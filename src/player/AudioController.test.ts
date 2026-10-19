@@ -134,7 +134,7 @@ describe('AudioController play intent when already playing', () => {
         detach();
     });
 
-    it('should clear play intent when emptied fires with no play pending', async () => {
+    it('should leave play intent to the pause event after emptied with no play pending', async () => {
         const { audio, controller, detach } = await setupPlaying();
         await controller.load(RECORDING, { autoplay: true });
         audio.paused = true;
