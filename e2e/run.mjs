@@ -317,7 +317,14 @@ const todayCardShare = (p) =>
 
 const recordTodayMetrics = async (p, label, rows) => {
     const share = await todayCardShare(p);
-    todayMetrics.push({ label, share: `${(share * 100).toFixed(1)}%`, rows });
+    // 距 PLAYER_MAX_SHARE 上限仲有幾多 px（負數 = 超出；好矮嘅畫面成頁捲，唔要求）
+    const headroom = (PLAYER_MAX_SHARE - share) * p.viewportSize().height;
+    todayMetrics.push({
+        label,
+        share: `${(share * 100).toFixed(1)}%`,
+        headroom: `${headroom.toFixed(1)}px`,
+        rows,
+    });
     return share;
 };
 
@@ -875,8 +882,10 @@ try {
     }
     console.log('\n節目頁尺寸｜播放器佔高｜唱片｜清單行數');
     for (const m of metrics) console.log(`${m.label}｜${m.share}｜${m.disc}px｜${m.rows}`);
-    console.log('\n今日節目頁尺寸｜卡（連指示點）佔高｜清單行數');
-    for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.rows}`);
+    console.log(
+        `\n今日節目頁尺寸｜卡（連指示點）佔高｜距 ${PLAYER_MAX_SHARE * 100}% 上限｜清單行數`,
+    );
+    for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.headroom}｜${m.rows}`);
     console.log('');
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
