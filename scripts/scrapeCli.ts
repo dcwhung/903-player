@@ -1,25 +1,9 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import type { Recording, RecordingsFeed } from '../src/types/recording';
-import { buildFeed, fetchShowFromSite, scrapeShows } from './scrape';
+import { buildFeed, fetchShowFromSite, loadFallback, scrapeShows } from './scrape';
 
 const OUTPUT_PATH = 'public/data/recordings.json';
 const JSON_INDENT = 2;
-
-/** 上次 deploy 嘅 JSON（GitHub Pages），爬唔到時做後備 */
-const loadFallback = async (url: string | undefined): Promise<Recording[]> => {
-    if (!url) {
-        return [];
-    }
-    try {
-        const response = await fetch(url);
-        const feed = (await response.json()) as RecordingsFeed;
-        return Array.isArray(feed.recordings) ? feed.recordings : [];
-    } catch {
-        console.warn('[scrape] fallback unavailable');
-        return [];
-    }
-};
 
 const main = async (): Promise<void> => {
     const [fallback, fresh] = await Promise.all([

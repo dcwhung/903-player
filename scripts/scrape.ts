@@ -1,4 +1,5 @@
 import { SHOWS } from '../src/config/shows';
+import { isRecording } from '../src/data/recordingValidation';
 import type { Recording, RecordingsFeed, ShowId } from '../src/types/recording';
 import { parseRecordings } from './parseRecordings';
 
@@ -50,3 +51,24 @@ export const buildFeed = (
         (show) => fresh.get(show.id) ?? fallback.filter((r) => r.showId === show.id),
     ),
 });
+
+/** 上次 deploy 嘅 feed（GitHub Pages），驗證後先用嚟做後備 */
+export const loadFallback = async (
+    url: string | undefined,
+    fetchImpl: typeof fetch = fetch,
+): Promise<Recording[]> => {
+    if (!url) {
+        return [];
+    }
+    try {
+        const response = await fetchImpl(url);
+        if (!response.ok) {
+            return [];
+        }
+        const payload = (await response.json()) as { recordings?: unknown };
+        return Array.isArray(payload.recordings) ? payload.recordings.filter(isRecording) : [];
+    } catch {
+        console.warn('[scrape] fallback unavailable');
+        return [];
+    }
+};

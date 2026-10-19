@@ -14,3 +14,6 @@ export const ARC_START_DEGREES = 135;
 export const ARC_SWEEP_DEGREES = 270;
 
 export const RECORDINGS_DATA_PATH = 'data/recordings.json';
+
+/** 錄音檔只可以嚟自原站 audio host */
+export const ALLOWED_AUDIO_ORIGIN = 'https://audio.hkfm903.live';

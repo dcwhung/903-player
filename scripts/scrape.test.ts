@@ -1,6 +1,6 @@
 // @vitest-environment node
 import type { Recording, ShowId } from '../src/types/recording';
-import { buildFeed, scrapeShows } from './scrape';
+import { buildFeed, loadFallback, scrapeShows } from './scrape';
 
 const rec = (showId: ShowId, date: string): Recording => ({
     showId,
@@ -40,5 +40,33 @@ describe('buildFeed', () => {
 
         expect(feed.generatedAt).toBe('2026-10-19T00:00:00.000Z');
         expect(feed.recordings).toEqual([rec('gongzi', '2026-10-17'), rec('wanni', '2026-10-16')]);
+    });
+});
+
+describe('loadFallback', () => {
+    const respond = (body: unknown, ok = true) =>
+        vi.fn(async () => ({ ok, json: async () => body }) as Response);
+
+    it('returns only valid recordings from the previous feed', async () => {
+        const fetchMock = respond({
+            recordings: [
+                rec('gongzi', '2026-10-17'),
+                { showId: 'gongzi', url: 'https://evil.example.com' },
+            ],
+        });
+
+        await expect(loadFallback('https://x/data.json', fetchMock)).resolves.toEqual([
+            rec('gongzi', '2026-10-17'),
+        ]);
+    });
+
+    it('returns an empty list on HTTP errors, bad payloads or no url', async () => {
+        await expect(loadFallback('https://x', respond({}, false))).resolves.toEqual([]);
+        await expect(loadFallback('https://x', respond({ foo: 1 }))).resolves.toEqual([]);
+        await expect(loadFallback(undefined)).resolves.toEqual([]);
+        const failing = vi.fn(async () => {
+            throw new Error('offline');
+        });
+        await expect(loadFallback('https://x', failing)).resolves.toEqual([]);
     });
 });

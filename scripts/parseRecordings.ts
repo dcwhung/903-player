@@ -1,21 +1,13 @@
 import { load } from 'cheerio';
+import { hasAllowedAudioOrigin } from '../src/data/recordingValidation';
 import type { Recording, ShowId } from '../src/types/recording';
 
-const ALLOWED_AUDIO_ORIGIN = 'https://audio.hkfm903.live';
 /** 檔名格式：20261017_2308_公子會.aac */
 const FILENAME_PATTERN = /(\d{4})(\d{2})(\d{2})_(\d{4})_/;
 
-const isAllowedAudioUrl = (url: string): boolean => {
-    try {
-        return new URL(url).origin === ALLOWED_AUDIO_ORIGIN;
-    } catch {
-        return false;
-    }
-};
-
 const toRecording = (title: string, url: string, showId: ShowId): Recording | null => {
     const match = FILENAME_PATTERN.exec(title);
-    if (!match || !isAllowedAudioUrl(url)) {
+    if (!match || !hasAllowedAudioOrigin(url)) {
         return null;
     }
     const [, year, month, day, time] = match;
