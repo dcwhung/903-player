@@ -1,18 +1,12 @@
-interface NodeFs {
-    readFileSync: (path: URL, encoding: 'utf8') => string;
-}
-
-// app 嘅 tsconfig 冇 node 型別（app code 唔應該用到 fs），所以用非字面 specifier 再自己標型別
-const FS_MODULE: string = 'node:fs';
+// 只畀 Node 環境嘅測試用（*.node.test.ts / scripts/）：tsconfig.node.json 有 Node 型別，
+// tsconfig.app.json 排除咗呢個檔，所以 node:fs 唔會漏入 app 程式
+import { readFileSync } from 'node:fs';
 
 /**
  * 讀 CSS 原文。Vitest 會將 `.module.css?raw` 當 CSS module 處理（返回 class 名 proxy），
  * 攞唔到原文，所以直接由檔案讀。
  */
-export const readCss = async (url: URL): Promise<string> => {
-    const fs = (await import(/* @vite-ignore */ FS_MODULE)) as NodeFs;
-    return fs.readFileSync(url, 'utf8');
-};
+export const readCss = (url: URL): string => readFileSync(url, 'utf8');
 
 /**
  * 喺 CSS 原文入面搵頂層、selector 完全一樣嘅規則，返回佢嘅宣告。
