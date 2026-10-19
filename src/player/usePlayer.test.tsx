@@ -25,6 +25,18 @@ const setup = () => {
 };
 
 describe('usePlayer', () => {
+    it('should reject audio and controller together at the type level', () => {
+        // 兩樣都傳會令 audio 被靜靜雞忽略，所以要喺型別層面擋
+        const audio = new FakeAudio().asAudio();
+        const element = (
+            // @ts-expect-error audio 同 controller 只可以傳其中一個
+            <PlayerProvider audio={audio} controller={new AudioController(audio)}>
+                {null}
+            </PlayerProvider>
+        );
+        expect(element).toBeTruthy();
+    });
+
     it('should share state with an injected controller when one is passed', async () => {
         // main.tsx 喺 React 外面都要讀播放狀態（決定幾時靜靜雞更新），所以 controller 由外面建立
         const audio = new FakeAudio();
