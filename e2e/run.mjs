@@ -53,6 +53,82 @@ const checkVersionClear = async (p, label) => {
     );
 };
 
+const EPISODE_ROW_PX = 56;
+const MIN_VISIBLE_ROWS = 2;
+const WHEEL_PX = 400;
+const SWIPE_FROM_PX = 120;
+
+/** 節目頁固定：捲集數 panel 時 window 唔郁、控制掣仍然喺畫面，panel 自己嘅 scrollTop 有變 */
+const checkFixedShowPage = async (p, label, shot) => {
+    const panel = p.getByRole('region', { name: '集數' }).getByRole('list');
+    const before = await panel.evaluate((el) => el.scrollTop);
+    const box = await panel.boundingBox();
+    await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await p.mouse.wheel(0, WHEEL_PX);
+    await p.waitForTimeout(600);
+    const after = await panel.evaluate((el) => el.scrollTop);
+    log(after !== before, `${label}：集數 panel 自己捲（scrollTop ${before} → ${after}）`);
+    // 喺唱片上面捲都唔會捲成頁
+    const disc = await p.getByRole('slider', { name: '播放進度' }).boundingBox();
+    await p.mouse.move(disc.x + disc.width / 2, disc.y + disc.height / 2);
+    await p.mouse.wheel(0, WHEEL_PX);
+    await p.waitForTimeout(300);
+    const page = await p.evaluate(() => ({
+        scrollY: window.scrollY,
+        overflow: document.documentElement.scrollHeight - window.innerHeight,
+    }));
+    log(page.scrollY === 0 && page.overflow <= 0, `${label}：成頁唔捲（${JSON.stringify(page)}）`);
+    await checkControlsInView(p, label);
+    const rows = box.height / EPISODE_ROW_PX;
+    log(rows >= MIN_VISIBLE_ROWS, `${label}：清單見到約 ${rows.toFixed(1)} 行`);
+    await p.screenshot({ path: `${OUT}/${shot}` });
+};
+
+/** 返回掣、播放掣同前進掣要完整喺畫面入面 */
+const checkControlsInView = async (p, label) => {
+    const height = p.viewportSize().height;
+    for (const name of ['返回主頁', '後退 60 秒', '前進 60 秒']) {
+        const b = await p.getByRole('button', { name }).boundingBox();
+        const ok = b !== null && b.y >= 0 && b.y + b.height <= height;
+        log(ok, `${label}：「${name}」喺畫面內（y ${b?.y?.toFixed(0)}）`);
+    }
+};
+
+/** 節目頁同今日節目頁嘅唱片要一樣大（矮螢幕一齊縮） */
+const checkDiscMatchesToday = async (p, label) => {
+    const discWidth = async () =>
+        (await p.getByRole('slider', { name: '播放進度' }).boundingBox()).width;
+    const show = await discWidth();
+    await p.goto(`${BASE}#/today`);
+    await p.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+    const today = await discWidth();
+    log(Math.abs(show - today) < 1, `${label}：唱片同今日節目頁一樣大（${show} / ${today}）`);
+};
+
+/** 喺唱片下面嘅日期 / 節目名區向左掃 → 播放中轉去下一行（舊一集） */
+const checkSwipeToOlder = async (p) => {
+    const rows = p.getByRole('region', { name: '集數' }).locator('li button');
+    const labels = await rows.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+    const from = labels.findIndex((l) => l.includes('播放中'));
+    const zone = await p
+        .getByRole('group', { name: '向左掃動聽舊一集，向右掃動聽新一集' })
+        .boundingBox();
+    const y = zone.y + zone.height / 2;
+    await p.mouse.move(zone.x + zone.width / 2 + SWIPE_FROM_PX / 2, y);
+    await p.mouse.down();
+    await p.mouse.move(zone.x + zone.width / 2 - SWIPE_FROM_PX / 2, y + 4, { steps: 6 });
+    await p.mouse.up();
+    await p.waitForTimeout(800);
+    const now = await p.locator('button[aria-current="true"]').first().getAttribute('aria-label');
+    const olderDate = labels[from + 1]?.split('，')[0];
+    log(
+        now.startsWith(olderDate) && now.includes('播放中'),
+        `向左掃轉舊一集：${labels[from]} → ${now}`,
+    );
+    const playing = await p.evaluate(() => navigator.mediaSession.playbackState);
+    log(playing === 'playing', `掃完即刻播：${playing}`);
+};
+
 const server = await startPreview();
 let browser;
 try {
@@ -249,6 +325,26 @@ try {
         log(overflow === 0, `320px 闊冇橫向捲動（${route}，超出 ${overflow}px）`);
     }
     await narrow.close();
+
+    // 節目頁固定、集數清單自己捲；badgirl 集數多過一個畫面
+    const fixedViewports = [
+        [{ width: 390, height: 844 }, '9-show-fixed-390.png'],
+        [{ width: 320, height: 568 }, '10-show-fixed-320x568.png'],
+    ];
+    for (const [viewport, shot] of fixedViewports) {
+        const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2 });
+        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
+        const fp = await ctx.newPage();
+        fp.on('pageerror', (e) => errors.push(e.message));
+        await fp.goto(`${BASE}#/show/badgirl`);
+        await fp.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+        await fp.waitForTimeout(800);
+        const label = `${viewport.width}×${viewport.height} 節目頁`;
+        await checkSwipeToOlder(fp);
+        await checkFixedShowPage(fp, label, shot);
+        await checkDiscMatchesToday(fp, label);
+        await ctx.close();
+    }
 
     const light = await browser.newContext({
         viewport: { width: 390, height: 844 },
