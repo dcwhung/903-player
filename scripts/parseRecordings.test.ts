@@ -39,6 +39,34 @@ describe('parseRecordings on non-aac files', () => {
     });
 });
 
+describe('parseRecordings cross-check', () => {
+    const card = (title: string, badge: string) =>
+        `<div class="recording-card"><h5 class="card-title">${title}</h5><span class="badge">${badge}</span>
+        <audio><source src="https://audio.hkfm903.live/x/${title}"></audio></div>`;
+
+    it('drops cards that clearly belong to another show', () => {
+        const html =
+            card('20261019_1009_Bad_Girl大過佬.aac', 'Bad Girl大過佬') +
+            card('20261018_2308_公子會.aac', '公子會') +
+            card('20261017_1000_未知.aac', '');
+
+        expect(parseRecordings(html, 'badgirl').map((r) => r.date)).toEqual([
+            '2026-10-19',
+            '2026-10-17',
+        ]);
+    });
+});
+
+describe('parseAllRecordings unmatched names', () => {
+    it('reports the show name rather than a label badge', () => {
+        const html = `<div class="recording-card"><h5 class="card-title">20261019_1510_口水多過浪花.aac</h5>
+            <span class="badge">新</span><span class="badge">口水多過浪花</span>
+            <audio><source src="https://audio.hkfm903.live/x/a.aac"></audio></div>`;
+
+        expect(parseAllRecordings(html).unmatched).toEqual(['口水多過浪花']);
+    });
+});
+
 describe('parseAllRecordings', () => {
     const all = parseAllRecordings(read('all-shows.html'));
 

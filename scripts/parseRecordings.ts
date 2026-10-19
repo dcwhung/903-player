@@ -50,12 +50,6 @@ const toRecording = ({ title, url }: Card, showId: ShowId): Recording | null => 
 
 const isPresent = (recording: Recording | null): recording is Recording => recording !== null;
 
-/** 節目頁：全部卡都屬於指定節目（原站已按節目篩選） */
-export const parseRecordings = (html: string, showId: ShowId): Recording[] =>
-    readCards(html)
-        .map((card) => toRecording(card, showId))
-        .filter(isPresent);
-
 type Resolution = { showId: ShowId } | { unmatched: string } | { conflict: true };
 
 /** badge 同檔名都揀出節目；全部指向同一個先接受 */
@@ -66,8 +60,26 @@ const resolveShow = (card: Card): Resolution => {
         return { conflict: true };
     }
     const [showId] = [...ids];
-    return showId ? { showId } : { unmatched: candidates.find(Boolean) ?? '' };
+    // 報節目名（檔名優先），唔好報「新」之類嘅標籤
+    const filenameShow = FILENAME_SHOW_PATTERN.exec(card.title)?.[1];
+    return showId ? { showId } : { unmatched: filenameShow || (card.labels.at(-1) ?? '') };
 };
+
+/** 節目頁嘅卡：認得出係其他節目（或者自相矛盾）就丟走，認唔出就信原站篩選 */
+const belongsTo = (card: Card, showId: ShowId): boolean => {
+    const resolution = resolveShow(card);
+    if ('conflict' in resolution) {
+        return false;
+    }
+    return 'showId' in resolution ? resolution.showId === showId : true;
+};
+
+/** 節目頁：原站已按節目篩選，再用 badge / 檔名交叉檢查 */
+export const parseRecordings = (html: string, showId: ShowId): Recording[] =>
+    readCards(html)
+        .filter((card) => belongsTo(card, showId))
+        .map((card) => toRecording(card, showId))
+        .filter(isPresent);
 
 /** All Shows 頁：按 badge 同檔名分返落各個節目 */
 export const parseAllRecordings = (html: string): ParsedAll => {

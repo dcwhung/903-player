@@ -54,7 +54,7 @@ const settle = async <T, F>(task: () => Promise<T>, fallback: F, label: string):
 export const escapeWorkflowData = (value: string): string =>
     value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 
-const annotate = (level: 'notice' | 'warning', message: string): void =>
+export const annotate = (level: 'notice' | 'warning', message: string): void =>
     console.log(`::${level}::${escapeWorkflowData(message)}`);
 
 const reportAllPage = (all: ParsedAll): void => {
@@ -125,6 +125,17 @@ export const buildFeed = (
         ),
     ),
 });
+
+/** Actions 摘要：每個節目幾多集，同埋指定日子有邊幾個節目 */
+export const summariseFeed = (feed: RecordingsFeed, date: string): string => {
+    const counts = SHOWS.map(
+        (show) => `${show.id} ${feed.recordings.filter((r) => r.showId === show.id).length}`,
+    );
+    const onDate = SHOWS.filter((show) =>
+        feed.recordings.some((r) => r.showId === show.id && r.date === date),
+    ).map((show) => show.name);
+    return `${counts.join(', ')} | ${date}: ${onDate.join(', ') || '-'}`;
+};
 
 /** 上次 deploy 嘅 feed（GitHub Pages），驗證後先用嚟做後備 */
 export const loadFallback = async (

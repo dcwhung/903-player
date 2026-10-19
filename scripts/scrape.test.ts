@@ -4,6 +4,7 @@ import {
     buildFeed,
     escapeWorkflowData,
     loadFallback,
+    summariseFeed,
     scrapeShows,
     type ScrapeSources,
     type ShowResult,
@@ -140,6 +141,15 @@ describe('buildFeed', () => {
         expect(feed.recordings.map((r) => r.date)).toEqual(['2026-10-19']);
     });
 
+    it('prefers the fresh copy when an incomplete result overlaps the history', () => {
+        const fresh = { ...rec('wanni', '2026-10-16'), time: '2000' };
+
+        const feed = feedFor({ recordings: [fresh], complete: false });
+
+        expect(feed.recordings.filter((r) => r.date === '2026-10-16')).toEqual([fresh]);
+        expect(feed.recordings).toHaveLength(3);
+    });
+
     it('falls back entirely when the show was not scraped', () => {
         expect(feedFor(null).recordings).toEqual(fallback);
     });
@@ -190,5 +200,22 @@ describe('loadFallback', () => {
             throw new Error('offline');
         });
         await expect(loadFallback('https://x', failing)).resolves.toEqual([]);
+    });
+});
+
+describe('summariseFeed', () => {
+    it('lists per-show counts and the shows recorded today', () => {
+        const feed = {
+            generatedAt: 'x',
+            recordings: [
+                rec('badgirl', '2026-10-19'),
+                rec('badgirl', '2026-10-16'),
+                rec('wanni', '2026-10-19'),
+            ],
+        };
+
+        expect(summariseFeed(feed, '2026-10-19')).toBe(
+            'badgirl 2, gongzi 0, wanni 1, sunnyday 0, westair 0 | 2026-10-19: Bad Girl大過佬, 雲妮鍾情',
+        );
     });
 });

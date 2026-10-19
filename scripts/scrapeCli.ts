@@ -1,6 +1,14 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { buildFeed, loadFallback, scrapeShows, siteSources } from './scrape';
+import { hkToday } from '../src/utils/date';
+import {
+    annotate,
+    buildFeed,
+    loadFallback,
+    scrapeShows,
+    siteSources,
+    summariseFeed,
+} from './scrape';
 
 const OUTPUT_PATH = 'public/data/recordings.json';
 const JSON_INDENT = 2;
@@ -21,6 +29,8 @@ const main = async (): Promise<void> => {
         // 寧願 deploy 失敗、保留舊版本，都唔好發佈一個空列表
         throw new Error('No recordings scraped and no fallback available');
     }
+    // 摘要寫成 annotation，可以經 GitHub API 讀到
+    annotate('notice', `Feed: ${summariseFeed(feed, hkToday())}`);
     await mkdir(dirname(OUTPUT_PATH), { recursive: true });
     await writeFile(OUTPUT_PATH, JSON.stringify(feed, null, JSON_INDENT));
     console.log(`[scrape] wrote ${feed.recordings.length} recordings to ${OUTPUT_PATH}`);
