@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { buildFeed, fetchShowFromSite, loadFallback, scrapeShows } from './scrape';
+import { buildFeed, loadFallback, scrapeShows, siteSources } from './scrape';
 
 const OUTPUT_PATH = 'public/data/recordings.json';
 const JSON_INDENT = 2;
@@ -8,7 +8,7 @@ const JSON_INDENT = 2;
 const main = async (): Promise<void> => {
     const [fallback, fresh] = await Promise.all([
         loadFallback(process.env.FALLBACK_URL),
-        scrapeShows(fetchShowFromSite),
+        scrapeShows(siteSources),
     ]);
     const feed = buildFeed(fresh, fallback);
     fresh.forEach((recordings, showId) =>
