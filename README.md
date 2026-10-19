@@ -12,7 +12,7 @@
 ## 架構
 
 ```
-GitHub Actions（push main / 每 30 分鐘 / 手動）
+GitHub Actions（push main / 每日兩次：香港 13:17、02:17 / 手動）
   ├─ npm run scrape → public/data/recordings.json（爬唔到嘅節目沿用上次 deploy 嘅資料）
   └─ npm run build  → dist/ ─► GitHub Pages
 PWA ─ fetch data/recordings.json ─► <audio> 直接播 audio.hkfm903.live
@@ -36,7 +36,7 @@ npm run build
 ## 部署（只需做一次）
 
 GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 **GitHub Actions**。
-之後每次 push `main` 同每 30 分鐘都會自動爬資料同重新 deploy 去
+之後每次 push `main` 同每日兩次（香港 13:17、02:17）都會自動爬資料同重新 deploy 去
 `https://<owner>.github.io/903-player/`。
 
 ## 目錄
