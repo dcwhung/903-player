@@ -154,3 +154,50 @@ describe('AudioController play intent when already playing', () => {
         detach();
     });
 });
+
+/** 每次 play() 都返回一個可以由測試控制 settle 嘅 promise */
+const setupManualPlays = () => {
+    const audio = new FakeAudio();
+    const rejects: ((error: Error) => void)[] = [];
+    audio.play.mockImplementation(
+        () => new Promise<void>((_resolve, reject) => rejects.push(reject)),
+    );
+    const controller = new AudioController(audio.asAudio());
+    const detach = controller.attach();
+    const abort = (index: number) => rejects[index]?.(new DOMException('aborted', 'AbortError'));
+    return { audio, controller, detach, abort };
+};
+
+describe('AudioController overlapping play() calls', () => {
+    it('should keep play intent when an earlier aborted play() settles after a later one', async () => {
+        const { controller, detach, abort } = setupManualPlays();
+        const first = controller.play();
+        void controller.play();
+        abort(0);
+        await first;
+        expect(controller.hasPlayIntent()).toBe(true);
+        detach();
+    });
+
+    it('should keep play intent on emptied when an earlier play() settled but a later one is pending', async () => {
+        const { audio, controller, detach, abort } = setupManualPlays();
+        const first = controller.play();
+        void controller.play();
+        abort(0);
+        await first;
+        audio.dispatchEvent(new Event('emptied'));
+        expect(controller.hasPlayIntent()).toBe(true);
+        detach();
+    });
+
+    it('should clear play intent when the latest play() is aborted', async () => {
+        const { controller, detach, abort } = setupManualPlays();
+        const first = controller.play();
+        const second = controller.play();
+        abort(0);
+        abort(1);
+        await Promise.all([first, second]);
+        expect(controller.hasPlayIntent()).toBe(false);
+        detach();
+    });
+});

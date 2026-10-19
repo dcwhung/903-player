@@ -46,8 +46,10 @@ export class AudioController {
     private lastTickPosition = 0;
     /** 撳咗 Play 但 play event 未到（瀏覽器仲準備緊）；PWA 更新要當播緊，唔好搶走呢下撳 */
     private playIntent = false;
-    /** audio.play() 仲未 settle */
+    /** 最新一次 audio.play() 仲未 settle */
     private playPending = false;
+    /** 每次 play() +1：舊嘅 play()（例如被換集 abort）settle 時唔可以清走新一次嘅意圖 */
+    private playGeneration = 0;
 
     constructor(private readonly audio: HTMLAudioElement) {}
 
@@ -100,20 +102,26 @@ export class AudioController {
     };
 
     play = async (): Promise<void> => {
+        const generation = ++this.playGeneration;
+        const isLatest = () => generation === this.playGeneration;
         this.setPlayIntent(true);
         this.playPending = true;
         try {
             await this.audio.play();
             // 本身已經播緊時 spec 唔會再發 play event，要喺度清走，否則會卡住擋住更新
-            if (!this.audio.paused) {
+            if (isLatest() && !this.audio.paused) {
                 this.setPlayIntent(false);
             }
         } catch {
-            // 瀏覽器擋自動播放：維持暫停，等用戶撳 Play
-            this.playIntent = false;
-            this.update({ isPlaying: false });
+            // 瀏覽器擋自動播放：維持暫停，等用戶撳 Play；被新一次 play() 取代就交畀佢
+            if (isLatest()) {
+                this.playIntent = false;
+                this.update({ isPlaying: false });
+            }
         } finally {
-            this.playPending = false;
+            if (isLatest()) {
+                this.playPending = false;
+            }
         }
     };
 
