@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
-import type { SwipeDirection } from '../../hooks/swipe';
+import { DRAG_INTENT_PX, type SwipeDirection } from '../../hooks/swipe';
 import { prefersReducedMotion } from '../../utils/motion';
 import {
     CARD_FLY_MS,
@@ -61,12 +61,13 @@ const drag = (refs: MotionRefs, dx: number) => {
 
 /**
  * 彈返途中捉住張卡：停喺佢而家嘅位置（computed transform）繼續拖，唔會跳返中間；
- * 返回而家嘅橫向位移，唔係彈緊就係 null
+ * 返回而家嘅橫向位移。唔係彈緊，或者已經差唔多返到中間（未過橫拖門檻，當係 tap）就係 null，照彈
  */
 const grab = (refs: MotionRefs): number | null => {
     const top = refs.top.current;
     if (!top || refs.stack.current?.dataset.phase !== 'settling') return null;
     const dx = translateXOf(getComputedStyle(top).transform);
+    if (Math.abs(dx) < DRAG_INTENT_PX) return null;
     drag(refs, dx);
     return dx;
 };

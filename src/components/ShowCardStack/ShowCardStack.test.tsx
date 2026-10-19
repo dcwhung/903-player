@@ -220,6 +220,21 @@ describe('ShowCardStack', () => {
         expect(cardDx(group)).toBe('-30px');
     });
 
+    it('should treat a tap near the centre during spring-back as a tap, not a drag', () => {
+        const { group, onInnerClick } = setup();
+        const inner = screen.getByRole('button', { name: '內容' });
+
+        drag(group, -40);
+        // 差唔多彈返中間（未過橫拖門檻）先撳
+        inner.parentElement?.style.setProperty('transform', 'matrix(1, 0, 0, 1, -5, 0)');
+        fireEvent.pointerDown(inner, { clientX: 200, clientY: 100 });
+        fireEvent.pointerUp(inner, { clientX: 200, clientY: 100 });
+        fireEvent.click(inner, { detail: 1 });
+
+        expect(onInnerClick).toHaveBeenCalledTimes(1);
+        expect(group).toHaveAttribute('data-phase', 'settling');
+    });
+
     it('should spring back when the pointer is cancelled', () => {
         const { group, onChange } = setup();
 
