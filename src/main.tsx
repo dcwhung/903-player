@@ -21,8 +21,16 @@ const updateManager = new UpdateManager({
     now: Date.now,
     isOnline: () => navigator.onLine,
     isPlaying: () => playerController.getSnapshot().isPlaying,
+    hasRecording: () => playerController.getSnapshot().recording !== null,
+    isVisible: () => document.visibilityState === 'visible',
+    schedule: (callback, ms) => {
+        const id = window.setTimeout(callback, ms);
+        return () => window.clearTimeout(id);
+    },
     subscribePlayback: playerController.subscribe,
 });
+// 由開 app 就追蹤播放停低嘅時間，grace period 先計得準
+updateManager.start();
 
 // prompt 模式：新 SW 喺 waiting 等，由 updateManager 決定幾時 skipWaiting
 const updateSW = registerSW({
