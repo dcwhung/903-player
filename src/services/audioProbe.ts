@@ -2,7 +2,13 @@ import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
 import { SHOWS, type ShowConfig } from '../config/shows';
 import type { Recording } from '../types/recording';
 import { hkToday } from '../utils/date';
-import { readProbeState, writeProbeState, type ProbeState } from './probeStore';
+import {
+    dateFromShowDateKey,
+    readProbeState,
+    showDateKey,
+    writeProbeState,
+    type ProbeState,
+} from './probeStore';
 
 /** 等 metadata 最多幾耐；超時當冇呢個檔 */
 export const PROBE_TIMEOUT_MS = 15_000;
@@ -63,12 +69,10 @@ const recentDates = (now: Date): string[] =>
         hkToday(new Date(now.getTime() - days * MS_PER_DAY)),
     );
 
-const showDateKey = (showId: string, date: string): string => `${showId}:${date}`;
-
 /** 只保留最近幾日嘅 miss 記錄，唔好令 localStorage 越積越多 */
 const recentMisses = (misses: ProbeState['misses'], dates: string[]): ProbeState['misses'] =>
     Object.fromEntries(
-        Object.entries(misses).filter(([key]) => dates.includes(key.split(':')[1] ?? '')),
+        Object.entries(misses).filter(([key]) => dates.includes(dateFromShowDateKey(key))),
     );
 
 /**

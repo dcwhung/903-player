@@ -10,7 +10,18 @@ export interface ProbeState {
     misses: Record<string, number>;
 }
 
-const EMPTY_STATE: ProbeState = { found: [], misses: {} };
+/** misses 嘅 key 格式：`showId:date`（showId 同日期都唔會有 `:`） */
+const SHOW_DATE_KEY_SEPARATOR = ':';
+
+export const showDateKey = (showId: string, date: string): string =>
+    `${showId}${SHOW_DATE_KEY_SEPARATOR}${date}`;
+
+/** 由 key 攞返日期；格式唔啱就回傳空字串 */
+export const dateFromShowDateKey = (key: string): string =>
+    key.split(SHOW_DATE_KEY_SEPARATOR)[1] ?? '';
+
+/** 每次都整個新 object，避免 caller 改咗共用嘅預設值 */
+const emptyState = (): ProbeState => ({ found: [], misses: {} });
 
 const readMisses = (value: unknown): Record<string, number> =>
     typeof value === 'object' && value !== null
@@ -24,14 +35,14 @@ export const readProbeState = (): ProbeState => {
             misses?: unknown;
         } | null;
         if (typeof parsed !== 'object' || parsed === null) {
-            return EMPTY_STATE;
+            return emptyState();
         }
         return {
             found: Array.isArray(parsed.found) ? parsed.found.filter(isRecording) : [],
             misses: readMisses(parsed.misses),
         };
     } catch {
-        return EMPTY_STATE;
+        return emptyState();
     }
 };
 

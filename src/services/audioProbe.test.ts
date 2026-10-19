@@ -9,7 +9,7 @@ import {
     probeRecentRecordings,
     type AudioProber,
 } from './audioProbe';
-import { PROBE_STORAGE_KEY, readProbeState } from './probeStore';
+import { PROBE_STORAGE_KEY, dateFromShowDateKey, readProbeState } from './probeStore';
 
 /** 用戶喺原站複製出嚟嘅真實網址 */
 const REAL_URLS = {
@@ -143,7 +143,7 @@ describe('probeRecentRecordings', () => {
 
         await probeRecentRecordings([], { probe: found([]), now: twoDaysLater });
 
-        const dates = Object.keys(readProbeState().misses).map((key) => key.split(':')[1]);
+        const dates = Object.keys(readProbeState().misses).map(dateFromShowDateKey);
         expect(new Set(dates)).toEqual(new Set(['2026-10-21', '2026-10-22']));
     });
 
