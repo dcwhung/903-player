@@ -44,6 +44,7 @@ export class UpdateManager {
     private lastCheckedAt = Number.NEGATIVE_INFINITY;
     /** 等緊做嘅動作：refresh = 新 SW 喺 waiting；reload = 新 SW 已啟用（例如另一個 tab 換咗） */
     private pendingAction: 'refresh' | 'reload' | undefined;
+    /** 已經叫咗 updateSW(true)（SKIP_WAITING 已發） */
     private applied = false;
     /** 播放上一次停低嘅時間；播緊就係 undefined */
     private stoppedAt: number | undefined;
@@ -78,17 +79,20 @@ export class UpdateManager {
 
     /** 新版本已裝好喺 waiting：等到唔會打斷收聽嘅時機先換 */
     handleNeedRefresh = (): void => {
+        if (this.applied) {
+            return;
+        }
         this.pendingAction ??= 'refresh';
         this.syncStoppedAt();
         this.evaluate(false);
     };
 
     /**
-     * 新 SW 已接管（controllerchange）。自己 apply 嘅就即刻 reload；
-     * 否則（例如另一個 tab 換咗版本）照樣等唔會打斷收聽先 reload
+     * 新 SW 已接管（controllerchange）。自己 apply 而仲未播就即刻 reload（apply 嗰陣已經符合條件）；
+     * 播緊（例如 iOS 恢復時先到）或者另一個 tab 換咗版本，就照樣等唔會打斷收聽先 reload
      */
     handleNeedReload = (): void => {
-        if (this.applied) {
+        if (this.applied && !this.deps.isPlaying()) {
             this.reloadOnce();
             return;
         }
@@ -118,7 +122,7 @@ export class UpdateManager {
     }
 
     private evaluate(justBecameVisible: boolean): void {
-        if (this.pendingAction === undefined || this.applied) {
+        if (this.pendingAction === undefined) {
             return;
         }
         if (this.canApply(justBecameVisible)) {
@@ -163,11 +167,13 @@ export class UpdateManager {
     }
 
     private apply(): void {
-        this.applied = true;
+        const action = this.pendingAction;
+        this.pendingAction = undefined;
         this.clearTimer();
-        if (this.pendingAction === 'reload') {
+        if (action === 'reload') {
             this.reloadOnce();
         } else {
+            this.applied = true;
             this.deps.applyUpdate();
         }
     }

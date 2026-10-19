@@ -239,11 +239,27 @@ describe('UpdateManager apply rule', () => {
 });
 
 describe('UpdateManager.handleNeedReload', () => {
-    it('should reload at once when this app applied the update', () => {
+    it('should defer the self-applied reload when audio is playing', () => {
+        // 例如 iOS 由背景恢復時先收到 controllerchange，嗰陣已經播緊
         const h = createHarness();
         h.setLoaded(false);
         h.manager.handleNeedRefresh();
         h.setPlaying(true);
+        h.manager.handleNeedReload();
+        expect(h.deps.reload).not.toHaveBeenCalled();
+
+        h.setPlaying(false);
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+        expect(h.deps.applyUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('should reload at once when self-applied and still not playing', () => {
+        // 返到前景時 apply 咗，controllerchange 跟住到：唔使再等收埋 app
+        const h = createHarness();
+        h.manager.handleNeedRefresh();
+        vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
+        h.show();
+        expect(h.deps.applyUpdate).toHaveBeenCalledTimes(1);
         h.manager.handleNeedReload();
         expect(h.deps.reload).toHaveBeenCalledTimes(1);
     });
