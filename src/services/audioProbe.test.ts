@@ -61,6 +61,13 @@ describe('buildAudioUrl', () => {
     });
 });
 
+describe('probe constants', () => {
+    it('keeps found recordings at least as long as the lookback window', () => {
+        // 短過回看期就會清走仍然喺期內嘅錄音，下次又重新 probe 返
+        expect(PROBE_FOUND_RETENTION_DAYS).toBeGreaterThanOrEqual(PROBE_LOOKBACK_DAYS);
+    });
+});
+
 describe('probeAudio', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());

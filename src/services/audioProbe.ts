@@ -23,7 +23,11 @@ const SETTLED_AFTER_DAYS = 2;
  * 一日試一次已經夠，亦令斷網誤記嘅 miss 最多只影響一日
  */
 export const PROBE_SETTLED_RETRY_MS = 24 * 60 * 60 * 1_000;
-/** 搵到嘅錄音最多留幾多日（香港日期），feed 一直唔更新都唔會越積越多 */
+/**
+ * 搵到嘅錄音最多留幾多日（香港日期），feed 一直唔更新都唔會越積越多。
+ * 一定要 ≥ PROBE_LOOKBACK_DAYS：如果短過回看期，仲喺回看期內嘅錄音會先被清走、
+ * 再被當成未搵過重新 probe，白白多咗請求，列表亦會忽然少咗嗰幾個
+ */
 export const PROBE_FOUND_RETENTION_DAYS = 14;
 const MS_PER_DAY = 24 * 60 * 60 * 1_000;
 /**
