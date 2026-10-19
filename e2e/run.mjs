@@ -267,11 +267,22 @@ const checkDiscMatchesToday = async (p, label) => {
     const today = await discWidth();
     log(Math.abs(show - today) < 1, `${label}：唱片同今日節目頁一樣大（${show} / ${today}）`);
     // 今日節目頁同節目頁用同一個固定版面（.fixed），頁面間距一樣、矮螢幕一齊收窄；
-    // 今日節目卡入面用卡自己較窄嘅間距（--card-inner-gap），唔可以闊過節目頁
+    // 今日節目卡入面用卡自己較窄嘅間距：要正正係 --card-inner-gap（ShowCardStack .card 蓋過 .fixed），
+    // 亦唔可以闊過節目頁
     const todayGaps = await pageGaps();
+    // custom property 嘅 computed value 已經代入咗 var()（例如 var(--space-2) → 8px）
+    const cardInnerGap = await p.evaluate(() =>
+        parseFloat(
+            getComputedStyle(document.querySelector('[class*="panel"]')).getPropertyValue(
+                '--card-inner-gap',
+            ),
+        ),
+    );
     log(
-        todayGaps[0] === showGaps[0] && todayGaps[1] <= showGaps[1],
-        `${label}：今日節目頁頁面間距同節目頁一樣、卡入面唔闊過節目頁（${todayGaps.join(' / ')}px，節目頁 ${showGaps.join(' / ')}px）`,
+        todayGaps[0] === showGaps[0] &&
+            todayGaps[1] === cardInnerGap &&
+            cardInnerGap <= showGaps[1],
+        `${label}：今日節目頁頁面間距同節目頁一樣、卡入面間距 = --card-inner-gap ${cardInnerGap}px（${todayGaps.join(' / ')}px，節目頁 ${showGaps.join(' / ')}px）`,
     );
 };
 
