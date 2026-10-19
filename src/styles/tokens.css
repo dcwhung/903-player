@@ -65,6 +65,52 @@
 }
 
 /*
+ * 矮螢幕（例如 320×568）主碟按畫面高縮細，令固定唔捲嘅節目頁仍然見到兩行集數；
+ * 夠高就維持 300px。今日節目頁共用同一個 token，兩頁大小一致。
+ * 預留高度 = 頁頭 + 日期節目名 + 控制掣 + 間距 + 兩行集數；唔支援 dvh 就用返上面嘅值。
+ * 最細唔會細過 --player-disc-min：再矮（≤ 561px 高）節目頁會改為成頁捲（Page.module.css）。
+ */
+:root {
+    --player-disc-min: 160px;
+    /* 節目頁（只限節目頁）嘅間距；700px 高或以下收窄，令固定版面多啲位畀集數清單 */
+    --show-page-gap: var(--space-5);
+}
+
+@media (max-height: 700px) {
+    :root {
+        --show-page-gap: var(--space-3);
+    }
+}
+
+@supports (height: 100dvh) {
+    :root {
+        /*
+         * 節目頁除咗唱片之外要預留嘅高度，按固定版面由上而下：
+         * 1. 頂部安全區 + 頁頂 padding（--space-4）
+         * 2. 頁頭返回掣（--touch-target）
+         * 3. 4 個間距（頁：頁頭↔播放器↔清單；播放器：唱片↔標題↔控制掣）
+         * 4. 日期 + 節目名：60px（13px + 4px 間距 + 24px，Poppins 行高 1.5 量出嚟）
+         * 5. 播放掣最大尺寸：76px（PlayerControls --toggle-size 上限）
+         * 6. 「集數 / 共 N 集」標題列：30px（量出嚟）
+         * 7. 兩行集數：2 × 56px（EpisodeList .row，border-box 連分隔線）
+         * 8. 清單底 padding（--space-2）+ 底部安全區
+         * 改字體大小、控制掣或者行高要跟住改。
+         */
+        --player-reserved-height: calc(
+            env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 4 *
+                var(--show-page-gap) + 60px + 76px + 30px + 2 * 56px + var(--space-2) +
+                env(safe-area-inset-bottom)
+        );
+        /* 唱片 + 時間嗰一格嘅高 = 闊 × 316 / 300（PlayerPanel .gauge aspect-ratio） */
+        /* 下限都唔可以闊過 78vw（極窄 / 高倍放大時避免橫向超出） */
+        --player-disc-size: max(
+            min(var(--player-disc-min), 78vw),
+            min(300px, 78vw, calc((100dvh - var(--player-reserved-height)) * 300 / 316))
+        );
+    }
+}
+
+/*
  * 語意 token 由 --theme-* 推出。自訂屬性喺宣告嗰個元素解析，
  * 所以要喺 :root 同每個 ThemeScope 都重新宣告，先會跟節目轉色。
  */

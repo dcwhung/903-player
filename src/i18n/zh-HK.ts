@@ -44,6 +44,10 @@ export const zhHK = {
         watched: '已收聽',
         unwatched: '未收聽',
         play: '播放 {date}，{status}',
+        // 節目頁唱片下面嘅日期 / 節目名區：左右掃（或者方向鍵）轉集
+        switchHint: '左右方向鍵或左右掃動轉集',
+        switchRoleDescription: '轉集',
+        switched: '已轉到 {date}',
     },
     miniPlayer: {
         region: '正在播放（今日節目）',
