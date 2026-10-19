@@ -4,6 +4,7 @@ import { findShow } from '../config/shows';
 import type { Recording } from '../types/recording';
 import {
     PROBE_FOUND_RETENTION_DAYS,
+    PROBE_LOOKBACK_DAYS,
     PROBE_RETRY_MS,
     PROBE_TIMEOUT_MS,
     buildAudioUrl,
@@ -32,8 +33,17 @@ const REAL_URLS = {
     wanni: 'https://audio.hkfm903.live/%E9%9B%B2%E5%A6%AE%E9%8D%BE%E6%83%85/20261019_0708_%E9%9B%B2%E5%A6%AE%E9%8D%BE%E6%83%85.aac',
 } as const;
 
-/** 2026-10-20 12:00 香港時間 */
+/** 2026-10-20（二）12:00 香港時間 */
 const NOW = new Date('2026-10-20T04:00:00Z');
+/**
+ * NOW 回看 7 日（14–20 號）入面要 probe 嘅節目：
+ * 一至五（14、15、16、19、20）各 3 個；六（17）公子會同西加；日（18）冇節目
+ */
+const WINDOW_SLOTS = 17;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const daysAfter = (date: Date, days: number): Date => new Date(date.getTime() + days * MS_PER_DAY);
+const urlFor = (showId: Parameters<typeof findShow>[0], date: string): string =>
+    buildAudioUrl(findShow(showId)!, date);
 
 describe('buildAudioUrl', () => {
     it.each([
@@ -141,30 +151,55 @@ describe('probeRecentRecordings', () => {
 
         await probeRecentRecordings([], { probe: next, now: new Date(NOW.getTime() + 1) });
 
-        expect(next).toHaveBeenCalledTimes(9);
+        expect(next).toHaveBeenCalledTimes(WINDOW_SLOTS);
     });
 
-    it('probes today and yesterday for every show and returns what exists', async () => {
+    it(`probes each show's broadcast days in the last ${PROBE_LOOKBACK_DAYS} days`, async () => {
         const probe = found([REAL_URLS.badgirl]);
 
         const result = await probeRecentRecordings([], { probe, now: NOW });
 
-        // 今日 12:00：公子會（23:08）未播，所以係 4 + 5
-        expect(probe).toHaveBeenCalledTimes(9);
+        expect(probe).toHaveBeenCalledTimes(WINDOW_SLOTS);
         expect(result).toEqual<Recording[]>([
             { showId: 'badgirl', date: '2026-10-19', time: '1009', url: REAL_URLS.badgirl },
         ]);
     });
 
-    it("skips today's shows that have not aired yet", async () => {
+    it('only probes a show on the weekdays it airs', async () => {
         const probe = found([]);
 
         await probeRecentRecordings([], { probe, now: NOW });
 
         const urls = vi.mocked(probe).mock.calls.map(([url]) => url);
-        expect(urls).not.toContain(buildAudioUrl(findShow('gongzi')!, '2026-10-20'));
-        expect(urls).toContain(buildAudioUrl(findShow('gongzi')!, '2026-10-19'));
-        expect(urls).toContain(buildAudioUrl(findShow('badgirl')!, '2026-10-20'));
+        expect(urls).toContain(urlFor('gongzi', '2026-10-17'));
+        expect(urls).not.toContain(urlFor('gongzi', '2026-10-19'));
+        expect(urls).not.toContain(urlFor('badgirl', '2026-10-17'));
+        expect(urls).not.toContain(urlFor('badgirl', '2026-10-18'));
+    });
+
+    it('finds the days the app was not opened (Thursday to Sunday, opened on Monday)', async () => {
+        const monday = new Date('2026-10-19T04:00:00Z');
+        const thursday = urlFor('badgirl', '2026-10-15');
+        const saturday = urlFor('gongzi', '2026-10-17');
+
+        const result = await probeRecentRecordings([], {
+            probe: found([thursday, saturday]),
+            now: monday,
+        });
+
+        // 由最近嘅日子 probe 起，所以次序唔重要
+        expect(new Set(result.map((r) => r.url))).toEqual(new Set([thursday, saturday]));
+    });
+
+    it("skips today's shows that have not aired yet", async () => {
+        const saturdayNoon = new Date('2026-10-17T04:00:00Z');
+        const probe = found([]);
+
+        await probeRecentRecordings([], { probe, now: saturdayNoon });
+
+        const urls = vi.mocked(probe).mock.calls.map(([url]) => url);
+        expect(urls).not.toContain(urlFor('gongzi', '2026-10-17'));
+        expect(urls).toContain(urlFor('westair', '2026-10-17'));
     });
 
     it('skips shows the feed already has for that date', async () => {
@@ -178,7 +213,7 @@ describe('probeRecentRecordings', () => {
 
         await probeRecentRecordings([known], { probe, now: NOW });
 
-        expect(probe).toHaveBeenCalledTimes(8);
+        expect(probe).toHaveBeenCalledTimes(WINDOW_SLOTS - 1);
         expect(probe).not.toHaveBeenCalledWith(REAL_URLS.badgirl);
     });
 
@@ -251,37 +286,27 @@ describe('probeRecentRecordings', () => {
                         ([url]) => /\/(\d{8})_/.exec(decodeURIComponent(url))?.[1] ?? '',
                     ),
             );
-        const seedMisses = (): void =>
-            writeProbeState({
-                found: [],
-                misses: {
-                    'gongzi:2026-10-18': 0,
-                    'gongzi:2026-10-19': 0,
-                    'gongzi:2026-10-20': 0,
-                },
-            });
-        const keptMissDates = (): Set<string> =>
-            new Set(Object.keys(readProbeState().misses).map(dateFromShowDateKey));
 
         it('treats UTC 16:30 (HK 00:30) as the next HK day', async () => {
-            seedMisses();
             const probe = found([]);
 
             await probeRecentRecordings([], { probe, now: new Date('2026-10-19T16:30:00Z') });
 
-            // 00:30 未有節目開咪，所以今日（20 號）冇嘢 probe，只係 probe 尋日（19 號）
-            expect(probedDates(probe)).toEqual(new Set(['20261019']));
-            expect(keptMissDates()).toEqual(new Set(['2026-10-19', '2026-10-20']));
+            // 香港 20 號（二）00:30：回看 14–20 號；今日未有節目開咪，所以冇 20 號
+            expect(probedDates(probe)).toEqual(
+                new Set(['20261014', '20261015', '20261016', '20261017', '20261019']),
+            );
         });
 
         it('treats UTC 15:59 (HK 23:59) as still the same HK day', async () => {
-            seedMisses();
             const probe = found([]);
 
             await probeRecentRecordings([], { probe, now: new Date('2026-10-19T15:59:00Z') });
 
-            expect(probedDates(probe)).toEqual(new Set(['20261019', '20261018']));
-            expect(keptMissDates()).toEqual(new Set(['2026-10-18', '2026-10-19']));
+            // 香港 19 號（一）23:59：回看 13–19 號
+            expect(probedDates(probe)).toEqual(
+                new Set(['20261013', '20261014', '20261015', '20261016', '20261017', '20261019']),
+            );
         });
     });
 
@@ -297,17 +322,35 @@ describe('probeRecentRecordings', () => {
         });
 
         expect(soon).not.toHaveBeenCalled();
-        expect(later).toHaveBeenCalledTimes(9);
+        // 只有今日同尋日（19、20 號各 3 個）會再試；更早嘅日子已經搵過，當真係冇
+        expect(later).toHaveBeenCalledTimes(6);
+        expect(later).not.toHaveBeenCalledWith(urlFor('badgirl', '2026-10-16'));
     });
 
-    it('drops misses from older days so storage does not grow', async () => {
+    it('gives a miss from a recent day one more try once that day is settled', async () => {
         await probeRecentRecordings([], { probe: found([]), now: NOW });
-        const twoDaysLater = new Date(NOW.getTime() + 2 * 24 * 60 * 60 * 1000);
+        const friday = daysAfter(NOW, 3);
+        const first = found([]);
+        const second = found([]);
 
-        await probeRecentRecordings([], { probe: found([]), now: twoDaysLater });
+        await probeRecentRecordings([], { probe: first, now: friday });
+        await probeRecentRecordings([], {
+            probe: second,
+            now: new Date(friday.getTime() + PROBE_RETRY_MS),
+        });
+
+        // 19 號嘅 miss 係 20 號記低（當時可能仲未上架），所以 23 號會再試一次，之後就唔再試
+        expect(first).toHaveBeenCalledWith(urlFor('badgirl', '2026-10-19'));
+        expect(second).not.toHaveBeenCalledWith(urlFor('badgirl', '2026-10-19'));
+    });
+
+    it(`drops misses older than ${PROBE_LOOKBACK_DAYS} days so storage does not grow`, async () => {
+        await probeRecentRecordings([], { probe: found([]), now: NOW });
+
+        await probeRecentRecordings([], { probe: found([]), now: daysAfter(NOW, 8) });
 
         const dates = Object.keys(readProbeState().misses).map(dateFromShowDateKey);
-        expect(new Set(dates)).toEqual(new Set(['2026-10-21', '2026-10-22']));
+        expect(dates.every((date) => date >= '2026-10-22')).toBe(true);
     });
 
     it('still returns results when storage is unavailable', async () => {

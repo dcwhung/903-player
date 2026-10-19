@@ -1,7 +1,7 @@
 import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
 import { SHOWS, type ShowConfig } from '../config/shows';
 import type { Recording } from '../types/recording';
-import { hkTimeHHMM, hkToday } from '../utils/date';
+import { daysBetween, hkTimeHHMM, hkToday, isoWeekday } from '../utils/date';
 import {
     dateFromShowDateKey,
     readProbeState,
@@ -12,10 +12,12 @@ import {
 
 /** 等 metadata 最多幾耐；超時當冇呢個檔 */
 export const PROBE_TIMEOUT_MS = 15_000;
-/** 搵唔到嘅檔隔幾耐先再試（錄音通常節目完咗一陣先上架） */
+/** 今日 / 尋日搵唔到嘅檔隔幾耐先再試（錄音通常節目完咗一陣先上架） */
 export const PROBE_RETRY_MS = 30 * 60 * 1_000;
-/** probe 幾多日：今日同尋日 */
-const PROBE_DAYS = 2;
+/** 回看幾多日（包括今日）：幾日冇開 app 都攞得返嗰幾日嘅錄音 */
+export const PROBE_LOOKBACK_DAYS = 7;
+/** 播出日之後過咗幾多日先記低嘅 miss 就當真係冇，唔再試（今日 = 0、尋日 = 1） */
+const SETTLED_AFTER_DAYS = 2;
 /** 搵到嘅錄音最多留幾多日（香港日期），feed 一直唔更新都唔會越積越多 */
 export const PROBE_FOUND_RETENTION_DAYS = 14;
 const MS_PER_DAY = 24 * 60 * 60 * 1_000;
@@ -74,11 +76,11 @@ export const probeAudio = (
     });
 
 const recentDates = (now: Date): string[] =>
-    Array.from({ length: PROBE_DAYS }, (_, days) =>
+    Array.from({ length: PROBE_LOOKBACK_DAYS }, (_, days) =>
         hkToday(new Date(now.getTime() - days * MS_PER_DAY)),
     );
 
-/** 只保留最近幾日嘅 miss 記錄，唔好令 localStorage 越積越多 */
+/** 只保留回看期內嘅 miss 記錄，唔好令 localStorage 越積越多 */
 const recentMisses = (misses: ProbeState['misses'], dates: string[]): ProbeState['misses'] =>
     Object.fromEntries(
         Object.entries(misses).filter(([key]) => dates.includes(dateFromShowDateKey(key))),
@@ -123,26 +125,44 @@ const toSlot = (show: ShowConfig, date: string): ProbeSlot => ({
     recording: { showId: show.id, date, time: show.fileTime, url: buildAudioUrl(show, date) },
 });
 
-const isRetryDue = (missedAt: number | undefined, now: Date): boolean =>
-    missedAt === undefined || now.getTime() - missedAt >= PROBE_RETRY_MS;
+/**
+ * 未搵過就要搵；播出日過咗兩日先搵唔到，即係真係冇，唔再試；
+ * 今日 / 尋日搵唔到可能只係未上架，隔 PROBE_RETRY_MS 再試
+ */
+const isRetryDue = (missedAt: number | undefined, date: string, now: Date): boolean => {
+    if (missedAt === undefined) {
+        return true;
+    }
+    if (daysBetween(date, hkToday(new Date(missedAt))) >= SETTLED_AFTER_DAYS) {
+        return false;
+    }
+    return now.getTime() - missedAt >= PROBE_RETRY_MS;
+};
+
+const airsOn = (show: ShowConfig, date: string): boolean => show.airDays.includes(isoWeekday(date));
 
 /** 今日嘅節目要開咪時間過咗先可能有錄音；HHMM 字串直接比較就得 */
 const hasStarted = (show: ShowConfig, date: string, now: Date): boolean =>
     date !== hkToday(now) || show.fileTime <= hkTimeHHMM(now);
 
-/** 今日同尋日入面，已經開咪、未有錄音、又唔係啱啱先搵唔到嘅節目 */
+/** 回看期內，當日有播、已經開咪、未有錄音、又唔係已經搵過嘅節目 */
 const pendingSlots = (have: Recording[], misses: ProbeState['misses'], now: Date): ProbeSlot[] => {
     const covered = new Set(have.map((r) => showDateKey(r.showId, r.date)));
     return recentDates(now)
         .flatMap((date) =>
-            SHOWS.filter((show) => hasStarted(show, date, now)).map((show) => toSlot(show, date)),
+            SHOWS.filter((show) => airsOn(show, date) && hasStarted(show, date, now)).map((show) =>
+                toSlot(show, date),
+            ),
         )
-        .filter((slot) => !covered.has(slot.key) && isRetryDue(misses[slot.key], now));
+        .filter(
+            (slot) =>
+                !covered.has(slot.key) && isRetryDue(misses[slot.key], slot.recording.date, now),
+        );
 };
 
 /**
- * 今日同尋日，feed 未有嘅節目逐個 probe（唔並行，減輕原站負擔）。
- * 搵到嘅記低，之後唔再 probe；feed 有咗就唔再保留。搵唔到嘅隔 PROBE_RETRY_MS 先再試。
+ * 回看 PROBE_LOOKBACK_DAYS 日，feed 未有嘅節目喺播放日逐個 probe（唔並行，減輕原站負擔）。
+ * 搵到嘅記低，之後唔再 probe；feed 有咗就唔再保留。搵唔到嘅規則見 isRetryDue。
  * 一遇到 timeout 就停：平台背景唔載 media，再試落去都係白等，亦唔當係 miss
  */
 export const probeRecentRecordings = async (

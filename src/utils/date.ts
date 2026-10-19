@@ -31,13 +31,31 @@ export const hkTimeHHMM = (now: Date = new Date()): string =>
         .join('');
 
 const DATE_PART_WIDTH = 2;
+const MS_PER_DAY = 24 * 60 * 60 * 1_000;
+
+const splitIsoDate = (isoDate: string): [number, number, number] =>
+    isoDate.split('-').map(Number) as [number, number, number];
+
+/** YYYY-MM-DD 當作 UTC 午夜，唔受裝置時區影響 */
+const isoDateToUtcMs = (isoDate: string): number => {
+    const [year, month, day] = splitIsoDate(isoDate);
+    return Date.UTC(year, month - 1, day);
+};
+
+/** 星期幾：0 = 星期日 … 6 = 星期六（同 Date#getUTCDay 一致） */
+export const isoWeekday = (isoDate: string): number =>
+    new Date(isoDateToUtcMs(isoDate)).getUTCDay();
+
+/** 兩個 YYYY-MM-DD 之間相差幾多日（to − from） */
+export const daysBetween = (from: string, to: string): number =>
+    Math.round((isoDateToUtcMs(to) - isoDateToUtcMs(from)) / MS_PER_DAY);
 
 const dateParts = (isoDate: string) => {
-    const [year, month, day] = isoDate.split('-').map(Number) as [number, number, number];
+    const [, month, day] = splitIsoDate(isoDate);
     return {
         day: String(day).padStart(DATE_PART_WIDTH, '0'),
         month: String(month).padStart(DATE_PART_WIDTH, '0'),
-        weekday: WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()] ?? '',
+        weekday: WEEKDAYS[isoWeekday(isoDate)] ?? '',
     };
 };
 
