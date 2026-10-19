@@ -21,4 +21,18 @@ describe('ShowTile', () => {
         expect(button).toHaveTextContent('今日節目');
         expect(button.className).toMatch(/today/);
     });
+
+    it('should render a decorative sound wave as aria-hidden when variant is today', () => {
+        render(<ShowTile label="今日節目" variant="today" onClick={() => {}} />);
+
+        const wave = screen.getByRole('button', { name: '今日節目' }).querySelector('.wave');
+        expect(wave).toHaveAttribute('aria-hidden', 'true');
+        expect(wave?.querySelectorAll('line')).toHaveLength(5);
+    });
+
+    it('should not render the sound wave when variant is show', () => {
+        render(<ShowTile label="公子會" art="/art/gongzi.jpg" onClick={() => {}} />);
+
+        expect(screen.getByRole('button', { name: '公子會' }).querySelector('.wave')).toBeNull();
+    });
 });
