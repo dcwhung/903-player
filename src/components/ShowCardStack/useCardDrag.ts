@@ -119,7 +119,7 @@ const swallow = (event: MouseEvent<HTMLElement>) => {
 };
 
 /**
- * 跟手指拖卡（卡疊 touch-action: none，好矮嘅畫面 pan-y）。commit 係 null（例如得一個節目）就永遠彈返。
+ * 跟手指拖卡（卡疊 touch-action: pinch-zoom，好矮嘅畫面 pan-y pinch-zoom）。commit 係 null（例如得一個節目）就永遠彈返。
  * ArcSlider 自己 stopPropagation，所以拖弧形唔會郁張卡；拖完嘅 click 會被食咗。
  */
 export const useCardDrag = (

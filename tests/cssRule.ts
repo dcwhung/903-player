@@ -31,6 +31,23 @@ const contextOf = (rule: Rule): string | undefined => {
     return OTHER_AT_RULE;
 };
 
+/** 逐個宣告行過 selector（同 media）完全一樣嘅規則；!important 留喺值後面 */
+const eachDeclaration = (
+    css: string,
+    selector: string,
+    media: string | undefined,
+    visit: (prop: string, value: string) => void,
+) => {
+    parse(css).walkRules((rule) => {
+        if (squash(rule.selector) !== selector || contextOf(rule) !== media) return;
+        rule.each((node) => {
+            if (node.type !== 'decl') return;
+            const value = squash(node.value);
+            visit(node.prop, node.important ? `${value} !important` : value);
+        });
+    });
+};
+
 /**
  * 喺 CSS 原文搵 selector 完全一樣嘅規則，返回佢嘅宣告（同名後寫蓋前寫）。
  * 唔傳 media 就只睇頂層規則；傳咗就只睇條件完全一樣嘅 @media 入面嗰啲。
@@ -43,15 +60,27 @@ export const cssDeclarations = (
     media?: string,
 ): Record<string, string> => {
     const declarations: Record<string, string> = {};
-    parse(css).walkRules((rule) => {
-        if (squash(rule.selector) !== selector || contextOf(rule) !== media) return;
-        rule.each((node) => {
-            if (node.type !== 'decl') return;
-            const value = squash(node.value);
-            declarations[node.prop] = node.important ? `${value} !important` : value;
-        });
+    eachDeclaration(css, selector, media, (prop, value) => {
+        declarations[prop] = value;
     });
     return declarations;
+};
+
+/**
+ * 同一條規則入面某個屬性嘅全部值（按寫嘅次序）：用嚟斷言後備鏈，例如
+ * `touch-action: none; touch-action: pinch-zoom;`（唔識後者嘅瀏覽器留喺前者）。
+ */
+export const cssValues = (
+    css: string,
+    selector: string,
+    prop: string,
+    media?: string,
+): string[] => {
+    const values: string[] = [];
+    eachDeclaration(css, selector, media, (name, value) => {
+        if (name === prop) values.push(value);
+    });
+    return values;
 };
 
 /** CSS 入面所有 @media 嘅 max-height 斷點（px） */

@@ -1,6 +1,6 @@
 // @vitest-environment node
 // 要用 node:fs 讀 CSS 原文：*.node.test.ts 行 tsconfig.node.json（有 Node 型別），唔會漏入 app 程式
-import { cssDeclarations, e2eShortHeightPx, readCss } from '../../tests/cssRule';
+import { cssDeclarations, cssValues, e2eShortHeightPx, readCss } from '../../tests/cssRule';
 
 const css = (path: string) => readCss(new URL(path, import.meta.url));
 const SHORT_HEIGHT_MEDIA = `(max-height: ${e2eShortHeightPx()}px)`;
@@ -9,7 +9,8 @@ const STRIP_CSS = '../components/DateStrip/DateStrip.module.css';
 
 /*
  * iOS standalone PWA：成頁唔可以捲 / 橡筋，只有清單 panel 自己捲；
- * 唔喺捲動容器入面嘅 swipe 區要 touch-action: none，否則 iOS 開始原生 pan 就 pointercancel。
+ * 唔喺捲動容器入面嘅 swipe 區要擋晒單指 pan（touch-action: pinch-zoom，舊瀏覽器後備 none），
+ * 否則 iOS 開始原生 pan 就 pointercancel；雙指放大照得（無障礙）。
  * Chromium e2e 模擬唔到 iOS 橡筋，所以喺度直接鎖死 CSS 設定。
  */
 describe('iOS touch lock', () => {
@@ -45,8 +46,8 @@ describe('iOS touch lock', () => {
         ['ShowCardStack .stack', STACK_CSS, '.stack'],
         ['DateStrip .strip', STRIP_CSS, '.strip'],
         ['MiniPlayer .player', '../components/MiniPlayer/MiniPlayer.module.css', '.player'],
-    ])('should give the %s swipe zone touch-action: none', (_name, path, selector) => {
-        expect(cssDeclarations(css(path), selector)['touch-action']).toBe('none');
+    ])('should block single-finger pan but allow pinch-zoom on the %s', (_name, path, selector) => {
+        expect(cssValues(css(path), selector, 'touch-action')).toEqual(['none', 'pinch-zoom']);
     });
 
     // 好矮畫面 main 自己捲：卡疊同日子條要畀返直向 pan，橫拖照由 pointer events 處理
@@ -54,9 +55,9 @@ describe('iOS touch lock', () => {
         ['ShowCardStack .stack', STACK_CSS, '.stack'],
         ['DateStrip .strip', STRIP_CSS, '.strip'],
     ])('should give the %s vertical pan back at short heights', (_name, path, selector) => {
-        expect(cssDeclarations(css(path), selector, SHORT_HEIGHT_MEDIA)['touch-action']).toBe(
-            'pan-y',
-        );
+        expect(cssValues(css(path), selector, 'touch-action', SHORT_HEIGHT_MEDIA)).toEqual([
+            'pan-y pinch-zoom',
+        ]);
     });
 
     it('should not let !important pass as a plain touch-action value', () => {
