@@ -136,10 +136,26 @@ const toSiteUrl = (href: string | undefined, baseUrl: string): string | null => 
     }
 };
 
-/** 下一頁候選：要係原站網址，而且唔係目前呢頁（例如 href="#" 或者自己連返自己） */
+/** 同一個列表 = 同 path、除咗 page 之外 query 全部一樣（唔理次序），例如同一個 ?show= */
+const listKey = (url: string): string => {
+    const { pathname, searchParams } = new URL(url);
+    const params = new URLSearchParams(searchParams);
+    params.delete(PAGE_PARAM);
+    params.sort();
+    return `${pathname}?${params.toString()}`;
+};
+
+/**
+ * 下一頁候選：要係原站網址、同一個列表（唔可以跳去其他節目），
+ * 而且唔係目前呢頁（例如 href="#" 或者自己連返自己）。
+ */
 const toNextUrl = (href: string | undefined, currentUrl: string): string | null => {
     const url = toSiteUrl(href, currentUrl);
-    return url !== null && url !== toSiteUrl(currentUrl, currentUrl) ? url : null;
+    const current = toSiteUrl(currentUrl, currentUrl);
+    if (url === null || current === null || url === current) {
+        return null;
+    }
+    return listKey(url) === listKey(current) ? url : null;
 };
 
 const pageNumberOf = (url: string): number => {

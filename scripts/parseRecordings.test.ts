@@ -112,19 +112,21 @@ describe('readNextPageUrl', () => {
     });
 
     it('follows a rel="next" link, resolved against the current url', () => {
-        const html = '<nav><a rel="next" href="?show=x&amp;page=2">Next</a></nav>';
+        const html = `<nav><a rel="next" href="${current}&amp;page=2">Next</a></nav>`;
 
-        expect(readNextPageUrl(html, current)).toBe('https://hkfm903.live/?show=x&page=2');
+        expect(readNextPageUrl(html, current)).toBe(`${current}&page=2`);
     });
 
     it('follows the link after the active item in a .pagination list', () => {
         const html = `<ul class="pagination">
-            <li class="page-item"><a class="page-link" href="/p/1">1</a></li>
+            <li class="page-item"><a class="page-link" href="/?page=1">1</a></li>
             <li class="page-item active"><span class="page-link">2</span></li>
-            <li class="page-item"><a class="page-link" href="/p/3">3</a></li>
+            <li class="page-item"><a class="page-link" href="/?page=3">3</a></li>
         </ul>`;
 
-        expect(readNextPageUrl(html, 'https://hkfm903.live/p/2')).toBe('https://hkfm903.live/p/3');
+        expect(readNextPageUrl(html, 'https://hkfm903.live/?page=2')).toBe(
+            'https://hkfm903.live/?page=3',
+        );
     });
 
     it('returns null when the active item is the last one', () => {
@@ -150,9 +152,9 @@ describe('readNextPageUrl', () => {
     });
 
     it('treats a url without page= as page 1', () => {
-        const html = '<a href="/?page=1">1</a><a href="/?page=2">2</a>';
+        const html = `<a href="${current}&amp;page=1">1</a><a href="${current}&amp;page=2">2</a>`;
 
-        expect(readNextPageUrl(html, current)).toBe('https://hkfm903.live/?page=2');
+        expect(readNextPageUrl(html, current)).toBe(`${current}&page=2`);
     });
 
     it('rejects a cross-origin next link', () => {
@@ -195,5 +197,35 @@ describe('readNextPageUrl self-links', () => {
         const html = '<a rel="next" href="/?page=2#list">Next</a>';
 
         expect(readNextPageUrl(html, current)).toBe('https://hkfm903.live/?page=2');
+    });
+});
+
+describe('readNextPageUrl stays on the same list', () => {
+    const current = 'https://hkfm903.live/?show=%E5%85%AC%E5%AD%90%E6%9C%83';
+    const otherShow = '/?show=%E5%85%B6%E4%BB%96&amp;page=2';
+
+    it('rejects a page= link to a different show', () => {
+        expect(readNextPageUrl(`<a href="${otherShow}">2</a>`, current)).toBeNull();
+    });
+
+    it('rejects rel="next" to a different show', () => {
+        expect(readNextPageUrl(`<a rel="next" href="${otherShow}">Next</a>`, current)).toBeNull();
+    });
+
+    it('rejects a .pagination link to a different path', () => {
+        const html = `<ul class="pagination">
+            <li class="active"><span>1</span></li>
+            <li><a href="/archive?show=%E5%85%AC%E5%AD%90%E6%9C%83&amp;page=2">2</a></li>
+        </ul>`;
+
+        expect(readNextPageUrl(html, current)).toBeNull();
+    });
+
+    it('accepts the same show with only the page changed, in any param order', () => {
+        const html = '<a href="/?page=2&amp;show=%E5%85%AC%E5%AD%90%E6%9C%83">2</a>';
+
+        expect(readNextPageUrl(html, current)).toBe(
+            'https://hkfm903.live/?page=2&show=%E5%85%AC%E5%AD%90%E6%9C%83',
+        );
     });
 });

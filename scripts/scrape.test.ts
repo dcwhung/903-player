@@ -349,8 +349,8 @@ describe('fetchPages on a single page with self-links', () => {
 describe('createSiteSources', () => {
     it('combines show-page cards from every page', async () => {
         const fetchHtml = fakeSite({
-            [SHOW_URL]: card('20261017_2308_公子會.aac') + nextLink('/?show=x&page=2'),
-            [`${SITE}?show=x&page=2`]: card('20261010_2308_公子會.aac'),
+            [SHOW_URL]: card('20261017_2308_公子會.aac') + nextLink(`${SHOW_URL}&page=2`),
+            [`${SHOW_URL}&page=2`]: card('20261010_2308_公子會.aac'),
         });
 
         const recordings = await createSiteSources(fetchHtml).fetchShow('gongzi', '公子會');
