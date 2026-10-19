@@ -722,7 +722,11 @@ try {
         const shot = `show-${width}x${height}.png`;
         await checkShowHeader(fp, 'Bad Girl大過佬', label);
         await checkSideCellsFit(fp, label);
-        if (swipe) await checkSwipeToOlder(fp, width === 390 ? 'show-strip-dragging.png' : null);
+        if (swipe) {
+            await checkSwipeToOlder(fp, width === 390 ? 'show-strip-dragging.png' : null);
+            // 掃去舊一集之後兩邊都有隔籬集：連左邊「新一集」側格都量埋
+            await checkSideCellsFit(fp, `${label}（掃完，兩邊都有）`);
+        }
         if (height > SHORT_HEIGHT_PX) await checkFixedShowPage(fp, label, shot);
         else await checkScrollingShowPage(fp, label, shot);
         await checkDiscMatchesToday(fp, label);
