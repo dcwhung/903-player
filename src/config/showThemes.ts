@@ -66,6 +66,8 @@ export const SHOW_THEMES: Record<ShowId, ShowTheme> = {
         bg: '#1c1c1e',
         surface: '#28282b',
         track: '#424247',
+        // 刻意用 #f26b5f 而唔係 mockup 嘅 #EF5548：#EF5548 喺 surface #28282b 上只有 4.24:1，
+        // #f26b5f 有 4.93:1（bg 上 5.71:1），文字達到 WCAG AA 4.5:1
         accent: '#f26b5f',
         onAccent: '#1c1c1e',
         title: '#f4f1ec',
