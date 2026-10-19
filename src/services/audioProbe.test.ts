@@ -241,6 +241,47 @@ describe('probeRecentRecordings', () => {
         });
     });
 
+    describe('Hong Kong / UTC day boundary', () => {
+        const probedDates = (probe: AudioProber): Set<string> =>
+            new Set(
+                vi
+                    .mocked(probe)
+                    .mock.calls.map(([url]) => /\/(\d{8})_/.exec(decodeURIComponent(url))?.[1]),
+            );
+        const seedMisses = (): void =>
+            writeProbeState({
+                found: [],
+                misses: {
+                    'gongzi:2026-10-18': 0,
+                    'gongzi:2026-10-19': 0,
+                    'gongzi:2026-10-20': 0,
+                },
+            });
+        const keptMissDates = (): Set<string> =>
+            new Set(Object.keys(readProbeState().misses).map(dateFromShowDateKey));
+
+        it('treats UTC 16:30 (HK 00:30) as the next HK day', async () => {
+            seedMisses();
+            const probe = found([]);
+
+            await probeRecentRecordings([], { probe, now: new Date('2026-10-19T16:30:00Z') });
+
+            // 00:30 未有節目開咪，所以今日（20 號）冇嘢 probe，只係 probe 尋日（19 號）
+            expect(probedDates(probe)).toEqual(new Set(['20261019']));
+            expect(keptMissDates()).toEqual(new Set(['2026-10-19', '2026-10-20']));
+        });
+
+        it('treats UTC 15:59 (HK 23:59) as still the same HK day', async () => {
+            seedMisses();
+            const probe = found([]);
+
+            await probeRecentRecordings([], { probe, now: new Date('2026-10-19T15:59:00Z') });
+
+            expect(probedDates(probe)).toEqual(new Set(['20261019', '20261018']));
+            expect(keptMissDates()).toEqual(new Set(['2026-10-18', '2026-10-19']));
+        });
+    });
+
     it('waits PROBE_RETRY_MS before probing a missing file again', async () => {
         await probeRecentRecordings([], { probe: found([]), now: NOW });
         const soon = found([]);
