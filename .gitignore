@@ -5,3 +5,4 @@ public/data/
 *.log
 .DS_Store
 .env*
+e2e/screenshots/

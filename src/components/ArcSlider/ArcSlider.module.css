@@ -1,0 +1,34 @@
+.slider {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    touch-action: none;
+    cursor: pointer;
+}
+
+.track {
+    fill: none;
+    stroke: var(--color-track);
+    stroke-linecap: round;
+}
+
+.progress {
+    fill: none;
+    stroke: var(--color-accent);
+    stroke-linecap: round;
+}
+
+.thumb {
+    fill: var(--color-accent);
+}
+
+/* 撳 / 拖之後唔顯示方形 focus 框；鍵盤操作時喺圓點加 focus 環 */
+.slider:focus {
+    outline: none;
+}
+
+.slider:focus-visible .thumb {
+    stroke: var(--color-title);
+    stroke-width: 4px;
+}

@@ -1,0 +1,58 @@
+.disc {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--color-disc);
+}
+
+.large {
+    width: 72%;
+    aspect-ratio: 1;
+    box-shadow:
+        0 0 0 10px var(--color-disc-rim),
+        var(--shadow-disc);
+}
+
+.small {
+    width: 40px;
+    height: 40px;
+    box-shadow: 0 0 0 3px var(--color-divider);
+}
+
+.groove {
+    position: absolute;
+    border: 1px solid var(--color-disc-groove);
+    border-radius: 50%;
+}
+
+.groove:nth-child(1) {
+    inset: 10%;
+}
+
+.groove:nth-child(2) {
+    inset: 20%;
+}
+
+.groove:nth-child(3) {
+    inset: 30%;
+}
+
+.label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--color-accent);
+}
+
+.hole {
+    width: 28%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--color-disc);
+}
