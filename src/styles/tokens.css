@@ -53,7 +53,7 @@
     --card-fly-distance: 150%;
     --card-fly-rotate: 30deg;
     --card-pivot: 50% 100%;
-    /* 要同 cardStack.ts 嘅 CARD_FLY_MS / CARD_SPRING_MS 一致 */
+    /* 要同 cardStack.ts 嘅 CARD_FLY_MS / CARD_SPRING_MS 一致（scripts/cardStackTokens.test.ts 鎖住） */
     --duration-card-fly: 280ms;
     --duration-card-spring: 320ms;
     /* 飛走帶住甩手嘅速度減速；彈返中間輕輕過頭再停 */
