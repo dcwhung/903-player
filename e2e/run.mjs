@@ -16,6 +16,8 @@ mkdirSync(OUT, { recursive: true });
 // 預期色：刻意寫死做獨立對照（同下面 '#d4af5a' 一樣），唔係由 app 推返出嚟
 const HOME_TOP = '#4f749c'; // HOME_THEME.bg（主頁漸變頂色）
 const GONGZI_BG = '#111111'; // SHOW_THEMES.gongzi.bg
+const SUNNYDAY_BG = '#0e2230'; // SHOW_THEMES.sunnyday.bg
+const BADGIRL_BG = '#21151a'; // SHOW_THEMES.badgirl.bg
 const APP_VERSION_TEXT = `v${JSON.parse(readFileSync(new URL('../package.json', import.meta.url))).version}`;
 
 let failures = 0;
@@ -231,6 +233,7 @@ try {
     log(items.length === 3, `今日節目列表：${items.join(' | ')}`);
     const heading = await page.getByRole('heading', { level: 1 }).textContent();
     log(heading === '在晴朗的一天出發', `今日自動播第一個節目：${heading}`);
+    await checkThemeColor(page, SUNNYDAY_BG, '今日節目（在晴朗的一天出發）');
     await page.screenshot({ path: `${OUT}/5-today.png` });
     const carousel = page.getByRole('group', { name: '今日節目，左右掃動轉節目' });
     const box2 = await carousel.boundingBox();
@@ -241,6 +244,7 @@ try {
     await page.waitForTimeout(500);
     const swiped = await page.getByRole('heading', { level: 1 }).textContent();
     log(swiped === 'Bad Girl大過佬', `今日節目向左掃轉下一個節目：${swiped}`);
+    await checkThemeColor(page, BADGIRL_BG, '今日節目掃到 Bad Girl大過佬');
     await page.getByRole('button', { name: /播放 雲妮鍾情/ }).click();
     await page.waitForTimeout(500);
     log(

@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { useThemeColorMeta } from './useThemeColorMeta';
 
 const themeColor = () =>
@@ -44,6 +45,19 @@ describe('useThemeColorMeta', () => {
 
         rerender({ color: '#222222' });
         expect(themeColor()).toBe('#222222');
+
+        unmount();
+        expect(themeColor()).toBe('#4f749c');
+    });
+
+    it('should still restore the original under StrictMode double effects', () => {
+        addMeta('#4f749c');
+        // StrictMode 會 mount → cleanup → mount 多行一次 effect，還原值唔可以變成自己個色
+        const { unmount } = renderHook(() => useThemeColorMeta('#111111'), {
+            wrapper: StrictMode,
+        });
+
+        expect(themeColor()).toBe('#111111');
 
         unmount();
         expect(themeColor()).toBe('#4f749c');
