@@ -5,6 +5,12 @@
     touch-action: pan-y;
 }
 
+/* 輪播本身可以 focus 嚟用方向鍵；overflow: hidden 會切走外面嘅 outline，所以畫喺入面 */
+.carousel:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-title);
+    outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
 /* 兩邊露出上一個 / 下一個節目嘅碟，中心對齊主碟 */
 .peek {
     --peek-size: var(--carousel-peek-size);

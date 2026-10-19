@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { PageDots } from '../PageDots/PageDots';
 import { ShowCarousel } from './ShowCarousel';
 
 const ARTS = ['/a.jpg', '/b.jpg', '/c.jpg'];
@@ -85,6 +86,39 @@ describe('ShowCarousel', () => {
         fireEvent.click(inner);
 
         expect(onInnerClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores arrow keys meant for inner buttons and sliders', () => {
+        const { inner, onChange } = setup();
+        render(
+            <ShowCarousel arts={ARTS} index={1} onChange={onChange}>
+                <div role="slider" aria-valuenow={0} tabIndex={0} aria-label="進度" />
+            </ShowCarousel>,
+        );
+
+        fireEvent.keyDown(inner, { key: 'ArrowRight' });
+        fireEvent.keyDown(screen.getByRole('slider'), { key: 'ArrowLeft' });
+
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('reacts to arrow keys on the dots', () => {
+        const onChange = vi.fn();
+        render(
+            <ShowCarousel arts={ARTS} index={1} onChange={onChange}>
+                <PageDots keys={ARTS} labels={['甲', '乙', '丙']} index={1} onSelect={() => {}} />
+            </ShowCarousel>,
+        );
+
+        fireEvent.keyDown(screen.getByRole('button', { name: '乙' }), { key: 'ArrowRight' });
+
+        expect(onChange).toHaveBeenCalledWith(2);
+    });
+
+    it('can be focused itself', () => {
+        const { group } = setup();
+
+        expect(group).toHaveAttribute('tabindex', '0');
     });
 
     it('supports the arrow keys', () => {

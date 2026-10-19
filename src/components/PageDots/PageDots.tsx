@@ -21,6 +21,7 @@ export const PageDots = ({ keys, labels, index, onSelect }: PageDotsProps) =>
                 <button
                     key={keys[i] ?? i}
                     type="button"
+                    data-page-dot=""
                     aria-label={label}
                     aria-current={i === index ? 'true' : undefined}
                     className={`${styles.dot} ${i === index ? styles.selected : ''}`}

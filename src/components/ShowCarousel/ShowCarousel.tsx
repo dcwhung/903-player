@@ -13,6 +13,11 @@ interface ShowCarouselProps {
 
 const KEY_DIRECTION = { ArrowRight: 'next', ArrowLeft: 'previous' } as const;
 
+/** 方向鍵只係焦點喺輪播本身或者指示點先轉節目；其他掣 / 進度 slider 有自己用途 */
+const ownsArrowKeys = (event: KeyboardEvent<HTMLDivElement>): boolean =>
+    event.target === event.currentTarget ||
+    (event.target instanceof Element && event.target.closest('[data-page-dot]') !== null);
+
 /** 今日節目輪播：左右掃或者方向鍵轉節目，兩邊露出鄰近節目 */
 export const ShowCarousel = ({ arts, index, onChange, children }: ShowCarouselProps) => {
     const go = (direction: 'next' | 'previous') => {
@@ -22,7 +27,7 @@ export const ShowCarousel = ({ arts, index, onChange, children }: ShowCarouselPr
     const swipe = useSwipe(go);
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
         const direction = KEY_DIRECTION[event.key as keyof typeof KEY_DIRECTION];
-        if (direction) go(direction);
+        if (direction && ownsArrowKeys(event)) go(direction);
     };
     const previous = arts[index - 1];
     const next = arts[index + 1];
@@ -33,6 +38,7 @@ export const ShowCarousel = ({ arts, index, onChange, children }: ShowCarouselPr
             role="group"
             aria-roledescription={t('carousel.roleDescription')}
             aria-label={t('carousel.label')}
+            tabIndex={0}
             onKeyDown={onKeyDown}
             {...swipe}
         >
