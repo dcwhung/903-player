@@ -594,10 +594,14 @@ const PROBE_DATE = '2026-10-19';
 const PROBE_WAIT_MS = 20000;
 const PROBE_POLL_MS = 100;
 
-/** 同 app 嘅 buildAudioUrl 一樣砌法：<host>/<節目名>/<YYYYMMDD>_<HHMM>_<節目名>.aac */
+/**
+ * 同 app 嘅 buildAudioUrl 一樣砌法：<host>/<節目名>/<YYYYMMDD>_<HHMM>_<節目名>.aac。
+ * 檔名部分嘅節目名空格變底線（Bad Girl大過佬 → Bad_Girl大過佬），資料夾部分照用原名：
+ * 同 src/services/audioProbe.ts 嘅 fileShowName 一樣
+ */
 const probeUrl = ({ name, fileTime }, date) =>
     `${AUDIO_HOST}/${encodeURIComponent(name)}/${encodeURIComponent(
-        `${date.replaceAll('-', '')}_${fileTime}_${name}`,
+        `${date.replaceAll('-', '')}_${fileTime}_${name.replace(/ /g, '_')}`,
     )}.aac`;
 /** 2026-10-16 → 16/10（集數掣 aria-label 嘅寫法） */
 const dayMonth = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
