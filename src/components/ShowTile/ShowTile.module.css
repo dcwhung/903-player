@@ -10,6 +10,8 @@
     border: 1px solid var(--color-divider);
     border-radius: 14px;
     background: var(--color-surface);
+    /* 泥膠感：實色落影 + 柔和散影（跟 app icon） */
+    box-shadow: var(--shadow-clay-tile);
 }
 
 .art {
@@ -23,8 +25,22 @@
 .today {
     padding: var(--space-3);
     border: none;
-    background: var(--color-accent-fill);
-    color: var(--color-on-accent);
+    background: var(--color-today-tile-bg);
+    color: var(--color-today-tile-text);
     font-size: var(--font-size-md);
     font-weight: 600;
+    box-shadow: var(--shadow-today-tile);
+}
+
+.todayIcon {
+    color: var(--color-today-tile-icon);
+}
+
+/* 右下角裝飾聲波，淡少少唔搶「今日節目」字眼 */
+.wave {
+    position: absolute;
+    right: var(--space-3);
+    bottom: var(--space-3);
+    color: var(--color-today-tile-icon);
+    opacity: 0.6;
 }

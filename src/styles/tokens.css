@@ -48,6 +48,19 @@
     /* 兩邊露出嘅碟有幾多收埋喺畫面外（佔碟闊比例） */
     --carousel-peek-hidden: 0.73;
 
+    /* 主頁色調（跟 app icon）：漸變底、泥膠陰影、今日節目奶油色掣；文字顏色見 HOME_THEME */
+    --home-bg-top: #4f749c;
+    --home-bg-bottom: #42658a;
+    /* 頁底淡淡奶油色光暈，收喺 mini player 後面，唔會掂到版本號 */
+    --home-glow: rgb(253 248 242 / 14%);
+    --home-glow-height: 110px;
+    --shadow-home-title: 0 3px 0 rgb(25 45 75 / 35%);
+    --shadow-clay-tile: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
+    --color-today-tile-bg: #fdf8f2;
+    --color-today-tile-text: #2f4560;
+    --color-today-tile-icon: #e8796e;
+    --shadow-today-tile: 0 6px 0 #d9cbb6, 0 10px 18px rgb(20 40 65 / 30%);
+
     color-scheme: dark;
 }
 

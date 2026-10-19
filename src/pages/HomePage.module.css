@@ -1,4 +1,18 @@
 /*
+ * 主頁漸變底 + 頁底淡光暈（跟 app icon）。ThemeScope 嘅 .scope 已經設咗實色 background，
+ * 兩個 module 喺 bundle 嘅先後唔保證，所以加 [data-theme-scope] 提高 specificity。
+ */
+.scope[data-theme-scope] {
+    background:
+        radial-gradient(
+            ellipse 70% var(--home-glow-height) at 50% 100%,
+            var(--home-glow),
+            transparent
+        ),
+        linear-gradient(180deg, var(--home-bg-top), var(--home-bg-bottom));
+}
+
+/*
  * 留位畀底部 mini player（頁底版本號唔會畀佢遮住）。
  * Page.module.css 嘅 .page 喺 bundle 排喺後面，佢個 padding shorthand 會蓋過 .home，
  * 所以用 main.home 提高 specificity，確保呢個留位真係生效。
@@ -21,7 +35,8 @@ main.home {
     font-size: var(--font-size-xs);
     font-weight: 500;
     letter-spacing: var(--letter-spacing-caps);
-    color: var(--color-text-muted);
+    /* 細字喺漸變頂（最光嗰段），muted 色唔夠 4.5:1，所以用 text 色 */
+    color: var(--color-text);
     text-transform: uppercase;
 }
 
@@ -33,6 +48,7 @@ main.home {
     font-size: var(--font-size-xxl);
     font-weight: 600;
     color: var(--color-title);
+    text-shadow: var(--shadow-home-title);
 }
 
 .grid {
