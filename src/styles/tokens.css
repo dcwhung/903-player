@@ -1,0 +1,77 @@
+/* Design tokens — 來源：mockup https://claude.ai/artifact/VuU4PQdBsgZn8XWeiT22Uy */
+:root {
+    --color-bg: #262a33;
+    --color-surface: #2b303a;
+    --color-disc: #15171c;
+    --color-disc-groove: #262a31;
+    --color-disc-rim: #2e333d;
+    --color-track: #3a404c;
+    --color-divider: #343a46;
+    --color-text: #f0f2f5;
+    --color-text-secondary: #c9d1de;
+    --color-text-muted: #9aa3b2;
+    --color-title: #7cc4f0;
+    --color-accent: #e0306a;
+    --color-accent-fill: #c81e56;
+    --color-on-accent: #ffffff;
+    --color-status-playing: #f2668f;
+    --color-badge: #7cc4f0;
+    --color-on-badge: #15171c;
+
+    --shadow-raised: 6px 6px 14px #1b1e25, -4px -4px 10px #323844;
+    --shadow-raised-strong: 7px 7px 16px #1b1e25, -5px -5px 12px #323844;
+    --shadow-disc: 0 20px 38px rgb(0 0 0 / 50%);
+    --fade-edge: linear-gradient(90deg, var(--color-bg), rgb(38 42 51 / 0%));
+
+    --font-family: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 13px;
+    --font-size-md: 15px;
+    --font-size-lg: 16px;
+    --font-size-xl: 24px;
+    --font-size-xxl: 26px;
+    --letter-spacing-caps: 0.18em;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+
+    --radius-md: 16px;
+    --radius-lg: 20px;
+    --radius-full: 999px;
+
+    --touch-target: 44px;
+    --page-max-width: 480px;
+
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --color-bg: #e4e8ee;
+        --color-surface: #e9edf2;
+        --color-disc: #2b2f38;
+        --color-disc-groove: #3a3f49;
+        --color-disc-rim: #d5dbe3;
+        --color-track: #c5ccd6;
+        --color-divider: #cdd3dc;
+        --color-text: #1e2128;
+        --color-text-secondary: #3d4452;
+        --color-text-muted: #5b6474;
+        --color-title: #1f6fa8;
+        --color-accent: #d3245f;
+        --color-status-playing: #b81d52;
+        --color-badge: #1f6fa8;
+        --color-on-badge: #ffffff;
+        --shadow-raised: 6px 6px 14px #c3c8d0, -4px -4px 10px #ffffff;
+        --shadow-raised-strong: 7px 7px 16px #c3c8d0, -5px -5px 12px #ffffff;
+        --shadow-disc: 0 18px 32px rgb(30 33 40 / 30%);
+        --fade-edge: linear-gradient(90deg, var(--color-bg), rgb(228 232 238 / 0%));
+
+        color-scheme: light;
+    }
+}

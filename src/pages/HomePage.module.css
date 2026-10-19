@@ -1,0 +1,40 @@
+.home {
+    gap: var(--space-8);
+    padding-top: calc(env(safe-area-inset-top) + 56px);
+}
+
+.brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.appName {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    letter-spacing: var(--letter-spacing-caps);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+}
+
+.appIcon {
+    color: var(--color-accent);
+}
+
+.title {
+    font-size: var(--font-size-xxl);
+    font-weight: 600;
+    color: var(--color-title);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    width: 100%;
+    padding: 0 var(--space-4);
+}

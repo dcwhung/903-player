@@ -1,0 +1,32 @@
+.controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+.skip,
+.toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+}
+
+.skip {
+    width: 52px;
+    height: 52px;
+    box-shadow: var(--shadow-raised);
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.toggle {
+    width: 76px;
+    height: 76px;
+    box-shadow: var(--shadow-raised-strong);
+    color: var(--color-text);
+}
