@@ -40,6 +40,11 @@
     --dot-size: 6px;
     --dot-size-active: 18px;
     --page-max-width: 480px;
+    /* 節目頁 / 今日節目頁主碟（連進度弧）嘅闊度；輪播兩邊碟要對齊佢 */
+    --player-disc-size: min(300px, 78vw);
+    --carousel-peek-size: 152px;
+    /* 兩邊露出嘅碟有幾多收埋喺畫面外（佔碟闊比例） */
+    --carousel-peek-hidden: 0.73;
 
     color-scheme: dark;
 }

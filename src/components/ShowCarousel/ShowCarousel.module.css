@@ -7,10 +7,11 @@
 
 /* 兩邊露出上一個 / 下一個節目嘅碟，中心對齊主碟 */
 .peek {
-    --peek-size: 152px;
+    --peek-size: var(--carousel-peek-size);
+    --peek-offset: calc(var(--peek-size) * var(--carousel-peek-hidden) * -1);
 
     position: absolute;
-    top: calc(min(300px, 78vw) / 2 - var(--peek-size) / 2);
+    top: calc(var(--player-disc-size) / 2 - var(--peek-size) / 2);
     width: var(--peek-size);
     height: var(--peek-size);
     overflow: hidden;
@@ -22,11 +23,11 @@
 }
 
 .previous {
-    left: calc(var(--peek-size) / -1.37);
+    left: var(--peek-offset);
 }
 
 .next {
-    right: calc(var(--peek-size) / -1.37);
+    right: var(--peek-offset);
 }
 
 .art {
