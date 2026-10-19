@@ -420,3 +420,22 @@ describe('show pages cut off at MAX_PAGES', () => {
         expect(results.get('gongzi')?.complete).toBe(false);
     });
 });
+
+describe('createSiteSources dropped cards', () => {
+    it('warns once about a card that belongs to another show', async () => {
+        const fetchHtml = fakeSite({
+            [SHOW_URL]: `${card('20261017_2308_公子會.aac')}${card('20261019_0000_西加航空.aac', '西加航空')}
+                <ul class="pagination">
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+                </ul>`,
+        });
+
+        const page = await createSiteSources(fetchHtml).fetchShow('gongzi', '公子會');
+
+        expect(page.recordings.map((r) => r.date)).toEqual(['2026-10-17']);
+        expect(logLines()).toEqual([
+            '::warning::gongzi: dropped 1 cards from the show page: 20261019_0000_西加航空.aac',
+        ]);
+    });
+});
