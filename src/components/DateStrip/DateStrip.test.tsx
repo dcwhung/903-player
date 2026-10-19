@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import type { SwipeDirection } from '../../hooks/swipe';
@@ -67,13 +67,14 @@ describe('DateStrip', () => {
     it('shows the newer date left, 現正播放 in the centre and the older date right', () => {
         render(<Harness />);
 
-        expect(screen.getByRole('button', { name: '新一集 19/10（一）' })).toHaveTextContent(
-            '‹ 19/10（一）',
-        );
+        const newer = screen.getByRole('button', { name: '新一集 19/10（一）' });
+        const older = screen.getByRole('button', { name: '舊一集 15/10（四）' });
+        expect(newer).toHaveTextContent(/^‹\s*19\/10（一）$/);
         expect(screen.getByText('現正播放：')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '舊一集 15/10（四）' })).toHaveTextContent(
-            '15/10（四） ›',
-        );
+        expect(older).toHaveTextContent(/^15\/10（四）\s*›$/);
+        // 箭咀係裝飾（窄螢幕用 CSS 收埋），唔讀出嚟
+        expect(within(newer).getByText('‹')).toHaveAttribute('aria-hidden', 'true');
+        expect(within(older).getByText('›')).toHaveAttribute('aria-hidden', 'true');
         expect(zone()).toHaveAccessibleName('16/10（五） Bad Girl大過佬');
     });
 

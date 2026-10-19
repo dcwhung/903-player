@@ -47,9 +47,9 @@ export const stripNeighbours = (
     };
 };
 
-/** 側格可見文字：箭咀指向嗰集喺邊（新一集喺左） */
-export const sideCellText = (direction: SwipeDirection, date: string): string =>
-    t(direction === 'next' ? 'episodes.olderCell' : 'episodes.newerCell', { date });
+/** 側格箭咀：指向嗰集喺邊（新一集喺左），純裝飾，窄螢幕會收埋 */
+export const sideCellChevron = (direction: SwipeDirection): string =>
+    t(direction === 'next' ? 'episodes.olderChevron' : 'episodes.newerChevron');
 
 /** 側格掣嘅名（包含可見日期，符合 label-in-name） */
 export const sideCellLabel = (direction: SwipeDirection, date: string): string =>

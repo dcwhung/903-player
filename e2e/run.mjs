@@ -263,6 +263,19 @@ const checkShowHeader = async (p, name, label) => {
     log(/^現正播放：\d{2}\/\d{2}（.）$/.test(line), `${label}：日子條讀「${line}」`);
 };
 
+/** 日子條側格嘅日期唔可以畀剪走（320px 闊會收埋箭咀） */
+const checkSideCellsFit = async (p, label) => {
+    const cells = await p
+        .locator(`${STRIP} button`)
+        .evaluateAll((els) =>
+            els.map((e) => ({ text: e.textContent, over: e.scrollWidth - e.clientWidth })),
+        );
+    log(
+        cells.length > 0 && cells.every((c) => c.over <= 0),
+        `${label}：日子條側格冇剪走（${cells.map((c) => `${c.text} ${c.over}px`).join(' / ')}）`,
+    );
+};
+
 /** 主頁固定：喺版面上面捲都唔郁，版本號仍然喺 mini player 上面 */
 const checkFixedHome = async (p, label) => {
     await p.mouse.move(p.viewportSize().width / 2, p.viewportSize().height / 3);
@@ -515,6 +528,7 @@ try {
         const label = `${width}×${height} 節目頁`;
         const shot = `show-${width}x${height}.png`;
         await checkShowHeader(fp, 'Bad Girl大過佬', label);
+        await checkSideCellsFit(fp, label);
         if (swipe) await checkSwipeToOlder(fp, width === 390 ? 'show-strip-dragging.png' : null);
         if (height > SHORT_HEIGHT_PX) await checkFixedShowPage(fp, label, shot);
         else await checkScrollingShowPage(fp, label, shot);

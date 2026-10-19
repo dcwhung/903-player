@@ -68,6 +68,25 @@
     font-size: var(--font-size-xs);
 }
 
+/* 箭咀同日期之間留少少位（唔用空格，收埋箭咀時唔會留低） */
+.chevron {
+    margin: 0 var(--space-1);
+}
+
+/*
+ * 窄過 340px（例如 320px）側格得約 80px，連箭咀會畀剪走：收埋箭咀、淡出收窄，
+ * 日期（「19/10（一）」）完整顯示；箭咀只係裝飾，撳嘅掣名照讀「新一集 / 舊一集」
+ */
+@media (max-width: 339px) {
+    .strip {
+        --date-strip-fade: var(--space-4);
+    }
+
+    .chevron {
+        display: none;
+    }
+}
+
 /* 隔籬日期靠向中間，太長就喺外邊（淡出嗰邊）剪走 */
 .newer {
     justify-content: flex-end;

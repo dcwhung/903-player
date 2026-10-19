@@ -1,5 +1,5 @@
 import type { SwipeDirection } from '../../hooks/swipe';
-import { sideCellLabel, sideCellText } from './dateStrip';
+import { sideCellChevron, sideCellLabel } from './dateStrip';
 import styles from './DateStrip.module.css';
 
 interface SideCellProps {
@@ -13,6 +13,11 @@ interface SideCellProps {
 /** 日子條兩邊：隔籬集嘅日期，撳落去都轉集 */
 export const SideCell = ({ direction, date, onPick }: SideCellProps) => {
     const placement = direction === 'next' ? styles.older : styles.newer;
+    const chevron = (
+        <span className={styles.chevron} aria-hidden="true">
+            {sideCellChevron(direction)}
+        </span>
+    );
     if (date === undefined) {
         return <span className={`${styles.cell} ${placement}`} aria-hidden="true" />;
     }
@@ -23,7 +28,9 @@ export const SideCell = ({ direction, date, onPick }: SideCellProps) => {
             aria-label={sideCellLabel(direction, date)}
             onClick={() => onPick(direction)}
         >
-            {sideCellText(direction, date)}
+            {direction === 'previous' && chevron}
+            {date}
+            {direction === 'next' && chevron}
         </button>
     );
 };

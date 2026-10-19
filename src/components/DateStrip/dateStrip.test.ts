@@ -1,7 +1,7 @@
 import { recording } from '../../../tests/renderWithProviders';
 import {
+    sideCellChevron,
     sideCellLabel,
-    sideCellText,
     stripNeighbours,
     stripOffset,
     stripRelease,
@@ -30,8 +30,8 @@ describe('stripNeighbours', () => {
 
 describe('side cells', () => {
     it('points the newer cell left and the older cell right', () => {
-        expect(sideCellText('previous', '19/10（一）')).toBe('‹ 19/10（一）');
-        expect(sideCellText('next', '15/10（四）')).toBe('15/10（四） ›');
+        expect(sideCellChevron('previous')).toBe('‹');
+        expect(sideCellChevron('next')).toBe('›');
     });
 
     it('names each side cell after the episode it plays', () => {

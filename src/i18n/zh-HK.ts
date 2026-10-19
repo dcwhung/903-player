@@ -50,8 +50,8 @@ export const zhHK = {
         // 日子條中間：「現正播放：16/10（五）」，標籤用強調色
         nowPlayingLabel: '現正播放：',
         // 日子條兩邊：左邊新一集、右邊舊一集（可見文字 + 讀屏軟件讀嘅名）
-        newerCell: '‹ {date}',
-        olderCell: '{date} ›',
+        newerChevron: '‹',
+        olderChevron: '›',
         newer: '新一集 {date}',
         older: '舊一集 {date}',
     },
