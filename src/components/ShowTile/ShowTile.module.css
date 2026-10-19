@@ -1,0 +1,22 @@
+.tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    height: 112px;
+    padding: var(--space-4) 14px;
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-raised);
+    font-size: var(--font-size-lg);
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+}
+
+.today {
+    background: var(--color-accent-fill);
+    color: var(--color-on-accent);
+    font-weight: 600;
+}

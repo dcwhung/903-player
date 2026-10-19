@@ -1,0 +1,17 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-5);
+    width: 100%;
+    max-width: var(--page-max-width);
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: calc(env(safe-area-inset-top) + var(--space-4)) 0
+        calc(env(safe-area-inset-bottom) + var(--space-8));
+}
+
+.header {
+    width: 100%;
+    padding: 0 var(--space-3);
+}
