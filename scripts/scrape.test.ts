@@ -7,6 +7,7 @@ import {
     fetchPages,
     fetchSiteHtml,
     HttpError,
+    isLiveScrapeEnabled,
     MAX_PAGES,
     MAX_RETRIES,
     MAX_RETRY_AFTER_MS,
@@ -16,6 +17,7 @@ import {
     REQUEST_GAP_MS,
     RETRY_BACKOFF_MS,
     scrapeShows,
+    scrapeShowsIfEnabled,
     type HtmlFetcher,
     type ScrapeSources,
     type ShowResult,
@@ -158,6 +160,50 @@ describe('scrapeShows fetch failures', () => {
         );
 
         expect(lines()).toContainEqual('::warning::all shows: HTTP 500%0Afor all');
+    });
+});
+
+describe('isLiveScrapeEnabled', () => {
+    it.each([undefined, '', 'true', 'TRUE', 'yes'])('keeps live scraping on for %j', (value) => {
+        expect(isLiveScrapeEnabled(value)).toBe(true);
+    });
+
+    it.each(['false', 'FALSE', ' false '])('turns live scraping off for %j', (value) => {
+        expect(isLiveScrapeEnabled(value)).toBe(false);
+    });
+});
+
+describe('scrapeShowsIfEnabled', () => {
+    const lines = (): string[] => vi.mocked(console.log).mock.calls.map(([line]) => String(line));
+
+    it('sends no requests and returns no fresh results when disabled', async () => {
+        const disabled = sources();
+
+        const results = await scrapeShowsIfEnabled(false, disabled);
+
+        expect(results.size).toBe(0);
+        expect(disabled.fetchAll).not.toHaveBeenCalled();
+        expect(disabled.fetchShow).not.toHaveBeenCalled();
+        expect(lines()).toContainEqual(
+            '::notice::Requests: 0 (live scrape disabled by SCRAPE_LIVE)',
+        );
+    });
+
+    it('scrapes as usual when enabled', async () => {
+        const enabled = sources();
+
+        const results = await scrapeShowsIfEnabled(true, enabled);
+
+        expect(enabled.fetchAll).toHaveBeenCalledTimes(1);
+        expect(results.get('gongzi')?.complete).toBe(true);
+    });
+
+    it('lets buildFeed fall back to the previous feed for every show when disabled', async () => {
+        const fallback = [rec('badgirl', '2026-10-19'), rec('westair', '2026-10-18')];
+
+        const feed = buildFeed(await scrapeShowsIfEnabled(false, sources()), fallback);
+
+        expect(feed.recordings).toEqual(fallback);
     });
 });
 

@@ -45,6 +45,8 @@ jobs:
               run: npm run scrape
               env:
                   FALLBACK_URL: ${{ steps.pages.outputs.base_url }}/data/recordings.json
+                  # repo variable 設成 false 就唔請求原站，只用上次 deploy 嘅資料（原站封鎖數據中心 IP 時用）
+                  SCRAPE_LIVE: ${{ vars.SCRAPE_LIVE }}
 
             - run: npm run build
 
