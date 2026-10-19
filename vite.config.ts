@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
-import { LAUNCH_THEME_COLOR } from './src/config/launchTheme';
+import { LAUNCH_THEME_COLOR } from './src/config/launchTheme.ts';
 
 const BASE_PATH = '/903-player/';
 // package.json 係版本嘅唯一來源；build 時注入，唔使 runtime fetch
