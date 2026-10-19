@@ -11,9 +11,25 @@ const RECORDING: Recording = {
     url: 'https://audio.hkfm903.live/a.aac',
 };
 
-const wrap = (loader: () => Promise<Recording[]>) =>
+const PROBED: Recording = {
+    showId: 'badgirl',
+    date: '2026-10-19',
+    time: '1009',
+    url: 'https://audio.hkfm903.live/b.aac',
+};
+
+const noProbe = async (): Promise<Recording[]> => [];
+
+const wrap = (
+    loader: () => Promise<Recording[]>,
+    prober: (known: Recording[]) => Promise<Recording[]> = noProbe,
+) =>
     function Wrapper({ children }: { children: ReactNode }) {
-        return <RecordingsProvider loader={loader}>{children}</RecordingsProvider>;
+        return (
+            <RecordingsProvider loader={loader} prober={prober}>
+                {children}
+            </RecordingsProvider>
+        );
     };
 
 describe('RecordingsProvider', () => {
@@ -38,6 +54,30 @@ describe('RecordingsProvider', () => {
         await act(async () => result.current.reload());
 
         expect(result.current.status).toBe('ready');
+    });
+
+    it('adds recordings the prober finds on top of the feed', async () => {
+        const prober = vi.fn(async () => [PROBED]);
+        const { result } = renderHook(() => useRecordings(), {
+            wrapper: wrap(async () => [RECORDING], prober),
+        });
+
+        await waitFor(() => expect(result.current.recordings).toEqual([RECORDING, PROBED]));
+        expect(prober).toHaveBeenCalledWith([RECORDING]);
+    });
+
+    it('keeps the feed when probing fails', async () => {
+        const { result } = renderHook(() => useRecordings(), {
+            wrapper: wrap(
+                async () => [RECORDING],
+                async () => {
+                    throw new Error('blocked');
+                },
+            ),
+        });
+
+        await waitFor(() => expect(result.current.status).toBe('ready'));
+        expect(result.current.recordings).toEqual([RECORDING]);
     });
 
     it('throws when used outside the provider', () => {
