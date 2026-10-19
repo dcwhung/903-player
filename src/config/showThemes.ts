@@ -3,6 +3,7 @@ import gongziArt from '../assets/shows/gongzi.jpg';
 import sunnydayArt from '../assets/shows/sunnyday.jpg';
 import wanniArt from '../assets/shows/wanni.jpg';
 import westairArt from '../assets/shows/westair.jpg';
+import { LAUNCH_THEME_COLOR } from './launchTheme';
 import type { ShowId } from '../types/recording';
 
 /** 節目色調：由節目圖抽色，全部深色（來源：mockup Palette artboard） */
@@ -38,10 +39,10 @@ export const NEUTRAL_THEME: ShowTheme = {
 /**
  * 主頁色調：跟 app icon（design/app-icon.png）——柔藍底、奶油色泥膠字、黃色點綴。
  * NEUTRAL_THEME 仲係 :root 同搵唔到節目時嘅後備，所以另開一個，唔改中性色。
- * bg 係漸變頂色（漸變本身見 tokens.css --home-bg-*）。
+ * bg 係漸變頂色（漸變本身見 tokens.css --home-bg-*）；app 喺主頁啟動，所以同時係啟動色。
  */
 export const HOME_THEME: ShowTheme = {
-    bg: '#4f749c',
+    bg: LAUNCH_THEME_COLOR,
     surface: '#42658a',
     // 節目圖邊框用漸變底色，幾乎隱形，唔會好似中性色嘅深灰框咁搶眼
     track: '#42658a',
