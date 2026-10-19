@@ -67,17 +67,20 @@ const track = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion
     return dx;
 };
 
-/** 放手：拖得夠遠 / 甩得夠快就交畀 onSwipe（飛走），否則彈返；返回有冇拖過 */
+/** 放手：拖得夠遠 / 甩得夠快就交畀 onSwipe（飛走），否則彈返；返回有冇拖過（要唔要食 click） */
 const release = (
     gesture: GestureRef,
     event: StackPointerEvent,
     motion: CardMotion,
     commit: ((direction: SwipeDirection) => void) | null,
 ): boolean => {
+    // track() 會作廢畀飛行打斷嘅手勢，所以要喺之前讀：拖過嘅手勢就算作廢咗，放手嗰下 click 都要食
+    const held = gesture.current;
+    const wasDragging = held?.pointerId === event.pointerId && held.isDragging;
     const dx = track(gesture, event, motion);
     const samples = gesture.current?.samples ?? [];
     gesture.current = null;
-    if (dx === null) return false;
+    if (dx === null) return wasDragging;
     const direction = commit && releaseDirection(dx, velocityOf(samples), motion.width());
     if (direction) commit(direction);
     else motion.springBack();

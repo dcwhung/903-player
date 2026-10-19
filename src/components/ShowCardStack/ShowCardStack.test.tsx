@@ -477,6 +477,22 @@ describe('ShowCardStack during the fly-out', () => {
         expect(group).not.toHaveAttribute('data-phase');
     });
 
+    it('should still swallow the click of a drag that a flight dropped, once it has landed', () => {
+        const { group, onInnerClick } = setup();
+        const inner = screen.getByRole('button', { name: '內容' });
+
+        fireEvent.pointerDown(inner, { clientX: 200, clientY: 100 });
+        fireEvent.pointerMove(inner, { clientX: 50, clientY: 100 });
+        fireEvent.keyDown(group, { key: 'ArrowLeft' });
+        finishFly();
+        fireEvent.pointerUp(inner, { clientX: 50, clientY: 100 });
+        // 放手之後瀏覽器照發嘅 click 要食咗；下一下普通 tap 照常
+        fireEvent.click(inner, { detail: 1 });
+        expect(onInnerClick).not.toHaveBeenCalled();
+        fireEvent.click(inner, { detail: 1 });
+        expect(onInnerClick).toHaveBeenCalledTimes(1);
+    });
+
     it('should not override a show picked elsewhere during the flight', () => {
         const onChange = vi.fn();
         const stack = (index: number) => (
