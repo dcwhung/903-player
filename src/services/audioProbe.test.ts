@@ -9,6 +9,7 @@ import {
     buildAudioUrl,
     probeAudio,
     probeRecentRecordings,
+    readCachedRecordings,
     type AudioProber,
     type ProbeResult,
 } from './audioProbe';
@@ -246,7 +247,9 @@ describe('probeRecentRecordings', () => {
             new Set(
                 vi
                     .mocked(probe)
-                    .mock.calls.map(([url]) => /\/(\d{8})_/.exec(decodeURIComponent(url))?.[1]),
+                    .mock.calls.map(
+                        ([url]) => /\/(\d{8})_/.exec(decodeURIComponent(url))?.[1] ?? '',
+                    ),
             );
         const seedMisses = (): void =>
             writeProbeState({
@@ -327,5 +330,32 @@ describe('probeRecentRecordings', () => {
         await expect(probeRecentRecordings([], { probe: found([]), now: NOW })).resolves.toEqual(
             [],
         );
+    });
+});
+
+describe('readCachedRecordings', () => {
+    beforeEach(() => localStorage.clear());
+
+    const remembered: Recording = {
+        showId: 'badgirl',
+        date: '2026-10-19',
+        time: '1009',
+        url: REAL_URLS.badgirl,
+    };
+
+    it('returns remembered recordings synchronously without probing', () => {
+        writeProbeState({ found: [remembered], misses: {} });
+
+        expect(readCachedRecordings([], NOW)).toEqual([remembered]);
+    });
+
+    it('leaves out what the feed already covers', () => {
+        writeProbeState({ found: [remembered], misses: {} });
+
+        expect(readCachedRecordings([remembered], NOW)).toEqual([]);
+    });
+
+    it('returns nothing when storage is empty', () => {
+        expect(readCachedRecordings([], NOW)).toEqual([]);
     });
 });

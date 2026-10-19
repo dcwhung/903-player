@@ -19,14 +19,16 @@ const PROBED: Recording = {
 };
 
 const noProbe = async (): Promise<Recording[]> => [];
+const noCache = (): Recording[] => [];
 
 const wrap = (
     loader: () => Promise<Recording[]>,
     prober: (known: Recording[]) => Promise<Recording[]> = noProbe,
+    readCached: (known: Recording[]) => Recording[] = noCache,
 ) =>
     function Wrapper({ children }: { children: ReactNode }) {
         return (
-            <RecordingsProvider loader={loader} prober={prober}>
+            <RecordingsProvider loader={loader} prober={prober} readCached={readCached}>
                 {children}
             </RecordingsProvider>
         );
@@ -64,6 +66,44 @@ describe('RecordingsProvider', () => {
 
         await waitFor(() => expect(result.current.recordings).toEqual([RECORDING, PROBED]));
         expect(prober).toHaveBeenCalledWith([RECORDING]);
+    });
+
+    it('shows cached recordings as soon as the feed loads, before probing finishes', async () => {
+        const pending = new Promise<Recording[]>(() => {});
+        const readCached = vi.fn(() => [PROBED]);
+        const { result } = renderHook(() => useRecordings(), {
+            wrapper: wrap(
+                async () => [RECORDING],
+                () => pending,
+                readCached,
+            ),
+        });
+
+        await waitFor(() => expect(result.current.status).toBe('ready'));
+        expect(result.current.recordings).toEqual([RECORDING, PROBED]);
+        expect(readCached).toHaveBeenCalledWith([RECORDING]);
+    });
+
+    it('ignores probe results that arrive after unmounting', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        let resolveProbe: (found: Recording[]) => void = () => {};
+        const prober = vi.fn(
+            () =>
+                new Promise<Recording[]>((resolve) => {
+                    resolveProbe = resolve;
+                }),
+        );
+        const { result, unmount } = renderHook(() => useRecordings(), {
+            wrapper: wrap(async () => [RECORDING], prober),
+        });
+        await waitFor(() => expect(prober).toHaveBeenCalled());
+
+        unmount();
+        await act(async () => resolveProbe([PROBED]));
+
+        expect(result.current.recordings).toEqual([RECORDING]);
+        expect(errorSpy).not.toHaveBeenCalled();
+        errorSpy.mockRestore();
     });
 
     it('keeps the feed when probing fails', async () => {

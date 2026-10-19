@@ -109,6 +109,10 @@ const pruneFound = (found: Recording[], known: Recording[], now: Date): Recordin
     );
 };
 
+/** 之前搵到、feed 仲未有嘅錄音；同步讀，feed 一到就可以即刻顯示，唔使等 probe */
+export const readCachedRecordings = (known: Recording[], now: Date = new Date()): Recording[] =>
+    pruneFound(readProbeState().found, known, now);
+
 interface ProbeSlot {
     key: string;
     recording: Recording;
