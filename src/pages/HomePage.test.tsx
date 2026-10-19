@@ -1,6 +1,9 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useNavigate } from 'react-router-dom';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
+import { usePlayer } from '../player/usePlayer';
+import type { Recording } from '../types/recording';
 import { HomePage } from './HomePage';
 
 const RECORDINGS = [
@@ -9,6 +12,34 @@ const RECORDINGS = [
     recording('badgirl', '2026-10-19', '1000'),
     recording('wanni', '2026-10-19', '1300'),
 ];
+
+/** 模擬喺其他頁播緊某集，再返主頁 */
+const PlayThenGoHome = ({ target }: { target: Recording }) => {
+    const { load } = usePlayer();
+    const navigate = useNavigate();
+    return (
+        <button
+            type="button"
+            onClick={async () => {
+                await load(target, { autoplay: true });
+                navigate('/');
+            }}
+        >
+            play then home
+        </button>
+    );
+};
+
+const arriveHomeWith = async (target: Recording, recordings = RECORDINGS) => {
+    const view = renderWithProviders(<HomePage />, {
+        route: '/elsewhere',
+        recordings,
+        extraRoutes: [{ path: '/elsewhere', element: <PlayThenGoHome target={target} /> }],
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'play then home' }));
+    await screen.findByRole('navigation');
+    return view;
+};
 
 describe('HomePage', () => {
     beforeEach(() => {
@@ -40,6 +71,13 @@ describe('HomePage', () => {
         const { audio } = renderWithProviders(<HomePage />);
 
         expect(audio.pause).toHaveBeenCalled();
+    });
+
+    it('keeps playing when arriving home with a today recording playing', async () => {
+        const { audio } = await arriveHomeWith(RECORDINGS[3] as Recording);
+
+        expect(await screen.findByRole('button', { name: '暫停' })).toBeInTheDocument();
+        expect(audio.pause).not.toHaveBeenCalled();
     });
 
     it('shows a mini player for today’s first show and plays it on demand', async () => {

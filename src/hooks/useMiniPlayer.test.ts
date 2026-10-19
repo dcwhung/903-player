@@ -1,0 +1,84 @@
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { createHookWrapper, recording } from '../../tests/renderWithProviders';
+import { usePlayer } from '../player/usePlayer';
+import type { Recording } from '../types/recording';
+import { useMiniPlayer } from './useMiniPlayer';
+
+const BADGIRL = recording('badgirl', '2026-10-19', '1000');
+const WANNI = recording('wanni', '2026-10-19', '1300');
+const RECORDINGS = [recording('gongzi', '2026-10-17'), BADGIRL, WANNI];
+
+const setup = (recordings: Recording[] = RECORDINGS) => {
+    const { audio, wrapper } = createHookWrapper(recordings);
+    const hook = renderHook(() => ({ mini: useMiniPlayer(), player: usePlayer() }), { wrapper });
+    return { audio, ...hook };
+};
+
+const ready = async (result: ReturnType<typeof setup>['result']) => {
+    await waitFor(() => expect(result.current.mini).not.toBeNull());
+    return result.current;
+};
+
+describe('useMiniPlayer', () => {
+    beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-19T08:00:00Z')); // 香港 19/10 16:00
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('keeps playing when switching show while loaded and playing', async () => {
+        const { audio, result } = setup();
+        await ready(result);
+        await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
+
+        await act(async () => result.current.mini?.onChange(1));
+
+        expect(audio.src).toBe(WANNI.url);
+        expect(audio.play).toHaveBeenCalledTimes(2);
+        expect(result.current.mini?.showName).toBe('雲妮鍾情');
+    });
+
+    it('switches show without autoplay while loaded and paused', async () => {
+        const { audio, result } = setup();
+        await ready(result);
+        await act(() => result.current.player.load(BADGIRL));
+
+        await act(async () => result.current.mini?.onChange(1));
+
+        expect(audio.src).toBe(WANNI.url);
+        expect(audio.play).not.toHaveBeenCalled();
+    });
+
+    it('only changes the selection when nothing of today is loaded', async () => {
+        const { audio, result } = setup();
+        await ready(result);
+
+        act(() => result.current.mini?.onChange(1));
+
+        expect(result.current.mini?.showName).toBe('雲妮鍾情');
+        expect(result.current.mini?.index).toBe(1);
+        expect(audio.src).toBe('');
+    });
+
+    it('falls back to the latest day when nothing was recorded today', async () => {
+        vi.setSystemTime(new Date('2026-10-18T08:00:00Z'));
+        const { result } = setup();
+
+        const { mini } = await ready(result);
+
+        expect(mini?.showName).toBe('公子會');
+        expect(mini?.subtitle).toBe('17/10（六）');
+        expect(mini?.labels).toEqual(['公子會']);
+    });
+
+    it('loads and plays the shown show on toggle when nothing is loaded', async () => {
+        const { audio, result } = setup();
+        const { mini } = await ready(result);
+
+        await act(async () => mini?.onToggle());
+
+        expect(audio.src).toBe(BADGIRL.url);
+        expect(audio.play).toHaveBeenCalledTimes(1);
+        expect(result.current.mini?.isPlaying).toBe(true);
+    });
+});
