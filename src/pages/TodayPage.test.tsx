@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { saveProgress } from '../services/progressStore';
@@ -63,8 +63,9 @@ describe('TodayPage', () => {
 
         await waitFor(() => expect(audio.src).toBe(TODAY[1]?.url));
         expect(screen.getByRole('heading', { name: 'Bad Girl大過佬' })).toBeInTheDocument();
-        expect(screen.getByRole('tab', { name: 'Bad Girl大過佬' })).toHaveAttribute(
-            'aria-selected',
+        const dots = screen.getByRole('group', { name: '今日第 2 個節目，共 3 個' });
+        expect(within(dots).getByRole('button', { name: 'Bad Girl大過佬' })).toHaveAttribute(
+            'aria-current',
             'true',
         );
         expect(screen.getByRole('main').closest('[data-theme-scope]')).toHaveStyle({

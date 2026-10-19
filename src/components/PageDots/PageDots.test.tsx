@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { PageDots } from './PageDots';
 
 describe('PageDots', () => {
-    it('shows one tab per item with the current one selected', async () => {
+    it('shows one button per item in a labelled group, marking the current one', async () => {
         const onSelect = vi.fn();
         render(
             <PageDots
@@ -13,14 +13,16 @@ describe('PageDots', () => {
             />,
         );
 
-        expect(
-            screen.getByRole('tablist', { name: '今日第 2 個節目，共 3 個' }),
-        ).toBeInTheDocument();
-        expect(screen.getByRole('tab', { name: '在晴朗的一天出發' })).toHaveAttribute(
-            'aria-selected',
-            'true',
+        const group = screen.getByRole('group', { name: '今日第 2 個節目，共 3 個' });
+        expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+        expect(group.querySelectorAll('button')).toHaveLength(3);
+        const current = screen.getByRole('button', { name: '在晴朗的一天出發' });
+        expect(current).toHaveAttribute('aria-current', 'true');
+        expect(current).not.toHaveAttribute('aria-selected');
+        expect(screen.getByRole('button', { name: '雲妮鍾情' })).not.toHaveAttribute(
+            'aria-current',
         );
-        await userEvent.click(screen.getByRole('tab', { name: 'Bad Girl大過佬' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Bad Girl大過佬' }));
         expect(onSelect).toHaveBeenCalledWith(2);
     });
 
