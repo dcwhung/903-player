@@ -62,7 +62,6 @@ export const useStripGesture = (options: StripGestureOptions) => {
     const justDragged = useRef(false);
     return {
         onPointerDown: (event: StripPointer) => {
-            options.motion.flush();
             const t = performance.now();
             session.current = { x: event.clientX, y: event.clientY, t, dragging: false };
             justDragged.current = false;

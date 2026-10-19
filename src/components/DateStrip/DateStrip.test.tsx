@@ -177,6 +177,24 @@ describe('DateStrip', () => {
             expect(screen.queryByRole('button', { name: /^舊一集/ })).not.toBeInTheDocument();
         });
 
+        it('switches on release and slides the new date in from where the old neighbour was', () => {
+            const onStep = vi.fn();
+            render(<Harness onStep={onStep} />);
+            // 記低每次改 style 之前嘅值（同步讀 takeRecords，唔使等 observer callback）
+            const observer = new MutationObserver(() => undefined);
+            observer.observe(track(), { attributeFilter: ['style'], attributeOldValue: true });
+
+            drag(zone(), -100);
+            const moves = observer.takeRecords().map((record) => record.oldValue ?? '');
+            observer.disconnect();
+
+            // 即刻播（唔使等滑完）：新日期由舊一集原本位置（-100 + 150）滑返中間
+            expect(onStep).toHaveBeenCalledWith('next');
+            expect(zone()).toHaveAccessibleName(/^15\/10（四）/);
+            expect(moves.some((style) => style.includes('translateX(50px)'))).toBe(true);
+            expect(track().style.transform).toBe('translateX(0px)');
+        });
+
         it('settles back when onStep cannot switch', async () => {
             const onStep = vi.fn();
             render(<Harness refuse onStep={onStep} />);
