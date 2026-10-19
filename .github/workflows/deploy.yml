@@ -36,10 +36,14 @@ jobs:
                   npm run lint
                   npm test
 
+            # 排程觸發時 github.event 冇 repository 資料，所以由 configure-pages 攞網址
+            - id: pages
+              uses: actions/configure-pages@v5
+
             - name: Scrape recordings
               run: npm run scrape
               env:
-                  FALLBACK_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/recordings.json
+                  FALLBACK_URL: ${{ steps.pages.outputs.base_url }}/data/recordings.json
 
             - run: npm run build
 
