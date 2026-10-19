@@ -56,8 +56,14 @@
     --card-stack-offset: 12px;
     --card-stack-scale-step: 0.08;
     --card-stack-fade-step: 0.35;
-    /* 卡上下留白（700px 高或以下收窄） */
-    --card-padding-block: var(--space-5);
+    /*
+     * 今日節目卡入面嘅留白（卡上下、唱片 ↔ 標題 ↔ 控制掣、日期 ↔ 節目名 ↔ 指示點），
+     * 700px 高或以下再收窄。唱片唔郁（同節目頁一樣大），收窄留白令卡連指示點 ≤ 畫面高 66%、
+     * 今日節目清單最少見到一行；節目頁唔受影響（只喺 ShowCardStack .card 入面用）
+     */
+    --card-padding-block: var(--space-2);
+    --card-inner-gap: var(--space-2);
+    --card-titles-gap: 2px;
     /* 卡疊兩邊留白；好窄嘅畫面收窄（見下面 max-width: 339px） */
     --card-stack-gutter: var(--space-4);
     /* 飛走：移出幾遠（佔卡闊）、再轉幾多；拖動 / 飛走都以卡底中間做軸心 */
@@ -120,7 +126,8 @@
     :root {
         --fixed-page-gap: var(--space-3);
         /* 今日節目卡：唱片唔郁（同節目頁一樣大），收窄卡上下留白同疊卡位移，多啲位畀今日節目清單 */
-        --card-padding-block: var(--space-2);
+        --card-padding-block: var(--space-1);
+        --card-inner-gap: var(--space-1);
         --card-stack-offset: 8px;
     }
 }

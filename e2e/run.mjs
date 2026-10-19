@@ -204,11 +204,12 @@ const checkControlsInView = async (p, label) => {
 const checkDiscMatchesToday = async (p, label) => {
     const discWidth = async () =>
         (await p.getByRole('slider', { name: '播放進度' }).boundingBox()).width;
+    // [頁面間距, 播放器 panel 入面間距]（px）
     const pageGaps = () =>
         p.evaluate(() =>
-            [document.querySelector('main'), document.querySelector('[class*="panel"]')]
-                .map((el) => getComputedStyle(el).rowGap)
-                .join(' / '),
+            [document.querySelector('main'), document.querySelector('[class*="panel"]')].map((el) =>
+                parseFloat(getComputedStyle(el).rowGap),
+            ),
         );
     const show = await discWidth();
     const showGaps = await pageGaps();
@@ -216,15 +217,18 @@ const checkDiscMatchesToday = async (p, label) => {
     await p.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
     const today = await discWidth();
     log(Math.abs(show - today) < 1, `${label}：唱片同今日節目頁一樣大（${show} / ${today}）`);
-    // 今日節目頁同節目頁用同一個固定版面（.fixed），矮螢幕一齊收窄間距
+    // 今日節目頁同節目頁用同一個固定版面（.fixed），頁面間距一樣、矮螢幕一齊收窄；
+    // 今日節目卡入面用卡自己較窄嘅間距（--card-inner-gap），唔可以闊過節目頁
     const todayGaps = await pageGaps();
-    log(todayGaps === showGaps, `${label}：今日節目頁間距同節目頁一樣（${todayGaps}）`);
+    log(
+        todayGaps[0] === showGaps[0] && todayGaps[1] <= showGaps[1],
+        `${label}：今日節目頁頁面間距同節目頁一樣、卡入面唔闊過節目頁（${todayGaps.join(' / ')}px，節目頁 ${showGaps.join(' / ')}px）`,
+    );
 };
 
-// 今日節目清單最少見到一行（合併共用播放器高度上限後量到 320×568 = 1.00、375×667 = 1.08、
-// 390×844 = 1.94）。390×720 只得約 0.66 行，未有版面決定前只印出嚟、唔斷言（已回報）
+// 今日節目清單最少見到一行（固定版面嘅直向尺寸全部斷言）
 const TODAY_MIN_ROWS = 1;
-const TODAY_ROW_VIEWPORTS = ['320×568', '375×667', '390×844'];
+const TODAY_ROW_VIEWPORTS = ['320×568', '375×667', '390×664', '390×720', '390×844', '390×562'];
 
 /** 今日節目清單見到幾多行：指定畫面要過 TODAY_MIN_ROWS，其他只印出嚟 */
 const checkTodayRows = async (list, label) => {
@@ -254,14 +258,11 @@ const recordTodayMetrics = async (p, label, rows) => {
 };
 
 /** 固定版面嘅今日節目卡（連指示點）≤ PLAYER_MAX_SHARE */
-// 今日節目卡而家喺好多尺寸超過 66%（已回報，等版面決定）：暫時只標 WARN，唔當失敗
-const warn = (ok, msg) => console.log(`${ok ? 'PASS' : 'WARN'}  ${msg}`);
-
 const checkTodayCardShare = async (p, label) => {
     const share = await todayCardShare(p);
-    warn(
+    log(
         share <= PLAYER_MAX_SHARE + 0.001,
-        `${label}：今日節目卡佔畫面高 ${(share * 100).toFixed(1)}%（目標 ≤ ${PLAYER_MAX_SHARE * 100}%）`,
+        `${label}：今日節目卡佔畫面高 ${(share * 100).toFixed(1)}%（≤ ${PLAYER_MAX_SHARE * 100}%）`,
     );
 };
 

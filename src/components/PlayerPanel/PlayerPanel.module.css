@@ -70,7 +70,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-1);
+    /* 今日節目卡（ShowCardStack .card）會傳入較窄嘅間距 */
+    gap: var(--player-titles-gap, var(--space-1));
     padding: 0 var(--space-4);
     text-align: center;
 }
