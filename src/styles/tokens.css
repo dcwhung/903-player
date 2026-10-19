@@ -83,6 +83,8 @@
 :root {
     --player-disc-min: 160px;
     --player-max-share: 0.6;
+    /* 播放掣尺寸：細螢幕按闊度縮細（PlayerControls 同播放器高度計法共用） */
+    --player-toggle-size: clamp(64px, 19vw, 76px);
     /* 節目頁（只限節目頁）嘅間距；700px 高或以下收窄，令固定版面多啲位畀集數清單 */
     --show-page-gap: var(--space-5);
 }
@@ -104,7 +106,9 @@
          *    13px 日期 + 4px 間距 + 24px 節目名，Poppins 行高 1.5 量出嚟）較大嗰個。
          *    兩頁共用同一隻唱片，今日節目頁仍然顯示日期 + 節目名（再加指示點），
          *    如果只預留日子條，矮螢幕（例如 320×568）唱片會變大，今日節目頁清單就唔夠位
-         * 5. 播放掣最大尺寸：76px（PlayerControls --toggle-size 上限）
+         * 5. 播放掣最大尺寸：76px（--player-toggle-size 上限）。呢度刻意用上限：
+         *    窄螢幕個掣細啲，多出嚟嘅位留畀清單；改用 clamp 會令共用唱片變大，
+         *    今日節目頁清單（日期 + 節目名 + 指示點）會唔夠位
          * 6. 「集數 / 共 N 集」標題列：30px（量出嚟）
          * 7. 兩行集數：2 × 56px（EpisodeList .row，border-box 連分隔線）
          * 8. 清單底 padding（--space-2）+ 底部安全區
@@ -115,8 +119,10 @@
                 var(--show-page-gap) + max(var(--date-strip-height), 60px) + 76px + 30px + 2 *
                 56px + var(--space-2) + env(safe-area-inset-bottom)
         );
-        /* 播放器入面唱片以外嘅高度：2 個間距 + 日子條 + 播放掣最大尺寸（76px） */
-        --player-chrome-height: calc(2 * var(--show-page-gap) + var(--date-strip-height) + 76px);
+        /* 播放器入面唱片以外嘅高度：2 個間距 + 日子條 + 播放掣真實尺寸（跟 clamp 縮放） */
+        --player-chrome-height: calc(
+            2 * var(--show-page-gap) + var(--date-strip-height) + var(--player-toggle-size)
+        );
         /* 唱片 + 時間嗰一格嘅高 = 闊 × 316 / 300（PlayerPanel .gauge aspect-ratio） */
         /* 下限都唔可以闊過 78vw（極窄 / 高倍放大時避免橫向超出） */
         --player-disc-size: max(
