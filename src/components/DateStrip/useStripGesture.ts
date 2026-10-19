@@ -34,8 +34,12 @@ const moveStrip = (session: DragSession, event: StripPointer, options: StripGest
     options.motion.follow(stripOffset(dx, options.neighbours));
 };
 
-/** 放手：stripRelease 決定轉（交畀 onGo）定彈返 */
-const releaseStrip = (session: DragSession, event: StripPointer, options: StripGestureOptions) => {
+/** 放手：stripRelease 決定轉（交畀 onGo）定彈返；返回有冇當係掃（即使之前冇 pointermove） */
+const releaseStrip = (
+    session: DragSession,
+    event: StripPointer,
+    options: StripGestureOptions,
+): boolean => {
     const gesture = {
         dx: event.clientX - session.x,
         dy: event.clientY - session.y,
@@ -45,6 +49,7 @@ const releaseStrip = (session: DragSession, event: StripPointer, options: StripG
     const { direction } = stripRelease(gesture, options.neighbours);
     if (direction) options.onGo(direction);
     else if (session.dragging) options.motion.springBack();
+    return direction !== null;
 };
 
 /** 拖完瀏覽器可能仍然發 click，喺 capture 階段食咗佢；鍵盤 / 輔助技術嘅 click（detail 0）照放行 */
@@ -73,8 +78,9 @@ export const useStripGesture = (options: StripGestureOptions) => {
             const current = session.current;
             if (!current) return;
             session.current = null;
-            justDragged.current = current.dragging;
-            releaseStrip(current, event, options);
+            // 冇 pointermove 但放手時已經算掃（轉咗集）：之後嘅 click 都要食咗，唔好再撳多次側格
+            const swiped = releaseStrip(current, event, options);
+            justDragged.current = current.dragging || swiped;
         },
         onPointerCancel: () => {
             session.current = null;

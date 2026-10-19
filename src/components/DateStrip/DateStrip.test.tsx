@@ -134,6 +134,20 @@ describe('DateStrip', () => {
         await waitFor(() => expect(zone()).toHaveAccessibleName(/^19\/10（一）/));
     });
 
+    it('swallows the click after a swipe released without any pointermove', () => {
+        const onStep = vi.fn();
+        render(<Harness onStep={onStep} />);
+        const newer = screen.getByRole('button', { name: '新一集 19/10（一）' });
+
+        // 有啲瀏覽器 / 輔助工具冇 pointermove：撳喺側格向左撥，放手後仲會發 click
+        fireEvent.pointerDown(newer, { clientX: 200, clientY: 20, pointerId: 1 });
+        vi.advanceTimersByTime(DRAG_MS);
+        fireEvent.pointerUp(newer, { clientX: 100, clientY: 20, pointerId: 1 });
+        fireEvent.click(newer, { detail: 1 });
+
+        expect(onStep.mock.calls).toEqual([['next']]);
+    });
+
     it('steps with the arrow keys only when the strip itself is focused', async () => {
         const onStep = vi.fn();
         render(<Harness onStep={onStep} />);
