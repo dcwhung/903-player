@@ -675,6 +675,55 @@ const checkShellMismatch = async (browser, serveAudio, errors) => {
     console.log('');
 };
 
+/*
+ * S-421：成頁 .scope 而家係 size container（W-390）。如果瀏覽器對 container-type 加埋 layout containment，
+ * .scope 會變成 position: fixed 嘅 containing block，主頁 mini player 就會跟 .scope（殼）而唔係 viewport 定位。
+ * 正常畫面：mini player 底 = innerHeight − 16（--space-4，Chromium 冇安全區）。
+ * 殼縮矮（同 checkShellMismatch 一樣模擬 dvh 高過殼）：底唔可以出咗 viewport，亦唔可以高過殼底 − 16。
+ */
+const MINI_BOTTOM_GAP_PX = 16;
+const MINI_POSITION_CASES = [
+    { width: 390, height: 844, shrink: 160 },
+    { width: 320, height: 568, shrink: 80 },
+];
+const SUBPIXEL_PX = 0.5;
+/** 主頁 mini player 外層（ThemeScope wrapper，position: fixed）嘅底、innerHeight、殼底 */
+const miniPosition = (p) =>
+    p.getByRole('region', { name: MINI_REGION }).evaluate((el) => ({
+        bottom: el.closest('[data-theme-scope]').getBoundingClientRect().bottom,
+        inner: window.innerHeight,
+        shell: document.getElementById('root').getBoundingClientRect().bottom,
+    }));
+
+const checkMiniPlayerPosition = async (browser, serveAudio, errors) => {
+    for (const { width, height, shrink } of MINI_POSITION_CASES) {
+        const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2 });
+        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
+        const mp = await ctx.newPage();
+        mp.on('pageerror', (e) => errors.push(e.message));
+        await mp.goto(BASE);
+        await mp.waitForSelector('nav[aria-busy="false"]');
+        await mp.getByRole('region', { name: MINI_REGION }).waitFor();
+        const label = `${width}×${height} 主頁 mini player`;
+        const normal = await miniPosition(mp);
+        log(
+            Math.abs(normal.bottom - (normal.inner - MINI_BOTTOM_GAP_PX)) <= SUBPIXEL_PX,
+            `${label}：底 ${normal.bottom.toFixed(1)} = innerHeight ${normal.inner} − ${MINI_BOTTOM_GAP_PX}`,
+        );
+        await mp.addStyleTag({
+            content: `html { height: calc(100% - ${shrink}px) !important; }`,
+        });
+        await mp.waitForTimeout(LAYOUT_SETTLE_MS);
+        const shrunk = await miniPosition(mp);
+        log(
+            shrunk.bottom <= shrunk.inner + SUBPIXEL_PX &&
+                shrunk.bottom >= shrunk.shell - MINI_BOTTOM_GAP_PX - SUBPIXEL_PX,
+            `${label}（殼矮 ${shrink}px）：底 ${shrunk.bottom.toFixed(1)} ≤ innerHeight ${shrunk.inner}，≥ 殼底 ${shrunk.shell.toFixed(1)} − ${MINI_BOTTOM_GAP_PX}`,
+        );
+        await ctx.close();
+    }
+};
+
 const server = await startPreview();
 let browser;
 try {
@@ -973,6 +1022,7 @@ try {
     console.log('');
 
     await checkShellMismatch(browser, serveAudio, errors);
+    await checkMiniPlayerPosition(browser, serveAudio, errors);
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
     await runTouchChecks({ browser, base: BASE, out: OUT, serveAudio, errors, log });
