@@ -16,7 +16,13 @@ export const MAX_PAGES = 10;
 const ALL_SHOWS_LABEL = 'all shows';
 const SHOW_PARAM = 'show';
 
-export type ShowFetcher = (showId: ShowId, showName: string) => Promise<Recording[]>;
+export interface ShowPage {
+    recordings: Recording[];
+    /** 到咗 MAX_PAGES 仲有下一頁：結果唔齊，唔可以取代舊資料 */
+    truncated: boolean;
+}
+
+export type ShowFetcher = (showId: ShowId, showName: string) => Promise<ShowPage>;
 
 export interface ShowResult {
     recordings: Recording[];
@@ -27,6 +33,12 @@ export interface ShowResult {
 export interface ScrapeSources {
     fetchShow: ShowFetcher;
     fetchAll: () => Promise<ParsedAll>;
+}
+
+interface FetchedPages {
+    pages: string[];
+    /** 到咗 MAX_PAGES 仲有下一頁未爬 */
+    truncated: boolean;
 }
 
 /** 攞一頁 HTML；可以注入，方便測試唔使真係連原站 */
@@ -59,7 +71,7 @@ export const fetchPages = async (
     firstUrl: string,
     label: string,
     fetchHtml: HtmlFetcher,
-): Promise<string[]> => {
+): Promise<FetchedPages> => {
     const pages: string[] = [];
     const seen = new Set<string>();
     let url: string | null = firstUrl;
@@ -69,13 +81,14 @@ export const fetchPages = async (
         pages.push(html);
         url = readNextPageUrl(html, url);
     }
-    if (url && !seen.has(url)) {
+    const truncated = url !== null && !seen.has(url);
+    if (truncated) {
         annotate('warning', `${label}: stopped after ${MAX_PAGES} pages, more pages remain`);
     }
     if (pages.length > 1) {
         annotate('notice', `${label}: fetched ${pages.length} pages`);
     }
-    return pages;
+    return { pages, truncated };
 };
 
 const reportDropped = (showId: ShowId, dropped: string[]): void => {
@@ -90,14 +103,15 @@ const reportDropped = (showId: ShowId, dropped: string[]): void => {
 /** 原站：各節目頁 + All Shows 頁（兩者都會跟分頁） */
 export const createSiteSources = (fetchHtml: HtmlFetcher = fetchSiteHtml): ScrapeSources => ({
     fetchShow: async (showId, showName) => {
-        const pages = await fetchPages(siteUrl(showName), showId, fetchHtml);
+        const { pages, truncated } = await fetchPages(siteUrl(showName), showId, fetchHtml);
         const dropped: string[] = [];
         const recordings = parseRecordings(pages, showId, (title) => dropped.push(title));
         reportDropped(showId, dropped);
-        return recordings;
+        return { recordings, truncated };
     },
+    // All Shows 頁只會補充資料（永遠唔會令節目「完整」），截斷咗出 warning 就夠
     fetchAll: async () =>
-        parseAllRecordings(await fetchPages(siteUrl(), ALL_SHOWS_LABEL, fetchHtml)),
+        parseAllRecordings((await fetchPages(siteUrl(), ALL_SHOWS_LABEL, fetchHtml)).pages),
 });
 
 export const siteSources: ScrapeSources = createSiteSources();
@@ -133,21 +147,19 @@ const reportAllPage = (all: ParsedAll): void => {
     }
 };
 
-/** 節目頁同 All 頁合併；節目頁失敗（null）或 0 集時結果唔完整，要保留舊資料 */
-const mergeShow = (
-    show: ShowConfig,
-    page: Recording[] | null,
-    all: ParsedAll,
-): ShowResult | null => {
+/** 節目頁同 All 頁合併；節目頁失敗（null）、0 集或者分頁截斷時結果唔完整，要保留舊資料 */
+const mergeShow = (show: ShowConfig, page: ShowPage | null, all: ParsedAll): ShowResult | null => {
     const fromAll = all.recordings.filter((r) => r.showId === show.id);
-    if (page?.length === 0 && fromAll.length > 0) {
+    const fromPage = page?.recordings ?? [];
+    if (page?.recordings.length === 0 && fromAll.length > 0) {
         annotate(
             'warning',
             `${show.id} (${show.name}): show page has 0 recordings but the all-shows page has ${fromAll.length}; check the ?show= name`,
         );
     }
-    const recordings = uniqueByUrl([...(page ?? []), ...fromAll]);
-    return recordings.length > 0 ? { recordings, complete: (page?.length ?? 0) > 0 } : null;
+    const recordings = uniqueByUrl([...fromPage, ...fromAll]);
+    const complete = fromPage.length > 0 && !page?.truncated;
+    return recordings.length > 0 ? { recordings, complete } : null;
 };
 
 const EMPTY_ALL: ParsedAll = { recordings: [], unmatched: [], conflicts: [] };

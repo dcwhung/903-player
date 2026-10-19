@@ -31,7 +31,10 @@ const sources = (overrides: Partial<ScrapeSources> = {}): ScrapeSources => ({
         if (showId === 'wanni') {
             throw new Error('timeout');
         }
-        return showId === 'gongzi' ? [rec('gongzi', '2026-10-17')] : [];
+        return {
+            recordings: showId === 'gongzi' ? [rec('gongzi', '2026-10-17')] : [],
+            truncated: false,
+        };
     }),
     fetchAll: vi.fn(async () => ({
         recordings: [rec('badgirl', '2026-10-19'), rec('gongzi', '2026-10-17')],
@@ -272,9 +275,10 @@ describe('fetchPages', () => {
     it('fetches a single page and stays quiet when there is no pagination', async () => {
         const fetchHtml = fakeSite({ [SITE]: card('20261017_2308_公子會.aac') });
 
-        const pages = await fetchPages(SITE, 'all shows', fetchHtml);
+        const { pages, truncated } = await fetchPages(SITE, 'all shows', fetchHtml);
 
         expect(pages).toHaveLength(1);
+        expect(truncated).toBe(false);
         expect(fetchHtml).toHaveBeenCalledTimes(1);
         expect(logLines()).toEqual([]);
     });
@@ -286,7 +290,7 @@ describe('fetchPages', () => {
             [`${SITE}?page=3`]: '<p>last</p>',
         });
 
-        const pages = await fetchPages(SITE, 'all shows', fetchHtml);
+        const { pages, truncated } = await fetchPages(SITE, 'all shows', fetchHtml);
 
         expect(fetchHtml.mock.calls.map(([url]) => url)).toEqual([
             SITE,
@@ -294,6 +298,7 @@ describe('fetchPages', () => {
             `${SITE}?page=3`,
         ]);
         expect(pages).toHaveLength(3);
+        expect(truncated).toBe(false);
         expect(logLines()).toContain('::notice::all shows: fetched 3 pages');
     });
 
@@ -303,9 +308,10 @@ describe('fetchPages', () => {
             [`${SITE}?page=2`]: nextLink('/'),
         });
 
-        const pages = await fetchPages(SITE, 'all shows', fetchHtml);
+        const { pages, truncated } = await fetchPages(SITE, 'all shows', fetchHtml);
 
         expect(pages).toHaveLength(2);
+        expect(truncated).toBe(false);
         expect(fetchHtml).toHaveBeenCalledTimes(2);
     });
 
@@ -315,9 +321,10 @@ describe('fetchPages', () => {
             return nextLink(`/?page=${page + 1}`);
         });
 
-        const pages = await fetchPages(SITE, 'all shows', fetchHtml);
+        const { pages, truncated } = await fetchPages(SITE, 'all shows', fetchHtml);
 
         expect(pages).toHaveLength(MAX_PAGES);
+        expect(truncated).toBe(true);
         expect(fetchHtml).toHaveBeenCalledTimes(MAX_PAGES);
         expect(logLines()).toContainEqual(expect.stringMatching(/^::warning::all shows: stopped/));
     });
@@ -338,9 +345,10 @@ describe('fetchPages on a single page with self-links', () => {
             </ul>${nextLink('#')}`,
         });
 
-        const pages = await fetchPages(SITE, 'all shows', fetchHtml);
+        const { pages, truncated } = await fetchPages(SITE, 'all shows', fetchHtml);
 
         expect(pages).toHaveLength(1);
+        expect(truncated).toBe(false);
         expect(fetchHtml).toHaveBeenCalledTimes(1);
         expect(logLines()).toEqual([]);
     });
@@ -353,10 +361,11 @@ describe('createSiteSources', () => {
             [`${SHOW_URL}&page=2`]: card('20261010_2308_公子會.aac'),
         });
 
-        const recordings = await createSiteSources(fetchHtml).fetchShow('gongzi', '公子會');
+        const page = await createSiteSources(fetchHtml).fetchShow('gongzi', '公子會');
 
         expect(fetchHtml).toHaveBeenCalledWith(SHOW_URL);
-        expect(recordings.map((r) => r.date)).toEqual(['2026-10-17', '2026-10-10']);
+        expect(page.recordings.map((r) => r.date)).toEqual(['2026-10-17', '2026-10-10']);
+        expect(page.truncated).toBe(false);
         expect(logLines()).toContain('::notice::gongzi: fetched 2 pages');
     });
 
@@ -371,5 +380,43 @@ describe('createSiteSources', () => {
         expect(all.recordings.map((r) => r.showId)).toEqual(['gongzi']);
         expect(all.unmatched).toEqual(['口水多過浪花']);
         expect(logLines()).toContain('::notice::all shows: fetched 2 pages');
+    });
+});
+
+describe('show pages cut off at MAX_PAGES', () => {
+    /** 公子會頁永遠有下一頁；其他頁冇卡 */
+    const endlessShowPage = vi.fn(async (url: string) => {
+        if (!url.startsWith(SHOW_URL)) {
+            return '';
+        }
+        const page = Number(new URL(url).searchParams.get('page') ?? '1');
+        return card('20261017_2308_公子會.aac') + nextLink(`${SHOW_URL}&page=${page + 1}`);
+    });
+
+    it('marks the show result as incomplete', async () => {
+        const results = await scrapeShows(createSiteSources(endlessShowPage));
+
+        expect(results.get('gongzi')?.complete).toBe(false);
+    });
+
+    it('merges with the fallback instead of replacing it', async () => {
+        const older = rec('gongzi', '2026-01-03');
+
+        const feed = buildFeed(await scrapeShows(createSiteSources(endlessShowPage)), [older]);
+
+        expect(feed.recordings).toContainEqual(older);
+    });
+
+    it('treats a truncated page from any fetcher as incomplete', async () => {
+        const results = await scrapeShows(
+            sources({
+                fetchShow: vi.fn(async () => ({
+                    recordings: [rec('gongzi', '2026-10-17')],
+                    truncated: true,
+                })),
+            }),
+        );
+
+        expect(results.get('gongzi')?.complete).toBe(false);
     });
 });
