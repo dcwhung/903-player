@@ -1,7 +1,9 @@
+import { PageDots } from '../components/PageDots/PageDots';
 import { PageHeader } from '../components/PageHeader/PageHeader';
 import { PlayerPanel } from '../components/PlayerPanel/PlayerPanel';
+import { ShowCarousel } from '../components/ShowCarousel/ShowCarousel';
+import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { TodayShowList } from '../components/TodayShowList/TodayShowList';
-import { findShow } from '../config/shows';
 import { useGoHome } from '../hooks/useGoHome';
 import { t } from '../i18n/t';
 import { formatDateLabel } from '../utils/date';
@@ -11,23 +13,42 @@ import { useTodayPage } from './useTodayPage';
 
 export const TodayPage = () => {
     const goHome = useGoHome();
-    const { status, reload, date, current, items, selectShow } = useTodayPage();
+    const { status, reload, current, index, items, theme, selectIndex, selectShow } =
+        useTodayPage();
+    const names = items.map((item) => item.name);
 
     return (
-        <main className={page.page}>
-            <div className={page.header}>
-                <PageHeader title={t('today.title')} onBack={goHome} />
-            </div>
-            <LoadState status={status} isEmpty={!current} onRetry={reload} />
-            {status === 'ready' && current && date && (
-                <>
-                    <PlayerPanel
-                        title={findShow(current.showId)?.name ?? ''}
-                        dateLabel={formatDateLabel(date)}
-                    />
-                    <TodayShowList items={items} onSelect={selectShow} />
-                </>
-            )}
-        </main>
+        <ThemeScope theme={theme}>
+            <main className={page.page}>
+                <div className={page.header}>
+                    <PageHeader title={t('today.title')} onBack={goHome} />
+                </div>
+                <LoadState status={status} isEmpty={!current} onRetry={reload} />
+                {status === 'ready' && current && (
+                    <>
+                        <ShowCarousel
+                            arts={items.map((item) => item.art)}
+                            index={index}
+                            onChange={selectIndex}
+                        >
+                            <PlayerPanel
+                                title={names[index] ?? ''}
+                                dateLabel={formatDateLabel(current.date)}
+                                art={theme.art}
+                                accessory={
+                                    <PageDots
+                                        keys={items.map((item) => item.key)}
+                                        labels={names}
+                                        index={index}
+                                        onSelect={selectIndex}
+                                    />
+                                }
+                            />
+                        </ShowCarousel>
+                        <TodayShowList items={items} onSelect={selectShow} />
+                    </>
+                )}
+            </main>
+        </ThemeScope>
     );
 };

@@ -8,7 +8,7 @@
 
 .gauge {
     position: relative;
-    width: min(300px, 78vw);
+    width: var(--player-disc-size);
     aspect-ratio: 300 / 316;
 }
 

@@ -1,12 +1,14 @@
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RadioIcon } from '../components/icons/icons';
+import { MiniPlayer } from '../components/MiniPlayer/MiniPlayer';
 import { ShowTile } from '../components/ShowTile/ShowTile';
+import { SHOW_THEMES } from '../config/showThemes';
 import { SHOWS } from '../config/shows';
 import { useRecordings } from '../data/useRecordings';
+import { useHomeArrival } from '../hooks/useHomeArrival';
+import { useMiniPlayer } from '../hooks/useMiniPlayer';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { t } from '../i18n/t';
-import { usePlayer } from '../player/usePlayer';
 import styles from './HomePage.module.css';
 import page from './Page.module.css';
 
@@ -16,12 +18,8 @@ export const HomePage = () => {
     const navigate = useNavigate();
     const { status } = useRecordings();
     const { startShow, startToday } = useStartPlayback();
-    const { stop } = usePlayer();
-
-    // 主頁冇 mini player：任何方式返主頁（包括系統返回手勢）都暫停並存進度
-    useEffect(() => {
-        stop();
-    }, [stop]);
+    const miniPlayer = useMiniPlayer();
+    useHomeArrival();
 
     return (
         <main className={`${page.page} ${styles.home}`}>
@@ -41,6 +39,7 @@ export const HomePage = () => {
                     <ShowTile
                         key={show.id}
                         label={show.name}
+                        art={SHOW_THEMES[show.id].art}
                         onClick={() => {
                             startShow(show.id);
                             navigate(`/show/${show.id}`);
@@ -56,6 +55,7 @@ export const HomePage = () => {
                     }}
                 />
             </nav>
+            {miniPlayer && <MiniPlayer {...miniPlayer} />}
         </main>
     );
 };

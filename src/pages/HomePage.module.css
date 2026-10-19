@@ -1,6 +1,8 @@
 .home {
     gap: var(--space-8);
     padding-top: calc(env(safe-area-inset-top) + 56px);
+    /* 留位畀底部 mini player */
+    padding-bottom: calc(env(safe-area-inset-bottom) + 120px);
 }
 
 .brand {
@@ -34,7 +36,7 @@
 .grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-4);
+    gap: var(--space-3);
     width: 100%;
     padding: 0 var(--space-4);
 }

@@ -1,55 +1,50 @@
 import { useEffect, useMemo } from 'react';
-import type { ShowStatus, TodayShowItem } from '../components/TodayShowList/TodayShowList';
-import { findShow } from '../config/shows';
+import { themeFor } from '../config/showThemes';
 import { useRecordings } from '../data/useRecordings';
+import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
-import { pickTodayDate, showsOnDate } from '../selectors/recordings';
+import { todayRecordings } from '../selectors/recordings';
 import { getWatchedUrls } from '../services/progressStore';
 import { hkToday } from '../utils/date';
+import { toTodayItems } from './todayItems';
 
-const statusOf = (isActive: boolean, isPlaying: boolean, isWatched: boolean): ShowStatus => {
-    if (isActive && isPlaying) {
-        return 'playing';
-    }
-    return isWatched ? 'watched' : 'unwatched';
+/** 入嚟時未播今日節目就自動播第一個 */
+const useAutoplayToday = (hasShows: boolean, isPlayingToday: boolean) => {
+    const { status } = useRecordings();
+    const { startToday } = useStartPlayback();
+    useEffect(() => {
+        if (status === 'ready' && hasShows && !isPlayingToday) {
+            startToday();
+        }
+    }, [status, hasShows, isPlayingToday, startToday]);
 };
 
 /** 今日節目頁嘅資料同動作 */
 export const useTodayPage = () => {
     const { status, recordings, reload } = useRecordings();
     const player = usePlayer();
-    const { startToday } = useStartPlayback();
 
     // 每次 render 重新計，app 開過香港午夜都會轉日
     const today = hkToday();
-    const date = useMemo(() => pickTodayDate(recordings, today), [recordings, today]);
-    const list = useMemo(() => (date ? showsOnDate(recordings, date) : []), [recordings, date]);
-    const playing = list.find((r) => r.url === player.recording?.url) ?? null;
-    const current = playing ?? list[0];
+    const list = useMemo(() => todayRecordings(recordings, today), [recordings, today]);
+    const playingIndex = list.findIndex((r) => r.url === player.recording?.url);
+    const index = Math.max(0, playingIndex);
+    const current = list[index];
+    useAutoplayToday(list.length > 0, playingIndex >= 0);
 
-    useEffect(() => {
-        if (status === 'ready' && list.length > 0 && !playing) {
-            startToday();
-        }
-    }, [status, list, playing, startToday]);
-
-    const { watchedRevision } = player;
     // 有集數變成聽過（watchedRevision 改變）先重新讀 localStorage
-    const watchedUrls = useMemo(() => getWatchedUrls(watchedRevision), [watchedRevision]);
-    const items: TodayShowItem[] = list.map((r) => ({
-        key: r.url,
-        name: findShow(r.showId)?.name ?? '',
-        active: r.url === current?.url,
-        status: statusOf(r.url === current?.url, player.isPlaying, watchedUrls.has(r.url)),
-    }));
+    const watchedUrls = useRefreshedOn(getWatchedUrls, [player.watchedRevision]);
+    const items = toTodayItems(list, index, player.isPlaying, watchedUrls);
 
-    const selectShow = (url: string) => {
-        const recording = list.find((r) => r.url === url);
+    const selectIndex = (i: number) => {
+        const recording = list[i];
         if (recording) {
             void player.load(recording, { autoplay: true });
         }
     };
+    const selectShow = (url: string) => selectIndex(list.findIndex((r) => r.url === url));
 
-    return { status, reload, date, current, items, selectShow };
+    const theme = themeFor(current?.showId);
+    return { status, reload, current, index, items, theme, selectIndex, selectShow };
 };
