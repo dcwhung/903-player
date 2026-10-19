@@ -403,6 +403,20 @@ describe('ShowCardStack during the fly-out', () => {
         expect(onInnerClick).toHaveBeenCalledTimes(1);
     });
 
+    it('should drop a drag that a keyboard flight interrupted, even with no pointer event mid-flight', () => {
+        const { group, onChange } = setup();
+
+        fireEvent.pointerDown(group, { clientX: 200, clientY: 100 });
+        fireEvent.pointerMove(group, { clientX: 50, clientY: 100 });
+        fireEvent.keyDown(group, { key: 'ArrowLeft' });
+        finishFly();
+        fireEvent.pointerUp(group, { clientX: 50, clientY: 100 });
+        finishFly();
+
+        expect(onChange).toHaveBeenCalledExactlyOnceWith(0);
+        expect(group).not.toHaveAttribute('data-phase');
+    });
+
     it('should not override a show picked elsewhere during the flight', () => {
         const onChange = vi.fn();
         const stack = (index: number) => (

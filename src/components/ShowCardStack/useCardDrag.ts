@@ -11,6 +11,8 @@ interface Gesture {
     /** 已經確認係橫拖（之前只係按住，未知橫定直） */
     isDragging: boolean;
     samples: DragSample[];
+    /** 按低時嘅 flightId：之後飛過（例如方向鍵）就唔再係同一個手勢 */
+    flight: number;
 }
 
 type GestureRef = RefObject<Gesture | null>;
@@ -36,8 +38,9 @@ const confirmHorizontal = (gesture: GestureRef, current: Gesture, event: StackPo
 const track = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion) => {
     const current = gesture.current;
     if (!current || current.pointerId !== event.pointerId) return null;
-    // 拖緊時方向鍵令張卡飛走咗：鍵盤要求優先，呢個手勢就作廢（放手唔再彈返 / 轉節目）
-    if (motion.isFlying()) {
+    // 拖緊時方向鍵令張卡飛走咗（飛緊或者已經落地）：鍵盤要求優先，呢個手勢就作廢
+    // （放手唔再彈返 / 轉節目）；就算飛行期間冇 pointer event 都認得出
+    if (motion.isFlying() || current.flight !== motion.flightId()) {
         gesture.current = null;
         return null;
     }
@@ -74,7 +77,8 @@ const begin = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion
     const isDragging = held !== null;
     // 接住彈緊嘅卡即刻算橫拖，confirmHorizontal 唔會行，要喺度 capture，否則喺外面放手會卡住
     if (isDragging) event.currentTarget.setPointerCapture?.(pointerId);
-    gesture.current = { pointerId, x, y, isDragging, samples: [sampleOf(event)] };
+    const samples = [sampleOf(event)];
+    gesture.current = { pointerId, x, y, isDragging, samples, flight: motion.flightId() };
 };
 
 /** 取消 / 冇咗 capture（例如喺視窗外放手）：拖緊就彈返，手勢作廢 */

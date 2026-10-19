@@ -21,6 +21,8 @@ interface MotionRefs {
     top: RefObject<HTMLDivElement | null>;
     timer: RefObject<number | undefined>;
     flying: RefObject<boolean>;
+    /** 每次 fly() 加一（連減少動畫即刻換都計），俾手勢認出中途有冇飛過 */
+    flight: RefObject<number>;
 }
 
 /** 清走拖動姿勢，再轉去指定 phase（null = 靜止） */
@@ -74,6 +76,7 @@ const grab = (refs: MotionRefs): number | null => {
 
 /** 飛走之後先轉節目；減少動畫就唔飛唔轉，即刻換 */
 const fly = (refs: MotionRefs, direction: SwipeDirection, onLanded: () => void) => {
+    refs.flight.current += 1;
     if (prefersReducedMotion()) {
         rest(refs);
         onLanded();
@@ -98,13 +101,15 @@ export const useCardMotion = () => {
     const topRef = useRef<HTMLDivElement>(null);
     const timer = useRef<number | undefined>(undefined);
     const flying = useRef(false);
+    const flight = useRef(0);
     useEffect(() => () => window.clearTimeout(timer.current), []);
     // 只喺事件 / timer 入面先組合 refs，render 期間唔讀 ref
-    const refs = (): MotionRefs => ({ stack: stackRef, top: topRef, timer, flying });
+    const refs = (): MotionRefs => ({ stack: stackRef, top: topRef, timer, flying, flight });
     return {
         stackRef,
         topRef,
         isFlying: () => flying.current,
+        flightId: () => flight.current,
         width: () => widthOf(refs()),
         drag: (dx: number) => drag(refs(), dx),
         grab: () => grab(refs()),
