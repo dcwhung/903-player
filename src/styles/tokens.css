@@ -82,5 +82,4 @@
         7px 7px 16px var(--theme-shadow-dark), -5px -5px 12px var(--theme-shadow-light);
     --shadow-disc: 0 20px 38px rgb(0 0 0 / 50%);
     --shadow-floating: 0 12px 30px rgb(0 0 0 / 55%);
-    --fade-edge: linear-gradient(0deg, var(--theme-bg), transparent);
 }
