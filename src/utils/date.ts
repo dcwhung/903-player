@@ -43,8 +43,7 @@ const isoDateToUtcMs = (isoDate: string): number => {
 };
 
 /** 星期幾：0 = 星期日 … 6 = 星期六（同 Date#getUTCDay 一致） */
-export const isoWeekday = (isoDate: string): number =>
-    new Date(isoDateToUtcMs(isoDate)).getUTCDay();
+export const weekdayOf = (isoDate: string): number => new Date(isoDateToUtcMs(isoDate)).getUTCDay();
 
 /** 兩個 YYYY-MM-DD 之間相差幾多日（to − from） */
 export const daysBetween = (from: string, to: string): number =>
@@ -55,7 +54,7 @@ const dateParts = (isoDate: string) => {
     return {
         day: String(day).padStart(DATE_PART_WIDTH, '0'),
         month: String(month).padStart(DATE_PART_WIDTH, '0'),
-        weekday: WEEKDAYS[isoWeekday(isoDate)] ?? '',
+        weekday: WEEKDAYS[weekdayOf(isoDate)] ?? '',
     };
 };
 

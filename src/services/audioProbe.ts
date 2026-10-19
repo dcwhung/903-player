@@ -1,7 +1,7 @@
 import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
 import { SHOWS, type ShowConfig } from '../config/shows';
 import type { Recording } from '../types/recording';
-import { daysBetween, hkTimeHHMM, hkToday, isoWeekday } from '../utils/date';
+import { daysBetween, hkTimeHHMM, hkToday, weekdayOf } from '../utils/date';
 import {
     dateFromShowDateKey,
     readProbeState,
@@ -139,7 +139,7 @@ const isRetryDue = (missedAt: number | undefined, date: string, now: Date): bool
     return now.getTime() - missedAt >= PROBE_RETRY_MS;
 };
 
-const airsOn = (show: ShowConfig, date: string): boolean => show.airDays.includes(isoWeekday(date));
+const airsOn = (show: ShowConfig, date: string): boolean => show.airDays.includes(weekdayOf(date));
 
 /** 今日嘅節目要開咪時間過咗先可能有錄音；HHMM 字串直接比較就得 */
 const hasStarted = (show: ShowConfig, date: string, now: Date): boolean =>

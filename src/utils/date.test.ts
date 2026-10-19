@@ -5,7 +5,7 @@ import {
     formatWeekday,
     hkTimeHHMM,
     hkToday,
-    isoWeekday,
+    weekdayOf,
 } from './date';
 
 describe('hkToday', () => {
@@ -51,11 +51,11 @@ describe('formatDayMonth / formatWeekday', () => {
     });
 });
 
-describe('isoWeekday', () => {
+describe('weekdayOf', () => {
     it('returns 0 for Sunday through 6 for Saturday', () => {
-        expect(isoWeekday('2026-10-18')).toBe(0);
-        expect(isoWeekday('2026-10-19')).toBe(1);
-        expect(isoWeekday('2026-10-17')).toBe(6);
+        expect(weekdayOf('2026-10-18')).toBe(0);
+        expect(weekdayOf('2026-10-19')).toBe(1);
+        expect(weekdayOf('2026-10-17')).toBe(6);
     });
 });
 
