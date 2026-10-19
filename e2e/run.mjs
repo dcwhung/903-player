@@ -53,7 +53,6 @@ const checkVersionClear = async (p, label) => {
     );
 };
 
-const EPISODE_ROW_PX = 56;
 const MIN_VISIBLE_ROWS = 2;
 const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
@@ -65,6 +64,10 @@ const TODAY_GAP = '20px';
 const SHOW_VIEWPORTS = [
     { width: 390, height: 844, swipe: true },
     { width: 320, height: 568, swipe: true },
+    // 常見手機（iPhone SE / 細 Android / 有工具列嘅 Safari）
+    { width: 390, height: 720 },
+    { width: 375, height: 667 },
+    { width: 390, height: 664 },
     // 橫向手機 / 矮視窗
     { width: 844, height: 390 },
     { width: 568, height: 320 },
@@ -93,11 +96,19 @@ const checkFixedShowPage = async (p, label, shot) => {
     }));
     log(page.scrollY === 0 && page.overflow <= 0, `${label}：成頁唔捲（${JSON.stringify(page)}）`);
     await checkControlsInView(p, label);
-    const rows = box.height / EPISODE_ROW_PX;
-    log(rows >= MIN_VISIBLE_ROWS, `${label}：清單見到約 ${rows.toFixed(1)} 行`);
+    const rows = await visibleRows(panel);
+    log(rows >= MIN_VISIBLE_ROWS, `${label}：清單見到約 ${rows.toFixed(2)} 行`);
     await logDiscSize(p, label, rows.toFixed(2));
     await p.screenshot({ path: `${OUT}/${shot}` });
 };
+
+/** 清單 panel 見到幾多行：扣走底部 padding（安全區），用第一行嘅真實高度計 */
+const visibleRows = (panel) =>
+    panel.evaluate((el) => {
+        const padding = parseFloat(getComputedStyle(el).paddingBottom);
+        const row = el.querySelector('li')?.getBoundingClientRect().height ?? 1;
+        return (el.clientHeight - padding) / row;
+    });
 
 /** 唱片闊度（同列表行數一齊印出嚟，方便對照） */
 const logDiscSize = async (p, label, rows) => {
