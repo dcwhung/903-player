@@ -1,9 +1,10 @@
 // 端對端測試：真 Chromium + vite preview + 假錄音列表 + 模擬 audio server（支援 Range）
+// 固定時鐘同 audio host 見 harness.mjs
 // 用法：npm run e2e（截圖輸出去 e2e/screenshots/）
 import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { silenceWav } from './silenceWav.mjs';
+import { newE2EContext } from './harness.mjs';
 import { runTouchChecks } from './touch.mjs';
 
 const DEFAULT_PORT = 4173;
@@ -23,8 +24,6 @@ const parsePort = (raw) => {
 const PORT = parsePort(process.env.E2E_PORT);
 const BASE = `http://localhost:${PORT}/903-player/`;
 const OUT = new URL('./screenshots', import.meta.url).pathname;
-const AUDIO_SECONDS = 600;
-const wav = silenceWav(AUDIO_SECONDS);
 mkdirSync(OUT, { recursive: true });
 
 // 預期色：刻意寫死做獨立對照（同下面 '#d4af5a' 一樣），唔係由 app 推返出嚟
@@ -573,28 +572,11 @@ const server = await startPreview();
 let browser;
 try {
     browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
-    const context = await browser.newContext({
+    const context = await newE2EContext(browser, {
         viewport: { width: 390, height: 844 },
         deviceScaleFactor: 2,
         colorScheme: 'dark',
     });
-    // 模擬真實 audio server 嘅 Range 支援（206 Partial Content），seek 先會成功
-    const serveAudio = (route) => {
-        const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? '');
-        const start = range ? Number(range[1]) : 0;
-        const end = range && range[2] ? Number(range[2]) : wav.length - 1;
-        route.fulfill({
-            status: range ? 206 : 200,
-            headers: {
-                'Content-Type': 'audio/wav',
-                'Accept-Ranges': 'bytes',
-                'Content-Length': String(end - start + 1),
-                ...(range ? { 'Content-Range': `bytes ${start}-${end}/${wav.length}` } : {}),
-            },
-            body: wav.subarray(start, end + 1),
-        });
-    };
-    await context.route('https://audio.hkfm903.live/**', serveAudio);
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -761,8 +743,7 @@ try {
     await checkVersionClear(page, '390×844');
     await page.screenshot({ path: `${OUT}/7-home-mini-player.png` });
 
-    const narrow = await browser.newContext({ viewport: { width: 320, height: 640 } });
-    await narrow.route('https://audio.hkfm903.live/**', serveAudio);
+    const narrow = await newE2EContext(browser, { viewport: { width: 320, height: 640 } });
     const np = await narrow.newPage();
     await np.goto(BASE);
     await np.waitForSelector('nav[aria-busy="false"]');
@@ -779,8 +760,7 @@ try {
     await narrow.close();
 
     // 主頁 mini player 循環掃：獨立 context，未載入任何節目
-    const loop = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    await loop.route('https://audio.hkfm903.live/**', serveAudio);
+    const loop = await newE2EContext(browser, { viewport: { width: 390, height: 844 } });
     const lpp = await loop.newPage();
     lpp.on('pageerror', (e) => errors.push(e.message));
     await lpp.goto(BASE);
@@ -789,12 +769,11 @@ try {
     await loop.close();
 
     // 細 iPhone（320×568）：今日節目卡疊靜止嘅樣
-    const small = await browser.newContext({
+    const small = await newE2EContext(browser, {
         viewport: { width: 320, height: 568 },
         deviceScaleFactor: 2,
         colorScheme: 'dark',
     });
-    await small.route('https://audio.hkfm903.live/**', serveAudio);
     const sp = await small.newPage();
     sp.on('pageerror', (e) => errors.push(e.message));
     await sp.goto(`${BASE}#/today`);
@@ -810,12 +789,11 @@ try {
 
     // 主頁頁頂橫額：常見手機闊度（細 iPhone、一般、Pro Max）
     for (const { width, height } of HOME_BANNER_VIEWPORTS) {
-        const ctx = await browser.newContext({
+        const ctx = await newE2EContext(browser, {
             viewport: { width, height },
             deviceScaleFactor: 2,
             colorScheme: 'dark',
         });
-        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
         const hp = await ctx.newPage();
         hp.on('pageerror', (e) => errors.push(e.message));
         await hp.goto(BASE);
@@ -827,8 +805,10 @@ try {
 
     // 節目頁：夠高就固定、集數清單自己捲；好矮（橫向手機）就成頁正常捲。badgirl 集數多過一個畫面
     for (const { width, height, swipe, homeFixed } of SHOW_VIEWPORTS) {
-        const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2 });
-        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
+        const ctx = await newE2EContext(browser, {
+            viewport: { width, height },
+            deviceScaleFactor: 2,
+        });
         const fp = await ctx.newPage();
         fp.on('pageerror', (e) => errors.push(e.message));
         await fp.goto(`${BASE}#/show/badgirl`);
@@ -867,9 +847,9 @@ try {
     console.log('');
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
-    await runTouchChecks({ browser, base: BASE, out: OUT, serveAudio, errors, log });
+    await runTouchChecks({ browser, base: BASE, out: OUT, errors, log });
 
-    const light = await browser.newContext({
+    const light = await newE2EContext(browser, {
         viewport: { width: 390, height: 844 },
         deviceScaleFactor: 2,
         colorScheme: 'light',
