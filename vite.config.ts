@@ -3,7 +3,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
 
 const BASE_PATH = '/903-player/';
-const THEME_COLOR = '#262A33';
+const THEME_COLOR = '#141414';
 
 export default defineConfig({
     base: BASE_PATH,
@@ -11,7 +11,7 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'autoUpdate',
-            includeAssets: ['icon.svg', 'apple-touch-icon.png'],
+            includeAssets: ['favicon.png', 'apple-touch-icon.png'],
             manifest: {
                 name: '903 Player',
                 short_name: '903 Player',
@@ -25,7 +25,7 @@ export default defineConfig({
                     { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
                     { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
                     {
-                        src: 'icon-512.png',
+                        src: 'icon-maskable-512.png',
                         sizes: '512x512',
                         type: 'image/png',
                         purpose: 'maskable',
@@ -33,7 +33,7 @@ export default defineConfig({
                 ],
             },
             workbox: {
-                globPatterns: ['**/*.{js,css,html,svg,png}'],
+                globPatterns: ['**/*.{js,css,html,svg,png,jpg}'],
                 navigateFallbackDenylist: [/^\/903-player\/data\//],
                 runtimeCaching: [
                     {
