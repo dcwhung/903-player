@@ -58,7 +58,7 @@ const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
 // 同 tokens.css 嘅 --player-disc-min 同 Page.module.css 嘅成頁捲斷點（max-height）一致
 const DISC_MIN_PX = 160;
-const SHORT_HEIGHT_PX = 559;
+const SHORT_HEIGHT_PX = 561;
 // 今日節目頁同主頁一直用 --space-5 間距
 const TODAY_GAP = '20px';
 const SHOW_VIEWPORTS = [
@@ -73,6 +73,9 @@ const SHOW_VIEWPORTS = [
     { width: 568, height: 320 },
     { width: 1280, height: 400 },
     { width: 390, height: 540 },
+    // 成頁捲斷點兩邊：560 成頁捲，562 固定（最細唱片仍然見到兩行）
+    { width: 390, height: 560 },
+    { width: 390, height: 562 },
 ];
 
 /** 節目頁固定：捲集數 panel 時 window 唔郁、控制掣仍然喺畫面，panel 自己嘅 scrollTop 有變 */
