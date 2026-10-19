@@ -36,6 +36,11 @@ const confirmHorizontal = (gesture: GestureRef, current: Gesture, event: StackPo
 const track = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion) => {
     const current = gesture.current;
     if (!current || current.pointerId !== event.pointerId) return null;
+    // 拖緊時方向鍵令張卡飛走咗：鍵盤要求優先，呢個手勢就作廢（放手唔再彈返 / 轉節目）
+    if (motion.isFlying()) {
+        gesture.current = null;
+        return null;
+    }
     if (!current.isDragging && !confirmHorizontal(gesture, current, event)) return null;
     const dx = event.clientX - current.x;
     current.samples = pushSample(current.samples, sampleOf(event));

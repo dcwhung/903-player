@@ -347,6 +347,22 @@ describe('ShowCardStack during the fly-out', () => {
         expect(onInnerClick).toHaveBeenCalledTimes(1);
     });
 
+    it('should let an arrow key pressed mid-drag take over and land, without jamming clicks', () => {
+        const { group, onChange, onInnerClick } = setup();
+
+        fireEvent.pointerDown(group, { clientX: 200, clientY: 100 });
+        fireEvent.pointerMove(group, { clientX: 180, clientY: 100 });
+        fireEvent.keyDown(group, { key: 'ArrowLeft' });
+        fireEvent.pointerMove(group, { clientX: 150, clientY: 100 });
+        fireEvent.pointerUp(group, { clientX: 150, clientY: 100 });
+        finishFly();
+
+        expect(group).not.toHaveAttribute('data-phase');
+        expect(onChange).toHaveBeenCalledExactlyOnceWith(0);
+        fireEvent.click(screen.getByRole('button', { name: '內容' }), { detail: 1 });
+        expect(onInnerClick).toHaveBeenCalledTimes(1);
+    });
+
     it('should not override a show picked elsewhere during the flight', () => {
         const onChange = vi.fn();
         const stack = (index: number) => (

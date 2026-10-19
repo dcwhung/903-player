@@ -47,7 +47,8 @@ const widthOf = (refs: MotionRefs): number => refs.top.current?.offsetWidth ?? 0
 /** 拖動中：卡跟手指、按比例傾斜；向左拖推後面嘅卡上前，向右拖上一張卡由左邊探入 */
 const drag = (refs: MotionRefs, dx: number) => {
     const el = refs.stack.current;
-    if (!el) return;
+    // 飛緊（例如拖緊時撳咗方向鍵）就唔郁：清走落地 timer 會令 flying 永遠卡住
+    if (!el || refs.flying.current) return;
     window.clearTimeout(refs.timer.current);
     const progress = dragProgress(dx, widthOf(refs));
     const rotate = prefersReducedMotion() ? 0 : cardRotation(dx);
@@ -107,6 +108,8 @@ export const useCardMotion = () => {
         drag: (dx: number) => drag(refs(), dx),
         grab: () => grab(refs()),
         springBack: () => {
+            // 飛緊就唔好清走落地 timer（否則 flying 永遠卡住）
+            if (flying.current) return;
             pose(refs(), 'settling');
             schedule(refs(), CARD_SPRING_MS, () => rest(refs()));
         },
