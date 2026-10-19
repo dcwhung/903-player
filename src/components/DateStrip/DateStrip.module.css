@@ -1,0 +1,126 @@
+/*
+ * 日子條：高度固定（--date-strip-height，tokens.css 嘅播放器高度計法有計埋），
+ * 超出嘅隔籬日期收埋；pan-y 等橫向手勢交畀 pointer events，唔揀字；可以 focus 嚟用方向鍵
+ */
+.strip {
+    position: relative;
+    align-self: stretch;
+    height: var(--date-strip-height);
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    touch-action: pan-y;
+    user-select: none;
+    cursor: grab;
+}
+
+/* overflow: hidden 會剪走外面嘅 focus 環，所以畫喺入面 */
+.strip:focus-visible,
+.side:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-title);
+    outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+/* 兩邊淡出，似日期由畫面外滑入嚟 */
+.strip::before,
+.strip::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    width: var(--date-strip-fade);
+    content: '';
+    pointer-events: none;
+}
+
+.strip::before {
+    left: 0;
+    background: linear-gradient(90deg, var(--color-bg), transparent);
+}
+
+.strip::after {
+    right: 0;
+    background: linear-gradient(-90deg, var(--color-bg), transparent);
+}
+
+/* 拖緊由 JS 直接寫 transform（transition: none），放手先用返呢個 transition */
+.track {
+    display: flex;
+    height: 100%;
+    transition: transform var(--duration-strip) var(--ease-strip);
+}
+
+/* 三格：兩邊各 25%、中間 50%（dateStrip.ts 嘅 SIDE_SHARE / CENTRE_SHARE 要同步） */
+.cell {
+    display: flex;
+    flex: 0 0 25%;
+    align-items: center;
+    min-width: 0;
+    padding: 0 var(--space-1);
+    overflow: hidden;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.side {
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+/* 箭咀同日期之間留少少位（唔用空格，收埋箭咀時唔會留低） */
+.chevron {
+    margin: 0 var(--space-1);
+}
+
+/*
+ * 窄過 340px（例如 320px）側格得約 80px，連箭咀會畀剪走：收埋箭咀、淡出收窄，
+ * 日期（「19/10（一）」）完整顯示；箭咀只係裝飾，撳嘅掣名照讀「新一集 / 舊一集」
+ */
+@media (max-width: 339px) {
+    .strip {
+        --date-strip-fade: var(--space-4);
+    }
+
+    .chevron {
+        display: none;
+    }
+}
+
+/* 隔籬日期靠向中間，太長就喺外邊（淡出嗰邊）剪走 */
+.newer {
+    justify-content: flex-end;
+}
+
+.older {
+    justify-content: flex-start;
+}
+
+/* 320px 闊都要一行放得落「現正播放：16/10（五）」 */
+.current {
+    flex-basis: 50%;
+    justify-content: center;
+    color: var(--color-text);
+    font-size: clamp(var(--font-size-sm), 4.2vw, var(--font-size-md));
+    font-weight: 500;
+}
+
+.label {
+    color: var(--color-accent);
+}
+
+/* 畀讀屏軟件讀（操作提示、轉集通知），畫面唔顯示 */
+.visuallyHidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .track {
+        transition: none;
+    }
+}

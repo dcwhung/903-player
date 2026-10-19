@@ -35,6 +35,28 @@ describe('PlayerPanel', () => {
         );
     });
 
+    it('keeps the show name under the disc without a date strip (今日節目頁)', () => {
+        renderWithProviders(<PlayerPanel title="公子會" dateLabel="17/10（六）" />);
+
+        expect(screen.getByRole('heading', { name: '公子會' })).toBeInTheDocument();
+        expect(screen.queryByRole('group')).not.toBeInTheDocument();
+    });
+
+    it('swaps the name for the date strip when it can step (節目頁)', () => {
+        renderWithProviders(
+            <PlayerPanel
+                title="公子會"
+                dateLabel="17/10（六）"
+                neighbours={{ older: '10/10（六）' }}
+                onStep={() => true}
+            />,
+        );
+
+        expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+        expect(screen.getByRole('group', { name: '17/10（六） 公子會' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '舊一集 10/10（六）' })).toBeInTheDocument();
+    });
+
     it('restarts from the beginning', async () => {
         const { audio } = renderWithProviders(<Harness />);
         await userEvent.click(screen.getByRole('button', { name: 'load' }));

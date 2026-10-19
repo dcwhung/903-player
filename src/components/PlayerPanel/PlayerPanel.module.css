@@ -3,7 +3,7 @@
     flex-shrink: 0;
     flex-direction: column;
     align-items: center;
-    /* 節目頁（Page.module.css .fixed）會傳入矮螢幕收窄嘅間距；今日節目頁用預設 */
+    /* 固定版面（Page.module.css .fixed：節目頁、今日節目頁）會傳入矮螢幕收窄嘅間距；冇就用預設 */
     gap: var(--player-panel-gap, var(--space-5));
     width: 100%;
 }
@@ -70,36 +70,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-1);
+    /* 今日節目卡（ShowCardStack .card）會傳入較窄嘅間距 */
+    gap: var(--player-titles-gap, var(--space-1));
     padding: 0 var(--space-4);
     text-align: center;
-}
-
-/*
- * 節目頁轉集區：拉闊到成個 panel 方便掃；pan-y 等橫向手勢交畀 pointer events，
- * 唔揀字（滑鼠拖都唔會反白）；可以 focus 嚟用方向鍵
- */
-.switcher {
-    position: relative;
-    align-self: stretch;
-    border-radius: var(--radius-md);
-    touch-action: pan-y;
-    user-select: none;
-}
-
-/* 畀讀屏軟件讀（操作提示、轉集通知），畫面唔顯示 */
-.visuallyHidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-}
-
-.switcher:focus-visible {
-    outline: var(--focus-ring-width) solid var(--color-title);
-    outline-offset: var(--focus-ring-width);
 }
 
 .date {

@@ -1,0 +1,28 @@
+/*
+ * h1 只係個殼：左右留白同主頁節目格一樣；inline-size container 令 .image 嘅 100cqi = 內容闊。
+ * line-height: 0 免 img 底下多咗 inline 行距。
+ */
+.banner {
+    container-type: inline-size;
+    width: 100%;
+    padding: 0 var(--home-gutter);
+    line-height: 0;
+}
+
+/*
+ * 高度 = 一格節目嘅高：兩欄格（扣走中間格距）嘅一欄闊 × 9 / 16（ShowTile 嘅比例）。
+ * cover 裁走上下；object-position 32% 令頂嘅紅針同下面「音樂・節目・一click 即聽」都喺畫面內
+ * （內容約喺原圖高 14%–73%，320–480px 闊都睇到）。
+ */
+.image {
+    display: block;
+    width: 100%;
+    /* 唔支援 cqi 嘅舊瀏覽器：用未扣格距嘅近似比例 */
+    aspect-ratio: calc(2 * var(--tile-aspect-w)) / var(--tile-aspect-h);
+    height: calc((100cqi - var(--home-tile-gap)) / 2 * var(--tile-aspect-h) / var(--tile-aspect-w));
+    object-fit: cover;
+    object-position: 50% 32%;
+    border-radius: var(--radius-tile);
+    /* 泥膠落影跟節目格 */
+    box-shadow: var(--shadow-clay-tile);
+}

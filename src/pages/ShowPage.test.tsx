@@ -38,6 +38,39 @@ describe('ShowPage', () => {
         expect(screen.getByRole('heading', { name: '公子會' })).toBeInTheDocument();
     });
 
+    it('puts the show name in the header instead of 正在播放 and under the disc', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+
+        const headings = screen.getAllByRole('heading', { level: 1 });
+        expect(headings).toHaveLength(1);
+        expect(headings[0]).toHaveTextContent('公子會');
+        expect(headings[0]?.closest('header')).not.toBeNull();
+        expect(screen.queryByText('正在播放')).not.toBeInTheDocument();
+    });
+
+    it('reads 現正播放 with the current date and shows both neighbour dates', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+        await userEvent.click(screen.getByRole('button', { name: /^播放 10\/10/ }));
+
+        const date = screen.getByText('10/10（六）');
+        expect(date.parentElement).toHaveTextContent('現正播放：10/10（六）');
+        expect(screen.getByRole('button', { name: '新一集 17/10（六）' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '舊一集 03/10（六）' })).toBeInTheDocument();
+    });
+
+    it('plays the newer episode when its date is tapped beside 現正播放', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+        await userEvent.click(screen.getByRole('button', { name: /^播放 03\/10/ }));
+
+        await userEvent.click(screen.getByRole('button', { name: '新一集 10/10（六）' }));
+
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[2]?.url));
+        expect(audio.play).toHaveBeenLastCalledWith();
+    });
+
     it('lists this show’s episodes newest first with their progress', async () => {
         saveProgress(RECORDINGS[1]?.url ?? '', 990, 1000);
         saveProgress(RECORDINGS[2]?.url ?? '', 600, 2400);

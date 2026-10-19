@@ -29,6 +29,14 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* 日子條轉集時轉一下；拖緊由 JS 設 transition: none 跟手指 */
+    transition: transform var(--duration-spin) var(--ease-strip);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .art {
+        transition: none;
+    }
 }
 
 /* 邊緣陰影，令節目圖似唱片 */

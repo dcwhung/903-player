@@ -21,40 +21,11 @@ main.home {
     padding-bottom: calc(env(safe-area-inset-bottom) + 120px);
 }
 
-.brand {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-}
-
-.appName {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--font-size-xs);
-    font-weight: 500;
-    letter-spacing: var(--letter-spacing-caps);
-    /* 細字喺漸變頂（最光嗰段），muted 色唔夠 4.5:1，所以用 text 色 */
-    color: var(--color-text);
-    text-transform: uppercase;
-}
-
-.appIcon {
-    color: var(--color-accent);
-}
-
-.title {
-    font-size: var(--font-size-xxl);
-    font-weight: 600;
-    color: var(--color-title);
-    text-shadow: var(--shadow-home-title);
-}
-
+/* 左右留白、格距同頁頂橫額共用（HomeBanner 用同一對 token 計高度） */
 .grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
+    gap: var(--home-tile-gap);
     width: 100%;
-    padding: 0 var(--space-4);
+    padding: 0 var(--home-gutter);
 }

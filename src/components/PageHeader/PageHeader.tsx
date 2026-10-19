@@ -5,9 +5,11 @@ import styles from './PageHeader.module.css';
 interface PageHeaderProps {
     title: string;
     onBack: () => void;
+    /** label：細階大楷標籤（預設）；title：節目頁用節目名做全頁標題（h1，太長就省略號） */
+    variant?: 'label' | 'title';
 }
 
-export const PageHeader = ({ title, onBack }: PageHeaderProps) => (
+export const PageHeader = ({ title, onBack, variant = 'label' }: PageHeaderProps) => (
     <header className={styles.header}>
         <button
             type="button"
@@ -17,7 +19,12 @@ export const PageHeader = ({ title, onBack }: PageHeaderProps) => (
         >
             <BackIcon />
         </button>
-        <span className={styles.title}>{title}</span>
+        {/* 冇節目名（例如搵唔到節目）就唔出空嘅 h1 */}
+        {variant === 'title' && title ? (
+            <h1 className={styles.showTitle}>{title}</h1>
+        ) : (
+            <span className={styles.title}>{title}</span>
+        )}
         <span aria-hidden="true" />
     </header>
 );

@@ -67,6 +67,41 @@ describe('MiniPlayer', () => {
         expect(p.onChange).toHaveBeenCalledWith(1);
     });
 
+    it('should wrap to the last today show when swiping right at the first show', () => {
+        const p = props({ index: 0 });
+        render(<MiniPlayer {...p} />);
+        const region = screen.getByRole('region');
+
+        fireEvent.pointerDown(region, { clientX: 100, clientY: 10 });
+        fireEvent.pointerUp(region, { clientX: 200, clientY: 12 });
+
+        expect(p.onChange).toHaveBeenCalledWith(2);
+    });
+
+    it('should wrap to the first today show when swiping left at the last show', () => {
+        const p = props({ index: 2 });
+        render(<MiniPlayer {...p} />);
+        const region = screen.getByRole('region');
+
+        fireEvent.pointerDown(region, { clientX: 200, clientY: 10 });
+        fireEvent.pointerUp(region, { clientX: 100, clientY: 12 });
+
+        expect(p.onChange).toHaveBeenCalledWith(0);
+    });
+
+    it('should do nothing when swiping with a single today show', () => {
+        const p = props({ labels: ['Bad Girl大過佬'], keys: ['/badgirl.aac'], index: 0 });
+        render(<MiniPlayer {...p} />);
+        const region = screen.getByRole('region');
+
+        fireEvent.pointerDown(region, { clientX: 200, clientY: 10 });
+        fireEvent.pointerUp(region, { clientX: 100, clientY: 12 });
+        fireEvent.pointerDown(region, { clientX: 100, clientY: 10 });
+        fireEvent.pointerUp(region, { clientX: 200, clientY: 12 });
+
+        expect(p.onChange).not.toHaveBeenCalled();
+    });
+
     it('does not open the show page when a swipe ends on the open button', () => {
         const p = props();
         render(<MiniPlayer {...p} />);
