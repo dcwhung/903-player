@@ -70,3 +70,21 @@ export const PlayIcon = ({ filled = true, ...props }: IconProps & { filled?: boo
         <path d="M7.5 4.8v14.4l11.5-7.2z" />
     </StrokeIcon>
 );
+
+/** 聲波 5 條：x 位置同高度（viewBox 24×24，跟 mockup 今日掣右下角） */
+const WAVE_BAR_XS = [2, 7, 12, 17, 22];
+const WAVE_BAR_HEIGHTS = [8, 16, 22, 12, 6];
+const WAVE_BAR_WIDTH = 2.5;
+const WAVE_CENTER_Y = 12;
+
+/** 裝飾用聲波（圓頭直條）；圓頭會凸出半條線闊，所以線段兩頭先扣返 */
+export const SoundWaveIcon = (props: IconProps) => (
+    <StrokeIcon strokeWidth={WAVE_BAR_WIDTH} {...props}>
+        {WAVE_BAR_XS.map((x, i) => {
+            const half = (WAVE_BAR_HEIGHTS[i] ?? 0) / 2 - WAVE_BAR_WIDTH / 2;
+            return (
+                <line key={x} x1={x} x2={x} y1={WAVE_CENTER_Y - half} y2={WAVE_CENTER_Y + half} />
+            );
+        })}
+    </StrokeIcon>
+);
