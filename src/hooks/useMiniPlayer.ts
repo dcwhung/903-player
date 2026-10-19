@@ -38,18 +38,28 @@ const useTodaySelection = () => {
     return { today, list, index, current: list[index], isLoaded, select };
 };
 
+/** 載入咗就用 player 即時時間，否則用 localStorage 存低嘅進度 */
+const useShownTime = (url: string | undefined, isLoaded: boolean) => {
+    const player = usePlayer();
+    // 未載入先要讀 localStorage；轉節目或者有集數變成聽過先再讀
+    const saved = useMemo(
+        () => (url && !isLoaded ? getProgress(url, player.watchedRevision) : undefined),
+        [url, isLoaded, player.watchedRevision],
+    );
+    return isLoaded
+        ? { position: player.currentTime, duration: player.duration }
+        : { position: saved?.position ?? 0, duration: saved?.duration ?? 0 };
+};
+
 /** 主頁 mini player：只播今日（冇就最近一日）嘅節目 */
 export const useMiniPlayer = (): MiniPlayerProps | null => {
     const player = usePlayer();
     const navigate = useNavigate();
     const { today, list, index, current, isLoaded, select } = useTodaySelection();
+    const { position, duration } = useShownTime(current?.url, isLoaded);
     if (!current) {
         return null;
     }
-
-    const saved = getProgress(current.url);
-    const position = isLoaded ? player.currentTime : (saved?.position ?? 0);
-    const duration = isLoaded ? player.duration : (saved?.duration ?? 0);
     const timeText = miniPlayerTimeText(position, duration);
 
     return {

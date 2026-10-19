@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
+import { saveProgress } from '../services/progressStore';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
 import { useMiniPlayer } from './useMiniPlayer';
@@ -72,6 +73,32 @@ describe('useMiniPlayer', () => {
         expect(result.current.mini?.showName).toBe('雲妮鍾情');
         expect(result.current.mini?.index).toBe(1);
         expect(audio.src).toBe('');
+    });
+
+    it('shows saved progress of a show that is not loaded, reading it once', async () => {
+        saveProgress(BADGIRL.url, 600, 2400);
+        const { result, rerender } = setup();
+        await ready(result);
+        const getItem = vi.spyOn(Storage.prototype, 'getItem');
+
+        rerender();
+        rerender();
+
+        expect(result.current.mini?.timeText).toBe('10:00 / 40:00');
+        expect(getItem).not.toHaveBeenCalled();
+        getItem.mockRestore();
+    });
+
+    it('does not read saved progress for the loaded show', async () => {
+        const { result, rerender } = setup();
+        await ready(result);
+        await act(() => result.current.player.load(BADGIRL));
+        const getItem = vi.spyOn(Storage.prototype, 'getItem');
+
+        rerender();
+
+        expect(getItem).not.toHaveBeenCalled();
+        getItem.mockRestore();
     });
 
     it('falls back to the latest day when nothing was recorded today', async () => {

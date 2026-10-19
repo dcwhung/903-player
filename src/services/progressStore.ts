@@ -43,7 +43,9 @@ const writeAll = (map: ProgressMap): void => {
 const reachedWatchedRatio = (position: number, duration: number): boolean =>
     Number.isFinite(duration) && duration > 0 && position / duration >= WATCHED_RATIO;
 
-export const getProgress = (url: string): Progress | undefined => readAll()[url];
+/** `_revision` 只用嚟做 useMemo 嘅 invalidation key */
+export const getProgress = (url: string, _revision?: number): Progress | undefined =>
+    readAll()[url];
 
 export const isWatched = (url: string): boolean => getProgress(url)?.watched ?? false;
 
