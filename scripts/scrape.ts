@@ -57,7 +57,10 @@ const settle = async <T, F>(task: () => Promise<T>, fallback: F, label: string):
     try {
         return await task();
     } catch (error) {
-        console.error(`[scrape] ${label}: ${(error as Error).message}`);
+        const message = (error as Error).message;
+        console.error(`[scrape] ${label}: ${message}`);
+        // console.error 喺 Actions 摘要睇唔到，所以另外出 warning annotation
+        annotate('warning', `${label}: ${message}`);
         return fallback;
     }
 };

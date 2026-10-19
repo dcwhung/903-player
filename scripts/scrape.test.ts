@@ -109,6 +109,28 @@ describe('scrapeShows', () => {
     });
 });
 
+describe('scrapeShows fetch failures', () => {
+    const lines = (): string[] => vi.mocked(console.log).mock.calls.map(([line]) => String(line));
+
+    it('annotates a failed show page as a warning', async () => {
+        await scrapeShows(sources());
+
+        expect(lines()).toContainEqual(expect.stringMatching(/^::warning::.+: timeout$/));
+    });
+
+    it('annotates a failed all-shows page as a warning', async () => {
+        await scrapeShows(
+            sources({
+                fetchAll: vi.fn(async () => {
+                    throw new Error('HTTP 500\nfor all');
+                }),
+            }),
+        );
+
+        expect(lines()).toContainEqual('::warning::all shows: HTTP 500%0Afor all');
+    });
+});
+
 describe('escapeWorkflowData', () => {
     it('escapes characters that would start a new workflow command', () => {
         expect(escapeWorkflowData('a%b\r\nc')).toBe('a%25b%0D%0Ac');
