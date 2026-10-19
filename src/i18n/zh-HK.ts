@@ -56,9 +56,9 @@ export const zhHK = {
         withTime: '{label} · {time}',
         position: '今日第 {index} 個節目，共 {total} 個',
     },
-    carousel: {
+    cardStack: {
         label: '今日節目，左右掃動轉節目',
-        roleDescription: '輪播',
+        roleDescription: '節目卡疊',
     },
     today: {
         title: '今日節目',

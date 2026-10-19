@@ -42,11 +42,27 @@
     --dot-size: 6px;
     --dot-size-active: 18px;
     --page-max-width: 480px;
-    /* 節目頁 / 今日節目頁主碟（連進度弧）嘅闊度；輪播兩邊碟要對齊佢 */
+    /* 節目頁 / 今日節目頁主碟（連進度弧）嘅闊度，兩頁一樣大 */
     --player-disc-size: min(300px, 78vw);
-    --carousel-peek-size: 152px;
-    /* 兩邊露出嘅碟有幾多收埋喺畫面外（佔碟闊比例） */
-    --carousel-peek-hidden: 0.73;
+
+    /* 今日節目卡疊（ShowCardStack）：每疊後一層向下移、縮細、變淡幾多（第一張後面嘅卡 scale 0.92） */
+    --card-stack-offset: 12px;
+    --card-stack-scale-step: 0.08;
+    --card-stack-fade-step: 0.35;
+    /* 卡上下留白（700px 高或以下收窄） */
+    --card-padding-block: var(--space-5);
+    /* 卡疊兩邊留白；好窄嘅畫面收窄（見下面 max-width: 339px） */
+    --card-stack-gutter: var(--space-4);
+    /* 飛走：移出幾遠（佔卡闊）、再轉幾多；拖動 / 飛走都以卡底中間做軸心 */
+    --card-fly-distance: 150%;
+    --card-fly-rotate: 30deg;
+    --card-pivot: 50% 100%;
+    /* 要同 cardStack.ts 嘅 CARD_FLY_MS / CARD_SPRING_MS 一致（scripts/cardStackTokens.test.ts 鎖住） */
+    --duration-card-fly: 280ms;
+    --duration-card-spring: 320ms;
+    /* 飛走帶住甩手嘅速度減速；彈返中間輕輕過頭再停 */
+    --ease-card-fly: cubic-bezier(0.2, 0.6, 0.4, 1);
+    --ease-card-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
     /* 主頁色調（跟 app icon）：漸變底、泥膠陰影、今日節目奶油色掣；文字顏色見 HOME_THEME */
     --home-bg-top: #4f749c;
@@ -68,17 +84,31 @@
  * 矮螢幕（例如 320×568）主碟按畫面高縮細，令固定唔捲嘅節目頁仍然見到兩行集數；
  * 夠高就維持 300px。今日節目頁共用同一個 token，兩頁大小一致。
  * 預留高度 = 頁頭 + 日期節目名 + 控制掣 + 間距 + 兩行集數；唔支援 dvh 就用返上面嘅值。
- * 最細唔會細過 --player-disc-min：再矮（≤ 561px 高）節目頁會改為成頁捲（Page.module.css）。
+ * 最細唔會細過 --player-disc-min：再矮（≤ 561px 高）兩頁都會改為成頁捲（Page.module.css）。
  */
 :root {
     --player-disc-min: 160px;
-    /* 節目頁（只限節目頁）嘅間距；700px 高或以下收窄，令固定版面多啲位畀集數清單 */
-    --show-page-gap: var(--space-5);
+    /* 固定版面（Page.module.css .fixed：節目頁、今日節目頁）嘅間距；700px 高或以下收窄，令固定版面多啲位畀清單 */
+    --fixed-page-gap: var(--space-5);
+}
+
+/*
+ * 好窄（< 340px，例如 320px）時 PlayerControls 一排掣（4 × 44px + 64px + 4 個 ~9.6px 間距 ≈ 278px）
+ * 塞入 16px 留白嘅卡（288px）只剩約 5px 貼住卡邊；收窄留白令卡闊返 304px，掣同卡邊有約 13px。
+ * 340px 或以上，掣按 vw 縮放後已經有 ≥ 12px。
+ */
+@media (max-width: 339px) {
+    :root {
+        --card-stack-gutter: var(--space-2);
+    }
 }
 
 @media (max-height: 700px) {
     :root {
-        --show-page-gap: var(--space-3);
+        --fixed-page-gap: var(--space-3);
+        /* 今日節目卡：唱片唔郁（同節目頁一樣大），收窄卡上下留白同疊卡位移，多啲位畀今日節目清單 */
+        --card-padding-block: var(--space-2);
+        --card-stack-offset: 8px;
     }
 }
 
@@ -98,7 +128,7 @@
          */
         --player-reserved-height: calc(
             env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 4 *
-                var(--show-page-gap) + 60px + 76px + 30px + 2 * 56px + var(--space-2) +
+                var(--fixed-page-gap) + 60px + 76px + 30px + 2 * 56px + var(--space-2) +
                 env(safe-area-inset-bottom)
         );
         /* 唱片 + 時間嗰一格嘅高 = 闊 × 316 / 300（PlayerPanel .gauge aspect-ratio） */
@@ -143,4 +173,6 @@
         7px 7px 16px var(--theme-shadow-dark), -5px -5px 12px var(--theme-shadow-light);
     --shadow-disc: 0 20px 38px rgb(0 0 0 / 50%);
     --shadow-floating: 0 12px 30px rgb(0 0 0 / 55%);
+    /* 今日節目卡：細細一圈軌道色描邊 + 浮起陰影，令疊喺後面嘅卡睇得出邊 */
+    --shadow-card: 0 0 0 1px var(--theme-track), 0 10px 26px rgb(0 0 0 / 45%);
 }

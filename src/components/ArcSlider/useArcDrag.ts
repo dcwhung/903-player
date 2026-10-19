@@ -11,7 +11,7 @@ const ratioFromPointer = (event: SvgPointerEvent): number => {
     return pointToRatio(x, y, CENTER);
 };
 
-/** 拖弧形唔好傳上去 carousel / mini player 嘅 swipe：先 stopPropagation 再處理 */
+/** 拖弧形唔好傳上去今日節目卡疊 / mini player 嘅 swipe：先 stopPropagation 再處理 */
 const contained =
     (handler: (event: SvgPointerEvent) => void) =>
     (event: SvgPointerEvent): void => {

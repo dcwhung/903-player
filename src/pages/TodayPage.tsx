@@ -1,7 +1,7 @@
 import { PageDots } from '../components/PageDots/PageDots';
 import { PageHeader } from '../components/PageHeader/PageHeader';
 import { PlayerPanel } from '../components/PlayerPanel/PlayerPanel';
-import { ShowCarousel } from '../components/ShowCarousel/ShowCarousel';
+import { ShowCardStack } from '../components/ShowCardStack/ShowCardStack';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { TodayShowList } from '../components/TodayShowList/TodayShowList';
 import { useGoHome } from '../hooks/useGoHome';
@@ -13,24 +13,20 @@ import { useTodayPage } from './useTodayPage';
 
 export const TodayPage = () => {
     const goHome = useGoHome();
-    const { status, reload, current, index, items, theme, selectIndex, selectShow } =
+    const { status, reload, current, index, items, cards, theme, selectIndex, selectShow } =
         useTodayPage();
     const names = items.map((item) => item.name);
 
     return (
         <ThemeScope theme={theme}>
-            <main className={page.page}>
+            <main className={`${page.page} ${page.fixed}`}>
                 <div className={page.header}>
                     <PageHeader title={t('today.title')} onBack={goHome} />
                 </div>
                 <LoadState status={status} isEmpty={!current} onRetry={reload} />
                 {status === 'ready' && current && (
                     <>
-                        <ShowCarousel
-                            arts={items.map((item) => item.art)}
-                            index={index}
-                            onChange={selectIndex}
-                        >
+                        <ShowCardStack cards={cards} index={index} onChange={selectIndex}>
                             <PlayerPanel
                                 title={names[index] ?? ''}
                                 dateLabel={formatDateLabel(current.date)}
@@ -44,7 +40,7 @@ export const TodayPage = () => {
                                     />
                                 }
                             />
-                        </ShowCarousel>
+                        </ShowCardStack>
                         <TodayShowList items={items} onSelect={selectShow} />
                     </>
                 )}

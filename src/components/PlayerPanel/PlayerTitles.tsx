@@ -56,7 +56,7 @@ const useSwitcher = (dateLabel: string, onStep: PlayerTitlesProps['onStep']) => 
     return { ids, zone, announcement };
 };
 
-/** 唱片下面嘅日期同節目名；節目頁用嚟做轉集區（跟今日節目輪播一樣用方向鍵代替 swipe） */
+/** 唱片下面嘅日期同節目名；節目頁用嚟做轉集區（跟今日節目卡疊一樣用方向鍵代替 swipe） */
 export const PlayerTitles = ({ title, dateLabel, accessory, onStep }: PlayerTitlesProps) => {
     const { ids, zone, announcement } = useSwitcher(dateLabel, onStep);
     return (
