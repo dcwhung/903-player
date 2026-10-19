@@ -1,5 +1,6 @@
 // 產生 preview 用嘅假錄音列表（真實 URL 格式）
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { E2E_NOW } from './harness.mjs';
 const [outFile] = process.argv.slice(2);
 const shows = [
     ['badgirl', 'Bad Girl大過佬', '1000', [1, 2, 3, 4, 5]],
@@ -30,6 +31,7 @@ for (
 mkdirSync(outFile.replace(/\/[^/]+$/, ''), { recursive: true });
 writeFileSync(
     outFile,
-    JSON.stringify({ generatedAt: new Date().toISOString(), recordings }, null, 2),
+    // 同瀏覽器固定時鐘一致，每次產生嘅檔案都一樣
+    JSON.stringify({ generatedAt: new Date(E2E_NOW).toISOString(), recordings }, null, 2),
 );
 console.log(`${recordings.length} recordings`);
