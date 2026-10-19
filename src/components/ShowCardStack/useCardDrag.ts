@@ -13,6 +13,8 @@ interface Gesture {
     samples: DragSample[];
     /** 按低時嘅 flightId：之後飛過（例如方向鍵）就唔再係同一個手勢 */
     flight: number;
+    /** 開始拖嗰陣張卡已經偏咗幾多 px（彈緊返中間時）；x 只係手指起點，兩樣分開記 */
+    offset: number;
 }
 
 type GestureRef = RefObject<Gesture | null>;
@@ -24,11 +26,18 @@ const sampleOf = (event: StackPointerEvent): DragSample => ({
 });
 
 /** 未確認橫拖就睇吓方向：直向放棄（交返畀瀏覽器捲頁），橫向就開始拖 */
-const confirmHorizontal = (gesture: GestureRef, current: Gesture, event: StackPointerEvent) => {
+const confirmHorizontal = (
+    gesture: GestureRef,
+    current: Gesture,
+    event: StackPointerEvent,
+    motion: CardMotion,
+) => {
     const intent = dragIntent(event.clientX - current.x, event.clientY - current.y);
     if (intent === 'vertical') gesture.current = null;
     if (intent !== 'horizontal') return false;
     current.isDragging = true;
+    // 近中間 tap 嗰陣冇捉住張卡（照彈緊）；確認橫拖先由張卡而家嘅位置接落去，唔會跳
+    current.offset = motion.settlingOffset();
     // 放手（pointerup）嗰下唔可以再 capture
     if (event.type === 'pointermove') event.currentTarget.setPointerCapture?.(event.pointerId);
     return true;
@@ -44,8 +53,8 @@ const track = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion
         gesture.current = null;
         return null;
     }
-    if (!current.isDragging && !confirmHorizontal(gesture, current, event)) return null;
-    const dx = event.clientX - current.x;
+    if (!current.isDragging && !confirmHorizontal(gesture, current, event, motion)) return null;
+    const dx = event.clientX - current.x + current.offset;
     current.samples = pushSample(current.samples, sampleOf(event));
     motion.drag(dx);
     return dx;
@@ -77,12 +86,13 @@ const begin = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion
     if (motion.isFlying() || gesture.current) return;
     const held = isOnPageDot(event.target) ? null : motion.grab();
     const { pointerId, clientX, clientY: y } = event;
-    const x = clientX - (held ?? 0);
     const isDragging = held !== null;
     // 接住彈緊嘅卡即刻算橫拖，confirmHorizontal 唔會行，要喺度 capture，否則喺外面放手會卡住
     if (isDragging) event.currentTarget.setPointerCapture?.(pointerId);
     const samples = [sampleOf(event)];
-    gesture.current = { pointerId, x, y, isDragging, samples, flight: motion.flightId() };
+    const flight = motion.flightId();
+    const offset = held ?? 0;
+    gesture.current = { pointerId, x: clientX, y, isDragging, samples, flight, offset };
 };
 
 /** 取消 / 冇咗 capture（例如喺視窗外放手）：拖緊就彈返，手勢作廢 */

@@ -262,6 +262,20 @@ describe('ShowCardStack', () => {
         expect(group).toHaveAttribute('data-phase', 'settling');
     });
 
+    it('should carry on from the card offset when a near-centre tap during spring-back becomes a drag', () => {
+        const { group } = setup();
+        const top = screen.getByRole('button', { name: '內容' }).parentElement;
+
+        drag(group, -40);
+        top?.style.setProperty('transform', 'matrix(1, 0, 0, 1, -5, 0)');
+        fireEvent.pointerDown(group, { clientX: 200, clientY: 100 });
+        expect(group).toHaveAttribute('data-phase', 'settling');
+        fireEvent.pointerMove(group, { clientX: 185, clientY: 100 });
+
+        // 手指郁咗 -15px，張卡由佢而家 -5px 嘅位置接落去
+        expect(cardDx(group)).toBe('-20px');
+    });
+
     it('should spring back when the pointer is cancelled', () => {
         const { group, onChange } = setup();
 

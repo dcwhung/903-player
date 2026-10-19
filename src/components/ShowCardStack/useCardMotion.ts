@@ -61,14 +61,19 @@ const drag = (refs: MotionRefs, dx: number) => {
     el.style.setProperty('--card-return', String(dx > 0 ? progress * RETURN_PEEK_RATIO : 0));
 };
 
+/** 彈緊返中間時張卡而家嘅橫向位移（computed transform）；唔係彈緊就係 0 */
+const settlingOffset = (refs: MotionRefs): number => {
+    const top = refs.top.current;
+    if (!top || refs.stack.current?.dataset.phase !== 'settling') return 0;
+    return translateXOf(getComputedStyle(top).transform);
+};
+
 /**
  * 彈返途中捉住張卡：停喺佢而家嘅位置（computed transform）繼續拖，唔會跳返中間；
  * 返回而家嘅橫向位移。唔係彈緊，或者已經差唔多返到中間（未過橫拖門檻，當係 tap）就係 null，照彈
  */
 const grab = (refs: MotionRefs): number | null => {
-    const top = refs.top.current;
-    if (!top || refs.stack.current?.dataset.phase !== 'settling') return null;
-    const dx = translateXOf(getComputedStyle(top).transform);
+    const dx = settlingOffset(refs);
     if (Math.abs(dx) < DRAG_INTENT_PX) return null;
     drag(refs, dx);
     return dx;
@@ -113,6 +118,7 @@ export const useCardMotion = () => {
         width: () => widthOf(refs()),
         drag: (dx: number) => drag(refs(), dx),
         grab: () => grab(refs()),
+        settlingOffset: () => settlingOffset(refs()),
         springBack: () => {
             // 飛緊就唔好清走落地 timer（否則 flying 永遠卡住）
             if (flying.current) return;
