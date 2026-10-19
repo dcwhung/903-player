@@ -50,6 +50,31 @@ describe('MiniPlayer', () => {
         expect(p.onChange).toHaveBeenCalledWith(1);
     });
 
+    it('does not open the show page when a swipe ends on the open button', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+        const open = screen.getByRole('button', { name: '開啟 Bad Girl大過佬 節目頁' });
+
+        fireEvent.pointerDown(open, { clientX: 100, clientY: 10 });
+        fireEvent.pointerUp(open, { clientX: 220, clientY: 10 });
+        fireEvent.click(open);
+
+        expect(p.onChange).toHaveBeenCalledWith(1);
+        expect(p.onOpen).not.toHaveBeenCalled();
+    });
+
+    it('still opens the show page on a plain tap', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+        const open = screen.getByRole('button', { name: '開啟 Bad Girl大過佬 節目頁' });
+
+        fireEvent.pointerDown(open, { clientX: 100, clientY: 10 });
+        fireEvent.pointerUp(open, { clientX: 102, clientY: 10 });
+        fireEvent.click(open);
+
+        expect(p.onOpen).toHaveBeenCalledTimes(1);
+    });
+
     it('shows a play button while paused', () => {
         render(<MiniPlayer {...props({ isPlaying: false })} />);
 

@@ -5,12 +5,20 @@ const ARTS = ['/a.jpg', '/b.jpg', '/c.jpg'];
 
 const setup = (index = 1) => {
     const onChange = vi.fn();
+    const onInnerClick = vi.fn();
     render(
         <ShowCarousel arts={ARTS} index={index} onChange={onChange}>
-            <button type="button">內容</button>
+            <button type="button" onClick={onInnerClick}>
+                內容
+            </button>
         </ShowCarousel>,
     );
-    return { group: screen.getByRole('group', { name: '今日節目，左右掃動轉節目' }), onChange };
+    return {
+        group: screen.getByRole('group', { name: '今日節目，左右掃動轉節目' }),
+        inner: screen.getByRole('button', { name: '內容' }),
+        onChange,
+        onInnerClick,
+    };
 };
 
 describe('ShowCarousel', () => {
@@ -53,6 +61,30 @@ describe('ShowCarousel', () => {
         fireEvent.pointerUp(group, { clientX: 40, clientY: 300 });
 
         expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('swallows the click that follows a swipe over an inner button', () => {
+        const { inner, onChange, onInnerClick } = setup();
+
+        fireEvent.pointerDown(inner, { clientX: 300, clientY: 100 });
+        fireEvent.pointerUp(inner, { clientX: 150, clientY: 100 });
+        fireEvent.click(inner);
+
+        expect(onChange).toHaveBeenCalledWith(2);
+        expect(onInnerClick).not.toHaveBeenCalled();
+    });
+
+    it('lets a plain click on an inner button through, also right after a swipe', () => {
+        const { inner, onInnerClick } = setup();
+
+        fireEvent.pointerDown(inner, { clientX: 300, clientY: 100 });
+        fireEvent.pointerUp(inner, { clientX: 150, clientY: 100 });
+        fireEvent.click(inner);
+        fireEvent.pointerDown(inner, { clientX: 100, clientY: 100 });
+        fireEvent.pointerUp(inner, { clientX: 101, clientY: 100 });
+        fireEvent.click(inner);
+
+        expect(onInnerClick).toHaveBeenCalledTimes(1);
     });
 
     it('supports the arrow keys', () => {
