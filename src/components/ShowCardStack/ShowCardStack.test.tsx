@@ -387,7 +387,10 @@ describe('ShowCardStack', () => {
 
 describe('ShowCardStack during the fly-out', () => {
     beforeEach(() => vi.useFakeTimers());
-    afterEach(() => vi.useRealTimers());
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+    });
 
     it('should ignore a second drag made during the flight', () => {
         const { group, onChange } = setup();
@@ -472,6 +475,24 @@ describe('ShowCardStack during the fly-out', () => {
         finishFly();
         fireEvent.pointerUp(group, { clientX: 50, clientY: 100 });
         finishFly();
+
+        expect(onChange).toHaveBeenCalledExactlyOnceWith(0);
+        expect(group).not.toHaveAttribute('data-phase');
+    });
+
+    it('should drop a drag that an instant reduced-motion swap interrupted', () => {
+        // 減少動畫：方向鍵即刻換、從來唔會 isFlying，淨係靠 flightId 認出手勢已經作廢
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn((query: string) => ({ matches: query.includes('reduce'), media: query })),
+        );
+        const { group, onChange } = setup();
+
+        fireEvent.pointerDown(group, { clientX: 200, clientY: 100 });
+        fireEvent.pointerMove(group, { clientX: 50, clientY: 100 });
+        fireEvent.keyDown(group, { key: 'ArrowLeft' });
+        fireEvent.pointerUp(group, { clientX: 50, clientY: 100 });
+        act(() => vi.advanceTimersByTime(CARD_SPRING_MS));
 
         expect(onChange).toHaveBeenCalledExactlyOnceWith(0);
         expect(group).not.toHaveAttribute('data-phase');
