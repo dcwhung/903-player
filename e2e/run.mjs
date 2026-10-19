@@ -73,6 +73,12 @@ const checkVersionClear = async (p, label) => {
 };
 
 const MIN_VISIBLE_ROWS = 2;
+// 同 tokens.css 嘅 --player-max-share 一致：唱片連弧 → 日子條 → 控制掣最多佔畫面高六成
+const PLAYER_MAX_SHARE = 0.6;
+const STRIP_DRAG_PX = 60;
+const STRIP = '[aria-roledescription="轉集"]';
+/** 每個節目頁尺寸量到嘅播放器高度比例、唱片闊度、清單行數（最尾印成表） */
+const metrics = [];
 const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
 // 同 tokens.css 嘅 --player-disc-min 同 Page.module.css 嘅成頁捲斷點（max-height）一致
@@ -81,8 +87,8 @@ const SHORT_HEIGHT_PX = 561;
 // 今日節目頁同主頁一直用 --space-5 間距
 const TODAY_GAP = '20px';
 const SHOW_VIEWPORTS = [
-    { width: 390, height: 844, swipe: true },
-    { width: 320, height: 568, swipe: true },
+    { width: 390, height: 844, swipe: true, homeFixed: true },
+    { width: 320, height: 568, swipe: true, homeFixed: true },
     // 常見手機（iPhone SE / 細 Android / 有工具列嘅 Safari）
     { width: 390, height: 720 },
     { width: 375, height: 667 },
@@ -121,7 +127,26 @@ const checkFixedShowPage = async (p, label, shot) => {
     const rows = await visibleRows(panel);
     log(rows >= MIN_VISIBLE_ROWS, `${label}：清單見到約 ${rows.toFixed(2)} 行`);
     await logDiscSize(p, label, rows.toFixed(2));
+    const share = await playerShare(p);
+    log(
+        share <= PLAYER_MAX_SHARE + 0.001,
+        `${label}：播放器佔畫面高 ${(share * 100).toFixed(1)}%（≤ ${PLAYER_MAX_SHARE * 100}%）`,
+    );
+    await recordMetrics(p, label, rows.toFixed(2), share);
     await p.screenshot({ path: `${OUT}/${shot}` });
+};
+
+/** 播放器（PlayerPanel：唱片連弧 → 日子條 → 控制掣）佔畫面高幾多 */
+const playerShare = (p) =>
+    p.evaluate(
+        () =>
+            document.querySelector('[class*="panel"]').getBoundingClientRect().height /
+            window.innerHeight,
+    );
+
+const recordMetrics = async (p, label, rows, share) => {
+    const disc = (await p.getByRole('slider', { name: '播放進度' }).boundingBox()).width;
+    metrics.push({ label, share: `${(share * 100).toFixed(1)}%`, disc: disc.toFixed(0), rows });
 };
 
 /** 清單 panel 見到幾多行：扣走底部 padding（安全區），用第一行嘅真實高度計 */
@@ -159,6 +184,7 @@ const checkScrollingShowPage = async (p, label, shot) => {
     const last = p.getByRole('region', { name: '集數' }).locator('li button').last();
     await last.scrollIntoViewIfNeeded();
     log(await last.isVisible(), `${label}：捲到最尾一集`);
+    await recordMetrics(p, label, '全部（成頁捲）', await playerShare(p));
     await p.screenshot({ path: `${OUT}/${shot}` });
 };
 
@@ -193,15 +219,25 @@ const checkDiscMatchesToday = async (p, label) => {
     );
 };
 
-/** 喺唱片下面嘅日期 / 節目名區向左掃 → 播放中轉去下一行（舊一集） */
-const checkSwipeToOlder = async (p) => {
+/** 拖緊日子條：成條跟住手指郁（track 有 translateX），可以順便影一張拖緊嘅截圖 */
+const checkStripFollows = async (p, x, y, shot) => {
+    await p.mouse.move(x - STRIP_DRAG_PX, y + 2, { steps: 4 });
+    const transform = await p.locator(STRIP).evaluate((el) => el.firstElementChild.style.transform);
+    log(/translateX\(-\d/.test(transform), `拖緊日子條成條跟住郁：${transform}`);
+    if (shot) await p.screenshot({ path: `${OUT}/${shot}` });
+};
+
+/** 喺唱片下面嘅日子條向左掃 → 播放中轉去下一行（舊一集） */
+const checkSwipeToOlder = async (p, dragShot) => {
     const rows = p.getByRole('region', { name: '集數' }).locator('li button');
     const labels = await rows.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
     const from = labels.findIndex((l) => l.includes('播放中'));
-    const zone = await p.locator('[aria-roledescription="轉集"]').boundingBox();
+    const zone = await p.locator(STRIP).boundingBox();
     const y = zone.y + zone.height / 2;
-    await p.mouse.move(zone.x + zone.width / 2 + SWIPE_FROM_PX / 2, y);
+    const x = zone.x + zone.width / 2 + SWIPE_FROM_PX / 2;
+    await p.mouse.move(x, y);
     await p.mouse.down();
+    await checkStripFollows(p, x, y, dragShot);
     await p.mouse.move(zone.x + zone.width / 2 - SWIPE_FROM_PX / 2, y + 4, { steps: 6 });
     await p.mouse.up();
     await p.waitForTimeout(800);
@@ -213,6 +249,34 @@ const checkSwipeToOlder = async (p) => {
     );
     const playing = await p.evaluate(() => navigator.mediaSession.playbackState);
     log(playing === 'playing', `掃完即刻播：${playing}`);
+};
+
+/** 節目頁頁頭係節目名（唔再係「正在播放」），日子條中間讀「現正播放：日期」 */
+const checkShowHeader = async (p, name, label) => {
+    const heading = await p.locator('header h1').textContent();
+    const stale = await p.getByText('正在播放', { exact: true }).count();
+    log(heading === name && stale === 0, `${label}：頁頭係節目名「${heading}」`);
+    const line = await p.locator(STRIP).evaluate((el) => {
+        const dateId = el.getAttribute('aria-labelledby').split(' ')[0];
+        return document.getElementById(dateId).parentElement.textContent;
+    });
+    log(/^現正播放：\d{2}\/\d{2}（.）$/.test(line), `${label}：日子條讀「${line}」`);
+};
+
+/** 主頁固定：喺版面上面捲都唔郁，版本號仍然喺 mini player 上面 */
+const checkFixedHome = async (p, label) => {
+    await p.mouse.move(p.viewportSize().width / 2, p.viewportSize().height / 3);
+    await p.mouse.wheel(0, WHEEL_PX);
+    await p.waitForTimeout(300);
+    const page = await p.evaluate(() => ({
+        scrollY: window.scrollY,
+        overflow: document.documentElement.scrollHeight - window.innerHeight,
+    }));
+    log(
+        page.scrollY === 0 && page.overflow <= 0,
+        `${label}：主頁成頁唔捲（${JSON.stringify(page)}）`,
+    );
+    await checkVersionClear(p, label);
 };
 
 /** Android 工具列 / PWA 狀態列色（<meta name="theme-color">）要跟頁面色調；轉頁後等 React commit 先讀 */
@@ -277,6 +341,7 @@ try {
     );
     log(cols === 2, `主頁每行 ${cols} 粒`);
     await checkThemeColor(page, HOME_TOP, '主頁');
+    await checkFixedHome(page, '390×844 主頁');
 
     const mini = page.getByRole('region', { name: '正在播放（今日節目）' });
     log(
@@ -286,6 +351,7 @@ try {
     await page.getByRole('button', { name: '公子會', exact: true }).click();
     await page.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
     log(page.url().endsWith('#/show/gongzi'), `轉到節目頁並自動播放：${page.url()}`);
+    await checkShowHeader(page, '公子會', '公子會節目頁');
     const currentEpisode = () =>
         page.locator('button[aria-current="true"]').first().getAttribute('aria-label');
     const current = await currentEpisode();
@@ -438,7 +504,7 @@ try {
     await narrow.close();
 
     // 節目頁：夠高就固定、集數清單自己捲；好矮（橫向手機）就成頁正常捲。badgirl 集數多過一個畫面
-    for (const { width, height, swipe } of SHOW_VIEWPORTS) {
+    for (const { width, height, swipe, homeFixed } of SHOW_VIEWPORTS) {
         const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2 });
         await ctx.route('https://audio.hkfm903.live/**', serveAudio);
         const fp = await ctx.newPage();
@@ -448,12 +514,22 @@ try {
         await fp.waitForTimeout(800);
         const label = `${width}×${height} 節目頁`;
         const shot = `show-${width}x${height}.png`;
-        if (swipe) await checkSwipeToOlder(fp);
+        await checkShowHeader(fp, 'Bad Girl大過佬', label);
+        if (swipe) await checkSwipeToOlder(fp, width === 390 ? 'show-strip-dragging.png' : null);
         if (height > SHORT_HEIGHT_PX) await checkFixedShowPage(fp, label, shot);
         else await checkScrollingShowPage(fp, label, shot);
         await checkDiscMatchesToday(fp, label);
+        if (homeFixed) {
+            await fp.goto(BASE);
+            await fp.waitForSelector('nav[aria-busy="false"]');
+            await checkFixedHome(fp, `${width}×${height} 主頁`);
+            await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
+        }
         await ctx.close();
     }
+    console.log('\n節目頁尺寸｜播放器佔高｜唱片｜清單行數');
+    for (const m of metrics) console.log(`${m.label}｜${m.share}｜${m.disc}px｜${m.rows}`);
+    console.log('');
 
     const light = await browser.newContext({
         viewport: { width: 390, height: 844 },
