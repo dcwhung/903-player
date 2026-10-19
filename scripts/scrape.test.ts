@@ -30,6 +30,14 @@ describe('scrapeShows', () => {
 describe('buildFeed', () => {
     const fallback = [rec('gongzi', '2026-10-10'), rec('wanni', '2026-10-16')];
 
+    it('drops duplicate recordings', () => {
+        const fresh = new Map<ShowId, Recording[] | null>([
+            ['gongzi', [rec('gongzi', '2026-10-17'), rec('gongzi', '2026-10-17')]],
+        ]);
+
+        expect(buildFeed(fresh, []).recordings).toEqual([rec('gongzi', '2026-10-17')]);
+    });
+
     it('uses fresh data and falls back per show when scraping failed', () => {
         const fresh = new Map<ShowId, Recording[] | null>([
             ['gongzi', [rec('gongzi', '2026-10-17')]],

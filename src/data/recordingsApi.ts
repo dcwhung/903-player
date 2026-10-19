@@ -1,6 +1,6 @@
 import { RECORDINGS_DATA_PATH } from '../config/constants';
 import type { Recording } from '../types/recording';
-import { isRecording } from './recordingValidation';
+import { isRecording, uniqueByUrl } from './recordingValidation';
 
 export const fetchRecordings = async (fetchImpl: typeof fetch = fetch): Promise<Recording[]> => {
     const response = await fetchImpl(`${import.meta.env.BASE_URL}${RECORDINGS_DATA_PATH}`, {
@@ -13,5 +13,5 @@ export const fetchRecordings = async (fetchImpl: typeof fetch = fetch): Promise<
     if (!Array.isArray(payload.recordings)) {
         throw new Error('Invalid recordings payload');
     }
-    return payload.recordings.filter(isRecording);
+    return uniqueByUrl(payload.recordings.filter(isRecording));
 };

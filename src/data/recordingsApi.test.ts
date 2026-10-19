@@ -34,6 +34,12 @@ describe('fetchRecordings', () => {
         await expect(fetchRecordings(fetchMock)).resolves.toEqual([VALID]);
     });
 
+    it('drops duplicate urls', async () => {
+        await expect(fetchRecordings(respond({ recordings: [VALID, VALID] }))).resolves.toEqual([
+            VALID,
+        ]);
+    });
+
     it('rejects on HTTP errors', async () => {
         await expect(fetchRecordings(respond({}, false))).rejects.toThrow();
     });

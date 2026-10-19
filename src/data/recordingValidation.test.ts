@@ -1,4 +1,4 @@
-import { hasAllowedAudioOrigin, isRecording } from './recordingValidation';
+import { hasAllowedAudioOrigin, isRecording, uniqueByUrl } from './recordingValidation';
 
 const VALID = {
     showId: 'gongzi',
@@ -20,10 +20,23 @@ describe('isRecording', () => {
         ['valid', VALID, true],
         ['unknown show', { ...VALID, showId: 'x' }, false],
         ['bad date', { ...VALID, date: '17/10/2026' }, false],
+        ['impossible date', { ...VALID, date: '2026-13-99' }, false],
+        ['impossible time', { ...VALID, time: '2599' }, false],
         ['bad time', { ...VALID, time: '23:08' }, false],
         ['foreign url', { ...VALID, url: 'https://evil.example.com/a.aac' }, false],
         ['null', null, false],
     ])('%s', (_, value, expected) => {
         expect(isRecording(value)).toBe(expected);
+    });
+});
+
+describe('uniqueByUrl', () => {
+    it('keeps the first recording for each url', () => {
+        const other = { ...VALID, url: 'https://audio.hkfm903.live/b.aac' };
+
+        expect(uniqueByUrl([VALID, other, { ...VALID, time: '2300' }] as never)).toEqual([
+            VALID,
+            other,
+        ]);
     });
 });

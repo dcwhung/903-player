@@ -1,5 +1,5 @@
 import { load } from 'cheerio';
-import { hasAllowedAudioOrigin } from '../src/data/recordingValidation';
+import { hasAllowedAudioOrigin, isRecording } from '../src/data/recordingValidation';
 import type { Recording, ShowId } from '../src/types/recording';
 
 /** 檔名格式：20261017_2308_公子會.aac */
@@ -23,5 +23,5 @@ export const parseRecordings = (html: string, showId: ShowId): Recording[] => {
             const url = $(card).find('audio source').attr('src') ?? '';
             return toRecording(title, url, showId);
         })
-        .filter((recording): recording is Recording => recording !== null);
+        .filter(isRecording);
 };

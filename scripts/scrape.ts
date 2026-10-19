@@ -1,5 +1,5 @@
 import { SHOWS } from '../src/config/shows';
-import { isRecording } from '../src/data/recordingValidation';
+import { isRecording, uniqueByUrl } from '../src/data/recordingValidation';
 import type { Recording, RecordingsFeed, ShowId } from '../src/types/recording';
 import { parseRecordings } from './parseRecordings';
 
@@ -47,8 +47,8 @@ export const buildFeed = (
     now: Date = new Date(),
 ): RecordingsFeed => ({
     generatedAt: now.toISOString(),
-    recordings: SHOWS.flatMap(
-        (show) => fresh.get(show.id) ?? fallback.filter((r) => r.showId === show.id),
+    recordings: uniqueByUrl(
+        SHOWS.flatMap((show) => fresh.get(show.id) ?? fallback.filter((r) => r.showId === show.id)),
     ),
 });
 
