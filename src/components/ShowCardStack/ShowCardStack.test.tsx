@@ -270,6 +270,64 @@ describe('ShowCardStack during the fly-out', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
 
+    it('should ignore a second drag made during the flight', () => {
+        const { group, onChange } = setup();
+
+        drag(group, -150);
+        drag(group, 150);
+        expect(group).toHaveAttribute('data-phase', 'fly-next');
+        finishFly();
+        finishFly();
+
+        expect(onChange).toHaveBeenCalledExactlyOnceWith(2);
+    });
+
+    it('should ignore an arrow key pressed during the flight', () => {
+        const { group, onChange } = setup();
+
+        fireEvent.keyDown(group, { key: 'ArrowRight' });
+        fireEvent.keyDown(group, { key: 'ArrowLeft' });
+        finishFly();
+        finishFly();
+
+        expect(onChange).toHaveBeenCalledExactlyOnceWith(2);
+    });
+
+    it('should swallow a dot tap made during the flight', () => {
+        const onSelect = vi.fn();
+        const { group, onChange } = setup(
+            1,
+            CARDS,
+            <PageDots
+                keys={['a', 'b', 'c']}
+                labels={['甲', '乙', '丙']}
+                index={1}
+                onSelect={onSelect}
+            />,
+        );
+
+        // 用方向鍵起飛：唔係拖動，拖完食 click 嗰個保護唔會幫手
+        fireEvent.keyDown(group, { key: 'ArrowRight' });
+        fireEvent.click(screen.getByRole('button', { name: '甲' }), { detail: 1 });
+        finishFly();
+
+        expect(onSelect).not.toHaveBeenCalled();
+        expect(onChange).toHaveBeenCalledExactlyOnceWith(2);
+    });
+
+    it('should swallow a play tap, by pointer or keyboard, made during the flight', () => {
+        const { group, onInnerClick } = setup();
+        const inner = screen.getByRole('button', { name: '內容' });
+
+        fireEvent.keyDown(group, { key: 'ArrowRight' });
+        fireEvent.click(inner, { detail: 1 });
+        fireEvent.click(inner, { detail: 0 });
+        finishFly();
+        fireEvent.click(inner, { detail: 0 });
+
+        expect(onInnerClick).toHaveBeenCalledTimes(1);
+    });
+
     it('should not override a show picked elsewhere during the flight', () => {
         const onChange = vi.fn();
         const stack = (index: number) => (
