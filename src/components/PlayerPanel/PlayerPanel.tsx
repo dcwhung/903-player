@@ -17,8 +17,10 @@ interface PlayerPanelProps {
     art?: string;
     /** 標題下面嘅額外內容（例如今日節目指示點） */
     accessory?: ReactNode;
-    /** 節目頁：左右掃日期 / 節目名轉集（今日節目頁由外面嘅輪播處理 swipe，唔使傳） */
-    onStep?: (direction: SwipeDirection) => void;
+    /**
+     * 節目頁：左右掃日期 / 節目名轉集，返回有冇真係轉（今日節目頁由外面嘅輪播處理 swipe，唔使傳）
+     */
+    onStep?: (direction: SwipeDirection) => boolean;
 }
 
 const RESTART_ICON_SIZE = 22;

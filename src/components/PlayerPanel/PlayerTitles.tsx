@@ -8,21 +8,36 @@ interface PlayerTitlesProps {
     title: string;
     dateLabel: string;
     accessory?: ReactNode;
-    /** 有傳就變成轉集區：左右掃，或者 focus 咗用左右方向鍵 */
-    onStep?: (direction: SwipeDirection) => void;
+    /** 有傳就變成轉集區：左右掃，或者 focus 咗用左右方向鍵；返回有冇真係轉集（盡頭唔郁 = false） */
+    onStep?: (direction: SwipeDirection) => boolean;
 }
 
 /**
- * 轉集區嘅 props：名就係日期 + 節目名（aria-labelledby），操作提示放 aria-describedby。
- * 記低轉集前嘅日期，日期真係變咗先讀出「已轉到…」；去到盡頭唔郁就唔會讀。
+ * 「已轉到…」通知：只係轉集區真係觸發咗轉集（pending），之後日期變咗先讀，讀完清走 pending；
+ * 其他原因轉集（例如撳清單）或者盡頭唔郁就清空通知。
+ * 用「記住上次 props」嘅寫法喺 render 入面更新，唔使 effect。
  */
+const useStepAnnouncement = (dateLabel: string) => {
+    const [shownDate, setShownDate] = useState(dateLabel);
+    const [pending, setPending] = useState(false);
+    const [announcement, setAnnouncement] = useState('');
+    if (shownDate !== dateLabel) {
+        setShownDate(dateLabel);
+        setAnnouncement(pending ? t('episodes.switched', { date: dateLabel }) : '');
+        setPending(false);
+    }
+    const markStep = (moved: boolean) => {
+        setPending(moved);
+        if (!moved) setAnnouncement('');
+    };
+    return { announcement, markStep };
+};
+
+/** 轉集區嘅 props：名就係日期 + 節目名（aria-labelledby），操作提示放 aria-describedby */
 const useSwitcher = (dateLabel: string, onStep: PlayerTitlesProps['onStep']) => {
     const ids = { date: useId(), title: useId(), hint: useId() };
-    const [stepFrom, setStepFrom] = useState<string | null>(null);
-    const step = (direction: SwipeDirection) => {
-        setStepFrom(dateLabel);
-        onStep?.(direction);
-    };
+    const { announcement, markStep } = useStepAnnouncement(dateLabel);
+    const step = (direction: SwipeDirection) => markStep(onStep?.(direction) ?? false);
     const swipe = useSwipe(step);
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
         const direction = arrowKeyDirection(event.key);
@@ -38,8 +53,6 @@ const useSwitcher = (dateLabel: string, onStep: PlayerTitlesProps['onStep']) => 
         onKeyDown,
         ...swipe,
     };
-    const switched = stepFrom !== null && stepFrom !== dateLabel;
-    const announcement = switched ? t('episodes.switched', { date: dateLabel }) : '';
     return { ids, zone, announcement };
 };
 

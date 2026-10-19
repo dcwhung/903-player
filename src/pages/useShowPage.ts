@@ -64,10 +64,11 @@ export const useShowPage = (showId: string) => {
             void player.load(recording, { autoplay: true });
         }
     };
-    // 轉集區左右掃：行同撳集數一樣嘅路（未聽完續播、聽過由頭播），盡頭就唔郁
-    const stepEpisode = (direction: SwipeDirection) => {
+    // 轉集區左右掃：行同撳集數一樣嘅路（未聽完續播、聽過由頭播），盡頭就唔郁並返回 false
+    const stepEpisode = (direction: SwipeDirection): boolean => {
         const url = adjacentEpisodeUrl(episodes, currentUrl, direction);
         if (url) selectEpisode(url);
+        return url !== null;
     };
 
     const theme = themeFor(show?.id);
