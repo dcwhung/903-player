@@ -23,3 +23,16 @@ export const pickTodayDate = (recordings: Recording[], today: string): string | 
 /** 某日嘅錄音，按播出時間排 */
 export const showsOnDate = (recordings: Recording[], date: string): Recording[] =>
     recordings.filter((r) => r.date === date).sort(byBroadcastTime);
+
+/** 今日（香港時間）有錄音就用今日，否則用最近有錄音嗰日，按播出時間排 */
+export const todayRecordings = (recordings: Recording[], today: string): Recording[] => {
+    const date = pickTodayDate(recordings, today);
+    return date ? showsOnDate(recordings, date) : [];
+};
+
+/** 集數清單：最新喺頂 */
+export const episodesNewestFirst = (recordings: Recording[], showId: ShowId): Recording[] =>
+    recordingsForShow(recordings, showId).reverse();
+
+export const isTodayRecording = (recording: Recording | null, today: string): boolean =>
+    recording?.date === today;

@@ -28,19 +28,26 @@ export const useArcDrag = (
 
     const handlers = {
         onPointerDown: (event: SvgPointerEvent) => {
+            // 拖弧形唔好傳上去 carousel / mini player 嘅 swipe
+            event.stopPropagation();
             if (max <= 0) return;
             event.currentTarget.setPointerCapture?.(event.pointerId);
             preview(ratioFromPointer(event));
         },
         onPointerMove: (event: SvgPointerEvent) => {
+            event.stopPropagation();
             if (dragRatio !== null) preview(nextRatio(event));
         },
         onPointerUp: (event: SvgPointerEvent) => {
+            event.stopPropagation();
             if (dragRatio === null) return;
             onSeek(nextRatio(event) * max);
             preview(null);
         },
-        onPointerCancel: () => preview(null),
+        onPointerCancel: (event: SvgPointerEvent) => {
+            event.stopPropagation();
+            preview(null);
+        },
     };
     return { dragRatio, handlers };
 };

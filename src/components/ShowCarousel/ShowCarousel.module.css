@@ -1,0 +1,36 @@
+.carousel {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    touch-action: pan-y;
+}
+
+/* 兩邊露出上一個 / 下一個節目嘅碟，中心對齊主碟 */
+.peek {
+    --peek-size: 152px;
+
+    position: absolute;
+    top: calc(min(300px, 78vw) / 2 - var(--peek-size) / 2);
+    width: var(--peek-size);
+    height: var(--peek-size);
+    overflow: hidden;
+    border-radius: 50%;
+    opacity: 0.45;
+    background: var(--color-disc);
+    box-shadow: 0 0 0 7px var(--color-disc-rim);
+    pointer-events: none;
+}
+
+.previous {
+    left: calc(var(--peek-size) / -1.37);
+}
+
+.next {
+    right: calc(var(--peek-size) / -1.37);
+}
+
+.art {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}

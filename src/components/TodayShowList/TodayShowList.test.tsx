@@ -3,9 +3,23 @@ import userEvent from '@testing-library/user-event';
 import { TodayShowList, type TodayShowItem } from './TodayShowList';
 
 const ITEMS: TodayShowItem[] = [
-    { key: 'a', name: 'Bad Girl大過佬', status: 'playing', active: true },
-    { key: 'b', name: '雲妮鍾情', status: 'watched', active: false },
-    { key: 'c', name: '在晴朗的一天出發', status: 'unwatched', active: false },
+    {
+        key: 'a',
+        name: 'Bad Girl大過佬',
+        time: '10:09',
+        art: '/a.jpg',
+        status: 'playing',
+        active: true,
+    },
+    { key: 'b', name: '雲妮鍾情', time: '07:08', art: '/b.jpg', status: 'watched', active: false },
+    {
+        key: 'c',
+        name: '在晴朗的一天出發',
+        time: '08:09',
+        art: '/c.jpg',
+        status: 'unwatched',
+        active: false,
+    },
 ];
 
 describe('TodayShowList', () => {
@@ -17,9 +31,9 @@ describe('TodayShowList', () => {
             'aria-current',
             'true',
         );
-        expect(screen.getByText('播放中')).toBeInTheDocument();
-        expect(screen.getByText('已收聽')).toBeInTheDocument();
-        expect(screen.getByText('未收聽')).toBeInTheDocument();
+        expect(screen.getByText('10:09 · 播放中')).toBeInTheDocument();
+        expect(screen.getByText('07:08 · 已收聽')).toBeInTheDocument();
+        expect(screen.getByText('08:09 · 未收聽')).toBeInTheDocument();
     });
 
     it('reports the selected show', async () => {

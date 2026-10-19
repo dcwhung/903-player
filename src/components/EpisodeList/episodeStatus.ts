@@ -1,0 +1,41 @@
+import { t } from '../../i18n/t';
+import type { Progress } from '../../services/progressStore';
+import { formatDuration } from '../../utils/time';
+
+export type EpisodeKind = 'playing' | 'watched' | 'resume' | 'unwatched';
+
+export interface EpisodeStatus {
+    kind: EpisodeKind;
+    /** 進度條 0–1 */
+    ratio: number;
+    text: string;
+}
+
+interface EpisodeStatusInput {
+    isCurrent: boolean;
+    /** 揀中集用 player 即時時間 */
+    live?: { currentTime: number; duration: number };
+    progress?: Progress;
+}
+
+const safeRatio = (position: number, duration: number): number =>
+    duration > 0 ? Math.min(1, position / duration) : 0;
+
+/** 集數清單每一行嘅狀態：播放中 / 已收聽 / 聽到 mm:ss / 未收聽 */
+export const episodeStatus = ({ isCurrent, live, progress }: EpisodeStatusInput): EpisodeStatus => {
+    if (isCurrent && live) {
+        const text = t('episodes.playing', {
+            current: formatDuration(live.currentTime),
+            total: formatDuration(live.duration),
+        });
+        return { kind: 'playing', ratio: safeRatio(live.currentTime, live.duration), text };
+    }
+    if (progress?.watched) {
+        return { kind: 'watched', ratio: 1, text: t('episodes.watched') };
+    }
+    if (progress && progress.position > 0) {
+        const text = t('episodes.resume', { time: formatDuration(progress.position) });
+        return { kind: 'resume', ratio: safeRatio(progress.position, progress.duration), text };
+    }
+    return { kind: 'unwatched', ratio: 0, text: t('episodes.unwatched') };
+};

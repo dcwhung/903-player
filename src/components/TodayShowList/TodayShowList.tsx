@@ -9,6 +9,9 @@ export type ShowStatus = 'playing' | 'watched' | 'unwatched';
 export interface TodayShowItem {
     key: string;
     name: string;
+    /** 播出時間 HH:MM */
+    time: string;
+    art: string;
     status: ShowStatus;
     active: boolean;
 }
@@ -36,12 +39,12 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
             aria-label={t('today.playShowWithStatus', { name: item.name, status: statusText })}
             onClick={() => onSelect(item.key)}
         >
-            <Disc size="small" />
+            <Disc size="small" art={item.art} />
             <span className={styles.text}>
                 <span className={styles.name}>{item.name}</span>
                 <span className={`${styles.status} ${styles[item.status] ?? ''}`}>
                     {item.status === 'watched' && <CheckIcon size={STATUS_ICON_SIZE} />}
-                    {statusText}
+                    {t('today.timeWithStatus', { time: item.time, status: statusText })}
                 </span>
             </span>
             <PlayIcon size={PLAY_ICON_SIZE} filled={false} />

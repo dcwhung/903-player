@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { HomePage } from './HomePage';
@@ -17,11 +17,16 @@ describe('HomePage', () => {
     });
     afterEach(() => vi.useRealTimers());
 
-    it('lists five shows plus today, in order', () => {
+    it('lists five artwork tiles plus today, in order', () => {
         renderWithProviders(<HomePage />);
 
         expect(screen.getByRole('heading', { name: '收聽節目' })).toBeInTheDocument();
-        expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual([
+        const nav = screen.getByRole('navigation');
+        expect(
+            [...nav.querySelectorAll('button')].map(
+                (b) => b.getAttribute('aria-label') ?? b.textContent,
+            ),
+        ).toEqual([
             'Bad Girl大過佬',
             '公子會',
             '雲妮鍾情',
@@ -31,10 +36,42 @@ describe('HomePage', () => {
         ]);
     });
 
-    it('pauses playback whenever home is shown, including system back', () => {
+    it('pauses playback when home is shown without a today recording', () => {
         const { audio } = renderWithProviders(<HomePage />);
 
         expect(audio.pause).toHaveBeenCalled();
+    });
+
+    it('shows a mini player for today’s first show and plays it on demand', async () => {
+        const { audio } = renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+
+        const mini = await screen.findByRole('region', { name: '正在播放（今日節目）' });
+        expect(mini).toHaveTextContent('Bad Girl大過佬');
+        expect(mini).toHaveTextContent('今日 19/10（一）');
+
+        await userEvent.click(screen.getByRole('button', { name: '播放' }));
+        expect(audio.src).toBe(RECORDINGS[2]?.url);
+        expect(audio.play).toHaveBeenCalled();
+    });
+
+    it('swipes the mini player to the next show of today', async () => {
+        renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+        const mini = await screen.findByRole('region', { name: '正在播放（今日節目）' });
+
+        fireEvent.pointerDown(mini, { clientX: 300, clientY: 10 });
+        fireEvent.pointerUp(mini, { clientX: 150, clientY: 10 });
+
+        expect(mini).toHaveTextContent('雲妮鍾情');
+    });
+
+    it('opens the show page from the mini player', async () => {
+        renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+
+        await userEvent.click(
+            await screen.findByRole('button', { name: '開啟 Bad Girl大過佬 節目頁' }),
+        );
+
+        expect(screen.getByTestId('location')).toHaveTextContent('/show/badgirl');
     });
 
     it('starts the latest episode and opens the show page', async () => {

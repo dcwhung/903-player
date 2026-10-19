@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { saveProgress } from '../services/progressStore';
@@ -50,6 +50,26 @@ describe('TodayPage', () => {
         await userEvent.click(wanni);
 
         expect(audio.src).toBe(TODAY[0]?.url);
+    });
+
+    it('shows broadcast times and switches show on swipe, in that show’s theme', async () => {
+        const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
+        expect(screen.getByText('06:00 · 播放中')).toBeInTheDocument();
+
+        const carousel = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        fireEvent.pointerDown(carousel, { clientX: 300, clientY: 100 });
+        fireEvent.pointerUp(carousel, { clientX: 150, clientY: 100 });
+
+        await waitFor(() => expect(audio.src).toBe(TODAY[1]?.url));
+        expect(screen.getByRole('heading', { name: 'Bad Girl大過佬' })).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: 'Bad Girl大過佬' })).toHaveAttribute(
+            'aria-selected',
+            'true',
+        );
+        expect(screen.getByRole('main').closest('[data-theme-scope]')).toHaveStyle({
+            '--theme-accent': '#f08a24',
+        });
     });
 
     it('falls back to the latest day with recordings', async () => {

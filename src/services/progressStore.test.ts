@@ -2,6 +2,7 @@ import { PROGRESS_STORAGE_KEY } from '../config/constants';
 import {
     getProgress,
     getResumePosition,
+    getProgressMap,
     getWatchedUrls,
     isWatched,
     saveProgress,
@@ -56,6 +57,12 @@ describe('progressStore', () => {
         expect(getWatchedUrls()).toEqual(new Set([URL_A]));
         expect(spy).toHaveBeenCalledTimes(1);
         spy.mockRestore();
+    });
+
+    it('returns every saved progress in a single read', () => {
+        saveProgress(URL_A, 300, DURATION);
+
+        expect(getProgressMap(0)[URL_A]).toMatchObject({ position: 300, watched: false });
     });
 
     it('survives corrupted storage data', () => {
