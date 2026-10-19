@@ -100,7 +100,10 @@
          * 1. 頂部安全區 + 頁頂 padding（--space-4）
          * 2. 頁頭返回掣（--touch-target）
          * 3. 4 個間距（頁：頁頭↔播放器↔清單；播放器：唱片↔標題↔控制掣）
-         * 4. 日子條：--date-strip-height（節目名已經搬咗去頁頭，頁頭高度不變）
+         * 4. 唱片下面嗰行：取日子條（--date-strip-height）同今日節目頁標題（60px：
+         *    13px 日期 + 4px 間距 + 24px 節目名，Poppins 行高 1.5 量出嚟）較大嗰個。
+         *    兩頁共用同一隻唱片，今日節目頁仍然顯示日期 + 節目名（再加指示點），
+         *    如果只預留日子條，矮螢幕（例如 320×568）唱片會變大，今日節目頁清單就唔夠位
          * 5. 播放掣最大尺寸：76px（PlayerControls --toggle-size 上限）
          * 6. 「集數 / 共 N 集」標題列：30px（量出嚟）
          * 7. 兩行集數：2 × 56px（EpisodeList .row，border-box 連分隔線）
@@ -109,8 +112,8 @@
          */
         --player-reserved-height: calc(
             env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 4 *
-                var(--show-page-gap) + var(--date-strip-height) + 76px + 30px + 2 * 56px +
-                var(--space-2) + env(safe-area-inset-bottom)
+                var(--show-page-gap) + max(var(--date-strip-height), 60px) + 76px + 30px + 2 *
+                56px + var(--space-2) + env(safe-area-inset-bottom)
         );
         /* 播放器入面唱片以外嘅高度：2 個間距 + 日子條 + 播放掣最大尺寸（76px） */
         --player-chrome-height: calc(2 * var(--show-page-gap) + var(--date-strip-height) + 76px);
