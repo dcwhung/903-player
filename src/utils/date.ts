@@ -1,6 +1,7 @@
 import { HK_TIMEZONE } from '../config/constants';
 import { t } from '../i18n/t';
 import { WEEKDAYS } from '../i18n/zh-HK';
+import type { Weekday } from '../types/weekday';
 
 // en-CA 嘅日期格式正好係 YYYY-MM-DD
 const hkDateFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -43,7 +44,9 @@ const isoDateToUtcMs = (isoDate: string): number => {
 };
 
 /** 星期幾：0 = 星期日 … 6 = 星期六（同 Date#getUTCDay 一致） */
-export const weekdayOf = (isoDate: string): number => new Date(isoDateToUtcMs(isoDate)).getUTCDay();
+export const weekdayOf = (isoDate: string): Weekday =>
+    // getUTCDay 一定係 0–6，TypeScript 唔識收窄，所以要 cast
+    new Date(isoDateToUtcMs(isoDate)).getUTCDay() as Weekday;
 
 /** 兩個 YYYY-MM-DD 之間相差幾多日（to − from） */
 export const daysBetween = (from: string, to: string): number =>

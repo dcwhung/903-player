@@ -7,6 +7,7 @@ import {
     hkToday,
     weekdayOf,
 } from './date';
+import type { Weekday } from '../types/weekday';
 
 describe('hkToday', () => {
     it('uses Hong Kong date even when UTC is still the previous day', () => {
@@ -56,6 +57,10 @@ describe('weekdayOf', () => {
         expect(weekdayOf('2026-10-18')).toBe(0);
         expect(weekdayOf('2026-10-19')).toBe(1);
         expect(weekdayOf('2026-10-17')).toBe(6);
+    });
+
+    it('is typed as a Weekday so airDays comparisons stay checked', () => {
+        expectTypeOf(weekdayOf('2026-10-19')).toEqualTypeOf<Weekday>();
     });
 });
 

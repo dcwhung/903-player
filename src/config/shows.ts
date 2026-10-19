@@ -1,4 +1,5 @@
 import type { ShowId } from '../types/recording';
+import type { Weekday } from '../types/weekday';
 
 export interface ShowConfig {
     id: ShowId;
@@ -9,11 +10,11 @@ export interface ShowConfig {
     /** 原站錄音檔名嘅 HHMM（每個節目固定），用嚟喺 app 度直接砌錄音網址 */
     fileTime: string;
     /** 逢星期幾播（0 = 星期日 … 6 = 星期六），唔播嘅日子唔使 probe */
-    airDays: readonly number[];
+    airDays: readonly Weekday[];
 }
 
-const MONDAY_TO_FRIDAY: readonly number[] = [1, 2, 3, 4, 5];
-const SATURDAY: readonly number[] = [6];
+const MONDAY_TO_FRIDAY: readonly Weekday[] = [1, 2, 3, 4, 5];
+const SATURDAY: readonly Weekday[] = [6];
 
 export const SHOWS: readonly ShowConfig[] = [
     { id: 'badgirl', name: 'Bad Girl大過佬', fileTime: '1009', airDays: MONDAY_TO_FRIDAY },
