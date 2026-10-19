@@ -38,6 +38,15 @@ export class FakeAudio extends EventTarget {
         }
     }
 
+    /** 真 element 移除 src attribute 之後，src getter 會變返空字串 */
+    removeAttribute(name: string): void {
+        if (name === 'src') {
+            this.src = '';
+        }
+    }
+
+    load = vi.fn();
+
     play = vi.fn(async () => {
         if (this.rejectPlay) {
             throw new DOMException('blocked', 'NotAllowedError');
