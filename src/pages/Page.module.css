@@ -26,6 +26,21 @@
     padding-left: env(safe-area-inset-left);
 }
 
+/*
+ * 好矮嘅畫面（橫向手機、矮視窗、200% 放大）塞唔落固定版面：
+ * 取消固定，成頁正常捲；清單冇咗高度上限，自然唔會變成內部捲動。
+ * 559px：最細唱片（--player-disc-min）+ 其他固定內容 + 兩行集數大約要 552px 高，
+ * 再矮就用唔到固定版面；320×568 仍然係固定。e2e/run.mjs 嘅 SHORT_HEIGHT_PX 要同步。
+ */
+@media (max-height: 559px) {
+    .fixed {
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        overflow: visible;
+    }
+}
+
 .header {
     width: 100%;
     padding: 0 var(--space-3);

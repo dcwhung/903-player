@@ -5,7 +5,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { silenceWav } from './silenceWav.mjs';
 
-const PORT = 4173;
+const PORT = Number(process.env.E2E_PORT ?? 4173);
 const BASE = `http://localhost:${PORT}/903-player/`;
 const OUT = new URL('./screenshots', import.meta.url).pathname;
 const AUDIO_SECONDS = 600;
@@ -57,6 +57,18 @@ const EPISODE_ROW_PX = 56;
 const MIN_VISIBLE_ROWS = 2;
 const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
+// 同 tokens.css 嘅 --player-disc-min 同 Page.module.css 嘅成頁捲斷點（max-height）一致
+const DISC_MIN_PX = 160;
+const SHORT_HEIGHT_PX = 559;
+const SHOW_VIEWPORTS = [
+    { width: 390, height: 844, swipe: true },
+    { width: 320, height: 568, swipe: true },
+    // 橫向手機 / 矮視窗
+    { width: 844, height: 390 },
+    { width: 568, height: 320 },
+    { width: 1280, height: 400 },
+    { width: 390, height: 540 },
+];
 
 /** 節目頁固定：捲集數 panel 時 window 唔郁、控制掣仍然喺畫面，panel 自己嘅 scrollTop 有變 */
 const checkFixedShowPage = async (p, label, shot) => {
@@ -81,6 +93,37 @@ const checkFixedShowPage = async (p, label, shot) => {
     await checkControlsInView(p, label);
     const rows = box.height / EPISODE_ROW_PX;
     log(rows >= MIN_VISIBLE_ROWS, `${label}：清單見到約 ${rows.toFixed(1)} 行`);
+    await logDiscSize(p, label, rows.toFixed(2));
+    await p.screenshot({ path: `${OUT}/${shot}` });
+};
+
+/** 唱片闊度（同列表行數一齊印出嚟，方便對照） */
+const logDiscSize = async (p, label, rows) => {
+    const disc = (await p.getByRole('slider', { name: '播放進度' }).boundingBox()).width;
+    log(
+        disc >= DISC_MIN_PX,
+        `${label}：唱片 ${disc.toFixed(0)}px（≥ ${DISC_MIN_PX}），清單 ${rows}`,
+    );
+};
+
+/** 好矮嘅畫面（橫向手機 / 矮視窗）：唔再固定，成頁正常捲，清單唔係內部捲動，控制掣捲得到 */
+const checkScrollingShowPage = async (p, label, shot) => {
+    const list = p.getByRole('region', { name: '集數' }).getByRole('list');
+    const inner = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
+    log(inner <= 1, `${label}：清單唔係內部捲動（多出 ${inner}px）`);
+    await logDiscSize(p, label, '全部（成頁捲）');
+    const forward = p.getByRole('button', { name: '前進 60 秒' });
+    await forward.scrollIntoViewIfNeeded();
+    const b = await forward.boundingBox();
+    const overflow = await p.evaluate(
+        () => document.documentElement.scrollHeight - window.innerHeight,
+    );
+    const inView = b !== null && b.y >= 0 && b.y + b.height <= p.viewportSize().height;
+    log(overflow > 0 && inView, `${label}：成頁捲得、控制掣捲得到（可捲 ${overflow}px）`);
+    // 最尾一集都要捲得到
+    const last = p.getByRole('region', { name: '集數' }).locator('li button').last();
+    await last.scrollIntoViewIfNeeded();
+    log(await last.isVisible(), `${label}：捲到最尾一集`);
     await p.screenshot({ path: `${OUT}/${shot}` });
 };
 
@@ -110,9 +153,7 @@ const checkSwipeToOlder = async (p) => {
     const rows = p.getByRole('region', { name: '集數' }).locator('li button');
     const labels = await rows.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
     const from = labels.findIndex((l) => l.includes('播放中'));
-    const zone = await p
-        .getByRole('group', { name: '向左掃動聽舊一集，向右掃動聽新一集' })
-        .boundingBox();
+    const zone = await p.locator('[aria-roledescription="轉集"]').boundingBox();
     const y = zone.y + zone.height / 2;
     await p.mouse.move(zone.x + zone.width / 2 + SWIPE_FROM_PX / 2, y);
     await p.mouse.down();
@@ -326,22 +367,20 @@ try {
     }
     await narrow.close();
 
-    // 節目頁固定、集數清單自己捲；badgirl 集數多過一個畫面
-    const fixedViewports = [
-        [{ width: 390, height: 844 }, '9-show-fixed-390.png'],
-        [{ width: 320, height: 568 }, '10-show-fixed-320x568.png'],
-    ];
-    for (const [viewport, shot] of fixedViewports) {
-        const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2 });
+    // 節目頁：夠高就固定、集數清單自己捲；好矮（橫向手機）就成頁正常捲。badgirl 集數多過一個畫面
+    for (const { width, height, swipe } of SHOW_VIEWPORTS) {
+        const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2 });
         await ctx.route('https://audio.hkfm903.live/**', serveAudio);
         const fp = await ctx.newPage();
         fp.on('pageerror', (e) => errors.push(e.message));
         await fp.goto(`${BASE}#/show/badgirl`);
         await fp.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
         await fp.waitForTimeout(800);
-        const label = `${viewport.width}×${viewport.height} 節目頁`;
-        await checkSwipeToOlder(fp);
-        await checkFixedShowPage(fp, label, shot);
+        const label = `${width}×${height} 節目頁`;
+        const shot = `show-${width}x${height}.png`;
+        if (swipe) await checkSwipeToOlder(fp);
+        if (height > SHORT_HEIGHT_PX) await checkFixedShowPage(fp, label, shot);
+        else await checkScrollingShowPage(fp, label, shot);
         await checkDiscMatchesToday(fp, label);
         await ctx.close();
     }
