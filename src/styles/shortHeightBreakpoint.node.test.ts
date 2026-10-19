@@ -3,10 +3,10 @@
 import { e2eShortHeightPx, maxHeightBreakpoints, readCss } from '../../tests/cssRule';
 
 /*
- * 好矮畫面（橫向手機、矮視窗、200% 放大）改為 main 自己捲嘅斷點，四個地方各自寫死：
- * Page.module.css（成頁捲）、ShowCardStack / DateStrip（touch-action 畀返 pan-y）、
- * e2e/run.mjs（SHORT_HEIGHT_PX）。@media 條件用唔到 custom property，所以唔抽 token，
- * 靠呢個測試鎖住四個值一樣。
+ * 好矮畫面（橫向手機、矮視窗、200% 放大）改為 main 自己捲嘅斷點，幾個地方各自寫死：
+ * Page.module.css（成頁捲）、HomePage.module.css（主頁背景跟 main 捲）、
+ * ShowCardStack / DateStrip（touch-action 畀返 pan-y）、e2e/run.mjs（SHORT_HEIGHT_PX）。
+ * @media 條件用唔到 custom property，所以唔抽 token，靠呢個測試鎖住全部一樣。
  */
 describe('short-height breakpoint', () => {
     it('should read a whole-pixel breakpoint from the e2e runner', () => {
@@ -15,6 +15,7 @@ describe('short-height breakpoint', () => {
 
     it.each([
         ['Page.module.css', '../pages/Page.module.css'],
+        ['HomePage.module.css', '../pages/HomePage.module.css'],
         ['ShowCardStack.module.css', '../components/ShowCardStack/ShowCardStack.module.css'],
         ['DateStrip.module.css', '../components/DateStrip/DateStrip.module.css'],
     ])('should use the same max-height as SHORT_HEIGHT_PX in %s', (_name, path) => {
