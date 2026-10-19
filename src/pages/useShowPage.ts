@@ -11,6 +11,7 @@ import {
     pickInitialRecording,
     recordingsForShow,
 } from '../selectors/recordings';
+import { stripNeighbours } from '../components/DateStrip/dateStrip';
 import { getProgressMap } from '../services/progressStore';
 import { hkToday } from '../utils/date';
 import { adjacentEpisodeUrl } from './adjacentEpisode';
@@ -72,5 +73,16 @@ export const useShowPage = (showId: string) => {
     };
 
     const theme = themeFor(show?.id);
-    return { show, theme, status, reload, current, episodeItems, selectEpisode, stepEpisode };
+    const neighbours = stripNeighbours(episodes, currentUrl);
+    return {
+        show,
+        theme,
+        status,
+        reload,
+        current,
+        episodeItems,
+        neighbours,
+        selectEpisode,
+        stepEpisode,
+    };
 };

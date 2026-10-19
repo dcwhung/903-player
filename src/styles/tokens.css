@@ -41,18 +41,31 @@
     --touch-target-min: 24px;
     --focus-ring-width: 2px;
     --duration-fast: 0.2s;
+    /* 節目頁日子條：轉集時新日期由隔籬格滑返中間、碟轉一下（播放唔使等動畫） */
+    --duration-strip: 0.3s;
+    --duration-spin: 0.45s;
+    --ease-strip: cubic-bezier(0.2, 0.8, 0.2, 1);
     --dot-size: 6px;
     --dot-size-active: 18px;
     --page-max-width: 480px;
     /* 節目頁 / 今日節目頁主碟（連進度弧）嘅闊度，兩頁一樣大 */
     --player-disc-size: min(300px, 78vw);
+    /* 節目頁唱片下面嘅日子條：一行高（側格係掣，用足觸控高度）、兩邊淡出闊度 */
+    --date-strip-height: var(--touch-target);
+    --date-strip-fade: var(--space-8);
 
     /* 今日節目卡疊（ShowCardStack）：每疊後一層向下移、縮細、變淡幾多（第一張後面嘅卡 scale 0.92） */
     --card-stack-offset: 12px;
     --card-stack-scale-step: 0.08;
     --card-stack-fade-step: 0.35;
-    /* 卡上下留白（700px 高或以下收窄） */
-    --card-padding-block: var(--space-5);
+    /*
+     * 今日節目卡入面嘅留白（卡上下、唱片 ↔ 標題 ↔ 控制掣、日期 ↔ 節目名 ↔ 指示點），
+     * 700px 高或以下再收窄。唱片唔郁（同節目頁一樣大），收窄留白令卡連指示點 ≤ 畫面高 66%、
+     * 今日節目清單最少見到一行；節目頁唔受影響（只喺 ShowCardStack .card 入面用）
+     */
+    --card-padding-block: var(--space-2);
+    --card-inner-gap: var(--space-2);
+    --card-titles-gap: 2px;
     /* 卡疊兩邊留白；好窄嘅畫面收窄（見下面 max-width: 339px） */
     --card-stack-gutter: var(--space-4);
     /* 飛走：移出幾遠（佔卡闊）、再轉幾多；拖動 / 飛走都以卡底中間做軸心 */
@@ -90,11 +103,17 @@
 /*
  * 矮螢幕（例如 320×568）主碟按畫面高縮細，令固定唔捲嘅節目頁仍然見到兩行集數；
  * 夠高就維持 300px。今日節目頁共用同一個 token，兩頁大小一致。
- * 預留高度 = 頁頭 + 日期節目名 + 控制掣 + 間距 + 兩行集數；唔支援 dvh 就用返上面嘅值。
- * 最細唔會細過 --player-disc-min：再矮（≤ 561px 高）兩頁都會改為成頁捲（Page.module.css）。
+ * 兩個上限取細嗰個：
+ * 1. 預留高度 = 頁頭 + 唱片下面嗰行 + 控制掣 + 間距 + 兩行集數（清單最少見到兩行）
+ * 2. 成個播放器（唱片連弧 → 日子條 → 控制掣）最多佔畫面高 --player-max-share（六成，設計目標）
+ * 唔支援 dvh 就用返上面嘅值。
+ * 最細唔會細過 --player-disc-min：再矮（≤ 561px 高）會改為成頁捲（Page.module.css）。
  */
 :root {
     --player-disc-min: 160px;
+    --player-max-share: 0.6;
+    /* 播放掣尺寸：細螢幕按闊度縮細（PlayerControls 同播放器高度計法共用） */
+    --player-toggle-size: clamp(64px, 19vw, 76px);
     /* 固定版面（Page.module.css .fixed：節目頁、今日節目頁）嘅間距；700px 高或以下收窄，令固定版面多啲位畀清單 */
     --fixed-page-gap: var(--space-5);
 }
@@ -114,7 +133,8 @@
     :root {
         --fixed-page-gap: var(--space-3);
         /* 今日節目卡：唱片唔郁（同節目頁一樣大），收窄卡上下留白同疊卡位移，多啲位畀今日節目清單 */
-        --card-padding-block: var(--space-2);
+        --card-padding-block: var(--space-1);
+        --card-inner-gap: var(--space-1);
         --card-stack-offset: 8px;
     }
 }
@@ -126,8 +146,13 @@
          * 1. 頂部安全區 + 頁頂 padding（--space-4）
          * 2. 頁頭返回掣（--touch-target）
          * 3. 4 個間距（頁：頁頭↔播放器↔清單；播放器：唱片↔標題↔控制掣）
-         * 4. 日期 + 節目名：60px（13px + 4px 間距 + 24px，Poppins 行高 1.5 量出嚟）
-         * 5. 播放掣最大尺寸：76px（PlayerControls --toggle-size 上限）
+         * 4. 唱片下面嗰行：取日子條（--date-strip-height）同今日節目頁標題（60px：
+         *    13px 日期 + 4px 間距 + 24px 節目名，Poppins 行高 1.5 量出嚟）較大嗰個。
+         *    兩頁共用同一隻唱片，今日節目頁仍然顯示日期 + 節目名（再加指示點），
+         *    如果只預留日子條，矮螢幕（例如 320×568）唱片會變大，今日節目頁清單就唔夠位
+         * 5. 播放掣最大尺寸：76px（--player-toggle-size 上限）。呢度刻意用上限：
+         *    窄螢幕個掣細啲，多出嚟嘅位留畀清單；改用 clamp 會令共用唱片變大，
+         *    今日節目頁清單（日期 + 節目名 + 指示點）會唔夠位
          * 6. 「集數 / 共 N 集」標題列：30px（量出嚟）
          * 7. 兩行集數：2 × 56px（EpisodeList .row，border-box 連分隔線）
          * 8. 清單底 padding（--space-2）+ 底部安全區
@@ -135,14 +160,23 @@
          */
         --player-reserved-height: calc(
             env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 4 *
-                var(--fixed-page-gap) + 60px + 76px + 30px + 2 * 56px + var(--space-2) +
-                env(safe-area-inset-bottom)
+                var(--fixed-page-gap) + max(var(--date-strip-height), 60px) + 76px + 30px + 2 *
+                56px + var(--space-2) + env(safe-area-inset-bottom)
+        );
+        /* 播放器入面唱片以外嘅高度：2 個間距 + 日子條 + 播放掣真實尺寸（跟 clamp 縮放） */
+        --player-chrome-height: calc(
+            2 * var(--fixed-page-gap) + var(--date-strip-height) + var(--player-toggle-size)
         );
         /* 唱片 + 時間嗰一格嘅高 = 闊 × 316 / 300（PlayerPanel .gauge aspect-ratio） */
         /* 下限都唔可以闊過 78vw（極窄 / 高倍放大時避免橫向超出） */
         --player-disc-size: max(
             min(var(--player-disc-min), 78vw),
-            min(300px, 78vw, calc((100dvh - var(--player-reserved-height)) * 300 / 316))
+            min(
+                300px,
+                78vw,
+                calc((100dvh - var(--player-reserved-height)) * 300 / 316),
+                calc((100dvh * var(--player-max-share) - var(--player-chrome-height)) * 300 / 316)
+            )
         );
     }
 }

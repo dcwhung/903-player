@@ -14,15 +14,16 @@ import { useShowPage } from './useShowPage';
 export const ShowPage = () => {
     const { showId = '' } = useParams();
     const goHome = useGoHome();
-    const { show, theme, status, reload, current, episodeItems, selectEpisode, stepEpisode } =
+    const { show, theme, status, reload, current, episodeItems, neighbours, ...actions } =
         useShowPage(showId);
 
-    // 成頁固定唔捲，得集數清單自己捲（見 Page.module.css .fixed）
+    // 成頁固定唔捲，得集數清單自己捲（見 Page.module.css .locked / .fixed）；
+    // 節目名喺頁頭（取代「正在播放」），唱片下面變成日子條
     return (
         <ThemeScope theme={theme}>
-            <main className={`${page.page} ${page.fixed}`}>
+            <main className={`${page.page} ${page.locked} ${page.fixed}`}>
                 <div className={page.header}>
-                    <PageHeader title={t('player.nowPlaying')} onBack={goHome} />
+                    <PageHeader title={show?.name ?? ''} variant="title" onBack={goHome} />
                 </div>
                 {!show ? (
                     <StatusMessage message={t('common.showNotFound')} />
@@ -35,9 +36,13 @@ export const ShowPage = () => {
                                     title={show.name}
                                     dateLabel={formatDateLabel(current.date)}
                                     art={theme.art}
-                                    onStep={stepEpisode}
+                                    onStep={actions.stepEpisode}
+                                    neighbours={neighbours}
                                 />
-                                <EpisodeList items={episodeItems} onSelect={selectEpisode} />
+                                <EpisodeList
+                                    items={episodeItems}
+                                    onSelect={actions.selectEpisode}
+                                />
                             </>
                         )}
                     </>

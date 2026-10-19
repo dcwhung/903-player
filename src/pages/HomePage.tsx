@@ -25,7 +25,8 @@ export const HomePage = () => {
     return (
         // 主頁用自己嘅色調（跟 app icon）；mini player 入面另有 ThemeScope，照跟節目色
         <ThemeScope theme={HOME_THEME} className={styles.scope}>
-            <main className={`${page.page} ${styles.home}`}>
+            {/* 主頁都固定唔捲（page.locked）；好矮嘅畫面先改返成頁捲 */}
+            <main className={`${page.page} ${page.locked} ${styles.home}`}>
                 <HomeBanner />
                 <nav
                     className={styles.grid}

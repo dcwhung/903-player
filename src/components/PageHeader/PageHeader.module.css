@@ -1,6 +1,7 @@
 .header {
     display: grid;
-    grid-template-columns: var(--touch-target) 1fr var(--touch-target);
+    /* minmax(0, 1fr)：中間標題可以縮細過內容，長節目名唔會逼開或者疊住返回掣 */
+    grid-template-columns: var(--touch-target) minmax(0, 1fr) var(--touch-target);
     align-items: center;
     width: 100%;
 }
@@ -23,4 +24,15 @@
     font-weight: 500;
     letter-spacing: var(--letter-spacing-caps);
     color: var(--color-text-secondary);
+}
+
+/* 節目頁：節目名做標題，用返以前唱片下面嗰個大字樣式；一行放唔落就省略號 */
+.showTitle {
+    overflow: hidden;
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--color-title);
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

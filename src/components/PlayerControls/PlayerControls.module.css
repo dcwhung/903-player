@@ -1,7 +1,7 @@
 /* 細螢幕（320px）會按比例縮細，最細仍然 ≥ 44px 觸控範圍 */
 .controls {
     --skip-size: clamp(var(--touch-target), 13vw, 52px);
-    --toggle-size: clamp(64px, 19vw, 76px);
+    --toggle-size: var(--player-toggle-size);
 
     display: flex;
     align-items: center;
