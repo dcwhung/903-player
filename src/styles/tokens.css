@@ -14,7 +14,7 @@
     --color-accent: #e0306a;
     --color-accent-fill: #c81e56;
     --color-on-accent: #ffffff;
-    --color-status-playing: #f2668f;
+    --color-status-playing: #f57a9e;
     --color-badge: #7cc4f0;
     --color-on-badge: #15171c;
 
@@ -62,10 +62,10 @@
         --color-text: #1e2128;
         --color-text-secondary: #3d4452;
         --color-text-muted: #5b6474;
-        --color-title: #1f6fa8;
+        --color-title: #1a5f91;
         --color-accent: #d3245f;
         --color-status-playing: #b81d52;
-        --color-badge: #1f6fa8;
+        --color-badge: #1a5f91;
         --color-on-badge: #ffffff;
         --shadow-raised: 6px 6px 14px #c3c8d0, -4px -4px 10px #ffffff;
         --shadow-raised-strong: 7px 7px 16px #c3c8d0, -5px -5px 12px #ffffff;

@@ -158,6 +158,19 @@ await page.waitForTimeout(500);
 const backState = await page.evaluate(() => navigator.mediaSession.playbackState);
 log(page.url().endsWith('#/') && backState === 'paused', `系統返回手勢返主頁會暫停：${backState}`);
 
+const narrow = await browser.newContext({ viewport: { width: 320, height: 640 } });
+await narrow.route('https://audio.hkfm903.live/**', serveAudio);
+const np = await narrow.newPage();
+for (const route of ['#/show/gongzi', '#/today']) {
+    await np.goto(`${BASE}${route}`);
+    await np.getByRole('button', { name: '前進 60 秒' }).waitFor();
+    const overflow = await np.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    log(overflow === 0, `320px 闊冇橫向捲動（${route}，超出 ${overflow}px）`);
+}
+await narrow.close();
+
 const light = await browser.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,

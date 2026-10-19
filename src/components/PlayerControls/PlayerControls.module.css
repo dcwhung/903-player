@@ -1,13 +1,18 @@
+/* 細螢幕（320px）會按比例縮細，最細仍然 ≥ 44px 觸控範圍 */
 .controls {
+    --skip-size: clamp(var(--touch-target), 13vw, 52px);
+    --toggle-size: clamp(64px, 19vw, 76px);
+
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 14px;
+    gap: clamp(var(--space-2), 3vw, 14px);
 }
 
 .skip,
 .toggle {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
     border: none;
@@ -16,8 +21,8 @@
 }
 
 .skip {
-    width: 52px;
-    height: 52px;
+    width: var(--skip-size);
+    height: var(--skip-size);
     box-shadow: var(--shadow-raised);
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);
@@ -25,8 +30,8 @@
 }
 
 .toggle {
-    width: 76px;
-    height: 76px;
+    width: var(--toggle-size);
+    height: var(--toggle-size);
     box-shadow: var(--shadow-raised-strong);
     color: var(--color-text);
 }
