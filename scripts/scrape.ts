@@ -44,13 +44,22 @@ interface FetchedPages {
 /** 攞一頁 HTML；可以注入，方便測試唔使真係連原站 */
 export type HtmlFetcher = (url: string) => Promise<string>;
 
+/** 錯誤訊息用：還原中文節目名方便睇；%FF 之類解唔到就照用原本網址 */
+export const readableUrl = (url: string): string => {
+    try {
+        return decodeURI(url);
+    } catch {
+        return url;
+    }
+};
+
 const fetchSiteHtml: HtmlFetcher = async (url) => {
     const response = await fetch(url, {
         headers: { 'User-Agent': USER_AGENT },
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (!response.ok) {
-        throw new Error(`HTTP ${response.status} for ${url}`);
+        throw new Error(`HTTP ${response.status} for ${readableUrl(url)}`);
     }
     return response.text();
 };

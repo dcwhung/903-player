@@ -8,7 +8,9 @@ import {
     MAX_PAGES,
     loadFallback,
     summariseFeed,
+    readableUrl,
     scrapeShows,
+    siteSources,
     type ScrapeSources,
     type ShowResult,
 } from './scrape';
@@ -437,5 +439,26 @@ describe('createSiteSources dropped cards', () => {
         expect(logLines()).toEqual([
             '::warning::gongzi: dropped 1 cards from the show page: 20261019_0000_西加航空.aac',
         ]);
+    });
+});
+
+describe('siteSources HTTP errors', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('reports the failing url decoded so show names are readable', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async () => new Response('', { status: 503 })),
+        );
+
+        await expect(siteSources.fetchShow('gongzi', '公子會')).rejects.toThrow(
+            'HTTP 503 for https://hkfm903.live/?show=公子會',
+        );
+    });
+});
+
+describe('readableUrl', () => {
+    it('keeps the encoded url when it cannot be decoded', () => {
+        expect(readableUrl('https://hkfm903.live/?x=%FF')).toBe('https://hkfm903.live/?x=%FF');
     });
 });
