@@ -3,12 +3,18 @@ import { RecordingsProvider } from './data/RecordingsProvider';
 import { HomePage } from './pages/HomePage';
 import { ShowPage } from './pages/ShowPage';
 import { TodayPage } from './pages/TodayPage';
+import type { AudioController } from './player/AudioController';
 import { PlayerProvider } from './player/PlayerProvider';
 
 // GitHub Pages 冇 server-side rewrite，所以用 hash routing
-export const App = () => (
+interface AppProps {
+    /** main.tsx 建立嘅共用 controller，PWA 更新要喺 React 以外讀播放狀態 */
+    playerController?: AudioController;
+}
+
+export const App = ({ playerController }: AppProps) => (
     <RecordingsProvider>
-        <PlayerProvider>
+        <PlayerProvider controller={playerController}>
             <HashRouter>
                 <Routes>
                     <Route path="/" element={<HomePage />} />

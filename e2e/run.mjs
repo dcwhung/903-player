@@ -5,8 +5,21 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { silenceWav } from './silenceWav.mjs';
 
-// 多個 worktree 同時跑 e2e 時可以用 E2E_PORT 避開撞 port（否則會測到第二個 build）
-const PORT = Number(process.env.E2E_PORT ?? 4173);
+const DEFAULT_PORT = 4173;
+const MAX_PORT = 65535;
+
+/** 多個 worktree 同時跑 e2e 時可以用 E2E_PORT 避開撞 port（strictPort 會令人誤測別人嘅 build） */
+const parsePort = (raw) => {
+    if (raw === undefined || raw === '') return DEFAULT_PORT;
+    const port = Number(raw);
+    if (!/^\d+$/.test(raw) || port < 1 || port > MAX_PORT) {
+        console.error(`E2E_PORT 要係 1–${MAX_PORT} 嘅整數，收到「${raw}」`);
+        process.exit(1);
+    }
+    return port;
+};
+
+const PORT = parsePort(process.env.E2E_PORT);
 const BASE = `http://localhost:${PORT}/903-player/`;
 const OUT = new URL('./screenshots', import.meta.url).pathname;
 const AUDIO_SECONDS = 600;
@@ -451,6 +464,13 @@ try {
     await lp.goto(BASE);
     await lp.waitForSelector('nav[aria-busy="false"]');
     await lp.screenshot({ path: `${OUT}/7-home-light.png` });
+
+    // 靜靜雞更新靠 registration.update()：build 出嚟嘅 sw.js 要註冊到同啟用
+    const swScript = await lp.evaluate(async () => {
+        const registration = await navigator.serviceWorker.ready;
+        return registration.active?.scriptURL ?? '';
+    });
+    log(swScript.endsWith('/903-player/sw.js'), `Service worker 已啟用：${swScript}`);
 
     log(errors.length === 0, `冇 JS error ${errors.join('; ')}`);
 } finally {
