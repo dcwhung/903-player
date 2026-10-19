@@ -460,6 +460,67 @@ describe('probeRecentRecordings', () => {
         expect(dates.every((date) => date >= '2026-10-22')).toBe(true);
     });
 
+    describe('progress during a run', () => {
+        /** 第一個 probe 搵到 firstUrl，之後嘅 probe 永遠唔返（好似 app 中途閂咗） */
+        const stallAfterFirst = (firstUrl: string): AudioProber => {
+            let calls = 0;
+            return vi.fn((url: string): Promise<ProbeResult> => {
+                calls += 1;
+                if (calls === 1) {
+                    return Promise.resolve(url === firstUrl ? 'found' : 'missing');
+                }
+                return new Promise<ProbeResult>(() => {});
+            });
+        };
+        // NOW 係 20 號（二）12:00，第一個 probe 嘅係當日嘅 Bad Girl
+        const firstUrl = urlFor('badgirl', '2026-10-20');
+
+        it('saves each find right away, so closing the app mid-run keeps it', async () => {
+            const probe = stallAfterFirst(firstUrl);
+
+            void probeRecentRecordings([], { probe, now: NOW });
+
+            await vi.waitFor(() => expect(probe).toHaveBeenCalledTimes(2));
+            expect(readProbeState().found.map((r) => r.url)).toEqual([firstUrl]);
+        });
+
+        it('saves each miss right away too', async () => {
+            const probe = stallAfterFirst('none');
+
+            void probeRecentRecordings([], { probe, now: NOW });
+
+            await vi.waitFor(() => expect(probe).toHaveBeenCalledTimes(2));
+            expect(readProbeState().misses).toEqual({ 'badgirl:2026-10-20': NOW.getTime() });
+        });
+
+        it('reports each find through onFound before the run completes', async () => {
+            const onFound = vi.fn<(recording: Recording) => void>();
+
+            void probeRecentRecordings([], { probe: stallAfterFirst(firstUrl), now: NOW, onFound });
+
+            await vi.waitFor(() => expect(onFound).toHaveBeenCalledTimes(1));
+            expect(onFound).toHaveBeenCalledWith<[Recording]>({
+                showId: 'badgirl',
+                date: '2026-10-20',
+                time: '1009',
+                url: firstUrl,
+            });
+        });
+
+        it('calls onFound once per find and never for misses', async () => {
+            const onFound = vi.fn<(recording: Recording) => void>();
+            const thursday = urlFor('badgirl', '2026-10-15');
+
+            await probeRecentRecordings([], {
+                probe: found([REAL_URLS.badgirl, thursday]),
+                now: NOW,
+                onFound,
+            });
+
+            expect(onFound.mock.calls.map(([r]) => r.url)).toEqual([REAL_URLS.badgirl, thursday]);
+        });
+    });
+
     it('still returns results when storage is unavailable', async () => {
         vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
             throw new DOMException('full', 'QuotaExceededError');

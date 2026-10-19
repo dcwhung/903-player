@@ -49,6 +49,8 @@ export interface ProbeOptions {
     probe?: AudioProber;
     now?: Date;
     isOnline?: OnlineChecker;
+    /** 每搵到一個就即刻通知（唔使等成輪 probe 完），等 UI 可以逐個加 */
+    onFound?: (recording: Recording) => void;
 }
 
 /** 冇 navigator（例如 SSR / 測試環境）就當有網，交俾 probe 自己判斷 */
@@ -175,34 +177,57 @@ const pendingSlots = (have: Recording[], misses: ProbeState['misses'], now: Date
         );
 };
 
+/** 由 storage 讀返上次嘅 state，順手清走 feed 已有、太舊同回看期外嘅記錄 */
+const loadState = (known: Recording[], now: Date): ProbeState => {
+    const stored = readProbeState();
+    return {
+        found: pruneFound(stored.found, known, now),
+        misses: recentMisses(stored.misses, recentDates(now)),
+    };
+};
+
+/** 將一個 probe 結果記入 state（直接改 state，因為係呢一輪自己嘅副本） */
+const recordResult = (state: ProbeState, slot: ProbeSlot, result: ProbeResult, now: Date): void => {
+    if (result === 'found') {
+        state.found.push(slot.recording);
+        delete state.misses[slot.key];
+    } else {
+        state.misses[slot.key] = now.getTime();
+    }
+};
+
 /**
  * 回看 PROBE_LOOKBACK_DAYS 日，feed 未有嘅節目喺播放日逐個 probe（唔並行，減輕原站負擔）。
  * 搵到嘅記低，之後唔再 probe；feed 有咗就唔再保留。搵唔到嘅規則見 isRetryDue。
+ * 每個結果即刻寫入 storage，中途閂 app 都唔會白做。
  * 一遇到 timeout 就停：平台背景唔載 media，再試落去都係白等，亦唔當係 miss。
  * 離線就完全唔 probe，淨係交返之前搵到嘅，免得將斷網當成冇錄音
  */
 export const probeRecentRecordings = async (
     known: Recording[],
-    { probe = probeAudio, now = new Date(), isOnline = navigatorIsOnline }: ProbeOptions = {},
+    {
+        probe = probeAudio,
+        now = new Date(),
+        isOnline = navigatorIsOnline,
+        onFound,
+    }: ProbeOptions = {},
 ): Promise<Recording[]> => {
-    const stored = readProbeState();
-    const found = pruneFound(stored.found, known, now);
+    const state = loadState(known, now);
     if (!isOnline()) {
-        return found;
+        return state.found;
     }
-    const misses = recentMisses(stored.misses, recentDates(now));
-    for (const { key, recording } of pendingSlots([...known, ...found], misses, now)) {
-        const result = await probe(recording.url);
+    // 先寫一次：就算冇嘢要 probe，都要清走過期 / feed 已有嘅記錄
+    writeProbeState(state);
+    for (const slot of pendingSlots([...known, ...state.found], state.misses, now)) {
+        const result = await probe(slot.recording.url);
         if (result === 'timeout') {
             break;
         }
+        recordResult(state, slot, result, now);
+        writeProbeState(state);
         if (result === 'found') {
-            found.push(recording);
-            delete misses[key];
-        } else {
-            misses[key] = now.getTime();
+            onFound?.(slot.recording);
         }
     }
-    writeProbeState({ found, misses });
-    return found;
+    return state.found;
 };
