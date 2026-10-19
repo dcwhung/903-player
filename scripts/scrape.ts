@@ -1,11 +1,20 @@
 import { SHOWS, type ShowConfig } from '../src/config/shows';
 import { isRecording, uniqueByUrl } from '../src/data/recordingValidation';
 import type { Recording, RecordingsFeed, ShowId } from '../src/types/recording';
-import { parseAllRecordings, parseRecordings, type ParsedAll } from './parseRecordings';
+import {
+    parseAllRecordings,
+    parseRecordings,
+    readNextPageUrl,
+    type ParsedAll,
+} from './parseRecordings';
 
 const SITE_URL = 'https://hkfm903.live/';
 const REQUEST_TIMEOUT_MS = 20_000;
 const USER_AGENT = '903-player personal archive reader (+https://github.com/dcwhung/903-player)';
+/** 每個列表最多跟幾多頁，防止原站分頁出錯時無限爬落去 */
+export const MAX_PAGES = 10;
+const ALL_SHOWS_LABEL = 'all shows';
+const SHOW_PARAM = 'show';
 
 export type ShowFetcher = (showId: ShowId, showName: string) => Promise<Recording[]>;
 
@@ -20,38 +29,78 @@ export interface ScrapeSources {
     fetchAll: () => Promise<ParsedAll>;
 }
 
-const fetchSiteHtml = async (showName?: string): Promise<string> => {
-    const url = new URL(SITE_URL);
-    if (showName) {
-        url.searchParams.set('show', showName);
-    }
+/** 攞一頁 HTML；可以注入，方便測試唔使真係連原站 */
+export type HtmlFetcher = (url: string) => Promise<string>;
+
+const fetchSiteHtml: HtmlFetcher = async (url) => {
     const response = await fetch(url, {
         headers: { 'User-Agent': USER_AGENT },
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (!response.ok) {
-        throw new Error(`HTTP ${response.status} for ${showName ?? 'all shows'}`);
+        throw new Error(`HTTP ${response.status} for ${url}`);
     }
     return response.text();
 };
 
-/** 原站：各節目頁 + All Shows 頁 */
-export const siteSources: ScrapeSources = {
-    fetchShow: async (showId, showName) => {
-        const dropped: string[] = [];
-        const recordings = parseRecordings(await fetchSiteHtml(showName), showId, (title) =>
-            dropped.push(title),
+const siteUrl = (showName?: string): string => {
+    const url = new URL(SITE_URL);
+    if (showName) {
+        url.searchParams.set(SHOW_PARAM, showName);
+    }
+    return url.href;
+};
+
+/**
+ * 由第一頁開始逐頁跟「下一頁」（唔並行，減輕原站負擔）；網址重複或者到 MAX_PAGES 就停。
+ * 任何一頁失敗就成個列表當失敗，等上層保留舊資料，唔好用唔齊嘅結果取代舊資料。
+ */
+export const fetchPages = async (
+    firstUrl: string,
+    label: string,
+    fetchHtml: HtmlFetcher,
+): Promise<string[]> => {
+    const pages: string[] = [];
+    const seen = new Set<string>();
+    let url: string | null = firstUrl;
+    while (url && !seen.has(url) && pages.length < MAX_PAGES) {
+        seen.add(url);
+        const html = await fetchHtml(url);
+        pages.push(html);
+        url = readNextPageUrl(html, url);
+    }
+    if (url && !seen.has(url)) {
+        annotate('warning', `${label}: stopped after ${MAX_PAGES} pages, more pages remain`);
+    }
+    if (pages.length > 1) {
+        annotate('notice', `${label}: fetched ${pages.length} pages`);
+    }
+    return pages;
+};
+
+const reportDropped = (showId: ShowId, dropped: string[]): void => {
+    if (dropped.length > 0) {
+        annotate(
+            'warning',
+            `${showId}: dropped ${dropped.length} cards from the show page: ${dropped.join(', ')}`,
         );
-        if (dropped.length > 0) {
-            annotate(
-                'warning',
-                `${showId}: dropped ${dropped.length} cards from the show page: ${dropped.join(', ')}`,
-            );
-        }
+    }
+};
+
+/** 原站：各節目頁 + All Shows 頁（兩者都會跟分頁） */
+export const createSiteSources = (fetchHtml: HtmlFetcher = fetchSiteHtml): ScrapeSources => ({
+    fetchShow: async (showId, showName) => {
+        const pages = await fetchPages(siteUrl(showName), showId, fetchHtml);
+        const dropped: string[] = [];
+        const recordings = parseRecordings(pages, showId, (title) => dropped.push(title));
+        reportDropped(showId, dropped);
         return recordings;
     },
-    fetchAll: async () => parseAllRecordings(await fetchSiteHtml()),
-};
+    fetchAll: async () =>
+        parseAllRecordings(await fetchPages(siteUrl(), ALL_SHOWS_LABEL, fetchHtml)),
+});
+
+export const siteSources: ScrapeSources = createSiteSources();
 
 const settle = async <T, F>(task: () => Promise<T>, fallback: F, label: string): Promise<T | F> => {
     try {
@@ -107,7 +156,7 @@ const EMPTY_ALL: ParsedAll = { recordings: [], unmatched: [], conflicts: [] };
 export const scrapeShows = async (
     sources: ScrapeSources,
 ): Promise<Map<ShowId, ShowResult | null>> => {
-    const all = await settle(sources.fetchAll, EMPTY_ALL, 'all shows');
+    const all = await settle(sources.fetchAll, EMPTY_ALL, ALL_SHOWS_LABEL);
     reportAllPage(all);
     const results = new Map<ShowId, ShowResult | null>();
     for (const show of SHOWS) {
