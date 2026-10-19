@@ -28,8 +28,11 @@ export const useSwipe = (onSwipe: (direction: SwipeDirection) => void) => {
             start.current = null;
         },
         onClickCapture: (event: MouseEvent<HTMLElement>) => {
-            if (!justSwiped.current) return;
+            const swiped = justSwiped.current;
             justSwiped.current = false;
+            // 鍵盤 / 輔助技術觸發嘅 click（detail 0）一定唔係 swipe；
+            // 觸控 swipe 之後通常冇 click，flag 會留低，唔可以食咗下一下鍵盤操作
+            if (!swiped || event.detail === 0) return;
             event.preventDefault();
             event.stopPropagation();
         },

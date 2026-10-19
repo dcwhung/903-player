@@ -69,7 +69,7 @@ describe('ShowCarousel', () => {
 
         fireEvent.pointerDown(inner, { clientX: 300, clientY: 100 });
         fireEvent.pointerUp(inner, { clientX: 150, clientY: 100 });
-        fireEvent.click(inner);
+        fireEvent.click(inner, { detail: 1 }); // 滑鼠 click
 
         expect(onChange).toHaveBeenCalledWith(2);
         expect(onInnerClick).not.toHaveBeenCalled();
@@ -80,11 +80,22 @@ describe('ShowCarousel', () => {
 
         fireEvent.pointerDown(inner, { clientX: 300, clientY: 100 });
         fireEvent.pointerUp(inner, { clientX: 150, clientY: 100 });
-        fireEvent.click(inner);
+        fireEvent.click(inner, { detail: 1 }); // 滑鼠 click
         fireEvent.pointerDown(inner, { clientX: 100, clientY: 100 });
         fireEvent.pointerUp(inner, { clientX: 101, clientY: 100 });
-        fireEvent.click(inner);
+        fireEvent.click(inner, { detail: 1 }); // 滑鼠 click
 
+        expect(onInnerClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('lets a keyboard click through after a touch swipe that sent no click', () => {
+        const { inner, onChange, onInnerClick } = setup();
+
+        fireEvent.pointerDown(inner, { pointerType: 'touch', clientX: 300, clientY: 100 });
+        fireEvent.pointerUp(inner, { pointerType: 'touch', clientX: 180, clientY: 100 });
+        fireEvent.click(inner, { detail: 0 });
+
+        expect(onChange).toHaveBeenCalledWith(2);
         expect(onInnerClick).toHaveBeenCalledTimes(1);
     });
 

@@ -74,10 +74,26 @@ describe('MiniPlayer', () => {
 
         fireEvent.pointerDown(open, { clientX: 100, clientY: 10 });
         fireEvent.pointerUp(open, { clientX: 220, clientY: 10 });
-        fireEvent.click(open);
+        fireEvent.click(open, { detail: 1 }); // 滑鼠 click
 
         expect(p.onChange).toHaveBeenCalledWith(1);
         expect(p.onOpen).not.toHaveBeenCalled();
+    });
+
+    it('lets a keyboard click through after a touch swipe that sent no click', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+        const open = screen.getByRole('button', { name: '開啟 Bad Girl大過佬 節目頁' });
+        const toggle = screen.getByRole('button', { name: '暫停' });
+
+        fireEvent.pointerDown(open, { pointerType: 'touch', clientX: 100, clientY: 10 });
+        fireEvent.pointerUp(open, { pointerType: 'touch', clientX: 220, clientY: 10 });
+        fireEvent.click(toggle, { detail: 0 });
+        fireEvent.click(open, { detail: 0 });
+
+        expect(p.onChange).toHaveBeenCalledWith(1);
+        expect(p.onToggle).toHaveBeenCalledTimes(1);
+        expect(p.onOpen).toHaveBeenCalledTimes(1);
     });
 
     it('still opens the show page on a plain tap', () => {
@@ -87,7 +103,7 @@ describe('MiniPlayer', () => {
 
         fireEvent.pointerDown(open, { clientX: 100, clientY: 10 });
         fireEvent.pointerUp(open, { clientX: 102, clientY: 10 });
-        fireEvent.click(open);
+        fireEvent.click(open, { detail: 1 }); // 滑鼠 click
 
         expect(p.onOpen).toHaveBeenCalledTimes(1);
     });
