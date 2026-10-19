@@ -15,7 +15,7 @@
     /* 固定版面（Page.module.css .fixed）入面唔縮，剩低嘅高度留畀今日節目清單捲 */
     flex-shrink: 0;
     width: 100%;
-    padding: 0 var(--space-4) calc(var(--card-stack-offset) * 2);
+    padding: 0 var(--card-stack-gutter) calc(var(--card-stack-offset) * 2);
     overflow: hidden;
     overflow: clip visible;
     touch-action: pan-y;

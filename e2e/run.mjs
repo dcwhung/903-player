@@ -284,6 +284,25 @@ const TODAY_SWIPE_PX = 260;
 // 飛走（--duration-card-fly 280ms）+ 轉節目 render
 const TODAY_SETTLE_MS = 600;
 
+// 今日節目卡入面最外嘅控制掣（-60 / +60）同卡邊最少要留幾多 px
+const CARD_CONTROL_INSET_PX = 12;
+
+/** 控制掣要完整喺卡入面，同卡邊留返位（唔可以貼住描邊） */
+const checkCardControlsInset = async (p, label) => {
+    const inset = await p.evaluate(() => {
+        // 最上面嗰張卡 = PlayerPanel 嘅外層
+        const card = document.querySelector('h1').closest('[class*="panel"]').parentElement;
+        const box = card.getBoundingClientRect();
+        const left = document.querySelector('[aria-label="後退 60 秒"]').getBoundingClientRect();
+        const right = document.querySelector('[aria-label="前進 60 秒"]').getBoundingClientRect();
+        return Math.min(left.left - box.left, box.right - right.right);
+    });
+    log(
+        inset >= CARD_CONTROL_INSET_PX,
+        `${label} 今日節目卡：控制掣離卡邊 ${inset.toFixed(1)}px（≥ ${CARD_CONTROL_INSET_PX}）`,
+    );
+};
+
 const horizontalOverflow = (p) =>
     p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
@@ -553,6 +572,7 @@ try {
     await sp.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
     await sp.waitForTimeout(800);
     log((await horizontalOverflow(sp)) === 0, '320×568 今日節目冇橫向捲動');
+    await checkCardControlsInset(sp, '320×568');
     await sp.screenshot({ path: `${OUT}/5c-today-320x568.png` });
     await dragTodayCard(sp, -TODAY_SWIPE_PX / 2);
     await checkTodayShow(sp, 'Bad Girl大過佬', BADGIRL_BG, '320×568 今日節目向左掃');

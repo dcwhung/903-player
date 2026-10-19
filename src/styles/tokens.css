@@ -49,6 +49,8 @@
     --card-stack-offset: 12px;
     --card-stack-scale-step: 0.08;
     --card-stack-fade-step: 0.35;
+    /* 卡疊兩邊留白；好窄嘅畫面收窄（見下面 max-width: 339px） */
+    --card-stack-gutter: var(--space-4);
     /* 飛走：移出幾遠（佔卡闊）、再轉幾多；拖動 / 飛走都以卡底中間做軸心 */
     --card-fly-distance: 150%;
     --card-fly-rotate: 30deg;
@@ -86,6 +88,17 @@
     --player-disc-min: 160px;
     /* 固定版面（Page.module.css .fixed：節目頁、今日節目頁）嘅間距；700px 高或以下收窄，令固定版面多啲位畀清單 */
     --fixed-page-gap: var(--space-5);
+}
+
+/*
+ * 好窄（< 340px，例如 320px）時 PlayerControls 一排掣（4 × 44px + 64px + 4 個 ~9.6px 間距 ≈ 278px）
+ * 塞入 16px 留白嘅卡（288px）只剩約 5px 貼住卡邊；收窄留白令卡闊返 304px，掣同卡邊有約 13px。
+ * 340px 或以上，掣按 vw 縮放後已經有 ≥ 12px。
+ */
+@media (max-width: 339px) {
+    :root {
+        --card-stack-gutter: var(--space-2);
+    }
 }
 
 @media (max-height: 700px) {
