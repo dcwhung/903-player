@@ -133,7 +133,7 @@ describe('probeRecentRecordings', () => {
 
         await probeRecentRecordings([], { probe: next, now: new Date(NOW.getTime() + 1) });
 
-        expect(next).toHaveBeenCalledTimes(10);
+        expect(next).toHaveBeenCalledTimes(9);
     });
 
     it('probes today and yesterday for every show and returns what exists', async () => {
@@ -141,10 +141,22 @@ describe('probeRecentRecordings', () => {
 
         const result = await probeRecentRecordings([], { probe, now: NOW });
 
-        expect(probe).toHaveBeenCalledTimes(10);
+        // 今日 12:00：公子會（23:08）未播，所以係 4 + 5
+        expect(probe).toHaveBeenCalledTimes(9);
         expect(result).toEqual<Recording[]>([
             { showId: 'badgirl', date: '2026-10-19', time: '1009', url: REAL_URLS.badgirl },
         ]);
+    });
+
+    it("skips today's shows that have not aired yet", async () => {
+        const probe = found([]);
+
+        await probeRecentRecordings([], { probe, now: NOW });
+
+        const urls = vi.mocked(probe).mock.calls.map(([url]) => url);
+        expect(urls).not.toContain(buildAudioUrl(findShow('gongzi')!, '2026-10-20'));
+        expect(urls).toContain(buildAudioUrl(findShow('gongzi')!, '2026-10-19'));
+        expect(urls).toContain(buildAudioUrl(findShow('badgirl')!, '2026-10-20'));
     });
 
     it('skips shows the feed already has for that date', async () => {
@@ -158,7 +170,7 @@ describe('probeRecentRecordings', () => {
 
         await probeRecentRecordings([known], { probe, now: NOW });
 
-        expect(probe).toHaveBeenCalledTimes(9);
+        expect(probe).toHaveBeenCalledTimes(8);
         expect(probe).not.toHaveBeenCalledWith(REAL_URLS.badgirl);
     });
 
@@ -184,7 +196,7 @@ describe('probeRecentRecordings', () => {
         });
 
         expect(soon).not.toHaveBeenCalled();
-        expect(later).toHaveBeenCalledTimes(10);
+        expect(later).toHaveBeenCalledTimes(9);
     });
 
     it('drops misses from older days so storage does not grow', async () => {

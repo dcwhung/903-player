@@ -1,7 +1,7 @@
 import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
 import { SHOWS, type ShowConfig } from '../config/shows';
 import type { Recording } from '../types/recording';
-import { hkToday } from '../utils/date';
+import { hkTimeHHMM, hkToday } from '../utils/date';
 import {
     dateFromShowDateKey,
     readProbeState,
@@ -87,23 +87,24 @@ interface ProbeSlot {
     recording: Recording;
 }
 
+const toSlot = (show: ShowConfig, date: string): ProbeSlot => ({
+    key: showDateKey(show.id, date),
+    recording: { showId: show.id, date, time: show.fileTime, url: buildAudioUrl(show, date) },
+});
+
 const isRetryDue = (missedAt: number | undefined, now: Date): boolean =>
     missedAt === undefined || now.getTime() - missedAt >= PROBE_RETRY_MS;
 
-/** 今日同尋日入面，未有錄音、又唔係啱啱先搵唔到嘅節目 */
+/** 今日嘅節目要開咪時間過咗先可能有錄音；HHMM 字串直接比較就得 */
+const hasStarted = (show: ShowConfig, date: string, now: Date): boolean =>
+    date !== hkToday(now) || show.fileTime <= hkTimeHHMM(now);
+
+/** 今日同尋日入面，已經開咪、未有錄音、又唔係啱啱先搵唔到嘅節目 */
 const pendingSlots = (have: Recording[], misses: ProbeState['misses'], now: Date): ProbeSlot[] => {
     const covered = new Set(have.map((r) => showDateKey(r.showId, r.date)));
     return recentDates(now)
         .flatMap((date) =>
-            SHOWS.map((show) => ({
-                key: showDateKey(show.id, date),
-                recording: {
-                    showId: show.id,
-                    date,
-                    time: show.fileTime,
-                    url: buildAudioUrl(show, date),
-                },
-            })),
+            SHOWS.filter((show) => hasStarted(show, date, now)).map((show) => toSlot(show, date)),
         )
         .filter((slot) => !covered.has(slot.key) && isRetryDue(misses[slot.key], now));
 };
