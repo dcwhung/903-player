@@ -25,7 +25,8 @@
 
 /*
  * 有播放器嘅固定版面（節目頁、今日節目頁）：間距跟 --fixed-page-gap（矮螢幕收窄），
- * 播放器 panel 同今日節目卡入面都用同一個值；
+ * 節目頁嘅播放器 panel 都用同一個值；今日節目卡入面嘅播放器另有較窄嘅 --card-inner-gap
+ * （見 ShowCardStack.module.css 嘅 .card，會蓋過呢度嘅 --player-panel-gap）；
  * 底部安全區由清單自己留，等清單可以捲到 home indicator 後面。
  */
 .fixed {
