@@ -34,6 +34,7 @@ export const zhHK = {
         title: '今日節目',
         listTitle: '今日節目',
         playShow: '播放 {name}',
+        playShowWithStatus: '播放 {name}，{status}',
         statusPlaying: '播放中',
         statusWatched: '已收聽',
         statusUnwatched: '未收聽',

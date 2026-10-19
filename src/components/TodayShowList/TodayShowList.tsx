@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { t, type MessageKey } from '../../i18n/t';
 import { Disc } from '../Disc/Disc';
 import { CheckIcon, PlayIcon } from '../icons/icons';
@@ -32,7 +33,7 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
             type="button"
             className={`${styles.item} ${item.active ? styles.active : ''}`}
             aria-current={item.active ? 'true' : undefined}
-            aria-label={`${t('today.playShow', { name: item.name })}，${statusText}`}
+            aria-label={t('today.playShowWithStatus', { name: item.name, status: statusText })}
             onClick={() => onSelect(item.key)}
         >
             <Disc size="small" />
@@ -48,17 +49,20 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
     );
 };
 
-export const TodayShowList = ({ items, onSelect }: TodayShowListProps) => (
-    <section className={styles.section} aria-labelledby="today-list-heading">
-        <h2 id="today-list-heading" className={styles.heading}>
-            {t('today.listTitle')}
-        </h2>
-        <ul className={styles.list}>
-            {items.map((item) => (
-                <li key={item.key}>
-                    <ShowRow item={item} onSelect={onSelect} />
-                </li>
-            ))}
-        </ul>
-    </section>
-);
+export const TodayShowList = ({ items, onSelect }: TodayShowListProps) => {
+    const headingId = useId();
+    return (
+        <section className={styles.section} aria-labelledby={headingId}>
+            <h2 id={headingId} className={styles.heading}>
+                {t('today.listTitle')}
+            </h2>
+            <ul className={styles.list}>
+                {items.map((item) => (
+                    <li key={item.key}>
+                        <ShowRow item={item} onSelect={onSelect} />
+                    </li>
+                ))}
+            </ul>
+        </section>
+    );
+};

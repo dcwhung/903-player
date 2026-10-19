@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { t } from '../../i18n/t';
 import { WatchedBadge } from '../WatchedBadge/WatchedBadge';
 import styles from './DateSlider.module.css';
@@ -17,6 +17,7 @@ interface DateSliderProps {
 
 /** 橫向日子列，只列有錄音嘅日子，揀中嗰日自動置中 */
 export const DateSlider = ({ items, onSelect }: DateSliderProps) => {
+    const headingId = useId();
     const selectedRef = useRef<HTMLButtonElement>(null);
     const selectedKey = items.find((item) => item.selected)?.key;
 
@@ -29,8 +30,8 @@ export const DateSlider = ({ items, onSelect }: DateSliderProps) => {
     }, [selectedKey]);
 
     return (
-        <section className={styles.section} aria-labelledby="date-slider-heading">
-            <h2 id="date-slider-heading" className={styles.heading}>
+        <section className={styles.section} aria-labelledby={headingId}>
+            <h2 id={headingId} className={styles.heading}>
                 {t('dates.title')}
             </h2>
             <div className={styles.viewport}>

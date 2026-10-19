@@ -20,7 +20,7 @@
     height: 52px;
     box-shadow: var(--shadow-raised);
     color: var(--color-text-secondary);
-    font-size: 14px;
+    font-size: var(--font-size-sm);
     font-weight: 500;
 }
 
