@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
+import packageJson from '../../package.json';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
@@ -135,6 +136,14 @@ describe('HomePage', () => {
 
         expect(audio.src).toBe(RECORDINGS[2]?.url);
         expect(screen.getByTestId('location')).toHaveTextContent('/today');
+    });
+
+    it('should show the app version below the show tiles when rendered', async () => {
+        renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+
+        const version = await screen.findByText(`v${packageJson.version}`);
+        const position = screen.getByRole('navigation').compareDocumentPosition(version);
+        expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     it('still navigates when recordings are not loaded yet', async () => {

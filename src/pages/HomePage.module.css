@@ -1,7 +1,14 @@
 .home {
     gap: var(--space-8);
     padding-top: calc(env(safe-area-inset-top) + 56px);
-    /* 留位畀底部 mini player */
+}
+
+/*
+ * 留位畀底部 mini player（頁底版本號唔會畀佢遮住）。
+ * Page.module.css 嘅 .page 喺 bundle 排喺後面，佢個 padding shorthand 會蓋過 .home，
+ * 所以用 main.home 提高 specificity，確保呢個留位真係生效。
+ */
+main.home {
     padding-bottom: calc(env(safe-area-inset-bottom) + 120px);
 }
 

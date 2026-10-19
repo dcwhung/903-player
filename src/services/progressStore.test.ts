@@ -5,6 +5,7 @@ import {
     getProgressMap,
     getWatchedUrls,
     isWatched,
+    resetWatched,
     saveProgress,
 } from './progressStore';
 
@@ -40,6 +41,26 @@ describe('progressStore', () => {
         saveProgress(URL_A, 960, DURATION);
         saveProgress(URL_A, 10, DURATION);
 
+        expect(isWatched(URL_A)).toBe(true);
+    });
+
+    it('clears watched and saves the replay position when reset', () => {
+        saveProgress(URL_A, 960, DURATION);
+
+        resetWatched(URL_A, 10, DURATION);
+
+        expect(getProgress(URL_A)).toMatchObject({ position: 10, watched: false });
+        expect(getResumePosition(URL_A)).toBe(10);
+    });
+
+    it('marks watched again after a reset once 95% is reached', () => {
+        saveProgress(URL_A, 960, DURATION);
+        resetWatched(URL_A, 10, DURATION);
+
+        saveProgress(URL_A, 500, DURATION);
+        expect(isWatched(URL_A)).toBe(false);
+
+        saveProgress(URL_A, 950, DURATION);
         expect(isWatched(URL_A)).toBe(true);
     });
 

@@ -1,5 +1,9 @@
 export const zhHK = {
     appName: '903 Player',
+    app: {
+        version: 'v{version}',
+        versionLabel: '版本 {version}',
+    },
     common: {
         back: '返回主頁',
         loading: '載入中…',
