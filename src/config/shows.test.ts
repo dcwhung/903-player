@@ -1,4 +1,4 @@
-import { findShow, findShowByName } from './shows';
+import { SHOWS, findShow, findShowByName } from './shows';
 
 describe('findShowByName', () => {
     it.each([
@@ -21,5 +21,14 @@ describe('findShow', () => {
     it('finds by id', () => {
         expect(findShow('westair')?.name).toBe('西加航空');
         expect(findShow('nope')).toBeUndefined();
+    });
+});
+
+describe('show names', () => {
+    it('stay unique after normalisation so no alias shadows another show', () => {
+        const names = SHOWS.flatMap((show) => [show.name, ...(show.aliases ?? [])]);
+
+        expect(new Set(names.map((name) => findShowByName(name)?.id)).size).toBe(SHOWS.length);
+        names.forEach((name) => expect(findShowByName(name)).toBeDefined());
     });
 });

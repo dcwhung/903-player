@@ -11,9 +11,12 @@ const main = async (): Promise<void> => {
         scrapeShows(siteSources),
     ]);
     const feed = buildFeed(fresh, fallback);
-    fresh.forEach((recordings, showId) =>
-        console.log(`[scrape] ${showId}: ${recordings ? recordings.length : 'fallback'}`),
-    );
+    fresh.forEach((result, showId) => {
+        const source = result
+            ? `${result.recordings.length}${result.complete ? '' : ' + fallback'}`
+            : 'fallback';
+        console.log(`[scrape] ${showId}: ${source}`);
+    });
     if (feed.recordings.length === 0) {
         // 寧願 deploy 失敗、保留舊版本，都唔好發佈一個空列表
         throw new Error('No recordings scraped and no fallback available');

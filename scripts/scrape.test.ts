@@ -1,6 +1,13 @@
 // @vitest-environment node
 import type { Recording, ShowId } from '../src/types/recording';
-import { buildFeed, loadFallback, scrapeShows, type ScrapeSources } from './scrape';
+import {
+    buildFeed,
+    escapeWorkflowData,
+    loadFallback,
+    scrapeShows,
+    type ScrapeSources,
+    type ShowResult,
+} from './scrape';
 
 const rec = (showId: ShowId, date: string): Recording => ({
     showId,
@@ -9,30 +16,49 @@ const rec = (showId: ShowId, date: string): Recording => ({
     url: `https://audio.hkfm903.live/${showId}/${date}.aac`,
 });
 
+beforeEach(() => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+});
+afterEach(() => vi.restoreAllMocks());
+
+const sources = (overrides: Partial<ScrapeSources> = {}): ScrapeSources => ({
+    fetchShow: vi.fn(async (showId: ShowId) => {
+        if (showId === 'wanni') {
+            throw new Error('timeout');
+        }
+        return showId === 'gongzi' ? [rec('gongzi', '2026-10-17')] : [];
+    }),
+    fetchAll: vi.fn(async () => ({
+        recordings: [rec('badgirl', '2026-10-19'), rec('gongzi', '2026-10-17')],
+        unmatched: ['口水多過浪花'],
+        conflicts: [],
+    })),
+    ...overrides,
+});
+
 describe('scrapeShows', () => {
-    const sources = (overrides: Partial<ScrapeSources> = {}): ScrapeSources => ({
-        fetchShow: vi.fn(async (showId: ShowId) => {
-            if (showId === 'wanni') {
-                throw new Error('timeout');
-            }
-            return showId === 'gongzi' ? [rec('gongzi', '2026-10-17')] : [];
-        }),
-        fetchAll: vi.fn(async () => ({
-            recordings: [rec('badgirl', '2026-10-19'), rec('gongzi', '2026-10-17')],
-            unmatched: ['口水多過浪花'],
-        })),
-        ...overrides,
+    it('treats a show page with recordings as complete', async () => {
+        const results = await scrapeShows(sources());
+
+        expect(results.get('gongzi')).toEqual({
+            recordings: [rec('gongzi', '2026-10-17')],
+            complete: true,
+        });
     });
 
-    it('merges show pages with the all-shows page and de-duplicates', async () => {
-        const s = sources();
+    it('marks all-shows-only data as incomplete when the show page is empty', async () => {
+        const results = await scrapeShows(sources());
 
-        const results = await scrapeShows(s);
+        expect(results.get('badgirl')).toEqual({
+            recordings: [rec('badgirl', '2026-10-19')],
+            complete: false,
+        });
+    });
 
-        expect(s.fetchShow).toHaveBeenCalledTimes(5);
-        expect(s.fetchAll).toHaveBeenCalledTimes(1);
-        expect(results.get('gongzi')).toEqual([rec('gongzi', '2026-10-17')]);
-        expect(results.get('badgirl')).toEqual([rec('badgirl', '2026-10-19')]);
+    it('returns null when neither source has the show', async () => {
+        const results = await scrapeShows(sources());
+
         expect(results.get('wanni')).toBeNull();
         expect(results.get('westair')).toBeNull();
     });
@@ -46,43 +72,95 @@ describe('scrapeShows', () => {
             }),
         );
 
-        expect(results.get('gongzi')).toEqual([rec('gongzi', '2026-10-17')]);
+        expect(results.get('gongzi')?.complete).toBe(true);
         expect(results.get('badgirl')).toBeNull();
     });
 
-    it('warns in GitHub Actions format when a show page is empty but the all page is not', async () => {
-        const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    it('fetches the all-shows page once and each show page once', async () => {
+        const s = sources();
 
-        await scrapeShows(sources());
+        await scrapeShows(s);
 
-        const lines = log.mock.calls.map(([line]) => String(line));
-        expect(lines).toContainEqual(expect.stringMatching(/^::warning::.*badgirl/));
-        expect(lines).toContainEqual(expect.stringMatching(/^::notice::.*口水多過浪花/));
-        log.mockRestore();
+        expect(s.fetchAll).toHaveBeenCalledTimes(1);
+        expect(s.fetchShow).toHaveBeenCalledTimes(5);
+    });
+
+    it('emits GitHub Actions annotations', async () => {
+        await scrapeShows(
+            sources({
+                fetchAll: vi.fn(async () => ({
+                    recordings: [rec('badgirl', '2026-10-19')],
+                    unmatched: ['口水多過浪花\n::error::x'],
+                    conflicts: ['20261019_0000_西加航空.aac'],
+                })),
+            }),
+        );
+
+        const lines = vi.mocked(console.log).mock.calls.map(([line]) => String(line));
+        expect(lines).toContainEqual(expect.stringMatching(/^::warning::badgirl/));
+        expect(lines).toContainEqual(
+            '::notice::Shows on the site that the app does not list: 口水多過浪花%0A::error::x',
+        );
+        expect(lines).toContainEqual(
+            expect.stringMatching(/^::warning::Badge and filename disagree.*西加航空/),
+        );
+        expect(lines.some((line) => line.includes('\n'))).toBe(false);
+    });
+});
+
+describe('escapeWorkflowData', () => {
+    it('escapes characters that would start a new workflow command', () => {
+        expect(escapeWorkflowData('a%b\r\nc')).toBe('a%25b%0D%0Ac');
     });
 });
 
 describe('buildFeed', () => {
-    const fallback = [rec('gongzi', '2026-10-10'), rec('wanni', '2026-10-16')];
+    const fallback = [
+        rec('wanni', '2026-10-14'),
+        rec('wanni', '2026-10-15'),
+        rec('wanni', '2026-10-16'),
+    ];
+    const feedFor = (result: ShowResult | null) =>
+        buildFeed(new Map([['wanni', result]]), fallback, new Date('2026-10-19T00:00:00Z'));
 
-    it('drops duplicate recordings', () => {
-        const fresh = new Map<ShowId, Recording[] | null>([
-            ['gongzi', [rec('gongzi', '2026-10-17'), rec('gongzi', '2026-10-17')]],
+    it('keeps the old history when only partial all-shows data is fresh', () => {
+        const feed = feedFor({ recordings: [rec('wanni', '2026-10-19')], complete: false });
+
+        expect(feed.recordings.map((r) => r.date)).toEqual([
+            '2026-10-19',
+            '2026-10-14',
+            '2026-10-15',
+            '2026-10-16',
         ]);
-
-        expect(buildFeed(fresh, []).recordings).toEqual([rec('gongzi', '2026-10-17')]);
     });
 
-    it('uses fresh data and falls back per show when scraping failed', () => {
-        const fresh = new Map<ShowId, Recording[] | null>([
-            ['gongzi', [rec('gongzi', '2026-10-17')]],
-            ['wanni', null],
-        ]);
+    it('replaces the history when the show page was complete', () => {
+        const feed = feedFor({ recordings: [rec('wanni', '2026-10-19')], complete: true });
 
-        const feed = buildFeed(fresh, fallback, new Date('2026-10-19T00:00:00Z'));
+        expect(feed.recordings.map((r) => r.date)).toEqual(['2026-10-19']);
+    });
+
+    it('falls back entirely when the show was not scraped', () => {
+        expect(feedFor(null).recordings).toEqual(fallback);
+    });
+
+    it('stamps the generation time and drops duplicate urls', () => {
+        const feed = buildFeed(
+            new Map([
+                [
+                    'gongzi',
+                    {
+                        recordings: [rec('gongzi', '2026-10-17'), rec('gongzi', '2026-10-17')],
+                        complete: true,
+                    },
+                ],
+            ]),
+            [],
+            new Date('2026-10-19T00:00:00Z'),
+        );
 
         expect(feed.generatedAt).toBe('2026-10-19T00:00:00.000Z');
-        expect(feed.recordings).toEqual([rec('gongzi', '2026-10-17'), rec('wanni', '2026-10-16')]);
+        expect(feed.recordings).toEqual([rec('gongzi', '2026-10-17')]);
     });
 });
 
@@ -104,6 +182,7 @@ describe('loadFallback', () => {
     });
 
     it('returns an empty list on HTTP errors, bad payloads or no url', async () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
         await expect(loadFallback('https://x', respond({}, false))).resolves.toEqual([]);
         await expect(loadFallback('https://x', respond({ foo: 1 }))).resolves.toEqual([]);
         await expect(loadFallback(undefined)).resolves.toEqual([]);

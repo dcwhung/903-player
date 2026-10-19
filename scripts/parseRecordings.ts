@@ -3,13 +3,14 @@ import { findShowByName } from '../src/config/shows';
 import { isRecording } from '../src/data/recordingValidation';
 import type { Recording, ShowId } from '../src/types/recording';
 
-/** 檔名格式：20261017_2308_公子會.aac */
-const FILENAME_PATTERN = /(\d{4})(\d{2})(\d{2})_(\d{4})_(.+?)\.aac/;
-const FILENAME_SHOW_GROUP = 5;
+/** 檔名開頭：20261017_2308_ */
+const DATE_TIME_PATTERN = /(\d{4})(\d{2})(\d{2})_(\d{4})_/;
+/** 檔名入面嘅節目名：20261017_2308_公子會.aac → 公子會（任何副檔名） */
+const FILENAME_SHOW_PATTERN = /^\d{8}_\d{4}_(.+)\.[a-z0-9]+$/i;
 
 interface Card {
-    /** badge 上嘅節目名（可能冇） */
-    label: string;
+    /** 卡上所有 badge 文字（可能有「新」之類嘅標籤） */
+    labels: string[];
     title: string;
     url: string;
 }
@@ -18,6 +19,8 @@ export interface ParsedAll {
     recordings: Recording[];
     /** 原站有、但 app 冇列出嘅節目名 */
     unmatched: string[];
+    /** badge 同檔名指向唔同節目而被丟棄嘅檔名 */
+    conflicts: string[];
 }
 
 const readCards = (html: string): Card[] => {
@@ -25,14 +28,18 @@ const readCards = (html: string): Card[] => {
     return $('.recording-card')
         .toArray()
         .map((card) => ({
-            label: $(card).find('.badge').first().text().trim(),
+            labels: $(card)
+                .find('.badge')
+                .toArray()
+                .map((badge) => $(badge).text().trim())
+                .filter(Boolean),
             title: $(card).find('.card-title').text().trim(),
             url: $(card).find('audio source').attr('src') ?? '',
         }));
 };
 
 const toRecording = ({ title, url }: Card, showId: ShowId): Recording | null => {
-    const match = FILENAME_PATTERN.exec(title);
+    const match = DATE_TIME_PATTERN.exec(title);
     if (!match) {
         return null;
     }
@@ -43,28 +50,38 @@ const toRecording = ({ title, url }: Card, showId: ShowId): Recording | null => 
 
 const isPresent = (recording: Recording | null): recording is Recording => recording !== null;
 
-/** 節目頁：全部卡都屬於指定節目 */
+/** 節目頁：全部卡都屬於指定節目（原站已按節目篩選） */
 export const parseRecordings = (html: string, showId: ShowId): Recording[] =>
     readCards(html)
         .map((card) => toRecording(card, showId))
         .filter(isPresent);
 
-const showLabelOf = (card: Card): string =>
-    card.label || (FILENAME_PATTERN.exec(card.title)?.[FILENAME_SHOW_GROUP] ?? '');
+type Resolution = { showId: ShowId } | { unmatched: string } | { conflict: true };
 
-/** All Shows 頁：按 badge（冇就用檔名）分返落各個節目 */
+/** badge 同檔名都揀出節目；全部指向同一個先接受 */
+const resolveShow = (card: Card): Resolution => {
+    const candidates = [...card.labels, FILENAME_SHOW_PATTERN.exec(card.title)?.[1] ?? ''];
+    const ids = new Set(candidates.map((name) => findShowByName(name)?.id).filter(Boolean));
+    if (ids.size > 1) {
+        return { conflict: true };
+    }
+    const [showId] = [...ids];
+    return showId ? { showId } : { unmatched: candidates.find(Boolean) ?? '' };
+};
+
+/** All Shows 頁：按 badge 同檔名分返落各個節目 */
 export const parseAllRecordings = (html: string): ParsedAll => {
-    const recordings: Recording[] = [];
-    const unmatched = new Set<string>();
+    const result: ParsedAll = { recordings: [], unmatched: [], conflicts: [] };
     for (const card of readCards(html)) {
-        const label = showLabelOf(card);
-        const show = findShowByName(label);
-        const recording = show ? toRecording(card, show.id) : null;
-        if (recording) {
-            recordings.push(recording);
-        } else if (!show && label) {
-            unmatched.add(label);
+        const resolution = resolveShow(card);
+        if ('conflict' in resolution) {
+            result.conflicts.push(card.title);
+        } else if ('unmatched' in resolution) {
+            result.unmatched.push(resolution.unmatched);
+        } else {
+            const recording = toRecording(card, resolution.showId);
+            if (recording) result.recordings.push(recording);
         }
     }
-    return { recordings, unmatched: [...unmatched] };
+    return { ...result, unmatched: [...new Set(result.unmatched.filter(Boolean))] };
 };

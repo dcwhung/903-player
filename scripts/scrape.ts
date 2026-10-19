@@ -1,4 +1,4 @@
-import { SHOWS } from '../src/config/shows';
+import { SHOWS, type ShowConfig } from '../src/config/shows';
 import { isRecording, uniqueByUrl } from '../src/data/recordingValidation';
 import type { Recording, RecordingsFeed, ShowId } from '../src/types/recording';
 import { parseAllRecordings, parseRecordings, type ParsedAll } from './parseRecordings';
@@ -8,6 +8,12 @@ const REQUEST_TIMEOUT_MS = 20_000;
 const USER_AGENT = '903-player personal archive reader (+https://github.com/dcwhung/903-player)';
 
 export type ShowFetcher = (showId: ShowId, showName: string) => Promise<Recording[]>;
+
+export interface ShowResult {
+    recordings: Recording[];
+    /** 節目頁成功而且有卡：可以完全取代舊資料；否則要同舊資料合併 */
+    complete: boolean;
+}
 
 export interface ScrapeSources {
     fetchShow: ShowFetcher;
@@ -35,7 +41,7 @@ export const siteSources: ScrapeSources = {
     fetchAll: async () => parseAllRecordings(await fetchSiteHtml()),
 };
 
-const settle = async <T>(task: () => Promise<T>, fallback: T, label: string): Promise<T> => {
+const settle = async <T, F>(task: () => Promise<T>, fallback: F, label: string): Promise<T | F> => {
     try {
         return await task();
     } catch (error) {
@@ -44,45 +50,79 @@ const settle = async <T>(task: () => Promise<T>, fallback: T, label: string): Pr
     }
 };
 
-/** 節目頁同 All 頁合併；節目頁 0 集但 All 頁有，即係 ?show= 名唔啱，出 warning */
-const mergeShow = (showId: ShowId, name: string, page: Recording[], all: ParsedAll) => {
-    const fromAll = all.recordings.filter((r) => r.showId === showId);
-    if (page.length === 0 && fromAll.length > 0) {
-        console.log(
-            `::warning::${showId} (${name}): show page has 0 recordings but the all-shows page has ${fromAll.length}; check the ?show= name`,
+/** GitHub Actions workflow command 嘅資料要 escape，防止原站文字插入其他指令 */
+export const escapeWorkflowData = (value: string): string =>
+    value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+
+const annotate = (level: 'notice' | 'warning', message: string): void =>
+    console.log(`::${level}::${escapeWorkflowData(message)}`);
+
+const reportAllPage = (all: ParsedAll): void => {
+    if (all.unmatched.length > 0) {
+        annotate(
+            'notice',
+            `Shows on the site that the app does not list: ${all.unmatched.join(', ')}`,
         );
     }
-    const merged = uniqueByUrl([...page, ...fromAll]);
-    return merged.length > 0 ? merged : null;
+    if (all.conflicts.length > 0) {
+        annotate('warning', `Badge and filename disagree, skipped: ${all.conflicts.join(', ')}`);
+    }
 };
 
-/** 逐個節目爬（唔並行，減輕原站負擔）；失敗或 0 集記為 null */
-export const scrapeShows = async (
-    sources: ScrapeSources,
-): Promise<Map<ShowId, Recording[] | null>> => {
-    const all = await settle(sources.fetchAll, { recordings: [], unmatched: [] }, 'all shows');
-    if (all.unmatched.length > 0) {
-        console.log(
-            `::notice::Shows on the site that the app does not list: ${all.unmatched.join(', ')}`,
+/** 節目頁同 All 頁合併；節目頁失敗（null）或 0 集時結果唔完整，要保留舊資料 */
+const mergeShow = (
+    show: ShowConfig,
+    page: Recording[] | null,
+    all: ParsedAll,
+): ShowResult | null => {
+    const fromAll = all.recordings.filter((r) => r.showId === show.id);
+    if (page?.length === 0 && fromAll.length > 0) {
+        annotate(
+            'warning',
+            `${show.id} (${show.name}): show page has 0 recordings but the all-shows page has ${fromAll.length}; check the ?show= name`,
         );
     }
-    const results = new Map<ShowId, Recording[] | null>();
+    const recordings = uniqueByUrl([...(page ?? []), ...fromAll]);
+    return recordings.length > 0 ? { recordings, complete: (page?.length ?? 0) > 0 } : null;
+};
+
+const EMPTY_ALL: ParsedAll = { recordings: [], unmatched: [], conflicts: [] };
+
+/** 逐個節目爬（唔並行，減輕原站負擔）；兩邊都冇資料就記為 null */
+export const scrapeShows = async (
+    sources: ScrapeSources,
+): Promise<Map<ShowId, ShowResult | null>> => {
+    const all = await settle(sources.fetchAll, EMPTY_ALL, 'all shows');
+    reportAllPage(all);
+    const results = new Map<ShowId, ShowResult | null>();
     for (const show of SHOWS) {
-        const page = await settle(() => sources.fetchShow(show.id, show.name), [], show.name);
-        results.set(show.id, mergeShow(show.id, show.name, page, all));
+        const page = await settle(() => sources.fetchShow(show.id, show.name), null, show.name);
+        results.set(show.id, mergeShow(show, page, all));
     }
     return results;
 };
 
-/** 合併新資料同上次 deploy 嘅資料：某節目爬唔到就沿用舊資料 */
+/** 完整就取代舊資料；唔完整就同舊資料合併；冇就沿用舊資料 */
+const recordingsFor = (result: ShowResult | null | undefined, old: Recording[]): Recording[] => {
+    if (!result) {
+        return old;
+    }
+    return result.complete ? result.recordings : [...result.recordings, ...old];
+};
+
 export const buildFeed = (
-    fresh: Map<ShowId, Recording[] | null>,
+    fresh: Map<ShowId, ShowResult | null>,
     fallback: Recording[],
     now: Date = new Date(),
 ): RecordingsFeed => ({
     generatedAt: now.toISOString(),
     recordings: uniqueByUrl(
-        SHOWS.flatMap((show) => fresh.get(show.id) ?? fallback.filter((r) => r.showId === show.id)),
+        SHOWS.flatMap((show) =>
+            recordingsFor(
+                fresh.get(show.id),
+                fallback.filter((r) => r.showId === show.id),
+            ),
+        ),
     ),
 });
 

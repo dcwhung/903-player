@@ -30,20 +30,35 @@ describe('parseRecordings', () => {
     });
 });
 
+describe('parseRecordings on non-aac files', () => {
+    it('keeps cards whose file has another audio extension', () => {
+        const html = `<div class="recording-card"><h5 class="card-title">20261019_1000_x.MP3</h5>
+            <audio><source src="https://audio.hkfm903.live/x/20261019_1000_x.mp3"></audio></div>`;
+
+        expect(parseRecordings(html, 'badgirl').map((r) => r.date)).toEqual(['2026-10-19']);
+    });
+});
+
 describe('parseAllRecordings', () => {
     const all = parseAllRecordings(read('all-shows.html'));
 
-    it('assigns each card to a show by its badge, ignoring spacing and character variants', () => {
+    it('assigns cards to shows by badge or filename, ignoring spacing, variants and extra badges', () => {
         expect(all.recordings.map((r) => [r.showId, r.date, r.time])).toEqual([
             ['badgirl', '2026-10-19', '1009'],
             ['sunnyday', '2026-10-19', '0809'],
             ['wanni', '2026-10-19', '0708'],
             ['gongzi', '2026-10-18', '2308'],
+            ['gongzi', '2026-10-17', '2308'],
         ]);
     });
 
-    it('falls back to the show name in the filename when a card has no badge', () => {
-        expect(all.recordings.find((r) => r.showId === 'gongzi')?.url).toContain('20261018_2308');
+    it('drops cards whose badge and filename name different shows', () => {
+        expect(all.recordings.some((r) => r.date === '2026-10-16')).toBe(false);
+        expect(all.conflicts).toEqual(['20261016_2000_西加航空.aac']);
+    });
+
+    it('drops foreign audio hosts and impossible dates', () => {
+        expect(all.recordings.some((r) => r.showId === 'westair')).toBe(false);
     });
 
     it('reports show names it could not match', () => {
