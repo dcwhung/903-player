@@ -1,4 +1,5 @@
 import { useRef, type MouseEvent, type PointerEvent } from 'react';
+import { wrapIndex } from '../components/ShowCardStack/cardStack';
 import { swipeDirection, type SwipeDirection } from './swipe';
 
 /**
@@ -52,8 +53,20 @@ export const useSwipe = (onSwipe: (direction: SwipeDirection) => void) => {
     };
 };
 
-/** 由 swipe 方向計新 index；去到盡頭就唔郁（唔會循環） */
-export const stepIndex = (index: number, total: number, direction: SwipeDirection): number => {
+export interface StepIndexOptions {
+    /** 去到盡頭循環返另一頭（同今日節目卡疊一樣）；預設唔循環 */
+    wrap?: boolean;
+}
+
+/** 由 swipe 方向計新 index；預設去到盡頭就唔郁，`wrap` 就循環 */
+export const stepIndex = (
+    index: number,
+    total: number,
+    direction: SwipeDirection,
+    { wrap = false }: StepIndexOptions = {},
+): number => {
+    // 循環邏輯用返卡疊嗰個，兩邊行為先唔會走樣
+    if (wrap) return wrapIndex(index, total, direction);
     const next = direction === 'next' ? index + 1 : index - 1;
     return Math.min(total - 1, Math.max(0, next));
 };
