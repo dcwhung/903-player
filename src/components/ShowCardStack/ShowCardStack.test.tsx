@@ -7,9 +7,9 @@ import { CARD_FLY_MS, CARD_SPRING_MS } from './cardStack';
 import { ShowCardStack, type StackCard } from './ShowCardStack';
 
 const CARDS: StackCard[] = [
-    { key: 'a', title: '甲節目', theme: SHOW_THEMES.sunnyday },
-    { key: 'b', title: '乙節目', theme: SHOW_THEMES.badgirl },
-    { key: 'c', title: '丙節目', theme: SHOW_THEMES.wanni },
+    { title: '甲節目', theme: SHOW_THEMES.sunnyday },
+    { title: '乙節目', theme: SHOW_THEMES.badgirl },
+    { title: '丙節目', theme: SHOW_THEMES.wanni },
 ];
 const LABEL = '今日節目，左右掃動轉節目';
 

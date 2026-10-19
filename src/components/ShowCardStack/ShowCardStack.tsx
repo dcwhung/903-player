@@ -63,8 +63,8 @@ export const ShowCardStack = ({ cards, index, onChange, children }: ShowCardStac
             ref={stackRef}
             className={styles.stack}
             role="group"
-            aria-roledescription={t('carousel.roleDescription')}
-            aria-label={t('carousel.label')}
+            aria-roledescription={t('cardStack.roleDescription')}
+            aria-label={t('cardStack.label')}
             tabIndex={0}
             onKeyDown={onKeyDown}
             {...handlers}

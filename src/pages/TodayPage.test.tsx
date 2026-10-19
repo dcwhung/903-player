@@ -43,7 +43,7 @@ describe('TodayPage', () => {
         expect(screen.getByRole('heading', { name: '在晴朗的一天出發' })).toBeInTheDocument();
     });
 
-    it('leaves swiping to the carousel and renders no episode switcher', async () => {
+    it('leaves swiping to the card stack and renders no episode switcher', async () => {
         renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
 
         await screen.findByRole('heading', { name: '在晴朗的一天出發' });
@@ -69,9 +69,9 @@ describe('TodayPage', () => {
         await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
         expect(screen.getByText('06:00 · 播放中')).toBeInTheDocument();
 
-        const carousel = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
-        fireEvent.pointerDown(carousel, { clientX: 300, clientY: 100 });
-        fireEvent.pointerUp(carousel, { clientX: 150, clientY: 100 });
+        const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        fireEvent.pointerDown(stack, { clientX: 300, clientY: 100 });
+        fireEvent.pointerUp(stack, { clientX: 150, clientY: 100 });
 
         await waitFor(() => expect(audio.src).toBe(TODAY[1]?.url));
         expect(screen.getByRole('heading', { name: 'Bad Girl大過佬' })).toBeInTheDocument();
@@ -85,16 +85,16 @@ describe('TodayPage', () => {
         });
     });
 
-    it('should follow the selected show in theme-color when the carousel changes', async () => {
+    it('should follow the selected show in theme-color when the card stack changes', async () => {
         const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
         const themeColor = () =>
             document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.content;
         expect(themeColor()).toBe(SHOW_THEMES.sunnyday.bg);
 
-        const carousel = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
-        fireEvent.pointerDown(carousel, { clientX: 300, clientY: 100 });
-        fireEvent.pointerUp(carousel, { clientX: 150, clientY: 100 });
+        const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        fireEvent.pointerDown(stack, { clientX: 300, clientY: 100 });
+        fireEvent.pointerUp(stack, { clientX: 150, clientY: 100 });
 
         await waitFor(() => expect(themeColor()).toBe(SHOW_THEMES.badgirl.bg));
     });

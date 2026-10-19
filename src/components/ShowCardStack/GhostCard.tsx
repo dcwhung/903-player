@@ -5,8 +5,6 @@ import styles from './ShowCardStack.module.css';
 
 /** 卡疊入面一個節目 */
 export interface StackCard {
-    /** React key（錄音 URL） */
-    key: string;
     title: string;
     /** 節目色調（連節目圖），後面嘅卡用自己節目嘅色 */
     theme: ShowTheme;

@@ -31,7 +31,6 @@ export const toTodayItems = (
 /** 卡疊每張卡：節目名 + 自己節目嘅色調（後面嘅卡用自己嘅色） */
 export const toStackCards = (list: Recording[]): StackCard[] =>
     list.map((r) => ({
-        key: r.url,
         title: findShow(r.showId)?.name ?? '',
         theme: themeFor(r.showId),
     }));
