@@ -3,15 +3,9 @@
     flex-shrink: 0;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-5);
+    /* 節目頁（Page.module.css .fixed）會傳入矮螢幕收窄嘅間距；今日節目頁用預設 */
+    gap: var(--player-panel-gap, var(--space-5));
     width: 100%;
-}
-
-/* 矮螢幕收窄間距（同 Page.module.css 一致），節目頁同今日節目頁一樣大小 */
-@media (max-height: 700px) {
-    .panel {
-        gap: var(--space-3);
-    }
 }
 
 .gauge {

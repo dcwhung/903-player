@@ -60,6 +60,8 @@ const SWIPE_FROM_PX = 120;
 // 同 tokens.css 嘅 --player-disc-min 同 Page.module.css 嘅成頁捲斷點（max-height）一致
 const DISC_MIN_PX = 160;
 const SHORT_HEIGHT_PX = 559;
+// 今日節目頁同主頁一直用 --space-5 間距
+const TODAY_GAP = '20px';
 const SHOW_VIEWPORTS = [
     { width: 390, height: 844, swipe: true },
     { width: 320, height: 568, swipe: true },
@@ -146,6 +148,16 @@ const checkDiscMatchesToday = async (p, label) => {
     await p.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
     const today = await discWidth();
     log(Math.abs(show - today) < 1, `${label}：唱片同今日節目頁一樣大（${show} / ${today}）`);
+    // 節目頁矮螢幕收窄嘅間距唔可以漏去今日節目頁
+    const gaps = await p.evaluate(() =>
+        [document.querySelector('main'), document.querySelector('[class*="panel"]')].map(
+            (el) => getComputedStyle(el).rowGap,
+        ),
+    );
+    log(
+        gaps.every((g) => g === TODAY_GAP),
+        `${label}：今日節目頁間距不變（${gaps.join(' / ')}）`,
+    );
 };
 
 /** 喺唱片下面嘅日期 / 節目名區向左掃 → 播放中轉去下一行（舊一集） */

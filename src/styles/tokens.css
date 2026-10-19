@@ -55,10 +55,18 @@
  * 矮螢幕（例如 320×568）主碟按畫面高縮細，令固定唔捲嘅節目頁仍然見到兩行集數；
  * 夠高就維持 300px。今日節目頁共用同一個 token，兩頁大小一致。
  * 預留高度 = 頁頭 + 日期節目名 + 控制掣 + 間距 + 兩行集數；唔支援 dvh 就用返上面嘅值。
- * 最細唔會細過 --player-disc-min：再矮（≤ 480px 高）節目頁會改為成頁捲（Page.module.css）。
+ * 最細唔會細過 --player-disc-min：再矮（< 560px 高）節目頁會改為成頁捲（Page.module.css）。
  */
 :root {
     --player-disc-min: 160px;
+    /* 節目頁（只限節目頁）嘅間距；700px 高或以下收窄，令固定版面多啲位畀集數清單 */
+    --show-page-gap: var(--space-5);
+}
+
+@media (max-height: 700px) {
+    :root {
+        --show-page-gap: var(--space-3);
+    }
 }
 
 @supports (height: 100dvh) {
