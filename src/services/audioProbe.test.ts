@@ -1,7 +1,9 @@
 import { FakeAudio } from '../../tests/fakeAudio';
+import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
 import { findShow } from '../config/shows';
 import type { Recording } from '../types/recording';
 import {
+    PROBE_FOUND_RETENTION_DAYS,
     PROBE_RETRY_MS,
     PROBE_TIMEOUT_MS,
     buildAudioUrl,
@@ -10,7 +12,12 @@ import {
     type AudioProber,
     type ProbeResult,
 } from './audioProbe';
-import { PROBE_STORAGE_KEY, dateFromShowDateKey, readProbeState } from './probeStore';
+import {
+    PROBE_STORAGE_KEY,
+    dateFromShowDateKey,
+    readProbeState,
+    writeProbeState,
+} from './probeStore';
 
 /** 用戶喺原站複製出嚟嘅真實網址 */
 const REAL_URLS = {
@@ -182,6 +189,56 @@ describe('probeRecentRecordings', () => {
 
         expect(again).not.toHaveBeenCalledWith(REAL_URLS.badgirl);
         expect(result.map((r) => r.url)).toEqual([REAL_URLS.badgirl]);
+    });
+
+    describe('pruning remembered recordings', () => {
+        const remembered: Recording = {
+            showId: 'badgirl',
+            date: '2026-10-19',
+            time: '1009',
+            url: REAL_URLS.badgirl,
+        };
+        const remember = (recording: Recording): void =>
+            writeProbeState({ found: [recording], misses: {} });
+
+        it('drops a found recording once the feed covers the same show and date', async () => {
+            remember(remembered);
+            const feedVersion: Recording = {
+                ...remembered,
+                time: '1010',
+                url: `${ALLOWED_AUDIO_ORIGIN}/x.aac`,
+            };
+
+            const result = await probeRecentRecordings([feedVersion], {
+                probe: found([]),
+                now: NOW,
+            });
+
+            expect(result).toEqual([]);
+            expect(readProbeState().found).toEqual([]);
+        });
+
+        it('drops a found recording when the feed has the same url in another encoding', async () => {
+            remember(remembered);
+            const unencoded = decodeURI(REAL_URLS.badgirl);
+            const feedVersion: Recording = { ...remembered, date: '2026-10-12', url: unencoded };
+
+            const result = await probeRecentRecordings([feedVersion], {
+                probe: found([]),
+                now: NOW,
+            });
+
+            expect(result).toEqual([]);
+        });
+
+        it(`drops found recordings older than ${PROBE_FOUND_RETENTION_DAYS} days`, async () => {
+            const kept: Recording = { ...remembered, showId: 'westair', date: '2026-10-06' };
+            writeProbeState({ found: [{ ...remembered, date: '2026-10-05' }, kept], misses: {} });
+
+            const result = await probeRecentRecordings([], { probe: found([]), now: NOW });
+
+            expect(result).toEqual([kept]);
+        });
     });
 
     it('waits PROBE_RETRY_MS before probing a missing file again', async () => {

@@ -16,6 +16,8 @@ export const PROBE_TIMEOUT_MS = 15_000;
 export const PROBE_RETRY_MS = 30 * 60 * 1_000;
 /** probe 幾多日：今日同尋日 */
 const PROBE_DAYS = 2;
+/** 搵到嘅錄音最多留幾多日（香港日期），feed 一直唔更新都唔會越積越多 */
+export const PROBE_FOUND_RETENTION_DAYS = 14;
 const MS_PER_DAY = 24 * 60 * 60 * 1_000;
 const AUDIO_EXTENSION = '.aac';
 
@@ -82,6 +84,31 @@ const recentMisses = (misses: ProbeState['misses'], dates: string[]): ProbeState
         Object.entries(misses).filter(([key]) => dates.includes(dateFromShowDateKey(key))),
     );
 
+/** 同一個網址可能有唔同編碼寫法（中文字 / %XX），比較前統一 */
+const normalizeUrl = (url: string): string => {
+    try {
+        return new URL(url).href;
+    } catch {
+        return url;
+    }
+};
+
+/**
+ * 清走 feed 已經有嘅（同節目同日，或者同一個網址）同太舊嘅錄音，
+ * 免得同 feed 重複或者 localStorage 越積越多
+ */
+const pruneFound = (found: Recording[], known: Recording[], now: Date): Recording[] => {
+    const knownUrls = new Set(known.map((r) => normalizeUrl(r.url)));
+    const covered = new Set(known.map((r) => showDateKey(r.showId, r.date)));
+    const oldest = hkToday(new Date(now.getTime() - PROBE_FOUND_RETENTION_DAYS * MS_PER_DAY));
+    return found.filter(
+        (r) =>
+            r.date >= oldest &&
+            !covered.has(showDateKey(r.showId, r.date)) &&
+            !knownUrls.has(normalizeUrl(r.url)),
+    );
+};
+
 interface ProbeSlot {
     key: string;
     recording: Recording;
@@ -119,8 +146,7 @@ export const probeRecentRecordings = async (
     { probe = probeAudio, now = new Date() }: ProbeOptions = {},
 ): Promise<Recording[]> => {
     const stored = readProbeState();
-    const knownUrls = new Set(known.map((r) => r.url));
-    const found = stored.found.filter((r) => !knownUrls.has(r.url));
+    const found = pruneFound(stored.found, known, now);
     const misses = recentMisses(stored.misses, recentDates(now));
     for (const { key, recording } of pendingSlots([...known, ...found], misses, now)) {
         const result = await probe(recording.url);
