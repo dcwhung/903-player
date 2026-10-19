@@ -2,7 +2,7 @@ import { zhHK } from './zh-HK';
 
 type Messages = typeof zhHK;
 
-/** 將巢狀字典展平成 'home.title' 呢類 key */
+/** 將巢狀字典展平成 'home.today' 呢類 key */
 type LeafKeys<T, Prefix extends string = ''> = {
     [K in keyof T & string]: T[K] extends string
         ? `${Prefix}${K}`

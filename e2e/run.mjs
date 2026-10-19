@@ -73,6 +73,41 @@ const checkVersionClear = async (p, label) => {
     );
 };
 
+const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
+// 橫額高度同一格節目一樣（容許 subpixel 捨入）
+const BANNER_HEIGHT_TOLERANCE_PX = 1;
+const HOME_BANNER_VIEWPORTS = [
+    { width: 390, height: 844 },
+    { width: 320, height: 568 },
+    { width: 430, height: 932 },
+];
+
+/** 主頁頁頂橫額：見到、同一格節目一樣高、有圓角；成頁唔捲、冇橫向捲動、版本號喺 mini player 上面 */
+const checkHomeBanner = async (p, label, shot) => {
+    const banner = p.getByRole('heading', { level: 1 }).getByRole('img', { name: BANNER_ALT });
+    await banner.evaluate((img) => img.decode());
+    const b = await banner.boundingBox();
+    const tile = await p.locator('nav button').first().boundingBox();
+    const radius = await banner.evaluate((img) => parseFloat(getComputedStyle(img).borderRadius));
+    const diff = Math.abs(b.height - tile.height);
+    log(
+        (await banner.isVisible()) && diff <= BANNER_HEIGHT_TOLERANCE_PX,
+        `${label}：橫額高 ${b.height.toFixed(2)}px = 節目格高 ${tile.height.toFixed(2)}px`,
+    );
+    log(
+        Math.abs(b.x - tile.x) < 1 && b.y + b.height < tile.y,
+        `${label}：橫額喺節目格上面、左邊對齊（${b.x} / ${tile.x}）`,
+    );
+    log(radius > 0, `${label}：橫額有圓角（${radius}px）`);
+    log((await horizontalOverflow(p)) === 0, `${label}：冇橫向捲動`);
+    const overflow = await p.evaluate(
+        () => document.documentElement.scrollHeight - window.innerHeight,
+    );
+    log(overflow <= 0, `${label}：主頁成頁唔捲（超出 ${overflow}px）`);
+    await p.screenshot({ path: `${OUT}/${shot}` });
+    await checkVersionClear(p, label);
+};
+
 const MIN_VISIBLE_ROWS = 2;
 const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
@@ -642,6 +677,23 @@ try {
     await checkTodayShow(sp, 'Bad Girl大過佬', BADGIRL_BG, '320×568 今日節目向左掃');
     log((await horizontalOverflow(sp)) === 0, '320×568 今日節目掃完冇橫向捲動');
     await small.close();
+
+    // 主頁頁頂橫額：常見手機闊度（細 iPhone、一般、Pro Max）
+    for (const { width, height } of HOME_BANNER_VIEWPORTS) {
+        const ctx = await browser.newContext({
+            viewport: { width, height },
+            deviceScaleFactor: 2,
+            colorScheme: 'dark',
+        });
+        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
+        const hp = await ctx.newPage();
+        hp.on('pageerror', (e) => errors.push(e.message));
+        await hp.goto(BASE);
+        await hp.waitForSelector('nav[aria-busy="false"]');
+        await hp.getByRole('region', { name: '正在播放（今日節目）' }).waitFor();
+        await checkHomeBanner(hp, `${width}×${height} 主頁`, `home-banner-${width}x${height}.png`);
+        await ctx.close();
+    }
 
     // 節目頁：夠高就固定、集數清單自己捲；好矮（橫向手機）就成頁正常捲。badgirl 集數多過一個畫面
     for (const { width, height, swipe } of SHOW_VIEWPORTS) {
