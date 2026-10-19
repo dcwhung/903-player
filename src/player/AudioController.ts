@@ -23,6 +23,13 @@ const INITIAL_STATE: PlayerState = {
 const clamp = (value: number, max: number): number =>
     Math.min(Number.isFinite(max) ? max : value, Math.max(0, value));
 
+/** 全 app 唯一嘅 audio element；只載 metadata，用戶撳播先開始下載 */
+export const createAudioElement = (): HTMLAudioElement => {
+    const audio = new Audio();
+    audio.preload = 'metadata';
+    return audio;
+};
+
 /**
  * 包住唯一一個 HTMLAudioElement：負責播放、續播、存進度。
  * React 透過 subscribe / getSnapshot（useSyncExternalStore）讀取狀態。

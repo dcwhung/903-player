@@ -260,6 +260,13 @@ try {
     await lp.waitForSelector('nav[aria-busy="false"]');
     await lp.screenshot({ path: `${OUT}/7-home-light.png` });
 
+    // 靜靜雞更新靠 registration.update()：build 出嚟嘅 sw.js 要註冊到同啟用
+    const swScript = await lp.evaluate(async () => {
+        const registration = await navigator.serviceWorker.ready;
+        return registration.active?.scriptURL ?? '';
+    });
+    log(swScript.endsWith('/903-player/sw.js'), `Service worker 已啟用：${swScript}`);
+
     log(errors.length === 0, `冇 JS error ${errors.join('; ')}`);
 } finally {
     await browser?.close();

@@ -2,13 +2,44 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
+import { AudioController, createAudioElement } from './player/AudioController';
+import { UpdateManager, createReloadOnce, startUpdateChecks } from './pwa/updateManager';
 import './styles/tokens.css';
 import './styles/global.css';
 
-registerSW({ immediate: true });
+// 喺 React 外面建立，令 PWA 更新可以直接讀播放狀態（唔使經 React）
+const playerController = new AudioController(createAudioElement());
+let registration: ServiceWorkerRegistration | undefined;
+
+const updateManager = new UpdateManager({
+    checkForUpdate: () => registration?.update() ?? Promise.resolve(),
+    applyUpdate: () => {
+        // stop = pause + persist：reload 前先存低進度
+        playerController.stop();
+        void updateSW(true);
+    },
+    now: Date.now,
+    isOnline: () => navigator.onLine,
+    isPlaying: () => playerController.getSnapshot().isPlaying,
+    subscribePlayback: playerController.subscribe,
+});
+
+// prompt 模式：新 SW 喺 waiting 等，由 updateManager 決定幾時 skipWaiting
+const updateSW = registerSW({
+    immediate: true,
+    onNeedRefresh: updateManager.handleNeedRefresh,
+    onNeedReload: createReloadOnce(() => window.location.reload()),
+    onRegisteredSW: (_swUrl, swRegistration) => {
+        if (!swRegistration) {
+            return;
+        }
+        registration = swRegistration;
+        startUpdateChecks(updateManager, { document, window });
+    },
+});
 
 createRoot(document.getElementById('root') as HTMLElement).render(
     <StrictMode>
-        <App />
+        <App playerController={playerController} />
     </StrictMode>,
 );

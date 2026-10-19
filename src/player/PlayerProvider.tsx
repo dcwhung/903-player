@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { AudioController } from './AudioController';
+import { AudioController, createAudioElement } from './AudioController';
 import { PlayerContext, type PlayerActions } from './playerContext';
 import { useMediaSession } from './useMediaSession';
 
@@ -7,17 +7,15 @@ interface PlayerProviderProps {
     children: ReactNode;
     /** 測試時注入假 audio element */
     audio?: HTMLAudioElement;
+    /** 由 main.tsx 傳入共用 controller，令 React 以外（例如 PWA 更新）都讀到播放狀態 */
+    controller?: AudioController;
 }
 
-const createAudio = (): HTMLAudioElement => {
-    const audio = new Audio();
-    audio.preload = 'metadata';
-    return audio;
-};
-
 /** 全 app 共用一個 audio element，令 iOS 喺用戶 click 時就可以開始播放 */
-export const PlayerProvider = ({ children, audio }: PlayerProviderProps) => {
-    const [controller] = useState(() => new AudioController(audio ?? createAudio()));
+export const PlayerProvider = ({ children, audio, controller: shared }: PlayerProviderProps) => {
+    const [controller] = useState(
+        () => shared ?? new AudioController(audio ?? createAudioElement()),
+    );
     useEffect(() => controller.attach(), [controller]);
     const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
 

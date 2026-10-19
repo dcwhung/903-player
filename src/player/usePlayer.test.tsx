@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { FakeAudio } from '../../tests/fakeAudio';
 import { getProgress, isWatched, saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
+import { AudioController } from './AudioController';
 import { PlayerProvider } from './PlayerProvider';
 import { usePlayer } from './usePlayer';
 
@@ -24,6 +25,21 @@ const setup = () => {
 };
 
 describe('usePlayer', () => {
+    it('should share state with an injected controller when one is passed', async () => {
+        // main.tsx 喺 React 外面都要讀播放狀態（決定幾時靜靜雞更新），所以 controller 由外面建立
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const wrapper = ({ children }: { children: ReactNode }) => (
+            <PlayerProvider controller={controller}>{children}</PlayerProvider>
+        );
+        const { result } = renderHook(() => usePlayer(), { wrapper });
+
+        await act(async () => result.current.load(RECORDING, { autoplay: true }));
+
+        expect(controller.getSnapshot().isPlaying).toBe(true);
+        expect(result.current.isPlaying).toBe(true);
+    });
+
     it('loads a recording and autoplays it', async () => {
         const { audio, result } = setup();
 
