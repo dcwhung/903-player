@@ -43,26 +43,18 @@ const writeAll = (map: ProgressMap): void => {
 const reachedWatchedRatio = (position: number, duration: number): boolean =>
     Number.isFinite(duration) && duration > 0 && position / duration >= WATCHED_RATIO;
 
-/** `_revision` 只用嚟做 useMemo 嘅 invalidation key */
-export const getProgress = (url: string, _revision?: number): Progress | undefined =>
-    readAll()[url];
+export const getProgress = (url: string): Progress | undefined => readAll()[url];
 
 export const isWatched = (url: string): boolean => getProgress(url)?.watched ?? false;
 
-/**
- * 一次過讀晒所有進度（集數清單用）。
- * `_revision` 同 `_currentUrl` 只用嚟做 useMemo 嘅 invalidation key（轉集時剛存咗進度）。
- */
-export const getProgressMap = (
-    _revision?: number,
-    _currentUrl?: string,
-): Readonly<Record<string, Progress>> => readAll();
+/** 一次過讀晒所有進度（集數清單用；幾時重新讀見 useRefreshedOn） */
+export const getProgressMap = (): Readonly<Record<string, Progress>> => readAll();
 
 /**
  * 一次過讀晒所有聽過嘅 URL，避免每個項目都 parse 一次 localStorage。
- * `_revision` 只用嚟做 useMemo 嘅 invalidation key。
+ * 幾時重新讀見 useRefreshedOn。
  */
-export const getWatchedUrls = (_revision?: number): Set<string> =>
+export const getWatchedUrls = (): Set<string> =>
     new Set(
         Object.entries(readAll())
             .filter(([, progress]) => progress.watched)

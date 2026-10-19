@@ -10,6 +10,7 @@ import { todayRecordings } from '../selectors/recordings';
 import { getProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import { hkToday } from '../utils/date';
+import { useRefreshedOn } from './useRefreshedOn';
 import { ratio } from '../utils/ratio';
 
 const showName = (recording: Recording): string => findShow(recording.showId)?.name ?? '';
@@ -40,8 +41,8 @@ const useTodaySelection = () => {
 const useShownTime = (url: string | undefined, isLoaded: boolean) => {
     const player = usePlayer();
     // 未載入先要讀 localStorage；轉節目或者有集數變成聽過先再讀
-    const saved = useMemo(
-        () => (url && !isLoaded ? getProgress(url, player.watchedRevision) : undefined),
+    const saved = useRefreshedOn(
+        () => (url && !isLoaded ? getProgress(url) : undefined),
         [url, isLoaded, player.watchedRevision],
     );
     return isLoaded

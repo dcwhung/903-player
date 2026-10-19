@@ -62,7 +62,7 @@ describe('progressStore', () => {
     it('returns every saved progress in a single read', () => {
         saveProgress(URL_A, 300, DURATION);
 
-        expect(getProgressMap(0)[URL_A]).toMatchObject({ position: 300, watched: false });
+        expect(getProgressMap()[URL_A]).toMatchObject({ position: 300, watched: false });
     });
 
     it('survives corrupted storage data', () => {

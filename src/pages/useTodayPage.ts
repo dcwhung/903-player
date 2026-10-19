@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { themeFor } from '../config/showThemes';
 import { useRecordings } from '../data/useRecordings';
+import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
 import { todayRecordings } from '../selectors/recordings';
@@ -33,10 +34,7 @@ export const useTodayPage = () => {
     useAutoplayToday(list.length > 0, playingIndex >= 0);
 
     // 有集數變成聽過（watchedRevision 改變）先重新讀 localStorage
-    const watchedUrls = useMemo(
-        () => getWatchedUrls(player.watchedRevision),
-        [player.watchedRevision],
-    );
+    const watchedUrls = useRefreshedOn(getWatchedUrls, [player.watchedRevision]);
     const items = toTodayItems(list, index, player.isPlaying, watchedUrls);
 
     const selectIndex = (i: number) => {

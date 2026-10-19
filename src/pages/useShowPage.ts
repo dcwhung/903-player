@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { themeFor } from '../config/showThemes';
 import { findShow, type ShowConfig } from '../config/shows';
 import { useRecordings } from '../data/useRecordings';
+import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
 import {
@@ -51,10 +52,7 @@ export const useShowPage = (showId: string) => {
 
     // 轉集或者有集數變成聽過先重新讀 localStorage
     const currentUrl = current?.url;
-    const progressMap = useMemo(
-        () => getProgressMap(player.watchedRevision, currentUrl),
-        [player.watchedRevision, currentUrl],
-    );
+    const progressMap = useRefreshedOn(getProgressMap, [player.watchedRevision, currentUrl]);
     const live = { currentTime: player.currentTime, duration: player.duration };
     const episodeItems = toEpisodeItems(episodes, currentUrl, live, progressMap);
 
