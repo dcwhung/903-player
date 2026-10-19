@@ -4,7 +4,7 @@
 import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { newE2EContext } from './harness.mjs';
+import { AUDIO_HOST, newE2EContext, readFeed } from './harness.mjs';
 import { runTouchChecks } from './touch.mjs';
 
 const DEFAULT_PORT = 4173;
@@ -568,6 +568,108 @@ const checkTodayMidDrag = async (p) => {
     log(after === before && phase === null, `拖唔夠遠放手彈返：${before} → ${after}`);
 };
 
+// audio probe（PR #29）：今日同尋日、feed 未有嘅節目會直接 probe 原站。
+// 西加航空 19/10 晚間節目唔喺假資料（sampleData.mjs），而 E2E_NOW（22:30）佢已經開咗咪，所以一定會 probe
+const PROBE_STORAGE_KEY = '903player:probed:v1';
+// 同 src/config/shows.ts 嘅 westair 一致；刻意寫死做獨立對照
+const PROBE_SHOW = { id: 'westair', name: '西加航空', fileTime: '0905' };
+const PROBE_DATE = '2026-10-19';
+const PROBE_WAIT_MS = 20000;
+const PROBE_POLL_MS = 100;
+
+/** 同 app 嘅 buildAudioUrl 一樣砌法：<host>/<節目名>/<YYYYMMDD>_<HHMM>_<節目名>.aac */
+const probeUrl = ({ name, fileTime }, date) =>
+    `${AUDIO_HOST}/${encodeURIComponent(name)}/${encodeURIComponent(
+        `${date.replaceAll('-', '')}_${fileTime}_${name}`,
+    )}.aac`;
+/** 2026-10-16 → 16/10（集數掣 aria-label 嘅寫法） */
+const dayMonth = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+const feedLatestDate = (showId) =>
+    readFeed()
+        .filter((r) => r.showId === showId)
+        .map((r) => r.date)
+        .sort()
+        .at(-1);
+
+/** 開節目頁，等 probe 寫低某個節目某日嘅結果（found 或者 miss） */
+const openProbedShowPage = async (browser, errors, extraAudioUrls) => {
+    const ctx = await newE2EContext(
+        browser,
+        { viewport: { width: 390, height: 844 } },
+        { extraAudioUrls },
+    );
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => errors.push(e.message));
+    await p.goto(`${BASE}#/show/${PROBE_SHOW.id}`);
+    const slot = `${PROBE_SHOW.id}:${PROBE_DATE}`;
+    await p.waitForFunction(
+        ({ key, slot: wanted, showId, date }) => {
+            const state = JSON.parse(localStorage.getItem(key) ?? 'null');
+            return (
+                state?.misses?.[wanted] !== undefined ||
+                state?.found?.some((r) => r.showId === showId && r.date === date)
+            );
+        },
+        { key: PROBE_STORAGE_KEY, slot, showId: PROBE_SHOW.id, date: PROBE_DATE },
+        { timeout: PROBE_WAIT_MS, polling: PROBE_POLL_MS },
+    );
+    const state = await p.evaluate(
+        (key) => JSON.parse(localStorage.getItem(key)),
+        PROBE_STORAGE_KEY,
+    );
+    return { ctx, p, state };
+};
+
+const currentEpisodeOf = (p) =>
+    p.locator('button[aria-current="true"]').first().getAttribute('aria-label');
+
+/** 原站冇嘅檔（404）唔會變成集數；節目頁最近一集同假資料一樣 */
+const checkProbeIgnoresUnknown = async (browser, errors) => {
+    const { ctx, p, state } = await openProbedShowPage(browser, errors, []);
+    log(
+        state.found.length === 0,
+        `probe 原站冇嘅日子唔會多咗集數（found ${state.found.length}，miss ${Object.keys(state.misses).join(' ')}）`,
+    );
+    const latest = dayMonth(feedLatestDate(PROBE_SHOW.id));
+    // 重開先計：一入頁揀集嗰陣 probe 未完；重開會即刻併埋之前 probe 到嘅（如果有）
+    await p.reload();
+    await p
+        .getByRole('button', { name: new RegExp(`^播放 ${latest}`) })
+        .first()
+        .waitFor();
+    const current = await currentEpisodeOf(p);
+    log(
+        current.startsWith(`播放 ${latest}`),
+        `西加航空節目頁最近一集 = 假資料最近一集 ${latest}：${current}`,
+    );
+    const invented = await p.getByRole('button', { name: /^播放 1[89]\/10/ }).count();
+    log(invented === 0, `西加航空冇 probe 作出嚟嘅 18/10、19/10（${invented} 個）`);
+    await ctx.close();
+};
+
+/** 原站真係有、feed 未有嘅今日新一集：probe 搵到就加入清單，重開節目頁揀佢做最近一集 */
+const checkProbeFindsNewEpisode = async (browser, errors) => {
+    const url = probeUrl(PROBE_SHOW, PROBE_DATE);
+    const { ctx, p, state } = await openProbedShowPage(browser, errors, [url]);
+    const found = state.found.map((r) => `${r.showId} ${r.date}`);
+    log(
+        found.length === 1 && found[0] === `${PROBE_SHOW.id} ${PROBE_DATE}`,
+        `probe 搵到原站有嘅今日新一集，冇其他（${found.join(' / ')}）`,
+    );
+    const label = `播放 ${dayMonth(PROBE_DATE)}`;
+    const row = p.getByRole('button', { name: new RegExp(`^${label}`) });
+    await row.first().waitFor({ timeout: 5000 });
+    log((await row.count()) > 0, `probe 搵到嘅 ${dayMonth(PROBE_DATE)} 即刻加入西加航空清單`);
+    await p.reload();
+    await p
+        .getByRole('button', { name: new RegExp(`^${label}`) })
+        .first()
+        .waitFor();
+    const current = await currentEpisodeOf(p);
+    log(current.startsWith(label), `重開節目頁揀 probe 搵到嘅最新一集：${current}`);
+    await ctx.close();
+};
+
 const server = await startPreview();
 let browser;
 try {
@@ -580,6 +682,9 @@ try {
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    // 先驗 probe 同 audio host：佢哋錯咗，下面最近一集嘅斷言會一連串錯（甚至 crash），睇唔到成因
+    await checkProbeIgnoresUnknown(browser, errors);
+    await checkProbeFindsNewEpisode(browser, errors);
 
     await page.goto(BASE);
     await page.waitForSelector('nav[aria-busy="false"]');
