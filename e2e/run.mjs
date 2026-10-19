@@ -5,8 +5,21 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { silenceWav } from './silenceWav.mjs';
 
-// 多個 worktree 同時跑 e2e 時可以用 E2E_PORT 避開撞 port（strictPort 會令人誤測別人嘅 build）
-const PORT = Number(process.env.E2E_PORT ?? 4173);
+const DEFAULT_PORT = 4173;
+const MAX_PORT = 65535;
+
+/** 多個 worktree 同時跑 e2e 時可以用 E2E_PORT 避開撞 port（strictPort 會令人誤測別人嘅 build） */
+const parsePort = (raw) => {
+    if (raw === undefined || raw === '') return DEFAULT_PORT;
+    const port = Number(raw);
+    if (!/^\d+$/.test(raw) || port < 1 || port > MAX_PORT) {
+        console.error(`E2E_PORT 要係 1–${MAX_PORT} 嘅整數，收到「${raw}」`);
+        process.exit(1);
+    }
+    return port;
+};
+
+const PORT = parsePort(process.env.E2E_PORT);
 const BASE = `http://localhost:${PORT}/903-player/`;
 const OUT = new URL('./screenshots', import.meta.url).pathname;
 const AUDIO_SECONDS = 600;
