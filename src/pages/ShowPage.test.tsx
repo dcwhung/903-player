@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { saveProgress } from '../services/progressStore';
@@ -11,12 +11,22 @@ const RECORDINGS = [
     recording('badgirl', '2026-10-19', '1000'),
 ];
 const ROUTE = { route: '/show/gongzi', path: '/show/:showId' };
+const SWIPE_ZONE = { name: '向左掃動聽舊一集，向右掃動聽新一集' };
+const SWIPE_PX = 100;
+
+/** 喺轉集區左右掃一下（dx < 0 = 向左） */
+const swipe = (zone: HTMLElement, dx: number) => {
+    fireEvent.pointerDown(zone, { clientX: 200, clientY: 100 });
+    fireEvent.pointerUp(zone, { clientX: 200 + dx, clientY: 102 });
+};
+const currentRow = () => screen.getByRole('button', { current: true });
 
 describe('ShowPage', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
         vi.setSystemTime(new Date('2026-10-19T08:00:00Z'));
         Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
     });
     afterEach(() => vi.useRealTimers());
 
@@ -53,6 +63,62 @@ describe('ShowPage', () => {
             'aria-current',
             'true',
         );
+    });
+
+    it('plays the next older episode on a left swipe under the player', async () => {
+        saveProgress(RECORDINGS[2]?.url ?? '', 600, 2400);
+        const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+
+        swipe(screen.getByRole('group', SWIPE_ZONE), -SWIPE_PX);
+
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[2]?.url));
+        act(() => audio.emitMetadata(2400));
+        // 同撳集數一樣：未聽完嘅續播並且即刻播
+        expect(audio.currentTime).toBe(600);
+        expect(audio.play).toHaveBeenLastCalledWith();
+        expect(currentRow()).toHaveAccessibleName(/^播放 10\/10/);
+    });
+
+    it('plays the next newer episode on a right swipe and stops at either end', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+        const zone = screen.getByRole('group', SWIPE_ZONE);
+
+        swipe(zone, SWIPE_PX);
+        expect(audio.src).toBe(RECORDINGS[0]?.url);
+
+        swipe(zone, -SWIPE_PX);
+        swipe(zone, -SWIPE_PX);
+        swipe(zone, -SWIPE_PX);
+        await waitFor(() => expect(currentRow()).toHaveAccessibleName(/^播放 03\/10/));
+
+        swipe(zone, SWIPE_PX);
+        await waitFor(() => expect(currentRow()).toHaveAccessibleName(/^播放 10\/10/));
+    });
+
+    it('switches episodes with the arrow keys when the swipe zone is focused', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+        const zone = screen.getByRole('group', SWIPE_ZONE);
+        expect(zone).toHaveAttribute('aria-roledescription', '轉集');
+
+        zone.focus();
+        await userEvent.keyboard('{ArrowRight}');
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[2]?.url));
+        await userEvent.keyboard('{ArrowLeft}');
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+    });
+
+    it('scrolls the current episode inside the list panel, not the page', async () => {
+        renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+
+        const region = await screen.findByRole('region', { name: '集數' });
+        const list = within(region).getByRole('list');
+        await waitFor(() => expect(HTMLElement.prototype.scrollTo).toHaveBeenCalled());
+        const scrolled = vi.mocked(HTMLElement.prototype.scrollTo).mock.contexts;
+        expect(scrolled.every((el) => el === list)).toBe(true);
+        expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
     });
 
     it('uses the show’s own colour theme', async () => {

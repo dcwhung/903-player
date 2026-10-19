@@ -11,7 +11,29 @@
         calc(env(safe-area-inset-bottom) + var(--space-8));
 }
 
+/*
+ * 節目頁：成頁固定喺一個畫面高，唔會捲（避免控制掣捲咗去 status bar 下面），
+ * 剩低嘅高度畀集數清單自己捲。100dvh 跟 iOS Safari 工具列伸縮，舊瀏覽器用 100vh。
+ * 底部安全區由清單自己留，等清單可以捲到 home indicator 後面。
+ */
+.fixed {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: 0;
+    padding-left: env(safe-area-inset-left);
+}
+
 .header {
     width: 100%;
     padding: 0 var(--space-3);
+}
+
+/* 矮螢幕（例如 320×568）收窄間距，令清單起碼見到兩行 */
+@media (max-height: 700px) {
+    .page {
+        gap: var(--space-3);
+    }
 }
