@@ -34,3 +34,22 @@ export const arcDashArray = (ratio: number, radius: number): string => {
     const visible = circumference * (ARC_SWEEP_DEGREES / FULL_CIRCLE_DEGREES) * clampRatio(ratio);
     return `${visible} ${circumference}`;
 };
+
+const HALF = 0.5;
+
+/**
+ * 拖動時防止喺底部缺口由尾跳返頭（或相反）：
+ * 上一個位置喺後半段而新位置 snap 咗去 0，就維持喺 1；前半段同理。
+ */
+export const stabiliseDragRatio = (next: number, previous: number | null): number => {
+    if (previous === null) {
+        return next;
+    }
+    if (next === 0 && previous > HALF) {
+        return 1;
+    }
+    if (next === 1 && previous < HALF) {
+        return 0;
+    }
+    return next;
+};

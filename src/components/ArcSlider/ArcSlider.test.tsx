@@ -44,6 +44,38 @@ describe('ArcSlider', () => {
         expect(onSeek).toHaveBeenCalledWith(expect.closeTo(MAX / 6, 3));
     });
 
+    it('does not jump from the end to the start when dragged across the bottom gap', () => {
+        const { slider, onSeek } = renderSlider();
+
+        fireEvent.pointerDown(slider, { clientX: 290, clientY: 150, pointerId: 1 });
+        fireEvent.pointerMove(slider, { clientX: 160, clientY: 290, pointerId: 1 });
+        fireEvent.pointerMove(slider, { clientX: 140, clientY: 290, pointerId: 1 });
+        expect(slider).toHaveAttribute('aria-valuenow', String(MAX));
+
+        fireEvent.pointerUp(slider, { clientX: 140, clientY: 290, pointerId: 1 });
+        expect(onSeek).toHaveBeenCalledWith(MAX);
+    });
+
+    it('does not jump from the start to the end when dragged backwards into the gap', () => {
+        const { slider, onSeek } = renderSlider();
+
+        fireEvent.pointerDown(slider, { clientX: 10, clientY: 150, pointerId: 1 });
+        fireEvent.pointerMove(slider, { clientX: 160, clientY: 290, pointerId: 1 });
+        fireEvent.pointerUp(slider, { clientX: 160, clientY: 290, pointerId: 1 });
+
+        expect(onSeek).toHaveBeenCalledWith(0);
+    });
+
+    it('cancels a gesture without seeking', () => {
+        const { slider, onSeek } = renderSlider();
+
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.pointerCancel(slider, { pointerId: 1 });
+
+        expect(onSeek).not.toHaveBeenCalled();
+        expect(slider).toHaveAttribute('aria-valuenow', '400');
+    });
+
     it('ignores pointer moves when not dragging', () => {
         const { slider, onSeek } = renderSlider();
 

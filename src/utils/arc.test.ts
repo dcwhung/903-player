@@ -1,4 +1,4 @@
-import { arcDashArray, pointToRatio, ratioToPoint } from './arc';
+import { arcDashArray, pointToRatio, ratioToPoint, stabiliseDragRatio } from './arc';
 
 const CENTER = 150;
 const RADIUS = 140;
@@ -58,5 +58,25 @@ describe('arcDashArray', () => {
 
     it('is empty at ratio 0', () => {
         expect(arcDashArray(0, RADIUS).startsWith('0 ')).toBe(true);
+    });
+});
+
+describe('stabiliseDragRatio', () => {
+    it('passes through the first sample of a drag', () => {
+        expect(stabiliseDragRatio(0, null)).toBe(0);
+        expect(stabiliseDragRatio(1, null)).toBe(1);
+    });
+
+    it('keeps the end when a drag near the end crosses the gap', () => {
+        expect(stabiliseDragRatio(0, 0.97)).toBe(1);
+    });
+
+    it('keeps the start when a drag near the start crosses the gap', () => {
+        expect(stabiliseDragRatio(1, 0.03)).toBe(0);
+    });
+
+    it('passes through normal movement', () => {
+        expect(stabiliseDragRatio(0.4, 0.42)).toBe(0.4);
+        expect(stabiliseDragRatio(1, 0.98)).toBe(1);
     });
 });
