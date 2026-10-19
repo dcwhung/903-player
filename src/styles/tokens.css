@@ -66,11 +66,16 @@
     --color-status-playing: var(--theme-accent);
     --color-badge: var(--theme-title);
     --color-on-badge: var(--theme-bg);
+    /* 唱片效果：節目圖邊緣陰影、坑紋、中間軸心外圈 */
+    --color-disc-vignette: rgb(0 0 0 / 45%);
+    --color-disc-groove: rgb(255 255 255 / 14%);
+    --color-spindle-ring: rgb(0 0 0 / 50%);
 
     --shadow-raised:
         6px 6px 14px var(--theme-shadow-dark), -4px -4px 10px var(--theme-shadow-light);
     --shadow-raised-strong:
         7px 7px 16px var(--theme-shadow-dark), -5px -5px 12px var(--theme-shadow-light);
     --shadow-disc: 0 20px 38px rgb(0 0 0 / 50%);
+    --shadow-floating: 0 12px 30px rgb(0 0 0 / 55%);
     --fade-edge: linear-gradient(0deg, var(--theme-bg), transparent);
 }

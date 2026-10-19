@@ -36,12 +36,12 @@
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    background: radial-gradient(circle, transparent 55%, rgb(0 0 0 / 45%) 100%);
+    background: radial-gradient(circle, transparent 55%, var(--color-disc-vignette) 100%);
 }
 
 .groove {
     position: absolute;
-    border: 1px solid rgb(255 255 255 / 14%);
+    border: 1px solid var(--color-disc-groove);
     border-radius: 50%;
 }
 
@@ -63,7 +63,7 @@
     aspect-ratio: 1;
     border-radius: 50%;
     background: var(--color-disc-rim);
-    box-shadow: 0 0 0 3px rgb(0 0 0 / 50%);
+    box-shadow: 0 0 0 3px var(--color-spindle-ring);
 }
 
 .small .spindle {
