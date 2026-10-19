@@ -68,6 +68,7 @@ export const useMiniPlayer = (): MiniPlayerProps | null => {
         isPlaying: isLoaded && player.isPlaying,
         progress: ratio(position, duration),
         labels: list.map(showName),
+        keys: list.map((r) => r.url),
         index,
         onToggle: () =>
             void (isLoaded ? player.toggle() : player.load(current, { autoplay: true })),

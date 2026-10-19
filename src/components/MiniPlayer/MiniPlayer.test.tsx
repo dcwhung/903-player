@@ -11,6 +11,7 @@ const props = (overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps => ({
     isPlaying: true,
     progress: 0.11,
     labels: ['雲妮鍾情', '在晴朗的一天出發', 'Bad Girl大過佬'],
+    keys: ['/wanni.aac', '/sunnyday.aac', '/badgirl.aac'],
     index: 2,
     onToggle: vi.fn(),
     onOpen: vi.fn(),

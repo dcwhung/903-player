@@ -36,7 +36,12 @@ export const TodayPage = () => {
                                 dateLabel={formatDateLabel(current.date)}
                                 art={theme.art}
                                 accessory={
-                                    <PageDots labels={names} index={index} onSelect={selectIndex} />
+                                    <PageDots
+                                        keys={items.map((item) => item.key)}
+                                        labels={names}
+                                        index={index}
+                                        onSelect={selectIndex}
+                                    />
                                 }
                             />
                         </ShowCarousel>

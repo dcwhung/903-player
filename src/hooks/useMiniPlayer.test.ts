@@ -110,6 +110,7 @@ describe('useMiniPlayer', () => {
         expect(mini?.showName).toBe('公子會');
         expect(mini?.subtitle).toBe('17/10（六）');
         expect(mini?.labels).toEqual(['公子會']);
+        expect(mini?.keys).toEqual([RECORDINGS[0]?.url]);
     });
 
     it('loads and plays the shown show on toggle when nothing is loaded', async () => {

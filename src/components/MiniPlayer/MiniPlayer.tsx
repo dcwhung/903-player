@@ -18,6 +18,8 @@ export interface MiniPlayerProps {
     progress: number;
     /** 今日所有節目名（按播出次序） */
     labels: string[];
+    /** 同 labels 一樣次序嘅錄音 URL */
+    keys: string[];
     index: number;
     onToggle: () => void;
     onOpen: () => void;
@@ -25,7 +27,7 @@ export interface MiniPlayerProps {
 }
 
 /** 主頁底部嘅今日節目播放器：跟節目轉色，左右掃轉節目，撳入節目頁 */
-export const MiniPlayer = ({ labels, index, onChange, ...props }: MiniPlayerProps) => {
+export const MiniPlayer = ({ labels, keys, index, onChange, ...props }: MiniPlayerProps) => {
     const swipe = useSwipe((direction) => {
         const next = stepIndex(index, labels.length, direction);
         if (next !== index) onChange(next);
@@ -36,7 +38,7 @@ export const MiniPlayer = ({ labels, index, onChange, ...props }: MiniPlayerProp
             <section className={styles.player} aria-label={t('miniPlayer.region')} {...swipe}>
                 <MiniPlayerRow {...props} />
                 <div className={styles.dots}>
-                    <PageDots labels={labels} index={index} onSelect={onChange} />
+                    <PageDots keys={keys} labels={labels} index={index} onSelect={onChange} />
                 </div>
                 <MiniPlayerProgress progress={props.progress} timeText={props.timeText} />
             </section>

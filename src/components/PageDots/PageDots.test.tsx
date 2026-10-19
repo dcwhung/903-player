@@ -7,6 +7,7 @@ describe('PageDots', () => {
         const onSelect = vi.fn();
         render(
             <PageDots
+                keys={['a', 'b', 'c']}
                 labels={['雲妮鍾情', '在晴朗的一天出發', 'Bad Girl大過佬']}
                 index={1}
                 onSelect={onSelect}
@@ -26,9 +27,25 @@ describe('PageDots', () => {
         expect(onSelect).toHaveBeenCalledWith(2);
     });
 
+    it('keys the dots by recording, so the same show twice in a day is fine', () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        render(
+            <PageDots
+                keys={['/gongzi/0600.aac', '/gongzi/2308.aac']}
+                labels={['公子會', '公子會']}
+                index={0}
+                onSelect={() => {}}
+            />,
+        );
+
+        expect(screen.getAllByRole('button', { name: '公子會' })).toHaveLength(2);
+        expect(error).not.toHaveBeenCalled();
+        error.mockRestore();
+    });
+
     it('renders nothing for a single item', () => {
         const { container } = render(
-            <PageDots labels={['公子會']} index={0} onSelect={() => {}} />,
+            <PageDots keys={['a']} labels={['公子會']} index={0} onSelect={() => {}} />,
         );
 
         expect(container).toBeEmptyDOMElement();
