@@ -7,7 +7,7 @@ import { usePlayer } from '../player/usePlayer';
 import { todayRecordings } from '../selectors/recordings';
 import { getWatchedUrls } from '../services/progressStore';
 import { hkToday } from '../utils/date';
-import { toTodayItems } from './todayItems';
+import { toStackCards, toTodayItems } from './todayItems';
 
 /** 入嚟時未播今日節目就自動播第一個 */
 const useAutoplayToday = (hasShows: boolean, isPlayingToday: boolean) => {
@@ -36,6 +36,7 @@ export const useTodayPage = () => {
     // 有集數變成聽過（watchedRevision 改變）先重新讀 localStorage
     const watchedUrls = useRefreshedOn(getWatchedUrls, [player.watchedRevision]);
     const items = toTodayItems(list, index, player.isPlaying, watchedUrls);
+    const cards = useMemo(() => toStackCards(list), [list]);
 
     const selectIndex = (i: number) => {
         const recording = list[i];
@@ -46,5 +47,5 @@ export const useTodayPage = () => {
     const selectShow = (url: string) => selectIndex(list.findIndex((r) => r.url === url));
 
     const theme = themeFor(current?.showId);
-    return { status, reload, current, index, items, theme, selectIndex, selectShow };
+    return { status, reload, current, index, items, cards, theme, selectIndex, selectShow };
 };

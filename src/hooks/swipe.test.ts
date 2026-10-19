@@ -1,4 +1,15 @@
-import { arrowKeyDirection, swipeDirection } from './swipe';
+import { arrowKeyDirection, dragIntent, DRAG_INTENT_PX, swipeDirection } from './swipe';
+
+describe('dragIntent', () => {
+    it('should wait until the pointer has moved far enough', () => {
+        expect(dragIntent(DRAG_INTENT_PX - 1, 0)).toBeNull();
+    });
+
+    it('should tell horizontal from vertical movement', () => {
+        expect(dragIntent(-DRAG_INTENT_PX, 2)).toBe('horizontal');
+        expect(dragIntent(4, DRAG_INTENT_PX + 2)).toBe('vertical');
+    });
+});
 
 describe('swipeDirection', () => {
     it('detects a left swipe as next and a right swipe as previous', () => {

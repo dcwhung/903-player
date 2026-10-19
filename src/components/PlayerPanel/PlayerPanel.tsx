@@ -20,7 +20,7 @@ interface PlayerPanelProps {
     accessory?: ReactNode;
     /**
      * 節目頁：有傳就用日子條代替日期 + 節目名（節目名喺頁頭），左右掃 / 撳隔籬日期轉集，
-     * 返回有冇真係轉（今日節目頁由外面嘅輪播處理 swipe，唔使傳）
+     * 返回有冇真係轉（今日節目頁由外面嘅卡疊處理 swipe，唔使傳）
      */
     onStep?: (direction: SwipeDirection) => boolean;
     /** 節目頁日子條兩邊嘅新一集 / 舊一集日期（配合 onStep） */
