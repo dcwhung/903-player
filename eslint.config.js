@@ -16,6 +16,8 @@ export default tseslint.config(
         rules: {
             ...reactHooks.configs.recommended.rules,
             'no-magic-numbers': 'off',
+            // 底線開頭嘅參數係刻意唔用（例如 memo invalidation key）
+            '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
         },
     },
 );

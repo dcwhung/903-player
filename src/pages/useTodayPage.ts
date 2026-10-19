@@ -35,8 +35,8 @@ export const useTodayPage = () => {
     }, [status, list, playing, startToday]);
 
     const { watchedRevision } = player;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- watchedRevision 係 invalidation key
-    const watchedUrls = useMemo(() => getWatchedUrls(), [list, watchedRevision]);
+    // 有集數變成聽過（watchedRevision 改變）先重新讀 localStorage
+    const watchedUrls = useMemo(() => getWatchedUrls(watchedRevision), [watchedRevision]);
     const items: TodayShowItem[] = list.map((r) => ({
         key: r.url,
         name: findShow(r.showId)?.name ?? '',

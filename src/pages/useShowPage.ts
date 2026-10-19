@@ -30,9 +30,8 @@ export const useShowPage = (showId: string) => {
     }, [show, status, playing, startShow]);
 
     const { watchedRevision } = player;
-    // watchedRevision 係 invalidation key：有集數變成聽過先重新讀 localStorage
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const watchedUrls = useMemo(() => getWatchedUrls(), [showRecordings, watchedRevision]);
+    // 有集數變成聽過（watchedRevision 改變）先重新讀 localStorage
+    const watchedUrls = useMemo(() => getWatchedUrls(watchedRevision), [watchedRevision]);
     const dateItems: DateItem[] = showRecordings.map((r) => ({
         key: r.url,
         label: formatDateLabel(r.date),

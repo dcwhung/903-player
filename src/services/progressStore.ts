@@ -47,8 +47,11 @@ export const getProgress = (url: string): Progress | undefined => readAll()[url]
 
 export const isWatched = (url: string): boolean => getProgress(url)?.watched ?? false;
 
-/** 一次過讀晒所有聽過嘅 URL，避免每個項目都 parse 一次 localStorage */
-export const getWatchedUrls = (): Set<string> =>
+/**
+ * 一次過讀晒所有聽過嘅 URL，避免每個項目都 parse 一次 localStorage。
+ * `_revision` 只用嚟做 useMemo 嘅 invalidation key。
+ */
+export const getWatchedUrls = (_revision?: number): Set<string> =>
     new Set(
         Object.entries(readAll())
             .filter(([, progress]) => progress.watched)

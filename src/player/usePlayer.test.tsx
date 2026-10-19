@@ -195,6 +195,30 @@ describe('usePlayer', () => {
         expect(getProgress(RECORDING.url)?.position).toBe(1800);
     });
 
+    it('skips from the resume position when metadata has not loaded yet', async () => {
+        saveProgress(RECORDING.url, 1800, 6000);
+        const { audio, result } = setup();
+        await act(async () => result.current.load(RECORDING));
+
+        act(() => result.current.skip(30));
+        act(() => audio.emitMetadata(6000));
+
+        expect(audio.currentTime).toBe(1830);
+        expect(result.current.currentTime).toBe(1830);
+        expect(getProgress(RECORDING.url)?.position).toBe(1800);
+    });
+
+    it('does not restart a watched episode that is still playing', async () => {
+        const { audio, result } = setup();
+        await act(async () => result.current.load(RECORDING, { autoplay: true }));
+        act(() => audio.emitMetadata(DURATION));
+        act(() => audio.emitTime(990));
+
+        await act(async () => result.current.load(RECORDING, { autoplay: true }));
+
+        expect(audio.currentTime).toBe(990);
+    });
+
     it('restarts a watched episode that is reloaded while parked at the end', async () => {
         const { audio, result } = setup();
         await act(async () => result.current.load(RECORDING));

@@ -85,13 +85,15 @@ export class AudioController {
 
     seek = (seconds: number): void => {
         const target = clamp(seconds, this.audio.duration);
-        this.pendingStart = 0;
+        // metadata 未到時記低目標，等 loadedmetadata 先套用（否則會由 0 起計）
+        this.pendingStart = Number.isFinite(this.audio.duration) ? 0 : target;
         this.audio.currentTime = target;
         this.update({ currentTime: target });
         this.persist();
     };
 
-    skip = (deltaSeconds: number): void => this.seek(this.audio.currentTime + deltaSeconds);
+    // 用 state 而唔係 audio.currentTime：metadata 未到時 state 已經係續播位置
+    skip = (deltaSeconds: number): void => this.seek(this.state.currentTime + deltaSeconds);
 
     stop = (): void => {
         this.audio.pause();
@@ -106,9 +108,13 @@ export class AudioController {
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
     }
 
-    /** 已聽過而停喺尾段：再入嚟就由頭播 */
+    /** 已聽過、已暫停而停喺尾段：再入嚟就由頭播 */
     private isParkedAtEnd(): boolean {
-        return this.watched && this.audio.currentTime / this.audio.duration >= WATCHED_RATIO;
+        return (
+            this.audio.paused &&
+            this.watched &&
+            this.audio.currentTime / this.audio.duration >= WATCHED_RATIO
+        );
     }
 
     private persist = (): void => {
