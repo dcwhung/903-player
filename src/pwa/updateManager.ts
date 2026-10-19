@@ -6,11 +6,25 @@ export const UPDATE_CHECK_THROTTLE_MS = 60 * 1000;
 /** 停咗播放最少咁耐先可以換版本（收起 app 或者返到前景時），短暫暫停唔會即刻 reload */
 export const UPDATE_IDLE_GRACE_MS = 60_000;
 
+/** controllerchange 可能觸發多過一次（多個 listener / 連續更新），確保只 reload 一次 */
+export const createReloadOnce = (reload: () => void): (() => void) => {
+    let reloaded = false;
+    return () => {
+        if (reloaded) {
+            return;
+        }
+        reloaded = true;
+        reload();
+    };
+};
+
 export interface UpdateManagerDeps {
     /** 即係 registration.update()：叫瀏覽器重新攞 sw.js 睇下有冇新版 */
     checkForUpdate: () => Promise<unknown>;
     /** 換新版：先存進度，再叫 waiting SW skipWaiting */
     applyUpdate: () => void;
+    /** 新 SW 已經接管：存進度再 reload */
+    reload: () => void;
     now: () => number;
     isOnline: () => boolean;
     isPlaying: () => boolean;
@@ -28,13 +42,18 @@ export interface UpdateManagerDeps {
  */
 export class UpdateManager {
     private lastCheckedAt = Number.NEGATIVE_INFINITY;
-    private pending = false;
+    /** 等緊做嘅動作：refresh = 新 SW 喺 waiting；reload = 新 SW 已啟用（例如另一個 tab 換咗） */
+    private pendingAction: 'refresh' | 'reload' | undefined;
     private applied = false;
     /** 播放上一次停低嘅時間；播緊就係 undefined */
     private stoppedAt: number | undefined;
     private cancelTimer: (() => void) | undefined;
 
-    constructor(private readonly deps: UpdateManagerDeps) {}
+    private readonly reloadOnce: () => void;
+
+    constructor(private readonly deps: UpdateManagerDeps) {
+        this.reloadOnce = createReloadOnce(deps.reload);
+    }
 
     /** 開始追蹤播放狀態（要知幾時停低先計到 grace period），返回解除 function */
     start = (): (() => void) => {
@@ -59,7 +78,21 @@ export class UpdateManager {
 
     /** 新版本已裝好喺 waiting：等到唔會打斷收聽嘅時機先換 */
     handleNeedRefresh = (): void => {
-        this.pending = true;
+        this.pendingAction ??= 'refresh';
+        this.syncStoppedAt();
+        this.evaluate(false);
+    };
+
+    /**
+     * 新 SW 已接管（controllerchange）。自己 apply 嘅就即刻 reload；
+     * 否則（例如另一個 tab 換咗版本）照樣等唔會打斷收聽先 reload
+     */
+    handleNeedReload = (): void => {
+        if (this.applied) {
+            this.reloadOnce();
+            return;
+        }
+        this.pendingAction = 'reload';
         this.syncStoppedAt();
         this.evaluate(false);
     };
@@ -85,7 +118,7 @@ export class UpdateManager {
     }
 
     private evaluate(justBecameVisible: boolean): void {
-        if (!this.pending || this.applied) {
+        if (this.pendingAction === undefined || this.applied) {
             return;
         }
         if (this.canApply(justBecameVisible)) {
@@ -132,21 +165,13 @@ export class UpdateManager {
     private apply(): void {
         this.applied = true;
         this.clearTimer();
-        this.deps.applyUpdate();
+        if (this.pendingAction === 'reload') {
+            this.reloadOnce();
+        } else {
+            this.deps.applyUpdate();
+        }
     }
 }
-
-/** controllerchange 可能觸發多過一次（多個 listener / 連續更新），確保只 reload 一次 */
-export const createReloadOnce = (reload: () => void): (() => void) => {
-    let reloaded = false;
-    return () => {
-        if (reloaded) {
-            return;
-        }
-        reloaded = true;
-        reload();
-    };
-};
 
 export interface UpdateCheckEnv {
     document: Pick<Document, 'visibilityState' | 'addEventListener' | 'removeEventListener'>;

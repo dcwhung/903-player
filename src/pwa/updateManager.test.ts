@@ -22,6 +22,7 @@ const createHarness = () => {
     const deps: UpdateManagerDeps = {
         checkForUpdate: vi.fn(async () => undefined),
         applyUpdate: vi.fn(),
+        reload: vi.fn(),
         now: () => Date.now(),
         isOnline: () => online,
         isPlaying: () => playing,
@@ -233,6 +234,65 @@ describe('UpdateManager apply rule', () => {
         h.hide();
         h.stop();
         vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
+        expect(h.deps.applyUpdate).not.toHaveBeenCalled();
+    });
+});
+
+describe('UpdateManager.handleNeedReload', () => {
+    it('should reload at once when this app applied the update', () => {
+        const h = createHarness();
+        h.setLoaded(false);
+        h.manager.handleNeedRefresh();
+        h.setPlaying(true);
+        h.manager.handleNeedReload();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('should reload only once when controllerchange fires twice', () => {
+        const h = createHarness();
+        h.setLoaded(false);
+        h.manager.handleNeedRefresh();
+        h.manager.handleNeedReload();
+        h.manager.handleNeedReload();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('should defer the reload while playing when another tab applied the update', () => {
+        const h = createHarness();
+        h.setPlaying(true);
+        h.manager.handleNeedReload();
+        h.hide();
+        vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
+        expect(h.deps.reload).not.toHaveBeenCalled();
+
+        h.setPlaying(false);
+        vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+        // 新 SW 已經啟用咗，唔使再 skipWaiting
+        expect(h.deps.applyUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should not reload when visible and paused after another tab applied the update', () => {
+        const h = createHarness();
+        h.manager.handleNeedReload();
+        vi.advanceTimersByTime(LONG_PAUSE_MS);
+        expect(h.deps.reload).not.toHaveBeenCalled();
+    });
+
+    it('should reload at once when nothing is loaded and another tab applied the update', () => {
+        const h = createHarness();
+        h.setLoaded(false);
+        h.manager.handleNeedReload();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('should reload instead of skipWaiting when need-reload overtakes a pending refresh', () => {
+        const h = createHarness();
+        h.manager.handleNeedRefresh();
+        h.manager.handleNeedReload();
+        vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
+        h.show();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
         expect(h.deps.applyUpdate).not.toHaveBeenCalled();
     });
 });

@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { AudioController, createAudioElement } from './player/AudioController';
-import { UpdateManager, createReloadOnce, startUpdateChecks } from './pwa/updateManager';
+import { UpdateManager, startUpdateChecks } from './pwa/updateManager';
 import './styles/tokens.css';
 import './styles/global.css';
 
@@ -17,6 +17,10 @@ const updateManager = new UpdateManager({
         // stop = pause + persist：reload 前先存低進度
         playerController.stop();
         void updateSW(true);
+    },
+    reload: () => {
+        playerController.stop();
+        window.location.reload();
     },
     now: Date.now,
     isOnline: () => navigator.onLine,
@@ -37,7 +41,8 @@ updateManager.start();
 const updateSW = registerSW({
     immediate: true,
     onNeedRefresh: updateManager.handleNeedRefresh,
-    onNeedReload: createReloadOnce(() => window.location.reload()),
+    // 只會 reload 一次；播緊（例如另一個 tab 換咗版本）就等停咗先 reload
+    onNeedReload: updateManager.handleNeedReload,
     onRegisteredSW: (_swUrl, swRegistration) => {
         if (!swRegistration) {
             return;
