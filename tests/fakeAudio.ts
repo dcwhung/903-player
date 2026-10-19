@@ -13,6 +13,8 @@ export class FakeAudio extends EventTarget {
     duration = Number.NaN;
     paused = true;
     rejectPlay = false;
+    /** 同真 element 一樣：發 error event 之前設定，等 caller 睇 code 分辨網絡問題定冇檔 */
+    error: { code: number } | null = null;
     private source = '';
 
     constructor(private readonly options: FakeAudioOptions = {}) {

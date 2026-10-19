@@ -21,6 +21,11 @@ const SETTLED_AFTER_DAYS = 2;
 /** 搵到嘅錄音最多留幾多日（香港日期），feed 一直唔更新都唔會越積越多 */
 export const PROBE_FOUND_RETENTION_DAYS = 14;
 const MS_PER_DAY = 24 * 60 * 60 * 1_000;
+/**
+ * MediaError.MEDIA_ERR_NETWORK：斷網、captive portal、DNS 失敗都係呢個 code，
+ * 唔代表冇呢個檔。直接寫數字，因為 jsdom 等環境冇 MediaError
+ */
+const MEDIA_ERR_NETWORK = 2;
 const AUDIO_EXTENSION = '.aac';
 
 /**
@@ -32,10 +37,17 @@ export type ProbeResult = 'found' | 'missing' | 'timeout';
 /** 檢查一個錄音網址存唔存在；可以注入，方便測試 */
 export type AudioProber = (url: string) => Promise<ProbeResult>;
 
+/** 裝置而家有冇網絡；可以注入，方便測試 */
+export type OnlineChecker = () => boolean;
+
 export interface ProbeOptions {
     probe?: AudioProber;
     now?: Date;
+    isOnline?: OnlineChecker;
 }
+
+/** 冇 navigator（例如 SSR / 測試環境）就當有網，交俾 probe 自己判斷 */
+const navigatorIsOnline: OnlineChecker = () => typeof navigator === 'undefined' || navigator.onLine;
 
 /** 檔名入面嘅節目名用底線代替空格（Bad Girl大過佬 → Bad_Girl大過佬） */
 const fileShowName = (name: string): string => name.replace(/ /g, '_');
@@ -67,7 +79,9 @@ export const probeAudio = (
             resolve(result);
         };
         const onFound = (): void => finish('found');
-        const onMissing = (): void => finish('missing');
+        // 網絡問題當 timeout：停低今次，唔好記低一個其實存在嘅檔做 miss
+        const onMissing = (): void =>
+            finish(audio.error?.code === MEDIA_ERR_NETWORK ? 'timeout' : 'missing');
         const timer = setTimeout(() => finish('timeout'), timeoutMs);
         audio.addEventListener('loadedmetadata', onFound);
         audio.addEventListener('error', onMissing);
@@ -163,14 +177,18 @@ const pendingSlots = (have: Recording[], misses: ProbeState['misses'], now: Date
 /**
  * 回看 PROBE_LOOKBACK_DAYS 日，feed 未有嘅節目喺播放日逐個 probe（唔並行，減輕原站負擔）。
  * 搵到嘅記低，之後唔再 probe；feed 有咗就唔再保留。搵唔到嘅規則見 isRetryDue。
- * 一遇到 timeout 就停：平台背景唔載 media，再試落去都係白等，亦唔當係 miss
+ * 一遇到 timeout 就停：平台背景唔載 media，再試落去都係白等，亦唔當係 miss。
+ * 離線就完全唔 probe，淨係交返之前搵到嘅，免得將斷網當成冇錄音
  */
 export const probeRecentRecordings = async (
     known: Recording[],
-    { probe = probeAudio, now = new Date() }: ProbeOptions = {},
+    { probe = probeAudio, now = new Date(), isOnline = navigatorIsOnline }: ProbeOptions = {},
 ): Promise<Recording[]> => {
     const stored = readProbeState();
     const found = pruneFound(stored.found, known, now);
+    if (!isOnline()) {
+        return found;
+    }
     const misses = recentMisses(stored.misses, recentDates(now));
     for (const { key, recording } of pendingSlots([...known, ...found], misses, now)) {
         const result = await probe(recording.url);

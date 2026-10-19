@@ -41,6 +41,9 @@ const NOW = new Date('2026-10-20T04:00:00Z');
  */
 const WINDOW_SLOTS = 34;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+/** MediaError 嘅 code（jsdom 冇 MediaError，所以自己寫低） */
+const MEDIA_ERR_NETWORK_CODE = 2;
+const MEDIA_ERR_SRC_NOT_SUPPORTED_CODE = 4;
 const daysAfter = (date: Date, days: number): Date => new Date(date.getTime() + days * MS_PER_DAY);
 const urlFor = (showId: Parameters<typeof findShow>[0], date: string): string =>
     buildAudioUrl(findShow(showId)!, date);
@@ -94,6 +97,25 @@ describe('probeAudio', () => {
         expect(audio.load).toHaveBeenCalled();
     });
 
+    it('resolves timeout (not missing) on a network error, e.g. offline or captive portal', async () => {
+        const { audio, result } = start();
+
+        audio.error = { code: MEDIA_ERR_NETWORK_CODE };
+        audio.dispatchEvent(new Event('error'));
+
+        await expect(result).resolves.toBe('timeout');
+        expect(audio.src).toBe('');
+    });
+
+    it('still resolves missing for a non-network media error', async () => {
+        const { audio, result } = start();
+
+        audio.error = { code: MEDIA_ERR_SRC_NOT_SUPPORTED_CODE };
+        audio.dispatchEvent(new Event('error'));
+
+        await expect(result).resolves.toBe('missing');
+    });
+
     it('resolves timeout (not missing) when nothing happens, then releases the source', async () => {
         const { audio, result } = start();
 
@@ -140,6 +162,31 @@ describe('probeRecentRecordings', () => {
         expect(timingOut).toHaveBeenCalledTimes(1);
         expect(result).toEqual([]);
         expect(readProbeState().misses).toEqual({});
+    });
+
+    it('neither probes nor records misses while offline, but still returns cached finds', async () => {
+        const remembered: Recording = {
+            showId: 'badgirl',
+            date: '2026-10-19',
+            time: '1009',
+            url: REAL_URLS.badgirl,
+        };
+        writeProbeState({ found: [remembered], misses: {} });
+        const probe = found([]);
+
+        const result = await probeRecentRecordings([], { probe, now: NOW, isOnline: () => false });
+
+        expect(probe).not.toHaveBeenCalled();
+        expect(result).toEqual([remembered]);
+        expect(readProbeState().misses).toEqual({});
+    });
+
+    it('probes as usual when online', async () => {
+        const probe = found([]);
+
+        await probeRecentRecordings([], { probe, now: NOW, isOnline: () => true });
+
+        expect(probe).toHaveBeenCalledTimes(WINDOW_SLOTS);
     });
 
     it('retries right away on the next run after a timeout', async () => {
