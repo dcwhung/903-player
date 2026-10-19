@@ -77,13 +77,15 @@ const checkVersionClear = async (p, label) => {
 const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 // 橫額高度同一格節目一樣（容許 subpixel 捨入）
 const BANNER_HEIGHT_TOLERANCE_PX = 1;
+// 390×844、320×568 嘅主頁固定 / 版本號已經由 SHOW_VIEWPORTS（homeFixed）嘅 checkFixedHome 檢查；
+// 430×932 唔喺嗰度，所以喺橫額呢度補做（fixedHome）
 const HOME_BANNER_VIEWPORTS = [
     { width: 390, height: 844 },
     { width: 320, height: 568 },
-    { width: 430, height: 932 },
+    { width: 430, height: 932, fixedHome: true },
 ];
 
-/** 主頁頁頂橫額：見到、同一格節目一樣高、有圓角；成頁唔捲、冇橫向捲動、版本號喺 mini player 上面 */
+/** 主頁頁頂橫額嘅幾何：見到、同一格節目一樣高、喺節目格上面對齊、有圓角、冇令頁面橫向捲動 */
 const checkHomeBanner = async (p, label, shot) => {
     const banner = p.getByRole('heading', { level: 1 }).getByRole('img', { name: BANNER_ALT });
     await banner.evaluate((img) => img.decode());
@@ -101,12 +103,7 @@ const checkHomeBanner = async (p, label, shot) => {
     );
     log(radius > 0, `${label}：橫額有圓角（${radius}px）`);
     log((await horizontalOverflow(p)) === 0, `${label}：冇橫向捲動`);
-    const overflow = await p.evaluate(
-        () => document.documentElement.scrollHeight - window.innerHeight,
-    );
-    log(overflow <= 0, `${label}：主頁成頁唔捲（超出 ${overflow}px）`);
     await p.screenshot({ path: `${OUT}/${shot}` });
-    await checkVersionClear(p, label);
 };
 
 const MIN_VISIBLE_ROWS = 2;
@@ -829,7 +826,7 @@ try {
     await small.close();
 
     // 主頁頁頂橫額：常見手機闊度（細 iPhone、一般、Pro Max）
-    for (const { width, height } of HOME_BANNER_VIEWPORTS) {
+    for (const { width, height, fixedHome } of HOME_BANNER_VIEWPORTS) {
         const ctx = await browser.newContext({
             viewport: { width, height },
             deviceScaleFactor: 2,
@@ -842,6 +839,7 @@ try {
         await hp.waitForSelector('nav[aria-busy="false"]');
         await hp.getByRole('region', { name: '正在播放（今日節目）' }).waitFor();
         await checkHomeBanner(hp, `${width}×${height} 主頁`, `home-banner-${width}x${height}.png`);
+        if (fixedHome) await checkFixedHome(hp, `${width}×${height} 主頁`);
         await ctx.close();
     }
 
