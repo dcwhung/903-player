@@ -1,4 +1,4 @@
-import { formatDuration } from './time';
+import { formatBroadcastTime, formatDuration } from './time';
 
 describe('formatDuration', () => {
     it.each([
@@ -15,5 +15,12 @@ describe('formatDuration', () => {
         expect(formatDuration(Number.NaN)).toBe('0:00');
         expect(formatDuration(Number.POSITIVE_INFINITY)).toBe('0:00');
         expect(formatDuration(-5)).toBe('0:00');
+    });
+});
+
+describe('formatBroadcastTime', () => {
+    it('formats HHMM as HH:MM', () => {
+        expect(formatBroadcastTime('0708')).toBe('07:08');
+        expect(formatBroadcastTime('2308')).toBe('23:08');
     });
 });

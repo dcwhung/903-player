@@ -1,4 +1,4 @@
-import { formatDateLabel, hkToday } from './date';
+import { formatDateLabel, formatDayMonth, formatWeekday, hkToday } from './date';
 
 describe('hkToday', () => {
     it('uses Hong Kong date even when UTC is still the previous day', () => {
@@ -17,5 +17,12 @@ describe('formatDateLabel', () => {
         expect(formatDateLabel('2026-10-17')).toBe('17/10（六）');
         expect(formatDateLabel('2026-10-19')).toBe('19/10（一）');
         expect(formatDateLabel('2026-10-25')).toBe('25/10（日）');
+    });
+});
+
+describe('formatDayMonth / formatWeekday', () => {
+    it('splits the label into day/month and weekday', () => {
+        expect(formatDayMonth('2026-10-05')).toBe('05/10');
+        expect(formatWeekday('2026-10-19')).toBe('星期一');
     });
 });

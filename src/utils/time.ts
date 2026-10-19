@@ -11,3 +11,9 @@ export const formatDuration = (totalSeconds: number): string => {
     const seconds = safe % SECONDS_PER_MINUTE;
     return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
 };
+
+const BROADCAST_HOUR_DIGITS = 2;
+
+/** 播出時間：0708 → 07:08 */
+export const formatBroadcastTime = (hhmm: string): string =>
+    `${hhmm.slice(0, BROADCAST_HOUR_DIGITS)}:${hhmm.slice(BROADCAST_HOUR_DIGITS)}`;

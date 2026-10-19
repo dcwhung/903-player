@@ -1,27 +1,17 @@
-/* Design tokens — 來源：mockup https://claude.ai/artifact/VuU4PQdBsgZn8XWeiT22Uy */
-:root {
-    --color-bg: #262a33;
-    --color-surface: #2b303a;
-    --color-disc: #15171c;
-    --color-disc-groove: #262a31;
-    --color-disc-rim: #2e333d;
-    --color-track: #3a404c;
-    --color-divider: #343a46;
-    --color-text: #f0f2f5;
-    --color-text-secondary: #c9d1de;
-    --color-text-muted: #9aa3b2;
-    --color-title: #7cc4f0;
-    --color-accent: #e0306a;
-    --color-accent-fill: #c81e56;
-    --color-on-accent: #ffffff;
-    --color-status-playing: #f57a9e;
-    --color-badge: #7cc4f0;
-    --color-on-badge: #15171c;
+/* Design tokens — 來源：mockup https://claude.ai/artifact/VuU4PQdBsgZn8XWeiT22Uy（Palette） */
 
-    --shadow-raised: 6px 6px 14px #1b1e25, -4px -4px 10px #323844;
-    --shadow-raised-strong: 7px 7px 16px #1b1e25, -5px -5px 12px #323844;
-    --shadow-disc: 0 20px 38px rgb(0 0 0 / 50%);
-    --fade-edge: linear-gradient(90deg, var(--color-bg), rgb(38 42 51 / 0%));
+/* 節目色調：預設中性；ThemeScope 會喺頁面 root 覆寫 --theme-*（見 src/config/showThemes.ts） */
+:root {
+    --theme-bg: #141414;
+    --theme-surface: #1e1e1e;
+    --theme-track: #333333;
+    --theme-accent: #f2f2f2;
+    --theme-on-accent: #141414;
+    --theme-title: #ffffff;
+    --theme-text: #f2f2f2;
+    --theme-muted: #a3a3a3;
+    --theme-shadow-dark: #0a0a0a;
+    --theme-shadow-light: #242424;
 
     --font-family: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
     --font-size-xs: 12px;
@@ -45,33 +35,53 @@
     --radius-full: 999px;
 
     --touch-target: 44px;
+    /* WCAG 2.2 target size (minimum)：細粒掣嘅撳得到範圍 */
+    --touch-target-min: 24px;
+    --focus-ring-width: 2px;
+    --duration-fast: 0.2s;
+    --dot-size: 6px;
+    --dot-size-active: 18px;
     --page-max-width: 480px;
+    /* 節目頁 / 今日節目頁主碟（連進度弧）嘅闊度；輪播兩邊碟要對齊佢 */
+    --player-disc-size: min(300px, 78vw);
+    --carousel-peek-size: 152px;
+    /* 兩邊露出嘅碟有幾多收埋喺畫面外（佔碟闊比例） */
+    --carousel-peek-hidden: 0.73;
 
     color-scheme: dark;
 }
 
-@media (prefers-color-scheme: light) {
-    :root {
-        --color-bg: #e4e8ee;
-        --color-surface: #e9edf2;
-        --color-disc: #2b2f38;
-        --color-disc-groove: #3a3f49;
-        --color-disc-rim: #d5dbe3;
-        --color-track: #c5ccd6;
-        --color-divider: #cdd3dc;
-        --color-text: #1e2128;
-        --color-text-secondary: #3d4452;
-        --color-text-muted: #5b6474;
-        --color-title: #1a5f91;
-        --color-accent: #d3245f;
-        --color-status-playing: #b81d52;
-        --color-badge: #1a5f91;
-        --color-on-badge: #ffffff;
-        --shadow-raised: 6px 6px 14px #c3c8d0, -4px -4px 10px #ffffff;
-        --shadow-raised-strong: 7px 7px 16px #c3c8d0, -5px -5px 12px #ffffff;
-        --shadow-disc: 0 18px 32px rgb(30 33 40 / 30%);
-        --fade-edge: linear-gradient(90deg, var(--color-bg), rgb(228 232 238 / 0%));
+/*
+ * 語意 token 由 --theme-* 推出。自訂屬性喺宣告嗰個元素解析，
+ * 所以要喺 :root 同每個 ThemeScope 都重新宣告，先會跟節目轉色。
+ */
+:root,
+[data-theme-scope] {
+    --color-bg: var(--theme-bg);
+    --color-surface: var(--theme-surface);
+    --color-disc: var(--theme-shadow-dark);
+    --color-disc-rim: var(--theme-surface);
+    --color-track: var(--theme-track);
+    --color-divider: var(--theme-track);
+    --color-text: var(--theme-text);
+    --color-text-secondary: var(--theme-text);
+    --color-text-muted: var(--theme-muted);
+    --color-title: var(--theme-title);
+    --color-accent: var(--theme-accent);
+    --color-accent-fill: var(--theme-accent);
+    --color-on-accent: var(--theme-on-accent);
+    --color-status-playing: var(--theme-accent);
+    --color-badge: var(--theme-title);
+    --color-on-badge: var(--theme-bg);
+    /* 唱片效果：節目圖邊緣陰影、坑紋、中間軸心外圈 */
+    --color-disc-vignette: rgb(0 0 0 / 45%);
+    --color-disc-groove: rgb(255 255 255 / 14%);
+    --color-spindle-ring: rgb(0 0 0 / 50%);
 
-        color-scheme: light;
-    }
+    --shadow-raised:
+        6px 6px 14px var(--theme-shadow-dark), -4px -4px 10px var(--theme-shadow-light);
+    --shadow-raised-strong:
+        7px 7px 16px var(--theme-shadow-dark), -5px -5px 12px var(--theme-shadow-light);
+    --shadow-disc: 0 20px 38px rgb(0 0 0 / 50%);
+    --shadow-floating: 0 12px 30px rgb(0 0 0 / 55%);
 }

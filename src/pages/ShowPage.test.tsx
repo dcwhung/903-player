@@ -28,30 +28,38 @@ describe('ShowPage', () => {
         expect(screen.getByRole('heading', { name: '公子會' })).toBeInTheDocument();
     });
 
-    it('lists only this show’s dates, oldest first, with ticks for watched ones', async () => {
+    it('lists this show’s episodes newest first with their progress', async () => {
         saveProgress(RECORDINGS[1]?.url ?? '', 990, 1000);
+        saveProgress(RECORDINGS[2]?.url ?? '', 600, 2400);
         renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
 
-        const dates = await screen.findAllByRole('button', { name: /\/10（/ });
-        expect(dates.map((d) => d.textContent)).toEqual([
-            '03/10（六）',
-            '10/10（六）',
-            '17/10（六）',
+        const rows = await screen.findAllByRole('button', { name: /^播放 \d/ });
+        expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual([
+            '播放 17/10 星期六，播放中 · 0:00 / 0:00',
+            '播放 10/10 星期六，聽到 10:00',
+            '播放 03/10 星期六，已收聽',
         ]);
-        expect(dates[2]).toHaveAttribute('aria-current', 'date');
-        expect(screen.getAllByRole('img', { name: '已收聽' })).toHaveLength(1);
+        expect(rows[0]).toHaveAttribute('aria-current', 'true');
+        expect(screen.getByText('共 3 集')).toBeInTheDocument();
     });
 
-    it('plays the date that is tapped', async () => {
+    it('plays the episode that is tapped', async () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
 
-        await userEvent.click(await screen.findByRole('button', { name: '10/10（六）' }));
+        await userEvent.click(await screen.findByRole('button', { name: /^播放 10\/10/ }));
 
         expect(audio.src).toBe(RECORDINGS[2]?.url);
-        expect(screen.getByRole('button', { name: '10/10（六）' })).toHaveAttribute(
+        expect(screen.getByRole('button', { name: /^播放 10\/10/ })).toHaveAttribute(
             'aria-current',
-            'date',
+            'true',
         );
+    });
+
+    it('uses the show’s own colour theme', async () => {
+        renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+
+        const main = await screen.findByRole('main');
+        expect(main.closest('[data-theme-scope]')).toHaveStyle({ '--theme-accent': '#d4af5a' });
     });
 
     it('goes back home (home itself pauses playback)', async () => {

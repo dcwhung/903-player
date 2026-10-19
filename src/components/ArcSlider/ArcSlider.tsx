@@ -37,6 +37,7 @@ export const ArcSlider = (props: ArcSliderProps) => {
         const target = max > 0 ? keyTarget(event.key, value, max) : undefined;
         if (target === undefined) return;
         event.preventDefault();
+        event.stopPropagation();
         onSeek(target);
     };
 

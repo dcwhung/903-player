@@ -1,5 +1,12 @@
 import type { Recording, ShowId } from '../types/recording';
-import { pickInitialRecording, pickTodayDate, recordingsForShow, showsOnDate } from './recordings';
+import {
+    episodesNewestFirst,
+    pickInitialRecording,
+    pickTodayDate,
+    recordingsForShow,
+    showsOnDate,
+    todayRecordings,
+} from './recordings';
 
 const rec = (showId: ShowId, date: string, time = '2308'): Recording => ({
     showId,
@@ -67,6 +74,27 @@ describe('showsOnDate', () => {
             'sunnyday',
             'badgirl',
             'wanni',
+        ]);
+    });
+});
+
+describe('todayRecordings', () => {
+    it('lists today (or the latest day) in broadcast order', () => {
+        expect(todayRecordings(all, '2026-10-19').map((r) => r.showId)).toEqual(['badgirl']);
+        expect(todayRecordings(all, '2026-10-16').map((r) => r.showId)).toEqual([
+            'sunnyday',
+            'badgirl',
+            'wanni',
+        ]);
+        expect(todayRecordings([], '2026-10-19')).toEqual([]);
+    });
+});
+
+describe('episodesNewestFirst', () => {
+    it('orders a show newest first', () => {
+        expect(episodesNewestFirst(all, 'gongzi').map((r) => r.date)).toEqual([
+            '2026-10-17',
+            '2026-10-10',
         ]);
     });
 });

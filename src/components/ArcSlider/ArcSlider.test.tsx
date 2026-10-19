@@ -138,6 +138,32 @@ describe('ArcSlider', () => {
         expect(onSeek).not.toHaveBeenCalled();
     });
 
+    it('keeps its pointer and key events from reaching a surrounding swipe area', () => {
+        const parentPointer = vi.fn();
+        const parentKey = vi.fn();
+        render(
+            <div onPointerUp={parentPointer} onPointerDown={parentPointer} onKeyDown={parentKey}>
+                <ArcSlider
+                    value={400}
+                    max={MAX}
+                    onSeek={() => {}}
+                    label="播放進度"
+                    formatValueText={String}
+                />
+            </div>,
+        );
+        const slider = screen.getByRole('slider');
+        slider.getBoundingClientRect = () =>
+            ({ left: 0, top: 0, width: VIEWBOX, height: VIEWBOX }) as DOMRect;
+
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.pointerUp(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.keyDown(slider, { key: 'ArrowRight' });
+
+        expect(parentPointer).not.toHaveBeenCalled();
+        expect(parentKey).not.toHaveBeenCalled();
+    });
+
     it('ignores other keys', () => {
         const { slider, onSeek } = renderSlider();
 

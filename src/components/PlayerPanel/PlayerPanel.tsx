@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { t } from '../../i18n/t';
 import { usePlayer } from '../../player/usePlayer';
 import { formatDuration } from '../../utils/time';
@@ -11,12 +11,16 @@ import styles from './PlayerPanel.module.css';
 interface PlayerPanelProps {
     title: string;
     dateLabel: string;
+    /** 節目圖，做碟嘅底色 */
+    art?: string;
+    /** 標題下面嘅額外內容（例如今日節目指示點） */
+    accessory?: ReactNode;
 }
 
 const RESTART_ICON_SIZE = 22;
 
 /** 唱片 + 弧形進度 + 時間 + 控制掣，節目頁同今日節目頁共用 */
-export const PlayerPanel = ({ title, dateLabel }: PlayerPanelProps) => {
+export const PlayerPanel = ({ title, dateLabel, art, accessory }: PlayerPanelProps) => {
     const player = usePlayer();
     const [previewTime, setPreviewTime] = useState<number | null>(null);
     const total = formatDuration(player.duration);
@@ -37,7 +41,7 @@ export const PlayerPanel = ({ title, dateLabel }: PlayerPanelProps) => {
                     />
                 </div>
                 <div className={styles.discArea}>
-                    <Disc />
+                    <Disc art={art} />
                 </div>
                 <span className={`${styles.time} ${styles.elapsed}`}>
                     {formatDuration(previewTime ?? player.currentTime)}
@@ -55,6 +59,7 @@ export const PlayerPanel = ({ title, dateLabel }: PlayerPanelProps) => {
             <div className={styles.titles}>
                 <span className={styles.date}>{dateLabel}</span>
                 <h1 className={styles.title}>{title}</h1>
+                {accessory}
             </div>
             <PlayerControls
                 isPlaying={player.isPlaying}

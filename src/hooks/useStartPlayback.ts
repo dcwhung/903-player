@@ -1,12 +1,7 @@
 import { useCallback } from 'react';
 import { useRecordings } from '../data/useRecordings';
 import { usePlayer } from '../player/usePlayer';
-import {
-    pickInitialRecording,
-    pickTodayDate,
-    recordingsForShow,
-    showsOnDate,
-} from '../selectors/recordings';
+import { pickInitialRecording, recordingsForShow, todayRecordings } from '../selectors/recordings';
 import type { ShowId } from '../types/recording';
 import { hkToday } from '../utils/date';
 
@@ -33,8 +28,7 @@ export const useStartPlayback = () => {
     );
 
     const startToday = useCallback(() => {
-        const date = pickTodayDate(recordings, hkToday());
-        const recording = date ? showsOnDate(recordings, date)[0] : undefined;
+        const recording = todayRecordings(recordings, hkToday())[0];
         if (ready && recording) {
             void load(recording, { autoplay: true });
         }

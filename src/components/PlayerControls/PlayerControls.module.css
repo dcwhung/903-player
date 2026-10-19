@@ -32,6 +32,7 @@
 .toggle {
     width: var(--toggle-size);
     height: var(--toggle-size);
+    background: var(--color-accent-fill);
     box-shadow: var(--shadow-raised-strong);
-    color: var(--color-text);
+    color: var(--color-on-accent);
 }
