@@ -126,6 +126,22 @@ describe('scrapeShows fetch failures', () => {
         expect(lines()).toContainEqual(expect.stringMatching(/^::warning::.+: timeout$/));
     });
 
+    it('escapes failure messages written to stderr too', async () => {
+        await scrapeShows(
+            sources({
+                fetchAll: vi.fn(async () => {
+                    throw new Error(
+                        'HTTP 404 for https://hkfm903.live/?page=2\r\n::error::injected',
+                    );
+                }),
+            }),
+        );
+
+        const errors = vi.mocked(console.error).mock.calls.map(([line]) => String(line));
+        expect(errors.some((line) => line.includes('%0D%0A::error::injected'))).toBe(true);
+        expect(errors.some((line) => /[\r\n]/.test(line))).toBe(false);
+    });
+
     it('annotates a failed all-shows page as a warning', async () => {
         await scrapeShows(
             sources({

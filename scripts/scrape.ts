@@ -130,7 +130,8 @@ const settle = async <T, F>(task: () => Promise<T>, fallback: F, label: string):
         return await task();
     } catch (error) {
         const message = (error as Error).message;
-        console.error(`[scrape] ${label}: ${message}`);
+        // 錯誤訊息可能包含原站網址；stderr 都會被 runner 當指令解析，所以同樣要 escape
+        console.error(`[scrape] ${label}: ${escapeWorkflowData(message)}`);
         // console.error 喺 Actions 摘要睇唔到，所以另外出 warning annotation
         annotate('warning', `${label}: ${message}`);
         return fallback;
