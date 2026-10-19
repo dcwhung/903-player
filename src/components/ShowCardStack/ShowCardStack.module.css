@@ -50,6 +50,16 @@
         opacity var(--duration-card-fly) var(--ease-card-fly);
 }
 
+/*
+ * 飛緊嗰張卡同入面嘅指示點唔收 tap（落地先轉節目，中途撳會作用喺飛走緊嗰個節目）。
+ * 連子元素都要寫：PlayerPanel 嘅 .discArea > * 會將 pointer-events 設返 auto。
+ * 鍵盤 click 由 useCardDrag 嘅 onClickCapture 擋。
+ */
+.stack[data-phase^='fly'] .top,
+.stack[data-phase^='fly'] .top * {
+    pointer-events: none;
+}
+
 /* 最上面嗰張：真播放器，跟手指移動同傾斜 */
 .top {
     padding: var(--player-panel-gap, var(--space-5)) 0;

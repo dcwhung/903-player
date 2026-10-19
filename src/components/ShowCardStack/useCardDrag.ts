@@ -1,4 +1,4 @@
-import { useRef, type DragEvent, type PointerEvent, type RefObject } from 'react';
+import { useRef, type DragEvent, type MouseEvent, type PointerEvent, type RefObject } from 'react';
 import { dragIntent, type SwipeDirection } from '../../hooks/swipe';
 import { useClickSuppression } from '../../hooks/useSwipe';
 import { pushSample, releaseDirection, velocityOf, type DragSample } from './cardStack';
@@ -85,7 +85,16 @@ export const useCardDrag = (
             if (gesture.current?.isDragging) motion.springBack();
             gesture.current = null;
         },
-        onClickCapture: clicks.onClickCapture,
+        onClickCapture: (event: MouseEvent<HTMLElement>) => {
+            // 飛緊嗰張卡（連指示點）唔再收 click：否則會播 / 停飛走緊嗰個節目，
+            // 或者撳嘅指示點畀落地嘅轉節目蓋過。鍵盤 click 都一樣擋（CSS pointer-events 擋唔到）
+            if (!motion.isFlying()) {
+                clicks.onClickCapture(event);
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+        },
         // 滑鼠拖節目圖會觸發原生拖放（之後 pointercancel），要擋住
         onDragStart: (event: DragEvent<HTMLElement>) => event.preventDefault(),
     };

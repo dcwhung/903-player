@@ -170,6 +170,7 @@ describe('ShowCardStack', () => {
         fireEvent.pointerUp(inner, { clientX: 102, clientY: 100 });
         fireEvent.click(inner, { detail: 1 });
         drag(inner, -150, 0, 'touch');
+        finishFly();
         fireEvent.click(inner, { detail: 0 });
 
         expect(onInnerClick).toHaveBeenCalledTimes(2);
@@ -262,5 +263,26 @@ describe('ShowCardStack', () => {
         const { group } = setup(0, CARDS.slice(0, 1));
 
         expect(group.querySelector('[inert]')).toBeNull();
+    });
+});
+
+describe('ShowCardStack during the fly-out', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('should not override a show picked elsewhere during the flight', () => {
+        const onChange = vi.fn();
+        const stack = (index: number) => (
+            <ShowCardStack cards={CARDS} index={index} onChange={onChange}>
+                <span>內容</span>
+            </ShowCardStack>
+        );
+        const { rerender } = render(stack(1));
+
+        drag(screen.getByRole('group', { name: LABEL }), -150);
+        rerender(stack(0)); // 例如飛緊時撳咗下面清單嘅節目
+        finishFly();
+
+        expect(onChange).not.toHaveBeenCalled();
     });
 });

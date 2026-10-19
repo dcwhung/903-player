@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode } from 'react';
+import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { arrowKeyDirection, type SwipeDirection } from '../../hooks/swipe';
 import { t } from '../../i18n/t';
 import { stackSlots, wrapIndex } from './cardStack';
@@ -25,10 +25,17 @@ const ownsArrowKeys = (event: KeyboardEvent<HTMLDivElement>): boolean =>
 /** 拖動 / 方向鍵都係飛走之後先轉去目標節目（循環）；得一個節目就唔轉 */
 const useShowCardStack = (index: number, total: number, onChange: (index: number) => void) => {
     const motion = useCardMotion();
+    // 落地時讀最新 index：飛緊期間已經轉咗（例如撳下面清單）就唔好蓋過
+    const latestIndex = useRef(index);
+    useEffect(() => {
+        latestIndex.current = index;
+    }, [index]);
     const go = (direction: SwipeDirection) => {
         if (motion.isFlying()) return;
         const target = wrapIndex(index, total, direction);
-        motion.fly(direction, () => onChange(target));
+        motion.fly(direction, () => {
+            if (latestIndex.current === index) onChange(target);
+        });
     };
     const handlers = useCardDrag(motion, total > 1 ? go : null);
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
