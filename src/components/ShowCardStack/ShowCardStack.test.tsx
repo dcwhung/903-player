@@ -235,6 +235,33 @@ describe('ShowCardStack', () => {
         expect(group).toHaveAttribute('data-phase', 'settling');
     });
 
+    it('should let a dot tap through during spring-back instead of grabbing the card', () => {
+        const onSelect = vi.fn();
+        const { group } = setup(
+            1,
+            CARDS,
+            <PageDots
+                keys={['a', 'b', 'c']}
+                labels={['甲', '乙', '丙']}
+                index={1}
+                onSelect={onSelect}
+            />,
+        );
+        const dot = screen.getByRole('button', { name: '甲' });
+
+        drag(group, -40);
+        // 仲離中間好遠（過咗橫拖門檻）
+        group
+            .querySelector<HTMLElement>(':scope > :not([inert])')
+            ?.style.setProperty('transform', 'matrix(1, 0, 0, 1, -25, 0)');
+        fireEvent.pointerDown(dot, { clientX: 200, clientY: 100 });
+        fireEvent.pointerUp(dot, { clientX: 200, clientY: 100 });
+        fireEvent.click(dot, { detail: 1 });
+
+        expect(onSelect).toHaveBeenCalledExactlyOnceWith(0);
+        expect(group).toHaveAttribute('data-phase', 'settling');
+    });
+
     it('should spring back when the pointer is cancelled', () => {
         const { group, onChange } = setup();
 

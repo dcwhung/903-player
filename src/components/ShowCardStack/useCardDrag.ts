@@ -68,10 +68,14 @@ const release = (
     return true;
 };
 
+/** 撳緊今日節目指示點（掣有自己用途：彈返途中都唔好捉住張卡、食咗佢嘅 click） */
+export const isOnPageDot = (target: EventTarget | null): boolean =>
+    target instanceof Element && target.closest('[data-page-dot]') !== null;
+
 /** 按低：飛緊或者第二隻手指就唔理；彈緊返中間就由張卡而家嘅位置接住，當已經係橫拖 */
 const begin = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion) => {
     if (motion.isFlying() || gesture.current) return;
-    const held = motion.grab();
+    const held = isOnPageDot(event.target) ? null : motion.grab();
     const { pointerId, clientX, clientY: y } = event;
     const x = clientX - (held ?? 0);
     const isDragging = held !== null;
