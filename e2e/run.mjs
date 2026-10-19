@@ -5,7 +5,8 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { silenceWav } from './silenceWav.mjs';
 
-const PORT = 4173;
+// 多個 worktree 同時跑 e2e 時可以用 E2E_PORT 避開撞 port（strictPort 會令人誤測別人嘅 build）
+const PORT = Number(process.env.E2E_PORT ?? 4173);
 const BASE = `http://localhost:${PORT}/903-player/`;
 const OUT = new URL('./screenshots', import.meta.url).pathname;
 const AUDIO_SECONDS = 600;
