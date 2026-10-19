@@ -57,6 +57,8 @@ export class AudioController {
     load = async (recording: Recording, { autoplay = false }: LoadOptions = {}): Promise<void> => {
         if (this.state.recording?.url !== recording.url) {
             this.switchTo(recording);
+        } else if (this.isParkedAtEnd()) {
+            this.seek(0);
         }
         if (autoplay) {
             await this.play();
@@ -102,10 +104,16 @@ export class AudioController {
         }
     }
 
+    /** 已聽過而停喺尾段：再入嚟就由頭播 */
+    private isParkedAtEnd(): boolean {
+        return this.watched && this.audio.currentTime / this.audio.duration >= WATCHED_RATIO;
+    }
+
     private persist = (): void => {
         this.lastSavedAt = Date.now();
         const { recording } = this.state;
-        if (!recording) {
+        // 未 loadedmetadata 前 currentTime 已被 reset 做 0，存落去會洗走續播位置
+        if (!recording || !Number.isFinite(this.audio.duration)) {
             return;
         }
         const progress = saveProgress(recording.url, this.audio.currentTime, this.audio.duration);

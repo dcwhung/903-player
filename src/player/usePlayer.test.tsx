@@ -158,6 +158,41 @@ describe('usePlayer', () => {
         expect(audio.play).toHaveBeenCalled();
     });
 
+    it('keeps the saved position when switching away before metadata loads', async () => {
+        const other: Recording = { ...RECORDING, date: '2026-10-10', url: `${RECORDING.url}?b` };
+        saveProgress(RECORDING.url, 1800, 6000);
+        const { result } = setup();
+
+        await act(async () => result.current.load(RECORDING));
+        await act(async () => result.current.load(other));
+
+        expect(getProgress(RECORDING.url)?.position).toBe(1800);
+    });
+
+    it('keeps the saved position when stopped or hidden before metadata loads', async () => {
+        saveProgress(RECORDING.url, 1800, 6000);
+        const { result } = setup();
+
+        await act(async () => result.current.load(RECORDING));
+        act(() => result.current.stop());
+        act(() => {
+            window.dispatchEvent(new Event('pagehide'));
+        });
+
+        expect(getProgress(RECORDING.url)?.position).toBe(1800);
+    });
+
+    it('restarts a watched episode that is reloaded while parked at the end', async () => {
+        const { audio, result } = setup();
+        await act(async () => result.current.load(RECORDING));
+        act(() => audio.emitMetadata(DURATION));
+        act(() => audio.emitTime(990));
+
+        await act(async () => result.current.load(RECORDING, { autoplay: true }));
+
+        expect(audio.currentTime).toBe(0);
+    });
+
     it('throws when used outside the provider', () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         expect(() => renderHook(() => usePlayer())).toThrow();
