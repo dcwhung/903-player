@@ -60,6 +60,25 @@ const release = (
     return true;
 };
 
+/** 按低：飛緊或者第二隻手指就唔理；彈緊返中間就由張卡而家嘅位置接住，當已經係橫拖 */
+const begin = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion) => {
+    if (motion.isFlying() || gesture.current) return;
+    const held = motion.grab();
+    const { pointerId, clientX, clientY: y } = event;
+    const x = clientX - (held ?? 0);
+    const isDragging = held !== null;
+    gesture.current = { pointerId, x, y, isDragging, samples: [sampleOf(event)] };
+};
+
+/**
+ * 飛緊嗰張卡（連指示點）唔再收 click：否則會播 / 停飛走緊嗰個節目，
+ * 或者撳嘅指示點畀落地嘅轉節目蓋過。鍵盤 click 都一樣擋（CSS pointer-events 擋唔到）
+ */
+const swallow = (event: MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+};
+
 /**
  * 跟手指拖卡（配合 touch-action: pan-y）。commit 係 null（例如得一個節目）就永遠彈返。
  * ArcSlider 自己 stopPropagation，所以拖弧形唔會郁張卡；拖完嘅 click 會被食咗。
@@ -73,10 +92,7 @@ export const useCardDrag = (
     return {
         onPointerDown: (event: StackPointerEvent) => {
             clicks.arm(false);
-            // 飛緊或者第二隻手指就唔理
-            if (motion.isFlying() || gesture.current) return;
-            const { pointerId, clientX: x, clientY: y } = event;
-            gesture.current = { pointerId, x, y, isDragging: false, samples: [sampleOf(event)] };
+            begin(gesture, event, motion);
         },
         onPointerMove: (event: StackPointerEvent) => void track(gesture, event, motion),
         onPointerUp: (event: StackPointerEvent) =>
@@ -86,14 +102,8 @@ export const useCardDrag = (
             gesture.current = null;
         },
         onClickCapture: (event: MouseEvent<HTMLElement>) => {
-            // 飛緊嗰張卡（連指示點）唔再收 click：否則會播 / 停飛走緊嗰個節目，
-            // 或者撳嘅指示點畀落地嘅轉節目蓋過。鍵盤 click 都一樣擋（CSS pointer-events 擋唔到）
-            if (!motion.isFlying()) {
-                clicks.onClickCapture(event);
-                return;
-            }
-            event.preventDefault();
-            event.stopPropagation();
+            if (motion.isFlying()) swallow(event);
+            else clicks.onClickCapture(event);
         },
         // 滑鼠拖節目圖會觸發原生拖放（之後 pointercancel），要擋住
         onDragStart: (event: DragEvent<HTMLElement>) => event.preventDefault(),

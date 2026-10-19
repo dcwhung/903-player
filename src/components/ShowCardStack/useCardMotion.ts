@@ -7,6 +7,7 @@ import {
     RETURN_PEEK_RATIO,
     cardRotation,
     dragProgress,
+    translateXOf,
 } from './cardStack';
 
 /** 卡疊做緊乜（寫喺 data-phase）；冇 data-phase = 靜止，冇 transition */
@@ -57,6 +58,18 @@ const drag = (refs: MotionRefs, dx: number) => {
     el.style.setProperty('--card-return', String(dx > 0 ? progress * RETURN_PEEK_RATIO : 0));
 };
 
+/**
+ * 彈返途中捉住張卡：停喺佢而家嘅位置（computed transform）繼續拖，唔會跳返中間；
+ * 返回而家嘅橫向位移，唔係彈緊就係 null
+ */
+const grab = (refs: MotionRefs): number | null => {
+    const top = refs.top.current;
+    if (!top || refs.stack.current?.dataset.phase !== 'settling') return null;
+    const dx = translateXOf(getComputedStyle(top).transform);
+    drag(refs, dx);
+    return dx;
+};
+
 /** 飛走之後先轉節目；減少動畫就唔飛唔轉，即刻換 */
 const fly = (refs: MotionRefs, direction: SwipeDirection, onLanded: () => void) => {
     if (prefersReducedMotion()) {
@@ -92,6 +105,7 @@ export const useCardMotion = () => {
         isFlying: () => flying.current,
         width: () => widthOf(refs()),
         drag: (dx: number) => drag(refs(), dx),
+        grab: () => grab(refs()),
         springBack: () => {
             pose(refs(), 'settling');
             schedule(refs(), CARD_SPRING_MS, () => rest(refs()));

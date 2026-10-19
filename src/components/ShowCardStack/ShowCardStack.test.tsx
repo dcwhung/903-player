@@ -176,6 +176,25 @@ describe('ShowCardStack', () => {
         expect(onInnerClick).toHaveBeenCalledTimes(2);
     });
 
+    it('should pick the card up where it is when grabbed while springing back', () => {
+        const { group, onChange } = setup();
+        const top = screen.getByRole('button', { name: '內容' }).parentElement;
+
+        drag(group, -40);
+        expect(group).toHaveAttribute('data-phase', 'settling');
+        // 彈返途中：瀏覽器 computed transform 停喺 -25px
+        top?.style.setProperty('transform', 'matrix(1, 0, 0, 1, -25, 0)');
+        fireEvent.pointerDown(group, { clientX: 200, clientY: 100 });
+        expect(group).toHaveAttribute('data-phase', 'dragging');
+        expect(cardDx(group)).toBe('-25px');
+        fireEvent.pointerMove(group, { clientX: 195, clientY: 100 });
+        act(() => vi.advanceTimersByTime(CARD_SPRING_MS));
+
+        expect(cardDx(group)).toBe('-30px');
+        expect(group).toHaveAttribute('data-phase', 'dragging');
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('should spring back when the pointer is cancelled', () => {
         const { group, onChange } = setup();
 

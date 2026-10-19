@@ -10,6 +10,7 @@ import {
     pushSample,
     releaseDirection,
     stackSlots,
+    translateXOf,
     velocityOf,
     wrapIndex,
 } from './cardStack';
@@ -91,6 +92,17 @@ describe('stackSlots', () => {
     it('should not repeat the current show behind itself', () => {
         expect(stackSlots(0, 2)).toEqual({ behind: [1], incoming: 1 });
         expect(stackSlots(0, 1)).toEqual({ behind: [], incoming: null });
+    });
+});
+
+describe('translateXOf', () => {
+    it('should read the horizontal offset of a computed 2D transform', () => {
+        expect(translateXOf('matrix(0.99, -0.1, 0.1, 0.99, -42.5, 3)')).toBe(-42.5);
+    });
+
+    it('should be 0 when there is no transform', () => {
+        expect(translateXOf('none')).toBe(0);
+        expect(translateXOf('')).toBe(0);
     });
 });
 

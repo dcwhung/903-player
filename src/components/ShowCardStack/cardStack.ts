@@ -67,6 +67,16 @@ export const stackSlots = (
     return { behind, incoming: total > 1 ? wrapIndex(index, total, 'previous') : null };
 };
 
+/** 2D matrix 第 5 個值係 translateX */
+const MATRIX_TRANSLATE_X = 4;
+
+/** 由 getComputedStyle 嘅 transform（matrix(a, b, c, d, e, f)）讀橫向位移；冇 transform 就係 0 */
+export const translateXOf = (transform: string): number => {
+    const values = /^matrix\(([^)]+)\)$/.exec(transform)?.[1]?.split(',');
+    const x = Number(values?.[MATRIX_TRANSLATE_X]);
+    return Number.isFinite(x) ? x : 0;
+};
+
 /** 加一個拖動樣本，順手掉走速度窗口以外嘅舊樣本 */
 export const pushSample = (samples: DragSample[], sample: DragSample): DragSample[] =>
     [...samples, sample].filter((s) => sample.t - s.t <= VELOCITY_WINDOW_MS);
