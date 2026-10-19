@@ -168,3 +168,32 @@ describe('readNextPageUrl', () => {
         expect(readNextPageUrl(html, current)).toBeNull();
     });
 });
+
+describe('readNextPageUrl self-links', () => {
+    const current = 'https://hkfm903.live/?page=1';
+
+    it('returns null for a single-page Bootstrap pagination block', () => {
+        const html = `<ul class="pagination">
+            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+            <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+        </ul>`;
+
+        expect(readNextPageUrl(html, current)).toBeNull();
+    });
+
+    it('returns null for rel="next" pointing at "#"', () => {
+        expect(readNextPageUrl('<a rel="next" href="#">Next</a>', current)).toBeNull();
+    });
+
+    it('treats a link to the current page with a fragment as the same page', () => {
+        const html = '<a rel="next" href="/?page=1#list">Next</a>';
+
+        expect(readNextPageUrl(html, `${current}#top`)).toBeNull();
+    });
+
+    it('drops the fragment from a real next page', () => {
+        const html = '<a rel="next" href="/?page=2#list">Next</a>';
+
+        expect(readNextPageUrl(html, current)).toBe('https://hkfm903.live/?page=2');
+    });
+});

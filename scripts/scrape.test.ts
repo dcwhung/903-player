@@ -329,6 +329,23 @@ describe('fetchPages', () => {
     });
 });
 
+describe('fetchPages on a single page with self-links', () => {
+    it('fetches once and stays quiet', async () => {
+        const fetchHtml = fakeSite({
+            [SITE]: `<ul class="pagination">
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+            </ul>${nextLink('#')}`,
+        });
+
+        const pages = await fetchPages(SITE, 'all shows', fetchHtml);
+
+        expect(pages).toHaveLength(1);
+        expect(fetchHtml).toHaveBeenCalledTimes(1);
+        expect(logLines()).toEqual([]);
+    });
+});
+
 describe('createSiteSources', () => {
     it('combines show-page cards from every page', async () => {
         const fetchHtml = fakeSite({

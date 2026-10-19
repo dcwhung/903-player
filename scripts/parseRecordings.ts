@@ -119,17 +119,27 @@ export const parseAllRecordings = (html: string | string[]): ParsedAll => {
     return { ...result, unmatched: [...new Set(result.unmatched.filter(Boolean))] };
 };
 
-/** 相對連結以目前網址為基準；只接受原站網址，其他（包括 http、子網域）一律唔跟 */
-const toSiteUrl = (href: string | undefined, currentUrl: string): string | null => {
+/**
+ * 相對連結以目前網址為基準；只接受原站網址，其他（包括 http、子網域）一律唔跟。
+ * #fragment 唔算另一頁，所以去走，否則 href="#" 會被當成新網址再爬多次。
+ */
+const toSiteUrl = (href: string | undefined, baseUrl: string): string | null => {
     if (!href) {
         return null;
     }
     try {
-        const url = new URL(href, currentUrl);
+        const url = new URL(href, baseUrl);
+        url.hash = '';
         return url.origin === SITE_ORIGIN ? url.href : null;
     } catch {
         return null;
     }
+};
+
+/** 下一頁候選：要係原站網址，而且唔係目前呢頁（例如 href="#" 或者自己連返自己） */
+const toNextUrl = (href: string | undefined, currentUrl: string): string | null => {
+    const url = toSiteUrl(href, currentUrl);
+    return url !== null && url !== toSiteUrl(currentUrl, currentUrl) ? url : null;
 };
 
 const pageNumberOf = (url: string): number => {
@@ -151,7 +161,7 @@ const higherPageUrl = ($: CheerioAPI, currentUrl: string): string | null => {
     const current = pageNumberOf(currentUrl);
     const candidates = $(`a[href*="${PAGE_PARAM}="]`)
         .toArray()
-        .map((link) => toSiteUrl($(link).attr('href'), currentUrl))
+        .map((link) => toNextUrl($(link).attr('href'), currentUrl))
         .filter((url): url is string => url !== null && pageNumberOf(url) > current)
         .sort((a, b) => pageNumberOf(a) - pageNumberOf(b));
     return candidates[0] ?? null;
@@ -161,8 +171,8 @@ const higherPageUrl = ($: CheerioAPI, currentUrl: string): string | null => {
 export const readNextPageUrl = (html: string, currentUrl: string): string | null => {
     const $ = load(html);
     return (
-        toSiteUrl(relNextHref($), currentUrl) ??
-        toSiteUrl(afterActiveHref($), currentUrl) ??
+        toNextUrl(relNextHref($), currentUrl) ??
+        toNextUrl(afterActiveHref($), currentUrl) ??
         higherPageUrl($, currentUrl)
     );
 };
