@@ -36,10 +36,10 @@ const REAL_URLS = {
 /** 2026-10-20（二）12:00 香港時間 */
 const NOW = new Date('2026-10-20T04:00:00Z');
 /**
- * NOW 回看 7 日（14–20 號）入面要 probe 嘅節目：
- * 一至五（14、15、16、19、20）各 3 個；六（17）公子會同西加；日（18）冇節目
+ * NOW 回看 14 日（7–20 號）入面要 probe 嘅節目：
+ * 一至五共 10 日各 3 個；六（10、17 號）各有公子會同西加；日冇節目
  */
-const WINDOW_SLOTS = 17;
+const WINDOW_SLOTS = 34;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const daysAfter = (date: Date, days: number): Date => new Date(date.getTime() + days * MS_PER_DAY);
 const urlFor = (showId: Parameters<typeof findShow>[0], date: string): string =>
@@ -292,9 +292,21 @@ describe('probeRecentRecordings', () => {
 
             await probeRecentRecordings([], { probe, now: new Date('2026-10-19T16:30:00Z') });
 
-            // 香港 20 號（二）00:30：回看 14–20 號；今日未有節目開咪，所以冇 20 號
+            // 香港 20 號（二）00:30：回看 7–20 號；今日未有節目開咪，所以冇 20 號
             expect(probedDates(probe)).toEqual(
-                new Set(['20261014', '20261015', '20261016', '20261017', '20261019']),
+                new Set([
+                    '20261007',
+                    '20261008',
+                    '20261009',
+                    '20261010',
+                    '20261012',
+                    '20261013',
+                    '20261014',
+                    '20261015',
+                    '20261016',
+                    '20261017',
+                    '20261019',
+                ]),
             );
         });
 
@@ -303,9 +315,22 @@ describe('probeRecentRecordings', () => {
 
             await probeRecentRecordings([], { probe, now: new Date('2026-10-19T15:59:00Z') });
 
-            // 香港 19 號（一）23:59：回看 13–19 號
+            // 香港 19 號（一）23:59：回看 6–19 號
             expect(probedDates(probe)).toEqual(
-                new Set(['20261013', '20261014', '20261015', '20261016', '20261017', '20261019']),
+                new Set([
+                    '20261006',
+                    '20261007',
+                    '20261008',
+                    '20261009',
+                    '20261010',
+                    '20261012',
+                    '20261013',
+                    '20261014',
+                    '20261015',
+                    '20261016',
+                    '20261017',
+                    '20261019',
+                ]),
             );
         });
     });
@@ -347,9 +372,10 @@ describe('probeRecentRecordings', () => {
     it(`drops misses older than ${PROBE_LOOKBACK_DAYS} days so storage does not grow`, async () => {
         await probeRecentRecordings([], { probe: found([]), now: NOW });
 
-        await probeRecentRecordings([], { probe: found([]), now: daysAfter(NOW, 8) });
+        await probeRecentRecordings([], { probe: found([]), now: daysAfter(NOW, 15) });
 
         const dates = Object.keys(readProbeState().misses).map(dateFromShowDateKey);
+        // 15 日後（11 月 4 號）只保留 10 月 22 號至 11 月 4 號
         expect(dates.every((date) => date >= '2026-10-22')).toBe(true);
     });
 

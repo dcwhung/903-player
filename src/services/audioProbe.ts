@@ -15,7 +15,7 @@ export const PROBE_TIMEOUT_MS = 15_000;
 /** 今日 / 尋日搵唔到嘅檔隔幾耐先再試（錄音通常節目完咗一陣先上架） */
 export const PROBE_RETRY_MS = 30 * 60 * 1_000;
 /** 回看幾多日（包括今日）：幾日冇開 app 都攞得返嗰幾日嘅錄音 */
-export const PROBE_LOOKBACK_DAYS = 7;
+export const PROBE_LOOKBACK_DAYS = 14;
 /** 播出日之後過咗幾多日先記低嘅 miss 就當真係冇，唔再試（今日 = 0、尋日 = 1） */
 const SETTLED_AFTER_DAYS = 2;
 /** 搵到嘅錄音最多留幾多日（香港日期），feed 一直唔更新都唔會越積越多 */
