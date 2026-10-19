@@ -1,4 +1,4 @@
-import { formatDateLabel, formatDayMonth, formatWeekday, hkToday } from './date';
+import { formatDateLabel, formatDayMonth, formatWeekday, hkTimeHHMM, hkToday } from './date';
 
 describe('hkToday', () => {
     it('uses Hong Kong date even when UTC is still the previous day', () => {
@@ -9,6 +9,22 @@ describe('hkToday', () => {
     it('stays on the same day before Hong Kong midnight', () => {
         // UTC 19/10 15:59 = 香港 19/10 23:59
         expect(hkToday(new Date('2026-10-19T15:59:00Z'))).toBe('2026-10-19');
+    });
+});
+
+describe('hkTimeHHMM', () => {
+    it('formats Hong Kong time as HHMM like recording file names', () => {
+        // UTC 19/10 01:05 = 香港 19/10 09:05
+        expect(hkTimeHHMM(new Date('2026-10-19T01:05:00Z'))).toBe('0905');
+    });
+
+    it('uses 00 for the hour right after Hong Kong midnight', () => {
+        // UTC 19/10 16:30 = 香港 20/10 00:30
+        expect(hkTimeHHMM(new Date('2026-10-19T16:30:00Z'))).toBe('0030');
+    });
+
+    it('stays on 23 just before Hong Kong midnight', () => {
+        expect(hkTimeHHMM(new Date('2026-10-19T15:59:00Z'))).toBe('2359');
     });
 });
 

@@ -5,8 +5,9 @@ import {
     annotate,
     buildFeed,
     createSiteSources,
+    isLiveScrapeEnabled,
     loadFallback,
-    scrapeShows,
+    scrapeShowsIfEnabled,
     summariseFeed,
 } from './scrape';
 
@@ -17,7 +18,7 @@ const main = async (): Promise<void> => {
     // 先攞上次 feed：爬到已有嘅錄音就唔使再跟落一頁，減少對原站嘅請求
     const fallback = await loadFallback(process.env.FALLBACK_URL);
     const sources = createSiteSources({ knownUrls: fallback.map((r) => r.url) });
-    const fresh = await scrapeShows(sources);
+    const fresh = await scrapeShowsIfEnabled(isLiveScrapeEnabled(process.env.SCRAPE_LIVE), sources);
     const feed = buildFeed(fresh, fallback);
     fresh.forEach((result, showId) => {
         const source = result

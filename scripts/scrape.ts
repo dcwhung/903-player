@@ -29,6 +29,8 @@ const HTTP_SERVER_ERROR = 500;
 /** Retry-After 只接受秒數（日期格式唔理） */
 const RETRY_AFTER_SECONDS = /^\d+$/;
 const ALL_SHOWS_LABEL = 'all shows';
+/** SCRAPE_LIVE 設成呢個值就停用即時抓取（原站封鎖咗數據中心 IP 時用） */
+const SCRAPE_LIVE_OFF = 'false';
 const SHOW_PARAM = 'show';
 
 export interface ShowPage {
@@ -340,6 +342,22 @@ export const scrapeShows = async (
     }
     reportRequests(sources);
     return results;
+};
+
+/** 只有明確設成 'false' 先停用；冇設定或者其他值都維持即時抓取 */
+export const isLiveScrapeEnabled = (value: string | undefined): boolean =>
+    value?.trim().toLowerCase() !== SCRAPE_LIVE_OFF;
+
+/** 停用時唔對原站發任何請求，回傳空結果，等 buildFeed 全部沿用舊資料 */
+export const scrapeShowsIfEnabled = async (
+    enabled: boolean,
+    sources: ScrapeSources,
+): Promise<Map<ShowId, ShowResult | null>> => {
+    if (enabled) {
+        return scrapeShows(sources);
+    }
+    annotate('notice', 'Requests: 0 (live scrape disabled by SCRAPE_LIVE)');
+    return new Map();
 };
 
 /** 完整就取代舊資料；唔完整就同舊資料合併；冇就沿用舊資料 */

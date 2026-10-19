@@ -12,6 +12,24 @@ const hkDateFormatter = new Intl.DateTimeFormat('en-CA', {
 
 export const hkToday = (now: Date = new Date()): string => hkDateFormatter.format(now);
 
+// h23 確保午夜係 00 而唔係 24
+const hkTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: HK_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+});
+
+const TIME_PART_TYPES: ReadonlySet<string> = new Set(['hour', 'minute']);
+
+/** 香港時間 HHMM（例如 0905），同錄音檔名入面嘅時間格式一樣 */
+export const hkTimeHHMM = (now: Date = new Date()): string =>
+    hkTimeFormatter
+        .formatToParts(now)
+        .filter((part) => TIME_PART_TYPES.has(part.type))
+        .map((part) => part.value)
+        .join('');
+
 const DATE_PART_WIDTH = 2;
 
 const dateParts = (isoDate: string) => {
