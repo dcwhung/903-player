@@ -32,7 +32,6 @@
     padding: 0 0 calc(env(safe-area-inset-bottom) + var(--space-2));
     overflow-y: auto;
     overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
     list-style: none;
 }
 
