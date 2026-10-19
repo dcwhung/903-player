@@ -1,3 +1,11 @@
+export interface FakeAudioOptions {
+    /**
+     * 跟足 spec：本身已經播緊時 play() 唔會再發 play event。
+     * 預設 false 係為咗兼容舊測試（佢哋每次 play() 都等 play event）
+     */
+    strictPlayEvents?: boolean;
+}
+
 /** jsdom 唔支援播放，用呢個假 audio element 模擬 HTMLAudioElement 嘅事件 */
 export class FakeAudio extends EventTarget {
     preload = '';
@@ -6,6 +14,10 @@ export class FakeAudio extends EventTarget {
     paused = true;
     rejectPlay = false;
     private source = '';
+
+    constructor(private readonly options: FakeAudioOptions = {}) {
+        super();
+    }
 
     get src(): string {
         return this.source;
@@ -29,6 +41,9 @@ export class FakeAudio extends EventTarget {
     play = vi.fn(async () => {
         if (this.rejectPlay) {
             throw new DOMException('blocked', 'NotAllowedError');
+        }
+        if (this.options.strictPlayEvents && !this.paused) {
+            return;
         }
         this.paused = false;
         this.dispatchEvent(new Event('play'));

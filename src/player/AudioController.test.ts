@@ -85,3 +85,72 @@ describe('AudioController.hasPlayIntent', () => {
         detach();
     });
 });
+
+/** 跟 spec 嘅假 audio：已經播緊時 play() 唔發 play event */
+const setupPlaying = async () => {
+    const audio = new FakeAudio({ strictPlayEvents: true });
+    const controller = new AudioController(audio.asAudio());
+    const detach = controller.attach();
+    await controller.load(RECORDING, { autoplay: true });
+    audio.emitMetadata(1000);
+    return { audio, controller, detach };
+};
+
+describe('AudioController play intent when already playing', () => {
+    it('should clear play intent when a native pause follows play() while already playing', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+        // useStartPlayback / useTodayPage 會對同一集再叫 load(autoplay)
+        await controller.load(RECORDING, { autoplay: true });
+        audio.pause(); // 例如拔耳筒、來電中斷
+        expect(controller.getSnapshot().isPlaying).toBe(false);
+        expect(controller.hasPlayIntent()).toBe(false);
+        detach();
+    });
+
+    it('should clear play intent when playback ends after play() while already playing', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+        await controller.play();
+        audio.end();
+        expect(controller.hasPlayIntent()).toBe(false);
+        detach();
+    });
+
+    it('should clear play intent when a native pause arrives before the play event', async () => {
+        const { audio, controller, resolvePlay, detach } = setupPendingPlay();
+        void controller.play();
+        audio.paused = true;
+        audio.dispatchEvent(new Event('pause'));
+        expect(controller.hasPlayIntent()).toBe(false);
+        resolvePlay();
+        detach();
+    });
+
+    it('should clear play intent when the source errors during a pending play', () => {
+        // 來源出錯，等緊嘅 play 已經冇可能成功
+        const { audio, controller, detach } = setupPendingPlay();
+        void controller.play();
+        audio.dispatchEvent(new Event('error'));
+        expect(controller.hasPlayIntent()).toBe(false);
+        detach();
+    });
+
+    it('should clear play intent when emptied fires with no play pending', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.paused = true;
+        audio.dispatchEvent(new Event('emptied'));
+        expect(controller.hasPlayIntent()).toBe(true); // isPlaying 仲係 true，由 pause 負責
+        audio.dispatchEvent(new Event('pause'));
+        expect(controller.hasPlayIntent()).toBe(false);
+        detach();
+    });
+
+    it('should keep play intent when emptied fires during a pending play', () => {
+        // 換集時 src 改咗會 queue emptied，但用戶啱啱撳嘅 Play 仲等緊
+        const { audio, controller, detach } = setupPendingPlay();
+        void controller.play();
+        audio.dispatchEvent(new Event('emptied'));
+        expect(controller.hasPlayIntent()).toBe(true);
+        detach();
+    });
+});

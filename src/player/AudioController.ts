@@ -46,6 +46,8 @@ export class AudioController {
     private lastTickPosition = 0;
     /** 撳咗 Play 但 play event 未到（瀏覽器仲準備緊）；PWA 更新要當播緊，唔好搶走呢下撳 */
     private playIntent = false;
+    /** audio.play() 仲未 settle */
+    private playPending = false;
 
     constructor(private readonly audio: HTMLAudioElement) {}
 
@@ -67,6 +69,8 @@ export class AudioController {
             play: this.onPlay,
             pause: this.onStopped,
             ended: this.onStopped,
+            error: this.onError,
+            emptied: this.onEmptied,
         };
         const entries = Object.entries(audioEvents);
         entries.forEach(([name, handler]) => this.audio.addEventListener(name, handler));
@@ -97,12 +101,19 @@ export class AudioController {
 
     play = async (): Promise<void> => {
         this.setPlayIntent(true);
+        this.playPending = true;
         try {
             await this.audio.play();
+            // 本身已經播緊時 spec 唔會再發 play event，要喺度清走，否則會卡住擋住更新
+            if (!this.audio.paused) {
+                this.setPlayIntent(false);
+            }
         } catch {
             // 瀏覽器擋自動播放：維持暫停，等用戶撳 Play
             this.playIntent = false;
             this.update({ isPlaying: false });
+        } finally {
+            this.playPending = false;
         }
     };
 
@@ -239,6 +250,16 @@ export class AudioController {
         this.update({ isPlaying: true });
     };
 
+    /** 來源出錯：等緊嘅 play 冇可能成功 */
+    private onError = (): void => this.setPlayIntent(false);
+
+    /** 換 src 會 queue emptied，嗰陣用戶啱啱撳嘅 Play 仲等緊，唔好清走 */
+    private onEmptied = (): void => {
+        if (!this.playPending) {
+            this.setPlayIntent(false);
+        }
+    };
+
     /** 唔改 state object（React 唔使 re-render），但要通知 PWA 更新重新判斷 */
     private setPlayIntent(value: boolean): void {
         if (this.playIntent === value) {
@@ -248,7 +269,9 @@ export class AudioController {
         this.notify();
     }
 
+    /** pause / ended（包括拔耳筒、來電等系統暫停）：用戶冇再想播 */
     private onStopped = (): void => {
+        this.playIntent = false;
         this.update({ isPlaying: false });
         this.persist();
     };
