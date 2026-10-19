@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { silenceWav } from './silenceWav.mjs';
 
+// 多個 worktree 同時跑 e2e 時可以用 E2E_PORT 避開撞 port（否則會測到第二個 build）
 const PORT = Number(process.env.E2E_PORT ?? 4173);
 const BASE = `http://localhost:${PORT}/903-player/`;
 const OUT = new URL('./screenshots', import.meta.url).pathname;
@@ -12,6 +13,11 @@ const AUDIO_SECONDS = 600;
 const wav = silenceWav(AUDIO_SECONDS);
 mkdirSync(OUT, { recursive: true });
 
+// 預期色：刻意寫死做獨立對照（同下面 '#d4af5a' 一樣），唔係由 app 推返出嚟
+const HOME_TOP = '#4f749c'; // HOME_THEME.bg（主頁漸變頂色）
+const GONGZI_BG = '#111111'; // SHOW_THEMES.gongzi.bg
+const SUNNYDAY_BG = '#0e2230'; // SHOW_THEMES.sunnyday.bg
+const BADGIRL_BG = '#21151a'; // SHOW_THEMES.badgirl.bg
 const APP_VERSION_TEXT = `v${JSON.parse(readFileSync(new URL('../package.json', import.meta.url))).version}`;
 
 let failures = 0;
@@ -196,6 +202,26 @@ const checkSwipeToOlder = async (p) => {
     log(playing === 'playing', `掃完即刻播：${playing}`);
 };
 
+/** Android 工具列 / PWA 狀態列色（<meta name="theme-color">）要跟頁面色調；轉頁後等 React commit 先讀 */
+const checkThemeColor = async (p, expected, label) => {
+    const read = () =>
+        p
+            .locator('meta[name="theme-color"]')
+            .evaluateAll((els) => els.map((e) => e.getAttribute('content')));
+    const ok = await p
+        .waitForFunction(
+            (want) => {
+                const metas = document.querySelectorAll('meta[name="theme-color"]');
+                return metas.length === 1 && metas[0].getAttribute('content') === want;
+            },
+            expected,
+            { timeout: 2000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+    log(ok, `${label}：theme-color ${(await read()).join(', ')}（預期 ${expected}）`);
+};
+
 const server = await startPreview();
 let browser;
 try {
@@ -237,6 +263,7 @@ try {
         () => getComputedStyle(document.querySelector('nav')).gridTemplateColumns.split(' ').length,
     );
     log(cols === 2, `主頁每行 ${cols} 粒`);
+    await checkThemeColor(page, HOME_TOP, '主頁');
 
     const mini = page.getByRole('region', { name: '正在播放（今日節目）' });
     log(
@@ -256,6 +283,7 @@ try {
         ),
     );
     log(accent.trim() === '#d4af5a', `節目頁用公子會色調：${accent}`);
+    await checkThemeColor(page, GONGZI_BG, '公子會節目頁');
     await page.waitForTimeout(1500);
     await page.screenshot({ path: `${OUT}/2-show-playing.png` });
 
@@ -304,6 +332,7 @@ try {
 
     await page.getByRole('button', { name: '返回主頁' }).click();
     log(page.url().endsWith('#/'), '返回主頁');
+    await checkThemeColor(page, HOME_TOP, '返回主頁');
     await page.getByRole('button', { name: '公子會', exact: true }).click();
     await page.waitForTimeout(800);
     const resumed = await currentEpisode();
@@ -347,6 +376,7 @@ try {
     log(items.length === 3, `今日節目列表：${items.join(' | ')}`);
     const heading = await page.getByRole('heading', { level: 1 }).textContent();
     log(heading === '在晴朗的一天出發', `今日自動播第一個節目：${heading}`);
+    await checkThemeColor(page, SUNNYDAY_BG, '今日節目（在晴朗的一天出發）');
     await page.screenshot({ path: `${OUT}/5-today.png` });
     const carousel = page.getByRole('group', { name: '今日節目，左右掃動轉節目' });
     const box2 = await carousel.boundingBox();
@@ -357,6 +387,7 @@ try {
     await page.waitForTimeout(500);
     const swiped = await page.getByRole('heading', { level: 1 }).textContent();
     log(swiped === 'Bad Girl大過佬', `今日節目向左掃轉下一個節目：${swiped}`);
+    await checkThemeColor(page, BADGIRL_BG, '今日節目掃到 Bad Girl大過佬');
     await page.getByRole('button', { name: /播放 雲妮鍾情/ }).click();
     await page.waitForTimeout(500);
     log(

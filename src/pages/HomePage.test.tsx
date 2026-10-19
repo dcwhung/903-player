@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
+import { HOME_THEME } from '../config/showThemes';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
 import { HomePage } from './HomePage';
@@ -66,6 +67,15 @@ describe('HomePage', () => {
             '西加航空',
             '今日節目',
         ]);
+    });
+
+    it('should apply the home theme vars when rendered', () => {
+        renderWithProviders(<HomePage />);
+
+        const scope = screen.getByRole('main').closest('[data-theme-scope]') as HTMLElement;
+        expect(scope).not.toBeNull();
+        expect(scope.style.getPropertyValue('--theme-bg')).toBe(HOME_THEME.bg);
+        expect(scope.style.getPropertyValue('--theme-title')).toBe(HOME_THEME.title);
     });
 
     it('pauses playback when home is shown without a today recording', () => {

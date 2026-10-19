@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { themeVars, type ShowTheme } from '../../config/showThemes';
+import { useThemeColorMeta } from '../../hooks/useThemeColorMeta';
 import styles from './ThemeScope.module.css';
 
 interface ThemeScopeProps {
@@ -16,12 +17,16 @@ export const ThemeScope = ({
     children,
     fullPage = true,
     className = '',
-}: ThemeScopeProps) => (
-    <div
-        className={`${fullPage ? styles.scope : ''} ${className}`}
-        data-theme-scope=""
-        style={themeVars(theme) as CSSProperties}
-    >
-        {children}
-    </div>
-);
+}: ThemeScopeProps) => {
+    // 只有成頁先改瀏覽器工具列色：bg 係頁頂色（主頁 HOME_THEME.bg 就係漸變頂色）
+    useThemeColorMeta(fullPage ? theme.bg : undefined);
+    return (
+        <div
+            className={`${fullPage ? styles.scope : ''} ${className}`}
+            data-theme-scope=""
+            style={themeVars(theme) as CSSProperties}
+        >
+            {children}
+        </div>
+    );
+};
