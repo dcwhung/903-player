@@ -1,5 +1,6 @@
+/* 成頁：填滿固定殼（global.css 嘅 #root），唔用 100dvh，免得同殼高度對唔齊而溢出 */
 .scope {
-    min-height: 100dvh;
+    height: 100%;
     background: var(--color-bg);
     color: var(--color-text);
 }

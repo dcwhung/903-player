@@ -24,8 +24,9 @@ export const HomePage = () => {
 
     return (
         // 主頁用自己嘅色調（跟 app icon）；mini player 入面另有 ThemeScope，照跟節目色
-        <ThemeScope theme={HOME_THEME} className={styles.scope}>
-            {/* 主頁都固定唔捲（page.locked）；好矮嘅畫面先改返成頁捲 */}
+        // canvas 用漸變底色：iOS home indicator 後面露出 canvas 時同漸變接得順
+        <ThemeScope theme={HOME_THEME} className={styles.scope} canvas="var(--home-bg-bottom)">
+            {/* 主頁都固定唔捲（page.locked）；好矮嘅畫面改由 main 自己捲 */}
             <main className={`${page.page} ${page.locked} ${styles.home}`}>
                 <HomeBanner />
                 <nav
