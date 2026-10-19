@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
+import { LAUNCH_THEME_COLOR } from './src/config/launchTheme.ts';
 
 const BASE_PATH = '/903-player/';
-const THEME_COLOR = '#141414';
 // package.json 係版本嘅唯一來源；build 時注入，唔使 runtime fetch
 const PACKAGE_JSON = new URL('./package.json', import.meta.url);
 const { version: APP_VERSION } = JSON.parse(readFileSync(PACKAGE_JSON, 'utf8')) as {
@@ -27,8 +27,9 @@ export default defineConfig({
                 start_url: BASE_PATH,
                 scope: BASE_PATH,
                 display: 'standalone',
-                background_color: THEME_COLOR,
-                theme_color: THEME_COLOR,
+                // 啟動畫面 / 狀態列：app 喺主頁啟動，用 HOME_THEME.bg（入咗 app 之後由 ThemeScope 跟頁轉）
+                background_color: LAUNCH_THEME_COLOR,
+                theme_color: LAUNCH_THEME_COLOR,
                 icons: [
                     { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
                     { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
