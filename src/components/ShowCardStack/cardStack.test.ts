@@ -100,6 +100,10 @@ describe('translateXOf', () => {
         expect(translateXOf('matrix(0.99, -0.1, 0.1, 0.99, -42.5, 3)')).toBe(-42.5);
     });
 
+    it('should read the horizontal offset of a computed 3D transform', () => {
+        expect(translateXOf('matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 37, -4, 0, 1)')).toBe(37);
+    });
+
     it('should be 0 when there is no transform', () => {
         expect(translateXOf('none')).toBe(0);
         expect(translateXOf('')).toBe(0);

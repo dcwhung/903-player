@@ -67,13 +67,17 @@ export const stackSlots = (
     return { behind, incoming: total > 1 ? wrapIndex(index, total, 'previous') : null };
 };
 
-/** 2D matrix 第 5 個值係 translateX */
-const MATRIX_TRANSLATE_X = 4;
+/** translateX 喺 matrix() 係第 5 個值，喺 matrix3d() 係第 13 個值 */
+const TRANSLATE_X_INDEX: Readonly<Record<string, number>> = { matrix: 4, matrix3d: 12 };
 
-/** 由 getComputedStyle 嘅 transform（matrix(a, b, c, d, e, f)）讀橫向位移；冇 transform 就係 0 */
+/**
+ * 由 getComputedStyle 嘅 transform 讀橫向位移：支援 matrix(a, b, c, d, e, f) 同 matrix3d(…16 個值)
+ * （瀏覽器開咗 GPU 合成有時會畀 3D）；冇 transform 或者睇唔明就係 0
+ */
 export const translateXOf = (transform: string): number => {
-    const values = /^matrix\(([^)]+)\)$/.exec(transform)?.[1]?.split(',');
-    const x = Number(values?.[MATRIX_TRANSLATE_X]);
+    const match = /^(matrix3d|matrix)\(([^)]+)\)$/.exec(transform);
+    const index = match?.[1] === undefined ? undefined : TRANSLATE_X_INDEX[match[1]];
+    const x = index === undefined ? NaN : Number(match?.[2]?.split(',')[index]);
     return Number.isFinite(x) ? x : 0;
 };
 
