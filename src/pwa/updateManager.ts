@@ -25,6 +25,7 @@ export interface UpdateManagerDeps {
     applyUpdate: () => void;
     /** 新 SW 已經接管：存進度再 reload */
     reload: () => void;
+    /** 牆鐘時間（Date.now）；performance.now 喺 iOS 暫停期間可能唔前進 */
     now: () => number;
     isOnline: () => boolean;
     isPlaying: () => boolean;

@@ -22,6 +22,8 @@ const updateManager = new UpdateManager({
         playerController.stop();
         window.location.reload();
     },
+    // 用牆鐘 Date.now 而唔係 performance.now：iOS 背景暫停時 performance.now 可能唔行，
+    // 返到前景就會低估停咗幾耐，grace period 永遠計唔夠
     now: Date.now,
     isOnline: () => navigator.onLine,
     // 用播放意圖：撳咗 Play 但 play event 未到嗰陣都當播緊，唔好 reload 搶走呢下撳
