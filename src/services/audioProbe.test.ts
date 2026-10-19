@@ -8,6 +8,7 @@ import {
     probeAudio,
     probeRecentRecordings,
     type AudioProber,
+    type ProbeResult,
 } from './audioProbe';
 import { PROBE_STORAGE_KEY, dateFromShowDateKey, readProbeState } from './probeStore';
 
@@ -42,7 +43,7 @@ describe('probeAudio', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
 
-    const start = (): { audio: FakeAudio; result: Promise<boolean> } => {
+    const start = (): { audio: FakeAudio; result: Promise<ProbeResult> } => {
         const audio = new FakeAudio();
         const result = probeAudio(REAL_URLS.gongzi, () => audio.asAudio());
         return { audio, result };
@@ -55,36 +56,85 @@ describe('probeAudio', () => {
         expect(audio.src).toBe(REAL_URLS.gongzi);
     });
 
-    it('resolves true once metadata loads, then releases the source', async () => {
+    it('resolves found once metadata loads, then releases the source', async () => {
         const { audio, result } = start();
 
         audio.emitMetadata(3600);
 
-        await expect(result).resolves.toBe(true);
+        await expect(result).resolves.toBe('found');
         expect(audio.src).toBe('');
+        expect(audio.load).toHaveBeenCalled();
     });
 
-    it('resolves false when the file is missing', async () => {
+    it('resolves missing when the file errors, then releases the source', async () => {
         const { audio, result } = start();
 
         audio.dispatchEvent(new Event('error'));
 
-        await expect(result).resolves.toBe(false);
+        await expect(result).resolves.toBe('missing');
+        expect(audio.src).toBe('');
+        expect(audio.load).toHaveBeenCalled();
     });
 
-    it('resolves false when nothing happens before the timeout', async () => {
-        const { result } = start();
+    it('resolves timeout (not missing) when nothing happens, then releases the source', async () => {
+        const { audio, result } = start();
 
         await vi.advanceTimersByTimeAsync(PROBE_TIMEOUT_MS);
 
-        await expect(result).resolves.toBe(false);
+        await expect(result).resolves.toBe('timeout');
+        expect(audio.src).toBe('');
+        expect(audio.load).toHaveBeenCalled();
+    });
+
+    it('ignores events fired after it has finished', async () => {
+        const { audio, result } = start();
+
+        audio.dispatchEvent(new Event('error'));
+        audio.emitMetadata(3600);
+        await vi.advanceTimersByTimeAsync(PROBE_TIMEOUT_MS);
+
+        await expect(result).resolves.toBe('missing');
+    });
+
+    it('ignores metadata arriving after the timeout', async () => {
+        const { audio, result } = start();
+
+        await vi.advanceTimersByTimeAsync(PROBE_TIMEOUT_MS);
+        audio.emitMetadata(3600);
+
+        await expect(result).resolves.toBe('timeout');
     });
 });
 
 describe('probeRecentRecordings', () => {
     beforeEach(() => localStorage.clear());
 
-    const found = (urls: string[]): AudioProber => vi.fn(async (url: string) => urls.includes(url));
+    const found = (urls: string[]): AudioProber =>
+        vi.fn(async (url: string): Promise<ProbeResult> =>
+            urls.includes(url) ? 'found' : 'missing',
+        );
+
+    it('stops probing and records no miss when the platform times out', async () => {
+        const timingOut = vi.fn(async (): Promise<ProbeResult> => 'timeout');
+
+        const result = await probeRecentRecordings([], { probe: timingOut, now: NOW });
+
+        expect(timingOut).toHaveBeenCalledTimes(1);
+        expect(result).toEqual([]);
+        expect(readProbeState().misses).toEqual({});
+    });
+
+    it('retries right away on the next run after a timeout', async () => {
+        await probeRecentRecordings([], {
+            probe: async (): Promise<ProbeResult> => 'timeout',
+            now: NOW,
+        });
+        const next = found([]);
+
+        await probeRecentRecordings([], { probe: next, now: new Date(NOW.getTime() + 1) });
+
+        expect(next).toHaveBeenCalledTimes(10);
+    });
 
     it('probes today and yesterday for every show and returns what exists', async () => {
         const probe = found([REAL_URLS.badgirl]);
