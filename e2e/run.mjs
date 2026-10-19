@@ -1,9 +1,10 @@
 // 端對端測試：真 Chromium + vite preview + 假錄音列表 + 模擬 audio server（支援 Range）
+// 固定時鐘同 audio host 見 harness.mjs
 // 用法：npm run e2e（截圖輸出去 e2e/screenshots/）
 import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { silenceWav } from './silenceWav.mjs';
+import { AUDIO_HOST, newE2EContext, readFeed } from './harness.mjs';
 import { runTouchChecks } from './touch.mjs';
 
 const DEFAULT_PORT = 4173;
@@ -23,8 +24,6 @@ const parsePort = (raw) => {
 const PORT = parsePort(process.env.E2E_PORT);
 const BASE = `http://localhost:${PORT}/903-player/`;
 const OUT = new URL('./screenshots', import.meta.url).pathname;
-const AUDIO_SECONDS = 600;
-const wav = silenceWav(AUDIO_SECONDS);
 mkdirSync(OUT, { recursive: true });
 
 // 預期色：刻意寫死做獨立對照（同下面 '#d4af5a' 一樣），唔係由 app 推返出嚟
@@ -586,35 +585,123 @@ const checkTodayMidDrag = async (p) => {
     log(after === before && phase === null, `拖唔夠遠放手彈返：${before} → ${after}`);
 };
 
+// audio probe（PR #29）：今日同尋日、feed 未有嘅節目會直接 probe 原站。
+// 西加航空 19/10 晚間節目唔喺假資料（sampleData.mjs），而 E2E_NOW（22:30）佢已經開咗咪，所以一定會 probe
+const PROBE_STORAGE_KEY = '903player:probed:v1';
+// 同 src/config/shows.ts 嘅 westair 一致；刻意寫死做獨立對照
+const PROBE_SHOW = { id: 'westair', name: '西加航空', fileTime: '0905' };
+const PROBE_DATE = '2026-10-19';
+const PROBE_WAIT_MS = 20000;
+const PROBE_POLL_MS = 100;
+
+/** 同 app 嘅 buildAudioUrl 一樣砌法：<host>/<節目名>/<YYYYMMDD>_<HHMM>_<節目名>.aac */
+const probeUrl = ({ name, fileTime }, date) =>
+    `${AUDIO_HOST}/${encodeURIComponent(name)}/${encodeURIComponent(
+        `${date.replaceAll('-', '')}_${fileTime}_${name}`,
+    )}.aac`;
+/** 2026-10-16 → 16/10（集數掣 aria-label 嘅寫法） */
+const dayMonth = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+const feedLatestDate = (showId) =>
+    readFeed()
+        .filter((r) => r.showId === showId)
+        .map((r) => r.date)
+        .sort()
+        .at(-1);
+
+/** 開節目頁，等 probe 寫低某個節目某日嘅結果（found 或者 miss） */
+const openProbedShowPage = async (browser, errors, extraAudioUrls) => {
+    const ctx = await newE2EContext(
+        browser,
+        { viewport: { width: 390, height: 844 } },
+        { extraAudioUrls },
+    );
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => errors.push(e.message));
+    await p.goto(`${BASE}#/show/${PROBE_SHOW.id}`);
+    const slot = `${PROBE_SHOW.id}:${PROBE_DATE}`;
+    await p.waitForFunction(
+        ({ key, slot: wanted, showId, date }) => {
+            const state = JSON.parse(localStorage.getItem(key) ?? 'null');
+            return (
+                state?.misses?.[wanted] !== undefined ||
+                state?.found?.some((r) => r.showId === showId && r.date === date)
+            );
+        },
+        { key: PROBE_STORAGE_KEY, slot, showId: PROBE_SHOW.id, date: PROBE_DATE },
+        { timeout: PROBE_WAIT_MS, polling: PROBE_POLL_MS },
+    );
+    const state = await p.evaluate(
+        (key) => JSON.parse(localStorage.getItem(key)),
+        PROBE_STORAGE_KEY,
+    );
+    return { ctx, p, state };
+};
+
+const currentEpisodeOf = (p) =>
+    p.locator('button[aria-current="true"]').first().getAttribute('aria-label');
+
+/** 原站冇嘅檔（404）唔會變成集數；節目頁最近一集同假資料一樣 */
+const checkProbeIgnoresUnknown = async (browser, errors) => {
+    const { ctx, p, state } = await openProbedShowPage(browser, errors, []);
+    log(
+        state.found.length === 0,
+        `probe 原站冇嘅日子唔會多咗集數（found ${state.found.length}，miss ${Object.keys(state.misses).join(' ')}）`,
+    );
+    const latest = dayMonth(feedLatestDate(PROBE_SHOW.id));
+    // 重開先計：一入頁揀集嗰陣 probe 未完；重開會即刻併埋之前 probe 到嘅（如果有）
+    await p.reload();
+    await p
+        .getByRole('button', { name: new RegExp(`^播放 ${latest}`) })
+        .first()
+        .waitFor();
+    const current = await currentEpisodeOf(p);
+    log(
+        current.startsWith(`播放 ${latest}`),
+        `西加航空節目頁最近一集 = 假資料最近一集 ${latest}：${current}`,
+    );
+    const invented = await p.getByRole('button', { name: /^播放 1[89]\/10/ }).count();
+    log(invented === 0, `西加航空冇 probe 作出嚟嘅 18/10、19/10（${invented} 個）`);
+    await ctx.close();
+};
+
+/** 原站真係有、feed 未有嘅今日新一集：probe 搵到就加入清單，重開節目頁揀佢做最近一集 */
+const checkProbeFindsNewEpisode = async (browser, errors) => {
+    const url = probeUrl(PROBE_SHOW, PROBE_DATE);
+    const { ctx, p, state } = await openProbedShowPage(browser, errors, [url]);
+    const found = state.found.map((r) => `${r.showId} ${r.date}`);
+    log(
+        found.length === 1 && found[0] === `${PROBE_SHOW.id} ${PROBE_DATE}`,
+        `probe 搵到原站有嘅今日新一集，冇其他（${found.join(' / ')}）`,
+    );
+    const label = `播放 ${dayMonth(PROBE_DATE)}`;
+    const row = p.getByRole('button', { name: new RegExp(`^${label}`) });
+    await row.first().waitFor({ timeout: 5000 });
+    log((await row.count()) > 0, `probe 搵到嘅 ${dayMonth(PROBE_DATE)} 即刻加入西加航空清單`);
+    await p.reload();
+    await p
+        .getByRole('button', { name: new RegExp(`^${label}`) })
+        .first()
+        .waitFor();
+    const current = await currentEpisodeOf(p);
+    log(current.startsWith(label), `重開節目頁揀 probe 搵到嘅最新一集：${current}`);
+    await ctx.close();
+};
+
 const server = await startPreview();
 let browser;
 try {
     browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
-    const context = await browser.newContext({
+    const context = await newE2EContext(browser, {
         viewport: { width: 390, height: 844 },
         deviceScaleFactor: 2,
         colorScheme: 'dark',
     });
-    // 模擬真實 audio server 嘅 Range 支援（206 Partial Content），seek 先會成功
-    const serveAudio = (route) => {
-        const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? '');
-        const start = range ? Number(range[1]) : 0;
-        const end = range && range[2] ? Number(range[2]) : wav.length - 1;
-        route.fulfill({
-            status: range ? 206 : 200,
-            headers: {
-                'Content-Type': 'audio/wav',
-                'Accept-Ranges': 'bytes',
-                'Content-Length': String(end - start + 1),
-                ...(range ? { 'Content-Range': `bytes ${start}-${end}/${wav.length}` } : {}),
-            },
-            body: wav.subarray(start, end + 1),
-        });
-    };
-    await context.route('https://audio.hkfm903.live/**', serveAudio);
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    // 先驗 probe 同 audio host：佢哋錯咗，下面最近一集嘅斷言會一連串錯（甚至 crash），睇唔到成因
+    await checkProbeIgnoresUnknown(browser, errors);
+    await checkProbeFindsNewEpisode(browser, errors);
 
     await page.goto(BASE);
     await page.waitForSelector('nav[aria-busy="false"]');
@@ -778,8 +865,7 @@ try {
     await checkVersionClear(page, '390×844');
     await page.screenshot({ path: `${OUT}/7-home-mini-player.png` });
 
-    const narrow = await browser.newContext({ viewport: { width: 320, height: 640 } });
-    await narrow.route('https://audio.hkfm903.live/**', serveAudio);
+    const narrow = await newE2EContext(browser, { viewport: { width: 320, height: 640 } });
     const np = await narrow.newPage();
     await np.goto(BASE);
     await np.waitForSelector('nav[aria-busy="false"]');
@@ -796,8 +882,7 @@ try {
     await narrow.close();
 
     // 主頁 mini player 循環掃：獨立 context，未載入任何節目
-    const loop = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    await loop.route('https://audio.hkfm903.live/**', serveAudio);
+    const loop = await newE2EContext(browser, { viewport: { width: 390, height: 844 } });
     const lpp = await loop.newPage();
     lpp.on('pageerror', (e) => errors.push(e.message));
     await lpp.goto(BASE);
@@ -806,12 +891,11 @@ try {
     await loop.close();
 
     // 細 iPhone（320×568）：今日節目卡疊靜止嘅樣
-    const small = await browser.newContext({
+    const small = await newE2EContext(browser, {
         viewport: { width: 320, height: 568 },
         deviceScaleFactor: 2,
         colorScheme: 'dark',
     });
-    await small.route('https://audio.hkfm903.live/**', serveAudio);
     const sp = await small.newPage();
     sp.on('pageerror', (e) => errors.push(e.message));
     await sp.goto(`${BASE}#/today`);
@@ -827,12 +911,11 @@ try {
 
     // 主頁頁頂橫額：常見手機闊度（細 iPhone、一般、Pro Max）
     for (const { width, height, fixedHome } of HOME_BANNER_VIEWPORTS) {
-        const ctx = await browser.newContext({
+        const ctx = await newE2EContext(browser, {
             viewport: { width, height },
             deviceScaleFactor: 2,
             colorScheme: 'dark',
         });
-        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
         const hp = await ctx.newPage();
         hp.on('pageerror', (e) => errors.push(e.message));
         await hp.goto(BASE);
@@ -845,8 +928,10 @@ try {
 
     // 節目頁：夠高就固定、集數清單自己捲；好矮（橫向手機）就成頁正常捲。badgirl 集數多過一個畫面
     for (const { width, height, swipe, homeFixed } of SHOW_VIEWPORTS) {
-        const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2 });
-        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
+        const ctx = await newE2EContext(browser, {
+            viewport: { width, height },
+            deviceScaleFactor: 2,
+        });
         const fp = await ctx.newPage();
         fp.on('pageerror', (e) => errors.push(e.message));
         await fp.goto(`${BASE}#/show/badgirl`);
@@ -887,9 +972,9 @@ try {
     console.log('');
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
-    await runTouchChecks({ browser, base: BASE, out: OUT, serveAudio, errors, log });
+    await runTouchChecks({ browser, base: BASE, out: OUT, errors, log });
 
-    const light = await browser.newContext({
+    const light = await newE2EContext(browser, {
         viewport: { width: 390, height: 844 },
         deviceScaleFactor: 2,
         colorScheme: 'light',
