@@ -37,7 +37,19 @@ const fetchSiteHtml = async (showName?: string): Promise<string> => {
 
 /** 原站：各節目頁 + All Shows 頁 */
 export const siteSources: ScrapeSources = {
-    fetchShow: async (showId, showName) => parseRecordings(await fetchSiteHtml(showName), showId),
+    fetchShow: async (showId, showName) => {
+        const dropped: string[] = [];
+        const recordings = parseRecordings(await fetchSiteHtml(showName), showId, (title) =>
+            dropped.push(title),
+        );
+        if (dropped.length > 0) {
+            annotate(
+                'warning',
+                `${showId}: dropped ${dropped.length} cards from the show page: ${dropped.join(', ')}`,
+            );
+        }
+        return recordings;
+    },
     fetchAll: async () => parseAllRecordings(await fetchSiteHtml()),
 };
 

@@ -55,6 +55,16 @@ describe('parseRecordings cross-check', () => {
             '2026-10-17',
         ]);
     });
+
+    it('reports every dropped card, including badge / filename conflicts', () => {
+        const dropped: string[] = [];
+        const html =
+            card('20261018_2308_公子會.aac', '公子會') +
+            card('20261016_1000_公子會.aac', 'Bad Girl大過佬');
+
+        expect(parseRecordings(html, 'badgirl', (title) => dropped.push(title))).toEqual([]);
+        expect(dropped).toEqual(['20261018_2308_公子會.aac', '20261016_1000_公子會.aac']);
+    });
 });
 
 describe('parseAllRecordings unmatched names', () => {

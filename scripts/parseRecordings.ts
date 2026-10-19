@@ -74,10 +74,20 @@ const belongsTo = (card: Card, showId: ShowId): boolean => {
     return 'showId' in resolution ? resolution.showId === showId : true;
 };
 
-/** 節目頁：原站已按節目篩選，再用 badge / 檔名交叉檢查 */
-export const parseRecordings = (html: string, showId: ShowId): Recording[] =>
+/** 節目頁：原站已按節目篩選，再用 badge / 檔名交叉檢查；丟走嘅卡經 onDrop 報告 */
+export const parseRecordings = (
+    html: string,
+    showId: ShowId,
+    onDrop: (title: string) => void = () => {},
+): Recording[] =>
     readCards(html)
-        .filter((card) => belongsTo(card, showId))
+        .filter((card) => {
+            const keep = belongsTo(card, showId);
+            if (!keep) {
+                onDrop(card.title);
+            }
+            return keep;
+        })
         .map((card) => toRecording(card, showId))
         .filter(isPresent);
 

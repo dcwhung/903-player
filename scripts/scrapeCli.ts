@@ -29,11 +29,11 @@ const main = async (): Promise<void> => {
         // 寧願 deploy 失敗、保留舊版本，都唔好發佈一個空列表
         throw new Error('No recordings scraped and no fallback available');
     }
-    // 摘要寫成 annotation，可以經 GitHub API 讀到
-    annotate('notice', `Feed: ${summariseFeed(feed, hkToday())}`);
     await mkdir(dirname(OUTPUT_PATH), { recursive: true });
     await writeFile(OUTPUT_PATH, JSON.stringify(feed, null, JSON_INDENT));
     console.log(`[scrape] wrote ${feed.recordings.length} recordings to ${OUTPUT_PATH}`);
+    // 寫完先出摘要 annotation（可以經 GitHub API 讀到），確認係真正發佈嘅內容
+    annotate('notice', `Feed: ${summariseFeed(feed, hkToday())}`);
 };
 
 main().catch((error: unknown) => {
