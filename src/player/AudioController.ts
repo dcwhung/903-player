@@ -44,6 +44,8 @@ export class AudioController {
     private replayedSeconds: number | undefined;
     /** 上一次 timeupdate 嘅位置，用嚟計兩次之間播咗幾耐 */
     private lastTickPosition = 0;
+    /** 撳咗 Play 但 play event 未到（瀏覽器仲準備緊）；PWA 更新要當播緊，唔好搶走呢下撳 */
+    private playIntent = false;
 
     constructor(private readonly audio: HTMLAudioElement) {}
 
@@ -54,12 +56,15 @@ export class AudioController {
 
     getSnapshot = (): PlayerState => this.state;
 
+    /** 播緊，或者用戶啱啱撳咗 Play 等緊 play event */
+    hasPlayIntent = (): boolean => this.state.isPlaying || this.playIntent;
+
     /** 綁定 audio 同頁面事件，返回解除綁定嘅 function */
     attach = (): (() => void) => {
         const audioEvents: Record<string, () => void> = {
             loadedmetadata: this.onLoadedMetadata,
             timeupdate: this.onTimeUpdate,
-            play: () => this.update({ isPlaying: true }),
+            play: this.onPlay,
             pause: this.onStopped,
             ended: this.onStopped,
         };
@@ -75,6 +80,10 @@ export class AudioController {
     };
 
     load = async (recording: Recording, { autoplay = false }: LoadOptions = {}): Promise<void> => {
+        // 換集時 subscriber 已經會收到通知，所以要喺換之前標記想播
+        if (autoplay) {
+            this.setPlayIntent(true);
+        }
         if (this.state.recording?.url !== recording.url) {
             this.switchTo(recording);
         } else if (this.isParkedAtEnd()) {
@@ -87,15 +96,20 @@ export class AudioController {
     };
 
     play = async (): Promise<void> => {
+        this.setPlayIntent(true);
         try {
             await this.audio.play();
         } catch {
             // 瀏覽器擋自動播放：維持暫停，等用戶撳 Play
+            this.playIntent = false;
             this.update({ isPlaying: false });
         }
     };
 
-    pause = (): void => this.audio.pause();
+    pause = (): void => {
+        this.setPlayIntent(false);
+        this.audio.pause();
+    };
 
     toggle = async (): Promise<void> => (this.audio.paused ? this.play() : this.pause());
 
@@ -120,6 +134,7 @@ export class AudioController {
     skip = (deltaSeconds: number): void => this.seek(this.state.currentTime + deltaSeconds);
 
     stop = (): void => {
+        this.setPlayIntent(false);
         this.audio.pause();
         this.persist();
     };
@@ -219,6 +234,20 @@ export class AudioController {
         }
     };
 
+    private onPlay = (): void => {
+        this.playIntent = false;
+        this.update({ isPlaying: true });
+    };
+
+    /** 唔改 state object（React 唔使 re-render），但要通知 PWA 更新重新判斷 */
+    private setPlayIntent(value: boolean): void {
+        if (this.playIntent === value) {
+            return;
+        }
+        this.playIntent = value;
+        this.notify();
+    }
+
     private onStopped = (): void => {
         this.update({ isPlaying: false });
         this.persist();
@@ -232,6 +261,10 @@ export class AudioController {
 
     private update(partial: Partial<PlayerState>): void {
         this.state = { ...this.state, ...partial };
+        this.notify();
+    }
+
+    private notify(): void {
         this.listeners.forEach((listener) => listener());
     }
 }

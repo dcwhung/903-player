@@ -20,7 +20,8 @@ const updateManager = new UpdateManager({
     },
     now: Date.now,
     isOnline: () => navigator.onLine,
-    isPlaying: () => playerController.getSnapshot().isPlaying,
+    // 用播放意圖：撳咗 Play 但 play event 未到嗰陣都當播緊，唔好 reload 搶走呢下撳
+    isPlaying: playerController.hasPlayIntent,
     hasRecording: () => playerController.getSnapshot().recording !== null,
     isVisible: () => document.visibilityState === 'visible',
     schedule: (callback, ms) => {
