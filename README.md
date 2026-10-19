@@ -29,6 +29,7 @@ npm test           # Vitest
 npm run coverage   # 覆蓋率
 npm run lint       # ESLint + Prettier
 npm run scrape     # 爬原站，寫 public/data/recordings.json
+npm run e2e        # Playwright 端對端測試（假資料 + 模擬 audio server）
 npm run build
 ```
 
