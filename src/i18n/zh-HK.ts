@@ -18,7 +18,8 @@ export const zhHK = {
         today: '今日節目',
     },
     player: {
-        nowPlaying: '正在播放',
+        // 節目頁日子條中間：「現正播放：16/10（五）」，標籤用強調色
+        nowPlaying: '現正播放：',
         play: '播放',
         pause: '暫停',
         restart: '由頭播放',
@@ -44,10 +45,15 @@ export const zhHK = {
         watched: '已收聽',
         unwatched: '未收聽',
         play: '播放 {date}，{status}',
-        // 節目頁唱片下面嘅日期 / 節目名區：左右掃（或者方向鍵）轉集
+        // 節目頁唱片下面嘅日子條：左右掃（或者方向鍵）轉集
         switchHint: '左右方向鍵或左右掃動轉集',
         switchRoleDescription: '轉集',
         switched: '已轉到 {date}',
+        // 日子條兩邊：左邊新一集、右邊舊一集（可見文字 + 讀屏軟件讀嘅名）
+        newerCell: '‹ {date}',
+        olderCell: '{date} ›',
+        newer: '新一集 {date}',
+        older: '舊一集 {date}',
     },
     miniPlayer: {
         region: '正在播放（今日節目）',

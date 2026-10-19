@@ -39,12 +39,19 @@
     --touch-target-min: 24px;
     --focus-ring-width: 2px;
     --duration-fast: 0.2s;
+    /* 節目頁日子條：滑去隔籬格（useStripMotion 嘅 STRIP_SETTLE_MS 要同步）、碟轉一下 */
+    --duration-strip: 0.3s;
+    --duration-spin: 0.45s;
+    --ease-strip: cubic-bezier(0.2, 0.8, 0.2, 1);
     --dot-size: 6px;
     --dot-size-active: 18px;
     --page-max-width: 480px;
     /* 節目頁 / 今日節目頁主碟（連進度弧）嘅闊度；輪播兩邊碟要對齊佢 */
     --player-disc-size: min(300px, 78vw);
     --carousel-peek-size: 152px;
+    /* 節目頁唱片下面嘅日子條：一行高（側格係掣，用足觸控高度）、兩邊淡出闊度 */
+    --date-strip-height: var(--touch-target);
+    --date-strip-fade: var(--space-8);
     /* 兩邊露出嘅碟有幾多收埋喺畫面外（佔碟闊比例） */
     --carousel-peek-hidden: 0.73;
 
@@ -67,11 +74,15 @@
 /*
  * 矮螢幕（例如 320×568）主碟按畫面高縮細，令固定唔捲嘅節目頁仍然見到兩行集數；
  * 夠高就維持 300px。今日節目頁共用同一個 token，兩頁大小一致。
- * 預留高度 = 頁頭 + 日期節目名 + 控制掣 + 間距 + 兩行集數；唔支援 dvh 就用返上面嘅值。
+ * 兩個上限取細嗰個：
+ * 1. 預留高度 = 頁頭 + 日子條 + 控制掣 + 間距 + 兩行集數（清單最少見到兩行）
+ * 2. 成個播放器（唱片連弧 → 日子條 → 控制掣）最多佔畫面高 --player-max-share（六成）
+ * 唔支援 dvh 就用返上面嘅值。
  * 最細唔會細過 --player-disc-min：再矮（≤ 561px 高）節目頁會改為成頁捲（Page.module.css）。
  */
 :root {
     --player-disc-min: 160px;
+    --player-max-share: 0.6;
     /* 節目頁（只限節目頁）嘅間距；700px 高或以下收窄，令固定版面多啲位畀集數清單 */
     --show-page-gap: var(--space-5);
 }
@@ -89,7 +100,7 @@
          * 1. 頂部安全區 + 頁頂 padding（--space-4）
          * 2. 頁頭返回掣（--touch-target）
          * 3. 4 個間距（頁：頁頭↔播放器↔清單；播放器：唱片↔標題↔控制掣）
-         * 4. 日期 + 節目名：60px（13px + 4px 間距 + 24px，Poppins 行高 1.5 量出嚟）
+         * 4. 日子條：--date-strip-height（節目名已經搬咗去頁頭，頁頭高度不變）
          * 5. 播放掣最大尺寸：76px（PlayerControls --toggle-size 上限）
          * 6. 「集數 / 共 N 集」標題列：30px（量出嚟）
          * 7. 兩行集數：2 × 56px（EpisodeList .row，border-box 連分隔線）
@@ -98,14 +109,21 @@
          */
         --player-reserved-height: calc(
             env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 4 *
-                var(--show-page-gap) + 60px + 76px + 30px + 2 * 56px + var(--space-2) +
-                env(safe-area-inset-bottom)
+                var(--show-page-gap) + var(--date-strip-height) + 76px + 30px + 2 * 56px +
+                var(--space-2) + env(safe-area-inset-bottom)
         );
+        /* 播放器入面唱片以外嘅高度：2 個間距 + 日子條 + 播放掣最大尺寸（76px） */
+        --player-chrome-height: calc(2 * var(--show-page-gap) + var(--date-strip-height) + 76px);
         /* 唱片 + 時間嗰一格嘅高 = 闊 × 316 / 300（PlayerPanel .gauge aspect-ratio） */
         /* 下限都唔可以闊過 78vw（極窄 / 高倍放大時避免橫向超出） */
         --player-disc-size: max(
             min(var(--player-disc-min), 78vw),
-            min(300px, 78vw, calc((100dvh - var(--player-reserved-height)) * 300 / 316))
+            min(
+                300px,
+                78vw,
+                calc((100dvh - var(--player-reserved-height)) * 300 / 316),
+                calc((100dvh * var(--player-max-share) - var(--player-chrome-height)) * 300 / 316)
+            )
         );
     }
 }
