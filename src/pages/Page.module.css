@@ -11,6 +11,42 @@
         calc(env(safe-area-inset-bottom) + var(--space-8));
 }
 
+/*
+ * 節目頁：成頁固定喺一個畫面高，唔會捲（避免控制掣捲咗去 status bar 下面），
+ * 剩低嘅高度畀集數清單自己捲。100dvh 跟 iOS Safari 工具列伸縮，舊瀏覽器用 100vh。
+ * 底部安全區由清單自己留，等清單可以捲到 home indicator 後面。
+ */
+.fixed {
+    /* 間距跟 --show-page-gap（矮螢幕收窄，只限節目頁），播放器 panel 入面都用同一個值 */
+    --player-panel-gap: var(--show-page-gap);
+
+    gap: var(--show-page-gap);
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: 0;
+    padding-left: env(safe-area-inset-left);
+}
+
+/*
+ * 好矮嘅畫面（橫向手機、矮視窗、200% 放大）塞唔落固定版面：
+ * 取消固定，成頁正常捲；清單冇咗高度上限，自然唔會變成內部捲動。
+ * 561px：700px 高或以下 --player-reserved-height 係 394px（冇安全區），
+ * 加最細唱片（--player-disc-min 160px）嗰格 160 × 316 / 300 ≈ 168.5px，合共約 562px；
+ * 再矮就塞唔落兩行集數，所以 ≤ 561px 改為成頁捲；320×568 仍然係固定。
+ * e2e/run.mjs 嘅 SHORT_HEIGHT_PX 要同步。
+ */
+@media (max-height: 561px) {
+    .fixed {
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        overflow: visible;
+    }
+}
+
 .header {
     width: 100%;
     padding: 0 var(--space-3);

@@ -48,7 +48,66 @@
     /* 兩邊露出嘅碟有幾多收埋喺畫面外（佔碟闊比例） */
     --carousel-peek-hidden: 0.73;
 
+    /* 主頁色調（跟 app icon）：漸變底、泥膠陰影、今日節目奶油色掣；文字顏色見 HOME_THEME */
+    --home-bg-top: #4f749c;
+    --home-bg-bottom: #42658a;
+    /* 頁底淡淡奶油色光暈，收喺 mini player 後面，唔會掂到版本號 */
+    --home-glow: rgb(253 248 242 / 14%);
+    --home-glow-height: 110px;
+    --shadow-home-title: 0 3px 0 rgb(25 45 75 / 35%);
+    --shadow-clay-tile: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
+    --color-today-tile-bg: #fdf8f2;
+    --color-today-tile-text: #2f4560;
+    --color-today-tile-icon: #e8796e;
+    --shadow-today-tile: 0 6px 0 #d9cbb6, 0 10px 18px rgb(20 40 65 / 30%);
+
     color-scheme: dark;
+}
+
+/*
+ * 矮螢幕（例如 320×568）主碟按畫面高縮細，令固定唔捲嘅節目頁仍然見到兩行集數；
+ * 夠高就維持 300px。今日節目頁共用同一個 token，兩頁大小一致。
+ * 預留高度 = 頁頭 + 日期節目名 + 控制掣 + 間距 + 兩行集數；唔支援 dvh 就用返上面嘅值。
+ * 最細唔會細過 --player-disc-min：再矮（≤ 561px 高）節目頁會改為成頁捲（Page.module.css）。
+ */
+:root {
+    --player-disc-min: 160px;
+    /* 節目頁（只限節目頁）嘅間距；700px 高或以下收窄，令固定版面多啲位畀集數清單 */
+    --show-page-gap: var(--space-5);
+}
+
+@media (max-height: 700px) {
+    :root {
+        --show-page-gap: var(--space-3);
+    }
+}
+
+@supports (height: 100dvh) {
+    :root {
+        /*
+         * 節目頁除咗唱片之外要預留嘅高度，按固定版面由上而下：
+         * 1. 頂部安全區 + 頁頂 padding（--space-4）
+         * 2. 頁頭返回掣（--touch-target）
+         * 3. 4 個間距（頁：頁頭↔播放器↔清單；播放器：唱片↔標題↔控制掣）
+         * 4. 日期 + 節目名：60px（13px + 4px 間距 + 24px，Poppins 行高 1.5 量出嚟）
+         * 5. 播放掣最大尺寸：76px（PlayerControls --toggle-size 上限）
+         * 6. 「集數 / 共 N 集」標題列：30px（量出嚟）
+         * 7. 兩行集數：2 × 56px（EpisodeList .row，border-box 連分隔線）
+         * 8. 清單底 padding（--space-2）+ 底部安全區
+         * 改字體大小、控制掣或者行高要跟住改。
+         */
+        --player-reserved-height: calc(
+            env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 4 *
+                var(--show-page-gap) + 60px + 76px + 30px + 2 * 56px + var(--space-2) +
+                env(safe-area-inset-bottom)
+        );
+        /* 唱片 + 時間嗰一格嘅高 = 闊 × 316 / 300（PlayerPanel .gauge aspect-ratio） */
+        /* 下限都唔可以闊過 78vw（極窄 / 高倍放大時避免橫向超出） */
+        --player-disc-size: max(
+            min(var(--player-disc-min), 78vw),
+            min(300px, 78vw, calc((100dvh - var(--player-reserved-height)) * 300 / 316))
+        );
+    }
 }
 
 /*

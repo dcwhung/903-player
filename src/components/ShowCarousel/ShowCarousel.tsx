@@ -1,4 +1,5 @@
 import type { KeyboardEvent, ReactNode } from 'react';
+import { arrowKeyDirection } from '../../hooks/swipe';
 import { stepIndex, useSwipe } from '../../hooks/useSwipe';
 import { t } from '../../i18n/t';
 import styles from './ShowCarousel.module.css';
@@ -10,8 +11,6 @@ interface ShowCarouselProps {
     onChange: (index: number) => void;
     children: ReactNode;
 }
-
-const KEY_DIRECTION = { ArrowRight: 'next', ArrowLeft: 'previous' } as const;
 
 /** 方向鍵只係焦點喺輪播本身或者指示點先轉節目；其他掣 / 進度 slider 有自己用途 */
 const ownsArrowKeys = (event: KeyboardEvent<HTMLDivElement>): boolean =>
@@ -26,7 +25,7 @@ export const ShowCarousel = ({ arts, index, onChange, children }: ShowCarouselPr
     };
     const swipe = useSwipe(go);
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-        const direction = KEY_DIRECTION[event.key as keyof typeof KEY_DIRECTION];
+        const direction = arrowKeyDirection(event.key);
         if (direction && ownsArrowKeys(event)) go(direction);
     };
     const previous = arts[index - 1];

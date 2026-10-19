@@ -10,3 +10,12 @@ export const swipeDirection = (dx: number, dy: number): SwipeDirection | null =>
     }
     return dx < 0 ? 'next' : 'previous';
 };
+
+const ARROW_KEY_DIRECTION: Readonly<Record<string, SwipeDirection>> = {
+    ArrowRight: 'next',
+    ArrowLeft: 'previous',
+};
+
+/** 鍵盤代替 swipe：右方向鍵 = 下一個（等於向左掃），左方向鍵 = 上一個 */
+export const arrowKeyDirection = (key: string): SwipeDirection | null =>
+    ARROW_KEY_DIRECTION[key] ?? null;

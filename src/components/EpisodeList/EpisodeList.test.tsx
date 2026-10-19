@@ -28,7 +28,7 @@ const ITEMS: EpisodeItem[] = [
 
 describe('EpisodeList', () => {
     beforeEach(() => {
-        Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
     });
 
     it('lists episodes with their count and status', () => {
@@ -54,12 +54,12 @@ describe('EpisodeList', () => {
         expect(screen.getAllByRole('img', { name: '已收聽' })).toHaveLength(1);
     });
 
-    it('scrolls the current episode into view', () => {
+    it('scrolls the current episode into view inside the list panel', () => {
         render(<EpisodeList items={ITEMS} onSelect={() => {}} />);
 
-        expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith(
-            expect.objectContaining({ block: 'nearest' }),
-        );
+        const scrollTo = vi.mocked(HTMLElement.prototype.scrollTo);
+        expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }));
+        expect(scrollTo.mock.contexts).toEqual([screen.getByRole('list')]);
     });
 
     it('jumps instead of scrolling smoothly when reduced motion is preferred', () => {
@@ -69,7 +69,7 @@ describe('EpisodeList', () => {
         );
         render(<EpisodeList items={ITEMS} onSelect={() => {}} />);
 
-        expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith(
+        expect(HTMLElement.prototype.scrollTo).toHaveBeenCalledWith(
             expect.objectContaining({ behavior: 'auto' }),
         );
         vi.unstubAllGlobals();

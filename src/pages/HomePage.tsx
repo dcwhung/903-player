@@ -3,8 +3,9 @@ import { AppVersion } from '../components/AppVersion/AppVersion';
 import { RadioIcon } from '../components/icons/icons';
 import { MiniPlayer } from '../components/MiniPlayer/MiniPlayer';
 import { ShowTile } from '../components/ShowTile/ShowTile';
+import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { APP_VERSION } from '../config/appVersion';
-import { SHOW_THEMES } from '../config/showThemes';
+import { HOME_THEME, SHOW_THEMES } from '../config/showThemes';
 import { SHOWS } from '../config/shows';
 import { useRecordings } from '../data/useRecordings';
 import { useHomeArrival } from '../hooks/useHomeArrival';
@@ -16,6 +17,17 @@ import page from './Page.module.css';
 
 const APP_ICON_SIZE = 18;
 
+/** 頁頂：app 名（黃色 icon）+ 標題 */
+const HomeBrand = () => (
+    <header className={styles.brand}>
+        <span className={styles.appName}>
+            <RadioIcon size={APP_ICON_SIZE} className={styles.appIcon} />
+            {t('appName')}
+        </span>
+        <h1 className={styles.title}>{t('home.title')}</h1>
+    </header>
+);
+
 export const HomePage = () => {
     const navigate = useNavigate();
     const { status } = useRecordings();
@@ -24,41 +36,38 @@ export const HomePage = () => {
     useHomeArrival();
 
     return (
-        <main className={`${page.page} ${styles.home}`}>
-            <header className={styles.brand}>
-                <span className={styles.appName}>
-                    <RadioIcon size={APP_ICON_SIZE} className={styles.appIcon} />
-                    {t('appName')}
-                </span>
-                <h1 className={styles.title}>{t('home.title')}</h1>
-            </header>
-            <nav
-                className={styles.grid}
-                aria-label={t('home.showsNav')}
-                aria-busy={status === 'loading'}
-            >
-                {SHOWS.map((show) => (
+        // 主頁用自己嘅色調（跟 app icon）；mini player 入面另有 ThemeScope，照跟節目色
+        <ThemeScope theme={HOME_THEME} className={styles.scope}>
+            <main className={`${page.page} ${styles.home}`}>
+                <HomeBrand />
+                <nav
+                    className={styles.grid}
+                    aria-label={t('home.showsNav')}
+                    aria-busy={status === 'loading'}
+                >
+                    {SHOWS.map((show) => (
+                        <ShowTile
+                            key={show.id}
+                            label={show.name}
+                            art={SHOW_THEMES[show.id].art}
+                            onClick={() => {
+                                startShow(show.id);
+                                navigate(`/show/${show.id}`);
+                            }}
+                        />
+                    ))}
                     <ShowTile
-                        key={show.id}
-                        label={show.name}
-                        art={SHOW_THEMES[show.id].art}
+                        variant="today"
+                        label={t('home.today')}
                         onClick={() => {
-                            startShow(show.id);
-                            navigate(`/show/${show.id}`);
+                            startToday();
+                            navigate('/today');
                         }}
                     />
-                ))}
-                <ShowTile
-                    variant="today"
-                    label={t('home.today')}
-                    onClick={() => {
-                        startToday();
-                        navigate('/today');
-                    }}
-                />
-            </nav>
-            <AppVersion version={APP_VERSION} />
-            {miniPlayer && <MiniPlayer {...miniPlayer} />}
-        </main>
+                </nav>
+                <AppVersion version={APP_VERSION} />
+                {miniPlayer && <MiniPlayer {...miniPlayer} />}
+            </main>
+        </ThemeScope>
     );
 };

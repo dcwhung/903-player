@@ -2,6 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import { t } from '../../i18n/t';
 import { scrollBehavior } from '../../utils/motion';
 import { PERCENT, toPercent } from '../../utils/ratio';
+import { scrollRowIntoPanel } from '../../utils/scroll';
 import { CheckIcon, PlayIcon } from '../icons/icons';
 import styles from './EpisodeList.module.css';
 import type { EpisodeStatus } from './episodeStatus';
@@ -61,16 +62,19 @@ const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: str
     );
 };
 
-/** 集數清單：最新喺頂，每集有進度同狀態；入頁自動捲到揀中嗰集 */
+/**
+ * 集數清單：最新喺頂，每集有進度同狀態。
+ * 清單本身係節目頁唯一捲動嘅 panel；入頁 / 轉集時只喺 panel 入面捲到揀中嗰集
+ */
 export const EpisodeList = ({ items, onSelect }: EpisodeListProps) => {
     const headingId = useId();
     const listRef = useRef<HTMLUListElement>(null);
     const currentKey = items.find((item) => item.current)?.key;
 
     useEffect(() => {
-        listRef.current
-            ?.querySelector('[aria-current="true"]')
-            ?.scrollIntoView?.({ block: 'nearest', behavior: scrollBehavior() });
+        const list = listRef.current;
+        const row = list?.querySelector('[aria-current="true"]');
+        if (list && row) scrollRowIntoPanel(list, row, scrollBehavior());
     }, [currentKey]);
 
     return (

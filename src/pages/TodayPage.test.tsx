@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
+import { SHOW_THEMES } from '../config/showThemes';
 import { saveProgress } from '../services/progressStore';
 import { TodayPage } from './TodayPage';
 
@@ -42,6 +43,17 @@ describe('TodayPage', () => {
         expect(screen.getByRole('heading', { name: '在晴朗的一天出發' })).toBeInTheDocument();
     });
 
+    it('leaves swiping to the carousel and renders no episode switcher', async () => {
+        renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
+
+        await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+        expect(screen.getByRole('group', { name: '今日節目，左右掃動轉節目' })).toBeInTheDocument();
+        expect(
+            screen.queryByRole('group', { description: '左右方向鍵或左右掃動轉集' }),
+        ).not.toBeInTheDocument();
+        expect(document.querySelector('[aria-roledescription="轉集"]')).toBeNull();
+    });
+
     it('shows watched status and plays the tapped show', async () => {
         saveProgress(TODAY[0]?.url ?? '', 990, 1000);
         const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
@@ -71,6 +83,20 @@ describe('TodayPage', () => {
         expect(screen.getByRole('main').closest('[data-theme-scope]')).toHaveStyle({
             '--theme-accent': '#f08a24',
         });
+    });
+
+    it('should follow the selected show in theme-color when the carousel changes', async () => {
+        const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
+        const themeColor = () =>
+            document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.content;
+        expect(themeColor()).toBe(SHOW_THEMES.sunnyday.bg);
+
+        const carousel = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        fireEvent.pointerDown(carousel, { clientX: 300, clientY: 100 });
+        fireEvent.pointerUp(carousel, { clientX: 150, clientY: 100 });
+
+        await waitFor(() => expect(themeColor()).toBe(SHOW_THEMES.badgirl.bg));
     });
 
     it('falls back to the latest day with recordings', async () => {
