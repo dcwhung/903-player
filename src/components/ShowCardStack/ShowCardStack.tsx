@@ -4,7 +4,7 @@ import { t } from '../../i18n/t';
 import { stackSlots, wrapIndex } from './cardStack';
 import { GhostCard, type GhostSlot, type StackCard } from './GhostCard';
 import styles from './ShowCardStack.module.css';
-import { useCardDrag } from './useCardDrag';
+import { isOnPageDot, useCardDrag } from './useCardDrag';
 import { useCardMotion } from './useCardMotion';
 
 export type { StackCard } from './GhostCard';
@@ -19,8 +19,7 @@ interface ShowCardStackProps {
 
 /** 方向鍵只係焦點喺卡疊本身或者指示點先轉節目；其他掣 / 進度 slider 有自己用途 */
 const ownsArrowKeys = (event: KeyboardEvent<HTMLDivElement>): boolean =>
-    event.target === event.currentTarget ||
-    (event.target instanceof Element && event.target.closest('[data-page-dot]') !== null);
+    event.target === event.currentTarget || isOnPageDot(event.target);
 
 /** 拖動 / 方向鍵都係飛走之後先轉去目標節目（循環）；得一個節目就唔轉 */
 const useShowCardStack = (index: number, total: number, onChange: (index: number) => void) => {

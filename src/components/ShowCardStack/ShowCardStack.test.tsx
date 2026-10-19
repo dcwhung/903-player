@@ -235,6 +235,47 @@ describe('ShowCardStack', () => {
         expect(group).toHaveAttribute('data-phase', 'settling');
     });
 
+    it('should let a dot tap through during spring-back instead of grabbing the card', () => {
+        const onSelect = vi.fn();
+        const { group } = setup(
+            1,
+            CARDS,
+            <PageDots
+                keys={['a', 'b', 'c']}
+                labels={['甲', '乙', '丙']}
+                index={1}
+                onSelect={onSelect}
+            />,
+        );
+        const dot = screen.getByRole('button', { name: '甲' });
+
+        drag(group, -40);
+        // 仲離中間好遠（過咗橫拖門檻）
+        group
+            .querySelector<HTMLElement>(':scope > :not([inert])')
+            ?.style.setProperty('transform', 'matrix(1, 0, 0, 1, -25, 0)');
+        fireEvent.pointerDown(dot, { clientX: 200, clientY: 100 });
+        fireEvent.pointerUp(dot, { clientX: 200, clientY: 100 });
+        fireEvent.click(dot, { detail: 1 });
+
+        expect(onSelect).toHaveBeenCalledExactlyOnceWith(0);
+        expect(group).toHaveAttribute('data-phase', 'settling');
+    });
+
+    it('should carry on from the card offset when a near-centre tap during spring-back becomes a drag', () => {
+        const { group } = setup();
+        const top = screen.getByRole('button', { name: '內容' }).parentElement;
+
+        drag(group, -40);
+        top?.style.setProperty('transform', 'matrix(1, 0, 0, 1, -5, 0)');
+        fireEvent.pointerDown(group, { clientX: 200, clientY: 100 });
+        expect(group).toHaveAttribute('data-phase', 'settling');
+        fireEvent.pointerMove(group, { clientX: 185, clientY: 100 });
+
+        // 手指郁咗 -15px，張卡由佢而家 -5px 嘅位置接落去
+        expect(cardDx(group)).toBe('-20px');
+    });
+
     it('should spring back when the pointer is cancelled', () => {
         const { group, onChange } = setup();
 
@@ -401,6 +442,20 @@ describe('ShowCardStack during the fly-out', () => {
         expect(onChange).toHaveBeenCalledExactlyOnceWith(0);
         fireEvent.click(screen.getByRole('button', { name: '內容' }), { detail: 1 });
         expect(onInnerClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('should drop a drag that a keyboard flight interrupted, even with no pointer event mid-flight', () => {
+        const { group, onChange } = setup();
+
+        fireEvent.pointerDown(group, { clientX: 200, clientY: 100 });
+        fireEvent.pointerMove(group, { clientX: 50, clientY: 100 });
+        fireEvent.keyDown(group, { key: 'ArrowLeft' });
+        finishFly();
+        fireEvent.pointerUp(group, { clientX: 50, clientY: 100 });
+        finishFly();
+
+        expect(onChange).toHaveBeenCalledExactlyOnceWith(0);
+        expect(group).not.toHaveAttribute('data-phase');
     });
 
     it('should not override a show picked elsewhere during the flight', () => {
