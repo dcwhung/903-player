@@ -266,6 +266,39 @@ describe('UpdateManager.handleNeedReload', () => {
         expect(h.deps.applyUpdate).toHaveBeenCalledTimes(1);
     });
 
+    /** apply 咗之後用戶返嚟繼續播（iOS 恢復），controllerchange 遲咗到 */
+    const appliedThenResumed = () => {
+        const h = createHarness();
+        h.manager.handleNeedRefresh();
+        h.hide();
+        vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
+        expect(h.deps.applyUpdate).toHaveBeenCalledTimes(1);
+        h.show();
+        h.setPlaying(true);
+        h.manager.handleNeedReload();
+        return h;
+    };
+
+    it('should not reload a visible paused recording after a deferred self-applied reload', () => {
+        const h = appliedThenResumed();
+        h.setPlaying(false);
+        vi.advanceTimersByTime(LONG_PAUSE_MS);
+        expect(h.deps.reload).not.toHaveBeenCalled();
+        // 停咗好耐先收埋：即刻符合條件
+        h.hide();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('should reload a deferred self-applied update after hidden for the grace period', () => {
+        const h = appliedThenResumed();
+        h.setPlaying(false);
+        h.hide();
+        vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS - ONE_SECOND_MS);
+        expect(h.deps.reload).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(ONE_SECOND_MS);
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+
     it('should reload at once when self-applied and still not playing', () => {
         // 返到前景時 apply 咗，controllerchange 跟住到：唔使再等收埋 app
         const h = createHarness();
