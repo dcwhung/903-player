@@ -1,3 +1,4 @@
+import type { StackCard } from '../components/ShowCardStack/ShowCardStack';
 import type { ShowStatus, TodayShowItem } from '../components/TodayShowList/TodayShowList';
 import { themeFor } from '../config/showThemes';
 import { findShow } from '../config/shows';
@@ -25,4 +26,12 @@ export const toTodayItems = (
         art: themeFor(r.showId).art,
         active: i === activeIndex,
         status: statusOf(i === activeIndex, isPlaying, watchedUrls.has(r.url)),
+    }));
+
+/** 卡疊每張卡：節目名 + 自己節目嘅色調（後面嘅卡用自己嘅色） */
+export const toStackCards = (list: Recording[]): StackCard[] =>
+    list.map((r) => ({
+        key: r.url,
+        title: findShow(r.showId)?.name ?? '',
+        theme: themeFor(r.showId),
     }));

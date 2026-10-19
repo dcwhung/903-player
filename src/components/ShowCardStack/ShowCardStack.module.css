@@ -1,0 +1,143 @@
+/*
+ * 卡疊：所有卡疊喺同一格 grid（一樣大），DOM 次序 = 疊嘅次序。
+ * 拖動姿勢由 useCardMotion 寫入以下 CSS 變數；data-phase 決定 transition 同飛走位置。
+ * 只裁橫向（卡飛出畫面唔會令頁面橫向捲），直向照顯示（傾斜時卡角可以凸出）。
+ */
+.stack {
+    --card-dx: 0px;
+    --card-rotate: 0deg;
+    /* 0–1：向左拖時後面嘅卡上前幾多 */
+    --card-forward: 0;
+    /* 0–1：向右拖時上一張卡由左邊飛返入嚟幾多 */
+    --card-return: 0;
+
+    display: grid;
+    width: 100%;
+    padding: 0 var(--space-4) calc(var(--card-stack-offset) * 2);
+    overflow: hidden;
+    overflow: clip visible;
+    touch-action: pan-y;
+    user-select: none;
+}
+
+/* 卡疊本身可以 focus 嚟用方向鍵；橫向裁咗，所以 outline 畫喺入面 */
+.stack:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-title);
+    outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+.stack img {
+    -webkit-user-drag: none;
+}
+
+.card {
+    grid-area: 1 / 1;
+    border-radius: var(--radius-lg);
+    transform-origin: var(--card-pivot);
+}
+
+.stack[data-phase='settling'] .card {
+    transition:
+        transform var(--duration-card-spring) var(--ease-card-spring),
+        opacity var(--duration-card-spring) var(--ease-card-spring);
+}
+
+.stack[data-phase^='fly'] .card {
+    transition:
+        transform var(--duration-card-fly) var(--ease-card-fly),
+        opacity var(--duration-card-fly) var(--ease-card-fly);
+}
+
+/* 最上面嗰張：真播放器，跟手指移動同傾斜 */
+.top {
+    padding: var(--space-5) 0;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-card);
+    transform: translateX(var(--card-dx)) rotate(var(--card-rotate));
+}
+
+/* 後面嘅卡：每深一層向下移、縮細、變淡；向左拖 / 飛走時按 --card-forward 上前一層 */
+.depth1,
+.depth2 {
+    --card-step: calc(var(--card-depth) - var(--card-forward));
+
+    opacity: calc(1 - var(--card-stack-fade-step) * var(--card-step));
+    transform: translateY(calc(var(--card-stack-offset) * var(--card-step)))
+        scale(calc(1 - var(--card-stack-scale-step) * var(--card-step)));
+}
+
+.depth1 {
+    --card-depth: 1;
+}
+
+.depth2 {
+    --card-depth: 2;
+}
+
+/* 上一個節目：平時喺左邊畫面外（反方向傾斜），向右拖 / 飛走時按 --card-return 飛返入嚟蓋喺最上面 */
+.incoming {
+    --card-away: calc(1 - var(--card-return));
+
+    transform: translateX(calc(var(--card-fly-distance) * -1 * var(--card-away)))
+        rotate(calc(var(--card-fly-rotate) * -1 * var(--card-away)));
+}
+
+/* 向左飛走：最上面嗰張飛出左邊，後面嘅卡上前一層 */
+.stack[data-phase='fly-next'] {
+    --card-forward: 1;
+}
+
+.stack[data-phase='fly-next'] .top {
+    transform: translateX(calc(var(--card-fly-distance) * -1))
+        rotate(calc(var(--card-fly-rotate) * -1));
+}
+
+/* 向右飛走：最上面嗰張飛出右邊，上一張由左邊飛返入嚟 */
+.stack[data-phase='fly-previous'] {
+    --card-return: 1;
+}
+
+.stack[data-phase='fly-previous'] .top {
+    transform: translateX(var(--card-fly-distance)) rotate(var(--card-fly-rotate));
+}
+
+/* 唔係最上面嘅卡：節目自己嘅色調底，只有唱片同節目名 */
+.face {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-5);
+    height: 100%;
+    padding: var(--space-5) 0;
+    border-radius: inherit;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-card);
+}
+
+/* 同 PlayerPanel 嘅唱片格一樣大、一樣位置，換卡時唱片唔會跳 */
+.gauge {
+    position: relative;
+    width: var(--player-disc-size);
+    aspect-ratio: 300 / 316;
+}
+
+.discArea {
+    position: absolute;
+    inset: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+}
+
+.title {
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--color-title);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stack[data-phase] .card {
+        transition: none;
+    }
+}

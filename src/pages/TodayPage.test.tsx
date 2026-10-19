@@ -99,6 +99,29 @@ describe('TodayPage', () => {
         await waitFor(() => expect(themeColor()).toBe(SHOW_THEMES.badgirl.bg));
     });
 
+    it('should wrap from the first show to the last on a right swipe', async () => {
+        const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
+
+        const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        fireEvent.pointerDown(stack, { clientX: 100, clientY: 100 });
+        fireEvent.pointerUp(stack, { clientX: 250, clientY: 100 });
+
+        await waitFor(() => expect(audio.src).toBe(TODAY[0]?.url));
+        expect(screen.getByRole('heading', { name: '雲妮鍾情' })).toBeInTheDocument();
+    });
+
+    it('should stack the next show behind the player without a second player', async () => {
+        renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
+        await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+
+        const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        const backs = [...stack.querySelectorAll('[aria-hidden="true"][inert]')];
+        expect(backs.map((card) => card.textContent)).toContain('Bad Girl大過佬');
+        expect(screen.getAllByRole('slider')).toHaveLength(1);
+        expect(document.querySelectorAll('audio')).toHaveLength(0);
+    });
+
     it('falls back to the latest day with recordings', async () => {
         vi.setSystemTime(new Date('2026-10-18T08:00:00Z'));
         renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });

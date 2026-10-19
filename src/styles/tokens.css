@@ -44,9 +44,21 @@
     --page-max-width: 480px;
     /* 節目頁 / 今日節目頁主碟（連進度弧）嘅闊度；輪播兩邊碟要對齊佢 */
     --player-disc-size: min(300px, 78vw);
-    --carousel-peek-size: 152px;
-    /* 兩邊露出嘅碟有幾多收埋喺畫面外（佔碟闊比例） */
-    --carousel-peek-hidden: 0.73;
+
+    /* 今日節目卡疊（ShowCardStack）：每疊後一層向下移、縮細、變淡幾多（第一張後面嘅卡 scale 0.92） */
+    --card-stack-offset: 12px;
+    --card-stack-scale-step: 0.08;
+    --card-stack-fade-step: 0.35;
+    /* 飛走：移出幾遠（佔卡闊）、再轉幾多；拖動 / 飛走都以卡底中間做軸心 */
+    --card-fly-distance: 150%;
+    --card-fly-rotate: 30deg;
+    --card-pivot: 50% 100%;
+    /* 要同 cardStack.ts 嘅 CARD_FLY_MS / CARD_SPRING_MS 一致 */
+    --duration-card-fly: 280ms;
+    --duration-card-spring: 320ms;
+    /* 飛走帶住甩手嘅速度減速；彈返中間輕輕過頭再停 */
+    --ease-card-fly: cubic-bezier(0.2, 0.6, 0.4, 1);
+    --ease-card-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
     /* 主頁色調（跟 app icon）：漸變底、泥膠陰影、今日節目奶油色掣；文字顏色見 HOME_THEME */
     --home-bg-top: #4f749c;
@@ -143,4 +155,6 @@
         7px 7px 16px var(--theme-shadow-dark), -5px -5px 12px var(--theme-shadow-light);
     --shadow-disc: 0 20px 38px rgb(0 0 0 / 50%);
     --shadow-floating: 0 12px 30px rgb(0 0 0 / 55%);
+    /* 今日節目卡：細細一圈軌道色描邊 + 浮起陰影，令疊喺後面嘅卡睇得出邊 */
+    --shadow-card: 0 0 0 1px var(--theme-track), 0 10px 26px rgb(0 0 0 / 45%);
 }
