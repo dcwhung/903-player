@@ -123,6 +123,8 @@ const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
 // 同 tokens.css 嘅 --player-disc-min 同 Page.module.css 嘅成頁捲斷點（max-height）一致
 const DISC_MIN_PX = 160;
+// SHORT_HEIGHT_PX 要同三個 CSS 嘅 @media (max-height) 一樣：src/styles/shortHeightBreakpoint.node.test.ts
+// 用 regex 讀呢一行，所以保持 `const SHORT_HEIGHT_PX = <數字>;` 嘅寫法
 const SHORT_HEIGHT_PX = 561;
 const SHOW_VIEWPORTS = [
     { width: 390, height: 844, swipe: true, homeFixed: true },

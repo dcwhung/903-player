@@ -45,7 +45,8 @@
  * 561px 係講好嘅斷點：700px 高或以下 --player-reserved-height 係 394px（冇安全區），
  * 加最細唱片（--player-disc-min 160px）嗰格 160 × 316 / 300 ≈ 168.5px，合共約 562px；
  * 再矮就塞唔落兩行集數，所以 ≤ 561px 改為成頁捲；320×568 仍然係固定。
- * e2e/run.mjs 嘅 SHORT_HEIGHT_PX、ShowCardStack / DateStrip 嘅 touch-action 斷點要同步。
+ * e2e/run.mjs 嘅 SHORT_HEIGHT_PX、ShowCardStack / DateStrip 嘅 touch-action 斷點要同步
+ * （src/styles/shortHeightBreakpoint.node.test.ts 會檢查）。
  */
 @media (max-height: 561px) {
     .locked {

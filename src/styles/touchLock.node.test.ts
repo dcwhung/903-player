@@ -1,8 +1,11 @@
 // @vitest-environment node
 // 要用 node:fs 讀 CSS 原文：*.node.test.ts 行 tsconfig.node.json（有 Node 型別），唔會漏入 app 程式
-import { cssDeclarations, readCss } from '../../tests/cssRule';
+import { cssDeclarations, e2eShortHeightPx, readCss } from '../../tests/cssRule';
 
 const css = (path: string) => readCss(new URL(path, import.meta.url));
+const SHORT_HEIGHT_MEDIA = `(max-height: ${e2eShortHeightPx()}px)`;
+const STACK_CSS = '../components/ShowCardStack/ShowCardStack.module.css';
+const STRIP_CSS = '../components/DateStrip/DateStrip.module.css';
 
 /*
  * iOS standalone PWA：成頁唔可以捲 / 橡筋，只有清單 panel 自己捲；
@@ -39,11 +42,34 @@ describe('iOS touch lock', () => {
     });
 
     it.each([
-        ['ShowCardStack .stack', '../components/ShowCardStack/ShowCardStack.module.css', '.stack'],
-        ['DateStrip .strip', '../components/DateStrip/DateStrip.module.css', '.strip'],
+        ['ShowCardStack .stack', STACK_CSS, '.stack'],
+        ['DateStrip .strip', STRIP_CSS, '.strip'],
         ['MiniPlayer .player', '../components/MiniPlayer/MiniPlayer.module.css', '.player'],
     ])('should give the %s swipe zone touch-action: none', (_name, path, selector) => {
         expect(cssDeclarations(css(path), selector)['touch-action']).toBe('none');
+    });
+
+    // 好矮畫面 main 自己捲：卡疊同日子條要畀返直向 pan，橫拖照由 pointer events 處理
+    it.each([
+        ['ShowCardStack .stack', STACK_CSS, '.stack'],
+        ['DateStrip .strip', STRIP_CSS, '.strip'],
+    ])('should give the %s vertical pan back at short heights', (_name, path, selector) => {
+        expect(cssDeclarations(css(path), selector, SHORT_HEIGHT_MEDIA)['touch-action']).toBe(
+            'pan-y',
+        );
+    });
+
+    it('should not let !important pass as a plain touch-action value', () => {
+        const declarations = cssDeclarations(
+            `@media ${SHORT_HEIGHT_MEDIA} { .stack { touch-action: pan-y !important; } }`,
+            '.stack',
+            SHORT_HEIGHT_MEDIA,
+        );
+
+        expect(declarations['touch-action']).toBe('pan-y !important');
+        expect(
+            cssDeclarations('.stack { touch-action: none; }', '.stack', SHORT_HEIGHT_MEDIA),
+        ).toEqual({});
     });
 
     it.each([
