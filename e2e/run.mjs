@@ -73,6 +73,41 @@ const checkVersionClear = async (p, label) => {
     );
 };
 
+const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
+// 橫額高度同一格節目一樣（容許 subpixel 捨入）
+const BANNER_HEIGHT_TOLERANCE_PX = 1;
+const HOME_BANNER_VIEWPORTS = [
+    { width: 390, height: 844 },
+    { width: 320, height: 568 },
+    { width: 430, height: 932 },
+];
+
+/** 主頁頁頂橫額：見到、同一格節目一樣高、有圓角；成頁唔捲、冇橫向捲動、版本號喺 mini player 上面 */
+const checkHomeBanner = async (p, label, shot) => {
+    const banner = p.getByRole('heading', { level: 1 }).getByRole('img', { name: BANNER_ALT });
+    await banner.evaluate((img) => img.decode());
+    const b = await banner.boundingBox();
+    const tile = await p.locator('nav button').first().boundingBox();
+    const radius = await banner.evaluate((img) => parseFloat(getComputedStyle(img).borderRadius));
+    const diff = Math.abs(b.height - tile.height);
+    log(
+        (await banner.isVisible()) && diff <= BANNER_HEIGHT_TOLERANCE_PX,
+        `${label}：橫額高 ${b.height.toFixed(2)}px = 節目格高 ${tile.height.toFixed(2)}px`,
+    );
+    log(
+        Math.abs(b.x - tile.x) < 1 && b.y + b.height < tile.y,
+        `${label}：橫額喺節目格上面、左邊對齊（${b.x} / ${tile.x}）`,
+    );
+    log(radius > 0, `${label}：橫額有圓角（${radius}px）`);
+    log((await horizontalOverflow(p)) === 0, `${label}：冇橫向捲動`);
+    const overflow = await p.evaluate(
+        () => document.documentElement.scrollHeight - window.innerHeight,
+    );
+    log(overflow <= 0, `${label}：主頁成頁唔捲（超出 ${overflow}px）`);
+    await p.screenshot({ path: `${OUT}/${shot}` });
+    await checkVersionClear(p, label);
+};
+
 const MIN_VISIBLE_ROWS = 2;
 // tokens.css 嘅 --player-max-share（0.6）係設計目標；用戶接受 62–66%，
 // 所以 e2e 只要求節目頁播放器同今日節目卡（連指示點）≤ 66%，實際比例照印出嚟
@@ -457,6 +492,45 @@ const checkTodayShow = async (p, name, bg, label) => {
     await checkThemeColor(p, bg, label);
 };
 
+const MINI_REGION = '正在播放（今日節目）';
+const MINI_SWIPE_PX = 160;
+
+/** 喺主頁 mini player 中間橫掃（正數 = 向右 = 上一個） */
+const swipeMiniPlayer = async (p, dx) => {
+    const box = await p.getByRole('region', { name: MINI_REGION }).boundingBox();
+    const y = box.y + box.height / 2;
+    const fromX = box.x + box.width / 2 - dx / 2;
+    await p.mouse.move(fromX, y);
+    await p.mouse.down();
+    await p.mouse.move(fromX + dx, y + 4, { steps: 8 });
+    await p.mouse.up();
+    await p.waitForTimeout(300);
+};
+
+/** mini player 指示點：全部節目名同 aria-current 嗰個 */
+const miniDots = async (p) => {
+    const dots = p.getByRole('region', { name: MINI_REGION }).locator('[data-page-dot]');
+    const labels = await dots.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+    const current = await dots.and(p.locator('[aria-current="true"]')).getAttribute('aria-label');
+    return { labels, current };
+};
+
+/** 主頁 mini player 掃過頭會循環：第一個向右掃去最後一個，最後一個向左掃返第一個 */
+const checkMiniPlayerLoop = async (p) => {
+    const { labels, current } = await miniDots(p);
+    const first = labels[0];
+    const last = labels[labels.length - 1];
+    log(labels.length > 1 && current === first, `mini player 由第一個節目開始：${current}`);
+    await swipeMiniPlayer(p, MINI_SWIPE_PX);
+    const wrappedBack = (await miniDots(p)).current;
+    log(wrappedBack === last, `mini player 第一個向右掃循環去最後一個：${wrappedBack}`);
+    await swipeMiniPlayer(p, -MINI_SWIPE_PX);
+    const wrappedForward = (await miniDots(p)).current;
+    log(wrappedForward === first, `mini player 最後一個向左掃循環返第一個：${wrappedForward}`);
+    // 掃完個 click 要被食咗，唔可以跳咗去節目頁
+    log(!p.url().includes('#/show'), `mini player 掃完仲喺主頁：${p.url()}`);
+};
+
 /** 拖到一半：最上面張卡跟手指、傾斜；後面張卡上前；頁面冇橫向捲動 */
 const checkTodayMidDrag = async (p) => {
     await dragTodayCard(p, -TODAY_MID_DRAG_PX, { release: false });
@@ -691,6 +765,16 @@ try {
     }
     await narrow.close();
 
+    // 主頁 mini player 循環掃：獨立 context，未載入任何節目
+    const loop = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await loop.route('https://audio.hkfm903.live/**', serveAudio);
+    const lpp = await loop.newPage();
+    lpp.on('pageerror', (e) => errors.push(e.message));
+    await lpp.goto(BASE);
+    await lpp.waitForSelector('nav[aria-busy="false"]');
+    await checkMiniPlayerLoop(lpp);
+    await loop.close();
+
     // 細 iPhone（320×568）：今日節目卡疊靜止嘅樣
     const small = await browser.newContext({
         viewport: { width: 320, height: 568 },
@@ -710,6 +794,23 @@ try {
     await checkTodayShow(sp, 'Bad Girl大過佬', BADGIRL_BG, '320×568 今日節目向左掃');
     log((await horizontalOverflow(sp)) === 0, '320×568 今日節目掃完冇橫向捲動');
     await small.close();
+
+    // 主頁頁頂橫額：常見手機闊度（細 iPhone、一般、Pro Max）
+    for (const { width, height } of HOME_BANNER_VIEWPORTS) {
+        const ctx = await browser.newContext({
+            viewport: { width, height },
+            deviceScaleFactor: 2,
+            colorScheme: 'dark',
+        });
+        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
+        const hp = await ctx.newPage();
+        hp.on('pageerror', (e) => errors.push(e.message));
+        await hp.goto(BASE);
+        await hp.waitForSelector('nav[aria-busy="false"]');
+        await hp.getByRole('region', { name: '正在播放（今日節目）' }).waitFor();
+        await checkHomeBanner(hp, `${width}×${height} 主頁`, `home-banner-${width}x${height}.png`);
+        await ctx.close();
+    }
 
     // 節目頁：夠高就固定、集數清單自己捲；好矮（橫向手機）就成頁正常捲。badgirl 集數多過一個畫面
     for (const { width, height, swipe, homeFixed } of SHOW_VIEWPORTS) {

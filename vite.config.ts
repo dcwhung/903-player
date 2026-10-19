@@ -44,7 +44,8 @@ export default defineConfig({
                 ],
             },
             workbox: {
-                globPatterns: ['**/*.{js,css,html,svg,png,jpg}'],
+                // webp：主頁橫額（src/assets/banner.webp），離線都要見到
+                globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp}'],
                 // 唔好自動 skipWaiting：靠 updateSW(true) 發 SKIP_WAITING message 先啟用新 SW。
                 // clientsClaim 只影響第一次安裝（冇舊 SW 時即刻接管頁面），同 autoUpdate 時一樣
                 skipWaiting: false,

@@ -2,7 +2,7 @@ import { t } from './t';
 
 describe('t', () => {
     it('returns the message for a key', () => {
-        expect(t('home.title')).toBe('收聽節目');
+        expect(t('home.today')).toBe('今日節目');
     });
 
     it('fills in parameters', () => {

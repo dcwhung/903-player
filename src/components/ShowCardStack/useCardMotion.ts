@@ -21,6 +21,8 @@ interface MotionRefs {
     top: RefObject<HTMLDivElement | null>;
     timer: RefObject<number | undefined>;
     flying: RefObject<boolean>;
+    /** 每次 fly() 加一（連減少動畫即刻換都計），俾手勢認出中途有冇飛過 */
+    flight: RefObject<number>;
 }
 
 /** 清走拖動姿勢，再轉去指定 phase（null = 靜止） */
@@ -59,14 +61,19 @@ const drag = (refs: MotionRefs, dx: number) => {
     el.style.setProperty('--card-return', String(dx > 0 ? progress * RETURN_PEEK_RATIO : 0));
 };
 
+/** 彈緊返中間時張卡而家嘅橫向位移（computed transform）；唔係彈緊就係 0 */
+const settlingOffset = (refs: MotionRefs): number => {
+    const top = refs.top.current;
+    if (!top || refs.stack.current?.dataset.phase !== 'settling') return 0;
+    return translateXOf(getComputedStyle(top).transform);
+};
+
 /**
  * 彈返途中捉住張卡：停喺佢而家嘅位置（computed transform）繼續拖，唔會跳返中間；
  * 返回而家嘅橫向位移。唔係彈緊，或者已經差唔多返到中間（未過橫拖門檻，當係 tap）就係 null，照彈
  */
 const grab = (refs: MotionRefs): number | null => {
-    const top = refs.top.current;
-    if (!top || refs.stack.current?.dataset.phase !== 'settling') return null;
-    const dx = translateXOf(getComputedStyle(top).transform);
+    const dx = settlingOffset(refs);
     if (Math.abs(dx) < DRAG_INTENT_PX) return null;
     drag(refs, dx);
     return dx;
@@ -74,6 +81,7 @@ const grab = (refs: MotionRefs): number | null => {
 
 /** 飛走之後先轉節目；減少動畫就唔飛唔轉，即刻換 */
 const fly = (refs: MotionRefs, direction: SwipeDirection, onLanded: () => void) => {
+    refs.flight.current += 1;
     if (prefersReducedMotion()) {
         rest(refs);
         onLanded();
@@ -98,16 +106,19 @@ export const useCardMotion = () => {
     const topRef = useRef<HTMLDivElement>(null);
     const timer = useRef<number | undefined>(undefined);
     const flying = useRef(false);
+    const flight = useRef(0);
     useEffect(() => () => window.clearTimeout(timer.current), []);
     // 只喺事件 / timer 入面先組合 refs，render 期間唔讀 ref
-    const refs = (): MotionRefs => ({ stack: stackRef, top: topRef, timer, flying });
+    const refs = (): MotionRefs => ({ stack: stackRef, top: topRef, timer, flying, flight });
     return {
         stackRef,
         topRef,
         isFlying: () => flying.current,
+        flightId: () => flight.current,
         width: () => widthOf(refs()),
         drag: (dx: number) => drag(refs(), dx),
         grab: () => grab(refs()),
+        settlingOffset: () => settlingOffset(refs()),
         springBack: () => {
             // 飛緊就唔好清走落地 timer（否則 flying 永遠卡住）
             if (flying.current) return;

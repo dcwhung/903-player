@@ -1,5 +1,4 @@
 export const zhHK = {
-    appName: '903 Player',
     app: {
         version: 'v{version}',
         versionLabel: '版本 {version}',
@@ -13,7 +12,7 @@ export const zhHK = {
         showNotFound: '找不到此節目',
     },
     home: {
-        title: '收聽節目',
+        bannerAlt: '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽',
         showsNav: '節目',
         today: '今日節目',
     },

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { AppVersion } from '../components/AppVersion/AppVersion';
-import { RadioIcon } from '../components/icons/icons';
+import { HomeBanner } from '../components/HomeBanner/HomeBanner';
 import { MiniPlayer } from '../components/MiniPlayer/MiniPlayer';
 import { ShowTile } from '../components/ShowTile/ShowTile';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
@@ -15,19 +15,6 @@ import { t } from '../i18n/t';
 import styles from './HomePage.module.css';
 import page from './Page.module.css';
 
-const APP_ICON_SIZE = 18;
-
-/** 頁頂：app 名（黃色 icon）+ 標題 */
-const HomeBrand = () => (
-    <header className={styles.brand}>
-        <span className={styles.appName}>
-            <RadioIcon size={APP_ICON_SIZE} className={styles.appIcon} />
-            {t('appName')}
-        </span>
-        <h1 className={styles.title}>{t('home.title')}</h1>
-    </header>
-);
-
 export const HomePage = () => {
     const navigate = useNavigate();
     const { status } = useRecordings();
@@ -40,7 +27,7 @@ export const HomePage = () => {
         <ThemeScope theme={HOME_THEME} className={styles.scope}>
             {/* 主頁都固定唔捲（page.locked）；好矮嘅畫面先改返成頁捲 */}
             <main className={`${page.page} ${page.locked} ${styles.home}`}>
-                <HomeBrand />
+                <HomeBanner />
                 <nav
                     className={styles.grid}
                     aria-label={t('home.showsNav')}
