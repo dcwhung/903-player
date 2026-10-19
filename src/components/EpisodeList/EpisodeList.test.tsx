@@ -62,6 +62,19 @@ describe('EpisodeList', () => {
         );
     });
 
+    it('jumps instead of scrolling smoothly when reduced motion is preferred', () => {
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn((query: string) => ({ matches: query.includes('reduce'), media: query })),
+        );
+        render(<EpisodeList items={ITEMS} onSelect={() => {}} />);
+
+        expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith(
+            expect.objectContaining({ behavior: 'auto' }),
+        );
+        vi.unstubAllGlobals();
+    });
+
     it('reports the tapped episode', async () => {
         const onSelect = vi.fn();
         render(<EpisodeList items={ITEMS} onSelect={onSelect} />);

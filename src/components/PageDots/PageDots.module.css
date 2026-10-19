@@ -22,7 +22,13 @@
     border-radius: var(--radius-full);
     /* 非文字對比度要 ≥ 3:1，所以唔用 track 色 */
     background: var(--color-text-muted);
-    transition: width 0.2s;
+    transition: width var(--duration-fast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dot::after {
+        transition: none;
+    }
 }
 
 .selected::after {

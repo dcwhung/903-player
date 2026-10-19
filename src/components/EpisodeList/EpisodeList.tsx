@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
 import { t } from '../../i18n/t';
+import { scrollBehavior } from '../../utils/motion';
 import { PERCENT, toPercent } from '../../utils/ratio';
 import { CheckIcon, PlayIcon } from '../icons/icons';
 import styles from './EpisodeList.module.css';
@@ -69,7 +70,7 @@ export const EpisodeList = ({ items, onSelect }: EpisodeListProps) => {
     useEffect(() => {
         listRef.current
             ?.querySelector('[aria-current="true"]')
-            ?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+            ?.scrollIntoView?.({ block: 'nearest', behavior: scrollBehavior() });
     }, [currentKey]);
 
     return (
