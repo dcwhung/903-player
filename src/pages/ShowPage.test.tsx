@@ -11,7 +11,7 @@ const RECORDINGS = [
     recording('badgirl', '2026-10-19', '1000'),
 ];
 const ROUTE = { route: '/show/gongzi', path: '/show/:showId' };
-const SWIPE_ZONE = { name: '向左掃動聽舊一集，向右掃動聽新一集' };
+const SWIPE_ZONE = { description: '左右方向鍵或左右掃動轉集' };
 const SWIPE_PX = 100;
 
 /** 喺轉集區左右掃一下（dx < 0 = 向左） */
@@ -78,6 +78,21 @@ describe('ShowPage', () => {
         expect(audio.currentTime).toBe(600);
         expect(audio.play).toHaveBeenLastCalledWith();
         expect(currentRow()).toHaveAccessibleName(/^播放 10\/10/);
+    });
+
+    it('names the swipe zone after the episode and announces each switch politely', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+        const zone = screen.getByRole('group', SWIPE_ZONE);
+        const announcer = screen.getByRole('status');
+        expect(zone).toHaveAccessibleName('17/10（六） 公子會');
+        expect(announcer).toHaveAttribute('aria-live', 'polite');
+        expect(announcer).toBeEmptyDOMElement();
+
+        swipe(zone, -SWIPE_PX);
+
+        await waitFor(() => expect(announcer).toHaveTextContent('已轉到 10/10（六）'));
+        expect(zone).toHaveAccessibleName('10/10（六） 公子會');
     });
 
     it('plays the next newer episode on a right swipe and stops at either end', async () => {
