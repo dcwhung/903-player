@@ -8,24 +8,26 @@ import type { StripNeighbours } from './dateStrip';
 const ZONE = { description: '左右方向鍵或左右掃動轉集' };
 const DATES = ['19/10（一）', '16/10（五）', '15/10（四）'];
 
-const neighboursAt = (index: number): StripNeighbours => ({
-    ...(DATES[index - 1] ? { newer: DATES[index - 1] } : {}),
-    ...(DATES[index + 1] ? { older: DATES[index + 1] } : {}),
+const neighboursAt = (dates: readonly string[], index: number): StripNeighbours => ({
+    ...(dates[index - 1] ? { newer: dates[index - 1] } : {}),
+    ...(dates[index + 1] ? { older: dates[index + 1] } : {}),
 });
 
-/** 模擬節目頁：next = 舊一集（index + 1），previous = 新一集 */
-const Harness = ({
-    start = 1,
-    onStep,
-}: {
+interface HarnessProps {
     start?: number;
     onStep?: (d: SwipeDirection) => void;
-}) => {
+    dates?: readonly string[];
+    /** 模擬 onStep 轉唔到（例如 player 拒絕）：有隔籬集都返回 false */
+    refuse?: boolean;
+}
+
+/** 模擬節目頁：next = 舊一集（index + 1），previous = 新一集 */
+const Harness = ({ start = 1, onStep, dates = DATES, refuse = false }: HarnessProps) => {
     const [index, setIndex] = useState(start);
     const step = (direction: SwipeDirection) => {
         onStep?.(direction);
         const next = direction === 'next' ? index + 1 : index - 1;
-        if (!DATES[next]) return false;
+        if (refuse || !dates[next]) return false;
         setIndex(next);
         return true;
     };
@@ -33,8 +35,8 @@ const Harness = ({
         <>
             <DateStrip
                 title="Bad Girl大過佬"
-                dateLabel={DATES[index] ?? ''}
-                neighbours={neighboursAt(index)}
+                dateLabel={dates[index] ?? ''}
+                neighbours={neighboursAt(dates, index)}
                 onStep={step}
             />
             <button type="button" onClick={() => setIndex(0)}>
@@ -154,6 +156,38 @@ describe('DateStrip', () => {
 
         await userEvent.click(screen.getByRole('button', { name: '外面轉集' }));
         expect(status).toBeEmptyDOMElement();
+    });
+
+    describe('on a measured 400px strip', () => {
+        // jsdom 冇 layout：假裝日子條有 400px 闊，轉集時真係會滑 150px
+        beforeEach(() => {
+            vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(400);
+        });
+        afterEach(() => vi.restoreAllMocks());
+
+        it('settles and announces when the next episode has the same date label', async () => {
+            // 同一日兩集（例如重播）：日期唔變都要歸位同讀出嚟
+            render(<Harness dates={['19/10（一）', '16/10（五）', '16/10（五）']} />);
+            const status = screen.getByRole('status');
+
+            drag(zone(), -100);
+
+            await waitFor(() => expect(status).toHaveTextContent('已轉到 16/10（五）'));
+            expect(track().style.transform).toBe('translateX(0px)');
+            expect(screen.queryByRole('button', { name: /^舊一集/ })).not.toBeInTheDocument();
+        });
+
+        it('settles back when onStep cannot switch', async () => {
+            const onStep = vi.fn();
+            render(<Harness refuse onStep={onStep} />);
+
+            drag(zone(), -100);
+
+            await waitFor(() => expect(onStep).toHaveBeenCalledWith('next'));
+            await waitFor(() => expect(track().style.transform).toBe('translateX(0px)'));
+            expect(zone()).toHaveAccessibleName(/^16\/10（五）/);
+            expect(screen.getByRole('status')).toBeEmptyDOMElement();
+        });
     });
 
     it('swaps instantly without a spin when reduced motion is requested', () => {

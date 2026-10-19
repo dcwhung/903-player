@@ -17,21 +17,27 @@ export interface DateStripStepOptions {
 
 /** 拖動 / 撳側格 / 方向鍵都行同一條路：有隔籬集就滑過去再轉，盡頭就彈返並清空通知 */
 const useStripStep = ({ dateLabel, neighbours, onStep, spinRef }: DateStripStepOptions) => {
-    const { announcement, markStep } = useStepAnnouncement(dateLabel);
+    const { steps, announcement, markStep } = useStepAnnouncement(dateLabel);
     const motion = useStripMotion(spinRef);
     // 滑完先轉集：到時要用最新嘅 onStep（播緊邊集可能已經變咗）
     const onStepRef = useRef(onStep);
     useLayoutEffect(() => {
         onStepRef.current = onStep;
     });
-    useLayoutEffect(() => motion.settle(), [dateLabel, motion]);
+    // 轉咗集（steps）或者外面轉咗集（日期變）就歸位；唔靠日期，同一日兩集都會歸位
+    useLayoutEffect(() => motion.settle(), [dateLabel, steps, motion]);
     const go = (direction: SwipeDirection) => {
         if (neighbourFor(neighbours, direction) === undefined) {
             motion.springBack();
             markStep(false);
             return;
         }
-        motion.commit(direction, () => markStep(onStepRef.current(direction)));
+        motion.commit(direction, () => {
+            const moved = onStepRef.current(direction);
+            // 轉唔到就唔會有新 render 觸發歸位，要自己歸位
+            if (!moved) motion.settle();
+            markStep(moved);
+        });
     };
     return { motion, go, announcement };
 };
