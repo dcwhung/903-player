@@ -42,6 +42,17 @@ describe('TodayPage', () => {
         expect(screen.getByRole('heading', { name: '在晴朗的一天出發' })).toBeInTheDocument();
     });
 
+    it('leaves swiping to the carousel and renders no episode switcher', async () => {
+        renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
+
+        await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+        expect(screen.getByRole('group', { name: '今日節目，左右掃動轉節目' })).toBeInTheDocument();
+        expect(
+            screen.queryByRole('group', { description: '左右方向鍵或左右掃動轉集' }),
+        ).not.toBeInTheDocument();
+        expect(document.querySelector('[aria-roledescription="轉集"]')).toBeNull();
+    });
+
     it('shows watched status and plays the tapped show', async () => {
         saveProgress(TODAY[0]?.url ?? '', 990, 1000);
         const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
