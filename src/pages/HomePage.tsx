@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RadioIcon } from '../components/icons/icons';
 import { MiniPlayer } from '../components/MiniPlayer/MiniPlayer';
@@ -6,12 +5,10 @@ import { ShowTile } from '../components/ShowTile/ShowTile';
 import { SHOW_THEMES } from '../config/showThemes';
 import { SHOWS } from '../config/shows';
 import { useRecordings } from '../data/useRecordings';
+import { useHomeArrival } from '../hooks/useHomeArrival';
 import { useMiniPlayer } from '../hooks/useMiniPlayer';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { t } from '../i18n/t';
-import { usePlayer } from '../player/usePlayer';
-import { isTodayRecording } from '../selectors/recordings';
-import { hkToday } from '../utils/date';
 import styles from './HomePage.module.css';
 import page from './Page.module.css';
 
@@ -21,16 +18,8 @@ export const HomePage = () => {
     const navigate = useNavigate();
     const { status } = useRecordings();
     const { startShow, startToday } = useStartPlayback();
-    const { stop, recording } = usePlayer();
     const miniPlayer = useMiniPlayer();
-    // 只睇入嚟嗰刻播緊乜：今日節目就喺 mini player 繼續播，舊集就暫停並存進度
-    const [arrivedWith] = useState(recording);
-
-    useEffect(() => {
-        if (!isTodayRecording(arrivedWith, hkToday())) {
-            stop();
-        }
-    }, [arrivedWith, stop]);
+    useHomeArrival();
 
     return (
         <main className={`${page.page} ${styles.home}`}>

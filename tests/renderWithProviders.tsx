@@ -42,9 +42,11 @@ export const renderWithProviders = (ui: ReactElement, options: Options = {}) => 
 };
 
 /** renderHook 用：同 renderWithProviders 一樣嘅 provider，但唔包 Routes */
-export const createHookWrapper = (recordings: Recording[] = []) => {
+export const createHookWrapper = (
+    recordings: Recording[] = [],
+    loader: () => Promise<Recording[]> = async () => recordings,
+) => {
     const audio = new FakeAudio();
-    const loader = async () => recordings;
     const wrapper = ({ children }: { children: ReactNode }) => (
         <RecordingsProvider loader={loader}>
             <PlayerProvider audio={audio.asAudio()}>

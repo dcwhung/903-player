@@ -33,6 +33,3 @@ export const todayRecordings = (recordings: Recording[], today: string): Recordi
 /** 集數清單：最新喺頂 */
 export const episodesNewestFirst = (recordings: Recording[], showId: ShowId): Recording[] =>
     recordingsForShow(recordings, showId).reverse();
-
-export const isTodayRecording = (recording: Recording | null, today: string): boolean =>
-    recording?.date === today;

@@ -1,7 +1,6 @@
 import type { Recording, ShowId } from '../types/recording';
 import {
     episodesNewestFirst,
-    isTodayRecording,
     pickInitialRecording,
     pickTodayDate,
     recordingsForShow,
@@ -97,13 +96,5 @@ describe('episodesNewestFirst', () => {
             '2026-10-17',
             '2026-10-10',
         ]);
-    });
-});
-
-describe('isTodayRecording', () => {
-    it('compares against the Hong Kong date', () => {
-        expect(isTodayRecording(rec('gongzi', '2026-10-19'), '2026-10-19')).toBe(true);
-        expect(isTodayRecording(rec('gongzi', '2026-10-17'), '2026-10-19')).toBe(false);
-        expect(isTodayRecording(null, '2026-10-19')).toBe(false);
     });
 });
