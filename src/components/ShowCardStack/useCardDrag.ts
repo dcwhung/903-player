@@ -72,7 +72,17 @@ const begin = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion
     const { pointerId, clientX, clientY: y } = event;
     const x = clientX - (held ?? 0);
     const isDragging = held !== null;
+    // 接住彈緊嘅卡即刻算橫拖，confirmHorizontal 唔會行，要喺度 capture，否則喺外面放手會卡住
+    if (isDragging) event.currentTarget.setPointerCapture?.(pointerId);
     gesture.current = { pointerId, x, y, isDragging, samples: [sampleOf(event)] };
+};
+
+/** 取消 / 冇咗 capture（例如喺視窗外放手）：拖緊就彈返，手勢作廢 */
+const abandon = (gesture: GestureRef, motion: CardMotion, pointerId?: number) => {
+    const current = gesture.current;
+    if (!current || (pointerId !== undefined && current.pointerId !== pointerId)) return;
+    if (current.isDragging) motion.springBack();
+    gesture.current = null;
 };
 
 /**
@@ -102,10 +112,9 @@ export const useCardDrag = (
         onPointerMove: (event: StackPointerEvent) => void track(gesture, event, motion),
         onPointerUp: (event: StackPointerEvent) =>
             clicks.arm(release(gesture, event, motion, commit)),
-        onPointerCancel: () => {
-            if (gesture.current?.isDragging) motion.springBack();
-            gesture.current = null;
-        },
+        onPointerCancel: () => abandon(gesture, motion),
+        onLostPointerCapture: (event: StackPointerEvent) =>
+            abandon(gesture, motion, event.pointerId),
         onClickCapture: (event: MouseEvent<HTMLElement>) => {
             if (motion.isFlying()) swallow(event);
             else clicks.onClickCapture(event);

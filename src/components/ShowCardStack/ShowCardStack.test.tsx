@@ -195,6 +195,31 @@ describe('ShowCardStack', () => {
         expect(onChange).not.toHaveBeenCalled();
     });
 
+    it('should capture the pointer when grabbed mid spring-back, and let go on lost capture', () => {
+        const { group } = setup();
+        const top = screen.getByRole('button', { name: '內容' }).parentElement;
+        const capture = vi.fn();
+        group.setPointerCapture = capture;
+
+        drag(group, -40);
+        top?.style.setProperty('transform', 'matrix(1, 0, 0, 1, -25, 0)');
+        fireEvent.pointerDown(group, { pointerId: 3, clientX: 200, clientY: 100 });
+        expect(capture).toHaveBeenCalledWith(3);
+
+        // 例如喺視窗外放手：冇 pointerup，只有 lostpointercapture
+        fireEvent.lostPointerCapture(group, { pointerId: 3 });
+        expect(group).toHaveAttribute('data-phase', 'settling');
+        fireEvent.pointerMove(group, { pointerId: 3, clientX: 150, clientY: 100 });
+        expect(cardDx(group)).toBe('');
+
+        // 之後再按低可以照拖
+        top?.style.removeProperty('transform');
+        act(() => vi.advanceTimersByTime(CARD_SPRING_MS));
+        fireEvent.pointerDown(group, { pointerId: 4, clientX: 200, clientY: 100 });
+        fireEvent.pointerMove(group, { pointerId: 4, clientX: 170, clientY: 100 });
+        expect(cardDx(group)).toBe('-30px');
+    });
+
     it('should spring back when the pointer is cancelled', () => {
         const { group, onChange } = setup();
 
