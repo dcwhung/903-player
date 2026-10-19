@@ -1,8 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import type { EpisodeItem } from '../components/EpisodeList/EpisodeList';
-import { episodeStatus } from '../components/EpisodeList/episodeStatus';
 import { themeFor } from '../config/showThemes';
-import { findShow } from '../config/shows';
+import { findShow, type ShowConfig } from '../config/shows';
 import { useRecordings } from '../data/useRecordings';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
@@ -12,15 +10,13 @@ import {
     recordingsForShow,
 } from '../selectors/recordings';
 import { getProgressMap } from '../services/progressStore';
-import { formatDayMonth, formatWeekday, hkToday } from '../utils/date';
+import { hkToday } from '../utils/date';
+import { toEpisodeItems } from './episodeItems';
 
-/** 節目頁嘅資料同動作 */
-export const useShowPage = (showId: string) => {
-    const show = findShow(showId);
-    const { status, recordings, reload } = useRecordings();
+/** 呢個節目嘅集數同揀中嗰集：播緊呢個節目就用播緊嗰集，否則用預設嗰集 */
+const useShowEpisodes = (show: ShowConfig | undefined) => {
+    const { recordings } = useRecordings();
     const player = usePlayer();
-    const { startShow } = useStartPlayback();
-
     const episodes = useMemo(
         () => (show ? episodesNewestFirst(recordings, show.id) : []),
         [show, recordings],
@@ -31,13 +27,27 @@ export const useShowPage = (showId: string) => {
         (show
             ? pickInitialRecording(recordingsForShow(recordings, show.id), hkToday())
             : undefined);
+    return { episodes, playing, current };
+};
 
-    // 直接開呢頁（例如 deep link / mini player）時都自動播放
+/** 直接開呢頁（例如 deep link / mini player）時都自動播放 */
+const useAutoplayShow = (show: ShowConfig | undefined, isPlayingShow: boolean) => {
+    const { status } = useRecordings();
+    const { startShow } = useStartPlayback();
     useEffect(() => {
-        if (show && status === 'ready' && !playing) {
+        if (show && status === 'ready' && !isPlayingShow) {
             startShow(show.id);
         }
-    }, [show, status, playing, startShow]);
+    }, [show, status, isPlayingShow, startShow]);
+};
+
+/** 節目頁嘅資料同動作 */
+export const useShowPage = (showId: string) => {
+    const show = findShow(showId);
+    const { status, reload } = useRecordings();
+    const player = usePlayer();
+    const { episodes, playing, current } = useShowEpisodes(show);
+    useAutoplayShow(show, playing !== null);
 
     // 轉集或者有集數變成聽過先重新讀 localStorage
     const progressMap = useMemo(
@@ -45,22 +55,8 @@ export const useShowPage = (showId: string) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps -- current 係 invalidation key（轉集時剛存咗進度）
         [player.watchedRevision, current?.url],
     );
-    const episodeItems: EpisodeItem[] = episodes.map((r) => {
-        const isCurrent = r.url === current?.url;
-        return {
-            key: r.url,
-            dayMonth: formatDayMonth(r.date),
-            weekday: formatWeekday(r.date),
-            current: isCurrent,
-            status: episodeStatus({
-                isCurrent,
-                live: isCurrent
-                    ? { currentTime: player.currentTime, duration: player.duration }
-                    : undefined,
-                progress: progressMap[r.url],
-            }),
-        };
-    });
+    const live = { currentTime: player.currentTime, duration: player.duration };
+    const episodeItems = toEpisodeItems(episodes, current?.url, live, progressMap);
 
     const selectEpisode = (url: string) => {
         const recording = episodes.find((r) => r.url === url);
@@ -69,13 +65,6 @@ export const useShowPage = (showId: string) => {
         }
     };
 
-    return {
-        show,
-        theme: themeFor(show?.id),
-        status,
-        reload,
-        current,
-        episodeItems,
-        selectEpisode,
-    };
+    const theme = themeFor(show?.id);
+    return { show, theme, status, reload, current, episodeItems, selectEpisode };
 };
