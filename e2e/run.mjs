@@ -192,9 +192,24 @@ const checkDiscMatchesToday = async (p, label) => {
     log(todayGaps === showGaps, `${label}：今日節目頁間距同節目頁一樣（${todayGaps}）`);
 };
 
+// 今日節目清單最少見到幾多行（暫定；共用播放器高度上限合併後再提高）
+const TODAY_MIN_ROWS = 0.8;
+const TODAY_ROW_VIEWPORTS = ['320×568', '375×667', '390×844'];
+
+/** 今日節目清單見到幾多行：指定畫面要過 TODAY_MIN_ROWS，其他只印出嚟 */
+const checkTodayRows = async (list, label) => {
+    const rows = await visibleRows(list);
+    const enforced = TODAY_ROW_VIEWPORTS.some((size) => label.startsWith(size));
+    log(
+        !enforced || rows >= TODAY_MIN_ROWS,
+        `${label}：清單見到約 ${rows.toFixed(2)} 行${enforced ? `（≥ ${TODAY_MIN_ROWS}）` : ''}`,
+    );
+};
+
 /** 今日節目頁固定：捲輪 / scrollTo 都唔會捲成頁；清單太長就自己捲 */
 const checkFixedTodayPage = async (p, label) => {
     const list = p.getByRole('region', { name: '今日節目' }).getByRole('list');
+    await checkTodayRows(list, label);
     const card = await p.getByRole('heading', { level: 1 }).boundingBox();
     await p.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
     await p.mouse.wheel(0, WHEEL_PX);

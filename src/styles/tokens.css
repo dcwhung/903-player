@@ -49,6 +49,8 @@
     --card-stack-offset: 12px;
     --card-stack-scale-step: 0.08;
     --card-stack-fade-step: 0.35;
+    /* 卡上下留白（700px 高或以下收窄） */
+    --card-padding-block: var(--space-5);
     /* 卡疊兩邊留白；好窄嘅畫面收窄（見下面 max-width: 339px） */
     --card-stack-gutter: var(--space-4);
     /* 飛走：移出幾遠（佔卡闊）、再轉幾多；拖動 / 飛走都以卡底中間做軸心 */
@@ -104,6 +106,9 @@
 @media (max-height: 700px) {
     :root {
         --fixed-page-gap: var(--space-3);
+        /* 今日節目卡：唱片唔郁（同節目頁一樣大），收窄卡上下留白同疊卡位移，多啲位畀今日節目清單 */
+        --card-padding-block: var(--space-2);
+        --card-stack-offset: 8px;
     }
 }
 

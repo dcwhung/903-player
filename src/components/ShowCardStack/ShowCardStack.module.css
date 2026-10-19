@@ -62,7 +62,7 @@
 
 /* 最上面嗰張：真播放器，跟手指移動同傾斜 */
 .top {
-    padding: var(--player-panel-gap, var(--space-5)) 0;
+    padding: var(--card-padding-block) 0;
     background: var(--color-bg);
     box-shadow: var(--shadow-card);
     transform: translateX(var(--card-dx)) rotate(var(--card-rotate));
@@ -120,7 +120,7 @@
     align-items: center;
     gap: var(--player-panel-gap, var(--space-5));
     height: 100%;
-    padding: var(--player-panel-gap, var(--space-5)) 0;
+    padding: var(--card-padding-block) 0;
     border-radius: inherit;
     background: var(--color-bg);
     box-shadow: var(--shadow-card);
