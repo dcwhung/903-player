@@ -1,7 +1,13 @@
 import { useRef, type DragEvent, type MouseEvent, type PointerEvent, type RefObject } from 'react';
 import { dragIntent, type SwipeDirection } from '../../hooks/swipe';
 import { useClickSuppression } from '../../hooks/useSwipe';
-import { pushSample, releaseDirection, velocityOf, type DragSample } from './cardStack';
+import {
+    isOnPageDot,
+    pushSample,
+    releaseDirection,
+    velocityOf,
+    type DragSample,
+} from './cardStack';
 import type { CardMotion } from './useCardMotion';
 
 interface Gesture {
@@ -48,8 +54,9 @@ const track = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion
     const current = gesture.current;
     if (!current || current.pointerId !== event.pointerId) return null;
     // 拖緊時方向鍵令張卡飛走咗（飛緊或者已經落地）：鍵盤要求優先，呢個手勢就作廢
-    // （放手唔再彈返 / 轉節目）；就算飛行期間冇 pointer event 都認得出
-    if (motion.isFlying() || current.flight !== motion.flightId()) {
+    // （放手唔再彈返 / 轉節目）；就算飛行期間冇 pointer event 都認得出。
+    // 唔使另外睇 isFlying()：飛緊就唔會開始手勢（begin），所以飛緊一定係按低之後先起飛，flightId 必然變咗
+    if (current.flight !== motion.flightId()) {
         gesture.current = null;
         return null;
     }
@@ -76,10 +83,6 @@ const release = (
     else motion.springBack();
     return true;
 };
-
-/** 撳緊今日節目指示點（掣有自己用途：彈返途中都唔好捉住張卡、食咗佢嘅 click） */
-export const isOnPageDot = (target: EventTarget | null): boolean =>
-    target instanceof Element && target.closest('[data-page-dot]') !== null;
 
 /** 按低：飛緊或者第二隻手指就唔理；彈緊返中間就由張卡而家嘅位置接住，當已經係橫拖 */
 const begin = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion) => {

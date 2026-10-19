@@ -7,6 +7,7 @@ import {
     VELOCITY_WINDOW_MS,
     cardRotation,
     dragProgress,
+    isOnPageDot,
     pushSample,
     releaseDirection,
     stackSlots,
@@ -74,6 +75,19 @@ describe('stackSlots', () => {
     it('should not repeat the current show behind itself', () => {
         expect(stackSlots(0, 2)).toEqual({ behind: [1], incoming: 1 });
         expect(stackSlots(0, 1)).toEqual({ behind: [], incoming: null });
+    });
+});
+
+describe('isOnPageDot', () => {
+    it('should spot a target inside a page dot, but not elsewhere', () => {
+        const dot = document.createElement('button');
+        dot.dataset.pageDot = '';
+        const inner = dot.appendChild(document.createElement('span'));
+
+        expect(isOnPageDot(dot)).toBe(true);
+        expect(isOnPageDot(inner)).toBe(true);
+        expect(isOnPageDot(document.createElement('button'))).toBe(false);
+        expect(isOnPageDot(null)).toBe(false);
     });
 });
 
