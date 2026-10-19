@@ -4,8 +4,9 @@ on:
     push:
         branches: [main]
     schedule:
-        # 每 30 分鐘更新錄音列表（GitHub 排程可能延遲 10–60 分鐘）
-        - cron: '*/30 * * * *'
+        # 每日兩次更新錄音列表：UTC 05:17 / 18:17 = 香港 13:17 / 02:17（避開整點；GitHub 排程可能延遲 10–60 分鐘）
+        # 唔好調密：原站有 Cloudflare 限流，太密會被 403
+        - cron: '17 5,18 * * *'
     workflow_dispatch:
 
 permissions:
