@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
 import { t } from '../../i18n/t';
+import { PERCENT, toPercent } from '../../utils/ratio';
 import { CheckIcon, PlayIcon } from '../icons/icons';
 import styles from './EpisodeList.module.css';
 import type { EpisodeStatus } from './episodeStatus';
@@ -17,13 +18,12 @@ interface EpisodeListProps {
     onSelect: (key: string) => void;
 }
 
-const PERCENT = 100;
 const CHECK_ICON_SIZE = 12;
 const PLAY_ICON_SIZE = 22;
 
 const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: string) => void }) => {
     const { status } = item;
-    const percent = Math.round(status.ratio * PERCENT);
+    const percent = toPercent(status.ratio);
     const date = `${item.dayMonth} ${item.weekday}`;
     return (
         <button

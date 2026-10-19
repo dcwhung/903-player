@@ -10,9 +10,7 @@ import { todayRecordings } from '../selectors/recordings';
 import { getProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import { hkToday } from '../utils/date';
-
-const ratio = (position: number, duration: number): number =>
-    duration > 0 ? Math.min(1, position / duration) : 0;
+import { ratio } from '../utils/ratio';
 
 const showName = (recording: Recording): string => findShow(recording.showId)?.name ?? '';
 

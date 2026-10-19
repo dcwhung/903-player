@@ -1,4 +1,5 @@
 import { t } from '../../i18n/t';
+import { PERCENT, toPercent } from '../../utils/ratio';
 import styles from './MiniPlayer.module.css';
 
 interface MiniPlayerProgressProps {
@@ -8,11 +9,9 @@ interface MiniPlayerProgressProps {
     timeText?: string;
 }
 
-const PERCENT = 100;
-
 /** 底部細進度條；有名同 value text，所以條 track 本身只係裝飾 */
 export const MiniPlayerProgress = ({ progress, timeText }: MiniPlayerProgressProps) => {
-    const percent = Math.round(progress * PERCENT);
+    const percent = toPercent(progress);
     return (
         <div
             className={styles.progress}
