@@ -10,9 +10,10 @@ import {
 
 const ONE_SECOND_MS = 1000;
 const LONG_PAUSE_MS = 10 * 60 * 60 * 1000;
+const IOS_SUSPEND_MS = 11 * 60 * 1000;
 
 /** 假依賴：用 fake timers 控制時間，可以改網絡、可見度、播放狀態 */
-const createHarness = () => {
+const createHarness = (overrides: Partial<UpdateManagerDeps> = {}) => {
     let online = true;
     let playing = false;
     let loaded = true;
@@ -36,6 +37,7 @@ const createHarness = () => {
             listeners.add(listener);
             return () => listeners.delete(listener);
         },
+        ...overrides,
     };
     const manager = new UpdateManager(deps);
     const stop = manager.start();
@@ -159,6 +161,17 @@ describe('UpdateManager apply rule', () => {
         const h = createHarness();
         h.manager.handleNeedRefresh();
         vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS + ONE_SECOND_MS);
+        expect(h.deps.applyUpdate).not.toHaveBeenCalled();
+        h.show();
+        expect(h.deps.applyUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('should apply on return when iOS never fired the timer while suspended', () => {
+        // iOS 背景暫停 JS：timer 永遠唔行，牆鐘照樣行；靠返到前景嗰下判斷
+        const h = createHarness({ schedule: () => () => undefined });
+        h.manager.handleNeedRefresh();
+        h.hide();
+        vi.setSystemTime(Date.now() + IOS_SUSPEND_MS);
         expect(h.deps.applyUpdate).not.toHaveBeenCalled();
         h.show();
         expect(h.deps.applyUpdate).toHaveBeenCalledTimes(1);
