@@ -18,28 +18,30 @@ export const e2eShortHeightPx = (): number => {
 
 const squash = (text: string): string => text.trim().replace(/\s+/g, ' ');
 
-/** 其他 at-rule（例如 @supports）入面嘅規則：唔當頂層，亦唔當任何 @media */
-const OTHER_AT_RULE = '@other';
-
-/** 規則喺邊：頂層係 undefined，@media 入面就係佢嘅條件（例如 `(max-height: 561px)`） */
+/**
+ * 規則喺邊：頂層係 undefined，否則係由外至內嘅 at-rule prelude 用空格連埋，空白壓成一格，例如
+ * `@media (max-height: 561px)`、`@supports (height: 1cqh)`，
+ * 或者 @media 入面再包 @supports 就係 `@media (max-height: 561px) @supports (height: 1cqh)`。
+ */
 const contextOf = (rule: Rule): string | undefined => {
-    const parent = rule.parent;
-    if (parent?.type === 'root') return undefined;
-    if (parent?.type === 'atrule' && 'name' in parent && parent.name === 'media') {
-        return squash(String(parent.params));
+    const preludes: string[] = [];
+    for (let node = rule.parent; node && node.type !== 'root'; node = node.parent) {
+        if (node.type === 'atrule' && 'name' in node) {
+            preludes.unshift(`@${String(node.name)} ${String(node.params)}`);
+        }
     }
-    return OTHER_AT_RULE;
+    return preludes.length === 0 ? undefined : squash(preludes.join(' '));
 };
 
-/** 逐個宣告行過 selector（同 media）完全一樣嘅規則；!important 留喺值後面 */
+/** 逐個宣告行過 selector 完全一樣、直屬 context（undefined = 頂層）嘅規則；!important 留喺值後面 */
 const eachDeclaration = (
     css: string,
     selector: string,
-    media: string | undefined,
+    context: string | undefined,
     visit: (prop: string, value: string) => void,
 ) => {
     parse(css).walkRules((rule) => {
-        if (squash(rule.selector) !== selector || contextOf(rule) !== media) return;
+        if (squash(rule.selector) !== selector || contextOf(rule) !== context) return;
         rule.each((node) => {
             if (node.type !== 'decl') return;
             const value = squash(node.value);
@@ -48,9 +50,25 @@ const eachDeclaration = (
     });
 };
 
+const mediaContext = (media?: string): string | undefined =>
+    media === undefined ? undefined : squash(`@media ${media}`);
+
+/** 同名後寫蓋前寫 */
+const collect = (
+    css: string,
+    selector: string,
+    context: string | undefined,
+): Record<string, string> => {
+    const declarations: Record<string, string> = {};
+    eachDeclaration(css, selector, context, (prop, value) => {
+        declarations[prop] = value;
+    });
+    return declarations;
+};
+
 /**
  * 喺 CSS 原文搵 selector 完全一樣嘅規則，返回佢嘅宣告（同名後寫蓋前寫）。
- * 唔傳 media 就只睇頂層規則；傳咗就只睇條件完全一樣嘅 @media 入面嗰啲。
+ * 唔傳 media 就只睇頂層規則；傳咗（例如 `(max-height: 561px)`）就只睇條件一樣嘅 @media 入面嗰啲。
  * jsdom 唔會套用 CSS module 嘅樣式，所以 touch-action / overflow 呢類 iOS 手勢關鍵設定要直接讀原文斷言。
  * !important 會留喺值後面，令 toBe('pan-y') 呢類斷言對 `pan-y !important` 失敗（唔准靠 !important 蓋）。
  */
@@ -58,12 +76,28 @@ export const cssDeclarations = (
     css: string,
     selector: string,
     media?: string,
-): Record<string, string> => {
-    const declarations: Record<string, string> = {};
-    eachDeclaration(css, selector, media, (prop, value) => {
-        declarations[prop] = value;
+): Record<string, string> => collect(css, selector, mediaContext(media));
+
+/**
+ * 任何 at-rule 入面嘅宣告：prelude 寫齊 `@名 條件`（空白唔計），例如
+ * `atRuleDeclarations(css, '@supports (height: 1cqh)', '.shell')`，
+ * 或者 `atRuleDeclarations(css, '@media (max-height: 561px)', '.stack')`（等於 cssDeclarations 傳 media）。
+ * 要成條 at-rule 鏈一樣先計：包喺第二個 at-rule 入面就要寫埋外層，例如
+ * `'@media (max-height: 561px) @supports (height: 1cqh)'`。同名後寫蓋前寫，!important 留喺值後面。
+ */
+export const atRuleDeclarations = (
+    css: string,
+    prelude: string,
+    selector: string,
+): Record<string, string> => collect(css, selector, squash(prelude));
+
+/** 喺某條 at-rule 鏈（同 atRuleDeclarations 一樣寫法）入面嘅所有 selector，按出現次序 */
+export const atRuleSelectors = (css: string, prelude: string): string[] => {
+    const selectors: string[] = [];
+    parse(css).walkRules((rule) => {
+        if (contextOf(rule) === squash(prelude)) selectors.push(squash(rule.selector));
     });
-    return declarations;
+    return selectors;
 };
 
 /**
@@ -77,7 +111,7 @@ export const cssValues = (
     media?: string,
 ): string[] => {
     const values: string[] = [];
-    eachDeclaration(css, selector, media, (name, value) => {
+    eachDeclaration(css, selector, mediaContext(media), (name, value) => {
         if (name === prop) values.push(value);
     });
     return values;

@@ -1,6 +1,13 @@
 // @vitest-environment node
 // 要用 node:fs 讀 CSS 原文：*.node.test.ts 行 tsconfig.node.json（有 Node 型別），唔會漏入 app 程式
-import { cssDeclarations, cssValues, e2eShortHeightPx, readCss } from '../../tests/cssRule';
+import {
+    atRuleDeclarations,
+    atRuleSelectors,
+    cssDeclarations,
+    cssValues,
+    e2eShortHeightPx,
+    readCss,
+} from '../../tests/cssRule';
 
 const css = (path: string) => readCss(new URL(path, import.meta.url));
 const SHORT_HEIGHT_MEDIA = `(max-height: ${e2eShortHeightPx()}px)`;
@@ -71,6 +78,28 @@ describe('iOS touch lock', () => {
         expect(
             cssDeclarations('.stack { touch-action: none; }', '.stack', SHORT_HEIGHT_MEDIA),
         ).toEqual({});
+    });
+
+    it('should read the rules inside a given at-rule, and only there', () => {
+        const source = `
+            .shell { height: 100%; }
+            @supports (height: 1cqh) { .shell { height: 50cqh; } .disc { width: 1cqh; } }
+            @media (max-height: 561px) { @supports (height: 1cqh) { .shell { height: 1px; } } }
+        `;
+
+        expect(atRuleDeclarations(source, '@supports  (height: 1cqh)', '.shell')).toEqual({
+            height: '50cqh',
+        });
+        expect(atRuleSelectors(source, '@supports (height: 1cqh)')).toEqual(['.shell', '.disc']);
+        expect(
+            atRuleDeclarations(
+                source,
+                '@media (max-height: 561px) @supports (height: 1cqh)',
+                '.shell',
+            ),
+        ).toEqual({ height: '1px' });
+        expect(cssDeclarations(source, '.shell')).toEqual({ height: '100%' });
+        expect(atRuleDeclarations(source, '@media (max-height: 561px)', '.shell')).toEqual({});
     });
 
     it.each([
