@@ -70,6 +70,19 @@ describe('usePlayer', () => {
         expect(result.current.isPlaying).toBe(false);
     });
 
+    it('plays and pauses explicitly', async () => {
+        const { audio, result } = setup();
+        await act(async () => result.current.load(RECORDING));
+
+        await act(async () => result.current.play());
+        await act(async () => result.current.play());
+        expect(result.current.isPlaying).toBe(true);
+
+        act(() => result.current.pause());
+        expect(audio.pause).toHaveBeenCalledTimes(1);
+        expect(result.current.isPlaying).toBe(false);
+    });
+
     it('skips within the bounds of the recording', async () => {
         const { audio, result } = setup();
         await act(async () => result.current.load(RECORDING));

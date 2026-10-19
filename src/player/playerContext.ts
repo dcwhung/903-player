@@ -16,6 +16,8 @@ export interface PlayerState {
 
 export interface PlayerActions {
     load: (recording: Recording, options?: LoadOptions) => Promise<void>;
+    play: () => Promise<void>;
+    pause: () => void;
     toggle: () => Promise<void>;
     restart: () => Promise<void>;
     seek: (seconds: number) => void;

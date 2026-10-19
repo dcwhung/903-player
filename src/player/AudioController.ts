@@ -65,7 +65,18 @@ export class AudioController {
         }
     };
 
-    toggle = async (): Promise<void> => (this.audio.paused ? this.play() : this.audio.pause());
+    play = async (): Promise<void> => {
+        try {
+            await this.audio.play();
+        } catch {
+            // 瀏覽器擋自動播放：維持暫停，等用戶撳 Play
+            this.update({ isPlaying: false });
+        }
+    };
+
+    pause = (): void => this.audio.pause();
+
+    toggle = async (): Promise<void> => (this.audio.paused ? this.play() : this.pause());
 
     restart = async (): Promise<void> => {
         this.seek(0);
@@ -93,15 +104,6 @@ export class AudioController {
         this.pendingStart = getResumePosition(recording.url);
         this.audio.src = recording.url;
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
-    }
-
-    private async play(): Promise<void> {
-        try {
-            await this.audio.play();
-        } catch {
-            // 瀏覽器擋自動播放：維持暫停，等用戶撳 Play
-            this.update({ isPlaying: false });
-        }
     }
 
     /** 已聽過而停喺尾段：再入嚟就由頭播 */

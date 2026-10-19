@@ -1,5 +1,11 @@
 import { PROGRESS_STORAGE_KEY } from '../config/constants';
-import { getProgress, getResumePosition, isWatched, saveProgress } from './progressStore';
+import {
+    getProgress,
+    getResumePosition,
+    getWatchedUrls,
+    isWatched,
+    saveProgress,
+} from './progressStore';
 
 const URL_A = 'https://audio.hkfm903.live/a.aac';
 const DURATION = 1000;
@@ -40,6 +46,16 @@ describe('progressStore', () => {
         saveProgress(URL_A, 10, Number.NaN);
 
         expect(isWatched(URL_A)).toBe(false);
+    });
+
+    it('lists watched urls in a single read', () => {
+        saveProgress(URL_A, 960, DURATION);
+        saveProgress('https://audio.hkfm903.live/b.aac', 10, DURATION);
+        const spy = vi.spyOn(Storage.prototype, 'getItem');
+
+        expect(getWatchedUrls()).toEqual(new Set([URL_A]));
+        expect(spy).toHaveBeenCalledTimes(1);
+        spy.mockRestore();
     });
 
     it('survives corrupted storage data', () => {

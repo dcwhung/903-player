@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AudioController } from './AudioController';
-import { PlayerContext } from './playerContext';
+import { PlayerContext, type PlayerActions } from './playerContext';
 import { useMediaSession } from './useMediaSession';
 
 interface PlayerProviderProps {
@@ -21,19 +21,22 @@ export const PlayerProvider = ({ children, audio }: PlayerProviderProps) => {
     useEffect(() => controller.attach(), [controller]);
     const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
 
-    const value = useMemo(
+    // controller 嘅 method 係 arrow property，所以 actions 永遠唔變
+    const actions = useMemo<PlayerActions>(
         () => ({
-            ...state,
             load: controller.load,
+            play: controller.play,
+            pause: controller.pause,
             toggle: controller.toggle,
             restart: controller.restart,
             seek: controller.seek,
             skip: controller.skip,
             stop: controller.stop,
         }),
-        [state, controller],
+        [controller],
     );
-    useMediaSession(value);
+    useMediaSession(actions, state);
+    const value = useMemo(() => ({ ...state, ...actions }), [state, actions]);
 
     return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 };

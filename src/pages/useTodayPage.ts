@@ -5,15 +5,14 @@ import { useRecordings } from '../data/useRecordings';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
 import { pickTodayDate, showsOnDate } from '../selectors/recordings';
-import { isWatched } from '../services/progressStore';
-import type { Recording } from '../types/recording';
+import { getWatchedUrls } from '../services/progressStore';
 import { hkToday } from '../utils/date';
 
-const statusOf = (recording: Recording, isActive: boolean, isPlaying: boolean): ShowStatus => {
+const statusOf = (isActive: boolean, isPlaying: boolean, isWatched: boolean): ShowStatus => {
     if (isActive && isPlaying) {
         return 'playing';
     }
-    return isWatched(recording.url) ? 'watched' : 'unwatched';
+    return isWatched ? 'watched' : 'unwatched';
 };
 
 /** 今日節目頁嘅資料同動作 */
@@ -22,7 +21,9 @@ export const useTodayPage = () => {
     const player = usePlayer();
     const { startToday } = useStartPlayback();
 
-    const date = useMemo(() => pickTodayDate(recordings, hkToday()), [recordings]);
+    // 每次 render 重新計，app 開過香港午夜都會轉日
+    const today = hkToday();
+    const date = useMemo(() => pickTodayDate(recordings, today), [recordings, today]);
     const list = useMemo(() => (date ? showsOnDate(recordings, date) : []), [recordings, date]);
     const playing = list.find((r) => r.url === player.recording?.url) ?? null;
     const current = playing ?? list[0];
@@ -33,11 +34,14 @@ export const useTodayPage = () => {
         }
     }, [status, list, playing, startToday]);
 
+    const { watchedRevision } = player;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- watchedRevision 係 invalidation key
+    const watchedUrls = useMemo(() => getWatchedUrls(), [list, watchedRevision]);
     const items: TodayShowItem[] = list.map((r) => ({
         key: r.url,
         name: findShow(r.showId)?.name ?? '',
         active: r.url === current?.url,
-        status: statusOf(r, r.url === current?.url, player.isPlaying),
+        status: statusOf(r.url === current?.url, player.isPlaying, watchedUrls.has(r.url)),
     }));
 
     const selectShow = (url: string) => {

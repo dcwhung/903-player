@@ -5,7 +5,7 @@ import { useRecordings } from '../data/useRecordings';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
 import { pickInitialRecording, recordingsForShow } from '../selectors/recordings';
-import { isWatched } from '../services/progressStore';
+import { getWatchedUrls } from '../services/progressStore';
 import { formatDateLabel, hkToday } from '../utils/date';
 
 /** 節目頁嘅資料同動作 */
@@ -29,10 +29,14 @@ export const useShowPage = (showId: string) => {
         }
     }, [show, status, playing, startShow]);
 
+    const { watchedRevision } = player;
+    // watchedRevision 係 invalidation key：有集數變成聽過先重新讀 localStorage
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const watchedUrls = useMemo(() => getWatchedUrls(), [showRecordings, watchedRevision]);
     const dateItems: DateItem[] = showRecordings.map((r) => ({
         key: r.url,
         label: formatDateLabel(r.date),
-        watched: isWatched(r.url),
+        watched: watchedUrls.has(r.url),
         selected: r.url === current?.url,
     }));
 
