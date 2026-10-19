@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
-import { parseAllRecordings, parseRecordings } from './parseRecordings';
+import { parseAllRecordings, parseRecordings, readNextPageUrl } from './parseRecordings';
 
 const read = (name: string) =>
     readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8');
@@ -101,5 +101,152 @@ describe('parseAllRecordings', () => {
 
     it('reports show names it could not match', () => {
         expect(all.unmatched).toEqual(['口水多過浪花']);
+    });
+});
+
+describe('readNextPageUrl', () => {
+    const current = 'https://hkfm903.live/?show=%E5%85%AC%E5%AD%90%E6%9C%83';
+
+    it('returns null when the page has no pagination', () => {
+        expect(readNextPageUrl(fixture, current)).toBeNull();
+    });
+
+    it('follows a rel="next" link, resolved against the current url', () => {
+        const html = `<nav><a rel="next" href="${current}&amp;page=2">Next</a></nav>`;
+
+        expect(readNextPageUrl(html, current)).toBe(`${current}&page=2`);
+    });
+
+    it('follows the link after the active item in a .pagination list', () => {
+        const html = `<ul class="pagination">
+            <li class="page-item"><a class="page-link" href="/?page=1">1</a></li>
+            <li class="page-item active"><span class="page-link">2</span></li>
+            <li class="page-item"><a class="page-link" href="/?page=3">3</a></li>
+        </ul>`;
+
+        expect(readNextPageUrl(html, 'https://hkfm903.live/?page=2')).toBe(
+            'https://hkfm903.live/?page=3',
+        );
+    });
+
+    it('returns null when the active item is the last one', () => {
+        const html = `<ul class="pagination">
+            <li><a href="/p/1">1</a></li>
+            <li class="active"><span>2</span></li>
+        </ul>`;
+
+        expect(readNextPageUrl(html, 'https://hkfm903.live/p/2')).toBeNull();
+    });
+
+    it('picks the lowest page= link above the current page', () => {
+        const html = `<div>
+            <a href="/?page=1">1</a>
+            <a href="/?page=4">4</a>
+            <a href="/?page=3">3</a>
+            <a href="/?page=2">2</a>
+        </div>`;
+
+        expect(readNextPageUrl(html, 'https://hkfm903.live/?page=2')).toBe(
+            'https://hkfm903.live/?page=3',
+        );
+    });
+
+    it('treats a url without page= as page 1', () => {
+        const html = `<a href="${current}&amp;page=1">1</a><a href="${current}&amp;page=2">2</a>`;
+
+        expect(readNextPageUrl(html, current)).toBe(`${current}&page=2`);
+    });
+
+    it('rejects a cross-origin next link', () => {
+        const html = '<a rel="next" href="https://evil.example/?page=2">Next</a>';
+
+        expect(readNextPageUrl(html, current)).toBeNull();
+    });
+
+    it('rejects plain http and subdomains of the site', () => {
+        const html = `<a href="http://hkfm903.live/?page=2">2</a>
+            <a href="https://audio.hkfm903.live/?page=3">3</a>`;
+
+        expect(readNextPageUrl(html, current)).toBeNull();
+    });
+});
+
+describe('readNextPageUrl self-links', () => {
+    const current = 'https://hkfm903.live/?page=1';
+
+    it('returns null for a single-page Bootstrap pagination block', () => {
+        const html = `<ul class="pagination">
+            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+            <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+        </ul>`;
+
+        expect(readNextPageUrl(html, current)).toBeNull();
+    });
+
+    it('returns null for rel="next" pointing at "#"', () => {
+        expect(readNextPageUrl('<a rel="next" href="#">Next</a>', current)).toBeNull();
+    });
+
+    it('treats a link to the current page with a fragment as the same page', () => {
+        const html = '<a rel="next" href="/?page=1#list">Next</a>';
+
+        expect(readNextPageUrl(html, `${current}#top`)).toBeNull();
+    });
+
+    it('drops the fragment from a real next page', () => {
+        const html = '<a rel="next" href="/?page=2#list">Next</a>';
+
+        expect(readNextPageUrl(html, current)).toBe('https://hkfm903.live/?page=2');
+    });
+});
+
+describe('readNextPageUrl stays on the same list', () => {
+    const current = 'https://hkfm903.live/?show=%E5%85%AC%E5%AD%90%E6%9C%83';
+    const otherShow = '/?show=%E5%85%B6%E4%BB%96&amp;page=2';
+
+    it('rejects a page= link to a different show', () => {
+        expect(readNextPageUrl(`<a href="${otherShow}">2</a>`, current)).toBeNull();
+    });
+
+    it('rejects rel="next" to a different show', () => {
+        expect(readNextPageUrl(`<a rel="next" href="${otherShow}">Next</a>`, current)).toBeNull();
+    });
+
+    it('rejects a .pagination link to a different path', () => {
+        const html = `<ul class="pagination">
+            <li class="active"><span>1</span></li>
+            <li><a href="/archive?show=%E5%85%AC%E5%AD%90%E6%9C%83&amp;page=2">2</a></li>
+        </ul>`;
+
+        expect(readNextPageUrl(html, current)).toBeNull();
+    });
+
+    it('accepts the same show with only the page changed, in any param order', () => {
+        const html = '<a href="/?page=2&amp;show=%E5%85%AC%E5%AD%90%E6%9C%83">2</a>';
+
+        expect(readNextPageUrl(html, current)).toBe(
+            'https://hkfm903.live/?page=2&show=%E5%85%AC%E5%AD%90%E6%9C%83',
+        );
+    });
+});
+
+describe('readNextPageUrl active item markup', () => {
+    const current = 'https://hkfm903.live/?page=1';
+
+    it('supports an active <a> inside an <li>', () => {
+        const html = `<ul class="pagination">
+            <li><a class="active" href="/?page=1">1</a></li>
+            <li><a href="/?page=2">2</a></li>
+        </ul>`;
+
+        expect(readNextPageUrl(html, current)).toBe('https://hkfm903.live/?page=2');
+    });
+
+    it('supports sibling <a> elements with an active one', () => {
+        const html = `<div class="pagination">
+            <a class="active" href="/?page=1">1</a><a href="/?page=2">2</a>
+        </div>`;
+
+        expect(readNextPageUrl(html, current)).toBe('https://hkfm903.live/?page=2');
     });
 });
