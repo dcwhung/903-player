@@ -208,6 +208,23 @@ describe('usePlayer', () => {
         expect(getProgress(RECORDING.url)?.position).toBe(1800);
     });
 
+    it('skips from the resume position after switching episodes before metadata loads', async () => {
+        const other: Recording = { ...RECORDING, date: '2026-10-15', url: `${RECORDING.url}?b` };
+        saveProgress(other.url, 100, 6000);
+        const { audio, result } = setup();
+        await act(async () => result.current.load(RECORDING, { autoplay: true }));
+        act(() => audio.emitMetadata(DURATION));
+        act(() => audio.emitTime(60));
+
+        await act(async () => result.current.load(other, { autoplay: true }));
+        expect(result.current.currentTime).toBe(100);
+        act(() => result.current.skip(30));
+        act(() => audio.emitMetadata(6000));
+
+        expect(audio.currentTime).toBe(130);
+        expect(getProgress(other.url)?.position).toBe(100);
+    });
+
     it('does not restart a watched episode that is still playing', async () => {
         const { audio, result } = setup();
         await act(async () => result.current.load(RECORDING, { autoplay: true }));

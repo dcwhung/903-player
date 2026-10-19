@@ -33,7 +33,8 @@ export const ArcSlider = (props: ArcSliderProps) => {
     const shownValue = ratio * max;
 
     const onKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
-        const target = keyTarget(event.key, value, max);
+        // 未知長度時唔處理，避免 End / 方向鍵將續播位置 seek 走
+        const target = max > 0 ? keyTarget(event.key, value, max) : undefined;
         if (target === undefined) return;
         event.preventDefault();
         onSeek(target);

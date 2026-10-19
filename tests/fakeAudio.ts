@@ -11,11 +11,19 @@ export class FakeAudio extends EventTarget {
         return this.source;
     }
 
-    /** 同真 HTMLMediaElement 一樣：換 src 會 reset 播放位置同長度 */
+    /**
+     * 同真 HTMLMediaElement 嘅 load algorithm 一樣：換 src 會 reset 播放位置同長度，
+     * 而原本位置唔係 0 時會發一次 timeupdate
+     */
     set src(value: string) {
+        const wasPlayingFrom = this.currentTime;
         this.source = value;
         this.currentTime = 0;
         this.duration = Number.NaN;
+        if (wasPlayingFrom !== 0) {
+            // 真瀏覽器係 queue 一個 task 先發，即係喺 caller 執行完之後
+            queueMicrotask(() => this.dispatchEvent(new Event('timeupdate')));
+        }
     }
 
     play = vi.fn(async () => {

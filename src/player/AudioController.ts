@@ -140,6 +140,10 @@ export class AudioController {
     };
 
     private onTimeUpdate = (): void => {
+        // 換 src 時瀏覽器會發一次 currentTime = 0 嘅 timeupdate；metadata 未到嘅位置唔可信
+        if (!Number.isFinite(this.audio.duration)) {
+            return;
+        }
         this.update({ currentTime: this.audio.currentTime });
         const intervalElapsed = Date.now() - this.lastSavedAt >= PROGRESS_SAVE_INTERVAL_MS;
         const crossedWatched =

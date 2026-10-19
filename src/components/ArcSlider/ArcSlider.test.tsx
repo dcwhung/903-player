@@ -120,6 +120,24 @@ describe('ArcSlider', () => {
         expect(onSeek).not.toHaveBeenCalled();
     });
 
+    it('ignores keys while the duration is unknown', () => {
+        const onSeek = vi.fn();
+        render(
+            <ArcSlider
+                value={100}
+                max={0}
+                onSeek={onSeek}
+                label="播放進度"
+                formatValueText={String}
+            />,
+        );
+
+        fireEvent.keyDown(screen.getByRole('slider'), { key: 'End' });
+        fireEvent.keyDown(screen.getByRole('slider'), { key: 'ArrowRight' });
+
+        expect(onSeek).not.toHaveBeenCalled();
+    });
+
     it('ignores other keys', () => {
         const { slider, onSeek } = renderSlider();
 
