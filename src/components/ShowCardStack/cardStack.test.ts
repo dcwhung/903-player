@@ -12,7 +12,6 @@ import {
     stackSlots,
     translateXOf,
     velocityOf,
-    wrapIndex,
 } from './cardStack';
 
 const WIDTH = 300;
@@ -43,23 +42,6 @@ describe('releaseDirection', () => {
     it('should not drop below the plain swipe threshold when the width is unknown', () => {
         expect(releaseDirection(-(SWIPE_THRESHOLD_PX - 1), 0, 0)).toBeNull();
         expect(releaseDirection(-SWIPE_THRESHOLD_PX, 0, 0)).toBe('next');
-    });
-});
-
-describe('wrapIndex', () => {
-    it('should step forward and back', () => {
-        expect(wrapIndex(1, 3, 'next')).toBe(2);
-        expect(wrapIndex(1, 3, 'previous')).toBe(0);
-    });
-
-    it('should wrap around at both ends', () => {
-        expect(wrapIndex(2, 3, 'next')).toBe(0);
-        expect(wrapIndex(0, 3, 'previous')).toBe(2);
-    });
-
-    it('should stay put with one show or none', () => {
-        expect(wrapIndex(0, 1, 'next')).toBe(0);
-        expect(wrapIndex(0, 0, 'previous')).toBe(0);
     });
 });
 

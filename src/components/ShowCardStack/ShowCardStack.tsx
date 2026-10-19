@@ -1,7 +1,7 @@
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
-import { arrowKeyDirection, type SwipeDirection } from '../../hooks/swipe';
+import { arrowKeyDirection, type SwipeDirection, wrapIndex } from '../../hooks/swipe';
 import { t } from '../../i18n/t';
-import { stackSlots, wrapIndex } from './cardStack';
+import { stackSlots } from './cardStack';
 import { GhostCard, type GhostSlot, type StackCard } from './GhostCard';
 import styles from './ShowCardStack.module.css';
 import { isOnPageDot, useCardDrag } from './useCardDrag';

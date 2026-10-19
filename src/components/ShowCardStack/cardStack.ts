@@ -1,4 +1,4 @@
-import { SWIPE_THRESHOLD_PX, type SwipeDirection } from '../../hooks/swipe';
+import { SWIPE_THRESHOLD_PX, type SwipeDirection, wrapIndex } from '../../hooks/swipe';
 
 /** 拖過卡闊嘅 30% 放手就轉節目 */
 export const COMMIT_DISTANCE_RATIO = 0.3;
@@ -40,13 +40,6 @@ export const releaseDirection = (
         Math.sign(velocity) === Math.sign(dx);
     if (dx === 0 || !(isFar || isFlick)) return null;
     return dx < 0 ? 'next' : 'previous';
-};
-
-/** 循環轉：最後一個之後係第一個，第一個之前係最後一個；得一個（或者冇）就唔郁 */
-export const wrapIndex = (index: number, total: number, direction: SwipeDirection): number => {
-    if (total <= 1) return index;
-    const step = direction === 'next' ? 1 : -1;
-    return (index + step + total) % total;
 };
 
 /** 拖動時卡嘅傾斜角度（°），同拖動距離成正比，有上限 */
