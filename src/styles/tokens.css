@@ -89,8 +89,9 @@
                 env(safe-area-inset-bottom)
         );
         /* 唱片 + 時間嗰一格嘅高 = 闊 × 316 / 300（PlayerPanel .gauge aspect-ratio） */
+        /* 下限都唔可以闊過 78vw（極窄 / 高倍放大時避免橫向超出） */
         --player-disc-size: max(
-            var(--player-disc-min),
+            min(var(--player-disc-min), 78vw),
             min(300px, 78vw, calc((100dvh - var(--player-reserved-height)) * 300 / 316))
         );
     }
