@@ -170,8 +170,23 @@ try {
     );
     const restartPos = Number(await slider.getAttribute('aria-valuenow'));
     log(restartPos <= 3, `已聽過嘅集由頭播：${restartPos}s`);
+    const watched17 = () =>
+        page.evaluate(
+            () =>
+                Object.entries(JSON.parse(localStorage.getItem('903player:progress:v1'))).find(
+                    ([u]) => u.includes('20261017'),
+                )[1].watched,
+        );
+    log(await watched17(), '重播頭幾秒仍然保留已收聽');
+    // 真正播超過 REPLAY_RESET_SECONDS（10 秒）先清走已收聽
+    await page.waitForTimeout(11000);
+    log(!(await watched17()), '重播超過 10 秒清走已收聽');
     await page.getByRole('button', { name: /^播放 10\/10/ }).click();
     await page.waitForTimeout(800);
+    const replayed = await page
+        .getByRole('button', { name: /^播放 17\/10/ })
+        .getAttribute('aria-label');
+    log(/聽到 0:1\d$/.test(replayed), `重播超過 10 秒後清單顯示聽到：${replayed}`);
     const resumePos = Number(await slider.getAttribute('aria-valuenow'));
     log(resumePos >= 29, `未聽完嘅 10/10 續播：${resumePos}s`);
 

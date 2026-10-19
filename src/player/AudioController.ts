@@ -1,5 +1,14 @@
-import { PROGRESS_SAVE_INTERVAL_MS, WATCHED_RATIO } from '../config/constants';
-import { getResumePosition, isWatched, saveProgress } from '../services/progressStore';
+import {
+    PROGRESS_SAVE_INTERVAL_MS,
+    REPLAY_RESET_SECONDS,
+    WATCHED_RATIO,
+} from '../config/constants';
+import {
+    getResumePosition,
+    isWatched,
+    resetWatched,
+    saveProgress,
+} from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import type { LoadOptions, PlayerState } from './playerContext';
 
@@ -24,6 +33,10 @@ export class AudioController {
     private pendingStart = 0;
     private lastSavedAt = 0;
     private watched = false;
+    /** 聽過嘅錄音由頭重播時累計嘅真正播放秒數；undefined = 唔係重播，唔使計 */
+    private replayedSeconds: number | undefined;
+    /** 上一次 timeupdate 嘅位置，用嚟計兩次之間播咗幾耐 */
+    private lastTickPosition = 0;
 
     constructor(private readonly audio: HTMLAudioElement) {}
 
@@ -59,6 +72,7 @@ export class AudioController {
             this.switchTo(recording);
         } else if (this.isParkedAtEnd()) {
             this.seek(0);
+            this.armReplay();
         }
         if (autoplay) {
             await this.play();
@@ -80,6 +94,7 @@ export class AudioController {
 
     restart = async (): Promise<void> => {
         this.seek(0);
+        this.armReplay();
         await this.play();
     };
 
@@ -88,6 +103,8 @@ export class AudioController {
         // metadata 未到時記低目標，等 loadedmetadata 先套用（否則會由 0 起計）
         this.pendingStart = this.hasMetadata() ? 0 : target;
         this.audio.currentTime = target;
+        // seek 唔算收聽時間：由新位置重新起計
+        this.lastTickPosition = target;
         this.update({ currentTime: target });
         this.persist();
     };
@@ -104,6 +121,9 @@ export class AudioController {
         this.persist();
         this.watched = isWatched(recording.url);
         this.pendingStart = getResumePosition(recording.url);
+        this.lastTickPosition = this.pendingStart;
+        // 聽過嘅集 getResumePosition 係 0，即係由頭重播
+        this.armReplay();
         this.audio.src = recording.url;
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
     }
@@ -120,6 +140,38 @@ export class AudioController {
             this.watched &&
             this.audio.currentTime / this.audio.duration >= WATCHED_RATIO
         );
+    }
+
+    /** 聽過嘅錄音由頭播：開始計重播時間；未聽過就唔使計 */
+    private armReplay(): void {
+        this.replayedSeconds = this.watched ? 0 : undefined;
+    }
+
+    /** 累計真正播放時間（暫停、seek 唔計），夠 REPLAY_RESET_SECONDS 就重新開始記錄 */
+    private trackReplay(): void {
+        const position = this.audio.currentTime;
+        const delta = position - this.lastTickPosition;
+        this.lastTickPosition = position;
+        if (this.replayedSeconds === undefined || this.audio.paused || delta <= 0) {
+            return;
+        }
+        this.replayedSeconds += delta;
+        if (this.replayedSeconds >= REPLAY_RESET_SECONDS) {
+            this.resetReplay();
+        }
+    }
+
+    /** 清走「已收聽」，之後當新一次收聽照常存進度，再到 95% 先再打剔 */
+    private resetReplay(): void {
+        this.replayedSeconds = undefined;
+        const { recording } = this.state;
+        if (!recording) {
+            return;
+        }
+        resetWatched(recording.url, this.audio.currentTime, this.audio.duration);
+        this.lastSavedAt = Date.now();
+        this.watched = false;
+        this.update({ watchedRevision: this.state.watchedRevision + 1 });
     }
 
     private persist = (): void => {
@@ -140,6 +192,7 @@ export class AudioController {
         this.update({ duration: this.audio.duration });
         if (this.pendingStart > 0) {
             this.audio.currentTime = this.pendingStart;
+            this.lastTickPosition = this.pendingStart;
             this.pendingStart = 0;
         }
     };
@@ -150,6 +203,7 @@ export class AudioController {
             return;
         }
         this.update({ currentTime: this.audio.currentTime });
+        this.trackReplay();
         const intervalElapsed = Date.now() - this.lastSavedAt >= PROGRESS_SAVE_INTERVAL_MS;
         const crossedWatched =
             !this.watched && this.audio.currentTime / this.audio.duration >= WATCHED_RATIO;

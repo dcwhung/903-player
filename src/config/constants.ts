@@ -3,6 +3,8 @@ export const HK_TIMEZONE = 'Asia/Hong_Kong';
 /** 播放位置 ≥ 總長度嘅 95% 就當聽過 */
 export const WATCHED_RATIO = 0.95;
 export const PROGRESS_SAVE_INTERVAL_MS = 5000;
+/** 聽過嘅錄音由頭重播，真正播咗咁多秒先清走「已收聽」（防自動播放 / 誤撳） */
+export const REPLAY_RESET_SECONDS = 10;
 export const PROGRESS_STORAGE_KEY = '903player:progress:v1';
 
 export const SKIP_BACK_SECONDS = [60, 30] as const;

@@ -67,14 +67,29 @@ export const getResumePosition = (url: string): number => {
     return progress && !progress.watched ? progress.position : 0;
 };
 
-export const saveProgress = (url: string, position: number, duration: number): Progress => {
+const writeProgress = (
+    url: string,
+    position: number,
+    duration: number,
+    keepWatched: boolean,
+): Progress => {
     const all = readAll();
     const progress: Progress = {
         position,
         duration: Number.isFinite(duration) ? duration : 0,
-        watched: (all[url]?.watched ?? false) || reachedWatchedRatio(position, duration),
+        watched:
+            (keepWatched && (all[url]?.watched ?? false)) ||
+            reachedWatchedRatio(position, duration),
         updatedAt: Date.now(),
     };
     writeAll({ ...all, [url]: progress });
     return progress;
 };
+
+/** 一旦聽過就一直當聽過（seek 返前都唔會取消），除非 resetWatched */
+export const saveProgress = (url: string, position: number, duration: number): Progress =>
+    writeProgress(url, position, duration, true);
+
+/** 聽過嘅錄音重新再聽：清走「已收聽」，由呢個位置重新記錄（再到 95% 先再當聽過） */
+export const resetWatched = (url: string, position: number, duration: number): Progress =>
+    writeProgress(url, position, duration, false);

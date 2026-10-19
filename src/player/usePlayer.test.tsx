@@ -259,6 +259,120 @@ describe('usePlayer', () => {
         expect(audio.currentTime).toBe(0);
     });
 
+    describe('replaying a watched episode', () => {
+        const replayWatched = async (options = { autoplay: true }) => {
+            saveProgress(RECORDING.url, DURATION, DURATION);
+            const { audio, result } = setup();
+            await act(async () => result.current.load(RECORDING, options));
+            act(() => audio.emitMetadata(DURATION));
+            return { audio, result };
+        };
+
+        // 模擬瀏覽器每 0.25 秒發一次 timeupdate
+        const playThrough = (audio: FakeAudio, from: number, to: number) => {
+            for (let t = from; t <= to; t += 0.25) {
+                act(() => audio.emitTime(t));
+            }
+        };
+
+        it('keeps the watched tick before 10 seconds of playback', async () => {
+            const { audio, result } = await replayWatched();
+            const revision = result.current.watchedRevision;
+
+            playThrough(audio, 0, 5);
+            act(() => result.current.pause());
+
+            expect(isWatched(RECORDING.url)).toBe(true);
+            expect(result.current.watchedRevision).toBe(revision);
+        });
+
+        it('clears watched after 10 seconds of playback and bumps the revision', async () => {
+            const { audio, result } = await replayWatched();
+            const revision = result.current.watchedRevision;
+
+            playThrough(audio, 0, 10.25);
+
+            expect(isWatched(RECORDING.url)).toBe(false);
+            expect(getProgress(RECORDING.url)?.position).toBeGreaterThanOrEqual(10);
+            expect(result.current.watchedRevision).toBe(revision + 1);
+        });
+
+        it('marks watched again when the replay reaches 95%', async () => {
+            const { audio, result } = await replayWatched();
+            playThrough(audio, 0, 10.25);
+            const revision = result.current.watchedRevision;
+
+            act(() => audio.emitTime(951));
+
+            expect(isWatched(RECORDING.url)).toBe(true);
+            expect(result.current.watchedRevision).toBe(revision + 1);
+        });
+
+        it('does not count a seek as listening time', async () => {
+            const { audio, result } = await replayWatched();
+
+            playThrough(audio, 0, 2);
+            act(() => result.current.seek(300));
+            playThrough(audio, 300, 305);
+
+            expect(isWatched(RECORDING.url)).toBe(true);
+        });
+
+        it('does not count time while paused', async () => {
+            const { audio } = await replayWatched({ autoplay: false });
+
+            playThrough(audio, 0, 20);
+
+            expect(isWatched(RECORDING.url)).toBe(true);
+        });
+
+        it('adds up playback across a pause', async () => {
+            const { audio, result } = await replayWatched();
+
+            playThrough(audio, 0, 5);
+            act(() => result.current.pause());
+            await act(async () => result.current.play());
+            playThrough(audio, 5.25, 10.25);
+
+            expect(isWatched(RECORDING.url)).toBe(false);
+        });
+
+        it('clears watched after restart() on a watched episode is played for 10 seconds', async () => {
+            const { audio, result } = setup();
+            await act(async () => result.current.load(RECORDING, { autoplay: true }));
+            act(() => audio.emitMetadata(DURATION));
+            act(() => audio.emitTime(960));
+            expect(isWatched(RECORDING.url)).toBe(true);
+
+            await act(async () => result.current.restart());
+            playThrough(audio, 0, 10.25);
+
+            expect(isWatched(RECORDING.url)).toBe(false);
+        });
+
+        it('clears watched when an episode parked at the end is replayed for 10 seconds', async () => {
+            const { audio, result } = setup();
+            await act(async () => result.current.load(RECORDING));
+            act(() => audio.emitMetadata(DURATION));
+            act(() => audio.emitTime(990));
+
+            await act(async () => result.current.load(RECORDING, { autoplay: true }));
+            playThrough(audio, 0, 10.25);
+
+            expect(isWatched(RECORDING.url)).toBe(false);
+        });
+
+        it('does not clear watched while finishing the first listen', async () => {
+            const { audio, result } = setup();
+            await act(async () => result.current.load(RECORDING, { autoplay: true }));
+            act(() => audio.emitMetadata(DURATION));
+
+            playThrough(audio, 950, 975);
+
+            expect(isWatched(RECORDING.url)).toBe(true);
+        });
+    });
+
     it('throws when used outside the provider', () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         expect(() => renderHook(() => usePlayer())).toThrow();
