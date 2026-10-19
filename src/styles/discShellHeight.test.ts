@@ -2,7 +2,12 @@ import { atRuleBody, cssDeclarations, readCss, withoutAtRule } from '../../tests
 
 const css = (path: string) => readCss(new URL(path, import.meta.url));
 
+/*
+ * 三個 @supports：公式（cqh 或 dvh 有一樣就用）、殼高 100cqh、殼高 100dvh（fallback）。
+ * 殼高嗰兩個條件互相排斥，fallback 唔靠 source 先後蓋過。
+ */
 const NO_CQH = '@supports not (height: 1cqh)';
+const CQH = '@supports (height: 1cqh)';
 const SIZED = '@supports (height: 1cqh) or (height: 100dvh)';
 // 任何自訂屬性（token）嘅值入面有 dvh；@supports 條件本身唔計
 const DVH_TOKEN = /--[\w-]+\s*:[^;{}]*dvh\b/;
@@ -25,8 +30,10 @@ describe('player disc sizing source (W-390)', () => {
     it('should size the disc from the shell height (100cqh), not the dynamic viewport', async () => {
         const tokens = await css('./tokens.css');
         const sized = cssDeclarations(atRuleBody(tokens, SIZED), ':root');
+        const cqh = cssDeclarations(atRuleBody(tokens, CQH), ':root');
 
-        expect(sized['--player-shell-height']).toBe('100cqh');
+        expect(cqh).toEqual({ '--player-shell-height': '100cqh' });
+        expect(sized).not.toHaveProperty('--player-shell-height');
         expect(sized['--player-disc-size']).toContain('var(--player-shell-height)');
         expect(sized['--player-disc-size']).not.toMatch(/dvh\b/);
     });

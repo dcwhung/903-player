@@ -148,10 +148,10 @@
  * 自訂屬性喺用嘅地方先代入（PlayerPanel / ShowCardStack .gauge 嘅 width），
  * 所以 cqh 係對住最近嗰個 size container（.scope）解析，唔係 :root。
  * 主碟用家（節目頁、今日節目頁、今日節目疊卡）全部喺成頁 .scope 入面。
+ * --player-shell-height 喺下面兩個互相排斥嘅 @supports 設定（有 cqh → 100cqh，冇 cqh → 100dvh）。
  */
 @supports (height: 1cqh) or (height: 100dvh) {
     :root {
-        --player-shell-height: 100cqh;
         /*
          * 節目頁除咗唱片之外要預留嘅高度，按固定版面由上而下：
          * 1. 頂部安全區 + 頁頂 padding（--space-4）
@@ -191,6 +191,16 @@
                 calc((var(--player-max-height) - var(--player-chrome-height)) * 300 / 316)
             )
         );
+    }
+}
+
+/*
+ * 殼高來源：下面兩個 @supports 條件互相排斥，唔靠 source 先後蓋過（S-420）。
+ * 支援 cqh：殼高 = 成頁 .scope（size container）嘅 100cqh。
+ */
+@supports (height: 1cqh) {
+    :root {
+        --player-shell-height: 100cqh;
     }
 }
 
