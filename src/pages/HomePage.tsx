@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RadioIcon } from '../components/icons/icons';
 import { ShowTile } from '../components/ShowTile/ShowTile';
@@ -5,6 +6,7 @@ import { SHOWS } from '../config/shows';
 import { useRecordings } from '../data/useRecordings';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { t } from '../i18n/t';
+import { usePlayer } from '../player/usePlayer';
 import styles from './HomePage.module.css';
 import page from './Page.module.css';
 
@@ -14,6 +16,12 @@ export const HomePage = () => {
     const navigate = useNavigate();
     const { status } = useRecordings();
     const { startShow, startToday } = useStartPlayback();
+    const { stop } = usePlayer();
+
+    // 主頁冇 mini player：任何方式返主頁（包括系統返回手勢）都暫停並存進度
+    useEffect(() => {
+        stop();
+    }, [stop]);
 
     return (
         <main className={`${page.page} ${styles.home}`}>

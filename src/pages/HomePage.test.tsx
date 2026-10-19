@@ -31,6 +31,12 @@ describe('HomePage', () => {
         ]);
     });
 
+    it('pauses playback whenever home is shown, including system back', () => {
+        const { audio } = renderWithProviders(<HomePage />);
+
+        expect(audio.pause).toHaveBeenCalled();
+    });
+
     it('starts the latest episode and opens the show page', async () => {
         const { audio } = renderWithProviders(<HomePage />, { recordings: RECORDINGS });
         await waitFor(() =>

@@ -54,13 +54,12 @@ describe('ShowPage', () => {
         );
     });
 
-    it('stops playback when going back home', async () => {
+    it('goes back home (home itself pauses playback)', async () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.play).toHaveBeenCalled());
 
         await userEvent.click(screen.getByRole('button', { name: '返回主頁' }));
 
-        expect(audio.pause).toHaveBeenCalled();
         expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
     });
 

@@ -1,13 +1,8 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePlayer } from '../player/usePlayer';
 
-/** 返主頁：主頁冇 mini player，所以先暫停並存低進度 */
+/** 返主頁；暫停播放由 HomePage 負責，令系統返回手勢都一樣處理 */
 export const useGoHome = () => {
     const navigate = useNavigate();
-    const { stop } = usePlayer();
-    return useCallback(() => {
-        stop();
-        navigate('/');
-    }, [stop, navigate]);
+    return useCallback(() => navigate('/'), [navigate]);
 };
