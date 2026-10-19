@@ -230,15 +230,19 @@ const checkDiscMatchesToday = async (p, label) => {
 const TODAY_MIN_ROWS = 1;
 const TODAY_ROW_VIEWPORTS = ['320×568', '375×667', '390×664', '390×720', '390×844', '390×562'];
 
-/** 今日節目清單見到幾多行：指定畫面要過 TODAY_MIN_ROWS，其他只印出嚟 */
+/**
+ * 今日節目清單見到幾多行：指定畫面要過 TODAY_MIN_ROWS，其他只印出嚟。
+ * 順便記低卡佔高（返回量到嘅比例，畀 checkTodayCardShare 用，唔使再量一次）
+ */
 const checkTodayRows = async (list, label) => {
     const rows = await visibleRows(list);
-    await recordTodayMetrics(list.page(), label, rows.toFixed(2));
+    const share = await recordTodayMetrics(list.page(), label, rows.toFixed(2));
     const enforced = TODAY_ROW_VIEWPORTS.some((size) => label.startsWith(size));
     log(
         !enforced || rows >= TODAY_MIN_ROWS,
         `${label}：清單見到約 ${rows.toFixed(2)} 行${enforced ? `（≥ ${TODAY_MIN_ROWS}）` : ''}`,
     );
+    return share;
 };
 
 /** 今日節目最上面嗰張卡（PlayerPanel 外層，指示點喺入面）佔畫面高幾多 */
@@ -257,9 +261,8 @@ const recordTodayMetrics = async (p, label, rows) => {
     return share;
 };
 
-/** 固定版面嘅今日節目卡（連指示點）≤ PLAYER_MAX_SHARE */
-const checkTodayCardShare = async (p, label) => {
-    const share = await todayCardShare(p);
+/** 固定版面嘅今日節目卡（連指示點）≤ PLAYER_MAX_SHARE；share 由 checkTodayRows 量好傳入 */
+const checkTodayCardShare = (share, label) => {
     log(
         share <= PLAYER_MAX_SHARE + 0.001,
         `${label}：今日節目卡佔畫面高 ${(share * 100).toFixed(1)}%（≤ ${PLAYER_MAX_SHARE * 100}%）`,
@@ -269,8 +272,7 @@ const checkTodayCardShare = async (p, label) => {
 /** 今日節目頁固定：捲輪 / scrollTo 都唔會捲成頁；清單太長就自己捲 */
 const checkFixedTodayPage = async (p, label) => {
     const list = p.getByRole('region', { name: '今日節目' }).getByRole('list');
-    await checkTodayRows(list, label);
-    await checkTodayCardShare(p, label);
+    checkTodayCardShare(await checkTodayRows(list, label), label);
     const card = await p.getByRole('heading', { level: 1 }).boundingBox();
     await p.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
     await p.mouse.wheel(0, WHEEL_PX);
