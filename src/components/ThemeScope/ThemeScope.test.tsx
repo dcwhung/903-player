@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import { SHOW_THEMES } from '../../config/showThemes';
 import { ThemeScope } from './ThemeScope';
 
+const canvas = () => document.documentElement.style.getPropertyValue('--page-canvas');
+
 const themeColor = () =>
     document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.content;
 
@@ -47,5 +49,38 @@ describe('ThemeScope', () => {
 
         expect(themeColor()).toBe(SHOW_THEMES.sunnyday.bg);
         expect(document.head.querySelectorAll('meta[name="theme-color"]')).toHaveLength(1);
+    });
+
+    it('should paint the page canvas (behind the home indicator) and clear it on unmount', () => {
+        const { unmount } = render(
+            <ThemeScope theme={SHOW_THEMES.sunnyday}>
+                <p>內容</p>
+            </ThemeScope>,
+        );
+
+        expect(canvas()).toBe(SHOW_THEMES.sunnyday.bg);
+
+        unmount();
+        expect(canvas()).toBe('');
+    });
+
+    it('should use the given canvas colour, e.g. the bottom of the home gradient', () => {
+        render(
+            <ThemeScope theme={SHOW_THEMES.sunnyday} canvas="var(--home-bg-bottom)">
+                <p>內容</p>
+            </ThemeScope>,
+        );
+
+        expect(canvas()).toBe('var(--home-bg-bottom)');
+    });
+
+    it('should leave the page canvas alone when it is not full page', () => {
+        render(
+            <ThemeScope theme={SHOW_THEMES.badgirl} fullPage={false}>
+                <p>mini player</p>
+            </ThemeScope>,
+        );
+
+        expect(canvas()).toBe('');
     });
 });

@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { silenceWav } from './silenceWav.mjs';
+import { runTouchChecks } from './touch.mjs';
 
 const DEFAULT_PORT = 4173;
 const MAX_PORT = 65535;
@@ -203,7 +204,17 @@ const logDiscSize = async (p, label, rows) => {
     );
 };
 
-/** 好矮嘅畫面（橫向手機 / 矮視窗）：唔再固定，成頁正常捲，清單唔係內部捲動，控制掣捲得到 */
+/** main 可以捲幾多、文件本身有冇溢出（矮畫面要 main 捲、文件唔捲） */
+const mainScroll = (p) =>
+    p.evaluate(() => {
+        const main = document.querySelector('main');
+        return {
+            main: main.scrollHeight - main.clientHeight,
+            doc: document.documentElement.scrollHeight - window.innerHeight,
+        };
+    });
+
+/** 好矮嘅畫面（橫向手機 / 矮視窗）：唔再固定，改由 main 捲（文件唔捲），清單唔係內部捲動，控制掣捲得到 */
 const checkScrollingShowPage = async (p, label, shot) => {
     const list = p.getByRole('region', { name: '集數' }).getByRole('list');
     const inner = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
@@ -212,11 +223,12 @@ const checkScrollingShowPage = async (p, label, shot) => {
     const forward = p.getByRole('button', { name: '前進 60 秒' });
     await forward.scrollIntoViewIfNeeded();
     const b = await forward.boundingBox();
-    const overflow = await p.evaluate(
-        () => document.documentElement.scrollHeight - window.innerHeight,
-    );
+    const scroll = await mainScroll(p);
     const inView = b !== null && b.y >= 0 && b.y + b.height <= p.viewportSize().height;
-    log(overflow > 0 && inView, `${label}：成頁捲得、控制掣捲得到（可捲 ${overflow}px）`);
+    log(
+        scroll.main > 0 && scroll.doc <= 0 && inView,
+        `${label}：main 捲得、文件唔捲、控制掣捲得到（${JSON.stringify(scroll)}）`,
+    );
     // 最尾一集都要捲得到
     const last = p.getByRole('region', { name: '集數' }).locator('li button').last();
     await last.scrollIntoViewIfNeeded();
@@ -332,21 +344,22 @@ const checkFixedTodayPage = async (p, label) => {
     await checkControlsInView(p, label);
 };
 
-/** 好矮嘅畫面：今日節目頁好似節目頁咁成頁捲，清單唔係內部捲動，控制掣捲得到 */
+/** 好矮嘅畫面：今日節目頁好似節目頁咁由 main 捲，清單唔係內部捲動，控制掣捲得到 */
 const checkScrollingTodayPage = async (p, label) => {
     const list = p.getByRole('region', { name: '今日節目' }).getByRole('list');
     const inner = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
     log(inner <= 1, `${label}：清單唔係內部捲動（多出 ${inner}px）`);
     await recordTodayMetrics(p, label, '全部（成頁捲）');
     const forward = p.getByRole('button', { name: '前進 60 秒' });
-    // 由節目頁轉過嚟時 window 可能停喺半格（-0.5px）位置，scrollIntoViewIfNeeded 會當睇到；直接置中
+    // 由節目頁轉過嚟時捲動位置可能停喺半格（-0.5px）位置，scrollIntoViewIfNeeded 會當睇到；直接置中
     await forward.evaluate((el) => el.scrollIntoView({ block: 'center' }));
     const b = await forward.boundingBox();
-    const overflow = await p.evaluate(
-        () => document.documentElement.scrollHeight - window.innerHeight,
-    );
+    const scroll = await mainScroll(p);
     const inView = b !== null && b.y >= 0 && b.y + b.height <= p.viewportSize().height;
-    log(overflow > 0 && inView, `${label}：成頁捲得、控制掣捲得到（可捲 ${overflow}px）`);
+    log(
+        scroll.main > 0 && scroll.doc <= 0 && inView,
+        `${label}：main 捲得、文件唔捲、控制掣捲得到（${JSON.stringify(scroll)}）`,
+    );
 };
 
 /** 拖緊日子條：成條跟住手指郁（track 有 translateX），可以順便影一張拖緊嘅截圖 */
@@ -852,6 +865,9 @@ try {
     console.log('\n今日節目頁尺寸｜卡（連指示點）佔高｜清單行數');
     for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.rows}`);
     console.log('');
+
+    // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
+    await runTouchChecks({ browser, base: BASE, out: OUT, serveAudio, errors, log });
 
     const light = await browser.newContext({
         viewport: { width: 390, height: 844 },

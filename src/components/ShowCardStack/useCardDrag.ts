@@ -25,7 +25,7 @@ const sampleOf = (event: StackPointerEvent): DragSample => ({
     t: event.timeStamp,
 });
 
-/** 未確認橫拖就睇吓方向：直向放棄（交返畀瀏覽器捲頁），橫向就開始拖 */
+/** 未確認橫拖就睇吓方向：直向放棄（固定版面冇嘢捲；好矮嘅畫面交返畀 main 捲），橫向就開始拖 */
 const confirmHorizontal = (
     gesture: GestureRef,
     current: Gesture,
@@ -113,7 +113,7 @@ const swallow = (event: MouseEvent<HTMLElement>) => {
 };
 
 /**
- * 跟手指拖卡（配合 touch-action: pan-y）。commit 係 null（例如得一個節目）就永遠彈返。
+ * 跟手指拖卡（卡疊 touch-action: none，好矮嘅畫面 pan-y）。commit 係 null（例如得一個節目）就永遠彈返。
  * ArcSlider 自己 stopPropagation，所以拖弧形唔會郁張卡；拖完嘅 click 會被食咗。
  */
 export const useCardDrag = (
@@ -131,8 +131,12 @@ export const useCardDrag = (
         onPointerUp: (event: StackPointerEvent) =>
             clicks.arm(release(gesture, event, motion, commit)),
         onPointerCancel: () => abandon(gesture, motion),
-        onLostPointerCapture: (event: StackPointerEvent) =>
-            abandon(gesture, motion, event.pointerId),
+        // 只理卡疊自己冇咗 capture。觸控有隱式 capture（手指落喺邊個子元素就 capture 喺度），
+        // 卡疊 setPointerCapture 搶過嚟時子元素嘅 lostpointercapture 會冒泡上嚟，
+        // 當成放手就會一開始拖即刻彈返（手機上完全拖唔到嘅原因）
+        onLostPointerCapture: (event: StackPointerEvent) => {
+            if (event.target === event.currentTarget) abandon(gesture, motion, event.pointerId);
+        },
         onClickCapture: (event: MouseEvent<HTMLElement>) => {
             if (motion.isFlying()) swallow(event);
             else clicks.onClickCapture(event);

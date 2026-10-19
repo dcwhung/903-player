@@ -220,6 +220,25 @@ describe('ShowCardStack', () => {
         expect(cardDx(group)).toBe('-30px');
     });
 
+    it('should keep dragging when the touch target loses its implicit capture to the stack', () => {
+        // 觸控有隱式 capture（落喺手指下面嗰個子元素）；卡疊 setPointerCapture 搶過嚟時，
+        // 子元素嘅 lostpointercapture 會冒泡上嚟，唔可以當係放手（iOS / Android 實機拖唔到嘅原因）
+        const { group, onChange } = setup();
+        const inner = screen.getByRole('button', { name: '內容' });
+        const start = { pointerId: 7, pointerType: 'touch', clientY: 100 };
+
+        fireEvent.pointerDown(inner, { ...start, clientX: 200 });
+        fireEvent.pointerMove(inner, { ...start, clientX: 180, clientY: 104 });
+        fireEvent.lostPointerCapture(inner, { pointerId: 7 });
+        fireEvent.pointerMove(group, { ...start, clientX: 60, clientY: 110 });
+        expect(cardDx(group)).toBe('-140px');
+        expect(group).toHaveAttribute('data-phase', 'dragging');
+
+        fireEvent.pointerUp(group, { ...start, clientX: 40, clientY: 112 });
+        finishFly();
+        expect(onChange).toHaveBeenCalledWith(2);
+    });
+
     it('should treat a tap near the centre during spring-back as a tap, not a drag', () => {
         const { group, onInnerClick } = setup();
         const inner = screen.getByRole('button', { name: '內容' });
