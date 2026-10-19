@@ -8,6 +8,8 @@ import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
 import { HomePage } from './HomePage';
 
+const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
+
 const RECORDINGS = [
     recording('gongzi', '2026-10-10'),
     recording('gongzi', '2026-10-17'),
@@ -53,7 +55,6 @@ describe('HomePage', () => {
     it('lists five artwork tiles plus today, in order', () => {
         renderWithProviders(<HomePage />);
 
-        expect(screen.getByRole('heading', { name: '收聽節目' })).toBeInTheDocument();
         const nav = screen.getByRole('navigation');
         expect(
             [...nav.querySelectorAll('button')].map(
@@ -67,6 +68,26 @@ describe('HomePage', () => {
             '西加航空',
             '今日節目',
         ]);
+    });
+
+    it('should render the banner image as the only page heading when rendered', () => {
+        renderWithProviders(<HomePage />);
+
+        const headings = screen.getAllByRole('heading', { level: 1 });
+        expect(headings).toHaveLength(1);
+        expect(headings[0]).toHaveAccessibleName(BANNER_ALT);
+        const banner = screen.getByRole('img', { name: BANNER_ALT });
+        expect(headings[0]).toContainElement(banner);
+        // 橫額喺節目格之前（頁頂）
+        const position = banner.compareDocumentPosition(screen.getByRole('navigation'));
+        expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('should not show the old header text when rendered', () => {
+        renderWithProviders(<HomePage />);
+
+        expect(screen.queryByText(/903 player/i)).not.toBeInTheDocument();
+        expect(screen.queryByText('收聽節目')).not.toBeInTheDocument();
     });
 
     it('should apply the home theme vars when rendered', () => {
