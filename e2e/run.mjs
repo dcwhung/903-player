@@ -342,6 +342,45 @@ const checkTodayShow = async (p, name, bg, label) => {
     await checkThemeColor(p, bg, label);
 };
 
+const MINI_REGION = '正在播放（今日節目）';
+const MINI_SWIPE_PX = 160;
+
+/** 喺主頁 mini player 中間橫掃（正數 = 向右 = 上一個） */
+const swipeMiniPlayer = async (p, dx) => {
+    const box = await p.getByRole('region', { name: MINI_REGION }).boundingBox();
+    const y = box.y + box.height / 2;
+    const fromX = box.x + box.width / 2 - dx / 2;
+    await p.mouse.move(fromX, y);
+    await p.mouse.down();
+    await p.mouse.move(fromX + dx, y + 4, { steps: 8 });
+    await p.mouse.up();
+    await p.waitForTimeout(300);
+};
+
+/** mini player 指示點：全部節目名同 aria-current 嗰個 */
+const miniDots = async (p) => {
+    const dots = p.getByRole('region', { name: MINI_REGION }).locator('[data-page-dot]');
+    const labels = await dots.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+    const current = await dots.and(p.locator('[aria-current="true"]')).getAttribute('aria-label');
+    return { labels, current };
+};
+
+/** 主頁 mini player 掃過頭會循環：第一個向右掃去最後一個，最後一個向左掃返第一個 */
+const checkMiniPlayerLoop = async (p) => {
+    const { labels, current } = await miniDots(p);
+    const first = labels[0];
+    const last = labels[labels.length - 1];
+    log(labels.length > 1 && current === first, `mini player 由第一個節目開始：${current}`);
+    await swipeMiniPlayer(p, MINI_SWIPE_PX);
+    const wrappedBack = (await miniDots(p)).current;
+    log(wrappedBack === last, `mini player 第一個向右掃循環去最後一個：${wrappedBack}`);
+    await swipeMiniPlayer(p, -MINI_SWIPE_PX);
+    const wrappedForward = (await miniDots(p)).current;
+    log(wrappedForward === first, `mini player 最後一個向左掃循環返第一個：${wrappedForward}`);
+    // 掃完個 click 要被食咗，唔可以跳咗去節目頁
+    log(!p.url().includes('#/show'), `mini player 掃完仲喺主頁：${p.url()}`);
+};
+
 /** 拖到一半：最上面張卡跟手指、傾斜；後面張卡上前；頁面冇橫向捲動 */
 const checkTodayMidDrag = async (p) => {
     await dragTodayCard(p, -TODAY_MID_DRAG_PX, { release: false });
@@ -573,6 +612,16 @@ try {
         log(overflow === 0, `320px 闊冇橫向捲動（${route}，超出 ${overflow}px）`);
     }
     await narrow.close();
+
+    // 主頁 mini player 循環掃：獨立 context，未載入任何節目
+    const loop = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await loop.route('https://audio.hkfm903.live/**', serveAudio);
+    const lpp = await loop.newPage();
+    lpp.on('pageerror', (e) => errors.push(e.message));
+    await lpp.goto(BASE);
+    await lpp.waitForSelector('nav[aria-busy="false"]');
+    await checkMiniPlayerLoop(lpp);
+    await loop.close();
 
     // 細 iPhone（320×568）：今日節目卡疊靜止嘅樣
     const small = await browser.newContext({
