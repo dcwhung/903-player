@@ -1,6 +1,13 @@
 /* 成頁：填滿固定殼（global.css 嘅 #root），唔用 100dvh，免得同殼高度對唔齊而溢出 */
 .scope {
     height: 100%;
+    /*
+     * W-390：size container，令 tokens.css 嘅主碟公式（--player-shell-height: 100cqh）跟殼高計，
+     * 唔跟 iOS standalone 可能對唔齊嘅 dvh。.scope 自己有確定嘅闊高（block 闊 + 殼高 100%），
+     * 唔靠子元素撐，所以 size containment 唔會改版面；主頁橫額 h1 自己係 inline-size container，
+     * 入面嘅 cqi 照舊對住 h1，唔受影響。
+     */
+    container-type: size;
     background: var(--color-bg);
     color: var(--color-text);
 }
