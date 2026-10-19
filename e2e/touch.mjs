@@ -1,6 +1,7 @@
 // 觸控 e2e：Chromium 手機模擬（hasTouch + isMobile）+ CDP Input.dispatchTouchEvent。
 // page.touchscreen 只識 tap，拖動要自己逐格發 touchMove。
 // 模擬唔到 iOS 橡筋同 standalone 嘅 viewport 怪癖，所以另外斷言根元素嘅 CSS 鎖。
+import { newE2EContext } from './harness.mjs';
 
 const TOUCH_VIEWPORTS = [
     // iPhone 14/15（有 Dynamic Island：頂 47–59px、底 34px 安全區）同 iPhone SE（Home 掣）
@@ -25,15 +26,15 @@ const STRIP = '[aria-roledescription="轉集"]';
 const MINI_REGION = '正在播放（今日節目）';
 
 /** 開一個 iPhone 似嘅觸控 context；支援就順便模擬安全區（env(safe-area-inset-*)） */
-const openTouchPage = async (browser, serveAudio, errors, { width, height, insets }) => {
-    const ctx = await browser.newContext({
+const openTouchPage = async (browser, errors, { width, height, insets }) => {
+    // 同 run.mjs 一樣嘅固定時鐘同 audio host
+    const ctx = await newE2EContext(browser, {
         viewport: { width, height },
         hasTouch: true,
         isMobile: true,
         deviceScaleFactor: 3,
         colorScheme: 'dark',
     });
-    await ctx.route('https://audio.hkfm903.live/**', serveAudio);
     const p = await ctx.newPage();
     p.on('pageerror', (e) => errors.push(e.message));
     const cdp = await ctx.newCDPSession(p);
@@ -310,15 +311,10 @@ const checkLandscape = async (env, route, zone, label) => {
 };
 
 /** 全部觸控檢查；每個尺寸用獨立 context（新鮮播放狀態） */
-export const runTouchChecks = async ({ browser, base, out, serveAudio, errors, log }) => {
+export const runTouchChecks = async ({ browser, base, out, errors, log }) => {
     for (const viewport of TOUCH_VIEWPORTS) {
         const size = `${viewport.width}×${viewport.height}`;
-        const { ctx, p, cdp, safeArea } = await openTouchPage(
-            browser,
-            serveAudio,
-            errors,
-            viewport,
-        );
+        const { ctx, p, cdp, safeArea } = await openTouchPage(browser, errors, viewport);
         console.log(`(觸控 ${size}：安全區模擬${safeArea ? '已開' : '唔支援'})`);
         const env = { p, cdp, log, base, out };
         await checkHome(env, `${size} 觸控主頁`);
@@ -327,7 +323,7 @@ export const runTouchChecks = async ({ browser, base, out, serveAudio, errors, l
         await ctx.close();
     }
     const size = `${LANDSCAPE.width}×${LANDSCAPE.height}`;
-    const { ctx, p, cdp } = await openTouchPage(browser, serveAudio, errors, LANDSCAPE);
+    const { ctx, p, cdp } = await openTouchPage(browser, errors, LANDSCAPE);
     const env = { p, cdp, log, base, out };
     const strip = (page) => page.locator(STRIP);
     const card = (page) => page.getByRole('heading', { level: 1 });
