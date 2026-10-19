@@ -6,6 +6,7 @@ import {
     PROBE_FOUND_RETENTION_DAYS,
     PROBE_LOOKBACK_DAYS,
     PROBE_RETRY_MS,
+    PROBE_SETTLED_RETRY_MS,
     PROBE_TIMEOUT_MS,
     buildAudioUrl,
     probeAudio,
@@ -394,7 +395,7 @@ describe('probeRecentRecordings', () => {
         });
 
         expect(soon).not.toHaveBeenCalled();
-        // 只有今日同尋日（19、20 號各 3 個）會再試；更早嘅日子已經搵過，當真係冇
+        // 只有今日同尋日（19、20 號各 3 個）會再試；更早嘅日子已定，要等 PROBE_SETTLED_RETRY_MS
         expect(later).toHaveBeenCalledTimes(6);
         expect(later).not.toHaveBeenCalledWith(urlFor('badgirl', '2026-10-16'));
     });
@@ -411,9 +412,42 @@ describe('probeRecentRecordings', () => {
             now: new Date(friday.getTime() + PROBE_RETRY_MS),
         });
 
-        // 19 號嘅 miss 係 20 號記低（當時可能仲未上架），所以 23 號會再試一次，之後就唔再試
+        // 19 號嘅 miss 係 20 號記低（當時可能仲未上架），所以 23 號會再試一次，之後已定，隔 PROBE_SETTLED_RETRY_MS 先再試
         expect(first).toHaveBeenCalledWith(urlFor('badgirl', '2026-10-19'));
         expect(second).not.toHaveBeenCalledWith(urlFor('badgirl', '2026-10-19'));
+    });
+
+    describe('settled misses', () => {
+        const settled = urlFor('badgirl', '2026-10-16');
+
+        it(`are not retried before PROBE_SETTLED_RETRY_MS`, async () => {
+            await probeRecentRecordings([], { probe: found([]), now: NOW });
+            const tooSoon = found([]);
+
+            await probeRecentRecordings([], {
+                probe: tooSoon,
+                now: new Date(NOW.getTime() + PROBE_SETTLED_RETRY_MS - 1),
+            });
+
+            expect(tooSoon).not.toHaveBeenCalledWith(settled);
+        });
+
+        it('are retried after PROBE_SETTLED_RETRY_MS, so a late upload is still found', async () => {
+            await probeRecentRecordings([], { probe: found([]), now: NOW });
+            const nextDay = found([settled]);
+
+            const result = await probeRecentRecordings([], {
+                probe: nextDay,
+                now: new Date(NOW.getTime() + PROBE_SETTLED_RETRY_MS),
+            });
+
+            expect(nextDay).toHaveBeenCalledWith(settled);
+            expect(result.map((r) => r.url)).toContain(settled);
+        });
+
+        it('retry far less often than recent misses', () => {
+            expect(PROBE_SETTLED_RETRY_MS).toBeGreaterThan(PROBE_RETRY_MS);
+        });
     });
 
     it(`drops misses older than ${PROBE_LOOKBACK_DAYS} days so storage does not grow`, async () => {

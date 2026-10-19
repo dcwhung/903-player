@@ -16,8 +16,13 @@ export const PROBE_TIMEOUT_MS = 15_000;
 export const PROBE_RETRY_MS = 30 * 60 * 1_000;
 /** 回看幾多日（包括今日）：幾日冇開 app 都攞得返嗰幾日嘅錄音 */
 export const PROBE_LOOKBACK_DAYS = 14;
-/** 播出日之後過咗幾多日先記低嘅 miss 就當真係冇，唔再試（今日 = 0、尋日 = 1） */
+/** 播出日之後過咗幾多日先記低嘅 miss 就當「已定」（今日 = 0、尋日 = 1） */
 const SETTLED_AFTER_DAYS = 2;
+/**
+ * 已定嘅 miss 隔幾耐再試：原站間中遲幾日先補上架，所以唔可以永久放棄；
+ * 一日試一次已經夠，亦令斷網誤記嘅 miss 最多只影響一日
+ */
+export const PROBE_SETTLED_RETRY_MS = 24 * 60 * 60 * 1_000;
 /** 搵到嘅錄音最多留幾多日（香港日期），feed 一直唔更新都唔會越積越多 */
 export const PROBE_FOUND_RETENTION_DAYS = 14;
 const MS_PER_DAY = 24 * 60 * 60 * 1_000;
@@ -139,19 +144,15 @@ const toSlot = (show: ShowConfig, date: string): ProbeSlot => ({
     recording: { showId: show.id, date, time: show.fileTime, url: buildAudioUrl(show, date) },
 });
 
-/**
- * 未搵過就要搵；播出日過咗兩日先搵唔到，即係真係冇，唔再試；
- * 今日 / 尋日搵唔到可能只係未上架，隔 PROBE_RETRY_MS 再試
- */
-const isRetryDue = (missedAt: number | undefined, date: string, now: Date): boolean => {
-    if (missedAt === undefined) {
-        return true;
-    }
-    if (daysBetween(date, hkToday(new Date(missedAt))) >= SETTLED_AFTER_DAYS) {
-        return false;
-    }
-    return now.getTime() - missedAt >= PROBE_RETRY_MS;
-};
+/** 播出日過咗兩日先搵唔到，多數真係冇，一日先再試；今日 / 尋日可能只係未上架，密啲試 */
+const retryIntervalMs = (missedAt: number, date: string): number =>
+    daysBetween(date, hkToday(new Date(missedAt))) >= SETTLED_AFTER_DAYS
+        ? PROBE_SETTLED_RETRY_MS
+        : PROBE_RETRY_MS;
+
+/** 未搵過就要搵；搵唔到嘅隔 retryIntervalMs 再試 */
+const isRetryDue = (missedAt: number | undefined, date: string, now: Date): boolean =>
+    missedAt === undefined || now.getTime() - missedAt >= retryIntervalMs(missedAt, date);
 
 const airsOn = (show: ShowConfig, date: string): boolean => show.airDays.includes(weekdayOf(date));
 
