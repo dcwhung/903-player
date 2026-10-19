@@ -36,18 +36,19 @@ export const useMiniPlayer = (): MiniPlayerProps | null => {
     const duration = isLoaded ? player.duration : (saved?.duration ?? 0);
     const dateLabel = formatDateLabel(current.date);
     const label = current.date === today ? t('miniPlayer.today', { date: dateLabel }) : dateLabel;
+    const timeText =
+        duration > 0
+            ? t('player.progressText', {
+                  current: formatDuration(position),
+                  total: formatDuration(duration),
+              })
+            : undefined;
 
     return {
         showName: findShow(current.showId)?.name ?? '',
         theme: themeFor(current.showId),
-        subtitle:
-            duration > 0
-                ? t('miniPlayer.withTime', {
-                      label,
-                      current: formatDuration(position),
-                      total: formatDuration(duration),
-                  })
-                : label,
+        subtitle: timeText ? t('miniPlayer.withTime', { label, time: timeText }) : label,
+        timeText,
         isPlaying: isLoaded && player.isPlaying,
         progress: ratio(position, duration),
         labels: list.map((r) => findShow(r.showId)?.name ?? ''),

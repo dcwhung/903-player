@@ -45,7 +45,7 @@ export const zhHK = {
         region: '正在播放（今日節目）',
         open: '開啟 {name} 節目頁',
         today: '今日 {date}',
-        withTime: '{label} · {current} / {total}',
+        withTime: '{label} · {time}',
         position: '今日第 {index} 個節目，共 {total} 個',
     },
     carousel: {

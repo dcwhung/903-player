@@ -35,6 +35,10 @@
     --radius-full: 999px;
 
     --touch-target: 44px;
+    /* WCAG 2.2 target size (minimum)：細粒掣嘅撳得到範圍 */
+    --touch-target-min: 24px;
+    --dot-size: 6px;
+    --dot-size-active: 18px;
     --page-max-width: 480px;
 
     color-scheme: dark;

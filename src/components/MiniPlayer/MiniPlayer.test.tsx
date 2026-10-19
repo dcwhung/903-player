@@ -7,6 +7,7 @@ const props = (overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps => ({
     showName: 'Bad Girl大過佬',
     theme: SHOW_THEMES.badgirl,
     subtitle: '今日 19/10（一）· 12:40 / 1:58:30',
+    timeText: '12:40 / 1:58:30',
     isPlaying: true,
     progress: 0.11,
     labels: ['雲妮鍾情', '在晴朗的一天出發', 'Bad Girl大過佬'],
@@ -26,6 +27,21 @@ describe('MiniPlayer', () => {
         expect(region).toHaveTextContent('今日 19/10（一）· 12:40 / 1:58:30');
         expect(region.closest('[data-theme-scope]')).toHaveStyle({ '--theme-accent': '#f08a24' });
         expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '11');
+    });
+
+    it('names the progress bar and reads out the time', () => {
+        render(<MiniPlayer {...props()} />);
+
+        const bar = screen.getByRole('progressbar', { name: '播放進度' });
+        expect(bar).toHaveAttribute('aria-valuetext', '12:40 / 1:58:30');
+    });
+
+    it('leaves out the value text while the duration is unknown', () => {
+        render(<MiniPlayer {...props({ timeText: undefined })} />);
+
+        expect(screen.getByRole('progressbar', { name: '播放進度' })).not.toHaveAttribute(
+            'aria-valuetext',
+        );
     });
 
     it('opens the show page and toggles playback', async () => {

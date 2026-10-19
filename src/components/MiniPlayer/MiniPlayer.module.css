@@ -20,7 +20,8 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-3) var(--space-3) 14px;
+    /* 頂部留位俾指示點（撳得到範圍 24px），唔會疊住開節目頁個掣 */
+    padding: var(--touch-target-min) var(--space-3) var(--space-4);
 }
 
 .open {
@@ -72,9 +73,9 @@
 
 .dots {
     position: absolute;
-    top: -6px;
+    top: 0;
     left: 50%;
-    transform: translateX(-50%) scale(0.7);
+    transform: translateX(-50%);
 }
 
 .progress {

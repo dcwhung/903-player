@@ -38,6 +38,20 @@ describe('useMiniPlayer', () => {
         expect(result.current.mini?.showName).toBe('雲妮鍾情');
     });
 
+    it('gives the time text once the duration is known', async () => {
+        const { audio, result } = setup();
+        await ready(result);
+        expect(result.current.mini?.timeText).toBeUndefined();
+
+        await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
+        act(() => {
+            audio.emitMetadata(7110);
+            audio.emitTime(760);
+        });
+
+        expect(result.current.mini?.timeText).toBe('12:40 / 1:58:30');
+    });
+
     it('switches show without autoplay while loaded and paused', async () => {
         const { audio, result } = setup();
         await ready(result);

@@ -11,6 +11,8 @@ export interface MiniPlayerProps {
     showName: string;
     theme: ShowTheme;
     subtitle: string;
+    /** 例如「12:40 / 1:58:30」；未知長度時冇 */
+    timeText?: string;
     isPlaying: boolean;
     /** 0–1 */
     progress: number;
@@ -69,6 +71,8 @@ export const MiniPlayer = (props: MiniPlayerProps) => {
                 <div
                     className={styles.progress}
                     role="progressbar"
+                    aria-label={t('player.progress')}
+                    aria-valuetext={props.timeText}
                     aria-valuemin={0}
                     aria-valuemax={PERCENT}
                     aria-valuenow={percent}

@@ -1,14 +1,15 @@
 .dots {
     display: flex;
-    gap: 2px;
+    gap: 0;
 }
 
 .dot {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    /* 撳得到範圍係成粒掣（≥ 24×24），睇到嘅細點係 ::after */
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
     padding: 0;
     border: none;
     background: transparent;
@@ -16,14 +17,15 @@
 
 .dot::after {
     content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--color-track);
+    width: var(--dot-size);
+    height: var(--dot-size);
+    border-radius: var(--radius-full);
+    /* 非文字對比度要 ≥ 3:1，所以唔用 track 色 */
+    background: var(--color-text-muted);
     transition: width 0.2s;
 }
 
 .selected::after {
-    width: 18px;
+    width: var(--dot-size-active);
     background: var(--color-accent);
 }
