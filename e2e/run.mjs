@@ -74,12 +74,15 @@ const checkVersionClear = async (p, label) => {
 };
 
 const MIN_VISIBLE_ROWS = 2;
-// 同 tokens.css 嘅 --player-max-share 一致：唱片連弧 → 日子條 → 控制掣最多佔畫面高六成
-const PLAYER_MAX_SHARE = 0.6;
+// tokens.css 嘅 --player-max-share（0.6）係設計目標；用戶接受 62–66%，
+// 所以 e2e 只要求節目頁播放器同今日節目卡（連指示點）≤ 66%，實際比例照印出嚟
+const PLAYER_MAX_SHARE = 0.66;
 const STRIP_DRAG_PX = 60;
 const STRIP = '[aria-roledescription="轉集"]';
 /** 每個節目頁尺寸量到嘅播放器高度比例、唱片闊度、清單行數（最尾印成表） */
 const metrics = [];
+/** 今日節目頁：卡（連指示點）佔高、清單行數 */
+const todayMetrics = [];
 const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
 // 同 tokens.css 嘅 --player-disc-min 同 Page.module.css 嘅成頁捲斷點（max-height）一致
@@ -218,13 +221,15 @@ const checkDiscMatchesToday = async (p, label) => {
     log(todayGaps === showGaps, `${label}：今日節目頁間距同節目頁一樣（${todayGaps}）`);
 };
 
-// 今日節目清單最少見到幾多行（暫定；共用播放器高度上限合併後再提高）
-const TODAY_MIN_ROWS = 0.8;
+// 今日節目清單最少見到一行（合併共用播放器高度上限後量到 320×568 = 1.00、375×667 = 1.08、
+// 390×844 = 1.94）。390×720 只得約 0.66 行，未有版面決定前只印出嚟、唔斷言（已回報）
+const TODAY_MIN_ROWS = 1;
 const TODAY_ROW_VIEWPORTS = ['320×568', '375×667', '390×844'];
 
 /** 今日節目清單見到幾多行：指定畫面要過 TODAY_MIN_ROWS，其他只印出嚟 */
 const checkTodayRows = async (list, label) => {
     const rows = await visibleRows(list);
+    await recordTodayMetrics(list.page(), label, rows.toFixed(2));
     const enforced = TODAY_ROW_VIEWPORTS.some((size) => label.startsWith(size));
     log(
         !enforced || rows >= TODAY_MIN_ROWS,
@@ -232,10 +237,39 @@ const checkTodayRows = async (list, label) => {
     );
 };
 
+/** 今日節目最上面嗰張卡（PlayerPanel 外層，指示點喺入面）佔畫面高幾多 */
+const todayCardShare = (p) =>
+    p.evaluate(
+        () =>
+            document
+                .querySelector('h1')
+                .closest('[class*="panel"]')
+                .parentElement.getBoundingClientRect().height / window.innerHeight,
+    );
+
+const recordTodayMetrics = async (p, label, rows) => {
+    const share = await todayCardShare(p);
+    todayMetrics.push({ label, share: `${(share * 100).toFixed(1)}%`, rows });
+    return share;
+};
+
+/** 固定版面嘅今日節目卡（連指示點）≤ PLAYER_MAX_SHARE */
+// 今日節目卡而家喺好多尺寸超過 66%（已回報，等版面決定）：暫時只標 WARN，唔當失敗
+const warn = (ok, msg) => console.log(`${ok ? 'PASS' : 'WARN'}  ${msg}`);
+
+const checkTodayCardShare = async (p, label) => {
+    const share = await todayCardShare(p);
+    warn(
+        share <= PLAYER_MAX_SHARE + 0.001,
+        `${label}：今日節目卡佔畫面高 ${(share * 100).toFixed(1)}%（目標 ≤ ${PLAYER_MAX_SHARE * 100}%）`,
+    );
+};
+
 /** 今日節目頁固定：捲輪 / scrollTo 都唔會捲成頁；清單太長就自己捲 */
 const checkFixedTodayPage = async (p, label) => {
     const list = p.getByRole('region', { name: '今日節目' }).getByRole('list');
     await checkTodayRows(list, label);
+    await checkTodayCardShare(p, label);
     const card = await p.getByRole('heading', { level: 1 }).boundingBox();
     await p.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
     await p.mouse.wheel(0, WHEEL_PX);
@@ -265,6 +299,7 @@ const checkScrollingTodayPage = async (p, label) => {
     const list = p.getByRole('region', { name: '今日節目' }).getByRole('list');
     const inner = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
     log(inner <= 1, `${label}：清單唔係內部捲動（多出 ${inner}px）`);
+    await recordTodayMetrics(p, label, '全部（成頁捲）');
     const forward = p.getByRole('button', { name: '前進 60 秒' });
     // 由節目頁轉過嚟時 window 可能停喺半格（-0.5px）位置，scrollIntoViewIfNeeded 會當睇到；直接置中
     await forward.evaluate((el) => el.scrollIntoView({ block: 'center' }));
@@ -706,6 +741,8 @@ try {
     }
     console.log('\n節目頁尺寸｜播放器佔高｜唱片｜清單行數');
     for (const m of metrics) console.log(`${m.label}｜${m.share}｜${m.disc}px｜${m.rows}`);
+    console.log('\n今日節目頁尺寸｜卡（連指示點）佔高｜清單行數');
+    for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.rows}`);
     console.log('');
 
     const light = await browser.newContext({
