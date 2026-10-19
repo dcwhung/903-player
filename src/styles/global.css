@@ -4,10 +4,30 @@
     box-sizing: border-box;
 }
 
+/*
+ * 固定殼：html / body / #root 一個畫面高，本身唔捲、唔橡筋（iOS standalone PWA 會成份文件拉走，
+ * 頁頭捲去 status bar 下面、底部露出深色帶）。真正會捲嘅只有清單 panel，
+ * 好矮嘅畫面就由 main 自己捲（Page.module.css .locked）。
+ * 用 100% 而唔用 100dvh：跟 ICB（即 innerHeight），唔會因為 dvh 同 viewport 對唔齊而多出一截。
+ */
+html,
+body,
+#root {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+/*
+ * canvas（home indicator 後面 / viewport 以外露出嚟嗰截）跟頁面底色，
+ * 由成頁 ThemeScope 經 usePageCanvas 設 --page-canvas
+ */
+html {
+    background: var(--page-canvas, var(--color-bg));
+}
+
 body {
     margin: 0;
-    min-height: 100dvh;
-    background: var(--color-bg);
     color: var(--color-text);
     font-family: var(--font-family);
     -webkit-font-smoothing: antialiased;

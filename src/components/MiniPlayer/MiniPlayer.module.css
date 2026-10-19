@@ -13,7 +13,8 @@
     background: var(--color-surface);
     box-shadow: var(--shadow-floating);
     color: var(--color-text);
-    touch-action: pan-y;
+    /* 浮喺頁面上面（position: fixed），後面冇嘢要捲：手勢全部交畀 useSwipe，iOS 唔會 pointercancel */
+    touch-action: none;
 }
 
 .row {
