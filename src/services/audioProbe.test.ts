@@ -424,6 +424,51 @@ describe('probeRecentRecordings', () => {
         expect(second).not.toHaveBeenCalledWith(urlFor('badgirl', '2026-10-19'));
     });
 
+    it('gives a miss recorded on the broadcast day itself its extra try too', async () => {
+        await probeRecentRecordings([], { probe: found([]), now: NOW });
+        const friday = daysAfter(NOW, 3);
+        const first = found([]);
+        const second = found([]);
+
+        await probeRecentRecordings([], { probe: first, now: friday });
+        await probeRecentRecordings([], {
+            probe: second,
+            now: new Date(friday.getTime() + PROBE_RETRY_MS),
+        });
+
+        // 20 號嘅 miss 係 20 號當日記低，23 號再試一次；之後已定，唔會隔 30 分鐘又試
+        expect(first).toHaveBeenCalledWith(urlFor('badgirl', '2026-10-20'));
+        expect(second).not.toHaveBeenCalledWith(urlFor('badgirl', '2026-10-20'));
+    });
+
+    describe('settled rule at the HK midnight boundary', () => {
+        const broadcast = urlFor('badgirl', '2026-10-19');
+        /** 記低 19 號 Bad Girl 喺 missedAt 搵唔到，再喺 PROBE_RETRY_MS 之後行一次 */
+        const retryAfterMissAt = async (missedAt: Date): Promise<AudioProber> => {
+            writeProbeState({ found: [], misses: { 'badgirl:2026-10-19': missedAt.getTime() } });
+            const probe = found([]);
+            await probeRecentRecordings([], {
+                probe,
+                now: new Date(missedAt.getTime() + PROBE_RETRY_MS),
+            });
+            return probe;
+        };
+
+        it('treats a miss at broadcast + 1 day, HK 23:59, as recent (30-minute retry)', async () => {
+            // UTC 15:59 = 香港 20 號 23:59
+            const probe = await retryAfterMissAt(new Date('2026-10-20T15:59:00Z'));
+
+            expect(probe).toHaveBeenCalledWith(broadcast);
+        });
+
+        it('treats a miss at broadcast + 2 days, HK 00:00, as settled (no 30-minute retry)', async () => {
+            // UTC 16:00 = 香港 21 號 00:00
+            const probe = await retryAfterMissAt(new Date('2026-10-20T16:00:00Z'));
+
+            expect(probe).not.toHaveBeenCalledWith(broadcast);
+        });
+    });
+
     describe('settled misses', () => {
         const settled = urlFor('badgirl', '2026-10-16');
 
@@ -462,9 +507,24 @@ describe('probeRecentRecordings', () => {
 
         await probeRecentRecordings([], { probe: found([]), now: daysAfter(NOW, 15) });
 
-        const dates = Object.keys(readProbeState().misses).map(dateFromShowDateKey);
-        // 15 日後（11 月 4 號）只保留 10 月 22 號至 11 月 4 號
-        expect(dates.every((date) => date >= '2026-10-22')).toBe(true);
+        const dates = new Set(Object.keys(readProbeState().misses).map(dateFromShowDateKey));
+        // 15 日後（11 月 4 號（三）12:00）只保留 10 月 22 號至 11 月 4 號有節目嘅日子（星期日冇）
+        expect(dates).toEqual(
+            new Set([
+                '2026-10-22',
+                '2026-10-23',
+                '2026-10-24',
+                '2026-10-26',
+                '2026-10-27',
+                '2026-10-28',
+                '2026-10-29',
+                '2026-10-30',
+                '2026-10-31',
+                '2026-11-02',
+                '2026-11-03',
+                '2026-11-04',
+            ]),
+        );
     });
 
     describe('progress during a run', () => {
