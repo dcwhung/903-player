@@ -1,12 +1,20 @@
+import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
 
 const BASE_PATH = '/903-player/';
 const THEME_COLOR = '#141414';
+// package.json 係版本嘅唯一來源；build 時注入，唔使 runtime fetch
+const PACKAGE_JSON = new URL('./package.json', import.meta.url);
+const { version: APP_VERSION } = JSON.parse(readFileSync(PACKAGE_JSON, 'utf8')) as {
+    version: string;
+};
 
 export default defineConfig({
     base: BASE_PATH,
+    // Vitest 共用呢份 config，所以測試都睇到同一個 define
+    define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
     plugins: [
         react(),
         VitePWA({

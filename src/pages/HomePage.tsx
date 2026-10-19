@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
+import { AppVersion } from '../components/AppVersion/AppVersion';
 import { RadioIcon } from '../components/icons/icons';
 import { MiniPlayer } from '../components/MiniPlayer/MiniPlayer';
 import { ShowTile } from '../components/ShowTile/ShowTile';
+import { APP_VERSION } from '../config/appVersion';
 import { SHOW_THEMES } from '../config/showThemes';
 import { SHOWS } from '../config/shows';
 import { useRecordings } from '../data/useRecordings';
@@ -55,6 +57,7 @@ export const HomePage = () => {
                     }}
                 />
             </nav>
+            <AppVersion version={APP_VERSION} />
             {miniPlayer && <MiniPlayer {...miniPlayer} />}
         </main>
     );
