@@ -229,3 +229,24 @@ describe('readNextPageUrl stays on the same list', () => {
         );
     });
 });
+
+describe('readNextPageUrl active item markup', () => {
+    const current = 'https://hkfm903.live/?page=1';
+
+    it('supports an active <a> inside an <li>', () => {
+        const html = `<ul class="pagination">
+            <li><a class="active" href="/?page=1">1</a></li>
+            <li><a href="/?page=2">2</a></li>
+        </ul>`;
+
+        expect(readNextPageUrl(html, current)).toBe('https://hkfm903.live/?page=2');
+    });
+
+    it('supports sibling <a> elements with an active one', () => {
+        const html = `<div class="pagination">
+            <a class="active" href="/?page=1">1</a><a href="/?page=2">2</a>
+        </div>`;
+
+        expect(readNextPageUrl(html, current)).toBe('https://hkfm903.live/?page=2');
+    });
+});

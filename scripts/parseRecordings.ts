@@ -166,9 +166,14 @@ const pageNumberOf = (url: string): number => {
 /** 模式 1：<a rel="next"> */
 const relNextHref = ($: CheerioAPI): string | undefined => $('a[rel~="next"]').first().attr('href');
 
-/** 模式 2：.pagination 入面 active 嗰項之後嘅連結（Bootstrap 嘅 li.active 或者 a.active） */
+/**
+ * 模式 2：.pagination 入面 active 嗰項之後嘅連結。
+ * 支援 li.active、li > a.active（跳上 li 再搵下一項）同埋並排嘅 a.active。
+ */
 const afterActiveHref = ($: CheerioAPI): string | undefined => {
-    const next = $('.pagination .active').first().next();
+    const active = $('.pagination .active').first();
+    const item = active.closest('li');
+    const next = (item.length > 0 ? item : active).next();
     return next.is('a') ? next.attr('href') : next.find('a').first().attr('href');
 };
 
