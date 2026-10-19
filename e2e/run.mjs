@@ -1,7 +1,7 @@
 // 端對端測試：真 Chromium + vite preview + 假錄音列表 + 模擬 audio server（支援 Range）
 // 用法：npm run e2e（截圖輸出去 e2e/screenshots/）
 import { spawn } from 'node:child_process';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { silenceWav } from './silenceWav.mjs';
 
@@ -11,6 +11,8 @@ const OUT = new URL('./screenshots', import.meta.url).pathname;
 const AUDIO_SECONDS = 600;
 const wav = silenceWav(AUDIO_SECONDS);
 mkdirSync(OUT, { recursive: true });
+
+const APP_VERSION_TEXT = `v${JSON.parse(readFileSync(new URL('../package.json', import.meta.url))).version}`;
 
 let failures = 0;
 const log = (ok, msg) => {
@@ -36,6 +38,19 @@ const startPreview = async () => {
     }
     server.kill();
     throw new Error('vite preview did not start');
+};
+
+/** 版本號要見到，而且喺 mini player 上面（捲到底都唔會畀佢遮住） */
+const checkVersionClear = async (p, label) => {
+    const version = p.getByText(APP_VERSION_TEXT, { exact: true });
+    await p.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const v = await version.boundingBox();
+    const m = await p.getByRole('region', { name: '正在播放（今日節目）' }).boundingBox();
+    const ok = (await version.isVisible()) && v !== null && m !== null && v.y + v.height <= m.y;
+    log(
+        ok,
+        `${label}：版本號 ${APP_VERSION_TEXT} 喺 mini player 上面（底 ${v?.y + v?.height} ≤ ${m?.y}）`,
+    );
 };
 
 const server = await startPreview();
@@ -200,11 +215,16 @@ try {
         page.url().endsWith('#/') && backState === 'playing' && miniText.includes('雲妮鍾情'),
         `播緊今日節目用返回手勢返主頁會繼續播，mini player 顯示：${backState} / ${miniText}`,
     );
+    await checkVersionClear(page, '390×844');
     await page.screenshot({ path: `${OUT}/7-home-mini-player.png` });
 
     const narrow = await browser.newContext({ viewport: { width: 320, height: 640 } });
     await narrow.route('https://audio.hkfm903.live/**', serveAudio);
     const np = await narrow.newPage();
+    await np.goto(BASE);
+    await np.waitForSelector('nav[aria-busy="false"]');
+    await checkVersionClear(np, '320×640');
+    await np.screenshot({ path: `${OUT}/8-home-version-320.png` });
     for (const route of ['#/show/gongzi', '#/today']) {
         await np.goto(`${BASE}${route}`);
         await np.getByRole('button', { name: '前進 60 秒' }).waitFor();
