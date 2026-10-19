@@ -1,7 +1,10 @@
+/* 填滿今日節目頁剩低嘅高度；min-height: 0 先縮得細過內容，等清單自己捲 */
 .section {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     width: 100%;
+    min-height: 0;
     padding: 0 var(--space-4);
 }
 
@@ -14,9 +17,17 @@
     color: var(--color-text-muted);
 }
 
+/*
+ * 唯一捲動嘅 panel：捲到盡頭唔會帶動成頁（iOS 橡筋效果）；底部留 home indicator 位。
+ * 好矮嘅畫面（≤ 561px，Page.module.css）成頁捲，冇高度上限，自然唔會變成內部捲動。
+ */
 .list {
+    flex: 1 1 auto;
+    min-height: 0;
     margin: 0;
-    padding: 0;
+    padding: 0 0 calc(env(safe-area-inset-bottom) + var(--space-2));
+    overflow-y: auto;
+    overscroll-behavior: contain;
     list-style: none;
 }
 

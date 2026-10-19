@@ -79,8 +79,6 @@ const SWIPE_FROM_PX = 120;
 // 同 tokens.css 嘅 --player-disc-min 同 Page.module.css 嘅成頁捲斷點（max-height）一致
 const DISC_MIN_PX = 160;
 const SHORT_HEIGHT_PX = 561;
-// 今日節目頁同主頁一直用 --space-5 間距
-const TODAY_GAP = '20px';
 const SHOW_VIEWPORTS = [
     { width: 390, height: 844, swipe: true },
     { width: 320, height: 568, swipe: true },
@@ -177,21 +175,64 @@ const checkControlsInView = async (p, label) => {
 const checkDiscMatchesToday = async (p, label) => {
     const discWidth = async () =>
         (await p.getByRole('slider', { name: '播放進度' }).boundingBox()).width;
+    const pageGaps = () =>
+        p.evaluate(() =>
+            [document.querySelector('main'), document.querySelector('[class*="panel"]')]
+                .map((el) => getComputedStyle(el).rowGap)
+                .join(' / '),
+        );
     const show = await discWidth();
+    const showGaps = await pageGaps();
     await p.goto(`${BASE}#/today`);
     await p.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
     const today = await discWidth();
     log(Math.abs(show - today) < 1, `${label}：唱片同今日節目頁一樣大（${show} / ${today}）`);
-    // 節目頁矮螢幕收窄嘅間距唔可以漏去今日節目頁
-    const gaps = await p.evaluate(() =>
-        [document.querySelector('main'), document.querySelector('[class*="panel"]')].map(
-            (el) => getComputedStyle(el).rowGap,
-        ),
-    );
+    // 今日節目頁同節目頁用同一個固定版面（.fixed），矮螢幕一齊收窄間距
+    const todayGaps = await pageGaps();
+    log(todayGaps === showGaps, `${label}：今日節目頁間距同節目頁一樣（${todayGaps}）`);
+};
+
+/** 今日節目頁固定：捲輪 / scrollTo 都唔會捲成頁；清單太長就自己捲 */
+const checkFixedTodayPage = async (p, label) => {
+    const list = p.getByRole('region', { name: '今日節目' }).getByRole('list');
+    const card = await p.getByRole('heading', { level: 1 }).boundingBox();
+    await p.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
+    await p.mouse.wheel(0, WHEEL_PX);
+    await p.evaluate(() => window.scrollTo(0, 500));
+    await p.waitForTimeout(300);
+    const page = await p.evaluate(() => ({
+        scrollY: window.scrollY,
+        overflow: document.documentElement.scrollHeight - window.innerHeight,
+    }));
+    log(page.scrollY === 0 && page.overflow <= 0, `${label}：成頁唔捲（${JSON.stringify(page)}）`);
+    const extra = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
+    const box = await list.boundingBox();
+    await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await p.mouse.wheel(0, WHEEL_PX);
+    await p.waitForTimeout(600);
+    const scrolled = await list.evaluate((el) => el.scrollTop);
+    const after = await p.evaluate(() => window.scrollY);
     log(
-        gaps.every((g) => g === TODAY_GAP),
-        `${label}：今日節目頁間距不變（${gaps.join(' / ')}）`,
+        (extra <= 1 || scrolled > 0) && after === 0,
+        `${label}：清單自己捲（多出 ${extra}px，scrollTop ${scrolled}，window ${after}）`,
     );
+    await checkControlsInView(p, label);
+};
+
+/** 好矮嘅畫面：今日節目頁好似節目頁咁成頁捲，清單唔係內部捲動，控制掣捲得到 */
+const checkScrollingTodayPage = async (p, label) => {
+    const list = p.getByRole('region', { name: '今日節目' }).getByRole('list');
+    const inner = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
+    log(inner <= 1, `${label}：清單唔係內部捲動（多出 ${inner}px）`);
+    const forward = p.getByRole('button', { name: '前進 60 秒' });
+    // 由節目頁轉過嚟時 window 可能停喺半格（-0.5px）位置，scrollIntoViewIfNeeded 會當睇到；直接置中
+    await forward.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    const b = await forward.boundingBox();
+    const overflow = await p.evaluate(
+        () => document.documentElement.scrollHeight - window.innerHeight,
+    );
+    const inView = b !== null && b.y >= 0 && b.y + b.height <= p.viewportSize().height;
+    log(overflow > 0 && inView, `${label}：成頁捲得、控制掣捲得到（可捲 ${overflow}px）`);
 };
 
 /** 喺唱片下面嘅日期 / 節目名區向左掃 → 播放中轉去下一行（舊一集） */
@@ -533,6 +574,12 @@ try {
         if (height > SHORT_HEIGHT_PX) await checkFixedShowPage(fp, label, shot);
         else await checkScrollingShowPage(fp, label, shot);
         await checkDiscMatchesToday(fp, label);
+        // checkDiscMatchesToday 之後已經喺今日節目頁：同樣夠高就固定，好矮就成頁捲
+        const todayLabel = `${width}×${height} 今日節目頁`;
+        await fp.waitForTimeout(500);
+        if (height > SHORT_HEIGHT_PX) await checkFixedTodayPage(fp, todayLabel);
+        else await checkScrollingTodayPage(fp, todayLabel);
+        await fp.screenshot({ path: `${OUT}/today-${width}x${height}.png` });
         await ctx.close();
     }
 

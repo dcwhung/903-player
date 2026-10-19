@@ -12,6 +12,8 @@
     --card-return: 0;
 
     display: grid;
+    /* 固定版面（Page.module.css .fixed）入面唔縮，剩低嘅高度留畀今日節目清單捲 */
+    flex-shrink: 0;
     width: 100%;
     padding: 0 var(--space-4) calc(var(--card-stack-offset) * 2);
     overflow: hidden;
@@ -50,7 +52,7 @@
 
 /* 最上面嗰張：真播放器，跟手指移動同傾斜 */
 .top {
-    padding: var(--space-5) 0;
+    padding: var(--player-panel-gap, var(--space-5)) 0;
     background: var(--color-bg);
     box-shadow: var(--shadow-card);
     transform: translateX(var(--card-dx)) rotate(var(--card-rotate));
@@ -106,9 +108,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-5);
+    gap: var(--player-panel-gap, var(--space-5));
     height: 100%;
-    padding: var(--space-5) 0;
+    padding: var(--player-panel-gap, var(--space-5)) 0;
     border-radius: inherit;
     background: var(--color-bg);
     box-shadow: var(--shadow-card);

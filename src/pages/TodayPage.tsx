@@ -19,7 +19,7 @@ export const TodayPage = () => {
 
     return (
         <ThemeScope theme={theme}>
-            <main className={page.page}>
+            <main className={`${page.page} ${page.fixed}`}>
                 <div className={page.header}>
                     <PageHeader title={t('today.title')} onBack={goHome} />
                 </div>
