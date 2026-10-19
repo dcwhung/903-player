@@ -86,7 +86,7 @@ export class AudioController {
     seek = (seconds: number): void => {
         const target = clamp(seconds, this.audio.duration);
         // metadata 未到時記低目標，等 loadedmetadata 先套用（否則會由 0 起計）
-        this.pendingStart = Number.isFinite(this.audio.duration) ? 0 : target;
+        this.pendingStart = this.hasMetadata() ? 0 : target;
         this.audio.currentTime = target;
         this.update({ currentTime: target });
         this.persist();
@@ -108,6 +108,11 @@ export class AudioController {
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
     }
 
+    /** metadata 未到時 duration 係 NaN；串流可能係 Infinity，都當已載入 */
+    private hasMetadata(): boolean {
+        return !Number.isNaN(this.audio.duration);
+    }
+
     /** 已聽過、已暫停而停喺尾段：再入嚟就由頭播 */
     private isParkedAtEnd(): boolean {
         return (
@@ -121,7 +126,7 @@ export class AudioController {
         this.lastSavedAt = Date.now();
         const { recording } = this.state;
         // 未 loadedmetadata 前 currentTime 已被 reset 做 0，存落去會洗走續播位置
-        if (!recording || !Number.isFinite(this.audio.duration)) {
+        if (!recording || !this.hasMetadata()) {
             return;
         }
         const progress = saveProgress(recording.url, this.audio.currentTime, this.audio.duration);
@@ -141,7 +146,7 @@ export class AudioController {
 
     private onTimeUpdate = (): void => {
         // 換 src 時瀏覽器會發一次 currentTime = 0 嘅 timeupdate；metadata 未到嘅位置唔可信
-        if (!Number.isFinite(this.audio.duration)) {
+        if (!this.hasMetadata()) {
             return;
         }
         this.update({ currentTime: this.audio.currentTime });

@@ -225,6 +225,18 @@ describe('usePlayer', () => {
         expect(getProgress(other.url)?.position).toBe(100);
     });
 
+    it('keeps tracking time when the browser reports an infinite duration', async () => {
+        const { audio, result } = setup();
+        await act(async () => result.current.load(RECORDING));
+        act(() => audio.emitMetadata(Number.POSITIVE_INFINITY));
+
+        act(() => audio.emitTime(60));
+        act(() => result.current.stop());
+
+        expect(result.current.currentTime).toBe(60);
+        expect(getProgress(RECORDING.url)?.position).toBe(60);
+    });
+
     it('does not restart a watched episode that is still playing', async () => {
         const { audio, result } = setup();
         await act(async () => result.current.load(RECORDING, { autoplay: true }));
