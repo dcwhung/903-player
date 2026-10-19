@@ -95,6 +95,36 @@ describe('ShowPage', () => {
         expect(zone).toHaveAccessibleName('10/10（六） 公子會');
     });
 
+    it('does not announce an episode change made by tapping a row after a swipe', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+        const announcer = screen.getByRole('status');
+        swipe(screen.getByRole('group', SWIPE_ZONE), -SWIPE_PX);
+        await waitFor(() => expect(announcer).toHaveTextContent('已轉到 10/10（六）'));
+
+        await userEvent.click(screen.getByRole('button', { name: /^播放 03\/10/ }));
+
+        expect(currentRow()).toHaveAccessibleName(/^播放 03\/10/);
+        expect(announcer).toBeEmptyDOMElement();
+    });
+
+    it('announces nothing when a swipe at either end changes nothing', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+        const zone = screen.getByRole('group', SWIPE_ZONE);
+        const announcer = screen.getByRole('status');
+
+        // 最新一集再向右掃：唔郁，之後撳清單轉集都唔應該當係掃出嚟
+        swipe(zone, SWIPE_PX);
+        expect(announcer).toBeEmptyDOMElement();
+        await userEvent.click(screen.getByRole('button', { name: /^播放 03\/10/ }));
+        expect(announcer).toBeEmptyDOMElement();
+
+        // 最舊一集再向左掃
+        swipe(zone, -SWIPE_PX);
+        expect(announcer).toBeEmptyDOMElement();
+    });
+
     it('plays the next newer episode on a right swipe and stops at either end', async () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
