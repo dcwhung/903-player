@@ -20,7 +20,7 @@ export const DateStrip = ({ title, ...options }: DateStripProps) => {
             <div ref={trackRef} className={styles.track}>
                 <SideCell direction="previous" date={neighbours.newer} onPick={go} />
                 <span className={`${styles.cell} ${styles.current}`}>
-                    <span className={styles.label}>{t('player.nowPlaying')}</span>
+                    <span className={styles.label}>{t('episodes.nowPlayingLabel')}</span>
                     <span id={ids.date}>{dateLabel}</span>
                 </span>
                 <SideCell direction="next" date={neighbours.older} onPick={go} />
