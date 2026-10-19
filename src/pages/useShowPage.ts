@@ -50,13 +50,13 @@ export const useShowPage = (showId: string) => {
     useAutoplayShow(show, playing !== null);
 
     // 轉集或者有集數變成聽過先重新讀 localStorage
+    const currentUrl = current?.url;
     const progressMap = useMemo(
-        () => getProgressMap(player.watchedRevision),
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- current 係 invalidation key（轉集時剛存咗進度）
-        [player.watchedRevision, current?.url],
+        () => getProgressMap(player.watchedRevision, currentUrl),
+        [player.watchedRevision, currentUrl],
     );
     const live = { currentTime: player.currentTime, duration: player.duration };
-    const episodeItems = toEpisodeItems(episodes, current?.url, live, progressMap);
+    const episodeItems = toEpisodeItems(episodes, currentUrl, live, progressMap);
 
     const selectEpisode = (url: string) => {
         const recording = episodes.find((r) => r.url === url);

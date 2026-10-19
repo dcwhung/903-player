@@ -51,9 +51,12 @@ export const isWatched = (url: string): boolean => getProgress(url)?.watched ?? 
 
 /**
  * 一次過讀晒所有進度（集數清單用）。
- * `_revision` 只用嚟做 useMemo 嘅 invalidation key。
+ * `_revision` 同 `_currentUrl` 只用嚟做 useMemo 嘅 invalidation key（轉集時剛存咗進度）。
  */
-export const getProgressMap = (_revision?: number): Readonly<Record<string, Progress>> => readAll();
+export const getProgressMap = (
+    _revision?: number,
+    _currentUrl?: string,
+): Readonly<Record<string, Progress>> => readAll();
 
 /**
  * 一次過讀晒所有聽過嘅 URL，避免每個項目都 parse 一次 localStorage。
