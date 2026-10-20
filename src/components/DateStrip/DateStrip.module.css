@@ -4,9 +4,24 @@
  * touch-action: pinch-zoom（舊瀏覽器 none）：固定版面冇嘢好直向捲，所有單指手勢交畀 pointer events
  * （pan-y 會令 iOS 喺手指有少少直向郁時開始原生 pan、pointercancel）
  */
+/* 「現正播放」標籤 + 日子條：兩者貼埋（唔用播放器嘅間距），成組喺播放器入面佔滿闊度 */
+.group {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+}
+
+/* 標籤高度固定（--date-strip-label-height），tokens.css 嘅播放器高度計法有計埋 */
+.label {
+    color: var(--color-accent);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    line-height: var(--date-strip-label-height);
+    text-align: center;
+}
+
 .strip {
     position: relative;
-    align-self: stretch;
     height: var(--date-strip-height);
     overflow: hidden;
     border-radius: var(--radius-md);
@@ -101,7 +116,7 @@
     justify-content: flex-start;
 }
 
-/* 320px 闊都要一行放得落「現正播放：16/10（五）」 */
+/* 中格日期跟螢幕闊度放大縮細 */
 .current {
     flex-basis: 50%;
     justify-content: center;
@@ -113,14 +128,9 @@
         font-size var(--duration-strip) var(--ease-strip);
 }
 
-.label {
-    color: var(--color-accent);
-    transition: opacity var(--duration-strip) var(--ease-strip);
-}
-
 /*
  * 轉集滑入嘅起點（useStripMotion 嘅 data-arriving = 轉集方向，套用完即刻拎走）：
- * 新中格扮返側格（細字、淡色、「現正播放：」透明）；得由畫面外滑入嗰邊嘅側格係新嘅，未出現
+ * 新中格扮返側格（細字、淡色）；得由畫面外滑入嗰邊嘅側格係新嘅，未出現
  * （next = 右邊舊一集，previous = 左邊新一集）；另一邊係啱啱嘅中格日期，照顯示。
  * transition: none 令起點即刻生效，拎走之後用返上面嘅 transition，一路滑一路變返正常樣式
  */
@@ -129,14 +139,12 @@
     font-size: var(--font-size-xs);
 }
 
-.track[data-arriving] .label,
 .track[data-arriving='next'] .older,
 .track[data-arriving='previous'] .newer {
     opacity: 0;
 }
 
 .track[data-arriving] .current,
-.track[data-arriving] .label,
 .track[data-arriving] .side {
     transition: none;
 }
@@ -154,7 +162,6 @@
 @media (prefers-reduced-motion: reduce) {
     .track,
     .current,
-    .label,
     .side {
         transition: none;
     }

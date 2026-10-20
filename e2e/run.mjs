@@ -447,16 +447,22 @@ const checkSwipeToOlder = async (p, dragShot) => {
     log(playing === 'playing', `掃完即刻播：${playing}`);
 };
 
-/** 節目頁頁頭係節目名（唔再係「正在播放」），日子條中間讀「現正播放：日期」 */
+/** 節目頁頁頭係節目名（唔再係「正在播放」），日子條上面有「現正播放」、中間係日期 */
 const checkShowHeader = async (p, name, label) => {
     const heading = await p.locator('header h1').textContent();
     const stale = await p.getByText('正在播放', { exact: true }).count();
     log(heading === name && stale === 0, `${label}：頁頭係節目名「${heading}」`);
-    const line = await p.locator(STRIP).evaluate((el) => {
+    const { above, line } = await p.locator(STRIP).evaluate((el) => {
         const dateId = el.getAttribute('aria-labelledby').split(' ')[0];
-        return document.getElementById(dateId).parentElement.textContent;
+        return {
+            above: el.previousElementSibling?.textContent,
+            line: document.getElementById(dateId).parentElement.textContent,
+        };
     });
-    log(/^現正播放：\d{2}\/\d{2}（.）$/.test(line), `${label}：日子條讀「${line}」`);
+    log(
+        above === '現正播放' && /^\d{2}\/\d{2}（.）$/.test(line),
+        `${label}：日子條上面「${above}」、中間「${line}」`,
+    );
 };
 
 /** 日子條側格嘅日期唔可以畀剪走（320px 闊會收埋箭咀） */

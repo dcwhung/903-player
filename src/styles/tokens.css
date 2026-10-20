@@ -54,6 +54,11 @@
     --player-disc-size: min(300px, 78vw);
     /* 節目頁唱片下面嘅日子條：一行高（側格係掣，用足觸控高度）、兩邊淡出闊度 */
     --date-strip-height: var(--touch-target);
+    /*
+     * 日子條上面「現正播放」標籤一行嘅高度（line-height）：標籤 + 日子條 = 60px，
+     * 啱啱等於播放器高度計法唱片下面嗰行嘅下限，矮螢幕斷點（561px）唔使改
+     */
+    --date-strip-label-height: 16px;
     --date-strip-fade: var(--space-8);
 
     /* 今日節目卡疊（ShowCardStack）：每疊後一層向下移、縮細、變淡幾多（第一張後面嘅卡 scale 0.92） */
@@ -168,7 +173,8 @@
          * 1. 頂部安全區 + 頁頂 padding（--space-4）
          * 2. 頁頭返回掣（--touch-target）
          * 3. 4 個間距（頁：頁頭↔播放器↔清單；播放器：唱片↔標題↔控制掣）
-         * 4. 唱片下面嗰行：取日子條（--date-strip-height）同 60px 較大嗰個。
+         * 4. 唱片下面嗰行：取「現正播放」標籤 + 日子條（--date-strip-label-height +
+         *    --date-strip-height）同 60px 較大嗰個。
          *    兩頁共用同一隻唱片；今日節目頁唱片下面有卡入面嘅節目名（36px）+ 卡底留白，
          *    卡外再有卡疊底（後面卡露出嚟）同指示點（24px），比節目頁日子條高。
          *    60px 係保留落嚟嘅下限：如果只預留日子條，矮螢幕（例如 320×568）唱片會變大，
@@ -183,14 +189,16 @@
          */
         --player-reserved-height: calc(
             env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 4 *
-                var(--fixed-page-gap) + max(var(--date-strip-height), 60px) + 76px + 30px + 2 *
-                56px + var(--space-2) + env(safe-area-inset-bottom)
+                var(--fixed-page-gap) +
+                max(var(--date-strip-label-height) + var(--date-strip-height), 60px) + 76px + 30px +
+                2 * 56px + var(--space-2) + env(safe-area-inset-bottom)
         );
         /* 成個播放器最多佔幾高：殼高 × --player-max-share */
         --player-max-height: calc(var(--player-shell-height) * var(--player-max-share));
-        /* 播放器入面唱片以外嘅高度：2 個間距 + 日子條 + 播放掣真實尺寸（跟 clamp 縮放） */
+        /* 播放器入面唱片以外嘅高度：2 個間距 + 標籤 + 日子條 + 播放掣真實尺寸（跟 clamp 縮放） */
         --player-chrome-height: calc(
-            2 * var(--fixed-page-gap) + var(--date-strip-height) + var(--player-toggle-size)
+            2 * var(--fixed-page-gap) + var(--date-strip-label-height) + var(--date-strip-height) +
+                var(--player-toggle-size)
         );
         /* 唱片 + 時間嗰一格嘅高 = 闊 × 316 / 300（PlayerPanel .gauge aspect-ratio） */
         /* 下限都唔可以闊過 78vw（極窄 / 高倍放大時避免橫向超出） */

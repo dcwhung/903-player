@@ -1,6 +1,10 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
+import {
+    DISC_SCRUB_FAST_DEGREES_PER_MS,
+    DISC_SCRUB_SLOW_DEGREES_PER_MS,
+} from '../../config/constants';
 import { usePlayer } from '../../player/usePlayer';
 import { PlayerGauge } from './PlayerGauge';
 
@@ -10,6 +14,15 @@ const DURATION = 600;
 const DISC_SIZE = 200;
 const CENTER = DISC_SIZE / 2;
 const TURN_STEP = 30;
+/**
+ * 捽碟計手指轉速用 event.timeStamp（jsdom = Date.now()）：每步之間推前假時鐘。
+ * 慢 = 啱啱好喺微調轉速（每圈 60 秒）；快 = 加速上限（每圈 600 秒）
+ */
+const SLOW_STEP_MS = TURN_STEP / DISC_SCRUB_SLOW_DEGREES_PER_MS;
+const FAST_STEP_MS = TURN_STEP / DISC_SCRUB_FAST_DEGREES_PER_MS;
+/** spindle 嗰個 test 每步 45°，都要慢 */
+const SPINDLE_TEST_STEP = 45;
+const SPINDLE_TEST_STEP_MS = SPINDLE_TEST_STEP / DISC_SCRUB_SLOW_DEGREES_PER_MS;
 
 const Harness = ({ onOuterPointer }: { onOuterPointer: () => void }) => {
     const player = usePlayer();
@@ -53,13 +66,23 @@ const setup = async (currentTime = 100) => {
     return { audio, disc, face, slider, onOuterPointer };
 };
 
+/** 隔 stepMs 先郁（假時鐘推前），默認慢慢郁 */
+const move = (
+    disc: HTMLElement,
+    point: { clientX: number; clientY: number },
+    stepMs = SLOW_STEP_MS,
+) => {
+    vi.advanceTimersByTime(stepMs);
+    fireEvent.pointerMove(disc, { ...point, pointerId: 1 });
+};
+
 /** 由 from 度轉去 to 度（相差係 30° 倍數），每步 30°，唔放手；順時針為正 */
-const turn = (disc: HTMLElement, from: number, to: number) => {
+const turn = (disc: HTMLElement, from: number, to: number, stepMs = SLOW_STEP_MS) => {
     const step = Math.sign(to - from) * TURN_STEP;
     fireEvent.pointerDown(disc, { ...rim(from), pointerId: 1 });
     for (let angle = from; angle !== to;) {
         angle += step;
-        fireEvent.pointerMove(disc, { ...rim(angle), pointerId: 1 });
+        move(disc, rim(angle), stepMs);
     }
 };
 
@@ -70,8 +93,12 @@ const faceDegrees = (face: HTMLElement): number =>
 const release = (disc: HTMLElement, at: number) =>
     fireEvent.pointerUp(disc, { ...rim(at), pointerId: 1 });
 
+// 只假 Date（event.timeStamp），setTimeout 照用真嘅
+beforeEach(() => vi.useFakeTimers({ toFake: ['Date'] }));
+afterEach(() => vi.useRealTimers());
+
 describe('PlayerGauge disc scrub', () => {
-    it('previews while the disc is turned and seeks on release (a turn is 60 seconds)', async () => {
+    it('previews while the disc is turned slowly and seeks on release (a turn is 60 seconds)', async () => {
         const { audio, disc, face, slider } = await setup();
 
         turn(disc, 0, 90);
@@ -82,6 +109,16 @@ describe('PlayerGauge disc scrub', () => {
 
         release(disc, 90);
         expect(audio.currentTime).toBeCloseTo(115);
+    });
+
+    it('speeds up to 10 minutes a turn when the disc is flicked fast', async () => {
+        const { audio, disc, face } = await setup();
+
+        turn(disc, 0, 90, FAST_STEP_MS);
+        release(disc, 90);
+
+        expect(audio.currentTime).toBeCloseTo(250);
+        expect(faceDegrees(face)).toBeCloseTo(90);
     });
 
     it('turns backwards when rubbed anticlockwise', async () => {
@@ -106,7 +143,7 @@ describe('PlayerGauge disc scrub', () => {
         const { audio, disc } = await setup();
 
         fireEvent.pointerDown(disc, { ...rim(0), pointerId: 1 });
-        fireEvent.pointerMove(disc, { ...rim(3), pointerId: 1 });
+        move(disc, rim(3));
         release(disc, 3);
 
         expect(audio.currentTime).toBe(100);
@@ -116,10 +153,10 @@ describe('PlayerGauge disc scrub', () => {
         const { audio, disc } = await setup();
 
         fireEvent.pointerDown(disc, { clientX: CENTER + 5, clientY: CENTER, pointerId: 1 });
-        fireEvent.pointerMove(disc, { clientX: CENTER, clientY: CENTER + 5, pointerId: 1 });
-        fireEvent.pointerMove(disc, { ...rim(0), pointerId: 1 });
-        fireEvent.pointerMove(disc, { ...rim(45), pointerId: 1 });
-        fireEvent.pointerMove(disc, { ...rim(90), pointerId: 1 });
+        move(disc, { clientX: CENTER, clientY: CENTER + 5 });
+        move(disc, rim(0));
+        move(disc, rim(SPINDLE_TEST_STEP), SPINDLE_TEST_STEP_MS);
+        move(disc, rim(SPINDLE_TEST_STEP * 2), SPINDLE_TEST_STEP_MS);
         release(disc, 90);
 
         expect(audio.currentTime).toBeCloseTo(115);

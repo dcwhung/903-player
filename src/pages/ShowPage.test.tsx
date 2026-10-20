@@ -56,7 +56,8 @@ describe('ShowPage', () => {
         await userEvent.click(screen.getByRole('button', { name: /^播放 10\/10/ }));
 
         const date = screen.getByText('10/10（六）');
-        expect(date.parentElement).toHaveTextContent('現正播放：10/10（六）');
+        expect(date.parentElement).toHaveTextContent(/^10\/10（六）$/);
+        expect(screen.getByText('現正播放')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '新一集 17/10（六）' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '舊一集 03/10（六）' })).toBeInTheDocument();
     });

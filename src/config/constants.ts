@@ -18,8 +18,14 @@ export const ARC_SWEEP_DEGREES = 270;
 /** 錄音檔只可以嚟自原站 audio host */
 export const ALLOWED_AUDIO_ORIGIN = 'https://audio.hkfm903.live';
 
-/** 捽碟：順時針轉一圈 = 向前 60 秒（微調；粗調用弧形） */
-export const DISC_SCRUB_SECONDS_PER_TURN = 60;
+/**
+ * 捽碟加速：慢慢捽轉一圈 = 60 秒（微調），捽得快每圈最多 = 10 分鐘（粗調）；
+ * 手指轉速（度 / 毫秒）喺 SLOW 至 FAST 之間線性加速
+ */
+export const DISC_SCRUB_MIN_SECONDS_PER_TURN = 60;
+export const DISC_SCRUB_MAX_SECONDS_PER_TURN = 600;
+export const DISC_SCRUB_SLOW_DEGREES_PER_MS = 0.15;
+export const DISC_SCRUB_FAST_DEGREES_PER_MS = 1.35;
 /** 離圓心半徑兩成以內（spindle 附近）角度唔穩定，唔計 */
 export const DISC_SCRUB_DEAD_ZONE_RATIO = 0.2;
 /** 轉少過呢個角度當係 tap，唔 seek */
