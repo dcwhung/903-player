@@ -193,6 +193,9 @@ const checkCardDragNeverSeeks = async (cdp, p, log, label) => {
     );
 };
 
+/** 秒數差加正負號：+15s / -100s（唔會出 +-100s） */
+const signedSeconds = (seconds) => `${seconds >= 0 ? '+' : ''}${seconds}s`;
+
 /** 圓周上某個角度嘅點（0° 指向右，順時針為正） */
 const circlePoint = (centre, radius, degrees) => {
     const radians = (degrees * Math.PI) / 180;
@@ -273,7 +276,7 @@ const checkTwoFingerSingleSeek = async (cdp, p, log, label) => {
     const moved = Number(await slider.getAttribute('aria-valuenow')) - before;
     log(
         Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S,
-        `${label}：兩隻手指撳碟同弧形，只跟捽碟 seek（+${moved}s，預期約 +${DISC_QUARTER_TURN_S}s）`,
+        `${label}：兩隻手指撳碟同弧形，只跟捽碟 seek（${signedSeconds(moved)}，預期約 +${DISC_QUARTER_TURN_S}s）`,
     );
 };
 
@@ -455,7 +458,7 @@ const checkReducedMotion = async (env, label) => {
     const transform = await face.evaluate((el) => el.style.transform);
     log(
         transform === '' && Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S,
-        `${label}：捽碟唔跟手指轉（transform「${transform}」）但照樣 seek（+${moved}s）`,
+        `${label}：捽碟唔跟手指轉（transform「${transform}」）但照樣 seek（${signedSeconds(moved)}）`,
     );
 };
 
