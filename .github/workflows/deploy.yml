@@ -1,12 +1,8 @@
-name: Scrape & Deploy
+name: Deploy
 
 on:
     push:
         branches: [main]
-    schedule:
-        # 每日兩次更新錄音列表：UTC 05:17 / 18:17 = 香港 13:17 / 02:17（避開整點；GitHub 排程可能延遲 10–60 分鐘）
-        # 唔好調密：原站有 Cloudflare 限流，太密會被 403
-        - cron: '17 5,18 * * *'
     workflow_dispatch:
 
 permissions:
@@ -32,21 +28,11 @@ jobs:
             - run: npm ci
 
             - name: Lint & test
-              if: github.event_name != 'schedule'
               run: |
                   npm run lint
                   npm test
 
-            # 排程觸發時 github.event 冇 repository 資料，所以由 configure-pages 攞網址
-            - id: pages
-              uses: actions/configure-pages@v6
-
-            - name: Scrape recordings
-              run: npm run scrape
-              env:
-                  FALLBACK_URL: ${{ steps.pages.outputs.base_url }}/data/recordings.json
-                  # repo variable 設成 false 就唔請求原站，只用上次 deploy 嘅資料（原站封鎖數據中心 IP 時用）
-                  SCRAPE_LIVE: ${{ vars.SCRAPE_LIVE }}
+            - uses: actions/configure-pages@v6
 
             - run: npm run build
 
