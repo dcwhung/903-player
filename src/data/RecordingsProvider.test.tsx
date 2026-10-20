@@ -1,5 +1,5 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { StrictMode, type ReactNode } from 'react';
 import type { Recording } from '../types/recording';
 import { RecordingsProvider } from './RecordingsProvider';
 import { useRecordings } from './useRecordings';
@@ -159,6 +159,100 @@ describe('RecordingsProvider', () => {
         expect(result.current.recordings).toEqual([STORED]);
         expect(errorSpy).not.toHaveBeenCalled();
         errorSpy.mockRestore();
+    });
+
+    describe('probing again later', () => {
+        const goOnline = (): void => {
+            act(() => {
+                window.dispatchEvent(new Event('online'));
+            });
+        };
+        const becomeVisible = (state: DocumentVisibilityState = 'visible'): void => {
+            vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
+            act(() => {
+                document.dispatchEvent(new Event('visibilitychange'));
+            });
+        };
+        /** 等第一輪 probe 完 */
+        const renderSettled = async (prober: Prober) => {
+            const rendered = renderHook(() => useRecordings(), { wrapper: wrap(prober) });
+            await waitFor(() => expect(rendered.result.current.isProbing).toBe(false));
+            return rendered;
+        };
+        afterEach(() => vi.restoreAllMocks());
+
+        it('starts another run when the device comes back online', async () => {
+            const prober = vi.fn<Prober>(noProbe);
+            await renderSettled(prober);
+
+            goOnline();
+
+            expect(prober).toHaveBeenCalledTimes(2);
+        });
+
+        it('starts another run when the page becomes visible', async () => {
+            const prober = vi.fn<Prober>(noProbe);
+            await renderSettled(prober);
+
+            becomeVisible();
+
+            expect(prober).toHaveBeenCalledTimes(2);
+        });
+
+        it('does not start a run when the page is hidden', async () => {
+            const prober = vi.fn<Prober>(noProbe);
+            await renderSettled(prober);
+
+            becomeVisible('hidden');
+
+            expect(prober).toHaveBeenCalledTimes(1);
+        });
+
+        it('adds finds from a later run', async () => {
+            const prober = vi.fn<Prober>(noProbe).mockResolvedValueOnce([]);
+            const { result } = await renderSettled(prober);
+            prober.mockResolvedValueOnce([PROBED]);
+
+            goOnline();
+
+            await waitFor(() => expect(result.current.recordings).toEqual([PROBED]));
+        });
+
+        it('never starts a second run while one is in flight', () => {
+            const prober = vi.fn<Prober>(neverFinishes);
+            renderHook(() => useRecordings(), { wrapper: wrap(prober) });
+
+            goOnline();
+            becomeVisible();
+
+            expect(prober).toHaveBeenCalledTimes(1);
+        });
+
+        it('stops listening after unmounting', async () => {
+            const prober = vi.fn<Prober>(noProbe);
+            const { unmount } = await renderSettled(prober);
+
+            unmount();
+            goOnline();
+
+            expect(prober).toHaveBeenCalledTimes(1);
+        });
+
+        it('runs a single probe under StrictMode and still shows its finds', async () => {
+            // 用 render 而唔用 renderHook：renderHook 個 wrapper 入面嘅 StrictMode 唔會重複行 effect
+            const prober = vi.fn<Prober>(async () => [PROBED]);
+            const Urls = () => <p>{useRecordings().recordings.map((r) => r.url)}</p>;
+            render(
+                <StrictMode>
+                    <RecordingsProvider prober={prober} readStored={nothingStored}>
+                        <Urls />
+                    </RecordingsProvider>
+                </StrictMode>,
+            );
+
+            expect(await screen.findByText(PROBED.url)).toBeInTheDocument();
+            expect(prober).toHaveBeenCalledTimes(1);
+        });
     });
 
     it('throws when used outside the provider', () => {
