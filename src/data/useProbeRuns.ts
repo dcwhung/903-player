@@ -5,10 +5,24 @@ import type { Recording } from '../types/recording';
 export type RecordingsProber = (onFound?: (recording: Recording) => void) => Promise<Recording[]>;
 
 interface ProbeRuns {
-    isProbing: boolean;
     /** 第一輪 probe 完咗未（成功或者失敗都算） */
     hasFinishedFirstRun: boolean;
 }
+
+/**
+ * 即刻開始 probe；prober 同步 throw 都轉成 reject，令 finish 一定會行，in-flight 唔會卡死。
+ * 唔用 Promise.resolve().then()：會遲一個 microtask 先開始
+ */
+const startProbe = (
+    prober: RecordingsProber,
+    onFound: (recording: Recording) => void,
+): Promise<Recording[]> => {
+    try {
+        return prober(onFound);
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
 
 /**
  * 背景 probe 一輪（唔阻住 UI）：每搵到一個即刻 merge，最後再用完整結果對齊一次。
@@ -24,7 +38,7 @@ const probeOnce = (
     const onFound = (recording: Recording): void => {
         if (isMounted.current) merge([recording]);
     };
-    prober(onFound)
+    startProbe(prober, onFound)
         .then(
             (found) => {
                 if (isMounted.current) merge(found);
@@ -47,7 +61,6 @@ export const useProbeRuns = (
     prober: RecordingsProber,
     merge: (found: Recording[]) => void,
 ): ProbeRuns => {
-    const [isProbing, setIsProbing] = useState(true);
     const [hasFinishedFirstRun, setHasFinishedFirstRun] = useState(false);
     const isInFlight = useRef(false);
     const isMounted = useRef(false);
@@ -55,12 +68,9 @@ export const useProbeRuns = (
     const run = useCallback(() => {
         if (isInFlight.current) return;
         isInFlight.current = true;
-        setIsProbing(true);
         probeOnce(prober, isMounted, merge, () => {
             isInFlight.current = false;
-            if (!isMounted.current) return;
-            setIsProbing(false);
-            setHasFinishedFirstRun(true);
+            if (isMounted.current) setHasFinishedFirstRun(true);
         });
     }, [prober, merge]);
 
@@ -77,5 +87,5 @@ export const useProbeRuns = (
         };
     }, [run]);
 
-    return { isProbing, hasFinishedFirstRun };
+    return { hasFinishedFirstRun };
 };
