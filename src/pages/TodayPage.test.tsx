@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { SHOW_THEMES } from '../config/showThemes';
@@ -67,12 +67,9 @@ describe('TodayPage', () => {
     it('shows broadcast times and switches show on swipe, in that show’s theme', async () => {
         const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
-        // 錄音由 storage 同步讀，autoplay 喺 mount 嘅 effect 已經開始，早過 PlayerProvider attach。
-        // 真瀏覽器嘅 play event 係排 task 先發（attach 咗之後），FakeAudio 就即刻發咗；補發一次模擬真瀏覽器
-        act(() => {
-            audio.dispatchEvent(new Event('play'));
-        });
-        expect(screen.getByText('06:00 · 播放中')).toBeInTheDocument();
+        // 錄音由 storage 同步讀，autoplay 喺 mount 嘅 effect 已經開始，早過 PlayerProvider attach；
+        // play event 同真瀏覽器一樣遲啲先發（FakeAudio 用 microtask），所以要等
+        expect(await screen.findByText('06:00 · 播放中')).toBeInTheDocument();
 
         const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
         fireEvent.pointerDown(stack, { clientX: 300, clientY: 100 });
