@@ -32,11 +32,13 @@ const useArcFollow = (max: number, setPreview: (preview: Preview | null) => void
 
 /**
  * 唱片格嘅手勢：弧形 seek、捽碟 seek，兩者共用預覽（時間 / 弧形一齊郁）同碟面角度；
- * held = 外面（日子條）捉住碟。有人捉住碟或者暫停就唔自轉，停喺原位
+ * held = 外面（日子條）捉住碟。有人捉住碟（包括手指撳住碟面）或者暫停就唔自轉，停喺原位
  */
 export const useGaugeGestures = (held: boolean) => {
     const player = usePlayer();
     const [preview, setPreview] = useState<Preview | null>(null);
+    // 手指撳住碟（由 pointerdown 起，未轉夠門檻都算）：弧形即刻鎖住，碟即刻停轉
+    const [discHeld, setDiscHeld] = useState(false);
     const { motion, onArcPreview } = useArcFollow(player.duration, setPreview);
     const disc = useDiscScrub({
         max: player.duration,
@@ -44,6 +46,7 @@ export const useGaugeGestures = (held: boolean) => {
         locked: preview?.source === 'arc',
         onSeek: player.seek,
         onPreview: (seconds) => setPreview(seconds === null ? null : { source: 'disc', seconds }),
+        onHold: setDiscHeld,
         motion,
     });
     return {
@@ -52,12 +55,12 @@ export const useGaugeGestures = (held: boolean) => {
         arc: {
             // 捽碟時弧形跟住預覽；拖弧形時弧形自己有拖動值
             value: preview?.source === 'disc' ? preview.seconds : player.currentTime,
-            locked: preview?.source === 'disc',
+            locked: discHeld,
             onPreview: onArcPreview,
         },
         disc: {
             faceRef: motion.faceRef,
-            spinning: player.isPlaying && !preview && !held,
+            spinning: player.isPlaying && !preview && !held && !discHeld,
             scrub: disc,
         },
     };

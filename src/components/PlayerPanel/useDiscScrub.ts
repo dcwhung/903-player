@@ -18,6 +18,8 @@ interface DiscScrubOptions {
     onSeek: (seconds: number) => void;
     /** 捽緊預覽嘅時間（放手 / 取消時 null） */
     onPreview: (seconds: number | null) => void;
+    /** 撳落碟（未轉夠門檻都算）/ 放手或取消：畀外面鎖住弧形、停自轉 */
+    onHold: (held: boolean) => void;
     motion: DiscTurn;
 }
 
@@ -62,12 +64,13 @@ const advance = (session: ScrubSession, angle: number, options: DiscScrubOptions
     options.motion.turn(session.degrees);
 };
 
-/** 撳落碟：capture 住，記低起手位置 */
-const begin = (event: DiscPointerEvent, startSeconds: number): ScrubSession => {
+/** 撳落碟：capture 住，記低起手位置；一撳落就算捉住碟（唔使等過門檻） */
+const begin = (event: DiscPointerEvent, options: DiscScrubOptions): ScrubSession => {
     event.currentTarget.setPointerCapture?.(event.pointerId);
+    options.onHold(true);
     return {
         pointerId: event.pointerId,
-        startSeconds,
+        startSeconds: options.currentTime,
         lastAngle: angleOnDisc(event),
         degrees: 0,
         scrubbing: false,
@@ -85,6 +88,8 @@ export const useDiscScrub = (options: DiscScrubOptions) => {
         if (!current || current.pointerId !== event.pointerId) return;
         event.stopPropagation();
         session.current = null;
+        // tap（未過門檻）完都要放返碟
+        options.onHold(false);
         if (!current.scrubbing) return;
         if (commit) options.onSeek(secondsAt(current));
         options.onPreview(null);
@@ -95,7 +100,7 @@ export const useDiscScrub = (options: DiscScrubOptions) => {
         onPointerDown: (event: DiscPointerEvent) => {
             event.stopPropagation();
             if (session.current || options.locked || options.max <= 0) return;
-            session.current = begin(event, options.currentTime);
+            session.current = begin(event, options);
         },
         onPointerMove: (event: DiscPointerEvent) => {
             const current = session.current;

@@ -164,6 +164,28 @@ describe('PlayerGauge disc scrub', () => {
         expect(audio.currentTime).toBe(100);
         expect(slider).toHaveAttribute('aria-valuenow', '115');
     });
+
+    it('locks the ring as soon as the disc is pressed, before it turns', async () => {
+        const { audio, disc, slider } = await setup();
+
+        fireEvent.pointerDown(disc, { ...rim(0), pointerId: 1 });
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 2 });
+        fireEvent.pointerUp(slider, { clientX: 150, clientY: 10, pointerId: 2 });
+
+        expect(audio.currentTime).toBe(100);
+        expect(slider).toHaveAttribute('aria-valuenow', '100');
+    });
+
+    it('unlocks the ring when a tap on the disc ends', async () => {
+        const { audio, disc, slider } = await setup();
+
+        fireEvent.pointerDown(disc, { ...rim(0), pointerId: 1 });
+        release(disc, 0);
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 2 });
+        fireEvent.pointerUp(slider, { clientX: 150, clientY: 10, pointerId: 2 });
+
+        expect(audio.currentTime).toBe(DURATION / 2);
+    });
 });
 
 describe('PlayerGauge disc motion', () => {
@@ -188,6 +210,20 @@ describe('PlayerGauge disc motion', () => {
         expect(face.className).not.toMatch(/spinning/);
 
         release(disc, 90);
+        expect(face.className).toMatch(/spinning/);
+    });
+
+    it('stops spinning right when the disc is pressed and spins again after a tap or cancel', async () => {
+        const { disc, face } = await setup();
+        await userEvent.click(screen.getByRole('button', { name: 'toggle' }));
+
+        fireEvent.pointerDown(disc, { ...rim(0), pointerId: 1 });
+        expect(face.className).not.toMatch(/spinning/);
+        release(disc, 0);
+        expect(face.className).toMatch(/spinning/);
+
+        fireEvent.pointerDown(disc, { ...rim(0), pointerId: 1 });
+        fireEvent.pointerCancel(disc, { pointerId: 1 });
         expect(face.className).toMatch(/spinning/);
     });
 });
