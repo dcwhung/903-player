@@ -12,24 +12,30 @@
 ## 架構
 
 ```
-GitHub Actions（push main / 每日兩次：香港 13:17、02:17 / 手動）
-  ├─ npm run scrape → public/data/recordings.json（爬唔到嘅節目沿用上次 deploy 嘅資料）
-  └─ npm run build  → dist/ ─► GitHub Pages
-PWA ─ fetch data/recordings.json ─► <audio> 直接播 audio.hkfm903.live
+GitHub Actions（push main / 手動）
+  └─ npm run build → dist/ ─► GitHub Pages
+PWA（用戶部機）
+  ├─ src/services/audioProbe.ts：逐個節目砌錄音網址，用 metadata-only <audio> 試
+  ├─ src/services/probeStore.ts：搵到嘅錄音存 localStorage（唯一資料來源）
+  └─ <audio> 直接播 audio.hkfm903.live
 ```
 
-原站冇 JSON API 亦冇 CORS，所以由 GitHub Actions 爬 HTML 生成 JSON，同 PWA 一齊發佈。
+原站冇 JSON API 亦冇 CORS，HTML 站仲封鎖數據中心 IP，所以唔再爬 HTML。
+PWA 喺用戶部機度按每個節目嘅播出日，砌過去 14 日嘅錄音網址
+（`https://audio.hkfm903.live/<節目>/<YYYYMMDD>_<HHMM>_<節目>.aac`），
+用只載 metadata 嘅 `<audio>` 試下有冇（`<audio>` 唔使 CORS），
+每個節目保留最新 50 個錄音喺 localStorage，作為唯一資料來源。
+GitHub Actions 只負責 build 同 deploy。
 
 ## 開發
 
 ```bash
 npm install
-npm run dev        # 本地開發（要自行放 public/data/recordings.json）
+npm run dev        # 本地開發
 npm test           # Vitest
 npm run coverage   # 覆蓋率
 npm run lint       # ESLint + Prettier
-npm run scrape     # 爬原站，寫 public/data/recordings.json
-npm run e2e        # Playwright 端對端測試（假資料 + 模擬 audio server）
+npm run e2e        # Playwright 端對端測試（假錄音寫入 localStorage + 模擬 audio server）
 npm run build
 ```
 
@@ -48,17 +54,17 @@ maskable 內容縮到 80%（安全區）。有 ImageMagick 就順手無損壓縮
 ## 部署（只需做一次）
 
 GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 **GitHub Actions**。
-之後每次 push `main` 同每日兩次（香港 13:17、02:17）都會自動爬資料同重新 deploy 去
+之後每次 push `main`（或者喺 Actions 手動執行）都會自動 build 同重新 deploy 去
 `https://<owner>.github.io/903-player/`。
 
 ## 目錄
 
-| 路徑                    | 用途                                                                              |
-| ----------------------- | --------------------------------------------------------------------------------- |
-| `scripts/`              | 爬蟲（`parseRecordings.ts` 解析、`scrape.ts` 合併 fallback、`scrapeCli.ts` 入口） |
-| `src/config/`           | 節目清單、常數                                                                    |
-| `src/i18n/`             | 語言包（zh-HK 書面語）                                                            |
-| `src/player/`           | `AudioController`（唯一 audio element）、Media Session                            |
-| `src/components/`       | UI component（每個 folder 有 `.tsx`、`.module.css`、`.test.tsx`）                 |
-| `src/pages/`            | 主頁、節目頁、今日節目頁                                                          |
-| `src/styles/tokens.css` | Design tokens（來源：mockup）                                                     |
+| 路徑                    | 用途                                                                             |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| `src/config/`           | 節目清單、常數                                                                   |
+| `src/services/`         | `audioProbe.ts`（喺部機度 probe 錄音）、`probeStore.ts`（localStorage 錄音清單） |
+| `src/i18n/`             | 語言包（zh-HK 書面語）                                                           |
+| `src/player/`           | `AudioController`（唯一 audio element）、Media Session                           |
+| `src/components/`       | UI component（每個 folder 有 `.tsx`、`.module.css`、`.test.tsx`）                |
+| `src/pages/`            | 主頁、節目頁、今日節目頁                                                         |
+| `src/styles/tokens.css` | Design tokens（來源：mockup）                                                    |

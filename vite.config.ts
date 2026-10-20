@@ -62,8 +62,7 @@ export default defineConfig({
         coverage: {
             provider: 'v8',
             include: ['src/**/*.{ts,tsx}', 'scripts/**/*.ts'],
-            // CLI entry 只係 I/O glue，邏輯已喺 scrape.ts 測試
-            exclude: ['src/main.tsx', 'scripts/scrapeCli.ts', '**/*.test.{ts,tsx}'],
+            exclude: ['src/main.tsx', '**/*.test.{ts,tsx}'],
         },
     },
 });
