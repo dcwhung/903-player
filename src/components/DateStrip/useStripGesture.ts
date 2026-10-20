@@ -59,6 +59,19 @@ const releaseStrip = (
     return direction !== null;
 };
 
+/** 放手：轉集或者彈返，記低之後嘅 click 要唔要食，拖緊就放返碟 */
+const finishStrip = (
+    session: DragSession,
+    event: StripPointer,
+    options: StripGestureOptions,
+    justDragged: RefObject<boolean>,
+) => {
+    // 冇 pointermove 但放手時已經算掃（轉咗集）：之後嘅 click 都要食咗，唔好再撳多次側格
+    const swiped = releaseStrip(session, event, options);
+    justDragged.current = session.dragging || swiped;
+    if (session.dragging) options.onHold?.(false);
+};
+
 /** 取消（例如系統搶咗手勢）：放返碟，彈返原位 */
 const cancelStrip = (session: DragSession, options: StripGestureOptions) => {
     if (session.dragging) options.onHold?.(false);
@@ -107,10 +120,7 @@ export const useStripGesture = (options: StripGestureOptions) => {
             const current = ownSession(session.current, event);
             if (!current) return;
             session.current = null;
-            // 冇 pointermove 但放手時已經算掃（轉咗集）：之後嘅 click 都要食咗，唔好再撳多次側格
-            const swiped = releaseStrip(current, event, options);
-            justDragged.current = current.dragging || swiped;
-            if (current.dragging) options.onHold?.(false);
+            finishStrip(current, event, options, justDragged);
         },
         onPointerCancel: (event: StripPointer) => {
             const current = ownSession(session.current, event);
