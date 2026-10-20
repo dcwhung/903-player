@@ -146,6 +146,13 @@ describe('PlayerGauge disc scrub', () => {
         expect(faceDegrees(face)).toBeCloseTo(120);
     });
 
+    it('blocks native drag and drop of the disc artwork (mouse)', async () => {
+        const { disc } = await setup();
+
+        // fireEvent 返回 false = 已經 preventDefault
+        expect(fireEvent.dragStart(disc)).toBe(false);
+    });
+
     it('does not pass disc touches on to the card stack', async () => {
         const { disc, onOuterPointer } = await setup();
 
