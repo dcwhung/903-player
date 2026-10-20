@@ -29,6 +29,8 @@ type StripClick = MouseEvent<HTMLElement>;
 
 /** 拖緊：過咗 slop 先 capture（之前仍然可以係 tap 側格），之後成條跟手指 */
 const moveStrip = (session: DragSession, event: StripPointer, options: StripGestureOptions) => {
+    // 滑鼠冇撳掣 = 只係 hover（例如喺條外面放咗手，收唔到 pointerup），唔當拖
+    if (event.pointerType === 'mouse' && event.buttons === 0) return;
     const dx = event.clientX - session.x;
     if (!session.dragging) {
         const dy = event.clientY - session.y;

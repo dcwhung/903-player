@@ -19,10 +19,11 @@ interface HarnessProps {
     dates?: readonly string[];
     /** 模擬 onStep 轉唔到（例如 player 拒絕）：有隔籬集都返回 false */
     refuse?: boolean;
+    onHold?: (held: boolean) => void;
 }
 
 /** 模擬節目頁：next = 舊一集（index + 1），previous = 新一集 */
-const Harness = ({ start = 1, onStep, dates = DATES, refuse = false }: HarnessProps) => {
+const Harness = ({ start = 1, onStep, dates = DATES, refuse = false, onHold }: HarnessProps) => {
     const [index, setIndex] = useState(start);
     const step = (direction: SwipeDirection) => {
         onStep?.(direction);
@@ -38,6 +39,7 @@ const Harness = ({ start = 1, onStep, dates = DATES, refuse = false }: HarnessPr
                 dateLabel={dates[index] ?? ''}
                 neighbours={neighboursAt(dates, index)}
                 onStep={step}
+                onHold={onHold}
             />
             <button type="button" onClick={() => setIndex(0)}>
                 外面轉集
@@ -95,7 +97,7 @@ describe('DateStrip', () => {
 
     it('starts a fresh drag after a mouse press was released outside the strip', () => {
         render(<Harness />);
-        const mouse = { pointerId: 1, pointerType: 'mouse' };
+        const mouse = { pointerId: 1, pointerType: 'mouse', buttons: 1 };
         // 撳落未過 slop 就拖出去放手：pointerup 唔會返到日子條
         fireEvent.pointerDown(zone(), { clientX: 200, clientY: 20, ...mouse });
         fireEvent.pointerMove(zone(), { clientX: 203, clientY: 20, ...mouse });
@@ -104,6 +106,20 @@ describe('DateStrip', () => {
         fireEvent.pointerMove(zone(), { clientX: 70, clientY: 20, ...mouse });
 
         expect(track().style.transform).toBe('translateX(-30px)');
+    });
+
+    it('ignores mouse hover moves after a press was released outside the strip', () => {
+        const onHold = vi.fn();
+        render(<Harness onHold={onHold} />);
+        const mouse = { pointerId: 1, pointerType: 'mouse' };
+        fireEvent.pointerDown(zone(), { clientX: 200, clientY: 20, buttons: 1, ...mouse });
+        fireEvent.pointerMove(zone(), { clientX: 203, clientY: 20, buttons: 1, ...mouse });
+
+        // 喺條外面放咗手（冇 pointerup），之後滑鼠冇撳掣咁經過
+        fireEvent.pointerMove(zone(), { clientX: 240, clientY: 20, buttons: 0, ...mouse });
+
+        expect(track().style.transform).not.toMatch(/translateX\(40px\)/);
+        expect(onHold).not.toHaveBeenCalled();
     });
 
     it('plays the older episode on a left swipe and the newer one on a right swipe', async () => {
