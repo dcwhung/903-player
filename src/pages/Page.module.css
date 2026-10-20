@@ -67,14 +67,13 @@
 }
 
 /*
- * 今日節目頁播放器：卡疊 + 指示點 + 控制掣一組，用卡入面嘅較窄間距（矮螢幕再收窄），唔縮；
- * 卡疊底已經留咗後面卡露出嚟嘅位，唔使再加頁面間距
+ * 今日節目頁播放器：卡疊 + 指示點 + 控制掣一組，唔縮。唔加間距：卡疊底已經留咗後面卡露出嚟嘅位，
+ * 指示點本身有 24px 撳得到範圍（點得 6px），上下自然有留白
  */
 .todayPlayer {
     display: flex;
     flex-shrink: 0;
     flex-direction: column;
     align-items: center;
-    gap: var(--card-inner-gap);
     width: 100%;
 }

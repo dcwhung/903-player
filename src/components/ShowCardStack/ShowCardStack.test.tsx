@@ -2,7 +2,6 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react';
 import { SHOW_THEMES } from '../../config/showThemes';
 import { ArcSlider } from '../ArcSlider/ArcSlider';
-import { PageDots } from '../PageDots/PageDots';
 import { CARD_FLY_MS, CARD_SPRING_MS } from './cardStack';
 import { ShowCardStack, type StackCard } from './ShowCardStack';
 
@@ -254,33 +253,6 @@ describe('ShowCardStack', () => {
         expect(group).toHaveAttribute('data-phase', 'settling');
     });
 
-    it('should let a dot tap through during spring-back instead of grabbing the card', () => {
-        const onSelect = vi.fn();
-        const { group } = setup(
-            1,
-            CARDS,
-            <PageDots
-                keys={['a', 'b', 'c']}
-                labels={['甲', '乙', '丙']}
-                index={1}
-                onSelect={onSelect}
-            />,
-        );
-        const dot = screen.getByRole('button', { name: '甲' });
-
-        drag(group, -40);
-        // 仲離中間好遠（過咗橫拖門檻）
-        group
-            .querySelector<HTMLElement>(':scope > :not([inert])')
-            ?.style.setProperty('transform', 'matrix(1, 0, 0, 1, -25, 0)');
-        fireEvent.pointerDown(dot, { clientX: 200, clientY: 100 });
-        fireEvent.pointerUp(dot, { clientX: 200, clientY: 100 });
-        fireEvent.click(dot, { detail: 1 });
-
-        expect(onSelect).toHaveBeenCalledExactlyOnceWith(0);
-        expect(group).toHaveAttribute('data-phase', 'settling');
-    });
-
     it('should carry on from the card offset when a near-centre tap during spring-back becomes a drag', () => {
         const { group } = setup();
         const top = screen.getByRole('button', { name: '內容' }).parentElement;
@@ -320,28 +292,13 @@ describe('ShowCardStack', () => {
         expect(onChange).toHaveBeenNthCalledWith(2, 0);
     });
 
-    it('should ignore arrow keys meant for inner buttons, but react on the dots', () => {
-        const { onChange } = setup(
-            1,
-            CARDS,
-            <>
-                <button type="button">內容</button>
-                <PageDots
-                    keys={['a', 'b', 'c']}
-                    labels={['甲', '乙', '丙']}
-                    index={1}
-                    onSelect={vi.fn()}
-                />
-            </>,
-        );
+    it('should ignore arrow keys meant for inner buttons', () => {
+        const { onChange } = setup();
 
         fireEvent.keyDown(screen.getByRole('button', { name: '內容' }), { key: 'ArrowRight' });
         finishFly();
-        expect(onChange).not.toHaveBeenCalled();
 
-        fireEvent.keyDown(screen.getByRole('button', { name: '乙' }), { key: 'ArrowRight' });
-        finishFly();
-        expect(onChange).toHaveBeenCalledWith(2);
+        expect(onChange).not.toHaveBeenCalled();
     });
 
     it('should swap instantly when the user prefers reduced motion', () => {
@@ -412,28 +369,6 @@ describe('ShowCardStack during the fly-out', () => {
         finishFly();
         finishFly();
 
-        expect(onChange).toHaveBeenCalledExactlyOnceWith(2);
-    });
-
-    it('should swallow a dot tap made during the flight', () => {
-        const onSelect = vi.fn();
-        const { group, onChange } = setup(
-            1,
-            CARDS,
-            <PageDots
-                keys={['a', 'b', 'c']}
-                labels={['甲', '乙', '丙']}
-                index={1}
-                onSelect={onSelect}
-            />,
-        );
-
-        // 用方向鍵起飛：唔係拖動，拖完食 click 嗰個保護唔會幫手
-        fireEvent.keyDown(group, { key: 'ArrowRight' });
-        fireEvent.click(screen.getByRole('button', { name: '甲' }), { detail: 1 });
-        finishFly();
-
-        expect(onSelect).not.toHaveBeenCalled();
         expect(onChange).toHaveBeenCalledExactlyOnceWith(2);
     });
 

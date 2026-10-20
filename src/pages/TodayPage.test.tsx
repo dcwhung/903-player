@@ -114,6 +114,16 @@ describe('TodayPage', () => {
         await waitFor(() => expect(themeColor()).toBe(SHOW_THEMES.badgirl.bg));
     });
 
+    it('should switch show on the arrow keys from the dots below the card stack', async () => {
+        const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
+
+        screen.getByRole('button', { name: '在晴朗的一天出發' }).focus();
+        await userEvent.keyboard('{ArrowRight}');
+
+        await waitFor(() => expect(audio.src).toBe(TODAY[1]?.url));
+    });
+
     it('should wrap from the first show to the last on a right swipe', async () => {
         const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));

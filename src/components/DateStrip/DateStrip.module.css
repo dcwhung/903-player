@@ -119,9 +119,10 @@
 }
 
 /*
- * 轉集滑入嘅起點（useStripMotion 嘅 data-arriving，套用完即刻拎走）：
- * 新中格扮返側格（細字、淡色、「現正播放：」透明），新側格未出現；transition: none 令起點即刻生效，
- * 拎走之後用返上面嘅 transition，一路滑一路變返正常樣式
+ * 轉集滑入嘅起點（useStripMotion 嘅 data-arriving = 轉集方向，套用完即刻拎走）：
+ * 新中格扮返側格（細字、淡色、「現正播放：」透明）；得由畫面外滑入嗰邊嘅側格係新嘅，未出現
+ * （next = 右邊舊一集，previous = 左邊新一集）；另一邊係啱啱嘅中格日期，照顯示。
+ * transition: none 令起點即刻生效，拎走之後用返上面嘅 transition，一路滑一路變返正常樣式
  */
 .track[data-arriving] .current {
     color: var(--color-text-muted);
@@ -129,7 +130,8 @@
 }
 
 .track[data-arriving] .label,
-.track[data-arriving] .side {
+.track[data-arriving='next'] .older,
+.track[data-arriving='previous'] .newer {
     opacity: 0;
 }
 

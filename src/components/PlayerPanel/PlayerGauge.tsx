@@ -24,7 +24,8 @@ const formatTotal = (duration: number): string =>
 export const PlayerGauge = ({ art, artRef }: PlayerGaugeProps) => {
     const player = usePlayer();
     const [previewTime, setPreviewTime] = useState<number | null>(null);
-    const total = formatDuration(player.duration);
+    // 讀屏同畫面一樣：未知時長讀佔位，唔讀 0:00
+    const total = formatTotal(player.duration);
     const formatValueText = (seconds: number) =>
         t('player.progressText', { current: formatDuration(seconds), total });
 
@@ -46,7 +47,7 @@ export const PlayerGauge = ({ art, artRef }: PlayerGaugeProps) => {
             <span className={`${styles.time} ${styles.elapsed}`}>
                 {formatDuration(previewTime ?? player.currentTime)}
             </span>
-            <span className={`${styles.time} ${styles.total}`}>{formatTotal(player.duration)}</span>
+            <span className={`${styles.time} ${styles.total}`}>{total}</span>
             <button
                 type="button"
                 className={styles.restart}

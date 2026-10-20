@@ -5,7 +5,7 @@ import { stripShift, uprightSpin } from './dateStrip';
 
 /** 拖緊碟跟住轉：每 px 0.5 度；轉集時碟順時針轉返正（uprightSpin） */
 const DISC_DEG_PER_PX = 0.5;
-/** 滑入期間新格用側格樣式（DateStrip.module.css），拎走就 transition 返正常樣式 */
+/** 滑入起點：值係轉集方向，新格用側格樣式（DateStrip.module.css），拎走就 transition 返正常樣式 */
 const ARRIVING_ATTR = 'data-arriving';
 
 interface MotionRefs {
@@ -19,6 +19,8 @@ interface MotionRefs {
     drag: RefObject<number>;
     /** 轉咗集之後，新日期要由邊度滑返中間（null = 直接歸位） */
     arriveFrom: RefObject<number | null>;
+    /** 轉去邊個方向：滑入時得嗰邊新出現嘅側格要淡入 */
+    arriveDirection: RefObject<SwipeDirection>;
 }
 
 /** 寫 style：animate = 用返 CSS 嘅 transition，否則即刻跟手指 */
@@ -63,6 +65,7 @@ const commit = (refs: MotionRefs, direction: SwipeDirection) => {
     turnDisc(refs, 0, true);
     const width = refs.track.current?.clientWidth ?? 0;
     refs.arriveFrom.current = refs.offset.current - stripShift(width, direction);
+    refs.arriveDirection.current = direction;
 };
 
 /**
@@ -78,7 +81,7 @@ const arrive = (refs: MotionRefs) => {
         moveTrack(refs, 0, false);
         return;
     }
-    track?.setAttribute(ARRIVING_ATTR, '');
+    track?.setAttribute(ARRIVING_ATTR, refs.arriveDirection.current);
     moveTrack(refs, from, false);
     // 讀一次 layout，等瀏覽器先套用起點，下一步先會有 transition
     void track?.offsetWidth;
@@ -96,8 +99,17 @@ export const useStripMotion = (spinRef?: RefObject<HTMLElement | null>) => {
     const spin = useRef(0);
     const drag = useRef(0);
     const arriveFrom = useRef<number | null>(null);
+    const arriveDirection = useRef<SwipeDirection>('next');
     return useMemo(() => {
-        const refs: MotionRefs = { track, disc: spinRef, offset, spin, drag, arriveFrom };
+        const refs: MotionRefs = {
+            track,
+            disc: spinRef,
+            offset,
+            spin,
+            drag,
+            arriveFrom,
+            arriveDirection,
+        };
         return {
             trackRef: track,
             follow: (dx: number) => follow(refs, dx),

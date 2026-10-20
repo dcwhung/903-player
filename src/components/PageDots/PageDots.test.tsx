@@ -27,6 +27,24 @@ describe('PageDots', () => {
         expect(onSelect).toHaveBeenCalledWith(2);
     });
 
+    it('steps to the neighbouring show on the arrow keys, wrapping around', async () => {
+        const onSelect = vi.fn();
+        render(
+            <PageDots
+                keys={['a', 'b', 'c']}
+                labels={['甲', '乙', '丙']}
+                index={0}
+                onSelect={onSelect}
+            />,
+        );
+
+        screen.getByRole('button', { name: '甲' }).focus();
+        await userEvent.keyboard('{ArrowRight}');
+        await userEvent.keyboard('{ArrowLeft}');
+
+        expect(onSelect.mock.calls).toEqual([[1], [2]]);
+    });
+
     it('keys the dots by recording, so the same show twice in a day is fine', () => {
         const error = vi.spyOn(console, 'error').mockImplementation(() => {});
         render(
