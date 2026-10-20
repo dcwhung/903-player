@@ -51,7 +51,7 @@ describe('RecordingsProvider', () => {
         expect(result.current.recordings).toEqual([]);
     });
 
-    it('reports isProbing while the probe runs, keeping status ready when something is stored', async () => {
+    it('reports isSearching while the probe runs, keeping status ready when something is stored', async () => {
         let finishProbe: (found: Recording[]) => void = () => {};
         const prober = () =>
             new Promise<Recording[]>((resolve) => {
@@ -61,9 +61,9 @@ describe('RecordingsProvider', () => {
             wrapper: wrap(prober, () => [STORED]),
         });
 
-        expect(result.current).toMatchObject({ status: 'ready', isProbing: true });
+        expect(result.current).toMatchObject({ status: 'ready', isSearching: true });
         await act(async () => finishProbe([]));
-        expect(result.current).toMatchObject({ status: 'ready', isProbing: false });
+        expect(result.current).toMatchObject({ status: 'ready', isSearching: false });
     });
 
     it('becomes ready once the probe finishes, even if it found nothing', async () => {
@@ -104,7 +104,7 @@ describe('RecordingsProvider', () => {
 
         expect(result.current.status).toBe('loading');
         await waitFor(() =>
-            expect(result.current).toEqual({ status: 'ready', recordings: [], isProbing: false }),
+            expect(result.current).toEqual({ status: 'ready', recordings: [], isSearching: false }),
         );
     });
 
@@ -188,10 +188,49 @@ describe('RecordingsProvider', () => {
         /** 等第一輪 probe 完 */
         const renderSettled = async (prober: Prober) => {
             const rendered = renderHook(() => useRecordings(), { wrapper: wrap(prober) });
-            await waitFor(() => expect(rendered.result.current.isProbing).toBe(false));
+            await waitFor(() => expect(rendered.result.current.isSearching).toBe(false));
             return rendered;
         };
         afterEach(() => vi.restoreAllMocks());
+
+        it('does not report searching again on later runs, so empty pages do not flicker', async () => {
+            let finishLater: (found: Recording[]) => void = () => {};
+            const prober = vi
+                .fn<Prober>(noProbe)
+                .mockImplementationOnce(noProbe)
+                .mockImplementationOnce(
+                    () =>
+                        new Promise<Recording[]>((resolve) => {
+                            finishLater = resolve;
+                        }),
+                );
+            const { result } = await renderSettled(prober);
+
+            goOnline();
+
+            expect(prober).toHaveBeenCalledTimes(2);
+            expect(result.current.isSearching).toBe(false);
+            await act(async () => finishLater([]));
+        });
+
+        it('recovers when the prober throws synchronously instead of rejecting', async () => {
+            const prober = vi.fn<Prober>(noProbe).mockImplementationOnce(() => {
+                throw new Error('sync');
+            });
+            const { result } = renderHook(() => useRecordings(), { wrapper: wrap(prober) });
+
+            await waitFor(() =>
+                expect(result.current).toEqual({
+                    status: 'ready',
+                    recordings: [],
+                    isSearching: false,
+                }),
+            );
+            goOnline();
+
+            // in-flight 冇卡住：之後嘅 trigger 照樣可以開新一輪
+            expect(prober).toHaveBeenCalledTimes(2);
+        });
 
         it('starts another run when the device comes back online', async () => {
             const prober = vi.fn<Prober>(noProbe);

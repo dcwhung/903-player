@@ -31,14 +31,16 @@ export const RecordingsProvider = ({
     const merge = useCallback((found: Recording[]): void => {
         if (found.length > 0) setRecordings((shown) => uniqueByUrl([...shown, ...found]));
     }, []);
-    const { isProbing, hasFinishedFirstRun } = useProbeRuns(prober, merge);
+    const { hasFinishedFirstRun } = useProbeRuns(prober, merge);
+    // 只有第一輪先算「搵緊」：之後返到前景再 probe 多數即刻完，唔好令空嘅頁面閃一下
+    const isSearching = !hasFinishedFirstRun;
 
     // 新用戶（storage 空）第一輪 probe 未有結果先算載入中；有一集或者第一輪完就 ready
     const status: LoadStatus =
         !hasFinishedFirstRun && recordings.length === 0 ? 'loading' : 'ready';
     const value = useMemo(
-        () => ({ status, recordings, isProbing }),
-        [status, recordings, isProbing],
+        () => ({ status, recordings, isSearching }),
+        [status, recordings, isSearching],
     );
     return <RecordingsContext.Provider value={value}>{children}</RecordingsContext.Provider>;
 };
