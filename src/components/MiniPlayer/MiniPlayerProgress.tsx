@@ -9,7 +9,7 @@ interface MiniPlayerProgressProps {
     timeText?: string;
 }
 
-/** 頂邊細進度條（底邊貼住 home indicator）；有名同 value text，所以條 track 本身只係裝飾 */
+/** 底部細進度條；有名同 value text，所以條 track 本身只係裝飾 */
 export const MiniPlayerProgress = ({ progress, timeText }: MiniPlayerProgressProps) => {
     const percent = toPercent(progress);
     return (

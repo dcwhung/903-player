@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
-import { HOME_THEME, SHOW_THEMES } from '../config/showThemes';
+import { HOME_THEME } from '../config/showThemes';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
 import { HomePage } from './HomePage';
@@ -124,17 +124,9 @@ describe('HomePage', () => {
         expect(audio.play).toHaveBeenCalled();
     });
 
-    it('should paint the page canvas with the mini player surface so it reaches the bottom', async () => {
+    it('should paint the page canvas with the gradient bottom, even with a floating mini player', async () => {
         renderWithProviders(<HomePage />, { recordings: RECORDINGS });
         await screen.findByRole('region', { name: '正在播放（今日節目）' });
-
-        expect(document.documentElement.style.getPropertyValue('--page-canvas')).toBe(
-            SHOW_THEMES.badgirl.surface,
-        );
-    });
-
-    it('should paint the page canvas with the gradient bottom without a mini player', () => {
-        renderWithProviders(<HomePage />);
 
         expect(document.documentElement.style.getPropertyValue('--page-canvas')).toBe(
             'var(--home-bg-bottom)',

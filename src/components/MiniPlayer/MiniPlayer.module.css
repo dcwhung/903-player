@@ -1,25 +1,20 @@
 /*
- * 貼住 viewport 底、全闊（闊螢幕收返喺 --page-max-width 中間）。
- * iOS standalone 嘅 viewport 有時矮過螢幕：viewport 以下 iOS 唔會畫內容（實機推落去會畀剪走），
- * 只會露出 canvas，HomePage 將 canvas 設成 mini player 底色，睇落係同一塊
+ * 浮喺頁底嘅圓角卡，兩邊留白（闊螢幕收返喺 --page-max-width 中間）。
+ * 卡底離 viewport 底 --mini-player-offset-bottom（安全區 + 一格；iOS standalone viewport 矮過螢幕時扣返差距）。
+ * viewport 以下 iOS 唔會畫內容，只露出 canvas（主頁漸變底色），同頁底接得順
  */
 .wrapper {
     position: fixed;
-    right: max(0px, calc((100vw - var(--page-max-width)) / 2));
-    bottom: 0;
-    left: max(0px, calc((100vw - var(--page-max-width)) / 2));
+    right: max(var(--space-3), calc((100vw - var(--page-max-width)) / 2 + var(--space-3)));
+    bottom: var(--mini-player-offset-bottom);
+    left: max(var(--space-3), calc((100vw - var(--page-max-width)) / 2 + var(--space-3)));
     z-index: 10;
 }
 
-/*
- * 得上面兩角圓角；底部安全區（home indicator）計入 mini player 自己。
- * viewport 矮過螢幕時 home indicator 已經喺 viewport 以下，--mini-player-inset-bottom 會扣返嗰截
- */
 .player {
     position: relative;
     overflow: hidden;
-    padding-bottom: var(--mini-player-inset-bottom);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-radius: var(--radius-lg);
     background: var(--color-surface);
     box-shadow: var(--shadow-floating);
     color: var(--color-text);
@@ -93,10 +88,9 @@
     transform: translateX(-50%);
 }
 
-/* 進度條喺頂邊：底邊貼住 home indicator，放喺度會畀佢遮住 */
 .progress {
     position: absolute;
-    inset: 0 0 auto;
+    inset: auto 0 0;
     height: 3px;
     background: var(--color-track);
 }
