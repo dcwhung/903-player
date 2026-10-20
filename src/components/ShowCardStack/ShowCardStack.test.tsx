@@ -458,6 +458,8 @@ describe('ShowCardStack during the fly-out', () => {
         fireEvent.keyDown(group, { key: 'ArrowLeft' });
         fireEvent.pointerMove(group, { clientX: 150, clientY: 100 });
         fireEvent.pointerUp(group, { clientX: 150, clientY: 100 });
+        // 瀏覽器喺放手之後即刻發嘅 click（仲飛緊）：食咗，而且唔會留低標記食埋落地後嘅 click
+        fireEvent.click(screen.getByRole('button', { name: '內容' }), { detail: 1 });
         finishFly();
 
         expect(group).not.toHaveAttribute('data-phase');
@@ -510,6 +512,26 @@ describe('ShowCardStack during the fly-out', () => {
         // 放手之後瀏覽器照發嘅 click 要食咗；下一下普通 tap 照常
         fireEvent.click(inner, { detail: 1 });
         expect(onInnerClick).not.toHaveBeenCalled();
+        fireEvent.click(inner, { detail: 1 });
+        expect(onInnerClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('should still swallow the click of a dropped drag when the finger moved after landing', () => {
+        const { group, onChange, onInnerClick } = setup();
+        const inner = screen.getByRole('button', { name: '內容' });
+
+        fireEvent.pointerDown(inner, { clientX: 200, clientY: 100 });
+        fireEvent.pointerMove(inner, { clientX: 50, clientY: 100 });
+        fireEvent.keyDown(group, { key: 'ArrowLeft' });
+        finishFly();
+        // 落地之後手指仲郁咗先放手：手勢已經作廢，唔可以再拖或者轉節目，但放手嗰下 click 照食
+        fireEvent.pointerMove(inner, { clientX: 20, clientY: 100 });
+        fireEvent.pointerUp(inner, { clientX: 20, clientY: 100 });
+        fireEvent.click(inner, { detail: 1 });
+
+        expect(onInnerClick).not.toHaveBeenCalled();
+        expect(onChange).toHaveBeenCalledExactlyOnceWith(0);
+        expect(group).not.toHaveAttribute('data-phase');
         fireEvent.click(inner, { detail: 1 });
         expect(onInnerClick).toHaveBeenCalledTimes(1);
     });
