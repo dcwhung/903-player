@@ -22,6 +22,8 @@
     --font-size-xxl: 26px;
     --letter-spacing-caps: 0.18em;
 
+    /* 半格：只用喺緊貼嘅文字行之間（例如今日節目卡嘅標題行） */
+    --space-half: 2px;
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
@@ -65,7 +67,7 @@
      */
     --card-padding-block: var(--space-2);
     --card-inner-gap: var(--space-2);
-    --card-titles-gap: 2px;
+    --card-titles-gap: var(--space-half);
     /* 卡疊兩邊留白；好窄嘅畫面收窄（見下面 max-width: 339px） */
     --card-stack-gutter: var(--space-4);
     /* 飛走：移出幾遠（佔卡闊）、再轉幾多；拖動 / 飛走都以卡底中間做軸心 */

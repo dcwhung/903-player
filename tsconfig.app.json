@@ -22,5 +22,6 @@
             "@testing-library/jest-dom"
         ]
     },
-    "include": ["src", "tests"]
+    "include": ["src", "tests"],
+    "exclude": ["src/**/*.node.test.ts", "tests/cssRule.ts"]
 }

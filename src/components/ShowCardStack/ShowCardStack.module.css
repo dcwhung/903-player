@@ -2,8 +2,9 @@
  * 卡疊：所有卡疊喺同一格 grid（一樣大），DOM 次序 = 疊嘅次序。
  * 拖動姿勢由 useCardMotion 寫入以下 CSS 變數；data-phase 決定 transition 同飛走位置。
  * 只裁橫向（卡飛出畫面唔會令頁面橫向捲），直向照顯示（傾斜時卡角可以凸出）。
- * touch-action: none：固定版面冇嘢好直向捲；用 pan-y 嘅話 iOS 一見手指有少少直向郁
- * 就開始原生 pan、發 pointercancel，張卡即刻彈返（實機完全拖唔到）。
+ * touch-action: pinch-zoom（舊瀏覽器 none）：擋晒單指 pan，固定版面冇嘢好直向捲；
+ * 用 pan-y 嘅話 iOS 一見手指有少少直向郁就開始原生 pan、發 pointercancel，
+ * 張卡即刻彈返（實機完全拖唔到）。雙指放大照得（無障礙）。
  * 弧形進度條自己都係 none，而且 stopPropagation，拖佢唔會郁張卡。
  */
 .stack {
@@ -21,7 +22,9 @@
     padding: 0 var(--card-stack-gutter) calc(var(--card-stack-offset) * 2);
     overflow: hidden;
     overflow: clip visible;
+    /* 唔識 pinch-zoom 嘅舊瀏覽器留喺 none；識嘅就照樣擋單指 pan，但雙指放大得（無障礙） */
     touch-action: none;
+    touch-action: pinch-zoom;
     user-select: none;
 }
 
@@ -161,7 +164,7 @@
  */
 @media (max-height: 561px) {
     .stack {
-        touch-action: pan-y;
+        touch-action: pan-y pinch-zoom;
     }
 }
 

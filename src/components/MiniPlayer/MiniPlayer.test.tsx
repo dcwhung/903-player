@@ -67,7 +67,7 @@ describe('MiniPlayer', () => {
         expect(p.onChange).toHaveBeenCalledWith(1);
     });
 
-    it('should wrap to the last today show when swiping right at the first show', () => {
+    it('wraps to the last today show when swiping right at the first show', () => {
         const p = props({ index: 0 });
         render(<MiniPlayer {...p} />);
         const region = screen.getByRole('region');
@@ -78,7 +78,7 @@ describe('MiniPlayer', () => {
         expect(p.onChange).toHaveBeenCalledWith(2);
     });
 
-    it('should wrap to the first today show when swiping left at the last show', () => {
+    it('wraps to the first today show when swiping left at the last show', () => {
         const p = props({ index: 2 });
         render(<MiniPlayer {...p} />);
         const region = screen.getByRole('region');
@@ -89,7 +89,7 @@ describe('MiniPlayer', () => {
         expect(p.onChange).toHaveBeenCalledWith(0);
     });
 
-    it('should do nothing when swiping with a single today show', () => {
+    it('does nothing when swiping with a single today show', () => {
         const p = props({ labels: ['Bad Girl大過佬'], keys: ['/badgirl.aac'], index: 0 });
         render(<MiniPlayer {...p} />);
         const region = screen.getByRole('region');

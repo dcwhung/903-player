@@ -1,9 +1,10 @@
 // 端對端測試：真 Chromium + vite preview + 假錄音列表 + 模擬 audio server（支援 Range）
+// 固定時鐘同 audio host 見 harness.mjs
 // 用法：npm run e2e（截圖輸出去 e2e/screenshots/）
 import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { silenceWav } from './silenceWav.mjs';
+import { AUDIO_HOST, newE2EContext, readFeed } from './harness.mjs';
 import { runTouchChecks } from './touch.mjs';
 
 const DEFAULT_PORT = 4173;
@@ -23,8 +24,6 @@ const parsePort = (raw) => {
 const PORT = parsePort(process.env.E2E_PORT);
 const BASE = `http://localhost:${PORT}/903-player/`;
 const OUT = new URL('./screenshots', import.meta.url).pathname;
-const AUDIO_SECONDS = 600;
-const wav = silenceWav(AUDIO_SECONDS);
 mkdirSync(OUT, { recursive: true });
 
 // 預期色：刻意寫死做獨立對照（同下面 '#d4af5a' 一樣），唔係由 app 推返出嚟
@@ -77,13 +76,15 @@ const checkVersionClear = async (p, label) => {
 const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 // 橫額高度同一格節目一樣（容許 subpixel 捨入）
 const BANNER_HEIGHT_TOLERANCE_PX = 1;
+// 390×844、320×568 嘅主頁固定 / 版本號已經由 SHOW_VIEWPORTS（homeFixed）嘅 checkFixedHome 檢查；
+// 430×932 唔喺嗰度，所以喺橫額呢度補做（fixedHome）
 const HOME_BANNER_VIEWPORTS = [
     { width: 390, height: 844 },
     { width: 320, height: 568 },
-    { width: 430, height: 932 },
+    { width: 430, height: 932, fixedHome: true },
 ];
 
-/** 主頁頁頂橫額：見到、同一格節目一樣高、有圓角；成頁唔捲、冇橫向捲動、版本號喺 mini player 上面 */
+/** 主頁頁頂橫額嘅幾何：見到、同一格節目一樣高、喺節目格上面對齊、有圓角、冇令頁面橫向捲動 */
 const checkHomeBanner = async (p, label, shot) => {
     const banner = p.getByRole('heading', { level: 1 }).getByRole('img', { name: BANNER_ALT });
     await banner.evaluate((img) => img.decode());
@@ -101,12 +102,7 @@ const checkHomeBanner = async (p, label, shot) => {
     );
     log(radius > 0, `${label}：橫額有圓角（${radius}px）`);
     log((await horizontalOverflow(p)) === 0, `${label}：冇橫向捲動`);
-    const overflow = await p.evaluate(
-        () => document.documentElement.scrollHeight - window.innerHeight,
-    );
-    log(overflow <= 0, `${label}：主頁成頁唔捲（超出 ${overflow}px）`);
     await p.screenshot({ path: `${OUT}/${shot}` });
-    await checkVersionClear(p, label);
 };
 
 const MIN_VISIBLE_ROWS = 2;
@@ -123,6 +119,8 @@ const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
 // 同 tokens.css 嘅 --player-disc-min 同 Page.module.css 嘅成頁捲斷點（max-height）一致
 const DISC_MIN_PX = 160;
+// SHORT_HEIGHT_PX 要同 CSS 嘅 @media (max-height) 一樣：src/styles/shortHeightBreakpoint.node.test.ts
+// 用 regex 讀呢一行，所以保持 `const SHORT_HEIGHT_PX = <數字>;` 嘅寫法
 const SHORT_HEIGHT_PX = 561;
 const SHOW_VIEWPORTS = [
     { width: 390, height: 844, swipe: true, homeFixed: true },
@@ -131,8 +129,8 @@ const SHOW_VIEWPORTS = [
     { width: 390, height: 720 },
     { width: 375, height: 667 },
     { width: 390, height: 664 },
-    // 橫向手機 / 矮視窗
-    { width: 844, height: 390 },
+    // 橫向手機 / 矮視窗（844×390 順便驗好矮嘅主頁：shortHome）
+    { width: 844, height: 390, shortHome: true },
     { width: 568, height: 320 },
     { width: 1280, height: 400 },
     { width: 390, height: 540 },
@@ -140,6 +138,35 @@ const SHOW_VIEWPORTS = [
     { width: 390, height: 560 },
     { width: 390, height: 562 },
 ];
+
+// 同 tokens.css 嘅 --page-max-width 一致；刻意寫死做獨立對照
+const PAGE_MAX_WIDTH_PX = 480;
+
+/**
+ * 好矮嘅主頁（S-403）：漸變同光暈畫喺 main、background-attachment: local，跟內容一齊捲；
+ * main 闊到成個畫面，但節目格仍然係 --page-max-width 闊、喺畫面中間
+ */
+const checkShortHeightHome = async (p, label) => {
+    const layout = await p.evaluate(() => {
+        const main = document.querySelector('main');
+        const nav = main.querySelector('nav').getBoundingClientRect();
+        return {
+            attachment: getComputedStyle(main).backgroundAttachment,
+            width: nav.width,
+            left: nav.left,
+            right: document.documentElement.clientWidth - nav.right,
+        };
+    });
+    log(
+        layout.attachment.includes('local'),
+        `${label}：主頁背景跟 main 捲（background-attachment: ${layout.attachment}）`,
+    );
+    log(
+        Math.abs(layout.width - PAGE_MAX_WIDTH_PX) <= 1 &&
+            Math.abs(layout.left - layout.right) <= 1,
+        `${label}：節目格保持 ${PAGE_MAX_WIDTH_PX}px 闊、置中（${layout.width}px，左 ${layout.left}px / 右 ${layout.right}px）`,
+    );
+};
 
 /** 節目頁固定：捲集數 panel 時 window 唔郁、控制掣仍然喺畫面，panel 自己嘅 scrollTop 有變 */
 const checkFixedShowPage = async (p, label, shot) => {
@@ -265,11 +292,22 @@ const checkDiscMatchesToday = async (p, label) => {
     const today = await discWidth();
     log(Math.abs(show - today) < 1, `${label}：唱片同今日節目頁一樣大（${show} / ${today}）`);
     // 今日節目頁同節目頁用同一個固定版面（.fixed），頁面間距一樣、矮螢幕一齊收窄；
-    // 今日節目卡入面用卡自己較窄嘅間距（--card-inner-gap），唔可以闊過節目頁
+    // 今日節目卡入面用卡自己較窄嘅間距：要正正係 --card-inner-gap（ShowCardStack .card 蓋過 .fixed），
+    // 亦唔可以闊過節目頁
     const todayGaps = await pageGaps();
+    // custom property 嘅 computed value 已經代入咗 var()（例如 var(--space-2) → 8px）
+    const cardInnerGap = await p.evaluate(() =>
+        parseFloat(
+            getComputedStyle(document.querySelector('[class*="panel"]')).getPropertyValue(
+                '--card-inner-gap',
+            ),
+        ),
+    );
     log(
-        todayGaps[0] === showGaps[0] && todayGaps[1] <= showGaps[1],
-        `${label}：今日節目頁頁面間距同節目頁一樣、卡入面唔闊過節目頁（${todayGaps.join(' / ')}px，節目頁 ${showGaps.join(' / ')}px）`,
+        todayGaps[0] === showGaps[0] &&
+            todayGaps[1] === cardInnerGap &&
+            cardInnerGap <= showGaps[1],
+        `${label}：今日節目頁頁面間距同節目頁一樣、卡入面間距 = --card-inner-gap ${cardInnerGap}px（${todayGaps.join(' / ')}px，節目頁 ${showGaps.join(' / ')}px）`,
     );
 };
 
@@ -304,7 +342,14 @@ const todayCardShare = (p) =>
 
 const recordTodayMetrics = async (p, label, rows) => {
     const share = await todayCardShare(p);
-    todayMetrics.push({ label, share: `${(share * 100).toFixed(1)}%`, rows });
+    // 距 PLAYER_MAX_SHARE 上限仲有幾多 px（負數 = 超出；好矮嘅畫面成頁捲，唔要求）
+    const headroom = (PLAYER_MAX_SHARE - share) * p.viewportSize().height;
+    todayMetrics.push({
+        label,
+        share: `${(share * 100).toFixed(1)}%`,
+        headroom: `${headroom.toFixed(1)}px`,
+        rows,
+    });
     return share;
 };
 
@@ -621,10 +666,12 @@ const describeFit = (fit) =>
 /** 每個殼縮矮情況量到嘅結果（最尾印成表） */
 const shellMetrics = [];
 
-const checkShellMismatch = async (browser, serveAudio, errors) => {
+const checkShellMismatch = async (browser, errors) => {
     for (const { width, height, shrink } of SHELL_MISMATCH_CASES) {
-        const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2 });
-        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
+        const ctx = await newE2EContext(browser, {
+            viewport: { width, height },
+            deviceScaleFactor: 2,
+        });
         const sp = await ctx.newPage();
         sp.on('pageerror', (e) => errors.push(e.message));
         for (const { route, region, minRows, name } of SHELL_PAGES) {
@@ -695,10 +742,12 @@ const miniPosition = (p) =>
         shell: document.getElementById('root').getBoundingClientRect().bottom,
     }));
 
-const checkMiniPlayerPosition = async (browser, serveAudio, errors) => {
+const checkMiniPlayerPosition = async (browser, errors) => {
     for (const { width, height, shrink } of MINI_POSITION_CASES) {
-        const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2 });
-        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
+        const ctx = await newE2EContext(browser, {
+            viewport: { width, height },
+            deviceScaleFactor: 2,
+        });
         const mp = await ctx.newPage();
         mp.on('pageerror', (e) => errors.push(e.message));
         await mp.goto(BASE);
@@ -724,35 +773,127 @@ const checkMiniPlayerPosition = async (browser, serveAudio, errors) => {
     }
 };
 
+// audio probe（PR #29）：今日同尋日、feed 未有嘅節目會直接 probe 原站。
+// 西加航空 19/10 晚間節目唔喺假資料（sampleData.mjs），而 E2E_NOW（22:30）佢已經開咗咪，所以一定會 probe
+const PROBE_STORAGE_KEY = '903player:probed:v1';
+// 同 src/config/shows.ts 嘅 westair 一致；刻意寫死做獨立對照
+const PROBE_SHOW = { id: 'westair', name: '西加航空', fileTime: '0905' };
+const PROBE_DATE = '2026-10-19';
+const PROBE_WAIT_MS = 20000;
+const PROBE_POLL_MS = 100;
+
+/**
+ * 同 app 嘅 buildAudioUrl 一樣砌法：<host>/<節目名>/<YYYYMMDD>_<HHMM>_<節目名>.aac。
+ * 檔名部分嘅節目名空格變底線（Bad Girl大過佬 → Bad_Girl大過佬），資料夾部分照用原名：
+ * 同 src/services/audioProbe.ts 嘅 fileShowName 一樣
+ */
+const probeUrl = ({ name, fileTime }, date) =>
+    `${AUDIO_HOST}/${encodeURIComponent(name)}/${encodeURIComponent(
+        `${date.replaceAll('-', '')}_${fileTime}_${name.replace(/ /g, '_')}`,
+    )}.aac`;
+/** 2026-10-16 → 16/10（集數掣 aria-label 嘅寫法） */
+const dayMonth = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+const feedLatestDate = (showId) =>
+    readFeed()
+        .filter((r) => r.showId === showId)
+        .map((r) => r.date)
+        .sort()
+        .at(-1);
+
+/** 開節目頁，等 probe 寫低某個節目某日嘅結果（found 或者 miss） */
+const openProbedShowPage = async (browser, errors, extraAudioUrls) => {
+    const ctx = await newE2EContext(
+        browser,
+        { viewport: { width: 390, height: 844 } },
+        { extraAudioUrls },
+    );
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => errors.push(e.message));
+    await p.goto(`${BASE}#/show/${PROBE_SHOW.id}`);
+    const slot = `${PROBE_SHOW.id}:${PROBE_DATE}`;
+    await p.waitForFunction(
+        ({ key, slot: wanted, showId, date }) => {
+            const state = JSON.parse(localStorage.getItem(key) ?? 'null');
+            return (
+                state?.misses?.[wanted] !== undefined ||
+                state?.found?.some((r) => r.showId === showId && r.date === date)
+            );
+        },
+        { key: PROBE_STORAGE_KEY, slot, showId: PROBE_SHOW.id, date: PROBE_DATE },
+        { timeout: PROBE_WAIT_MS, polling: PROBE_POLL_MS },
+    );
+    const state = await p.evaluate(
+        (key) => JSON.parse(localStorage.getItem(key)),
+        PROBE_STORAGE_KEY,
+    );
+    return { ctx, p, state };
+};
+
+const currentEpisodeOf = (p) =>
+    p.locator('button[aria-current="true"]').first().getAttribute('aria-label');
+
+/** 原站冇嘅檔（404）唔會變成集數；節目頁最近一集同假資料一樣 */
+const checkProbeIgnoresUnknown = async (browser, errors) => {
+    const { ctx, p, state } = await openProbedShowPage(browser, errors, []);
+    log(
+        state.found.length === 0,
+        `probe 原站冇嘅日子唔會多咗集數（found ${state.found.length}，miss ${Object.keys(state.misses).join(' ')}）`,
+    );
+    const latest = dayMonth(feedLatestDate(PROBE_SHOW.id));
+    // 重開先計：一入頁揀集嗰陣 probe 未完；重開會即刻併埋之前 probe 到嘅（如果有）
+    await p.reload();
+    await p
+        .getByRole('button', { name: new RegExp(`^播放 ${latest}`) })
+        .first()
+        .waitFor();
+    const current = await currentEpisodeOf(p);
+    log(
+        current.startsWith(`播放 ${latest}`),
+        `西加航空節目頁最近一集 = 假資料最近一集 ${latest}：${current}`,
+    );
+    const invented = await p.getByRole('button', { name: /^播放 1[89]\/10/ }).count();
+    log(invented === 0, `西加航空冇 probe 作出嚟嘅 18/10、19/10（${invented} 個）`);
+    await ctx.close();
+};
+
+/** 原站真係有、feed 未有嘅今日新一集：probe 搵到就加入清單，重開節目頁揀佢做最近一集 */
+const checkProbeFindsNewEpisode = async (browser, errors) => {
+    const url = probeUrl(PROBE_SHOW, PROBE_DATE);
+    const { ctx, p, state } = await openProbedShowPage(browser, errors, [url]);
+    const found = state.found.map((r) => `${r.showId} ${r.date}`);
+    log(
+        found.length === 1 && found[0] === `${PROBE_SHOW.id} ${PROBE_DATE}`,
+        `probe 搵到原站有嘅今日新一集，冇其他（${found.join(' / ')}）`,
+    );
+    const label = `播放 ${dayMonth(PROBE_DATE)}`;
+    const row = p.getByRole('button', { name: new RegExp(`^${label}`) });
+    await row.first().waitFor({ timeout: 5000 });
+    log((await row.count()) > 0, `probe 搵到嘅 ${dayMonth(PROBE_DATE)} 即刻加入西加航空清單`);
+    await p.reload();
+    await p
+        .getByRole('button', { name: new RegExp(`^${label}`) })
+        .first()
+        .waitFor();
+    const current = await currentEpisodeOf(p);
+    log(current.startsWith(label), `重開節目頁揀 probe 搵到嘅最新一集：${current}`);
+    await ctx.close();
+};
+
 const server = await startPreview();
 let browser;
 try {
     browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
-    const context = await browser.newContext({
+    const context = await newE2EContext(browser, {
         viewport: { width: 390, height: 844 },
         deviceScaleFactor: 2,
         colorScheme: 'dark',
     });
-    // 模擬真實 audio server 嘅 Range 支援（206 Partial Content），seek 先會成功
-    const serveAudio = (route) => {
-        const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? '');
-        const start = range ? Number(range[1]) : 0;
-        const end = range && range[2] ? Number(range[2]) : wav.length - 1;
-        route.fulfill({
-            status: range ? 206 : 200,
-            headers: {
-                'Content-Type': 'audio/wav',
-                'Accept-Ranges': 'bytes',
-                'Content-Length': String(end - start + 1),
-                ...(range ? { 'Content-Range': `bytes ${start}-${end}/${wav.length}` } : {}),
-            },
-            body: wav.subarray(start, end + 1),
-        });
-    };
-    await context.route('https://audio.hkfm903.live/**', serveAudio);
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    // 先驗 probe 同 audio host：佢哋錯咗，下面最近一集嘅斷言會一連串錯（甚至 crash），睇唔到成因
+    await checkProbeIgnoresUnknown(browser, errors);
+    await checkProbeFindsNewEpisode(browser, errors);
 
     await page.goto(BASE);
     await page.waitForSelector('nav[aria-busy="false"]');
@@ -916,8 +1057,7 @@ try {
     await checkVersionClear(page, '390×844');
     await page.screenshot({ path: `${OUT}/7-home-mini-player.png` });
 
-    const narrow = await browser.newContext({ viewport: { width: 320, height: 640 } });
-    await narrow.route('https://audio.hkfm903.live/**', serveAudio);
+    const narrow = await newE2EContext(browser, { viewport: { width: 320, height: 640 } });
     const np = await narrow.newPage();
     await np.goto(BASE);
     await np.waitForSelector('nav[aria-busy="false"]');
@@ -934,8 +1074,7 @@ try {
     await narrow.close();
 
     // 主頁 mini player 循環掃：獨立 context，未載入任何節目
-    const loop = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    await loop.route('https://audio.hkfm903.live/**', serveAudio);
+    const loop = await newE2EContext(browser, { viewport: { width: 390, height: 844 } });
     const lpp = await loop.newPage();
     lpp.on('pageerror', (e) => errors.push(e.message));
     await lpp.goto(BASE);
@@ -944,12 +1083,11 @@ try {
     await loop.close();
 
     // 細 iPhone（320×568）：今日節目卡疊靜止嘅樣
-    const small = await browser.newContext({
+    const small = await newE2EContext(browser, {
         viewport: { width: 320, height: 568 },
         deviceScaleFactor: 2,
         colorScheme: 'dark',
     });
-    await small.route('https://audio.hkfm903.live/**', serveAudio);
     const sp = await small.newPage();
     sp.on('pageerror', (e) => errors.push(e.message));
     await sp.goto(`${BASE}#/today`);
@@ -964,26 +1102,28 @@ try {
     await small.close();
 
     // 主頁頁頂橫額：常見手機闊度（細 iPhone、一般、Pro Max）
-    for (const { width, height } of HOME_BANNER_VIEWPORTS) {
-        const ctx = await browser.newContext({
+    for (const { width, height, fixedHome } of HOME_BANNER_VIEWPORTS) {
+        const ctx = await newE2EContext(browser, {
             viewport: { width, height },
             deviceScaleFactor: 2,
             colorScheme: 'dark',
         });
-        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
         const hp = await ctx.newPage();
         hp.on('pageerror', (e) => errors.push(e.message));
         await hp.goto(BASE);
         await hp.waitForSelector('nav[aria-busy="false"]');
         await hp.getByRole('region', { name: '正在播放（今日節目）' }).waitFor();
         await checkHomeBanner(hp, `${width}×${height} 主頁`, `home-banner-${width}x${height}.png`);
+        if (fixedHome) await checkFixedHome(hp, `${width}×${height} 主頁`);
         await ctx.close();
     }
 
     // 節目頁：夠高就固定、集數清單自己捲；好矮（橫向手機）就成頁正常捲。badgirl 集數多過一個畫面
-    for (const { width, height, swipe, homeFixed } of SHOW_VIEWPORTS) {
-        const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2 });
-        await ctx.route('https://audio.hkfm903.live/**', serveAudio);
+    for (const { width, height, swipe, homeFixed, shortHome } of SHOW_VIEWPORTS) {
+        const ctx = await newE2EContext(browser, {
+            viewport: { width, height },
+            deviceScaleFactor: 2,
+        });
         const fp = await ctx.newPage();
         fp.on('pageerror', (e) => errors.push(e.message));
         await fp.goto(`${BASE}#/show/badgirl`);
@@ -1013,21 +1153,29 @@ try {
             await checkFixedHome(fp, `${width}×${height} 主頁`);
             await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
         }
+        if (shortHome) {
+            await fp.goto(BASE);
+            await fp.waitForSelector('nav[aria-busy="false"]');
+            await checkShortHeightHome(fp, `${width}×${height} 主頁`);
+            await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
+        }
         await ctx.close();
     }
     console.log('\n節目頁尺寸｜播放器佔高｜唱片｜清單行數');
     for (const m of metrics) console.log(`${m.label}｜${m.share}｜${m.disc}px｜${m.rows}`);
-    console.log('\n今日節目頁尺寸｜卡（連指示點）佔高｜清單行數');
-    for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.rows}`);
+    console.log(
+        `\n今日節目頁尺寸｜卡（連指示點）佔高｜距 ${PLAYER_MAX_SHARE * 100}% 上限｜清單行數`,
+    );
+    for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.headroom}｜${m.rows}`);
     console.log('');
 
-    await checkShellMismatch(browser, serveAudio, errors);
-    await checkMiniPlayerPosition(browser, serveAudio, errors);
+    await checkShellMismatch(browser, errors);
+    await checkMiniPlayerPosition(browser, errors);
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
-    await runTouchChecks({ browser, base: BASE, out: OUT, serveAudio, errors, log });
+    await runTouchChecks({ browser, base: BASE, out: OUT, errors, log });
 
-    const light = await browser.newContext({
+    const light = await newE2EContext(browser, {
         viewport: { width: 390, height: 844 },
         deviceScaleFactor: 2,
         colorScheme: 'light',

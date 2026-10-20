@@ -1,6 +1,5 @@
 import { useRef, type MouseEvent, type PointerEvent } from 'react';
-import { wrapIndex } from '../components/ShowCardStack/cardStack';
-import { swipeDirection, type SwipeDirection } from './swipe';
+import { swipeDirection, type SwipeDirection, wrapIndex } from './swipe';
 
 /**
  * 掃完 / 拖完之後瀏覽器仍然會喺放手嗰粒掣度發 click，所以要喺 capture 階段食咗佢。
