@@ -31,8 +31,10 @@ export const PROBE_SETTLED_RETRY_MS = 24 * 60 * 60 * 1_000;
 export const PROBE_FOUND_RETENTION_DAYS = 14;
 const MS_PER_DAY = 24 * 60 * 60 * 1_000;
 /**
- * MediaError.MEDIA_ERR_NETWORK：斷網、captive portal、DNS 失敗都係呢個 code，
- * 唔代表冇呢個檔。直接寫數字，因為 jsdom 等環境冇 MediaError
+ * MediaError.MEDIA_ERR_NETWORK：只會喺已經收到部分 data 之後先斷線先出現；
+ * 完全攞唔到（斷網 / DNS / captive portal）按 spec 係 code 4，同冇檔一樣，
+ * 所以 probeRecentRecordings 收到 missing 之後會再 check 一次 isOnline，加埋 24h 重試兜底。
+ * 直接寫數字，因為 jsdom 等環境冇 MediaError
  */
 const MEDIA_ERR_NETWORK = 2;
 const AUDIO_EXTENSION = '.aac';
@@ -224,7 +226,8 @@ export const probeRecentRecordings = async (
     writeProbeState(state);
     for (const slot of pendingSlots([...known, ...state.found], state.misses, now)) {
         const result = await probe(slot.recording.url);
-        if (result === 'timeout') {
+        // 中途斷網嘅 error 睇落同冇檔一樣：當 timeout 停低，唔好將剩低嘅 slot 全部記做 miss
+        if (result === 'timeout' || (result === 'missing' && !isOnline())) {
             break;
         }
         recordResult(state, slot, result, now);

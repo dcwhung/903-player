@@ -105,7 +105,7 @@ describe('probeAudio', () => {
         expect(audio.load).toHaveBeenCalled();
     });
 
-    it('resolves timeout (not missing) on a network error, e.g. offline or captive portal', async () => {
+    it('resolves timeout (not missing) on a network error after data started arriving', async () => {
         const { audio, result } = start();
 
         audio.error = { code: MEDIA_ERR_NETWORK_CODE };
@@ -187,6 +187,24 @@ describe('probeRecentRecordings', () => {
         expect(probe).not.toHaveBeenCalled();
         expect(result).toEqual([remembered]);
         expect(readProbeState().misses).toEqual({});
+    });
+
+    it('stops without recording a miss when the network drops mid-run', async () => {
+        let online = true;
+        let calls = 0;
+        const probe = vi.fn(async (): Promise<ProbeResult> => {
+            calls += 1;
+            if (calls === 2) {
+                // 第 2 個 probe 途中斷網：瀏覽器照樣報 error（code 4），睇落同冇檔一樣
+                online = false;
+            }
+            return 'missing';
+        });
+
+        await probeRecentRecordings([], { probe, now: NOW, isOnline: () => online });
+
+        expect(probe).toHaveBeenCalledTimes(2);
+        expect(Object.keys(readProbeState().misses)).toHaveLength(1);
     });
 
     it('probes as usual when online', async () => {
