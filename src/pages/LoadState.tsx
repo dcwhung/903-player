@@ -5,7 +5,7 @@ import { t } from '../i18n/t';
 interface LoadStateProps {
     status: LoadStatus;
     isEmpty: boolean;
-    /** 背景 probe 緊：冇錄音都可能只係未搵到，唔好太早話「冇錄音」 */
+    /** 第一輪 probe 仲未完：冇錄音都可能只係未搵到，唔好太早話「冇錄音」 */
     isSearching: boolean;
 }
 
