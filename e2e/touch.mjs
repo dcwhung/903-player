@@ -277,34 +277,39 @@ const checkTwoFingerSingleSeek = async (cdp, p, log, label) => {
     );
 };
 
+/** 今日節目卡最上面嗰張（可以捽嘅）碟面 */
+const discFace = (p) => p.locator('[class*="scrubbable"] [class*="face"]').first();
+
 /** 播緊時碟面自轉（CSS animation 喺度行） */
 const checkDiscSpins = async (p, log, label) => {
-    const state = await p
-        .locator('[class*="scrubbable"] [class*="face"]')
-        .first()
-        .evaluate((el) => getComputedStyle(el).animationPlayState);
+    const state = await discFace(p).evaluate((el) => getComputedStyle(el).animationPlayState);
     log(state === 'running', `${label}：播緊時碟自轉（animation-play-state ${state}）`);
 };
 
-/** 捽碟：順時針轉四分一圈 = 向前 15 秒，唔會轉節目 */
+/** 捽碟：順時針轉四分一圈 = 向前 15 秒，碟面跟手指轉，唔會轉節目 */
 const checkDiscScrub = async (cdp, p, log, label) => {
     const slider = p.getByRole('slider', { name: '播放進度' });
     const box = await slider.boundingBox();
     const title = await heading(p);
     const before = Number(await slider.getAttribute('aria-valuenow'));
+    const to = DISC_START_DEGREES + QUARTER_TURN_DEGREES;
     await touchArc(
         cdp,
         p,
         centreOf(box),
         DISC_SCRUB_RADIUS_RATIO * box.width,
         DISC_START_DEGREES,
-        DISC_START_DEGREES + QUARTER_TURN_DEGREES,
+        to,
     );
     const after = Number(await slider.getAttribute('aria-valuenow'));
     const moved = after - before;
+    // 正常動畫下碟面有手動角度：減少動畫嗰個 check 斷言「冇 transform」先唔會因為揀錯元素白過
+    const transform = await discFace(p).evaluate((el) => el.style.transform);
     log(
-        Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S && (await heading(p)) === title,
-        `${label}：順時針捽碟四分一圈向前約 ${DISC_QUARTER_TURN_S}s，唔轉節目（${before}s → ${after}s）`,
+        Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S &&
+            transform.startsWith('rotate(') &&
+            (await heading(p)) === title,
+        `${label}：順時針捽碟四分一圈向前約 ${DISC_QUARTER_TURN_S}s、碟跟手指轉（${transform}），唔轉節目（${before}s → ${after}s）`,
     );
 };
 
@@ -432,7 +437,7 @@ const checkReducedMotion = async (env, label) => {
     await p.goto(`${env.base}#/today`);
     await waitPlaying(p);
     await p.waitForTimeout(500);
-    const face = p.locator('[class*="scrubbable"] [class*="face"]').first();
+    const face = discFace(p);
     const animation = await face.evaluate((el) => getComputedStyle(el).animationName);
     log(animation === 'none', `${label}：碟面冇自轉 animation（${animation}）`);
     const slider = p.getByRole('slider', { name: '播放進度' });
