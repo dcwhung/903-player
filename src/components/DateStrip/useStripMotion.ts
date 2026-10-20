@@ -90,7 +90,7 @@ const commit = (refs: MotionRefs, direction: SwipeDirection) => {
 
 /**
  * 新日期 render 咗之後：由舊隔籬格位置即刻擺好，再 transition 返中間（FLIP）。
- * 起點同時套用側格樣式（細字、淡色、冇「現正播放：」），一路滑一路變返中格樣式，
+ * 起點同時套用側格樣式（細字、淡色），一路滑一路變返中格樣式，
  * 唔會一開頭就由細字跳做大字
  */
 const arrive = (refs: MotionRefs) => {

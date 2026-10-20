@@ -1,15 +1,20 @@
-import { ARC_SWEEP_DEGREES } from '../config/constants';
+import {
+    ARC_SWEEP_DEGREES,
+    DISC_SCRUB_FAST_DEGREES_PER_MS,
+    DISC_SCRUB_MAX_SECONDS_PER_TURN,
+    DISC_SCRUB_MIN_SECONDS_PER_TURN,
+    DISC_SCRUB_SLOW_DEGREES_PER_MS,
+} from '../config/constants';
 
 // 角度以螢幕座標計：0° 指向右，順時針為正（y 軸向下），同 arc.ts 一樣
 const FULL_CIRCLE_DEGREES = 360;
 const HALF_CIRCLE_DEGREES = FULL_CIRCLE_DEGREES / 2;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
 
-/** 捽碟可以轉嘅範圍：由起手位置計，唔可以轉出錄音頭尾 */
-export interface TurnRange {
-    startSeconds: number;
-    max: number;
-    secondsPerTurn: number;
+/** 捽碟一步：前進 / 後退到邊（秒）、碟面實際轉咗幾多度 */
+export interface ScrubStep {
+    seconds: number;
+    degrees: number;
 }
 
 export const pointerAngle = (x: number, y: number, centerX: number, centerY: number): number =>
@@ -27,12 +32,28 @@ export const angleDelta = (from: number, to: number): number => {
 export const turnSeconds = (degrees: number, secondsPerTurn: number): number =>
     (degrees / FULL_CIRCLE_DEGREES) * secondsPerTurn;
 
-/** 轉到錄音頭尾就停：之後反方向轉即刻有反應，唔使先轉返超出咗嘅角度 */
-export const clampTurn = (degrees: number, range: TurnRange): number => {
-    const toDegrees = (seconds: number) => (seconds / range.secondsPerTurn) * FULL_CIRCLE_DEGREES;
-    const min = toDegrees(-range.startSeconds);
-    const max = toDegrees(range.max - range.startSeconds);
-    return Math.min(max, Math.max(min, degrees));
+/** 手指轉速（度 / 毫秒）→ 每圈幾多秒：慢就微調，快就線性加速到上限 */
+export const scrubSecondsPerTurn = (degreesPerMs: number): number => {
+    const range = DISC_SCRUB_FAST_DEGREES_PER_MS - DISC_SCRUB_SLOW_DEGREES_PER_MS;
+    const ratio = Math.min(1, Math.max(0, (degreesPerMs - DISC_SCRUB_SLOW_DEGREES_PER_MS) / range));
+    return (
+        DISC_SCRUB_MIN_SECONDS_PER_TURN +
+        ratio * (DISC_SCRUB_MAX_SECONDS_PER_TURN - DISC_SCRUB_MIN_SECONDS_PER_TURN)
+    );
+};
+
+/**
+ * 由 seconds 轉 degrees：轉到錄音頭尾就停，碟面只轉實際行咗嘅角度，
+ * 之後反方向轉即刻有反應，唔使先轉返超出咗嘅角度
+ */
+export const scrubStep = (
+    seconds: number,
+    degrees: number,
+    secondsPerTurn: number,
+    max: number,
+): ScrubStep => {
+    const next = Math.min(max, Math.max(0, seconds + turnSeconds(degrees, secondsPerTurn)));
+    return { seconds: next, degrees: ((next - seconds) / secondsPerTurn) * FULL_CIRCLE_DEGREES };
 };
 
 /** 拖弧形時碟跟手指轉：弧形掃過幾多度，碟就轉幾多度 */

@@ -29,8 +29,13 @@ const RING_RADIUS = 140;
 const CORNER_RATIO = 12 / GAUGE_VIEWBOX;
 // 捽碟手指離圓心：碟半徑係唱片格嘅 36%，揀 30% 喺碟面中段
 const DISC_SCRUB_RADIUS_RATIO = 0.3;
-// 轉一圈 60 秒（src/config/constants.ts DISC_SCRUB_SECONDS_PER_TURN）
+// 慢慢捽轉一圈 60 秒（src/config/constants.ts DISC_SCRUB_MIN_SECONDS_PER_TURN）
 const DISC_QUARTER_TURN_S = 15;
+// 慢慢捽：每格 9°（90° / STEPS）隔 90ms ≈ 0.1°/ms，低過加速門檻（DISC_SCRUB_SLOW_DEGREES_PER_MS 0.15）
+const DISC_SLOW_STEP_MS = 90;
+// 快速撥：每格 18°（半圈 / STEPS）隔 STEP_MS ≈ 1.1°/ms，加速；半圈要行多過慢慢捽嘅兩倍（> 60s）
+const HALF_TURN_DEGREES = 180;
+const DISC_FLICK_MIN_S = 60;
 // 捽碟由碟頂順時針轉四分一圈
 const DISC_START_DEGREES = -90;
 const QUARTER_TURN_DEGREES = 90;
@@ -202,15 +207,15 @@ const circlePoint = (centre, radius, degrees) => {
     return { x: centre.x + radius * Math.cos(radians), y: centre.y + radius * Math.sin(radians) };
 };
 
-/** 一隻手指沿圓周由 from 度轉去 to 度（0° 指向右，順時針為正），分 STEPS 格 */
-const touchArc = async (cdp, p, centre, radius, from, to) => {
+/** 一隻手指沿圓周由 from 度轉去 to 度（0° 指向右，順時針為正），分 STEPS 格，每格隔 stepMs */
+const touchArc = async (cdp, p, centre, radius, from, to, stepMs = STEP_MS) => {
     const at = (degrees) => circlePoint(centre, radius, degrees);
     const send = (type, points) =>
         cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
     await send('touchStart', [at(from)]);
     for (let i = 1; i <= STEPS; i += 1) {
         await send('touchMove', [at(from + ((to - from) * i) / STEPS)]);
-        await p.waitForTimeout(STEP_MS);
+        await p.waitForTimeout(stepMs);
     }
     await send('touchEnd', []);
     await p.waitForTimeout(SETTLE_MS);
@@ -246,7 +251,7 @@ const checkRingGapIgnored = async (cdp, p, log, label) => {
  * 兩隻手指（id 0、1）：先撳 first(0)，再撳 second(0)，之後一齊郁到 first(1) / second(1)，最後一齊放。
  * first / second 係 0–1 進度去畫面座標嘅 function
  */
-const touchTwoFingers = async (cdp, p, first, second) => {
+const touchTwoFingers = async (cdp, p, first, second, stepMs = STEP_MS) => {
     const send = (type, points) =>
         cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
     const at = (t) => [
@@ -257,7 +262,7 @@ const touchTwoFingers = async (cdp, p, first, second) => {
     await send('touchStart', at(0));
     for (let i = 1; i <= STEPS; i += 1) {
         await send('touchMove', at(i / STEPS));
-        await p.waitForTimeout(STEP_MS);
+        await p.waitForTimeout(stepMs);
     }
     await send('touchEnd', []);
     await p.waitForTimeout(SETTLE_MS);
@@ -272,7 +277,7 @@ const checkTwoFingerSingleSeek = async (cdp, p, log, label) => {
     const [from, to] = [gaugePoint(box, RING_TOP), gaugePoint(box, RING_RIGHT)];
     const ring = (t) => ({ x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t });
     const before = Number(await slider.getAttribute('aria-valuenow'));
-    await touchTwoFingers(cdp, p, disc, ring);
+    await touchTwoFingers(cdp, p, disc, ring, DISC_SLOW_STEP_MS);
     const moved = Number(await slider.getAttribute('aria-valuenow')) - before;
     log(
         Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S,
@@ -303,6 +308,7 @@ const checkDiscScrub = async (cdp, p, log, label) => {
         DISC_SCRUB_RADIUS_RATIO * box.width,
         DISC_START_DEGREES,
         to,
+        DISC_SLOW_STEP_MS,
     );
     const after = Number(await slider.getAttribute('aria-valuenow'));
     const moved = after - before;
@@ -313,6 +319,26 @@ const checkDiscScrub = async (cdp, p, log, label) => {
             transform.startsWith('rotate(') &&
             (await heading(p)) === title,
         `${label}：順時針捽碟四分一圈向前約 ${DISC_QUARTER_TURN_S}s、碟跟手指轉（${transform}），唔轉節目（${before}s → ${after}s）`,
+    );
+};
+
+/** 捽碟加速：快速撥半圈，行多過慢慢捽嘅兩倍 */
+const checkDiscFlick = async (cdp, p, log, label) => {
+    const slider = p.getByRole('slider', { name: '播放進度' });
+    const box = await slider.boundingBox();
+    const before = Number(await slider.getAttribute('aria-valuenow'));
+    await touchArc(
+        cdp,
+        p,
+        centreOf(box),
+        DISC_SCRUB_RADIUS_RATIO * box.width,
+        DISC_START_DEGREES,
+        DISC_START_DEGREES + HALF_TURN_DEGREES,
+    );
+    const moved = Number(await slider.getAttribute('aria-valuenow')) - before;
+    log(
+        moved > DISC_FLICK_MIN_S,
+        `${label}：快速撥碟半圈加速（${signedSeconds(moved)}，預期多過 +${DISC_FLICK_MIN_S}s）`,
     );
 };
 
@@ -431,6 +457,7 @@ const checkToday = async (env, label) => {
     await checkRingDragNeverSwitches(cdp, p, log, label);
     await checkDiscSpins(p, log, label);
     await checkDiscScrub(cdp, p, log, label);
+    await checkDiscFlick(cdp, p, log, label);
     await p.screenshot({ path: `${env.out}/touch-today-${label.split(' ')[0]}.png` });
 };
 
@@ -453,6 +480,7 @@ const checkReducedMotion = async (env, label) => {
         DISC_SCRUB_RADIUS_RATIO * box.width,
         DISC_START_DEGREES,
         DISC_START_DEGREES + QUARTER_TURN_DEGREES,
+        DISC_SLOW_STEP_MS,
     );
     const moved = Number(await slider.getAttribute('aria-valuenow')) - before;
     const transform = await face.evaluate((el) => el.style.transform);

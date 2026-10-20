@@ -66,18 +66,26 @@ describe('DateStrip', () => {
     beforeEach(() => vi.useFakeTimers({ toFake: ['performance'] }));
     afterEach(() => vi.useRealTimers());
 
-    it('shows the newer date left, 現正播放 in the centre and the older date right', () => {
+    it('shows the newer date left, the current date in the centre and the older date right', () => {
         render(<Harness />);
 
         const newer = screen.getByRole('button', { name: '新一集 19/10（一）' });
         const older = screen.getByRole('button', { name: '舊一集 15/10（四）' });
         expect(newer).toHaveTextContent(/^‹\s*19\/10（一）$/);
-        expect(screen.getByText('現正播放：')).toBeInTheDocument();
+        expect(screen.getByText('16/10（五）').parentElement).toHaveTextContent(/^16\/10（五）$/);
         expect(older).toHaveTextContent(/^15\/10（四）\s*›$/);
         // 箭咀係裝飾（窄螢幕用 CSS 收埋），唔讀出嚟
         expect(within(newer).getByText('‹')).toHaveAttribute('aria-hidden', 'true');
         expect(within(older).getByText('›')).toHaveAttribute('aria-hidden', 'true');
         expect(zone()).toHaveAccessibleName('16/10（五） Bad Girl大過佬');
+    });
+
+    it('labels 現正播放 above the strip, without a colon', () => {
+        render(<Harness />);
+
+        const label = screen.getByText('現正播放');
+        expect(zone()).not.toContainElement(label);
+        expect(label.compareDocumentPosition(zone())).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
     it('leaves the missing side empty at either end', () => {

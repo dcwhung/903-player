@@ -1,4 +1,17 @@
-import { angleDelta, arcFollowDegrees, clampTurn, pointerAngle, turnSeconds } from './discScrub';
+import {
+    DISC_SCRUB_FAST_DEGREES_PER_MS,
+    DISC_SCRUB_MAX_SECONDS_PER_TURN,
+    DISC_SCRUB_MIN_SECONDS_PER_TURN,
+    DISC_SCRUB_SLOW_DEGREES_PER_MS,
+} from '../config/constants';
+import {
+    angleDelta,
+    arcFollowDegrees,
+    pointerAngle,
+    scrubSecondsPerTurn,
+    scrubStep,
+    turnSeconds,
+} from './discScrub';
 
 const SECONDS_PER_TURN = 60;
 
@@ -29,16 +42,42 @@ describe('turnSeconds', () => {
     });
 });
 
-describe('clampTurn', () => {
-    const range = { startSeconds: 100, max: 400, secondsPerTurn: SECONDS_PER_TURN };
-
-    it('passes turns that stay inside the recording', () => {
-        expect(clampTurn(180, range)).toBe(180);
+describe('scrubSecondsPerTurn', () => {
+    it('uses the fine rate for slow turns', () => {
+        expect(scrubSecondsPerTurn(0)).toBe(DISC_SCRUB_MIN_SECONDS_PER_TURN);
+        expect(scrubSecondsPerTurn(DISC_SCRUB_SLOW_DEGREES_PER_MS)).toBe(
+            DISC_SCRUB_MIN_SECONDS_PER_TURN,
+        );
     });
 
-    it('stops at the start and the end of the recording', () => {
-        expect(clampTurn(-1000, range)).toBe(-600);
-        expect(clampTurn(5000, range)).toBe(1800);
+    it('caps at the coarse rate for fast flicks', () => {
+        expect(scrubSecondsPerTurn(DISC_SCRUB_FAST_DEGREES_PER_MS)).toBe(
+            DISC_SCRUB_MAX_SECONDS_PER_TURN,
+        );
+        expect(scrubSecondsPerTurn(DISC_SCRUB_FAST_DEGREES_PER_MS * 10)).toBe(
+            DISC_SCRUB_MAX_SECONDS_PER_TURN,
+        );
+    });
+
+    it('speeds up linearly in between', () => {
+        const midSpeed = (DISC_SCRUB_SLOW_DEGREES_PER_MS + DISC_SCRUB_FAST_DEGREES_PER_MS) / 2;
+        expect(scrubSecondsPerTurn(midSpeed)).toBeCloseTo(
+            (DISC_SCRUB_MIN_SECONDS_PER_TURN + DISC_SCRUB_MAX_SECONDS_PER_TURN) / 2,
+        );
+    });
+});
+
+describe('scrubStep', () => {
+    const max = 400;
+
+    it('moves by the turned angle at the given rate', () => {
+        expect(scrubStep(100, 90, SECONDS_PER_TURN, max)).toEqual({ seconds: 115, degrees: 90 });
+        expect(scrubStep(100, -90, SECONDS_PER_TURN, max)).toEqual({ seconds: 85, degrees: -90 });
+    });
+
+    it('stops at the start and the end, turning the disc only as far as it moved', () => {
+        expect(scrubStep(10, -360, SECONDS_PER_TURN, max)).toEqual({ seconds: 0, degrees: -60 });
+        expect(scrubStep(390, 360, SECONDS_PER_TURN, max)).toEqual({ seconds: 400, degrees: 60 });
     });
 });
 

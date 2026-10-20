@@ -48,8 +48,8 @@ export const zhHK = {
         switchHint: '左右方向鍵或左右掃動轉集',
         switchRoleDescription: '轉集',
         switched: '已轉到 {date}',
-        // 日子條中間：「現正播放：16/10（五）」，標籤用強調色
-        nowPlayingLabel: '現正播放：',
+        // 日子條上面嘅標籤（強調色），日期喺條中間
+        nowPlayingLabel: '現正播放',
         // 日子條兩邊：左邊新一集、右邊舊一集（可見文字 + 讀屏軟件讀嘅名）
         newerChevron: '‹',
         olderChevron: '›',

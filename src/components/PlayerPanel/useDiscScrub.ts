@@ -1,10 +1,6 @@
 import { useRef, type DragEvent, type PointerEvent } from 'react';
-import {
-    DISC_SCRUB_DEAD_ZONE_RATIO,
-    DISC_SCRUB_MIN_DEGREES,
-    DISC_SCRUB_SECONDS_PER_TURN,
-} from '../../config/constants';
-import { angleDelta, clampTurn, pointerAngle, turnSeconds } from '../../utils/discScrub';
+import { DISC_SCRUB_DEAD_ZONE_RATIO, DISC_SCRUB_MIN_DEGREES } from '../../config/constants';
+import { angleDelta, pointerAngle, scrubSecondsPerTurn, scrubStep } from '../../utils/discScrub';
 import type { DiscTurn } from './useDiscTurn';
 
 type DiscPointerEvent = PointerEvent<HTMLElement>;
@@ -25,10 +21,13 @@ interface DiscScrubOptions {
 
 interface ScrubSession {
     pointerId: number;
-    startSeconds: number;
+    /** 預覽緊嘅播放位置（由起手位置開始累積，已 clamp 喺錄音頭尾） */
+    seconds: number;
     /** 上一個有效樣本嘅角度；spindle 附近嘅樣本唔計（null） */
     lastAngle: number | null;
-    /** 累積轉咗幾多度（順時針為正，已 clamp 喺錄音頭尾） */
+    /** 上一個樣本嘅時間（event.timeStamp），計手指轉速 */
+    lastTime: number;
+    /** 碟面累積轉咗幾多度（順時針為正） */
     degrees: number;
     /** 轉過 DISC_SCRUB_MIN_DEGREES 先算捽，否則當 tap */
     scrubbing: boolean;
@@ -44,23 +43,23 @@ const angleOnDisc = (event: DiscPointerEvent): number | null => {
     return pointerAngle(event.clientX, event.clientY, centerX, centerY);
 };
 
-const secondsAt = (session: ScrubSession): number =>
-    session.startSeconds + turnSeconds(session.degrees, DISC_SCRUB_SECONDS_PER_TURN);
+/** 兩個樣本同一個 timeStamp（合併咗嘅 event）都唔會除以 0 */
+const MIN_SAMPLE_MS = 1;
 
-/** 跟手指累積角度；過咗門檻先開始預覽同轉碟 */
-const advance = (session: ScrubSession, angle: number, options: DiscScrubOptions) => {
-    const { lastAngle } = session;
+/** 跟手指累積角度（捽得快每度行多啲秒）；過咗門檻先開始預覽同轉碟 */
+const advance = (session: ScrubSession, angle: number, time: number, options: DiscScrubOptions) => {
+    const { lastAngle, lastTime } = session;
     session.lastAngle = angle;
+    session.lastTime = time;
     if (lastAngle === null) return;
-    const range = {
-        startSeconds: session.startSeconds,
-        max: options.max,
-        secondsPerTurn: DISC_SCRUB_SECONDS_PER_TURN,
-    };
-    session.degrees = clampTurn(session.degrees + angleDelta(lastAngle, angle), range);
+    const delta = angleDelta(lastAngle, angle);
+    const speed = Math.abs(delta) / Math.max(MIN_SAMPLE_MS, time - lastTime);
+    const step = scrubStep(session.seconds, delta, scrubSecondsPerTurn(speed), options.max);
+    session.seconds = step.seconds;
+    session.degrees += step.degrees;
     if (Math.abs(session.degrees) >= DISC_SCRUB_MIN_DEGREES) session.scrubbing = true;
     if (!session.scrubbing) return;
-    options.onPreview(secondsAt(session));
+    options.onPreview(session.seconds);
     options.motion.turn(session.degrees);
 };
 
@@ -70,8 +69,9 @@ const begin = (event: DiscPointerEvent, options: DiscScrubOptions): ScrubSession
     options.onHold(true);
     return {
         pointerId: event.pointerId,
-        startSeconds: options.currentTime,
+        seconds: options.currentTime,
         lastAngle: angleOnDisc(event),
+        lastTime: event.timeStamp,
         degrees: 0,
         scrubbing: false,
     };
@@ -92,7 +92,7 @@ const finish = (
     // tap（未過門檻）完都要放返碟
     options.onHold(false);
     if (!session.scrubbing) return null;
-    if (commit) options.onSeek(secondsAt(session));
+    if (commit) options.onSeek(session.seconds);
     options.onPreview(null);
     if (commit) options.motion.settle();
     else options.motion.revert();
@@ -100,7 +100,8 @@ const finish = (
 };
 
 /**
- * 捽碟 seek（好似 DJ jog wheel）：順時針向前、逆時針向後，轉一圈 = DISC_SCRUB_SECONDS_PER_TURN 秒。
+ * 捽碟 seek（好似 DJ jog wheel）：順時針向前、逆時針向後；慢慢捽微調，捽得快加速
+ * （每圈秒數見 scrubSecondsPerTurn）。
  * 拖緊只預覽，放手先 seek；取消唔 seek。撳落碟就係自己嘅手勢（唔郁今日節目卡疊）
  */
 export const useDiscScrub = (options: DiscScrubOptions) => {
@@ -117,7 +118,7 @@ export const useDiscScrub = (options: DiscScrubOptions) => {
             event.stopPropagation();
             const angle = angleOnDisc(event);
             if (angle === null) current.lastAngle = null;
-            else advance(current, angle, options);
+            else advance(current, angle, event.timeStamp, options);
         },
         onPointerUp: (event: DiscPointerEvent) => {
             session.current = finish(session.current, event, true, options);
