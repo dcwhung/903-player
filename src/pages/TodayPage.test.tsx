@@ -67,7 +67,9 @@ describe('TodayPage', () => {
     it('shows broadcast times and switches show on swipe, in that show’s theme', async () => {
         const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
-        expect(screen.getByText('06:00 · 播放中')).toBeInTheDocument();
+        // 錄音由 storage 同步讀，autoplay 喺 mount 嘅 effect 已經開始，早過 PlayerProvider attach；
+        // play event 同真瀏覽器一樣遲啲先發（FakeAudio 用 microtask），所以要等
+        expect(await screen.findByText('06:00 · 播放中')).toBeInTheDocument();
 
         const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
         fireEvent.pointerDown(stack, { clientX: 300, clientY: 100 });

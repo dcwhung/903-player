@@ -1,9 +1,8 @@
 import { FakeAudio } from '../../tests/fakeAudio';
-import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
-import { findShow } from '../config/shows';
+import { SHOWS, findShow } from '../config/shows';
 import type { Recording } from '../types/recording';
 import {
-    PROBE_FOUND_RETENTION_DAYS,
+    PROBE_KEEP_PER_SHOW,
     PROBE_LOOKBACK_DAYS,
     PROBE_RETRY_MS,
     PROBE_SETTLED_RETRY_MS,
@@ -11,7 +10,7 @@ import {
     buildAudioUrl,
     probeAudio,
     probeRecentRecordings,
-    readCachedRecordings,
+    readStoredRecordings,
     type AudioProber,
     type ProbeResult,
 } from './audioProbe';
@@ -42,6 +41,7 @@ const NOW = new Date('2026-10-20T04:00:00Z');
  */
 const WINDOW_SLOTS = 34;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const DAYS_PER_WEEK = 7;
 /** MediaError 嘅 code（jsdom 冇 MediaError，所以自己寫低） */
 const MEDIA_ERR_NETWORK_CODE = 2;
 const MEDIA_ERR_SRC_NOT_SUPPORTED_CODE = 4;
@@ -62,9 +62,13 @@ describe('buildAudioUrl', () => {
 });
 
 describe('probe constants', () => {
-    it('keeps found recordings at least as long as the lookback window', () => {
-        // 短過回看期就會清走仍然喺期內嘅錄音，下次又重新 probe 返
-        expect(PROBE_FOUND_RETENTION_DAYS).toBeGreaterThanOrEqual(PROBE_LOOKBACK_DAYS);
+    it('keeps enough recordings per show to cover the whole lookback window', () => {
+        // 播得最密嘅節目喺回看期內最多有幾多集；保留少過呢個數，仲喺期內嘅錄音會先被清走、
+        // 再被當成未搵過重新 probe，白白多咗請求，列表亦會忽然少咗嗰幾集
+        const weeks = Math.ceil(PROBE_LOOKBACK_DAYS / DAYS_PER_WEEK);
+        const busiest = Math.max(...SHOWS.map((show) => show.airDays.length * weeks));
+
+        expect(PROBE_KEEP_PER_SHOW).toBeGreaterThanOrEqual(busiest);
     });
 });
 
@@ -165,7 +169,7 @@ describe('probeRecentRecordings', () => {
     it('stops probing and records no miss when the platform times out', async () => {
         const timingOut = vi.fn(async (): Promise<ProbeResult> => 'timeout');
 
-        const result = await probeRecentRecordings([], { probe: timingOut, now: NOW });
+        const result = await probeRecentRecordings({ probe: timingOut, now: NOW });
 
         expect(timingOut).toHaveBeenCalledTimes(1);
         expect(result).toEqual([]);
@@ -182,7 +186,7 @@ describe('probeRecentRecordings', () => {
         writeProbeState({ found: [remembered], misses: {} });
         const probe = found([]);
 
-        const result = await probeRecentRecordings([], { probe, now: NOW, isOnline: () => false });
+        const result = await probeRecentRecordings({ probe, now: NOW, isOnline: () => false });
 
         expect(probe).not.toHaveBeenCalled();
         expect(result).toEqual([remembered]);
@@ -201,7 +205,7 @@ describe('probeRecentRecordings', () => {
             return 'missing';
         });
 
-        await probeRecentRecordings([], { probe, now: NOW, isOnline: () => online });
+        await probeRecentRecordings({ probe, now: NOW, isOnline: () => online });
 
         expect(probe).toHaveBeenCalledTimes(2);
         expect(Object.keys(readProbeState().misses)).toHaveLength(1);
@@ -210,19 +214,19 @@ describe('probeRecentRecordings', () => {
     it('probes as usual when online', async () => {
         const probe = found([]);
 
-        await probeRecentRecordings([], { probe, now: NOW, isOnline: () => true });
+        await probeRecentRecordings({ probe, now: NOW, isOnline: () => true });
 
         expect(probe).toHaveBeenCalledTimes(WINDOW_SLOTS);
     });
 
     it('retries right away on the next run after a timeout', async () => {
-        await probeRecentRecordings([], {
+        await probeRecentRecordings({
             probe: async (): Promise<ProbeResult> => 'timeout',
             now: NOW,
         });
         const next = found([]);
 
-        await probeRecentRecordings([], { probe: next, now: new Date(NOW.getTime() + 1) });
+        await probeRecentRecordings({ probe: next, now: new Date(NOW.getTime() + 1) });
 
         expect(next).toHaveBeenCalledTimes(WINDOW_SLOTS);
     });
@@ -230,7 +234,7 @@ describe('probeRecentRecordings', () => {
     it(`probes each show's broadcast days in the last ${PROBE_LOOKBACK_DAYS} days`, async () => {
         const probe = found([REAL_URLS.badgirl]);
 
-        const result = await probeRecentRecordings([], { probe, now: NOW });
+        const result = await probeRecentRecordings({ probe, now: NOW });
 
         expect(probe).toHaveBeenCalledTimes(WINDOW_SLOTS);
         expect(result).toEqual<Recording[]>([
@@ -241,7 +245,7 @@ describe('probeRecentRecordings', () => {
     it('only probes a show on the weekdays it airs', async () => {
         const probe = found([]);
 
-        await probeRecentRecordings([], { probe, now: NOW });
+        await probeRecentRecordings({ probe, now: NOW });
 
         const urls = vi.mocked(probe).mock.calls.map(([url]) => url);
         expect(urls).toContain(urlFor('gongzi', '2026-10-17'));
@@ -255,7 +259,7 @@ describe('probeRecentRecordings', () => {
         const thursday = urlFor('badgirl', '2026-10-15');
         const saturday = urlFor('gongzi', '2026-10-17');
 
-        const result = await probeRecentRecordings([], {
+        const result = await probeRecentRecordings({
             probe: found([thursday, saturday]),
             now: monday,
         });
@@ -268,85 +272,92 @@ describe('probeRecentRecordings', () => {
         const saturdayNoon = new Date('2026-10-17T04:00:00Z');
         const probe = found([]);
 
-        await probeRecentRecordings([], { probe, now: saturdayNoon });
+        await probeRecentRecordings({ probe, now: saturdayNoon });
 
         const urls = vi.mocked(probe).mock.calls.map(([url]) => url);
         expect(urls).not.toContain(urlFor('gongzi', '2026-10-17'));
         expect(urls).toContain(urlFor('westair', '2026-10-17'));
     });
 
-    it('skips shows the feed already has for that date', async () => {
+    it('skips shows already stored for that date', async () => {
         const probe = found([]);
-        const known: Recording = {
+        const stored: Recording = {
             showId: 'badgirl',
             date: '2026-10-19',
             time: '1009',
             url: REAL_URLS.badgirl,
         };
+        writeProbeState({ found: [stored], misses: {} });
 
-        await probeRecentRecordings([known], { probe, now: NOW });
+        await probeRecentRecordings({ probe, now: NOW });
 
         expect(probe).toHaveBeenCalledTimes(WINDOW_SLOTS - 1);
         expect(probe).not.toHaveBeenCalledWith(REAL_URLS.badgirl);
     });
 
     it('remembers found files and never probes them again', async () => {
-        await probeRecentRecordings([], { probe: found([REAL_URLS.badgirl]), now: NOW });
+        await probeRecentRecordings({ probe: found([REAL_URLS.badgirl]), now: NOW });
         const again = found([]);
 
-        const result = await probeRecentRecordings([], { probe: again, now: NOW });
+        const result = await probeRecentRecordings({ probe: again, now: NOW });
 
         expect(again).not.toHaveBeenCalledWith(REAL_URLS.badgirl);
         expect(result.map((r) => r.url)).toEqual([REAL_URLS.badgirl]);
     });
 
-    describe('pruning remembered recordings', () => {
-        const remembered: Recording = {
-            showId: 'badgirl',
-            date: '2026-10-19',
-            time: '1009',
-            url: REAL_URLS.badgirl,
+    describe('keeping the newest recordings per show', () => {
+        /** 由 2026-01-01 起計第 index 日（遠早過回看期，唔會同 probe 撞） */
+        const oldRecording = (
+            showId: Recording['showId'],
+            index: number,
+            time = '1009',
+        ): Recording => {
+            const date = new Date(Date.UTC(2026, 0, 1) + index * MS_PER_DAY)
+                .toISOString()
+                .slice(0, 10);
+            return { showId, date, time, url: `${urlFor(showId, date)}?t=${time}` };
         };
-        const remember = (recording: Recording): void =>
-            writeProbeState({ found: [recording], misses: {} });
+        const many = (showId: Recording['showId'], count: number): Recording[] =>
+            Array.from({ length: count }, (_, index) => oldRecording(showId, index));
 
-        it('drops a found recording once the feed covers the same show and date', async () => {
-            remember(remembered);
-            const feedVersion: Recording = {
-                ...remembered,
-                time: '1010',
-                url: `${ALLOWED_AUDIO_ORIGIN}/x.aac`,
-            };
+        it(`keeps only the newest ${PROBE_KEEP_PER_SHOW} recordings of a show`, async () => {
+            const stored = many('badgirl', PROBE_KEEP_PER_SHOW + 2);
+            writeProbeState({ found: stored, misses: {} });
 
-            const result = await probeRecentRecordings([feedVersion], {
-                probe: found([]),
-                now: NOW,
-            });
+            const result = await probeRecentRecordings({ probe: found([]), now: NOW });
 
-            expect(result).toEqual([]);
-            expect(readProbeState().found).toEqual([]);
+            expect(result).toEqual(stored.slice(2));
+            expect(readProbeState().found).toEqual(stored.slice(2));
         });
 
-        it('drops a found recording when the feed has the same url in another encoding', async () => {
-            remember(remembered);
-            const unencoded = decodeURI(REAL_URLS.badgirl);
-            const feedVersion: Recording = { ...remembered, date: '2026-10-12', url: unencoded };
+        it('counts each show separately', async () => {
+            const badgirl = many('badgirl', PROBE_KEEP_PER_SHOW);
+            const westair = oldRecording('westair', 0);
+            writeProbeState({ found: [westair, ...badgirl], misses: {} });
 
-            const result = await probeRecentRecordings([feedVersion], {
-                probe: found([]),
-                now: NOW,
-            });
+            const result = await probeRecentRecordings({ probe: found([]), now: NOW });
 
-            expect(result).toEqual([]);
+            expect(result).toEqual([westair, ...badgirl]);
         });
 
-        it(`drops found recordings older than ${PROBE_FOUND_RETENTION_DAYS} days`, async () => {
-            const kept: Recording = { ...remembered, showId: 'westair', date: '2026-10-06' };
-            writeProbeState({ found: [{ ...remembered, date: '2026-10-05' }, kept], misses: {} });
+        it('uses the time to break a tie on the same date', async () => {
+            const stored = many('badgirl', PROBE_KEEP_PER_SHOW);
+            const earlier = oldRecording('badgirl', 0, '0900');
+            writeProbeState({ found: [earlier, ...stored], misses: {} });
 
-            const result = await probeRecentRecordings([], { probe: found([]), now: NOW });
+            const result = await probeRecentRecordings({ probe: found([]), now: NOW });
 
-            expect(result).toEqual([kept]);
+            expect(result).not.toContainEqual(earlier);
+            expect(result).toHaveLength(PROBE_KEEP_PER_SHOW);
+        });
+
+        it('keeps old recordings when the show has fewer than the limit', async () => {
+            const ancient = oldRecording('gongzi', 0);
+            writeProbeState({ found: [ancient], misses: {} });
+
+            const result = await probeRecentRecordings({ probe: found([]), now: NOW });
+
+            expect(result).toEqual([ancient]);
         });
     });
 
@@ -363,7 +374,7 @@ describe('probeRecentRecordings', () => {
         it('treats UTC 16:30 (HK 00:30) as the next HK day', async () => {
             const probe = found([]);
 
-            await probeRecentRecordings([], { probe, now: new Date('2026-10-19T16:30:00Z') });
+            await probeRecentRecordings({ probe, now: new Date('2026-10-19T16:30:00Z') });
 
             // 香港 20 號（二）00:30：回看 7–20 號；今日未有節目開咪，所以冇 20 號
             expect(probedDates(probe)).toEqual(
@@ -386,7 +397,7 @@ describe('probeRecentRecordings', () => {
         it('treats UTC 15:59 (HK 23:59) as still the same HK day', async () => {
             const probe = found([]);
 
-            await probeRecentRecordings([], { probe, now: new Date('2026-10-19T15:59:00Z') });
+            await probeRecentRecordings({ probe, now: new Date('2026-10-19T15:59:00Z') });
 
             // 香港 19 號（一）23:59：回看 6–19 號
             expect(probedDates(probe)).toEqual(
@@ -409,12 +420,12 @@ describe('probeRecentRecordings', () => {
     });
 
     it('waits PROBE_RETRY_MS before probing a missing file again', async () => {
-        await probeRecentRecordings([], { probe: found([]), now: NOW });
+        await probeRecentRecordings({ probe: found([]), now: NOW });
         const soon = found([]);
         const later = found([]);
 
-        await probeRecentRecordings([], { probe: soon, now: new Date(NOW.getTime() + 1) });
-        await probeRecentRecordings([], {
+        await probeRecentRecordings({ probe: soon, now: new Date(NOW.getTime() + 1) });
+        await probeRecentRecordings({
             probe: later,
             now: new Date(NOW.getTime() + PROBE_RETRY_MS),
         });
@@ -426,13 +437,13 @@ describe('probeRecentRecordings', () => {
     });
 
     it('gives a miss from a recent day one more try once that day is settled', async () => {
-        await probeRecentRecordings([], { probe: found([]), now: NOW });
+        await probeRecentRecordings({ probe: found([]), now: NOW });
         const friday = daysAfter(NOW, 3);
         const first = found([]);
         const second = found([]);
 
-        await probeRecentRecordings([], { probe: first, now: friday });
-        await probeRecentRecordings([], {
+        await probeRecentRecordings({ probe: first, now: friday });
+        await probeRecentRecordings({
             probe: second,
             now: new Date(friday.getTime() + PROBE_RETRY_MS),
         });
@@ -443,13 +454,13 @@ describe('probeRecentRecordings', () => {
     });
 
     it('gives a miss recorded on the broadcast day itself its extra try too', async () => {
-        await probeRecentRecordings([], { probe: found([]), now: NOW });
+        await probeRecentRecordings({ probe: found([]), now: NOW });
         const friday = daysAfter(NOW, 3);
         const first = found([]);
         const second = found([]);
 
-        await probeRecentRecordings([], { probe: first, now: friday });
-        await probeRecentRecordings([], {
+        await probeRecentRecordings({ probe: first, now: friday });
+        await probeRecentRecordings({
             probe: second,
             now: new Date(friday.getTime() + PROBE_RETRY_MS),
         });
@@ -465,7 +476,7 @@ describe('probeRecentRecordings', () => {
         const retryAfterMissAt = async (missedAt: Date): Promise<AudioProber> => {
             writeProbeState({ found: [], misses: { 'badgirl:2026-10-19': missedAt.getTime() } });
             const probe = found([]);
-            await probeRecentRecordings([], {
+            await probeRecentRecordings({
                 probe,
                 now: new Date(missedAt.getTime() + PROBE_RETRY_MS),
             });
@@ -491,10 +502,10 @@ describe('probeRecentRecordings', () => {
         const settled = urlFor('badgirl', '2026-10-16');
 
         it(`are not retried before PROBE_SETTLED_RETRY_MS`, async () => {
-            await probeRecentRecordings([], { probe: found([]), now: NOW });
+            await probeRecentRecordings({ probe: found([]), now: NOW });
             const tooSoon = found([]);
 
-            await probeRecentRecordings([], {
+            await probeRecentRecordings({
                 probe: tooSoon,
                 now: new Date(NOW.getTime() + PROBE_SETTLED_RETRY_MS - 1),
             });
@@ -503,10 +514,10 @@ describe('probeRecentRecordings', () => {
         });
 
         it('are retried after PROBE_SETTLED_RETRY_MS, so a late upload is still found', async () => {
-            await probeRecentRecordings([], { probe: found([]), now: NOW });
+            await probeRecentRecordings({ probe: found([]), now: NOW });
             const nextDay = found([settled]);
 
-            const result = await probeRecentRecordings([], {
+            const result = await probeRecentRecordings({
                 probe: nextDay,
                 now: new Date(NOW.getTime() + PROBE_SETTLED_RETRY_MS),
             });
@@ -521,9 +532,9 @@ describe('probeRecentRecordings', () => {
     });
 
     it(`drops misses older than ${PROBE_LOOKBACK_DAYS} days so storage does not grow`, async () => {
-        await probeRecentRecordings([], { probe: found([]), now: NOW });
+        await probeRecentRecordings({ probe: found([]), now: NOW });
 
-        await probeRecentRecordings([], { probe: found([]), now: daysAfter(NOW, 15) });
+        await probeRecentRecordings({ probe: found([]), now: daysAfter(NOW, 15) });
 
         const dates = new Set(Object.keys(readProbeState().misses).map(dateFromShowDateKey));
         // 15 日後（11 月 4 號（三）12:00）只保留 10 月 22 號至 11 月 4 號有節目嘅日子（星期日冇）
@@ -563,7 +574,7 @@ describe('probeRecentRecordings', () => {
         it('saves each find right away, so closing the app mid-run keeps it', async () => {
             const probe = stallAfterFirst(firstUrl);
 
-            void probeRecentRecordings([], { probe, now: NOW });
+            void probeRecentRecordings({ probe, now: NOW });
 
             await vi.waitFor(() => expect(probe).toHaveBeenCalledTimes(2));
             expect(readProbeState().found.map((r) => r.url)).toEqual([firstUrl]);
@@ -572,7 +583,7 @@ describe('probeRecentRecordings', () => {
         it('saves each miss right away too', async () => {
             const probe = stallAfterFirst('none');
 
-            void probeRecentRecordings([], { probe, now: NOW });
+            void probeRecentRecordings({ probe, now: NOW });
 
             await vi.waitFor(() => expect(probe).toHaveBeenCalledTimes(2));
             expect(readProbeState().misses).toEqual({ 'badgirl:2026-10-20': NOW.getTime() });
@@ -581,7 +592,7 @@ describe('probeRecentRecordings', () => {
         it('reports each find through onFound before the run completes', async () => {
             const onFound = vi.fn<(recording: Recording) => void>();
 
-            void probeRecentRecordings([], { probe: stallAfterFirst(firstUrl), now: NOW, onFound });
+            void probeRecentRecordings({ probe: stallAfterFirst(firstUrl), now: NOW, onFound });
 
             await vi.waitFor(() => expect(onFound).toHaveBeenCalledTimes(1));
             expect(onFound).toHaveBeenCalledWith<[Recording]>({
@@ -596,7 +607,7 @@ describe('probeRecentRecordings', () => {
             const onFound = vi.fn<(recording: Recording) => void>();
             const thursday = urlFor('badgirl', '2026-10-15');
 
-            await probeRecentRecordings([], {
+            await probeRecentRecordings({
                 probe: found([REAL_URLS.badgirl, thursday]),
                 now: NOW,
                 onFound,
@@ -611,7 +622,7 @@ describe('probeRecentRecordings', () => {
             throw new DOMException('full', 'QuotaExceededError');
         });
 
-        const result = await probeRecentRecordings([], {
+        const result = await probeRecentRecordings({
             probe: found([REAL_URLS.badgirl]),
             now: NOW,
         });
@@ -623,13 +634,11 @@ describe('probeRecentRecordings', () => {
     it('ignores corrupted storage', async () => {
         localStorage.setItem(PROBE_STORAGE_KEY, '{not json');
 
-        await expect(probeRecentRecordings([], { probe: found([]), now: NOW })).resolves.toEqual(
-            [],
-        );
+        await expect(probeRecentRecordings({ probe: found([]), now: NOW })).resolves.toEqual([]);
     });
 });
 
-describe('readCachedRecordings', () => {
+describe('readStoredRecordings', () => {
     beforeEach(() => localStorage.clear());
 
     const remembered: Recording = {
@@ -639,19 +648,24 @@ describe('readCachedRecordings', () => {
         url: REAL_URLS.badgirl,
     };
 
-    it('returns remembered recordings synchronously without probing', () => {
+    it('returns stored recordings synchronously without probing', () => {
         writeProbeState({ found: [remembered], misses: {} });
 
-        expect(readCachedRecordings([], NOW)).toEqual([remembered]);
+        expect(readStoredRecordings()).toEqual([remembered]);
     });
 
-    it('leaves out what the feed already covers', () => {
-        writeProbeState({ found: [remembered], misses: {} });
+    it(`returns at most ${PROBE_KEEP_PER_SHOW} recordings per show`, () => {
+        const stored = Array.from({ length: PROBE_KEEP_PER_SHOW + 1 }, (_, index) => ({
+            ...remembered,
+            date: new Date(Date.UTC(2026, 0, 1) + index * MS_PER_DAY).toISOString().slice(0, 10),
+            url: `${REAL_URLS.badgirl}?n=${index}`,
+        }));
+        writeProbeState({ found: stored, misses: {} });
 
-        expect(readCachedRecordings([remembered], NOW)).toEqual([]);
+        expect(readStoredRecordings()).toEqual(stored.slice(1));
     });
 
     it('returns nothing when storage is empty', () => {
-        expect(readCachedRecordings([], NOW)).toEqual([]);
+        expect(readStoredRecordings()).toEqual([]);
     });
 });

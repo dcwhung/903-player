@@ -7,7 +7,7 @@ const TIME_PATTERN = /^([01]\d|2[0-3])[0-5]\d$/;
 const ISO_DATE_LENGTH = 10;
 const SHOW_IDS = new Set<string>(SHOWS.map((show) => show.id));
 
-/** 只接受原站 audio host，防止 feed 被注入其他網址 */
+/** 只接受原站 audio host，防止 storage 被注入其他網址 */
 export const hasAllowedAudioOrigin = (url: string): boolean => {
     try {
         return new URL(url).origin === ALLOWED_AUDIO_ORIGIN;
@@ -27,7 +27,7 @@ const isCalendarDate = (value: string): boolean => {
     return date.toISOString().slice(0, ISO_DATE_LENGTH) === value;
 };
 
-/** 驗證外部資料（feed JSON）係咪合法錄音 */
+/** 驗證外部資料（localStorage 讀返嘅 JSON）係咪合法錄音 */
 export const isRecording = (value: unknown): value is Recording => {
     const r = value as Recording;
     return (
