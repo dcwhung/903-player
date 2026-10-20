@@ -1,7 +1,6 @@
 // 只畀 Node 環境嘅測試用（*.node.test.ts / scripts/）：tsconfig.node.json 有 Node 型別，
 // tsconfig.app.json 排除咗呢個檔，所以 node:fs 唔會漏入 app 程式
 import { readFileSync } from 'node:fs';
-// postcss 係 Vite 自己嘅依賴（已經喺 node_modules），冇另外加 package
 import { parse, type Rule } from 'postcss';
 
 /**
