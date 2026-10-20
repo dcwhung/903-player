@@ -11,8 +11,8 @@ interface ArcSliderProps {
     onSeek: (seconds: number) => void;
     label: string;
     formatValueText: (seconds: number) => string;
-    /** 拖動時通知父 component 預覽值（放手時 null） */
-    onPreview?: (seconds: number | null) => void;
+    /** 拖動時通知父 component 預覽值（完咗時 null；cancelled = 手勢被取消，唔係放手） */
+    onPreview?: (seconds: number | null, cancelled: boolean) => void;
     /** 其他手勢（捽碟）進行緊：唔開始新嘅拖動 */
     locked?: boolean;
 }

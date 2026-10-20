@@ -46,16 +46,16 @@ const pressBand = (event: SvgPointerEvent, canStart: boolean): number | null => 
 export const useArcDrag = (
     max: number,
     onSeek: (seconds: number) => void,
-    onPreview?: (seconds: number | null) => void,
+    onPreview?: (seconds: number | null, cancelled: boolean) => void,
     locked = false,
 ) => {
     const [dragRatio, setDragRatio] = useState<number | null>(null);
     // 邊隻手指拖緊（null = 冇拖）：其他手指嘅 events 唔理，唔可以搶走或者結束呢次拖動
     const owner = useRef<number | null>(null);
-    const preview = (ratio: number | null) => {
+    const preview = (ratio: number | null, cancelled = false) => {
         if (ratio === null) owner.current = null;
         setDragRatio(ratio);
-        onPreview?.(ratio === null ? null : ratio * max);
+        onPreview?.(ratio === null ? null : ratio * max, cancelled);
     };
     const nextRatio = (event: SvgPointerEvent) =>
         stabiliseDragRatio(ratioFromPointer(event), dragRatio);
@@ -75,7 +75,7 @@ export const useArcDrag = (
             preview(null);
         },
         onPointerCancel: (event: SvgPointerEvent) => {
-            if (claim(event, owner.current)) preview(null);
+            if (claim(event, owner.current)) preview(null, true);
         },
     };
     return { dragRatio, handlers };

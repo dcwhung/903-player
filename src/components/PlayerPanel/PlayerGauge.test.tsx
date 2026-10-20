@@ -199,6 +199,17 @@ describe('PlayerGauge disc motion', () => {
         expect(faceDegrees(face)).toBeCloseTo(90);
     });
 
+    it('turns the disc back when a ring drag is cancelled', async () => {
+        const { audio, face, slider } = await setup();
+
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.pointerMove(slider, { clientX: 290, clientY: 150, pointerId: 1 });
+        fireEvent.pointerCancel(slider, { pointerId: 1 });
+
+        expect(audio.currentTime).toBe(100);
+        expect(faceDegrees(face)).toBeCloseTo(0);
+    });
+
     it('spins only while playing and nobody holds the disc', async () => {
         const { disc, face } = await setup();
         expect(face.className).not.toMatch(/spinning/);

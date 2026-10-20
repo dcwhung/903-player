@@ -145,6 +145,31 @@ describe('ArcSlider', () => {
         expect(slider).toHaveAttribute('aria-valuenow', '400');
     });
 
+    it('tells the parent whether a drag ended by release or by cancel', () => {
+        const onPreview = vi.fn();
+        render(
+            <ArcSlider
+                value={400}
+                max={MAX}
+                onSeek={() => {}}
+                label="播放進度"
+                formatValueText={String}
+                onPreview={onPreview}
+            />,
+        );
+        const slider = screen.getByRole('slider');
+        slider.getBoundingClientRect = () =>
+            ({ left: 0, top: 0, width: VIEWBOX, height: VIEWBOX }) as DOMRect;
+
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.pointerUp(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        expect(onPreview).toHaveBeenLastCalledWith(null, false);
+
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.pointerCancel(slider, { pointerId: 1 });
+        expect(onPreview).toHaveBeenLastCalledWith(null, true);
+    });
+
     it('ignores pointer moves when not dragging', () => {
         const { slider, onSeek } = renderSlider();
 

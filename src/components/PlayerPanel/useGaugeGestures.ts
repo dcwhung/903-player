@@ -16,10 +16,12 @@ interface Preview {
 const useArcFollow = (max: number, setPreview: (preview: Preview | null) => void) => {
     const motion = useDiscTurn();
     const arcStart = useRef<number | null>(null);
-    const onArcPreview = (seconds: number | null) => {
+    const onArcPreview = (seconds: number | null, cancelled: boolean) => {
         if (seconds === null) {
             arcStart.current = null;
-            motion.settle();
+            // 放手停喺原位；取消就轉返去起手角度（同捽碟一樣）
+            if (cancelled) motion.revert();
+            else motion.settle();
             setPreview(null);
             return;
         }
