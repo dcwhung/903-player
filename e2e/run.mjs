@@ -129,8 +129,8 @@ const SHOW_VIEWPORTS = [
     { width: 390, height: 720 },
     { width: 375, height: 667 },
     { width: 390, height: 664 },
-    // 橫向手機 / 矮視窗
-    { width: 844, height: 390 },
+    // 橫向手機 / 矮視窗（844×390 順便驗好矮嘅主頁：shortHome）
+    { width: 844, height: 390, shortHome: true },
     { width: 568, height: 320 },
     { width: 1280, height: 400 },
     { width: 390, height: 540 },
@@ -138,6 +138,35 @@ const SHOW_VIEWPORTS = [
     { width: 390, height: 560 },
     { width: 390, height: 562 },
 ];
+
+// 同 tokens.css 嘅 --page-max-width 一致；刻意寫死做獨立對照
+const PAGE_MAX_WIDTH_PX = 480;
+
+/**
+ * 好矮嘅主頁（S-403）：漸變同光暈畫喺 main、background-attachment: local，跟內容一齊捲；
+ * main 闊到成個畫面，但節目格仍然係 --page-max-width 闊、喺畫面中間
+ */
+const checkShortHeightHome = async (p, label) => {
+    const layout = await p.evaluate(() => {
+        const main = document.querySelector('main');
+        const nav = main.querySelector('nav').getBoundingClientRect();
+        return {
+            attachment: getComputedStyle(main).backgroundAttachment,
+            width: nav.width,
+            left: nav.left,
+            right: document.documentElement.clientWidth - nav.right,
+        };
+    });
+    log(
+        layout.attachment.includes('local'),
+        `${label}：主頁背景跟 main 捲（background-attachment: ${layout.attachment}）`,
+    );
+    log(
+        Math.abs(layout.width - PAGE_MAX_WIDTH_PX) <= 1 &&
+            Math.abs(layout.left - layout.right) <= 1,
+        `${label}：節目格保持 ${PAGE_MAX_WIDTH_PX}px 闊、置中（${layout.width}px，左 ${layout.left}px / 右 ${layout.right}px）`,
+    );
+};
 
 /** 節目頁固定：捲集數 panel 時 window 唔郁、控制掣仍然喺畫面，panel 自己嘅 scrollTop 有變 */
 const checkFixedShowPage = async (p, label, shot) => {
@@ -931,7 +960,7 @@ try {
     }
 
     // 節目頁：夠高就固定、集數清單自己捲；好矮（橫向手機）就成頁正常捲。badgirl 集數多過一個畫面
-    for (const { width, height, swipe, homeFixed } of SHOW_VIEWPORTS) {
+    for (const { width, height, swipe, homeFixed, shortHome } of SHOW_VIEWPORTS) {
         const ctx = await newE2EContext(browser, {
             viewport: { width, height },
             deviceScaleFactor: 2,
@@ -963,6 +992,12 @@ try {
             await fp.goto(BASE);
             await fp.waitForSelector('nav[aria-busy="false"]');
             await checkFixedHome(fp, `${width}×${height} 主頁`);
+            await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
+        }
+        if (shortHome) {
+            await fp.goto(BASE);
+            await fp.waitForSelector('nav[aria-busy="false"]');
+            await checkShortHeightHome(fp, `${width}×${height} 主頁`);
             await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
         }
         await ctx.close();
