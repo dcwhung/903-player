@@ -50,15 +50,6 @@ export default defineConfig({
                 // clientsClaim 只影響第一次安裝（冇舊 SW 時即刻接管頁面），同 autoUpdate 時一樣
                 skipWaiting: false,
                 clientsClaim: true,
-                navigateFallbackDenylist: [/^\/903-player\/data\//],
-                runtimeCaching: [
-                    {
-                        // 錄音列表：優先攞最新，離線先用 cache
-                        urlPattern: /\/data\/recordings\.json$/,
-                        handler: 'NetworkFirst',
-                        options: { cacheName: 'recordings-data' },
-                    },
-                ],
             },
         }),
     ],

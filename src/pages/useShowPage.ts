@@ -48,7 +48,7 @@ const useAutoplayShow = (show: ShowConfig | undefined, isPlayingShow: boolean) =
 /** 節目頁嘅資料同動作 */
 export const useShowPage = (showId: string) => {
     const show = findShow(showId);
-    const { status, reload } = useRecordings();
+    const { status } = useRecordings();
     const player = usePlayer();
     const { episodes, playing, current } = useShowEpisodes(show);
     useAutoplayShow(show, playing !== null);
@@ -78,7 +78,6 @@ export const useShowPage = (showId: string) => {
         show,
         theme,
         status,
-        reload,
         current,
         episodeItems,
         neighbours,

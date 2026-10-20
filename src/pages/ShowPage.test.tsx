@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { saveProgress } from '../services/progressStore';
+import type { Recording } from '../types/recording';
 import { ShowPage } from './ShowPage';
 
 const RECORDINGS = [
@@ -215,13 +216,18 @@ describe('ShowPage', () => {
         expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
     });
 
-    it('shows loading, error with retry, and empty states', async () => {
-        const loader = vi.fn().mockRejectedValueOnce(new Error('x')).mockResolvedValueOnce([]);
-        renderWithProviders(<ShowPage />, { ...ROUTE, loader });
+    it('shows loading while the first probe runs, then the empty state without a retry button', async () => {
+        let finishProbe: (found: Recording[]) => void = () => {};
+        const prober = () =>
+            new Promise<Recording[]>((resolve) => {
+                finishProbe = resolve;
+            });
+        renderWithProviders(<ShowPage />, { ...ROUTE, prober });
 
         expect(screen.getByRole('status')).toHaveTextContent('載入中…');
-        await userEvent.click(await screen.findByRole('button', { name: '重試' }));
+        await act(async () => finishProbe([]));
         expect(await screen.findByText('暫時未有錄音')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: '重試' })).not.toBeInTheDocument();
     });
 
     it('handles unknown shows', () => {

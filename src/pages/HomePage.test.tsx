@@ -179,7 +179,7 @@ describe('HomePage', () => {
 
     it('still navigates when recordings are not loaded yet', async () => {
         const { audio } = renderWithProviders(<HomePage />, {
-            loader: () => new Promise(() => {}),
+            prober: () => new Promise(() => {}),
         });
 
         await userEvent.click(screen.getByRole('button', { name: '公子會' }));

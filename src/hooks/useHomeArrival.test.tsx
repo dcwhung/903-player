@@ -45,9 +45,9 @@ const Harness = ({ target, later }: { target?: Recording; later?: Recording }) =
 const arrive = async (
     props: { target?: Recording; later?: Recording },
     recordings: Recording[] = RECORDINGS,
-    loader?: () => Promise<Recording[]>,
+    prober?: () => Promise<Recording[]>,
 ) => {
-    const { audio, wrapper } = createHookWrapper(recordings, loader);
+    const { audio, wrapper } = createHookWrapper(recordings, prober);
     render(<Harness {...props} />, { wrapper });
     await userEvent.click(screen.getByRole('button', { name: 'arrive' }));
     await screen.findByText('home');
@@ -59,7 +59,7 @@ const deferred = () => {
     const promise = new Promise<Recording[]>((r) => {
         resolve = r;
     });
-    return { loader: () => promise, resolve };
+    return { prober: () => promise, resolve };
 };
 
 describe('useHomeArrival', () => {
@@ -97,8 +97,8 @@ describe('useHomeArrival', () => {
     });
 
     it('waits for the recordings before deciding', async () => {
-        const { loader, resolve } = deferred();
-        const audio = await arrive({ target: OLD }, [], loader);
+        const { prober, resolve } = deferred();
+        const audio = await arrive({ target: OLD }, [], prober);
         expect(audio.pause).not.toHaveBeenCalled();
 
         await act(async () => resolve(RECORDINGS));
@@ -107,8 +107,8 @@ describe('useHomeArrival', () => {
     });
 
     it('keeps a today recording once loading finishes', async () => {
-        const { loader, resolve } = deferred();
-        const audio = await arrive({ target: TODAY }, [], loader);
+        const { prober, resolve } = deferred();
+        const audio = await arrive({ target: TODAY }, [], prober);
 
         await act(async () => resolve(RECORDINGS));
 

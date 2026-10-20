@@ -4,7 +4,7 @@ import type { Recording } from '../types/recording';
 export const PROBE_STORAGE_KEY = '903player:probed:v1';
 
 export interface ProbeState {
-    /** app 自己搵到、feed 未有嘅錄音 */
+    /** app 自己搵到嘅錄音：錄音列表嘅唯一來源（SSOT） */
     found: Recording[];
     /** `${showId}:${date}` → 上次搵唔到嘅時間（ms），用嚟限制重試頻率 */
     misses: Record<string, number>;
