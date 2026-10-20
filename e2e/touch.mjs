@@ -27,12 +27,21 @@ const CORNER_RATIO = 12 / 300;
 const DISC_SCRUB_RADIUS_RATIO = 0.3;
 // 轉一圈 60 秒（src/config/constants.ts DISC_SCRUB_SECONDS_PER_TURN）
 const DISC_QUARTER_TURN_S = 15;
+// 底部缺口入面一點（viewBox：由右邊順時針 70°、半徑 140）：離缺口尾端 25°（> 12° 容差），亦避開中間嘅由頭播放掣
+const GAP_POINT = {
+    x: 150 + 140 * Math.cos((70 * Math.PI) / 180),
+    y: 150 + 140 * Math.sin((70 * Math.PI) / 180),
+};
+const GAP_DRAG_PX = 60;
+// 弧形頂（viewBox (150, 10) = 一半）拖去右邊（(290, 150) ≈ 5/6）：如果 ring 冇被鎖，會 seek 去好遠
+const RING_TOP = { x: 150, y: 10 };
+const RING_RIGHT = { x: 290, y: 150 };
 const TODAY_STACK = '今日節目，左右掃動轉節目';
 const STRIP = '[aria-roledescription="轉集"]';
 const MINI_REGION = '正在播放（今日節目）';
 
 /** 開一個 iPhone 似嘅觸控 context；支援就順便模擬安全區（env(safe-area-inset-*)） */
-const openTouchPage = async (browser, errors, { width, height, insets }) => {
+const openTouchPage = async (browser, errors, { width, height, insets }, extra = {}) => {
     // 同 run.mjs 一樣嘅固定時鐘同 audio host
     const ctx = await newE2EContext(browser, {
         viewport: { width, height },
@@ -40,6 +49,7 @@ const openTouchPage = async (browser, errors, { width, height, insets }) => {
         isMobile: true,
         deviceScaleFactor: 3,
         colorScheme: 'dark',
+        ...extra,
     });
     const p = await ctx.newPage();
     p.on('pageerror', (e) => errors.push(e.message));
@@ -199,6 +209,67 @@ const touchArc = async (cdp, p, centre, radius, from, to) => {
     await p.waitForTimeout(SETTLE_MS);
 };
 
+/** 唱片格（300×300 viewBox）入面某點嘅畫面座標 */
+const gaugePoint = (box, { x, y }) => ({
+    x: box.x + (x / 300) * box.width,
+    y: box.y + (y / 300) * box.height,
+});
+
+/** 節目頁：喺弧形底部缺口起手橫拖，唔會 seek（缺口唔屬於圓環） */
+const checkRingGapIgnored = async (cdp, p, log, label) => {
+    const slider = p.getByRole('slider', { name: '播放進度' });
+    const box = await slider.boundingBox();
+    const before = Number(await slider.getAttribute('aria-valuenow'));
+    await touchDrag(cdp, p, gaugePoint(box, GAP_POINT), { dx: GAP_DRAG_PX, dy: 0 });
+    const after = Number(await slider.getAttribute('aria-valuenow'));
+    log(
+        Math.abs(after - before) <= SEEK_TOLERANCE_S,
+        `${label}：喺弧形底部缺口拖唔會 seek（${before}s → ${after}s）`,
+    );
+};
+
+/**
+ * 兩隻手指：先撳碟，再撳弧形，兩隻一齊郁。碟擁有手勢，弧形被鎖住：
+ * 只會跟捽碟向前約 15 秒，唔會跟弧形 seek 去右邊
+ */
+const checkTwoFingerSingleSeek = async (cdp, p, log, label) => {
+    const slider = p.getByRole('slider', { name: '播放進度' });
+    const box = await slider.boundingBox();
+    const centre = centreOf(box);
+    const radius = DISC_SCRUB_RADIUS_RATIO * box.width;
+    const discAt = (degrees) => {
+        const radians = (degrees * Math.PI) / 180;
+        return {
+            x: centre.x + radius * Math.cos(radians),
+            y: centre.y + radius * Math.sin(radians),
+            id: 0,
+        };
+    };
+    const ringFrom = { ...gaugePoint(box, RING_TOP), id: 1 };
+    const ringTo = gaugePoint(box, RING_RIGHT);
+    const send = (type, points) =>
+        cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+    const before = Number(await slider.getAttribute('aria-valuenow'));
+    await send('touchStart', [discAt(-90)]);
+    await send('touchStart', [discAt(-90), ringFrom]);
+    for (let i = 1; i <= STEPS; i += 1) {
+        const ring = {
+            x: ringFrom.x + ((ringTo.x - ringFrom.x) * i) / STEPS,
+            y: ringFrom.y + ((ringTo.y - ringFrom.y) * i) / STEPS,
+            id: 1,
+        };
+        await send('touchMove', [discAt(-90 + (90 * i) / STEPS), ring]);
+        await p.waitForTimeout(STEP_MS);
+    }
+    await send('touchEnd', []);
+    await p.waitForTimeout(SETTLE_MS);
+    const moved = Number(await slider.getAttribute('aria-valuenow')) - before;
+    log(
+        Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S,
+        `${label}：兩隻手指撳碟同弧形，只跟捽碟 seek（+${moved}s，預期約 +${DISC_QUARTER_TURN_S}s）`,
+    );
+};
+
 /** 播緊時碟面自轉（CSS animation 喺度行） */
 const checkDiscSpins = async (p, log, label) => {
     const state = await p
@@ -312,6 +383,8 @@ const checkShow = async (env, label) => {
         p.getByRole('region', { name: '集數' }).getByRole('list'),
     );
     await checkStripSwipe(cdp, p, log, label);
+    await checkRingGapIgnored(cdp, p, log, label);
+    await checkTwoFingerSingleSeek(cdp, p, log, label);
 };
 
 const checkToday = async (env, label) => {
@@ -337,6 +410,27 @@ const checkToday = async (env, label) => {
     await checkDiscSpins(p, log, label);
     await checkDiscScrub(cdp, p, log, label);
     await p.screenshot({ path: `${env.out}/touch-today-${label.split(' ')[0]}.png` });
+};
+
+/** 減少動畫：碟面唔自轉、捽碟唔跟手指轉，但照樣 seek */
+const checkReducedMotion = async (env, label) => {
+    const { p, cdp, log } = env;
+    await p.goto(`${env.base}#/today`);
+    await waitPlaying(p);
+    await p.waitForTimeout(500);
+    const face = p.locator('[class*="scrubbable"] [class*="face"]').first();
+    const animation = await face.evaluate((el) => getComputedStyle(el).animationName);
+    log(animation === 'none', `${label}：碟面冇自轉 animation（${animation}）`);
+    const slider = p.getByRole('slider', { name: '播放進度' });
+    const box = await slider.boundingBox();
+    const before = Number(await slider.getAttribute('aria-valuenow'));
+    await touchArc(cdp, p, centreOf(box), DISC_SCRUB_RADIUS_RATIO * box.width, -90, 0);
+    const moved = Number(await slider.getAttribute('aria-valuenow')) - before;
+    const transform = await face.evaluate((el) => el.style.transform);
+    log(
+        transform === '' && Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S,
+        `${label}：捽碟唔跟手指轉（transform「${transform}」）但照樣 seek（+${moved}s）`,
+    );
 };
 
 /** 橫向手機：main 自己捲（手指拖得落去），文件本身唔捲 */
@@ -378,6 +472,13 @@ export const runTouchChecks = async ({ browser, base, out, errors, log }) => {
         await checkToday(env, `${size} 觸控今日節目頁`);
         await ctx.close();
     }
+    const [phone] = TOUCH_VIEWPORTS;
+    const reduced = await openTouchPage(browser, errors, phone, { reducedMotion: 'reduce' });
+    await checkReducedMotion(
+        { p: reduced.p, cdp: reduced.cdp, log, base, out },
+        `${phone.width}×${phone.height} 觸控減少動畫`,
+    );
+    await reduced.ctx.close();
     const size = `${LANDSCAPE.width}×${LANDSCAPE.height}`;
     const { ctx, p, cdp } = await openTouchPage(browser, errors, LANDSCAPE);
     const env = { p, cdp, log, base, out };
