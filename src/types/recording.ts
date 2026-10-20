@@ -1,4 +1,4 @@
-export type ShowId = 'badgirl' | 'gongzi' | 'wanni' | 'sunnyday' | 'westair';
+export type ShowId = 'badgirl' | 'gongzi' | 'wanni' | 'sunnyday' | 'westair' | 'waves' | 'lalala';
 
 export interface Recording {
     showId: ShowId;

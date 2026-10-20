@@ -20,6 +20,8 @@ export const SHOWS: readonly ShowConfig[] = [
     { id: 'wanni', name: '雲妮鍾情', fileTime: '0708', airDays: MONDAY_TO_FRIDAY },
     { id: 'sunnyday', name: '在晴朗的一天出發', fileTime: '0809', airDays: MONDAY_TO_FRIDAY },
     { id: 'westair', name: '西加航空', fileTime: '0905', airDays: SATURDAY },
+    { id: 'waves', name: '口水多過浪花', fileTime: '1510', airDays: MONDAY_TO_FRIDAY },
+    { id: 'lalala', name: '聖艾粒LaLaLaLa', fileTime: '1710', airDays: MONDAY_TO_FRIDAY },
 ];
 
 export const findShow = (id: string): ShowConfig | undefined =>

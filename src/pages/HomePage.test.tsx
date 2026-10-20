@@ -52,7 +52,7 @@ describe('HomePage', () => {
     });
     afterEach(() => vi.useRealTimers());
 
-    it('lists five artwork tiles plus today, in order', () => {
+    it('lists seven artwork tiles plus today, in order', () => {
         renderWithProviders(<HomePage />);
 
         const nav = screen.getByRole('navigation');
@@ -66,6 +66,8 @@ describe('HomePage', () => {
             '雲妮鍾情',
             '在晴朗的一天出發',
             '西加航空',
+            '口水多過浪花',
+            '聖艾粒LaLaLaLa',
             '今日節目',
         ]);
     });
