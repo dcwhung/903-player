@@ -189,15 +189,15 @@ const checkCardDragNeverSeeks = async (cdp, p, log, label) => {
     );
 };
 
+/** 圓周上某個角度嘅點（0° 指向右，順時針為正） */
+const circlePoint = (centre, radius, degrees) => {
+    const radians = (degrees * Math.PI) / 180;
+    return { x: centre.x + radius * Math.cos(radians), y: centre.y + radius * Math.sin(radians) };
+};
+
 /** 一隻手指沿圓周由 from 度轉去 to 度（0° 指向右，順時針為正），分 STEPS 格 */
 const touchArc = async (cdp, p, centre, radius, from, to) => {
-    const at = (degrees) => {
-        const radians = (degrees * Math.PI) / 180;
-        return {
-            x: centre.x + radius * Math.cos(radians),
-            y: centre.y + radius * Math.sin(radians),
-        };
-    };
+    const at = (degrees) => circlePoint(centre, radius, degrees);
     const send = (type, points) =>
         cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
     await send('touchStart', [at(from)]);
@@ -232,37 +232,36 @@ const checkRingGapIgnored = async (cdp, p, log, label) => {
  * 兩隻手指：先撳碟，再撳弧形，兩隻一齊郁。碟擁有手勢，弧形被鎖住：
  * 只會跟捽碟向前約 15 秒，唔會跟弧形 seek 去右邊
  */
-const checkTwoFingerSingleSeek = async (cdp, p, log, label) => {
-    const slider = p.getByRole('slider', { name: '播放進度' });
-    const box = await slider.boundingBox();
-    const centre = centreOf(box);
-    const radius = DISC_SCRUB_RADIUS_RATIO * box.width;
-    const discAt = (degrees) => {
-        const radians = (degrees * Math.PI) / 180;
-        return {
-            x: centre.x + radius * Math.cos(radians),
-            y: centre.y + radius * Math.sin(radians),
-            id: 0,
-        };
-    };
-    const ringFrom = { ...gaugePoint(box, RING_TOP), id: 1 };
-    const ringTo = gaugePoint(box, RING_RIGHT);
+/**
+ * 兩隻手指（id 0、1）：先撳 first(0)，再撳 second(0)，之後一齊郁到 first(1) / second(1)，最後一齊放。
+ * first / second 係 0–1 進度去畫面座標嘅 function
+ */
+const touchTwoFingers = async (cdp, p, first, second) => {
     const send = (type, points) =>
         cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
-    const before = Number(await slider.getAttribute('aria-valuenow'));
-    await send('touchStart', [discAt(-90)]);
-    await send('touchStart', [discAt(-90), ringFrom]);
+    const at = (t) => [
+        { ...first(t), id: 0 },
+        { ...second(t), id: 1 },
+    ];
+    await send('touchStart', [at(0)[0]]);
+    await send('touchStart', at(0));
     for (let i = 1; i <= STEPS; i += 1) {
-        const ring = {
-            x: ringFrom.x + ((ringTo.x - ringFrom.x) * i) / STEPS,
-            y: ringFrom.y + ((ringTo.y - ringFrom.y) * i) / STEPS,
-            id: 1,
-        };
-        await send('touchMove', [discAt(-90 + (90 * i) / STEPS), ring]);
+        await send('touchMove', at(i / STEPS));
         await p.waitForTimeout(STEP_MS);
     }
     await send('touchEnd', []);
     await p.waitForTimeout(SETTLE_MS);
+};
+
+const checkTwoFingerSingleSeek = async (cdp, p, log, label) => {
+    const slider = p.getByRole('slider', { name: '播放進度' });
+    const box = await slider.boundingBox();
+    const radius = DISC_SCRUB_RADIUS_RATIO * box.width;
+    const disc = (t) => circlePoint(centreOf(box), radius, -90 + 90 * t);
+    const [from, to] = [gaugePoint(box, RING_TOP), gaugePoint(box, RING_RIGHT)];
+    const ring = (t) => ({ x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t });
+    const before = Number(await slider.getAttribute('aria-valuenow'));
+    await touchTwoFingers(cdp, p, disc, ring);
     const moved = Number(await slider.getAttribute('aria-valuenow')) - before;
     log(
         Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S,
