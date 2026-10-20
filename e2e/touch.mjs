@@ -21,21 +21,25 @@ const STRIP_SWIPE_PX = 140;
 const MINI_SWIPE_PX = 160;
 // 拖卡途中播放進度最多可以自然行咁多秒（唔可以係 seek）
 const SEEK_TOLERANCE_S = 3;
-// 唱片格角落（viewBox 300 入面約 (12, 12)），圓環以外：交畀卡疊 swipe
-const CORNER_RATIO = 12 / 300;
+// 唱片格 viewBox 同弧形半徑（同 src/components/ArcSlider/ArcSlider.constants.ts 一樣）
+const GAUGE_VIEWBOX = 300;
+const GAUGE_CENTRE = { x: GAUGE_VIEWBOX / 2, y: GAUGE_VIEWBOX / 2 };
+const RING_RADIUS = 140;
+// 唱片格角落（viewBox 入面約 (12, 12)），圓環以外：交畀卡疊 swipe
+const CORNER_RATIO = 12 / GAUGE_VIEWBOX;
 // 捽碟手指離圓心：碟半徑係唱片格嘅 36%，揀 30% 喺碟面中段
 const DISC_SCRUB_RADIUS_RATIO = 0.3;
 // 轉一圈 60 秒（src/config/constants.ts DISC_SCRUB_SECONDS_PER_TURN）
 const DISC_QUARTER_TURN_S = 15;
-// 底部缺口入面一點（viewBox：由右邊順時針 70°、半徑 140）：離缺口尾端 25°（> 12° 容差），亦避開中間嘅由頭播放掣
-const GAP_POINT = {
-    x: 150 + 140 * Math.cos((70 * Math.PI) / 180),
-    y: 150 + 140 * Math.sin((70 * Math.PI) / 180),
-};
+// 捽碟由碟頂順時針轉四分一圈
+const DISC_START_DEGREES = -90;
+const QUARTER_TURN_DEGREES = 90;
+// 底部缺口入面嘅角度（由右邊順時針）：離缺口尾端（45°）25°（> 12° 容差），亦避開中間嘅由頭播放掣
+const GAP_DEGREES = 70;
 const GAP_DRAG_PX = 60;
-// 弧形頂（viewBox (150, 10) = 一半）拖去右邊（(290, 150) ≈ 5/6）：如果 ring 冇被鎖，會 seek 去好遠
-const RING_TOP = { x: 150, y: 10 };
-const RING_RIGHT = { x: 290, y: 150 };
+// 弧形頂（= 一半）拖去右邊（≈ 5/6）：如果 ring 冇被鎖，會 seek 去好遠
+const RING_TOP = { x: GAUGE_CENTRE.x, y: GAUGE_CENTRE.y - RING_RADIUS };
+const RING_RIGHT = { x: GAUGE_CENTRE.x + RING_RADIUS, y: GAUGE_CENTRE.y };
 const TODAY_STACK = '今日節目，左右掃動轉節目';
 const STRIP = '[aria-roledescription="轉集"]';
 const MINI_REGION = '正在播放（今日節目）';
@@ -209,10 +213,10 @@ const touchArc = async (cdp, p, centre, radius, from, to) => {
     await p.waitForTimeout(SETTLE_MS);
 };
 
-/** 唱片格（300×300 viewBox）入面某點嘅畫面座標 */
+/** 唱片格 viewBox 入面某點嘅畫面座標 */
 const gaugePoint = (box, { x, y }) => ({
-    x: box.x + (x / 300) * box.width,
-    y: box.y + (y / 300) * box.height,
+    x: box.x + (x / GAUGE_VIEWBOX) * box.width,
+    y: box.y + (y / GAUGE_VIEWBOX) * box.height,
 });
 
 /** 節目頁：喺弧形底部缺口起手橫拖，唔會 seek（缺口唔屬於圓環） */
@@ -220,7 +224,10 @@ const checkRingGapIgnored = async (cdp, p, log, label) => {
     const slider = p.getByRole('slider', { name: '播放進度' });
     const box = await slider.boundingBox();
     const before = Number(await slider.getAttribute('aria-valuenow'));
-    await touchDrag(cdp, p, gaugePoint(box, GAP_POINT), { dx: GAP_DRAG_PX, dy: 0 });
+    await touchDrag(cdp, p, gaugePoint(box, circlePoint(GAUGE_CENTRE, RING_RADIUS, GAP_DEGREES)), {
+        dx: GAP_DRAG_PX,
+        dy: 0,
+    });
     const after = Number(await slider.getAttribute('aria-valuenow'));
     log(
         Math.abs(after - before) <= SEEK_TOLERANCE_S,
@@ -257,7 +264,8 @@ const checkTwoFingerSingleSeek = async (cdp, p, log, label) => {
     const slider = p.getByRole('slider', { name: '播放進度' });
     const box = await slider.boundingBox();
     const radius = DISC_SCRUB_RADIUS_RATIO * box.width;
-    const disc = (t) => circlePoint(centreOf(box), radius, -90 + 90 * t);
+    const disc = (t) =>
+        circlePoint(centreOf(box), radius, DISC_START_DEGREES + QUARTER_TURN_DEGREES * t);
     const [from, to] = [gaugePoint(box, RING_TOP), gaugePoint(box, RING_RIGHT)];
     const ring = (t) => ({ x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t });
     const before = Number(await slider.getAttribute('aria-valuenow'));
@@ -284,7 +292,14 @@ const checkDiscScrub = async (cdp, p, log, label) => {
     const box = await slider.boundingBox();
     const title = await heading(p);
     const before = Number(await slider.getAttribute('aria-valuenow'));
-    await touchArc(cdp, p, centreOf(box), DISC_SCRUB_RADIUS_RATIO * box.width, -90, 0);
+    await touchArc(
+        cdp,
+        p,
+        centreOf(box),
+        DISC_SCRUB_RADIUS_RATIO * box.width,
+        DISC_START_DEGREES,
+        DISC_START_DEGREES + QUARTER_TURN_DEGREES,
+    );
     const after = Number(await slider.getAttribute('aria-valuenow'));
     const moved = after - before;
     log(
@@ -297,8 +312,8 @@ const checkDiscScrub = async (cdp, p, log, label) => {
 const checkRingDragNeverSwitches = async (cdp, p, log, label) => {
     const box = await p.getByRole('slider', { name: '播放進度' }).boundingBox();
     const before = await heading(p);
-    // 弧形左邊（viewBox 300 入面約 (20, 150)），唱片外面
-    const start = { x: box.x + (20 / 300) * box.width, y: box.y + box.height / 2 };
+    // 弧形左邊（viewBox 入面約 (20, 150)），唱片外面
+    const start = gaugePoint(box, { x: 20, y: GAUGE_CENTRE.y });
     await touchDrag(cdp, p, start, { dx: CARD_SWIPE_PX, dy: -CARD_JITTER_PX });
     const after = await heading(p);
     const phase = await p.getByRole('group', { name: TODAY_STACK }).getAttribute('data-phase');
@@ -423,7 +438,14 @@ const checkReducedMotion = async (env, label) => {
     const slider = p.getByRole('slider', { name: '播放進度' });
     const box = await slider.boundingBox();
     const before = Number(await slider.getAttribute('aria-valuenow'));
-    await touchArc(cdp, p, centreOf(box), DISC_SCRUB_RADIUS_RATIO * box.width, -90, 0);
+    await touchArc(
+        cdp,
+        p,
+        centreOf(box),
+        DISC_SCRUB_RADIUS_RATIO * box.width,
+        DISC_START_DEGREES,
+        DISC_START_DEGREES + QUARTER_TURN_DEGREES,
+    );
     const moved = Number(await slider.getAttribute('aria-valuenow')) - before;
     const transform = await face.evaluate((el) => el.style.transform);
     log(
