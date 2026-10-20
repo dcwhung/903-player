@@ -2,6 +2,7 @@
  * 貼住螢幕底、全闊（闊螢幕收返喺 --page-max-width 中間）。
  * iOS standalone 嘅 viewport 有時矮過螢幕：useViewportGap 量出差距（--viewport-gap-bottom），
  * 將 mini player 推落 viewport 以下、貼住真正螢幕底；其他情況係 0。
+ * MiniPlayer 用 portal 掛喺 body，containing block 係 viewport，唔會畀頁面 .scope / #root 剪走。
  * 下面萬一仲露出 canvas，HomePage 都設咗 mini player 底色
  */
 .wrapper {

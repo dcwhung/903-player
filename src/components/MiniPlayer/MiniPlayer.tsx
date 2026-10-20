@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import type { ShowTheme } from '../../config/showThemes';
 import { stepIndex, useSwipe } from '../../hooks/useSwipe';
 import { useViewportGap } from '../../hooks/useViewportGap';
@@ -27,7 +28,11 @@ export interface MiniPlayerProps {
     onChange: (index: number) => void;
 }
 
-/** 主頁底部嘅今日節目播放器：跟節目轉色，左右掃轉節目，撳入節目頁 */
+/**
+ * 主頁底部嘅今日節目播放器：跟節目轉色，左右掃轉節目，撳入節目頁。
+ * 用 portal 掛喺 body：頁面 .scope 係 size container（會變成 position: fixed 嘅 containing block），
+ * #root 又 overflow: hidden，放喺入面推落 viewport 以下就會畀佢哋剪走
+ */
 export const MiniPlayer = ({ labels, keys, index, onChange, ...props }: MiniPlayerProps) => {
     useViewportGap();
     const swipe = useSwipe((direction) => {
@@ -36,7 +41,7 @@ export const MiniPlayer = ({ labels, keys, index, onChange, ...props }: MiniPlay
         if (next !== index) onChange(next);
     });
 
-    return (
+    return createPortal(
         <ThemeScope theme={props.theme} fullPage={false} className={styles.wrapper}>
             <section className={styles.player} aria-label={t('miniPlayer.region')} {...swipe}>
                 <MiniPlayerRow {...props} />
@@ -45,6 +50,7 @@ export const MiniPlayer = ({ labels, keys, index, onChange, ...props }: MiniPlay
                 </div>
                 <MiniPlayerProgress progress={props.progress} timeText={props.timeText} />
             </section>
-        </ThemeScope>
+        </ThemeScope>,
+        document.body,
     );
 };

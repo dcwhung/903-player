@@ -1,6 +1,6 @@
 /** 量 viewport 底同螢幕底差幾多所需嘅狀態 */
 export interface ViewportMetrics {
-    /** 加咗落主畫面嘅 PWA（冇瀏覽器工具列） */
+    /** iOS 主畫面 app（navigator.standalone，冇瀏覽器工具列） */
     standalone: boolean;
     portrait: boolean;
     /** screen.height：iOS 永遠係直向螢幕高（CSS px） */

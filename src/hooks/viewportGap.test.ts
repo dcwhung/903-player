@@ -19,6 +19,11 @@ describe('viewportGap', () => {
         expect(viewportGap({ ...IPHONE, portrait: false, innerHeight: 393 })).toBe(0);
     });
 
+    it('allows gaps up to the cap but not beyond', () => {
+        expect(viewportGap({ ...IPHONE, innerHeight: 772 })).toBe(80);
+        expect(viewportGap({ ...IPHONE, innerHeight: 771 })).toBe(0);
+    });
+
     it('ignores gaps too large to be the iOS bug (e.g. keyboard open)', () => {
         expect(viewportGap({ ...IPHONE, innerHeight: 500 })).toBe(0);
     });
