@@ -1,4 +1,5 @@
-import { SHOWS, findShow, findShowByName } from './shows';
+import type { Weekday } from '../types/weekday';
+import { SHOWS, findShow, findShowByName, type ShowConfig } from './shows';
 
 describe('findShowByName', () => {
     it.each([
@@ -30,5 +31,11 @@ describe('show names', () => {
 
         expect(new Set(names.map((name) => findShowByName(name)?.id)).size).toBe(SHOWS.length);
         names.forEach((name) => expect(findShowByName(name)).toBeDefined());
+    });
+});
+
+describe('ShowConfig.airDays', () => {
+    it('only accepts real weekdays (0 = Sunday … 6 = Saturday)', () => {
+        expectTypeOf<ShowConfig['airDays']>().toEqualTypeOf<readonly Weekday[]>();
     });
 });
