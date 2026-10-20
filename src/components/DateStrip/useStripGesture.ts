@@ -93,8 +93,9 @@ export const useStripGesture = (options: StripGestureOptions) => {
     const justDragged = useRef(false);
     return {
         onPointerDown: (event: StripPointer) => {
-            // 拖緊時第二隻手指撳落唔可以蓋過，否則 onHold(false) 永遠唔會發，碟停咗唔再轉
-            if (session.current) return;
+            // 拖緊時第二隻手指撳落唔可以蓋過，否則 onHold(false) 永遠唔會發，碟停咗唔再轉；
+            // 未開始拖嘅 session 可以換走（滑鼠喺條外面放手唔會有 pointerup，唔換就會卡死）
+            if (session.current?.dragging) return;
             session.current = beginStrip(event);
             justDragged.current = false;
         },

@@ -93,6 +93,19 @@ describe('DateStrip', () => {
         expect(track().style.transform).toBe('translateX(-30px)');
     });
 
+    it('starts a fresh drag after a mouse press was released outside the strip', () => {
+        render(<Harness />);
+        const mouse = { pointerId: 1, pointerType: 'mouse' };
+        // 撳落未過 slop 就拖出去放手：pointerup 唔會返到日子條
+        fireEvent.pointerDown(zone(), { clientX: 200, clientY: 20, ...mouse });
+        fireEvent.pointerMove(zone(), { clientX: 203, clientY: 20, ...mouse });
+
+        fireEvent.pointerDown(zone(), { clientX: 100, clientY: 20, ...mouse });
+        fireEvent.pointerMove(zone(), { clientX: 70, clientY: 20, ...mouse });
+
+        expect(track().style.transform).toBe('translateX(-30px)');
+    });
+
     it('plays the older episode on a left swipe and the newer one on a right swipe', async () => {
         const onStep = vi.fn();
         render(<Harness onStep={onStep} />);
