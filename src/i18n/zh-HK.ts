@@ -7,6 +7,7 @@ export const zhHK = {
         back: '返回主頁',
         loading: '載入中…',
         retry: '重試',
+        searching: '搵緊最新錄音…',
         noRecordings: '暫時未有錄音',
         showNotFound: '找不到此節目',
     },

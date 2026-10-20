@@ -72,6 +72,9 @@ export const RecordingsProvider = ({
 
     // 新用戶（storage 空）第一輪 probe 未有結果先算載入中；有一集或者 probe 完就 ready
     const status: LoadStatus = isProbing && recordings.length === 0 ? 'loading' : 'ready';
-    const value = useMemo(() => ({ status, recordings }), [status, recordings]);
+    const value = useMemo(
+        () => ({ status, recordings, isProbing }),
+        [status, recordings, isProbing],
+    );
     return <RecordingsContext.Provider value={value}>{children}</RecordingsContext.Provider>;
 };

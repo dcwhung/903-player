@@ -5,12 +5,17 @@ import { t } from '../i18n/t';
 interface LoadStateProps {
     status: LoadStatus;
     isEmpty: boolean;
+    /** 背景 probe 緊：冇錄音都可能只係未搵到，唔好太早話「冇錄音」 */
+    isProbing: boolean;
 }
 
-/** 載入中 / 冇錄音時顯示提示；有資料就返回 null */
-export const LoadState = ({ status, isEmpty }: LoadStateProps) => {
+/** 載入中 / 搵緊 / 冇錄音時顯示提示；有資料就返回 null */
+export const LoadState = ({ status, isEmpty, isProbing }: LoadStateProps) => {
     if (status === 'loading') {
         return <StatusMessage message={t('common.loading')} />;
     }
-    return isEmpty ? <StatusMessage message={t('common.noRecordings')} /> : null;
+    if (!isEmpty) {
+        return null;
+    }
+    return <StatusMessage message={t(isProbing ? 'common.searching' : 'common.noRecordings')} />;
 };

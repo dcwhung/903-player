@@ -22,7 +22,7 @@ const useAutoplayToday = (hasShows: boolean, isPlayingToday: boolean) => {
 
 /** 今日節目頁嘅資料同動作 */
 export const useTodayPage = () => {
-    const { status, recordings } = useRecordings();
+    const { status, recordings, isProbing } = useRecordings();
     const player = usePlayer();
 
     // 每次 render 重新計，app 開過香港午夜都會轉日
@@ -47,5 +47,5 @@ export const useTodayPage = () => {
     const selectShow = (url: string) => selectIndex(list.findIndex((r) => r.url === url));
 
     const theme = themeFor(current?.showId);
-    return { status, current, index, items, cards, theme, selectIndex, selectShow };
+    return { status, isProbing, current, index, items, cards, theme, selectIndex, selectShow };
 };

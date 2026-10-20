@@ -230,6 +230,21 @@ describe('ShowPage', () => {
         expect(screen.queryByRole('button', { name: '重試' })).not.toBeInTheDocument();
     });
 
+    it('says it is still searching, not empty, while the first probe runs for a show with nothing stored', async () => {
+        let finishProbe: (found: Recording[]) => void = () => {};
+        const prober = () =>
+            new Promise<Recording[]>((resolve) => {
+                finishProbe = resolve;
+            });
+        const otherShowOnly = [recording('badgirl', '2026-10-19', '1000')];
+        renderWithProviders(<ShowPage />, { ...ROUTE, recordings: otherShowOnly, prober });
+
+        expect(screen.getByRole('status')).toHaveTextContent('搵緊最新錄音…');
+        expect(screen.queryByText('暫時未有錄音')).not.toBeInTheDocument();
+        await act(async () => finishProbe([]));
+        expect(await screen.findByText('暫時未有錄音')).toBeInTheDocument();
+    });
+
     it('handles unknown shows', () => {
         renderWithProviders(<ShowPage />, { route: '/show/nope', path: '/show/:showId' });
 

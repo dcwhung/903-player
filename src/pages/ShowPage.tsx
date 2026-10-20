@@ -14,7 +14,7 @@ import { useShowPage } from './useShowPage';
 export const ShowPage = () => {
     const { showId = '' } = useParams();
     const goHome = useGoHome();
-    const { show, theme, status, current, episodeItems, neighbours, ...actions } =
+    const { show, theme, status, isProbing, current, episodeItems, neighbours, ...actions } =
         useShowPage(showId);
 
     // 成頁固定唔捲，得集數清單自己捲（見 Page.module.css .locked / .fixed）；
@@ -29,7 +29,7 @@ export const ShowPage = () => {
                     <StatusMessage message={t('common.showNotFound')} />
                 ) : (
                     <>
-                        <LoadState status={status} isEmpty={!current} />
+                        <LoadState status={status} isEmpty={!current} isProbing={isProbing} />
                         {status === 'ready' && current && (
                             <>
                                 <PlayerPanel

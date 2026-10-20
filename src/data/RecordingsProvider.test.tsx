@@ -51,6 +51,21 @@ describe('RecordingsProvider', () => {
         expect(result.current.recordings).toEqual([]);
     });
 
+    it('reports isProbing while the probe runs, keeping status ready when something is stored', async () => {
+        let finishProbe: (found: Recording[]) => void = () => {};
+        const prober = () =>
+            new Promise<Recording[]>((resolve) => {
+                finishProbe = resolve;
+            });
+        const { result } = renderHook(() => useRecordings(), {
+            wrapper: wrap(prober, () => [STORED]),
+        });
+
+        expect(result.current).toMatchObject({ status: 'ready', isProbing: true });
+        await act(async () => finishProbe([]));
+        expect(result.current).toMatchObject({ status: 'ready', isProbing: false });
+    });
+
     it('becomes ready once the probe finishes, even if it found nothing', async () => {
         const { result } = renderHook(() => useRecordings(), { wrapper: wrap(noProbe) });
 
