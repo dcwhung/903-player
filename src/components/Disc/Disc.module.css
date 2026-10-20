@@ -23,6 +23,39 @@
     box-shadow: 0 0 0 3px var(--color-divider);
 }
 
+/* 碟面：自轉用獨立嘅 rotate property，同手動角度（inline transform）疊埋計 */
+.face {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+/* 一直掛住 animation，暫停（paused）就停喺原位；播緊先轉 */
+.large .face {
+    animation: disc-spin var(--duration-disc-spin) linear infinite paused;
+}
+
+.large .face.spinning {
+    animation-play-state: running;
+}
+
+@keyframes disc-spin {
+    from {
+        rotate: 0deg;
+    }
+
+    to {
+        rotate: 360deg;
+    }
+}
+
+/* 捽碟：單指手勢全部交畀 pointer events，唔好畀瀏覽器捲 / 拖圖 */
+.scrubbable {
+    touch-action: none;
+    cursor: grab;
+}
+
 .art {
     position: absolute;
     inset: 0;
@@ -36,6 +69,10 @@
 @media (prefers-reduced-motion: reduce) {
     .art {
         transition: none;
+    }
+
+    .large .face {
+        animation: none;
     }
 }
 

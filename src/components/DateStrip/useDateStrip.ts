@@ -13,6 +13,8 @@ export interface DateStripStepOptions {
     onStep: (direction: SwipeDirection) => boolean;
     /** 跟住日子條轉嘅唱片（PlayerPanel 嘅節目圖） */
     spinRef?: RefObject<HTMLElement | null> | undefined;
+    /** 拖緊日子條（捉住碟）：畀 PlayerPanel 暫停碟自轉 */
+    onHold?: ((held: boolean) => void) | undefined;
 }
 
 /**
@@ -41,7 +43,12 @@ const useStripStep = ({ dateLabel, neighbours, onStep, spinRef }: DateStripStepO
 export const useDateStrip = (options: DateStripStepOptions) => {
     const ids = { date: useId(), title: useId(), hint: useId() };
     const { motion, go, announcement } = useStripStep(options);
-    const gesture = useStripGesture({ neighbours: options.neighbours, motion, onGo: go });
+    const gesture = useStripGesture({
+        neighbours: options.neighbours,
+        motion,
+        onGo: go,
+        onHold: options.onHold,
+    });
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
         const direction = arrowKeyDirection(event.key);
         // 只係焦點喺日子條本身先處理，入面嘅側格掣有自己用途

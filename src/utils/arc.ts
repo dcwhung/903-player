@@ -28,6 +28,25 @@ export const pointToRatio = (x: number, y: number, center: number): number => {
     return offset < ARC_SWEEP_DEGREES + GAP_DEGREES / 2 ? 1 : 0;
 };
 
+/** 弧形可以撳嘅範圍：離圓心 inner–outer 之間，底部缺口只留兩端少少容差（方便撳 0 / 尾嘅圓點） */
+export interface ArcBand {
+    inner: number;
+    outer: number;
+    gapTolerance: number;
+}
+
+/** 指標喺唔喺弧形觸控帶入面；唔喺就交返畀外面（今日節目卡疊 swipe） */
+export const isOnArcBand = (x: number, y: number, center: number, band: ArcBand): boolean => {
+    const distance = Math.hypot(x - center, y - center);
+    if (!(distance >= band.inner && distance <= band.outer)) return false;
+    const angle = Math.atan2(y - center, x - center) / DEGREES_TO_RADIANS;
+    const offset = (angle - ARC_START_DEGREES + FULL_CIRCLE_DEGREES * 2) % FULL_CIRCLE_DEGREES;
+    return (
+        offset <= ARC_SWEEP_DEGREES + band.gapTolerance ||
+        offset >= FULL_CIRCLE_DEGREES - band.gapTolerance
+    );
+};
+
 /** 畫弧形用嘅 stroke-dasharray（circle 要 rotate 到 ARC_START_DEGREES） */
 export const arcDashArray = (ratio: number, radius: number): string => {
     const circumference = 2 * Math.PI * radius;

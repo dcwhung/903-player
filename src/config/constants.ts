@@ -17,3 +17,10 @@ export const ARC_SWEEP_DEGREES = 270;
 
 /** 錄音檔只可以嚟自原站 audio host */
 export const ALLOWED_AUDIO_ORIGIN = 'https://audio.hkfm903.live';
+
+/** 捽碟：順時針轉一圈 = 向前 60 秒（微調；粗調用弧形） */
+export const DISC_SCRUB_SECONDS_PER_TURN = 60;
+/** 離圓心半徑兩成以內（spindle 附近）角度唔穩定，唔計 */
+export const DISC_SCRUB_DEAD_ZONE_RATIO = 0.2;
+/** 轉少過呢個角度當係 tap，唔 seek */
+export const DISC_SCRUB_MIN_DEGREES = 6;

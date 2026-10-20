@@ -21,6 +21,12 @@ const STRIP_SWIPE_PX = 140;
 const MINI_SWIPE_PX = 160;
 // 拖卡途中播放進度最多可以自然行咁多秒（唔可以係 seek）
 const SEEK_TOLERANCE_S = 3;
+// 唱片格角落（viewBox 300 入面約 (12, 12)），圓環以外：交畀卡疊 swipe
+const CORNER_RATIO = 12 / 300;
+// 捽碟手指離圓心：碟半徑係唱片格嘅 36%，揀 30% 喺碟面中段
+const DISC_SCRUB_RADIUS_RATIO = 0.3;
+// 轉一圈 60 秒（src/config/constants.ts DISC_SCRUB_SECONDS_PER_TURN）
+const DISC_QUARTER_TURN_S = 15;
 const TODAY_STACK = '今日節目，左右掃動轉節目';
 const STRIP = '[aria-roledescription="轉集"]';
 const MINI_REGION = '正在播放（今日節目）';
@@ -157,18 +163,63 @@ const checkCardSwipes = async (cdp, p, log, label) => {
     log(isDocLocked(await docScroll(p)), `${label}：掃卡之後成頁仍然唔捲`);
 };
 
-/** 由唱片中間拖卡：卡跟手指，但進度唔會 seek */
+/** 由唱片格角落（圓環以外）拖卡：卡跟手指，但進度唔會 seek */
 const checkCardDragNeverSeeks = async (cdp, p, log, label) => {
     const slider = p.getByRole('slider', { name: '播放進度' });
     const before = Number(await slider.getAttribute('aria-valuenow'));
-    const disc = centreOf(await slider.boundingBox());
-    const end = await touchDrag(cdp, p, disc, { dx: -60, dy: 6 }, { release: false });
+    const box = await slider.boundingBox();
+    const corner = { x: box.x + CORNER_RATIO * box.width, y: box.y + CORNER_RATIO * box.height };
+    const end = await touchDrag(cdp, p, corner, { dx: -60, dy: 6 }, { release: false });
     const phase = await p.getByRole('group', { name: TODAY_STACK }).getAttribute('data-phase');
     const during = Number(await slider.getAttribute('aria-valuenow'));
     await end();
     log(
         phase === 'dragging' && Math.abs(during - before) <= SEEK_TOLERANCE_S,
-        `${label}：由唱片拖卡會拖卡唔會 seek（${phase}，${before}s → ${during}s）`,
+        `${label}：由唱片格角落拖卡會拖卡唔會 seek（${phase}，${before}s → ${during}s）`,
+    );
+};
+
+/** 一隻手指沿圓周由 from 度轉去 to 度（0° 指向右，順時針為正），分 STEPS 格 */
+const touchArc = async (cdp, p, centre, radius, from, to) => {
+    const at = (degrees) => {
+        const radians = (degrees * Math.PI) / 180;
+        return {
+            x: centre.x + radius * Math.cos(radians),
+            y: centre.y + radius * Math.sin(radians),
+        };
+    };
+    const send = (type, points) =>
+        cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+    await send('touchStart', [at(from)]);
+    for (let i = 1; i <= STEPS; i += 1) {
+        await send('touchMove', [at(from + ((to - from) * i) / STEPS)]);
+        await p.waitForTimeout(STEP_MS);
+    }
+    await send('touchEnd', []);
+    await p.waitForTimeout(SETTLE_MS);
+};
+
+/** 播緊時碟面自轉（CSS animation 喺度行） */
+const checkDiscSpins = async (p, log, label) => {
+    const state = await p
+        .locator('[class*="scrubbable"] [class*="face"]')
+        .first()
+        .evaluate((el) => getComputedStyle(el).animationPlayState);
+    log(state === 'running', `${label}：播緊時碟自轉（animation-play-state ${state}）`);
+};
+
+/** 捽碟：順時針轉四分一圈 = 向前 15 秒，唔會轉節目 */
+const checkDiscScrub = async (cdp, p, log, label) => {
+    const slider = p.getByRole('slider', { name: '播放進度' });
+    const box = await slider.boundingBox();
+    const title = await heading(p);
+    const before = Number(await slider.getAttribute('aria-valuenow'));
+    await touchArc(cdp, p, centreOf(box), DISC_SCRUB_RADIUS_RATIO * box.width, -90, 0);
+    const after = Number(await slider.getAttribute('aria-valuenow'));
+    const moved = after - before;
+    log(
+        Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S && (await heading(p)) === title,
+        `${label}：順時針捽碟四分一圈向前約 ${DISC_QUARTER_TURN_S}s，唔轉節目（${before}s → ${after}s）`,
     );
 };
 
@@ -283,6 +334,8 @@ const checkToday = async (env, label) => {
     await checkCardSwipes(cdp, p, log, label);
     await checkCardDragNeverSeeks(cdp, p, log, label);
     await checkRingDragNeverSwitches(cdp, p, log, label);
+    await checkDiscSpins(p, log, label);
+    await checkDiscScrub(cdp, p, log, label);
     await p.screenshot({ path: `${env.out}/touch-today-${label.split(' ')[0]}.png` });
 };
 
