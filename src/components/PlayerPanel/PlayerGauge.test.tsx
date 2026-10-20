@@ -199,6 +199,21 @@ describe('PlayerGauge disc motion', () => {
         expect(faceDegrees(face)).toBeCloseTo(90);
     });
 
+    it('keeps the disc where a ring drag let go and follows the next drag from its own start', async () => {
+        const { face, slider } = await setup();
+
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.pointerMove(slider, { clientX: 290, clientY: 150, pointerId: 1 });
+        fireEvent.pointerUp(slider, { clientX: 290, clientY: 150, pointerId: 1 });
+        expect(faceDegrees(face)).toBeCloseTo(90);
+
+        // 第二次由左邊（1/6）起手：唔跳，由起手位置再跟住轉
+        fireEvent.pointerDown(slider, { clientX: 10, clientY: 150, pointerId: 2 });
+        expect(faceDegrees(face)).toBeCloseTo(90);
+        fireEvent.pointerMove(slider, { clientX: 150, clientY: 10, pointerId: 2 });
+        expect(faceDegrees(face)).toBeCloseTo(180);
+    });
+
     it('turns the disc back when a ring drag is cancelled', async () => {
         const { audio, face, slider } = await setup();
 
