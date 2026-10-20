@@ -13,7 +13,7 @@ import { useTodayPage } from './useTodayPage';
 
 export const TodayPage = () => {
     const goHome = useGoHome();
-    const { status, isProbing, current, index, items, cards, theme, selectIndex, selectShow } =
+    const { status, isSearching, current, index, items, cards, theme, selectIndex, selectShow } =
         useTodayPage();
     const names = items.map((item) => item.name);
 
@@ -23,7 +23,7 @@ export const TodayPage = () => {
                 <div className={page.header}>
                     <PageHeader title={t('today.title')} onBack={goHome} />
                 </div>
-                <LoadState status={status} isEmpty={!current} isProbing={isProbing} />
+                <LoadState status={status} isEmpty={!current} isSearching={isSearching} />
                 {status === 'ready' && current && (
                     <>
                         <ShowCardStack cards={cards} index={index} onChange={selectIndex}>

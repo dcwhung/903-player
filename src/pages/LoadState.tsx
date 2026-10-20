@@ -6,16 +6,16 @@ interface LoadStateProps {
     status: LoadStatus;
     isEmpty: boolean;
     /** 背景 probe 緊：冇錄音都可能只係未搵到，唔好太早話「冇錄音」 */
-    isProbing: boolean;
+    isSearching: boolean;
 }
 
 /** 載入中 / 搵緊 / 冇錄音時顯示提示；有資料就返回 null */
-export const LoadState = ({ status, isEmpty, isProbing }: LoadStateProps) => {
+export const LoadState = ({ status, isEmpty, isSearching }: LoadStateProps) => {
     if (status === 'loading') {
         return <StatusMessage message={t('common.loading')} />;
     }
     if (!isEmpty) {
         return null;
     }
-    return <StatusMessage message={t(isProbing ? 'common.searching' : 'common.noRecordings')} />;
+    return <StatusMessage message={t(isSearching ? 'common.searching' : 'common.noRecordings')} />;
 };
