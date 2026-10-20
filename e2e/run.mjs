@@ -4,7 +4,8 @@
 import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { AUDIO_HOST, newE2EContext, readFeed } from './harness.mjs';
+import { AUDIO_HOST, PROBE_STORAGE_KEY, newE2EContext } from './harness.mjs';
+import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { runTouchChecks } from './touch.mjs';
 
 const DEFAULT_PORT = 4173;
@@ -773,9 +774,8 @@ const checkMiniPlayerPosition = async (browser, errors) => {
     }
 };
 
-// audio probe（PR #29）：今日同尋日、feed 未有嘅節目會直接 probe 原站。
+// audio probe（PR #29）：回看期內、storage 未有嘅節目會直接 probe 原站。
 // 西加航空 19/10 晚間節目唔喺假資料（sampleData.mjs），而 E2E_NOW（22:30）佢已經開咗咪，所以一定會 probe
-const PROBE_STORAGE_KEY = '903player:probed:v1';
 // 同 src/config/shows.ts 嘅 westair 一致；刻意寫死做獨立對照
 const PROBE_SHOW = { id: 'westair', name: '西加航空', fileTime: '0905' };
 const PROBE_DATE = '2026-10-19';
@@ -793,9 +793,11 @@ const probeUrl = ({ name, fileTime }, date) =>
     )}.aac`;
 /** 2026-10-16 → 16/10（集數掣 aria-label 嘅寫法） */
 const dayMonth = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-const feedLatestDate = (showId) =>
-    readFeed()
-        .filter((r) => r.showId === showId)
+/** probe 自己搵到嘅（唔計 harness seed 落 storage 嘅假資料） */
+const SAMPLE_URLS = new Set(SAMPLE_RECORDINGS.map((r) => r.url));
+const probedOnly = (found) => found.filter((r) => !SAMPLE_URLS.has(r.url));
+const sampleLatestDate = (showId) =>
+    SAMPLE_RECORDINGS.filter((r) => r.showId === showId)
         .map((r) => r.date)
         .sort()
         .at(-1);
@@ -835,11 +837,12 @@ const currentEpisodeOf = (p) =>
 /** 原站冇嘅檔（404）唔會變成集數；節目頁最近一集同假資料一樣 */
 const checkProbeIgnoresUnknown = async (browser, errors) => {
     const { ctx, p, state } = await openProbedShowPage(browser, errors, []);
+    const probed = probedOnly(state.found);
     log(
-        state.found.length === 0,
-        `probe 原站冇嘅日子唔會多咗集數（found ${state.found.length}，miss ${Object.keys(state.misses).join(' ')}）`,
+        probed.length === 0,
+        `probe 原站冇嘅日子唔會多咗集數（found ${probed.length}，miss ${Object.keys(state.misses).join(' ')}）`,
     );
-    const latest = dayMonth(feedLatestDate(PROBE_SHOW.id));
+    const latest = dayMonth(sampleLatestDate(PROBE_SHOW.id));
     // 重開先計：一入頁揀集嗰陣 probe 未完；重開會即刻併埋之前 probe 到嘅（如果有）
     await p.reload();
     await p
@@ -856,11 +859,11 @@ const checkProbeIgnoresUnknown = async (browser, errors) => {
     await ctx.close();
 };
 
-/** 原站真係有、feed 未有嘅今日新一集：probe 搵到就加入清單，重開節目頁揀佢做最近一集 */
+/** 原站真係有、storage 未有嘅今日新一集：probe 搵到就加入清單，重開節目頁揀佢做最近一集 */
 const checkProbeFindsNewEpisode = async (browser, errors) => {
     const url = probeUrl(PROBE_SHOW, PROBE_DATE);
     const { ctx, p, state } = await openProbedShowPage(browser, errors, [url]);
-    const found = state.found.map((r) => `${r.showId} ${r.date}`);
+    const found = probedOnly(state.found).map((r) => `${r.showId} ${r.date}`);
     log(
         found.length === 1 && found[0] === `${PROBE_SHOW.id} ${PROBE_DATE}`,
         `probe 搵到原站有嘅今日新一集，冇其他（${found.join(' / ')}）`,
