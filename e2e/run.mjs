@@ -614,6 +614,165 @@ const checkTodayMidDrag = async (p) => {
     log(after === before && phase === null, `拖唔夠遠放手彈返：${before} → ${after}`);
 };
 
+/*
+ * W-390：iOS standalone 嘅 dvh 可能高過真正嘅固定殼（html / body / #root 100%）。
+ * Chromium 冇呢個 bug，所以人手將殼（html）縮矮 shrink px，100dvh 仍然係成個 viewport：
+ * 主碟跟殼高（100cqh）就會縮細，清單最少行數、控制掣、main 唔溢出都要守得住。
+ * 對照組：將 --player-shell-height 強制改返 100dvh（即舊做法），同一個殼要真係出事，
+ * 證明呢個模擬真係會令舊公式爆，唔係無論點都過。
+ * shrink 要大到舊公式會剪走（390×844 主碟本身封頂 300px，要縮多啲先見到），
+ * 又唔可以矮到連最細唱片都塞唔落最少行數。
+ */
+const SHELL_MISMATCH_CASES = [
+    { width: 390, height: 844, shrink: 160 },
+    { width: 375, height: 667, shrink: 80 },
+];
+const SHELL_PAGES = [
+    { route: '#/show/badgirl', region: '集數', minRows: MIN_VISIBLE_ROWS, name: '節目頁' },
+    { route: '#/today', region: '今日節目', minRows: TODAY_MIN_ROWS, name: '今日節目頁' },
+];
+// 對照組用嘅舊做法：主碟跟 dvh（W-390 之前）
+const DVH_SOURCE_CSS = ':root { --player-shell-height: 100dvh !important; }';
+const LAYOUT_SETTLE_MS = 300;
+/** 殼縮矮後嘅量度：殼高、100dvh、唱片、清單行數、控制掣係咪喺 main 入面、main 有冇溢出 */
+const shellFit = async (p, region) => {
+    const rows = await visibleRows(p.getByRole('region', { name: region }).getByRole('list'));
+    const layout = await p.evaluate(() => {
+        const main = document.querySelector('main');
+        const box = main.getBoundingClientRect();
+        const probe = document.createElement('div');
+        probe.style.cssText = 'position:fixed;top:0;height:100dvh;visibility:hidden';
+        document.body.append(probe);
+        const dvh = probe.getBoundingClientRect().height;
+        probe.remove();
+        const controls = ['返回主頁', '後退 60 秒', '前進 60 秒'].every((name) => {
+            const b = document.querySelector(`[aria-label="${name}"]`).getBoundingClientRect();
+            return b.top >= box.top && b.bottom <= box.bottom + 0.5;
+        });
+        return {
+            shell: document.getElementById('root').getBoundingClientRect().height,
+            dvh,
+            disc: document.querySelector('[aria-label="播放進度"]').getBoundingClientRect().width,
+            controls,
+            overflow: main.scrollHeight - main.clientHeight,
+        };
+    });
+    return { ...layout, rows };
+};
+/** shellFit 結果守唔守得住：清單最少行數、控制掣喺 main 入面、main 唔溢出（固定版面） */
+const shellHolds = (fit, minRows) => fit.rows >= minRows && fit.controls && fit.overflow <= 0;
+const describeFit = (fit) =>
+    `殼 ${fit.shell.toFixed(0)}px / 100dvh ${fit.dvh.toFixed(0)}px，唱片 ${fit.disc.toFixed(0)}px，清單 ${fit.rows.toFixed(2)} 行，控制掣喺 main 入面 ${fit.controls}，main 溢出 ${fit.overflow}px`;
+/** 每個殼縮矮情況量到嘅結果（最尾印成表） */
+const shellMetrics = [];
+
+const checkShellMismatch = async (browser, errors) => {
+    for (const { width, height, shrink } of SHELL_MISMATCH_CASES) {
+        const ctx = await newE2EContext(browser, {
+            viewport: { width, height },
+            deviceScaleFactor: 2,
+        });
+        const sp = await ctx.newPage();
+        sp.on('pageerror', (e) => errors.push(e.message));
+        for (const { route, region, minRows, name } of SHELL_PAGES) {
+            await sp.goto(`${BASE}${route}`);
+            await sp.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+            await sp.waitForTimeout(800);
+            const label = `${width}×${height} ${name}（殼矮 ${shrink}px）`;
+            const normal = await shellFit(sp, region);
+            const shrunk = await sp.addStyleTag({
+                content: `html { height: calc(100% - ${shrink}px) !important; }`,
+            });
+            await sp.waitForTimeout(LAYOUT_SETTLE_MS);
+            const fit = await shellFit(sp, region);
+            log(
+                Math.abs(fit.dvh - fit.shell - shrink) < 1,
+                `${label}：模擬到 dvh 高過殼 ${(fit.dvh - fit.shell).toFixed(0)}px`,
+            );
+            log(
+                shellHolds(fit, minRows) && fit.disc < normal.disc,
+                `${label}：唱片跟殼高縮細（${normal.disc.toFixed(0)} → ${fit.disc.toFixed(0)}px），清單 ≥ ${minRows} 行、控制掣喺 main 入面、main 唔溢出（${describeFit(fit)}）`,
+            );
+            const legacy = await sp.addStyleTag({ content: DVH_SOURCE_CSS });
+            await sp.waitForTimeout(LAYOUT_SETTLE_MS);
+            const dvhFit = await shellFit(sp, region);
+            log(
+                !shellHolds(dvhFit, minRows),
+                `${label} 對照：舊做法（唱片跟 100dvh）真係會出事（${describeFit(dvhFit)}）`,
+            );
+            await sp.screenshot({
+                path: `${OUT}/shell-mismatch-dvh-${width}x${height}-${name}.png`,
+            });
+            await legacy.evaluate((el) => el.remove());
+            await sp.waitForTimeout(LAYOUT_SETTLE_MS);
+            await sp.screenshot({ path: `${OUT}/shell-mismatch-${width}x${height}-${name}.png` });
+            await shrunk.evaluate((el) => el.remove());
+            shellMetrics.push({ label, normal, fit, dvhFit });
+        }
+        await ctx.close();
+    }
+    console.log(
+        '\n殼縮矮情況｜唱片（正常 → 跟殼 / 跟 dvh）｜清單行數（跟殼 / 跟 dvh）｜main 溢出（跟殼 / 跟 dvh）',
+    );
+    for (const { label, normal, fit, dvhFit } of shellMetrics) {
+        console.log(
+            `${label}｜${normal.disc.toFixed(0)} → ${fit.disc.toFixed(0)} / ${dvhFit.disc.toFixed(0)}px｜${fit.rows.toFixed(2)} / ${dvhFit.rows.toFixed(2)}｜${fit.overflow} / ${dvhFit.overflow}px`,
+        );
+    }
+    console.log('');
+};
+
+/*
+ * S-421：成頁 .scope 而家係 size container（W-390）。如果瀏覽器對 container-type 加埋 layout containment，
+ * .scope 會變成 position: fixed 嘅 containing block，主頁 mini player 就會跟 .scope（殼）而唔係 viewport 定位。
+ * 正常畫面：mini player 底 = innerHeight − 16（--space-4，Chromium 冇安全區）。
+ * 殼縮矮（同 checkShellMismatch 一樣模擬 dvh 高過殼）：底唔可以出咗 viewport，亦唔可以高過殼底 − 16。
+ */
+const MINI_BOTTOM_GAP_PX = 16;
+const MINI_POSITION_CASES = [
+    { width: 390, height: 844, shrink: 160 },
+    { width: 320, height: 568, shrink: 80 },
+];
+const SUBPIXEL_PX = 0.5;
+/** 主頁 mini player 外層（ThemeScope wrapper，position: fixed）嘅底、innerHeight、殼底 */
+const miniPosition = (p) =>
+    p.getByRole('region', { name: MINI_REGION }).evaluate((el) => ({
+        bottom: el.closest('[data-theme-scope]').getBoundingClientRect().bottom,
+        inner: window.innerHeight,
+        shell: document.getElementById('root').getBoundingClientRect().bottom,
+    }));
+
+const checkMiniPlayerPosition = async (browser, errors) => {
+    for (const { width, height, shrink } of MINI_POSITION_CASES) {
+        const ctx = await newE2EContext(browser, {
+            viewport: { width, height },
+            deviceScaleFactor: 2,
+        });
+        const mp = await ctx.newPage();
+        mp.on('pageerror', (e) => errors.push(e.message));
+        await mp.goto(BASE);
+        await mp.waitForSelector('nav[aria-busy="false"]');
+        await mp.getByRole('region', { name: MINI_REGION }).waitFor();
+        const label = `${width}×${height} 主頁 mini player`;
+        const normal = await miniPosition(mp);
+        log(
+            Math.abs(normal.bottom - (normal.inner - MINI_BOTTOM_GAP_PX)) <= SUBPIXEL_PX,
+            `${label}：底 ${normal.bottom.toFixed(1)} = innerHeight ${normal.inner} − ${MINI_BOTTOM_GAP_PX}`,
+        );
+        await mp.addStyleTag({
+            content: `html { height: calc(100% - ${shrink}px) !important; }`,
+        });
+        await mp.waitForTimeout(LAYOUT_SETTLE_MS);
+        const shrunk = await miniPosition(mp);
+        log(
+            shrunk.bottom <= shrunk.inner + SUBPIXEL_PX &&
+                shrunk.bottom >= shrunk.shell - MINI_BOTTOM_GAP_PX - SUBPIXEL_PX,
+            `${label}（殼矮 ${shrink}px）：底 ${shrunk.bottom.toFixed(1)} ≤ innerHeight ${shrunk.inner}，≥ 殼底 ${shrunk.shell.toFixed(1)} − ${MINI_BOTTOM_GAP_PX}`,
+        );
+        await ctx.close();
+    }
+};
+
 // audio probe（PR #29）：今日同尋日、feed 未有嘅節目會直接 probe 原站。
 // 西加航空 19/10 晚間節目唔喺假資料（sampleData.mjs），而 E2E_NOW（22:30）佢已經開咗咪，所以一定會 probe
 const PROBE_STORAGE_KEY = '903player:probed:v1';
@@ -1009,6 +1168,9 @@ try {
     );
     for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.headroom}｜${m.rows}`);
     console.log('');
+
+    await checkShellMismatch(browser, errors);
+    await checkMiniPlayerPosition(browser, errors);
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
     await runTouchChecks({ browser, base: BASE, out: OUT, errors, log });

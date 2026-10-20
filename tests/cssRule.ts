@@ -126,3 +126,35 @@ export const maxHeightBreakpoints = (css: string): number[] => {
     });
     return breakpoints;
 };
+
+export interface CssDeclaration {
+    /** 同 contextOf 一樣：頂層係 undefined，否則係由外至內嘅 at-rule 鏈 */
+    context: string | undefined;
+    selector: string;
+    prop: string;
+    value: string;
+}
+
+/**
+ * 某條 at-rule 鏈（同 atRuleDeclarations 一樣寫法）以外嘅所有規則宣告：頂層同其他 at-rule 入面嘅都計，
+ * 嗰條鏈入面再包嘅 at-rule 當係入面。用嚟斷言某啲值（例如 dvh）只可以喺 fallback 出現。
+ * at-rule 本身嘅條件（例如 `@supports (height: 100dvh)`）唔係宣告，唔會返回。
+ */
+export const declarationsOutside = (css: string, prelude: string): CssDeclaration[] => {
+    const excluded = squash(prelude);
+    const found: CssDeclaration[] = [];
+    parse(css).walkRules((rule) => {
+        const context = contextOf(rule);
+        if (context === excluded || context?.startsWith(`${excluded} `)) return;
+        rule.each((node) => {
+            if (node.type !== 'decl') return;
+            found.push({
+                context,
+                selector: squash(rule.selector),
+                prop: node.prop,
+                value: squash(node.value),
+            });
+        });
+    });
+    return found;
+};
