@@ -90,3 +90,22 @@ export const stripShift = (width: number, direction: SwipeDirection): number => 
 /** 轉集時碟順時針轉去下一個「正」嘅角度（360 倍數），最少轉半圈，轉完節目圖一定擺正 */
 export const uprightSpin = (deg: number): number =>
     Math.ceil((deg + MIN_UPRIGHT_TURN_DEG) / FULL_TURN_DEG) * FULL_TURN_DEG;
+
+/** matrix() 同 matrix3d() 嘅頭兩個值都係 cos θ、sin θ（繞 z 軸轉） */
+const ROTATION_MATRIX = /^matrix(?:3d)?\(([^,]+),([^,]+),/;
+const HALF_TURN_DEG = FULL_TURN_DEG / 2;
+
+/** 由 getComputedStyle 嘅 transform 讀碟而家轉咗幾多度（-180–180）；冇 transform 或者睇唔明就係 null */
+export const rotationOf = (transform: string): number | null => {
+    const match = ROTATION_MATRIX.exec(transform);
+    if (!match) return null;
+    const [cos, sin] = [Number(match[1]), Number(match[2])];
+    if (!Number.isFinite(cos) || !Number.isFinite(sin)) return null;
+    return (Math.atan2(sin, cos) * HALF_TURN_DEG) / Math.PI;
+};
+
+/** 同 `deg` 睇落一樣（差 360 倍數）而又最接近 `reference` 嘅角度：接住轉緊嘅碟唔會跳 */
+export const nearestTurn = (deg: number, reference: number): number => {
+    const diff = (((deg - reference) % FULL_TURN_DEG) + FULL_TURN_DEG) % FULL_TURN_DEG;
+    return reference + (diff > HALF_TURN_DEG ? diff - FULL_TURN_DEG : diff);
+};

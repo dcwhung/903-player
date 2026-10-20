@@ -6,6 +6,8 @@ import {
     stripOffset,
     stripRelease,
     stripShift,
+    nearestTurn,
+    rotationOf,
     uprightSpin,
 } from './dateStrip';
 
@@ -116,5 +118,29 @@ describe('uprightSpin', () => {
             expect(target % 360 === 0).toBe(true);
             expect(target).toBeGreaterThan(deg);
         });
+    });
+});
+
+describe('rotationOf', () => {
+    it('reads the angle of a computed 2D or 3D rotation matrix', () => {
+        expect(rotationOf('matrix(0, 1, -1, 0, 0, 0)')).toBeCloseTo(90);
+        expect(rotationOf('matrix(-1, 0, 0, -1, 0, 0)')).toBeCloseTo(180);
+        expect(rotationOf('matrix3d(0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)')).toBeCloseTo(
+            -90,
+        );
+    });
+
+    it('gives null without a readable transform', () => {
+        expect(rotationOf('none')).toBeNull();
+        expect(rotationOf('')).toBeNull();
+    });
+});
+
+describe('nearestTurn', () => {
+    it('picks the same visual angle closest to the reference', () => {
+        expect(nearestTurn(90, 720)).toBe(810);
+        expect(nearestTurn(-90, 720)).toBe(630);
+        expect(nearestTurn(0, 360)).toBe(360);
+        expect(nearestTurn(170, -170)).toBe(-190);
     });
 });

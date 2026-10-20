@@ -1,7 +1,7 @@
 import { useMemo, useRef, type RefObject } from 'react';
 import type { SwipeDirection } from '../../hooks/swipe';
 import { prefersReducedMotion } from '../../utils/motion';
-import { stripShift, uprightSpin } from './dateStrip';
+import { nearestTurn, rotationOf, stripShift, uprightSpin } from './dateStrip';
 
 /** 拖緊碟跟住轉：每 px 0.5 度；轉集時碟順時針轉返正（uprightSpin） */
 const DISC_DEG_PER_PX = 0.5;
@@ -38,6 +38,20 @@ const moveTrack = (refs: MotionRefs, offset: number, animate: boolean) => {
 const turnDisc = (refs: MotionRefs, extra: number, animate: boolean) => {
     refs.drag.current = extra;
     setTransform(refs.disc?.current, `rotate(${refs.spin.current + extra}deg)`, animate);
+};
+
+/**
+ * 開始拖：碟可能仲轉緊（轉集轉返正 / 彈返），inline style 係目標角度，畫面上未到。
+ * 讀畫面上嘅角度做新起點（揀同佢睇落一樣、最接近目標嘅角度），之後跟手指唔會跳；
+ * 讀唔到（例如冇 transform）就照舊由目標角度開始
+ */
+const grab = (refs: MotionRefs) => {
+    const disc = refs.disc?.current;
+    if (!disc || prefersReducedMotion()) return;
+    const angle = rotationOf(getComputedStyle(disc).transform);
+    if (angle === null) return;
+    refs.spin.current = nearestTurn(angle, refs.spin.current + refs.drag.current);
+    turnDisc(refs, 0, false);
 };
 
 const follow = (refs: MotionRefs, offset: number) => {
@@ -112,6 +126,7 @@ export const useStripMotion = (spinRef?: RefObject<HTMLElement | null>) => {
         };
         return {
             trackRef: track,
+            grab: () => grab(refs),
             follow: (dx: number) => follow(refs, dx),
             springBack: () => springBack(refs),
             commit: (direction: SwipeDirection) => commit(refs, direction),
