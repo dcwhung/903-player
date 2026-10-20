@@ -13,7 +13,7 @@
         "lint": "eslint . && prettier --check .",
         "format": "prettier --write .",
         "scrape": "tsx scripts/scrapeCli.ts",
-        "e2e": "npm run build && node e2e/sampleData.mjs dist/data/recordings.json && node e2e/run.mjs"
+        "e2e": "npm run build && node e2e/run.mjs"
     },
     "dependencies": {
         "react": "^19.3.1",

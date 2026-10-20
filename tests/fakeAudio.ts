@@ -57,7 +57,8 @@ export class FakeAudio extends EventTarget {
             return;
         }
         this.paused = false;
-        this.dispatchEvent(new Event('play'));
+        // 真瀏覽器係 queue 一個 task 先發 play event，即係喺 caller 執行完之後（同 timeupdate 一樣）
+        queueMicrotask(() => this.dispatchEvent(new Event('play')));
     });
 
     pause = vi.fn(() => {

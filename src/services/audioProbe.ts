@@ -24,11 +24,11 @@ const SETTLED_AFTER_DAYS = 2;
  */
 export const PROBE_SETTLED_RETRY_MS = 24 * 60 * 60 * 1_000;
 /**
- * 搵到嘅錄音最多留幾多日（香港日期），feed 一直唔更新都唔會越積越多。
- * 一定要 ≥ PROBE_LOOKBACK_DAYS：如果短過回看期，仲喺回看期內嘅錄音會先被清走、
- * 再被當成未搵過重新 probe，白白多咗請求，列表亦會忽然少咗嗰幾個
+ * 每個節目最多留幾多集（按日期 + 時間由新到舊），localStorage 唔會越積越多。
+ * 一定要夠蓋住回看期內播得最密嘅節目：如果少過，仲喺回看期內嘅錄音會先被清走、
+ * 再被當成未搵過重新 probe，白白多咗請求，列表亦會忽然少咗嗰幾集
  */
-export const PROBE_FOUND_RETENTION_DAYS = 14;
+export const PROBE_KEEP_PER_SHOW = 50;
 const MS_PER_DAY = 24 * 60 * 60 * 1_000;
 /**
  * MediaError.MEDIA_ERR_NETWORK：只會喺已經收到部分 data 之後先斷線先出現；
@@ -113,34 +113,25 @@ const recentMisses = (misses: ProbeState['misses'], dates: string[]): ProbeState
         Object.entries(misses).filter(([key]) => dates.includes(dateFromShowDateKey(key))),
     );
 
-/** 同一個網址可能有唔同編碼寫法（中文字 / %XX），比較前統一 */
-const normalizeUrl = (url: string): string => {
-    try {
-        return new URL(url).href;
-    } catch {
-        return url;
-    }
-};
+/** 新嘅排先：日期再時間（YYYY-MM-DD + HHMM 字串直接比較就得） */
+const newestFirst = (a: Recording, b: Recording): number =>
+    `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`);
 
-/**
- * 清走 feed 已經有嘅（同節目同日，或者同一個網址）同太舊嘅錄音，
- * 免得同 feed 重複或者 localStorage 越積越多
- */
-const pruneFound = (found: Recording[], known: Recording[], now: Date): Recording[] => {
-    const knownUrls = new Set(known.map((r) => normalizeUrl(r.url)));
-    const covered = new Set(known.map((r) => showDateKey(r.showId, r.date)));
-    const oldest = hkToday(new Date(now.getTime() - PROBE_FOUND_RETENTION_DAYS * MS_PER_DAY));
-    return found.filter(
-        (r) =>
-            r.date >= oldest &&
-            !covered.has(showDateKey(r.showId, r.date)) &&
-            !knownUrls.has(normalizeUrl(r.url)),
+/** 每個節目只留最新 PROBE_KEEP_PER_SHOW 集；保留原本次序 */
+const keepNewestPerShow = (found: Recording[]): Recording[] => {
+    const counts = new Map<string, number>();
+    const kept = new Set(
+        [...found].sort(newestFirst).filter((r) => {
+            const count = (counts.get(r.showId) ?? 0) + 1;
+            counts.set(r.showId, count);
+            return count <= PROBE_KEEP_PER_SHOW;
+        }),
     );
+    return found.filter((r) => kept.has(r));
 };
 
-/** 之前搵到、feed 仲未有嘅錄音；同步讀，feed 一到就可以即刻顯示，唔使等 probe */
-export const readCachedRecordings = (known: Recording[], now: Date = new Date()): Recording[] =>
-    pruneFound(readProbeState().found, known, now);
+/** 已經搵到嘅錄音（app 唯一嘅資料來源）；同步讀，一開 app 就可以即刻顯示，唔使等 probe */
+export const readStoredRecordings = (): Recording[] => keepNewestPerShow(readProbeState().found);
 
 interface ProbeSlot {
     key: string;
@@ -169,8 +160,8 @@ const hasStarted = (show: ShowConfig, date: string, now: Date): boolean =>
     date !== hkToday(now) || show.fileTime <= hkTimeHHMM(now);
 
 /** 回看期內，當日有播、已經開咪、未有錄音、又唔係已經搵過嘅節目 */
-const pendingSlots = (have: Recording[], misses: ProbeState['misses'], now: Date): ProbeSlot[] => {
-    const covered = new Set(have.map((r) => showDateKey(r.showId, r.date)));
+const pendingSlots = ({ found, misses }: ProbeState, now: Date): ProbeSlot[] => {
+    const covered = new Set(found.map((r) => showDateKey(r.showId, r.date)));
     return recentDates(now)
         .flatMap((date) =>
             SHOWS.filter((show) => airsOn(show, date) && hasStarted(show, date, now)).map((show) =>
@@ -183,11 +174,11 @@ const pendingSlots = (have: Recording[], misses: ProbeState['misses'], now: Date
         );
 };
 
-/** 由 storage 讀返上次嘅 state，順手清走 feed 已有、太舊同回看期外嘅記錄 */
-const loadState = (known: Recording[], now: Date): ProbeState => {
+/** 由 storage 讀返上次嘅 state，順手清走每個節目超出上限嘅錄音同回看期外嘅 miss */
+const loadState = (now: Date): ProbeState => {
     const stored = readProbeState();
     return {
-        found: pruneFound(stored.found, known, now),
+        found: keepNewestPerShow(stored.found),
         misses: recentMisses(stored.misses, recentDates(now)),
     };
 };
@@ -195,7 +186,7 @@ const loadState = (known: Recording[], now: Date): ProbeState => {
 /** 將一個 probe 結果記入 state（直接改 state，因為係呢一輪自己嘅副本） */
 const recordResult = (state: ProbeState, slot: ProbeSlot, result: ProbeResult, now: Date): void => {
     if (result === 'found') {
-        state.found.push(slot.recording);
+        state.found = keepNewestPerShow([...state.found, slot.recording]);
         delete state.misses[slot.key];
     } else {
         state.misses[slot.key] = now.getTime();
@@ -203,28 +194,25 @@ const recordResult = (state: ProbeState, slot: ProbeSlot, result: ProbeResult, n
 };
 
 /**
- * 回看 PROBE_LOOKBACK_DAYS 日，feed 未有嘅節目喺播放日逐個 probe（唔並行，減輕原站負擔）。
- * 搵到嘅記低，之後唔再 probe；feed 有咗就唔再保留。搵唔到嘅規則見 isRetryDue。
+ * 回看 PROBE_LOOKBACK_DAYS 日，未有錄音嘅節目喺播放日逐個 probe（唔並行，減輕原站負擔）。
+ * 搵到嘅記低，之後唔再 probe；每個節目只留最新 PROBE_KEEP_PER_SHOW 集。搵唔到嘅規則見 isRetryDue。
  * 每個結果即刻寫入 storage，中途閂 app 都唔會白做。
  * 一遇到 timeout 就停：平台背景唔載 media，再試落去都係白等，亦唔當係 miss。
  * 離線就完全唔 probe，淨係交返之前搵到嘅，免得將斷網當成冇錄音
  */
-export const probeRecentRecordings = async (
-    known: Recording[],
-    {
-        probe = probeAudio,
-        now = new Date(),
-        isOnline = navigatorIsOnline,
-        onFound,
-    }: ProbeOptions = {},
-): Promise<Recording[]> => {
-    const state = loadState(known, now);
+export const probeRecentRecordings = async ({
+    probe = probeAudio,
+    now = new Date(),
+    isOnline = navigatorIsOnline,
+    onFound,
+}: ProbeOptions = {}): Promise<Recording[]> => {
+    const state = loadState(now);
     if (!isOnline()) {
         return state.found;
     }
-    // 先寫一次：就算冇嘢要 probe，都要清走過期 / feed 已有嘅記錄
+    // 先寫一次：就算冇嘢要 probe，都要清走超出上限 / 過期嘅記錄
     writeProbeState(state);
-    for (const slot of pendingSlots([...known, ...state.found], state.misses, now)) {
+    for (const slot of pendingSlots(state, now)) {
         const result = await probe(slot.recording.url);
         // 中途斷網嘅 error 睇落同冇檔一樣：當 timeout 停低，唔好將剩低嘅 slot 全部記做 miss
         if (result === 'timeout' || (result === 'missing' && !isOnline())) {

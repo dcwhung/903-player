@@ -6,8 +6,8 @@ export const zhHK = {
     common: {
         back: '返回主頁',
         loading: '載入中…',
-        loadError: '未能載入節目列表，請稍後再試。',
         retry: '重試',
+        searching: '搵緊最新錄音…',
         noRecordings: '暫時未有錄音',
         showNotFound: '找不到此節目',
     },
