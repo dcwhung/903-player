@@ -30,6 +30,14 @@ describe('MiniPlayer', () => {
         expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '11');
     });
 
+    it('renders straight into the body, outside any page container that could clip it', () => {
+        const { container } = render(<MiniPlayer {...props()} />);
+
+        const region = screen.getByRole('region', { name: '正在播放（今日節目）' });
+        expect(container).not.toContainElement(region);
+        expect(region.closest('[data-theme-scope]')?.parentElement).toBe(document.body);
+    });
+
     it('names the progress bar and reads out the time', () => {
         render(<MiniPlayer {...props()} />);
 

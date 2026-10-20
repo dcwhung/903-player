@@ -783,6 +783,43 @@ const checkMiniPlayerPosition = async (browser, errors) => {
     }
 };
 
+/*
+ * iOS standalone 嘅 viewport 矮過螢幕（實機約 55px）：模擬 navigator.standalone + screen.height 高過 innerHeight，
+ * mini player 要推落 viewport 底以下 gap 咁多（portal 掛喺 body，唔畀頁面 .scope / #root 擋住定位）
+ */
+const IOS_VIEWPORT_GAP_PX = 55;
+const fakeIosStandalone = (gap) => {
+    Object.defineProperty(navigator, 'standalone', { value: true, configurable: true });
+    Object.defineProperty(screen, 'height', {
+        get: () => window.innerHeight + gap,
+        configurable: true,
+    });
+};
+
+const checkMiniPlayerViewportGap = async (browser, errors) => {
+    const ctx = await newE2EContext(browser, {
+        viewport: { width: 390, height: 797 },
+        deviceScaleFactor: 2,
+    });
+    await ctx.addInitScript(fakeIosStandalone, IOS_VIEWPORT_GAP_PX);
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => errors.push(e.message));
+    await p.goto(BASE);
+    await p.waitForSelector('nav[aria-busy="false"]');
+    await p.getByRole('region', { name: MINI_REGION }).waitFor();
+    const { bottom, inner } = await miniPosition(p);
+    // getBoundingClientRect 唔計 overflow 剪裁：另外確認掛喺 body（唔喺 #root 入面畀佢剪走）
+    const inBody = await p
+        .getByRole('region', { name: MINI_REGION })
+        .evaluate((el) => el.closest('[data-theme-scope]').parentElement === document.body);
+    log(inBody, `iOS standalone：mini player 掛喺 body（唔會畀 #root overflow 剪走）`);
+    log(
+        Math.abs(bottom - (inner + IOS_VIEWPORT_GAP_PX)) <= SUBPIXEL_PX,
+        `iOS standalone viewport 矮 ${IOS_VIEWPORT_GAP_PX}px：mini player 底 ${bottom.toFixed(1)} = innerHeight ${inner} + ${IOS_VIEWPORT_GAP_PX}（推到螢幕底）`,
+    );
+    await ctx.close();
+};
+
 // audio probe（PR #29）：回看期內、storage 未有嘅節目會直接 probe 原站。
 // 西加航空只喺星期六播（src/config/shows.ts 嘅 airDays），假資料（sampleData.mjs）就只有平日嗰幾集，
 // 所以 17/10（六）一定喺回看期內、storage 又未有，一定會 probe
@@ -1184,6 +1221,7 @@ try {
 
     await checkShellMismatch(browser, errors);
     await checkMiniPlayerPosition(browser, errors);
+    await checkMiniPlayerViewportGap(browser, errors);
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
     await runTouchChecks({ browser, base: BASE, out: OUT, errors, log });
