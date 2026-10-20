@@ -1,7 +1,13 @@
 import { useRef, type DragEvent, type MouseEvent, type PointerEvent, type RefObject } from 'react';
 import { dragIntent, type SwipeDirection } from '../../hooks/swipe';
 import { useClickSuppression } from '../../hooks/useSwipe';
-import { pushSample, releaseDirection, velocityOf, type DragSample } from './cardStack';
+import {
+    isOnPageDot,
+    pushSample,
+    releaseDirection,
+    velocityOf,
+    type DragSample,
+} from './cardStack';
 import type { CardMotion } from './useCardMotion';
 
 interface Gesture {
@@ -15,6 +21,11 @@ interface Gesture {
     flight: number;
     /** 開始拖嗰陣張卡已經偏咗幾多 px（彈緊返中間時）；x 只係手指起點，兩樣分開記 */
     offset: number;
+    /**
+     * 畀飛行打斷咗（flightId 變咗）：之後唔再拖、唔彈返、唔轉節目，但保留到放手，
+     * 等 release 知道要食咗放手嗰下 click（中途再郁手指都一樣）
+     */
+    dropped: boolean;
 }
 
 type GestureRef = RefObject<Gesture | null>;
@@ -46,11 +57,12 @@ const confirmHorizontal = (
 /** 跟住指標更新；返回橫向拖咗幾多 px，未確認橫拖就係 null */
 const track = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion) => {
     const current = gesture.current;
-    if (!current || current.pointerId !== event.pointerId) return null;
+    if (!current || current.pointerId !== event.pointerId || current.dropped) return null;
     // 拖緊時方向鍵令張卡飛走咗（飛緊或者已經落地）：鍵盤要求優先，呢個手勢就作廢
-    // （放手唔再彈返 / 轉節目）；就算飛行期間冇 pointer event 都認得出
-    if (motion.isFlying() || current.flight !== motion.flightId()) {
-        gesture.current = null;
+    // （放手唔再彈返 / 轉節目）；就算飛行期間冇 pointer event 都認得出。
+    // 唔使另外睇 isFlying()：飛緊就唔會開始手勢（begin），所以飛緊一定係按低之後先起飛，flightId 必然變咗
+    if (current.flight !== motion.flightId()) {
+        current.dropped = true;
         return null;
     }
     if (!current.isDragging && !confirmHorizontal(gesture, current, event, motion)) return null;
@@ -60,7 +72,7 @@ const track = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion
     return dx;
 };
 
-/** 放手：拖得夠遠 / 甩得夠快就交畀 onSwipe（飛走），否則彈返；返回有冇拖過 */
+/** 放手：拖得夠遠 / 甩得夠快就交畀 onSwipe（飛走），否則彈返；返回有冇拖過（要唔要食 click） */
 const release = (
     gesture: GestureRef,
     event: StackPointerEvent,
@@ -68,18 +80,17 @@ const release = (
     commit: ((direction: SwipeDirection) => void) | null,
 ): boolean => {
     const dx = track(gesture, event, motion);
-    const samples = gesture.current?.samples ?? [];
+    const current = gesture.current;
     gesture.current = null;
+    // 畀飛行打斷咗嘅手勢：唔轉節目、唔彈返；拖過就食咗放手嗰下 click
+    if (current?.pointerId === event.pointerId && current.dropped) return current.isDragging;
     if (dx === null) return false;
-    const direction = commit && releaseDirection(dx, velocityOf(samples), motion.width());
+    const direction =
+        commit && releaseDirection(dx, velocityOf(current?.samples ?? []), motion.width());
     if (direction) commit(direction);
     else motion.springBack();
     return true;
 };
-
-/** 撳緊今日節目指示點（掣有自己用途：彈返途中都唔好捉住張卡、食咗佢嘅 click） */
-export const isOnPageDot = (target: EventTarget | null): boolean =>
-    target instanceof Element && target.closest('[data-page-dot]') !== null;
 
 /** 按低：飛緊或者第二隻手指就唔理；彈緊返中間就由張卡而家嘅位置接住，當已經係橫拖 */
 const begin = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion) => {
@@ -92,14 +103,24 @@ const begin = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion
     const samples = [sampleOf(event)];
     const flight = motion.flightId();
     const offset = held ?? 0;
-    gesture.current = { pointerId, x: clientX, y, isDragging, samples, flight, offset };
+    gesture.current = {
+        pointerId,
+        x: clientX,
+        y,
+        isDragging,
+        samples,
+        flight,
+        offset,
+        dropped: false,
+    };
 };
 
 /** 取消 / 冇咗 capture（例如喺視窗外放手）：拖緊就彈返，手勢作廢 */
 const abandon = (gesture: GestureRef, motion: CardMotion, pointerId?: number) => {
     const current = gesture.current;
     if (!current || (pointerId !== undefined && current.pointerId !== pointerId)) return;
-    if (current.isDragging) motion.springBack();
+    // 畀飛行打斷咗嘅手勢唔彈返：張卡已經飛走 / 換咗節目
+    if (current.isDragging && !current.dropped) motion.springBack();
     gesture.current = null;
 };
 
@@ -113,7 +134,7 @@ const swallow = (event: MouseEvent<HTMLElement>) => {
 };
 
 /**
- * 跟手指拖卡（卡疊 touch-action: none，好矮嘅畫面 pan-y）。commit 係 null（例如得一個節目）就永遠彈返。
+ * 跟手指拖卡（卡疊 touch-action: pinch-zoom，好矮嘅畫面 pan-y pinch-zoom）。commit 係 null（例如得一個節目）就永遠彈返。
  * ArcSlider 自己 stopPropagation，所以拖弧形唔會郁張卡；拖完嘅 click 會被食咗。
  */
 export const useCardDrag = (
@@ -138,8 +159,10 @@ export const useCardDrag = (
             if (event.target === event.currentTarget) abandon(gesture, motion, event.pointerId);
         },
         onClickCapture: (event: MouseEvent<HTMLElement>) => {
-            if (motion.isFlying()) swallow(event);
-            else clicks.onClickCapture(event);
+            if (!motion.isFlying()) return clicks.onClickCapture(event);
+            // 飛緊照食；順手消耗「放手後要食一下 click」嘅標記，落地之後唔會再食多一下
+            clicks.arm(false);
+            swallow(event);
         },
         // 滑鼠拖節目圖會觸發原生拖放（之後 pointercancel），要擋住
         onDragStart: (event: DragEvent<HTMLElement>) => event.preventDefault(),

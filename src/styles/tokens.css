@@ -22,6 +22,8 @@
     --font-size-xxl: 26px;
     --letter-spacing-caps: 0.18em;
 
+    /* 半格：只用喺緊貼嘅文字行之間（例如今日節目卡嘅標題行） */
+    --space-half: 2px;
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
@@ -65,7 +67,7 @@
      */
     --card-padding-block: var(--space-2);
     --card-inner-gap: var(--space-2);
-    --card-titles-gap: 2px;
+    --card-titles-gap: var(--space-half);
     /* 卡疊兩邊留白；好窄嘅畫面收窄（見下面 max-width: 339px） */
     --card-stack-gutter: var(--space-4);
     /* 飛走：移出幾遠（佔卡闊）、再轉幾多；拖動 / 飛走都以卡底中間做軸心 */
@@ -106,7 +108,8 @@
  * 兩個上限取細嗰個：
  * 1. 預留高度 = 頁頭 + 唱片下面嗰行 + 控制掣 + 間距 + 兩行集數（清單最少見到兩行）
  * 2. 成個播放器（唱片連弧 → 日子條 → 控制掣）最多佔畫面高 --player-max-share（六成，設計目標）
- * 唔支援 dvh 就用返上面嘅值。
+ * 「畫面高」係固定殼嘅高（--player-shell-height，見下面 @supports），唔係 dvh。
+ * cqh 同 dvh 都唔支援就用返上面嘅值。
  * 最細唔會細過 --player-disc-min：再矮（≤ 561px 高）會改為成頁捲（Page.module.css）。
  */
 :root {
@@ -139,7 +142,17 @@
     }
 }
 
-@supports (height: 100dvh) {
+/*
+ * W-390：主碟跟固定殼（global.css html / body / #root 100% → ThemeScope .scope）嘅高度計，唔跟 dvh。
+ * iOS standalone PWA 嘅 100dvh 可能同殼高度對唔齊（高過殼），用 dvh 計唱片就會大過殼預留嘅位，
+ * main.locked 又 overflow: hidden，清單 / 控制掣就會畀人剪走。
+ * 成頁 .scope 係 size container（container-type: size），100cqh 就係殼高。
+ * 自訂屬性喺用嘅地方先代入（PlayerPanel / ShowCardStack .gauge 嘅 width），
+ * 所以 cqh 係對住最近嗰個 size container（.scope）解析，唔係 :root。
+ * 主碟用家（節目頁、今日節目頁、今日節目疊卡）全部喺成頁 .scope 入面。
+ * --player-shell-height 喺下面兩個互相排斥嘅 @supports 設定（有 cqh → 100cqh，冇 cqh → 100dvh）。
+ */
+@supports (height: 1cqh) or (height: 100dvh) {
     :root {
         /*
          * 節目頁除咗唱片之外要預留嘅高度，按固定版面由上而下：
@@ -163,6 +176,8 @@
                 var(--fixed-page-gap) + max(var(--date-strip-height), 60px) + 76px + 30px + 2 *
                 56px + var(--space-2) + env(safe-area-inset-bottom)
         );
+        /* 成個播放器最多佔幾高：殼高 × --player-max-share */
+        --player-max-height: calc(var(--player-shell-height) * var(--player-max-share));
         /* 播放器入面唱片以外嘅高度：2 個間距 + 日子條 + 播放掣真實尺寸（跟 clamp 縮放） */
         --player-chrome-height: calc(
             2 * var(--fixed-page-gap) + var(--date-strip-height) + var(--player-toggle-size)
@@ -174,10 +189,30 @@
             min(
                 300px,
                 78vw,
-                calc((100dvh - var(--player-reserved-height)) * 300 / 316),
-                calc((100dvh * var(--player-max-share) - var(--player-chrome-height)) * 300 / 316)
+                calc((var(--player-shell-height) - var(--player-reserved-height)) * 300 / 316),
+                calc((var(--player-max-height) - var(--player-chrome-height)) * 300 / 316)
             )
         );
+    }
+}
+
+/*
+ * 殼高來源：下面兩個 @supports 條件互相排斥，唔靠 source 先後蓋過（S-420）。
+ * 支援 cqh：殼高 = 成頁 .scope（size container）嘅 100cqh。
+ */
+@supports (height: 1cqh) {
+    :root {
+        --player-shell-height: 100cqh;
+    }
+}
+
+/*
+ * 舊 iOS（< 16，例如 15.4–15.x）有 dvh 冇 cqh：用返 W-390 之前嘅 dvh 公式（只係殼高來源換返 100dvh），
+ * 呢啲版本嘅 standalone 殼高仍然可能對唔齊，但總好過冇得按畫面高縮細。
+ */
+@supports not (height: 1cqh) {
+    :root {
+        --player-shell-height: 100dvh;
     }
 }
 

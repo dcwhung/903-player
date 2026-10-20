@@ -1,7 +1,7 @@
 /*
  * 日子條：高度固定（--date-strip-height，tokens.css 嘅播放器高度計法有計埋），
  * 超出嘅隔籬日期收埋；唔揀字；可以 focus 嚟用方向鍵。
- * touch-action: none：固定版面冇嘢好直向捲，所有手勢交畀 pointer events
+ * touch-action: pinch-zoom（舊瀏覽器 none）：固定版面冇嘢好直向捲，所有單指手勢交畀 pointer events
  * （pan-y 會令 iOS 喺手指有少少直向郁時開始原生 pan、pointercancel）
  */
 .strip {
@@ -10,7 +10,9 @@
     height: var(--date-strip-height);
     overflow: hidden;
     border-radius: var(--radius-md);
+    /* 唔識 pinch-zoom 嘅舊瀏覽器留喺 none；識嘅就照樣擋單指 pan，但雙指放大得（無障礙） */
     touch-action: none;
+    touch-action: pinch-zoom;
     user-select: none;
     cursor: grab;
 }
@@ -130,6 +132,6 @@
 /* 好矮嘅畫面（同 Page.module.css 嘅斷點一樣）main 自己捲：畀返直向 pan */
 @media (max-height: 561px) {
     .strip {
-        touch-action: pan-y;
+        touch-action: pan-y pinch-zoom;
     }
 }

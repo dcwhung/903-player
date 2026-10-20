@@ -33,6 +33,18 @@ npm run e2e        # Playwright 端對端測試（假資料 + 模擬 audio serve
 npm run build
 ```
 
+### App icon
+
+`public/` 入面嘅 icon（`icon-192`、`icon-512`、`icon-maskable-512`、`apple-touch-icon` 180、`favicon` 64）
+全部由 `design/app-icon.png` 生成。改咗原圖之後執行：
+
+```bash
+node scripts/generateIcons.mjs
+```
+
+用 Playwright 嘅 Chromium 縮放（唔使另外裝套件）；maskable 同 apple-touch-icon 填 `#98bdde` 底色，
+maskable 內容縮到 80%（安全區）。有 ImageMagick 就順手無損壓縮（像素唔變），冇就跳過。
+
 ## 部署（只需做一次）
 
 GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 **GitHub Actions**。
