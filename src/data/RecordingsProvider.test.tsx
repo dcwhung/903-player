@@ -18,12 +18,17 @@ const PROBED: Recording = {
     url: 'https://audio.hkfm903.live/b.aac',
 };
 
+type Prober = (
+    known: Recording[],
+    onFound?: (recording: Recording) => void,
+) => Promise<Recording[]>;
+
 const noProbe = async (): Promise<Recording[]> => [];
 const noCache = (): Recording[] => [];
 
 const wrap = (
     loader: () => Promise<Recording[]>,
-    prober: (known: Recording[]) => Promise<Recording[]> = noProbe,
+    prober: Prober = noProbe,
     readCached: (known: Recording[]) => Recording[] = noCache,
 ) =>
     function Wrapper({ children }: { children: ReactNode }) {
@@ -65,7 +70,56 @@ describe('RecordingsProvider', () => {
         });
 
         await waitFor(() => expect(result.current.recordings).toEqual([RECORDING, PROBED]));
-        expect(prober).toHaveBeenCalledWith([RECORDING]);
+        expect(prober).toHaveBeenCalledWith([RECORDING], expect.any(Function));
+    });
+
+    it('shows each recording the prober finds before the whole run completes', async () => {
+        const prober = vi.fn<Prober>((_known, onFound) => {
+            onFound?.(PROBED);
+            return new Promise<Recording[]>(() => {});
+        });
+        const { result } = renderHook(() => useRecordings(), {
+            wrapper: wrap(async () => [RECORDING], prober),
+        });
+
+        await waitFor(() => expect(result.current.recordings).toEqual([RECORDING, PROBED]));
+    });
+
+    it('does not duplicate a find reported through onFound and again in the final result', async () => {
+        const prober = vi.fn<Prober>(async (_known, onFound) => {
+            onFound?.(PROBED);
+            return [PROBED];
+        });
+        const { result } = renderHook(() => useRecordings(), {
+            wrapper: wrap(
+                async () => [RECORDING],
+                prober,
+                () => [PROBED],
+            ),
+        });
+
+        await waitFor(() => expect(prober).toHaveBeenCalled());
+        await waitFor(() => expect(result.current.recordings).toEqual([RECORDING, PROBED]));
+    });
+
+    it('ignores finds reported after unmounting', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        let report: (recording: Recording) => void = () => {};
+        const prober = vi.fn<Prober>((_known, onFound) => {
+            report = onFound ?? report;
+            return new Promise<Recording[]>(() => {});
+        });
+        const { result, unmount } = renderHook(() => useRecordings(), {
+            wrapper: wrap(async () => [RECORDING], prober),
+        });
+        await waitFor(() => expect(prober).toHaveBeenCalled());
+
+        unmount();
+        act(() => report(PROBED));
+
+        expect(result.current.recordings).toEqual([RECORDING]);
+        expect(errorSpy).not.toHaveBeenCalled();
+        errorSpy.mockRestore();
     });
 
     it('shows cached recordings as soon as the feed loads, before probing finishes', async () => {

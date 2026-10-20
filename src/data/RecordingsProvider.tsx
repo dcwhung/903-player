@@ -5,7 +5,11 @@ import { fetchRecordings } from './recordingsApi';
 import { RecordingsContext, type LoadStatus } from './recordingsContext';
 import { uniqueByUrl } from './recordingValidation';
 
-type Prober = (known: Recording[]) => Promise<Recording[]>;
+/** onFound：每搵到一個就即刻通知；唔理佢嘅 prober（例如舊測試）一樣用得 */
+type Prober = (
+    known: Recording[],
+    onFound?: (recording: Recording) => void,
+) => Promise<Recording[]>;
 type CacheReader = (known: Recording[]) => Recording[];
 
 interface RecordingsProviderProps {
@@ -18,8 +22,12 @@ interface RecordingsProviderProps {
     readCached?: CacheReader;
 }
 
+/** 預設 prober：固定 reference，唔會令 useEffect 每次 render 都重新 probe */
+const probeWithProgress: Prober = (known, onFound) => probeRecentRecordings(known, { onFound });
+
 /**
  * feed 一到就即刻併埋之前搵到嘅錄音，再喺背景 probe 新嘅（唔阻住 UI；失敗就淨係用 feed）。
+ * 每搵到一個即刻加入列表，唔使等成輪 probe 完；最後再用完整結果對齊一次。
  * isActive 係 false（unmount / reload 咗）就唔再更新
  */
 const mergeProbed = (
@@ -28,8 +36,15 @@ const mergeProbed = (
     isActive: () => boolean,
     apply: (recordings: Recording[]) => void,
 ): void => {
-    apply(uniqueByUrl([...feed, ...readCached(feed)]));
-    prober(feed).then(
+    let shown = uniqueByUrl([...feed, ...readCached(feed)]);
+    apply(shown);
+    const onFound = (recording: Recording): void => {
+        if (isActive()) {
+            shown = uniqueByUrl([...shown, recording]);
+            apply(shown);
+        }
+    };
+    prober(feed, onFound).then(
         (extra) => {
             if (isActive() && extra.length > 0) {
                 apply(uniqueByUrl([...feed, ...extra]));
@@ -43,7 +58,7 @@ const mergeProbed = (
 export const RecordingsProvider = ({
     children,
     loader = fetchRecordings,
-    prober = probeRecentRecordings,
+    prober = probeWithProgress,
     readCached = readCachedRecordings,
 }: RecordingsProviderProps) => {
     const [status, setStatus] = useState<LoadStatus>('loading');

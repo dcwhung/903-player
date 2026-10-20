@@ -1,4 +1,13 @@
-import { formatDateLabel, formatDayMonth, formatWeekday, hkTimeHHMM, hkToday } from './date';
+import {
+    daysBetween,
+    formatDateLabel,
+    formatDayMonth,
+    formatWeekday,
+    hkTimeHHMM,
+    hkToday,
+    weekdayOf,
+} from './date';
+import type { Weekday } from '../types/weekday';
 
 describe('hkToday', () => {
     it('uses Hong Kong date even when UTC is still the previous day', () => {
@@ -40,5 +49,25 @@ describe('formatDayMonth / formatWeekday', () => {
     it('splits the label into day/month and weekday', () => {
         expect(formatDayMonth('2026-10-05')).toBe('05/10');
         expect(formatWeekday('2026-10-19')).toBe('星期一');
+    });
+});
+
+describe('weekdayOf', () => {
+    it('returns 0 for Sunday through 6 for Saturday', () => {
+        expect(weekdayOf('2026-10-18')).toBe(0);
+        expect(weekdayOf('2026-10-19')).toBe(1);
+        expect(weekdayOf('2026-10-17')).toBe(6);
+    });
+
+    it('is typed as a Weekday so airDays comparisons stay checked', () => {
+        expectTypeOf(weekdayOf('2026-10-19')).toEqualTypeOf<Weekday>();
+    });
+});
+
+describe('daysBetween', () => {
+    it('counts calendar days between two ISO dates', () => {
+        expect(daysBetween('2026-10-19', '2026-10-19')).toBe(0);
+        expect(daysBetween('2026-10-19', '2026-10-21')).toBe(2);
+        expect(daysBetween('2026-10-30', '2026-11-02')).toBe(3);
     });
 });
