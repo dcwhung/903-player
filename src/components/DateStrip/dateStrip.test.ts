@@ -6,6 +6,7 @@ import {
     stripOffset,
     stripRelease,
     stripShift,
+    uprightSpin,
 } from './dateStrip';
 
 const EPISODES = [
@@ -97,5 +98,23 @@ describe('stripShift', () => {
         // 中格中心去側格中心 = (50% + 25%) / 2
         expect(stripShift(WIDTH, 'next')).toBe(-150);
         expect(stripShift(WIDTH, 'previous')).toBe(150);
+    });
+});
+
+describe('uprightSpin', () => {
+    it('turns clockwise to the next upright angle, at least half a turn away', () => {
+        expect(uprightSpin(0)).toBe(360);
+        expect(uprightSpin(-50)).toBe(360);
+        expect(uprightSpin(170)).toBe(360);
+        expect(uprightSpin(200)).toBe(720);
+        expect(uprightSpin(360)).toBe(720);
+    });
+
+    it('always lands on a whole turn so the art reads upright', () => {
+        [-400, -90, 0, 45, 359, 1000].forEach((deg) => {
+            const target = uprightSpin(deg);
+            expect(target % 360 === 0).toBe(true);
+            expect(target).toBeGreaterThan(deg);
+        });
     });
 });

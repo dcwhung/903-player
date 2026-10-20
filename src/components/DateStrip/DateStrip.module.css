@@ -70,6 +70,7 @@
     background: transparent;
     color: var(--color-text-muted);
     font-size: var(--font-size-xs);
+    transition: opacity var(--duration-strip) var(--ease-strip);
 }
 
 /* 箭咀同日期之間留少少位（唔用空格，收埋箭咀時唔會留低） */
@@ -107,10 +108,35 @@
     color: var(--color-text);
     font-size: clamp(var(--font-size-sm), 4.2vw, var(--font-size-md));
     font-weight: 500;
+    transition:
+        color var(--duration-strip) var(--ease-strip),
+        font-size var(--duration-strip) var(--ease-strip);
 }
 
 .label {
     color: var(--color-accent);
+    transition: opacity var(--duration-strip) var(--ease-strip);
+}
+
+/*
+ * 轉集滑入嘅起點（useStripMotion 嘅 data-arriving，套用完即刻拎走）：
+ * 新中格扮返側格（細字、淡色、「現正播放：」透明），新側格未出現；transition: none 令起點即刻生效，
+ * 拎走之後用返上面嘅 transition，一路滑一路變返正常樣式
+ */
+.track[data-arriving] .current {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.track[data-arriving] .label,
+.track[data-arriving] .side {
+    opacity: 0;
+}
+
+.track[data-arriving] .current,
+.track[data-arriving] .label,
+.track[data-arriving] .side {
+    transition: none;
 }
 
 /* 畀讀屏軟件讀（操作提示、轉集通知），畫面唔顯示 */
@@ -124,7 +150,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .track {
+    .track,
+    .current,
+    .label,
+    .side {
         transition: none;
     }
 }

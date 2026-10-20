@@ -13,19 +13,23 @@ const Harness = () => {
             <button type="button" onClick={() => void player.load(REC)}>
                 load
             </button>
-            <PlayerPanel title="公子會" dateLabel="17/10（六）" />
+            <PlayerPanel
+                title="公子會"
+                dateLabel="17/10（六）"
+                neighbours={{}}
+                onStep={() => false}
+            />
         </>
     );
 };
 
 describe('PlayerPanel', () => {
-    it('shows title, date, elapsed and total time', async () => {
+    it('shows the date, elapsed and total time', async () => {
         const { audio } = renderWithProviders(<Harness />);
         await userEvent.click(screen.getByRole('button', { name: 'load' }));
         act(() => audio.emitMetadata(6836));
         act(() => audio.emitTime(2892));
 
-        expect(screen.getByRole('heading', { name: '公子會' })).toBeInTheDocument();
         expect(screen.getByText('17/10（六）')).toBeInTheDocument();
         expect(screen.getByText('48:12')).toBeInTheDocument();
         expect(screen.getByText('1:53:56')).toBeInTheDocument();
@@ -35,14 +39,7 @@ describe('PlayerPanel', () => {
         );
     });
 
-    it('keeps the show name under the disc without a date strip (今日節目頁)', () => {
-        renderWithProviders(<PlayerPanel title="公子會" dateLabel="17/10（六）" />);
-
-        expect(screen.getByRole('heading', { name: '公子會' })).toBeInTheDocument();
-        expect(screen.queryByRole('group')).not.toBeInTheDocument();
-    });
-
-    it('swaps the name for the date strip when it can step (節目頁)', () => {
+    it('shows the date strip instead of the show name (節目頁)', () => {
         renderWithProviders(
             <PlayerPanel
                 title="公子會"
@@ -55,6 +52,14 @@ describe('PlayerPanel', () => {
         expect(screen.queryByRole('heading')).not.toBeInTheDocument();
         expect(screen.getByRole('group', { name: '17/10（六） 公子會' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '舊一集 10/10（六）' })).toBeInTheDocument();
+    });
+
+    it('shows a placeholder instead of 0:00 while the duration is unknown', async () => {
+        renderWithProviders(<Harness />);
+        await userEvent.click(screen.getByRole('button', { name: 'load' }));
+
+        expect(screen.getByText('--:--')).toBeInTheDocument();
+        expect(screen.getByText('0:00')).toBeInTheDocument();
     });
 
     it('restarts from the beginning', async () => {

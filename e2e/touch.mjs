@@ -121,11 +121,14 @@ const checkListTouchScroll = async (cdp, p, log, label, list) => {
     );
 };
 
-const heading = (p) => p.getByRole('heading', { level: 1 }).textContent();
+/** 今日節目卡疊最上面嗰張卡嘅節目名（h1 係頁頭「今日節目」，卡入面係 h2） */
+const cardTitle = (p) =>
+    p.getByRole('group', { name: TODAY_STACK }).getByRole('heading', { level: 2 });
+const heading = (p) => cardTitle(p).textContent();
 
 /** 今日節目卡：橫拖（帶直向抖動）轉節目；向左 = 下一個，向右 = 上一個 */
 const checkCardSwipes = async (cdp, p, log, label) => {
-    const start = centreOf(await p.getByRole('heading', { level: 1 }).boundingBox());
+    const start = centreOf(await cardTitle(p).boundingBox());
     const first = await heading(p);
     await touchDrag(
         cdp,
@@ -268,7 +271,7 @@ const checkToday = async (env, label) => {
     await checkRootLocked(p, log, label);
     await checkVerticalDragsLocked(cdp, p, log, label, [
         ['頁頭', p.locator('header')],
-        ['今日節目卡', p.getByRole('heading', { level: 1 })],
+        ['今日節目卡', cardTitle(p)],
     ]);
     await checkListTouchScroll(
         cdp,
@@ -326,7 +329,7 @@ export const runTouchChecks = async ({ browser, base, out, errors, log }) => {
     const { ctx, p, cdp } = await openTouchPage(browser, errors, LANDSCAPE);
     const env = { p, cdp, log, base, out };
     const strip = (page) => page.locator(STRIP);
-    const card = (page) => page.getByRole('heading', { level: 1 });
+    const card = cardTitle;
     await checkLandscape(env, '#/show/badgirl', strip, `${size} 觸控節目頁（橫向，由日子條拖）`);
     await checkLandscape(env, '#/today', card, `${size} 觸控今日節目頁（橫向，由卡拖）`);
     await ctx.close();

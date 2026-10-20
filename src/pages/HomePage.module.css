@@ -1,16 +1,11 @@
 /*
- * 主頁漸變底 + 頁底淡光暈（跟 app icon）。ThemeScope 嘅 .scope 已經設咗實色 background，
+ * 主頁漸變底（跟 app icon）。ThemeScope 嘅 .scope 已經設咗實色 background，
  * 兩個 module 喺 bundle 嘅先後唔保證，所以加 [data-theme-scope] 提高 specificity。
+ * 最底一定係 --home-bg-bottom（冇光暈），同冇 mini player 時嘅 canvas 一樣色，唔會見到接縫。
  */
 .scope[data-theme-scope] {
     /* 寫成變數：好矮嘅畫面要搬去 main.home（見下面），兩邊用同一份 */
-    --home-background:
-        radial-gradient(
-            ellipse 70% var(--home-glow-height) at 50% 100%,
-            var(--home-glow),
-            transparent
-        ),
-        linear-gradient(180deg, var(--home-bg-top), var(--home-bg-bottom));
+    --home-background: linear-gradient(180deg, var(--home-bg-top), var(--home-bg-bottom));
 
     background: var(--home-background);
 }
@@ -25,8 +20,8 @@ main.home {
 }
 
 /*
- * 好矮嘅畫面（同 Page.module.css 嘅斷點一樣）由 main 自己捲：漸變同光暈畫喺 .scope 會釘死喺畫面，
- * 內容捲走佢唔郁。改為畫喺 main 度、background-attachment: local，跟住捲動內容一齊郁（光暈喺內容底）。
+ * 好矮嘅畫面（同 Page.module.css 嘅斷點一樣）由 main 自己捲：漸變畫喺 .scope 會釘死喺畫面，
+ * 內容捲走佢唔郁。改為畫喺 main 度、background-attachment: local，跟住捲動內容一齊郁。
  * main 要闊到成個畫面先蓋得晒兩邊：取消 max-width，用左右 padding 將內容收返喺 --page-max-width 中間，
  * 所以內容闊度、位置同之前一樣。直向畫面唔受影響。
  */

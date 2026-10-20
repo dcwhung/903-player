@@ -108,13 +108,13 @@ const checkHomeBanner = async (p, label, shot) => {
 
 const MIN_VISIBLE_ROWS = 2;
 // tokens.css 嘅 --player-max-share（0.6）係設計目標；用戶接受 62–66%，
-// 所以 e2e 只要求節目頁播放器同今日節目卡（連指示點）≤ 66%，實際比例照印出嚟
+// 所以 e2e 只要求節目頁播放器同今日節目播放器（卡 → 控制掣）≤ 66%，實際比例照印出嚟
 const PLAYER_MAX_SHARE = 0.66;
 const STRIP_DRAG_PX = 60;
 const STRIP = '[aria-roledescription="轉集"]';
 /** 每個節目頁尺寸量到嘅播放器高度比例、唱片闊度、清單行數（最尾印成表） */
 const metrics = [];
-/** 今日節目頁：卡（連指示點）佔高、清單行數 */
+/** 今日節目頁：播放器（卡 → 控制掣）佔高、清單行數 */
 const todayMetrics = [];
 const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
@@ -144,7 +144,7 @@ const SHOW_VIEWPORTS = [
 const PAGE_MAX_WIDTH_PX = 480;
 
 /**
- * 好矮嘅主頁（S-403）：漸變同光暈畫喺 main、background-attachment: local，跟內容一齊捲；
+ * 好矮嘅主頁（S-403）：漸變畫喺 main、background-attachment: local，跟內容一齊捲；
  * main 闊到成個畫面，但節目格仍然係 --page-max-width 闊、喺畫面中間
  */
 const checkShortHeightHome = async (p, label) => {
@@ -331,15 +331,17 @@ const checkTodayRows = async (list, label) => {
     return share;
 };
 
-/** 今日節目最上面嗰張卡（PlayerPanel 外層，指示點喺入面）佔畫面高幾多 */
+/**
+ * 今日節目播放器佔畫面高幾多：最上面嗰張卡（PlayerCard 外層）頂 → 卡下面控制掣底
+ * （指示點同控制掣已經搬出卡外，同節目頁播放器一樣計到控制掣為止）
+ */
 const todayCardShare = (p) =>
-    p.evaluate(
-        () =>
-            document
-                .querySelector('h1')
-                .closest('[class*="panel"]')
-                .parentElement.getBoundingClientRect().height / window.innerHeight,
-    );
+    p.evaluate((titleSelector) => {
+        const card = document.querySelector(titleSelector).closest('[class*="panel"]');
+        const top = card.parentElement.getBoundingClientRect().top;
+        const controls = document.querySelector('[aria-label="前進 60 秒"]').parentElement;
+        return (controls.getBoundingClientRect().bottom - top) / window.innerHeight;
+    }, TODAY_CARD_TITLE);
 
 const recordTodayMetrics = async (p, label, rows) => {
     const share = await todayCardShare(p);
@@ -354,7 +356,7 @@ const recordTodayMetrics = async (p, label, rows) => {
     return share;
 };
 
-/** 固定版面嘅今日節目卡（連指示點）≤ PLAYER_MAX_SHARE；share 由 checkTodayRows 量好傳入 */
+/** 固定版面嘅今日節目播放器（卡 → 控制掣）≤ PLAYER_MAX_SHARE；share 由 checkTodayRows 量好傳入 */
 const checkTodayCardShare = (share, label) => {
     log(
         share <= PLAYER_MAX_SHARE + 0.001,
@@ -366,7 +368,7 @@ const checkTodayCardShare = (share, label) => {
 const checkFixedTodayPage = async (p, label) => {
     const list = p.getByRole('region', { name: '今日節目' }).getByRole('list');
     checkTodayCardShare(await checkTodayRows(list, label), label);
-    const card = await p.getByRole('heading', { level: 1 }).boundingBox();
+    const card = await todayCardTitle(p).boundingBox();
     await p.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
     await p.mouse.wheel(0, WHEEL_PX);
     await p.evaluate(() => window.scrollTo(0, 500));
@@ -502,25 +504,32 @@ const checkThemeColor = async (p, expected, label) => {
 };
 
 const TODAY_STACK = '今日節目，左右掃動轉節目';
+/** 卡疊最上面嗰張卡嘅節目名（h1 係頁頭「今日節目」，卡入面係 h2）；畀 page.evaluate 用 */
+const TODAY_CARD_TITLE = '[role="group"] h2';
+/** 卡疊而家嘅節目名 */
+const todayCardTitle = (p) =>
+    p.getByRole('group', { name: TODAY_STACK }).getByRole('heading', { level: 2 });
 // 拖到一半（未到轉節目門檻 30% 卡闊）影相；成個掃動一定過門檻
 const TODAY_MID_DRAG_PX = 90;
 const TODAY_SWIPE_PX = 260;
 // 飛走（--duration-card-fly 280ms）+ 轉節目 render
 const TODAY_SETTLE_MS = 600;
 
-// 今日節目卡入面最外嘅控制掣（-60 / +60）同卡邊最少要留幾多 px
+// 今日節目卡下面最外嘅控制掣（-60 / +60）同卡邊（左右）最少要留幾多 px
 const CARD_CONTROL_INSET_PX = 12;
 
-/** 控制掣要完整喺卡入面，同卡邊留返位（唔可以貼住描邊） */
+/** 控制掣喺卡下面，左右唔可以闊過卡、要同卡邊留返位 */
 const checkCardControlsInset = async (p, label) => {
-    const inset = await p.evaluate(() => {
-        // 最上面嗰張卡 = PlayerPanel 嘅外層
-        const card = document.querySelector('h1').closest('[class*="panel"]').parentElement;
+    const inset = await p.evaluate((titleSelector) => {
+        // 最上面嗰張卡 = PlayerCard 嘅外層
+        const card = document
+            .querySelector(titleSelector)
+            .closest('[class*="panel"]').parentElement;
         const box = card.getBoundingClientRect();
         const left = document.querySelector('[aria-label="後退 60 秒"]').getBoundingClientRect();
         const right = document.querySelector('[aria-label="前進 60 秒"]').getBoundingClientRect();
         return Math.min(left.left - box.left, box.right - right.right);
-    });
+    }, TODAY_CARD_TITLE);
     log(
         inset >= CARD_CONTROL_INSET_PX,
         `${label} 今日節目卡：控制掣離卡邊 ${inset.toFixed(1)}px（≥ ${CARD_CONTROL_INSET_PX}）`,
@@ -532,7 +541,7 @@ const horizontalOverflow = (p) =>
 
 /** 喺節目名度橫向拖（dx < 0 向左）；唔放手就停喺半途，方便影相 */
 const dragTodayCard = async (p, dx, { release = true } = {}) => {
-    const h = await p.getByRole('heading', { level: 1 }).boundingBox();
+    const h = await todayCardTitle(p).boundingBox();
     const y = h.y + h.height / 2;
     const fromX = h.x + h.width / 2 - dx / 2;
     await p.mouse.move(fromX, y);
@@ -545,7 +554,7 @@ const dragTodayCard = async (p, dx, { release = true } = {}) => {
 
 /** 卡疊而家嘅節目：標題、指示點 aria-current、theme-color 三樣都要跟 */
 const checkTodayShow = async (p, name, bg, label) => {
-    const heading = await p.getByRole('heading', { level: 1 }).textContent();
+    const heading = await todayCardTitle(p).textContent();
     const dot = await p.locator('[data-page-dot][aria-current="true"]').getAttribute('aria-label');
     log(heading === name && dot === name, `${label}：${heading}（指示點 ${dot}）`);
     await checkThemeColor(p, bg, label);
@@ -607,10 +616,10 @@ const checkTodayMidDrag = async (p) => {
     log((await horizontalOverflow(p)) === 0, '今日節目拖動中冇橫向捲動');
     await p.screenshot({ path: `${OUT}/5b-today-mid-drag.png` });
     // 停咗（影相）先放手：唔算甩，又未過門檻 → 彈返，唔轉節目
-    const before = await p.getByRole('heading', { level: 1 }).textContent();
+    const before = await todayCardTitle(p).textContent();
     await p.mouse.up();
     await p.waitForTimeout(TODAY_SETTLE_MS);
-    const after = await p.getByRole('heading', { level: 1 }).textContent();
+    const after = await todayCardTitle(p).textContent();
     const phase = await p.getByRole('group', { name: TODAY_STACK }).getAttribute('data-phase');
     log(after === before && phase === null, `拖唔夠遠放手彈返：${before} → ${after}`);
 };
@@ -726,10 +735,10 @@ const checkShellMismatch = async (browser, errors) => {
 /*
  * S-421：成頁 .scope 而家係 size container（W-390）。如果瀏覽器對 container-type 加埋 layout containment，
  * .scope 會變成 position: fixed 嘅 containing block，主頁 mini player 就會跟 .scope（殼）而唔係 viewport 定位。
- * 正常畫面：mini player 底 = innerHeight − 16（--space-4，Chromium 冇安全區）。
- * 殼縮矮（同 checkShellMismatch 一樣模擬 dvh 高過殼）：底唔可以出咗 viewport，亦唔可以高過殼底 − 16。
+ * 正常畫面：mini player 貼底，底 = innerHeight（bottom: 0，Chromium 冇安全區）。
+ * 殼縮矮（同 checkShellMismatch 一樣模擬 dvh 高過殼）：底唔可以出咗 viewport，亦唔可以高過殼底。
  */
-const MINI_BOTTOM_GAP_PX = 16;
+const MINI_BOTTOM_GAP_PX = 0;
 const MINI_POSITION_CASES = [
     { width: 390, height: 844, shrink: 160 },
     { width: 320, height: 568, shrink: 80 },
@@ -1024,7 +1033,9 @@ try {
         .locator('li button')
         .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
     log(items.length === 3, `今日節目列表：${items.join(' | ')}`);
-    const heading = await page.getByRole('heading', { level: 1 }).textContent();
+    const pageTitle = await page.getByRole('heading', { level: 1 }).textContent();
+    log(pageTitle === '今日節目', `今日節目頁頁頭大字標題：${pageTitle}`);
+    const heading = await todayCardTitle(page).textContent();
     log(heading === '在晴朗的一天出發', `今日自動播第一個節目：${heading}`);
     await checkThemeColor(page, SUNNYDAY_BG, '今日節目（在晴朗的一天出發）');
     await page.screenshot({ path: `${OUT}/5-today.png` });
@@ -1045,10 +1056,7 @@ try {
     log(playingAfterSwipes === 'playing', `掃卡轉節目即刻播：${playingAfterSwipes}`);
     await page.getByRole('button', { name: /播放 雲妮鍾情/ }).click();
     await page.waitForTimeout(500);
-    log(
-        (await page.getByRole('heading', { level: 1 }).textContent()) === '雲妮鍾情',
-        '撳節目掣轉播',
-    );
+    log((await todayCardTitle(page).textContent()) === '雲妮鍾情', '撳節目掣轉播');
     await page.screenshot({ path: `${OUT}/6-today-switched.png` });
 
     await page.goBack();
@@ -1169,7 +1177,7 @@ try {
     console.log('\n節目頁尺寸｜播放器佔高｜唱片｜清單行數');
     for (const m of metrics) console.log(`${m.label}｜${m.share}｜${m.disc}px｜${m.rows}`);
     console.log(
-        `\n今日節目頁尺寸｜卡（連指示點）佔高｜距 ${PLAYER_MAX_SHARE * 100}% 上限｜清單行數`,
+        `\n今日節目頁尺寸｜播放器（卡 → 控制掣）佔高｜距 ${PLAYER_MAX_SHARE * 100}% 上限｜清單行數`,
     );
     for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.headroom}｜${m.rows}`);
     console.log('');

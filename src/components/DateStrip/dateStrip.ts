@@ -25,6 +25,9 @@ const FLICK_VELOCITY = 0.5;
 const FLICK_MIN_PX = 16;
 /** 拖向冇集數嗰邊：只跟手指郁三成，似橡筋 */
 const RUBBER_BAND = 0.3;
+/** 碟轉正：一圈 360 度，轉集時最少順時針轉半圈先停 */
+const FULL_TURN_DEG = 360;
+const MIN_UPRIGHT_TURN_DEG = 180;
 
 /** 向左掃（next）= 舊一集，向右掃（previous）= 新一集，同 adjacentEpisodeUrl 一致 */
 export const neighbourFor = (neighbours: StripNeighbours, direction: SwipeDirection) =>
@@ -83,3 +86,7 @@ export const stripShift = (width: number, direction: SwipeDirection): number => 
     const distance = (width * (SIDE_SHARE + CENTRE_SHARE)) / 2;
     return direction === 'next' ? -distance : distance;
 };
+
+/** 轉集時碟順時針轉去下一個「正」嘅角度（360 倍數），最少轉半圈，轉完節目圖一定擺正 */
+export const uprightSpin = (deg: number): number =>
+    Math.ceil((deg + MIN_UPRIGHT_TURN_DEG) / FULL_TURN_DEG) * FULL_TURN_DEG;

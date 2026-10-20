@@ -41,7 +41,6 @@
 .card {
     /* 卡入面嘅播放器用卡自己（較窄）嘅間距，蓋過固定版面 .fixed 嘅 --player-panel-gap */
     --player-panel-gap: var(--card-inner-gap);
-    --player-titles-gap: var(--card-titles-gap);
 
     grid-area: 1 / 1;
     border-radius: var(--radius-lg);
@@ -152,10 +151,14 @@
     aspect-ratio: 1;
 }
 
+/* 同最上面嗰張卡（PlayerCard 嘅 h2）一樣：冇 <p> 預設 margin，唔會撐高卡疊 */
 .title {
+    margin: 0;
+    padding: 0 var(--space-4);
     font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--color-title);
+    text-align: center;
 }
 
 /*

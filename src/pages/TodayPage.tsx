@@ -1,12 +1,12 @@
 import { PageDots } from '../components/PageDots/PageDots';
 import { PageHeader } from '../components/PageHeader/PageHeader';
-import { PlayerPanel } from '../components/PlayerPanel/PlayerPanel';
+import { PlayerCard } from '../components/PlayerPanel/PlayerCard';
+import { PlayerTransport } from '../components/PlayerPanel/PlayerTransport';
 import { ShowCardStack } from '../components/ShowCardStack/ShowCardStack';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { TodayShowList } from '../components/TodayShowList/TodayShowList';
 import { useGoHome } from '../hooks/useGoHome';
 import { t } from '../i18n/t';
-import { formatDateLabel } from '../utils/date';
 import { LoadState } from './LoadState';
 import page from './Page.module.css';
 import { useTodayPage } from './useTodayPage';
@@ -17,30 +17,28 @@ export const TodayPage = () => {
         useTodayPage();
     const names = items.map((item) => item.name);
 
+    // 標題同節目頁一樣（大字 h1）；卡只有唱片、進度弧同節目名，指示點同控制掣喺卡外（每個節目一樣）
     return (
         <ThemeScope theme={theme}>
             <main className={`${page.page} ${page.locked} ${page.fixed}`}>
                 <div className={page.header}>
-                    <PageHeader title={t('today.title')} onBack={goHome} />
+                    <PageHeader title={t('today.title')} variant="title" onBack={goHome} />
                 </div>
                 <LoadState status={status} isEmpty={!current} isSearching={isSearching} />
                 {status === 'ready' && current && (
                     <>
-                        <ShowCardStack cards={cards} index={index} onChange={selectIndex}>
-                            <PlayerPanel
-                                title={names[index] ?? ''}
-                                dateLabel={formatDateLabel(current.date)}
-                                art={theme.art}
-                                accessory={
-                                    <PageDots
-                                        keys={items.map((item) => item.key)}
-                                        labels={names}
-                                        index={index}
-                                        onSelect={selectIndex}
-                                    />
-                                }
+                        <div className={page.todayPlayer}>
+                            <ShowCardStack cards={cards} index={index} onChange={selectIndex}>
+                                <PlayerCard title={names[index] ?? ''} art={theme.art} />
+                            </ShowCardStack>
+                            <PageDots
+                                keys={items.map((item) => item.key)}
+                                labels={names}
+                                index={index}
+                                onSelect={selectIndex}
                             />
-                        </ShowCardStack>
+                            <PlayerTransport />
+                        </div>
                         <TodayShowList items={items} onSelect={selectShow} />
                     </>
                 )}

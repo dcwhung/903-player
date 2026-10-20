@@ -20,7 +20,7 @@ describe('TodayPage', () => {
     });
     afterEach(() => vi.useRealTimers());
 
-    it('shows the Hong Kong date and today’s shows in broadcast order', async () => {
+    it('lists today’s shows in broadcast order', async () => {
         renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
 
         const items = await screen.findAllByRole('button', { name: /^播放 / });
@@ -29,7 +29,20 @@ describe('TodayPage', () => {
             '播放 Bad Girl大過佬',
             '播放 雲妮鍾情',
         ]);
-        expect(screen.getByText('19/10（一）')).toBeInTheDocument();
+    });
+
+    it('should title the page like the show page and keep the card to disc, ring and name', async () => {
+        renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
+        await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+
+        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('今日節目');
+        expect(screen.queryByText('19/10（一）')).not.toBeInTheDocument();
+        const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        expect(within(stack).getByRole('slider', { name: '播放進度' })).toBeInTheDocument();
+        expect(within(stack).queryByRole('button', { name: '播放' })).not.toBeInTheDocument();
+        expect(within(stack).queryByRole('button', { name: '暫停' })).not.toBeInTheDocument();
+        expect(within(stack).queryByRole('group', { name: /^今日第/ })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '前進 30 秒' })).toBeInTheDocument();
     });
 
     it('autoplays the first show and marks it active', async () => {
@@ -128,7 +141,7 @@ describe('TodayPage', () => {
         vi.setSystemTime(new Date('2026-10-18T08:00:00Z'));
         renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
 
-        expect(await screen.findByText('17/10（六）')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', { name: '公子會' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /播放 公子會/ })).toBeInTheDocument();
     });
 

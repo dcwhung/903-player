@@ -22,8 +22,6 @@
     --font-size-xxl: 26px;
     --letter-spacing-caps: 0.18em;
 
-    /* 半格：只用喺緊貼嘅文字行之間（例如今日節目卡嘅標題行） */
-    --space-half: 2px;
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
@@ -43,9 +41,9 @@
     --touch-target-min: 24px;
     --focus-ring-width: 2px;
     --duration-fast: 0.2s;
-    /* 節目頁日子條：轉集時新日期由隔籬格滑返中間、碟轉一下（播放唔使等動畫） */
+    /* 節目頁日子條：轉集時新日期由隔籬格滑返中間、碟慢慢順時針轉返正（播放唔使等動畫） */
     --duration-strip: 0.3s;
-    --duration-spin: 0.45s;
+    --duration-spin: 0.9s;
     --ease-strip: cubic-bezier(0.2, 0.8, 0.2, 1);
     --dot-size: 6px;
     --dot-size-active: 18px;
@@ -61,13 +59,12 @@
     --card-stack-scale-step: 0.08;
     --card-stack-fade-step: 0.35;
     /*
-     * 今日節目卡入面嘅留白（卡上下、唱片 ↔ 標題 ↔ 控制掣、日期 ↔ 節目名 ↔ 指示點），
-     * 700px 高或以下再收窄。唱片唔郁（同節目頁一樣大），收窄留白令卡連指示點 ≤ 畫面高 66%、
-     * 今日節目清單最少見到一行；節目頁唔受影響（只喺 ShowCardStack .card 入面用）
+     * 今日節目卡入面嘅留白（卡上下、唱片 ↔ 節目名），同卡下面指示點 ↔ 控制掣嘅間距，
+     * 700px 高或以下再收窄。唱片唔郁（同節目頁一樣大），收窄留白令今日節目清單最少見到一行；
+     * 節目頁唔受影響
      */
     --card-padding-block: var(--space-2);
     --card-inner-gap: var(--space-2);
-    --card-titles-gap: var(--space-half);
     /* 卡疊兩邊留白；好窄嘅畫面收窄（見下面 max-width: 339px） */
     --card-stack-gutter: var(--space-4);
     /* 飛走：移出幾遠（佔卡闊）、再轉幾多；拖動 / 飛走都以卡底中間做軸心 */
@@ -84,9 +81,6 @@
     /* 主頁色調（跟 app icon）：漸變底、泥膠陰影、今日節目奶油色掣；文字顏色見 HOME_THEME */
     --home-bg-top: #4f749c;
     --home-bg-bottom: #42658a;
-    /* 頁底淡淡奶油色光暈，收喺 mini player 後面，唔會掂到版本號 */
-    --home-glow: rgb(253 248 242 / 14%);
-    --home-glow-height: 110px;
     /* 主頁節目格（ShowTile）16:9；頁頂橫額嘅高度用同一個比例計，兩者一樣高 */
     --tile-aspect-w: 16;
     --tile-aspect-h: 9;
