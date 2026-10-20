@@ -25,6 +25,7 @@ interface DragSession {
 }
 
 type StripPointer = PointerEvent<HTMLElement>;
+type StripClick = MouseEvent<HTMLElement>;
 
 /** 拖緊：過咗 slop 先 capture（之前仍然可以係 tap 側格），之後成條跟手指 */
 const moveStrip = (session: DragSession, event: StripPointer, options: StripGestureOptions) => {
@@ -79,7 +80,7 @@ const cancelStrip = (session: DragSession, options: StripGestureOptions) => {
 };
 
 /** 拖完瀏覽器可能仍然發 click，喺 capture 階段食咗佢；鍵盤 / 輔助技術嘅 click（detail 0）照放行 */
-const swallowClickAfterDrag = (event: MouseEvent<HTMLElement>, justDragged: RefObject<boolean>) => {
+const swallowClickAfterDrag = (event: StripClick, justDragged: RefObject<boolean>) => {
     const dragged = justDragged.current;
     justDragged.current = false;
     if (!dragged || event.detail === 0) return;
@@ -124,10 +125,10 @@ export const useStripGesture = (options: StripGestureOptions) => {
         },
         onPointerCancel: (event: StripPointer) => {
             const current = ownSession(session.current, event);
-            session.current = current ? null : session.current;
-            if (current) cancelStrip(current, options);
+            if (!current) return;
+            session.current = null;
+            cancelStrip(current, options);
         },
-        onClickCapture: (event: MouseEvent<HTMLElement>) =>
-            swallowClickAfterDrag(event, justDragged),
+        onClickCapture: (event: StripClick) => swallowClickAfterDrag(event, justDragged),
     };
 };
