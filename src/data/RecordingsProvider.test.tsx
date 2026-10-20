@@ -96,6 +96,18 @@ describe('RecordingsProvider', () => {
         expect(result.current.recordings).toEqual([STORED]);
     });
 
+    it('goes from loading to ready with nothing when the store is empty and the probe fails', async () => {
+        const failing = async (): Promise<Recording[]> => {
+            throw new Error('blocked');
+        };
+        const { result } = renderHook(() => useRecordings(), { wrapper: wrap(failing) });
+
+        expect(result.current.status).toBe('loading');
+        await waitFor(() =>
+            expect(result.current).toEqual({ status: 'ready', recordings: [], isProbing: false }),
+        );
+    });
+
     it('adds recordings the prober finds on top of the stored ones', async () => {
         const prober = vi.fn(async () => [STORED, PROBED]);
         const { result } = renderHook(() => useRecordings(), {
