@@ -22,6 +22,22 @@ const isOnBand = (event: SvgPointerEvent): boolean => {
     return isOnArcBand(x, y, CENTER, ARC_HIT_BAND);
 };
 
+/** 拖緊嗰隻手指（owner）先截住；未開始拖嘅 move / up 要照傳，卡疊先確認到橫拖 */
+const claim = (event: SvgPointerEvent, owner: number | null): boolean => {
+    if (event.pointerId !== owner) return false;
+    event.stopPropagation();
+    return true;
+};
+
+/** 撳落：撳中圓環就截住（即使開始唔到）；開始到就 capture，返回起手 ratio，否則 null */
+const pressBand = (event: SvgPointerEvent, canStart: boolean): number | null => {
+    if (!isOnBand(event)) return null;
+    event.stopPropagation();
+    if (!canStart) return null;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    return ratioFromPointer(event);
+};
+
 /**
  * 拖動弧形：拖緊只預覽，放手先 seek；取消手勢唔 seek。
  * 只有撳中圓環先當自己嘅手勢（stopPropagation，唔郁今日節目卡疊 / mini player）；
@@ -43,31 +59,23 @@ export const useArcDrag = (
     };
     const nextRatio = (event: SvgPointerEvent) =>
         stabiliseDragRatio(ratioFromPointer(event), dragRatio);
-    // 拖緊嗰隻手指先截住；未開始拖嘅 move / up 要照傳，卡疊先確認到橫拖
-    const claim = (event: SvgPointerEvent): boolean => {
-        if (event.pointerId !== owner.current) return false;
-        event.stopPropagation();
-        return true;
-    };
     const handlers = {
         onPointerDown: (event: SvgPointerEvent) => {
-            if (!isOnBand(event)) return;
-            event.stopPropagation();
-            if (max <= 0 || locked || owner.current !== null) return;
+            const ratio = pressBand(event, max > 0 && !locked && owner.current === null);
+            if (ratio === null) return;
             owner.current = event.pointerId;
-            event.currentTarget.setPointerCapture?.(event.pointerId);
-            preview(ratioFromPointer(event));
+            preview(ratio);
         },
         onPointerMove: (event: SvgPointerEvent) => {
-            if (claim(event)) preview(nextRatio(event));
+            if (claim(event, owner.current)) preview(nextRatio(event));
         },
         onPointerUp: (event: SvgPointerEvent) => {
-            if (!claim(event)) return;
+            if (!claim(event, owner.current)) return;
             onSeek(nextRatio(event) * max);
             preview(null);
         },
         onPointerCancel: (event: SvgPointerEvent) => {
-            if (claim(event)) preview(null);
+            if (claim(event, owner.current)) preview(null);
         },
     };
     return { dragRatio, handlers };
