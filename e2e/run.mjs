@@ -775,10 +775,11 @@ const checkMiniPlayerPosition = async (browser, errors) => {
 };
 
 // audio probe（PR #29）：回看期內、storage 未有嘅節目會直接 probe 原站。
-// 西加航空 19/10 晚間節目唔喺假資料（sampleData.mjs），而 E2E_NOW（22:30）佢已經開咗咪，所以一定會 probe
+// 西加航空只喺星期六播（src/config/shows.ts 嘅 airDays），假資料（sampleData.mjs）就只有平日嗰幾集，
+// 所以 17/10（六）一定喺回看期內、storage 又未有，一定會 probe
 // 同 src/config/shows.ts 嘅 westair 一致；刻意寫死做獨立對照
 const PROBE_SHOW = { id: 'westair', name: '西加航空', fileTime: '0905' };
-const PROBE_DATE = '2026-10-19';
+const PROBE_DATE = '2026-10-17';
 const PROBE_WAIT_MS = 20000;
 const PROBE_POLL_MS = 100;
 
@@ -854,19 +855,20 @@ const checkProbeIgnoresUnknown = async (browser, errors) => {
         current.startsWith(`播放 ${latest}`),
         `西加航空節目頁最近一集 = 假資料最近一集 ${latest}：${current}`,
     );
-    const invented = await p.getByRole('button', { name: /^播放 1[89]\/10/ }).count();
-    log(invented === 0, `西加航空冇 probe 作出嚟嘅 18/10、19/10（${invented} 個）`);
+    const probedLabel = `播放 ${dayMonth(PROBE_DATE)}`;
+    const invented = await p.getByRole('button', { name: new RegExp(`^${probedLabel}`) }).count();
+    log(invented === 0, `西加航空冇 probe 作出嚟嘅 ${dayMonth(PROBE_DATE)}（${invented} 個）`);
     await ctx.close();
 };
 
-/** 原站真係有、storage 未有嘅今日新一集：probe 搵到就加入清單，重開節目頁揀佢做最近一集 */
+/** 原站真係有、storage 未有嘅新一集：probe 搵到就加入清單，重開節目頁揀佢做最近一集 */
 const checkProbeFindsNewEpisode = async (browser, errors) => {
     const url = probeUrl(PROBE_SHOW, PROBE_DATE);
     const { ctx, p, state } = await openProbedShowPage(browser, errors, [url]);
     const found = probedOnly(state.found).map((r) => `${r.showId} ${r.date}`);
     log(
         found.length === 1 && found[0] === `${PROBE_SHOW.id} ${PROBE_DATE}`,
-        `probe 搵到原站有嘅今日新一集，冇其他（${found.join(' / ')}）`,
+        `probe 搵到原站有嘅新一集，冇其他（${found.join(' / ')}）`,
     );
     const label = `播放 ${dayMonth(PROBE_DATE)}`;
     const row = p.getByRole('button', { name: new RegExp(`^${label}`) });
