@@ -116,6 +116,25 @@ describe('ArcSlider', () => {
         expect(onOuterPointer).not.toHaveBeenCalled();
     });
 
+    it('ignores a second pointer while the ring is dragged, without passing its press on', () => {
+        const { slider, onSeek, onOuterPointer } = renderSlider();
+
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.pointerDown(slider, { clientX: 290, clientY: 150, pointerId: 2 });
+        expect(onOuterPointer).not.toHaveBeenCalled();
+        expect(slider).toHaveAttribute('aria-valuenow', String(MAX / 2));
+
+        fireEvent.pointerMove(slider, { clientX: 10, clientY: 150, pointerId: 2 });
+        fireEvent.pointerUp(slider, { clientX: 10, clientY: 150, pointerId: 2 });
+        fireEvent.pointerCancel(slider, { pointerId: 2 });
+        expect(onSeek).not.toHaveBeenCalled();
+        expect(slider).toHaveAttribute('aria-valuenow', String(MAX / 2));
+
+        fireEvent.pointerUp(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        expect(onSeek).toHaveBeenCalledTimes(1);
+        expect(onSeek).toHaveBeenCalledWith(MAX / 2);
+    });
+
     it('cancels a gesture without seeking', () => {
         const { slider, onSeek } = renderSlider();
 
