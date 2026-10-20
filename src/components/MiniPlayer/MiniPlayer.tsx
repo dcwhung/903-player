@@ -1,5 +1,6 @@
 import type { ShowTheme } from '../../config/showThemes';
 import { stepIndex, useSwipe } from '../../hooks/useSwipe';
+import { useViewportGap } from '../../hooks/useViewportGap';
 import { t } from '../../i18n/t';
 import { PageDots } from '../PageDots/PageDots';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
@@ -28,6 +29,7 @@ export interface MiniPlayerProps {
 
 /** 主頁底部嘅今日節目播放器：跟節目轉色，左右掃轉節目，撳入節目頁 */
 export const MiniPlayer = ({ labels, keys, index, onChange, ...props }: MiniPlayerProps) => {
+    useViewportGap();
     const swipe = useSwipe((direction) => {
         // 掃過頭會循環返另一頭；得一個節目就唔郁
         const next = stepIndex(index, labels.length, direction, { wrap: true });
