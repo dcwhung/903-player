@@ -1,7 +1,7 @@
 import { useLayoutEffect } from 'react';
 import { viewportGap } from './viewportGap';
 
-/** MiniPlayer.module.css 讀呢個變數，將 mini player 推落螢幕底 */
+/** MiniPlayer.module.css 讀呢個變數，扣減 mini player 底部嘅安全區留白 */
 const GAP_VAR = '--viewport-gap-bottom';
 const PORTRAIT_QUERY = '(orientation: portrait)';
 /** viewport 高度可能變嘅時候：轉向、由 bfcache / 背景返嚟（iOS 唔一定發 resize） */

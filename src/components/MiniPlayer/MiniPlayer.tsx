@@ -31,7 +31,7 @@ export interface MiniPlayerProps {
 /**
  * 主頁底部嘅今日節目播放器：跟節目轉色，左右掃轉節目，撳入節目頁。
  * 用 portal 掛喺 body：頁面 .scope 係 size container（會變成 position: fixed 嘅 containing block），
- * #root 又 overflow: hidden，放喺入面推落 viewport 以下就會畀佢哋剪走
+ * 掛喺 body 先保證係跟 viewport 定位，唔受頁面 .scope / #root 影響
  */
 export const MiniPlayer = ({ labels, keys, index, onChange, ...props }: MiniPlayerProps) => {
     useViewportGap();

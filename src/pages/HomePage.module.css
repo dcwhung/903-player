@@ -11,12 +11,15 @@
 }
 
 /*
- * 留位畀底部 mini player（頁底版本號唔會畀佢遮住）。
+ * 留位畀底部 mini player：剛好係 mini player 嘅高（連底部安全區留白）再加一格間距，
+ * 頁底版本號（AppVersion margin-top: auto）就貼住 mini player 上面，唔會畀佢遮住。
  * Page.module.css 嘅 .page 喺 bundle 排喺後面，佢個 padding shorthand 會蓋過 .home，
  * 所以用 main.home 提高 specificity，確保呢個留位真係生效。
  */
 main.home {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 120px);
+    padding-bottom: calc(
+        var(--mini-player-height) + var(--mini-player-inset-bottom) + var(--space-3)
+    );
 }
 
 /*
