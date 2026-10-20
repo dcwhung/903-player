@@ -808,6 +808,11 @@ const checkMiniPlayerViewportGap = async (browser, errors) => {
     await p.waitForSelector('nav[aria-busy="false"]');
     await p.getByRole('region', { name: MINI_REGION }).waitFor();
     const { bottom, inner } = await miniPosition(p);
+    // getBoundingClientRect 唔計 overflow 剪裁：另外確認掛喺 body（唔喺 #root 入面畀佢剪走）
+    const inBody = await p
+        .getByRole('region', { name: MINI_REGION })
+        .evaluate((el) => el.closest('[data-theme-scope]').parentElement === document.body);
+    log(inBody, `iOS standalone：mini player 掛喺 body（唔會畀 #root overflow 剪走）`);
     log(
         Math.abs(bottom - (inner + IOS_VIEWPORT_GAP_PX)) <= SUBPIXEL_PX,
         `iOS standalone viewport 矮 ${IOS_VIEWPORT_GAP_PX}px：mini player 底 ${bottom.toFixed(1)} = innerHeight ${inner} + ${IOS_VIEWPORT_GAP_PX}（推到螢幕底）`,
