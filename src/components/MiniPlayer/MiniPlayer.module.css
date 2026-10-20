@@ -33,7 +33,9 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    /* 頂部留位俾指示點（撳得到範圍 24px），唔會疊住開節目頁個掣；改高度要同步 tokens.css --mini-player-height */
+    /* 固定高度：主頁底部留位用同一個 token，字體大咗都唔會遮住版本號 */
+    height: var(--mini-player-height);
+    /* 頂部留位俾指示點（撳得到範圍 24px），唔會疊住開節目頁個掣 */
     padding: var(--touch-target-min) var(--space-3) var(--space-4);
 }
 
