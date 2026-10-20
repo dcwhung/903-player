@@ -1,20 +1,43 @@
-import type { Ref } from 'react';
+import type { DOMAttributes, Ref } from 'react';
 import styles from './Disc.module.css';
 
 interface DiscProps {
     size?: 'large' | 'small';
     /** 節目圖；冇就顯示純色碟 */
-    art?: string;
+    art?: string | undefined;
     /** 節目頁日子條拖動時轉節目圖（直接寫 style，唔經 render） */
-    artRef?: Ref<HTMLImageElement>;
+    artRef?: Ref<HTMLImageElement> | undefined;
+    /** 碟面（自轉 + 捽碟 / 拖弧形跟手指轉嘅手動角度） */
+    faceRef?: Ref<HTMLSpanElement> | undefined;
+    /** 播緊而且冇人捉住：自轉；停咗就停喺原位 */
+    spinning?: boolean;
+    /** 捽碟 seek 嘅 pointer events；冇就係純裝飾 */
+    scrub?: DOMAttributes<HTMLDivElement> | undefined;
 }
 
 const GROOVE_COUNT = 3;
 
-/** 唱片：底色係節目圖，large 用喺播放器，small 用喺列表同 mini player */
-export const Disc = ({ size = 'large', art, artRef }: DiscProps) => (
-    <div className={`${styles.disc} ${styles[size]}`} aria-hidden="true">
-        {art && <img ref={artRef} className={styles.art} src={art} alt="" />}
+/**
+ * 唱片：底色係節目圖，large 用喺播放器，small 用喺列表同 mini player。
+ * 三層轉動各自一層，唔會互相覆蓋：.disc 唔轉（陰影有向下偏移，轉咗會跟住轉）；
+ * .face 自轉（CSS rotate）+ 手動角度（transform）；入面節目圖畀日子條轉
+ */
+export const Disc = ({
+    size = 'large',
+    art,
+    artRef,
+    faceRef,
+    spinning = false,
+    scrub,
+}: DiscProps) => (
+    <div
+        className={`${styles.disc} ${styles[size]} ${scrub ? styles.scrubbable : ''}`}
+        aria-hidden="true"
+        {...scrub}
+    >
+        <span ref={faceRef} className={`${styles.face} ${spinning ? styles.spinning : ''}`}>
+            {art && <img ref={artRef} className={styles.art} src={art} alt="" />}
+        </span>
         {size === 'large' && (
             <>
                 <span className={styles.vignette} />

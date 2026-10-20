@@ -1,4 +1,4 @@
-import { arcDashArray, pointToRatio, ratioToPoint, stabiliseDragRatio } from './arc';
+import { arcDashArray, isOnArcBand, pointToRatio, ratioToPoint, stabiliseDragRatio } from './arc';
 
 const CENTER = 150;
 const RADIUS = 140;
@@ -78,5 +78,40 @@ describe('stabiliseDragRatio', () => {
     it('passes through normal movement', () => {
         expect(stabiliseDragRatio(0.4, 0.42)).toBe(0.4);
         expect(stabiliseDragRatio(1, 0.98)).toBe(1);
+    });
+});
+
+describe('isOnArcBand', () => {
+    const BAND = { inner: 112, outer: 168, gapTolerance: 12 };
+    const at = (degrees: number, radius: number) => {
+        const radians = (degrees * Math.PI) / 180;
+        return [CENTER + radius * Math.cos(radians), CENTER + radius * Math.sin(radians)] as const;
+    };
+    const onBand = (degrees: number, radius: number) =>
+        isOnArcBand(...at(degrees, radius), CENTER, BAND);
+
+    it('accepts points on the ring within the band width', () => {
+        expect(onBand(270, RADIUS)).toBe(true);
+        expect(onBand(270, 113)).toBe(true);
+        expect(onBand(270, 167)).toBe(true);
+    });
+
+    it('rejects points inside the disc or outside the band', () => {
+        expect(onBand(270, 100)).toBe(false);
+        expect(onBand(270, 180)).toBe(false);
+        // 唱片格四角
+        expect(isOnArcBand(5, 5, CENTER, BAND)).toBe(false);
+    });
+
+    it('rejects the bottom gap but keeps a tolerance next to both ends', () => {
+        expect(onBand(90, RADIUS)).toBe(false);
+        expect(onBand(130, RADIUS)).toBe(true);
+        expect(onBand(50, RADIUS)).toBe(true);
+        expect(onBand(120, RADIUS)).toBe(false);
+        expect(onBand(60, RADIUS)).toBe(false);
+    });
+
+    it('rejects points that cannot be measured', () => {
+        expect(isOnArcBand(Number.NaN, Number.NaN, CENTER, BAND)).toBe(false);
     });
 });

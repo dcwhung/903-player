@@ -13,6 +13,8 @@ interface ArcSliderProps {
     formatValueText: (seconds: number) => string;
     /** 拖動時通知父 component 預覽值（放手時 null） */
     onPreview?: (seconds: number | null) => void;
+    /** 其他手勢（捽碟）進行緊：唔開始新嘅拖動 */
+    locked?: boolean;
 }
 
 const keyTarget = (key: string, value: number, max: number): number | undefined =>
@@ -27,8 +29,8 @@ const keyTarget = (key: string, value: number, max: number): number | undefined 
 
 /** 270° 弧形進度條，可以拖動、撳或者用方向鍵調整 */
 export const ArcSlider = (props: ArcSliderProps) => {
-    const { value, max, onSeek, label, formatValueText, onPreview } = props;
-    const { dragRatio, handlers } = useArcDrag(max, onSeek, onPreview);
+    const { value, max, onSeek, label, formatValueText, onPreview, locked } = props;
+    const { dragRatio, handlers } = useArcDrag(max, onSeek, onPreview, locked);
     const ratio = dragRatio ?? (max > 0 ? value / max : 0);
     const shownValue = ratio * max;
 

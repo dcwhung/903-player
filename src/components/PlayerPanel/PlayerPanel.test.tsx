@@ -6,7 +6,7 @@ import { PlayerPanel } from './PlayerPanel';
 
 const REC = recording('gongzi', '2026-10-17');
 
-const Harness = () => {
+const Harness = ({ neighbours = {} }: { neighbours?: { older?: string } }) => {
     const player = usePlayer();
     return (
         <>
@@ -16,7 +16,7 @@ const Harness = () => {
             <PlayerPanel
                 title="公子會"
                 dateLabel="17/10（六）"
-                neighbours={{}}
+                neighbours={neighbours}
                 onStep={() => false}
             />
         </>
@@ -97,5 +97,39 @@ describe('PlayerPanel', () => {
         fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 1 });
 
         expect(screen.getByText('50:00')).toBeInTheDocument();
+    });
+
+    it('stops the disc spin while the date strip holds it', async () => {
+        const { audio, container } = renderWithProviders(
+            <Harness neighbours={{ older: '10/10（六）' }} />,
+        );
+        await userEvent.click(screen.getByRole('button', { name: 'load' }));
+        act(() => audio.emitMetadata(6836));
+        await userEvent.click(screen.getByRole('button', { name: '播放' }));
+        const face = container.querySelector('[class*="face"]');
+        const strip = screen.getByRole('group', { name: '17/10（六） 公子會' });
+        expect(face?.className).toMatch(/spinning/);
+
+        fireEvent.pointerDown(strip, { clientX: 200, clientY: 10, pointerId: 1 });
+        fireEvent.pointerMove(strip, { clientX: 150, clientY: 10, pointerId: 1 });
+        expect(face?.className).not.toMatch(/spinning/);
+
+        fireEvent.pointerUp(strip, { clientX: 195, clientY: 10, pointerId: 1 });
+        expect(face?.className).toMatch(/spinning/);
+    });
+
+    it('lets the disc spin again when a date strip drag is cancelled', async () => {
+        const { audio, container } = renderWithProviders(<Harness />);
+        await userEvent.click(screen.getByRole('button', { name: 'load' }));
+        act(() => audio.emitMetadata(6836));
+        await userEvent.click(screen.getByRole('button', { name: '播放' }));
+        const face = container.querySelector('[class*="face"]');
+        const strip = screen.getByRole('group', { name: '17/10（六） 公子會' });
+
+        fireEvent.pointerDown(strip, { clientX: 200, clientY: 10, pointerId: 1 });
+        fireEvent.pointerMove(strip, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.pointerCancel(strip, { pointerId: 1 });
+
+        expect(face?.className).toMatch(/spinning/);
     });
 });

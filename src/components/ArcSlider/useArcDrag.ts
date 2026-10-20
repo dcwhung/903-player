@@ -1,29 +1,37 @@
 import { useState, type PointerEvent } from 'react';
-import { pointToRatio, stabiliseDragRatio } from '../../utils/arc';
-import { CENTER, VIEWBOX_SIZE } from './ArcSlider.constants';
+import { isOnArcBand, pointToRatio, stabiliseDragRatio, type Point } from '../../utils/arc';
+import { ARC_HIT_BAND, CENTER, VIEWBOX_SIZE } from './ArcSlider.constants';
 
 type SvgPointerEvent = PointerEvent<SVGSVGElement>;
 
-const ratioFromPointer = (event: SvgPointerEvent): number => {
+const viewBoxPoint = (event: SvgPointerEvent): Point => {
     const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * VIEWBOX_SIZE;
-    const y = ((event.clientY - rect.top) / rect.height) * VIEWBOX_SIZE;
+    return {
+        x: ((event.clientX - rect.left) / rect.width) * VIEWBOX_SIZE,
+        y: ((event.clientY - rect.top) / rect.height) * VIEWBOX_SIZE,
+    };
+};
+
+const ratioFromPointer = (event: SvgPointerEvent): number => {
+    const { x, y } = viewBoxPoint(event);
     return pointToRatio(x, y, CENTER);
 };
 
-/** 拖弧形唔好傳上去今日節目卡疊 / mini player 嘅 swipe：先 stopPropagation 再處理 */
-const contained =
-    (handler: (event: SvgPointerEvent) => void) =>
-    (event: SvgPointerEvent): void => {
-        event.stopPropagation();
-        handler(event);
-    };
+const isOnBand = (event: SvgPointerEvent): boolean => {
+    const { x, y } = viewBoxPoint(event);
+    return isOnArcBand(x, y, CENTER, ARC_HIT_BAND);
+};
 
-/** 拖動弧形：拖緊只預覽，放手先 seek；取消手勢唔 seek */
+/**
+ * 拖動弧形：拖緊只預覽，放手先 seek；取消手勢唔 seek。
+ * 只有撳中圓環先當自己嘅手勢（stopPropagation，唔郁今日節目卡疊 / mini player）；
+ * 圓環以外照傳上去，等卡疊 swipe 得到。locked（例如捽緊碟）就唔開始新手勢，但照截住
+ */
 export const useArcDrag = (
     max: number,
     onSeek: (seconds: number) => void,
     onPreview?: (seconds: number | null) => void,
+    locked = false,
 ) => {
     const [dragRatio, setDragRatio] = useState<number | null>(null);
     const preview = (ratio: number | null) => {
@@ -32,21 +40,28 @@ export const useArcDrag = (
     };
     const nextRatio = (event: SvgPointerEvent) =>
         stabiliseDragRatio(ratioFromPointer(event), dragRatio);
+    // 拖緊先截住；未開始拖嘅 move / up 要照傳，卡疊先確認到橫拖
+    const owned =
+        (handler: (event: SvgPointerEvent) => void) =>
+        (event: SvgPointerEvent): void => {
+            if (dragRatio === null) return;
+            event.stopPropagation();
+            handler(event);
+        };
     const handlers = {
-        onPointerDown: contained((event) => {
-            if (max <= 0) return;
+        onPointerDown: (event: SvgPointerEvent) => {
+            if (!isOnBand(event)) return;
+            event.stopPropagation();
+            if (max <= 0 || locked) return;
             event.currentTarget.setPointerCapture?.(event.pointerId);
             preview(ratioFromPointer(event));
-        }),
-        onPointerMove: contained((event) => {
-            if (dragRatio !== null) preview(nextRatio(event));
-        }),
-        onPointerUp: contained((event) => {
-            if (dragRatio === null) return;
+        },
+        onPointerMove: owned((event) => preview(nextRatio(event))),
+        onPointerUp: owned((event) => {
             onSeek(nextRatio(event) * max);
             preview(null);
         }),
-        onPointerCancel: contained(() => preview(null)),
+        onPointerCancel: owned(() => preview(null)),
     };
     return { dragRatio, handlers };
 };

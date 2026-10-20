@@ -36,6 +36,17 @@ const drag = (target: Element, dx: number, dy = 0, pointerType = 'mouse') => {
     fireEvent.pointerUp(target, { ...start, clientX: 200 + dx, clientY: 100 + dy });
 };
 
+const ringSlider = (onSeek: (seconds: number) => void) => (
+    <ArcSlider value={0} max={600} onSeek={onSeek} label="播放進度" formatValueText={String} />
+);
+
+/** 將弧形擺喺畫面 (left, top)，300px 大（同 viewBox 一樣） */
+const ringAt = (left: number, top: number) => {
+    const slider = screen.getByRole('slider', { name: '播放進度' });
+    slider.getBoundingClientRect = () => ({ left, top, width: 300, height: 300 }) as DOMRect;
+    return slider;
+};
+
 const finishFly = () => act(() => vi.advanceTimersByTime(CARD_FLY_MS));
 const cardDx = (group: HTMLElement) => group.style.getPropertyValue('--card-dx');
 
@@ -129,24 +140,25 @@ describe('ShowCardStack', () => {
 
     it('should not move the card while the arc slider is dragged', () => {
         const onSeek = vi.fn();
-        const { group, onChange } = setup(
-            1,
-            CARDS,
-            <ArcSlider
-                value={0}
-                max={600}
-                onSeek={onSeek}
-                label="播放進度"
-                formatValueText={String}
-            />,
-        );
+        const { group, onChange } = setup(1, CARDS, ringSlider(onSeek));
 
-        drag(screen.getByRole('slider', { name: '播放進度' }), -150);
+        // drag 由 (200, 100) 起手：擺喺弧形頂部（viewBox 150, 10），即係撳中圓環
+        drag(ringAt(50, 90), -150);
         finishFly();
 
         expect(onSeek).toHaveBeenCalled();
         expect(cardDx(group)).toBe('');
         expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('should swipe the card when the drag starts in a corner of the progress ring box', () => {
+        const { onChange } = setup(1, CARDS, ringSlider(vi.fn()));
+
+        // (200, 100) 係 viewBox (5, 5)：唱片格左上角，圓環以外
+        drag(ringAt(195, 95), -150);
+        finishFly();
+
+        expect(onChange).toHaveBeenCalledWith(2);
     });
 
     it('should swallow the click that follows a drag over an inner button', () => {

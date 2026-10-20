@@ -11,6 +11,8 @@ interface StripGestureOptions {
     motion: StripMotion;
     /** 放手時過咗門檻：想轉去邊個方向（盡頭由 onGo 自己彈返） */
     onGo: (direction: SwipeDirection) => void;
+    /** 開始拖（捉住碟）/ 放手或取消：畀外面暫停碟自轉 */
+    onHold?: ((held: boolean) => void) | undefined;
 }
 
 interface DragSession {
@@ -32,6 +34,7 @@ const moveStrip = (session: DragSession, event: StripPointer, options: StripGest
         event.currentTarget.setPointerCapture?.(event.pointerId);
         // 碟仲轉緊就由畫面上嘅角度接住，唔好跳去目標角度
         options.motion.grab();
+        options.onHold?.(true);
     }
     options.motion.follow(stripOffset(dx, options.neighbours));
 };
@@ -83,8 +86,10 @@ export const useStripGesture = (options: StripGestureOptions) => {
             // 冇 pointermove 但放手時已經算掃（轉咗集）：之後嘅 click 都要食咗，唔好再撳多次側格
             const swiped = releaseStrip(current, event, options);
             justDragged.current = current.dragging || swiped;
+            if (current.dragging) options.onHold?.(false);
         },
         onPointerCancel: () => {
+            if (session.current?.dragging) options.onHold?.(false);
             session.current = null;
             options.motion.springBack();
         },

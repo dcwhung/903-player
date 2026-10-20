@@ -44,6 +44,8 @@
     /* 節目頁日子條：轉集時新日期由隔籬格滑返中間、碟慢慢順時針轉返正（播放唔使等動畫） */
     --duration-strip: 0.3s;
     --duration-spin: 0.9s;
+    /* 播放中碟自轉一圈（真黑膠 33⅓ rpm 喺手機太快，會頭暈） */
+    --duration-disc-spin: 8s;
     --ease-strip: cubic-bezier(0.2, 0.8, 0.2, 1);
     --dot-size: 6px;
     --dot-size-active: 18px;

@@ -4,21 +4,26 @@ import { ArcSlider } from './ArcSlider';
 const MAX = 1000;
 const VIEWBOX = 300;
 
-const renderSlider = (value = 400) => {
+const renderSlider = (value = 400, locked = false) => {
     const onSeek = vi.fn();
+    const onOuterPointer = vi.fn();
     render(
-        <ArcSlider
-            value={value}
-            max={MAX}
-            onSeek={onSeek}
-            label="播放進度"
-            formatValueText={(seconds) => `v${Math.round(seconds)}`}
-        />,
+        // 模擬今日節目卡疊：冇被 ArcSlider 截住嘅 pointer event 會傳到呢度
+        <div onPointerDown={onOuterPointer} onPointerMove={onOuterPointer}>
+            <ArcSlider
+                value={value}
+                max={MAX}
+                onSeek={onSeek}
+                label="播放進度"
+                formatValueText={(seconds) => `v${Math.round(seconds)}`}
+                locked={locked}
+            />
+        </div>,
     );
     const slider = screen.getByRole('slider', { name: '播放進度' });
     slider.getBoundingClientRect = () =>
         ({ left: 0, top: 0, width: VIEWBOX, height: VIEWBOX }) as DOMRect;
-    return { slider, onSeek };
+    return { slider, onSeek, onOuterPointer };
 };
 
 describe('ArcSlider', () => {
@@ -64,6 +69,51 @@ describe('ArcSlider', () => {
         fireEvent.pointerUp(slider, { clientX: 160, clientY: 290, pointerId: 1 });
 
         expect(onSeek).toHaveBeenCalledWith(0);
+    });
+
+    it('leaves the corners and the disc to the parent (card swipe)', () => {
+        const { slider, onSeek, onOuterPointer } = renderSlider();
+
+        fireEvent.pointerDown(slider, { clientX: 5, clientY: 5, pointerId: 1 });
+        fireEvent.pointerMove(slider, { clientX: 100, clientY: 8, pointerId: 1 });
+        fireEvent.pointerUp(slider, { clientX: 100, clientY: 8, pointerId: 1 });
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 150, pointerId: 2 });
+
+        expect(onOuterPointer).toHaveBeenCalledTimes(3);
+        expect(onSeek).not.toHaveBeenCalled();
+        expect(slider).toHaveAttribute('aria-valuenow', '400');
+    });
+
+    it('leaves the bottom gap to the parent but still grabs the start of the ring', () => {
+        const { slider, onSeek, onOuterPointer } = renderSlider();
+
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 290, pointerId: 1 });
+        fireEvent.pointerUp(slider, { clientX: 150, clientY: 290, pointerId: 1 });
+        expect(onOuterPointer).toHaveBeenCalledTimes(1);
+
+        fireEvent.pointerDown(slider, { clientX: 51, clientY: 249, pointerId: 2 });
+        fireEvent.pointerUp(slider, { clientX: 51, clientY: 249, pointerId: 2 });
+        expect(onOuterPointer).toHaveBeenCalledTimes(1);
+        expect(onSeek).toHaveBeenCalledWith(0);
+    });
+
+    it('keeps a ring drag to itself', () => {
+        const { slider, onOuterPointer } = renderSlider();
+
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.pointerMove(slider, { clientX: 10, clientY: 150, pointerId: 1 });
+
+        expect(onOuterPointer).not.toHaveBeenCalled();
+    });
+
+    it('ignores a new ring drag while locked by the disc, without passing it on', () => {
+        const { slider, onSeek, onOuterPointer } = renderSlider(400, true);
+
+        fireEvent.pointerDown(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.pointerUp(slider, { clientX: 150, clientY: 10, pointerId: 1 });
+
+        expect(onSeek).not.toHaveBeenCalled();
+        expect(onOuterPointer).not.toHaveBeenCalled();
     });
 
     it('cancels a gesture without seeking', () => {

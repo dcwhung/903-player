@@ -5,7 +5,7 @@
  * touch-action: pinch-zoom（舊瀏覽器 none）：擋晒單指 pan，固定版面冇嘢好直向捲；
  * 用 pan-y 嘅話 iOS 一見手指有少少直向郁就開始原生 pan、發 pointercancel，
  * 張卡即刻彈返（實機完全拖唔到）。雙指放大照得（無障礙）。
- * 弧形進度條自己都係 none，而且 stopPropagation，拖佢唔會郁張卡。
+ * 弧形進度條（圓環）同捽碟都係 none，而且 stopPropagation，拖佢哋唔會郁張卡；唱片格四角照交畀卡疊。
  */
 .stack {
     --card-dx: 0px;
