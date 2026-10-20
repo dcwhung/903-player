@@ -1,7 +1,9 @@
 import badgirlArt from '../assets/shows/badgirl.jpg';
 import gongziArt from '../assets/shows/gongzi.jpg';
+import lalalaArt from '../assets/shows/lalala.jpg';
 import sunnydayArt from '../assets/shows/sunnyday.jpg';
 import wanniArt from '../assets/shows/wanni.jpg';
+import wavesArt from '../assets/shows/waves.jpg';
 import westairArt from '../assets/shows/westair.jpg';
 import { LAUNCH_THEME_COLOR } from './launchTheme';
 import type { ShowId } from '../types/recording';
@@ -126,6 +128,34 @@ export const SHOW_THEMES: Record<ShowId, ShowTheme> = {
         shadowDark: '#1d0c15',
         shadowLight: '#442331',
         art: westairArt,
+    },
+    // 深海藍底（浪）+ 標題字嘅紅
+    waves: {
+        bg: '#0c1a2c',
+        surface: '#152a40',
+        track: '#2a4560',
+        accent: '#ff5a4e',
+        onAccent: '#0c1a2c',
+        title: '#dcefff',
+        text: '#eef5fb',
+        muted: '#9fb6cc',
+        shadowDark: '#06101c',
+        shadowLight: '#1b3450',
+        art: wavesArt,
+    },
+    // 車身招牌嘅深綠松石底 + 標題字嘅橙黃
+    lalala: {
+        bg: '#0f2826',
+        surface: '#173634',
+        track: '#2e524e',
+        accent: '#f7a531',
+        onAccent: '#0f2826',
+        title: '#ffe27a',
+        text: '#f1f7f5',
+        muted: '#a5c2bd',
+        shadowDark: '#081a19',
+        shadowLight: '#1d403d',
+        art: lalalaArt,
     },
 };
 

@@ -30,6 +30,8 @@ const REAL_URLS = {
         'https://audio.hkfm903.live/%E5%9C%A8%E6%99%B4%E6%9C%97%E7%9A%84%E4%B8%80%E5%A4%A9%E5%87%BA%E7%99%BC/20261019_0809_%E5%9C%A8%E6%99%B4%E6%9C%97%E7%9A%84%E4%B8%80%E5%A4%A9%E5%87%BA%E7%99%BC.aac',
     westair:
         'https://audio.hkfm903.live/%E8%A5%BF%E5%8A%A0%E8%88%AA%E7%A9%BA/20261017_0905_%E8%A5%BF%E5%8A%A0%E8%88%AA%E7%A9%BA.aac',
+    waves: 'https://audio.hkfm903.live/%E5%8F%A3%E6%B0%B4%E5%A4%9A%E9%81%8E%E6%B5%AA%E8%8A%B1/20261020_1510_%E5%8F%A3%E6%B0%B4%E5%A4%9A%E9%81%8E%E6%B5%AA%E8%8A%B1.aac',
+    lalala: 'https://audio.hkfm903.live/%E8%81%96%E8%89%BE%E7%B2%92LaLaLaLa/20261020_1710_%E8%81%96%E8%89%BE%E7%B2%92LaLaLaLa.aac',
     wanni: 'https://audio.hkfm903.live/%E9%9B%B2%E5%A6%AE%E9%8D%BE%E6%83%85/20261019_0708_%E9%9B%B2%E5%A6%AE%E9%8D%BE%E6%83%85.aac',
 } as const;
 
@@ -37,9 +39,10 @@ const REAL_URLS = {
 const NOW = new Date('2026-10-20T04:00:00Z');
 /**
  * NOW 回看 14 日（7–20 號）入面要 probe 嘅節目：
- * 一至五共 10 日各 3 個；六（10、17 號）各有公子會同西加；日冇節目
+ * 一至五共 10 日各 5 個，但今日（20 號）口水多過浪花（15:10）同聖艾粒（17:10）未開咪；
+ * 六（10、17 號）各有公子會同西加；日冇節目
  */
-const WINDOW_SLOTS = 34;
+const WINDOW_SLOTS = 52;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DAYS_PER_WEEK = 7;
 /** MediaError 嘅 code（jsdom 冇 MediaError，所以自己寫低） */
@@ -56,6 +59,8 @@ describe('buildAudioUrl', () => {
         ['sunnyday', '2026-10-19'],
         ['westair', '2026-10-17'],
         ['wanni', '2026-10-19'],
+        ['waves', '2026-10-20'],
+        ['lalala', '2026-10-20'],
     ] as const)('matches the real %s url', (showId, date) => {
         expect(buildAudioUrl(findShow(showId)!, date)).toBe(REAL_URLS[showId]);
     });
@@ -431,8 +436,8 @@ describe('probeRecentRecordings', () => {
         });
 
         expect(soon).not.toHaveBeenCalled();
-        // 只有今日同尋日（19、20 號各 3 個）會再試；更早嘅日子已定，要等 PROBE_SETTLED_RETRY_MS
-        expect(later).toHaveBeenCalledTimes(6);
+        // 只有尋日（19 號 5 個）同今日（20 號已開咪嘅 3 個）會再試；更早嘅日子已定，要等 PROBE_SETTLED_RETRY_MS
+        expect(later).toHaveBeenCalledTimes(8);
         expect(later).not.toHaveBeenCalledWith(urlFor('badgirl', '2026-10-16'));
     });
 
