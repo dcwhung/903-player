@@ -1,6 +1,6 @@
 .version {
-    /* 推去頁底：內容短都貼住 page 底部 padding（嗰度已經留位畀 mini player） */
-    margin-top: auto;
+    /* 推去頁底：內容短都貼住 page 底部 padding（嗰度已經留位畀 mini player）；冇 <p> 預設下 margin */
+    margin: auto 0 0;
     padding: 0 var(--space-4);
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);

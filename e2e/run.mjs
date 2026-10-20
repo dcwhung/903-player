@@ -61,16 +61,21 @@ const startPreview = async () => {
     throw new Error('vite preview did not start');
 };
 
-/** 版本號要見到，而且喺 mini player 上面（捲到底都唔會畀佢遮住） */
+// 版本號底同 mini player 頂之間：tokens.css 嘅 --space-3（12px）+ subpixel 捨入
+const VERSION_MINI_GAP_MAX_PX = 13;
+
+/** 版本號要見到，貼住 mini player 上面（捲到底都唔會畀佢遮住，中間唔會留一大截空位） */
 const checkVersionClear = async (p, label) => {
     const version = p.getByText(APP_VERSION_TEXT, { exact: true });
-    await p.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    // 成份文件鎖死唔捲；好矮嘅畫面係 main 自己捲，捲到底先量
+    await p.evaluate(() => document.querySelector('main').scrollTo(0, Number.MAX_SAFE_INTEGER));
     const v = await version.boundingBox();
     const m = await p.getByRole('region', { name: '正在播放（今日節目）' }).boundingBox();
-    const ok = (await version.isVisible()) && v !== null && m !== null && v.y + v.height <= m.y;
+    const gap = v !== null && m !== null ? m.y - (v.y + v.height) : NaN;
+    const ok = (await version.isVisible()) && gap >= 0 && gap <= VERSION_MINI_GAP_MAX_PX;
     log(
         ok,
-        `${label}：版本號 ${APP_VERSION_TEXT} 喺 mini player 上面（底 ${v?.y + v?.height} ≤ ${m?.y}）`,
+        `${label}：版本號 ${APP_VERSION_TEXT} 貼住 mini player 上面（相距 ${gap.toFixed(1)}px，0–${VERSION_MINI_GAP_MAX_PX}）`,
     );
 };
 
@@ -784,8 +789,9 @@ const checkMiniPlayerPosition = async (browser, errors) => {
 };
 
 /*
- * iOS standalone 嘅 viewport 矮過螢幕（實機約 55px）：模擬 navigator.standalone + screen.height 高過 innerHeight，
- * mini player 要推落 viewport 底以下 gap 咁多（portal 掛喺 body，唔畀頁面 .scope / #root 擋住定位）
+ * iOS standalone 嘅 viewport 矮過螢幕（實機約 55px）：模擬 navigator.standalone + screen.height 高過 innerHeight。
+ * iOS 唔會喺 viewport 以下畫內容（實機推落去會畀剪走），所以 mini player 仍然貼住 viewport 底、掛喺 body。
+ * Chromium 嘅 env(safe-area-inset-bottom) 永遠係 0，扣減安全區留白（--mini-player-inset-bottom）呢度驗唔到
  */
 const IOS_VIEWPORT_GAP_PX = 55;
 const fakeIosStandalone = (gap) => {
@@ -812,10 +818,10 @@ const checkMiniPlayerViewportGap = async (browser, errors) => {
     const inBody = await p
         .getByRole('region', { name: MINI_REGION })
         .evaluate((el) => el.closest('[data-theme-scope]').parentElement === document.body);
-    log(inBody, `iOS standalone：mini player 掛喺 body（唔會畀 #root overflow 剪走）`);
+    log(inBody, `iOS standalone：mini player 掛喺 body（跟 viewport 定位）`);
     log(
-        Math.abs(bottom - (inner + IOS_VIEWPORT_GAP_PX)) <= SUBPIXEL_PX,
-        `iOS standalone viewport 矮 ${IOS_VIEWPORT_GAP_PX}px：mini player 底 ${bottom.toFixed(1)} = innerHeight ${inner} + ${IOS_VIEWPORT_GAP_PX}（推到螢幕底）`,
+        Math.abs(bottom - inner) <= SUBPIXEL_PX,
+        `iOS standalone viewport 矮 ${IOS_VIEWPORT_GAP_PX}px：mini player 底 ${bottom.toFixed(1)} = innerHeight ${inner}（唔會推出 viewport 畀人剪走）`,
     );
     await ctx.close();
 };
@@ -1207,6 +1213,7 @@ try {
             await fp.goto(BASE);
             await fp.waitForSelector('nav[aria-busy="false"]');
             await checkShortHeightHome(fp, `${width}×${height} 主頁`);
+            await checkVersionClear(fp, `${width}×${height} 主頁（main 捲到底）`);
             await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
         }
         await ctx.close();

@@ -89,6 +89,16 @@
     /* 主頁節目格同橫額共用嘅左右留白、格距 */
     --home-gutter: var(--space-4);
     --home-tile-gap: var(--space-3);
+    /*
+     * 主頁 mini player：一行嘅高（頂部指示點撳得到範圍 + 開節目頁掣 / 播放掣 + 底 padding，見 MiniPlayer .row），
+     * 同底部安全區留白（viewport 矮過螢幕時 home indicator 已經喺 viewport 以下，扣返 useViewportGap 量到嘅差距）。
+     * 主頁底部留位（版本號貼住 mini player 上面）同 mini player 自己共用
+     */
+    --mini-player-height: calc(var(--touch-target-min) + var(--touch-target) + var(--space-4));
+    --mini-player-inset-bottom: max(
+        0px,
+        calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))
+    );
     --shadow-clay-tile: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
     --color-today-tile-bg: #fdf8f2;
     --color-today-tile-text: #2f4560;

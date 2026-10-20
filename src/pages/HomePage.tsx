@@ -31,8 +31,8 @@ export const HomePage = () => {
     return (
         // 主頁用自己嘅色調（跟 app icon）；mini player 入面另有 ThemeScope，照跟節目色。
         // canvas（iOS standalone viewport 矮過螢幕時，home indicator 後面露出嗰截）：
-        // 有 mini player 就用佢嘅底色——mini player 已經推落螢幕底（useViewportGap），
-        // 萬一推唔盡，下面露出嘅都同色；
+        // 有 mini player 就用佢嘅底色——mini player 貼住 viewport 底，iOS 唔會喺 viewport 以下畫內容，
+        // 下面露出嘅 canvas 同色，睇落就係一路伸到螢幕底；
         // 冇就用漸變底色，同漸變接得順
         <ThemeScope theme={HOME_THEME} className={styles.scope} canvas={homeCanvas(miniPlayer)}>
             {/* 主頁都固定唔捲（page.locked）；好矮嘅畫面改由 main 自己捲 */}
