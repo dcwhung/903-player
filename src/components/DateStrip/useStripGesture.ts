@@ -30,6 +30,8 @@ const moveStrip = (session: DragSession, event: StripPointer, options: StripGest
         if (Math.abs(dx) < DRAG_SLOP_PX || Math.abs(dx) <= Math.abs(dy)) return;
         session.dragging = true;
         event.currentTarget.setPointerCapture?.(event.pointerId);
+        // 碟仲轉緊就由畫面上嘅角度接住，唔好跳去目標角度
+        options.motion.grab();
     }
     options.motion.follow(stripOffset(dx, options.neighbours));
 };

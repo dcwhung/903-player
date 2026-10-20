@@ -1,13 +1,7 @@
 import { useRef, type DragEvent, type MouseEvent, type PointerEvent, type RefObject } from 'react';
 import { dragIntent, type SwipeDirection } from '../../hooks/swipe';
 import { useClickSuppression } from '../../hooks/useSwipe';
-import {
-    isOnPageDot,
-    pushSample,
-    releaseDirection,
-    velocityOf,
-    type DragSample,
-} from './cardStack';
+import { pushSample, releaseDirection, velocityOf, type DragSample } from './cardStack';
 import type { CardMotion } from './useCardMotion';
 
 interface Gesture {
@@ -95,7 +89,7 @@ const release = (
 /** 按低：飛緊或者第二隻手指就唔理；彈緊返中間就由張卡而家嘅位置接住，當已經係橫拖 */
 const begin = (gesture: GestureRef, event: StackPointerEvent, motion: CardMotion) => {
     if (motion.isFlying() || gesture.current) return;
-    const held = isOnPageDot(event.target) ? null : motion.grab();
+    const held = motion.grab();
     const { pointerId, clientX, clientY: y } = event;
     const isDragging = held !== null;
     // 接住彈緊嘅卡即刻算橫拖，confirmHorizontal 唔會行，要喺度 capture，否則喺外面放手會卡住
@@ -125,8 +119,8 @@ const abandon = (gesture: GestureRef, motion: CardMotion, pointerId?: number) =>
 };
 
 /**
- * 飛緊嗰張卡（連指示點）唔再收 click：否則會播 / 停飛走緊嗰個節目，
- * 或者撳嘅指示點畀落地嘅轉節目蓋過。鍵盤 click 都一樣擋（CSS pointer-events 擋唔到）
+ * 飛緊嗰張卡唔再收 click：否則會作用喺飛走緊嗰個節目（例如由頭播放）。
+ * 鍵盤 click 都一樣擋（CSS pointer-events 擋唔到）
  */
 const swallow = (event: MouseEvent<HTMLElement>) => {
     event.preventDefault();

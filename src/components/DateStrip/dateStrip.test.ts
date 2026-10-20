@@ -6,6 +6,9 @@ import {
     stripOffset,
     stripRelease,
     stripShift,
+    behindTurn,
+    rotationOf,
+    uprightSpin,
 } from './dateStrip';
 
 const EPISODES = [
@@ -97,5 +100,47 @@ describe('stripShift', () => {
         // 中格中心去側格中心 = (50% + 25%) / 2
         expect(stripShift(WIDTH, 'next')).toBe(-150);
         expect(stripShift(WIDTH, 'previous')).toBe(150);
+    });
+});
+
+describe('uprightSpin', () => {
+    it('turns clockwise to the next upright angle, at least half a turn away', () => {
+        expect(uprightSpin(0)).toBe(360);
+        expect(uprightSpin(-50)).toBe(360);
+        expect(uprightSpin(170)).toBe(360);
+        expect(uprightSpin(200)).toBe(720);
+        expect(uprightSpin(360)).toBe(720);
+    });
+
+    it('always lands on a whole turn so the art reads upright', () => {
+        [-400, -90, 0, 45, 359, 1000].forEach((deg) => {
+            const target = uprightSpin(deg);
+            expect(target % 360 === 0).toBe(true);
+            expect(target).toBeGreaterThan(deg);
+        });
+    });
+});
+
+describe('rotationOf', () => {
+    it('reads the angle of a computed 2D or 3D rotation matrix', () => {
+        expect(rotationOf('matrix(0, 1, -1, 0, 0, 0)')).toBeCloseTo(90);
+        expect(rotationOf('matrix(-1, 0, 0, -1, 0, 0)')).toBeCloseTo(180);
+        expect(rotationOf('matrix3d(0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)')).toBeCloseTo(
+            -90,
+        );
+    });
+
+    it('gives null without a readable transform', () => {
+        expect(rotationOf('none')).toBeNull();
+        expect(rotationOf('')).toBeNull();
+    });
+});
+
+describe('behindTurn', () => {
+    it('picks the same visual angle at or less than one turn behind the target', () => {
+        expect(behindTurn(90, 720)).toBe(450);
+        expect(behindTurn(-90, 720)).toBe(630);
+        expect(behindTurn(0, 360)).toBe(360);
+        expect(behindTurn(170, -170)).toBe(-190);
     });
 });

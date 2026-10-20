@@ -26,6 +26,8 @@ export const zhHK = {
         seekForwardShort: '+{seconds}',
         progress: '播放進度',
         progressText: '{current} / {total}',
+        // 未載到 metadata 時，進度弧右邊嘅總長度佔位
+        unknownDuration: '--:--',
     },
     dates: {
         title: '日子',

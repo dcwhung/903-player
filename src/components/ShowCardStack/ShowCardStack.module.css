@@ -41,7 +41,6 @@
 .card {
     /* 卡入面嘅播放器用卡自己（較窄）嘅間距，蓋過固定版面 .fixed 嘅 --player-panel-gap */
     --player-panel-gap: var(--card-inner-gap);
-    --player-titles-gap: var(--card-titles-gap);
 
     grid-area: 1 / 1;
     border-radius: var(--radius-lg);
@@ -61,8 +60,8 @@
 }
 
 /*
- * 飛緊嗰張卡同入面嘅指示點唔收 tap（落地先轉節目，中途撳會作用喺飛走緊嗰個節目）。
- * 連子元素都要寫：PlayerPanel 嘅 .discArea > * 會將 pointer-events 設返 auto。
+ * 飛緊嗰張卡唔收 tap（落地先轉節目，中途撳會作用喺飛走緊嗰個節目）。
+ * 連子元素都要寫：PlayerGauge 嘅 .discArea > * 會將 pointer-events 設返 auto。
  * 鍵盤 click 由 useCardDrag 嘅 onClickCapture 擋。
  */
 .stack[data-phase^='fly'] .top,
@@ -72,7 +71,7 @@
 
 /* 最上面嗰張：真播放器，跟手指移動同傾斜 */
 .top {
-    padding: var(--card-padding-block) 0;
+    padding: var(--card-padding-block) 0 var(--card-title-space);
     background: var(--color-bg);
     box-shadow: var(--shadow-card);
     transform: translateX(var(--card-dx)) rotate(var(--card-rotate));
@@ -94,6 +93,26 @@
 
 .depth2 {
     --card-depth: 2;
+}
+
+/*
+ * 後面嘅卡：節目名喺卡底（--card-title-space），疊喺後面時會喺最上面張卡底下露出半行字；
+ * 平時收埋，向左拖 / 飛走上前時跟 --card-forward 淡入（depth2 永遠唔會上到最前）
+ */
+.depth1 .title {
+    opacity: var(--card-forward);
+}
+
+.depth2 .title {
+    opacity: 0;
+}
+
+.stack[data-phase='settling'] .depth1 .title {
+    transition: opacity var(--duration-card-spring) var(--ease-card-spring);
+}
+
+.stack[data-phase^='fly'] .depth1 .title {
+    transition: opacity var(--duration-card-fly) var(--ease-card-fly);
 }
 
 /* 上一個節目：平時喺左邊畫面外（反方向傾斜），向右拖 / 飛走時按 --card-return 飛返入嚟蓋喺最上面 */
@@ -130,7 +149,7 @@
     align-items: center;
     gap: var(--player-panel-gap, var(--space-5));
     height: 100%;
-    padding: var(--card-padding-block) 0;
+    padding: var(--card-padding-block) 0 var(--card-title-space);
     border-radius: inherit;
     background: var(--color-bg);
     box-shadow: var(--shadow-card);
@@ -152,10 +171,14 @@
     aspect-ratio: 1;
 }
 
+/* 同最上面嗰張卡（PlayerCard 嘅 h2）一樣：冇 <p> 預設 margin，唔會撐高卡疊 */
 .title {
+    margin: 0;
+    padding: 0 var(--space-4);
     font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--color-title);
+    text-align: center;
 }
 
 /*
@@ -169,7 +192,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .stack[data-phase] .card {
+    .stack[data-phase] .card,
+    .stack[data-phase] .depth1 .title {
         transition: none;
     }
 }

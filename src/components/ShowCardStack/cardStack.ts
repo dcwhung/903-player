@@ -60,15 +60,6 @@ export const stackSlots = (
     return { behind, incoming: total > 1 ? wrapIndex(index, total, 'previous') : null };
 };
 
-/**
- * 撳緊今日節目指示點（掣有自己用途：彈返途中都唔好捉住張卡、食咗佢嘅 click）。
- * 睇有冇 closest 而唔用 instanceof Element：scripts/ 嘅測試（Node tsconfig，冇 DOM 型別）都會 import 呢個檔
- */
-export const isOnPageDot = (target: EventTarget | null): boolean => {
-    const closest = (target as { closest?: unknown } | null)?.closest;
-    return typeof closest === 'function' && closest.call(target, '[data-page-dot]') !== null;
-};
-
 /** translateX 喺 matrix() 係第 5 個值，喺 matrix3d() 係第 13 個值 */
 const TRANSLATE_X_INDEX: Readonly<Record<string, number>> = { matrix: 4, matrix3d: 12 };
 

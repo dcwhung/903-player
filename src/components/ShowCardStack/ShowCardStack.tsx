@@ -1,7 +1,7 @@
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { arrowKeyDirection, type SwipeDirection, wrapIndex } from '../../hooks/swipe';
 import { t } from '../../i18n/t';
-import { isOnPageDot, stackSlots } from './cardStack';
+import { stackSlots } from './cardStack';
 import { GhostCard, type GhostSlot, type StackCard } from './GhostCard';
 import styles from './ShowCardStack.module.css';
 import { useCardDrag } from './useCardDrag';
@@ -17,9 +17,9 @@ interface ShowCardStackProps {
     children: ReactNode;
 }
 
-/** 方向鍵只係焦點喺卡疊本身或者指示點先轉節目；其他掣 / 進度 slider 有自己用途 */
+/** 方向鍵只係焦點喺卡疊本身先轉節目；卡入面嘅掣 / 進度 slider 有自己用途 */
 const ownsArrowKeys = (event: KeyboardEvent<HTMLDivElement>): boolean =>
-    event.target === event.currentTarget || isOnPageDot(event.target);
+    event.target === event.currentTarget;
 
 /** 拖動 / 方向鍵都係飛走之後先轉去目標節目（循環）；得一個節目就唔轉 */
 const useShowCardStack = (index: number, total: number, onChange: (index: number) => void) => {

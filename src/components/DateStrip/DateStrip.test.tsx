@@ -210,6 +210,20 @@ describe('DateStrip', () => {
             expect(track().style.transform).toBe('translateX(0px)');
         });
 
+        it('morphs the arriving cells from side-cell style while sliding in', () => {
+            render(<Harness />);
+            const observer = new MutationObserver(() => undefined);
+            observer.observe(track(), { attributeFilter: ['data-arriving'] });
+
+            drag(zone(), -100);
+            const flips = observer.takeRecords().length;
+            observer.disconnect();
+
+            // 起點套用側格樣式（data-arriving），即刻拎走等 CSS transition 過渡返正常樣式
+            expect(flips).toBe(2);
+            expect(track()).not.toHaveAttribute('data-arriving');
+        });
+
         it('settles back when onStep cannot switch', async () => {
             const onStep = vi.fn();
             render(<Harness refuse onStep={onStep} />);

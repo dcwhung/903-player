@@ -25,6 +25,9 @@ const FLICK_VELOCITY = 0.5;
 const FLICK_MIN_PX = 16;
 /** 拖向冇集數嗰邊：只跟手指郁三成，似橡筋 */
 const RUBBER_BAND = 0.3;
+/** 碟轉正：一圈 360 度，轉集時最少順時針轉半圈先停 */
+const FULL_TURN_DEG = 360;
+const MIN_UPRIGHT_TURN_DEG = 180;
 
 /** 向左掃（next）= 舊一集，向右掃（previous）= 新一集，同 adjacentEpisodeUrl 一致 */
 export const neighbourFor = (neighbours: StripNeighbours, direction: SwipeDirection) =>
@@ -82,4 +85,30 @@ export const stripOffset = (dx: number, neighbours: StripNeighbours): number =>
 export const stripShift = (width: number, direction: SwipeDirection): number => {
     const distance = (width * (SIDE_SHARE + CENTRE_SHARE)) / 2;
     return direction === 'next' ? -distance : distance;
+};
+
+/** 轉集時碟順時針轉去下一個「正」嘅角度（360 倍數），最少轉半圈，轉完節目圖一定擺正 */
+export const uprightSpin = (deg: number): number =>
+    Math.ceil((deg + MIN_UPRIGHT_TURN_DEG) / FULL_TURN_DEG) * FULL_TURN_DEG;
+
+/** matrix() 同 matrix3d() 嘅頭兩個值都係 cos θ、sin θ（繞 z 軸轉） */
+const ROTATION_MATRIX = /^matrix(?:3d)?\(([^,]+),([^,]+),/;
+const HALF_TURN_DEG = FULL_TURN_DEG / 2;
+
+/** 由 getComputedStyle 嘅 transform 讀碟而家轉咗幾多度（-180–180）；冇 transform 或者睇唔明就係 null */
+export const rotationOf = (transform: string): number | null => {
+    const match = ROTATION_MATRIX.exec(transform);
+    if (!match) return null;
+    const [cos, sin] = [Number(match[1]), Number(match[2])];
+    if (!Number.isFinite(cos) || !Number.isFinite(sin)) return null;
+    return (Math.atan2(sin, cos) * HALF_TURN_DEG) / Math.PI;
+};
+
+/**
+ * 同 `deg` 睇落一樣（差 360 倍數）、喺 `target` 後面一圈之內（target − 360 < 結果 ≤ target）嘅角度。
+ * 碟一定係順時針轉向目標，所以接住轉緊嘅碟時揀後面嗰個，之後彈返都係順時針轉完
+ */
+export const behindTurn = (deg: number, target: number): number => {
+    const behind = (((target - deg) % FULL_TURN_DEG) + FULL_TURN_DEG) % FULL_TURN_DEG;
+    return target - behind;
 };
