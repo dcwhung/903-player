@@ -256,7 +256,12 @@
     --shadow-raised-strong:
         7px 7px 16px var(--theme-shadow-dark), -5px -5px 12px var(--theme-shadow-light);
     --shadow-disc: 0 20px 38px rgb(0 0 0 / 50%);
-    --shadow-floating: 0 12px 30px rgb(0 0 0 / 55%);
+    /*
+     * 主頁 mini player 浮卡：陰影向下（y 位移 + 模糊）要短過卡底間距（--space-4）。iOS standalone viewport
+     * 矮過螢幕時，viewport 底邊會切走陰影，下面嘅 canvas 冇陰影，伸到邊就見到一條深色縫
+     * （src/styles/miniPlayerShadow.node.test.ts 鎖住）
+     */
+    --shadow-floating: 0 2px 10px rgb(0 0 0 / 45%);
     /* 今日節目卡：細細一圈軌道色描邊 + 浮起陰影，令疊喺後面嘅卡睇得出邊 */
     --shadow-card: 0 0 0 1px var(--theme-track), 0 10px 26px rgb(0 0 0 / 45%);
 }
