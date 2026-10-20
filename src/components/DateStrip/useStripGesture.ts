@@ -16,6 +16,8 @@ interface StripGestureOptions {
 }
 
 interface DragSession {
+    /** 邊隻手指開始嘅；其他手指嘅 events 唔理 */
+    pointerId: number;
     x: number;
     y: number;
     t: number;
@@ -57,6 +59,12 @@ const releaseStrip = (
     return direction !== null;
 };
 
+/** 取消（例如系統搶咗手勢）：放返碟，彈返原位 */
+const cancelStrip = (session: DragSession, options: StripGestureOptions) => {
+    if (session.dragging) options.onHold?.(false);
+    options.motion.springBack();
+};
+
 /** 拖完瀏覽器可能仍然發 click，喺 capture 階段食咗佢；鍵盤 / 輔助技術嘅 click（detail 0）照放行 */
 const swallowClickAfterDrag = (event: MouseEvent<HTMLElement>, justDragged: RefObject<boolean>) => {
     const dragged = justDragged.current;
@@ -66,21 +74,36 @@ const swallowClickAfterDrag = (event: MouseEvent<HTMLElement>, justDragged: RefO
     event.stopPropagation();
 };
 
+/** 起手：記低邊隻手指同位置 */
+const beginStrip = (event: StripPointer): DragSession => ({
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    t: performance.now(),
+    dragging: false,
+});
+
+/** 而家呢個 session 係咪由呢隻手指開始（第二隻手指唔可以搶走 / 結束佢） */
+const ownSession = (session: DragSession | null, event: StripPointer): DragSession | null =>
+    session?.pointerId === event.pointerId ? session : null;
+
 /** 日子條嘅 pointer events（滑鼠同手指都得） */
 export const useStripGesture = (options: StripGestureOptions) => {
     const session = useRef<DragSession | null>(null);
     const justDragged = useRef(false);
     return {
         onPointerDown: (event: StripPointer) => {
-            const t = performance.now();
-            session.current = { x: event.clientX, y: event.clientY, t, dragging: false };
+            // 拖緊時第二隻手指撳落唔可以蓋過，否則 onHold(false) 永遠唔會發，碟停咗唔再轉
+            if (session.current) return;
+            session.current = beginStrip(event);
             justDragged.current = false;
         },
         onPointerMove: (event: StripPointer) => {
-            if (session.current) moveStrip(session.current, event, options);
+            const current = ownSession(session.current, event);
+            if (current) moveStrip(current, event, options);
         },
         onPointerUp: (event: StripPointer) => {
-            const current = session.current;
+            const current = ownSession(session.current, event);
             if (!current) return;
             session.current = null;
             // 冇 pointermove 但放手時已經算掃（轉咗集）：之後嘅 click 都要食咗，唔好再撳多次側格
@@ -88,10 +111,10 @@ export const useStripGesture = (options: StripGestureOptions) => {
             justDragged.current = current.dragging || swiped;
             if (current.dragging) options.onHold?.(false);
         },
-        onPointerCancel: () => {
-            if (session.current?.dragging) options.onHold?.(false);
-            session.current = null;
-            options.motion.springBack();
+        onPointerCancel: (event: StripPointer) => {
+            const current = ownSession(session.current, event);
+            session.current = current ? null : session.current;
+            if (current) cancelStrip(current, options);
         },
         onClickCapture: (event: MouseEvent<HTMLElement>) =>
             swallowClickAfterDrag(event, justDragged),

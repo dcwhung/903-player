@@ -118,6 +118,26 @@ describe('PlayerPanel', () => {
         expect(face?.className).toMatch(/spinning/);
     });
 
+    it('ignores a second finger on the date strip while the first one drags', async () => {
+        const { audio, container } = renderWithProviders(
+            <Harness neighbours={{ older: '10/10（六）' }} />,
+        );
+        await userEvent.click(screen.getByRole('button', { name: 'load' }));
+        act(() => audio.emitMetadata(6836));
+        await userEvent.click(screen.getByRole('button', { name: '播放' }));
+        const face = container.querySelector('[class*="face"]');
+        const strip = screen.getByRole('group', { name: '17/10（六） 公子會' });
+
+        fireEvent.pointerDown(strip, { clientX: 200, clientY: 10, pointerId: 1 });
+        fireEvent.pointerMove(strip, { clientX: 150, clientY: 10, pointerId: 1 });
+        fireEvent.pointerDown(strip, { clientX: 100, clientY: 10, pointerId: 2 });
+        fireEvent.pointerUp(strip, { clientX: 100, clientY: 10, pointerId: 2 });
+        expect(face?.className).not.toMatch(/spinning/);
+
+        fireEvent.pointerUp(strip, { clientX: 195, clientY: 10, pointerId: 1 });
+        expect(face?.className).toMatch(/spinning/);
+    });
+
     it('lets the disc spin again when a date strip drag is cancelled', async () => {
         const { audio, container } = renderWithProviders(<Harness />);
         await userEvent.click(screen.getByRole('button', { name: 'load' }));
