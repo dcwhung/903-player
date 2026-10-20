@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { AppVersion } from '../components/AppVersion/AppVersion';
 import { HomeBanner } from '../components/HomeBanner/HomeBanner';
-import { MiniPlayer, type MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
+import { MiniPlayer } from '../components/MiniPlayer/MiniPlayer';
 import { ShowTile } from '../components/ShowTile/ShowTile';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { APP_VERSION } from '../config/appVersion';
@@ -15,12 +15,6 @@ import { t } from '../i18n/t';
 import styles from './HomePage.module.css';
 import page from './Page.module.css';
 
-/** 主頁漸變最底嘅顏色 */
-const HOME_CANVAS = 'var(--home-bg-bottom)';
-
-const homeCanvas = (miniPlayer: MiniPlayerProps | null): string =>
-    miniPlayer ? miniPlayer.theme.surface : HOME_CANVAS;
-
 export const HomePage = () => {
     const navigate = useNavigate();
     const { status } = useRecordings();
@@ -30,11 +24,8 @@ export const HomePage = () => {
 
     return (
         // 主頁用自己嘅色調（跟 app icon）；mini player 入面另有 ThemeScope，照跟節目色。
-        // canvas（iOS standalone viewport 矮過螢幕時，home indicator 後面露出嗰截）：
-        // 有 mini player 就用佢嘅底色——mini player 貼住 viewport 底，iOS 唔會喺 viewport 以下畫內容，
-        // 下面露出嘅 canvas 同色，睇落就係一路伸到螢幕底；
-        // 冇就用漸變底色，同漸變接得順
-        <ThemeScope theme={HOME_THEME} className={styles.scope} canvas={homeCanvas(miniPlayer)}>
+        // canvas 用漸變底色：iOS standalone viewport 矮過螢幕時，home indicator 後面露出 canvas 同漸變接得順
+        <ThemeScope theme={HOME_THEME} className={styles.scope} canvas="var(--home-bg-bottom)">
             {/* 主頁都固定唔捲（page.locked）；好矮嘅畫面改由 main 自己捲 */}
             <main className={`${page.page} ${page.locked} ${styles.home}`}>
                 <HomeBanner />

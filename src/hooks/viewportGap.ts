@@ -10,7 +10,7 @@ export interface ViewportMetrics {
 
 /**
  * iOS standalone 嘅 viewport 有時矮過螢幕（實機量到約 55px，大約係頂部安全區高），
- * 超過呢個數就唔係呢個 bug（例如開咗鍵盤），唔好扣減 mini player 底部留白
+ * 超過呢個數就唔係呢個 bug（例如開咗鍵盤），唔好扣減 mini player 卡底距離
  */
 const MAX_VIEWPORT_GAP_PX = 80;
 

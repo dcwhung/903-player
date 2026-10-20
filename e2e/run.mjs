@@ -740,10 +740,10 @@ const checkShellMismatch = async (browser, errors) => {
 /*
  * S-421：成頁 .scope 而家係 size container（W-390）。如果瀏覽器對 container-type 加埋 layout containment，
  * .scope 會變成 position: fixed 嘅 containing block，主頁 mini player 就會跟 .scope（殼）而唔係 viewport 定位。
- * 正常畫面：mini player 貼底，底 = innerHeight（bottom: 0，Chromium 冇安全區）。
- * 殼縮矮（同 checkShellMismatch 一樣模擬 dvh 高過殼）：底唔可以出咗 viewport，亦唔可以高過殼底。
+ * 正常畫面：mini player 浮喺頁底，底 = innerHeight − 16（--space-4，Chromium 冇安全區）。
+ * 殼縮矮（同 checkShellMismatch 一樣模擬 dvh 高過殼）：底唔可以出咗 viewport，亦唔可以高過殼底 − 16。
  */
-const MINI_BOTTOM_GAP_PX = 0;
+const MINI_BOTTOM_GAP_PX = 16;
 const MINI_POSITION_CASES = [
     { width: 390, height: 844, shrink: 160 },
     { width: 320, height: 568, shrink: 80 },
@@ -790,7 +790,7 @@ const checkMiniPlayerPosition = async (browser, errors) => {
 
 /*
  * iOS standalone 嘅 viewport 矮過螢幕（實機約 55px）：模擬 navigator.standalone + screen.height 高過 innerHeight。
- * iOS 唔會喺 viewport 以下畫內容（實機推落去會畀剪走），所以 mini player 仍然貼住 viewport 底、掛喺 body。
+ * iOS 唔會喺 viewport 以下畫內容（實機推落去會畀剪走），所以 mini player 仍然喺 viewport 入面、掛喺 body。
  * Chromium 嘅 env(safe-area-inset-bottom) 永遠係 0，扣減安全區留白（--mini-player-inset-bottom）呢度驗唔到
  */
 const IOS_VIEWPORT_GAP_PX = 55;
@@ -820,8 +820,8 @@ const checkMiniPlayerViewportGap = async (browser, errors) => {
         .evaluate((el) => el.closest('[data-theme-scope]').parentElement === document.body);
     log(inBody, `iOS standalone：mini player 掛喺 body（跟 viewport 定位）`);
     log(
-        Math.abs(bottom - inner) <= SUBPIXEL_PX,
-        `iOS standalone viewport 矮 ${IOS_VIEWPORT_GAP_PX}px：mini player 底 ${bottom.toFixed(1)} = innerHeight ${inner}（唔會推出 viewport 畀人剪走）`,
+        Math.abs(bottom - (inner - MINI_BOTTOM_GAP_PX)) <= SUBPIXEL_PX,
+        `iOS standalone viewport 矮 ${IOS_VIEWPORT_GAP_PX}px：mini player 底 ${bottom.toFixed(1)} = innerHeight ${inner} − ${MINI_BOTTOM_GAP_PX}（唔會推出 viewport 畀人剪走）`,
     );
     await ctx.close();
 };
