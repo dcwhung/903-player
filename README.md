@@ -35,7 +35,7 @@ npm run dev        # 本地開發
 npm test           # Vitest
 npm run coverage   # 覆蓋率
 npm run lint       # ESLint + Prettier
-npm run e2e        # Playwright 端對端測試（假資料 + 模擬 audio server）
+npm run e2e        # Playwright 端對端測試（假錄音寫入 localStorage + 模擬 audio server）
 npm run build
 ```
 
