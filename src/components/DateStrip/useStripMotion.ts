@@ -1,7 +1,7 @@
 import { useMemo, useRef, type RefObject } from 'react';
 import type { SwipeDirection } from '../../hooks/swipe';
 import { prefersReducedMotion } from '../../utils/motion';
-import { nearestTurn, rotationOf, stripShift, uprightSpin } from './dateStrip';
+import { behindTurn, rotationOf, stripShift, uprightSpin } from './dateStrip';
 
 /** 拖緊碟跟住轉：每 px 0.5 度；轉集時碟順時針轉返正（uprightSpin） */
 const DISC_DEG_PER_PX = 0.5;
@@ -13,10 +13,12 @@ interface MotionRefs {
     disc: RefObject<HTMLElement | null> | undefined;
     /** 日子條而家嘅位移（px） */
     offset: RefObject<number>;
-    /** 碟累積轉咗幾多度（每次轉集轉去下一個 360 倍數） */
+    /** 碟嘅目標角度：一定係 360 倍數（擺正），每次轉集轉去下一個 */
     spin: RefObject<number>;
-    /** 拖緊碟額外轉咗幾多度（未加入 spin） */
+    /** 碟而家喺目標以外額外轉咗幾多度（捉住嗰下嘅差 + 拖動） */
     drag: RefObject<number>;
+    /** 開始拖時碟仲未轉到目標：畫面上角度同目標嘅差（≤ 0），彈返 / 轉集就清走 */
+    grabbed: RefObject<number>;
     /** 轉咗集之後，新日期要由邊度滑返中間（null = 直接歸位） */
     arriveFrom: RefObject<number | null>;
     /** 轉去邊個方向：滑入時得嗰邊新出現嘅側格要淡入 */
@@ -42,25 +44,28 @@ const turnDisc = (refs: MotionRefs, extra: number, animate: boolean) => {
 
 /**
  * 開始拖：碟可能仲轉緊（轉集轉返正 / 彈返），inline style 係目標角度，畫面上未到。
- * 讀畫面上嘅角度做新起點（揀同佢睇落一樣、最接近目標嘅角度），之後跟手指唔會跳；
- * 讀唔到（例如冇 transform）就照舊由目標角度開始
+ * 讀畫面上嘅角度，記低同目標差幾多（grabbed），之後跟手指由嗰度開始唔會跳；
+ * 目標（spin）唔變，所以彈返照樣順時針轉返正。讀唔到（例如冇 transform）就照舊由目標開始
  */
 const grab = (refs: MotionRefs) => {
     const disc = refs.disc?.current;
     if (!disc || prefersReducedMotion()) return;
     const angle = rotationOf(getComputedStyle(disc).transform);
     if (angle === null) return;
-    refs.spin.current = nearestTurn(angle, refs.spin.current + refs.drag.current);
-    turnDisc(refs, 0, false);
+    refs.grabbed.current = behindTurn(angle, refs.spin.current) - refs.spin.current;
+    turnDisc(refs, refs.grabbed.current, false);
 };
 
 const follow = (refs: MotionRefs, offset: number) => {
     moveTrack(refs, offset, false);
-    if (!prefersReducedMotion()) turnDisc(refs, offset * DISC_DEG_PER_PX, false);
+    if (!prefersReducedMotion()) {
+        turnDisc(refs, refs.grabbed.current + offset * DISC_DEG_PER_PX, false);
+    }
 };
 
 const springBack = (refs: MotionRefs) => {
     refs.arriveFrom.current = null;
+    refs.grabbed.current = 0;
     moveTrack(refs, 0, true);
     turnDisc(refs, 0, true);
 };
@@ -76,6 +81,7 @@ const commit = (refs: MotionRefs, direction: SwipeDirection) => {
         return;
     }
     refs.spin.current = uprightSpin(refs.spin.current + refs.drag.current);
+    refs.grabbed.current = 0;
     turnDisc(refs, 0, true);
     const width = refs.track.current?.clientWidth ?? 0;
     refs.arriveFrom.current = refs.offset.current - stripShift(width, direction);
@@ -112,6 +118,7 @@ export const useStripMotion = (spinRef?: RefObject<HTMLElement | null>) => {
     const offset = useRef(0);
     const spin = useRef(0);
     const drag = useRef(0);
+    const grabbed = useRef(0);
     const arriveFrom = useRef<number | null>(null);
     const arriveDirection = useRef<SwipeDirection>('next');
     return useMemo(() => {
@@ -121,6 +128,7 @@ export const useStripMotion = (spinRef?: RefObject<HTMLElement | null>) => {
             offset,
             spin,
             drag,
+            grabbed,
             arriveFrom,
             arriveDirection,
         };

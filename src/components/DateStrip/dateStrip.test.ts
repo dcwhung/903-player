@@ -6,7 +6,7 @@ import {
     stripOffset,
     stripRelease,
     stripShift,
-    nearestTurn,
+    behindTurn,
     rotationOf,
     uprightSpin,
 } from './dateStrip';
@@ -136,11 +136,11 @@ describe('rotationOf', () => {
     });
 });
 
-describe('nearestTurn', () => {
-    it('picks the same visual angle closest to the reference', () => {
-        expect(nearestTurn(90, 720)).toBe(810);
-        expect(nearestTurn(-90, 720)).toBe(630);
-        expect(nearestTurn(0, 360)).toBe(360);
-        expect(nearestTurn(170, -170)).toBe(-190);
+describe('behindTurn', () => {
+    it('picks the same visual angle at or less than one turn behind the target', () => {
+        expect(behindTurn(90, 720)).toBe(450);
+        expect(behindTurn(-90, 720)).toBe(630);
+        expect(behindTurn(0, 360)).toBe(360);
+        expect(behindTurn(170, -170)).toBe(-190);
     });
 });

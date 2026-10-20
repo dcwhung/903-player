@@ -27,9 +27,37 @@ describe('useStripMotion', () => {
         result.current.grab();
         result.current.follow(0);
 
-        // 由畫面上嘅 90 度接住（同 450 度睇落一樣、最近 360 嘅係 450），唔會跳去 360
-        expect(disc.style.transform).toBe('rotate(450deg)');
+        // 由畫面上嘅 90 度接住（喺目標 360 後面一圈之內），唔會跳去 360
+        expect(disc.style.transform).toBe('rotate(90deg)');
         expect(disc.style.transition).toBe('none');
+    });
+
+    it('finishes the clockwise turn to upright when a grabbed disc springs back', () => {
+        const { disc, spinRef } = discMidSpin('matrix(0, 1, -1, 0, 0, 0)');
+        const { result } = renderHook(() => useStripMotion(spinRef));
+        result.current.trackRef.current = document.createElement('div');
+
+        result.current.commit('next');
+        result.current.grab();
+        result.current.follow(20);
+        result.current.springBack();
+
+        expect(disc.style.transform).toBe('rotate(360deg)');
+        expect(disc.style.transition).toBe('');
+    });
+
+    it('turns a grabbed disc on to the next upright angle when the drag switches episode', () => {
+        const { disc, spinRef } = discMidSpin('matrix(0, 1, -1, 0, 0, 0)');
+        const { result } = renderHook(() => useStripMotion(spinRef));
+        result.current.trackRef.current = document.createElement('div');
+
+        result.current.commit('next');
+        result.current.grab();
+        result.current.follow(-40);
+        result.current.commit('next');
+
+        // 畫面上 90 − 20 = 70 度，順時針最少半圈 → 360
+        expect(disc.style.transform).toBe('rotate(360deg)');
     });
 
     it('leaves the disc alone when it has no readable transform', () => {

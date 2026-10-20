@@ -104,8 +104,11 @@ export const rotationOf = (transform: string): number | null => {
     return (Math.atan2(sin, cos) * HALF_TURN_DEG) / Math.PI;
 };
 
-/** 同 `deg` 睇落一樣（差 360 倍數）而又最接近 `reference` 嘅角度：接住轉緊嘅碟唔會跳 */
-export const nearestTurn = (deg: number, reference: number): number => {
-    const diff = (((deg - reference) % FULL_TURN_DEG) + FULL_TURN_DEG) % FULL_TURN_DEG;
-    return reference + (diff > HALF_TURN_DEG ? diff - FULL_TURN_DEG : diff);
+/**
+ * 同 `deg` 睇落一樣（差 360 倍數）、喺 `target` 後面一圈之內（target − 360 < 結果 ≤ target）嘅角度。
+ * 碟一定係順時針轉向目標，所以接住轉緊嘅碟時揀後面嗰個，之後彈返都係順時針轉完
+ */
+export const behindTurn = (deg: number, target: number): number => {
+    const behind = (((target - deg) % FULL_TURN_DEG) + FULL_TURN_DEG) % FULL_TURN_DEG;
+    return target - behind;
 };
