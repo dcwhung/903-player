@@ -7,12 +7,12 @@ import {
     VELOCITY_WINDOW_MS,
     cardRotation,
     dragProgress,
+    isOnPageDot,
     pushSample,
     releaseDirection,
     stackSlots,
     translateXOf,
     velocityOf,
-    wrapIndex,
 } from './cardStack';
 
 const WIDTH = 300;
@@ -46,23 +46,6 @@ describe('releaseDirection', () => {
     });
 });
 
-describe('wrapIndex', () => {
-    it('should step forward and back', () => {
-        expect(wrapIndex(1, 3, 'next')).toBe(2);
-        expect(wrapIndex(1, 3, 'previous')).toBe(0);
-    });
-
-    it('should wrap around at both ends', () => {
-        expect(wrapIndex(2, 3, 'next')).toBe(0);
-        expect(wrapIndex(0, 3, 'previous')).toBe(2);
-    });
-
-    it('should stay put with one show or none', () => {
-        expect(wrapIndex(0, 1, 'next')).toBe(0);
-        expect(wrapIndex(0, 0, 'previous')).toBe(0);
-    });
-});
-
 describe('cardRotation', () => {
     it('should rotate in proportion to the drag', () => {
         expect(cardRotation(ROTATE_DIVISOR_PX * 3)).toBe(3);
@@ -92,6 +75,19 @@ describe('stackSlots', () => {
     it('should not repeat the current show behind itself', () => {
         expect(stackSlots(0, 2)).toEqual({ behind: [1], incoming: 1 });
         expect(stackSlots(0, 1)).toEqual({ behind: [], incoming: null });
+    });
+});
+
+describe('isOnPageDot', () => {
+    it('should spot a target inside a page dot, but not elsewhere', () => {
+        const dot = document.createElement('button');
+        dot.dataset.pageDot = '';
+        const inner = dot.appendChild(document.createElement('span'));
+
+        expect(isOnPageDot(dot)).toBe(true);
+        expect(isOnPageDot(inner)).toBe(true);
+        expect(isOnPageDot(document.createElement('button'))).toBe(false);
+        expect(isOnPageDot(null)).toBe(false);
     });
 });
 

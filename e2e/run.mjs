@@ -76,13 +76,15 @@ const checkVersionClear = async (p, label) => {
 const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 // 橫額高度同一格節目一樣（容許 subpixel 捨入）
 const BANNER_HEIGHT_TOLERANCE_PX = 1;
+// 390×844、320×568 嘅主頁固定 / 版本號已經由 SHOW_VIEWPORTS（homeFixed）嘅 checkFixedHome 檢查；
+// 430×932 唔喺嗰度，所以喺橫額呢度補做（fixedHome）
 const HOME_BANNER_VIEWPORTS = [
     { width: 390, height: 844 },
     { width: 320, height: 568 },
-    { width: 430, height: 932 },
+    { width: 430, height: 932, fixedHome: true },
 ];
 
-/** 主頁頁頂橫額：見到、同一格節目一樣高、有圓角；成頁唔捲、冇橫向捲動、版本號喺 mini player 上面 */
+/** 主頁頁頂橫額嘅幾何：見到、同一格節目一樣高、喺節目格上面對齊、有圓角、冇令頁面橫向捲動 */
 const checkHomeBanner = async (p, label, shot) => {
     const banner = p.getByRole('heading', { level: 1 }).getByRole('img', { name: BANNER_ALT });
     await banner.evaluate((img) => img.decode());
@@ -100,12 +102,7 @@ const checkHomeBanner = async (p, label, shot) => {
     );
     log(radius > 0, `${label}：橫額有圓角（${radius}px）`);
     log((await horizontalOverflow(p)) === 0, `${label}：冇橫向捲動`);
-    const overflow = await p.evaluate(
-        () => document.documentElement.scrollHeight - window.innerHeight,
-    );
-    log(overflow <= 0, `${label}：主頁成頁唔捲（超出 ${overflow}px）`);
     await p.screenshot({ path: `${OUT}/${shot}` });
-    await checkVersionClear(p, label);
 };
 
 const MIN_VISIBLE_ROWS = 2;
@@ -122,6 +119,8 @@ const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
 // 同 tokens.css 嘅 --player-disc-min 同 Page.module.css 嘅成頁捲斷點（max-height）一致
 const DISC_MIN_PX = 160;
+// SHORT_HEIGHT_PX 要同 CSS 嘅 @media (max-height) 一樣：src/styles/shortHeightBreakpoint.node.test.ts
+// 用 regex 讀呢一行，所以保持 `const SHORT_HEIGHT_PX = <數字>;` 嘅寫法
 const SHORT_HEIGHT_PX = 561;
 const SHOW_VIEWPORTS = [
     { width: 390, height: 844, swipe: true, homeFixed: true },
@@ -130,8 +129,8 @@ const SHOW_VIEWPORTS = [
     { width: 390, height: 720 },
     { width: 375, height: 667 },
     { width: 390, height: 664 },
-    // 橫向手機 / 矮視窗
-    { width: 844, height: 390 },
+    // 橫向手機 / 矮視窗（844×390 順便驗好矮嘅主頁：shortHome）
+    { width: 844, height: 390, shortHome: true },
     { width: 568, height: 320 },
     { width: 1280, height: 400 },
     { width: 390, height: 540 },
@@ -139,6 +138,35 @@ const SHOW_VIEWPORTS = [
     { width: 390, height: 560 },
     { width: 390, height: 562 },
 ];
+
+// 同 tokens.css 嘅 --page-max-width 一致；刻意寫死做獨立對照
+const PAGE_MAX_WIDTH_PX = 480;
+
+/**
+ * 好矮嘅主頁（S-403）：漸變同光暈畫喺 main、background-attachment: local，跟內容一齊捲；
+ * main 闊到成個畫面，但節目格仍然係 --page-max-width 闊、喺畫面中間
+ */
+const checkShortHeightHome = async (p, label) => {
+    const layout = await p.evaluate(() => {
+        const main = document.querySelector('main');
+        const nav = main.querySelector('nav').getBoundingClientRect();
+        return {
+            attachment: getComputedStyle(main).backgroundAttachment,
+            width: nav.width,
+            left: nav.left,
+            right: document.documentElement.clientWidth - nav.right,
+        };
+    });
+    log(
+        layout.attachment.includes('local'),
+        `${label}：主頁背景跟 main 捲（background-attachment: ${layout.attachment}）`,
+    );
+    log(
+        Math.abs(layout.width - PAGE_MAX_WIDTH_PX) <= 1 &&
+            Math.abs(layout.left - layout.right) <= 1,
+        `${label}：節目格保持 ${PAGE_MAX_WIDTH_PX}px 闊、置中（${layout.width}px，左 ${layout.left}px / 右 ${layout.right}px）`,
+    );
+};
 
 /** 節目頁固定：捲集數 panel 時 window 唔郁、控制掣仍然喺畫面，panel 自己嘅 scrollTop 有變 */
 const checkFixedShowPage = async (p, label, shot) => {
@@ -264,11 +292,22 @@ const checkDiscMatchesToday = async (p, label) => {
     const today = await discWidth();
     log(Math.abs(show - today) < 1, `${label}：唱片同今日節目頁一樣大（${show} / ${today}）`);
     // 今日節目頁同節目頁用同一個固定版面（.fixed），頁面間距一樣、矮螢幕一齊收窄；
-    // 今日節目卡入面用卡自己較窄嘅間距（--card-inner-gap），唔可以闊過節目頁
+    // 今日節目卡入面用卡自己較窄嘅間距：要正正係 --card-inner-gap（ShowCardStack .card 蓋過 .fixed），
+    // 亦唔可以闊過節目頁
     const todayGaps = await pageGaps();
+    // custom property 嘅 computed value 已經代入咗 var()（例如 var(--space-2) → 8px）
+    const cardInnerGap = await p.evaluate(() =>
+        parseFloat(
+            getComputedStyle(document.querySelector('[class*="panel"]')).getPropertyValue(
+                '--card-inner-gap',
+            ),
+        ),
+    );
     log(
-        todayGaps[0] === showGaps[0] && todayGaps[1] <= showGaps[1],
-        `${label}：今日節目頁頁面間距同節目頁一樣、卡入面唔闊過節目頁（${todayGaps.join(' / ')}px，節目頁 ${showGaps.join(' / ')}px）`,
+        todayGaps[0] === showGaps[0] &&
+            todayGaps[1] === cardInnerGap &&
+            cardInnerGap <= showGaps[1],
+        `${label}：今日節目頁頁面間距同節目頁一樣、卡入面間距 = --card-inner-gap ${cardInnerGap}px（${todayGaps.join(' / ')}px，節目頁 ${showGaps.join(' / ')}px）`,
     );
 };
 
@@ -303,7 +342,14 @@ const todayCardShare = (p) =>
 
 const recordTodayMetrics = async (p, label, rows) => {
     const share = await todayCardShare(p);
-    todayMetrics.push({ label, share: `${(share * 100).toFixed(1)}%`, rows });
+    // 距 PLAYER_MAX_SHARE 上限仲有幾多 px（負數 = 超出；好矮嘅畫面成頁捲，唔要求）
+    const headroom = (PLAYER_MAX_SHARE - share) * p.viewportSize().height;
+    todayMetrics.push({
+        label,
+        share: `${(share * 100).toFixed(1)}%`,
+        headroom: `${headroom.toFixed(1)}px`,
+        rows,
+    });
     return share;
 };
 
@@ -577,10 +623,14 @@ const PROBE_DATE = '2026-10-19';
 const PROBE_WAIT_MS = 20000;
 const PROBE_POLL_MS = 100;
 
-/** 同 app 嘅 buildAudioUrl 一樣砌法：<host>/<節目名>/<YYYYMMDD>_<HHMM>_<節目名>.aac */
+/**
+ * 同 app 嘅 buildAudioUrl 一樣砌法：<host>/<節目名>/<YYYYMMDD>_<HHMM>_<節目名>.aac。
+ * 檔名部分嘅節目名空格變底線（Bad Girl大過佬 → Bad_Girl大過佬），資料夾部分照用原名：
+ * 同 src/services/audioProbe.ts 嘅 fileShowName 一樣
+ */
 const probeUrl = ({ name, fileTime }, date) =>
     `${AUDIO_HOST}/${encodeURIComponent(name)}/${encodeURIComponent(
-        `${date.replaceAll('-', '')}_${fileTime}_${name}`,
+        `${date.replaceAll('-', '')}_${fileTime}_${name.replace(/ /g, '_')}`,
     )}.aac`;
 /** 2026-10-16 → 16/10（集數掣 aria-label 嘅寫法） */
 const dayMonth = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
@@ -893,7 +943,7 @@ try {
     await small.close();
 
     // 主頁頁頂橫額：常見手機闊度（細 iPhone、一般、Pro Max）
-    for (const { width, height } of HOME_BANNER_VIEWPORTS) {
+    for (const { width, height, fixedHome } of HOME_BANNER_VIEWPORTS) {
         const ctx = await newE2EContext(browser, {
             viewport: { width, height },
             deviceScaleFactor: 2,
@@ -905,11 +955,12 @@ try {
         await hp.waitForSelector('nav[aria-busy="false"]');
         await hp.getByRole('region', { name: '正在播放（今日節目）' }).waitFor();
         await checkHomeBanner(hp, `${width}×${height} 主頁`, `home-banner-${width}x${height}.png`);
+        if (fixedHome) await checkFixedHome(hp, `${width}×${height} 主頁`);
         await ctx.close();
     }
 
     // 節目頁：夠高就固定、集數清單自己捲；好矮（橫向手機）就成頁正常捲。badgirl 集數多過一個畫面
-    for (const { width, height, swipe, homeFixed } of SHOW_VIEWPORTS) {
+    for (const { width, height, swipe, homeFixed, shortHome } of SHOW_VIEWPORTS) {
         const ctx = await newE2EContext(browser, {
             viewport: { width, height },
             deviceScaleFactor: 2,
@@ -943,12 +994,20 @@ try {
             await checkFixedHome(fp, `${width}×${height} 主頁`);
             await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
         }
+        if (shortHome) {
+            await fp.goto(BASE);
+            await fp.waitForSelector('nav[aria-busy="false"]');
+            await checkShortHeightHome(fp, `${width}×${height} 主頁`);
+            await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
+        }
         await ctx.close();
     }
     console.log('\n節目頁尺寸｜播放器佔高｜唱片｜清單行數');
     for (const m of metrics) console.log(`${m.label}｜${m.share}｜${m.disc}px｜${m.rows}`);
-    console.log('\n今日節目頁尺寸｜卡（連指示點）佔高｜清單行數');
-    for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.rows}`);
+    console.log(
+        `\n今日節目頁尺寸｜卡（連指示點）佔高｜距 ${PLAYER_MAX_SHARE * 100}% 上限｜清單行數`,
+    );
+    for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.headroom}｜${m.rows}`);
     console.log('');
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁

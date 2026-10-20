@@ -3,6 +3,13 @@ export const SWIPE_THRESHOLD_PX = 48;
 
 export type SwipeDirection = 'next' | 'previous';
 
+/** 循環轉：最後一個之後係第一個，第一個之前係最後一個；得一個（或者冇）就唔郁 */
+export const wrapIndex = (index: number, total: number, direction: SwipeDirection): number => {
+    if (total <= 1) return index;
+    const step = direction === 'next' ? 1 : -1;
+    return (index + step + total) % total;
+};
+
 /** 向左掃 = 下一個，向右掃 = 上一個；太短或者主要係上下移動就唔算 */
 export const swipeDirection = (dx: number, dy: number): SwipeDirection | null => {
     if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) {

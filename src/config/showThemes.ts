@@ -48,7 +48,8 @@ export const HOME_THEME: ShowTheme = {
     track: '#42658a',
     accent: '#f5d294',
     onAccent: '#2f4560',
-    // #fdf8f2 喺 #4f749c 上有 4.61:1，「903 PLAYER」細字都過到 WCAG AA
+    // #fdf8f2 喺 #4f749c 上有 4.61:1，過到 WCAG AA。主頁而家冇文字標題：title 用喺掣嘅 focus ring
+    // （global.css button:focus-visible），text 係 ThemeScope 嘅預設字色（冇自己顏色嘅文字承繼佢）
     title: '#fdf8f2',
     text: '#fdf8f2',
     // 版本號喺頁底（漸變底色 #42658a），#e6eef7 有 5.18:1

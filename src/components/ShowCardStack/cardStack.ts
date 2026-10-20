@@ -1,4 +1,4 @@
-import { SWIPE_THRESHOLD_PX, type SwipeDirection } from '../../hooks/swipe';
+import { SWIPE_THRESHOLD_PX, type SwipeDirection, wrapIndex } from '../../hooks/swipe';
 
 /** 拖過卡闊嘅 30% 放手就轉節目 */
 export const COMMIT_DISTANCE_RATIO = 0.3;
@@ -42,13 +42,6 @@ export const releaseDirection = (
     return dx < 0 ? 'next' : 'previous';
 };
 
-/** 循環轉：最後一個之後係第一個，第一個之前係最後一個；得一個（或者冇）就唔郁 */
-export const wrapIndex = (index: number, total: number, direction: SwipeDirection): number => {
-    if (total <= 1) return index;
-    const step = direction === 'next' ? 1 : -1;
-    return (index + step + total) % total;
-};
-
 /** 拖動時卡嘅傾斜角度（°），同拖動距離成正比，有上限 */
 export const cardRotation = (dx: number): number =>
     Math.min(MAX_ROTATE_DEG, Math.max(-MAX_ROTATE_DEG, dx / ROTATE_DIVISOR_PX));
@@ -65,6 +58,15 @@ export const stackSlots = (
     const depth = Math.min(MAX_BEHIND, total - 1);
     const behind = Array.from({ length: Math.max(0, depth) }, (_, i) => (index + i + 1) % total);
     return { behind, incoming: total > 1 ? wrapIndex(index, total, 'previous') : null };
+};
+
+/**
+ * 撳緊今日節目指示點（掣有自己用途：彈返途中都唔好捉住張卡、食咗佢嘅 click）。
+ * 睇有冇 closest 而唔用 instanceof Element：scripts/ 嘅測試（Node tsconfig，冇 DOM 型別）都會 import 呢個檔
+ */
+export const isOnPageDot = (target: EventTarget | null): boolean => {
+    const closest = (target as { closest?: unknown } | null)?.closest;
+    return typeof closest === 'function' && closest.call(target, '[data-page-dot]') !== null;
 };
 
 /** translateX 喺 matrix() 係第 5 個值，喺 matrix3d() 係第 13 個值 */

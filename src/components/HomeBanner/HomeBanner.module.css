@@ -17,8 +17,12 @@
 .image {
     display: block;
     width: 100%;
-    /* 唔支援 cqi 嘅舊瀏覽器：用未扣格距嘅近似比例 */
-    aspect-ratio: calc(2 * var(--tile-aspect-w)) / var(--tile-aspect-h);
+    /*
+     * 唔支援 cqi 嘅舊瀏覽器：用未扣格距嘅近似比例。
+     * 寫死 32 / 9（= 2 × --tile-aspect-w / --tile-aspect-h，即 2 × 16 / 9）：
+     * 舊 iOS 嘅 aspect-ratio 唔一定接受 calc() / var()，成句無效就連後備都冇；改 tile token 要同步改呢度
+     */
+    aspect-ratio: 32 / 9;
     height: calc((100cqi - var(--home-tile-gap)) / 2 * var(--tile-aspect-h) / var(--tile-aspect-w));
     object-fit: cover;
     object-position: 50% 32%;
