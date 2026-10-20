@@ -21,18 +21,31 @@ const STRIP_SWIPE_PX = 140;
 const MINI_SWIPE_PX = 160;
 // 拖卡途中播放進度最多可以自然行咁多秒（唔可以係 seek）
 const SEEK_TOLERANCE_S = 3;
-// 唱片格角落（viewBox 300 入面約 (12, 12)），圓環以外：交畀卡疊 swipe
-const CORNER_RATIO = 12 / 300;
+// 唱片格 viewBox 同弧形半徑（同 src/components/ArcSlider/ArcSlider.constants.ts 一樣）
+const GAUGE_VIEWBOX = 300;
+const GAUGE_CENTRE = { x: GAUGE_VIEWBOX / 2, y: GAUGE_VIEWBOX / 2 };
+const RING_RADIUS = 140;
+// 唱片格角落（viewBox 入面約 (12, 12)），圓環以外：交畀卡疊 swipe
+const CORNER_RATIO = 12 / GAUGE_VIEWBOX;
 // 捽碟手指離圓心：碟半徑係唱片格嘅 36%，揀 30% 喺碟面中段
 const DISC_SCRUB_RADIUS_RATIO = 0.3;
 // 轉一圈 60 秒（src/config/constants.ts DISC_SCRUB_SECONDS_PER_TURN）
 const DISC_QUARTER_TURN_S = 15;
+// 捽碟由碟頂順時針轉四分一圈
+const DISC_START_DEGREES = -90;
+const QUARTER_TURN_DEGREES = 90;
+// 底部缺口入面嘅角度（由右邊順時針）：離缺口尾端（45°）25°（> 12° 容差），亦避開中間嘅由頭播放掣
+const GAP_DEGREES = 70;
+const GAP_DRAG_PX = 60;
+// 弧形頂（= 一半）拖去右邊（≈ 5/6）：如果 ring 冇被鎖，會 seek 去好遠
+const RING_TOP = { x: GAUGE_CENTRE.x, y: GAUGE_CENTRE.y - RING_RADIUS };
+const RING_RIGHT = { x: GAUGE_CENTRE.x + RING_RADIUS, y: GAUGE_CENTRE.y };
 const TODAY_STACK = '今日節目，左右掃動轉節目';
 const STRIP = '[aria-roledescription="轉集"]';
 const MINI_REGION = '正在播放（今日節目）';
 
 /** 開一個 iPhone 似嘅觸控 context；支援就順便模擬安全區（env(safe-area-inset-*)） */
-const openTouchPage = async (browser, errors, { width, height, insets }) => {
+const openTouchPage = async (browser, errors, { width, height, insets }, extra = {}) => {
     // 同 run.mjs 一樣嘅固定時鐘同 audio host
     const ctx = await newE2EContext(browser, {
         viewport: { width, height },
@@ -40,6 +53,7 @@ const openTouchPage = async (browser, errors, { width, height, insets }) => {
         isMobile: true,
         deviceScaleFactor: 3,
         colorScheme: 'dark',
+        ...extra,
     });
     const p = await ctx.newPage();
     p.on('pageerror', (e) => errors.push(e.message));
@@ -179,15 +193,18 @@ const checkCardDragNeverSeeks = async (cdp, p, log, label) => {
     );
 };
 
+/** 秒數差加正負號：+15s / -100s（唔會出 +-100s） */
+const signedSeconds = (seconds) => `${seconds >= 0 ? '+' : ''}${seconds}s`;
+
+/** 圓周上某個角度嘅點（0° 指向右，順時針為正） */
+const circlePoint = (centre, radius, degrees) => {
+    const radians = (degrees * Math.PI) / 180;
+    return { x: centre.x + radius * Math.cos(radians), y: centre.y + radius * Math.sin(radians) };
+};
+
 /** 一隻手指沿圓周由 from 度轉去 to 度（0° 指向右，順時針為正），分 STEPS 格 */
 const touchArc = async (cdp, p, centre, radius, from, to) => {
-    const at = (degrees) => {
-        const radians = (degrees * Math.PI) / 180;
-        return {
-            x: centre.x + radius * Math.cos(radians),
-            y: centre.y + radius * Math.sin(radians),
-        };
-    };
+    const at = (degrees) => circlePoint(centre, radius, degrees);
     const send = (type, points) =>
         cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
     await send('touchStart', [at(from)]);
@@ -199,27 +216,103 @@ const touchArc = async (cdp, p, centre, radius, from, to) => {
     await p.waitForTimeout(SETTLE_MS);
 };
 
+/** 唱片格 viewBox 入面某點嘅畫面座標 */
+const gaugePoint = (box, { x, y }) => ({
+    x: box.x + (x / GAUGE_VIEWBOX) * box.width,
+    y: box.y + (y / GAUGE_VIEWBOX) * box.height,
+});
+
+/** 節目頁：喺弧形底部缺口起手橫拖，唔會 seek（缺口唔屬於圓環） */
+const checkRingGapIgnored = async (cdp, p, log, label) => {
+    const slider = p.getByRole('slider', { name: '播放進度' });
+    const box = await slider.boundingBox();
+    const before = Number(await slider.getAttribute('aria-valuenow'));
+    await touchDrag(cdp, p, gaugePoint(box, circlePoint(GAUGE_CENTRE, RING_RADIUS, GAP_DEGREES)), {
+        dx: GAP_DRAG_PX,
+        dy: 0,
+    });
+    const after = Number(await slider.getAttribute('aria-valuenow'));
+    log(
+        Math.abs(after - before) <= SEEK_TOLERANCE_S,
+        `${label}：喺弧形底部缺口拖唔會 seek（${before}s → ${after}s）`,
+    );
+};
+
+/**
+ * 兩隻手指：先撳碟，再撳弧形，兩隻一齊郁。碟擁有手勢，弧形被鎖住：
+ * 只會跟捽碟向前約 15 秒，唔會跟弧形 seek 去右邊
+ */
+/**
+ * 兩隻手指（id 0、1）：先撳 first(0)，再撳 second(0)，之後一齊郁到 first(1) / second(1)，最後一齊放。
+ * first / second 係 0–1 進度去畫面座標嘅 function
+ */
+const touchTwoFingers = async (cdp, p, first, second) => {
+    const send = (type, points) =>
+        cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+    const at = (t) => [
+        { ...first(t), id: 0 },
+        { ...second(t), id: 1 },
+    ];
+    await send('touchStart', [at(0)[0]]);
+    await send('touchStart', at(0));
+    for (let i = 1; i <= STEPS; i += 1) {
+        await send('touchMove', at(i / STEPS));
+        await p.waitForTimeout(STEP_MS);
+    }
+    await send('touchEnd', []);
+    await p.waitForTimeout(SETTLE_MS);
+};
+
+const checkTwoFingerSingleSeek = async (cdp, p, log, label) => {
+    const slider = p.getByRole('slider', { name: '播放進度' });
+    const box = await slider.boundingBox();
+    const radius = DISC_SCRUB_RADIUS_RATIO * box.width;
+    const disc = (t) =>
+        circlePoint(centreOf(box), radius, DISC_START_DEGREES + QUARTER_TURN_DEGREES * t);
+    const [from, to] = [gaugePoint(box, RING_TOP), gaugePoint(box, RING_RIGHT)];
+    const ring = (t) => ({ x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t });
+    const before = Number(await slider.getAttribute('aria-valuenow'));
+    await touchTwoFingers(cdp, p, disc, ring);
+    const moved = Number(await slider.getAttribute('aria-valuenow')) - before;
+    log(
+        Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S,
+        `${label}：兩隻手指撳碟同弧形，只跟捽碟 seek（${signedSeconds(moved)}，預期約 +${DISC_QUARTER_TURN_S}s）`,
+    );
+};
+
+/** 今日節目卡最上面嗰張（可以捽嘅）碟面 */
+const discFace = (p) => p.locator('[class*="scrubbable"] [class*="face"]').first();
+
 /** 播緊時碟面自轉（CSS animation 喺度行） */
 const checkDiscSpins = async (p, log, label) => {
-    const state = await p
-        .locator('[class*="scrubbable"] [class*="face"]')
-        .first()
-        .evaluate((el) => getComputedStyle(el).animationPlayState);
+    const state = await discFace(p).evaluate((el) => getComputedStyle(el).animationPlayState);
     log(state === 'running', `${label}：播緊時碟自轉（animation-play-state ${state}）`);
 };
 
-/** 捽碟：順時針轉四分一圈 = 向前 15 秒，唔會轉節目 */
+/** 捽碟：順時針轉四分一圈 = 向前 15 秒，碟面跟手指轉，唔會轉節目 */
 const checkDiscScrub = async (cdp, p, log, label) => {
     const slider = p.getByRole('slider', { name: '播放進度' });
     const box = await slider.boundingBox();
     const title = await heading(p);
     const before = Number(await slider.getAttribute('aria-valuenow'));
-    await touchArc(cdp, p, centreOf(box), DISC_SCRUB_RADIUS_RATIO * box.width, -90, 0);
+    const to = DISC_START_DEGREES + QUARTER_TURN_DEGREES;
+    await touchArc(
+        cdp,
+        p,
+        centreOf(box),
+        DISC_SCRUB_RADIUS_RATIO * box.width,
+        DISC_START_DEGREES,
+        to,
+    );
     const after = Number(await slider.getAttribute('aria-valuenow'));
     const moved = after - before;
+    // 正常動畫下碟面有手動角度：減少動畫嗰個 check 斷言「冇 transform」先唔會因為揀錯元素白過
+    const transform = await discFace(p).evaluate((el) => el.style.transform);
     log(
-        Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S && (await heading(p)) === title,
-        `${label}：順時針捽碟四分一圈向前約 ${DISC_QUARTER_TURN_S}s，唔轉節目（${before}s → ${after}s）`,
+        Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S &&
+            transform.startsWith('rotate(') &&
+            (await heading(p)) === title,
+        `${label}：順時針捽碟四分一圈向前約 ${DISC_QUARTER_TURN_S}s、碟跟手指轉（${transform}），唔轉節目（${before}s → ${after}s）`,
     );
 };
 
@@ -227,8 +320,8 @@ const checkDiscScrub = async (cdp, p, log, label) => {
 const checkRingDragNeverSwitches = async (cdp, p, log, label) => {
     const box = await p.getByRole('slider', { name: '播放進度' }).boundingBox();
     const before = await heading(p);
-    // 弧形左邊（viewBox 300 入面約 (20, 150)），唱片外面
-    const start = { x: box.x + (20 / 300) * box.width, y: box.y + box.height / 2 };
+    // 弧形左邊（viewBox 入面約 (20, 150)），唱片外面
+    const start = gaugePoint(box, { x: 20, y: GAUGE_CENTRE.y });
     await touchDrag(cdp, p, start, { dx: CARD_SWIPE_PX, dy: -CARD_JITTER_PX });
     const after = await heading(p);
     const phase = await p.getByRole('group', { name: TODAY_STACK }).getAttribute('data-phase');
@@ -312,6 +405,8 @@ const checkShow = async (env, label) => {
         p.getByRole('region', { name: '集數' }).getByRole('list'),
     );
     await checkStripSwipe(cdp, p, log, label);
+    await checkRingGapIgnored(cdp, p, log, label);
+    await checkTwoFingerSingleSeek(cdp, p, log, label);
 };
 
 const checkToday = async (env, label) => {
@@ -337,6 +432,34 @@ const checkToday = async (env, label) => {
     await checkDiscSpins(p, log, label);
     await checkDiscScrub(cdp, p, log, label);
     await p.screenshot({ path: `${env.out}/touch-today-${label.split(' ')[0]}.png` });
+};
+
+/** 減少動畫：碟面唔自轉、捽碟唔跟手指轉，但照樣 seek */
+const checkReducedMotion = async (env, label) => {
+    const { p, cdp, log } = env;
+    await p.goto(`${env.base}#/today`);
+    await waitPlaying(p);
+    await p.waitForTimeout(500);
+    const face = discFace(p);
+    const animation = await face.evaluate((el) => getComputedStyle(el).animationName);
+    log(animation === 'none', `${label}：碟面冇自轉 animation（${animation}）`);
+    const slider = p.getByRole('slider', { name: '播放進度' });
+    const box = await slider.boundingBox();
+    const before = Number(await slider.getAttribute('aria-valuenow'));
+    await touchArc(
+        cdp,
+        p,
+        centreOf(box),
+        DISC_SCRUB_RADIUS_RATIO * box.width,
+        DISC_START_DEGREES,
+        DISC_START_DEGREES + QUARTER_TURN_DEGREES,
+    );
+    const moved = Number(await slider.getAttribute('aria-valuenow')) - before;
+    const transform = await face.evaluate((el) => el.style.transform);
+    log(
+        transform === '' && Math.abs(moved - DISC_QUARTER_TURN_S) <= SEEK_TOLERANCE_S,
+        `${label}：捽碟唔跟手指轉（transform「${transform}」）但照樣 seek（${signedSeconds(moved)}）`,
+    );
 };
 
 /** 橫向手機：main 自己捲（手指拖得落去），文件本身唔捲 */
@@ -378,6 +501,13 @@ export const runTouchChecks = async ({ browser, base, out, errors, log }) => {
         await checkToday(env, `${size} 觸控今日節目頁`);
         await ctx.close();
     }
+    const [phone] = TOUCH_VIEWPORTS;
+    const reduced = await openTouchPage(browser, errors, phone, { reducedMotion: 'reduce' });
+    await checkReducedMotion(
+        { p: reduced.p, cdp: reduced.cdp, log, base, out },
+        `${phone.width}×${phone.height} 觸控減少動畫`,
+    );
+    await reduced.ctx.close();
     const size = `${LANDSCAPE.width}×${LANDSCAPE.height}`;
     const { ctx, p, cdp } = await openTouchPage(browser, errors, LANDSCAPE);
     const env = { p, cdp, log, base, out };
