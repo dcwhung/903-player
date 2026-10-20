@@ -78,24 +78,33 @@ const begin = (event: DiscPointerEvent, options: DiscScrubOptions): ScrubSession
 };
 
 /**
+ * 放手（commit）/ 取消：唔係起手嗰隻手指就唔理，返回原本 session；
+ * 否則放返碟、捽過就 seek（取消唔 seek、碟轉返去），返回 null（session 完咗）
+ */
+const finish = (
+    session: ScrubSession | null,
+    event: DiscPointerEvent,
+    commit: boolean,
+    options: DiscScrubOptions,
+): ScrubSession | null => {
+    if (!session || session.pointerId !== event.pointerId) return session;
+    event.stopPropagation();
+    // tap（未過門檻）完都要放返碟
+    options.onHold(false);
+    if (!session.scrubbing) return null;
+    if (commit) options.onSeek(secondsAt(session));
+    options.onPreview(null);
+    if (commit) options.motion.settle();
+    else options.motion.revert();
+    return null;
+};
+
+/**
  * 捽碟 seek（好似 DJ jog wheel）：順時針向前、逆時針向後，轉一圈 = DISC_SCRUB_SECONDS_PER_TURN 秒。
  * 拖緊只預覽，放手先 seek；取消唔 seek。撳落碟就係自己嘅手勢（唔郁今日節目卡疊）
  */
 export const useDiscScrub = (options: DiscScrubOptions) => {
     const session = useRef<ScrubSession | null>(null);
-    const end = (event: DiscPointerEvent, commit: boolean) => {
-        const current = session.current;
-        if (!current || current.pointerId !== event.pointerId) return;
-        event.stopPropagation();
-        session.current = null;
-        // tap（未過門檻）完都要放返碟
-        options.onHold(false);
-        if (!current.scrubbing) return;
-        if (commit) options.onSeek(secondsAt(current));
-        options.onPreview(null);
-        if (commit) options.motion.settle();
-        else options.motion.revert();
-    };
     return {
         onPointerDown: (event: DiscPointerEvent) => {
             event.stopPropagation();
@@ -110,8 +119,12 @@ export const useDiscScrub = (options: DiscScrubOptions) => {
             if (angle === null) current.lastAngle = null;
             else advance(current, angle, options);
         },
-        onPointerUp: (event: DiscPointerEvent) => end(event, true),
-        onPointerCancel: (event: DiscPointerEvent) => end(event, false),
+        onPointerUp: (event: DiscPointerEvent) => {
+            session.current = finish(session.current, event, true, options);
+        },
+        onPointerCancel: (event: DiscPointerEvent) => {
+            session.current = finish(session.current, event, false, options);
+        },
         // 滑鼠拖節目圖會觸發原生拖放（之後 pointercancel），要擋住
         onDragStart: (event: DragEvent<HTMLElement>) => event.preventDefault(),
     };
