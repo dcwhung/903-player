@@ -63,9 +63,20 @@ const startPreview = async () => {
 
 const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 
+/** index.html 嘅啟動畫面：顯示 package.json 版本，app render 完之後淡出再由 DOM 移走 */
+const checkSplashRemoved = async (p) => {
+    const splash = p.locator('#splash');
+    const removed = await splash
+        .waitFor({ state: 'detached', timeout: 5_000 })
+        .then(() => true)
+        .catch(() => false);
+    log(removed, `啟動畫面 render 完已經移走`);
+};
+
 /** 版本號喺主頁橫額右下角：見到、成個喺橫額圖入面、喺圖右下嗰一半，唔係標題嘅一部分 */
 const checkVersionOnBanner = async (p, label) => {
-    const version = p.getByText(APP_VERSION_TEXT, { exact: true });
+    // 限 #root：啟動畫面淡出期間 #splash 都有同一個版本號
+    const version = p.locator('#root').getByText(APP_VERSION_TEXT, { exact: true });
     const v = await version.boundingBox();
     const b = await p.getByRole('img', { name: BANNER_ALT }).boundingBox();
     const inside =
@@ -1324,6 +1335,7 @@ try {
     const np = await narrow.newPage();
     await np.goto(BASE);
     await np.waitForSelector('nav[aria-busy="false"]');
+    await checkSplashRemoved(np);
     await checkVersionOnBanner(np, '320×640');
     await np.screenshot({ path: `${OUT}/8-home-version-320.png` });
     for (const route of ['#/show/gongzi', '#/today']) {

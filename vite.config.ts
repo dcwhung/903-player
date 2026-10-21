@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { LAUNCH_THEME_COLOR } from './src/config/launchTheme.ts';
 
@@ -14,12 +15,20 @@ const { version: APP_VERSION } = JSON.parse(readFileSync(PACKAGE_JSON, 'utf8')) 
     version: string;
 };
 
+// index.html 啟動畫面嘅版本號（JS 未跑都要顯示，所以喺 HTML 層換）
+const APP_VERSION_PLACEHOLDER = '%APP_VERSION%';
+const injectAppVersion = (): Plugin => ({
+    name: 'inject-app-version',
+    transformIndexHtml: (html) => html.replaceAll(APP_VERSION_PLACEHOLDER, APP_VERSION),
+});
+
 export default defineConfig({
     base: BASE_PATH,
     // Vitest 共用呢份 config，所以測試都睇到同一個 define
     define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
     plugins: [
         react(),
+        injectAppVersion(),
         VitePWA({
             // prompt：新 SW 裝好後喺 waiting 等，由 src/pwa/updateManager 揀播放停咗先換，
             // 避免 autoUpdate 喺收聽途中自動 reload

@@ -11,14 +11,210 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <!--
+            字體唔好阻住第一格畫面：preload 落嚟先套用，未到就用 system font（同 display=swap 一樣會換字）。
+            冇 JS 嘅話 noscript 照用返普通 stylesheet
+        -->
         <link
+            rel="preload"
+            as="style"
             href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap"
-            rel="stylesheet"
+            onload="
+                this.onload = null;
+                this.rel = 'stylesheet';
+            "
         />
+        <noscript>
+            <link
+                rel="stylesheet"
+                href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+            />
+        </noscript>
+        <!--
+            啟動畫面（設計：design/previews/splash.html）：JS 未跑完之前顯示，所以 inline，唔使等任何檔案。
+            底圖係 cover：.splash-art 同底圖一樣比例、蓋滿 viewport，loading bar 用百分比釘喺 logo 下面，
+            點裁都唔會走位。按 viewport 闊高比揀圖：直身手機 / iPad / 桌面（橫身手機都用桌面圖）。
+            app render 完之後由 src/splash/hideSplash.ts 淡出再移走
+        -->
+        <style>
+            :root {
+                /* 底圖頂部嘅藍：圖未載完都唔會見到黑屏 */
+                --splash-bg: #5bade5;
+                /* 黃色取自 logo 兩邊嘅閃光 */
+                --splash-yellow: #f8e076;
+                --splash-yellow-light: #fcefb4;
+                --splash-yellow-dark: #e9c94f;
+                --splash-track: rgb(255 255 255 / 0.38);
+                --splash-text: #ffffff;
+                --splash-text-shadow: 0 1px 2px rgb(30 90 150 / 0.45);
+                --splash-bar-height: 10px;
+                --splash-gap: 14px;
+                --splash-font-size: 15px;
+                --splash-slide-duration: 1.4s;
+                --splash-fade-duration: 0.3s;
+                /* 版本號喺底部淺色雲上面：用深藍先睇得清 */
+                --splash-version-text: #255d91;
+                --splash-version-font-size: 12px;
+                --splash-version-bottom: 16px;
+
+                /* 直身手機（923 × 2000）：logo 底約 53.5%，雲由約 72% 開始 */
+                --splash-image: url('%BASE_URL%splash/mobile.webp');
+                --splash-ratio: 923 / 2000;
+                --splash-ratio-value: 0.4615;
+                --splash-bar-top: 59%;
+                --splash-bar-width: 38%;
+            }
+            /* iPad（2000 × 1499）：闊高比 0.65 – 1.5，包括 iPad 直身同橫身 */
+            @media (min-aspect-ratio: 13 / 20) {
+                :root {
+                    --splash-image: url('%BASE_URL%splash/tablet.webp');
+                    --splash-ratio: 2000 / 1499;
+                    --splash-ratio-value: 1.3342;
+                    --splash-bar-top: 62.5%;
+                    --splash-bar-width: 20%;
+                }
+            }
+            /* 桌面 / 橫身手機（2000 × 1125） */
+            @media (min-aspect-ratio: 3 / 2) {
+                :root {
+                    --splash-image: url('%BASE_URL%splash/desktop.webp');
+                    --splash-ratio: 2000 / 1125;
+                    --splash-ratio-value: 1.7778;
+                    --splash-bar-top: 61%;
+                    --splash-bar-width: 16%;
+                }
+            }
+
+            .splash {
+                position: fixed;
+                inset: 0;
+                z-index: 1000;
+                overflow: hidden;
+                background: var(--splash-bg);
+                transition: opacity var(--splash-fade-duration) ease-out;
+            }
+            .splash--hidden {
+                opacity: 0;
+                pointer-events: none;
+            }
+            /* 同底圖一樣比例、蓋滿 viewport：闊度 = max(100vw, 100vh × 比例) */
+            .splash-art {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: max(100vw, 100dvh * var(--splash-ratio-value));
+                aspect-ratio: var(--splash-ratio);
+                transform: translate(-50%, -50%);
+                background: var(--splash-image) center / 100% 100% no-repeat;
+            }
+            .splash-status {
+                position: absolute;
+                left: 50%;
+                top: var(--splash-bar-top);
+                width: var(--splash-bar-width);
+                min-width: 140px;
+                transform: translateX(-50%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: var(--splash-gap);
+            }
+            .splash-bar {
+                position: relative;
+                width: 100%;
+                height: var(--splash-bar-height);
+                border-radius: 999px;
+                overflow: hidden;
+                background: var(--splash-track);
+                box-shadow: inset 0 1px 2px rgb(30 90 150 / 0.25);
+            }
+            /* 未知進度：一段黃色喺軌道入面來回滑 */
+            .splash-bar::after {
+                content: '';
+                position: absolute;
+                inset: 0 auto 0 0;
+                width: 40%;
+                border-radius: inherit;
+                background: linear-gradient(
+                    180deg,
+                    var(--splash-yellow-light) 0%,
+                    var(--splash-yellow) 45%,
+                    var(--splash-yellow-dark) 100%
+                );
+                box-shadow: 0 1px 3px rgb(160 120 20 / 0.35);
+                animation: splash-slide var(--splash-slide-duration) ease-in-out infinite;
+            }
+            @keyframes splash-slide {
+                from {
+                    transform: translateX(-100%);
+                }
+                to {
+                    transform: translateX(250%);
+                }
+            }
+            .splash-text,
+            .splash-version {
+                margin: 0;
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    'PingFang HK',
+                    'Microsoft JhengHei',
+                    sans-serif;
+                font-weight: 500;
+                line-height: 1.4;
+            }
+            .splash-text {
+                color: var(--splash-text);
+                font-size: var(--splash-font-size);
+                letter-spacing: 0.08em;
+                text-shadow: var(--splash-text-shadow);
+            }
+            /* 版本號：貼住 viewport 底（唔跟底圖），避開 iPhone home indicator */
+            .splash-version {
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: calc(var(--splash-version-bottom) + env(safe-area-inset-bottom, 0px));
+                text-align: center;
+                color: var(--splash-version-text);
+                font-size: var(--splash-version-font-size);
+                letter-spacing: 0.04em;
+            }
+            /* 減少動態：唔滑，改為成條黃色慢慢閃 */
+            @media (prefers-reduced-motion: reduce) {
+                .splash {
+                    transition: none;
+                }
+                .splash-bar::after {
+                    width: 100%;
+                    animation: splash-pulse 2s ease-in-out infinite alternate;
+                }
+                @keyframes splash-pulse {
+                    from {
+                        opacity: 0.45;
+                    }
+                    to {
+                        opacity: 1;
+                    }
+                }
+            }
+        </style>
         <title>903 Player</title>
     </head>
     <body>
         <div id="root"></div>
+        <!-- 喺 #root 外面：React render 唔會即刻抹走佢，等 hideSplash 淡出 -->
+        <div id="splash" class="splash" role="status" aria-live="polite">
+            <div class="splash-art">
+                <div class="splash-status">
+                    <div class="splash-bar"></div>
+                    <p class="splash-text">載入中…</p>
+                </div>
+            </div>
+            <!-- 版本號 placeholder 由 vite.config.ts 嘅 injectAppVersion 喺 build / dev 時換做 package.json 版本 -->
+            <p class="splash-version">v%APP_VERSION%</p>
+        </div>
         <script type="module" src="/src/main.tsx"></script>
     </body>
 </html>
