@@ -32,12 +32,12 @@
 
 /*
  * 「今日節目」字：放喺插畫中間嗰條米色帶（約圖高 59% 位置，量出嚟），
- * 左上月曆、右下聲波都唔會遮到
+ * 中心偏右（約圖闊 60%）避開左上月曆；右下聲波都唔會遮到
  */
 .todayLabel {
     position: absolute;
     top: 59%;
-    left: 50%;
+    left: 60%;
     white-space: nowrap;
     transform: translate(-50%, -50%);
 }
