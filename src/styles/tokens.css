@@ -119,10 +119,9 @@
             var(--space-4)
     );
     --shadow-clay-tile: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
-    --color-today-tile-bg: #fdf8f2;
     --color-today-tile-text: #2f4560;
-    --color-today-tile-icon: #e8796e;
-    --shadow-today-tile: 0 6px 0 #d9cbb6, 0 10px 18px rgb(20 40 65 / 30%);
+    /* 今日節目插畫係藍色：落影用插畫底部深藍，同其他節目格一樣泥膠感 */
+    --shadow-today-tile: 0 6px 0 #1f7fd0, 0 10px 18px rgb(20 40 65 / 30%);
 
     color-scheme: dark;
 }
