@@ -11,11 +11,30 @@ import { LoadState } from './LoadState';
 import page from './Page.module.css';
 import { useShowPage } from './useShowPage';
 
+type ShowPageData = ReturnType<typeof useShowPage>;
+
+/** 有集數播得就係播放器；未有就講「未有集數上架」（下面照列出未上架嘅，撳唔到） */
+const ShowPlayer = ({ show, theme, current, strip, selectEpisode }: ShowPageData) => {
+    if (!current) {
+        return <StatusMessage message={t('episodes.noneUp')} />;
+    }
+    return (
+        <PlayerPanel
+            title={show?.name ?? ''}
+            dateLabel={formatDateLabel(current.date)}
+            art={theme.art}
+            days={strip.days}
+            currentDay={strip.current}
+            onPick={selectEpisode}
+        />
+    );
+};
+
 export const ShowPage = () => {
     const { showId = '' } = useParams();
     const goHome = useGoHome();
-    const { show, theme, status, isSearching, current, episodeItems, strip, ...actions } =
-        useShowPage(showId);
+    const data = useShowPage(showId);
+    const { show, theme, status, isSearching, episodeItems } = data;
 
     // 有集數（包括未上架）就列清單
     const listed = show && status === 'ready' && episodeItems.length > 0;
@@ -40,24 +59,11 @@ export const ShowPage = () => {
                             isSearching={isSearching}
                         />
                     )}
-                    {/* 有集數播得就有播放器；未有就講「未有集數上架」，照列出未上架嘅（撳唔到） */}
-                    {listed &&
-                        (current ? (
-                            <PlayerPanel
-                                title={show.name}
-                                dateLabel={formatDateLabel(current.date)}
-                                art={theme.art}
-                                days={strip.days}
-                                currentDay={strip.current}
-                                onPick={actions.selectEpisode}
-                            />
-                        ) : (
-                            <StatusMessage message={t('episodes.noneUp')} />
-                        ))}
+                    {listed && <ShowPlayer {...data} />}
                 </div>
                 {listed && (
                     <div className={page.listColumn}>
-                        <EpisodeList items={episodeItems} onSelect={actions.pressEpisode} />
+                        <EpisodeList items={episodeItems} onSelect={data.pressEpisode} />
                     </div>
                 )}
             </main>
