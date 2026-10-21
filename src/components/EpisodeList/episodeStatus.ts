@@ -1,7 +1,7 @@
 import { t } from '../../i18n/t';
 import type { Progress } from '../../services/progressStore';
 import { ratio } from '../../utils/ratio';
-import { formatDuration } from '../../utils/time';
+import { formatDuration, hasKnownDuration } from '../../utils/time';
 
 export type EpisodeKind = 'playing' | 'watched' | 'resume' | 'unwatched';
 
@@ -19,8 +19,11 @@ interface EpisodeStatusInput {
     progress?: Progress;
 }
 
-/** 集數清單每一行嘅狀態：播放中 / 已收聽 / 聽到 mm:ss / 未收聽 */
+/** 集數清單每一行嘅狀態：連線中 / 播放中 / 已收聽 / 聽到 mm:ss / 未收聽 */
 export const episodeStatus = ({ isCurrent, live, progress }: EpisodeStatusInput): EpisodeStatus => {
+    if (isCurrent && live && !hasKnownDuration(live.duration)) {
+        return { kind: 'playing', ratio: 0, text: t('episodes.connecting') };
+    }
     if (isCurrent && live) {
         const text = t('episodes.playing', {
             current: formatDuration(live.currentTime),

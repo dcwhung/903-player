@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import type { SwipeDirection } from '../../hooks/swipe';
+import { usePlayer } from '../../player/usePlayer';
+import { hasKnownDuration } from '../../utils/time';
 import { DateStrip } from '../DateStrip/DateStrip';
 import type { StripNeighbours } from '../DateStrip/dateStrip';
 import { PlayerGauge } from './PlayerGauge';
@@ -24,11 +26,13 @@ export const PlayerPanel = ({ title, dateLabel, art, onStep, neighbours }: Playe
     const artRef = useRef<HTMLImageElement>(null);
     // 拖緊日子條 = 捉住碟，碟唔自轉
     const [held, setHeld] = useState(false);
+    const { duration } = usePlayer();
     return (
         <div className={styles.panel}>
             <PlayerGauge art={art} artRef={artRef} held={held} />
             <DateStrip
                 title={title}
+                connecting={!hasKnownDuration(duration)}
                 dateLabel={dateLabel}
                 neighbours={neighbours}
                 onStep={onStep}

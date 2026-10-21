@@ -54,6 +54,7 @@ describe('ShowPage', () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
         await userEvent.click(screen.getByRole('button', { name: /^播放 10\/10/ }));
+        act(() => audio.emitMetadata(2400));
 
         const date = screen.getByText('10/10（六）');
         expect(date.parentElement).toHaveTextContent(/^10\/10（六）$/);
@@ -80,7 +81,8 @@ describe('ShowPage', () => {
 
         const rows = await screen.findAllByRole('button', { name: /^播放 \d/ });
         expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual([
-            '播放 17/10 星期六，播放中 · 0:00 / 0:00',
+            // 未讀到時長：唔顯示 0:00 / 0:00
+            '播放 17/10 星期六，連線中…',
             '播放 10/10 星期六，聽到 10:00',
             '播放 03/10 星期六，已收聽',
         ]);
