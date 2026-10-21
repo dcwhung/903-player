@@ -8,6 +8,8 @@ export interface LoadOptions {
 export interface PlayerState {
     recording: Recording | null;
     isPlaying: boolean;
+    /** 真正出緊聲（playing event 之後）；撳咗 Play 仲載緊 / 緩衝緊係 false */
+    isAudible: boolean;
     currentTime: number;
     duration: number;
     /** 每次有錄音變成「聽過」就 +1，令顯示剔嘅 component 重新 render */

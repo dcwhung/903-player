@@ -9,7 +9,7 @@ interface DiscProps {
     artRef?: Ref<HTMLImageElement> | undefined;
     /** 碟面（自轉 + 捽碟 / 拖弧形跟手指轉嘅手動角度） */
     faceRef?: Ref<HTMLSpanElement> | undefined;
-    /** 播緊而且冇人捉住：自轉；停咗就停喺原位 */
+    /** 真正出緊聲而且冇人捉住：自轉；停咗 / 載緊就停喺原位 */
     spinning?: boolean;
     /** 捽碟 seek 嘅 pointer events；冇就係純裝飾 */
     scrub?: DOMAttributes<HTMLDivElement> | undefined;

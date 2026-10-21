@@ -201,3 +201,40 @@ describe('AudioController overlapping play() calls', () => {
         detach();
     });
 });
+
+describe('AudioController.isAudible', () => {
+    it('should stay silent until the audio actually starts playing', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+        expect(controller.getSnapshot().isPlaying).toBe(true);
+        expect(controller.getSnapshot().isAudible).toBe(false);
+
+        audio.emitPlaying();
+        expect(controller.getSnapshot().isAudible).toBe(true);
+        detach();
+    });
+
+    it('should go silent while buffering and resume when data arrives', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+        audio.emitPlaying();
+
+        audio.emitWaiting();
+        expect(controller.getSnapshot().isAudible).toBe(false);
+
+        audio.emitPlaying();
+        expect(controller.getSnapshot().isAudible).toBe(true);
+        detach();
+    });
+
+    it('should go silent when paused or ended', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+        audio.emitPlaying();
+        audio.pause();
+        expect(controller.getSnapshot().isAudible).toBe(false);
+
+        await controller.play();
+        audio.emitPlaying();
+        audio.end();
+        expect(controller.getSnapshot().isAudible).toBe(false);
+        detach();
+    });
+});
