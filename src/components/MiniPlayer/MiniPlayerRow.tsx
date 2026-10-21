@@ -2,6 +2,7 @@ import type { ShowTheme } from '../../config/showThemes';
 import { t } from '../../i18n/t';
 import { Disc } from '../Disc/Disc';
 import { PauseIcon, PlayIcon } from '../icons/icons';
+import { Marquee } from '../Marquee/Marquee';
 import styles from './MiniPlayer.module.css';
 
 interface MiniPlayerRowProps {
@@ -15,7 +16,7 @@ interface MiniPlayerRowProps {
 
 const TOGGLE_ICON_SIZE = 20;
 
-/** 節目碟 + 名 + 副題（撳入節目頁），右邊係播放 / 暫停 */
+/** 節目碟 + 名 + 副題（撳入節目頁；放唔落就跑馬燈），右邊係播放 / 暫停 */
 export const MiniPlayerRow = (props: MiniPlayerRowProps) => (
     <div className={styles.row}>
         <button
@@ -26,8 +27,8 @@ export const MiniPlayerRow = (props: MiniPlayerRowProps) => (
         >
             <Disc size="small" art={props.theme.art} />
             <span className={styles.text}>
-                <span className={styles.name}>{props.showName}</span>
-                <span className={styles.subtitle}>{props.subtitle}</span>
+                <Marquee className={styles.name} text={props.showName} />
+                <Marquee className={styles.subtitle} text={props.subtitle} />
             </span>
         </button>
         <button

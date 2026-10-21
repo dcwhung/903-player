@@ -14,7 +14,13 @@ import {
 type CardPhase = 'dragging' | 'settling' | `fly-${SwipeDirection}`;
 
 /** 拖動姿勢嘅 CSS 變數；清走就返去 CSS 預設（或者 data-phase 嘅飛走位置） */
-const POSE_VARS = ['--card-dx', '--card-rotate', '--card-forward', '--card-return'] as const;
+const POSE_VARS = [
+    '--card-dx',
+    '--card-rotate',
+    '--card-forward',
+    '--card-return',
+    '--card-reveal',
+] as const;
 
 interface MotionRefs {
     stack: RefObject<HTMLDivElement | null>;
@@ -46,7 +52,10 @@ const schedule = (refs: MotionRefs, ms: number, run: () => void) => {
 
 const widthOf = (refs: MotionRefs): number => refs.top.current?.offsetWidth ?? 0;
 
-/** 拖動中：卡跟手指、按比例傾斜；向左拖推後面嘅卡上前，向右拖上一張卡由左邊探入 */
+/**
+ * 拖動中：卡跟手指、按比例傾斜；向左拖推後面嘅卡上前，向右拖上一張卡由左邊探入。
+ * 兩個方向都會露出後面嗰張卡，佢嘅節目名跟拖動進度淡入（--card-reveal）
+ */
 const drag = (refs: MotionRefs, dx: number) => {
     const el = refs.stack.current;
     // 飛緊（例如拖緊時撳咗方向鍵）就唔郁：清走落地 timer 會令 flying 永遠卡住
@@ -59,6 +68,7 @@ const drag = (refs: MotionRefs, dx: number) => {
     el.style.setProperty('--card-rotate', `${rotate}deg`);
     el.style.setProperty('--card-forward', String(dx < 0 ? progress : 0));
     el.style.setProperty('--card-return', String(dx > 0 ? progress * RETURN_PEEK_RATIO : 0));
+    el.style.setProperty('--card-reveal', String(progress));
 };
 
 /** 彈緊返中間時張卡而家嘅橫向位移（computed transform）；唔係彈緊就係 0 */

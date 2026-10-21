@@ -53,19 +53,18 @@
     min-width: 0;
 }
 
+/* 名同副題用 Marquee：放唔落就跑馬燈，唔會疊住播放掣 */
 .name {
-    overflow: hidden;
     font-size: var(--font-size-md);
     font-weight: 600;
     color: var(--color-title);
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
+/* 時間每秒變：數字等闊，跑馬燈距離唔會每秒跳 */
 .subtitle {
     font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
     color: var(--color-text-muted);
-    white-space: nowrap;
 }
 
 .toggle {

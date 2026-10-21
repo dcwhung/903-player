@@ -14,6 +14,8 @@
     --card-forward: 0;
     /* 0–1：向右拖時上一張卡由左邊飛返入嚟幾多 */
     --card-return: 0;
+    /* 0–1：最上面嗰張卡（向左或者向右）拖開咗幾多，後面嗰張卡嘅節目名跟住淡入 */
+    --card-reveal: 0;
 
     display: grid;
     /* 固定版面（Page.module.css .fixed）入面唔縮，剩低嘅高度留畀今日節目清單捲 */
@@ -97,10 +99,10 @@
 
 /*
  * 後面嘅卡：節目名喺卡底（--card-title-space），疊喺後面時會喺最上面張卡底下露出半行字；
- * 平時收埋，向左拖 / 飛走上前時跟 --card-forward 淡入（depth2 永遠唔會上到最前）
+ * 平時收埋，最上面嗰張卡向左或者向右拖開 / 飛走時跟 --card-reveal 淡入（depth2 永遠唔會上到最前）
  */
 .depth1 .title {
-    opacity: var(--card-forward);
+    opacity: var(--card-reveal);
 }
 
 .depth2 .title {
@@ -126,6 +128,7 @@
 /* 向左飛走：最上面嗰張飛出左邊，後面嘅卡上前一層 */
 .stack[data-phase='fly-next'] {
     --card-forward: 1;
+    --card-reveal: 1;
 }
 
 .stack[data-phase='fly-next'] .top {
@@ -136,6 +139,7 @@
 /* 向右飛走：最上面嗰張飛出右邊，上一張由左邊飛返入嚟 */
 .stack[data-phase='fly-previous'] {
     --card-return: 1;
+    --card-reveal: 1;
 }
 
 .stack[data-phase='fly-previous'] .top {

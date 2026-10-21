@@ -808,6 +808,106 @@ const checkMiniPlayerPosition = async (browser, errors) => {
 };
 
 /*
+ * 窄螢幕（291×562，用戶實機尺寸）嘅三個版面問題：
+ * 1. 長時間（例如 1:14:04）唔可以疊住由頭播放掣 / 播放掣
+ * 2. mini player 嘅字唔可以疊住播放掣；放唔落就跑馬燈
+ * 3. 今日節目卡向右拖，露出嚟嗰張後面嘅卡見到節目名（同向左拖一樣）
+ */
+const NARROW = { width: 291, height: 562 };
+// 測試用嘅長時間（真錄音約兩粒鐘）：直接改字，量版面
+const LONG_TIMES = ['1:14:04', '1:54:19'];
+// 拖一半（未到轉節目門檻）
+const NARROW_HALF_DRAG_PX = 100;
+// 跑馬燈開始捲（20% 停留之後）要等嘅時間
+const MARQUEE_START_WAIT_MS = 2500;
+
+/** 時間字嘅框同由頭播放 / 播放掣有冇橫向重疊（重疊 px，0 = 冇） */
+const timeOverlap = (p) =>
+    p.evaluate((times) => {
+        const spans = [...document.querySelectorAll('[class*="time"] > span')];
+        spans.forEach((span, i) => (span.textContent = times[i]));
+        const buttons = [
+            ...document.querySelector('[aria-label="由頭播放"]').parentElement.children,
+        ].map((b) => b.getBoundingClientRect());
+        return Math.max(
+            0,
+            ...spans.flatMap((span) => {
+                const t = span.getBoundingClientRect();
+                return buttons.map((b) => Math.min(t.right, b.right) - Math.max(t.left, b.left));
+            }),
+        );
+    }, LONG_TIMES);
+
+/** mini player 嘅名 / 副題框右邊有冇過咗播放掣左邊；副題有冇捲 */
+const miniTextFit = (p) =>
+    p.evaluate((region) => {
+        const mini = document.querySelector(`[aria-label="${region}"]`);
+        const toggle = mini.querySelector('button[aria-label="播放"], button[aria-label="暫停"]');
+        const boxes = [...mini.querySelectorAll('[class*="box"]')];
+        const track = boxes[1].firstElementChild;
+        return {
+            gap:
+                toggle.getBoundingClientRect().left -
+                Math.max(...boxes.map((b) => b.getBoundingClientRect().right)),
+            overflow: boxes[1].hasAttribute('data-overflow'),
+            shift: new DOMMatrix(getComputedStyle(track).transform).m41,
+        };
+    }, MINI_REGION);
+
+/** 拖緊卡時後面嗰張卡（depth1）嘅節目名透明度 */
+const behindTitleOpacity = (p) =>
+    p.evaluate(() => {
+        const ghosts = [...document.querySelectorAll('[class*="depth1"] [class*="title"]')];
+        return Number(getComputedStyle(ghosts[0]).opacity);
+    });
+
+const checkNarrowLayout = async (browser, errors) => {
+    const ctx = await newE2EContext(browser, { viewport: NARROW, deviceScaleFactor: 2 });
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => errors.push(e.message));
+    const label = `${NARROW.width}×${NARROW.height}`;
+    for (const [route, name] of [
+        ['#/show/badgirl', '節目頁'],
+        ['#/today', '今日節目頁'],
+    ]) {
+        await p.goto(`${BASE}${route}`);
+        await p.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+        const overlap = await timeOverlap(p);
+        log(
+            overlap <= 0,
+            `${label} ${name}：長時間 ${LONG_TIMES.join(' / ')} 唔疊住掣（重疊 ${overlap.toFixed(1)}px）`,
+        );
+        await p.screenshot({ path: `${OUT}/narrow-long-times-${route.replace(/\W/g, '')}.png` });
+    }
+    for (const dx of [-NARROW_HALF_DRAG_PX, NARROW_HALF_DRAG_PX]) {
+        await p.goto(`${BASE}#/today`);
+        await p.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+        await dragTodayCard(p, dx, { release: false });
+        const opacity = await behindTitleOpacity(p);
+        const side = dx < 0 ? '左' : '右';
+        log(
+            opacity > 0,
+            `${label} 今日節目卡向${side}拖一半：後面嗰張卡見到節目名（opacity ${opacity.toFixed(2)}）`,
+        );
+        await p.screenshot({ path: `${OUT}/narrow-today-drag-${dx < 0 ? 'left' : 'right'}.png` });
+        await p.mouse.up();
+    }
+    await p.goto(BASE);
+    // 播緊先有時間（「· 0:01 / 10:00」），副題喺 291px 闊放唔落
+    const mini = p.getByRole('region', { name: MINI_REGION });
+    await mini.getByRole('button', { name: '播放', exact: true }).click();
+    await mini.getByText(/ \/ /).waitFor();
+    await p.waitForTimeout(MARQUEE_START_WAIT_MS);
+    const fit = await miniTextFit(p);
+    log(
+        fit.gap >= 0 && fit.overflow && fit.shift < 0,
+        `${label} 主頁 mini player：字唔疊住播放掣（相距 ${fit.gap.toFixed(1)}px），副題放唔落就跑馬燈（捲咗 ${fit.shift.toFixed(1)}px）`,
+    );
+    await p.screenshot({ path: `${OUT}/narrow-mini-marquee.png` });
+    await ctx.close();
+};
+
+/*
  * iOS standalone 嘅 viewport 矮過螢幕（實機約 55px）：模擬 navigator.standalone + screen.height 高過 innerHeight。
  * iOS 唔會喺 viewport 以下畫內容（實機推落去會畀剪走），所以 mini player 仍然喺 viewport 入面、掛喺 body。
  * Chromium 嘅 env(safe-area-inset-bottom) 永遠係 0，扣減安全區留白（--mini-player-inset-bottom）呢度驗唔到
@@ -1254,6 +1354,7 @@ try {
     await checkShellMismatch(browser, errors);
     await checkMiniPlayerPosition(browser, errors);
     await checkMiniPlayerViewportGap(browser, errors);
+    await checkNarrowLayout(browser, errors);
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
     await runTouchChecks({ browser, base: BASE, out: OUT, errors, log });

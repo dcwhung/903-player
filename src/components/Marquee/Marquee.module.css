@@ -1,0 +1,39 @@
+/* 一行，放唔落嘅部分收埋 */
+.box {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* inline-block：ResizeObserver 先睇到文字闊度變化（例如字型載完） */
+.track {
+    display: inline-block;
+}
+
+/* 放唔落：來回捲，兩頭停低（20% / 80% 要同 marquee.ts 嘅 MARQUEE_TRAVEL_SHARE 一致） */
+.box[data-overflow] .track {
+    animation: marquee var(--marquee-duration) ease-in-out infinite alternate;
+}
+
+@keyframes marquee {
+    0%,
+    20% {
+        transform: translateX(0);
+    }
+
+    80%,
+    100% {
+        transform: translateX(var(--marquee-shift));
+    }
+}
+
+/* 減少動畫：唔捲，用 … 收尾（scrollWidth 仍然係成句闊度，照樣量到多出幾多） */
+@media (prefers-reduced-motion: reduce) {
+    .box[data-overflow] .track {
+        overflow: hidden;
+        max-width: 100%;
+        text-overflow: ellipsis;
+        vertical-align: top;
+        animation: none;
+    }
+}
