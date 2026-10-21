@@ -13,36 +13,43 @@
     --theme-shadow-dark: #0a0a0a;
     --theme-shadow-light: #242424;
 
+    /*
+     * 橫版大畫面放大字、間距、掣同 icon 嘅倍數（直版 / 手機打橫都係 1，見下面 landscape @media）。
+     * 呢個 :root 入面用佢嘅 token 喺 :root 解析，所以 @media 改 --ui-scale 會連帶全部跟住變；
+     * 組件入面寫死嘅 px（例如清單行高）要自己乘 var(--ui-scale)
+     */
+    --ui-scale: 1;
+
     --font-family: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
     /* 日子條每格上面嘅星期（一、二…） */
-    --font-size-2xs: 11px;
-    --font-size-xs: 12px;
-    --font-size-sm: 13px;
-    --font-size-md: 15px;
-    --font-size-lg: 16px;
-    --font-size-xl: 24px;
-    --font-size-xxl: 26px;
+    --font-size-2xs: calc(11px * var(--ui-scale));
+    --font-size-xs: calc(12px * var(--ui-scale));
+    --font-size-sm: calc(13px * var(--ui-scale));
+    --font-size-md: calc(15px * var(--ui-scale));
+    --font-size-lg: calc(16px * var(--ui-scale));
+    --font-size-xl: calc(24px * var(--ui-scale));
+    --font-size-xxl: calc(26px * var(--ui-scale));
     --letter-spacing-caps: 0.18em;
 
-    --space-1: 4px;
-    --space-2: 8px;
-    --space-3: 12px;
-    --space-4: 16px;
-    --space-5: 20px;
-    --space-6: 24px;
-    --space-8: 32px;
+    --space-1: calc(4px * var(--ui-scale));
+    --space-2: calc(8px * var(--ui-scale));
+    --space-3: calc(12px * var(--ui-scale));
+    --space-4: calc(16px * var(--ui-scale));
+    --space-5: calc(20px * var(--ui-scale));
+    --space-6: calc(24px * var(--ui-scale));
+    --space-8: calc(32px * var(--ui-scale));
 
-    --radius-md: 16px;
-    --radius-lg: 20px;
+    --radius-md: calc(16px * var(--ui-scale));
+    --radius-lg: calc(20px * var(--ui-scale));
     --radius-full: 999px;
     /* 主頁節目格同頁頂橫額共用嘅圓角 */
-    --radius-tile: 14px;
+    --radius-tile: calc(14px * var(--ui-scale));
     /* 節目頁日子條同正中 highlight box 嘅圓角 */
-    --radius-cell: 12px;
+    --radius-cell: calc(12px * var(--ui-scale));
 
-    --touch-target: 44px;
+    --touch-target: calc(44px * var(--ui-scale));
     /* WCAG 2.2 target size (minimum)：細粒掣嘅撳得到範圍 */
-    --touch-target-min: 24px;
+    --touch-target-min: calc(24px * var(--ui-scale));
     --focus-ring-width: 2px;
     --duration-fast: 0.2s;
     /* 節目頁日子條：轉集時新日期由隔籬格滑返中間、碟慢慢順時針轉返正（播放唔使等動畫） */
@@ -51,8 +58,8 @@
     /* 播放中碟自轉一圈（真黑膠 33⅓ rpm 喺手機太快，會頭暈） */
     --duration-disc-spin: 8s;
     --ease-strip: cubic-bezier(0.2, 0.8, 0.2, 1);
-    --dot-size: 6px;
-    --dot-size-active: 18px;
+    --dot-size: calc(6px * var(--ui-scale));
+    --dot-size-active: calc(18px * var(--ui-scale));
     --page-max-width: 480px;
     /* 節目頁 / 今日節目頁主碟（連進度弧）嘅闊度，兩頁一樣大 */
     --player-disc-size: min(300px, 78vw);
@@ -127,6 +134,23 @@
     --shadow-today-tile: 0 6px 0 #1f7fd0, 0 10px 18px rgb(20 40 65 / 30%);
 
     color-scheme: dark;
+}
+
+/*
+ * 橫版大畫面放大字、間距、掣同 icon（--ui-scale）：闊 ≥ 1024px 而且唔係矮螢幕（> 561px 高）× 1.3；
+ * 再高過 800px（iPad 打橫）× 1.5。手機打橫同直版維持 × 1。
+ * 條件開頭同 src/config/layout.ts 嘅 LANDSCAPE_QUERY 一樣（landscapeBreakpoint.node.test.ts）
+ */
+@media (orientation: landscape) and (min-width: 1024px) and (min-height: 562px) {
+    :root {
+        --ui-scale: 1.3;
+    }
+}
+
+@media (orientation: landscape) and (min-width: 1024px) and (min-height: 800px) {
+    :root {
+        --ui-scale: 1.5;
+    }
 }
 
 /*

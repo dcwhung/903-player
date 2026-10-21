@@ -55,3 +55,134 @@
     align-items: center;
     width: 100%;
 }
+
+/*
+ * 橫版（打橫而且 ≥ 640px 闊；條件同 src/config/layout.ts 嘅 LANDSCAPE_QUERY 一樣）：
+ * 頁面用晒成個闊度（唔再收喺 --page-max-width），左右讓開瀏海 / 圓角嘅安全區。
+ * 節目頁 / 今日節目頁再分左右兩欄，見下面 .fixed
+ */
+@media (orientation: landscape) and (min-width: 640px) {
+    .page {
+        max-width: none;
+        padding-right: env(safe-area-inset-right);
+        padding-left: env(safe-area-inset-left);
+    }
+}
+
+/*
+ * 節目頁 / 今日節目頁兩欄：直版 display: contents（等於冇呢層，次序同以前一樣）。
+ * 左欄 = 頁頭 + 播放器，右欄 = 集數 / 節目表清單
+ */
+.playerColumn,
+.listColumn {
+    display: contents;
+}
+
+/*
+ * 橫版兩欄（LANDSCAPE_QUERY）：右欄 30%，但最少 300px × --ui-scale（放大咗嘅字仍然放得落一行狀態），
+ * 其餘畀播放器；手機打橫右欄要 54% 先放得落清單（見下面）。
+ * 成頁固定唔捲，右欄清單自己捲；左欄頁頭釘頂，播放器喺剩低嘅高度置中
+ */
+@media (orientation: landscape) and (min-width: 640px) {
+    .fixed {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, max(30%, calc(300px * var(--ui-scale))));
+        column-gap: var(--space-5);
+        align-items: stretch;
+    }
+
+    .playerColumn {
+        /*
+         * 唱片按左欄（size container）嘅闊同高計，用盡位：扣走頁頭、一個間距同底部安全區，
+         * 唔再跟直版嘅「畫面高 × 六成」；最大 640px（iPad 打橫）
+         */
+        --player-disc-size: max(
+            120px,
+            min(
+                88cqw,
+                calc((100cqh - var(--touch-target) - var(--fixed-page-gap)) * 300 / 332),
+                640px
+            )
+        );
+
+        container-type: size;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--fixed-page-gap);
+        min-height: 0;
+        padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+    }
+
+    /* 頁頭以外（播放器 / 載入狀態）喺頁頭下面剩低嘅高度置中 */
+    .playerColumn > :not(.header) {
+        margin-block: auto;
+    }
+
+    .listColumn {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        border-left: 1px solid var(--color-divider);
+    }
+
+    /* 今日節目卡唔好拉到成欄咁闊：跟唱片大小，兩邊留少少卡邊 */
+    .todayPlayer {
+        width: min(
+            100%,
+            calc(var(--player-disc-size) + 2 * var(--card-stack-gutter) + 2 * var(--space-6))
+        );
+    }
+
+    /*
+     * 今日節目頁：唱片外面仲有卡（上下留白、節目名、卡疊底）同指示點，要一齊扣走；
+     * 節目名一行當 1.6 × 字體大小（line-height normal）
+     */
+    .todayColumn {
+        --player-disc-size: max(
+            120px,
+            min(
+                calc(100cqw - 2 * var(--card-stack-gutter)),
+                calc(
+                    (
+                            100cqh - var(--touch-target) - var(--fixed-page-gap) -
+                                var(--card-padding-block) - var(--card-inner-gap) - 1.6 *
+                                var(--font-size-xl) - var(--card-title-space) - 2 *
+                                var(--card-stack-offset) - var(--touch-target-min)
+                        ) *
+                        300 / 332
+                ),
+                640px
+            )
+        );
+    }
+}
+
+/*
+ * 手機打橫（SHORT_LANDSCAPE_QUERY）：右欄 54%（太窄放唔落清單）。
+ * 今日節目頁指示點搬咗上頁頭、卡疊只露一層（ShowCardStack），唱片唔使扣嗰兩樣
+ */
+@media (orientation: landscape) and (min-width: 640px) and (max-height: 561px) {
+    .fixed {
+        grid-template-columns: minmax(0, 46%) minmax(0, 1fr);
+    }
+
+    .todayColumn {
+        --player-disc-size: max(
+            120px,
+            min(
+                calc(100cqw - 2 * var(--card-stack-gutter)),
+                calc(
+                    (
+                            100cqh - var(--touch-target) - var(--fixed-page-gap) -
+                                var(--card-padding-block) - var(--card-inner-gap) - 1.6 *
+                                var(--font-size-xl) - var(--card-title-space) -
+                                var(--card-stack-offset)
+                        ) *
+                        300 / 332
+                ),
+                640px
+            )
+        );
+    }
+}

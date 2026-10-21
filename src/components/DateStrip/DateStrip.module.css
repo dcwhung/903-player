@@ -142,3 +142,13 @@
         transition: none;
     }
 }
+
+/*
+ * 橫版唔出日子條：轉集用右欄集數清單（聽過剔、進度都喺清單度），唱片用返嗰啲高度；
+ * display: none 連讀屏都略過，唔會有兩個轉集入口。條件同 layout.ts 嘅 LANDSCAPE_QUERY 一樣
+ */
+@media (orientation: landscape) and (min-width: 640px) {
+    .group {
+        display: none;
+    }
+}

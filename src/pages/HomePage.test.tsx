@@ -85,6 +85,40 @@ describe('HomePage', () => {
         expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
+    it('should offer the wide banner to landscape screens taller than a phone', () => {
+        renderWithProviders(<HomePage />);
+
+        const source = screen.getByRole('img', { name: BANNER_ALT }).previousElementSibling;
+        expect(source?.tagName).toBe('SOURCE');
+        expect(source).toHaveAttribute(
+            'media',
+            '(orientation: landscape) and (min-width: 640px) and (min-height: 562px)',
+        );
+        expect(source?.getAttribute('srcset')).toMatch(/banner-wide/);
+    });
+
+    it('should put the banner in the tile grid, before the shows, on a phone held sideways', () => {
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn((query: string) => ({
+                matches: query.includes('max-height: 561px') || query.includes('landscape'),
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn(),
+            })),
+        );
+        renderWithProviders(<HomePage />);
+
+        const nav = screen.getByRole('navigation');
+        const banner = screen.getByRole('img', { name: BANNER_ALT });
+        expect(nav).toContainElement(banner);
+        expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+        const firstShow = screen.getByRole('button', { name: 'Bad Girl大過佬' });
+        expect(
+            banner.compareDocumentPosition(firstShow) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        vi.unstubAllGlobals();
+    });
+
     it('should not show the old header text when rendered', () => {
         renderWithProviders(<HomePage />);
 

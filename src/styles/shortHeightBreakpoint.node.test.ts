@@ -27,6 +27,7 @@ describe('short-height breakpoint', () => {
     ])('should keep %s fixed at every height (no short-height override)', (_name, path) => {
         const css = readCss(new URL(path, import.meta.url));
 
-        expect(maxHeightBreakpoints(css)).toEqual([]);
+        // 手機打橫（SHORT_LANDSCAPE_QUERY）係另一套兩欄版面，唔係直版矮螢幕嘅覆寫
+        expect(maxHeightBreakpoints(css, { excludeLandscape: true })).toEqual([]);
     });
 });

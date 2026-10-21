@@ -191,3 +191,17 @@
         transition: none;
     }
 }
+
+/*
+ * 手機打橫（SHORT_LANDSCAPE_QUERY）：卡疊只露一層（後面第二張收埋），底部少留一格位移，
+ * 騰返高度畀唱片（Page.module.css .todayColumn 嘅唱片計法對應咁扣）
+ */
+@media (orientation: landscape) and (min-width: 640px) and (max-height: 561px) {
+    .stack {
+        padding-bottom: var(--card-stack-offset);
+    }
+
+    .depth2 {
+        display: none;
+    }
+}

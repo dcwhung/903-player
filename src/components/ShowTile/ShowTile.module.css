@@ -41,3 +41,11 @@
     white-space: nowrap;
     transform: translate(-50%, -50%);
 }
+
+/* 橫版：格大小跟 ShowGrid 嘅欄 × 行（填滿畫面），節目圖 cover 裁走少少邊（LANDSCAPE_QUERY） */
+@media (orientation: landscape) and (min-width: 640px) {
+    .tile {
+        aspect-ratio: auto;
+        min-height: 0;
+    }
+}

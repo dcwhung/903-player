@@ -4,10 +4,13 @@
  * viewport 以下 iOS 唔會畫內容，只露出 canvas（主頁漸變底色），同頁底接得順
  */
 .wrapper {
+    /* 橫版大畫面跟字一齊放大（--ui-scale），直版 / 手機係 --page-max-width */
+    --mini-player-max-width: calc(var(--page-max-width) * var(--ui-scale));
+
     position: fixed;
-    right: max(var(--space-3), calc((100vw - var(--page-max-width)) / 2 + var(--space-3)));
+    right: max(var(--space-3), calc((100vw - var(--mini-player-max-width)) / 2 + var(--space-3)));
     bottom: var(--mini-player-offset-bottom);
-    left: max(var(--space-3), calc((100vw - var(--page-max-width)) / 2 + var(--space-3)));
+    left: max(var(--space-3), calc((100vw - var(--mini-player-max-width)) / 2 + var(--space-3)));
     z-index: 10;
 }
 

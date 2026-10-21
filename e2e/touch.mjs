@@ -491,7 +491,7 @@ const checkReducedMotion = async (env, label) => {
     );
 };
 
-/** 橫向手機：都係固定版面，由 swipe 區（日子條 / 今日節目卡）直向拖，main 同文件都唔捲，播放掣原本已經喺畫面 */
+/** 橫向手機（橫版兩欄）：固定版面，由頁頭 / 今日節目卡直向拖，main 同文件都唔捲，播放掣原本已經喺畫面 */
 const checkLandscape = async (env, route, zone, label) => {
     const { p, cdp, log } = env;
     await p.goto(`${env.base}${route}`);
@@ -514,7 +514,7 @@ const checkLandscape = async (env, route, zone, label) => {
     );
 };
 
-/** 橫向手機主頁：節目格分頁，橫掃轉頁（指示點跟住轉），成頁唔捲 */
+/** 橫向手機主頁（橫版）：一頁放晒唔分頁，橫掃節目格唔會捲走、文件唔捲 */
 const checkLandscapeHome = async (env, label) => {
     const { p, cdp, log } = env;
     await p.goto(env.base);
@@ -524,11 +524,12 @@ const checkLandscapeHome = async (env, label) => {
     const tile = p.locator('nav button').first();
     await touchDrag(cdp, p, centreOf(await tile.boundingBox()), { dx: -CARD_SWIPE_PX, dy: 0 });
     await p.waitForTimeout(SETTLE_MS);
-    const group = await p.getByRole('group', { name: /^節目第 \d+ 頁/ }).getAttribute('aria-label');
+    const pages = await p.getByRole('group', { name: /^節目第 \d+ 頁/ }).count();
+    const scrolled = await p.locator('nav > div').evaluate((el) => el.scrollLeft);
     const doc = await docScroll(p);
     log(
-        group.startsWith('節目第 2 頁') && isDocLocked(doc),
-        `${label}：橫掃轉去下一頁（${group}），文件唔捲`,
+        pages === 0 && scrolled === 0 && isDocLocked(doc),
+        `${label}：唔分頁（指示點 ${pages}），橫掃唔捲（scrollLeft ${scrolled}），文件唔捲`,
     );
 };
 
@@ -554,9 +555,10 @@ export const runTouchChecks = async ({ browser, base, out, errors, log }) => {
     const size = `${LANDSCAPE.width}×${LANDSCAPE.height}`;
     const { ctx, p, cdp } = await openTouchPage(browser, errors, LANDSCAPE);
     const env = { p, cdp, log, base, out };
-    const strip = (page) => page.locator(STRIP);
+    // 橫版唔出日子條：節目頁由頁頭（節目名）拖
+    const heading = (page) => page.locator('header h1');
     const card = cardTitle;
-    await checkLandscape(env, '#/show/badgirl', strip, `${size} 觸控節目頁（橫向，由日子條拖）`);
+    await checkLandscape(env, '#/show/badgirl', heading, `${size} 觸控節目頁（橫向，由頁頭拖）`);
     await checkLandscape(env, '#/today', card, `${size} 觸控今日節目頁（橫向，由卡拖）`);
     await checkLandscapeHome(env, `${size} 觸控主頁（橫向）`);
     await ctx.close();

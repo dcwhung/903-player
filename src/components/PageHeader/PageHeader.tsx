@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { t } from '../../i18n/t';
 import { BackIcon } from '../icons/icons';
 import styles from './PageHeader.module.css';
@@ -21,9 +22,11 @@ interface PageHeaderProps {
     onBack: () => void;
     /** label：細階大楷標籤（預設）；title：節目頁用節目名做全頁標題（h1，太長就縮細字體） */
     variant?: 'label' | 'title';
+    /** 標題右邊嘅嘢（例如手機打橫今日節目頁嘅指示點）；冇就留返同返回掣一樣闊嘅空位，標題置中 */
+    trailing?: ReactNode;
 }
 
-export const PageHeader = ({ title, onBack, variant = 'label' }: PageHeaderProps) => (
+export const PageHeader = ({ title, onBack, variant = 'label', trailing }: PageHeaderProps) => (
     <header className={styles.header}>
         <button
             type="button"
@@ -39,6 +42,6 @@ export const PageHeader = ({ title, onBack, variant = 'label' }: PageHeaderProps
         ) : (
             <span className={styles.title}>{title}</span>
         )}
-        <span aria-hidden="true" />
+        {trailing ?? <span aria-hidden="true" />}
     </header>
 );
