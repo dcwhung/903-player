@@ -4,7 +4,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
 import { LAUNCH_THEME_COLOR } from './src/config/launchTheme.ts';
 
-const BASE_PATH = '/903-player/';
+// GitHub Pages serve 喺 /903-player/；Vercel build 時會注入 VERCEL=1，serve 喺 root
+const GITHUB_PAGES_BASE_PATH = '/903-player/';
+const ROOT_BASE_PATH = '/';
+const BASE_PATH = process.env.VERCEL ? ROOT_BASE_PATH : GITHUB_PAGES_BASE_PATH;
 // package.json 係版本嘅唯一來源；build 時注入，唔使 runtime fetch
 const PACKAGE_JSON = new URL('./package.json', import.meta.url);
 const { version: APP_VERSION } = JSON.parse(readFileSync(PACKAGE_JSON, 'utf8')) as {
