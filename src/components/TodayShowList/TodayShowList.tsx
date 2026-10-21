@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { t, type MessageKey } from '../../i18n/t';
 import { Disc } from '../Disc/Disc';
-import { CheckIcon, PlayIcon } from '../icons/icons';
+import { CheckIcon, PauseIcon, PlayIcon } from '../icons/icons';
 import styles from './TodayShowList.module.css';
 
 export type ShowStatus = 'playing' | 'watched' | 'unwatched';
@@ -31,12 +31,17 @@ const PLAY_ICON_SIZE = 22;
 
 const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: string) => void }) => {
     const statusText = t(STATUS_MESSAGE[item.status]);
+    // 播緊（status playing = 揀中 + 播放中）：掣變暫停，撳落去暫停
+    const isPlaying = item.status === 'playing';
     return (
         <button
             type="button"
             className={`${styles.item} ${item.active ? styles.active : ''}`}
             aria-current={item.active ? 'true' : undefined}
-            aria-label={t('today.playShowWithStatus', { name: item.name, status: statusText })}
+            aria-label={t(isPlaying ? 'today.pauseShowWithStatus' : 'today.playShowWithStatus', {
+                name: item.name,
+                status: statusText,
+            })}
             onClick={() => onSelect(item.key)}
         >
             <Disc size="small" art={item.art} />
@@ -47,7 +52,11 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
                     {t('today.timeWithStatus', { time: item.time, status: statusText })}
                 </span>
             </span>
-            <PlayIcon size={PLAY_ICON_SIZE} filled={false} />
+            {isPlaying ? (
+                <PauseIcon size={PLAY_ICON_SIZE} />
+            ) : (
+                <PlayIcon size={PLAY_ICON_SIZE} filled={false} />
+            )}
         </button>
     );
 };

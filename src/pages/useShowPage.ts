@@ -55,13 +55,23 @@ export const useShowPage = (showId: string) => {
     const currentUrl = current?.url;
     const progressMap = useRefreshedOn(getProgressMap, [player.watchedRevision, currentUrl]);
     const live = { currentTime: player.currentTime, duration: player.duration };
-    const episodeItems = toEpisodeItems(episodes, currentUrl, live, progressMap);
+    // 只有播緊呢個節目先當播緊（未開始播時揀中集係預設嗰集）
+    const isPlayingCurrent = playing !== null && player.isPlaying;
+    const episodeItems = toEpisodeItems(episodes, currentUrl, live, progressMap, isPlayingCurrent);
 
     const selectEpisode = (url: string) => {
         const recording = episodes.find((r) => r.url === url);
         if (recording) {
             void player.load(recording, { autoplay: true });
         }
+    };
+    // 集數清單：撳播緊嗰集就暫停（掣係暫停樣），其他同日子條一樣播嗰集
+    const pressEpisode = (url: string) => {
+        if (isPlayingCurrent && url === currentUrl) {
+            void player.toggle();
+            return;
+        }
+        selectEpisode(url);
     };
     const theme = themeFor(show?.id);
     // 日子條：同撳集數行同一條路（未聽完續播、聽過由頭播）
@@ -81,5 +91,6 @@ export const useShowPage = (showId: string) => {
         episodeItems,
         strip,
         selectEpisode,
+        pressEpisode,
     };
 };
