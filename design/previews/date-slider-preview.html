@@ -1,0 +1,408 @@
+<title>節目日子 Slider</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Noto+Sans+TC:wght@400;500&display=swap">
+<style>
+/* Layout：左邊手機 mock（節目頁唱片 + 新日子 slider），右邊規格說明；窄螢幕上下疊 */
+:root {
+    color-scheme: dark;
+    --bg: #141414;
+    --surface: #1e1e1e;
+    --surface-hi: #2a2622;
+    --track: #333333;
+    --accent: #f0a04b;
+    --text: #f2f2f2;
+    --muted: #a3a3a3;
+    --disabled: #4a4a4a;
+    --line: #2b2b2b;
+    --font: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
+    --cell-count: 7;
+    --strip-height: 60px;
+    --radius-md: 16px;
+    --radius-cell: 12px;
+    --snap-duration: 0.3s;
+    --ease-strip: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+html, body { height: 100%; }
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px;
+    box-sizing: border-box;
+}
+.wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+    gap: 32px;
+    max-width: 960px;
+    margin: 0 auto;
+    align-items: start;
+}
+@media (max-width: 760px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+
+.phone {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    padding: 28px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+.show-title { font-size: 16px; font-weight: 600; }
+.disc {
+    width: min(220px, 60vw);
+    aspect-ratio: 1;
+    max-width: 100%;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle, var(--accent) 0 9%, #111 9.5% 11%, transparent 11.5%),
+        repeating-radial-gradient(circle, #1b1b1b 0 2px, #222 2px 4px);
+    box-shadow: 0 0 0 6px var(--track);
+}
+
+/* ---------- 新日子 slider ---------- */
+.group { align-self: stretch; display: flex; flex-direction: column; gap: 6px; }
+.label {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+.strip {
+    position: relative;
+    height: var(--strip-height);
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    touch-action: pan-y pinch-zoom;
+    user-select: none;
+    cursor: grab;
+    outline: none;
+}
+.strip:focus-visible { box-shadow: inset 0 0 0 2px var(--text); }
+.strip.dragging { cursor: grabbing; }
+/* 中間固定 highlight box：日子喺下面滑過 */
+.box {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: calc(100% * 3 / var(--cell-count) + 3px);
+    width: calc(100% / var(--cell-count) - 6px);
+    border-radius: var(--radius-cell);
+    background: var(--surface-hi);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+    pointer-events: none;
+}
+.track {
+    position: absolute;
+    inset: 0 auto 0 0;
+    display: flex;
+    will-change: transform;
+}
+.track.snapping { transition: transform var(--snap-duration) var(--ease-strip); }
+.cell {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.2s, transform 0.2s;
+}
+.cell .wd { font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0.04em; }
+.cell .dm { font-size: 14px; font-weight: 500; }
+.cell.none { cursor: default; }
+.cell.none .wd, .cell.none .dm { color: var(--disabled); }
+.cell.out .dm { text-decoration: line-through; text-decoration-color: var(--disabled); }
+.cell.current .wd { color: var(--accent); }
+.cell.current .dm { font-size: 15px; font-weight: 600; }
+
+/* ---------- 說明 ---------- */
+.notes { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.notes h1 { font-size: 20px; font-weight: 600; margin: 0; text-wrap: balance; }
+.notes p, .notes li { color: var(--muted); font-size: 14px; line-height: 1.65; }
+.notes p { margin: 0; }
+.notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.notes strong { color: var(--text); font-weight: 500; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.controls button, .seg button {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+}
+.controls button:hover, .seg button:hover { border-color: var(--muted); }
+.controls button:focus-visible, .seg button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.legend { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; font-size: 13px; color: var(--muted); align-items: center; }
+.sw { width: 40px; height: 32px; border-radius: 8px; display: grid; place-items: center; font-size: 12px; font-weight: 500; background: var(--surface); }
+.sw.cur { background: var(--surface-hi); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
+.log { font-size: 12px; color: var(--muted); min-height: 1.4em; }
+
+@media (prefers-reduced-motion: reduce) { .track.snapping { transition: none; } }
+</style>
+
+<div class="wrap">
+    <section class="phone" aria-label="節目頁 mock">
+        <div class="show-title">叱咤903 · 示範節目</div>
+        <div class="disc" aria-hidden="true"></div>
+        <div class="group">
+            <span class="label" id="label">現正播放</span>
+            <div class="strip" id="strip" tabindex="0" role="group" aria-roledescription="日子選擇" aria-labelledby="label">
+                <div class="box" aria-hidden="true"></div>
+                <div class="track" id="track"></div>
+            </div>
+        </div>
+        <div class="log" id="log" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="notes">
+        <h1>節目頁日子 Slider（preview）</h1>
+        <p>拖、撥 trackpad、撳日子、或者 focus 之後用 ← → 都得。示範資料：記錄由 <strong>28/9（一）</strong> 到 <strong>21/10（三）</strong>，星期一至五有節目，1/10 公眾假期冇節目。</p>
+
+        <div class="controls">
+            <button type="button" data-jump="latest">跳去最新一集</button>
+            <button type="button" data-jump="oldest">跳去最舊一集</button>
+            <button type="button" data-jump="mid">跳去 8/10</button>
+        </div>
+
+        <div>
+            <p style="margin-bottom:8px"><strong>方向（想你揀）</strong></p>
+            <div class="seg" role="group" aria-label="方向">
+                <button type="button" data-dir="chrono" aria-pressed="true">舊 ← → 新（參考圖 2）</button>
+                <button type="button" data-dir="reverse" aria-pressed="false">新 ← → 舊（現有日子條）</button>
+            </div>
+        </div>
+
+        <div class="legend">
+            <span class="sw cur" style="color:var(--accent)">三</span><span>中間 highlight box = 現正播放，永遠喺正中</span>
+            <span class="sw">二</span><span>有節目，撳得 / 拖過去就播</span>
+            <span class="sw" style="color:var(--disabled)">六</span><span>冇節目（週末、假期）：灰色，唔會停喺度</span>
+            <span class="sw" style="color:var(--disabled);text-decoration:line-through">22</span><span>超出記錄範圍（最新之後 / 最舊之前）：灰色 + 刪除線</span>
+        </div>
+
+        <ul>
+            <li><strong>一格 7 日</strong>：現正播放喺第 4 格，兩邊各 3 日。</li>
+            <li><strong>放手 snap</strong>：停喺兩格之間會 animate 返去最近嗰格正中；如果嗰日冇節目，會跳去拖動方向最近有節目嗰日。</li>
+            <li><strong>盡頭</strong>：去到最新 / 最舊，外面嘅日子照顯示但灰色，拖過頭有阻力、放手彈返。</li>
+            <li><strong>放手即播</strong>：snap 落邊日就轉去邊集（同現時拖日子條一樣即刻播）。</li>
+        </ul>
+    </section>
+</div>
+
+<script>
+(() => {
+    const CELL_COUNT = 7;
+    const CENTRE_SLOT = 3;
+    const OUT_OF_RANGE_PADDING = 3;
+    const EDGE_RESISTANCE = 0.35;
+    const FLICK_PROJECTION_MS = 120;
+    const WHEEL_IDLE_MS = 140;
+    const DRAG_THRESHOLD_PX = 4;
+    const DAY_MS = 86400000;
+    const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
+    const HOLIDAYS = new Set(['2026-10-01']);
+    const FIRST_RECORD = new Date(2026, 8, 28);
+    const LAST_RECORD = new Date(2026, 9, 21);
+
+    const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const dm = (d) => `${d.getDate()}/${d.getMonth() + 1}`;
+    const isWeekday = (d) => d.getDay() >= 1 && d.getDay() <= 5;
+
+    const buildDays = () => {
+        const days = [];
+        const start = new Date(FIRST_RECORD);
+        start.setDate(start.getDate() - OUT_OF_RANGE_PADDING);
+        const end = new Date(LAST_RECORD);
+        end.setDate(end.getDate() + OUT_OF_RANGE_PADDING);
+        for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const day = new Date(d);
+            const inRange = day >= FIRST_RECORD && day <= LAST_RECORD;
+            days.push({ date: day, inRange, hasShow: inRange && isWeekday(day) && !HOLIDAYS.has(iso(day)) });
+        }
+        return days;
+    };
+
+    const strip = document.getElementById('strip');
+    const track = document.getElementById('track');
+    const label = document.getElementById('label');
+    const log = document.getElementById('log');
+
+    let days = buildDays();
+    let currentIndex = days.findIndex((d) => iso(d.date) === iso(LAST_RECORD));
+    let offset = 0;
+    let cellWidth = 0;
+    let wasDrag = false;
+
+    const showIndices = () => days.map((d, i) => (d.hasShow ? i : -1)).filter((i) => i >= 0);
+    const baseX = (index) => (CENTRE_SLOT - index) * cellWidth;
+
+    const render = () => {
+        track.innerHTML = '';
+        days.forEach((day, i) => {
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.tabIndex = -1;
+            cell.className = 'cell' + (day.hasShow ? '' : ' none') + (day.inRange ? '' : ' out') + (i === currentIndex ? ' current' : '');
+            cell.style.width = `${cellWidth}px`;
+            cell.innerHTML = `<span class="wd">${WEEKDAYS[day.date.getDay()]}</span><span class="dm">${dm(day.date)}</span>`;
+            cell.setAttribute('aria-label', `${dm(day.date)}（${WEEKDAYS[day.date.getDay()]}）${day.hasShow ? '' : '，冇節目'}`);
+            if (day.hasShow) cell.addEventListener('click', () => { if (!wasDrag) snapTo(i); });
+            track.appendChild(cell);
+        });
+        const cur = days[currentIndex].date;
+        label.textContent = `現正播放 · ${dm(cur)}（${WEEKDAYS[cur.getDay()]}）`;
+    };
+
+    const place = (animate) => {
+        track.classList.toggle('snapping', animate);
+        track.style.transform = `translateX(${baseX(currentIndex) + offset}px)`;
+    };
+
+    const measure = () => {
+        cellWidth = strip.clientWidth / CELL_COUNT;
+        render();
+        place(false);
+    };
+
+    /* 放手 / 撳：搵最近有節目嗰日（同分就跟拖動方向），animate 返正中 */
+    const nearestShow = (rawIndex, bias) => {
+        const shows = showIndices();
+        let best = shows[0];
+        let bestScore = Infinity;
+        shows.forEach((i) => {
+            const score = Math.abs(i - rawIndex) + (Math.sign(i - rawIndex) === bias ? -0.01 : 0);
+            if (score < bestScore) { bestScore = score; best = i; }
+        });
+        return best;
+    };
+
+    const snapTo = (index) => {
+        const changed = index !== currentIndex;
+        currentIndex = index;
+        offset = 0;
+        render();
+        place(true);
+        if (changed) log.textContent = `▶ 轉去 ${dm(days[index].date)}（${WEEKDAYS[days[index].date.getDay()]}）嗰集`;
+    };
+
+    /* 放手：由目前位置（加少少慣性）計最近一格 */
+    const release = (velocity) => {
+        const projected = offset + velocity * FLICK_PROJECTION_MS;
+        const raw = currentIndex - projected / cellWidth;
+        snapTo(nearestShow(Math.round(raw), Math.sign(-projected)));
+    };
+
+    /* 拖過最新 / 最舊加阻力 */
+    const resist = (rawOffset) => {
+        const shows = showIndices();
+        const minOffset = (currentIndex - shows[shows.length - 1]) * cellWidth;
+        const maxOffset = (currentIndex - shows[0]) * cellWidth;
+        if (rawOffset > maxOffset) return maxOffset + (rawOffset - maxOffset) * EDGE_RESISTANCE;
+        if (rawOffset < minOffset) return minOffset + (rawOffset - minOffset) * EDGE_RESISTANCE;
+        return rawOffset;
+    };
+
+    let pointerId = null;
+    let startX = 0;
+    let lastX = 0;
+    let lastT = 0;
+    let velocity = 0;
+
+    strip.addEventListener('pointerdown', (e) => {
+        pointerId = e.pointerId;
+        startX = lastX = e.clientX;
+        lastT = performance.now();
+        velocity = 0;
+        wasDrag = false;
+    });
+    strip.addEventListener('pointermove', (e) => {
+        if (e.pointerId !== pointerId) return;
+        const dx = e.clientX - startX;
+        if (!wasDrag && Math.abs(dx) > DRAG_THRESHOLD_PX) {
+            wasDrag = true;
+            strip.setPointerCapture(pointerId);
+            strip.classList.add('dragging');
+        }
+        if (!wasDrag) return;
+        const now = performance.now();
+        velocity = (e.clientX - lastX) / Math.max(1, now - lastT);
+        lastX = e.clientX;
+        lastT = now;
+        offset = resist(dx);
+        place(false);
+    });
+    const end = (e) => {
+        if (e.pointerId !== pointerId) return;
+        pointerId = null;
+        strip.classList.remove('dragging');
+        if (wasDrag) release(velocity);
+        setTimeout(() => { wasDrag = false; }, 0);
+    };
+    strip.addEventListener('pointerup', end);
+    strip.addEventListener('pointercancel', end);
+
+    let wheelTimer = 0;
+    strip.addEventListener('wheel', (e) => {
+        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        if (!delta) return;
+        e.preventDefault();
+        offset = resist(offset - delta);
+        place(false);
+        clearTimeout(wheelTimer);
+        wheelTimer = setTimeout(() => release(0), WHEEL_IDLE_MS);
+    }, { passive: false });
+
+    strip.addEventListener('keydown', (e) => {
+        const step = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
+        if (!step) return;
+        e.preventDefault();
+        const shows = showIndices();
+        const pos = shows.indexOf(currentIndex) + step;
+        if (pos >= 0 && pos < shows.length) { snapTo(shows[pos]); return; }
+        offset = -step * cellWidth * EDGE_RESISTANCE;
+        place(true);
+        setTimeout(() => { offset = 0; place(true); }, 160);
+    });
+
+    const findDay = (key) => days.findIndex((d) => iso(d.date) === key);
+    const JUMPS = { latest: () => findDay(iso(LAST_RECORD)), oldest: () => findDay(iso(FIRST_RECORD)), mid: () => findDay('2026-10-08') };
+    document.querySelectorAll('[data-jump]').forEach((btn) => btn.addEventListener('click', () => {
+        snapTo(nearestShow(JUMPS[btn.dataset.jump](), 0));
+    }));
+
+    document.querySelectorAll('[data-dir]').forEach((btn) => btn.addEventListener('click', () => {
+        const wantReverse = btn.dataset.dir === 'reverse';
+        const isReverse = days[0].date > days[days.length - 1].date;
+        document.querySelectorAll('[data-dir]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+        if (wantReverse === isReverse) return;
+        const cur = days[currentIndex];
+        days = days.slice().reverse();
+        currentIndex = days.indexOf(cur);
+        offset = 0;
+        render();
+        place(false);
+    }));
+
+    new ResizeObserver(measure).observe(strip);
+    measure();
+})();
+</script>
