@@ -1,0 +1,48 @@
+/*
+ * 填滿橫額同 mini player 之間剩低嘅高度（flex-basis 0：高度跟版面，唔跟內容），
+ * useRowsPerPage 量呢個高度計每頁幾多行；分頁時指示點喺最底
+ */
+.pager {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    min-height: 0;
+    /* 抵銷 .grid 頂部留俾陰影嘅位，橫額 ↔ 節目格距離同以前一樣 */
+    margin-top: calc(-1 * var(--space-2));
+}
+
+/* 一頁一屏：橫向 scroll-snap，一次轉一頁；唔見捲動條。食晒剩低高度，指示點貼住底 */
+.scroller {
+    display: flex;
+    flex: 1 1 0;
+    /* 收窄（maxWidth）時喺中間 */
+    width: 100%;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+}
+
+.scroller::-webkit-scrollbar {
+    display: none;
+}
+
+/*
+ * 一頁：左右留白、格距同頁頂橫額共用（HomeBanner 用同一對 token 計高度）。
+ * 捲動容器會剪走溢出，所以上下留位畀泥膠落影（--shadow-clay-tile 向下 6px 實色 + 散影；
+ * 散影最外圈好淡，留 8px 已經睇唔出剪走）
+ */
+.grid {
+    display: grid;
+    flex: 0 0 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: var(--home-tile-gap);
+    padding: var(--space-2) var(--home-gutter);
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}

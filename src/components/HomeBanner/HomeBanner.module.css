@@ -1,12 +1,25 @@
 /*
- * h1 只係個殼：左右留白同主頁節目格一樣；inline-size container 令 .image 嘅 100cqi = 內容闊。
- * line-height: 0 免 img 底下多咗 inline 行距。
+ * 外殼：左右留白同主頁節目格一樣；inline-size container 令 .image 嘅 100cqi = 內容闊。
+ * position: relative 畀右下角（.corner）定位。
  */
 .banner {
+    position: relative;
+    flex-shrink: 0;
     container-type: inline-size;
     width: 100%;
     padding: 0 var(--home-gutter);
+}
+
+/* h1 只係個殼；line-height: 0 免 img 底下多咗 inline 行距 */
+.heading {
     line-height: 0;
+}
+
+/* 右下角（版本號）：喺圖入面，離圖邊一格圓角咁遠，唔會貼住圓角 */
+.corner {
+    position: absolute;
+    right: calc(var(--home-gutter) + var(--space-2));
+    bottom: var(--space-2);
 }
 
 /*
