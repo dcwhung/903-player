@@ -27,6 +27,14 @@ describe('useMiniPlayer', () => {
     });
     afterEach(() => vi.useRealTimers());
 
+    it('hides instead of showing an older day on a weekday with nothing up yet', async () => {
+        vi.setSystemTime(new Date('2026-10-20T08:00:00Z'));
+        const { result } = setup();
+
+        await waitFor(() => expect(result.current.player).toBeDefined());
+        expect(result.current.mini).toBeNull();
+    });
+
     it('keeps playing when switching show while loaded and playing', async () => {
         const { audio, result } = setup();
         await ready(result);

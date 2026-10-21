@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import type { Recording } from '../types/recording';
+import type { Recording, UnavailableEpisode } from '../types/recording';
 
 /** loading：storage 冇錄音而第一輪 probe 仲未有結果；之後一律 ready */
 export type LoadStatus = 'loading' | 'ready';
@@ -7,6 +7,8 @@ export type LoadStatus = 'loading' | 'ready';
 export interface RecordingsContextValue {
     status: LoadStatus;
     recordings: Recording[];
+    /** 試過但原站未有嘅集數：清單照列出但播唔到；搵到之後由 selector 用 recordings 對走 */
+    unavailable: UnavailableEpisode[];
     /** 第一輪 probe 仲未完（唔影響 status）：某節目冇錄音時，未 probe 完唔好話「冇錄音」住 */
     isSearching: boolean;
 }

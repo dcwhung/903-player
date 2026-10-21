@@ -1,0 +1,64 @@
+/* 卡疊嘅位：虛線外框（同卡一樣圓角），入面灰色 ring + 唱片 + 兩行字 */
+.empty {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: center;
+    /* 留白同今日節目卡一樣（ShowCardStack .top / .card），唱片位置唔會同有節目時唔同 */
+    gap: var(--card-inner-gap);
+    width: calc(100% - 2 * var(--card-stack-gutter));
+    padding: var(--card-padding-block) var(--space-4) var(--card-title-space);
+    border: 1px dashed var(--color-divider);
+    border-radius: var(--radius-lg);
+    text-align: center;
+}
+
+/*
+ * 同播放器（PlayerGauge .gauge）一樣大：闊 = --player-disc-size，高連下面控制掣嗰行（300 / 332），
+ * 冇節目所以控制掣嗰行留空；ring 同唱片喺上面正方形入面
+ */
+.gauge {
+    position: relative;
+    width: var(--player-disc-size);
+    aspect-ratio: 300 / 332;
+}
+
+.ring {
+    position: absolute;
+    inset: 0 0 auto;
+    width: 100%;
+    aspect-ratio: 1;
+}
+
+.track {
+    fill: none;
+    stroke: var(--color-track);
+    stroke-linecap: round;
+}
+
+/* 唱片喺 ring 入面置中（Disc large = 闊 72%，同播放器比例一樣） */
+.disc {
+    position: absolute;
+    inset: 0 0 auto;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* h2 / p 預設有上下 margin，兩行字會隔得太開 */
+.title,
+.hint {
+    margin: 0;
+}
+
+.title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.hint {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}

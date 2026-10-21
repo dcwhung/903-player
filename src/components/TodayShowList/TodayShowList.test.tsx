@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TodayShowList, type TodayShowItem } from './TodayShowList';
 
@@ -48,6 +48,56 @@ describe('TodayShowList', () => {
 
         expect(screen.queryByRole('button', { name: /^暫停/ })).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: /^播放 Bad Girl大過佬/ })).toBeInTheDocument();
+    });
+
+    describe('unavailable shows', () => {
+        const UNAVAILABLE: TodayShowItem = {
+            key: 'missing',
+            name: '口水多過浪花',
+            time: '15:10',
+            art: '/d.jpg',
+            status: 'unavailable',
+            active: false,
+        };
+        const withUnavailable = [...ITEMS, UNAVAILABLE];
+
+        /** 未上架嗰行：唔係掣，用可見文字搵 */
+        const unavailableRow = (): HTMLElement => {
+            const row = screen.getByText('口水多過浪花').closest('li');
+            if (!row) throw new Error('unavailable row not found');
+            return row;
+        };
+
+        it('lists them as plain rows, not buttons, without a play icon', () => {
+            render(<TodayShowList items={withUnavailable} onSelect={() => {}} />);
+
+            const row = unavailableRow();
+            expect(row).toHaveTextContent('口水多過浪花15:10 · 未上架');
+            expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: /口水多過浪花/ })).not.toBeInTheDocument();
+            expect(row.querySelector('svg')).toBeNull();
+        });
+
+        it('says how many are unavailable next to the heading', () => {
+            render(<TodayShowList items={withUnavailable} onSelect={() => {}} />);
+
+            expect(screen.getByText('1 個未上架')).toBeInTheDocument();
+        });
+
+        it('shows no count when everything is available', () => {
+            render(<TodayShowList items={ITEMS} onSelect={() => {}} />);
+
+            expect(screen.queryByText(/未上架/)).not.toBeInTheDocument();
+        });
+
+        it('does not report a tap on an unavailable show', async () => {
+            const onSelect = vi.fn();
+            render(<TodayShowList items={withUnavailable} onSelect={onSelect} />);
+
+            await userEvent.click(unavailableRow());
+
+            expect(onSelect).not.toHaveBeenCalled();
+        });
     });
 
     it('reports the selected show', async () => {

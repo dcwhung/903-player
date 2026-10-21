@@ -11,6 +11,7 @@ import { SHOWS } from '../config/shows';
 import { useRecordings } from '../data/useRecordings';
 import { useHomeArrival } from '../hooks/useHomeArrival';
 import { useMiniPlayer } from '../hooks/useMiniPlayer';
+import { useNewShowIds } from '../hooks/useNewShowIds';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { t } from '../i18n/t';
 import styles from './HomePage.module.css';
@@ -21,6 +22,7 @@ export const HomePage = () => {
     const { status } = useRecordings();
     const { startShow, startToday } = useStartPlayback();
     const miniPlayer = useMiniPlayer();
+    const newShowIds = useNewShowIds();
     useHomeArrival();
 
     return (
@@ -39,6 +41,7 @@ export const HomePage = () => {
                                 key={show.id}
                                 label={show.name}
                                 art={SHOW_THEMES[show.id].art}
+                                isNew={newShowIds.has(show.id)}
                                 onClick={() => {
                                     startShow(show.id);
                                     navigate(`/show/${show.id}`);

@@ -71,6 +71,15 @@
     --date-strip-weekday-line: 14px;
     --date-strip-day-line: 18px;
     --date-strip-empty-opacity: 0.35;
+    /* 未上架嘅集數 / 節目（清單照列出但撳唔到）：日子、節目名、唱片變淡；進度條變虛線 */
+    --unavailable-opacity: 0.45;
+    --unavailable-dash: 6px;
+    --unavailable-gap: 4px;
+    /* 主頁節目格「New」標籤：細細粒膠囊；左邊有粒圓點，所以左邊 padding 細過右邊（右邊用 --space-2） */
+    --new-badge-pad-block: 2px;
+    --new-badge-pad-start: 6px;
+    --new-badge-line: 16px;
+    --new-badge-dot: 6px;
 
     /* 今日節目卡疊（ShowCardStack）：每疊後一層向下移、縮細、變淡幾多（第一張後面嘅卡 scale 0.92） */
     --card-stack-offset: 12px;
@@ -119,6 +128,8 @@
             var(--space-4)
     );
     --shadow-clay-tile: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
+    /* 主頁節目格「New」標籤：輕輕浮起，同節目圖分開 */
+    --shadow-new-badge: 0 2px 6px rgb(0 0 0 / 35%);
     --color-today-tile-text: #2f4560;
     /* 橫額右下角版本號：半透明深底 + 白字（插畫係淺藍，對比度 ≥ 4.5:1） */
     --version-badge-bg: rgb(0 0 0 / 55%);

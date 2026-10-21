@@ -5,7 +5,10 @@ import { todayRecordings } from '../selectors/recordings';
 import type { Recording } from '../types/recording';
 import { hkToday } from '../utils/date';
 
-/** 入嚟主頁嗰刻播緊嘅錄音，係咪 mini player 會顯示嘅其中一個（今日，冇就最近一日） */
+/**
+ * 入嚟主頁嗰刻播緊嘅錄音，係咪 mini player 會顯示嘅其中一個
+ * （今日；今日冇節目播先用最近一日）
+ */
 export const isListedByMiniPlayer = (
     arrivedWith: Recording | null,
     recordings: Recording[],

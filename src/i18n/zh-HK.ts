@@ -15,6 +15,9 @@ export const zhHK = {
         bannerAlt: '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽',
         showsNav: '節目',
         today: '今日節目',
+        // 節目格：今日有已上架、未聽完嘅新一集
+        newBadge: 'New',
+        showNew: '{name}，今日有新一集',
         // 矮螢幕節目格分頁：指示點每粒嘅名、成組嘅位置
         page: '第 {index} 頁',
         pagePosition: '節目第 {index} 頁，共 {total} 頁',
@@ -38,6 +41,12 @@ export const zhHK = {
     episodes: {
         title: '集數',
         count: '共 {count} 集',
+        // 有未上架集數：「共 N 集」只計播得到嘅
+        countWithUnavailable: '共 {count} 集 · {unavailable} 集未上架',
+        // 試過但原站未有（404）：行照列出但撳唔到
+        unavailable: '未上架',
+        // 節目頁：有未上架集數但一集都播唔到
+        noneUp: '未有集數上架',
         playing: '播放中 · {current} / {total}',
         resume: '聽到 {time}',
         watched: '已收聽',
@@ -77,6 +86,11 @@ export const zhHK = {
         statusPlaying: '播放中',
         statusWatched: '已收聽',
         statusUnwatched: '未收聽',
+        statusUnavailable: '未上架',
+        unavailableCount: '{count} 個未上架',
+        // 今日有節目播但一個都未上架：卡疊嘅位改為呢個空狀態
+        emptyTitle: '今日節目未上架',
+        emptyHint: '上架之後會自動顯示',
     },
 } as const;
 

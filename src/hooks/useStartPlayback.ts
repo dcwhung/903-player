@@ -28,6 +28,7 @@ export const useStartPlayback = () => {
     );
 
     const startToday = useCallback(() => {
+        // 今日有節目播但未上架就唔播（唔會跳去舊日子），同今日節目頁一致
         const recording = todayRecordings(recordings, hkToday())[0];
         if (ready && recording) {
             void load(recording, { autoplay: true });

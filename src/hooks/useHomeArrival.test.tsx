@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
-import { useHomeArrival } from './useHomeArrival';
+import { isListedByMiniPlayer, useHomeArrival } from './useHomeArrival';
 
 const TODAY = recording('badgirl', '2026-10-19', '1000');
 const OLD = recording('gongzi', '2026-10-10');
@@ -88,7 +88,8 @@ describe('useHomeArrival', () => {
         await waitFor(() => expect(audio.pause).toHaveBeenCalledTimes(1));
     });
 
-    it('keeps playing the latest day when nothing was recorded today', async () => {
+    it('keeps playing the latest day when no show airs today', async () => {
+        vi.setSystemTime(new Date('2026-10-18T08:00:00Z')); // 香港 18/10（日）
         const latest = recording('gongzi', '2026-10-17');
         const audio = await arrive({ target: latest }, [OLD, latest]);
 
@@ -123,5 +124,16 @@ describe('useHomeArrival', () => {
 
         expect(audio.src).toBe(OLD.url);
         expect(audio.pause).not.toHaveBeenCalled();
+    });
+});
+
+describe('isListedByMiniPlayer', () => {
+    it('does not list an older day on a weekday with nothing up yet', () => {
+        expect(isListedByMiniPlayer(TODAY, RECORDINGS, '2026-10-19')).toBe(true);
+        expect(isListedByMiniPlayer(TODAY, RECORDINGS, '2026-10-20')).toBe(false);
+    });
+
+    it('lists the latest day when no show airs today', () => {
+        expect(isListedByMiniPlayer(TODAY, RECORDINGS, '2026-10-25')).toBe(true);
     });
 });

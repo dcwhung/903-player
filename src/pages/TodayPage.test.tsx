@@ -1,6 +1,10 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { recording, renderWithProviders } from '../../tests/renderWithProviders';
+import {
+    recording,
+    renderWithProviders,
+    unavailableEpisode,
+} from '../../tests/renderWithProviders';
 import { SHOW_THEMES } from '../config/showThemes';
 import { saveProgress } from '../services/progressStore';
 import { TodayPage } from './TodayPage';
@@ -12,6 +16,10 @@ const TODAY = [
 ];
 const RECORDINGS = [...TODAY, recording('gongzi', '2026-10-17')];
 const ROUTE = { route: '/today', path: '/today' };
+
+/** 節目表入面嘅行（未上架嗰啲唔係掣，用可見文字搵） */
+const scheduleRows = (): HTMLElement[] =>
+    within(screen.getByRole('region', { name: '節目表' })).getAllByRole('listitem');
 
 describe('TodayPage', () => {
     beforeEach(() => {
@@ -164,7 +172,85 @@ describe('TodayPage', () => {
         expect(screen.getByRole('button', { name: /(?:播放|暫停) 公子會/ })).toBeInTheDocument();
     });
 
-    it('shows an empty state when nothing has been recorded', async () => {
+    it('lists the rest of today’s schedule as plain rows, not buttons, in broadcast order', async () => {
+        const { audio } = renderWithProviders(<TodayPage />, {
+            ...ROUTE,
+            recordings: RECORDINGS,
+            unavailable: [unavailableEpisode('waves', '2026-10-19', '1510')],
+        });
+
+        expect(await screen.findByText('2 個未上架')).toBeInTheDocument();
+        const rows = scheduleRows();
+        expect(rows).toHaveLength(TODAY.length + 2);
+        expect(rows[3]).toHaveTextContent('口水多過浪花15:10 · 未上架');
+        expect(rows[4]).toHaveTextContent('聖艾粒LaLaLaLa17:10 · 未上架');
+        expect(rows[4] && within(rows[4]).queryByRole('button')).toBeNull();
+        const list = screen.getByRole('region', { name: '節目表' });
+        expect(within(list).getAllByRole('button')).toHaveLength(TODAY.length);
+        await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
+        await userEvent.click(within(list).getByText('聖艾粒LaLaLaLa'));
+        expect(audio.src).toBe(TODAY[2]?.url);
+        const dots = screen.getByRole('group', { name: /^今日第/ });
+        expect(within(dots).getAllByRole('button')).toHaveLength(TODAY.length);
+    });
+
+    describe('when nothing today is up yet', () => {
+        const UNAVAILABLE_TODAY = [
+            unavailableEpisode('wanni', '2026-10-20', '0708'),
+            unavailableEpisode('badgirl', '2026-10-20', '1009'),
+        ];
+        beforeEach(() => vi.setSystemTime(new Date('2026-10-20T08:00:00Z')));
+
+        it('lists the whole of today greyed out with an empty player instead of an older day', async () => {
+            renderWithProviders(<TodayPage />, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+                unavailable: UNAVAILABLE_TODAY,
+            });
+
+            expect(await screen.findByText('今日節目未上架')).toBeInTheDocument();
+            expect(screen.getByText('上架之後會自動顯示')).toBeInTheDocument();
+            expect(screen.getByText('5 個未上架')).toBeInTheDocument();
+            const rows = scheduleRows();
+            expect(rows[0]).toHaveTextContent('雲妮鍾情07:08 · 未上架');
+            expect(rows[4]).toHaveTextContent('聖艾粒LaLaLaLa17:10 · 未上架');
+            const list = screen.getByRole('region', { name: '節目表' });
+            expect(within(list).queryByRole('button')).not.toBeInTheDocument();
+            expect(
+                screen.queryByRole('group', { name: '今日節目，左右掃動轉節目' }),
+            ).not.toBeInTheDocument();
+            expect(screen.queryByRole('group', { name: /^今日第/ })).not.toBeInTheDocument();
+        });
+
+        it('does not autoplay an older day', async () => {
+            const { audio } = renderWithProviders(<TodayPage />, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+                unavailable: UNAVAILABLE_TODAY,
+            });
+
+            await screen.findByText('今日節目未上架');
+            expect(audio.src).toBe('');
+        });
+
+        it('stays on today at 07:00 before any show has been probed', async () => {
+            vi.setSystemTime(new Date('2026-10-19T23:00:00Z')); // 香港 20/10（二）07:00
+            const { audio } = renderWithProviders(<TodayPage />, {
+                ...ROUTE,
+                recordings: TODAY,
+            });
+
+            expect(await screen.findByText('今日節目未上架')).toBeInTheDocument();
+            expect(screen.getByText('5 個未上架')).toBeInTheDocument();
+            expect(
+                screen.queryByRole('heading', { name: '在晴朗的一天出發' }),
+            ).not.toBeInTheDocument();
+            expect(audio.src).toBe('');
+        });
+    });
+
+    it('shows an empty state when no show airs today and nothing has been recorded', async () => {
+        vi.setSystemTime(new Date('2026-10-18T08:00:00Z'));
         renderWithProviders(<TodayPage />, ROUTE);
 
         expect(await screen.findByText('暫時未有錄音')).toBeInTheDocument();

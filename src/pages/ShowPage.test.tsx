@@ -1,6 +1,10 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { recording, renderWithProviders } from '../../tests/renderWithProviders';
+import {
+    recording,
+    renderWithProviders,
+    unavailableEpisode,
+} from '../../tests/renderWithProviders';
 import { saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import { ShowPage } from './ShowPage';
@@ -94,6 +98,43 @@ describe('ShowPage', () => {
         ]);
         expect(rows[0]).toHaveAttribute('aria-current', 'true');
         expect(screen.getByText('共 3 集')).toBeInTheDocument();
+    });
+
+    it('lists unavailable episodes as plain rows, not buttons, and counts them apart', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, {
+            ...ROUTE,
+            recordings: RECORDINGS,
+            unavailable: [unavailableEpisode('gongzi', '2026-09-26')],
+        });
+
+        const rows = await screen.findAllByRole('button', { name: /\d{2}\/\d{2} 星期/ });
+        expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual([
+            '暫停 17/10 星期六，連線中…',
+            '播放 10/10 星期六，未收聽',
+            '播放 03/10 星期六，未收聽',
+        ]);
+        const list = screen.getByRole('region', { name: '集數' });
+        const last = within(list).getAllByRole('listitem').at(-1);
+        expect(last).toHaveTextContent('26/09星期六未上架');
+        expect(last && within(last).queryByRole('button')).toBeNull();
+        expect(screen.getByText('共 3 集 · 1 集未上架')).toBeInTheDocument();
+
+        await userEvent.click(within(list).getByText('26/09'));
+        expect(audio.src).toBe(RECORDINGS[0]?.url);
+    });
+
+    it('still lists unavailable episodes when the show has nothing to play yet', async () => {
+        renderWithProviders(<ShowPage />, {
+            ...ROUTE,
+            unavailable: [unavailableEpisode('gongzi', '2026-10-17')],
+        });
+
+        expect(await screen.findByText('未有集數上架')).toBeInTheDocument();
+        expect(screen.queryByText('暫時未有錄音')).not.toBeInTheDocument();
+        const list = screen.getByRole('region', { name: '集數' });
+        expect(within(list).getByRole('listitem')).toHaveTextContent('17/10星期六未上架');
+        expect(within(list).queryByRole('button')).not.toBeInTheDocument();
+        expect(screen.queryByRole('slider')).not.toBeInTheDocument();
     });
 
     it('plays the episode that is tapped', async () => {
