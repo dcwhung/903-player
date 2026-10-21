@@ -148,9 +148,11 @@ export const todayView = (
     if (!date) {
         return { date, playable: [], entries: [] };
     }
-    // 今日有節目播先會揀今日，所以 hasShowsOn(date) 即係「今日」嗰個分支
-    const entries = hasShowsOn(date)
-        ? scheduleOnDate(recordings, date)
-        : entriesOnDate(recordings, unavailable, date);
+    // 今日：成日節目表（未開咪、未 probe、404 全部灰）；
+    // fallback 嗰日（今日冇節目播）：只有嗰日 probe 過但未有嘅先灰
+    const entries =
+        date === today
+            ? scheduleOnDate(recordings, date)
+            : entriesOnDate(recordings, unavailable, date);
     return { date, playable: showsOnDate(recordings, date), entries };
 };

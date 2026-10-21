@@ -152,6 +152,20 @@ describe('todayView', () => {
         });
     });
 
+    it('greys out nothing on the fallback day without probe misses', () => {
+        expect(todayView(all, [], '2026-10-18').entries).toEqual([rec('gongzi', '2026-10-17')]);
+    });
+
+    it('lists only the recordings of a fallback weekday, not its whole schedule', () => {
+        const noSaturday = all.filter((r) => r.date !== '2026-10-17');
+
+        expect(todayView(noSaturday, [], '2026-10-18')).toEqual({
+            date: '2026-10-16',
+            playable: showsOnDate(noSaturday, '2026-10-16'),
+            entries: showsOnDate(noSaturday, '2026-10-16'),
+        });
+    });
+
     it('is empty when no show airs today and nothing was recorded', () => {
         expect(todayView([], [], '2026-10-18')).toEqual({
             date: undefined,
