@@ -188,17 +188,16 @@
          * 改字體大小、控制掣或者行高要跟住改。
          */
         --player-reserved-height: calc(
-            env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 4 *
+            env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 3 *
                 var(--fixed-page-gap) +
-                max(var(--date-strip-label-height) + var(--date-strip-height), 60px) + 76px + 30px +
-                2 * 56px + var(--space-2) + env(safe-area-inset-bottom)
+                max(var(--date-strip-label-height) + var(--date-strip-height), 60px) + 30px + 2 *
+                56px + var(--space-2) + env(safe-area-inset-bottom)
         );
         /* 成個播放器最多佔幾高：殼高 × --player-max-share */
         --player-max-height: calc(var(--player-shell-height) * var(--player-max-share));
         /* 播放器入面唱片以外嘅高度：2 個間距 + 標籤 + 日子條 + 播放掣真實尺寸（跟 clamp 縮放） */
         --player-chrome-height: calc(
-            2 * var(--fixed-page-gap) + var(--date-strip-label-height) + var(--date-strip-height) +
-                var(--player-toggle-size)
+            2 * var(--fixed-page-gap) + var(--date-strip-label-height) + var(--date-strip-height)
         );
         /* 唱片 + 時間嗰一格嘅高 = 闊 × 316 / 300（PlayerPanel .gauge aspect-ratio） */
         /* 下限都唔可以闊過 78vw（極窄 / 高倍放大時避免橫向超出） */
@@ -207,8 +206,8 @@
             min(
                 300px,
                 78vw,
-                calc((var(--player-shell-height) - var(--player-reserved-height)) * 300 / 316),
-                calc((var(--player-max-height) - var(--player-chrome-height)) * 300 / 316)
+                calc((var(--player-shell-height) - var(--player-reserved-height)) * 300 / 332),
+                calc((var(--player-max-height) - var(--player-chrome-height)) * 300 / 332)
             )
         );
     }

@@ -90,7 +90,7 @@ describe('PlayerPanel', () => {
         expect(audio.play).toHaveBeenCalled();
     });
 
-    it('toggles and skips through the controls', async () => {
+    it('toggles through the play button beside restart, with no skip buttons', async () => {
         const { audio } = renderWithProviders(<Harness />);
         await userEvent.click(screen.getByRole('button', { name: 'load' }));
         act(() => audio.emitMetadata(6836));
@@ -98,8 +98,7 @@ describe('PlayerPanel', () => {
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
         expect(screen.getByRole('button', { name: '暫停' })).toBeInTheDocument();
 
-        await userEvent.click(screen.getByRole('button', { name: '前進 60 秒' }));
-        expect(audio.currentTime).toBe(60);
+        expect(screen.queryByRole('button', { name: /秒$/ })).not.toBeInTheDocument();
     });
 
     it('previews the dragged time in the elapsed label', async () => {

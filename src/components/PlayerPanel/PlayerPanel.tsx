@@ -6,7 +6,6 @@ import { DateStrip } from '../DateStrip/DateStrip';
 import type { StripNeighbours } from '../DateStrip/dateStrip';
 import { PlayerGauge } from './PlayerGauge';
 import styles from './PlayerPanel.module.css';
-import { PlayerTransport } from './PlayerTransport';
 
 interface PlayerPanelProps {
     /** 節目名：畫面顯示喺頁頭，日子條只係攞嚟做轉集區個名 */
@@ -39,7 +38,6 @@ export const PlayerPanel = ({ title, dateLabel, art, onStep, neighbours }: Playe
                 spinRef={artRef}
                 onHold={setHeld}
             />
-            <PlayerTransport />
         </div>
     );
 };

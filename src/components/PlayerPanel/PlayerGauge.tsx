@@ -3,7 +3,7 @@ import { t } from '../../i18n/t';
 import { formatDuration } from '../../utils/time';
 import { ArcSlider } from '../ArcSlider/ArcSlider';
 import { Disc } from '../Disc/Disc';
-import { RestartIcon } from '../icons/icons';
+import { PauseIcon, PlayIcon, RestartIcon } from '../icons/icons';
 import styles from './PlayerPanel.module.css';
 import { useGaugeGestures } from './useGaugeGestures';
 
@@ -17,6 +17,7 @@ interface PlayerGaugeProps {
 }
 
 const RESTART_ICON_SIZE = 22;
+const TOGGLE_ICON_SIZE = 26;
 
 /** 未知時長（未載到 metadata，例如斷網）時間都唔可信：顯示佔位，唔顯示 0:00 / 續播位置 */
 const formatClock = (seconds: number, known: boolean): string =>
@@ -48,14 +49,28 @@ export const PlayerGauge = ({ art, artRef, held = false }: PlayerGaugeProps) => 
                 {formatClock(shownTime, known)}
             </span>
             <span className={`${styles.time} ${styles.total}`}>{total}</span>
-            <button
-                type="button"
-                className={styles.restart}
-                aria-label={t('player.restart')}
-                onClick={() => void player.restart()}
-            >
-                <RestartIcon size={RESTART_ICON_SIZE} />
-            </button>
+            <div className={styles.actions}>
+                <button
+                    type="button"
+                    className={styles.restart}
+                    aria-label={t('player.restart')}
+                    onClick={() => void player.restart()}
+                >
+                    <RestartIcon size={RESTART_ICON_SIZE} />
+                </button>
+                <button
+                    type="button"
+                    className={styles.toggle}
+                    aria-label={t(player.isPlaying ? 'player.pause' : 'player.play')}
+                    onClick={() => void player.toggle()}
+                >
+                    {player.isPlaying ? (
+                        <PauseIcon size={TOGGLE_ICON_SIZE} />
+                    ) : (
+                        <PlayIcon size={TOGGLE_ICON_SIZE} />
+                    )}
+                </button>
+            </div>
         </div>
     );
 };

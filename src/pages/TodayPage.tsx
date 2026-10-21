@@ -1,7 +1,6 @@
 import { PageDots } from '../components/PageDots/PageDots';
 import { PageHeader } from '../components/PageHeader/PageHeader';
 import { PlayerCard } from '../components/PlayerPanel/PlayerCard';
-import { PlayerTransport } from '../components/PlayerPanel/PlayerTransport';
 import { ShowCardStack } from '../components/ShowCardStack/ShowCardStack';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { TodayShowList } from '../components/TodayShowList/TodayShowList';
@@ -37,7 +36,6 @@ export const TodayPage = () => {
                                 index={index}
                                 onSelect={selectIndex}
                             />
-                            <PlayerTransport />
                         </div>
                         <TodayShowList items={items} onSelect={selectShow} />
                     </>

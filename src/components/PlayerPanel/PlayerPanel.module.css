@@ -11,7 +11,9 @@
 .gauge {
     position: relative;
     width: var(--player-disc-size);
-    aspect-ratio: 300 / 316;
+    aspect-ratio: 300 / 332;
+    /* 播放掣跟唱片大小縮放（300px 唱片 → 56px），最細仍然 ≥ 44px 觸控範圍 */
+    --player-gauge-toggle-size: max(var(--touch-target), calc(var(--player-disc-size) * 56 / 300));
 }
 
 .arc {
@@ -36,10 +38,11 @@
 
 .time {
     position: absolute;
-    top: 85%;
+    bottom: calc(var(--player-gauge-toggle-size) / 2);
     font-size: var(--font-size-sm);
     font-variant-numeric: tabular-nums;
     color: var(--color-text-secondary);
+    transform: translateY(50%);
 }
 
 .elapsed {
@@ -50,20 +53,39 @@
     right: 0;
 }
 
-.restart {
+/* 唱片下面弧形缺口：重新播放 + 播放（播放掣置中，右邊留同重新播放一樣闊嘅空格） */
+.actions {
     position: absolute;
-    top: 84%;
+    bottom: 0;
     left: 50%;
+    display: grid;
+    grid-template-columns: var(--touch-target) auto var(--touch-target);
+    align-items: center;
+    transform: translateX(-50%);
+}
+
+.restart,
+.toggle {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--touch-target);
-    height: var(--touch-target);
     border: none;
     border-radius: var(--radius-full);
+}
+
+.restart {
+    width: var(--touch-target);
+    height: var(--touch-target);
     background: transparent;
     color: var(--color-accent);
-    transform: translateX(-50%);
+}
+
+.toggle {
+    width: var(--player-gauge-toggle-size);
+    height: var(--player-gauge-toggle-size);
+    background: var(--color-accent-fill);
+    box-shadow: var(--shadow-raised-strong);
+    color: var(--color-on-accent);
 }
 
 /* 今日節目卡嘅節目名（同 GhostCard 嘅 .title 一樣，換卡唔會跳） */
