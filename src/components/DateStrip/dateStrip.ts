@@ -86,11 +86,11 @@ const cellWidthOf = (width: number): number =>
 /** 離 position 最近有集數嗰日；一樣近就揀 bias 方向（+1 = 右邊舊啲，-1 = 左邊新啲） */
 const nearestEpisode = (days: readonly StripDay[], position: number, bias: number): number => {
     let best = -1;
-    let bestScore = Infinity;
+    let bestDistance = Infinity;
     episodeIndexes(days).forEach((i) => {
-        const tieBreak = Math.sign(i - position) === bias ? 0 : Number.EPSILON;
-        const score = Math.abs(i - position) + tieBreak;
-        if (score < bestScore) [best, bestScore] = [i, score];
+        const distance = Math.abs(i - position);
+        const tieWins = distance === bestDistance && Math.sign(i - position) === bias;
+        if (distance < bestDistance || tieWins) [best, bestDistance] = [i, distance];
     });
     return best;
 };

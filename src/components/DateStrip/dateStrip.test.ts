@@ -101,6 +101,20 @@ describe('stripRelease', () => {
         expect(stripRelease(release(-50), gap.days, gap.current)).toBe(5);
     });
 
+    it('breaks a tie towards the drag direction across a wide gap too', () => {
+        const wide = stripDays(
+            [
+                recording('badgirl', '2026-10-20'),
+                recording('badgirl', '2026-10-16'),
+                recording('badgirl', '2026-10-12'),
+            ],
+            recording('badgirl', '2026-10-16').url,
+        );
+        // 16/10（7）向左拖兩格去 14/10：16/10 同 12/10 都隔兩格，跟拖動方向揀 12/10（11）
+        expect(stripRelease(release(-2 * CELL), wide.days, wide.current)).toBe(11);
+        expect(stripRelease(release(2 * CELL), wide.days, wide.current)).toBe(3);
+    });
+
     it('moves at least one episode on a quick flick', () => {
         expect(at(ON_19, -30, 40)).toBe(ON_16);
         expect(at(ON_19, 30, 40)).toBe(4);
