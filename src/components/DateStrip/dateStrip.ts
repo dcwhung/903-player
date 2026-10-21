@@ -23,6 +23,9 @@ export interface StripGesture {
     width: number;
 }
 
+/** 日子條入面撳得嘅日子掣：記住自己係第幾格（track 代理 click 用） */
+export const DAY_INDEX_ATTR = 'data-day';
+
 /** 一次見到 7 日，現正播放喺正中（第 4 格）；DateStrip.module.css 嘅 --date-strip-days 要同步 */
 export const VISIBLE_DAYS = 7;
 const CENTRE_SLOT = Math.floor(VISIBLE_DAYS / 2);

@@ -65,7 +65,8 @@ export const useShowPage = (showId: string) => {
     };
     const theme = themeFor(show?.id);
     // 日子條：同撳集數行同一條路（未聽完續播、聽過由頭播）
-    const strip = stripDays(episodes, currentUrl);
+    // memo：播緊時每秒幾次 re-render，唔使每次重砌成段歷史
+    const strip = useMemo(() => stripDays(episodes, currentUrl), [episodes, currentUrl]);
     return {
         show,
         theme,

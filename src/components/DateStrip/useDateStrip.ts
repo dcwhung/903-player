@@ -1,7 +1,14 @@
-import { useId, useLayoutEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
+import {
+    useId,
+    useLayoutEffect,
+    useRef,
+    type KeyboardEvent,
+    type MouseEvent,
+    type RefObject,
+} from 'react';
 import { arrowKeyDirection } from '../../hooks/swipe';
 import { t } from '../../i18n/t';
-import { steppedDay, type StripDay } from './dateStrip';
+import { DAY_INDEX_ATTR, steppedDay, type StripDay } from './dateStrip';
 import { useStepAnnouncement } from './useStepAnnouncement';
 import { useStripGesture } from './useStripGesture';
 import { useStripMotion } from './useStripMotion';
@@ -28,12 +35,16 @@ export interface DateStripStepOptions {
 const useStripStep = ({ dateLabel, days, current, onPick, spinRef }: DateStripStepOptions) => {
     const { steps, announcement, markStep } = useStepAnnouncement(dateLabel);
     const motion = useStripMotion(spinRef);
-    const mounted = useRef(false);
-    // 轉咗集（steps）或者外面轉咗集（current 變）就滑去新嗰日正中；第一次 render 直接擺好
+    const currentDate = days[current]?.date;
+    const settled = useRef<{ date: string | undefined; steps: number } | null>(null);
+    // 轉咗集（steps）或者外面轉咗集（日子變）就滑去新嗰日正中；第一次 render、
+    // 或者只係集數清單多咗（例如 probe 搵到新一集，index 變但日子冇變）就直接擺好，唔使滑
     useLayoutEffect(() => {
-        motion.settle(current, mounted.current);
-        mounted.current = true;
-    }, [current, steps, motion]);
+        const last = settled.current;
+        const moved = last !== null && (last.date !== currentDate || last.steps !== steps);
+        motion.settle(current, moved);
+        settled.current = { date: currentDate, steps };
+    }, [current, currentDate, steps, motion]);
     const go = (index: number) => {
         const url = days[index]?.url;
         const moved = index !== current && url !== undefined && url !== null;
@@ -70,6 +81,14 @@ export const useDateStrip = (options: DateStripStepOptions) => {
         // → 舊一集（右邊）、← 新一集（左邊），同畫面位置一致
         go(steppedDay(options.days, options.current, direction));
     };
+    // 撳日子：由 track 代理（DayCell 唔使每格一個 callback，可以 memo）；
+    // 撳咗嘅掣會變做正中（唔再係掣），焦點交返日子條，方向鍵照用得
+    const onTrackClick = (event: MouseEvent<HTMLDivElement>) => {
+        const cell = (event.target as HTMLElement).closest<HTMLElement>(`[${DAY_INDEX_ATTR}]`);
+        if (!cell) return;
+        event.currentTarget.parentElement?.focus({ preventScroll: true });
+        go(Number(cell.getAttribute(DAY_INDEX_ATTR)));
+    };
     const zone = {
         role: 'group',
         'aria-roledescription': t('episodes.switchRoleDescription'),
@@ -79,5 +98,5 @@ export const useDateStrip = (options: DateStripStepOptions) => {
         onKeyDown,
         ...gesture,
     };
-    return { ids, zone, trackRef: motion.trackRef, go, announcement };
+    return { ids, zone, trackRef: motion.trackRef, onTrackClick, announcement };
 };

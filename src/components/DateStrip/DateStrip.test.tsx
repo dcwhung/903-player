@@ -185,6 +185,22 @@ describe('DateStrip', () => {
         expect(onPick).toHaveBeenCalledWith(urlOn('2026-10-21'));
         await waitFor(() => expect(zone()).toHaveAccessibleName(/^21\/10（三）/));
         expect(track().style.transform).toBe(settledAt(3));
+        // 撳嘅日子變咗正中（唔再係掣）：焦點留喺日子條，方向鍵照用得
+        expect(zone()).toHaveFocus();
+    });
+
+    it('jumps without sliding when a newer episode is added and the playing day stays put', () => {
+        const days = (episodes: typeof EPISODES) => stripDays(episodes, urlOn('2026-10-19'));
+        const props = { title: 'Bad Girl大過佬', dateLabel: '19/10（一）', onPick: vi.fn() };
+        const before = days(EPISODES);
+        const { rerender } = render(<DateStrip {...props} {...before} />);
+
+        // probe 搵到 22/10：成條多咗一格，19/10 index + 1，但畫面上位置唔變，唔使滑
+        const after = days([recording('badgirl', '2026-10-22'), ...EPISODES]);
+        rerender(<DateStrip {...props} {...after} />);
+
+        expect(track().style.transform).toBe(settledAt(after.current));
+        expect(track().style.transition).toBe('none');
     });
 
     it('swallows the click after a swipe released without any pointermove', () => {

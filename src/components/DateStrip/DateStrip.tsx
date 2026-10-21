@@ -13,19 +13,20 @@ interface DateStripProps extends DateStripStepOptions {
  * 現正播放永遠喺正中 highlight box。成條跟手指拖，放手滑去最近有集數嗰日；撳日子或者方向鍵都得。
  */
 export const DateStrip = ({ title, ...options }: DateStripProps) => {
-    const { ids, zone, trackRef, go, announcement } = useDateStrip(options);
+    const { ids, zone, trackRef, onTrackClick, announcement } = useDateStrip(options);
     const { dateLabel, days, current } = options;
     return (
         <div className={styles.group}>
             <span className={styles.label}>{t('episodes.nowPlayingLabel')}</span>
             <div className={styles.strip} {...zone}>
-                <div ref={trackRef} className={styles.track}>
+                {/* click 代理：撳到嘅日子掣冒泡上嚟（鍵盤 / 輔助技術 activate 掣都係 click） */}
+                <div ref={trackRef} className={styles.track} onClick={onTrackClick}>
                     {days.map((day, index) => (
                         <DayCell
                             key={day.date}
                             day={day}
+                            index={index}
                             isCurrent={index === current}
-                            onPick={() => go(index)}
                         />
                     ))}
                 </div>
