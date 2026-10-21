@@ -50,6 +50,8 @@ export const zhHK = {
         switched: '已轉到 {date}',
         // 日子條上面嘅標籤（強調色），日期喺條中間
         nowPlayingLabel: '現正播放',
+        // 未讀到時長（例如斷網）：標籤同揀中集狀態都顯示呢個，唔顯示時間
+        connecting: '連線中…',
         // 日子條兩邊：左邊新一集、右邊舊一集（可見文字 + 讀屏軟件讀嘅名）
         newerChevron: '‹',
         olderChevron: '›',

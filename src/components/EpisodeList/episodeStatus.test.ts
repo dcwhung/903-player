@@ -15,6 +15,12 @@ describe('episodeStatus', () => {
         ).toEqual({ kind: 'playing', ratio: 760 / 7110, text: '播放中 · 12:40 / 1:58:30' });
     });
 
+    it('shows connecting without times while the duration is unknown (offline)', () => {
+        expect(
+            episodeStatus({ isCurrent: true, live: { currentTime: 1449, duration: 0 } }),
+        ).toEqual({ kind: 'playing', ratio: 0, text: '連線中…' });
+    });
+
     it('marks watched episodes', () => {
         expect(episodeStatus({ isCurrent: false, progress: progress(10, 100, true) })).toEqual({
             kind: 'watched',
