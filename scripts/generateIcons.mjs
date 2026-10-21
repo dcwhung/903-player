@@ -10,6 +10,7 @@ const SOURCE = fileURLToPath(new URL('../design/app-icon.png', import.meta.url))
 const OUT_DIR = fileURLToPath(new URL('../public/', import.meta.url));
 // icon 嘅柔藍底色（要同 app-icon.png 背景一致）：maskable 同 apple-touch-icon 用嚟填滿四角
 const ICON_BACKGROUND = '#98bdde';
+const OG_ICON_QUALITY = 88;
 
 /**
  * fill：底色（冇就透明）；scale：圖佔邊長幾多。
@@ -22,6 +23,14 @@ const ICONS = [
     { name: 'icon-maskable-512.png', size: 512, scale: 0.8, fill: ICON_BACKGROUND },
     { name: 'apple-touch-icon.png', size: 180, scale: 1.02, fill: ICON_BACKGROUND },
     { name: 'favicon.png', size: 64, scale: 1 },
+    // 分享預覽（og:image）：同 apple-touch-icon 一樣滿版，WhatsApp 細縮圖先睇得清；jpg 細啲
+    {
+        name: 'og-icon.jpg',
+        size: 512,
+        scale: 1.02,
+        fill: ICON_BACKGROUND,
+        quality: OG_ICON_QUALITY,
+    },
 ];
 
 const iconHtml = (dataUrl, { size, scale, fill }) => {
@@ -72,7 +81,11 @@ try {
         await page.setViewportSize({ width: icon.size, height: icon.size });
         await page.setContent(iconHtml(dataUrl, icon));
         await page.locator('img').evaluate((img) => img.decode());
-        await page.screenshot({ path: `${OUT_DIR}${icon.name}`, omitBackground: !icon.fill });
+        await page.screenshot({
+            path: `${OUT_DIR}${icon.name}`,
+            omitBackground: !icon.fill,
+            quality: icon.quality,
+        });
     }
 } finally {
     await browser.close();
@@ -80,7 +93,8 @@ try {
 
 const imageMagick = findImageMagick();
 for (const { name } of ICONS) {
-    if (imageMagick) optimise(imageMagick, `${OUT_DIR}${name}`);
+    // 淨係 png 做無損壓縮；jpg 已經由 quality 壓
+    if (imageMagick && name.endsWith('.png')) optimise(imageMagick, `${OUT_DIR}${name}`);
     console.log(`public/${name}`);
 }
 console.log(imageMagick ? `已用 ${imageMagick} 無損壓縮` : '冇 ImageMagick：跳過壓縮');

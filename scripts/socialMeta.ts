@@ -1,9 +1,11 @@
 import type { HtmlTagDescriptor } from 'vite';
 
-/** 分享預覽圖（public/og-image.jpg，由桌面 splash 圖裁成 1.91:1） */
-export const OG_IMAGE_PATH = 'og-image.jpg';
-const OG_IMAGE_WIDTH = 1200;
-const OG_IMAGE_HEIGHT = 630;
+/**
+ * 分享預覽圖：滿版 app icon（scripts/generateIcons.mjs 生成）。
+ * WhatsApp 只顯示細正方縮圖，用闊圖 logo 會細到睇唔清
+ */
+export const OG_IMAGE_PATH = 'og-icon.jpg';
+const OG_IMAGE_SIZE = 512;
 const OG_IMAGE_ALT = '903 叱咤 Player';
 
 /** build 環境變數：Vercel 嘅正式網域 / GitHub Actions 嘅 repo owner */
@@ -36,7 +38,7 @@ const metaProperty = (property: string, content: string): HtmlTagDescriptor => (
 export const buildSocialTags = (siteUrl: string): HtmlTagDescriptor[] => [
     metaProperty('og:url', siteUrl),
     metaProperty('og:image', `${siteUrl}${OG_IMAGE_PATH}`),
-    metaProperty('og:image:width', String(OG_IMAGE_WIDTH)),
-    metaProperty('og:image:height', String(OG_IMAGE_HEIGHT)),
+    metaProperty('og:image:width', String(OG_IMAGE_SIZE)),
+    metaProperty('og:image:height', String(OG_IMAGE_SIZE)),
     metaProperty('og:image:alt', OG_IMAGE_ALT),
 ];
