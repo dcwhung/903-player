@@ -55,10 +55,37 @@ const whenVisible = (run: () => void) => (): void => {
     if (document.visibilityState === 'visible') run();
 };
 
+/** 永遠攞到最新嘅 value，但 ref 本身固定，放入 deps 都唔會觸發 effect */
+const useLatest = <T>(value: T): RefObject<T> => {
+    const ref = useRef(value);
+    // 唔可以喺 render 期間寫 ref，所以每次 commit 之後先更新
+    useEffect(() => {
+        ref.current = value;
+    });
+    return ref;
+};
+
+/** mount 時行一輪，之後重新上網或者返到前景再行；unmount 就停 */
+const useRunTriggers = (run: () => void, isMountedRef: RefObject<boolean>): void => {
+    useEffect(() => {
+        isMountedRef.current = true;
+        run();
+        const onVisibilityChange = whenVisible(run);
+        window.addEventListener('online', run);
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        return () => {
+            isMountedRef.current = false;
+            window.removeEventListener('online', run);
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+        };
+    }, [run, isMountedRef]);
+};
+
 /**
  * mount 時 probe 一輪，之後重新上網或者返到前景再 probe（重試頻率由 audioProbe 嘅規則限住）。
  * 同一時間只會有一輪：StrictMode 重複行 effect、幾個 trigger 撞埋都唔會並行 probe。
- * onRunEnd：每輪完（成功或者失敗）通知一次，例如重新讀未上架集數；要固定 reference
+ * onRunEnd：每輪完（成功或者失敗）通知一次，例如重新讀未上架集數；
+ * 用 ref 攞最新嗰個，換咗 reference 都唔會重新開始 probe
  */
 export const useProbeRuns = (
     prober: RecordingsProber,
@@ -68,6 +95,7 @@ export const useProbeRuns = (
     const [hasFinishedFirstRun, setHasFinishedFirstRun] = useState(false);
     const isInFlight = useRef(false);
     const isMounted = useRef(false);
+    const onRunEndRef = useLatest(onRunEnd);
 
     const run = useCallback(() => {
         if (isInFlight.current) return;
@@ -76,22 +104,10 @@ export const useProbeRuns = (
             isInFlight.current = false;
             if (!isMounted.current) return;
             setHasFinishedFirstRun(true);
-            onRunEnd();
+            onRunEndRef.current();
         });
-    }, [prober, merge, onRunEnd]);
-
-    useEffect(() => {
-        isMounted.current = true;
-        run();
-        const onVisibilityChange = whenVisible(run);
-        window.addEventListener('online', run);
-        document.addEventListener('visibilitychange', onVisibilityChange);
-        return () => {
-            isMounted.current = false;
-            window.removeEventListener('online', run);
-            document.removeEventListener('visibilitychange', onVisibilityChange);
-        };
-    }, [run]);
-
+        // onRunEndRef 係固定嘅 ref，放入 deps 唔會令 run 換 reference
+    }, [prober, merge, onRunEndRef]);
+    useRunTriggers(run, isMounted);
     return { hasFinishedFirstRun };
 };

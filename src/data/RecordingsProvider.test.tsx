@@ -209,6 +209,32 @@ describe('RecordingsProvider', () => {
 
             await waitFor(() => expect(result.current.unavailable).toEqual([MISSED]));
         });
+
+        it('does not probe again when re-rendered with a new reader, but uses it on the next run', async () => {
+            const prober = vi.fn(noProbe);
+            const Shown = () => <p>{useRecordings().unavailable.length}</p>;
+            const ui = (readUnavailable: () => UnavailableEpisode[]) => (
+                <RecordingsProvider
+                    prober={prober}
+                    readStored={nothingStored}
+                    readUnavailable={readUnavailable}
+                >
+                    <Shown />
+                </RecordingsProvider>
+            );
+            const { rerender } = render(ui(() => []));
+            await act(async () => {});
+
+            rerender(ui(() => [MISSED]));
+            await act(async () => {});
+            expect(prober).toHaveBeenCalledTimes(1);
+
+            act(() => {
+                window.dispatchEvent(new Event('online'));
+            });
+            expect(await screen.findByText('1')).toBeInTheDocument();
+            expect(prober).toHaveBeenCalledTimes(2);
+        });
     });
 
     describe('probing again later', () => {
