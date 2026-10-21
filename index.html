@@ -89,9 +89,14 @@
 
             /*
                 fixed 層蓋唔到 viewport 以外嘅位（iOS 底部 home indicator 嗰截會露出 html 底色），
-                啟動畫面仲喺度時將 html 底色改做雲色；specificity 高過 global.css 嘅 html，移走 #splash 就自動還原
+                啟動畫面未淡出時將 html 底色改做雲色；specificity 高過 global.css 嘅 html。
+                一開始淡出（.splash--hidden）就同步轉返主頁底色，唔好等移走 #splash 先轉，
+                否則淡出期間主頁底部會露出一截雲色
             */
             html:has(#splash) {
+                transition: background-color var(--splash-fade-duration) ease-out;
+            }
+            html:has(#splash:not(.splash--hidden)) {
                 background: var(--splash-canvas);
             }
             .splash {
