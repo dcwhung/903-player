@@ -17,8 +17,12 @@ describe('index.html', () => {
         expect(indexHtml).toContain(`.${SPLASH_HIDDEN_CLASS}`);
     });
 
-    it('should paint the canvas outside the viewport in the splash colour', () => {
-        expect(indexHtml).toMatch(/html:has\(#splash\)\s*\{\s*background: var\(--splash-canvas\)/);
+    it('should paint the canvas outside the viewport in the splash colour until the fade starts', () => {
+        expect(indexHtml).toMatch(
+            new RegExp(
+                String.raw`html:has\(#splash:not\(\.${SPLASH_HIDDEN_CLASS}\)\)\s*\{\s*background: var\(--splash-canvas\)`,
+            ),
+        );
     });
 
     it('should show the build-time app version on the splash', () => {
