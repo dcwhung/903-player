@@ -11,16 +11,19 @@ import { LoadState } from './LoadState';
 import page from './Page.module.css';
 import { useShowPage } from './useShowPage';
 
-type ShowPageData = ReturnType<typeof useShowPage>;
+type ShowPlayerProps = Pick<
+    ReturnType<typeof useShowPage>,
+    'theme' | 'current' | 'strip' | 'selectEpisode'
+> & { title: string };
 
 /** 有集數播得就係播放器；未有就講「未有集數上架」（下面照列出未上架嘅，撳唔到） */
-const ShowPlayer = ({ show, theme, current, strip, selectEpisode }: ShowPageData) => {
+const ShowPlayer = ({ title, theme, current, strip, selectEpisode }: ShowPlayerProps) => {
     if (!current) {
         return <StatusMessage message={t('episodes.noneUp')} />;
     }
     return (
         <PlayerPanel
-            title={show?.name ?? ''}
+            title={title}
             dateLabel={formatDateLabel(current.date)}
             art={theme.art}
             days={strip.days}
@@ -59,7 +62,7 @@ export const ShowPage = () => {
                             isSearching={isSearching}
                         />
                     )}
-                    {listed && <ShowPlayer {...data} />}
+                    {listed && <ShowPlayer {...data} title={show.name} />}
                 </div>
                 {listed && (
                     <div className={page.listColumn}>
