@@ -13,7 +13,8 @@ const RECORDINGS = [
 ];
 const ROUTE = { route: '/show/gongzi', path: '/show/:showId' };
 const SWIPE_ZONE = { description: '左右方向鍵或左右掃動轉集' };
-const SWIPE_PX = 100;
+// 掃一格：jsdom 冇 layout，日子條一格當 56px（公子會逢星期六，一格一集）
+const SWIPE_PX = 56;
 
 /** 喺轉集區左右掃一下（dx < 0 = 向左） */
 const swipe = (zone: HTMLElement, dx: number) => {
@@ -50,17 +51,21 @@ describe('ShowPage', () => {
         expect(screen.queryByText('正在播放')).not.toBeInTheDocument();
     });
 
-    it('reads 現正播放 and centres the playing day among greyed-out days without a show', async () => {
+    it('reads 現正播放 and lists only the Saturdays of a weekly show, without greyed-out days', async () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
         await userEvent.click(screen.getByRole('button', { name: /^播放 10\/10/ }));
 
+        const zone = screen.getByRole('group', SWIPE_ZONE);
         expect(screen.getByText('現正播放')).toHaveTextContent(/^現正播放$/);
-        expect(screen.getByRole('group', SWIPE_ZONE)).toHaveAccessibleName(/^10\/10（六）/);
-        // 公子會逢星期六：正中 10/10，隔籬（同 17/10、03/10 一樣）都可以撳，平日冇節目唔可以撳
+        expect(zone).toHaveAccessibleName(/^10\/10（六）/);
+        // 公子會逢星期六：隔籬格就係 17/10 同 03/10，中間冇灰色平日
+        const days = Array.from(zone.firstElementChild?.children ?? [])
+            .map((cell) => cell.textContent)
+            .filter(Boolean);
+        expect(days).toEqual(['六17/10', '六10/10', '六03/10']);
         expect(screen.getByRole('button', { name: '轉去 17/10（六）' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '轉去 03/10（六）' })).toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: /^轉去 09\/10/ })).not.toBeInTheDocument();
     });
 
     it('plays a newer episode when its day is tapped in the strip', async () => {

@@ -74,6 +74,36 @@ describe('stripDays', () => {
     });
 });
 
+describe('stripDays for a weekly show', () => {
+    const SATURDAYS = [
+        recording('gongzi', '2026-10-17'),
+        recording('gongzi', '2026-10-10'),
+        recording('gongzi', '2026-10-03'),
+    ];
+
+    it('lists only the days with an episode, still padded by three blank days at each end', () => {
+        const weekly = stripDays(SATURDAYS, SATURDAYS[1]?.url, { episodeDaysOnly: true });
+
+        expect(weekly.days.map((d) => (d.inRange ? d.date : ''))).toEqual([
+            ...['', '', ''],
+            ...['2026-10-17', '2026-10-10', '2026-10-03'],
+            ...['', '', ''],
+        ]);
+        expect(weekly.days.filter((d) => d.inRange).every((d) => d.url !== null)).toBe(true);
+        expect(weekly.days.filter((d) => !d.inRange).every((d) => d.url === null)).toBe(true);
+        expect(weekly.current).toBe(4);
+        // React key 用日期：留空嗰幾格都唔可以撞
+        expect(new Set(weekly.days.map((d) => d.date)).size).toBe(weekly.days.length);
+    });
+
+    it('moves one episode per cell when dragged', () => {
+        const weekly = stripDays(SATURDAYS, SATURDAYS[0]?.url, { episodeDaysOnly: true });
+        const drag = { dx: -2 * CELL, dy: 0, ms: 400, width: WIDTH };
+
+        expect(stripRelease(drag, weekly.days, weekly.current)).toBe(5);
+    });
+});
+
 describe('stripRelease', () => {
     const release = (dx: number, ms = 400, dy = 0, width = WIDTH) => ({ dx, dy, ms, width });
     const at = (current: number, dx: number, ms?: number) =>

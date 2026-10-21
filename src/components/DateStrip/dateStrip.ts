@@ -57,28 +57,46 @@ const episodeByDate = (episodes: readonly Pick<Recording, 'url' | 'date'>[]) => 
     return byDate;
 };
 
+export interface StripDaysOptions {
+    /** 只排有集數嘅日子（一星期播一日嘅節目）：冇灰色格，一格一集 */
+    episodeDaysOnly?: boolean;
+}
+
+/** newest → oldest 之間每一日（包埋兩頭），由新到舊 */
+const calendarDates = (newest: string, oldest: string): string[] =>
+    Array.from({ length: daysBetween(oldest, newest) + 1 }, (_, i) => addDays(newest, -i));
+
+/** 盡頭外面嘅留空格：由 from 起向 step 方向（+1 = 新啲、-1 = 舊啲）數 3 日，日期只係做 key */
+const blankDates = (from: string, step: number): string[] =>
+    Array.from({ length: BLANK_DAYS }, (_, i) => addDays(from, step * (i + 1)));
+
 /**
- * 日子條嘅日子：由最新一集 + 3 日排到最舊一集 − 3 日（新一集喺左，同集數清單上到下一樣）。
+ * 日子條嘅日子（新一集喺左，同集數清單上到下一樣）：最新一集之前、最舊一集之後各留 3 格空位；
+ * 中間係每一日（冇節目嘅灰色），或者 episodeDaysOnly 時只係有集數嘅日子。
  * 搵唔到而家嗰集就擺最新一集喺正中
  */
 export const stripDays = (
     episodesNewestFirst: readonly Pick<Recording, 'url' | 'date'>[],
     currentUrl: string | undefined,
+    { episodeDaysOnly = false }: StripDaysOptions = {},
 ): StripDays => {
     const newest = episodesNewestFirst[0];
     const oldest = episodesNewestFirst.at(-1);
     if (!newest || !oldest) return { days: [], current: -1 };
     const byDate = episodeByDate(episodesNewestFirst);
-    const span = daysBetween(oldest.date, newest.date) + 2 * BLANK_DAYS;
-    const start = addDays(newest.date, BLANK_DAYS);
-    const days = Array.from({ length: span + 1 }, (_, i): StripDay => {
-        const date = addDays(start, -i);
-        return {
+    const rangeDates = episodeDaysOnly
+        ? [...byDate.keys()]
+        : calendarDates(newest.date, oldest.date);
+    const blank = (date: string): StripDay => ({ date, url: null, inRange: false });
+    const days = [
+        ...blankDates(newest.date, 1).reverse().map(blank),
+        ...rangeDates.map((date): StripDay => ({
             date,
             url: byDate.get(date) ?? null,
-            inRange: i >= BLANK_DAYS && i <= span - BLANK_DAYS,
-        };
-    });
+            inRange: true,
+        })),
+        ...blankDates(oldest.date, -1).map(blank),
+    ];
     const currentDate = episodesNewestFirst.find((r) => r.url === currentUrl)?.date ?? newest.date;
     return { days, current: days.findIndex((d) => d.date === currentDate) };
 };
