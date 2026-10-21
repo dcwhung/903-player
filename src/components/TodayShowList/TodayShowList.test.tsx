@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TodayShowList, type TodayShowItem } from './TodayShowList';
 
@@ -61,12 +61,20 @@ describe('TodayShowList', () => {
         };
         const withUnavailable = [...ITEMS, UNAVAILABLE];
 
-        it('lists them as disabled rows without a play icon', () => {
+        /** 未上架嗰行：唔係掣，用可見文字搵 */
+        const unavailableRow = (): HTMLElement => {
+            const row = screen.getByText('口水多過浪花').closest('li');
+            if (!row) throw new Error('unavailable row not found');
+            return row;
+        };
+
+        it('lists them as plain rows, not buttons, without a play icon', () => {
             render(<TodayShowList items={withUnavailable} onSelect={() => {}} />);
 
-            const row = screen.getByRole('button', { name: '口水多過浪花，15:10 · 未上架' });
-            expect(row).toBeDisabled();
-            expect(row).toHaveTextContent('15:10 · 未上架');
+            const row = unavailableRow();
+            expect(row).toHaveTextContent('口水多過浪花15:10 · 未上架');
+            expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: /口水多過浪花/ })).not.toBeInTheDocument();
             expect(row.querySelector('svg')).toBeNull();
         });
 
@@ -86,7 +94,7 @@ describe('TodayShowList', () => {
             const onSelect = vi.fn();
             render(<TodayShowList items={withUnavailable} onSelect={onSelect} />);
 
-            await userEvent.click(screen.getByRole('button', { name: /口水多過浪花/ }));
+            await userEvent.click(unavailableRow());
 
             expect(onSelect).not.toHaveBeenCalled();
         });

@@ -47,7 +47,6 @@ export const zhHK = {
         unavailable: '未上架',
         // 節目頁：有未上架集數但一集都播唔到
         noneUp: '未有集數上架',
-        unavailableRow: '{date}，{status}',
         playing: '播放中 · {current} / {total}',
         resume: '聽到 {time}',
         watched: '已收聽',
@@ -88,10 +87,8 @@ export const zhHK = {
         statusWatched: '已收聽',
         statusUnwatched: '未收聽',
         statusUnavailable: '未上架',
-        // 未上架嗰行（撳唔到）：讀屏讀節目名 + 時間 + 狀態
-        unavailableShow: '{name}，{time} · {status}',
         unavailableCount: '{count} 個未上架',
-        // 今日全部未上架：卡疊嘅位改為呢個空狀態
+        // 今日有節目播但一個都未上架：卡疊嘅位改為呢個空狀態
         emptyTitle: '今日節目未上架',
         emptyHint: '上架之後會自動顯示',
     },

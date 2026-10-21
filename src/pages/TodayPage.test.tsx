@@ -17,6 +17,10 @@ const TODAY = [
 const RECORDINGS = [...TODAY, recording('gongzi', '2026-10-17')];
 const ROUTE = { route: '/today', path: '/today' };
 
+/** 節目表入面嘅行（未上架嗰啲唔係掣，用可見文字搵） */
+const scheduleRows = (): HTMLElement[] =>
+    within(screen.getByRole('region', { name: '節目表' })).getAllByRole('listitem');
+
 describe('TodayPage', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
@@ -168,21 +172,24 @@ describe('TodayPage', () => {
         expect(screen.getByRole('button', { name: /(?:播放|暫停) 公子會/ })).toBeInTheDocument();
     });
 
-    it('lists the rest of today’s schedule as disabled rows in broadcast order', async () => {
-        renderWithProviders(<TodayPage />, {
+    it('lists the rest of today’s schedule as plain rows, not buttons, in broadcast order', async () => {
+        const { audio } = renderWithProviders(<TodayPage />, {
             ...ROUTE,
             recordings: RECORDINGS,
             unavailable: [unavailableEpisode('waves', '2026-10-19', '1510')],
         });
 
-        const row = await screen.findByRole('button', { name: '口水多過浪花，15:10 · 未上架' });
-        expect(row).toBeDisabled();
-        expect(
-            screen.getByRole('button', { name: '聖艾粒LaLaLaLa，17:10 · 未上架' }),
-        ).toBeDisabled();
-        expect(screen.getByText('2 個未上架')).toBeInTheDocument();
+        expect(await screen.findByText('2 個未上架')).toBeInTheDocument();
+        const rows = scheduleRows();
+        expect(rows).toHaveLength(TODAY.length + 2);
+        expect(rows[3]).toHaveTextContent('口水多過浪花15:10 · 未上架');
+        expect(rows[4]).toHaveTextContent('聖艾粒LaLaLaLa17:10 · 未上架');
+        expect(rows[4] && within(rows[4]).queryByRole('button')).toBeNull();
         const list = screen.getByRole('region', { name: '節目表' });
-        expect(within(list).getAllByRole('button')).toHaveLength(TODAY.length + 2);
+        expect(within(list).getAllByRole('button')).toHaveLength(TODAY.length);
+        await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
+        await userEvent.click(within(list).getByText('聖艾粒LaLaLaLa'));
+        expect(audio.src).toBe(TODAY[2]?.url);
         const dots = screen.getByRole('group', { name: /^今日第/ });
         expect(within(dots).getAllByRole('button')).toHaveLength(TODAY.length);
     });
@@ -204,10 +211,11 @@ describe('TodayPage', () => {
             expect(await screen.findByText('今日節目未上架')).toBeInTheDocument();
             expect(screen.getByText('上架之後會自動顯示')).toBeInTheDocument();
             expect(screen.getByText('5 個未上架')).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: '雲妮鍾情，07:08 · 未上架' })).toBeDisabled();
-            expect(
-                screen.getByRole('button', { name: '聖艾粒LaLaLaLa，17:10 · 未上架' }),
-            ).toBeDisabled();
+            const rows = scheduleRows();
+            expect(rows[0]).toHaveTextContent('雲妮鍾情07:08 · 未上架');
+            expect(rows[4]).toHaveTextContent('聖艾粒LaLaLaLa17:10 · 未上架');
+            const list = screen.getByRole('region', { name: '節目表' });
+            expect(within(list).queryByRole('button')).not.toBeInTheDocument();
             expect(
                 screen.queryByRole('group', { name: '今日節目，左右掃動轉節目' }),
             ).not.toBeInTheDocument();

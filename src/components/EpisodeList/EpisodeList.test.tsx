@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EpisodeList, type EpisodeItem } from './EpisodeList';
 
@@ -101,12 +101,20 @@ describe('EpisodeList', () => {
         };
         const withUnavailable = [UNAVAILABLE, ...ITEMS];
 
-        it('lists them as disabled rows without a play icon or progress bar', () => {
+        /** 未上架嗰行：唔係掣，用可見文字搵 */
+        const unavailableRow = (): HTMLElement => {
+            const row = screen.getByText('21/10').closest('li');
+            if (!row) throw new Error('unavailable row not found');
+            return row;
+        };
+
+        it('lists them as plain rows, not buttons, without a play icon or progress bar', () => {
             render(<EpisodeList items={withUnavailable} onSelect={() => {}} />);
 
-            const row = screen.getByRole('button', { name: '21/10 星期三，未上架' });
-            expect(row).toBeDisabled();
-            expect(row).toHaveTextContent('未上架');
+            const row = unavailableRow();
+            expect(row).toHaveTextContent('21/10星期三未上架');
+            expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: /21\/10/ })).not.toBeInTheDocument();
             expect(row.querySelector('svg')).toBeNull();
             expect(screen.getAllByRole('progressbar')).toHaveLength(ITEMS.length);
         });
@@ -121,7 +129,7 @@ describe('EpisodeList', () => {
             const onSelect = vi.fn();
             render(<EpisodeList items={withUnavailable} onSelect={onSelect} />);
 
-            await userEvent.click(screen.getByRole('button', { name: /21\/10/ }));
+            await userEvent.click(unavailableRow());
 
             expect(onSelect).not.toHaveBeenCalled();
         });

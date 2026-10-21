@@ -100,8 +100,8 @@ describe('ShowPage', () => {
         expect(screen.getByText('共 3 集')).toBeInTheDocument();
     });
 
-    it('lists unavailable episodes as disabled rows and counts them apart', async () => {
-        renderWithProviders(<ShowPage />, {
+    it('lists unavailable episodes as plain rows, not buttons, and counts them apart', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, {
             ...ROUTE,
             recordings: RECORDINGS,
             unavailable: [unavailableEpisode('gongzi', '2026-09-26')],
@@ -112,10 +112,15 @@ describe('ShowPage', () => {
             '暫停 17/10 星期六，連線中…',
             '播放 10/10 星期六，未收聽',
             '播放 03/10 星期六，未收聽',
-            '26/09 星期六，未上架',
         ]);
-        expect(rows[3]).toBeDisabled();
+        const list = screen.getByRole('region', { name: '集數' });
+        const last = within(list).getAllByRole('listitem').at(-1);
+        expect(last).toHaveTextContent('26/09星期六未上架');
+        expect(last && within(last).queryByRole('button')).toBeNull();
         expect(screen.getByText('共 3 集 · 1 集未上架')).toBeInTheDocument();
+
+        await userEvent.click(within(list).getByText('26/09'));
+        expect(audio.src).toBe(RECORDINGS[0]?.url);
     });
 
     it('still lists unavailable episodes when the show has nothing to play yet', async () => {
@@ -126,7 +131,9 @@ describe('ShowPage', () => {
 
         expect(await screen.findByText('未有集數上架')).toBeInTheDocument();
         expect(screen.queryByText('暫時未有錄音')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '17/10 星期六，未上架' })).toBeDisabled();
+        const list = screen.getByRole('region', { name: '集數' });
+        expect(within(list).getByRole('listitem')).toHaveTextContent('17/10星期六未上架');
+        expect(within(list).queryByRole('button')).not.toBeInTheDocument();
         expect(screen.queryByRole('slider')).not.toBeInTheDocument();
     });
 

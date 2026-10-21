@@ -40,27 +40,22 @@ const RowIcon = ({ item }: { item: EpisodeItem }) => {
     return <PlayIcon className={styles.play} size={PLAY_ICON_SIZE} filled={false} />;
 };
 
-/** 未上架：照列出日子同狀態，但撳唔到、冇播放掣、進度條變虛線 */
-const UnavailableRow = ({ item }: { item: EpisodeItem }) => {
-    const date = `${item.dayMonth} ${item.weekday}`;
-    return (
-        <button
-            type="button"
-            className={`${styles.row} ${styles.unavailable}`}
-            disabled
-            aria-label={t('episodes.unavailableRow', { date, status: item.status.text })}
-        >
-            <span className={styles.date}>
-                <span className={styles.dayMonth}>{item.dayMonth}</span>
-                <span className={styles.weekday}>{item.weekday}</span>
-            </span>
-            <span className={styles.body}>
-                <span className={styles.bar} aria-hidden="true" />
-                <span className={styles.status}>{item.status.text}</span>
-            </span>
-        </button>
-    );
-};
+/**
+ * 未上架：照列出日子同狀態，但唔係掣（撳唔到、冇播放掣、進度條變虛線）。
+ * 用普通 div：screen reader 直接讀可見文字（日子、星期、未上架），唔會當成停用咗嘅掣
+ */
+const UnavailableRow = ({ item }: { item: EpisodeItem }) => (
+    <div className={`${styles.row} ${styles.unavailable}`}>
+        <span className={styles.date}>
+            <span className={styles.dayMonth}>{item.dayMonth}</span>
+            <span className={styles.weekday}>{item.weekday}</span>
+        </span>
+        <span className={styles.body}>
+            <span className={styles.bar} aria-hidden="true" />
+            <span className={styles.status}>{item.status.text}</span>
+        </span>
+    </div>
+);
 
 const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: string) => void }) => {
     const { status } = item;

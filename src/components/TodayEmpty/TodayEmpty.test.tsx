@@ -5,9 +5,12 @@ describe('TodayEmpty', () => {
     it('says today is not up yet and that it will show up by itself', () => {
         render(<TodayEmpty />);
 
-        const status = screen.getByRole('status');
-        expect(status).toHaveTextContent('今日節目未上架');
-        expect(status).toHaveTextContent('上架之後會自動顯示');
+        const region = screen.getByRole('region', { name: '今日節目未上架' });
+        expect(
+            screen.getByRole('heading', { level: 2, name: '今日節目未上架' }),
+        ).toBeInTheDocument();
+        expect(region).toHaveTextContent('上架之後會自動顯示');
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
     it('draws a grey ring with no slider or play button', () => {

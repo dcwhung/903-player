@@ -40,7 +40,7 @@
     justify-content: center;
 }
 
-/* p 預設有上下 margin，兩行字會隔得太開 */
+/* h2 / p 預設有上下 margin，兩行字會隔得太開 */
 .title,
 .hint {
     margin: 0;

@@ -30,32 +30,26 @@ const STATUS_MESSAGE: Record<ShowStatus, MessageKey> = {
 const STATUS_ICON_SIZE = 12;
 const PLAY_ICON_SIZE = 22;
 
-/** 未上架：照列出節目同時間，但撳唔到、冇播放掣，唱片同節目名變淡 */
-const UnavailableRow = ({ item }: { item: TodayShowItem }) => {
-    const statusText = t(STATUS_MESSAGE.unavailable);
-    return (
-        <button
-            type="button"
-            className={`${styles.item} ${styles.unavailable}`}
-            disabled
-            aria-label={t('today.unavailableShow', {
-                name: item.name,
-                time: item.time,
-                status: statusText,
-            })}
-        >
-            <span className={styles.art}>
-                <Disc size="small" art={item.art} />
+/**
+ * 未上架：照列出節目同時間，但唔係掣（撳唔到、冇播放掣），唱片同節目名變淡。
+ * 用普通 div：screen reader 直接讀可見文字（節目名、時間 · 未上架），唔會當成停用咗嘅掣
+ */
+const UnavailableRow = ({ item }: { item: TodayShowItem }) => (
+    <div className={`${styles.item} ${styles.unavailable}`}>
+        <span className={styles.art}>
+            <Disc size="small" art={item.art} />
+        </span>
+        <span className={styles.text}>
+            <span className={styles.name}>{item.name}</span>
+            <span className={styles.status}>
+                {t('today.timeWithStatus', {
+                    time: item.time,
+                    status: t(STATUS_MESSAGE.unavailable),
+                })}
             </span>
-            <span className={styles.text}>
-                <span className={styles.name}>{item.name}</span>
-                <span className={styles.status}>
-                    {t('today.timeWithStatus', { time: item.time, status: statusText })}
-                </span>
-            </span>
-        </button>
-    );
-};
+        </span>
+    </div>
+);
 
 const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: string) => void }) => {
     if (item.status === 'unavailable') {
