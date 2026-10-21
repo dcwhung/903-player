@@ -4,25 +4,30 @@
     flex-shrink: 0;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-2);
+    /* 留白同今日節目卡一樣（ShowCardStack .top / .card），唱片位置唔會同有節目時唔同 */
+    gap: var(--card-inner-gap);
     width: calc(100% - 2 * var(--card-stack-gutter));
-    padding: var(--space-5) var(--space-4) var(--space-4);
+    padding: var(--card-padding-block) var(--space-4) var(--card-title-space);
     border: 1px dashed var(--color-divider);
     border-radius: var(--radius-lg);
     text-align: center;
 }
 
+/*
+ * 同播放器（PlayerGauge .gauge）一樣大：闊 = --player-disc-size，高連下面控制掣嗰行（300 / 332），
+ * 冇節目所以控制掣嗰行留空；ring 同唱片喺上面正方形入面
+ */
 .gauge {
     position: relative;
-    width: var(--today-empty-disc-size);
-    aspect-ratio: 1;
+    width: var(--player-disc-size);
+    aspect-ratio: 300 / 332;
 }
 
 .ring {
     position: absolute;
-    inset: 0;
+    inset: 0 0 auto;
     width: 100%;
-    height: 100%;
+    aspect-ratio: 1;
 }
 
 .track {
@@ -34,7 +39,8 @@
 /* 唱片喺 ring 入面置中（Disc large = 闊 72%，同播放器比例一樣） */
 .disc {
     position: absolute;
-    inset: 0;
+    inset: 0 0 auto;
+    aspect-ratio: 1;
     display: flex;
     align-items: center;
     justify-content: center;

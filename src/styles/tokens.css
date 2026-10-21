@@ -75,8 +75,6 @@
     --unavailable-opacity: 0.45;
     --unavailable-dash: 6px;
     --unavailable-gap: 4px;
-    /* 今日節目全部未上架：卡疊位嘅灰色 ring 闊度（細過主碟，留位畀節目表） */
-    --today-empty-disc-size: min(150px, 40vw);
     /* 主頁節目格「New」標籤：細細粒膠囊；左邊有粒圓點，所以左邊 padding 細過右邊（右邊用 --space-2） */
     --new-badge-pad-block: 2px;
     --new-badge-pad-start: 6px;
