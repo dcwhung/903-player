@@ -86,13 +86,9 @@ body {
     --fs-md: calc(15px * var(--s));
     --fs-lg: calc(16px * var(--s));
     --fs-xl: calc(20px * var(--s));
-    --strip-label: calc(16px * var(--s));
-    --strip-height: calc(44px * var(--s));
-    --strip-space: calc(var(--strip-label) + var(--strip-height) + var(--fixed-gap));
     --card-offset: calc(12px * var(--s));
-    --radius-cell: calc(12px * var(--s));
     --radius-lg: calc(20px * var(--s));
-    --disc-max: 340px;
+    --disc-max: 640px;
 
     height: 100%;
     background: var(--theme-bg);
@@ -105,24 +101,23 @@ body {
 .app button { font: inherit; color: inherit; cursor: pointer; }
 .app svg { display: block; width: var(--ico, calc(22px * var(--s))); height: var(--ico, calc(22px * var(--s))); }
 
-/* 節目頁 / 今日節目頁：左播放器、右清單 */
+/*
+ * 節目頁 / 今日節目頁：左播放器、右清單；橫版一律唔出日子條（轉集用右欄清單）。
+ * 預設（細視窗、桌面、iPad）：右欄 30%，最少 300px × 倍數（放大咗嘅字先放得落「播放中 · 42:56 / 1:53:00」），其餘畀播放器
+ */
 .split {
     display: grid;
-    grid-template-columns: minmax(0, 46%) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, max(30%, calc(300px * var(--s))));
     column-gap: var(--sp-5);
 }
 
-/* 規則 A：矮畫面（手機打橫，高 ≤ 561px）唔出日子條 */
+/* 規則 A：手機打橫（高 ≤ 561px）右欄 54%（太窄放唔落清單），字同掣 × 1 */
 @container screen (max-height: 561px) {
-    .app { --strip-space: 0px; }
-    .app .strip-wrap { display: none; }
+    .split { grid-template-columns: minmax(0, 46%) minmax(0, 1fr); }
 }
-/* 規則 B：闊 ≥ 1024px（iPad 打橫及以上）右欄 30%、唔出日子條、唱片放大、字同掣 × 1.3 */
+/* 規則 B：闊 ≥ 1024px 字同掣 × 1.3 */
 @container screen (min-width: 1024px) {
-    .app { --s: 1.3; --disc-max: 640px; --strip-space: 0px; }
-    .app .strip-wrap { display: none; }
-    /* 右欄 30%，但最少 300px × 倍數，放大咗嘅字先放得落「播放中 · 42:56 / 1:53:00」 */
-    .split { grid-template-columns: minmax(0, 1fr) minmax(0, max(30%, calc(300px * var(--s)))); }
+    .app { --s: 1.3; }
 }
 /* 規則 C：闊 ≥ 1024px 而且高 ≥ 800px（iPad 打橫）字同掣 × 1.5 */
 @container screen (min-width: 1024px) and (min-height: 800px) {
@@ -162,7 +157,7 @@ body {
 .player, .stack-area { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .player { gap: var(--fixed-gap); width: 100%; }
 .show-page .col-left {
-    --disc: clamp(150px, min(86cqw, (100cqh - var(--touch) - var(--fixed-gap) - var(--strip-space)) * 300 / 332), var(--disc-max));
+    --disc: clamp(150px, min(86cqw, (100cqh - var(--touch) - var(--fixed-gap)) * 300 / 332), var(--disc-max));
 }
 .today-page .col-left {
     --disc: clamp(140px, min(72cqw, (100cqh - var(--touch) - calc(24px * var(--s)) - 2 * var(--card-offset) - calc(48px * var(--s)) - 2 * var(--fixed-gap)) * 300 / 332), var(--disc-max));
@@ -210,31 +205,6 @@ body {
     background: var(--theme-accent); color: var(--theme-on-accent);
     box-shadow: -4px -4px 10px var(--theme-shadow-light), 5px 5px 14px var(--theme-shadow-dark);
 }
-
-/* 日子條（只喺 640–1023px 闊而且高 > 561px 先出） */
-.strip-wrap { width: min(100%, calc(360px * var(--s))); display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
-.strip-label { height: var(--strip-label); line-height: var(--strip-label); font-size: var(--fs-2xs); letter-spacing: 0.18em; color: var(--theme-accent); }
-.strip {
-    position: relative; width: 100%; height: var(--strip-height);
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
-            mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
-}
-.strip::before {
-    content: ''; position: absolute; top: 2px; bottom: 2px; left: calc(100% * 3 / 7 + 2px); width: calc(100% / 7 - 4px);
-    border-radius: var(--radius-cell); background: var(--theme-surface);
-    box-shadow: -3px -3px 6px var(--theme-shadow-light), 3px 3px 8px var(--theme-shadow-dark);
-}
-.cell {
-    position: relative; border: 0; background: transparent; padding: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font-variant-numeric: tabular-nums;
-}
-.cell .wd { font-size: var(--fs-2xs); line-height: 1.25; color: var(--theme-muted); }
-.cell .dm { font-size: var(--fs-sm); line-height: 1.35; font-weight: 500; }
-.cell.empty { opacity: 0.35; cursor: default; }
-.cell.on .dm { color: var(--theme-accent); }
-.cell .tick { position: absolute; top: 2px; right: 6px; font-size: calc(9px * var(--s)); color: var(--theme-accent); }
 
 /* 右欄清單（EpisodeList / TodayShowList） */
 .list-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-2) var(--sp-4) var(--sp-3) var(--sp-1); }
@@ -291,9 +261,10 @@ body {
 
 /* ---------- 主頁 ---------- */
 /*
- * 闊畫面（手機打橫、桌面）：5 欄 × 2 行，第一行橫額（32:9，佔兩格）+ 3 個節目，第二行 4 個節目 + 今日節目。
- * 方啲嘅畫面（闊高比 ≤ 8:5，例如 iPad 打橫、細視窗）：4 欄，橫額佔成行兩行高（啱啱 32:9），下面 2 行 × 4 格。
- * 格嘅闊度由格區（扣 mini player 同版本號）嘅闊同高邊個細決定
+ * 預設（細視窗、桌面、iPad）：4 欄，橫額佔成行、兩行高（啱啱 32:9），下面 2 行 × 4 格；
+ * 格嘅闊度由格區（扣 mini player 同版本號）嘅闊同高邊個細決定。
+ * 手機打橫（高 ≤ 561px）：5 欄 × 2 行，第一行橫額佔兩格 + 3 個節目，第二行 4 個節目 + 今日節目；
+ * 格拉闊拉高填滿格區（唔再鎖 16:9，節目圖 cover 裁走少少邊）
  */
 .home-page {
     --home-gap: var(--sp-3);
@@ -311,26 +282,31 @@ body {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-2);
 }
 .home-grid {
-    --cols: 5;
-    --rows: 2;
+    --cols: 4;
+    --rows: 4;
     --tile-w: min((100cqw - (var(--cols) - 1) * var(--home-gap)) / var(--cols), (100cqh - var(--fs-xs) * 1.5 - var(--sp-2) - var(--sp-2) - (var(--rows) - 1) * var(--home-gap)) / var(--rows) * 16 / 9);
     display: grid;
     grid-template-columns: repeat(var(--cols), var(--tile-w));
     gap: var(--home-gap);
 }
-@container screen (max-aspect-ratio: 8 / 5) {
-    .home-grid { --cols: 4; --rows: 4; }
-    /* 4 欄闊、兩行高 = 32:9；空 h1 冇內容高度，要靠 aspect-ratio 撐起兩行 */
-    .home-grid .banner { grid-column: span 4; grid-row: span 2; aspect-ratio: 32 / 9; }
-}
 .banner, .tile {
     position: relative; overflow: hidden; border-radius: calc(14px * var(--s));
     box-shadow: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
 }
-.banner { grid-column: span 2; aspect-ratio: auto; background: var(--img) 50% 32% / cover no-repeat; margin: 0; }
+/* 4 欄闊、兩行高 = 32:9；空 h1 冇內容高度，要靠 aspect-ratio 撐起兩行 */
+.banner { grid-column: span 4; grid-row: span 2; aspect-ratio: 32 / 9; background: var(--img) 50% 32% / cover no-repeat; margin: 0; }
 .tile { aspect-ratio: 16 / 9; border: 1px solid #42658a; padding: 0; background: #42658a var(--img) center / cover no-repeat; }
 .tile.today { border: 0; box-shadow: 0 6px 0 #1f7fd0, 0 10px 18px rgb(20 40 65 / 30%); }
 .tile.today span { position: absolute; top: 59%; left: 52%; transform: translate(-50%, -50%); white-space: nowrap; font-size: var(--fs-lg); font-weight: 700; color: #2f4560; }
+@container screen (max-height: 561px) {
+    .home-grid {
+        width: 100%; height: 100%; min-height: 0; flex: 1;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+    .home-grid .banner { grid-column: span 2; grid-row: auto; aspect-ratio: auto; background-position: 50% 40%; }
+    .home-grid .tile { aspect-ratio: auto; }
+}
 .version { margin: 0; line-height: 1.5; font-size: var(--fs-xs); color: #e6eef7; }
 .mini {
     position: absolute; z-index: 5;
@@ -373,7 +349,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
     <header class="intro">
         <div>
             <h1>903 Player 橫版</h1>
-            <p>打橫而且闊 ≥ 640px 就用橫版。節目頁、今日節目頁：左播放器、右清單；主頁：5 欄格，mini player 浮喺底。字同掣跟裝置放大（手機 × 1、闊 ≥ 1024px × 1.3、iPad 打橫 × 1.5）。mock 入面嘅掣、清單、卡疊都撳得，純示意，冇接聲。</p>
+            <p>打橫而且闊 ≥ 640px 就用橫版。節目頁、今日節目頁：左播放器、右清單；主頁：橫額成行 + 4 欄格（手機打橫 5 欄填滿），mini player 浮喺底。橫版一律唔出日子條。字同掣跟裝置放大（手機 × 1、闊 ≥ 1024px × 1.3、iPad 打橫 × 1.5）。mock 入面嘅掣、清單、卡疊都撳得，純示意，冇接聲。</p>
         </div>
         <div class="controls">
             <div class="seg" role="group" aria-label="頁面">
@@ -401,12 +377,12 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         <article class="note">
             <h2>版面規則</h2>
             <div class="tbl"><table>
-                <thead><tr><th>畫面</th><th>欄（節目 / 今日）</th><th>日子條</th><th>字同掣</th><th>唱片上限</th><th>主頁</th></tr></thead>
+                <thead><tr><th>畫面</th><th>節目頁 / 今日節目頁欄</th><th>字同掣</th><th>主頁</th></tr></thead>
                 <tbody>
-                    <tr><td>手機打橫（高 ≤ 561px）</td><td>46% / 54%</td><td>唔出</td><td>× 1</td><td>340px</td><td>5 欄</td></tr>
-                    <tr><td>細視窗（640–1023px 闊，高 &gt; 561px）</td><td>46% / 54%</td><td>出</td><td>× 1</td><td>340px</td><td>4 欄</td></tr>
-                    <tr><td>闊 ≥ 1024px（桌面）</td><td>其餘 / max(30%, 300px × 倍數)</td><td>唔出</td><td>× 1.3</td><td>640px</td><td>5 欄</td></tr>
-                    <tr><td>闊 ≥ 1024px 而且高 ≥ 800px（iPad 打橫）</td><td>其餘 / max(30%, 300px × 倍數)</td><td>唔出</td><td>× 1.5</td><td>640px</td><td>4 欄</td></tr>
+                    <tr><td>手機打橫（高 ≤ 561px）</td><td>46% / 54%</td><td>× 1</td><td>5 欄 × 2 行，填滿</td></tr>
+                    <tr><td>細視窗（闊 &lt; 1024px，高 &gt; 561px）</td><td>其餘 / max(30%, 300px × 倍數)</td><td>× 1</td><td>橫額成行 + 4 欄 × 2 行</td></tr>
+                    <tr><td>桌面（闊 ≥ 1024px）</td><td>同上</td><td>× 1.3</td><td>同上</td></tr>
+                    <tr><td>iPad 打橫（闊 ≥ 1024px、高 ≥ 800px）</td><td>同上</td><td>× 1.5</td><td>同上</td></tr>
                 </tbody>
             </table></div>
         </article>
@@ -415,11 +391,11 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             <div class="tbl"><table>
                 <thead><tr><th>功能</th><th>橫版位置</th></tr></thead>
                 <tbody>
-                    <tr><td>主頁：7 個節目 + 今日節目</td><td>闊畫面 5 欄 × 2 行（橫額佔兩格）；iPad 打橫等方啲嘅畫面 4 欄（橫額成行，下面 2 行 × 4）</td></tr>
+                    <tr><td>主頁：7 個節目 + 今日節目</td><td>橫額成行，下面 2 行 × 4；手機打橫 5 欄 × 2 行（橫額佔兩格）</td></tr>
                     <tr><td>主頁 mini player（掃動轉節目、指示點、播放、撳入節目頁、進度）</td><td>浮喺底中間，最闊 520px × 倍數</td></tr>
                     <tr><td>返回主頁</td><td>左欄頁頭 ←</td></tr>
                     <tr><td>弧形進度拖動、拖碟、播放 / 暫停、由頭播放</td><td>左欄唱片</td></tr>
-                    <tr><td>日子條（掃動轉集、聽過剔、連線中…）</td><td>只喺細視窗出；其他畫面用右欄集數清單轉集，聽過剔同進度喺清單睇</td></tr>
+                    <tr><td>日子條（掃動轉集、聽過剔、連線中…）</td><td>橫版唔出（直版照舊）；用右欄集數清單轉集，聽過剔同進度喺清單睇</td></tr>
                     <tr><td>集數清單 / 今日節目清單</td><td>右欄，自己捲</td></tr>
                     <tr><td>卡疊左右掃、指示點</td><td>左欄（今日節目頁）</td></tr>
                     <tr><td>節目色調、鎖屏 / 耳機控制、續播、版本號</td><td>不變</td></tr>
@@ -432,10 +408,10 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                 <thead><tr><th>檔案</th><th>改動</th></tr></thead>
                 <tbody>
                     <tr><td><code>src/styles/tokens.css</code></td><td>新增 <code>--ui-scale</code>（1 / 1.3 / 1.5），字級、<code>--touch-target</code>、間距喺橫版乘佢；橫版 <code>--player-disc-size</code> 按左欄高計</td></tr>
-                    <tr><td><code>src/pages/Page.module.css</code></td><td>landscape media query：<code>.fixed</code> 改 grid（46 / 54，≥ 1024px 右欄 max(30%, 300px × 倍數)），加 <code>.playerColumn</code> / <code>.listColumn</code>；橫版唔再行 ≤ 561px 成頁捲</td></tr>
+                    <tr><td><code>src/pages/Page.module.css</code></td><td>landscape media query：<code>.fixed</code> 改 grid（右欄 max(30%, 300px × 倍數)；高 ≤ 561px 46 / 54），加 <code>.playerColumn</code> / <code>.listColumn</code>；橫版唔再行 ≤ 561px 成頁捲</td></tr>
                     <tr><td><code>src/pages/ShowPage.tsx</code>、<code>TodayPage.tsx</code></td><td>兩個 column wrapper 包住「頁頭 + 播放器」同清單（直版用 <code>display: contents</code>，行為不變）</td></tr>
-                    <tr><td><code>src/components/DateStrip/</code></td><td>橫向而且（高 ≤ 561px 或闊 ≥ 1024px）時隱藏</td></tr>
-                    <tr><td><code>src/pages/HomePage.module.css</code>、<code>HomeBanner</code>、<code>MiniPlayer</code></td><td>5 欄格、橫額 <code>grid-column: span 2</code>；闊高比 ≤ 8:5 改 4 欄、橫額 <code>span 4 / 2 行</code>；mini player 限闊置中</td></tr>
+                    <tr><td><code>src/components/DateStrip/</code></td><td>橫版一律隱藏</td></tr>
+                    <tr><td><code>src/pages/HomePage.module.css</code>、<code>HomeBanner</code>、<code>MiniPlayer</code></td><td>4 欄格、橫額 <code>span 4 / 2 行</code>；高 ≤ 561px 改 5 欄 × 2 行填滿、橫額 <code>span 2</code>；mini player 限闊置中</td></tr>
                     <tr><td>icon（<code>icons.tsx</code> 嘅 size prop）</td><td>改用 CSS 控制大小，跟 <code>--ui-scale</code></td></tr>
                     <tr><td><code>shortHeightBreakpoint.node.test.ts</code>、<code>e2e/run.mjs</code></td><td>同步斷點；e2e 加 844×390、1180×820 橫向 case</td></tr>
                 </tbody>
@@ -480,17 +456,16 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         { id: 'lalala', name: '聖艾粒LaLaLaLa', time: '17:10', status: 'unwatched', pos: 0 },
     ];
     const DEVICES = {
-        phone: { w: 844, h: 390, kind: 'phone', label: 'iPhone 打橫 844 × 390 · 字同掣 × 1 · 冇日子條', sa: { l: 47, r: 47, b: 21 }, gap: 12 },
-        small: { w: 960, h: 640, kind: 'desktop', label: '細視窗 960 × 640 · 字同掣 × 1 · 有日子條', sa: { l: 20, r: 20, b: 0 }, gap: 16 },
-        tablet: { w: 1180, h: 820, kind: 'tablet', label: 'iPad 打橫 1180 × 820 · 字同掣 × 1.5 · 冇日子條', sa: { l: 24, r: 24, b: 20 }, gap: 20 },
-        desktop: { w: 1280, h: 720, kind: 'desktop', label: '桌面 1280 × 720 · 字同掣 × 1.3 · 冇日子條', sa: { l: 24, r: 24, b: 0 }, gap: 20 },
+        phone: { w: 844, h: 390, kind: 'phone', label: 'iPhone 打橫 844 × 390 · 字同掣 × 1', sa: { l: 47, r: 47, b: 21 }, gap: 12 },
+        small: { w: 960, h: 640, kind: 'desktop', label: '細視窗 960 × 640 · 字同掣 × 1', sa: { l: 20, r: 20, b: 0 }, gap: 16 },
+        tablet: { w: 1180, h: 820, kind: 'tablet', label: 'iPad 打橫 1180 × 820 · 字同掣 × 1.5', sa: { l: 24, r: 24, b: 20 }, gap: 20 },
+        desktop: { w: 1280, h: 720, kind: 'desktop', label: '桌面 1280 × 720 · 字同掣 × 1.3', sa: { l: 24, r: 24, b: 0 }, gap: 20 },
     };
     const PAGES = { home: 1, show: 1, today: 1 };
     const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
     const EPISODE_SECONDS = 2 * 3600 - 7 * 60;
     const TODAY = new Date(Date.UTC(2026, 9, 21));
     const DAY_MS = 86400000;
-    const STRIP_HALF = 3;
     const SWIPE_PX = 50;
     const FLY_MS = 280;
     const APP_VERSION = 'v0.8.1';
@@ -568,20 +543,6 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         return { text: '未收聽', done: false };
     };
 
-    const stripHtml = () => {
-        const cur = episodes[state.epIndex];
-        const center = days.findIndex((x) => x.d.getTime() === cur.d.getTime());
-        let cells = '';
-        for (let k = -STRIP_HALF; k <= STRIP_HALF; k++) {
-            const day = days[center - k];
-            if (!day) { cells += '<span class="cell empty"></span>'; continue; }
-            const ep = episodes.find((e) => e.d.getTime() === day.d.getTime());
-            const tick = ep && ep.ratio >= 0.95 ? '<span class="tick">✓</span>' : '';
-            cells += `<button type="button" class="cell ${ep ? '' : 'empty'} ${k === 0 ? 'on' : ''}" ${ep ? `data-ep="${episodes.indexOf(ep)}"` : 'disabled'} aria-label="${ep ? `轉去 ${day.dm}（${WEEKDAYS[day.wd]}）` : '冇節目'}"><span class="wd">${WEEKDAYS[day.wd]}</span><span class="dm">${day.dm}</span>${tick}</button>`;
-        }
-        return `<div class="strip-wrap"><span class="strip-label">現正播放</span><div class="strip" data-strip role="group" aria-roledescription="轉集" aria-label="左右方向鍵或左右掃動轉集" tabindex="0">${cells}</div></div>`;
-    };
-
     const showPageHtml = () => {
         const cur = episodes[state.epIndex];
         const rows = episodes.map((ep, i) => {
@@ -595,7 +556,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         }).join('');
         return `<div class="col-left">
                 ${headHtml('Bad Girl大過佬')}
-                <div class="player">${gaugeHtml(IMG.badgirl, cur.ratio)}${stripHtml()}</div>
+                <div class="player">${gaugeHtml(IMG.badgirl, cur.ratio)}</div>
             </div>
             <section class="col-right" aria-label="集數">
                 <div class="list-head"><h2>集數</h2><span>共 ${episodes.length} 集</span></div>
@@ -749,10 +710,10 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         if (t.matches('[data-arc]')) seekFromEvent(t, e);
     });
 
-    // 日子條 / 卡疊 / mini player：左右掃動同方向鍵
+    // 卡疊 / mini player：左右掃動；卡疊方向鍵
     let swipe = null;
     device.addEventListener('pointerdown', (e) => {
-        const zone = e.target.closest('[data-strip], [data-stack], [data-mini]');
+        const zone = e.target.closest('[data-stack], [data-mini]');
         if (zone && !e.target.closest('[data-arc], .toggle, .restart, .mini-toggle')) swipe = { x: e.clientX, zone };
     });
     window.addEventListener('pointerup', (e) => {
@@ -761,15 +722,13 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         const zone = swipe.zone;
         swipe = null;
         if (Math.abs(dx) < SWIPE_PX) return;
-        // 日子條：向右掃 = 舊一集；卡疊 / mini player：向左掃 = 下一個節目
-        if (zone.matches('[data-strip]')) setEpisode(state.epIndex + (dx > 0 ? 1 : -1));
-        else if (zone.matches('[data-mini]')) setToday(state.todayIndex + (dx < 0 ? 1 : -1), null, true);
+        // 卡疊 / mini player：向左掃 = 下一個節目
+        if (zone.matches('[data-mini]')) setToday(state.todayIndex + (dx < 0 ? 1 : -1), null, true);
         else setToday(state.todayIndex + (dx < 0 ? 1 : -1), dx < 0 ? 'fly-left' : 'fly-right');
     });
     device.addEventListener('keydown', (e) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
         const left = e.key === 'ArrowLeft';
-        if (e.target.matches('[data-strip]')) { e.preventDefault(); state.refocus = '[data-strip]'; setEpisode(state.epIndex + (left ? 1 : -1)); }
         if (e.target.matches('[data-stack]')) { e.preventDefault(); state.refocus = '[data-stack]'; setToday(state.todayIndex + (left ? -1 : 1)); }
     });
 
