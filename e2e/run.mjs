@@ -818,7 +818,7 @@ const NARROW = { width: 291, height: 562 };
 const LONG_TIMES = ['1:14:04', '1:54:19'];
 // 拖一半（未到轉節目門檻）
 const NARROW_HALF_DRAG_PX = 100;
-// 跑馬燈開始捲（20% 停留之後）要等嘅時間
+// 等跑馬燈捲咗一段先量位移
 const MARQUEE_START_WAIT_MS = 2500;
 
 /** 時間字嘅框同由頭播放 / 播放掣有冇橫向重疊（重疊 px，0 = 冇） */
@@ -896,7 +896,8 @@ const checkNarrowLayout = async (browser, errors) => {
     // 播緊先有時間（「· 0:01 / 10:00」），副題喺 291px 闊放唔落
     const mini = p.getByRole('region', { name: MINI_REGION });
     await mini.getByRole('button', { name: '播放', exact: true }).click();
-    await mini.getByText(/ \/ /).waitFor();
+    // 跑馬燈捲動時有一份 aria-hidden 副本，攞第一份
+    await mini.getByText(/ \/ /).first().waitFor();
     await p.waitForTimeout(MARQUEE_START_WAIT_MS);
     const fit = await miniTextFit(p);
     log(

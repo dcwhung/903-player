@@ -23,24 +23,21 @@
 }
 
 .today {
-    padding: var(--space-3);
     border: none;
-    background: var(--color-today-tile-bg);
     color: var(--color-today-tile-text);
-    font-size: var(--font-size-md);
-    font-weight: 600;
+    font-size: var(--font-size-lg);
+    font-weight: 700;
     box-shadow: var(--shadow-today-tile);
 }
 
-.todayIcon {
-    color: var(--color-today-tile-icon);
-}
-
-/* 右下角裝飾聲波，淡少少唔搶「今日節目」字眼 */
-.wave {
+/*
+ * 「今日節目」字：放喺插畫中間嗰條米色帶（約圖高 59% 位置，量出嚟），
+ * 中心略為偏右（圖闊 52%）避開左上月曆；右下聲波都唔會遮到
+ */
+.todayLabel {
     position: absolute;
-    right: var(--space-3);
-    bottom: var(--space-3);
-    color: var(--color-today-tile-icon);
-    opacity: 0.6;
+    top: 59%;
+    left: 52%;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
 }
