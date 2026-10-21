@@ -1,4 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
+import { LANDSCAPE_QUERY } from '../../config/layout';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { t } from '../../i18n/t';
 import { scrollBehavior } from '../../utils/motion';
 import { PageDots } from '../PageDots/PageDots';
@@ -17,10 +19,13 @@ const pagePosition = (index: number, total: number) => t('home.pagePosition', { 
 
 /**
  * 主頁節目格（兩欄）：填滿橫額同 mini player 之間嘅高度。
- * 全部放得落就一頁；矮螢幕放唔落就按高度分頁，左右掃（scroll-snap）或者撳指示點轉頁
+ * 全部放得落就一頁；矮螢幕放唔落就按高度分頁，左右掃（scroll-snap）或者撳指示點轉頁。
+ * 橫版（LANDSCAPE_QUERY）唔分頁：CSS 排成 4 欄（手機打橫 5 欄）× 兩行填滿
  */
 export const ShowGrid = ({ tiles, label, busy }: ShowGridProps) => {
-    const { viewportRef, gridRef, rows, maxWidthPx } = useRowsPerPage(tiles.length);
+    // 橫版一頁放晒（ShowGrid.module.css 排成幾欄 × 兩行填滿），唔使量高度分頁
+    const landscape = useMediaQuery(LANDSCAPE_QUERY);
+    const { viewportRef, gridRef, rows, maxWidthPx } = useRowsPerPage(tiles.length, !landscape);
     const scrollerRef = useRef<HTMLDivElement>(null);
     const pages = paginate(tiles, rows * GRID_COLUMNS);
     const [index, setIndex] = useState(0);

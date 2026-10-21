@@ -20,3 +20,9 @@ main.home {
         var(--mini-player-height) + var(--mini-player-offset-bottom) + var(--space-3)
     );
 }
+
+/* 手機打橫：橫額做節目格第一格，佔兩欄（ShowGrid 排成 5 欄 × 2 行） */
+.bannerTile {
+    grid-column: span 2;
+    min-height: 0;
+}

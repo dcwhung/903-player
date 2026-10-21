@@ -15,6 +15,12 @@ export const e2eShortHeightPx = (): number => {
     return Number(/const SHORT_HEIGHT_PX = (\d+);/.exec(runner)?.[1]);
 };
 
+/** e2e 嘅橫版最細闊度（LANDSCAPE_MIN_WIDTH_PX），由測試對返 src/config/layout.ts */
+export const e2eLandscapeMinWidthPx = (): number => {
+    const runner = readFileSync(new URL('../e2e/run.mjs', import.meta.url), 'utf8');
+    return Number(/const LANDSCAPE_MIN_WIDTH_PX = (\d+);/.exec(runner)?.[1]);
+};
+
 const squash = (text: string): string => text.trim().replace(/\s+/g, ' ');
 
 /**
@@ -116,16 +122,22 @@ export const cssValues = (
     return values;
 };
 
-/** CSS 入面所有 @media 嘅 max-height 斷點（px） */
-export const maxHeightBreakpoints = (css: string): number[] => {
-    const breakpoints: number[] = [];
+/** CSS 入面所有 @media 嘅條件（空白壓成一格），按出現次序 */
+export const mediaQueries = (css: string): string[] => {
+    const queries: string[] = [];
     parse(css).walkAtRules('media', (atRule) => {
-        for (const match of atRule.params.matchAll(/max-height:\s*(\d+)px/g)) {
-            breakpoints.push(Number(match[1]));
-        }
+        queries.push(squash(atRule.params));
     });
-    return breakpoints;
+    return queries;
 };
+
+/** CSS 入面所有 @media 嘅 max-height 斷點（px）；excludeLandscape 就唔計橫版（orientation: landscape）嘅 */
+export const maxHeightBreakpoints = (css: string, { excludeLandscape = false } = {}): number[] =>
+    mediaQueries(css)
+        .filter((query) => !(excludeLandscape && query.includes('orientation: landscape')))
+        .flatMap((query) =>
+            [...query.matchAll(/max-height:\s*(\d+)px/g)].map((match) => Number(match[1])),
+        );
 
 export interface CssDeclaration {
     /** 同 contextOf 一樣：頂層係 undefined，否則係由外至內嘅 at-rule 鏈 */

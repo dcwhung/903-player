@@ -41,9 +41,10 @@
 .item {
     display: flex;
     align-items: center;
-    gap: 14px;
+    /* 寫死嘅 px 都跟 --ui-scale（橫版大畫面放大）；直版 / 手機係 × 1 */
+    gap: calc(14px * var(--ui-scale));
     width: 100%;
-    min-height: 64px;
+    min-height: calc(64px * var(--ui-scale));
     padding: 0 var(--space-1);
     border: none;
     border-bottom: 1px solid var(--color-divider);

@@ -38,10 +38,11 @@
 .row {
     display: flex;
     align-items: center;
-    gap: 14px;
+    /* 寫死嘅 px 都跟 --ui-scale（橫版大畫面放大）；直版 / 手機係 × 1 */
+    gap: calc(14px * var(--ui-scale));
     width: 100%;
-    min-height: 56px;
-    padding: 0 6px;
+    min-height: calc(56px * var(--ui-scale));
+    padding: 0 calc(6px * var(--ui-scale));
     border: none;
     border-bottom: 1px solid var(--color-divider);
     background: transparent;
@@ -56,7 +57,7 @@
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    width: 58px;
+    width: calc(58px * var(--ui-scale));
 }
 
 .dayMonth {
@@ -70,7 +71,7 @@
 }
 
 .weekday {
-    font-size: 11px;
+    font-size: var(--font-size-2xs);
     color: var(--color-text-muted);
 }
 
@@ -78,12 +79,12 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    gap: 6px;
+    gap: calc(6px * var(--ui-scale));
 }
 
 .bar {
     position: relative;
-    height: 4px;
+    height: calc(4px * var(--ui-scale));
     overflow: hidden;
     border-radius: 2px;
     background: var(--color-track);
@@ -114,8 +115,8 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: calc(22px * var(--ui-scale));
+    height: calc(22px * var(--ui-scale));
     border-radius: var(--radius-full);
     background: var(--color-badge);
     color: var(--color-on-badge);

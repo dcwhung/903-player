@@ -44,10 +44,11 @@ export const DateStrip = ({ title, connecting = false, ...options }: DateStripPr
                 <span id={ids.hint} className={styles.visuallyHidden}>
                     {t('episodes.switchHint')}
                 </span>
-                <span role="status" aria-live="polite" className={styles.visuallyHidden}>
-                    {announcement}
-                </span>
             </div>
+            {/* 喺 .strip 外面：橫版收埋日子條（DateStrip.module.css）都照樣讀出轉集 */}
+            <span role="status" aria-live="polite" className={styles.visuallyHidden}>
+                {announcement}
+            </span>
         </div>
     );
 };

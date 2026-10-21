@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
+import { cssPx } from '../../utils/cssLength';
 import { GRID_COLUMNS, rowsPerPage, shrunkGridWidth } from './showGridPages';
 
 /** 指示點嗰行嘅高（PageDots 每粒撳得到範圍），由 CSS token 讀 */
@@ -34,7 +35,7 @@ const layoutFor = (viewport: HTMLElement, grid: HTMLElement, totalRows: number):
     const fullColumnPx = (viewport.clientWidth - 2 * gutterPx - columnGapPx) / GRID_COLUMNS;
     const tilePx = tileRatio * fullColumnPx;
     const availablePx = viewport.clientHeight - paddingPx;
-    const dotsPx = px(getComputedStyle(viewport).getPropertyValue(DOTS_HEIGHT_VAR));
+    const dotsPx = cssPx(getComputedStyle(viewport).getPropertyValue(DOTS_HEIGHT_VAR));
     const rows = rowsPerPage({ availablePx, tilePx, gapPx, totalRows, dotsPx });
     // 要分頁就扣走指示點；一格放得落就唔使收窄
     const roomPx = availablePx - (rows < totalRows ? dotsPx : 0);
@@ -49,9 +50,10 @@ const layoutFor = (viewport: HTMLElement, grid: HTMLElement, totalRows: number):
  * 量分頁容器（viewport）有幾高、第一頁嘅格（grid）一格幾高同行距，計每頁幾多行。
  * 格高按容器闊度推算（唔係直接用量到嘅高），收窄咗再量都係同一個答案，唔會來回跳。
  * 容器尺寸變咗（ResizeObserver，例如轉向、iOS 工具列）就重新計；
- * 冇 ResizeObserver（jsdom）就只計一次，量唔到（0）就全部一頁
+ * 冇 ResizeObserver（jsdom）就只計一次，量唔到（0）就全部一頁。
+ * paged = false（橫版：節目格排成幾欄 × 兩行填滿）就唔量、唔分頁
  */
-export const useRowsPerPage = (count: number) => {
+export const useRowsPerPage = (count: number, paged = true) => {
     const viewportRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<HTMLDivElement>(null);
     const totalRows = Math.ceil(count / GRID_COLUMNS);
@@ -60,7 +62,7 @@ export const useRowsPerPage = (count: number) => {
     useLayoutEffect(() => {
         const viewport = viewportRef.current;
         const grid = gridRef.current;
-        if (!viewport || !grid) return;
+        if (!paged || !viewport || !grid) return;
         const measure = () => {
             const next = layoutFor(viewport, grid, totalRows);
             setLayout((prev) =>
@@ -71,7 +73,8 @@ export const useRowsPerPage = (count: number) => {
         const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
         observer?.observe(viewport);
         return () => observer?.disconnect();
-    }, [totalRows]);
+    }, [totalRows, paged]);
 
-    return { viewportRef, gridRef, ...layout };
+    // 唔分頁（橫版）：全部一頁、唔收窄；轉返直版再量
+    return { viewportRef, gridRef, ...(paged ? layout : { rows: totalRows }) };
 };

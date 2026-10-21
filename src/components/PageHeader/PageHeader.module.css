@@ -1,7 +1,8 @@
 .header {
     display: grid;
     /* minmax(0, 1fr)：中間標題可以縮細過內容，長節目名唔會逼開或者疊住返回掣 */
-    grid-template-columns: var(--touch-target) minmax(0, 1fr) var(--touch-target);
+    /* 右邊格最少同返回掣一樣闊（標題置中）；有 trailing（例如指示點）就跟佢闊度 */
+    grid-template-columns: var(--touch-target) minmax(0, 1fr) minmax(var(--touch-target), auto);
     align-items: center;
     width: 100%;
 }

@@ -114,6 +114,10 @@ const checkHomeBanner = async (p, label, shot) => {
     await p.screenshot({ path: `${OUT}/${shot}` });
 };
 
+// 今日有新一集嘅節目格讀屏名後面加「，今日有新一集」（i18n home.showNew），比較節目名時去走
+const NEW_SUFFIX = /，今日有新一集$/;
+const tileName = (label) => label.replace(NEW_SUFFIX, '');
+
 const HOME_TILES = [
     'Bad Girl大過佬',
     '公子會',
@@ -151,6 +155,14 @@ const SHORT_ROWS_MIN_HEIGHT_PX = 390;
 // 以下唱片下限細啲、預留行數少啲，播放器佔高唔要求 ≤ PLAYER_MAX_SHARE；任何高度都係固定版面
 // 用 regex 讀呢一行，所以保持 `const SHORT_HEIGHT_PX = <數字>;` 嘅寫法
 const SHORT_HEIGHT_PX = 561;
+// 橫版（打橫而且 ≥ 640px 闊）：同 src/config/layout.ts 嘅 LANDSCAPE_QUERY 一樣；
+// 左播放器、右清單，唔出日子條，唱片按左欄計（同今日節目頁唔一定一樣大），播放器唔受六成上限
+const LANDSCAPE_MIN_WIDTH_PX = 640;
+const isLandscape = (p) => {
+    const { width, height } = p.viewportSize();
+    return width > height && width >= LANDSCAPE_MIN_WIDTH_PX;
+};
+
 const SHOW_VIEWPORTS = [
     { width: 390, height: 844, swipe: true, homeFixed: true },
     { width: 320, height: 568, swipe: true, homeFixed: true, pagedHome: true },
@@ -160,8 +172,13 @@ const SHOW_VIEWPORTS = [
     { width: 390, height: 720 },
     { width: 375, height: 667 },
     { width: 390, height: 664 },
-    // 橫向手機 / 矮視窗（844×390 順便驗好矮嘅主頁：一行都放唔落要收窄）
-    { width: 844, height: 390, homeFixed: true, pagedHome: true },
+    // 橫版：手機打橫（主頁橫額入格 5 欄 × 2 行）、細視窗、iPad 打橫（主頁橫額成行 + 4 欄）
+    { width: 844, height: 390, homeFixed: true, landscapeHome: true },
+    // iPhone SE 打橫：左欄最窄，今日節目頁頁頭要放得落標題同指示點
+    { width: 667, height: 375 },
+    { width: 960, height: 640, homeFixed: true, landscapeHome: true },
+    { width: 1180, height: 820, homeFixed: true, landscapeHome: true },
+    // 568 闊未夠橫版（< 640px），照直版矮螢幕；1280×400 係矮嘅橫版
     { width: 568, height: 320 },
     { width: 1280, height: 400 },
     { width: 390, height: 540 },
@@ -216,6 +233,47 @@ const checkPagedHome = async (p, label) => {
     log(page.scrollY === 0 && page.main === 0, `${label}：主頁成頁唔捲（${JSON.stringify(page)}）`);
 };
 
+/**
+ * 橫版主頁：唔分頁（冇頁數指示點），8 格全部完整喺畫面、喺 mini player 上面；
+ * 手機打橫橫額入節目格（nav 入面），其他橫版橫額成行喺節目格上面、用闊版圖
+ */
+const checkLandscapeHome = async (p, label) => {
+    const nav = p.getByRole('navigation', { name: '節目' });
+    log((await nav.getByRole('group').count()) === 0, `${label}：唔分頁，冇頁數指示點`);
+    const fit = await p.evaluate(
+        ({ names, suffix }) => {
+            const mini = document.querySelector('[aria-label="正在播放（今日節目）"]');
+            const miniTop = mini ? mini.getBoundingClientRect().top : innerHeight;
+            const nav = document.querySelector('nav');
+            return [...nav.querySelectorAll('button')]
+                .filter((b) =>
+                    names.includes(
+                        (b.getAttribute('aria-label') ?? b.textContent).replace(suffix, ''),
+                    ),
+                )
+                .map((b) => b.getBoundingClientRect())
+                .filter(
+                    (r) =>
+                        r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= miniTop,
+                ).length;
+        },
+        { names: HOME_TILES, suffix: NEW_SUFFIX },
+    );
+    log(
+        fit === HOME_TILES.length,
+        `${label}：${fit} / ${HOME_TILES.length} 格完整喺畫面、mini player 上面`,
+    );
+    const banner = p.getByRole('img', { name: BANNER_ALT });
+    const inGrid = (await nav.getByRole('img', { name: BANNER_ALT }).count()) === 1;
+    const phone = p.viewportSize().height <= SHORT_HEIGHT_PX;
+    const src = await banner.evaluate((img) => img.currentSrc);
+    log(
+        phone ? inGrid : !inGrid && /banner-wide/.test(src),
+        `${label}：${phone ? '橫額入節目格' : '橫額成行、用闊版圖'}（${src.split('/').pop()}）`,
+    );
+    log((await horizontalOverflow(p)) === 0, `${label}：冇橫向捲動`);
+};
+
 /** 節目頁固定：捲集數 panel 時 window 唔郁、控制掣仍然喺畫面，panel 自己嘅 scrollTop 有變 */
 const checkFixedShowPage = async (p, label, shot) => {
     const panel = p.getByRole('region', { name: '集數' }).getByRole('list');
@@ -254,8 +312,8 @@ const checkFixedShowPage = async (p, label, shot) => {
     await logDiscSize(p, label, rows.toFixed(2));
     const share = await playerShare(p);
     log(
-        short || share <= PLAYER_MAX_SHARE + 0.001,
-        `${label}：播放器佔畫面高 ${(share * 100).toFixed(1)}%${short ? '' : `（≤ ${PLAYER_MAX_SHARE * 100}%）`}`,
+        short || isLandscape(p) || share <= PLAYER_MAX_SHARE + 0.001,
+        `${label}：播放器佔畫面高 ${(share * 100).toFixed(1)}%${short || isLandscape(p) ? '' : `（≤ ${PLAYER_MAX_SHARE * 100}%）`}`,
     );
     await recordMetrics(p, label, rows.toFixed(2), share);
     await p.screenshot({ path: `${OUT}/${shot}` });
@@ -315,19 +373,26 @@ const checkDiscMatchesToday = async (p, label) => {
     await p.goto(`${BASE}#/today`);
     await p.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
     const today = await discWidth();
-    log(Math.abs(show - today) < 1, `${label}：唱片同今日節目頁一樣大（${show} / ${today}）`);
+    // 橫版唱片按左欄計，今日節目頁要扣卡同指示點，所以只要求唔大過節目頁
+    const landscape = isLandscape(p);
+    log(
+        landscape ? today <= show + 0.5 : Math.abs(show - today) < 1,
+        `${label}：唱片${landscape ? '（橫版）唔大過節目頁' : '同今日節目頁一樣大'}（${show} / ${today}）`,
+    );
     // 今日節目頁同節目頁用同一個固定版面（.fixed），頁面間距一樣、矮螢幕一齊收窄；
     // 今日節目卡入面用卡自己較窄嘅間距：要正正係 --card-inner-gap（ShowCardStack .card 蓋過 .fixed），
     // 亦唔可以闊過節目頁
     const todayGaps = await pageGaps();
-    // custom property 嘅 computed value 已經代入咗 var()（例如 var(--space-2) → 8px）
-    const cardInnerGap = await p.evaluate(() =>
-        parseFloat(
-            getComputedStyle(document.querySelector('[class*="panel"]')).getPropertyValue(
-                '--card-inner-gap',
-            ),
-        ),
-    );
+    // custom property 嘅 computed value 只係代入咗 var()（例如 calc(8px * 1)），
+    // 放喺一個 probe 嘅 width 度由瀏覽器計成 px
+    const cardInnerGap = await p.evaluate(() => {
+        const probe = document.createElement('div');
+        probe.style.width = 'var(--card-inner-gap)';
+        document.querySelector('[class*="panel"]').append(probe);
+        const width = probe.getBoundingClientRect().width;
+        probe.remove();
+        return width;
+    });
     log(
         todayGaps[0] === showGaps[0] &&
             todayGaps[1] === cardInnerGap &&
@@ -391,8 +456,15 @@ const checkTodayCardShare = (share, label, short) => {
 /** 今日節目頁固定：捲輪 / scrollTo 都唔會捲成頁；清單太長就自己捲 */
 const checkFixedTodayPage = async (p, label) => {
     const list = p.getByRole('region', { name: '節目表' }).getByRole('list');
-    const short = p.viewportSize().height <= SHORT_HEIGHT_PX;
+    // 橫版播放器喺左欄，唔受六成上限（同矮螢幕一樣只印出）
+    const short = p.viewportSize().height <= SHORT_HEIGHT_PX || isLandscape(p);
     checkTodayCardShare(await checkTodayRows(list, label), label, short);
+    // 手機打橫指示點搬咗上頁頭：標題仍然完整顯示（冇省略號）
+    const heading = await p.locator('header h1').evaluate((el) => ({
+        fits: el.scrollWidth <= el.clientWidth,
+        size: getComputedStyle(el).fontSize,
+    }));
+    log(heading.fits, `${label}：頁頭標題完整顯示（字體 ${heading.size}）`);
     const card = await todayCardTitle(p).boundingBox();
     await p.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
     await p.mouse.wheel(0, WHEEL_PX);
@@ -470,6 +542,11 @@ const checkShowHeader = async (p, name, label) => {
         size: getComputedStyle(el).fontSize,
     }));
     log(title.fits, `${label}：節目名完整顯示（字體 ${title.size}）`);
+    if (isLandscape(p)) {
+        const hidden = !(await p.locator(STRIP).isVisible());
+        log(hidden, `${label}：橫版唔出日子條（轉集用右欄清單）`);
+        return;
+    }
     const { above, date, centreGap } = await p.locator(STRIP).evaluate((el) => {
         const dateId = el.getAttribute('aria-labelledby').split(' ')[0];
         const zone = el.getBoundingClientRect();
@@ -488,6 +565,7 @@ const checkShowHeader = async (p, name, label) => {
 
 /** 日子條每格（星期 + 日/月）唔可以畀剪走（320px 闊一格得約 41px） */
 const checkDayCellsFit = async (p, label) => {
+    if (isLandscape(p)) return;
     const cells = await p
         .locator(`${STRIP} > div > *`)
         .evaluateAll((els) =>
@@ -1078,7 +1156,7 @@ try {
         .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.textContent));
     // 每個節目一粒（src/config/shows.ts 次序）+ 最尾「今日節目」；刻意寫死做獨立對照
     log(
-        tiles.join(' | ') === HOME_TILES.join(' | '),
+        tiles.map(tileName).join(' | ') === HOME_TILES.join(' | '),
         `主頁 ${HOME_TILES.length} 粒掣：${tiles.join(' | ')}`,
     );
     const cols = await page.evaluate(
@@ -1303,7 +1381,7 @@ try {
     }
 
     // 節目頁 / 今日節目頁：任何高度都固定、只有清單自己捲。badgirl 集數多過一個畫面
-    for (const { width, height, swipe, homeFixed, pagedHome } of SHOW_VIEWPORTS) {
+    for (const { width, height, swipe, homeFixed, pagedHome, landscapeHome } of SHOW_VIEWPORTS) {
         const ctx = await newE2EContext(browser, {
             viewport: { width, height },
             deviceScaleFactor: 2,
@@ -1335,6 +1413,7 @@ try {
             await fp.waitForTimeout(300);
             await checkFixedHome(fp, `${width}×${height} 主頁`);
             if (pagedHome) await checkPagedHome(fp, `${width}×${height} 主頁`);
+            if (landscapeHome) await checkLandscapeHome(fp, `${width}×${height} 主頁（橫版）`);
             await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
         }
         await ctx.close();

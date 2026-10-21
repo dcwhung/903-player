@@ -18,8 +18,9 @@
 }
 
 .small {
-    width: 40px;
-    height: 40px;
+    /* 跟 --ui-scale（橫版大畫面放大清單同 mini player 嘅細碟） */
+    width: calc(40px * var(--ui-scale));
+    height: calc(40px * var(--ui-scale));
     box-shadow: 0 0 0 3px var(--color-divider);
 }
 

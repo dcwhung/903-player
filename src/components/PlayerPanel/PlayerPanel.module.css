@@ -12,8 +12,15 @@
     position: relative;
     width: var(--player-disc-size);
     aspect-ratio: 300 / 332;
-    /* 播放掣跟唱片大小縮放（300px 唱片 → 56px），最細仍然 ≥ 44px 觸控範圍 */
-    --player-gauge-toggle-size: max(var(--touch-target), calc(var(--player-disc-size) * 56 / 300));
+    /*
+     * 播放掣跟唱片大小縮放（300px 唱片 → 56px），最細仍然 ≥ 44px 觸控範圍；
+     * 橫版唱片可以大過 300px，播放掣最大 72px × --ui-scale，唔好大到搶過唱片
+     */
+    --player-gauge-toggle-size: clamp(
+        var(--touch-target),
+        calc(var(--player-disc-size) * 56 / 300),
+        calc(72px * var(--ui-scale))
+    );
 }
 
 .arc {

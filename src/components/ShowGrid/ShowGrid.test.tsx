@@ -34,7 +34,10 @@ const mockLayout = (heightPx: number) => {
 };
 
 describe('ShowGrid', () => {
-    afterEach(() => vi.restoreAllMocks());
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
 
     it('should keep every tile on one page without dots when they all fit', () => {
         render(<ShowGrid tiles={TILES} label="節目" busy={false} />);
@@ -57,6 +60,23 @@ describe('ShowGrid', () => {
             expect.objectContaining({ left: PAGE_WIDTH_PX }),
         );
         expect(screen.getByRole('group', { name: '節目第 2 頁，共 2 頁' })).toBeInTheDocument();
+    });
+
+    it('should keep every tile on one page in landscape, however short the screen', () => {
+        mockLayout(250);
+        // 橫版：節目格排成幾欄 × 兩行填滿，唔分頁
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn(() => ({
+                matches: true,
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn(),
+            })),
+        );
+        render(<ShowGrid tiles={TILES} label="節目" busy={false} />);
+
+        expect(within(screen.getByRole('navigation')).getAllByRole('button')).toHaveLength(8);
+        expect(screen.queryByRole('group')).not.toBeInTheDocument();
     });
 
     it('should mark the navigation busy while recordings load', () => {

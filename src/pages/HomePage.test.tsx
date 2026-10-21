@@ -51,7 +51,10 @@ describe('HomePage', () => {
         vi.useFakeTimers({ toFake: ['Date'] });
         vi.setSystemTime(new Date('2026-10-19T08:00:00Z')); // 香港 19/10 16:00
     });
-    afterEach(() => vi.useRealTimers());
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+    });
 
     it('lists seven artwork tiles plus today, in order', () => {
         renderWithProviders(<HomePage />);
@@ -96,6 +99,39 @@ describe('HomePage', () => {
         // 橫額喺節目格之前（頁頂）
         const position = banner.compareDocumentPosition(screen.getByRole('navigation'));
         expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('should offer the wide banner to landscape screens taller than a phone', () => {
+        renderWithProviders(<HomePage />);
+
+        const source = screen.getByRole('img', { name: BANNER_ALT }).previousElementSibling;
+        expect(source?.tagName).toBe('SOURCE');
+        expect(source).toHaveAttribute(
+            'media',
+            '(orientation: landscape) and (min-width: 640px) and (min-height: 562px)',
+        );
+        expect(source?.getAttribute('srcset')).toMatch(/banner-wide/);
+    });
+
+    it('should put the banner in the tile grid, before the shows, on a phone held sideways', () => {
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn((query: string) => ({
+                matches: query.includes('max-height: 561px') || query.includes('landscape'),
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn(),
+            })),
+        );
+        renderWithProviders(<HomePage />);
+
+        const nav = screen.getByRole('navigation');
+        const banner = screen.getByRole('img', { name: BANNER_ALT });
+        expect(nav).toContainElement(banner);
+        expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+        const firstShow = screen.getByRole('button', { name: 'Bad Girl大過佬' });
+        expect(
+            banner.compareDocumentPosition(firstShow) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
     });
 
     it('should not show the old header text when rendered', () => {
