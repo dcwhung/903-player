@@ -15,7 +15,7 @@ import { ratio } from '../utils/ratio';
 
 const showName = (recording: Recording): string => findShow(recording.showId)?.name ?? '';
 
-/** 今日（冇就最近一日）節目入面揀中邊個：有載入就跟 player，否則跟用戶揀 */
+/** 今日（今日冇節目播先用最近一日）節目入面揀中邊個：有載入就跟 player，否則跟用戶揀 */
 const useTodaySelection = () => {
     const { recordings } = useRecordings();
     const player = usePlayer();
@@ -50,7 +50,7 @@ const useShownTime = (url: string | undefined, isLoaded: boolean) => {
         : { position: saved?.position ?? 0, duration: saved?.duration ?? 0 };
 };
 
-/** 主頁 mini player：只播今日（冇就最近一日）嘅節目 */
+/** 主頁 mini player：只播今日（今日冇節目播先用最近一日）嘅節目 */
 export const useMiniPlayer = (): MiniPlayerProps | null => {
     const player = usePlayer();
     const navigate = useNavigate();

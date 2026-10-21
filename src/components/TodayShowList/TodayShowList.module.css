@@ -8,13 +8,21 @@
     padding: 0 var(--space-4);
 }
 
-.heading {
+/* 標題列：左邊「節目表」，右邊有未上架就顯示幾多個（同集數清單標題列一樣） */
+.header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
     padding-bottom: var(--space-2);
     border-bottom: 1px solid var(--color-divider);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.heading {
     font-size: var(--font-size-xs);
     font-weight: 500;
     letter-spacing: var(--letter-spacing-caps);
-    color: var(--color-text-muted);
 }
 
 /*
@@ -75,4 +83,23 @@
 
 .watched {
     color: var(--color-title);
+}
+
+/* 未上架：撳唔到；唱片變灰變淡、節目名變淡、冇播放掣（見 design/previews/unavailable-preview.html） */
+.unavailable {
+    cursor: default;
+}
+
+.art {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.unavailable .art {
+    opacity: var(--unavailable-opacity);
+    filter: grayscale(1);
+}
+
+.unavailable .name {
+    opacity: var(--unavailable-opacity);
 }

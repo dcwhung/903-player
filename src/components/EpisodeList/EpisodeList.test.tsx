@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EpisodeList, type EpisodeItem } from './EpisodeList';
 
@@ -88,6 +88,51 @@ describe('EpisodeList', () => {
 
         expect(screen.getByRole('button', { name: /^播放 19\/10/ })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /^暫停/ })).not.toBeInTheDocument();
+    });
+
+    describe('unavailable episodes', () => {
+        const UNAVAILABLE: EpisodeItem = {
+            key: 'missing',
+            dayMonth: '21/10',
+            weekday: '星期三',
+            current: false,
+            isPlaying: false,
+            status: { kind: 'unavailable', ratio: 0, text: '未上架' },
+        };
+        const withUnavailable = [UNAVAILABLE, ...ITEMS];
+
+        /** 未上架嗰行：唔係掣，用可見文字搵 */
+        const unavailableRow = (): HTMLElement => {
+            const row = screen.getByText('21/10').closest('li');
+            if (!row) throw new Error('unavailable row not found');
+            return row;
+        };
+
+        it('lists them as plain rows, not buttons, without a play icon or progress bar', () => {
+            render(<EpisodeList items={withUnavailable} onSelect={() => {}} />);
+
+            const row = unavailableRow();
+            expect(row).toHaveTextContent('21/10星期三未上架');
+            expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: /21\/10/ })).not.toBeInTheDocument();
+            expect(row.querySelector('svg')).toBeNull();
+            expect(screen.getAllByRole('progressbar')).toHaveLength(ITEMS.length);
+        });
+
+        it('counts only playable episodes and adds how many are unavailable', () => {
+            render(<EpisodeList items={withUnavailable} onSelect={() => {}} />);
+
+            expect(screen.getByText('共 3 集 · 1 集未上架')).toBeInTheDocument();
+        });
+
+        it('does not report a tap on an unavailable episode', async () => {
+            const onSelect = vi.fn();
+            render(<EpisodeList items={withUnavailable} onSelect={onSelect} />);
+
+            await userEvent.click(unavailableRow());
+
+            expect(onSelect).not.toHaveBeenCalled();
+        });
     });
 
     it('reports the tapped episode', async () => {

@@ -114,6 +114,10 @@ const checkHomeBanner = async (p, label, shot) => {
     await p.screenshot({ path: `${OUT}/${shot}` });
 };
 
+// 今日有新一集嘅節目格讀屏名後面加「，今日有新一集」（i18n home.showNew），比較節目名時去走
+const NEW_SUFFIX = /，今日有新一集$/;
+const tileName = (label) => label.replace(NEW_SUFFIX, '');
+
 const HOME_TILES = [
     'Bad Girl大過佬',
     '公子會',
@@ -236,17 +240,25 @@ const checkPagedHome = async (p, label) => {
 const checkLandscapeHome = async (p, label) => {
     const nav = p.getByRole('navigation', { name: '節目' });
     log((await nav.getByRole('group').count()) === 0, `${label}：唔分頁，冇頁數指示點`);
-    const fit = await p.evaluate((names) => {
-        const mini = document.querySelector('[aria-label="正在播放（今日節目）"]');
-        const miniTop = mini ? mini.getBoundingClientRect().top : innerHeight;
-        const nav = document.querySelector('nav');
-        return [...nav.querySelectorAll('button')]
-            .filter((b) => names.includes(b.getAttribute('aria-label') ?? b.textContent))
-            .map((b) => b.getBoundingClientRect())
-            .filter(
-                (r) => r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= miniTop,
-            ).length;
-    }, HOME_TILES);
+    const fit = await p.evaluate(
+        ({ names, suffix }) => {
+            const mini = document.querySelector('[aria-label="正在播放（今日節目）"]');
+            const miniTop = mini ? mini.getBoundingClientRect().top : innerHeight;
+            const nav = document.querySelector('nav');
+            return [...nav.querySelectorAll('button')]
+                .filter((b) =>
+                    names.includes(
+                        (b.getAttribute('aria-label') ?? b.textContent).replace(suffix, ''),
+                    ),
+                )
+                .map((b) => b.getBoundingClientRect())
+                .filter(
+                    (r) =>
+                        r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= miniTop,
+                ).length;
+        },
+        { names: HOME_TILES, suffix: NEW_SUFFIX },
+    );
     log(
         fit === HOME_TILES.length,
         `${label}：${fit} / ${HOME_TILES.length} 格完整喺畫面、mini player 上面`,
@@ -1144,7 +1156,7 @@ try {
         .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.textContent));
     // 每個節目一粒（src/config/shows.ts 次序）+ 最尾「今日節目」；刻意寫死做獨立對照
     log(
-        tiles.join(' | ') === HOME_TILES.join(' | '),
+        tiles.map(tileName).join(' | ') === HOME_TILES.join(' | '),
         `主頁 ${HOME_TILES.length} 粒掣：${tiles.join(' | ')}`,
     );
     const cols = await page.evaluate(

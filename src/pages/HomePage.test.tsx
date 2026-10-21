@@ -1,10 +1,11 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { HOME_THEME } from '../config/showThemes';
 import { usePlayer } from '../player/usePlayer';
+import { saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import { HomePage } from './HomePage';
 
@@ -73,6 +74,18 @@ describe('HomePage', () => {
             '聖艾粒LaLaLaLa',
             '今日節目',
         ]);
+    });
+
+    it('marks shows with an unwatched episode today as New', () => {
+        saveProgress(RECORDINGS[3]?.url ?? '', 990, 1000);
+        renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+
+        const nav = within(screen.getByRole('navigation'));
+        expect(nav.getByRole('button', { name: 'Bad Girl大過佬，今日有新一集' })).toHaveTextContent(
+            'New',
+        );
+        expect(nav.getByRole('button', { name: '雲妮鍾情' })).not.toHaveTextContent('New');
+        expect(nav.getByRole('button', { name: '公子會' })).not.toHaveTextContent('New');
     });
 
     it('should render the banner image as the only page heading when rendered', () => {

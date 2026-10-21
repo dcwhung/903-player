@@ -4,6 +4,7 @@ import { PageHeader } from '../components/PageHeader/PageHeader';
 import { PlayerCard } from '../components/PlayerPanel/PlayerCard';
 import { ShowCardStack, type StackCard } from '../components/ShowCardStack/ShowCardStack';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
+import { TodayEmpty } from '../components/TodayEmpty/TodayEmpty';
 import { TodayShowList } from '../components/TodayShowList/TodayShowList';
 import { SHORT_LANDSCAPE_QUERY } from '../config/layout';
 import { useGoHome } from '../hooks/useGoHome';
@@ -35,19 +36,15 @@ const TodayStack = ({ cards, index, title, art, onChange, dots }: TodayStackProp
 
 export const TodayPage = () => {
     const goHome = useGoHome();
-    const { status, isSearching, current, index, items, cards, theme, selectIndex, selectShow } =
+    const { status, isSearching, current, index, items, cards, cardKeys, theme, ...actions } =
         useTodayPage();
-    const names = items.map((item) => item.name);
-    const ready = status === 'ready' && current;
+    // 卡疊同指示點只有播得到嘅節目；節目表（items）另外有未上架嘅
+    const names = cards.map((card) => card.title);
+    const listed = status === 'ready' && items.length > 0;
     // 手機打橫：指示點搬上頁頭右邊，騰返高度畀唱片
     const dotsInHeader = useMediaQuery(SHORT_LANDSCAPE_QUERY);
-    const dots = ready && (
-        <PageDots
-            keys={items.map((item) => item.key)}
-            labels={names}
-            index={index}
-            onSelect={selectIndex}
-        />
+    const dots = listed && current && (
+        <PageDots keys={cardKeys} labels={names} index={index} onSelect={actions.selectIndex} />
     );
 
     // 標題同節目頁一樣（大字 h1）；卡入面係唱片、進度弧、播放掣同節目名，指示點喺卡外。
@@ -64,21 +61,29 @@ export const TodayPage = () => {
                             trailing={dotsInHeader ? dots : undefined}
                         />
                     </div>
-                    <LoadState status={status} isEmpty={!current} isSearching={isSearching} />
-                    {ready && (
-                        <TodayStack
-                            cards={cards}
-                            index={index}
-                            title={names[index] ?? ''}
-                            art={theme.art}
-                            onChange={selectIndex}
-                            dots={!dotsInHeader && dots}
-                        />
-                    )}
+                    <LoadState
+                        status={status}
+                        isEmpty={items.length === 0}
+                        isSearching={isSearching}
+                    />
+                    {/* 今日有節目播但一個都未上架：冇卡疊、唔自動播，節目表照列出成日（全部灰） */}
+                    {listed &&
+                        (current ? (
+                            <TodayStack
+                                cards={cards}
+                                index={index}
+                                title={names[index] ?? ''}
+                                art={theme.art}
+                                onChange={actions.selectIndex}
+                                dots={!dotsInHeader && dots}
+                            />
+                        ) : (
+                            <TodayEmpty />
+                        ))}
                 </div>
-                {ready && (
+                {listed && (
                     <div className={page.listColumn}>
-                        <TodayShowList items={items} onSelect={selectShow} />
+                        <TodayShowList items={items} onSelect={actions.selectShow} />
                     </div>
                 )}
             </main>

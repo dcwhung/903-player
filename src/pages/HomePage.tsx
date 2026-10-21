@@ -13,21 +13,24 @@ import { useRecordings } from '../data/useRecordings';
 import { useHomeArrival } from '../hooks/useHomeArrival';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useMiniPlayer } from '../hooks/useMiniPlayer';
+import { useNewShowIds } from '../hooks/useNewShowIds';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { t } from '../i18n/t';
 import styles from './HomePage.module.css';
 import page from './Page.module.css';
 
-/** 7 個節目格 + 今日節目格（撳落開始播再入頁） */
+/** 7 個節目格（今日有新一集就有「New」）+ 今日節目格（撳落開始播再入頁） */
 const useHomeTiles = () => {
     const navigate = useNavigate();
     const { startShow, startToday } = useStartPlayback();
+    const newShowIds = useNewShowIds();
     return [
         ...SHOWS.map((show) => (
             <ShowTile
                 key={show.id}
                 label={show.name}
                 art={SHOW_THEMES[show.id].art}
+                isNew={newShowIds.has(show.id)}
                 onClick={() => {
                     startShow(show.id);
                     navigate(`/show/${show.id}`);

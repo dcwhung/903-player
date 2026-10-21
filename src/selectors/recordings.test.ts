@@ -1,11 +1,19 @@
-import type { Recording, ShowId } from '../types/recording';
+import type { Recording, ShowId, UnavailableEpisode } from '../types/recording';
 import {
+    entriesNewestFirst,
+    entriesOnDate,
+    entryKey,
     episodesNewestFirst,
+    isAvailable,
+    newShowIds,
     pickInitialRecording,
     pickTodayDate,
     recordingsForShow,
     showsOnDate,
     todayRecordings,
+    todayView,
+    unavailableForShow,
+    unavailableOnDate,
 } from './recordings';
 
 const rec = (showId: ShowId, date: string, time = '2308'): Recording => ({
@@ -13,6 +21,12 @@ const rec = (showId: ShowId, date: string, time = '2308'): Recording => ({
     date,
     time,
     url: `https://audio.hkfm903.live/${showId}/${date}_${time}.aac`,
+});
+
+const missing = (showId: ShowId, date: string, time = '2308'): UnavailableEpisode => ({
+    showId,
+    date,
+    time,
 });
 
 const all: Recording[] = [
@@ -63,8 +77,13 @@ describe('pickTodayDate', () => {
         expect(pickTodayDate(all, '2026-10-18')).toBe('2026-10-17');
     });
 
-    it('returns undefined when there are no recordings', () => {
-        expect(pickTodayDate([], '2026-10-19')).toBeUndefined();
+    it('returns undefined when no show airs today and there are no recordings', () => {
+        expect(pickTodayDate([], '2026-10-18')).toBeUndefined();
+    });
+
+    it('stays on today when a show airs today, even before anything is up', () => {
+        expect(pickTodayDate(all, '2026-10-20')).toBe('2026-10-20');
+        expect(pickTodayDate([], '2026-10-19')).toBe('2026-10-19');
     });
 });
 
@@ -88,6 +107,102 @@ describe('todayRecordings', () => {
         ]);
         expect(todayRecordings([], '2026-10-19')).toEqual([]);
     });
+
+    it('is empty on a weekday with nothing up yet, instead of falling back', () => {
+        expect(todayRecordings(all, '2026-10-20')).toEqual([]);
+    });
+});
+
+describe('todayView', () => {
+    it('lists the whole schedule greyed out on a weekday with nothing up yet', () => {
+        expect(todayView(all, [], '2026-10-20')).toEqual({
+            date: '2026-10-20',
+            playable: [],
+            entries: [
+                missing('wanni', '2026-10-20', '0708'),
+                missing('sunnyday', '2026-10-20', '0809'),
+                missing('badgirl', '2026-10-20', '1009'),
+                missing('waves', '2026-10-20', '1510'),
+                missing('lalala', '2026-10-20', '1710'),
+            ],
+        });
+    });
+
+    it('mixes today’s recordings with the scheduled shows that are not up yet', () => {
+        const view = todayView(all, [], '2026-10-19');
+
+        expect(view.date).toBe('2026-10-19');
+        expect(view.playable).toEqual([rec('badgirl', '2026-10-19', '1000')]);
+        expect(view.entries).toEqual([
+            missing('wanni', '2026-10-19', '0708'),
+            missing('sunnyday', '2026-10-19', '0809'),
+            rec('badgirl', '2026-10-19', '1000'),
+            missing('waves', '2026-10-19', '1510'),
+            missing('lalala', '2026-10-19', '1710'),
+        ]);
+    });
+
+    it('falls back to the latest recorded day, with its probe misses, when no show airs today', () => {
+        const unavailable = [missing('westair', '2026-10-17', '0905')];
+
+        expect(todayView(all, unavailable, '2026-10-18')).toEqual({
+            date: '2026-10-17',
+            playable: [rec('gongzi', '2026-10-17')],
+            entries: [missing('westair', '2026-10-17', '0905'), rec('gongzi', '2026-10-17')],
+        });
+    });
+
+    it('greys out nothing on the fallback day without probe misses', () => {
+        expect(todayView(all, [], '2026-10-18').entries).toEqual([rec('gongzi', '2026-10-17')]);
+    });
+
+    it('lists only the recordings of a fallback weekday, not its whole schedule', () => {
+        const noSaturday = all.filter((r) => r.date !== '2026-10-17');
+
+        expect(todayView(noSaturday, [], '2026-10-18')).toEqual({
+            date: '2026-10-16',
+            playable: showsOnDate(noSaturday, '2026-10-16'),
+            entries: showsOnDate(noSaturday, '2026-10-16'),
+        });
+    });
+
+    it('is empty when no show airs today and nothing was recorded', () => {
+        expect(todayView([], [], '2026-10-18')).toEqual({
+            date: undefined,
+            playable: [],
+            entries: [],
+        });
+    });
+});
+
+describe('unavailableForShow', () => {
+    it('lists that show only, skipping episodes that have since been found', () => {
+        const unavailable = [
+            missing('badgirl', '2026-10-20', '1000'),
+            missing('badgirl', '2026-10-19', '1000'),
+            missing('wanni', '2026-10-20', '1300'),
+        ];
+
+        expect(unavailableForShow(unavailable, all, 'badgirl')).toEqual([
+            missing('badgirl', '2026-10-20', '1000'),
+        ]);
+    });
+});
+
+describe('unavailableOnDate', () => {
+    it('lists that date in broadcast order, skipping episodes that have since been found', () => {
+        const unavailable = [
+            missing('lalala', '2026-10-16', '1710'),
+            missing('wanni', '2026-10-16', '1300'),
+            missing('waves', '2026-10-16', '1510'),
+            missing('waves', '2026-10-15', '1510'),
+        ];
+
+        expect(unavailableOnDate(unavailable, all, '2026-10-16').map((u) => u.showId)).toEqual([
+            'waves',
+            'lalala',
+        ]);
+    });
 });
 
 describe('episodesNewestFirst', () => {
@@ -96,5 +211,59 @@ describe('episodesNewestFirst', () => {
             '2026-10-17',
             '2026-10-10',
         ]);
+    });
+});
+
+describe('entriesNewestFirst', () => {
+    it("merges a show's recordings with its unavailable episodes, newest first", () => {
+        const unavailable = [missing('gongzi', '2026-10-24'), missing('gongzi', '2026-10-17')];
+
+        expect(entriesNewestFirst(all, unavailable, 'gongzi')).toEqual([
+            missing('gongzi', '2026-10-24'),
+            rec('gongzi', '2026-10-17'),
+            rec('gongzi', '2026-10-10'),
+        ]);
+    });
+});
+
+describe('entriesOnDate', () => {
+    it("merges that date's recordings with its unavailable episodes in broadcast order", () => {
+        const unavailable = [
+            missing('waves', '2026-10-16', '1510'),
+            missing('wanni', '2026-10-16', '1300'),
+        ];
+
+        expect(entriesOnDate(all, unavailable, '2026-10-16')).toEqual([
+            rec('sunnyday', '2026-10-16', '0600'),
+            rec('badgirl', '2026-10-16', '1000'),
+            rec('wanni', '2026-10-16', '1300'),
+            missing('waves', '2026-10-16', '1510'),
+        ]);
+    });
+});
+
+describe('isAvailable', () => {
+    it('tells recordings apart from unavailable episodes', () => {
+        expect(isAvailable(rec('gongzi', '2026-10-17'))).toBe(true);
+        expect(isAvailable(missing('gongzi', '2026-10-17'))).toBe(false);
+    });
+});
+
+describe('entryKey', () => {
+    it('uses the url for a recording and the show:date key for an unavailable episode', () => {
+        expect(entryKey(rec('gongzi', '2026-10-17'))).toBe(rec('gongzi', '2026-10-17').url);
+        expect(entryKey(missing('gongzi', '2026-10-24'))).toBe('gongzi:2026-10-24');
+    });
+});
+
+describe('newShowIds', () => {
+    it('lists shows with a recording today that is not watched yet', () => {
+        const watched = new Set([rec('wanni', '2026-10-16', '1300').url]);
+
+        expect(newShowIds(all, '2026-10-16', watched)).toEqual(new Set(['badgirl', 'sunnyday']));
+    });
+
+    it('is empty when nothing is up today', () => {
+        expect(newShowIds(all, '2026-10-18', new Set())).toEqual(new Set());
     });
 });

@@ -17,7 +17,8 @@ export const ShowPage = () => {
     const { show, theme, status, isSearching, current, episodeItems, strip, ...actions } =
         useShowPage(showId);
 
-    const ready = show && status === 'ready' && current;
+    // 有集數（包括未上架）就列清單
+    const listed = show && status === 'ready' && episodeItems.length > 0;
 
     // 成頁固定唔捲，得集數清單自己捲（見 Page.module.css .locked / .fixed）；
     // 節目名喺頁頭（取代「正在播放」），唱片下面變成日子條。
@@ -32,20 +33,29 @@ export const ShowPage = () => {
                     {!show ? (
                         <StatusMessage message={t('common.showNotFound')} />
                     ) : (
-                        <LoadState status={status} isEmpty={!current} isSearching={isSearching} />
-                    )}
-                    {ready && (
-                        <PlayerPanel
-                            title={show.name}
-                            dateLabel={formatDateLabel(current.date)}
-                            art={theme.art}
-                            days={strip.days}
-                            currentDay={strip.current}
-                            onPick={actions.selectEpisode}
+                        // 乜都冇先講「暫時未有錄音」/ 搵緊；有未上架嘅就由下面講「未有集數上架」
+                        <LoadState
+                            status={status}
+                            isEmpty={episodeItems.length === 0}
+                            isSearching={isSearching}
                         />
                     )}
+                    {/* 有集數播得就有播放器；未有就講「未有集數上架」，照列出未上架嘅（撳唔到） */}
+                    {listed &&
+                        (current ? (
+                            <PlayerPanel
+                                title={show.name}
+                                dateLabel={formatDateLabel(current.date)}
+                                art={theme.art}
+                                days={strip.days}
+                                currentDay={strip.current}
+                                onPick={actions.selectEpisode}
+                            />
+                        ) : (
+                            <StatusMessage message={t('episodes.noneUp')} />
+                        ))}
                 </div>
-                {ready && (
+                {listed && (
                     <div className={page.listColumn}>
                         <EpisodeList items={episodeItems} onSelect={actions.pressEpisode} />
                     </div>

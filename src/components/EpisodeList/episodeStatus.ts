@@ -3,7 +3,7 @@ import type { Progress } from '../../services/progressStore';
 import { ratio } from '../../utils/ratio';
 import { formatDuration, hasKnownDuration } from '../../utils/time';
 
-export type EpisodeKind = 'playing' | 'watched' | 'resume' | 'unwatched';
+export type EpisodeKind = 'playing' | 'watched' | 'resume' | 'unwatched' | 'unavailable';
 
 export interface EpisodeStatus {
     kind: EpisodeKind;
@@ -40,3 +40,10 @@ export const episodeStatus = ({ isCurrent, live, progress }: EpisodeStatusInput)
     }
     return { kind: 'unwatched', ratio: 0, text: t('episodes.unwatched') };
 };
+
+/** 試過但原站未有嘅集數：撳唔到，冇進度 */
+export const unavailableStatus = (): EpisodeStatus => ({
+    kind: 'unavailable',
+    ratio: 0,
+    text: t('episodes.unavailable'),
+});

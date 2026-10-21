@@ -1,6 +1,6 @@
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { StrictMode, type ReactNode } from 'react';
-import type { Recording } from '../types/recording';
+import type { Recording, UnavailableEpisode } from '../types/recording';
 import { RecordingsProvider } from './RecordingsProvider';
 import { useRecordings } from './useRecordings';
 
@@ -23,11 +23,22 @@ type Prober = (onFound?: (recording: Recording) => void) => Promise<Recording[]>
 const noProbe = async (): Promise<Recording[]> => [];
 const neverFinishes = (): Promise<Recording[]> => new Promise<Recording[]>(() => {});
 const nothingStored = (): Recording[] => [];
+const nothingUnavailable = (): UnavailableEpisode[] => [];
 
-const wrap = (prober: Prober = noProbe, readStored: () => Recording[] = nothingStored) =>
+const MISSED: UnavailableEpisode = { showId: 'wanni', date: '2026-10-19', time: '0708' };
+
+const wrap = (
+    prober: Prober = noProbe,
+    readStored: () => Recording[] = nothingStored,
+    readUnavailable: () => UnavailableEpisode[] = nothingUnavailable,
+) =>
     function Wrapper({ children }: { children: ReactNode }) {
         return (
-            <RecordingsProvider prober={prober} readStored={readStored}>
+            <RecordingsProvider
+                prober={prober}
+                readStored={readStored}
+                readUnavailable={readUnavailable}
+            >
                 {children}
             </RecordingsProvider>
         );
@@ -104,7 +115,12 @@ describe('RecordingsProvider', () => {
 
         expect(result.current.status).toBe('loading');
         await waitFor(() =>
-            expect(result.current).toEqual({ status: 'ready', recordings: [], isSearching: false }),
+            expect(result.current).toEqual({
+                status: 'ready',
+                recordings: [],
+                unavailable: [],
+                isSearching: false,
+            }),
         );
     });
 
@@ -173,6 +189,54 @@ describe('RecordingsProvider', () => {
         errorSpy.mockRestore();
     });
 
+    describe('unavailable episodes', () => {
+        it('reads them right away, before probing finishes', () => {
+            const { result } = renderHook(() => useRecordings(), {
+                wrapper: wrap(neverFinishes, nothingStored, () => [MISSED]),
+            });
+
+            expect(result.current.unavailable).toEqual([MISSED]);
+        });
+
+        it('reads them again once a probe run finishes', async () => {
+            const readUnavailable = vi
+                .fn<() => UnavailableEpisode[]>()
+                .mockReturnValueOnce([])
+                .mockReturnValue([MISSED]);
+            const { result } = renderHook(() => useRecordings(), {
+                wrapper: wrap(noProbe, nothingStored, readUnavailable),
+            });
+
+            await waitFor(() => expect(result.current.unavailable).toEqual([MISSED]));
+        });
+
+        it('does not probe again when re-rendered with a new reader, but uses it on the next run', async () => {
+            const prober = vi.fn(noProbe);
+            const Shown = () => <p>{useRecordings().unavailable.length}</p>;
+            const ui = (readUnavailable: () => UnavailableEpisode[]) => (
+                <RecordingsProvider
+                    prober={prober}
+                    readStored={nothingStored}
+                    readUnavailable={readUnavailable}
+                >
+                    <Shown />
+                </RecordingsProvider>
+            );
+            const { rerender } = render(ui(() => []));
+            await act(async () => {});
+
+            rerender(ui(() => [MISSED]));
+            await act(async () => {});
+            expect(prober).toHaveBeenCalledTimes(1);
+
+            act(() => {
+                window.dispatchEvent(new Event('online'));
+            });
+            expect(await screen.findByText('1')).toBeInTheDocument();
+            expect(prober).toHaveBeenCalledTimes(2);
+        });
+    });
+
     describe('probing again later', () => {
         const goOnline = (): void => {
             act(() => {
@@ -223,6 +287,7 @@ describe('RecordingsProvider', () => {
                 expect(result.current).toEqual({
                     status: 'ready',
                     recordings: [],
+                    unavailable: [],
                     isSearching: false,
                 }),
             );
