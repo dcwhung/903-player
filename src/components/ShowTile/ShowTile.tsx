@@ -1,4 +1,4 @@
-import { CalendarIcon, SoundWaveIcon } from '../icons/icons';
+import todayArt from '../../assets/today-tile.webp';
 import styles from './ShowTile.module.css';
 
 interface ShowTileProps {
@@ -9,17 +9,15 @@ interface ShowTileProps {
     onClick: () => void;
 }
 
-const TODAY_ICON_SIZE = 22;
-const WAVE_ICON_SIZE = 24;
-
-/** 主頁掣：節目用節目圖（冇文字，靠 aria-label），今日節目用文字 */
+/**
+ * 主頁掣：節目用節目圖（冇文字，靠 aria-label）；
+ * 今日節目用插畫底圖（原圖喺 design/today-tile.webp），「今日節目」字放喺中間米色帶
+ */
 export const ShowTile = ({ label, art, variant = 'show', onClick }: ShowTileProps) =>
     variant === 'today' ? (
         <button type="button" className={`${styles.tile} ${styles.today}`} onClick={onClick}>
-            <CalendarIcon size={TODAY_ICON_SIZE} className={styles.todayIcon} />
-            <span>{label}</span>
-            {/* 純裝飾聲波（StrokeIcon 已經 aria-hidden），screen reader 唔會讀 */}
-            <SoundWaveIcon size={WAVE_ICON_SIZE} className={styles.wave} />
+            <img className={styles.art} src={todayArt} alt="" />
+            <span className={styles.todayLabel}>{label}</span>
         </button>
     ) : (
         <button type="button" className={styles.tile} aria-label={label} onClick={onClick}>
