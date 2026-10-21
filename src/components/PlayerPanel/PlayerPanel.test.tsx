@@ -58,8 +58,13 @@ describe('PlayerPanel', () => {
         renderWithProviders(<Harness />);
         await userEvent.click(screen.getByRole('button', { name: 'load' }));
 
-        expect(screen.getByText('--:--')).toBeInTheDocument();
-        expect(screen.getByText('0:00')).toBeInTheDocument();
+        // 已播時間都未可信（例如斷網讀唔到 metadata）：兩邊都顯示佔位
+        expect(screen.getAllByText('--:--')).toHaveLength(2);
+        expect(screen.queryByText('0:00')).not.toBeInTheDocument();
+        expect(screen.getByRole('slider', { name: '播放進度' })).toHaveAttribute(
+            'aria-valuetext',
+            '--:-- / --:--',
+        );
     });
 
     it('restarts from the beginning', async () => {
@@ -99,6 +104,21 @@ describe('PlayerPanel', () => {
         expect(screen.getByText('50:00')).toBeInTheDocument();
     });
 
+    it('does not spin the disc until the audio actually starts playing', async () => {
+        const { audio, container } = renderWithProviders(<Harness />);
+        await userEvent.click(screen.getByRole('button', { name: 'load' }));
+        act(() => audio.emitMetadata(6836));
+        await userEvent.click(screen.getByRole('button', { name: '播放' }));
+        const face = container.querySelector('[class*="face"]');
+        expect(face?.className).not.toMatch(/spinning/);
+
+        act(() => audio.emitPlaying());
+        expect(face?.className).toMatch(/spinning/);
+
+        act(() => audio.emitWaiting());
+        expect(face?.className).not.toMatch(/spinning/);
+    });
+
     it('stops the disc spin while the date strip holds it', async () => {
         const { audio, container } = renderWithProviders(
             <Harness neighbours={{ older: '10/10（六）' }} />,
@@ -106,6 +126,7 @@ describe('PlayerPanel', () => {
         await userEvent.click(screen.getByRole('button', { name: 'load' }));
         act(() => audio.emitMetadata(6836));
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
+        act(() => audio.emitPlaying());
         const face = container.querySelector('[class*="face"]');
         const strip = screen.getByRole('group', { name: '17/10（六） 公子會' });
         expect(face?.className).toMatch(/spinning/);
@@ -125,6 +146,7 @@ describe('PlayerPanel', () => {
         await userEvent.click(screen.getByRole('button', { name: 'load' }));
         act(() => audio.emitMetadata(6836));
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
+        act(() => audio.emitPlaying());
         const face = container.querySelector('[class*="face"]');
         const strip = screen.getByRole('group', { name: '17/10（六） 公子會' });
 
@@ -143,6 +165,7 @@ describe('PlayerPanel', () => {
         await userEvent.click(screen.getByRole('button', { name: 'load' }));
         act(() => audio.emitMetadata(6836));
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
+        act(() => audio.emitPlaying());
         const face = container.querySelector('[class*="face"]');
         const strip = screen.getByRole('group', { name: '17/10（六） 公子會' });
 

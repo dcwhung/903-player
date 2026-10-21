@@ -15,6 +15,7 @@ import type { LoadOptions, PlayerState } from './playerContext';
 const INITIAL_STATE: PlayerState = {
     recording: null,
     isPlaying: false,
+    isAudible: false,
     currentTime: 0,
     duration: 0,
     watchedRevision: 0,
@@ -69,6 +70,8 @@ export class AudioController {
             loadedmetadata: this.onLoadedMetadata,
             timeupdate: this.onTimeUpdate,
             play: this.onPlay,
+            playing: this.onAudible,
+            waiting: this.onSilent,
             pause: this.onStopped,
             ended: this.onStopped,
             error: this.onError,
@@ -77,10 +80,12 @@ export class AudioController {
         const entries = Object.entries(audioEvents);
         entries.forEach(([name, handler]) => this.audio.addEventListener(name, handler));
         window.addEventListener('pagehide', this.persist);
+        window.addEventListener('online', this.recoverSource);
         document.addEventListener('visibilitychange', this.onVisibilityChange);
         return () => {
             entries.forEach(([name, handler]) => this.audio.removeEventListener(name, handler));
             window.removeEventListener('pagehide', this.persist);
+            window.removeEventListener('online', this.recoverSource);
             document.removeEventListener('visibilitychange', this.onVisibilityChange);
         };
     };
@@ -106,6 +111,7 @@ export class AudioController {
         const isLatest = () => generation === this.playGeneration;
         this.setPlayIntent(true);
         this.playPending = true;
+        this.recoverSource();
         try {
             await this.audio.play();
             // 本身已經播緊時 spec 唔會再發 play event，要喺度清走，否則會卡住擋住更新
@@ -130,7 +136,9 @@ export class AudioController {
         this.audio.pause();
     };
 
-    toggle = async (): Promise<void> => (this.audio.paused ? this.play() : this.pause());
+    /** 載入失敗咗嘅 element paused 可能仲係 false，但其實冇播緊：當暫停處理 */
+    toggle = async (): Promise<void> =>
+        this.audio.paused || this.audio.error ? this.play() : this.pause();
 
     restart = async (): Promise<void> => {
         this.seek(0);
@@ -168,6 +176,20 @@ export class AudioController {
         this.audio.src = recording.url;
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
     }
+
+    /**
+     * 載入失敗（例如斷網）之後 element 唔會自己重試，play() 只會一直 reject：
+     * 重新 load 同一個 source，續播位置用 state（load 會將 audio.currentTime reset 做 0）
+     */
+    private recoverSource = (): void => {
+        if (!this.audio.error || !this.state.recording) {
+            return;
+        }
+        this.pendingStart = this.state.currentTime;
+        this.lastTickPosition = this.pendingStart;
+        this.audio.load();
+        this.update({ duration: 0 });
+    };
 
     /** metadata 未到時 duration 係 NaN；串流可能係 Infinity，都當已載入 */
     private hasMetadata(): boolean {
@@ -258,14 +280,24 @@ export class AudioController {
         this.update({ isPlaying: true });
     };
 
-    /** 來源出錯：等緊嘅 play 冇可能成功 */
-    private onError = (): void => this.setPlayIntent(false);
+    /** 數據到咗、真正開始出聲 */
+    private onAudible = (): void => this.update({ isAudible: true });
+
+    /** 緩衝緊：仲係「播緊」（掣維持暫停），但冇聲 */
+    private onSilent = (): void => this.update({ isAudible: false });
+
+    /** 來源出錯（例如斷網）：等緊嘅 play 冇可能成功，亦冇嘢播緊 */
+    private onError = (): void => {
+        this.playIntent = false;
+        this.update({ isPlaying: false, isAudible: false });
+    };
 
     /** 換 src 會 queue emptied，嗰陣用戶啱啱撳嘅 Play 仲等緊，唔好清走 */
     private onEmptied = (): void => {
         if (!this.playPending) {
             this.setPlayIntent(false);
         }
+        this.onSilent();
     };
 
     /** 唔改 state object（React 唔使 re-render），但要通知 PWA 更新重新判斷 */
@@ -280,7 +312,7 @@ export class AudioController {
     /** pause / ended（包括拔耳筒、來電等系統暫停）：用戶冇再想播 */
     private onStopped = (): void => {
         this.playIntent = false;
-        this.update({ isPlaying: false });
+        this.update({ isPlaying: false, isAudible: false });
         this.persist();
     };
 

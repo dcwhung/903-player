@@ -12,6 +12,9 @@ export const formatDuration = (totalSeconds: number): string => {
     return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
 };
 
+/** 讀到時長未：metadata 未到（例如斷網）係 0；串流 Infinity 都當讀到 */
+export const hasKnownDuration = (duration: number): boolean => duration > 0;
+
 const BROADCAST_HOUR_DIGITS = 2;
 
 /** 播出時間：0708 → 07:08 */

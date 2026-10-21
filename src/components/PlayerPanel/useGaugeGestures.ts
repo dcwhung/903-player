@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PlayerContextValue } from '../../player/playerContext';
 import { usePlayer } from '../../player/usePlayer';
 import { arcFollowDegrees } from '../../utils/discScrub';
+import { hasKnownDuration } from '../../utils/time';
 import { useDiscScrub } from './useDiscScrub';
 import { useDiscTurn, type DiscTurn } from './useDiscTurn';
 
@@ -56,17 +57,27 @@ const useDiscGesture = (
     return { held, scrub };
 };
 
+/** 未知時長（斷網 / metadata 未到）：碟轉返正，等讀到時長先可以捽同自轉 */
+const useUprightUntilKnown = (known: boolean, motion: DiscTurn) => {
+    useEffect(() => {
+        if (!known) motion.reset();
+    }, [known, motion]);
+};
+
 /**
  * 唱片格嘅手勢：弧形 seek、捽碟 seek，兩者共用預覽（時間 / 弧形一齊郁）同碟面角度；
- * held = 外面（日子條）捉住碟。有人捉住碟（包括手指撳住碟面）或者暫停就唔自轉，停喺原位
+ * held = 外面（日子條）捉住碟。有人捉住碟（包括手指撳住碟面）、暫停或者未出聲（載緊 / 緩衝緊）就唔自轉，停喺原位
  */
 export const useGaugeGestures = (held: boolean) => {
     const player = usePlayer();
     const [preview, setPreview] = useState<Preview | null>(null);
     const { motion, onArcPreview } = useArcFollow(player.duration, setPreview);
     const disc = useDiscGesture(player, preview?.source === 'arc', setPreview, motion);
+    const known = hasKnownDuration(player.duration);
+    useUprightUntilKnown(known, motion);
     return {
         player,
+        known,
         shownTime: preview?.seconds ?? player.currentTime,
         arc: {
             // 捽碟時弧形跟住預覽；拖弧形時弧形自己有拖動值
@@ -76,8 +87,9 @@ export const useGaugeGestures = (held: boolean) => {
         },
         disc: {
             faceRef: motion.faceRef,
-            spinning: player.isPlaying && !preview && !held && !disc.held,
-            scrub: disc.scrub,
+            spinning: player.isAudible && !preview && !held && !disc.held,
+            upright: !known,
+            scrub: known ? disc.scrub : undefined,
         },
     };
 };

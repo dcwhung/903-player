@@ -9,6 +9,7 @@ import { usePlayer } from '../../player/usePlayer';
 import { PlayerGauge } from './PlayerGauge';
 
 const REC = recording('gongzi', '2026-10-17');
+const OTHER_REC = recording('gongzi', '2026-10-10');
 const DURATION = 600;
 /** 碟擺喺畫面 (0, 0)，200px 大：圓心 (100, 100)，半徑 100 */
 const DISC_SIZE = 200;
@@ -30,6 +31,9 @@ const Harness = ({ onOuterPointer }: { onOuterPointer: () => void }) => {
         <>
             <button type="button" onClick={() => void player.load(REC)}>
                 load
+            </button>
+            <button type="button" onClick={() => void player.load(OTHER_REC)}>
+                load other
             </button>
             <button type="button" onClick={() => void player.toggle()}>
                 toggle
@@ -270,10 +274,11 @@ describe('PlayerGauge disc motion', () => {
     });
 
     it('spins only while playing and nobody holds the disc', async () => {
-        const { disc, face } = await setup();
+        const { audio, disc, face } = await setup();
         expect(face.className).not.toMatch(/spinning/);
 
         await userEvent.click(screen.getByRole('button', { name: 'toggle' }));
+        act(() => audio.emitPlaying());
         expect(face.className).toMatch(/spinning/);
 
         turn(disc, 0, 90);
@@ -284,8 +289,9 @@ describe('PlayerGauge disc motion', () => {
     });
 
     it('stops spinning right when the disc is pressed and spins again after a tap or cancel', async () => {
-        const { disc, face } = await setup();
+        const { audio, disc, face } = await setup();
         await userEvent.click(screen.getByRole('button', { name: 'toggle' }));
+        act(() => audio.emitPlaying());
 
         fireEvent.pointerDown(disc, { ...rim(0), pointerId: 1 });
         expect(face.className).not.toMatch(/spinning/);
@@ -295,5 +301,26 @@ describe('PlayerGauge disc motion', () => {
         fireEvent.pointerDown(disc, { ...rim(0), pointerId: 1 });
         fireEvent.pointerCancel(disc, { pointerId: 1 });
         expect(face.className).toMatch(/spinning/);
+    });
+
+    it('keeps the disc upright and still until the duration is known', async () => {
+        const { container } = renderWithProviders(<Harness onOuterPointer={vi.fn()} />);
+        await userEvent.click(screen.getByRole('button', { name: 'load' }));
+        const face = container.querySelector<HTMLElement>('[class*="face"]');
+
+        expect(face?.className).toMatch(/upright/);
+        expect(container.querySelector('[class*="scrubbable"]')).not.toBeInTheDocument();
+    });
+
+    it('turns the disc back upright when switching to an episode with no duration yet', async () => {
+        const { disc, face } = await setup();
+        turn(disc, 0, 90);
+        release(disc, 90);
+        expect(faceDegrees(face)).toBeCloseTo(90);
+
+        await userEvent.click(screen.getByRole('button', { name: 'load other' }));
+
+        expect(face.className).toMatch(/upright/);
+        expect(faceDegrees(face)).toBeCloseTo(0);
     });
 });

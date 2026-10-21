@@ -26,6 +26,7 @@ const installMediaSession = () => {
 const state = (overrides: Partial<PlayerState> = {}): PlayerState => ({
     recording: { showId: 'gongzi', date: '2026-10-17', time: '2308', url: 'u' },
     isPlaying: true,
+    isAudible: true,
     currentTime: 0,
     duration: 100,
     watchedRevision: 0,
