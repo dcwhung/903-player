@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import { usePlayer } from '../../player/usePlayer';
+import { hasKnownDuration } from '../../utils/time';
 import { DateStrip } from '../DateStrip/DateStrip';
 import type { StripDay } from '../DateStrip/dateStrip';
 import { PlayerGauge } from './PlayerGauge';
@@ -31,11 +33,13 @@ export const PlayerPanel = ({
     const artRef = useRef<HTMLImageElement>(null);
     // 拖緊日子條 = 捉住碟，碟唔自轉
     const [held, setHeld] = useState(false);
+    const { duration } = usePlayer();
     return (
         <div className={styles.panel}>
             <PlayerGauge art={art} artRef={artRef} held={held} />
             <DateStrip
                 title={title}
+                connecting={!hasKnownDuration(duration)}
                 dateLabel={dateLabel}
                 days={days}
                 current={currentDay}

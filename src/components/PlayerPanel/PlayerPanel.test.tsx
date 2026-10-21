@@ -72,6 +72,17 @@ describe('PlayerPanel', () => {
         );
     });
 
+    it('labels the date strip as connecting until the duration is known', async () => {
+        const { audio } = renderWithProviders(<Harness />);
+        await userEvent.click(screen.getByRole('button', { name: 'load' }));
+        expect(screen.getByText('連線中…')).toBeInTheDocument();
+        expect(screen.queryByText('現正播放')).not.toBeInTheDocument();
+
+        act(() => audio.emitMetadata(6836));
+        expect(screen.getByText('現正播放')).toBeInTheDocument();
+        expect(screen.queryByText('連線中…')).not.toBeInTheDocument();
+    });
+
     it('restarts from the beginning', async () => {
         const { audio } = renderWithProviders(<Harness />);
         await userEvent.click(screen.getByRole('button', { name: 'load' }));
