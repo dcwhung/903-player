@@ -20,10 +20,6 @@ export const zhHK = {
         play: '播放',
         pause: '暫停',
         restart: '由頭播放',
-        seekBack: '後退 {seconds} 秒',
-        seekForward: '前進 {seconds} 秒',
-        seekBackShort: '−{seconds}',
-        seekForwardShort: '+{seconds}',
         progress: '播放進度',
         progressText: '{current} / {total}',
         // 未載到 metadata 時，進度弧右邊嘅總長度佔位

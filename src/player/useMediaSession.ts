@@ -1,11 +1,8 @@
 import { useEffect } from 'react';
-import { SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from '../config/constants';
+import { LOCK_SCREEN_SKIP_SECONDS } from '../config/constants';
 import { findShow } from '../config/shows';
 import { formatDateLabel } from '../utils/date';
 import type { PlayerActions, PlayerState } from './playerContext';
-
-// 鎖屏 / 耳機只有一粒前後掣，用較短嗰個跳秒值
-const LOCK_SCREEN_SKIP_SECONDS = Math.min(...SKIP_BACK_SECONDS, ...SKIP_FORWARD_SECONDS);
 
 const hasMediaSession = (): boolean => 'mediaSession' in navigator;
 

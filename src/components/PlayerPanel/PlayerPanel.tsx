@@ -5,7 +5,6 @@ import { DateStrip } from '../DateStrip/DateStrip';
 import type { StripDay } from '../DateStrip/dateStrip';
 import { PlayerGauge } from './PlayerGauge';
 import styles from './PlayerPanel.module.css';
-import { PlayerTransport } from './PlayerTransport';
 
 interface PlayerPanelProps {
     /** 節目名：畫面顯示喺頁頭，日子條只係攞嚟做轉集區個名 */
@@ -20,7 +19,7 @@ interface PlayerPanelProps {
     onPick: (url: string) => void;
 }
 
-/** 節目頁播放器：唱片 + 弧形進度 + 日子條 + 控制掣 */
+/** 節目頁播放器：唱片 + 弧形進度 + 播放掣 + 日子條 */
 export const PlayerPanel = ({
     title,
     dateLabel,
@@ -47,7 +46,6 @@ export const PlayerPanel = ({
                 spinRef={artRef}
                 onHold={setHeld}
             />
-            <PlayerTransport />
         </div>
     );
 };

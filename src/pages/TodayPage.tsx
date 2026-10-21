@@ -1,7 +1,6 @@
 import { PageDots } from '../components/PageDots/PageDots';
 import { PageHeader } from '../components/PageHeader/PageHeader';
 import { PlayerCard } from '../components/PlayerPanel/PlayerCard';
-import { PlayerTransport } from '../components/PlayerPanel/PlayerTransport';
 import { ShowCardStack } from '../components/ShowCardStack/ShowCardStack';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { TodayShowList } from '../components/TodayShowList/TodayShowList';
@@ -17,7 +16,7 @@ export const TodayPage = () => {
         useTodayPage();
     const names = items.map((item) => item.name);
 
-    // 標題同節目頁一樣（大字 h1）；卡只有唱片、進度弧同節目名，指示點同控制掣喺卡外（每個節目一樣）
+    // 標題同節目頁一樣（大字 h1）；卡入面係唱片、進度弧、播放掣同節目名，指示點喺卡外
     return (
         <ThemeScope theme={theme}>
             <main className={`${page.page} ${page.locked} ${page.fixed}`}>
@@ -37,7 +36,6 @@ export const TodayPage = () => {
                                 index={index}
                                 onSelect={selectIndex}
                             />
-                            <PlayerTransport />
                         </div>
                         <TodayShowList items={items} onSelect={selectShow} />
                     </>
