@@ -111,6 +111,16 @@ const checkHomeBanner = async (p, label, shot) => {
     await p.screenshot({ path: `${OUT}/${shot}` });
 };
 
+const HOME_TILES = [
+    'Bad Girl大過佬',
+    '公子會',
+    '雲妮鍾情',
+    '在晴朗的一天出發',
+    '西加航空',
+    '口水多過浪花',
+    '聖艾粒LaLaLaLa',
+    '今日節目',
+];
 const MIN_VISIBLE_ROWS = 2;
 // tokens.css 嘅 --player-max-share（0.6）係設計目標；用戶接受 62–66%，
 // 所以 e2e 只要求節目頁播放器同今日節目播放器（卡 → 控制掣）≤ 66%，實際比例照印出嚟
@@ -978,7 +988,11 @@ try {
     const tiles = await page
         .locator('nav button')
         .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.textContent));
-    log(tiles.length === 6 && tiles[5] === '今日節目', `主頁 6 粒掣：${tiles.join(' | ')}`);
+    // 每個節目一粒（src/config/shows.ts 次序）+ 最尾「今日節目」；刻意寫死做獨立對照
+    log(
+        tiles.join(' | ') === HOME_TILES.join(' | '),
+        `主頁 ${HOME_TILES.length} 粒掣：${tiles.join(' | ')}`,
+    );
     const cols = await page.evaluate(
         () => getComputedStyle(document.querySelector('nav')).gridTemplateColumns.split(' ').length,
     );
