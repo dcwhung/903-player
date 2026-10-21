@@ -68,6 +68,8 @@ body {
     position: absolute; left: 0; top: 0; transform-origin: 0 0;
     border-radius: 44px; box-shadow: 0 0 0 10px #000, 0 0 0 11px #2c2c2c, 0 24px 70px rgb(0 0 0 / 55%);
     overflow: hidden;
+    /* mock 用 container query 代替真 app 嘅 @media（裝置係縮放咗嘅 div） */
+    container: screen / size;
 }
 .device[data-kind="tablet"] { border-radius: 24px; }
 .device[data-kind="desktop"] { border-radius: 10px; box-shadow: 0 0 0 1px #33373c, 0 24px 70px rgb(0 0 0 / 55%); }
@@ -87,7 +89,7 @@ body {
     font-family: var(--font);
     display: grid;
     /* 橫版核心：左欄播放器（最闊 440px），右欄清單 */
-    grid-template-columns: minmax(0, min(46%, 440px)) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 46%) minmax(0, 1fr);
     column-gap: var(--space-5);
     padding-left: var(--sa-l, 0px);
     padding-right: var(--sa-r, 0px);
@@ -132,13 +134,34 @@ body {
     width: var(--disc);
     aspect-ratio: 300 / 332;
     flex-shrink: 0;
-    --toggle: max(var(--touch-target), calc(var(--disc) * 56 / 300));
+    /* 大碟時播放掣封頂 72px，唔好大到搶戲 */
+    --toggle: clamp(var(--touch-target), calc(var(--disc) * 56 / 300), 72px);
 }
 .show-page .col-left {
-    --disc: clamp(150px, min(80cqw, (100cqh - var(--touch-target) - var(--strip-label) - var(--strip-height) - 3 * var(--fixed-gap)) * 300 / 332), 340px);
+    --disc: clamp(150px, min(80cqw, (100cqh - var(--touch-target) - var(--strip-label) - var(--strip-height) - 3 * var(--fixed-gap)) * 300 / 332), var(--disc-max));
 }
 .today-page .col-left {
-    --disc: clamp(140px, min(70cqw, (100cqh - var(--touch-target) - 24px - 2 * var(--card-offset) - 44px - 2 * var(--fixed-gap)) * 300 / 332), 320px);
+    --disc: clamp(140px, min(70cqw, (100cqh - var(--touch-target) - 24px - 2 * var(--card-offset) - 44px - 2 * var(--fixed-gap)) * 300 / 332), var(--disc-max));
+}
+.app { --disc-max: 340px; }
+
+/*
+ * 規則 1：矮畫面（手機打橫，高 ≤ 561px）唔出日子條，唱片用盡左欄高度；
+ * 轉集改由右欄集數清單做（聽過剔、進度都喺清單度）
+ */
+@container screen (max-height: 561px) {
+    .app .strip-wrap { display: none; }
+    .show-page .col-left {
+        --disc: clamp(150px, min(86cqw, (100cqh - var(--touch-target) - var(--fixed-gap)) * 300 / 332), var(--disc-max));
+    }
+}
+
+/* 規則 2：闊畫面（iPad 打橫及以上，闊 ≥ 1024px）右欄收窄到 30%，唱片放大用盡左欄 */
+@container screen (min-width: 1024px) {
+    .app {
+        --disc-max: 640px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 30%);
+    }
 }
 .arc { position: absolute; inset: 0 0 auto; aspect-ratio: 1; width: 100%; }
 .arc svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: pointer; }
@@ -278,7 +301,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
     <header class="intro">
         <div>
             <h1>903 Player 橫版</h1>
-            <p>節目頁同今日節目頁打橫時：左邊播放器、右邊清單。條件係 <code>orientation: landscape</code> 而且闊 ≥ 640px。mock 入面嘅掣、日子條、清單、卡疊都撳得（純示意，冇接聲）。</p>
+            <p>節目頁同今日節目頁打橫時：左邊播放器、右邊清單。條件係 <code>orientation: landscape</code> 而且闊 ≥ 640px。手機打橫（高 ≤ 561px）唔出日子條、唱片放大；iPad 打橫及以上（闊 ≥ 1024px）右欄收窄到 30%、唱片放大。mock 入面嘅掣、日子條、清單、卡疊都撳得（純示意，冇接聲）。</p>
         </div>
         <div class="controls">
             <div class="seg" role="group" aria-label="頁面">
@@ -307,9 +330,11 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                 <thead><tr><th>項目</th><th>橫版</th><th>直版（現狀）</th></tr></thead>
                 <tbody>
                     <tr><td>觸發</td><td>landscape 且闊 ≥ 640px</td><td>其他情況</td></tr>
-                    <tr><td>欄</td><td>左 min(46%, 440px)，右 1fr，中間 20px + 分隔線</td><td>單欄，最闊 480px</td></tr>
+                    <tr><td>欄（640–1023px 闊）</td><td>左 46%，右 54%，中間 20px + 分隔線</td><td>單欄，最闊 480px</td></tr>
+                    <tr><td>欄（≥ 1024px 闊）</td><td>左 70%，右 30%</td><td>同上</td></tr>
+                    <tr><td>日子條</td><td>高 ≤ 561px（手機打橫）唔出；其他照出</td><td>一直出</td></tr>
                     <tr><td>頁頭</td><td>左欄頂，標題左對齊、20px</td><td>全闊，大字置中</td></tr>
-                    <tr><td>唱片大小</td><td>按左欄高計（cqh），150–340px</td><td>畫面高 × 六成，最大 300px</td></tr>
+                    <tr><td>唱片大小</td><td>按左欄高計（cqh），用盡剩低嘅位；闊 &lt; 1024px 最大 340px，≥ 1024px 最大 640px</td><td>畫面高 × 六成，最大 300px</td></tr>
                     <tr><td>捲動</td><td>成頁鎖死，只有右欄清單捲</td><td>≤ 561px 高改成頁捲</td></tr>
                     <tr><td>安全區</td><td>左右 inset 畀瀏海；清單底留 home indicator</td><td>上下 inset</td></tr>
                 </tbody>
@@ -323,7 +348,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                     <tr><td>返回主頁</td><td>左欄頁頭 ←</td></tr>
                     <tr><td>弧形進度條拖動 / 拖碟 scrub</td><td>左欄唱片</td></tr>
                     <tr><td>播放 / 暫停、由頭播放</td><td>左欄唱片底</td></tr>
-                    <tr><td>日子條（掃動轉集、聽過剔、連線中…）</td><td>左欄唱片下面（節目頁）</td></tr>
+                    <tr><td>日子條（掃動轉集、聽過剔、連線中…）</td><td>左欄唱片下面（節目頁）；手機打橫唔出，轉集用右欄清單，聽過剔、進度喺清單度睇</td></tr>
                     <tr><td>集數清單（進度、狀態、揀集、自動捲到現正集）</td><td>右欄（節目頁）</td></tr>
                     <tr><td>卡疊左右掃轉節目、指示點</td><td>左欄（今日節目頁）</td></tr>
                     <tr><td>今日節目清單</td><td>右欄（今日節目頁）</td></tr>
@@ -336,9 +361,10 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             <div class="tbl"><table>
                 <thead><tr><th>檔案</th><th>改動</th></tr></thead>
                 <tbody>
-                    <tr><td><code>src/pages/Page.module.css</code></td><td>新增 landscape media query：<code>.fixed</code> 改 grid，加 <code>.playerColumn</code> / <code>.listColumn</code>；橫版唔再行 ≤ 561px 成頁捲</td></tr>
+                    <tr><td><code>src/pages/Page.module.css</code></td><td>新增 landscape media query：<code>.fixed</code> 改 grid，加 <code>.playerColumn</code> / <code>.listColumn</code>；橫版唔再行 ≤ 561px 成頁捲；≥ 1024px 闊改 70 / 30</td></tr>
                     <tr><td><code>src/pages/ShowPage.tsx</code>、<code>TodayPage.tsx</code></td><td>用兩個 column wrapper 包住「頁頭 + 播放器」同清單（直版 wrapper 用 <code>display: contents</code>，行為不變）</td></tr>
-                    <tr><td><code>src/styles/tokens.css</code></td><td>橫版 <code>--player-disc-size</code> 按左欄高計，上限 340px</td></tr>
+                    <tr><td><code>src/styles/tokens.css</code></td><td>橫版 <code>--player-disc-size</code> 按左欄高計：一般上限 340px，≥ 1024px 闊上限 640px；高 ≤ 561px 計法唔扣日子條</td></tr>
+                    <tr><td><code>src/components/DateStrip/</code></td><td>橫向且高 ≤ 561px 時隱藏（<code>display: none</code>，讀屏一齊略過）</tr>
                     <tr><td><code>src/components/PageHeader/</code></td><td>橫版標題細啲、左對齊</td></tr>
                     <tr><td><code>shortHeightBreakpoint.node.test.ts</code>、<code>e2e/run.mjs</code></td><td>同步斷點；e2e 加 844×390 橫向 case（播放器同清單同時見到、清單可捲）</td></tr>
                 </tbody>
