@@ -1,0 +1,637 @@
+<title>903 Player 橫版</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600&display=swap">
+<style>
+/*
+ * Layout：上面揀頁面 / 裝置，中間係按比例縮放嘅橫向裝置 mock（入面係真實 px 尺寸，唱片按左欄高度計），
+ * 下面係版面規則、功能對照、實作備註三張表。
+ * 外殼刻意單一深色（app 本身全深色）；裝置入面嘅 --theme-* 跟 src/config/showThemes.ts。
+ */
+:root {
+    color-scheme: dark;
+    --shell-bg: #101214;
+    --shell-panel: #181b1f;
+    --shell-line: #2a2f35;
+    --shell-text: #e9ecef;
+    --shell-muted: #9aa3ad;
+    --shell-accent: #98bdde;
+    --shell-on-accent: #101214;
+    --font: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
+
+    /* app tokens（src/styles/tokens.css） */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --touch-target: 44px;
+    --radius-cell: 12px;
+    --radius-lg: 20px;
+    --strip-label: 16px;
+    --strip-height: 44px;
+    --card-offset: 12px;
+    --ease-strip: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: var(--shell-bg);
+    color: var(--shell-text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px 48px;
+}
+.wrap { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+/* ---------- 頁頂 ---------- */
+.intro { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px; }
+.intro h1 { margin: 0; font-size: 24px; font-weight: 600; text-wrap: balance; }
+.intro p { margin: 4px 0 0; color: var(--shell-muted); max-width: 62ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: var(--shell-panel); border: 1px solid var(--shell-line); }
+.seg button {
+    border: 0; border-radius: 999px; padding: 6px 14px; min-height: 34px;
+    font: inherit; font-size: 13px; color: var(--shell-muted); background: transparent; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--shell-accent); color: var(--shell-on-accent); font-weight: 500; }
+.seg button:focus-visible, .app button:focus-visible { outline: 2px solid var(--shell-accent); outline-offset: 2px; }
+
+/* ---------- 裝置舞台 ---------- */
+.stage { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.stage-caption { color: var(--shell-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.scaler { position: relative; }
+.device {
+    position: absolute; left: 0; top: 0; transform-origin: 0 0;
+    border-radius: 44px; box-shadow: 0 0 0 10px #000, 0 0 0 11px #2c2c2c, 0 24px 70px rgb(0 0 0 / 55%);
+    overflow: hidden;
+}
+.device[data-kind="tablet"] { border-radius: 24px; }
+.device[data-kind="desktop"] { border-radius: 10px; box-shadow: 0 0 0 1px #33373c, 0 24px 70px rgb(0 0 0 / 55%); }
+/* iPhone 打橫：瀏海喺左邊，home indicator 喺底 */
+.notch {
+    position: absolute; z-index: 5; left: 10px; top: 50%; width: 30px; height: 126px;
+    transform: translateY(-50%); border-radius: 16px; background: #000;
+}
+.home-ind { position: absolute; z-index: 5; left: 50%; bottom: 8px; width: 200px; height: 5px; transform: translateX(-50%); border-radius: 3px; background: rgb(255 255 255 / 70%); }
+
+/* ---------- App（裝置入面） ---------- */
+.app {
+    --color-bg: var(--theme-bg);
+    height: 100%;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+    font-family: var(--font);
+    display: grid;
+    /* 橫版核心：左欄播放器（最闊 440px），右欄清單 */
+    grid-template-columns: minmax(0, min(46%, 440px)) minmax(0, 1fr);
+    column-gap: var(--space-5);
+    padding-left: var(--sa-l, 0px);
+    padding-right: var(--sa-r, 0px);
+    transition: background-color 0.3s;
+}
+.app button { font: inherit; color: inherit; cursor: pointer; }
+
+.col-left {
+    container-type: size;
+    min-height: 0;
+    display: flex; flex-direction: column; align-items: center;
+    gap: var(--fixed-gap);
+    padding-top: var(--space-3);
+    padding-bottom: max(var(--space-3), var(--sa-b, 0px));
+}
+.col-right {
+    min-height: 0; min-width: 0;
+    display: flex; flex-direction: column;
+    padding-top: var(--space-3);
+    border-left: 1px solid color-mix(in srgb, var(--theme-track) 70%, transparent);
+    padding-left: var(--space-5);
+}
+
+/* 頁頭：返回掣 + 標題，橫版放左欄頂，左對齊省高度 */
+.page-head { align-self: stretch; display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.back {
+    flex-shrink: 0; width: var(--touch-target); height: var(--touch-target);
+    display: grid; place-items: center; border: 0; border-radius: 50%;
+    background: var(--theme-surface); color: var(--theme-text);
+    box-shadow: -3px -3px 6px var(--theme-shadow-light), 3px 3px 8px var(--theme-shadow-dark);
+}
+.page-head h1 {
+    margin: 0; min-width: 0; font-size: 20px; font-weight: 600; color: var(--theme-title);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* 播放器：頁頭釘頂，播放器喺剩低嘅高度置中；唱片大小由左欄高度決定（cqh），唔再係畫面高 × 六成 */
+.player, .stack-area { flex: 1; min-height: 0; justify-content: center; }
+.player { display: flex; flex-direction: column; align-items: center; gap: var(--fixed-gap); width: 100%; }
+.gauge {
+    position: relative;
+    width: var(--disc);
+    aspect-ratio: 300 / 332;
+    flex-shrink: 0;
+    --toggle: max(var(--touch-target), calc(var(--disc) * 56 / 300));
+}
+.show-page .col-left {
+    --disc: clamp(150px, min(80cqw, (100cqh - var(--touch-target) - var(--strip-label) - var(--strip-height) - 3 * var(--fixed-gap)) * 300 / 332), 340px);
+}
+.today-page .col-left {
+    --disc: clamp(140px, min(70cqw, (100cqh - var(--touch-target) - 24px - 2 * var(--card-offset) - 44px - 2 * var(--fixed-gap)) * 300 / 332), 320px);
+}
+.arc { position: absolute; inset: 0 0 auto; aspect-ratio: 1; width: 100%; }
+.arc svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: pointer; }
+.disc-area { position: absolute; inset: 0 0 auto; aspect-ratio: 1; display: grid; place-items: center; pointer-events: none; }
+.disc {
+    position: relative; width: 72%; aspect-ratio: 1; border-radius: 50%; overflow: hidden;
+    background: var(--theme-surface);
+    box-shadow: 0 0 0 calc(var(--disc) * 10 / 300) #111, 0 8px 24px rgb(0 0 0 / 45%);
+}
+.disc .face { position: absolute; inset: 0; background: var(--art) center / cover no-repeat; animation: spin 8s linear infinite paused; }
+.disc .face.spinning { animation-play-state: running; }
+.disc::after {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 13%; aspect-ratio: 1; transform: translate(-50%, -50%);
+    border-radius: 50%; background: var(--theme-bg); box-shadow: inset 0 0 0 2px var(--theme-track);
+}
+@keyframes spin { to { rotate: 360deg; } }
+.time {
+    position: absolute; bottom: calc(var(--toggle) / 2); transform: translateY(50%);
+    font-size: 13px; font-variant-numeric: tabular-nums; color: var(--theme-text); white-space: nowrap;
+}
+/* 時間嘅框止喺掣旁邊，字放唔落就向外伸（同 PlayerPanel.module.css .time） */
+.time.elapsed { display: flex; justify-content: flex-end; left: 4%; right: calc(50% + var(--toggle) / 2 + var(--touch-target) + var(--space-1)); }
+.time.total { display: flex; justify-content: flex-start; right: 0; left: calc(50% + var(--toggle) / 2 + var(--touch-target) + var(--space-1)); }
+.time.elapsed > span { margin-right: auto; }
+.time.total > span { margin-left: auto; }
+.actions {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    display: grid; grid-template-columns: var(--touch-target) auto var(--touch-target); align-items: center;
+}
+.restart { width: var(--touch-target); height: var(--touch-target); border: 0; border-radius: 50%; background: transparent; color: var(--theme-accent) !important; display: grid; place-items: center; }
+.toggle {
+    width: var(--toggle); height: var(--toggle); border: 0; border-radius: 50%; display: grid; place-items: center;
+    background: var(--theme-accent); color: var(--theme-on-accent) !important;
+    box-shadow: -4px -4px 10px var(--theme-shadow-light), 5px 5px 14px var(--theme-shadow-dark);
+}
+
+/* 日子條：闊度跟左欄，最闊 360px */
+.strip-wrap { width: min(100%, 360px); display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.strip-label { height: var(--strip-label); line-height: var(--strip-label); font-size: 11px; letter-spacing: 0.18em; color: var(--theme-accent); }
+.strip {
+    position: relative; width: 100%; height: var(--strip-height);
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+}
+.strip::before {
+    content: ''; position: absolute; top: 2px; bottom: 2px; left: calc(100% * 3 / 7 + 2px); width: calc(100% / 7 - 4px);
+    border-radius: var(--radius-cell); background: var(--theme-surface);
+    box-shadow: -3px -3px 6px var(--theme-shadow-light), 3px 3px 8px var(--theme-shadow-dark);
+}
+.cell {
+    position: relative; border: 0; background: transparent; padding: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-variant-numeric: tabular-nums;
+}
+.cell .wd { font-size: 11px; line-height: 14px; color: var(--theme-muted); }
+.cell .dm { font-size: 13px; line-height: 18px; font-weight: 500; }
+.cell.empty { opacity: 0.35; cursor: default; }
+.cell.on .dm { color: var(--theme-accent); }
+.cell .tick { position: absolute; top: 2px; right: 6px; font-size: 9px; color: var(--theme-accent); }
+
+/* 右欄清單（EpisodeList / TodayShowList 共用外觀） */
+.list-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-4) var(--space-3) var(--space-1); }
+.list-head h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--theme-title); letter-spacing: 0.04em; }
+.list-head span { font-size: 12px; color: var(--theme-muted); }
+.list {
+    list-style: none; margin: 0; padding: 0 var(--space-3) max(var(--space-4), var(--sa-b, 0px)) 0;
+    overflow-y: auto; overscroll-behavior: contain; min-height: 0; flex: 1;
+    display: flex; flex-direction: column; gap: var(--space-2);
+    scrollbar-width: thin; scrollbar-color: var(--theme-track) transparent;
+}
+.row {
+    width: 100%; border: 0; border-radius: 14px; padding: var(--space-2) var(--space-3);
+    display: flex; align-items: center; gap: var(--space-3); text-align: left;
+    background: transparent; min-height: 56px;
+}
+.row:hover { background: color-mix(in srgb, var(--theme-surface) 60%, transparent); }
+.row.current { background: var(--theme-surface); box-shadow: -3px -3px 6px var(--theme-shadow-light), 3px 3px 8px var(--theme-shadow-dark); }
+.row .date { width: 64px; flex-shrink: 0; display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
+.row .dmo { font-size: 16px; font-weight: 600; color: var(--theme-title); line-height: 1.2; }
+.row .wdy { font-size: 12px; color: var(--theme-muted); }
+.row .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.bar { height: 4px; border-radius: 2px; background: var(--theme-track); overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--theme-accent); }
+.row .st { font-size: 12px; color: var(--theme-muted); font-variant-numeric: tabular-nums; }
+.row.current .st { color: var(--theme-accent); }
+.row .ico { flex-shrink: 0; width: 28px; display: grid; place-items: center; color: var(--theme-muted); }
+.row .ico.done { color: var(--theme-accent); }
+.mini-disc { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: var(--art) center / cover; box-shadow: 0 0 0 3px var(--theme-track); }
+.row .name { font-size: 15px; font-weight: 500; color: var(--theme-title); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 今日節目：卡疊 + 指示點 */
+.stack-area { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.stack { position: relative; padding-bottom: calc(2 * var(--card-offset)); touch-action: pan-y; }
+.card {
+    position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
+    padding: var(--space-2) var(--space-4) var(--space-4);
+    border-radius: var(--radius-lg); background: var(--theme-surface);
+    box-shadow: -4px -4px 10px var(--theme-shadow-light), 6px 6px 16px var(--theme-shadow-dark);
+    transition: transform 0.28s cubic-bezier(0.2, 0.6, 0.4, 1), opacity 0.28s;
+    cursor: grab;
+}
+.card.fly-left { transform: translateX(-60%) rotate(-12deg); opacity: 0; }
+.card.fly-right { transform: translateX(60%) rotate(12deg); opacity: 0; }
+.card h2 { margin: 0; font-size: 20px; font-weight: 600; color: var(--theme-title); text-align: center; max-width: var(--disc); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 28px; }
+.ghost {
+    position: absolute; inset: 0 0 calc(2 * var(--card-offset)); border-radius: var(--radius-lg);
+    background: var(--theme-surface); transform-origin: 50% 100%;
+}
+.ghost.g1 { z-index: 1; transform: translateY(var(--card-offset)) scale(0.92); opacity: 0.65; }
+.ghost.g2 { z-index: 0; transform: translateY(calc(2 * var(--card-offset))) scale(0.84); opacity: 0.3; }
+.dots { display: flex; gap: 0; height: 24px; align-items: center; }
+.dot { border: 0; padding: 0; width: 18px; height: 24px; background: transparent; display: grid; place-items: center; }
+.dot::after { content: ''; width: 6px; height: 6px; border-radius: 3px; background: var(--theme-track); transition: width 0.2s, background-color 0.2s; }
+.dot[aria-current="true"]::after { width: 18px; background: var(--theme-accent); }
+.dot[aria-current="true"] { width: 30px; }
+
+/* ---------- 說明表 ---------- */
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 20px; }
+.note { background: var(--shell-panel); border: 1px solid var(--shell-line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+.note.wide { grid-column: 1 / -1; }
+.note h2 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+.note p { margin: 0 0 10px; color: var(--shell-muted); }
+.tbl { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; vertical-align: top; padding: 7px 10px 7px 0; border-top: 1px solid var(--shell-line); }
+th { color: var(--shell-muted); font-weight: 500; font-size: 12px; border-top: 0; white-space: nowrap; }
+td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border-radius: 4px; color: var(--shell-accent); }
+
+@media (prefers-reduced-motion: reduce) {
+    .disc .face { animation: none; }
+    .card, .dot::after { transition: none; }
+}
+</style>
+
+<div class="wrap">
+    <header class="intro">
+        <div>
+            <h1>903 Player 橫版</h1>
+            <p>節目頁同今日節目頁打橫時：左邊播放器、右邊清單。條件係 <code>orientation: landscape</code> 而且闊 ≥ 640px。mock 入面嘅掣、日子條、清單、卡疊都撳得（純示意，冇接聲）。</p>
+        </div>
+        <div class="controls">
+            <div class="seg" role="group" aria-label="頁面">
+                <button type="button" id="pg-show" data-page="show" aria-pressed="true">節目頁</button>
+                <button type="button" id="pg-today" data-page="today" aria-pressed="false">今日節目頁</button>
+            </div>
+            <div class="seg" role="group" aria-label="裝置">
+                <button type="button" id="dv-phone" data-device="phone" aria-pressed="true">iPhone 打橫</button>
+                <button type="button" id="dv-tablet" data-device="tablet" aria-pressed="false">iPad 打橫</button>
+                <button type="button" id="dv-desktop" data-device="desktop" aria-pressed="false">桌面</button>
+            </div>
+        </div>
+    </header>
+
+    <section class="stage" aria-label="預覽">
+        <div class="scaler" id="scaler">
+            <div class="device" id="device"></div>
+        </div>
+        <div class="stage-caption" id="caption"></div>
+    </section>
+
+    <section class="notes">
+        <article class="note">
+            <h2>版面規則</h2>
+            <div class="tbl"><table>
+                <thead><tr><th>項目</th><th>橫版</th><th>直版（現狀）</th></tr></thead>
+                <tbody>
+                    <tr><td>觸發</td><td>landscape 且闊 ≥ 640px</td><td>其他情況</td></tr>
+                    <tr><td>欄</td><td>左 min(46%, 440px)，右 1fr，中間 20px + 分隔線</td><td>單欄，最闊 480px</td></tr>
+                    <tr><td>頁頭</td><td>左欄頂，標題左對齊、20px</td><td>全闊，大字置中</td></tr>
+                    <tr><td>唱片大小</td><td>按左欄高計（cqh），150–340px</td><td>畫面高 × 六成，最大 300px</td></tr>
+                    <tr><td>捲動</td><td>成頁鎖死，只有右欄清單捲</td><td>≤ 561px 高改成頁捲</td></tr>
+                    <tr><td>安全區</td><td>左右 inset 畀瀏海；清單底留 home indicator</td><td>上下 inset</td></tr>
+                </tbody>
+            </table></div>
+        </article>
+        <article class="note">
+            <h2>功能保留對照</h2>
+            <div class="tbl"><table>
+                <thead><tr><th>功能</th><th>橫版位置</th></tr></thead>
+                <tbody>
+                    <tr><td>返回主頁</td><td>左欄頁頭 ←</td></tr>
+                    <tr><td>弧形進度條拖動 / 拖碟 scrub</td><td>左欄唱片</td></tr>
+                    <tr><td>播放 / 暫停、由頭播放</td><td>左欄唱片底</td></tr>
+                    <tr><td>日子條（掃動轉集、聽過剔、連線中…）</td><td>左欄唱片下面（節目頁）</td></tr>
+                    <tr><td>集數清單（進度、狀態、揀集、自動捲到現正集）</td><td>右欄（節目頁）</td></tr>
+                    <tr><td>卡疊左右掃轉節目、指示點</td><td>左欄（今日節目頁）</td></tr>
+                    <tr><td>今日節目清單</td><td>右欄（今日節目頁）</td></tr>
+                    <tr><td>節目色調、鎖屏 / 耳機控制、續播</td><td>不變</td></tr>
+                </tbody>
+            </table></div>
+        </article>
+        <article class="note wide">
+            <h2>確認後實作要改嘅地方</h2>
+            <div class="tbl"><table>
+                <thead><tr><th>檔案</th><th>改動</th></tr></thead>
+                <tbody>
+                    <tr><td><code>src/pages/Page.module.css</code></td><td>新增 landscape media query：<code>.fixed</code> 改 grid，加 <code>.playerColumn</code> / <code>.listColumn</code>；橫版唔再行 ≤ 561px 成頁捲</td></tr>
+                    <tr><td><code>src/pages/ShowPage.tsx</code>、<code>TodayPage.tsx</code></td><td>用兩個 column wrapper 包住「頁頭 + 播放器」同清單（直版 wrapper 用 <code>display: contents</code>，行為不變）</td></tr>
+                    <tr><td><code>src/styles/tokens.css</code></td><td>橫版 <code>--player-disc-size</code> 按左欄高計，上限 340px</td></tr>
+                    <tr><td><code>src/components/PageHeader/</code></td><td>橫版標題細啲、左對齊</td></tr>
+                    <tr><td><code>shortHeightBreakpoint.node.test.ts</code>、<code>e2e/run.mjs</code></td><td>同步斷點；e2e 加 844×390 橫向 case（播放器同清單同時見到、清單可捲）</td></tr>
+                </tbody>
+            </table></div>
+        </article>
+    </section>
+</div>
+
+<script>
+(() => {
+    const ART = {
+        badgirl: '../../src/assets/shows/badgirl.jpg',
+        wanni: '../../src/assets/shows/wanni.jpg',
+        sunnyday: '../../src/assets/shows/sunnyday.jpg',
+        waves: '../../src/assets/shows/waves.jpg',
+        lalala: '../../src/assets/shows/lalala.jpg',
+    };
+    // src/config/showThemes.ts
+    const THEMES = {
+        badgirl: ['#21151a', '#2e1e24', '#4a3540', '#f08a24', '#21151a', '#f6c987', '#f6eee8', '#c2aaa6', '#160d11', '#352329'],
+        wanni: ['#1c1c1e', '#28282b', '#424247', '#f26b5f', '#1c1c1e', '#f4f1ec', '#f4f1ec', '#afafb5', '#121214', '#2f2f33'],
+        sunnyday: ['#0e2230', '#16303f', '#2c4a5c', '#6ec6ea', '#0e2230', '#e3f5ff', '#eef7fb', '#9fbacb', '#081620', '#1c3a4b'],
+        waves: ['#0c1a2c', '#152a40', '#2a4560', '#ff5a4e', '#0c1a2c', '#dcefff', '#eef5fb', '#9fb6cc', '#06101c', '#1b3450'],
+        lalala: ['#0f2826', '#173634', '#2e524e', '#f7a531', '#0f2826', '#ffe27a', '#f1f7f5', '#a5c2bd', '#081a19', '#1d403d'],
+    };
+    const THEME_VARS = ['bg', 'surface', 'track', 'accent', 'on-accent', 'title', 'text', 'muted', 'shadow-dark', 'shadow-light'];
+    // 今日（2026-10-21 星期三）播出嘅節目，按播出時間
+    const TODAY_SHOWS = [
+        { id: 'wanni', name: '雲妮鍾情', time: '07:08', status: 'watched', pos: 1.0 },
+        { id: 'sunnyday', name: '在晴朗的一天出發', time: '08:09', status: 'unwatched', pos: 0 },
+        { id: 'badgirl', name: 'Bad Girl大過佬', time: '10:09', status: 'playing', pos: 0.38 },
+        { id: 'waves', name: '口水多過浪花', time: '15:10', status: 'unwatched', pos: 0 },
+        { id: 'lalala', name: '聖艾粒LaLaLaLa', time: '17:10', status: 'unwatched', pos: 0 },
+    ];
+    const DEVICES = {
+        phone: { w: 844, h: 390, kind: 'phone', label: 'iPhone 打橫 844 × 390（左瀏海 47px、底 home indicator 21px）', sa: { l: 47, r: 47, b: 21 }, gap: 12 },
+        tablet: { w: 1180, h: 820, kind: 'tablet', label: 'iPad 打橫 1180 × 820', sa: { l: 24, r: 24, b: 20 }, gap: 20 },
+        desktop: { w: 1280, h: 720, kind: 'desktop', label: '桌面視窗 1280 × 720', sa: { l: 24, r: 24, b: 0 }, gap: 20 },
+    };
+    const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
+    const EPISODE_SECONDS = 2 * 3600 - 7 * 60;
+    const TODAY = new Date(Date.UTC(2026, 9, 21));
+    const DAY_MS = 86400000;
+    const STRIP_CELLS = 7;
+    const STRIP_HALF = 3;
+    const SWIPE_PX = 50;
+
+    const state = { page: 'show', device: 'phone', playing: false, epIndex: 0, todayIndex: 2 };
+    try {
+        const saved = JSON.parse(localStorage.getItem('landscape-preview') || '{}');
+        if (saved.page in { show: 1, today: 1 }) state.page = saved.page;
+        if (saved.device in DEVICES) state.device = saved.device;
+    } catch { /* 冇 storage 照用預設 */ }
+
+    // 節目頁：Bad Girl 逢一至五，過去 21 日（日子條包埋六日，灰色）
+    const days = [];
+    for (let i = 0; i < 21; i++) {
+        const d = new Date(TODAY.getTime() - i * DAY_MS);
+        const wd = d.getUTCDay();
+        days.push({ d, wd, dm: `${d.getUTCDate()}/${d.getUTCMonth() + 1}`, aired: wd >= 1 && wd <= 5 });
+    }
+    const episodes = days.filter((x) => x.aired).map((x, i) => ({
+        ...x,
+        ratio: i === 0 ? 0.38 : i === 1 ? 0.62 : i === 4 ? 0.15 : i < 9 && i !== 3 ? 1 : 0,
+    }));
+
+    const fmt = (s) => {
+        const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+        const mm = String(m).padStart(2, '0'), ss = String(sec).padStart(2, '0');
+        return h ? `${h}:${mm}:${ss}` : `${m}:${ss}`;
+    };
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+    const ICON = {
+        back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+        play: (s, filled = true) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="${filled ? 0 : 1.8}" stroke-linejoin="round"/></svg>`,
+        pause: (s) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>`,
+        restart: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg>',
+        check: (s) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,
+    };
+
+    // 弧：135° 開始，順時針 270°（src/config/constants.ts），viewBox 300、半徑 140
+    const ARC = { c: 150, r: 140, start: 135, sweep: 270 };
+    const polar = (deg) => {
+        const rad = (deg * Math.PI) / 180;
+        return [ARC.c + ARC.r * Math.cos(rad), ARC.c + ARC.r * Math.sin(rad)];
+    };
+    const arcPath = (ratio) => {
+        const end = ARC.start + ARC.sweep * Math.max(0.0001, ratio);
+        const [x1, y1] = polar(ARC.start), [x2, y2] = polar(end);
+        return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${ARC.r} ${ARC.r} 0 ${end - ARC.start > 180 ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+    };
+    const gaugeHtml = (art, ratio) => {
+        const [tx, ty] = polar(ARC.start + ARC.sweep * ratio);
+        return `<div class="gauge">
+            <div class="arc"><svg viewBox="0 0 300 300" data-arc role="slider" aria-label="播放進度" aria-valuemin="0" aria-valuemax="${EPISODE_SECONDS}" aria-valuenow="${Math.round(ratio * EPISODE_SECONDS)}" tabindex="0">
+                <path d="${arcPath(1)}" fill="none" stroke="var(--theme-track)" stroke-width="6" stroke-linecap="round"/>
+                <path d="${arcPath(ratio)}" fill="none" stroke="var(--theme-accent)" stroke-width="6" stroke-linecap="round"/>
+                <circle cx="${tx.toFixed(2)}" cy="${ty.toFixed(2)}" r="9" fill="var(--theme-accent)"/>
+            </svg></div>
+            <div class="disc-area"><div class="disc"><div class="face ${state.playing ? 'spinning' : ''}" style="--art:url('${art}')"></div></div></div>
+            <span class="time elapsed"><span>${fmt(ratio * EPISODE_SECONDS)}</span></span>
+            <span class="time total"><span>${fmt(EPISODE_SECONDS)}</span></span>
+            <div class="actions">
+                <button type="button" class="restart" data-act="restart" aria-label="由頭播放">${ICON.restart}</button>
+                <button type="button" class="toggle" data-act="toggle" aria-label="${state.playing ? '暫停' : '播放'}">${state.playing ? ICON.pause(26) : ICON.play(26)}</button>
+                <span></span>
+            </div>
+        </div>`;
+    };
+    const headHtml = (title) => `<div class="page-head"><button type="button" class="back" aria-label="返回主頁">${ICON.back}</button><h1>${esc(title)}</h1></div>`;
+
+    const statusOf = (ep, current) => {
+        if (current) return { text: `播放中 · ${fmt(ep.ratio * EPISODE_SECONDS)} / ${fmt(EPISODE_SECONDS)}`, done: false };
+        if (ep.ratio >= 0.95) return { text: '已收聽', done: true };
+        if (ep.ratio > 0) return { text: `聽到 ${fmt(ep.ratio * EPISODE_SECONDS)}`, done: false };
+        return { text: '未收聽', done: false };
+    };
+
+    const stripHtml = () => {
+        const cur = episodes[state.epIndex];
+        const center = days.findIndex((x) => x.d.getTime() === cur.d.getTime());
+        let cells = '';
+        for (let k = -STRIP_HALF; k <= STRIP_HALF; k++) {
+            const day = days[center - k];
+            if (!day) { cells += '<span class="cell empty"></span>'; continue; }
+            const ep = episodes.find((e) => e.d.getTime() === day.d.getTime());
+            const on = k === 0;
+            const tick = ep && ep.ratio >= 0.95 ? '<span class="tick">✓</span>' : '';
+            cells += `<button type="button" class="cell ${ep ? '' : 'empty'} ${on ? 'on' : ''}" ${ep ? `data-ep="${episodes.indexOf(ep)}"` : 'disabled'} aria-label="${ep ? `轉去 ${day.dm}（${WEEKDAYS[day.wd]}）` : '冇節目'}"><span class="wd">${WEEKDAYS[day.wd]}</span><span class="dm">${day.dm}</span>${tick}</button>`;
+        }
+        return `<div class="strip-wrap"><span class="strip-label">現正播放</span><div class="strip" data-strip role="group" aria-roledescription="轉集" aria-label="左右方向鍵或左右掃動轉集" tabindex="0">${cells}</div></div>`;
+    };
+
+    const showPageHtml = () => {
+        const cur = episodes[state.epIndex];
+        const rows = episodes.map((ep, i) => {
+            const current = i === state.epIndex;
+            const st = statusOf(ep, current);
+            return `<li><button type="button" class="row ${current ? 'current' : ''}" data-ep="${i}" ${current ? 'aria-current="true"' : ''}>
+                <span class="date"><span class="dmo">${ep.dm}</span><span class="wdy">星期${WEEKDAYS[ep.wd]}</span></span>
+                <span class="body"><span class="bar"><span style="width:${Math.round(ep.ratio * 100)}%"></span></span><span class="st">${st.text}</span></span>
+                <span class="ico ${st.done ? 'done' : ''}">${st.done ? ICON.check(14) : ICON.play(22, false)}</span>
+            </button></li>`;
+        }).join('');
+        return `<div class="col-left">
+                ${headHtml('Bad Girl大過佬')}
+                <div class="player">${gaugeHtml(ART.badgirl, cur.ratio)}${stripHtml()}</div>
+            </div>
+            <section class="col-right" aria-label="集數">
+                <div class="list-head"><h2>集數</h2><span>共 ${episodes.length} 集</span></div>
+                <ul class="list" data-list>${rows}</ul>
+            </section>`;
+    };
+
+    const TODAY_STATUS = { playing: '播放中', watched: '已收聽', unwatched: '未收聽' };
+    const todayPageHtml = () => {
+        const show = TODAY_SHOWS[state.todayIndex];
+        const rows = TODAY_SHOWS.map((s, i) => {
+            const active = i === state.todayIndex;
+            return `<li><button type="button" class="row ${active ? 'current' : ''}" data-today="${i}" ${active ? 'aria-current="true"' : ''}>
+                <span class="mini-disc" style="--art:url('${ART[s.id]}')"></span>
+                <span class="body"><span class="name">${esc(s.name)}</span><span class="st">${s.status === 'watched' ? '✓ ' : ''}${s.time} · ${TODAY_STATUS[s.status]}</span></span>
+                <span class="ico">${ICON.play(22, false)}</span>
+            </button></li>`;
+        }).join('');
+        const dots = TODAY_SHOWS.map((s, i) => `<button type="button" class="dot" data-today="${i}" aria-label="${esc(s.name)}" ${i === state.todayIndex ? 'aria-current="true"' : ''}></button>`).join('');
+        const ghosts = state.todayIndex < TODAY_SHOWS.length - 1 ? '<span class="ghost g1"></span>' + (state.todayIndex < TODAY_SHOWS.length - 2 ? '<span class="ghost g2"></span>' : '') : '';
+        return `<div class="col-left">
+                ${headHtml('今日節目')}
+                <div class="stack-area">
+                    <div class="stack" data-stack role="group" aria-roledescription="節目卡疊" aria-label="今日節目，左右掃動轉節目" tabindex="0">
+                        ${ghosts}
+                        <div class="card" data-card>${gaugeHtml(ART[show.id], show.pos)}<h2>${esc(show.name)}</h2></div>
+                    </div>
+                    <div class="dots">${dots}</div>
+                </div>
+            </div>
+            <section class="col-right" aria-label="今日節目">
+                <div class="list-head"><h2>今日節目</h2><span>21/10 星期三 · ${TODAY_SHOWS.length} 個</span></div>
+                <ul class="list" data-list>${rows}</ul>
+            </section>`;
+    };
+
+    const device = document.getElementById('device');
+    const scaler = document.getElementById('scaler');
+    const caption = document.getElementById('caption');
+
+    const applyTheme = (app, id) => {
+        THEMES[id].forEach((v, i) => app.style.setProperty(`--theme-${THEME_VARS[i]}`, v));
+    };
+
+    const render = () => {
+        const dv = DEVICES[state.device];
+        device.dataset.kind = dv.kind;
+        device.style.width = `${dv.w}px`;
+        device.style.height = `${dv.h}px`;
+        const chrome = dv.kind === 'phone' ? '<span class="notch"></span><span class="home-ind"></span>' : '';
+        const page = state.page === 'show' ? 'show-page' : 'today-page';
+        device.innerHTML = `${chrome}<main class="app ${page}" style="--sa-l:${dv.sa.l}px;--sa-r:${dv.sa.r}px;--sa-b:${dv.sa.b}px;--fixed-gap:${dv.gap}px">${state.page === 'show' ? showPageHtml() : todayPageHtml()}</main>`;
+        applyTheme(device.querySelector('.app'), state.page === 'show' ? 'badgirl' : TODAY_SHOWS[state.todayIndex].id);
+        caption.textContent = dv.label;
+        document.querySelectorAll('[data-page]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.page === state.page)));
+        document.querySelectorAll('[data-device]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.device === state.device)));
+        const row = device.querySelector('.list [aria-current="true"]');
+        const list = device.querySelector('[data-list]');
+        if (row && list) list.scrollTop = Math.max(0, row.offsetTop - list.offsetTop - list.clientHeight / 2 + row.offsetHeight / 2);
+        if (state.refocus) { state.refocus = false; device.querySelector('[data-stack]')?.focus(); }
+        fit();
+        try { localStorage.setItem('landscape-preview', JSON.stringify({ page: state.page, device: state.device })); } catch { /* 冇 storage 唔記 */ }
+    };
+
+    const fit = () => {
+        const dv = DEVICES[state.device];
+        const avail = scaler.parentElement.clientWidth - 24;
+        const s = Math.min(1, avail / dv.w);
+        device.style.transform = `scale(${s})`;
+        scaler.style.width = `${dv.w * s}px`;
+        scaler.style.height = `${dv.h * s}px`;
+    };
+
+    const setEpisode = (i) => {
+        state.epIndex = Math.max(0, Math.min(episodes.length - 1, i));
+        render();
+    };
+    const setToday = (i, dir) => {
+        const next = Math.max(0, Math.min(TODAY_SHOWS.length - 1, i));
+        if (next === state.todayIndex) return;
+        const card = device.querySelector('[data-card]');
+        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (card && !reduce) {
+            card.classList.add(dir ?? (next > state.todayIndex ? 'fly-left' : 'fly-right'));
+            setTimeout(() => { state.todayIndex = next; render(); }, 280);
+        } else {
+            state.todayIndex = next;
+            render();
+        }
+    };
+
+    // 拖弧 seek（示意：只改當前集 ratio）
+    const seekFromEvent = (svg, e) => {
+        const rect = svg.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 300 - 150;
+        const y = ((e.clientY - rect.top) / rect.height) * 300 - 150;
+        let deg = (Math.atan2(y, x) * 180) / Math.PI;
+        deg = (deg - ARC.start + 720) % 360;
+        if (deg > ARC.sweep) return;
+        const ratio = deg / ARC.sweep;
+        if (state.page === 'show') episodes[state.epIndex].ratio = ratio;
+        else TODAY_SHOWS[state.todayIndex].pos = ratio;
+        render();
+    };
+
+    document.querySelectorAll('[data-page]').forEach((b) => b.addEventListener('click', () => { state.page = b.dataset.page; render(); }));
+    document.querySelectorAll('[data-device]').forEach((b) => b.addEventListener('click', () => { state.device = b.dataset.device; render(); }));
+
+    device.addEventListener('click', (e) => {
+        const t = e.target.closest('button, [data-arc]');
+        if (!t) return;
+        if (t.dataset.act === 'toggle') { state.playing = !state.playing; render(); return; }
+        if (t.dataset.act === 'restart') {
+            if (state.page === 'show') episodes[state.epIndex].ratio = 0; else TODAY_SHOWS[state.todayIndex].pos = 0;
+            state.playing = true; render(); return;
+        }
+        if (t.dataset.ep !== undefined) { setEpisode(Number(t.dataset.ep)); return; }
+        if (t.dataset.today !== undefined) { setToday(Number(t.dataset.today)); return; }
+        if (t.matches('[data-arc]')) seekFromEvent(t, e);
+    });
+
+    // 日子條 / 卡疊：左右掃動同方向鍵
+    let swipe = null;
+    device.addEventListener('pointerdown', (e) => {
+        const zone = e.target.closest('[data-strip], [data-stack]');
+        if (zone && !e.target.closest('[data-arc], button.toggle, button.restart')) swipe = { x: e.clientX, zone };
+    });
+    window.addEventListener('pointerup', (e) => {
+        if (!swipe) return;
+        const dx = e.clientX - swipe.x;
+        const zone = swipe.zone;
+        swipe = null;
+        if (Math.abs(dx) < SWIPE_PX) return;
+        // 日子條：向右掃 = 舊一集；卡疊：向左掃 = 下一個節目
+        if (zone.matches('[data-strip]')) setEpisode(state.epIndex + (dx > 0 ? 1 : -1));
+        else setToday(state.todayIndex + (dx < 0 ? 1 : -1), dx < 0 ? 'fly-left' : 'fly-right');
+    });
+    device.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        const left = e.key === 'ArrowLeft';
+        if (e.target.matches('[data-strip]')) { e.preventDefault(); setEpisode(state.epIndex + (left ? 1 : -1)); device.querySelector('[data-strip]')?.focus(); }
+        if (e.target.matches('[data-stack]')) { e.preventDefault(); state.refocus = true; setToday(state.todayIndex + (left ? -1 : 1)); }
+    });
+
+    addEventListener('resize', fit);
+    render();
+})();
+</script>
