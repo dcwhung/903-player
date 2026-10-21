@@ -43,4 +43,20 @@ describe('index.html', () => {
         expect(blocking).toHaveLength(0);
         expect(preload).not.toBeNull();
     });
+
+    it('should give share previews the same description as search engines', () => {
+        const description = doc.querySelector<HTMLMetaElement>('meta[name="description"]')?.content;
+        const ogDescription = doc.querySelector<HTMLMetaElement>(
+            'meta[property="og:description"]',
+        )?.content;
+
+        expect(description).toBeTruthy();
+        expect(ogDescription).toBe(description);
+    });
+
+    it('should title share previews with the app name', () => {
+        expect(doc.querySelector<HTMLMetaElement>('meta[property="og:title"]')?.content).toBe(
+            '903 叱咤 Player',
+        );
+    });
 });
