@@ -170,6 +170,8 @@ const SHOW_VIEWPORTS = [
     { width: 390, height: 664 },
     // 橫版：手機打橫（主頁橫額入格 5 欄 × 2 行）、細視窗、iPad 打橫（主頁橫額成行 + 4 欄）
     { width: 844, height: 390, homeFixed: true, landscapeHome: true },
+    // iPhone SE 打橫：左欄最窄，今日節目頁頁頭要放得落標題同指示點
+    { width: 667, height: 375 },
     { width: 960, height: 640, homeFixed: true, landscapeHome: true },
     { width: 1180, height: 820, homeFixed: true, landscapeHome: true },
     // 568 闊未夠橫版（< 640px），照直版矮螢幕；1280×400 係矮嘅橫版
@@ -445,6 +447,12 @@ const checkFixedTodayPage = async (p, label) => {
     // 橫版播放器喺左欄，唔受六成上限（同矮螢幕一樣只印出）
     const short = p.viewportSize().height <= SHORT_HEIGHT_PX || isLandscape(p);
     checkTodayCardShare(await checkTodayRows(list, label), label, short);
+    // 手機打橫指示點搬咗上頁頭：標題仍然完整顯示（冇省略號）
+    const heading = await p.locator('header h1').evaluate((el) => ({
+        fits: el.scrollWidth <= el.clientWidth,
+        size: getComputedStyle(el).fontSize,
+    }));
+    log(heading.fits, `${label}：頁頭標題完整顯示（字體 ${heading.size}）`);
     const card = await todayCardTitle(p).boundingBox();
     await p.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
     await p.mouse.wheel(0, WHEEL_PX);

@@ -50,7 +50,10 @@ describe('HomePage', () => {
         vi.useFakeTimers({ toFake: ['Date'] });
         vi.setSystemTime(new Date('2026-10-19T08:00:00Z')); // 香港 19/10 16:00
     });
-    afterEach(() => vi.useRealTimers());
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+    });
 
     it('lists seven artwork tiles plus today, in order', () => {
         renderWithProviders(<HomePage />);
@@ -116,7 +119,6 @@ describe('HomePage', () => {
         expect(
             banner.compareDocumentPosition(firstShow) & Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
-        vi.unstubAllGlobals();
     });
 
     it('should not show the old header text when rendered', () => {

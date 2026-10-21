@@ -87,21 +87,30 @@
     .fixed {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, max(30%, calc(300px * var(--ui-scale))));
+        grid-template-rows: minmax(0, 1fr);
         column-gap: var(--space-5);
         align-items: stretch;
     }
 
+    /* 載入中 / 搵唔到節目：未有右欄，左欄用晒成行，訊息喺正中 */
+    .playerColumn:only-child {
+        grid-column: 1 / -1;
+    }
+
     .playerColumn {
         /*
-         * 唱片按左欄（size container）嘅闊同高計，用盡位：扣走頁頭、一個間距同底部安全區，
-         * 唔再跟直版嘅「畫面高 × 六成」；最大 640px（iPad 打橫）
+         * 唱片按左欄（size container）嘅闊同高計，用盡位，唔再跟直版嘅「畫面高 × 六成」：
+         * 闊最多 --player-disc-width，高扣走 --player-disc-reserve（頁頭 + 一個間距），
+         * 夾喺 --landscape-disc-min / --landscape-disc-max 之間（tokens.css）
          */
+        --player-disc-width: calc(100cqw * var(--landscape-disc-fill));
+        --player-disc-reserve: calc(var(--touch-target) + var(--fixed-page-gap));
         --player-disc-size: max(
-            120px,
+            var(--landscape-disc-min),
             min(
-                88cqw,
-                calc((100cqh - var(--touch-target) - var(--fixed-page-gap)) * 300 / 332),
-                640px
+                var(--player-disc-width),
+                calc((100cqh - var(--player-disc-reserve)) * 300 / 332),
+                var(--landscape-disc-max)
             )
         );
 
@@ -136,31 +145,24 @@
 
     /*
      * 今日節目頁：唱片外面仲有卡（上下留白、節目名、卡疊底）同指示點，要一齊扣走；
-     * 節目名一行當 1.6 × 字體大小（line-height normal）
+     * 節目名一行當 1.6 × 字體大小（line-height normal，Poppins / Noto Sans TC 約 1.5，留少少餘地）。
+     * 卡疊底 + 指示點（--today-stack-reserve）手機打橫會改（見下面）
      */
     .todayColumn {
-        --player-disc-size: max(
-            120px,
-            min(
-                calc(100cqw - 2 * var(--card-stack-gutter)),
-                calc(
-                    (
-                            100cqh - var(--touch-target) - var(--fixed-page-gap) -
-                                var(--card-padding-block) - var(--card-inner-gap) - 1.6 *
-                                var(--font-size-xl) - var(--card-title-space) - 2 *
-                                var(--card-stack-offset) - var(--touch-target-min)
-                        ) *
-                        300 / 332
-                ),
-                640px
-            )
+        --card-title-line: calc(1.6 * var(--font-size-xl));
+        --today-stack-reserve: calc(2 * var(--card-stack-offset) + var(--touch-target-min));
+        --player-disc-width: calc(100cqw - 2 * var(--card-stack-gutter));
+        --player-disc-reserve: calc(
+            var(--touch-target) + var(--fixed-page-gap) + var(--card-padding-block) +
+                var(--card-inner-gap) + var(--card-title-line) + var(--card-title-space) +
+                var(--today-stack-reserve)
         );
     }
 }
 
 /*
  * 手機打橫（SHORT_LANDSCAPE_QUERY）：右欄 54%（太窄放唔落清單）。
- * 今日節目頁指示點搬咗上頁頭、卡疊只露一層（ShowCardStack），唱片唔使扣嗰兩樣
+ * 今日節目頁指示點搬咗上頁頭、卡疊只露一層（ShowCardStack），卡疊底只扣一格位移
  */
 @media (orientation: landscape) and (min-width: 640px) and (max-height: 561px) {
     .fixed {
@@ -168,21 +170,6 @@
     }
 
     .todayColumn {
-        --player-disc-size: max(
-            120px,
-            min(
-                calc(100cqw - 2 * var(--card-stack-gutter)),
-                calc(
-                    (
-                            100cqh - var(--touch-target) - var(--fixed-page-gap) -
-                                var(--card-padding-block) - var(--card-inner-gap) - 1.6 *
-                                var(--font-size-xl) - var(--card-title-space) -
-                                var(--card-stack-offset)
-                        ) *
-                        300 / 332
-                ),
-                640px
-            )
-        );
+        --today-stack-reserve: var(--card-stack-offset);
     }
 }

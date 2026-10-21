@@ -49,6 +49,17 @@ describe('useMediaQuery', () => {
         expect(result.current).toBe(true);
     });
 
+    it('should keep one listener across re-renders of the same query', () => {
+        const media = fakeMatchMedia(false);
+        const { rerender } = renderHook(() => useMediaQuery(QUERY));
+
+        rerender();
+        rerender();
+
+        expect(window.matchMedia).toHaveBeenCalledTimes(1);
+        expect(media.listeners.size).toBe(1);
+    });
+
     it('should stop listening after unmount', () => {
         const media = fakeMatchMedia(false);
         const { unmount } = renderHook(() => useMediaQuery(QUERY));

@@ -15,6 +15,12 @@ export const e2eShortHeightPx = (): number => {
     return Number(/const SHORT_HEIGHT_PX = (\d+);/.exec(runner)?.[1]);
 };
 
+/** e2e 嘅橫版最細闊度（LANDSCAPE_MIN_WIDTH_PX），由測試對返 src/config/layout.ts */
+export const e2eLandscapeMinWidthPx = (): number => {
+    const runner = readFileSync(new URL('../e2e/run.mjs', import.meta.url), 'utf8');
+    return Number(/const LANDSCAPE_MIN_WIDTH_PX = (\d+);/.exec(runner)?.[1]);
+};
+
 const squash = (text: string): string => text.trim().replace(/\s+/g, ' ');
 
 /**

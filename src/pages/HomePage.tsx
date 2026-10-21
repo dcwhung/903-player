@@ -18,10 +18,37 @@ import { t } from '../i18n/t';
 import styles from './HomePage.module.css';
 import page from './Page.module.css';
 
-export const HomePage = () => {
+/** 7 個節目格 + 今日節目格（撳落開始播再入頁） */
+const useHomeTiles = () => {
     const navigate = useNavigate();
-    const { status } = useRecordings();
     const { startShow, startToday } = useStartPlayback();
+    return [
+        ...SHOWS.map((show) => (
+            <ShowTile
+                key={show.id}
+                label={show.name}
+                art={SHOW_THEMES[show.id].art}
+                onClick={() => {
+                    startShow(show.id);
+                    navigate(`/show/${show.id}`);
+                }}
+            />
+        )),
+        <ShowTile
+            key="today"
+            variant="today"
+            label={t('home.today')}
+            onClick={() => {
+                startToday();
+                navigate('/today');
+            }}
+        />,
+    ];
+};
+
+export const HomePage = () => {
+    const { status } = useRecordings();
+    const tiles = useHomeTiles();
     const miniPlayer = useMiniPlayer();
     useHomeArrival();
     // 手機打橫：橫額變成節目格第一格（佔兩欄），同節目排成 5 欄 × 2 行；其他情況釘喺頂
@@ -38,35 +65,16 @@ export const HomePage = () => {
                 <ShowGrid
                     label={t('home.showsNav')}
                     busy={status === 'loading'}
-                    tiles={[
-                        ...(bannerInGrid
+                    tiles={
+                        bannerInGrid
                             ? [
                                   <div key="banner" className={styles.bannerTile}>
                                       {banner}
                                   </div>,
+                                  ...tiles,
                               ]
-                            : []),
-                        ...SHOWS.map((show) => (
-                            <ShowTile
-                                key={show.id}
-                                label={show.name}
-                                art={SHOW_THEMES[show.id].art}
-                                onClick={() => {
-                                    startShow(show.id);
-                                    navigate(`/show/${show.id}`);
-                                }}
-                            />
-                        )),
-                        <ShowTile
-                            key="today"
-                            variant="today"
-                            label={t('home.today')}
-                            onClick={() => {
-                                startToday();
-                                navigate('/today');
-                            }}
-                        />,
-                    ]}
+                            : tiles
+                    }
                 />
                 {miniPlayer && <MiniPlayer {...miniPlayer} />}
             </main>

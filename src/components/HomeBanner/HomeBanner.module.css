@@ -60,10 +60,11 @@
         height: 100%;
     }
 
+    /* 扁過 5:1 要裁上下時偏向保留上面（「903」紅針喺圖高約 14%） */
     .image {
         height: 100%;
         aspect-ratio: auto;
-        object-position: 50% 50%;
+        object-position: 50% 35%;
     }
 }
 

@@ -49,6 +49,7 @@
 
 /*
  * 橫版：一頁放晒（useRowsPerPage 唔分頁），4 欄 × 2 行填滿高度，格唔再鎖 16:9（ShowTile 跟格大小）。
+ * 剛好 8 格（7 個節目 + 今日節目，src/config/shows.test.ts 鎖住）；加節目要改欄數。
  * 條件同 layout.ts 嘅 LANDSCAPE_QUERY 一樣
  */
 @media (orientation: landscape) and (min-width: 640px) {

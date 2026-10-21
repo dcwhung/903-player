@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react';
 import { PageDots } from '../components/PageDots/PageDots';
 import { PageHeader } from '../components/PageHeader/PageHeader';
 import { PlayerCard } from '../components/PlayerPanel/PlayerCard';
-import { ShowCardStack } from '../components/ShowCardStack/ShowCardStack';
+import { ShowCardStack, type StackCard } from '../components/ShowCardStack/ShowCardStack';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { TodayShowList } from '../components/TodayShowList/TodayShowList';
 import { SHORT_LANDSCAPE_QUERY } from '../config/layout';
@@ -11,6 +12,26 @@ import { t } from '../i18n/t';
 import { LoadState } from './LoadState';
 import page from './Page.module.css';
 import { useTodayPage } from './useTodayPage';
+
+interface TodayStackProps {
+    cards: StackCard[];
+    index: number;
+    title: string;
+    art: string | undefined;
+    onChange: (index: number) => void;
+    /** 卡疊下面嘅指示點；手機打橫搬咗上頁頭就冇 */
+    dots: ReactNode;
+}
+
+/** 今日節目卡疊（最上面係播放器）+ 卡外嘅指示點，一組唔縮 */
+const TodayStack = ({ cards, index, title, art, onChange, dots }: TodayStackProps) => (
+    <div className={page.todayPlayer}>
+        <ShowCardStack cards={cards} index={index} onChange={onChange}>
+            <PlayerCard title={title} art={art} />
+        </ShowCardStack>
+        {dots}
+    </div>
+);
 
 export const TodayPage = () => {
     const goHome = useGoHome();
@@ -45,12 +66,14 @@ export const TodayPage = () => {
                     </div>
                     <LoadState status={status} isEmpty={!current} isSearching={isSearching} />
                     {ready && (
-                        <div className={page.todayPlayer}>
-                            <ShowCardStack cards={cards} index={index} onChange={selectIndex}>
-                                <PlayerCard title={names[index] ?? ''} art={theme.art} />
-                            </ShowCardStack>
-                            {!dotsInHeader && dots}
-                        </div>
+                        <TodayStack
+                            cards={cards}
+                            index={index}
+                            title={names[index] ?? ''}
+                            art={theme.art}
+                            onChange={selectIndex}
+                            dots={!dotsInHeader && dots}
+                        />
                     )}
                 </div>
                 {ready && (

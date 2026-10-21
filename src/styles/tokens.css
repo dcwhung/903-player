@@ -61,6 +61,13 @@
     --dot-size: calc(6px * var(--ui-scale));
     --dot-size-active: calc(18px * var(--ui-scale));
     --page-max-width: 480px;
+    /*
+     * 橫版唱片（Page.module.css .playerColumn）：最細 / 最大，同佔左欄闊幾多（× 100cqw）。
+     * 最大 640px 係 iPad 打橫左欄放得落嘅大小
+     */
+    --landscape-disc-min: 120px;
+    --landscape-disc-max: 640px;
+    --landscape-disc-fill: 0.88;
     /* 節目頁 / 今日節目頁主碟（連進度弧）嘅闊度，兩頁一樣大 */
     --player-disc-size: min(300px, 78vw);
     /*

@@ -34,7 +34,10 @@ const mockLayout = (heightPx: number) => {
 };
 
 describe('ShowGrid', () => {
-    afterEach(() => vi.restoreAllMocks());
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
 
     it('should keep every tile on one page without dots when they all fit', () => {
         render(<ShowGrid tiles={TILES} label="節目" busy={false} />);
@@ -74,7 +77,6 @@ describe('ShowGrid', () => {
 
         expect(within(screen.getByRole('navigation')).getAllByRole('button')).toHaveLength(8);
         expect(screen.queryByRole('group')).not.toBeInTheDocument();
-        vi.unstubAllGlobals();
     });
 
     it('should mark the navigation busy while recordings load', () => {

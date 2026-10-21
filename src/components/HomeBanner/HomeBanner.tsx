@@ -13,7 +13,8 @@ interface HomeBannerProps {
 /**
  * 主頁頁頂橫額（用戶提供嘅 903 叱咤 Player 圖，原圖喺 design/banner.webp）。
  * 橫額本身就係頁標題：<h1> 包住 <img>，heading 嘅名由 alt 嚟，唔使另外收埋一句字。
- * 橫版成行（WIDE_BANNER_QUERY）換闊版圖（5:1，原圖喺 design/banner-wide.webp），內容唔會畀 cover 裁走。
+ * 橫版成行（WIDE_BANNER_QUERY）換闊版圖（5:1，原圖喺 design/banner-wide.webp），內容集中喺中間，
+ * 大部分畫面 cover 只裁走兩邊天空；好闊好矮嘅視窗（扁過 5:1）先會裁走少少上下。
  */
 export const HomeBanner = ({ corner }: HomeBannerProps) => (
     <div className={styles.banner}>
