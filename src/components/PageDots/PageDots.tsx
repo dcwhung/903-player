@@ -9,13 +9,23 @@ interface PageDotsProps {
     labels: string[];
     index: number;
     onSelect: (index: number) => void;
+    /** 成組嘅讀屏名（第幾個，共幾個）；預設係今日節目嘅講法 */
+    positionLabel?: (index: number, total: number) => string;
 }
 
+const todayPosition = (index: number, total: number) => t('miniPlayer.position', { index, total });
+
 /**
- * 今日節目指示點；撳點都可以轉節目（普通掣 + aria-current，唔係 tabs pattern）。
+ * 指示點（今日節目、主頁節目格分頁）；撳點都可以轉節目（普通掣 + aria-current，唔係 tabs pattern）。
  * 焦點喺點上面時左右方向鍵轉去隔籬節目（循環），同撳隔籬嗰點一樣
  */
-export const PageDots = ({ keys, labels, index, onSelect }: PageDotsProps) => {
+export const PageDots = ({
+    keys,
+    labels,
+    index,
+    onSelect,
+    positionLabel = todayPosition,
+}: PageDotsProps) => {
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
         const direction = arrowKeyDirection(event.key);
         if (!direction) return;
@@ -26,7 +36,7 @@ export const PageDots = ({ keys, labels, index, onSelect }: PageDotsProps) => {
         <div
             className={styles.dots}
             role="group"
-            aria-label={t('miniPlayer.position', { index: index + 1, total: labels.length })}
+            aria-label={positionLabel(index + 1, labels.length)}
             onKeyDown={onKeyDown}
         >
             {labels.map((label, i) => (

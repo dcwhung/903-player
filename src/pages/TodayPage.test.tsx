@@ -23,9 +23,9 @@ describe('TodayPage', () => {
     it('lists today’s shows in broadcast order', async () => {
         renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
 
-        const items = await screen.findAllByRole('button', { name: /^播放 / });
+        const items = await screen.findAllByRole('button', { name: /^(?:播放|暫停) / });
         expect(items.map((i) => i.getAttribute('aria-label')?.split('，')[0])).toEqual([
-            '播放 在晴朗的一天出發',
+            '暫停 在晴朗的一天出發',
             '播放 Bad Girl大過佬',
             '播放 雲妮鍾情',
         ]);
@@ -48,11 +48,21 @@ describe('TodayPage', () => {
         const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
 
         await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
-        expect(screen.getByRole('button', { name: /播放 在晴朗的一天出發/ })).toHaveAttribute(
-            'aria-current',
-            'true',
-        );
+        expect(
+            screen.getByRole('button', { name: /(?:播放|暫停) 在晴朗的一天出發/ }),
+        ).toHaveAttribute('aria-current', 'true');
         expect(screen.getByRole('heading', { name: '在晴朗的一天出發' })).toBeInTheDocument();
+    });
+
+    it('pauses when the playing show row is tapped', async () => {
+        const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
+        const playing = await screen.findByRole('button', { name: /^暫停 在晴朗的一天出發/ });
+
+        await userEvent.click(playing);
+
+        expect(audio.pause).toHaveBeenCalled();
+        expect(audio.src).toBe(TODAY[2]?.url);
+        await screen.findByRole('button', { name: /^播放 在晴朗的一天出發/ });
     });
 
     it('leaves swiping to the card stack and renders no episode switcher', async () => {
@@ -151,7 +161,7 @@ describe('TodayPage', () => {
         renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
 
         expect(await screen.findByRole('heading', { name: '公子會' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /播放 公子會/ })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /(?:播放|暫停) 公子會/ })).toBeInTheDocument();
     });
 
     it('shows an empty state when nothing has been recorded', async () => {

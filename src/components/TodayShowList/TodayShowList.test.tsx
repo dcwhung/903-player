@@ -26,14 +26,28 @@ describe('TodayShowList', () => {
     it('shows each show with its status', () => {
         render(<TodayShowList items={ITEMS} onSelect={() => {}} />);
 
-        expect(screen.getByRole('heading', { name: '今日節目' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /播放 Bad Girl大過佬/ })).toHaveAttribute(
+        expect(screen.getByRole('heading', { name: '節目表' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /暫停 Bad Girl大過佬/ })).toHaveAttribute(
             'aria-current',
             'true',
         );
         expect(screen.getByText('10:09 · 播放中')).toBeInTheDocument();
         expect(screen.getByText('07:08 · 已收聽')).toBeInTheDocument();
         expect(screen.getByText('08:09 · 未收聽')).toBeInTheDocument();
+    });
+
+    it('shows a pause button only on the playing show', () => {
+        const paused = ITEMS.map((item) =>
+            item.status === 'playing' ? { ...item, status: 'unwatched' as const } : item,
+        );
+        const { rerender } = render(<TodayShowList items={ITEMS} onSelect={() => {}} />);
+
+        expect(screen.getAllByRole('button', { name: /^暫停/ })).toHaveLength(1);
+
+        rerender(<TodayShowList items={paused} onSelect={() => {}} />);
+
+        expect(screen.queryByRole('button', { name: /^暫停/ })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /^播放 Bad Girl大過佬/ })).toBeInTheDocument();
     });
 
     it('reports the selected show', async () => {

@@ -54,7 +54,7 @@ describe('ShowPage', () => {
     it('reads 現正播放 and lists only the Saturdays of a weekly show, without greyed-out days', async () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
-        await userEvent.click(screen.getByRole('button', { name: /^播放 10\/10/ }));
+        await userEvent.click(screen.getByRole('button', { name: /^(?:播放|暫停) 10\/10/ }));
         act(() => audio.emitMetadata(2400));
 
         const zone = screen.getByRole('group', SWIPE_ZONE);
@@ -72,7 +72,7 @@ describe('ShowPage', () => {
     it('plays a newer episode when its day is tapped in the strip', async () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
-        await userEvent.click(screen.getByRole('button', { name: /^播放 03\/10/ }));
+        await userEvent.click(screen.getByRole('button', { name: /^(?:播放|暫停) 03\/10/ }));
 
         await userEvent.click(screen.getByRole('button', { name: '轉去 10/10（六）' }));
 
@@ -85,10 +85,10 @@ describe('ShowPage', () => {
         saveProgress(RECORDINGS[2]?.url ?? '', 600, 2400);
         renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
 
-        const rows = await screen.findAllByRole('button', { name: /^播放 \d/ });
+        const rows = await screen.findAllByRole('button', { name: /^(?:播放|暫停) \d/ });
         expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual([
             // 未讀到時長：唔顯示 0:00 / 0:00
-            '播放 17/10 星期六，連線中…',
+            '暫停 17/10 星期六，連線中…',
             '播放 10/10 星期六，聽到 10:00',
             '播放 03/10 星期六，已收聽',
         ]);
@@ -99,13 +99,28 @@ describe('ShowPage', () => {
     it('plays the episode that is tapped', async () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
 
-        await userEvent.click(await screen.findByRole('button', { name: /^播放 10\/10/ }));
+        await userEvent.click(await screen.findByRole('button', { name: /^(?:播放|暫停) 10\/10/ }));
 
         expect(audio.src).toBe(RECORDINGS[2]?.url);
-        expect(screen.getByRole('button', { name: /^播放 10\/10/ })).toHaveAttribute(
+        expect(screen.getByRole('button', { name: /^(?:播放|暫停) 10\/10/ })).toHaveAttribute(
             'aria-current',
             'true',
         );
+    });
+
+    it('pauses when the playing episode row is tapped, and resumes on the next tap', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(currentRow()).toHaveAccessibleName(/^暫停 17\/10/));
+
+        await userEvent.click(currentRow());
+
+        expect(audio.pause).toHaveBeenCalled();
+        expect(audio.src).toBe(RECORDINGS[0]?.url);
+        await waitFor(() => expect(currentRow()).toHaveAccessibleName(/^播放 17\/10/));
+
+        await userEvent.click(currentRow());
+
+        await waitFor(() => expect(currentRow()).toHaveAccessibleName(/^暫停 17\/10/));
     });
 
     it('plays the next older episode on a left swipe under the player', async () => {
@@ -120,7 +135,7 @@ describe('ShowPage', () => {
         // 同撳集數一樣：未聽完嘅續播並且即刻播
         expect(audio.currentTime).toBe(600);
         expect(audio.play).toHaveBeenLastCalledWith();
-        expect(currentRow()).toHaveAccessibleName(/^播放 10\/10/);
+        expect(currentRow()).toHaveAccessibleName(/^(?:播放|暫停) 10\/10/);
     });
 
     it('names the swipe zone after the episode and announces each switch politely', async () => {
@@ -145,9 +160,9 @@ describe('ShowPage', () => {
         swipe(screen.getByRole('group', SWIPE_ZONE), -SWIPE_PX);
         await waitFor(() => expect(announcer).toHaveTextContent('已轉到 10/10（六）'));
 
-        await userEvent.click(screen.getByRole('button', { name: /^播放 03\/10/ }));
+        await userEvent.click(screen.getByRole('button', { name: /^(?:播放|暫停) 03\/10/ }));
 
-        expect(currentRow()).toHaveAccessibleName(/^播放 03\/10/);
+        expect(currentRow()).toHaveAccessibleName(/^(?:播放|暫停) 03\/10/);
         expect(announcer).toBeEmptyDOMElement();
     });
 
@@ -160,7 +175,7 @@ describe('ShowPage', () => {
         // 最新一集再向右掃：唔郁，之後撳清單轉集都唔應該當係掃出嚟
         swipe(zone, SWIPE_PX);
         expect(announcer).toBeEmptyDOMElement();
-        await userEvent.click(screen.getByRole('button', { name: /^播放 03\/10/ }));
+        await userEvent.click(screen.getByRole('button', { name: /^(?:播放|暫停) 03\/10/ }));
         expect(announcer).toBeEmptyDOMElement();
 
         // 最舊一集再向左掃
@@ -179,10 +194,10 @@ describe('ShowPage', () => {
         swipe(zone, -SWIPE_PX);
         swipe(zone, -SWIPE_PX);
         swipe(zone, -SWIPE_PX);
-        await waitFor(() => expect(currentRow()).toHaveAccessibleName(/^播放 03\/10/));
+        await waitFor(() => expect(currentRow()).toHaveAccessibleName(/^(?:播放|暫停) 03\/10/));
 
         swipe(zone, SWIPE_PX);
-        await waitFor(() => expect(currentRow()).toHaveAccessibleName(/^播放 10\/10/));
+        await waitFor(() => expect(currentRow()).toHaveAccessibleName(/^(?:播放|暫停) 10\/10/));
     });
 
     it('switches episodes with the arrow keys when the swipe zone is focused', async () => {

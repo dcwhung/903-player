@@ -3,7 +3,7 @@ import { t } from '../../i18n/t';
 import { scrollBehavior } from '../../utils/motion';
 import { PERCENT, toPercent } from '../../utils/ratio';
 import { scrollRowIntoPanel } from '../../utils/scroll';
-import { CheckIcon, PlayIcon } from '../icons/icons';
+import { CheckIcon, PauseIcon, PlayIcon } from '../icons/icons';
 import styles from './EpisodeList.module.css';
 import type { EpisodeStatus } from './episodeStatus';
 
@@ -12,6 +12,8 @@ export interface EpisodeItem {
     dayMonth: string;
     weekday: string;
     current: boolean;
+    /** 揀中而且播緊：掣變暫停，撳落去暫停 */
+    isPlaying: boolean;
     status: EpisodeStatus;
 }
 
@@ -23,6 +25,21 @@ interface EpisodeListProps {
 const CHECK_ICON_SIZE = 12;
 const PLAY_ICON_SIZE = 22;
 
+/** 行尾圖示：播緊 → 暫停；聽過 → 剔；其他 → 播放 */
+const RowIcon = ({ item }: { item: EpisodeItem }) => {
+    if (item.isPlaying) {
+        return <PauseIcon className={styles.play} size={PLAY_ICON_SIZE} />;
+    }
+    if (item.status.kind === 'watched') {
+        return (
+            <span className={styles.check} role="img" aria-label={t('episodes.watched')}>
+                <CheckIcon size={CHECK_ICON_SIZE} />
+            </span>
+        );
+    }
+    return <PlayIcon className={styles.play} size={PLAY_ICON_SIZE} filled={false} />;
+};
+
 const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: string) => void }) => {
     const { status } = item;
     const percent = toPercent(status.ratio);
@@ -32,7 +49,10 @@ const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: str
             type="button"
             className={`${styles.row} ${item.current ? styles.current : ''} ${styles[status.kind] ?? ''}`}
             aria-current={item.current ? 'true' : undefined}
-            aria-label={t('episodes.play', { date, status: status.text })}
+            aria-label={t(item.isPlaying ? 'episodes.pause' : 'episodes.play', {
+                date,
+                status: status.text,
+            })}
             onClick={() => onSelect(item.key)}
         >
             <span className={styles.date}>
@@ -51,13 +71,7 @@ const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: str
                 </span>
                 <span className={styles.status}>{status.text}</span>
             </span>
-            {status.kind === 'watched' ? (
-                <span className={styles.check} role="img" aria-label={t('episodes.watched')}>
-                    <CheckIcon size={CHECK_ICON_SIZE} />
-                </span>
-            ) : (
-                <PlayIcon className={styles.play} size={PLAY_ICON_SIZE} filled={false} />
-            )}
+            <RowIcon item={item} />
         </button>
     );
 };

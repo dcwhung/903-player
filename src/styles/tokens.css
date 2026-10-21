@@ -120,6 +120,9 @@
     );
     --shadow-clay-tile: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
     --color-today-tile-text: #2f4560;
+    /* 橫額右下角版本號：半透明深底 + 白字（插畫係淺藍，對比度 ≥ 4.5:1） */
+    --version-badge-bg: rgb(0 0 0 / 55%);
+    --version-badge-text: #ffffff;
     /* 今日節目插畫係藍色：落影用插畫底部深藍，同其他節目格一樣泥膠感 */
     --shadow-today-tile: 0 6px 0 #1f7fd0, 0 10px 18px rgb(20 40 65 / 30%);
 
@@ -134,13 +137,30 @@
  * 2. 成個播放器（唱片連弧 → 日子條）最多佔畫面高 --player-max-share（六成，設計目標）
  * 「畫面高」係固定殼嘅高（--player-shell-height，見下面 @supports），唔係 dvh。
  * cqh 同 dvh 都唔支援就用返上面嘅值。
- * 最細唔會細過 --player-disc-min：再矮（≤ 561px 高）會改為成頁捲（Page.module.css）。
+ * 最細唔會細過 --player-disc-min。
+ * 任何高度都係固定版面（唔會成頁捲）：好矮（≤ 561px 高，例如橫向手機）就少預留一行集數、
+ * 唱片下限再細啲，令清單仍然有位自己捲。
  */
 :root {
     --player-disc-min: 160px;
+    /* 預留幾多行集數（清單最少見到幾行） */
+    --player-reserved-rows: 3;
     --player-max-share: 0.6;
     /* 固定版面（Page.module.css .fixed：節目頁、今日節目頁）嘅間距；700px 高或以下收窄，令固定版面多啲位畀清單 */
     --fixed-page-gap: var(--space-5);
+}
+
+/*
+ * 好矮嘅畫面（橫向手機、矮視窗、200% 放大）：同樣固定唔捲。預留兩行集數、唱片最細 120px
+ * （播放掣仍然 ≥ 44px 觸控範圍）。561px 係以前「成頁捲」嘅斷點，沿用：
+ * 562px 或以上 3 行 + 160px 唱片啱啱塞得落（見下面 --player-reserved-height）。
+ * e2e/run.mjs 嘅 SHORT_HEIGHT_PX 要同步（src/styles/shortHeightBreakpoint.node.test.ts 會檢查）
+ */
+@media (max-height: 561px) {
+    :root {
+        --player-reserved-rows: 2;
+        --player-disc-min: 120px;
+    }
 }
 
 @media (max-height: 700px) {
@@ -178,15 +198,15 @@
          *    60px 係保留落嚟嘅下限：預留三行集數之後，今日節目頁清單仍然見到兩行以上
          *    （e2e 會印出今日節目頁播放器佔高同清單行數）
          * 5. 「集數 / 共 N 集」標題列：30px（量出嚟）
-         * 6. 三行集數：3 × 56px（EpisodeList .row，border-box 連分隔線）
+         * 6. --player-reserved-rows 行集數（預設 3，好矮嘅畫面 2）× 56px（EpisodeList .row，border-box 連分隔線）
          * 7. 清單底 padding（--space-2）+ 底部安全區
          * 改字體大小、播放掣或者行高要跟住改。
          */
         --player-reserved-height: calc(
             env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 3 *
                 var(--fixed-page-gap) +
-                max(var(--date-strip-label-height) + var(--date-strip-height), 60px) + 30px + 3 *
-                56px + var(--space-2) + env(safe-area-inset-bottom)
+                max(var(--date-strip-label-height) + var(--date-strip-height), 60px) + 30px +
+                var(--player-reserved-rows) * 56px + var(--space-2) + env(safe-area-inset-bottom)
         );
         /* 成個播放器最多佔幾高：殼高 × --player-max-share */
         --player-max-height: calc(var(--player-shell-height) * var(--player-max-share));

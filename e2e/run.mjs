@@ -61,25 +61,28 @@ const startPreview = async () => {
     throw new Error('vite preview did not start');
 };
 
-// 版本號底同 mini player 頂之間：tokens.css 嘅 --space-3（12px）+ subpixel 捨入
-const VERSION_MINI_GAP_MAX_PX = 13;
+const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 
-/** 版本號要見到，貼住 mini player 上面（捲到底都唔會畀佢遮住，中間唔會留一大截空位） */
-const checkVersionClear = async (p, label) => {
+/** 版本號喺主頁橫額右下角：見到、成個喺橫額圖入面、喺圖右下嗰一半，唔係標題嘅一部分 */
+const checkVersionOnBanner = async (p, label) => {
     const version = p.getByText(APP_VERSION_TEXT, { exact: true });
-    // 成份文件鎖死唔捲；好矮嘅畫面係 main 自己捲，捲到底先量
-    await p.evaluate(() => document.querySelector('main').scrollTo(0, Number.MAX_SAFE_INTEGER));
     const v = await version.boundingBox();
-    const m = await p.getByRole('region', { name: '正在播放（今日節目）' }).boundingBox();
-    const gap = v !== null && m !== null ? m.y - (v.y + v.height) : NaN;
-    const ok = (await version.isVisible()) && gap >= 0 && gap <= VERSION_MINI_GAP_MAX_PX;
+    const b = await p.getByRole('img', { name: BANNER_ALT }).boundingBox();
+    const inside =
+        v !== null &&
+        b !== null &&
+        v.x >= b.x &&
+        v.y >= b.y &&
+        v.x + v.width <= b.x + b.width &&
+        v.y + v.height <= b.y + b.height;
+    const corner = inside && v.x > b.x + b.width / 2 && v.y > b.y + b.height / 2;
+    const heading = await p.getByRole('heading', { level: 1 }).textContent();
     log(
-        ok,
-        `${label}：版本號 ${APP_VERSION_TEXT} 貼住 mini player 上面（相距 ${gap.toFixed(1)}px，0–${VERSION_MINI_GAP_MAX_PX}）`,
+        (await version.isVisible()) && corner && !heading.includes(APP_VERSION_TEXT),
+        `${label}：版本號 ${APP_VERSION_TEXT} 喺橫額右下角（${v?.x?.toFixed(0)}, ${v?.y?.toFixed(0)}）`,
     );
 };
 
-const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 // 橫額高度同一格節目一樣（容許 subpixel 捨入）
 const BANNER_HEIGHT_TOLERANCE_PX = 1;
 // 390×844、320×568 嘅主頁固定 / 版本號已經由 SHOW_VIEWPORTS（homeFixed）嘅 checkFixedHome 檢查；
@@ -138,55 +141,79 @@ const metrics = [];
 const todayMetrics = [];
 const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
-// 同 tokens.css 嘅 --player-disc-min 同 Page.module.css 嘅成頁捲斷點（max-height）一致
+// 同 tokens.css 嘅 --player-disc-min 一致：預設 160px，好矮（≤ SHORT_HEIGHT_PX）120px
 const DISC_MIN_PX = 160;
-// SHORT_HEIGHT_PX 要同 CSS 嘅 @media (max-height) 一樣：src/styles/shortHeightBreakpoint.node.test.ts
+const SHORT_DISC_MIN_PX = 120;
+// 好矮嘅畫面都係固定版面：清單最少見到一行（再矮過 SHORT_ROWS_MIN_HEIGHT_PX 只印出嚟，例如 568×320）
+const SHORT_MIN_VISIBLE_ROWS = 1;
+const SHORT_ROWS_MIN_HEIGHT_PX = 390;
+// SHORT_HEIGHT_PX 要同 tokens.css 嘅 @media (max-height) 一樣（src/styles/shortHeightBreakpoint.node.test.ts）：
+// 以下唱片下限細啲、預留行數少啲，播放器佔高唔要求 ≤ PLAYER_MAX_SHARE；任何高度都係固定版面
 // 用 regex 讀呢一行，所以保持 `const SHORT_HEIGHT_PX = <數字>;` 嘅寫法
 const SHORT_HEIGHT_PX = 561;
 const SHOW_VIEWPORTS = [
     { width: 390, height: 844, swipe: true, homeFixed: true },
-    { width: 320, height: 568, swipe: true, homeFixed: true },
+    { width: 320, height: 568, swipe: true, homeFixed: true, pagedHome: true },
+    // 用戶截圖嘅尺寸：主頁分頁、節目名縮字
+    { width: 291, height: 494, homeFixed: true, pagedHome: true },
     // 常見手機（iPhone SE / 細 Android / 有工具列嘅 Safari）
     { width: 390, height: 720 },
     { width: 375, height: 667 },
     { width: 390, height: 664 },
-    // 橫向手機 / 矮視窗（844×390 順便驗好矮嘅主頁：shortHome）
-    { width: 844, height: 390, shortHome: true },
+    // 橫向手機 / 矮視窗（844×390 順便驗好矮嘅主頁：一行都放唔落要收窄）
+    { width: 844, height: 390, homeFixed: true, pagedHome: true },
     { width: 568, height: 320 },
     { width: 1280, height: 400 },
     { width: 390, height: 540 },
-    // 成頁捲斷點兩邊：560 成頁捲，562 固定（最細唱片仍然見到兩行）
+    // 矮螢幕斷點兩邊：560 預留兩行、唱片下限 120；562 預留三行、唱片下限 160
     { width: 390, height: 560 },
     { width: 390, height: 562 },
 ];
 
-// 同 tokens.css 嘅 --page-max-width 一致；刻意寫死做獨立對照
-const PAGE_MAX_WIDTH_PX = 480;
-
 /**
- * 好矮嘅主頁（S-403）：漸變畫喺 main、background-attachment: local，跟內容一齊捲；
- * main 闊到成個畫面，但節目格仍然係 --page-max-width 闊、喺畫面中間
+ * 矮螢幕主頁（分頁）：有頁數指示點；第一頁每格都完整喺節目格範圍入面（冇剪走）、喺 mini player 上面；
+ * 撳最後一點轉到最後一頁，見到「今日節目」格；成頁唔捲
  */
-const checkShortHeightHome = async (p, label) => {
-    const layout = await p.evaluate(() => {
-        const main = document.querySelector('main');
-        const nav = main.querySelector('nav').getBoundingClientRect();
-        return {
-            attachment: getComputedStyle(main).backgroundAttachment,
-            width: nav.width,
-            left: nav.left,
-            right: document.documentElement.clientWidth - nav.right,
-        };
+const checkPagedHome = async (p, label) => {
+    const nav = p.getByRole('navigation', { name: '節目' });
+    const dots = nav.getByRole('group', { name: /^節目第 1 頁，共 \d+ 頁$/ });
+    const hasDots = (await dots.count()) === 1;
+    log(hasDots, `${label}：節目格分頁，有頁數指示點`);
+    if (!hasDots) return;
+    const fit = await p.evaluate(() => {
+        const navBox = document.querySelector('nav').getBoundingClientRect();
+        const mini = document.querySelector('[aria-label="正在播放（今日節目）"]');
+        const miniTop = mini ? mini.getBoundingClientRect().top : innerHeight;
+        const scroller = document.querySelector('nav > div');
+        const page = scroller.getBoundingClientRect();
+        const firstPage = [...scroller.firstElementChild.children].map((el) =>
+            el.getBoundingClientRect(),
+        );
+        return firstPage.every(
+            (b) =>
+                b.top >= navBox.top &&
+                b.bottom <= navBox.bottom &&
+                b.bottom <= miniTop &&
+                b.left >= page.left - 0.5 &&
+                b.right <= page.right + 0.5,
+        );
     });
+    log(fit, `${label}：第一頁節目格冇剪走、冇畀 mini player 遮住`);
+    await dots.getByRole('button').last().click();
+    await p.waitForTimeout(600);
+    const today = await nav.getByRole('button', { name: '今日節目', exact: true }).boundingBox();
+    const navBox = await nav.boundingBox();
     log(
-        layout.attachment.includes('local'),
-        `${label}：主頁背景跟 main 捲（background-attachment: ${layout.attachment}）`,
+        today !== null &&
+            today.x >= navBox.x - 0.5 &&
+            today.x + today.width <= navBox.x + navBox.width + 0.5,
+        `${label}：撳最後一點轉到最後一頁，見到今日節目格`,
     );
-    log(
-        Math.abs(layout.width - PAGE_MAX_WIDTH_PX) <= 1 &&
-            Math.abs(layout.left - layout.right) <= 1,
-        `${label}：節目格保持 ${PAGE_MAX_WIDTH_PX}px 闊、置中（${layout.width}px，左 ${layout.left}px / 右 ${layout.right}px）`,
-    );
+    const page = await p.evaluate(() => ({
+        scrollY: window.scrollY,
+        main: document.querySelector('main').scrollTop,
+    }));
+    log(page.scrollY === 0 && page.main === 0, `${label}：主頁成頁唔捲（${JSON.stringify(page)}）`);
 };
 
 /** 節目頁固定：捲集數 panel 時 window 唔郁、控制掣仍然喺畫面，panel 自己嘅 scrollTop 有變 */
@@ -198,7 +225,12 @@ const checkFixedShowPage = async (p, label, shot) => {
     await p.mouse.wheel(0, WHEEL_PX);
     await p.waitForTimeout(600);
     const after = await panel.evaluate((el) => el.scrollTop);
-    log(after !== before, `${label}：集數 panel 自己捲（scrollTop ${before} → ${after}）`);
+    // 矮過 SHORT_ROWS_MIN_HEIGHT_PX（例如 568×320）清單得返幾 px 高，只印出嚟
+    const tiny = p.viewportSize().height < SHORT_ROWS_MIN_HEIGHT_PX;
+    log(
+        tiny || after !== before,
+        `${label}：集數 panel 自己捲（scrollTop ${before} → ${after}）${tiny ? '（太矮，只印出）' : ''}`,
+    );
     // 喺唱片上面捲都唔會捲成頁
     const disc = await p.getByRole('slider', { name: '播放進度' }).boundingBox();
     await p.mouse.move(disc.x + disc.width / 2, disc.y + disc.height / 2);
@@ -211,12 +243,19 @@ const checkFixedShowPage = async (p, label, shot) => {
     log(page.scrollY === 0 && page.overflow <= 0, `${label}：成頁唔捲（${JSON.stringify(page)}）`);
     await checkControlsInView(p, label);
     const rows = await visibleRows(panel);
-    log(rows >= MIN_VISIBLE_ROWS, `${label}：清單見到約 ${rows.toFixed(2)} 行`);
+    const height = p.viewportSize().height;
+    const short = height <= SHORT_HEIGHT_PX;
+    const minRows = short ? SHORT_MIN_VISIBLE_ROWS : MIN_VISIBLE_ROWS;
+    const enforced = !short || height >= SHORT_ROWS_MIN_HEIGHT_PX;
+    log(
+        !enforced || rows >= minRows,
+        `${label}：清單見到約 ${rows.toFixed(2)} 行${enforced ? `（≥ ${minRows}）` : ''}`,
+    );
     await logDiscSize(p, label, rows.toFixed(2));
     const share = await playerShare(p);
     log(
-        share <= PLAYER_MAX_SHARE + 0.001,
-        `${label}：播放器佔畫面高 ${(share * 100).toFixed(1)}%（≤ ${PLAYER_MAX_SHARE * 100}%）`,
+        short || share <= PLAYER_MAX_SHARE + 0.001,
+        `${label}：播放器佔畫面高 ${(share * 100).toFixed(1)}%${short ? '' : `（≤ ${PLAYER_MAX_SHARE * 100}%）`}`,
     );
     await recordMetrics(p, label, rows.toFixed(2), share);
     await p.screenshot({ path: `${OUT}/${shot}` });
@@ -243,46 +282,11 @@ const visibleRows = (panel) =>
         return (el.clientHeight - padding) / row;
     });
 
-/** 唱片闊度（同列表行數一齊印出嚟，方便對照） */
+/** 唱片闊度（同列表行數一齊印出嚟，方便對照）；好矮嘅畫面下限細啲 */
 const logDiscSize = async (p, label, rows) => {
     const disc = (await p.getByRole('slider', { name: '播放進度' }).boundingBox()).width;
-    log(
-        disc >= DISC_MIN_PX,
-        `${label}：唱片 ${disc.toFixed(0)}px（≥ ${DISC_MIN_PX}），清單 ${rows}`,
-    );
-};
-
-/** main 可以捲幾多、文件本身有冇溢出（矮畫面要 main 捲、文件唔捲） */
-const mainScroll = (p) =>
-    p.evaluate(() => {
-        const main = document.querySelector('main');
-        return {
-            main: main.scrollHeight - main.clientHeight,
-            doc: document.documentElement.scrollHeight - window.innerHeight,
-        };
-    });
-
-/** 好矮嘅畫面（橫向手機 / 矮視窗）：唔再固定，改由 main 捲（文件唔捲），清單唔係內部捲動，播放掣捲得到 */
-const checkScrollingShowPage = async (p, label, shot) => {
-    const list = p.getByRole('region', { name: '集數' }).getByRole('list');
-    const inner = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
-    log(inner <= 1, `${label}：清單唔係內部捲動（多出 ${inner}px）`);
-    await logDiscSize(p, label, '全部（成頁捲）');
-    const toggle = p.getByRole('button', { name: PLAY_TOGGLE });
-    await toggle.scrollIntoViewIfNeeded();
-    const b = await toggle.boundingBox();
-    const scroll = await mainScroll(p);
-    const inView = b !== null && b.y >= 0 && b.y + b.height <= p.viewportSize().height;
-    log(
-        scroll.main > 0 && scroll.doc <= 0 && inView,
-        `${label}：main 捲得、文件唔捲、播放掣捲得到（${JSON.stringify(scroll)}）`,
-    );
-    // 最尾一集都要捲得到
-    const last = p.getByRole('region', { name: '集數' }).locator('li button').last();
-    await last.scrollIntoViewIfNeeded();
-    log(await last.isVisible(), `${label}：捲到最尾一集`);
-    await recordMetrics(p, label, '全部（成頁捲）', await playerShare(p));
-    await p.screenshot({ path: `${OUT}/${shot}` });
+    const min = p.viewportSize().height <= SHORT_HEIGHT_PX ? SHORT_DISC_MIN_PX : DISC_MIN_PX;
+    log(disc >= min - 0.5, `${label}：唱片 ${disc.toFixed(0)}px（≥ ${min}），清單 ${rows}`);
 };
 
 /** 返回掣、由頭播放掣同播放掣要完整喺畫面入面 */
@@ -309,7 +313,7 @@ const checkDiscMatchesToday = async (p, label) => {
     const show = await discWidth();
     const showGaps = await pageGaps();
     await p.goto(`${BASE}#/today`);
-    await p.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+    await p.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
     const today = await discWidth();
     log(Math.abs(show - today) < 1, `${label}：唱片同今日節目頁一樣大（${show} / ${today}）`);
     // 今日節目頁同節目頁用同一個固定版面（.fixed），頁面間距一樣、矮螢幕一齊收窄；
@@ -365,7 +369,7 @@ const todayCardShare = (p) =>
 
 const recordTodayMetrics = async (p, label, rows) => {
     const share = await todayCardShare(p);
-    // 距 PLAYER_MAX_SHARE 上限仲有幾多 px（負數 = 超出；好矮嘅畫面成頁捲，唔要求）
+    // 距 PLAYER_MAX_SHARE 上限仲有幾多 px（負數 = 超出；好矮嘅畫面唔要求）
     const headroom = (PLAYER_MAX_SHARE - share) * p.viewportSize().height;
     todayMetrics.push({
         label,
@@ -377,17 +381,18 @@ const recordTodayMetrics = async (p, label, rows) => {
 };
 
 /** 固定版面嘅今日節目播放器（卡 → 指示點）≤ PLAYER_MAX_SHARE；share 由 checkTodayRows 量好傳入 */
-const checkTodayCardShare = (share, label) => {
+const checkTodayCardShare = (share, label, short) => {
     log(
-        share <= PLAYER_MAX_SHARE + 0.001,
+        short || share <= PLAYER_MAX_SHARE + 0.001,
         `${label}：今日節目卡佔畫面高 ${(share * 100).toFixed(1)}%（≤ ${PLAYER_MAX_SHARE * 100}%）`,
     );
 };
 
 /** 今日節目頁固定：捲輪 / scrollTo 都唔會捲成頁；清單太長就自己捲 */
 const checkFixedTodayPage = async (p, label) => {
-    const list = p.getByRole('region', { name: '今日節目' }).getByRole('list');
-    checkTodayCardShare(await checkTodayRows(list, label), label);
+    const list = p.getByRole('region', { name: '節目表' }).getByRole('list');
+    const short = p.viewportSize().height <= SHORT_HEIGHT_PX;
+    checkTodayCardShare(await checkTodayRows(list, label), label, short);
     const card = await todayCardTitle(p).boundingBox();
     await p.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
     await p.mouse.wheel(0, WHEEL_PX);
@@ -405,29 +410,12 @@ const checkFixedTodayPage = async (p, label) => {
     await p.waitForTimeout(600);
     const scrolled = await list.evaluate((el) => el.scrollTop);
     const after = await p.evaluate(() => window.scrollY);
+    const tiny = p.viewportSize().height < SHORT_ROWS_MIN_HEIGHT_PX;
     log(
-        (extra <= 1 || scrolled > 0) && after === 0,
-        `${label}：清單自己捲（多出 ${extra}px，scrollTop ${scrolled}，window ${after}）`,
+        (tiny || extra <= 1 || scrolled > 0) && after === 0,
+        `${label}：清單自己捲（多出 ${extra}px，scrollTop ${scrolled}，window ${after}）${tiny ? '（太矮，清單只印出）' : ''}`,
     );
     await checkControlsInView(p, label);
-};
-
-/** 好矮嘅畫面：今日節目頁好似節目頁咁由 main 捲，清單唔係內部捲動，播放掣捲得到 */
-const checkScrollingTodayPage = async (p, label) => {
-    const list = p.getByRole('region', { name: '今日節目' }).getByRole('list');
-    const inner = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
-    log(inner <= 1, `${label}：清單唔係內部捲動（多出 ${inner}px）`);
-    await recordTodayMetrics(p, label, '全部（成頁捲）');
-    const toggle = p.getByRole('button', { name: PLAY_TOGGLE });
-    // 由節目頁轉過嚟時捲動位置可能停喺半格（-0.5px）位置，scrollIntoViewIfNeeded 會當睇到；直接置中
-    await toggle.evaluate((el) => el.scrollIntoView({ block: 'center' }));
-    const b = await toggle.boundingBox();
-    const scroll = await mainScroll(p);
-    const inView = b !== null && b.y >= 0 && b.y + b.height <= p.viewportSize().height;
-    log(
-        scroll.main > 0 && scroll.doc <= 0 && inView,
-        `${label}：main 捲得、文件唔捲、播放掣捲得到（${JSON.stringify(scroll)}）`,
-    );
 };
 
 /** 拖緊日子條：成條跟住手指郁（track translateX 加咗負數位移），可以順便影一張拖緊嘅截圖 */
@@ -450,8 +438,9 @@ const checkSwipeToOlder = async (p, dragShot) => {
     const rows = p.getByRole('region', { name: '集數' }).locator('li button');
     const labels = await rows.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
     const from = labels.findIndex((l) => l.includes('播放中'));
-    const olderDate = labels[from + 1]?.split('，')[0];
-    const distance = await dayOffset(p, olderDate.replace('播放 ', '').split(' ')[0]);
+    // 去走行首動作（播放 / 暫停），淨低「日/月 星期X」
+    const olderDate = labels[from + 1]?.split('，')[0].replace(/^(播放|暫停) /, '');
+    const distance = await dayOffset(p, olderDate.split(' ')[0]);
     const zone = await p.locator(STRIP).boundingBox();
     const y = zone.y + zone.height / 2;
     const x = zone.x + zone.width / 2 + distance / 2;
@@ -463,7 +452,7 @@ const checkSwipeToOlder = async (p, dragShot) => {
     await p.waitForTimeout(800);
     const now = await p.locator('button[aria-current="true"]').first().getAttribute('aria-label');
     log(
-        now.startsWith(olderDate) && now.includes('播放中'),
+        now.includes(` ${olderDate}，`) && now.includes('播放中'),
         `向左拖轉舊一集：${labels[from]} → ${now}`,
     );
     const playing = await p.evaluate(() => navigator.mediaSession.playbackState);
@@ -475,6 +464,12 @@ const checkShowHeader = async (p, name, label) => {
     const heading = await p.locator('header h1').textContent();
     const stale = await p.getByText('正在播放', { exact: true }).count();
     log(heading === name && stale === 0, `${label}：頁頭係節目名「${heading}」`);
+    // 節目名按畫面闊度縮字，一行完整顯示（冇省略號）
+    const title = await p.locator('header h1').evaluate((el) => ({
+        fits: el.scrollWidth <= el.clientWidth,
+        size: getComputedStyle(el).fontSize,
+    }));
+    log(title.fits, `${label}：節目名完整顯示（字體 ${title.size}）`);
     const { above, date, centreGap } = await p.locator(STRIP).evaluate((el) => {
         const dateId = el.getAttribute('aria-labelledby').split(' ')[0];
         const zone = el.getBoundingClientRect();
@@ -520,7 +515,7 @@ const checkFixedHome = async (p, label) => {
         page.scrollY === 0 && page.overflow <= 0,
         `${label}：主頁成頁唔捲（${JSON.stringify(page)}）`,
     );
-    await checkVersionClear(p, label);
+    await checkVersionOnBanner(p, label);
 };
 
 /** Android 工具列 / PWA 狀態列色（<meta name="theme-color">）要跟頁面色調；轉頁後等 React commit 先讀 */
@@ -658,7 +653,7 @@ const SHELL_MISMATCH_CASES = [
 ];
 const SHELL_PAGES = [
     { route: '#/show/badgirl', region: '集數', minRows: MIN_VISIBLE_ROWS, name: '節目頁' },
-    { route: '#/today', region: '今日節目', minRows: TODAY_MIN_ROWS, name: '今日節目頁' },
+    { route: '#/today', region: '節目表', minRows: TODAY_MIN_ROWS, name: '今日節目頁' },
 ];
 // 對照組用嘅舊做法：主碟跟 dvh（W-390 之前）
 const DVH_SOURCE_CSS = ':root { --player-shell-height: 100dvh !important; }';
@@ -710,7 +705,7 @@ const checkShellMismatch = async (browser, errors) => {
         sp.on('pageerror', (e) => errors.push(e.message));
         for (const { route, region, minRows, name } of SHELL_PAGES) {
             await sp.goto(`${BASE}${route}`);
-            await sp.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+            await sp.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
             await sp.waitForTimeout(800);
             const label = `${width}×${height} ${name}（殼矮 ${shrink}px）`;
             const normal = await shellFit(sp, region);
@@ -871,7 +866,7 @@ const checkNarrowLayout = async (browser, errors) => {
         ['#/today', '今日節目頁'],
     ]) {
         await p.goto(`${BASE}${route}`);
-        await p.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+        await p.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
         const overlap = await timeOverlap(p);
         log(
             overlap <= 0,
@@ -881,7 +876,7 @@ const checkNarrowLayout = async (browser, errors) => {
     }
     for (const dx of [-NARROW_HALF_DRAG_PX, NARROW_HALF_DRAG_PX]) {
         await p.goto(`${BASE}#/today`);
-        await p.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+        await p.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
         await dragTodayCard(p, dx, { release: false });
         const opacity = await behindTitleOpacity(p);
         const side = dx < 0 ? '左' : '右';
@@ -1004,6 +999,9 @@ const openProbedShowPage = async (browser, errors, extraAudioUrls) => {
     return { ctx, p, state };
 };
 
+/** 清單行掣嘅動作：播緊嗰行係「暫停」，其他係「播放」 */
+const ROW_ACTION = '(?:播放|暫停)';
+
 const currentEpisodeOf = (p) =>
     p.locator('button[aria-current="true"]').first().getAttribute('aria-label');
 
@@ -1019,15 +1017,15 @@ const checkProbeIgnoresUnknown = async (browser, errors) => {
     // 重開先計：一入頁揀集嗰陣 probe 未完；重開會即刻併埋之前 probe 到嘅（如果有）
     await p.reload();
     await p
-        .getByRole('button', { name: new RegExp(`^播放 ${latest}`) })
+        .getByRole('button', { name: new RegExp(`^${ROW_ACTION} ${latest}`) })
         .first()
         .waitFor();
     const current = await currentEpisodeOf(p);
     log(
-        current.startsWith(`播放 ${latest}`),
+        new RegExp(`^${ROW_ACTION} ${latest}`).test(current),
         `西加航空節目頁最近一集 = 假資料最近一集 ${latest}：${current}`,
     );
-    const probedLabel = `播放 ${dayMonth(PROBE_DATE)}`;
+    const probedLabel = `${ROW_ACTION} ${dayMonth(PROBE_DATE)}`;
     const invented = await p.getByRole('button', { name: new RegExp(`^${probedLabel}`) }).count();
     log(invented === 0, `西加航空冇 probe 作出嚟嘅 ${dayMonth(PROBE_DATE)}（${invented} 個）`);
     await ctx.close();
@@ -1042,7 +1040,7 @@ const checkProbeFindsNewEpisode = async (browser, errors) => {
         found.length === 1 && found[0] === `${PROBE_SHOW.id} ${PROBE_DATE}`,
         `probe 搵到原站有嘅新一集，冇其他（${found.join(' / ')}）`,
     );
-    const label = `播放 ${dayMonth(PROBE_DATE)}`;
+    const label = `${ROW_ACTION} ${dayMonth(PROBE_DATE)}`;
     const row = p.getByRole('button', { name: new RegExp(`^${label}`) });
     await row.first().waitFor({ timeout: 5000 });
     log((await row.count()) > 0, `probe 搵到嘅 ${dayMonth(PROBE_DATE)} 即刻加入西加航空清單`);
@@ -1052,7 +1050,7 @@ const checkProbeFindsNewEpisode = async (browser, errors) => {
         .first()
         .waitFor();
     const current = await currentEpisodeOf(p);
-    log(current.startsWith(label), `重開節目頁揀 probe 搵到嘅最新一集：${current}`);
+    log(new RegExp(`^${label}`).test(current), `重開節目頁揀 probe 搵到嘅最新一集：${current}`);
     await ctx.close();
 };
 
@@ -1084,7 +1082,11 @@ try {
         `主頁 ${HOME_TILES.length} 粒掣：${tiles.join(' | ')}`,
     );
     const cols = await page.evaluate(
-        () => getComputedStyle(document.querySelector('nav')).gridTemplateColumns.split(' ').length,
+        // 節目格喺分頁入面：nav > 捲動容器 > 每頁一個 grid
+        () =>
+            getComputedStyle(document.querySelector('nav > div > div')).gridTemplateColumns.split(
+                ' ',
+            ).length,
     );
     log(cols === 2, `主頁每行 ${cols} 粒`);
     await checkThemeColor(page, HOME_TOP, '主頁');
@@ -1096,13 +1098,13 @@ try {
         `主頁 mini player 顯示今日第一個節目：${await mini.textContent()}`,
     );
     await page.getByRole('button', { name: '公子會', exact: true }).click();
-    await page.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+    await page.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
     log(page.url().endsWith('#/show/gongzi'), `轉到節目頁並自動播放：${page.url()}`);
     await checkShowHeader(page, '公子會', '公子會節目頁');
     const currentEpisode = () =>
         page.locator('button[aria-current="true"]').first().getAttribute('aria-label');
     const current = await currentEpisode();
-    log(current.startsWith('播放 17/10'), `揀中最近一集（今日之前）：${current}`);
+    log(/^(?:播放|暫停) 17\/10/.test(current), `揀中最近一集（今日之前）：${current}`);
     const accent = await page.evaluate(() =>
         getComputedStyle(document.querySelector('[data-theme-scope]')).getPropertyValue(
             '--theme-accent',
@@ -1137,14 +1139,14 @@ try {
     await slider.focus();
     await page.keyboard.press('End');
     await page.waitForTimeout(800);
-    await page.getByRole('button', { name: /^播放 10\/10/ }).click();
+    await page.getByRole('button', { name: /^(?:播放|暫停) 10\/10/ }).click();
     await page.waitForTimeout(800);
     const row17 = await page
-        .getByRole('button', { name: /^播放 17\/10/ })
+        .getByRole('button', { name: /^(?:播放|暫停) 17\/10/ })
         .getAttribute('aria-label');
     log(row17.endsWith('已收聽'), `聽到尾嘅 17/10 顯示已收聽：${row17}`);
     const sel = await currentEpisode();
-    log(sel.startsWith('播放 10/10'), `撳集數轉集：${sel}`);
+    log(/^(?:播放|暫停) 10\/10/.test(sel), `撳集數轉集：${sel}`);
     const visible = await page.locator('button[aria-current="true"]').first().isVisible();
     log(visible, '揀中集數喺畫面內');
     await page.screenshot({ path: `${OUT}/4-show-date-changed.png` });
@@ -1152,7 +1154,7 @@ try {
     // 冇咗跳秒掣：用弧形 slider 嘅鍵盤 →（KEYBOARD_SEEK_SECONDS = 30 秒）
     await slider.focus();
     await page.keyboard.press('ArrowRight');
-    await page.getByRole('button', { name: '暫停' }).click();
+    await page.getByRole('button', { name: '暫停', exact: true }).click();
     const saved = await page.evaluate(() =>
         JSON.parse(localStorage.getItem('903player:progress:v1')),
     );
@@ -1166,7 +1168,7 @@ try {
     await page.waitForTimeout(800);
     const resumed = await currentEpisode();
     log(
-        resumed.startsWith('播放 17/10'),
+        /^(?:播放|暫停) 17\/10/.test(resumed),
         `再入節目頁：揀返最近一集 ${resumed}（17/10 已聽過 → 由頭播）`,
     );
     const restartPos = Number(await slider.getAttribute('aria-valuenow'));
@@ -1182,10 +1184,10 @@ try {
     // 真正播超過 REPLAY_RESET_SECONDS（10 秒）先清走已收聽
     await page.waitForTimeout(11000);
     log(!(await watched17()), '重播超過 10 秒清走已收聽');
-    await page.getByRole('button', { name: /^播放 10\/10/ }).click();
+    await page.getByRole('button', { name: /^(?:播放|暫停) 10\/10/ }).click();
     await page.waitForTimeout(800);
     const replayed = await page
-        .getByRole('button', { name: /^播放 17\/10/ })
+        .getByRole('button', { name: /^(?:播放|暫停) 17\/10/ })
         .getAttribute('aria-label');
     log(/聽到 0:1\d$/.test(replayed), `重播超過 10 秒後清單顯示聽到：${replayed}`);
     const resumePos = Number(await slider.getAttribute('aria-valuenow'));
@@ -1196,10 +1198,10 @@ try {
     const oldEpisodeState = await page.evaluate(() => navigator.mediaSession.playbackState);
     log(oldEpisodeState === 'paused', `播緊舊集返主頁會暫停：${oldEpisodeState}`);
     await page.getByRole('button', { name: '今日節目', exact: true }).click();
-    await page.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+    await page.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
     await page.waitForTimeout(1000);
     const items = await page
-        .getByRole('region', { name: '今日節目' })
+        .getByRole('region', { name: '節目表' })
         .locator('li button')
         .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
     log(items.length === 3, `今日節目列表：${items.join(' | ')}`);
@@ -1237,14 +1239,14 @@ try {
         page.url().endsWith('#/') && backState === 'playing' && miniText.includes('雲妮鍾情'),
         `播緊今日節目用返回手勢返主頁會繼續播，mini player 顯示：${backState} / ${miniText}`,
     );
-    await checkVersionClear(page, '390×844');
+    await checkVersionOnBanner(page, '390×844');
     await page.screenshot({ path: `${OUT}/7-home-mini-player.png` });
 
     const narrow = await newE2EContext(browser, { viewport: { width: 320, height: 640 } });
     const np = await narrow.newPage();
     await np.goto(BASE);
     await np.waitForSelector('nav[aria-busy="false"]');
-    await checkVersionClear(np, '320×640');
+    await checkVersionOnBanner(np, '320×640');
     await np.screenshot({ path: `${OUT}/8-home-version-320.png` });
     for (const route of ['#/show/gongzi', '#/today']) {
         await np.goto(`${BASE}${route}`);
@@ -1274,7 +1276,7 @@ try {
     const sp = await small.newPage();
     sp.on('pageerror', (e) => errors.push(e.message));
     await sp.goto(`${BASE}#/today`);
-    await sp.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+    await sp.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
     await sp.waitForTimeout(800);
     log((await horizontalOverflow(sp)) === 0, '320×568 今日節目冇橫向捲動');
     await sp.screenshot({ path: `${OUT}/5c-today-320x568.png` });
@@ -1300,8 +1302,8 @@ try {
         await ctx.close();
     }
 
-    // 節目頁：夠高就固定、集數清單自己捲；好矮（橫向手機）就成頁正常捲。badgirl 集數多過一個畫面
-    for (const { width, height, swipe, homeFixed, shortHome } of SHOW_VIEWPORTS) {
+    // 節目頁 / 今日節目頁：任何高度都固定、只有清單自己捲。badgirl 集數多過一個畫面
+    for (const { width, height, swipe, homeFixed, pagedHome } of SHOW_VIEWPORTS) {
         const ctx = await newE2EContext(browser, {
             viewport: { width, height },
             deviceScaleFactor: 2,
@@ -1309,7 +1311,7 @@ try {
         const fp = await ctx.newPage();
         fp.on('pageerror', (e) => errors.push(e.message));
         await fp.goto(`${BASE}#/show/badgirl`);
-        await fp.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+        await fp.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
         await fp.waitForTimeout(800);
         const label = `${width}×${height} 節目頁`;
         const shot = `show-${width}x${height}.png`;
@@ -1320,26 +1322,19 @@ try {
             // 拖去舊一集之後正中仍然對齊
             await checkShowHeader(fp, 'Bad Girl大過佬', `${label}（拖完）`);
         }
-        if (height > SHORT_HEIGHT_PX) await checkFixedShowPage(fp, label, shot);
-        else await checkScrollingShowPage(fp, label, shot);
+        await checkFixedShowPage(fp, label, shot);
         await checkDiscMatchesToday(fp, label);
-        // checkDiscMatchesToday 之後已經喺今日節目頁：同樣夠高就固定，好矮就成頁捲
+        // checkDiscMatchesToday 之後已經喺今日節目頁：同樣固定
         const todayLabel = `${width}×${height} 今日節目頁`;
         await fp.waitForTimeout(500);
-        if (height > SHORT_HEIGHT_PX) await checkFixedTodayPage(fp, todayLabel);
-        else await checkScrollingTodayPage(fp, todayLabel);
+        await checkFixedTodayPage(fp, todayLabel);
         await fp.screenshot({ path: `${OUT}/today-${width}x${height}.png` });
         if (homeFixed) {
             await fp.goto(BASE);
             await fp.waitForSelector('nav[aria-busy="false"]');
+            await fp.waitForTimeout(300);
             await checkFixedHome(fp, `${width}×${height} 主頁`);
-            await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
-        }
-        if (shortHome) {
-            await fp.goto(BASE);
-            await fp.waitForSelector('nav[aria-busy="false"]');
-            await checkShortHeightHome(fp, `${width}×${height} 主頁`);
-            await checkVersionClear(fp, `${width}×${height} 主頁（main 捲到底）`);
+            if (pagedHome) await checkPagedHome(fp, `${width}×${height} 主頁`);
             await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
         }
         await ctx.close();

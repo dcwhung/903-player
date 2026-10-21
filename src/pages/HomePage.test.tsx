@@ -180,12 +180,15 @@ describe('HomePage', () => {
         expect(screen.getByTestId('location')).toHaveTextContent('/today');
     });
 
-    it('should show the app version below the show tiles when rendered', async () => {
+    it('should show the app version on the banner, outside its heading, when rendered', async () => {
         renderWithProviders(<HomePage />, { recordings: RECORDINGS });
 
         const version = await screen.findByText(`v${packageJson.version}`);
+        const heading = screen.getByRole('heading', { level: 1 });
+        expect(heading).toHaveAccessibleName(BANNER_ALT);
+        expect(heading).not.toContainElement(version);
         const position = screen.getByRole('navigation').compareDocumentPosition(version);
-        expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(position & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
     });
 
     it('still navigates when recordings are not loaded yet', async () => {

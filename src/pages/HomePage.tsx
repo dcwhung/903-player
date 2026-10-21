@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppVersion } from '../components/AppVersion/AppVersion';
 import { HomeBanner } from '../components/HomeBanner/HomeBanner';
 import { MiniPlayer } from '../components/MiniPlayer/MiniPlayer';
+import { ShowGrid } from '../components/ShowGrid/ShowGrid';
 import { ShowTile } from '../components/ShowTile/ShowTile';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { APP_VERSION } from '../config/appVersion';
@@ -26,35 +27,35 @@ export const HomePage = () => {
         // 主頁用自己嘅色調（跟 app icon）；mini player 入面另有 ThemeScope，照跟節目色。
         // canvas 用漸變底色：iOS standalone viewport 矮過螢幕時，home indicator 後面露出 canvas 同漸變接得順
         <ThemeScope theme={HOME_THEME} className={styles.scope} canvas="var(--home-bg-bottom)">
-            {/* 主頁都固定唔捲（page.locked）；好矮嘅畫面改由 main 自己捲 */}
+            {/* 主頁任何高度都固定唔捲（page.locked）：橫額釘喺頂，節目格放唔落就分頁 */}
             <main className={`${page.page} ${page.locked} ${styles.home}`}>
-                <HomeBanner />
-                <nav
-                    className={styles.grid}
-                    aria-label={t('home.showsNav')}
-                    aria-busy={status === 'loading'}
-                >
-                    {SHOWS.map((show) => (
+                <HomeBanner corner={<AppVersion version={APP_VERSION} />} />
+                <ShowGrid
+                    label={t('home.showsNav')}
+                    busy={status === 'loading'}
+                    tiles={[
+                        ...SHOWS.map((show) => (
+                            <ShowTile
+                                key={show.id}
+                                label={show.name}
+                                art={SHOW_THEMES[show.id].art}
+                                onClick={() => {
+                                    startShow(show.id);
+                                    navigate(`/show/${show.id}`);
+                                }}
+                            />
+                        )),
                         <ShowTile
-                            key={show.id}
-                            label={show.name}
-                            art={SHOW_THEMES[show.id].art}
+                            key="today"
+                            variant="today"
+                            label={t('home.today')}
                             onClick={() => {
-                                startShow(show.id);
-                                navigate(`/show/${show.id}`);
+                                startToday();
+                                navigate('/today');
                             }}
-                        />
-                    ))}
-                    <ShowTile
-                        variant="today"
-                        label={t('home.today')}
-                        onClick={() => {
-                            startToday();
-                            navigate('/today');
-                        }}
-                    />
-                </nav>
-                <AppVersion version={APP_VERSION} />
+                        />,
+                    ]}
+                />
                 {miniPlayer && <MiniPlayer {...miniPlayer} />}
             </main>
         </ThemeScope>
