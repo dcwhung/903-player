@@ -45,6 +45,8 @@ export const zhHK = {
         countWithUnavailable: '共 {count} 集 · {unavailable} 集未上架',
         // 試過但原站未有（404）：行照列出但撳唔到
         unavailable: '未上架',
+        // 節目頁：有未上架集數但一集都播唔到
+        noneUp: '未有集數上架',
         unavailableRow: '{date}，{status}',
         playing: '播放中 · {current} / {total}',
         resume: '聽到 {time}',

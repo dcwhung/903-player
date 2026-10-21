@@ -124,7 +124,8 @@ describe('ShowPage', () => {
             unavailable: [unavailableEpisode('gongzi', '2026-10-17')],
         });
 
-        expect(await screen.findByText('暫時未有錄音')).toBeInTheDocument();
+        expect(await screen.findByText('未有集數上架')).toBeInTheDocument();
+        expect(screen.queryByText('暫時未有錄音')).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: '17/10 星期六，未上架' })).toBeDisabled();
         expect(screen.queryByRole('slider')).not.toBeInTheDocument();
     });
