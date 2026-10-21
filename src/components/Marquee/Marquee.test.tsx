@@ -1,28 +1,37 @@
 import { render, screen } from '@testing-library/react';
+import { MARQUEE_GAP_PX } from './marquee';
 import { Marquee } from './Marquee';
 
-/** jsdom 冇 layout：人手設定外框同內容闊度 */
+/** jsdom 冇 layout：人手設定外框同文字闊度 */
 const stubWidths = (scrollWidth: number, clientWidth: number) => {
     vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(scrollWidth);
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(clientWidth);
 };
 
+const LONG = '今日 19/10（一）· 1:14:04 / 1:54:19';
+
 describe('Marquee', () => {
     afterEach(() => vi.restoreAllMocks());
 
-    it('stays still when the text fits', () => {
+    it('stays still with a single copy when the text fits', () => {
         stubWidths(100, 100);
-        render(<Marquee text="公子會" />);
+        const { container } = render(<Marquee text="公子會" />);
 
-        expect(screen.getByText('公子會').parentElement).not.toHaveAttribute('data-overflow');
+        expect(container.firstElementChild).not.toHaveAttribute('data-overflow');
+        expect(screen.getAllByText('公子會')).toHaveLength(1);
     });
 
-    it('scrolls by the overflow when the text is too long', () => {
+    it('loops right to left with a hidden second copy when the text is too long', () => {
         stubWidths(180, 120);
-        render(<Marquee text="今日 19/10（一）· 1:14:04 / 1:54:19" />);
+        const { container } = render(<Marquee text={LONG} />);
 
-        const track = screen.getByText('今日 19/10（一）· 1:14:04 / 1:54:19');
-        expect(track.parentElement).toHaveAttribute('data-overflow', 'true');
-        expect(track.style.getPropertyValue('--marquee-shift')).toBe('-60px');
+        const box = container.firstElementChild as HTMLElement;
+        const [first, copy] = screen.getAllByText(LONG);
+        expect(box).toHaveAttribute('data-overflow', 'true');
+        expect(first).not.toHaveAttribute('aria-hidden');
+        expect(copy).toHaveAttribute('aria-hidden', 'true');
+        expect(
+            (box.firstElementChild as HTMLElement).style.getPropertyValue('--marquee-shift'),
+        ).toBe(`-${180 + MARQUEE_GAP_PX}px`);
     });
 });

@@ -5,35 +5,45 @@
     white-space: nowrap;
 }
 
-/* inline-block：ResizeObserver 先睇到文字闊度變化（例如字型載完） */
 .track {
+    display: inline-flex;
+    gap: var(--marquee-gap, 0);
+}
+
+/* inline-block：ResizeObserver 先睇到文字闊度變化（例如字型載完） */
+.text {
     display: inline-block;
 }
 
-/* 放唔落：來回捲，兩頭停低（20% / 80% 要同 marquee.ts 嘅 MARQUEE_TRAVEL_SHARE 一致） */
+/* 放唔落：一直向左捲一份文字 + 空位，副本接住由右邊入嚟，到尾即刻返去 0（同一個畫面，睇唔出跳） */
 .box[data-overflow] .track {
-    animation: marquee var(--marquee-duration) ease-in-out infinite alternate;
+    animation: marquee var(--marquee-duration) linear infinite;
 }
 
 @keyframes marquee {
-    0%,
-    20% {
+    from {
         transform: translateX(0);
     }
 
-    80%,
-    100% {
+    to {
         transform: translateX(var(--marquee-shift));
     }
 }
 
-/* 減少動畫：唔捲，用 … 收尾（scrollWidth 仍然係成句闊度，照樣量到多出幾多） */
+/* 減少動畫：唔捲、收埋副本，用 … 收尾（scrollWidth 仍然係成句闊度，照樣量到多出幾多） */
 @media (prefers-reduced-motion: reduce) {
     .box[data-overflow] .track {
-        overflow: hidden;
-        max-width: 100%;
-        text-overflow: ellipsis;
-        vertical-align: top;
+        display: flex;
         animation: none;
+    }
+
+    .box[data-overflow] .text {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .box[data-overflow] .copy {
+        display: none;
     }
 }
