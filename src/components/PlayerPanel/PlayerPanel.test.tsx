@@ -2,11 +2,14 @@ import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
 import { usePlayer } from '../../player/usePlayer';
+import { stripDays } from '../DateStrip/dateStrip';
 import { PlayerPanel } from './PlayerPanel';
 
 const REC = recording('gongzi', '2026-10-17');
+const OLDER = recording('gongzi', '2026-10-10');
+const STRIP = stripDays([REC, OLDER], REC.url);
 
-const Harness = ({ neighbours = {} }: { neighbours?: { older?: string } }) => {
+const Harness = () => {
     const player = usePlayer();
     return (
         <>
@@ -16,8 +19,9 @@ const Harness = ({ neighbours = {} }: { neighbours?: { older?: string } }) => {
             <PlayerPanel
                 title="公子會"
                 dateLabel="17/10（六）"
-                neighbours={neighbours}
-                onStep={() => false}
+                days={STRIP.days}
+                currentDay={STRIP.current}
+                onPick={() => undefined}
             />
         </>
     );
@@ -44,14 +48,15 @@ describe('PlayerPanel', () => {
             <PlayerPanel
                 title="公子會"
                 dateLabel="17/10（六）"
-                neighbours={{ older: '10/10（六）' }}
-                onStep={() => true}
+                days={STRIP.days}
+                currentDay={STRIP.current}
+                onPick={() => undefined}
             />,
         );
 
         expect(screen.queryByRole('heading')).not.toBeInTheDocument();
         expect(screen.getByRole('group', { name: '17/10（六） 公子會' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '舊一集 10/10（六）' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '轉去 10/10（六）' })).toBeInTheDocument();
     });
 
     it('shows a placeholder instead of 0:00 while the duration is unknown', async () => {
@@ -130,9 +135,7 @@ describe('PlayerPanel', () => {
     });
 
     it('stops the disc spin while the date strip holds it', async () => {
-        const { audio, container } = renderWithProviders(
-            <Harness neighbours={{ older: '10/10（六）' }} />,
-        );
+        const { audio, container } = renderWithProviders(<Harness />);
         await userEvent.click(screen.getByRole('button', { name: 'load' }));
         act(() => audio.emitMetadata(6836));
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
@@ -150,9 +153,7 @@ describe('PlayerPanel', () => {
     });
 
     it('ignores a second finger on the date strip while the first one drags', async () => {
-        const { audio, container } = renderWithProviders(
-            <Harness neighbours={{ older: '10/10（六）' }} />,
-        );
+        const { audio, container } = renderWithProviders(<Harness />);
         await userEvent.click(screen.getByRole('button', { name: 'load' }));
         act(() => audio.emitMetadata(6836));
         await userEvent.click(screen.getByRole('button', { name: '播放' }));

@@ -52,6 +52,13 @@ export const weekdayOf = (isoDate: string): Weekday =>
 export const daysBetween = (from: string, to: string): number =>
     Math.round((isoDateToUtcMs(to) - isoDateToUtcMs(from)) / MS_PER_DAY);
 
+/** toISOString() 頭 10 個字就係 YYYY-MM-DD */
+const ISO_DATE_LENGTH = 10;
+
+/** YYYY-MM-DD 加減幾多日（跨月 / 跨年都得） */
+export const addDays = (isoDate: string, days: number): string =>
+    new Date(isoDateToUtcMs(isoDate) + days * MS_PER_DAY).toISOString().slice(0, ISO_DATE_LENGTH);
+
 const dateParts = (isoDate: string) => {
     const [, month, day] = splitIsoDate(isoDate);
     return {

@@ -14,6 +14,8 @@
     --theme-shadow-light: #242424;
 
     --font-family: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
+    /* 日子條每格上面嘅星期（一、二…） */
+    --font-size-2xs: 11px;
     --font-size-xs: 12px;
     --font-size-sm: 13px;
     --font-size-md: 15px;
@@ -35,6 +37,8 @@
     --radius-full: 999px;
     /* 主頁節目格同頁頂橫額共用嘅圓角 */
     --radius-tile: 14px;
+    /* 節目頁日子條同正中 highlight box 嘅圓角 */
+    --radius-cell: 12px;
 
     --touch-target: 44px;
     /* WCAG 2.2 target size (minimum)：細粒掣嘅撳得到範圍 */
@@ -52,14 +56,21 @@
     --page-max-width: 480px;
     /* 節目頁 / 今日節目頁主碟（連進度弧）嘅闊度，兩頁一樣大 */
     --player-disc-size: min(300px, 78vw);
-    /* 節目頁唱片下面嘅日子條：一行高（側格係掣，用足觸控高度）、兩邊淡出闊度 */
+    /*
+     * 節目頁唱片下面嘅日子條（7 日 slider）：每格兩行（星期 + 日/月）收緊 line-height，
+     * 塞入觸控高度；兩邊淡出闊度、正中 highlight box 離條邊幾遠、兩行嘅 line-height、冇節目日子嘅透明度
+     */
     --date-strip-height: var(--touch-target);
     /*
      * 日子條上面「現正播放」標籤一行嘅高度（line-height）：標籤 + 日子條 = 60px，
      * 啱啱等於播放器高度計法唱片下面嗰行嘅下限，矮螢幕斷點（561px）唔使改
      */
     --date-strip-label-height: 16px;
-    --date-strip-fade: var(--space-8);
+    --date-strip-fade: var(--space-6);
+    --date-strip-box-inset: 2px;
+    --date-strip-weekday-line: 14px;
+    --date-strip-day-line: 18px;
+    --date-strip-empty-opacity: 0.35;
 
     /* 今日節目卡疊（ShowCardStack）：每疊後一層向下移、縮細、變淡幾多（第一張後面嘅卡 scale 0.92） */
     --card-stack-offset: 12px;

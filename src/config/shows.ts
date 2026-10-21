@@ -24,5 +24,11 @@ export const SHOWS: readonly ShowConfig[] = [
     { id: 'lalala', name: '聖艾粒LaLaLaLa', fileTime: '1710', airDays: MONDAY_TO_FRIDAY },
 ];
 
+/** 一星期得一日播（例如逢星期六）：日子條只排有集數嘅日子，唔顯示灰色日子 */
+const WEEKLY_AIR_DAY_COUNT = 1;
+
+export const airsWeekly = (show: ShowConfig): boolean =>
+    show.airDays.length === WEEKLY_AIR_DAY_COUNT;
+
 export const findShow = (id: string): ShowConfig | undefined =>
     SHOWS.find((show) => show.id === id);

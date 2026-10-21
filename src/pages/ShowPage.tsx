@@ -14,7 +14,7 @@ import { useShowPage } from './useShowPage';
 export const ShowPage = () => {
     const { showId = '' } = useParams();
     const goHome = useGoHome();
-    const { show, theme, status, isSearching, current, episodeItems, neighbours, ...actions } =
+    const { show, theme, status, isSearching, current, episodeItems, strip, ...actions } =
         useShowPage(showId);
 
     // 成頁固定唔捲，得集數清單自己捲（見 Page.module.css .locked / .fixed）；
@@ -36,8 +36,9 @@ export const ShowPage = () => {
                                     title={show.name}
                                     dateLabel={formatDateLabel(current.date)}
                                     art={theme.art}
-                                    onStep={actions.stepEpisode}
-                                    neighbours={neighbours}
+                                    days={strip.days}
+                                    currentDay={strip.current}
+                                    onPick={actions.selectEpisode}
                                 />
                                 <EpisodeList
                                     items={episodeItems}
