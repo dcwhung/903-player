@@ -29,6 +29,12 @@ export const useDiscTurn = () => {
                 base.current += extra.current;
                 extra.current = 0;
             },
+            /** 轉返正（換咗集、未知時長）：清走之前捽過嘅角度 */
+            reset: () => {
+                base.current = 0;
+                extra.current = 0;
+                write(faceRef.current, 0);
+            },
             /** 取消：轉返去起手角度 */
             revert: () => {
                 extra.current = 0;

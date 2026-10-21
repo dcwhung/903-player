@@ -47,11 +47,20 @@ export class FakeAudio extends EventTarget {
         }
     }
 
-    load = vi.fn();
+    /** 同真 element 一樣：重新載入會清走 error，位置同長度 reset */
+    load = vi.fn(() => {
+        this.error = null;
+        this.currentTime = 0;
+        this.duration = Number.NaN;
+    });
 
     play = vi.fn(async () => {
         if (this.rejectPlay) {
             throw new DOMException('blocked', 'NotAllowedError');
+        }
+        // 載入失敗咗（例如斷網）嘅 element 唔會自己重試，play() 直接 reject
+        if (this.error) {
+            throw new DOMException('failed', 'NotSupportedError');
         }
         if (this.options.strictPlayEvents && !this.paused) {
             return;
@@ -74,6 +83,12 @@ export class FakeAudio extends EventTarget {
     /** 播緊但數據唔夠（緩衝 / seek 去未載到嘅位置） */
     emitWaiting(): void {
         this.dispatchEvent(new Event('waiting'));
+    }
+
+    /** 載入失敗（斷網 / 冇檔）：記低 error code 再發 error event */
+    fail(code: number): void {
+        this.error = { code };
+        this.dispatchEvent(new Event('error'));
     }
 
     emitMetadata(duration: number): void {

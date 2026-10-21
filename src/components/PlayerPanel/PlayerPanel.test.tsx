@@ -58,8 +58,13 @@ describe('PlayerPanel', () => {
         renderWithProviders(<Harness />);
         await userEvent.click(screen.getByRole('button', { name: 'load' }));
 
-        expect(screen.getByText('--:--')).toBeInTheDocument();
-        expect(screen.getByText('0:00')).toBeInTheDocument();
+        // 已播時間都未可信（例如斷網讀唔到 metadata）：兩邊都顯示佔位
+        expect(screen.getAllByText('--:--')).toHaveLength(2);
+        expect(screen.queryByText('0:00')).not.toBeInTheDocument();
+        expect(screen.getByRole('slider', { name: '播放進度' })).toHaveAttribute(
+            'aria-valuetext',
+            '--:-- / --:--',
+        );
     });
 
     it('restarts from the beginning', async () => {

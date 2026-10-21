@@ -11,6 +11,8 @@ interface DiscProps {
     faceRef?: Ref<HTMLSpanElement> | undefined;
     /** 真正出緊聲而且冇人捉住：自轉；停咗 / 載緊就停喺原位 */
     spinning?: boolean;
+    /** 未知時長（斷網 / metadata 未到）：碟擺正，清走自轉停低嘅角度 */
+    upright?: boolean;
     /** 捽碟 seek 嘅 pointer events；冇就係純裝飾 */
     scrub?: DOMAttributes<HTMLDivElement> | undefined;
 }
@@ -28,6 +30,7 @@ export const Disc = ({
     artRef,
     faceRef,
     spinning = false,
+    upright = false,
     scrub,
 }: DiscProps) => (
     <div
@@ -35,7 +38,10 @@ export const Disc = ({
         aria-hidden="true"
         {...scrub}
     >
-        <span ref={faceRef} className={`${styles.face} ${spinning ? styles.spinning : ''}`}>
+        <span
+            ref={faceRef}
+            className={`${styles.face} ${spinning ? styles.spinning : ''} ${upright ? styles.upright : ''}`}
+        >
             {art && <img ref={artRef} className={styles.art} src={art} alt="" />}
         </span>
         {size === 'large' && (
