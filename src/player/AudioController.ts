@@ -80,10 +80,12 @@ export class AudioController {
         const entries = Object.entries(audioEvents);
         entries.forEach(([name, handler]) => this.audio.addEventListener(name, handler));
         window.addEventListener('pagehide', this.persist);
+        window.addEventListener('online', this.recoverSource);
         document.addEventListener('visibilitychange', this.onVisibilityChange);
         return () => {
             entries.forEach(([name, handler]) => this.audio.removeEventListener(name, handler));
             window.removeEventListener('pagehide', this.persist);
+            window.removeEventListener('online', this.recoverSource);
             document.removeEventListener('visibilitychange', this.onVisibilityChange);
         };
     };
@@ -109,6 +111,7 @@ export class AudioController {
         const isLatest = () => generation === this.playGeneration;
         this.setPlayIntent(true);
         this.playPending = true;
+        this.recoverSource();
         try {
             await this.audio.play();
             // 本身已經播緊時 spec 唔會再發 play event，要喺度清走，否則會卡住擋住更新
@@ -133,7 +136,9 @@ export class AudioController {
         this.audio.pause();
     };
 
-    toggle = async (): Promise<void> => (this.audio.paused ? this.play() : this.pause());
+    /** 載入失敗咗嘅 element paused 可能仲係 false，但其實冇播緊：當暫停處理 */
+    toggle = async (): Promise<void> =>
+        this.audio.paused || this.audio.error ? this.play() : this.pause();
 
     restart = async (): Promise<void> => {
         this.seek(0);
@@ -171,6 +176,20 @@ export class AudioController {
         this.audio.src = recording.url;
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
     }
+
+    /**
+     * 載入失敗（例如斷網）之後 element 唔會自己重試，play() 只會一直 reject：
+     * 重新 load 同一個 source，續播位置用 state（load 會將 audio.currentTime reset 做 0）
+     */
+    private recoverSource = (): void => {
+        if (!this.audio.error || !this.state.recording) {
+            return;
+        }
+        this.pendingStart = this.state.currentTime;
+        this.lastTickPosition = this.pendingStart;
+        this.audio.load();
+        this.update({ duration: 0 });
+    };
 
     /** metadata 未到時 duration 係 NaN；串流可能係 Infinity，都當已載入 */
     private hasMetadata(): boolean {
@@ -267,10 +286,10 @@ export class AudioController {
     /** 緩衝緊：仲係「播緊」（掣維持暫停），但冇聲 */
     private onSilent = (): void => this.update({ isAudible: false });
 
-    /** 來源出錯：等緊嘅 play 冇可能成功 */
+    /** 來源出錯（例如斷網）：等緊嘅 play 冇可能成功，亦冇嘢播緊 */
     private onError = (): void => {
-        this.setPlayIntent(false);
-        this.onSilent();
+        this.playIntent = false;
+        this.update({ isPlaying: false, isAudible: false });
     };
 
     /** 換 src 會 queue emptied，嗰陣用戶啱啱撳嘅 Play 仲等緊，唔好清走 */

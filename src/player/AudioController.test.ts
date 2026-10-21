@@ -238,3 +238,63 @@ describe('AudioController.isAudible', () => {
         detach();
     });
 });
+
+/** MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED：斷網時第一次載入通常係呢個 */
+const MEDIA_ERR_SRC_NOT_SUPPORTED = 4;
+const RESUME_SECONDS = 967;
+
+/** 斷網時載入：autoplay 失敗，element 停喺 error 狀態 */
+const setupOfflineLoad = async () => {
+    const audio = new FakeAudio();
+    const controller = new AudioController(audio.asAudio());
+    const detach = controller.attach();
+    await controller.load(RECORDING, { autoplay: true });
+    controller.seek(RESUME_SECONDS);
+    // play event 先到（瀏覽器開始載），之後先因為斷網失敗
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    audio.fail(MEDIA_ERR_SRC_NOT_SUPPORTED);
+    return { audio, controller, detach };
+};
+
+describe('AudioController recovery after a failed load (offline)', () => {
+    it('should stop showing as playing when the source fails', async () => {
+        const { controller, detach } = await setupOfflineLoad();
+        expect(controller.getSnapshot().isPlaying).toBe(false);
+        expect(controller.hasPlayIntent()).toBe(false);
+        detach();
+    });
+
+    it('should reload the source and resume where it was when Play is pressed again', async () => {
+        const { audio, controller, detach } = await setupOfflineLoad();
+        audio.load.mockClear();
+
+        await controller.toggle();
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.play).toHaveBeenLastCalledWith();
+        expect(audio.paused).toBe(false);
+
+        audio.emitMetadata(1000);
+        expect(audio.currentTime).toBe(RESUME_SECONDS);
+        expect(controller.getSnapshot().currentTime).toBe(RESUME_SECONDS);
+        detach();
+    });
+
+    it('should reload the failed source when the network comes back', async () => {
+        const { audio, detach } = await setupOfflineLoad();
+        audio.load.mockClear();
+        audio.play.mockClear();
+
+        window.dispatchEvent(new Event('online'));
+        // 只係重新載入，等用戶自己撳 Play
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.play).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('should leave a healthy source alone when the network comes back', async () => {
+        const { audio, detach } = await setupPlaying();
+        window.dispatchEvent(new Event('online'));
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+});
