@@ -53,19 +53,20 @@
     display: inline-flex;
     align-items: center;
     gap: var(--space-1);
-    padding: 2px var(--space-2) 2px 6px;
+    padding: var(--new-badge-pad-block) var(--space-2) var(--new-badge-pad-block)
+        var(--new-badge-pad-start);
     border-radius: var(--radius-full);
     background: var(--color-accent);
     color: var(--color-on-accent);
     font-size: var(--font-size-2xs);
     font-weight: 700;
-    line-height: 16px;
+    line-height: var(--new-badge-line);
     box-shadow: var(--shadow-new-badge);
 }
 
 .newBadge::before {
-    width: 6px;
-    height: 6px;
+    width: var(--new-badge-dot);
+    height: var(--new-badge-dot);
     border-radius: var(--radius-full);
     background: currentColor;
     content: '';

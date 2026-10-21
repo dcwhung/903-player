@@ -77,6 +77,11 @@
     --unavailable-gap: 4px;
     /* 今日節目全部未上架：卡疊位嘅灰色 ring 闊度（細過主碟，留位畀節目表） */
     --today-empty-disc-size: min(150px, 40vw);
+    /* 主頁節目格「New」標籤：細細粒膠囊；左邊有粒圓點，所以左邊 padding 細過右邊（右邊用 --space-2） */
+    --new-badge-pad-block: 2px;
+    --new-badge-pad-start: 6px;
+    --new-badge-line: 16px;
+    --new-badge-dot: 6px;
 
     /* 今日節目卡疊（ShowCardStack）：每疊後一層向下移、縮細、變淡幾多（第一張後面嘅卡 scale 0.92） */
     --card-stack-offset: 12px;
