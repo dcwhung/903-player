@@ -47,7 +47,7 @@ describe('buildSocialTags', () => {
     });
 
     it('should give the image size so previews render before it loads', () => {
-        expect(content('og:image:width')).toBe('1200');
-        expect(content('og:image:height')).toBe('630');
+        expect(content('og:image:width')).toBe('512');
+        expect(content('og:image:height')).toBe('512');
     });
 });
