@@ -142,10 +142,3 @@
         transition: none;
     }
 }
-
-/* 好矮嘅畫面（同 Page.module.css 嘅斷點一樣）main 自己捲：畀返直向 pan */
-@media (max-height: 561px) {
-    .strip {
-        touch-action: pan-y pinch-zoom;
-    }
-}

@@ -8,7 +8,7 @@ const TOUCH_VIEWPORTS = [
     { width: 390, height: 844, insets: { top: 47, bottom: 34, left: 0, right: 0 } },
     { width: 375, height: 667, insets: { top: 20, bottom: 0, left: 0, right: 0 } },
 ];
-// 橫向手機：成頁捲斷點（Page.module.css max-height: 561px）以下，改由 main 自己捲
+// 橫向手機：矮螢幕斷點（tokens.css max-height: 561px）以下，照樣固定版面（唔會成頁捲）
 const LANDSCAPE = { width: 844, height: 390, insets: { top: 0, bottom: 21, left: 47, right: 47 } };
 
 const STEPS = 10;
@@ -395,7 +395,8 @@ const checkMiniSwipe = async (cdp, p, log, label) => {
     );
 };
 
-const waitPlaying = (p) => p.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
+const waitPlaying = (p) =>
+    p.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
 
 const checkHome = async (env, label) => {
     const { p, cdp, log } = env;
@@ -450,7 +451,7 @@ const checkToday = async (env, label) => {
         p,
         log,
         label,
-        p.getByRole('region', { name: '今日節目' }).getByRole('list'),
+        p.getByRole('region', { name: '節目表' }).getByRole('list'),
     );
     await checkCardSwipes(cdp, p, log, label);
     await checkCardDragNeverSeeks(cdp, p, log, label);
@@ -490,7 +491,7 @@ const checkReducedMotion = async (env, label) => {
     );
 };
 
-/** 橫向手機：main 自己捲（手指拖得落去），文件本身唔捲 */
+/** 橫向手機：都係固定版面，由 swipe 區（日子條 / 今日節目卡）直向拖，main 同文件都唔捲，播放掣原本已經喺畫面 */
 const checkLandscape = async (env, route, zone, label) => {
     const { p, cdp, log } = env;
     await p.goto(`${env.base}${route}`);
@@ -498,22 +499,36 @@ const checkLandscape = async (env, route, zone, label) => {
     await p.waitForTimeout(500);
     await checkRootLocked(p, log, label);
     const main = p.locator('main');
-    const extra = await main.evaluate((el) => el.scrollHeight - el.clientHeight);
-    // 由 swipe 區（日子條 / 今日節目卡）開始直向拖：佢哋喺 main 入面，矮畫面要畀返直向 pan
     const start = centreOf(await zone(p).boundingBox());
     await touchDrag(cdp, p, start, { dx: 0, dy: -Math.min(VERTICAL_DRAG_PX, start.y - 10) });
     const scrolled = await main.evaluate((el) => el.scrollTop);
     const doc = await docScroll(p);
     log(
-        extra > 0 && scrolled > 0 && isDocLocked(doc),
-        `${label}：main 自己捲（多出 ${extra}px，scrollTop ${scrolled}），文件唔捲 ${JSON.stringify(doc)}`,
+        scrolled === 0 && isDocLocked(doc),
+        `${label}：直向拖 main 唔捲（scrollTop ${scrolled}），文件唔捲 ${JSON.stringify(doc)}`,
     );
-    const toggle = p.getByRole('button', { name: /^(播放|暫停)$/ });
-    await toggle.evaluate((el) => el.scrollIntoView({ block: 'center' }));
-    const b = await toggle.boundingBox();
+    const b = await p.getByRole('button', { name: /^(播放|暫停)$/ }).boundingBox();
     log(
         b !== null && b.y >= 0 && b.y + b.height <= LANDSCAPE.height,
-        `${label}：捲 main 捲得到播放掣（y ${b?.y?.toFixed(0)}）`,
+        `${label}：播放掣喺畫面內（y ${b?.y?.toFixed(0)}）`,
+    );
+};
+
+/** 橫向手機主頁：節目格分頁，橫掃轉頁（指示點跟住轉），成頁唔捲 */
+const checkLandscapeHome = async (env, label) => {
+    const { p, cdp, log } = env;
+    await p.goto(env.base);
+    await p.waitForSelector('nav[aria-busy="false"]');
+    await p.waitForTimeout(500);
+    await checkRootLocked(p, log, label);
+    const tile = p.locator('nav button').first();
+    await touchDrag(cdp, p, centreOf(await tile.boundingBox()), { dx: -CARD_SWIPE_PX, dy: 0 });
+    await p.waitForTimeout(SETTLE_MS);
+    const group = await p.getByRole('group', { name: /^節目第 \d+ 頁/ }).getAttribute('aria-label');
+    const doc = await docScroll(p);
+    log(
+        group.startsWith('節目第 2 頁') && isDocLocked(doc),
+        `${label}：橫掃轉去下一頁（${group}），文件唔捲`,
     );
 };
 
@@ -543,5 +558,6 @@ export const runTouchChecks = async ({ browser, base, out, errors, log }) => {
     const card = cardTitle;
     await checkLandscape(env, '#/show/badgirl', strip, `${size} 觸控節目頁（橫向，由日子條拖）`);
     await checkLandscape(env, '#/today', card, `${size} 觸控今日節目頁（橫向，由卡拖）`);
+    await checkLandscapeHome(env, `${size} 觸控主頁（橫向）`);
     await ctx.close();
 };

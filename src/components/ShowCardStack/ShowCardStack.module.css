@@ -185,16 +185,6 @@
     text-align: center;
 }
 
-/*
- * 好矮嘅畫面（同 Page.module.css 嘅斷點一樣）main 自己捲：卡疊佔咗大半個畫面，
- * 要畀返直向 pan 捲 main，橫拖照樣由 pointer events 處理
- */
-@media (max-height: 561px) {
-    .stack {
-        touch-action: pan-y pinch-zoom;
-    }
-}
-
 @media (prefers-reduced-motion: reduce) {
     .stack[data-phase] .card,
     .stack[data-phase] .depth1 .title {
