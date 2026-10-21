@@ -1,4 +1,6 @@
+import { SHOWS, type ShowConfig } from '../config/shows';
 import type { EpisodeEntry, Recording, ShowId, UnavailableEpisode } from '../types/recording';
+import { weekdayOf } from '../utils/date';
 
 type Broadcast = Pick<Recording, 'date' | 'time'>;
 
@@ -28,16 +30,18 @@ export const pickInitialRecording = (
 ): Recording | undefined =>
     sortedRecordings.findLast((r) => r.date <= today) ?? sortedRecordings[0];
 
+/** 嗰日（香港星期幾）有排節目播嘅節目 */
+const showsAiringOn = (date: string): ShowConfig[] =>
+    SHOWS.filter((show) => show.airDays.includes(weekdayOf(date)));
+
+const hasShowsOn = (date: string): boolean => showsAiringOn(date).length > 0;
+
 /**
- * 今日有錄音（或者有未上架集數）就用今日，否則用今日之前最近一個有錄音嘅日子。
- * 今日全部未上架都用今日：清單照列出今日節目（全部灰），唔會跳去舊日子播
+ * 今日有排節目播就一定用今日（就算一個都未開始 / 未上架），唔會跳去舊日子；
+ * 今日冇節目播（例如星期日）先用今日之前最近一個有錄音嘅日子
  */
-export const pickTodayDate = (
-    recordings: Recording[],
-    today: string,
-    unavailable: UnavailableEpisode[] = [],
-): string | undefined => {
-    if (unavailable.some((u) => u.date === today)) {
+export const pickTodayDate = (recordings: Recording[], today: string): string | undefined => {
+    if (hasShowsOn(today)) {
         return today;
     }
     const dates = [...new Set(recordings.map((r) => r.date))].sort();
@@ -48,13 +52,9 @@ export const pickTodayDate = (
 export const showsOnDate = (recordings: Recording[], date: string): Recording[] =>
     recordings.filter((r) => r.date === date).sort(byBroadcastTime);
 
-/** 今日（香港時間）有錄音就用今日，否則用最近有錄音嗰日，按播出時間排；今日全部未上架就冇 */
-export const todayRecordings = (
-    recordings: Recording[],
-    today: string,
-    unavailable: UnavailableEpisode[] = [],
-): Recording[] => {
-    const date = pickTodayDate(recordings, today, unavailable);
+/** 今日節目頁用嘅日子嘅錄音，按播出時間排；今日有節目播但未上架就冇（唔會跳去舊日子） */
+export const todayRecordings = (recordings: Recording[], today: string): Recording[] => {
+    const date = pickTodayDate(recordings, today);
     return date ? showsOnDate(recordings, date) : [];
 };
 
@@ -115,3 +115,39 @@ export const newShowIds = (
     new Set(
         recordings.filter((r) => r.date === today && !watchedUrls.has(r.url)).map((r) => r.showId),
     );
+
+/** 嗰日成日嘅節目表：有錄音嘅播得；其他有排播嘅（未開始、未 probe、404）全部當未上架 */
+const scheduleOnDate = (recordings: Recording[], date: string): EpisodeEntry[] => {
+    const playable = showsOnDate(recordings, date);
+    const recorded = new Set(playable.map((r) => r.showId));
+    const notUp = showsAiringOn(date)
+        .filter((show) => !recorded.has(show.id))
+        .map((show): UnavailableEpisode => ({ showId: show.id, date, time: show.fileTime }));
+    return [...playable, ...notUp].sort(byBroadcastTime);
+};
+
+export interface TodayView {
+    /** 今日節目頁顯示嘅日子；冇就 undefined */
+    date: string | undefined;
+    /** 播得到嘅（卡疊、指示點、自動播放用） */
+    playable: Recording[];
+    /** 節目表：播得到嘅同未上架嘅一齊，按播出時間排 */
+    entries: EpisodeEntry[];
+}
+
+/** 今日節目頁：日子只計一次；今日有節目播就列成日節目表，否則用最近有錄音嗰日 */
+export const todayView = (
+    recordings: Recording[],
+    unavailable: UnavailableEpisode[],
+    today: string,
+): TodayView => {
+    const date = pickTodayDate(recordings, today);
+    if (!date) {
+        return { date, playable: [], entries: [] };
+    }
+    // 今日有節目播先會揀今日，所以 hasShowsOn(date) 即係「今日」嗰個分支
+    const entries = hasShowsOn(date)
+        ? scheduleOnDate(recordings, date)
+        : entriesOnDate(recordings, unavailable, date);
+    return { date, playable: showsOnDate(recordings, date), entries };
+};

@@ -168,7 +168,7 @@ describe('TodayPage', () => {
         expect(screen.getByRole('button', { name: /(?:播放|暫停) 公子會/ })).toBeInTheDocument();
     });
 
-    it('lists unavailable shows as disabled rows in broadcast order', async () => {
+    it('lists the rest of today’s schedule as disabled rows in broadcast order', async () => {
         renderWithProviders(<TodayPage />, {
             ...ROUTE,
             recordings: RECORDINGS,
@@ -177,9 +177,12 @@ describe('TodayPage', () => {
 
         const row = await screen.findByRole('button', { name: '口水多過浪花，15:10 · 未上架' });
         expect(row).toBeDisabled();
-        expect(screen.getByText('1 個未上架')).toBeInTheDocument();
+        expect(
+            screen.getByRole('button', { name: '聖艾粒LaLaLaLa，17:10 · 未上架' }),
+        ).toBeDisabled();
+        expect(screen.getByText('2 個未上架')).toBeInTheDocument();
         const list = screen.getByRole('region', { name: '節目表' });
-        expect(within(list).getAllByRole('button')).toHaveLength(TODAY.length + 1);
+        expect(within(list).getAllByRole('button')).toHaveLength(TODAY.length + 2);
         const dots = screen.getByRole('group', { name: /^今日第/ });
         expect(within(dots).getAllByRole('button')).toHaveLength(TODAY.length);
     });
@@ -191,7 +194,7 @@ describe('TodayPage', () => {
         ];
         beforeEach(() => vi.setSystemTime(new Date('2026-10-20T08:00:00Z')));
 
-        it('lists today greyed out with an empty player instead of an older day', async () => {
+        it('lists the whole of today greyed out with an empty player instead of an older day', async () => {
             renderWithProviders(<TodayPage />, {
                 ...ROUTE,
                 recordings: RECORDINGS,
@@ -200,8 +203,11 @@ describe('TodayPage', () => {
 
             expect(await screen.findByText('今日節目未上架')).toBeInTheDocument();
             expect(screen.getByText('上架之後會自動顯示')).toBeInTheDocument();
-            expect(screen.getByText('2 個未上架')).toBeInTheDocument();
+            expect(screen.getByText('5 個未上架')).toBeInTheDocument();
             expect(screen.getByRole('button', { name: '雲妮鍾情，07:08 · 未上架' })).toBeDisabled();
+            expect(
+                screen.getByRole('button', { name: '聖艾粒LaLaLaLa，17:10 · 未上架' }),
+            ).toBeDisabled();
             expect(
                 screen.queryByRole('group', { name: '今日節目，左右掃動轉節目' }),
             ).not.toBeInTheDocument();
@@ -218,9 +224,25 @@ describe('TodayPage', () => {
             await screen.findByText('今日節目未上架');
             expect(audio.src).toBe('');
         });
+
+        it('stays on today at 07:00 before any show has been probed', async () => {
+            vi.setSystemTime(new Date('2026-10-19T23:00:00Z')); // 香港 20/10（二）07:00
+            const { audio } = renderWithProviders(<TodayPage />, {
+                ...ROUTE,
+                recordings: TODAY,
+            });
+
+            expect(await screen.findByText('今日節目未上架')).toBeInTheDocument();
+            expect(screen.getByText('5 個未上架')).toBeInTheDocument();
+            expect(
+                screen.queryByRole('heading', { name: '在晴朗的一天出發' }),
+            ).not.toBeInTheDocument();
+            expect(audio.src).toBe('');
+        });
     });
 
-    it('shows an empty state when nothing has been recorded', async () => {
+    it('shows an empty state when no show airs today and nothing has been recorded', async () => {
+        vi.setSystemTime(new Date('2026-10-18T08:00:00Z'));
         renderWithProviders(<TodayPage />, ROUTE);
 
         expect(await screen.findByText('暫時未有錄音')).toBeInTheDocument();

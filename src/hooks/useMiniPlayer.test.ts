@@ -1,18 +1,16 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { createHookWrapper, recording, unavailableEpisode } from '../../tests/renderWithProviders';
+import { createHookWrapper, recording } from '../../tests/renderWithProviders';
 import { saveProgress } from '../services/progressStore';
 import { usePlayer } from '../player/usePlayer';
-import type { Recording, UnavailableEpisode } from '../types/recording';
+import type { Recording } from '../types/recording';
 import { useMiniPlayer } from './useMiniPlayer';
 
 const BADGIRL = recording('badgirl', '2026-10-19', '1000');
 const WANNI = recording('wanni', '2026-10-19', '1300');
 const RECORDINGS = [recording('gongzi', '2026-10-17'), BADGIRL, WANNI];
 
-const noProbe = async (): Promise<Recording[]> => [];
-
-const setup = (recordings: Recording[] = RECORDINGS, unavailable: UnavailableEpisode[] = []) => {
-    const { audio, wrapper } = createHookWrapper(recordings, noProbe, unavailable);
+const setup = (recordings: Recording[] = RECORDINGS) => {
+    const { audio, wrapper } = createHookWrapper(recordings);
     const hook = renderHook(() => ({ mini: useMiniPlayer(), player: usePlayer() }), { wrapper });
     return { audio, ...hook };
 };
@@ -29,9 +27,9 @@ describe('useMiniPlayer', () => {
     });
     afterEach(() => vi.useRealTimers());
 
-    it('hides instead of showing an older day when today only has unavailable shows', async () => {
+    it('hides instead of showing an older day on a weekday with nothing up yet', async () => {
         vi.setSystemTime(new Date('2026-10-20T08:00:00Z'));
-        const { result } = setup(RECORDINGS, [unavailableEpisode('wanni', '2026-10-20', '0708')]);
+        const { result } = setup();
 
         await waitFor(() => expect(result.current.player).toBeDefined());
         expect(result.current.mini).toBeNull();

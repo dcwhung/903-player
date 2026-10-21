@@ -15,16 +15,13 @@ import { ratio } from '../utils/ratio';
 
 const showName = (recording: Recording): string => findShow(recording.showId)?.name ?? '';
 
-/** 今日（冇就最近一日）節目入面揀中邊個：有載入就跟 player，否則跟用戶揀 */
+/** 今日（今日冇節目播先用最近一日）節目入面揀中邊個：有載入就跟 player，否則跟用戶揀 */
 const useTodaySelection = () => {
-    const { recordings, unavailable } = useRecordings();
+    const { recordings } = useRecordings();
     const player = usePlayer();
     const [chosen, setChosen] = useState(0);
     const today = hkToday();
-    const list = useMemo(
-        () => todayRecordings(recordings, today, unavailable),
-        [recordings, today, unavailable],
-    );
+    const list = useMemo(() => todayRecordings(recordings, today), [recordings, today]);
     const loadedIndex = list.findIndex((r) => r.url === player.recording?.url);
     const isLoaded = loadedIndex >= 0;
     const index = isLoaded ? loadedIndex : Math.min(chosen, list.length - 1);
@@ -53,7 +50,7 @@ const useShownTime = (url: string | undefined, isLoaded: boolean) => {
         : { position: saved?.position ?? 0, duration: saved?.duration ?? 0 };
 };
 
-/** 主頁 mini player：只播今日（冇就最近一日）嘅節目 */
+/** 主頁 mini player：只播今日（今日冇節目播先用最近一日）嘅節目 */
 export const useMiniPlayer = (): MiniPlayerProps | null => {
     const player = usePlayer();
     const navigate = useNavigate();

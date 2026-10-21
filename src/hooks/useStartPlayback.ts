@@ -10,7 +10,7 @@ import { hkToday } from '../utils/date';
  * 主頁喺 click handler 入面直接 call，令 iOS 容許自動播放。
  */
 export const useStartPlayback = () => {
-    const { status, recordings, unavailable } = useRecordings();
+    const { status, recordings } = useRecordings();
     const { load } = usePlayer();
     const ready = status === 'ready';
 
@@ -28,12 +28,12 @@ export const useStartPlayback = () => {
     );
 
     const startToday = useCallback(() => {
-        // 今日全部未上架就唔播（唔會跳去舊日子），同今日節目頁一致
-        const recording = todayRecordings(recordings, hkToday(), unavailable)[0];
+        // 今日有節目播但未上架就唔播（唔會跳去舊日子），同今日節目頁一致
+        const recording = todayRecordings(recordings, hkToday())[0];
         if (ready && recording) {
             void load(recording, { autoplay: true });
         }
-    }, [ready, recordings, unavailable, load]);
+    }, [ready, recordings, load]);
 
     return { ready, startShow, startToday };
 };

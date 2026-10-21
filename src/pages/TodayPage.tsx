@@ -26,7 +26,7 @@ export const TodayPage = () => {
                     <PageHeader title={t('today.title')} variant="title" onBack={goHome} />
                 </div>
                 <LoadState status={status} isEmpty={items.length === 0} isSearching={isSearching} />
-                {/* 今日全部未上架：冇卡疊、唔自動播，節目表照列出（全部灰） */}
+                {/* 今日有節目播但一個都未上架：冇卡疊、唔自動播，節目表照列出成日（全部灰） */}
                 {status === 'ready' && !current && items.length > 0 && (
                     <>
                         <TodayEmpty />
