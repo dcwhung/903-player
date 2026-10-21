@@ -1,9 +1,12 @@
 import { useMemo, useRef } from 'react';
 import { prefersReducedMotion } from '../../utils/motion';
 
-/** 寫碟面角度（直接寫 style，拖緊唔會每次郁都 re-render） */
+/**
+ * 寫碟面角度（直接寫 style，拖緊唔會每次郁都 re-render）；
+ * 減少動畫就清走手動角度（reset / revert 都唔留 rotate），碟面保持正
+ */
 const write = (el: HTMLElement | null, degrees: number) => {
-    if (el) el.style.transform = `rotate(${degrees}deg)`;
+    if (el) el.style.transform = prefersReducedMotion() ? '' : `rotate(${degrees}deg)`;
 };
 
 /**

@@ -59,4 +59,14 @@ describe('useDiscTurn', () => {
         motion.turn(10);
         expect(face.style.transform).toBe('rotate(10deg)');
     });
+
+    it('leaves no manual angle on the face when reset or cancelled under reduced motion', () => {
+        stubReducedMotion(true);
+        const { motion, face } = renderTurn();
+
+        motion.reset();
+        expect(face.style.transform).toBe('');
+        motion.revert();
+        expect(face.style.transform).toBe('');
+    });
 });
