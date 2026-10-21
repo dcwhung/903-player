@@ -15,7 +15,7 @@ interface AppProps {
 }
 
 export const App = ({ playerController }: AppProps) => {
-    // 第一次 commit 完先收 index.html 嘅啟動畫面，唔會見到中間嘅空白
+    // 第一次 commit 完先收 index.html 嘅啟動畫面（最少顯示夠時間），唔會見到中間嘅空白
     useEffect(() => hideSplash(document), []);
     return (
         <RecordingsProvider>

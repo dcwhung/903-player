@@ -68,10 +68,29 @@ const seedProbeStore = ({ key, found }) => {
  * setTimeout / setInterval / Date.now 跟真實時間前進，播放進度、定時存進度、更新檢查照行），
  * audio host 用上面嘅似真版本。extraAudioUrls：額外當係存在嘅檔（例如測 probe 搵到新一集）。
  */
+/** 啟動畫面最少顯示 2 秒，期間會蓋住成頁：用坐標嘅手勢會撳中佢，所以要等佢移走 */
+const SPLASH_GONE_TIMEOUT_MS = 10_000;
+
+const waitForSplashGone = (page) =>
+    page.locator('#splash').waitFor({ state: 'detached', timeout: SPLASH_GONE_TIMEOUT_MS });
+
+/** 每次 goto / reload 完（真係載過成頁）都等啟動畫面淡出先交返；淨係換 hash 嘅 goto 會即刻過 */
+const waitForSplashOnLoad = (page) => {
+    for (const method of ['goto', 'reload']) {
+        const navigate = page[method].bind(page);
+        page[method] = async (...args) => {
+            const response = await navigate(...args);
+            await waitForSplashGone(page);
+            return response;
+        };
+    }
+};
+
 export const newE2EContext = async (browser, options = {}, { extraAudioUrls = [] } = {}) => {
     const ctx = await browser.newContext(options);
     await ctx.clock.install({ time: new Date(E2E_NOW) });
     await ctx.route(`${AUDIO_HOST}/**`, audioResponder(extraAudioUrls));
     await ctx.addInitScript(seedProbeStore, { key: PROBE_STORAGE_KEY, found: SAMPLE_RECORDINGS });
+    ctx.on('page', waitForSplashOnLoad);
     return ctx;
 };
