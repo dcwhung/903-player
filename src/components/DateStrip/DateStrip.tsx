@@ -20,7 +20,6 @@ export const DateStrip = ({ title, connecting = false, ...options }: DateStripPr
     return (
         <div className={styles.group}>
             <span className={styles.label}>
-                {' '}
                 {t(connecting ? 'episodes.connecting' : 'episodes.nowPlayingLabel')}
             </span>
             <div className={styles.strip} {...zone}>

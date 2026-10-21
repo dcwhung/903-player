@@ -89,7 +89,8 @@ describe('DateStrip', () => {
         render(<Harness />);
 
         const label = screen.getByText('現正播放');
-        expect(label).toHaveTextContent(/^現正播放$/);
+        // 唔用 toHaveTextContent（會 trim）：前後多咗空格會令標籤唔置中
+        expect(label.textContent).toBe('現正播放');
         expect(zone()).not.toContainElement(label);
         expect(label.compareDocumentPosition(zone())).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
