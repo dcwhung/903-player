@@ -261,10 +261,9 @@ body {
 
 /* ---------- 主頁 ---------- */
 /*
- * 預設（細視窗、桌面、iPad）：4 欄，橫額佔成行、兩行高（啱啱 32:9），下面 2 行 × 4 格；
- * 格嘅闊度由格區（扣 mini player 同版本號）嘅闊同高邊個細決定。
- * 手機打橫（高 ≤ 561px）：5 欄 × 2 行，第一行橫額佔兩格 + 3 個節目，第二行 4 個節目 + 今日節目；
- * 格拉闊拉高填滿格區（唔再鎖 16:9，節目圖 cover 裁走少少邊）
+ * 格區填滿左右同上下（扣 mini player 同版本號），格唔再鎖 16:9，節目圖 / 橫額 cover 裁走少少邊。
+ * 預設（細視窗、桌面、iPad）：4 欄；第一行橫額成行（高度 = 兩行格），下面 2 行 × 4 格。
+ * 手機打橫（高 ≤ 561px）：5 欄 × 2 行，第一行橫額佔兩格 + 3 個節目，第二行 4 個節目 + 今日節目
  */
 .home-page {
     --home-gap: var(--sp-3);
@@ -282,11 +281,10 @@ body {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-2);
 }
 .home-grid {
-    --cols: 4;
-    --rows: 4;
-    --tile-w: min((100cqw - (var(--cols) - 1) * var(--home-gap)) / var(--cols), (100cqh - var(--fs-xs) * 1.5 - var(--sp-2) - var(--sp-2) - (var(--rows) - 1) * var(--home-gap)) / var(--rows) * 16 / 9);
+    flex: 1; min-height: 0; width: 100%;
     display: grid;
-    grid-template-columns: repeat(var(--cols), var(--tile-w));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: 2fr 1fr 1fr;
     gap: var(--home-gap);
 }
 .banner, .tile {
@@ -294,18 +292,25 @@ body {
     box-shadow: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
 }
 /* 4 欄闊、兩行高 = 32:9；空 h1 冇內容高度，要靠 aspect-ratio 撐起兩行 */
-.banner { grid-column: span 4; grid-row: span 2; aspect-ratio: 32 / 9; background: var(--img) 50% 32% / cover no-repeat; margin: 0; }
-.tile { aspect-ratio: 16 / 9; border: 1px solid #42658a; padding: 0; background: #42658a var(--img) center / cover no-repeat; }
+/*
+ * 橫額成行時比原圖（1911 × 823）扁好多：cover 會切走「903」頂同「音樂・節目・一click 即聽」。
+ * 改為原圖 contain 完整顯示，底下鋪一層放大模糊嘅同一張圖補滿兩邊（底色用原圖邊緣天藍 #72bbea）
+ */
+.banner { grid-column: span 4; margin: 0; background: #72bbea; }
+.banner::before, .banner::after { content: ''; position: absolute; }
+.banner::before { inset: -24px; background: var(--img) center / cover no-repeat; filter: blur(18px); opacity: 0.85; }
+.banner::after { inset: 0; background: var(--img) center / contain no-repeat; }
+.tile { border: 1px solid #42658a; padding: 0; background: #42658a var(--img) center / cover no-repeat; }
 .tile.today { border: 0; box-shadow: 0 6px 0 #1f7fd0, 0 10px 18px rgb(20 40 65 / 30%); }
 .tile.today span { position: absolute; top: 59%; left: 52%; transform: translate(-50%, -50%); white-space: nowrap; font-size: var(--fs-lg); font-weight: 700; color: #2f4560; }
 @container screen (max-height: 561px) {
     .home-grid {
-        width: 100%; height: 100%; min-height: 0; flex: 1;
         grid-template-columns: repeat(5, minmax(0, 1fr));
         grid-template-rows: repeat(2, minmax(0, 1fr));
     }
-    .home-grid .banner { grid-column: span 2; grid-row: auto; aspect-ratio: auto; background-position: 50% 40%; }
-    .home-grid .tile { aspect-ratio: auto; }
+    .home-grid .banner { grid-column: span 2; }
+    .home-grid .banner::before { display: none; }
+    .home-grid .banner::after { background-size: cover; background-position: 50% 40%; }
 }
 .version { margin: 0; line-height: 1.5; font-size: var(--fs-xs); color: #e6eef7; }
 .mini {
@@ -380,7 +385,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                 <thead><tr><th>畫面</th><th>節目頁 / 今日節目頁欄</th><th>字同掣</th><th>主頁</th></tr></thead>
                 <tbody>
                     <tr><td>手機打橫（高 ≤ 561px）</td><td>46% / 54%</td><td>× 1</td><td>5 欄 × 2 行，填滿</td></tr>
-                    <tr><td>細視窗（闊 &lt; 1024px，高 &gt; 561px）</td><td>其餘 / max(30%, 300px × 倍數)</td><td>× 1</td><td>橫額成行 + 4 欄 × 2 行</td></tr>
+                    <tr><td>細視窗（闊 &lt; 1024px，高 &gt; 561px）</td><td>其餘 / max(30%, 300px × 倍數)</td><td>× 1</td><td>橫額成行 + 4 欄 × 2 行，填滿左右</td></tr>
                     <tr><td>桌面（闊 ≥ 1024px）</td><td>同上</td><td>× 1.3</td><td>同上</td></tr>
                     <tr><td>iPad 打橫（闊 ≥ 1024px、高 ≥ 800px）</td><td>同上</td><td>× 1.5</td><td>同上</td></tr>
                 </tbody>
@@ -391,7 +396,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             <div class="tbl"><table>
                 <thead><tr><th>功能</th><th>橫版位置</th></tr></thead>
                 <tbody>
-                    <tr><td>主頁：7 個節目 + 今日節目</td><td>橫額成行，下面 2 行 × 4；手機打橫 5 欄 × 2 行（橫額佔兩格）</td></tr>
+                    <tr><td>主頁：7 個節目 + 今日節目</td><td>橫額成行，下面 2 行 × 4；手機打橫 5 欄 × 2 行（橫額佔兩格）；格區填滿畫面</td></tr>
                     <tr><td>主頁 mini player（掃動轉節目、指示點、播放、撳入節目頁、進度）</td><td>浮喺底中間，最闊 520px × 倍數</td></tr>
                     <tr><td>返回主頁</td><td>左欄頁頭 ←</td></tr>
                     <tr><td>弧形進度拖動、拖碟、播放 / 暫停、由頭播放</td><td>左欄唱片</td></tr>
@@ -411,7 +416,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                     <tr><td><code>src/pages/Page.module.css</code></td><td>landscape media query：<code>.fixed</code> 改 grid（右欄 max(30%, 300px × 倍數)；高 ≤ 561px 46 / 54），加 <code>.playerColumn</code> / <code>.listColumn</code>；橫版唔再行 ≤ 561px 成頁捲</td></tr>
                     <tr><td><code>src/pages/ShowPage.tsx</code>、<code>TodayPage.tsx</code></td><td>兩個 column wrapper 包住「頁頭 + 播放器」同清單（直版用 <code>display: contents</code>，行為不變）</td></tr>
                     <tr><td><code>src/components/DateStrip/</code></td><td>橫版一律隱藏</td></tr>
-                    <tr><td><code>src/pages/HomePage.module.css</code>、<code>HomeBanner</code>、<code>MiniPlayer</code></td><td>4 欄格、橫額 <code>span 4 / 2 行</code>；高 ≤ 561px 改 5 欄 × 2 行填滿、橫額 <code>span 2</code>；mini player 限闊置中</td></tr>
+                    <tr><td><code>src/pages/HomePage.module.css</code>、<code>HomeBanner</code>、<code>MiniPlayer</code></td><td>4 欄格（rows 2fr / 1fr / 1fr 填滿）、橫額成行；高 ≤ 561px 改 5 欄 × 2 行填滿、橫額 <code>span 2</code>；mini player 限闊置中</td></tr>
                     <tr><td>icon（<code>icons.tsx</code> 嘅 size prop）</td><td>改用 CSS 控制大小，跟 <code>--ui-scale</code></td></tr>
                     <tr><td><code>shortHeightBreakpoint.node.test.ts</code>、<code>e2e/run.mjs</code></td><td>同步斷點；e2e 加 844×390、1180×820 橫向 case</td></tr>
                 </tbody>
