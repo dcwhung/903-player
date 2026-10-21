@@ -162,6 +162,20 @@ body {
 .today-page .col-left {
     --disc: clamp(140px, min(72cqw, (100cqh - var(--touch) - calc(24px * var(--s)) - 2 * var(--card-offset) - calc(48px * var(--s)) - 2 * var(--fixed-gap)) * 300 / 332), var(--disc-max));
 }
+/*
+ * 手機打橫嘅今日節目頁：指示點搬上頁頭右邊、卡疊只露一層，慳返嘅高度全部畀唱片
+ * （174px → 約 220px）
+ */
+.head-dots { display: none; margin-left: auto; }
+@container screen (max-height: 561px) {
+    .today-page .col-left {
+        --disc: clamp(140px, min(80cqw, (100cqh - var(--touch) - var(--card-offset) - calc(48px * var(--s)) - var(--fixed-gap)) * 300 / 332), var(--disc-max));
+    }
+    .today-page .head-dots { display: flex; }
+    .today-page .stack-area > .dots, .today-page .ghost.g2 { display: none; }
+    .today-page .stack { padding-bottom: var(--card-offset); }
+    .today-page .ghost { inset: 0 0 var(--card-offset); }
+}
 .gauge {
     position: relative;
     width: var(--disc);
@@ -397,7 +411,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                     <tr><td>弧形進度拖動、拖碟、播放 / 暫停、由頭播放</td><td>左欄唱片</td></tr>
                     <tr><td>日子條（掃動轉集、聽過剔、連線中…）</td><td>橫版唔出（直版照舊）；用右欄集數清單轉集，聽過剔同進度喺清單睇</td></tr>
                     <tr><td>集數清單 / 今日節目清單</td><td>右欄，自己捲</td></tr>
-                    <tr><td>卡疊左右掃、指示點</td><td>左欄（今日節目頁）</td></tr>
+                    <tr><td>卡疊左右掃、指示點</td><td>左欄（今日節目頁）；手機打橫指示點搬上頁頭右邊、卡疊只露一層，碟由 174px 放大</td></tr>
                     <tr><td>節目色調、鎖屏 / 耳機控制、續播、版本號</td><td>不變</td></tr>
                 </tbody>
             </table></div>
@@ -535,7 +549,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             </div>
         </div>`;
     };
-    const headHtml = (title) => `<div class="page-head"><button type="button" class="back" data-act="home" aria-label="返回主頁">${ICON.back}</button><h1>${esc(title)}</h1></div>`;
+    const headHtml = (title, extra = '') => `<div class="page-head"><button type="button" class="back" data-act="home" aria-label="返回主頁">${ICON.back}</button><h1>${esc(title)}</h1>${extra}</div>`;
 
     const statusOf = (ep, current) => {
         if (current) return { text: `播放中 · ${fmt(ep.ratio * EPISODE_SECONDS)} / ${fmt(EPISODE_SECONDS)}`, done: false };
@@ -580,7 +594,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         const left = TODAY_SHOWS.length - 1 - state.todayIndex;
         const ghosts = (left >= 1 ? '<span class="ghost g1"></span>' : '') + (left >= 2 ? '<span class="ghost g2"></span>' : '');
         return `<div class="col-left">
-                ${headHtml('今日節目')}
+                ${headHtml('今日節目', `<div class="dots head-dots">${dotsHtml()}</div>`)}
                 <div class="stack-area">
                     <div class="stack" data-stack role="group" aria-roledescription="節目卡疊" aria-label="今日節目，左右掃動轉節目" tabindex="0">
                         ${ghosts}
