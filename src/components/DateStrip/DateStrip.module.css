@@ -30,12 +30,12 @@
     height: var(--date-strip-height);
     overflow: hidden;
     border-radius: var(--radius-cell);
-    /* 兩邊淡出，似日子由畫面外滑入（冇底色，用 mask 唔使知道背景色） */
+    /* 兩邊淡出，似日子由畫面外滑入（冇底色，用 mask 唔使知道背景色；mask 只睇 alpha，black = 全顯示） */
     mask-image: linear-gradient(
         90deg,
         transparent,
-        #000 var(--date-strip-fade),
-        #000 calc(100% - var(--date-strip-fade)),
+        black var(--date-strip-fade),
+        black calc(100% - var(--date-strip-fade)),
         transparent
     );
     /* 唔識 pinch-zoom 嘅舊瀏覽器留喺 none；識嘅就照樣擋單指 pan，但雙指放大得（無障礙） */

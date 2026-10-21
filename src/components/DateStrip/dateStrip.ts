@@ -44,7 +44,11 @@ const RUBBER_BAND = 0.3;
 const FULL_TURN_DEG = 360;
 const MIN_UPRIGHT_TURN_DEG = 180;
 
-/** 每日嘅集數：同一日有兩集就留最新嗰集（集數最新喺頂，第一個就係） */
+/**
+ * 每日嘅集數：同一日有兩集就留最新嗰集（集數最新喺頂，第一個就係）。
+ * 每個節目每日得一個固定開咪時間（shows.ts fileTime），正常唔會有兩集；
+ * 真係有嘅話另一集只可以喺集數清單撳
+ */
 const episodeByDate = (episodes: readonly Pick<Recording, 'url' | 'date'>[]) => {
     const byDate = new Map<string, string>();
     episodes.forEach((r) => {
