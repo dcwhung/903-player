@@ -40,6 +40,11 @@
     animation-play-state: running;
 }
 
+/* 未知時長：拎走 animation，碟即刻返正（之後再掛返由 0° 開始） */
+.large .face.upright {
+    animation: none;
+}
+
 @keyframes disc-spin {
     from {
         rotate: 0deg;

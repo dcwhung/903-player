@@ -18,17 +18,17 @@ interface PlayerGaugeProps {
 
 const RESTART_ICON_SIZE = 22;
 
-/** 未知時長（未載到 metadata）顯示佔位，唔顯示 0:00 */
-const formatTotal = (duration: number): string =>
-    duration > 0 ? formatDuration(duration) : t('player.unknownDuration');
+/** 未知時長（未載到 metadata，例如斷網）時間都唔可信：顯示佔位，唔顯示 0:00 / 續播位置 */
+const formatClock = (seconds: number, known: boolean): string =>
+    known ? formatDuration(seconds) : t('player.unknownDuration');
 
 /** 唱片 + 弧形進度 + 時間 + 由頭播放：節目頁播放器同今日節目卡共用 */
 export const PlayerGauge = ({ art, artRef, held = false }: PlayerGaugeProps) => {
-    const { player, shownTime, arc, disc } = useGaugeGestures(held);
+    const { player, known, shownTime, arc, disc } = useGaugeGestures(held);
     // 讀屏同畫面一樣：未知時長讀佔位，唔讀 0:00
-    const total = formatTotal(player.duration);
+    const total = formatClock(player.duration, known);
     const formatValueText = (seconds: number) =>
-        t('player.progressText', { current: formatDuration(seconds), total });
+        t('player.progressText', { current: formatClock(seconds, known), total });
 
     return (
         <div className={styles.gauge}>
@@ -44,7 +44,9 @@ export const PlayerGauge = ({ art, artRef, held = false }: PlayerGaugeProps) => 
             <div className={styles.discArea}>
                 <Disc art={art} artRef={artRef} {...disc} />
             </div>
-            <span className={`${styles.time} ${styles.elapsed}`}>{formatDuration(shownTime)}</span>
+            <span className={`${styles.time} ${styles.elapsed}`}>
+                {formatClock(shownTime, known)}
+            </span>
             <span className={`${styles.time} ${styles.total}`}>{total}</span>
             <button
                 type="button"

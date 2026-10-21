@@ -1,4 +1,4 @@
-import { formatBroadcastTime, formatDuration } from './time';
+import { formatBroadcastTime, formatDuration, hasKnownDuration } from './time';
 
 describe('formatDuration', () => {
     it.each([
@@ -22,5 +22,16 @@ describe('formatBroadcastTime', () => {
     it('formats HHMM as HH:MM', () => {
         expect(formatBroadcastTime('0708')).toBe('07:08');
         expect(formatBroadcastTime('2308')).toBe('23:08');
+    });
+});
+
+describe('hasKnownDuration', () => {
+    it('treats a missing duration as unknown', () => {
+        expect(hasKnownDuration(0)).toBe(false);
+    });
+
+    it('treats a real or streaming duration as known', () => {
+        expect(hasKnownDuration(6836)).toBe(true);
+        expect(hasKnownDuration(Infinity)).toBe(true);
     });
 });
