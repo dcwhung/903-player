@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { buildSocialTags, resolveSiteUrl } from './scripts/socialMeta.ts';
 import { LAUNCH_THEME_COLOR } from './src/config/launchTheme.ts';
 
 // GitHub Pages serve 喺 /903-player/；Vercel build 時會注入 VERCEL=1，serve 喺 root
@@ -22,6 +23,15 @@ const injectAppVersion = (): Plugin => ({
     transformIndexHtml: (html) => html.replaceAll(APP_VERSION_PLACEHOLDER, APP_VERSION),
 });
 
+// 分享預覽嘅 og:url / og:image：要部署網域先寫到，本機 build 就唔加
+const injectSocialTags = (): Plugin => ({
+    name: 'inject-social-tags',
+    transformIndexHtml: () => {
+        const siteUrl = resolveSiteUrl(process.env, BASE_PATH);
+        return siteUrl ? buildSocialTags(siteUrl) : [];
+    },
+});
+
 export default defineConfig({
     base: BASE_PATH,
     // Vitest 共用呢份 config，所以測試都睇到同一個 define
@@ -29,6 +39,7 @@ export default defineConfig({
     plugins: [
         react(),
         injectAppVersion(),
+        injectSocialTags(),
         VitePWA({
             // prompt：新 SW 裝好後喺 waiting 等，由 src/pwa/updateManager 揀播放停咗先換，
             // 避免 autoUpdate 喺收聽途中自動 reload
