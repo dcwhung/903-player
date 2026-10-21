@@ -66,6 +66,16 @@ export class FakeAudio extends EventTarget {
         this.dispatchEvent(new Event('pause'));
     });
 
+    /** 有足夠數據、真正開始出聲（真瀏覽器喺 play event 之後，數據到先發） */
+    emitPlaying(): void {
+        this.dispatchEvent(new Event('playing'));
+    }
+
+    /** 播緊但數據唔夠（緩衝 / seek 去未載到嘅位置） */
+    emitWaiting(): void {
+        this.dispatchEvent(new Event('waiting'));
+    }
+
     emitMetadata(duration: number): void {
         this.duration = duration;
         this.dispatchEvent(new Event('loadedmetadata'));

@@ -58,7 +58,7 @@ const useDiscGesture = (
 
 /**
  * 唱片格嘅手勢：弧形 seek、捽碟 seek，兩者共用預覽（時間 / 弧形一齊郁）同碟面角度；
- * held = 外面（日子條）捉住碟。有人捉住碟（包括手指撳住碟面）或者暫停就唔自轉，停喺原位
+ * held = 外面（日子條）捉住碟。有人捉住碟（包括手指撳住碟面）、暫停或者未出聲（載緊 / 緩衝緊）就唔自轉，停喺原位
  */
 export const useGaugeGestures = (held: boolean) => {
     const player = usePlayer();
@@ -76,7 +76,7 @@ export const useGaugeGestures = (held: boolean) => {
         },
         disc: {
             faceRef: motion.faceRef,
-            spinning: player.isPlaying && !preview && !held && !disc.held,
+            spinning: player.isAudible && !preview && !held && !disc.held,
             scrub: disc.scrub,
         },
     };

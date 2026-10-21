@@ -15,6 +15,7 @@ import type { LoadOptions, PlayerState } from './playerContext';
 const INITIAL_STATE: PlayerState = {
     recording: null,
     isPlaying: false,
+    isAudible: false,
     currentTime: 0,
     duration: 0,
     watchedRevision: 0,
@@ -69,6 +70,8 @@ export class AudioController {
             loadedmetadata: this.onLoadedMetadata,
             timeupdate: this.onTimeUpdate,
             play: this.onPlay,
+            playing: this.onAudible,
+            waiting: this.onSilent,
             pause: this.onStopped,
             ended: this.onStopped,
             error: this.onError,
@@ -258,14 +261,24 @@ export class AudioController {
         this.update({ isPlaying: true });
     };
 
+    /** 數據到咗、真正開始出聲 */
+    private onAudible = (): void => this.update({ isAudible: true });
+
+    /** 緩衝緊：仲係「播緊」（掣維持暫停），但冇聲 */
+    private onSilent = (): void => this.update({ isAudible: false });
+
     /** 來源出錯：等緊嘅 play 冇可能成功 */
-    private onError = (): void => this.setPlayIntent(false);
+    private onError = (): void => {
+        this.setPlayIntent(false);
+        this.onSilent();
+    };
 
     /** 換 src 會 queue emptied，嗰陣用戶啱啱撳嘅 Play 仲等緊，唔好清走 */
     private onEmptied = (): void => {
         if (!this.playPending) {
             this.setPlayIntent(false);
         }
+        this.onSilent();
     };
 
     /** 唔改 state object（React 唔使 re-render），但要通知 PWA 更新重新判斷 */
@@ -280,7 +293,7 @@ export class AudioController {
     /** pause / ended（包括拔耳筒、來電等系統暫停）：用戶冇再想播 */
     private onStopped = (): void => {
         this.playIntent = false;
-        this.update({ isPlaying: false });
+        this.update({ isPlaying: false, isAudible: false });
         this.persist();
     };
 
