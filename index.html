@@ -40,6 +40,8 @@
             :root {
                 /* 底圖頂部嘅藍：圖未載完都唔會見到黑屏 */
                 --splash-bg: #5bade5;
+                /* 底圖最底嘅雲色：畫面以外露出嘅 canvas（例如 iPhone home indicator 嗰截）都要同色 */
+                --splash-canvas: #a6d4f0;
                 /* 黃色取自 logo 兩邊嘅閃光 */
                 --splash-yellow: #f8e076;
                 --splash-yellow-light: #fcefb4;
@@ -85,6 +87,13 @@
                 }
             }
 
+            /*
+                fixed 層蓋唔到 viewport 以外嘅位（iOS 底部 home indicator 嗰截會露出 html 底色），
+                啟動畫面仲喺度時將 html 底色改做雲色；specificity 高過 global.css 嘅 html，移走 #splash 就自動還原
+            */
+            html:has(#splash) {
+                background: var(--splash-canvas);
+            }
             .splash {
                 position: fixed;
                 inset: 0;
