@@ -2,6 +2,7 @@ import type { Recording, ShowId, UnavailableEpisode } from '../types/recording';
 import {
     entriesNewestFirst,
     entriesOnDate,
+    entryKey,
     episodesNewestFirst,
     isAvailable,
     newShowIds,
@@ -231,6 +232,13 @@ describe('isAvailable', () => {
     it('tells recordings apart from unavailable episodes', () => {
         expect(isAvailable(rec('gongzi', '2026-10-17'))).toBe(true);
         expect(isAvailable(missing('gongzi', '2026-10-17'))).toBe(false);
+    });
+});
+
+describe('entryKey', () => {
+    it('uses the url for a recording and the show:date key for an unavailable episode', () => {
+        expect(entryKey(rec('gongzi', '2026-10-17'))).toBe(rec('gongzi', '2026-10-17').url);
+        expect(entryKey(missing('gongzi', '2026-10-24'))).toBe('gongzi:2026-10-24');
     });
 });
 

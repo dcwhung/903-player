@@ -1,4 +1,5 @@
 import { SHOWS, type ShowConfig } from '../config/shows';
+import { showDateKey } from '../services/probeStore';
 import type { EpisodeEntry, Recording, ShowId, UnavailableEpisode } from '../types/recording';
 import { weekdayOf } from '../utils/date';
 
@@ -7,16 +8,14 @@ type Broadcast = Pick<Recording, 'date' | 'time'>;
 const byBroadcastTime = (a: Broadcast, b: Broadcast): number =>
     `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`);
 
-const episodeKey = (episode: Pick<Recording, 'showId' | 'date'>): string =>
-    `${episode.showId}/${episode.date}`;
-
 /** 未上架集數入面，仲未搵到錄音嘅（probe 搵到之後即刻唔再當未上架） */
 const stillUnavailable = (
     unavailable: UnavailableEpisode[],
     recordings: Recording[],
 ): UnavailableEpisode[] => {
-    const found = new Set(recordings.map(episodeKey));
-    return unavailable.filter((u) => !found.has(episodeKey(u)));
+    // 同 probe misses 用同一個 key 格式（showId:date），全 app 只得一種
+    const found = new Set(recordings.map((r) => showDateKey(r.showId, r.date)));
+    return unavailable.filter((u) => !found.has(showDateKey(u.showId, u.date)));
 };
 
 /** 某節目嘅錄音，由舊到新 */
@@ -82,6 +81,10 @@ export const episodesNewestFirst = (recordings: Recording[], showId: ShowId): Re
 
 /** 清單一行播唔播得：有網址先係錄音 */
 export const isAvailable = (entry: EpisodeEntry): entry is Recording => 'url' in entry;
+
+/** 清單一行嘅 key：錄音用網址；未上架未有網址，用 showId:date */
+export const entryKey = (entry: EpisodeEntry): string =>
+    isAvailable(entry) ? entry.url : showDateKey(entry.showId, entry.date);
 
 /** 節目頁集數清單：錄音同未上架集數一齊，最新喺頂 */
 export const entriesNewestFirst = (

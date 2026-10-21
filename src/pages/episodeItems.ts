@@ -1,7 +1,6 @@
 import type { EpisodeItem } from '../components/EpisodeList/EpisodeList';
 import { episodeStatus, unavailableStatus } from '../components/EpisodeList/episodeStatus';
-import { isAvailable } from '../selectors/recordings';
-import { showDateKey } from '../services/probeStore';
+import { entryKey, isAvailable } from '../selectors/recordings';
 import type { Progress } from '../services/progressStore';
 import type { EpisodeEntry, UnavailableEpisode } from '../types/recording';
 import { formatDayMonth, formatWeekday } from '../utils/date';
@@ -13,7 +12,7 @@ interface LiveTime {
 
 /** 未上架嗰行：撳唔到，冇進度 */
 const toUnavailableItem = (episode: UnavailableEpisode): EpisodeItem => ({
-    key: showDateKey(episode.showId, episode.date),
+    key: entryKey(episode),
     dayMonth: formatDayMonth(episode.date),
     weekday: formatWeekday(episode.date),
     current: false,
@@ -33,7 +32,7 @@ export const toEpisodeItems = (
         if (!isAvailable(r)) return toUnavailableItem(r);
         const isCurrent = r.url === currentUrl;
         return {
-            key: r.url,
+            key: entryKey(r),
             dayMonth: formatDayMonth(r.date),
             weekday: formatWeekday(r.date),
             current: isCurrent,
