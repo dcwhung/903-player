@@ -40,10 +40,7 @@ export const ShowPage = () => {
                                     currentDay={strip.current}
                                     onPick={actions.selectEpisode}
                                 />
-                                <EpisodeList
-                                    items={episodeItems}
-                                    onSelect={actions.selectEpisode}
-                                />
+                                <EpisodeList items={episodeItems} onSelect={actions.pressEpisode} />
                             </>
                         )}
                     </>

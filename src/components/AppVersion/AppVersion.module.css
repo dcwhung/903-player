@@ -1,10 +1,12 @@
+/* 版本號小標籤：疊喺主頁橫額右下角，半透明深色底，喺淺色插畫上面都睇得清 */
 .version {
-    /* 推去頁底：內容短都貼住 page 底部 padding（嗰度已經留位畀 mini player）；冇 <p> 預設下 margin */
-    margin: auto 0 0;
-    padding: 0 var(--space-4);
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
-    text-align: center;
+    margin: 0;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--version-badge-bg);
+    color: var(--version-badge-text);
+    font-size: var(--font-size-2xs);
+    line-height: 1.6;
 }
 
 /* 視覺上隱藏，screen reader 照讀 */

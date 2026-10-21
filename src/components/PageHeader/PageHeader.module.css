@@ -26,7 +26,10 @@
     color: var(--color-text-secondary);
 }
 
-/* 節目頁：節目名做標題，用返以前唱片下面嗰個大字樣式；一行放唔落就省略號 */
+/*
+ * 節目頁：節目名做標題，用返以前唱片下面嗰個大字樣式。
+ * 一行放唔落由 useFitText 按格闊縮細字體（完整顯示）；縮到最細都放唔落先省略號
+ */
 .showTitle {
     overflow: hidden;
     font-size: var(--font-size-xl);

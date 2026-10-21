@@ -7,7 +7,7 @@ interface AppVersionProps {
 }
 
 /**
- * 頁底版本號。<p> 係 generic role，aria-label 唔保證會讀，
+ * 版本號（主頁橫額右下角）。<p> 係 generic role，aria-label 唔保證會讀，
  * 所以畫面字收埋，另外俾 screen reader 一段讀得順嘅「版本 x.y.z」。
  */
 export const AppVersion = ({ version }: AppVersionProps) => (

@@ -3,14 +3,20 @@
 import { e2eShortHeightPx, maxHeightBreakpoints, readCss } from '../../tests/cssRule';
 
 /*
- * 好矮畫面（橫向手機、矮視窗、200% 放大）改為 main 自己捲嘅斷點，幾個地方各自寫死：
- * Page.module.css（成頁捲）、HomePage.module.css（主頁背景跟 main 捲）、
- * ShowCardStack / DateStrip（touch-action 畀返 pan-y）、e2e/run.mjs（SHORT_HEIGHT_PX）。
- * @media 條件用唔到 custom property，所以唔抽 token，靠呢個測試鎖住全部一樣。
+ * 好矮畫面（橫向手機、矮視窗、200% 放大）嘅斷點：tokens.css 喺度收細唱片、少預留一行集數，
+ * e2e/run.mjs（SHORT_HEIGHT_PX）跟住放寬清單行數 / 唱片下限。
+ * 任何高度都係固定版面，所以其他 CSS 唔可以再有呢個斷點（例如以前嘅成頁捲、畀返 pan-y）。
+ * @media 條件用唔到 custom property，所以唔抽 token，靠呢個測試鎖住兩邊一樣。
  */
 describe('short-height breakpoint', () => {
     it('should read a whole-pixel breakpoint from the e2e runner', () => {
         expect(Number.isInteger(e2eShortHeightPx())).toBe(true);
+    });
+
+    it('should use the same short-height max-height as SHORT_HEIGHT_PX in tokens.css', () => {
+        const css = readCss(new URL('./tokens.css', import.meta.url));
+
+        expect(maxHeightBreakpoints(css)).toContain(e2eShortHeightPx());
     });
 
     it.each([
@@ -18,9 +24,9 @@ describe('short-height breakpoint', () => {
         ['HomePage.module.css', '../pages/HomePage.module.css'],
         ['ShowCardStack.module.css', '../components/ShowCardStack/ShowCardStack.module.css'],
         ['DateStrip.module.css', '../components/DateStrip/DateStrip.module.css'],
-    ])('should use the same max-height as SHORT_HEIGHT_PX in %s', (_name, path) => {
+    ])('should keep %s fixed at every height (no short-height override)', (_name, path) => {
         const css = readCss(new URL(path, import.meta.url));
 
-        expect(maxHeightBreakpoints(css)).toEqual([e2eShortHeightPx()]);
+        expect(maxHeightBreakpoints(css)).toEqual([]);
     });
 });

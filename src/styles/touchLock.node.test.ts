@@ -57,14 +57,12 @@ describe('iOS touch lock', () => {
         expect(cssValues(css(path), selector, 'touch-action')).toEqual(['none', 'pinch-zoom']);
     });
 
-    // 好矮畫面 main 自己捲：卡疊同日子條要畀返直向 pan，橫拖照由 pointer events 處理
+    // 任何高度都固定（冇成頁捲）：好矮嘅畫面卡疊同日子條都照樣擋晒單指 pan，唔畀返 pan-y
     it.each([
         ['ShowCardStack .stack', STACK_CSS, '.stack'],
         ['DateStrip .strip', STRIP_CSS, '.strip'],
-    ])('should give the %s vertical pan back at short heights', (_name, path, selector) => {
-        expect(cssValues(css(path), selector, 'touch-action', SHORT_HEIGHT_MEDIA)).toEqual([
-            'pan-y pinch-zoom',
-        ]);
+    ])('should keep the %s locked at short heights', (_name, path, selector) => {
+        expect(cssValues(css(path), selector, 'touch-action', SHORT_HEIGHT_MEDIA)).toEqual([]);
     });
 
     it('should not let !important pass as a plain touch-action value', () => {

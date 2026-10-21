@@ -4,45 +4,19 @@
  * 最底一定係 --home-bg-bottom（冇光暈），同冇 mini player 時嘅 canvas 一樣色，唔會見到接縫。
  */
 .scope[data-theme-scope] {
-    /* 寫成變數：好矮嘅畫面要搬去 main.home（見下面），兩邊用同一份 */
-    --home-background: linear-gradient(180deg, var(--home-bg-top), var(--home-bg-bottom));
-
-    background: var(--home-background);
+    background: linear-gradient(180deg, var(--home-bg-top), var(--home-bg-bottom));
 }
 
 /*
  * 留位畀底部 mini player：剛好係 mini player 嘅高同佢離 viewport 底嘅距離，再加一格間距，
- * 頁底版本號（AppVersion margin-top: auto）就貼住 mini player 上面，唔會畀佢遮住。
+ * 節目格（ShowGrid 填滿剩低高度）同指示點就喺 mini player 上面，唔會畀佢遮住。
  * Page.module.css 嘅 .page 喺 bundle 排喺後面，佢個 padding shorthand 會蓋過 .home，
  * 所以用 main.home 提高 specificity，確保呢個留位真係生效。
  */
 main.home {
+    /* 同節目頁一樣跟 --fixed-page-gap（700px 高或以下收窄），矮螢幕每頁多啲位放節目格 */
+    gap: var(--fixed-page-gap);
     padding-bottom: calc(
         var(--mini-player-height) + var(--mini-player-offset-bottom) + var(--space-3)
     );
-}
-
-/*
- * 好矮嘅畫面（同 Page.module.css 嘅斷點一樣）由 main 自己捲：漸變畫喺 .scope 會釘死喺畫面，
- * 內容捲走佢唔郁。改為畫喺 main 度、background-attachment: local，跟住捲動內容一齊郁。
- * main 要闊到成個畫面先蓋得晒兩邊：取消 max-width，用左右 padding 將內容收返喺 --page-max-width 中間，
- * 所以內容闊度、位置同之前一樣。直向畫面唔受影響。
- */
-@media (max-height: 561px) {
-    main.home {
-        max-width: none;
-        padding-right: max(0px, (100% - var(--page-max-width)) / 2);
-        padding-left: max(0px, (100% - var(--page-max-width)) / 2);
-        background: var(--home-background);
-        background-attachment: local;
-    }
-}
-
-/* 左右留白、格距同頁頂橫額共用（HomeBanner 用同一對 token 計高度） */
-.grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--home-tile-gap);
-    width: 100%;
-    padding: 0 var(--home-gutter);
 }

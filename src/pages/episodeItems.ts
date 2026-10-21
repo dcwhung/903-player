@@ -15,6 +15,7 @@ export const toEpisodeItems = (
     currentUrl: string | undefined,
     live: LiveTime,
     progressMap: Readonly<Record<string, Progress>>,
+    isPlaying: boolean,
 ): EpisodeItem[] =>
     episodes.map((r) => {
         const isCurrent = r.url === currentUrl;
@@ -23,6 +24,7 @@ export const toEpisodeItems = (
             dayMonth: formatDayMonth(r.date),
             weekday: formatWeekday(r.date),
             current: isCurrent,
+            isPlaying: isCurrent && isPlaying,
             status: episodeStatus({
                 isCurrent,
                 live: isCurrent ? live : undefined,

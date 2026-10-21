@@ -18,8 +18,7 @@
 }
 
 /*
- * 唯一捲動嘅 panel：捲到盡頭唔會帶動成頁（iOS 橡筋效果）；底部留 home indicator 位。
- * 好矮嘅畫面（≤ 561px，Page.module.css）成頁捲，冇高度上限，自然唔會變成內部捲動。
+ * 唯一捲動嘅 panel（任何高度都係）：捲到盡頭唔會帶動成頁（iOS 橡筋效果）；底部留 home indicator 位。
  */
 .list {
     flex: 1 1 auto;

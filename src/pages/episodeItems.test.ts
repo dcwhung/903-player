@@ -14,6 +14,7 @@ describe('toEpisodeItems', () => {
             NEWEST.url,
             { currentTime: 760, duration: 7110 },
             PROGRESS,
+            true,
         );
 
         expect(items).toEqual([
@@ -22,6 +23,7 @@ describe('toEpisodeItems', () => {
                 dayMonth: '17/10',
                 weekday: '星期六',
                 current: true,
+                isPlaying: true,
                 status: { kind: 'playing', ratio: 760 / 7110, text: '播放中 · 12:40 / 1:58:30' },
             },
             {
@@ -29,15 +31,36 @@ describe('toEpisodeItems', () => {
                 dayMonth: '10/10',
                 weekday: '星期六',
                 current: false,
+                isPlaying: false,
                 status: { kind: 'resume', ratio: 0.25, text: '聽到 10:00' },
             },
         ]);
     });
 
     it('has no current episode when the url matches none', () => {
-        const items = toEpisodeItems([NEWEST], undefined, { currentTime: 0, duration: 0 }, {});
+        const items = toEpisodeItems(
+            [NEWEST],
+            undefined,
+            { currentTime: 0, duration: 0 },
+            {},
+            true,
+        );
 
         expect(items[0]?.current).toBe(false);
+        expect(items[0]?.isPlaying).toBe(false);
         expect(items[0]?.status.kind).toBe('unwatched');
+    });
+
+    it('does not mark the current episode as playing while paused', () => {
+        const items = toEpisodeItems(
+            [NEWEST],
+            NEWEST.url,
+            { currentTime: 760, duration: 7110 },
+            {},
+            false,
+        );
+
+        expect(items[0]?.current).toBe(true);
+        expect(items[0]?.isPlaying).toBe(false);
     });
 });

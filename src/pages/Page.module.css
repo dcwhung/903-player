@@ -14,9 +14,10 @@
 
 /*
  * 固定版面（主頁、節目頁、今日節目頁）：剛好填滿固定殼（global.css html / body / #root，
- * 經 ThemeScope .scope 嘅 height: 100%），唔會捲（避免控制掣捲咗去 status bar 下面）。
+ * 經 ThemeScope .scope 嘅 height: 100%），任何高度都唔會捲（避免控制掣捲咗去 status bar 下面）。
  * 用 100% 而唔係 100dvh：iOS standalone 嘅 dvh 可能同殼高度對唔齊，溢出就會成頁捲。
- * 節目頁 / 今日節目頁剩低嘅高度畀集數 / 今日節目清單自己捲。
+ * 節目頁 / 今日節目頁剩低嘅高度畀集數 / 節目表清單自己捲；主頁節目格放唔晒就分頁（ShowGrid）。
+ * 矮螢幕（≤ 561px 高）由 tokens.css 收細唱片、少預留一行集數，唔再改為成頁捲。
  */
 .locked {
     height: 100%;
@@ -36,29 +37,6 @@
     padding-right: env(safe-area-inset-right);
     padding-bottom: 0;
     padding-left: env(safe-area-inset-left);
-}
-
-/*
- * 好矮嘅畫面（橫向手機、矮視窗、200% 放大）塞唔落固定版面（主頁、節目頁、今日節目頁）：
- * 改由 main 自己捲（文件本身仍然鎖死，iOS 唔會成份文件橡筋）；子元素唔縮，
- * 清單冇咗高度上限，自然唔會變成內部捲動。
- * 561px 係講好嘅斷點：700px 高或以下 --player-reserved-height 係 394px（冇安全區），
- * 加最細唱片（--player-disc-min 160px）嗰格 160 × 316 / 300 ≈ 168.5px，合共約 562px；
- * 再矮就塞唔落兩行集數，所以 ≤ 561px 改為成頁捲；320×568 仍然係固定。
- * e2e/run.mjs 嘅 SHORT_HEIGHT_PX、ShowCardStack / DateStrip 嘅 touch-action、HomePage 嘅背景斷點要同步
- * （src/styles/shortHeightBreakpoint.node.test.ts 會檢查）。
- */
-@media (max-height: 561px) {
-    .locked {
-        overflow-x: hidden;
-        overflow-y: auto;
-        overscroll-behavior: contain;
-    }
-
-    /* main.locked 提高 specificity：蓋過清單 .section 嘅 flex-shrink（bundle 先後唔保證） */
-    main.locked > * {
-        flex-shrink: 0;
-    }
 }
 
 .header {

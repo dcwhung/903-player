@@ -15,6 +15,9 @@ export const zhHK = {
         bannerAlt: '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽',
         showsNav: '節目',
         today: '今日節目',
+        // 矮螢幕節目格分頁：指示點每粒嘅名、成組嘅位置
+        page: '第 {index} 頁',
+        pagePosition: '節目第 {index} 頁，共 {total} 頁',
     },
     player: {
         play: '播放',
@@ -40,6 +43,8 @@ export const zhHK = {
         watched: '已收聽',
         unwatched: '未收聽',
         play: '播放 {date}，{status}',
+        // 播緊嗰集：清單行嘅掣變暫停
+        pause: '暫停 {date}，{status}',
         // 節目頁唱片下面嘅日子條：左右掃（或者方向鍵）轉集
         switchHint: '左右方向鍵或左右掃動轉集',
         switchRoleDescription: '轉集',
@@ -64,9 +69,10 @@ export const zhHK = {
     },
     today: {
         title: '今日節目',
-        listTitle: '今日節目',
+        listTitle: '節目表',
         playShow: '播放 {name}',
         playShowWithStatus: '播放 {name}，{status}',
+        pauseShowWithStatus: '暫停 {name}，{status}',
         timeWithStatus: '{time} · {status}',
         statusPlaying: '播放中',
         statusWatched: '已收聽',

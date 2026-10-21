@@ -44,7 +44,14 @@ export const useTodayPage = () => {
             void player.load(recording, { autoplay: true });
         }
     };
-    const selectShow = (url: string) => selectIndex(list.findIndex((r) => r.url === url));
+    // 節目表：撳播緊嗰個就暫停（掣係暫停樣），其他就轉去嗰個節目
+    const selectShow = (url: string) => {
+        if (player.isPlaying && url === player.recording?.url) {
+            void player.toggle();
+            return;
+        }
+        selectIndex(list.findIndex((r) => r.url === url));
+    };
 
     const theme = themeFor(current?.showId);
     return { status, isSearching, current, index, items, cards, theme, selectIndex, selectShow };
