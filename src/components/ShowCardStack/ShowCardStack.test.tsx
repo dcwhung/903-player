@@ -68,6 +68,19 @@ describe('ShowCardStack', () => {
         expect(group).toHaveAttribute('data-phase', 'dragging');
     });
 
+    it('should reveal the name on the card behind whichever way the card is dragged', () => {
+        const { group } = setup();
+        const reveal = () => group.style.getPropertyValue('--card-reveal');
+
+        fireEvent.pointerDown(group, { clientX: 200, clientY: 100 });
+        fireEvent.pointerMove(group, { clientX: 120, clientY: 104 });
+        const left = reveal();
+        fireEvent.pointerMove(group, { clientX: 280, clientY: 104 });
+
+        expect(Number(left)).toBeGreaterThan(0);
+        expect(reveal()).toBe(left);
+    });
+
     it('should go to the next show after the card flies out on a left swipe', () => {
         const { group, onChange } = setup();
 

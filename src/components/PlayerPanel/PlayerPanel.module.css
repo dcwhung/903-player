@@ -39,18 +39,38 @@
 .time {
     position: absolute;
     bottom: calc(var(--player-gauge-toggle-size) / 2);
+    display: flex;
     font-size: var(--font-size-sm);
     font-variant-numeric: tabular-nums;
     color: var(--color-text-secondary);
+    white-space: nowrap;
     transform: translateY(50%);
 }
 
+/*
+ * 時間嘅外框由弧形一端去到掣旁邊（唔會入到掣嘅範圍）。
+ * 字放得落：auto margin 食晒剩餘位，字貼住弧形嗰端（同以前一樣）；
+ * 放唔落（例如 1:14:04 喺窄螢幕）：auto margin 變 0，justify-content 令字由掣嗰邊向外伸，
+ * 伸出唱片格外面（入 panel / 卡嘅留白），唔會疊住由頭播放掣
+ */
 .elapsed {
+    right: calc(50% + var(--player-gauge-toggle-size) / 2 + var(--touch-target) + var(--space-1));
     left: 4%;
+    justify-content: flex-end;
+}
+
+.elapsed > span {
+    margin-right: auto;
 }
 
 .total {
     right: 0;
+    left: calc(50% + var(--player-gauge-toggle-size) / 2 + var(--touch-target) + var(--space-1));
+    justify-content: flex-start;
+}
+
+.total > span {
+    margin-left: auto;
 }
 
 /* 唱片下面弧形缺口：重新播放 + 播放（播放掣置中，右邊留同重新播放一樣闊嘅空格） */

@@ -45,10 +45,13 @@ export const PlayerGauge = ({ art, artRef, held = false }: PlayerGaugeProps) => 
             <div className={styles.discArea}>
                 <Disc art={art} artRef={artRef} {...disc} />
             </div>
+            {/* 外框止喺掣旁邊，入面嘅字放唔落就向外伸（見 PlayerPanel.module.css .time） */}
             <span className={`${styles.time} ${styles.elapsed}`}>
-                {formatClock(shownTime, known)}
+                <span>{formatClock(shownTime, known)}</span>
             </span>
-            <span className={`${styles.time} ${styles.total}`}>{total}</span>
+            <span className={`${styles.time} ${styles.total}`}>
+                <span>{total}</span>
+            </span>
             <div className={styles.actions}>
                 <button
                     type="button"
