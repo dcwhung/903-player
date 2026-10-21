@@ -109,7 +109,10 @@
             var(--landscape-disc-min),
             min(
                 var(--player-disc-width),
-                calc((100cqh - var(--player-disc-reserve)) * 300 / 332),
+                calc(
+                    (100cqh - var(--player-disc-reserve)) * var(--player-gauge-w) /
+                        var(--player-gauge-h)
+                ),
                 var(--landscape-disc-max)
             )
         );

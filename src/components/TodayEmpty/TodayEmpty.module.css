@@ -14,13 +14,13 @@
 }
 
 /*
- * 同播放器（PlayerGauge .gauge）一樣大：闊 = --player-disc-size，高連下面控制掣嗰行（300 / 332），
+ * 同播放器（PlayerGauge .gauge）一樣大：闊 = --player-disc-size，高連下面控制掣嗰行（--player-gauge-w / --player-gauge-h），
  * 冇節目所以控制掣嗰行留空；ring 同唱片喺上面正方形入面
  */
 .gauge {
     position: relative;
     width: var(--player-disc-size);
-    aspect-ratio: 300 / 332;
+    aspect-ratio: var(--player-gauge-w) / var(--player-gauge-h);
 }
 
 .ring {
