@@ -6,6 +6,6 @@ describe('t', () => {
     });
 
     it('fills in parameters', () => {
-        expect(t('player.seekBack', { seconds: 30 })).toBe('後退 30 秒');
+        expect(t('app.version', { version: '1.2.3' })).toBe('v1.2.3');
     });
 });

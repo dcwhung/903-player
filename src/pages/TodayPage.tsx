@@ -16,7 +16,7 @@ export const TodayPage = () => {
         useTodayPage();
     const names = items.map((item) => item.name);
 
-    // 標題同節目頁一樣（大字 h1）；卡只有唱片、進度弧同節目名，指示點同控制掣喺卡外（每個節目一樣）
+    // 標題同節目頁一樣（大字 h1）；卡入面係唱片、進度弧、播放掣同節目名，指示點喺卡外
     return (
         <ThemeScope theme={theme}>
             <main className={`${page.page} ${page.locked} ${page.fixed}`}>

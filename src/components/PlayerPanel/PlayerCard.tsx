@@ -8,8 +8,8 @@ interface PlayerCardProps {
 }
 
 /**
- * 今日節目卡疊最上面嗰張：只有唱片、進度弧同節目名（同後面嘅 GhostCard 一樣），
- * 控制掣每個節目都一樣，放喺卡疊外面（TodayPage）
+ * 今日節目卡疊最上面嗰張：唱片、進度弧、由頭播放 / 播放掣同節目名
+ * （後面嘅 GhostCard 只有唱片同節目名）
  */
 export const PlayerCard = ({ title, art }: PlayerCardProps) => (
     <div className={styles.panel}>

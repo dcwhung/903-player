@@ -7,8 +7,8 @@ export const PROGRESS_SAVE_INTERVAL_MS = 5000;
 export const REPLAY_RESET_SECONDS = 10;
 export const PROGRESS_STORAGE_KEY = '903player:progress:v1';
 
-export const SKIP_BACK_SECONDS = [60, 30] as const;
-export const SKIP_FORWARD_SECONDS = [30, 60] as const;
+/** 鎖屏 / 耳機嘅前後掣每次跳幾多秒 */
+export const LOCK_SCREEN_SKIP_SECONDS = 30;
 export const KEYBOARD_SEEK_SECONDS = 30;
 
 /** 弧形 slider：由左下角（135°）順時針掃 270° 去右下角 */

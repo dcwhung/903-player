@@ -508,12 +508,12 @@ const checkLandscape = async (env, route, zone, label) => {
         extra > 0 && scrolled > 0 && isDocLocked(doc),
         `${label}：main 自己捲（多出 ${extra}px，scrollTop ${scrolled}），文件唔捲 ${JSON.stringify(doc)}`,
     );
-    const forward = p.getByRole('button', { name: '前進 60 秒' });
-    await forward.evaluate((el) => el.scrollIntoView({ block: 'center' }));
-    const b = await forward.boundingBox();
+    const toggle = p.getByRole('button', { name: /^(播放|暫停)$/ });
+    await toggle.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    const b = await toggle.boundingBox();
     log(
         b !== null && b.y >= 0 && b.y + b.height <= LANDSCAPE.height,
-        `${label}：捲 main 捲得到控制掣（y ${b?.y?.toFixed(0)}）`,
+        `${label}：捲 main 捲得到播放掣（y ${b?.y?.toFixed(0)}）`,
     );
 };
 

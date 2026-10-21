@@ -121,15 +121,20 @@ const HOME_TILES = [
     '聖艾粒LaLaLaLa',
     '今日節目',
 ];
-const MIN_VISIBLE_ROWS = 2;
+// 節目頁矮螢幕最少見到三集（tokens.css --player-reserved-height 預留三行）
+const MIN_VISIBLE_ROWS = 3;
+/** 唱片底嘅由頭播放掣（播放 / 暫停掣喺佢隔籬） */
+const RESTART = '由頭播放';
+/** 唱片底嘅播放 / 暫停掣（錨定成個名，唔會撞到集數行嘅「播放 19/10…」） */
+const PLAY_TOGGLE = /^(播放|暫停)$/;
 // tokens.css 嘅 --player-max-share（0.6）係設計目標；用戶接受 62–66%，
-// 所以 e2e 只要求節目頁播放器同今日節目播放器（卡 → 控制掣）≤ 66%，實際比例照印出嚟
+// 所以 e2e 只要求節目頁播放器同今日節目播放器（卡 → 指示點）≤ 66%，實際比例照印出嚟
 const PLAYER_MAX_SHARE = 0.66;
 const STRIP_DRAG_PX = 60;
 const STRIP = '[aria-roledescription="轉集"]';
 /** 每個節目頁尺寸量到嘅播放器高度比例、唱片闊度、清單行數（最尾印成表） */
 const metrics = [];
-/** 今日節目頁：播放器（卡 → 控制掣）佔高、清單行數 */
+/** 今日節目頁：播放器（卡 → 指示點）佔高、清單行數 */
 const todayMetrics = [];
 const WHEEL_PX = 400;
 const SWIPE_FROM_PX = 120;
@@ -217,7 +222,7 @@ const checkFixedShowPage = async (p, label, shot) => {
     await p.screenshot({ path: `${OUT}/${shot}` });
 };
 
-/** 播放器（PlayerPanel：唱片連弧 → 日子條 → 控制掣）佔畫面高幾多 */
+/** 播放器（PlayerPanel：唱片連弧 → 日子條）佔畫面高幾多 */
 const playerShare = (p) =>
     p.evaluate(
         () =>
@@ -257,20 +262,20 @@ const mainScroll = (p) =>
         };
     });
 
-/** 好矮嘅畫面（橫向手機 / 矮視窗）：唔再固定，改由 main 捲（文件唔捲），清單唔係內部捲動，控制掣捲得到 */
+/** 好矮嘅畫面（橫向手機 / 矮視窗）：唔再固定，改由 main 捲（文件唔捲），清單唔係內部捲動，播放掣捲得到 */
 const checkScrollingShowPage = async (p, label, shot) => {
     const list = p.getByRole('region', { name: '集數' }).getByRole('list');
     const inner = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
     log(inner <= 1, `${label}：清單唔係內部捲動（多出 ${inner}px）`);
     await logDiscSize(p, label, '全部（成頁捲）');
-    const forward = p.getByRole('button', { name: '前進 60 秒' });
-    await forward.scrollIntoViewIfNeeded();
-    const b = await forward.boundingBox();
+    const toggle = p.getByRole('button', { name: PLAY_TOGGLE });
+    await toggle.scrollIntoViewIfNeeded();
+    const b = await toggle.boundingBox();
     const scroll = await mainScroll(p);
     const inView = b !== null && b.y >= 0 && b.y + b.height <= p.viewportSize().height;
     log(
         scroll.main > 0 && scroll.doc <= 0 && inView,
-        `${label}：main 捲得、文件唔捲、控制掣捲得到（${JSON.stringify(scroll)}）`,
+        `${label}：main 捲得、文件唔捲、播放掣捲得到（${JSON.stringify(scroll)}）`,
     );
     // 最尾一集都要捲得到
     const last = p.getByRole('region', { name: '集數' }).locator('li button').last();
@@ -280,10 +285,10 @@ const checkScrollingShowPage = async (p, label, shot) => {
     await p.screenshot({ path: `${OUT}/${shot}` });
 };
 
-/** 返回掣、播放掣同前進掣要完整喺畫面入面 */
+/** 返回掣、由頭播放掣同播放掣要完整喺畫面入面 */
 const checkControlsInView = async (p, label) => {
     const height = p.viewportSize().height;
-    for (const name of ['返回主頁', '後退 60 秒', '前進 60 秒']) {
+    for (const name of ['返回主頁', RESTART, PLAY_TOGGLE]) {
         const b = await p.getByRole('button', { name }).boundingBox();
         const ok = b !== null && b.y >= 0 && b.y + b.height <= height;
         log(ok, `${label}：「${name}」喺畫面內（y ${b?.y?.toFixed(0)}）`);
@@ -327,8 +332,8 @@ const checkDiscMatchesToday = async (p, label) => {
     );
 };
 
-// 今日節目清單最少見到一行（固定版面嘅直向尺寸全部斷言）
-const TODAY_MIN_ROWS = 1;
+// 今日節目清單最少見到兩行（固定版面嘅直向尺寸全部斷言；播放掣搬入卡之後騰出位）
+const TODAY_MIN_ROWS = 2;
 const TODAY_ROW_VIEWPORTS = ['320×568', '375×667', '390×664', '390×720', '390×844', '390×562'];
 
 /**
@@ -347,15 +352,15 @@ const checkTodayRows = async (list, label) => {
 };
 
 /**
- * 今日節目播放器佔畫面高幾多：最上面嗰張卡（PlayerCard 外層）頂 → 卡下面控制掣底
- * （指示點同控制掣已經搬出卡外，同節目頁播放器一樣計到控制掣為止）
+ * 今日節目播放器佔畫面高幾多：最上面嗰張卡（PlayerCard 外層）頂 → 卡疊 + 指示點一組（.todayPlayer）底
+ * （播放掣喺卡入面；指示點喺卡外）
  */
 const todayCardShare = (p) =>
     p.evaluate((titleSelector) => {
         const card = document.querySelector(titleSelector).closest('[class*="panel"]');
         const top = card.parentElement.getBoundingClientRect().top;
-        const controls = document.querySelector('[aria-label="前進 60 秒"]').parentElement;
-        return (controls.getBoundingClientRect().bottom - top) / window.innerHeight;
+        const player = document.querySelector('[class*="todayPlayer"]');
+        return (player.getBoundingClientRect().bottom - top) / window.innerHeight;
     }, TODAY_CARD_TITLE);
 
 const recordTodayMetrics = async (p, label, rows) => {
@@ -371,7 +376,7 @@ const recordTodayMetrics = async (p, label, rows) => {
     return share;
 };
 
-/** 固定版面嘅今日節目播放器（卡 → 控制掣）≤ PLAYER_MAX_SHARE；share 由 checkTodayRows 量好傳入 */
+/** 固定版面嘅今日節目播放器（卡 → 指示點）≤ PLAYER_MAX_SHARE；share 由 checkTodayRows 量好傳入 */
 const checkTodayCardShare = (share, label) => {
     log(
         share <= PLAYER_MAX_SHARE + 0.001,
@@ -407,21 +412,21 @@ const checkFixedTodayPage = async (p, label) => {
     await checkControlsInView(p, label);
 };
 
-/** 好矮嘅畫面：今日節目頁好似節目頁咁由 main 捲，清單唔係內部捲動，控制掣捲得到 */
+/** 好矮嘅畫面：今日節目頁好似節目頁咁由 main 捲，清單唔係內部捲動，播放掣捲得到 */
 const checkScrollingTodayPage = async (p, label) => {
     const list = p.getByRole('region', { name: '今日節目' }).getByRole('list');
     const inner = await list.evaluate((el) => el.scrollHeight - el.clientHeight);
     log(inner <= 1, `${label}：清單唔係內部捲動（多出 ${inner}px）`);
     await recordTodayMetrics(p, label, '全部（成頁捲）');
-    const forward = p.getByRole('button', { name: '前進 60 秒' });
+    const toggle = p.getByRole('button', { name: PLAY_TOGGLE });
     // 由節目頁轉過嚟時捲動位置可能停喺半格（-0.5px）位置，scrollIntoViewIfNeeded 會當睇到；直接置中
-    await forward.evaluate((el) => el.scrollIntoView({ block: 'center' }));
-    const b = await forward.boundingBox();
+    await toggle.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    const b = await toggle.boundingBox();
     const scroll = await mainScroll(p);
     const inView = b !== null && b.y >= 0 && b.y + b.height <= p.viewportSize().height;
     log(
         scroll.main > 0 && scroll.doc <= 0 && inView,
-        `${label}：main 捲得、文件唔捲、控制掣捲得到（${JSON.stringify(scroll)}）`,
+        `${label}：main 捲得、文件唔捲、播放掣捲得到（${JSON.stringify(scroll)}）`,
     );
 };
 
@@ -550,27 +555,6 @@ const TODAY_SWIPE_PX = 260;
 // 飛走（--duration-card-fly 280ms）+ 轉節目 render
 const TODAY_SETTLE_MS = 600;
 
-// 今日節目卡下面最外嘅控制掣（-60 / +60）同卡邊（左右）最少要留幾多 px
-const CARD_CONTROL_INSET_PX = 12;
-
-/** 控制掣喺卡下面，左右唔可以闊過卡、要同卡邊留返位 */
-const checkCardControlsInset = async (p, label) => {
-    const inset = await p.evaluate((titleSelector) => {
-        // 最上面嗰張卡 = PlayerCard 嘅外層
-        const card = document
-            .querySelector(titleSelector)
-            .closest('[class*="panel"]').parentElement;
-        const box = card.getBoundingClientRect();
-        const left = document.querySelector('[aria-label="後退 60 秒"]').getBoundingClientRect();
-        const right = document.querySelector('[aria-label="前進 60 秒"]').getBoundingClientRect();
-        return Math.min(left.left - box.left, box.right - right.right);
-    }, TODAY_CARD_TITLE);
-    log(
-        inset >= CARD_CONTROL_INSET_PX,
-        `${label} 今日節目卡：控制掣離卡邊 ${inset.toFixed(1)}px（≥ ${CARD_CONTROL_INSET_PX}）`,
-    );
-};
-
 const horizontalOverflow = (p) =>
     p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
@@ -690,8 +674,13 @@ const shellFit = async (p, region) => {
         document.body.append(probe);
         const dvh = probe.getBoundingClientRect().height;
         probe.remove();
-        const controls = ['返回主頁', '後退 60 秒', '前進 60 秒'].every((name) => {
-            const b = document.querySelector(`[aria-label="${name}"]`).getBoundingClientRect();
+        // 由頭播放掣嘅 parent 係唱片底成排掣（由頭播放 + 播放 / 暫停）
+        const restart = document.querySelector('[aria-label="由頭播放"]');
+        const controls = [
+            document.querySelector('[aria-label="返回主頁"]'),
+            restart.parentElement,
+        ].every((el) => {
+            const b = el.getBoundingClientRect();
             return b.top >= box.top && b.bottom <= box.bottom + 0.5;
         });
         return {
@@ -1039,9 +1028,10 @@ try {
         `拖弧形 slider 去左邊 → ${afterDrag}s（預期約 100s / 600s）`,
     );
 
-    await page.getByRole('button', { name: '前進 60 秒' }).click();
-    const afterSkip = Number(await slider.getAttribute('aria-valuenow'));
-    log(afterSkip >= 158 && afterSkip <= 165, `前進 60 秒 → ${afterSkip}s`);
+    await page.getByRole('button', { name: RESTART }).click();
+    await page.waitForTimeout(300);
+    const afterRestart = Number(await slider.getAttribute('aria-valuenow'));
+    log(afterRestart <= 2, `由頭播放 → ${afterRestart}s（預期約 0s）`);
 
     await slider.focus();
     await page.keyboard.press('End');
@@ -1058,7 +1048,9 @@ try {
     log(visible, '揀中集數喺畫面內');
     await page.screenshot({ path: `${OUT}/4-show-date-changed.png` });
 
-    await page.getByRole('button', { name: '前進 30 秒' }).click();
+    // 冇咗跳秒掣：用弧形 slider 嘅鍵盤 →（KEYBOARD_SEEK_SECONDS = 30 秒）
+    await slider.focus();
+    await page.keyboard.press('ArrowRight');
     await page.getByRole('button', { name: '暫停' }).click();
     const saved = await page.evaluate(() =>
         JSON.parse(localStorage.getItem('903player:progress:v1')),
@@ -1155,7 +1147,7 @@ try {
     await np.screenshot({ path: `${OUT}/8-home-version-320.png` });
     for (const route of ['#/show/gongzi', '#/today']) {
         await np.goto(`${BASE}${route}`);
-        await np.getByRole('button', { name: '前進 60 秒' }).waitFor();
+        await np.getByRole('button', { name: RESTART }).waitFor();
         const overflow = await np.evaluate(
             () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
         );
@@ -1184,7 +1176,6 @@ try {
     await sp.getByRole('button', { name: '暫停' }).waitFor({ timeout: 5000 });
     await sp.waitForTimeout(800);
     log((await horizontalOverflow(sp)) === 0, '320×568 今日節目冇橫向捲動');
-    await checkCardControlsInset(sp, '320×568');
     await sp.screenshot({ path: `${OUT}/5c-today-320x568.png` });
     await dragTodayCard(sp, -TODAY_SWIPE_PX / 2);
     await checkTodayShow(sp, 'Bad Girl大過佬', BADGIRL_BG, '320×568 今日節目向左掃');
@@ -1255,7 +1246,7 @@ try {
     console.log('\n節目頁尺寸｜播放器佔高｜唱片｜清單行數');
     for (const m of metrics) console.log(`${m.label}｜${m.share}｜${m.disc}px｜${m.rows}`);
     console.log(
-        `\n今日節目頁尺寸｜播放器（卡 → 控制掣）佔高｜距 ${PLAYER_MAX_SHARE * 100}% 上限｜清單行數`,
+        `\n今日節目頁尺寸｜播放器（卡 → 指示點）佔高｜距 ${PLAYER_MAX_SHARE * 100}% 上限｜清單行數`,
     );
     for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.headroom}｜${m.rows}`);
     console.log('');

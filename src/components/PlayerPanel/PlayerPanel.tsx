@@ -19,7 +19,7 @@ interface PlayerPanelProps {
     onPick: (url: string) => void;
 }
 
-/** 節目頁播放器：唱片 + 弧形進度 + 日子條 + 控制掣 */
+/** 節目頁播放器：唱片 + 弧形進度 + 播放掣 + 日子條 */
 export const PlayerPanel = ({
     title,
     dateLabel,
