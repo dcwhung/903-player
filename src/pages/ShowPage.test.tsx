@@ -1,6 +1,10 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { recording, renderWithProviders } from '../../tests/renderWithProviders';
+import {
+    recording,
+    renderWithProviders,
+    unavailableEpisode,
+} from '../../tests/renderWithProviders';
 import { saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import { ShowPage } from './ShowPage';
@@ -94,6 +98,35 @@ describe('ShowPage', () => {
         ]);
         expect(rows[0]).toHaveAttribute('aria-current', 'true');
         expect(screen.getByText('共 3 集')).toBeInTheDocument();
+    });
+
+    it('lists unavailable episodes as disabled rows and counts them apart', async () => {
+        renderWithProviders(<ShowPage />, {
+            ...ROUTE,
+            recordings: RECORDINGS,
+            unavailable: [unavailableEpisode('gongzi', '2026-09-26')],
+        });
+
+        const rows = await screen.findAllByRole('button', { name: /\d{2}\/\d{2} 星期/ });
+        expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual([
+            '暫停 17/10 星期六，連線中…',
+            '播放 10/10 星期六，未收聽',
+            '播放 03/10 星期六，未收聽',
+            '26/09 星期六，未上架',
+        ]);
+        expect(rows[3]).toBeDisabled();
+        expect(screen.getByText('共 3 集 · 1 集未上架')).toBeInTheDocument();
+    });
+
+    it('still lists unavailable episodes when the show has nothing to play yet', async () => {
+        renderWithProviders(<ShowPage />, {
+            ...ROUTE,
+            unavailable: [unavailableEpisode('gongzi', '2026-10-17')],
+        });
+
+        expect(await screen.findByText('暫時未有錄音')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '17/10 星期六，未上架' })).toBeDisabled();
+        expect(screen.queryByRole('slider')).not.toBeInTheDocument();
     });
 
     it('plays the episode that is tapped', async () => {

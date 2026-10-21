@@ -1,6 +1,6 @@
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { StrictMode, type ReactNode } from 'react';
-import type { Recording } from '../types/recording';
+import type { Recording, UnavailableEpisode } from '../types/recording';
 import { RecordingsProvider } from './RecordingsProvider';
 import { useRecordings } from './useRecordings';
 
@@ -23,11 +23,22 @@ type Prober = (onFound?: (recording: Recording) => void) => Promise<Recording[]>
 const noProbe = async (): Promise<Recording[]> => [];
 const neverFinishes = (): Promise<Recording[]> => new Promise<Recording[]>(() => {});
 const nothingStored = (): Recording[] => [];
+const nothingUnavailable = (): UnavailableEpisode[] => [];
 
-const wrap = (prober: Prober = noProbe, readStored: () => Recording[] = nothingStored) =>
+const MISSED: UnavailableEpisode = { showId: 'wanni', date: '2026-10-19', time: '0708' };
+
+const wrap = (
+    prober: Prober = noProbe,
+    readStored: () => Recording[] = nothingStored,
+    readUnavailable: () => UnavailableEpisode[] = nothingUnavailable,
+) =>
     function Wrapper({ children }: { children: ReactNode }) {
         return (
-            <RecordingsProvider prober={prober} readStored={readStored}>
+            <RecordingsProvider
+                prober={prober}
+                readStored={readStored}
+                readUnavailable={readUnavailable}
+            >
                 {children}
             </RecordingsProvider>
         );
@@ -104,7 +115,12 @@ describe('RecordingsProvider', () => {
 
         expect(result.current.status).toBe('loading');
         await waitFor(() =>
-            expect(result.current).toEqual({ status: 'ready', recordings: [], isSearching: false }),
+            expect(result.current).toEqual({
+                status: 'ready',
+                recordings: [],
+                unavailable: [],
+                isSearching: false,
+            }),
         );
     });
 
@@ -173,6 +189,28 @@ describe('RecordingsProvider', () => {
         errorSpy.mockRestore();
     });
 
+    describe('unavailable episodes', () => {
+        it('reads them right away, before probing finishes', () => {
+            const { result } = renderHook(() => useRecordings(), {
+                wrapper: wrap(neverFinishes, nothingStored, () => [MISSED]),
+            });
+
+            expect(result.current.unavailable).toEqual([MISSED]);
+        });
+
+        it('reads them again once a probe run finishes', async () => {
+            const readUnavailable = vi
+                .fn<() => UnavailableEpisode[]>()
+                .mockReturnValueOnce([])
+                .mockReturnValue([MISSED]);
+            const { result } = renderHook(() => useRecordings(), {
+                wrapper: wrap(noProbe, nothingStored, readUnavailable),
+            });
+
+            await waitFor(() => expect(result.current.unavailable).toEqual([MISSED]));
+        });
+    });
+
     describe('probing again later', () => {
         const goOnline = (): void => {
             act(() => {
@@ -223,6 +261,7 @@ describe('RecordingsProvider', () => {
                 expect(result.current).toEqual({
                     status: 'ready',
                     recordings: [],
+                    unavailable: [],
                     isSearching: false,
                 }),
             );

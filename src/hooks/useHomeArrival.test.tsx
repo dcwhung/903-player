@@ -1,10 +1,10 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { createHookWrapper, recording } from '../../tests/renderWithProviders';
+import { createHookWrapper, recording, unavailableEpisode } from '../../tests/renderWithProviders';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
-import { useHomeArrival } from './useHomeArrival';
+import { isListedByMiniPlayer, useHomeArrival } from './useHomeArrival';
 
 const TODAY = recording('badgirl', '2026-10-19', '1000');
 const OLD = recording('gongzi', '2026-10-10');
@@ -123,5 +123,14 @@ describe('useHomeArrival', () => {
 
         expect(audio.src).toBe(OLD.url);
         expect(audio.pause).not.toHaveBeenCalled();
+    });
+});
+
+describe('isListedByMiniPlayer', () => {
+    it('does not list an older day when today only has unavailable shows', () => {
+        const unavailable = [unavailableEpisode('wanni', '2026-10-20', '0708')];
+
+        expect(isListedByMiniPlayer(TODAY, RECORDINGS, '2026-10-20')).toBe(true);
+        expect(isListedByMiniPlayer(TODAY, RECORDINGS, '2026-10-20', unavailable)).toBe(false);
     });
 });

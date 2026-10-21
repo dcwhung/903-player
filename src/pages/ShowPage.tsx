@@ -30,6 +30,10 @@ export const ShowPage = () => {
                 ) : (
                     <>
                         <LoadState status={status} isEmpty={!current} isSearching={isSearching} />
+                        {/* 未有集數播得：照列出未上架嘅（撳唔到） */}
+                        {status === 'ready' && !current && episodeItems.length > 0 && (
+                            <EpisodeList items={episodeItems} onSelect={actions.pressEpisode} />
+                        )}
                         {status === 'ready' && current && (
                             <>
                                 <PlayerPanel

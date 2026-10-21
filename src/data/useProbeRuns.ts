@@ -48,6 +48,8 @@ const probeOnce = (
         .finally(finish);
 };
 
+const noop = (): void => {};
+
 /** 返到前景先再 probe；收埋時唔使 */
 const whenVisible = (run: () => void) => (): void => {
     if (document.visibilityState === 'visible') run();
@@ -55,11 +57,13 @@ const whenVisible = (run: () => void) => (): void => {
 
 /**
  * mount 時 probe 一輪，之後重新上網或者返到前景再 probe（重試頻率由 audioProbe 嘅規則限住）。
- * 同一時間只會有一輪：StrictMode 重複行 effect、幾個 trigger 撞埋都唔會並行 probe
+ * 同一時間只會有一輪：StrictMode 重複行 effect、幾個 trigger 撞埋都唔會並行 probe。
+ * onRunEnd：每輪完（成功或者失敗）通知一次，例如重新讀未上架集數；要固定 reference
  */
 export const useProbeRuns = (
     prober: RecordingsProber,
     merge: (found: Recording[]) => void,
+    onRunEnd: () => void = noop,
 ): ProbeRuns => {
     const [hasFinishedFirstRun, setHasFinishedFirstRun] = useState(false);
     const isInFlight = useRef(false);
@@ -70,9 +74,11 @@ export const useProbeRuns = (
         isInFlight.current = true;
         probeOnce(prober, isMounted, merge, () => {
             isInFlight.current = false;
-            if (isMounted.current) setHasFinishedFirstRun(true);
+            if (!isMounted.current) return;
+            setHasFinishedFirstRun(true);
+            onRunEnd();
         });
-    }, [prober, merge]);
+    }, [prober, merge, onRunEnd]);
 
     useEffect(() => {
         isMounted.current = true;

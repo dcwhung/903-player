@@ -9,7 +9,7 @@ const LIST = [SUNNY, BADGIRL, WANNI];
 
 describe('toTodayItems', () => {
     it('builds one row per show with time, art and status', () => {
-        const items = toTodayItems(LIST, 0, true, new Set([WANNI.url]));
+        const items = toTodayItems(LIST, SUNNY.url, true, new Set([WANNI.url]));
 
         expect(items).toEqual([
             {
@@ -40,10 +40,30 @@ describe('toTodayItems', () => {
     });
 
     it('shows the active show by its watched state while paused', () => {
-        const items = toTodayItems(LIST, 2, false, new Set([WANNI.url]));
+        const items = toTodayItems(LIST, WANNI.url, false, new Set([WANNI.url]));
 
         expect(items.map((item) => item.status)).toEqual(['unwatched', 'unwatched', 'watched']);
         expect(items[2]?.active).toBe(true);
+    });
+});
+
+describe('toTodayItems with unavailable shows', () => {
+    it('lists them as unavailable rows that are never active', () => {
+        const items = toTodayItems(
+            [SUNNY, { showId: 'waves', date: '2026-10-19', time: '1510' }],
+            SUNNY.url,
+            true,
+            new Set(),
+        );
+
+        expect(items[1]).toEqual({
+            key: 'waves:2026-10-19',
+            name: '口水多過浪花',
+            time: '15:10',
+            art: themeFor('waves').art,
+            active: false,
+            status: 'unavailable',
+        });
     });
 });
 

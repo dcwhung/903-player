@@ -41,3 +41,32 @@
     white-space: nowrap;
     transform: translate(-50%, -50%);
 }
+
+/*
+ * 「New」標籤：左上角奶油色膠囊（主頁強調色）+ 前面一粒圓點，任何節目圖上都睇得到
+ * （見 design/previews/home-today-indicator-preview.html 方案 B）
+ */
+.newBadge {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-2);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-2) 2px 6px;
+    border-radius: var(--radius-full);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-size: var(--font-size-2xs);
+    font-weight: 700;
+    line-height: 16px;
+    box-shadow: var(--shadow-new-badge);
+}
+
+.newBadge::before {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: currentColor;
+    content: '';
+}

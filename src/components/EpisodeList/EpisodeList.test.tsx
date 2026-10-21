@@ -90,6 +90,43 @@ describe('EpisodeList', () => {
         expect(screen.queryByRole('button', { name: /^暫停/ })).not.toBeInTheDocument();
     });
 
+    describe('unavailable episodes', () => {
+        const UNAVAILABLE: EpisodeItem = {
+            key: 'missing',
+            dayMonth: '21/10',
+            weekday: '星期三',
+            current: false,
+            isPlaying: false,
+            status: { kind: 'unavailable', ratio: 0, text: '未上架' },
+        };
+        const withUnavailable = [UNAVAILABLE, ...ITEMS];
+
+        it('lists them as disabled rows without a play icon or progress bar', () => {
+            render(<EpisodeList items={withUnavailable} onSelect={() => {}} />);
+
+            const row = screen.getByRole('button', { name: '21/10 星期三，未上架' });
+            expect(row).toBeDisabled();
+            expect(row).toHaveTextContent('未上架');
+            expect(row.querySelector('svg')).toBeNull();
+            expect(screen.getAllByRole('progressbar')).toHaveLength(ITEMS.length);
+        });
+
+        it('counts only playable episodes and adds how many are unavailable', () => {
+            render(<EpisodeList items={withUnavailable} onSelect={() => {}} />);
+
+            expect(screen.getByText('共 3 集 · 1 集未上架')).toBeInTheDocument();
+        });
+
+        it('does not report a tap on an unavailable episode', async () => {
+            const onSelect = vi.fn();
+            render(<EpisodeList items={withUnavailable} onSelect={onSelect} />);
+
+            await userEvent.click(screen.getByRole('button', { name: /21\/10/ }));
+
+            expect(onSelect).not.toHaveBeenCalled();
+        });
+    });
+
     it('reports the tapped episode', async () => {
         const onSelect = vi.fn();
         render(<EpisodeList items={ITEMS} onSelect={onSelect} />);

@@ -6,6 +6,7 @@ import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
 import {
+    entriesNewestFirst,
     episodesNewestFirst,
     pickInitialRecording,
     recordingsForShow,
@@ -17,11 +18,16 @@ import { toEpisodeItems } from './episodeItems';
 
 /** 呢個節目嘅集數同揀中嗰集：播緊呢個節目就用播緊嗰集，否則用預設嗰集 */
 const useShowEpisodes = (show: ShowConfig | undefined) => {
-    const { recordings } = useRecordings();
+    const { recordings, unavailable } = useRecordings();
     const player = usePlayer();
     const episodes = useMemo(
         () => (show ? episodesNewestFirst(recordings, show.id) : []),
         [show, recordings],
+    );
+    // 集數清單：播得到嘅加埋未上架嘅（日子條同播放器只用播得到嘅 episodes）
+    const entries = useMemo(
+        () => (show ? entriesNewestFirst(recordings, unavailable, show.id) : []),
+        [show, recordings, unavailable],
     );
     const playing = player.recording?.showId === show?.id ? player.recording : null;
     const current =
@@ -29,7 +35,7 @@ const useShowEpisodes = (show: ShowConfig | undefined) => {
         (show
             ? pickInitialRecording(recordingsForShow(recordings, show.id), hkToday())
             : undefined);
-    return { episodes, playing, current };
+    return { episodes, entries, playing, current };
 };
 
 /** 直接開呢頁（例如 deep link / mini player）時都自動播放 */
@@ -48,7 +54,7 @@ export const useShowPage = (showId: string) => {
     const show = findShow(showId);
     const { status, isSearching } = useRecordings();
     const player = usePlayer();
-    const { episodes, playing, current } = useShowEpisodes(show);
+    const { episodes, entries, playing, current } = useShowEpisodes(show);
     useAutoplayShow(show, playing !== null);
 
     // 轉集或者有集數變成聽過先重新讀 localStorage
@@ -57,7 +63,7 @@ export const useShowPage = (showId: string) => {
     const live = { currentTime: player.currentTime, duration: player.duration };
     // 只有播緊呢個節目先當播緊（未開始播時揀中集係預設嗰集）
     const isPlayingCurrent = playing !== null && player.isPlaying;
-    const episodeItems = toEpisodeItems(episodes, currentUrl, live, progressMap, isPlayingCurrent);
+    const episodeItems = toEpisodeItems(entries, currentUrl, live, progressMap, isPlayingCurrent);
 
     const selectEpisode = (url: string) => {
         const recording = episodes.find((r) => r.url === url);

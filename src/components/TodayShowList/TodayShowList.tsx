@@ -4,7 +4,7 @@ import { Disc } from '../Disc/Disc';
 import { CheckIcon, PauseIcon, PlayIcon } from '../icons/icons';
 import styles from './TodayShowList.module.css';
 
-export type ShowStatus = 'playing' | 'watched' | 'unwatched';
+export type ShowStatus = 'playing' | 'watched' | 'unwatched' | 'unavailable';
 
 export interface TodayShowItem {
     key: string;
@@ -25,11 +25,42 @@ const STATUS_MESSAGE: Record<ShowStatus, MessageKey> = {
     playing: 'today.statusPlaying',
     watched: 'today.statusWatched',
     unwatched: 'today.statusUnwatched',
+    unavailable: 'today.statusUnavailable',
 };
 const STATUS_ICON_SIZE = 12;
 const PLAY_ICON_SIZE = 22;
 
+/** 未上架：照列出節目同時間，但撳唔到、冇播放掣，唱片同節目名變淡 */
+const UnavailableRow = ({ item }: { item: TodayShowItem }) => {
+    const statusText = t(STATUS_MESSAGE.unavailable);
+    return (
+        <button
+            type="button"
+            className={`${styles.item} ${styles.unavailable}`}
+            disabled
+            aria-label={t('today.unavailableShow', {
+                name: item.name,
+                time: item.time,
+                status: statusText,
+            })}
+        >
+            <span className={styles.art}>
+                <Disc size="small" art={item.art} />
+            </span>
+            <span className={styles.text}>
+                <span className={styles.name}>{item.name}</span>
+                <span className={styles.status}>
+                    {t('today.timeWithStatus', { time: item.time, status: statusText })}
+                </span>
+            </span>
+        </button>
+    );
+};
+
 const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: string) => void }) => {
+    if (item.status === 'unavailable') {
+        return <UnavailableRow item={item} />;
+    }
     const statusText = t(STATUS_MESSAGE[item.status]);
     // 播緊（status playing = 揀中 + 播放中）：掣變暫停，撳落去暫停
     const isPlaying = item.status === 'playing';
@@ -63,11 +94,17 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
 
 export const TodayShowList = ({ items, onSelect }: TodayShowListProps) => {
     const headingId = useId();
+    const unavailable = items.filter((item) => item.status === 'unavailable').length;
     return (
         <section className={styles.section} aria-labelledby={headingId}>
-            <h2 id={headingId} className={styles.heading}>
-                {t('today.listTitle')}
-            </h2>
+            <div className={styles.header}>
+                <h2 id={headingId} className={styles.heading}>
+                    {t('today.listTitle')}
+                </h2>
+                {unavailable > 0 && (
+                    <span>{t('today.unavailableCount', { count: unavailable })}</span>
+                )}
+            </div>
             <ul className={styles.list}>
                 {items.map((item) => (
                     <li key={item.key}>

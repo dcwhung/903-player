@@ -8,6 +8,25 @@ const PROGRESS = {
 };
 
 describe('toEpisodeItems', () => {
+    it('lists unavailable episodes as disabled rows with no progress', () => {
+        const items = toEpisodeItems(
+            [{ showId: 'gongzi', date: '2026-10-24', time: '2308' }, NEWEST],
+            NEWEST.url,
+            { currentTime: 0, duration: 0 },
+            {},
+            false,
+        );
+
+        expect(items[0]).toEqual({
+            key: 'gongzi:2026-10-24',
+            dayMonth: '24/10',
+            weekday: '星期六',
+            current: false,
+            isPlaying: false,
+            status: { kind: 'unavailable', ratio: 0, text: '未上架' },
+        });
+    });
+
     it('marks the current episode with live time and the rest with saved progress', () => {
         const items = toEpisodeItems(
             [NEWEST, OLDER],

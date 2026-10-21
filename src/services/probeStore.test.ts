@@ -1,4 +1,10 @@
-import { PROBE_STORAGE_KEY, dateFromShowDateKey, readProbeState, showDateKey } from './probeStore';
+import {
+    PROBE_STORAGE_KEY,
+    dateFromShowDateKey,
+    readProbeState,
+    showDateKey,
+    showIdFromShowDateKey,
+} from './probeStore';
 
 describe('showDateKey / dateFromShowDateKey', () => {
     it('round-trips the date out of a key', () => {
@@ -7,6 +13,10 @@ describe('showDateKey / dateFromShowDateKey', () => {
 
     it('returns an empty string for a malformed key', () => {
         expect(dateFromShowDateKey('badgirl')).toBe('');
+    });
+
+    it('round-trips the show id out of a key', () => {
+        expect(showIdFromShowDateKey(showDateKey('badgirl', '2026-10-19'))).toBe('badgirl');
     });
 });
 

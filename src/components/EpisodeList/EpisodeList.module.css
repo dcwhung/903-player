@@ -125,3 +125,20 @@
     flex-shrink: 0;
     color: var(--color-text);
 }
+
+/* 未上架：撳唔到；日子變淡、進度條變虛線、冇播放掣（見 design/previews/unavailable-preview.html） */
+.unavailable {
+    cursor: default;
+}
+
+.unavailable .date {
+    opacity: var(--unavailable-opacity);
+}
+
+.unavailable .bar {
+    background: repeating-linear-gradient(
+        90deg,
+        var(--color-track) 0 var(--unavailable-dash),
+        transparent var(--unavailable-dash) calc(var(--unavailable-dash) + var(--unavailable-gap))
+    );
+}

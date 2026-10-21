@@ -16,6 +16,10 @@ const SHOW_DATE_KEY_SEPARATOR = ':';
 export const showDateKey = (showId: string, date: string): string =>
     `${showId}${SHOW_DATE_KEY_SEPARATOR}${date}`;
 
+/** 由 key 攞返節目 id */
+export const showIdFromShowDateKey = (key: string): string =>
+    key.split(SHOW_DATE_KEY_SEPARATOR)[0] ?? '';
+
 /** 由 key 攞返日期；格式唔啱就回傳空字串 */
 export const dateFromShowDateKey = (key: string): string =>
     key.split(SHOW_DATE_KEY_SEPARATOR)[1] ?? '';

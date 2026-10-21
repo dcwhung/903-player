@@ -17,11 +17,14 @@ const showName = (recording: Recording): string => findShow(recording.showId)?.n
 
 /** 今日（冇就最近一日）節目入面揀中邊個：有載入就跟 player，否則跟用戶揀 */
 const useTodaySelection = () => {
-    const { recordings } = useRecordings();
+    const { recordings, unavailable } = useRecordings();
     const player = usePlayer();
     const [chosen, setChosen] = useState(0);
     const today = hkToday();
-    const list = useMemo(() => todayRecordings(recordings, today), [recordings, today]);
+    const list = useMemo(
+        () => todayRecordings(recordings, today, unavailable),
+        [recordings, today, unavailable],
+    );
     const loadedIndex = list.findIndex((r) => r.url === player.recording?.url);
     const isLoaded = loadedIndex >= 0;
     const index = isLoaded ? loadedIndex : Math.min(chosen, list.length - 1);

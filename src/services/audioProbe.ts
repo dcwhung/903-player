@@ -1,11 +1,12 @@
 import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
-import { SHOWS, type ShowConfig } from '../config/shows';
-import type { Recording } from '../types/recording';
+import { SHOWS, findShow, type ShowConfig } from '../config/shows';
+import type { Recording, UnavailableEpisode } from '../types/recording';
 import { daysBetween, hkTimeHHMM, hkToday, weekdayOf } from '../utils/date';
 import {
     dateFromShowDateKey,
     readProbeState,
     showDateKey,
+    showIdFromShowDateKey,
     writeProbeState,
     type ProbeState,
 } from './probeStore';
@@ -132,6 +133,26 @@ const keepNewestPerShow = (found: Recording[]): Recording[] => {
 
 /** 已經搵到嘅錄音（app 唯一嘅資料來源）；同步讀，一開 app 就可以即刻顯示，唔使等 probe */
 export const readStoredRecordings = (): Recording[] => keepNewestPerShow(readProbeState().found);
+
+/** 由 miss 記錄嘅 key（`showId:date`）砌返未上架集數；唔認識嘅節目就冇 */
+const toUnavailable = (key: string): UnavailableEpisode | undefined => {
+    const show = findShow(showIdFromShowDateKey(key));
+    return show && { showId: show.id, date: dateFromShowDateKey(key), time: show.fileTime };
+};
+
+/**
+ * 回看期內試過但原站未有嘅集數（同步讀）：清單照列出但播唔到。
+ * 已經搵到嘅唔計（miss 記錄理論上會清走，保險起見再對一次）
+ */
+export const readUnavailableEpisodes = (now: Date = new Date()): UnavailableEpisode[] => {
+    const { found, misses } = readProbeState();
+    const covered = new Set(found.map((r) => showDateKey(r.showId, r.date)));
+    const dates = recentDates(now);
+    return Object.keys(misses)
+        .filter((key) => !covered.has(key) && dates.includes(dateFromShowDateKey(key)))
+        .map(toUnavailable)
+        .filter((episode) => episode !== undefined);
+};
 
 interface ProbeSlot {
     key: string;

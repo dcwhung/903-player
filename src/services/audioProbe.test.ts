@@ -11,6 +11,7 @@ import {
     probeAudio,
     probeRecentRecordings,
     readStoredRecordings,
+    readUnavailableEpisodes,
     type AudioProber,
     type ProbeResult,
 } from './audioProbe';
@@ -672,5 +673,46 @@ describe('readStoredRecordings', () => {
 
     it('returns nothing when storage is empty', () => {
         expect(readStoredRecordings()).toEqual([]);
+    });
+});
+
+describe('readUnavailableEpisodes', () => {
+    it('lists recent misses as unavailable episodes with the show file time', () => {
+        writeProbeState({ found: [], misses: { 'wanni:2026-10-20': NOW.getTime() } });
+
+        expect(readUnavailableEpisodes(NOW)).toEqual([
+            { showId: 'wanni', date: '2026-10-20', time: '0708' },
+        ]);
+    });
+
+    it(`skips misses outside the ${PROBE_LOOKBACK_DAYS}-day lookback`, () => {
+        writeProbeState({ found: [], misses: { 'wanni:2026-10-01': NOW.getTime() } });
+
+        expect(readUnavailableEpisodes(NOW)).toEqual([]);
+    });
+
+    it('skips unknown shows and malformed keys', () => {
+        writeProbeState({
+            found: [],
+            misses: { 'nobody:2026-10-20': 1, 'wanni:not-a-date': 1, wanni: 1 },
+        });
+
+        expect(readUnavailableEpisodes(NOW)).toEqual([]);
+    });
+
+    it('skips a miss whose recording has since been found', () => {
+        const recording: Recording = {
+            showId: 'wanni',
+            date: '2026-10-19',
+            time: '0708',
+            url: REAL_URLS.wanni,
+        };
+        writeProbeState({ found: [recording], misses: { 'wanni:2026-10-19': 1 } });
+
+        expect(readUnavailableEpisodes(NOW)).toEqual([]);
+    });
+
+    it('returns nothing when storage is empty', () => {
+        expect(readUnavailableEpisodes(NOW)).toEqual([]);
     });
 });

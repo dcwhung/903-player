@@ -40,8 +40,33 @@ const RowIcon = ({ item }: { item: EpisodeItem }) => {
     return <PlayIcon className={styles.play} size={PLAY_ICON_SIZE} filled={false} />;
 };
 
+/** 未上架：照列出日子同狀態，但撳唔到、冇播放掣、進度條變虛線 */
+const UnavailableRow = ({ item }: { item: EpisodeItem }) => {
+    const date = `${item.dayMonth} ${item.weekday}`;
+    return (
+        <button
+            type="button"
+            className={`${styles.row} ${styles.unavailable}`}
+            disabled
+            aria-label={t('episodes.unavailableRow', { date, status: item.status.text })}
+        >
+            <span className={styles.date}>
+                <span className={styles.dayMonth}>{item.dayMonth}</span>
+                <span className={styles.weekday}>{item.weekday}</span>
+            </span>
+            <span className={styles.body}>
+                <span className={styles.bar} aria-hidden="true" />
+                <span className={styles.status}>{item.status.text}</span>
+            </span>
+        </button>
+    );
+};
+
 const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: string) => void }) => {
     const { status } = item;
+    if (status.kind === 'unavailable') {
+        return <UnavailableRow item={item} />;
+    }
     const percent = toPercent(status.ratio);
     const date = `${item.dayMonth} ${item.weekday}`;
     return (
@@ -76,6 +101,15 @@ const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: str
     );
 };
 
+/** 標題右邊：「共 N 集」只計播得到嘅；有未上架就加埋幾多集 */
+const countText = (items: EpisodeItem[]): string => {
+    const unavailable = items.filter((item) => item.status.kind === 'unavailable').length;
+    const count = items.length - unavailable;
+    return unavailable > 0
+        ? t('episodes.countWithUnavailable', { count, unavailable })
+        : t('episodes.count', { count });
+};
+
 /**
  * 集數清單：最新喺頂，每集有進度同狀態。
  * 清單本身係節目頁唯一捲動嘅 panel；入頁 / 轉集時只喺 panel 入面捲到揀中嗰集
@@ -97,7 +131,7 @@ export const EpisodeList = ({ items, onSelect }: EpisodeListProps) => {
                 <h2 id={headingId} className={styles.heading}>
                     {t('episodes.title')}
                 </h2>
-                <span>{t('episodes.count', { count: items.length })}</span>
+                <span>{countText(items)}</span>
             </div>
             <ul ref={listRef} className={styles.list}>
                 {items.map((item) => (
