@@ -163,7 +163,7 @@
 .gauge {
     position: relative;
     width: var(--player-disc-size);
-    aspect-ratio: 300 / 332;
+    aspect-ratio: var(--player-gauge-w) / var(--player-gauge-h);
 }
 
 .discArea {

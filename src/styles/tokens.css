@@ -68,6 +68,12 @@
     --landscape-disc-min: 120px;
     --landscape-disc-max: 640px;
     --landscape-disc-fill: 0.88;
+    /*
+     * 播放器唱片格（唱片 + 下面時間 / 播放掣嗰行）嘅比例：闊 300 × 高 332（同 mockup 一致）。
+     * 節目頁播放器、今日節目卡、今日全部未上架嘅灰色唱片同下面計唱片大細都用呢對，唔好再寫死
+     */
+    --player-gauge-w: 300;
+    --player-gauge-h: 332;
     /* 節目頁 / 今日節目頁主碟（連進度弧）嘅闊度，兩頁一樣大 */
     --player-disc-size: min(300px, 78vw);
     /*
@@ -256,15 +262,21 @@
         --player-chrome-height: calc(
             2 * var(--fixed-page-gap) + var(--date-strip-label-height) + var(--date-strip-height)
         );
-        /* 唱片 + 時間 / 播放掣嗰一格嘅高 = 闊 × 332 / 300（PlayerPanel .gauge aspect-ratio） */
+        /* 唱片 + 時間 / 播放掣嗰一格嘅高 = 闊 × --player-gauge-h / --player-gauge-w（.gauge aspect-ratio） */
         /* 下限都唔可以闊過 78vw（極窄 / 高倍放大時避免橫向超出） */
         --player-disc-size: max(
             min(var(--player-disc-min), 78vw),
             min(
                 300px,
                 78vw,
-                calc((var(--player-shell-height) - var(--player-reserved-height)) * 300 / 332),
-                calc((var(--player-max-height) - var(--player-chrome-height)) * 300 / 332)
+                calc(
+                    (var(--player-shell-height) - var(--player-reserved-height)) *
+                        var(--player-gauge-w) / var(--player-gauge-h)
+                ),
+                calc(
+                    (var(--player-max-height) - var(--player-chrome-height)) *
+                        var(--player-gauge-w) / var(--player-gauge-h)
+                )
             )
         );
     }

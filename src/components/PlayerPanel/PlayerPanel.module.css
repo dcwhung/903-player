@@ -11,7 +11,7 @@
 .gauge {
     position: relative;
     width: var(--player-disc-size);
-    aspect-ratio: 300 / 332;
+    aspect-ratio: var(--player-gauge-w) / var(--player-gauge-h);
     /*
      * 播放掣跟唱片大小縮放（300px 唱片 → 56px），最細仍然 ≥ 44px 觸控範圍；
      * 橫版唱片可以大過 300px，播放掣最大 72px × --ui-scale，唔好大到搶過唱片
