@@ -1,4 +1,5 @@
 import {
+    addDays,
     daysBetween,
     formatDateLabel,
     formatDayMonth,
@@ -69,5 +70,13 @@ describe('daysBetween', () => {
         expect(daysBetween('2026-10-19', '2026-10-19')).toBe(0);
         expect(daysBetween('2026-10-19', '2026-10-21')).toBe(2);
         expect(daysBetween('2026-10-30', '2026-11-02')).toBe(3);
+    });
+});
+
+describe('addDays', () => {
+    it('moves an ISO date by whole calendar days across months and years', () => {
+        expect(addDays('2026-10-19', 0)).toBe('2026-10-19');
+        expect(addDays('2026-10-30', 3)).toBe('2026-11-02');
+        expect(addDays('2026-01-01', -1)).toBe('2025-12-31');
     });
 });

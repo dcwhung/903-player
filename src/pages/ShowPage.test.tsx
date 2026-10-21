@@ -13,7 +13,8 @@ const RECORDINGS = [
 ];
 const ROUTE = { route: '/show/gongzi', path: '/show/:showId' };
 const SWIPE_ZONE = { description: '左右方向鍵或左右掃動轉集' };
-const SWIPE_PX = 100;
+// 掃一格：jsdom 冇 layout，日子條一格當 56px（公子會逢星期六，一格一集）
+const SWIPE_PX = 56;
 
 /** 喺轉集區左右掃一下（dx < 0 = 向左） */
 const swipe = (zone: HTMLElement, dx: number) => {
@@ -50,25 +51,30 @@ describe('ShowPage', () => {
         expect(screen.queryByText('正在播放')).not.toBeInTheDocument();
     });
 
-    it('reads 現正播放 with the current date and shows both neighbour dates', async () => {
+    it('reads 現正播放 and lists only the Saturdays of a weekly show, without greyed-out days', async () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
         await userEvent.click(screen.getByRole('button', { name: /^播放 10\/10/ }));
         act(() => audio.emitMetadata(2400));
 
-        const date = screen.getByText('10/10（六）');
-        expect(date.parentElement).toHaveTextContent(/^10\/10（六）$/);
-        expect(screen.getByText('現正播放')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '新一集 17/10（六）' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '舊一集 03/10（六）' })).toBeInTheDocument();
+        const zone = screen.getByRole('group', SWIPE_ZONE);
+        expect(screen.getByText('現正播放')).toHaveTextContent(/^現正播放$/);
+        expect(zone).toHaveAccessibleName(/^10\/10（六）/);
+        // 公子會逢星期六：隔籬格就係 17/10 同 03/10，中間冇灰色平日
+        const days = Array.from(zone.firstElementChild?.children ?? [])
+            .map((cell) => cell.textContent)
+            .filter(Boolean);
+        expect(days).toEqual(['六17/10', '六10/10', '六03/10']);
+        expect(screen.getByRole('button', { name: '轉去 17/10（六）' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '轉去 03/10（六）' })).toBeInTheDocument();
     });
 
-    it('plays the newer episode when its date is tapped beside 現正播放', async () => {
+    it('plays a newer episode when its day is tapped in the strip', async () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
         await userEvent.click(screen.getByRole('button', { name: /^播放 03\/10/ }));
 
-        await userEvent.click(screen.getByRole('button', { name: '新一集 10/10（六）' }));
+        await userEvent.click(screen.getByRole('button', { name: '轉去 10/10（六）' }));
 
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[2]?.url));
         expect(audio.play).toHaveBeenLastCalledWith();

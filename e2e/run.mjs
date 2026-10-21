@@ -415,66 +415,80 @@ const checkScrollingTodayPage = async (p, label) => {
     );
 };
 
-/** 拖緊日子條：成條跟住手指郁（track 有 translateX），可以順便影一張拖緊嘅截圖 */
+/** 拖緊日子條：成條跟住手指郁（track translateX 加咗負數位移），可以順便影一張拖緊嘅截圖 */
 const checkStripFollows = async (p, x, y, shot) => {
     await p.mouse.move(x - STRIP_DRAG_PX, y + 2, { steps: 4 });
     const transform = await p.locator(STRIP).evaluate((el) => el.firstElementChild.style.transform);
-    log(/translateX\(-\d/.test(transform), `拖緊日子條成條跟住郁：${transform}`);
+    log(/-\s?\d[\d.]*px\)\)$/.test(transform), `拖緊日子條成條跟住郁：${transform}`);
     if (shot) await p.screenshot({ path: `${OUT}/${shot}` });
 };
 
-/** 喺唱片下面嘅日子條向左掃 → 播放中轉去下一行（舊一集） */
+/** 日子條入面某一日（「轉去 20/10（二）」）嘅中心離日子條中心幾遠（px） */
+const dayOffset = async (p, dayMonth) => {
+    const zone = await p.locator(STRIP).boundingBox();
+    const day = await p.locator(`${STRIP} button[aria-label^="轉去 ${dayMonth}"]`).boundingBox();
+    return day.x + day.width / 2 - (zone.x + zone.width / 2);
+};
+
+/** 喺唱片下面嘅日子條向左拖，將下一行（舊一集）嗰日拖入正中 → 播放中轉去嗰集 */
 const checkSwipeToOlder = async (p, dragShot) => {
     const rows = p.getByRole('region', { name: '集數' }).locator('li button');
     const labels = await rows.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
     const from = labels.findIndex((l) => l.includes('播放中'));
+    const olderDate = labels[from + 1]?.split('，')[0];
+    const distance = await dayOffset(p, olderDate.replace('播放 ', '').split(' ')[0]);
     const zone = await p.locator(STRIP).boundingBox();
     const y = zone.y + zone.height / 2;
-    const x = zone.x + zone.width / 2 + SWIPE_FROM_PX / 2;
+    const x = zone.x + zone.width / 2 + distance / 2;
     await p.mouse.move(x, y);
     await p.mouse.down();
     await checkStripFollows(p, x, y, dragShot);
-    await p.mouse.move(zone.x + zone.width / 2 - SWIPE_FROM_PX / 2, y + 4, { steps: 6 });
+    await p.mouse.move(x - distance, y + 4, { steps: 6 });
     await p.mouse.up();
     await p.waitForTimeout(800);
     const now = await p.locator('button[aria-current="true"]').first().getAttribute('aria-label');
-    const olderDate = labels[from + 1]?.split('，')[0];
     log(
         now.startsWith(olderDate) && now.includes('播放中'),
-        `向左掃轉舊一集：${labels[from]} → ${now}`,
+        `向左拖轉舊一集：${labels[from]} → ${now}`,
     );
     const playing = await p.evaluate(() => navigator.mediaSession.playbackState);
-    log(playing === 'playing', `掃完即刻播：${playing}`);
+    log(playing === 'playing', `拖完即刻播：${playing}`);
 };
 
-/** 節目頁頁頭係節目名（唔再係「正在播放」），日子條上面有「現正播放」、中間係日期 */
+/** 節目頁頁頭係節目名（唔再係「正在播放」），日子條上面得「現正播放」，現正播放嗰日喺正中 */
 const checkShowHeader = async (p, name, label) => {
     const heading = await p.locator('header h1').textContent();
     const stale = await p.getByText('正在播放', { exact: true }).count();
     log(heading === name && stale === 0, `${label}：頁頭係節目名「${heading}」`);
-    const { above, line } = await p.locator(STRIP).evaluate((el) => {
+    const { above, date, centreGap } = await p.locator(STRIP).evaluate((el) => {
         const dateId = el.getAttribute('aria-labelledby').split(' ')[0];
+        const zone = el.getBoundingClientRect();
+        const cell = el.querySelector('[aria-current="date"]').getBoundingClientRect();
         return {
             above: el.previousElementSibling?.textContent,
-            line: document.getElementById(dateId).parentElement.textContent,
+            date: document.getElementById(dateId).textContent,
+            centreGap: cell.x + cell.width / 2 - (zone.x + zone.width / 2),
         };
     });
     log(
-        above === '現正播放' && /^\d{2}\/\d{2}（.）$/.test(line),
-        `${label}：日子條上面「${above}」、中間「${line}」`,
+        above === '現正播放' && /^\d{2}\/\d{2}（.）$/.test(date) && Math.abs(centreGap) < 1,
+        `${label}：日子條上面「${above}」、正中「${date}」（偏離 ${centreGap.toFixed(2)}px）`,
     );
 };
 
-/** 日子條側格嘅日期唔可以畀剪走（320px 闊會收埋箭咀） */
-const checkSideCellsFit = async (p, label) => {
+/** 日子條每格（星期 + 日/月）唔可以畀剪走（320px 闊一格得約 41px） */
+const checkDayCellsFit = async (p, label) => {
     const cells = await p
-        .locator(`${STRIP} button`)
+        .locator(`${STRIP} > div > *`)
         .evaluateAll((els) =>
-            els.map((e) => ({ text: e.textContent, over: e.scrollWidth - e.clientWidth })),
+            els
+                .filter((e) => e.textContent)
+                .map((e) => ({ text: e.textContent, over: e.scrollWidth - e.clientWidth })),
         );
+    const clipped = cells.filter((c) => c.over > 0);
     log(
-        cells.length > 0 && cells.every((c) => c.over <= 0),
-        `${label}：日子條側格冇剪走（${cells.map((c) => `${c.text} ${c.over}px`).join(' / ')}）`,
+        cells.length > 0 && clipped.length === 0,
+        `${label}：日子條 ${cells.length} 格冇剪走（${clipped.map((c) => `${c.text} ${c.over}px`).join(' / ') || '全部啱位'}）`,
     );
 };
 
@@ -1194,11 +1208,11 @@ try {
         const label = `${width}×${height} 節目頁`;
         const shot = `show-${width}x${height}.png`;
         await checkShowHeader(fp, 'Bad Girl大過佬', label);
-        await checkSideCellsFit(fp, label);
+        await checkDayCellsFit(fp, label);
         if (swipe) {
             await checkSwipeToOlder(fp, width === 390 ? 'show-strip-dragging.png' : null);
-            // 掃去舊一集之後兩邊都有隔籬集：連左邊「新一集」側格都量埋
-            await checkSideCellsFit(fp, `${label}（掃完，兩邊都有）`);
+            // 拖去舊一集之後正中仍然對齊
+            await checkShowHeader(fp, 'Bad Girl大過佬', `${label}（拖完）`);
         }
         if (height > SHORT_HEIGHT_PX) await checkFixedShowPage(fp, label, shot);
         else await checkScrollingShowPage(fp, label, shot);
