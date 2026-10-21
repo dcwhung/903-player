@@ -1,12 +1,13 @@
 <title>903 Player 橫版</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <style>
 /*
- * Layout：上面揀頁面 / 裝置，中間係按比例縮放嘅橫向裝置 mock（入面係真實 px 尺寸，唱片按左欄高度計），
+ * Layout：上面揀頁面 / 裝置，中間係按比例縮放嘅橫向裝置 mock（入面係真實 px 尺寸），
  * 下面係版面規則、功能對照、實作備註三張表。
  * 外殼刻意單一深色（app 本身全深色）；裝置入面嘅 --theme-* 跟 src/config/showThemes.ts。
+ * 裝置用 container query 代替真 app 嘅 @media（裝置係縮放咗嘅 div）。
  */
 :root {
     color-scheme: dark;
@@ -18,20 +19,7 @@
     --shell-accent: #98bdde;
     --shell-on-accent: #101214;
     --font: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
-
-    /* app tokens（src/styles/tokens.css） */
-    --space-1: 4px;
-    --space-2: 8px;
-    --space-3: 12px;
-    --space-4: 16px;
-    --space-5: 20px;
-    --touch-target: 44px;
-    --radius-cell: 12px;
-    --radius-lg: 20px;
-    --strip-label: 16px;
-    --strip-height: 44px;
-    --card-offset: 12px;
-    --ease-strip: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-card: cubic-bezier(0.2, 0.6, 0.4, 1);
 }
 * { box-sizing: border-box; }
 body {
@@ -50,9 +38,9 @@ body {
 /* ---------- 頁頂 ---------- */
 .intro { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px; }
 .intro h1 { margin: 0; font-size: 24px; font-weight: 600; text-wrap: balance; }
-.intro p { margin: 4px 0 0; color: var(--shell-muted); max-width: 62ch; }
+.intro p { margin: 4px 0 0; color: var(--shell-muted); max-width: 66ch; }
 .controls { display: flex; flex-wrap: wrap; gap: 12px; }
-.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: var(--shell-panel); border: 1px solid var(--shell-line); }
+.seg { display: inline-flex; flex-wrap: wrap; padding: 3px; gap: 2px; border-radius: 20px; background: var(--shell-panel); border: 1px solid var(--shell-line); }
 .seg button {
     border: 0; border-radius: 999px; padding: 6px 14px; min-height: 34px;
     font: inherit; font-size: 13px; color: var(--shell-muted); background: transparent; cursor: pointer;
@@ -62,109 +50,133 @@ body {
 
 /* ---------- 裝置舞台 ---------- */
 .stage { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.stage-caption { color: var(--shell-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.stage-caption { color: var(--shell-muted); font-size: 12px; font-variant-numeric: tabular-nums; text-align: center; }
 .scaler { position: relative; }
 .device {
     position: absolute; left: 0; top: 0; transform-origin: 0 0;
     border-radius: 44px; box-shadow: 0 0 0 10px #000, 0 0 0 11px #2c2c2c, 0 24px 70px rgb(0 0 0 / 55%);
     overflow: hidden;
-    /* mock 用 container query 代替真 app 嘅 @media（裝置係縮放咗嘅 div） */
     container: screen / size;
 }
 .device[data-kind="tablet"] { border-radius: 24px; }
 .device[data-kind="desktop"] { border-radius: 10px; box-shadow: 0 0 0 1px #33373c, 0 24px 70px rgb(0 0 0 / 55%); }
 /* iPhone 打橫：瀏海喺左邊，home indicator 喺底 */
 .notch {
-    position: absolute; z-index: 5; left: 10px; top: 50%; width: 30px; height: 126px;
+    position: absolute; z-index: 20; left: 10px; top: 50%; width: 30px; height: 126px;
     transform: translateY(-50%); border-radius: 16px; background: #000;
 }
-.home-ind { position: absolute; z-index: 5; left: 50%; bottom: 8px; width: 200px; height: 5px; transform: translateX(-50%); border-radius: 3px; background: rgb(255 255 255 / 70%); }
+.home-ind { position: absolute; z-index: 20; left: 50%; bottom: 8px; width: 200px; height: 5px; transform: translateX(-50%); border-radius: 3px; background: rgb(255 255 255 / 70%); }
 
 /* ---------- App（裝置入面） ---------- */
+/*
+ * --s：文字同掣嘅倍數。手機 1（同直版一樣）；闊 ≥ 1024px 1.3；再高 ≥ 800px（iPad 打橫）1.5。
+ * 所有字、掣、icon、清單行高、間距都乘 --s
+ */
 .app {
-    --color-bg: var(--theme-bg);
+    --s: 1;
+    --touch: calc(44px * var(--s));
+    --sp-1: calc(4px * var(--s));
+    --sp-2: calc(8px * var(--s));
+    --sp-3: calc(12px * var(--s));
+    --sp-4: calc(16px * var(--s));
+    --sp-5: calc(20px * var(--s));
+    --fs-2xs: calc(11px * var(--s));
+    --fs-xs: calc(12px * var(--s));
+    --fs-sm: calc(13px * var(--s));
+    --fs-md: calc(15px * var(--s));
+    --fs-lg: calc(16px * var(--s));
+    --fs-xl: calc(20px * var(--s));
+    --strip-label: calc(16px * var(--s));
+    --strip-height: calc(44px * var(--s));
+    --strip-space: calc(var(--strip-label) + var(--strip-height) + var(--fixed-gap));
+    --card-offset: calc(12px * var(--s));
+    --radius-cell: calc(12px * var(--s));
+    --radius-lg: calc(20px * var(--s));
+    --disc-max: 340px;
+
     height: 100%;
     background: var(--theme-bg);
     color: var(--theme-text);
     font-family: var(--font);
-    display: grid;
-    /* 橫版核心：左欄播放器（最闊 440px），右欄清單 */
-    grid-template-columns: minmax(0, 46%) minmax(0, 1fr);
-    column-gap: var(--space-5);
     padding-left: var(--sa-l, 0px);
     padding-right: var(--sa-r, 0px);
     transition: background-color 0.3s;
 }
 .app button { font: inherit; color: inherit; cursor: pointer; }
+.app svg { display: block; width: var(--ico, calc(22px * var(--s))); height: var(--ico, calc(22px * var(--s))); }
+
+/* 節目頁 / 今日節目頁：左播放器、右清單 */
+.split {
+    display: grid;
+    grid-template-columns: minmax(0, 46%) minmax(0, 1fr);
+    column-gap: var(--sp-5);
+}
+
+/* 規則 A：矮畫面（手機打橫，高 ≤ 561px）唔出日子條 */
+@container screen (max-height: 561px) {
+    .app { --strip-space: 0px; }
+    .app .strip-wrap { display: none; }
+}
+/* 規則 B：闊 ≥ 1024px（iPad 打橫及以上）右欄 30%、唔出日子條、唱片放大、字同掣 × 1.3 */
+@container screen (min-width: 1024px) {
+    .app { --s: 1.3; --disc-max: 640px; --strip-space: 0px; }
+    .app .strip-wrap { display: none; }
+    /* 右欄 30%，但最少 300px × 倍數，放大咗嘅字先放得落「播放中 · 42:56 / 1:53:00」 */
+    .split { grid-template-columns: minmax(0, 1fr) minmax(0, max(30%, calc(300px * var(--s)))); }
+}
+/* 規則 C：闊 ≥ 1024px 而且高 ≥ 800px（iPad 打橫）字同掣 × 1.5 */
+@container screen (min-width: 1024px) and (min-height: 800px) {
+    .app { --s: 1.5; }
+}
 
 .col-left {
     container-type: size;
     min-height: 0;
     display: flex; flex-direction: column; align-items: center;
     gap: var(--fixed-gap);
-    padding-top: var(--space-3);
-    padding-bottom: max(var(--space-3), var(--sa-b, 0px));
+    padding-top: var(--sp-3);
+    padding-bottom: max(var(--sp-3), var(--sa-b, 0px));
 }
 .col-right {
     min-height: 0; min-width: 0;
     display: flex; flex-direction: column;
-    padding-top: var(--space-3);
+    padding-top: var(--sp-3);
     border-left: 1px solid color-mix(in srgb, var(--theme-track) 70%, transparent);
-    padding-left: var(--space-5);
+    padding-left: var(--sp-5);
 }
 
-/* 頁頭：返回掣 + 標題，橫版放左欄頂，左對齊省高度 */
-.page-head { align-self: stretch; display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+/* 頁頭：返回掣 + 標題，放左欄頂、左對齊 */
+.page-head { align-self: stretch; display: flex; align-items: center; gap: var(--sp-2); min-width: 0; flex-shrink: 0; }
 .back {
-    flex-shrink: 0; width: var(--touch-target); height: var(--touch-target);
+    flex-shrink: 0; width: var(--touch); height: var(--touch);
     display: grid; place-items: center; border: 0; border-radius: 50%;
     background: var(--theme-surface); color: var(--theme-text);
     box-shadow: -3px -3px 6px var(--theme-shadow-light), 3px 3px 8px var(--theme-shadow-dark);
 }
 .page-head h1 {
-    margin: 0; min-width: 0; font-size: 20px; font-weight: 600; color: var(--theme-title);
+    margin: 0; min-width: 0; font-size: var(--fs-xl); font-weight: 600; color: var(--theme-title);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* 播放器：頁頭釘頂，播放器喺剩低嘅高度置中；唱片大小由左欄高度決定（cqh），唔再係畫面高 × 六成 */
-.player, .stack-area { flex: 1; min-height: 0; justify-content: center; }
-.player { display: flex; flex-direction: column; align-items: center; gap: var(--fixed-gap); width: 100%; }
+/* 播放器：頁頭釘頂，播放器喺剩低嘅高度置中；唱片大小由左欄高度決定（cqh） */
+.player, .stack-area { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.player { gap: var(--fixed-gap); width: 100%; }
+.show-page .col-left {
+    --disc: clamp(150px, min(86cqw, (100cqh - var(--touch) - var(--fixed-gap) - var(--strip-space)) * 300 / 332), var(--disc-max));
+}
+.today-page .col-left {
+    --disc: clamp(140px, min(72cqw, (100cqh - var(--touch) - calc(24px * var(--s)) - 2 * var(--card-offset) - calc(48px * var(--s)) - 2 * var(--fixed-gap)) * 300 / 332), var(--disc-max));
+}
 .gauge {
     position: relative;
     width: var(--disc);
     aspect-ratio: 300 / 332;
     flex-shrink: 0;
-    /* 大碟時播放掣封頂 72px，唔好大到搶戲 */
-    --toggle: clamp(var(--touch-target), calc(var(--disc) * 56 / 300), 72px);
-}
-.show-page .col-left {
-    --disc: clamp(150px, min(80cqw, (100cqh - var(--touch-target) - var(--strip-label) - var(--strip-height) - 3 * var(--fixed-gap)) * 300 / 332), var(--disc-max));
-}
-.today-page .col-left {
-    --disc: clamp(140px, min(70cqw, (100cqh - var(--touch-target) - 24px - 2 * var(--card-offset) - 44px - 2 * var(--fixed-gap)) * 300 / 332), var(--disc-max));
-}
-.app { --disc-max: 340px; }
-
-/*
- * 規則 1：矮畫面（手機打橫，高 ≤ 561px）唔出日子條，唱片用盡左欄高度；
- * 轉集改由右欄集數清單做（聽過剔、進度都喺清單度）
- */
-@container screen (max-height: 561px) {
-    .app .strip-wrap { display: none; }
-    .show-page .col-left {
-        --disc: clamp(150px, min(86cqw, (100cqh - var(--touch-target) - var(--fixed-gap)) * 300 / 332), var(--disc-max));
-    }
-}
-
-/* 規則 2：闊畫面（iPad 打橫及以上，闊 ≥ 1024px）右欄收窄到 30%，唱片放大用盡左欄 */
-@container screen (min-width: 1024px) {
-    .app {
-        --disc-max: 640px;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 30%);
-    }
+    /* 播放掣跟碟放大，最大 72px × --s */
+    --toggle: clamp(var(--touch), calc(var(--disc) * 56 / 300), calc(72px * var(--s)));
 }
 .arc { position: absolute; inset: 0 0 auto; aspect-ratio: 1; width: 100%; }
-.arc svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: pointer; }
+.arc svg { width: 100%; height: 100%; touch-action: none; cursor: pointer; }
 .disc-area { position: absolute; inset: 0 0 auto; aspect-ratio: 1; display: grid; place-items: center; pointer-events: none; }
 .disc {
     position: relative; width: 72%; aspect-ratio: 1; border-radius: 50%; overflow: hidden;
@@ -178,29 +190,30 @@ body {
     border-radius: 50%; background: var(--theme-bg); box-shadow: inset 0 0 0 2px var(--theme-track);
 }
 @keyframes spin { to { rotate: 360deg; } }
-.time {
-    position: absolute; bottom: calc(var(--toggle) / 2); transform: translateY(50%);
-    font-size: 13px; font-variant-numeric: tabular-nums; color: var(--theme-text); white-space: nowrap;
-}
 /* 時間嘅框止喺掣旁邊，字放唔落就向外伸（同 PlayerPanel.module.css .time） */
-.time.elapsed { display: flex; justify-content: flex-end; left: 4%; right: calc(50% + var(--toggle) / 2 + var(--touch-target) + var(--space-1)); }
-.time.total { display: flex; justify-content: flex-start; right: 0; left: calc(50% + var(--toggle) / 2 + var(--touch-target) + var(--space-1)); }
+.time {
+    position: absolute; bottom: calc(var(--toggle) / 2); transform: translateY(50%); display: flex;
+    font-size: var(--fs-sm); font-variant-numeric: tabular-nums; color: var(--theme-text); white-space: nowrap;
+}
+.time.elapsed { justify-content: flex-end; left: 4%; right: calc(50% + var(--toggle) / 2 + var(--touch) + var(--sp-1)); }
+.time.total { justify-content: flex-start; right: 0; left: calc(50% + var(--toggle) / 2 + var(--touch) + var(--sp-1)); }
 .time.elapsed > span { margin-right: auto; }
 .time.total > span { margin-left: auto; }
 .actions {
     position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-    display: grid; grid-template-columns: var(--touch-target) auto var(--touch-target); align-items: center;
+    display: grid; grid-template-columns: var(--touch) auto var(--touch); align-items: center;
 }
-.restart { width: var(--touch-target); height: var(--touch-target); border: 0; border-radius: 50%; background: transparent; color: var(--theme-accent) !important; display: grid; place-items: center; }
-.toggle {
+.app .restart { width: var(--touch); height: var(--touch); border: 0; border-radius: 50%; background: transparent; color: var(--theme-accent); display: grid; place-items: center; }
+.app .toggle {
+    --ico: calc(var(--toggle) * 0.45);
     width: var(--toggle); height: var(--toggle); border: 0; border-radius: 50%; display: grid; place-items: center;
-    background: var(--theme-accent); color: var(--theme-on-accent) !important;
+    background: var(--theme-accent); color: var(--theme-on-accent);
     box-shadow: -4px -4px 10px var(--theme-shadow-light), 5px 5px 14px var(--theme-shadow-dark);
 }
 
-/* 日子條：闊度跟左欄，最闊 360px */
-.strip-wrap { width: min(100%, 360px); display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
-.strip-label { height: var(--strip-label); line-height: var(--strip-label); font-size: 11px; letter-spacing: 0.18em; color: var(--theme-accent); }
+/* 日子條（只喺 640–1023px 闊而且高 > 561px 先出） */
+.strip-wrap { width: min(100%, calc(360px * var(--s))); display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.strip-label { height: var(--strip-label); line-height: var(--strip-label); font-size: var(--fs-2xs); letter-spacing: 0.18em; color: var(--theme-accent); }
 .strip {
     position: relative; width: 100%; height: var(--strip-height);
     display: grid; grid-template-columns: repeat(7, 1fr);
@@ -217,74 +230,133 @@ body {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     font-variant-numeric: tabular-nums;
 }
-.cell .wd { font-size: 11px; line-height: 14px; color: var(--theme-muted); }
-.cell .dm { font-size: 13px; line-height: 18px; font-weight: 500; }
+.cell .wd { font-size: var(--fs-2xs); line-height: 1.25; color: var(--theme-muted); }
+.cell .dm { font-size: var(--fs-sm); line-height: 1.35; font-weight: 500; }
 .cell.empty { opacity: 0.35; cursor: default; }
 .cell.on .dm { color: var(--theme-accent); }
-.cell .tick { position: absolute; top: 2px; right: 6px; font-size: 9px; color: var(--theme-accent); }
+.cell .tick { position: absolute; top: 2px; right: 6px; font-size: calc(9px * var(--s)); color: var(--theme-accent); }
 
-/* 右欄清單（EpisodeList / TodayShowList 共用外觀） */
-.list-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-4) var(--space-3) var(--space-1); }
-.list-head h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--theme-title); letter-spacing: 0.04em; }
-.list-head span { font-size: 12px; color: var(--theme-muted); }
+/* 右欄清單（EpisodeList / TodayShowList） */
+.list-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-2) var(--sp-4) var(--sp-3) var(--sp-1); }
+.list-head h2 { margin: 0; font-size: var(--fs-md); font-weight: 600; color: var(--theme-title); letter-spacing: 0.04em; }
+.list-head span { font-size: var(--fs-xs); color: var(--theme-muted); }
 .list {
-    list-style: none; margin: 0; padding: 0 var(--space-3) max(var(--space-4), var(--sa-b, 0px)) 0;
+    list-style: none; margin: 0; padding: 0 var(--sp-3) max(var(--sp-4), var(--sa-b, 0px)) 0;
     overflow-y: auto; overscroll-behavior: contain; min-height: 0; flex: 1;
-    display: flex; flex-direction: column; gap: var(--space-2);
+    display: flex; flex-direction: column; gap: var(--sp-2);
     scrollbar-width: thin; scrollbar-color: var(--theme-track) transparent;
 }
 .row {
-    width: 100%; border: 0; border-radius: 14px; padding: var(--space-2) var(--space-3);
-    display: flex; align-items: center; gap: var(--space-3); text-align: left;
-    background: transparent; min-height: 56px;
+    width: 100%; border: 0; border-radius: calc(14px * var(--s)); padding: var(--sp-2) var(--sp-3);
+    display: flex; align-items: center; gap: var(--sp-3); text-align: left;
+    background: transparent; min-height: calc(56px * var(--s));
 }
 .row:hover { background: color-mix(in srgb, var(--theme-surface) 60%, transparent); }
 .row.current { background: var(--theme-surface); box-shadow: -3px -3px 6px var(--theme-shadow-light), 3px 3px 8px var(--theme-shadow-dark); }
-.row .date { width: 64px; flex-shrink: 0; display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
-.row .dmo { font-size: 16px; font-weight: 600; color: var(--theme-title); line-height: 1.2; }
-.row .wdy { font-size: 12px; color: var(--theme-muted); }
-.row .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.bar { height: 4px; border-radius: 2px; background: var(--theme-track); overflow: hidden; }
+.row .date { width: calc(64px * var(--s)); flex-shrink: 0; display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
+.row .dmo { font-size: var(--fs-lg); font-weight: 600; color: var(--theme-title); line-height: 1.2; }
+.row .wdy { font-size: var(--fs-xs); color: var(--theme-muted); }
+.row .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+.bar { height: calc(4px * var(--s)); border-radius: 2px; background: var(--theme-track); overflow: hidden; }
 .bar > span { display: block; height: 100%; background: var(--theme-accent); }
-.row .st { font-size: 12px; color: var(--theme-muted); font-variant-numeric: tabular-nums; }
+/* 狀態字放唔落就斷行（「播放中 · 42:56 / 1:53:00」喺窄右欄唔好截走時間） */
+.row .st { font-size: var(--fs-xs); color: var(--theme-muted); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .row.current .st { color: var(--theme-accent); }
-.row .ico { flex-shrink: 0; width: 28px; display: grid; place-items: center; color: var(--theme-muted); }
-.row .ico.done { color: var(--theme-accent); }
-.mini-disc { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: var(--art) center / cover; box-shadow: 0 0 0 3px var(--theme-track); }
-.row .name { font-size: 15px; font-weight: 500; color: var(--theme-title); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .ico { flex-shrink: 0; width: calc(28px * var(--s)); display: grid; place-items: center; color: var(--theme-muted); }
+.row .ico.done { --ico: calc(14px * var(--s)); color: var(--theme-accent); }
+.mini-disc { width: calc(40px * var(--s)); height: calc(40px * var(--s)); flex-shrink: 0; border-radius: 50%; background: var(--art) center / cover; box-shadow: 0 0 0 3px var(--theme-track); }
+.row .name { font-size: var(--fs-md); font-weight: 500; color: var(--theme-title); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* 今日節目：卡疊 + 指示點 */
-.stack-area { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
 .stack { position: relative; padding-bottom: calc(2 * var(--card-offset)); touch-action: pan-y; }
 .card {
-    position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
-    padding: var(--space-2) var(--space-4) var(--space-4);
+    position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-4) var(--sp-4);
     border-radius: var(--radius-lg); background: var(--theme-surface);
     box-shadow: -4px -4px 10px var(--theme-shadow-light), 6px 6px 16px var(--theme-shadow-dark);
-    transition: transform 0.28s cubic-bezier(0.2, 0.6, 0.4, 1), opacity 0.28s;
+    transition: transform 0.28s var(--ease-card), opacity 0.28s;
     cursor: grab;
 }
 .card.fly-left { transform: translateX(-60%) rotate(-12deg); opacity: 0; }
 .card.fly-right { transform: translateX(60%) rotate(12deg); opacity: 0; }
-.card h2 { margin: 0; font-size: 20px; font-weight: 600; color: var(--theme-title); text-align: center; max-width: var(--disc); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 28px; }
-.ghost {
-    position: absolute; inset: 0 0 calc(2 * var(--card-offset)); border-radius: var(--radius-lg);
-    background: var(--theme-surface); transform-origin: 50% 100%;
-}
+.card h2 { margin: 0; font-size: var(--fs-xl); font-weight: 600; color: var(--theme-title); text-align: center; max-width: var(--disc); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
+.ghost { position: absolute; inset: 0 0 calc(2 * var(--card-offset)); border-radius: var(--radius-lg); background: var(--theme-surface); transform-origin: 50% 100%; }
 .ghost.g1 { z-index: 1; transform: translateY(var(--card-offset)) scale(0.92); opacity: 0.65; }
 .ghost.g2 { z-index: 0; transform: translateY(calc(2 * var(--card-offset))) scale(0.84); opacity: 0.3; }
-.dots { display: flex; gap: 0; height: 24px; align-items: center; }
-.dot { border: 0; padding: 0; width: 18px; height: 24px; background: transparent; display: grid; place-items: center; }
-.dot::after { content: ''; width: 6px; height: 6px; border-radius: 3px; background: var(--theme-track); transition: width 0.2s, background-color 0.2s; }
-.dot[aria-current="true"]::after { width: 18px; background: var(--theme-accent); }
-.dot[aria-current="true"] { width: 30px; }
+.dots { display: flex; height: calc(24px * var(--s)); align-items: center; }
+.dot { border: 0; padding: 0; width: calc(18px * var(--s)); height: calc(24px * var(--s)); background: transparent; display: grid; place-items: center; }
+.dot::after { content: ''; width: calc(6px * var(--s)); height: calc(6px * var(--s)); border-radius: 99px; background: var(--theme-track); transition: width 0.2s, background-color 0.2s; }
+.dot[aria-current="true"] { width: calc(30px * var(--s)); }
+.dot[aria-current="true"]::after { width: calc(18px * var(--s)); background: var(--theme-accent); }
+
+/* ---------- 主頁 ---------- */
+/*
+ * 闊畫面（手機打橫、桌面）：5 欄 × 2 行，第一行橫額（32:9，佔兩格）+ 3 個節目，第二行 4 個節目 + 今日節目。
+ * 方啲嘅畫面（闊高比 ≤ 8:5，例如 iPad 打橫、細視窗）：4 欄，橫額佔成行兩行高（啱啱 32:9），下面 2 行 × 4 格。
+ * 格嘅闊度由格區（扣 mini player 同版本號）嘅闊同高邊個細決定
+ */
+.home-page {
+    --home-gap: var(--sp-3);
+    --mini-h: calc(var(--touch) + 24px * var(--s) + var(--sp-4));
+    position: relative;
+    background: linear-gradient(180deg, #4f749c, #42658a);
+    color: #fdf8f2;
+    display: flex; flex-direction: column; align-items: center;
+    gap: var(--sp-2);
+    padding-top: var(--sp-4);
+    padding-bottom: calc(var(--mini-h) + max(var(--sp-3), var(--sa-b, 0px)) + var(--sp-3));
+}
+.home-main {
+    flex: 1; min-height: 0; width: 100%; container-type: size;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-2);
+}
+.home-grid {
+    --cols: 5;
+    --rows: 2;
+    --tile-w: min((100cqw - (var(--cols) - 1) * var(--home-gap)) / var(--cols), (100cqh - var(--fs-xs) * 1.5 - var(--sp-2) - var(--sp-2) - (var(--rows) - 1) * var(--home-gap)) / var(--rows) * 16 / 9);
+    display: grid;
+    grid-template-columns: repeat(var(--cols), var(--tile-w));
+    gap: var(--home-gap);
+}
+@container screen (max-aspect-ratio: 8 / 5) {
+    .home-grid { --cols: 4; --rows: 4; }
+    /* 4 欄闊、兩行高 = 32:9；空 h1 冇內容高度，要靠 aspect-ratio 撐起兩行 */
+    .home-grid .banner { grid-column: span 4; grid-row: span 2; aspect-ratio: 32 / 9; }
+}
+.banner, .tile {
+    position: relative; overflow: hidden; border-radius: calc(14px * var(--s));
+    box-shadow: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
+}
+.banner { grid-column: span 2; aspect-ratio: auto; background: var(--img) 50% 32% / cover no-repeat; margin: 0; }
+.tile { aspect-ratio: 16 / 9; border: 1px solid #42658a; padding: 0; background: #42658a var(--img) center / cover no-repeat; }
+.tile.today { border: 0; box-shadow: 0 6px 0 #1f7fd0, 0 10px 18px rgb(20 40 65 / 30%); }
+.tile.today span { position: absolute; top: 59%; left: 52%; transform: translate(-50%, -50%); white-space: nowrap; font-size: var(--fs-lg); font-weight: 700; color: #2f4560; }
+.version { margin: 0; line-height: 1.5; font-size: var(--fs-xs); color: #e6eef7; }
+.mini {
+    position: absolute; z-index: 5;
+    left: 50%; transform: translateX(-50%);
+    bottom: max(var(--sp-3), var(--sa-b, 0px));
+    width: min(calc(100% - var(--sa-l, 0px) - var(--sa-r, 0px) - 2 * var(--sp-3)), calc(520px * var(--s)));
+    border-radius: var(--radius-lg); overflow: hidden;
+    background: var(--theme-surface); color: var(--theme-text);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 45%);
+    touch-action: pan-y;
+}
+.mini .dots { position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
+.mini-row { display: flex; align-items: center; gap: var(--sp-3); height: var(--mini-h); padding: calc(24px * var(--s)) var(--sp-3) var(--sp-4); }
+.mini-open { display: flex; flex: 1; align-items: center; gap: var(--sp-3); min-width: 0; padding: 0; border: 0; background: transparent; text-align: left; }
+.mini-text { display: flex; flex-direction: column; min-width: 0; }
+.mini-name { font-size: var(--fs-md); font-weight: 600; color: var(--theme-title); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-sub { font-size: var(--fs-xs); color: var(--theme-muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .mini-toggle { --ico: calc(20px * var(--s)); flex-shrink: 0; width: var(--touch); height: var(--touch); border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--theme-accent); color: var(--theme-on-accent); }
+.mini-progress { position: absolute; inset: auto 0 0; height: 3px; background: var(--theme-track); }
+.mini-progress > span { display: block; height: 100%; background: var(--theme-accent); }
 
 /* ---------- 說明表 ---------- */
 .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 20px; }
 .note { background: var(--shell-panel); border: 1px solid var(--shell-line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
 .note.wide { grid-column: 1 / -1; }
 .note h2 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
-.note p { margin: 0 0 10px; color: var(--shell-muted); }
 .tbl { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { text-align: left; vertical-align: top; padding: 7px 10px 7px 0; border-top: 1px solid var(--shell-line); }
@@ -301,15 +373,17 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
     <header class="intro">
         <div>
             <h1>903 Player 橫版</h1>
-            <p>節目頁同今日節目頁打橫時：左邊播放器、右邊清單。條件係 <code>orientation: landscape</code> 而且闊 ≥ 640px。手機打橫（高 ≤ 561px）唔出日子條、唱片放大；iPad 打橫及以上（闊 ≥ 1024px）右欄收窄到 30%、唱片放大。mock 入面嘅掣、日子條、清單、卡疊都撳得（純示意，冇接聲）。</p>
+            <p>打橫而且闊 ≥ 640px 就用橫版。節目頁、今日節目頁：左播放器、右清單；主頁：5 欄格，mini player 浮喺底。字同掣跟裝置放大（手機 × 1、闊 ≥ 1024px × 1.3、iPad 打橫 × 1.5）。mock 入面嘅掣、清單、卡疊都撳得，純示意，冇接聲。</p>
         </div>
         <div class="controls">
             <div class="seg" role="group" aria-label="頁面">
+                <button type="button" id="pg-home" data-page="home" aria-pressed="false">主頁</button>
                 <button type="button" id="pg-show" data-page="show" aria-pressed="true">節目頁</button>
                 <button type="button" id="pg-today" data-page="today" aria-pressed="false">今日節目頁</button>
             </div>
             <div class="seg" role="group" aria-label="裝置">
                 <button type="button" id="dv-phone" data-device="phone" aria-pressed="true">iPhone 打橫</button>
+                <button type="button" id="dv-small" data-device="small" aria-pressed="false">細視窗</button>
                 <button type="button" id="dv-tablet" data-device="tablet" aria-pressed="false">iPad 打橫</button>
                 <button type="button" id="dv-desktop" data-device="desktop" aria-pressed="false">桌面</button>
             </div>
@@ -327,16 +401,12 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         <article class="note">
             <h2>版面規則</h2>
             <div class="tbl"><table>
-                <thead><tr><th>項目</th><th>橫版</th><th>直版（現狀）</th></tr></thead>
+                <thead><tr><th>畫面</th><th>欄（節目 / 今日）</th><th>日子條</th><th>字同掣</th><th>唱片上限</th><th>主頁</th></tr></thead>
                 <tbody>
-                    <tr><td>觸發</td><td>landscape 且闊 ≥ 640px</td><td>其他情況</td></tr>
-                    <tr><td>欄（640–1023px 闊）</td><td>左 46%，右 54%，中間 20px + 分隔線</td><td>單欄，最闊 480px</td></tr>
-                    <tr><td>欄（≥ 1024px 闊）</td><td>左 70%，右 30%</td><td>同上</td></tr>
-                    <tr><td>日子條</td><td>高 ≤ 561px（手機打橫）唔出；其他照出</td><td>一直出</td></tr>
-                    <tr><td>頁頭</td><td>左欄頂，標題左對齊、20px</td><td>全闊，大字置中</td></tr>
-                    <tr><td>唱片大小</td><td>按左欄高計（cqh），用盡剩低嘅位；闊 &lt; 1024px 最大 340px，≥ 1024px 最大 640px</td><td>畫面高 × 六成，最大 300px</td></tr>
-                    <tr><td>捲動</td><td>成頁鎖死，只有右欄清單捲</td><td>≤ 561px 高改成頁捲</td></tr>
-                    <tr><td>安全區</td><td>左右 inset 畀瀏海；清單底留 home indicator</td><td>上下 inset</td></tr>
+                    <tr><td>手機打橫（高 ≤ 561px）</td><td>46% / 54%</td><td>唔出</td><td>× 1</td><td>340px</td><td>5 欄</td></tr>
+                    <tr><td>細視窗（640–1023px 闊，高 &gt; 561px）</td><td>46% / 54%</td><td>出</td><td>× 1</td><td>340px</td><td>4 欄</td></tr>
+                    <tr><td>闊 ≥ 1024px（桌面）</td><td>其餘 / max(30%, 300px × 倍數)</td><td>唔出</td><td>× 1.3</td><td>640px</td><td>5 欄</td></tr>
+                    <tr><td>闊 ≥ 1024px 而且高 ≥ 800px（iPad 打橫）</td><td>其餘 / max(30%, 300px × 倍數)</td><td>唔出</td><td>× 1.5</td><td>640px</td><td>4 欄</td></tr>
                 </tbody>
             </table></div>
         </article>
@@ -345,14 +415,14 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             <div class="tbl"><table>
                 <thead><tr><th>功能</th><th>橫版位置</th></tr></thead>
                 <tbody>
+                    <tr><td>主頁：7 個節目 + 今日節目</td><td>闊畫面 5 欄 × 2 行（橫額佔兩格）；iPad 打橫等方啲嘅畫面 4 欄（橫額成行，下面 2 行 × 4）</td></tr>
+                    <tr><td>主頁 mini player（掃動轉節目、指示點、播放、撳入節目頁、進度）</td><td>浮喺底中間，最闊 520px × 倍數</td></tr>
                     <tr><td>返回主頁</td><td>左欄頁頭 ←</td></tr>
-                    <tr><td>弧形進度條拖動 / 拖碟 scrub</td><td>左欄唱片</td></tr>
-                    <tr><td>播放 / 暫停、由頭播放</td><td>左欄唱片底</td></tr>
-                    <tr><td>日子條（掃動轉集、聽過剔、連線中…）</td><td>左欄唱片下面（節目頁）；手機打橫唔出，轉集用右欄清單，聽過剔、進度喺清單度睇</td></tr>
-                    <tr><td>集數清單（進度、狀態、揀集、自動捲到現正集）</td><td>右欄（節目頁）</td></tr>
-                    <tr><td>卡疊左右掃轉節目、指示點</td><td>左欄（今日節目頁）</td></tr>
-                    <tr><td>今日節目清單</td><td>右欄（今日節目頁）</td></tr>
-                    <tr><td>節目色調、鎖屏 / 耳機控制、續播</td><td>不變</td></tr>
+                    <tr><td>弧形進度拖動、拖碟、播放 / 暫停、由頭播放</td><td>左欄唱片</td></tr>
+                    <tr><td>日子條（掃動轉集、聽過剔、連線中…）</td><td>只喺細視窗出；其他畫面用右欄集數清單轉集，聽過剔同進度喺清單睇</td></tr>
+                    <tr><td>集數清單 / 今日節目清單</td><td>右欄，自己捲</td></tr>
+                    <tr><td>卡疊左右掃、指示點</td><td>左欄（今日節目頁）</td></tr>
+                    <tr><td>節目色調、鎖屏 / 耳機控制、續播、版本號</td><td>不變</td></tr>
                 </tbody>
             </table></div>
         </article>
@@ -361,12 +431,13 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             <div class="tbl"><table>
                 <thead><tr><th>檔案</th><th>改動</th></tr></thead>
                 <tbody>
-                    <tr><td><code>src/pages/Page.module.css</code></td><td>新增 landscape media query：<code>.fixed</code> 改 grid，加 <code>.playerColumn</code> / <code>.listColumn</code>；橫版唔再行 ≤ 561px 成頁捲；≥ 1024px 闊改 70 / 30</td></tr>
-                    <tr><td><code>src/pages/ShowPage.tsx</code>、<code>TodayPage.tsx</code></td><td>用兩個 column wrapper 包住「頁頭 + 播放器」同清單（直版 wrapper 用 <code>display: contents</code>，行為不變）</td></tr>
-                    <tr><td><code>src/styles/tokens.css</code></td><td>橫版 <code>--player-disc-size</code> 按左欄高計：一般上限 340px，≥ 1024px 闊上限 640px；高 ≤ 561px 計法唔扣日子條</td></tr>
-                    <tr><td><code>src/components/DateStrip/</code></td><td>橫向且高 ≤ 561px 時隱藏（<code>display: none</code>，讀屏一齊略過）</tr>
-                    <tr><td><code>src/components/PageHeader/</code></td><td>橫版標題細啲、左對齊</td></tr>
-                    <tr><td><code>shortHeightBreakpoint.node.test.ts</code>、<code>e2e/run.mjs</code></td><td>同步斷點；e2e 加 844×390 橫向 case（播放器同清單同時見到、清單可捲）</td></tr>
+                    <tr><td><code>src/styles/tokens.css</code></td><td>新增 <code>--ui-scale</code>（1 / 1.3 / 1.5），字級、<code>--touch-target</code>、間距喺橫版乘佢；橫版 <code>--player-disc-size</code> 按左欄高計</td></tr>
+                    <tr><td><code>src/pages/Page.module.css</code></td><td>landscape media query：<code>.fixed</code> 改 grid（46 / 54，≥ 1024px 右欄 max(30%, 300px × 倍數)），加 <code>.playerColumn</code> / <code>.listColumn</code>；橫版唔再行 ≤ 561px 成頁捲</td></tr>
+                    <tr><td><code>src/pages/ShowPage.tsx</code>、<code>TodayPage.tsx</code></td><td>兩個 column wrapper 包住「頁頭 + 播放器」同清單（直版用 <code>display: contents</code>，行為不變）</td></tr>
+                    <tr><td><code>src/components/DateStrip/</code></td><td>橫向而且（高 ≤ 561px 或闊 ≥ 1024px）時隱藏</td></tr>
+                    <tr><td><code>src/pages/HomePage.module.css</code>、<code>HomeBanner</code>、<code>MiniPlayer</code></td><td>5 欄格、橫額 <code>grid-column: span 2</code>；闊高比 ≤ 8:5 改 4 欄、橫額 <code>span 4 / 2 行</code>；mini player 限闊置中</td></tr>
+                    <tr><td>icon（<code>icons.tsx</code> 嘅 size prop）</td><td>改用 CSS 控制大小，跟 <code>--ui-scale</code></td></tr>
+                    <tr><td><code>shortHeightBreakpoint.node.test.ts</code>、<code>e2e/run.mjs</code></td><td>同步斷點；e2e 加 844×390、1180×820 橫向 case</td></tr>
                 </tbody>
             </table></div>
         </article>
@@ -375,12 +446,16 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
 
 <script>
 (() => {
-    const ART = {
+    const IMG = {
         badgirl: '../../src/assets/shows/badgirl.jpg',
+        gongzi: '../../src/assets/shows/gongzi.jpg',
         wanni: '../../src/assets/shows/wanni.jpg',
         sunnyday: '../../src/assets/shows/sunnyday.jpg',
+        westair: '../../src/assets/shows/westair.jpg',
         waves: '../../src/assets/shows/waves.jpg',
         lalala: '../../src/assets/shows/lalala.jpg',
+        banner: '../banner.webp',
+        todayTile: '../today-tile.webp',
     };
     // src/config/showThemes.ts
     const THEMES = {
@@ -391,6 +466,11 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         lalala: ['#0f2826', '#173634', '#2e524e', '#f7a531', '#0f2826', '#ffe27a', '#f1f7f5', '#a5c2bd', '#081a19', '#1d403d'],
     };
     const THEME_VARS = ['bg', 'surface', 'track', 'accent', 'on-accent', 'title', 'text', 'muted', 'shadow-dark', 'shadow-light'];
+    // src/config/shows.ts 次序
+    const SHOWS = [
+        ['badgirl', 'Bad Girl大過佬'], ['gongzi', '公子會'], ['wanni', '雲妮鍾情'], ['sunnyday', '在晴朗的一天出發'],
+        ['westair', '西加航空'], ['waves', '口水多過浪花'], ['lalala', '聖艾粒LaLaLaLa'],
+    ];
     // 今日（2026-10-21 星期三）播出嘅節目，按播出時間
     const TODAY_SHOWS = [
         { id: 'wanni', name: '雲妮鍾情', time: '07:08', status: 'watched', pos: 1.0 },
@@ -400,22 +480,25 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         { id: 'lalala', name: '聖艾粒LaLaLaLa', time: '17:10', status: 'unwatched', pos: 0 },
     ];
     const DEVICES = {
-        phone: { w: 844, h: 390, kind: 'phone', label: 'iPhone 打橫 844 × 390（左瀏海 47px、底 home indicator 21px）', sa: { l: 47, r: 47, b: 21 }, gap: 12 },
-        tablet: { w: 1180, h: 820, kind: 'tablet', label: 'iPad 打橫 1180 × 820', sa: { l: 24, r: 24, b: 20 }, gap: 20 },
-        desktop: { w: 1280, h: 720, kind: 'desktop', label: '桌面視窗 1280 × 720', sa: { l: 24, r: 24, b: 0 }, gap: 20 },
+        phone: { w: 844, h: 390, kind: 'phone', label: 'iPhone 打橫 844 × 390 · 字同掣 × 1 · 冇日子條', sa: { l: 47, r: 47, b: 21 }, gap: 12 },
+        small: { w: 960, h: 640, kind: 'desktop', label: '細視窗 960 × 640 · 字同掣 × 1 · 有日子條', sa: { l: 20, r: 20, b: 0 }, gap: 16 },
+        tablet: { w: 1180, h: 820, kind: 'tablet', label: 'iPad 打橫 1180 × 820 · 字同掣 × 1.5 · 冇日子條', sa: { l: 24, r: 24, b: 20 }, gap: 20 },
+        desktop: { w: 1280, h: 720, kind: 'desktop', label: '桌面 1280 × 720 · 字同掣 × 1.3 · 冇日子條', sa: { l: 24, r: 24, b: 0 }, gap: 20 },
     };
+    const PAGES = { home: 1, show: 1, today: 1 };
     const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
     const EPISODE_SECONDS = 2 * 3600 - 7 * 60;
     const TODAY = new Date(Date.UTC(2026, 9, 21));
     const DAY_MS = 86400000;
-    const STRIP_CELLS = 7;
     const STRIP_HALF = 3;
     const SWIPE_PX = 50;
+    const FLY_MS = 280;
+    const APP_VERSION = 'v0.8.1';
 
     const state = { page: 'show', device: 'phone', playing: false, epIndex: 0, todayIndex: 2 };
     try {
         const saved = JSON.parse(localStorage.getItem('landscape-preview') || '{}');
-        if (saved.page in { show: 1, today: 1 }) state.page = saved.page;
+        if (saved.page in PAGES) state.page = saved.page;
         if (saved.device in DEVICES) state.device = saved.device;
     } catch { /* 冇 storage 照用預設 */ }
 
@@ -439,12 +522,13 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
     const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
     const ICON = {
-        back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
-        play: (s, filled = true) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="${filled ? 0 : 1.8}" stroke-linejoin="round"/></svg>`,
-        pause: (s) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>`,
-        restart: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg>',
-        check: (s) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,
+        back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+        play: (filled = true) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="${filled ? 0 : 1.8}" stroke-linejoin="round"/></svg>`,
+        pause: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>',
+        restart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg>',
+        check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     };
+    const toggleIcon = () => (state.playing ? ICON.pause : ICON.play());
 
     // 弧：135° 開始，順時針 270°（src/config/constants.ts），viewBox 300、半徑 140
     const ARC = { c: 150, r: 140, start: 135, sweep: 270 };
@@ -470,12 +554,12 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             <span class="time total"><span>${fmt(EPISODE_SECONDS)}</span></span>
             <div class="actions">
                 <button type="button" class="restart" data-act="restart" aria-label="由頭播放">${ICON.restart}</button>
-                <button type="button" class="toggle" data-act="toggle" aria-label="${state.playing ? '暫停' : '播放'}">${state.playing ? ICON.pause(26) : ICON.play(26)}</button>
+                <button type="button" class="toggle" data-act="toggle" aria-label="${state.playing ? '暫停' : '播放'}">${toggleIcon()}</button>
                 <span></span>
             </div>
         </div>`;
     };
-    const headHtml = (title) => `<div class="page-head"><button type="button" class="back" aria-label="返回主頁">${ICON.back}</button><h1>${esc(title)}</h1></div>`;
+    const headHtml = (title) => `<div class="page-head"><button type="button" class="back" data-act="home" aria-label="返回主頁">${ICON.back}</button><h1>${esc(title)}</h1></div>`;
 
     const statusOf = (ep, current) => {
         if (current) return { text: `播放中 · ${fmt(ep.ratio * EPISODE_SECONDS)} / ${fmt(EPISODE_SECONDS)}`, done: false };
@@ -492,9 +576,8 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             const day = days[center - k];
             if (!day) { cells += '<span class="cell empty"></span>'; continue; }
             const ep = episodes.find((e) => e.d.getTime() === day.d.getTime());
-            const on = k === 0;
             const tick = ep && ep.ratio >= 0.95 ? '<span class="tick">✓</span>' : '';
-            cells += `<button type="button" class="cell ${ep ? '' : 'empty'} ${on ? 'on' : ''}" ${ep ? `data-ep="${episodes.indexOf(ep)}"` : 'disabled'} aria-label="${ep ? `轉去 ${day.dm}（${WEEKDAYS[day.wd]}）` : '冇節目'}"><span class="wd">${WEEKDAYS[day.wd]}</span><span class="dm">${day.dm}</span>${tick}</button>`;
+            cells += `<button type="button" class="cell ${ep ? '' : 'empty'} ${k === 0 ? 'on' : ''}" ${ep ? `data-ep="${episodes.indexOf(ep)}"` : 'disabled'} aria-label="${ep ? `轉去 ${day.dm}（${WEEKDAYS[day.wd]}）` : '冇節目'}"><span class="wd">${WEEKDAYS[day.wd]}</span><span class="dm">${day.dm}</span>${tick}</button>`;
         }
         return `<div class="strip-wrap"><span class="strip-label">現正播放</span><div class="strip" data-strip role="group" aria-roledescription="轉集" aria-label="左右方向鍵或左右掃動轉集" tabindex="0">${cells}</div></div>`;
     };
@@ -507,12 +590,12 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             return `<li><button type="button" class="row ${current ? 'current' : ''}" data-ep="${i}" ${current ? 'aria-current="true"' : ''}>
                 <span class="date"><span class="dmo">${ep.dm}</span><span class="wdy">星期${WEEKDAYS[ep.wd]}</span></span>
                 <span class="body"><span class="bar"><span style="width:${Math.round(ep.ratio * 100)}%"></span></span><span class="st">${st.text}</span></span>
-                <span class="ico ${st.done ? 'done' : ''}">${st.done ? ICON.check(14) : ICON.play(22, false)}</span>
+                <span class="ico ${st.done ? 'done' : ''}">${st.done ? ICON.check : ICON.play(false)}</span>
             </button></li>`;
         }).join('');
         return `<div class="col-left">
                 ${headHtml('Bad Girl大過佬')}
-                <div class="player">${gaugeHtml(ART.badgirl, cur.ratio)}${stripHtml()}</div>
+                <div class="player">${gaugeHtml(IMG.badgirl, cur.ratio)}${stripHtml()}</div>
             </div>
             <section class="col-right" aria-label="集數">
                 <div class="list-head"><h2>集數</h2><span>共 ${episodes.length} 集</span></div>
@@ -521,26 +604,27 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
     };
 
     const TODAY_STATUS = { playing: '播放中', watched: '已收聽', unwatched: '未收聽' };
+    const dotsHtml = () => TODAY_SHOWS.map((s, i) => `<button type="button" class="dot" data-today="${i}" aria-label="${esc(s.name)}" ${i === state.todayIndex ? 'aria-current="true"' : ''}></button>`).join('');
     const todayPageHtml = () => {
         const show = TODAY_SHOWS[state.todayIndex];
         const rows = TODAY_SHOWS.map((s, i) => {
             const active = i === state.todayIndex;
             return `<li><button type="button" class="row ${active ? 'current' : ''}" data-today="${i}" ${active ? 'aria-current="true"' : ''}>
-                <span class="mini-disc" style="--art:url('${ART[s.id]}')"></span>
+                <span class="mini-disc" style="--art:url('${IMG[s.id]}')"></span>
                 <span class="body"><span class="name">${esc(s.name)}</span><span class="st">${s.status === 'watched' ? '✓ ' : ''}${s.time} · ${TODAY_STATUS[s.status]}</span></span>
-                <span class="ico">${ICON.play(22, false)}</span>
+                <span class="ico">${ICON.play(false)}</span>
             </button></li>`;
         }).join('');
-        const dots = TODAY_SHOWS.map((s, i) => `<button type="button" class="dot" data-today="${i}" aria-label="${esc(s.name)}" ${i === state.todayIndex ? 'aria-current="true"' : ''}></button>`).join('');
-        const ghosts = state.todayIndex < TODAY_SHOWS.length - 1 ? '<span class="ghost g1"></span>' + (state.todayIndex < TODAY_SHOWS.length - 2 ? '<span class="ghost g2"></span>' : '') : '';
+        const left = TODAY_SHOWS.length - 1 - state.todayIndex;
+        const ghosts = (left >= 1 ? '<span class="ghost g1"></span>' : '') + (left >= 2 ? '<span class="ghost g2"></span>' : '');
         return `<div class="col-left">
                 ${headHtml('今日節目')}
                 <div class="stack-area">
                     <div class="stack" data-stack role="group" aria-roledescription="節目卡疊" aria-label="今日節目，左右掃動轉節目" tabindex="0">
                         ${ghosts}
-                        <div class="card" data-card>${gaugeHtml(ART[show.id], show.pos)}<h2>${esc(show.name)}</h2></div>
+                        <div class="card" data-card>${gaugeHtml(IMG[show.id], show.pos)}<h2>${esc(show.name)}</h2></div>
                     </div>
-                    <div class="dots">${dots}</div>
+                    <div class="dots">${dotsHtml()}</div>
                 </div>
             </div>
             <section class="col-right" aria-label="今日節目">
@@ -549,13 +633,37 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             </section>`;
     };
 
+    const homePageHtml = () => {
+        const show = TODAY_SHOWS[state.todayIndex];
+        const tiles = SHOWS.map(([id, name]) => `<button type="button" class="tile" data-open="${id}" aria-label="${esc(name)}" style="--img:url('${IMG[id]}')"></button>`).join('');
+        return `<div class="home-main"><nav class="home-grid" aria-label="節目">
+                <h1 class="banner" role="img" aria-label="903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽" style="--img:url('${IMG.banner}')"></h1>
+                ${tiles}
+                <button type="button" class="tile today" data-act="today" style="--img:url('${IMG.todayTile}')"><span>今日節目</span></button>
+            </nav><p class="version">${APP_VERSION}</p></div>
+            <section class="mini" data-mini aria-label="正在播放（今日節目）" data-theme-of="${show.id}">
+                <div class="dots">${dotsHtml()}</div>
+                <div class="mini-row">
+                    <button type="button" class="mini-open" data-act="today" aria-label="開啟 ${esc(show.name)} 節目頁">
+                        <span class="mini-disc" style="--art:url('${IMG[show.id]}')"></span>
+                        <span class="mini-text"><span class="mini-name">${esc(show.name)}</span><span class="mini-sub">今日 21/10 · ${show.time}</span></span>
+                    </button>
+                    <button type="button" class="mini-toggle" data-act="toggle" aria-label="${state.playing ? '暫停' : '播放'}">${toggleIcon()}</button>
+                </div>
+                <div class="mini-progress"><span style="width:${Math.round(show.pos * 100)}%"></span></div>
+            </section>`;
+    };
+
     const device = document.getElementById('device');
     const scaler = document.getElementById('scaler');
     const caption = document.getElementById('caption');
 
-    const applyTheme = (app, id) => {
-        THEMES[id].forEach((v, i) => app.style.setProperty(`--theme-${THEME_VARS[i]}`, v));
+    const applyTheme = (el, id) => {
+        THEMES[id].forEach((v, i) => el.style.setProperty(`--theme-${THEME_VARS[i]}`, v));
     };
+
+    const PAGE_HTML = { home: homePageHtml, show: showPageHtml, today: todayPageHtml };
+    const PAGE_CLASS = { home: 'home-page', show: 'show-page split', today: 'today-page split' };
 
     const render = () => {
         const dv = DEVICES[state.device];
@@ -563,16 +671,18 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         device.style.width = `${dv.w}px`;
         device.style.height = `${dv.h}px`;
         const chrome = dv.kind === 'phone' ? '<span class="notch"></span><span class="home-ind"></span>' : '';
-        const page = state.page === 'show' ? 'show-page' : 'today-page';
-        device.innerHTML = `${chrome}<main class="app ${page}" style="--sa-l:${dv.sa.l}px;--sa-r:${dv.sa.r}px;--sa-b:${dv.sa.b}px;--fixed-gap:${dv.gap}px">${state.page === 'show' ? showPageHtml() : todayPageHtml()}</main>`;
-        applyTheme(device.querySelector('.app'), state.page === 'show' ? 'badgirl' : TODAY_SHOWS[state.todayIndex].id);
+        device.innerHTML = `${chrome}<main class="app ${PAGE_CLASS[state.page]}" style="--sa-l:${dv.sa.l}px;--sa-r:${dv.sa.r}px;--sa-b:${dv.sa.b}px;--fixed-gap:${dv.gap}px">${PAGE_HTML[state.page]()}</main>`;
+        const app = device.querySelector('.app');
+        if (state.page === 'show') applyTheme(app, 'badgirl');
+        if (state.page === 'today') applyTheme(app, TODAY_SHOWS[state.todayIndex].id);
+        if (state.page === 'home') applyTheme(device.querySelector('[data-mini]'), TODAY_SHOWS[state.todayIndex].id);
         caption.textContent = dv.label;
         document.querySelectorAll('[data-page]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.page === state.page)));
         document.querySelectorAll('[data-device]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.device === state.device)));
         const row = device.querySelector('.list [aria-current="true"]');
         const list = device.querySelector('[data-list]');
         if (row && list) list.scrollTop = Math.max(0, row.offsetTop - list.offsetTop - list.clientHeight / 2 + row.offsetHeight / 2);
-        if (state.refocus) { state.refocus = false; device.querySelector('[data-stack]')?.focus(); }
+        if (state.refocus) { device.querySelector(state.refocus)?.focus(); state.refocus = null; }
         fit();
         try { localStorage.setItem('landscape-preview', JSON.stringify({ page: state.page, device: state.device })); } catch { /* 冇 storage 唔記 */ }
     };
@@ -590,14 +700,16 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         state.epIndex = Math.max(0, Math.min(episodes.length - 1, i));
         render();
     };
-    const setToday = (i, dir) => {
-        const next = Math.max(0, Math.min(TODAY_SHOWS.length - 1, i));
+    // 今日節目：卡疊唔循環；mini player 掃過頭循環（同 app 一樣）
+    const setToday = (i, dir, wrap = false) => {
+        const n = TODAY_SHOWS.length;
+        const next = wrap ? (i + n) % n : Math.max(0, Math.min(n - 1, i));
         if (next === state.todayIndex) return;
         const card = device.querySelector('[data-card]');
         const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (card && !reduce) {
             card.classList.add(dir ?? (next > state.todayIndex ? 'fly-left' : 'fly-right'));
-            setTimeout(() => { state.todayIndex = next; render(); }, 280);
+            setTimeout(() => { state.todayIndex = next; render(); }, FLY_MS);
         } else {
             state.todayIndex = next;
             render();
@@ -609,8 +721,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         const rect = svg.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width) * 300 - 150;
         const y = ((e.clientY - rect.top) / rect.height) * 300 - 150;
-        let deg = (Math.atan2(y, x) * 180) / Math.PI;
-        deg = (deg - ARC.start + 720) % 360;
+        const deg = ((Math.atan2(y, x) * 180) / Math.PI - ARC.start + 720) % 360;
         if (deg > ARC.sweep) return;
         const ratio = deg / ARC.sweep;
         if (state.page === 'show') episodes[state.epIndex].ratio = ratio;
@@ -624,21 +735,25 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
     device.addEventListener('click', (e) => {
         const t = e.target.closest('button, [data-arc]');
         if (!t) return;
-        if (t.dataset.act === 'toggle') { state.playing = !state.playing; render(); return; }
-        if (t.dataset.act === 'restart') {
+        const act = t.dataset.act;
+        if (act === 'toggle') { state.playing = !state.playing; render(); return; }
+        if (act === 'home') { state.page = 'home'; render(); return; }
+        if (act === 'today') { state.page = 'today'; render(); return; }
+        if (act === 'restart') {
             if (state.page === 'show') episodes[state.epIndex].ratio = 0; else TODAY_SHOWS[state.todayIndex].pos = 0;
             state.playing = true; render(); return;
         }
+        if (t.dataset.open) { state.page = 'show'; render(); return; }
         if (t.dataset.ep !== undefined) { setEpisode(Number(t.dataset.ep)); return; }
         if (t.dataset.today !== undefined) { setToday(Number(t.dataset.today)); return; }
         if (t.matches('[data-arc]')) seekFromEvent(t, e);
     });
 
-    // 日子條 / 卡疊：左右掃動同方向鍵
+    // 日子條 / 卡疊 / mini player：左右掃動同方向鍵
     let swipe = null;
     device.addEventListener('pointerdown', (e) => {
-        const zone = e.target.closest('[data-strip], [data-stack]');
-        if (zone && !e.target.closest('[data-arc], button.toggle, button.restart')) swipe = { x: e.clientX, zone };
+        const zone = e.target.closest('[data-strip], [data-stack], [data-mini]');
+        if (zone && !e.target.closest('[data-arc], .toggle, .restart, .mini-toggle')) swipe = { x: e.clientX, zone };
     });
     window.addEventListener('pointerup', (e) => {
         if (!swipe) return;
@@ -646,15 +761,16 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         const zone = swipe.zone;
         swipe = null;
         if (Math.abs(dx) < SWIPE_PX) return;
-        // 日子條：向右掃 = 舊一集；卡疊：向左掃 = 下一個節目
+        // 日子條：向右掃 = 舊一集；卡疊 / mini player：向左掃 = 下一個節目
         if (zone.matches('[data-strip]')) setEpisode(state.epIndex + (dx > 0 ? 1 : -1));
+        else if (zone.matches('[data-mini]')) setToday(state.todayIndex + (dx < 0 ? 1 : -1), null, true);
         else setToday(state.todayIndex + (dx < 0 ? 1 : -1), dx < 0 ? 'fly-left' : 'fly-right');
     });
     device.addEventListener('keydown', (e) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
         const left = e.key === 'ArrowLeft';
-        if (e.target.matches('[data-strip]')) { e.preventDefault(); setEpisode(state.epIndex + (left ? 1 : -1)); device.querySelector('[data-strip]')?.focus(); }
-        if (e.target.matches('[data-stack]')) { e.preventDefault(); state.refocus = true; setToday(state.todayIndex + (left ? -1 : 1)); }
+        if (e.target.matches('[data-strip]')) { e.preventDefault(); state.refocus = '[data-strip]'; setEpisode(state.epIndex + (left ? 1 : -1)); }
+        if (e.target.matches('[data-stack]')) { e.preventDefault(); state.refocus = '[data-stack]'; setToday(state.todayIndex + (left ? -1 : 1)); }
     });
 
     addEventListener('resize', fit);
