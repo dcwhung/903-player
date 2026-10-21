@@ -183,34 +183,33 @@
          * 節目頁除咗唱片之外要預留嘅高度，按固定版面由上而下：
          * 1. 頂部安全區 + 頁頂 padding（--space-4）
          * 2. 頁頭返回掣（--touch-target）
-         * 3. 4 個間距（頁：頁頭↔播放器↔清單；播放器：唱片↔標題↔控制掣）
+         * 3. 3 個間距（頁：頁頭↔播放器↔清單；播放器：唱片↔日子條）
+         *    （播放 / 由頭播放掣喺唱片格入面，冇獨立控制掣行）
          * 4. 唱片下面嗰行：取「現正播放」標籤 + 日子條（--date-strip-label-height +
-         *    --date-strip-height）同 60px 較大嗰個。
+         *    --date-strip-height）同 92px 較大嗰個。
          *    兩頁共用同一隻唱片；今日節目頁唱片下面有卡入面嘅節目名（36px）+ 卡底留白，
-         *    卡外再有卡疊底（後面卡露出嚟）同指示點（24px），比節目頁日子條高。
-         *    60px 係保留落嚟嘅下限：如果只預留日子條，矮螢幕（例如 320×568）唱片會變大，
-         *    今日節目頁清單就唔夠位（e2e 會印出今日節目頁播放器佔高同清單行數）
-         * 5. 播放掣最大尺寸：76px（--player-toggle-size 上限）。呢度刻意用上限：
-         *    窄螢幕個掣細啲，多出嚟嘅位留畀清單；改用 clamp 會令共用唱片變大，
-         *    今日節目頁清單會唔夠位
+         *    卡外再有卡疊底（後面卡露出嚟）同指示點（24px），清單行亦比節目頁高。
+         *    92px 係保留落嚟嘅下限：令矮螢幕（例如 320×568）今日節目頁清單仍然見到兩行
+         *    （88px 只得約 2.02 行，太貼；e2e 會印出今日節目頁播放器佔高同清單行數）
+         * 5. （已刪）以前預留控制掣行 76px；播放掣搬咗入唱片格
          * 6. 「集數 / 共 N 集」標題列：30px（量出嚟）
          * 7. 兩行集數：2 × 56px（EpisodeList .row，border-box 連分隔線）
          * 8. 清單底 padding（--space-2）+ 底部安全區
-         * 改字體大小、控制掣或者行高要跟住改。
+         * 改字體大小、播放掣或者行高要跟住改。
          */
         --player-reserved-height: calc(
             env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 3 *
                 var(--fixed-page-gap) +
-                max(var(--date-strip-label-height) + var(--date-strip-height), 60px) + 30px + 2 *
+                max(var(--date-strip-label-height) + var(--date-strip-height), 92px) + 30px + 2 *
                 56px + var(--space-2) + env(safe-area-inset-bottom)
         );
         /* 成個播放器最多佔幾高：殼高 × --player-max-share */
         --player-max-height: calc(var(--player-shell-height) * var(--player-max-share));
-        /* 播放器入面唱片以外嘅高度：2 個間距 + 標籤 + 日子條 + 播放掣真實尺寸（跟 clamp 縮放） */
+        /* 播放器入面唱片以外嘅高度：2 個間距 + 標籤 + 日子條 */
         --player-chrome-height: calc(
             2 * var(--fixed-page-gap) + var(--date-strip-label-height) + var(--date-strip-height)
         );
-        /* 唱片 + 時間嗰一格嘅高 = 闊 × 316 / 300（PlayerPanel .gauge aspect-ratio） */
+        /* 唱片 + 時間 / 播放掣嗰一格嘅高 = 闊 × 332 / 300（PlayerPanel .gauge aspect-ratio） */
         /* 下限都唔可以闊過 78vw（極窄 / 高倍放大時避免橫向超出） */
         --player-disc-size: max(
             min(var(--player-disc-min), 78vw),
