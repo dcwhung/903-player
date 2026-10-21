@@ -1,6 +1,6 @@
 import { t } from '../../i18n/t';
+import { DayCell } from './DayCell';
 import styles from './DateStrip.module.css';
-import { SideCell } from './SideCell';
 import { useDateStrip, type DateStripStepOptions } from './useDateStrip';
 
 interface DateStripProps extends DateStripStepOptions {
@@ -9,24 +9,30 @@ interface DateStripProps extends DateStripStepOptions {
 }
 
 /**
- * 節目頁唱片下面嘅日子條：上面「現正播放」標籤；條入面左新一集、中日期、右舊一集。
- * 成條跟手指拖：向左 = 舊一集，向右 = 新一集；撳側格或者方向鍵都得。
+ * 節目頁唱片下面嘅日子條：上面「現正播放」標籤；條入面一次見到 7 日（新一集喺左），
+ * 現正播放永遠喺正中 highlight box。成條跟手指拖，放手滑去最近有集數嗰日；撳日子或者方向鍵都得。
  */
 export const DateStrip = ({ title, ...options }: DateStripProps) => {
     const { ids, zone, trackRef, go, announcement } = useDateStrip(options);
-    const { dateLabel, neighbours } = options;
+    const { dateLabel, days, current } = options;
     return (
         <div className={styles.group}>
             <span className={styles.label}>{t('episodes.nowPlayingLabel')}</span>
             <div className={styles.strip} {...zone}>
                 <div ref={trackRef} className={styles.track}>
-                    <SideCell direction="previous" date={neighbours.newer} onPick={go} />
-                    <span className={`${styles.cell} ${styles.current}`}>
-                        <span id={ids.date}>{dateLabel}</span>
-                    </span>
-                    <SideCell direction="next" date={neighbours.older} onPick={go} />
+                    {days.map((day, index) => (
+                        <DayCell
+                            key={day.date}
+                            day={day}
+                            isCurrent={index === current}
+                            onPick={() => go(index)}
+                        />
+                    ))}
                 </div>
-                {/* hidden：唔會再讀多次（頁頭已經有），但 aria-labelledby 照用到 */}
+                {/* hidden：畫面上日期分開兩行，轉集區個名用完整日期；節目名頁頭已經有 */}
+                <span id={ids.date} hidden>
+                    {dateLabel}
+                </span>
                 <span id={ids.title} hidden>
                     {title}
                 </span>

@@ -22,7 +22,7 @@ describe('useStripMotion', () => {
         result.current.trackRef.current = document.createElement('div');
 
         // 轉集：目標係 360 度（順時針轉返正），轉到一半（畫面上 90 度）就再拖
-        result.current.commit('next');
+        result.current.commit();
         expect(disc.style.transform).toBe('rotate(360deg)');
         result.current.grab();
         result.current.follow(0);
@@ -37,7 +37,7 @@ describe('useStripMotion', () => {
         const { result } = renderHook(() => useStripMotion(spinRef));
         result.current.trackRef.current = document.createElement('div');
 
-        result.current.commit('next');
+        result.current.commit();
         result.current.grab();
         result.current.follow(20);
         result.current.springBack();
@@ -51,10 +51,10 @@ describe('useStripMotion', () => {
         const { result } = renderHook(() => useStripMotion(spinRef));
         result.current.trackRef.current = document.createElement('div');
 
-        result.current.commit('next');
+        result.current.commit();
         result.current.grab();
         result.current.follow(-40);
-        result.current.commit('next');
+        result.current.commit();
 
         // 畫面上 90 − 20 = 70 度，順時針最少半圈 → 360
         expect(disc.style.transform).toBe('rotate(360deg)');

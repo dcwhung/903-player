@@ -1,16 +1,20 @@
-import { useId, useLayoutEffect, type KeyboardEvent, type RefObject } from 'react';
-import { arrowKeyDirection, type SwipeDirection } from '../../hooks/swipe';
+import { useId, useLayoutEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
+import { arrowKeyDirection } from '../../hooks/swipe';
 import { t } from '../../i18n/t';
-import { neighbourFor, type StripNeighbours } from './dateStrip';
+import { steppedDay, type StripDay } from './dateStrip';
 import { useStepAnnouncement } from './useStepAnnouncement';
 import { useStripGesture } from './useStripGesture';
 import { useStripMotion } from './useStripMotion';
 
 export interface DateStripStepOptions {
+    /** 現正播放嗰日（例如「19/10（一）」）：轉集區個名 + 轉集通知 */
     dateLabel: string;
-    neighbours: StripNeighbours;
-    /** 真係轉集，返回有冇轉到（節目頁 stepEpisode：同撳清單一樣即刻播、續播 / 由頭播） */
-    onStep: (direction: SwipeDirection) => boolean;
+    /** 由新到舊（左到右）嘅日子，見 stripDays */
+    days: readonly StripDay[];
+    /** 現正播放嗰日嘅 index，永遠擺喺正中 */
+    current: number;
+    /** 播嗰日嘅集數（節目頁 selectEpisode：同撳清單一樣即刻播、續播 / 由頭播） */
+    onPick: (url: string) => void;
     /** 跟住日子條轉嘅唱片（PlayerPanel 嘅節目圖） */
     spinRef?: RefObject<HTMLElement | null> | undefined;
     /** 拖緊日子條（捉住碟）：畀 PlayerPanel 暫停碟自轉 */
@@ -18,19 +22,27 @@ export interface DateStripStepOptions {
 }
 
 /**
- * 拖動 / 撳側格 / 方向鍵都行同一條路：有隔籬集就即刻轉集（即刻播），
- * 動畫同時進行（新日期由隔籬格滑入）；盡頭或者轉唔到就彈返並清空通知
+ * 拖動 / 撳日子 / 方向鍵都行同一條路：揀到另一日有集數就即刻播（動畫同時滑去正中）；
+ * 同一日、冇集數或者盡頭就彈返並清空通知
  */
-const useStripStep = ({ dateLabel, neighbours, onStep, spinRef }: DateStripStepOptions) => {
+const useStripStep = ({ dateLabel, days, current, onPick, spinRef }: DateStripStepOptions) => {
     const { steps, announcement, markStep } = useStepAnnouncement(dateLabel);
     const motion = useStripMotion(spinRef);
-    // 轉咗集（steps）或者外面轉咗集（日期變）就歸位；唔靠日期，同一日兩集都會歸位
-    useLayoutEffect(() => motion.arrive(), [dateLabel, steps, motion]);
-    const go = (direction: SwipeDirection) => {
-        const moved = neighbourFor(neighbours, direction) !== undefined && onStep(direction);
-        // 轉唔到就唔會有新 render 觸發歸位，要自己彈返
-        if (moved) motion.commit(direction);
-        else motion.springBack();
+    const mounted = useRef(false);
+    // 轉咗集（steps）或者外面轉咗集（current 變）就滑去新嗰日正中；第一次 render 直接擺好
+    useLayoutEffect(() => {
+        motion.settle(current, mounted.current);
+        mounted.current = true;
+    }, [current, steps, motion]);
+    const go = (index: number) => {
+        const url = days[index]?.url;
+        const moved = index !== current && url !== undefined && url !== null;
+        if (moved) {
+            motion.commit();
+            onPick(url);
+        } else {
+            motion.springBack();
+        }
         markStep(moved);
     };
     return { motion, go, announcement };
@@ -44,17 +56,19 @@ export const useDateStrip = (options: DateStripStepOptions) => {
     const ids = { date: useId(), title: useId(), hint: useId() };
     const { motion, go, announcement } = useStripStep(options);
     const gesture = useStripGesture({
-        neighbours: options.neighbours,
+        days: options.days,
+        current: options.current,
         motion,
         onGo: go,
         onHold: options.onHold,
     });
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
         const direction = arrowKeyDirection(event.key);
-        // 只係焦點喺日子條本身先處理，入面嘅側格掣有自己用途
+        // 只係焦點喺日子條本身先處理
         if (!direction || event.target !== event.currentTarget) return;
         event.preventDefault();
-        go(direction);
+        // → 舊一集（右邊）、← 新一集（左邊），同畫面位置一致
+        go(steppedDay(options.days, options.current, direction));
     };
     const zone = {
         role: 'group',

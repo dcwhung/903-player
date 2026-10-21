@@ -1,16 +1,17 @@
 import { useRef, type MouseEvent, type PointerEvent, type RefObject } from 'react';
-import type { SwipeDirection } from '../../hooks/swipe';
-import { stripOffset, stripRelease, type StripNeighbours } from './dateStrip';
+import { stripCellWidth, stripOffset, stripRelease, type StripDay } from './dateStrip';
 import type { StripMotion } from './useStripMotion';
 
-/** 郁過 8px（而且主要係橫向）先當係拖，之前仍然可以係撳側格 */
+/** 郁過 8px（而且主要係橫向）先當係拖，之前仍然可以係撳日子 */
 const DRAG_SLOP_PX = 8;
 
 interface StripGestureOptions {
-    neighbours: StripNeighbours;
+    days: readonly StripDay[];
+    /** 現正播放嗰日嘅 index */
+    current: number;
     motion: StripMotion;
-    /** 放手時過咗門檻：想轉去邊個方向（盡頭由 onGo 自己彈返） */
-    onGo: (direction: SwipeDirection) => void;
+    /** 放手：停喺邊日（同現正播放一樣就由 onGo 自己彈返） */
+    onGo: (index: number) => void;
     /** 開始拖（捉住碟）/ 放手或取消：畀外面暫停碟自轉 */
     onHold?: ((held: boolean) => void) | undefined;
 }
@@ -27,7 +28,7 @@ interface DragSession {
 type StripPointer = PointerEvent<HTMLElement>;
 type StripClick = MouseEvent<HTMLElement>;
 
-/** 拖緊：過咗 slop 先 capture（之前仍然可以係 tap 側格），之後成條跟手指 */
+/** 拖緊：過咗 slop 先 capture（之前仍然可以係 tap 日子），之後成條跟手指 */
 const moveStrip = (session: DragSession, event: StripPointer, options: StripGestureOptions) => {
     // 滑鼠冇撳掣 = 只係 hover（例如喺條外面放咗手，收唔到 pointerup），唔當拖
     if (event.pointerType === 'mouse' && event.buttons === 0) return;
@@ -41,10 +42,11 @@ const moveStrip = (session: DragSession, event: StripPointer, options: StripGest
         options.motion.grab();
         options.onHold?.(true);
     }
-    options.motion.follow(stripOffset(dx, options.neighbours));
+    const cellWidth = stripCellWidth(event.currentTarget.clientWidth);
+    options.motion.follow(stripOffset(dx, options.days, options.current, cellWidth));
 };
 
-/** 放手：stripRelease 決定轉（交畀 onGo）定彈返；返回有冇當係掃（即使之前冇 pointermove） */
+/** 放手：stripRelease 決定停喺邊日（交畀 onGo）定彈返；返回有冇當係掃（即使之前冇 pointermove） */
 const releaseStrip = (
     session: DragSession,
     event: StripPointer,
@@ -56,10 +58,10 @@ const releaseStrip = (
         ms: performance.now() - session.t,
         width: event.currentTarget.clientWidth,
     };
-    const { direction } = stripRelease(gesture, options.neighbours);
-    if (direction) options.onGo(direction);
+    const target = stripRelease(gesture, options.days, options.current);
+    if (target !== null) options.onGo(target);
     else if (session.dragging) options.motion.springBack();
-    return direction !== null;
+    return target !== null;
 };
 
 /** 放手：轉集或者彈返，記低之後嘅 click 要唔要食，拖緊就放返碟 */
@@ -69,7 +71,7 @@ const finishStrip = (
     options: StripGestureOptions,
     justDragged: RefObject<boolean>,
 ) => {
-    // 冇 pointermove 但放手時已經算掃（轉咗集）：之後嘅 click 都要食咗，唔好再撳多次側格
+    // 冇 pointermove 但放手時已經算掃（轉咗集）：之後嘅 click 都要食咗，唔好再撳多次日子
     const swiped = releaseStrip(session, event, options);
     justDragged.current = session.dragging || swiped;
     if (session.dragging) options.onHold?.(false);

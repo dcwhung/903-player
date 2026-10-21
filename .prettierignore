@@ -2,3 +2,5 @@ dist
 coverage
 node_modules
 package-lock.json
+# 設計 preview（Artifact 用，內嵌 base64 節目圖）
+design/previews

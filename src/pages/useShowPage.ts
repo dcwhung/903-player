@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react';
 import { themeFor } from '../config/showThemes';
 import { findShow, type ShowConfig } from '../config/shows';
 import { useRecordings } from '../data/useRecordings';
-import type { SwipeDirection } from '../hooks/swipe';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
@@ -11,10 +10,9 @@ import {
     pickInitialRecording,
     recordingsForShow,
 } from '../selectors/recordings';
-import { stripNeighbours } from '../components/DateStrip/dateStrip';
+import { stripDays } from '../components/DateStrip/dateStrip';
 import { getProgressMap } from '../services/progressStore';
 import { hkToday } from '../utils/date';
-import { adjacentEpisodeUrl } from './adjacentEpisode';
 import { toEpisodeItems } from './episodeItems';
 
 /** 呢個節目嘅集數同揀中嗰集：播緊呢個節目就用播緊嗰集，否則用預設嗰集 */
@@ -65,15 +63,9 @@ export const useShowPage = (showId: string) => {
             void player.load(recording, { autoplay: true });
         }
     };
-    // 轉集區左右掃：行同撳集數一樣嘅路（未聽完續播、聽過由頭播），盡頭就唔郁並返回 false
-    const stepEpisode = (direction: SwipeDirection): boolean => {
-        const url = adjacentEpisodeUrl(episodes, currentUrl, direction);
-        if (url) selectEpisode(url);
-        return url !== null;
-    };
-
     const theme = themeFor(show?.id);
-    const neighbours = stripNeighbours(episodes, currentUrl);
+    // 日子條：同撳集數行同一條路（未聽完續播、聽過由頭播）
+    const strip = stripDays(episodes, currentUrl);
     return {
         show,
         theme,
@@ -81,8 +73,7 @@ export const useShowPage = (showId: string) => {
         isSearching,
         current,
         episodeItems,
-        neighbours,
+        strip,
         selectEpisode,
-        stepEpisode,
     };
 };

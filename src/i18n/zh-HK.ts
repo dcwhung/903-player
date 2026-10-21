@@ -48,13 +48,10 @@ export const zhHK = {
         switchHint: '左右方向鍵或左右掃動轉集',
         switchRoleDescription: '轉集',
         switched: '已轉到 {date}',
-        // 日子條上面嘅標籤（強調色），日期喺條中間
+        // 日子條上面嘅標籤（強調色），現正播放嗰日喺條正中
         nowPlayingLabel: '現正播放',
-        // 日子條兩邊：左邊新一集、右邊舊一集（可見文字 + 讀屏軟件讀嘅名）
-        newerChevron: '‹',
-        olderChevron: '›',
-        newer: '新一集 {date}',
-        older: '舊一集 {date}',
+        // 日子條入面有集數嘅日子（撳落去播嗰集；同集數清單「播放 …」分開）
+        pickDay: '轉去 {date}',
     },
     miniPlayer: {
         region: '正在播放（今日節目）',

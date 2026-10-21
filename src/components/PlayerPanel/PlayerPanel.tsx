@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
-import type { SwipeDirection } from '../../hooks/swipe';
 import { DateStrip } from '../DateStrip/DateStrip';
-import type { StripNeighbours } from '../DateStrip/dateStrip';
+import type { StripDay } from '../DateStrip/dateStrip';
 import { PlayerGauge } from './PlayerGauge';
 import styles from './PlayerPanel.module.css';
 import { PlayerTransport } from './PlayerTransport';
@@ -12,14 +11,22 @@ interface PlayerPanelProps {
     dateLabel: string;
     /** 節目圖，做碟嘅底色 */
     art?: string | undefined;
-    /** 左右掃 / 撳隔籬日期轉集，返回有冇真係轉 */
-    onStep: (direction: SwipeDirection) => boolean;
-    /** 日子條兩邊嘅新一集 / 舊一集日期 */
-    neighbours: StripNeighbours;
+    /** 日子條嘅日子（由新到舊）同現正播放嗰日嘅 index */
+    days: readonly StripDay[];
+    currentDay: number;
+    /** 喺日子條揀咗另一日：播嗰集 */
+    onPick: (url: string) => void;
 }
 
 /** 節目頁播放器：唱片 + 弧形進度 + 日子條 + 控制掣 */
-export const PlayerPanel = ({ title, dateLabel, art, onStep, neighbours }: PlayerPanelProps) => {
+export const PlayerPanel = ({
+    title,
+    dateLabel,
+    art,
+    days,
+    currentDay,
+    onPick,
+}: PlayerPanelProps) => {
     // 日子條拖動時跟住轉嘅節目圖
     const artRef = useRef<HTMLImageElement>(null);
     // 拖緊日子條 = 捉住碟，碟唔自轉
@@ -30,8 +37,9 @@ export const PlayerPanel = ({ title, dateLabel, art, onStep, neighbours }: Playe
             <DateStrip
                 title={title}
                 dateLabel={dateLabel}
-                neighbours={neighbours}
-                onStep={onStep}
+                days={days}
+                current={currentDay}
+                onPick={onPick}
                 spinRef={artRef}
                 onHold={setHeld}
             />

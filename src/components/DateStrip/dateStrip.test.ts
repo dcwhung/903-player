@@ -1,105 +1,153 @@
 import { recording } from '../../../tests/renderWithProviders';
 import {
-    sideCellChevron,
-    sideCellLabel,
-    stripNeighbours,
-    stripOffset,
-    stripRelease,
-    stripShift,
     behindTurn,
     rotationOf,
+    steppedDay,
+    stripDays,
+    stripOffset,
+    stripRelease,
+    trackTransform,
     uprightSpin,
 } from './dateStrip';
 
 const EPISODES = [
+    recording('badgirl', '2026-10-21'),
+    recording('badgirl', '2026-10-20'),
     recording('badgirl', '2026-10-19'),
     recording('badgirl', '2026-10-16'),
     recording('badgirl', '2026-10-15'),
 ];
-const BOTH = { newer: '19/10（一）', older: '15/10（四）' };
-const WIDTH = 400;
+const urlOn = (date: string) => EPISODES.find((r) => r.date === date)?.url;
+// 7 格 × 50px
+const WIDTH = 350;
+const CELL = 50;
+// 新一集喺左：24/10（留空）… 21/10 = 3、19/10 = 5、18–17/10 冇節目、16/10 = 8、15/10 = 9 … 12/10（留空）
+const { days } = stripDays(EPISODES, urlOn('2026-10-19'));
+const ON_19 = 5;
+const ON_16 = 8;
 
-describe('stripNeighbours', () => {
-    it('labels the newer and older neighbours of the current episode', () => {
-        expect(stripNeighbours(EPISODES, EPISODES[1]?.url)).toEqual(BOTH);
+describe('stripDays', () => {
+    it('lists every calendar day newest first, padded by three blank days at each end', () => {
+        expect(days.map((d) => d.date)).toEqual([
+            '2026-10-24',
+            '2026-10-23',
+            '2026-10-22',
+            '2026-10-21',
+            '2026-10-20',
+            '2026-10-19',
+            '2026-10-18',
+            '2026-10-17',
+            '2026-10-16',
+            '2026-10-15',
+            '2026-10-14',
+            '2026-10-13',
+            '2026-10-12',
+        ]);
+        expect(days.map((d) => d.inRange)).toEqual([
+            ...[false, false, false],
+            ...[true, true, true, true, true, true, true],
+            ...[false, false, false],
+        ]);
     });
 
-    it('leaves the missing side empty at either end', () => {
-        expect(stripNeighbours(EPISODES, EPISODES[0]?.url)).toEqual({ older: '16/10（五）' });
-        expect(stripNeighbours(EPISODES, EPISODES[2]?.url)).toEqual({ newer: '16/10（五）' });
-        expect(stripNeighbours(EPISODES, 'missing')).toEqual({});
-    });
-});
+    it('links each day that has an episode and centres the current one', () => {
+        const result = stripDays(EPISODES, urlOn('2026-10-19'));
 
-describe('side cells', () => {
-    it('points the newer cell left and the older cell right', () => {
-        expect(sideCellChevron('previous')).toBe('‹');
-        expect(sideCellChevron('next')).toBe('›');
+        expect(result.current).toBe(ON_19);
+        expect(result.days[ON_19]?.url).toBe(urlOn('2026-10-19'));
+        expect(result.days[6]?.url).toBeNull();
+        expect(result.days[0]?.url).toBeNull();
     });
 
-    it('names each side cell after the episode it plays', () => {
-        expect(sideCellLabel('previous', '19/10（一）')).toBe('新一集 19/10（一）');
-        expect(sideCellLabel('next', '15/10（四）')).toBe('舊一集 15/10（四）');
+    it('falls back to the newest episode when the current one is not listed', () => {
+        expect(stripDays(EPISODES, 'missing').current).toBe(3);
+        expect(stripDays([], undefined)).toEqual({ days: [], current: -1 });
+    });
+
+    it('keeps the newest episode of a day that has two and still centres the other one', () => {
+        const late = recording('badgirl', '2026-10-20', '2308');
+        const early = recording('badgirl', '2026-10-20', '1009');
+        const result = stripDays([late, early], early.url);
+
+        expect(result.days[result.current]?.url).toBe(late.url);
+        expect(result.days[result.current]?.date).toBe('2026-10-20');
     });
 });
 
 describe('stripRelease', () => {
-    const release = (dx: number, ms = 400, dy = 0) => ({ dx, dy, ms, width: WIDTH });
+    const release = (dx: number, ms = 400, dy = 0, width = WIDTH) => ({ dx, dy, ms, width });
+    const at = (current: number, dx: number, ms?: number) =>
+        stripRelease(release(dx, ms), days, current);
 
-    it('commits a left drag past half a side cell to the older episode', () => {
-        // 側格 = 25% × 400 = 100px，過一半（50px）就轉
-        expect(stripRelease(release(-60), BOTH)).toEqual({ direction: 'next', commit: true });
-        expect(stripRelease(release(60), BOTH)).toEqual({ direction: 'previous', commit: true });
+    it('lands on the episode nearest to where the strip was let go', () => {
+        // 拖兩格（-100px）：17/10 冇節目，最近係 16/10
+        expect(at(ON_19, -100)).toBe(ON_16);
+        // 拖一格（-50px）：18/10 冇節目，最近係返 19/10
+        expect(at(ON_19, -50)).toBe(ON_19);
+        // 拖三格（+150px）去咗 22/10（留空）：最近係最新一集 21/10
+        expect(at(ON_19, 150)).toBe(3);
     });
 
-    it('springs back from a short slow drag', () => {
-        expect(stripRelease(release(-40), BOTH)).toEqual({ direction: null, commit: false });
+    it('springs back to the current day from a short slow drag', () => {
+        expect(at(ON_19, -20)).toBe(ON_19);
     });
 
-    it('commits a short fast flick', () => {
-        expect(stripRelease(release(-30, 40), BOTH)).toEqual({ direction: 'next', commit: true });
+    it('breaks a tie towards the direction of the drag', () => {
+        const gap = stripDays(
+            [recording('badgirl', '2026-10-21'), recording('badgirl', '2026-10-19')],
+            undefined,
+        );
+        // 21/10（3）向左拖一格去 20/10（冇節目）：19/10 同 21/10 一樣近，跟拖動方向揀舊嗰集
+        expect(stripRelease(release(-50), gap.days, gap.current)).toBe(5);
+    });
+
+    it('moves at least one episode on a quick flick', () => {
+        expect(at(ON_19, -30, 40)).toBe(ON_16);
+        expect(at(ON_19, 30, 40)).toBe(4);
     });
 
     it('ignores mostly vertical movement and tiny twitches', () => {
-        expect(stripRelease(release(-60, 400, 90), BOTH).direction).toBeNull();
-        expect(stripRelease(release(-8, 1), BOTH).direction).toBeNull();
+        expect(stripRelease(release(-60, 400, 90), days, ON_19)).toBeNull();
+        expect(at(ON_19, -4, 1)).toBeNull();
     });
 
-    it('does not commit towards a missing neighbour at either end', () => {
-        expect(stripRelease(release(-80), { newer: '19/10（一）' })).toEqual({
-            direction: 'next',
-            commit: false,
-        });
-        expect(stripRelease(release(80), { older: '15/10（四）' })).toEqual({
-            direction: 'previous',
-            commit: false,
-        });
-    });
-
-    it('falls back to the swipe threshold before the strip is measured', () => {
-        const unmeasured = (dx: number) => ({ dx, dy: 0, ms: 400, width: 0 });
-        expect(stripRelease(unmeasured(-47), BOTH).direction).toBeNull();
-        expect(stripRelease(unmeasured(-48), BOTH).direction).toBe('next');
+    it('measures cells with a fallback width before the strip is laid out', () => {
+        // 未量到闊度用 56px 一格：拖 -112px = 兩格
+        expect(stripRelease(release(-112, 400, 0, 0), days, ON_19)).toBe(ON_16);
     });
 });
 
 describe('stripOffset', () => {
-    it('follows the finger towards an existing neighbour', () => {
-        expect(stripOffset(-50, BOTH)).toBe(-50);
-        expect(stripOffset(50, BOTH)).toBe(50);
+    it('follows the finger between the newest and oldest episodes', () => {
+        expect(stripOffset(-100, days, ON_19, CELL)).toBe(-100);
+        expect(stripOffset(100, days, ON_19, CELL)).toBe(100);
     });
 
-    it('resists a drag towards a missing neighbour', () => {
-        expect(Math.abs(stripOffset(-50, { newer: '19/10（一）' }))).toBeLessThan(50);
-        expect(Math.abs(stripOffset(50, { older: '15/10（四）' }))).toBeLessThan(50);
+    it('resists a drag past the newest or oldest episode', () => {
+        expect(stripOffset(100, days, 3, CELL)).toBeLessThan(100);
+        expect(stripOffset(100, days, 3, CELL)).toBeGreaterThan(0);
+        expect(stripOffset(-100, days, 9, CELL)).toBeGreaterThan(-100);
+        // 未去到盡頭嗰段照跟手指，之後先加阻力
+        expect(stripOffset(-200, days, ON_19, CELL)).toBeLessThan(-200 + CELL);
     });
 });
 
-describe('stripShift', () => {
-    it('moves a side cell into the centre on commit', () => {
-        // 中格中心去側格中心 = (50% + 25%) / 2
-        expect(stripShift(WIDTH, 'next')).toBe(-150);
-        expect(stripShift(WIDTH, 'previous')).toBe(150);
+describe('trackTransform', () => {
+    it('puts the current day in the middle of seven cells and adds the drag', () => {
+        expect(trackTransform(ON_19, 0)).toBe('translateX(calc(-2 * 100% / 7 + 0px))');
+        expect(trackTransform(3, -20)).toBe('translateX(calc(0 * 100% / 7 + -20px))');
+    });
+});
+
+describe('steppedDay', () => {
+    it('steps to the next episode left (newer) or right (older), skipping empty days', () => {
+        expect(steppedDay(days, ON_19, 'next')).toBe(ON_16);
+        expect(steppedDay(days, ON_19, 'previous')).toBe(4);
+    });
+
+    it('stays put at either end', () => {
+        expect(steppedDay(days, 3, 'previous')).toBe(3);
+        expect(steppedDay(days, 9, 'next')).toBe(9);
     });
 });
 
