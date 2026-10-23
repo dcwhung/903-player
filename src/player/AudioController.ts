@@ -52,7 +52,15 @@ export class AudioController {
     /** 每次 play() +1：舊嘅 play()（例如被換集 abort）settle 時唔可以清走新一次嘅意圖 */
     private playGeneration = 0;
 
+    /** 播完一集之後接住播邊集；冇設定或者返回 undefined 就停 */
+    private nextTrack: ((track: Track) => Track | undefined) | undefined;
+
     constructor(private readonly audio: HTMLAudioElement) {}
+
+    /** 設定播完自動接住播邊集（PlayerProvider 傳入） */
+    setNextTrack = (resolver: ((track: Track) => Track | undefined) | undefined): void => {
+        this.nextTrack = resolver;
+    };
 
     subscribe = (listener: () => void): (() => void) => {
         this.listeners.add(listener);
@@ -73,7 +81,7 @@ export class AudioController {
             playing: this.onAudible,
             waiting: this.onSilent,
             pause: this.onStopped,
-            ended: this.onStopped,
+            ended: this.onEnded,
             error: this.onError,
             emptied: this.onEmptied,
         };
@@ -314,6 +322,19 @@ export class AudioController {
         this.playIntent = false;
         this.update({ isPlaying: false, isAudible: false });
         this.persist();
+    };
+
+    /**
+     * 播完：同暫停一樣存低進度（會變聽過）；有下一集就喺 ended event 入面即刻換集再播，
+     * 唔等 React render，iOS 鎖屏 / 背景都可以接住播
+     */
+    private onEnded = (): void => {
+        this.onStopped();
+        const { recording } = this.state;
+        const next = recording ? this.nextTrack?.(recording) : undefined;
+        if (next) {
+            void this.load(next, { autoplay: true });
+        }
     };
 
     private onVisibilityChange = (): void => {

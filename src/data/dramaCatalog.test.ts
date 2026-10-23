@@ -53,14 +53,14 @@ describe('dramaCatalog', () => {
             title: '認認真真搵返個人',
         });
         expect(decodeURIComponent(episodes.at(-1)?.url ?? '')).toBe(
-            'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/芝-See-菇-Bi-Family/Ｘ時mas時小提議/04 - Ｘ時mas時小提議 - 第四集 - 認認真真搵返個人.m4a',
+            'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/芝See菇Bi Family/Ｘ時mas時小提議/04 - Ｘ時mas時小提議 - 第四集 - 認認真真搵返個人.m4a',
         );
     });
 
-    it('builds the exact R2 url of a known-good sample (游亁水, U+4E81)', () => {
+    it('builds the R2 url of the 游亁水 sample, under the renamed 芝See菇Bi Family folder', () => {
         const first = seriesEpisodesOf('chisee').find((e) => e.arc === '游亁水');
         expect(first?.url).toBe(
-            'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/%E8%8A%9D-See-%E8%8F%87-Bi-Family/%E6%B8%B8%E4%BA%81%E6%B0%B4/01%20-%20%E6%B8%B8%E4%BA%81%E6%B0%B4%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a',
+            'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/%E8%8A%9DSee%E8%8F%87Bi%20Family/%E6%B8%B8%E4%BA%81%E6%B0%B4/01%20-%20%E6%B8%B8%E4%BA%81%E6%B0%B4%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a',
         );
     });
 });

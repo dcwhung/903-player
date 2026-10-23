@@ -70,3 +70,12 @@ export const dramaEpisodeLabel = (episode: DramaEpisode): string => {
     const date = formatDateLabel(episode.date);
     return episode.rerun ? t('drama.dailyRerunLabel', { date }) : date;
 };
+
+/** 短篇劇集嘅下一集（按 catalogue 次序，播完一個短篇接下一個短篇）；最後一集或者搵唔到就冇 */
+export const nextSeriesEpisode = (
+    episodes: readonly SeriesEpisode[],
+    url: string,
+): SeriesEpisode | undefined => {
+    const index = episodes.findIndex((e) => e.url === url);
+    return index < 0 ? undefined : episodes[index + 1];
+};

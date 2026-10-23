@@ -1,7 +1,7 @@
 /*
  * 廣播劇集數。
  * - 芝See菇Bi Family：真清單（10 個短篇、35 集，固定唔會再變），錄音喺 Cloudflare R2
- *   （DRAMA_AUDIO_BASE/芝-See-菇-Bi-Family/<短篇>/<原檔名>）。
+ *   （DRAMA_AUDIO_BASE/芝See菇Bi Family/<短篇>/<原檔名>）。
  * - 18 樓 C 座：⚠️ 仲係假資料（由截圖抄嘅日子），網址係佔位（public/dramas/c18/），
  *   撳播放會一直「連線中…」；等 manifest 到咗先換。介面（dramaEpisodesOf 等）唔使變。
  */
@@ -12,8 +12,8 @@ import type { DailyEpisode, DramaEpisode, DramaId, SeriesEpisode } from '../type
 const encodePath = (segments: readonly string[]): string =>
     segments.map(encodeURIComponent).join('/');
 
-/** R2 入面芝See 嘅 folder（R2 用連字號寫法，同畫面顯示嘅劇名唔同） */
-const CHISEE_FOLDER = '芝-See-菇-Bi-Family';
+/** R2 入面芝See 嘅 folder（同畫面顯示嘅劇名一樣） */
+const CHISEE_FOLDER = '芝See菇Bi Family';
 
 /** 檔名入面嘅集數用中文數字（第一集 … 第四集） */
 const CHINESE_NUMERALS = ['一', '二', '三', '四'] as const;

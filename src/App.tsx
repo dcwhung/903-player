@@ -6,6 +6,7 @@ import { HomePage } from './pages/HomePage';
 import { ShowPage } from './pages/ShowPage';
 import { TodayPage } from './pages/TodayPage';
 import type { AudioController } from './player/AudioController';
+import { nextTrack } from './player/nextTrack';
 import { PlayerProvider } from './player/PlayerProvider';
 import { hideSplash } from './splash/hideSplash';
 
@@ -20,7 +21,7 @@ export const App = ({ playerController }: AppProps) => {
     useEffect(() => hideSplash(document), []);
     return (
         <RecordingsProvider>
-            <PlayerProvider controller={playerController}>
+            <PlayerProvider controller={playerController} nextTrack={nextTrack}>
                 <HashRouter>
                     <Routes>
                         <Route path="/" element={<HomePage />} />

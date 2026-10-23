@@ -4,6 +4,7 @@ import {
     dailyNewestFirst,
     dramaEpisodeLabel,
     dramaHasNew,
+    nextSeriesEpisode,
     episodesInArc,
     pickDailyStart,
     pickSeriesStart,
@@ -133,5 +134,19 @@ describe('dramaEpisodeLabel', () => {
     it('names a daily episode by its date, marking reruns', () => {
         expect(dramaEpisodeLabel(daily('2026-10-23'))).toBe('23/10（五）');
         expect(dramaEpisodeLabel(daily('2025-08-11', true))).toBe('11/08（一） · 重溫');
+    });
+});
+
+describe('nextSeriesEpisode', () => {
+    const ordered = [series('甲', 1), series('甲', 2), series('乙', 1)];
+
+    it('moves to the next episode, then on to the next arc', () => {
+        expect(nextSeriesEpisode(ordered, ordered[0]?.url ?? '')).toBe(ordered[1]);
+        expect(nextSeriesEpisode(ordered, ordered[1]?.url ?? '')).toBe(ordered[2]);
+    });
+
+    it('has nothing after the last episode or for an unknown one', () => {
+        expect(nextSeriesEpisode(ordered, ordered[2]?.url ?? '')).toBeUndefined();
+        expect(nextSeriesEpisode(ordered, '/nope.m4a')).toBeUndefined();
     });
 });

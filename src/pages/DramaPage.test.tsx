@@ -75,6 +75,19 @@ describe('DramaPage', () => {
         });
     });
 
+    it('plays the next episode by itself when one finishes, and the list follows', async () => {
+        const { audio } = openDrama('chisee');
+        await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
+        act(() => audio.emitMetadata(1200));
+
+        act(() => audio.end());
+
+        await waitFor(() => expect(audio.src).toBe(CHISEE[1]?.url));
+        const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole('button');
+        expect(rows[0]).toHaveAccessibleName('播放 第 1 集，已收聽');
+        expect(rows[1]).toHaveAttribute('aria-current', 'true');
+    });
+
     it('treats the disabled 18 樓 C 座 as not found', () => {
         const { audio } = openDrama('c18');
 
