@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>廣播劇 UI 方案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/*
+ * 廣播劇 category 三款方案。上面揀方案，下面三部手機 mock（375 × 720 真 px）+ 優缺點表。
+ * 手機入面顏色跟 src/styles/tokens.css 同 src/config/showThemes.ts 嘅 HOME_THEME；
+ * 兩個劇集色調（--chi / --c18）係新提議，未入 showThemes。
+ */
+:root {
+    color-scheme: dark;
+    --shell-bg: #101214;
+    --shell-panel: #181b1f;
+    --shell-line: #2a2f35;
+    --shell-text: #e9ecef;
+    --shell-muted: #9aa3ad;
+    --shell-accent: #98bdde;
+    --shell-on-accent: #101214;
+    --font: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
+
+    /* 主頁（HOME_THEME） */
+    --home-top: #4f749c;
+    --home-bottom: #42658a;
+    --home-accent: #f5d294;
+    --home-on-accent: #2f4560;
+    --home-text: #fdf8f2;
+    --clay: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
+
+    /* 芝-See-菇-Bi-Family（提議色調：紫底粉紅） */
+    --chi-bg: #2b2233;
+    --chi-surface: #3a2e45;
+    --chi-track: #4d3f5a;
+    --chi-accent: #f4a6c0;
+    --chi-on-accent: #2b2233;
+    --chi-muted: #c3b3cf;
+
+    /* 18-樓-C-座（提議色調：深青底紅字，跟 YouTube 縮圖） */
+    --c18-bg: #182628;
+    --c18-surface: #213437;
+    --c18-track: #2f4a4e;
+    --c18-accent: #ff6b6b;
+    --c18-on-accent: #182628;
+    --c18-muted: #a9c3c5;
+
+    --phone-w: 375px;
+    --phone-h: 720px;
+}
+* { box-sizing: border-box; }
+em, i { font-style: normal; }
+body {
+    margin: 0;
+    background: var(--shell-bg);
+    color: var(--shell-text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 24px 16px 48px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+.intro h1 { margin: 0; font-size: 24px; font-weight: 600; }
+.intro p { margin: 4px 0 0; color: var(--shell-muted); max-width: 70ch; }
+.seg { display: inline-flex; flex-wrap: wrap; padding: 3px; gap: 2px; border-radius: 20px; background: var(--shell-panel); border: 1px solid var(--shell-line); }
+.seg button { border: 0; border-radius: 999px; padding: 6px 14px; min-height: 34px; font: inherit; font-size: 13px; color: var(--shell-muted); background: transparent; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--shell-accent); color: var(--shell-on-accent); font-weight: 600; }
+.option { display: none; flex-direction: column; gap: 20px; }
+.option.active { display: flex; }
+.option > h2 { margin: 0; font-size: 18px; }
+.option > .lead { margin: -12px 0 0; color: var(--shell-muted); }
+.phones { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px; }
+.phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; }
+.phone-cap { color: var(--shell-muted); font-size: 12px; text-align: center; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { border: 1px solid var(--shell-line); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: var(--shell-panel); font-weight: 600; }
+
+/* ---------- 手機 ---------- */
+.phone {
+    position: relative;
+    width: var(--phone-w);
+    max-width: calc(100vw - 32px);
+    height: var(--phone-h);
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 0 0 8px #000, 0 0 0 9px #2c2c2c, 0 20px 60px rgb(0 0 0 / 55%);
+    display: flex;
+    flex-direction: column;
+    color: var(--home-text);
+}
+.phone.home { background: linear-gradient(180deg, var(--home-top), var(--home-bottom)); }
+.phone.chi { background: var(--chi-bg); --accent: var(--chi-accent); --on-accent: var(--chi-on-accent); --surface: var(--chi-surface); --track: var(--chi-track); --muted: var(--chi-muted); }
+.phone.c18 { background: var(--c18-bg); --accent: var(--c18-accent); --on-accent: var(--c18-on-accent); --surface: var(--c18-surface); --track: var(--c18-track); --muted: var(--c18-muted); }
+.statusbar { height: 44px; flex: none; }
+.scr { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 0 16px 16px; }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+
+/* 主頁 */
+.banner {
+    position: relative; flex: none; aspect-ratio: 2.32 / 1; border-radius: 14px; overflow: hidden;
+    background: radial-gradient(circle at 80% 110%, #cfe6fa 0 22%, transparent 23%), radial-gradient(circle at 15% 115%, #cfe6fa 0 25%, transparent 26%), #4aa0e0;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-weight: 700; box-shadow: var(--clay);
+}
+.banner b { font-size: 34px; color: #fff; letter-spacing: -1px; text-shadow: 0 3px 0 rgb(0 0 0 / 15%); }
+.banner span { background: #f7dc5e; color: #2f6fae; padding: 2px 8px; border-radius: 4px; font-size: 12px; transform: rotate(-3deg); }
+.ver { position: absolute; right: 6px; bottom: 6px; font-size: 10px; background: rgb(0 0 0 / 55%); color: #fff; padding: 1px 6px; border-radius: 999px; font-weight: 500; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-bottom: 8px; }
+.tile {
+    position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; box-shadow: var(--clay);
+    display: flex; align-items: flex-end; padding: 8px; font-size: 12px; font-weight: 700; color: #fff;
+    text-shadow: 0 1px 3px rgb(0 0 0 / 60%);
+}
+.tile.wide { grid-column: span 2; aspect-ratio: 32 / 9; font-size: 15px; }
+.tile .tag {
+    position: absolute; top: 6px; left: 6px; background: var(--home-accent); color: var(--home-on-accent);
+    font-size: 10px; padding: 1px 8px; border-radius: 999px; text-shadow: none; box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
+}
+.tile .tag.drama { background: #f4a6c0; color: #2b2233; }
+.tile .meta { position: absolute; top: 8px; right: 8px; font-size: 10px; font-weight: 500; background: rgb(0 0 0 / 45%); padding: 1px 6px; border-radius: 999px; text-shadow: none; }
+.art1 { background: linear-gradient(135deg, #e9746a, #f2b56b); }
+.art2 { background: linear-gradient(135deg, #3c4a7a, #7a6ab8); }
+.art3 { background: linear-gradient(135deg, #63b38a, #2f7b74); }
+.art4 { background: linear-gradient(135deg, #f0c64a, #e48a3c); }
+.art5 { background: linear-gradient(135deg, #5a9fd6, #2d5d9a); }
+.art6 { background: linear-gradient(135deg, #3fb8c9, #1f6f8c); }
+.art7 { background: linear-gradient(135deg, #d36aa8, #7b3f9a); }
+.art-today { background: linear-gradient(180deg, #8fd0ff, #4aa0e0); color: #2f4560; text-shadow: none; justify-content: center; align-items: center; }
+.art-drama { background: linear-gradient(135deg, #f4a6c0, #8e6bc4 60%, #2f7b74); justify-content: center; align-items: center; font-size: 14px; }
+.art-chi { background: radial-gradient(circle at 25% 30%, #ffd6e4 0 14%, transparent 15%), radial-gradient(circle at 70% 60%, #ffe8a3 0 12%, transparent 13%), linear-gradient(135deg, #f4a6c0, #a77bd4); }
+.art-c18 { background: radial-gradient(circle at 70% 40%, #e43c3c 0 16%, transparent 17%), radial-gradient(circle at 30% 65%, #5fc3c9 0 18%, transparent 19%), linear-gradient(135deg, #f3ede4, #cfc4b4); color: #fff; }
+.tabs { flex: none; display: flex; padding: 3px; gap: 2px; border-radius: 999px; background: rgb(0 0 0 / 18%); }
+.tabs span { flex: 1; text-align: center; padding: 7px 0; border-radius: 999px; font-size: 13px; font-weight: 500; color: #e6eef7; }
+.tabs span.on { background: var(--home-accent); color: var(--home-on-accent); font-weight: 700; }
+.dots { display: flex; justify-content: center; gap: 6px; flex: none; }
+.dots i { width: 6px; height: 6px; border-radius: 999px; background: rgb(255 255 255 / 45%); }
+.dots i.on { width: 18px; background: var(--home-accent); }
+.mini {
+    flex: none; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px;
+    background: var(--chi-surface); box-shadow: 0 8px 20px rgb(0 0 0 / 35%); font-size: 12px;
+}
+.mini .d { width: 34px; height: 34px; border-radius: 999px; background: radial-gradient(circle, #111 0 18%, var(--chi-accent) 19% 30%, #111 31%); flex: none; }
+.mini .tx { flex: 1; min-width: 0; line-height: 1.3; }
+.mini .tx small { color: var(--chi-muted); display: block; }
+.mini .pp { width: 32px; height: 32px; border-radius: 999px; background: var(--chi-accent); color: var(--chi-on-accent); display: grid; place-items: center; font-size: 12px; }
+
+/* 劇集頁共用 */
+.hdr { flex: none; display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.back { width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; background: var(--surface, rgb(0 0 0 / 18%)); font-size: 18px; flex: none; }
+.hdr h3 { margin: 0; font-size: 20px; font-weight: 700; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hdr .sub { font-size: 11px; color: var(--muted); font-weight: 500; display: block; }
+.player { flex: none; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.disc {
+    position: relative; width: var(--disc, 200px); aspect-ratio: 1; border-radius: 999px;
+    background:
+        radial-gradient(circle, #111 0 6%, var(--accent) 6.5% 22%, #111 22.5%),
+        repeating-radial-gradient(circle, #151515 0 2px, #1d1d1d 2px 4px);
+    box-shadow: 0 0 0 6px var(--track), 0 12px 30px rgb(0 0 0 / 45%);
+}
+.disc::after {
+    content: ''; position: absolute; inset: -12px; border-radius: 999px;
+    background: conic-gradient(var(--accent) 0 var(--pct, 38%), transparent 0);
+    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+            mask: radial-gradient(closest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+}
+.ctrls { display: flex; align-items: center; gap: 14px; font-size: 11px; color: var(--muted); }
+.ctrls .b { width: 40px; height: 40px; border-radius: 999px; background: var(--surface); display: grid; place-items: center; color: var(--home-text); }
+.ctrls .play { width: 52px; height: 52px; background: var(--accent); color: var(--on-accent); font-size: 18px; }
+.now { font-size: 13px; text-align: center; line-height: 1.35; }
+.now small { display: block; color: var(--muted); font-size: 11px; }
+.chips { flex: none; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+.chips span { flex: none; padding: 6px 12px; border-radius: 999px; background: var(--surface); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.chips span.on { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.listhead { flex: none; display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
+.row { display: flex; align-items: center; gap: 10px; min-height: 52px; border-bottom: 1px solid var(--track); font-size: 13px; }
+.row .no { width: 26px; text-align: center; color: var(--muted); font-size: 11px; flex: none; }
+.row .nm { flex: 1; min-width: 0; line-height: 1.3; }
+.row .nm small { display: block; color: var(--muted); font-size: 11px; }
+.row .ic { width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center; background: var(--surface); font-size: 11px; flex: none; }
+.row.on .nm { color: var(--accent); font-weight: 700; }
+.row.on .ic { background: var(--accent); color: var(--on-accent); }
+.row .done { color: var(--accent); font-size: 12px; }
+.sec { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; margin-top: 8px; border-radius: 12px; background: var(--surface); font-size: 13px; font-weight: 700; }
+.sec small { color: var(--muted); font-weight: 500; font-size: 11px; }
+.sec.closed { opacity: 0.85; }
+.strip { flex: none; display: flex; gap: 4px; justify-content: center; }
+.strip span { width: 44px; padding: 3px 0; border-radius: 12px; text-align: center; font-size: 10px; line-height: 1.3; color: var(--muted); }
+.strip span b { display: block; font-size: 13px; color: var(--home-text); }
+.strip span.on { background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); }
+.strip span.rerun b { color: var(--muted); }
+.lab { flex: none; text-align: center; font-size: 10px; letter-spacing: 0.18em; color: var(--muted); }
+.badge-rerun { display: inline-block; font-size: 10px; padding: 0 6px; border-radius: 999px; border: 1px solid var(--muted); color: var(--muted); margin-left: 4px; vertical-align: 1px; }
+
+/* 方案 B 劇集一覽 */
+.hub { display: flex; flex-direction: column; gap: 14px; }
+.card { border-radius: 18px; overflow: hidden; background: rgb(0 0 0 / 18%); box-shadow: var(--clay); }
+.card .art { aspect-ratio: 16 / 9; display: flex; align-items: flex-end; padding: 10px; font-weight: 700; font-size: 18px; color: #fff; text-shadow: 0 1px 4px rgb(0 0 0 / 60%); }
+.card .info { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; font-size: 12px; }
+.card .info small { display: block; color: #e6eef7; opacity: 0.85; }
+.card .go { background: var(--home-accent); color: var(--home-on-accent); border-radius: 999px; padding: 4px 12px; font-weight: 700; white-space: nowrap; }
+
+/* 方案 C 主題 folder */
+.folders { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.folder { position: relative; border-radius: 14px; padding: 12px; background: var(--surface); min-height: 86px; display: flex; flex-direction: column; justify-content: space-between; gap: 6px; font-size: 13px; font-weight: 700; line-height: 1.3; }
+.folder::before { content: ''; position: absolute; top: -5px; left: 12px; width: 36px; height: 10px; border-radius: 6px 6px 0 0; background: var(--surface); }
+.folder small { color: var(--muted); font-weight: 500; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+.bar { height: 4px; border-radius: 999px; background: var(--track); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); }
+.folder.cont { box-shadow: inset 0 0 0 2px var(--accent); }
+.resume { flex: none; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 700; }
+.resume small { display: block; font-weight: 500; opacity: 0.8; }
+.resume .pp { margin-left: auto; width: 34px; height: 34px; border-radius: 999px; background: var(--on-accent); color: var(--accent); display: grid; place-items: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <header class="intro">
+        <h1>廣播劇 category：三款 UI 方案</h1>
+        <p>兩套劇集：芝-See-菇-Bi-Family（主題 × 集數，好似 folder）同 18-樓-C-座（大約一日一集，同 903 節目一樣按日子排）。揀一款，或者話我知要撈邊幾部分。</p>
+    </header>
+    <div class="seg" role="group" aria-label="方案">
+        <button type="button" aria-pressed="true" data-opt="a">A・主頁分頁 Tab</button>
+        <button type="button" aria-pressed="false" data-opt="b">B・「廣播劇」入口格</button>
+        <button type="button" aria-pressed="false" data-opt="c">C・劇集直接入主頁</button>
+    </div>
+
+    <!-- ============ 方案 A ============ -->
+    <section class="option active" id="opt-a">
+        <h2>A・主頁頂加「節目 / 廣播劇」Tab；芝See 用主題 chips</h2>
+        <p class="lead">主頁橫額下面加 segmented control，兩個 tab 共用同一個 grid。芝See 頁面播放器下面一行主題 chips 左右掃，揀主題換集數清單。18樓C座 直接沿用節目頁（唱片 + 日子條）。</p>
+        <div class="phones">
+            <div class="phone-wrap">
+                <div class="phone home">
+                    <div class="statusbar"></div>
+                    <div class="scr">
+                        <div class="banner"><b>903</b><span>音樂・節目・廣播劇</span><em class="ver">v1.3.0</em></div>
+                        <div class="tabs"><span>節目</span><span class="on">廣播劇</span></div>
+                        <div class="grid">
+                            <div class="tile wide art-chi"><em class="tag">New</em><em class="meta">11 個主題</em>芝-See-菇-Bi-Family</div>
+                            <div class="tile wide art-c18"><em class="tag">New</em><em class="meta">每日更新</em>18-樓-C-座</div>
+                        </div>
+                        <div style="flex:1"></div>
+                        <div class="mini"><i class="d"></i><span class="tx">X時mas時小提議・第 2 集<small>芝-See-菇-Bi-Family</small></span><i class="pp">❚❚</i></div>
+                    </div>
+                </div>
+                <span class="phone-cap">主頁（廣播劇 tab）：兩套劇用闊格，一行一套</span>
+            </div>
+            <div class="phone-wrap">
+                <div class="phone chi">
+                    <div class="statusbar"></div>
+                    <div class="scr">
+                        <div class="hdr"><span class="back">‹</span><h3>芝-See-菇-Bi-Family</h3></div>
+                        <div class="player" style="--disc:190px">
+                            <div class="disc" style="--pct:38%"></div>
+                            <div class="ctrls"><span class="b">−30</span><span class="b play">❚❚</span><span class="b">+30</span></div>
+                            <div class="now">第 2 集・你洽我<small>X時mas時小提議</small></div>
+                        </div>
+                        <div class="chips">
+                            <span>我哋覺得我哋窮</span><span class="on">X時mas時小提議</span><span>你生日所以我生日</span><span>大妒忌</span><span>好朋友手牽手</span>
+                        </div>
+                        <div class="listhead"><span>集數</span><span>共 4 集</span></div>
+                        <div class="scroll">
+                            <div class="row"><span class="no">1</span><span class="nm">休養下<small>18:42</small></span><span class="done">✓</span></div>
+                            <div class="row on"><span class="no">2</span><span class="nm">你洽我<small>播緊・7:05 / 18:20</small></span><span class="ic">❚❚</span></div>
+                            <div class="row"><span class="no">3</span><span class="nm">索腳汗<small>19:03</small></span><span class="ic">▶</span></div>
+                            <div class="row"><span class="no">4</span><span class="nm">返個人<small>17:56</small></span><span class="ic">▶</span></div>
+                        </div>
+                    </div>
+                </div>
+                <span class="phone-cap">芝See：chips 換主題，清單只列該主題 4 集</span>
+            </div>
+            <div class="phone-wrap">
+                <div class="phone c18">
+                    <div class="statusbar"></div>
+                    <div class="scr">
+                        <div class="hdr"><span class="back">‹</span><h3>18-樓-C-座</h3></div>
+                        <div class="player" style="--disc:210px">
+                            <div class="disc" style="--pct:62%"></div>
+                            <div class="ctrls"><span class="b">−30</span><span class="b play">▶</span><span class="b">+30</span></div>
+                        </div>
+                        <div class="lab">現正播放</div>
+                        <div class="strip">
+                            <span>六<b>17/10</b></span><span>一<b>19/10</b></span><span>二<b>20/10</b></span><span>三<b>21/10</b></span><span>四<b>22/10</b></span><span class="on">五<b>23/10</b></span>
+                        </div>
+                        <div class="listhead"><span>集數</span><span>共 9 集</span></div>
+                        <div class="scroll">
+                            <div class="row on"><span class="no">五</span><span class="nm">23/10/2026<small>23:09</small></span><span class="ic">▶</span></div>
+                            <div class="row"><span class="no">四</span><span class="nm">22/10/2026<small>22:06</small></span><span class="ic">▶</span></div>
+                            <div class="row"><span class="no">三</span><span class="nm">21/10/2026<small>21:09</small></span><span class="done">✓</span></div>
+                            <div class="row"><span class="no">二</span><span class="nm">20/10/2026<small>24:51</small></span><span class="done">✓</span></div>
+                            <div class="row"><span class="no">三</span><span class="nm">13/08/2025<span class="badge-rerun">重溫</span><small>23:20</small></span><span class="ic">▶</span></div>
+                        </div>
+                    </div>
+                </div>
+                <span class="phone-cap">18樓C座：同節目頁一樣；舊年嘅集數標「重溫」</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ 方案 B ============ -->
+    <section class="option" id="opt-b">
+        <h2>B・主頁加一格「廣播劇」入口；芝See 用分組清單</h2>
+        <p class="lead">主頁照舊，最尾（今日節目後面）多一格「廣播劇」，入去係劇集一覽頁。芝See 播放器下面一條長清單，按主題分組（主題頭 sticky，可以收埋）。18樓C座 同方案 A 一樣用節目頁。</p>
+        <div class="phones">
+            <div class="phone-wrap">
+                <div class="phone home">
+                    <div class="statusbar"></div>
+                    <div class="scr">
+                        <div class="banner"><b>903</b><span>音樂・節目・廣播劇</span><em class="ver">v1.3.0</em></div>
+                        <div class="grid">
+                            <div class="tile art1">Bad Girl大過佬</div><div class="tile art2">公子會</div>
+                            <div class="tile art3">雲妮鍾情</div><div class="tile art4">在晴朗的一天出發</div>
+                            <div class="tile art5">西加航空</div><div class="tile art6">口水多過浪花</div>
+                            <div class="tile art7">聖艾粒LaLaLaLa</div><div class="tile art-today">今日節目</div>
+                            <div class="tile wide art-drama"><em class="tag drama">New</em>🎭 廣播劇</div>
+                        </div>
+                        <div style="flex:1"></div>
+                        <div class="dots"><i class="on"></i><i></i></div>
+                    </div>
+                </div>
+                <span class="phone-cap">主頁：多一格闊「廣播劇」（矮螢幕會多一頁）</span>
+            </div>
+            <div class="phone-wrap">
+                <div class="phone home">
+                    <div class="statusbar"></div>
+                    <div class="scr">
+                        <div class="hdr"><span class="back">‹</span><h3>廣播劇</h3></div>
+                        <div class="hub">
+                            <div class="card"><div class="art art-chi">芝-See-菇-Bi-Family</div><div class="info"><span>11 個主題・44 集<small>上次聽到：X時mas時小提議 第 2 集</small></span><span class="go">繼續 ▶</span></div></div>
+                            <div class="card"><div class="art art-c18">18-樓-C-座</div><div class="info"><span>大約每日一集<small>最新：23/10/2026（未聽）</small></span><span class="go">播最新 ▶</span></div></div>
+                        </div>
+                    </div>
+                </div>
+                <span class="phone-cap">劇集一覽：每套一張大卡 + 進度</span>
+            </div>
+            <div class="phone-wrap">
+                <div class="phone chi">
+                    <div class="statusbar"></div>
+                    <div class="scr">
+                        <div class="hdr"><span class="back">‹</span><h3>芝-See-菇-Bi-Family</h3></div>
+                        <div class="player" style="--disc:170px">
+                            <div class="disc" style="--pct:38%"></div>
+                            <div class="ctrls"><span class="b">−30</span><span class="b play">❚❚</span><span class="b">+30</span></div>
+                            <div class="now">X時mas時小提議・第 2 集 你洽我</div>
+                        </div>
+                        <div class="scroll">
+                            <div class="sec closed">我哋覺得我哋窮<small>4 集・聽晒 ✓ ▸</small></div>
+                            <div class="sec">X時mas時小提議<small>1 / 4 ▾</small></div>
+                            <div class="row"><span class="no">1</span><span class="nm">休養下<small>18:42</small></span><span class="done">✓</span></div>
+                            <div class="row on"><span class="no">2</span><span class="nm">你洽我<small>播緊・7:05 / 18:20</small></span><span class="ic">❚❚</span></div>
+                            <div class="row"><span class="no">3</span><span class="nm">索腳汗<small>19:03</small></span><span class="ic">▶</span></div>
+                            <div class="row"><span class="no">4</span><span class="nm">返個人<small>17:56</small></span><span class="ic">▶</span></div>
+                            <div class="sec closed">你生日所以我生日<small>4 集 ▸</small></div>
+                            <div class="sec closed">大妒忌<small>4 集 ▸</small></div>
+                            <div class="sec closed">好朋友手牽手<small>4 集 ▸</small></div>
+                        </div>
+                    </div>
+                </div>
+                <span class="phone-cap">芝See：主題分組，播緊嗰組自動打開</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ 方案 C ============ -->
+    <section class="option" id="opt-c">
+        <h2>C・兩套劇直接入主頁 grid；芝See 兩層（主題 folder → 集數）</h2>
+        <p class="lead">主頁 grid 加兩格劇集（左上角「廣播劇」標籤分辨）。撳芝See 先見主題 folder 牆（似 Finder 第一欄），揀主題先入播放器 + 4 集。18樓C座 撳落直接開始播最新一集，入節目頁（同方案 A）。</p>
+        <div class="phones">
+            <div class="phone-wrap">
+                <div class="phone home">
+                    <div class="statusbar"></div>
+                    <div class="scr">
+                        <div class="banner"><b>903</b><span>音樂・節目・廣播劇</span><em class="ver">v1.3.0</em></div>
+                        <div class="grid">
+                            <div class="tile art1">Bad Girl大過佬</div><div class="tile art2">公子會</div>
+                            <div class="tile art3">雲妮鍾情</div><div class="tile art4">在晴朗的一天出發</div>
+                            <div class="tile art5">西加航空</div><div class="tile art6">口水多過浪花</div>
+                            <div class="tile art7">聖艾粒LaLaLaLa</div><div class="tile art-today">今日節目</div>
+                            <div class="tile art-chi"><em class="tag drama">廣播劇</em>芝-See-菇-Bi</div>
+                            <div class="tile art-c18"><em class="tag drama">廣播劇</em>18-樓-C-座</div>
+                        </div>
+                        <div style="flex:1"></div>
+                        <div class="dots"><i class="on"></i><i></i></div>
+                    </div>
+                </div>
+                <span class="phone-cap">主頁：10 格，劇集排最尾，粉紅標籤</span>
+            </div>
+            <div class="phone-wrap">
+                <div class="phone chi">
+                    <div class="statusbar"></div>
+                    <div class="scr">
+                        <div class="hdr"><span class="back">‹</span><h3>芝-See-菇-Bi-Family<span class="sub">11 個主題・44 集</span></h3></div>
+                        <div class="resume"><span>繼續收聽<small>X時mas時小提議・第 2 集 你洽我</small></span><i class="pp">▶</i></div>
+                        <div class="scroll">
+                            <div class="folders" style="padding-top:6px">
+                                <div class="folder">我哋覺得我哋窮<small><span>4 集</span><span>✓</span></small><div class="bar"><i style="width:100%"></i></div></div>
+                                <div class="folder cont">X時mas時小提議<small><span>1 / 4</span></small><div class="bar"><i style="width:30%"></i></div></div>
+                                <div class="folder">你生日所以我生日<small><span>4 集</span></small><div class="bar"><i style="width:0"></i></div></div>
+                                <div class="folder">大妒忌<small><span>4 集</span></small><div class="bar"><i style="width:0"></i></div></div>
+                                <div class="folder">好朋友手牽手<small><span>4 集</span></small><div class="bar"><i style="width:0"></i></div></div>
+                                <div class="folder">小苦妹撲水<small><span>4 集</span></small><div class="bar"><i style="width:0"></i></div></div>
+                                <div class="folder">我們都在會考中成長<small><span>4 集</span></small><div class="bar"><i style="width:0"></i></div></div>
+                                <div class="folder">游乾水<small><span>4 集</span></small><div class="bar"><i style="width:0"></i></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <span class="phone-cap">第一層：主題 folder 牆 + 「繼續收聽」</span>
+            </div>
+            <div class="phone-wrap">
+                <div class="phone chi">
+                    <div class="statusbar"></div>
+                    <div class="scr">
+                        <div class="hdr"><span class="back">‹</span><h3>X時mas時小提議<span class="sub">芝-See-菇-Bi-Family</span></h3></div>
+                        <div class="player" style="--disc:220px">
+                            <div class="disc" style="--pct:38%"></div>
+                            <div class="ctrls"><span class="b">−30</span><span class="b play">❚❚</span><span class="b">+30</span></div>
+                        </div>
+                        <div class="listhead"><span>集數</span><span>共 4 集</span></div>
+                        <div class="scroll">
+                            <div class="row"><span class="no">1</span><span class="nm">休養下<small>18:42</small></span><span class="done">✓</span></div>
+                            <div class="row on"><span class="no">2</span><span class="nm">你洽我<small>播緊・7:05 / 18:20</small></span><span class="ic">❚❚</span></div>
+                            <div class="row"><span class="no">3</span><span class="nm">索腳汗<small>19:03</small></span><span class="ic">▶</span></div>
+                            <div class="row"><span class="no">4</span><span class="nm">返個人<small>17:56</small></span><span class="ic">▶</span></div>
+                        </div>
+                    </div>
+                </div>
+                <span class="phone-cap">第二層：主題播放頁，唱片最大</span>
+            </div>
+        </div>
+    </section>
+
+    <table>
+        <thead><tr><th>方案</th><th>主頁改動</th><th>芝See 揀集</th><th>好處</th><th>代價</th></tr></thead>
+        <tbody>
+            <tr><td>A・Tab</td><td>加 segmented control，grid 換內容</td><td>播放器下 chips 換主題</td><td>節目同廣播劇清楚分開；之後加更多劇集唔會逼爆主頁；一頁完成揀主題 + 播</td><td>主頁每個 tab 少咗一行高度；11 個主題 chips 要左右掃先見晒</td></tr>
+            <tr><td>B・入口格</td><td>多一格闊「廣播劇」</td><td>主題分組清單（可收埋）</td><td>主頁幾乎唔郁；一覽頁可以放進度 / 「繼續」；清單一眼見晒所有主題</td><td>入劇集要撳多一下；清單長，播放器要縮細啲</td></tr>
+            <tr><td>C・直接入主頁</td><td>多兩格劇集</td><td>兩層：folder 牆 → 主題頁</td><td>最似 Finder 結構；主題頁唱片最大；撳落即播（18樓）</td><td>主頁 10 格，矮螢幕一定分頁；劇集越加越多會同節目混埋；芝See 要多一層導航</td></tr>
+        </tbody>
+    </table>
+</div>
+<script>
+const show = (opt) => {
+    document.querySelectorAll('.seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.opt === opt)));
+    document.querySelectorAll('.option').forEach((o) => o.classList.toggle('active', o.id === `opt-${opt}`));
+};
+document.querySelectorAll('.seg button').forEach((btn) => btn.addEventListener('click', () => show(btn.dataset.opt)));
+if (/^#[abc]$/.test(location.hash)) show(location.hash.slice(1));
+</script>
+</body>
+</html>
