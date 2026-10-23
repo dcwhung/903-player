@@ -1,0 +1,150 @@
+/*
+ * 填滿剩低高度（flex-basis 0），放唔落就自己捲；左右留白、格距同節目格一樣。
+ * 上下留位畀泥膠落影（同 ShowGrid .grid 一樣）
+ */
+.shelf {
+    display: grid;
+    flex: 1 1 0;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: var(--home-tile-gap);
+    width: 100%;
+    min-height: 0;
+    padding: var(--space-2) var(--home-gutter);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+}
+
+.shelf::-webkit-scrollbar {
+    display: none;
+}
+
+/* 一行一套：2:1（原圖 16:9，cover 裁走少少上下），泥膠感落影同節目格一樣 */
+.tile {
+    position: relative;
+    aspect-ratio: var(--drama-tile-aspect-w) / var(--drama-tile-aspect-h);
+    padding: 0;
+    overflow: hidden;
+    border: none;
+    border-radius: var(--radius-tile);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-clay-tile);
+}
+
+.art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 「新」（NewBadge）喺左上角 */
+.newBadge {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-2);
+}
+
+/*
+ * 角落細字（短篇數 / 每日更新）：同橫額版本號一樣半透明深底白字（任何劇集圖上都睇得清）。
+ * 平時右下角；圖底有「繼續收聽」條就讓去右上角
+ */
+.meta {
+    position: absolute;
+    right: var(--space-2);
+    bottom: var(--space-2);
+    padding: var(--new-badge-pad-block) var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--version-badge-bg);
+    color: var(--version-badge-text);
+    font-size: var(--font-size-2xs);
+    font-weight: 500;
+    line-height: var(--new-badge-line);
+}
+
+.metaTop {
+    top: var(--space-2);
+    bottom: auto;
+}
+
+/*
+ * 圖底「繼續收聽」：由透明漸變到深啡，白字（深底上對比夠），右邊一粒強調色 ▶；
+ * 文字讓開 ▶ 嘅位
+ */
+.continue {
+    position: absolute;
+    inset: auto 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--space-6) calc(var(--touch-target) + var(--space-4)) var(--space-3) var(--space-3);
+    background: linear-gradient(transparent, var(--drama-continue-scrim));
+    color: var(--version-badge-text);
+    text-align: left;
+}
+
+.continueTitle {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+}
+
+.continueLabel {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: var(--font-size-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.continueBar {
+    width: 100%;
+    height: var(--space-1);
+    margin-top: var(--space-1);
+    overflow: hidden;
+    border-radius: var(--radius-full);
+    background: var(--drama-continue-track);
+}
+
+.continueBar > span {
+    display: block;
+    height: 100%;
+    background: var(--drama-continue-fill);
+}
+
+.continuePlay {
+    position: absolute;
+    right: var(--space-3);
+    bottom: var(--space-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border-radius: var(--radius-full);
+    background: var(--drama-continue-fill);
+    color: var(--drama-continue-on-fill);
+}
+
+/* 橫版：並排（條件同 layout.ts 嘅 LANDSCAPE_QUERY 一樣） */
+@media (orientation: landscape) and (min-width: 640px) {
+    .shelf {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-content: center;
+    }
+}
+
+/* 手機打橫：橫額入格，橫額 + 兩套劇排成一行三格，填滿高度（SHORT_LANDSCAPE_QUERY） */
+@media (orientation: landscape) and (min-width: 640px) and (max-height: 561px) {
+    .shelf {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-rows: minmax(0, 1fr);
+        align-content: stretch;
+    }
+
+    .tile {
+        aspect-ratio: auto;
+        min-height: 0;
+    }
+}

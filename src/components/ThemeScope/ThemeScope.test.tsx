@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { DRAMA_THEMES } from '../../config/dramaThemes';
 import { SHOW_THEMES } from '../../config/showThemes';
 import { ThemeScope } from './ThemeScope';
 
@@ -82,5 +83,47 @@ describe('ThemeScope', () => {
         );
 
         expect(canvas()).toBe('');
+    });
+
+    it('marks a light theme so the browser uses light form controls and scrollbars', () => {
+        render(
+            <ThemeScope theme={DRAMA_THEMES.chisee}>
+                <p>內容</p>
+            </ThemeScope>,
+        );
+
+        const scope = screen.getByText('內容').parentElement as HTMLElement;
+        expect(scope).toHaveAttribute('data-scheme', 'light');
+    });
+
+    it('should paint a status bar band and use its colour for theme-color on a light page', () => {
+        const { container } = render(
+            <ThemeScope theme={DRAMA_THEMES.c18}>
+                <p>內容</p>
+            </ThemeScope>,
+        );
+
+        expect(themeColor()).toBe(DRAMA_THEMES.c18.statusBar);
+        const band = container.querySelector('[data-status-band]') as HTMLElement;
+        expect(band).toHaveAttribute('aria-hidden', 'true');
+        expect(band.style.background).toBe('rgb(165, 42, 36)');
+        // 畫面底色照用 bg（home indicator 後面同頁面一樣色）
+        expect(canvas()).toBe(DRAMA_THEMES.c18.bg);
+    });
+
+    it('should not paint a status bar band for dark themes or partial scopes', () => {
+        const { container } = render(
+            <>
+                <ThemeScope theme={SHOW_THEMES.sunnyday}>
+                    <p>節目</p>
+                </ThemeScope>
+                <ThemeScope theme={DRAMA_THEMES.c18} fullPage={false}>
+                    <p>mini player</p>
+                </ThemeScope>
+            </>,
+        );
+
+        expect(container.querySelector('[data-status-band]')).toBeNull();
+        expect(screen.getByText('節目').parentElement).not.toHaveAttribute('data-scheme');
     });
 });

@@ -2,6 +2,7 @@ import { render } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { RecordingsProvider, type RecordingsProber } from '../src/data/RecordingsProvider';
+import { nextTrack } from '../src/player/nextTrack';
 import { PlayerProvider } from '../src/player/PlayerProvider';
 import type { Recording, UnavailableEpisode } from '../src/types/recording';
 import { FakeAudio } from './fakeAudio';
@@ -35,7 +36,7 @@ export const renderWithProviders = (ui: ReactElement, options: Options = {}) => 
             readStored={() => recordings}
             readUnavailable={() => unavailable}
         >
-            <PlayerProvider audio={audio.asAudio()}>
+            <PlayerProvider audio={audio.asAudio()} nextTrack={nextTrack}>
                 <MemoryRouter initialEntries={[route]}>
                     <Routes>
                         <Route path={path} element={ui} />
@@ -65,7 +66,7 @@ export const createHookWrapper = (
             readStored={() => recordings}
             readUnavailable={() => unavailable}
         >
-            <PlayerProvider audio={audio.asAudio()}>
+            <PlayerProvider audio={audio.asAudio()} nextTrack={nextTrack}>
                 <MemoryRouter>{children}</MemoryRouter>
             </PlayerProvider>
         </RecordingsProvider>

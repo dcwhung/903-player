@@ -14,17 +14,17 @@ describe('ShowTile', () => {
         expect(onClick).toHaveBeenCalledTimes(1);
     });
 
-    it('shows a New badge and says so in its name when today has a new episode', () => {
+    it('shows a 新 badge and says so in its name when today has a new episode', () => {
         render(<ShowTile label="公子會" art="/art/gongzi.jpg" isNew onClick={() => {}} />);
 
         const button = screen.getByRole('button', { name: '公子會，今日有新一集' });
-        expect(button).toHaveTextContent('New');
+        expect(button).toHaveTextContent('新');
     });
 
     it('shows no badge by default', () => {
         render(<ShowTile label="公子會" art="/art/gongzi.jpg" onClick={() => {}} />);
 
-        expect(screen.getByRole('button', { name: '公子會' })).not.toHaveTextContent('New');
+        expect(screen.getByRole('button', { name: '公子會' })).not.toHaveTextContent('新');
     });
 
     it('shows the label on the today tile', () => {

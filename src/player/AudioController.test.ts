@@ -298,3 +298,52 @@ describe('AudioController recovery after a failed load (offline)', () => {
         detach();
     });
 });
+
+describe('AudioController auto-advance', () => {
+    const NEXT: Recording = {
+        ...RECORDING,
+        date: '2026-10-24',
+        url: 'https://audio.hkfm903.live/next.aac',
+    };
+
+    const playToEnd = async (nextTrack?: (url: string) => Recording | undefined) => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack(nextTrack && ((track) => nextTrack(track.url)));
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(1200);
+        audio.play.mockClear();
+        audio.end();
+        return { audio, controller, detach };
+    };
+
+    it('loads and plays the next track straight from the ended event', async () => {
+        const { audio, controller, detach } = await playToEnd((url) =>
+            url === RECORDING.url ? NEXT : undefined,
+        );
+
+        expect(audio.src).toBe(NEXT.url);
+        expect(audio.play).toHaveBeenCalledTimes(1);
+        expect(controller.getSnapshot().recording).toBe(NEXT);
+        detach();
+    });
+
+    it('marks the finished track as watched before moving on', async () => {
+        const { detach } = await playToEnd(() => NEXT);
+
+        expect(JSON.parse(localStorage.getItem('903player:progress:v1') ?? '{}')).toMatchObject({
+            [RECORDING.url]: { watched: true },
+        });
+        detach();
+    });
+
+    it('stops when there is no next track', async () => {
+        const { audio, controller, detach } = await playToEnd(() => undefined);
+
+        expect(audio.src).toBe(RECORDING.url);
+        expect(audio.play).not.toHaveBeenCalled();
+        expect(controller.getSnapshot().isPlaying).toBe(false);
+        detach();
+    });
+});

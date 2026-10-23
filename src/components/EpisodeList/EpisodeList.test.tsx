@@ -143,4 +143,29 @@ describe('EpisodeList', () => {
 
         expect(onSelect).toHaveBeenCalledWith('c');
     });
+
+    it('shows a tag (e.g. 重溫) beside the date and reads it out', () => {
+        const rerun: EpisodeItem = {
+            key: 'r',
+            dayMonth: '11/08',
+            weekday: '星期一',
+            tag: '重溫',
+            current: false,
+            isPlaying: false,
+            status: { kind: 'unwatched', ratio: 0, text: '未收聽' },
+        };
+        render(<EpisodeList items={[rerun]} onSelect={() => {}} />);
+
+        const row = screen.getByRole('button', { name: '播放 11/08 星期一 重溫，未收聽' });
+        expect(within(row).getByText('重溫')).toBeInTheDocument();
+    });
+
+    it('gives every row the same label column, sized for the kind of list', () => {
+        const { container, rerender } = render(<EpisodeList items={ITEMS} onSelect={() => {}} />);
+        const section = () => container.querySelector('section') as HTMLElement;
+        expect(section().dataset.labels).toBe('date');
+
+        rerender(<EpisodeList items={ITEMS} onSelect={() => {}} labels="title" />);
+        expect(section().dataset.labels).toBe('title');
+    });
 });

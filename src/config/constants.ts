@@ -6,6 +6,8 @@ export const PROGRESS_SAVE_INTERVAL_MS = 5000;
 /** 聽過嘅錄音由頭重播，真正播咗咁多秒先清走「已收聽」（防自動播放 / 誤撳） */
 export const REPLAY_RESET_SECONDS = 10;
 export const PROGRESS_STORAGE_KEY = '903player:progress:v1';
+/** 主頁上次揀咗「節目」定「廣播劇」tab */
+export const HOME_TAB_STORAGE_KEY = '903player:home-tab:v1';
 
 /** 鎖屏 / 耳機嘅前後掣每次跳幾多秒 */
 export const LOCK_SCREEN_SKIP_SECONDS = 30;
@@ -17,6 +19,12 @@ export const ARC_SWEEP_DEGREES = 270;
 
 /** 錄音檔只可以嚟自原站 audio host */
 export const ALLOWED_AUDIO_ORIGIN = 'https://audio.hkfm903.live';
+
+/** 廣播劇錄音（Cloudflare R2 public bucket「radio-drama」）：<劇集 folder>/<短篇 folder>/<檔名> */
+/** 新上架短篇由上架日起計幾多日內有「新」 */
+export const NEW_ARC_DAYS = 14;
+
+export const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
 
 /**
  * 捽碟加速：慢慢捽轉一圈 = 60 秒（微調），捽得快每圈最多 = 10 分鐘（粗調）；

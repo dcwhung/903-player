@@ -12,6 +12,9 @@
     --theme-muted: #a3a3a3;
     --theme-shadow-dark: #0a0a0a;
     --theme-shadow-light: #242424;
+    /* 淺色劇集先另外設（見 showThemes.ts ShowTheme）；預設跟強調色 / app 字體 / 冇裝飾線 */
+    --theme-accent-text: var(--theme-accent);
+    --theme-header-rule: none;
 
     /*
      * 橫版大畫面放大字、間距、掣同 icon 嘅倍數（直版 / 手機打橫都係 1，見下面 landscape @media）。
@@ -21,6 +24,7 @@
     --ui-scale: 1;
 
     --font-family: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
+    --theme-title-font: var(--font-family);
     /* 日子條每格上面嘅星期（一、二…） */
     --font-size-2xs: calc(11px * var(--ui-scale));
     --font-size-xs: calc(12px * var(--ui-scale));
@@ -91,15 +95,32 @@
     --date-strip-weekday-line: 14px;
     --date-strip-day-line: 18px;
     --date-strip-empty-opacity: 0.35;
+    /* 短篇劇集頁嘅短篇 chip：睇落嘅高度（撳得到範圍係成行 --date-strip-height） */
+    --arc-chip-height: calc(32px * var(--ui-scale));
+    /* 「全部短篇」一覽表：最高佔畫面幾多、遮罩、拉柄闊、每行高、圓環大細、疊喺頁面上面嘅層 */
+    --arc-sheet-max-height: 78%;
+    --arc-sheet-scrim: rgb(0 0 0 / 40%);
+    --arc-sheet-grab-width: calc(40px * var(--ui-scale));
+    --arc-sheet-row-height: calc(52px * var(--ui-scale));
+    --arc-sheet-ring: calc(34px * var(--ui-scale));
+    --arc-sheet-z: 10;
+    /*
+     * 集數清單行頭欄闊：節目日子（17/10 + 星期六）；每日劇集日子 + 「重溫」標籤；
+     * 短篇劇集集名（最長「認認真真搵返個人」8 個字，佔清單四成）
+     */
+    --episode-label-date: calc(58px * var(--ui-scale));
+    --episode-label-tagged-date: calc(76px * var(--ui-scale));
+    --episode-label-title: 40%;
     /* 未上架嘅集數 / 節目（清單照列出但撳唔到）：日子、節目名、唱片變淡；進度條變虛線 */
     --unavailable-opacity: 0.45;
     --unavailable-dash: 6px;
     --unavailable-gap: 4px;
-    /* 主頁節目格「New」標籤：細細粒膠囊；左邊有粒圓點，所以左邊 padding 細過右邊（右邊用 --space-2） */
+    /* 「新」標籤（NewBadge）：上下內邊、行高 */
     --new-badge-pad-block: 2px;
-    --new-badge-pad-start: 6px;
     --new-badge-line: 16px;
-    --new-badge-dot: 6px;
+    /* 「新」統一紅底白字（NewBadge） */
+    --new-badge-bg: #c0362c;
+    --new-badge-text: #ffffff;
 
     /* 今日節目卡疊（ShowCardStack）：每疊後一層向下移、縮細、變淡幾多（第一張後面嘅卡 scale 0.92） */
     --card-stack-offset: 12px;
@@ -133,6 +154,18 @@
     /* 主頁節目格（ShowTile）16:9；頁頂橫額嘅高度用同一個比例計，兩者一樣高 */
     --tile-aspect-w: 16;
     --tile-aspect-h: 9;
+    /* 主頁「廣播劇」tab 嘅劇集格（一行一套） */
+    --drama-tile-aspect-w: 2;
+    --drama-tile-aspect-h: 1;
+    /* 劇集格「繼續收聽」條：深啡漸變底、進度線底、芝See 橙（▶ 同進度）、▶ 上面嘅字 */
+    --drama-continue-scrim: rgb(43 26 12 / 85%);
+    --drama-continue-track: rgb(255 255 255 / 30%);
+    --drama-continue-fill: #f7901e;
+    --drama-continue-on-fill: #2b1a0c;
+    /* 主頁橫額下面「節目 / 廣播劇」切換：膠囊底色、內邊、每個掣高度（觸控高度） */
+    --home-tab-track: rgb(0 0 0 / 18%);
+    --home-tab-inset: calc(3px * var(--ui-scale));
+    --home-tab-height: var(--touch-target);
     /* 主頁節目格同橫額共用嘅左右留白、格距 */
     --home-gutter: var(--space-4);
     --home-tile-gap: var(--space-3);
@@ -317,11 +350,15 @@
     --color-text: var(--theme-text);
     --color-text-secondary: var(--theme-text);
     --color-text-muted: var(--theme-muted);
+    /* 已收聽嘅集數（EpisodeList）：淡色字；支援 color-mix 就再向背景色淡 25%（見下面 @supports） */
+    --color-watched: var(--color-text-muted);
     --color-title: var(--theme-title);
     --color-accent: var(--theme-accent);
     --color-accent-fill: var(--theme-accent);
     --color-on-accent: var(--theme-on-accent);
-    --color-status-playing: var(--theme-accent);
+    /* 強調色做文字 / 細 icon：淺色底強調色太淺，用 --theme-accent-text（深色短篇就係強調色） */
+    --color-accent-text: var(--theme-accent-text);
+    --color-status-playing: var(--theme-accent-text);
     --color-badge: var(--theme-title);
     --color-on-badge: var(--theme-bg);
     /* 唱片效果：節目圖邊緣陰影、坑紋、中間軸心外圈 */
@@ -342,4 +379,16 @@
     --shadow-floating: 0 2px 10px rgb(0 0 0 / 45%);
     /* 今日節目卡：細細一圈軌道色描邊 + 浮起陰影，令疊喺後面嘅卡睇得出邊 */
     --shadow-card: 0 0 0 1px var(--theme-track), 0 10px 26px rgb(0 0 0 / 45%);
+}
+
+/*
+ * 已收聽集數再淡 25%（用戶要求；淺色劇集對比度約 3.2–3.5:1，低過 AA 細字 4.5:1，深色節目約 4.6–5.1:1）。
+ * 要同語意 token 一樣喺 :root 同每個 ThemeScope 宣告，先跟到當頁底色；
+ * 放喺檔案最尾，蓋過上面語意 token 區塊嘅後備值
+ */
+@supports (color: color-mix(in srgb, red, blue)) {
+    :root,
+    [data-theme-scope] {
+        --color-watched: color-mix(in srgb, var(--color-text-muted) 75%, var(--color-bg));
+    }
 }

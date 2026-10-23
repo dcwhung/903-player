@@ -45,6 +45,19 @@ export const RestartIcon = (props: IconProps) => (
     </StrokeIcon>
 );
 
+export const CloseIcon = (props: IconProps) => (
+    <StrokeIcon {...props}>
+        <path d="M18 6L6 18M6 6l12 12" />
+    </StrokeIcon>
+);
+
+/** 「全部短篇」：三條橫線 */
+export const ListIcon = (props: IconProps) => (
+    <StrokeIcon {...props}>
+        <path d="M4 6h16M4 12h16M4 18h16" />
+    </StrokeIcon>
+);
+
 export const CheckIcon = (props: IconProps) => (
     <StrokeIcon strokeWidth={4} {...props}>
         <path d="M20 6L9 17l-5-5" />

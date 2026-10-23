@@ -8,6 +8,25 @@
      * 入面嘅 cqi 照舊對住 h1，唔受影響。
      */
     container-type: size;
+    /* 淺色頁嘅狀態列色帶（.statusBand）對住成頁定位 */
+    position: relative;
     background: var(--color-bg);
     color: var(--color-text);
+}
+
+/* 淺色主題（廣播劇）：表單元素、捲動條跟淺色；tokens.css :root 預設係 dark */
+[data-scheme='light'] {
+    color-scheme: light;
+}
+
+/*
+ * 淺色頁頂部安全區（iOS 狀態列 / 瀏海）嘅色帶：black-translucent 狀態列一定係白字，
+ * 唔墊深色會睇唔到時間、電量。冇安全區（桌面、Android）高度係 0，睇唔到
+ */
+.statusBand {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 1;
+    height: env(safe-area-inset-top);
+    pointer-events: none;
 }

@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
 import type { PlayerActions, PlayerState } from './playerContext';
 import { useMediaSession } from './useMediaSession';
 
@@ -60,6 +61,24 @@ describe('useMediaSession', () => {
             artist: '17/10（六）',
         });
         expect(session.playbackState).toBe('playing');
+    });
+
+    it('publishes drama name and episode label for a drama episode', () => {
+        const { session } = installMediaSession();
+        const xmas = seriesEpisodesOf('chisee').find((e) => e.title === '哥哥你洽我');
+        const rerun = dailyEpisodesOf('c18').find((e) => e.date === '2025-08-11');
+
+        const { rerender } = renderHook(({ s }) => useMediaSession(actions(), s), {
+            initialProps: { s: state({ recording: xmas ?? null }) },
+        });
+        const init = () => (session.metadata as unknown as { init: MediaMetadataInit }).init;
+        expect(init()).toMatchObject({
+            title: '芝See菇Bi Family',
+            artist: 'Ｘ時mas時小提議 · 第 2 集 哥哥你洽我',
+        });
+
+        rerender({ s: state({ recording: rerun ?? null }) });
+        expect(init()).toMatchObject({ title: '18 樓 C 座', artist: '11/08（一） · 重溫' });
     });
 
     it('wires lock-screen buttons to player actions', () => {

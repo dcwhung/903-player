@@ -37,3 +37,27 @@ export const scrollRowIntoPanel = (
     );
     panel.scrollTo?.({ top, behavior });
 };
+
+/** chip 喺 panel 入面置中要捲到幾多（scrollLeft）；chipLeft 係 chip 相對 panel 可見範圍左邊 */
+export const centredScrollLeft = (
+    view: { scrollLeft: number; width: number },
+    chip: { left: number; width: number },
+): number => view.scrollLeft + chip.left - (view.width - chip.width) / 2;
+
+/**
+ * 將橫向 panel 入面嘅某一格捲到正中（只捲 panel，唔會捲成頁）。
+ * 用 bounding rect 唔用 offsetLeft：offsetLeft 係對住最近有 position 嘅祖先（例如成頁 .scope）計
+ */
+export const scrollChipToCentre = (
+    panel: HTMLElement,
+    chip: HTMLElement,
+    behavior: ScrollBehavior,
+): void => {
+    const view = panel.getBoundingClientRect();
+    const box = chip.getBoundingClientRect();
+    const left = centredScrollLeft(
+        { scrollLeft: panel.scrollLeft, width: panel.clientWidth },
+        { left: box.left - view.left, width: box.width },
+    );
+    panel.scrollTo?.({ left, behavior });
+};

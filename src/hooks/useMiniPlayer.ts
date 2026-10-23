@@ -1,14 +1,20 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
+import { DRAMA_THEMES } from '../config/dramaThemes';
+import { findDrama } from '../config/dramas';
 import { themeFor } from '../config/showThemes';
 import { findShow } from '../config/shows';
 import { useRecordings } from '../data/useRecordings';
 import { usePlayer } from '../player/usePlayer';
+import { dramaEpisodeLabel } from '../selectors/dramas';
 import { miniPlayerSubtitle, miniPlayerTimeText } from '../selectors/miniPlayer';
 import { todayRecordings } from '../selectors/recordings';
 import { getProgress } from '../services/progressStore';
+import type { DramaEpisode } from '../types/drama';
 import type { Recording } from '../types/recording';
+import { isDramaEpisode } from '../types/track';
+import { t } from '../i18n/t';
 import { hkToday } from '../utils/date';
 import { useRefreshedOn } from './useRefreshedOn';
 import { ratio } from '../utils/ratio';
@@ -50,12 +56,45 @@ const useShownTime = (url: string | undefined, isLoaded: boolean) => {
         : { position: saved?.position ?? 0, duration: saved?.duration ?? 0 };
 };
 
-/** 主頁 mini player：只播今日（今日冇節目播先用最近一日）嘅節目 */
+type Player = ReturnType<typeof usePlayer>;
+
+/** 載入咗廣播劇：mini player 只顯示嗰套劇（得一個，唔使左右掃），撳入劇集頁 */
+const dramaMiniPlayer = (
+    episode: DramaEpisode,
+    player: Player,
+    open: (path: string) => void,
+): MiniPlayerProps => {
+    const name = findDrama(episode.dramaId)?.name ?? '';
+    const timeText = miniPlayerTimeText(player.currentTime, player.duration);
+    const label = dramaEpisodeLabel(episode);
+    return {
+        showName: name,
+        theme: DRAMA_THEMES[episode.dramaId],
+        subtitle: timeText ? t('miniPlayer.withTime', { label, time: timeText }) : label,
+        timeText,
+        isPlaying: player.isPlaying,
+        progress: ratio(player.currentTime, player.duration),
+        labels: [name],
+        keys: [episode.url],
+        index: 0,
+        onToggle: () => void player.toggle(),
+        onOpen: () => open(`/drama/${episode.dramaId}`),
+        onChange: () => {},
+    };
+};
+
+/**
+ * 主頁 mini player：今日（今日冇節目播先用最近一日）嘅節目；
+ * 載入緊廣播劇就改為顯示嗰套劇（返主頁唔會停，見 useHomeArrival）
+ */
 export const useMiniPlayer = (): MiniPlayerProps | null => {
     const player = usePlayer();
     const navigate = useNavigate();
     const { today, list, index, current, isLoaded, select } = useTodaySelection();
     const { position, duration } = useShownTime(current?.url, isLoaded);
+    if (player.recording && isDramaEpisode(player.recording)) {
+        return dramaMiniPlayer(player.recording, player, navigate);
+    }
     if (!current) {
         return null;
     }

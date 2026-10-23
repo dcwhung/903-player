@@ -26,3 +26,8 @@ main.home {
     grid-column: span 2;
     min-height: 0;
 }
+
+/* 手機打橫「廣播劇」tab：橫額同兩套劇排成一行三格（DramaShelf），唔使跨欄 */
+.shelfBanner {
+    min-height: 0;
+}

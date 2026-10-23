@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { RecordingsProvider } from './data/RecordingsProvider';
+import { DramaPage } from './pages/DramaPage';
 import { HomePage } from './pages/HomePage';
 import { ShowPage } from './pages/ShowPage';
 import { TodayPage } from './pages/TodayPage';
 import type { AudioController } from './player/AudioController';
+import { nextTrack } from './player/nextTrack';
 import { PlayerProvider } from './player/PlayerProvider';
 import { hideSplash } from './splash/hideSplash';
 
@@ -19,12 +21,13 @@ export const App = ({ playerController }: AppProps) => {
     useEffect(() => hideSplash(document), []);
     return (
         <RecordingsProvider>
-            <PlayerProvider controller={playerController}>
+            <PlayerProvider controller={playerController} nextTrack={nextTrack}>
                 <HashRouter>
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/show/:showId" element={<ShowPage />} />
                         <Route path="/today" element={<TodayPage />} />
+                        <Route path="/drama/:dramaId" element={<DramaPage />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                 </HashRouter>

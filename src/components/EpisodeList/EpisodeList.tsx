@@ -9,17 +9,28 @@ import type { EpisodeStatus } from './episodeStatus';
 
 export interface EpisodeItem {
     key: string;
+    /** 大字（節目：日/月；短篇劇集：集名） */
     dayMonth: string;
+    /** 細字（節目：星期幾；短篇劇集：第 N 集） */
     weekday: string;
+    /** 細字旁邊嘅標籤（例如每日劇集重播「重溫」）；冇就唔顯示 */
+    tag?: string;
     current: boolean;
     /** 揀中而且播緊：掣變暫停，撳落去暫停 */
     isPlaying: boolean;
     status: EpisodeStatus;
 }
 
+/**
+ * 行頭欄闊（成個清單一樣，進度條先對齊）：date 節目日子；taggedDate 日子加「重溫」標籤；
+ * title 短篇劇集集名（長短唔一）
+ */
+export type EpisodeLabels = 'date' | 'taggedDate' | 'title';
+
 interface EpisodeListProps {
     items: EpisodeItem[];
     onSelect: (key: string) => void;
+    labels?: EpisodeLabels;
 }
 
 const CHECK_ICON_SIZE = 12;
@@ -40,16 +51,24 @@ const RowIcon = ({ item }: { item: EpisodeItem }) => {
     return <PlayIcon className={styles.play} size={PLAY_ICON_SIZE} filled={false} />;
 };
 
+/** 行頭：大字 + 細字（+ 標籤） */
+const RowDate = ({ item }: { item: EpisodeItem }) => (
+    <span className={styles.date}>
+        <span className={styles.dayMonth}>{item.dayMonth}</span>
+        <span className={styles.weekday}>
+            {item.weekday}
+            {item.tag && <span className={styles.tag}>{item.tag}</span>}
+        </span>
+    </span>
+);
+
 /**
  * 未上架：照列出日子同狀態，但唔係掣（撳唔到、冇播放掣、進度條變虛線）。
  * 用普通 div：screen reader 直接讀可見文字（日子、星期、未上架），唔會當成停用咗嘅掣
  */
 const UnavailableRow = ({ item }: { item: EpisodeItem }) => (
     <div className={`${styles.row} ${styles.unavailable}`}>
-        <span className={styles.date}>
-            <span className={styles.dayMonth}>{item.dayMonth}</span>
-            <span className={styles.weekday}>{item.weekday}</span>
-        </span>
+        <RowDate item={item} />
         <span className={styles.body}>
             <span className={styles.bar} aria-hidden="true" />
             <span className={styles.status}>{item.status.text}</span>
@@ -63,7 +82,7 @@ const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: str
         return <UnavailableRow item={item} />;
     }
     const percent = toPercent(status.ratio);
-    const date = `${item.dayMonth} ${item.weekday}`;
+    const date = [item.dayMonth, item.weekday, item.tag].filter(Boolean).join(' ');
     return (
         <button
             type="button"
@@ -75,10 +94,7 @@ const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: str
             })}
             onClick={() => onSelect(item.key)}
         >
-            <span className={styles.date}>
-                <span className={styles.dayMonth}>{item.dayMonth}</span>
-                <span className={styles.weekday}>{item.weekday}</span>
-            </span>
+            <RowDate item={item} />
             <span className={styles.body}>
                 <span
                     className={styles.bar}
@@ -109,7 +125,7 @@ const countText = (items: EpisodeItem[]): string => {
  * 集數清單：最新喺頂，每集有進度同狀態。
  * 清單本身係節目頁唯一捲動嘅 panel；入頁 / 轉集時只喺 panel 入面捲到揀中嗰集
  */
-export const EpisodeList = ({ items, onSelect }: EpisodeListProps) => {
+export const EpisodeList = ({ items, onSelect, labels = 'date' }: EpisodeListProps) => {
     const headingId = useId();
     const listRef = useRef<HTMLUListElement>(null);
     const currentKey = items.find((item) => item.current)?.key;
@@ -121,7 +137,7 @@ export const EpisodeList = ({ items, onSelect }: EpisodeListProps) => {
     }, [currentKey]);
 
     return (
-        <section className={styles.section} aria-labelledby={headingId}>
+        <section className={styles.section} aria-labelledby={headingId} data-labels={labels}>
             <div className={styles.header}>
                 <h2 id={headingId} className={styles.heading}>
                     {t('episodes.title')}

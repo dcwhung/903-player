@@ -14,9 +14,14 @@ export const zhHK = {
     home: {
         bannerAlt: '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽',
         showsNav: '節目',
+        // 主頁橫額下面嘅分類 tab
+        tabs: '分類',
+        tabShows: '節目',
+        tabDramas: '廣播劇',
+        dramasNav: '廣播劇',
         today: '今日節目',
         // 節目格：今日有已上架、未聽完嘅新一集
-        newBadge: 'New',
+        newBadge: '新',
         showNew: '{name}，今日有新一集',
         // 矮螢幕節目格分頁：指示點每粒嘅名、成組嘅位置
         page: '第 {index} 頁',
@@ -91,6 +96,55 @@ export const zhHK = {
         // 今日有節目播但一個都未上架：卡疊嘅位改為呢個空狀態
         emptyTitle: '今日節目未上架',
         emptyHint: '上架之後會自動顯示',
+    },
+    drama: {
+        notFound: '找不到此廣播劇',
+        // 主頁劇集格右下角
+        arcCount: '{count} 個短篇',
+        daily: '每日更新',
+        // 主頁劇集格底部（聽過先出）
+        continue: '繼續收聽',
+        tileContinue: '{name}，繼續收聽 {label}',
+        // 劇集格左上角「新」嘅讀屏
+        tileNew: '{name}，{label}',
+        newArc: '有新短篇',
+        newEpisode: '今日有新一集',
+        // 短篇劇集：清單每行細字、mini player / 鎖屏副標題
+        episodeNo: '第 {no} 集',
+        seriesLabel: '{arc} · 第 {no} 集 {title}',
+        // 冇集名嘅集數
+        seriesLabelUntitled: '{arc} · 第 {no} 集',
+        // 每日劇集重播舊集
+        rerun: '重溫',
+        dailyRerunLabel: '{date} · 重溫',
+        // 短篇劇集頁：唱片下面嘅短篇 chips
+        arcs: '短篇',
+        // 睇緊其他短篇時，播緊嗰個短篇嘅 chip
+        arcPlaying: '播緊',
+        // 全集一覽表（chips 最前「☰ 全集」打開）
+        allArcs: '全集',
+        // chip 上「新」嘅讀屏說明
+        arcNewLabel: '新上架',
+        sheetTitle: '全集',
+        groupPlaying: '播放中',
+        groupNew: '新上架',
+        groupUnfinished: '未聽完',
+        groupDone: '已聽完',
+        sheetDone: '聽完 {done} / {total} 個',
+        sheetClose: '關閉',
+        arcPlayingEpisode: '播緊第 {no} 集',
+        arcResumeAt: '聽到第 {no} 集 {time}',
+        arcNext: '下一集係第 {no} 集',
+        arcNew: '未聽 · {count} 集',
+        arcDone: '聽完 · {count} 集',
+        arcRow: '{arc}，{status}',
+        arcPlayNew: '播放 {arc} 第 1 集',
+        arcPlayResume: '續聽 {arc} 第 {no} 集',
+        arcPlayAgain: '由第 1 集重聽 {arc}',
+        arcPause: '暫停 {arc}',
+        arcPlay: '播放 {arc}',
+        nowPlaying: '現正播放：{label}',
+        nowPlayingShort: '第 {no} 集 {title}',
     },
 } as const;
 

@@ -33,6 +33,8 @@
  */
 .showTitle {
     overflow: hidden;
+    /* 廣播劇可以有自己嘅標題字體（例如 18樓C座 襯線粗體），節目跟 app 字體 */
+    font-family: var(--theme-title-font);
     font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--color-title);

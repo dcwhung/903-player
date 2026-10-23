@@ -2,8 +2,10 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
+import { seriesEpisodesOf } from '../data/dramaCatalog';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
+import type { Track } from '../types/track';
 import { isListedByMiniPlayer, useHomeArrival } from './useHomeArrival';
 
 const TODAY = recording('badgirl', '2026-10-19', '1000');
@@ -16,7 +18,7 @@ const Home = () => {
 };
 
 /** 先喺「其他頁」播 target（可以冇），再轉去主頁 */
-const Harness = ({ target, later }: { target?: Recording; later?: Recording }) => {
+const Harness = ({ target, later }: { target?: Track; later?: Recording }) => {
     const { load } = usePlayer();
     const [isHome, setIsHome] = useState(false);
     if (isHome) {
@@ -43,7 +45,7 @@ const Harness = ({ target, later }: { target?: Recording; later?: Recording }) =
 };
 
 const arrive = async (
-    props: { target?: Recording; later?: Recording },
+    props: { target?: Track; later?: Recording },
     recordings: Recording[] = RECORDINGS,
     prober?: () => Promise<Recording[]>,
 ) => {
@@ -71,6 +73,14 @@ describe('useHomeArrival', () => {
 
     it('keeps playing a recording that the mini player lists', async () => {
         const audio = await arrive({ target: TODAY });
+
+        await waitFor(() => expect(audio.play).toHaveBeenCalled());
+        expect(audio.pause).not.toHaveBeenCalled();
+    });
+
+    it('keeps playing a drama episode, which the mini player shows instead of today', async () => {
+        const drama = seriesEpisodesOf('chisee')[0];
+        const audio = await arrive({ target: drama });
 
         await waitFor(() => expect(audio.play).toHaveBeenCalled());
         expect(audio.pause).not.toHaveBeenCalled();
