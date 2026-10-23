@@ -31,21 +31,23 @@
     --home-text: #fdf8f2;
     --clay: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
 
-    /* 芝-See-菇-Bi-Family（提議色調：紫底粉紅） */
-    --chi-bg: #2b2233;
-    --chi-surface: #3a2e45;
-    --chi-track: #4d3f5a;
-    --chi-accent: #f4a6c0;
-    --chi-on-accent: #2b2233;
-    --chi-muted: #c3b3cf;
+    /* 芝-See-菇-Bi-Family：由 design/dramas/chisee.webp 抽色（黃底、橙字、啡色梳化） */
+    --chi-bg: #22180f;
+    --chi-surface: #33251a;
+    --chi-track: #4d3a28;
+    --chi-accent: #ffd60a;
+    --chi-on-accent: #22180f;
+    --chi-title: #ffb04a;
+    --chi-muted: #cdb89a;
 
-    /* 18-樓-C-座（提議色調：深青底紅字，跟 YouTube 縮圖） */
-    --c18-bg: #182628;
-    --c18-surface: #213437;
-    --c18-track: #2f4a4e;
-    --c18-accent: #ff6b6b;
-    --c18-on-accent: #182628;
-    --c18-muted: #a9c3c5;
+    /* 18-樓-C-座：由 design/dramas/c18.jpg 抽色（菲林感暖啡、橄欖綠、白色標題） */
+    --c18-bg: #1a1611;
+    --c18-surface: #28221b;
+    --c18-track: #433a2e;
+    --c18-accent: #e6c58f;
+    --c18-on-accent: #1a1611;
+    --c18-title: #ffffff;
+    --c18-muted: #b8ab96;
 
     --phone-w: 375px;
     --phone-h: 720px;
@@ -92,8 +94,8 @@ th { background: var(--shell-panel); font-weight: 600; }
     color: var(--home-text);
 }
 .phone.home { background: linear-gradient(180deg, var(--home-top), var(--home-bottom)); }
-.phone.chi { background: var(--chi-bg); --accent: var(--chi-accent); --on-accent: var(--chi-on-accent); --surface: var(--chi-surface); --track: var(--chi-track); --muted: var(--chi-muted); }
-.phone.c18 { background: var(--c18-bg); --accent: var(--c18-accent); --on-accent: var(--c18-on-accent); --surface: var(--c18-surface); --track: var(--c18-track); --muted: var(--c18-muted); }
+.phone.chi { --title: var(--chi-title); background: var(--chi-bg); --accent: var(--chi-accent); --on-accent: var(--chi-on-accent); --surface: var(--chi-surface); --track: var(--chi-track); --muted: var(--chi-muted); }
+.phone.c18 { --title: var(--c18-title); background: var(--c18-bg); --accent: var(--c18-accent); --on-accent: var(--c18-on-accent); --surface: var(--c18-surface); --track: var(--c18-track); --muted: var(--c18-muted); }
 .statusbar { height: 44px; flex: none; }
 .scr { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 0 16px 16px; }
 .scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
@@ -130,8 +132,11 @@ th { background: var(--shell-panel); font-weight: 600; }
 .art7 { background: linear-gradient(135deg, #d36aa8, #7b3f9a); }
 .art-today { background: linear-gradient(180deg, #8fd0ff, #4aa0e0); color: #2f4560; text-shadow: none; justify-content: center; align-items: center; }
 .art-drama { background: linear-gradient(135deg, #f4a6c0, #8e6bc4 60%, #2f7b74); justify-content: center; align-items: center; font-size: 14px; }
-.art-chi { background: radial-gradient(circle at 25% 30%, #ffd6e4 0 14%, transparent 15%), radial-gradient(circle at 70% 60%, #ffe8a3 0 12%, transparent 13%), linear-gradient(135deg, #f4a6c0, #a77bd4); }
-.art-c18 { background: radial-gradient(circle at 70% 40%, #e43c3c 0 16%, transparent 17%), radial-gradient(circle at 30% 65%, #5fc3c9 0 18%, transparent 19%), linear-gradient(135deg, #f3ede4, #cfc4b4); color: #fff; }
+.art-chi { background: center / cover url(../dramas/chisee.webp), #ffe805; }
+.art-c18 { background: center / cover url(../dramas/c18.jpg), #503b28; }
+/* 方案 A：真圖已經有劇名，唔使再疊字 */
+.tile.art-real { aspect-ratio: 2 / 1; font-size: 0; }
+.tile.art-real .meta { top: auto; bottom: 8px; }
 .tabs { flex: none; display: flex; padding: 3px; gap: 2px; border-radius: 999px; background: rgb(0 0 0 / 18%); }
 .tabs span { flex: 1; text-align: center; padding: 7px 0; border-radius: 999px; font-size: 13px; font-weight: 500; color: #e6eef7; }
 .tabs span.on { background: var(--home-accent); color: var(--home-on-accent); font-weight: 700; }
@@ -150,7 +155,7 @@ th { background: var(--shell-panel); font-weight: 600; }
 /* 劇集頁共用 */
 .hdr { flex: none; display: flex; align-items: center; gap: 8px; min-height: 44px; }
 .back { width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; background: var(--surface, rgb(0 0 0 / 18%)); font-size: 18px; flex: none; }
-.hdr h3 { margin: 0; font-size: 20px; font-weight: 700; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hdr h3 { color: var(--title, inherit); margin: 0; font-size: 20px; font-weight: 700; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hdr .sub { font-size: 11px; color: var(--muted); font-weight: 500; display: block; }
 .player { flex: none; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .disc {
@@ -229,7 +234,7 @@ th { background: var(--shell-panel); font-weight: 600; }
 
     <!-- ============ 方案 A ============ -->
     <section class="option active" id="opt-a">
-        <h2>A・主頁頂加「節目 / 廣播劇」Tab；芝See 用主題 chips</h2>
+        <h2>A・主頁頂加「節目 / 廣播劇」Tab；芝See 用主題 chips <small style="font-size:12px;background:#98bdde;color:#101214;padding:2px 8px;border-radius:999px;vertical-align:3px">已選</small></h2>
         <p class="lead">主頁橫額下面加 segmented control，兩個 tab 共用同一個 grid。芝See 頁面播放器下面一行主題 chips 左右掃，揀主題換集數清單。18樓C座 直接沿用節目頁（唱片 + 日子條）。</p>
         <div class="phones">
             <div class="phone-wrap">
@@ -239,14 +244,14 @@ th { background: var(--shell-panel); font-weight: 600; }
                         <div class="banner"><b>903</b><span>音樂・節目・廣播劇</span><em class="ver">v1.3.0</em></div>
                         <div class="tabs"><span>節目</span><span class="on">廣播劇</span></div>
                         <div class="grid">
-                            <div class="tile wide art-chi"><em class="tag">New</em><em class="meta">11 個主題</em>芝-See-菇-Bi-Family</div>
-                            <div class="tile wide art-c18"><em class="tag">New</em><em class="meta">每日更新</em>18-樓-C-座</div>
+                            <div class="tile wide art-real art-chi" aria-label="芝-See-菇-Bi-Family"><em class="meta" style="font-size:10px">11 個主題</em></div>
+                            <div class="tile wide art-real art-c18" aria-label="18-樓-C-座"><em class="tag" style="font-size:10px">New</em><em class="meta" style="font-size:10px">每日更新</em></div>
                         </div>
                         <div style="flex:1"></div>
                         <div class="mini"><i class="d"></i><span class="tx">X時mas時小提議・第 2 集<small>芝-See-菇-Bi-Family</small></span><i class="pp">❚❚</i></div>
                     </div>
                 </div>
-                <span class="phone-cap">主頁（廣播劇 tab）：兩套劇用闊格，一行一套</span>
+                <span class="phone-cap">主頁（廣播劇 tab）：一行一套，16:9 原圖（有新集先出 New）</span>
             </div>
             <div class="phone-wrap">
                 <div class="phone chi">
