@@ -8,6 +8,7 @@ import { usePlayer } from '../player/usePlayer';
 import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
 import { saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
+import type { Track } from '../types/track';
 import { HomePage } from './HomePage';
 
 const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
@@ -20,7 +21,7 @@ const RECORDINGS = [
 ];
 
 /** 模擬喺其他頁播緊某集，再返主頁 */
-const PlayThenGoHome = ({ target }: { target: Recording }) => {
+const PlayThenGoHome = ({ target }: { target: Track }) => {
     const { load } = usePlayer();
     const navigate = useNavigate();
     return (
@@ -36,7 +37,7 @@ const PlayThenGoHome = ({ target }: { target: Recording }) => {
     );
 };
 
-const arriveHomeWith = async (target: Recording, recordings = RECORDINGS) => {
+const arriveHomeWith = async (target: Track, recordings = RECORDINGS) => {
     const view = renderWithProviders(<HomePage />, {
         route: '/elsewhere',
         recordings,
@@ -312,6 +313,19 @@ describe('HomePage', () => {
 
             expect(audio.src).toBe(seriesEpisodesOf('chisee')[0]?.url);
             expect(audio.play).toHaveBeenCalled();
+            expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
+        });
+
+        it('keeps a drama playing at home and opens its page from the mini player', async () => {
+            const episode = seriesEpisodesOf('chisee')[0];
+            if (!episode) throw new Error('missing fixture');
+            const { audio } = await arriveHomeWith(episode);
+
+            await userEvent.click(
+                screen.getByRole('button', { name: '開啟 芝-See-菇-Bi-Family 節目頁' }),
+            );
+
+            expect(audio.pause).not.toHaveBeenCalled();
             expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
         });
 

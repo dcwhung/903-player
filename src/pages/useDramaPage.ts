@@ -14,18 +14,24 @@ import {
     seriesArcs,
 } from '../selectors/dramas';
 import { getProgressMap } from '../services/progressStore';
-import type { DailyEpisode, DramaEpisode, SeriesEpisode } from '../types/drama';
-import { isDramaEpisode } from '../types/track';
+import type { DramaEpisode } from '../types/drama';
+import { isDramaEpisode, type Track } from '../types/track';
 import { hkToday } from '../utils/date';
 import { toDailyItems, toSeriesItems } from './dramaItems';
 import type { RowContext } from './episodeItems';
 
-/** player 載入緊呢套劇嘅一集；未載入（或者載入緊其他嘢）係 null */
-const useLoadedEpisode = <T extends DramaEpisode>(drama: DramaConfig): T | null => {
+/** player 載入緊呢套劇、呢款（kind）嘅一集；未載入（或者載入緊其他嘢）係 null */
+const useLoadedEpisode = <K extends DramaEpisode['kind']>(
+    drama: DramaConfig,
+    kind: K,
+): Extract<DramaEpisode, { kind: K }> | null => {
     const { recording } = usePlayer();
-    return recording && isDramaEpisode(recording) && recording.dramaId === drama.id
-        ? (recording as T)
-        : null;
+    const isThis = (track: Track | null): track is Extract<DramaEpisode, { kind: K }> =>
+        track !== null &&
+        isDramaEpisode(track) &&
+        track.dramaId === drama.id &&
+        track.kind === kind;
+    return isThis(recording) ? recording : null;
 };
 
 /** 直接開呢頁（例如 deep link / mini player）時都自動播放，同節目頁一樣 */
@@ -68,7 +74,7 @@ const usePlaybackRows = (
 /** 每日劇集頁（例如 18-樓-C-座）：同節目頁一樣，唱片 + 日子條 + 集數清單 */
 export const useDailyDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => dailyNewestFirst(dailyEpisodesOf(drama.id)), [drama]);
-    const loaded = useLoadedEpisode<DailyEpisode>(drama);
+    const loaded = useLoadedEpisode(drama, 'daily');
     useAutoplayDrama(drama, loaded !== null);
     const current = loaded ?? pickDailyStart(episodes, hkToday());
     const { ctx, selectEpisode, pressEpisode } = usePlaybackRows(episodes, current, !!loaded);
@@ -97,7 +103,7 @@ const useViewedArc = (playingArc: string | undefined) => {
 export const useSeriesDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
     const arcs = useMemo(() => seriesArcs(episodes), [episodes]);
-    const loaded = useLoadedEpisode<SeriesEpisode>(drama);
+    const loaded = useLoadedEpisode(drama, 'series');
     useAutoplayDrama(drama, loaded !== null);
     const { watchedRevision } = usePlayer();
     const progressMap = useRefreshedOn(getProgressMap, [watchedRevision, loaded?.url]);

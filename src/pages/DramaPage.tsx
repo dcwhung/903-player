@@ -12,6 +12,7 @@ import { useGoHome } from '../hooks/useGoHome';
 import { usePlayer } from '../player/usePlayer';
 import { t } from '../i18n/t';
 import { formatDateLabel } from '../utils/date';
+import type { SeriesEpisode } from '../types/drama';
 import { hasKnownDuration } from '../utils/time';
 import page from './Page.module.css';
 import { useDailyDramaPage, useSeriesDramaPage } from './useDramaPage';
@@ -26,6 +27,14 @@ const DramaHeader = ({ title }: { title: string }) => {
     );
 };
 
+/** 主題 chips 上面嗰行：同日子條一樣，未讀到時長講「連線中…」，否則「現正播放：第 N 集 集名」 */
+const arcPickerLabel = (duration: number, current: SeriesEpisode | undefined): string => {
+    if (!hasKnownDuration(duration)) return t('episodes.connecting');
+    if (!current) return '';
+    const label = t('drama.nowPlayingShort', { no: current.no, title: current.title });
+    return t('drama.nowPlaying', { label });
+};
+
 /**
  * 每日劇集：同節目頁一樣嘅版面（唱片 + 日子條，右 / 下面集數清單）。
  * 成頁固定唔捲，得集數清單自己捲（Page.module.css .locked / .fixed）
@@ -37,6 +46,7 @@ const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
             <main className={`${page.page} ${page.locked} ${page.fixed}`}>
                 <div className={page.playerColumn}>
                     <DramaHeader title={drama.name} />
+                    {!current && <StatusMessage message={t('episodes.noneUp')} />}
                     {current && (
                         <PlayerPanel
                             title={drama.name}
@@ -63,19 +73,17 @@ const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
 const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const { theme, current, arcs, arc, pickArc, items, pressEpisode } = useSeriesDramaPage(drama);
     const { duration } = usePlayer();
-    const label = !hasKnownDuration(duration)
-        ? t('episodes.connecting')
-        : current
-          ? t('drama.nowPlaying', {
-                label: t('drama.nowPlayingShort', { no: current.no, title: current.title }),
-            })
-          : '';
+    const label = arcPickerLabel(duration, current);
     return (
         <ThemeScope theme={theme}>
             <main className={`${page.page} ${page.locked} ${page.fixed}`}>
                 <div className={page.playerColumn}>
                     <DramaHeader title={drama.name} />
-                    {current && <PlayerGauge art={theme.art} />}
+                    {current ? (
+                        <PlayerGauge art={theme.art} />
+                    ) : (
+                        <StatusMessage message={t('episodes.noneUp')} />
+                    )}
                 </div>
                 <div className={page.listColumn}>
                     <ArcPicker

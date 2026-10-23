@@ -13,7 +13,7 @@
     --theme-shadow-dark: #0a0a0a;
     --theme-shadow-light: #242424;
     /* 淺色劇集先另外設（見 showThemes.ts ShowTheme）；預設跟強調色 / app 字體 / 冇裝飾線 */
-    --theme-accent-text: #f2f2f2;
+    --theme-accent-text: var(--theme-accent);
     --theme-header-rule: none;
 
     /*
@@ -142,10 +142,10 @@
     /* 主頁「廣播劇」tab 嘅劇集格（一行一套） */
     --drama-tile-aspect-w: 2;
     --drama-tile-aspect-h: 1;
-    /* 主頁橫額下面「節目 / 廣播劇」切換：膠囊底色、內邊、每個掣高度 */
+    /* 主頁橫額下面「節目 / 廣播劇」切換：膠囊底色、內邊、每個掣高度（觸控高度） */
     --home-tab-track: rgb(0 0 0 / 18%);
     --home-tab-inset: calc(3px * var(--ui-scale));
-    --home-tab-height: calc(36px * var(--ui-scale));
+    --home-tab-height: var(--touch-target);
     /* 主頁節目格同橫額共用嘅左右留白、格距 */
     --home-gutter: var(--space-4);
     --home-tile-gap: var(--space-3);

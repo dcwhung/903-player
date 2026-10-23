@@ -10,6 +10,8 @@
 }
 
 .label {
+    /* 冇字（例如未有揀中集）都要留返標籤高度，成組維持 60px */
+    min-height: var(--date-strip-label-height);
     overflow: hidden;
     padding: 0 var(--space-4);
     color: var(--color-accent-text);
@@ -38,30 +40,45 @@
     display: none;
 }
 
-/* chip 睇落 32px 高；撳得到範圍用成行（--date-strip-height = 觸控高度） */
+/*
+ * 掣本身成行高（--date-strip-height = 觸控高度），撳膠囊上下少少都撳得到；
+ * 睇落 32px 高嘅膠囊由 ::before 畫（同 PageDots 細點大掣一樣做法）
+ */
 .chip {
     position: relative;
+    isolation: isolate;
     flex-shrink: 0;
-    height: var(--arc-chip-height);
+    height: 100%;
     padding: 0 var(--space-3);
     border: none;
-    border-radius: var(--radius-full);
-    background: var(--color-surface);
+    background: transparent;
     color: var(--color-text-muted);
     font-size: var(--font-size-xs);
     white-space: nowrap;
 }
 
+.chip::before {
+    position: absolute;
+    inset: calc((100% - var(--arc-chip-height)) / 2) 0;
+    z-index: -1;
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    content: '';
+}
+
 .chip[aria-pressed='true'] {
-    background: var(--color-accent-fill);
     color: var(--color-on-accent);
     font-weight: 700;
 }
 
-/* 播緊嗰個主題（睇緊其他主題時）：右上角一粒強調色點 */
+.chip[aria-pressed='true']::before {
+    background: var(--color-accent-fill);
+}
+
+/* 播緊嗰個主題（睇緊其他主題時）：膠囊右上角一粒強調色點 */
 .playing::after {
     position: absolute;
-    top: var(--space-1);
+    top: calc((100% - var(--arc-chip-height)) / 2 + var(--space-1));
     right: var(--space-1);
     width: var(--dot-size);
     height: var(--dot-size);
