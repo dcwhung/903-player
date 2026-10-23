@@ -40,6 +40,28 @@
     --chi-title: #ffd60a;
     --chi-muted: #cdb89a;
 
+    /* 芝See V1「亮黃底」：跟劇集圖黃底，橙做主色（播放掣、進度、chips），劇名深橙 */
+    --chiy-bg: #ffe14a;
+    --chiy-surface: #fff09a;
+    --chiy-track: #f2c414;
+    --chiy-accent: #f7901e;
+    --chiy-on-accent: #2b1a0c;
+    --chiy-title: #c25400;
+    --chiy-text: #3b2412;
+    --chiy-muted: #7a5a20;
+    --chiy-hl: #c25400;
+
+    /* 芝See V2「橙底」：跟 logo 字框橙，黃做主色（播放掣、進度、chips），字深啡 */
+    --chio-bg: #f7901e;
+    --chio-surface: #ffa947;
+    --chio-track: #dc7208;
+    --chio-accent: #ffe14a;
+    --chio-on-accent: #2b1a0c;
+    --chio-title: #2b1a0c;
+    --chio-text: #2b1a0c;
+    --chio-muted: #5c3410;
+    --chio-hl: #2b1a0c;
+
     /* 18-樓-C-座 Tone 1「周記茶餐」：米黃餐牌紙 + 朱紅字（淺色，app 第一個淺色主題） */
     --c18a-bg: #f3e8d2;
     --c18a-surface: #e9d9b9;
@@ -107,6 +129,11 @@ th { background: var(--shell-panel); font-weight: 600; }
 }
 .phone.home { background: linear-gradient(180deg, var(--home-top), var(--home-bottom)); }
 .phone.chi { --title: var(--chi-title); background: var(--chi-bg); --accent: var(--chi-accent); --on-accent: var(--chi-on-accent); --surface: var(--chi-surface); --track: var(--chi-track); --muted: var(--chi-muted); }
+.phone.chiy { --title: var(--chiy-title); --text: var(--chiy-text); --hl: var(--chiy-hl); background: var(--chiy-bg); --accent: var(--chiy-accent); --on-accent: var(--chiy-on-accent); --surface: var(--chiy-surface); --track: var(--chiy-track); --muted: var(--chiy-muted); }
+.phone.chio { --title: var(--chio-title); --text: var(--chio-text); --hl: var(--chio-hl); background: var(--chio-bg); --accent: var(--chio-accent); --on-accent: var(--chio-on-accent); --surface: var(--chio-surface); --track: var(--chio-track); --muted: var(--chio-muted); }
+/* 淺色底：劇名粗啲，頁頭下面一條圓點線（跟 logo 卡通感） */
+.phone.chiy .hdr h3, .phone.chio .hdr h3 { font-weight: 900; letter-spacing: 0.02em; }
+.phone.chiy .hdr, .phone.chio .hdr { border-bottom: 3px dotted var(--accent); padding-bottom: 6px; }
 .phone.c18a { --title: var(--c18a-title); --text: var(--c18a-text); background: var(--c18a-bg); --accent: var(--c18a-accent); --on-accent: var(--c18a-on-accent); --surface: var(--c18a-surface); --track: var(--c18a-track); --muted: var(--c18a-muted); }
 .phone.c18b { --title: var(--c18b-title); --text: var(--c18b-text); background: var(--c18b-bg); --accent: var(--c18b-accent); --on-accent: var(--c18b-on-accent); --surface: var(--c18b-surface); --track: var(--c18b-track); --muted: var(--c18b-muted); }
 /* Tone 1：餐牌紙紋 + 頁頭下一條朱紅雙線 */
@@ -176,12 +203,12 @@ th { background: var(--shell-panel); font-weight: 600; }
 .dots i.on { width: 18px; background: var(--home-accent); }
 .mini {
     flex: none; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px;
-    background: var(--chi-surface); box-shadow: 0 8px 20px rgb(0 0 0 / 35%); font-size: 12px;
+    background: var(--chiy-bg); color: var(--chiy-text); box-shadow: 0 8px 20px rgb(0 0 0 / 35%); font-size: 12px;
 }
-.mini .d { width: 34px; height: 34px; border-radius: 999px; background: radial-gradient(circle, #111 0 18%, var(--chi-accent) 19% 30%, #111 31%); flex: none; }
+.mini .d { width: 34px; height: 34px; border-radius: 999px; background: radial-gradient(circle, #111 0 18%, var(--chiy-accent) 19% 30%, #111 31%); flex: none; }
 .mini .tx { flex: 1; min-width: 0; line-height: 1.3; }
-.mini .tx small { color: var(--chi-muted); display: block; }
-.mini .pp { width: 32px; height: 32px; border-radius: 999px; background: var(--chi-accent); color: var(--chi-on-accent); display: grid; place-items: center; font-size: 12px; }
+.mini .tx small { color: var(--chiy-muted); display: block; }
+.mini .pp { width: 32px; height: 32px; border-radius: 999px; background: var(--chiy-accent); color: var(--chiy-on-accent); display: grid; place-items: center; font-size: 12px; }
 
 /* 劇集頁共用 */
 .hdr { flex: none; display: flex; align-items: center; gap: 8px; min-height: 44px; }
@@ -216,9 +243,9 @@ th { background: var(--shell-panel); font-weight: 600; }
 .row .nm { flex: 1; min-width: 0; line-height: 1.3; }
 .row .nm small { display: block; color: var(--muted); font-size: 11px; }
 .row .ic { width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center; background: var(--surface); font-size: 11px; flex: none; }
-.row.on .nm { color: var(--accent); font-weight: 700; }
+.row.on .nm { color: var(--hl, var(--accent)); font-weight: 700; }
 .row.on .ic { background: var(--accent); color: var(--on-accent); }
-.row .done { color: var(--accent); font-size: 12px; }
+.row .done { color: var(--hl, var(--accent)); font-size: 12px; }
 .sec { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; margin-top: 8px; border-radius: 12px; background: var(--surface); font-size: 13px; font-weight: 700; }
 .sec small { color: var(--muted); font-weight: 500; font-size: 11px; }
 .sec.closed { opacity: 0.85; }
@@ -285,7 +312,7 @@ th { background: var(--shell-panel); font-weight: 600; }
                 <span class="phone-cap">主頁（廣播劇 tab）：一行一套，2:1 原圖（有新集先出 New）</span>
             </div>
             <div class="phone-wrap">
-                <div class="phone chi">
+                <div class="phone chiy">
                     <div class="statusbar"></div>
                     <div class="scr">
                         <div class="hdr"><span class="back">‹</span><h3>芝-See-菇-Bi-Family</h3></div>
@@ -306,7 +333,31 @@ th { background: var(--shell-panel); font-weight: 600; }
                         </div>
                     </div>
                 </div>
-                <span class="phone-cap">芝See：chips 換主題，清單只列該主題 4 集</span>
+                <span class="phone-cap">芝See V1「亮黃底」：橙主色、黃底</span>
+            </div>
+            <div class="phone-wrap">
+                <div class="phone chio">
+                    <div class="statusbar"></div>
+                    <div class="scr">
+                        <div class="hdr"><span class="back">‹</span><h3>芝-See-菇-Bi-Family</h3></div>
+                        <div class="player" style="--disc:190px">
+                            <div class="disc" style="--pct:38%"></div>
+                            <div class="ctrls"><span class="b">−30</span><span class="b play">❚❚</span><span class="b">+30</span></div>
+                            <div class="now">第 2 集・你洽我<small>X時mas時小提議</small></div>
+                        </div>
+                        <div class="chips">
+                            <span>我哋覺得我哋窮</span><span class="on">X時mas時小提議</span><span>你生日所以我生日</span><span>大妒忌</span><span>好朋友手牽手</span>
+                        </div>
+                        <div class="listhead"><span>集數</span><span>共 4 集</span></div>
+                        <div class="scroll">
+                            <div class="row"><span class="no">1</span><span class="nm">休養下<small>18:42</small></span><span class="done">✓</span></div>
+                            <div class="row on"><span class="no">2</span><span class="nm">你洽我<small>播緊・7:05 / 18:20</small></span><span class="ic">❚❚</span></div>
+                            <div class="row"><span class="no">3</span><span class="nm">索腳汗<small>19:03</small></span><span class="ic">▶</span></div>
+                            <div class="row"><span class="no">4</span><span class="nm">返個人<small>17:56</small></span><span class="ic">▶</span></div>
+                        </div>
+                    </div>
+                </div>
+                <span class="phone-cap">芝See V2「橙底」：黃主色、橙底</span>
             </div>
             <div class="phone-wrap">
                 <div class="phone c18a">
@@ -331,33 +382,7 @@ th { background: var(--shell-panel); font-weight: 600; }
                         </div>
                     </div>
                 </div>
-                <span class="phone-cap">18樓C座 Tone 1「周記茶餐」：米黃紙 + 朱紅（淺色）</span>
-            </div>
-            <div class="phone-wrap">
-                <div class="phone c18b">
-                    <div class="statusbar"></div>
-                    <div class="scr">
-                        <div class="hdr"><span class="back">‹</span><h3>18-樓-C-座</h3></div>
-                        <div class="tiles-band" aria-hidden="true"></div>
-                        <div class="player" style="--disc:210px">
-                            <div class="disc" style="--pct:62%"></div>
-                            <div class="ctrls"><span class="b">−30</span><span class="b play">▶</span><span class="b">+30</span></div>
-                        </div>
-                        <div class="lab">現正播放</div>
-                        <div class="strip">
-                            <span>六<b>17/10</b></span><span>一<b>19/10</b></span><span>二<b>20/10</b></span><span>三<b>21/10</b></span><span>四<b>22/10</b></span><span class="on">五<b>23/10</b></span>
-                        </div>
-                        <div class="listhead"><span>集數</span><span>共 9 集</span></div>
-                        <div class="scroll">
-                            <div class="row on"><span class="no">五</span><span class="nm">23/10/2026<small>23:09</small></span><span class="ic">▶</span></div>
-                            <div class="row"><span class="no">四</span><span class="nm">22/10/2026<small>22:06</small></span><span class="ic">▶</span></div>
-                            <div class="row"><span class="no">三</span><span class="nm">21/10/2026<small>21:09</small></span><span class="done">✓</span></div>
-                            <div class="row"><span class="no">二</span><span class="nm">20/10/2026<small>24:51</small></span><span class="done">✓</span></div>
-                            <div class="row"><span class="no">三</span><span class="nm">13/08/2025<span class="badge-rerun">重溫</span><small>23:20</small></span><span class="ic">▶</span></div>
-                        </div>
-                    </div>
-                </div>
-                <span class="phone-cap">18樓C座 Tone 2「階磚」：墨綠 + 米白 + 銅金</span>
+                <span class="phone-cap">18樓C座 Tone 1「周記茶餐」（已選）：米黃紙 + 朱紅</span>
             </div>
         </div>
     </section>
