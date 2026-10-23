@@ -12,7 +12,8 @@ export interface SeriesEpisode {
     arc: string;
     /** 主題入面第幾集，由 1 開始 */
     no: number;
-    title: string;
+    /** 集名；檔名冇集名嘅集數冇 */
+    title?: string;
 }
 
 /** 每日劇集嘅一集 */

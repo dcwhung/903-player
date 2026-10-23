@@ -97,6 +97,13 @@
     --date-strip-empty-opacity: 0.35;
     /* 主題劇集頁嘅主題 chip：睇落嘅高度（撳得到範圍係成行 --date-strip-height） */
     --arc-chip-height: calc(32px * var(--ui-scale));
+    /*
+     * 集數清單行頭欄闊：節目日子（17/10 + 星期六）；每日劇集日子 + 「重溫」標籤；
+     * 主題劇集集名（最長「認認真真搵返個人」8 個字，佔清單四成）
+     */
+    --episode-label-date: calc(58px * var(--ui-scale));
+    --episode-label-tagged-date: calc(76px * var(--ui-scale));
+    --episode-label-title: 40%;
     /* 未上架嘅集數 / 節目（清單照列出但撳唔到）：日子、節目名、唱片變淡；進度條變虛線 */
     --unavailable-opacity: 0.45;
     --unavailable-dash: 6px;

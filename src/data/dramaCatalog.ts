@@ -1,46 +1,62 @@
 /*
- * ⚠️ 假資料：廣播劇錄音仲未 host，主題 / 集數 / 日子都係由截圖砌出嚟嘅樣本，只係畀 UI 用。
- * 真資料到咗（芝See 固定清單、18樓C座 manifest）就換走呢個檔，介面（dramaEpisodesOf 等）唔使變。
- * 網址指去 public/dramas/ 底下（將來放錄音嘅位置），而家未有檔案，撳播放會一直「連線中…」。
+ * 廣播劇集數。
+ * - 芝-See-菇-Bi-Family：真清單（10 個短篇、35 集，固定唔會再變），檔名同原檔一樣。
+ * - 18-樓-C-座：⚠️ 仲係假資料（由截圖抄嘅日子），等 manifest 到咗先換。
+ * 錄音仲未 host：網址指去 public/dramas/<劇>/ 底下（暫定放錄音嘅位置），
+ * 而家未有檔案，撳播放會一直「連線中…」。介面（dramaEpisodesOf 等）之後唔使變。
  */
 import type { DailyEpisode, DramaEpisode, DramaId, SeriesEpisode } from '../types/drama';
 
-const AUDIO_EXTENSION = '.m4a';
 const audioUrl = (dramaId: DramaId, file: string): string =>
-    `${import.meta.env.BASE_URL}dramas/${dramaId}/${file}${AUDIO_EXTENSION}`;
+    `${import.meta.env.BASE_URL}dramas/${dramaId}/${encodeURIComponent(file)}`;
 
-/** 只知道「X時mas時小提議」四集嘅標題（截圖），其他主題嘅集名用「待定」頂住 */
-const KNOWN_TITLES: Readonly<Record<string, readonly string[]>> = {
-    X時mas時小提議: ['休養下', '你洽我', '索腳汗', '返個人'],
-};
-const EPISODES_PER_ARC = 4;
-const PLACEHOLDER_TITLE = '待定';
+/** 檔名入面嘅集數用中文數字（第一集 … 第四集） */
+const CHINESE_NUMERALS = ['一', '二', '三', '四'] as const;
+const FILE_NO_WIDTH = 2;
 
-const CHISEE_ARCS = [
-    '我哋覺得我哋窮',
-    'X時mas時小提議',
-    '你生日所以我生日',
-    '大妒忌',
-    '好朋友手牽手',
-    '小苦妹撲水',
-    '我們都在會考中成長',
-    '游乾水',
-    '苦榮去做GYM',
-    '青春期',
-    '青春期真神奇',
-] as const;
+/**
+ * 原檔名：「01 - 短篇名 - 第一集.m4a」，有集名就加「 - 集名」
+ * （例如「04 - Ｘ時mas時小提議 - 第四集 - 認認真真搵返個人.m4a」）
+ */
+const chiseeFile = (arc: string, no: number, title: string | undefined): string =>
+    [
+        String(no).padStart(FILE_NO_WIDTH, '0'),
+        arc,
+        `第${CHINESE_NUMERALS[no - 1] ?? no}集`,
+        ...(title ? [title] : []),
+    ].join(' - ') + '.m4a';
+
+/**
+ * 芝-See-菇-Bi-Family 短篇（按清單次序）：每集嘅集名，冇集名係 null。
+ * 短篇名照原檔寫法（全形「Ｘ」、「游亁水」、「青春期眞神奇」）
+ */
+const CHISEE_ARCS: readonly { arc: string; titles: readonly (string | null)[] }[] = [
+    { arc: '你生日所以我生日', titles: [null, null, null] },
+    { arc: '大妒忌', titles: [null, null, null] },
+    { arc: '好朋友手牽手', titles: ['好傾朋友', '朋友不同', '朋友性別', '朋友第一'] },
+    { arc: '小苦妹撲水', titles: [null, null, null, null] },
+    { arc: '我們都在會考中成長', titles: ['能源的故事', '舊底的故事'] },
+    { arc: '游亁水', titles: [null, null, null, null] },
+    { arc: '苦榮去做GYM', titles: [null, null, null, null] },
+    { arc: '青春期', titles: [null, null, null, null] },
+    { arc: '青春期眞神奇', titles: ['男女先後', '多少問題', '時間長短'] },
+    {
+        arc: 'Ｘ時mas時小提議',
+        titles: ['不如休養下', '哥哥你洽我', '著襪索腳汗', '認認真真搵返個人'],
+    },
+];
 
 const chiseeEpisodes = (): SeriesEpisode[] =>
-    CHISEE_ARCS.flatMap((arc, arcIndex) =>
-        Array.from({ length: EPISODES_PER_ARC }, (_, i): SeriesEpisode => {
+    CHISEE_ARCS.flatMap(({ arc, titles }) =>
+        titles.map((title, i): SeriesEpisode => {
             const no = i + 1;
             return {
                 kind: 'series',
                 dramaId: 'chisee',
-                url: audioUrl('chisee', `${arcIndex + 1}-${no}`),
+                url: audioUrl('chisee', chiseeFile(arc, no, title ?? undefined)),
                 arc,
                 no,
-                title: KNOWN_TITLES[arc]?.[i] ?? PLACEHOLDER_TITLE,
+                ...(title ? { title } : {}),
             };
         }),
     );
@@ -62,7 +78,7 @@ const c18Episodes = (): DailyEpisode[] =>
     C18_EPISODES.map(({ date, rerun = false }) => ({
         kind: 'daily',
         dramaId: 'c18',
-        url: audioUrl('c18', date.replaceAll('-', '')),
+        url: audioUrl('c18', `${date.replaceAll('-', '')}.m4a`),
         date,
         rerun,
     }));

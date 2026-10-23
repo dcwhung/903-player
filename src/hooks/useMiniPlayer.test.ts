@@ -136,8 +136,9 @@ describe('useMiniPlayer', () => {
     });
 
     describe('with a drama episode loaded', () => {
-        // 芝See 第 2 個主題（X時mas時小提議）第 2 集「你洽我」
-        const XMAS = seriesEpisodesOf('chisee')[5] as SeriesEpisode;
+        const XMAS = seriesEpisodesOf('chisee').find(
+            (e) => e.title === '哥哥你洽我',
+        ) as SeriesEpisode;
 
         it('shows the drama instead of today’s shows, even when no show is up today', async () => {
             vi.setSystemTime(new Date('2026-10-20T08:00:00Z'));
@@ -152,7 +153,7 @@ describe('useMiniPlayer', () => {
             expect(mini).toMatchObject({
                 showName: '芝-See-菇-Bi-Family',
                 theme: DRAMA_THEMES.chisee,
-                subtitle: 'X時mas時小提議 · 第 2 集 你洽我 · 5:00 / 20:00',
+                subtitle: 'Ｘ時mas時小提議 · 第 2 集 哥哥你洽我 · 5:00 / 20:00',
                 isPlaying: true,
                 progress: 0.25,
                 labels: ['芝-See-菇-Bi-Family'],

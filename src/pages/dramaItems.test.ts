@@ -2,7 +2,8 @@ import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
 import type { RowContext } from './episodeItems';
 import { toDailyItems, toSeriesItems } from './dramaItems';
 
-const XMAS = seriesEpisodesOf('chisee').filter((e) => e.arc === 'X時mas時小提議');
+const XMAS = seriesEpisodesOf('chisee').filter((e) => e.arc === 'Ｘ時mas時小提議');
+const BIRTHDAY = seriesEpisodesOf('chisee').filter((e) => e.arc === '你生日所以我生日');
 const C18 = dailyEpisodesOf('c18');
 
 const ctx = (overrides: Partial<RowContext> = {}): RowContext => ({
@@ -17,10 +18,19 @@ describe('toSeriesItems', () => {
     it('labels each row by episode title and number', () => {
         const items = toSeriesItems(XMAS, ctx());
         expect(items.map((i) => [i.dayMonth, i.weekday])).toEqual([
-            ['休養下', '第 1 集'],
-            ['你洽我', '第 2 集'],
-            ['索腳汗', '第 3 集'],
-            ['返個人', '第 4 集'],
+            ['不如休養下', '第 1 集'],
+            ['哥哥你洽我', '第 2 集'],
+            ['著襪索腳汗', '第 3 集'],
+            ['認認真真搵返個人', '第 4 集'],
+        ]);
+    });
+
+    it('labels an untitled episode by its number alone', () => {
+        const items = toSeriesItems(BIRTHDAY, ctx());
+        expect(items.map((i) => [i.dayMonth, i.weekday])).toEqual([
+            ['第 1 集', ''],
+            ['第 2 集', ''],
+            ['第 3 集', ''],
         ]);
     });
 

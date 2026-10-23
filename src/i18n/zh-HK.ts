@@ -105,6 +105,8 @@ export const zhHK = {
         // 主題劇集：清單每行細字、mini player / 鎖屏副標題
         episodeNo: '第 {no} 集',
         seriesLabel: '{arc} · 第 {no} 集 {title}',
+        // 冇集名嘅集數
+        seriesLabelUntitled: '{arc} · 第 {no} 集',
         // 每日劇集重播舊集
         rerun: '重溫',
         dailyRerunLabel: '{date} · 重溫',

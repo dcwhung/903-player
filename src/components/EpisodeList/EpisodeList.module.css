@@ -54,13 +54,20 @@
     background: var(--color-surface);
 }
 
+/* 行頭欄成個清單一樣闊（EpisodeList labels），進度條先對齊；集名太長就斷行 */
 .date {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    /* 節目日子剛好 58px；主題劇集集名可以長啲，最多佔一行四成，再長就斷行 */
-    min-width: calc(58px * var(--ui-scale));
-    max-width: 40%;
+    width: var(--episode-label-date);
+}
+
+[data-labels='taggedDate'] .date {
+    width: var(--episode-label-tagged-date);
+}
+
+[data-labels='title'] .date {
+    width: var(--episode-label-title);
 }
 
 .dayMonth {

@@ -62,7 +62,10 @@ export const dramaHasNew = (
 /** mini player / 鎖屏嘅副標題：主題劇集「主題 · 第 N 集 標題」；每日劇集用日子（重播加「重溫」） */
 export const dramaEpisodeLabel = (episode: DramaEpisode): string => {
     if (!isDaily(episode)) {
-        return t('drama.seriesLabel', { arc: episode.arc, no: episode.no, title: episode.title });
+        const { arc, no, title } = episode;
+        return title
+            ? t('drama.seriesLabel', { arc, no, title })
+            : t('drama.seriesLabelUntitled', { arc, no });
     }
     const date = formatDateLabel(episode.date);
     return episode.rerun ? t('drama.dailyRerunLabel', { date }) : date;

@@ -13,10 +13,10 @@
   主頁一頁放晒（手機打橫橫額入格 5 欄 × 2 行，其他橫額成行用闊版圖 + 4 欄）；
   闊 ≥ 1024px 字同掣 × 1.3、iPad 打橫 × 1.5（`--ui-scale`）。Preview：`design/previews/landscape-preview.html`
 - 廣播劇（`src/config/dramas.ts`）：主頁廣播劇 tab 一行一套劇；兩套都用淺色主題（頁頂狀態列墊深色帶，iOS 白字睇得清），碟面用劇集圖
-    - 芝-See-菇-Bi-Family（主題劇集）：唱片下面「現正播放」+ 主題 chips 左右掃，揀主題換集數清單；入頁續播上次聽緊嗰集（聽完就下一集）
+    - 芝-See-菇-Bi-Family（主題劇集）：唱片下面「現正播放」+ 短篇 chips 左右掃，揀短篇換集數清單（有集名大字顯示集名，冇就顯示「第 N 集」）；入頁續播上次聽緊嗰集（聽完就下一集）
     - 18-樓-C-座（每日劇集）：同節目頁一樣嘅日子條 + 集數清單，日子條只排有集數嘅日子，重播舊集標「重溫」
     - 播緊廣播劇返主頁唔會停，mini player 改為顯示嗰套劇
-    - ⚠️ 暫時係假資料（`src/data/dramaCatalog.ts`），錄音未 host，撳播放會一直「連線中…」。Preview：`design/previews/radio-drama-preview.html`
+    - 集數清單喺 `src/data/dramaCatalog.ts`：芝See 係真清單（10 個短篇、35 集，檔名同原檔一樣）；18樓C座 ⚠️ 仲係假資料。錄音未 host，撳播放會一直「連線中…」。Preview：`design/previews/radio-drama-preview.html`
 - 自動續播（進度存喺本機 localStorage）、鎖屏 / 耳機控制、深色 + 跟系統淺色
 
 ## 架構

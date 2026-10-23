@@ -31,7 +31,10 @@ const DramaHeader = ({ title }: { title: string }) => {
 const arcPickerLabel = (duration: number, current: SeriesEpisode | undefined): string => {
     if (!hasKnownDuration(duration)) return t('episodes.connecting');
     if (!current) return '';
-    const label = t('drama.nowPlayingShort', { no: current.no, title: current.title });
+    const episodeNo = t('drama.episodeNo', { no: current.no });
+    const label = current.title
+        ? t('drama.nowPlayingShort', { no: current.no, title: current.title })
+        : episodeNo;
     return t('drama.nowPlaying', { label });
 };
 
@@ -59,7 +62,7 @@ const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
                     )}
                 </div>
                 <div className={page.listColumn}>
-                    <EpisodeList items={items} onSelect={pressEpisode} />
+                    <EpisodeList items={items} onSelect={pressEpisode} labels="taggedDate" />
                 </div>
             </main>
         </ThemeScope>
@@ -93,7 +96,7 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
                         label={label}
                         onPick={pickArc}
                     />
-                    <EpisodeList items={items} onSelect={pressEpisode} />
+                    <EpisodeList items={items} onSelect={pressEpisode} labels="title" />
                 </div>
             </main>
         </ThemeScope>

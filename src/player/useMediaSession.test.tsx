@@ -65,7 +65,7 @@ describe('useMediaSession', () => {
 
     it('publishes drama name and episode label for a drama episode', () => {
         const { session } = installMediaSession();
-        const xmas = seriesEpisodesOf('chisee').find((e) => e.title === '你洽我');
+        const xmas = seriesEpisodesOf('chisee').find((e) => e.title === '哥哥你洽我');
         const rerun = dailyEpisodesOf('c18').find((e) => e.date === '2025-08-11');
 
         const { rerender } = renderHook(({ s }) => useMediaSession(actions(), s), {
@@ -74,7 +74,7 @@ describe('useMediaSession', () => {
         const init = () => (session.metadata as unknown as { init: MediaMetadataInit }).init;
         expect(init()).toMatchObject({
             title: '芝-See-菇-Bi-Family',
-            artist: 'X時mas時小提議 · 第 2 集 你洽我',
+            artist: 'Ｘ時mas時小提議 · 第 2 集 哥哥你洽我',
         });
 
         rerender({ s: state({ recording: rerun ?? null }) });

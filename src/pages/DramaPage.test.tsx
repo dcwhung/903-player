@@ -7,7 +7,7 @@ import { DramaPage } from './DramaPage';
 
 const PATH = '/drama/:dramaId';
 const CHISEE = seriesEpisodesOf('chisee');
-const XMAS = CHISEE.filter((e) => e.arc === 'X時mas時小提議');
+const XMAS = CHISEE.filter((e) => e.arc === 'Ｘ時mas時小提議');
 const C18 = dailyEpisodesOf('c18');
 
 const openDrama = (id: string) =>
@@ -47,20 +47,20 @@ describe('DramaPage', () => {
             const group = screen.getByRole('group', { name: '主題' }).parentElement as HTMLElement;
             expect(within(group).getByText('連線中…')).toBeInTheDocument();
             act(() => audio.emitMetadata(1200));
-            expect(arcChips()).toHaveLength(11);
-            expect(screen.getByRole('button', { name: 'X時mas時小提議' })).toHaveAttribute(
+            expect(arcChips()).toHaveLength(10);
+            expect(screen.getByRole('button', { name: 'Ｘ時mas時小提議' })).toHaveAttribute(
                 'aria-pressed',
                 'true',
             );
-            expect(screen.getByText('現正播放：第 2 集 你洽我')).toBeInTheDocument();
+            expect(screen.getByText('現正播放：第 2 集 哥哥你洽我')).toBeInTheDocument();
             const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole(
                 'button',
             );
             expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual([
-                '播放 休養下 第 1 集，未收聽',
-                '暫停 你洽我 第 2 集，播放中 · 2:00 / 20:00',
-                '播放 索腳汗 第 3 集，未收聽',
-                '播放 返個人 第 4 集，未收聽',
+                '播放 不如休養下 第 1 集，未收聽',
+                '暫停 哥哥你洽我 第 2 集，播放中 · 2:00 / 20:00',
+                '播放 著襪索腳汗 第 3 集，未收聽',
+                '播放 認認真真搵返個人 第 4 集，未收聽',
             ]);
         });
 
@@ -68,7 +68,7 @@ describe('DramaPage', () => {
             const { audio } = openDrama('chisee');
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
 
-            await userEvent.click(screen.getByRole('button', { name: 'X時mas時小提議' }));
+            await userEvent.click(screen.getByRole('button', { name: 'Ｘ時mas時小提議' }));
 
             expect(audio.src).toBe(CHISEE[0]?.url);
             const list = screen.getByRole('region', { name: '集數' });

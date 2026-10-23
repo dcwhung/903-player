@@ -159,4 +159,13 @@ describe('EpisodeList', () => {
         const row = screen.getByRole('button', { name: '播放 11/08 星期一 重溫，未收聽' });
         expect(within(row).getByText('重溫')).toBeInTheDocument();
     });
+
+    it('gives every row the same label column, sized for the kind of list', () => {
+        const { container, rerender } = render(<EpisodeList items={ITEMS} onSelect={() => {}} />);
+        const section = () => container.querySelector('section') as HTMLElement;
+        expect(section().dataset.labels).toBe('date');
+
+        rerender(<EpisodeList items={ITEMS} onSelect={() => {}} labels="title" />);
+        expect(section().dataset.labels).toBe('title');
+    });
 });

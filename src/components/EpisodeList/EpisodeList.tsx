@@ -21,9 +21,16 @@ export interface EpisodeItem {
     status: EpisodeStatus;
 }
 
+/**
+ * 行頭欄闊（成個清單一樣，進度條先對齊）：date 節目日子；taggedDate 日子加「重溫」標籤；
+ * title 主題劇集集名（長短唔一）
+ */
+export type EpisodeLabels = 'date' | 'taggedDate' | 'title';
+
 interface EpisodeListProps {
     items: EpisodeItem[];
     onSelect: (key: string) => void;
+    labels?: EpisodeLabels;
 }
 
 const CHECK_ICON_SIZE = 12;
@@ -118,7 +125,7 @@ const countText = (items: EpisodeItem[]): string => {
  * 集數清單：最新喺頂，每集有進度同狀態。
  * 清單本身係節目頁唯一捲動嘅 panel；入頁 / 轉集時只喺 panel 入面捲到揀中嗰集
  */
-export const EpisodeList = ({ items, onSelect }: EpisodeListProps) => {
+export const EpisodeList = ({ items, onSelect, labels = 'date' }: EpisodeListProps) => {
     const headingId = useId();
     const listRef = useRef<HTMLUListElement>(null);
     const currentKey = items.find((item) => item.current)?.key;
@@ -130,7 +137,7 @@ export const EpisodeList = ({ items, onSelect }: EpisodeListProps) => {
     }, [currentKey]);
 
     return (
-        <section className={styles.section} aria-labelledby={headingId}>
+        <section className={styles.section} aria-labelledby={headingId} data-labels={labels}>
             <div className={styles.header}>
                 <h2 id={headingId} className={styles.heading}>
                     {t('episodes.title')}
