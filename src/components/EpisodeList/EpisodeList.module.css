@@ -116,8 +116,8 @@
     background: var(--color-accent);
 }
 
-.watched .fill {
-    background: var(--color-title);
+.watched:not(.current) .fill {
+    background: var(--color-text-muted);
 }
 
 .status {
@@ -125,8 +125,26 @@
     color: var(--color-text-muted);
 }
 
-.watched .status {
-    color: var(--color-title);
+/*
+ * 已收聽：成行淡色（集名唔粗體、進度條同剔都轉淡），同未聽嘅一眼分開。
+ * 唔用 opacity：行仲撳得（重聽），淡色字（--color-text-muted）照過 WCAG AA。
+ * 重聽緊嗰集（.current）照用播放中嘅強調色，唔會淡咗
+ */
+.watched:not(.current) .status {
+    color: var(--color-text-muted);
+}
+
+.watched:not(.current) .dayMonth {
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.watched:not(.current) .play {
+    color: var(--color-text-muted);
+}
+
+.watched:not(.current) .check {
+    background: var(--color-text-muted);
 }
 
 .check {
