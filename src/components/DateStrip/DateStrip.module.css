@@ -13,7 +13,7 @@
 
 /* 標籤高度固定（--date-strip-label-height），tokens.css 嘅播放器高度計法有計埋 */
 .label {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     font-size: var(--font-size-sm);
     font-weight: 500;
     line-height: var(--date-strip-label-height);
@@ -118,7 +118,7 @@
 }
 
 .current .weekday {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
 }
 
 .current .dayMonth {

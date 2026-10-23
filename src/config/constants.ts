@@ -6,6 +6,8 @@ export const PROGRESS_SAVE_INTERVAL_MS = 5000;
 /** 聽過嘅錄音由頭重播，真正播咗咁多秒先清走「已收聽」（防自動播放 / 誤撳） */
 export const REPLAY_RESET_SECONDS = 10;
 export const PROGRESS_STORAGE_KEY = '903player:progress:v1';
+/** 主頁上次揀咗「節目」定「廣播劇」tab */
+export const HOME_TAB_STORAGE_KEY = '903player:home-tab:v1';
 
 /** 鎖屏 / 耳機嘅前後掣每次跳幾多秒 */
 export const LOCK_SCREEN_SKIP_SECONDS = 30;

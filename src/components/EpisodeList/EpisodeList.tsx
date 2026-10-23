@@ -9,8 +9,12 @@ import type { EpisodeStatus } from './episodeStatus';
 
 export interface EpisodeItem {
     key: string;
+    /** 大字（節目：日/月；主題劇集：集名） */
     dayMonth: string;
+    /** 細字（節目：星期幾；主題劇集：第 N 集） */
     weekday: string;
+    /** 細字旁邊嘅標籤（例如每日劇集重播「重溫」）；冇就唔顯示 */
+    tag?: string;
     current: boolean;
     /** 揀中而且播緊：掣變暫停，撳落去暫停 */
     isPlaying: boolean;
@@ -40,16 +44,24 @@ const RowIcon = ({ item }: { item: EpisodeItem }) => {
     return <PlayIcon className={styles.play} size={PLAY_ICON_SIZE} filled={false} />;
 };
 
+/** 行頭：大字 + 細字（+ 標籤） */
+const RowDate = ({ item }: { item: EpisodeItem }) => (
+    <span className={styles.date}>
+        <span className={styles.dayMonth}>{item.dayMonth}</span>
+        <span className={styles.weekday}>
+            {item.weekday}
+            {item.tag && <span className={styles.tag}>{item.tag}</span>}
+        </span>
+    </span>
+);
+
 /**
  * 未上架：照列出日子同狀態，但唔係掣（撳唔到、冇播放掣、進度條變虛線）。
  * 用普通 div：screen reader 直接讀可見文字（日子、星期、未上架），唔會當成停用咗嘅掣
  */
 const UnavailableRow = ({ item }: { item: EpisodeItem }) => (
     <div className={`${styles.row} ${styles.unavailable}`}>
-        <span className={styles.date}>
-            <span className={styles.dayMonth}>{item.dayMonth}</span>
-            <span className={styles.weekday}>{item.weekday}</span>
-        </span>
+        <RowDate item={item} />
         <span className={styles.body}>
             <span className={styles.bar} aria-hidden="true" />
             <span className={styles.status}>{item.status.text}</span>
@@ -63,7 +75,7 @@ const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: str
         return <UnavailableRow item={item} />;
     }
     const percent = toPercent(status.ratio);
-    const date = `${item.dayMonth} ${item.weekday}`;
+    const date = [item.dayMonth, item.weekday, item.tag].filter(Boolean).join(' ');
     return (
         <button
             type="button"
@@ -75,10 +87,7 @@ const EpisodeRow = ({ item, onSelect }: { item: EpisodeItem; onSelect: (key: str
             })}
             onClick={() => onSelect(item.key)}
         >
-            <span className={styles.date}>
-                <span className={styles.dayMonth}>{item.dayMonth}</span>
-                <span className={styles.weekday}>{item.weekday}</span>
-            </span>
+            <RowDate item={item} />
             <span className={styles.body}>
                 <span
                     className={styles.bar}

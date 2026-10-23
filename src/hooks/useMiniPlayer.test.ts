@@ -1,5 +1,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
+import { DRAMA_THEMES } from '../config/dramaThemes';
+import { seriesEpisodesOf } from '../data/dramaCatalog';
+import type { SeriesEpisode } from '../types/drama';
 import { saveProgress } from '../services/progressStore';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
@@ -130,5 +133,41 @@ describe('useMiniPlayer', () => {
         expect(audio.src).toBe(BADGIRL.url);
         expect(audio.play).toHaveBeenCalledTimes(1);
         expect(result.current.mini?.isPlaying).toBe(true);
+    });
+
+    describe('with a drama episode loaded', () => {
+        // 芝See 第 2 個主題（X時mas時小提議）第 2 集「你洽我」
+        const XMAS = seriesEpisodesOf('chisee')[5] as SeriesEpisode;
+
+        it('shows the drama instead of today’s shows, even when no show is up today', async () => {
+            vi.setSystemTime(new Date('2026-10-20T08:00:00Z'));
+            const { audio, result } = setup();
+            await act(() => result.current.player.load(XMAS, { autoplay: true }));
+            act(() => {
+                audio.emitMetadata(1200);
+                audio.emitTime(300);
+            });
+
+            const mini = result.current.mini;
+            expect(mini).toMatchObject({
+                showName: '芝-See-菇-Bi-Family',
+                theme: DRAMA_THEMES.chisee,
+                subtitle: 'X時mas時小提議 · 第 2 集 你洽我 · 5:00 / 20:00',
+                isPlaying: true,
+                progress: 0.25,
+                labels: ['芝-See-菇-Bi-Family'],
+                index: 0,
+            });
+        });
+
+        it('toggles the drama and opens its page', async () => {
+            const { audio, result } = setup();
+            await act(() => result.current.player.load(XMAS, { autoplay: true }));
+
+            await act(async () => result.current.mini?.onToggle());
+
+            expect(audio.pause).toHaveBeenCalled();
+            expect(audio.src).toBe(XMAS.url);
+        });
     });
 });

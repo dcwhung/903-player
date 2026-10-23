@@ -42,6 +42,8 @@
 .header {
     width: 100%;
     padding: 0 var(--space-3);
+    /* 廣播劇頁頭底嘅裝飾線（--theme-header-rule，畫喺框底唔佔高度）；節目冇 */
+    background: var(--theme-header-rule);
 }
 
 /*

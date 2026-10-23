@@ -14,6 +14,7 @@ import {
 import { stripDays } from '../components/DateStrip/dateStrip';
 import { getProgressMap } from '../services/progressStore';
 import { hkToday } from '../utils/date';
+import { asShowRecording } from '../types/track';
 import { toEpisodeItems } from './episodeItems';
 
 /** 呢個節目嘅集數同揀中嗰集：播緊呢個節目就用播緊嗰集，否則用預設嗰集 */
@@ -29,7 +30,8 @@ const useShowEpisodes = (show: ShowConfig | undefined) => {
         () => (show ? entriesNewestFirst(recordings, unavailable, show.id) : []),
         [show, recordings, unavailable],
     );
-    const playing = player.recording?.showId === show?.id ? player.recording : null;
+    const loaded = asShowRecording(player.recording);
+    const playing = loaded?.showId === show?.id ? loaded : null;
     const current =
         playing ??
         (show

@@ -1,0 +1,32 @@
+/* 左右留白同主頁節目格一樣（--home-gutter） */
+.wrap {
+    flex-shrink: 0;
+    width: 100%;
+    padding: 0 var(--home-gutter);
+}
+
+/* 主頁漸變底上面一條半透明深色膠囊，揀中嗰邊用主頁強調色（奶油黃） */
+.tabs {
+    display: flex;
+    gap: var(--home-tab-inset);
+    padding: var(--home-tab-inset);
+    border-radius: var(--radius-full);
+    background: var(--home-tab-track);
+}
+
+.tab {
+    flex: 1 1 0;
+    min-height: var(--home-tab-height);
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+}
+
+.tab[aria-pressed='true'] {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-weight: 700;
+}

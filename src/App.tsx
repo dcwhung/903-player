@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { RecordingsProvider } from './data/RecordingsProvider';
+import { DramaPage } from './pages/DramaPage';
 import { HomePage } from './pages/HomePage';
 import { ShowPage } from './pages/ShowPage';
 import { TodayPage } from './pages/TodayPage';
@@ -25,6 +26,7 @@ export const App = ({ playerController }: AppProps) => {
                         <Route path="/" element={<HomePage />} />
                         <Route path="/show/:showId" element={<ShowPage />} />
                         <Route path="/today" element={<TodayPage />} />
+                        <Route path="/drama/:dramaId" element={<DramaPage />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                 </HashRouter>

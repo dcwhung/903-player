@@ -1,4 +1,4 @@
-import { nearestScrollTop } from './scroll';
+import { centredScrollLeft, nearestScrollTop } from './scroll';
 
 const VIEW = { top: 100, height: 200, scrollTop: 300 };
 
@@ -14,5 +14,20 @@ describe('nearestScrollTop', () => {
     it('scrolls down just enough when the row is below the panel', () => {
         // 行底 = 290 + 56 = 346，panel 底 = 300 → 要多捲 46
         expect(nearestScrollTop(VIEW, { top: 290, height: 56 })).toBe(346);
+    });
+});
+
+describe('centredScrollLeft', () => {
+    it('scrolls so the chip sits in the middle of the panel', () => {
+        // panel 300 闊、已捲 40；chip 喺可見範圍 250 起、60 闊 → 中心要喺 150：40 + 250 − 120 = 170
+        expect(centredScrollLeft({ scrollLeft: 40, width: 300 }, { left: 250, width: 60 })).toBe(
+            170,
+        );
+    });
+
+    it('scrolls back left for a chip left of the visible range', () => {
+        expect(centredScrollLeft({ scrollLeft: 400, width: 300 }, { left: -200, width: 60 })).toBe(
+            80,
+        );
     });
 });

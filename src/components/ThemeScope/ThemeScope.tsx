@@ -25,15 +25,27 @@ export const ThemeScope = ({
     className = '',
     canvas,
 }: ThemeScopeProps) => {
-    // 只有成頁先改瀏覽器工具列色：bg 係頁頂色（主頁 HOME_THEME.bg 就係漸變頂色）
-    useThemeColorMeta(fullPage ? theme.bg : undefined);
+    // 只有成頁先改瀏覽器工具列色：bg 係頁頂色（主頁 HOME_THEME.bg 就係漸變頂色）；
+    // 淺色頁頂有狀態列色帶，工具列跟色帶
+    const statusBar = fullPage ? theme.statusBar : undefined;
+    useThemeColorMeta(fullPage ? (statusBar ?? theme.bg) : undefined);
     usePageCanvas(fullPage ? (canvas ?? theme.bg) : undefined);
     return (
         <div
             className={`${fullPage ? styles.scope : ''} ${className}`}
             data-theme-scope=""
+            data-scheme={theme.scheme}
             style={themeVars(theme) as CSSProperties}
         >
+            {statusBar && (
+                // iOS standalone 狀態列一定係白字：淺色頁喺頂部安全區墊一條深色帶
+                <div
+                    className={styles.statusBand}
+                    data-status-band=""
+                    aria-hidden="true"
+                    style={{ background: statusBar }}
+                />
+            )}
             {children}
         </div>
     );

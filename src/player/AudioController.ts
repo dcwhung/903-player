@@ -9,7 +9,7 @@ import {
     resetWatched,
     saveProgress,
 } from '../services/progressStore';
-import type { Recording } from '../types/recording';
+import type { Track } from '../types/track';
 import type { LoadOptions, PlayerState } from './playerContext';
 
 const INITIAL_STATE: PlayerState = {
@@ -90,7 +90,7 @@ export class AudioController {
         };
     };
 
-    load = async (recording: Recording, { autoplay = false }: LoadOptions = {}): Promise<void> => {
+    load = async (recording: Track, { autoplay = false }: LoadOptions = {}): Promise<void> => {
         // 換集時 subscriber 已經會收到通知，所以要喺換之前標記想播
         if (autoplay) {
             this.setPlayIntent(true);
@@ -166,7 +166,7 @@ export class AudioController {
         this.persist();
     };
 
-    private switchTo(recording: Recording): void {
+    private switchTo(recording: Track): void {
         this.persist();
         this.watched = isWatched(recording.url);
         this.pendingStart = getResumePosition(recording.url);

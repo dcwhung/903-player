@@ -12,6 +12,9 @@
     --theme-muted: #a3a3a3;
     --theme-shadow-dark: #0a0a0a;
     --theme-shadow-light: #242424;
+    /* 淺色劇集先另外設（見 showThemes.ts ShowTheme）；預設跟強調色 / app 字體 / 冇裝飾線 */
+    --theme-accent-text: #f2f2f2;
+    --theme-header-rule: none;
 
     /*
      * 橫版大畫面放大字、間距、掣同 icon 嘅倍數（直版 / 手機打橫都係 1，見下面 landscape @media）。
@@ -21,6 +24,7 @@
     --ui-scale: 1;
 
     --font-family: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
+    --theme-title-font: var(--font-family);
     /* 日子條每格上面嘅星期（一、二…） */
     --font-size-2xs: calc(11px * var(--ui-scale));
     --font-size-xs: calc(12px * var(--ui-scale));
@@ -91,6 +95,8 @@
     --date-strip-weekday-line: 14px;
     --date-strip-day-line: 18px;
     --date-strip-empty-opacity: 0.35;
+    /* 主題劇集頁嘅主題 chip：睇落嘅高度（撳得到範圍係成行 --date-strip-height） */
+    --arc-chip-height: calc(32px * var(--ui-scale));
     /* 未上架嘅集數 / 節目（清單照列出但撳唔到）：日子、節目名、唱片變淡；進度條變虛線 */
     --unavailable-opacity: 0.45;
     --unavailable-dash: 6px;
@@ -133,6 +139,13 @@
     /* 主頁節目格（ShowTile）16:9；頁頂橫額嘅高度用同一個比例計，兩者一樣高 */
     --tile-aspect-w: 16;
     --tile-aspect-h: 9;
+    /* 主頁「廣播劇」tab 嘅劇集格（一行一套） */
+    --drama-tile-aspect-w: 2;
+    --drama-tile-aspect-h: 1;
+    /* 主頁橫額下面「節目 / 廣播劇」切換：膠囊底色、內邊、每個掣高度 */
+    --home-tab-track: rgb(0 0 0 / 18%);
+    --home-tab-inset: calc(3px * var(--ui-scale));
+    --home-tab-height: calc(36px * var(--ui-scale));
     /* 主頁節目格同橫額共用嘅左右留白、格距 */
     --home-gutter: var(--space-4);
     --home-tile-gap: var(--space-3);
@@ -321,7 +334,9 @@
     --color-accent: var(--theme-accent);
     --color-accent-fill: var(--theme-accent);
     --color-on-accent: var(--theme-on-accent);
-    --color-status-playing: var(--theme-accent);
+    /* 強調色做文字 / 細 icon：淺色底強調色太淺，用 --theme-accent-text（深色主題就係強調色） */
+    --color-accent-text: var(--theme-accent-text);
+    --color-status-playing: var(--theme-accent-text);
     --color-badge: var(--theme-title);
     --color-on-badge: var(--theme-bg);
     /* 唱片效果：節目圖邊緣陰影、坑紋、中間軸心外圈 */

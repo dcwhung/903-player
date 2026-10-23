@@ -22,6 +22,19 @@ export interface ShowTheme {
     shadowDark: string;
     shadowLight: string;
     art: string;
+    /** 淺色底（廣播劇）；冇就係深色（全部 903 節目） */
+    scheme?: 'light';
+    /**
+     * 淺色底先要：iOS standalone 狀態列（black-translucent）一定係白字，
+     * 頁頂安全區畫一條呢個色嘅色帶墊住白字；Android 工具列（theme-color）都用呢個色
+     */
+    statusBar?: string;
+    /** 強調色做文字（播緊嗰集、現正播放標籤）；淺色底強調色太淺唔夠對比先另外設，冇就用 accent */
+    accentText?: string;
+    /** 頁頭標題字體（CSS font-family）；冇就跟 app 字體 */
+    titleFont?: string;
+    /** 頁頭底部裝飾線（CSS background，畫喺頁頭框底，唔佔高度）；冇就冇 */
+    headerRule?: string;
 }
 
 export const NEUTRAL_THEME: ShowTheme = {
@@ -162,7 +175,10 @@ export const SHOW_THEMES: Record<ShowId, ShowTheme> = {
 export const themeFor = (showId: ShowId | undefined): ShowTheme =>
     showId ? SHOW_THEMES[showId] : NEUTRAL_THEME;
 
-const THEME_KEYS: Record<Exclude<keyof ShowTheme, 'art'>, string> = {
+type ColorKey = Exclude<keyof ShowTheme, 'art' | 'scheme' | 'statusBar' | OptionalVarKey>;
+type OptionalVarKey = 'accentText' | 'titleFont' | 'headerRule';
+
+const THEME_KEYS: Record<ColorKey, string> = {
     bg: '--theme-bg',
     surface: '--theme-surface',
     track: '--theme-track',
@@ -175,11 +191,21 @@ const THEME_KEYS: Record<Exclude<keyof ShowTheme, 'art'>, string> = {
     shadowLight: '--theme-shadow-light',
 };
 
+/**
+ * 可有可無嘅項目都一定輸出（用預設值）：ThemeScope 會一層包一層，
+ * 唔輸出就會承繼外面嗰層（例如淺色劇集頁）嘅值
+ */
+const optionalVars = (theme: ShowTheme): Record<string, string> => ({
+    '--theme-accent-text': theme.accentText ?? theme.accent,
+    // 唔可以用 inherit：自訂屬性嘅 inherit 係承繼外層嘅 --theme-title-font，唔係字體
+    '--theme-title-font': theme.titleFont ?? 'var(--font-family)',
+    '--theme-header-rule': theme.headerRule ?? 'none',
+});
+
 /** 將色調轉成 CSS custom properties，套喺頁面 root */
-export const themeVars = (theme: ShowTheme): Record<string, string> =>
-    Object.fromEntries(
-        Object.entries(THEME_KEYS).map(([key, cssVar]) => [
-            cssVar,
-            theme[key as keyof typeof THEME_KEYS],
-        ]),
-    );
+export const themeVars = (theme: ShowTheme): Record<string, string> => ({
+    ...Object.fromEntries(
+        Object.entries(THEME_KEYS).map(([key, cssVar]) => [cssVar, theme[key as ColorKey]]),
+    ),
+    ...optionalVars(theme),
+});

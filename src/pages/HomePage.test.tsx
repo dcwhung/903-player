@@ -5,6 +5,7 @@ import packageJson from '../../package.json';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { HOME_THEME } from '../config/showThemes';
 import { usePlayer } from '../player/usePlayer';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
 import { saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import { HomePage } from './HomePage';
@@ -249,5 +250,79 @@ describe('HomePage', () => {
 
         expect(audio.play).not.toHaveBeenCalled();
         expect(screen.getByTestId('location')).toHaveTextContent('/show/gongzi');
+    });
+
+    describe('廣播劇 tab', () => {
+        const openDramas = async () => {
+            await userEvent.click(screen.getByRole('button', { name: '廣播劇' }));
+            return screen.getByRole('navigation', { name: '廣播劇' });
+        };
+
+        it('starts on the 節目 tab', () => {
+            renderWithProviders(<HomePage />);
+
+            const tabs = screen.getByRole('group', { name: '分類' });
+            expect(within(tabs).getByRole('button', { name: '節目' })).toHaveAttribute(
+                'aria-pressed',
+                'true',
+            );
+            expect(screen.getByRole('navigation', { name: '節目' })).toBeInTheDocument();
+            expect(screen.queryByRole('navigation', { name: '廣播劇' })).not.toBeInTheDocument();
+        });
+
+        it('lists the two dramas instead of the shows', async () => {
+            renderWithProviders(<HomePage />);
+
+            const nav = await openDramas();
+
+            expect(
+                within(nav)
+                    .getAllByRole('button')
+                    .map((b) => b.getAttribute('aria-label')),
+            ).toEqual(['芝-See-菇-Bi-Family', '18-樓-C-座']);
+            expect(screen.queryByRole('navigation', { name: '節目' })).not.toBeInTheDocument();
+        });
+
+        it('marks the daily drama New when today’s episode is unwatched', async () => {
+            vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
+            renderWithProviders(<HomePage />);
+
+            const nav = await openDramas();
+
+            expect(
+                within(nav).getByRole('button', { name: '18-樓-C-座，今日有新一集' }),
+            ).toBeInTheDocument();
+        });
+
+        it('drops New once today’s episode has been listened to', async () => {
+            vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
+            saveProgress(dailyEpisodesOf('c18')[0]?.url ?? '', 990, 1000);
+            renderWithProviders(<HomePage />);
+
+            const nav = await openDramas();
+
+            expect(within(nav).getByRole('button', { name: '18-樓-C-座' })).toBeInTheDocument();
+        });
+
+        it('starts the drama and opens its page when its tile is tapped', async () => {
+            const { audio } = renderWithProviders(<HomePage />);
+            const nav = await openDramas();
+
+            await userEvent.click(within(nav).getByRole('button', { name: '芝-See-菇-Bi-Family' }));
+
+            expect(audio.src).toBe(seriesEpisodesOf('chisee')[0]?.url);
+            expect(audio.play).toHaveBeenCalled();
+            expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
+        });
+
+        it('remembers the chosen tab next time home opens', async () => {
+            const { unmount } = renderWithProviders(<HomePage />);
+            await openDramas();
+            unmount();
+
+            renderWithProviders(<HomePage />);
+
+            expect(screen.getByRole('navigation', { name: '廣播劇' })).toBeInTheDocument();
+        });
     });
 });

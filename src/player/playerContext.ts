@@ -1,12 +1,13 @@
 import { createContext } from 'react';
-import type { Recording } from '../types/recording';
+import type { Track } from '../types/track';
 
 export interface LoadOptions {
     autoplay?: boolean;
 }
 
 export interface PlayerState {
-    recording: Recording | null;
+    /** 載入咗嘅節目錄音或者廣播劇一集 */
+    recording: Track | null;
     isPlaying: boolean;
     /** 真正出緊聲（playing event 之後）；撳咗 Play 仲載緊 / 緩衝緊係 false */
     isAudible: boolean;
@@ -17,7 +18,7 @@ export interface PlayerState {
 }
 
 export interface PlayerActions {
-    load: (recording: Recording, options?: LoadOptions) => Promise<void>;
+    load: (recording: Track, options?: LoadOptions) => Promise<void>;
     play: () => Promise<void>;
     pause: () => void;
     toggle: () => Promise<void>;

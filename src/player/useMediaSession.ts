@@ -1,10 +1,19 @@
 import { useEffect } from 'react';
 import { LOCK_SCREEN_SKIP_SECONDS } from '../config/constants';
+import { findDrama } from '../config/dramas';
 import { findShow } from '../config/shows';
+import { dramaEpisodeLabel } from '../selectors/dramas';
+import { isDramaEpisode, type Track } from '../types/track';
 import { formatDateLabel } from '../utils/date';
 import type { PlayerActions, PlayerState } from './playerContext';
 
 const hasMediaSession = (): boolean => 'mediaSession' in navigator;
+
+/** 鎖屏顯示：節目名 + 日子；廣播劇係劇名 + 集數（主題 / 日子） */
+const trackMetadata = (track: Track): MediaMetadataInit =>
+    isDramaEpisode(track)
+        ? { title: findDrama(track.dramaId)?.name ?? '', artist: dramaEpisodeLabel(track) }
+        : { title: findShow(track.showId)?.name ?? '', artist: formatDateLabel(track.date) };
 
 const bindActions = (mediaSession: MediaSession, actions: PlayerActions): void => {
     const handlers: Partial<Record<MediaSessionAction, MediaSessionActionHandler>> = {
@@ -31,10 +40,7 @@ export const useMediaSession = (actions: PlayerActions, state: PlayerState): voi
 
     useEffect(() => {
         if (hasMediaSession() && recording) {
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: findShow(recording.showId)?.name ?? '',
-                artist: formatDateLabel(recording.date),
-            });
+            navigator.mediaSession.metadata = new MediaMetadata(trackMetadata(recording));
         }
     }, [recording]);
 

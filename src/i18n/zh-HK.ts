@@ -14,6 +14,11 @@ export const zhHK = {
     home: {
         bannerAlt: '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽',
         showsNav: '節目',
+        // 主頁橫額下面嘅分類 tab
+        tabs: '分類',
+        tabShows: '節目',
+        tabDramas: '廣播劇',
+        dramasNav: '廣播劇',
         today: '今日節目',
         // 節目格：今日有已上架、未聽完嘅新一集
         newBadge: 'New',
@@ -91,6 +96,24 @@ export const zhHK = {
         // 今日有節目播但一個都未上架：卡疊嘅位改為呢個空狀態
         emptyTitle: '今日節目未上架',
         emptyHint: '上架之後會自動顯示',
+    },
+    drama: {
+        notFound: '找不到此廣播劇',
+        // 主頁劇集格右下角
+        arcCount: '{count} 個主題',
+        daily: '每日更新',
+        // 主題劇集：清單每行細字、mini player / 鎖屏副標題
+        episodeNo: '第 {no} 集',
+        seriesLabel: '{arc} · 第 {no} 集 {title}',
+        // 每日劇集重播舊集
+        rerun: '重溫',
+        dailyRerunLabel: '{date} · 重溫',
+        // 主題劇集頁：唱片下面嘅主題 chips
+        arcs: '主題',
+        // 睇緊其他主題時，播緊嗰個主題嘅 chip
+        arcPlaying: '播緊',
+        nowPlaying: '現正播放：{label}',
+        nowPlayingShort: '第 {no} 集 {title}',
     },
 } as const;
 

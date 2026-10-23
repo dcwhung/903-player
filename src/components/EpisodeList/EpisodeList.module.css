@@ -58,7 +58,9 @@
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    width: calc(58px * var(--ui-scale));
+    /* 節目日子剛好 58px；主題劇集集名可以長啲，最多佔一行四成，再長就斷行 */
+    min-width: calc(58px * var(--ui-scale));
+    max-width: 40%;
 }
 
 .dayMonth {
@@ -74,6 +76,15 @@
 .weekday {
     font-size: var(--font-size-2xs);
     color: var(--color-text-muted);
+}
+
+/* 每日劇集重播「重溫」：細框標籤，同星期幾同一行 */
+.tag {
+    margin-left: var(--space-1);
+    padding: 0 var(--space-1);
+    border: 1px solid currentColor;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
 }
 
 .body {
