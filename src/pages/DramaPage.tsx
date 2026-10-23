@@ -103,7 +103,7 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
                 </div>
                 <ArcSheet
                     open={sheet.open}
-                    summaries={sheet.summaries}
+                    groups={sheet.groups}
                     current={recording === current ? current : undefined}
                     isPlaying={isPlaying}
                     onPick={sheet.pick}

@@ -1,0 +1,53 @@
+import { renderHook } from '@testing-library/react';
+import { createHookWrapper } from '../../tests/renderWithProviders';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
+import { saveProgress } from '../services/progressStore';
+import { useDramaNewLabels } from './useDramaNewLabels';
+
+// 18 樓 C 座暫時停用；「新」嘅計法照測，當佢開咗
+vi.mock('../config/dramas', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../config/dramas')>();
+    return { ...actual, enabledDramas: () => actual.DRAMAS };
+});
+
+// 而家 10 個短篇都係舊；當「Ｘ時mas時小提議」係 20/10 新上架，睇吓主頁「新」點計
+vi.mock('../data/dramaCatalog', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../data/dramaCatalog')>();
+    const withNewArc = (id: Parameters<typeof actual.seriesEpisodesOf>[0]) =>
+        actual
+            .seriesEpisodesOf(id)
+            .map((e) => (e.arc === 'Ｘ時mas時小提議' ? { ...e, addedAt: '2026-10-20' } : e));
+    return { ...actual, seriesEpisodesOf: withNewArc };
+});
+
+const labels = () => {
+    const { wrapper } = createHookWrapper();
+    return renderHook(() => useDramaNewLabels(), { wrapper }).result.current;
+};
+
+describe('useDramaNewLabels', () => {
+    beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-23T08:00:00Z')); // 香港 23/10 16:00
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('labels a series with an unheard new 短篇, and the daily drama with today’s episode', () => {
+        expect(Object.fromEntries(labels())).toEqual({
+            chisee: '有新短篇',
+            c18: '今日有新一集',
+        });
+    });
+
+    it('drops 新 once the new 短篇 has been touched, or today’s episode listened to', () => {
+        const xmas = seriesEpisodesOf('chisee').find((e) => e.arc === 'Ｘ時mas時小提議');
+        saveProgress(xmas?.url ?? '', 30, 160);
+        saveProgress(dailyEpisodesOf('c18')[0]?.url ?? '', 990, 1000);
+        expect(labels().size).toBe(0);
+    });
+
+    it('stops calling a 短篇 new 14 days after it was added', () => {
+        vi.setSystemTime(new Date('2026-11-03T08:00:00Z'));
+        expect(labels().has('chisee')).toBe(false);
+    });
+});

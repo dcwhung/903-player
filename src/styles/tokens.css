@@ -115,11 +115,12 @@
     --unavailable-opacity: 0.45;
     --unavailable-dash: 6px;
     --unavailable-gap: 4px;
-    /* 主頁節目格「New」標籤：細細粒膠囊；左邊有粒圓點，所以左邊 padding 細過右邊（右邊用 --space-2） */
+    /* 「新」標籤（NewBadge）：上下內邊、行高 */
     --new-badge-pad-block: 2px;
-    --new-badge-pad-start: 6px;
     --new-badge-line: 16px;
-    --new-badge-dot: 6px;
+    /* 「新」統一紅底白字（NewBadge） */
+    --new-badge-bg: #c0362c;
+    --new-badge-text: #ffffff;
 
     /* 今日節目卡疊（ShowCardStack）：每疊後一層向下移、縮細、變淡幾多（第一張後面嘅卡 scale 0.92） */
     --card-stack-offset: 12px;

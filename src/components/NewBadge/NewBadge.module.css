@@ -1,0 +1,23 @@
+/* 紅底白字膠囊（白字喺 --new-badge-bg 上 5.2:1，過 WCAG AA），輕輕浮起同圖分開 */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-full);
+    background: var(--new-badge-bg);
+    color: var(--new-badge-text);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.md {
+    padding: var(--new-badge-pad-block) var(--space-2);
+    font-size: var(--font-size-xs);
+    line-height: var(--new-badge-line);
+    box-shadow: var(--shadow-new-badge);
+}
+
+.sm {
+    padding: 0 var(--space-1);
+    font-size: var(--font-size-2xs);
+    line-height: var(--new-badge-line);
+}

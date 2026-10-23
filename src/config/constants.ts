@@ -21,6 +21,9 @@ export const ARC_SWEEP_DEGREES = 270;
 export const ALLOWED_AUDIO_ORIGIN = 'https://audio.hkfm903.live';
 
 /** 廣播劇錄音（Cloudflare R2 public bucket「radio-drama」）：<劇集 folder>/<短篇 folder>/<檔名> */
+/** 新上架短篇由上架日起計幾多日內有「新」 */
+export const NEW_ARC_DAYS = 14;
+
 export const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
 
 /**

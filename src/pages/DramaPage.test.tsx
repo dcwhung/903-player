@@ -85,15 +85,16 @@ describe('DramaPage', () => {
 
         await waitFor(() => expect(audio.src).toBe(CHISEE[1]?.url));
         const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole('button');
-        expect(rows[0]).toHaveAccessibleName('播放 第 1 集，已收聽');
-        expect(rows[1]).toHaveAttribute('aria-current', 'true');
+        // 播緊第 2 集排頂；聽完嘅第 1 集排最底
+        expect(rows[0]).toHaveAttribute('aria-current', 'true');
+        expect(rows.at(-1)).toHaveAccessibleName('播放 第 1 集，已收聽');
     });
 
-    describe('全部短篇 overview', () => {
+    describe('全集 overview', () => {
         const BIRTHDAY = CHISEE.filter((e) => e.arc === '你生日所以我生日');
         const FRIENDS = CHISEE.filter((e) => e.arc === '好朋友手牽手');
 
-        it('lists every 短篇 with finished ones last, and plays one from its row button', async () => {
+        it('groups 短篇 playing → unfinished → finished, and plays one from its row button', async () => {
             BIRTHDAY.forEach((e) => saveProgress(e.url, 990, 1000));
             saveProgress(FRIENDS[0]?.url ?? '', 990, 1000);
             vi.setSystemTime(new Date('2026-10-23T08:05:00Z')); // 最近聽緊嘅係好朋友手牽手第 2 集
@@ -101,14 +102,15 @@ describe('DramaPage', () => {
             const { audio } = openDrama('chisee');
             await waitFor(() => expect(audio.src).toBe(FRIENDS[1]?.url));
 
-            await userEvent.click(screen.getByRole('button', { name: '全部短篇（10 個）' }));
+            await userEvent.click(screen.getByRole('button', { name: '全集' }));
 
-            const dialog = screen.getByRole('dialog', { name: '全部短篇' });
+            const dialog = screen.getByRole('dialog', { name: '全集' });
             const picks = within(dialog)
                 .getAllByRole('button')
                 .filter((b) => b.dataset.role === 'pick');
             expect(picks).toHaveLength(10);
-            expect(picks[0]).toHaveAccessibleName('大妒忌，未聽 · 3 集');
+            expect(picks[0]).toHaveAccessibleName('好朋友手牽手，播緊第 2 集');
+            expect(picks[1]).toHaveAccessibleName('大妒忌，未聽 · 3 集');
             expect(picks.at(-1)).toHaveAccessibleName('你生日所以我生日，聽完 · 3 集');
             expect(within(dialog).getByText('聽完 1 / 10 個')).toBeInTheDocument();
 
@@ -125,10 +127,24 @@ describe('DramaPage', () => {
             );
         });
 
+        it('moves the playing 短篇 to the front of the chips, after 全集', async () => {
+            const { audio } = openDrama('chisee');
+            await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
+            await userEvent.click(screen.getByRole('button', { name: '全集' }));
+            await userEvent.click(screen.getByRole('button', { name: '播放 青春期 第 1 集' }));
+
+            const chips = within(screen.getByRole('group', { name: '短篇' })).getAllByRole(
+                'button',
+            );
+            expect(
+                chips.slice(0, 3).map((c) => c.getAttribute('aria-label') ?? c.textContent),
+            ).toEqual(['全集', '青春期', '你生日所以我生日']);
+        });
+
         it('switches the list to a 短篇 picked by its row, without changing playback', async () => {
             const { audio } = openDrama('chisee');
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
-            await userEvent.click(screen.getByRole('button', { name: '全部短篇（10 個）' }));
+            await userEvent.click(screen.getByRole('button', { name: '全集' }));
 
             await userEvent.click(screen.getByRole('button', { name: '青春期，未聽 · 4 集' }));
 

@@ -33,9 +33,15 @@ const chiseeFile = (arc: string, no: number, title: string | undefined): string 
 
 /**
  * 芝See菇Bi Family 短篇（按清單次序）：每集嘅集名，冇集名係 null。
- * 短篇名 = R2 folder 名 = 檔名入面嘅名，照原寫法（全形「Ｘ」、「游亁水」、「青春期眞神奇」）
+ * 短篇名 = R2 folder 名 = 檔名入面嘅名，照原寫法（全形「Ｘ」、「游亁水」、「青春期眞神奇」）。
+ * 新加短篇要寫 addedAt（上架日子 YYYY-MM-DD），上架 14 日內會出「新」；
+ * 而家嗰 10 個係舊短篇，唔寫
  */
-const CHISEE_ARCS: readonly { arc: string; titles: readonly (string | null)[] }[] = [
+const CHISEE_ARCS: readonly {
+    arc: string;
+    addedAt?: string;
+    titles: readonly (string | null)[];
+}[] = [
     { arc: '你生日所以我生日', titles: [null, null, null] },
     { arc: '大妒忌', titles: [null, null, null] },
     { arc: '好朋友手牽手', titles: ['好傾朋友', '朋友不同', '朋友性別', '朋友第一'] },
@@ -52,7 +58,7 @@ const CHISEE_ARCS: readonly { arc: string; titles: readonly (string | null)[] }[
 ];
 
 const chiseeEpisodes = (): SeriesEpisode[] =>
-    CHISEE_ARCS.flatMap(({ arc, titles }) =>
+    CHISEE_ARCS.flatMap(({ arc, addedAt, titles }) =>
         titles.map((title, i): SeriesEpisode => {
             const no = i + 1;
             return {
@@ -66,6 +72,7 @@ const chiseeEpisodes = (): SeriesEpisode[] =>
                 arc,
                 no,
                 ...(title ? { title } : {}),
+                ...(addedAt ? { addedAt } : {}),
             };
         }),
     );

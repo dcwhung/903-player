@@ -1,5 +1,6 @@
 import todayArt from '../../assets/today-tile.webp';
 import { t } from '../../i18n/t';
+import { NewBadge } from '../NewBadge/NewBadge';
 import styles from './ShowTile.module.css';
 
 interface ShowTileProps {
@@ -36,10 +37,6 @@ export const ShowTile = ({
             onClick={onClick}
         >
             {art && <img className={styles.art} src={art} alt="" />}
-            {isNew && (
-                <span className={styles.newBadge} aria-hidden="true">
-                    {t('home.newBadge')}
-                </span>
-            )}
+            {isNew && <NewBadge className={styles.newBadge} />}
         </button>
     );

@@ -40,38 +40,21 @@
     object-fit: cover;
 }
 
-/* 「New」：同 ShowTile 一樣嘅奶油色膠囊 */
+/* 「新」（NewBadge）喺左上角 */
 .newBadge {
     position: absolute;
     top: var(--space-2);
     left: var(--space-2);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    padding: var(--new-badge-pad-block) var(--space-2) var(--new-badge-pad-block)
-        var(--new-badge-pad-start);
-    border-radius: var(--radius-full);
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    font-size: var(--font-size-2xs);
-    font-weight: 700;
-    line-height: var(--new-badge-line);
-    box-shadow: var(--shadow-new-badge);
 }
 
-.newBadge::before {
-    width: var(--new-badge-dot);
-    height: var(--new-badge-dot);
-    border-radius: var(--radius-full);
-    background: currentColor;
-    content: '';
-}
-
-/* 右上角（短篇數 / 每日更新）：同橫額版本號一樣半透明深底白字（任何劇集圖上都睇得清） */
+/*
+ * 角落細字（短篇數 / 每日更新）：同橫額版本號一樣半透明深底白字（任何劇集圖上都睇得清）。
+ * 平時右下角；圖底有「繼續收聽」條就讓去右上角
+ */
 .meta {
     position: absolute;
-    top: var(--space-2);
     right: var(--space-2);
+    bottom: var(--space-2);
     padding: var(--new-badge-pad-block) var(--space-2);
     border-radius: var(--radius-full);
     background: var(--version-badge-bg);
@@ -79,6 +62,11 @@
     font-size: var(--font-size-2xs);
     font-weight: 500;
     line-height: var(--new-badge-line);
+}
+
+.metaTop {
+    top: var(--space-2);
+    bottom: auto;
 }
 
 /*

@@ -78,16 +78,16 @@ describe('HomePage', () => {
         ]);
     });
 
-    it('marks shows with an unwatched episode today as New', () => {
+    it('marks shows with an unwatched episode today as 新', () => {
         saveProgress(RECORDINGS[3]?.url ?? '', 990, 1000);
         renderWithProviders(<HomePage />, { recordings: RECORDINGS });
 
         const nav = within(screen.getByRole('navigation'));
         expect(nav.getByRole('button', { name: 'Bad Girl大過佬，今日有新一集' })).toHaveTextContent(
-            'New',
+            '新',
         );
-        expect(nav.getByRole('button', { name: '雲妮鍾情' })).not.toHaveTextContent('New');
-        expect(nav.getByRole('button', { name: '公子會' })).not.toHaveTextContent('New');
+        expect(nav.getByRole('button', { name: '雲妮鍾情' })).not.toHaveTextContent('新');
+        expect(nav.getByRole('button', { name: '公子會' })).not.toHaveTextContent('新');
     });
 
     it('should render the banner image as the only page heading when rendered', () => {
@@ -285,11 +285,11 @@ describe('HomePage', () => {
             expect(screen.queryByRole('navigation', { name: '節目' })).not.toBeInTheDocument();
         });
 
-        it('shows the 短篇 count top-right until something has been played', async () => {
+        it('shows the 短篇 count bottom-right until something has been played', async () => {
             renderWithProviders(<HomePage />);
             const nav = await openDramas();
 
-            expect(within(nav).getByText('10 個短篇')).toBeInTheDocument();
+            expect(within(nav).getByText('10 個短篇').dataset.corner).toBe('bottom');
             expect(within(nav).queryByText('繼續收聽')).not.toBeInTheDocument();
         });
 
@@ -305,6 +305,20 @@ describe('HomePage', () => {
             expect(within(tile).getByText('繼續收聽')).toBeInTheDocument();
             expect(within(tile).getByText('10 個短篇')).toBeInTheDocument();
             expect(tile.querySelector('[data-continue-fill]')).toHaveStyle({ width: '25%' });
+        });
+
+        it('leaves the tile plain while the drama plays, as the mini player already shows it', async () => {
+            const friends = seriesEpisodesOf('chisee').filter((e) => e.arc === '好朋友手牽手');
+            saveProgress(friends[1]?.url ?? '', 250, 1000);
+            await arriveHomeWith(friends[1]!);
+            await userEvent.click(screen.getByRole('button', { name: '廣播劇' }));
+
+            const nav = screen.getByRole('navigation', { name: '廣播劇' });
+            expect(
+                within(nav).getByRole('button', { name: '芝See菇Bi Family' }),
+            ).toBeInTheDocument();
+            expect(within(nav).queryByText('繼續收聽')).not.toBeInTheDocument();
+            expect(within(nav).getByText('10 個短篇').dataset.corner).toBe('bottom');
         });
 
         it('starts the drama and opens its page when its tile is tapped', async () => {

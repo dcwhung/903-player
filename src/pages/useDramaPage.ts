@@ -11,10 +11,9 @@ import {
     episodesInArc,
     pickDailyStart,
     pickSeriesStart,
-    seriesArcs,
 } from '../selectors/dramas';
-import { arcSummaries, type ArcSummary } from '../selectors/arcProgress';
-import { getProgressMap } from '../services/progressStore';
+import { arcGroups, arcSummaries, listOrder, type ArcSummary } from '../selectors/arcProgress';
+import { getProgressMap, type Progress } from '../services/progressStore';
 import type { DramaEpisode, SeriesEpisode } from '../types/drama';
 import { isDramaEpisode, type Track } from '../types/track';
 import { hkToday } from '../utils/date';
@@ -100,53 +99,69 @@ const useViewedArc = (playingArc: string | undefined) => {
     return { arc: picked ?? playingArc, pickArc: setPicked };
 };
 
-/**
- * 「全部短篇」一覽表：開關、每個短篇進度（打開嗰陣重新讀 localStorage）、
- * 撳行轉短篇、撳右邊掣播（播緊嗰個短篇就暫停 / 繼續）
- */
-const useArcSheet = (
+/** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已聽完（today 每次 render 重新攞） */
+const useArcOrder = (
     episodes: readonly SeriesEpisode[],
+    progressMap: Readonly<Record<string, Progress>>,
+    loadedArc: string | undefined,
+) => {
+    const today = hkToday();
+    const groups = useMemo(
+        () => arcGroups(arcSummaries(episodes, progressMap, today), loadedArc),
+        [episodes, progressMap, today, loadedArc],
+    );
+    const chips = useMemo(
+        () => groups.flatMap((g) => g.items).map(({ arc, isNew }) => ({ arc, isNew })),
+        [groups],
+    );
+    return { groups, chips };
+};
+
+/**
+ * 全集一覽表嘅動作：撳行轉去嗰個短篇；撳右邊掣播嗰個短篇（播緊嗰個就暫停 / 繼續），
+ * 兩樣都會收埋表、內頁跳去嗰個短篇
+ */
+const useArcSheetActions = (
     loaded: SeriesEpisode | null,
     pickArc: (arc: string) => void,
+    setOpen: (open: boolean) => void,
 ) => {
     const player = usePlayer();
-    const [open, setOpen] = useState(false);
-    const progressMap = useRefreshedOn(getProgressMap, [player.watchedRevision, loaded?.url, open]);
-    const summaries = useMemo(() => arcSummaries(episodes, progressMap), [episodes, progressMap]);
-    const close = () => setOpen(false);
     const pick = (arc: string) => {
         pickArc(arc);
-        close();
+        setOpen(false);
     };
     const play = (summary: ArcSummary) => {
         if (loaded?.arc === summary.arc) void player.toggle();
         else void player.load(summary.resume, { autoplay: true });
         pick(summary.arc);
     };
-    return { open, summaries, openSheet: () => setOpen(true), close, pick, play };
+    return { openSheet: () => setOpen(true), close: () => setOpen(false), pick, play };
 };
 
-/** 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 短篇 chips + 嗰個短篇嘅集數 */
+/** 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 全集 / 短篇 chips + 嗰個短篇嘅集數 */
 export const useSeriesDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
-    const arcs = useMemo(() => seriesArcs(episodes), [episodes]);
     const loaded = useLoadedEpisode(drama, 'series');
     useAutoplayDrama(drama, loaded !== null);
+    const [sheetOpen, setSheetOpen] = useState(false);
     const { watchedRevision } = usePlayer();
-    const progressMap = useRefreshedOn(getProgressMap, [watchedRevision, loaded?.url]);
+    // 轉集、有集數聽完、打開全集表都重新讀 localStorage
+    const progressMap = useRefreshedOn(getProgressMap, [watchedRevision, loaded?.url, sheetOpen]);
     const current = loaded ?? pickSeriesStart(episodes, progressMap);
     const { ctx, selectEpisode, pressEpisode } = usePlaybackRows(episodes, current, !!loaded);
     const { arc, pickArc } = useViewedArc(current?.arc);
-    const shown = useMemo(() => (arc ? episodesInArc(episodes, arc) : []), [episodes, arc]);
+    const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc);
+    const shown = listOrder(arc ? episodesInArc(episodes, arc) : [], progressMap, current?.url);
     return {
         theme: DRAMA_THEMES[drama.id],
         current,
-        arcs,
+        arcs: chips,
         arc,
         pickArc,
         items: toSeriesItems(shown, ctx),
         selectEpisode,
         pressEpisode,
-        sheet: useArcSheet(episodes, loaded, pickArc),
+        sheet: { open: sheetOpen, groups, ...useArcSheetActions(loaded, pickArc, setSheetOpen) },
     };
 };

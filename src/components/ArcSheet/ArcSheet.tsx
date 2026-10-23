@@ -1,16 +1,17 @@
 import { useEffect, useId, useRef, type CSSProperties } from 'react';
 import { t } from '../../i18n/t';
-import type { ArcSummary } from '../../selectors/arcProgress';
+import type { ArcGroup, ArcSummary } from '../../selectors/arcProgress';
 import type { SeriesEpisode } from '../../types/drama';
 import { ratio, toPercent } from '../../utils/ratio';
 import { formatDuration } from '../../utils/time';
-import { CheckIcon, CloseIcon, PauseIcon, PlayIcon } from '../icons/icons';
+import { CheckIcon, CloseIcon, PauseIcon, PlayIcon, RestartIcon } from '../icons/icons';
+import { NewBadge } from '../NewBadge/NewBadge';
 import styles from './ArcSheet.module.css';
 
 interface ArcSheetProps {
     open: boolean;
-    /** 每個短篇嘅進度（聽完嘅已經排最底） */
-    summaries: readonly ArcSummary[];
+    /** 分好組嘅短篇（播放中 → 新上架 → 未聽完 → 已聽完，見 arcGroups） */
+    groups: readonly { group: ArcGroup; items: readonly ArcSummary[] }[];
     /** 載入緊嘅一集（屬於邊個短篇就框住嗰行） */
     current: SeriesEpisode | undefined;
     isPlaying: boolean;
@@ -24,6 +25,13 @@ interface ArcSheetProps {
 const CLOSE_ICON_SIZE = 20;
 const PLAY_ICON_SIZE = 18;
 const CHECK_ICON_SIZE = 14;
+
+const GROUP_TITLES = {
+    playing: 'drama.groupPlaying',
+    new: 'drama.groupNew',
+    unfinished: 'drama.groupUnfinished',
+    done: 'drama.groupDone',
+} as const satisfies Record<ArcGroup, string>;
 
 /** 行入面細字：播緊 / 聽到邊 / 下一集 / 未聽 / 聽完 */
 const arcStatus = (s: ArcSummary, current: SeriesEpisode | undefined): string => {
@@ -43,6 +51,21 @@ const playLabel = (s: ArcSummary, isCurrent: boolean, isPlaying: boolean): strin
     return t('drama.arcPlayResume', { arc: s.arc, no: s.resume.no });
 };
 
+/** 右邊掣個 icon：播緊 ❚❚；聽完 ↺ 重聽；其他 ▶ */
+const PlayButtonIcon = ({
+    summary,
+    isCurrent,
+    isPlaying,
+}: {
+    summary: ArcSummary;
+    isCurrent: boolean;
+    isPlaying: boolean;
+}) => {
+    if (isCurrent && isPlaying) return <PauseIcon size={PLAY_ICON_SIZE} />;
+    if (!isCurrent && summary.state === 'done') return <RestartIcon size={PLAY_ICON_SIZE} />;
+    return <PlayIcon size={PLAY_ICON_SIZE} />;
+};
+
 type RowProps = Pick<ArcSheetProps, 'current' | 'isPlaying' | 'onPick' | 'onPlay'> & {
     summary: ArcSummary;
 };
@@ -50,8 +73,9 @@ type RowProps = Pick<ArcSheetProps, 'current' | 'isPlaying' | 'onPick' | 'onPlay
 /** 一行：左邊撳轉短篇（圓環 + 名 + 進度），右邊播放掣 */
 const ArcRow = ({ summary: s, current, isPlaying, onPick, onPlay }: RowProps) => {
     const isCurrent = current?.arc === s.arc;
-    const status = arcStatus(s, current);
-    const showPause = isCurrent && isPlaying;
+    const status = [arcStatus(s, current), s.isNew && t('drama.arcNewLabel')]
+        .filter(Boolean)
+        .join('，');
     return (
         <li className={`${styles.row} ${isCurrent ? styles.current : ''}`}>
             <button
@@ -78,7 +102,10 @@ const ArcRow = ({ summary: s, current, isPlaying, onPick, onPlay }: RowProps) =>
                     )}
                 </span>
                 <span className={styles.text} aria-hidden="true">
-                    <span className={styles.name}>{s.arc}</span>
+                    <span className={styles.name}>
+                        {s.arc}
+                        {s.isNew && <NewBadge size="sm" className={styles.fresh} />}
+                    </span>
                     <span className={styles.status}>{status}</span>
                 </span>
             </button>
@@ -88,11 +115,7 @@ const ArcRow = ({ summary: s, current, isPlaying, onPick, onPlay }: RowProps) =>
                 aria-label={playLabel(s, isCurrent, isPlaying)}
                 onClick={() => onPlay(s)}
             >
-                {showPause ? (
-                    <PauseIcon size={PLAY_ICON_SIZE} />
-                ) : (
-                    <PlayIcon size={PLAY_ICON_SIZE} />
-                )}
+                <PlayButtonIcon summary={s} isCurrent={isCurrent} isPlaying={isPlaying} />
             </button>
         </li>
     );
@@ -117,16 +140,38 @@ const useSheetFocus = (open: boolean, onClose: () => void) => {
     return sheetRef;
 };
 
+/** 一組：細標題（播放中 / 新上架 / 未聽完 / 已聽完）+ 嗰組嘅短篇 */
+const ArcGroupBlock = ({
+    group,
+    items,
+    ...rowProps
+}: ArcSheetProps['groups'][number] & Omit<RowProps, 'summary'>) => {
+    const headingId = useId();
+    return (
+        <section aria-labelledby={headingId}>
+            <h3 id={headingId} className={styles.groupTitle}>
+                {t(GROUP_TITLES[group])}
+            </h3>
+            <ul className={styles.groupList}>
+                {items.map((s) => (
+                    <ArcRow key={s.arc} summary={s} {...rowProps} />
+                ))}
+            </ul>
+        </section>
+    );
+};
+
 /**
- * 「全部短篇」一覽表（底部彈出）：每個短篇一行，圓環 = 聽完幾多集，聽完嘅排最底；
- * 撳行轉去嗰個短篇，撳右邊掣直接播（續聽 / 未收聽 / 重聽）。
- * 見 design/previews/drama-progress-preview.html ① 方案 B
+ * 全集一覽表（底部彈出）：分組 播放中 → 新上架 → 未聽完 → 已聽完，圓環 = 聽完幾多集；
+ * 撳行轉去嗰個短篇，撳右邊掣直接播（續聽 / 未收聽 / ↺ 重聽）。
+ * 見 design/previews/drama-flow-preview.html
  */
-export const ArcSheet = ({ open, summaries, onClose, ...rowProps }: ArcSheetProps) => {
+export const ArcSheet = ({ open, groups, onClose, ...rowProps }: ArcSheetProps) => {
     const titleId = useId();
     const sheetRef = useSheetFocus(open, onClose);
     if (!open) return null;
-    const done = summaries.filter((s) => s.state === 'done').length;
+    const all = groups.flatMap((g) => g.items);
+    const done = all.filter((s) => s.state === 'done').length;
     return (
         <div className={styles.overlay}>
             <div className={styles.backdrop} data-testid="arc-sheet-backdrop" onClick={onClose} />
@@ -144,7 +189,7 @@ export const ArcSheet = ({ open, summaries, onClose, ...rowProps }: ArcSheetProp
                         {t('drama.sheetTitle')}
                     </h2>
                     <span className={styles.summary}>
-                        {t('drama.sheetDone', { done, total: summaries.length })}
+                        {t('drama.sheetDone', { done, total: all.length })}
                     </span>
                     <button
                         type="button"
@@ -155,11 +200,11 @@ export const ArcSheet = ({ open, summaries, onClose, ...rowProps }: ArcSheetProp
                         <CloseIcon size={CLOSE_ICON_SIZE} />
                     </button>
                 </header>
-                <ul className={styles.list}>
-                    {summaries.map((s) => (
-                        <ArcRow key={s.arc} summary={s} {...rowProps} />
+                <div className={styles.list}>
+                    {groups.map((g) => (
+                        <ArcGroupBlock key={g.group} {...g} {...rowProps} />
                     ))}
-                </ul>
+                </div>
             </section>
         </div>
     );

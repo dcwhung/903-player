@@ -42,34 +42,11 @@
     transform: translate(-50%, -50%);
 }
 
-/*
- * 「New」標籤：左上角奶油色膠囊（主頁強調色）+ 前面一粒圓點，任何節目圖上都睇得到
- * （見 design/previews/home-today-indicator-preview.html 方案 B）
- */
+/* 「新」（NewBadge）喺左上角 */
 .newBadge {
     position: absolute;
     top: var(--space-2);
     left: var(--space-2);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    padding: var(--new-badge-pad-block) var(--space-2) var(--new-badge-pad-block)
-        var(--new-badge-pad-start);
-    border-radius: var(--radius-full);
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    font-size: var(--font-size-2xs);
-    font-weight: 700;
-    line-height: var(--new-badge-line);
-    box-shadow: var(--shadow-new-badge);
-}
-
-.newBadge::before {
-    width: var(--new-badge-dot);
-    height: var(--new-badge-dot);
-    border-radius: var(--radius-full);
-    background: currentColor;
-    content: '';
 }
 
 /* 橫版：格大小跟 ShowGrid 嘅欄 × 行（填滿畫面），節目圖 cover 裁走少少邊（LANDSCAPE_QUERY） */

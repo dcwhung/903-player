@@ -20,7 +20,7 @@ import { useHomeArrival } from '../hooks/useHomeArrival';
 import { useHomeTab } from '../hooks/useHomeTab';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useMiniPlayer } from '../hooks/useMiniPlayer';
-import { useNewDramaIds } from '../hooks/useNewDramaIds';
+import { useDramaNewLabels } from '../hooks/useDramaNewLabels';
 import { useNewShowIds } from '../hooks/useNewShowIds';
 import { useStartDrama } from '../hooks/useStartDrama';
 import { useStartPlayback } from '../hooks/useStartPlayback';
@@ -69,14 +69,14 @@ const dramaMeta = (drama: DramaConfig): string =>
 const useDramaItems = (): DramaShelfItem[] => {
     const navigate = useNavigate();
     const startDrama = useStartDrama();
-    const newDramaIds = useNewDramaIds();
+    const newLabels = useDramaNewLabels();
     const continueOf = useDramaContinue();
     return enabledDramas().map((drama) => ({
         id: drama.id,
         name: drama.name,
         art: DRAMA_TILE_ART[drama.id],
         meta: dramaMeta(drama),
-        isNew: newDramaIds.has(drama.id),
+        newLabel: newLabels.get(drama.id),
         resume: continueOf(drama),
         onOpen: () => {
             startDrama(drama);

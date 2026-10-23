@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { toPercent } from '../../utils/ratio';
 import { PlayIcon } from '../icons/icons';
+import { NewBadge } from '../NewBadge/NewBadge';
 import { t } from '../../i18n/t';
 import styles from './DramaShelf.module.css';
 
@@ -9,9 +10,10 @@ export interface DramaShelfItem {
     name: string;
     /** 劇集原圖（16:9，已經有劇名） */
     art: string;
-    /** 右下角細字（例如「10 個短篇」/「每日更新」） */
+    /** 角落細字（例如「10 個短篇」/「每日更新」）：平時右下，有「繼續收聽」就讓去右上 */
     meta: string;
-    isNew: boolean;
+    /** 有新嘢先有：左上角出「新」，讀屏講呢句（例如「有新短篇」/「今日有新一集」） */
+    newLabel?: string;
     /** 聽過先有：繼續收聽邊集（「短篇 · 第 N 集 集名」）同嗰集聽到幾多（0–1） */
     resume?: { label: string; ratio: number };
     onOpen: () => void;
@@ -25,10 +27,10 @@ interface DramaShelfProps {
     leading?: ReactNode;
 }
 
-/** 讀屏名：劇名（+ 繼續收聽邊集）（+ 今日有新一集） */
-const tileLabel = ({ name, isNew, resume }: DramaShelfItem): string => {
+/** 讀屏名：劇名（+ 繼續收聽邊集）（+ 有新嘢） */
+const tileLabel = ({ name, newLabel, resume }: DramaShelfItem): string => {
     const base = resume ? t('drama.tileContinue', { name, label: resume.label }) : name;
-    return isNew ? t('home.showNew', { name: base }) : base;
+    return newLabel ? t('drama.tileNew', { name: base, label: newLabel }) : base;
 };
 
 /** 圖底「繼續收聽」條：短篇 · 集數、進度線、▶（成格都係掣，呢度只係顯示） */
@@ -54,12 +56,12 @@ const DramaTile = (item: DramaShelfItem) => (
         onClick={item.onOpen}
     >
         <img className={styles.art} src={item.art} alt="" />
-        {item.isNew && (
-            <span className={styles.newBadge} aria-hidden="true">
-                {t('home.newBadge')}
-            </span>
-        )}
-        <span className={styles.meta} aria-hidden="true">
+        {item.newLabel && <NewBadge className={styles.newBadge} />}
+        <span
+            className={`${styles.meta} ${item.resume ? styles.metaTop : ''}`}
+            data-corner={item.resume ? 'top' : 'bottom'}
+            aria-hidden="true"
+        >
             {item.meta}
         </span>
         {item.resume && <ContinueStrip {...item.resume} />}

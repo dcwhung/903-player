@@ -14,6 +14,8 @@ export interface SeriesEpisode {
     no: number;
     /** 集名；檔名冇集名嘅集數冇 */
     title?: string;
+    /** 呢個短篇上架日子（YYYY-MM-DD）；冇就當舊短篇（唔出「新」） */
+    addedAt?: string;
 }
 
 /** 每日劇集嘅一集 */
