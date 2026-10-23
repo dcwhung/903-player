@@ -38,7 +38,7 @@ describe('dramaCatalog', () => {
             '好朋友手牽手',
             '小苦妹撲水',
             '我們都在會考中成長',
-            '游乾水',
+            '游亁水',
             '苦榮去做GYM',
             '青春期',
             '青春期眞神奇',
@@ -57,12 +57,10 @@ describe('dramaCatalog', () => {
         );
     });
 
-    it('uses the R2 folder 游乾水 but keeps the file name 游亁水 as uploaded', () => {
-        const first = seriesEpisodesOf('chisee').find((e) => e.arc === '游乾水');
-        expect(decodeURIComponent(first?.url ?? '')).toBe(
-            'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/芝-See-菇-Bi-Family/游乾水/01 - 游亁水 - 第一集.m4a',
+    it('builds the exact R2 url of a known-good sample (游亁水, U+4E81)', () => {
+        const first = seriesEpisodesOf('chisee').find((e) => e.arc === '游亁水');
+        expect(first?.url).toBe(
+            'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/%E8%8A%9D-See-%E8%8F%87-Bi-Family/%E6%B8%B8%E4%BA%81%E6%B0%B4/01%20-%20%E6%B8%B8%E4%BA%81%E6%B0%B4%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a',
         );
-        // 每段路徑都要 encode（空格、中文、全形字）
-        expect(first?.url).not.toMatch(/ /);
     });
 });

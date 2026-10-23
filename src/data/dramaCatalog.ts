@@ -23,30 +23,25 @@ const FILE_NO_WIDTH = 2;
  * 原檔名：「01 - 短篇名 - 第一集.m4a」，有集名就加「 - 集名」
  * （例如「04 - Ｘ時mas時小提議 - 第四集 - 認認真真搵返個人.m4a」）
  */
-const chiseeFile = (fileArc: string, no: number, title: string | undefined): string =>
+const chiseeFile = (arc: string, no: number, title: string | undefined): string =>
     [
         String(no).padStart(FILE_NO_WIDTH, '0'),
-        fileArc,
+        arc,
         `第${CHINESE_NUMERALS[no - 1] ?? no}集`,
         ...(title ? [title] : []),
     ].join(' - ') + '.m4a';
 
 /**
  * 芝-See-菇-Bi-Family 短篇（按清單次序）：每集嘅集名，冇集名係 null。
- * arc = R2 folder 名（亦係畫面顯示嘅短篇名，照原寫法：全形「Ｘ」、「青春期眞神奇」）；
- * fileArc = 檔名入面嘅短篇名，同 folder 唔同先要寫（「游乾水」folder 入面嘅檔名係「游亁水」）
+ * 短篇名 = R2 folder 名 = 檔名入面嘅名，照原寫法（全形「Ｘ」、「游亁水」、「青春期眞神奇」）
  */
-const CHISEE_ARCS: readonly {
-    arc: string;
-    fileArc?: string;
-    titles: readonly (string | null)[];
-}[] = [
+const CHISEE_ARCS: readonly { arc: string; titles: readonly (string | null)[] }[] = [
     { arc: '你生日所以我生日', titles: [null, null, null] },
     { arc: '大妒忌', titles: [null, null, null] },
     { arc: '好朋友手牽手', titles: ['好傾朋友', '朋友不同', '朋友性別', '朋友第一'] },
     { arc: '小苦妹撲水', titles: [null, null, null, null] },
     { arc: '我們都在會考中成長', titles: ['能源的故事', '舊底的故事'] },
-    { arc: '游乾水', fileArc: '游亁水', titles: [null, null, null, null] },
+    { arc: '游亁水', titles: [null, null, null, null] },
     { arc: '苦榮去做GYM', titles: [null, null, null, null] },
     { arc: '青春期', titles: [null, null, null, null] },
     { arc: '青春期眞神奇', titles: ['男女先後', '多少問題', '時間長短'] },
@@ -57,7 +52,7 @@ const CHISEE_ARCS: readonly {
 ];
 
 const chiseeEpisodes = (): SeriesEpisode[] =>
-    CHISEE_ARCS.flatMap(({ arc, fileArc = arc, titles }) =>
+    CHISEE_ARCS.flatMap(({ arc, titles }) =>
         titles.map((title, i): SeriesEpisode => {
             const no = i + 1;
             return {
@@ -66,7 +61,7 @@ const chiseeEpisodes = (): SeriesEpisode[] =>
                 url: `${DRAMA_AUDIO_BASE}/${encodePath([
                     CHISEE_FOLDER,
                     arc,
-                    chiseeFile(fileArc, no, title ?? undefined),
+                    chiseeFile(arc, no, title ?? undefined),
                 ])}`,
                 arc,
                 no,
