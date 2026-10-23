@@ -15,6 +15,7 @@ import { HOME_THEME, SHOW_THEMES } from '../config/showThemes';
 import { SHOWS } from '../config/shows';
 import { seriesEpisodesOf } from '../data/dramaCatalog';
 import { useRecordings } from '../data/useRecordings';
+import { useDramaContinue } from '../hooks/useDramaContinue';
 import { useHomeArrival } from '../hooks/useHomeArrival';
 import { useHomeTab } from '../hooks/useHomeTab';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -69,12 +70,14 @@ const useDramaItems = (): DramaShelfItem[] => {
     const navigate = useNavigate();
     const startDrama = useStartDrama();
     const newDramaIds = useNewDramaIds();
+    const continueOf = useDramaContinue();
     return enabledDramas().map((drama) => ({
         id: drama.id,
         name: drama.name,
         art: DRAMA_TILE_ART[drama.id],
         meta: dramaMeta(drama),
         isNew: newDramaIds.has(drama.id),
+        resume: continueOf(drama),
         onOpen: () => {
             startDrama(drama);
             navigate(`/drama/${drama.id}`);

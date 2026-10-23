@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { ArcPicker } from '../components/ArcPicker/ArcPicker';
+import { ArcSheet } from '../components/ArcSheet/ArcSheet';
 import { EpisodeList } from '../components/EpisodeList/EpisodeList';
 import { PageHeader } from '../components/PageHeader/PageHeader';
 import { PlayerGauge } from '../components/PlayerPanel/PlayerGauge';
@@ -74,8 +75,9 @@ const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
  * chips 喺清單嗰欄：直版次序同節目頁一樣（唱片 → 60px 一組 → 清單），橫版跟清單去右欄
  */
 const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
-    const { theme, current, arcs, arc, pickArc, items, pressEpisode } = useSeriesDramaPage(drama);
-    const { duration } = usePlayer();
+    const { theme, current, arcs, arc, pickArc, items, pressEpisode, sheet } =
+        useSeriesDramaPage(drama);
+    const { duration, isPlaying, recording } = usePlayer();
     const label = arcPickerLabel(duration, current);
     return (
         <ThemeScope theme={theme}>
@@ -95,9 +97,19 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
                         playing={current?.arc}
                         label={label}
                         onPick={pickArc}
+                        onOpenAll={sheet.openSheet}
                     />
                     <EpisodeList items={items} onSelect={pressEpisode} labels="title" />
                 </div>
+                <ArcSheet
+                    open={sheet.open}
+                    summaries={sheet.summaries}
+                    current={recording === current ? current : undefined}
+                    isPlaying={isPlaying}
+                    onPick={sheet.pick}
+                    onPlay={sheet.play}
+                    onClose={sheet.close}
+                />
             </main>
         </ThemeScope>
     );

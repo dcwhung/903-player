@@ -1,0 +1,176 @@
+/*
+ * 「全部短篇」一覽表：成頁（ThemeScope .scope）上面嘅遮罩 + 底部彈出嘅表。
+ * 表最高佔畫面 --arc-sheet-max-height，入面清單自己捲；底部讓開 home indicator
+ */
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--arc-sheet-z);
+}
+
+.backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--arc-sheet-scrim);
+}
+
+.sheet {
+    position: absolute;
+    inset: auto 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-width: var(--page-max-width);
+    max-height: var(--arc-sheet-max-height);
+    margin: 0 auto;
+    padding: var(--space-2) var(--space-4) 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-floating);
+    outline: none;
+}
+
+.grab {
+    flex-shrink: 0;
+    align-self: center;
+    width: var(--arc-sheet-grab-width);
+    height: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--color-track);
+}
+
+.header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.title {
+    flex: 1;
+    color: var(--color-title);
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+}
+
+.summary {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text);
+}
+
+/* 唯一捲動嘅 panel */
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-height: 0;
+    margin: 0;
+    padding: 0 0 calc(env(safe-area-inset-bottom) + var(--space-3));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    list-style: none;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-right: var(--space-2);
+    border-radius: var(--radius-md);
+}
+
+/* 載入緊嗰個短篇：淺底 + 強調色框 */
+.current {
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 2px var(--color-accent-fill);
+}
+
+.pick {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    min-height: var(--arc-sheet-row-height);
+    padding: var(--space-2);
+    border: none;
+    background: transparent;
+    text-align: left;
+}
+
+/* 圓環：已聽完集數佔幾多（--arc-ring-fill），中間寫「1/4」；聽完變實色 + 剔 */
+.ring {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--arc-sheet-ring);
+    height: var(--arc-sheet-ring);
+    border-radius: var(--radius-full);
+    background:
+        radial-gradient(closest-side, var(--color-bg) 72%, transparent 74%),
+        conic-gradient(var(--color-accent-fill) var(--arc-ring-fill), var(--color-track) 0);
+    color: var(--color-accent-text);
+    font-size: var(--font-size-2xs);
+    font-weight: 700;
+}
+
+.current .ring {
+    background:
+        radial-gradient(closest-side, var(--color-surface) 72%, transparent 74%),
+        conic-gradient(var(--color-accent-fill) var(--arc-ring-fill), var(--color-track) 0);
+}
+
+.ring.done {
+    background: var(--color-title);
+    color: var(--color-bg);
+}
+
+.text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.name {
+    overflow: hidden;
+    color: var(--color-text);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.status {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.current .status {
+    color: var(--color-accent-text);
+}
+
+.play {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--color-accent-fill);
+    color: var(--color-on-accent);
+}

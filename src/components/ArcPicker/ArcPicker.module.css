@@ -86,3 +86,16 @@
     background: var(--color-accent-text);
     content: '';
 }
+
+/* 「全部」chip：深色實心，同短篇 chips 分開 */
+.all {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--color-bg);
+    font-weight: 700;
+}
+
+.all::before {
+    background: var(--color-text);
+}

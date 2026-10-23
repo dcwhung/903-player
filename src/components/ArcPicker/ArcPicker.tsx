@@ -2,6 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import { t } from '../../i18n/t';
 import { scrollBehavior } from '../../utils/motion';
 import { scrollChipToCentre } from '../../utils/scroll';
+import { ListIcon } from '../icons/icons';
 import styles from './ArcPicker.module.css';
 
 interface ArcPickerProps {
@@ -13,13 +14,24 @@ interface ArcPickerProps {
     /** chips 上面嗰行（例如「現正播放：第 2 集 你洽我」） */
     label: string;
     onPick: (arc: string) => void;
+    /** 「全部」chip：打開「全部短篇」一覽表 */
+    onOpenAll: () => void;
 }
+
+const LIST_ICON_SIZE = 14;
 
 /**
  * 短篇劇集頁唱片下面：現正播放標籤 + 一行短篇 chips（左右掃），揀短篇換下面嘅集數清單。
  * 高度同節目頁嘅「現正播放」+ 日子條一樣（tokens.css 嘅播放器高度計法唔使改）
  */
-export const ArcPicker = ({ arcs, selected, playing, label, onPick }: ArcPickerProps) => {
+export const ArcPicker = ({
+    arcs,
+    selected,
+    playing,
+    label,
+    onPick,
+    onOpenAll,
+}: ArcPickerProps) => {
     const rowRef = useRef<HTMLDivElement>(null);
     const playingId = useId();
 
@@ -34,6 +46,16 @@ export const ArcPicker = ({ arcs, selected, playing, label, onPick }: ArcPickerP
         <div className={styles.group}>
             <span className={styles.label}>{label}</span>
             <div ref={rowRef} className={styles.chips} role="group" aria-label={t('drama.arcs')}>
+                <button
+                    type="button"
+                    className={`${styles.chip} ${styles.all}`}
+                    aria-haspopup="dialog"
+                    aria-label={t('drama.allArcsLabel', { count: arcs.length })}
+                    onClick={onOpenAll}
+                >
+                    <ListIcon size={LIST_ICON_SIZE} />
+                    {t('drama.allArcs', { count: arcs.length })}
+                </button>
                 {arcs.map((arc) => {
                     const isPlayingElsewhere = arc === playing && arc !== selected;
                     return (

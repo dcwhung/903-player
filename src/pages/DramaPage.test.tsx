@@ -44,7 +44,8 @@ describe('DramaPage', () => {
             const group = screen.getByRole('group', { name: '短篇' }).parentElement as HTMLElement;
             expect(within(group).getByText('連線中…')).toBeInTheDocument();
             act(() => audio.emitMetadata(1200));
-            expect(arcChips()).toHaveLength(10);
+            // 「全部」+ 10 個短篇
+            expect(arcChips()).toHaveLength(11);
             expect(screen.getByRole('button', { name: 'Ｘ時mas時小提議' })).toHaveAttribute(
                 'aria-pressed',
                 'true',
@@ -86,6 +87,58 @@ describe('DramaPage', () => {
         const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole('button');
         expect(rows[0]).toHaveAccessibleName('播放 第 1 集，已收聽');
         expect(rows[1]).toHaveAttribute('aria-current', 'true');
+    });
+
+    describe('全部短篇 overview', () => {
+        const BIRTHDAY = CHISEE.filter((e) => e.arc === '你生日所以我生日');
+        const FRIENDS = CHISEE.filter((e) => e.arc === '好朋友手牽手');
+
+        it('lists every 短篇 with finished ones last, and plays one from its row button', async () => {
+            BIRTHDAY.forEach((e) => saveProgress(e.url, 990, 1000));
+            saveProgress(FRIENDS[0]?.url ?? '', 990, 1000);
+            vi.setSystemTime(new Date('2026-10-23T08:05:00Z')); // 最近聽緊嘅係好朋友手牽手第 2 集
+            saveProgress(FRIENDS[1]?.url ?? '', 400, 1000);
+            const { audio } = openDrama('chisee');
+            await waitFor(() => expect(audio.src).toBe(FRIENDS[1]?.url));
+
+            await userEvent.click(screen.getByRole('button', { name: '全部短篇（10 個）' }));
+
+            const dialog = screen.getByRole('dialog', { name: '全部短篇' });
+            const picks = within(dialog)
+                .getAllByRole('button')
+                .filter((b) => b.dataset.role === 'pick');
+            expect(picks).toHaveLength(10);
+            expect(picks[0]).toHaveAccessibleName('大妒忌，未聽 · 3 集');
+            expect(picks.at(-1)).toHaveAccessibleName('你生日所以我生日，聽完 · 3 集');
+            expect(within(dialog).getByText('聽完 1 / 10 個')).toBeInTheDocument();
+
+            await userEvent.click(
+                within(dialog).getByRole('button', { name: '播放 大妒忌 第 1 集' }),
+            );
+
+            const DAJEALOUS = CHISEE.find((e) => e.arc === '大妒忌' && e.no === 1);
+            await waitFor(() => expect(audio.src).toBe(DAJEALOUS?.url));
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', { name: '大妒忌' })).toHaveAttribute(
+                'aria-pressed',
+                'true',
+            );
+        });
+
+        it('switches the list to a 短篇 picked by its row, without changing playback', async () => {
+            const { audio } = openDrama('chisee');
+            await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
+            await userEvent.click(screen.getByRole('button', { name: '全部短篇（10 個）' }));
+
+            await userEvent.click(screen.getByRole('button', { name: '青春期，未聽 · 4 集' }));
+
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', { name: '青春期' })).toHaveAttribute(
+                'aria-pressed',
+                'true',
+            );
+            expect(audio.src).toBe(CHISEE[0]?.url);
+        });
     });
 
     it('treats the disabled 18 樓 C 座 as not found', () => {

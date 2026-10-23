@@ -13,8 +13,9 @@ import {
     pickSeriesStart,
     seriesArcs,
 } from '../selectors/dramas';
+import { arcSummaries, type ArcSummary } from '../selectors/arcProgress';
 import { getProgressMap } from '../services/progressStore';
-import type { DramaEpisode } from '../types/drama';
+import type { DramaEpisode, SeriesEpisode } from '../types/drama';
 import { isDramaEpisode, type Track } from '../types/track';
 import { hkToday } from '../utils/date';
 import { toDailyItems, toSeriesItems } from './dramaItems';
@@ -99,6 +100,32 @@ const useViewedArc = (playingArc: string | undefined) => {
     return { arc: picked ?? playingArc, pickArc: setPicked };
 };
 
+/**
+ * 「全部短篇」一覽表：開關、每個短篇進度（打開嗰陣重新讀 localStorage）、
+ * 撳行轉短篇、撳右邊掣播（播緊嗰個短篇就暫停 / 繼續）
+ */
+const useArcSheet = (
+    episodes: readonly SeriesEpisode[],
+    loaded: SeriesEpisode | null,
+    pickArc: (arc: string) => void,
+) => {
+    const player = usePlayer();
+    const [open, setOpen] = useState(false);
+    const progressMap = useRefreshedOn(getProgressMap, [player.watchedRevision, loaded?.url, open]);
+    const summaries = useMemo(() => arcSummaries(episodes, progressMap), [episodes, progressMap]);
+    const close = () => setOpen(false);
+    const pick = (arc: string) => {
+        pickArc(arc);
+        close();
+    };
+    const play = (summary: ArcSummary) => {
+        if (loaded?.arc === summary.arc) void player.toggle();
+        else void player.load(summary.resume, { autoplay: true });
+        pick(summary.arc);
+    };
+    return { open, summaries, openSheet: () => setOpen(true), close, pick, play };
+};
+
 /** 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 短篇 chips + 嗰個短篇嘅集數 */
 export const useSeriesDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
@@ -120,5 +147,6 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
         items: toSeriesItems(shown, ctx),
         selectEpisode,
         pressEpisode,
+        sheet: useArcSheet(episodes, loaded, pickArc),
     };
 };

@@ -285,6 +285,28 @@ describe('HomePage', () => {
             expect(screen.queryByRole('navigation', { name: '節目' })).not.toBeInTheDocument();
         });
 
+        it('shows the 短篇 count top-right until something has been played', async () => {
+            renderWithProviders(<HomePage />);
+            const nav = await openDramas();
+
+            expect(within(nav).getByText('10 個短篇')).toBeInTheDocument();
+            expect(within(nav).queryByText('繼續收聽')).not.toBeInTheDocument();
+        });
+
+        it('offers 繼續收聽 with the episode to continue and how far it got', async () => {
+            const friends = seriesEpisodesOf('chisee').filter((e) => e.arc === '好朋友手牽手');
+            saveProgress(friends[1]?.url ?? '', 250, 1000);
+            renderWithProviders(<HomePage />);
+            const nav = await openDramas();
+
+            const tile = within(nav).getByRole('button', {
+                name: '芝See菇Bi Family，繼續收聽 好朋友手牽手 · 第 2 集 朋友不同',
+            });
+            expect(within(tile).getByText('繼續收聽')).toBeInTheDocument();
+            expect(within(tile).getByText('10 個短篇')).toBeInTheDocument();
+            expect(tile.querySelector('[data-continue-fill]')).toHaveStyle({ width: '25%' });
+        });
+
         it('starts the drama and opens its page when its tile is tapped', async () => {
             const { audio } = renderWithProviders(<HomePage />);
             const nav = await openDramas();

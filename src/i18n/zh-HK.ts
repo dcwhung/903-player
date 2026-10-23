@@ -102,6 +102,9 @@ export const zhHK = {
         // 主頁劇集格右下角
         arcCount: '{count} 個短篇',
         daily: '每日更新',
+        // 主頁劇集格底部（聽過先出）
+        continue: '繼續收聽',
+        tileContinue: '{name}，繼續收聽 {label}',
         // 短篇劇集：清單每行細字、mini player / 鎖屏副標題
         episodeNo: '第 {no} 集',
         seriesLabel: '{arc} · 第 {no} 集 {title}',
@@ -114,6 +117,23 @@ export const zhHK = {
         arcs: '短篇',
         // 睇緊其他短篇時，播緊嗰個短篇嘅 chip
         arcPlaying: '播緊',
+        // 「全部短篇」一覽表（chips 最前嘅掣打開）
+        allArcs: '全部 {count}',
+        allArcsLabel: '全部短篇（{count} 個）',
+        sheetTitle: '全部短篇',
+        sheetDone: '聽完 {done} / {total} 個',
+        sheetClose: '關閉',
+        arcPlayingEpisode: '播緊第 {no} 集',
+        arcResumeAt: '聽到第 {no} 集 {time}',
+        arcNext: '下一集係第 {no} 集',
+        arcNew: '未聽 · {count} 集',
+        arcDone: '聽完 · {count} 集',
+        arcRow: '{arc}，{status}',
+        arcPlayNew: '播放 {arc} 第 1 集',
+        arcPlayResume: '續聽 {arc} 第 {no} 集',
+        arcPlayAgain: '由第 1 集重聽 {arc}',
+        arcPause: '暫停 {arc}',
+        arcPlay: '播放 {arc}',
         nowPlaying: '現正播放：{label}',
         nowPlayingShort: '第 {no} 集 {title}',
     },

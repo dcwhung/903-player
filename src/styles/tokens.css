@@ -97,6 +97,13 @@
     --date-strip-empty-opacity: 0.35;
     /* 短篇劇集頁嘅短篇 chip：睇落嘅高度（撳得到範圍係成行 --date-strip-height） */
     --arc-chip-height: calc(32px * var(--ui-scale));
+    /* 「全部短篇」一覽表：最高佔畫面幾多、遮罩、拉柄闊、每行高、圓環大細、疊喺頁面上面嘅層 */
+    --arc-sheet-max-height: 78%;
+    --arc-sheet-scrim: rgb(0 0 0 / 40%);
+    --arc-sheet-grab-width: calc(40px * var(--ui-scale));
+    --arc-sheet-row-height: calc(52px * var(--ui-scale));
+    --arc-sheet-ring: calc(34px * var(--ui-scale));
+    --arc-sheet-z: 10;
     /*
      * 集數清單行頭欄闊：節目日子（17/10 + 星期六）；每日劇集日子 + 「重溫」標籤；
      * 短篇劇集集名（最長「認認真真搵返個人」8 個字，佔清單四成）
@@ -149,6 +156,11 @@
     /* 主頁「廣播劇」tab 嘅劇集格（一行一套） */
     --drama-tile-aspect-w: 2;
     --drama-tile-aspect-h: 1;
+    /* 劇集格「繼續收聽」條：深啡漸變底、進度線底、芝See 橙（▶ 同進度）、▶ 上面嘅字 */
+    --drama-continue-scrim: rgb(43 26 12 / 85%);
+    --drama-continue-track: rgb(255 255 255 / 30%);
+    --drama-continue-fill: #f7901e;
+    --drama-continue-on-fill: #2b1a0c;
     /* 主頁橫額下面「節目 / 廣播劇」切換：膠囊底色、內邊、每個掣高度（觸控高度） */
     --home-tab-track: rgb(0 0 0 / 18%);
     --home-tab-inset: calc(3px * var(--ui-scale));

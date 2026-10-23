@@ -17,12 +17,13 @@ describe('ArcPicker', () => {
                 playing="X時mas時小提議"
                 label="現正播放：第 2 集 你洽我"
                 onPick={() => {}}
+                onOpenAll={() => {}}
             />,
         );
 
         expect(screen.getByText('現正播放：第 2 集 你洽我')).toBeInTheDocument();
         const group = screen.getByRole('group', { name: '短篇' });
-        expect(group.querySelectorAll('button')).toHaveLength(3);
+        expect(group.querySelectorAll('button')).toHaveLength(4);
         expect(screen.getByRole('button', { name: 'X時mas時小提議' })).toHaveAttribute(
             'aria-pressed',
             'true',
@@ -42,6 +43,7 @@ describe('ArcPicker', () => {
                 playing="X時mas時小提議"
                 label="現正播放"
                 onPick={onPick}
+                onOpenAll={() => {}}
             />,
         );
 
@@ -58,6 +60,7 @@ describe('ArcPicker', () => {
                 playing="X時mas時小提議"
                 label="現正播放"
                 onPick={() => {}}
+                onOpenAll={() => {}}
             />,
         );
 
@@ -75,9 +78,30 @@ describe('ArcPicker', () => {
                 playing="大妒忌"
                 label="現正播放"
                 onPick={() => {}}
+                onOpenAll={() => {}}
             />,
         );
 
         expect(HTMLElement.prototype.scrollTo).toHaveBeenCalled();
+    });
+
+    it('starts the row with a 全部 chip that opens the 短篇 overview', async () => {
+        const onOpenAll = vi.fn();
+        render(
+            <ArcPicker
+                arcs={ARCS}
+                selected="大妒忌"
+                playing="大妒忌"
+                label="現正播放"
+                onPick={() => {}}
+                onOpenAll={onOpenAll}
+            />,
+        );
+
+        const all = screen.getByRole('button', { name: '全部短篇（3 個）' });
+        expect(screen.getByRole('group', { name: '短篇' }).querySelector('button')).toBe(all);
+        expect(all).toHaveAttribute('aria-haspopup', 'dialog');
+        await userEvent.click(all);
+        expect(onOpenAll).toHaveBeenCalled();
     });
 });

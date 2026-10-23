@@ -67,11 +67,11 @@
     content: '';
 }
 
-/* 右下角：同橫額版本號一樣半透明深底白字（任何劇集圖上都睇得清） */
+/* 右上角（短篇數 / 每日更新）：同橫額版本號一樣半透明深底白字（任何劇集圖上都睇得清） */
 .meta {
     position: absolute;
+    top: var(--space-2);
     right: var(--space-2);
-    bottom: var(--space-2);
     padding: var(--new-badge-pad-block) var(--space-2);
     border-radius: var(--radius-full);
     background: var(--version-badge-bg);
@@ -79,6 +79,64 @@
     font-size: var(--font-size-2xs);
     font-weight: 500;
     line-height: var(--new-badge-line);
+}
+
+/*
+ * 圖底「繼續收聽」：由透明漸變到深啡，白字（深底上對比夠），右邊一粒強調色 ▶；
+ * 文字讓開 ▶ 嘅位
+ */
+.continue {
+    position: absolute;
+    inset: auto 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--space-6) calc(var(--touch-target) + var(--space-4)) var(--space-3) var(--space-3);
+    background: linear-gradient(transparent, var(--drama-continue-scrim));
+    color: var(--version-badge-text);
+    text-align: left;
+}
+
+.continueTitle {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+}
+
+.continueLabel {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: var(--font-size-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.continueBar {
+    width: 100%;
+    height: var(--space-1);
+    margin-top: var(--space-1);
+    overflow: hidden;
+    border-radius: var(--radius-full);
+    background: var(--drama-continue-track);
+}
+
+.continueBar > span {
+    display: block;
+    height: 100%;
+    background: var(--drama-continue-fill);
+}
+
+.continuePlay {
+    position: absolute;
+    right: var(--space-3);
+    bottom: var(--space-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border-radius: var(--radius-full);
+    background: var(--drama-continue-fill);
+    color: var(--drama-continue-on-fill);
 }
 
 /* 橫版：並排（條件同 layout.ts 嘅 LANDSCAPE_QUERY 一樣） */
