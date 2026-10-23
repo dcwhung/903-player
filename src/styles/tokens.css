@@ -350,6 +350,8 @@
     --color-text: var(--theme-text);
     --color-text-secondary: var(--theme-text);
     --color-text-muted: var(--theme-muted);
+    /* 已收聽嘅集數（EpisodeList）：淡色字；支援 color-mix 就再向背景色淡 25%（見下面 @supports） */
+    --color-watched: var(--color-text-muted);
     --color-title: var(--theme-title);
     --color-accent: var(--theme-accent);
     --color-accent-fill: var(--theme-accent);
@@ -377,4 +379,16 @@
     --shadow-floating: 0 2px 10px rgb(0 0 0 / 45%);
     /* 今日節目卡：細細一圈軌道色描邊 + 浮起陰影，令疊喺後面嘅卡睇得出邊 */
     --shadow-card: 0 0 0 1px var(--theme-track), 0 10px 26px rgb(0 0 0 / 45%);
+}
+
+/*
+ * 已收聽集數再淡 25%（用戶要求；淺色劇集對比度約 3.2–3.5:1，低過 AA 細字 4.5:1，深色節目約 4.6–5.1:1）。
+ * 要同語意 token 一樣喺 :root 同每個 ThemeScope 宣告，先跟到當頁底色；
+ * 放喺檔案最尾，蓋過上面語意 token 區塊嘅後備值
+ */
+@supports (color: color-mix(in srgb, red, blue)) {
+    :root,
+    [data-theme-scope] {
+        --color-watched: color-mix(in srgb, var(--color-text-muted) 75%, var(--color-bg));
+    }
 }

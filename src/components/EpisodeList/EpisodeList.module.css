@@ -117,7 +117,7 @@
 }
 
 .watched:not(.current) .fill {
-    background: var(--color-text-muted);
+    background: var(--color-watched);
 }
 
 .status {
@@ -126,25 +126,28 @@
 }
 
 /*
- * 已收聽：成行淡色（集名唔粗體、進度條同剔都轉淡），同未聽嘅一眼分開。
- * 唔用 opacity：行仲撳得（重聽），淡色字（--color-text-muted）照過 WCAG AA。
- * 重聽緊嗰集（.current）照用播放中嘅強調色，唔會淡咗
+ * 已收聽：成行淡色（--color-watched：淡色字再向背景淡 25%；集名唔粗體、進度條同剔都轉淡），
+ * 同未聽嘅一眼分開。唔用 opacity（行仲撳得重聽）。重聽緊嗰集（.current）照用播放中嘅強調色
  */
 .watched:not(.current) .status {
-    color: var(--color-text-muted);
+    color: var(--color-watched);
 }
 
 .watched:not(.current) .dayMonth {
-    color: var(--color-text-muted);
+    color: var(--color-watched);
     font-weight: 500;
 }
 
+.watched:not(.current) .weekday {
+    color: var(--color-watched);
+}
+
 .watched:not(.current) .play {
-    color: var(--color-text-muted);
+    color: var(--color-watched);
 }
 
 .watched:not(.current) .check {
-    background: var(--color-text-muted);
+    background: var(--color-watched);
 }
 
 .check {
