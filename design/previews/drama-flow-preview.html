@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>廣播劇 Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+/*
+ * 兩組方案：① 芝See 內頁點樣睇晒有邊啲短篇 + 每個短篇聽到邊；② 主頁劇集格「繼續收聽」。
+ * 手機 375 × 720 真 px；顏色跟 src/config/dramaThemes.ts（芝See V1）同 HOME_THEME。
+ * 示範進度：你生日所以我生日、大妒忌 聽完；好朋友手牽手 第 1 集聽完、第 2 集聽到 40%（播緊）；
+ * Ｘ時mas時小提議 第 1 集聽完；其他未聽。
+ */
+:root {
+    color-scheme: dark;
+    --shell-bg: #101214; --shell-panel: #181b1f; --shell-line: #2a2f35;
+    --shell-text: #e9ecef; --shell-muted: #9aa3ad; --shell-accent: #98bdde; --shell-on-accent: #101214;
+    --font: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
+    --home-top: #4f749c; --home-bottom: #42658a; --home-accent: #f5d294; --home-on-accent: #2f4560; --home-text: #fdf8f2;
+    --clay: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
+    --bg: #ffeb85; --surface: #fff5c2; --track: #f5d23c; --accent: #f7901e; --on-accent: #2b1a0c;
+    --title: #a84800; --text: #3b2412; --muted: #7a5a20;
+}
+* { box-sizing: border-box; }
+em, i { font-style: normal; }
+body { margin: 0; background: var(--shell-bg); color: var(--shell-text); font-family: var(--font); font-size: 14px; line-height: 1.5; padding: 24px 16px 48px; }
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+h1 { margin: 0; font-size: 24px; font-weight: 600; }
+h2 { margin: 16px 0 0; font-size: 20px; }
+h3 { margin: 0; font-size: 16px; }
+.lead { margin: 4px 0 0; color: var(--shell-muted); max-width: 72ch; }
+.seg { display: inline-flex; flex-wrap: wrap; padding: 3px; gap: 2px; border-radius: 20px; background: var(--shell-panel); border: 1px solid var(--shell-line); }
+.seg button { border: 0; border-radius: 999px; padding: 6px 14px; min-height: 34px; font: inherit; font-size: 13px; color: var(--shell-muted); background: transparent; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--shell-accent); color: var(--shell-on-accent); font-weight: 600; }
+.opt { display: none; flex-direction: column; gap: 16px; }
+.opt.active { display: flex; }
+.phones { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px; }
+.pw { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; }
+.cap { color: var(--shell-muted); font-size: 12px; text-align: center; max-width: 360px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { border: 1px solid var(--shell-line); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: var(--shell-panel); }
+
+/* 手機 */
+.phone { position: relative; width: 375px; max-width: calc(100vw - 32px); height: 720px; border-radius: 40px; overflow: hidden;
+    box-shadow: 0 0 0 8px #000, 0 0 0 9px #2c2c2c, 0 20px 60px rgb(0 0 0 / 55%); display: flex; flex-direction: column; color: var(--text); background: var(--bg); }
+.phone.home { background: linear-gradient(180deg, var(--home-top), var(--home-bottom)); color: var(--home-text); }
+.sb { height: 44px; flex: none; background: var(--title); }
+.phone.home .sb { background: transparent; }
+.scr { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 0 16px 0; }
+.scroll { flex: 1; min-height: 0; overflow: hidden; }
+.hdr { flex: none; display: flex; align-items: center; gap: 8px; min-height: 44px; padding-bottom: 4px;
+    background: radial-gradient(circle, var(--accent) 1.5px, transparent 2px) 0 100% / 8px 4px repeat-x; }
+.back { width: 36px; text-align: center; font-size: 22px; color: var(--text); }
+.hdr h4 { margin: 0; flex: 1; text-align: center; padding-right: 36px; color: var(--title); font-size: 22px; font-weight: 700; }
+.gauge { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.disc { position: relative; width: 170px; aspect-ratio: 1; border-radius: 999px; background: center / cover url(../../src/assets/dramas/chisee-disc.webp), #ffe805; box-shadow: 0 0 0 7px var(--surface), 0 12px 26px rgb(0 0 0 / 30%); }
+.disc::after { content: ''; position: absolute; inset: -16px; border-radius: 999px;
+    background: conic-gradient(from 225deg, var(--accent) 0 30%, var(--track) 0 75%, transparent 0);
+    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); mask: radial-gradient(closest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); }
+.ctl { display: flex; align-items: center; gap: 18px; font-size: 12px; color: var(--muted); }
+.ctl .pp { width: 46px; height: 46px; border-radius: 999px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-size: 16px; box-shadow: 0 6px 12px rgb(0 0 0 / 15%); }
+.lab { flex: none; text-align: center; color: var(--title); font-size: 13px; font-weight: 500; margin-bottom: -6px; }
+.chips { flex: none; display: flex; align-items: center; gap: 8px; overflow: hidden; margin: 0 -16px; padding: 0 16px; height: 44px; }
+.chip { position: relative; flex: none; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--surface); color: var(--muted); font-size: 12px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.chip.on { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.chip .cnt { font-size: 10px; opacity: 0.85; font-weight: 500; }
+.chip .ok { color: var(--title); font-weight: 700; }
+.chip.on .ok { color: var(--on-accent); }
+.chip.done { background: transparent; box-shadow: inset 0 0 0 1px var(--track); }
+.chip .bar { position: absolute; left: 10px; right: 10px; bottom: 4px; height: 3px; border-radius: 3px; background: rgb(0 0 0 / 8%); overflow: hidden; }
+.chip .bar i { display: block; height: 100%; background: var(--title); }
+.chip.on .bar { background: rgb(0 0 0 / 15%); }
+.chip.on .bar i { background: var(--on-accent); }
+.chip.all { background: var(--text); color: var(--bg); font-weight: 700; }
+.lh { flex: none; display: flex; justify-content: space-between; font-size: 11px; letter-spacing: .1em; color: var(--muted); border-bottom: 1px solid var(--track); padding-bottom: 6px; }
+.row { display: flex; align-items: center; gap: 12px; min-height: 54px; border-bottom: 1px solid var(--track); font-size: 13px; padding: 0 6px; }
+.row.cur { background: var(--surface); }
+.row .nm { width: 110px; line-height: 1.25; font-weight: 600; font-size: 15px; }
+.row.cur .nm, .row.cur .st { color: var(--title); }
+.row .nm small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+.row .bd { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.row .pb { height: 4px; border-radius: 2px; background: var(--track); overflow: hidden; }
+.row .pb i { display: block; height: 100%; background: var(--accent); }
+.row .st { font-size: 12px; color: var(--muted); }
+.row .ic { width: 22px; text-align: center; }
+.row .ck { width: 22px; height: 22px; border-radius: 999px; background: var(--title); color: var(--bg); display: grid; place-items: center; font-size: 11px; }
+
+/* B：bottom sheet */
+.dim { position: absolute; inset: 0; background: rgb(43 26 12 / 45%); }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 74%; background: var(--bg); border-radius: 22px 22px 0 0; padding: 10px 16px 0; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 -10px 30px rgb(0 0 0 / 25%); }
+.sheet .grab { align-self: center; width: 40px; height: 4px; border-radius: 4px; background: var(--track); }
+.sheet .sh { display: flex; justify-content: space-between; align-items: baseline; }
+.sheet .sh b { font-size: 17px; color: var(--title); }
+.sheet .sh span { font-size: 12px; color: var(--muted); }
+.arcrow { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 14px; }
+.arcrow.cur { background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); }
+.arcrow .tx { flex: 1; min-width: 0; }
+.arcrow .tx b { display: block; font-size: 14px; }
+.arcrow .tx small { display: block; font-size: 11px; color: var(--muted); }
+.arcrow .pb { height: 4px; border-radius: 2px; background: var(--track); overflow: hidden; margin-top: 5px; }
+.arcrow .pb i { display: block; height: 100%; background: var(--accent); }
+.arcrow .ring { width: 30px; height: 30px; border-radius: 999px; flex: none; display: grid; place-items: center; font-size: 10px; font-weight: 700; color: var(--title);
+    background: radial-gradient(closest-side, var(--bg) 72%, transparent 74%), conic-gradient(var(--accent) var(--p), var(--track) 0); }
+.arcrow .ring.full { background: var(--title); color: var(--bg); }
+
+/* C：下拉 */
+.dd { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; padding: 0 14px; border-radius: 14px; background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); font-size: 14px; font-weight: 700; }
+.dd small { font-weight: 500; color: var(--muted); font-size: 12px; margin-left: 6px; }
+.ddl { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 2px; margin-top: -6px; padding: 6px; border-radius: 14px; background: var(--surface); }
+.ddl .arcrow { padding: 7px 8px; }
+
+/* 主頁 */
+.banner { position: relative; flex: none; aspect-ratio: 2.32 / 1; border-radius: 14px; overflow: hidden; background: center / cover url(../banner.webp), #4aa0e0; box-shadow: var(--clay); }
+.tabs { flex: none; display: flex; padding: 3px; gap: 3px; border-radius: 999px; background: rgb(0 0 0 / 18%); }
+.tabs span { flex: 1; text-align: center; height: 44px; line-height: 44px; border-radius: 999px; font-size: 13px; font-weight: 500; }
+.tabs span.on { background: var(--home-accent); color: var(--home-on-accent); font-weight: 700; }
+.tile { position: relative; flex: none; aspect-ratio: 2 / 1; border-radius: 14px; overflow: hidden; background: center / cover url(../dramas/chisee.webp), #ffe805; box-shadow: var(--clay); }
+.pill { position: absolute; padding: 2px 8px; border-radius: 999px; font-size: 10px; line-height: 16px; font-weight: 500; background: rgb(0 0 0 / 55%); color: #fff; }
+.tA .strip { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 12px 10px; background: linear-gradient(transparent, rgb(43 26 12 / 85%)); color: #fff; font-size: 12px; line-height: 1.35; }
+.tA .strip b { display: block; font-size: 13px; }
+.tA .strip .pb, .tC .pb { height: 4px; border-radius: 2px; background: rgb(255 255 255 / 30%); overflow: hidden; margin-top: 6px; }
+.tA .strip .pb i, .tC .pb i { display: block; height: 100%; background: var(--accent); }
+.tA .strip .go { position: absolute; right: 12px; bottom: 16px; width: 36px; height: 36px; border-radius: 999px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-size: 13px; }
+.cardB { flex: none; border-radius: 14px; overflow: hidden; box-shadow: var(--clay); background: var(--bg); color: var(--text); }
+.cardB .tile { box-shadow: none; border-radius: 0; }
+.cardB .info { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.cardB .info .tx { flex: 1; min-width: 0; font-size: 12px; line-height: 1.35; }
+.cardB .info .tx b { display: block; font-size: 13px; color: var(--title); }
+.cardB .info .tx .pb { height: 4px; border-radius: 2px; background: var(--track); overflow: hidden; margin-top: 5px; }
+.cardB .info .tx .pb i { display: block; height: 100%; background: var(--accent); }
+.cardB .go { flex: none; padding: 7px 12px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 700; font-size: 12px; }
+.tC .badge { position: absolute; left: 8px; top: 8px; display: inline-flex; gap: 4px; align-items: center; padding: 3px 10px; border-radius: 999px; background: var(--home-accent); color: var(--home-on-accent); font-size: 11px; font-weight: 700; box-shadow: 0 2px 6px rgb(0 0 0 / 35%); }
+.tC .pb { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; border-radius: 0; height: 5px; }
+.mini { flex: none; margin-top: auto; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px; background: var(--bg); color: var(--text); box-shadow: 0 8px 20px rgb(0 0 0 / 35%); font-size: 12px; }
+.mini .d { width: 34px; height: 34px; border-radius: 999px; background: center / cover url(../../src/assets/dramas/chisee-disc.webp); flex: none; }
+.mini .tx { flex: 1; line-height: 1.3; } .mini .tx b { color: var(--title); } .mini .tx small { display: block; color: var(--muted); }
+.mini .pp { width: 32px; height: 32px; border-radius: 999px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; }
+
+/* ---- flow preview 加嘅 ---- */
+.dim, .sheet { z-index: 5; }
+.flow { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 18px; }
+.arrow { align-self: center; color: var(--shell-accent); font-size: 28px; }
+.step { font-weight: 700; color: var(--shell-accent); }
+.chips .chip.pin { position: sticky; left: 0; z-index: 1; background: var(--text); color: var(--bg); font-weight: 700; box-shadow: 8px 0 8px -4px var(--bg); }
+.chip .new { margin-left: 2px; padding: 0 5px; border-radius: 999px; background: #c0362c; color: #fff; font-size: 9px; font-weight: 700; line-height: 14px; }
+.tag-new { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: #c0362c; color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; vertical-align: 2px; }
+.sheet .grouphd { font-size: 10px; letter-spacing: .12em; color: var(--muted); margin: 4px 4px -2px; }
+.arcrow .btn { width: 36px; height: 36px; border-radius: 999px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-size: 12px; flex: none; }
+.row.watched { opacity: 0.75; }
+.row.watched .nm { color: var(--muted); }
+.tA .strip .wave { position: absolute; right: 12px; bottom: 16px; height: 36px; display: flex; align-items: center; gap: 3px; }
+.tA .strip .wave i { width: 4px; border-radius: 2px; background: var(--accent); }
+.tA .strip b.live { color: var(--accent); }
+.note { color: var(--shell-muted); font-size: 13px; }
+.note b { color: var(--shell-text); }
+.hl { outline: 3px solid #4fd1ff; outline-offset: 3px; box-shadow: 0 0 0 9px rgb(79 209 255 / 25%) !important; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>芝See菇Bi Family：user flow（修訂）</h1>
+<p class="lead">主頁繼續收聽 → 短篇內頁播放 → 撳「☰ 全集」→ 改選另一短篇播放 → 嗰個短篇內頁播放 → 返主頁。示範：「青春期眞神奇」當係 10/10 新上架（14 日內有標籤）。藍框 = 下一步撳邊度。</p>
+</header>
+<div class="flow">
+<div class="pw"><div class="phone home"><div class="sb"></div><div class="scr">
+<div class="banner"></div><div class="tabs"><span>節目</span><span class="on">廣播劇</span></div>
+<div class="tile tA"><em class="pill" style="right:8px;top:8px">10 個短篇</em><div class="strip"><b>繼續收聽</b>好朋友手牽手 · 第 2 集 朋友不同<span class="pb" style="display:block;width:70%"><i style="width:46%"></i></span><span class="go hl">▶</span></div></div>
+</div></div><span class="cap"><span class="step">1</span>・主頁：未播緊，圖底「繼續收聽 ▶」；撳成格（或 ▶）入短篇內頁並續播</span></div>
+<span class="arrow">→</span>
+<div class="pw"><div class="phone"><div class="sb"></div><div class="scr">
+<div class="hdr"><span class="back">‹</span><h4>芝See菇Bi Family</h4></div>
+<div class="gauge"><div class="disc"></div><div class="ctl"><span>1:02</span><span>↺</span><span class="pp">❚❚</span><span>2:13</span></div></div>
+<div class="lab">現正播放：第 2 集 朋友不同</div>
+<div class="chips" style="margin-top:-6px"><span class="chip pin hl">☰ 全集</span><span class="chip on">好朋友手牽手</span><span class="chip">青春期眞神奇 <span class="new">新</span></span><span class="chip">小苦妹撲水</span><span class="chip">我們都在會考中成長</span></div>
+<div class="lh"><span>集數</span><span>共 4 集</span></div>
+<div class="scroll"><div class="row cur"><span class="nm">朋友不同<small>第 2 集</small></span><span class="bd"><span class="pb"><i style="width:46%"></i></span><span class="st">播放中 · 1:02 / 2:13</span></span><span class="ic">❚❚</span></div><div class="row"><span class="nm">朋友性別<small>第 3 集</small></span><span class="bd"><span class="pb"></span><span class="st">未收聽</span></span><span class="ic">▷</span></div><div class="row"><span class="nm">朋友第一<small>第 4 集</small></span><span class="bd"><span class="pb"></span><span class="st">未收聽</span></span><span class="ic">▷</span></div><div class="row watched"><span class="nm">好傾朋友<small>第 1 集</small></span><span class="bd"><span class="pb"><i style="width:100%;background:var(--title)"></i></span><span class="st" style="color:var(--title)">已收聽</span></span><span class="ck">✓</span></div></div>
+</div></div><span class="cap"><span class="step">2</span>・短篇內頁：「☰ 全集」永遠排第一（左右掃都釘住左邊）；集數清單已收聽嘅（第 1 集）排最底；新上架短篇 chip 有「新」</span></div>
+<span class="arrow">→</span>
+<div class="pw"><div class="phone" style="position:relative"><div class="sb"></div><div class="scr">
+<div class="hdr"><span class="back">‹</span><h4>芝See菇Bi Family</h4></div>
+<div class="gauge"><div class="disc"></div><div class="ctl"><span>1:02</span><span>↺</span><span class="pp">❚❚</span><span>2:13</span></div></div>
+<div class="lab">現正播放：第 2 集 朋友不同</div>
+<div class="chips" style="margin-top:-6px"><span class="chip pin">☰ 全集</span><span class="chip on">好朋友手牽手</span><span class="chip">青春期眞神奇 <span class="new">新</span></span><span class="chip">小苦妹撲水</span><span class="chip">我們都在會考中成長</span></div>
+<div class="lh"><span>集數</span><span>共 4 集</span></div>
+<div class="scroll"><div class="row cur"><span class="nm">朋友不同<small>第 2 集</small></span><span class="bd"><span class="pb"><i style="width:46%"></i></span><span class="st">播放中 · 1:02 / 2:13</span></span><span class="ic">❚❚</span></div><div class="row"><span class="nm">朋友性別<small>第 3 集</small></span><span class="bd"><span class="pb"></span><span class="st">未收聽</span></span><span class="ic">▷</span></div><div class="row"><span class="nm">朋友第一<small>第 4 集</small></span><span class="bd"><span class="pb"></span><span class="st">未收聽</span></span><span class="ic">▷</span></div><div class="row watched"><span class="nm">好傾朋友<small>第 1 集</small></span><span class="bd"><span class="pb"><i style="width:100%;background:var(--title)"></i></span><span class="st" style="color:var(--title)">已收聽</span></span><span class="ck">✓</span></div></div>
+</div><div class="dim"></div><div class="sheet"><span class="grab"></span>
+<div class="sh"><b>全集</b><span>聽完 2 / 10 個　✕</span></div>
+<div class="grouphd">播放中</div>
+<div class="arcrow cur"><span class="ring" style="--p:25%">1/4</span><span class="tx"><b>好朋友手牽手</b><small>播緊第 2 集 朋友不同</small></span><span class="btn">❚❚</span></div>
+<div class="grouphd">新上架</div>
+<div class="arcrow "><span class="ring" style="--p:0%">0/3</span><span class="tx"><b>青春期眞神奇<span class="tag-new">新上架</span></b><small>未聽 · 3 集 · 10/10 上架</small></span><span class="btn">▶</span></div>
+<div class="grouphd">未聽完</div>
+<div class="arcrow "><span class="ring" style="--p:25%">1/4</span><span class="tx"><b>Ｘ時mas時小提議</b><small>聽到第 2 集 0:45</small></span><span class="btn">▶</span></div>
+<div class="arcrow "><span class="ring" style="--p:0%">0/4</span><span class="tx"><b>小苦妹撲水</b><small>未聽 · 4 集</small></span><span class="btn hl">▶</span></div>
+<div class="arcrow "><span class="ring" style="--p:0%">0/2</span><span class="tx"><b>我們都在會考中成長</b><small>未聽 · 2 集</small></span><span class="btn">▶</span></div>
+<div class="arcrow "><span class="ring" style="--p:0%">0/4</span><span class="tx"><b>游亁水</b><small>未聽 · 4 集</small></span><span class="btn">▶</span></div>
+<div class="grouphd">已聽完</div>
+<div class="arcrow "><span class="ring full" style="--p:0%">✓</span><span class="tx"><b>你生日所以我生日</b><small>聽完 · 3 集</small></span><span class="btn">↺</span></div>
+<div class="arcrow "><span class="ring full" style="--p:0%">✓</span><span class="tx"><b>大妒忌</b><small>聽完 · 3 集</small></span><span class="btn">↺</span></div>
+</div></div><span class="cap"><span class="step">3</span>・全集一覽表：播放中 → 新上架 → 未聽完 → 已聽完（最底，↺ 重聽）；撳「小苦妹撲水」右邊 ▶</span></div>
+<span class="arrow">→</span>
+<div class="pw"><div class="phone"><div class="sb"></div><div class="scr">
+<div class="hdr"><span class="back">‹</span><h4>芝See菇Bi Family</h4></div>
+<div class="gauge"><div class="disc"></div><div class="ctl"><span>1:02</span><span>↺</span><span class="pp">❚❚</span><span>2:13</span></div></div>
+<div class="lab">現正播放：第 1 集</div>
+<div class="chips" style="margin-top:-6px"><span class="chip pin">☰ 全集</span><span class="chip on">小苦妹撲水</span><span class="chip">好朋友手牽手</span><span class="chip">青春期眞神奇 <span class="new">新</span></span><span class="chip">我們都在會考中成長</span></div>
+<div class="lh"><span>集數</span><span>共 4 集</span></div>
+<div class="scroll"><div class="row cur"><span class="nm">第 1 集</span><span class="bd"><span class="pb"><i style="width:46%"></i></span><span class="st">播放中 · 0:08 / 2:41</span></span><span class="ic">❚❚</span></div><div class="row"><span class="nm">第 2 集</span><span class="bd"><span class="pb"></span><span class="st">未收聽</span></span><span class="ic">▷</span></div><div class="row"><span class="nm">第 3 集</span><span class="bd"><span class="pb"></span><span class="st">未收聽</span></span><span class="ic">▷</span></div><div class="row"><span class="nm">第 4 集</span><span class="bd"><span class="pb"></span><span class="st">未收聽</span></span><span class="ic">▷</span></div></div>
+</div></div><span class="cap"><span class="step">4</span>・表收埋，內頁換成「小苦妹撲水」、由第 1 集開始播；chips 揀中嗰粒移到「全集」後面</span></div>
+<span class="arrow">→</span>
+<div class="pw"><div class="phone home"><div class="sb"></div><div class="scr">
+<div class="banner"></div><div class="tabs"><span>節目</span><span class="on">廣播劇</span></div>
+<div class="tile tA"><em class="pill" style="right:8px;top:8px">10 個短篇</em><div class="strip"><b class="live">播放中</b>小苦妹撲水 · 第 1 集<span class="pb" style="display:block;width:70%"><i style="width:8%"></i></span><span class="wave"><i style="height:12px"></i><i style="height:22px"></i><i style="height:16px"></i><i style="height:26px"></i></span></div></div>
+<div class="mini"><span class="d"></span><span class="tx"><b>芝See菇Bi Family</b><small>小苦妹撲水 · 第 1 集 · 0:13 / 2:41</small></span><span class="pp">❚❚</span></div>
+</div></div><span class="cap"><span class="step">5</span>・返主頁：播緊嘅時候圖底改做「播放中」+ 音波（冇 ▶），播放 / 暫停交畀下面 mini player，唔會再出現兩個掣講唔同嘢</span></div>
+</div>
+<table>
+<thead><tr><th>改動</th><th>規則</th></tr></thead>
+<tbody>
+<tr><td>「☰ 全集」chip</td><td>唔顯示數字；永遠係第一粒，左右掃 chips 時釘住左邊</td></tr>
+<tr><td>短篇 chips 次序</td><td>同全集一覽表一樣：播放中 → 新上架 → 未聽完 → 已聽完</td></tr>
+<tr><td>集數清單</td><td>播緊 / 未聽完嘅按集數排喺上面，已收聽嘅排最底（淡色 + ✓）</td></tr>
+<tr><td>全集一覽表</td><td>分組：播放中、新上架、未聽完、已聽完；右邊掣：▶ 續聽 / 播未收聽、❚❚ 播緊嗰個、↺ 已聽完重聽；撳行或者掣之後收埋表，內頁跳去嗰個短篇</td></tr>
+<tr><td>新上架</td><td>每個短篇記上架日子；上架 14 日內 chip 有「新」、一覽表有「新上架」標籤並排喺播放中之後；14 日後標籤消失、排返去未聽完 / 已聽完</td></tr>
+<tr><td>主頁劇集格</td><td>未播：「繼續收聽 ▶」；播緊（mini player 出咗）：「播放中」+ 音波，冇 ▶，撳成格入內頁</td></tr>
+</tbody>
+</table>
+</div>
+</body>
+</html>
