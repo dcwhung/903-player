@@ -1,14 +1,13 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../../tests/renderWithProviders';
-import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
+import { seriesEpisodesOf } from '../data/dramaCatalog';
 import { saveProgress } from '../services/progressStore';
 import { DramaPage } from './DramaPage';
 
 const PATH = '/drama/:dramaId';
 const CHISEE = seriesEpisodesOf('chisee');
 const XMAS = CHISEE.filter((e) => e.arc === 'Ｘ時mas時小提議');
-const C18 = dailyEpisodesOf('c18');
 
 const openDrama = (id: string) =>
     renderWithProviders(<DramaPage />, { route: `/drama/${id}`, path: PATH });
@@ -29,9 +28,7 @@ describe('DramaPage', () => {
 
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
             expect(audio.play).toHaveBeenCalled();
-            expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-                '芝-See-菇-Bi-Family',
-            );
+            expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('芝See菇Bi Family');
             expect(screen.getByRole('main').closest('[data-theme-scope]')).toHaveAttribute(
                 'data-scheme',
                 'light',
@@ -78,31 +75,11 @@ describe('DramaPage', () => {
         });
     });
 
-    describe('daily drama', () => {
-        it('autoplays today’s episode and lists every episode newest first, tagging reruns', async () => {
-            const { audio } = openDrama('c18');
+    it('treats the disabled 18 樓 C 座 as not found', () => {
+        const { audio } = openDrama('c18');
 
-            await waitFor(() => expect(audio.src).toBe(C18[0]?.url));
-            expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('18-樓-C-座');
-            const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole(
-                'button',
-            );
-            expect(rows).toHaveLength(C18.length);
-            expect(rows[0]).toHaveAccessibleName('暫停 23/10 星期五，連線中…');
-            expect(rows.at(-1)).toHaveAccessibleName('播放 11/08 星期一 重溫，未收聽');
-        });
-
-        it('lines up only the days with an episode in the date strip', async () => {
-            const { audio } = openDrama('c18');
-            await waitFor(() => expect(audio.src).toBe(C18[0]?.url));
-
-            await userEvent.click(screen.getByRole('button', { name: '轉去 22/10（四）' }));
-
-            await waitFor(() => expect(audio.src).toBe(C18[1]?.url));
-            // 16/10 之後就係重播嘅 13/08：中間冇成年灰色日子
-            await userEvent.click(screen.getByRole('button', { name: /^播放 15\/10/ }));
-            expect(screen.getByRole('button', { name: '轉去 13/08（三）' })).toBeInTheDocument();
-        });
+        expect(screen.getByText('找不到此廣播劇')).toBeInTheDocument();
+        expect(audio.src).toBe('');
     });
 
     it('says the drama cannot be found for an unknown id', () => {

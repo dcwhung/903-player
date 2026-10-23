@@ -1,8 +1,8 @@
 /*
  * 廣播劇集數。
- * - 芝-See-菇-Bi-Family：真清單（10 個短篇、35 集，固定唔會再變），錄音喺 Cloudflare R2
+ * - 芝See菇Bi Family：真清單（10 個短篇、35 集，固定唔會再變），錄音喺 Cloudflare R2
  *   （DRAMA_AUDIO_BASE/芝-See-菇-Bi-Family/<短篇>/<原檔名>）。
- * - 18-樓-C-座：⚠️ 仲係假資料（由截圖抄嘅日子），網址係佔位（public/dramas/c18/），
+ * - 18 樓 C 座：⚠️ 仲係假資料（由截圖抄嘅日子），網址係佔位（public/dramas/c18/），
  *   撳播放會一直「連線中…」；等 manifest 到咗先換。介面（dramaEpisodesOf 等）唔使變。
  */
 import { DRAMA_AUDIO_BASE } from '../config/constants';
@@ -12,7 +12,7 @@ import type { DailyEpisode, DramaEpisode, DramaId, SeriesEpisode } from '../type
 const encodePath = (segments: readonly string[]): string =>
     segments.map(encodeURIComponent).join('/');
 
-/** R2 入面芝See 嘅 folder（同劇名一樣） */
+/** R2 入面芝See 嘅 folder（R2 用連字號寫法，同畫面顯示嘅劇名唔同） */
 const CHISEE_FOLDER = '芝-See-菇-Bi-Family';
 
 /** 檔名入面嘅集數用中文數字（第一集 … 第四集） */
@@ -32,7 +32,7 @@ const chiseeFile = (arc: string, no: number, title: string | undefined): string 
     ].join(' - ') + '.m4a';
 
 /**
- * 芝-See-菇-Bi-Family 短篇（按清單次序）：每集嘅集名，冇集名係 null。
+ * 芝See菇Bi Family 短篇（按清單次序）：每集嘅集名，冇集名係 null。
  * 短篇名 = R2 folder 名 = 檔名入面嘅名，照原寫法（全形「Ｘ」、「游亁水」、「青春期眞神奇」）
  */
 const CHISEE_ARCS: readonly { arc: string; titles: readonly (string | null)[] }[] = [

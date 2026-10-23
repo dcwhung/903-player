@@ -5,7 +5,7 @@ import packageJson from '../../package.json';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { HOME_THEME } from '../config/showThemes';
 import { usePlayer } from '../player/usePlayer';
-import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
+import { seriesEpisodesOf } from '../data/dramaCatalog';
 import { saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import type { Track } from '../types/track';
@@ -271,7 +271,8 @@ describe('HomePage', () => {
             expect(screen.queryByRole('navigation', { name: '廣播劇' })).not.toBeInTheDocument();
         });
 
-        it('lists the two dramas instead of the shows', async () => {
+        it('lists the enabled dramas instead of the shows, leaving out 18 樓 C 座 for now', async () => {
+            vi.setSystemTime(new Date('2026-10-23T08:00:00Z')); // 18 樓 C 座今日有新集都唔出
             renderWithProviders(<HomePage />);
 
             const nav = await openDramas();
@@ -280,36 +281,15 @@ describe('HomePage', () => {
                 within(nav)
                     .getAllByRole('button')
                     .map((b) => b.getAttribute('aria-label')),
-            ).toEqual(['芝-See-菇-Bi-Family', '18-樓-C-座']);
+            ).toEqual(['芝See菇Bi Family']);
             expect(screen.queryByRole('navigation', { name: '節目' })).not.toBeInTheDocument();
-        });
-
-        it('marks the daily drama New when today’s episode is unwatched', async () => {
-            vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
-            renderWithProviders(<HomePage />);
-
-            const nav = await openDramas();
-
-            expect(
-                within(nav).getByRole('button', { name: '18-樓-C-座，今日有新一集' }),
-            ).toBeInTheDocument();
-        });
-
-        it('drops New once today’s episode has been listened to', async () => {
-            vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
-            saveProgress(dailyEpisodesOf('c18')[0]?.url ?? '', 990, 1000);
-            renderWithProviders(<HomePage />);
-
-            const nav = await openDramas();
-
-            expect(within(nav).getByRole('button', { name: '18-樓-C-座' })).toBeInTheDocument();
         });
 
         it('starts the drama and opens its page when its tile is tapped', async () => {
             const { audio } = renderWithProviders(<HomePage />);
             const nav = await openDramas();
 
-            await userEvent.click(within(nav).getByRole('button', { name: '芝-See-菇-Bi-Family' }));
+            await userEvent.click(within(nav).getByRole('button', { name: '芝See菇Bi Family' }));
 
             expect(audio.src).toBe(seriesEpisodesOf('chisee')[0]?.url);
             expect(audio.play).toHaveBeenCalled();
@@ -322,7 +302,7 @@ describe('HomePage', () => {
             const { audio } = await arriveHomeWith(episode);
 
             await userEvent.click(
-                screen.getByRole('button', { name: '開啟 芝-See-菇-Bi-Family 節目頁' }),
+                screen.getByRole('button', { name: '開啟 芝See菇Bi Family 節目頁' }),
             );
 
             expect(audio.pause).not.toHaveBeenCalled();

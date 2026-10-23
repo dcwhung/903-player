@@ -9,7 +9,7 @@ import { ShowTile } from '../components/ShowTile/ShowTile';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { APP_VERSION } from '../config/appVersion';
 import { DRAMA_TILE_ART } from '../config/dramaThemes';
-import { DRAMAS, type DramaConfig } from '../config/dramas';
+import { enabledDramas, type DramaConfig } from '../config/dramas';
 import { SHORT_LANDSCAPE_QUERY } from '../config/layout';
 import { HOME_THEME, SHOW_THEMES } from '../config/showThemes';
 import { SHOWS } from '../config/shows';
@@ -69,7 +69,7 @@ const useDramaItems = (): DramaShelfItem[] => {
     const navigate = useNavigate();
     const startDrama = useStartDrama();
     const newDramaIds = useNewDramaIds();
-    return DRAMAS.map((drama) => ({
+    return enabledDramas().map((drama) => ({
         id: drama.id,
         name: drama.name,
         art: DRAMA_TILE_ART[drama.id],

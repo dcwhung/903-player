@@ -73,12 +73,12 @@ describe('useMediaSession', () => {
         });
         const init = () => (session.metadata as unknown as { init: MediaMetadataInit }).init;
         expect(init()).toMatchObject({
-            title: '芝-See-菇-Bi-Family',
+            title: '芝See菇Bi Family',
             artist: 'Ｘ時mas時小提議 · 第 2 集 哥哥你洽我',
         });
 
         rerender({ s: state({ recording: rerun ?? null }) });
-        expect(init()).toMatchObject({ title: '18-樓-C-座', artist: '11/08（一） · 重溫' });
+        expect(init()).toMatchObject({ title: '18 樓 C 座', artist: '11/08（一） · 重溫' });
     });
 
     it('wires lock-screen buttons to player actions', () => {

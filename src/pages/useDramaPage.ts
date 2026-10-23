@@ -71,7 +71,7 @@ const usePlaybackRows = (
     return { ctx, selectEpisode, pressEpisode };
 };
 
-/** 每日劇集頁（例如 18-樓-C-座）：同節目頁一樣，唱片 + 日子條 + 集數清單 */
+/** 每日劇集頁（例如 18 樓 C 座）：同節目頁一樣，唱片 + 日子條 + 集數清單 */
 export const useDailyDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => dailyNewestFirst(dailyEpisodesOf(drama.id)), [drama]);
     const loaded = useLoadedEpisode(drama, 'daily');
@@ -99,7 +99,7 @@ const useViewedArc = (playingArc: string | undefined) => {
     return { arc: picked ?? playingArc, pickArc: setPicked };
 };
 
-/** 短篇劇集頁（例如芝-See-菇-Bi-Family）：唱片 + 短篇 chips + 嗰個短篇嘅集數 */
+/** 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 短篇 chips + 嗰個短篇嘅集數 */
 export const useSeriesDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
     const arcs = useMemo(() => seriesArcs(episodes), [episodes]);

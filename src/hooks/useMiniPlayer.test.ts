@@ -151,12 +151,12 @@ describe('useMiniPlayer', () => {
 
             const mini = result.current.mini;
             expect(mini).toMatchObject({
-                showName: '芝-See-菇-Bi-Family',
+                showName: '芝See菇Bi Family',
                 theme: DRAMA_THEMES.chisee,
                 subtitle: 'Ｘ時mas時小提議 · 第 2 集 哥哥你洽我 · 5:00 / 20:00',
                 isPlaying: true,
                 progress: 0.25,
-                labels: ['芝-See-菇-Bi-Family'],
+                labels: ['芝See菇Bi Family'],
                 index: 0,
             });
         });

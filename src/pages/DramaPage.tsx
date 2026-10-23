@@ -7,7 +7,7 @@ import { PlayerPanel } from '../components/PlayerPanel/PlayerPanel';
 import { StatusMessage } from '../components/StatusMessage/StatusMessage';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { NEUTRAL_THEME } from '../config/showThemes';
-import { findDrama, type DramaConfig } from '../config/dramas';
+import { findEnabledDrama, type DramaConfig } from '../config/dramas';
 import { useGoHome } from '../hooks/useGoHome';
 import { usePlayer } from '../player/usePlayer';
 import { t } from '../i18n/t';
@@ -105,7 +105,7 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
 
 export const DramaPage = () => {
     const { dramaId = '' } = useParams();
-    const drama = findDrama(dramaId);
+    const drama = findEnabledDrama(dramaId);
     if (!drama) {
         return (
             <ThemeScope theme={NEUTRAL_THEME}>

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { DRAMAS } from '../config/dramas';
+import { enabledDramas } from '../config/dramas';
 import { dramaEpisodesOf } from '../data/dramaCatalog';
 import { usePlayer } from '../player/usePlayer';
 import { dramaHasNew } from '../selectors/dramas';
@@ -17,9 +17,9 @@ export const useNewDramaIds = (): ReadonlySet<DramaId> => {
     return useMemo(
         () =>
             new Set(
-                DRAMAS.filter((d) => dramaHasNew(dramaEpisodesOf(d.id), today, watchedUrls)).map(
-                    (d) => d.id,
-                ),
+                enabledDramas()
+                    .filter((d) => dramaHasNew(dramaEpisodesOf(d.id), today, watchedUrls))
+                    .map((d) => d.id),
             ),
         [today, watchedUrls],
     );

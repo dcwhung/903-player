@@ -1,6 +1,6 @@
 export type DramaId = 'chisee' | 'c18';
 
-/** series：分短篇 × 集數（例如芝-See-菇-Bi-Family）；daily：大約一日一集，按日子排（例如 18-樓-C-座） */
+/** series：分短篇 × 集數（例如芝See菇Bi Family）；daily：大約一日一集，按日子排（例如 18 樓 C 座） */
 export type DramaKind = 'series' | 'daily';
 
 /** 短篇劇集嘅一集：屬於邊個短篇、短篇入面第幾集 */
