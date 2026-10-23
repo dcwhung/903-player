@@ -8,7 +8,7 @@ import type { DramaEpisode } from '../types/drama';
 import { isDramaEpisode } from '../types/track';
 import { hkToday } from '../utils/date';
 
-/** 入劇集播邊集：主題劇集續播 / 下一集；每日劇集今日（或者之前最近）嗰集 */
+/** 入劇集播邊集：短篇劇集續播 / 下一集；每日劇集今日（或者之前最近）嗰集 */
 export const dramaStartEpisode = (
     drama: DramaConfig,
     progressMap: Readonly<Record<string, Progress>>,

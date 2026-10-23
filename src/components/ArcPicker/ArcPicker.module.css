@@ -75,7 +75,7 @@
     background: var(--color-accent-fill);
 }
 
-/* 播緊嗰個主題（睇緊其他主題時）：膠囊右上角一粒強調色點 */
+/* 播緊嗰個短篇（睇緊其他短篇時）：膠囊右上角一粒強調色點 */
 .playing::after {
     position: absolute;
     top: calc((100% - var(--arc-chip-height)) / 2 + var(--space-1));

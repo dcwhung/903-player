@@ -58,7 +58,7 @@ const useHomeTiles = () => {
     ];
 };
 
-/** 劇集格右下角：主題劇集「N 個主題」，每日劇集「每日更新」 */
+/** 劇集格右下角：短篇劇集「N 個短篇」，每日劇集「每日更新」 */
 const dramaMeta = (drama: DramaConfig): string =>
     drama.kind === 'series'
         ? t('drama.arcCount', { count: seriesArcs(seriesEpisodesOf(drama.id)).length })

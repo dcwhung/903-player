@@ -12,7 +12,7 @@ const C18 = dailyEpisodesOf('c18');
 
 const openDrama = (id: string) =>
     renderWithProviders(<DramaPage />, { route: `/drama/${id}`, path: PATH });
-const arcChips = () => within(screen.getByRole('group', { name: '主題' })).getAllByRole('button');
+const arcChips = () => within(screen.getByRole('group', { name: '短篇' })).getAllByRole('button');
 
 describe('DramaPage', () => {
     beforeEach(() => {
@@ -44,7 +44,7 @@ describe('DramaPage', () => {
 
             await waitFor(() => expect(audio.src).toBe(XMAS[1]?.url));
             // 未讀到時長：標籤同節目頁日子條一樣講「連線中…」
-            const group = screen.getByRole('group', { name: '主題' }).parentElement as HTMLElement;
+            const group = screen.getByRole('group', { name: '短篇' }).parentElement as HTMLElement;
             expect(within(group).getByText('連線中…')).toBeInTheDocument();
             act(() => audio.emitMetadata(1200));
             expect(arcChips()).toHaveLength(10);

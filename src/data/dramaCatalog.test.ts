@@ -29,7 +29,7 @@ describe('dramaCatalog', () => {
         expect(dailyEpisodesOf('c18').some((e) => e.rerun)).toBe(true);
     });
 
-    it('holds the full 芝See list: 10 arcs, 35 episodes, titles only where the file has one', () => {
+    it('holds the full 芝See list: 10 短篇, 35 episodes, titles only where the file has one', () => {
         const episodes = seriesEpisodesOf('chisee');
         expect(episodes).toHaveLength(35);
         expect([...new Set(episodes.map((e) => e.arc))]).toEqual([
@@ -38,7 +38,7 @@ describe('dramaCatalog', () => {
             '好朋友手牽手',
             '小苦妹撲水',
             '我們都在會考中成長',
-            '游亁水',
+            '游乾水',
             '苦榮去做GYM',
             '青春期',
             '青春期眞神奇',
@@ -52,8 +52,17 @@ describe('dramaCatalog', () => {
             no: 4,
             title: '認認真真搵返個人',
         });
-        expect(decodeURIComponent(episodes.at(-1)?.url ?? '')).toMatch(
-            /\/dramas\/chisee\/04 - Ｘ時mas時小提議 - 第四集 - 認認真真搵返個人\.m4a$/,
+        expect(decodeURIComponent(episodes.at(-1)?.url ?? '')).toBe(
+            'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/芝-See-菇-Bi-Family/Ｘ時mas時小提議/04 - Ｘ時mas時小提議 - 第四集 - 認認真真搵返個人.m4a',
         );
+    });
+
+    it('uses the R2 folder 游乾水 but keeps the file name 游亁水 as uploaded', () => {
+        const first = seriesEpisodesOf('chisee').find((e) => e.arc === '游乾水');
+        expect(decodeURIComponent(first?.url ?? '')).toBe(
+            'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/芝-See-菇-Bi-Family/游乾水/01 - 游亁水 - 第一集.m4a',
+        );
+        // 每段路徑都要 encode（空格、中文、全形字）
+        expect(first?.url).not.toMatch(/ /);
     });
 });

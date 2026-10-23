@@ -100,9 +100,9 @@ export const zhHK = {
     drama: {
         notFound: '找不到此廣播劇',
         // 主頁劇集格右下角
-        arcCount: '{count} 個主題',
+        arcCount: '{count} 個短篇',
         daily: '每日更新',
-        // 主題劇集：清單每行細字、mini player / 鎖屏副標題
+        // 短篇劇集：清單每行細字、mini player / 鎖屏副標題
         episodeNo: '第 {no} 集',
         seriesLabel: '{arc} · 第 {no} 集 {title}',
         // 冇集名嘅集數
@@ -110,9 +110,9 @@ export const zhHK = {
         // 每日劇集重播舊集
         rerun: '重溫',
         dailyRerunLabel: '{date} · 重溫',
-        // 主題劇集頁：唱片下面嘅主題 chips
-        arcs: '主題',
-        // 睇緊其他主題時，播緊嗰個主題嘅 chip
+        // 短篇劇集頁：唱片下面嘅短篇 chips
+        arcs: '短篇',
+        // 睇緊其他短篇時，播緊嗰個短篇嘅 chip
         arcPlaying: '播緊',
         nowPlaying: '現正播放：{label}',
         nowPlayingShort: '第 {no} 集 {title}',

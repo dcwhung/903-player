@@ -9,7 +9,7 @@ import type { PlayerActions, PlayerState } from './playerContext';
 
 const hasMediaSession = (): boolean => 'mediaSession' in navigator;
 
-/** 鎖屏顯示：節目名 + 日子；廣播劇係劇名 + 集數（主題 / 日子） */
+/** 鎖屏顯示：節目名 + 日子；廣播劇係劇名 + 集數（短篇 / 日子） */
 const trackMetadata = (track: Track): MediaMetadataInit =>
     isDramaEpisode(track)
         ? { title: findDrama(track.dramaId)?.name ?? '', artist: dramaEpisodeLabel(track) }

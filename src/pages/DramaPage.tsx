@@ -27,7 +27,7 @@ const DramaHeader = ({ title }: { title: string }) => {
     );
 };
 
-/** 主題 chips 上面嗰行：同日子條一樣，未讀到時長講「連線中…」，否則「現正播放：第 N 集 集名」 */
+/** 短篇 chips 上面嗰行：同日子條一樣，未讀到時長講「連線中…」，否則「現正播放：第 N 集 集名」 */
 const arcPickerLabel = (duration: number, current: SeriesEpisode | undefined): string => {
     if (!hasKnownDuration(duration)) return t('episodes.connecting');
     if (!current) return '';
@@ -70,7 +70,7 @@ const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
 };
 
 /**
- * 主題劇集：唱片下面（橫版右欄頂）係「現正播放」+ 主題 chips，揀主題換下面嘅集數清單。
+ * 短篇劇集：唱片下面（橫版右欄頂）係「現正播放」+ 短篇 chips，揀短篇換下面嘅集數清單。
  * chips 喺清單嗰欄：直版次序同節目頁一樣（唱片 → 60px 一組 → 清單），橫版跟清單去右欄
  */
 const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {

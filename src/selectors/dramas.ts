@@ -5,12 +5,12 @@ import { formatDateLabel } from '../utils/date';
 
 const isDaily = (episode: DramaEpisode): episode is DailyEpisode => episode.kind === 'daily';
 
-/** 主題（按 catalogue 次序，每個一次） */
+/** 短篇（按 catalogue 次序，每個一次） */
 export const seriesArcs = (episodes: readonly SeriesEpisode[]): string[] => [
     ...new Set(episodes.map((e) => e.arc)),
 ];
 
-/** 某主題嘅集數，按集數排 */
+/** 某短篇嘅集數，按集數排 */
 export const episodesInArc = (episodes: readonly SeriesEpisode[], arc: string): SeriesEpisode[] =>
     episodes.filter((e) => e.arc === arc).sort((a, b) => a.no - b.no);
 
@@ -29,7 +29,7 @@ const lastTouched = (
 };
 
 /**
- * 主題劇集入頁播邊集（episodes 係由第一個主題第 1 集排到最後）：
+ * 短篇劇集入頁播邊集（episodes 係由第一個短篇第 1 集排到最後）：
  * 最近聽緊嗰集未聽完就續播；聽完就播下一集（全部聽完就停喺最後一集）；未聽過就由第一集
  */
 export const pickSeriesStart = (
@@ -52,14 +52,14 @@ export const pickDailyStart = (
     today: string,
 ): DailyEpisode | undefined => newestFirst.find((e) => e.date <= today) ?? newestFirst.at(-1);
 
-/** 主頁劇集格「New」：每日劇集今日有一集而且未聽完；主題劇集固定唔變，永遠唔係新 */
+/** 主頁劇集格「New」：每日劇集今日有一集而且未聽完；短篇劇集固定唔變，永遠唔係新 */
 export const dramaHasNew = (
     episodes: readonly DramaEpisode[],
     today: string,
     watchedUrls: ReadonlySet<string>,
 ): boolean => episodes.some((e) => isDaily(e) && e.date === today && !watchedUrls.has(e.url));
 
-/** mini player / 鎖屏嘅副標題：主題劇集「主題 · 第 N 集 標題」；每日劇集用日子（重播加「重溫」） */
+/** mini player / 鎖屏嘅副標題：短篇劇集「短篇 · 第 N 集 標題」；每日劇集用日子（重播加「重溫」） */
 export const dramaEpisodeLabel = (episode: DramaEpisode): string => {
     if (!isDaily(episode)) {
         const { arc, no, title } = episode;

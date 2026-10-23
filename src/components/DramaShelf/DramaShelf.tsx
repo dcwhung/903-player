@@ -7,7 +7,7 @@ export interface DramaShelfItem {
     name: string;
     /** 劇集原圖（16:9，已經有劇名） */
     art: string;
-    /** 右下角細字（例如「11 個主題」/「每日更新」） */
+    /** 右下角細字（例如「10 個短篇」/「每日更新」） */
     meta: string;
     isNew: boolean;
     onOpen: () => void;

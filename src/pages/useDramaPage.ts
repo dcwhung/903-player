@@ -93,13 +93,13 @@ export const useDailyDramaPage = (drama: DramaConfig) => {
     };
 };
 
-/** 揀咗睇邊個主題；未揀（或者揀返播緊嗰個）就跟播緊嗰集嘅主題 */
+/** 揀咗睇邊個短篇；未揀（或者揀返播緊嗰個）就跟播緊嗰集嘅短篇 */
 const useViewedArc = (playingArc: string | undefined) => {
     const [picked, setPicked] = useState<string | null>(null);
     return { arc: picked ?? playingArc, pickArc: setPicked };
 };
 
-/** 主題劇集頁（例如芝-See-菇-Bi-Family）：唱片 + 主題 chips + 嗰個主題嘅集數 */
+/** 短篇劇集頁（例如芝-See-菇-Bi-Family）：唱片 + 短篇 chips + 嗰個短篇嘅集數 */
 export const useSeriesDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
     const arcs = useMemo(() => seriesArcs(episodes), [episodes]);
