@@ -229,6 +229,20 @@ th { background: var(--shell-panel); font-weight: 600; }
     -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
             mask: radial-gradient(closest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
 }
+/*
+ * 劇集碟面：同 app 嘅 Disc 一樣，劇集圖 cover 成隻碟（16:9 圖裁中間正方），
+ * 上面疊坑紋、四邊暗角同中心軸孔，似一隻印咗圖嘅 picture disc
+ */
+.phone.chi .disc, .phone.chiy .disc, .phone.chio .disc { --art: url(../dramas/chisee.webp); --art-pos: 46% 50%; }
+/* 18樓C座：劇名橫跨圖闊約六成，cover 會切走「十」同「座」，改用 145% 闊、上下用圖嘅暖啡補 */
+.phone.c18a .disc { --art: url(../dramas/c18.jpg); --art-pos: 50% 50%; --art-size: 145% auto; --art-fill: #4f3c2b; }
+.phone.chi .disc, .phone.chiy .disc, .phone.chio .disc, .phone.c18a .disc {
+    background:
+        radial-gradient(circle, #111 0 3%, rgb(0 0 0 / 50%) 3.2% 5%, transparent 5.5%),
+        repeating-radial-gradient(circle, rgb(255 255 255 / 0%) 0 3px, rgb(255 255 255 / 10%) 3px 4px),
+        radial-gradient(circle, transparent 55%, rgb(0 0 0 / 45%) 100%),
+        var(--art) var(--art-pos) / var(--art-size, cover) no-repeat var(--art-fill, transparent);
+}
 .ctrls { display: flex; align-items: center; gap: 14px; font-size: 11px; color: var(--muted); }
 .ctrls .b { width: 40px; height: 40px; border-radius: 999px; background: var(--surface); display: grid; place-items: center; color: var(--text); }
 .ctrls .play { width: 52px; height: 52px; background: var(--accent); color: var(--on-accent); font-size: 18px; }
