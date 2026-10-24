@@ -282,6 +282,39 @@ body {
 .row .name { font-size: var(--fs-md); font-weight: 500; color: var(--theme-title); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* 廣播劇（短篇）：清單欄頂「現正播放」+ 「☰ 全集」+ 短篇 chips（ArcPicker） */
+/*
+ * 「☰ 全集」sheet（橫版）：只蓋左欄頁頭以下（chips + 集數清單），右欄播放器照見照撳得。
+ * 由欄底滑上；頂圓角 + 拉柄；Esc / ✕ / 撳返「☰ 全集」收埋。直版照舊由畫面底滑上蓋全頁
+ */
+.list-body { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--fixed-gap); }
+.sheet {
+    position: absolute; z-index: 6; inset: 0;
+    display: flex; flex-direction: column; min-height: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--theme-bg);
+    box-shadow: 0 -6px 18px rgb(0 0 0 / 18%), 0 0 0 1px color-mix(in srgb, var(--theme-track) 70%, transparent);
+    animation: sheet-up 0.24s var(--ease-card);
+}
+@keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } }
+.sheet-grip { flex-shrink: 0; width: calc(36px * var(--s)); height: 4px; margin: var(--sp-2) auto 0; border-radius: 2px; background: var(--theme-track); }
+.sheet-head { flex-shrink: 0; display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-4); }
+.sheet-head h2 { margin: 0; font-size: var(--fs-lg); font-weight: 700; color: var(--theme-title); }
+.sheet-head .sum { margin-left: auto; font-size: var(--fs-xs); color: var(--theme-muted); font-variant-numeric: tabular-nums; }
+.app .sheet-close { width: var(--touch); height: var(--touch); border: 0; background: transparent; display: grid; place-items: center; color: var(--theme-text); }
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--sp-3) max(var(--sp-4), var(--sa-b, 0px)) var(--sp-3); }
+.sheet-group { margin: var(--sp-3) var(--sp-1) var(--sp-2); font-size: var(--fs-sm); font-weight: 600; color: var(--theme-muted); letter-spacing: 0.1em; }
+.sheet-row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2); border-radius: calc(14px * var(--s)); }
+.sheet-row.on { background: var(--theme-surface); box-shadow: inset 0 0 0 2px var(--theme-accent); }
+.ring { --p: 0; flex-shrink: 0; width: calc(40px * var(--s)); height: calc(40px * var(--s)); border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--theme-accent) calc(var(--p) * 1%), var(--theme-track) 0); }
+.ring span { width: 78%; height: 78%; border-radius: 50%; display: grid; place-items: center; background: var(--theme-bg); font-size: var(--fs-2xs); font-weight: 700; color: var(--theme-title); font-variant-numeric: tabular-nums; }
+.sheet-row.on .ring span { background: var(--theme-surface); }
+.sheet-row .body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sheet-row .nm { font-size: var(--fs-md); font-weight: 700; color: var(--theme-text); }
+.sheet-row .sub { font-size: var(--fs-xs); color: var(--theme-muted); }
+.sheet-row.on .sub { color: var(--theme-title); }
+.app .sheet-play { --ico: calc(18px * var(--s)); flex-shrink: 0; width: var(--touch); height: var(--touch); border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--theme-accent); color: var(--theme-on-accent); }
+.app .chip.all[aria-expanded="true"] { box-shadow: 0 0 0 2px var(--theme-accent); }
+
 .arc-picker { flex-shrink: 0; display: flex; flex-direction: column; min-width: 0; }
 .arc-label { height: calc(20px * var(--s)); line-height: calc(20px * var(--s)); padding: 0 var(--sp-1); font-size: var(--fs-sm); font-weight: 500; color: var(--theme-title); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .arc-row { display: flex; align-items: center; gap: var(--sp-2); height: calc(40px * var(--s)); min-width: 0; }
@@ -328,6 +361,7 @@ th { color: var(--shell-muted); font-weight: 500; font-size: 12px; border-top: 0
 td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border-radius: 4px; color: var(--shell-accent); }
 
 @media (prefers-reduced-motion: reduce) {
+    .sheet { animation: none; }
     .mq[data-run] { text-overflow: ellipsis; -webkit-mask-image: none; mask-image: none; }
     .mq[data-run] .mq-track { animation: none; }
     .mq[data-run] .mq-track > span + span { display: none; }
@@ -405,6 +439,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                     <tr><td>「現正播放」</td><td>只有廣播劇（chips 上面）；節目頁 / 今日節目頁橫版冇（日子條收埋咗）</td><td>三頁都有，喺右欄唱片下面</td></tr>
                     <tr><td>唱片、弧形進度、播放 / 由頭播</td><td>左欄</td><td>右欄，喺欄內置中</td></tr>
                     <tr><td>今日節目表上面「今日節目 / 日期 · N 個」</td><td>右欄清單頂</td><td>拎走（標題同頁頭重覆；日期同個數搬去唱片下面「現正播放」）</td></tr>
+                    <tr><td>廣播劇「☰ 全集」sheet</td><td>由畫面底滑上，蓋住成頁（連播放器）</td><td>只蓋左欄頁頭以下（chips + 清單），右欄播放器照見、照撳得；Esc / ✕ / 再撳「☰ 全集」收埋</td></tr>
                     <tr><td>今日節目卡疊 + 指示點</td><td>左欄</td><td>右欄（手機打橫指示點跟頁頭）</td></tr>
                     <tr><td>直版</td><td colspan="2">不變（兩欄 <code>display: contents</code>）</td></tr>
                 </tbody>
@@ -431,6 +466,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                     <tr><td><code>src/pages/Page.module.css</code></td><td>橫版 <code>.fixed</code> 嘅 <code>grid-template-columns</code> 對調（含 ≤ 561px 54 / 46）；<code>.listColumn</code> 分隔線由 <code>border-left</code> 改 <code>border-right</code>；用 <code>order</code> 或 <code>grid-column</code> 將清單欄放第一欄（直版 DOM 次序唔使改）</td></tr>
                     <tr><td><code>ShowPage.tsx</code>、<code>TodayPage.tsx</code>、<code>DramaPage.tsx</code></td><td>頁頭由 <code>.playerColumn</code> 搬去橫版清單欄頂（直版位置唔變，可以用 grid area 處理，唔使重複 render）；新增橫版先出嘅「現正播放」一行（直版節目頁照用日子條標籤）</td></tr>
                     <tr><td>新 <code>Marquee</code> component + <code>useMarquee</code> hook</td><td>ResizeObserver 量 overflow → 開關動畫；取代上面各處嘅 ellipsis（直版都受惠）</td></tr>
+                    <tr><td><code>ArcSheet</code></td><td>橫版改為喺清單欄入面定位（<code>position: absolute</code> 喺清單欄 body），唔再 fixed 蓋全頁、冇全頁遮罩；直版不變</td></tr>
                     <tr><td><code>ArcPicker</code></td><td>橫版收埋 chips 上面嘅「現正播放」標籤（改喺唱片下面出），直版不變</td></tr>
                     <tr><td><code>--player-disc-reserve</code></td><td>頁頭唔喺播放器欄就唔再扣頁頭高度，唱片可以大啲</td></tr>
                     <tr><td>e2e / test</td><td>橫版 case 改為檢查清單喺左、播放器喺右</td></tr>
@@ -494,7 +530,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
     const FLY_MS = 280;
     const APP_VERSION = 'v0.8.1';
 
-    const state = { page: 'show', device: 'phone', count: 'pill', playing: false, epIndex: 0, todayIndex: 2, arcIndex: 0, dramaEp: 1 };
+    const state = { page: 'show', device: 'phone', sheet: false, count: 'pill', playing: false, epIndex: 0, todayIndex: 2, arcIndex: 0, dramaEp: 1 };
     try {
         const saved = JSON.parse(localStorage.getItem('landscape-list-left-preview') || '{}');
         if (saved.page in PAGES) state.page = saved.page;
@@ -624,7 +660,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         { name: '好朋友手牽手', eps: ['相識', '聖誕節交換禮物大作戰之邊個抽中咗菇Bi', '吵架', '和好'] },
         { name: '青春期眞神奇', eps: ['變聲', '暗戀', '日記', '表白', '畢業'] },
         { name: 'Ｘ時mas時小提議', eps: ['聖誕樹', '報佳音', '交換禮物'] },
-        { name: '小苦妹撲水', eps: ['補習', '考試', '派成績'] },
+        { name: '小苦妹撲水', eps: ['補習', '考試', '派成績'], done: true },
     ];
     const DRAMA_SECONDS = 9 * 60 + 24;
     // 廣播劇「現正播放」：A 尾巴膠囊「2 / 4」；B 第二行「短篇名 · 第 2 / 4 集」
@@ -634,6 +670,32 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             return `${nowHtml(cur)}<div class="now-sub">${mq(`${arc.name} · 第 ${no} / ${total} 集`)}</div>`;
         }
         return nowHtml(`第 ${no} 集 ${cur}`, `<span class="now-count" aria-label="共 ${total} 集中第 ${no} 集">${no} / ${total}</span>`);
+    };
+    // 全集 sheet：播放中 → 未聽完 → 已聽完；示意：播緊之前嘅短篇當已聽完
+    const ringHtml = (heard, total) => `<span class="ring" style="--p:${Math.round((heard / total) * 100)}"><span>${heard}/${total}</span></span>`;
+    const sheetHtml = () => {
+        const groups = { playing: [], todo: [], done: [] };
+        ARCS.forEach((a, i) => {
+            const key = i === state.arcIndex ? 'playing' : a.done ? 'done' : 'todo';
+            groups[key].push(i);
+        });
+        const row = (i) => {
+            const a = ARCS[i], on = i === state.arcIndex, total = a.eps.length;
+            const heard = on ? state.dramaEp : a.done ? total : 0;
+            const sub = on ? `播緊第 ${state.dramaEp + 1} 集` : a.done ? `已聽完 · ${total} 集` : `未聽 · ${total} 集`;
+            const btn = on ? (state.playing ? ICON.pause : ICON.play()) : a.done ? ICON.restart : ICON.play();
+            return `<div class="sheet-row ${on ? 'on' : ''}">${ringHtml(heard, total)}
+                <span class="body"><span class="nm">${mq(a.name)}</span><span class="sub">${sub}</span></span>
+                <button type="button" class="sheet-play" data-sheet-play="${i}" aria-label="播放 ${esc(a.name)}">${btn}</button></div>`;
+        };
+        const grp = (title, ids) => ids.length ? `<div class="sheet-group">${title}</div>${ids.map(row).join('')}` : '';
+        const doneCount = ARCS.filter((a) => a.done).length;
+        return `<section class="sheet" role="dialog" aria-label="全集" data-sheet>
+            <div class="sheet-grip"></div>
+            <div class="sheet-head"><h2>全集</h2><span class="sum">聽完 ${doneCount} / ${ARCS.length} 個</span>
+                <button type="button" class="sheet-close" data-act="sheet-close" aria-label="收埋全集">✕</button></div>
+            <div class="sheet-body">${grp('播放中', groups.playing)}${grp('未聽完', groups.todo)}${grp('已聽完', groups.done)}</div>
+        </section>`;
     };
     const dramaPageHtml = () => {
         const arc = ARCS[state.arcIndex];
@@ -651,10 +713,10 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         const cur = arc.eps[state.dramaEp];
         return columns(headHtml('芝See菇Bi Family'),
             `<div class="player">${gaugeHtml(IMG.chisee, 0.42, DRAMA_SECONDS)}${dramaNow(arc, cur)}</div>`, '短篇集數',
-            `<div class="arc-picker">
-                    <div class="arc-row"><button type="button" class="chip all">☰ 全集</button><div class="arc-chips">${chips}</div></div>
+            `<div class="list-body"><div class="arc-picker">
+                    <div class="arc-row"><button type="button" class="chip all" data-act="sheet" aria-expanded="${state.sheet}">☰ 全集</button><div class="arc-chips">${chips}</div></div>
                 </div>
-                <ul class="list" data-list>${rows}</ul>`);
+                <ul class="list" data-list>${rows}</ul>${state.sheet ? sheetHtml() : ''}</div>`);
     };
 
     const device = document.getElementById('device');
@@ -744,7 +806,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         render();
     };
 
-    document.querySelectorAll('[data-page]').forEach((b) => b.addEventListener('click', () => { state.page = b.dataset.page; render(); }));
+    document.querySelectorAll('[data-page]').forEach((b) => b.addEventListener('click', () => { state.page = b.dataset.page; state.sheet = false; render(); }));
     document.querySelectorAll('[data-device]').forEach((b) => b.addEventListener('click', () => { state.device = b.dataset.device; render(); }));
     document.querySelectorAll('[data-count]').forEach((b) => b.addEventListener('click', () => { state.count = b.dataset.count; render(); }));
 
@@ -761,6 +823,14 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         }
         if (t.dataset.open) { state.page = 'show'; render(); return; }
         if (t.dataset.ep !== undefined) { setEpisode(Number(t.dataset.ep)); return; }
+        if (act === 'sheet') { state.sheet = !state.sheet; render(); return; }
+        if (act === 'sheet-close') { state.sheet = false; render(); return; }
+        if (t.dataset.sheetPlay !== undefined) {
+            const i = Number(t.dataset.sheetPlay);
+            if (i === state.arcIndex) state.playing = !state.playing;
+            else { state.arcIndex = i; state.dramaEp = 0; state.playing = true; }
+            state.sheet = false; render(); return;
+        }
         if (t.dataset.arcPick !== undefined) { state.arcIndex = Number(t.dataset.arcPick); state.dramaEp = 0; render(); return; }
         if (t.dataset.dramaEp !== undefined) { state.dramaEp = Number(t.dataset.dramaEp); render(); return; }
         if (t.dataset.today !== undefined) { setToday(Number(t.dataset.today)); return; }
@@ -784,6 +854,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         else setToday(state.todayIndex + (dx < 0 ? 1 : -1), dx < 0 ? 'fly-left' : 'fly-right');
     });
     device.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && state.sheet) { state.sheet = false; render(); return; }
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
         const left = e.key === 'ArrowLeft';
         if (e.target.matches('[data-stack]')) { e.preventDefault(); state.refocus = '[data-stack]'; setToday(state.todayIndex + (left ? -1 : 1)); }
