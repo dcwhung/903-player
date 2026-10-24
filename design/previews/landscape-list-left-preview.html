@@ -150,11 +150,9 @@ body {
 /* 唱片 / 卡疊下面「現正播放：…」（三頁一樣；強調色，一行放唔落就截） */
 .now-playing { flex-shrink: 0; max-width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--sp-2); height: var(--now-h); line-height: var(--now-h); font-size: var(--fs-sm); font-weight: 500; color: var(--theme-title); }
 .now-playing .mq { min-width: 0; }
-/* 方案 A：總數做尾巴細膠囊（淡色、等寬數字），唔同主句爭 */
-.now-count { flex-shrink: 0; padding: 0 var(--sp-2); border-radius: 999px; background: color-mix(in srgb, var(--theme-track) 55%, transparent); color: var(--theme-muted); font-size: var(--fs-xs); line-height: calc(18px * var(--s)); font-variant-numeric: tabular-nums; }
-/* 方案 B：第二行細字（短篇名 · 第 N / M 集），淡色 */
+/* 廣播劇第二行細字（集名），淡色 */
 .now-sub { flex-shrink: 0; max-width: 100%; height: calc(18px * var(--s)); line-height: calc(18px * var(--s)); font-size: var(--fs-xs); color: var(--theme-muted); font-variant-numeric: tabular-nums; margin-top: calc(-1 * var(--fixed-gap) + var(--sp-1)); }
-.drama-page.count-sub .col-left { --head-reserve: calc(var(--now-h) + calc(18px * var(--s)) + var(--sp-1) + var(--fixed-gap)); }
+.drama-page .col-left { --head-reserve: calc(var(--now-h) + calc(18px * var(--s)) + var(--sp-1) + var(--fixed-gap)); }
 
 /*
  * 跑馬燈：放唔落嘅字（JS 量到 scrollWidth > clientWidth）先郁；單向向左、無縫 loop
@@ -382,10 +380,6 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                 <button type="button" id="pg-today" data-page="today" aria-pressed="false">今日節目頁</button>
                 <button type="button" id="pg-drama" data-page="drama" aria-pressed="false">廣播劇播放頁</button>
             </div>
-            <div class="seg" role="group" aria-label="廣播劇總數位置">
-                <button type="button" data-count="pill" aria-pressed="true">總數：尾巴膠囊（建議）</button>
-                <button type="button" data-count="sub" aria-pressed="false">總數：第二行</button>
-            </div>
             <div class="seg" role="group" aria-label="裝置">
                 <button type="button" id="dv-phone" data-device="phone" aria-pressed="true">iPhone 打橫</button>
                 <button type="button" id="dv-se" data-device="se" aria-pressed="false">窄：iPhone SE 打橫</button>
@@ -423,7 +417,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                 <tbody>
                     <tr><td>節目頁</td><td>現正播放：21/10 星期三</td><td>連線中…</td></tr>
                     <tr><td>今日節目頁</td><td>現正播放：21/10 星期三 · 第 3 / 5 個節目（節目名已喺卡入面）</td><td>連線中…</td></tr>
-                    <tr><td>廣播劇播放頁（短篇）</td><td>A（建議）：現正播放：第 N 集 集名 <code>N / M</code>（尾巴淡色膠囊）<br>B：現正播放：集名；下一行細字「短篇名 · 第 N / M 集」</td><td>連線中…</td></tr>
+                    <tr><td>廣播劇播放頁（短篇）</td><td>現正播放：短篇名 · 第 N / M 集；下一行淡色細字：集名</td><td>連線中…</td></tr>
                     <tr><td>廣播劇播放頁（每日）</td><td>現正播放：日期（同節目頁）</td><td>連線中…</td></tr>
                 </tbody>
             </table></div>
@@ -530,12 +524,11 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
     const FLY_MS = 280;
     const APP_VERSION = 'v0.8.1';
 
-    const state = { page: 'show', device: 'phone', sheet: false, count: 'pill', playing: false, epIndex: 0, todayIndex: 2, arcIndex: 0, dramaEp: 1 };
+    const state = { page: 'show', device: 'phone', sheet: false, playing: false, epIndex: 0, todayIndex: 2, arcIndex: 0, dramaEp: 1 };
     try {
         const saved = JSON.parse(localStorage.getItem('landscape-list-left-preview') || '{}');
         if (saved.page in PAGES) state.page = saved.page;
         if (saved.device in DEVICES) state.device = saved.device;
-        if (saved.count === 'pill' || saved.count === 'sub') state.count = saved.count;
     } catch { /* 冇 storage 照用預設 */ }
 
     // 節目頁：Bad Girl 逢一至五，過去 21 日（日子條包埋六日，灰色）
@@ -602,7 +595,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
     // 清單欄（左，連頁頭）+ 播放器欄（右，唱片下面「現正播放」）
     const columns = (head, player, listLabel, list) => `<section class="col-right" aria-label="${listLabel}">${head}${list}</section>
             <div class="col-left">${player}</div>`;
-    const nowHtml = (text, count = '') => `<div class="now-playing">${mq(`現正播放：${text}`)}${count}</div>`;
+    const nowHtml = (text) => `<div class="now-playing">${mq(`現正播放：${text}`)}</div>`;
     const dayLabel = (x) => `${x.dm} 星期${WEEKDAYS[x.wd]}`;
 
     const statusOf = (ep, current) => {
@@ -663,13 +656,10 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         { name: '小苦妹撲水', eps: ['補習', '考試', '派成績'], done: true },
     ];
     const DRAMA_SECONDS = 9 * 60 + 24;
-    // 廣播劇「現正播放」：A 尾巴膠囊「2 / 4」；B 第二行「短篇名 · 第 2 / 4 集」
+    // 廣播劇「現正播放」：第一行短篇名 + 第 N / M 集；第二行（淡色細字）集名
     const dramaNow = (arc, cur) => {
         const no = state.dramaEp + 1, total = arc.eps.length;
-        if (state.count === 'sub') {
-            return `${nowHtml(cur)}<div class="now-sub">${mq(`${arc.name} · 第 ${no} / ${total} 集`)}</div>`;
-        }
-        return nowHtml(`第 ${no} 集 ${cur}`, `<span class="now-count" aria-label="共 ${total} 集中第 ${no} 集">${no} / ${total}</span>`);
+        return `${nowHtml(`${arc.name} · 第 ${no} / ${total} 集`)}<div class="now-sub">${mq(cur)}</div>`;
     };
     // 全集 sheet：播放中 → 未聽完 → 已聽完；示意：播緊之前嘅短篇當已聽完
     const ringHtml = (heard, total) => `<span class="ring" style="--p:${Math.round((heard / total) * 100)}"><span>${heard}/${total}</span></span>`;
@@ -746,7 +736,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         device.style.width = `${dv.w}px`;
         device.style.height = `${dv.h}px`;
         const chrome = dv.kind === 'phone' ? '<span class="notch"></span><span class="home-ind"></span>' : '';
-        device.innerHTML = `${chrome}<main class="app ${PAGE_CLASS[state.page]} count-${state.count}" style="--sa-l:${dv.sa.l}px;--sa-r:${dv.sa.r}px;--sa-b:${dv.sa.b}px;--fixed-gap:${dv.gap}px">${PAGE_HTML[state.page]()}</main>`;
+        device.innerHTML = `${chrome}<main class="app ${PAGE_CLASS[state.page]}" style="--sa-l:${dv.sa.l}px;--sa-r:${dv.sa.r}px;--sa-b:${dv.sa.b}px;--fixed-gap:${dv.gap}px">${PAGE_HTML[state.page]()}</main>`;
         const app = device.querySelector('.app');
         if (state.page === 'show') applyTheme(app, 'badgirl');
         if (state.page === 'today') applyTheme(app, TODAY_SHOWS[state.todayIndex].id);
@@ -754,14 +744,13 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         caption.textContent = dv.label;
         document.querySelectorAll('[data-page]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.page === state.page)));
         document.querySelectorAll('[data-device]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.device === state.device)));
-        document.querySelectorAll('[data-count]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.count === state.count)));
         const row = device.querySelector('.list [aria-current="true"]');
         const list = device.querySelector('[data-list]');
         if (row && list) list.scrollTop = Math.max(0, row.offsetTop - list.offsetTop - list.clientHeight / 2 + row.offsetHeight / 2);
         if (state.refocus) { device.querySelector(state.refocus)?.focus(); state.refocus = null; }
         fit();
         runMarquees();
-        try { localStorage.setItem('landscape-list-left-preview', JSON.stringify({ page: state.page, device: state.device, count: state.count })); } catch { /* 冇 storage 唔記 */ }
+        try { localStorage.setItem('landscape-list-left-preview', JSON.stringify({ page: state.page, device: state.device })); } catch { /* 冇 storage 唔記 */ }
     };
 
     const fit = () => {
@@ -808,7 +797,6 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
 
     document.querySelectorAll('[data-page]').forEach((b) => b.addEventListener('click', () => { state.page = b.dataset.page; state.sheet = false; render(); }));
     document.querySelectorAll('[data-device]').forEach((b) => b.addEventListener('click', () => { state.device = b.dataset.device; render(); }));
-    document.querySelectorAll('[data-count]').forEach((b) => b.addEventListener('click', () => { state.count = b.dataset.count; render(); }));
 
     device.addEventListener('click', (e) => {
         const t = e.target.closest('button, [data-arc]');
