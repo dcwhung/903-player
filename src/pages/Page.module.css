@@ -77,7 +77,8 @@
  */
 .playerColumn,
 .listColumn,
-.listBody {
+.listBody,
+.listContent {
     display: contents;
 }
 

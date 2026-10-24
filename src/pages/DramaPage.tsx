@@ -132,15 +132,18 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
                 <div className={page.listColumn}>
                     {landscape && <DramaHeader title={drama.name} />}
                     <div className={page.listBody}>
-                        <ArcPicker
-                            arcs={arcs}
-                            selected={arc}
-                            playing={current?.arc}
-                            label={label}
-                            onPick={pickArc}
-                            onOpenAll={sheet.openSheet}
-                        />
-                        <EpisodeList items={items} onSelect={pressEpisode} labels="title" />
+                        {/* 橫版全集表蓋住 chips + 清單：下面嗰啲 inert，Tab / 讀屏唔會入到睇唔見嘅嘢 */}
+                        <div className={page.listContent} inert={landscape && sheet.open}>
+                            <ArcPicker
+                                arcs={arcs}
+                                selected={arc}
+                                playing={current?.arc}
+                                label={label}
+                                onPick={pickArc}
+                                onOpenAll={sheet.openSheet}
+                            />
+                            <EpisodeList items={items} onSelect={pressEpisode} labels="title" />
+                        </div>
                         {landscape && arcSheet}
                     </div>
                 </div>

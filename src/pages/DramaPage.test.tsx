@@ -105,9 +105,13 @@ describe('DramaPage', () => {
 
             const dialog = screen.getByRole('dialog', { name: '全集' });
             expect(dialog).toHaveAttribute('aria-modal', 'false');
+            // 表蓋住嘅 chips + 清單 inert（Tab 唔會入去）
+            expect(
+                screen.getByRole('group', { name: '短篇', hidden: true }).closest('[inert]'),
+            ).not.toBeNull();
             expect(screen.queryByTestId('arc-sheet-backdrop')).not.toBeInTheDocument();
-            const chips = screen.getByRole('group', { name: '短篇' });
-            expect(chips.parentElement?.parentElement).toContainElement(dialog);
+            const chips = screen.getByRole('group', { name: '短篇', hidden: true });
+            expect(chips.closest('[inert]')?.parentElement).toContainElement(dialog);
             expect(screen.getByRole('slider', { name: '播放進度' })).toBeInTheDocument();
         });
     });
