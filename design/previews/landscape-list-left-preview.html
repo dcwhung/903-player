@@ -59,6 +59,7 @@ body {
     container: screen / size;
 }
 .device[data-kind="tablet"] { border-radius: 24px; }
+.device[data-kind="se"] { border-radius: 18px; }
 .device[data-kind="desktop"] { border-radius: 10px; box-shadow: 0 0 0 1px #33373c, 0 24px 70px rgb(0 0 0 / 55%); }
 /* iPhone 打橫：瀏海喺左邊，home indicator 喺底 */
 .notch {
@@ -94,8 +95,9 @@ body {
     background: var(--theme-bg);
     color: var(--theme-text);
     font-family: var(--font);
-    padding-left: var(--sa-l, 0px);
-    padding-right: var(--sa-r, 0px);
+    /* 冇瀏海（例如 iPhone SE）都留返少少邊 */
+    padding-left: max(var(--sp-3), var(--sa-l, 0px));
+    padding-right: max(var(--sp-3), var(--sa-r, 0px));
     transition: background-color 0.3s;
 }
 .app button { font: inherit; color: inherit; cursor: pointer; }
@@ -146,7 +148,27 @@ body {
 .col-right > .page-head { padding-right: var(--sp-3); }
 
 /* 唱片 / 卡疊下面「現正播放：…」（三頁一樣；強調色，一行放唔落就截） */
-.now-playing { flex-shrink: 0; max-width: 100%; height: var(--now-h); line-height: var(--now-h); font-size: var(--fs-sm); font-weight: 500; color: var(--theme-title); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.now-playing { flex-shrink: 0; max-width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--sp-2); height: var(--now-h); line-height: var(--now-h); font-size: var(--fs-sm); font-weight: 500; color: var(--theme-title); }
+.now-playing .mq { min-width: 0; }
+/* 方案 A：總數做尾巴細膠囊（淡色、等寬數字），唔同主句爭 */
+.now-count { flex-shrink: 0; padding: 0 var(--sp-2); border-radius: 999px; background: color-mix(in srgb, var(--theme-track) 55%, transparent); color: var(--theme-muted); font-size: var(--fs-xs); line-height: calc(18px * var(--s)); font-variant-numeric: tabular-nums; }
+/* 方案 B：第二行細字（短篇名 · 第 N / M 集），淡色 */
+.now-sub { flex-shrink: 0; max-width: 100%; height: calc(18px * var(--s)); line-height: calc(18px * var(--s)); font-size: var(--fs-xs); color: var(--theme-muted); font-variant-numeric: tabular-nums; margin-top: calc(-1 * var(--fixed-gap) + var(--sp-1)); }
+.drama-page.count-sub .col-left { --head-reserve: calc(var(--now-h) + calc(18px * var(--s)) + var(--sp-1) + var(--fixed-gap)); }
+
+/*
+ * 跑馬燈：放唔落嘅字（JS 量到 scrollWidth > clientWidth）先郁；單向向左、無縫 loop
+ * （兩份字 + 間隔，移 -50%），開頭停 1.2s 先開始；速度固定 px/s，長字唔會飛得快。
+ * 兩邊淡出遮罩；prefers-reduced-motion 唔郁，退返 ellipsis
+ */
+.mq { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mq-track { display: inline-flex; }
+.mq-track > span + span { display: none; }
+.mq[data-run] { text-overflow: clip; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+.mq[data-run] .mq-track { animation: mq var(--mq-dur, 8s) linear 1.2s infinite; }
+.mq[data-run] .mq-track > span { padding-right: 2.5em; }
+.mq[data-run] .mq-track > span + span { display: inline; }
+@keyframes mq { to { transform: translateX(-50%); } }
 
 /* 頁頭：返回掣 + 標題，放左欄頂、左對齊 */
 .page-head { align-self: stretch; display: flex; align-items: center; gap: var(--sp-2); min-width: 0; flex-shrink: 0; }
@@ -306,6 +328,9 @@ th { color: var(--shell-muted); font-weight: 500; font-size: 12px; border-top: 0
 td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border-radius: 4px; color: var(--shell-accent); }
 
 @media (prefers-reduced-motion: reduce) {
+    .mq[data-run] { text-overflow: ellipsis; -webkit-mask-image: none; mask-image: none; }
+    .mq[data-run] .mq-track { animation: none; }
+    .mq[data-run] .mq-track > span + span { display: none; }
     .disc .face { animation: none; }
     .card, .dot::after { transition: none; }
 }
@@ -323,8 +348,13 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                 <button type="button" id="pg-today" data-page="today" aria-pressed="false">今日節目頁</button>
                 <button type="button" id="pg-drama" data-page="drama" aria-pressed="false">廣播劇播放頁</button>
             </div>
+            <div class="seg" role="group" aria-label="廣播劇總數位置">
+                <button type="button" data-count="pill" aria-pressed="true">總數：尾巴膠囊（建議）</button>
+                <button type="button" data-count="sub" aria-pressed="false">總數：第二行</button>
+            </div>
             <div class="seg" role="group" aria-label="裝置">
                 <button type="button" id="dv-phone" data-device="phone" aria-pressed="true">iPhone 打橫</button>
+                <button type="button" id="dv-se" data-device="se" aria-pressed="false">窄：iPhone SE 打橫</button>
                 <button type="button" id="dv-small" data-device="small" aria-pressed="false">細視窗</button>
                 <button type="button" id="dv-tablet" data-device="tablet" aria-pressed="false">iPad 打橫</button>
                 <button type="button" id="dv-desktop" data-device="desktop" aria-pressed="false">桌面</button>
@@ -359,7 +389,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                 <tbody>
                     <tr><td>節目頁</td><td>現正播放：21/10 星期三</td><td>連線中…</td></tr>
                     <tr><td>今日節目頁</td><td>現正播放：21/10 星期三 · 第 3 / 5 個節目（節目名已喺卡入面）</td><td>連線中…</td></tr>
-                    <tr><td>廣播劇播放頁（短篇）</td><td>現正播放：第 N 集 集名（由左欄 chips 上面搬落嚟）</td><td>連線中…</td></tr>
+                    <tr><td>廣播劇播放頁（短篇）</td><td>A（建議）：現正播放：第 N 集 集名 <code>N / M</code>（尾巴淡色膠囊）<br>B：現正播放：集名；下一行細字「短篇名 · 第 N / M 集」</td><td>連線中…</td></tr>
                     <tr><td>廣播劇播放頁（每日）</td><td>現正播放：日期（同節目頁）</td><td>連線中…</td></tr>
                 </tbody>
             </table></div>
@@ -380,6 +410,19 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                 </tbody>
             </table></div>
         </article>
+        <article class="note">
+            <h2>跑馬燈（長字段）</h2>
+            <div class="tbl"><table>
+                <thead><tr><th>項目</th><th>規則</th></tr></thead>
+                <tbody>
+                    <tr><td>邊度用</td><td>頁頭標題、「現正播放」、今日節目卡節目名、清單節目名 / 集名、廣播劇第二行</td></tr>
+                    <tr><td>幾時郁</td><td>只係放唔落先郁（量 <code>scrollWidth &gt; clientWidth</code>，resize / 轉方向重新量）；放得落就靜止、照舊對齊</td></tr>
+                    <tr><td>點郁</td><td>單向向左、無縫 loop（兩份字 + 2.5em 間隔）；開頭停 1.2s；固定 40px/s，長字唔會快啲；兩邊淡出</td></tr>
+                    <tr><td>無障礙</td><td>第二份字 <code>aria-hidden</code>；<code>prefers-reduced-motion</code> 唔郁，退返 ellipsis</td></tr>
+                    <tr><td>示範</td><td>揀「窄：iPhone SE 打橫」；廣播劇第 2 集故意用長集名</td></tr>
+                </tbody>
+            </table></div>
+        </article>
         <article class="note wide">
             <h2>確認後實作要改嘅地方</h2>
             <div class="tbl"><table>
@@ -387,6 +430,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                 <tbody>
                     <tr><td><code>src/pages/Page.module.css</code></td><td>橫版 <code>.fixed</code> 嘅 <code>grid-template-columns</code> 對調（含 ≤ 561px 54 / 46）；<code>.listColumn</code> 分隔線由 <code>border-left</code> 改 <code>border-right</code>；用 <code>order</code> 或 <code>grid-column</code> 將清單欄放第一欄（直版 DOM 次序唔使改）</td></tr>
                     <tr><td><code>ShowPage.tsx</code>、<code>TodayPage.tsx</code>、<code>DramaPage.tsx</code></td><td>頁頭由 <code>.playerColumn</code> 搬去橫版清單欄頂（直版位置唔變，可以用 grid area 處理，唔使重複 render）；新增橫版先出嘅「現正播放」一行（直版節目頁照用日子條標籤）</td></tr>
+                    <tr><td>新 <code>Marquee</code> component + <code>useMarquee</code> hook</td><td>ResizeObserver 量 overflow → 開關動畫；取代上面各處嘅 ellipsis（直版都受惠）</td></tr>
                     <tr><td><code>ArcPicker</code></td><td>橫版收埋 chips 上面嘅「現正播放」標籤（改喺唱片下面出），直版不變</td></tr>
                     <tr><td><code>--player-disc-reserve</code></td><td>頁頭唔喺播放器欄就唔再扣頁頭高度，唱片可以大啲</td></tr>
                     <tr><td>e2e / test</td><td>橫版 case 改為檢查清單喺左、播放器喺右</td></tr>
@@ -435,6 +479,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         { id: 'lalala', name: '聖艾粒LaLaLaLa', time: '17:10', status: 'unwatched', pos: 0 },
     ];
     const DEVICES = {
+        se: { w: 667, h: 375, kind: 'se', label: '窄：iPhone SE 打橫 667 × 375 · 字同掣 × 1', sa: { l: 0, r: 0, b: 0 }, gap: 12 },
         phone: { w: 844, h: 390, kind: 'phone', label: 'iPhone 打橫 844 × 390 · 字同掣 × 1', sa: { l: 47, r: 47, b: 21 }, gap: 12 },
         small: { w: 960, h: 640, kind: 'desktop', label: '細視窗 960 × 640 · 字同掣 × 1', sa: { l: 20, r: 20, b: 0 }, gap: 16 },
         tablet: { w: 1180, h: 820, kind: 'tablet', label: 'iPad 打橫 1180 × 820 · 字同掣 × 1.5', sa: { l: 24, r: 24, b: 20 }, gap: 20 },
@@ -449,11 +494,12 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
     const FLY_MS = 280;
     const APP_VERSION = 'v0.8.1';
 
-    const state = { page: 'show', device: 'phone', playing: false, epIndex: 0, todayIndex: 2, arcIndex: 0, dramaEp: 1 };
+    const state = { page: 'show', device: 'phone', count: 'pill', playing: false, epIndex: 0, todayIndex: 2, arcIndex: 0, dramaEp: 1 };
     try {
         const saved = JSON.parse(localStorage.getItem('landscape-list-left-preview') || '{}');
         if (saved.page in PAGES) state.page = saved.page;
         if (saved.device in DEVICES) state.device = saved.device;
+        if (saved.count === 'pill' || saved.count === 'sub') state.count = saved.count;
     } catch { /* 冇 storage 照用預設 */ }
 
     // 節目頁：Bad Girl 逢一至五，過去 21 日（日子條包埋六日，灰色）
@@ -513,12 +559,14 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             </div>
         </div>`;
     };
-    const headHtml = (title, extra = '') => `<div class="page-head"><button type="button" class="back" data-act="home" aria-label="返回主頁">${ICON.back}</button><h1>${esc(title)}</h1>${extra}</div>`;
+    // 跑馬燈：第二份字 aria-hidden，讀屏只讀一次
+    const mq = (text) => `<span class="mq"><span class="mq-track"><span>${esc(text)}</span><span aria-hidden="true">${esc(text)}</span></span></span>`;
+    const headHtml = (title, extra = '') => `<div class="page-head"><button type="button" class="back" data-act="home" aria-label="返回主頁">${ICON.back}</button><h1 class="mq-host">${mq(title)}</h1>${extra}</div>`;
 
     // 清單欄（左，連頁頭）+ 播放器欄（右，唱片下面「現正播放」）
     const columns = (head, player, listLabel, list) => `<section class="col-right" aria-label="${listLabel}">${head}${list}</section>
             <div class="col-left">${player}</div>`;
-    const nowHtml = (text) => `<div class="now-playing">現正播放：${esc(text)}</div>`;
+    const nowHtml = (text, count = '') => `<div class="now-playing">${mq(`現正播放：${text}`)}${count}</div>`;
     const dayLabel = (x) => `${x.dm} 星期${WEEKDAYS[x.wd]}`;
 
     const statusOf = (ep, current) => {
@@ -553,7 +601,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             const active = i === state.todayIndex;
             return `<li><button type="button" class="row ${active ? 'current' : ''}" data-today="${i}" ${active ? 'aria-current="true"' : ''}>
                 <span class="mini-disc" style="--art:url('${IMG[s.id]}')"></span>
-                <span class="body"><span class="name">${esc(s.name)}</span><span class="st">${s.status === 'watched' ? '✓ ' : ''}${s.time} · ${TODAY_STATUS[s.status]}</span></span>
+                <span class="body"><span class="name">${mq(s.name)}</span><span class="st">${s.status === 'watched' ? '✓ ' : ''}${s.time} · ${TODAY_STATUS[s.status]}</span></span>
                 <span class="ico">${ICON.play(false)}</span>
             </button></li>`;
         }).join('');
@@ -563,7 +611,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             `<div class="stack-area">
                     <div class="stack" data-stack role="group" aria-roledescription="節目卡疊" aria-label="今日節目，左右掃動轉節目" tabindex="0">
                         ${ghosts}
-                        <div class="card" data-card>${gaugeHtml(IMG[show.id], show.pos)}<h2>${esc(show.name)}</h2></div>
+                        <div class="card" data-card>${gaugeHtml(IMG[show.id], show.pos)}<h2>${mq(show.name)}</h2></div>
                     </div>
                     <div class="dots">${dotsHtml()}</div>
                     ${nowHtml(`21/10 星期三 · 第 ${state.todayIndex + 1} / ${TODAY_SHOWS.length} 個節目`)}
@@ -573,12 +621,20 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
 
     // 芝See菇Bi Family（短篇）：chips 次序 = 播放中 → 新上架 → 未聽完 → 已聽完
     const ARCS = [
-        { name: '好朋友手牽手', eps: ['相識', '交換禮物', '吵架', '和好'] },
+        { name: '好朋友手牽手', eps: ['相識', '聖誕節交換禮物大作戰之邊個抽中咗菇Bi', '吵架', '和好'] },
         { name: '青春期眞神奇', eps: ['變聲', '暗戀', '日記', '表白', '畢業'] },
         { name: 'Ｘ時mas時小提議', eps: ['聖誕樹', '報佳音', '交換禮物'] },
         { name: '小苦妹撲水', eps: ['補習', '考試', '派成績'] },
     ];
     const DRAMA_SECONDS = 9 * 60 + 24;
+    // 廣播劇「現正播放」：A 尾巴膠囊「2 / 4」；B 第二行「短篇名 · 第 2 / 4 集」
+    const dramaNow = (arc, cur) => {
+        const no = state.dramaEp + 1, total = arc.eps.length;
+        if (state.count === 'sub') {
+            return `${nowHtml(cur)}<div class="now-sub">${mq(`${arc.name} · 第 ${no} / ${total} 集`)}</div>`;
+        }
+        return nowHtml(`第 ${no} 集 ${cur}`, `<span class="now-count" aria-label="共 ${total} 集中第 ${no} 集">${no} / ${total}</span>`);
+    };
     const dramaPageHtml = () => {
         const arc = ARCS[state.arcIndex];
         const chips = ARCS.map((a, i) => `<button type="button" class="chip ${i === state.arcIndex ? 'on' : ''}" data-arc-pick="${i}">${esc(a.name)}</button>`).join('');
@@ -588,13 +644,13 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
             const st = current ? `播放中 · ${fmt(ratio * DRAMA_SECONDS)} / ${fmt(DRAMA_SECONDS)}` : ratio >= 1 ? '已收聽' : '未收聽';
             return `<li><button type="button" class="row ${current ? 'current' : ''}" data-drama-ep="${i}" ${current ? 'aria-current="true"' : ''}>
                 <span class="ep-no">第 ${i + 1} 集</span>
-                <span class="body"><span class="ep-title">${esc(title)}</span><span class="bar"><span style="width:${Math.round(ratio * 100)}%"></span></span><span class="st">${st}</span></span>
+                <span class="body"><span class="ep-title">${mq(title)}</span><span class="bar"><span style="width:${Math.round(ratio * 100)}%"></span></span><span class="st">${st}</span></span>
                 <span class="ico ${ratio >= 1 ? 'done' : ''}">${ratio >= 1 ? ICON.check : ICON.play(false)}</span>
             </button></li>`;
         }).join('');
         const cur = arc.eps[state.dramaEp];
         return columns(headHtml('芝See菇Bi Family'),
-            `<div class="player">${gaugeHtml(IMG.chisee, 0.42, DRAMA_SECONDS)}${nowHtml(`第 ${state.dramaEp + 1} 集 ${cur}`)}</div>`, '短篇集數',
+            `<div class="player">${gaugeHtml(IMG.chisee, 0.42, DRAMA_SECONDS)}${dramaNow(arc, cur)}</div>`, '短篇集數',
             `<div class="arc-picker">
                     <div class="arc-row"><button type="button" class="chip all">☰ 全集</button><div class="arc-chips">${chips}</div></div>
                 </div>
@@ -612,13 +668,23 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
     const PAGE_HTML = { show: showPageHtml, today: todayPageHtml, drama: dramaPageHtml };
     const PAGE_CLASS = { show: 'show-page split', today: 'today-page split', drama: 'drama-page split' };
 
+    const MQ_PX_PER_S = 40;
+    const runMarquees = () => {
+        device.querySelectorAll('.mq').forEach((el) => {
+            const first = el.querySelector('.mq-track > span');
+            const over = first.scrollWidth > el.clientWidth + 1;
+            el.toggleAttribute('data-run', over);
+            if (over) el.style.setProperty('--mq-dur', `${(first.scrollWidth + el.clientWidth * 0.2) / MQ_PX_PER_S}s`);
+        });
+    };
+
     const render = () => {
         const dv = DEVICES[state.device];
         device.dataset.kind = dv.kind;
         device.style.width = `${dv.w}px`;
         device.style.height = `${dv.h}px`;
         const chrome = dv.kind === 'phone' ? '<span class="notch"></span><span class="home-ind"></span>' : '';
-        device.innerHTML = `${chrome}<main class="app ${PAGE_CLASS[state.page]}" style="--sa-l:${dv.sa.l}px;--sa-r:${dv.sa.r}px;--sa-b:${dv.sa.b}px;--fixed-gap:${dv.gap}px">${PAGE_HTML[state.page]()}</main>`;
+        device.innerHTML = `${chrome}<main class="app ${PAGE_CLASS[state.page]} count-${state.count}" style="--sa-l:${dv.sa.l}px;--sa-r:${dv.sa.r}px;--sa-b:${dv.sa.b}px;--fixed-gap:${dv.gap}px">${PAGE_HTML[state.page]()}</main>`;
         const app = device.querySelector('.app');
         if (state.page === 'show') applyTheme(app, 'badgirl');
         if (state.page === 'today') applyTheme(app, TODAY_SHOWS[state.todayIndex].id);
@@ -626,12 +692,14 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         caption.textContent = dv.label;
         document.querySelectorAll('[data-page]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.page === state.page)));
         document.querySelectorAll('[data-device]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.device === state.device)));
+        document.querySelectorAll('[data-count]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.count === state.count)));
         const row = device.querySelector('.list [aria-current="true"]');
         const list = device.querySelector('[data-list]');
         if (row && list) list.scrollTop = Math.max(0, row.offsetTop - list.offsetTop - list.clientHeight / 2 + row.offsetHeight / 2);
         if (state.refocus) { device.querySelector(state.refocus)?.focus(); state.refocus = null; }
         fit();
-        try { localStorage.setItem('landscape-list-left-preview', JSON.stringify({ page: state.page, device: state.device })); } catch { /* 冇 storage 唔記 */ }
+        runMarquees();
+        try { localStorage.setItem('landscape-list-left-preview', JSON.stringify({ page: state.page, device: state.device, count: state.count })); } catch { /* 冇 storage 唔記 */ }
     };
 
     const fit = () => {
@@ -678,6 +746,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
 
     document.querySelectorAll('[data-page]').forEach((b) => b.addEventListener('click', () => { state.page = b.dataset.page; render(); }));
     document.querySelectorAll('[data-device]').forEach((b) => b.addEventListener('click', () => { state.device = b.dataset.device; render(); }));
+    document.querySelectorAll('[data-count]').forEach((b) => b.addEventListener('click', () => { state.count = b.dataset.count; render(); }));
 
     device.addEventListener('click', (e) => {
         const t = e.target.closest('button, [data-arc]');
