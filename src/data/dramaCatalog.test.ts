@@ -1,5 +1,12 @@
 import { DRAMAS } from '../config/dramas';
-import { dailyEpisodesOf, dramaEpisodesOf, seriesEpisodesOf } from './dramaCatalog';
+import {
+    dailyEpisodesOf,
+    dramaEpisodesOf,
+    seriesEpisodesOf,
+    toChineseNumeral,
+} from './dramaCatalog';
+
+const R2_CHISEE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/芝See菇Bi Family';
 
 describe('dramaCatalog', () => {
     it('has episodes for every drama, each with its own url', () => {
@@ -29,9 +36,9 @@ describe('dramaCatalog', () => {
         expect(dailyEpisodesOf('c18').some((e) => e.rerun)).toBe(true);
     });
 
-    it('holds the full 芝See list: 10 短篇, 35 episodes, titles only where the file has one', () => {
+    it('holds the full 芝See list: 11 短篇, 71 episodes, titles only where the file has one', () => {
         const episodes = seriesEpisodesOf('chisee');
-        expect(episodes).toHaveLength(35);
+        expect(episodes).toHaveLength(71);
         expect([...new Set(episodes.map((e) => e.arc))]).toEqual([
             '你生日所以我生日',
             '大妒忌',
@@ -43,17 +50,15 @@ describe('dramaCatalog', () => {
             '青春期',
             '青春期眞神奇',
             'Ｘ時mas時小提議',
+            '三十六計',
         ]);
         const first = episodes[0];
         expect(first?.title).toBeUndefined();
         expect(first?.url).toMatch(/%E7%AC%AC%E4%B8%80%E9%9B%86\.m4a$/);
-        expect(episodes.at(-1)).toMatchObject({
-            arc: 'Ｘ時mas時小提議',
-            no: 4,
-            title: '認認真真搵返個人',
-        });
-        expect(decodeURIComponent(episodes.at(-1)?.url ?? '')).toBe(
-            'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/芝See菇Bi Family/Ｘ時mas時小提議/04 - Ｘ時mas時小提議 - 第四集 - 認認真真搵返個人.m4a',
+        const lastOld = episodes.find((e) => e.arc === 'Ｘ時mas時小提議' && e.no === 4);
+        expect(lastOld).toMatchObject({ title: '認認真真搵返個人' });
+        expect(decodeURIComponent(lastOld?.url ?? '')).toBe(
+            `${R2_CHISEE}/Ｘ時mas時小提議/04 - Ｘ時mas時小提議 - 第四集 - 認認真真搵返個人.m4a`,
         );
     });
 
@@ -62,5 +67,39 @@ describe('dramaCatalog', () => {
         expect(first?.url).toBe(
             'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/%E8%8A%9DSee%E8%8F%87Bi%20Family/%E6%B8%B8%E4%BA%81%E6%B0%B4/01%20-%20%E6%B8%B8%E4%BA%81%E6%B0%B4%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a',
         );
+    });
+
+    it('adds 三十六計 as a new 短篇 of 36 episodes, built from the original file names', () => {
+        const arc = seriesEpisodesOf('chisee').filter((e) => e.arc === '三十六計');
+        expect(arc).toHaveLength(36);
+        expect(arc.every((e) => e.addedAt === '2026-10-24')).toBe(true);
+        const fileOf = (no: number): string =>
+            decodeURIComponent(arc[no - 1]?.url ?? '').replace(`${R2_CHISEE}/三十六計/`, '');
+        expect(fileOf(1)).toBe('01 - 三十六計 - 第一集 - 瞞天過海 _ 隱形墨水筆.m4a');
+        expect(fileOf(10)).toBe('10 - 三十六計 - 第十集 - 以逸待勞 _ 智取亞生成績表.m4a');
+        expect(fileOf(17)).toBe('17 - 三十六計 - 第十七集 - 美人計 _ 小姐你係邊位？ .m4a');
+        expect(fileOf(36)).toBe(
+            '36 - 三十六計 - 第三十六集 - 偷樑換柱 + 金蟬脫殼 + 擒賊擒王 _ 完美的結局.m4a',
+        );
+    });
+
+    it('shows 三十六計 titles with 「：」 in place of the file-name 「 _ 」, trimmed', () => {
+        const arc = seriesEpisodesOf('chisee').filter((e) => e.arc === '三十六計');
+        expect(arc[0]?.title).toBe('瞞天過海：隱形墨水筆');
+        expect(arc[16]?.title).toBe('美人計：小姐你係邊位？');
+    });
+});
+
+describe('toChineseNumeral', () => {
+    it.each([
+        [1, '一'],
+        [4, '四'],
+        [10, '十'],
+        [11, '十一'],
+        [20, '二十'],
+        [21, '二十一'],
+        [36, '三十六'],
+    ])('%i → %s', (n, expected) => {
+        expect(toChineseNumeral(n)).toBe(expected);
     });
 });

@@ -45,8 +45,8 @@ describe('DramaPage', () => {
             const group = screen.getByRole('group', { name: '短篇' }).parentElement as HTMLElement;
             expect(within(group).getByText('連線中…')).toBeInTheDocument();
             act(() => audio.emitMetadata(1200));
-            // 「全部」+ 10 個短篇
-            expect(arcChips()).toHaveLength(11);
+            // 「全部」+ 11 個短篇
+            expect(arcChips()).toHaveLength(12);
             expect(screen.getByRole('button', { name: 'Ｘ時mas時小提議' })).toHaveAttribute(
                 'aria-pressed',
                 'true',
@@ -148,11 +148,11 @@ describe('DramaPage', () => {
             const picks = within(dialog)
                 .getAllByRole('button')
                 .filter((b) => b.dataset.role === 'pick');
-            expect(picks).toHaveLength(10);
+            expect(picks).toHaveLength(11);
             expect(picks[0]).toHaveAccessibleName('好朋友手牽手，播緊第 2 集');
             expect(picks[1]).toHaveAccessibleName('大妒忌，未聽 · 3 集');
             expect(picks.at(-1)).toHaveAccessibleName('你生日所以我生日，聽完 · 3 集');
-            expect(within(dialog).getByText('聽完 1 / 10 個')).toBeInTheDocument();
+            expect(within(dialog).getByText('聽完 1 / 11 個')).toBeInTheDocument();
 
             await userEvent.click(
                 within(dialog).getByRole('button', { name: '播放 大妒忌 第 1 集' }),
