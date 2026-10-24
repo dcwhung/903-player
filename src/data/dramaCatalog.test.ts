@@ -21,12 +21,13 @@ describe('dramaCatalog', () => {
         expect(new Set(urls).size).toBe(urls.length);
     });
 
-    it('numbers the series episodes from 1 within each arc', () => {
+    it('numbers the series episodes consecutively within each arc, from 1 (or 0 with a 前傳)', () => {
         const episodes = seriesEpisodesOf('chisee');
         const arcs = new Set(episodes.map((e) => e.arc));
         arcs.forEach((arc) => {
             const numbers = episodes.filter((e) => e.arc === arc).map((e) => e.no);
-            expect(numbers).toEqual(numbers.map((_, i) => i + 1));
+            const first = arc === '初戀嗱喳麵' ? 0 : 1;
+            expect(numbers).toEqual(numbers.map((_, i) => i + first));
         });
     });
 
@@ -36,12 +37,13 @@ describe('dramaCatalog', () => {
         expect(dailyEpisodesOf('c18').some((e) => e.rerun)).toBe(true);
     });
 
-    it('holds the full 芝See list: 11 短篇, 71 episodes, titles only where the file has one', () => {
+    it('holds the full 芝See list: 12 短篇, 97 episodes, titles only where the file has one', () => {
         const episodes = seriesEpisodesOf('chisee');
-        expect(episodes).toHaveLength(71);
+        expect(episodes).toHaveLength(97);
         expect([...new Set(episodes.map((e) => e.arc))]).toEqual([
             '三十六計',
             '你生日所以我生日',
+            '初戀嗱喳麵',
             '大妒忌',
             '好朋友手牽手',
             '小苦妹撲水',
@@ -89,10 +91,26 @@ describe('dramaCatalog', () => {
         expect(arc[0]?.title).toBe('瞞天過海：隠形墨水筆');
         expect(arc[16]?.title).toBe('美人計：小姐你係邊位？');
     });
+    it('adds 初戀嗱喳麵: 第零集 前傳, 第一 … 二十集, then 後傳 1–5', () => {
+        const arc = seriesEpisodesOf('chisee').filter((e) => e.arc === '初戀嗱喳麵');
+        expect(arc).toHaveLength(26);
+        expect(arc.map((e) => e.no)).toEqual(arc.map((_, i) => i));
+        expect(arc.every((e) => e.addedAt === '2026-10-25')).toBe(true);
+        expect(arc[0]?.title).toBe('前傳');
+        expect(arc[1]?.title).toBeUndefined();
+        expect(arc[25]?.title).toBe('後傳5');
+        const fileOf = (i: number): string =>
+            decodeURIComponent(arc[i]?.url ?? '').replace(`${R2_CHISEE}/初戀嗱喳麵/`, '');
+        expect(fileOf(0)).toBe('00 - 初戀嗱喳麵 - 第零集 - 前傳.m4a');
+        expect(fileOf(1)).toBe('01 - 初戀嗱喳麵 - 第一集.m4a');
+        expect(fileOf(20)).toBe('20 - 初戀嗱喳麵 - 第二十集.m4a');
+        expect(fileOf(21)).toBe('21 - 初戀嗱喳麵 - 第二十一集 - 後傳1.m4a');
+    });
 });
 
 describe('toChineseNumeral', () => {
     it.each([
+        [0, '零'],
         [1, '一'],
         [4, '四'],
         [10, '十'],
