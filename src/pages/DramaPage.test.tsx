@@ -127,7 +127,7 @@ describe('DramaPage', () => {
         const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole('button');
         // 播緊第 2 集排頂；聽完嘅第 1 集排最底
         expect(rows[0]).toHaveAttribute('aria-current', 'true');
-        expect(rows.at(-1)).toHaveAccessibleName('播放 第 1 集，已收聽');
+        expect(rows.at(-1)).toHaveAccessibleName(`播放 ${CHISEE[0]?.title ?? ''} 第 1 集，已收聽`);
     });
 
     describe('全集 overview', () => {
@@ -150,7 +150,8 @@ describe('DramaPage', () => {
                 .filter((b) => b.dataset.role === 'pick');
             expect(picks).toHaveLength(11);
             expect(picks[0]).toHaveAccessibleName('好朋友手牽手，播緊第 2 集');
-            expect(picks[1]).toHaveAccessibleName('大妒忌，未聽 · 3 集');
+            expect(picks[1]).toHaveAccessibleName('三十六計，未聽 · 36 集');
+            expect(picks[2]).toHaveAccessibleName('大妒忌，未聽 · 3 集');
             expect(picks.at(-1)).toHaveAccessibleName('你生日所以我生日，聽完 · 3 集');
             expect(within(dialog).getByText('聽完 1 / 11 個')).toBeInTheDocument();
 
@@ -178,7 +179,7 @@ describe('DramaPage', () => {
             );
             expect(
                 chips.slice(0, 3).map((c) => c.getAttribute('aria-label') ?? c.textContent),
-            ).toEqual(['全集', '青春期', '你生日所以我生日']);
+            ).toEqual(['全集', '青春期', '三十六計']);
         });
 
         it('switches the list to a 短篇 picked by its row, without changing playback', async () => {

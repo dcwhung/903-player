@@ -51,7 +51,7 @@ const chiseeFile = (arc: string, no: number, title: string | undefined): string 
     ].join(' - ') + '.m4a';
 
 /**
- * 芝See菇Bi Family 短篇（按清單次序；新短篇加喺最尾）：每集嘅集名，冇集名係 null。
+ * 芝See菇Bi Family 短篇（按短篇名字碼排，新短篇照排入去）：每集嘅集名，冇集名係 null。
  * 短篇名 = R2 folder 名 = 檔名入面嘅名，照原寫法（全形「Ｘ」、「游亁水」、「青春期眞神奇」）。
  * 集名照原檔名寫（包括「 _ 」），顯示時先由 displayTitle 執靚。
  * 新加短篇要寫 addedAt（上架日子 YYYY-MM-DD），上架 14 日內會出「新」；
@@ -62,29 +62,16 @@ const CHISEE_ARCS: readonly {
     addedAt?: string;
     titles: readonly (string | null)[];
 }[] = [
-    { arc: '你生日所以我生日', titles: [null, null, null] },
-    { arc: '大妒忌', titles: [null, null, null] },
-    { arc: '好朋友手牽手', titles: ['好傾朋友', '朋友不同', '朋友性別', '朋友第一'] },
-    { arc: '小苦妹撲水', titles: [null, null, null, null] },
-    { arc: '我們都在會考中成長', titles: ['能源的故事', '舊底的故事'] },
-    { arc: '游亁水', titles: [null, null, null, null] },
-    { arc: '苦榮去做GYM', titles: [null, null, null, null] },
-    { arc: '青春期', titles: [null, null, null, null] },
-    { arc: '青春期眞神奇', titles: ['男女先後', '多少問題', '時間長短'] },
-    {
-        arc: 'Ｘ時mas時小提議',
-        titles: ['不如休養下', '哥哥你洽我', '著襪索腳汗', '認認真真搵返個人'],
-    },
     {
         arc: '三十六計',
         addedAt: '2026-10-24',
         titles: [
-            '瞞天過海 _ 隱形墨水筆',
+            '暪天過海 _ 隠形墨水筆',
             '無中生有 _ 你騙我騙你',
             '聲東擊西 _ 突擊檢查大作戰',
             '順手牽羊 _ 一代橋王苦榮',
             '反客為主 _ 臭爆插班生亞沙',
-            '拋磚引玉 _ 看透一切的維圍呀伯',
+            '拋磚引玉 _ 看透一切的維園呀伯',
             '笑裡藏刀 _ 小學雞大報仇',
             '反間計 _ 手掌, 手背, 反轉再反轉都係肉',
             '樹上開花 _ IFC 鬥智大比拼',
@@ -116,6 +103,19 @@ const CHISEE_ARCS: readonly {
             '連環計 _ 弱肉強食皇者無敵',
             '偷樑換柱 + 金蟬脫殼 + 擒賊擒王 _ 完美的結局',
         ],
+    },
+    { arc: '你生日所以我生日', titles: [null, null, null] },
+    { arc: '大妒忌', titles: [null, null, null] },
+    { arc: '好朋友手牽手', titles: ['好傾朋友', '朋友不同', '朋友性別', '朋友第一'] },
+    { arc: '小苦妹撲水', titles: [null, null, null, null] },
+    { arc: '我們都在會考中成長', titles: ['能源的故事', '舊底的故事'] },
+    { arc: '游亁水', titles: [null, null, null, null] },
+    { arc: '苦榮去做GYM', titles: [null, null, null, null] },
+    { arc: '青春期', titles: [null, null, null, null] },
+    { arc: '青春期眞神奇', titles: ['男女先後', '多少問題', '時間長短'] },
+    {
+        arc: 'Ｘ時mas時小提議',
+        titles: ['不如休養下', '哥哥你洽我', '著襪索腳汗', '認認真真搵返個人'],
     },
 ];
 
