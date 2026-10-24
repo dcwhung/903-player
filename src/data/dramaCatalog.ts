@@ -34,7 +34,7 @@ export const toChineseNumeral = (n: number): string => {
 const FILE_TITLE_SEPARATOR = ' _ ';
 const DISPLAY_TITLE_SEPARATOR = '：';
 
-/** 畫面顯示嘅集名：分隔換「：」，去頭尾空格（原檔名有尾隨空格都唔顯示） */
+/** 畫面顯示嘅集名：分隔換「：」，去頭尾空格 */
 const displayTitle = (fileTitle: string): string =>
     fileTitle.replaceAll(FILE_TITLE_SEPARATOR, DISPLAY_TITLE_SEPARATOR).trim();
 
@@ -53,7 +53,7 @@ const chiseeFile = (arc: string, no: number, title: string | undefined): string 
 /**
  * 芝See菇Bi Family 短篇（按清單次序；新短篇加喺最尾）：每集嘅集名，冇集名係 null。
  * 短篇名 = R2 folder 名 = 檔名入面嘅名，照原寫法（全形「Ｘ」、「游亁水」、「青春期眞神奇」）。
- * 集名照原檔名寫（包括「 _ 」同尾隨空格），顯示時先由 displayTitle 執靚。
+ * 集名照原檔名寫（包括「 _ 」），顯示時先由 displayTitle 執靚。
  * 新加短篇要寫 addedAt（上架日子 YYYY-MM-DD），上架 14 日內會出「新」；
  * 原本嗰 10 個係舊短篇，唔寫
  */
@@ -84,7 +84,7 @@ const CHISEE_ARCS: readonly {
             '聲東擊西 _ 突擊檢查大作戰',
             '順手牽羊 _ 一代橋王苦榮',
             '反客為主 _ 臭爆插班生亞沙',
-            '拋磚引玉 _ 看透一切的維園呀伯',
+            '拋磚引玉 _ 看透一切的維圍呀伯',
             '笑裡藏刀 _ 小學雞大報仇',
             '反間計 _ 手掌, 手背, 反轉再反轉都係肉',
             '樹上開花 _ IFC 鬥智大比拼',
@@ -92,10 +92,10 @@ const CHISEE_ARCS: readonly {
             '假途伐虢 _ 英雄本色',
             '空城計 _ 晶晶和亞偉',
             '指桑罵槐 _ 談真誠 VS 講大話',
-            '借屍還魂 _ 男女互恐大比賽',
+            '借屍還魂 _ 男女互氹大比賽',
             '假痴不癲 _ 他和她的祕密',
             '圍魏救趙 _ 感動浪漫的一天',
-            '美人計 _ 小姐你係邊位？ ',
+            '美人計 _ 小姐你係邊位？',
             '上屋抽梯 _ 消聲匿跡愛一天',
             '遠交近攻 _ 被煽動的賽果',
             '隔岸觀火 _ 當堂... 當堂咩嘢都變晒',
