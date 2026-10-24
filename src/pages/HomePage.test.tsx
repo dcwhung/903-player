@@ -289,7 +289,7 @@ describe('HomePage', () => {
             renderWithProviders(<HomePage />);
             const nav = await openDramas();
 
-            expect(within(nav).getByText('11 個短篇').dataset.corner).toBe('bottom');
+            expect(within(nav).getByText('12 個短篇').dataset.corner).toBe('bottom');
             expect(within(nav).queryByText('繼續收聽')).not.toBeInTheDocument();
         });
 
@@ -303,7 +303,7 @@ describe('HomePage', () => {
                 name: '芝See菇Bi Family，繼續收聽 好朋友手牽手 · 第 2 集 朋友不同',
             });
             expect(within(tile).getByText('繼續收聽')).toBeInTheDocument();
-            expect(within(tile).getByText('11 個短篇')).toBeInTheDocument();
+            expect(within(tile).getByText('12 個短篇')).toBeInTheDocument();
             expect(tile.querySelector('[data-continue-fill]')).toHaveStyle({ width: '25%' });
         });
 
@@ -318,7 +318,7 @@ describe('HomePage', () => {
                 within(nav).getByRole('button', { name: '芝See菇Bi Family' }),
             ).toBeInTheDocument();
             expect(within(nav).queryByText('繼續收聽')).not.toBeInTheDocument();
-            expect(within(nav).getByText('11 個短篇').dataset.corner).toBe('bottom');
+            expect(within(nav).getByText('12 個短篇').dataset.corner).toBe('bottom');
         });
 
         it('starts the drama and opens its page when its tile is tapped', async () => {

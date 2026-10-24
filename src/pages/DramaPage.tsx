@@ -42,9 +42,9 @@ const arcPickerLabel = (duration: number, current: SeriesEpisode | undefined): s
     return t('drama.nowPlaying', { label });
 };
 
-/** 橫版唱片下面「現正播放」：短篇加埋第幾 / 幾多集，下一行集名 */
-const seriesNowPlaying = (current: SeriesEpisode, arcTotal: number) => ({
-    label: t('drama.nowPlayingArc', { arc: current.arc, no: current.no, total: arcTotal }),
+/** 橫版唱片下面「現正播放」：短篇加埋第幾個 / 幾多集（按排位，唔係集數），下一行集名 */
+const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, arcTotal: number) => ({
+    label: t('drama.nowPlayingArc', { arc: current.arc, no: arcPosition, total: arcTotal }),
     detail: current.title,
 });
 
@@ -93,8 +93,18 @@ const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
  * 全集表橫版只蓋左欄（listBody），唔遮播放器
  */
 const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
-    const { theme, current, arcTotal, arcs, arc, pickArc, items, pressEpisode, sheet } =
-        useSeriesDramaPage(drama);
+    const {
+        theme,
+        current,
+        arcTotal,
+        arcPosition,
+        arcs,
+        arc,
+        pickArc,
+        items,
+        pressEpisode,
+        sheet,
+    } = useSeriesDramaPage(drama);
     const { duration, isPlaying, recording } = usePlayer();
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
     const label = arcPickerLabel(duration, current);
@@ -124,7 +134,7 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
                     )}
                     {current && landscape && (
                         <NowPlaying
-                            {...seriesNowPlaying(current, arcTotal)}
+                            {...seriesNowPlaying(current, arcPosition, arcTotal)}
                             connecting={!hasKnownDuration(duration)}
                         />
                     )}
