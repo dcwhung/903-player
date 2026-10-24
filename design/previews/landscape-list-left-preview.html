@@ -358,7 +358,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                 <thead><tr><th>頁面</th><th>顯示</th><th>未讀到時長</th></tr></thead>
                 <tbody>
                     <tr><td>節目頁</td><td>現正播放：21/10 星期三</td><td>連線中…</td></tr>
-                    <tr><td>今日節目頁</td><td>現正播放：21/10 星期三 · 10:09（節目名已喺卡入面）</td><td>連線中…</td></tr>
+                    <tr><td>今日節目頁</td><td>現正播放：21/10 星期三 · 第 3 / 5 個節目（節目名已喺卡入面）</td><td>連線中…</td></tr>
                     <tr><td>廣播劇播放頁（短篇）</td><td>現正播放：第 N 集 集名（由左欄 chips 上面搬落嚟）</td><td>連線中…</td></tr>
                     <tr><td>廣播劇播放頁（每日）</td><td>現正播放：日期（同節目頁）</td><td>連線中…</td></tr>
                 </tbody>
@@ -374,6 +374,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                     <tr><td>廣播劇 ☰ 全集 + 短篇 chips</td><td>右欄頂</td><td>左欄頂（清單上面）</td></tr>
                     <tr><td>「現正播放」</td><td>只有廣播劇（chips 上面）；節目頁 / 今日節目頁橫版冇（日子條收埋咗）</td><td>三頁都有，喺右欄唱片下面</td></tr>
                     <tr><td>唱片、弧形進度、播放 / 由頭播</td><td>左欄</td><td>右欄，喺欄內置中</td></tr>
+                    <tr><td>今日節目表上面「今日節目 / 日期 · N 個」</td><td>右欄清單頂</td><td>拎走（標題同頁頭重覆；日期同個數搬去唱片下面「現正播放」）</td></tr>
                     <tr><td>今日節目卡疊 + 指示點</td><td>左欄</td><td>右欄（手機打橫指示點跟頁頭）</td></tr>
                     <tr><td>直版</td><td colspan="2">不變（兩欄 <code>display: contents</code>）</td></tr>
                 </tbody>
@@ -565,10 +566,9 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
                         <div class="card" data-card>${gaugeHtml(IMG[show.id], show.pos)}<h2>${esc(show.name)}</h2></div>
                     </div>
                     <div class="dots">${dotsHtml()}</div>
-                    ${nowHtml(`21/10 星期三 · ${show.time}`)}
+                    ${nowHtml(`21/10 星期三 · 第 ${state.todayIndex + 1} / ${TODAY_SHOWS.length} 個節目`)}
                 </div>`, '今日節目',
-            `<div class="list-head"><h2>今日節目</h2><span>21/10 星期三 · ${TODAY_SHOWS.length} 個</span></div>
-                <ul class="list" data-list>${rows}</ul>`);
+            `<ul class="list" data-list>${rows}</ul>`);
     };
 
     // 芝See菇Bi Family（短篇）：chips 次序 = 播放中 → 新上架 → 未聽完 → 已聽完
