@@ -169,10 +169,11 @@ describe('EpisodeList', () => {
         expect(section().dataset.labels).toBe('title');
     });
 
-    it('scrolls a long title only on the playing row; the others end in …', () => {
+    it('scrolls a long title only on the selected row, even paused; the others end in …', () => {
         vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(180);
         vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(120);
-        const { container } = render(<EpisodeList items={ITEMS} onSelect={() => {}} />);
+        const paused = ITEMS.map((item) => ({ ...item, isPlaying: false }));
+        const { container } = render(<EpisodeList items={paused} onSelect={() => {}} />);
 
         const boxes = [...container.querySelectorAll('[data-overflow]')];
         expect(boxes.map((b) => b.hasAttribute('data-static'))).toEqual([false, true, true]);
