@@ -75,7 +75,7 @@ describe('dramaCatalog', () => {
         expect(arc.every((e) => e.addedAt === '2026-10-24')).toBe(true);
         const fileOf = (no: number): string =>
             decodeURIComponent(arc[no - 1]?.url ?? '').replace(`${R2_CHISEE}/三十六計/`, '');
-        expect(fileOf(1)).toBe('01 - 三十六計 - 第一集 - 暪天過海 _ 隠形墨水筆.m4a');
+        expect(fileOf(1)).toBe('01 - 三十六計 - 第一集 - 瞞天過海 _ 隠形墨水筆.m4a');
         expect(fileOf(10)).toBe('10 - 三十六計 - 第十集 - 以逸待勞 _ 智取亞生成績表.m4a');
         expect(fileOf(14)).toBe('14 - 三十六計 - 第十四集 - 借屍還魂 _ 男女互氹大比賽.m4a');
         expect(fileOf(17)).toBe('17 - 三十六計 - 第十七集 - 美人計 _ 小姐你係邊位？.m4a');
@@ -86,7 +86,7 @@ describe('dramaCatalog', () => {
 
     it('shows 三十六計 titles with 「：」 in place of the file-name 「 _ 」', () => {
         const arc = seriesEpisodesOf('chisee').filter((e) => e.arc === '三十六計');
-        expect(arc[0]?.title).toBe('暪天過海：隠形墨水筆');
+        expect(arc[0]?.title).toBe('瞞天過海：隠形墨水筆');
         expect(arc[16]?.title).toBe('美人計：小姐你係邊位？');
     });
 });
