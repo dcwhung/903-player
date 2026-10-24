@@ -4,6 +4,7 @@ import { scrollBehavior } from '../../utils/motion';
 import { PERCENT, toPercent } from '../../utils/ratio';
 import { scrollRowIntoPanel } from '../../utils/scroll';
 import { CheckIcon, PauseIcon, PlayIcon } from '../icons/icons';
+import { Marquee } from '../Marquee/Marquee';
 import styles from './EpisodeList.module.css';
 import type { EpisodeStatus } from './episodeStatus';
 
@@ -51,10 +52,10 @@ const RowIcon = ({ item }: { item: EpisodeItem }) => {
     return <PlayIcon className={styles.play} size={PLAY_ICON_SIZE} filled={false} />;
 };
 
-/** 行頭：大字 + 細字（+ 標籤） */
+/** 行頭：大字（集名太長就跑馬燈）+ 細字（+ 標籤） */
 const RowDate = ({ item }: { item: EpisodeItem }) => (
     <span className={styles.date}>
-        <span className={styles.dayMonth}>{item.dayMonth}</span>
+        <Marquee className={styles.dayMonth} text={item.dayMonth} />
         <span className={styles.weekday}>
             {item.weekday}
             {item.tag && <span className={styles.tag}>{item.tag}</span>}

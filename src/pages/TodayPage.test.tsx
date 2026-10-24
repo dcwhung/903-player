@@ -1,5 +1,6 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { stubLandscape } from '../../tests/landscape';
 import {
     recording,
     renderWithProviders,
@@ -50,6 +51,25 @@ describe('TodayPage', () => {
         expect(within(stack).getByRole('button', { name: /^(播放|暫停)$/ })).toBeInTheDocument();
         expect(within(stack).queryByRole('group', { name: /^今日第/ })).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /秒$/ })).not.toBeInTheDocument();
+    });
+
+    describe('landscape', () => {
+        beforeEach(stubLandscape);
+        afterEach(() => vi.unstubAllGlobals());
+
+        it('puts the header above the schedule and the date and position under the card', async () => {
+            const { audio } = renderWithProviders(<TodayPage />, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+            });
+            await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
+            act(() => audio.emitMetadata(2400));
+
+            const schedule = screen.getByRole('region', { name: '節目表' });
+            const header = screen.getByRole('heading', { level: 1 }).closest('header');
+            expect(header?.parentElement?.parentElement).toBe(schedule.parentElement);
+            expect(screen.getByText('現正播放：19/10（一） · 第 1 / 3 個節目')).toBeInTheDocument();
+        });
     });
 
     it('autoplays the first show and marks it active', async () => {

@@ -31,7 +31,8 @@ export const Marquee = ({ text, className = '' }: MarqueeProps) => {
             data-overflow={overflowing || undefined}
         >
             <span className={styles.track} style={style}>
-                <span ref={textRef} className={styles.text}>
+                {/* data-marquee-text：外面（例如 useFitText）量文字本身有幾闊 */}
+                <span ref={textRef} className={styles.text} data-marquee-text>
                     {text}
                 </span>
                 {overflowing && (

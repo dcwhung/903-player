@@ -90,12 +90,10 @@
     font-weight: 700;
 }
 
+/* 一行，放唔落就跑馬燈（Marquee） */
 .continueLabel {
-    max-width: 100%;
-    overflow: hidden;
+    width: 100%;
     font-size: var(--font-size-xs);
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .continueBar {

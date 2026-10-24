@@ -153,9 +153,12 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
     const { arc, pickArc } = useViewedArc(current?.arc);
     const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc);
     const shown = listOrder(arc ? episodesInArc(episodes, arc) : [], progressMap, current?.url);
+    // 播緊嗰集個短篇有幾多集（橫版「現正播放：短篇 · 第 N / M 集」）
+    const arcTotal = current ? episodesInArc(episodes, current.arc).length : 0;
     return {
         theme: DRAMA_THEMES[drama.id],
         current,
+        arcTotal,
         arcs: chips,
         arc,
         pickArc,

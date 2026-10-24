@@ -30,6 +30,20 @@
     outline: none;
 }
 
+/*
+ * 橫版（docked）：只蓋住清單欄（DramaPage .listBody：chips + 集數清單），右欄播放器照見照撳得；
+ * 冇遮罩，表填滿成格（唔再限最高 / 最闊）
+ */
+.docked {
+    position: absolute;
+}
+
+.docked .sheet {
+    inset: 0;
+    max-width: none;
+    max-height: none;
+}
+
 .grab {
     flex-shrink: 0;
     align-self: center;
@@ -168,12 +182,18 @@
 }
 
 .name {
-    overflow: hidden;
+    display: flex;
+    align-items: center;
+    min-width: 0;
     color: var(--color-text);
     font-size: var(--font-size-md);
     font-weight: 600;
-    text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* 短篇名放唔落就跑馬燈（Marquee），「新」唔跟住捲 */
+.nameText {
+    min-width: 0;
 }
 
 .status {

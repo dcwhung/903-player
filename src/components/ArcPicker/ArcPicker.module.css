@@ -115,3 +115,13 @@
 .all::before {
     background: var(--color-text);
 }
+
+/*
+ * 橫版：「現正播放」搬咗去右欄唱片下面（NowPlaying），chips 上面唔再出標籤，
+ * chips 緊貼頁頭。條件同 layout.ts 嘅 LANDSCAPE_QUERY 一樣
+ */
+@media (orientation: landscape) and (min-width: 640px) {
+    .label {
+        display: none;
+    }
+}

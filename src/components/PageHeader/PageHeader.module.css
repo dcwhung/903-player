@@ -29,9 +29,10 @@
 
 /*
  * 節目頁：節目名做標題，用返以前唱片下面嗰個大字樣式。
- * 一行放唔落由 useFitText 按格闊縮細字體（完整顯示）；縮到最細都放唔落先省略號
+ * 一行放唔落由 useFitText 按格闊縮細字體（完整顯示）；縮到最細都放唔落就跑馬燈（Marquee）
  */
 .showTitle {
+    min-width: 0;
     overflow: hidden;
     /* 廣播劇可以有自己嘅標題字體（例如 18樓C座 襯線粗體），節目跟 app 字體 */
     font-family: var(--theme-title-font);
@@ -39,6 +40,5 @@
     font-weight: 600;
     color: var(--color-title);
     text-align: center;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }

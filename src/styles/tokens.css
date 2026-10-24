@@ -90,6 +90,12 @@
      * 啱啱等於播放器高度計法唱片下面嗰行嘅下限，矮螢幕斷點（561px）唔使改
      */
     --date-strip-label-height: 16px;
+    /*
+     * 橫版唱片下面「現正播放」（NowPlaying）每行高度：第一行 / 廣播劇第二行（集名）。
+     * Page.module.css 計唱片大細時扣走（--now-playing-height）
+     */
+    --now-playing-line: calc(var(--font-size-sm) * 1.5);
+    --now-playing-detail-line: calc(var(--font-size-xs) * 1.5);
     --date-strip-fade: var(--space-6);
     --date-strip-box-inset: 2px;
     --date-strip-weekday-line: 14px;
