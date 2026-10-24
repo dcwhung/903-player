@@ -81,6 +81,16 @@ describe('DramaPage', () => {
         beforeEach(stubLandscape);
         afterEach(() => vi.unstubAllGlobals());
 
+        it('counts a 第零集 短篇 by position, so its last episode reads 第 26 / 26 集', async () => {
+            const chuluen = CHISEE.filter((e) => e.arc === '初戀嗱喳麵');
+            saveProgress(chuluen.at(-1)?.url ?? '', 120, 1200);
+            const { audio } = openDrama('chisee');
+            await waitFor(() => expect(audio.src).toBe(chuluen.at(-1)?.url));
+            act(() => audio.emitMetadata(1200));
+
+            expect(screen.getByText('現正播放：初戀嗱喳麵 · 第 26 / 26 集')).toBeInTheDocument();
+        });
+
         it('shows the 短篇, position and episode title under the disc, header above the list', async () => {
             saveProgress(XMAS[1]?.url ?? '', 120, 1200);
             const { audio } = openDrama('chisee');

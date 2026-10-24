@@ -153,12 +153,15 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
     const { arc, pickArc } = useViewedArc(current?.arc);
     const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc);
     const shown = listOrder(arc ? episodesInArc(episodes, arc) : [], progressMap, current?.url);
-    // 播緊嗰集個短篇有幾多集（橫版「現正播放：短篇 · 第 N / M 集」）
-    const arcTotal = current ? episodesInArc(episodes, current.arc).length : 0;
+    // 橫版「現正播放：短篇 · 第 N / M 集」：M = 個短篇有幾多集；N 按排位計（有第零集都係 1 起）
+    const arcEpisodes = current ? episodesInArc(episodes, current.arc) : [];
+    const arcTotal = arcEpisodes.length;
+    const arcPosition = arcEpisodes.findIndex((e) => e.url === current?.url) + 1;
     return {
         theme: DRAMA_THEMES[drama.id],
         current,
         arcTotal,
+        arcPosition,
         arcs: chips,
         arc,
         pickArc,
