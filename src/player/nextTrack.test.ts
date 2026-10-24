@@ -6,10 +6,9 @@ const SERIES = seriesEpisodesOf('chisee');
 
 describe('nextTrack', () => {
     it('continues a series drama in catalogue order, across 短篇', () => {
-        const lastOfFirstArc = SERIES[2];
-        expect(lastOfFirstArc?.arc).toBe('你生日所以我生日');
-        expect(nextTrack(lastOfFirstArc!)).toBe(SERIES[3]);
-        expect(SERIES[3]).toMatchObject({ arc: '大妒忌', no: 1 });
+        const lastOfArc = SERIES.findLastIndex((e) => e.arc === '你生日所以我生日');
+        expect(nextTrack(SERIES[lastOfArc]!)).toBe(SERIES[lastOfArc + 1]);
+        expect(SERIES[lastOfArc + 1]).toMatchObject({ arc: '大妒忌', no: 1 });
     });
 
     it('stops after the last 短篇', () => {

@@ -10,13 +10,15 @@ vi.mock('../config/dramas', async (importOriginal) => {
     return { ...actual, enabledDramas: () => actual.DRAMAS };
 });
 
-// 而家 10 個短篇都係舊；當「Ｘ時mas時小提議」係 20/10 新上架，睇吓主頁「新」點計
+// 唔靠真清單嘅上架日子：只當「Ｘ時mas時小提議」係 20/10 新上架，其他短篇全部當舊，睇吓主頁「新」點計
 vi.mock('../data/dramaCatalog', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../data/dramaCatalog')>();
     const withNewArc = (id: Parameters<typeof actual.seriesEpisodesOf>[0]) =>
         actual
             .seriesEpisodesOf(id)
-            .map((e) => (e.arc === 'Ｘ時mas時小提議' ? { ...e, addedAt: '2026-10-20' } : e));
+            .map(({ addedAt: _realAddedAt, ...e }) =>
+                e.arc === 'Ｘ時mas時小提議' ? { ...e, addedAt: '2026-10-20' } : e,
+            );
     return { ...actual, seriesEpisodesOf: withNewArc };
 });
 
