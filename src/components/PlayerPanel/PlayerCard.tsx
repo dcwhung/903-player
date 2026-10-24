@@ -1,3 +1,4 @@
+import { Marquee } from '../Marquee/Marquee';
 import { PlayerGauge } from './PlayerGauge';
 import styles from './PlayerPanel.module.css';
 
@@ -14,6 +15,8 @@ interface PlayerCardProps {
 export const PlayerCard = ({ title, art }: PlayerCardProps) => (
     <div className={styles.panel}>
         <PlayerGauge art={art} />
-        <h2 className={styles.title}>{title}</h2>
+        <h2 className={styles.title}>
+            <Marquee text={title} />
+        </h2>
     </div>
 );

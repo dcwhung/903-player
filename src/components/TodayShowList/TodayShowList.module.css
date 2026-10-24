@@ -25,6 +25,13 @@
     letter-spacing: var(--letter-spacing-caps);
 }
 
+/* 橫版：頁頭已經寫「今日節目」，唔再出標題列（日期 / 個數喺唱片下面「現正播放」） */
+@media (orientation: landscape) and (min-width: 640px) {
+    .header {
+        display: none;
+    }
+}
+
 /*
  * 唯一捲動嘅 panel（任何高度都係）：捲到盡頭唔會帶動成頁（iOS 橡筋效果）；底部留 home indicator 位。
  */
@@ -61,6 +68,8 @@
     display: flex;
     flex-grow: 1;
     flex-direction: column;
+    /* 節目名放唔落就跑馬燈（Marquee），唔好逼闊行 */
+    min-width: 0;
     gap: 2px;
 }
 

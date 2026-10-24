@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { toPercent } from '../../utils/ratio';
 import { PlayIcon } from '../icons/icons';
+import { Marquee } from '../Marquee/Marquee';
 import { NewBadge } from '../NewBadge/NewBadge';
 import { t } from '../../i18n/t';
 import styles from './DramaShelf.module.css';
@@ -37,7 +38,7 @@ const tileLabel = ({ name, newLabel, resume }: DramaShelfItem): string => {
 const ContinueStrip = ({ label, ratio }: NonNullable<DramaShelfItem['resume']>) => (
     <span className={styles.continue} aria-hidden="true">
         <span className={styles.continueTitle}>{t('drama.continue')}</span>
-        <span className={styles.continueLabel}>{label}</span>
+        <Marquee className={styles.continueLabel} text={label} />
         <span className={styles.continueBar}>
             <span data-continue-fill="" style={{ width: `${toPercent(ratio)}%` }} />
         </span>

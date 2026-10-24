@@ -1,0 +1,22 @@
+/* 成欄闊、置中；每行高度固定（同 Page.module.css 扣唱片高度用同一個 token） */
+.group {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    width: 100%;
+    padding: 0 var(--space-4);
+    text-align: center;
+}
+
+.line {
+    color: var(--color-accent-text);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    line-height: var(--now-playing-line);
+}
+
+.detail {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    line-height: var(--now-playing-detail-line);
+}

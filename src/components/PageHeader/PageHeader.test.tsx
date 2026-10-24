@@ -38,12 +38,25 @@ describe('PageHeader', () => {
         vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function (
             this: HTMLElement,
         ) {
-            return parseFloat(this.style.fontSize || '24') * 8;
+            // 文字（Marquee 入面）闊度跟 h1 嘅字體大小
+            return parseFloat(this.closest('h1')?.style.fontSize || '24') * 8;
         });
 
         render(<PageHeader title="在晴朗的一天出發" variant="title" onBack={vi.fn()} />);
 
         expect(screen.getByRole('heading', { level: 1 }).style.fontSize).toBe('22px');
+    });
+
+    it('should scroll the show name as a marquee when even the smallest size does not fit', () => {
+        // 標題格得 60px：縮到最細（13px × 8 字 = 104px）都放唔落
+        vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(60);
+        vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(104);
+
+        render(<PageHeader title="在晴朗的一天出發" variant="title" onBack={vi.fn()} />);
+
+        const heading = screen.getByRole('heading', { level: 1 });
+        expect(heading.firstElementChild).toHaveAttribute('data-overflow', 'true');
+        expect(heading).toHaveTextContent('在晴朗的一天出發');
     });
 
     it('should keep the CSS size when the show name fits', () => {

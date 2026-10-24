@@ -1,5 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { stubLandscape } from '../../tests/landscape';
 import { renderWithProviders } from '../../tests/renderWithProviders';
 import { seriesEpisodesOf } from '../data/dramaCatalog';
 import { saveProgress } from '../services/progressStore';
@@ -73,6 +74,41 @@ describe('DramaPage', () => {
             expect(within(list).getAllByRole('button')).toHaveLength(4);
             await userEvent.click(within(list).getByRole('button', { name: /索腳汗/ }));
             await waitFor(() => expect(audio.src).toBe(XMAS[2]?.url));
+        });
+    });
+
+    describe('landscape', () => {
+        beforeEach(stubLandscape);
+        afterEach(() => vi.unstubAllGlobals());
+
+        it('shows the 短篇, position and episode title under the disc, header above the list', async () => {
+            saveProgress(XMAS[1]?.url ?? '', 120, 1200);
+            const { audio } = openDrama('chisee');
+            await waitFor(() => expect(audio.src).toBe(XMAS[1]?.url));
+            act(() => audio.emitMetadata(1200));
+
+            expect(screen.getByText('現正播放：Ｘ時mas時小提議 · 第 2 / 4 集')).toBeInTheDocument();
+            // 集名：清單行 + 唱片下面第二行
+            expect(
+                screen.getAllByText('哥哥你洽我', { selector: '[data-marquee-text]' }),
+            ).toHaveLength(2);
+            const header = screen.getByRole('heading', { level: 1 }).closest('header');
+            const chips = screen.getByRole('group', { name: '短篇' });
+            expect(header?.parentElement?.parentElement).toContainElement(chips);
+        });
+
+        it('opens 全集 inside the list column, leaving the player usable', async () => {
+            const { audio } = openDrama('chisee');
+            await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
+
+            await userEvent.click(screen.getByRole('button', { name: '全集' }));
+
+            const dialog = screen.getByRole('dialog', { name: '全集' });
+            expect(dialog).toHaveAttribute('aria-modal', 'false');
+            expect(screen.queryByTestId('arc-sheet-backdrop')).not.toBeInTheDocument();
+            const chips = screen.getByRole('group', { name: '短篇' });
+            expect(chips.parentElement?.parentElement).toContainElement(dialog);
+            expect(screen.getByRole('slider', { name: '播放進度' })).toBeInTheDocument();
         });
     });
 

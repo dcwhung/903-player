@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { t, type MessageKey } from '../../i18n/t';
 import { Disc } from '../Disc/Disc';
 import { CheckIcon, PauseIcon, PlayIcon } from '../icons/icons';
+import { Marquee } from '../Marquee/Marquee';
 import styles from './TodayShowList.module.css';
 
 export type ShowStatus = 'playing' | 'watched' | 'unwatched' | 'unavailable';
@@ -40,7 +41,7 @@ const UnavailableRow = ({ item }: { item: TodayShowItem }) => (
             <Disc size="small" art={item.art} />
         </span>
         <span className={styles.text}>
-            <span className={styles.name}>{item.name}</span>
+            <Marquee className={styles.name} text={item.name} />
             <span className={styles.status}>
                 {t('today.timeWithStatus', {
                     time: item.time,
@@ -71,7 +72,7 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
         >
             <Disc size="small" art={item.art} />
             <span className={styles.text}>
-                <span className={styles.name}>{item.name}</span>
+                <Marquee className={styles.name} text={item.name} />
                 <span className={`${styles.status} ${styles[item.status] ?? ''}`}>
                     {item.status === 'watched' && <CheckIcon size={STATUS_ICON_SIZE} />}
                     {t('today.timeWithStatus', { time: item.time, status: statusText })}

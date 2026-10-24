@@ -167,7 +167,7 @@ const SHORT_ROWS_MIN_HEIGHT_PX = 390;
 // 用 regex 讀呢一行，所以保持 `const SHORT_HEIGHT_PX = <數字>;` 嘅寫法
 const SHORT_HEIGHT_PX = 561;
 // 橫版（打橫而且 ≥ 640px 闊）：同 src/config/layout.ts 嘅 LANDSCAPE_QUERY 一樣；
-// 左播放器、右清單，唔出日子條，唱片按左欄計（同今日節目頁唔一定一樣大），播放器唔受六成上限
+// 左清單（連頁頭）、右播放器，唔出日子條，唱片按右欄計（同今日節目頁唔一定一樣大），播放器唔受六成上限
 const LANDSCAPE_MIN_WIDTH_PX = 640;
 const isLandscape = (p) => {
     const { width, height } = p.viewportSize();
@@ -185,7 +185,7 @@ const SHOW_VIEWPORTS = [
     { width: 390, height: 664 },
     // 橫版：手機打橫（主頁橫額入格 5 欄 × 2 行）、細視窗、iPad 打橫（主頁橫額成行 + 4 欄）
     { width: 844, height: 390, homeFixed: true, landscapeHome: true },
-    // iPhone SE 打橫：左欄最窄，今日節目頁頁頭要放得落標題同指示點
+    // iPhone SE 打橫：最窄，今日節目頁頁頭要放得落標題同指示點
     { width: 667, height: 375 },
     { width: 960, height: 640, homeFixed: true, landscapeHome: true },
     { width: 1180, height: 820, homeFixed: true, landscapeHome: true },
@@ -384,7 +384,7 @@ const checkDiscMatchesToday = async (p, label) => {
     await p.goto(`${BASE}#/today`);
     await p.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
     const today = await discWidth();
-    // 橫版唱片按左欄計，今日節目頁要扣卡同指示點，所以只要求唔大過節目頁
+    // 橫版唱片按右欄計，今日節目頁要扣卡同指示點，所以只要求唔大過節目頁
     const landscape = isLandscape(p);
     log(
         landscape ? today <= show + 0.5 : Math.abs(show - today) < 1,
@@ -467,7 +467,7 @@ const checkTodayCardShare = (share, label, short) => {
 /** 今日節目頁固定：捲輪 / scrollTo 都唔會捲成頁；清單太長就自己捲 */
 const checkFixedTodayPage = async (p, label) => {
     const list = p.getByRole('region', { name: '節目表' }).getByRole('list');
-    // 橫版播放器喺左欄，唔受六成上限（同矮螢幕一樣只印出）
+    // 橫版播放器喺右欄，唔受六成上限（同矮螢幕一樣只印出）
     const short = p.viewportSize().height <= SHORT_HEIGHT_PX || isLandscape(p);
     checkTodayCardShare(await checkTodayRows(list, label), label, short);
     // 手機打橫指示點搬咗上頁頭：標題仍然完整顯示（冇省略號）
@@ -555,7 +555,19 @@ const checkShowHeader = async (p, name, label) => {
     log(title.fits, `${label}：節目名完整顯示（字體 ${title.size}）`);
     if (isLandscape(p)) {
         const hidden = !(await p.locator(STRIP).isVisible());
-        log(hidden, `${label}：橫版唔出日子條（轉集用右欄清單）`);
+        log(hidden, `${label}：橫版唔出日子條（轉集用左欄清單）`);
+        // 頁頭同集數清單喺左邊，唱片喺右邊，唱片下面有「現正播放」
+        const list = await p.getByRole('region', { name: '集數' }).boundingBox();
+        const head = await p.locator('header h1').boundingBox();
+        const disc = await p.getByRole('slider', { name: '播放進度' }).boundingBox();
+        const now = await p
+            .getByText(/^現正播放：/)
+            .first()
+            .boundingBox();
+        log(
+            list.x + list.width <= disc.x && head.x < disc.x && now.y > disc.y,
+            `${label}：橫版左清單（${list.x.toFixed(0)}）、右唱片（${disc.x.toFixed(0)}），現正播放喺唱片下面`,
+        );
         return;
     }
     const { above, date, centreGap } = await p.locator(STRIP).evaluate((el) => {

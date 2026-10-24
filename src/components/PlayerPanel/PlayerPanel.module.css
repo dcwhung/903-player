@@ -115,8 +115,9 @@
     color: var(--color-on-accent);
 }
 
-/* 今日節目卡嘅節目名（同 GhostCard 嘅 .title 一樣，換卡唔會跳） */
+/* 今日節目卡嘅節目名（同 GhostCard 嘅 .title 一樣，換卡唔會跳）；一行，放唔落就跑馬燈 */
 .title {
+    width: 100%;
     padding: 0 var(--space-4);
     font-size: var(--font-size-xl);
     font-weight: 600;

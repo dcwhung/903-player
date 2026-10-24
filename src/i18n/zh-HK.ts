@@ -67,6 +67,8 @@ export const zhHK = {
         nowPlayingLabel: '現正播放',
         // 未讀到時長（例如斷網）：標籤同揀中集狀態都顯示呢個，唔顯示時間
         connecting: '連線中…',
+        // 橫版唱片下面嗰行（節目頁 / 今日節目頁 / 廣播劇播放頁）
+        nowPlayingLine: '現正播放：{label}',
         // 日子條入面有集數嘅日子（撳落去播嗰集；同集數清單「播放 …」分開）
         pickDay: '轉去 {date}',
     },
@@ -93,6 +95,8 @@ export const zhHK = {
         statusUnwatched: '未收聽',
         statusUnavailable: '未上架',
         unavailableCount: '{count} 個未上架',
+        // 橫版唱片下面「現正播放：21/10（三）· 第 3 / 5 個節目」
+        nowPlayingIndex: '{date} · 第 {no} / {total} 個節目',
         // 今日有節目播但一個都未上架：卡疊嘅位改為呢個空狀態
         emptyTitle: '今日節目未上架',
         emptyHint: '上架之後會自動顯示',
@@ -145,6 +149,8 @@ export const zhHK = {
         arcPlay: '播放 {arc}',
         nowPlaying: '現正播放：{label}',
         nowPlayingShort: '第 {no} 集 {title}',
+        // 橫版唱片下面「現正播放：好朋友手牽手 · 第 2 / 4 集」（下一行集名）
+        nowPlayingArc: '{arc} · 第 {no} / {total} 集',
     },
 } as const;
 

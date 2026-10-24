@@ -5,11 +5,17 @@ import type { SeriesEpisode } from '../../types/drama';
 import { ratio, toPercent } from '../../utils/ratio';
 import { formatDuration } from '../../utils/time';
 import { CheckIcon, CloseIcon, PauseIcon, PlayIcon, RestartIcon } from '../icons/icons';
+import { Marquee } from '../Marquee/Marquee';
 import { NewBadge } from '../NewBadge/NewBadge';
 import styles from './ArcSheet.module.css';
 
 interface ArcSheetProps {
     open: boolean;
+    /**
+     * 橫版：表只蓋住清單欄（父層要 position: relative），冇遮罩、唔係 modal，旁邊播放器照撳得；
+     * 直版（預設）由畫面底彈出蓋全頁
+     */
+    docked?: boolean;
     /** 分好組嘅短篇（播放中 → 新上架 → 未聽完 → 已聽完，見 arcGroups） */
     groups: readonly { group: ArcGroup; items: readonly ArcSummary[] }[];
     /** 載入緊嘅一集（屬於邊個短篇就框住嗰行） */
@@ -103,7 +109,7 @@ const ArcRow = ({ summary: s, current, isPlaying, onPick, onPlay }: RowProps) =>
                 </span>
                 <span className={styles.text} aria-hidden="true">
                     <span className={styles.name}>
-                        {s.arc}
+                        <Marquee className={styles.nameText} text={s.arc} />
                         {s.isNew && <NewBadge size="sm" className={styles.fresh} />}
                     </span>
                     <span className={styles.status}>{status}</span>
@@ -164,22 +170,28 @@ const ArcGroupBlock = ({
 /**
  * 全集一覽表（底部彈出）：分組 播放中 → 新上架 → 未聽完 → 已聽完，圓環 = 聽完幾多集；
  * 撳行轉去嗰個短篇，撳右邊掣直接播（續聽 / 未收聽 / ↺ 重聽）。
- * 見 design/previews/drama-flow-preview.html
+ * 見 design/previews/drama-flow-preview.html；橫版 docked 見 landscape-list-left-preview.html
  */
-export const ArcSheet = ({ open, groups, onClose, ...rowProps }: ArcSheetProps) => {
+export const ArcSheet = ({ open, docked = false, groups, onClose, ...rowProps }: ArcSheetProps) => {
     const titleId = useId();
     const sheetRef = useSheetFocus(open, onClose);
     if (!open) return null;
     const all = groups.flatMap((g) => g.items);
     const done = all.filter((s) => s.state === 'done').length;
     return (
-        <div className={styles.overlay}>
-            <div className={styles.backdrop} data-testid="arc-sheet-backdrop" onClick={onClose} />
+        <div className={`${styles.overlay} ${docked ? styles.docked : ''}`}>
+            {!docked && (
+                <div
+                    className={styles.backdrop}
+                    data-testid="arc-sheet-backdrop"
+                    onClick={onClose}
+                />
+            )}
             <section
                 ref={sheetRef}
                 className={styles.sheet}
                 role="dialog"
-                aria-modal="true"
+                aria-modal={!docked}
                 aria-labelledby={titleId}
                 tabIndex={-1}
             >

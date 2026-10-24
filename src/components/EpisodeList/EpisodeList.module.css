@@ -54,7 +54,7 @@
     background: var(--color-surface);
 }
 
-/* 行頭欄成個清單一樣闊（EpisodeList labels），進度條先對齊；集名太長就斷行 */
+/* 行頭欄成個清單一樣闊（EpisodeList labels），進度條先對齊；集名太長就跑馬燈（Marquee） */
 .date {
     display: flex;
     flex-direction: column;

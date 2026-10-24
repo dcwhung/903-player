@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { stubLandscape } from '../../tests/landscape';
 import {
     recording,
     renderWithProviders,
@@ -53,6 +54,29 @@ describe('ShowPage', () => {
         expect(headings[0]).toHaveTextContent('公子會');
         expect(headings[0]?.closest('header')).not.toBeNull();
         expect(screen.queryByText('正在播放')).not.toBeInTheDocument();
+    });
+
+    describe('landscape', () => {
+        beforeEach(stubLandscape);
+        afterEach(() => vi.unstubAllGlobals());
+
+        it('puts the header above the episode list and 現正播放 under the disc', async () => {
+            const { audio } = renderWithProviders(<ShowPage />, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+            });
+            await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+
+            const list = screen.getByRole('region', { name: '集數' });
+            const header = screen.getByRole('heading', { level: 1 }).closest('header');
+            expect(header?.parentElement?.parentElement).toBe(list.parentElement);
+            // 唱片下面嗰行（Marquee）；清單揀中行都講「連線中…」
+            expect(
+                screen.getByText('連線中…', { selector: '[data-marquee-text]' }),
+            ).toBeInTheDocument();
+            act(() => audio.emitMetadata(2400));
+            expect(screen.getByText('現正播放：17/10（六）')).toBeInTheDocument();
+        });
     });
 
     it('reads 現正播放 and lists only the Saturdays of a weekly show, without greyed-out days', async () => {
