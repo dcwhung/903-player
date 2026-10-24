@@ -52,10 +52,10 @@ const RowIcon = ({ item }: { item: EpisodeItem }) => {
     return <PlayIcon className={styles.play} size={PLAY_ICON_SIZE} filled={false} />;
 };
 
-/** 行頭：大字（集名太長就跑馬燈）+ 細字（+ 標籤） */
+/** 行頭：大字（集名太長：揀中嗰行跑馬燈，其他行 … 收尾）+ 細字（+ 標籤） */
 const RowDate = ({ item }: { item: EpisodeItem }) => (
     <span className={styles.date}>
-        <Marquee className={styles.dayMonth} text={item.dayMonth} />
+        <Marquee className={styles.dayMonth} text={item.dayMonth} animate={item.current} />
         <span className={styles.weekday}>
             {item.weekday}
             {item.tag && <span className={styles.tag}>{item.tag}</span>}

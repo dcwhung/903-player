@@ -30,6 +30,17 @@
     }
 }
 
+/* 唔捲（animate={false}）：同減少動畫一樣，用 … 收尾 */
+.box[data-static] .track {
+    display: flex;
+}
+
+.box[data-static] .text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* 減少動畫：唔捲、收埋副本，用 … 收尾（scrollWidth 仍然係成句闊度，照樣量到多出幾多） */
 @media (prefers-reduced-motion: reduce) {
     .box[data-overflow] .track {
