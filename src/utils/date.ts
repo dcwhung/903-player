@@ -54,6 +54,18 @@ export const daysBetween = (from: string, to: string): number =>
 
 /** toISOString() 頭 10 個字就係 YYYY-MM-DD */
 const ISO_DATE_LENGTH = 10;
+const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** 格式啱之外，仲要係真實存在嘅日子（排除 2026-13-99 之類） */
+export const isCalendarDate = (value: string): boolean => {
+    const match = ISO_DATE_PATTERN.exec(value);
+    if (!match) {
+        return false;
+    }
+    const [, year, month, day] = match.map(Number) as [number, number, number, number];
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.toISOString().slice(0, ISO_DATE_LENGTH) === value;
+};
 
 /** YYYY-MM-DD 加減幾多日（跨月 / 跨年都得） */
 export const addDays = (isoDate: string, days: number): string =>
