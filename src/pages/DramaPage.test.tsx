@@ -57,6 +57,10 @@ describe('DramaPage', () => {
             expect(miniArt()).toContain('golden-s2-disc');
 
             await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
+            expect(screen.getByRole('button', { name: /^Season 4/ })).toHaveAttribute(
+                'aria-pressed',
+                'true',
+            );
             expect(miniArt()).toContain('golden-s2-disc');
         });
 

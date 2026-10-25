@@ -66,8 +66,10 @@ describe('useDramaNewLabels', () => {
     });
 
     it('turns 新上架 into 有新短篇 once only a later season is still new', () => {
-        goldenOverride.season4AddedAt = '2026-11-01';
-        vi.setSystemTime(new Date('2026-11-07T08:00:00Z')); // 24/10 嗰 3 季過咗 14 日，Season 4 仲新
+        vi.setSystemTime(new Date('2026-11-07T08:00:00Z')); // 24/10 嗰 3 季過咗 14 日
+        expect(labels().has('golden')).toBe(false);
+
+        goldenOverride.season4AddedAt = '2026-11-01'; // Season 4 遲啲先上架，仲新
         expect(labels().get('golden')).toBe('有新短篇');
     });
 

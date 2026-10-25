@@ -81,9 +81,11 @@ describe('dramaThemes', () => {
         });
 
         it('falls back to the drama disc for a season without its own cover', () => {
-            const s1 = golden[0];
-            if (!s1) throw new Error('missing fixture');
-            expect(dramaArtFor({ ...s1, arc: 'Season 5' })).toBe(DRAMA_THEMES.golden.art);
+            const s2 = golden.find((e) => e.arc === 'Season 2');
+            if (!s2) throw new Error('missing fixture');
+            const art = dramaArtFor({ ...s2, arc: 'Season 5' });
+            expect(art).toBe(DRAMA_THEMES.golden.art);
+            expect(art).not.toBe(DRAMA_ARC_ART.golden?.['Season 2']);
         });
 
         it('never uses per-arc art for a daily drama', () => {
