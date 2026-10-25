@@ -6,6 +6,7 @@ import { MiniPlayer, type MiniPlayerProps } from './MiniPlayer';
 const props = (overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps => ({
     showName: 'Bad Girl大過佬',
     region: '正在播放（今日節目）',
+    openLabel: '開啟 Bad Girl大過佬 節目頁',
     theme: SHOW_THEMES.badgirl,
     subtitle: '今日 19/10（一）· 12:40 / 1:58:30',
     timeText: '12:40 / 1:58:30',
@@ -24,6 +25,11 @@ describe('MiniPlayer', () => {
     it('names its region after what plays', () => {
         render(<MiniPlayer {...props({ region: '正在播放（廣播劇）' })} />);
         expect(screen.getByRole('region', { name: '正在播放（廣播劇）' })).toBeInTheDocument();
+    });
+
+    it('names the open button after where it leads', () => {
+        render(<MiniPlayer {...props({ openLabel: '開啟 黃金少年 廣播劇頁' })} />);
+        expect(screen.getByRole('button', { name: '開啟 黃金少年 廣播劇頁' })).toBeInTheDocument();
     });
 
     it('shows the current today show in its own theme', () => {

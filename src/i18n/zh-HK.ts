@@ -76,6 +76,7 @@ export const zhHK = {
         region: '正在播放（今日節目）',
         regionDrama: '正在播放（廣播劇）',
         open: '開啟 {name} 節目頁',
+        openDrama: '開啟 {name} 廣播劇頁',
         today: '今日 {date}',
         withTime: '{label} · {time}',
         position: '今日第 {index} 個節目，共 {total} 個',

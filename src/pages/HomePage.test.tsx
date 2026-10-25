@@ -346,7 +346,7 @@ describe('HomePage', () => {
             const { audio } = await arriveHomeWith(episode);
 
             await userEvent.click(
-                screen.getByRole('button', { name: '開啟 芝See菇Bi Family 節目頁' }),
+                screen.getByRole('button', { name: '開啟 芝See菇Bi Family 廣播劇頁' }),
             );
 
             expect(audio.pause).not.toHaveBeenCalled();

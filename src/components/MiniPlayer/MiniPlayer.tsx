@@ -12,6 +12,8 @@ export interface MiniPlayerProps {
     showName: string;
     /** 成個播放器嘅讀屏名：今日節目 / 廣播劇 */
     region: string;
+    /** 開頁掣嘅讀屏名：開啟節目頁 / 廣播劇頁 */
+    openLabel: string;
     theme: ShowTheme;
     subtitle: string;
     /** 例如「12:40 / 1:58:30」；未知長度時冇 */
