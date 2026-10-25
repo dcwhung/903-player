@@ -1,5 +1,12 @@
+import { seriesEpisodesOf } from '../data/dramaCatalog';
 import { DRAMAS } from './dramas';
-import { DRAMA_THEMES, DRAMA_TILE_ART, dramaThemeFor } from './dramaThemes';
+import {
+    DRAMA_ARC_ART,
+    DRAMA_THEMES,
+    DRAMA_TILE_ART,
+    dramaArtFor,
+    dramaThemeFor,
+} from './dramaThemes';
 import { NEUTRAL_THEME, themeVars } from './showThemes';
 
 const HEX = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i;
@@ -52,6 +59,27 @@ describe('dramaThemes', () => {
             );
         },
     );
+
+    describe('per-arc disc art', () => {
+        const golden = seriesEpisodesOf('golden');
+
+        it('gives every 黃金少年 season its own disc', () => {
+            const arcs = [...new Set(golden.map((e) => e.arc))];
+            const discs = arcs.map((arc) => DRAMA_ARC_ART.golden?.[arc]);
+            expect(discs.every(Boolean)).toBe(true);
+            expect(new Set(discs).size).toBe(arcs.length);
+        });
+
+        it('picks the season disc of the episode', () => {
+            const s2 = golden.find((e) => e.arc === 'Season 2');
+            expect(s2 && dramaArtFor(s2)).toBe(DRAMA_ARC_ART.golden?.['Season 2']);
+        });
+
+        it('falls back to the drama disc when the arc has none', () => {
+            const chisee = seriesEpisodesOf('chisee')[0];
+            expect(chisee && dramaArtFor(chisee)).toBe(DRAMA_THEMES.chisee.art);
+        });
+    });
 
     it('falls back to the neutral theme for an unknown drama', () => {
         expect(dramaThemeFor(undefined)).toBe(NEUTRAL_THEME);

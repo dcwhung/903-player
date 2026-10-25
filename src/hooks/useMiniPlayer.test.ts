@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
-import { DRAMA_THEMES } from '../config/dramaThemes';
+import { DRAMA_ARC_ART, DRAMA_THEMES } from '../config/dramaThemes';
 import { seriesEpisodesOf } from '../data/dramaCatalog';
 import type { SeriesEpisode } from '../types/drama';
 import { saveProgress } from '../services/progressStore';
@@ -158,6 +158,18 @@ describe('useMiniPlayer', () => {
                 progress: 0.25,
                 labels: ['芝See菇Bi Family'],
                 index: 0,
+            });
+        });
+
+        it('spins the disc of the season that plays', async () => {
+            const s3 = seriesEpisodesOf('golden').find((e) => e.arc === 'Season 3');
+            if (!s3) throw new Error('missing fixture');
+            const { result } = setup();
+            await act(() => result.current.player.load(s3, { autoplay: true }));
+
+            expect(result.current.mini?.theme).toEqual({
+                ...DRAMA_THEMES.golden,
+                art: DRAMA_ARC_ART.golden?.['Season 3'],
             });
         });
 

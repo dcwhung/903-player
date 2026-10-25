@@ -105,6 +105,7 @@ export const zhHK = {
         notFound: '找不到此廣播劇',
         // 主頁劇集格右下角
         arcCount: '{count} 個短篇',
+        seasonCount: '全 {count} 季',
         daily: '每日更新',
         // 主頁劇集格底部（聽過先出）
         continue: '繼續收聽',

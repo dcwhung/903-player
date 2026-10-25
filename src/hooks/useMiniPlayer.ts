@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
-import { DRAMA_THEMES } from '../config/dramaThemes';
+import { dramaEpisodeTheme } from '../config/dramaThemes';
 import { findDrama } from '../config/dramas';
 import { themeFor } from '../config/showThemes';
 import { findShow } from '../config/shows';
@@ -69,7 +69,7 @@ const dramaMiniPlayer = (
     const label = dramaEpisodeLabel(episode);
     return {
         showName: name,
-        theme: DRAMA_THEMES[episode.dramaId],
+        theme: dramaEpisodeTheme(episode),
         subtitle: timeText ? t('miniPlayer.withTime', { label, time: timeText }) : label,
         timeText,
         isPlaying: player.isPlaying,

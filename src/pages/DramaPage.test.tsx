@@ -24,6 +24,19 @@ describe('DramaPage', () => {
     afterEach(() => vi.useRealTimers());
 
     describe('series drama', () => {
+        it('spins the disc of the playing season, not the one only being browsed', async () => {
+            const s2 = seriesEpisodesOf('golden').filter((e) => e.arc === 'Season 2');
+            saveProgress(s2[2]?.url ?? '', 60, 1200);
+            const { audio } = openDrama('golden');
+            const discArt = () => screen.getByRole('main').querySelector('img');
+
+            await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
+            expect(discArt()?.getAttribute('src')).toContain('golden-s2-disc');
+
+            await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
+            expect(discArt()?.getAttribute('src')).toContain('golden-s2-disc');
+        });
+
         it('autoplays the first episode on a light themed page with the drama name as title', async () => {
             const { audio } = openDrama('chisee');
 

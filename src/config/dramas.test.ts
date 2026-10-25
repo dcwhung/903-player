@@ -2,8 +2,13 @@ import { DRAMAS, enabledDramas, findDrama, findEnabledDrama } from './dramas';
 
 describe('dramas', () => {
     it('keeps 18 樓 C 座 configured but switched off for now', () => {
-        expect(DRAMAS.map((d) => d.id)).toEqual(['chisee', 'c18']);
-        expect(enabledDramas().map((d) => d.name)).toEqual(['芝See菇Bi Family']);
+        expect(DRAMAS.map((d) => d.id)).toEqual(['chisee', 'c18', 'golden']);
+        expect(enabledDramas().map((d) => d.name)).toEqual(['芝See菇Bi Family', '黃金少年']);
+    });
+
+    it('counts 黃金少年 in seasons, while 芝See keeps 短篇', () => {
+        expect(findDrama('golden')).toMatchObject({ kind: 'series', arcUnit: 'season' });
+        expect(findDrama('chisee')?.arcUnit).toBeUndefined();
     });
 
     it('still names a disabled drama, but does not open it', () => {

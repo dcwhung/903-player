@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { stripDays } from '../components/DateStrip/dateStrip';
-import { DRAMA_THEMES } from '../config/dramaThemes';
+import { DRAMA_THEMES, dramaEpisodeTheme } from '../config/dramaThemes';
 import type { DramaConfig } from '../config/dramas';
 import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
@@ -156,7 +156,8 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
     // 播緊嗰集個短篇有幾多集（橫版「現正播放：短篇 · 第 N / M 集」）
     const arcTotal = current ? episodesInArc(episodes, current.arc).length : 0;
     return {
-        theme: DRAMA_THEMES[drama.id],
+        // 碟面跟播緊（未播就係準備播）嗰集嘅短篇；淨係揀 chip 睇清單唔換
+        theme: current ? dramaEpisodeTheme(current) : DRAMA_THEMES[drama.id],
         current,
         arcTotal,
         arcs: chips,

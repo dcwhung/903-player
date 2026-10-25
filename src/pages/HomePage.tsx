@@ -59,11 +59,12 @@ const useHomeTiles = () => {
     ];
 };
 
-/** 劇集格右下角：短篇劇集「N 個短篇」，每日劇集「每日更新」 */
-const dramaMeta = (drama: DramaConfig): string =>
-    drama.kind === 'series'
-        ? t('drama.arcCount', { count: seriesArcs(seriesEpisodesOf(drama.id)).length })
-        : t('drama.daily');
+/** 劇集格右下角：短篇劇集「N 個短篇」（分季嘅「全 N 季」），每日劇集「每日更新」 */
+const dramaMeta = (drama: DramaConfig): string => {
+    if (drama.kind !== 'series') return t('drama.daily');
+    const count = seriesArcs(seriesEpisodesOf(drama.id)).length;
+    return t(drama.arcUnit === 'season' ? 'drama.seasonCount' : 'drama.arcCount', { count });
+};
 
 /** 廣播劇 tab 嘅劇集格（撳落開始播再入頁，同節目格一樣） */
 const useDramaItems = (): DramaShelfItem[] => {
