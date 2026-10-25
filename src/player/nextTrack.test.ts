@@ -8,7 +8,7 @@ describe('nextTrack', () => {
     it('continues a series drama in catalogue order, across 短篇', () => {
         const lastOfArc = SERIES.findLastIndex((e) => e.arc === '你生日所以我生日');
         expect(nextTrack(SERIES[lastOfArc]!)).toBe(SERIES[lastOfArc + 1]);
-        expect(SERIES[lastOfArc + 1]).toMatchObject({ arc: '大妒忌', no: 1 });
+        expect(SERIES[lastOfArc + 1]).toMatchObject({ arc: '初戀嗱喳麵', no: 0 });
     });
 
     it('stops after the last 短篇', () => {

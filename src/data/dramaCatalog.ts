@@ -1,6 +1,6 @@
 /*
  * 廣播劇集數。
- * - 芝See菇Bi Family：真清單（11 個短篇、71 集），錄音喺 Cloudflare R2
+ * - 芝See菇Bi Family：真清單（12 個短篇、97 集），錄音喺 Cloudflare R2
  *   （DRAMA_AUDIO_BASE/芝See菇Bi Family/<短篇>/<原檔名>）。
  * - 黃金少年：4 季、126 集，錄音喺 R2（DRAMA_AUDIO_BASE/黃金少年/Season N/<原檔名>）。
  * - 18 樓 C 座：⚠️ 仲係假資料（由截圖抄嘅日子），網址係佔位（public/dramas/c18/），
@@ -16,14 +16,16 @@ const encodePath = (segments: readonly string[]): string =>
 /** R2 入面芝See 嘅 folder（同畫面顯示嘅劇名一樣） */
 const CHISEE_FOLDER = '芝See菇Bi Family';
 
-/** 檔名入面嘅集數用中文數字（第一集 … 第十集 … 第三十六集） */
+/** 檔名入面嘅集數用中文數字（第零集、第一集 … 第十集 … 第三十六集） */
 const CHINESE_DIGITS = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'] as const;
+const CHINESE_ZERO = '零';
 const CHINESE_TEN = '十';
 const TEN = 10;
 const FILE_NO_WIDTH = 2;
 
-/** 1–99 → 中文數字（10 →「十」、12 →「十二」、20 →「二十」、36 →「三十六」） */
+/** 0–99 → 中文數字（0 →「零」、10 →「十」、12 →「十二」、20 →「二十」、36 →「三十六」） */
 export const toChineseNumeral = (n: number): string => {
+    if (n === 0) return CHINESE_ZERO;
     const tens = Math.floor(n / TEN);
     const ones = n % TEN;
     if (tens === 0) return CHINESE_DIGITS[ones] ?? String(n);
@@ -51,16 +53,21 @@ const chiseeFile = (arc: string, no: number, title: string | undefined): string 
         ...(title ? [title] : []),
     ].join(' - ') + '.m4a';
 
+/** 初戀嗱喳麵：前傳之後、後傳之前，第一至二十集冇集名 */
+const CHULUEN_UNTITLED_EPISODES = 20;
+
 /**
  * 芝See菇Bi Family 短篇（按短篇名字碼排，新短篇照排入去）：每集嘅集名，冇集名係 null。
  * 短篇名 = R2 folder 名 = 檔名入面嘅名，照原寫法（全形「Ｘ」、「游亁水」、「青春期眞神奇」）。
  * 集名照原檔名寫（包括「 _ 」），顯示時先由 displayTitle 執靚。
+ * 有「第零集」（前傳）嘅短篇寫 firstNo: 0；冇寫就由第 1 集起。
  * 新加短篇要寫 addedAt（上架日子 YYYY-MM-DD），上架 14 日內會出「新」；
  * 原本嗰 10 個係舊短篇，唔寫
  */
 const CHISEE_ARCS: readonly {
     arc: string;
     addedAt?: string;
+    firstNo?: number;
     titles: readonly (string | null)[];
 }[] = [
     {
@@ -106,6 +113,20 @@ const CHISEE_ARCS: readonly {
         ],
     },
     { arc: '你生日所以我生日', titles: [null, null, null] },
+    {
+        arc: '初戀嗱喳麵',
+        addedAt: '2026-10-25',
+        firstNo: 0,
+        titles: [
+            '前傳',
+            ...Array<null>(CHULUEN_UNTITLED_EPISODES).fill(null),
+            '後傳1',
+            '後傳2',
+            '後傳3',
+            '後傳4',
+            '後傳5',
+        ],
+    },
     { arc: '大妒忌', titles: [null, null, null] },
     { arc: '好朋友手牽手', titles: ['好傾朋友', '朋友不同', '朋友性別', '朋友第一'] },
     { arc: '小苦妹撲水', titles: [null, null, null, null] },
@@ -121,9 +142,9 @@ const CHISEE_ARCS: readonly {
 ];
 
 const chiseeEpisodes = (): SeriesEpisode[] =>
-    CHISEE_ARCS.flatMap(({ arc, addedAt, titles }) =>
+    CHISEE_ARCS.flatMap(({ arc, addedAt, firstNo = 1, titles }) =>
         titles.map((title, i): SeriesEpisode => {
-            const no = i + 1;
+            const no = i + firstNo;
             return {
                 kind: 'series',
                 dramaId: 'chisee',

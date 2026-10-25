@@ -34,4 +34,17 @@ describe('Marquee', () => {
             (box.firstElementChild as HTMLElement).style.getPropertyValue('--marquee-shift'),
         ).toBe(`-${180 + MARQUEE_GAP_PX}px`);
     });
+
+    it('holds still with an ellipsis and no copy when told not to animate', () => {
+        stubWidths(180, 120);
+        const { container } = render(<Marquee text={LONG} animate={false} />);
+
+        const box = container.firstElementChild as HTMLElement;
+        expect(box).toHaveAttribute('data-overflow', 'true');
+        expect(box).toHaveAttribute('data-static', 'true');
+        expect(screen.getAllByText(LONG)).toHaveLength(1);
+        expect(
+            (box.firstElementChild as HTMLElement).style.getPropertyValue('--marquee-shift'),
+        ).toBe('');
+    });
 });

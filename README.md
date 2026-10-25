@@ -16,7 +16,7 @@
     - 芝See菇Bi Family（短篇劇集）：唱片下面「現正播放」+ 短篇 chips 左右掃，揀短篇換集數清單（有集名大字顯示集名，冇就顯示「第 N 集」）；入頁續播上次聽緊嗰集（聽完就下一集）；一集播完自動接下一集（播完一個短篇接下一個短篇，最後一集播完就停）；「☰ 全集」釘住 chips 最左，打開全集一覽表（分組：播放中 → 新上架 → 未聽完 → 已聽完；圓環 = 聽完幾多集；右邊掣續聽 / 播未收聽 / ↺ 重聽），短篇 chips 同一次序；集數清單聽完嘅排最底；新短篇（catalog `addedAt`）上架 14 日內有「新」；主頁劇集格：未聽過 / 播緊時只有短篇數（右下），聽過未播緊就喺圖底出「繼續收聽」（短篇數移去右上），有未聽過嘅新短篇左上角出「新」
     - 18 樓 C 座（每日劇集，⚠️ 暫時停用：`src/config/dramas.ts` `enabled: false`，主頁唔出、劇集頁當搵唔到）：同節目頁一樣嘅日子條 + 集數清單，日子條只排有集數嘅日子，重播舊集標「重溫」
     - 播緊廣播劇返主頁唔會停，mini player 改為顯示嗰套劇
-    - 集數清單喺 `src/data/dramaCatalog.ts`：芝See 係真清單（11 個短篇、71 集），錄音喺 Cloudflare R2（`DRAMA_AUDIO_BASE`，`芝See菇Bi Family/<短篇>/<原檔名>`）；18樓C座 ⚠️ 仲係假資料，錄音未 host，撳播放會一直「連線中…」。Preview：`design/previews/radio-drama-preview.html`
+    - 集數清單喺 `src/data/dramaCatalog.ts`：芝See 係真清單（12 個短篇、97 集），錄音喺 Cloudflare R2（`DRAMA_AUDIO_BASE`，`芝See菇Bi Family/<短篇>/<原檔名>`）；18樓C座 ⚠️ 仲係假資料，錄音未 host，撳播放會一直「連線中…」。Preview：`design/previews/radio-drama-preview.html`
 - 自動續播（進度存喺本機 localStorage）、鎖屏 / 耳機控制、深色 + 跟系統淺色
 
 ## 架構

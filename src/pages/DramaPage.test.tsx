@@ -58,8 +58,8 @@ describe('DramaPage', () => {
             const group = screen.getByRole('group', { name: '短篇' }).parentElement as HTMLElement;
             expect(within(group).getByText('連線中…')).toBeInTheDocument();
             act(() => audio.emitMetadata(1200));
-            // 「全部」+ 11 個短篇
-            expect(arcChips()).toHaveLength(12);
+            // 「全部」+ 12 個短篇
+            expect(arcChips()).toHaveLength(13);
             expect(screen.getByRole('button', { name: 'Ｘ時mas時小提議' })).toHaveAttribute(
                 'aria-pressed',
                 'true',
@@ -93,6 +93,16 @@ describe('DramaPage', () => {
     describe('landscape', () => {
         beforeEach(stubLandscape);
         afterEach(() => vi.unstubAllGlobals());
+
+        it('counts a 第零集 短篇 by position, so its last episode reads 第 26 / 26 集', async () => {
+            const chuluen = CHISEE.filter((e) => e.arc === '初戀嗱喳麵');
+            saveProgress(chuluen.at(-1)?.url ?? '', 120, 1200);
+            const { audio } = openDrama('chisee');
+            await waitFor(() => expect(audio.src).toBe(chuluen.at(-1)?.url));
+            act(() => audio.emitMetadata(1200));
+
+            expect(screen.getByText('現正播放：初戀嗱喳麵 · 第 26 / 26 集')).toBeInTheDocument();
+        });
 
         it('shows the 短篇, position and episode title under the disc, header above the list', async () => {
             saveProgress(XMAS[1]?.url ?? '', 120, 1200);
@@ -161,12 +171,13 @@ describe('DramaPage', () => {
             const picks = within(dialog)
                 .getAllByRole('button')
                 .filter((b) => b.dataset.role === 'pick');
-            expect(picks).toHaveLength(11);
+            expect(picks).toHaveLength(12);
             expect(picks[0]).toHaveAccessibleName('好朋友手牽手，播緊第 2 集');
             expect(picks[1]).toHaveAccessibleName('三十六計，未聽 · 36 集');
-            expect(picks[2]).toHaveAccessibleName('大妒忌，未聽 · 3 集');
+            expect(picks[2]).toHaveAccessibleName('初戀嗱喳麵，未聽 · 26 集');
+            expect(picks[3]).toHaveAccessibleName('大妒忌，未聽 · 3 集');
             expect(picks.at(-1)).toHaveAccessibleName('你生日所以我生日，聽完 · 3 集');
-            expect(within(dialog).getByText('聽完 1 / 11 個')).toBeInTheDocument();
+            expect(within(dialog).getByText('聽完 1 / 12 個')).toBeInTheDocument();
 
             await userEvent.click(
                 within(dialog).getByRole('button', { name: '播放 大妒忌 第 1 集' }),
