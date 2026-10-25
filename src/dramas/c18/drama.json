@@ -1,0 +1,62 @@
+{
+    "name": "18 樓 C 座",
+    "kind": "daily",
+    "enabled": false,
+    "order": 2,
+    "tile": "tile.webp",
+    "disc": "disc.webp",
+    "audio": {
+        "host": "app",
+        "folder": "c18",
+        "file": "{yyyymmdd}.m4a"
+    },
+    "theme": {
+        "bg": "#f3e8d2",
+        "surface": "#e9d9b9",
+        "track": "#d3bd94",
+        "accent": "#c0362c",
+        "onAccent": "#fff8ec",
+        "title": "#a52a24",
+        "accentText": "#a52a24",
+        "text": "#3a2a20",
+        "muted": "#67533f",
+        "shadowDark": "#d9c8a6",
+        "shadowLight": "#fffaf0",
+        "scheme": "light",
+        "statusBar": "#a52a24",
+        "titleFont": "'Noto Serif TC', serif",
+        "headerRule": "linear-gradient(#c0362c, #c0362c) 0 100% / 100% 1px no-repeat, linear-gradient(#c0362c, #c0362c) 0 calc(100% - 3px) / 100% 1px no-repeat"
+    },
+    "episodes": [
+        {
+            "date": "2026-10-23"
+        },
+        {
+            "date": "2026-10-22"
+        },
+        {
+            "date": "2026-10-21"
+        },
+        {
+            "date": "2026-10-20"
+        },
+        {
+            "date": "2026-10-16"
+        },
+        {
+            "date": "2026-10-15"
+        },
+        {
+            "date": "2025-08-13",
+            "rerun": true
+        },
+        {
+            "date": "2025-08-12",
+            "rerun": true
+        },
+        {
+            "date": "2025-08-11",
+            "rerun": true
+        }
+    ]
+}

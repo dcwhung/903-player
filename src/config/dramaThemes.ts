@@ -1,5 +1,5 @@
-import c18Disc from '../assets/dramas/c18-disc.webp';
-import c18Tile from '../assets/dramas/c18-tile.webp';
+import c18Disc from '../dramas/c18/disc.webp';
+import c18Tile from '../dramas/c18/tile.webp';
 import chiseeDisc from '../dramas/chisee/disc.webp';
 import chiseeTile from '../dramas/chisee/tile.webp';
 import goldenS1Disc from '../dramas/golden/season-1-disc.webp';
