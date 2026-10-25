@@ -12,7 +12,7 @@ export interface MiniPlayerProps {
     showName: string;
     /** 成個播放器嘅讀屏名：今日節目 / 廣播劇 */
     region: string;
-    /** 開頁掣嘅讀屏名：開啟節目頁 / 廣播劇頁 */
+    /** 開頁掣嘅讀屏名：節目頁 / 廣播劇頁 */
     openLabel: string;
     theme: ShowTheme;
     subtitle: string;
@@ -32,7 +32,7 @@ export interface MiniPlayerProps {
 }
 
 /**
- * 主頁底部播放器（今日節目，或者載入緊嘅廣播劇）：跟節目轉色，左右掃轉節目，撳入節目頁。
+ * 主頁底部播放器（今日節目，或者載入緊嘅廣播劇）：跟節目轉色，左右掃轉節目，撳入節目頁 / 廣播劇頁。
  * 用 portal 掛喺 body：頁面 .scope 係 size container（會變成 position: fixed 嘅 containing block），
  * 掛喺 body 先保證係跟 viewport 定位，唔受頁面 .scope / #root 影響
  */
