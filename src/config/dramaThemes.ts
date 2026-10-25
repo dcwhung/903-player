@@ -2,11 +2,11 @@ import c18Disc from '../assets/dramas/c18-disc.webp';
 import c18Tile from '../assets/dramas/c18-tile.webp';
 import chiseeDisc from '../dramas/chisee/disc.webp';
 import chiseeTile from '../dramas/chisee/tile.webp';
-import goldenS1Disc from '../assets/dramas/golden-s1-disc.webp';
-import goldenS2Disc from '../assets/dramas/golden-s2-disc.webp';
-import goldenS3Disc from '../assets/dramas/golden-s3-disc.webp';
-import goldenS4Disc from '../assets/dramas/golden-s4-disc.webp';
-import goldenTile from '../assets/dramas/golden-tile.webp';
+import goldenS1Disc from '../dramas/golden/season-1-disc.webp';
+import goldenS2Disc from '../dramas/golden/season-2-disc.webp';
+import goldenS3Disc from '../dramas/golden/season-3-disc.webp';
+import goldenS4Disc from '../dramas/golden/season-4-disc.webp';
+import goldenTile from '../dramas/golden/tile.webp';
 import type { DramaEpisode, DramaId } from '../types/drama';
 import { NEUTRAL_THEME, type ShowTheme } from './showThemes';
 
