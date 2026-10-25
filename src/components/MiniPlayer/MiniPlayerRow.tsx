@@ -7,6 +7,8 @@ import styles from './MiniPlayer.module.css';
 
 interface MiniPlayerRowProps {
     showName: string;
+    /** 左邊開頁掣嘅讀屏名：節目頁 / 廣播劇頁 */
+    openLabel: string;
     theme: ShowTheme;
     subtitle: string;
     isPlaying: boolean;
@@ -16,13 +18,13 @@ interface MiniPlayerRowProps {
 
 const TOGGLE_ICON_SIZE = 20;
 
-/** 節目碟 + 名 + 副題（撳入節目頁；放唔落就跑馬燈），右邊係播放 / 暫停 */
+/** 節目碟 + 名 + 副題（撳入節目頁 / 廣播劇頁；放唔落就跑馬燈），右邊係播放 / 暫停 */
 export const MiniPlayerRow = (props: MiniPlayerRowProps) => (
     <div className={styles.row}>
         <button
             type="button"
             className={styles.open}
-            aria-label={t('miniPlayer.open', { name: props.showName })}
+            aria-label={props.openLabel}
             onClick={props.onOpen}
         >
             <Disc size="small" art={props.theme.art} />

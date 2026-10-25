@@ -69,6 +69,8 @@ const dramaMiniPlayer = (
     const label = dramaEpisodeLabel(episode);
     return {
         showName: name,
+        region: t('miniPlayer.regionDrama'),
+        openLabel: t('miniPlayer.openDrama', { name }),
         theme: dramaEpisodeTheme(episode),
         subtitle: timeText ? t('miniPlayer.withTime', { label, time: timeText }) : label,
         timeText,
@@ -102,6 +104,8 @@ export const useMiniPlayer = (): MiniPlayerProps | null => {
 
     return {
         showName: showName(current),
+        region: t('miniPlayer.region'),
+        openLabel: t('miniPlayer.open', { name: showName(current) }),
         theme: themeFor(current.showId),
         subtitle: miniPlayerSubtitle(current.date, today, timeText),
         timeText,
