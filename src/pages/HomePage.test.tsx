@@ -281,7 +281,7 @@ describe('HomePage', () => {
                 within(nav)
                     .getAllByRole('button')
                     .map((b) => b.getAttribute('aria-label')),
-            ).toEqual(['芝See菇Bi Family']);
+            ).toEqual(['芝See菇Bi Family', '黃金少年']);
             expect(screen.queryByRole('navigation', { name: '節目' })).not.toBeInTheDocument();
         });
 
@@ -291,6 +291,14 @@ describe('HomePage', () => {
 
             expect(within(nav).getByText('12 個短篇').dataset.corner).toBe('bottom');
             expect(within(nav).queryByText('繼續收聽')).not.toBeInTheDocument();
+        });
+
+        it('counts 黃金少年 in seasons, 全 4 季', async () => {
+            renderWithProviders(<HomePage />);
+            const nav = await openDramas();
+
+            const tile = within(nav).getByRole('button', { name: /^黃金少年/ });
+            expect(within(tile).getByText('全 4 季')).toBeInTheDocument();
         });
 
         it('offers 繼續收聽 with the episode to continue and how far it got', async () => {

@@ -2,6 +2,7 @@
  * 廣播劇集數。
  * - 芝See菇Bi Family：真清單（12 個短篇、97 集），錄音喺 Cloudflare R2
  *   （DRAMA_AUDIO_BASE/芝See菇Bi Family/<短篇>/<原檔名>）。
+ * - 黃金少年：4 季、126 集，錄音喺 R2（DRAMA_AUDIO_BASE/黃金少年/Season N/<原檔名>）。
  * - 18 樓 C 座：⚠️ 仲係假資料（由截圖抄嘅日子），網址係佔位（public/dramas/c18/），
  *   撳播放會一直「連線中…」；等 manifest 到咗先換。介面（dramaEpisodesOf 等）唔使變。
  */
@@ -160,6 +161,56 @@ const chiseeEpisodes = (): SeriesEpisode[] =>
         }),
     );
 
+/** R2 入面黃金少年嘅 folder（同劇名一樣），入面每季一個「Season N」folder */
+const GOLDEN_FOLDER = '黃金少年';
+const GOLDEN_ADDED_AT = '2026-10-24';
+
+/** 每季集數；有集名嘅集數（得大結局）另外寫，key 係集數 */
+const GOLDEN_SEASONS: readonly { episodes: number; titles?: Readonly<Record<number, string>> }[] = [
+    { episodes: 35 },
+    { episodes: 30 },
+    { episodes: 30 },
+    { episodes: 31, titles: { 31: '最終結局' } },
+];
+
+/** 季名 = folder 名（「Season 1」），亦係畫面 chip 名 */
+const goldenSeason = (season: number): string => `Season ${season}`;
+
+/**
+ * 原檔名：「01 - 黃金少年Season 1 - 第一集.m4a」（劇名同 Season 之間冇空格），
+ * 有集名就加「 - 集名」（「31 - 黃金少年Season 4 - 第三十一集 - 最終結局.m4a」）
+ */
+const goldenFile = (season: number, no: number, title: string | undefined): string =>
+    [
+        String(no).padStart(FILE_NO_WIDTH, '0'),
+        `${GOLDEN_FOLDER}${goldenSeason(season)}`,
+        `第${toChineseNumeral(no)}集`,
+        ...(title ? [title] : []),
+    ].join(' - ') + '.m4a';
+
+const goldenEpisodes = (): SeriesEpisode[] =>
+    GOLDEN_SEASONS.flatMap(({ episodes, titles = {} }, i) => {
+        const season = i + 1;
+        const arc = goldenSeason(season);
+        return Array.from({ length: episodes }, (_, j): SeriesEpisode => {
+            const no = j + 1;
+            const title = titles[no];
+            return {
+                kind: 'series',
+                dramaId: 'golden',
+                url: `${DRAMA_AUDIO_BASE}/${encodePath([
+                    GOLDEN_FOLDER,
+                    arc,
+                    goldenFile(season, no, title),
+                ])}`,
+                arc,
+                no,
+                ...(title ? { title } : {}),
+                addedAt: GOLDEN_ADDED_AT,
+            };
+        });
+    });
+
 /** 截圖見到嘅日子；2025-08 嗰幾集係重播 */
 const C18_EPISODES: readonly { date: string; rerun?: boolean }[] = [
     { date: '2026-10-23' },
@@ -185,6 +236,7 @@ const c18Episodes = (): DailyEpisode[] =>
 const CATALOG: Readonly<Record<DramaId, readonly DramaEpisode[]>> = {
     chisee: chiseeEpisodes(),
     c18: c18Episodes(),
+    golden: goldenEpisodes(),
 };
 
 /** 某套劇全部集數（短篇劇集按短篇 → 集數排；每日劇集次序唔保證，用 dailyNewestFirst 排） */

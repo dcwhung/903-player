@@ -3,7 +3,7 @@ import { enabledDramas, type DramaConfig } from '../config/dramas';
 import { dramaEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
 import { t } from '../i18n/t';
 import { usePlayer } from '../player/usePlayer';
-import { hasNewUnheardArc } from '../selectors/arcProgress';
+import { hasNewUnheardArc, isArcNew } from '../selectors/arcProgress';
 import { dramaHasNew } from '../selectors/dramas';
 import { getProgressMap, type Progress } from '../services/progressStore';
 import type { DramaId } from '../types/drama';
@@ -15,13 +15,17 @@ type ProgressMap = Readonly<Record<string, Progress>>;
 const watchedUrlsOf = (progressMap: ProgressMap): ReadonlySet<string> =>
     new Set(Object.keys(progressMap).filter((url) => progressMap[url]?.watched));
 
-/** 短篇劇集：有新上架短篇未聽過 →「有新短篇」；每日劇集：今日一集未聽完 →「今日有新一集」 */
+/** 短篇劇集有新短篇未聽過：成套劇一齊上架（全部短篇都新）→「新上架」，否則「有新短篇」 */
+const seriesNewLabel = (drama: DramaConfig, progressMap: ProgressMap, today: string) => {
+    const episodes = seriesEpisodesOf(drama.id);
+    if (!hasNewUnheardArc(episodes, progressMap, today)) return undefined;
+    const wholeDramaNew = episodes.every((e) => isArcNew(e.addedAt, today));
+    return t(wholeDramaNew ? 'drama.newDrama' : 'drama.newArc');
+};
+
+/** 短篇劇集見 seriesNewLabel；每日劇集：今日一集未聽完 →「今日有新一集」 */
 const newLabelOf = (drama: DramaConfig, progressMap: ProgressMap, today: string) => {
-    if (drama.kind === 'series') {
-        return hasNewUnheardArc(seriesEpisodesOf(drama.id), progressMap, today)
-            ? t('drama.newArc')
-            : undefined;
-    }
+    if (drama.kind === 'series') return seriesNewLabel(drama, progressMap, today);
     return dramaHasNew(dramaEpisodesOf(drama.id), today, watchedUrlsOf(progressMap))
         ? t('drama.newEpisode')
         : undefined;
