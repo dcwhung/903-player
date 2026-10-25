@@ -48,6 +48,7 @@ describe('useMiniPlayer', () => {
         expect(audio.src).toBe(WANNI.url);
         expect(audio.play).toHaveBeenCalledTimes(2);
         expect(result.current.mini?.showName).toBe('雲妮鍾情');
+        expect(result.current.mini?.region).toBe('正在播放（今日節目）');
     });
 
     it('gives the time text once the duration is known', async () => {
@@ -152,6 +153,7 @@ describe('useMiniPlayer', () => {
             const mini = result.current.mini;
             expect(mini).toMatchObject({
                 showName: '芝See菇Bi Family',
+                region: '正在播放（廣播劇）',
                 theme: DRAMA_THEMES.chisee,
                 subtitle: 'Ｘ時mas時小提議 · 第 2 集 哥哥你洽我 · 5:00 / 20:00',
                 isPlaying: true,

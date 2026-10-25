@@ -74,6 +74,7 @@ export const zhHK = {
     },
     miniPlayer: {
         region: '正在播放（今日節目）',
+        regionDrama: '正在播放（廣播劇）',
         open: '開啟 {name} 節目頁',
         today: '今日 {date}',
         withTime: '{label} · {time}',

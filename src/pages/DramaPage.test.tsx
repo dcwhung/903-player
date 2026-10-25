@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { stubLandscape } from '../../tests/landscape';
 import { renderWithProviders } from '../../tests/renderWithProviders';
 import { seriesEpisodesOf } from '../data/dramaCatalog';
+import { useMiniPlayer } from '../hooks/useMiniPlayer';
 import { saveProgress } from '../services/progressStore';
 import { DramaPage } from './DramaPage';
 
@@ -12,6 +13,9 @@ const XMAS = CHISEE.filter((e) => e.arc === 'Ｘ時mas時小提議');
 
 const openDrama = (id: string) =>
     renderWithProviders(<DramaPage />, { route: `/drama/${id}`, path: PATH });
+
+/** 同一個 player 入面主頁 mini player 會用嘅碟面 */
+const MiniArtProbe = () => <span data-testid="mini-art" data-art={useMiniPlayer()?.theme.art} />;
 const arcChips = () => within(screen.getByRole('group', { name: '短篇' })).getAllByRole('button');
 
 describe('DramaPage', () => {
@@ -35,6 +39,25 @@ describe('DramaPage', () => {
 
             await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
             expect(discArt()?.getAttribute('src')).toContain('golden-s2-disc');
+        });
+
+        it('keeps the mini player disc on the playing season while another one is browsed', async () => {
+            const s2 = seriesEpisodesOf('golden').filter((e) => e.arc === 'Season 2');
+            saveProgress(s2[2]?.url ?? '', 60, 1200);
+            const { audio } = renderWithProviders(
+                <>
+                    <DramaPage />
+                    <MiniArtProbe />
+                </>,
+                { route: '/drama/golden', path: PATH },
+            );
+            const miniArt = () => screen.getByTestId('mini-art').dataset.art;
+
+            await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
+            expect(miniArt()).toContain('golden-s2-disc');
+
+            await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
+            expect(miniArt()).toContain('golden-s2-disc');
         });
 
         it('autoplays the first episode on a light themed page with the drama name as title', async () => {

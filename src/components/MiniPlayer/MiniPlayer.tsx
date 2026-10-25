@@ -2,7 +2,6 @@ import { createPortal } from 'react-dom';
 import type { ShowTheme } from '../../config/showThemes';
 import { stepIndex, useSwipe } from '../../hooks/useSwipe';
 import { useViewportGap } from '../../hooks/useViewportGap';
-import { t } from '../../i18n/t';
 import { PageDots } from '../PageDots/PageDots';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import styles from './MiniPlayer.module.css';
@@ -11,6 +10,8 @@ import { MiniPlayerRow } from './MiniPlayerRow';
 
 export interface MiniPlayerProps {
     showName: string;
+    /** 成個播放器嘅讀屏名：今日節目 / 廣播劇 */
+    region: string;
     theme: ShowTheme;
     subtitle: string;
     /** 例如「12:40 / 1:58:30」；未知長度時冇 */
@@ -29,11 +30,18 @@ export interface MiniPlayerProps {
 }
 
 /**
- * 主頁底部嘅今日節目播放器：跟節目轉色，左右掃轉節目，撳入節目頁。
+ * 主頁底部播放器（今日節目，或者載入緊嘅廣播劇）：跟節目轉色，左右掃轉節目，撳入節目頁。
  * 用 portal 掛喺 body：頁面 .scope 係 size container（會變成 position: fixed 嘅 containing block），
  * 掛喺 body 先保證係跟 viewport 定位，唔受頁面 .scope / #root 影響
  */
-export const MiniPlayer = ({ labels, keys, index, onChange, ...props }: MiniPlayerProps) => {
+export const MiniPlayer = ({
+    region,
+    labels,
+    keys,
+    index,
+    onChange,
+    ...props
+}: MiniPlayerProps) => {
     useViewportGap();
     const swipe = useSwipe((direction) => {
         // 掃過頭會循環返另一頭；得一個節目就唔郁
@@ -43,7 +51,7 @@ export const MiniPlayer = ({ labels, keys, index, onChange, ...props }: MiniPlay
 
     return createPortal(
         <ThemeScope theme={props.theme} fullPage={false} className={styles.wrapper}>
-            <section className={styles.player} aria-label={t('miniPlayer.region')} {...swipe}>
+            <section className={styles.player} aria-label={region} {...swipe}>
                 <MiniPlayerRow {...props} />
                 <div className={styles.dots}>
                     <PageDots keys={keys} labels={labels} index={index} onSelect={onChange} />

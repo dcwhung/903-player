@@ -1,4 +1,4 @@
-import { seriesEpisodesOf } from '../data/dramaCatalog';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
 import { DRAMAS } from './dramas';
 import {
     DRAMA_ARC_ART,
@@ -78,6 +78,17 @@ describe('dramaThemes', () => {
         it('falls back to the drama disc when the arc has none', () => {
             const chisee = seriesEpisodesOf('chisee')[0];
             expect(chisee && dramaArtFor(chisee)).toBe(DRAMA_THEMES.chisee.art);
+        });
+
+        it('falls back to the drama disc for a season without its own cover', () => {
+            const s1 = golden[0];
+            if (!s1) throw new Error('missing fixture');
+            expect(dramaArtFor({ ...s1, arc: 'Season 5' })).toBe(DRAMA_THEMES.golden.art);
+        });
+
+        it('never uses per-arc art for a daily drama', () => {
+            const daily = dailyEpisodesOf('c18')[0];
+            expect(daily && dramaArtFor(daily)).toBe(DRAMA_THEMES.c18.art);
         });
     });
 
