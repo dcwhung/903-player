@@ -113,6 +113,8 @@ export const zhHK = {
         // 劇集格左上角「新」嘅讀屏
         tileNew: '{name}，{label}',
         newArc: '有新短篇',
+        // 成套劇一齊上架（全部短篇 / 季都新）
+        newDrama: '新上架',
         newEpisode: '今日有新一集',
         // 短篇劇集：清單每行細字、mini player / 鎖屏副標題
         episodeNo: '第 {no} 集',
