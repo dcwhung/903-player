@@ -147,32 +147,74 @@
     text-align: left;
 }
 
-/* 圓環：已聽完集數佔幾多（--arc-ring-fill），中間寫「1/4」；聽完變實色 + 剔 */
+/*
+ * 碟面進度環：外圈 conic（強調色 = 聽完集數佔幾多，--arc-ring-fill），中間係短篇碟面（冇就劇集主碟面）。
+ * pill / ✓ 用 --arc-row-bg 描一圈邊，同碟面 / 外圈分得開（載入緊嗰行係淺底）
+ */
 .ring {
-    display: flex;
+    --arc-row-bg: var(--color-bg);
+
+    position: relative;
+    display: block;
     flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
+    box-sizing: border-box;
     width: var(--arc-sheet-ring);
     height: var(--arc-sheet-ring);
+    padding: var(--arc-sheet-ring-width);
     border-radius: var(--radius-full);
-    background:
-        radial-gradient(closest-side, var(--color-bg) 72%, transparent 74%),
-        conic-gradient(var(--color-accent-fill) var(--arc-ring-fill), var(--color-track) 0);
-    color: var(--color-accent-text);
-    font-size: var(--font-size-2xs);
-    font-weight: 700;
+    background: conic-gradient(var(--color-accent-fill) var(--arc-ring-fill), var(--color-track) 0);
 }
 
 .current .ring {
-    background:
-        radial-gradient(closest-side, var(--color-surface) 72%, transparent 74%),
-        conic-gradient(var(--color-accent-fill) var(--arc-ring-fill), var(--color-track) 0);
+    --arc-row-bg: var(--color-surface);
 }
 
-.ring.done {
-    background: var(--color-title);
-    color: var(--color-bg);
+/* 碟面：圓形 cover，中間挖個碟心孔（mask 只睇 alpha，所以實色用邊隻都得） */
+.cover {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    mask: radial-gradient(
+        circle,
+        transparent var(--arc-sheet-hole),
+        currentcolor calc(var(--arc-sheet-hole) + 1%)
+    );
+}
+
+/* 未聽完：碟面底中間嘅「1/4」 */
+.count {
+    position: absolute;
+    bottom: var(--arc-sheet-count-offset);
+    left: 50%;
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--color-accent-fill);
+    box-shadow: 0 0 0 var(--arc-sheet-badge-outline) var(--arc-row-bg);
+    color: var(--color-on-accent);
+    font-size: var(--arc-sheet-count-font);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    line-height: var(--arc-sheet-count-line);
+    white-space: nowrap;
+    transform: translateX(-50%);
+}
+
+/* 聽完：冇 pill，右下角出 ✓ */
+.doneBadge {
+    position: absolute;
+    right: var(--arc-sheet-check-offset);
+    bottom: var(--arc-sheet-check-offset);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--arc-sheet-check);
+    height: var(--arc-sheet-check);
+    border-radius: var(--radius-full);
+    background: var(--color-accent-fill);
+    box-shadow: 0 0 0 var(--arc-sheet-badge-outline) var(--arc-row-bg);
+    color: var(--color-on-accent);
 }
 
 .text {

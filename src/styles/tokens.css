@@ -103,13 +103,25 @@
     --date-strip-empty-opacity: 0.35;
     /* 短篇劇集頁嘅短篇 chip：睇落嘅高度（撳得到範圍係成行 --date-strip-height） */
     --arc-chip-height: calc(32px * var(--ui-scale));
-    /* 「全部短篇」一覽表：最高佔畫面幾多、遮罩、拉柄闊、每行高、圓環大細、疊喺頁面上面嘅層 */
+    /* 「全部短篇」一覽表：最高佔畫面幾多、遮罩、拉柄闊、每行高、碟面圓環大細、疊喺頁面上面嘅層 */
     --arc-sheet-max-height: 78%;
     --arc-sheet-scrim: rgb(0 0 0 / 40%);
     --arc-sheet-grab-width: calc(40px * var(--ui-scale));
     --arc-sheet-row-height: calc(52px * var(--ui-scale));
-    --arc-sheet-ring: calc(34px * var(--ui-scale));
+    --arc-sheet-ring: calc(54px * var(--ui-scale));
     --arc-sheet-z: 10;
+    /*
+     * 碟面圓環細節：外圈進度環粗幼、碟心孔（佔碟面半徑幾多）、碟面底「1/4」pill（字、行高、
+     * 凸出碟底幾多）、聽完 ✓ 章（大細、凸出右下角幾多）、pill / ✓ 同碟面之間嗰圈底色邊
+     */
+    --arc-sheet-ring-width: var(--space-1);
+    --arc-sheet-hole: 12%;
+    --arc-sheet-count-font: calc(10px * var(--ui-scale));
+    --arc-sheet-count-line: calc(16px * var(--ui-scale));
+    --arc-sheet-count-offset: calc(-6px * var(--ui-scale));
+    --arc-sheet-check: calc(18px * var(--ui-scale));
+    --arc-sheet-check-offset: calc(-2px * var(--ui-scale));
+    --arc-sheet-badge-outline: 2px;
     /*
      * 集數清單行頭欄闊：節目日子（17/10 + 星期六）；每日劇集日子 + 「重溫」標籤；
      * 短篇劇集集名（最長「認認真真搵返個人」8 個字，佔清單四成）
