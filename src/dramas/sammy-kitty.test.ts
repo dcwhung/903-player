@@ -9,7 +9,7 @@ const ARCS: ReadonlyArray<readonly [string, number]> = [
     ['公子森林', 40],
     ['十九樓半的夏天', 10],
     ['森之愛情I - 森之聖誕', 10],
-    ['森之愛情Ⅱ - 電燈膽', 9],
+    ['森之愛情II - 電燈膽', 9],
     ['森之聖誕2010', 15],
     ['森美幻想劇', 15],
 ];
@@ -68,12 +68,13 @@ describe('森美小儀系列', () => {
         expect(sammy.filter((e) => e.title)).toHaveLength(15);
     });
 
-    it('keeps the Roman numeral Ⅱ (U+2161) of 森之愛情Ⅱ, as uploaded to R2', () => {
-        const first = inArc('森之愛情Ⅱ - 電燈膽')[0];
+    it('spells 森之愛情II with ASCII II, as renamed on R2 (the Roman numeral Ⅱ U+2161 now 404s)', () => {
+        const first = inArc('森之愛情II - 電燈膽')[0];
         expect(decodeURIComponent(first?.url ?? '')).toBe(
-            `${R2_SAMMY}/森之愛情Ⅱ - 電燈膽/01 - 森之愛情Ⅱ - 電燈膽 - 第一集.m4a`,
+            `${R2_SAMMY}/森之愛情II - 電燈膽/01 - 森之愛情II - 電燈膽 - 第一集.m4a`,
         );
-        expect(first?.url).toContain('%E6%A3%AE%E4%B9%8B%E6%84%9B%E6%83%85%E2%85%A1%20-%20');
+        expect(first?.url).toContain('%E6%A3%AE%E4%B9%8B%E6%84%9B%E6%83%85II%20-%20');
+        expect(sammy.some((e) => e.url.includes('%E2%85%A1'))).toBe(false);
         expect(decodeURIComponent(inArc('森之愛情I - 森之聖誕')[0]?.url ?? '')).toBe(
             `${R2_SAMMY}/森之愛情I - 森之聖誕/01 - 森之愛情I - 森之聖誕 - 第一集.m4a`,
         );
