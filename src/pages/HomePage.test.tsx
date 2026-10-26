@@ -298,6 +298,12 @@ describe('HomePage', () => {
             await userEvent.click(screen.getByRole('button', { name: '廣播劇' }));
             return screen.getByRole('navigation', { name: '廣播劇' });
         };
+        /** 直版疊卡：撳暗咗嘅卡先捲佢做 focus（jsdom 冇 element.scrollTo），再撳先入劇集頁 */
+        const tapTwice = async (tile: HTMLElement) => {
+            (tile.parentElement as HTMLElement).scrollTo = vi.fn();
+            await userEvent.click(tile);
+            await userEvent.click(tile);
+        };
 
         it('starts on the 節目 tab', () => {
             renderWithProviders(<HomePage />);
@@ -390,7 +396,7 @@ describe('HomePage', () => {
             const { audio } = renderWithProviders(<HomePage />);
             const nav = await openDramas();
 
-            await userEvent.click(within(nav).getByRole('button', { name: '芝See菇Bi Family' }));
+            await tapTwice(within(nav).getByRole('button', { name: '芝See菇Bi Family' }));
 
             expect(audio.src).toBe('');
             expect(audio.play).not.toHaveBeenCalled();
@@ -402,7 +408,7 @@ describe('HomePage', () => {
             const plays = audio.play.mock.calls.length;
             const nav = await openDramas();
 
-            await userEvent.click(within(nav).getByRole('button', { name: '黃金少年' }));
+            await tapTwice(within(nav).getByRole('button', { name: '黃金少年' }));
 
             expect(audio.src).toBe(RECORDINGS[3]?.url);
             expect(audio.play).toHaveBeenCalledTimes(plays);

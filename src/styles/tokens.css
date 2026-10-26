@@ -163,6 +163,15 @@
     /* 主頁「廣播劇」tab 嘅劇集格（一行一套） */
     --drama-tile-aspect-w: 2;
     --drama-tile-aspect-h: 1;
+    /*
+     * 直版廣播劇書架（疊卡「捲相簿」）：每張卡隔幾高（矮過張卡，蓋住下一張）、focus 卡上面露出上一張幾多、
+     * 未 focus 嘅卡縮幾多同蓋幾暗、轉 focus 嘅過渡時間（prototype T2 用戶揀定）
+     */
+    --drama-shelf-step: calc(112px * var(--ui-scale));
+    --drama-shelf-peek: calc(24px * var(--ui-scale));
+    --drama-shelf-rest-scale: 0.94;
+    --drama-shelf-rest-dim: 0.45;
+    --drama-shelf-focus-duration: 220ms;
     /* 劇集格「繼續收聽」條：深啡漸變底、進度線底、芝See 橙（▶ 同進度）、▶ 上面嘅字 */
     --drama-continue-scrim: rgb(43 26 12 / 85%);
     --drama-continue-track: rgb(255 255 255 / 30%);
