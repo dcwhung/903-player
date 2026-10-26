@@ -28,26 +28,44 @@ describe('DramaPage', () => {
     afterEach(() => vi.useRealTimers());
 
     describe('series drama', () => {
-        it('switches the disc to the picked season and back to the playing one', async () => {
+        it('keeps the disc on the playing season while it plays and another one is browsed', async () => {
+            const s2 = seriesEpisodesOf('golden').filter((e) => e.arc === 'Season 2');
+            const s2Art = s2[2] ? dramaArtFor(s2[2]) : '';
+            saveProgress(s2[2]?.url ?? '', 60, 1200);
+            const { audio } = openDrama('golden');
+            const discArt = () => screen.getByRole('main').querySelector('img');
+
+            await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
+            await waitFor(() => expect(screen.getByRole('button', { name: '暫停' })).toBeVisible());
+            expect(discArt()?.getAttribute('src')).toBe(s2Art);
+
+            await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
+            expect(discArt()?.getAttribute('src')).toBe(s2Art);
+            expect(audio.src).toBe(s2[2]?.url);
+        });
+
+        it('loads the picked season paused, with its disc and duration, when nothing plays', async () => {
             const golden = seriesEpisodesOf('golden');
             const s2 = golden.filter((e) => e.arc === 'Season 2');
             const s4 = golden.find((e) => e.arc === 'Season 4');
-            const s2Art = s2[2] ? dramaArtFor(s2[2]) : '';
             const s4Art = s4 ? dramaArtFor(s4) : '';
             saveProgress(s2[2]?.url ?? '', 60, 1200);
             const { audio } = openDrama('golden');
             const discArt = () => screen.getByRole('main').querySelector('img');
 
             await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
-            expect(discArt()?.getAttribute('src')).toBe(s2Art);
-            expect(s4Art).not.toBe(s2Art);
+            await waitFor(() => expect(screen.getByRole('button', { name: '暫停' })).toBeVisible());
+            await userEvent.click(screen.getByRole('button', { name: '暫停' }));
+            const plays = audio.play.mock.calls.length;
+            expect(s4Art).not.toBe(dramaArtFor(s2[2] ?? golden[0]!));
 
             await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
+            expect(audio.src).toBe(s4?.url);
             expect(discArt()?.getAttribute('src')).toBe(s4Art);
-            expect(audio.src).toBe(s2[2]?.url);
-
-            await userEvent.click(screen.getByRole('button', { name: /^Season 2/ }));
-            expect(discArt()?.getAttribute('src')).toBe(s2Art);
+            act(() => audio.emitMetadata(1500));
+            expect(screen.getByText('25:00')).toBeVisible();
+            expect(audio.play).toHaveBeenCalledTimes(plays);
+            expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
         });
 
         it('keeps the mini player disc on the playing season while another one is browsed', async () => {

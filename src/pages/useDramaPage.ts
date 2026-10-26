@@ -97,14 +97,6 @@ const useViewedArc = (playingArc: string | undefined) => {
     return { arc: picked ?? playingArc, pickArc: setPicked };
 };
 
-/** 碟面代表嘅一集：睇緊播緊嗰個短篇就係播緊嗰集，否則係揀咗嗰個短篇第一集（每個短篇碟面唔同） */
-const discEpisodeOf = (
-    episodes: readonly SeriesEpisode[],
-    current: SeriesEpisode | undefined,
-    arc: string | undefined,
-): SeriesEpisode | undefined =>
-    !arc || arc === current?.arc ? current : (episodesInArc(episodes, arc)[0] ?? current);
-
 /** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已聽完（today 每次 render 重新攞） */
 const useArcOrder = (
     episodes: readonly SeriesEpisode[],
@@ -145,6 +137,23 @@ const useArcSheetActions = (
     return { openSheet: () => setOpen(true), close: () => setOpen(false), pick, play };
 };
 
+/**
+ * 揀短篇：播緊就淨係換清單（碟面、時間照跟播緊嗰集）；
+ * 冇播放就順便載入嗰個短篇嘅續聽集（唔自動播），碟面同時間即刻跟住轉
+ */
+const useArcPick = (
+    groups: readonly { items: readonly ArcSummary[] }[],
+    setArc: (arc: string) => void,
+) => {
+    const player = usePlayer();
+    return (arc: string) => {
+        setArc(arc);
+        if (player.isPlaying) return;
+        const resume = groups.flatMap((g) => g.items).find((s) => s.arc === arc)?.resume;
+        if (resume) void player.load(resume);
+    };
+};
+
 /** 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 全集 / 短篇 chips + 嗰個短篇嘅集數 */
 export const useSeriesDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
@@ -156,17 +165,17 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
     const progressMap = useRefreshedOn(getProgressMap, [watchedRevision, loaded?.url, sheetOpen]);
     const current = loaded ?? pickSeriesStart(episodes, progressMap);
     const { ctx, selectEpisode, pressEpisode } = usePlaybackRows(episodes, current, !!loaded);
-    const { arc, pickArc } = useViewedArc(current?.arc);
+    const { arc, pickArc: setArc } = useViewedArc(current?.arc);
     const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc);
+    const pickArc = useArcPick(groups, setArc);
     const shown = listOrder(arc ? episodesInArc(episodes, arc) : [], progressMap, current?.url);
     // 橫版「現正播放：短篇 · 第 N / M 集」：M = 個短篇有幾多集；N 按排位計（有第零集都係 1 起）
     const arcEpisodes = current ? episodesInArc(episodes, current.arc) : [];
     const arcTotal = arcEpisodes.length;
     const arcPosition = arcEpisodes.findIndex((e) => e.url === current?.url) + 1;
-    const discEpisode = discEpisodeOf(episodes, current, arc);
     return {
-        // 碟面跟揀緊嘅短篇（揀 chip 即換）；未揀就跟播緊（未播就係準備播）嗰集。mini player 照跟播緊嗰集
-        theme: discEpisode ? dramaEpisodeTheme(discEpisode) : drama.theme,
+        // 碟面跟播緊（未播就係準備播）嗰集；冇播放時揀短篇會載入嗰個短篇，碟面就跟住轉
+        theme: current ? dramaEpisodeTheme(current) : drama.theme,
         current,
         arcTotal,
         arcPosition,
