@@ -1,10 +1,10 @@
-import badgirlArt from '../assets/shows/badgirl.jpg';
-import gongziArt from '../assets/shows/gongzi.jpg';
-import lalalaArt from '../assets/shows/lalala.jpg';
-import sunnydayArt from '../assets/shows/sunnyday.jpg';
-import wanniArt from '../assets/shows/wanni.jpg';
-import wavesArt from '../assets/shows/waves.jpg';
-import westairArt from '../assets/shows/westair.jpg';
+import badgirlArt from '../shows/badgirl/art.jpg';
+import gongziArt from '../shows/gongzi/art.jpg';
+import lalalaArt from '../shows/lalala/art.jpg';
+import sunnydayArt from '../shows/sunnyday/art.jpg';
+import wanniArt from '../shows/wanni/art.jpg';
+import wavesArt from '../shows/waves/art.jpg';
+import westairArt from '../shows/westair/art.jpg';
 import { LAUNCH_THEME_COLOR } from './launchTheme';
 import type { ShowId } from '../types/recording';
 

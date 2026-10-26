@@ -1,0 +1,19 @@
+{
+    "name": "公子會",
+    "fileTime": "2308",
+    "airDays": [6],
+    "order": 2,
+    "art": "art.jpg",
+    "theme": {
+        "bg": "#111111",
+        "surface": "#1c1b19",
+        "track": "#3a372f",
+        "accent": "#d4af5a",
+        "onAccent": "#111111",
+        "title": "#f2e3b3",
+        "text": "#f2f0ea",
+        "muted": "#aba79c",
+        "shadowDark": "#080808",
+        "shadowLight": "#24231f"
+    }
+}

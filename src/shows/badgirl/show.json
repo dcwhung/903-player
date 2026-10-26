@@ -1,0 +1,19 @@
+{
+    "name": "Bad Girl大過佬",
+    "fileTime": "1009",
+    "airDays": [1, 2, 3, 4, 5],
+    "order": 1,
+    "art": "art.jpg",
+    "theme": {
+        "bg": "#21151a",
+        "surface": "#2e1e24",
+        "track": "#4a3540",
+        "accent": "#f08a24",
+        "onAccent": "#21151a",
+        "title": "#f6c987",
+        "text": "#f6eee8",
+        "muted": "#c2aaa6",
+        "shadowDark": "#160d11",
+        "shadowLight": "#352329"
+    }
+}

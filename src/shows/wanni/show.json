@@ -1,0 +1,19 @@
+{
+    "name": "雲妮鍾情",
+    "fileTime": "0708",
+    "airDays": [1, 2, 3, 4, 5],
+    "order": 3,
+    "art": "art.jpg",
+    "theme": {
+        "bg": "#1c1c1e",
+        "surface": "#28282b",
+        "track": "#424247",
+        "accent": "#f26b5f",
+        "onAccent": "#1c1c1e",
+        "title": "#f4f1ec",
+        "text": "#f4f1ec",
+        "muted": "#afafb5",
+        "shadowDark": "#121214",
+        "shadowLight": "#2f2f33"
+    }
+}
