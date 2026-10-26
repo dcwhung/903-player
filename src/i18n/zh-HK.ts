@@ -154,6 +154,8 @@ export const zhHK = {
         arcPlay: '播放 {arc}',
         nowPlaying: '現正播放：{label}',
         nowPlayingShort: '第 {no} 集 {title}',
+        // 直版 chips 上面「現正播放：好朋友手牽手 · 第 2 集 集名」
+        nowPlayingArcShort: '{arc} · {episode}',
         // 橫版唱片下面「現正播放：好朋友手牽手 · 第 2 / 4 集」（下一行集名）
         nowPlayingArc: '{arc} · 第 {no} / {total} 集',
     },

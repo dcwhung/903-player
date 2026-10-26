@@ -64,6 +64,8 @@ describe('DramaPage', () => {
             expect(discArt()?.getAttribute('src')).toBe(s4Art);
             act(() => audio.emitMetadata(1500));
             expect(screen.getByText('25:00')).toBeVisible();
+            // 直版 chips 上面都講埋短篇名，先睇得出轉咗短篇
+            expect(screen.getByText(`現正播放：Season 4 · 第 ${s4?.no} 集`)).toBeInTheDocument();
             expect(audio.play).toHaveBeenCalledTimes(plays);
             expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
         });
@@ -119,7 +121,9 @@ describe('DramaPage', () => {
                 'aria-pressed',
                 'true',
             );
-            expect(screen.getByText('現正播放：第 2 集 哥哥你洽我')).toBeInTheDocument();
+            expect(
+                screen.getByText('現正播放：Ｘ時mas時小提議 · 第 2 集 哥哥你洽我'),
+            ).toBeInTheDocument();
             const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole(
                 'button',
             );

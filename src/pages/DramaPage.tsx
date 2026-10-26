@@ -31,14 +31,15 @@ const DramaHeader = ({ title }: { title: string }) => {
     );
 };
 
-/** 短篇 chips 上面嗰行：同日子條一樣，未讀到時長講「連線中…」，否則「現正播放：第 N 集 集名」 */
+/** 短篇 chips 上面嗰行：同日子條一樣，未讀到時長講「連線中…」，否則「現正播放：短篇 · 第 N 集 集名」 */
 const arcPickerLabel = (duration: number, current: SeriesEpisode | undefined): string => {
     if (!hasKnownDuration(duration)) return t('episodes.connecting');
     if (!current) return '';
     const episodeNo = t('drama.episodeNo', { no: current.no });
-    const label = current.title
+    const episode = current.title
         ? t('drama.nowPlayingShort', { no: current.no, title: current.title })
         : episodeNo;
+    const label = t('drama.nowPlayingArcShort', { arc: current.arc, episode });
     return t('drama.nowPlaying', { label });
 };
 
