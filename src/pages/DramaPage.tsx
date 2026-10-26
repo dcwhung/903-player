@@ -17,6 +17,7 @@ import { usePlayer } from '../player/usePlayer';
 import { t } from '../i18n/t';
 import { formatDateLabel } from '../utils/date';
 import type { SeriesEpisode } from '../types/drama';
+import { PLAYBACK_LINE_KEY, type PlaybackState } from '../utils/playbackState';
 import { hasKnownDuration } from '../utils/time';
 import page from './Page.module.css';
 import { useDailyDramaPage, useSeriesDramaPage } from './useDramaPage';
@@ -31,15 +32,23 @@ const DramaHeader = ({ title }: { title: string }) => {
     );
 };
 
-/** 短篇 chips 上面嗰行：同日子條一樣，未讀到時長講「連線中…」，否則「現正播放：第 N 集 集名」 */
-const arcPickerLabel = (duration: number, current: SeriesEpisode | undefined): string => {
+/**
+ * 短篇 chips 上面嗰行：同日子條一樣，未讀到時長講「連線中…」，否則「現正播放：短篇 · 第 N 集 集名」
+ * （暫停講「已暫停：」，載入咗未開始講「下一集：」）
+ */
+const arcPickerLabel = (
+    duration: number,
+    current: SeriesEpisode | undefined,
+    state: PlaybackState,
+): string => {
     if (!hasKnownDuration(duration)) return t('episodes.connecting');
     if (!current) return '';
     const episodeNo = t('drama.episodeNo', { no: current.no });
-    const label = current.title
+    const episode = current.title
         ? t('drama.nowPlayingShort', { no: current.no, title: current.title })
         : episodeNo;
-    return t('drama.nowPlaying', { label });
+    const label = t('drama.nowPlayingArcShort', { arc: current.arc, episode });
+    return t(PLAYBACK_LINE_KEY[state], { label });
 };
 
 /** 橫版唱片下面「現正播放」：短篇加埋第幾個 / 幾多集（按排位，唔係集數），下一行集名 */
@@ -96,6 +105,7 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const {
         theme,
         current,
+        playState,
         arcTotal,
         arcPosition,
         arcs,
@@ -107,7 +117,7 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     } = useSeriesDramaPage(drama);
     const { duration, isPlaying, recording } = usePlayer();
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
-    const label = arcPickerLabel(duration, current);
+    const label = arcPickerLabel(duration, current, playState);
     const arcSheet = (
         <ArcSheet
             open={sheet.open}
@@ -135,6 +145,7 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
                     {current && landscape && (
                         <NowPlaying
                             {...seriesNowPlaying(current, arcPosition, arcTotal)}
+                            status={playState}
                             connecting={!hasKnownDuration(duration)}
                         />
                     )}

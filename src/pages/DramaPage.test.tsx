@@ -28,7 +28,7 @@ describe('DramaPage', () => {
     afterEach(() => vi.useRealTimers());
 
     describe('series drama', () => {
-        it('spins the disc of the playing season, not the one only being browsed', async () => {
+        it('keeps the disc on the playing season while it plays and another one is browsed', async () => {
             const s2 = seriesEpisodesOf('golden').filter((e) => e.arc === 'Season 2');
             const s2Art = s2[2] ? dramaArtFor(s2[2]) : '';
             saveProgress(s2[2]?.url ?? '', 60, 1200);
@@ -36,10 +36,41 @@ describe('DramaPage', () => {
             const discArt = () => screen.getByRole('main').querySelector('img');
 
             await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
+            await waitFor(() => expect(screen.getByRole('button', { name: '暫停' })).toBeVisible());
             expect(discArt()?.getAttribute('src')).toBe(s2Art);
 
             await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
             expect(discArt()?.getAttribute('src')).toBe(s2Art);
+            expect(audio.src).toBe(s2[2]?.url);
+        });
+
+        it('loads the picked season paused, with its disc and duration, when nothing plays', async () => {
+            const golden = seriesEpisodesOf('golden');
+            const s2 = golden.filter((e) => e.arc === 'Season 2');
+            const s4 = golden.find((e) => e.arc === 'Season 4');
+            const s4Art = s4 ? dramaArtFor(s4) : '';
+            saveProgress(s2[2]?.url ?? '', 60, 1200);
+            const { audio } = openDrama('golden');
+            const discArt = () => screen.getByRole('main').querySelector('img');
+
+            await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
+            await waitFor(() => expect(screen.getByRole('button', { name: '暫停' })).toBeVisible());
+            await userEvent.click(screen.getByRole('button', { name: '暫停' }));
+            act(() => audio.emitMetadata(1200));
+            expect(screen.getByText(/^已暫停：Season 2 · 第 \d+ 集$/)).toBeInTheDocument();
+            const plays = audio.play.mock.calls.length;
+            expect(s4Art).not.toBe(dramaArtFor(s2[2] ?? golden[0]!));
+
+            await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
+            expect(audio.src).toBe(s4?.url);
+            expect(discArt()?.getAttribute('src')).toBe(s4Art);
+            act(() => audio.emitMetadata(1500));
+            expect(screen.getByText('25:00')).toBeVisible();
+            // 直版 chips 上面都講埋短篇名；載入咗未開始講「下一集」，清單行講「未開始」
+            expect(screen.getByText(`下一集：Season 4 · 第 ${s4?.no} 集`)).toBeInTheDocument();
+            expect(screen.getByText('未開始 · 0:00 / 25:00')).toBeInTheDocument();
+            expect(audio.play).toHaveBeenCalledTimes(plays);
+            expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
         });
 
         it('keeps the mini player disc on the playing season while another one is browsed', async () => {
@@ -93,7 +124,9 @@ describe('DramaPage', () => {
                 'aria-pressed',
                 'true',
             );
-            expect(screen.getByText('現正播放：第 2 集 哥哥你洽我')).toBeInTheDocument();
+            expect(
+                screen.getByText('現正播放：Ｘ時mas時小提議 · 第 2 集 哥哥你洽我'),
+            ).toBeInTheDocument();
             const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole(
                 'button',
             );
@@ -131,6 +164,18 @@ describe('DramaPage', () => {
             act(() => audio.emitMetadata(1200));
 
             expect(screen.getByText('現正播放：初戀嗱喳麵 · 第 26 / 26 集')).toBeInTheDocument();
+        });
+
+        it('says 已暫停 under the disc once paused part way', async () => {
+            saveProgress(XMAS[1]?.url ?? '', 120, 1200);
+            const { audio } = openDrama('chisee');
+            await waitFor(() => expect(audio.src).toBe(XMAS[1]?.url));
+            act(() => audio.emitMetadata(1200));
+            await waitFor(() => expect(screen.getByRole('button', { name: '暫停' })).toBeVisible());
+
+            await userEvent.click(screen.getByRole('button', { name: '暫停' }));
+            expect(screen.getByText('已暫停：Ｘ時mas時小提議 · 第 2 / 4 集')).toBeInTheDocument();
+            expect(screen.getByText('已暫停 · 2:00 / 20:00')).toBeInTheDocument();
         });
 
         it('shows the 短篇, position and episode title under the disc, header above the list', async () => {
