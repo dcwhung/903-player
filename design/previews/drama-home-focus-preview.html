@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>廣播劇疊卡 Focus</title>
+        <style>
+            /*
+             * 直版廣播劇 tab：保留疊卡（下一張蓋住上一張下半），捲動 snap 到一張卡；
+             * focus 卡 100%、全亮、浮喺最上；其他卡縮到 94%、蓋暗。
+             * 手機 390 × 844 真 px；顏色跟 HOME_THEME。
+             */
+            :root {
+                --home-bg-top: #4f749c;
+                --home-bg-bottom: #42658a;
+                --gutter: 16px;
+                --radius-tile: 14px;
+                --shadow-clay-tile: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
+                --badge-bg: rgb(0 0 0 / 55%);
+                --tab-on: #f5cf8f;
+                --tab-track: rgb(40 65 100 / 60%);
+                --new-red: #c8322b;
+                /* 疊卡：每張卡露出幾高（其餘被下一張蓋住） */
+                --stack-step: 119px;
+                --focus-scale-rest: 0.94;
+                --focus-dim-rest: 0.45;
+                --focus-ease: 200ms ease-out;
+            }
+
+            body {
+                margin: 0;
+                padding: 24px;
+                background: #1c2733;
+                color: #e8eef5;
+                font-family: system-ui, sans-serif;
+            }
+
+            p {
+                max-width: 390px;
+                color: #b8c6d6;
+                font-size: 14px;
+            }
+
+            .phone {
+                display: grid;
+                grid-template-rows: auto auto minmax(0, 1fr);
+                gap: 12px;
+                box-sizing: border-box;
+                width: 390px;
+                height: 844px;
+                padding: 16px var(--gutter) 0;
+                overflow: hidden;
+                border-radius: 20px;
+                background: linear-gradient(180deg, var(--home-bg-top), var(--home-bg-bottom));
+                outline: 2px solid #0b1118;
+            }
+
+            .banner {
+                aspect-ratio: 358 / 194;
+                overflow: hidden;
+                border-radius: var(--radius-tile);
+            }
+
+            .banner img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .tabs {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                padding: 4px;
+                border-radius: 999px;
+                background: var(--tab-track);
+                font-weight: 700;
+                text-align: center;
+            }
+
+            .tabs span {
+                padding: 10px 0;
+                border-radius: 999px;
+            }
+
+            .tabs .on {
+                background: var(--tab-on);
+                color: #2d3b4d;
+            }
+
+            /* 疊卡 shelf：每行 --stack-step 高，卡本身 2:1 溢出蓋住下一行；snap 每張卡頂 */
+            .shelf {
+                display: grid;
+                grid-auto-rows: var(--stack-step);
+                min-height: 0;
+                padding: 8px 0 0;
+                overflow-y: auto;
+                scroll-snap-type: y mandatory;
+                scrollbar-width: none;
+            }
+
+            .tile {
+                position: relative;
+                aspect-ratio: 2 / 1;
+                overflow: hidden;
+                border-radius: var(--radius-tile);
+                box-shadow: var(--shadow-clay-tile);
+                transform: scale(var(--focus-scale-rest));
+                transform-origin: center top;
+                transition:
+                    transform var(--focus-ease),
+                    filter var(--focus-ease);
+                filter: brightness(var(--focus-dim-rest));
+                scroll-snap-align: start;
+            }
+
+            /* ?align=center：focus 卡停喺 shelf 中間，上下都露出暗咗嘅卡 */
+            .center .tile {
+                scroll-snap-align: center;
+                transform-origin: center;
+            }
+
+            .tile.focus {
+                z-index: 1;
+                transform: none;
+                filter: none;
+            }
+
+            .tile img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .tile .new {
+                position: absolute;
+                top: 8px;
+                left: 8px;
+                padding: 2px 8px;
+                border-radius: 999px;
+                background: var(--new-red);
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .tile .meta {
+                position: absolute;
+                right: 8px;
+                bottom: 8px;
+                padding: 2px 8px;
+                border-radius: 999px;
+                background: var(--badge-bg);
+                font-size: 11px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>廣播劇疊卡 Focus（直版）</h1>
+        <p>
+            上下捲會停喺一張卡；停低嗰張係 focus：100% 大小、全亮、浮喺最上，右下角集數標籤見晒。
+            其他卡縮到 94%、蓋暗。撳暗嘅卡先將佢捲做 focus，撳 focus 卡先入劇集頁。
+        </p>
+        <div class="phone">
+            <div class="banner"><img src="../../src/assets/banner.webp" alt="" /></div>
+            <div class="tabs"><span>節目</span><span class="on">廣播劇</span></div>
+            <div class="shelf" id="shelf">
+                <div class="tile">
+                    <img src="../../src/dramas/chisee/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">12 個短篇</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/golden/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">全 4 季</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/sammy-kitty/tile.webp" alt="" /><span class="new"
+                        >新</span
+                    ><span class="meta">7 個短篇</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/jim/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">2 個短篇</span>
+                </div>
+            </div>
+        </div>
+        <script>
+            // focus = 卡頂最近 shelf 頂嗰張；撳暗卡先捲佢做 focus
+            const shelf = document.getElementById('shelf');
+            const tiles = [...shelf.querySelectorAll('.tile')];
+            const step = () => tiles[1].offsetTop - tiles[0].offsetTop;
+            const focusIndex = () => Math.round(shelf.scrollTop / step());
+            const paint = () => {
+                const i = focusIndex();
+                tiles.forEach((tile, n) => tile.classList.toggle('focus', n === i));
+            };
+            shelf.addEventListener('scroll', paint, { passive: true });
+            tiles.forEach((tile, n) =>
+                tile.addEventListener('click', () => {
+                    if (n !== focusIndex()) shelf.scrollTo({ top: n * step(), behavior: 'smooth' });
+                }),
+            );
+            // 留位：頭尾兩張都捲得到 snap 位做 focus
+            const center = new URLSearchParams(location.search).get('align') === 'center';
+            const tileH = tiles[0].offsetHeight;
+            shelf.classList.toggle('center', center);
+            if (center) {
+                shelf.style.paddingTop = `${(shelf.clientHeight - tileH) / 2}px`;
+                shelf.style.paddingBottom = `${(shelf.clientHeight - tileH) / 2}px`;
+            } else {
+                shelf.style.paddingBottom = `${shelf.clientHeight - tileH}px`;
+            }
+            const start = Number(new URLSearchParams(location.search).get('focus') ?? 0);
+            shelf.scrollTop = start * step();
+            paint();
+        </script>
+    </body>

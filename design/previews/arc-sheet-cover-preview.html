@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>全集短篇 Cover</title>
+        <style>
+            /*
+             * 全集一覽表每行加短篇 cover。
+             * 排版 L1 / L2 用森美小儀（全部有碟面）；placeholder P1–P3 用芝See（全部冇碟面），排版跟 L1。
+             * 顏色跟 src/dramas/sammy-kitty、chisee 嘅 drama.json theme。
+             */
+            :root {
+                --row-height: 64px;
+                --thumb: 52px;
+                --ring-width: 4px;
+                --play: 44px;
+            }
+
+            body {
+                margin: 0;
+                padding: 24px;
+                background: #1c2733;
+                color: #e8eef5;
+                font-family: system-ui, sans-serif;
+            }
+
+            .frames {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 24px;
+            }
+
+            .frame h2 {
+                margin: 0 0 4px;
+                font-size: 16px;
+            }
+
+            .frame p {
+                width: 390px;
+                margin: 0 0 8px;
+                color: #b8c6d6;
+                font-size: 13px;
+            }
+
+            .sammy {
+                --bg: #ffe3e3;
+                --surface: #fff1f1;
+                --track: #f3b9b9;
+                --accent: #e7010e;
+                --on-accent: #ffffff;
+                --title: #b00010;
+                --text: #2e0f12;
+                --muted: #7d3c40;
+            }
+
+            .chisee {
+                --bg: #ffeb85;
+                --surface: #fff5c2;
+                --track: #f5d23c;
+                --accent: #f7901e;
+                --on-accent: #2b1a0c;
+                --title: #a84800;
+                --text: #3b2412;
+                --muted: #7a5a20;
+            }
+
+            .sheet {
+                box-sizing: border-box;
+                width: 390px;
+                padding: 16px;
+                border-radius: 20px 20px 0 0;
+                background: var(--bg);
+                color: var(--text);
+            }
+
+            .sheet header {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 8px;
+            }
+
+            .sheet h3 {
+                margin: 0;
+                color: var(--title);
+                font-size: 20px;
+            }
+
+            .sheet header span {
+                color: var(--muted);
+                font-size: 13px;
+            }
+
+            .group {
+                margin: 12px 0 4px 8px;
+                color: var(--muted);
+                font-size: 12px;
+                letter-spacing: 2px;
+            }
+
+            .row {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                min-height: var(--row-height);
+                padding: 4px 8px;
+                border-radius: 16px;
+            }
+
+            .row.current {
+                outline: 2px solid var(--accent);
+                background: var(--surface);
+            }
+
+            .text {
+                display: flex;
+                flex: 1;
+                flex-direction: column;
+                min-width: 0;
+            }
+
+            .name {
+                overflow: hidden;
+                font-size: 16px;
+                font-weight: 700;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .status {
+                color: var(--muted);
+                font-size: 13px;
+            }
+
+            .current .status {
+                color: var(--title);
+            }
+
+            .play {
+                display: grid;
+                flex: none;
+                place-items: center;
+                width: var(--play);
+                height: var(--play);
+                border-radius: 50%;
+                background: var(--accent);
+                color: var(--on-accent);
+                font-size: 16px;
+            }
+
+            /* L1：圓碟 thumbnail，外圈係進度環（聽咗幾多集填幾多） */
+            .disc {
+                position: relative;
+                flex: none;
+                width: var(--thumb);
+                height: var(--thumb);
+                padding: var(--ring-width);
+                box-sizing: border-box;
+                border-radius: 50%;
+                background: conic-gradient(var(--accent) var(--fill, 0%), var(--track) 0);
+            }
+
+            .disc > .face {
+                display: block;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                border-radius: 50%;
+                background: center / cover no-repeat;
+                /* 碟心孔 */
+                mask: radial-gradient(circle, transparent 12%, #000 13%);
+            }
+
+            .disc .check {
+                position: absolute;
+                right: -2px;
+                bottom: -2px;
+                display: grid;
+                place-items: center;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: var(--accent);
+                color: var(--on-accent);
+                font-size: 11px;
+            }
+
+            /* L2：方形 cover 喺左；細圓環「已聽 / 總數」移去播放掣隔籬 */
+            .square {
+                display: block;
+                flex: none;
+                width: var(--thumb);
+                height: var(--thumb);
+                border-radius: 10px;
+                background: center / cover no-repeat;
+            }
+
+            .miniRing {
+                display: grid;
+                flex: none;
+                place-items: center;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background:
+                    radial-gradient(var(--bg) 62%, transparent 63%),
+                    conic-gradient(var(--accent) var(--fill, 0%), var(--track) 0);
+                color: var(--title);
+                font-size: 11px;
+                font-weight: 700;
+            }
+
+            /* P1：主題色黑膠 + 短篇名第一個字 */
+            .face.p1 {
+                display: grid;
+                place-items: center;
+                background:
+                    repeating-radial-gradient(
+                        circle,
+                        rgb(255 255 255 / 6%) 0 1px,
+                        transparent 1px 3px
+                    ),
+                    radial-gradient(circle, var(--accent) 38%, #2a2a2a 39%);
+                color: var(--on-accent);
+                font-size: 14px;
+                font-weight: 900;
+                mask: none;
+            }
+
+            /* P3：通用 903 黑膠（所有劇共用） */
+            .face.p3 {
+                display: grid;
+                place-items: center;
+                background:
+                    repeating-radial-gradient(
+                        circle,
+                        rgb(255 255 255 / 7%) 0 1px,
+                        transparent 1px 3px
+                    ),
+                    radial-gradient(circle, #f5cf8f 30%, #1e1e1e 31%);
+                color: #2d3b4d;
+                font-size: 9px;
+                font-weight: 900;
+                mask: none;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>全集短篇 Cover</h1>
+        <div class="frames" id="frames"></div>
+        <script>
+            const SAMMY = [
+                ['來不及聽你說愛我', 'too-late', 0, 10, '播緊第 1 集', 'current'],
+                ['公子森林', 'forest', 12, 40, '下一集：第 13 集'],
+                ['十九樓半的夏天', 'summer', 0, 10, '未聽 · 10 集'],
+                ['森之愛情II - 電燈膽', 'love-2', 9, 9, '聽完 · 9 集'],
+                ['森美幻想劇', 'fantasy', 0, 15, '未聽 · 15 集'],
+            ];
+            const CHISEE = [
+                ['三十六計', 0, 8, '播緊第 1 集', 'current'],
+                ['你生日所以我生日', 6, 6, '聽完 · 6 集'],
+                ['初戀嗱喳麵', 3, 9, '下一集：第 4 集'],
+                ['大妒忌', 0, 7, '未聽 · 7 集'],
+            ];
+            const pct = (w, t) => `${Math.round((w / t) * 100)}%`;
+            const art = (slug) => `url(../../src/dramas/sammy-kitty/${slug}-disc.webp)`;
+            const discCell = (face, w, t) =>
+                `<span class="disc" style="--fill:${pct(w, t)}">${face}${w === t ? '<span class="check">✓</span>' : ''}</span>`;
+            const row = (cls, thumb, name, status, tail) =>
+                `<div class="row ${cls ?? ''}">${thumb}<span class="text"><span class="name">${name}</span><span class="status">${status}</span></span>${tail}<span class="play">${cls ? '❚❚' : '▶'}</span></div>`;
+
+            const l1 = SAMMY.map(([n, s, w, t, st, c]) =>
+                row(c, discCell(`<span class="face" style="background-image:${art(s)}"></span>`, w, t), n, st, ''),
+            );
+            const l2 = SAMMY.map(([n, s, w, t, st, c]) =>
+                row(
+                    c,
+                    `<span class="square" style="background-image:${art(s)}"></span>`,
+                    n,
+                    st,
+                    `<span class="miniRing" style="--fill:${pct(w, t)}">${w === t ? '✓' : `${w}/${t}`}</span>`,
+                ),
+            );
+            const chisee = (faceOf) =>
+                CHISEE.map(([n, w, t, st, c]) => row(c, discCell(faceOf(n), w, t), n, st, ''));
+            const p1 = chisee((n) => `<span class="face p1">${[...n][0]}</span>`);
+            const p2 = chisee(
+                () =>
+                    '<span class="face" style="background-image:url(../../src/dramas/chisee/disc.webp)"></span>',
+            );
+            const p3 = chisee(() => '<span class="face p3">903</span>');
+
+            const sheet = (theme, title, done, rows) =>
+                `<div class="sheet ${theme}"><header><h3>全集</h3><span>聽完 ${done}</span></header><div class="group">播放中</div>${rows[0]}<div class="group">未聽完</div>${rows.slice(1).join('')}</div>`;
+            const FRAMES = [
+                ['L1：圓碟 + 外圈進度環', '短篇碟面縮細做圓碟，取代中間「0/10」數字；外圈填色 = 聽咗幾多集，聽完加 ✓。', sheet('sammy', '', '1 / 7 個', l1)],
+                ['L2：方形 cover + 右邊細圓環', '左邊方形 cover；原本圓環縮細移去播放掣隔籬，保留「12/40」數字。', sheet('sammy', '', '1 / 7 個', l2)],
+                ['P1：主題色黑膠 + 第一個字', '冇碟面嘅短篇：用劇集主題色畫黑膠，中間寫短篇名第一個字，每行分得出。', sheet('chisee', '', '1 / 12 個', p1)],
+                ['P2：劇集主碟面', '全部用芝See 主碟面 disc.webp；最一致，但每行一模一樣。', sheet('chisee', '', '1 / 12 個', p2)],
+                ['P3：通用 903 黑膠', '所有劇共用同一個 placeholder。', sheet('chisee', '', '1 / 12 個', p3)],
+            ];
+            document.getElementById('frames').innerHTML = FRAMES.map(
+                ([h, p, s], i) => `<section class="frame" data-frame="${i}"><h2>${h}</h2><p>${p}</p>${s}</section>`,
+            ).join('');
+        </script>
+    </body>
+</html>
