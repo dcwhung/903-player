@@ -1,6 +1,7 @@
 import { t } from '../../i18n/t';
 import type { Progress } from '../../services/progressStore';
 import { ratio } from '../../utils/ratio';
+import { PLAYBACK_STATUS_KEY, type PlaybackState } from '../../utils/playbackState';
 import { formatDuration, hasKnownDuration } from '../../utils/time';
 
 export type EpisodeKind = 'playing' | 'watched' | 'resume' | 'unwatched' | 'unavailable';
@@ -17,15 +18,22 @@ interface EpisodeStatusInput {
     /** 揀中集用 player 即時時間 */
     live?: { currentTime: number; duration: number };
     progress?: Progress;
+    /** 揀中集嘅字眼：預設「播放中」；廣播劇頁會傳暫停 / 未開始 */
+    liveState?: PlaybackState;
 }
 
 /** 集數清單每一行嘅狀態：連線中 / 播放中 / 已收聽 / 聽到 mm:ss / 未收聽 */
-export const episodeStatus = ({ isCurrent, live, progress }: EpisodeStatusInput): EpisodeStatus => {
+export const episodeStatus = ({
+    isCurrent,
+    live,
+    progress,
+    liveState = 'playing',
+}: EpisodeStatusInput): EpisodeStatus => {
     if (isCurrent && live && !hasKnownDuration(live.duration)) {
         return { kind: 'playing', ratio: 0, text: t('episodes.connecting') };
     }
     if (isCurrent && live) {
-        const text = t('episodes.playing', {
+        const text = t(PLAYBACK_STATUS_KEY[liveState], {
             current: formatDuration(live.currentTime),
             total: formatDuration(live.duration),
         });

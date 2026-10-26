@@ -4,6 +4,7 @@ import { entryKey, isAvailable } from '../selectors/recordings';
 import type { Progress } from '../services/progressStore';
 import type { EpisodeEntry, UnavailableEpisode } from '../types/recording';
 import { formatDayMonth, formatWeekday } from '../utils/date';
+import type { PlaybackState } from '../utils/playbackState';
 
 export interface LiveTime {
     currentTime: number;
@@ -30,6 +31,8 @@ export interface RowContext {
     progressMap: Readonly<Record<string, Progress>>;
     /** 揀中嗰集播緊 */
     isPlaying: boolean;
+    /** 揀中集嘅字眼（廣播劇頁先傳；冇就係「播放中」） */
+    liveState?: PlaybackState;
 }
 
 /** 播得嘅一行（key = 網址）：揀中嗰集用 player 即時時間，其他集用 localStorage 進度 */
@@ -44,6 +47,7 @@ export const toPlayableItem = (url: string, labels: RowLabels, ctx: RowContext):
             isCurrent,
             live: isCurrent ? ctx.live : undefined,
             progress: ctx.progressMap[url],
+            liveState: ctx.liveState,
         }),
     };
 };
