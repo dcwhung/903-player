@@ -53,6 +53,9 @@ export const zhHK = {
         // 節目頁：有未上架集數但一集都播唔到
         noneUp: '未有集數上架',
         playing: '播放中 · {current} / {total}',
+        // 廣播劇頁：揀中嗰集聽到一半暫停 / 載入咗未開始
+        paused: '已暫停 · {current} / {total}',
+        ready: '未開始 · {current} / {total}',
         resume: '聽到 {time}',
         watched: '已收聽',
         unwatched: '未收聽',
@@ -69,6 +72,9 @@ export const zhHK = {
         connecting: '連線中…',
         // 橫版唱片下面嗰行（節目頁 / 今日節目頁 / 廣播劇播放頁）
         nowPlayingLine: '現正播放：{label}',
+        // 廣播劇頁：聽到一半暫停 / 揀短篇載入咗未開始
+        pausedLine: '已暫停：{label}',
+        readyLine: '下一集：{label}',
         // 日子條入面有集數嘅日子（撳落去播嗰集；同集數清單「播放 …」分開）
         pickDay: '轉去 {date}',
     },
@@ -152,7 +158,6 @@ export const zhHK = {
         arcPlayAgain: '由第 1 集重聽 {arc}',
         arcPause: '暫停 {arc}',
         arcPlay: '播放 {arc}',
-        nowPlaying: '現正播放：{label}',
         nowPlayingShort: '第 {no} 集 {title}',
         // 直版 chips 上面「現正播放：好朋友手牽手 · 第 2 集 集名」
         nowPlayingArcShort: '{arc} · {episode}',

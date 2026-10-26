@@ -56,6 +56,8 @@ describe('DramaPage', () => {
             await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
             await waitFor(() => expect(screen.getByRole('button', { name: '暫停' })).toBeVisible());
             await userEvent.click(screen.getByRole('button', { name: '暫停' }));
+            act(() => audio.emitMetadata(1200));
+            expect(screen.getByText(/^已暫停：Season 2 · 第 \d+ 集$/)).toBeInTheDocument();
             const plays = audio.play.mock.calls.length;
             expect(s4Art).not.toBe(dramaArtFor(s2[2] ?? golden[0]!));
 
@@ -64,8 +66,9 @@ describe('DramaPage', () => {
             expect(discArt()?.getAttribute('src')).toBe(s4Art);
             act(() => audio.emitMetadata(1500));
             expect(screen.getByText('25:00')).toBeVisible();
-            // 直版 chips 上面都講埋短篇名，先睇得出轉咗短篇
-            expect(screen.getByText(`現正播放：Season 4 · 第 ${s4?.no} 集`)).toBeInTheDocument();
+            // 直版 chips 上面都講埋短篇名；載入咗未開始講「下一集」，清單行講「未開始」
+            expect(screen.getByText(`下一集：Season 4 · 第 ${s4?.no} 集`)).toBeInTheDocument();
+            expect(screen.getByText('未開始 · 0:00 / 25:00')).toBeInTheDocument();
             expect(audio.play).toHaveBeenCalledTimes(plays);
             expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
         });
@@ -161,6 +164,18 @@ describe('DramaPage', () => {
             act(() => audio.emitMetadata(1200));
 
             expect(screen.getByText('現正播放：初戀嗱喳麵 · 第 26 / 26 集')).toBeInTheDocument();
+        });
+
+        it('says 已暫停 under the disc once paused part way', async () => {
+            saveProgress(XMAS[1]?.url ?? '', 120, 1200);
+            const { audio } = openDrama('chisee');
+            await waitFor(() => expect(audio.src).toBe(XMAS[1]?.url));
+            act(() => audio.emitMetadata(1200));
+            await waitFor(() => expect(screen.getByRole('button', { name: '暫停' })).toBeVisible());
+
+            await userEvent.click(screen.getByRole('button', { name: '暫停' }));
+            expect(screen.getByText('已暫停：Ｘ時mas時小提議 · 第 2 / 4 集')).toBeInTheDocument();
+            expect(screen.getByText('已暫停 · 2:00 / 20:00')).toBeInTheDocument();
         });
 
         it('shows the 短篇, position and episode title under the disc, header above the list', async () => {

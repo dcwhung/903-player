@@ -15,6 +15,7 @@ import { getProgressMap, type Progress } from '../services/progressStore';
 import type { DramaEpisode, SeriesEpisode } from '../types/drama';
 import { isDramaEpisode, type Track } from '../types/track';
 import { hkToday } from '../utils/date';
+import { playbackStateOf } from '../utils/playbackState';
 import { toDailyItems, toSeriesItems } from './dramaItems';
 import type { RowContext } from './episodeItems';
 
@@ -53,11 +54,17 @@ const usePlaybackRows = (
     // 轉集或者有集數變成聽過先重新讀 localStorage
     const progressMap = useRefreshedOn(getProgressMap, [player.watchedRevision, currentUrl]);
     const isPlaying = isLoaded && player.isPlaying;
+    // 暫停 / 未開始唔再講「播放中」（未載入就當未開始）
+    const playState = playbackStateOf({
+        isPlaying,
+        position: isLoaded ? player.currentTime : 0,
+    });
     const ctx: RowContext = {
         currentUrl,
         live: { currentTime: player.currentTime, duration: player.duration },
         progressMap,
         isPlaying,
+        liveState: playState,
     };
     const selectEpisode = (url: string) => {
         const episode = episodes.find((e) => e.url === url);
@@ -66,7 +73,7 @@ const usePlaybackRows = (
     // 撳播緊嗰集就暫停（掣係暫停樣），其他集就播嗰集
     const pressEpisode = (url: string) =>
         isPlaying && url === currentUrl ? void player.toggle() : selectEpisode(url);
-    return { ctx, selectEpisode, pressEpisode };
+    return { ctx, playState, selectEpisode, pressEpisode };
 };
 
 /** 每日劇集頁（例如 18 樓 C 座）：同節目頁一樣，唱片 + 日子條 + 集數清單 */
@@ -164,7 +171,11 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
     // 轉集、有集數聽完、打開全集表都重新讀 localStorage
     const progressMap = useRefreshedOn(getProgressMap, [watchedRevision, loaded?.url, sheetOpen]);
     const current = loaded ?? pickSeriesStart(episodes, progressMap);
-    const { ctx, selectEpisode, pressEpisode } = usePlaybackRows(episodes, current, !!loaded);
+    const { ctx, playState, selectEpisode, pressEpisode } = usePlaybackRows(
+        episodes,
+        current,
+        !!loaded,
+    );
     const { arc, pickArc: setArc } = useViewedArc(current?.arc);
     const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc);
     const pickArc = useArcPick(groups, setArc);
@@ -177,6 +188,7 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
         // 碟面跟播緊（未播就係準備播）嗰集；冇播放時揀短篇會載入嗰個短篇，碟面就跟住轉
         theme: current ? dramaEpisodeTheme(current) : drama.theme,
         current,
+        playState,
         arcTotal,
         arcPosition,
         arcs: chips,

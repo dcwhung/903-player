@@ -15,6 +15,20 @@ describe('episodeStatus', () => {
         ).toEqual({ kind: 'playing', ratio: 760 / 7110, text: '播放中 · 12:40 / 1:58:30' });
     });
 
+    it('says paused or not started instead of playing when the page asks for it', () => {
+        const live = { currentTime: 760, duration: 7110 };
+        expect(episodeStatus({ isCurrent: true, live, liveState: 'paused' }).text).toBe(
+            '已暫停 · 12:40 / 1:58:30',
+        );
+        expect(
+            episodeStatus({
+                isCurrent: true,
+                live: { currentTime: 0, duration: 677 },
+                liveState: 'ready',
+            }).text,
+        ).toBe('未開始 · 0:00 / 11:17');
+    });
+
     it('shows connecting without times while the duration is unknown (offline)', () => {
         expect(
             episodeStatus({ isCurrent: true, live: { currentTime: 1449, duration: 0 } }),
