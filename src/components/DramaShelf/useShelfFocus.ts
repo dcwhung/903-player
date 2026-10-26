@@ -115,6 +115,21 @@ const useSnapOnScrollStart = (
     }, [shelfRef, layout, focusRef]);
 };
 
+/**
+ * 捲動之後邊張係 focus；唔使捲、未量到，或者唔係用家捲就冇（唔改 focus）。
+ * 書架尺寸變咗但新 layout 未 commit（CUI-0002）：呢下 scroll 係瀏覽器按舊 layout 截短 scrollTop，
+ * 照舊 layout 計會跳去前一張；等 RO 量完（唔使捲就捲返頂）、新 layout commit 先再跟 scroll
+ */
+const scrollFocus = (
+    shelf: HTMLElement | null,
+    count: number,
+    layout: ShelfLayout | undefined,
+): number | undefined => {
+    if (!shelf || !layout?.scrolls) return undefined;
+    if (!sameShelfLayout(measure(shelf, count), layout)) return undefined;
+    return focusIndexAt(shelf.scrollTop, count, layout);
+};
+
 /** 書架 inline style：卡高、卡距（CSS 用）同要捲先有嘅底留位 */
 const shelfStyle = (layout?: ShelfLayout): CSSProperties | undefined =>
     layout &&
@@ -171,8 +186,8 @@ export const useShelfFocus = (count: number, enabled: boolean) => {
         setFocus(index);
     };
     const onScroll = () => {
-        const shelf = shelfRef.current;
-        if (shelf && scrolls && layout) setFocus(focusIndexAt(shelf.scrollTop, count, layout));
+        const index = scrollFocus(shelfRef.current, count, layout);
+        if (index !== undefined) setFocus(index);
     };
     const tileProps = useTileProps(focus, focusTile);
     return { shelfRef, style: shelfStyle(layout), scrolls, onScroll, tileProps, enabled };
