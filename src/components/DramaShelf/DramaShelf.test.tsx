@@ -60,6 +60,12 @@ describe('DramaShelf', () => {
 describe('DramaShelf focus (portrait stacked cards)', () => {
     const NAMES = ['劇 1', '劇 2', '劇 3', '劇 4'];
     let scrollTo: ReturnType<typeof vi.fn>;
+    // jsdom 冇 element.scrollTo（spyOn 唔到），自己裝假嘅；用完還原，唔好漏去其他 test
+    const realScrollTo = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTo');
+    const restoreScrollTo = () => {
+        if (realScrollTo) Object.defineProperty(HTMLElement.prototype, 'scrollTo', realScrollTo);
+        else Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo');
+    };
 
     /** jsdom 冇 layout：每張卡隔 112px、頂留 8px、focus 卡上面露 24px、書架可見 500px 高 */
     const mockShelf = () => {
@@ -105,6 +111,7 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
     afterEach(() => {
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
+        restoreScrollTo();
     });
 
     it('focuses the first card on entering the tab, with room below for the last one', () => {

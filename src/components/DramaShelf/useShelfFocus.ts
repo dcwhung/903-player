@@ -29,28 +29,11 @@ const useTailPadding = (shelfRef: RefObject<HTMLElement | null>, enabled: boolea
     return enabled ? padPx : undefined;
 };
 
-/**
- * 直版疊卡書架嘅 focus（「捲相簿」）：停喺 snap 位嗰張係 focus。
- * 撳暗咗嘅卡 → 捲佢做 focus；撳 focus 卡 / 鍵盤 Enter / 讀屏 → open。
- * 鍵盤 Tab 到一張卡就捲佢做 focus。enabled = false（橫版）就照舊撳落即 open
- */
-export const useShelfFocus = (count: number, enabled: boolean) => {
-    const shelfRef = useRef<HTMLElement>(null);
-    const [focus, setFocus] = useState(0);
+/** 每張卡嘅 props：撳 / 鍵盤 focus / click 點樣分 open 定捲做 focus */
+const useTileProps = (focus: number, focusTile: (index: number) => void) => {
     // 撳落去嗰刻邊張係 focus（pointerdown → focus → click，click 時 focus 可能已經變咗）
     const pressRef = useRef<number | null>(null);
-    const padPx = useTailPadding(shelfRef, enabled);
-
-    const focusTile = (index: number) => {
-        const shelf = shelfRef.current;
-        shelf?.scrollTo({ top: snapTop(index, measure(shelf)), behavior: scrollBehavior() });
-        setFocus(index);
-    };
-    const onScroll = () => {
-        const shelf = shelfRef.current;
-        if (shelf) setFocus(focusIndexAt(shelf.scrollTop, count, measure(shelf)));
-    };
-    const tileProps = (index: number, onOpen: () => void) => ({
+    return (index: number, onOpen: () => void) => ({
         'data-focused': index === focus ? '' : undefined,
         onPointerDown: () => (pressRef.current = focus),
         // 撳落去之後變咗捲動（冇 click）：唔好留住，否則之後鍵盤 focus 會當係撳
@@ -65,5 +48,27 @@ export const useShelfFocus = (count: number, enabled: boolean) => {
             else focusTile(index);
         },
     });
+};
+
+/**
+ * 直版疊卡書架嘅 focus（「捲相簿」）：停喺 snap 位嗰張係 focus。
+ * 撳暗咗嘅卡 → 捲佢做 focus；撳 focus 卡 / 鍵盤 Enter / 讀屏 → open。
+ * 鍵盤 Tab 到一張卡就捲佢做 focus。enabled = false（橫版）就照舊撳落即 open
+ */
+export const useShelfFocus = (count: number, enabled: boolean) => {
+    const shelfRef = useRef<HTMLElement>(null);
+    const [focus, setFocus] = useState(0);
+    const padPx = useTailPadding(shelfRef, enabled);
+
+    const focusTile = (index: number) => {
+        const shelf = shelfRef.current;
+        shelf?.scrollTo({ top: snapTop(index, measure(shelf)), behavior: scrollBehavior() });
+        setFocus(index);
+    };
+    const onScroll = () => {
+        const shelf = shelfRef.current;
+        if (shelf) setFocus(focusIndexAt(shelf.scrollTop, count, measure(shelf)));
+    };
+    const tileProps = useTileProps(focus, focusTile);
     return { shelfRef, padPx, onScroll, tileProps, enabled };
 };

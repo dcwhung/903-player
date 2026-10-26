@@ -34,15 +34,24 @@ describe('isFirstSeriesVisit', () => {
     });
 
     it('is a first visit for a series drama with no progress at all', () => {
-        expect(isFirstSeriesVisit(CHISEE, {})).toBe(true);
+        expect(isFirstSeriesVisit(CHISEE, {}, null)).toBe(true);
     });
 
     it('is not a first visit once any of its episodes has progress', () => {
-        expect(isFirstSeriesVisit(CHISEE, touched(SERIES.at(-1)?.url ?? ''))).toBe(false);
+        expect(isFirstSeriesVisit(CHISEE, touched(SERIES.at(-1)?.url ?? ''), null)).toBe(false);
+    });
+
+    it('is not a first visit while one of its episodes is loaded, even with no progress yet', () => {
+        // 喺全集揀咗一行：載入咗但未播，所以未有進度
+        expect(isFirstSeriesVisit(CHISEE, {}, SERIES[3] ?? null)).toBe(false);
+    });
+
+    it('is still a first visit while another drama is loaded', () => {
+        expect(isFirstSeriesVisit(CHISEE, {}, DAILY[0] ?? null)).toBe(true);
     });
 
     it('never counts a daily drama as a first visit', () => {
-        expect(isFirstSeriesVisit(C18, {})).toBe(false);
+        expect(isFirstSeriesVisit(C18, {}, null)).toBe(false);
     });
 });
 
