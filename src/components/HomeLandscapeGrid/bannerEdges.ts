@@ -119,7 +119,10 @@ export const readBannerEdges = (img: HTMLImageElement): BannerEdges | null => {
 
 const cache = new Map<string, Promise<BannerEdges | null>>();
 
-/** 每張圖只讀一次（轉向、改大細、開關 mini player 都係重用）；載入失敗就 null */
+/**
+ * 每張圖只讀一次（轉向、改大細、開關 mini player 都係重用）；載入 / 讀取失敗就 null。
+ * 失敗唔 cache：例如離線第一次開未 precache，下次載入可以再試
+ */
 export const loadBannerEdges = (src: string): Promise<BannerEdges | null> => {
     const cached = cache.get(src);
     if (cached) return cached;
@@ -128,6 +131,9 @@ export const loadBannerEdges = (src: string): Promise<BannerEdges | null> => {
         img.onload = () => resolve(readBannerEdges(img));
         img.onerror = () => resolve(null);
         img.src = src;
+    }).then((edges) => {
+        if (!edges) cache.delete(src);
+        return edges;
     });
     cache.set(src, pending);
     return pending;

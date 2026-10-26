@@ -187,4 +187,19 @@ describe('loadBannerEdges', () => {
 
         await expect(pending).resolves.toBeNull();
     });
+
+    it('should try again on the next load after a failed read', async () => {
+        stubCanvas(COLOR);
+        const images = stubImages();
+        const failed = loadBannerEdges('/load-retry.png');
+        images[0]?.onerror?.();
+        await failed;
+
+        // 例如離線第一次開未 precache：下次再載入要再試，唔好成個 session 都 cache 住 null
+        const retry = loadBannerEdges('/load-retry.png');
+        images[1]?.onload?.();
+
+        expect(retry).not.toBe(failed);
+        await expect(retry).resolves.toEqual(solidEdges(COLOR));
+    });
 });
