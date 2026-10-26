@@ -14,6 +14,17 @@
     z-index: 10;
 }
 
+/*
+ * 手機打橫（SHORT_LANDSCAPE_QUERY）：同主頁格（HomeLandscapeGrid）一樣闊，左右邊對齊格邊
+ * （頁面安全區 + --home-gutter），唔再收喺 --page-max-width 中間。mini player 只喺主頁出現
+ */
+@media (orientation: landscape) and (min-width: 640px) and (max-height: 561px) {
+    .wrapper {
+        right: calc(env(safe-area-inset-right) + var(--home-gutter));
+        left: calc(env(safe-area-inset-left) + var(--home-gutter));
+    }
+}
+
 .player {
     position: relative;
     overflow: hidden;
