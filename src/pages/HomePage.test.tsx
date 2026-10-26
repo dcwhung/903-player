@@ -213,7 +213,7 @@ describe('HomePage', () => {
         expect(audio.play).toHaveBeenCalled();
     });
 
-    it('should flag the page while the mini player shows, so phone-sideways tiles can use its room otherwise', async () => {
+    it('should flag the page while the mini player shows, so the home only reserves its room then (any orientation)', async () => {
         const { unmount } = renderWithProviders(<HomePage />);
         expect(screen.getByRole('main')).not.toHaveAttribute('data-mini-player');
         unmount();
