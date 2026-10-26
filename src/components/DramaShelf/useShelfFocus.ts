@@ -8,7 +8,14 @@ import {
 } from 'react';
 import { cssPx } from '../../utils/cssLength';
 import { scrollBehavior } from '../../utils/motion';
-import { focusIndexAt, snapTop, tailPadding, tapAction, type ShelfMetrics } from './shelfFocus';
+import {
+    focusIndexAt,
+    sameShelfLayout,
+    snapTop,
+    tailPadding,
+    tapAction,
+    type ShelfMetrics,
+} from './shelfFocus';
 import { stackLayout, type StackLayout } from './shelfStack';
 
 /** 書架嘅 token（tokens.css）：卡距、focus 卡上面露幾多、卡最矮 / 最高比例、疊卡間距最細 */
@@ -52,28 +59,46 @@ const measure = (shelf: HTMLElement, count: number): ShelfLayout | undefined => 
 };
 
 /**
+ * 捲唔捲轉咗就對返 scrollTop：變唔使捲 → 捲返頂（overflow: hidden 都會留住 scrollTop）；
+ * 變要捲 → 即刻捲去 focus 嗰張嘅 snap 位（W-464，T2「停喺 snap 位嗰張係 focus」）
+ */
+const syncScroll = (
+    shelf: HTMLElement,
+    wasScrolling: boolean,
+    next: ShelfLayout,
+    focus: number,
+) => {
+    if (!next.scrolls) shelf.scrollTop = 0;
+    else if (!wasScrolling) shelf.scrollTop = snapTop(focus, next);
+};
+
+/**
  * 跟書架尺寸重新排（轉向、iOS 工具列、mini player 出入令書架變高 / 矮）；冇 ResizeObserver（jsdom）就量一次。
- * 由要捲變唔使捲：捲返頂（overflow: hidden 都會留住 scrollTop）
+ * focusRef 係最新嘅 focus：RO callback 唔跟 render，直接讀 state 會係舊值
  */
 const useShelfLayout = (
     shelfRef: RefObject<HTMLElement | null>,
     count: number,
     enabled: boolean,
+    focusRef: RefObject<number>,
 ) => {
     const [layout, setLayout] = useState<ShelfLayout>();
     useLayoutEffect(() => {
         const shelf = shelfRef.current;
         if (!enabled || !shelf) return;
+        // 第一次量當之前唔使捲（scrollTop 係 0）：focus 0 嘅 snap 位都係 0，唔會亂捲
+        let scrolling = false;
         const update = () => {
             const next = measure(shelf, count);
-            if (next && !next.scrolls) shelf.scrollTop = 0;
-            setLayout(next);
+            if (next) syncScroll(shelf, scrolling, next, focusRef.current);
+            scrolling = next?.scrolls ?? false;
+            setLayout((prev) => (sameShelfLayout(prev, next) ? prev : next));
         };
         update();
         const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
         observer?.observe(shelf);
         return () => observer?.disconnect();
-    }, [shelfRef, count, enabled]);
+    }, [shelfRef, count, enabled, focusRef]);
     return enabled ? layout : undefined;
 };
 
@@ -115,7 +140,12 @@ const useTileProps = (focus: number, focusTile: (index: number) => void) => {
 export const useShelfFocus = (count: number, enabled: boolean) => {
     const shelfRef = useRef<HTMLElement>(null);
     const [focus, setFocus] = useState(0);
-    const layout = useShelfLayout(shelfRef, count, enabled);
+    // 畀 ResizeObserver callback 讀最新 focus（W-464）；喺 effect 更新，唔喺 render 寫 ref
+    const focusRef = useRef(focus);
+    useLayoutEffect(() => {
+        focusRef.current = focus;
+    }, [focus]);
+    const layout = useShelfLayout(shelfRef, count, enabled, focusRef);
     const scrolls = layout?.scrolls ?? false;
 
     const focusTile = (index: number) => {

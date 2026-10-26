@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { stubLandscape } from '../../../tests/landscape';
 import { DramaShelf, type DramaShelfItem } from './DramaShelf';
@@ -225,6 +225,56 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
 
         expect(focused()).toEqual(['劇 2']);
         expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    /** 假 ResizeObserver：記住 callback，test 自己觸發（模擬書架變高 / 矮） */
+    const stubResizeObserver = () => {
+        const observer = { trigger: () => {} };
+        vi.stubGlobal(
+            'ResizeObserver',
+            class {
+                constructor(callback: () => void) {
+                    observer.trigger = callback;
+                }
+                observe = vi.fn();
+                disconnect = vi.fn();
+            },
+        );
+        return observer;
+    };
+    /** 書架改高度（例如 mini player 出入），再等 ResizeObserver 通知 */
+    const resizeShelf = (observer: { trigger: () => void }, heightPx: number) => {
+        mockShelf(heightPx);
+        act(() => observer.trigger());
+    };
+
+    it('scrolls the focused card to the snap position when the shelf starts to scroll', async () => {
+        const observer = stubResizeObserver();
+        mockShelf(650);
+        renderShelf();
+        await userEvent.click(tile('劇 3'));
+
+        // mini player 出現，書架縮到 400px：要捲，snap 位要係 focus 嗰張（2 × 72 + 8 − 24）
+        resizeShelf(observer, 400);
+
+        const shelf = screen.getByRole('navigation');
+        expect(shelf).toHaveAttribute('data-scroll');
+        expect(shelf.scrollTop).toBe(128);
+        expect(focused()).toEqual(['劇 3']);
+    });
+
+    it('scrolls back to the top when the shelf stops scrolling', () => {
+        const observer = stubResizeObserver();
+        renderShelf();
+        const shelf = screen.getByRole('navigation');
+        shelf.scrollTop = 128;
+        fireEvent.scroll(shelf);
+
+        // 書架變高到 650px：唔使捲，overflow: hidden 都會留住 scrollTop，要自己捲返頂
+        resizeShelf(observer, 650);
+
+        expect(shelf).not.toHaveAttribute('data-scroll');
+        expect(shelf.scrollTop).toBe(0);
     });
 
     it('keeps plain tiles that open on tap in landscape (no stacked focus)', async () => {
