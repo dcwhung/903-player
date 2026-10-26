@@ -1,5 +1,5 @@
 import { NEUTRAL_THEME } from '../config/showThemes';
-import type { DramaId, SeriesEpisode } from '../types/drama';
+import type { SeriesEpisode } from '../types/drama';
 import { buildRegistry } from './registry';
 import { DramaSchemaError } from './schema';
 import type { DramaFolder, DramaSource } from './source';
@@ -119,7 +119,7 @@ describe('buildRegistry', () => {
         expect(registry.dramaArtFor(a)).toBe('/img/disc.webp');
         expect(registry.dramaArtFor(b)).toBe('/img/s2.webp');
         expect(registry.dramaArtFor({ ...b, arc: 'C' })).toBe('/img/disc.webp');
-        const orphan: SeriesEpisode = { ...b, dramaId: 'nope' as DramaId };
+        const orphan: SeriesEpisode = { ...b, dramaId: 'nope' };
         expect(registry.dramaArtFor(orphan)).toBe('');
         const [d] = registry.dailyEpisodesOf('off');
         expect(d && registry.dramaArtFor(d)).toBe('/img/disc.webp');

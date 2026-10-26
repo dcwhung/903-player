@@ -1,4 +1,5 @@
-export type DramaId = 'chisee' | 'c18' | 'golden';
+/** = src/dramas/<id>/ folder 名；清單由 drama.json 讀，所以唔係 closed union */
+export type DramaId = string;
 
 /** series：分短篇 × 集數（例如芝See菇Bi Family）；daily：大約一日一集，按日子排（例如 18 樓 C 座） */
 export type DramaKind = 'series' | 'daily';

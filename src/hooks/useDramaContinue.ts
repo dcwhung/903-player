@@ -1,6 +1,5 @@
 import type { DramaShelfItem } from '../components/DramaShelf/DramaShelf';
-import type { DramaConfig } from '../config/dramas';
-import { seriesEpisodesOf } from '../data/dramaCatalog';
+import { seriesEpisodesOf, type DramaConfig } from '../dramas';
 import { usePlayer } from '../player/usePlayer';
 import { seriesContinue } from '../selectors/arcProgress';
 import { dramaEpisodeLabel } from '../selectors/dramas';

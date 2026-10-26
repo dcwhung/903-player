@@ -1,11 +1,16 @@
 import { act, renderHook } from '@testing-library/react';
 import { createHookWrapper } from '../../tests/renderWithProviders';
-import { DRAMAS } from '../config/dramas';
-import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
+import { dailyEpisodesOf, findDrama, seriesEpisodesOf, type Drama } from '../dramas';
 import { usePlayer } from '../player/usePlayer';
 import { dramaStartEpisode, useStartDrama } from './useStartDrama';
 
-const [CHISEE, C18] = DRAMAS as [(typeof DRAMAS)[number], (typeof DRAMAS)[number]];
+const mustFind = (id: string): Drama => {
+    const drama = findDrama(id);
+    if (!drama) throw new Error(`missing drama ${id}`);
+    return drama;
+};
+const CHISEE = mustFind('chisee');
+const C18 = mustFind('c18');
 const SERIES = seriesEpisodesOf('chisee');
 const DAILY = dailyEpisodesOf('c18');
 

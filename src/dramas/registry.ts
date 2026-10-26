@@ -3,7 +3,7 @@
  * 所有 lookup 都有明確 fallback（唔靠 closed union），加劇唔使改呢度。
  */
 import { NEUTRAL_THEME, type ShowTheme } from '../config/showThemes';
-import type { DramaEpisode, DramaId, DramaKind, DailyEpisode, SeriesEpisode } from '../types/drama';
+import type { DramaEpisode, DramaKind, DailyEpisode, SeriesEpisode } from '../types/drama';
 import { buildEpisodes } from './episodes';
 import { DramaSchemaError, parseDramaDefinition, type DramaDefinition } from './schema';
 import type { DramaFolder, DramaSource } from './source';
@@ -91,8 +91,7 @@ const toEntry = (folder: DramaFolder): { entry: DramaEntry; order: number } => {
     return {
         entry: {
             drama: toDrama(folder, def),
-            // TODO(過渡)：DramaId 轉做 string 後刪呢個 cast
-            episodes: buildEpisodes(folder.id as DramaId, def),
+            episodes: buildEpisodes(folder.id, def),
             arcArt: arcArtOf(folder, def),
         },
         order: def.order ?? UNORDERED,

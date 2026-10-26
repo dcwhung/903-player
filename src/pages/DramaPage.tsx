@@ -9,7 +9,7 @@ import { PlayerPanel } from '../components/PlayerPanel/PlayerPanel';
 import { StatusMessage } from '../components/StatusMessage/StatusMessage';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { NEUTRAL_THEME } from '../config/showThemes';
-import { findEnabledDrama, type DramaConfig } from '../config/dramas';
+import { findEnabledDrama, type DramaConfig } from '../dramas';
 import { LANDSCAPE_QUERY } from '../config/layout';
 import { useGoHome } from '../hooks/useGoHome';
 import { useMediaQuery } from '../hooks/useMediaQuery';

@@ -8,12 +8,10 @@ import { ShowGrid } from '../components/ShowGrid/ShowGrid';
 import { ShowTile } from '../components/ShowTile/ShowTile';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { APP_VERSION } from '../config/appVersion';
-import { DRAMA_TILE_ART } from '../config/dramaThemes';
-import { enabledDramas, type DramaConfig } from '../config/dramas';
+import { enabledDramas, seriesEpisodesOf, type DramaConfig } from '../dramas';
 import { SHORT_LANDSCAPE_QUERY } from '../config/layout';
 import { HOME_THEME, SHOW_THEMES } from '../config/showThemes';
 import { SHOWS } from '../config/shows';
-import { seriesEpisodesOf } from '../data/dramaCatalog';
 import { useRecordings } from '../data/useRecordings';
 import { useDramaContinue } from '../hooks/useDramaContinue';
 import { useHomeArrival } from '../hooks/useHomeArrival';
@@ -75,7 +73,7 @@ const useDramaItems = (): DramaShelfItem[] => {
     return enabledDramas().map((drama) => ({
         id: drama.id,
         name: drama.name,
-        art: DRAMA_TILE_ART[drama.id],
+        art: drama.tileArt,
         meta: dramaMeta(drama),
         newLabel: newLabels.get(drama.id),
         resume: continueOf(drama),

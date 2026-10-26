@@ -1,7 +1,10 @@
 import { render, screen } from '@testing-library/react';
-import { DRAMA_THEMES } from '../../config/dramaThemes';
+import { dramaThemeFor } from '../../dramas';
 import { SHOW_THEMES } from '../../config/showThemes';
 import { ThemeScope } from './ThemeScope';
+
+const CHISEE_THEME = dramaThemeFor('chisee');
+const C18_THEME = dramaThemeFor('c18');
 
 const canvas = () => document.documentElement.style.getPropertyValue('--page-canvas');
 
@@ -87,7 +90,7 @@ describe('ThemeScope', () => {
 
     it('marks a light theme so the browser uses light form controls and scrollbars', () => {
         render(
-            <ThemeScope theme={DRAMA_THEMES.chisee}>
+            <ThemeScope theme={CHISEE_THEME}>
                 <p>內容</p>
             </ThemeScope>,
         );
@@ -98,17 +101,17 @@ describe('ThemeScope', () => {
 
     it('should paint a status bar band and use its colour for theme-color on a light page', () => {
         const { container } = render(
-            <ThemeScope theme={DRAMA_THEMES.c18}>
+            <ThemeScope theme={C18_THEME}>
                 <p>內容</p>
             </ThemeScope>,
         );
 
-        expect(themeColor()).toBe(DRAMA_THEMES.c18.statusBar);
+        expect(themeColor()).toBe(C18_THEME.statusBar);
         const band = container.querySelector('[data-status-band]') as HTMLElement;
         expect(band).toHaveAttribute('aria-hidden', 'true');
         expect(band.style.background).toBe('rgb(165, 42, 36)');
         // 畫面底色照用 bg（home indicator 後面同頁面一樣色）
-        expect(canvas()).toBe(DRAMA_THEMES.c18.bg);
+        expect(canvas()).toBe(C18_THEME.bg);
     });
 
     it('should not paint a status bar band for dark themes or partial scopes', () => {
@@ -117,7 +120,7 @@ describe('ThemeScope', () => {
                 <ThemeScope theme={SHOW_THEMES.sunnyday}>
                     <p>節目</p>
                 </ThemeScope>
-                <ThemeScope theme={DRAMA_THEMES.c18} fullPage={false}>
+                <ThemeScope theme={C18_THEME} fullPage={false}>
                     <p>mini player</p>
                 </ThemeScope>
             </>,
