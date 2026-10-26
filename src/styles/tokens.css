@@ -25,6 +25,8 @@
 
     --font-family: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
     --theme-title-font: var(--font-family);
+    /* 等寬字：debug panel 對數用，數字上下對齊（W-463） */
+    --font-family-mono: ui-monospace, monospace;
     /* 日子條每格上面嘅星期（一、二…） */
     --font-size-2xs: calc(11px * var(--ui-scale));
     --font-size-xs: calc(12px * var(--ui-scale));
