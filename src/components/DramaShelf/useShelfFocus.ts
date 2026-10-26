@@ -4,11 +4,14 @@ import {
     useState,
     type CSSProperties,
     type MouseEvent,
+    type PointerEvent,
     type RefObject,
 } from 'react';
+import { useClickSuppression } from '../../hooks/useSwipe';
 import { cssPx } from '../../utils/cssLength';
 import { scrollBehavior } from '../../utils/motion';
 import {
+    cardIndexAtY,
     focusIndexAt,
     sameShelfLayout,
     snapTop,
@@ -18,13 +21,14 @@ import {
 } from './shelfFocus';
 import { stackLayout, type StackLayout } from './shelfStack';
 
-/** 書架嘅 token（tokens.css）：卡距、focus 卡上面露幾多、卡最矮 / 最高比例、疊卡間距最細 */
+/** 書架嘅 token（tokens.css）：卡距、focus 卡上面露幾多、卡最矮 / 最高比例、疊卡間距最細、捽幾遠先當捽 */
 const TOKEN = {
     gap: '--home-tile-gap',
     peek: '--drama-shelf-peek',
     minRatio: '--drama-shelf-min-ratio',
     maxRatio: '--drama-shelf-max-ratio',
     minStep: '--drama-shelf-min-step',
+    scrubSlop: '--drama-shelf-scrub-slop',
 } as const;
 
 const px = (value: string): number => parseFloat(value) || 0;
@@ -32,6 +36,8 @@ const px = (value: string): number => parseFloat(value) || 0;
 interface ShelfLayout extends StackLayout, ShelfMetrics {
     /** 要捲先有：底留位，最尾一張都捲得到 snap 位 */
     tailPx?: number;
+    /** 手指上下郁過幾多先當捽（之前仍然係撳） */
+    scrubSlopPx: number;
 }
 
 /**
@@ -52,7 +58,12 @@ const measure = (shelf: HTMLElement, count: number): ShelfLayout | undefined => 
         minStepPx: cssPx(token(TOKEN.minStep)),
     });
     if (!stack) return undefined;
-    const metrics = { ...stack, topPx, peekPx: cssPx(token(TOKEN.peek)) };
+    const metrics = {
+        ...stack,
+        topPx,
+        peekPx: cssPx(token(TOKEN.peek)),
+        scrubSlopPx: cssPx(token(TOKEN.scrubSlop)),
+    };
     return stack.scrolls
         ? { ...metrics, tailPx: tailPadding(shelf.clientHeight, metrics) }
         : metrics;
@@ -139,11 +150,13 @@ const shelfStyle = (layout?: ShelfLayout): CSSProperties | undefined =>
         paddingBottom: layout.tailPx,
     } as CSSProperties);
 
-/** 每張卡嘅 props：撳 / 鍵盤 focus / click 點樣分 open 定捲做 focus */
-const useTileProps = (focus: number, focusTile: (index: number) => void) => {
-    // 撳落去嗰刻邊張係 focus（pointerdown → focus → click，click 時 focus 可能已經變咗）
-    const pressRef = useRef<number | null>(null);
-    return (index: number, onOpen: () => void) => ({
+/**
+ * 每張卡嘅 props：撳 / 鍵盤 focus / click 點樣分 open 定捲做 focus。
+ * pressRef：撳落去嗰刻邊張係 focus（pointerdown → focus → click，click 時 focus 可能已經變咗）
+ */
+const useTileProps =
+    (focus: number, focusTile: (index: number) => void, pressRef: RefObject<number | null>) =>
+    (index: number, onOpen: () => void) => ({
         'data-focused': index === focus ? '' : undefined,
         onPointerDown: () => (pressRef.current = focus),
         // 撳落去之後變咗捲動（冇 click）：唔好留住，否則之後鍵盤 focus 會當係撳
@@ -158,10 +171,84 @@ const useTileProps = (focus: number, focusTile: (index: number) => void) => {
             else focusTile(index);
         },
     });
+
+interface ScrubSession {
+    /** 邊隻手指 / pen 開始嘅；其他 pointer 嘅 events 唔理 */
+    pointerId: number;
+    startY: number;
+    scrubbing: boolean;
+}
+
+type ShelfPointer = PointerEvent<HTMLElement>;
+
+/** 呢下 move 之後係咪捽緊：郁過 slop 先開始（之前仍然可以係撳），開始就 capture 埋，手指出咗書架都跟 */
+const isScrubbing = (session: ScrubSession, event: ShelfPointer, slopPx: number): boolean => {
+    if (session.scrubbing) return true;
+    if (Math.abs(event.clientY - session.startY) < slopPx) return false;
+    session.scrubbing = true;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    return true;
+};
+
+/** 手指喺書架入面嘅 y（由書架內容頂量起，同 cardIndexAtY 嘅卡頂一樣） */
+const shelfY = (event: ShelfPointer): number => {
+    const shelf = event.currentTarget;
+    return event.clientY - shelf.getBoundingClientRect().top + shelf.scrollTop;
+};
+
+/** 撳落去：唔使捲先開始一下捽（未當捽住，等 isScrubbing）；要捲 / 未量到 / 唔係主掣就冇 */
+const scrubStart = (layout: ShelfLayout | undefined, event: ShelfPointer): ScrubSession | null =>
+    !layout || layout.scrolls || event.button !== 0
+        ? null
+        : { pointerId: event.pointerId, startY: event.clientY, scrubbing: false };
+
+interface ScrubOptions {
+    layout: ShelfLayout | undefined;
+    count: number;
+    setFocus: (index: number) => void;
+    /** 同 useTileProps 共用：捽完要清，唔好當之後嘅鍵盤 focus 係撳 */
+    pressRef: RefObject<number | null>;
+}
+
+/**
+ * 唔使捲嘅疊卡書架：手指 / pen（滑鼠撳住都得）上下捽，focus 即刻跟手指下面嗰張卡（「捲相簿」）。
+ * 放手 focus 留喺嗰張、唔 open，跟住嗰下 click 食咗（useClickSuppression，鍵盤 click 唔食）；
+ * 冇郁過 slop 就係普通撳（useTileProps）。要捲（或者未量到 / 橫版）就冇：交返原生捲動 + snap
+ */
+const useShelfScrub = ({ layout, count, setFocus, pressRef }: ScrubOptions) => {
+    const sessionRef = useRef<ScrubSession | null>(null);
+    const { arm, onClickCapture } = useClickSuppression();
+    const session = (event: ShelfPointer) =>
+        sessionRef.current?.pointerId === event.pointerId ? sessionRef.current : null;
+    const finish = (event: ShelfPointer) => {
+        const ended = session(event);
+        if (!ended) return;
+        sessionRef.current = null;
+        arm(ended.scrubbing);
+        // 捽完冇 click 去清：唔好留住，否則之後鍵盤 focus 會當係撳
+        if (ended.scrubbing) pressRef.current = null;
+    };
+    const onPointerMove = (event: ShelfPointer) => {
+        const moving = session(event);
+        if (!layout || !moving || !isScrubbing(moving, event, layout.scrubSlopPx)) return;
+        setFocus(cardIndexAtY(shelfY(event), count, layout));
+    };
+    const onPointerDown = (event: ShelfPointer) => {
+        arm(false);
+        sessionRef.current = scrubStart(layout, event);
+    };
+    return {
+        onPointerDown,
+        onPointerMove,
+        onPointerUp: finish,
+        onPointerCancel: finish,
+        onClickCapture,
+    };
 };
 
 /**
- * 直版疊卡書架嘅 focus（「捲相簿」）：要捲（放唔晒）就停喺 snap 位嗰張係 focus；唔使捲就撳邊張邊張係 focus。
+ * 直版疊卡書架嘅 focus（「捲相簿」）：要捲（放唔晒）就停喺 snap 位嗰張係 focus；
+ * 唔使捲就撳邊張邊張係 focus，或者手指上下捽，focus 跟手指（useShelfScrub）。
  * 撳暗咗嘅卡 → 佢做 focus（要捲就捲過去）；撳 focus 卡 / 鍵盤 Enter / 讀屏 → open。
  * 鍵盤 Tab 到一張卡就佢做 focus。enabled = false（橫版）就照舊撳落即 open
  */
@@ -171,6 +258,7 @@ export const useShelfFocus = (count: number, enabled: boolean) => {
     // 畀變要捲嗰刻讀最新 focus（W-464）：唔放入 effect deps，focus 變唔會重捲；
     // 喺 effect 更新，唔喺 render 寫 ref
     const focusRef = useRef(focus);
+    const pressRef = useRef<number | null>(null);
     useLayoutEffect(() => {
         focusRef.current = focus;
     }, [focus]);
@@ -189,6 +277,7 @@ export const useShelfFocus = (count: number, enabled: boolean) => {
         const index = scrollFocus(shelfRef.current, count, layout);
         if (index !== undefined) setFocus(index);
     };
-    const tileProps = useTileProps(focus, focusTile);
-    return { shelfRef, style: shelfStyle(layout), scrolls, onScroll, tileProps, enabled };
+    const tileProps = useTileProps(focus, focusTile, pressRef);
+    const scrubProps = useShelfScrub({ layout, count, setFocus, pressRef });
+    return { shelfRef, style: shelfStyle(layout), scrolls, onScroll, tileProps, scrubProps };
 };

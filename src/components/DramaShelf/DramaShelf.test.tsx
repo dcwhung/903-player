@@ -67,13 +67,14 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         else Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo');
     };
 
-    /** 由 tokens.css 讀嘅值：卡間距、focus 卡上面露幾多、卡最矮 / 最高比例、疊卡間距最細 */
+    /** 由 tokens.css 讀嘅值：卡間距、focus 卡上面露幾多、卡最矮 / 最高比例、疊卡間距最細、捽幾遠先當捽 */
     const TOKENS: Record<string, string> = {
         '--home-tile-gap': '12px',
         '--drama-shelf-peek': '24px',
         '--drama-shelf-min-ratio': '0.5',
         '--drama-shelf-max-ratio': '0.6',
         '--drama-shelf-min-step': '72px',
+        '--drama-shelf-scrub-slop': '8px',
     };
 
     /**
@@ -224,6 +225,103 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         await userEvent.tab();
 
         expect(focused()).toEqual(['劇 2']);
+        expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    /**
+     * 手指喺書架上下捽（jsdom 書架頂喺 0，clientY 就係由書架頂量起）。
+     * 650px 高唔使捲：卡頂 8、153、298、443（間距 145）
+     */
+    const TOUCH = { pointerId: 1, pointerType: 'touch', button: 0 };
+    const press = (name: string, clientY: number) =>
+        fireEvent.pointerDown(tile(name), { ...TOUCH, clientY });
+    // 手指一直喺撳落嗰張卡度（touch 隱式 capture），move / up 都係嗰張發
+    const drag = (name: string, clientY: number) =>
+        fireEvent.pointerMove(tile(name), { ...TOUCH, clientY });
+    const lift = (name: string, clientY: number) =>
+        fireEvent.pointerUp(tile(name), { ...TOUCH, clientY });
+
+    it('moves the focus to the card under the finger while scrubbing the stack', () => {
+        mockShelf(650);
+        renderShelf();
+
+        press('劇 1', 50);
+        drag('劇 1', 55);
+        // 未郁夠 8px：仲係撳緊，唔當捽
+        expect(focused()).toEqual(['劇 1']);
+        drag('劇 1', 320);
+        expect(focused()).toEqual(['劇 3']);
+        drag('劇 1', 160);
+        expect(focused()).toEqual(['劇 2']);
+        drag('劇 1', 600);
+        expect(focused()).toEqual(['劇 4']);
+        expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    it('keeps the scrubbed card focused on release without opening it, and eats the click after', () => {
+        mockShelf(650);
+        const onOpen = renderShelf();
+
+        press('劇 1', 50);
+        drag('劇 1', 320);
+        lift('劇 1', 320);
+        fireEvent.click(tile('劇 1'), { detail: 1 });
+
+        expect(onOpen.every((open) => open.mock.calls.length === 0)).toBe(true);
+        expect(focused()).toEqual(['劇 3']);
+    });
+
+    it('opens the scrubbed card on the next plain tap', () => {
+        mockShelf(650);
+        const onOpen = renderShelf();
+        press('劇 1', 50);
+        drag('劇 1', 320);
+        // iOS 捽完通常冇 click：唔可以食咗下一下真正嘅撳
+        lift('劇 1', 320);
+
+        press('劇 3', 320);
+        lift('劇 3', 320);
+        fireEvent.click(tile('劇 3'), { detail: 1 });
+
+        expect(onOpen[2]).toHaveBeenCalledTimes(1);
+    });
+
+    it('still lets the keyboard pick and open cards after a scrub', async () => {
+        mockShelf(650);
+        const onOpen = renderShelf();
+        press('劇 1', 50);
+        drag('劇 1', 320);
+        lift('劇 1', 320);
+
+        await userEvent.tab();
+        expect(focused()).toEqual(['劇 1']);
+        await userEvent.keyboard('{Enter}');
+        expect(onOpen[0]).toHaveBeenCalledTimes(1);
+    });
+
+    it('treats a tap that wobbles less than the slop as a plain tap', () => {
+        mockShelf(650);
+        const onOpen = renderShelf();
+
+        press('劇 3', 320);
+        drag('劇 3', 325);
+        lift('劇 3', 325);
+        fireEvent.click(tile('劇 3'), { detail: 1 });
+
+        expect(focused()).toEqual(['劇 3']);
+        expect(onOpen[2]).not.toHaveBeenCalled();
+    });
+
+    it('leaves the focus to the scroll snap when the shelf scrolls (no scrub)', () => {
+        renderShelf();
+        const shelf = screen.getByRole('navigation');
+        expect(shelf).toHaveAttribute('data-scroll');
+
+        press('劇 1', 50);
+        drag('劇 1', 300);
+        lift('劇 1', 300);
+
+        expect(focused()).toEqual(['劇 1']);
         expect(scrollTo).not.toHaveBeenCalled();
     });
 

@@ -1,4 +1,5 @@
 import {
+    cardIndexAtY,
     focusIndexAt,
     sameShelfLayout,
     snapTop,
@@ -92,5 +93,38 @@ describe('sameShelfLayout', () => {
         );
         expect(sameShelfLayout(undefined, LAYOUT)).toBe(false);
         expect(sameShelfLayout(LAYOUT, undefined)).toBe(false);
+    });
+});
+
+describe('cardIndexAtY', () => {
+    // 卡頂 = 8 + n × 112：8、120、232、344（每張卡高過一行，下一張蓋住上一張下半）
+    it.each([
+        [8, 0],
+        [119, 0],
+        [120, 1],
+        [231, 1],
+        [232, 2],
+        [344, 3],
+    ])('should give the card whose top is the last one at or above y = %i', (y, index) => {
+        expect(cardIndexAtY(y, 4, METRICS)).toBe(index);
+    });
+
+    it('should keep the first card above the first card top (top padding)', () => {
+        expect(cardIndexAtY(0, 4, METRICS)).toBe(0);
+        expect(cardIndexAtY(-50, 4, METRICS)).toBe(0);
+    });
+
+    it('should keep the last card below the last card top, however far down', () => {
+        expect(cardIndexAtY(500, 4, METRICS)).toBe(3);
+        expect(cardIndexAtY(10_000, 4, METRICS)).toBe(3);
+    });
+
+    it('should only ever give the first card with a single card', () => {
+        expect(cardIndexAtY(300, 1, METRICS)).toBe(0);
+    });
+
+    it('should fall back to the first card before the shelf is measured', () => {
+        expect(cardIndexAtY(300, 4, { ...METRICS, stepPx: 0 })).toBe(0);
+        expect(cardIndexAtY(300, 0, METRICS)).toBe(0);
     });
 });
