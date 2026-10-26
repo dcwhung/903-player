@@ -48,6 +48,12 @@
     padding: var(--touch-target-min) var(--space-3) var(--space-4);
 }
 
+/* 得一段錄音（例如廣播劇一集）冇指示點：頂唔使留撳得到範圍，上下 padding 一樣，矮啲 */
+.player[data-mode='single'] .row {
+    height: var(--mini-player-height-single);
+    padding-top: var(--space-4);
+}
+
 .open {
     display: flex;
     flex-grow: 1;

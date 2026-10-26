@@ -17,8 +17,20 @@ describe('home bottom space', () => {
 
     it('should reserve the mini player height, its offset and one gap while it shows', () => {
         expect(cssDeclarations(css, 'main.home[data-mini-player]')['padding-bottom']).toBe(
-            'calc( var(--mini-player-height) + var(--mini-player-offset-bottom) + var(--space-3) )',
+            'calc( var(--home-mini-player-height) + var(--mini-player-offset-bottom) + var(--space-3) )',
         );
+    });
+
+    // 同一條留位式（d1eada2），淨係換高度：多段錄音有指示點，得一段（例如廣播劇）冇
+    it.each([
+        ['multi', 'var(--mini-player-height)'],
+        ['single', 'var(--mini-player-height-single)'],
+    ])('should take the %s mini player height', (mode, height) => {
+        expect(
+            cssDeclarations(css, `main.home[data-mini-player='${mode}']`)[
+                '--home-mini-player-height'
+            ],
+        ).toBe(height);
     });
 
     it('should use the same rule in every orientation (no @media override)', () => {

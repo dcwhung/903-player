@@ -21,10 +21,19 @@ main.home {
 /*
  * 有 mini player（HomePage 加 data-mini-player）先留佢個位：剛好係佢嘅高同佢離 viewport 底嘅距離，
  * 再加一格間距，內容就喺 mini player 上面，唔會畀佢遮住。任何方向都係同一條規則；
- * 手機打橫嘅橫額規則（bannerRules 嘅 on / off）都係跟呢個高度揀
+ * 手機打橫嘅橫額規則（bannerRules 嘅 on / off）都係跟呢個高度揀。
+ * 高度跟 mini player 嘅 mode（miniPlayerMode）：multi 有指示點，single（得一段錄音）冇，矮啲
  */
 main.home[data-mini-player] {
     padding-bottom: calc(
-        var(--mini-player-height) + var(--mini-player-offset-bottom) + var(--space-3)
+        var(--home-mini-player-height) + var(--mini-player-offset-bottom) + var(--space-3)
     );
+}
+
+main.home[data-mini-player='multi'] {
+    --home-mini-player-height: var(--mini-player-height);
+}
+
+main.home[data-mini-player='single'] {
+    --home-mini-player-height: var(--mini-player-height-single);
 }
