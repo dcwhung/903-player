@@ -59,47 +59,60 @@ const measure = (shelf: HTMLElement, count: number): ShelfLayout | undefined => 
 };
 
 /**
- * 捲唔捲轉咗就對返 scrollTop：變唔使捲 → 捲返頂（overflow: hidden 都會留住 scrollTop）；
- * 變要捲 → 即刻捲去 focus 嗰張嘅 snap 位（W-464，T2「停喺 snap 位嗰張係 focus」）
+ * 變唔使捲 → 捲返頂（overflow: hidden 都會留住 scrollTop）。
+ * 捲去 0 喺舊 layout 都唔會被截短，所以喺 RO callback 做得；
+ * 變要捲嗰邊要等新 layout commit 先捲，見 useSnapOnScrollStart（W-465）
  */
-const syncScroll = (
-    shelf: HTMLElement,
-    wasScrolling: boolean,
-    next: ShelfLayout,
-    focus: number,
-) => {
+const resetScroll = (shelf: HTMLElement, next: ShelfLayout) => {
     if (!next.scrolls) shelf.scrollTop = 0;
-    else if (!wasScrolling) shelf.scrollTop = snapTop(focus, next);
 };
 
 /**
- * 跟書架尺寸重新排（轉向、iOS 工具列、mini player 出入令書架變高 / 矮）；冇 ResizeObserver（jsdom）就量一次。
- * focusRef 係最新嘅 focus：RO callback 唔跟 render，直接讀 state 會係舊值
+ * 跟書架尺寸重新排（轉向、iOS 工具列、mini player 出入令書架變高 / 矮）；冇 ResizeObserver（jsdom）就量一次
  */
 const useShelfLayout = (
     shelfRef: RefObject<HTMLElement | null>,
     count: number,
     enabled: boolean,
-    focusRef: RefObject<number>,
 ) => {
     const [layout, setLayout] = useState<ShelfLayout>();
     useLayoutEffect(() => {
         const shelf = shelfRef.current;
         if (!enabled || !shelf) return;
-        // 第一次量當之前唔使捲（scrollTop 係 0）：focus 0 嘅 snap 位都係 0，唔會亂捲
-        let scrolling = false;
         const update = () => {
             const next = measure(shelf, count);
-            if (next) syncScroll(shelf, scrolling, next, focusRef.current);
-            scrolling = next?.scrolls ?? false;
+            if (next) resetScroll(shelf, next);
             setLayout((prev) => (sameShelfLayout(prev, next) ? prev : next));
         };
         update();
         const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
         observer?.observe(shelf);
         return () => observer?.disconnect();
-    }, [shelfRef, count, enabled, focusRef]);
+    }, [shelfRef, count, enabled]);
     return enabled ? layout : undefined;
+};
+
+/**
+ * 變要捲（scrolls false → true）就捲去 focus 嗰張嘅 snap 位（W-464，T2「停喺 snap 位嗰張係 focus」）。
+ * 一定要喺新 layout commit 之後（layout effect）：之前 DOM 仲係舊間距、冇底留位，
+ * 真瀏覽器會將 scrollTop 截到舊 scrollHeight − clientHeight，focus 會跳（W-465）。
+ * 第一次量當之前唔使捲（scrollTop 係 0）：focus 0 嘅 snap 位都係 0，唔會亂捲
+ */
+const useSnapOnScrollStart = (
+    shelfRef: RefObject<HTMLElement | null>,
+    layout: ShelfLayout | undefined,
+    focusRef: RefObject<number>,
+) => {
+    const wasScrollingRef = useRef(false);
+    useLayoutEffect(() => {
+        const scrolls = layout?.scrolls ?? false;
+        const wasScrolling = wasScrollingRef.current;
+        wasScrollingRef.current = scrolls;
+        const shelf = shelfRef.current;
+        if (shelf && layout && scrolls && !wasScrolling) {
+            shelf.scrollTop = snapTop(focusRef.current, layout);
+        }
+    }, [shelfRef, layout, focusRef]);
 };
 
 /** 書架 inline style：卡高、卡距（CSS 用）同要捲先有嘅底留位 */
@@ -140,12 +153,14 @@ const useTileProps = (focus: number, focusTile: (index: number) => void) => {
 export const useShelfFocus = (count: number, enabled: boolean) => {
     const shelfRef = useRef<HTMLElement>(null);
     const [focus, setFocus] = useState(0);
-    // 畀 ResizeObserver callback 讀最新 focus（W-464）；喺 effect 更新，唔喺 render 寫 ref
+    // 畀變要捲嗰刻讀最新 focus（W-464）：唔放入 effect deps，focus 變唔會重捲；
+    // 喺 effect 更新，唔喺 render 寫 ref
     const focusRef = useRef(focus);
     useLayoutEffect(() => {
         focusRef.current = focus;
     }, [focus]);
-    const layout = useShelfLayout(shelfRef, count, enabled, focusRef);
+    const layout = useShelfLayout(shelfRef, count, enabled);
+    useSnapOnScrollStart(shelfRef, layout, focusRef);
     const scrolls = layout?.scrolls ?? false;
 
     const focusTile = (index: number) => {

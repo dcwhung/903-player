@@ -109,11 +109,11 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
             scrollTo as unknown as typeof HTMLElement.prototype.scrollTo;
     };
 
-    const renderShelf = () => {
-        const onOpen = NAMES.map(() => vi.fn());
+    const renderShelf = (names = NAMES) => {
+        const onOpen = names.map(() => vi.fn());
         render(
             <DramaShelf
-                items={NAMES.map((name, i) => item({ id: name, name, onOpen: onOpen[i] }))}
+                items={names.map((name, i) => item({ id: name, name, onOpen: onOpen[i] }))}
             />,
         );
         return onOpen;
@@ -261,6 +261,50 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         expect(shelf).toHaveAttribute('data-scroll');
         expect(shelf.scrollTop).toBe(128);
         expect(focused()).toEqual(['劇 3']);
+    });
+
+    /**
+     * 真瀏覽器會將 scrollTop 截到 scrollHeight − clientHeight（jsdom 唔會）。
+     * scrollHeight 由而家 DOM 上嘅 inline layout 計：上留白 + 最尾一張卡底 + 底留位（冇就用留白）
+     */
+    const clampScrollTop = (shelf: HTMLElement) => {
+        const SHELF_PAD_PX = 8;
+        let top = 0;
+        const scrollHeight = () => {
+            const step = parseFloat(shelf.style.getPropertyValue('--drama-shelf-step'));
+            const card = parseFloat(shelf.style.getPropertyValue('--drama-shelf-card'));
+            const rows = shelf.querySelectorAll('button').length;
+            const content = Math.max(rows * step, (rows - 1) * step + card);
+            const bottom = parseFloat(shelf.style.paddingBottom) || SHELF_PAD_PX;
+            return SHELF_PAD_PX + content + bottom;
+        };
+        Object.defineProperty(shelf, 'scrollTop', {
+            configurable: true,
+            get: () => top,
+            set: (value: number) => {
+                top = Math.min(Math.max(0, value), scrollHeight() - shelf.clientHeight);
+            },
+        });
+    };
+
+    it('keeps a lower focused card at its snap position when a full shelf starts to scroll (W-465)', async () => {
+        const SEVEN = ['劇 1', '劇 2', '劇 3', '劇 4', '劇 5', '劇 6', '劇 7'];
+        const observer = stubResizeObserver();
+        // 650px 高：7 張疊到間距 72.5px 都放得落，唔使捲
+        mockShelf(650);
+        renderShelf(SEVEN);
+        const shelf = screen.getByRole('navigation');
+        clampScrollTop(shelf);
+        await userEvent.click(tile('劇 5'));
+
+        // mini player 出現，書架縮到 550px：要捲。舊 layout 最多只捲到 100px，
+        // 一定要等新 layout（72px 間距 + 底留位）commit 咗先捲去 4 × 72 + 8 − 24
+        resizeShelf(observer, 550);
+        fireEvent.scroll(shelf);
+
+        expect(shelf).toHaveAttribute('data-scroll');
+        expect(shelf.scrollTop).toBe(272);
+        expect(focused()).toEqual(['劇 5']);
     });
 
     it('scrolls back to the top when the shelf stops scrolling', () => {
