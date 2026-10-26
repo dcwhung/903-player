@@ -307,6 +307,34 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         expect(focused()).toEqual(['劇 5']);
     });
 
+    it('keeps a lower focused card when a scrolling shelf grows enough to stop scrolling (CUI-0002)', async () => {
+        // 3 × 72 + 8 − 24：劇 4 嘅 snap 位
+        const SNAPPED_TOP_PX = 200;
+        const observer = stubResizeObserver();
+        mockShelf(650);
+        renderShelf();
+        const shelf = screen.getByRole('navigation');
+        clampScrollTop(shelf);
+        await userEvent.click(tile('劇 4'));
+        // mini player 出現，書架縮到 400px：要捲，捲去劇 4 嘅 snap 位
+        resizeShelf(observer, 400);
+        fireEvent.scroll(shelf);
+        expect(shelf.scrollTop).toBe(SNAPPED_TOP_PX);
+
+        // mini player 消失，書架一下子返去 650px：DOM 仲係舊 layout（要捲、有底留位），
+        // 瀏覽器喺 ResizeObserver 之前就截短 scrollTop 再觸發 scroll，唔可以照舊 layout 改 focus
+        mockShelf(650);
+        // 截短係瀏覽器重新 layout 時做：用新 clientHeight、舊 inline layout 再 set 一次
+        shelf.scrollTop = SNAPPED_TOP_PX;
+        fireEvent.scroll(shelf);
+        act(() => observer.trigger());
+        fireEvent.scroll(shelf);
+
+        expect(shelf).not.toHaveAttribute('data-scroll');
+        expect(shelf.scrollTop).toBe(0);
+        expect(focused()).toEqual(['劇 4']);
+    });
+
     it('scrolls back to the top when the shelf stops scrolling', () => {
         const observer = stubResizeObserver();
         renderShelf();
