@@ -1,5 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useNavigate } from 'react-router-dom';
 import { stubLandscape } from '../../tests/landscape';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { dramaArtFor, findDrama, seriesEpisodesOf } from '../dramas';
@@ -42,6 +43,15 @@ const openDramaWhileOtherPlays = async (id: string) => {
     act(() => rendered.audio.emitMetadata(1200));
     act(() => rendered.audio.emitTime(100));
     return rendered;
+};
+/** 轉頁掣：模擬返主頁再由主頁格 / mini player 入返劇集頁 */
+const GoTo = ({ label, to }: { label: string; to: string }) => {
+    const navigate = useNavigate();
+    return (
+        <button type="button" onClick={() => navigate(to)}>
+            {label}
+        </button>
+    );
 };
 const closeSheet = async () => {
     const dialog = await screen.findByRole('dialog', { name: '全集' });
@@ -276,6 +286,39 @@ describe('DramaPage', () => {
             openDrama('chisee');
 
             expect(await screen.findByRole('dialog', { name: '全集' })).toBeInTheDocument();
+        });
+
+        it('keeps the picked 短篇 and 全集 closed when coming back before anything was played', async () => {
+            const { audio } = renderWithProviders(
+                <>
+                    <GoTo label="go home" to="/" />
+                    <DramaPage />
+                </>,
+                {
+                    route: '/drama/chisee',
+                    path: PATH,
+                    extraRoutes: [{ path: '/', element: <GoTo label="back" to="/drama/chisee" /> }],
+                },
+            );
+            const dialog = await screen.findByRole('dialog', { name: '全集' });
+            await userEvent.click(
+                within(dialog).getByRole('button', { name: '青春期，未聽 · 4 集' }),
+            );
+            const youth = CHISEE.find((e) => e.arc === '青春期' && e.no === 1);
+            expect(screen.getByRole('main').querySelector('img')?.getAttribute('src')).toBe(
+                dramaArtFor(youth!),
+            );
+
+            // 未播過，所以未有進度；返主頁再入（主頁格或者 mini player）
+            await userEvent.click(screen.getByRole('button', { name: 'go home', hidden: true }));
+            await userEvent.click(screen.getByRole('button', { name: 'back' }));
+
+            expect(screen.queryByRole('dialog', { name: '全集' })).not.toBeInTheDocument();
+            expect(audio.src).toBe(youth?.url);
+            expect(screen.getByRole('button', { name: '青春期' })).toHaveAttribute(
+                'aria-pressed',
+                'true',
+            );
         });
 
         it('keeps 全集 closed once the drama has been listened to', async () => {

@@ -21,14 +21,14 @@ const RECORDINGS = [
 ];
 
 /** 模擬喺其他頁播緊某集，再返主頁 */
-const PlayThenGoHome = ({ target }: { target: Track }) => {
+const PlayThenGoHome = ({ target, autoplay }: { target: Track; autoplay: boolean }) => {
     const { load } = usePlayer();
     const navigate = useNavigate();
     return (
         <button
             type="button"
             onClick={async () => {
-                await load(target, { autoplay: true });
+                await load(target, { autoplay });
                 navigate('/');
             }}
         >
@@ -37,11 +37,17 @@ const PlayThenGoHome = ({ target }: { target: Track }) => {
     );
 };
 
-const arriveHomeWith = async (target: Track, recordings = RECORDINGS) => {
+/** autoplay false：淨係載入（例如喺全集揀咗一行），未播所以未有進度 */
+const arriveHomeWith = async (target: Track, recordings = RECORDINGS, autoplay = true) => {
     const view = renderWithProviders(<HomePage />, {
         route: '/elsewhere',
         recordings,
-        extraRoutes: [{ path: '/elsewhere', element: <PlayThenGoHome target={target} /> }],
+        extraRoutes: [
+            {
+                path: '/elsewhere',
+                element: <PlayThenGoHome target={target} autoplay={autoplay} />,
+            },
+        ],
     });
     await userEvent.click(screen.getByRole('button', { name: 'play then home' }));
     await screen.findByRole('navigation');
@@ -424,6 +430,19 @@ describe('HomePage', () => {
             await userEvent.click(within(nav).getByRole('button', { name: /^芝See菇Bi Family/ }));
 
             expect(audio.src).toBe(friends[1]?.url);
+            expect(audio.play).toHaveBeenCalled();
+            expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
+        });
+
+        it('plays the episode already loaded from 全集 when its tile is tapped, though it has no progress yet', async () => {
+            const youth = seriesEpisodesOf('chisee').find((e) => e.arc === '青春期');
+            if (!youth) throw new Error('missing fixture');
+            const { audio } = await arriveHomeWith(youth, RECORDINGS, false);
+            const nav = await openDramas();
+
+            await tapTwice(within(nav).getByRole('button', { name: '芝See菇Bi Family' }));
+
+            expect(audio.src).toBe(youth.url);
             expect(audio.play).toHaveBeenCalled();
             expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
         });

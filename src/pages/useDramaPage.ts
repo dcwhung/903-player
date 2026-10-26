@@ -109,7 +109,8 @@ export const useDailyDramaPage = (drama: DramaConfig) => {
  * 係就唔自動播、一入嚟就開全集表
  */
 const useFirstVisitOnEntry = (drama: DramaConfig): boolean => {
-    const [firstVisit] = useState(() => isFirstSeriesVisit(drama, getProgressMap()));
+    const { recording } = usePlayer();
+    const [firstVisit] = useState(() => isFirstSeriesVisit(drama, getProgressMap(), recording));
     return firstVisit;
 };
 

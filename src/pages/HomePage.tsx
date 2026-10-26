@@ -83,6 +83,7 @@ const useShelfDramas = (): DramaConfig[] => {
 const useDramaItems = (): DramaShelfItem[] => {
     const navigate = useNavigate();
     const startDrama = useStartDrama();
+    const { recording } = usePlayer();
     const newLabels = useDramaNewLabels();
     const continueOf = useDramaContinue();
     const shelf = useShelfDramas();
@@ -94,7 +95,7 @@ const useDramaItems = (): DramaShelfItem[] => {
         newLabel: newLabels.get(drama.id),
         resume: continueOf(drama),
         onOpen: () => {
-            if (!isFirstSeriesVisit(drama, getProgressMap())) startDrama(drama);
+            if (!isFirstSeriesVisit(drama, getProgressMap(), recording)) startDrama(drama);
             navigate(`/drama/${drama.id}`);
         },
     }));
