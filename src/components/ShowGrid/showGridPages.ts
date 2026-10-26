@@ -64,6 +64,8 @@ export const fillRows = ({ columnPx, tileRatio, maxGrow, ...input }: FillInput):
     if (tilePx <= 0) return { rows };
     const roomPx = input.availablePx - (rows < input.totalRows ? input.dotsPx : 0);
     const sharedPx = (roomPx - input.gapPx * (rows - 1)) / rows;
+    // S-495：極矮（連指示點都放唔落）就唔填滿，同未量到一樣用 CSS 16:9，唔會出負數 / 0 行高
+    if (sharedPx <= 0) return { rows };
     return { rows, rowPx: Math.min(sharedPx, tilePx * maxGrow) };
 };
 

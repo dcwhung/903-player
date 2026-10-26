@@ -25,6 +25,8 @@
 
     --font-family: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
     --theme-title-font: var(--font-family);
+    /* 等寬字：debug panel 對數用，數字上下對齊（W-463） */
+    --font-family-mono: ui-monospace, monospace;
     /* 日子條每格上面嘅星期（一、二…） */
     --font-size-2xs: calc(11px * var(--ui-scale));
     --font-size-xs: calc(12px * var(--ui-scale));
@@ -209,6 +211,8 @@
      * 主頁底部留位（版本號貼住 mini player 上面）同 mini player 自己共用
      */
     --mini-player-height: calc(var(--touch-target-min) + var(--touch-target) + var(--space-4));
+    /* 得一段錄音（例如廣播劇一集）冇指示點：頂同底一樣 --space-4，唔使留指示點嘅撳得到範圍 */
+    --mini-player-height-single: calc(var(--touch-target) + var(--space-4) * 2);
     --mini-player-offset-bottom: calc(
         max(0px, calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))) +
             var(--space-4)

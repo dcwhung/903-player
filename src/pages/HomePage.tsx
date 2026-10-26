@@ -5,6 +5,7 @@ import { HomeBanner } from '../components/HomeBanner/HomeBanner';
 import { FittedBanner } from '../components/HomeLandscapeGrid/FittedBanner';
 import { HomeTabs } from '../components/HomeTabs/HomeTabs';
 import { MiniPlayer } from '../components/MiniPlayer/MiniPlayer';
+import { miniPlayerMode } from '../components/MiniPlayer/miniPlayerMode';
 import { ShowGrid } from '../components/ShowGrid/ShowGrid';
 import { ShowTile } from '../components/ShowTile/ShowTile';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
@@ -127,7 +128,7 @@ export const HomePage = () => {
             {/* 主頁任何高度都固定唔捲（page.locked）：橫額釘喺頂，節目格放唔落就分頁（手機打橫多過一屏就左右捲） */}
             <main
                 className={`${page.page} ${page.locked} ${styles.home}`}
-                data-mini-player={miniPlayer ? '' : undefined}
+                data-mini-player={miniPlayer ? miniPlayerMode(miniPlayer.keys) : undefined}
             >
                 {!bannerInGrid && <HomeBanner corner={version} />}
                 <HomeTabs tab={tab} onChange={setTab} />

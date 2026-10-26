@@ -1,4 +1,11 @@
-import { focusIndexAt, snapTop, tailPadding, tapAction, type ShelfMetrics } from './shelfFocus';
+import {
+    focusIndexAt,
+    sameShelfLayout,
+    snapTop,
+    tailPadding,
+    tapAction,
+    type ShelfMetrics,
+} from './shelfFocus';
 
 /** 每張卡隔 112px、書架頂留 8px、focus 卡上面露 24px 上一張 */
 const METRICS: ShelfMetrics = { stepPx: 112, topPx: 8, peekPx: 24 };
@@ -61,5 +68,29 @@ describe('tapAction', () => {
     it('should always open from the keyboard or a screen reader', () => {
         // 鍵盤 Tab 過去已經捲咗做 focus；讀屏 double-tap 唔使撳兩次
         expect(tapAction({ index: 2, focusAtPress: 0, keyboard: true })).toBe('open');
+    });
+});
+
+// S-496：ResizeObserver 連續觸發（iOS 工具列伸縮、改 inline padding）量返一樣就唔 set 新 object
+describe('sameShelfLayout', () => {
+    const LAYOUT: ShelfMetrics & { cardPx: number; scrolls: boolean; tailPx?: number } = {
+        ...METRICS,
+        cardPx: 199,
+        scrolls: true,
+        tailPx: 304,
+    };
+
+    it('should treat a re-measured layout with the same numbers as unchanged', () => {
+        expect(sameShelfLayout(LAYOUT, { ...LAYOUT })).toBe(true);
+        expect(sameShelfLayout(undefined, undefined)).toBe(true);
+    });
+
+    it('should see any changed number, or a layout appearing / going away', () => {
+        expect(sameShelfLayout(LAYOUT, { ...LAYOUT, stepPx: 145 })).toBe(false);
+        expect(sameShelfLayout(LAYOUT, { ...LAYOUT, scrolls: false, tailPx: undefined })).toBe(
+            false,
+        );
+        expect(sameShelfLayout(undefined, LAYOUT)).toBe(false);
+        expect(sameShelfLayout(LAYOUT, undefined)).toBe(false);
     });
 });
