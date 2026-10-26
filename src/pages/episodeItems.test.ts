@@ -1,5 +1,5 @@
 import { recording } from '../../tests/renderWithProviders';
-import { toEpisodeItems } from './episodeItems';
+import { toEpisodeItems, toPlayableItem } from './episodeItems';
 
 const NEWEST = recording('gongzi', '2026-10-17');
 const OLDER = recording('gongzi', '2026-10-10');
@@ -81,5 +81,34 @@ describe('toEpisodeItems', () => {
 
         expect(items[0]?.current).toBe(true);
         expect(items[0]?.isPlaying).toBe(false);
+    });
+});
+
+describe('toPlayableItem', () => {
+    const LABELS = { dayMonth: '第 1 集', weekday: '不如休養下' };
+
+    it('uses saved progress, not 連線中…, for the current row when nothing of it is loaded', () => {
+        const item = toPlayableItem(OLDER.url, LABELS, {
+            currentUrl: OLDER.url,
+            live: undefined,
+            progressMap: PROGRESS,
+            isPlaying: false,
+            liveState: 'ready',
+        });
+
+        expect(item.current).toBe(true);
+        expect(item.isPlaying).toBe(false);
+        expect(item.status).toEqual({ kind: 'resume', ratio: 0.25, text: '聽到 10:00' });
+    });
+
+    it('still says 連線中… while the current row is loaded but its length is unknown', () => {
+        const item = toPlayableItem(OLDER.url, LABELS, {
+            currentUrl: OLDER.url,
+            live: { currentTime: 0, duration: 0 },
+            progressMap: PROGRESS,
+            isPlaying: true,
+        });
+
+        expect(item.status.text).toBe('連線中…');
     });
 });

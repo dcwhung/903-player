@@ -103,13 +103,24 @@
     --date-strip-empty-opacity: 0.35;
     /* 短篇劇集頁嘅短篇 chip：睇落嘅高度（撳得到範圍係成行 --date-strip-height） */
     --arc-chip-height: calc(32px * var(--ui-scale));
-    /* 「全部短篇」一覽表：最高佔畫面幾多、遮罩、拉柄闊、每行高、圓環大細、疊喺頁面上面嘅層 */
+    /* 「全部短篇」一覽表：最高佔畫面幾多、遮罩、拉柄闊、每行高、碟面圓環大細、疊喺頁面上面嘅層 */
     --arc-sheet-max-height: 78%;
     --arc-sheet-scrim: rgb(0 0 0 / 40%);
     --arc-sheet-grab-width: calc(40px * var(--ui-scale));
     --arc-sheet-row-height: calc(52px * var(--ui-scale));
-    --arc-sheet-ring: calc(34px * var(--ui-scale));
+    --arc-sheet-ring: calc(54px * var(--ui-scale));
     --arc-sheet-z: 10;
+    /*
+     * 碟面圓環細節：外圈進度環粗幼、碟面底「1/4」pill（字、行高、
+     * 凸出碟底幾多）、聽完 ✓ 章（大細、凸出右下角幾多）、pill / ✓ 同碟面之間嗰圈底色邊
+     */
+    --arc-sheet-ring-width: var(--space-1);
+    --arc-sheet-count-font: calc(10px * var(--ui-scale));
+    --arc-sheet-count-line: calc(16px * var(--ui-scale));
+    --arc-sheet-count-offset: calc(-6px * var(--ui-scale));
+    --arc-sheet-check: calc(18px * var(--ui-scale));
+    --arc-sheet-check-offset: calc(-2px * var(--ui-scale));
+    --arc-sheet-badge-outline: 2px;
     /*
      * 集數清單行頭欄闊：節目日子（17/10 + 星期六）；每日劇集日子 + 「重溫」標籤；
      * 短篇劇集集名（最長「認認真真搵返個人」8 個字，佔清單四成）
@@ -163,6 +174,15 @@
     /* 主頁「廣播劇」tab 嘅劇集格（一行一套） */
     --drama-tile-aspect-w: 2;
     --drama-tile-aspect-h: 1;
+    /*
+     * 直版廣播劇書架（疊卡「捲相簿」）：每張卡隔幾高（矮過張卡，蓋住下一張）、focus 卡上面露出上一張幾多、
+     * 未 focus 嘅卡縮幾多同蓋幾暗、轉 focus 嘅過渡時間（prototype T2 用戶揀定）
+     */
+    --drama-shelf-step: calc(112px * var(--ui-scale));
+    --drama-shelf-peek: calc(24px * var(--ui-scale));
+    --drama-shelf-rest-scale: 0.94;
+    --drama-shelf-rest-dim: 0.45;
+    --drama-shelf-focus-duration: 220ms;
     /* 劇集格「繼續收聽」條：深啡漸變底、進度線底、芝See 橙（▶ 同進度）、▶ 上面嘅字 */
     --drama-continue-scrim: rgb(43 26 12 / 85%);
     --drama-continue-track: rgb(255 255 255 / 30%);
@@ -175,6 +195,8 @@
     /* 主頁節目格同橫額共用嘅左右留白、格距 */
     --home-gutter: var(--space-4);
     --home-tile-gap: var(--space-3);
+    /* 手機打橫主頁 9 張卡起變左右捲 strip：右邊露出下一欄幾闊，提示仲有得捲 */
+    --home-strip-peek: calc(40px * var(--ui-scale));
     /*
      * 主頁 mini player（浮喺頁底嘅圓角卡）：一行嘅高（頂部指示點撳得到範圍 + 開節目頁掣 / 播放掣 + 底 padding，
      * 見 MiniPlayer .row），同卡底離 viewport 底幾遠：底部安全區 + 一格間距；viewport 矮過螢幕時

@@ -40,6 +40,42 @@
     object-fit: cover;
 }
 
+/*
+ * 直版疊卡（DramaShelf ShelfColumn 嘅 data-stacked）：每行 --drama-shelf-step 高，卡（2:1）高過一行，
+ * 蓋住下一張。上下捲每張卡 snap；snap 位上面留 --drama-shelf-peek 睇到上一張（第一張貼頂，見 shelfFocus）。
+ * 底留位由 useShelfFocus 計（inline padding-bottom），最尾一張都捲得到 snap 位
+ */
+.shelf[data-stacked] {
+    position: relative;
+    grid-auto-rows: var(--drama-shelf-step);
+    row-gap: 0;
+    scroll-padding-top: var(--drama-shelf-peek);
+    scroll-snap-type: y mandatory;
+}
+
+/* 未 focus：由頂中間縮細、蓋暗；focus 卡全大、全亮、浮喺上下兩張上面 */
+.shelf[data-stacked] .tile {
+    filter: brightness(var(--drama-shelf-rest-dim));
+    transform: scale(var(--drama-shelf-rest-scale));
+    transform-origin: top center;
+    transition:
+        transform var(--drama-shelf-focus-duration) ease-out,
+        filter var(--drama-shelf-focus-duration) ease-out;
+    scroll-snap-align: start;
+}
+
+.shelf[data-stacked] .tile[data-focused] {
+    z-index: 1;
+    filter: none;
+    transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shelf[data-stacked] .tile {
+        transition: none;
+    }
+}
+
 /* 「新」（NewBadge）喺左上角 */
 .newBadge {
     position: absolute;
@@ -133,14 +169,8 @@
     }
 }
 
-/* 手機打橫：橫額入格，橫額 + 兩套劇排成一行三格，填滿高度（SHORT_LANDSCAPE_QUERY） */
+/* 手機打橫：劇集格放喺 HomeLandscapeGrid 入面，拉滿個格（唔鎖 2:1；SHORT_LANDSCAPE_QUERY） */
 @media (orientation: landscape) and (min-width: 640px) and (max-height: 561px) {
-    .shelf {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        grid-template-rows: minmax(0, 1fr);
-        align-content: stretch;
-    }
-
     .tile {
         aspect-ratio: auto;
         min-height: 0;

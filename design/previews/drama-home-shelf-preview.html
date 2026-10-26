@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>廣播劇主頁 Preview</title>
+        <style>
+            :root {
+                --home-bg-top: #4f749c;
+                --home-bg-bottom: #42658a;
+                --gutter: 16px;
+                --gap: 12px;
+                --radius-tile: 14px;
+                --shadow-clay-tile: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
+                --badge-bg: rgb(0 0 0 / 55%);
+                --tab-on: #f5cf8f;
+                --tab-track: rgb(40 65 100 / 60%);
+                --new-red: #c8322b;
+            }
+
+            body {
+                margin: 0;
+                padding: 24px;
+                background: #1c2733;
+                color: #e8eef5;
+                font-family: system-ui, sans-serif;
+            }
+
+            h2 {
+                margin: 32px 0 8px;
+                font-size: 18px;
+            }
+
+            p {
+                max-width: 844px;
+                margin: 0 0 12px;
+                color: #b8c6d6;
+                font-size: 14px;
+            }
+
+            /* 手機畫面框 */
+            .phone {
+                display: grid;
+                grid-template-rows: auto minmax(0, 1fr);
+                gap: 12px;
+                box-sizing: border-box;
+                padding: 16px var(--gutter);
+                overflow: hidden;
+                border-radius: 20px;
+                background: linear-gradient(180deg, var(--home-bg-top), var(--home-bg-bottom));
+                outline: 2px solid #0b1118;
+            }
+
+            .landscape {
+                width: 844px;
+                height: 390px;
+            }
+
+            .portrait {
+                width: 390px;
+                height: 844px;
+                grid-template-rows: auto auto minmax(0, 1fr);
+            }
+
+            .tabs {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                padding: 4px;
+                border-radius: 999px;
+                background: var(--tab-track);
+                font-weight: 700;
+                text-align: center;
+            }
+
+            .tabs span {
+                padding: 10px 0;
+                border-radius: 999px;
+            }
+
+            .tabs .on {
+                background: var(--tab-on);
+                color: #2d3b4d;
+            }
+
+            .tile {
+                position: relative;
+                overflow: hidden;
+                border-radius: var(--radius-tile);
+                box-shadow: var(--shadow-clay-tile);
+            }
+
+            .tile img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .tile .new {
+                position: absolute;
+                top: 8px;
+                left: 8px;
+                padding: 2px 8px;
+                border-radius: 999px;
+                background: var(--new-red);
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .tile .meta {
+                position: absolute;
+                right: 8px;
+                bottom: 8px;
+                padding: 2px 8px;
+                border-radius: 999px;
+                background: var(--badge-bg);
+                font-size: 11px;
+            }
+
+            /* 方案 A：一行打橫捲，scroll-snap；每格窄過 1/3，右邊露出下一格提示可以 swipe */
+            .rowScroll {
+                display: grid;
+                grid-auto-columns: calc((100% - 2 * var(--gap)) / 3.25);
+                grid-auto-flow: column;
+                gap: var(--gap);
+                min-height: 0;
+                padding-bottom: 10px;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+            }
+
+            .rowScroll > .tile {
+                scroll-snap-align: start;
+            }
+
+            /* 方案 B：橫額佔左邊兩行，劇集 2 × 2；多過 4 套就上下捲 */
+            .twoRows {
+                display: grid;
+                grid-template-columns: 1.15fr 1fr 1fr;
+                grid-auto-rows: calc((100% - var(--gap)) / 2);
+                gap: var(--gap);
+                min-height: 0;
+                padding-bottom: 10px;
+                overflow-y: auto;
+            }
+
+            .twoRows > .banner {
+                grid-row: span 2;
+            }
+
+            /* 直版（B1 修正後）：每格 2:1，唔再疊，放唔落就上下捲 */
+            .column {
+                display: grid;
+                grid-auto-rows: max-content;
+                gap: var(--gap);
+                min-height: 0;
+                padding-bottom: 10px;
+                overflow-y: auto;
+            }
+
+            .column > .tile {
+                aspect-ratio: 2 / 1;
+            }
+
+            .bannerTop {
+                aspect-ratio: 358 / 194;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>廣播劇主頁 Preview（4 套劇）</h1>
+
+        <h2>方案 A：手機打橫，一行打橫捲</h2>
+        <p>
+            橫額同劇集排成一行，每格大約 1/3 闊。右邊露出下一格少少，提示可以
+            swipe。劇集再多都唔使改 layout。
+        </p>
+        <div class="phone landscape">
+            <div class="tabs"><span>節目</span><span class="on">廣播劇</span></div>
+            <div class="rowScroll">
+                <div class="tile banner"><img src="../../src/assets/banner.webp" alt="" /></div>
+                <div class="tile">
+                    <img src="../../src/dramas/chisee/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">12 個短篇</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/golden/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">全 4 季</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/sammy-kitty/tile.webp" alt="" /><span class="new"
+                        >新</span
+                    ><span class="meta">7 個短篇</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/jim/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">2 個短篇</span>
+                </div>
+            </div>
+        </div>
+
+        <h2>方案 B：手機打橫，兩行格（似節目 tab）</h2>
+        <p>
+            橫額佔左邊兩行，劇集排 2 × 2，4 套啱啱一頁放晒。每格會細過方案 A，第 5 套開始要上下捲。
+        </p>
+        <div class="phone landscape">
+            <div class="tabs"><span>節目</span><span class="on">廣播劇</span></div>
+            <div class="twoRows">
+                <div class="tile banner"><img src="../../src/assets/banner.webp" alt="" /></div>
+                <div class="tile">
+                    <img src="../../src/dramas/chisee/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">12 個短篇</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/golden/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">全 4 季</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/sammy-kitty/tile.webp" alt="" /><span class="new"
+                        >新</span
+                    ><span class="meta">7 個短篇</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/jim/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">2 個短篇</span>
+                </div>
+            </div>
+        </div>
+
+        <h2>直版（B1 修正後，兩個方案都係咁）</h2>
+        <p>每格維持 2:1，唔再疊；右下角集數標籤見返；放唔落就上下捲。</p>
+        <div class="phone portrait">
+            <div class="tile bannerTop"><img src="../../src/assets/banner.webp" alt="" /></div>
+            <div class="tabs"><span>節目</span><span class="on">廣播劇</span></div>
+            <div class="column">
+                <div class="tile">
+                    <img src="../../src/dramas/chisee/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">12 個短篇</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/golden/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">全 4 季</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/sammy-kitty/tile.webp" alt="" /><span class="new"
+                        >新</span
+                    ><span class="meta">7 個短篇</span>
+                </div>
+                <div class="tile">
+                    <img src="../../src/dramas/jim/tile.webp" alt="" /><span class="new">新</span
+                    ><span class="meta">2 個短篇</span>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

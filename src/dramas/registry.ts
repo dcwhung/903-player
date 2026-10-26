@@ -18,6 +18,8 @@ export interface Drama {
     enabled: boolean;
     /** 短篇劇集主頁角落點數：season →「全 N 季」；冇就「N 個短篇」 */
     arcUnit?: 'season';
+    /** 全劇上架日（YYYY-MM-DD，drama.json 頂層；冇就當最舊）：主頁劇集格排次序用 */
+    addedAt?: string;
     /** 劇集色調 + 碟面圖 */
     theme: ShowTheme;
     /** 主頁劇集格用嘅原圖（16:9，已經有劇名） */
@@ -67,6 +69,7 @@ const toDrama = (folder: DramaFolder, def: DramaDefinition): Drama => ({
     kind: def.kind,
     enabled: def.enabled,
     ...(def.arcUnit ? { arcUnit: def.arcUnit } : {}),
+    ...(def.kind === 'series' && def.addedAt ? { addedAt: def.addedAt } : {}),
     theme: { ...def.theme, art: requireImage(folder, def.disc) },
     tileArt: requireImage(folder, def.tile),
 });

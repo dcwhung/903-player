@@ -1,3 +1,4 @@
+import { recording } from '../../tests/renderWithProviders';
 import type { Progress } from '../services/progressStore';
 import type { DailyEpisode, SeriesEpisode } from '../types/drama';
 import {
@@ -6,6 +7,8 @@ import {
     dramaHasNew,
     nextSeriesEpisode,
     episodesInArc,
+    hasNoProgress,
+    isEpisodeOfDrama,
     pickDailyStart,
     pickSeriesStart,
     seriesArcs,
@@ -47,6 +50,22 @@ describe('episodesInArc', () => {
     it('keeps only that arc, ordered by episode number', () => {
         expect(episodesInArc(SERIES, '甲').map((e) => e.no)).toEqual([1, 2]);
         expect(episodesInArc(SERIES, '丙')).toEqual([]);
+    });
+});
+
+describe('hasNoProgress', () => {
+    it('is true when no episode of the drama has progress', () => {
+        expect(hasNoProgress(SERIES, {})).toBe(true);
+    });
+
+    it('ignores progress saved for other dramas', () => {
+        const other = series('丙', 1);
+        expect(hasNoProgress(SERIES, { [other.url]: progress(1) })).toBe(true);
+    });
+
+    it('is false once any episode has progress, watched or not', () => {
+        expect(hasNoProgress(SERIES, { [SERIES[2]?.url ?? '']: progress(1) })).toBe(false);
+        expect(hasNoProgress(SERIES, { [SERIES[0]?.url ?? '']: progress(1, true) })).toBe(false);
     });
 });
 
@@ -148,5 +167,18 @@ describe('nextSeriesEpisode', () => {
     it('has nothing after the last episode or for an unknown one', () => {
         expect(nextSeriesEpisode(ordered, ordered[2]?.url ?? '')).toBeUndefined();
         expect(nextSeriesEpisode(ordered, '/nope.m4a')).toBeUndefined();
+    });
+});
+
+describe('isEpisodeOfDrama', () => {
+    it('is true only for an episode of that drama', () => {
+        expect(isEpisodeOfDrama(series('甲', 1), 'chisee')).toBe(true);
+        expect(isEpisodeOfDrama(series('甲', 1), 'golden')).toBe(false);
+        expect(isEpisodeOfDrama(daily('2026-10-23'), 'chisee')).toBe(false);
+    });
+
+    it('is false when nothing, or a 903 recording, is loaded', () => {
+        expect(isEpisodeOfDrama(null, 'chisee')).toBe(false);
+        expect(isEpisodeOfDrama(recording('gongzi', '2026-10-17'), 'chisee')).toBe(false);
     });
 });

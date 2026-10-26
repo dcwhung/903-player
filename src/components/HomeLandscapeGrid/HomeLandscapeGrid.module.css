@@ -1,0 +1,72 @@
+/*
+ * 手機打橫主頁：填滿頁籤同 mini player 之間剩低嘅高度（flex-basis 0），左右留白同節目格一樣。
+ * 上下留位畀泥膠落影（同 ShowGrid .grid 一樣），margin-top 抵銷返，距離同以前一樣。
+ * inline-size container：strip 每欄闊度用 100cqi（= 扣咗左右留白嘅闊）計
+ */
+.scroller {
+    display: flex;
+    flex: 1 1 0;
+    container-type: inline-size;
+    width: 100%;
+    min-height: 0;
+    margin-top: calc(-1 * var(--space-2));
+    padding: var(--space-2) var(--home-gutter);
+    overflow: hidden;
+}
+
+/* 一屏放晒：欄 × 行平分，每格拉滿 */
+.grid {
+    display: grid;
+    flex: 1 1 0;
+    grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--grid-rows), minmax(0, 1fr));
+    gap: var(--home-tile-gap);
+    min-width: 0;
+}
+
+/*
+ * 9 張起：2 行長 strip 左右捲。每欄 = (闊 − 4 個格距 − 露出位) ÷ 5，右邊露出下一欄 --home-strip-peek。
+ * 每欄 snap（proximity）：捲到兩頭自然停，唔會一版一版咁跳
+ */
+.scroller[data-scroll='true'] {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: var(--home-gutter);
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+}
+
+.scroller[data-scroll='true']::-webkit-scrollbar {
+    display: none;
+}
+
+.scroller[data-scroll='true'] .grid {
+    flex: none;
+    grid-template-columns: repeat(
+        var(--grid-cols),
+        calc(
+            (
+                    100cqi - (var(--strip-visible-cols) - 1) * var(--home-tile-gap) -
+                        var(--home-strip-peek)
+                ) /
+                var(--strip-visible-cols)
+        )
+    );
+}
+
+.scroller[data-scroll='true'] .cell {
+    scroll-snap-align: start;
+}
+
+/* 卡（ShowTile / 劇集格 / 橫額）拉滿個格 */
+.cell {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+}
+
+.cell > * {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+}

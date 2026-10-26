@@ -21,14 +21,14 @@ const RECORDINGS = [
 ];
 
 /** 模擬喺其他頁播緊某集，再返主頁 */
-const PlayThenGoHome = ({ target }: { target: Track }) => {
+const PlayThenGoHome = ({ target, autoplay }: { target: Track; autoplay: boolean }) => {
     const { load } = usePlayer();
     const navigate = useNavigate();
     return (
         <button
             type="button"
             onClick={async () => {
-                await load(target, { autoplay: true });
+                await load(target, { autoplay });
                 navigate('/');
             }}
         >
@@ -37,15 +37,33 @@ const PlayThenGoHome = ({ target }: { target: Track }) => {
     );
 };
 
-const arriveHomeWith = async (target: Track, recordings = RECORDINGS) => {
+/** autoplay false：淨係載入（例如喺全集揀咗一行），未播所以未有進度 */
+const arriveHomeWith = async (target: Track, recordings = RECORDINGS, autoplay = true) => {
     const view = renderWithProviders(<HomePage />, {
         route: '/elsewhere',
         recordings,
-        extraRoutes: [{ path: '/elsewhere', element: <PlayThenGoHome target={target} /> }],
+        extraRoutes: [
+            {
+                path: '/elsewhere',
+                element: <PlayThenGoHome target={target} autoplay={autoplay} />,
+            },
+        ],
     });
     await userEvent.click(screen.getByRole('button', { name: 'play then home' }));
     await screen.findByRole('navigation');
     return view;
+};
+
+/** 手機打橫（SHORT_LANDSCAPE_QUERY 同 LANDSCAPE_QUERY 都符合） */
+const stubPhoneSideways = () => {
+    vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+            matches: query.includes('max-height: 561px') || query.includes('landscape'),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+        })),
+    );
 };
 
 describe('HomePage', () => {
@@ -116,14 +134,7 @@ describe('HomePage', () => {
     });
 
     it('should put the banner in the tile grid, before the shows, on a phone held sideways', () => {
-        vi.stubGlobal(
-            'matchMedia',
-            vi.fn((query: string) => ({
-                matches: query.includes('max-height: 561px') || query.includes('landscape'),
-                addEventListener: vi.fn(),
-                removeEventListener: vi.fn(),
-            })),
-        );
+        stubPhoneSideways();
         renderWithProviders(<HomePage />);
 
         const nav = screen.getByRole('navigation');
@@ -134,6 +145,31 @@ describe('HomePage', () => {
         expect(
             banner.compareDocumentPosition(firstShow) & Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
+    });
+
+    it('should keep the version on the in-grid banner and lay out every show plus 今日節目', () => {
+        stubPhoneSideways();
+        renderWithProviders(<HomePage />);
+
+        const nav = screen.getByRole('navigation', { name: '節目' });
+        // 7 個節目 + 今日節目，全部喺共用嘅手機打橫格入面（一屏放晒）
+        expect(within(nav).getAllByRole('button')).toHaveLength(8);
+        expect(nav).toHaveAttribute('data-scroll', 'false');
+        expect(within(nav).getByText(`v${packageJson.version}`)).toBeInTheDocument();
+    });
+
+    it('should put the banner and every drama in the shared grid on a phone held sideways', async () => {
+        stubPhoneSideways();
+        vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
+        renderWithProviders(<HomePage />);
+
+        await userEvent.click(screen.getByRole('button', { name: '廣播劇' }));
+
+        const nav = screen.getByRole('navigation', { name: '廣播劇' });
+        expect(nav).toContainElement(screen.getByRole('img', { name: BANNER_ALT }));
+        expect(within(nav).getAllByRole('button')).toHaveLength(4);
+        expect(within(nav).getByText(`v${packageJson.version}`)).toBeInTheDocument();
+        expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     });
 
     it('should not show the old header text when rendered', () => {
@@ -175,6 +211,16 @@ describe('HomePage', () => {
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
         expect(audio.src).toBe(RECORDINGS[2]?.url);
         expect(audio.play).toHaveBeenCalled();
+    });
+
+    it('should flag the page while the mini player shows, so phone-sideways tiles can use its room otherwise', async () => {
+        const { unmount } = renderWithProviders(<HomePage />);
+        expect(screen.getByRole('main')).not.toHaveAttribute('data-mini-player');
+        unmount();
+
+        renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+        await screen.findByRole('region', { name: '正在播放（今日節目）' });
+        expect(screen.getByRole('main')).toHaveAttribute('data-mini-player');
     });
 
     it('should paint the page canvas with the gradient bottom, even with a floating mini player', async () => {
@@ -258,6 +304,12 @@ describe('HomePage', () => {
             await userEvent.click(screen.getByRole('button', { name: '廣播劇' }));
             return screen.getByRole('navigation', { name: '廣播劇' });
         };
+        /** 直版疊卡：撳暗咗嘅卡先捲佢做 focus（jsdom 冇 element.scrollTo），再撳先入劇集頁 */
+        const tapTwice = async (tile: HTMLElement) => {
+            (tile.parentElement as HTMLElement).scrollTo = vi.fn();
+            await userEvent.click(tile);
+            await userEvent.click(tile);
+        };
 
         it('starts on the 節目 tab', () => {
             renderWithProviders(<HomePage />);
@@ -281,8 +333,25 @@ describe('HomePage', () => {
                 within(nav)
                     .getAllByRole('button')
                     .map((b) => b.getAttribute('aria-label')),
-            ).toEqual(['芝See菇Bi Family', '黃金少年', '森美小儀系列', '少爺占系列']);
+            ).toEqual(['少爺占系列', '森美小儀系列', '黃金少年', '芝See菇Bi Family']);
             expect(screen.queryByRole('navigation', { name: '節目' })).not.toBeInTheDocument();
+        });
+
+        it('puts the dramas being listened to first, finished ones last', async () => {
+            seriesEpisodesOf('jim').forEach((e) => saveProgress(e.url, 990, 1000));
+            vi.setSystemTime(new Date('2026-10-23T08:05:00Z'));
+            saveProgress(seriesEpisodesOf('golden')[0]?.url ?? '', 250, 1000);
+            vi.setSystemTime(new Date('2026-10-23T08:10:00Z')); // 最近聽緊嘅係森美小儀
+            saveProgress(seriesEpisodesOf('sammy-kitty')[0]?.url ?? '', 250, 1000);
+            renderWithProviders(<HomePage />);
+
+            const nav = await openDramas();
+
+            expect(
+                within(nav)
+                    .getAllByRole('button')
+                    .map((b) => b.getAttribute('aria-label')?.split('，')[0]),
+            ).toEqual(['森美小儀系列', '黃金少年', '芝See菇Bi Family', '少爺占系列']);
         });
 
         it('shows the 短篇 count bottom-right until something has been played', async () => {
@@ -329,13 +398,51 @@ describe('HomePage', () => {
             expect(within(nav).getByText('12 個短篇').dataset.corner).toBe('bottom');
         });
 
-        it('starts the drama and opens its page when its tile is tapped', async () => {
+        it('only opens the page of a series drama never listened to, without playing it', async () => {
             const { audio } = renderWithProviders(<HomePage />);
             const nav = await openDramas();
 
-            await userEvent.click(within(nav).getByRole('button', { name: '芝See菇Bi Family' }));
+            await tapTwice(within(nav).getByRole('button', { name: '芝See菇Bi Family' }));
 
-            expect(audio.src).toBe(seriesEpisodesOf('chisee')[0]?.url);
+            expect(audio.src).toBe('');
+            expect(audio.play).not.toHaveBeenCalled();
+            expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
+        });
+
+        it('keeps playing whatever plays when opening a series drama for the first time', async () => {
+            const { audio } = await arriveHomeWith(RECORDINGS[3] as Recording);
+            const plays = audio.play.mock.calls.length;
+            const nav = await openDramas();
+
+            await tapTwice(within(nav).getByRole('button', { name: '黃金少年' }));
+
+            expect(audio.src).toBe(RECORDINGS[3]?.url);
+            expect(audio.play).toHaveBeenCalledTimes(plays);
+            expect(screen.getByTestId('location')).toHaveTextContent('/drama/golden');
+        });
+
+        it('resumes a series drama listened to before and opens its page when its tile is tapped', async () => {
+            const friends = seriesEpisodesOf('chisee').filter((e) => e.arc === '好朋友手牽手');
+            saveProgress(friends[1]?.url ?? '', 250, 1000);
+            const { audio } = renderWithProviders(<HomePage />);
+            const nav = await openDramas();
+
+            await userEvent.click(within(nav).getByRole('button', { name: /^芝See菇Bi Family/ }));
+
+            expect(audio.src).toBe(friends[1]?.url);
+            expect(audio.play).toHaveBeenCalled();
+            expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
+        });
+
+        it('plays the episode already loaded from 全集 when its tile is tapped, though it has no progress yet', async () => {
+            const youth = seriesEpisodesOf('chisee').find((e) => e.arc === '青春期');
+            if (!youth) throw new Error('missing fixture');
+            const { audio } = await arriveHomeWith(youth, RECORDINGS, false);
+            const nav = await openDramas();
+
+            await tapTwice(within(nav).getByRole('button', { name: '芝See菇Bi Family' }));
+
+            expect(audio.src).toBe(youth.url);
             expect(audio.play).toHaveBeenCalled();
             expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
         });

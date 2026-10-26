@@ -150,9 +150,13 @@ export const zhHK = {
         arcPlayingEpisode: '播緊第 {no} 集',
         arcResumeAt: '聽到第 {no} 集 {time}',
         arcNext: '下一集係第 {no} 集',
+        // 短篇劇集頁未載入呢套劇（第一次入未揀，或者播緊其他嘢）：唱片下面 / chips 上面嗰行
+        pickArcToStart: '揀一個短篇開始',
         arcNew: '未聽 · {count} 集',
         arcDone: '聽完 · {count} 集',
         arcRow: '{arc}，{status}',
+        // 行嘅讀屏名加埋聽完幾多（畫面上係碟面下面嘅「1/4」）
+        arcWatchedCount: '聽完 {watched} / {total} 集',
         arcPlayNew: '播放 {arc} 第 1 集',
         arcPlayResume: '續聽 {arc} 第 {no} 集',
         arcPlayAgain: '由第 1 集重聽 {arc}',

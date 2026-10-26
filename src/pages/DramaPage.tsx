@@ -9,15 +9,16 @@ import { PlayerPanel } from '../components/PlayerPanel/PlayerPanel';
 import { StatusMessage } from '../components/StatusMessage/StatusMessage';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { NEUTRAL_THEME } from '../config/showThemes';
-import { findEnabledDrama, type DramaConfig } from '../dramas';
+import { dramaArtFor, findEnabledDrama, type DramaConfig } from '../dramas';
 import { LANDSCAPE_QUERY } from '../config/layout';
 import { useGoHome } from '../hooks/useGoHome';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { usePlayer } from '../player/usePlayer';
 import { t } from '../i18n/t';
 import { formatDateLabel } from '../utils/date';
+import type { ArcSummary } from '../selectors/arcProgress';
 import type { SeriesEpisode } from '../types/drama';
-import { PLAYBACK_LINE_KEY, type PlaybackState } from '../utils/playbackState';
+import { PLAYBACK_LINE_KEY, type PlaybackLineState } from '../utils/playbackState';
 import { hasKnownDuration } from '../utils/time';
 import page from './Page.module.css';
 import { useDailyDramaPage, useSeriesDramaPage } from './useDramaPage';
@@ -33,15 +34,16 @@ const DramaHeader = ({ title }: { title: string }) => {
 };
 
 /**
- * 短篇 chips 上面嗰行：同日子條一樣，未讀到時長講「連線中…」，否則「現正播放：短篇 · 第 N 集 集名」
- * （暫停講「已暫停：」，載入咗未開始講「下一集：」）
+ * 短篇 chips 上面嗰行：未載入呢套劇叫用戶揀短篇；載入咗同日子條一樣，未讀到時長講「連線中…」，
+ * 否則「現正播放：短篇 · 第 N 集 集名」（暫停講「已暫停：」，載入咗未開始講「下一集：」）
  */
 const arcPickerLabel = (
-    duration: number,
+    connecting: boolean,
     current: SeriesEpisode | undefined,
-    state: PlaybackState,
+    state: PlaybackLineState,
 ): string => {
-    if (!hasKnownDuration(duration)) return t('episodes.connecting');
+    if (state === 'unloaded') return t(PLAYBACK_LINE_KEY.unloaded);
+    if (connecting) return t('episodes.connecting');
     if (!current) return '';
     const episodeNo = t('drama.episodeNo', { no: current.no });
     const episode = current.title
@@ -50,6 +52,12 @@ const arcPickerLabel = (
     const label = t('drama.nowPlayingArcShort', { arc: current.arc, episode });
     return t(PLAYBACK_LINE_KEY[state], { label });
 };
+
+/**
+ * 全集表每行碟面：同唱片一樣用 dramaArtFor（短篇有自己碟面就用，冇就劇集主碟面），
+ * 拎嗰個短篇任何一集都得，resume 一定有
+ */
+const arcCover = (summary: ArcSummary): string => dramaArtFor(summary.resume);
 
 /** 橫版唱片下面「現正播放」：短篇加埋第幾個 / 幾多集（按排位，唔係集數），下一行集名 */
 const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, arcTotal: number) => ({
@@ -105,7 +113,8 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const {
         theme,
         current,
-        playState,
+        status,
+        start,
         arcTotal,
         arcPosition,
         arcs,
@@ -117,7 +126,9 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     } = useSeriesDramaPage(drama);
     const { duration, isPlaying, recording } = usePlayer();
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
-    const label = arcPickerLabel(duration, current, playState);
+    // 「連線中…」只講呢套劇嘅一集載緊 / 緩衝緊；未載入呢套劇（start 有值）唔講，亦冇 chip 係「播緊」
+    const connecting = !start && !hasKnownDuration(duration);
+    const label = arcPickerLabel(connecting, current, status);
     const arcSheet = (
         <ArcSheet
             open={sheet.open}
@@ -128,6 +139,7 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
             onPick={sheet.pick}
             onPlay={sheet.play}
             onClose={sheet.close}
+            coverOf={arcCover}
         />
     );
     return (
@@ -138,15 +150,15 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
                 >
                     {!landscape && <DramaHeader title={drama.name} />}
                     {current ? (
-                        <PlayerGauge art={theme.art} />
+                        <PlayerGauge art={theme.art} onStart={start} />
                     ) : (
                         <StatusMessage message={t('episodes.noneUp')} />
                     )}
                     {current && landscape && (
                         <NowPlaying
                             {...seriesNowPlaying(current, arcPosition, arcTotal)}
-                            status={playState}
-                            connecting={!hasKnownDuration(duration)}
+                            status={status}
+                            connecting={connecting}
                         />
                     )}
                 </div>
@@ -158,7 +170,7 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
                             <ArcPicker
                                 arcs={arcs}
                                 selected={arc}
-                                playing={current?.arc}
+                                playing={start ? undefined : current?.arc}
                                 label={label}
                                 onPick={pickArc}
                                 onOpenAll={sheet.openSheet}
@@ -187,8 +199,9 @@ export const DramaPage = () => {
             </ThemeScope>
         );
     }
+    // key：換劇（同一條 route）時重新入頁，第一次入 / 揀咗嘅短篇等 state 唔會帶過去
     return drama.kind === 'series' ? (
-        <SeriesDramaPage drama={drama} />
+        <SeriesDramaPage key={drama.id} drama={drama} />
     ) : (
         <DailyDramaPage drama={drama} />
     );

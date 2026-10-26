@@ -26,11 +26,13 @@ interface ArcSheetProps {
     /** 撳右邊掣：播嗰個短篇（續聽 / 未收聽 / 重聽；播緊嗰個就暫停 / 繼續） */
     onPlay: (summary: ArcSummary) => void;
     onClose: () => void;
+    /** 每行碟面：短篇有自己碟面就用，冇就用劇集主碟面（DramaPage 用 dramaArtFor，同唱片一致） */
+    coverOf: (summary: ArcSummary) => string;
 }
 
 const CLOSE_ICON_SIZE = 20;
 const PLAY_ICON_SIZE = 18;
-const CHECK_ICON_SIZE = 14;
+const CHECK_ICON_SIZE = 12;
 
 const GROUP_TITLES = {
     playing: 'drama.groupPlaying',
@@ -48,6 +50,23 @@ const arcStatus = (s: ArcSummary, current: SeriesEpisode | undefined): string =>
         ? t('drama.arcResumeAt', { no: s.resume.no, time: formatDuration(s.resumeAt) })
         : t('drama.arcNext', { no: s.resume.no });
 };
+
+const joinStatus = (parts: readonly (string | false)[]): string => parts.filter(Boolean).join('，');
+
+/** 行入面細字：狀態 + 新上架（同以前一樣） */
+const visibleStatus = (s: ArcSummary, current: SeriesEpisode | undefined): string =>
+    joinStatus([arcStatus(s, current), s.isNew && t('drama.arcNewLabel')]);
+
+/**
+ * 行嘅讀屏名：狀態 +（聽咗一半先講）聽完幾多集 + 新上架。畫面上集數喺碟面 pill（aria-hidden），
+ * 所以要喺度講；未聽 / 聽完嘅狀態本身已經講咗集數
+ */
+const rowLabel = (s: ArcSummary, current: SeriesEpisode | undefined): string =>
+    joinStatus([
+        arcStatus(s, current),
+        s.state === 'started' && t('drama.arcWatchedCount', { watched: s.watched, total: s.total }),
+        s.isNew && t('drama.arcNewLabel'),
+    ]);
 
 /** 右邊播放掣嘅讀屏名 */
 const playLabel = (s: ArcSummary, isCurrent: boolean, isPlaying: boolean): string => {
@@ -72,16 +91,42 @@ const PlayButtonIcon = ({
     return <PlayIcon size={PLAY_ICON_SIZE} />;
 };
 
-type RowProps = Pick<ArcSheetProps, 'current' | 'isPlaying' | 'onPick' | 'onPlay'> & {
+/**
+ * 碟面 + 外圈進度環（--arc-ring-fill = 聽完集數佔幾多）；未聽完碟面底中間有「1/4」pill，
+ * 聽完冇 pill、右下角出 ✓。成粒係裝飾（aria-hidden），狀態喺行嘅 aria-label
+ */
+const ArcCover = ({ summary: s, cover }: { summary: ArcSummary; cover: string }) => {
+    const isDone = s.state === 'done';
+    return (
+        <span
+            className={styles.ring}
+            style={
+                { '--arc-ring-fill': `${toPercent(ratio(s.watched, s.total))}%` } as CSSProperties
+            }
+            aria-hidden="true"
+        >
+            <img className={styles.cover} src={cover} alt="" loading="lazy" decoding="async" />
+            {isDone ? (
+                <span className={styles.doneBadge} data-role="done">
+                    <CheckIcon size={CHECK_ICON_SIZE} />
+                </span>
+            ) : (
+                <span className={styles.count} data-role="count">
+                    {`${s.watched}/${s.total}`}
+                </span>
+            )}
+        </span>
+    );
+};
+
+type RowProps = Pick<ArcSheetProps, 'current' | 'isPlaying' | 'onPick' | 'onPlay' | 'coverOf'> & {
     summary: ArcSummary;
 };
 
-/** 一行：左邊撳轉短篇（圓環 + 名 + 進度），右邊播放掣 */
-const ArcRow = ({ summary: s, current, isPlaying, onPick, onPlay }: RowProps) => {
+/** 一行：左邊撳轉短篇（碟面進度環 + 名 + 進度），右邊播放掣 */
+const ArcRow = ({ summary: s, current, isPlaying, onPick, onPlay, coverOf }: RowProps) => {
     const isCurrent = current?.arc === s.arc;
-    const status = [arcStatus(s, current), s.isNew && t('drama.arcNewLabel')]
-        .filter(Boolean)
-        .join('，');
+    const status = visibleStatus(s, current);
     return (
         <li className={`${styles.row} ${isCurrent ? styles.current : ''}`}>
             <button
@@ -89,24 +134,10 @@ const ArcRow = ({ summary: s, current, isPlaying, onPick, onPlay }: RowProps) =>
                 className={styles.pick}
                 data-role="pick"
                 aria-current={isCurrent ? 'true' : undefined}
-                aria-label={t('drama.arcRow', { arc: s.arc, status })}
+                aria-label={t('drama.arcRow', { arc: s.arc, status: rowLabel(s, current) })}
                 onClick={() => onPick(s.arc)}
             >
-                <span
-                    className={`${styles.ring} ${s.state === 'done' ? styles.done : ''}`}
-                    style={
-                        {
-                            '--arc-ring-fill': `${toPercent(ratio(s.watched, s.total))}%`,
-                        } as CSSProperties
-                    }
-                    aria-hidden="true"
-                >
-                    {s.state === 'done' ? (
-                        <CheckIcon size={CHECK_ICON_SIZE} />
-                    ) : (
-                        `${s.watched}/${s.total}`
-                    )}
-                </span>
+                <ArcCover summary={s} cover={coverOf(s)} />
                 <span className={styles.text} aria-hidden="true">
                     <span className={styles.name}>
                         <Marquee className={styles.nameText} text={s.arc} />

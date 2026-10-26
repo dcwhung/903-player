@@ -2,20 +2,25 @@ import { useEffect, useMemo, useState } from 'react';
 import { stripDays } from '../components/DateStrip/dateStrip';
 import { dailyEpisodesOf, dramaEpisodeTheme, seriesEpisodesOf, type DramaConfig } from '../dramas';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
-import { useStartDrama } from '../hooks/useStartDrama';
+import { isFirstSeriesVisit, useStartDrama } from '../hooks/useStartDrama';
 import { usePlayer } from '../player/usePlayer';
 import {
     dailyNewestFirst,
     episodesInArc,
+    isEpisodeOfDrama,
     pickDailyStart,
     pickSeriesStart,
 } from '../selectors/dramas';
 import { arcGroups, arcSummaries, listOrder, type ArcSummary } from '../selectors/arcProgress';
 import { getProgressMap, type Progress } from '../services/progressStore';
 import type { DramaEpisode, SeriesEpisode } from '../types/drama';
-import { isDramaEpisode, type Track } from '../types/track';
+import type { Track } from '../types/track';
 import { hkToday } from '../utils/date';
-import { playbackStateOf } from '../utils/playbackState';
+import {
+    playbackStateOf,
+    type PlaybackLineState,
+    type PlaybackState,
+} from '../utils/playbackState';
 import { toDailyItems, toSeriesItems } from './dramaItems';
 import type { RowContext } from './episodeItems';
 
@@ -26,21 +31,21 @@ const useLoadedEpisode = <K extends DramaEpisode['kind']>(
 ): Extract<DramaEpisode, { kind: K }> | null => {
     const { recording } = usePlayer();
     const isThis = (track: Track | null): track is Extract<DramaEpisode, { kind: K }> =>
-        track !== null &&
-        isDramaEpisode(track) &&
-        track.dramaId === drama.id &&
-        track.kind === kind;
+        isEpisodeOfDrama(track, drama.id) && track.kind === kind;
     return isThis(recording) ? recording : null;
 };
 
-/** 直接開呢頁（例如 deep link / mini player）時都自動播放，同節目頁一樣 */
-const useAutoplayDrama = (drama: DramaConfig, isLoaded: boolean) => {
+/**
+ * 直接開呢頁（例如 deep link / mini player）時都自動播放，同節目頁一樣；
+ * skip（已經載入咗呢套劇，或者第一次入短篇劇集）就唔播
+ */
+const useAutoplayDrama = (drama: DramaConfig, skip: boolean) => {
     const startDrama = useStartDrama();
     useEffect(() => {
-        if (!isLoaded) {
+        if (!skip) {
             startDrama(drama);
         }
-    }, [drama, isLoaded, startDrama]);
+    }, [drama, skip, startDrama]);
 };
 
 /** 清單行要嘅 player 狀態 + 撳行 / 揀集嘅動作（兩款劇集頁共用） */
@@ -61,7 +66,8 @@ const usePlaybackRows = (
     });
     const ctx: RowContext = {
         currentUrl,
-        live: { currentTime: player.currentTime, duration: player.duration },
+        // 未載入呢套劇：player 時間係其他嘢（或者冇嘢）嘅，揀中集用返 localStorage 進度，唔講「連線中…」
+        live: isLoaded ? { currentTime: player.currentTime, duration: player.duration } : undefined,
         progressMap,
         isPlaying,
         liveState: playState,
@@ -96,6 +102,16 @@ export const useDailyDramaPage = (drama: DramaConfig) => {
         selectEpisode,
         pressEpisode,
     };
+};
+
+/**
+ * 入頁嗰下係咪第一次入呢套短篇劇集（入頁時讀一次就定，揀咗 / 播咗都唔再變）：
+ * 係就唔自動播、一入嚟就開全集表
+ */
+const useFirstVisitOnEntry = (drama: DramaConfig): boolean => {
+    const { recording } = usePlayer();
+    const [firstVisit] = useState(() => isFirstSeriesVisit(drama, getProgressMap(), recording));
+    return firstVisit;
 };
 
 /** 揀咗睇邊個短篇；未揀（或者揀返播緊嗰個）就跟播緊嗰集嘅短篇 */
@@ -161,12 +177,24 @@ const useArcPick = (
     };
 };
 
+/**
+ * 未載入呢套劇（第一次入未揀，或者播緊其他嘢）：唱片區（時間、掣、「現正播放」）係未開始樣，
+ * 撳播放（start）先開始播呢套劇、換走其他嘢；載入咗就跟返 player（start 係 undefined）
+ */
+const useStandby = (drama: DramaConfig, isLoaded: boolean, playState: PlaybackState) => {
+    const startDrama = useStartDrama();
+    const status: PlaybackLineState = isLoaded ? playState : 'unloaded';
+    return { status, start: isLoaded ? undefined : () => startDrama(drama) };
+};
+
 /** 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 全集 / 短篇 chips + 嗰個短篇嘅集數 */
 export const useSeriesDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
     const loaded = useLoadedEpisode(drama, 'series');
-    useAutoplayDrama(drama, loaded !== null);
-    const [sheetOpen, setSheetOpen] = useState(false);
+    const firstVisit = useFirstVisitOnEntry(drama);
+    // 第一次入：唔自動播（亦唔打斷播緊嘅嘢），等用戶喺全集表揀
+    useAutoplayDrama(drama, loaded !== null || firstVisit);
+    const [sheetOpen, setSheetOpen] = useState(firstVisit);
     const { watchedRevision } = usePlayer();
     // 轉集、有集數聽完、打開全集表都重新讀 localStorage
     const progressMap = useRefreshedOn(getProgressMap, [watchedRevision, loaded?.url, sheetOpen]);
@@ -188,7 +216,7 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
         // 碟面跟播緊（未播就係準備播）嗰集；冇播放時揀短篇會載入嗰個短篇，碟面就跟住轉
         theme: current ? dramaEpisodeTheme(current) : drama.theme,
         current,
-        playState,
+        ...useStandby(drama, loaded !== null, playState),
         arcTotal,
         arcPosition,
         arcs: chips,

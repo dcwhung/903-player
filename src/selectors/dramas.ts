@@ -1,9 +1,17 @@
 import { t } from '../i18n/t';
 import type { Progress } from '../services/progressStore';
 import type { DailyEpisode, DramaEpisode, SeriesEpisode } from '../types/drama';
+import { isDramaEpisode, type Track } from '../types/track';
 import { formatDateLabel } from '../utils/date';
 
 const isDaily = (episode: DramaEpisode): episode is DailyEpisode => episode.kind === 'daily';
+
+/**
+ * player 載入緊嘅係咪呢套劇嘅一集（冇載入、903 節目、其他劇都唔係）：
+ * 劇集頁嘅唱片、時間、播放掣、「現正播放」只跟呢套劇，唔跟其他嘢
+ */
+export const isEpisodeOfDrama = (track: Track | null, dramaId: string): track is DramaEpisode =>
+    track !== null && isDramaEpisode(track) && track.dramaId === dramaId;
 
 /** 短篇（按 catalogue 次序，每個一次） */
 export const seriesArcs = (episodes: readonly SeriesEpisode[]): string[] => [
@@ -27,6 +35,12 @@ const lastTouched = (
     });
     return latest;
 };
+
+/** 呢啲集數全部都未有進度（未聽過，連開頭幾秒都冇）：用嚟判斷第一次入呢套劇 */
+export const hasNoProgress = (
+    episodes: readonly DramaEpisode[],
+    progressMap: Readonly<Record<string, Progress>>,
+): boolean => episodes.every((e) => progressMap[e.url] === undefined);
 
 /**
  * 短篇劇集入頁播邊集（episodes 係由第一個短篇第 1 集排到最後）：
