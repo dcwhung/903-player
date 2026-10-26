@@ -1,4 +1,4 @@
-import { edgeGradient, segmentAverages, type Rgb } from './bannerEdges';
+import { edgeGradient, readBannerEdges, segmentAverages, type Rgb } from './bannerEdges';
 
 /** 由一堆 [r, g, b] 砌 RGBA pixel（alpha 255） */
 const pixels = (colors: readonly Rgb[]): Uint8ClampedArray =>
@@ -73,5 +73,43 @@ describe('edgeGradient', () => {
         expect(edgeGradient([[1, 2, 3]], 'to right')).toBe(
             'linear-gradient(to right, rgb(1 2 3), rgb(1 2 3))',
         );
+    });
+});
+
+const IMAGE_SIZE = 10;
+
+/** 假 2D context：drawImage noop；getImageData / drawImage 可以逐個換 */
+const stubContext = (overrides: Partial<CanvasRenderingContext2D>) =>
+    vi
+        .spyOn(HTMLCanvasElement.prototype, 'getContext')
+        .mockReturnValue({ drawImage: vi.fn(), ...overrides } as unknown as RenderingContext);
+
+/** 只要 natural 大細嘅假圖（drawImage 係假嘅，唔使真圖） */
+const fakeImage = (width = IMAGE_SIZE, height = IMAGE_SIZE): HTMLImageElement =>
+    ({ naturalWidth: width, naturalHeight: height }) as HTMLImageElement;
+
+describe('readBannerEdges', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('should return null when getImageData throws (e.g. tainted canvas SecurityError)', () => {
+        stubContext({
+            getImageData: () => {
+                throw new DOMException('tainted', 'SecurityError');
+            },
+        });
+
+        expect(readBannerEdges(fakeImage())).toBeNull();
+    });
+
+    it('should return null when drawImage throws (e.g. decode failure)', () => {
+        stubContext({
+            drawImage: () => {
+                throw new DOMException('broken', 'InvalidStateError');
+            },
+        });
+
+        expect(readBannerEdges(fakeImage())).toBeNull();
     });
 });

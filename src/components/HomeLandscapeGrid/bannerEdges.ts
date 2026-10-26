@@ -82,15 +82,8 @@ export const edgeGradient = (colors: readonly Rgb[], direction: string): string 
 const bandColors = (ctx: CanvasRenderingContext2D, x: number, y: number, band: Band): Rgb[] =>
     segmentAverages(ctx.getImageData(x, y, band.width, band.height).data, band);
 
-/** 用 canvas 讀橫額四邊嘅邊色（同源 bundle 圖，唔會 taint）；讀唔到（例如 jsdom）就 null */
-export const readBannerEdges = (img: HTMLImageElement): BannerEdges | null => {
-    const { naturalWidth: w, naturalHeight: h } = img;
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx || w === 0 || h === 0) return null;
-    ctx.drawImage(img, 0, 0);
+/** 已畫咗圖嘅 canvas 讀四條邊 */
+const edgesOf = (ctx: CanvasRenderingContext2D, w: number, h: number): BannerEdges => {
     const side: Band = { width: SIDE_PX, height: h, horizontal: false, samples: SIDE_SAMPLES };
     const edge = { width: w, height: TOP_BOTTOM_ROWS, horizontal: true };
     return {
@@ -102,6 +95,26 @@ export const readBannerEdges = (img: HTMLImageElement): BannerEdges | null => {
             'to right',
         ),
     };
+};
+
+/**
+ * 用 canvas 讀橫額四邊嘅邊色；讀唔到（例如 jsdom 冇 context）就 null。
+ * drawImage / getImageData 都可能 throw（跨源圖 taint 咗 canvas 會 SecurityError、decode 失敗），
+ * 一樣當讀唔到：唔接住嘅話 onload 永遠唔 resolve，仲會變 uncaught error
+ */
+export const readBannerEdges = (img: HTMLImageElement): BannerEdges | null => {
+    const { naturalWidth: w, naturalHeight: h } = img;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx || w === 0 || h === 0) return null;
+    try {
+        ctx.drawImage(img, 0, 0);
+        return edgesOf(ctx, w, h);
+    } catch {
+        return null;
+    }
 };
 
 const cache = new Map<string, Promise<BannerEdges | null>>();
