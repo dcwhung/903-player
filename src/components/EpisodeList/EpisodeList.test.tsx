@@ -169,14 +169,19 @@ describe('EpisodeList', () => {
         expect(section().dataset.labels).toBe('title');
     });
 
-    it('scrolls a long title only on the selected row, even paused; the others end in …', () => {
+    it('scrolls a long title only on the row that is playing; paused or other rows end in …', () => {
         vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(180);
         vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(120);
-        const paused = ITEMS.map((item) => ({ ...item, isPlaying: false }));
-        const { container } = render(<EpisodeList items={paused} onSelect={() => {}} />);
+        const staticFlags = (container: HTMLElement) =>
+            [...container.querySelectorAll('[data-overflow]')].map((b) =>
+                b.hasAttribute('data-static'),
+            );
+        const { container, rerender } = render(<EpisodeList items={ITEMS} onSelect={() => {}} />);
+        expect(staticFlags(container)).toEqual([false, true, true]);
 
-        const boxes = [...container.querySelectorAll('[data-overflow]')];
-        expect(boxes.map((b) => b.hasAttribute('data-static'))).toEqual([false, true, true]);
+        const paused = ITEMS.map((item) => ({ ...item, isPlaying: false }));
+        rerender(<EpisodeList items={paused} onSelect={() => {}} />);
+        expect(staticFlags(container)).toEqual([true, true, true]);
         vi.restoreAllMocks();
     });
 });

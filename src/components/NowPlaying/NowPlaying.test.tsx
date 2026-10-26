@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import { NowPlaying } from './NowPlaying';
 
 describe('NowPlaying', () => {
+    afterEach(() => vi.restoreAllMocks());
+
     it('shows the now-playing line', () => {
         render(<NowPlaying label="21/10（三）" connecting={false} />);
 
@@ -16,6 +18,22 @@ describe('NowPlaying', () => {
 
         rerender(<NowPlaying label="公子森林 · 第 1 / 40 集" status="ready" connecting={false} />);
         expect(screen.getByText('下一集：公子森林 · 第 1 / 40 集')).toBeInTheDocument();
+    });
+
+    it('ends a long line in … instead of scrolling, like the portrait label', () => {
+        vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(400);
+        vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(200);
+        const { container } = render(
+            <NowPlaying
+                label="三十六計 · 第 36 / 36 集"
+                detail="偷樑換柱 + 金蟬脫殼"
+                connecting={false}
+            />,
+        );
+
+        const boxes = [...container.querySelectorAll('[data-overflow]')];
+        expect(boxes).toHaveLength(2);
+        expect(boxes.every((b) => b.hasAttribute('data-static'))).toBe(true);
     });
 
     it('adds a second line when there is a detail', () => {

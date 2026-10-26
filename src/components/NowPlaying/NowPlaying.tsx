@@ -16,14 +16,15 @@ interface NowPlayingProps {
 
 /**
  * 橫版唱片下面嘅「現正播放」（直版用日子條 / 短篇 chips 上面嘅標籤）。
- * 放唔落就跑馬燈（Marquee）；高度固定（tokens.css --now-playing-*），唱片大細先計得準
+ * 放唔落同直版一樣用 … 收尾，唔捲（只有清單播緊嗰行先跑馬燈）；高度固定（tokens.css --now-playing-*），唱片大細先計得準
  */
 export const NowPlaying = ({ label, detail, connecting, status = 'playing' }: NowPlayingProps) => (
     <div className={styles.group}>
         <Marquee
             className={styles.line}
+            animate={false}
             text={connecting ? t('episodes.connecting') : t(PLAYBACK_LINE_KEY[status], { label })}
         />
-        {detail && <Marquee className={styles.detail} text={detail} />}
+        {detail && <Marquee className={styles.detail} text={detail} animate={false} />}
     </div>
 );
