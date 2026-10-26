@@ -1,7 +1,8 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
-import { HOME_THEME, SHOW_THEMES } from '../config/showThemes';
+import { themeFor } from '../shows';
+import { HOME_THEME } from '../config/showThemes';
 import { HomePage } from './HomePage';
 import { ShowPage } from './ShowPage';
 
@@ -36,7 +37,7 @@ describe('theme-color across pages', () => {
 
         await userEvent.click(screen.getByRole('button', { name: '公子會' }));
         await screen.findByRole('heading', { name: '公子會' });
-        expect(themeColor()).toBe(SHOW_THEMES.gongzi.bg);
+        expect(themeColor()).toBe(themeFor('gongzi').bg);
 
         await userEvent.click(screen.getByRole('button', { name: '返回主頁' }));
         await screen.findByRole('navigation');

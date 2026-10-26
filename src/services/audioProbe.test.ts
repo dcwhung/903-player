@@ -1,5 +1,5 @@
 import { FakeAudio } from '../../tests/fakeAudio';
-import { SHOWS, findShow } from '../config/shows';
+import { findShow, SHOWS } from '../shows';
 import type { Recording } from '../types/recording';
 import {
     PROBE_KEEP_PER_SHOW,

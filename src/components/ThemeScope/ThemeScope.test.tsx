@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { dramaThemeFor } from '../../dramas';
-import { SHOW_THEMES } from '../../config/showThemes';
+import { themeFor } from '../../shows';
 import { ThemeScope } from './ThemeScope';
 
+const SUNNYDAY_THEME = themeFor('sunnyday');
+const BADGIRL_THEME = themeFor('badgirl');
 const CHISEE_THEME = dramaThemeFor('chisee');
 const C18_THEME = dramaThemeFor('c18');
 
@@ -18,7 +20,7 @@ describe('ThemeScope', () => {
 
     it('applies the show theme as CSS variables on its root', () => {
         render(
-            <ThemeScope theme={SHOW_THEMES.sunnyday}>
+            <ThemeScope theme={SUNNYDAY_THEME}>
                 <p>內容</p>
             </ThemeScope>,
         );
@@ -30,39 +32,39 @@ describe('ThemeScope', () => {
 
     it('should set theme-color to the theme bg when it is full page', () => {
         render(
-            <ThemeScope theme={SHOW_THEMES.sunnyday}>
+            <ThemeScope theme={SUNNYDAY_THEME}>
                 <p>內容</p>
             </ThemeScope>,
         );
 
-        expect(themeColor()).toBe(SHOW_THEMES.sunnyday.bg);
+        expect(themeColor()).toBe(SUNNYDAY_THEME.bg);
     });
 
     it('should not touch theme-color when it is not full page', () => {
         // 單獨 render（冇外層成頁 scope 覆寫），先驗證到 fullPage={false} 真係唔郁 meta
         const meta = document.createElement('meta');
         meta.name = 'theme-color';
-        meta.content = SHOW_THEMES.sunnyday.bg;
+        meta.content = SUNNYDAY_THEME.bg;
         document.head.append(meta);
 
         render(
-            <ThemeScope theme={SHOW_THEMES.badgirl} fullPage={false}>
+            <ThemeScope theme={BADGIRL_THEME} fullPage={false}>
                 <p>mini player</p>
             </ThemeScope>,
         );
 
-        expect(themeColor()).toBe(SHOW_THEMES.sunnyday.bg);
+        expect(themeColor()).toBe(SUNNYDAY_THEME.bg);
         expect(document.head.querySelectorAll('meta[name="theme-color"]')).toHaveLength(1);
     });
 
     it('should paint the page canvas (behind the home indicator) and clear it on unmount', () => {
         const { unmount } = render(
-            <ThemeScope theme={SHOW_THEMES.sunnyday}>
+            <ThemeScope theme={SUNNYDAY_THEME}>
                 <p>內容</p>
             </ThemeScope>,
         );
 
-        expect(canvas()).toBe(SHOW_THEMES.sunnyday.bg);
+        expect(canvas()).toBe(SUNNYDAY_THEME.bg);
 
         unmount();
         expect(canvas()).toBe('');
@@ -70,7 +72,7 @@ describe('ThemeScope', () => {
 
     it('should use the given canvas colour, e.g. the bottom of the home gradient', () => {
         render(
-            <ThemeScope theme={SHOW_THEMES.sunnyday} canvas="var(--home-bg-bottom)">
+            <ThemeScope theme={SUNNYDAY_THEME} canvas="var(--home-bg-bottom)">
                 <p>內容</p>
             </ThemeScope>,
         );
@@ -80,7 +82,7 @@ describe('ThemeScope', () => {
 
     it('should leave the page canvas alone when it is not full page', () => {
         render(
-            <ThemeScope theme={SHOW_THEMES.badgirl} fullPage={false}>
+            <ThemeScope theme={BADGIRL_THEME} fullPage={false}>
                 <p>mini player</p>
             </ThemeScope>,
         );
@@ -117,7 +119,7 @@ describe('ThemeScope', () => {
     it('should not paint a status bar band for dark themes or partial scopes', () => {
         const { container } = render(
             <>
-                <ThemeScope theme={SHOW_THEMES.sunnyday}>
+                <ThemeScope theme={SUNNYDAY_THEME}>
                     <p>節目</p>
                 </ThemeScope>
                 <ThemeScope theme={C18_THEME} fullPage={false}>

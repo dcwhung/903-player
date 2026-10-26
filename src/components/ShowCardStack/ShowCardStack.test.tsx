@@ -1,14 +1,14 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { SHOW_THEMES } from '../../config/showThemes';
+import { themeFor } from '../../shows';
 import { ArcSlider } from '../ArcSlider/ArcSlider';
 import { CARD_FLY_MS, CARD_SPRING_MS } from './cardStack';
 import { ShowCardStack, type StackCard } from './ShowCardStack';
 
 const CARDS: StackCard[] = [
-    { title: '甲節目', theme: SHOW_THEMES.sunnyday },
-    { title: '乙節目', theme: SHOW_THEMES.badgirl },
-    { title: '丙節目', theme: SHOW_THEMES.wanni },
+    { title: '甲節目', theme: themeFor('sunnyday') },
+    { title: '乙節目', theme: themeFor('badgirl') },
+    { title: '丙節目', theme: themeFor('wanni') },
 ];
 const LABEL = '今日節目，左右掃動轉節目';
 

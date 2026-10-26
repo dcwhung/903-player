@@ -1,4 +1,4 @@
-import { SHOWS, type ShowConfig } from '../config/shows';
+import { SHOWS, type ShowConfig } from '../shows';
 import { showDateKey } from '../services/probeStore';
 import type { EpisodeEntry, Recording, ShowId, UnavailableEpisode } from '../types/recording';
 import { weekdayOf } from '../utils/date';

@@ -1,24 +1,30 @@
-import { SHOWS } from './shows';
-import { NEUTRAL_THEME, SHOW_THEMES, themeFor, themeVars } from './showThemes';
+import { HOME_THEME, NEUTRAL_THEME, themeVars, type ShowTheme } from './showThemes';
 
-describe('showThemes', () => {
-    it('defines a theme with artwork for every show', () => {
-        SHOWS.forEach((show) => {
-            expect(SHOW_THEMES[show.id].art).toBeTruthy();
-            expect(SHOW_THEMES[show.id].accent).toMatch(/^#[0-9a-f]{6}$/i);
-        });
-    });
+const LIGHT: ShowTheme = {
+    ...NEUTRAL_THEME,
+    scheme: 'light',
+    accentText: '#a52a24',
+    titleFont: "'Noto Serif TC', serif",
+    headerRule: 'linear-gradient(#c0362c, #c0362c) 0 100% / 100% 1px no-repeat',
+};
 
-    it('falls back to the neutral theme', () => {
-        expect(themeFor(undefined)).toBe(NEUTRAL_THEME);
-        expect(themeFor('gongzi')).toBe(SHOW_THEMES.gongzi);
-    });
-
-    it('turns a theme into CSS custom properties', () => {
-        const vars = themeVars(SHOW_THEMES.badgirl);
-
-        expect(vars['--theme-bg']).toBe('#21151a');
-        expect(vars['--theme-accent']).toBe('#f08a24');
+describe('themeVars', () => {
+    it('turns a theme into --theme-* custom properties', () => {
+        const vars = themeVars(HOME_THEME);
+        expect(vars['--theme-bg']).toBe(HOME_THEME.bg);
+        expect(vars['--theme-accent']).toBe(HOME_THEME.accent);
         expect(Object.keys(vars).every((key) => key.startsWith('--theme-'))).toBe(true);
+    });
+
+    it('passes the light-only extras to CSS, with dark-theme defaults', () => {
+        const light = themeVars(LIGHT);
+        expect(light['--theme-accent-text']).toBe('#a52a24');
+        expect(light['--theme-title-font']).toContain('Noto Serif TC');
+        expect(light['--theme-header-rule']).toContain('linear-gradient');
+
+        const neutral = themeVars(NEUTRAL_THEME);
+        expect(neutral['--theme-accent-text']).toBe(NEUTRAL_THEME.accent);
+        expect(neutral['--theme-title-font']).toBe('var(--font-family)');
+        expect(neutral['--theme-header-rule']).toBe('none');
     });
 });

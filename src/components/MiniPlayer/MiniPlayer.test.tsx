@@ -1,13 +1,13 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { SHOW_THEMES } from '../../config/showThemes';
+import { themeFor } from '../../shows';
 import { MiniPlayer, type MiniPlayerProps } from './MiniPlayer';
 
 const props = (overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps => ({
     showName: 'Bad Girl大過佬',
     region: '正在播放（今日節目）',
     openLabel: '開啟 Bad Girl大過佬 節目頁',
-    theme: SHOW_THEMES.badgirl,
+    theme: themeFor('badgirl'),
     subtitle: '今日 19/10（一）· 12:40 / 1:58:30',
     timeText: '12:40 / 1:58:30',
     isPlaying: true,

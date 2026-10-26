@@ -10,8 +10,8 @@ import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { APP_VERSION } from '../config/appVersion';
 import { enabledDramas, seriesEpisodesOf, type DramaConfig } from '../dramas';
 import { SHORT_LANDSCAPE_QUERY } from '../config/layout';
-import { HOME_THEME, SHOW_THEMES } from '../config/showThemes';
-import { SHOWS } from '../config/shows';
+import { SHOWS } from '../shows';
+import { HOME_THEME } from '../config/showThemes';
 import { useRecordings } from '../data/useRecordings';
 import { useDramaContinue } from '../hooks/useDramaContinue';
 import { useHomeArrival } from '../hooks/useHomeArrival';
@@ -37,7 +37,7 @@ const useHomeTiles = () => {
             <ShowTile
                 key={show.id}
                 label={show.name}
-                art={SHOW_THEMES[show.id].art}
+                art={show.theme.art}
                 isNew={newShowIds.has(show.id)}
                 onClick={() => {
                     startShow(show.id);
