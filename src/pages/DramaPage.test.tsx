@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { stubLandscape } from '../../tests/landscape';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
-import { dramaArtFor, seriesEpisodesOf } from '../dramas';
+import { dramaArtFor, findDrama, seriesEpisodesOf } from '../dramas';
 import { useMiniPlayer } from '../hooks/useMiniPlayer';
 import { usePlayer } from '../player/usePlayer';
 import { saveProgress } from '../services/progressStore';
@@ -435,7 +435,9 @@ describe('DramaPage', () => {
                 .getAllByRole('button')
                 .filter((b) => b.dataset.role === 'pick');
             expect(picks).toHaveLength(12);
-            expect(picks[0]).toHaveAccessibleName('好朋友手牽手，播緊第 2 集');
+            expect(picks[0]).toHaveAccessibleName(
+                `好朋友手牽手，播緊第 2 集，聽完 1 / ${FRIENDS.length} 集`,
+            );
             expect(picks[1]).toHaveAccessibleName('三十六計，未聽 · 36 集');
             expect(picks[2]).toHaveAccessibleName('初戀嗱喳麵，未聽 · 26 集');
             expect(picks[3]).toHaveAccessibleName('大妒忌，未聽 · 3 集');
@@ -453,6 +455,42 @@ describe('DramaPage', () => {
                 'aria-pressed',
                 'true',
             );
+        });
+
+        it('puts each 短篇’s own disc in its row, falling back to the drama disc', async () => {
+            const sammy = seriesEpisodesOf('sammy-kitty');
+            // 聽過先會自動播（第一次入唔播，見 first-visit 測試）
+            saveProgress(sammy[0]?.url ?? '', 60, 1200);
+            const { audio } = openDrama('sammy-kitty');
+            await waitFor(() => expect(audio.src).not.toBe(''));
+            await userEvent.click(screen.getByRole('button', { name: '全集' }));
+
+            const rows = within(screen.getByRole('dialog', { name: '全集' })).getAllByRole(
+                'listitem',
+            );
+            const shown = rows.map((r) => r.querySelector('img')?.getAttribute('src'));
+            // 行嘅讀屏名「短篇名，狀態」→ 攞返短篇名
+            const arcOf = (r: HTMLElement) =>
+                r.querySelector('[data-role="pick"]')?.getAttribute('aria-label')?.split('，')[0];
+            const expected = rows.map((r) => {
+                const first = sammy.find((e) => e.arc === arcOf(r));
+                return first ? dramaArtFor(first) : undefined;
+            });
+            expect(shown).toEqual(expected);
+            expect(new Set(shown).size).toBe(rows.length);
+        });
+
+        it('shows the drama disc on every row when no 短篇 has its own (芝See)', async () => {
+            listenedBefore();
+            const { audio } = openDrama('chisee');
+            await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
+            await userEvent.click(screen.getByRole('button', { name: '全集' }));
+
+            const covers = within(screen.getByRole('dialog', { name: '全集' }))
+                .getAllByRole('listitem')
+                .map((r) => r.querySelector('img')?.getAttribute('src'));
+            expect(covers).toHaveLength(12);
+            expect(new Set(covers)).toEqual(new Set([findDrama('chisee')?.theme.art]));
         });
 
         it('moves the playing 短篇 to the front of the chips, after 全集', async () => {

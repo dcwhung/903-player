@@ -9,13 +9,14 @@ import { PlayerPanel } from '../components/PlayerPanel/PlayerPanel';
 import { StatusMessage } from '../components/StatusMessage/StatusMessage';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { NEUTRAL_THEME } from '../config/showThemes';
-import { findEnabledDrama, type DramaConfig } from '../dramas';
+import { dramaArtFor, findEnabledDrama, type DramaConfig } from '../dramas';
 import { LANDSCAPE_QUERY } from '../config/layout';
 import { useGoHome } from '../hooks/useGoHome';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { usePlayer } from '../player/usePlayer';
 import { t } from '../i18n/t';
 import { formatDateLabel } from '../utils/date';
+import type { ArcSummary } from '../selectors/arcProgress';
 import type { SeriesEpisode } from '../types/drama';
 import { PLAYBACK_LINE_KEY, type PlaybackLineState } from '../utils/playbackState';
 import { hasKnownDuration } from '../utils/time';
@@ -51,6 +52,12 @@ const arcPickerLabel = (
     const label = t('drama.nowPlayingArcShort', { arc: current.arc, episode });
     return t(PLAYBACK_LINE_KEY[state], { label });
 };
+
+/**
+ * 全集表每行碟面：同唱片一樣用 dramaArtFor（短篇有自己碟面就用，冇就劇集主碟面），
+ * 拎嗰個短篇任何一集都得，resume 一定有
+ */
+const arcCover = (summary: ArcSummary): string => dramaArtFor(summary.resume);
 
 /** 橫版唱片下面「現正播放」：短篇加埋第幾個 / 幾多集（按排位，唔係集數），下一行集名 */
 const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, arcTotal: number) => ({
@@ -132,6 +139,7 @@ const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
             onPick={sheet.pick}
             onPlay={sheet.play}
             onClose={sheet.close}
+            coverOf={arcCover}
         />
     );
     return (

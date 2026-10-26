@@ -55,6 +55,7 @@ const renderSheet = (overrides: Partial<Parameters<typeof ArcSheet>[0]> = {}) =>
         onPick: vi.fn(),
         onPlay: vi.fn(),
         onClose: vi.fn(),
+        coverOf: (s: ArcSummary) => `/covers/${s.arc}.webp`,
         ...overrides,
     };
     render(<ArcSheet {...props} />);
@@ -89,10 +90,10 @@ describe('ArcSheet', () => {
             '已聽完',
         ]);
         expect(picks().map((b) => b.getAttribute('aria-label'))).toEqual([
-            '好朋友手牽手，播緊第 2 集',
+            '好朋友手牽手，播緊第 2 集，聽完 1 / 4 集',
             '青春期眞神奇，未聽 · 3 集，新上架',
             '小苦妹撲水，未聽 · 4 集',
-            '青春期，下一集係第 2 集',
+            '青春期，下一集係第 2 集，聽完 1 / 4 集',
             '大妒忌，聽完 · 3 集',
         ]);
         expect(picks()[0]).toHaveAttribute('aria-current', 'true');
@@ -103,7 +104,7 @@ describe('ArcSheet', () => {
         renderSheet({ current: undefined, isPlaying: false });
 
         expect(
-            screen.getByRole('button', { name: '好朋友手牽手，聽到第 2 集 3:20' }),
+            screen.getByRole('button', { name: '好朋友手牽手，聽到第 2 集 3:20，聽完 1 / 4 集' }),
         ).toBeInTheDocument();
     });
 
@@ -137,6 +138,43 @@ describe('ArcSheet', () => {
         await userEvent.click(screen.getByTestId('arc-sheet-backdrop'));
         await userEvent.keyboard('{Escape}');
         expect(onClose).toHaveBeenCalledTimes(3);
+    });
+
+    it('shows each 短篇’s own cover inside its progress ring, hidden from screen readers', () => {
+        renderSheet();
+
+        // 碟面係裝飾：alt=""、唔入讀屏（狀態已經喺行嘅 aria-label）
+        expect(picks().map((b) => b.querySelector('img')?.getAttribute('src'))).toEqual([
+            '/covers/好朋友手牽手.webp',
+            '/covers/青春期眞神奇.webp',
+            '/covers/小苦妹撲水.webp',
+            '/covers/青春期.webp',
+            '/covers/大妒忌.webp',
+        ]);
+        picks().forEach((b) => expect(b.querySelector('img')).toHaveAttribute('alt', ''));
+        expect(within(picks()[0]!).queryByRole('img')).not.toBeInTheDocument();
+    });
+
+    it('passes the whole summary to coverOf, so a 短篇 without a disc can fall back', () => {
+        const coverOf = vi.fn(() => '/drama-disc.webp');
+        renderSheet({ coverOf });
+
+        expect(coverOf).toHaveBeenCalledWith(UNPLAYED);
+        picks().forEach((b) =>
+            expect(b.querySelector('img')).toHaveAttribute('src', '/drama-disc.webp'),
+        );
+    });
+
+    it('counts watched / total in a pill under the cover until the 短篇 is finished', () => {
+        renderSheet();
+        const [playing, fresh, , , done] = picks();
+
+        expect(within(playing!).getByText('1/4')).toHaveAttribute('data-role', 'count');
+        expect(within(fresh!).getByText('0/3')).toHaveAttribute('data-role', 'count');
+        // 聽完：冇 pill，改出 ✓
+        expect(done!.querySelector('[data-role="count"]')).toBeNull();
+        expect(done!.querySelector('[data-role="done"]')).not.toBeNull();
+        expect(playing!.querySelector('[data-role="done"]')).toBeNull();
     });
 
     it('moves focus into the sheet when it opens', () => {
