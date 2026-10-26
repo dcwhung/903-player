@@ -68,4 +68,12 @@ describe('fillRows', () => {
             rows: 4,
         });
     });
+
+    // S-495：鍵盤彈出 / 極細 split view，連指示點都放唔落：唔好計出負數行高（invalid CSS）
+    it.each([10, 24])(
+        'should not fill the rows when %ipx leaves no room above the dots',
+        (availablePx) => {
+            expect(fillRows({ ...PHONE, totalRows: rowsOf(8), availablePx })).toEqual({ rows: 1 });
+        },
+    );
 });
