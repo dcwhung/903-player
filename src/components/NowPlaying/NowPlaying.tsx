@@ -1,5 +1,5 @@
 import { t } from '../../i18n/t';
-import { PLAYBACK_LINE_KEY, type PlaybackState } from '../../utils/playbackState';
+import { PLAYBACK_LINE_KEY, type PlaybackLineState } from '../../utils/playbackState';
 import { Marquee } from '../Marquee/Marquee';
 import styles from './NowPlaying.module.css';
 
@@ -10,8 +10,8 @@ interface NowPlayingProps {
     detail?: string | undefined;
     /** 未讀到時長（例如斷網）：第一行改為「連線中…」 */
     connecting: boolean;
-    /** 字眼：預設「現正播放」；廣播劇頁暫停講「已暫停」、未開始講「下一集」 */
-    status?: PlaybackState;
+    /** 字眼：預設「現正播放」；廣播劇頁暫停講「已暫停」、未開始講「下一集」、未載入叫用戶揀短篇 */
+    status?: PlaybackLineState;
 }
 
 /**

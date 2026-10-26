@@ -14,6 +14,11 @@ interface PlayerGaugeProps {
     artRef?: RefObject<HTMLImageElement | null>;
     /** 日子條拖緊（捉住碟）：碟唔自轉 */
     held?: boolean;
+    /**
+     * 有傳 = player 未載入呢頁嘅嘢（例如劇集頁播緊其他節目）：時間佔位、弧形空、碟唔轉、掣係播放樣，
+     * 撳播放 / 由頭播放就叫呢個開始播呢頁；唔跟住顯示其他嘢嘅時間同播放狀態
+     */
+    onStart?: (() => void) | undefined;
 }
 
 const RESTART_ICON_SIZE = 22;
@@ -23,11 +28,36 @@ const TOGGLE_ICON_SIZE = 26;
 const formatClock = (seconds: number, known: boolean): string =>
     known ? formatDuration(seconds) : t('player.unknownDuration');
 
-/** 唱片 + 弧形進度 + 時間 + 由頭播放：節目頁播放器同今日節目卡共用 */
-export const PlayerGauge = ({ art, artRef, held = false }: PlayerGaugeProps) => {
+/** 未開始樣：弧形鎖住，拖唔到亦 seek 唔到 */
+const ignore = () => undefined;
+
+/** 唱片格要顯示嘅嘢：平時跟 player；有 onStart（未載入呢頁嘅嘢）就成個係未開始樣，唔跟 player */
+const useGaugeView = (held: boolean, onStart: (() => void) | undefined) => {
     const { player, known, shownTime, arc, disc } = useGaugeGestures(held);
+    if (onStart) {
+        return {
+            known: false,
+            shownTime: 0,
+            max: 0,
+            seek: ignore,
+            isPlaying: false,
+            arc: { value: 0, locked: true, onPreview: ignore },
+            disc: { faceRef: disc.faceRef, spinning: false, upright: true, scrub: undefined },
+            toggle: onStart,
+            restart: onStart,
+        };
+    }
+    const { duration: max, seek, isPlaying } = player;
+    const toggle = () => void player.toggle();
+    const restart = () => void player.restart();
+    return { known, shownTime, max, seek, isPlaying, arc, disc, toggle, restart };
+};
+
+/** 唱片 + 弧形進度 + 時間 + 由頭播放：節目頁播放器同今日節目卡共用 */
+export const PlayerGauge = ({ art, artRef, held = false, onStart }: PlayerGaugeProps) => {
+    const { known, shownTime, max, isPlaying, ...view } = useGaugeView(held, onStart);
     // 讀屏同畫面一樣：未知時長讀佔位，唔讀 0:00
-    const total = formatClock(player.duration, known);
+    const total = formatClock(max, known);
     const formatValueText = (seconds: number) =>
         t('player.progressText', { current: formatClock(seconds, known), total });
 
@@ -35,15 +65,15 @@ export const PlayerGauge = ({ art, artRef, held = false }: PlayerGaugeProps) => 
         <div className={styles.gauge}>
             <div className={styles.arc}>
                 <ArcSlider
-                    {...arc}
-                    max={player.duration}
-                    onSeek={player.seek}
+                    {...view.arc}
+                    max={max}
+                    onSeek={view.seek}
                     label={t('player.progress')}
                     formatValueText={formatValueText}
                 />
             </div>
             <div className={styles.discArea}>
-                <Disc art={art} artRef={artRef} {...disc} />
+                <Disc art={art} artRef={artRef} {...view.disc} />
             </div>
             {/* 外框止喺掣旁邊，入面嘅字放唔落就向外伸（見 PlayerPanel.module.css .time） */}
             <span className={`${styles.time} ${styles.elapsed}`}>
@@ -57,17 +87,17 @@ export const PlayerGauge = ({ art, artRef, held = false }: PlayerGaugeProps) => 
                     type="button"
                     className={styles.restart}
                     aria-label={t('player.restart')}
-                    onClick={() => void player.restart()}
+                    onClick={view.restart}
                 >
                     <RestartIcon size={RESTART_ICON_SIZE} />
                 </button>
                 <button
                     type="button"
                     className={styles.toggle}
-                    aria-label={t(player.isPlaying ? 'player.pause' : 'player.play')}
-                    onClick={() => void player.toggle()}
+                    aria-label={t(isPlaying ? 'player.pause' : 'player.play')}
+                    onClick={view.toggle}
                 >
-                    {player.isPlaying ? (
+                    {isPlaying ? (
                         <PauseIcon size={TOGGLE_ICON_SIZE} />
                     ) : (
                         <PlayIcon size={TOGGLE_ICON_SIZE} />

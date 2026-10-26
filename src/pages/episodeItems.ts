@@ -27,7 +27,8 @@ export type RowLabels = Pick<EpisodeItem, 'dayMonth' | 'weekday' | 'tag'>;
 /** 計每一行狀態要嘅 player / 進度資料（節目頁、廣播劇頁共用） */
 export interface RowContext {
     currentUrl: string | undefined;
-    live: LiveTime;
+    /** 揀中集嘅即時時間；未載入（例如劇集頁播緊其他嘢）就冇，用返 localStorage 進度 */
+    live: LiveTime | undefined;
     progressMap: Readonly<Record<string, Progress>>;
     /** 揀中嗰集播緊 */
     isPlaying: boolean;

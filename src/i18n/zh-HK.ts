@@ -150,6 +150,8 @@ export const zhHK = {
         arcPlayingEpisode: '播緊第 {no} 集',
         arcResumeAt: '聽到第 {no} 集 {time}',
         arcNext: '下一集係第 {no} 集',
+        // 短篇劇集頁未載入呢套劇（第一次入未揀，或者播緊其他嘢）：唱片下面 / chips 上面嗰行
+        pickArcToStart: '揀一個短篇開始',
         arcNew: '未聽 · {count} 集',
         arcDone: '聽完 · {count} 集',
         arcRow: '{arc}，{status}',
