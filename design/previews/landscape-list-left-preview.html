@@ -473,17 +473,17 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
 <script>
 (() => {
     const IMG = {
-        badgirl: '../../src/assets/shows/badgirl.jpg',
-        gongzi: '../../src/assets/shows/gongzi.jpg',
-        wanni: '../../src/assets/shows/wanni.jpg',
-        sunnyday: '../../src/assets/shows/sunnyday.jpg',
-        westair: '../../src/assets/shows/westair.jpg',
-        waves: '../../src/assets/shows/waves.jpg',
-        lalala: '../../src/assets/shows/lalala.jpg',
+        badgirl: '../../src/shows/badgirl/art.jpg',
+        gongzi: '../../src/shows/gongzi/art.jpg',
+        wanni: '../../src/shows/wanni/art.jpg',
+        sunnyday: '../../src/shows/sunnyday/art.jpg',
+        westair: '../../src/shows/westair/art.jpg',
+        waves: '../../src/shows/waves/art.jpg',
+        lalala: '../../src/shows/lalala/art.jpg',
         banner: '../banner.webp',
         bannerWide: '../banner-wide.webp',
         todayTile: '../today-tile.webp',
-        chisee: '../../src/assets/dramas/chisee-disc.webp',
+        chisee: '../../src/dramas/chisee/disc.webp',
     };
     // src/config/showThemes.ts
     const THEMES = {
@@ -495,7 +495,7 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
         lalala: ['#0f2826', '#173634', '#2e524e', '#f7a531', '#0f2826', '#ffe27a', '#f1f7f5', '#a5c2bd', '#081a19', '#1d403d'],
     };
     const THEME_VARS = ['bg', 'surface', 'track', 'accent', 'on-accent', 'title', 'text', 'muted', 'shadow-dark', 'shadow-light'];
-    // src/config/shows.ts 次序
+    // src/shows/<id>/show.json order 次序
     const SHOWS = [
         ['badgirl', 'Bad Girl大過佬'], ['gongzi', '公子會'], ['wanni', '雲妮鍾情'], ['sunnyday', '在晴朗的一天出發'],
         ['westair', '西加航空'], ['waves', '口水多過浪花'], ['lalala', '聖艾粒LaLaLaLa'],
