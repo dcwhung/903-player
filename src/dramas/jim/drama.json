@@ -1,0 +1,42 @@
+{
+    "name": "少爺占系列",
+    "kind": "series",
+    "enabled": true,
+    "order": 5,
+    "addedAt": "2026-10-26",
+    "tile": "tile.webp",
+    "disc": "disc.webp",
+    "audio": {
+        "host": "r2",
+        "folder": "少爺占系列",
+        "file": "{no2} - {arc} - 第{noZh}集[ - {title}].m4a"
+    },
+    "theme": {
+        "bg": "#e3e8f8",
+        "surface": "#f0f3fc",
+        "track": "#bfc8ea",
+        "accent": "#2b3fb6",
+        "onAccent": "#ffffff",
+        "title": "#1c2a8e",
+        "accentText": "#1c2a8e",
+        "text": "#171d3a",
+        "muted": "#4f5880",
+        "shadowDark": "#c2cae6",
+        "shadowLight": "#fafbff",
+        "scheme": "light",
+        "statusBar": "#1c2a8e",
+        "headerRule": "linear-gradient(90deg, #f5b400 0 60%, #2b3fb6 60%) 0 100% / 100% 3px no-repeat"
+    },
+    "arcs": [
+        {
+            "name": "八王子",
+            "disc": "hachioji-disc.webp",
+            "episodes": 21
+        },
+        {
+            "name": "忠孝公路",
+            "disc": "zhongxiao-disc.webp",
+            "episodes": 17
+        }
+    ]
+}
