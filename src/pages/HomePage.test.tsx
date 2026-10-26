@@ -213,14 +213,22 @@ describe('HomePage', () => {
         expect(audio.play).toHaveBeenCalled();
     });
 
-    it('should flag the page while the mini player shows, so phone-sideways tiles can use its room otherwise', async () => {
+    it('should flag the page while the mini player shows, so the home only reserves its room then (any orientation)', async () => {
         const { unmount } = renderWithProviders(<HomePage />);
         expect(screen.getByRole('main')).not.toHaveAttribute('data-mini-player');
         unmount();
 
         renderWithProviders(<HomePage />, { recordings: RECORDINGS });
         await screen.findByRole('region', { name: '正在播放（今日節目）' });
-        expect(screen.getByRole('main')).toHaveAttribute('data-mini-player');
+        expect(screen.getByRole('main')).toHaveAttribute('data-mini-player', 'multi');
+    });
+
+    it('should tell the page a single-audio mini player shows, so it reserves the shorter room', async () => {
+        const episode = seriesEpisodesOf('chisee')[0]!;
+        await arriveHomeWith(episode);
+
+        await screen.findByRole('region', { name: '正在播放（廣播劇）' });
+        expect(screen.getByRole('main')).toHaveAttribute('data-mini-player', 'single');
     });
 
     it('should paint the page canvas with the gradient bottom, even with a floating mini player', async () => {

@@ -25,6 +25,8 @@
 
     --font-family: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
     --theme-title-font: var(--font-family);
+    /* 等寬字：debug panel 對數用，數字上下對齊（W-463） */
+    --font-family-mono: ui-monospace, monospace;
     /* 日子條每格上面嘅星期（一、二…） */
     --font-size-2xs: calc(11px * var(--ui-scale));
     --font-size-xs: calc(12px * var(--ui-scale));
@@ -171,14 +173,19 @@
     /* 主頁節目格（ShowTile）16:9；頁頂橫額嘅高度用同一個比例計，兩者一樣高 */
     --tile-aspect-w: 16;
     --tile-aspect-h: 9;
+    /* 直版主頁節目格填滿高度（T8）：16:9 係最矮，每行最多高 30%（useRowsPerPage 讀） */
+    --show-tile-max-grow: 1.3;
     /* 主頁「廣播劇」tab 嘅劇集格（一行一套） */
     --drama-tile-aspect-w: 2;
     --drama-tile-aspect-h: 1;
     /*
-     * 直版廣播劇書架（疊卡「捲相簿」）：每張卡隔幾高（矮過張卡，蓋住下一張）、focus 卡上面露出上一張幾多、
-     * 未 focus 嘅卡縮幾多同蓋幾暗、轉 focus 嘅過渡時間（prototype T2 用戶揀定）
+     * 直版廣播劇書架（疊卡「捲相簿」，prototype T2 / T8 用戶揀定）：卡高同卡距由 useShelfFocus 按書架高計
+     * （卡最矮 闊 × min-ratio（2:1）、唔使疊時最高 闊 × max-ratio；疊卡間距最細 min-step，再擠就上下捲）；
+     * focus 卡上面露出上一張幾多、未 focus 嘅卡縮幾多同蓋幾暗、轉 focus 嘅過渡時間
      */
-    --drama-shelf-step: calc(112px * var(--ui-scale));
+    --drama-shelf-min-ratio: 0.5;
+    --drama-shelf-max-ratio: 0.6;
+    --drama-shelf-min-step: calc(72px * var(--ui-scale));
     --drama-shelf-peek: calc(24px * var(--ui-scale));
     --drama-shelf-rest-scale: 0.94;
     --drama-shelf-rest-dim: 0.45;
@@ -204,6 +211,8 @@
      * 主頁底部留位（版本號貼住 mini player 上面）同 mini player 自己共用
      */
     --mini-player-height: calc(var(--touch-target-min) + var(--touch-target) + var(--space-4));
+    /* 得一段錄音（例如廣播劇一集）冇指示點：頂同底一樣 --space-4，唔使留指示點嘅撳得到範圍 */
+    --mini-player-height-single: calc(var(--touch-target) + var(--space-4) * 2);
     --mini-player-offset-bottom: calc(
         max(0px, calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))) +
             var(--space-4)
@@ -215,6 +224,10 @@
     /* 橫額右下角版本號：半透明深底 + 白字（插畫係淺藍，對比度 ≥ 4.5:1） */
     --version-badge-bg: rgb(0 0 0 / 55%);
     --version-badge-text: #ffffff;
+    /* 隱藏 viewport debug panel（版本號連撳 5 下）：深底白字，疊喺 mini player（z-index 10）上面 */
+    --viewport-debug-bg: rgb(0 0 0 / 85%);
+    --viewport-debug-text: #ffffff;
+    --viewport-debug-z: 30;
     /* 今日節目插畫係藍色：落影用插畫底部深藍，同其他節目格一樣泥膠感 */
     --shadow-today-tile: 0 6px 0 #1f7fd0, 0 10px 18px rgb(20 40 65 / 30%);
 

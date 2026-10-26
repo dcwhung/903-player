@@ -33,6 +33,42 @@ export const rowsPerPage = ({
     return Math.max(1, rowsThatFit(availablePx - dotsPx, tilePx, gapPx));
 };
 
+interface FillInput {
+    /** 一頁節目格可以用嘅高度（已扣走頁內上下留白） */
+    availablePx: number;
+    /** 一欄闊 */
+    columnPx: number;
+    gapPx: number;
+    totalRows: number;
+    dotsPx: number;
+    /** 最矮嘅格高 ÷ 欄闊（16:9 → 9 / 16） */
+    tileRatio: number;
+    /** 一行最高係最矮嘅幾多倍 */
+    maxGrow: number;
+}
+
+export interface FillRows {
+    rows: number;
+    /** 每行實際幾高；未量到尺寸就冇（格照用 CSS 嘅 16:9） */
+    rowPx?: number;
+}
+
+/**
+ * 直版填滿（T8）：按最矮一行（欄闊 × 16:9）計每頁幾多行（放唔晒先分頁，見 rowsPerPage），
+ * 再將剩低高度平分畀每行，但最多高過 16:9 maxGrow 倍；再多嘅高度留喺最底。
+ * 連一行都放唔落（每頁會收窄，見 shrunkGridWidth）就一行填滿
+ */
+export const fillRows = ({ columnPx, tileRatio, maxGrow, ...input }: FillInput): FillRows => {
+    const tilePx = columnPx * tileRatio;
+    const rows = rowsPerPage({ ...input, tilePx });
+    if (tilePx <= 0) return { rows };
+    const roomPx = input.availablePx - (rows < input.totalRows ? input.dotsPx : 0);
+    const sharedPx = (roomPx - input.gapPx * (rows - 1)) / rows;
+    // S-495：極矮（連指示點都放唔落）就唔填滿，同未量到一樣用 CSS 16:9，唔會出負數 / 0 行高
+    if (sharedPx <= 0) return { rows };
+    return { rows, rowPx: Math.min(sharedPx, tilePx * maxGrow) };
+};
+
 interface ShrinkInput {
     /** 一行節目格可以用嘅高度（已扣走指示點） */
     heightPx: number;

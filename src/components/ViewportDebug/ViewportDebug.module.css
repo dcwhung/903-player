@@ -1,0 +1,50 @@
+/* 細細嘅半透明深底 panel，浮喺左上（讓開頂部安全區），蓋住頁面同 mini player */
+.panel {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + var(--space-2));
+    left: var(--space-2);
+    z-index: var(--viewport-debug-z);
+    max-width: calc(100vw - 2 * var(--space-2));
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-cell);
+    background: var(--viewport-debug-bg);
+    color: var(--viewport-debug-text);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-2xs);
+}
+
+.panel:focus-visible {
+    outline: var(--focus-ring-width) solid var(--viewport-debug-text);
+}
+
+.list {
+    margin: 0;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.row dd {
+    margin: 0;
+    font-weight: 700;
+}
+
+/*
+ * 量度用（唔顯示）：padding 係四邊安全區（env()），闊度係 --mini-player-offset-bottom 計出嚟嘅 px。
+ * content-box：闊度唔包 padding（全域 * 係 border-box）
+ */
+.probe {
+    position: fixed;
+    top: 0;
+    left: 0;
+    box-sizing: content-box;
+    width: var(--mini-player-offset-bottom);
+    height: 0;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+        env(safe-area-inset-left);
+    visibility: hidden;
+    pointer-events: none;
+}

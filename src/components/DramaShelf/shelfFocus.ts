@@ -1,4 +1,4 @@
-/** 直版疊卡書架嘅尺寸（由 CSS 量，見 useShelfFocus） */
+/** 直版疊卡書架嘅尺寸（卡距由 stackLayout 按書架高計，留白由 CSS 量，見 useShelfFocus） */
 export interface ShelfMetrics {
     /** 每張卡之間嘅距離（一行高；卡高過一行，所以會蓋住下一張） */
     stepPx: number;
@@ -7,6 +7,16 @@ export interface ShelfMetrics {
     /** focus 卡上面露出上一張卡幾多 */
     peekPx: number;
 }
+
+/**
+ * 兩次量度嘅排法係咪一樣（每個欄位逐個比，冇量到 = undefined）。
+ * S-496：一樣就唔 set 新 object，ResizeObserver 連續觸發唔會白白 re-render
+ */
+export const sameShelfLayout = <T extends object>(a?: T, b?: T): boolean => {
+    if (!a || !b) return a === b;
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    return [...keys].every((key) => Reflect.get(a, key) === Reflect.get(b, key));
+};
 
 /** 第 index 張卡做 focus 時書架捲到幾多：釘頂但留 peek；第一張冇上一張，貼返頂（0） */
 export const snapTop = (index: number, { stepPx, topPx, peekPx }: ShelfMetrics): number =>

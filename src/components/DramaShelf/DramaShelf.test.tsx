@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { stubLandscape } from '../../../tests/landscape';
 import { DramaShelf, type DramaShelfItem } from './DramaShelf';
@@ -67,35 +67,53 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         else Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo');
     };
 
-    /** jsdom 冇 layout：每張卡隔 112px、頂留 8px、focus 卡上面露 24px、書架可見 500px 高 */
-    const mockShelf = () => {
-        const realStyle = window.getComputedStyle.bind(window);
+    /** 由 tokens.css 讀嘅值：卡間距、focus 卡上面露幾多、卡最矮 / 最高比例、疊卡間距最細 */
+    const TOKENS: Record<string, string> = {
+        '--home-tile-gap': '12px',
+        '--drama-shelf-peek': '24px',
+        '--drama-shelf-min-ratio': '0.5',
+        '--drama-shelf-max-ratio': '0.6',
+        '--drama-shelf-min-step': '72px',
+    };
+
+    /**
+     * jsdom 冇 layout：書架 430px 闊（左右留白 16px → 卡闊 398px，最矮 199px）、上下留白 8px。
+     * 預設 400px 高（扣走留白 384px）：4 張要疊到間距 62px，細過 72px → 固定 72px 上下捲
+     */
+    const realStyle = window.getComputedStyle.bind(window);
+    const mockShelf = (heightPx = 400) => {
+        vi.restoreAllMocks();
         const values: Record<string, string> = {
-            gridAutoRows: '112px',
             paddingTop: '8px',
-            scrollPaddingTop: '24px',
+            paddingBottom: '8px',
+            paddingLeft: '16px',
+            paddingRight: '16px',
         };
         vi.spyOn(window, 'getComputedStyle').mockImplementation((el) => {
             const style = realStyle(el);
             return new Proxy(style, {
                 get: (target, key) => {
+                    if (key === 'getPropertyValue') {
+                        return (name: string) => TOKENS[name] ?? target.getPropertyValue(name);
+                    }
                     if (typeof key === 'string' && key in values) return values[key];
                     const value: unknown = Reflect.get(target, key);
                     return typeof value === 'function' ? value.bind(target) : value;
                 },
             });
         });
-        vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(500);
+        vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(heightPx);
+        vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(430);
         scrollTo = vi.fn();
         HTMLElement.prototype.scrollTo =
             scrollTo as unknown as typeof HTMLElement.prototype.scrollTo;
     };
 
-    const renderShelf = () => {
-        const onOpen = NAMES.map(() => vi.fn());
+    const renderShelf = (names = NAMES) => {
+        const onOpen = names.map(() => vi.fn());
         render(
             <DramaShelf
-                items={NAMES.map((name, i) => item({ id: name, name, onOpen: onOpen[i] }))}
+                items={names.map((name, i) => item({ id: name, name, onOpen: onOpen[i] }))}
             />,
         );
         return onOpen;
@@ -107,7 +125,7 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
             .filter((b) => b.hasAttribute('data-focused'))
             .map((b) => b.getAttribute('aria-label'));
 
-    beforeEach(mockShelf);
+    beforeEach(() => mockShelf());
     afterEach(() => {
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
@@ -118,8 +136,11 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         renderShelf();
 
         expect(focused()).toEqual(['劇 1']);
-        // 500 − 112 − 24：最尾一張都捲得到 snap 位
-        expect(screen.getByRole('navigation')).toHaveStyle({ paddingBottom: '364px' });
+        // 400 − 72 − 24：最尾一張都捲得到 snap 位
+        const shelf = screen.getByRole('navigation');
+        expect(shelf).toHaveAttribute('data-scroll');
+        expect(shelf.style.paddingBottom).toBe('304px');
+        expect(shelf.style.getPropertyValue('--drama-shelf-step')).toBe('72px');
     });
 
     it('scrolls a dimmed card into focus when tapped, without opening it', async () => {
@@ -128,7 +149,7 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         await userEvent.click(tile('劇 3'));
 
         expect(onOpen[2]).not.toHaveBeenCalled();
-        expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 208 }));
+        expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 128 }));
         expect(focused()).toEqual(['劇 3']);
     });
 
@@ -144,7 +165,7 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         renderShelf();
         const shelf = screen.getByRole('navigation');
 
-        shelf.scrollTop = 96;
+        shelf.scrollTop = 56;
         fireEvent.scroll(shelf);
 
         expect(focused()).toEqual(['劇 2']);
@@ -156,7 +177,7 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         await userEvent.tab();
         await userEvent.tab();
         expect(focused()).toEqual(['劇 2']);
-        expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ top: 96 }));
+        expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ top: 56 }));
 
         await userEvent.keyboard('{Enter}');
         expect(onOpen[1]).toHaveBeenCalledTimes(1);
@@ -168,6 +189,164 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         fireEvent.click(tile('劇 4'), { detail: 0 });
 
         expect(onOpen[3]).toHaveBeenCalledTimes(1);
+    });
+
+    it('overlaps the cards down to the bottom without scrolling when they fit', () => {
+        // 650px 高（扣走留白 634px）：(634 − 199) ÷ 3 = 145，最後一張卡底到書架底
+        mockShelf(650);
+        renderShelf();
+
+        const shelf = screen.getByRole('navigation');
+        expect(shelf).not.toHaveAttribute('data-scroll');
+        expect(shelf.style.getPropertyValue('--drama-shelf-step')).toBe('145px');
+        expect(shelf.style.getPropertyValue('--drama-shelf-card')).toBe('199px');
+        expect(shelf.style.paddingBottom).toBe('');
+    });
+
+    it('makes a dimmed card the focus straight away when the shelf does not scroll', async () => {
+        mockShelf(650);
+        const onOpen = renderShelf();
+
+        await userEvent.click(tile('劇 3'));
+        expect(onOpen[2]).not.toHaveBeenCalled();
+        expect(scrollTo).not.toHaveBeenCalled();
+        expect(focused()).toEqual(['劇 3']);
+
+        await userEvent.click(tile('劇 3'));
+        expect(onOpen[2]).toHaveBeenCalledTimes(1);
+    });
+
+    it('brings a card into focus by keyboard without scrolling when the shelf does not scroll', async () => {
+        mockShelf(650);
+        renderShelf();
+
+        await userEvent.tab();
+        await userEvent.tab();
+
+        expect(focused()).toEqual(['劇 2']);
+        expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    /** 假 ResizeObserver：記住 callback，test 自己觸發（模擬書架變高 / 矮） */
+    const stubResizeObserver = () => {
+        const observer = { trigger: () => {} };
+        vi.stubGlobal(
+            'ResizeObserver',
+            class {
+                constructor(callback: () => void) {
+                    observer.trigger = callback;
+                }
+                observe = vi.fn();
+                disconnect = vi.fn();
+            },
+        );
+        return observer;
+    };
+    /** 書架改高度（例如 mini player 出入），再等 ResizeObserver 通知 */
+    const resizeShelf = (observer: { trigger: () => void }, heightPx: number) => {
+        mockShelf(heightPx);
+        act(() => observer.trigger());
+    };
+
+    it('scrolls the focused card to the snap position when the shelf starts to scroll', async () => {
+        const observer = stubResizeObserver();
+        mockShelf(650);
+        renderShelf();
+        await userEvent.click(tile('劇 3'));
+
+        // mini player 出現，書架縮到 400px：要捲，snap 位要係 focus 嗰張（2 × 72 + 8 − 24）
+        resizeShelf(observer, 400);
+
+        const shelf = screen.getByRole('navigation');
+        expect(shelf).toHaveAttribute('data-scroll');
+        expect(shelf.scrollTop).toBe(128);
+        expect(focused()).toEqual(['劇 3']);
+    });
+
+    /**
+     * 真瀏覽器會將 scrollTop 截到 scrollHeight − clientHeight（jsdom 唔會）。
+     * scrollHeight 由而家 DOM 上嘅 inline layout 計：上留白 + 最尾一張卡底 + 底留位（冇就用留白）
+     */
+    const clampScrollTop = (shelf: HTMLElement) => {
+        const SHELF_PAD_PX = 8;
+        let top = 0;
+        const scrollHeight = () => {
+            const step = parseFloat(shelf.style.getPropertyValue('--drama-shelf-step'));
+            const card = parseFloat(shelf.style.getPropertyValue('--drama-shelf-card'));
+            const rows = shelf.querySelectorAll('button').length;
+            const content = Math.max(rows * step, (rows - 1) * step + card);
+            const bottom = parseFloat(shelf.style.paddingBottom) || SHELF_PAD_PX;
+            return SHELF_PAD_PX + content + bottom;
+        };
+        Object.defineProperty(shelf, 'scrollTop', {
+            configurable: true,
+            get: () => top,
+            set: (value: number) => {
+                top = Math.min(Math.max(0, value), scrollHeight() - shelf.clientHeight);
+            },
+        });
+    };
+
+    it('keeps a lower focused card at its snap position when a full shelf starts to scroll (W-465)', async () => {
+        const SEVEN = ['劇 1', '劇 2', '劇 3', '劇 4', '劇 5', '劇 6', '劇 7'];
+        const observer = stubResizeObserver();
+        // 650px 高：7 張疊到間距 72.5px 都放得落，唔使捲
+        mockShelf(650);
+        renderShelf(SEVEN);
+        const shelf = screen.getByRole('navigation');
+        clampScrollTop(shelf);
+        await userEvent.click(tile('劇 5'));
+
+        // mini player 出現，書架縮到 550px：要捲。舊 layout 最多只捲到 100px，
+        // 一定要等新 layout（72px 間距 + 底留位）commit 咗先捲去 4 × 72 + 8 − 24
+        resizeShelf(observer, 550);
+        fireEvent.scroll(shelf);
+
+        expect(shelf).toHaveAttribute('data-scroll');
+        expect(shelf.scrollTop).toBe(272);
+        expect(focused()).toEqual(['劇 5']);
+    });
+
+    it('keeps a lower focused card when a scrolling shelf grows enough to stop scrolling (CUI-0002)', async () => {
+        // 3 × 72 + 8 − 24：劇 4 嘅 snap 位
+        const SNAPPED_TOP_PX = 200;
+        const observer = stubResizeObserver();
+        mockShelf(650);
+        renderShelf();
+        const shelf = screen.getByRole('navigation');
+        clampScrollTop(shelf);
+        await userEvent.click(tile('劇 4'));
+        // mini player 出現，書架縮到 400px：要捲，捲去劇 4 嘅 snap 位
+        resizeShelf(observer, 400);
+        fireEvent.scroll(shelf);
+        expect(shelf.scrollTop).toBe(SNAPPED_TOP_PX);
+
+        // mini player 消失，書架一下子返去 650px：DOM 仲係舊 layout（要捲、有底留位），
+        // 瀏覽器喺 ResizeObserver 之前就截短 scrollTop 再觸發 scroll，唔可以照舊 layout 改 focus
+        mockShelf(650);
+        // 截短係瀏覽器重新 layout 時做：用新 clientHeight、舊 inline layout 再 set 一次
+        shelf.scrollTop = SNAPPED_TOP_PX;
+        fireEvent.scroll(shelf);
+        act(() => observer.trigger());
+        fireEvent.scroll(shelf);
+
+        expect(shelf).not.toHaveAttribute('data-scroll');
+        expect(shelf.scrollTop).toBe(0);
+        expect(focused()).toEqual(['劇 4']);
+    });
+
+    it('scrolls back to the top when the shelf stops scrolling', () => {
+        const observer = stubResizeObserver();
+        renderShelf();
+        const shelf = screen.getByRole('navigation');
+        shelf.scrollTop = 128;
+        fireEvent.scroll(shelf);
+
+        // 書架變高到 650px：唔使捲，overflow: hidden 都會留住 scrollTop，要自己捲返頂
+        resizeShelf(observer, 650);
+
+        expect(shelf).not.toHaveAttribute('data-scroll');
+        expect(shelf.scrollTop).toBe(0);
     });
 
     it('keeps plain tiles that open on tap in landscape (no stacked focus)', async () => {

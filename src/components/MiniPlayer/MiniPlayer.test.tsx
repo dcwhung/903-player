@@ -22,6 +22,22 @@ const props = (overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps => ({
 });
 
 describe('MiniPlayer', () => {
+    it('should keep the dots and their touch area above the row when there are several audios', () => {
+        render(<MiniPlayer {...props()} />);
+
+        const region = screen.getByRole('region', { name: '正在播放（今日節目）' });
+        expect(region).toHaveAttribute('data-mode', 'multi');
+        expect(region.querySelector('.dots')).not.toBeNull();
+    });
+
+    it('should drop the dots wrapper for a single audio (e.g. a drama episode)', () => {
+        render(<MiniPlayer {...props({ labels: ['黃金少年'], keys: ['/ep1.aac'], index: 0 })} />);
+
+        const region = screen.getByRole('region', { name: '正在播放（今日節目）' });
+        expect(region).toHaveAttribute('data-mode', 'single');
+        expect(region.querySelector('.dots')).toBeNull();
+    });
+
     it('names its region after what plays', () => {
         render(<MiniPlayer {...props({ region: '正在播放（廣播劇）' })} />);
         expect(screen.getByRole('region', { name: '正在播放（廣播劇）' })).toBeInTheDocument();

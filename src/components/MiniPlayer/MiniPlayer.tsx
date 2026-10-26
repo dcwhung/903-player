@@ -5,6 +5,7 @@ import { useViewportGap } from '../../hooks/useViewportGap';
 import { PageDots } from '../PageDots/PageDots';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import styles from './MiniPlayer.module.css';
+import { miniPlayerMode } from './miniPlayerMode';
 import { MiniPlayerProgress } from './MiniPlayerProgress';
 import { MiniPlayerRow } from './MiniPlayerRow';
 
@@ -51,13 +52,17 @@ export const MiniPlayer = ({
         if (next !== index) onChange(next);
     });
 
+    // 得一段錄音：冇指示點，連個 wrapper 都唔畫，CSS 唔留指示點個位（data-mode）
+    const mode = miniPlayerMode(keys);
     return createPortal(
         <ThemeScope theme={props.theme} fullPage={false} className={styles.wrapper}>
-            <section className={styles.player} aria-label={region} {...swipe}>
+            <section className={styles.player} aria-label={region} data-mode={mode} {...swipe}>
                 <MiniPlayerRow {...props} />
-                <div className={styles.dots}>
-                    <PageDots keys={keys} labels={labels} index={index} onSelect={onChange} />
-                </div>
+                {mode === 'multi' && (
+                    <div className={styles.dots}>
+                        <PageDots keys={keys} labels={labels} index={index} onSelect={onChange} />
+                    </div>
+                )}
                 <MiniPlayerProgress progress={props.progress} timeText={props.timeText} />
             </section>
         </ThemeScope>,
