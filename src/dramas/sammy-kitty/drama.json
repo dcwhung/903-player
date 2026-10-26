@@ -1,0 +1,83 @@
+{
+    "name": "森美小儀系列",
+    "kind": "series",
+    "enabled": true,
+    "order": 4,
+    "addedAt": "2026-10-26",
+    "tile": "tile.webp",
+    "disc": "disc.webp",
+    "audio": {
+        "host": "r2",
+        "folder": "森美小儀系列",
+        "file": "{no2} - {arc} - 第{noZh}集[ - {title}].m4a"
+    },
+    "theme": {
+        "bg": "#ffe3e3",
+        "surface": "#fff1f1",
+        "track": "#f3b9b9",
+        "accent": "#e7010e",
+        "onAccent": "#ffffff",
+        "title": "#b00010",
+        "accentText": "#b00010",
+        "text": "#2e0f12",
+        "muted": "#7d3c40",
+        "shadowDark": "#e9b7b7",
+        "shadowLight": "#fff8f8",
+        "scheme": "light",
+        "statusBar": "#b00010",
+        "headerRule": "linear-gradient(90deg, #e7010e, #1a1a1a) 0 100% / 100% 3px no-repeat"
+    },
+    "arcs": [
+        {
+            "name": "來不及聽你說愛我",
+            "disc": "too-late-disc.webp",
+            "episodes": 10
+        },
+        {
+            "name": "公子森林",
+            "disc": "forest-disc.webp",
+            "episodes": 40
+        },
+        {
+            "name": "十九樓半的夏天",
+            "disc": "summer-disc.webp",
+            "episodes": 10
+        },
+        {
+            "name": "森之愛情I - 森之聖誕",
+            "disc": "love-1-disc.webp",
+            "episodes": 10
+        },
+        {
+            "name": "森之愛情Ⅱ - 電燈膽",
+            "disc": "love-2-disc.webp",
+            "episodes": 9
+        },
+        {
+            "name": "森之聖誕2010",
+            "disc": "xmas-2010-disc.webp",
+            "episodes": [
+                "不會飛走的氣球",
+                "你在世界那邊",
+                "不死心",
+                "我的公園女王",
+                "愛情狗仔隊",
+                "斯德哥爾摩症候群",
+                "提神咖啡",
+                "兒嬉愛情",
+                "我的家",
+                "我的主診醫生",
+                "聖誕小屋",
+                "聖誕再造爸爸",
+                "兩個男人",
+                "聖誕村",
+                "愛情保險"
+            ]
+        },
+        {
+            "name": "森美幻想劇",
+            "disc": "fantasy-disc.webp",
+            "episodes": 15
+        }
+    ]
+}

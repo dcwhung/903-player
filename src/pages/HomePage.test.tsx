@@ -281,7 +281,7 @@ describe('HomePage', () => {
                 within(nav)
                     .getAllByRole('button')
                     .map((b) => b.getAttribute('aria-label')),
-            ).toEqual(['芝See菇Bi Family', '黃金少年']);
+            ).toEqual(['芝See菇Bi Family', '黃金少年', '森美小儀系列', '少爺占系列']);
             expect(screen.queryByRole('navigation', { name: '節目' })).not.toBeInTheDocument();
         });
 
