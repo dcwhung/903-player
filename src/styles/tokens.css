@@ -177,10 +177,13 @@
     --drama-tile-aspect-w: 2;
     --drama-tile-aspect-h: 1;
     /*
-     * 直版廣播劇書架（疊卡「捲相簿」）：每張卡隔幾高（矮過張卡，蓋住下一張）、focus 卡上面露出上一張幾多、
-     * 未 focus 嘅卡縮幾多同蓋幾暗、轉 focus 嘅過渡時間（prototype T2 用戶揀定）
+     * 直版廣播劇書架（疊卡「捲相簿」，prototype T2 / T8 用戶揀定）：卡高同卡距由 useShelfFocus 按書架高計
+     * （卡最矮 闊 × min-ratio（2:1）、唔使疊時最高 闊 × max-ratio；疊卡間距最細 min-step，再擠就上下捲）；
+     * focus 卡上面露出上一張幾多、未 focus 嘅卡縮幾多同蓋幾暗、轉 focus 嘅過渡時間
      */
-    --drama-shelf-step: calc(112px * var(--ui-scale));
+    --drama-shelf-min-ratio: 0.5;
+    --drama-shelf-max-ratio: 0.6;
+    --drama-shelf-min-step: calc(72px * var(--ui-scale));
     --drama-shelf-peek: calc(24px * var(--ui-scale));
     --drama-shelf-rest-scale: 0.94;
     --drama-shelf-rest-dim: 0.45;

@@ -41,16 +41,30 @@
 }
 
 /*
- * 直版疊卡（DramaShelf ShelfColumn 嘅 data-stacked）：每行 --drama-shelf-step 高，卡（2:1）高過一行，
- * 蓋住下一張。上下捲每張卡 snap；snap 位上面留 --drama-shelf-peek 睇到上一張（第一張貼頂，見 shelfFocus）。
- * 底留位由 useShelfFocus 計（inline padding-bottom），最尾一張都捲得到 snap 位
+ * 直版疊卡（DramaShelf ShelfColumn 嘅 data-stacked）：每行 --drama-shelf-step 高、每張卡 --drama-shelf-card 高
+ * （useShelfFocus 按書架高計，inline 設定；卡高過一行就蓋住下一張），疊到最後一張卡底到書架底。
+ * 放得晒就唔捲（overflow hidden）；放唔晒（data-scroll）先上下捲每張卡 snap，
+ * snap 位上面留 --drama-shelf-peek 睇到上一張（第一張貼頂，見 shelfFocus），
+ * 底留位由 useShelfFocus 計（inline padding-bottom），最尾一張都捲得到 snap 位。
+ * 未量到（冇 inline 變數）就照 2:1 一行一張排
  */
 .shelf[data-stacked] {
     position: relative;
     grid-auto-rows: var(--drama-shelf-step);
     row-gap: 0;
+    overflow-y: hidden;
+}
+
+.shelf[data-stacked][data-scroll] {
+    overflow-y: auto;
     scroll-padding-top: var(--drama-shelf-peek);
     scroll-snap-type: y mandatory;
+}
+
+/* 闊高都寫明，aspect-ratio（2:1）只係未量到時用 */
+.shelf[data-stacked] .tile {
+    width: 100%;
+    height: var(--drama-shelf-card, auto);
 }
 
 /* 未 focus：由頂中間縮細、蓋暗；focus 卡全大、全亮、浮喺上下兩張上面 */

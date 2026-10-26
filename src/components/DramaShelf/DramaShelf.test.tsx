@@ -67,25 +67,43 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         else Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo');
     };
 
-    /** jsdom 冇 layout：每張卡隔 112px、頂留 8px、focus 卡上面露 24px、書架可見 500px 高 */
-    const mockShelf = () => {
-        const realStyle = window.getComputedStyle.bind(window);
+    /** 由 tokens.css 讀嘅值：卡間距、focus 卡上面露幾多、卡最矮 / 最高比例、疊卡間距最細 */
+    const TOKENS: Record<string, string> = {
+        '--home-tile-gap': '12px',
+        '--drama-shelf-peek': '24px',
+        '--drama-shelf-min-ratio': '0.5',
+        '--drama-shelf-max-ratio': '0.6',
+        '--drama-shelf-min-step': '72px',
+    };
+
+    /**
+     * jsdom 冇 layout：書架 430px 闊（左右留白 16px → 卡闊 398px，最矮 199px）、上下留白 8px。
+     * 預設 400px 高（扣走留白 384px）：4 張要疊到間距 62px，細過 72px → 固定 72px 上下捲
+     */
+    const realStyle = window.getComputedStyle.bind(window);
+    const mockShelf = (heightPx = 400) => {
+        vi.restoreAllMocks();
         const values: Record<string, string> = {
-            gridAutoRows: '112px',
             paddingTop: '8px',
-            scrollPaddingTop: '24px',
+            paddingBottom: '8px',
+            paddingLeft: '16px',
+            paddingRight: '16px',
         };
         vi.spyOn(window, 'getComputedStyle').mockImplementation((el) => {
             const style = realStyle(el);
             return new Proxy(style, {
                 get: (target, key) => {
+                    if (key === 'getPropertyValue') {
+                        return (name: string) => TOKENS[name] ?? target.getPropertyValue(name);
+                    }
                     if (typeof key === 'string' && key in values) return values[key];
                     const value: unknown = Reflect.get(target, key);
                     return typeof value === 'function' ? value.bind(target) : value;
                 },
             });
         });
-        vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(500);
+        vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(heightPx);
+        vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(430);
         scrollTo = vi.fn();
         HTMLElement.prototype.scrollTo =
             scrollTo as unknown as typeof HTMLElement.prototype.scrollTo;
@@ -107,7 +125,7 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
             .filter((b) => b.hasAttribute('data-focused'))
             .map((b) => b.getAttribute('aria-label'));
 
-    beforeEach(mockShelf);
+    beforeEach(() => mockShelf());
     afterEach(() => {
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
@@ -118,8 +136,11 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         renderShelf();
 
         expect(focused()).toEqual(['劇 1']);
-        // 500 − 112 − 24：最尾一張都捲得到 snap 位
-        expect(screen.getByRole('navigation')).toHaveStyle({ paddingBottom: '364px' });
+        // 400 − 72 − 24：最尾一張都捲得到 snap 位
+        const shelf = screen.getByRole('navigation');
+        expect(shelf).toHaveAttribute('data-scroll');
+        expect(shelf.style.paddingBottom).toBe('304px');
+        expect(shelf.style.getPropertyValue('--drama-shelf-step')).toBe('72px');
     });
 
     it('scrolls a dimmed card into focus when tapped, without opening it', async () => {
@@ -128,7 +149,7 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         await userEvent.click(tile('劇 3'));
 
         expect(onOpen[2]).not.toHaveBeenCalled();
-        expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 208 }));
+        expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 128 }));
         expect(focused()).toEqual(['劇 3']);
     });
 
@@ -144,7 +165,7 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         renderShelf();
         const shelf = screen.getByRole('navigation');
 
-        shelf.scrollTop = 96;
+        shelf.scrollTop = 56;
         fireEvent.scroll(shelf);
 
         expect(focused()).toEqual(['劇 2']);
@@ -156,7 +177,7 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         await userEvent.tab();
         await userEvent.tab();
         expect(focused()).toEqual(['劇 2']);
-        expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ top: 96 }));
+        expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ top: 56 }));
 
         await userEvent.keyboard('{Enter}');
         expect(onOpen[1]).toHaveBeenCalledTimes(1);
@@ -168,6 +189,42 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         fireEvent.click(tile('劇 4'), { detail: 0 });
 
         expect(onOpen[3]).toHaveBeenCalledTimes(1);
+    });
+
+    it('overlaps the cards down to the bottom without scrolling when they fit', () => {
+        // 650px 高（扣走留白 634px）：(634 − 199) ÷ 3 = 145，最後一張卡底到書架底
+        mockShelf(650);
+        renderShelf();
+
+        const shelf = screen.getByRole('navigation');
+        expect(shelf).not.toHaveAttribute('data-scroll');
+        expect(shelf.style.getPropertyValue('--drama-shelf-step')).toBe('145px');
+        expect(shelf.style.getPropertyValue('--drama-shelf-card')).toBe('199px');
+        expect(shelf.style.paddingBottom).toBe('');
+    });
+
+    it('makes a dimmed card the focus straight away when the shelf does not scroll', async () => {
+        mockShelf(650);
+        const onOpen = renderShelf();
+
+        await userEvent.click(tile('劇 3'));
+        expect(onOpen[2]).not.toHaveBeenCalled();
+        expect(scrollTo).not.toHaveBeenCalled();
+        expect(focused()).toEqual(['劇 3']);
+
+        await userEvent.click(tile('劇 3'));
+        expect(onOpen[2]).toHaveBeenCalledTimes(1);
+    });
+
+    it('brings a card into focus by keyboard without scrolling when the shelf does not scroll', async () => {
+        mockShelf(650);
+        renderShelf();
+
+        await userEvent.tab();
+        await userEvent.tab();
+
+        expect(focused()).toEqual(['劇 2']);
+        expect(scrollTo).not.toHaveBeenCalled();
     });
 
     it('keeps plain tiles that open on tap in landscape (no stacked focus)', async () => {

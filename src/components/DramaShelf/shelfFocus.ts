@@ -1,4 +1,4 @@
-/** 直版疊卡書架嘅尺寸（由 CSS 量，見 useShelfFocus） */
+/** 直版疊卡書架嘅尺寸（卡距由 stackLayout 按書架高計，留白由 CSS 量，見 useShelfFocus） */
 export interface ShelfMetrics {
     /** 每張卡之間嘅距離（一行高；卡高過一行，所以會蓋住下一張） */
     stepPx: number;
