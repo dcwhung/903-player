@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { createHookWrapper } from '../../tests/renderWithProviders';
 import { dailyEpisodesOf, findDrama, seriesEpisodesOf, type Drama } from '../dramas';
 import { usePlayer } from '../player/usePlayer';
-import { dramaStartEpisode, useStartDrama } from './useStartDrama';
+import { dramaStartEpisode, isFirstSeriesVisit, useStartDrama } from './useStartDrama';
 
 const mustFind = (id: string): Drama => {
     const drama = findDrama(id);
@@ -25,6 +25,24 @@ describe('dramaStartEpisode', () => {
         expect(dramaStartEpisode(C18, {}, '2026-10-23')).toBe(
             DAILY.find((e) => e.date === '2026-10-23'),
         );
+    });
+});
+
+describe('isFirstSeriesVisit', () => {
+    const touched = (url: string) => ({
+        [url]: { position: 60, duration: 600, watched: false, updatedAt: 1 },
+    });
+
+    it('is a first visit for a series drama with no progress at all', () => {
+        expect(isFirstSeriesVisit(CHISEE, {})).toBe(true);
+    });
+
+    it('is not a first visit once any of its episodes has progress', () => {
+        expect(isFirstSeriesVisit(CHISEE, touched(SERIES.at(-1)?.url ?? ''))).toBe(false);
+    });
+
+    it('never counts a daily drama as a first visit', () => {
+        expect(isFirstSeriesVisit(C18, {})).toBe(false);
     });
 });
 

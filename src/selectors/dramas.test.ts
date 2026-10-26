@@ -6,6 +6,7 @@ import {
     dramaHasNew,
     nextSeriesEpisode,
     episodesInArc,
+    hasNoProgress,
     pickDailyStart,
     pickSeriesStart,
     seriesArcs,
@@ -47,6 +48,22 @@ describe('episodesInArc', () => {
     it('keeps only that arc, ordered by episode number', () => {
         expect(episodesInArc(SERIES, '甲').map((e) => e.no)).toEqual([1, 2]);
         expect(episodesInArc(SERIES, '丙')).toEqual([]);
+    });
+});
+
+describe('hasNoProgress', () => {
+    it('is true when no episode of the drama has progress', () => {
+        expect(hasNoProgress(SERIES, {})).toBe(true);
+    });
+
+    it('ignores progress saved for other dramas', () => {
+        const other = series('丙', 1);
+        expect(hasNoProgress(SERIES, { [other.url]: progress(1) })).toBe(true);
+    });
+
+    it('is false once any episode has progress, watched or not', () => {
+        expect(hasNoProgress(SERIES, { [SERIES[2]?.url ?? '']: progress(1) })).toBe(false);
+        expect(hasNoProgress(SERIES, { [SERIES[0]?.url ?? '']: progress(1, true) })).toBe(false);
     });
 });
 

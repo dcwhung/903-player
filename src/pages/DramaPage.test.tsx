@@ -16,6 +16,8 @@ const openDrama = (id: string) =>
 
 /** 同一個 player 入面主頁 mini player 會用嘅碟面 */
 const MiniArtProbe = () => <span data-testid="mini-art" data-art={useMiniPlayer()?.theme.art} />;
+/** 之前聽過芝See（第一集聽咗少少）：唔係第一次入，照舊自動播 */
+const listenedBefore = () => saveProgress(CHISEE[0]?.url ?? '', 60, 1200);
 const arcChips = () => within(screen.getByRole('group', { name: '短篇' })).getAllByRole('button');
 
 describe('DramaPage', () => {
@@ -97,11 +99,13 @@ describe('DramaPage', () => {
             expect(miniArt()).toBe(s2Art);
         });
 
-        it('autoplays the first episode on a light themed page with the drama name as title', async () => {
+        it('autoplays where it left off on a light themed page with the drama name as title', async () => {
+            listenedBefore();
             const { audio } = openDrama('chisee');
 
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
             expect(audio.play).toHaveBeenCalled();
+            expect(screen.queryByRole('dialog', { name: '全集' })).not.toBeInTheDocument();
             expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('芝See菇Bi Family');
             expect(screen.getByRole('main').closest('[data-theme-scope]')).toHaveAttribute(
                 'data-scheme',
@@ -139,6 +143,7 @@ describe('DramaPage', () => {
         });
 
         it('switches the list to another arc without interrupting playback, then plays a tapped episode', async () => {
+            listenedBefore();
             const { audio } = openDrama('chisee');
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
 
@@ -149,6 +154,74 @@ describe('DramaPage', () => {
             expect(within(list).getAllByRole('button')).toHaveLength(4);
             await userEvent.click(within(list).getByRole('button', { name: /索腳汗/ }));
             await waitFor(() => expect(audio.src).toBe(XMAS[2]?.url));
+        });
+    });
+
+    describe('first visit to a series drama', () => {
+        it('opens 全集 to pick a 短篇 and plays nothing', async () => {
+            const { audio } = openDrama('chisee');
+
+            expect(await screen.findByRole('dialog', { name: '全集' })).toBeInTheDocument();
+            expect(audio.src).toBe('');
+            expect(audio.play).not.toHaveBeenCalled();
+            // 未載入任何一集：碟面用第一集，時間係佔位，掣係播放樣
+            expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('芝See菇Bi Family');
+            expect(screen.getByRole('main').querySelector('img')?.getAttribute('src')).toBe(
+                dramaArtFor(CHISEE[0]!),
+            );
+            expect(screen.getAllByText('--:--')).toHaveLength(2);
+            expect(screen.getByRole('button', { name: '播放', hidden: true })).toBeInTheDocument();
+        });
+
+        it('loads the picked 短篇 paused after a row is picked', async () => {
+            const { audio } = openDrama('chisee');
+            const dialog = await screen.findByRole('dialog', { name: '全集' });
+
+            await userEvent.click(
+                within(dialog).getByRole('button', { name: '青春期，未聽 · 4 集' }),
+            );
+
+            const youth = CHISEE.find((e) => e.arc === '青春期' && e.no === 1);
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            await waitFor(() => expect(audio.src).toBe(youth?.url));
+            expect(audio.play).not.toHaveBeenCalled();
+            expect(screen.getByRole('button', { name: '青春期' })).toHaveAttribute(
+                'aria-pressed',
+                'true',
+            );
+        });
+
+        it('plays a 短篇 from its row button', async () => {
+            const { audio } = openDrama('chisee');
+            const dialog = await screen.findByRole('dialog', { name: '全集' });
+
+            await userEvent.click(
+                within(dialog).getByRole('button', { name: '播放 青春期 第 1 集' }),
+            );
+
+            const youth = CHISEE.find((e) => e.arc === '青春期' && e.no === 1);
+            await waitFor(() => expect(audio.src).toBe(youth?.url));
+            expect(audio.play).toHaveBeenCalled();
+        });
+
+        it('opens 全集 again next time while still nothing has been listened to', async () => {
+            const { unmount } = openDrama('chisee');
+            const dialog = await screen.findByRole('dialog', { name: '全集' });
+            await userEvent.click(within(dialog).getByRole('button', { name: /關閉/ }));
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            unmount();
+
+            openDrama('chisee');
+
+            expect(await screen.findByRole('dialog', { name: '全集' })).toBeInTheDocument();
+        });
+
+        it('keeps 全集 closed once the drama has been listened to', async () => {
+            listenedBefore();
+            const { audio } = openDrama('chisee');
+
+            await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
+            expect(screen.queryByRole('dialog', { name: '全集' })).not.toBeInTheDocument();
         });
     });
 
@@ -195,6 +268,7 @@ describe('DramaPage', () => {
         });
 
         it('opens 全集 inside the list column, leaving the player usable', async () => {
+            listenedBefore();
             const { audio } = openDrama('chisee');
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
 
@@ -214,6 +288,7 @@ describe('DramaPage', () => {
     });
 
     it('plays the next episode by itself when one finishes, and the list follows', async () => {
+        listenedBefore();
         const { audio } = openDrama('chisee');
         await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
         act(() => audio.emitMetadata(1200));
@@ -267,6 +342,7 @@ describe('DramaPage', () => {
         });
 
         it('moves the playing 短篇 to the front of the chips, after 全集', async () => {
+            listenedBefore();
             const { audio } = openDrama('chisee');
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
             await userEvent.click(screen.getByRole('button', { name: '全集' }));
@@ -281,6 +357,7 @@ describe('DramaPage', () => {
         });
 
         it('switches the list to a 短篇 picked by its row, without changing playback', async () => {
+            listenedBefore();
             const { audio } = openDrama('chisee');
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
             await userEvent.click(screen.getByRole('button', { name: '全集' }));

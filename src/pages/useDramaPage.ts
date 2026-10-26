@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { stripDays } from '../components/DateStrip/dateStrip';
 import { dailyEpisodesOf, dramaEpisodeTheme, seriesEpisodesOf, type DramaConfig } from '../dramas';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
-import { useStartDrama } from '../hooks/useStartDrama';
+import { isFirstSeriesVisit, useStartDrama } from '../hooks/useStartDrama';
 import { usePlayer } from '../player/usePlayer';
 import {
     dailyNewestFirst,
@@ -33,14 +33,17 @@ const useLoadedEpisode = <K extends DramaEpisode['kind']>(
     return isThis(recording) ? recording : null;
 };
 
-/** 直接開呢頁（例如 deep link / mini player）時都自動播放，同節目頁一樣 */
-const useAutoplayDrama = (drama: DramaConfig, isLoaded: boolean) => {
+/**
+ * 直接開呢頁（例如 deep link / mini player）時都自動播放，同節目頁一樣；
+ * skip（已經載入咗呢套劇，或者第一次入短篇劇集）就唔播
+ */
+const useAutoplayDrama = (drama: DramaConfig, skip: boolean) => {
     const startDrama = useStartDrama();
     useEffect(() => {
-        if (!isLoaded) {
+        if (!skip) {
             startDrama(drama);
         }
-    }, [drama, isLoaded, startDrama]);
+    }, [drama, skip, startDrama]);
 };
 
 /** 清單行要嘅 player 狀態 + 撳行 / 揀集嘅動作（兩款劇集頁共用） */
@@ -96,6 +99,15 @@ export const useDailyDramaPage = (drama: DramaConfig) => {
         selectEpisode,
         pressEpisode,
     };
+};
+
+/**
+ * 入頁嗰下係咪第一次入呢套短篇劇集（入頁時讀一次就定，揀咗 / 播咗都唔再變）：
+ * 係就唔自動播、一入嚟就開全集表
+ */
+const useFirstVisitOnEntry = (drama: DramaConfig): boolean => {
+    const [firstVisit] = useState(() => isFirstSeriesVisit(drama, getProgressMap()));
+    return firstVisit;
 };
 
 /** 揀咗睇邊個短篇；未揀（或者揀返播緊嗰個）就跟播緊嗰集嘅短篇 */
@@ -165,8 +177,10 @@ const useArcPick = (
 export const useSeriesDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
     const loaded = useLoadedEpisode(drama, 'series');
-    useAutoplayDrama(drama, loaded !== null);
-    const [sheetOpen, setSheetOpen] = useState(false);
+    const firstVisit = useFirstVisitOnEntry(drama);
+    // 第一次入：唔自動播（亦唔打斷播緊嘅嘢），等用戶喺全集表揀
+    useAutoplayDrama(drama, loaded !== null || firstVisit);
+    const [sheetOpen, setSheetOpen] = useState(firstVisit);
     const { watchedRevision } = usePlayer();
     // 轉集、有集數聽完、打開全集表都重新讀 localStorage
     const progressMap = useRefreshedOn(getProgressMap, [watchedRevision, loaded?.url, sheetOpen]);

@@ -329,13 +329,38 @@ describe('HomePage', () => {
             expect(within(nav).getByText('12 個短篇').dataset.corner).toBe('bottom');
         });
 
-        it('starts the drama and opens its page when its tile is tapped', async () => {
+        it('only opens the page of a series drama never listened to, without playing it', async () => {
             const { audio } = renderWithProviders(<HomePage />);
             const nav = await openDramas();
 
             await userEvent.click(within(nav).getByRole('button', { name: '芝See菇Bi Family' }));
 
-            expect(audio.src).toBe(seriesEpisodesOf('chisee')[0]?.url);
+            expect(audio.src).toBe('');
+            expect(audio.play).not.toHaveBeenCalled();
+            expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
+        });
+
+        it('keeps playing whatever plays when opening a series drama for the first time', async () => {
+            const { audio } = await arriveHomeWith(RECORDINGS[3] as Recording);
+            const plays = audio.play.mock.calls.length;
+            const nav = await openDramas();
+
+            await userEvent.click(within(nav).getByRole('button', { name: '黃金少年' }));
+
+            expect(audio.src).toBe(RECORDINGS[3]?.url);
+            expect(audio.play).toHaveBeenCalledTimes(plays);
+            expect(screen.getByTestId('location')).toHaveTextContent('/drama/golden');
+        });
+
+        it('resumes a series drama listened to before and opens its page when its tile is tapped', async () => {
+            const friends = seriesEpisodesOf('chisee').filter((e) => e.arc === '好朋友手牽手');
+            saveProgress(friends[1]?.url ?? '', 250, 1000);
+            const { audio } = renderWithProviders(<HomePage />);
+            const nav = await openDramas();
+
+            await userEvent.click(within(nav).getByRole('button', { name: /^芝See菇Bi Family/ }));
+
+            expect(audio.src).toBe(friends[1]?.url);
             expect(audio.play).toHaveBeenCalled();
             expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
         });

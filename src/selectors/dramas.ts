@@ -28,6 +28,12 @@ const lastTouched = (
     return latest;
 };
 
+/** 呢啲集數全部都未有進度（未聽過，連開頭幾秒都冇）：用嚟判斷第一次入呢套劇 */
+export const hasNoProgress = (
+    episodes: readonly DramaEpisode[],
+    progressMap: Readonly<Record<string, Progress>>,
+): boolean => episodes.every((e) => progressMap[e.url] === undefined);
+
 /**
  * 短篇劇集入頁播邊集（episodes 係由第一個短篇第 1 集排到最後）：
  * 最近聽緊嗰集未聽完就續播；聽完就播下一集（全部聽完就停喺最後一集）；未聽過就由第一集

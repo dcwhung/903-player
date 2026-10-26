@@ -187,8 +187,9 @@ export const DramaPage = () => {
             </ThemeScope>
         );
     }
+    // key：換劇（同一條 route）時重新入頁，第一次入 / 揀咗嘅短篇等 state 唔會帶過去
     return drama.kind === 'series' ? (
-        <SeriesDramaPage drama={drama} />
+        <SeriesDramaPage key={drama.id} drama={drama} />
     ) : (
         <DailyDramaPage drama={drama} />
     );

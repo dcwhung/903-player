@@ -20,9 +20,10 @@ import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useMiniPlayer } from '../hooks/useMiniPlayer';
 import { useDramaNewLabels } from '../hooks/useDramaNewLabels';
 import { useNewShowIds } from '../hooks/useNewShowIds';
-import { useStartDrama } from '../hooks/useStartDrama';
+import { isFirstSeriesVisit, useStartDrama } from '../hooks/useStartDrama';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { seriesArcs } from '../selectors/dramas';
+import { getProgressMap } from '../services/progressStore';
 import { t } from '../i18n/t';
 import styles from './HomePage.module.css';
 import page from './Page.module.css';
@@ -64,7 +65,10 @@ const dramaMeta = (drama: DramaConfig): string => {
     return t(drama.arcUnit === 'season' ? 'drama.seasonCount' : 'drama.arcCount', { count });
 };
 
-/** 廣播劇 tab 嘅劇集格（撳落開始播再入頁，同節目格一樣） */
+/**
+ * 廣播劇 tab 嘅劇集格（撳落開始播再入頁，同節目格一樣）。
+ * 第一次入短篇劇集就淨係入頁（唔播、亦唔打斷播緊嘅嘢），等用戶喺全集表揀短篇
+ */
 const useDramaItems = (): DramaShelfItem[] => {
     const navigate = useNavigate();
     const startDrama = useStartDrama();
@@ -78,7 +82,7 @@ const useDramaItems = (): DramaShelfItem[] => {
         newLabel: newLabels.get(drama.id),
         resume: continueOf(drama),
         onOpen: () => {
-            startDrama(drama);
+            if (!isFirstSeriesVisit(drama, getProgressMap())) startDrama(drama);
             navigate(`/drama/${drama.id}`);
         },
     }));

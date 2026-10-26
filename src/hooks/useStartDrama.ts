@@ -1,7 +1,12 @@
 import { useCallback } from 'react';
 import { dailyEpisodesOf, seriesEpisodesOf, type DramaConfig } from '../dramas';
 import { usePlayer } from '../player/usePlayer';
-import { dailyNewestFirst, pickDailyStart, pickSeriesStart } from '../selectors/dramas';
+import {
+    dailyNewestFirst,
+    hasNoProgress,
+    pickDailyStart,
+    pickSeriesStart,
+} from '../selectors/dramas';
 import { getProgressMap, type Progress } from '../services/progressStore';
 import type { DramaEpisode } from '../types/drama';
 import { isDramaEpisode } from '../types/track';
@@ -16,6 +21,15 @@ export const dramaStartEpisode = (
     drama.kind === 'series'
         ? pickSeriesStart(seriesEpisodesOf(drama.id), progressMap)
         : pickDailyStart(dailyNewestFirst(dailyEpisodesOf(drama.id)), today);
+
+/**
+ * 第一次入短篇劇集（呢套劇任何一集都未有進度）：唔自動播，入頁先開全集表畀用戶揀短篇。
+ * 每日劇集冇得揀短篇，照舊自動播
+ */
+export const isFirstSeriesVisit = (
+    drama: DramaConfig,
+    progressMap: Readonly<Record<string, Progress>>,
+): boolean => drama.kind === 'series' && hasNoProgress(seriesEpisodesOf(drama.id), progressMap);
 
 /**
  * 揀出要播嘅一集並即時開始播放。
