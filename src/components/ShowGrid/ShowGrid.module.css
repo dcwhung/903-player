@@ -48,6 +48,16 @@
 }
 
 /*
+ * 直版填滿（T8，useRowsPerPage 量到先有 data-fill）：行高由 inline grid-template-rows 定，
+ * 格唔再鎖 16:9，拉滿個格（ShowTile 圖 object-fit: cover）。
+ * > * 蓋過 ShowTile .tile 嘅 aspect-ratio（specificity 高過單一 class）
+ */
+.grid[data-fill] > * {
+    aspect-ratio: auto;
+    min-height: 0;
+}
+
+/*
  * 闊橫版（iPad / 桌面）：一頁放晒（useRowsPerPage 唔分頁），4 欄 × 2 行填滿高度，格唔再鎖 16:9（ShowTile 跟格大小）。
  * 剛好 8 格（7 個節目 + 今日節目，src/shows/shows.test.ts 鎖住）；加節目要改欄數。
  * 手機打橫唔用呢度，用 HomeLandscapeGrid。條件同 layout.ts 嘅 LANDSCAPE_QUERY 一樣

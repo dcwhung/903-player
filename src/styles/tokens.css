@@ -171,6 +171,8 @@
     /* 主頁節目格（ShowTile）16:9；頁頂橫額嘅高度用同一個比例計，兩者一樣高 */
     --tile-aspect-w: 16;
     --tile-aspect-h: 9;
+    /* 直版主頁節目格填滿高度（T8）：16:9 係最矮，每行最多高 30%（useRowsPerPage 讀） */
+    --show-tile-max-grow: 1.3;
     /* 主頁「廣播劇」tab 嘅劇集格（一行一套） */
     --drama-tile-aspect-w: 2;
     --drama-tile-aspect-h: 1;
