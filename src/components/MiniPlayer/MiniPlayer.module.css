@@ -1,6 +1,6 @@
 /*
  * 浮喺頁底嘅圓角卡，兩邊留白（闊螢幕收返喺 --page-max-width 中間）。
- * 卡底離 viewport 底 --mini-player-offset-bottom（安全區 + 一格；iOS standalone viewport 矮過螢幕時扣返差距）。
+ * 卡底離 viewport 底 --mini-player-offset-bottom（安全區 + --space-2；iOS standalone viewport 矮過螢幕時扣返差距）。
  * viewport 以下 iOS 唔會畫內容，只露出 canvas（主頁漸變底色），同頁底接得順
  */
 .wrapper {
@@ -30,7 +30,7 @@
     overflow: hidden;
     border-radius: var(--radius-lg);
     background: var(--color-surface);
-    box-shadow: var(--shadow-floating);
+    box-shadow: var(--shadow-mini-player);
     color: var(--color-text);
     /* 浮喺頁面上面（position: fixed），後面冇嘢要捲：單指手勢全部交畀 useSwipe，iOS 唔會 pointercancel */
     /* 唔識 pinch-zoom 嘅舊瀏覽器留喺 none；識嘅就照樣擋單指 pan，但雙指放大得（無障礙） */

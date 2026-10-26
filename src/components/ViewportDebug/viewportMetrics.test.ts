@@ -10,8 +10,8 @@ const SNAPSHOT: ViewportSnapshot = {
     standalone: true,
     safeArea: { top: 59, right: 0, bottom: 34, left: 0 },
     viewportGapBottom: '55px',
-    miniPlayerOffsetPx: 16,
-    miniPlayerGapPx: 16.5,
+    miniPlayerOffsetPx: 8,
+    miniPlayerGapPx: 8.5,
 };
 
 describe('metricRows', () => {
@@ -24,8 +24,8 @@ describe('metricRows', () => {
             ['navigator.standalone', 'true'],
             ['safe-area top / right / bottom / left', '59 / 0 / 34 / 0'],
             ['--viewport-gap-bottom', '55px'],
-            ['--mini-player-offset-bottom', '16'],
-            ['mini player gap to bottom', '16.5'],
+            ['--mini-player-offset-bottom', '8'],
+            ['mini player gap to bottom', '8.5'],
         ]);
     });
 
@@ -54,7 +54,7 @@ describe('readViewport', () => {
         paddingRight: '0px',
         paddingBottom: '34px',
         paddingLeft: '0px',
-        width: '16px',
+        width: '8px',
     };
 
     afterEach(() => {
@@ -83,7 +83,7 @@ describe('readViewport', () => {
             screenHeight: window.screen.height,
             safeArea: { top: 59, right: 0, bottom: 34, left: 0 },
             viewportGapBottom: '55px',
-            miniPlayerOffsetPx: 16,
+            miniPlayerOffsetPx: 8,
             miniPlayerGapPx: undefined,
         });
     });
@@ -96,9 +96,9 @@ describe('readViewport', () => {
         mini.setAttribute('data-theme-scope', '');
         document.body.append(mini);
         vi.spyOn(mini, 'getBoundingClientRect').mockReturnValue({
-            bottom: window.innerHeight - 16,
+            bottom: window.innerHeight - 8,
         } as DOMRect);
 
-        expect(readViewport(probe).miniPlayerGapPx).toBe(16);
+        expect(readViewport(probe).miniPlayerGapPx).toBe(8);
     });
 });
