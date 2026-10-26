@@ -97,6 +97,14 @@ const useViewedArc = (playingArc: string | undefined) => {
     return { arc: picked ?? playingArc, pickArc: setPicked };
 };
 
+/** 碟面代表嘅一集：睇緊播緊嗰個短篇就係播緊嗰集，否則係揀咗嗰個短篇第一集（每個短篇碟面唔同） */
+const discEpisodeOf = (
+    episodes: readonly SeriesEpisode[],
+    current: SeriesEpisode | undefined,
+    arc: string | undefined,
+): SeriesEpisode | undefined =>
+    !arc || arc === current?.arc ? current : (episodesInArc(episodes, arc)[0] ?? current);
+
 /** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已聽完（today 每次 render 重新攞） */
 const useArcOrder = (
     episodes: readonly SeriesEpisode[],
@@ -155,9 +163,10 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
     const arcEpisodes = current ? episodesInArc(episodes, current.arc) : [];
     const arcTotal = arcEpisodes.length;
     const arcPosition = arcEpisodes.findIndex((e) => e.url === current?.url) + 1;
+    const discEpisode = discEpisodeOf(episodes, current, arc);
     return {
-        // 碟面跟播緊（未播就係準備播）嗰集嘅短篇；淨係揀 chip 睇清單唔換
-        theme: current ? dramaEpisodeTheme(current) : drama.theme,
+        // 碟面跟揀緊嘅短篇（揀 chip 即換）；未揀就跟播緊（未播就係準備播）嗰集。mini player 照跟播緊嗰集
+        theme: discEpisode ? dramaEpisodeTheme(discEpisode) : drama.theme,
         current,
         arcTotal,
         arcPosition,

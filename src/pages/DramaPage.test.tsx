@@ -28,17 +28,25 @@ describe('DramaPage', () => {
     afterEach(() => vi.useRealTimers());
 
     describe('series drama', () => {
-        it('spins the disc of the playing season, not the one only being browsed', async () => {
-            const s2 = seriesEpisodesOf('golden').filter((e) => e.arc === 'Season 2');
+        it('switches the disc to the picked season and back to the playing one', async () => {
+            const golden = seriesEpisodesOf('golden');
+            const s2 = golden.filter((e) => e.arc === 'Season 2');
+            const s4 = golden.find((e) => e.arc === 'Season 4');
             const s2Art = s2[2] ? dramaArtFor(s2[2]) : '';
+            const s4Art = s4 ? dramaArtFor(s4) : '';
             saveProgress(s2[2]?.url ?? '', 60, 1200);
             const { audio } = openDrama('golden');
             const discArt = () => screen.getByRole('main').querySelector('img');
 
             await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
             expect(discArt()?.getAttribute('src')).toBe(s2Art);
+            expect(s4Art).not.toBe(s2Art);
 
             await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
+            expect(discArt()?.getAttribute('src')).toBe(s4Art);
+            expect(audio.src).toBe(s2[2]?.url);
+
+            await userEvent.click(screen.getByRole('button', { name: /^Season 2/ }));
             expect(discArt()?.getAttribute('src')).toBe(s2Art);
         });
 
