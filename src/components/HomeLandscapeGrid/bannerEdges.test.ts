@@ -1,4 +1,11 @@
-import { edgeGradient, readBannerEdges, segmentAverages, type Rgb } from './bannerEdges';
+import { FAKE_IMAGE_SIZE, stubCanvas, stubImages } from '../../../tests/fakeBannerImage';
+import {
+    edgeGradient,
+    loadBannerEdges,
+    readBannerEdges,
+    segmentAverages,
+    type Rgb,
+} from './bannerEdges';
 
 /** 由一堆 [r, g, b] 砌 RGBA pixel（alpha 255） */
 const pixels = (colors: readonly Rgb[]): Uint8ClampedArray =>
@@ -76,40 +83,108 @@ describe('edgeGradient', () => {
     });
 });
 
-const IMAGE_SIZE = 10;
-
-/** 假 2D context：drawImage noop；getImageData / drawImage 可以逐個換 */
-const stubContext = (overrides: Partial<CanvasRenderingContext2D>) =>
-    vi
-        .spyOn(HTMLCanvasElement.prototype, 'getContext')
-        .mockReturnValue({ drawImage: vi.fn(), ...overrides } as unknown as RenderingContext);
+const COLOR: Rgb = [10, 20, 30];
+const SIDE_SEGMENTS = 16;
+const TOP_SEGMENTS = 8;
+const EDGE_ROWS = 8;
 
 /** 只要 natural 大細嘅假圖（drawImage 係假嘅，唔使真圖） */
-const fakeImage = (width = IMAGE_SIZE, height = IMAGE_SIZE): HTMLImageElement =>
+const fakeImage = (width = FAKE_IMAGE_SIZE, height = FAKE_IMAGE_SIZE): HTMLImageElement =>
     ({ naturalWidth: width, naturalHeight: height }) as HTMLImageElement;
 
+/** 成張圖一隻色時預期嘅四邊 */
+const solidEdges = (color: Rgb) => ({
+    left: edgeGradient(Array<Rgb>(SIDE_SEGMENTS).fill(color), 'to bottom'),
+    right: edgeGradient(Array<Rgb>(SIDE_SEGMENTS).fill(color), 'to bottom'),
+    top: edgeGradient(Array<Rgb>(TOP_SEGMENTS).fill(color), 'to right'),
+    bottom: edgeGradient([color], 'to right'),
+});
+
+afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+});
+
 describe('readBannerEdges', () => {
-    afterEach(() => {
-        vi.restoreAllMocks();
+    it('should read the four outer bands and turn them into gradients', () => {
+        const getImageData = stubCanvas(COLOR);
+
+        expect(readBannerEdges(fakeImage())).toEqual(solidEdges(COLOR));
+        // 左欄、右欄（w - 1）、上面 8 行、下面 8 行（h - 8）
+        const last = FAKE_IMAGE_SIZE - 1;
+        const bottomY = FAKE_IMAGE_SIZE - EDGE_ROWS;
+        expect(getImageData.mock.calls).toEqual([
+            [0, 0, 1, FAKE_IMAGE_SIZE],
+            [last, 0, 1, FAKE_IMAGE_SIZE],
+            [0, 0, FAKE_IMAGE_SIZE, EDGE_ROWS],
+            [0, bottomY, FAKE_IMAGE_SIZE, EDGE_ROWS],
+        ]);
+    });
+
+    it('should return null when there is no 2D context (e.g. jsdom)', () => {
+        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+
+        expect(readBannerEdges(fakeImage())).toBeNull();
+    });
+
+    it('should return null when the image has no size yet', () => {
+        stubCanvas(COLOR);
+
+        expect(readBannerEdges(fakeImage(0, 0))).toBeNull();
     });
 
     it('should return null when getImageData throws (e.g. tainted canvas SecurityError)', () => {
-        stubContext({
+        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+            drawImage: vi.fn(),
             getImageData: () => {
                 throw new DOMException('tainted', 'SecurityError');
             },
-        });
+        } as unknown as RenderingContext);
 
         expect(readBannerEdges(fakeImage())).toBeNull();
     });
 
     it('should return null when drawImage throws (e.g. decode failure)', () => {
-        stubContext({
+        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
             drawImage: () => {
                 throw new DOMException('broken', 'InvalidStateError');
             },
-        });
+        } as unknown as RenderingContext);
 
         expect(readBannerEdges(fakeImage())).toBeNull();
+    });
+});
+
+describe('loadBannerEdges', () => {
+    it('should load the image and read its edges', async () => {
+        stubCanvas(COLOR);
+        const images = stubImages();
+
+        const pending = loadBannerEdges('/load-ok.png');
+        images[0]?.onload?.();
+
+        await expect(pending).resolves.toEqual(solidEdges(COLOR));
+        expect(images[0]?.src).toBe('/load-ok.png');
+    });
+
+    it('should reuse the cached read for the same image', async () => {
+        stubCanvas(COLOR);
+        const images = stubImages();
+
+        const first = loadBannerEdges('/load-cached.png');
+        images[0]?.onload?.();
+        await first;
+
+        expect(loadBannerEdges('/load-cached.png')).toBe(first);
+        expect(images).toHaveLength(1);
+    });
+
+    it('should resolve null when the image fails to load', async () => {
+        const images = stubImages();
+
+        const pending = loadBannerEdges('/load-error.png');
+        images[0]?.onerror?.();
+
+        await expect(pending).resolves.toBeNull();
     });
 });
