@@ -111,11 +111,10 @@
     --arc-sheet-ring: calc(54px * var(--ui-scale));
     --arc-sheet-z: 10;
     /*
-     * 碟面圓環細節：外圈進度環粗幼、碟心孔（佔碟面半徑幾多）、碟面底「1/4」pill（字、行高、
+     * 碟面圓環細節：外圈進度環粗幼、碟面底「1/4」pill（字、行高、
      * 凸出碟底幾多）、聽完 ✓ 章（大細、凸出右下角幾多）、pill / ✓ 同碟面之間嗰圈底色邊
      */
     --arc-sheet-ring-width: var(--space-1);
-    --arc-sheet-hole: 12%;
     --arc-sheet-count-font: calc(10px * var(--ui-scale));
     --arc-sheet-count-line: calc(16px * var(--ui-scale));
     --arc-sheet-count-offset: calc(-6px * var(--ui-scale));

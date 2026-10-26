@@ -169,18 +169,13 @@
     --arc-row-bg: var(--color-surface);
 }
 
-/* 碟面：圓形 cover，中間挖個碟心孔（mask 只睇 alpha，所以實色用邊隻都得） */
+/* 碟面：圓形 cover（唔挖碟心孔，用戶揀咗淨圓碟） */
 .cover {
     display: block;
     width: 100%;
     height: 100%;
     border-radius: var(--radius-full);
     object-fit: cover;
-    mask: radial-gradient(
-        circle,
-        transparent var(--arc-sheet-hole),
-        currentcolor calc(var(--arc-sheet-hole) + 1%)
-    );
 }
 
 /* 未聽完：碟面底中間嘅「1/4」 */
