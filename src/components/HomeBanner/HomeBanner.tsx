@@ -8,6 +8,8 @@ import styles from './HomeBanner.module.css';
 interface HomeBannerProps {
     /** 疊喺橫額右下角嘅嘢（例如版本號）；放喺 <h1> 外面，唔會變成標題嘅一部分 */
     corner?: ReactNode;
+    /** 代替預設 <picture> 嘅圖（手機打橫橫額格用 FittedBanner）；要自己帶 alt，h1 個名由佢嚟 */
+    art?: ReactNode;
 }
 
 /**
@@ -16,13 +18,15 @@ interface HomeBannerProps {
  * 橫版成行（WIDE_BANNER_QUERY）換闊版圖（5:1，原圖喺 design/banner-wide.webp），內容集中喺中間，
  * 大部分畫面 cover 只裁走兩邊天空；好闊好矮嘅視窗（扁過 5:1）先會裁走少少上下。
  */
-export const HomeBanner = ({ corner }: HomeBannerProps) => (
+export const HomeBanner = ({ corner, art }: HomeBannerProps) => (
     <div className={styles.banner}>
         <h1 className={styles.heading}>
-            <picture>
-                <source media={WIDE_BANNER_QUERY} srcSet={wideBannerImage} />
-                <img className={styles.image} src={bannerImage} alt={t('home.bannerAlt')} />
-            </picture>
+            {art ?? (
+                <picture>
+                    <source media={WIDE_BANNER_QUERY} srcSet={wideBannerImage} />
+                    <img className={styles.image} src={bannerImage} alt={t('home.bannerAlt')} />
+                </picture>
+            )}
         </h1>
         {corner && <div className={styles.corner}>{corner}</div>}
     </div>

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { toPercent } from '../../utils/ratio';
 import { PlayIcon } from '../icons/icons';
 import { Marquee } from '../Marquee/Marquee';
+import { HomeLandscapeGrid } from '../HomeLandscapeGrid/HomeLandscapeGrid';
 import { NewBadge } from '../NewBadge/NewBadge';
 import { t } from '../../i18n/t';
 import styles from './DramaShelf.module.css';
@@ -24,8 +25,8 @@ const CONTINUE_ICON_SIZE = 16;
 
 interface DramaShelfProps {
     items: readonly DramaShelfItem[];
-    /** 排喺最前嘅格（手機打橫橫額入格） */
-    leading?: ReactNode;
+    /** 手機打橫先畀：橫額入格，同劇集一齊排（HomeLandscapeGrid）；收劇集數揀點畫 */
+    renderBanner?: (count: number) => ReactNode;
 }
 
 /** 讀屏名：劇名（+ 繼續收聽邊集）（+ 有新嘢） */
@@ -70,14 +71,24 @@ const DramaTile = (item: DramaShelfItem) => (
 );
 
 /**
- * 主頁「廣播劇」tab：一行一套劇（橫版並排）。填滿橫額同 mini player 之間嘅高度，
- * 劇集多到放唔落就自己捲（唯一捲動嘅 panel）
+ * 主頁「廣播劇」tab：一行一套劇（闊橫版並排）。填滿橫額同 mini player 之間嘅高度，
+ * 劇集多到放唔落就自己捲（唯一捲動嘅 panel）。
+ * 手機打橫（有 renderBanner）用同節目共用嘅 HomeLandscapeGrid，幾多套都放得晒
  */
-export const DramaShelf = ({ items, leading }: DramaShelfProps) => (
-    <nav className={styles.shelf} aria-label={t('home.dramasNav')}>
-        {leading}
-        {items.map((item) => (
-            <DramaTile key={item.id} {...item} />
-        ))}
-    </nav>
-);
+export const DramaShelf = ({ items, renderBanner }: DramaShelfProps) => {
+    const tiles = items.map((item) => <DramaTile key={item.id} {...item} />);
+    if (renderBanner) {
+        return (
+            <HomeLandscapeGrid
+                label={t('home.dramasNav')}
+                tiles={tiles}
+                renderBanner={renderBanner}
+            />
+        );
+    }
+    return (
+        <nav className={styles.shelf} aria-label={t('home.dramasNav')}>
+            {tiles}
+        </nav>
+    );
+};

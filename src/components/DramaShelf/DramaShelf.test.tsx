@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { DramaShelf, type DramaShelfItem } from './DramaShelf';
 
 const item = (overrides: Partial<DramaShelfItem> = {}): DramaShelfItem => ({
@@ -38,4 +38,19 @@ describe('DramaShelf', () => {
         const tile = screen.getByRole('button', { name: '芝See菇Bi Family，有新短篇' });
         expect(tile).toHaveTextContent('新');
     });
+
+    it.each([1, 4, 9])(
+        'puts the banner and all %i dramas in the shared phone-sideways grid, none hidden',
+        (count) => {
+            const items = Array.from({ length: count }, (_, i) =>
+                item({ id: `d${i}`, name: `劇 ${i + 1}` }),
+            );
+            render(<DramaShelf items={items} renderBanner={(n) => <span>{`橫額 ${n}`}</span>} />);
+
+            const nav = screen.getByRole('navigation', { name: '廣播劇' });
+            expect(within(nav).getAllByRole('button')).toHaveLength(count);
+            expect(within(nav).getByText(`橫額 ${count}`)).toBeInTheDocument();
+            expect(nav).toHaveAttribute('data-scroll', String(count > 8));
+        },
+    );
 });

@@ -133,14 +133,8 @@
     }
 }
 
-/* 手機打橫：橫額入格，橫額 + 兩套劇排成一行三格，填滿高度（SHORT_LANDSCAPE_QUERY） */
+/* 手機打橫：劇集格放喺 HomeLandscapeGrid 入面，拉滿個格（唔鎖 2:1；SHORT_LANDSCAPE_QUERY） */
 @media (orientation: landscape) and (min-width: 640px) and (max-height: 561px) {
-    .shelf {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        grid-template-rows: minmax(0, 1fr);
-        align-content: stretch;
-    }
-
     .tile {
         aspect-ratio: auto;
         min-height: 0;

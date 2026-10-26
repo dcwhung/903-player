@@ -48,6 +48,18 @@ const arriveHomeWith = async (target: Track, recordings = RECORDINGS) => {
     return view;
 };
 
+/** 手機打橫（SHORT_LANDSCAPE_QUERY 同 LANDSCAPE_QUERY 都符合） */
+const stubPhoneSideways = () => {
+    vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+            matches: query.includes('max-height: 561px') || query.includes('landscape'),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+        })),
+    );
+};
+
 describe('HomePage', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
@@ -116,14 +128,7 @@ describe('HomePage', () => {
     });
 
     it('should put the banner in the tile grid, before the shows, on a phone held sideways', () => {
-        vi.stubGlobal(
-            'matchMedia',
-            vi.fn((query: string) => ({
-                matches: query.includes('max-height: 561px') || query.includes('landscape'),
-                addEventListener: vi.fn(),
-                removeEventListener: vi.fn(),
-            })),
-        );
+        stubPhoneSideways();
         renderWithProviders(<HomePage />);
 
         const nav = screen.getByRole('navigation');
@@ -134,6 +139,31 @@ describe('HomePage', () => {
         expect(
             banner.compareDocumentPosition(firstShow) & Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
+    });
+
+    it('should keep the version on the in-grid banner and lay out every show plus 今日節目', () => {
+        stubPhoneSideways();
+        renderWithProviders(<HomePage />);
+
+        const nav = screen.getByRole('navigation', { name: '節目' });
+        // 7 個節目 + 今日節目，全部喺共用嘅手機打橫格入面（一屏放晒）
+        expect(within(nav).getAllByRole('button')).toHaveLength(8);
+        expect(nav).toHaveAttribute('data-scroll', 'false');
+        expect(within(nav).getByText(`v${packageJson.version}`)).toBeInTheDocument();
+    });
+
+    it('should put the banner and every drama in the shared grid on a phone held sideways', async () => {
+        stubPhoneSideways();
+        vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
+        renderWithProviders(<HomePage />);
+
+        await userEvent.click(screen.getByRole('button', { name: '廣播劇' }));
+
+        const nav = screen.getByRole('navigation', { name: '廣播劇' });
+        expect(nav).toContainElement(screen.getByRole('img', { name: BANNER_ALT }));
+        expect(within(nav).getAllByRole('button')).toHaveLength(4);
+        expect(within(nav).getByText(`v${packageJson.version}`)).toBeInTheDocument();
+        expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     });
 
     it('should not show the old header text when rendered', () => {
@@ -175,6 +205,16 @@ describe('HomePage', () => {
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
         expect(audio.src).toBe(RECORDINGS[2]?.url);
         expect(audio.play).toHaveBeenCalled();
+    });
+
+    it('should flag the page while the mini player shows, so phone-sideways tiles can use its room otherwise', async () => {
+        const { unmount } = renderWithProviders(<HomePage />);
+        expect(screen.getByRole('main')).not.toHaveAttribute('data-mini-player');
+        unmount();
+
+        renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+        await screen.findByRole('region', { name: '正在播放（今日節目）' });
+        expect(screen.getByRole('main')).toHaveAttribute('data-mini-player');
     });
 
     it('should paint the page canvas with the gradient bottom, even with a floating mini player', async () => {

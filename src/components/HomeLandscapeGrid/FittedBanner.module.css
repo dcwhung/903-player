@@ -1,0 +1,81 @@
+/*
+ * 橫額格：填滿 HomeBanner 個殼，圓角 + 泥膠落影同節目格一樣，剪走圖放大後超出嘅部分。
+ * size container：.frame 用 100cqw / 100cqh（= 格嘅闊高）計圖幾大、擺喺邊
+ */
+.fit {
+    position: absolute;
+    inset: 0;
+    container-type: size;
+    overflow: hidden;
+    border-radius: var(--radius-tile);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-clay-tile);
+}
+
+/* 放大方式（bannerRules）：見晒成張 / 同格一樣高 / 同格一樣闊；--banner-ratio = 原圖闊 ÷ 高 */
+.fit[data-fit='contain'] {
+    --frame-w: min(100cqw, 100cqh * var(--banner-ratio));
+    --frame-h: min(100cqh, 100cqw / var(--banner-ratio));
+}
+
+.fit[data-fit='height'] {
+    --frame-w: calc(100cqh * var(--banner-ratio));
+    --frame-h: 100cqh;
+}
+
+.fit[data-fit='width'] {
+    --frame-w: 100cqw;
+    --frame-h: calc(100cqw / var(--banner-ratio));
+}
+
+/* 圖嘅位：置中，再按規則向右 / 向下移 */
+.frame {
+    position: absolute;
+    top: calc((100cqh - var(--frame-h)) / 2 + var(--banner-shift-y));
+    left: calc((100cqw - var(--frame-w)) / 2 + var(--banner-shift-x));
+    width: var(--frame-w);
+    height: var(--frame-h);
+}
+
+.image {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/*
+ * 邊色帶：由圖邊向外伸到格邊（多出嘅畀 .fit 剪走）。左右同圖一樣高（沿高漸變對齊圖），
+ * 上下同圖一樣闊（沿闊漸變對齊圖）；少少重疊圖邊 1px，唔會見到接縫
+ */
+.edge {
+    position: absolute;
+}
+
+.edge[data-side='left'] {
+    top: 0;
+    right: calc(100% - 1px);
+    bottom: 0;
+    width: 100cqw;
+}
+
+.edge[data-side='right'] {
+    top: 0;
+    bottom: 0;
+    left: calc(100% - 1px);
+    width: 100cqw;
+}
+
+.edge[data-side='top'] {
+    right: 0;
+    bottom: calc(100% - 1px);
+    left: 0;
+    height: 100cqh;
+}
+
+.edge[data-side='bottom'] {
+    top: calc(100% - 1px);
+    right: 0;
+    left: 0;
+    height: 100cqh;
+}

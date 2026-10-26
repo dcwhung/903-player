@@ -21,13 +21,12 @@ main.home {
     );
 }
 
-/* 手機打橫：橫額做節目格第一格，佔兩欄（ShowGrid 排成 5 欄 × 2 行） */
-.bannerTile {
-    grid-column: span 2;
-    min-height: 0;
-}
-
-/* 手機打橫「廣播劇」tab：橫額同兩套劇排成一行三格（DramaShelf），唔使跨欄 */
-.shelfBanner {
-    min-height: 0;
+/*
+ * 手機打橫冇 mini player：唔使留佢個位，主頁格（HomeLandscapeGrid）填到近底，
+ * 橫額規則（bannerRules 嘅 off）係按呢個高啲嘅格揀；條件同 layout.ts 嘅 SHORT_LANDSCAPE_QUERY 一樣
+ */
+@media (orientation: landscape) and (min-width: 640px) and (max-height: 561px) {
+    main.home:not([data-mini-player]) {
+        padding-bottom: calc(env(safe-area-inset-bottom) + var(--space-3));
+    }
 }

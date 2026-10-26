@@ -3,6 +3,7 @@ import { LANDSCAPE_QUERY } from '../../config/layout';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { t } from '../../i18n/t';
 import { scrollBehavior } from '../../utils/motion';
+import { HomeLandscapeGrid } from '../HomeLandscapeGrid/HomeLandscapeGrid';
 import { PageDots } from '../PageDots/PageDots';
 import styles from './ShowGrid.module.css';
 import { GRID_COLUMNS, paginate } from './showGridPages';
@@ -13,16 +14,18 @@ interface ShowGridProps {
     tiles: ReactNode[];
     label: string;
     busy: boolean;
+    /** 手機打橫先畀：橫額入格，同節目一齊排（HomeLandscapeGrid）；收節目格數揀點畫 */
+    renderBanner?: (count: number) => ReactNode;
 }
 
 const pagePosition = (index: number, total: number) => t('home.pagePosition', { index, total });
 
 /**
- * 主頁節目格（兩欄）：填滿橫額同 mini player 之間嘅高度。
+ * 直版 / 闊橫版節目格（兩欄）：填滿橫額同 mini player 之間嘅高度。
  * 全部放得落就一頁；矮螢幕放唔落就按高度分頁，左右掃（scroll-snap）或者撳指示點轉頁。
- * 橫版（LANDSCAPE_QUERY）唔分頁：CSS 排成 4 欄（手機打橫 5 欄）× 兩行填滿
+ * 橫版（LANDSCAPE_QUERY，例如 iPad）唔分頁：CSS 排成 4 欄 × 兩行填滿
  */
-export const ShowGrid = ({ tiles, label, busy }: ShowGridProps) => {
+const PagedShowGrid = ({ tiles, label, busy }: ShowGridProps) => {
     // 橫版一頁放晒（ShowGrid.module.css 排成幾欄 × 兩行填滿），唔使量高度分頁
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
     const { viewportRef, gridRef, rows, maxWidthPx } = useRowsPerPage(tiles.length, !landscape);
@@ -73,3 +76,14 @@ export const ShowGrid = ({ tiles, label, busy }: ShowGridProps) => {
         </nav>
     );
 };
+
+/**
+ * 主頁「節目」tab：手機打橫（有 renderBanner）用同廣播劇共用嘅 HomeLandscapeGrid，
+ * 幾多個節目都放得晒（多過 8 格就左右捲）；其他情況用分頁節目格
+ */
+export const ShowGrid = ({ renderBanner, ...props }: ShowGridProps) =>
+    renderBanner ? (
+        <HomeLandscapeGrid {...props} renderBanner={renderBanner} />
+    ) : (
+        <PagedShowGrid {...props} />
+    );

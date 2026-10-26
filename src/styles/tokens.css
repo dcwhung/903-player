@@ -175,6 +175,8 @@
     /* 主頁節目格同橫額共用嘅左右留白、格距 */
     --home-gutter: var(--space-4);
     --home-tile-gap: var(--space-3);
+    /* 手機打橫主頁 9 張卡起變左右捲 strip：右邊露出下一欄幾闊，提示仲有得捲 */
+    --home-strip-peek: calc(40px * var(--ui-scale));
     /*
      * 主頁 mini player（浮喺頁底嘅圓角卡）：一行嘅高（頂部指示點撳得到範圍 + 開節目頁掣 / 播放掣 + 底 padding，
      * 見 MiniPlayer .row），同卡底離 viewport 底幾遠：底部安全區 + 一格間距；viewport 矮過螢幕時

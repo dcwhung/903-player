@@ -79,6 +79,30 @@ describe('ShowGrid', () => {
         expect(screen.queryByRole('group')).not.toBeInTheDocument();
     });
 
+    it.each([3, 8, 12])(
+        'should lay %i tiles out with the banner in the shared phone-sideways grid, none hidden',
+        (count) => {
+            const tiles = Array.from({ length: count }, (_, i) => (
+                <button key={i} type="button">{`節目 ${i + 1}`}</button>
+            ));
+            render(
+                <ShowGrid
+                    tiles={tiles}
+                    label="節目"
+                    busy={false}
+                    renderBanner={(n) => <span>{`橫額 ${n}`}</span>}
+                />,
+            );
+
+            const nav = screen.getByRole('navigation', { name: '節目' });
+            expect(within(nav).getAllByRole('button')).toHaveLength(count);
+            expect(within(nav).getByText(`橫額 ${count}`)).toBeInTheDocument();
+            // 手機打橫唔分頁：冇指示點，用 HomeLandscapeGrid（data-scroll 標住一屏 / strip）
+            expect(screen.queryByRole('group')).not.toBeInTheDocument();
+            expect(nav).toHaveAttribute('data-scroll', String(count > 8));
+        },
+    );
+
     it('should mark the navigation busy while recordings load', () => {
         render(<ShowGrid tiles={TILES} label="節目" busy />);
 
