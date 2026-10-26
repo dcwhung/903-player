@@ -281,8 +281,25 @@ describe('HomePage', () => {
                 within(nav)
                     .getAllByRole('button')
                     .map((b) => b.getAttribute('aria-label')),
-            ).toEqual(['芝See菇Bi Family', '黃金少年', '森美小儀系列', '少爺占系列']);
+            ).toEqual(['少爺占系列', '森美小儀系列', '黃金少年', '芝See菇Bi Family']);
             expect(screen.queryByRole('navigation', { name: '節目' })).not.toBeInTheDocument();
+        });
+
+        it('puts the dramas being listened to first, finished ones last', async () => {
+            seriesEpisodesOf('jim').forEach((e) => saveProgress(e.url, 990, 1000));
+            vi.setSystemTime(new Date('2026-10-23T08:05:00Z'));
+            saveProgress(seriesEpisodesOf('golden')[0]?.url ?? '', 250, 1000);
+            vi.setSystemTime(new Date('2026-10-23T08:10:00Z')); // 最近聽緊嘅係森美小儀
+            saveProgress(seriesEpisodesOf('sammy-kitty')[0]?.url ?? '', 250, 1000);
+            renderWithProviders(<HomePage />);
+
+            const nav = await openDramas();
+
+            expect(
+                within(nav)
+                    .getAllByRole('button')
+                    .map((b) => b.getAttribute('aria-label')?.split('，')[0]),
+            ).toEqual(['森美小儀系列', '黃金少年', '芝See菇Bi Family', '少爺占系列']);
         });
 
         it('shows the 短篇 count bottom-right until something has been played', async () => {

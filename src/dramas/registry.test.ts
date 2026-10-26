@@ -66,7 +66,10 @@ describe('buildRegistry', () => {
     const registry = buildRegistry(
         sourceOf(
             folder('zeta', series('Zeta')),
-            folder('alpha', series('Alpha', { order: 2, arcUnit: 'season' })),
+            folder(
+                'alpha',
+                series('Alpha', { order: 2, arcUnit: 'season', addedAt: '2026-10-24' }),
+            ),
             folder('off', daily('Off', { order: 1 })),
             folder('beta', series('Beta')),
         ),
@@ -88,6 +91,12 @@ describe('buildRegistry', () => {
         });
         expect(alpha?.theme).toEqual({ ...THEME, art: '/img/disc.webp' });
         expect(registry.findDrama('off')?.arcUnit).toBeUndefined();
+    });
+
+    it('carries the drama-level addedAt, leaving it out when drama.json has none', () => {
+        expect(registry.findDrama('alpha')?.addedAt).toBe('2026-10-24');
+        expect(registry.findDrama('beta')).not.toHaveProperty('addedAt');
+        expect(registry.findDrama('off')).not.toHaveProperty('addedAt');
     });
 
     it('lists only enabled dramas for the home page, but still names a disabled one', () => {
