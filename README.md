@@ -12,11 +12,12 @@
 - 橫版（打橫而且 ≥ 640px 闊，`src/config/layout.ts`）：節目頁 / 今日節目頁左播放器、右清單（唔出日子條，唱片用盡左欄）；
   主頁一頁放晒（手機打橫橫額入格 5 欄 × 2 行，其他橫額成行用闊版圖 + 4 欄）；
   闊 ≥ 1024px 字同掣 × 1.3、iPad 打橫 × 1.5（`--ui-scale`）。Preview：`design/previews/landscape-preview.html`
-- 廣播劇（`src/config/dramas.ts`）：主頁廣播劇 tab 一行一套劇；兩套都用淺色主題（頁頂狀態列墊深色帶，iOS 白字睇得清），碟面用劇集圖
+- 廣播劇（`src/dramas/<id>/drama.json`，見下面「資料檔」）：主頁廣播劇 tab 一行一套劇；全部用淺色主題（頁頂狀態列墊深色帶，iOS 白字睇得清），碟面用劇集圖
     - 芝See菇Bi Family（短篇劇集）：唱片下面「現正播放」+ 短篇 chips 左右掃，揀短篇換集數清單（有集名大字顯示集名，冇就顯示「第 N 集」）；入頁續播上次聽緊嗰集（聽完就下一集）；一集播完自動接下一集（播完一個短篇接下一個短篇，最後一集播完就停）；「☰ 全集」釘住 chips 最左，打開全集一覽表（分組：播放中 → 新上架 → 未聽完 → 已聽完；圓環 = 聽完幾多集；右邊掣續聽 / 播未收聽 / ↺ 重聽），短篇 chips 同一次序；集數清單聽完嘅排最底；新短篇（catalog `addedAt`）上架 14 日內有「新」；主頁劇集格：未聽過 / 播緊時只有短篇數（右下），聽過未播緊就喺圖底出「繼續收聽」（短篇數移去右上），有未聽過嘅新短篇左上角出「新」
-    - 18 樓 C 座（每日劇集，⚠️ 暫時停用：`src/config/dramas.ts` `enabled: false`，主頁唔出、劇集頁當搵唔到）：同節目頁一樣嘅日子條 + 集數清單，日子條只排有集數嘅日子，重播舊集標「重溫」
+    - 黃金少年（短篇劇集，`arcUnit: "season"`）：4 季 126 集，主頁角落「全 4 季」，碟面跟播緊嗰季（每季一張 `season-N-disc.webp`）
+    - 18 樓 C 座（每日劇集，⚠️ 暫時停用：`src/dramas/c18/drama.json` `enabled: false`，主頁唔出、劇集頁當搵唔到）：同節目頁一樣嘅日子條 + 集數清單，日子條只排有集數嘅日子，重播舊集標「重溫」
     - 播緊廣播劇返主頁唔會停，mini player 改為顯示嗰套劇
-    - 集數清單喺 `src/data/dramaCatalog.ts`：芝See 係真清單（12 個短篇、97 集），錄音喺 Cloudflare R2（`DRAMA_AUDIO_BASE`，`芝See菇Bi Family/<短篇>/<原檔名>`）；18樓C座 ⚠️ 仲係假資料，錄音未 host，撳播放會一直「連線中…」。Preview：`design/previews/radio-drama-preview.html`
+    - 集數清單喺每套劇嘅 `drama.json`：芝See 係真清單（12 個短篇、97 集）、黃金少年 4 季 126 集，錄音喺 Cloudflare R2（`DRAMA_AUDIO_BASE`，`<劇集 folder>/<短篇>/<原檔名>`，檔名由 template 砌）；18樓C座 ⚠️ 仲係假資料，錄音未 host，撳播放會一直「連線中…」。Preview：`design/previews/radio-drama-preview.html`
 - 自動續播（進度存喺本機 localStorage）、鎖屏 / 耳機控制、深色 + 跟系統淺色
 
 ## 架構
@@ -36,6 +37,22 @@ PWA 喺用戶部機度按每個節目嘅播出日，砌過去 14 日嘅錄音網
 用只載 metadata 嘅 `<audio>` 試下有冇（`<audio>` 唔使 CORS），
 每個節目保留最新 50 個錄音喺 localStorage，作為唯一資料來源。
 GitHub Actions 只負責 build 同 deploy。
+
+## 資料檔（節目 / 廣播劇）
+
+節目同廣播劇都唔寫喺 TypeScript，而係**一個 folder 一套**，build time 由 `import.meta.glob` 自動發現（`src/catalog/` 係共用嘅 JSON reader / theme schema / folder source）。
+加一套 = 新開 folder，放 JSON + 圖，**唔使改 code**；JSON 唔合格 `npm test` 會指出邊個檔邊個欄位（`src/*/catalog.test.ts` / schema validator）。
+
+| 路徑                                                     | 內容                                                                                                                                                                                                                                            |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/shows/<id>/show.json` + `art.jpg`                   | `name`（原站節目名，亦用嚟砌錄音網址）、`fileTime`（HHMM）、`airDays`（0 = 日 … 6 = 六）、`order`、`art`、`theme`（深色 10 隻色）                                                                                                               |
+| `src/dramas/<id>/drama.json` + `tile.webp` + `disc.webp` | `name`、`kind`（`series` 短篇劇 / `daily` 每日劇）、`enabled`、`order`、`arcUnit`、`addedAt`、`audio`（`host`：`r2` / `app`、`folder`、檔名 `file` template）、`theme`（淺色 + `statusBar` / `headerRule` / `titleFont`）、`arcs` 或 `episodes` |
+
+- folder 名 = id = route（`/show/:id`、`/drama/:id`），只可以細楷英數同連字號
+- 短篇劇 `arcs[]`：`name`（= R2 folder 名）、`episodes`（集數，或者集名 list，冇集名寫 `null`）、`titles`（`{ "集數": "集名" }` 零散補集名）、`firstNo`（有第零集寫 `0`）、`addedAt`（上架日，14 日內出「新」）、`disc`（短篇自己碟面）、`files`（`{ "集數": "完整檔名" }` 不規則檔名）
+- 檔名 template token：`{no}` `{no2}` `{noZh}`（中文數字）`{arc}` `{folder}` `{title}`；`[ … ]` 入面 token 空值就整段略去，例如 `{no2} - {arc} - 第{noZh}集[ - {title}].m4a`。每日劇用 `{date}` / `{yyyymmdd}`
+- ⚠️ `name` / `fileTime` / `audio` / 檔名唔可以亂改：錄音網址係已儲進度（localStorage）嘅 key
+- 橫版主頁 grid 寫死 4 欄 × 2 行 = 7 個節目 + 今日格；加減節目要一齊改 `ShowGrid.module.css`（`src/shows/shows.test.ts` 會提醒）
 
 ## 開發
 
@@ -69,12 +86,15 @@ GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 *
 
 ## 目錄
 
-| 路徑                    | 用途                                                                             |
-| ----------------------- | -------------------------------------------------------------------------------- |
-| `src/config/`           | 節目清單、常數                                                                   |
-| `src/services/`         | `audioProbe.ts`（喺部機度 probe 錄音）、`probeStore.ts`（localStorage 錄音清單） |
-| `src/i18n/`             | 語言包（zh-HK 書面語）                                                           |
-| `src/player/`           | `AudioController`（唯一 audio element）、Media Session                           |
-| `src/components/`       | UI component（每個 folder 有 `.tsx`、`.module.css`、`.test.tsx`）                |
-| `src/pages/`            | 主頁、節目頁、今日節目頁                                                         |
-| `src/styles/tokens.css` | Design tokens（來源：mockup）                                                    |
+| 路徑                    | 用途                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| `src/config/`           | 常數、theme primitive（`showThemes.ts`）、版面 breakpoint                             |
+| `src/catalog/`          | 資料檔共用層：JSON reader、theme schema、folder source                                |
+| `src/shows/`            | 7 個節目：`<id>/show.json` + `art.jpg`，registry（`SHOWS` / `findShow` / `themeFor`） |
+| `src/dramas/`           | 廣播劇：`<id>/drama.json` + 圖，schema / 檔名 template / 集數 builder / registry      |
+| `src/services/`         | `audioProbe.ts`（喺部機度 probe 錄音）、`probeStore.ts`（localStorage 錄音清單）      |
+| `src/i18n/`             | 語言包（zh-HK 書面語）                                                                |
+| `src/player/`           | `AudioController`（唯一 audio element）、Media Session                                |
+| `src/components/`       | UI component（每個 folder 有 `.tsx`、`.module.css`、`.test.tsx`）                     |
+| `src/pages/`            | 主頁、節目頁、今日節目頁                                                              |
+| `src/styles/tokens.css` | Design tokens（來源：mockup）                                                         |

@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { enabledDramas, type DramaConfig } from '../config/dramas';
-import { dramaEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
+import { dramaEpisodesOf, enabledDramas, seriesEpisodesOf, type DramaConfig } from '../dramas';
 import { t } from '../i18n/t';
 import { usePlayer } from '../player/usePlayer';
 import { hasNewUnheardArc, isArcNew } from '../selectors/arcProgress';

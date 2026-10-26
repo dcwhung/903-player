@@ -1,0 +1,56 @@
+{
+    "name": "黃金少年",
+    "kind": "series",
+    "enabled": true,
+    "order": 3,
+    "arcUnit": "season",
+    "addedAt": "2026-10-24",
+    "tile": "tile.webp",
+    "disc": "season-1-disc.webp",
+    "audio": {
+        "host": "r2",
+        "folder": "黃金少年",
+        "file": "{no2} - {folder}{arc} - 第{noZh}集[ - {title}].m4a"
+    },
+    "theme": {
+        "bg": "#f7e7b4",
+        "surface": "#fdf3d3",
+        "track": "#e8c869",
+        "accent": "#f2c21b",
+        "onAccent": "#3a2600",
+        "title": "#7f5500",
+        "accentText": "#7f5500",
+        "text": "#3b2a0e",
+        "muted": "#6b5121",
+        "shadowDark": "#e0c77e",
+        "shadowLight": "#fff8e2",
+        "scheme": "light",
+        "statusBar": "#8a5c00",
+        "headerRule": "linear-gradient(90deg, #af7a08, #f2c21b, #af7a08) 0 100% / 100% 3px no-repeat"
+    },
+    "arcs": [
+        {
+            "name": "Season 1",
+            "disc": "season-1-disc.webp",
+            "episodes": 35
+        },
+        {
+            "name": "Season 2",
+            "disc": "season-2-disc.webp",
+            "episodes": 30
+        },
+        {
+            "name": "Season 3",
+            "disc": "season-3-disc.webp",
+            "episodes": 30
+        },
+        {
+            "name": "Season 4",
+            "disc": "season-4-disc.webp",
+            "episodes": 31,
+            "titles": {
+                "31": "最終結局"
+            }
+        }
+    ]
+}

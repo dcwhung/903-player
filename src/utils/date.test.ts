@@ -7,6 +7,7 @@ import {
     hkTimeHHMM,
     hkToday,
     weekdayOf,
+    isCalendarDate,
 } from './date';
 import type { Weekday } from '../types/weekday';
 
@@ -78,5 +79,15 @@ describe('addDays', () => {
         expect(addDays('2026-10-19', 0)).toBe('2026-10-19');
         expect(addDays('2026-10-30', 3)).toBe('2026-11-02');
         expect(addDays('2026-01-01', -1)).toBe('2025-12-31');
+    });
+});
+
+describe('isCalendarDate', () => {
+    it('accepts a real YYYY-MM-DD and rejects impossible or malformed dates', () => {
+        expect(isCalendarDate('2026-10-23')).toBe(true);
+        expect(isCalendarDate('2024-02-29')).toBe(true);
+        expect(isCalendarDate('2026-02-29')).toBe(false);
+        expect(isCalendarDate('2026-13-01')).toBe(false);
+        expect(isCalendarDate('20261023')).toBe(false);
     });
 });

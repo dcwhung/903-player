@@ -6,7 +6,7 @@ import {
     renderWithProviders,
     unavailableEpisode,
 } from '../../tests/renderWithProviders';
-import { SHOW_THEMES } from '../config/showThemes';
+import { themeFor } from '../shows';
 import { saveProgress } from '../services/progressStore';
 import { TodayPage } from './TodayPage';
 
@@ -142,13 +142,13 @@ describe('TodayPage', () => {
         await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
         const themeColor = () =>
             document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.content;
-        expect(themeColor()).toBe(SHOW_THEMES.sunnyday.bg);
+        expect(themeColor()).toBe(themeFor('sunnyday').bg);
 
         const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
         fireEvent.pointerDown(stack, { clientX: 300, clientY: 100 });
         fireEvent.pointerUp(stack, { clientX: 150, clientY: 100 });
 
-        await waitFor(() => expect(themeColor()).toBe(SHOW_THEMES.badgirl.bg));
+        await waitFor(() => expect(themeColor()).toBe(themeFor('badgirl').bg));
     });
 
     it('should switch show on the arrow keys from the dots below the card stack', async () => {

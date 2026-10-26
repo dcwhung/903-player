@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { stubLandscape } from '../../tests/landscape';
 import { renderWithProviders } from '../../tests/renderWithProviders';
-import { seriesEpisodesOf } from '../data/dramaCatalog';
+import { dramaArtFor, seriesEpisodesOf } from '../dramas';
 import { useMiniPlayer } from '../hooks/useMiniPlayer';
 import { saveProgress } from '../services/progressStore';
 import { DramaPage } from './DramaPage';
@@ -30,19 +30,21 @@ describe('DramaPage', () => {
     describe('series drama', () => {
         it('spins the disc of the playing season, not the one only being browsed', async () => {
             const s2 = seriesEpisodesOf('golden').filter((e) => e.arc === 'Season 2');
+            const s2Art = s2[2] ? dramaArtFor(s2[2]) : '';
             saveProgress(s2[2]?.url ?? '', 60, 1200);
             const { audio } = openDrama('golden');
             const discArt = () => screen.getByRole('main').querySelector('img');
 
             await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
-            expect(discArt()?.getAttribute('src')).toContain('golden-s2-disc');
+            expect(discArt()?.getAttribute('src')).toBe(s2Art);
 
             await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
-            expect(discArt()?.getAttribute('src')).toContain('golden-s2-disc');
+            expect(discArt()?.getAttribute('src')).toBe(s2Art);
         });
 
         it('keeps the mini player disc on the playing season while another one is browsed', async () => {
             const s2 = seriesEpisodesOf('golden').filter((e) => e.arc === 'Season 2');
+            const s2Art = s2[2] ? dramaArtFor(s2[2]) : '';
             saveProgress(s2[2]?.url ?? '', 60, 1200);
             const { audio } = renderWithProviders(
                 <>
@@ -54,14 +56,14 @@ describe('DramaPage', () => {
             const miniArt = () => screen.getByTestId('mini-art').dataset.art;
 
             await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
-            expect(miniArt()).toContain('golden-s2-disc');
+            expect(miniArt()).toBe(s2Art);
 
             await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
             expect(screen.getByRole('button', { name: /^Season 4/ })).toHaveAttribute(
                 'aria-pressed',
                 'true',
             );
-            expect(miniArt()).toContain('golden-s2-disc');
+            expect(miniArt()).toBe(s2Art);
         });
 
         it('autoplays the first episode on a light themed page with the drama name as title', async () => {

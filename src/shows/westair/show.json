@@ -1,0 +1,19 @@
+{
+    "name": "西加航空",
+    "fileTime": "0905",
+    "airDays": [6],
+    "order": 5,
+    "art": "art.jpg",
+    "theme": {
+        "bg": "#2a1420",
+        "surface": "#3a1d2b",
+        "track": "#573043",
+        "accent": "#ff8a65",
+        "onAccent": "#2a1420",
+        "title": "#ffd3b8",
+        "text": "#fff1ea",
+        "muted": "#d3a9b4",
+        "shadowDark": "#1d0c15",
+        "shadowLight": "#442331"
+    }
+}

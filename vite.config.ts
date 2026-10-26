@@ -79,6 +79,9 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
+        // src/dramas/bundledSource.ts 用 import.meta.glob 掃劇集 folder；fs cache 按檔案內容 hash，
+        // 加新 folder 唔會令 bundledSource.ts 變，會用到 stale 嘅 glob 結果 → 關掉
+        fsModuleCache: false,
         setupFiles: ['./tests/setup.ts'],
         css: { modules: { classNameStrategy: 'non-scoped' } },
         include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],

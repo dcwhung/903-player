@@ -1,20 +1,16 @@
 import { renderHook } from '@testing-library/react';
 import { createHookWrapper } from '../../tests/renderWithProviders';
-import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../dramas';
 import { saveProgress } from '../services/progressStore';
 import { useDramaNewLabels } from './useDramaNewLabels';
 
 // 18 樓 C 座暫時停用；「新」嘅計法照測，當佢開咗
-vi.mock('../config/dramas', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../config/dramas')>();
-    return { ...actual, enabledDramas: () => actual.DRAMAS };
-});
-
 // 唔靠真清單嘅上架日子：芝See 只當「Ｘ時mas時小提議」係 20/10 新上架，其他短篇全部當舊，睇吓主頁「新」點計；
 // 黃金少年用真日子（24/10 成套一齊上架），個別 test 可以將 Season 4 改做遲啲先上架
 const goldenOverride = vi.hoisted(() => ({ season4AddedAt: undefined as string | undefined }));
-vi.mock('../data/dramaCatalog', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../data/dramaCatalog')>();
+// 停用咗嘅 18 樓 C 座都當開咗，一齊測
+vi.mock('../dramas', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../dramas')>();
     const withLaterSeason4 = (e: ReturnType<typeof actual.seriesEpisodesOf>[number]) =>
         goldenOverride.season4AddedAt && e.arc === 'Season 4'
             ? { ...e, addedAt: goldenOverride.season4AddedAt }
@@ -27,7 +23,7 @@ vi.mock('../data/dramaCatalog', async (importOriginal) => {
                   .map(({ addedAt: _realAddedAt, ...e }) =>
                       e.arc === 'Ｘ時mas時小提議' ? { ...e, addedAt: '2026-10-20' } : e,
                   );
-    return { ...actual, seriesEpisodesOf: withNewArc };
+    return { ...actual, enabledDramas: () => actual.DRAMAS, seriesEpisodesOf: withNewArc };
 });
 
 const labels = () => {

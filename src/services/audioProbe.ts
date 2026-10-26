@@ -1,5 +1,5 @@
 import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
-import { SHOWS, findShow, type ShowConfig } from '../config/shows';
+import { findShow, SHOWS, type ShowConfig } from '../shows';
 import type { Recording, UnavailableEpisode } from '../types/recording';
 import { daysBetween, hkTimeHHMM, hkToday, weekdayOf } from '../utils/date';
 import {

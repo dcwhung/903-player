@@ -1,0 +1,19 @@
+{
+    "name": "在晴朗的一天出發",
+    "fileTime": "0809",
+    "airDays": [1, 2, 3, 4, 5],
+    "order": 4,
+    "art": "art.jpg",
+    "theme": {
+        "bg": "#0e2230",
+        "surface": "#16303f",
+        "track": "#2c4a5c",
+        "accent": "#6ec6ea",
+        "onAccent": "#0e2230",
+        "title": "#e3f5ff",
+        "text": "#eef7fb",
+        "muted": "#9fbacb",
+        "shadowDark": "#081620",
+        "shadowLight": "#1c3a4b"
+    }
+}

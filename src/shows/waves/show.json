@@ -1,0 +1,19 @@
+{
+    "name": "口水多過浪花",
+    "fileTime": "1510",
+    "airDays": [1, 2, 3, 4, 5],
+    "order": 6,
+    "art": "art.jpg",
+    "theme": {
+        "bg": "#0c1a2c",
+        "surface": "#152a40",
+        "track": "#2a4560",
+        "accent": "#ff5a4e",
+        "onAccent": "#0c1a2c",
+        "title": "#dcefff",
+        "text": "#eef5fb",
+        "muted": "#9fb6cc",
+        "shadowDark": "#06101c",
+        "shadowLight": "#1b3450"
+    }
+}

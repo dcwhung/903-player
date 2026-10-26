@@ -1,5 +1,5 @@
 import { recording } from '../../tests/renderWithProviders';
-import { themeFor } from '../config/showThemes';
+import { themeFor } from '../shows';
 import { toStackCards, toTodayItems } from './todayItems';
 
 const SUNNY = recording('sunnyday', '2026-10-19', '0600');

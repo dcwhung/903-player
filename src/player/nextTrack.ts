@@ -1,4 +1,4 @@
-import { seriesEpisodesOf } from '../data/dramaCatalog';
+import { seriesEpisodesOf } from '../dramas';
 import { nextSeriesEpisode } from '../selectors/dramas';
 import { isDramaEpisode, type Track } from '../types/track';
 

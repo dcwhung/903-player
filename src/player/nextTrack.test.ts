@@ -1,4 +1,4 @@
-import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../dramas';
 import type { Recording } from '../types/recording';
 import { nextTrack } from './nextTrack';
 

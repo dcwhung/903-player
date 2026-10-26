@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
-import { seriesEpisodesOf } from '../data/dramaCatalog';
+import { seriesEpisodesOf } from '../dramas';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
 import type { Track } from '../types/track';

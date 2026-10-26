@@ -1,0 +1,19 @@
+{
+    "name": "聖艾粒LaLaLaLa",
+    "fileTime": "1710",
+    "airDays": [1, 2, 3, 4, 5],
+    "order": 7,
+    "art": "art.jpg",
+    "theme": {
+        "bg": "#0f2826",
+        "surface": "#173634",
+        "track": "#2e524e",
+        "accent": "#f7a531",
+        "onAccent": "#0f2826",
+        "title": "#ffe27a",
+        "text": "#f1f7f5",
+        "muted": "#a5c2bd",
+        "shadowDark": "#081a19",
+        "shadowLight": "#1d403d"
+    }
+}

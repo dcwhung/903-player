@@ -1,4 +1,5 @@
-export type ShowId = 'badgirl' | 'gongzi' | 'wanni' | 'sunnyday' | 'westair' | 'waves' | 'lalala';
+/** = src/shows/<id>/ folder 名；清單由 show.json 讀，所以唔係 closed union */
+export type ShowId = string;
 
 export interface Recording {
     showId: ShowId;

@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
-import type { DramaConfig } from '../config/dramas';
-import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
+import { dailyEpisodesOf, seriesEpisodesOf, type DramaConfig } from '../dramas';
 import { usePlayer } from '../player/usePlayer';
 import { dailyNewestFirst, pickDailyStart, pickSeriesStart } from '../selectors/dramas';
 import { getProgressMap, type Progress } from '../services/progressStore';

@@ -1,7 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
-import { DRAMA_ARC_ART, DRAMA_THEMES } from '../config/dramaThemes';
-import { seriesEpisodesOf } from '../data/dramaCatalog';
+import { dramaArtFor, dramaThemeFor, seriesEpisodesOf } from '../dramas';
 import type { SeriesEpisode } from '../types/drama';
 import { saveProgress } from '../services/progressStore';
 import { usePlayer } from '../player/usePlayer';
@@ -156,7 +155,7 @@ describe('useMiniPlayer', () => {
                 showName: '芝See菇Bi Family',
                 region: '正在播放（廣播劇）',
                 openLabel: '開啟 芝See菇Bi Family 廣播劇頁',
-                theme: DRAMA_THEMES.chisee,
+                theme: dramaThemeFor('chisee'),
                 subtitle: 'Ｘ時mas時小提議 · 第 2 集 哥哥你洽我 · 5:00 / 20:00',
                 isPlaying: true,
                 progress: 0.25,
@@ -172,9 +171,10 @@ describe('useMiniPlayer', () => {
             await act(() => result.current.player.load(s3, { autoplay: true }));
 
             expect(result.current.mini?.theme).toEqual({
-                ...DRAMA_THEMES.golden,
-                art: DRAMA_ARC_ART.golden?.['Season 3'],
+                ...dramaThemeFor('golden'),
+                art: dramaArtFor(s3),
             });
+            expect(result.current.mini?.theme.art).not.toBe(dramaThemeFor('golden').art);
         });
 
         it('toggles the drama and opens its page', async () => {

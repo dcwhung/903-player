@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { stripDays } from '../components/DateStrip/dateStrip';
-import { DRAMA_THEMES, dramaEpisodeTheme } from '../config/dramaThemes';
-import type { DramaConfig } from '../config/dramas';
-import { dailyEpisodesOf, seriesEpisodesOf } from '../data/dramaCatalog';
+import { dailyEpisodesOf, dramaEpisodeTheme, seriesEpisodesOf, type DramaConfig } from '../dramas';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { useStartDrama } from '../hooks/useStartDrama';
 import { usePlayer } from '../player/usePlayer';
@@ -84,7 +82,7 @@ export const useDailyDramaPage = (drama: DramaConfig) => {
         [episodes, current?.url],
     );
     return {
-        theme: DRAMA_THEMES[drama.id],
+        theme: drama.theme,
         current,
         strip,
         items: toDailyItems(episodes, ctx),
@@ -159,7 +157,7 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
     const arcPosition = arcEpisodes.findIndex((e) => e.url === current?.url) + 1;
     return {
         // 碟面跟播緊（未播就係準備播）嗰集嘅短篇；淨係揀 chip 睇清單唔換
-        theme: current ? dramaEpisodeTheme(current) : DRAMA_THEMES[drama.id],
+        theme: current ? dramaEpisodeTheme(current) : drama.theme,
         current,
         arcTotal,
         arcPosition,

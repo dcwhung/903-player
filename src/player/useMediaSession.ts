@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { LOCK_SCREEN_SKIP_SECONDS } from '../config/constants';
-import { findDrama } from '../config/dramas';
-import { findShow } from '../config/shows';
+import { findDrama } from '../dramas';
+import { findShow } from '../shows';
 import { dramaEpisodeLabel } from '../selectors/dramas';
 import { isDramaEpisode, type Track } from '../types/track';
 import { formatDateLabel } from '../utils/date';

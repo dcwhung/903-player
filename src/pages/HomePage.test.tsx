@@ -5,7 +5,7 @@ import packageJson from '../../package.json';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { HOME_THEME } from '../config/showThemes';
 import { usePlayer } from '../player/usePlayer';
-import { seriesEpisodesOf } from '../data/dramaCatalog';
+import { seriesEpisodesOf } from '../dramas';
 import { saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import type { Track } from '../types/track';
