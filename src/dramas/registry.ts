@@ -4,6 +4,7 @@
  */
 import { NEUTRAL_THEME, type ShowTheme } from '../config/showThemes';
 import type { DramaEpisode, DramaKind, DailyEpisode, SeriesEpisode } from '../types/drama';
+import { compareOrderThenId } from '../catalog/ordering';
 import { buildEpisodes } from './episodes';
 import { DramaSchemaError, parseDramaDefinition, type DramaDefinition } from './schema';
 import type { DramaFolder, DramaSource } from './source';
@@ -53,9 +54,6 @@ interface DramaEntry {
     arcArt: ReadonlyMap<string, string>;
 }
 
-/** 冇寫 order 嘅排最後（再按 id 排） */
-const UNORDERED = Number.POSITIVE_INFINITY;
-
 const requireImage = (folder: DramaFolder, file: string): string => {
     const url = folder.images[file];
     if (url === undefined)
@@ -82,7 +80,7 @@ const arcArtOf = (folder: DramaFolder, def: DramaDefinition): ReadonlyMap<string
             : [],
     );
 
-const toEntry = (folder: DramaFolder): { entry: DramaEntry; order: number } => {
+const toEntry = (folder: DramaFolder): { entry: DramaEntry; order: number | undefined } => {
     const def = parseDramaDefinition(folder.definition, {
         id: folder.id,
         source: folder.source,
@@ -94,21 +92,18 @@ const toEntry = (folder: DramaFolder): { entry: DramaEntry; order: number } => {
             episodes: buildEpisodes(folder.id, def),
             arcArt: arcArtOf(folder, def),
         },
-        order: def.order ?? UNORDERED,
+        order: def.order,
     };
 };
-
-const byOrderThenId = (
-    a: { order: number; entry: DramaEntry },
-    b: { order: number; entry: DramaEntry },
-) => a.order - b.order || a.entry.drama.id.localeCompare(b.entry.drama.id);
 
 const indexEntries = (source: DramaSource): Map<string, DramaEntry> => {
     const entries = new Map<string, DramaEntry>();
     source
         .folders()
         .map(toEntry)
-        .sort(byOrderThenId)
+        .sort((a, b) =>
+            compareOrderThenId({ ...a, id: a.entry.drama.id }, { ...b, id: b.entry.drama.id }),
+        )
         .forEach(({ entry }) => {
             const { id } = entry.drama;
             if (entries.has(id)) throw new DramaSchemaError(`duplicate drama id ${id}`);

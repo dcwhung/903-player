@@ -3,16 +3,31 @@
  * 所以呢度逐個欄位驗，驗完先係 DramaDefinition（kind 等 literal 由此還原）。
  * 錯誤 message 一定寫明邊個檔、邊個欄位，方便加劇嘅人即刻改。
  */
-import type { ShowTheme } from '../config/showThemes';
+import {
+    checkId,
+    fail,
+    readBoolean,
+    readEnum,
+    readImage,
+    readNonEmptyArray,
+    readOptionalDate,
+    readOptionalEnum,
+    readOptionalImage,
+    readOptionalInteger,
+    readOptionalString,
+    readRecord,
+    readString,
+    type ParseContext,
+    type Raw,
+} from '../catalog/reader';
+import { readTheme, type ThemeDefinition } from '../catalog/themeSchema';
 import type { DramaKind } from '../types/drama';
-import { isCalendarDate } from '../utils/date';
 
-export class DramaSchemaError extends Error {
-    override readonly name = 'DramaSchemaError';
-}
+export { SchemaError as DramaSchemaError } from '../catalog/reader';
+export type { ParseContext } from '../catalog/reader';
 
 /** 劇集色調：ShowTheme 減碟面圖（圖由 folder 入面嘅 webp 補上） */
-export type DramaThemeDefinition = Omit<ShowTheme, 'art'>;
+export type DramaThemeDefinition = ThemeDefinition;
 
 export interface AudioDefinition {
     /** r2：DRAMA_AUDIO_BASE；app：app 自己 host（BASE_URL/dramas/） */
@@ -68,37 +83,11 @@ export interface DailyDefinition extends DramaDefinitionBase {
 
 export type DramaDefinition = SeriesDefinition | DailyDefinition;
 
-export interface ParseContext {
-    /** folder 名，亦係 /drama/:id */
-    id: string;
-    /** 錯誤 message 用嘅檔案路徑 */
-    source: string;
-    /** folder 入面有嘅圖檔名 */
-    files: ReadonlySet<string>;
-}
-
-export const DRAMA_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
-const HEX_COLOUR_PATTERN = /^#[0-9a-f]{6}$/i;
 const TOKEN_PATTERN = /\{(\w+)\}/g;
 
 const DRAMA_KINDS = ['series', 'daily'] as const satisfies readonly DramaKind[];
 const ARC_UNITS = ['season'] as const;
-const SCHEMES = ['light'] as const;
 const AUDIO_HOSTS = ['r2', 'app'] as const;
-const THEME_COLOUR_KEYS = [
-    'bg',
-    'surface',
-    'track',
-    'accent',
-    'onAccent',
-    'title',
-    'text',
-    'muted',
-    'shadowDark',
-    'shadowLight',
-] as const;
-const THEME_OPTIONAL_COLOUR_KEYS = ['statusBar', 'accentText'] as const;
-const THEME_OPTIONAL_TEXT_KEYS = ['titleFont', 'headerRule'] as const;
 
 /** 每種劇集 template 可以用嘅 token */
 export const SERIES_TOKENS: ReadonlySet<string> = new Set([
@@ -110,127 +99,6 @@ export const SERIES_TOKENS: ReadonlySet<string> = new Set([
     'title',
 ]);
 export const DAILY_TOKENS: ReadonlySet<string> = new Set(['date', 'yyyymmdd', 'folder']);
-
-type Raw = Record<string, unknown>;
-
-/** 明確寫 type annotation，TypeScript 先會當佢係 assertion function 去收窄（例如 if (x === undefined) fail(...)） */
-const fail: (ctx: ParseContext, message: string) => never = (ctx, message) => {
-    throw new DramaSchemaError(`${ctx.source}: ${message}`);
-};
-
-const isRecord = (value: unknown): value is Raw =>
-    typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const readRecord = (ctx: ParseContext, value: unknown, path: string): Raw =>
-    isRecord(value) ? value : fail(ctx, `${path} must be an object`);
-
-const readString = (ctx: ParseContext, raw: Raw, key: string, path: string = key): string => {
-    const value = raw[key];
-    return typeof value === 'string' && value !== ''
-        ? value
-        : fail(ctx, `${path} must be a non-empty string`);
-};
-
-const readOptionalString = (
-    ctx: ParseContext,
-    raw: Raw,
-    key: string,
-    path: string,
-): string | undefined => (raw[key] === undefined ? undefined : readString(ctx, raw, key, path));
-
-const readBoolean = (
-    ctx: ParseContext,
-    raw: Raw,
-    key: string,
-    path: string,
-    fallback?: boolean,
-): boolean => {
-    const value = raw[key];
-    if (value === undefined && fallback !== undefined) return fallback;
-    return typeof value === 'boolean' ? value : fail(ctx, `${path} must be a boolean`);
-};
-
-const readOptionalInteger = (
-    ctx: ParseContext,
-    raw: Raw,
-    key: string,
-    path: string,
-): number | undefined =>
-    raw[key] === undefined
-        ? undefined
-        : Number.isInteger(raw[key])
-          ? (raw[key] as number)
-          : fail(ctx, `${path} must be an integer`);
-
-const readEnum = <T extends string>(
-    ctx: ParseContext,
-    raw: Raw,
-    key: string,
-    path: string,
-    allowed: readonly T[],
-): T => {
-    const value = raw[key];
-    return allowed.includes(value as T)
-        ? (value as T)
-        : fail(ctx, `${path} must be one of ${allowed.join(', ')}`);
-};
-
-const readOptionalEnum = <T extends string>(
-    ctx: ParseContext,
-    raw: Raw,
-    key: string,
-    path: string,
-    allowed: readonly T[],
-): T | undefined => (raw[key] === undefined ? undefined : readEnum(ctx, raw, key, path, allowed));
-
-const readHex = (ctx: ParseContext, raw: Raw, key: string, path: string): string => {
-    const value = raw[key];
-    return typeof value === 'string' && HEX_COLOUR_PATTERN.test(value)
-        ? value
-        : fail(ctx, `${path} must be a #rrggbb colour`);
-};
-
-const readOptionalDate = (
-    ctx: ParseContext,
-    raw: Raw,
-    key: string,
-    path: string,
-): string | undefined => {
-    const value = raw[key];
-    if (value === undefined) return undefined;
-    return typeof value === 'string' && isCalendarDate(value)
-        ? value
-        : fail(ctx, `${path} must be a YYYY-MM-DD date`);
-};
-
-const readImage = (ctx: ParseContext, raw: Raw, key: string, path: string): string => {
-    const file = readString(ctx, raw, key, path);
-    return ctx.files.has(file) ? file : fail(ctx, `${path}: no file ${file} in the folder`);
-};
-
-const readOptionalImage = (
-    ctx: ParseContext,
-    raw: Raw,
-    key: string,
-    path: string,
-): string | undefined => (raw[key] === undefined ? undefined : readImage(ctx, raw, key, path));
-
-const readTheme = (ctx: ParseContext, raw: Raw): DramaThemeDefinition => {
-    const theme = readRecord(ctx, raw.theme, 'theme');
-    const colours = Object.fromEntries(
-        THEME_COLOUR_KEYS.map((key) => [key, readHex(ctx, theme, key, `theme.${key}`)]),
-    ) as Record<(typeof THEME_COLOUR_KEYS)[number], string>;
-    const optional: Partial<DramaThemeDefinition> = {};
-    THEME_OPTIONAL_COLOUR_KEYS.forEach((key) => {
-        if (theme[key] !== undefined) optional[key] = readHex(ctx, theme, key, `theme.${key}`);
-    });
-    THEME_OPTIONAL_TEXT_KEYS.forEach((key) => {
-        const value = readOptionalString(ctx, theme, key, `theme.${key}`);
-        if (value !== undefined) optional[key] = value;
-    });
-    const scheme = readOptionalEnum(ctx, theme, 'scheme', 'theme.scheme', SCHEMES);
-    return { ...colours, ...optional, ...(scheme ? { scheme } : {}) };
-};
 
 const checkTemplate = (ctx: ParseContext, template: string, allowed: ReadonlySet<string>): void => {
     for (const [, token] of template.matchAll(TOKEN_PATTERN)) {
@@ -327,10 +195,10 @@ const readArc = (
 };
 
 const readArcs = (ctx: ParseContext, raw: Raw): readonly ArcDefinition[] => {
-    const arcs = raw.arcs;
-    if (!Array.isArray(arcs) || arcs.length === 0) fail(ctx, 'arcs must not be empty');
     const seen = new Set<string>();
-    return (arcs as unknown[]).map((arc, i) => readArc(ctx, arc, `arcs[${i}]`, seen));
+    return readNonEmptyArray(ctx, raw, 'arcs').map((arc, i) =>
+        readArc(ctx, arc, `arcs[${i}]`, seen),
+    );
 };
 
 const readDailyEpisode = (
@@ -353,10 +221,10 @@ const readDailyEpisode = (
 };
 
 const readDailyEpisodes = (ctx: ParseContext, raw: Raw): readonly DailyEpisodeDefinition[] => {
-    const episodes = raw.episodes;
-    if (!Array.isArray(episodes) || episodes.length === 0) fail(ctx, 'episodes must not be empty');
     const seen = new Set<string>();
-    return (episodes as unknown[]).map((e, i) => readDailyEpisode(ctx, e, `episodes[${i}]`, seen));
+    return readNonEmptyArray(ctx, raw, 'episodes').map((e, i) =>
+        readDailyEpisode(ctx, e, `episodes[${i}]`, seen),
+    );
 };
 
 const readBase = (ctx: ParseContext, raw: Raw, kind: DramaKind): DramaDefinitionBase => ({
@@ -372,8 +240,7 @@ const readBase = (ctx: ParseContext, raw: Raw, kind: DramaKind): DramaDefinition
 
 /** 驗證一個 drama.json（JSON import 返嚟嘅 unknown），唔合格就 throw DramaSchemaError */
 export const parseDramaDefinition = (value: unknown, ctx: ParseContext): DramaDefinition => {
-    if (!DRAMA_ID_PATTERN.test(ctx.id))
-        fail(ctx, `folder name must match ${DRAMA_ID_PATTERN.toString()}`);
+    checkId(ctx);
     const raw = readRecord(ctx, value, 'drama.json');
     const kind = readEnum(ctx, raw, 'kind', 'kind', DRAMA_KINDS);
     const base = readBase(ctx, raw, kind);
