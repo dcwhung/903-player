@@ -94,7 +94,7 @@ const checkVersionOnBanner = async (p, label) => {
     );
 };
 
-// 橫額高度同一格節目一樣（容許 subpixel 捨入）
+// 橫額高度 / 節目格高度比較時容許 subpixel 捨入
 const BANNER_HEIGHT_TOLERANCE_PX = 1;
 // 390×844、320×568 嘅主頁固定 / 版本號已經由 SHOW_VIEWPORTS（homeFixed）嘅 checkFixedHome 檢查；
 // 430×932 唔喺嗰度，所以喺橫額呢度補做（fixedHome）
@@ -104,18 +104,45 @@ const HOME_BANNER_VIEWPORTS = [
     { width: 430, height: 932, fixedHome: true },
 ];
 
-/** 主頁頁頂橫額嘅幾何：見到、同一格節目一樣高、喺節目格上面對齊、有圓角、冇令頁面橫向捲動 */
+/** 節目格嘅 token（tokens.css :root）：最矮比例 16:9 同直版一行最多高幾多倍（T8），同 app 讀同一組 */
+const readTileTokens = (p) =>
+    p.evaluate(() => {
+        const style = getComputedStyle(document.documentElement);
+        const token = (name) => parseFloat(style.getPropertyValue(name));
+        return {
+            ratio: token('--tile-aspect-h') / token('--tile-aspect-w'),
+            maxGrow: token('--show-tile-max-grow'),
+        };
+    });
+
+/**
+ * 橫額同節目格嘅高（T8 直版填滿）：橫額唔郁，高 = 一欄闊 × 16:9（同最矮嘅節目格一樣）；
+ * 節目格行高由 ShowGrid fillRows 拉高，喺最矮（× 1）同最高（× maxGrow）之間。
+ * b = 橫額 boundingBox 加 visible（見唔見到）
+ */
+const checkBannerHeight = async (p, label, b, tile) => {
+    const { ratio, maxGrow } = await readTileTokens(p);
+    const minTilePx = tile.width * ratio;
+    const maxTilePx = minTilePx * maxGrow;
+    log(
+        b.visible && Math.abs(b.height - minTilePx) <= BANNER_HEIGHT_TOLERANCE_PX,
+        `${label}：橫額高 ${b.height.toFixed(2)}px = 一欄 16:9 格高 ${minTilePx.toFixed(2)}px`,
+    );
+    log(
+        tile.height >= minTilePx - BANNER_HEIGHT_TOLERANCE_PX &&
+            tile.height <= maxTilePx + BANNER_HEIGHT_TOLERANCE_PX,
+        `${label}：節目格高 ${tile.height.toFixed(2)}px 喺 ${minTilePx.toFixed(2)}–${maxTilePx.toFixed(2)}px`,
+    );
+};
+
+/** 主頁頁頂橫額嘅幾何：見到、高度跟 T8 規則、喺節目格上面對齊、有圓角、冇令頁面橫向捲動 */
 const checkHomeBanner = async (p, label, shot) => {
     const banner = p.getByRole('heading', { level: 1 }).getByRole('img', { name: BANNER_ALT });
     await banner.evaluate((img) => img.decode());
     const b = await banner.boundingBox();
     const tile = await p.locator('nav button').first().boundingBox();
     const radius = await banner.evaluate((img) => parseFloat(getComputedStyle(img).borderRadius));
-    const diff = Math.abs(b.height - tile.height);
-    log(
-        (await banner.isVisible()) && diff <= BANNER_HEIGHT_TOLERANCE_PX,
-        `${label}：橫額高 ${b.height.toFixed(2)}px = 節目格高 ${tile.height.toFixed(2)}px`,
-    );
+    await checkBannerHeight(p, label, { ...b, visible: await banner.isVisible() }, tile);
     log(
         Math.abs(b.x - tile.x) < 1 && b.y + b.height < tile.y,
         `${label}：橫額喺節目格上面、左邊對齊（${b.x} / ${tile.x}）`,
