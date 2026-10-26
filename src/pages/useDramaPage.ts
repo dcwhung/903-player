@@ -7,15 +7,20 @@ import { usePlayer } from '../player/usePlayer';
 import {
     dailyNewestFirst,
     episodesInArc,
+    isEpisodeOfDrama,
     pickDailyStart,
     pickSeriesStart,
 } from '../selectors/dramas';
 import { arcGroups, arcSummaries, listOrder, type ArcSummary } from '../selectors/arcProgress';
 import { getProgressMap, type Progress } from '../services/progressStore';
 import type { DramaEpisode, SeriesEpisode } from '../types/drama';
-import { isDramaEpisode, type Track } from '../types/track';
+import type { Track } from '../types/track';
 import { hkToday } from '../utils/date';
-import { playbackStateOf } from '../utils/playbackState';
+import {
+    playbackStateOf,
+    type PlaybackLineState,
+    type PlaybackState,
+} from '../utils/playbackState';
 import { toDailyItems, toSeriesItems } from './dramaItems';
 import type { RowContext } from './episodeItems';
 
@@ -26,10 +31,7 @@ const useLoadedEpisode = <K extends DramaEpisode['kind']>(
 ): Extract<DramaEpisode, { kind: K }> | null => {
     const { recording } = usePlayer();
     const isThis = (track: Track | null): track is Extract<DramaEpisode, { kind: K }> =>
-        track !== null &&
-        isDramaEpisode(track) &&
-        track.dramaId === drama.id &&
-        track.kind === kind;
+        isEpisodeOfDrama(track, drama.id) && track.kind === kind;
     return isThis(recording) ? recording : null;
 };
 
@@ -64,7 +66,8 @@ const usePlaybackRows = (
     });
     const ctx: RowContext = {
         currentUrl,
-        live: { currentTime: player.currentTime, duration: player.duration },
+        // 未載入呢套劇：player 時間係其他嘢（或者冇嘢）嘅，揀中集用返 localStorage 進度，唔講「連線中…」
+        live: isLoaded ? { currentTime: player.currentTime, duration: player.duration } : undefined,
         progressMap,
         isPlaying,
         liveState: playState,
@@ -173,6 +176,16 @@ const useArcPick = (
     };
 };
 
+/**
+ * 未載入呢套劇（第一次入未揀，或者播緊其他嘢）：唱片區（時間、掣、「現正播放」）係未開始樣，
+ * 撳播放（start）先開始播呢套劇、換走其他嘢；載入咗就跟返 player（start 係 undefined）
+ */
+const useStandby = (drama: DramaConfig, isLoaded: boolean, playState: PlaybackState) => {
+    const startDrama = useStartDrama();
+    const status: PlaybackLineState = isLoaded ? playState : 'unloaded';
+    return { status, start: isLoaded ? undefined : () => startDrama(drama) };
+};
+
 /** 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 全集 / 短篇 chips + 嗰個短篇嘅集數 */
 export const useSeriesDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
@@ -202,7 +215,7 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
         // 碟面跟播緊（未播就係準備播）嗰集；冇播放時揀短篇會載入嗰個短篇，碟面就跟住轉
         theme: current ? dramaEpisodeTheme(current) : drama.theme,
         current,
-        playState,
+        ...useStandby(drama, loaded !== null, playState),
         arcTotal,
         arcPosition,
         arcs: chips,

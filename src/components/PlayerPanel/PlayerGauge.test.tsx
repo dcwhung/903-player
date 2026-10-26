@@ -324,3 +324,39 @@ describe('PlayerGauge disc motion', () => {
         expect(faceDegrees(face)).toBeCloseTo(0);
     });
 });
+
+/** 播緊另一樣嘢，個唱片格係其他頁嘅（未載入呢頁嘅嘢） */
+const OtherPlayingHarness = ({ onStart }: { onStart: () => void }) => {
+    const player = usePlayer();
+    return (
+        <>
+            <button type="button" onClick={() => void player.load(REC, { autoplay: true })}>
+                play other
+            </button>
+            <PlayerGauge onStart={onStart} />
+        </>
+    );
+};
+
+describe('PlayerGauge not started (onStart)', () => {
+    it('ignores what the player plays and starts its own page from play or restart', async () => {
+        const onStart = vi.fn();
+        const { audio } = renderWithProviders(<OtherPlayingHarness onStart={onStart} />);
+        await userEvent.click(screen.getByRole('button', { name: 'play other' }));
+        act(() => audio.emitPlaying());
+        act(() => audio.emitMetadata(DURATION));
+        act(() => audio.emitTime(100));
+        const plays = audio.play.mock.calls.length;
+
+        expect(screen.getAllByText('--:--')).toHaveLength(2);
+        expect(screen.getByRole('slider', { name: '播放進度' })).toHaveAttribute(
+            'aria-valuenow',
+            '0',
+        );
+        await userEvent.click(screen.getByRole('button', { name: '播放' }));
+        await userEvent.click(screen.getByRole('button', { name: '由頭播放' }));
+        expect(onStart).toHaveBeenCalledTimes(2);
+        expect(audio.play).toHaveBeenCalledTimes(plays);
+        expect(audio.pause).not.toHaveBeenCalled();
+    });
+});
