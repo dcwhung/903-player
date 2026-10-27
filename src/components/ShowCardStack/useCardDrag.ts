@@ -127,6 +127,18 @@ const swallow = (event: MouseEvent<HTMLElement>) => {
     event.stopPropagation();
 };
 
+/** 拖完 / 飛緊嘅 click 食咗；其他照 useClickSuppression */
+const clickCapture = (
+    event: MouseEvent<HTMLElement>,
+    motion: CardMotion,
+    clicks: ReturnType<typeof useClickSuppression>,
+) => {
+    if (!motion.isFlying()) return clicks.onClickCapture(event);
+    // 飛緊照食；順手消耗「放手後要食一下 click」嘅標記，落地之後唔會再食多一下
+    clicks.arm(false);
+    swallow(event);
+};
+
 /**
  * 跟手指拖卡（卡疊 touch-action: pinch-zoom，好矮嘅畫面 pan-y pinch-zoom）。commit 係 null（例如得一個節目）就永遠彈返。
  * 弧形（只限圓環）同捽碟自己 stopPropagation，所以佢哋唔會郁張卡；唱片格四角照拖得卡。拖完嘅 click 會被食咗。
@@ -152,12 +164,7 @@ export const useCardDrag = (
         onLostPointerCapture: (event: StackPointerEvent) => {
             if (event.target === event.currentTarget) abandon(gesture, motion, event.pointerId);
         },
-        onClickCapture: (event: MouseEvent<HTMLElement>) => {
-            if (!motion.isFlying()) return clicks.onClickCapture(event);
-            // 飛緊照食；順手消耗「放手後要食一下 click」嘅標記，落地之後唔會再食多一下
-            clicks.arm(false);
-            swallow(event);
-        },
+        onClickCapture: (event: MouseEvent<HTMLElement>) => clickCapture(event, motion, clicks),
         // 滑鼠拖節目圖會觸發原生拖放（之後 pointercancel），要擋住
         onDragStart: (event: DragEvent<HTMLElement>) => event.preventDefault(),
     };

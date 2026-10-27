@@ -59,6 +59,27 @@ const useStripStep = ({ dateLabel, days, current, onPick, spinRef }: DateStripSt
     return { motion, go, announcement };
 };
 
+/** 日子條嘅方向鍵同撳日子：都行 go（同拖動同一條路） */
+const useStripInput = ({ days, current }: DateStripStepOptions, go: (index: number) => void) => {
+    const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+        const direction = arrowKeyDirection(event.key);
+        // 只係焦點喺日子條本身先處理
+        if (!direction || event.target !== event.currentTarget) return;
+        event.preventDefault();
+        // → 舊一集（右邊）、← 新一集（左邊），同畫面位置一致
+        go(steppedDay(days, current, direction));
+    };
+    // 撳日子：由 track 代理（DayCell 唔使每格一個 callback，可以 memo）；
+    // 撳咗嘅掣會變做正中（唔再係掣），焦點交返日子條，方向鍵照用得
+    const onTrackClick = (event: MouseEvent<HTMLDivElement>) => {
+        const cell = (event.target as HTMLElement).closest<HTMLElement>(`[${DAY_INDEX_ATTR}]`);
+        if (!cell) return;
+        event.currentTarget.parentElement?.focus({ preventScroll: true });
+        go(Number(cell.getAttribute(DAY_INDEX_ATTR)));
+    };
+    return { onKeyDown, onTrackClick };
+};
+
 /**
  * 日子條：轉集區名 = 日期 + 節目名（aria-labelledby），操作提示放 aria-describedby，
  * 只有日子條自己觸發嘅轉集先會經 polite live region 讀出嚟。
@@ -73,22 +94,7 @@ export const useDateStrip = (options: DateStripStepOptions) => {
         onGo: go,
         onHold: options.onHold,
     });
-    const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-        const direction = arrowKeyDirection(event.key);
-        // 只係焦點喺日子條本身先處理
-        if (!direction || event.target !== event.currentTarget) return;
-        event.preventDefault();
-        // → 舊一集（右邊）、← 新一集（左邊），同畫面位置一致
-        go(steppedDay(options.days, options.current, direction));
-    };
-    // 撳日子：由 track 代理（DayCell 唔使每格一個 callback，可以 memo）；
-    // 撳咗嘅掣會變做正中（唔再係掣），焦點交返日子條，方向鍵照用得
-    const onTrackClick = (event: MouseEvent<HTMLDivElement>) => {
-        const cell = (event.target as HTMLElement).closest<HTMLElement>(`[${DAY_INDEX_ATTR}]`);
-        if (!cell) return;
-        event.currentTarget.parentElement?.focus({ preventScroll: true });
-        go(Number(cell.getAttribute(DAY_INDEX_ATTR)));
-    };
+    const { onKeyDown, onTrackClick } = useStripInput(options, go);
     const zone = {
         role: 'group',
         'aria-roledescription': t('episodes.switchRoleDescription'),

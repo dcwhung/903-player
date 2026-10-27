@@ -21,3 +21,25 @@ export const fitFontSize = ({ basePx, availablePx, neededPx, minPx }: FitInput):
     const scaled = Math.floor((basePx * availablePx) / neededPx / FIT_STEP_PX) * FIT_STEP_PX;
     return Math.min(basePx, Math.max(minPx, scaled));
 };
+
+/**
+ * 量一次再縮：先清走之前設嘅字體，用 CSS 原本大小量 content（Marquee 文字或者格本身）闊度；
+ * 按比例縮完仍然有捨入誤差，就逐步再細 FIT_STEP_PX，直至放得落或者到 minPx
+ */
+export const applyFit = (el: HTMLElement, content: HTMLElement, minPx: number) => {
+    el.style.fontSize = '';
+    const basePx = parseFloat(getComputedStyle(el).fontSize);
+    if (!Number.isFinite(basePx)) return;
+    let size = fitFontSize({
+        basePx,
+        availablePx: el.clientWidth,
+        neededPx: content.scrollWidth,
+        minPx,
+    });
+    if (size === basePx) return;
+    el.style.fontSize = `${size}px`;
+    while (content.scrollWidth > el.clientWidth && size - FIT_STEP_PX >= minPx) {
+        size -= FIT_STEP_PX;
+        el.style.fontSize = `${size}px`;
+    }
+};
