@@ -208,7 +208,7 @@ const ArcGroupBlock = ({
 export const ArcSheet = ({ open, docked = false, groups, onClose, ...rowProps }: ArcSheetProps) => {
     const titleId = useId();
     const sheetRef = useSheetFocus(open, onClose);
-    const { backdropRef, listRef, handlers } = useSheetDrag(sheetRef, open, onClose);
+    const { sheetRef: bindSheet, backdropRef, listRef, handlers } = useSheetDrag(open, onClose);
     if (!open) return null;
     const all = groups.flatMap((g) => g.items);
     const done = all.filter((s) => s.state === 'done').length;
@@ -223,7 +223,10 @@ export const ArcSheet = ({ open, docked = false, groups, onClose, ...rowProps }:
                 />
             )}
             <section
-                ref={sheetRef}
+                ref={(el) => {
+                    sheetRef.current = el;
+                    bindSheet(el);
+                }}
                 className={styles.sheet}
                 role="dialog"
                 aria-modal={!docked}

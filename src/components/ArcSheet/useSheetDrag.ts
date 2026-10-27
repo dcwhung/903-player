@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, type PointerEvent, type RefObject } from 'react';
-import { DRAG_INTENT_PX } from '../../hooks/swipe';
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { DRAG_INTENT_PX, dragIntent } from '../../hooks/swipe';
 import { useClickSuppression } from '../../hooks/useSwipe';
 import { prefersReducedMotion } from '../../utils/motion';
 import { pushSample, velocityOf, type DragSample } from '../ShowCardStack/cardStack';
@@ -7,126 +7,251 @@ import { SHEET_SLIDE_MS, sheetOffset, shouldDismissSheet } from './sheetDrag';
 
 interface Gesture {
     startY: number;
+    /** 按低嗰陣量一次表高，拉緊唔使每格再量 */
+    height: number;
     offset: number;
-    /** 最近嘅位置樣本（DragSample 嘅 x 喺度當直向座標用），計放手速度 */
     samples: DragSample[];
 }
 
-/** 一個拉表手勢嘅三步：按低（起點）→ 拉（跟手指）→ 放手（閂定彈返） */
+/** 一個拉表手勢：按低 → 拉 → 放手（閂定彈返）；系統取消就一定彈返 */
 interface SheetDragControls {
-    begin: (y: number, t: number) => void;
+    /** 返回 false = 表滑走緊，唔接新手勢 */
+    begin: (y: number, t: number) => boolean;
     move: (y: number, t: number) => void;
-    finish: () => void;
+    finish: (y: number, t: number) => void;
+    abort: () => void;
+    /** 表開 / 閂時清走未完嘅手勢同閂表計時 */
+    reset: () => void;
 }
 
+type GetElement = () => HTMLElement | null;
+
+/**
+ * mutable box：useState 整一次，成個表生命期都係同一個 object（穩定，可以做 effect / memo 依賴）。
+ * 唔用 useRef：controls / handlers factory 喺 render 時建立，React lint 唔畀 render 時將 ref 傳入函數
+ */
+interface Box<T> {
+    current: T;
+}
+
+const useBox = <T>(initial: T): Box<T> => useState<Box<T>>(() => ({ current: initial }))[0];
+
+/** 表、遮罩、清單嘅 DOM：callback ref mount 時填入、unmount（null）時清走 */
+interface SheetElements {
+    sheet: HTMLElement | null;
+    backdrop: HTMLElement | null;
+    list: HTMLElement | null;
+}
+
+const bindElements = (elements: SheetElements) => ({
+    sheetRef: (el: HTMLElement | null) => void (elements.sheet = el),
+    backdropRef: (el: HTMLElement | null) => void (elements.backdrop = el),
+    listRef: (el: HTMLElement | null) => void (elements.list = el),
+});
+
 const DRAGGING_ATTR = 'data-dragging';
+const CLOSING_ATTR = 'data-closing';
 const FULLY_HIDDEN = 'translateY(100%)';
 
+/** 速度樣本只得一個方向：cardStack 嘅 DragSample.x 喺度裝直向座標 */
+const toSample = (y: number, t: number): DragSample => ({ x: y, t });
+
 /** 表向下移 offset px；遮罩跟住變淡。拉緊（data-dragging）CSS 唔做 transition，直接跟手指 */
-const paint = (sheet: HTMLElement | null, backdrop: HTMLElement | null, offset: number) => {
-    if (!sheet) return;
+const paint = (sheet: HTMLElement, backdrop: HTMLElement | null, { offset, height }: Gesture) => {
     sheet.style.transform = offset > 0 ? `translateY(${offset}px)` : '';
     sheet.setAttribute(DRAGGING_ATTR, 'true');
-    const height = sheet.getBoundingClientRect().height;
     if (!backdrop || height <= 0) return;
     backdrop.setAttribute(DRAGGING_ATTR, 'true');
     backdrop.style.opacity = String(Math.max(0, 1 - offset / height));
 };
 
-/** 放手：交返 CSS transition 做動畫，閂就滑到底，否則彈返原位 */
+/** 放手：交返 CSS transition 做動畫，閂就滑到底（data-closing：期間唔收 tap），否則彈返原位 */
 const settle = (sheet: HTMLElement | null, backdrop: HTMLElement | null, dismiss: boolean) => {
-    if (!sheet) return;
-    sheet.removeAttribute(DRAGGING_ATTR);
-    sheet.style.transform = dismiss ? FULLY_HIDDEN : '';
-    if (!backdrop) return;
-    backdrop.removeAttribute(DRAGGING_ATTR);
-    backdrop.style.opacity = dismiss ? '0' : '';
+    for (const el of [sheet, backdrop]) {
+        el?.removeAttribute(DRAGGING_ATTR);
+        if (dismiss) el?.setAttribute(CLOSING_ATTR, 'true');
+    }
+    if (sheet) sheet.style.transform = dismiss ? FULLY_HIDDEN : '';
+    if (backdrop) backdrop.style.opacity = dismiss ? '0' : '';
 };
 
-/**
- * 表嘅拉動邏輯（pointer 同 touch 共用）：跟手指向下移，放手拉過 25% 表高 / 向下甩就滑走再 onClose，
- * 否則彈返。直接改 style，唔經 React state，拉緊唔會成張表 re-render
- */
-const useSheetDragControls = (
-    sheetRef: RefObject<HTMLElement | null>,
-    backdropRef: RefObject<HTMLElement | null>,
-    onClose: () => void,
-): SheetDragControls => {
-    const gesture = useRef<Gesture | null>(null);
-    const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-    // 父層每次 render 可能俾新嘅 onClose；拉緊途中 re-render（例如播放時間每秒更新）唔可以斷手勢
+/** 閂表計時：滑走動畫完先 onClose；onClose 用 ref，拉緊途中 re-render（播放時間每秒更新）唔會斷 */
+const useCloseTimer = (onClose: () => void) => {
+    const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
     const onCloseRef = useRef(onClose);
     useEffect(() => {
         onCloseRef.current = onClose;
     }, [onClose]);
-    useEffect(() => () => clearTimeout(closeTimer.current), []);
-
-    const begin = useCallback((y: number, t: number) => {
-        gesture.current = { startY: y, offset: 0, samples: [{ x: y, t }] };
-    }, []);
-    const move = useCallback(
-        (y: number, t: number) => {
-            const current = gesture.current;
-            if (!current) return;
-            current.offset = sheetOffset(current.startY, y);
-            current.samples = pushSample(current.samples, { x: y, t });
-            paint(sheetRef.current, backdropRef.current, current.offset);
-        },
-        [sheetRef, backdropRef],
+    const close = useMemo(
+        () => ({
+            schedule: () => {
+                const delay = prefersReducedMotion() ? 0 : SHEET_SLIDE_MS;
+                timer.current = setTimeout(() => onCloseRef.current(), delay);
+            },
+            cancel: () => {
+                clearTimeout(timer.current);
+                timer.current = undefined;
+            },
+            isPending: () => timer.current !== undefined,
+        }),
+        [],
     );
-    const finish = useCallback(() => {
-        const current = gesture.current;
-        gesture.current = null;
-        const sheet = sheetRef.current;
+    useEffect(() => close.cancel, [close]);
+    return close;
+};
+
+/** 跟手指更新位移同速度樣本 */
+const track = (gesture: Gesture, y: number, t: number) => {
+    gesture.offset = sheetOffset(gesture.startY, y);
+    gesture.samples = pushSample(gesture.samples, toSample(y, t));
+};
+
+/** 放手決定閂定彈返；放手位置都當一個樣本，停咗手先放唔會用返舊速度 */
+const release = (gesture: Gesture, y: number, t: number): boolean => {
+    track(gesture, y, t);
+    const { offset, height } = gesture;
+    return shouldDismissSheet({ offset, height, velocity: velocityOf(gesture.samples) });
+};
+
+interface ControlDeps {
+    getSheet: GetElement;
+    getBackdrop: GetElement;
+    gesture: Box<Gesture | null>;
+    close: ReturnType<typeof useCloseTimer>;
+}
+
+/** 按低：表滑走緊就唔接；量一次表高 */
+const startGesture = ({ getSheet, gesture, close }: ControlDeps, y: number, t: number) => {
+    const sheet = getSheet();
+    if (!sheet || close.isPending()) return false;
+    const height = sheet.getBoundingClientRect().height;
+    gesture.current = { startY: y, height, offset: 0, samples: [toSample(y, t)] };
+    return true;
+};
+
+/** 放手：閂就滑走再 onClose，否則彈返 */
+const endGesture = (
+    { getSheet, getBackdrop, gesture, close }: ControlDeps,
+    y: number,
+    t: number,
+) => {
+    const current = gesture.current;
+    gesture.current = null;
+    if (!current) return;
+    const dismiss = release(current, y, t);
+    settle(getSheet(), getBackdrop(), dismiss);
+    if (dismiss) close.schedule();
+};
+
+/** 拉表邏輯（pointer 同 touch 共用）：直接改 style，唔經 React state，拉緊唔會成張表 re-render */
+const createControls = (deps: ControlDeps): SheetDragControls => ({
+    begin: (y, t) => startGesture(deps, y, t),
+    move: (y, t) => {
+        const current = deps.gesture.current;
+        const sheet = deps.getSheet();
         if (!current || !sheet) return;
-        const height = sheet.getBoundingClientRect().height;
-        const velocity = velocityOf(current.samples);
-        const dismiss = shouldDismissSheet({ offset: current.offset, height, velocity });
-        settle(sheet, backdropRef.current, dismiss);
-        if (!dismiss) return;
-        const delay = prefersReducedMotion() ? 0 : SHEET_SLIDE_MS;
-        closeTimer.current = setTimeout(() => onCloseRef.current(), delay);
-    }, [sheetRef, backdropRef]);
-    return { begin, move, finish };
+        track(current, y, t);
+        paint(sheet, deps.getBackdrop(), current);
+    },
+    finish: (y, t) => endGesture(deps, y, t),
+    abort: () => {
+        if (!deps.gesture.current) return;
+        deps.gesture.current = null;
+        settle(deps.getSheet(), deps.getBackdrop(), false);
+    },
+    reset: () => {
+        deps.gesture.current = null;
+        deps.close.cancel();
+    },
+});
+
+/** controls 只靠 box，所以係穩定嘅（listener 唔會拉緊途中重新掛） */
+const useSheetDragControls = (elements: SheetElements, onClose: () => void): SheetDragControls => {
+    const gesture = useBox<Gesture | null>(null);
+    const close = useCloseTimer(onClose);
+    return useMemo(
+        () =>
+            createControls({
+                getSheet: () => elements.sheet,
+                getBackdrop: () => elements.backdrop,
+                gesture,
+                close,
+            }),
+        [elements, gesture, close],
+    );
+};
+
+interface ListTouch {
+    id: number;
+    x: number;
+    y: number;
+    t: number;
+    /** 已經交咗畀表（拉緊表） */
+    engaged: boolean;
+    /** 呢下係捲清單 / 橫掃：成個手勢唔理，等佢放手 */
+    ignored: boolean;
+}
+
+const findTouch = (touches: TouchList, id: number): Touch | undefined =>
+    Array.from(touches).find((touch) => touch.identifier === id);
+
+/**
+ * 未交畀表：捲到頂兼向下先接手；未睇得出方向（郁唔夠 DRAG_INTENT_PX）都先 preventDefault，
+ * 唔畀瀏覽器開始捲（一開始捲之後 touchmove 就 cancel 唔到）。返回呢下 touchmove 係咪表嘅
+ */
+const engageListTouch = (
+    current: ListTouch,
+    touch: Touch,
+    list: HTMLElement,
+    controls: SheetDragControls,
+) => {
+    const dy = touch.clientY - current.y;
+    if (list.scrollTop > 0 || dy < 0) {
+        current.ignored = true;
+        return false;
+    }
+    const intent = dragIntent(touch.clientX - current.x, dy);
+    if (intent === null) return dy > 0;
+    if (intent === 'vertical') current.engaged = controls.begin(current.y, current.t);
+    current.ignored = !current.engaged;
+    return current.engaged;
 };
 
 /**
- * 清單入面用 touch（唔用 pointer）：清單要畀瀏覽器捲（touch-action: pan-y），
- * 捲到頂再向下拉先由表接手，同時 preventDefault 唔畀瀏覽器捲 / 回彈。
- * touchmove 要 non-passive 先 preventDefault 得，所以用 addEventListener
+ * 清單入面用 touch（唔用 pointer）：清單要畀瀏覽器捲（touch-action: pan-y），捲到頂再向下拉先由表接手。
+ * 只跟第一隻手指（identifier），第二隻手指唔理；touchcancel 一定彈返
  */
-const useListTouchDrag = (
-    listRef: RefObject<HTMLElement | null>,
-    open: boolean,
-    { begin, move, finish }: SheetDragControls,
-) => {
+const createListTouchHandlers = (list: HTMLElement, controls: SheetDragControls) => {
+    let current: ListTouch | null = null;
+    const onStart = (event: TouchEvent) => {
+        const touch = event.changedTouches[0];
+        if (current || !touch) return;
+        const { identifier: id, clientX: x, clientY: y } = touch;
+        current = { id, x, y, t: event.timeStamp, engaged: false, ignored: false };
+    };
+    const onMove = (event: TouchEvent) => {
+        const touch = current && findTouch(event.touches, current.id);
+        if (!current || !touch || current.ignored) return;
+        if (!current.engaged && !engageListTouch(current, touch, list, controls)) return;
+        event.preventDefault();
+        if (current.engaged) controls.move(touch.clientY, event.timeStamp);
+    };
+    const onEnd = (event: TouchEvent) => {
+        const touch = current && findTouch(event.changedTouches, current.id);
+        if (!current || !touch) return;
+        if (current.engaged && event.type === 'touchcancel') controls.abort();
+        else if (current.engaged) controls.finish(touch.clientY, event.timeStamp);
+        current = null;
+    };
+    return { onStart, onMove, onEnd };
+};
+
+/** touchmove 要 non-passive 先 preventDefault 得，所以用 addEventListener */
+const useListTouchDrag = (elements: SheetElements, open: boolean, controls: SheetDragControls) => {
     useEffect(() => {
-        const list = listRef.current;
+        const list = elements.list;
         if (!open || !list) return undefined;
-        let startY: number | null = null;
-        let engaged = false;
-        const onStart = (event: TouchEvent) => {
-            startY = event.touches.length === 1 ? (event.touches[0]?.clientY ?? null) : null;
-            engaged = false;
-        };
-        const onMove = (event: TouchEvent) => {
-            const y = event.touches[0]?.clientY;
-            if (startY === null || y === undefined) return;
-            if (!engaged) {
-                // 向上捲 / 未捲到頂：成個手勢交返畀清單捲
-                if (y < startY || list.scrollTop > 0) startY = null;
-                if (startY === null || y === startY) return;
-                engaged = true;
-                begin(startY, event.timeStamp);
-            }
-            event.preventDefault();
-            move(y, event.timeStamp);
-        };
-        const onEnd = () => {
-            if (engaged) finish();
-            startY = null;
-            engaged = false;
-        };
+        const { onStart, onMove, onEnd } = createListTouchHandlers(list, controls);
         list.addEventListener('touchstart', onStart, { passive: true });
         list.addEventListener('touchmove', onMove, { passive: false });
         list.addEventListener('touchend', onEnd);
@@ -137,7 +262,7 @@ const useListTouchDrag = (
             list.removeEventListener('touchend', onEnd);
             list.removeEventListener('touchcancel', onEnd);
         };
-    }, [listRef, open, begin, move, finish]);
+    }, [elements, open, controls]);
 };
 
 interface PointerGesture {
@@ -147,60 +272,88 @@ interface PointerGesture {
     moved: boolean;
 }
 
-/** grab bar / header 用 pointer（滑鼠都拖得）；喺清單入面開始嘅就唔理，交畀 useListTouchDrag */
-const useHandlePointerDrag = (
-    listRef: RefObject<HTMLElement | null>,
-    { begin, move, finish }: SheetDragControls,
-) => {
-    const pointer = useRef<PointerGesture | null>(null);
+type SheetPointerEvent = PointerEvent<HTMLElement>;
+
+/** 按低：喺清單入面 / 已經有個 pointer 拉緊 / 表滑走緊就唔理；返回新手勢 */
+const startPointer = (
+    event: SheetPointerEvent,
+    busy: boolean,
+    getList: GetElement,
+    controls: SheetDragControls,
+): PointerGesture | null => {
+    if (busy || event.button !== 0) return null;
+    if (getList()?.contains(event.target as Node)) return null;
+    if (!controls.begin(event.clientY, event.timeStamp)) return null;
+    return { pointerId: event.pointerId, startY: event.clientY, moved: false };
+};
+
+/** 拉緊：拉過少少先 capture（之前仍然可以係撳掣） */
+const markMoved = (event: SheetPointerEvent, current: PointerGesture) => {
+    if (current.moved || Math.abs(event.clientY - current.startY) < DRAG_INTENT_PX) return;
+    current.moved = true;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+};
+
+type PointerBox = Box<PointerGesture | null>;
+
+/** 放手 / 取消：只認拉緊嗰個 pointer；返回嗰個手勢（唔係就 null） */
+const takePointer = (pointer: PointerBox, event: SheetPointerEvent) => {
+    const current = pointer.current;
+    if (current?.pointerId !== event.pointerId) return null;
+    pointer.current = null;
+    return current;
+};
+
+/** 清單以外（grab bar / header）用 pointer，滑鼠都拖得；只跟一個 pointer */
+const createPointerHandlers = (
+    pointer: PointerBox,
+    getList: GetElement,
+    controls: SheetDragControls,
+    clicks: ReturnType<typeof useClickSuppression>,
+) => ({
+    onPointerDown: (event: SheetPointerEvent) => {
+        const busy = pointer.current !== null;
+        if (!busy) clicks.arm(false);
+        pointer.current = startPointer(event, busy, getList, controls) ?? pointer.current;
+    },
+    onPointerMove: (event: SheetPointerEvent) => {
+        const current = pointer.current;
+        if (current?.pointerId !== event.pointerId) return;
+        markMoved(event, current);
+        controls.move(event.clientY, event.timeStamp);
+    },
+    onPointerUp: (event: SheetPointerEvent) => {
+        const current = takePointer(pointer, event);
+        if (!current) return;
+        controls.finish(event.clientY, event.timeStamp);
+        // 拉過就食咗放手嗰下 click，唔會誤撳 ✕ / 播放掣
+        clicks.arm(current.moved);
+    },
+    onPointerCancel: (event: SheetPointerEvent) => {
+        if (takePointer(pointer, event)) controls.abort();
+    },
+    onClickCapture: clicks.onClickCapture,
+});
+
+/** 表閂咗 / 再開：唔記住之前（DOM 冇咗收唔到 pointerup）嘅 pointer */
+const usePointerDrag = (elements: SheetElements, open: boolean, controls: SheetDragControls) => {
+    const pointer: PointerBox = useBox<PointerGesture | null>(null);
     const clicks = useClickSuppression();
-    const end = () => {
-        const moved = pointer.current?.moved ?? false;
-        pointer.current = null;
-        finish();
-        return moved;
-    };
-    return {
-        onPointerDown: (event: PointerEvent<HTMLElement>) => {
-            clicks.arm(false);
-            if (event.button !== 0 || listRef.current?.contains(event.target as Node)) return;
-            pointer.current = { pointerId: event.pointerId, startY: event.clientY, moved: false };
-            begin(event.clientY, event.timeStamp);
-        },
-        onPointerMove: (event: PointerEvent<HTMLElement>) => {
-            const current = pointer.current;
-            if (current?.pointerId !== event.pointerId) return;
-            if (!current.moved && Math.abs(event.clientY - current.startY) >= DRAG_INTENT_PX) {
-                current.moved = true;
-                event.currentTarget.setPointerCapture?.(event.pointerId);
-            }
-            move(event.clientY, event.timeStamp);
-        },
-        onPointerUp: (event: PointerEvent<HTMLElement>) => {
-            if (pointer.current?.pointerId !== event.pointerId) return;
-            // 拉過就食咗放手嗰下 click，唔會誤撳 ✕ / 播放掣
-            clicks.arm(end());
-        },
-        onPointerCancel: () => {
-            if (pointer.current) end();
-        },
-        onClickCapture: clicks.onClickCapture,
-    };
+    useEffect(() => () => void (pointer.current = null), [open, pointer]);
+    return createPointerHandlers(pointer, () => elements.list, controls, clicks);
 };
 
 /**
- * 全集表向下拉閂（直版、橫版 docked 一樣）：grab bar / header 隨時拉得；
- * 清單捲到頂再向下拉都得。返回要掛喺遮罩 / 清單嘅 ref 同埋表嘅 pointer handlers
+ * 全集表向下拉閂（直版、橫版 docked 一樣）：清單以外（grab bar / header）隨時拉得；
+ * 清單捲到頂再向下拉都得。返回掛喺表 / 遮罩 / 清單嘅 callback ref 同埋表嘅 pointer handlers
  */
-export const useSheetDrag = (
-    sheetRef: RefObject<HTMLElement | null>,
-    open: boolean,
-    onClose: () => void,
-) => {
-    const backdropRef = useRef<HTMLDivElement>(null);
-    const listRef = useRef<HTMLDivElement>(null);
-    const controls = useSheetDragControls(sheetRef, backdropRef, onClose);
-    useListTouchDrag(listRef, open, controls);
-    const handlers = useHandlePointerDrag(listRef, controls);
-    return { backdropRef, listRef, handlers };
+export const useSheetDrag = (open: boolean, onClose: () => void) => {
+    const elements = useBox<SheetElements>({ sheet: null, backdrop: null, list: null }).current;
+    const controls = useSheetDragControls(elements, onClose);
+    // 表閂咗（Escape / ✕ / 拉走）或者再開：清走未完嘅手勢同閂表計時，唔會閂兩次 / 重開即刻跟住拉
+    useEffect(() => controls.reset, [open, controls]);
+    useListTouchDrag(elements, open, controls);
+    const handlers = usePointerDrag(elements, open, controls);
+    const refs = useMemo(() => bindElements(elements), [elements]);
+    return { ...refs, handlers };
 };
