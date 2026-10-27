@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { airsWeekly, findShow, themeFor, type ShowConfig } from '../shows';
 import { useRecordings } from '../data/useRecordings';
+import { useEpisodePress } from '../hooks/useEpisodePress';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
@@ -13,6 +14,7 @@ import {
 import { stripDays } from '../components/DateStrip/dateStrip';
 import { getProgressMap } from '../services/progressStore';
 import { hkToday } from '../utils/date';
+import type { Recording } from '../types/recording';
 import { asShowRecording } from '../types/track';
 import { toEpisodeItems } from './episodeItems';
 
@@ -50,6 +52,22 @@ const useAutoplayShow = (show: ShowConfig | undefined, isPlayingShow: boolean) =
     }, [show, status, isPlayingShow, startShow]);
 };
 
+/**
+ * 日子條嘅日子：memo 係因為播緊時每秒幾次 re-render，唔使每次重砌成段歷史；
+ * 一星期播一日嘅節目只排有集數嘅日子（冇灰色日子）
+ */
+const useShowStrip = (
+    show: ShowConfig | undefined,
+    episodes: readonly Recording[],
+    currentUrl: string | undefined,
+) => {
+    const episodeDaysOnly = show !== undefined && airsWeekly(show);
+    return useMemo(
+        () => stripDays(episodes, currentUrl, { episodeDaysOnly }),
+        [episodes, currentUrl, episodeDaysOnly],
+    );
+};
+
 /** 節目頁嘅資料同動作 */
 export const useShowPage = (showId: string) => {
     const show = findShow(showId);
@@ -66,37 +84,17 @@ export const useShowPage = (showId: string) => {
     const isPlayingCurrent = playing !== null && player.isPlaying;
     const episodeItems = toEpisodeItems(entries, currentUrl, live, progressMap, isPlayingCurrent);
 
-    const selectEpisode = (url: string) => {
-        const recording = episodes.find((r) => r.url === url);
-        if (recording) {
-            void player.load(recording, { autoplay: true });
-        }
-    };
     // 集數清單：撳播緊嗰集就暫停（掣係暫停樣），其他同日子條一樣播嗰集
-    const pressEpisode = (url: string) => {
-        if (isPlayingCurrent && url === currentUrl) {
-            void player.toggle();
-            return;
-        }
-        selectEpisode(url);
-    };
-    const theme = themeFor(show?.id);
-    // 日子條：同撳集數行同一條路（未聽完續播、聽過由頭播）
-    // memo：播緊時每秒幾次 re-render，唔使每次重砌成段歷史；
-    // 一星期播一日嘅節目只排有集數嘅日子（冇灰色日子）
-    const episodeDaysOnly = show !== undefined && airsWeekly(show);
-    const strip = useMemo(
-        () => stripDays(episodes, currentUrl, { episodeDaysOnly }),
-        [episodes, currentUrl, episodeDaysOnly],
-    );
+    const { selectEpisode, pressEpisode } = useEpisodePress(episodes, currentUrl, isPlayingCurrent);
     return {
         show,
-        theme,
+        theme: themeFor(show?.id),
         status,
         isSearching,
         current,
         episodeItems,
-        strip,
+        // 日子條：同撳集數行同一條路（未聽完續播、聽過由頭播）
+        strip: useShowStrip(show, episodes, currentUrl),
         selectEpisode,
         pressEpisode,
     };
