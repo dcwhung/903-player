@@ -4,6 +4,7 @@
 import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
+import { runArcSheetChecks } from './arcSheet.mjs';
 import { AUDIO_HOST, PROBE_STORAGE_KEY, newE2EContext } from './harness.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { runTouchChecks } from './touch.mjs';
@@ -1492,6 +1493,9 @@ try {
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
     await runTouchChecks({ browser, base: BASE, out: OUT, errors, log });
+
+    // 全集表向下拉閂：拉唔夠彈返、拉夠閂（觸控 header + 清單、滑鼠 header）
+    await runArcSheetChecks({ browser, base: BASE, errors, log });
 
     const light = await newE2EContext(browser, {
         viewport: { width: 390, height: 844 },
