@@ -14,6 +14,8 @@ interface MiniPlayerRowProps {
     subtitle: string;
     /** 節目名旁邊嘅細標籤（重溫 / 今日）；冇就唔顯示 */
     tag?: MiniPlayerTag;
+    /** 長按浮起後代替副題嘅提示（‹‹ 滑動關閉）；冇就顯示副題 */
+    hint?: string;
     isPlaying: boolean;
     isAudible: boolean;
     upright: boolean;
@@ -56,7 +58,7 @@ export const MiniPlayerRow = (props: MiniPlayerRowProps) => (
             />
             <span className={styles.text}>
                 <MiniPlayerName name={props.showName} tag={props.tag} />
-                <Marquee className={styles.subtitle} text={props.subtitle} />
+                <Marquee className={styles.subtitle} text={props.hint ?? props.subtitle} />
             </span>
         </button>
         <button

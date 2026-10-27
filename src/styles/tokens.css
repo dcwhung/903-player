@@ -219,6 +219,14 @@
     --mini-player-height: calc(var(--touch-target-min) + var(--touch-target) + var(--space-4));
     /* 得一段錄音（例如廣播劇一集）冇指示點：頂同底一樣 --space-4，唔使留指示點嘅撳得到範圍 */
     --mini-player-height-single: calc(var(--touch-target) + var(--space-4) * 2);
+    /*
+     * mini player 長按 → 左滑關閉（useDismissGesture）：撳住縮少少、浮起大少少；
+     * 時間同 src/components/MiniPlayer/miniPlayerDismiss.ts LONG_PRESS_MS / DISMISS_SLIDE_MS 一致
+     */
+    --mini-press-scale: 0.97;
+    --mini-lift-scale: 1.02;
+    --mini-long-press-ms: 500ms;
+    --mini-dismiss-slide-ms: 200ms;
     --mini-player-offset-bottom: calc(
         max(0px, calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))) +
             var(--space-2)
@@ -434,6 +442,8 @@
      * （src/styles/miniPlayerShadow.node.test.ts 鎖住）；所以比 --shadow-floating 收窄
      */
     --shadow-mini-player: 0 2px 5px rgb(0 0 0 / 45%);
+    /* 長按浮起（準備左滑關閉）：深啲、散啲，表示「拎起咗」；向下一樣收喺卡底間距入面（同上） */
+    --shadow-mini-player-lifted: 0 1px 6px rgb(0 0 0 / 60%);
     /* 今日節目卡：細細一圈軌道色描邊 + 浮起陰影，令疊喺後面嘅卡睇得出邊 */
     --shadow-card: 0 0 0 1px var(--theme-track), 0 10px 26px rgb(0 0 0 / 45%);
 }

@@ -90,6 +90,10 @@ export const zhHK = {
         openRewatch: '開啟 {name} 節目頁，重溫 {date}',
         rewatchDot: '{name}，重溫 {date}',
         positionRewatch: '第 {index} 個節目，共 {total} 個',
+        // 長按浮起後副題換做提示；左滑露出嘅掣；讀屏 / 鍵盤用嘅關閉掣
+        dismissHint: '‹‹ 滑動關閉',
+        dismissAction: '關閉',
+        dismissLabel: '關閉播放器',
         // 節目名旁邊嘅細標籤（MiniPlayerTag）
         tag: {
             rewatch: '重溫',

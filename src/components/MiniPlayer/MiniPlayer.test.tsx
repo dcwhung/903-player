@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { themeFor } from '../../shows';
 import { MiniPlayer, type MiniPlayerProps } from './MiniPlayer';
+import { ARMED_IDLE_MS, DISMISS_SLIDE_MS, LONG_PRESS_MS } from './miniPlayerDismiss';
 
 const props = (overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps => ({
     showName: 'Bad Girl大過佬',
@@ -20,6 +21,7 @@ const props = (overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps => ({
     onToggle: vi.fn(),
     onOpen: vi.fn(),
     onChange: vi.fn(),
+    onDismiss: vi.fn(),
     ...overrides,
 });
 
@@ -275,5 +277,166 @@ describe('MiniPlayer', () => {
 
             expect(screen.getByRole('group', { name: '第 1 個，共 3 個' })).toBeInTheDocument();
         });
+    });
+});
+
+describe('MiniPlayer swipe to close', () => {
+    const CARD_WIDTH = 360;
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+            width: CARD_WIDTH,
+        } as DOMRect);
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+    });
+
+    const region = () => screen.getByRole('region');
+    const openButton = () => screen.getByRole('button', { name: '開啟 Bad Girl大過佬 節目頁' });
+
+    /** 長按（唔郁）到浮起 */
+    const longPress = (target: HTMLElement = region(), x = 300) => {
+        fireEvent.pointerDown(target, { clientX: x, clientY: 10, pointerId: 1 });
+        act(() => vi.advanceTimersByTime(LONG_PRESS_MS));
+    };
+
+    const dragTo = (x: number, target: HTMLElement = region()) => {
+        fireEvent.pointerMove(target, { clientX: x, clientY: 12, pointerId: 1 });
+        fireEvent.pointerUp(target, { clientX: x, clientY: 12, pointerId: 1 });
+    };
+
+    it('lifts after a still long press and swaps the subtitle for the hint', () => {
+        render(<MiniPlayer {...props()} />);
+
+        longPress();
+
+        expect(region()).toHaveAttribute('data-armed', 'true');
+        expect(screen.getByText('‹‹ 滑動關閉')).toBeInTheDocument();
+    });
+
+    it('does not lift when the finger moves before the long press ends, and still swipes', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+
+        fireEvent.pointerDown(region(), { clientX: 300, clientY: 10, pointerId: 1 });
+        fireEvent.pointerMove(region(), { clientX: 240, clientY: 10, pointerId: 1 });
+        act(() => vi.advanceTimersByTime(LONG_PRESS_MS));
+        fireEvent.pointerUp(region(), { clientX: 200, clientY: 10, pointerId: 1 });
+
+        expect(region()).not.toHaveAttribute('data-armed');
+        expect(p.onChange).toHaveBeenCalledWith(0);
+    });
+
+    it('closes when dragged past half its width after lifting, without switching show', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+
+        longPress();
+        dragTo(300 - CARD_WIDTH / 2 - 10);
+        expect(p.onDismiss).not.toHaveBeenCalled();
+        act(() => vi.advanceTimersByTime(DISMISS_SLIDE_MS));
+
+        expect(p.onDismiss).toHaveBeenCalledTimes(1);
+        expect(p.onChange).not.toHaveBeenCalled();
+    });
+
+    it('also closes when lifted, released, then swiped left in a second touch', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+
+        longPress();
+        fireEvent.pointerUp(region(), { clientX: 300, clientY: 10, pointerId: 1 });
+        fireEvent.pointerDown(region(), { clientX: 320, clientY: 10, pointerId: 1 });
+        dragTo(100);
+        act(() => vi.advanceTimersByTime(DISMISS_SLIDE_MS));
+
+        expect(p.onDismiss).toHaveBeenCalledTimes(1);
+        expect(p.onChange).not.toHaveBeenCalled();
+    });
+
+    it('stops on the 關閉 button after a partial drag, which closes when pressed', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+
+        longPress();
+        dragTo(240);
+
+        expect(region()).toHaveAttribute('data-revealed', 'true');
+        fireEvent.click(screen.getByTestId('mini-player-close'));
+        act(() => vi.advanceTimersByTime(DISMISS_SLIDE_MS));
+        expect(p.onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('folds back to normal after a tiny drag', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+
+        longPress();
+        dragTo(290);
+
+        expect(region()).not.toHaveAttribute('data-armed');
+        expect(p.onDismiss).not.toHaveBeenCalled();
+    });
+
+    it('settles back after the idle time, a tap outside, or Escape', () => {
+        render(<MiniPlayer {...props()} />);
+
+        longPress();
+        fireEvent.pointerUp(region(), { clientX: 300, clientY: 10, pointerId: 1 });
+        act(() => vi.advanceTimersByTime(ARMED_IDLE_MS));
+        expect(region()).not.toHaveAttribute('data-armed');
+
+        longPress();
+        fireEvent.pointerUp(region(), { clientX: 300, clientY: 10, pointerId: 1 });
+        fireEvent.pointerDown(document.body);
+        expect(region()).not.toHaveAttribute('data-armed');
+
+        longPress();
+        fireEvent.pointerUp(region(), { clientX: 300, clientY: 10, pointerId: 1 });
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(region()).not.toHaveAttribute('data-armed');
+    });
+
+    it('settles back when the lifted card is tapped, without opening the show page', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+
+        longPress(openButton());
+        fireEvent.pointerUp(openButton(), { clientX: 300, clientY: 10, pointerId: 1 });
+        fireEvent.click(openButton(), { detail: 1 });
+        expect(p.onOpen).not.toHaveBeenCalled();
+        expect(region()).toHaveAttribute('data-armed', 'true');
+
+        fireEvent.pointerDown(openButton(), { clientX: 200, clientY: 10, pointerId: 1 });
+        fireEvent.pointerUp(openButton(), { clientX: 200, clientY: 10, pointerId: 1 });
+        fireEvent.click(openButton(), { detail: 1 });
+
+        expect(p.onOpen).not.toHaveBeenCalled();
+        expect(region()).not.toHaveAttribute('data-armed');
+    });
+
+    it('closes straight away when reduced motion is on', () => {
+        vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce') }));
+        const p = props();
+        render(<MiniPlayer {...p} />);
+
+        longPress();
+        dragTo(20);
+        act(() => vi.advanceTimersByTime(0));
+
+        expect(p.onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('offers screen reader and keyboard users a plain close button', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+
+        fireEvent.click(screen.getByRole('button', { name: '關閉播放器' }));
+
+        expect(p.onDismiss).toHaveBeenCalledTimes(1);
     });
 });

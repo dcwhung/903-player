@@ -25,8 +25,14 @@
     }
 }
 
+/* card 嘅位：card 左滑時，後面「關閉」掣喺呢格入面露出（--mini-dismiss-offset 由 useDismissGesture 設） */
+.slot {
+    position: relative;
+}
+
 .player {
     position: relative;
+    z-index: 1;
     overflow: hidden;
     border-radius: var(--radius-lg);
     background: var(--color-surface);
@@ -36,6 +42,90 @@
     /* 唔識 pinch-zoom 嘅舊瀏覽器留喺 none；識嘅就照樣擋單指 pan，但雙指放大得（無障礙） */
     touch-action: none;
     touch-action: pinch-zoom;
+    /* 長按唔好彈 iOS callout / 揀字 */
+    -webkit-touch-callout: none;
+    user-select: none;
+    transform: translateX(calc(var(--mini-dismiss-offset, 0px) * -1));
+    transition:
+        transform var(--mini-dismiss-slide-ms) ease-out,
+        box-shadow var(--mini-dismiss-slide-ms) ease-out;
+}
+
+/* 撳住緊（未夠長按）：慢慢縮少少，提示「撳住」 */
+.player[data-pressing='true'] {
+    transform: scale(var(--mini-press-scale));
+    transition: transform var(--mini-long-press-ms) ease-out;
+}
+
+/* 浮起：大少少 + 陰影深啲，表示而家左滑係關閉 */
+.player[data-armed='true'] {
+    box-shadow: var(--shadow-mini-player-lifted);
+}
+
+.player[data-armed='true']:not([data-dragging='true'], [data-revealed='true']) {
+    transform: scale(var(--mini-lift-scale));
+}
+
+/* 拉緊：直接跟手指 */
+.player[data-dragging='true'] {
+    transition: none;
+}
+
+/* card 後面：「⏻ 關閉」靠右，浮起先見，闊度跟 card 移咗幾多（減返間隔） */
+.behind {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: flex-end;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--mini-dismiss-slide-ms) ease-out;
+}
+
+.player[data-armed='true'] ~ .behind {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* B 版：節目標題色做底、卡面色做字（深藍底奶白字），唔用警示紅 */
+.dismiss {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+    justify-content: center;
+    width: max(0px, calc(var(--mini-dismiss-offset, 0px) - var(--space-2)));
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--color-title);
+    color: var(--color-surface);
+    font-size: var(--font-size-2xs);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.player[data-dragging='true'] ~ .behind .dismiss {
+    transition: none;
+}
+
+/* 視覺上隱藏，screen reader / 鍵盤照用（「關閉播放器」） */
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .player,
+    .behind {
+        transition: none;
+    }
 }
 
 .row {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
 import { dramaEpisodeTheme, findDrama } from '../dramas';
@@ -20,6 +20,11 @@ import type { Recording } from '../types/recording';
 import { isDramaEpisode, type Track } from '../types/track';
 import { t } from '../i18n/t';
 import { formatDateLabel, hkToday } from '../utils/date';
+import {
+    dismissMiniPlayer,
+    restoreMiniPlayer,
+    useMiniPlayerDismissed,
+} from './miniPlayerDismissed';
 import { useRefreshedOn } from './useRefreshedOn';
 import { ratio } from '../utils/ratio';
 import { hasKnownDuration } from '../utils/time';
@@ -79,12 +84,31 @@ const useShownTime = (url: string | undefined, isLoaded: boolean) => {
 
 type Player = ReturnType<typeof usePlayer>;
 
+/**
+ * 左滑關閉：停播 + 收起；之後開始播嘢（isPlaying 由 false 變 true）先再出返。
+ * 睇「變 true」而唔係「係 true」：真 audio 嘅 pause 遲啲先到，關閉嗰下 isPlaying 可能仲係 true。
+ * 第一次 mount 當之前係 false：喺節目頁播咗先返主頁，mini player 照出
+ */
+const useDismissal = (player: Player) => {
+    const dismissed = useMiniPlayerDismissed();
+    const wasPlaying = useRef(false);
+    useEffect(() => {
+        if (player.isPlaying && !wasPlaying.current) restoreMiniPlayer();
+        wasPlaying.current = player.isPlaying;
+    }, [player.isPlaying]);
+    const dismiss = () => {
+        player.stop();
+        dismissMiniPlayer();
+    };
+    return { dismissed, dismiss };
+};
+
 /** 載入咗廣播劇：mini player 只顯示嗰套劇（得一個，唔使左右掃），撳入劇集頁 */
 const dramaMiniPlayer = (
     episode: DramaEpisode,
     player: Player,
     open: (path: string) => void,
-): MiniPlayerProps => {
+): Omit<MiniPlayerProps, 'onDismiss'> => {
     const name = findDrama(episode.dramaId)?.name ?? '';
     const timeText = miniPlayerTimeText(player.currentTime, player.duration);
     const label = dramaEpisodeLabel(episode);
@@ -145,7 +169,9 @@ const listLabels = (list: Recording[], tags: (MiniPlayerTag | undefined)[], inde
  * 主頁 mini player：今日（今日冇節目播先用最近一日）嘅節目，播緊其他節目錄音就排最前做「重溫」；
  * 載入緊廣播劇就改為顯示嗰套劇（返主頁都唔會停，見 useHomeArrival）
  */
-export const useMiniPlayer = (): MiniPlayerProps | null => {
+type MiniPlayerContent = Omit<MiniPlayerProps, 'onDismiss'>;
+
+const useMiniPlayerContent = (): MiniPlayerContent | null => {
     const player = usePlayer();
     const navigate = useNavigate();
     const { list, tags, index, current, isLoaded, select } = useTodaySelection();
@@ -176,4 +202,12 @@ export const useMiniPlayer = (): MiniPlayerProps | null => {
         onOpen: () => navigate(`/show/${current.showId}`),
         onChange: select,
     };
+};
+
+/** 主頁 mini player；畀用戶左滑關閉咗（未再播嘢）就係 null */
+export const useMiniPlayer = (): MiniPlayerProps | null => {
+    const player = usePlayer();
+    const content = useMiniPlayerContent();
+    const { dismissed, dismiss } = useDismissal(player);
+    return content && !dismissed ? { ...content, onDismiss: dismiss } : null;
 };

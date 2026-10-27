@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useMemo, useRef, type PointerEvent } from 'react';
+import { useBox, type Box } from '../../hooks/useBox';
 import { DRAG_INTENT_PX, dragIntent } from '../../hooks/swipe';
 import { useClickSuppression } from '../../hooks/useSwipe';
 import { prefersReducedMotion } from '../../utils/motion';
@@ -25,16 +26,6 @@ interface SheetDragControls {
 }
 
 type GetElement = () => HTMLElement | null;
-
-/**
- * mutable box：useState 整一次，成個表生命期都係同一個 object（穩定，可以做 effect / memo 依賴）。
- * 唔用 useRef：controls / handlers factory 喺 render 時建立，React lint 唔畀 render 時將 ref 傳入函數
- */
-interface Box<T> {
-    current: T;
-}
-
-const useBox = <T>(initial: T): Box<T> => useState<Box<T>>(() => ({ current: initial }))[0];
 
 /** 表、遮罩、清單嘅 DOM：callback ref mount 時填入、unmount（null）時清走 */
 interface SheetElements {
