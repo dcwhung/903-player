@@ -22,7 +22,7 @@
     - 18 樓 C 座（每日劇集，⚠️ 暫時停用：`src/dramas/c18/drama.json` `enabled: false`，主頁唔出、劇集頁當搵唔到）：同節目頁一樣嘅日子條 + 集數清單，日子條只排有集數嘅日子，重播舊集標「重溫」
     - 播緊廣播劇返主頁唔會停，mini player 改為顯示嗰套劇
     - 集數清單喺每套劇嘅 `drama.json`：芝See 係真清單（12 個短篇、97 集）、黃金少年 4 季 126 集、森美小儀系列 7 個短篇 109 集、少爺占系列 2 個短篇 38 集、蘭茜夫人劇場 3 個短篇 100 集，錄音喺 Cloudflare R2（`DRAMA_AUDIO_BASE`，`<劇集 folder>/<短篇>/<原檔名>`，檔名由 template 砌）；18樓C座 ⚠️ 仲係假資料，錄音未 host，撳播放會一直「連線中…」。Preview：`design/previews/radio-drama-preview.html`
-- 主頁 mini player：左右掃轉今日節目；長按 0.5 秒浮起（副題換做「‹‹ 滑動關閉」）之後左滑關閉（似 iOS 鎖屏通知：過一半闊度即關，拉少少露出「⏻ 關閉」掣），關閉 = 停播 + 收起，之後再開始播先出返（唔記落 localStorage，重開 app 照出）；讀屏 / 鍵盤有「關閉播放器」掣。Preview：`design/previews/swipe-dismiss-preview.html`
+- 主頁 mini player：左右掃轉今日節目；長按 0.25 秒浮起（副題換做「‹‹ 滑動關閉」）之後左滑關閉（似 iOS 鎖屏通知：過一半闊度即關，拉少少露出「⏻ 關閉」掣），關閉 = 停播 + 收起，之後再開始播先出返（唔記落 localStorage，重開 app 照出）；讀屏 / 鍵盤有「關閉播放器」掣。Preview：`design/previews/swipe-dismiss-preview.html`
 - 自動續播（進度存喺本機 localStorage）、鎖屏 / 耳機控制、深色 + 跟系統淺色
 
 ## 架構

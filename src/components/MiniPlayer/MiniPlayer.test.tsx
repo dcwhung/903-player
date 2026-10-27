@@ -319,6 +319,17 @@ describe('MiniPlayer swipe to close', () => {
         expect(screen.getByText('‹‹ 滑動關閉')).toBeInTheDocument();
     });
 
+    it('lifts after a quarter of a second, not before', () => {
+        render(<MiniPlayer {...props()} />);
+
+        fireEvent.pointerDown(region(), { clientX: 300, clientY: 10, pointerId: 1 });
+        act(() => vi.advanceTimersByTime(249));
+        expect(region()).not.toHaveAttribute('data-armed');
+
+        act(() => vi.advanceTimersByTime(1));
+        expect(region()).toHaveAttribute('data-armed', 'true');
+    });
+
     it('does not lift when the finger moves before the long press ends, and still swipes', () => {
         const p = props();
         render(<MiniPlayer {...p} />);
