@@ -11,7 +11,7 @@ import {
     pickDailyStart,
     pickSeriesStart,
 } from '../selectors/dramas';
-import { arcGroups, arcSummaries, listOrder, type ArcSummary } from '../selectors/arcProgress';
+import { arcGroups, arcSummaries, type ArcSummary } from '../selectors/arcProgress';
 import { getProgressMap, type Progress } from '../services/progressStore';
 import type { DramaEpisode, SeriesEpisode } from '../types/drama';
 import type { Track } from '../types/track';
@@ -207,7 +207,8 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
     const { arc, pickArc: setArc } = useViewedArc(current?.arc);
     const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc);
     const pickArc = useArcPick(groups, setArc);
-    const shown = listOrder(arc ? episodesInArc(episodes, arc) : [], progressMap, current?.url);
+    // 照集數次序（聽完嘅留喺原位）；入頁 / 轉集由 EpisodeList 捲到播緊嗰集
+    const shown = arc ? episodesInArc(episodes, arc) : [];
     // 橫版「現正播放：短篇 · 第 N / M 集」：M = 個短篇有幾多集；N 按排位計（有第零集都係 1 起）
     const arcEpisodes = current ? episodesInArc(episodes, current.arc) : [];
     const arcTotal = arcEpisodes.length;

@@ -1,4 +1,4 @@
-import { centredScrollLeft, nearestScrollTop } from './scroll';
+import { centredScrollLeft, nearestScrollTop, peekScrollTop } from './scroll';
 
 const VIEW = { top: 100, height: 200, scrollTop: 300 };
 
@@ -14,6 +14,19 @@ describe('nearestScrollTop', () => {
     it('scrolls down just enough when the row is below the panel', () => {
         // 行底 = 290 + 56 = 346，panel 底 = 300 → 要多捲 46
         expect(nearestScrollTop(VIEW, { top: 290, height: 56 })).toBe(346);
+    });
+});
+
+describe('peekScrollTop', () => {
+    const view = { top: 100, height: 300, scrollTop: 40 };
+
+    it('should bring the row to the top of the panel, leaving the peek of the row above', () => {
+        // 行喺 panel 頂下面 120px（scrollTop 40）→ 捲到 40 + 120 − 30
+        expect(peekScrollTop(view, { top: 220, height: 60 }, 30)).toBe(130);
+    });
+
+    it('should never scroll above the top of the list', () => {
+        expect(peekScrollTop({ ...view, scrollTop: 0 }, { top: 110, height: 60 }, 30)).toBe(0);
     });
 });
 

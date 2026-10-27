@@ -264,7 +264,7 @@ const createContainerApi = (
 const newSession = (): Session => ({ ...SESSION_REST, press: null, closing: false });
 
 /**
- * mini player 手勢：平時左右掃轉節目；長按（唔郁）0.5 秒浮起之後，左滑（似 iOS 鎖屏通知）關閉：
+ * mini player 手勢：平時左右掃轉節目；長按（唔郁）0.25 秒浮起之後，左滑（似 iOS 鎖屏通知）關閉：
  * 拉過一半闊度放手即關，拉少少就停喺度露出「關閉」掣。見 design/previews/swipe-dismiss-preview.html
  */
 export const useDismissGesture = (

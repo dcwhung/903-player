@@ -227,7 +227,7 @@
      */
     --mini-press-scale: 0.97;
     --mini-lift-scale: 1.02;
-    --mini-long-press-ms: 500ms;
+    --mini-long-press-ms: 250ms;
     --mini-dismiss-slide-ms: 200ms;
     --mini-player-offset-bottom: calc(
         max(0px, calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))) +

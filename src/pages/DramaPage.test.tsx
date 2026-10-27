@@ -454,9 +454,9 @@ describe('DramaPage', () => {
 
         await waitFor(() => expect(audio.src).toBe(CHISEE[1]?.url));
         const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole('button');
-        // 播緊第 2 集排頂；聽完嘅第 1 集排最底
-        expect(rows[0]).toHaveAttribute('aria-current', 'true');
-        expect(rows.at(-1)).toHaveAccessibleName(`播放 ${CHISEE[0]?.title ?? ''} 第 1 集，已收聽`);
+        // 照集數次序：聽完嘅第 1 集留喺原位，播緊第 2 集喺佢下面（入頁會捲到播緊嗰集）
+        expect(rows[0]).toHaveAccessibleName(`播放 ${CHISEE[0]?.title ?? ''} 第 1 集，已收聽`);
+        expect(rows[1]).toHaveAttribute('aria-current', 'true');
     });
 
     describe('全集 overview', () => {

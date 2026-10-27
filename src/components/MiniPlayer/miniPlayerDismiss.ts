@@ -1,5 +1,5 @@
 /** 手指唔郁撳住咁耐，mini player 先浮起（之後左滑 = 關閉，唔再係轉節目）；同 --mini-long-press-ms 一致 */
-export const LONG_PRESS_MS = 500;
+export const LONG_PRESS_MS = 250;
 /** 浮起之後咁耐冇郁就變返平時 */
 export const ARMED_IDLE_MS = 4000;
 /** 拉過咁多 px 放手：停喺度露出「關閉」掣 */
