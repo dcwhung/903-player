@@ -504,4 +504,56 @@ describe('ArcSheet pull down to close', () => {
 
         expect(dialog().style.transform).toBe('');
     });
+
+    it('drops a mouse pull whose button was released outside the sheet', () => {
+        renderSheet();
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(header(), { clientY: 105, pointerId: 1, buttons: 1 });
+        // 放手喺遮罩度（表收唔到 pointerup），之後滑鼠只係經過
+        fireEvent.pointerMove(header(), {
+            clientY: 200,
+            pointerId: 1,
+            buttons: 0,
+            pointerType: 'mouse',
+        });
+
+        expect(dialog().style.transform).toBe('');
+        expect(dialog()).not.toHaveAttribute('data-dragging');
+    });
+
+    it('starts afresh when the same pointer presses again after a lost release', () => {
+        renderSheet();
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerDown(header(), { clientY: 300, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(header(), { clientY: 340, pointerId: 1 });
+
+        expect(dialog().style.transform).toBe('translateY(40px)');
+    });
+
+    it('keeps the header pull when a list touch starts at the same time', () => {
+        renderSheet();
+        const start = finger(0, 500);
+        const down = finger(0, 600);
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(header(), { clientY: 160, pointerId: 1 });
+        fireEvent.touchStart(list(), { touches: [start], changedTouches: [start] });
+        fireEvent.touchMove(list(), { touches: [down], changedTouches: [down] });
+        fireEvent.pointerMove(header(), { clientY: 170, pointerId: 1 });
+
+        expect(dialog().style.transform).toBe('translateY(70px)');
+    });
+
+    it('accepts a new pull once the slide-away has called onClose', () => {
+        const { onClose } = renderSheet();
+
+        pull(header(), FAR_PX);
+        settle();
+        pull(header(), FAR_PX);
+        settle();
+
+        expect(onClose).toHaveBeenCalledTimes(2);
+    });
 });

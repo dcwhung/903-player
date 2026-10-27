@@ -86,7 +86,11 @@ const useCloseTimer = (onClose: () => void) => {
         () => ({
             schedule: () => {
                 const delay = prefersReducedMotion() ? 0 : SHEET_SLIDE_MS;
-                timer.current = setTimeout(() => onCloseRef.current(), delay);
+                timer.current = setTimeout(() => {
+                    // 閂完就唔再算「滑走緊」：就算父層冇即刻 unmount，之後都拉得返
+                    timer.current = undefined;
+                    onCloseRef.current();
+                }, delay);
             },
             cancel: () => {
                 clearTimeout(timer.current);
@@ -120,10 +124,10 @@ interface ControlDeps {
     close: ReturnType<typeof useCloseTimer>;
 }
 
-/** 按低：表滑走緊就唔接；量一次表高 */
+/** 按低：表滑走緊 / 已經有手勢（例如 header 同清單同時拉）就唔接；量一次表高 */
 const startGesture = ({ getSheet, gesture, close }: ControlDeps, y: number, t: number) => {
     const sheet = getSheet();
-    if (!sheet || close.isPending()) return false;
+    if (!sheet || close.isPending() || gesture.current) return false;
     const height = sheet.getBoundingClientRect().height;
     gesture.current = { startY: y, height, offset: 0, samples: [toSample(y, t)] };
     return true;
@@ -304,6 +308,19 @@ const takePointer = (pointer: PointerBox, event: SheetPointerEvent) => {
     return current;
 };
 
+/**
+ * 滑鼠喺表外（例如遮罩）放手：表收唔到 pointerup，手勢留低咗。
+ * 同一個 pointer 再按低，或者滑鼠冇撳住掣都郁緊，就當之前嗰下已經放咗手
+ */
+const isLostRelease = (current: PointerGesture | null, event: SheetPointerEvent) =>
+    current?.pointerId === event.pointerId &&
+    (event.type === 'pointerdown' || (event.pointerType === 'mouse' && event.buttons === 0));
+
+const dropPointer = (pointer: PointerBox, controls: SheetDragControls) => {
+    pointer.current = null;
+    controls.abort();
+};
+
 /** 清單以外（grab bar / header）用 pointer，滑鼠都拖得；只跟一個 pointer */
 const createPointerHandlers = (
     pointer: PointerBox,
@@ -312,6 +329,7 @@ const createPointerHandlers = (
     clicks: ReturnType<typeof useClickSuppression>,
 ) => ({
     onPointerDown: (event: SheetPointerEvent) => {
+        if (isLostRelease(pointer.current, event)) dropPointer(pointer, controls);
         const busy = pointer.current !== null;
         if (!busy) clicks.arm(false);
         pointer.current = startPointer(event, busy, getList, controls) ?? pointer.current;
@@ -319,6 +337,7 @@ const createPointerHandlers = (
     onPointerMove: (event: SheetPointerEvent) => {
         const current = pointer.current;
         if (current?.pointerId !== event.pointerId) return;
+        if (isLostRelease(current, event)) return dropPointer(pointer, controls);
         markMoved(event, current);
         controls.move(event.clientY, event.timeStamp);
     },
@@ -329,9 +348,8 @@ const createPointerHandlers = (
         // 拉過就食咗放手嗰下 click，唔會誤撳 ✕ / 播放掣
         clicks.arm(current.moved);
     },
-    onPointerCancel: (event: SheetPointerEvent) => {
-        if (takePointer(pointer, event)) controls.abort();
-    },
+    onPointerCancel: (event: SheetPointerEvent) =>
+        void (takePointer(pointer, event) && controls.abort()),
     onClickCapture: clicks.onClickCapture,
 });
 
