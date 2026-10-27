@@ -282,6 +282,11 @@ describe('MiniPlayer', () => {
 
 describe('MiniPlayer swipe to close', () => {
     const CARD_WIDTH = 360;
+    const PRESS_X = 300;
+    const PRESS_Y = 10;
+    const POINTER_ID = 1;
+    /** 未夠長按就放手：長按時間嘅一半 */
+    const SHORT_PRESS_MS = LONG_PRESS_MS / 2;
 
     beforeEach(() => {
         vi.useFakeTimers();
@@ -328,6 +333,24 @@ describe('MiniPlayer swipe to close', () => {
 
         act(() => vi.advanceTimersByTime(1));
         expect(region()).toHaveAttribute('data-armed', 'true');
+    });
+
+    // Q-2：未夠長按就放手，之後就算過埋長按時間都唔可以浮起（放手要停計長按）
+    it('does not lift when released before the long press, even after the long press time', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+        const at = { clientX: PRESS_X, clientY: PRESS_Y, pointerId: POINTER_ID };
+
+        fireEvent.pointerDown(region(), at);
+        act(() => vi.advanceTimersByTime(SHORT_PRESS_MS));
+        fireEvent.pointerUp(region(), at);
+        act(() => vi.advanceTimersByTime(LONG_PRESS_MS));
+
+        expect(region()).not.toHaveAttribute('data-armed');
+        expect(region()).not.toHaveAttribute('data-lifted');
+        expect(region()).not.toHaveAttribute('data-pressing');
+        expect(p.onChange).not.toHaveBeenCalled();
+        expect(p.onDismiss).not.toHaveBeenCalled();
     });
 
     it('does not lift when the finger moves before the long press ends, and still swipes', () => {
