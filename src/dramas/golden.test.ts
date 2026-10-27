@@ -48,11 +48,11 @@ describe('黃金少年', () => {
     });
 
     describe('per-season disc art', () => {
-        it('gives every season its own disc, with Season 1 as the drama disc', () => {
+        it('gives every season its own disc, none of them the series disc', () => {
             const discs = SEASONS.map((n) => inSeason(n)[0]).map((e) => e && dramaArtFor(e));
             expect(discs.every(Boolean)).toBe(true);
             expect(new Set(discs).size).toBe(SEASONS.length);
-            expect(discs[0]).toBe(findDrama('golden')?.theme.art);
+            expect(discs).not.toContain(findDrama('golden')?.theme.art);
         });
 
         it('themes a playing episode with the drama colours and the season disc', () => {
