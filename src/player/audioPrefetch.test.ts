@@ -75,14 +75,14 @@ describe('AudioPrefetcher', () => {
         expect(prefetcher.take(URL_B)).toBe('blob:2');
     });
 
-    it('bypasses the HTTP cache so Safari cannot reuse the player’s CORS-less copy', async () => {
+    it('fetches its own cache key with no extra headers (no CORS preflight)', async () => {
         const fetchMock = vi.fn(async () => new Response('x'));
         vi.stubGlobal('fetch', fetchMock);
         const { signal } = new AbortController();
 
         await fetchAudioBlob(URL_A, signal);
 
-        expect(fetchMock).toHaveBeenCalledWith(URL_A, { signal, cache: 'no-store' });
+        expect(fetchMock).toHaveBeenCalledWith(`${URL_A}?prefetch=1`, { signal });
     });
 
     it('reports a failed download and hands nothing out (e.g. no CORS)', async () => {

@@ -15,11 +15,14 @@ export type PrefetchListener = (
 ) => void;
 
 /**
- * no-store：R2 冇帶 Origin 嘅回應冇 Vary: Origin，Safari 會將播放器載過、冇 CORS header 嘅快取
- * 拎嚟畀 fetch 用，變成 CORS 失敗（TypeError）；唔用快取就一定攞到有 CORS header 嘅新回應
+ * 預載用自己嘅 cache key（URL 加 query，R2 會忽略）：
+ * - R2 冇帶 Origin 嘅回應冇 Vary: Origin，Safari 會將播放器載過、冇 CORS header 嘅快取畀 fetch 用 → CORS 失敗
+ * - 唔可以用 cache: 'no-store'：Safari 會加 Cache-Control / Pragma header 觸發 preflight，R2 只准 Range → 403
  */
+const PREFETCH_QUERY = '?prefetch=1';
+
 export const fetchAudioBlob: FetchAudio = async (url, signal) => {
-    const response = await fetch(url, { signal, cache: 'no-store' });
+    const response = await fetch(`${url}${PREFETCH_QUERY}`, { signal });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.blob();
 };
