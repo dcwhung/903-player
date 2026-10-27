@@ -66,6 +66,8 @@
     --ease-strip: cubic-bezier(0.2, 0.8, 0.2, 1);
     --dot-size: calc(6px * var(--ui-scale));
     --dot-size-active: calc(18px * var(--ui-scale));
+    /* 指示點 variant（PageDots accent，例如 mini player「重溫」舊集）未揀中時嘅透明度 */
+    --dot-variant-opacity: 0.6;
     --page-max-width: 480px;
     /*
      * 橫版唱片（Page.module.css .playerColumn）：最細 / 最大，同佔左欄闊幾多（× 100cqw）。
@@ -223,6 +225,11 @@
     /* 主頁節目格「New」標籤：輕輕浮起，同節目圖分開 */
     --shadow-new-badge: 0 2px 6px rgb(0 0 0 / 35%);
     --color-today-tile-text: #2f4560;
+    /* 主頁奶油金（同 HOME_THEME accent）：唔跟節目轉色 */
+    --color-gold: #f5d294;
+    /* mini player 節目名旁邊「今日」標籤：奶油金 + 深藍字（揀中嘅「今日」指示點都係奶油金） */
+    --today-tag-bg: var(--color-gold);
+    --today-tag-text: var(--color-today-tile-text);
     /* 橫額右下角版本號：半透明深底 + 白字（插畫係淺藍，對比度 ≥ 4.5:1） */
     --version-badge-bg: rgb(0 0 0 / 55%);
     --version-badge-text: #ffffff;

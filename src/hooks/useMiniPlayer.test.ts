@@ -123,6 +123,93 @@ describe('useMiniPlayer', () => {
         expect(mini?.subtitle).toBe('17/10（六）');
         expect(mini?.labels).toEqual(['公子會']);
         expect(mini?.keys).toEqual([RECORDINGS[0]?.url]);
+        // 最近一日唔係今日：冇「今日」標籤
+        expect(mini?.tags).toEqual([undefined]);
+    });
+
+    it('tags today’s shows 今日 and leaves 今日 out of the date-only subtitle', async () => {
+        const { mini } = await ready(setup().result);
+
+        expect(mini?.tags).toEqual(['today', 'today']);
+        expect(mini?.subtitle).toBe('19/10（一）');
+        expect(mini?.region).toBe('正在播放（今日節目）');
+        expect(mini?.positionLabel).toBeUndefined();
+    });
+
+    describe('with an older episode loaded (重溫)', () => {
+        const OLD = recording('badgirl', '2026-10-12', '1000');
+
+        const playOld = async () => {
+            const view = setup();
+            await ready(view.result);
+            await act(() => view.result.current.player.load(OLD, { autoplay: true }));
+            return view;
+        };
+
+        it('puts it first, tagged 重溫, and shows it with its time', async () => {
+            const { audio, result } = await playOld();
+            act(() => {
+                audio.emitMetadata(7110);
+                audio.emitTime(760);
+            });
+
+            const mini = result.current.mini;
+            expect(mini).toMatchObject({
+                showName: 'Bad Girl大過佬',
+                region: '正在播放（重溫及今日節目）',
+                openLabel: '開啟 Bad Girl大過佬 節目頁，重溫 12/10（一）',
+                subtitle: '12/10（一） · 12:40 / 1:58:30',
+                isPlaying: true,
+                labels: ['Bad Girl大過佬，重溫 12/10（一）', 'Bad Girl大過佬', '雲妮鍾情'],
+                keys: [OLD.url, BADGIRL.url, WANNI.url],
+                tags: ['rewatch', 'today', 'today'],
+                index: 0,
+            });
+            expect(mini?.positionLabel?.(1, 3)).toBe('第 1 個節目，共 3 個');
+        });
+
+        it('only shows a today show swiped to, without loading it, and keeps the old one playing', async () => {
+            const { audio, result } = await playOld();
+
+            act(() => result.current.mini?.onChange(1));
+
+            expect(audio.src).toBe(OLD.url);
+            expect(audio.play).toHaveBeenCalledTimes(1);
+            expect(result.current.mini).toMatchObject({
+                showName: 'Bad Girl大過佬',
+                openLabel: '開啟 Bad Girl大過佬 節目頁',
+                subtitle: '19/10（一）',
+                isPlaying: false,
+                index: 1,
+            });
+            expect(result.current.mini?.tags?.[1]).toBe('today');
+        });
+
+        it('swipes back to the old one, still playing', async () => {
+            const { result } = await playOld();
+
+            act(() => result.current.mini?.onChange(2));
+            act(() => result.current.mini?.onChange(0));
+
+            expect(result.current.mini).toMatchObject({ index: 0, isPlaying: true });
+        });
+
+        it('drops the old one once a today show is played instead', async () => {
+            const { audio, result } = await playOld();
+            act(() => result.current.mini?.onChange(2));
+
+            await act(async () => result.current.mini?.onToggle());
+
+            expect(audio.src).toBe(WANNI.url);
+            expect(result.current.mini).toMatchObject({
+                showName: '雲妮鍾情',
+                region: '正在播放（今日節目）',
+                keys: [BADGIRL.url, WANNI.url],
+                tags: ['today', 'today'],
+                index: 1,
+                isPlaying: true,
+            });
+        });
     });
 
     it('loads and plays the shown show on toggle when nothing is loaded', async () => {

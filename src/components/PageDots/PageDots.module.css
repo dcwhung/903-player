@@ -31,7 +31,19 @@
     }
 }
 
+/* accent（例如 mini player「重溫」舊集）：未揀中都用強調色但淡啲；揀中就同其他點一樣（下面 .selected 蓋過） */
+.accent::after {
+    background: var(--color-accent);
+    opacity: var(--dot-variant-opacity);
+}
+
 .selected::after {
     width: var(--dot-size-active);
     background: var(--color-accent);
+    opacity: 1;
+}
+
+/* gold（例如 mini player「今日」節目）：揀中先係奶油金，同「今日」標籤一樣 */
+.gold.selected::after {
+    background: var(--color-gold);
 }

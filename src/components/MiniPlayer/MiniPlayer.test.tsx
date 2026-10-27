@@ -8,7 +8,7 @@ const props = (overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps => ({
     region: '正在播放（今日節目）',
     openLabel: '開啟 Bad Girl大過佬 節目頁',
     theme: themeFor('badgirl'),
-    subtitle: '今日 19/10（一）· 12:40 / 1:58:30',
+    subtitle: '19/10（一） · 12:40 / 1:58:30',
     timeText: '12:40 / 1:58:30',
     isPlaying: true,
     progress: 0.11,
@@ -67,7 +67,7 @@ describe('MiniPlayer', () => {
 
         const region = screen.getByRole('region', { name: '正在播放（今日節目）' });
         expect(region).toHaveTextContent('Bad Girl大過佬');
-        expect(region).toHaveTextContent('今日 19/10（一）· 12:40 / 1:58:30');
+        expect(region).toHaveTextContent('19/10（一） · 12:40 / 1:58:30');
         expect(region.closest('[data-theme-scope]')).toHaveStyle({ '--theme-accent': '#f08a24' });
         expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '11');
     });
@@ -197,5 +197,63 @@ describe('MiniPlayer', () => {
         render(<MiniPlayer {...props({ isPlaying: false })} />);
 
         expect(screen.getByRole('button', { name: '播放' })).toBeInTheDocument();
+    });
+
+    describe('tags', () => {
+        const REWATCH = props({
+            labels: ['Bad Girl大過佬，重溫 12/10（一）', '雲妮鍾情', 'Bad Girl大過佬'],
+            tags: ['rewatch', 'today', 'today'],
+            index: 0,
+        });
+
+        it('should tag the current show 重溫 next to its name, in the faded-accent first dot', () => {
+            render(<MiniPlayer {...REWATCH} />);
+
+            const region = screen.getByRole('region');
+            const tag = region.querySelector('[data-tag]');
+            expect(tag).toHaveAttribute('data-tag', 'rewatch');
+            expect(tag).toHaveTextContent('重溫');
+            expect(tag).toHaveAttribute('aria-hidden', 'true');
+            expect(
+                screen.getByRole('button', { name: 'Bad Girl大過佬，重溫 12/10（一）' }),
+            ).toHaveAttribute('data-variant', 'accent');
+            expect(screen.getByRole('button', { name: '雲妮鍾情' })).toHaveAttribute(
+                'data-variant',
+                'gold',
+            );
+        });
+
+        it('should leave untagged dots plain (latest-day fallback)', () => {
+            render(<MiniPlayer {...props({ tags: [undefined, undefined, undefined] })} />);
+
+            expect(screen.getByRole('region').querySelectorAll('[data-variant]')).toHaveLength(0);
+        });
+
+        it('should tag a today show 今日', () => {
+            render(<MiniPlayer {...REWATCH} index={1} />);
+
+            expect(screen.getByRole('region').querySelector('[data-tag]')).toHaveAttribute(
+                'data-tag',
+                'today',
+            );
+            expect(screen.getByRole('region')).toHaveTextContent('今日');
+        });
+
+        it('should show no tag without tags (latest-day fallback, drama)', () => {
+            render(<MiniPlayer {...props()} />);
+
+            expect(screen.getByRole('region').querySelector('[data-tag]')).toBeNull();
+        });
+
+        it('should name the dots group with the given position label', () => {
+            render(
+                <MiniPlayer
+                    {...REWATCH}
+                    positionLabel={(index, total) => `第 ${index} 個，共 ${total} 個`}
+                />,
+            );
+
+            expect(screen.getByRole('group', { name: '第 1 個，共 3 個' })).toBeInTheDocument();
+        });
     });
 });
