@@ -1,5 +1,6 @@
 import { FakeAudio } from '../../tests/fakeAudio';
 import type { Recording } from '../types/recording';
+import { EARLY_ADVANCE_SECONDS, STALL_MAX_RETRIES, STALL_RETRY_MS } from '../config/constants';
 import { AudioController } from './AudioController';
 
 const RECORDING: Recording = {
@@ -344,6 +345,168 @@ describe('AudioController auto-advance', () => {
         expect(audio.src).toBe(RECORDING.url);
         expect(audio.play).not.toHaveBeenCalled();
         expect(controller.getSnapshot().isPlaying).toBe(false);
+        detach();
+    });
+
+    it('keeps reporting playing while it switches to the next track', async () => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack(() => NEXT);
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(1200);
+        const seen: boolean[] = [];
+        controller.subscribe(() => seen.push(controller.getSnapshot().isPlaying));
+
+        audio.end();
+
+        expect(seen.length).toBeGreaterThan(0);
+        expect(seen.every(Boolean)).toBe(true);
+        detach();
+    });
+});
+
+/** 鎖屏時 iOS 可能卡住唔載下一集（停喺 0:00 但顯示播緊）：等一陣冇聲就重新載入 */
+describe('AudioController stalled auto-advance', () => {
+    const NEXT: Recording = {
+        ...RECORDING,
+        date: '2026-10-24',
+        url: 'https://audio.hkfm903.live/next.aac',
+    };
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const advance = async () => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(1200);
+        audio.end();
+        await Promise.resolve();
+        audio.play.mockClear();
+        audio.load.mockClear();
+        return { audio, controller, detach };
+    };
+
+    it('reloads and replays the next track when it never starts sounding', async () => {
+        const { audio, detach } = await advance();
+
+        vi.advanceTimersByTime(STALL_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.play).toHaveBeenCalledTimes(1);
+        expect(audio.src).toBe(NEXT.url);
+        detach();
+    });
+
+    it('leaves the next track alone once it is audible', async () => {
+        const { audio, detach } = await advance();
+
+        audio.emitPlaying();
+        vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('gives up after the retry limit', async () => {
+        const { audio, detach } = await advance();
+
+        vi.advanceTimersByTime(STALL_RETRY_MS * (STALL_MAX_RETRIES + 2));
+
+        expect(audio.load).toHaveBeenCalledTimes(STALL_MAX_RETRIES);
+        detach();
+    });
+
+    it('stops retrying when the user pauses', async () => {
+        const { audio, controller, detach } = await advance();
+
+        controller.pause();
+        vi.advanceTimersByTime(STALL_RETRY_MS);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('retries straight away when the screen wakes up while stalled', async () => {
+        const { audio, detach } = await advance();
+        const visibility = vi.spyOn(document, 'visibilityState', 'get');
+
+        visibility.mockReturnValue('visible');
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.play).toHaveBeenCalledTimes(1);
+        visibility.mockRestore();
+        detach();
+    });
+});
+
+/** iOS 喺 ended 嗰下收起 audio session，背景開唔返：要喺播完之前、仲播緊時換集 */
+describe('AudioController early auto-advance', () => {
+    const NEXT: Recording = {
+        ...RECORDING,
+        date: '2026-10-24',
+        url: 'https://audio.hkfm903.live/next.aac',
+    };
+    const DURATION = 1200;
+
+    const playNear = async (nextTrack: () => Recording | undefined) => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack(nextTrack);
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        await Promise.resolve();
+        audio.play.mockClear();
+        return { audio, controller, detach };
+    };
+
+    it('switches to the next track just before the end while still playing', async () => {
+        const { audio, controller, detach } = await playNear(() => NEXT);
+
+        audio.emitTime(DURATION - EARLY_ADVANCE_SECONDS / 2);
+
+        expect(audio.src).toBe(NEXT.url);
+        expect(audio.play).toHaveBeenCalledTimes(1);
+        expect(controller.getSnapshot().recording).toBe(NEXT);
+        expect(controller.getSnapshot().isPlaying).toBe(true);
+        expect(JSON.parse(localStorage.getItem('903player:progress:v1') ?? '{}')).toMatchObject({
+            [RECORDING.url]: { watched: true },
+        });
+        detach();
+    });
+
+    it('keeps playing the current track until the last moments', async () => {
+        const { audio, detach } = await playNear(() => NEXT);
+
+        audio.emitTime(DURATION - EARLY_ADVANCE_SECONDS * 2);
+
+        expect(audio.src).toBe(RECORDING.url);
+        detach();
+    });
+
+    it('does not switch while paused near the end', async () => {
+        const { audio, controller, detach } = await playNear(() => NEXT);
+
+        controller.pause();
+        audio.emitTime(DURATION - EARLY_ADVANCE_SECONDS / 2);
+
+        expect(audio.src).toBe(RECORDING.url);
+        detach();
+    });
+
+    it('plays to the end when there is no next track', async () => {
+        const { audio, detach } = await playNear(() => undefined);
+
+        audio.emitTime(DURATION - EARLY_ADVANCE_SECONDS / 2);
+
+        expect(audio.src).toBe(RECORDING.url);
+        expect(audio.play).not.toHaveBeenCalled();
         detach();
     });
 });
