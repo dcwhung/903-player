@@ -46,7 +46,7 @@ const readLines = (): string[] => {
 };
 
 /** URL 最後一段（解碼），即係檔名 */
-export const audioFileName = (src: string): string => {
+const audioFileName = (src: string): string => {
     try {
         return decodeURIComponent(src.split('/').at(-1) ?? '');
     } catch {
