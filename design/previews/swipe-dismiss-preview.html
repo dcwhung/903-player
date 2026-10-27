@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
 <style>
 /*
- * 兩個手勢：① 廣播劇「全部短篇」表向下拉閂；② 主頁 mini player 長按浮起 → iOS 鎖屏 notification 式左滑關閉（多個版本揀 button 顏色 / 字 / 提示）。
+ * 兩個手勢：① 廣播劇「全部短篇」表向下拉閂；② 主頁 mini player 長按浮起 → iOS 鎖屏 notification 式左滑關閉（B 版 button；多個版本揀關閉後提示）。
  * 普通左右掃照舊轉今日節目；手機 375 × 720 真 px。顏色跟 drama-flow-preview（芝See）同 HOME_THEME。
  * 用手機開最準（滑鼠都拖得）。
  */
@@ -94,8 +94,9 @@ h2 { margin: 0; font-size: 18px; }
 .mtext b { display: block; font-size: 15px; }
 .mtext small { color: var(--mini-muted); font-size: 12px; }
 .toggle { width: 44px; height: 44px; border: none; border-radius: 50%; background: var(--mini-accent); color: #fff; font-size: 16px; }
-.toast { position: absolute; left: 0; right: 0; bottom: 40px; text-align: center; color: var(--home-text); opacity: 0; transition: opacity .3s; }
-.toast.show { opacity: 1; }
+.toast { position: absolute; left: 12px; right: 12px; bottom: 32px; display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px; padding: 8px 16px; border-radius: 16px; background: rgb(32 48 68 / 92%); color: var(--home-text); font-size: 14px; box-shadow: 0 2px 8px rgb(0 0 0 / 35%); opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .25s, transform .25s; }
+.toast.show { opacity: 1; transform: none; pointer-events: auto; }
+.undo { flex-shrink: 0; padding: 6px 12px; border: none; border-radius: 999px; background: var(--home-accent); color: var(--home-on-accent); font: inherit; font-weight: 600; }
 .log { min-height: 1.5em; color: var(--shell-accent); font-size: 13px; }
 </style>
 </head>
@@ -131,12 +132,12 @@ h2 { margin: 0; font-size: 18px; }
         </section>
 
         <section class="demo">
-            <h2>② Mini player：長按 → iOS notification 式左滑關閉</h2>
+            <h2>② Mini player：長按 → 左滑關閉（B 版）· 揀關閉後提示</h2>
             <div class="variants" id="variants" role="group" aria-label="版本"></div>
             <p class="vdesc" id="vdesc"></p>
             <div class="phone home" id="homePhone">
                 <div class="tiles"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-                <div class="toast" id="toast">已關閉（喺節目頁撳 ▶ 會再出返）</div>
+                <div class="toast" id="toast" role="status"><span id="toastText"></span><button class="undo" id="undo" type="button" hidden>復原</button></div>
                 <div class="mini" id="mini">
                     <div class="behind"><button class="clear" id="clear" type="button"></button></div>
                     <div class="card" id="card">
@@ -152,8 +153,8 @@ h2 { margin: 0; font-size: 18px; }
             <div class="log" id="log">試吓：左右掃轉節目；長按 0.5 秒浮起之後左滑關閉</div>
             <ul class="note">
                 <li>平時左右掃（≥ 48px）照舊轉今日節目，循環轉</li>
-                <li>手指唔郁長按 0.5 秒 → card 浮起（大少少 + 陰影深啲），副題換做提示文字</li>
-                <li>浮起之後向左拉：card 跟手指走，右邊露出「關閉」（同一下唔放手拉，或者放手再拉都得）</li>
+                <li>手指唔郁長按 0.5 秒 → card 浮起（大少少 + 陰影深啲）</li>
+                <li>浮起之後副題換做「‹‹ 滑動關閉」；向左拉：card 跟手指走，右邊露出深藍「⏻ 關閉」（同一下唔放手拉，或者放手再拉都得）</li>
                 <li>拉過 card 闊度一半放手 → 直接關閉（停播 + 收起）</li>
                 <li>拉咗少少（≥ 40px）放手 → 停喺度露出「關閉」掣，撳先關閉；撳 card / 外面 / 向右拉 → 收返</li>
                 <li>浮起咗 4 秒冇郁 → 變返平時（左右掃又係轉節目）</li>
@@ -240,37 +241,51 @@ h2 { margin: 0; font-size: 18px; }
     const toast = document.getElementById('toast');
     let index = 2;
 
-    // 版本：button 底色 / 字色 / 內容 + 浮起後 card 副題嘅提示文字
-    const VARIANTS = [
-        { key: 'A', name: 'A 跟節目色', bg: 'var(--mini-accent)', fg: '#fff', ico: '✕', txt: '關閉', hint: '← 向左拉關閉', hintFg: 'var(--mini-accent)',
-          desc: 'button 用而家播緊節目嘅主題色（同 ▶ 掣一致），唔會好似「刪除」咁嚇人；提示用同色。' },
-        { key: 'B', name: 'B 深藍低調', bg: 'var(--mini-title)', fg: 'var(--mini-surface)', ico: '⏻', txt: '關閉', hint: '向左拉到盡即關閉', hintFg: 'var(--mini-muted)',
-          desc: '深藍底 + 奶白字（主頁字色），電源 icon 表示「熄機」；提示灰色唔搶眼。' },
-        { key: 'C', name: 'C 奶油金', bg: 'var(--home-accent)', fg: 'var(--home-on-accent)', ico: '■', txt: '停止', hint: '← 拉走停止播放', hintFg: '#9a7a35',
-          desc: '用主頁「今日」奶油金，字寫「停止」講清楚會停播；最貼主頁色調。' },
-        { key: 'D', name: 'D 磨砂灰', bg: 'rgb(47 69 96 / 18%)', fg: 'var(--mini-title)', ico: '✕', txt: '關閉', hint: '‹‹ 滑動關閉', hintFg: 'var(--mini-muted)',
-          desc: '似 iOS 鎖屏 notification 嘅半透明灰掣，最低調；提示似「滑動解鎖」。' },
-        { key: 'E', name: 'E 柔紅', bg: '#f3d6d3', fg: '#b3322a', ico: '✕', txt: '關閉', hint: '← 向左拉 · 關閉播放器', hintFg: '#b3322a', border: '1px solid #e6b3ad',
-          desc: '淡紅底 + 紅字，仍然有「關閉」警示感，但冇實心紅咁刺眼。' },
+    // 已揀：B 深藍低調 button，提示「‹‹ 滑動關閉」
+    mini.style.setProperty('--clear-bg', 'var(--mini-title)');
+    mini.style.setProperty('--clear-fg', 'var(--mini-surface)');
+    mini.style.setProperty('--hint-fg', 'var(--mini-muted)');
+    mini.style.setProperty('--clear-border', 'none');
+    clearBtn.innerHTML = '<span class="ico">⏻</span><span class="txt">關閉</span>';
+    document.getElementById('armhint').textContent = '‹‹ 滑動關閉';
+
+    // 關閉之後嘅提示：{name} = 節目名；undo = 有冇「復原」掣；ms = 停留幾耐
+    const TOASTS = [
+        { key: '1', name: '1 簡單一句', text: '已關閉播放器', ms: 2000,
+          desc: '最短，唔講點返嚟；2 秒自己消失。' },
+        { key: '2', name: '2 教返點聽', text: '已停止播放 · 喺節目頁撳 ▶ 再聽', ms: 3000,
+          desc: '講埋點樣再出返，第一次用嘅人唔會以為唔見咗；3 秒消失。' },
+        { key: '3', name: '3 帶節目名', text: '已停止播放《{name}》', ms: 2500,
+          desc: '講明停咗邊個節目（今日有幾個節目時清楚啲）；2.5 秒消失。' },
+        { key: '4', name: '4 有復原', text: '已關閉播放器', undo: true, ms: 4000,
+          desc: '似 Gmail / iOS 嘅「復原」：4 秒內撳復原，mini player 返嚟、由原本位置繼續播。防誤拉最穩陣。' },
+        { key: '5', name: '5 唔出提示', text: '', ms: 0,
+          desc: 'mini player 滑走就算，乜都唔講；最乾淨，但誤拉咗唔知點返嚟。' },
     ];
+    let toastVariant = TOASTS[3];
+    let toastTimer = 0;
     const mount = document.getElementById('variants');
-    const applyVariant = (v) => {
-        mini.style.setProperty('--clear-bg', v.bg);
-        mini.style.setProperty('--clear-fg', v.fg);
-        mini.style.setProperty('--hint-fg', v.hintFg);
-        mini.style.setProperty('--clear-border', v.border ?? 'none');
-        clearBtn.innerHTML = `<span class="ico">${v.ico}</span><span class="txt">${v.txt}</span>`;
-        document.getElementById('armhint').textContent = v.hint;
+    const applyToast = (v) => {
+        toastVariant = v;
         document.getElementById('vdesc').textContent = v.desc;
         mount.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.key === v.key)));
     };
-    mount.innerHTML = VARIANTS.map((v) => `<button type="button" data-key="${v.key}">${v.name}</button>`).join('');
+    mount.innerHTML = TOASTS.map((v) => `<button type="button" data-key="${v.key}">${v.name}</button>`).join('');
     mount.addEventListener('click', (e) => {
-        const key = e.target.closest('button')?.dataset.key;
-        const v = VARIANTS.find((x) => x.key === key);
-        if (v) applyVariant(v);
+        const v = TOASTS.find((x) => x.key === e.target.closest('button')?.dataset.key);
+        if (v) applyToast(v);
     });
-    applyVariant(VARIANTS[0]);
+    applyToast(toastVariant);
+    const hideToast = () => { clearTimeout(toastTimer); toast.classList.remove('show'); };
+    const showToast = () => {
+        const v = toastVariant;
+        if (!v.text) return;
+        document.getElementById('toastText').textContent = v.text.replace('{name}', SHOWS[index][0]);
+        document.getElementById('undo').hidden = !v.undo;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(hideToast, v.ms);
+    };
 
     const render = () => {
         document.getElementById('dots').innerHTML = SHOWS.map((_, i) => `<span class="${i === index ? 'on' : ''}"></span>`).join('');
@@ -312,8 +327,7 @@ h2 { margin: 0; font-size: 18px; }
         card.classList.remove('dragging');
         setOffset(card.offsetWidth + 24);
         log.textContent = '已關閉：player.stop() + 收起';
-        setTimeout(() => { mini.classList.add('closing'); toast.classList.add('show'); }, 200);
-        setTimeout(() => toast.classList.remove('show'), 2200);
+        setTimeout(() => { mini.classList.add('closing'); showToast(); }, 200);
     };
 
     mini.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -380,10 +394,13 @@ h2 { margin: 0; font-size: 18px; }
     document.getElementById('homePhone').addEventListener('pointerdown', (e) => {
         if (!mini.contains(e.target) && mini.classList.contains('armed')) disarm('撳咗外面 → 變返平時');
     });
-    document.getElementById('resetMini').addEventListener('click', () => {
-        disarm('已重新出返');
+    const restore = (msg) => {
+        hideToast();
+        disarm(msg);
         mini.classList.remove('closing');
-    });
+    };
+    document.getElementById('resetMini').addEventListener('click', () => restore('已重新出返'));
+    document.getElementById('undo').addEventListener('click', () => restore('撳咗復原：mini player 返嚟，繼續播'));
 })();
 </script>
 </body>
