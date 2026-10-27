@@ -1,4 +1,5 @@
 import { FakeAudio } from '../../tests/fakeAudio';
+import { APP_VERSION } from '../config/appVersion';
 import { PLAYBACK_LOG_MAX_ENTRIES, PLAYBACK_LOG_TICK_MS } from '../config/constants';
 import { attachPlaybackLog, copyPlaybackLog, readPlaybackLog, recordPlayback } from './playbackLog';
 
@@ -53,7 +54,7 @@ describe('playbackLog', () => {
             detach();
             audio.dispatchEvent(new Event('suspend'));
 
-            const log = readPlaybackLog();
+            const log = readPlaybackLog().slice(1);
             expect(log).toHaveLength(2);
             expect(log[0]).toContain('loadstart');
             expect(log[0]).toContain('04 - 公子森林 - 第四集.m4a');
@@ -74,13 +75,20 @@ describe('playbackLog', () => {
             expect(readPlaybackLog().filter((l) => l.includes('timeupdate'))).toHaveLength(2);
         });
 
+        it('starts with the app version so a log names the build it came from', () => {
+            const detach = attachPlaybackLog(new FakeAudio().asAudio());
+            detach();
+
+            expect(readPlaybackLog()[0]).toMatch(new RegExp(` boot .* v${APP_VERSION}$`));
+        });
+
         it('logs the page being hidden or shown', () => {
             const detach = attachPlaybackLog(new FakeAudio().asAudio());
 
             document.dispatchEvent(new Event('visibilitychange'));
             detach();
 
-            expect(readPlaybackLog()[0]).toContain('visibilitychange');
+            expect(readPlaybackLog()[1]).toContain('visibilitychange');
         });
     });
 
