@@ -9,7 +9,7 @@ const miniPlayer = readCss(
 const pageDots = readCss(new URL('../components/PageDots/PageDots.module.css', import.meta.url));
 const root = cssDeclarations(tokens, ':root');
 
-// 用戶揀定（T9 B）：「今日」= 主頁奶油金、深藍字；「重溫」= 節目強調色
+// 用戶揀定（T9 B）：「今日」= 主頁奶油金、深藍字；「重溫」= 固定藍色（唔跟節目強調色）
 describe('mini player tags', () => {
     it('should paint 今日 in the home gold with dark blue text, whatever the show theme', () => {
         expect(root['--color-gold']).toBe('#f5d294');
@@ -21,22 +21,27 @@ describe('mini player tags', () => {
         });
     });
 
-    it('should paint 重溫 in the show accent', () => {
+    it('should paint 重溫 in a fixed blue, whatever the show accent', () => {
+        expect(root['--color-rewatch']).toBe('#8ec6ef');
+        expect(root['--color-on-rewatch']).toBe('#10161d');
         expect(cssDeclarations(miniPlayer, ".tag[data-tag='rewatch']")).toMatchObject({
-            background: 'var(--color-accent)',
-            color: 'var(--color-on-accent)',
+            background: 'var(--color-rewatch)',
+            color: 'var(--color-on-rewatch)',
         });
     });
 });
 
 describe('page dot variants', () => {
-    it('should draw the accent variant in the faded accent, and the current dot at full strength', () => {
+    it('should draw the blue variant in the 重溫 blue: faded while not current, full when current', () => {
         expect(root['--dot-variant-opacity']).toBe('0.6');
-        expect(cssDeclarations(pageDots, '.accent::after')).toMatchObject({
-            background: 'var(--color-accent)',
+        expect(cssDeclarations(pageDots, '.blue::after')).toMatchObject({
+            background: 'var(--color-rewatch)',
             opacity: 'var(--dot-variant-opacity)',
         });
         expect(cssDeclarations(pageDots, '.selected::after').opacity).toBe('1');
+        expect(cssDeclarations(pageDots, '.blue.selected::after').background).toBe(
+            'var(--color-rewatch)',
+        );
     });
 
     it('should draw the current gold dot in the 今日 tag gold, leaving it plain while not current', () => {

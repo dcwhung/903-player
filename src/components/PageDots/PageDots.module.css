@@ -31,9 +31,9 @@
     }
 }
 
-/* accent（例如 mini player「重溫」舊集）：未揀中都用強調色但淡啲；揀中就同其他點一樣（下面 .selected 蓋過） */
-.accent::after {
-    background: var(--color-accent);
+/* blue（例如 mini player「重溫」舊集）：未揀中都係重溫藍但淡啲；揀中見下面 .blue.selected */
+.blue::after {
+    background: var(--color-rewatch);
     opacity: var(--dot-variant-opacity);
 }
 
@@ -41,6 +41,11 @@
     width: var(--dot-size-active);
     background: var(--color-accent);
     opacity: 1;
+}
+
+/* 揀中嘅 blue 點：全色重溫藍，同「重溫」標籤一樣 */
+.blue.selected::after {
+    background: var(--color-rewatch);
 }
 
 /* gold（例如 mini player「今日」節目）：揀中先係奶油金，同「今日」標籤一樣 */

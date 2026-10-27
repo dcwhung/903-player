@@ -69,22 +69,19 @@ describe('PageDots', () => {
         expect(container).toBeEmptyDOMElement();
     });
 
-    it('marks a dot with its variant (e.g. the 重溫 episode in faded accent), also when current', () => {
+    it('marks a dot with its variant (e.g. the 重溫 episode in blue), also when current', () => {
         const dots = (index: number) => (
             <PageDots
                 keys={['old', 'a', 'b']}
                 labels={['舊', '甲', '乙']}
-                variants={['accent']}
+                variants={['blue']}
                 index={index}
                 onSelect={() => {}}
             />
         );
         const { rerender } = render(dots(1));
 
-        expect(screen.getByRole('button', { name: '舊' })).toHaveAttribute(
-            'data-variant',
-            'accent',
-        );
+        expect(screen.getByRole('button', { name: '舊' })).toHaveAttribute('data-variant', 'blue');
         expect(screen.getByRole('button', { name: '甲' })).not.toHaveAttribute('data-variant');
         rerender(dots(0));
         expect(screen.getByRole('button', { name: '舊' }).className).toMatch(/selected/);

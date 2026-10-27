@@ -46,8 +46,8 @@ export interface MiniPlayerProps {
  * 用 portal 掛喺 body：頁面 .scope 係 size container（會變成 position: fixed 嘅 containing block），
  * 掛喺 body 先保證係跟 viewport 定位，唔受頁面 .scope / #root 影響
  */
-/** 指示點跟標籤色：重溫 = 強調色（未揀中淡啲），今日 = 揀中時奶油金；冇標籤就普通點 */
-const DOT_VARIANTS: Record<MiniPlayerTag, PageDotVariant> = { rewatch: 'accent', today: 'gold' };
+/** 指示點跟標籤色：重溫 = 藍（未揀中淡啲），今日 = 揀中時奶油金；冇標籤就普通點 */
+const DOT_VARIANTS: Record<MiniPlayerTag, PageDotVariant> = { rewatch: 'blue', today: 'gold' };
 const dotVariant = (tag: MiniPlayerTag | undefined): PageDotVariant | undefined =>
     tag && DOT_VARIANTS[tag];
 

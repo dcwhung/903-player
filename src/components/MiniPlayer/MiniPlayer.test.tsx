@@ -226,7 +226,7 @@ describe('MiniPlayer', () => {
             index: 0,
         });
 
-        it('should tag the current show 重溫 next to its name, in the faded-accent first dot', () => {
+        it('should tag the current show 重溫 next to its name, with a blue first dot', () => {
             render(<MiniPlayer {...REWATCH} />);
 
             const region = screen.getByRole('region');
@@ -236,7 +236,7 @@ describe('MiniPlayer', () => {
             expect(tag).toHaveAttribute('aria-hidden', 'true');
             expect(
                 screen.getByRole('button', { name: 'Bad Girl大過佬，重溫 12/10（一）' }),
-            ).toHaveAttribute('data-variant', 'accent');
+            ).toHaveAttribute('data-variant', 'blue');
             expect(screen.getByRole('button', { name: '雲妮鍾情' })).toHaveAttribute(
                 'data-variant',
                 'gold',

@@ -4,10 +4,10 @@ import { t } from '../../i18n/t';
 import styles from './PageDots.module.css';
 
 /**
- * accent：未揀中都用強調色但淡啲，揀中同普通點一樣（例如 mini player 嘅「重溫」舊集）；
+ * blue：重溫藍，未揀中淡啲、揀中就全色（例如 mini player 嘅「重溫」舊集）；
  * gold：未揀中同普通點一樣，揀中就係奶油金（例如 mini player 嘅「今日」節目）
  */
-export type PageDotVariant = 'accent' | 'gold';
+export type PageDotVariant = 'blue' | 'gold';
 
 interface PageDotsProps {
     /** React key（錄音 URL）；同一日可以有兩集同名節目 */

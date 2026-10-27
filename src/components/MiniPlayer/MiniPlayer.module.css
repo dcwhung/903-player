@@ -103,10 +103,10 @@
     white-space: nowrap;
 }
 
-/* 重溫：跟節目強調色（同揀中指示點一樣） */
+/* 重溫：固定藍色，唔跟節目轉色（同重溫指示點一樣） */
 .tag[data-tag='rewatch'] {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+    background: var(--color-rewatch);
+    color: var(--color-on-rewatch);
 }
 
 /* 今日：主頁奶油金，唔跟節目轉色 */

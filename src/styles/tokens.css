@@ -230,6 +230,9 @@
     /* mini player 節目名旁邊「今日」標籤：奶油金 + 深藍字（揀中嘅「今日」指示點都係奶油金） */
     --today-tag-bg: var(--color-gold);
     --today-tag-text: var(--color-today-tile-text);
+    /* 「重溫」固定藍色 + 深色字（mini player 標籤同指示點），唔跟節目強調色（用戶：重溫用藍色） */
+    --color-rewatch: #8ec6ef;
+    --color-on-rewatch: #10161d;
     /* 橫額右下角版本號：半透明深底 + 白字（插畫係淺藍，對比度 ≥ 4.5:1） */
     --version-badge-bg: rgb(0 0 0 / 55%);
     --version-badge-text: #ffffff;
