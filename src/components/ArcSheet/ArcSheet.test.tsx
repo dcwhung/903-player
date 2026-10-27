@@ -1,8 +1,10 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, createEvent, fireEvent, render, screen, within } from '@testing-library/react';
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import type { ArcSummary } from '../../selectors/arcProgress';
 import type { SeriesEpisode } from '../../types/drama';
 import { ArcSheet } from './ArcSheet';
+import { SHEET_SLIDE_MS } from './sheetDrag';
 
 const ep = (arc: string, no: number, title?: string): SeriesEpisode => ({
     kind: 'series',
@@ -180,5 +182,378 @@ describe('ArcSheet', () => {
     it('moves focus into the sheet when it opens', () => {
         renderSheet();
         expect(screen.getByRole('dialog')).toHaveFocus();
+    });
+});
+
+describe('ArcSheet pull down to close', () => {
+    const SHEET_HEIGHT = 400;
+    /** 拉過 25% 表高（100px） */
+    const FAR_PX = 150;
+    /** 拉唔夠 25%，亦唔夠甩嘅最少距離 */
+    const SHORT_PX = 20;
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+            height: SHEET_HEIGHT,
+        } as DOMRect);
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+    });
+
+    const dialog = () => screen.getByRole('dialog');
+    const header = () => within(dialog()).getByRole('heading', { name: '全集' });
+    const list = () => dialog().querySelector<HTMLElement>('[data-role="sheet-list"]')!;
+
+    const pull = (target: HTMLElement, distance: number) => {
+        fireEvent.pointerDown(target, { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(target, { clientY: 100 + distance, pointerId: 1 });
+        fireEvent.pointerUp(target, { clientY: 100 + distance, pointerId: 1 });
+    };
+
+    const touchPull = (target: HTMLElement, distance: number) => {
+        const start = { identifier: 0, clientX: 50, clientY: 100 };
+        const end = { ...start, clientY: 100 + distance };
+        fireEvent.touchStart(target, { touches: [start], changedTouches: [start] });
+        const move = fireEvent.touchMove(target, { touches: [end], changedTouches: [end] });
+        fireEvent.touchEnd(target, { touches: [], changedTouches: [end] });
+        return move;
+    };
+
+    const settle = () => act(() => vi.advanceTimersByTime(SHEET_SLIDE_MS));
+
+    it('closes when the header is pulled down past a quarter of the sheet', () => {
+        const { onClose } = renderSheet();
+
+        pull(header(), FAR_PX);
+        expect(onClose).not.toHaveBeenCalled();
+        settle();
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('follows the finger while pulling the header', () => {
+        renderSheet();
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(header(), { clientY: 160, pointerId: 1 });
+
+        expect(dialog().style.transform).toBe('translateY(60px)');
+        expect(dialog()).toHaveAttribute('data-dragging', 'true');
+    });
+
+    it('springs back without closing after a short pull', () => {
+        const { onClose } = renderSheet();
+
+        pull(header(), SHORT_PX);
+        settle();
+
+        expect(onClose).not.toHaveBeenCalled();
+        expect(dialog().style.transform).toBe('');
+        expect(dialog()).not.toHaveAttribute('data-dragging');
+    });
+
+    it('does not lift the sheet when pushed upwards', () => {
+        const { onClose } = renderSheet();
+
+        pull(header(), -FAR_PX);
+        settle();
+
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('does not fire the close button click after pulling from it', () => {
+        const { onClose } = renderSheet();
+        const close = within(dialog()).getByRole('button', { name: '關閉' });
+
+        fireEvent.pointerDown(close, { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(close, { clientY: 100 + SHORT_PX, pointerId: 1 });
+        fireEvent.pointerUp(close, { clientY: 100 + SHORT_PX, pointerId: 1 });
+        fireEvent.click(close, { detail: 1 });
+
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('leaves pointer drags inside the list to scrolling', () => {
+        const { onClose } = renderSheet();
+
+        pull(list(), FAR_PX);
+        settle();
+
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('takes over a downward touch pull in the list once it is scrolled to the top', () => {
+        const { onClose } = renderSheet();
+
+        const notCancelled = touchPull(list(), FAR_PX);
+        settle();
+
+        // touchmove preventDefault：瀏覽器唔會同時捲清單
+        expect(notCancelled).toBe(false);
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps scrolling the list when it is not at the top', () => {
+        const { onClose } = renderSheet();
+        list().scrollTop = 80;
+
+        const notCancelled = touchPull(list(), FAR_PX);
+        settle();
+
+        expect(notCancelled).toBe(true);
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('also pulls down to close when docked beside the player (landscape)', () => {
+        const { onClose } = renderSheet({ docked: true });
+
+        pull(header(), FAR_PX);
+        settle();
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    /** fireEvent 設唔到 timeStamp：自己砌 event 再定 timeStamp，計放手速度用（React 當 0 係冇，要 > 0） */
+    const timed = (
+        type: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'pointerCancel',
+        target: HTMLElement,
+        clientY: number,
+        t: number,
+        pointerId = 1,
+    ) => {
+        const event = createEvent[type](target, { clientY, pointerId, button: 0 });
+        Object.defineProperty(event, 'timeStamp', { value: t });
+        fireEvent(target, event);
+    };
+
+    const finger = (identifier: number, clientY: number, clientX = 50) => ({
+        identifier,
+        clientX,
+        clientY,
+    });
+
+    it('closes on a quick short downward flick', () => {
+        const { onClose } = renderSheet();
+
+        timed('pointerDown', header(), 100, 1000);
+        timed('pointerMove', header(), 140, 1010);
+        timed('pointerUp', header(), 140, 1012);
+        settle();
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('springs back when the finger rests before letting go after a quick pull', () => {
+        const { onClose } = renderSheet();
+
+        timed('pointerDown', header(), 100, 1000);
+        timed('pointerMove', header(), 140, 1010);
+        timed('pointerUp', header(), 140, 3000);
+        settle();
+
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('springs back instead of closing when the browser cancels the pull', () => {
+        const { onClose } = renderSheet();
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(header(), { clientY: 100 + FAR_PX, pointerId: 1 });
+        fireEvent.pointerCancel(header(), { pointerId: 1 });
+        settle();
+
+        expect(onClose).not.toHaveBeenCalled();
+        expect(dialog().style.transform).toBe('');
+        expect(dialog()).not.toHaveAttribute('data-dragging');
+    });
+
+    it('ignores a second pointer and a cancel from another pointer while pulling', () => {
+        renderSheet();
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerDown(header(), { clientY: 300, pointerId: 2, button: 0 });
+        fireEvent.pointerCancel(header(), { pointerId: 2 });
+        fireEvent.pointerMove(header(), { clientY: 160, pointerId: 1 });
+
+        expect(dialog().style.transform).toBe('translateY(60px)');
+    });
+
+    it('follows only the first finger in the list and finishes when that finger lifts', () => {
+        const { onClose } = renderSheet();
+        const first = finger(0, 100);
+
+        fireEvent.touchStart(list(), { touches: [first], changedTouches: [first] });
+        fireEvent.touchMove(list(), {
+            touches: [finger(0, 250)],
+            changedTouches: [finger(0, 250)],
+        });
+        // 第二隻手指：唔理
+        const second = finger(1, 400);
+        fireEvent.touchStart(list(), {
+            touches: [finger(0, 250), second],
+            changedTouches: [second],
+        });
+        fireEvent.touchMove(list(), {
+            touches: [finger(0, 250), finger(1, 420)],
+            changedTouches: [finger(1, 420)],
+        });
+        expect(dialog().style.transform).toBe('translateY(150px)');
+
+        fireEvent.touchEnd(list(), { touches: [finger(1, 420)], changedTouches: [finger(0, 250)] });
+        settle();
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(dialog()).not.toHaveAttribute('data-dragging');
+    });
+
+    it('springs back when the list pull is cancelled by the system', () => {
+        const { onClose } = renderSheet();
+        const start = finger(0, 100);
+        const far = finger(0, 100 + FAR_PX);
+
+        fireEvent.touchStart(list(), { touches: [start], changedTouches: [start] });
+        fireEvent.touchMove(list(), { touches: [far], changedTouches: [far] });
+        fireEvent.touchCancel(list(), { touches: [], changedTouches: [far] });
+        settle();
+
+        expect(onClose).not.toHaveBeenCalled();
+        expect(dialog().style.transform).toBe('');
+    });
+
+    it('leaves a sideways swipe at the top of the list alone', () => {
+        renderSheet();
+        const start = finger(0, 100, 50);
+        const sideways = finger(0, 110, 150);
+
+        fireEvent.touchStart(list(), { touches: [start], changedTouches: [start] });
+        const notCancelled = fireEvent.touchMove(list(), {
+            touches: [sideways],
+            changedTouches: [sideways],
+        });
+
+        expect(notCancelled).toBe(true);
+        expect(dialog().style.transform).toBe('');
+    });
+
+    it('blocks taps while sliding away after a pull', () => {
+        renderSheet();
+
+        pull(header(), FAR_PX);
+
+        expect(dialog()).toHaveAttribute('data-closing', 'true');
+    });
+
+    it('closes straight away when reduced motion is on', () => {
+        vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce') }));
+        const { onClose } = renderSheet();
+
+        pull(header(), FAR_PX);
+        act(() => vi.advanceTimersByTime(0));
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    /** 父層真係會將 open 變 false（Escape / ✕），亦可以再打開 */
+    const Harness = ({ onClose }: { onClose: () => void }) => {
+        const [open, setOpen] = useState(true);
+        return (
+            <>
+                <button type="button" onClick={() => setOpen(true)}>
+                    reopen
+                </button>
+                <ArcSheet
+                    open={open}
+                    groups={GROUPS}
+                    current={undefined}
+                    isPlaying={false}
+                    onPick={vi.fn()}
+                    onPlay={vi.fn()}
+                    onClose={() => {
+                        onClose();
+                        setOpen(false);
+                    }}
+                    coverOf={() => '/cover.webp'}
+                />
+            </>
+        );
+    };
+
+    it('does not close a second time when Escape lands during the slide-away', () => {
+        const onClose = vi.fn();
+        render(<Harness onClose={onClose} />);
+
+        pull(header(), FAR_PX);
+        fireEvent.keyDown(document, { key: 'Escape' });
+        settle();
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('starts a reopened sheet without the pull that was cut short by closing', () => {
+        render(<Harness onClose={vi.fn()} />);
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(header(), { clientY: 140, pointerId: 1 });
+        fireEvent.keyDown(document, { key: 'Escape' });
+        fireEvent.click(screen.getByRole('button', { name: 'reopen' }));
+        fireEvent.pointerMove(header(), { clientY: 200, pointerId: 1 });
+
+        expect(dialog().style.transform).toBe('');
+    });
+
+    it('drops a mouse pull whose button was released outside the sheet', () => {
+        renderSheet();
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(header(), { clientY: 105, pointerId: 1, buttons: 1 });
+        // 放手喺遮罩度（表收唔到 pointerup），之後滑鼠只係經過
+        fireEvent.pointerMove(header(), {
+            clientY: 200,
+            pointerId: 1,
+            buttons: 0,
+            pointerType: 'mouse',
+        });
+
+        expect(dialog().style.transform).toBe('');
+        expect(dialog()).not.toHaveAttribute('data-dragging');
+    });
+
+    it('starts afresh when the same pointer presses again after a lost release', () => {
+        renderSheet();
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerDown(header(), { clientY: 300, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(header(), { clientY: 340, pointerId: 1 });
+
+        expect(dialog().style.transform).toBe('translateY(40px)');
+    });
+
+    it('keeps the header pull when a list touch starts at the same time', () => {
+        renderSheet();
+        const start = finger(0, 500);
+        const down = finger(0, 600);
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(header(), { clientY: 160, pointerId: 1 });
+        fireEvent.touchStart(list(), { touches: [start], changedTouches: [start] });
+        fireEvent.touchMove(list(), { touches: [down], changedTouches: [down] });
+        fireEvent.pointerMove(header(), { clientY: 170, pointerId: 1 });
+
+        expect(dialog().style.transform).toBe('translateY(70px)');
+    });
+
+    it('accepts a new pull once the slide-away has called onClose', () => {
+        const { onClose } = renderSheet();
+
+        pull(header(), FAR_PX);
+        settle();
+        pull(header(), FAR_PX);
+        settle();
+
+        expect(onClose).toHaveBeenCalledTimes(2);
     });
 });

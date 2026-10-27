@@ -30,10 +30,13 @@ describe('mini player shadow', () => {
         );
     });
 
-    it('should stop above the viewport edge below the floating card', () => {
-        const shadow = rootTokens['--shadow-mini-player'];
-        const [, y, blur] = (shadow ?? '').split(/\s+/).map((part) => parseFloat(part));
+    it.each(['--shadow-mini-player', '--shadow-mini-player-lifted'])(
+        'should stop %s above the viewport edge below the floating card',
+        (token) => {
+            const shadow = rootTokens[token];
+            const [, y, blur] = (shadow ?? '').split(/\s+/).map((part) => parseFloat(part));
 
-        expect(Number(y) + Number(blur)).toBeLessThan(MIN_CARD_GAP_PX);
-    });
+            expect(Number(y) + Number(blur)).toBeLessThan(MIN_CARD_GAP_PX);
+        },
+    );
 });

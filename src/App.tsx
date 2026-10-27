@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { RecordingsProvider } from './data/RecordingsProvider';
+import { useRestoreMiniPlayerOnPlay } from './hooks/miniPlayerDismissed';
 import { DramaPage } from './pages/DramaPage';
 import { HomePage } from './pages/HomePage';
 import { ShowPage } from './pages/ShowPage';
@@ -9,6 +10,13 @@ import type { AudioController } from './player/AudioController';
 import { nextTrack } from './player/nextTrack';
 import { PlayerProvider } from './player/PlayerProvider';
 import { hideSplash } from './splash/hideSplash';
+
+/** 要喺 PlayerProvider 入面、唔跟頁面 mount / unmount 嘅播放觀察 */
+const PlaybackObservers = () => {
+    // 主頁 mini player 關閉咗：喺任何一頁開始播就再出返
+    useRestoreMiniPlayerOnPlay();
+    return null;
+};
 
 // GitHub Pages 冇 server-side rewrite，所以用 hash routing
 interface AppProps {
@@ -22,6 +30,7 @@ export const App = ({ playerController }: AppProps) => {
     return (
         <RecordingsProvider>
             <PlayerProvider controller={playerController} nextTrack={nextTrack}>
+                <PlaybackObservers />
                 <HashRouter>
                     <Routes>
                         <Route path="/" element={<HomePage />} />

@@ -37,6 +37,8 @@
     --font-size-xxl: calc(26px * var(--ui-scale));
     --letter-spacing-caps: 0.18em;
 
+    /* 細過 --space-1 嘅間隔：mini player 名同副題之間、「⏻ 關閉」icon 同字之間 */
+    --space-half: calc(2px * var(--ui-scale));
     --space-1: calc(4px * var(--ui-scale));
     --space-2: calc(8px * var(--ui-scale));
     --space-3: calc(12px * var(--ui-scale));
@@ -114,6 +116,8 @@
     --arc-sheet-row-height: calc(52px * var(--ui-scale));
     --arc-sheet-ring: calc(54px * var(--ui-scale));
     --arc-sheet-z: 10;
+    /* 向下拉閂：放手後滑走 / 彈返嘅時間（同 src/components/ArcSheet/sheetDrag.ts SHEET_SLIDE_MS 一致） */
+    --arc-sheet-slide-ms: 250ms;
     /*
      * 碟面圓環細節：外圈進度環粗幼、碟面底「1/4」pill（字、行高、
      * 凸出碟底幾多）、聽完 ✓ 章（大細、凸出右下角幾多）、pill / ✓ 同碟面之間嗰圈底色邊
@@ -217,6 +221,14 @@
     --mini-player-height: calc(var(--touch-target-min) + var(--touch-target) + var(--space-4));
     /* 得一段錄音（例如廣播劇一集）冇指示點：頂同底一樣 --space-4，唔使留指示點嘅撳得到範圍 */
     --mini-player-height-single: calc(var(--touch-target) + var(--space-4) * 2);
+    /*
+     * mini player 長按 → 左滑關閉（useDismissGesture）：撳住縮少少、浮起大少少；
+     * 時間同 src/components/MiniPlayer/miniPlayerDismiss.ts LONG_PRESS_MS / DISMISS_SLIDE_MS 一致
+     */
+    --mini-press-scale: 0.97;
+    --mini-lift-scale: 1.02;
+    --mini-long-press-ms: 500ms;
+    --mini-dismiss-slide-ms: 200ms;
     --mini-player-offset-bottom: calc(
         max(0px, calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))) +
             var(--space-2)
@@ -432,6 +444,8 @@
      * （src/styles/miniPlayerShadow.node.test.ts 鎖住）；所以比 --shadow-floating 收窄
      */
     --shadow-mini-player: 0 2px 5px rgb(0 0 0 / 45%);
+    /* 長按浮起（準備左滑關閉）：深啲、散啲，表示「拎起咗」；向下一樣收喺卡底間距入面（同上） */
+    --shadow-mini-player-lifted: 0 1px 6px rgb(0 0 0 / 60%);
     /* 今日節目卡：細細一圈軌道色描邊 + 浮起陰影，令疊喺後面嘅卡睇得出邊 */
     --shadow-card: 0 0 0 1px var(--theme-track), 0 10px 26px rgb(0 0 0 / 45%);
 }
