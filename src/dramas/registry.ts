@@ -48,12 +48,15 @@ export interface DramaRegistry {
     dramaArtFor(episode: DramaEpisode): string;
     /** 播緊某集時嘅色調：劇集色調 + 嗰集嘅碟面 */
     dramaEpisodeTheme(episode: DramaEpisode): ShowTheme;
+    /** 短篇長方形圖（暫時未用）：冇就 undefined，唔 fallback */
+    arcTileFor(dramaId: string, arc: string): string | undefined;
 }
 
 interface DramaEntry {
     drama: Drama;
     episodes: readonly DramaEpisode[];
     arcArt: ReadonlyMap<string, string>;
+    arcTiles: ReadonlyMap<string, string>;
 }
 
 const requireImage = (folder: DramaFolder, file: string): string => {
@@ -74,12 +77,16 @@ const toDrama = (folder: DramaFolder, def: DramaDefinition): Drama => ({
     tileArt: requireImage(folder, def.tile),
 });
 
-const arcArtOf = (folder: DramaFolder, def: DramaDefinition): ReadonlyMap<string, string> =>
+const arcImagesOf = (
+    folder: DramaFolder,
+    def: DramaDefinition,
+    field: 'disc' | 'tile',
+): ReadonlyMap<string, string> =>
     new Map(
         def.kind === 'series'
             ? def.arcs
-                  .filter((arc) => arc.disc)
-                  .map((arc) => [arc.name, requireImage(folder, arc.disc ?? '')])
+                  .filter((arc) => arc[field])
+                  .map((arc) => [arc.name, requireImage(folder, arc[field] ?? '')])
             : [],
     );
 
@@ -93,7 +100,8 @@ const toEntry = (folder: DramaFolder): { entry: DramaEntry; order: number | unde
         entry: {
             drama: toDrama(folder, def),
             episodes: buildEpisodes(folder.id, def),
-            arcArt: arcArtOf(folder, def),
+            arcArt: arcImagesOf(folder, def, 'disc'),
+            arcTiles: arcImagesOf(folder, def, 'tile'),
         },
         order: def.order,
     };
@@ -141,5 +149,6 @@ export const buildRegistry = (source: DramaSource): DramaRegistry => {
             ...(entries.get(episode.dramaId)?.drama.theme ?? NEUTRAL_THEME),
             art: artFor(episode),
         }),
+        arcTileFor: (dramaId, arc) => entries.get(dramaId)?.arcTiles.get(arc),
     };
 };

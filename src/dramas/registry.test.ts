@@ -24,6 +24,7 @@ const IMAGES = {
     'tile.webp': '/img/tile.webp',
     'disc.webp': '/img/disc.webp',
     's2.webp': '/img/s2.webp',
+    's2-tile.webp': '/img/s2-tile.webp',
 };
 
 const folder = (id: string, definition: Record<string, unknown>, images = IMAGES): DramaFolder => ({
@@ -43,7 +44,7 @@ const series = (name: string, patch: Record<string, unknown> = {}) => ({
     theme: THEME,
     arcs: [
         { name: 'A', episodes: 1 },
-        { name: 'B', episodes: 1, disc: 's2.webp' },
+        { name: 'B', episodes: 1, disc: 's2.webp', tile: 's2-tile.webp' },
     ],
     ...patch,
 });
@@ -138,6 +139,14 @@ describe('buildRegistry', () => {
         const [, b] = registry.seriesEpisodesOf('alpha');
         if (!b) throw new Error('missing fixture');
         expect(registry.dramaEpisodeTheme(b)).toEqual({ ...THEME, art: '/img/s2.webp' });
+    });
+
+    it('keeps each arc tile, and nothing for an arc without one or an unknown drama', () => {
+        expect(registry.arcTileFor('alpha', 'B')).toBe('/img/s2-tile.webp');
+        expect(registry.arcTileFor('alpha', 'A')).toBeUndefined();
+        expect(registry.arcTileFor('alpha', 'C')).toBeUndefined();
+        expect(registry.arcTileFor('nope', 'B')).toBeUndefined();
+        expect(registry.arcTileFor('off', 'B')).toBeUndefined();
     });
 
     it('rejects two folders with the same id', () => {

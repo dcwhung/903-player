@@ -31,16 +31,19 @@
         {
             "name": "戀愛二分一",
             "disc": "half-disc.webp",
+            "tile": "half-tile.webp",
             "episodes": 30
         },
         {
             "name": "初戀無限次",
             "disc": "first-love-disc.webp",
+            "tile": "first-love-tile.webp",
             "episodes": 33
         },
         {
             "name": "我心不死",
             "disc": "heart-disc.webp",
+            "tile": "heart-tile.webp",
             "episodes": 37
         }
     ]
