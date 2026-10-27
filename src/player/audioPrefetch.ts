@@ -15,14 +15,34 @@ export type PrefetchListener = (
 ) => void;
 
 /**
- * 預載用自己嘅 cache key（URL 加 query，R2 會忽略）：
- * - R2 冇帶 Origin 嘅回應冇 Vary: Origin，Safari 會將播放器載過、冇 CORS header 嘅快取畀 fetch 用 → CORS 失敗
+ * 預載每次用新嘅 cache key（URL 加 query，R2 會忽略）：
+ * - R2 冇帶 Origin 嘅回應冇 Vary: Origin，Safari 會將播放器載過、冇 CORS header 嘅快取畀 fetch 用 → CORS 失敗；
+ *   用時間做 query，連 CDN 節點都唔會有舊快取（v1.15.8 實機用固定 ?prefetch=1 仍然 Load failed）
  * - 唔可以用 cache: 'no-store'：Safari 會加 Cache-Control / Pragma header 觸發 preflight，R2 只准 Range → 403
  */
-const PREFETCH_QUERY = '?prefetch=1';
+const PREFETCH_QUERY = '?prefetch=';
+
+/** 失敗後用 no-cors 再問一次：ok = 網絡通、係 CORS 被拒；fail = 根本連唔到 */
+const probeNoCors = async (url: string): Promise<string> => {
+    try {
+        await fetch(url, { mode: 'no-cors' });
+        return 'no-cors ok';
+    } catch (error) {
+        const { name, message } = error as Error;
+        return `no-cors fail ${name}: ${message}`;
+    }
+};
 
 export const fetchAudioBlob: FetchAudio = async (url, signal) => {
-    const response = await fetch(`${url}${PREFETCH_QUERY}`, { signal });
+    let response: Response;
+    try {
+        response = await fetch(`${url}${PREFETCH_QUERY}${Date.now()}`, { signal });
+    } catch (error) {
+        const failure = error as Error;
+        if (failure.name === 'AbortError') throw failure;
+        const probe = await probeNoCors(url);
+        throw Object.assign(new Error(`${failure.message} | ${probe}`), { name: failure.name });
+    }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.blob();
 };
