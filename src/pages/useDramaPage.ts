@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { stripDays } from '../components/DateStrip/dateStrip';
 import { dailyEpisodesOf, dramaEpisodeTheme, seriesEpisodesOf, type DramaConfig } from '../dramas';
+import { useEpisodePress } from '../hooks/useEpisodePress';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { isFirstSeriesVisit, useStartDrama } from '../hooks/useStartDrama';
 import { usePlayer } from '../player/usePlayer';
@@ -72,14 +73,7 @@ const usePlaybackRows = (
         isPlaying,
         liveState: playState,
     };
-    const selectEpisode = (url: string) => {
-        const episode = episodes.find((e) => e.url === url);
-        if (episode) void player.load(episode, { autoplay: true });
-    };
-    // 撳播緊嗰集就暫停（掣係暫停樣），其他集就播嗰集
-    const pressEpisode = (url: string) =>
-        isPlaying && url === currentUrl ? void player.toggle() : selectEpisode(url);
-    return { ctx, playState, selectEpisode, pressEpisode };
+    return { ctx, playState, ...useEpisodePress(episodes, currentUrl, isPlaying) };
 };
 
 /** 每日劇集頁（例如 18 樓 C 座）：同節目頁一樣，唱片 + 日子條 + 集數清單 */
@@ -187,6 +181,41 @@ const useStandby = (drama: DramaConfig, isLoaded: boolean, playState: PlaybackSt
     return { status, start: isLoaded ? undefined : () => startDrama(drama) };
 };
 
+/**
+ * 全集表開唔開（第一次入一入嚟就開）+ 聽歌進度：
+ * 轉集、有集數聽完、打開全集表都重新讀 localStorage（所以 sheetOpen 要喺 progressMap 之前）
+ */
+const useSeriesSheet = (firstVisit: boolean, loadedUrl: string | undefined) => {
+    const [sheetOpen, setSheetOpen] = useState(firstVisit);
+    const { watchedRevision } = usePlayer();
+    const progressMap = useRefreshedOn(getProgressMap, [watchedRevision, loadedUrl, sheetOpen]);
+    return { sheetOpen, setSheetOpen, progressMap };
+};
+
+/** 橫版「現正播放：短篇 · 第 N / M 集」：M = 個短篇有幾多集；N 按排位計（有第零集都係 1 起） */
+const arcCounter = (episodes: readonly SeriesEpisode[], current: SeriesEpisode | undefined) => {
+    const arcEpisodes = current ? episodesInArc(episodes, current.arc) : [];
+    return {
+        arcTotal: arcEpisodes.length,
+        arcPosition: arcEpisodes.findIndex((e) => e.url === current?.url) + 1,
+    };
+};
+
+/** 揀緊睇邊個短篇、chips / 全集表次序，同嗰個短篇要列出嘅集數 */
+const useSeriesArcs = (
+    episodes: readonly SeriesEpisode[],
+    progressMap: Readonly<Record<string, Progress>>,
+    current: SeriesEpisode | undefined,
+    loaded: SeriesEpisode | null,
+) => {
+    const { arc, pickArc: setArc } = useViewedArc(current?.arc);
+    const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc);
+    const pickArc = useArcPick(groups, setArc);
+    // 照集數次序（聽完嘅留喺原位）；入頁 / 轉集由 EpisodeList 捲到播緊嗰集
+    const shown = arc ? episodesInArc(episodes, arc) : [];
+    return { arc, pickArc, groups, chips, shown };
+};
+
 /** 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 全集 / 短篇 chips + 嗰個短篇嘅集數 */
 export const useSeriesDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
@@ -194,38 +223,27 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
     const firstVisit = useFirstVisitOnEntry(drama);
     // 第一次入：唔自動播（亦唔打斷播緊嘅嘢），等用戶喺全集表揀
     useAutoplayDrama(drama, loaded !== null || firstVisit);
-    const [sheetOpen, setSheetOpen] = useState(firstVisit);
-    const { watchedRevision } = usePlayer();
-    // 轉集、有集數聽完、打開全集表都重新讀 localStorage
-    const progressMap = useRefreshedOn(getProgressMap, [watchedRevision, loaded?.url, sheetOpen]);
+    const { sheetOpen, setSheetOpen, progressMap } = useSeriesSheet(firstVisit, loaded?.url);
     const current = loaded ?? pickSeriesStart(episodes, progressMap);
-    const { ctx, playState, selectEpisode, pressEpisode } = usePlaybackRows(
+    const rows = usePlaybackRows(episodes, current, !!loaded);
+    const { arc, pickArc, groups, chips, shown } = useSeriesArcs(
         episodes,
+        progressMap,
         current,
-        !!loaded,
+        loaded,
     );
-    const { arc, pickArc: setArc } = useViewedArc(current?.arc);
-    const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc);
-    const pickArc = useArcPick(groups, setArc);
-    // 照集數次序（聽完嘅留喺原位）；入頁 / 轉集由 EpisodeList 捲到播緊嗰集
-    const shown = arc ? episodesInArc(episodes, arc) : [];
-    // 橫版「現正播放：短篇 · 第 N / M 集」：M = 個短篇有幾多集；N 按排位計（有第零集都係 1 起）
-    const arcEpisodes = current ? episodesInArc(episodes, current.arc) : [];
-    const arcTotal = arcEpisodes.length;
-    const arcPosition = arcEpisodes.findIndex((e) => e.url === current?.url) + 1;
     return {
         // 碟面跟播緊（未播就係準備播）嗰集；冇播放時揀短篇會載入嗰個短篇，碟面就跟住轉
         theme: current ? dramaEpisodeTheme(current) : drama.theme,
         current,
-        ...useStandby(drama, loaded !== null, playState),
-        arcTotal,
-        arcPosition,
+        ...useStandby(drama, loaded !== null, rows.playState),
+        ...arcCounter(episodes, current),
         arcs: chips,
         arc,
         pickArc,
-        items: toSeriesItems(shown, ctx),
-        selectEpisode,
-        pressEpisode,
+        items: toSeriesItems(shown, rows.ctx),
+        selectEpisode: rows.selectEpisode,
+        pressEpisode: rows.pressEpisode,
         sheet: { open: sheetOpen, groups, ...useArcSheetActions(loaded, pickArc, setSheetOpen) },
     };
 };
