@@ -27,8 +27,10 @@ export interface ShowDefinition {
     airDays: readonly Weekday[];
     /** 主頁次序；冇寫就排喺有寫嘅後面，按 id 排 */
     order?: number;
-    /** 節目圖（folder 內檔名） */
-    art: string;
+    /** 主頁節目格圖（folder 內檔名，16:9） */
+    tile: string;
+    /** 碟面圖（folder 內檔名，正方形）：唱片、mini player、今日節目 */
+    disc: string;
     theme: ThemeDefinition;
 }
 
@@ -64,7 +66,8 @@ export const parseShowDefinition = (value: unknown, ctx: ParseContext): ShowDefi
         fileTime: readFileTime(ctx, raw),
         airDays: readAirDays(ctx, raw),
         order: readOptionalInteger(ctx, raw, 'order'),
-        art: readImage(ctx, raw, 'art'),
+        tile: readImage(ctx, raw, 'tile'),
+        disc: readImage(ctx, raw, 'disc'),
         theme: readTheme(ctx, raw),
     };
 };

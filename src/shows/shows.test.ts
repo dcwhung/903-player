@@ -41,6 +41,14 @@ describe('SHOWS', () => {
         });
         expect(new Set(SHOWS.map((s) => s.theme.art)).size).toBe(SHOWS.length);
     });
+
+    it('keeps a separate home tile from the disc for every show', () => {
+        SHOWS.forEach((show) => {
+            expect(show.tileArt).toBeTruthy();
+            expect(show.tileArt).not.toBe(show.theme.art);
+        });
+        expect(new Set(SHOWS.map((s) => s.tileArt)).size).toBe(SHOWS.length);
+    });
 });
 
 describe('findShow / themeFor', () => {

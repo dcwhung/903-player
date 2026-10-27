@@ -43,7 +43,7 @@ const useHomeTiles = () => {
             <ShowTile
                 key={show.id}
                 label={show.name}
-                art={show.theme.art}
+                art={show.tileArt}
                 isNew={newShowIds.has(show.id)}
                 onClick={() => {
                     startShow(show.id);

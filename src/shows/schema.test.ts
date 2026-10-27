@@ -18,18 +18,19 @@ const SHOW = {
     fileTime: '1009',
     airDays: [1, 2, 3, 4, 5],
     order: 1,
-    art: 'art.jpg',
+    tile: 'tile.webp',
+    disc: 'disc.webp',
     theme: THEME,
 };
 
 const ctx = (id = 'badgirl') => ({
     id,
     source: `src/shows/${id}/show.json`,
-    files: new Set(['art.jpg']),
+    files: new Set(['tile.webp', 'disc.webp']),
 });
 
 describe('parseShowDefinition', () => {
-    it('reads a show with its schedule, art and dark theme', () => {
+    it('reads a show with its schedule, tile, disc and dark theme', () => {
         expect(parseShowDefinition(SHOW, ctx())).toEqual(SHOW);
     });
 
@@ -55,7 +56,8 @@ describe('parseShowDefinition', () => {
         ['a fractional weekday', { ...SHOW, airDays: [1.5] }, /airDays\[0\] must be a weekday 0–6/],
         ['a repeated weekday', { ...SHOW, airDays: [6, 6] }, /airDays\[1\]: duplicate weekday 6/],
         ['a non-integer order', { ...SHOW, order: '1' }, /order must be an integer/],
-        ['art missing from the folder', { ...SHOW, art: 'cover.jpg' }, /art: no file cover\.jpg/],
+        ['a tile missing from the folder', { ...SHOW, tile: 'x.webp' }, /tile: no file x\.webp/],
+        ['a disc missing from the folder', { ...SHOW, disc: 'x.webp' }, /disc: no file x\.webp/],
         [
             'a bad colour',
             { ...SHOW, theme: { ...THEME, accent: 'orange' } },

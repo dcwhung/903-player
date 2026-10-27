@@ -1,6 +1,6 @@
 // @vitest-environment node
 // 要用 node:fs 讀圖檔頭：*.node.test.ts 行 tsconfig.node.json（有 Node 型別）
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 
 /*
  * 短篇長方形圖（drama.json arcs[].tile）全部統一 16:9，同劇集 tile 一樣闊；對住 WebP 檔頭鎖住。
@@ -8,6 +8,8 @@ import { readFileSync } from 'node:fs';
  */
 const DRAMAS = new URL('./', import.meta.url);
 const ARC_TILE_SIZE: [number, number] = [1216, 684];
+/** 主頁廣播劇卡（--drama-tile-aspect 2:1） */
+const DRAMA_TILE_SIZE: [number, number] = [1216, 608];
 /** R2 每個短篇都有 cover photo 嘅劇（芝See 冇） */
 const WITH_ARC_COVERS = ['golden', 'sammy-kitty', 'jim', 'lancy'];
 
@@ -34,5 +36,18 @@ describe('arc tile sizes', () => {
         tiles.forEach((tile) =>
             expect(webpSize(new URL(`${id}/${tile}`, DRAMAS))).toEqual(ARC_TILE_SIZE),
         );
+    });
+});
+
+const dramaIds = readdirSync(DRAMAS).filter((name) =>
+    statSync(new URL(name, DRAMAS)).isDirectory(),
+);
+
+describe('drama tile sizes', () => {
+    it.each(dramaIds)('sizes the %s home tile at 1216×608', (id) => {
+        const { tile } = JSON.parse(readFileSync(new URL(`${id}/drama.json`, DRAMAS), 'utf8')) as {
+            tile: string;
+        };
+        expect(webpSize(new URL(`${id}/${tile}`, DRAMAS))).toEqual(DRAMA_TILE_SIZE);
     });
 });

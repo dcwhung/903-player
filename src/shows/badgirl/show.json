@@ -3,7 +3,8 @@
     "fileTime": "1009",
     "airDays": [1, 2, 3, 4, 5],
     "order": 1,
-    "art": "art.jpg",
+    "tile": "tile.webp",
+    "disc": "disc.webp",
     "theme": {
         "bg": "#21151a",
         "surface": "#2e1e24",
