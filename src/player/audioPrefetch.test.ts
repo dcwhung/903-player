@@ -75,14 +75,42 @@ describe('AudioPrefetcher', () => {
         expect(prefetcher.take(URL_B)).toBe('blob:2');
     });
 
-    it('fetches its own cache key with no extra headers (no CORS preflight)', async () => {
+    it('fetches a fresh cache key each time with no extra headers (no CORS preflight)', async () => {
         const fetchMock = vi.fn(async () => new Response('x'));
         vi.stubGlobal('fetch', fetchMock);
+        vi.spyOn(Date, 'now').mockReturnValue(42);
         const { signal } = new AbortController();
 
         await fetchAudioBlob(URL_A, signal);
 
-        expect(fetchMock).toHaveBeenCalledWith(`${URL_A}?prefetch=1`, { signal });
+        expect(fetchMock).toHaveBeenCalledWith(`${URL_A}?prefetch=42`, { signal });
+    });
+
+    it('probes with no-cors after a failure to tell a CORS rejection from a network error', async () => {
+        const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+            if (init?.mode === 'no-cors') return new Response(null);
+            throw new TypeError('Load failed');
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await expect(fetchAudioBlob(URL_A, new AbortController().signal)).rejects.toMatchObject({
+            name: 'TypeError',
+            message: 'Load failed | no-cors ok',
+        });
+        expect(fetchMock).toHaveBeenLastCalledWith(URL_A, { mode: 'no-cors' });
+    });
+
+    it('reports the no-cors probe failing too', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async () => {
+                throw new TypeError('Load failed');
+            }),
+        );
+
+        await expect(fetchAudioBlob(URL_A, new AbortController().signal)).rejects.toMatchObject({
+            message: 'Load failed | no-cors fail TypeError: Load failed',
+        });
     });
 
     it('reports a failed download and hands nothing out (e.g. no CORS)', async () => {
