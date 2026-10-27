@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
 <style>
 /*
- * 兩個手勢：① 廣播劇「全部短篇」表向下拉閂；② 主頁 mini player 長按 → 「向左滑動關閉」滑軌（似 iPhone 滑動關機）。
+ * 兩個手勢：① 廣播劇「全部短篇」表向下拉閂；② 主頁 mini player 長按浮起 → iOS 鎖屏 notification 式左滑清除。
  * 普通左右掃照舊轉今日節目；手機 375 × 720 真 px。顏色跟 drama-flow-preview（芝See）同 HOME_THEME。
  * 用手機開最準（滑鼠都拖得）。
  */
@@ -60,11 +60,20 @@ h2 { margin: 0; font-size: 18px; }
 .home { background: linear-gradient(var(--home-top), var(--home-bottom)); color: var(--home-text); }
 .home .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 64px 16px; }
 .home .tiles span { aspect-ratio: 1; border-radius: 14px; background: rgb(255 255 255 / 15%); }
-.mini { position: absolute; left: 12px; right: 12px; bottom: 20px; height: 92px; overflow: hidden; border-radius: 20px; background: var(--mini-surface); color: var(--mini-title); box-shadow: 0 2px 5px rgb(0 0 0 / 45%); touch-action: none; transition: transform .3s, opacity .3s; }
+/* 外框：圓角 + 收埋後面「清除」；收起時向下滑走 */
+.mini { position: absolute; left: 12px; right: 12px; bottom: 20px; height: 92px; border-radius: 20px; touch-action: none; transition: transform .3s, opacity .3s, height .3s; }
 .mini.closing { transform: translateY(140%); opacity: 0; }
-.mini.pressing .normal { transform: scale(.97); transition: transform .5s; }
-.normal, .slider { position: absolute; inset: 0; transition: opacity .2s; }
-.normal { display: flex; flex-direction: column; justify-content: flex-end; padding: 0 12px 16px; }
+/* 後面：iOS notification 式，紅底「清除」靠右；拉得越多越闊 */
+.behind { position: absolute; inset: 0; display: flex; justify-content: flex-end; border-radius: 20px; opacity: 0; transition: opacity .15s; }
+.mini.armed .behind { opacity: 1; }
+.clear { display: flex; align-items: center; justify-content: center; width: var(--reveal, 0px); min-width: 0; height: 100%; padding: 0; overflow: hidden; border: none; border-radius: 20px; background: var(--close-red); color: #fff; font: inherit; font-weight: 600; white-space: nowrap; }
+/* 前面：張 card 本身，跟手指左右拉 */
+.card { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 12px 16px; border-radius: 20px; background: var(--mini-surface); color: var(--mini-title); box-shadow: 0 2px 5px rgb(0 0 0 / 45%); transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s; }
+.card.dragging { transition: none; }
+/* 長按中：慢慢縮少少（提示「撳住」）；armed：浮起（大少少 + 陰影深啲），表示而家左滑係清除 */
+.mini.pressing .card { transform: scale(.97); transition: transform .5s; }
+.mini.armed .card { box-shadow: 0 8px 20px rgb(0 0 0 / 50%); }
+.mini.armed .card:not(.dragging):not(.open) { transform: scale(1.02); }
 .dots { position: absolute; top: 8px; left: 50%; display: flex; gap: 6px; transform: translateX(-50%); }
 .dots span { width: 7px; height: 7px; border-radius: 50%; background: rgb(47 69 96 / 25%); }
 .dots span.on { background: var(--mini-accent); }
@@ -74,17 +83,6 @@ h2 { margin: 0; font-size: 18px; }
 .mtext b { display: block; font-size: 15px; }
 .mtext small { color: var(--mini-muted); font-size: 12px; }
 .toggle { width: 44px; height: 44px; border: none; border-radius: 50%; background: var(--mini-accent); color: #fff; font-size: 16px; }
-.slider { display: flex; align-items: center; padding: 0 8px; opacity: 0; pointer-events: none; background: var(--mini-surface); }
-.mini.armed .normal { opacity: 0; pointer-events: none; }
-.mini.armed .slider { opacity: 1; pointer-events: auto; }
-.track { position: relative; flex: 1; height: 64px; border-radius: 999px; background: rgb(47 69 96 / 12%); overflow: hidden; }
-.fillred { position: absolute; inset: 0 0 0 auto; width: 0; background: var(--close-red); opacity: .85; }
-.label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; color: var(--mini-muted);
-    background: linear-gradient(90deg, var(--mini-muted) 40%, var(--mini-title) 50%, var(--mini-muted) 60%); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 2s linear infinite; }
-@keyframes shine { from { background-position: 100% 0; } to { background-position: 0 0; } }
-.knob { position: absolute; top: 4px; right: 4px; width: 56px; height: 56px; border-radius: 50%; background: var(--close-red); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 2px 6px rgb(0 0 0 / 30%); transition: transform .25s cubic-bezier(.2,.8,.2,1); }
-.knob.dragging { transition: none; }
-.cancel { width: 44px; height: 44px; margin-left: 4px; border: none; border-radius: 50%; background: transparent; color: var(--mini-muted); font: inherit; font-size: 12px; }
 .toast { position: absolute; left: 0; right: 0; bottom: 40px; text-align: center; color: var(--home-text); opacity: 0; transition: opacity .3s; }
 .toast.show { opacity: 1; }
 .log { min-height: 1.5em; color: var(--shell-accent); font-size: 13px; }
@@ -122,12 +120,13 @@ h2 { margin: 0; font-size: 18px; }
         </section>
 
         <section class="demo">
-            <h2>② Mini player：長按 → 向左滑動關閉</h2>
+            <h2>② Mini player：長按 → iOS notification 式左滑清除</h2>
             <div class="phone home" id="homePhone">
                 <div class="tiles"><span></span><span></span><span></span><span></span><span></span><span></span></div>
                 <div class="toast" id="toast">已停播（喺節目頁撳 ▶ 會再出返）</div>
                 <div class="mini" id="mini">
-                    <div class="normal">
+                    <div class="behind"><button class="clear" id="clear" type="button">清除</button></div>
+                    <div class="card" id="card">
                         <div class="dots" id="dots"></div>
                         <div class="mrow">
                             <span class="mdisc" id="mdisc"></span>
@@ -135,25 +134,19 @@ h2 { margin: 0; font-size: 18px; }
                             <button class="toggle" type="button">❚❚</button>
                         </div>
                     </div>
-                    <div class="slider" aria-hidden="true">
-                        <div class="track" id="track">
-                            <span class="fillred" id="fillred"></span>
-                            <span class="label" id="label">‹‹‹ 向左滑動關閉</span>
-                            <span class="knob" id="knob">⏻</span>
-                        </div>
-                        <button class="cancel" id="cancel" type="button">取消</button>
-                    </div>
                 </div>
             </div>
-            <div class="log" id="log">試吓：左右掃轉節目；長按 0.5 秒出滑軌</div>
+            <div class="log" id="log">試吓：左右掃轉節目；長按 0.5 秒浮起之後左滑清除</div>
             <ul class="note">
-                <li>普通左右掃（≥ 48px）照舊轉今日節目，循環轉</li>
-                <li>手指唔郁長按 0.5 秒 → 成條變做滑軌；同一下唔放手都可以即刻拖粒紅掣</li>
-                <li>拖到最左（≥ 90%）放手 → 停播 + mini player 收起；未夠就彈返，變返平時</li>
-                <li>撳「取消」/ 撳 mini player 以外 / 4 秒冇郁 → 變返平時</li>
-                <li>長按期間唔會觸發開節目頁、播放 / 暫停（click 食咗）</li>
-                <li>讀屏 / 鍵盤：mini player 加一粒讀屏先見到嘅「關閉播放器」掣，唔使做手勢</li>
-                <li>廣播劇 mini player（得一集，冇得轉）都係用同一個長按滑軌，兩種模式一致</li>
+                <li>平時左右掃（≥ 48px）照舊轉今日節目，循環轉</li>
+                <li>手指唔郁長按 0.5 秒 → card 浮起（大少少 + 陰影深啲），後面準備好紅色「清除」</li>
+                <li>浮起之後向左拉：card 跟手指走，右邊露出「清除」（同一下唔放手拉，或者放手再拉都得）</li>
+                <li>拉過 card 闊度一半放手 → 直接清走（停播 + 收起）</li>
+                <li>拉咗少少（≥ 40px）放手 → 停喺度露出「清除」掣，撳先清；撳 card / 外面 / 向右拉 → 收返</li>
+                <li>浮起咗 4 秒冇郁 → 變返平時（左右掃又係轉節目）</li>
+                <li>長按 / 拉嘅時候唔會觸發開節目頁、播放 / 暫停（click 食咗）</li>
+                <li>讀屏 / 鍵盤：加一粒讀屏先見到嘅「清除播放器」掣，唔使做手勢</li>
+                <li>廣播劇 mini player（得一集）都係同一套：長按 → 左滑清除</li>
             </ul>
             <button class="reset" id="resetMini" type="button">重新出 mini player</button>
         </section>
@@ -223,13 +216,13 @@ h2 { margin: 0; font-size: 18px; }
     const SWIPE_PX = 48;
     const MOVE_TOLERANCE_PX = 10;
     const LONG_PRESS_MS = 500;
-    const DISMISS_RATIO = 0.9;
+    const REVEAL_MIN_PX = 40;   // 拉過呢個先會停喺「露出清除」
+    const REVEAL_PX = 88;       // 「清除」掣停定時嘅闊度
+    const CLEAR_RATIO = 0.5;    // 拉過 card 闊度一半 = 直接清
     const IDLE_MS = 4000;
     const mini = document.getElementById('mini');
-    const knob = document.getElementById('knob');
-    const track = document.getElementById('track');
-    const fillred = document.getElementById('fillred');
-    const label = document.getElementById('label');
+    const card = document.getElementById('card');
+    const clearBtn = document.getElementById('clear');
     const log = document.getElementById('log');
     const toast = document.getElementById('toast');
     let index = 2;
@@ -241,99 +234,111 @@ h2 { margin: 0; font-size: 18px; }
     };
     render();
 
-    const maxTravel = () => track.clientWidth - knob.offsetWidth - 8;
-    const setKnob = (x) => {
-        const p = Math.min(1, x / maxTravel());
-        knob.style.transform = `translateX(${-x}px)`;
-        fillred.style.width = `${x + knob.offsetWidth / 2}px`;
-        label.style.opacity = String(1 - p);
+    // offset = card 向左拉咗幾多 px；「清除」掣闊度跟住（減返 8px 間隔）
+    let offset = 0;
+    const setOffset = (x) => {
+        offset = Math.max(0, x);
+        card.style.transform = offset ? `translateX(${-offset}px)` : '';
+        clearBtn.style.setProperty('--reveal', `${Math.max(0, offset - 8)}px`);
     };
 
-    let press = null;      // 平時：一下 pointer（掃 / 長按）
-    let knobDrag = null;   // 滑軌：拖緊粒掣
+    let press = null;   // 一下 pointer：{ x, y, id, timer, mode: 'press' | 'drag', from }
     let idle = 0;
 
-    const disarm = () => {
-        mini.classList.remove('armed', 'pressing');
-        knob.classList.remove('dragging');
-        setKnob(0);
-        knobDrag = null;
+    const disarm = (msg) => {
         clearTimeout(idle);
+        mini.classList.remove('armed', 'pressing');
+        card.classList.remove('dragging', 'open');
+        setOffset(0);
+        if (msg) log.textContent = msg;
     };
-    const armIdle = () => { clearTimeout(idle); idle = setTimeout(() => { disarm(); log.textContent = '4 秒冇郁 → 變返平時'; }, IDLE_MS); };
-    const arm = (e) => {
+    const armIdle = () => {
+        clearTimeout(idle);
+        idle = setTimeout(() => disarm('4 秒冇郁 → 變返平時'), IDLE_MS);
+    };
+    const arm = () => {
         mini.classList.remove('pressing');
         mini.classList.add('armed');
-        log.textContent = '滑軌出咗：拖紅掣去最左';
-        knobDrag = { x: e.clientX, id: e.pointerId, last: 0 };
-        knob.classList.add('dragging');
+        log.textContent = '浮起咗：向左拉清除';
         armIdle();
     };
-    const dismiss = () => {
-        mini.classList.add('closing');
-        toast.classList.add('show');
-        log.textContent = '已閂：player.stop() + 收起';
-        setTimeout(() => toast.classList.remove('show'), 2000);
+    const clearAll = () => {
+        clearTimeout(idle);
+        card.classList.remove('dragging');
+        setOffset(card.offsetWidth + 24);
+        log.textContent = '已清除：player.stop() + 收起';
+        setTimeout(() => { mini.classList.add('closing'); toast.classList.add('show'); }, 200);
+        setTimeout(() => toast.classList.remove('show'), 2200);
     };
 
     mini.addEventListener('contextmenu', (e) => e.preventDefault());
-    mini.addEventListener('pointerdown', (e) => {
-        mini.setPointerCapture(e.pointerId);
+    card.addEventListener('pointerdown', (e) => {
+        card.setPointerCapture(e.pointerId);
+        press = { x: e.clientX, y: e.clientY, id: e.pointerId, from: offset, mode: 'press' };
         if (mini.classList.contains('armed')) {
-            if (e.target.closest('.cancel')) return;
-            if (!e.target.closest('.knob')) return;
-            knobDrag = { x: e.clientX, id: e.pointerId, last: 0 };
-            knob.classList.add('dragging');
             clearTimeout(idle);
             return;
         }
-        press = { x: e.clientX, y: e.clientY, id: e.pointerId };
         mini.classList.add('pressing');
-        press.timer = setTimeout(() => { const p = press; press = null; arm(p.lastEvent ?? e); }, LONG_PRESS_MS);
+        press.timer = setTimeout(() => { if (press) arm(); }, LONG_PRESS_MS);
     });
-    mini.addEventListener('pointermove', (e) => {
-        if (press && e.pointerId === press.id) {
-            press.lastEvent = e;
-            if (Math.hypot(e.clientX - press.x, e.clientY - press.y) > MOVE_TOLERANCE_PX) {
-                clearTimeout(press.timer);
-                mini.classList.remove('pressing');
-            }
-        }
-        if (knobDrag && e.pointerId === knobDrag.id) {
-            knobDrag.last = Math.max(0, Math.min(maxTravel(), knobDrag.x - e.clientX));
-            setKnob(knobDrag.last);
-        }
-    });
-    mini.addEventListener('pointerup', (e) => {
-        if (press && e.pointerId === press.id) {
+    card.addEventListener('pointermove', (e) => {
+        if (!press || e.pointerId !== press.id) return;
+        const dx = e.clientX - press.x;
+        const dy = e.clientY - press.y;
+        const armed = mini.classList.contains('armed');
+        if (!armed && Math.hypot(dx, dy) > MOVE_TOLERANCE_PX) {
             clearTimeout(press.timer);
             mini.classList.remove('pressing');
-            const dx = e.clientX - press.x;
-            const dy = e.clientY - press.y;
-            press = null;
-            if (Math.abs(dx) >= SWIPE_PX && Math.abs(dx) > Math.abs(dy)) {
-                index = (index + (dx < 0 ? 1 : -1) + SHOWS.length) % SHOWS.length;
-                render();
-                log.textContent = dx < 0 ? '← 掃：下一個節目' : '→ 掃：上一個節目';
+        }
+        // 浮起咗：橫向拉 = card 跟手指走
+        if (armed && (press.mode === 'drag' || Math.abs(dx) > MOVE_TOLERANCE_PX)) {
+            press.mode = 'drag';
+            card.classList.add('dragging');
+            setOffset(press.from - dx);
+        }
+    });
+    card.addEventListener('pointerup', (e) => {
+        if (!press || e.pointerId !== press.id) return;
+        const p = press; press = null;
+        clearTimeout(p.timer);
+        mini.classList.remove('pressing');
+        const dx = e.clientX - p.x;
+        const dy = e.clientY - p.y;
+        if (mini.classList.contains('armed')) {
+            card.classList.remove('dragging');
+            if (p.mode !== 'drag') {
+                // 浮起後撳 card：已經露出清除就收返；啱啱長按完放手就保持浮起
+                if (p.from > 0) disarm('撳 card → 收返');
+                else armIdle();
+                return;
             }
+            if (offset >= card.offsetWidth * CLEAR_RATIO) { clearAll(); return; }
+            if (offset >= REVEAL_MIN_PX) {
+                card.classList.add('open');
+                setOffset(REVEAL_PX);
+                log.textContent = '露出「清除」：撳佢先清；撳 card / 外面收返';
+                armIdle();
+                return;
+            }
+            disarm('拉唔夠 → 收返，變返平時');
             return;
         }
-        if (knobDrag && e.pointerId === knobDrag.id) {
-            const done = knobDrag.last >= maxTravel() * DISMISS_RATIO;
-            knob.classList.remove('dragging');
-            knobDrag = null;
-            if (done) { dismiss(); return; }
-            setKnob(0);
-            disarm();
-            log.textContent = '未拖到盡頭 → 彈返，變返平時';
+        if (Math.abs(dx) >= SWIPE_PX && Math.abs(dx) > Math.abs(dy)) {
+            index = (index + (dx < 0 ? 1 : -1) + SHOWS.length) % SHOWS.length;
+            render();
+            log.textContent = dx < 0 ? '← 掃：下一個節目' : '→ 掃：上一個節目';
         }
     });
-    mini.addEventListener('pointercancel', () => { if (press) clearTimeout(press.timer); press = null; disarm(); });
-    document.getElementById('cancel').addEventListener('click', () => { disarm(); log.textContent = '取消'; });
+    card.addEventListener('pointercancel', () => { if (press) clearTimeout(press.timer); press = null; disarm(); });
+    clearBtn.addEventListener('click', clearAll);
     document.getElementById('homePhone').addEventListener('pointerdown', (e) => {
-        if (!mini.contains(e.target) && mini.classList.contains('armed')) { disarm(); log.textContent = '撳咗外面 → 變返平時'; }
+        if (!mini.contains(e.target) && mini.classList.contains('armed')) disarm('撳咗外面 → 變返平時');
     });
-    document.getElementById('resetMini').addEventListener('click', () => { disarm(); mini.classList.remove('closing'); log.textContent = '已重新出返'; });
+    document.getElementById('resetMini').addEventListener('click', () => {
+        disarm('已重新出返');
+        mini.classList.remove('closing');
+    });
 })();
 </script>
 </body>
