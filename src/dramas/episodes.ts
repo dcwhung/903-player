@@ -42,7 +42,7 @@ const seriesEpisode = (
     const title = arc.titles.get(no);
     const file =
         arc.files.get(no) ??
-        renderFileName(def.audio.file, seriesTokens(def.audio, arc, no, title ?? ''));
+        renderFileName(arc.file ?? def.audio.file, seriesTokens(def.audio, arc, no, title ?? ''));
     const addedAt = arc.addedAt ?? def.addedAt;
     return {
         kind: 'series',

@@ -44,6 +44,10 @@ const SERIES: SeriesDefinition = {
         arc('Ｘ時mas時小提議', 2, { titles: new Map([[2, '哥哥 _ 你洽我']]) }),
         arc('初戀嗱喳麵', 2, { firstNo: 0, titles: new Map([[0, '前傳']]), addedAt: '2026-10-25' }),
         arc('亂碼', 2, { files: new Map([[2, 'weird upload.m4a']]) }),
+        arc('有名冇檔', 1, {
+            titles: new Map([[1, '秘撈']]),
+            file: '{no2} - {arc} - 第{noZh}集.m4a',
+        }),
     ],
 };
 
@@ -67,7 +71,7 @@ describe('buildEpisodes (series)', () => {
     const episodes = buildEpisodes('chisee', SERIES);
 
     it('expands every arc into numbered episodes with the series literal kind', () => {
-        expect(episodes).toHaveLength(6);
+        expect(episodes).toHaveLength(7);
         expect(episodes.every((e) => e.kind === 'series' && e.dramaId === 'chisee')).toBe(true);
         expect(episodes.map((e) => (e.kind === 'series' ? `${e.arc}#${e.no}` : ''))).toEqual([
             'Ｘ時mas時小提議#1',
@@ -76,6 +80,7 @@ describe('buildEpisodes (series)', () => {
             '初戀嗱喳麵#1',
             '亂碍#1'.replace('碍', '碼'),
             '亂碼#2',
+            '有名冇檔#1',
         ]);
     });
 
@@ -115,6 +120,14 @@ describe('buildEpisodes (series)', () => {
         expect(decodeURIComponent(episodes[4]?.url ?? '')).toBe(
             `${R2}/亂碼/01 - 亂碼 - 第一集.m4a`,
         );
+    });
+
+    it('lets an arc template keep the title out of the file name but still show it', () => {
+        const titled = episodes[6];
+        expect(decodeURIComponent(titled?.url ?? '')).toBe(
+            `${R2}/有名冇檔/01 - 有名冇檔 - 第一集.m4a`,
+        );
+        expect(titled?.kind === 'series' && titled.title).toBe('秘撈');
     });
 
     it('lets the template use the drama folder name (黃金少年Season 1 style)', () => {

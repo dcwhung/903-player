@@ -31,6 +31,49 @@ const XMAS_2010_TITLES = [
     '聖誕村',
     '愛情保險',
 ];
+/** 公子森林集名：R2 檔名冇集名，只係顯示用 */
+const FOREST_TITLES = [
+    '秘撈',
+    '兩個危機',
+    '選擇困難',
+    '愛屋及烏',
+    '童年',
+    '單純',
+    '文藝青年神經',
+    '教科書與八卦雜誌',
+    '經常性男性幻想',
+    '踩單車愛情論',
+    '信不信緣份',
+    '楊過與小龍女',
+    '講大話的藝術',
+    '攞著數',
+    '愛情二五仔',
+    '理智不理智',
+    '傑仔崩潰',
+    '真相大白',
+    '整定',
+    '約定',
+    '開心防衛系統',
+    '齊人之福',
+    '重回單身',
+    '袋鼠死的疑問',
+    '上天堂',
+    '冷戰',
+    '空櫃桶',
+    'Mama的秘密',
+    'Mama的故事',
+    '薰衣草味道',
+    'Lavender走了',
+    '白海娟的決定',
+    '兩張紙巾',
+    'Sandra & Mama',
+    '浪費的愛情',
+    'Sandra BB',
+    '悼念',
+    '再見',
+    '大結局？',
+    'Fly me to the moon',
+];
 /** 用戶畀嘅 sample link（每集檔名都帶集名） */
 const XMAS_2010_SAMPLE_URL =
     'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/%E6%A3%AE%E7%BE%8E%E5%B0%8F%E5%84%80%E7%B3%BB%E5%88%97/%E6%A3%AE%E4%B9%8B%E8%81%96%E8%AA%952010/01%20-%20%E6%A3%AE%E4%B9%8B%E8%81%96%E8%AA%952010%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86%20-%20%E4%B8%8D%E6%9C%83%E9%A3%9B%E8%B5%B0%E7%9A%84%E6%B0%A3%E7%90%83.m4a';
@@ -65,7 +108,7 @@ describe('森美小儀系列', () => {
         expect(decodeURIComponent(inArc('公子森林')[39]?.url ?? '')).toBe(
             `${R2_SAMMY}/公子森林/40 - 公子森林 - 第四十集.m4a`,
         );
-        expect(sammy.filter((e) => e.title)).toHaveLength(15);
+        expect(sammy.filter((e) => e.title)).toHaveLength(15 + 40);
     });
 
     it('spells 森之愛情II with ASCII II, as renamed on R2 (the Roman numeral Ⅱ U+2161 now 404s)', () => {
@@ -87,6 +130,14 @@ describe('森美小儀系列', () => {
             `${R2_SAMMY}/森之聖誕2010/01 - 森之聖誕2010 - 第一集 - 不會飛走的氣球.m4a`,
         );
         expect(xmas[0]?.url).toBe(XMAS_2010_SAMPLE_URL);
+    });
+
+    it('titles every 公子森林 episode but keeps the title-less R2 file name', () => {
+        const forest = inArc('公子森林');
+        expect(forest.map((e) => e.title)).toEqual(FOREST_TITLES);
+        expect(decodeURIComponent(forest[0]?.url ?? '')).toBe(
+            `${R2_SAMMY}/公子森林/01 - 公子森林 - 第一集.m4a`,
+        );
     });
 
     describe('per-arc disc art', () => {
