@@ -5,6 +5,8 @@ import { metricRows, readViewport, type ViewportSnapshot } from './viewportMetri
 
 interface ViewportDebugProps {
     onClose: () => void;
+    /** 量度以外加嘅行（例如播放 log 複製結果） */
+    extraRows?: ReadonlyArray<readonly [string, string]>;
 }
 
 /** 開咗就量一次（probe 要 render 咗先量到）；Escape 關 */
@@ -29,7 +31,7 @@ const useSnapshot = (onClose: () => void) => {
  * --viewport-gap-bottom 同 mini player 離底幾遠，方便喺 iPhone 主畫面 app 對數。撳 panel 或者 Escape 關。
  * 用 portal 掛喺 body：頁面 .scope 係 size container，position: fixed 會跟佢而唔係 viewport
  */
-export const ViewportDebug = ({ onClose }: ViewportDebugProps) => {
+export const ViewportDebug = ({ onClose, extraRows = [] }: ViewportDebugProps) => {
     const { probeRef, panelRef, snapshot } = useSnapshot(onClose);
     return createPortal(
         <div
@@ -47,7 +49,7 @@ export const ViewportDebug = ({ onClose }: ViewportDebugProps) => {
             <div ref={probeRef} className={styles.probe} aria-hidden="true" />
             <dl className={styles.list}>
                 {snapshot &&
-                    metricRows(snapshot).map(([label, value]) => (
+                    [...metricRows(snapshot), ...extraRows].map(([label, value]) => (
                         <div key={label} className={styles.row}>
                             <dt>{label}</dt>
                             <dd>{value}</dd>

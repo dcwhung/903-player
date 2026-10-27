@@ -42,6 +42,18 @@ describe('AppVersion', () => {
             expect(dialog()).toHaveTextContent('mini player gap to bottom');
         });
 
+        it('should copy the playback log when the panel opens', async () => {
+            const writeText = vi.fn(async () => undefined);
+            vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+            render(<AppVersion version="0.2.0" />);
+
+            tap(5);
+
+            expect(writeText).toHaveBeenCalledTimes(1);
+            expect(await screen.findByText(/copied \d+ lines/)).toBeInTheDocument();
+            vi.unstubAllGlobals();
+        });
+
         it('should not open when the taps are too slow', () => {
             const now = vi.spyOn(Date, 'now');
             render(<AppVersion version="0.2.0" />);

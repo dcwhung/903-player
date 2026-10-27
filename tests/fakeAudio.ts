@@ -12,6 +12,8 @@ export class FakeAudio extends EventTarget {
     currentTime = 0;
     duration = Number.NaN;
     paused = true;
+    readyState = 0;
+    networkState = 0;
     /** 播到尾：同真 element 一樣，換 src / 再 play 就清走 */
     ended = false;
     rejectPlay = false;

@@ -3,12 +3,16 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { AudioController, createAudioElement } from './player/AudioController';
+import { attachPlaybackLog } from './player/playbackLog';
 import { UpdateManager, startUpdateChecks } from './pwa/updateManager';
 import './styles/tokens.css';
 import './styles/global.css';
 
 // 喺 React 外面建立，令 PWA 更新可以直接讀播放狀態（唔使經 React）
-const playerController = new AudioController(createAudioElement());
+const audio = createAudioElement();
+// 診斷 iPhone 鎖屏換集冇聲：記低 audio event（版本號連撳 5 下複製）
+attachPlaybackLog(audio);
+const playerController = new AudioController(audio);
 let registration: ServiceWorkerRegistration | undefined;
 
 const updateManager = new UpdateManager({
