@@ -184,4 +184,71 @@ describe('EpisodeList', () => {
         expect(staticFlags(container)).toEqual([true, true, true]);
         vi.restoreAllMocks();
     });
+
+    describe('scrollAlign="top" (series drama)', () => {
+        const LIST_TOP = 100;
+        const ROW_HEIGHT = 60;
+
+        /** 清單頂喺 100px，每行 60px（未捲）；current 係第 3 行 */
+        beforeEach(() => {
+            vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+                this: Element,
+            ) {
+                if (this.tagName === 'UL') return { top: LIST_TOP, height: 300 } as DOMRect;
+                const li = this.closest('li');
+                const index = li ? Array.from(li.parentElement?.children ?? []).indexOf(li) : 0;
+                return { top: LIST_TOP + index * ROW_HEIGHT, height: ROW_HEIGHT } as DOMRect;
+            });
+        });
+
+        afterEach(() => vi.restoreAllMocks());
+
+        const at = (index: number): EpisodeItem[] =>
+            ITEMS.map((item, i) => ({ ...item, current: i === index }));
+
+        it('jumps on entry so the playing episode sits at the top, with half of the one before showing', () => {
+            render(<EpisodeList items={at(2)} onSelect={() => {}} scrollAlign="top" />);
+
+            // 第 3 行：120px 下面，減半行（30px）露出上一集
+            expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({
+                top: 2 * ROW_HEIGHT - ROW_HEIGHT / 2,
+                behavior: 'auto',
+            });
+        });
+
+        it('scrolls smoothly to the same place when the next episode starts in the same list', () => {
+            const { rerender } = render(
+                <EpisodeList items={at(1)} onSelect={() => {}} scrollAlign="top" />,
+            );
+
+            rerender(<EpisodeList items={at(2)} onSelect={() => {}} scrollAlign="top" />);
+
+            expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({
+                top: 2 * ROW_HEIGHT - ROW_HEIGHT / 2,
+                behavior: 'smooth',
+            });
+        });
+
+        it('jumps again when a different 短篇 replaces the list', () => {
+            const { rerender } = render(
+                <EpisodeList items={at(1)} onSelect={() => {}} scrollAlign="top" />,
+            );
+            const other = at(2).map((item) => ({ ...item, key: `other-${item.key}` }));
+
+            rerender(<EpisodeList items={other} onSelect={() => {}} scrollAlign="top" />);
+
+            expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith(
+                expect.objectContaining({ behavior: 'auto' }),
+            );
+        });
+
+        it('keeps the first episode flush at the top', () => {
+            render(<EpisodeList items={at(0)} onSelect={() => {}} scrollAlign="top" />);
+
+            expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({
+                top: 0,
+                behavior: 'auto',
+            });
+        });
+    });
 });

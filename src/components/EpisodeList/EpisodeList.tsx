@@ -1,8 +1,8 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, type RefObject } from 'react';
 import { t } from '../../i18n/t';
 import { scrollBehavior } from '../../utils/motion';
 import { PERCENT, toPercent } from '../../utils/ratio';
-import { scrollRowIntoPanel } from '../../utils/scroll';
+import { scrollRowIntoPanel, scrollRowToTop } from '../../utils/scroll';
 import { CheckIcon, PauseIcon, PlayIcon } from '../icons/icons';
 import { Marquee } from '../Marquee/Marquee';
 import styles from './EpisodeList.module.css';
@@ -28,10 +28,18 @@ export interface EpisodeItem {
  */
 export type EpisodeLabels = 'date' | 'taggedDate' | 'title';
 
+/**
+ * 揀中嗰集點樣捲入 panel：
+ * nearest（預設，節目頁）= 見唔到先捲到最近位置；
+ * top（短篇劇集）= 捲到頂、露出半行上一集，上面嘅舊集捲上就見
+ */
+export type EpisodeScrollAlign = 'nearest' | 'top';
+
 interface EpisodeListProps {
     items: EpisodeItem[];
     onSelect: (key: string) => void;
     labels?: EpisodeLabels;
+    scrollAlign?: EpisodeScrollAlign;
 }
 
 const CHECK_ICON_SIZE = 12;
@@ -123,19 +131,47 @@ const countText = (items: EpisodeItem[]): string => {
 };
 
 /**
- * 集數清單：最新喺頂，每集有進度同狀態。
- * 清單本身係節目頁唯一捲動嘅 panel；入頁 / 轉集時只喺 panel 入面捲到揀中嗰集
+ * 入頁 / 轉集時只喺 panel 入面捲到揀中嗰集。
+ * top：成張清單換咗（入頁、轉短篇）即刻跳過去；同一張清單轉集（自動播下一集）就順滑捲；
+ * 新清單冇揀中嗰集（睇緊另一個短篇）就由頂開始
  */
-export const EpisodeList = ({ items, onSelect, labels = 'date' }: EpisodeListProps) => {
-    const headingId = useId();
-    const listRef = useRef<HTMLUListElement>(null);
+const useScrollToCurrent = (
+    listRef: RefObject<HTMLUListElement | null>,
+    items: EpisodeItem[],
+    align: EpisodeScrollAlign,
+) => {
     const currentKey = items.find((item) => item.current)?.key;
-
+    const listKey = items[0]?.key;
+    const shownList = useRef<string | undefined>(undefined);
     useEffect(() => {
         const list = listRef.current;
         const row = list?.querySelector('[aria-current="true"]');
-        if (list && row) scrollRowIntoPanel(list, row, scrollBehavior());
-    }, [currentKey]);
+        const fresh = shownList.current !== listKey;
+        shownList.current = listKey;
+        if (!list) return;
+        if (align === 'nearest') {
+            if (row) scrollRowIntoPanel(list, row, scrollBehavior());
+            return;
+        }
+        const behavior = fresh ? 'auto' : scrollBehavior();
+        if (row) scrollRowToTop(list, row.closest('li') ?? row, behavior);
+        else if (fresh) list.scrollTo?.({ top: 0, behavior });
+    }, [listRef, currentKey, listKey, align]);
+};
+
+/**
+ * 集數清單：最新喺頂（節目頁）/ 照集數次序（短篇劇集），每集有進度同狀態。
+ * 清單本身係頁面唯一捲動嘅 panel
+ */
+export const EpisodeList = ({
+    items,
+    onSelect,
+    labels = 'date',
+    scrollAlign = 'nearest',
+}: EpisodeListProps) => {
+    const headingId = useId();
+    const listRef = useRef<HTMLUListElement>(null);
+    useScrollToCurrent(listRef, items, scrollAlign);
 
     return (
         <section className={styles.section} aria-labelledby={headingId} data-labels={labels}>

@@ -99,16 +99,6 @@ export const hasNewUnheardArc = (
         );
     });
 
-/** 集數清單：未聽完嘅按集數排喺上面，聽完嘅排最底；載入緊嗰集（就算聽完過）唔會郁落去 */
-export const listOrder = (
-    episodes: readonly SeriesEpisode[],
-    progressMap: ProgressMap,
-    currentUrl: string | undefined,
-): SeriesEpisode[] => {
-    const isDone = (e: SeriesEpisode) => e.url !== currentUrl && !!progressMap[e.url]?.watched;
-    return [...episodes.filter((e) => !isDone(e)), ...episodes.filter(isDone)];
-};
-
 /** 主頁劇集格「繼續收聽」：播邊集、嗰集聽到幾多（0–1）；一集都未聽過就冇 */
 export const seriesContinue = (
     episodes: readonly SeriesEpisode[],
