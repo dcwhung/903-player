@@ -1323,8 +1323,16 @@ try {
 
     await page.getByRole('button', { name: '返回主頁' }).click();
     await page.waitForTimeout(300);
+    // T9 B：播緊舊集返主頁照播，mini player 將佢排最前、標「重溫」（以前係暫停）
     const oldEpisodeState = await page.evaluate(() => navigator.mediaSession.playbackState);
-    log(oldEpisodeState === 'paused', `播緊舊集返主頁會暫停：${oldEpisodeState}`);
+    const rewatchMini = page.getByRole('region', { name: '正在播放（重溫及今日節目）' });
+    const rewatchText = (await rewatchMini.textContent()) ?? '';
+    log(
+        oldEpisodeState === 'playing' &&
+            /公子會重溫/.test(rewatchText) &&
+            rewatchText.includes('10/10'),
+        `播緊舊集返主頁繼續播，mini player 第一個係重溫：${oldEpisodeState} / ${rewatchText}`,
+    );
     await page.getByRole('button', { name: '今日節目', exact: true }).click();
     await page.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
     await page.waitForTimeout(1000);
