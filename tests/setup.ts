@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 
-// 測試唔准真係上網（例如 AudioPrefetcher 預載下一集）：預設一律失敗，要用就自己 mock
+// 測試唔准真係上網：預設一律失敗，要用就自己 mock
 beforeEach(() => {
     vi.stubGlobal(
         'fetch',
