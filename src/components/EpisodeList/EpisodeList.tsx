@@ -141,7 +141,8 @@ const useScrollToCurrent = (
     align: EpisodeScrollAlign,
 ) => {
     const currentKey = items.find((item) => item.current)?.key;
-    const listKey = items[0]?.key;
+    // 清單身份（轉咗短篇）只係 top 模式用：節目頁新錄音加喺頂唔應該令清單捲返去
+    const listKey = align === 'top' ? items[0]?.key : undefined;
     const shownList = useRef<string | undefined>(undefined);
     useEffect(() => {
         const list = listRef.current;

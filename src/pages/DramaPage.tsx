@@ -104,14 +104,14 @@ const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
     );
 };
 
+/** 短篇劇集嘅集數清單：行名用集名，照集數次序，入頁捲到播緊嗰集（頂、露半行上一集） */
+const SERIES_LIST = { labels: 'title', scrollAlign: 'top' } as const;
+
 /**
  * 短篇劇集：直版唱片下面係「現正播放」+ 短篇 chips，揀短篇換下面嘅集數清單（次序同節目頁一樣：
  * 唱片 → 60px 一組 → 清單）。橫版 chips 跟清單喺左欄（頁頭下面），「現正播放」搬去右欄唱片下面；
  * 全集表橫版只蓋左欄（listBody），唔遮播放器
  */
-/** 短篇劇集嘅集數清單：行名用集名，照集數次序，入頁捲到播緊嗰集（頂、露半行上一集） */
-const SERIES_LIST = { labels: 'title', scrollAlign: 'top' } as const;
-
 const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const {
         theme,

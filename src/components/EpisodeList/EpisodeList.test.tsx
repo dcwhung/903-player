@@ -185,6 +185,16 @@ describe('EpisodeList', () => {
         vi.restoreAllMocks();
     });
 
+    it('does not pull a show page back to the current episode when a new one is added on top', () => {
+        const { rerender } = render(<EpisodeList items={ITEMS} onSelect={() => {}} />);
+        vi.mocked(HTMLElement.prototype.scrollTo).mockClear();
+        const fresh: EpisodeItem = { ...ITEMS[1]!, key: '/new.aac', current: false };
+
+        rerender(<EpisodeList items={[fresh, ...ITEMS]} onSelect={() => {}} />);
+
+        expect(HTMLElement.prototype.scrollTo).not.toHaveBeenCalled();
+    });
+
     describe('scrollAlign="top" (series drama)', () => {
         const LIST_TOP = 100;
         const ROW_HEIGHT = 60;
@@ -240,6 +250,39 @@ describe('EpisodeList', () => {
             expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith(
                 expect.objectContaining({ behavior: 'auto' }),
             );
+        });
+
+        it('starts a fresh list from the top when its episodes are not the playing ones', () => {
+            const { rerender } = render(
+                <EpisodeList items={at(1)} onSelect={() => {}} scrollAlign="top" />,
+            );
+            const otherArc = at(-1).map((item) => ({ ...item, key: `other-${item.key}` }));
+
+            rerender(<EpisodeList items={otherArc} onSelect={() => {}} scrollAlign="top" />);
+
+            expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({
+                top: 0,
+                behavior: 'auto',
+            });
+        });
+
+        it('stays put when the episode moves on in a 短篇 that is not on screen', () => {
+            const otherArc = at(-1).map((item) => ({ ...item, key: `other-${item.key}` }));
+            const { rerender } = render(
+                <EpisodeList items={otherArc} onSelect={() => {}} scrollAlign="top" />,
+            );
+            vi.mocked(HTMLElement.prototype.scrollTo).mockClear();
+
+            // 播緊嗰個短篇自動跳下一集：呢張清單冇嗰集，唔使捲
+            rerender(
+                <EpisodeList
+                    items={otherArc.map((item) => ({ ...item }))}
+                    onSelect={() => {}}
+                    scrollAlign="top"
+                />,
+            );
+
+            expect(HTMLElement.prototype.scrollTo).not.toHaveBeenCalled();
         });
 
         it('keeps the first episode flush at the top', () => {
