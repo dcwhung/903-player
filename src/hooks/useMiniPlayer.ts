@@ -152,25 +152,19 @@ const listLabels = (list: Recording[], tags: (MiniPlayerTag | undefined)[], inde
     };
 };
 
-/**
- * 主頁 mini player：今日（今日冇節目播先用最近一日）嘅節目，播緊其他節目錄音就排最前做「重溫」；
- * 載入緊廣播劇就改為顯示嗰套劇（返主頁都唔會停，見 useHomeArrival）
- */
 type MiniPlayerContent = Omit<MiniPlayerProps, 'onDismiss'>;
 
-const useMiniPlayerContent = (): MiniPlayerContent | null => {
-    const player = usePlayer();
-    const navigate = useNavigate();
-    const { list, tags, index, current, isLoaded, select } = useTodaySelection();
-    const { position, duration } = useShownTime(current?.url, isLoaded);
-    if (player.recording && isDramaEpisode(player.recording)) {
-        return dramaMiniPlayer(player.recording, player, navigate);
-    }
-    if (!current) {
-        return null;
-    }
-    const timeText = miniPlayerTimeText(position, duration);
+/** useTodaySelection 揀中咗節目（current 一定有） */
+type ShowSelection = ReturnType<typeof useTodaySelection> & { current: Recording };
 
+/** 今日節目 / 重溫舊集：未載入就用存低嘅進度，撳 ▶ 先載入播放，撳入節目頁 */
+const showMiniPlayer = (
+    { list, tags, index, current, isLoaded, select }: ShowSelection,
+    { position, duration }: ReturnType<typeof useShownTime>,
+    player: Player,
+    open: (path: string) => void,
+): MiniPlayerContent => {
+    const timeText = miniPlayerTimeText(position, duration);
     return {
         ...listLabels(list, tags, index),
         showName: showName(current),
@@ -186,9 +180,25 @@ const useMiniPlayerContent = (): MiniPlayerContent | null => {
         index,
         onToggle: () =>
             void (isLoaded ? player.toggle() : player.load(current, { autoplay: true })),
-        onOpen: () => navigate(`/show/${current.showId}`),
+        onOpen: () => open(`/show/${current.showId}`),
         onChange: select,
     };
+};
+
+/**
+ * 主頁 mini player：今日（今日冇節目播先用最近一日）嘅節目，播緊其他節目錄音就排最前做「重溫」；
+ * 載入緊廣播劇就改為顯示嗰套劇（返主頁都唔會停，見 useHomeArrival）
+ */
+const useMiniPlayerContent = (): MiniPlayerContent | null => {
+    const player = usePlayer();
+    const navigate = useNavigate();
+    const selection = useTodaySelection();
+    const time = useShownTime(selection.current?.url, selection.isLoaded);
+    if (player.recording && isDramaEpisode(player.recording)) {
+        return dramaMiniPlayer(player.recording, player, navigate);
+    }
+    const { current } = selection;
+    return current ? showMiniPlayer({ ...selection, current }, time, player, navigate) : null;
 };
 
 /** 主頁 mini player；畀用戶左滑關閉咗（未再播嘢）就係 null */
