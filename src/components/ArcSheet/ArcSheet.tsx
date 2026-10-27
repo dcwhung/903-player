@@ -8,6 +8,7 @@ import { CheckIcon, CloseIcon, PauseIcon, PlayIcon, RestartIcon } from '../icons
 import { Marquee } from '../Marquee/Marquee';
 import { NewBadge } from '../NewBadge/NewBadge';
 import styles from './ArcSheet.module.css';
+import { useSheetDrag } from './useSheetDrag';
 
 interface ArcSheetProps {
     open: boolean;
@@ -201,11 +202,13 @@ const ArcGroupBlock = ({
 /**
  * 全集一覽表（底部彈出）：分組 播放中 → 新上架 → 未聽完 → 已聽完，圓環 = 聽完幾多集；
  * 撳行轉去嗰個短篇，撳右邊掣直接播（續聽 / 未收聽 / ↺ 重聽）。
+ * 閂：✕ 掣、撳遮罩、Escape，或者向下拉（grab bar / header；清單捲到頂都得，直版橫版一樣）。
  * 見 design/previews/drama-flow-preview.html；橫版 docked 見 landscape-list-left-preview.html
  */
 export const ArcSheet = ({ open, docked = false, groups, onClose, ...rowProps }: ArcSheetProps) => {
     const titleId = useId();
     const sheetRef = useSheetFocus(open, onClose);
+    const { backdropRef, listRef, handlers } = useSheetDrag(sheetRef, open, onClose);
     if (!open) return null;
     const all = groups.flatMap((g) => g.items);
     const done = all.filter((s) => s.state === 'done').length;
@@ -213,6 +216,7 @@ export const ArcSheet = ({ open, docked = false, groups, onClose, ...rowProps }:
         <div className={`${styles.overlay} ${docked ? styles.docked : ''}`}>
             {!docked && (
                 <div
+                    ref={backdropRef}
                     className={styles.backdrop}
                     data-testid="arc-sheet-backdrop"
                     onClick={onClose}
@@ -225,6 +229,7 @@ export const ArcSheet = ({ open, docked = false, groups, onClose, ...rowProps }:
                 aria-modal={!docked}
                 aria-labelledby={titleId}
                 tabIndex={-1}
+                {...handlers}
             >
                 <span className={styles.grab} aria-hidden="true" />
                 <header className={styles.header}>
@@ -243,7 +248,7 @@ export const ArcSheet = ({ open, docked = false, groups, onClose, ...rowProps }:
                         <CloseIcon size={CLOSE_ICON_SIZE} />
                     </button>
                 </header>
-                <div className={styles.list}>
+                <div ref={listRef} className={styles.list} data-role="sheet-list">
                     {groups.map((g) => (
                         <ArcGroupBlock key={g.group} {...g} {...rowProps} />
                     ))}

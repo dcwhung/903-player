@@ -1,8 +1,9 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ArcSummary } from '../../selectors/arcProgress';
 import type { SeriesEpisode } from '../../types/drama';
 import { ArcSheet } from './ArcSheet';
+import { SHEET_SLIDE_MS } from './sheetDrag';
 
 const ep = (arc: string, no: number, title?: string): SeriesEpisode => ({
     kind: 'series',
@@ -180,5 +181,136 @@ describe('ArcSheet', () => {
     it('moves focus into the sheet when it opens', () => {
         renderSheet();
         expect(screen.getByRole('dialog')).toHaveFocus();
+    });
+});
+
+describe('ArcSheet pull down to close', () => {
+    const SHEET_HEIGHT = 400;
+    /** 拉過 25% 表高（100px） */
+    const FAR_PX = 150;
+    /** 拉唔夠 25%，亦唔夠甩嘅最少距離 */
+    const SHORT_PX = 20;
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+            height: SHEET_HEIGHT,
+        } as DOMRect);
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+    });
+
+    const dialog = () => screen.getByRole('dialog');
+    const header = () => within(dialog()).getByRole('heading', { name: '全集' });
+    const list = () => dialog().querySelector<HTMLElement>('[data-role="sheet-list"]')!;
+
+    const pull = (target: HTMLElement, distance: number) => {
+        fireEvent.pointerDown(target, { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(target, { clientY: 100 + distance, pointerId: 1 });
+        fireEvent.pointerUp(target, { clientY: 100 + distance, pointerId: 1 });
+    };
+
+    const touchPull = (target: HTMLElement, distance: number) => {
+        fireEvent.touchStart(target, { touches: [{ clientY: 100 }] });
+        const move = fireEvent.touchMove(target, { touches: [{ clientY: 100 + distance }] });
+        fireEvent.touchEnd(target, { touches: [] });
+        return move;
+    };
+
+    const settle = () => act(() => vi.advanceTimersByTime(SHEET_SLIDE_MS));
+
+    it('closes when the header is pulled down past a quarter of the sheet', () => {
+        const { onClose } = renderSheet();
+
+        pull(header(), FAR_PX);
+        expect(onClose).not.toHaveBeenCalled();
+        settle();
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('follows the finger while pulling the header', () => {
+        renderSheet();
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(header(), { clientY: 160, pointerId: 1 });
+
+        expect(dialog().style.transform).toBe('translateY(60px)');
+        expect(dialog()).toHaveAttribute('data-dragging', 'true');
+    });
+
+    it('springs back without closing after a short pull', () => {
+        const { onClose } = renderSheet();
+
+        pull(header(), SHORT_PX);
+        settle();
+
+        expect(onClose).not.toHaveBeenCalled();
+        expect(dialog().style.transform).toBe('');
+        expect(dialog()).not.toHaveAttribute('data-dragging');
+    });
+
+    it('does not lift the sheet when pushed upwards', () => {
+        const { onClose } = renderSheet();
+
+        pull(header(), -FAR_PX);
+        settle();
+
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('does not fire the close button click after pulling from it', () => {
+        const { onClose } = renderSheet();
+        const close = within(dialog()).getByRole('button', { name: '關閉' });
+
+        fireEvent.pointerDown(close, { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(close, { clientY: 100 + SHORT_PX, pointerId: 1 });
+        fireEvent.pointerUp(close, { clientY: 100 + SHORT_PX, pointerId: 1 });
+        fireEvent.click(close, { detail: 1 });
+
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('leaves pointer drags inside the list to scrolling', () => {
+        const { onClose } = renderSheet();
+
+        pull(list(), FAR_PX);
+        settle();
+
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('takes over a downward touch pull in the list once it is scrolled to the top', () => {
+        const { onClose } = renderSheet();
+
+        const notCancelled = touchPull(list(), FAR_PX);
+        settle();
+
+        // touchmove preventDefault：瀏覽器唔會同時捲清單
+        expect(notCancelled).toBe(false);
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps scrolling the list when it is not at the top', () => {
+        const { onClose } = renderSheet();
+        list().scrollTop = 80;
+
+        const notCancelled = touchPull(list(), FAR_PX);
+        settle();
+
+        expect(notCancelled).toBe(true);
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('also pulls down to close when docked beside the player (landscape)', () => {
+        const { onClose } = renderSheet({ docked: true });
+
+        pull(header(), FAR_PX);
+        settle();
+
+        expect(onClose).toHaveBeenCalledTimes(1);
     });
 });

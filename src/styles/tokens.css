@@ -114,6 +114,8 @@
     --arc-sheet-row-height: calc(52px * var(--ui-scale));
     --arc-sheet-ring: calc(54px * var(--ui-scale));
     --arc-sheet-z: 10;
+    /* 向下拉閂：放手後滑走 / 彈返嘅時間（同 src/components/ArcSheet/sheetDrag.ts SHEET_SLIDE_MS 一致） */
+    --arc-sheet-slide-ms: 250ms;
     /*
      * 碟面圓環細節：外圈進度環粗幼、碟面底「1/4」pill（字、行高、
      * 凸出碟底幾多）、聽完 ✓ 章（大細、凸出右下角幾多）、pill / ✓ 同碟面之間嗰圈底色邊
