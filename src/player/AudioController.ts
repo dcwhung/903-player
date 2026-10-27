@@ -13,6 +13,7 @@ import {
     saveProgress,
 } from '../services/progressStore';
 import type { Track } from '../types/track';
+import { recordPlayback } from './playbackLog';
 import type { LoadOptions, PlayerState } from './playerContext';
 
 const INITIAL_STATE: PlayerState = {
@@ -129,11 +130,13 @@ export class AudioController {
         this.recoverSource();
         try {
             await this.audio.play();
+            recordPlayback('play()', this.audio, 'resolved');
             // 本身已經播緊時 spec 唔會再發 play event，要喺度清走，否則會卡住擋住更新
             if (isLatest() && !this.audio.paused) {
                 this.setPlayIntent(false);
             }
-        } catch {
+        } catch (error) {
+            recordPlayback('play()', this.audio, `rejected ${(error as Error).name}`);
             // 瀏覽器擋自動播放：維持暫停，等用戶撳 Play；被新一次 play() 取代就交畀佢
             if (isLatest()) {
                 this.playIntent = false;
@@ -291,7 +294,7 @@ export class AudioController {
             this.persist();
         }
         if (this.isAboutToEnd()) {
-            this.advance();
+            this.advance('early');
         }
     };
 
@@ -355,7 +358,7 @@ export class AudioController {
 
     /** 播完：有下一集就接住播（通常 advance 已經喺 timeupdate 換咗，呢度係後備）；冇就停 */
     private onEnded = (): void => {
-        if (!this.advance()) {
+        if (!this.advance('ended')) {
             this.onStopped();
         }
     };
@@ -365,12 +368,13 @@ export class AudioController {
      * iOS 唔會收起 audio session，鎖屏 / 背景都接得住；換集期間維持「播緊」。
      * 冇下一集就返回 false
      */
-    private advance(): boolean {
+    private advance(reason: 'early' | 'ended'): boolean {
         const { recording } = this.state;
         const next = recording ? this.nextTrack?.(recording) : undefined;
         if (!next) {
             return false;
         }
+        recordPlayback('advance', this.audio, reason);
         this.persist();
         this.update({ isAudible: false });
         void this.load(next, { autoplay: true });
@@ -398,6 +402,7 @@ export class AudioController {
             this.unwatchStall();
             return;
         }
+        recordPlayback('retry', this.audio, `left=${retriesLeft}`);
         this.pendingStart = this.state.currentTime;
         this.lastTickPosition = this.pendingStart;
         this.audio.load();

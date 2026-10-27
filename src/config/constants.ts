@@ -12,6 +12,12 @@ export const EARLY_ADVANCE_SECONDS = 1;
 export const STALL_RETRY_MS = 8000;
 /** 自動播下一集卡住最多重試幾次 */
 export const STALL_MAX_RETRIES = 3;
+/** 播放診斷 log（版本號連撳 5 下複製）：iPhone 鎖屏換集冇聲，要實機 event 先知原因 */
+export const PLAYBACK_LOG_STORAGE_KEY = '903player:playback-log:v1';
+/** log 最多留幾多行（舊嘅先清走） */
+export const PLAYBACK_LOG_MAX_ENTRIES = 400;
+/** timeupdate 太密，最少隔咁耐先記一次（睇到背景時間有冇真係行） */
+export const PLAYBACK_LOG_TICK_MS = 5000;
 /** 聽過嘅錄音由頭重播，真正播咗咁多秒先清走「已收聽」（防自動播放 / 誤撳） */
 export const REPLAY_RESET_SECONDS = 10;
 export const PROGRESS_STORAGE_KEY = '903player:progress:v1';
