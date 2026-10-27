@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EpisodeList, type EpisodeItem } from './EpisodeList';
 
@@ -283,6 +283,56 @@ describe('EpisodeList', () => {
             );
 
             expect(HTMLElement.prototype.scrollTo).not.toHaveBeenCalled();
+        });
+
+        it('jumps back to the playing episode after the screen is rotated', async () => {
+            const listeners = new Set<() => void>();
+            const media = { matches: false };
+            vi.stubGlobal('matchMedia', (query: string) => ({
+                get matches() {
+                    return query.includes('orientation') && media.matches;
+                },
+                media: query,
+                addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+                removeEventListener: (_: string, listener: () => void) =>
+                    listeners.delete(listener),
+            }));
+            render(<EpisodeList items={at(2)} onSelect={() => {}} scrollAlign="top" />);
+            vi.mocked(HTMLElement.prototype.scrollTo).mockClear();
+
+            // 打橫：等新 layout 排好（下一個 frame）先再捲
+            media.matches = true;
+            act(() => listeners.forEach((listener) => listener()));
+            await act(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+
+            expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({
+                top: 2 * ROW_HEIGHT - ROW_HEIGHT / 2,
+                behavior: 'auto',
+            });
+            vi.unstubAllGlobals();
+        });
+
+        it('leaves show pages alone when the screen is rotated', async () => {
+            const listeners = new Set<() => void>();
+            const media = { matches: false };
+            vi.stubGlobal('matchMedia', (query: string) => ({
+                get matches() {
+                    return media.matches;
+                },
+                media: query,
+                addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+                removeEventListener: (_: string, listener: () => void) =>
+                    listeners.delete(listener),
+            }));
+            render(<EpisodeList items={at(2)} onSelect={() => {}} />);
+            vi.mocked(HTMLElement.prototype.scrollTo).mockClear();
+
+            media.matches = true;
+            act(() => listeners.forEach((listener) => listener()));
+            await act(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+
+            expect(HTMLElement.prototype.scrollTo).not.toHaveBeenCalled();
+            vi.unstubAllGlobals();
         });
 
         it('keeps the first episode flush at the top', () => {
