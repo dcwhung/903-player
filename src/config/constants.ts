@@ -3,6 +3,10 @@ export const HK_TIMEZONE = 'Asia/Hong_Kong';
 /** 播放位置 ≥ 總長度嘅 95% 就當聽過 */
 export const WATCHED_RATIO = 0.95;
 export const PROGRESS_SAVE_INTERVAL_MS = 5000;
+/** 自動播下一集之後咁耐都未出聲，就當卡住（iOS 鎖屏時見過停喺 0:00）重新載入 */
+export const STALL_RETRY_MS = 8000;
+/** 自動播下一集卡住最多重試幾次 */
+export const STALL_MAX_RETRIES = 3;
 /** 聽過嘅錄音由頭重播，真正播咗咁多秒先清走「已收聽」（防自動播放 / 誤撳） */
 export const REPLAY_RESET_SECONDS = 10;
 export const PROGRESS_STORAGE_KEY = '903player:progress:v1';

@@ -12,6 +12,8 @@ export class FakeAudio extends EventTarget {
     currentTime = 0;
     duration = Number.NaN;
     paused = true;
+    /** 播到尾：同真 element 一樣，換 src / 再 play 就清走 */
+    ended = false;
     rejectPlay = false;
     /** 同真 element 一樣：發 error event 之前設定，等 caller 睇 code 分辨網絡問題定冇檔 */
     error: { code: number } | null = null;
@@ -32,6 +34,7 @@ export class FakeAudio extends EventTarget {
     set src(value: string) {
         const wasPlayingFrom = this.currentTime;
         this.source = value;
+        this.ended = false;
         this.currentTime = 0;
         this.duration = Number.NaN;
         if (wasPlayingFrom !== 0) {
@@ -66,6 +69,7 @@ export class FakeAudio extends EventTarget {
             return;
         }
         this.paused = false;
+        this.ended = false;
         // 真瀏覽器係 queue 一個 task 先發 play event，即係喺 caller 執行完之後（同 timeupdate 一樣）
         queueMicrotask(() => this.dispatchEvent(new Event('play')));
     });
@@ -101,9 +105,12 @@ export class FakeAudio extends EventTarget {
         this.dispatchEvent(new Event('timeupdate'));
     }
 
+    /** 同 spec 一樣：播到尾先發 pause（嗰陣 ended 已經係 true），再發 ended */
     end(): void {
         this.currentTime = this.duration;
         this.paused = true;
+        this.ended = true;
+        this.dispatchEvent(new Event('pause'));
         this.dispatchEvent(new Event('ended'));
     }
 
