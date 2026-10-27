@@ -3,7 +3,7 @@ import { useBox, type Box } from '../../hooks/useBox';
 import { DRAG_INTENT_PX } from '../../hooks/swipe';
 import { isLostRelease } from '../../hooks/lostRelease';
 import { useClickSuppression } from '../../hooks/useSwipe';
-import type { GetElement, SheetDragControls, SheetElements } from './sheetDragCore';
+import type { GetElement, SheetDragControls, SheetElements } from './useSheetDragControls';
 
 interface PointerGesture {
     pointerId: number;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useBox } from '../../hooks/useBox';
-import { bindElements, useSheetDragControls, type SheetElements } from './sheetDragCore';
+import { bindElements, useSheetDragControls, type SheetElements } from './useSheetDragControls';
 import { useListTouchDrag } from './useListTouchDrag';
 import { useSheetPointerDrag } from './useSheetPointerDrag';
 

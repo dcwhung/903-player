@@ -78,7 +78,11 @@ export const lift = (session: Session, setView: Sync) => {
     sync(session, setView);
 };
 
-/** 關閉：card 滑走（減少動畫就即刻），之後先 onDismiss（停播 + 收起） */
+/**
+ * 關閉：card 滑走（減少動畫就即刻），之後先 onDismiss（停播 + 收起）。
+ * closing 係終態：之後 settleBack / armIdle / 新手勢都唔再郁呢個 session。onDismiss 必須令
+ * MiniPlayer unmount（useMiniPlayer 回 null）；再出現時係新 session
+ */
 export const dismiss = (session: Session, setView: Sync, width: number, onDismiss: () => void) => {
     if (session.closing) return;
     session.closing = true;
