@@ -203,6 +203,24 @@ describe('dismiss', () => {
         expect(session).toMatchObject({ armed: true, closing: true, offset: WIDTH });
     });
 
+    // S-527：closing 係終態，靠 onDismiss 令 MiniPlayer unmount；任何 transition 都唔可以救返個 session
+    it.each([
+        ['before the slide finishes', DISMISS_SLIDE_MS - ONE_MS],
+        ['after the slide finishes', DISMISS_SLIDE_MS],
+    ])('should stay closing for good when settling is tried %s', (_when, elapsed) => {
+        const setView = vi.fn();
+        const session = makeSession({ armed: true });
+        dismiss(session, setView, WIDTH, vi.fn());
+        vi.advanceTimersByTime(elapsed);
+        setView.mockClear();
+        settleBack(session, setView);
+        armIdle(session, setView);
+        dropPress(session, setView);
+        vi.advanceTimersByTime(ARMED_IDLE_MS);
+        expect(session).toMatchObject({ armed: true, closing: true, offset: WIDTH });
+        expect(setView).not.toHaveBeenCalled();
+    });
+
     it('should call onDismiss without waiting when reduced motion is preferred', () => {
         stubReducedMotion(true);
         const onDismiss = vi.fn();
