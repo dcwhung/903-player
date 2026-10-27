@@ -1,6 +1,6 @@
 import { FakeAudio } from '../../tests/fakeAudio';
 import type { Recording } from '../types/recording';
-import { STALL_MAX_RETRIES, STALL_RETRY_MS } from '../config/constants';
+import { EARLY_ADVANCE_SECONDS, STALL_MAX_RETRIES, STALL_RETRY_MS } from '../config/constants';
 import { AudioController } from './AudioController';
 
 const RECORDING: Recording = {
@@ -441,6 +441,72 @@ describe('AudioController stalled auto-advance', () => {
         expect(audio.load).toHaveBeenCalledTimes(1);
         expect(audio.play).toHaveBeenCalledTimes(1);
         visibility.mockRestore();
+        detach();
+    });
+});
+
+/** iOS 喺 ended 嗰下收起 audio session，背景開唔返：要喺播完之前、仲播緊時換集 */
+describe('AudioController early auto-advance', () => {
+    const NEXT: Recording = {
+        ...RECORDING,
+        date: '2026-10-24',
+        url: 'https://audio.hkfm903.live/next.aac',
+    };
+    const DURATION = 1200;
+
+    const playNear = async (nextTrack: () => Recording | undefined) => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack(nextTrack);
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        await Promise.resolve();
+        audio.play.mockClear();
+        return { audio, controller, detach };
+    };
+
+    it('switches to the next track just before the end while still playing', async () => {
+        const { audio, controller, detach } = await playNear(() => NEXT);
+
+        audio.emitTime(DURATION - EARLY_ADVANCE_SECONDS / 2);
+
+        expect(audio.src).toBe(NEXT.url);
+        expect(audio.play).toHaveBeenCalledTimes(1);
+        expect(controller.getSnapshot().recording).toBe(NEXT);
+        expect(controller.getSnapshot().isPlaying).toBe(true);
+        expect(JSON.parse(localStorage.getItem('903player:progress:v1') ?? '{}')).toMatchObject({
+            [RECORDING.url]: { watched: true },
+        });
+        detach();
+    });
+
+    it('keeps playing the current track until the last moments', async () => {
+        const { audio, detach } = await playNear(() => NEXT);
+
+        audio.emitTime(DURATION - EARLY_ADVANCE_SECONDS * 2);
+
+        expect(audio.src).toBe(RECORDING.url);
+        detach();
+    });
+
+    it('does not switch while paused near the end', async () => {
+        const { audio, controller, detach } = await playNear(() => NEXT);
+
+        controller.pause();
+        audio.emitTime(DURATION - EARLY_ADVANCE_SECONDS / 2);
+
+        expect(audio.src).toBe(RECORDING.url);
+        detach();
+    });
+
+    it('plays to the end when there is no next track', async () => {
+        const { audio, detach } = await playNear(() => undefined);
+
+        audio.emitTime(DURATION - EARLY_ADVANCE_SECONDS / 2);
+
+        expect(audio.src).toBe(RECORDING.url);
+        expect(audio.play).not.toHaveBeenCalled();
         detach();
     });
 });

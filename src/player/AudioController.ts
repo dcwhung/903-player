@@ -1,4 +1,5 @@
 import {
+    EARLY_ADVANCE_SECONDS,
     PROGRESS_SAVE_INTERVAL_MS,
     REPLAY_RESET_SECONDS,
     STALL_MAX_RETRIES,
@@ -289,7 +290,16 @@ export class AudioController {
         if (intervalElapsed || crossedWatched) {
             this.persist();
         }
+        if (this.isAboutToEnd()) {
+            this.advance();
+        }
     };
+
+    /** 播緊、就快播完（未到 ended）：串流長度係 Infinity，永遠唔會成立 */
+    private isAboutToEnd(): boolean {
+        const remaining = this.audio.duration - this.audio.currentTime;
+        return !this.audio.paused && remaining <= EARLY_ADVANCE_SECONDS;
+    }
 
     private onPlay = (): void => {
         this.playIntent = false;
@@ -343,23 +353,30 @@ export class AudioController {
         this.persist();
     };
 
-    /**
-     * 播完：存低進度（會變聽過）；有下一集就喺 ended event 入面即刻換集再播，
-     * 唔等 React render，iOS 鎖屏 / 背景都可以接住播。換集期間維持「播緊」，
-     * 鎖屏嘅 media session 唔會轉做暫停
-     */
+    /** 播完：有下一集就接住播（通常 advance 已經喺 timeupdate 換咗，呢度係後備）；冇就停 */
     private onEnded = (): void => {
+        if (!this.advance()) {
+            this.onStopped();
+        }
+    };
+
+    /**
+     * 存低進度（會變聽過）再即刻換下一集播，唔等 React render。喺 timeupdate 仲播緊時換，
+     * iOS 唔會收起 audio session，鎖屏 / 背景都接得住；換集期間維持「播緊」。
+     * 冇下一集就返回 false
+     */
+    private advance(): boolean {
         const { recording } = this.state;
         const next = recording ? this.nextTrack?.(recording) : undefined;
         if (!next) {
-            this.onStopped();
-            return;
+            return false;
         }
         this.persist();
         this.update({ isAudible: false });
         void this.load(next, { autoplay: true });
         this.watchStall(STALL_MAX_RETRIES);
-    };
+        return true;
+    }
 
     /** 自動接住播嘅集等一陣都未出聲，就重新載入 */
     private watchStall(retriesLeft: number): void {
