@@ -32,6 +32,7 @@
 | 2026-10-27 | [qa/2026-10-27_qa_v1.12.0.md](qa/2026-10-27_qa_v1.12.0.md)                     |
 | 2026-10-27 | [qa/2026-10-27_qa_size-limits_batch.md](qa/2026-10-27_qa_size-limits_batch.md) |
 | 2026-10-27 | [qa/2026-10-27_qa_size-guard_batch.md](qa/2026-10-27_qa_size-guard_batch.md)   |
+| 2026-10-27 | [qa/2026-10-27_qa_cleanup_batch.md](qa/2026-10-27_qa_cleanup_batch.md)         |
 
 ## Deploys
 
