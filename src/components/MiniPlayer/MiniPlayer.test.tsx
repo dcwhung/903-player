@@ -538,6 +538,45 @@ describe('MiniPlayer swipe to close', () => {
         expect(region()).not.toHaveAttribute('data-armed');
     });
 
+    // Q-3：系統搶咗手勢（來電、瀏覽器捲動）會 pointercancel：唔當放手，彈返平時，唔關閉唔轉節目
+    describe('pointercancel', () => {
+        /** 拉過成個 card 闊度：如果 cancel 當放手處理就會關閉 */
+        const FAR_LEFT_X = PRESS_X - CARD_WIDTH;
+        const at = (clientX: number) => ({ clientX, clientY: PRESS_Y, pointerId: POINTER_ID });
+
+        it('springs back to rest without closing when cancelled mid-drag after lifting', () => {
+            const p = props();
+            render(<MiniPlayer {...p} />);
+
+            longPress();
+            fireEvent.pointerMove(region(), at(FAR_LEFT_X));
+            expect(region()).toHaveAttribute('data-dragging', 'true');
+            fireEvent.pointerCancel(region(), at(FAR_LEFT_X));
+            act(() => vi.advanceTimersByTime(DISMISS_SLIDE_MS));
+
+            expect(region()).not.toHaveAttribute('data-armed');
+            expect(region()).not.toHaveAttribute('data-dragging');
+            expect(region()).not.toHaveAttribute('data-closing');
+            expect(region()).toHaveStyle({ '--mini-dismiss-offset': '0px' });
+            expect(p.onDismiss).not.toHaveBeenCalled();
+            expect(p.onChange).not.toHaveBeenCalled();
+        });
+
+        it('cancels the long press when cancelled before it lifts', () => {
+            const p = props();
+            render(<MiniPlayer {...p} />);
+
+            fireEvent.pointerDown(region(), at(PRESS_X));
+            act(() => vi.advanceTimersByTime(SHORT_PRESS_MS));
+            fireEvent.pointerCancel(region(), at(PRESS_X));
+            act(() => vi.advanceTimersByTime(LONG_PRESS_MS));
+
+            expect(region()).not.toHaveAttribute('data-armed');
+            expect(region()).not.toHaveAttribute('data-pressing');
+            expect(p.onChange).not.toHaveBeenCalled();
+        });
+    });
+
     it('does not lift on a right or middle mouse press', () => {
         render(<MiniPlayer {...props()} />);
 
