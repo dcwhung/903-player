@@ -18,6 +18,7 @@
 | 2026-10-27 | [reviews/2026-10-27_review_v1.11.0.md](reviews/2026-10-27_review_v1.11.0.md)                     |
 | 2026-10-27 | [reviews/2026-10-27_review_v1.12.0.md](reviews/2026-10-27_review_v1.12.0.md)                     |
 | 2026-10-27 | [reviews/2026-10-27_review_size-limits_batch.md](reviews/2026-10-27_review_size-limits_batch.md) |
+| 2026-10-27 | [reviews/2026-10-27_review_size-guard_batch.md](reviews/2026-10-27_review_size-guard_batch.md)   |
 
 ## QA
 
