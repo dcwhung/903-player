@@ -247,3 +247,6 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
         sheet: { open: sheetOpen, groups, ...useArcSheetActions(loaded, pickArc, setSheetOpen) },
     };
 };
+
+/** 短篇劇集頁嘅資料同動作（畀頁面兩欄揀需要嘅部分做 props） */
+export type SeriesDramaView = ReturnType<typeof useSeriesDramaPage>;
