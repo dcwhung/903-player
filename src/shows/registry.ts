@@ -17,8 +17,10 @@ export interface ShowConfig {
     fileTime: string;
     /** 逢星期幾播（0 = 星期日 … 6 = 星期六），唔播嘅日子唔使 probe */
     airDays: readonly Weekday[];
-    /** 節目色調 + 節目圖 */
+    /** 節目色調 + 碟面圖 */
     theme: ShowTheme;
+    /** 主頁節目格用嘅 16:9 圖 */
+    tileArt: string;
 }
 
 export interface ShowRegistry {
@@ -53,7 +55,8 @@ const toShow = (folder: Folder): { show: ShowConfig; order: number | undefined }
             name: def.name,
             fileTime: def.fileTime,
             airDays: def.airDays,
-            theme: { ...def.theme, art: requireImage(folder, def.art) },
+            theme: { ...def.theme, art: requireImage(folder, def.disc) },
+            tileArt: requireImage(folder, def.tile),
         },
         order: def.order,
     };

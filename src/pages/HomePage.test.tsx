@@ -6,6 +6,7 @@ import { recording, renderWithProviders } from '../../tests/renderWithProviders'
 import { HOME_THEME } from '../config/showThemes';
 import { usePlayer } from '../player/usePlayer';
 import { seriesEpisodesOf } from '../dramas';
+import { findShow } from '../shows';
 import { saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import type { Track } from '../types/track';
@@ -95,6 +96,13 @@ describe('HomePage', () => {
             '聖艾粒LaLaLaLa',
             '今日節目',
         ]);
+    });
+
+    it('shows each show by its 16:9 tile, not its disc', () => {
+        renderWithProviders(<HomePage />);
+
+        const tile = within(screen.getByRole('navigation')).getByRole('button', { name: '公子會' });
+        expect(tile.querySelector('img')?.getAttribute('src')).toBe(findShow('gongzi')?.tileArt);
     });
 
     it('marks shows with an unwatched episode today as 新', () => {

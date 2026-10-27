@@ -23,11 +23,12 @@ const folder = (id: string, patch: Record<string, unknown> = {}): Folder => ({
         name: id.toUpperCase(),
         fileTime: '0900',
         airDays: [1, 2, 3, 4, 5],
-        art: 'art.jpg',
+        tile: 'tile.webp',
+        disc: 'disc.webp',
         theme: THEME,
         ...patch,
     },
-    images: { 'art.jpg': `/img/${id}.jpg` },
+    images: { 'tile.webp': `/img/${id}-tile.webp`, 'disc.webp': `/img/${id}-disc.webp` },
 });
 
 const sourceOf = (...folders: Folder[]): FolderSource => ({ folders: () => folders });
@@ -46,13 +47,14 @@ describe('buildShowRegistry', () => {
         expect(registry.shows.map((s) => s.id)).toEqual(['sat', 'alpha', 'beta', 'zeta']);
     });
 
-    it('builds the show config with its theme and art attached', () => {
+    it('builds the show config with its tile, and its theme with the disc attached', () => {
         expect(registry.findShow('sat')).toEqual({
             id: 'sat',
             name: 'SAT',
             fileTime: '2308',
             airDays: [6],
-            theme: { ...THEME, art: '/img/sat.jpg' },
+            tileArt: '/img/sat-tile.webp',
+            theme: { ...THEME, art: '/img/sat-disc.webp' },
         });
         expect(registry.findShow('nope')).toBeUndefined();
     });
