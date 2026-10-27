@@ -1,4 +1,4 @@
-import { AudioPrefetcher, type FetchAudio } from './audioPrefetch';
+import { AudioPrefetcher, fetchAudioBlob, type FetchAudio } from './audioPrefetch';
 
 const URL_A = 'https://r2.dev/a.m4a';
 const URL_B = 'https://r2.dev/b.m4a';
@@ -75,6 +75,16 @@ describe('AudioPrefetcher', () => {
         expect(prefetcher.take(URL_B)).toBe('blob:2');
     });
 
+    it('bypasses the HTTP cache so Safari cannot reuse the player’s CORS-less copy', async () => {
+        const fetchMock = vi.fn(async () => new Response('x'));
+        vi.stubGlobal('fetch', fetchMock);
+        const { signal } = new AbortController();
+
+        await fetchAudioBlob(URL_A, signal);
+
+        expect(fetchMock).toHaveBeenCalledWith(URL_A, { signal, cache: 'no-store' });
+    });
+
     it('reports a failed download and hands nothing out (e.g. no CORS)', async () => {
         const { fetchAudio, settle } = deferredFetch();
         const onResult = vi.fn();
@@ -85,7 +95,7 @@ describe('AudioPrefetcher', () => {
 
         expect(prefetcher.take(URL_A)).toBeUndefined();
         expect(onResult).toHaveBeenCalledWith('prefetch-start', URL_A);
-        expect(onResult).toHaveBeenCalledWith('prefetch-fail', URL_A, 'TypeError');
+        expect(onResult).toHaveBeenCalledWith('prefetch-fail', URL_A, 'TypeError: cors');
     });
 
     it('revokes a blob that was taken once playback moves on', async () => {
