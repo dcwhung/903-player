@@ -2,6 +2,7 @@ import { FakeAudio } from '../../tests/fakeAudio';
 import type { Recording } from '../types/recording';
 import { EARLY_ADVANCE_SECONDS, STALL_MAX_RETRIES, STALL_RETRY_MS } from '../config/constants';
 import { AudioController } from './AudioController';
+import { AudioPrefetcher } from './audioPrefetch';
 
 const RECORDING: Recording = {
     showId: 'gongzi',
@@ -507,6 +508,62 @@ describe('AudioController early auto-advance', () => {
 
         expect(audio.src).toBe(RECORDING.url);
         expect(audio.play).not.toHaveBeenCalled();
+        detach();
+    });
+});
+
+/** iOS 鎖屏只載到檔頭：播緊一集就預載下一集，換集播 blob URL */
+describe('AudioController prefetching the next track', () => {
+    const NEXT: Recording = {
+        ...RECORDING,
+        date: '2026-10-24',
+        url: 'https://audio.hkfm903.live/next.aac',
+    };
+    const BLOB_URL = 'blob:next';
+
+    const setup = (ready: boolean) => {
+        const prefetcher = new AudioPrefetcher();
+        const prefetch = vi.spyOn(prefetcher, 'prefetch').mockImplementation(() => undefined);
+        const take = vi
+            .spyOn(prefetcher, 'take')
+            .mockImplementation((url) => (ready && url === NEXT.url ? BLOB_URL : undefined));
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio(), prefetcher);
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = controller.attach();
+        return { audio, controller, detach, prefetch, take };
+    };
+
+    it('starts downloading the next track once playback starts', async () => {
+        const { controller, detach, prefetch } = setup(false);
+
+        await controller.load(RECORDING, { autoplay: true });
+        await Promise.resolve();
+
+        expect(prefetch).toHaveBeenCalledWith(NEXT.url);
+        detach();
+    });
+
+    it('plays the downloaded copy but keeps the real url as the track', async () => {
+        const { audio, controller, detach } = setup(true);
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(1200);
+
+        audio.end();
+
+        expect(audio.src).toBe(BLOB_URL);
+        expect(controller.getSnapshot().recording).toBe(NEXT);
+        detach();
+    });
+
+    it('streams the real url when nothing was downloaded', async () => {
+        const { audio, controller, detach } = setup(false);
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(1200);
+
+        audio.end();
+
+        expect(audio.src).toBe(NEXT.url);
         detach();
     });
 });

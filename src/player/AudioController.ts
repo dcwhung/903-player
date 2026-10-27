@@ -13,7 +13,8 @@ import {
     saveProgress,
 } from '../services/progressStore';
 import type { Track } from '../types/track';
-import { recordPlayback } from './playbackLog';
+import { AudioPrefetcher } from './audioPrefetch';
+import { audioFileName, recordPlayback } from './playbackLog';
 import type { LoadOptions, PlayerState } from './playerContext';
 
 const INITIAL_STATE: PlayerState = {
@@ -62,7 +63,13 @@ export class AudioController {
     /** 播完一集之後接住播邊集；冇設定或者返回 undefined 就停 */
     private nextTrack: ((track: Track) => Track | undefined) | undefined;
 
-    constructor(private readonly audio: HTMLAudioElement) {}
+    constructor(
+        private readonly audio: HTMLAudioElement,
+        /** 預載下一集（測試可以注入）；預設用 fetch，結果寫入診斷 log */
+        private readonly prefetcher = new AudioPrefetcher(undefined, (event, url, detail) =>
+            recordPlayback(event, audio, [audioFileName(url), detail].filter(Boolean).join(' ')),
+        ),
+    ) {}
 
     /** 設定播完自動接住播邊集（PlayerProvider 傳入） */
     setNextTrack = (resolver: ((track: Track) => Track | undefined) | undefined): void => {
@@ -193,7 +200,10 @@ export class AudioController {
         this.lastTickPosition = this.pendingStart;
         // 聽過嘅集 getResumePosition 係 0，即係由頭重播
         this.armReplay();
-        this.audio.src = recording.url;
+        // 有預載好嘅就播記憶體入面嗰份（iOS 鎖屏唔會幫新 URL 載音頻資料）；track 照用真 URL
+        const prefetched = this.prefetcher.take(recording.url);
+        recordPlayback('switch', this.audio, prefetched ? 'blob' : 'stream');
+        this.audio.src = prefetched ?? recording.url;
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
     }
 
@@ -307,7 +317,17 @@ export class AudioController {
     private onPlay = (): void => {
         this.playIntent = false;
         this.update({ isPlaying: true });
+        this.prefetchNext();
     };
+
+    /** 播緊呢集就預載下一集（前景載最穩陣；同一集唔會重複載） */
+    private prefetchNext(): void {
+        const { recording } = this.state;
+        const next = recording ? this.nextTrack?.(recording) : undefined;
+        if (next) {
+            this.prefetcher.prefetch(next.url);
+        }
+    }
 
     /** 數據到咗、真正開始出聲 */
     private onAudible = (): void => {

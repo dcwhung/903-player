@@ -45,7 +45,7 @@ const readLines = (): string[] => {
 };
 
 /** URL 最後一段（解碼），即係檔名 */
-const fileName = (src: string): string => {
+export const audioFileName = (src: string): string => {
     try {
         return decodeURIComponent(src.split('/').at(-1) ?? '');
     } catch {
@@ -91,7 +91,7 @@ export const attachPlaybackLog = (audio: HTMLAudioElement): (() => void) => {
         recordPlayback(
             event.type,
             audio,
-            event.type === 'loadstart' ? fileName(audio.currentSrc || audio.src) : undefined,
+            event.type === 'loadstart' ? audioFileName(audio.currentSrc || audio.src) : undefined,
         );
     const onTick = () => {
         if (Date.now() - lastTickAt < PLAYBACK_LOG_TICK_MS) return;
