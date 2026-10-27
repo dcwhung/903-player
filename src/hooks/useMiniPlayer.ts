@@ -22,6 +22,7 @@ import { t } from '../i18n/t';
 import { formatDateLabel, hkToday } from '../utils/date';
 import { useRefreshedOn } from './useRefreshedOn';
 import { ratio } from '../utils/ratio';
+import { hasKnownDuration } from '../utils/time';
 
 const showName = (recording: Recording): string => findShow(recording.showId)?.name ?? '';
 
@@ -95,6 +96,8 @@ const dramaMiniPlayer = (
         subtitle: timeText ? t('miniPlayer.withTime', { label, time: timeText }) : label,
         timeText,
         isPlaying: player.isPlaying,
+        isAudible: player.isAudible,
+        upright: !hasKnownDuration(player.duration),
         progress: ratio(player.currentTime, player.duration),
         labels: [name],
         keys: [episode.url],
@@ -162,6 +165,9 @@ export const useMiniPlayer = (): MiniPlayerProps | null => {
         subtitle: miniPlayerSubtitle(current.date, timeText),
         timeText,
         isPlaying: isLoaded && player.isPlaying,
+        // 只係顯示緊（未載入）嗰個唔轉；擺正用同大碟一樣嘅未知時長規則
+        isAudible: isLoaded && player.isAudible,
+        upright: !hasKnownDuration(duration),
         progress: ratio(position, duration),
         keys: list.map((r) => r.url),
         index,

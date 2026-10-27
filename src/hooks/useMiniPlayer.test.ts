@@ -136,6 +136,76 @@ describe('useMiniPlayer', () => {
         expect(mini?.positionLabel).toBeUndefined();
     });
 
+    // CUI-0005：細碟跟大碟一樣，真正出聲先轉，未知時長擺正
+    describe('disc', () => {
+        it('spins only while the loaded show is audible, not while loading or stalled', async () => {
+            const { audio, result } = setup();
+            await ready(result);
+            await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
+            expect(result.current.mini).toMatchObject({ isPlaying: true, isAudible: false });
+
+            act(() => audio.emitPlaying());
+            expect(result.current.mini?.isAudible).toBe(true);
+
+            act(() => audio.emitWaiting());
+            expect(result.current.mini?.isAudible).toBe(false);
+        });
+
+        it('stops spinning when paused', async () => {
+            const { audio, result } = setup();
+            await ready(result);
+            await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
+            act(() => audio.emitPlaying());
+
+            await act(async () => result.current.mini?.onToggle());
+
+            expect(result.current.mini?.isAudible).toBe(false);
+        });
+
+        it('stands upright until the duration is known', async () => {
+            const { audio, result } = setup();
+            await ready(result);
+            expect(result.current.mini?.upright).toBe(true);
+            await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
+            expect(result.current.mini?.upright).toBe(true);
+
+            act(() => audio.emitMetadata(7110));
+
+            expect(result.current.mini?.upright).toBe(false);
+        });
+
+        it('does not spin a show that is only shown, while another one plays', async () => {
+            const { audio, result } = setup();
+            await ready(result);
+            await act(() =>
+                result.current.player.load(recording('badgirl', '2026-10-12', '1000'), {
+                    autoplay: true,
+                }),
+            );
+            act(() => audio.emitPlaying());
+            expect(result.current.mini?.isAudible).toBe(true);
+
+            act(() => result.current.mini?.onChange(1));
+
+            expect(result.current.mini?.isAudible).toBe(false);
+        });
+
+        it('follows the player for a drama episode', async () => {
+            const episode = seriesEpisodesOf('chisee')[0];
+            if (!episode) throw new Error('missing fixture');
+            const { audio, result } = setup();
+            await act(() => result.current.player.load(episode, { autoplay: true }));
+            expect(result.current.mini).toMatchObject({ isAudible: false, upright: true });
+
+            act(() => {
+                audio.emitMetadata(1200);
+                audio.emitPlaying();
+            });
+
+            expect(result.current.mini).toMatchObject({ isAudible: true, upright: false });
+        });
+    });
+
     describe('with an older episode loaded (重溫)', () => {
         const OLD = recording('badgirl', '2026-10-12', '1000');
 

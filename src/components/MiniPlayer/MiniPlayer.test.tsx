@@ -11,6 +11,8 @@ const props = (overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps => ({
     subtitle: '19/10（一） · 12:40 / 1:58:30',
     timeText: '12:40 / 1:58:30',
     isPlaying: true,
+    isAudible: true,
+    upright: false,
     progress: 0.11,
     labels: ['雲妮鍾情', '在晴朗的一天出發', 'Bad Girl大過佬'],
     keys: ['/wanni.aac', '/sunnyday.aac', '/badgirl.aac'],
@@ -38,18 +40,36 @@ describe('MiniPlayer', () => {
         expect(region.querySelector('.dots')).toBeNull();
     });
 
-    it('should spin the disc while playing', () => {
-        render(<MiniPlayer {...props({ isPlaying: true })} />);
+    it('should spin the disc while it is audible', () => {
+        render(<MiniPlayer {...props({ isPlaying: true, isAudible: true })} />);
 
         const region = screen.getByRole('region', { name: '正在播放（今日節目）' });
         expect(region.querySelector('.face')?.className).toMatch(/spinning/);
     });
 
     it('should stop the disc in place when paused', () => {
-        render(<MiniPlayer {...props({ isPlaying: false })} />);
+        render(<MiniPlayer {...props({ isPlaying: false, isAudible: false })} />);
 
         const region = screen.getByRole('region', { name: '正在播放（今日節目）' });
         expect(region.querySelector('.face')?.className).not.toMatch(/spinning/);
+    });
+
+    // CUI-0005：同大碟一樣，撳咗播但載緊 / 斷流（未出聲）唔轉
+    it('should keep the disc still while loading or stalled, though play was pressed', () => {
+        render(<MiniPlayer {...props({ isPlaying: true, isAudible: false })} />);
+
+        const region = screen.getByRole('region', { name: '正在播放（今日節目）' });
+        expect(region.querySelector('.face')?.className).not.toMatch(/spinning/);
+        expect(screen.getByRole('button', { name: '暫停' })).toBeInTheDocument();
+    });
+
+    it('should stand the disc upright while the duration is unknown', () => {
+        const { rerender } = render(<MiniPlayer {...props({ upright: true })} />);
+        const face = () => screen.getByRole('region').querySelector('.face');
+        expect(face()?.className).toMatch(/upright/);
+
+        rerender(<MiniPlayer {...props({ upright: false })} />);
+        expect(face()?.className).not.toMatch(/upright/);
     });
 
     it('names its region after what plays', () => {

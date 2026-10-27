@@ -21,6 +21,10 @@ export interface MiniPlayerProps {
     /** 例如「12:40 / 1:58:30」；未知長度時冇 */
     timeText?: string;
     isPlaying: boolean;
+    /** 真正出緊聲（唔係載緊 / 斷流）：細碟先自轉，同大碟一樣 */
+    isAudible: boolean;
+    /** 未知時長：細碟擺正，同大碟一樣 */
+    upright: boolean;
     /** 0–1 */
     progress: number;
     /** 今日所有節目名（按播出次序） */

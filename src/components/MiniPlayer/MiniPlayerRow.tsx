@@ -15,6 +15,8 @@ interface MiniPlayerRowProps {
     /** 節目名旁邊嘅細標籤（重溫 / 今日）；冇就唔顯示 */
     tag?: MiniPlayerTag;
     isPlaying: boolean;
+    isAudible: boolean;
+    upright: boolean;
     onToggle: () => void;
     onOpen: () => void;
 }
@@ -45,8 +47,13 @@ export const MiniPlayerRow = (props: MiniPlayerRowProps) => (
             aria-label={props.openLabel}
             onClick={props.onOpen}
         >
-            {/* 播緊就跟大碟一樣自轉，暫停就停喺原位 */}
-            <Disc size="small" art={props.theme.art} spinning={props.isPlaying} />
+            {/* 同大碟一樣：真正出緊聲先自轉（載緊 / 斷流 / 暫停就停喺原位），未知時長擺正 */}
+            <Disc
+                size="small"
+                art={props.theme.art}
+                spinning={props.isAudible}
+                upright={props.upright}
+            />
             <span className={styles.text}>
                 <MiniPlayerName name={props.showName} tag={props.tag} />
                 <Marquee className={styles.subtitle} text={props.subtitle} />
