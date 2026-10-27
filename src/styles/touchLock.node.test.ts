@@ -13,6 +13,7 @@ const css = (path: string) => readCss(new URL(path, import.meta.url));
 const SHORT_HEIGHT_MEDIA = `(max-height: ${e2eShortHeightPx()}px)`;
 const STACK_CSS = '../components/ShowCardStack/ShowCardStack.module.css';
 const STRIP_CSS = '../components/DateStrip/DateStrip.module.css';
+const DRAMA_CSS = '../components/DramaShelf/DramaShelf.module.css';
 
 /*
  * iOS standalone PWA：成頁唔可以捲 / 橡筋，只有清單 panel 自己捲；
@@ -55,6 +56,20 @@ describe('iOS touch lock', () => {
         ['MiniPlayer .player', '../components/MiniPlayer/MiniPlayer.module.css', '.player'],
     ])('should block single-finger pan but allow pinch-zoom on the %s', (_name, path, selector) => {
         expect(cssValues(css(path), selector, 'touch-action')).toEqual(['none', 'pinch-zoom']);
+    });
+
+    /*
+     * 直版廣播劇書架放得晒（唔使捲）：手指上下捽揀 focus（useShelfScrub），單指 pan 要擋，
+     * 否則 iOS 開始原生 pan 就 pointercancel；放唔晒（data-scroll）要保留原生捲動 + snap，唔可以擋
+     */
+    it('should block single-finger pan on the drama shelf only while it does not scroll', () => {
+        const shelf = css(DRAMA_CSS);
+
+        expect(cssValues(shelf, '.shelf[data-stacked]:not([data-scroll])', 'touch-action')).toEqual(
+            ['none', 'pinch-zoom'],
+        );
+        expect(cssValues(shelf, '.shelf[data-stacked][data-scroll]', 'touch-action')).toEqual([]);
+        expect(cssValues(shelf, '.shelf[data-stacked]', 'touch-action')).toEqual([]);
     });
 
     // 任何高度都固定（冇成頁捲）：好矮嘅畫面卡疊同日子條都照樣擋晒單指 pan，唔畀返 pan-y

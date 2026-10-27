@@ -84,12 +84,14 @@ const DramaTile = ({ item, focusProps }: DramaTileProps) => (
 
 /**
  * 直版：一行一套，卡疊住（每行矮過張卡，蓋住下一張），疊到最後一張到底（T8，useShelfFocus 計）；
- * focus 卡全大、全亮，其他縮細、蓋暗。放唔晒先上下捲，每張卡 snap，停喺 snap 位嗰張係 focus。
+ * focus 卡全大、全亮，其他縮細、蓋暗。放唔晒先上下捲，每張卡 snap，停喺 snap 位嗰張係 focus；
+ * 放得晒就手指上下捽揀 focus（scrubProps，要捲 / 橫版時乜都唔做）。
  * 闊橫版（iPad / 桌面）兩套並排，唔疊、唔 focus
  */
 const ShelfColumn = ({ items }: { items: readonly DramaShelfItem[] }) => {
     const stacked = !useMediaQuery(LANDSCAPE_QUERY);
-    const { shelfRef, style, scrolls, onScroll, tileProps } = useShelfFocus(items.length, stacked);
+    const focus = useShelfFocus(items.length, stacked);
+    const { shelfRef, style, scrolls, onScroll, tileProps, scrubProps } = focus;
     return (
         <nav
             ref={shelfRef}
@@ -99,6 +101,7 @@ const ShelfColumn = ({ items }: { items: readonly DramaShelfItem[] }) => {
             data-scroll={scrolls ? '' : undefined}
             style={style}
             onScroll={stacked ? onScroll : undefined}
+            {...scrubProps}
         >
             {items.map((item, i) => (
                 <DramaTile

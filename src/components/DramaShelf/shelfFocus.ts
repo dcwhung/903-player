@@ -34,6 +34,23 @@ export const focusIndexAt = (
 };
 
 /**
+ * 手指 / pen 喺書架上下捽（唔使捲先有）：y（由書架內容頂量起）落喺邊張卡露出嚟嗰條。
+ * 下一張卡蓋住上一張下半，所以 y 屬於「卡頂 ≤ y」入面最尾嗰張（疊卡次序，唔理而家邊張 focus），
+ * 頂留白以上當第一張、最尾一張卡頂以下當最尾一張。
+ * 未 focus 嘅卡 scale 0.94 但 transform-origin 係 top center：卡頂唔郁，只係底同兩邊縮，
+ * 而歸屬只睇卡頂，所以唔使計 scale；未量到尺寸當第一張
+ */
+export const cardIndexAtY = (
+    y: number,
+    count: number,
+    { stepPx, topPx }: Pick<ShelfMetrics, 'stepPx' | 'topPx'>,
+): number => {
+    if (stepPx <= 0 || count <= 0) return 0;
+    const index = Math.floor((y - topPx) / stepPx);
+    return Math.min(count - 1, Math.max(0, index));
+};
+
+/**
  * 書架底要留幾多位，最尾一張卡先捲得到 snap 位：
  * 最大 scrollTop（頂留白 + n 行 + 底留位 − 可見高）要等於 snapTop(n − 1)
  */

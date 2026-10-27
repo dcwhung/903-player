@@ -882,10 +882,10 @@ const checkShellMismatch = async (browser, errors) => {
 /*
  * S-421：成頁 .scope 而家係 size container（W-390）。如果瀏覽器對 container-type 加埋 layout containment，
  * .scope 會變成 position: fixed 嘅 containing block，主頁 mini player 就會跟 .scope（殼）而唔係 viewport 定位。
- * 正常畫面：mini player 浮喺頁底，底 = innerHeight − 16（--space-4，Chromium 冇安全區）。
- * 殼縮矮（同 checkShellMismatch 一樣模擬 dvh 高過殼）：底唔可以出咗 viewport，亦唔可以高過殼底 − 16。
+ * 正常畫面：mini player 浮喺頁底，底 = innerHeight − 8（--space-2，Chromium 冇安全區）。
+ * 殼縮矮（同 checkShellMismatch 一樣模擬 dvh 高過殼）：底唔可以出咗 viewport，亦唔可以高過殼底 − 8。
  */
-const MINI_BOTTOM_GAP_PX = 16;
+const MINI_BOTTOM_GAP_PX = 8;
 const MINI_POSITION_CASES = [
     { width: 390, height: 844, shrink: 160 },
     { width: 320, height: 568, shrink: 80 },

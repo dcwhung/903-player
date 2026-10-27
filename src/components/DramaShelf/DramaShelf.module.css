@@ -55,6 +55,16 @@
     overflow-y: hidden;
 }
 
+/*
+ * 放得晒（唔使捲）：手指上下捽揀 focus（useShelfScrub），擋晒單指 pan，否則 iOS 開始原生 pan 就 pointercancel；
+ * 成頁本身已經固定唔捲，書架入面亦冇左右手勢。雙指放大照得（無障礙），舊瀏覽器後備 none。
+ * 放唔晒（data-scroll）唔擋：原生上下捲 + snap，focus 跟 snap
+ */
+.shelf[data-stacked]:not([data-scroll]) {
+    touch-action: none;
+    touch-action: pinch-zoom;
+}
+
 .shelf[data-stacked][data-scroll] {
     overflow-y: auto;
     scroll-padding-top: var(--drama-shelf-peek);
