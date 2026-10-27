@@ -38,6 +38,20 @@ describe('MiniPlayer', () => {
         expect(region.querySelector('.dots')).toBeNull();
     });
 
+    it('should spin the disc while playing', () => {
+        render(<MiniPlayer {...props({ isPlaying: true })} />);
+
+        const region = screen.getByRole('region', { name: '正在播放（今日節目）' });
+        expect(region.querySelector('.face')?.className).toMatch(/spinning/);
+    });
+
+    it('should stop the disc in place when paused', () => {
+        render(<MiniPlayer {...props({ isPlaying: false })} />);
+
+        const region = screen.getByRole('region', { name: '正在播放（今日節目）' });
+        expect(region.querySelector('.face')?.className).not.toMatch(/spinning/);
+    });
+
     it('names its region after what plays', () => {
         render(<MiniPlayer {...props({ region: '正在播放（廣播劇）' })} />);
         expect(screen.getByRole('region', { name: '正在播放（廣播劇）' })).toBeInTheDocument();
