@@ -45,8 +45,6 @@ export interface ArcDefinition {
     /** 短篇自己嘅長方形圖（folder 內檔名，原 cover 比例）：暫時未用，留底防將來要 */
     tile?: string;
     addedAt?: string;
-    /** 短篇自己嘅檔名 template（例如集名唔喺檔名入面）；冇就用 audio.file */
-    file?: string;
     firstNo: number;
     count: number;
     /** 集數 → 集名（照檔名寫法） */
@@ -104,15 +102,10 @@ export const SERIES_TOKENS: ReadonlySet<string> = new Set([
 ]);
 export const DAILY_TOKENS: ReadonlySet<string> = new Set(['date', 'yyyymmdd', 'folder']);
 
-const checkTemplate = (
-    ctx: ParseContext,
-    template: string,
-    allowed: ReadonlySet<string>,
-    path = 'audio.file',
-): void => {
+const checkTemplate = (ctx: ParseContext, template: string, allowed: ReadonlySet<string>): void => {
     for (const [, token] of template.matchAll(TOKEN_PATTERN)) {
         if (token !== undefined && !allowed.has(token))
-            fail(ctx, `${path}: unknown token {${token}}`);
+            fail(ctx, `audio.file: unknown token {${token}}`);
     }
 };
 
@@ -189,8 +182,6 @@ const readArc = (
     const firstNo = readFirstNo(ctx, raw, `${path}.firstNo`);
     const { count, titles } = readEpisodeCount(ctx, raw, `${path}.episodes`, firstNo);
     const range = { first: firstNo, last: firstNo + count - 1 };
-    const file = readOptionalString(ctx, raw, 'file', `${path}.file`);
-    if (file !== undefined) checkTemplate(ctx, file, SERIES_TOKENS, `${path}.file`);
     readNumberMap(ctx, raw, 'titles', `${path}.titles`, range).forEach((t, no) =>
         titles.set(no, t),
     );
@@ -199,7 +190,6 @@ const readArc = (
         disc: readOptionalImage(ctx, raw, 'disc', `${path}.disc`),
         tile: readOptionalImage(ctx, raw, 'tile', `${path}.tile`),
         addedAt: readOptionalDate(ctx, raw, 'addedAt', `${path}.addedAt`),
-        ...(file !== undefined ? { file } : {}),
         firstNo,
         count,
         titles,

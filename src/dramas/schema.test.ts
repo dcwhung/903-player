@@ -45,7 +45,6 @@ const SERIES = {
             episodes: 3,
             titles: { '3': '最終結局' },
             files: { '2': 'odd name.m4a' },
-            file: '{no2} - {arc}.m4a',
         },
     ],
 };
@@ -105,8 +104,6 @@ describe('parseDramaDefinition', () => {
 
         expect([...(s3?.titles ?? [])]).toEqual([[3, '最終結局']]);
         expect([...(s3?.files ?? [])]).toEqual([[2, 'odd name.m4a']]);
-        expect(s3?.file).toBe('{no2} - {arc}.m4a');
-        expect(s1?.file).toBeUndefined();
     });
 
     it('normalises a daily drama: rerun defaults to false, order is optional', () => {
@@ -175,11 +172,6 @@ describe('parseDramaDefinition', () => {
             'an unknown template token',
             seriesWith({ audio: { ...SERIES.audio, file: '{no2} - {season}.m4a' } }),
             /audio\.file: unknown token \{season\}/,
-        ],
-        [
-            'an unknown token in an arc template',
-            seriesWith({ arcs: [{ name: 'S', episodes: 1, file: '{season}.m4a' }] }),
-            /arcs\[0\]\.file: unknown token \{season\}/,
         ],
         [
             'a series token in a daily template',
