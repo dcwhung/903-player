@@ -3,6 +3,7 @@
  * 所以將 audio 每個 event 連狀態記入 localStorage，版本號連撳 5 下複製出嚟分析。
  * 全部 try/catch：log 壞咗都唔可以影響播放。
  */
+import { APP_VERSION } from '../config/appVersion';
 import {
     PLAYBACK_LOG_MAX_ENTRIES,
     PLAYBACK_LOG_STORAGE_KEY,
@@ -45,7 +46,7 @@ const readLines = (): string[] => {
 };
 
 /** URL 最後一段（解碼），即係檔名 */
-export const audioFileName = (src: string): string => {
+const audioFileName = (src: string): string => {
     try {
         return decodeURIComponent(src.split('/').at(-1) ?? '');
     } catch {
@@ -84,8 +85,9 @@ export const recordPlayback = (event: string, audio: HTMLAudioElement, note?: st
     }
 };
 
-/** 聽住 audio 同頁面 event 自動記 log，返回解除 function */
+/** 聽住 audio 同頁面 event 自動記 log，返回解除 function；先記一行 boot + 版本號，分得出係邊個 build */
 export const attachPlaybackLog = (audio: HTMLAudioElement): (() => void) => {
+    recordPlayback('boot', audio, `v${APP_VERSION}`);
     let lastTickAt = Number.NEGATIVE_INFINITY;
     const onMedia = (event: Event) =>
         recordPlayback(
