@@ -1,12 +1,12 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { LANDSCAPE_QUERY } from '../../config/layout';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { t } from '../../i18n/t';
-import { scrollBehavior } from '../../utils/motion';
 import { HomeLandscapeGrid } from '../HomeLandscapeGrid/HomeLandscapeGrid';
 import { PageDots } from '../PageDots/PageDots';
 import styles from './ShowGrid.module.css';
 import { GRID_COLUMNS, paginate } from './showGridPages';
+import { useGridPager } from './useGridPager';
 import { useRowsPerPage } from './useRowsPerPage';
 
 interface ShowGridProps {
@@ -37,21 +37,8 @@ const PagedShowGrid = ({ tiles, label, busy }: ShowGridProps) => {
         tiles.length,
         !landscape,
     );
-    const scrollerRef = useRef<HTMLDivElement>(null);
     const pages = paginate(tiles, rows * GRID_COLUMNS);
-    const [index, setIndex] = useState(0);
-    const lastPage = pages.length - 1;
-
-    const onScroll = () => {
-        const scroller = scrollerRef.current;
-        if (!scroller || scroller.clientWidth === 0) return;
-        setIndex(Math.round(scroller.scrollLeft / scroller.clientWidth));
-    };
-    const goTo = (page: number) => {
-        const scroller = scrollerRef.current;
-        scroller?.scrollTo({ left: page * scroller.clientWidth, behavior: scrollBehavior() });
-        setIndex(page);
-    };
+    const { scrollerRef, index, onScroll, goTo } = useGridPager(pages.length);
 
     const pageLabels = pages.map((_, i) => t('home.page', { index: i + 1 }));
     return (
@@ -78,8 +65,7 @@ const PagedShowGrid = ({ tiles, label, busy }: ShowGridProps) => {
             <PageDots
                 keys={pageLabels}
                 labels={pageLabels}
-                // 轉向 / 放大令頁數變少：瀏覽器會將 scrollLeft 收返入範圍（再觸發 onScroll），之前先當最後一頁
-                index={Math.min(index, lastPage)}
+                index={index}
                 onSelect={goTo}
                 positionLabel={pagePosition}
             />
