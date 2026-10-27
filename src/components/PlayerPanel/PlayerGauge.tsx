@@ -53,6 +53,38 @@ const useGaugeView = (held: boolean, onStart: (() => void) | undefined) => {
     return { known, shownTime, max, seek, isPlaying, arc, disc, toggle, restart };
 };
 
+interface GaugeActionsProps {
+    isPlaying: boolean;
+    onRestart: () => void;
+    onToggle: () => void;
+}
+
+/** 由頭播放 + 播放 / 暫停兩粒掣 */
+const GaugeActions = ({ isPlaying, onRestart, onToggle }: GaugeActionsProps) => (
+    <div className={styles.actions}>
+        <button
+            type="button"
+            className={styles.restart}
+            aria-label={t('player.restart')}
+            onClick={onRestart}
+        >
+            <RestartIcon size={RESTART_ICON_SIZE} />
+        </button>
+        <button
+            type="button"
+            className={styles.toggle}
+            aria-label={t(isPlaying ? 'player.pause' : 'player.play')}
+            onClick={onToggle}
+        >
+            {isPlaying ? (
+                <PauseIcon size={TOGGLE_ICON_SIZE} />
+            ) : (
+                <PlayIcon size={TOGGLE_ICON_SIZE} />
+            )}
+        </button>
+    </div>
+);
+
 /** 唱片 + 弧形進度 + 時間 + 由頭播放：節目頁播放器同今日節目卡共用 */
 export const PlayerGauge = ({ art, artRef, held = false, onStart }: PlayerGaugeProps) => {
     const { known, shownTime, max, isPlaying, ...view } = useGaugeView(held, onStart);
@@ -82,28 +114,7 @@ export const PlayerGauge = ({ art, artRef, held = false, onStart }: PlayerGaugeP
             <span className={`${styles.time} ${styles.total}`}>
                 <span>{total}</span>
             </span>
-            <div className={styles.actions}>
-                <button
-                    type="button"
-                    className={styles.restart}
-                    aria-label={t('player.restart')}
-                    onClick={view.restart}
-                >
-                    <RestartIcon size={RESTART_ICON_SIZE} />
-                </button>
-                <button
-                    type="button"
-                    className={styles.toggle}
-                    aria-label={t(isPlaying ? 'player.pause' : 'player.play')}
-                    onClick={view.toggle}
-                >
-                    {isPlaying ? (
-                        <PauseIcon size={TOGGLE_ICON_SIZE} />
-                    ) : (
-                        <PlayIcon size={TOGGLE_ICON_SIZE} />
-                    )}
-                </button>
-            </div>
+            <GaugeActions isPlaying={isPlaying} onRestart={view.restart} onToggle={view.toggle} />
         </div>
     );
 };
