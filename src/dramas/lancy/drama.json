@@ -1,0 +1,47 @@
+{
+    "name": "蘭茜夫人劇場",
+    "kind": "series",
+    "enabled": true,
+    "order": 6,
+    "addedAt": "2026-10-27",
+    "tile": "tile.webp",
+    "disc": "disc.webp",
+    "audio": {
+        "host": "r2",
+        "folder": "蘭茜夫人劇場",
+        "file": "{no2} - {arc} - 第{noZh}集[ - {title}].m4a"
+    },
+    "theme": {
+        "bg": "#f3efde",
+        "surface": "#faf7ec",
+        "track": "#e0d6b8",
+        "accent": "#d45f32",
+        "onAccent": "#ffffff",
+        "title": "#a8401a",
+        "accentText": "#a8401a",
+        "text": "#33281d",
+        "muted": "#6b5a47",
+        "shadowDark": "#dcd3b8",
+        "shadowLight": "#ffffff",
+        "scheme": "light",
+        "statusBar": "#a8401a",
+        "headerRule": "linear-gradient(90deg, #d45f32 0 60%, #8fbcb2 60%) 0 100% / 100% 3px no-repeat"
+    },
+    "arcs": [
+        {
+            "name": "戀愛二分一",
+            "disc": "half-disc.webp",
+            "episodes": 30
+        },
+        {
+            "name": "初戀無限次",
+            "disc": "first-love-disc.webp",
+            "episodes": 33
+        },
+        {
+            "name": "我心不死",
+            "disc": "heart-disc.webp",
+            "episodes": 37
+        }
+    ]
+}
