@@ -32,17 +32,20 @@
     overflow: hidden;
 }
 
-/* 一直掛住 animation，暫停（paused）就停喺原位；播緊先轉 */
-.large .face {
+/*
+ * 一直掛住 animation，暫停（paused）就停喺原位；傳 spinning 先轉。
+ * 大碟（播放器）同細碟（mini player）共用；清單細碟唔傳 spinning，停喺 0° 同以前一樣
+ */
+.face {
     animation: disc-spin var(--duration-disc-spin) linear infinite paused;
 }
 
-.large .face.spinning {
+.face.spinning {
     animation-play-state: running;
 }
 
 /* 未知時長：拎走 animation，碟即刻返正（之後再掛返由 0° 開始） */
-.large .face.upright {
+.face.upright {
     animation: none;
 }
 
@@ -77,7 +80,7 @@
         transition: none;
     }
 
-    .large .face {
+    .face {
         animation: none;
     }
 }

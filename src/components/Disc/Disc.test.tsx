@@ -11,6 +11,18 @@ describe('Disc', () => {
         expect(disc.querySelector('img')).toHaveAttribute('src', '/art/gongzi.jpg');
     });
 
+    it('should spin a small disc face when spinning', () => {
+        const { container } = render(<Disc size="small" spinning />);
+
+        expect(container.querySelector('.face')?.className).toMatch(/spinning/);
+    });
+
+    it('should not spin a small disc face by default', () => {
+        const { container } = render(<Disc size="small" />);
+
+        expect(container.querySelector('.face')?.className).not.toMatch(/spinning/);
+    });
+
     it('renders without artwork', () => {
         const { container } = render(<Disc />);
 

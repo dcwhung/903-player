@@ -27,7 +27,8 @@ export const MiniPlayerRow = (props: MiniPlayerRowProps) => (
             aria-label={props.openLabel}
             onClick={props.onOpen}
         >
-            <Disc size="small" art={props.theme.art} />
+            {/* 播緊就跟大碟一樣自轉，暫停就停喺原位 */}
+            <Disc size="small" art={props.theme.art} spinning={props.isPlaying} />
             <span className={styles.text}>
                 <Marquee className={styles.name} text={props.showName} />
                 <Marquee className={styles.subtitle} text={props.subtitle} />
