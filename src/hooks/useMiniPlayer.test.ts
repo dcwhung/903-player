@@ -5,6 +5,7 @@ import type { SeriesEpisode } from '../types/drama';
 import { saveProgress } from '../services/progressStore';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
+import { restoreMiniPlayer, useRestoreMiniPlayerOnPlay } from './miniPlayerDismissed';
 import { useMiniPlayer } from './useMiniPlayer';
 
 const BADGIRL = recording('badgirl', '2026-10-19', '1000');
@@ -13,7 +14,14 @@ const RECORDINGS = [recording('gongzi', '2026-10-17'), BADGIRL, WANNI];
 
 const setup = (recordings: Recording[] = RECORDINGS) => {
     const { audio, wrapper } = createHookWrapper(recordings);
-    const hook = renderHook(() => ({ mini: useMiniPlayer(), player: usePlayer() }), { wrapper });
+    const hook = renderHook(
+        () => {
+            // App 層面掛住：開始播就清走「已關閉」
+            useRestoreMiniPlayerOnPlay();
+            return { mini: useMiniPlayer(), player: usePlayer() };
+        },
+        { wrapper },
+    );
     return { audio, ...hook };
 };
 
@@ -27,7 +35,42 @@ describe('useMiniPlayer', () => {
         vi.useFakeTimers({ toFake: ['Date'] });
         vi.setSystemTime(new Date('2026-10-19T08:00:00Z')); // 香港 19/10 16:00
     });
-    afterEach(() => vi.useRealTimers());
+    afterEach(() => {
+        vi.useRealTimers();
+        restoreMiniPlayer();
+    });
+
+    describe('closing (swipe to dismiss)', () => {
+        it('stops playback and hides until something plays again', async () => {
+            const { audio, result } = setup();
+            await ready(result);
+            await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
+
+            act(() => result.current.mini?.onDismiss());
+
+            expect(audio.pause).toHaveBeenCalled();
+            expect(result.current.player.isPlaying).toBe(false);
+            expect(result.current.mini).toBeNull();
+
+            await act(() => result.current.player.play());
+
+            expect(result.current.mini?.showName).toBe('Bad Girl大過佬');
+        });
+
+        it('stays hidden while paused after coming back, until play is pressed', async () => {
+            const { result } = setup();
+            await ready(result);
+
+            act(() => result.current.mini?.onDismiss());
+            expect(result.current.mini).toBeNull();
+
+            await act(() => result.current.player.load(WANNI, { autoplay: true }));
+            act(() => result.current.player.pause());
+
+            // 播過就清走「已關閉」：之後暫停都照出
+            expect(result.current.mini?.showName).toBe('雲妮鍾情');
+        });
+    });
 
     it('hides instead of showing an older day on a weekday with nothing up yet', async () => {
         vi.setSystemTime(new Date('2026-10-20T08:00:00Z'));

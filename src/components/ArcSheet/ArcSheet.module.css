@@ -12,6 +12,7 @@
     position: absolute;
     inset: 0;
     background: var(--arc-sheet-scrim);
+    transition: opacity var(--arc-sheet-slide-ms) ease-out;
 }
 
 .sheet {
@@ -28,6 +29,29 @@
     background: var(--color-bg);
     box-shadow: var(--shadow-floating);
     outline: none;
+    /* 清單以外（grab bar / header / 四周空位）都係拉表嘅把手：單指手勢交畀 useSheetDrag */
+    touch-action: none;
+    /* 向下拉閂：放手後滑走 / 彈返（useSheetDrag 改 transform） */
+    transition: transform var(--arc-sheet-slide-ms) ease-out;
+}
+
+/* 拉緊：表同遮罩直接跟手指，唔做 transition */
+.sheet[data-dragging='true'],
+.backdrop[data-dragging='true'] {
+    transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sheet,
+    .backdrop {
+        transition: none;
+    }
+}
+
+/* 拉走緊：唔收 tap（唔會撳到滑走緊嘅行 / 掣） */
+.sheet[data-closing='true'],
+.backdrop[data-closing='true'] {
+    pointer-events: none;
 }
 
 /*
@@ -94,6 +118,8 @@
     padding: 0 0 calc(env(safe-area-inset-bottom) + var(--space-3));
     overflow-y: auto;
     overscroll-behavior: contain;
+    /* 清單自己畀瀏覽器捲；捲到頂再向下拉先由表接手（useSheetDrag 嘅 touch 監聽） */
+    touch-action: pan-y;
 }
 
 /* 組標題：細細階大楷樣，同集數清單標題一樣 */

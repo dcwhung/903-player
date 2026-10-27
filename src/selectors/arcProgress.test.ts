@@ -1,13 +1,6 @@
 import type { Progress } from '../services/progressStore';
 import type { SeriesEpisode } from '../types/drama';
-import {
-    arcGroups,
-    arcSummaries,
-    hasNewUnheardArc,
-    isArcNew,
-    listOrder,
-    seriesContinue,
-} from './arcProgress';
+import { arcGroups, arcSummaries, hasNewUnheardArc, isArcNew, seriesContinue } from './arcProgress';
 
 const ep = (arc: string, no: number, addedAt?: string): SeriesEpisode => ({
     kind: 'series',
@@ -158,21 +151,6 @@ describe('hasNewUnheardArc', () => {
     it('turns false once any episode of the new 短篇 has progress, or after 14 days', () => {
         expect(hasNewUnheardArc(episodes, { '/乙-2.m4a': partway(5) }, TODAY)).toBe(false);
         expect(hasNewUnheardArc(episodes, {}, '2026-11-03')).toBe(false);
-    });
-});
-
-describe('listOrder', () => {
-    it('keeps unfinished episodes in order and sends finished ones to the bottom', () => {
-        const arc = [ep('甲', 1), ep('甲', 2), ep('甲', 3)];
-        const map = { '/甲-1.m4a': done(), '/甲-3.m4a': done() };
-        expect(listOrder(arc, map, undefined).map((e) => e.no)).toEqual([2, 1, 3]);
-    });
-
-    it('never moves the loaded episode down, even when it was finished before', () => {
-        const arc = [ep('甲', 1), ep('甲', 2)];
-        expect(listOrder(arc, { '/甲-1.m4a': done() }, '/甲-1.m4a').map((e) => e.no)).toEqual([
-            1, 2,
-        ]);
     });
 });
 

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type CSSProperties } from 'react';
+import { useCallback, useEffect, useId, useRef, type CSSProperties } from 'react';
 import { t } from '../../i18n/t';
 import type { ArcGroup, ArcSummary } from '../../selectors/arcProgress';
 import type { SeriesEpisode } from '../../types/drama';
@@ -8,6 +8,7 @@ import { CheckIcon, CloseIcon, PauseIcon, PlayIcon, RestartIcon } from '../icons
 import { Marquee } from '../Marquee/Marquee';
 import { NewBadge } from '../NewBadge/NewBadge';
 import styles from './ArcSheet.module.css';
+import { useSheetDrag } from './useSheetDrag';
 
 interface ArcSheetProps {
     open: boolean;
@@ -198,42 +199,65 @@ const ArcGroupBlock = ({
     );
 };
 
+/** 表頭「聽完 N / M 個」 */
+const sheetProgress = (groups: ArcSheetProps['groups']) => {
+    const all = groups.flatMap((g) => g.items);
+    return { done: all.filter((s) => s.state === 'done').length, total: all.length };
+};
+
+/**
+ * 焦點（useSheetFocus）同向下拉閂（useSheetDrag）共用同一張表：
+ * 穩定嘅 callback ref 同時填兩邊，唔會每次 render（播放時間每秒更新）重掛
+ */
+const useSheetBehaviour = (open: boolean, onClose: () => void) => {
+    const sheetRef = useSheetFocus(open, onClose);
+    const { sheetRef: bindSheet, ...drag } = useSheetDrag(open, onClose);
+    const setSheet = useCallback(
+        (el: HTMLElement | null) => {
+            sheetRef.current = el;
+            bindSheet(el);
+        },
+        [sheetRef, bindSheet],
+    );
+    return { setSheet, ...drag };
+};
+
 /**
  * 全集一覽表（底部彈出）：分組 播放中 → 新上架 → 未聽完 → 已聽完，圓環 = 聽完幾多集；
  * 撳行轉去嗰個短篇，撳右邊掣直接播（續聽 / 未收聽 / ↺ 重聽）。
+ * 閂：✕ 掣、撳遮罩、Escape，或者向下拉（grab bar / header；清單捲到頂都得，直版橫版一樣）。
  * 見 design/previews/drama-flow-preview.html；橫版 docked 見 landscape-list-left-preview.html
  */
 export const ArcSheet = ({ open, docked = false, groups, onClose, ...rowProps }: ArcSheetProps) => {
     const titleId = useId();
-    const sheetRef = useSheetFocus(open, onClose);
+    const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(open, onClose);
     if (!open) return null;
-    const all = groups.flatMap((g) => g.items);
-    const done = all.filter((s) => s.state === 'done').length;
+    const progress = sheetProgress(groups);
     return (
         <div className={`${styles.overlay} ${docked ? styles.docked : ''}`}>
             {!docked && (
                 <div
+                    ref={backdropRef}
                     className={styles.backdrop}
                     data-testid="arc-sheet-backdrop"
                     onClick={onClose}
                 />
             )}
             <section
-                ref={sheetRef}
+                ref={setSheet}
                 className={styles.sheet}
                 role="dialog"
                 aria-modal={!docked}
                 aria-labelledby={titleId}
                 tabIndex={-1}
+                {...handlers}
             >
                 <span className={styles.grab} aria-hidden="true" />
                 <header className={styles.header}>
                     <h2 id={titleId} className={styles.title}>
                         {t('drama.sheetTitle')}
                     </h2>
-                    <span className={styles.summary}>
-                        {t('drama.sheetDone', { done, total: all.length })}
-                    </span>
+                    <span className={styles.summary}>{t('drama.sheetDone', progress)}</span>
                     <button
                         type="button"
                         className={styles.close}
@@ -243,7 +267,7 @@ export const ArcSheet = ({ open, docked = false, groups, onClose, ...rowProps }:
                         <CloseIcon size={CLOSE_ICON_SIZE} />
                     </button>
                 </header>
-                <div className={styles.list}>
+                <div ref={listRef} className={styles.list} data-role="sheet-list">
                     {groups.map((g) => (
                         <ArcGroupBlock key={g.group} {...g} {...rowProps} />
                     ))}

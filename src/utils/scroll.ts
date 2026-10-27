@@ -23,6 +23,30 @@ export const nearestScrollTop = (view: ScrollView, row: RowBox): number => {
     return view.scrollTop;
 };
 
+/** 捲到頂時頂上露出上一行幾多（佢高度嘅比例），一睇就知上面仲有 */
+export const PEEK_RATIO = 0.5;
+
+/** 將某一行捲到 panel 頂，頂上留 peek px 露出上一行；唔會捲過清單頂 */
+export const peekScrollTop = (view: ScrollView, row: RowBox, peek: number): number =>
+    Math.max(0, view.scrollTop + row.top - view.top - peek);
+
+/** 將 panel 入面嘅某一行（li）捲到頂，露出半行上一行（只捲 panel，唔會捲成頁） */
+export const scrollRowToTop = (
+    panel: HTMLElement,
+    row: Element,
+    behavior: ScrollBehavior,
+): void => {
+    const view = panel.getBoundingClientRect();
+    const box = row.getBoundingClientRect();
+    const previous = row.previousElementSibling?.getBoundingClientRect().height ?? 0;
+    const top = peekScrollTop(
+        { top: view.top, height: panel.clientHeight, scrollTop: panel.scrollTop },
+        { top: box.top, height: box.height },
+        previous * PEEK_RATIO,
+    );
+    panel.scrollTo?.({ top, behavior });
+};
+
 /** 將 panel 入面嘅某一行捲入可見範圍（只捲 panel，唔會捲成頁） */
 export const scrollRowIntoPanel = (
     panel: HTMLElement,

@@ -1,14 +1,19 @@
+import type { CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { ShowTheme } from '../../config/showThemes';
-import { stepIndex, useSwipe } from '../../hooks/useSwipe';
+import type { SwipeDirection } from '../../hooks/swipe';
+import { stepIndex } from '../../hooks/useSwipe';
+import { t } from '../../i18n/t';
 import { useViewportGap } from '../../hooks/useViewportGap';
 import type { MiniPlayerTag } from '../../selectors/miniPlayer';
+import { PowerIcon } from '../icons/icons';
 import { PageDots, type PageDotVariant } from '../PageDots/PageDots';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import styles from './MiniPlayer.module.css';
 import { miniPlayerMode } from './miniPlayerMode';
 import { MiniPlayerProgress } from './MiniPlayerProgress';
 import { MiniPlayerRow } from './MiniPlayerRow';
+import { useDismissGesture, type DismissView } from './useDismissGesture';
 
 export interface MiniPlayerProps {
     showName: string;
@@ -39,6 +44,8 @@ export interface MiniPlayerProps {
     onToggle: () => void;
     onOpen: () => void;
     onChange: (index: number) => void;
+    /** 長按後左滑關閉（或者讀屏「關閉播放器」掣）：停播 + 收起 */
+    onDismiss: () => void;
 }
 
 /**
@@ -51,6 +58,61 @@ const DOT_VARIANTS: Record<MiniPlayerTag, PageDotVariant> = { rewatch: 'blue', t
 const dotVariant = (tag: MiniPlayerTag | undefined): PageDotVariant | undefined =>
     tag && DOT_VARIANTS[tag];
 
+const POWER_ICON_SIZE = 18;
+
+/** 左右掃轉節目：掃過頭會循環返另一頭；得一個節目就唔郁 */
+const stepShow =
+    (index: number, total: number, onChange: (index: number) => void) =>
+    (direction: SwipeDirection) => {
+        const next = stepIndex(index, total, direction, { wrap: true });
+        if (next !== index) onChange(next);
+    };
+
+type DotsProps = Pick<
+    MiniPlayerProps,
+    'keys' | 'labels' | 'index' | 'tags' | 'positionLabel' | 'onChange'
+>;
+
+/** 頂部指示點（多過一段錄音先有）：撳 = 跳去嗰個節目 */
+const MiniPlayerDots = ({ tags = [], onChange, ...dots }: DotsProps) => (
+    <div className={styles.dots}>
+        <PageDots {...dots} onSelect={onChange} variants={tags.map(dotVariant)} />
+    </div>
+);
+
+/** 浮起 / 拉緊 / 露出關閉掣：CSS 用 data-* */
+const dismissData = (view: DismissView) => ({
+    'data-pressing': view.pressing || undefined,
+    'data-armed': view.armed || undefined,
+    'data-dragging': view.dragging || undefined,
+    'data-revealed': view.revealed || undefined,
+    'data-closing': view.closing || undefined,
+    'data-lifted': (view.armed && !view.dragging && !view.revealed && !view.closing) || undefined,
+});
+
+/** card 向左移咗幾多：card 同後面「關閉」掣嘅闊度都跟呢個 CSS 變數 */
+const offsetStyle = (view: DismissView) =>
+    ({ '--mini-dismiss-offset': `${view.offset}px` }) as CSSProperties;
+
+/**
+ * card 後面嘅「⏻ 關閉」：左滑先露出，闊度跟 card 移咗幾多。
+ * 淨係畀手指 / 滑鼠用（讀屏 / 鍵盤用 card 入面嘅「關閉播放器」掣），所以 aria-hidden + 唔入 tab 次序
+ */
+const DismissButton = ({ onDismiss }: { onDismiss: () => void }) => (
+    <div className={styles.behind} aria-hidden="true">
+        <button
+            type="button"
+            tabIndex={-1}
+            className={styles.dismiss}
+            data-testid="mini-player-close"
+            onClick={onDismiss}
+        >
+            <PowerIcon size={POWER_ICON_SIZE} />
+            <span>{t('miniPlayer.dismissAction')}</span>
+        </button>
+    </div>
+);
+
 export const MiniPlayer = ({
     region,
     labels,
@@ -59,35 +121,44 @@ export const MiniPlayer = ({
     tags = [],
     positionLabel,
     onChange,
+    onDismiss,
     ...props
 }: MiniPlayerProps) => {
     useViewportGap();
-    const swipe = useSwipe((direction) => {
-        // 掃過頭會循環返另一頭；得一個節目就唔郁
-        const next = stepIndex(index, labels.length, direction, { wrap: true });
-        if (next !== index) onChange(next);
-    });
+    const { view, handlers, bindContainer, dismiss } = useDismissGesture(
+        stepShow(index, labels.length, onChange),
+        onDismiss,
+    );
 
     // 得一段錄音：冇指示點，連個 wrapper 都唔畫，CSS 唔留指示點個位（data-mode）
     const mode = miniPlayerMode(keys);
     return createPortal(
         <ThemeScope theme={props.theme} fullPage={false} className={styles.wrapper}>
-            <section className={styles.player} aria-label={region} data-mode={mode} {...swipe}>
-                <MiniPlayerRow {...props} tag={tags[index]} />
-                {mode === 'multi' && (
-                    <div className={styles.dots}>
-                        <PageDots
-                            keys={keys}
-                            labels={labels}
-                            index={index}
-                            onSelect={onChange}
-                            variants={tags.map(dotVariant)}
-                            positionLabel={positionLabel}
+            <div ref={bindContainer} className={styles.slot} style={offsetStyle(view)}>
+                <section
+                    className={styles.player}
+                    aria-label={region}
+                    data-mode={mode}
+                    {...dismissData(view)}
+                    {...handlers}
+                >
+                    <MiniPlayerRow
+                        {...props}
+                        tag={tags[index]}
+                        hint={view.armed ? t('miniPlayer.dismissHint') : undefined}
+                    />
+                    {mode === 'multi' && (
+                        <MiniPlayerDots
+                            {...{ keys, labels, index, tags, positionLabel, onChange }}
                         />
-                    </div>
-                )}
-                <MiniPlayerProgress progress={props.progress} timeText={props.timeText} />
-            </section>
+                    )}
+                    <MiniPlayerProgress progress={props.progress} timeText={props.timeText} />
+                    <button type="button" className={styles.srOnly} onClick={onDismiss}>
+                        {t('miniPlayer.dismissLabel')}
+                    </button>
+                </section>
+                <DismissButton onDismiss={dismiss} />
+            </div>
         </ThemeScope>,
         document.body,
     );
