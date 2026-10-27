@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
 <style>
 /*
- * 兩個手勢：① 廣播劇「全部短篇」表向下拉閂；② 主頁 mini player 長按浮起 → iOS 鎖屏 notification 式左滑清除。
+ * 兩個手勢：① 廣播劇「全部短篇」表向下拉閂；② 主頁 mini player 長按浮起 → iOS 鎖屏 notification 式左滑關閉（多個版本揀 button 顏色 / 字 / 提示）。
  * 普通左右掃照舊轉今日節目；手機 375 × 720 真 px。顏色跟 drama-flow-preview（芝See）同 HOME_THEME。
  * 用手機開最準（滑鼠都拖得）。
  */
@@ -60,17 +60,28 @@ h2 { margin: 0; font-size: 18px; }
 .home { background: linear-gradient(var(--home-top), var(--home-bottom)); color: var(--home-text); }
 .home .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 64px 16px; }
 .home .tiles span { aspect-ratio: 1; border-radius: 14px; background: rgb(255 255 255 / 15%); }
-/* 外框：圓角 + 收埋後面「清除」；收起時向下滑走 */
+/* 外框：圓角 + 收埋後面「關閉」；收起時向下滑走 */
 .mini { position: absolute; left: 12px; right: 12px; bottom: 20px; height: 92px; border-radius: 20px; touch-action: none; transition: transform .3s, opacity .3s, height .3s; }
 .mini.closing { transform: translateY(140%); opacity: 0; }
-/* 後面：iOS notification 式，紅底「清除」靠右；拉得越多越闊 */
+/* 後面：iOS notification 式，「關閉」靠右；拉得越多越闊（顏色跟揀咗嘅版本） */
 .behind { position: absolute; inset: 0; display: flex; justify-content: flex-end; border-radius: 20px; opacity: 0; transition: opacity .15s; }
 .mini.armed .behind { opacity: 1; }
-.clear { display: flex; align-items: center; justify-content: center; width: var(--reveal, 0px); min-width: 0; height: 100%; padding: 0; overflow: hidden; border: none; border-radius: 20px; background: var(--close-red); color: #fff; font: inherit; font-weight: 600; white-space: nowrap; }
+.clear { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: var(--reveal, 0px); min-width: 0; height: 100%; padding: 0; overflow: hidden; border: var(--clear-border, none); border-radius: 20px; background: var(--clear-bg); color: var(--clear-fg); font: inherit; font-weight: 600; white-space: nowrap; }
+.clear .ico { font-size: 18px; line-height: 1; }
+.clear .txt { font-size: 12px; }
+/* 浮起咗：副題換做提示文字 */
+.armhint { display: none; color: var(--hint-fg, var(--mini-muted)); font-size: 12px; font-weight: 600; }
+.mini.armed .sub { display: none; }
+.mini.armed .armhint { display: inline; }
+/* 揀版本 */
+.variants { display: flex; flex-wrap: wrap; gap: 6px; }
+.variants button { padding: 4px 12px; border-radius: 16px; border: 1px solid var(--shell-line); background: var(--shell-panel); color: var(--shell-text); font: inherit; font-size: 13px; }
+.variants button[aria-pressed='true'] { background: var(--shell-accent); color: #101214; border-color: var(--shell-accent); }
+.vdesc { margin: 0; color: var(--shell-muted); font-size: 13px; min-height: 2.6em; }
 /* 前面：張 card 本身，跟手指左右拉 */
 .card { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 12px 16px; border-radius: 20px; background: var(--mini-surface); color: var(--mini-title); box-shadow: 0 2px 5px rgb(0 0 0 / 45%); transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s; }
 .card.dragging { transition: none; }
-/* 長按中：慢慢縮少少（提示「撳住」）；armed：浮起（大少少 + 陰影深啲），表示而家左滑係清除 */
+/* 長按中：慢慢縮少少（提示「撳住」）；armed：浮起（大少少 + 陰影深啲），表示而家左滑係關閉 */
 .mini.pressing .card { transform: scale(.97); transition: transform .5s; }
 .mini.armed .card { box-shadow: 0 8px 20px rgb(0 0 0 / 50%); }
 .mini.armed .card:not(.dragging):not(.open) { transform: scale(1.02); }
@@ -120,33 +131,35 @@ h2 { margin: 0; font-size: 18px; }
         </section>
 
         <section class="demo">
-            <h2>② Mini player：長按 → iOS notification 式左滑清除</h2>
+            <h2>② Mini player：長按 → iOS notification 式左滑關閉</h2>
+            <div class="variants" id="variants" role="group" aria-label="版本"></div>
+            <p class="vdesc" id="vdesc"></p>
             <div class="phone home" id="homePhone">
                 <div class="tiles"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-                <div class="toast" id="toast">已停播（喺節目頁撳 ▶ 會再出返）</div>
+                <div class="toast" id="toast">已關閉（喺節目頁撳 ▶ 會再出返）</div>
                 <div class="mini" id="mini">
-                    <div class="behind"><button class="clear" id="clear" type="button">清除</button></div>
+                    <div class="behind"><button class="clear" id="clear" type="button"></button></div>
                     <div class="card" id="card">
                         <div class="dots" id="dots"></div>
                         <div class="mrow">
                             <span class="mdisc" id="mdisc"></span>
-                            <span class="mtext"><b id="mname"></b><small>27/10（二） · 12:40 / 1:58:30</small></span>
+                            <span class="mtext"><b id="mname"></b><small class="sub">27/10（二） · 12:40 / 1:58:30</small><span class="armhint" id="armhint"></span></span>
                             <button class="toggle" type="button">❚❚</button>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="log" id="log">試吓：左右掃轉節目；長按 0.5 秒浮起之後左滑清除</div>
+            <div class="log" id="log">試吓：左右掃轉節目；長按 0.5 秒浮起之後左滑關閉</div>
             <ul class="note">
                 <li>平時左右掃（≥ 48px）照舊轉今日節目，循環轉</li>
-                <li>手指唔郁長按 0.5 秒 → card 浮起（大少少 + 陰影深啲），後面準備好紅色「清除」</li>
-                <li>浮起之後向左拉：card 跟手指走，右邊露出「清除」（同一下唔放手拉，或者放手再拉都得）</li>
-                <li>拉過 card 闊度一半放手 → 直接清走（停播 + 收起）</li>
-                <li>拉咗少少（≥ 40px）放手 → 停喺度露出「清除」掣，撳先清；撳 card / 外面 / 向右拉 → 收返</li>
+                <li>手指唔郁長按 0.5 秒 → card 浮起（大少少 + 陰影深啲），副題換做提示文字</li>
+                <li>浮起之後向左拉：card 跟手指走，右邊露出「關閉」（同一下唔放手拉，或者放手再拉都得）</li>
+                <li>拉過 card 闊度一半放手 → 直接關閉（停播 + 收起）</li>
+                <li>拉咗少少（≥ 40px）放手 → 停喺度露出「關閉」掣，撳先關閉；撳 card / 外面 / 向右拉 → 收返</li>
                 <li>浮起咗 4 秒冇郁 → 變返平時（左右掃又係轉節目）</li>
                 <li>長按 / 拉嘅時候唔會觸發開節目頁、播放 / 暫停（click 食咗）</li>
-                <li>讀屏 / 鍵盤：加一粒讀屏先見到嘅「清除播放器」掣，唔使做手勢</li>
-                <li>廣播劇 mini player（得一集）都係同一套：長按 → 左滑清除</li>
+                <li>讀屏 / 鍵盤：加一粒讀屏先見到嘅「關閉播放器」掣，唔使做手勢</li>
+                <li>廣播劇 mini player（得一集）都係同一套：長按 → 左滑關閉</li>
             </ul>
             <button class="reset" id="resetMini" type="button">重新出 mini player</button>
         </section>
@@ -216,8 +229,8 @@ h2 { margin: 0; font-size: 18px; }
     const SWIPE_PX = 48;
     const MOVE_TOLERANCE_PX = 10;
     const LONG_PRESS_MS = 500;
-    const REVEAL_MIN_PX = 40;   // 拉過呢個先會停喺「露出清除」
-    const REVEAL_PX = 88;       // 「清除」掣停定時嘅闊度
+    const REVEAL_MIN_PX = 40;   // 拉過呢個先會停喺「露出關閉」
+    const REVEAL_PX = 88;       // 「關閉」掣停定時嘅闊度
     const CLEAR_RATIO = 0.5;    // 拉過 card 闊度一半 = 直接清
     const IDLE_MS = 4000;
     const mini = document.getElementById('mini');
@@ -227,6 +240,38 @@ h2 { margin: 0; font-size: 18px; }
     const toast = document.getElementById('toast');
     let index = 2;
 
+    // 版本：button 底色 / 字色 / 內容 + 浮起後 card 副題嘅提示文字
+    const VARIANTS = [
+        { key: 'A', name: 'A 跟節目色', bg: 'var(--mini-accent)', fg: '#fff', ico: '✕', txt: '關閉', hint: '← 向左拉關閉', hintFg: 'var(--mini-accent)',
+          desc: 'button 用而家播緊節目嘅主題色（同 ▶ 掣一致），唔會好似「刪除」咁嚇人；提示用同色。' },
+        { key: 'B', name: 'B 深藍低調', bg: 'var(--mini-title)', fg: 'var(--mini-surface)', ico: '⏻', txt: '關閉', hint: '向左拉到盡即關閉', hintFg: 'var(--mini-muted)',
+          desc: '深藍底 + 奶白字（主頁字色），電源 icon 表示「熄機」；提示灰色唔搶眼。' },
+        { key: 'C', name: 'C 奶油金', bg: 'var(--home-accent)', fg: 'var(--home-on-accent)', ico: '■', txt: '停止', hint: '← 拉走停止播放', hintFg: '#9a7a35',
+          desc: '用主頁「今日」奶油金，字寫「停止」講清楚會停播；最貼主頁色調。' },
+        { key: 'D', name: 'D 磨砂灰', bg: 'rgb(47 69 96 / 18%)', fg: 'var(--mini-title)', ico: '✕', txt: '關閉', hint: '‹‹ 滑動關閉', hintFg: 'var(--mini-muted)',
+          desc: '似 iOS 鎖屏 notification 嘅半透明灰掣，最低調；提示似「滑動解鎖」。' },
+        { key: 'E', name: 'E 柔紅', bg: '#f3d6d3', fg: '#b3322a', ico: '✕', txt: '關閉', hint: '← 向左拉 · 關閉播放器', hintFg: '#b3322a', border: '1px solid #e6b3ad',
+          desc: '淡紅底 + 紅字，仍然有「關閉」警示感，但冇實心紅咁刺眼。' },
+    ];
+    const mount = document.getElementById('variants');
+    const applyVariant = (v) => {
+        mini.style.setProperty('--clear-bg', v.bg);
+        mini.style.setProperty('--clear-fg', v.fg);
+        mini.style.setProperty('--hint-fg', v.hintFg);
+        mini.style.setProperty('--clear-border', v.border ?? 'none');
+        clearBtn.innerHTML = `<span class="ico">${v.ico}</span><span class="txt">${v.txt}</span>`;
+        document.getElementById('armhint').textContent = v.hint;
+        document.getElementById('vdesc').textContent = v.desc;
+        mount.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.key === v.key)));
+    };
+    mount.innerHTML = VARIANTS.map((v) => `<button type="button" data-key="${v.key}">${v.name}</button>`).join('');
+    mount.addEventListener('click', (e) => {
+        const key = e.target.closest('button')?.dataset.key;
+        const v = VARIANTS.find((x) => x.key === key);
+        if (v) applyVariant(v);
+    });
+    applyVariant(VARIANTS[0]);
+
     const render = () => {
         document.getElementById('dots').innerHTML = SHOWS.map((_, i) => `<span class="${i === index ? 'on' : ''}"></span>`).join('');
         document.getElementById('mname').textContent = SHOWS[index][0];
@@ -234,7 +279,7 @@ h2 { margin: 0; font-size: 18px; }
     };
     render();
 
-    // offset = card 向左拉咗幾多 px；「清除」掣闊度跟住（減返 8px 間隔）
+    // offset = card 向左拉咗幾多 px；「關閉」掣闊度跟住（減返 8px 間隔）
     let offset = 0;
     const setOffset = (x) => {
         offset = Math.max(0, x);
@@ -259,14 +304,14 @@ h2 { margin: 0; font-size: 18px; }
     const arm = () => {
         mini.classList.remove('pressing');
         mini.classList.add('armed');
-        log.textContent = '浮起咗：向左拉清除';
+        log.textContent = '浮起咗：向左拉關閉';
         armIdle();
     };
     const clearAll = () => {
         clearTimeout(idle);
         card.classList.remove('dragging');
         setOffset(card.offsetWidth + 24);
-        log.textContent = '已清除：player.stop() + 收起';
+        log.textContent = '已關閉：player.stop() + 收起';
         setTimeout(() => { mini.classList.add('closing'); toast.classList.add('show'); }, 200);
         setTimeout(() => toast.classList.remove('show'), 2200);
     };
@@ -308,7 +353,7 @@ h2 { margin: 0; font-size: 18px; }
         if (mini.classList.contains('armed')) {
             card.classList.remove('dragging');
             if (p.mode !== 'drag') {
-                // 浮起後撳 card：已經露出清除就收返；啱啱長按完放手就保持浮起
+                // 浮起後撳 card：已經露出關閉就收返；啱啱長按完放手就保持浮起
                 if (p.from > 0) disarm('撳 card → 收返');
                 else armIdle();
                 return;
@@ -317,7 +362,7 @@ h2 { margin: 0; font-size: 18px; }
             if (offset >= REVEAL_MIN_PX) {
                 card.classList.add('open');
                 setOffset(REVEAL_PX);
-                log.textContent = '露出「清除」：撳佢先清；撳 card / 外面收返';
+                log.textContent = '露出「關閉」：撳佢先關；撳 card / 外面收返';
                 armIdle();
                 return;
             }
