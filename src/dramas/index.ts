@@ -1,6 +1,6 @@
 /**
  * 廣播劇 public API。資料來自 src/dramas/<id>/drama.json（見 schema.ts）。
- * 加一套劇：新開 folder，放 drama.json + tile.webp + disc.webp（+ 短篇碟面），唔使改 code。
+ * 加一套劇：新開 folder，放 drama.json + tile.webp + disc.webp（+ 短篇碟面 / 短篇長方形圖），唔使改 code。
  */
 import { bundledSource } from './bundledSource';
 import { buildRegistry } from './registry';
@@ -21,4 +21,5 @@ export const {
     dramaThemeFor,
     dramaArtFor,
     dramaEpisodeTheme,
+    arcTileFor,
 } = REGISTRY;

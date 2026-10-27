@@ -42,6 +42,8 @@ export interface ArcDefinition {
     name: string;
     /** 短篇自己嘅碟面圖（folder 內檔名）；冇就用劇集碟面 */
     disc?: string;
+    /** 短篇自己嘅長方形圖（folder 內檔名，原 cover 比例）：暫時未用，留底防將來要 */
+    tile?: string;
     addedAt?: string;
     firstNo: number;
     count: number;
@@ -186,6 +188,7 @@ const readArc = (
     return {
         name,
         disc: readOptionalImage(ctx, raw, 'disc', `${path}.disc`),
+        tile: readOptionalImage(ctx, raw, 'tile', `${path}.tile`),
         addedAt: readOptionalDate(ctx, raw, 'addedAt', `${path}.addedAt`),
         firstNo,
         count,

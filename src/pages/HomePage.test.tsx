@@ -168,7 +168,7 @@ describe('HomePage', () => {
 
         const nav = screen.getByRole('navigation', { name: '廣播劇' });
         expect(nav).toContainElement(screen.getByRole('img', { name: BANNER_ALT }));
-        expect(within(nav).getAllByRole('button')).toHaveLength(4);
+        expect(within(nav).getAllByRole('button')).toHaveLength(5);
         expect(within(nav).getByText(`v${packageJson.version}`)).toBeInTheDocument();
         expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     });
@@ -370,7 +370,13 @@ describe('HomePage', () => {
                 within(nav)
                     .getAllByRole('button')
                     .map((b) => b.getAttribute('aria-label')),
-            ).toEqual(['少爺占系列', '森美小儀系列', '黃金少年', '芝See菇Bi Family']);
+            ).toEqual([
+                '蘭茜夫人劇場',
+                '少爺占系列',
+                '森美小儀系列',
+                '黃金少年',
+                '芝See菇Bi Family',
+            ]);
             expect(screen.queryByRole('navigation', { name: '節目' })).not.toBeInTheDocument();
         });
 
@@ -388,7 +394,13 @@ describe('HomePage', () => {
                 within(nav)
                     .getAllByRole('button')
                     .map((b) => b.getAttribute('aria-label')?.split('，')[0]),
-            ).toEqual(['森美小儀系列', '黃金少年', '芝See菇Bi Family', '少爺占系列']);
+            ).toEqual([
+                '森美小儀系列',
+                '黃金少年',
+                '蘭茜夫人劇場',
+                '芝See菇Bi Family',
+                '少爺占系列',
+            ]);
         });
 
         it('shows the 短篇 count bottom-right until something has been played', async () => {

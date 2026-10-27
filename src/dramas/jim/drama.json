@@ -31,11 +31,13 @@
         {
             "name": "八王子",
             "disc": "hachioji-disc.webp",
+            "tile": "hachioji-tile.webp",
             "episodes": 21
         },
         {
             "name": "忠孝公路",
             "disc": "zhongxiao-disc.webp",
+            "tile": "zhongxiao-tile.webp",
             "episodes": 17
         }
     ]

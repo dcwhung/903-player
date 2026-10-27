@@ -32,21 +32,25 @@
         {
             "name": "Season 1",
             "disc": "season-1-disc.webp",
+            "tile": "season-1-tile.webp",
             "episodes": 35
         },
         {
             "name": "Season 2",
             "disc": "season-2-disc.webp",
+            "tile": "season-2-tile.webp",
             "episodes": 30
         },
         {
             "name": "Season 3",
             "disc": "season-3-disc.webp",
+            "tile": "season-3-tile.webp",
             "episodes": 30
         },
         {
             "name": "Season 4",
             "disc": "season-4-disc.webp",
+            "tile": "season-4-tile.webp",
             "episodes": 31,
             "titles": {
                 "31": "最終結局"
