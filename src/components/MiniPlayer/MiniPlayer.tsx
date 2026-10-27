@@ -2,7 +2,8 @@ import { createPortal } from 'react-dom';
 import type { ShowTheme } from '../../config/showThemes';
 import { stepIndex, useSwipe } from '../../hooks/useSwipe';
 import { useViewportGap } from '../../hooks/useViewportGap';
-import { PageDots } from '../PageDots/PageDots';
+import type { MiniPlayerTag } from '../../selectors/miniPlayer';
+import { PageDots, type PageDotVariant } from '../PageDots/PageDots';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import styles from './MiniPlayer.module.css';
 import { miniPlayerMode } from './miniPlayerMode';
@@ -20,6 +21,10 @@ export interface MiniPlayerProps {
     /** 例如「12:40 / 1:58:30」；未知長度時冇 */
     timeText?: string;
     isPlaying: boolean;
+    /** 真正出緊聲（唔係載緊 / 斷流）：細碟先自轉，同大碟一樣 */
+    isAudible: boolean;
+    /** 未知時長：細碟擺正，同大碟一樣 */
+    upright: boolean;
     /** 0–1 */
     progress: number;
     /** 今日所有節目名（按播出次序） */
@@ -27,6 +32,10 @@ export interface MiniPlayerProps {
     /** 同 labels 一樣次序嘅錄音 URL */
     keys: string[];
     index: number;
+    /** 同 labels 一樣次序嘅標籤（重溫 / 今日）；冇就唔顯示 */
+    tags?: readonly (MiniPlayerTag | undefined)[];
+    /** 指示點成組嘅讀屏名；預設係「今日第幾個節目」 */
+    positionLabel?: (index: number, total: number) => string;
     onToggle: () => void;
     onOpen: () => void;
     onChange: (index: number) => void;
@@ -37,11 +46,18 @@ export interface MiniPlayerProps {
  * 用 portal 掛喺 body：頁面 .scope 係 size container（會變成 position: fixed 嘅 containing block），
  * 掛喺 body 先保證係跟 viewport 定位，唔受頁面 .scope / #root 影響
  */
+/** 指示點跟標籤色：重溫 = 藍（未揀中淡啲），今日 = 揀中時奶油金；冇標籤就普通點 */
+const DOT_VARIANTS: Record<MiniPlayerTag, PageDotVariant> = { rewatch: 'blue', today: 'gold' };
+const dotVariant = (tag: MiniPlayerTag | undefined): PageDotVariant | undefined =>
+    tag && DOT_VARIANTS[tag];
+
 export const MiniPlayer = ({
     region,
     labels,
     keys,
     index,
+    tags = [],
+    positionLabel,
     onChange,
     ...props
 }: MiniPlayerProps) => {
@@ -57,10 +73,17 @@ export const MiniPlayer = ({
     return createPortal(
         <ThemeScope theme={props.theme} fullPage={false} className={styles.wrapper}>
             <section className={styles.player} aria-label={region} data-mode={mode} {...swipe}>
-                <MiniPlayerRow {...props} />
+                <MiniPlayerRow {...props} tag={tags[index]} />
                 {mode === 'multi' && (
                     <div className={styles.dots}>
-                        <PageDots keys={keys} labels={labels} index={index} onSelect={onChange} />
+                        <PageDots
+                            keys={keys}
+                            labels={labels}
+                            index={index}
+                            onSelect={onChange}
+                            variants={tags.map(dotVariant)}
+                            positionLabel={positionLabel}
+                        />
                     </div>
                 )}
                 <MiniPlayerProgress progress={props.progress} timeText={props.timeText} />

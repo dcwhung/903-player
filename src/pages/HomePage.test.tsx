@@ -10,6 +10,7 @@ import { saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import type { Track } from '../types/track';
 import { HomePage } from './HomePage';
+import { ShowPage } from './ShowPage';
 
 const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 
@@ -206,7 +207,9 @@ describe('HomePage', () => {
 
         const mini = await screen.findByRole('region', { name: '正在播放（今日節目）' });
         expect(mini).toHaveTextContent('Bad Girl大過佬');
-        expect(mini).toHaveTextContent('今日 19/10（一）');
+        // 副題淨係日子；「今日」改為節目名旁邊嘅標籤
+        expect(mini).toHaveTextContent('19/10（一）');
+        expect(mini.querySelector('[data-tag]')).toHaveTextContent('今日');
 
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
         expect(audio.src).toBe(RECORDINGS[2]?.url);
@@ -238,6 +241,32 @@ describe('HomePage', () => {
         expect(document.documentElement.style.getPropertyValue('--page-canvas')).toBe(
             'var(--home-bg-bottom)',
         );
+    });
+
+    it('keeps an older episode played on the show page going at home, first in the mini player as 重溫', async () => {
+        Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
+        const old = recording('badgirl', '2026-10-12', '1000');
+        const { audio } = renderWithProviders(<ShowPage />, {
+            route: '/show/badgirl',
+            path: '/show/:showId',
+            recordings: [old, ...RECORDINGS],
+            extraRoutes: [{ path: '/', element: <HomePage /> }],
+        });
+        await userEvent.click(await screen.findByRole('button', { name: /^(?:播放|暫停) 12\/10/ }));
+        expect(audio.src).toBe(old.url);
+
+        await userEvent.click(screen.getByRole('button', { name: '返回主頁' }));
+
+        const mini = await screen.findByRole('region', { name: '正在播放（重溫及今日節目）' });
+        expect(audio.src).toBe(old.url);
+        expect(audio.pause).not.toHaveBeenCalled();
+        expect(within(mini).getByRole('button', { name: '暫停' })).toBeInTheDocument();
+        expect(mini.querySelector('[data-tag]')).toHaveTextContent('重溫');
+        expect(mini).toHaveTextContent('12/10（一）');
+        expect(
+            within(mini).getByRole('button', { name: 'Bad Girl大過佬，重溫 12/10（一）' }),
+        ).toHaveAttribute('aria-current', 'true');
     });
 
     it('swipes the mini player to the next show of today', async () => {

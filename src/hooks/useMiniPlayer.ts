@@ -6,39 +6,62 @@ import { findShow, themeFor } from '../shows';
 import { useRecordings } from '../data/useRecordings';
 import { usePlayer } from '../player/usePlayer';
 import { dramaEpisodeLabel } from '../selectors/dramas';
-import { miniPlayerSubtitle, miniPlayerTimeText } from '../selectors/miniPlayer';
+import {
+    miniPlayerRecordings,
+    miniPlayerSubtitle,
+    miniPlayerTags,
+    miniPlayerTimeText,
+    type MiniPlayerTag,
+} from '../selectors/miniPlayer';
 import { todayRecordings } from '../selectors/recordings';
 import { getProgress } from '../services/progressStore';
 import type { DramaEpisode } from '../types/drama';
 import type { Recording } from '../types/recording';
-import { isDramaEpisode } from '../types/track';
+import { isDramaEpisode, type Track } from '../types/track';
 import { t } from '../i18n/t';
-import { hkToday } from '../utils/date';
+import { formatDateLabel, hkToday } from '../utils/date';
 import { useRefreshedOn } from './useRefreshedOn';
 import { ratio } from '../utils/ratio';
+import { hasKnownDuration } from '../utils/time';
 
 const showName = (recording: Recording): string => findShow(recording.showId)?.name ?? '';
 
-/** 今日（今日冇節目播先用最近一日）節目入面揀中邊個：有載入就跟 player，否則跟用戶揀 */
-const useTodaySelection = () => {
+/** 今日（今日冇節目播先用最近一日）節目；載入緊清單冇嘅節目錄音（重溫舊集）就排最前 */
+const useListedRecordings = (loaded: Track | null) => {
     const { recordings } = useRecordings();
-    const player = usePlayer();
-    const [chosen, setChosen] = useState(0);
     const today = hkToday();
-    const list = useMemo(() => todayRecordings(recordings, today), [recordings, today]);
+    const listed = useMemo(() => todayRecordings(recordings, today), [recordings, today]);
+    const list = useMemo(() => miniPlayerRecordings(listed, loaded), [listed, loaded]);
+    const rewatchUrl = list.length > listed.length ? list[0]?.url : undefined;
+    return { today, list, rewatchUrl };
+};
+
+/**
+ * 清單入面揀中邊個：載入咗今日節目就跟 player，否則（包括播緊重溫舊集）跟用戶揀
+ */
+const useTodaySelection = () => {
+    const player = usePlayer();
+    const { today, list, rewatchUrl } = useListedRecordings(player.recording);
+    // 揀中邊個連埋當時嘅重溫舊集記低：多咗 / 換咗舊集（例如啱啱返主頁）就由第一個（重溫）開始
+    const [chosen, setChosen] = useState({ index: 0, rewatchUrl });
+    const chosenIndex = chosen.rewatchUrl === rewatchUrl ? chosen.index : 0;
     const loadedIndex = list.findIndex((r) => r.url === player.recording?.url);
-    const isLoaded = loadedIndex >= 0;
-    const index = isLoaded ? loadedIndex : Math.min(chosen, list.length - 1);
+    // 重溫舊集喺清單：左右掃只係睇今日節目（唔會自動播），撳 ▶ 先轉播
+    const followsPlayer = loadedIndex >= 0 && rewatchUrl === undefined;
+    const index = followsPlayer ? loadedIndex : Math.min(chosenIndex, list.length - 1);
+    const current = list[index];
 
     // 載入咗今日節目先跟住轉集；本身播緊就繼續播
     const select = (next: number) => {
-        setChosen(next);
+        setChosen({ index: next, rewatchUrl });
         const recording = list[next];
-        if (isLoaded && recording) {
+        if (followsPlayer && recording) {
             void player.load(recording, { autoplay: player.isPlaying });
         }
     };
-    return { today, list, index, current: list[index], isLoaded, select };
+    const isLoaded = current !== undefined && current.url === player.recording?.url;
+    const tags = miniPlayerTags(list, rewatchUrl !== undefined, today);
+    return { list, tags, index, current, isLoaded, select };
 };
 
 /** 載入咗就用 player 即時時間，否則用 localStorage 存低嘅進度 */
@@ -73,6 +96,8 @@ const dramaMiniPlayer = (
         subtitle: timeText ? t('miniPlayer.withTime', { label, time: timeText }) : label,
         timeText,
         isPlaying: player.isPlaying,
+        isAudible: player.isAudible,
+        upright: !hasKnownDuration(player.duration),
         progress: ratio(player.currentTime, player.duration),
         labels: [name],
         keys: [episode.url],
@@ -83,14 +108,47 @@ const dramaMiniPlayer = (
     };
 };
 
+/** 指示點讀屏名：重溫舊集要講埋日子，同今日同一個節目分得開 */
+const dotLabel = (recording: Recording, tag: MiniPlayerTag | undefined): string =>
+    tag === 'rewatch'
+        ? t('miniPlayer.rewatchDot', {
+              name: showName(recording),
+              date: formatDateLabel(recording.date),
+          })
+        : showName(recording);
+
+/** 開頁掣讀屏名：重溫舊集講埋係重溫邊日 */
+const openLabel = (recording: Recording, tag: MiniPlayerTag | undefined): string => {
+    const name = showName(recording);
+    return tag === 'rewatch'
+        ? t('miniPlayer.openRewatch', { name, date: formatDateLabel(recording.date) })
+        : t('miniPlayer.open', { name });
+};
+
+const rewatchPosition = (index: number, total: number) =>
+    t('miniPlayer.positionRewatch', { index, total });
+
+/** 讀屏名同標籤：清單有重溫舊集就成個播放器、第幾個都唔再講「今日」 */
+const listLabels = (list: Recording[], tags: (MiniPlayerTag | undefined)[], index: number) => {
+    const hasRewatch = tags[0] === 'rewatch';
+    const current = list[index];
+    return {
+        region: t(hasRewatch ? 'miniPlayer.regionRewatch' : 'miniPlayer.region'),
+        openLabel: current ? openLabel(current, tags[index]) : '',
+        labels: list.map((r, i) => dotLabel(r, tags[i])),
+        tags,
+        positionLabel: hasRewatch ? rewatchPosition : undefined,
+    };
+};
+
 /**
- * 主頁 mini player：今日（今日冇節目播先用最近一日）嘅節目；
- * 載入緊廣播劇就改為顯示嗰套劇（返主頁唔會停，見 useHomeArrival）
+ * 主頁 mini player：今日（今日冇節目播先用最近一日）嘅節目，播緊其他節目錄音就排最前做「重溫」；
+ * 載入緊廣播劇就改為顯示嗰套劇（返主頁都唔會停，見 useHomeArrival）
  */
 export const useMiniPlayer = (): MiniPlayerProps | null => {
     const player = usePlayer();
     const navigate = useNavigate();
-    const { today, list, index, current, isLoaded, select } = useTodaySelection();
+    const { list, tags, index, current, isLoaded, select } = useTodaySelection();
     const { position, duration } = useShownTime(current?.url, isLoaded);
     if (player.recording && isDramaEpisode(player.recording)) {
         return dramaMiniPlayer(player.recording, player, navigate);
@@ -101,15 +159,16 @@ export const useMiniPlayer = (): MiniPlayerProps | null => {
     const timeText = miniPlayerTimeText(position, duration);
 
     return {
+        ...listLabels(list, tags, index),
         showName: showName(current),
-        region: t('miniPlayer.region'),
-        openLabel: t('miniPlayer.open', { name: showName(current) }),
         theme: themeFor(current.showId),
-        subtitle: miniPlayerSubtitle(current.date, today, timeText),
+        subtitle: miniPlayerSubtitle(current.date, timeText),
         timeText,
         isPlaying: isLoaded && player.isPlaying,
+        // 只係顯示緊（未載入）嗰個唔轉；擺正用同大碟一樣嘅未知時長規則
+        isAudible: isLoaded && player.isAudible,
+        upright: !hasKnownDuration(duration),
         progress: ratio(position, duration),
-        labels: list.map(showName),
         keys: list.map((r) => r.url),
         index,
         onToggle: () =>

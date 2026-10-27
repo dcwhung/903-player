@@ -6,7 +6,7 @@ import { seriesEpisodesOf } from '../dramas';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
 import type { Track } from '../types/track';
-import { isListedByMiniPlayer, useHomeArrival } from './useHomeArrival';
+import { useHomeArrival } from './useHomeArrival';
 
 const TODAY = recording('badgirl', '2026-10-19', '1000');
 const OLD = recording('gongzi', '2026-10-10');
@@ -86,10 +86,13 @@ describe('useHomeArrival', () => {
         expect(audio.pause).not.toHaveBeenCalled();
     });
 
-    it('stops an older episode', async () => {
+    // 以前舊集唔喺 mini player 清單就停；而家 mini player 會將佢排最前（重溫），所以照播
+    it('keeps playing an older episode, which the mini player puts first as 重溫', async () => {
         const audio = await arrive({ target: OLD });
 
-        await waitFor(() => expect(audio.pause).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(audio.play).toHaveBeenCalled());
+        await act(async () => {});
+        expect(audio.pause).not.toHaveBeenCalled();
     });
 
     it('stops when nothing was playing', async () => {
@@ -107,14 +110,13 @@ describe('useHomeArrival', () => {
         expect(audio.pause).not.toHaveBeenCalled();
     });
 
-    it('waits for the recordings before deciding', async () => {
+    it('keeps an older episode once loading finishes', async () => {
         const { prober, resolve } = deferred();
         const audio = await arrive({ target: OLD }, [], prober);
-        expect(audio.pause).not.toHaveBeenCalled();
 
         await act(async () => resolve(RECORDINGS));
 
-        expect(audio.pause).toHaveBeenCalledTimes(1);
+        expect(audio.pause).not.toHaveBeenCalled();
     });
 
     it('keeps a today recording once loading finishes', async () => {
@@ -134,16 +136,5 @@ describe('useHomeArrival', () => {
 
         expect(audio.src).toBe(OLD.url);
         expect(audio.pause).not.toHaveBeenCalled();
-    });
-});
-
-describe('isListedByMiniPlayer', () => {
-    it('does not list an older day on a weekday with nothing up yet', () => {
-        expect(isListedByMiniPlayer(TODAY, RECORDINGS, '2026-10-19')).toBe(true);
-        expect(isListedByMiniPlayer(TODAY, RECORDINGS, '2026-10-20')).toBe(false);
-    });
-
-    it('lists the latest day when no show airs today', () => {
-        expect(isListedByMiniPlayer(TODAY, RECORDINGS, '2026-10-25')).toBe(true);
     });
 });

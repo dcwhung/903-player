@@ -68,4 +68,45 @@ describe('PageDots', () => {
 
         expect(container).toBeEmptyDOMElement();
     });
+
+    it('marks a dot with its variant (e.g. the 重溫 episode in blue), also when current', () => {
+        const dots = (index: number) => (
+            <PageDots
+                keys={['old', 'a', 'b']}
+                labels={['舊', '甲', '乙']}
+                variants={['blue']}
+                index={index}
+                onSelect={() => {}}
+            />
+        );
+        const { rerender } = render(dots(1));
+
+        expect(screen.getByRole('button', { name: '舊' })).toHaveAttribute('data-variant', 'blue');
+        expect(screen.getByRole('button', { name: '甲' })).not.toHaveAttribute('data-variant');
+        rerender(dots(0));
+        expect(screen.getByRole('button', { name: '舊' }).className).toMatch(/selected/);
+    });
+
+    it('keeps the gold variant on the current dot, so it can take the 今日 colour', () => {
+        render(
+            <PageDots
+                keys={['a', 'b']}
+                labels={['甲', '乙']}
+                variants={['gold', 'gold']}
+                index={1}
+                onSelect={() => {}}
+            />,
+        );
+
+        const current = screen.getByRole('button', { name: '乙' });
+        expect(current).toHaveAttribute('data-variant', 'gold');
+        expect(current.className).toMatch(/gold/);
+        expect(current.className).toMatch(/selected/);
+    });
+
+    it('leaves the dots plain without variants', () => {
+        render(<PageDots keys={['a', 'b']} labels={['甲', '乙']} index={0} onSelect={() => {}} />);
+
+        expect(document.querySelectorAll('[data-variant]')).toHaveLength(0);
+    });
 });

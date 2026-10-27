@@ -80,6 +80,41 @@
     color: var(--color-title);
 }
 
+/* 名 + 細標籤一行：名可以縮（跑馬燈），標籤唔縮 */
+.nameLine {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.nameLine .name {
+    min-width: 0;
+}
+
+/* 節目名旁邊嘅膠囊標籤（重溫 / 今日） */
+.tag {
+    flex-shrink: 0;
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-2xs);
+    font-weight: 700;
+    line-height: var(--new-badge-line);
+    white-space: nowrap;
+}
+
+/* 重溫：固定藍色，唔跟節目轉色（同重溫指示點一樣） */
+.tag[data-tag='rewatch'] {
+    background: var(--color-rewatch);
+    color: var(--color-on-rewatch);
+}
+
+/* 今日：主頁奶油金，唔跟節目轉色 */
+.tag[data-tag='today'] {
+    background: var(--today-tag-bg);
+    color: var(--today-tag-text);
+}
+
 /* 時間每秒變：數字等闊，跑馬燈距離唔會每秒跳 */
 .subtitle {
     font-size: var(--font-size-xs);
