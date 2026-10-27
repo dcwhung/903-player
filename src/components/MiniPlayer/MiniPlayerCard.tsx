@@ -1,10 +1,10 @@
 import { t } from '../../i18n/t';
-import type { MiniPlayerProps } from './MiniPlayer';
 import styles from './MiniPlayer.module.css';
 import { MiniPlayerDots } from './MiniPlayerDots';
 import type { MiniPlayerMode } from './miniPlayerMode';
 import { MiniPlayerProgress } from './MiniPlayerProgress';
 import { MiniPlayerRow } from './MiniPlayerRow';
+import type { MiniPlayerProps } from './miniPlayerTypes';
 
 type MiniPlayerCardProps = Omit<MiniPlayerProps, 'region'> & {
     mode: MiniPlayerMode;

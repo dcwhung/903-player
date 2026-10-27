@@ -1,7 +1,7 @@
 import type { MiniPlayerTag } from '../../selectors/miniPlayer';
 import { PageDots, type PageDotVariant } from '../PageDots/PageDots';
-import type { MiniPlayerProps } from './MiniPlayer';
 import styles from './MiniPlayer.module.css';
+import type { MiniPlayerProps } from './miniPlayerTypes';
 
 /** 指示點跟標籤色：重溫 = 藍（未揀中淡啲），今日 = 揀中時奶油金；冇標籤就普通點 */
 const DOT_VARIANTS: Record<MiniPlayerTag, PageDotVariant> = { rewatch: 'blue', today: 'gold' };
