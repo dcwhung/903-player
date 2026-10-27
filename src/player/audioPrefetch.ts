@@ -14,8 +14,12 @@ export type PrefetchListener = (
     detail?: string,
 ) => void;
 
+/**
+ * no-store：R2 冇帶 Origin 嘅回應冇 Vary: Origin，Safari 會將播放器載過、冇 CORS header 嘅快取
+ * 拎嚟畀 fetch 用，變成 CORS 失敗（TypeError）；唔用快取就一定攞到有 CORS header 嘅新回應
+ */
 export const fetchAudioBlob: FetchAudio = async (url, signal) => {
-    const response = await fetch(url, { signal });
+    const response = await fetch(url, { signal, cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.blob();
 };
@@ -53,7 +57,8 @@ export class AudioPrefetcher {
             (error: unknown) => {
                 if (this.entry !== entry) return;
                 this.entry = undefined;
-                this.onEvent('prefetch-fail', url, (error as Error).name);
+                const { name, message } = error as Error;
+                this.onEvent('prefetch-fail', url, `${name}: ${message}`);
             },
         );
     }
