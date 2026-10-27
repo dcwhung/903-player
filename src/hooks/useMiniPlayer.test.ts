@@ -5,7 +5,7 @@ import type { SeriesEpisode } from '../types/drama';
 import { saveProgress } from '../services/progressStore';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
-import { restoreMiniPlayer } from './miniPlayerDismissed';
+import { restoreMiniPlayer, useRestoreMiniPlayerOnPlay } from './miniPlayerDismissed';
 import { useMiniPlayer } from './useMiniPlayer';
 
 const BADGIRL = recording('badgirl', '2026-10-19', '1000');
@@ -14,7 +14,14 @@ const RECORDINGS = [recording('gongzi', '2026-10-17'), BADGIRL, WANNI];
 
 const setup = (recordings: Recording[] = RECORDINGS) => {
     const { audio, wrapper } = createHookWrapper(recordings);
-    const hook = renderHook(() => ({ mini: useMiniPlayer(), player: usePlayer() }), { wrapper });
+    const hook = renderHook(
+        () => {
+            // App 層面掛住：開始播就清走「已關閉」
+            useRestoreMiniPlayerOnPlay();
+            return { mini: useMiniPlayer(), player: usePlayer() };
+        },
+        { wrapper },
+    );
     return { audio, ...hook };
 };
 

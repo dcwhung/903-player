@@ -51,7 +51,6 @@ export const CloseIcon = (props: IconProps) => (
     </StrokeIcon>
 );
 
-/** 「全部短篇」：三條橫線 */
 /** 電源 ⏻：mini player 左滑露出嘅「關閉」掣 */
 export const PowerIcon = (props: IconProps) => (
     <StrokeIcon {...props}>
@@ -60,6 +59,7 @@ export const PowerIcon = (props: IconProps) => (
     </StrokeIcon>
 );
 
+/** 「全部短篇」：三條橫線 */
 export const ListIcon = (props: IconProps) => (
     <StrokeIcon {...props}>
         <path d="M4 6h16M4 12h16M4 18h16" />

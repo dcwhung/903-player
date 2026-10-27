@@ -37,6 +37,8 @@
     --font-size-xxl: calc(26px * var(--ui-scale));
     --letter-spacing-caps: 0.18em;
 
+    /* 細過 --space-1 嘅間隔：mini player 名同副題之間、「⏻ 關閉」icon 同字之間 */
+    --space-half: calc(2px * var(--ui-scale));
     --space-1: calc(4px * var(--ui-scale));
     --space-2: calc(8px * var(--ui-scale));
     --space-3: calc(12px * var(--ui-scale));

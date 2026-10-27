@@ -57,13 +57,22 @@
     transition: transform var(--mini-long-press-ms) ease-out;
 }
 
-/* 浮起：大少少 + 陰影深啲，表示而家左滑係關閉 */
+/* 浮起：陰影深啲，表示而家左滑係關閉 */
 .player[data-armed='true'] {
     box-shadow: var(--shadow-mini-player-lifted);
 }
 
-.player[data-armed='true']:not([data-dragging='true'], [data-revealed='true']) {
+/*
+ * 浮起而且停喺原位（未拉、未露出關閉掣、唔係滑走緊）先放大少少：
+ * 呢條 specificity 高過 .player 嘅 translateX，所以要由 JS 計好 data-lifted，唔可以用 data-armed
+ */
+.player[data-lifted='true'] {
     transform: scale(var(--mini-lift-scale));
+}
+
+/* 滑走緊（關閉）：唔收 tap */
+.player[data-closing='true'] {
+    pointer-events: none;
 }
 
 /* 拉緊：直接跟手指 */
@@ -91,7 +100,7 @@
 .dismiss {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-half);
     align-items: center;
     justify-content: center;
     width: max(0px, calc(var(--mini-dismiss-offset, 0px) - var(--space-2)));
@@ -119,6 +128,20 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+}
+
+/* 鍵盤 tab 到「關閉播放器」：要睇得見焦點喺邊（WCAG 2.4.7），貼住 card 右上角 */
+.srOnly:focus-visible {
+    top: var(--space-1);
+    right: var(--space-1);
+    width: auto;
+    height: auto;
+    padding: var(--space-1) var(--space-2);
+    clip-path: none;
+    border-radius: var(--radius-full);
+    background: var(--color-title);
+    color: var(--color-surface);
+    font-size: var(--font-size-2xs);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -159,7 +182,7 @@
 .text {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-half);
     min-width: 0;
 }
 

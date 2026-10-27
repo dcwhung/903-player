@@ -315,6 +315,7 @@ describe('MiniPlayer swipe to close', () => {
         longPress();
 
         expect(region()).toHaveAttribute('data-armed', 'true');
+        expect(region()).toHaveAttribute('data-lifted', 'true');
         expect(screen.getByText('‹‹ 滑動關閉')).toBeInTheDocument();
     });
 
@@ -438,5 +439,77 @@ describe('MiniPlayer swipe to close', () => {
         fireEvent.click(screen.getByRole('button', { name: '關閉播放器' }));
 
         expect(p.onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('slides away (data-closing) instead of settling while a full swipe closes', () => {
+        render(<MiniPlayer {...props()} />);
+
+        longPress();
+        dragTo(20);
+
+        expect(region()).toHaveAttribute('data-closing', 'true');
+        expect(region()).not.toHaveAttribute('data-lifted');
+    });
+
+    it('keeps the lift while the finger is held past the idle time, so the swipe still closes', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+
+        longPress();
+        act(() => vi.advanceTimersByTime(ARMED_IDLE_MS + 10));
+        dragTo(20);
+        act(() => vi.advanceTimersByTime(DISMISS_SLIDE_MS));
+
+        expect(p.onDismiss).toHaveBeenCalledTimes(1);
+        expect(p.onChange).not.toHaveBeenCalled();
+    });
+
+    it('ignores Escape while sliding away and still closes once', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+
+        longPress();
+        dragTo(20);
+        fireEvent.keyDown(document, { key: 'Escape' });
+
+        expect(region()).toHaveAttribute('data-closing', 'true');
+        act(() => vi.advanceTimersByTime(DISMISS_SLIDE_MS));
+        expect(p.onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('still closes when the page changes during the slide', () => {
+        const p = props();
+        const { unmount } = render(<MiniPlayer {...p} />);
+
+        longPress();
+        dragTo(20);
+        unmount();
+
+        expect(p.onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('drops a mouse press whose button was released outside the card', () => {
+        render(<MiniPlayer {...props()} />);
+
+        fireEvent.pointerDown(region(), { clientX: 300, clientY: 10, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(region(), {
+            clientX: 290,
+            clientY: 60,
+            pointerId: 1,
+            buttons: 0,
+            pointerType: 'mouse',
+        });
+        act(() => vi.advanceTimersByTime(LONG_PRESS_MS));
+
+        expect(region()).not.toHaveAttribute('data-armed');
+    });
+
+    it('does not lift on a right or middle mouse press', () => {
+        render(<MiniPlayer {...props()} />);
+
+        fireEvent.pointerDown(region(), { clientX: 300, clientY: 10, pointerId: 1, button: 2 });
+        act(() => vi.advanceTimersByTime(LONG_PRESS_MS));
+
+        expect(region()).not.toHaveAttribute('data-armed');
     });
 });

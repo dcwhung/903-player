@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
 import { dramaEpisodeTheme, findDrama } from '../dramas';
@@ -20,11 +20,7 @@ import type { Recording } from '../types/recording';
 import { isDramaEpisode, type Track } from '../types/track';
 import { t } from '../i18n/t';
 import { formatDateLabel, hkToday } from '../utils/date';
-import {
-    dismissMiniPlayer,
-    restoreMiniPlayer,
-    useMiniPlayerDismissed,
-} from './miniPlayerDismissed';
+import { dismissMiniPlayer, useMiniPlayerDismissed } from './miniPlayerDismissed';
 import { useRefreshedOn } from './useRefreshedOn';
 import { ratio } from '../utils/ratio';
 import { hasKnownDuration } from '../utils/time';
@@ -84,18 +80,9 @@ const useShownTime = (url: string | undefined, isLoaded: boolean) => {
 
 type Player = ReturnType<typeof usePlayer>;
 
-/**
- * 左滑關閉：停播 + 收起；之後開始播嘢（isPlaying 由 false 變 true）先再出返。
- * 睇「變 true」而唔係「係 true」：真 audio 嘅 pause 遲啲先到，關閉嗰下 isPlaying 可能仲係 true。
- * 第一次 mount 當之前係 false：喺節目頁播咗先返主頁，mini player 照出
- */
+/** 左滑關閉：停播 + 收起；之後喺任何一頁開始播先再出返（App 層面 useRestoreMiniPlayerOnPlay） */
 const useDismissal = (player: Player) => {
     const dismissed = useMiniPlayerDismissed();
-    const wasPlaying = useRef(false);
-    useEffect(() => {
-        if (player.isPlaying && !wasPlaying.current) restoreMiniPlayer();
-        wasPlaying.current = player.isPlaying;
-    }, [player.isPlaying]);
     const dismiss = () => {
         player.stop();
         dismissMiniPlayer();

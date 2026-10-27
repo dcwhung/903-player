@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, type PointerEvent } from 'react';
 import { useBox, type Box } from '../../hooks/useBox';
 import { DRAG_INTENT_PX, dragIntent } from '../../hooks/swipe';
+import { isLostRelease } from '../../hooks/lostRelease';
 import { useClickSuppression } from '../../hooks/useSwipe';
 import { prefersReducedMotion } from '../../utils/motion';
 import { pushSample, velocityOf, type DragSample } from '../ShowCardStack/cardStack';
@@ -299,14 +300,7 @@ const takePointer = (pointer: PointerBox, event: SheetPointerEvent) => {
     return current;
 };
 
-/**
- * 滑鼠喺表外（例如遮罩）放手：表收唔到 pointerup，手勢留低咗。
- * 同一個 pointer 再按低，或者滑鼠冇撳住掣都郁緊，就當之前嗰下已經放咗手
- */
-const isLostRelease = (current: PointerGesture | null, event: SheetPointerEvent) =>
-    current?.pointerId === event.pointerId &&
-    (event.type === 'pointerdown' || (event.pointerType === 'mouse' && event.buttons === 0));
-
+/** 滑鼠喺表外（例如遮罩）放手（isLostRelease）：當之前嗰下已經放咗手，彈返 */
 const dropPointer = (pointer: PointerBox, controls: SheetDragControls) => {
     pointer.current = null;
     controls.abort();
@@ -320,7 +314,7 @@ const createPointerHandlers = (
     clicks: ReturnType<typeof useClickSuppression>,
 ) => ({
     onPointerDown: (event: SheetPointerEvent) => {
-        if (isLostRelease(pointer.current, event)) dropPointer(pointer, controls);
+        if (isLostRelease(pointer.current?.pointerId, event)) dropPointer(pointer, controls);
         const busy = pointer.current !== null;
         if (!busy) clicks.arm(false);
         pointer.current = startPointer(event, busy, getList, controls) ?? pointer.current;
@@ -328,7 +322,7 @@ const createPointerHandlers = (
     onPointerMove: (event: SheetPointerEvent) => {
         const current = pointer.current;
         if (current?.pointerId !== event.pointerId) return;
-        if (isLostRelease(current, event)) return dropPointer(pointer, controls);
+        if (isLostRelease(current.pointerId, event)) return dropPointer(pointer, controls);
         markMoved(event, current);
         controls.move(event.clientY, event.timeStamp);
     },

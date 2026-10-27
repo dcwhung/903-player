@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, type PointerEvent } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent, type PointerEvent } from 'react';
 import { DRAG_INTENT_PX, dragIntent, swipeDirection, type SwipeDirection } from '../../hooks/swipe';
+import { isLostRelease } from '../../hooks/lostRelease';
 import { useBox, type Box } from '../../hooks/useBox';
 import { useClickSuppression } from '../../hooks/useSwipe';
 import { prefersReducedMotion } from '../../utils/motion';
@@ -24,6 +25,8 @@ export interface DismissView {
     revealed: boolean;
     /** card 向左移咗幾多 px */
     offset: number;
+    /** 關閉緊：card 滑走中（唔再浮起放大、唔收 tap） */
+    closing: boolean;
 }
 
 interface Press {
@@ -41,7 +44,8 @@ interface Press {
 /** 手勢狀態：成個 mini player 生命期都係同一個 object（timer 同 handler 改同一份） */
 interface Session extends Omit<DismissView, 'dragging'> {
     press: Press | null;
-    closing: boolean;
+    /** 滑走緊未 onDismiss：中途 unmount（例如撳咗節目格轉頁）都要即刻做埋 */
+    pendingDismiss?: () => void;
     longPress?: ReturnType<typeof setTimeout>;
     idle?: ReturnType<typeof setTimeout>;
     slide?: ReturnType<typeof setTimeout>;
@@ -58,15 +62,17 @@ type MiniPointerEvent = PointerEvent<HTMLElement>;
 type SessionBox = Box<Session>;
 
 const SESSION_REST = { pressing: false, armed: false, revealed: false, offset: 0 };
-const REST: DismissView = { ...SESSION_REST, dragging: false };
+const REST: DismissView = { ...SESSION_REST, dragging: false, closing: false };
 
 const sync = (session: Session, setView: Sync) => {
-    const { pressing, armed, revealed, offset } = session;
-    setView({ pressing, armed, revealed, offset, dragging: session.press?.dragging ?? false });
+    const { pressing, armed, revealed, offset, closing } = session;
+    const dragging = session.press?.dragging ?? false;
+    setView({ pressing, armed, revealed, offset, closing, dragging });
 };
 
-/** 變返平時：左右掃又係轉節目 */
+/** 變返平時：左右掃又係轉節目。手指仲撳住（例如長按完未郁）或者滑走緊就唔郁 */
 const settleBack = (session: Session, setView: Sync) => {
+    if (session.press || session.closing) return;
     clearTimeout(session.idle);
     Object.assign(session, SESSION_REST);
     sync(session, setView);
@@ -78,10 +84,10 @@ const armIdle = (session: Session, setView: Sync) => {
     session.idle = setTimeout(() => settleBack(session, setView), ARMED_IDLE_MS);
 };
 
+/** 長按夠鐘：浮起。idle 由放手先開始計（撳住睇提示唔會自己跌返落嚟） */
 const lift = (session: Session, setView: Sync) => {
     Object.assign(session, { pressing: false, armed: true });
     if (session.press) session.press.liftedNow = true;
-    armIdle(session, setView);
     sync(session, setView);
 };
 
@@ -92,7 +98,14 @@ const dismiss = (session: Session, setView: Sync, width: number, onDismiss: () =
     clearTimeout(session.idle);
     session.offset = width;
     sync(session, setView);
-    session.slide = setTimeout(onDismiss, prefersReducedMotion() ? 0 : DISMISS_SLIDE_MS);
+    session.pendingDismiss = onDismiss;
+    session.slide = setTimeout(
+        () => {
+            session.pendingDismiss = undefined;
+            onDismiss();
+        },
+        prefersReducedMotion() ? 0 : DISMISS_SLIDE_MS,
+    );
 };
 
 /** 浮起咗之後放手：冇拉過 = 撳 card（收返）或者啱啱長按完（保持浮起）；拉過就睇拉咗幾遠 */
@@ -177,18 +190,28 @@ const release = (release: Release, event: MiniPointerEvent) => {
     releaseArmed(session, setView, current, callbacks.onDismiss);
 };
 
-/** handlers 執行時先由 box 攞 session（render 時唔讀） */
+/** 滑鼠喺 card 外放手（isLostRelease）：當之前嗰下已經放咗手，取消長按 / 拉動 */
+const dropPress = (session: Session, setView: Sync) => {
+    clearTimeout(session.longPress);
+    session.press = null;
+    session.pressing = false;
+    settleBack(session, setView);
+};
+
+/** handlers 執行時先由 box 攞 session（render 時唔讀）；只認主掣（右鍵 / 中鍵唔浮起） */
 const createHandlers = (box: SessionBox, setView: Sync, clicks: Clicks, callbacks: Callbacks) => ({
     onPointerDown: (event: MiniPointerEvent) => {
         const session = box.current;
-        if (session.press || session.closing) return;
+        if (isLostRelease(session.press?.pointerId, event)) dropPress(session, setView);
+        if (session.press || session.closing || event.button !== 0) return;
         clicks.arm(false);
         startPress(session, setView, event);
     },
     onPointerMove: (event: MiniPointerEvent) => {
-        const session = box.current;
-        if (session.press?.pointerId === event.pointerId)
-            track(session, setView, session.press, event);
+        const { press } = box.current;
+        if (press?.pointerId !== event.pointerId) return;
+        if (isLostRelease(press.pointerId, event)) return dropPress(box.current, setView);
+        track(box.current, setView, press, event);
     },
     onPointerUp: (event: MiniPointerEvent) =>
         release({ session: box.current, setView, clicks, callbacks }, event),
@@ -196,7 +219,7 @@ const createHandlers = (box: SessionBox, setView: Sync, clicks: Clicks, callback
         if (takePress(box.current, event)) settleBack(box.current, setView);
     },
     onClickCapture: clicks.onClickCapture,
-    onContextMenu: (event: MiniPointerEvent) => event.preventDefault(),
+    onContextMenu: (event: MouseEvent<HTMLElement>) => event.preventDefault(),
 });
 
 /** 浮起咗：撳 mini player 以外 / Escape 就變返平時 */
@@ -252,10 +275,12 @@ export const useDismissGesture = (
     const container = useBox<HTMLElement | null>(null);
     const [view, setView] = useState<DismissView>(REST);
     const clicks = useClickSuppression();
+    // unmount：停晒 timer；滑走緊就即刻做埋關閉（停播 + 收起），唔會返主頁又見返
     useEffect(
         () => () => {
-            const { longPress, idle, slide } = box.current;
+            const { longPress, idle, slide, pendingDismiss } = box.current;
             [longPress, idle, slide].forEach(clearTimeout);
+            pendingDismiss?.();
         },
         [box],
     );

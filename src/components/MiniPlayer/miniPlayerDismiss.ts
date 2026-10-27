@@ -1,10 +1,10 @@
-/** 手指唔郁撳住咁耐，mini player 先浮起（之後左滑 = 關閉，唔再係轉節目） */
+/** 手指唔郁撳住咁耐，mini player 先浮起（之後左滑 = 關閉，唔再係轉節目）；同 --mini-long-press-ms 一致 */
 export const LONG_PRESS_MS = 500;
 /** 浮起之後咁耐冇郁就變返平時 */
 export const ARMED_IDLE_MS = 4000;
 /** 拉過咁多 px 放手：停喺度露出「關閉」掣 */
 export const REVEAL_MIN_PX = 40;
-/** 「關閉」掣停定時，card 向左移咗幾多 px（同 --mini-dismiss-reveal 一致） */
+/** 「關閉」掣停定時，card 向左移咗幾多 px（CSS 用 --mini-dismiss-offset 跟住，唔使另外 token） */
 export const REVEAL_PX = 88;
 /** 拉過 card 闊度咁多放手：直接關閉 */
 export const DISMISS_RATIO = 0.5;
