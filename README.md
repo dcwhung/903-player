@@ -72,6 +72,21 @@ npm run e2e        # Playwright 端對端測試（假錄音寫入 localStorage +
 npm run build
 ```
 
+### 端對端測試（e2e）
+
+Playwright 鎖咗 `~1.63.0`（`package.json`），瀏覽器版本要同套件對得上。新機第一次跑之前裝一次 Chromium：
+
+```bash
+npx playwright install chromium
+```
+
+`npm run e2e` 會先 `npm run build`，再用 `node e2e/run.mjs` 起 preview server（預設 port 4173）跑晒所有檢查，
+截圖輸出去 `e2e/screenshots/`（唔入 git）。
+
+- 瀏覽器已經裝咗喺其他位置（例如 CI / 雲端容器預先裝好）：設 `PLAYWRIGHT_BROWSERS_PATH` 指去嗰個資料夾，
+  `npx playwright install` 同 `npm run e2e` 都會用佢，唔使再下載
+- 幾個 worktree 同時跑：用 `E2E_PORT=4174 npm run e2e` 避開撞 port
+
 ### App icon
 
 `public/` 入面嘅 icon（`icon-192`、`icon-512`、`icon-maskable-512`、`apple-touch-icon` 180、`favicon` 64）
