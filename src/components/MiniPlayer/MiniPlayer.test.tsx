@@ -598,6 +598,45 @@ describe('MiniPlayer swipe to close', () => {
             expect(region()).not.toHaveAttribute('data-pressing');
             expect(p.onChange).not.toHaveBeenCalled();
         });
+
+        // Q-5：takePress 只認同一隻手指：另一隻手指 cancel 唔可以打斷而家嘅 press / 拖動
+        describe('from another finger', () => {
+            const OTHER_POINTER_ID = POINTER_ID + 1;
+            const otherAt = (clientX: number) => ({
+                clientX,
+                clientY: PRESS_Y,
+                pointerId: OTHER_POINTER_ID,
+            });
+
+            it('keeps counting the long press and still lifts', () => {
+                render(<MiniPlayer {...props()} />);
+
+                fireEvent.pointerDown(region(), at(PRESS_X));
+                act(() => vi.advanceTimersByTime(SHORT_PRESS_MS));
+                fireEvent.pointerCancel(region(), otherAt(PRESS_X));
+                expect(region()).toHaveAttribute('data-pressing', 'true');
+                act(() => vi.advanceTimersByTime(LONG_PRESS_MS - SHORT_PRESS_MS));
+
+                expect(region()).toHaveAttribute('data-armed', 'true');
+                expect(region()).toHaveAttribute('data-lifted', 'true');
+            });
+
+            it('keeps the drag going so releasing past half still closes', () => {
+                const p = props();
+                render(<MiniPlayer {...p} />);
+
+                longPress();
+                fireEvent.pointerMove(region(), at(FAR_LEFT_X));
+                fireEvent.pointerCancel(region(), otherAt(FAR_LEFT_X));
+                expect(region()).toHaveAttribute('data-dragging', 'true');
+                expect(region()).toHaveAttribute('data-armed', 'true');
+                fireEvent.pointerUp(region(), at(FAR_LEFT_X));
+                act(() => vi.advanceTimersByTime(DISMISS_SLIDE_MS));
+
+                expect(p.onDismiss).toHaveBeenCalledTimes(1);
+                expect(p.onChange).not.toHaveBeenCalled();
+            });
+        });
     });
 
     it('does not lift on a right or middle mouse press', () => {
