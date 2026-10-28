@@ -31,7 +31,10 @@ const formatClock = (seconds: number, known: boolean): string =>
 /** 未開始樣：弧形鎖住，拖唔到亦 seek 唔到 */
 const ignore = () => undefined;
 
-/** 唱片格要顯示嘅嘢：平時跟 player；有 onStart（未載入呢頁嘅嘢）就成個係未開始樣，唔跟 player */
+/**
+ * 唱片格要顯示嘅嘢：平時跟 player；有 onStart（未載入呢頁嘅嘢）就成個係未開始樣，唔跟 player，
+ * 冇「由頭播放」（未載入時 onStart 會續播，唔係由頭，S-485）
+ */
 const useGaugeView = (held: boolean, onStart: (() => void) | undefined) => {
     const { player, known, shownTime, arc, disc } = useGaugeGestures(held);
     if (onStart) {
@@ -44,7 +47,7 @@ const useGaugeView = (held: boolean, onStart: (() => void) | undefined) => {
             arc: { value: 0, locked: true, onPreview: ignore },
             disc: { faceRef: disc.faceRef, spinning: false, upright: true, scrub: undefined },
             toggle: onStart,
-            restart: onStart,
+            restart: undefined,
         };
     }
     const { duration: max, seek, isPlaying } = player;
@@ -55,21 +58,24 @@ const useGaugeView = (held: boolean, onStart: (() => void) | undefined) => {
 
 interface GaugeActionsProps {
     isPlaying: boolean;
-    onRestart: () => void;
+    /** 冇就唔出由頭播放掣（播放掣位置唔變） */
+    onRestart?: () => void;
     onToggle: () => void;
 }
 
 /** 由頭播放 + 播放 / 暫停兩粒掣 */
 const GaugeActions = ({ isPlaying, onRestart, onToggle }: GaugeActionsProps) => (
     <div className={styles.actions}>
-        <button
-            type="button"
-            className={styles.restart}
-            aria-label={t('player.restart')}
-            onClick={onRestart}
-        >
-            <RestartIcon size={RESTART_ICON_SIZE} />
-        </button>
+        {onRestart && (
+            <button
+                type="button"
+                className={styles.restart}
+                aria-label={t('player.restart')}
+                onClick={onRestart}
+            >
+                <RestartIcon size={RESTART_ICON_SIZE} />
+            </button>
+        )}
         <button
             type="button"
             className={styles.toggle}

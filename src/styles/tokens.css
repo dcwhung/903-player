@@ -109,12 +109,15 @@
     --date-strip-empty-opacity: 0.35;
     /* 短篇劇集頁嘅短篇 chip：睇落嘅高度（撳得到範圍係成行 --date-strip-height） */
     --arc-chip-height: calc(32px * var(--ui-scale));
-    /* 「全部短篇」一覽表：最高佔畫面幾多、遮罩、拉柄闊、每行高、碟面圓環大細、疊喺頁面上面嘅層 */
+    /*
+     * 「全部短篇」一覽表：最高佔畫面幾多、遮罩、拉柄闊、每行高、碟面圓環大細、疊喺頁面上面嘅層；
+     * 行高同碟面跟 design/previews/arc-sheet-cover-preview.html（--row-height 64px、--thumb 52px，S-488）
+     */
     --arc-sheet-max-height: 78%;
     --arc-sheet-scrim: rgb(0 0 0 / 40%);
     --arc-sheet-grab-width: calc(40px * var(--ui-scale));
-    --arc-sheet-row-height: calc(52px * var(--ui-scale));
-    --arc-sheet-ring: calc(54px * var(--ui-scale));
+    --arc-sheet-row-height: calc(64px * var(--ui-scale));
+    --arc-sheet-ring: calc(52px * var(--ui-scale));
     --arc-sheet-z: 10;
     /* 向下拉閂：放手後滑走 / 彈返嘅時間（同 src/components/ArcSheet/sheetDrag.ts SHEET_SLIDE_MS 一致） */
     --arc-sheet-slide-ms: 250ms;
@@ -123,7 +126,8 @@
      * 凸出碟底幾多）、聽完 ✓ 章（大細、凸出右下角幾多）、pill / ✓ 同碟面之間嗰圈底色邊
      */
     --arc-sheet-ring-width: var(--space-1);
-    --arc-sheet-count-font: calc(10px * var(--ui-scale));
+    /* pill 字跟 preview 嘅 badge（11px），細 mon 都睇得清 */
+    --arc-sheet-count-font: calc(11px * var(--ui-scale));
     --arc-sheet-count-line: calc(16px * var(--ui-scale));
     --arc-sheet-count-offset: calc(-6px * var(--ui-scale));
     --arc-sheet-check: calc(18px * var(--ui-scale));

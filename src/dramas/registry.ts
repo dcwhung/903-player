@@ -18,7 +18,10 @@ export interface Drama {
     enabled: boolean;
     /** 短篇劇集主頁角落點數：season →「全 N 季」；冇就「N 個短篇」 */
     arcUnit?: 'season';
-    /** 全劇上架日（YYYY-MM-DD，drama.json 頂層；冇就當最舊）：主頁劇集格排次序用 */
+    /**
+     * 全劇上架日（YYYY-MM-DD）：主頁劇集格排次序用。短篇劇用 drama.json 頂層，冇就用最新短篇嘅
+     * addedAt；都冇（或者每日劇）就當最舊
+     */
     addedAt?: string;
     /** 劇集色調 + 碟面圖 */
     theme: ShowTheme;
@@ -66,16 +69,26 @@ const requireImage = (folder: DramaFolder, file: string): string => {
     return url;
 };
 
-const toDrama = (folder: DramaFolder, def: DramaDefinition): Drama => ({
-    id: folder.id,
-    name: def.name,
-    kind: def.kind,
-    enabled: def.enabled,
-    ...(def.arcUnit ? { arcUnit: def.arcUnit } : {}),
-    ...(def.kind === 'series' && def.addedAt ? { addedAt: def.addedAt } : {}),
-    theme: { ...def.theme, art: requireImage(folder, def.disc) },
-    tileArt: requireImage(folder, def.tile),
-});
+/** 短篇劇嘅上架日：頂層先，冇就最新短篇（YYYY-MM-DD 用字串比較就得）；每日劇冇 */
+const addedAtOf = (def: DramaDefinition): string | undefined => {
+    if (def.kind !== 'series') return undefined;
+    const arcDates = def.arcs.flatMap((arc) => arc.addedAt ?? []);
+    return def.addedAt ?? arcDates.sort().at(-1);
+};
+
+const toDrama = (folder: DramaFolder, def: DramaDefinition): Drama => {
+    const addedAt = addedAtOf(def);
+    return {
+        id: folder.id,
+        name: def.name,
+        kind: def.kind,
+        enabled: def.enabled,
+        ...(def.arcUnit ? { arcUnit: def.arcUnit } : {}),
+        ...(addedAt ? { addedAt } : {}),
+        theme: { ...def.theme, art: requireImage(folder, def.disc) },
+        tileArt: requireImage(folder, def.tile),
+    };
+};
 
 const arcImagesOf = (
     folder: DramaFolder,

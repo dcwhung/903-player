@@ -1,9 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { HOME_THEME } from '../config/showThemes';
+import { clearShowPick } from '../hooks/showPick';
 import { usePlayer } from '../player/usePlayer';
 import { seriesEpisodesOf } from '../dramas';
 import { findShow } from '../shows';
@@ -76,6 +77,7 @@ describe('HomePage', () => {
     afterEach(() => {
         vi.useRealTimers();
         vi.unstubAllGlobals();
+        clearShowPick();
     });
 
     it('lists seven artwork tiles plus today, in order', () => {
@@ -277,6 +279,81 @@ describe('HomePage', () => {
         ).toHaveAttribute('aria-current', 'true');
     });
 
+    it('stops an older episode the show page played by itself, without 重溫', async () => {
+        Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
+        const { audio } = renderWithProviders(<ShowPage />, {
+            route: '/show/gongzi',
+            path: '/show/:showId',
+            recordings: RECORDINGS,
+            extraRoutes: [{ path: '/', element: <HomePage /> }],
+        });
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[1]?.url));
+
+        await userEvent.click(screen.getByRole('button', { name: '返回主頁' }));
+
+        const mini = await screen.findByRole('region', { name: '正在播放（今日節目）' });
+        await waitFor(() => expect(audio.pause).toHaveBeenCalled());
+        expect(mini.querySelector('[data-tag="rewatch"]')).toBeNull();
+    });
+
+    // S-507：重溫同今日係同一個節目，由「今日」嗰項撳入節目頁，節目頁要跟返今日
+    it('opens the show page on today’s episode when opened from today, next to a 重溫 of the same show', async () => {
+        Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
+        const old = recording('badgirl', '2026-10-12', '1000');
+        const today = RECORDINGS[2] as Recording;
+        const { audio } = renderWithProviders(<ShowPage />, {
+            route: '/show/badgirl',
+            path: '/show/:showId',
+            recordings: [old, ...RECORDINGS],
+            extraRoutes: [{ path: '/', element: <HomePage /> }],
+        });
+        await userEvent.click(await screen.findByRole('button', { name: /^(?:播放|暫停) 12\/10/ }));
+        await userEvent.click(screen.getByRole('button', { name: '返回主頁' }));
+        const mini = await screen.findByRole('region', { name: '正在播放（重溫及今日節目）' });
+
+        await userEvent.click(within(mini).getByRole('button', { name: 'Bad Girl大過佬' }));
+        await userEvent.click(
+            within(mini).getByRole('button', { name: '開啟 Bad Girl大過佬 節目頁' }),
+        );
+
+        expect(screen.getByTestId('location')).toHaveTextContent('/show/badgirl');
+        await waitFor(() => expect(audio.src).toBe(today.url));
+        expect(
+            screen.getByRole('button', { name: /^(?:播放|暫停) 19\/10/, current: true }),
+        ).toBeInTheDocument();
+
+        // 帶入嚟嘅 state 用完就清：之後自己揀返舊集，唔會再被拉返今日（S-532）
+        await userEvent.click(screen.getByRole('button', { name: /^(?:播放|暫停) 12\/10/ }));
+        await act(async () => {});
+        expect(audio.src).toBe(old.url);
+    });
+
+    it('keeps the 重溫 episode when opened from the 重溫 item', async () => {
+        Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
+        const old = recording('badgirl', '2026-10-12', '1000');
+        const { audio } = renderWithProviders(<ShowPage />, {
+            route: '/show/badgirl',
+            path: '/show/:showId',
+            recordings: [old, ...RECORDINGS],
+            extraRoutes: [{ path: '/', element: <HomePage /> }],
+        });
+        await userEvent.click(await screen.findByRole('button', { name: /^(?:播放|暫停) 12\/10/ }));
+        await userEvent.click(screen.getByRole('button', { name: '返回主頁' }));
+        const mini = await screen.findByRole('region', { name: '正在播放（重溫及今日節目）' });
+
+        await userEvent.click(
+            within(mini).getByRole('button', {
+                name: '開啟 Bad Girl大過佬 節目頁，重溫 12/10（一）',
+            }),
+        );
+
+        expect(screen.getByTestId('location')).toHaveTextContent('/show/badgirl');
+        expect(audio.src).toBe(old.url);
+    });
+
     it('swipes the mini player to the next show of today', async () => {
         renderWithProviders(<HomePage />, { recordings: RECORDINGS });
         const mini = await screen.findByRole('region', { name: '正在播放（今日節目）' });
@@ -382,8 +459,9 @@ describe('HomePage', () => {
                 '蘭茜夫人劇場',
                 '少爺占系列',
                 '森美小儀系列',
-                '黃金少年',
+                // S-482：芝See 冇頂層 addedAt，用最新短篇（10-25），排喺黃金少年（10-24）前面
                 '芝See菇Bi Family',
+                '黃金少年',
             ]);
             expect(screen.queryByRole('navigation', { name: '節目' })).not.toBeInTheDocument();
         });

@@ -100,6 +100,25 @@ describe('buildRegistry', () => {
         expect(registry.findDrama('off')).not.toHaveProperty('addedAt');
     });
 
+    // S-482：好似芝See 咁只有短篇有 addedAt，排序用最新嗰個短篇，唔再當最舊
+    it('falls back to the newest arc addedAt when drama.json has no top-level one', () => {
+        const arcsOnly = buildRegistry(
+            sourceOf(
+                folder(
+                    'gamma',
+                    series('Gamma', {
+                        arcs: [
+                            { name: 'A', episodes: 1, addedAt: '2026-10-24' },
+                            { name: 'B', episodes: 1, addedAt: '2026-10-25' },
+                            { name: 'C', episodes: 1 },
+                        ],
+                    }),
+                ),
+            ),
+        );
+        expect(arcsOnly.findDrama('gamma')?.addedAt).toBe('2026-10-25');
+    });
+
     it('lists only enabled dramas for the home page, but still names a disabled one', () => {
         expect(registry.enabledDramas().map((d) => d.id)).toEqual(['alpha', 'beta', 'zeta']);
         expect(registry.findDrama('off')?.name).toBe('Off');
