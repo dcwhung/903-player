@@ -25,8 +25,8 @@ const HOLD_BEFORE_RELEASE_MS = VELOCITY_WINDOW_MS * 2;
 const FOLLOW_TOLERANCE_PX = DRAG_INTENT_PX + 6;
 const STEPS = 10;
 const STEP_MS = 16;
-// 放手後等滑走 / 彈返動畫（SHEET_SLIDE_MS 250ms）同 onClose 完
-const SETTLE_MS = 700;
+// 放手後最多等咁耐表定落嚟（閂：滑走 SHEET_SLIDE_MS 250ms + onClose；彈返：即刻清 transform）
+const SETTLE_TIMEOUT_MS = 5000;
 // 起手點喺清單頂下面咁多 px（第一行入面）
 const LIST_GRIP_OFFSET_PX = 30;
 
@@ -41,10 +41,33 @@ const sheetTransform = (p) => sheetOf(p).evaluate((el) => el.style.transform);
 const translateYOf = (transform) => Number(/translateY\(([\d.]+)px\)/.exec(transform)?.[1] ?? 0);
 
 /**
- * 一下拖動：start → 逐格 move 到 dy → 量一次拖緊嘅 transform → 停定 HOLD_BEFORE_RELEASE_MS → 放手 → 等動畫完。
- * input 係 { down, move, up }，觸控 / 滑鼠共用；返回拖緊時嘅 transform
+ * 放手後等表定落嚟，唔用固定 sleep（S-529）：
+ * 閂 → 表由 DOM 移走；彈返 → inline transform 清空、冇 data-dragging / data-closing。
+ * 返回 'closed' / 'open'；等唔到（例如卡喺拖緊）就 'stuck'，交畀斷言報錯
+ */
+const waitSettled = async (p, sheet) => {
+    const settled = await p
+        .waitForFunction(
+            (el) =>
+                !el.isConnected ||
+                (el.style.transform === '' &&
+                    !el.hasAttribute('data-dragging') &&
+                    !el.hasAttribute('data-closing')),
+            sheet,
+            { timeout: SETTLE_TIMEOUT_MS },
+        )
+        .then(() => true)
+        .catch(() => false);
+    if (!settled) return 'stuck';
+    return (await sheet.evaluate((el) => el.isConnected)) ? 'open' : 'closed';
+};
+
+/**
+ * 一下拖動：start → 逐格 move 到 dy → 量一次拖緊嘅 transform → 停定 HOLD_BEFORE_RELEASE_MS → 放手 → 等表定落嚟。
+ * input 係 { down, move, up }，觸控 / 滑鼠共用；返回拖緊時嘅 transform 同放手後狀態（waitSettled）
  */
 const dragDown = async (p, input, { x, y }, dy) => {
+    const sheet = await sheetOf(p).elementHandle();
     await input.down(x, y);
     for (let i = 1; i <= STEPS; i += 1) {
         await input.move(x, y + (dy * i) / STEPS);
@@ -53,8 +76,9 @@ const dragDown = async (p, input, { x, y }, dy) => {
     const during = await sheetTransform(p);
     await p.waitForTimeout(HOLD_BEFORE_RELEASE_MS);
     await input.up(x, y + dy);
-    await p.waitForTimeout(SETTLE_MS);
-    return during;
+    const settled = await waitSettled(p, sheet);
+    await sheet.dispose();
+    return { during, settled };
 };
 
 /** 一隻手指（CDP Input.dispatchTouchEvent）：page.touchscreen 只識 tap，拖動要自己發 touchMove */
@@ -113,14 +137,12 @@ const checkSnapBack = async (env, grip, label) => {
     if (!(await openSheet(env, label))) return;
     const height = (await sheetOf(p).boundingBox()).height;
     const dy = Math.round(height * SNAP_BACK_RATIO);
-    const during = await dragDown(p, input, await GRIPS[grip](p), dy);
+    const { during, settled } = await dragDown(p, input, await GRIPS[grip](p), dy);
     const followed = Math.abs(translateYOf(during) - dy) <= FOLLOW_TOLERANCE_PX;
     log(followed, `${label}：拉 ${dy}px 時表跟手指（${during}）`);
-    const stillOpen = (await sheetOf(p).count()) === 1;
-    const after = stillOpen ? await sheetTransform(p) : '(冇表)';
     log(
-        stillOpen && after === '',
-        `${label}：拉 ${dy}px（< 表高 ${height.toFixed(0)} × ${SHEET_DISMISS_RATIO}）放手彈返，仍然開住（transform「${after}」）`,
+        settled === 'open',
+        `${label}：拉 ${dy}px（< 表高 ${height.toFixed(0)} × ${SHEET_DISMISS_RATIO}）放手彈返原位，仍然開住（${settled}）`,
     );
 };
 
@@ -130,11 +152,10 @@ const checkDismiss = async (env, grip, label) => {
     if (!(await openSheet(env, label))) return;
     const height = (await sheetOf(p).boundingBox()).height;
     const dy = Math.round(height * SHEET_DISMISS_RATIO) + DISMISS_MARGIN_PX;
-    await dragDown(p, input, await GRIPS[grip](p), dy);
-    const count = await sheetOf(p).count();
+    const { settled } = await dragDown(p, input, await GRIPS[grip](p), dy);
     log(
-        count === 0,
-        `${label}：拉 ${dy}px（≥ 表高 ${height.toFixed(0)} × ${SHEET_DISMISS_RATIO}）放手，全集表閂咗`,
+        settled === 'closed',
+        `${label}：拉 ${dy}px（≥ 表高 ${height.toFixed(0)} × ${SHEET_DISMISS_RATIO}）放手，全集表閂咗（${settled}）`,
     );
 };
 
