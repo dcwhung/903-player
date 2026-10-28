@@ -754,6 +754,25 @@ describe('AudioController replay timing details', () => {
         detach();
     });
 
+    it('starts replay timing from the new track, not where the old one stopped', async () => {
+        const WATCHED: Recording = { ...NEXT, url: 'https://audio.hkfm903.live/watched.aac' };
+        const OLD_POSITION = 2;
+        saveProgress(WATCHED.url, DURATION, DURATION);
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.emitTime(OLD_POSITION);
+
+        await controller.load(WATCHED, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        playThrough(audio, TICK_SECONDS, REPLAY_RESET_SECONDS);
+
+        expect(isWatched(WATCHED.url)).toBe(false);
+        detach();
+    });
+
     it('counts replay time on a watched track reached by auto-advance', async () => {
         saveProgress(NEXT.url, DURATION, DURATION);
         const audio = new FakeAudio();
