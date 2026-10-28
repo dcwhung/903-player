@@ -33,6 +33,7 @@ const DISC_SCRUB_RADIUS_RATIO = 0.3;
 const DISC_QUARTER_TURN_S = 15;
 // 慢慢捽：每格 9°（90° / STEPS）隔 90ms ≈ 0.1°/ms，低過加速門檻（DISC_SCRUB_SLOW_DEGREES_PER_MS 0.15）
 const DISC_SLOW_STEP_MS = 90;
+const MS_PER_SECOND = 1000;
 // 快速撥：每格 18°（半圈 / STEPS）隔 STEP_MS ≈ 1.1°/ms，加速；半圈要行多過慢慢捽嘅兩倍（> 60s）
 const HALF_TURN_DEGREES = 180;
 const DISC_FLICK_MIN_S = 60;
@@ -210,14 +211,21 @@ const circlePoint = (centre, radius, degrees) => {
 /** 一隻手指沿圓周由 from 度轉去 to 度（0° 指向右，順時針為正），分 STEPS 格，每格隔 stepMs */
 const touchArc = async (cdp, p, centre, radius, from, to, stepMs = STEP_MS) => {
     const at = (degrees) => circlePoint(centre, radius, degrees);
-    const send = (type, points) =>
-        cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
-    await send('touchStart', [at(from)]);
+    // 每步明確俾 timestamp（秒）：捽碟用相鄰 event.timeStamp 計轉速，唔俾就係瀏覽器處理嗰刻，
+    // 機忙時兩步擠埋一齊，慢捽會被當成快撥而加速（CUI-0003）
+    const start = Date.now() / MS_PER_SECOND;
+    const send = (type, points, step) =>
+        cdp.send('Input.dispatchTouchEvent', {
+            type,
+            touchPoints: points,
+            timestamp: start + (step * stepMs) / MS_PER_SECOND,
+        });
+    await send('touchStart', [at(from)], 0);
     for (let i = 1; i <= STEPS; i += 1) {
-        await send('touchMove', [at(from + ((to - from) * i) / STEPS)]);
+        await send('touchMove', [at(from + ((to - from) * i) / STEPS)], i);
         await p.waitForTimeout(stepMs);
     }
-    await send('touchEnd', []);
+    await send('touchEnd', [], STEPS + 1);
     await p.waitForTimeout(SETTLE_MS);
 };
 
