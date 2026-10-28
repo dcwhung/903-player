@@ -30,14 +30,17 @@ const showName = (recording: Recording): string => findShow(recording.showId)?.n
 
 /**
  * 今日節目（今日冇節目就冇，唔用最近一日）；載入緊清單冇嘅節目錄音（重溫舊集）就排最前，
- * 所以今日冇節目但聽緊嘢就只出聽緊嗰個
+ * 所以今日冇節目但聽緊嘢就只出聽緊嗰個。
+ * 清單未載入完（status 未 ready）：清單冇唔代表係舊集，今日節目會閃一下「重溫」，
+ * 所以照排最前但未當重溫，等載入完先決定（S-506）
  */
 const useListedRecordings = (loaded: Track | null) => {
-    const { recordings } = useRecordings();
+    const { recordings, status } = useRecordings();
     const today = hkToday();
     const listed = useMemo(() => showsOnDate(recordings, today), [recordings, today]);
     const list = useMemo(() => miniPlayerRecordings(listed, loaded), [listed, loaded]);
-    const rewatchUrl = list.length > listed.length ? list[0]?.url : undefined;
+    const prepended = list.length > listed.length;
+    const rewatchUrl = prepended && status === 'ready' ? list[0]?.url : undefined;
     return { today, list, rewatchUrl };
 };
 

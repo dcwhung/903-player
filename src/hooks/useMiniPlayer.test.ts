@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
+import type { RecordingsProber } from '../data/RecordingsProvider';
 import { dramaArtFor, dramaThemeFor, seriesEpisodesOf } from '../dramas';
 import type { SeriesEpisode } from '../types/drama';
 import { saveProgress } from '../services/progressStore';
@@ -12,8 +13,8 @@ const BADGIRL = recording('badgirl', '2026-10-19', '1000');
 const WANNI = recording('wanni', '2026-10-19', '1300');
 const RECORDINGS = [recording('gongzi', '2026-10-17'), BADGIRL, WANNI];
 
-const setup = (recordings: Recording[] = RECORDINGS) => {
-    const { audio, wrapper } = createHookWrapper(recordings);
+const setup = (recordings: Recording[] = RECORDINGS, prober?: RecordingsProber) => {
+    const { audio, wrapper } = createHookWrapper(recordings, prober);
     const hook = renderHook(
         () => {
             // App 層面掛住：開始播就清走「已關閉」
@@ -179,6 +180,27 @@ describe('useMiniPlayer', () => {
             isPlaying: true,
             // S-533：冇今日節目就唔好讀「及今日節目」
             region: '正在播放（重溫）',
+        });
+    });
+
+    // S-506：清單未載入完（storage 冇、第一輪 probe 未返）就已經播緊今日節目，唔好閃一下「重溫」
+    it('tags a today show 今日, not 重溫, while the recordings are still loading', async () => {
+        let resolve: (found: Recording[]) => void = () => {};
+        const probing = new Promise<Recording[]>((r) => (resolve = r));
+        const { result } = setup([], () => probing);
+
+        await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
+        expect(result.current.mini).toMatchObject({
+            keys: [BADGIRL.url],
+            tags: ['today'],
+            region: '正在播放（今日節目）',
+        });
+
+        await act(async () => resolve(RECORDINGS));
+        expect(result.current.mini).toMatchObject({
+            keys: [BADGIRL.url, WANNI.url],
+            tags: ['today', 'today'],
+            index: 0,
         });
     });
 
