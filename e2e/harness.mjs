@@ -12,16 +12,16 @@ import { silenceWav } from './silenceWav.mjs';
  */
 export const E2E_NOW = '2026-10-19T22:30:00+08:00';
 
-/** 同 src/config/constants.ts ALLOWED_AUDIO_ORIGIN 一樣（scripts/e2eSrcConstants.test.ts 鎖住） */
+/** 同 src/config/constants.ts ALLOWED_AUDIO_ORIGIN 一樣（src/e2eSrcConstants.test.ts 鎖住） */
 export const AUDIO_HOST = 'https://audio.hkfm903.live';
 /**
- * 廣播劇音檔（R2）：同 src/config/constants.ts DRAMA_AUDIO_BASE 一樣（scripts/e2eSrcConstants.test.ts 鎖住）。
+ * 廣播劇音檔（R2）：同 src/config/constants.ts DRAMA_AUDIO_BASE 一樣（src/e2eSrcConstants.test.ts 鎖住）。
  * e2e 唔出外網，所有 context 一律答 404，唔使每個劇集測試自己 route
  */
 export const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
 const AUDIO_SECONDS = 600;
 const wav = silenceWav(AUDIO_SECONDS);
-/** 同 src/services/probeStore.ts 嘅 PROBE_STORAGE_KEY 一樣：app 嘅錄音列表只會由呢度讀 */
+/** 同 src/services/probeStore.ts 嘅 PROBE_STORAGE_KEY 一樣（src/e2eSrcConstants.test.ts 鎖住）：app 嘅錄音列表只會由呢度讀 */
 export const PROBE_STORAGE_KEY = '903player:probed:v1';
 
 /** 同一個網址可能有唔同編碼寫法（中文字 / %XX），比較前統一 */

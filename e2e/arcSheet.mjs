@@ -6,7 +6,7 @@ import { PHONE, isShown, newE2EPage, succeeds } from './harness.mjs';
 const SIZE = `${PHONE.width}×${PHONE.height}`;
 // 短篇劇集（kind: series）：第一次入頁冇進度，全集表會自己彈出
 const DRAMA_ROUTE = '#/drama/chisee';
-// 以下 export 嘅常數係手抄 src（e2e 係純 node，import 唔到 TS），由 scripts/e2eSrcConstants.test.ts 鎖住一致
+// 以下 export 嘅常數係手抄 src（e2e 係純 node，import 唔到 TS），由 src/e2eSrcConstants.test.ts 鎖住一致
 // 拉過表高咁多先閂（src/components/ArcSheet/sheetDrag.ts SHEET_DISMISS_RATIO）
 export const SHEET_DISMISS_RATIO = 0.25;
 // 速度只計放手前咁多 ms 入面嘅樣本（src/components/ShowCardStack/cardStack.ts VELOCITY_WINDOW_MS）
