@@ -1,9 +1,7 @@
 import {
     EARLY_ADVANCE_SECONDS,
     PROGRESS_SAVE_INTERVAL_MS,
-    REPLAY_RESET_SECONDS,
     STALL_MAX_RETRIES,
-    STALL_RETRY_MS,
     WATCHED_RATIO,
 } from '../config/constants';
 import {
@@ -15,6 +13,8 @@ import {
 import type { Track } from '../types/track';
 import { recordPlayback } from './playbackLog';
 import type { LoadOptions, PlayerState } from './playerContext';
+import { ReplayTracker } from './replayTracker';
+import { StallWatchdog } from './stallWatchdog';
 
 const INITIAL_STATE: PlayerState = {
     recording: null,
@@ -45,19 +45,19 @@ export class AudioController {
     private pendingStart = 0;
     private lastSavedAt = 0;
     private watched = false;
-    /** 聽過嘅錄音由頭重播時累計嘅真正播放秒數；undefined = 唔係重播，唔使計 */
-    private replayedSeconds: number | undefined;
-    /** 上一次 timeupdate 嘅位置，用嚟計兩次之間播咗幾耐 */
-    private lastTickPosition = 0;
+    /** 聽過嘅錄音由頭重播：計夠時間就清走「已收聽」 */
+    private readonly replay = new ReplayTracker();
     /** 撳咗 Play 但 play event 未到（瀏覽器仲準備緊）；PWA 更新要當播緊，唔好搶走呢下撳 */
     private playIntent = false;
     /** 最新一次 audio.play() 仲未 settle */
     private playPending = false;
     /** 每次 play() +1：舊嘅 play()（例如被換集 abort）settle 時唔可以清走新一次嘅意圖 */
     private playGeneration = 0;
-    /** 自動接住播嘅集仲未出聲：剩低幾多次重試；undefined = 冇睇住 */
-    private stallRetriesLeft: number | undefined;
-    private stallTimer: ReturnType<typeof setTimeout> | undefined;
+    /** 自動接住播嘅集仲未出聲就重試（iOS 鎖屏） */
+    private readonly stall = new StallWatchdog({
+        canRetry: () => this.hasPlayIntent(),
+        retry: (retriesLeft) => this.retryStalled(retriesLeft),
+    });
 
     /** 播完一集之後接住播邊集；冇設定或者返回 undefined 就停 */
     private nextTrack: ((track: Track) => Track | undefined) | undefined;
@@ -102,7 +102,7 @@ export class AudioController {
             window.removeEventListener('pagehide', this.persist);
             window.removeEventListener('online', this.recoverSource);
             document.removeEventListener('visibilitychange', this.onVisibilityChange);
-            this.unwatchStall();
+            this.stall.cancel();
         };
     };
 
@@ -115,7 +115,7 @@ export class AudioController {
             this.switchTo(recording);
         } else if (this.isParkedAtEnd()) {
             this.seek(0);
-            this.armReplay();
+            this.replay.arm(this.watched);
         }
         if (autoplay) {
             await this.play();
@@ -160,7 +160,7 @@ export class AudioController {
 
     restart = async (): Promise<void> => {
         this.seek(0);
-        this.armReplay();
+        this.replay.arm(this.watched);
         await this.play();
     };
 
@@ -170,7 +170,7 @@ export class AudioController {
         this.pendingStart = this.hasMetadata() ? 0 : target;
         this.audio.currentTime = target;
         // seek 唔算收聽時間：由新位置重新起計
-        this.lastTickPosition = target;
+        this.replay.moveTo(target);
         this.update({ currentTime: target });
         this.persist();
     };
@@ -186,13 +186,13 @@ export class AudioController {
 
     private switchTo(recording: Track): void {
         // 用戶自己揀咗另一集：唔好再重試自動接住播嗰集
-        this.unwatchStall();
+        this.stall.cancel();
         this.persist();
         this.watched = isWatched(recording.url);
         this.pendingStart = getResumePosition(recording.url);
-        this.lastTickPosition = this.pendingStart;
+        this.replay.moveTo(this.pendingStart);
         // 聽過嘅集 getResumePosition 係 0，即係由頭重播
-        this.armReplay();
+        this.replay.arm(this.watched);
         this.audio.src = recording.url;
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
     }
@@ -206,7 +206,7 @@ export class AudioController {
             return;
         }
         this.pendingStart = this.state.currentTime;
-        this.lastTickPosition = this.pendingStart;
+        this.replay.moveTo(this.pendingStart);
         this.audio.load();
         this.update({ duration: 0 });
     };
@@ -225,28 +225,8 @@ export class AudioController {
         );
     }
 
-    /** 聽過嘅錄音由頭播：開始計重播時間；未聽過就唔使計 */
-    private armReplay(): void {
-        this.replayedSeconds = this.watched ? 0 : undefined;
-    }
-
-    /** 累計真正播放時間（暫停、seek 唔計），夠 REPLAY_RESET_SECONDS 就重新開始記錄 */
-    private trackReplay(): void {
-        const position = this.audio.currentTime;
-        const delta = position - this.lastTickPosition;
-        this.lastTickPosition = position;
-        if (this.replayedSeconds === undefined || this.audio.paused || delta <= 0) {
-            return;
-        }
-        this.replayedSeconds += delta;
-        if (this.replayedSeconds >= REPLAY_RESET_SECONDS) {
-            this.resetReplay();
-        }
-    }
-
-    /** 清走「已收聽」，之後當新一次收聽照常存進度，再到 95% 先再打剔 */
+    /** 重播夠鐘：清走「已收聽」，之後當新一次收聽照常存進度，再到 95% 先再打剔 */
     private resetReplay(): void {
-        this.replayedSeconds = undefined;
         const { recording } = this.state;
         if (!recording) {
             return;
@@ -275,7 +255,9 @@ export class AudioController {
         this.update({ duration: this.audio.duration });
         if (this.pendingStart > 0) {
             this.audio.currentTime = this.pendingStart;
-            this.lastTickPosition = this.pendingStart;
+            // 按 spec 呢度本身已經係 pendingStart；但 iOS 有可能喺 metadata 到之前發 timeupdate（位置 0），
+            // 唔重設嘅話跳返續播位置嗰下會當咗收聽時間，錯清「已收聽」（S-550）
+            this.replay.moveTo(this.pendingStart);
             this.pendingStart = 0;
         }
     };
@@ -286,7 +268,9 @@ export class AudioController {
             return;
         }
         this.update({ currentTime: this.audio.currentTime });
-        this.trackReplay();
+        if (this.replay.track(this.audio.currentTime, this.audio.paused)) {
+            this.resetReplay();
+        }
         const intervalElapsed = Date.now() - this.lastSavedAt >= PROGRESS_SAVE_INTERVAL_MS;
         const crossedWatched =
             !this.watched && this.audio.currentTime / this.audio.duration >= WATCHED_RATIO;
@@ -311,7 +295,7 @@ export class AudioController {
 
     /** 數據到咗、真正開始出聲 */
     private onAudible = (): void => {
-        this.unwatchStall();
+        this.stall.cancel();
         this.update({ isAudible: true });
     };
 
@@ -350,7 +334,7 @@ export class AudioController {
 
     /** pause / ended（包括拔耳筒、來電等系統暫停）：用戶冇再想播 */
     private onStopped = (): void => {
-        this.unwatchStall();
+        this.stall.cancel();
         this.playIntent = false;
         this.update({ isPlaying: false, isAudible: false });
         this.persist();
@@ -378,44 +362,25 @@ export class AudioController {
         this.persist();
         this.update({ isAudible: false });
         void this.load(next, { autoplay: true });
-        this.watchStall(STALL_MAX_RETRIES);
+        this.stall.watch(STALL_MAX_RETRIES);
         return true;
     }
 
-    /** 自動接住播嘅集等一陣都未出聲，就重新載入 */
-    private watchStall(retriesLeft: number): void {
-        this.unwatchStall();
-        this.stallRetriesLeft = retriesLeft;
-        this.stallTimer = setTimeout(this.retryStalled, STALL_RETRY_MS);
-    }
-
-    private unwatchStall(): void {
-        clearTimeout(this.stallTimer);
-        this.stallTimer = undefined;
-        this.stallRetriesLeft = undefined;
-    }
-
     /** iOS 鎖屏時下一集可能一直唔載（停喺 0:00 但顯示播緊）：重新 load 同一集再播 */
-    private retryStalled = (): void => {
-        const retriesLeft = this.stallRetriesLeft;
-        if (retriesLeft === undefined || retriesLeft <= 0 || !this.hasPlayIntent()) {
-            this.unwatchStall();
-            return;
-        }
+    private retryStalled(retriesLeft: number): void {
         recordPlayback('retry', this.audio, `left=${retriesLeft}`);
         this.pendingStart = this.state.currentTime;
-        this.lastTickPosition = this.pendingStart;
+        this.replay.moveTo(this.pendingStart);
         this.audio.load();
         void this.play();
-        this.watchStall(retriesLeft - 1);
-    };
+    }
 
     private onVisibilityChange = (): void => {
         if (document.visibilityState === 'hidden') {
             this.persist();
-        } else if (this.stallRetriesLeft !== undefined) {
+        } else if (this.stall.pending) {
             // 亮返屏幕時仲卡住：唔使等 timer（背景 timer 可能冇行過）
-            this.retryStalled();
+            this.stall.retryNow();
         }
     };
 

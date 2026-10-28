@@ -3,6 +3,7 @@ import { PlayIcon } from '../icons/icons';
 import { Marquee } from '../Marquee/Marquee';
 import { NewBadge } from '../NewBadge/NewBadge';
 import { t } from '../../i18n/t';
+import gesture from '../../styles/gesture.module.css';
 import styles from './DramaShelf.module.css';
 import type { useShelfFocus } from './useShelfFocus';
 
@@ -87,7 +88,12 @@ export const DramaTile = ({ item, focus }: DramaTileProps) => (
             {...focus?.open}
         >
             {/* 唔畀拖圖片：滑鼠撳住捽書架會變咗 HTML5 拖放（CUI-0004） */}
-            <img className={styles.art} src={item.art} alt="" draggable={false} />
+            <img
+                className={`${styles.art} ${gesture.noImageDrag}`}
+                src={item.art}
+                alt=""
+                draggable={false}
+            />
             {item.newLabel && <NewBadge className={styles.newBadge} />}
             <span
                 className={`${styles.meta} ${item.resume ? styles.metaTop : ''}`}

@@ -1,6 +1,6 @@
 # 903-player 項目文件索引
 
-**最後更新**：2026-10-28
+**最後更新**：2026-10-29
 
 ## Audits
 
@@ -10,22 +10,25 @@
 
 ## Reviews
 
-| 日期       | 文件                                                                                             |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| 2026-10-26 | [reviews/2026-10-26_review_v1.10.0_batch.md](reviews/2026-10-26_review_v1.10.0_batch.md)         |
-| 2026-10-26 | [reviews/2026-10-26_review_v1.10.1.md](reviews/2026-10-26_review_v1.10.1.md)                     |
-| 2026-10-27 | [reviews/2026-10-27_review_v1.10.2.md](reviews/2026-10-27_review_v1.10.2.md)                     |
-| 2026-10-27 | [reviews/2026-10-27_review_v1.11.0.md](reviews/2026-10-27_review_v1.11.0.md)                     |
-| 2026-10-27 | [reviews/2026-10-27_review_v1.12.0.md](reviews/2026-10-27_review_v1.12.0.md)                     |
-| 2026-10-27 | [reviews/2026-10-27_review_size-limits_batch.md](reviews/2026-10-27_review_size-limits_batch.md) |
-| 2026-10-27 | [reviews/2026-10-27_review_size-guard_batch.md](reviews/2026-10-27_review_size-guard_batch.md)   |
-| 2026-10-27 | [reviews/2026-10-27_review_cleanup_batch.md](reviews/2026-10-27_review_cleanup_batch.md)         |
-| 2026-10-28 | [reviews/2026-10-28_review_v1.19.1.md](reviews/2026-10-28_review_v1.19.1.md)                     |
-| 2026-10-28 | [reviews/2026-10-28_review_v1.19.2.md](reviews/2026-10-28_review_v1.19.2.md)                     |
-| 2026-10-28 | [reviews/2026-10-28_review_v1.19.3.md](reviews/2026-10-28_review_v1.19.3.md)                     |
-| 2026-10-28 | [reviews/2026-10-28_review_v1.19.4.md](reviews/2026-10-28_review_v1.19.4.md)                     |
-| 2026-10-28 | [reviews/2026-10-28_review_v1.20.3.md](reviews/2026-10-28_review_v1.20.3.md)                     |
-| 2026-10-28 | [reviews/2026-10-28_review_e2e_hardening.md](reviews/2026-10-28_review_e2e_hardening.md)         |
+| 日期       | 文件                                                                                                           |
+| ---------- | -------------------------------------------------------------------------------------------------------------- |
+| 2026-10-26 | [reviews/2026-10-26_review_v1.10.0_batch.md](reviews/2026-10-26_review_v1.10.0_batch.md)                       |
+| 2026-10-26 | [reviews/2026-10-26_review_v1.10.1.md](reviews/2026-10-26_review_v1.10.1.md)                                   |
+| 2026-10-27 | [reviews/2026-10-27_review_v1.10.2.md](reviews/2026-10-27_review_v1.10.2.md)                                   |
+| 2026-10-27 | [reviews/2026-10-27_review_v1.11.0.md](reviews/2026-10-27_review_v1.11.0.md)                                   |
+| 2026-10-27 | [reviews/2026-10-27_review_v1.12.0.md](reviews/2026-10-27_review_v1.12.0.md)                                   |
+| 2026-10-27 | [reviews/2026-10-27_review_size-limits_batch.md](reviews/2026-10-27_review_size-limits_batch.md)               |
+| 2026-10-27 | [reviews/2026-10-27_review_size-guard_batch.md](reviews/2026-10-27_review_size-guard_batch.md)                 |
+| 2026-10-27 | [reviews/2026-10-27_review_cleanup_batch.md](reviews/2026-10-27_review_cleanup_batch.md)                       |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.19.1.md](reviews/2026-10-28_review_v1.19.1.md)                                   |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.19.2.md](reviews/2026-10-28_review_v1.19.2.md)                                   |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.19.3.md](reviews/2026-10-28_review_v1.19.3.md)                                   |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.19.4.md](reviews/2026-10-28_review_v1.19.4.md)                                   |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.20.3.md](reviews/2026-10-28_review_v1.20.3.md)                                   |
+| 2026-10-28 | [reviews/2026-10-28_review_e2e_hardening.md](reviews/2026-10-28_review_e2e_hardening.md)                       |
+| 2026-10-29 | [reviews/2026-10-29_review_batch-a_refactor.md](reviews/2026-10-29_review_batch-a_refactor.md)                 |
+| 2026-10-29 | [reviews/2026-10-29_review_batch-b_fixes.md](reviews/2026-10-29_review_batch-b_fixes.md)                       |
+| 2026-10-29 | [reviews/2026-10-29_review_batch-c_audio-controller.md](reviews/2026-10-29_review_batch-c_audio-controller.md) |
 
 ## QA
 
@@ -45,6 +48,7 @@
 | 2026-10-28 | [qa/2026-10-28_qa_v1.19.4.md](qa/2026-10-28_qa_v1.19.4.md)                                    |
 | 2026-10-28 | [qa/2026-10-28_qa_v1.20.3.md](qa/2026-10-28_qa_v1.20.3.md)                                    |
 | 2026-10-28 | [qa/2026-10-28_qa_e2e_hardening.md](qa/2026-10-28_qa_e2e_hardening.md)                        |
+| 2026-10-29 | [qa/2026-10-29_qa_v1.20.5.md](qa/2026-10-29_qa_v1.20.5.md)                                    |
 
 ## Deploys
 

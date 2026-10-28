@@ -161,6 +161,13 @@ const useTileProps =
         onPointerDown: () => (pressRef.current = focus),
         // 撳落去之後變咗捲動（冇 click）：唔好留住，否則之後鍵盤 focus 會當係撳
         onPointerCancel: () => (pressRef.current = null),
+        // 長撳 / 右掣出 context menu 之後唔會有 click：同樣要清（S-483）
+        onContextMenu: () => (pressRef.current = null),
+        // 滑鼠撳住拖出卡外先放手都冇 click（S-483）。只限滑鼠：touch / pen 放手先 pointerleave，
+        // 跟住先 focus、click，喺度清咗 click 就會當鍵盤 focus 咁捲 / open
+        onPointerLeave: (event: PointerEvent) => {
+            if (event.pointerType === 'mouse') pressRef.current = null;
+        },
         // 鍵盤 Tab 過嚟先捲；撳落去引起嘅 focus 由 click 處理
         onFocus: () => pressRef.current === null && focusTile(index),
         onClick: (event: MouseEvent) => {

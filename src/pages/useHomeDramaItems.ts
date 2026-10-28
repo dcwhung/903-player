@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { DramaShelfItem } from '../components/DramaShelf/DramaShelf';
 import { dramaEpisodesOf, enabledDramas, seriesEpisodesOf, type DramaConfig } from '../dramas';
@@ -23,7 +24,12 @@ const dramaMeta = (drama: DramaConfig): string => {
 const useShelfDramas = (): DramaConfig[] => {
     const player = usePlayer();
     const progressMap = useRefreshedOn(getProgressMap, [player.watchedRevision, player.recording]);
-    return dramaShelfOrder(enabledDramas(), dramaEpisodesOf, progressMap);
+    // 播放中主頁跟 currentTime 成日 re-render；progressMap 由 useRefreshedOn 出，reference 穩定，
+    // 劇集清單又係 module 常數，所以只係進度真係重新讀過先再排（S-481）
+    return useMemo(
+        () => dramaShelfOrder(enabledDramas(), dramaEpisodesOf, progressMap),
+        [progressMap],
+    );
 };
 
 /**

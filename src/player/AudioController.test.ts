@@ -1,7 +1,14 @@
 import { FakeAudio } from '../../tests/fakeAudio';
 import type { Recording } from '../types/recording';
-import { EARLY_ADVANCE_SECONDS, STALL_MAX_RETRIES, STALL_RETRY_MS } from '../config/constants';
+import {
+    EARLY_ADVANCE_SECONDS,
+    REPLAY_RESET_SECONDS,
+    STALL_MAX_RETRIES,
+    STALL_RETRY_MS,
+} from '../config/constants';
+import { isWatched, saveProgress } from '../services/progressStore';
 import { AudioController } from './AudioController';
+import { readPlaybackLog } from './playbackLog';
 
 const RECORDING: Recording = {
     showId: 'gongzi',
@@ -532,6 +539,275 @@ describe('AudioController next track loading', () => {
 
         expect(fetch).not.toHaveBeenCalled();
         expect(audio.src).toBe(NEXT.url);
+        detach();
+    });
+});
+
+/** 鎖屏重試嘅細節（重試次數、亮屏、取消時機）：拆 StallWatchdog 之前鎖死現有行為 */
+describe('AudioController stall watchdog details', () => {
+    const NEXT: Recording = {
+        ...RECORDING,
+        date: '2026-10-24',
+        url: 'https://audio.hkfm903.live/next.aac',
+    };
+    const OTHER: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/other.aac' };
+    const DURATION = 1200;
+    const RESUME_AT = 300;
+    const GIVE_UP_MS = STALL_RETRY_MS * (STALL_MAX_RETRIES + 2);
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
+    });
+
+    const advance = async () => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.end();
+        await Promise.resolve();
+        audio.play.mockClear();
+        audio.load.mockClear();
+        return { audio, controller, detach };
+    };
+
+    const showScreen = (state: DocumentVisibilityState) => {
+        vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
+        document.dispatchEvent(new Event('visibilitychange'));
+    };
+
+    it('logs every retry with the retries left, counting down', async () => {
+        const { detach } = await advance();
+
+        vi.advanceTimersByTime(GIVE_UP_MS);
+
+        const notes = readPlaybackLog()
+            .filter((line) => line.includes(' retry '))
+            .map((line) => line.split(' ').at(-1));
+        const expected = Array.from(
+            { length: STALL_MAX_RETRIES },
+            (_, index) => `left=${STALL_MAX_RETRIES - index}`,
+        );
+        expect(notes).toEqual(expected);
+        detach();
+    });
+
+    it('resumes the stalled track where it was after reloading it', async () => {
+        saveProgress(NEXT.url, RESUME_AT, DURATION);
+        const { audio, detach } = await advance();
+        audio.emitMetadata(DURATION);
+        expect(audio.currentTime).toBe(RESUME_AT);
+
+        vi.advanceTimersByTime(STALL_RETRY_MS);
+        expect(audio.currentTime).toBe(0);
+        audio.emitMetadata(DURATION);
+
+        expect(audio.currentTime).toBe(RESUME_AT);
+        detach();
+    });
+
+    it('counts a screen wake-up retry against the retry limit', async () => {
+        const { audio, detach } = await advance();
+
+        showScreen('visible');
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        vi.advanceTimersByTime(GIVE_UP_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(STALL_MAX_RETRIES);
+        detach();
+    });
+
+    it('does not retry when the screen goes dark', async () => {
+        const { audio, detach } = await advance();
+
+        showScreen('hidden');
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('ignores a screen wake-up once the next track is audible', async () => {
+        const { audio, detach } = await advance();
+
+        audio.emitPlaying();
+        showScreen('visible');
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('stops watching once the user picks another track', async () => {
+        const { audio, controller, detach } = await advance();
+
+        await controller.load(OTHER);
+        vi.advanceTimersByTime(GIVE_UP_MS);
+
+        expect(audio.src).toBe(OTHER.url);
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('stops watching when detached', async () => {
+        const { audio, detach } = await advance();
+
+        detach();
+        vi.advanceTimersByTime(GIVE_UP_MS);
+
+        expect(audio.load).not.toHaveBeenCalled();
+    });
+
+    it('stops watching on a system pause even if playback is resumed later', async () => {
+        const { audio, controller, detach } = await advance();
+
+        audio.pause(); // 例如拔耳筒
+        void controller.play();
+        vi.advanceTimersByTime(STALL_RETRY_MS);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('gives up for good once play intent was lost when the timer fired', async () => {
+        const { audio, controller, detach } = await advance();
+
+        audio.dispatchEvent(new Event('error'));
+        vi.advanceTimersByTime(STALL_RETRY_MS);
+        void controller.play();
+        showScreen('visible');
+        vi.advanceTimersByTime(GIVE_UP_MS);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+});
+
+/** 聽過嘅集重播計時：拆 ReplayTracker 之前鎖死門檻同只清一次 */
+describe('AudioController replay timing details', () => {
+    const NEXT: Recording = {
+        ...RECORDING,
+        date: '2026-10-24',
+        url: 'https://audio.hkfm903.live/next.aac',
+    };
+    const DURATION = 1000;
+    // 模擬瀏覽器每 0.25 秒發一次 timeupdate
+    const TICK_SECONDS = 0.25;
+
+    const playThrough = (audio: FakeAudio, from: number, to: number) => {
+        for (let t = from; t <= to; t += TICK_SECONDS) {
+            audio.emitTime(t);
+        }
+    };
+
+    const replayWatched = async () => {
+        saveProgress(RECORDING.url, DURATION, DURATION);
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        return { audio, controller, detach };
+    };
+
+    it('keeps watched just short of the replay threshold', async () => {
+        const { audio, detach } = await replayWatched();
+
+        playThrough(audio, 0, REPLAY_RESET_SECONDS - TICK_SECONDS);
+
+        expect(isWatched(RECORDING.url)).toBe(true);
+        detach();
+    });
+
+    it('clears watched at exactly the replay threshold', async () => {
+        const { audio, detach } = await replayWatched();
+
+        playThrough(audio, 0, REPLAY_RESET_SECONDS);
+
+        expect(isWatched(RECORDING.url)).toBe(false);
+        detach();
+    });
+
+    it('clears watched only once per replay', async () => {
+        const { audio, controller, detach } = await replayWatched();
+        const revision = controller.getSnapshot().watchedRevision;
+
+        playThrough(audio, 0, REPLAY_RESET_SECONDS * 3);
+
+        expect(controller.getSnapshot().watchedRevision).toBe(revision + 1);
+        detach();
+    });
+
+    it('does not count replay time on a track that was never watched', async () => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        const revision = controller.getSnapshot().watchedRevision;
+
+        playThrough(audio, 0, REPLAY_RESET_SECONDS * 2);
+
+        expect(controller.getSnapshot().watchedRevision).toBe(revision);
+        detach();
+    });
+
+    it('starts replay timing from the new track, not where the old one stopped', async () => {
+        const WATCHED: Recording = { ...NEXT, url: 'https://audio.hkfm903.live/watched.aac' };
+        const OLD_POSITION = 2;
+        saveProgress(WATCHED.url, DURATION, DURATION);
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.emitTime(OLD_POSITION);
+
+        await controller.load(WATCHED, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        playThrough(audio, TICK_SECONDS, REPLAY_RESET_SECONDS);
+
+        expect(isWatched(WATCHED.url)).toBe(false);
+        detach();
+    });
+
+    it('counts replay time on a watched track reached by auto-advance', async () => {
+        saveProgress(NEXT.url, DURATION, DURATION);
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack(() => NEXT);
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.end();
+        await Promise.resolve();
+        audio.emitMetadata(DURATION);
+
+        playThrough(audio, 0, REPLAY_RESET_SECONDS);
+
+        expect(controller.getSnapshot().recording).toBe(NEXT);
+        expect(isWatched(NEXT.url)).toBe(false);
+        detach();
+    });
+
+    // S-550：斷網重載之後，iOS 可能喺 metadata 到之前發 timeupdate（位置 0），跳返續播位置唔可以當收聽時間
+    it('does not count the resume jump when a timeupdate slips in before metadata', async () => {
+        const RESUME_AT = 6;
+        const { audio, detach } = await replayWatched();
+        playThrough(audio, 0, RESUME_AT);
+        audio.fail(2);
+        window.dispatchEvent(new Event('online'));
+        // iOS 唔跟 spec：metadata 未到、duration 仲係舊值時已經發 timeupdate
+        audio.duration = DURATION;
+        audio.emitTime(0);
+        audio.emitMetadata(DURATION);
+        audio.paused = false;
+
+        playThrough(audio, RESUME_AT + TICK_SECONDS, RESUME_AT + 1);
+
+        expect(isWatched(RECORDING.url)).toBe(true);
         detach();
     });
 });
