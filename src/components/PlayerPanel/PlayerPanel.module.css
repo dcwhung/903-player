@@ -107,7 +107,9 @@
     color: var(--color-accent-text);
 }
 
+/* 固定喺中間一格：未載入時冇由頭播放掣（S-485），播放掣都唔會移位 */
 .toggle {
+    grid-column: 2;
     width: var(--player-gauge-toggle-size);
     height: var(--player-gauge-toggle-size);
     background: var(--color-accent-fill);

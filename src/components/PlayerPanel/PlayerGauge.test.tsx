@@ -339,7 +339,7 @@ const OtherPlayingHarness = ({ onStart }: { onStart: () => void }) => {
 };
 
 describe('PlayerGauge not started (onStart)', () => {
-    it('ignores what the player plays and starts its own page from play or restart', async () => {
+    it('ignores what the player plays and starts its own page from play', async () => {
         const onStart = vi.fn();
         const { audio } = renderWithProviders(<OtherPlayingHarness onStart={onStart} />);
         await userEvent.click(screen.getByRole('button', { name: 'play other' }));
@@ -354,9 +354,16 @@ describe('PlayerGauge not started (onStart)', () => {
             '0',
         );
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
-        await userEvent.click(screen.getByRole('button', { name: '由頭播放' }));
-        expect(onStart).toHaveBeenCalledTimes(2);
+        expect(onStart).toHaveBeenCalledTimes(1);
         expect(audio.play).toHaveBeenCalledTimes(plays);
         expect(audio.pause).not.toHaveBeenCalled();
+    });
+
+    // S-485：未載入時「由頭播放」其實係續播，講錯嘢，所以收埋
+    it('hides restart until its page is loaded', () => {
+        renderWithProviders(<PlayerGauge onStart={vi.fn()} />);
+
+        expect(screen.queryByRole('button', { name: '由頭播放' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '播放' })).toBeInTheDocument();
     });
 });
