@@ -511,6 +511,29 @@ describe('MiniPlayer swipe to close', () => {
         expect(p.onDismiss).toHaveBeenCalledTimes(1);
     });
 
+    // Q-4：滑走緊（closing 終態）再撳一下：唔開始新 press，唔會撳住 / 浮起 / 跟手指拉返
+    it('ignores a new press while sliding away and still closes once', () => {
+        const p = props();
+        render(<MiniPlayer {...p} />);
+        const at = (clientX: number) => ({ clientX, clientY: PRESS_Y, pointerId: POINTER_ID });
+
+        longPress();
+        dragTo(20);
+        expect(region()).toHaveAttribute('data-closing', 'true');
+        fireEvent.pointerDown(region(), at(PRESS_X));
+        fireEvent.pointerMove(region(), at(PRESS_X - CARD_WIDTH / 2));
+        act(() => vi.advanceTimersByTime(LONG_PRESS_MS));
+
+        expect(region()).toHaveAttribute('data-closing', 'true');
+        expect(region()).not.toHaveAttribute('data-pressing');
+        expect(region()).not.toHaveAttribute('data-lifted');
+        expect(region()).not.toHaveAttribute('data-dragging');
+        expect(region()).toHaveStyle({ '--mini-dismiss-offset': `${CARD_WIDTH}px` });
+        act(() => vi.advanceTimersByTime(DISMISS_SLIDE_MS));
+        expect(p.onDismiss).toHaveBeenCalledTimes(1);
+        expect(p.onChange).not.toHaveBeenCalled();
+    });
+
     it('still closes when the page changes during the slide', () => {
         const p = props();
         const { unmount } = render(<MiniPlayer {...p} />);
