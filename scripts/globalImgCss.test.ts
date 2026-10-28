@@ -13,4 +13,14 @@ describe('global img CSS', () => {
         expect(img['-webkit-user-drag']).toBe('none');
         expect(img['-webkit-touch-callout']).toBe('none');
     });
+
+    // 大唱片張圖上面疊住暗角 / 坑紋 / 碟心 span，長撳可能撳中佢哋：碟本身都要擋，傳落入面所有元素
+    it('should also stop the long-press callout on the whole disc, whose art sits under overlays', () => {
+        const disc = cssDeclarations(
+            readCss(new URL('../src/components/Disc/Disc.module.css', import.meta.url)),
+            '.disc',
+        );
+
+        expect(disc['-webkit-touch-callout']).toBe('none');
+    });
 });

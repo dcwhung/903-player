@@ -7,6 +7,8 @@
     overflow: hidden;
     border-radius: 50%;
     background: var(--color-disc);
+    /* 節目圖上面疊住暗角 / 坑紋 / 碟心，長撳可能撳中佢哋：成隻碟擋 iOS 選單（傳落入面，同 mini player 一樣） */
+    -webkit-touch-callout: none;
 }
 
 /* 冇圖：中性黑碟，唔跟頁面主題（碟邊同碟心都用 --color-disc-rim，一齊換） */
