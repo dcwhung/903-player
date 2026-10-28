@@ -6,7 +6,6 @@ import { seriesEpisodesOf } from '../dramas';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
 import type { Track } from '../types/track';
-import { clearShowPick, markShowPicked } from './showPick';
 import { useHomeArrival } from './useHomeArrival';
 
 const TODAY = recording('badgirl', '2026-10-19', '1000');
@@ -70,10 +69,7 @@ describe('useHomeArrival', () => {
         vi.useFakeTimers({ toFake: ['Date'] });
         vi.setSystemTime(new Date('2026-10-19T08:00:00Z')); // 香港 19/10 16:00
     });
-    afterEach(() => {
-        vi.useRealTimers();
-        clearShowPick();
-    });
+    afterEach(() => vi.useRealTimers());
 
     it('keeps playing a recording that the mini player lists', async () => {
         const audio = await arrive({ target: TODAY });
@@ -90,28 +86,13 @@ describe('useHomeArrival', () => {
         expect(audio.pause).not.toHaveBeenCalled();
     });
 
-    // 用戶喺節目頁揀嘅舊集：mini player 會將佢排最前（重溫），所以照播
-    it('keeps playing an older episode the user picked, which the mini player puts first as 重溫', async () => {
-        markShowPicked('gongzi');
+    // 以前舊集唔喺 mini player 清單就停；而家 mini player 會將佢排最前（重溫），所以照播
+    it('keeps playing an older episode, which the mini player puts first as 重溫', async () => {
         const audio = await arrive({ target: OLD });
 
         await waitFor(() => expect(audio.play).toHaveBeenCalled());
         await act(async () => {});
         expect(audio.pause).not.toHaveBeenCalled();
-    });
-
-    // 節目頁自動播嘅舊集唔算重溫，mini player 唔會出，所以停（存進度）
-    it('stops an older episode that the show page played by itself', async () => {
-        const audio = await arrive({ target: OLD });
-
-        await waitFor(() => expect(audio.pause).toHaveBeenCalledTimes(1));
-    });
-
-    it('stops an older episode when the user picked a different show', async () => {
-        markShowPicked('badgirl');
-        const audio = await arrive({ target: OLD });
-
-        await waitFor(() => expect(audio.pause).toHaveBeenCalledTimes(1));
     });
 
     it('stops when nothing was playing', async () => {
@@ -129,26 +110,13 @@ describe('useHomeArrival', () => {
         expect(audio.pause).not.toHaveBeenCalled();
     });
 
-    it('keeps a picked older episode once loading finishes', async () => {
-        markShowPicked('gongzi');
+    it('keeps an older episode once loading finishes', async () => {
         const { prober, resolve } = deferred();
         const audio = await arrive({ target: OLD }, [], prober);
 
         await act(async () => resolve(RECORDINGS));
 
         expect(audio.pause).not.toHaveBeenCalled();
-    });
-
-    // 清單未載入完分唔到係咪今日：等載入完先決定
-    it('waits for loading before stopping an older episode the user did not pick', async () => {
-        const { prober, resolve } = deferred();
-        const audio = await arrive({ target: OLD }, [], prober);
-        await act(async () => {});
-        expect(audio.pause).not.toHaveBeenCalled();
-
-        await act(async () => resolve(RECORDINGS));
-
-        expect(audio.pause).toHaveBeenCalledTimes(1);
     });
 
     it('keeps a today recording once loading finishes', async () => {

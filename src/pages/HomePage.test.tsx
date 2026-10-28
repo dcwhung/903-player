@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { HOME_THEME } from '../config/showThemes';
-import { clearShowPick } from '../hooks/showPick';
 import { usePlayer } from '../player/usePlayer';
 import { seriesEpisodesOf } from '../dramas';
 import { findShow } from '../shows';
@@ -77,7 +76,6 @@ describe('HomePage', () => {
     afterEach(() => {
         vi.useRealTimers();
         vi.unstubAllGlobals();
-        clearShowPick();
     });
 
     it('lists seven artwork tiles plus today, in order', () => {
@@ -279,7 +277,8 @@ describe('HomePage', () => {
         ).toHaveAttribute('aria-current', 'true');
     });
 
-    it('stops an older episode the show page played by itself, without 重溫', async () => {
+    // 節目頁自己自動播嘅舊集都照播，同今日節目一齊顯示
+    it('keeps an older episode the show page played by itself going at home, as 重溫 next to today', async () => {
         Element.prototype.scrollIntoView = vi.fn();
         HTMLElement.prototype.scrollTo = vi.fn();
         const { audio } = renderWithProviders(<ShowPage />, {
@@ -292,9 +291,11 @@ describe('HomePage', () => {
 
         await userEvent.click(screen.getByRole('button', { name: '返回主頁' }));
 
-        const mini = await screen.findByRole('region', { name: '正在播放（今日節目）' });
-        await waitFor(() => expect(audio.pause).toHaveBeenCalled());
-        expect(mini.querySelector('[data-tag="rewatch"]')).toBeNull();
+        const mini = await screen.findByRole('region', { name: '正在播放（重溫及今日節目）' });
+        expect(audio.src).toBe(RECORDINGS[1]?.url);
+        expect(audio.pause).not.toHaveBeenCalled();
+        expect(mini.querySelector('[data-tag]')).toHaveTextContent('重溫');
+        expect(mini).toHaveTextContent('17/10（六）');
     });
 
     // S-507：重溫同今日係同一個節目，由「今日」嗰項撳入節目頁，節目頁要跟返今日

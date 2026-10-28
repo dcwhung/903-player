@@ -36,35 +36,29 @@ describe('miniPlayerSubtitle', () => {
 
 describe('miniPlayerRecordings', () => {
     it('puts a loaded older episode that is not listed first', () => {
-        expect(miniPlayerRecordings(TODAY_LIST, OLD, 'badgirl')).toEqual([OLD, BADGIRL, WANNI]);
+        expect(miniPlayerRecordings(TODAY_LIST, OLD)).toEqual([OLD, BADGIRL, WANNI]);
     });
 
     it('keeps the list when the loaded episode is already listed', () => {
-        expect(miniPlayerRecordings(TODAY_LIST, WANNI, 'wanni')).toBe(TODAY_LIST);
+        expect(miniPlayerRecordings(TODAY_LIST, WANNI)).toBe(TODAY_LIST);
     });
 
     it('keeps the list when nothing is loaded', () => {
-        expect(miniPlayerRecordings(TODAY_LIST, null, null)).toBe(TODAY_LIST);
+        expect(miniPlayerRecordings(TODAY_LIST, null)).toBe(TODAY_LIST);
     });
 
     it('keeps the list for a drama episode, which the mini player shows on its own', () => {
         const drama = seriesEpisodesOf('chisee')[0] ?? null;
-        expect(miniPlayerRecordings(TODAY_LIST, drama, null)).toBe(TODAY_LIST);
+        expect(miniPlayerRecordings(TODAY_LIST, drama)).toBe(TODAY_LIST);
     });
 
     it('puts an older episode before the latest-day fallback too', () => {
         const fallback = [recording('gongzi', '2026-10-17')];
-        expect(miniPlayerRecordings(fallback, OLD, 'badgirl')).toEqual([OLD, ...fallback]);
+        expect(miniPlayerRecordings(fallback, OLD)).toEqual([OLD, ...fallback]);
     });
 
     it('shows the older episode alone while nothing of today is up yet', () => {
-        expect(miniPlayerRecordings([], OLD, 'badgirl')).toEqual([OLD]);
-    });
-
-    // 節目頁自動播嘅舊集唔係用戶揀，唔算重溫
-    it('leaves out an older episode the user did not pick', () => {
-        expect(miniPlayerRecordings(TODAY_LIST, OLD, null)).toBe(TODAY_LIST);
-        expect(miniPlayerRecordings(TODAY_LIST, OLD, 'wanni')).toBe(TODAY_LIST);
+        expect(miniPlayerRecordings([], OLD)).toEqual([OLD]);
     });
 });
 

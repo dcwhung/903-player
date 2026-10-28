@@ -13,7 +13,7 @@ import {
     miniPlayerTimeText,
     type MiniPlayerTag,
 } from '../selectors/miniPlayer';
-import { todayRecordings } from '../selectors/recordings';
+import { showsOnDate } from '../selectors/recordings';
 import { getProgress } from '../services/progressStore';
 import type { DramaEpisode } from '../types/drama';
 import type { Recording } from '../types/recording';
@@ -22,23 +22,21 @@ import { isDramaEpisode, type Track } from '../types/track';
 import { t } from '../i18n/t';
 import { formatDateLabel, hkToday } from '../utils/date';
 import { dismissMiniPlayer, useMiniPlayerDismissed } from './miniPlayerDismissed';
-import { usePickedShow } from './showPick';
 import { useRefreshedOn } from './useRefreshedOn';
 import { ratio } from '../utils/ratio';
 import { hasKnownDuration } from '../utils/time';
 
 const showName = (recording: Recording): string => findShow(recording.showId)?.name ?? '';
 
-/** 今日（今日冇節目播先用最近一日）節目；載入緊用戶揀嘅清單冇嘅節目錄音（重溫舊集）就排最前 */
+/**
+ * 今日節目（今日冇節目就冇，唔用最近一日）；載入緊清單冇嘅節目錄音（重溫舊集）就排最前，
+ * 所以今日冇節目但聽緊嘢就只出聽緊嗰個
+ */
 const useListedRecordings = (loaded: Track | null) => {
     const { recordings } = useRecordings();
-    const picked = usePickedShow();
     const today = hkToday();
-    const listed = useMemo(() => todayRecordings(recordings, today), [recordings, today]);
-    const list = useMemo(
-        () => miniPlayerRecordings(listed, loaded, picked),
-        [listed, loaded, picked],
-    );
+    const listed = useMemo(() => showsOnDate(recordings, today), [recordings, today]);
+    const list = useMemo(() => miniPlayerRecordings(listed, loaded), [listed, loaded]);
     const rewatchUrl = list.length > listed.length ? list[0]?.url : undefined;
     return { today, list, rewatchUrl };
 };
@@ -200,7 +198,7 @@ const showMiniPlayer = (
 };
 
 /**
- * 主頁 mini player：今日（今日冇節目播先用最近一日）嘅節目，播緊其他節目錄音就排最前做「重溫」；
+ * 主頁 mini player：今日嘅節目（冇就唔出），載入緊其他節目錄音就排最前做「重溫」；
  * 載入緊廣播劇就改為顯示嗰套劇（返主頁都唔會停，見 useHomeArrival）
  */
 const useMiniPlayerContent = (): MiniPlayerContent | null => {

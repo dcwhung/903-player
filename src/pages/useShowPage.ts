@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { airsWeekly, findShow, themeFor, type ShowConfig } from '../shows';
 import { useRecordings } from '../data/useRecordings';
 import { useEpisodePress } from '../hooks/useEpisodePress';
-import { clearShowPick, markShowPicked } from '../hooks/showPick';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
@@ -61,10 +60,7 @@ const useRequestedEpisode = (episodes: readonly Recording[]) => {
     return { hasRequest: url !== undefined, requested, consume };
 };
 
-/**
- * 直接開呢頁（例如 deep link / mini player）時都自動播放；自動播嘅唔算用戶揀（清走 showPick，
- * startShow 自己會清），返主頁唔會當重溫
- */
+/** 直接開呢頁（例如 deep link / mini player）時都自動播放；mini player 帶咗集數入嚟就播嗰集 */
 const useAutoplayShow = (
     show: ShowConfig | undefined,
     episodes: readonly Recording[],
@@ -78,7 +74,6 @@ const useAutoplayShow = (
         if (!show || status !== 'ready') return;
         if (hasRequest) consume();
         if (requested && requested.url !== playingUrl) {
-            clearShowPick();
             void load(requested, { autoplay: true });
         } else if (!requested && playingUrl === undefined) {
             startShow(show.id);
@@ -102,19 +97,6 @@ const useShowStrip = (
     );
 };
 
-/** 集數清單：撳播緊嗰集就暫停（掣係暫停樣），其他同日子條一樣播嗰集；揀咗就記低係用戶揀（重溫） */
-const useShowEpisodePress = (
-    show: ShowConfig | undefined,
-    episodes: readonly Recording[],
-    currentUrl: string | undefined,
-    isPlayingCurrent: boolean,
-) => {
-    const pick = () => {
-        if (show) markShowPicked(show.id);
-    };
-    return useEpisodePress(episodes, currentUrl, isPlayingCurrent, pick);
-};
-
 /** 節目頁嘅資料同動作 */
 export const useShowPage = (showId: string) => {
     const show = findShow(showId);
@@ -131,7 +113,8 @@ export const useShowPage = (showId: string) => {
     const isPlayingCurrent = playing !== null && player.isPlaying;
     const episodeItems = toEpisodeItems(entries, currentUrl, live, progressMap, isPlayingCurrent);
 
-    const press = useShowEpisodePress(show, episodes, currentUrl, isPlayingCurrent);
+    // 集數清單：撳播緊嗰集就暫停（掣係暫停樣），其他同日子條一樣播嗰集
+    const press = useEpisodePress(episodes, currentUrl, isPlayingCurrent);
     return {
         show,
         theme: themeFor(show?.id),

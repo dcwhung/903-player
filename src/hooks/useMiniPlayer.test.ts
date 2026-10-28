@@ -6,7 +6,6 @@ import { saveProgress } from '../services/progressStore';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
 import { restoreMiniPlayer, useRestoreMiniPlayerOnPlay } from './miniPlayerDismissed';
-import { clearShowPick, markShowPicked } from './showPick';
 import { useMiniPlayer } from './useMiniPlayer';
 
 const BADGIRL = recording('badgirl', '2026-10-19', '1000');
@@ -39,7 +38,6 @@ describe('useMiniPlayer', () => {
     afterEach(() => {
         vi.useRealTimers();
         restoreMiniPlayer();
-        clearShowPick();
     });
 
     describe('closing (swipe to dismiss)', () => {
@@ -158,18 +156,28 @@ describe('useMiniPlayer', () => {
         getItem.mockRestore();
     });
 
-    it('falls back to the latest day when nothing was recorded today', async () => {
+    // 今日冇節目：唔再用最近一日，冇聽緊嘢就唔出
+    it('hides when no show airs today and nothing is loaded', async () => {
         vi.setSystemTime(new Date('2026-10-18T08:00:00Z'));
         const { result } = setup();
 
-        const { mini } = await ready(result);
+        await waitFor(() => expect(result.current.player).toBeDefined());
+        expect(result.current.mini).toBeNull();
+    });
 
-        expect(mini?.showName).toBe('公子會');
-        expect(mini?.subtitle).toBe('17/10（六）');
-        expect(mini?.labels).toEqual(['公子會']);
-        expect(mini?.keys).toEqual([RECORDINGS[0]?.url]);
-        // 最近一日唔係今日：冇「今日」標籤
-        expect(mini?.tags).toEqual([undefined]);
+    it('shows only the loaded episode as 重溫 when no show airs today', async () => {
+        vi.setSystemTime(new Date('2026-10-18T08:00:00Z'));
+        const { result } = setup();
+        const saturday = RECORDINGS[0] as Recording;
+
+        await act(() => result.current.player.load(saturday, { autoplay: true }));
+
+        expect(result.current.mini).toMatchObject({
+            showName: '公子會',
+            keys: [saturday.url],
+            tags: ['rewatch'],
+            isPlaying: true,
+        });
     });
 
     it('tags today’s shows 今日 and leaves 今日 out of the date-only subtitle', async () => {
@@ -222,7 +230,6 @@ describe('useMiniPlayer', () => {
         it('does not spin a show that is only shown, while another one plays', async () => {
             const { audio, result } = setup();
             await ready(result);
-            markShowPicked('badgirl');
             await act(() =>
                 result.current.player.load(recording('badgirl', '2026-10-12', '1000'), {
                     autoplay: true,
@@ -255,25 +262,12 @@ describe('useMiniPlayer', () => {
     describe('with an older episode loaded (重溫)', () => {
         const OLD = recording('badgirl', '2026-10-12', '1000');
 
-        // 用戶喺節目頁揀咗呢個節目嘅舊集
         const playOld = async () => {
             const view = setup();
             await ready(view.result);
-            markShowPicked('badgirl');
             await act(() => view.result.current.player.load(OLD, { autoplay: true }));
             return view;
         };
-
-        it('leaves it out when the show page auto-played it, not the user', async () => {
-            const { result } = setup();
-            await ready(result);
-            await act(() => result.current.player.load(OLD, { autoplay: true }));
-
-            expect(result.current.mini).toMatchObject({
-                keys: [BADGIRL.url, WANNI.url],
-                tags: ['today', 'today'],
-            });
-        });
 
         it('puts it first, tagged 重溫, and shows it with its time', async () => {
             const { audio, result } = await playOld();

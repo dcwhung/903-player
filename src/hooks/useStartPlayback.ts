@@ -4,12 +4,10 @@ import { usePlayer } from '../player/usePlayer';
 import { pickInitialRecording, recordingsForShow, todayRecordings } from '../selectors/recordings';
 import type { ShowId } from '../types/recording';
 import { hkToday } from '../utils/date';
-import { clearShowPick } from './showPick';
 
 /**
  * 揀出要播嘅錄音並即時開始播放。
  * 主頁喺 click handler 入面直接 call，令 iOS 容許自動播放。
- * 自動揀嘅唔算用戶揀：清走 showPick，舊集返主頁唔會當重溫（W-468）
  */
 export const useStartPlayback = () => {
     const { status, recordings } = useRecordings();
@@ -23,7 +21,6 @@ export const useStartPlayback = () => {
                 hkToday(),
             );
             if (ready && recording) {
-                clearShowPick();
                 void load(recording, { autoplay: true });
             }
         },

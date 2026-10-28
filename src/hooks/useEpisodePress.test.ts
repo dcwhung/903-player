@@ -9,14 +9,13 @@ const EPISODES = [NEWER, OLDER];
 interface Props {
     currentUrl: string | undefined;
     isPlayingCurrent: boolean;
-    onSelect?: () => void;
 }
 
 const renderPress = (initial: Props) => {
     const { audio, wrapper } = createHookWrapper(EPISODES);
     const hook = renderHook(
-        ({ currentUrl, isPlayingCurrent, onSelect }: Props) =>
-            useEpisodePress(EPISODES, currentUrl, isPlayingCurrent, onSelect),
+        ({ currentUrl, isPlayingCurrent }: Props) =>
+            useEpisodePress(EPISODES, currentUrl, isPlayingCurrent),
         { wrapper, initialProps: initial },
     );
     return { audio, ...hook };
@@ -64,34 +63,5 @@ describe('useEpisodePress', () => {
         await act(async () => result.current.pressEpisode(OLDER.url));
 
         expect(audio.src).toBe(OLDER.url);
-    });
-
-    describe('onSelect', () => {
-        it('should tell the caller when an episode is picked', async () => {
-            const onSelect = vi.fn();
-            const { result } = renderPress({
-                currentUrl: undefined,
-                isPlayingCurrent: false,
-                onSelect,
-            });
-
-            await act(async () => result.current.selectEpisode(OLDER.url));
-            await act(async () => result.current.pressEpisode(NEWER.url));
-
-            expect(onSelect).toHaveBeenCalledTimes(2);
-        });
-
-        it('should not tell the caller when pressing the playing episode only pauses it', async () => {
-            const onSelect = vi.fn();
-            const { result } = renderPress({
-                currentUrl: NEWER.url,
-                isPlayingCurrent: true,
-                onSelect,
-            });
-
-            await act(async () => result.current.pressEpisode(NEWER.url));
-
-            expect(onSelect).not.toHaveBeenCalled();
-        });
     });
 });
