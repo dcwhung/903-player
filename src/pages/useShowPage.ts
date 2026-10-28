@@ -1,7 +1,9 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { airsWeekly, findShow, themeFor, type ShowConfig } from '../shows';
 import { useRecordings } from '../data/useRecordings';
 import { useEpisodePress } from '../hooks/useEpisodePress';
+import { clearShowPick, markShowPicked } from '../hooks/showPick';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
@@ -15,6 +17,7 @@ import { stripDays } from '../components/DateStrip/dateStrip';
 import { getProgressMap } from '../services/progressStore';
 import { hkToday } from '../utils/date';
 import type { Recording } from '../types/recording';
+import type { ShowPageState } from '../types/showPageState';
 import { asShowRecording } from '../types/track';
 import { toEpisodeItems } from './episodeItems';
 
@@ -41,15 +44,47 @@ const useShowEpisodes = (show: ShowConfig | undefined) => {
     return { episodes, entries, playing, current };
 };
 
-/** 直接開呢頁（例如 deep link / mini player）時都自動播放 */
-const useAutoplayShow = (show: ShowConfig | undefined, isPlayingShow: boolean) => {
+/**
+ * 帶入嚟要播嘅集（S-507）：同一個節目有重溫又有今日，由今日嗰項撳入就播今日，唔係跟住播緊嘅舊集。
+ * 用完即刻清走 history state，返上一頁再入唔會再觸發
+ */
+const useRequestedEpisode = (episodes: readonly Recording[]) => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const url = (location.state as ShowPageState | null)?.url;
+    const requested = url === undefined ? undefined : episodes.find((e) => e.url === url);
+    const { pathname } = location;
+    const consume = useCallback(
+        () => void navigate(pathname, { replace: true, state: null }),
+        [navigate, pathname],
+    );
+    return { requested, consume };
+};
+
+/**
+ * 直接開呢頁（例如 deep link / mini player）時都自動播放；自動播嘅唔算用戶揀（清走 showPick），
+ * 返主頁唔會當重溫
+ */
+const useAutoplayShow = (
+    show: ShowConfig | undefined,
+    episodes: readonly Recording[],
+    playingUrl: string | undefined,
+) => {
     const { status } = useRecordings();
+    const { load } = usePlayer();
     const { startShow } = useStartPlayback();
+    const { requested, consume } = useRequestedEpisode(episodes);
     useEffect(() => {
-        if (show && status === 'ready' && !isPlayingShow) {
+        if (!show || status !== 'ready') return;
+        if (requested) consume();
+        if (requested && requested.url !== playingUrl) {
+            clearShowPick();
+            void load(requested, { autoplay: true });
+        } else if (!requested && playingUrl === undefined) {
+            clearShowPick();
             startShow(show.id);
         }
-    }, [show, status, isPlayingShow, startShow]);
+    }, [show, status, requested, consume, playingUrl, load, startShow]);
 };
 
 /**
@@ -68,13 +103,26 @@ const useShowStrip = (
     );
 };
 
+/** 集數清單：撳播緊嗰集就暫停（掣係暫停樣），其他同日子條一樣播嗰集；揀咗就記低係用戶揀（重溫） */
+const useShowEpisodePress = (
+    show: ShowConfig | undefined,
+    episodes: readonly Recording[],
+    currentUrl: string | undefined,
+    isPlayingCurrent: boolean,
+) => {
+    const pick = () => {
+        if (show) markShowPicked(show.id);
+    };
+    return useEpisodePress(episodes, currentUrl, isPlayingCurrent, pick);
+};
+
 /** 節目頁嘅資料同動作 */
 export const useShowPage = (showId: string) => {
     const show = findShow(showId);
     const { status, isSearching } = useRecordings();
     const player = usePlayer();
     const { episodes, entries, playing, current } = useShowEpisodes(show);
-    useAutoplayShow(show, playing !== null);
+    useAutoplayShow(show, episodes, playing?.url);
 
     // 轉集或者有集數變成聽過先重新讀 localStorage
     const currentUrl = current?.url;
@@ -84,8 +132,7 @@ export const useShowPage = (showId: string) => {
     const isPlayingCurrent = playing !== null && player.isPlaying;
     const episodeItems = toEpisodeItems(entries, currentUrl, live, progressMap, isPlayingCurrent);
 
-    // 集數清單：撳播緊嗰集就暫停（掣係暫停樣），其他同日子條一樣播嗰集
-    const { selectEpisode, pressEpisode } = useEpisodePress(episodes, currentUrl, isPlayingCurrent);
+    const press = useShowEpisodePress(show, episodes, currentUrl, isPlayingCurrent);
     return {
         show,
         theme: themeFor(show?.id),
@@ -95,7 +142,7 @@ export const useShowPage = (showId: string) => {
         episodeItems,
         // 日子條：同撳集數行同一條路（未聽完續播、聽過由頭播）
         strip: useShowStrip(show, episodes, currentUrl),
-        selectEpisode,
-        pressEpisode,
+        selectEpisode: press.selectEpisode,
+        pressEpisode: press.pressEpisode,
     };
 };

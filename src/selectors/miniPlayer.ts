@@ -1,5 +1,5 @@
 import { t } from '../i18n/t';
-import type { Recording } from '../types/recording';
+import type { Recording, ShowId } from '../types/recording';
 import { asShowRecording, type Track } from '../types/track';
 import { formatDateLabel } from '../utils/date';
 import { formatDuration } from '../utils/time';
@@ -23,12 +23,19 @@ export const miniPlayerSubtitle = (date: string, timeText?: string): string => {
 };
 
 /**
- * mini player 清單：player 載入緊一集清單冇嘅節目錄音（例如節目頁日子條揀嘅舊集）就排最前，
- * 返主頁照樣見到、照樣播；轉咗載入第二集就自然跌返出清單。廣播劇另外顯示，唔郁清單
+ * mini player 清單：player 載入緊一集清單冇嘅節目錄音，而且係用戶喺節目頁揀嘅（picked，
+ * 見 showPick）就排最前做重溫，返主頁照樣見到、照樣播；節目頁自動播嘅舊集唔算。
+ * 轉咗載入第二集就自然跌返出清單。廣播劇另外顯示，唔郁清單
  */
-export const miniPlayerRecordings = (listed: Recording[], loaded: Track | null): Recording[] => {
+export const miniPlayerRecordings = (
+    listed: Recording[],
+    loaded: Track | null,
+    picked: ShowId | null,
+): Recording[] => {
     const show = asShowRecording(loaded);
-    return show && !listed.some((r) => r.url === show.url) ? [show, ...listed] : listed;
+    const isRewatch =
+        show !== null && show.showId === picked && !listed.some((r) => r.url === show.url);
+    return isRewatch ? [show, ...listed] : listed;
 };
 
 /**

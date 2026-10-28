@@ -6,6 +6,7 @@ import { saveProgress } from '../services/progressStore';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
 import { restoreMiniPlayer, useRestoreMiniPlayerOnPlay } from './miniPlayerDismissed';
+import { clearShowPick, markShowPicked } from './showPick';
 import { useMiniPlayer } from './useMiniPlayer';
 
 const BADGIRL = recording('badgirl', '2026-10-19', '1000');
@@ -38,6 +39,7 @@ describe('useMiniPlayer', () => {
     afterEach(() => {
         vi.useRealTimers();
         restoreMiniPlayer();
+        clearShowPick();
     });
 
     describe('closing (swipe to dismiss)', () => {
@@ -220,6 +222,7 @@ describe('useMiniPlayer', () => {
         it('does not spin a show that is only shown, while another one plays', async () => {
             const { audio, result } = setup();
             await ready(result);
+            markShowPicked('badgirl');
             await act(() =>
                 result.current.player.load(recording('badgirl', '2026-10-12', '1000'), {
                     autoplay: true,
@@ -252,12 +255,25 @@ describe('useMiniPlayer', () => {
     describe('with an older episode loaded (重溫)', () => {
         const OLD = recording('badgirl', '2026-10-12', '1000');
 
+        // 用戶喺節目頁揀咗呢個節目嘅舊集
         const playOld = async () => {
             const view = setup();
             await ready(view.result);
+            markShowPicked('badgirl');
             await act(() => view.result.current.player.load(OLD, { autoplay: true }));
             return view;
         };
+
+        it('leaves it out when the show page auto-played it, not the user', async () => {
+            const { result } = setup();
+            await ready(result);
+            await act(() => result.current.player.load(OLD, { autoplay: true }));
+
+            expect(result.current.mini).toMatchObject({
+                keys: [BADGIRL.url, WANNI.url],
+                tags: ['today', 'today'],
+            });
+        });
 
         it('puts it first, tagged 重溫, and shows it with its time', async () => {
             const { audio, result } = await playOld();

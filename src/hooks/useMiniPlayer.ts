@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, type NavigateOptions } from 'react-router-dom';
 import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
 import { dramaEpisodeTheme, findDrama } from '../dramas';
 import { findShow, themeFor } from '../shows';
@@ -17,22 +17,28 @@ import { todayRecordings } from '../selectors/recordings';
 import { getProgress } from '../services/progressStore';
 import type { DramaEpisode } from '../types/drama';
 import type { Recording } from '../types/recording';
+import type { ShowPageState } from '../types/showPageState';
 import { isDramaEpisode, type Track } from '../types/track';
 import { t } from '../i18n/t';
 import { formatDateLabel, hkToday } from '../utils/date';
 import { dismissMiniPlayer, useMiniPlayerDismissed } from './miniPlayerDismissed';
+import { usePickedShow } from './showPick';
 import { useRefreshedOn } from './useRefreshedOn';
 import { ratio } from '../utils/ratio';
 import { hasKnownDuration } from '../utils/time';
 
 const showName = (recording: Recording): string => findShow(recording.showId)?.name ?? '';
 
-/** 今日（今日冇節目播先用最近一日）節目；載入緊清單冇嘅節目錄音（重溫舊集）就排最前 */
+/** 今日（今日冇節目播先用最近一日）節目；載入緊用戶揀嘅清單冇嘅節目錄音（重溫舊集）就排最前 */
 const useListedRecordings = (loaded: Track | null) => {
     const { recordings } = useRecordings();
+    const picked = usePickedShow();
     const today = hkToday();
     const listed = useMemo(() => todayRecordings(recordings, today), [recordings, today]);
-    const list = useMemo(() => miniPlayerRecordings(listed, loaded), [listed, loaded]);
+    const list = useMemo(
+        () => miniPlayerRecordings(listed, loaded, picked),
+        [listed, loaded, picked],
+    );
     const rewatchUrl = list.length > listed.length ? list[0]?.url : undefined;
     return { today, list, rewatchUrl };
 };
@@ -80,6 +86,8 @@ const useShownTime = (url: string | undefined, isLoaded: boolean) => {
 
 type Player = ReturnType<typeof usePlayer>;
 
+type Open = (path: string, options?: NavigateOptions) => void;
+
 /** 左滑關閉：停播 + 收起；之後喺任何一頁開始播先再出返（App 層面 useRestoreMiniPlayerOnPlay） */
 const useDismissal = (player: Player) => {
     const dismissed = useMiniPlayerDismissed();
@@ -94,7 +102,7 @@ const useDismissal = (player: Player) => {
 const dramaMiniPlayer = (
     episode: DramaEpisode,
     player: Player,
-    open: (path: string) => void,
+    open: Open,
 ): Omit<MiniPlayerProps, 'onDismiss'> => {
     const name = findDrama(episode.dramaId)?.name ?? '';
     const timeText = miniPlayerTimeText(player.currentTime, player.duration);
@@ -157,12 +165,18 @@ type MiniPlayerContent = Omit<MiniPlayerProps, 'onDismiss'>;
 /** useTodaySelection 揀中咗節目（current 一定有） */
 type ShowSelection = ReturnType<typeof useTodaySelection> & { current: Recording };
 
+/** 撳入節目頁：帶埋顯示緊嗰集，同一個節目有重溫又有今日都開到啱嗰集（S-507） */
+const openShow = (recording: Recording, open: Open) => {
+    const state: ShowPageState = { url: recording.url };
+    open(`/show/${recording.showId}`, { state });
+};
+
 /** 今日節目 / 重溫舊集：未載入就用存低嘅進度，撳 ▶ 先載入播放，撳入節目頁 */
 const showMiniPlayer = (
     { list, tags, index, current, isLoaded, select }: ShowSelection,
     { position, duration }: ReturnType<typeof useShownTime>,
     player: Player,
-    open: (path: string) => void,
+    open: Open,
 ): MiniPlayerContent => {
     const timeText = miniPlayerTimeText(position, duration);
     return {
@@ -180,7 +194,7 @@ const showMiniPlayer = (
         index,
         onToggle: () =>
             void (isLoaded ? player.toggle() : player.load(current, { autoplay: true })),
-        onOpen: () => open(`/show/${current.showId}`),
+        onOpen: () => openShow(current, open),
         onChange: select,
     };
 };
