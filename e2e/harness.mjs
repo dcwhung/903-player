@@ -94,3 +94,18 @@ export const newE2EContext = async (browser, options = {}, { extraAudioUrls = []
     ctx.on('page', waitForSplashOnLoad);
     return ctx;
 };
+
+/** 入頁等幾耐自動播（之後當係播緊其他嘢，唔會自動播） */
+const AUTOPLAY_WAIT_MS = 2000;
+
+/** 等自動播放；等唔到即係入頁前 player 已經載入咗其他嘢（唔自動播、唔蓋過），撳播放先播呢頁 */
+export const ensurePlaying = async (p) => {
+    const pause = p.getByRole('button', { name: '暫停', exact: true });
+    try {
+        await pause.waitFor({ timeout: AUTOPLAY_WAIT_MS });
+        return;
+    } catch {
+        await p.getByRole('button', { name: '播放', exact: true }).click();
+        await pause.waitFor({ timeout: 5000 });
+    }
+};

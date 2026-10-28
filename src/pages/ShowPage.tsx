@@ -18,17 +18,19 @@ import { useShowPage } from './useShowPage';
 
 type ShowPlayerProps = Pick<
     ReturnType<typeof useShowPage>,
-    'theme' | 'current' | 'strip' | 'selectEpisode'
+    'theme' | 'current' | 'start' | 'strip' | 'selectEpisode'
 > & { title: string; landscape: boolean };
 
 /**
  * 有集數播得就係播放器（橫版下面加「現正播放」，直版喺日子條上面）；
- * 未有就講「未有集數上架」（清單照列出未上架嘅，撳唔到）
+ * 未有就講「未有集數上架」（清單照列出未上架嘅，撳唔到）。
+ * 播緊其他嘢（start 有值）：黑碟、未開始樣，撳播放先開始播呢個節目
  */
 const ShowPlayer = ({
     title,
     theme,
     current,
+    start,
     strip,
     selectEpisode,
     landscape,
@@ -43,12 +45,15 @@ const ShowPlayer = ({
             <PlayerPanel
                 title={title}
                 dateLabel={dateLabel}
-                art={theme.art}
+                art={start ? undefined : theme.art}
                 days={strip.days}
                 currentDay={strip.current}
                 onPick={selectEpisode}
+                onStart={start}
             />
-            {landscape && <NowPlaying label={dateLabel} connecting={!hasKnownDuration(duration)} />}
+            {landscape && (
+                <NowPlaying label={dateLabel} connecting={!start && !hasKnownDuration(duration)} />
+            )}
         </>
     );
 };

@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { runArcSheetChecks } from './arcSheet.mjs';
-import { AUDIO_HOST, PROBE_STORAGE_KEY, newE2EContext } from './harness.mjs';
+import { AUDIO_HOST, PROBE_STORAGE_KEY, ensurePlaying, newE2EContext } from './harness.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { runTouchChecks } from './touch.mjs';
 
@@ -410,7 +410,7 @@ const checkDiscMatchesToday = async (p, label) => {
     const show = await discWidth();
     const showGaps = await pageGaps();
     await p.goto(`${BASE}#/today`);
-    await p.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
+    await ensurePlaying(p);
     const today = await discWidth();
     // 橫版唱片按右欄計，今日節目頁要扣卡同指示點，所以只要求唔大過節目頁
     const landscape = isLandscape(p);
@@ -834,7 +834,7 @@ const checkShellMismatch = async (browser, errors) => {
         sp.on('pageerror', (e) => errors.push(e.message));
         for (const { route, region, minRows, name } of SHELL_PAGES) {
             await sp.goto(`${BASE}${route}`);
-            await sp.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
+            await ensurePlaying(sp);
             await sp.waitForTimeout(800);
             const label = `${width}×${height} ${name}（殼矮 ${shrink}px）`;
             const normal = await shellFit(sp, region);
@@ -995,7 +995,7 @@ const checkNarrowLayout = async (browser, errors) => {
         ['#/today', '今日節目頁'],
     ]) {
         await p.goto(`${BASE}${route}`);
-        await p.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
+        await ensurePlaying(p);
         const overlap = await timeOverlap(p);
         log(
             overlap <= 0,
@@ -1005,7 +1005,7 @@ const checkNarrowLayout = async (browser, errors) => {
     }
     for (const dx of [-NARROW_HALF_DRAG_PX, NARROW_HALF_DRAG_PX]) {
         await p.goto(`${BASE}#/today`);
-        await p.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
+        await ensurePlaying(p);
         await dragTodayCard(p, dx, { release: false });
         const opacity = await behindTitleOpacity(p);
         const side = dx < 0 ? '左' : '右';
@@ -1295,11 +1295,13 @@ try {
     await checkThemeColor(page, HOME_TOP, '返回主頁');
     await page.getByRole('button', { name: '公子會', exact: true }).click();
     await page.waitForTimeout(800);
+    // mini player 暫停緊 10/10：再入節目頁唔自動播、唔換集，停喺 10/10
+    const kept = await currentEpisode();
+    log(/^播放 10\/10/.test(kept), `再入節目頁：暫停緊嘅 10/10 唔會被蓋過 ${kept}`);
+    await page.getByRole('button', { name: /^(?:播放|暫停) 17\/10/ }).click();
+    await page.waitForTimeout(800);
     const resumed = await currentEpisode();
-    log(
-        /^(?:播放|暫停) 17\/10/.test(resumed),
-        `再入節目頁：揀返最近一集 ${resumed}（17/10 已聽過 → 由頭播）`,
-    );
+    log(/^(?:播放|暫停) 17\/10/.test(resumed), `撳返最近一集 ${resumed}（17/10 已聽過 → 由頭播）`);
     const restartPos = Number(await slider.getAttribute('aria-valuenow'));
     log(restartPos <= 3, `已聽過嘅集由頭播：${restartPos}s`);
     const watched17 = () =>
@@ -1335,6 +1337,11 @@ try {
         `播緊舊集返主頁繼續播，mini player 第一個係重溫：${oldEpisodeState} / ${rewatchText}`,
     );
     await page.getByRole('button', { name: '今日節目', exact: true }).click();
+    // 播緊 10/10 入今日節目頁：唔自動播、唔蓋過，卡疊係未開始樣，撳播放先播今日第一個
+    await page.getByRole('button', { name: '播放', exact: true }).waitFor({ timeout: 5000 });
+    const keptPlaying = await page.evaluate(() => navigator.mediaSession.metadata?.title ?? '');
+    log(keptPlaying.includes('公子會'), `入今日節目頁唔蓋過播緊嘅重溫：${keptPlaying}`);
+    await page.getByRole('button', { name: '播放', exact: true }).click();
     await page.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
     await page.waitForTimeout(1000);
     const items = await page
@@ -1345,7 +1352,7 @@ try {
     const pageTitle = await page.getByRole('heading', { level: 1 }).textContent();
     log(pageTitle === '今日節目', `今日節目頁頁頭大字標題：${pageTitle}`);
     const heading = await todayCardTitle(page).textContent();
-    log(heading === '在晴朗的一天出發', `今日自動播第一個節目：${heading}`);
+    log(heading === '在晴朗的一天出發', `今日撳播放播第一個節目：${heading}`);
     await checkThemeColor(page, SUNNYDAY_BG, '今日節目（在晴朗的一天出發）');
     await page.screenshot({ path: `${OUT}/5-today.png` });
     await checkTodayMidDrag(page);
@@ -1388,7 +1395,8 @@ try {
     await np.screenshot({ path: `${OUT}/8-home-version-320.png` });
     for (const route of ['#/show/gongzi', '#/today']) {
         await np.goto(`${BASE}${route}`);
-        await np.getByRole('button', { name: RESTART }).waitFor();
+        // 由節目頁轉去今日節目頁時 player 已經載入咗節目，今日節目頁唔自動播（冇「由頭播放」），等唱片出就得
+        await np.getByRole('slider', { name: '播放進度' }).waitFor();
         const overflow = await np.evaluate(
             () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
         );

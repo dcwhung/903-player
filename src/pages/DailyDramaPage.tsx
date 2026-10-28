@@ -16,10 +16,12 @@ import { useDailyDramaPage } from './useDramaPage';
 
 /**
  * 每日劇集：同節目頁一樣嘅版面（唱片 + 日子條，直版下面 / 橫版左欄集數清單）。
- * 成頁固定唔捲，得集數清單自己捲（Page.module.css .locked / .fixed）
+ * 成頁固定唔捲，得集數清單自己捲（Page.module.css .locked / .fixed）。
+ * 播緊其他嘢（start 有值）：黑碟、未開始樣，同短篇劇集頁一樣
  */
 export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
-    const { theme, current, strip, items, selectEpisode, pressEpisode } = useDailyDramaPage(drama);
+    const { theme, current, start, strip, items, selectEpisode, pressEpisode } =
+        useDailyDramaPage(drama);
     const { duration } = usePlayer();
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
     const dateLabel = current ? formatDateLabel(current.date) : '';
@@ -34,14 +36,18 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
                         <PlayerPanel
                             title={drama.name}
                             dateLabel={dateLabel}
-                            art={theme.art}
+                            art={start ? undefined : theme.art}
                             days={strip.days}
                             currentDay={strip.current}
                             onPick={selectEpisode}
+                            onStart={start}
                         />
                     )}
                     {current && landscape && (
-                        <NowPlaying label={dateLabel} connecting={!hasKnownDuration(duration)} />
+                        <NowPlaying
+                            label={dateLabel}
+                            connecting={!start && !hasKnownDuration(duration)}
+                        />
                     )}
                 </div>
                 <div className={page.listColumn}>

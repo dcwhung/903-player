@@ -1,86 +1,19 @@
 import type { ReactNode } from 'react';
 import { LANDSCAPE_QUERY } from '../../config/layout';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { toPercent } from '../../utils/ratio';
-import { PlayIcon } from '../icons/icons';
-import { Marquee } from '../Marquee/Marquee';
 import { HomeLandscapeGrid } from '../HomeLandscapeGrid/HomeLandscapeGrid';
-import { NewBadge } from '../NewBadge/NewBadge';
 import { t } from '../../i18n/t';
 import styles from './DramaShelf.module.css';
+import { DramaTile, tileFocus, type DramaShelfItem } from './DramaTile';
 import { useShelfFocus } from './useShelfFocus';
 
-export interface DramaShelfItem {
-    id: string;
-    name: string;
-    /** 劇集原圖（16:9，已經有劇名） */
-    art: string;
-    /** 角落細字（例如「10 個短篇」/「每日更新」）：平時右下，有「繼續收聽」就讓去右上 */
-    meta: string;
-    /** 有新嘢先有：左上角出「新」，讀屏講呢句（例如「有新短篇」/「今日有新一集」） */
-    newLabel?: string;
-    /** 聽過先有：繼續收聽邊集（「短篇 · 第 N 集 集名」）同嗰集聽到幾多（0–1） */
-    resume?: { label: string; ratio: number };
-    onOpen: () => void;
-}
-
-const CONTINUE_ICON_SIZE = 16;
+export type { DramaShelfItem } from './DramaTile';
 
 interface DramaShelfProps {
     items: readonly DramaShelfItem[];
     /** 手機打橫先畀：橫額入格，同劇集一齊排（HomeLandscapeGrid）；收劇集數揀點畫 */
     renderBanner?: (count: number) => ReactNode;
 }
-
-/** 讀屏名：劇名（+ 繼續收聽邊集）（+ 有新嘢） */
-const tileLabel = ({ name, newLabel, resume }: DramaShelfItem): string => {
-    const base = resume ? t('drama.tileContinue', { name, label: resume.label }) : name;
-    return newLabel ? t('drama.tileNew', { name: base, label: newLabel }) : base;
-};
-
-/** 圖底「繼續收聽」條：短篇 · 集數、進度線、▶（成格都係掣，呢度只係顯示） */
-const ContinueStrip = ({ label, ratio }: NonNullable<DramaShelfItem['resume']>) => (
-    <span className={styles.continue} aria-hidden="true">
-        <span className={styles.continueTitle}>{t('drama.continue')}</span>
-        <Marquee className={styles.continueLabel} text={label} />
-        <span className={styles.continueBar}>
-            <span data-continue-fill="" style={{ width: `${toPercent(ratio)}%` }} />
-        </span>
-        <span className={styles.continuePlay}>
-            <PlayIcon size={CONTINUE_ICON_SIZE} />
-        </span>
-    </span>
-);
-
-/** 疊卡 focus 用嘅掣屬性（useShelfFocus 嘅 tileProps）；冇就撳落即 open */
-type TileFocusProps = Partial<ReturnType<ReturnType<typeof useShelfFocus>['tileProps']>>;
-
-interface DramaTileProps {
-    item: DramaShelfItem;
-    focusProps?: TileFocusProps;
-}
-
-/** 劇集格：圖上冇字（劇名喺圖入面，靠 aria-label）；同節目格一樣有「New」；聽過就喺圖底出「繼續收聽」 */
-const DramaTile = ({ item, focusProps }: DramaTileProps) => (
-    <button
-        type="button"
-        className={styles.tile}
-        aria-label={tileLabel(item)}
-        onClick={item.onOpen}
-        {...focusProps}
-    >
-        <img className={styles.art} src={item.art} alt="" />
-        {item.newLabel && <NewBadge className={styles.newBadge} />}
-        <span
-            className={`${styles.meta} ${item.resume ? styles.metaTop : ''}`}
-            data-corner={item.resume ? 'top' : 'bottom'}
-            aria-hidden="true"
-        >
-            {item.meta}
-        </span>
-        {item.resume && <ContinueStrip {...item.resume} />}
-    </button>
-);
 
 /**
  * 直版：一行一套，卡疊住（每行矮過張卡，蓋住下一張），疊到最後一張到底（T8，useShelfFocus 計）；
@@ -92,6 +25,7 @@ const ShelfColumn = ({ items }: { items: readonly DramaShelfItem[] }) => {
     const stacked = !useMediaQuery(LANDSCAPE_QUERY);
     const focus = useShelfFocus(items.length, stacked);
     const { shelfRef, style, scrolls, onScroll, tileProps, scrubProps } = focus;
+    const focusedIndex = focus.focus;
     return (
         <nav
             ref={shelfRef}
@@ -107,7 +41,7 @@ const ShelfColumn = ({ items }: { items: readonly DramaShelfItem[] }) => {
                 <DramaTile
                     key={item.id}
                     item={item}
-                    focusProps={stacked ? tileProps(i, item.onOpen) : undefined}
+                    focus={stacked ? tileFocus(tileProps, i === focusedIndex, i, item) : undefined}
                 />
             ))}
         </nav>

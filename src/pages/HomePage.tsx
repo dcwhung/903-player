@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { AppVersion } from '../components/AppVersion/AppVersion';
-import { DramaShelf, type DramaShelfItem } from '../components/DramaShelf/DramaShelf';
+import { DramaShelf } from '../components/DramaShelf/DramaShelf';
 import { HomeBanner } from '../components/HomeBanner/HomeBanner';
 import { FittedBanner } from '../components/HomeLandscapeGrid/FittedBanner';
 import { HomeTabs } from '../components/HomeTabs/HomeTabs';
@@ -10,33 +10,30 @@ import { ShowGrid } from '../components/ShowGrid/ShowGrid';
 import { ShowTile } from '../components/ShowTile/ShowTile';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { APP_VERSION } from '../config/appVersion';
-import { dramaEpisodesOf, enabledDramas, seriesEpisodesOf, type DramaConfig } from '../dramas';
 import { SHORT_LANDSCAPE_QUERY } from '../config/layout';
 import { SHOWS } from '../shows';
 import { HOME_THEME } from '../config/showThemes';
 import { useRecordings } from '../data/useRecordings';
-import { useDramaContinue } from '../hooks/useDramaContinue';
+import { useAudioBusy } from '../hooks/useAudioBusy';
+import { useDramaItems } from './useHomeDramaItems';
 import { useHomeArrival } from '../hooks/useHomeArrival';
 import { useHomeTab } from '../hooks/useHomeTab';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useMiniPlayer } from '../hooks/useMiniPlayer';
-import { useDramaNewLabels } from '../hooks/useDramaNewLabels';
 import { useNewShowIds } from '../hooks/useNewShowIds';
-import { useRefreshedOn } from '../hooks/useRefreshedOn';
-import { isFirstSeriesVisit, useStartDrama } from '../hooks/useStartDrama';
 import { useStartPlayback } from '../hooks/useStartPlayback';
-import { seriesArcs } from '../selectors/dramas';
-import { dramaShelfOrder } from '../selectors/dramaShelf';
-import { usePlayer } from '../player/usePlayer';
-import { getProgressMap } from '../services/progressStore';
 import { t } from '../i18n/t';
 import styles from './HomePage.module.css';
 import page from './Page.module.css';
 
-/** 7 個節目格（今日有新一集就有「New」）+ 今日節目格（撳落開始播再入頁） */
+/**
+ * 7 個節目格（今日有新一集就有「New」）+ 今日節目格：撳落入頁；
+ * 冇其他嘢播緊 / 暫停緊（useAudioBusy）先順便開始播，唔蓋過用戶本身嗰樣（可能只係想睇清單）
+ */
 const useHomeTiles = () => {
     const navigate = useNavigate();
     const { startShow, startToday } = useStartPlayback();
+    const busy = useAudioBusy();
     const newShowIds = useNewShowIds();
     return [
         ...SHOWS.map((show) => (
@@ -46,7 +43,7 @@ const useHomeTiles = () => {
                 art={show.tileArt}
                 isNew={newShowIds.has(show.id)}
                 onClick={() => {
-                    startShow(show.id);
+                    if (!busy) startShow(show.id);
                     navigate(`/show/${show.id}`);
                 }}
             />
@@ -56,50 +53,11 @@ const useHomeTiles = () => {
             variant="today"
             label={t('home.today')}
             onClick={() => {
-                startToday();
+                if (!busy) startToday();
                 navigate('/today');
             }}
         />,
     ];
-};
-
-/** 劇集格右下角：短篇劇集「N 個短篇」（分季嘅「全 N 季」），每日劇集「每日更新」 */
-const dramaMeta = (drama: DramaConfig): string => {
-    if (drama.kind !== 'series') return t('drama.daily');
-    const count = seriesArcs(seriesEpisodesOf(drama.id)).length;
-    return t(drama.arcUnit === 'season' ? 'drama.seasonCount' : 'drama.arcCount', { count });
-};
-
-/** 廣播劇 tab 嘅劇集次序（見 dramaShelfOrder）；轉集、有集數聽完就按新進度重新排 */
-const useShelfDramas = (): DramaConfig[] => {
-    const player = usePlayer();
-    const progressMap = useRefreshedOn(getProgressMap, [player.watchedRevision, player.recording]);
-    return dramaShelfOrder(enabledDramas(), dramaEpisodesOf, progressMap);
-};
-
-/**
- * 廣播劇 tab 嘅劇集格（撳落開始播再入頁，同節目格一樣）。
- * 第一次入短篇劇集就淨係入頁（唔播、亦唔打斷播緊嘅嘢），等用戶喺全集表揀短篇
- */
-const useDramaItems = (): DramaShelfItem[] => {
-    const navigate = useNavigate();
-    const startDrama = useStartDrama();
-    const { recording } = usePlayer();
-    const newLabels = useDramaNewLabels();
-    const continueOf = useDramaContinue();
-    const shelf = useShelfDramas();
-    return shelf.map((drama) => ({
-        id: drama.id,
-        name: drama.name,
-        art: drama.tileArt,
-        meta: dramaMeta(drama),
-        newLabel: newLabels.get(drama.id),
-        resume: continueOf(drama),
-        onOpen: () => {
-            if (!isFirstSeriesVisit(drama, getProgressMap(), recording)) startDrama(drama);
-            navigate(`/drama/${drama.id}`);
-        },
-    }));
 };
 
 export const HomePage = () => {

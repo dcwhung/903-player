@@ -57,7 +57,7 @@ export const toPlayableItem = (url: string, labels: RowLabels, ctx: RowContext):
 export const toEpisodeItems = (
     episodes: EpisodeEntry[],
     currentUrl: string | undefined,
-    live: LiveTime,
+    live: LiveTime | undefined,
     progressMap: Readonly<Record<string, Progress>>,
     isPlaying: boolean,
 ): EpisodeItem[] =>

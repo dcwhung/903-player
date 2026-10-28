@@ -1,7 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import { themeFor } from '../shows';
 import { useRecordings } from '../data/useRecordings';
+import { useAudioBusy } from '../hooks/useAudioBusy';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
+import { useStandbyStart } from '../hooks/useStandbyStart';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
 import { todayView } from '../selectors/recordings';
@@ -10,15 +12,19 @@ import type { Recording } from '../types/recording';
 import { hkToday } from '../utils/date';
 import { toStackCards, toTodayItems } from './todayItems';
 
-/** 入嚟時未播今日節目就自動播第一個 */
+/**
+ * 入嚟時未播今日節目、亦冇其他嘢佔住（useAudioBusy）就自動播第一個；
+ * 有其他嘢播緊 / 暫停緊就唔蓋過（用戶可能只係想睇節目表），卡疊係未開始樣等用戶撳
+ */
 const useAutoplayToday = (hasShows: boolean, isPlayingToday: boolean) => {
     const { status } = useRecordings();
+    const busy = useAudioBusy();
     const { startToday } = useStartPlayback();
     useEffect(() => {
-        if (status === 'ready' && hasShows && !isPlayingToday) {
+        if (status === 'ready' && hasShows && !isPlayingToday && !busy) {
             startToday();
         }
-    }, [status, hasShows, isPlayingToday, startToday]);
+    }, [status, hasShows, isPlayingToday, busy, startToday]);
 };
 
 /** 卡疊 / 指示點轉節目，同節目表撳一行 */
@@ -41,6 +47,17 @@ const useTodayActions = (playable: Recording[]) => {
     return { selectIndex, selectShow };
 };
 
+/** 節目表每行：播緊其他嘢（唔係今日節目）唔當播緊；有集數變成聽過先重新讀 localStorage */
+const useTodayItems = (
+    entries: Parameters<typeof toTodayItems>[0],
+    activeUrl: string | undefined,
+    isPlayingToday: boolean,
+) => {
+    const player = usePlayer();
+    const watchedUrls = useRefreshedOn(getWatchedUrls, [player.watchedRevision]);
+    return toTodayItems(entries, activeUrl, isPlayingToday && player.isPlaying, watchedUrls);
+};
+
 /** 今日節目頁嘅資料同動作 */
 export const useTodayPage = () => {
     const { status, recordings, unavailable, isSearching } = useRecordings();
@@ -53,16 +70,17 @@ export const useTodayPage = () => {
     );
     // 卡疊、指示點、自動播放只用播得到嘅；節目表（entries）連未上架
     const playingIndex = playable.findIndex((r) => r.url === player.recording?.url);
+    const isPlayingToday = playingIndex >= 0;
     const index = Math.max(0, playingIndex);
     const current = playable[index];
-    useAutoplayToday(playable.length > 0, playingIndex >= 0);
+    useAutoplayToday(playable.length > 0, isPlayingToday);
 
-    // 有集數變成聽過（watchedRevision 改變）先重新讀 localStorage
-    const watchedUrls = useRefreshedOn(getWatchedUrls, [player.watchedRevision]);
-    const items = toTodayItems(entries, current?.url, player.isPlaying, watchedUrls);
+    const items = useTodayItems(entries, current?.url, isPlayingToday);
     const cards = useMemo(() => toStackCards(playable), [playable]);
     const cardKeys = useMemo(() => playable.map((r) => r.url), [playable]);
     const actions = useTodayActions(playable);
+    const start = useStandbyStart(isPlayingToday, () => actions.selectIndex(index));
     const theme = themeFor(current?.showId);
-    return { status, isSearching, current, index, items, cards, cardKeys, theme, ...actions };
+    const view = { status, isSearching, current, start, index, items, cards, cardKeys, theme };
+    return { ...view, ...actions };
 };

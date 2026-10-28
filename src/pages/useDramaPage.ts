@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { stripDays } from '../components/DateStrip/dateStrip';
 import { dailyEpisodesOf, dramaEpisodeTheme, seriesEpisodesOf, type DramaConfig } from '../dramas';
+import { useAudioBusy } from '../hooks/useAudioBusy';
 import { useEpisodePress } from '../hooks/useEpisodePress';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
+import { useStandbyStart } from '../hooks/useStandbyStart';
 import { isFirstSeriesVisit, useStartDrama } from '../hooks/useStartDrama';
 import { usePlayer } from '../player/usePlayer';
 import {
@@ -37,16 +39,18 @@ const useLoadedEpisode = <K extends DramaEpisode['kind']>(
 };
 
 /**
- * 直接開呢頁（例如 deep link / mini player）時都自動播放，同節目頁一樣；
- * skip（已經載入咗呢套劇，或者第一次入短篇劇集）就唔播
+ * 每日劇集頁：入頁冇其他嘢佔住（useAudioBusy）先自動播，同節目頁一樣；
+ * 已經載入咗呢套劇，或者有其他嘢播緊 / 暫停緊就唔播（唔蓋過，用戶可能只係想睇清單）。
+ * 短篇劇集頁唔自動播，一律等用戶撳播放 / 揀集
  */
-const useAutoplayDrama = (drama: DramaConfig, skip: boolean) => {
+const useAutoplayDaily = (drama: DramaConfig, isLoaded: boolean) => {
     const startDrama = useStartDrama();
+    const busy = useAudioBusy();
     useEffect(() => {
-        if (!skip) {
+        if (!isLoaded && !busy) {
             startDrama(drama);
         }
-    }, [drama, skip, startDrama]);
+    }, [drama, isLoaded, busy, startDrama]);
 };
 
 /** 清單行要嘅 player 狀態 + 撳行 / 揀集嘅動作（兩款劇集頁共用） */
@@ -80,7 +84,9 @@ const usePlaybackRows = (
 export const useDailyDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => dailyNewestFirst(dailyEpisodesOf(drama.id)), [drama]);
     const loaded = useLoadedEpisode(drama, 'daily');
-    useAutoplayDrama(drama, loaded !== null);
+    useAutoplayDaily(drama, loaded !== null);
+    const startDrama = useStartDrama();
+    const start = useStandbyStart(loaded !== null, () => startDrama(drama));
     const current = loaded ?? pickDailyStart(episodes, hkToday());
     const { ctx, selectEpisode, pressEpisode } = usePlaybackRows(episodes, current, !!loaded);
     // 重播舊集同新集隔成年：只排有集數嘅日子，唔排中間成年灰色日子
@@ -91,6 +97,7 @@ export const useDailyDramaPage = (drama: DramaConfig) => {
     return {
         theme: drama.theme,
         current,
+        start,
         strip,
         items: toDailyItems(episodes, ctx),
         selectEpisode,
@@ -100,7 +107,7 @@ export const useDailyDramaPage = (drama: DramaConfig) => {
 
 /**
  * 入頁嗰下係咪第一次入呢套短篇劇集（入頁時讀一次就定，揀咗 / 播咗都唔再變）：
- * 係就唔自動播、一入嚟就開全集表
+ * 係就一入嚟就開全集表
  */
 const useFirstVisitOnEntry = (drama: DramaConfig): boolean => {
     const { recording } = usePlayer();
@@ -243,9 +250,8 @@ const useSeriesArcs = (
 export const useSeriesDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
     const loaded = useLoadedEpisode(drama, 'series');
+    // 第一次入：一入嚟就開全集表，等用戶揀短篇
     const firstVisit = useFirstVisitOnEntry(drama);
-    // 第一次入：唔自動播（亦唔打斷播緊嘅嘢），等用戶喺全集表揀
-    useAutoplayDrama(drama, loaded !== null || firstVisit);
     const { sheetOpen, setSheetOpen, progressMap } = useSeriesSheet(firstVisit, loaded?.url);
     const current = loaded ?? pickSeriesStart(episodes, progressMap);
     const rows = usePlaybackRows(episodes, current, !!loaded);

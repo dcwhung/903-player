@@ -151,13 +151,13 @@ const shelfStyle = (layout?: ShelfLayout): CSSProperties | undefined =>
     } as CSSProperties);
 
 /**
- * 每張卡嘅 props：撳 / 鍵盤 focus / click 點樣分 open 定捲做 focus。
+ * 每張卡入面每粒掣嘅 props：撳 / 鍵盤 focus / click 點樣分 open 定捲做 focus
+ * （一張卡有幾粒掣就每粒各自攞，onOpen 係嗰粒掣自己做嘅嘢）。
  * pressRef：撳落去嗰刻邊張係 focus（pointerdown → focus → click，click 時 focus 可能已經變咗）
  */
 const useTileProps =
     (focus: number, focusTile: (index: number) => void, pressRef: RefObject<number | null>) =>
     (index: number, onOpen: () => void) => ({
-        'data-focused': index === focus ? '' : undefined,
         onPointerDown: () => (pressRef.current = focus),
         // 撳落去之後變咗捲動（冇 click）：唔好留住，否則之後鍵盤 focus 會當係撳
         onPointerCancel: () => (pressRef.current = null),
@@ -279,5 +279,5 @@ export const useShelfFocus = (count: number, enabled: boolean) => {
     };
     const tileProps = useTileProps(focus, focusTile, pressRef);
     const scrubProps = useShelfScrub({ layout, count, setFocus, pressRef });
-    return { shelfRef, style: shelfStyle(layout), scrolls, onScroll, tileProps, scrubProps };
+    return { shelfRef, style: shelfStyle(layout), scrolls, onScroll, focus, tileProps, scrubProps };
 };

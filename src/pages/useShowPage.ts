@@ -3,7 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { airsWeekly, findShow, themeFor, type ShowConfig } from '../shows';
 import { useRecordings } from '../data/useRecordings';
 import { useEpisodePress } from '../hooks/useEpisodePress';
+import { useAudioBusy } from '../hooks/useAudioBusy';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
+import { useStandbyStart } from '../hooks/useStandbyStart';
 import { useStartPlayback } from '../hooks/useStartPlayback';
 import { usePlayer } from '../player/usePlayer';
 import {
@@ -60,7 +62,10 @@ const useRequestedEpisode = (episodes: readonly Recording[]) => {
     return { hasRequest: url !== undefined, requested, consume };
 };
 
-/** 直接開呢頁（例如 deep link / mini player）時都自動播放；mini player 帶咗集數入嚟就播嗰集 */
+/**
+ * 入頁（主頁撳格、deep link）冇其他嘢佔住（useAudioBusy）先自動播；有其他嘢播緊 / 暫停緊就唔蓋過
+ * （用戶可能只係想睇清單），唱片係未開始樣等用戶撳。mini player 帶咗集數入嚟係明確要播，照播嗰集
+ */
 const useAutoplayShow = (
     show: ShowConfig | undefined,
     episodes: readonly Recording[],
@@ -68,6 +73,7 @@ const useAutoplayShow = (
 ) => {
     const { status } = useRecordings();
     const { load } = usePlayer();
+    const busy = useAudioBusy();
     const { startShow } = useStartPlayback();
     const { hasRequest, requested, consume } = useRequestedEpisode(episodes);
     useEffect(() => {
@@ -75,10 +81,10 @@ const useAutoplayShow = (
         if (hasRequest) consume();
         if (requested && requested.url !== playingUrl) {
             void load(requested, { autoplay: true });
-        } else if (!requested && playingUrl === undefined) {
+        } else if (!requested && playingUrl === undefined && !busy) {
             startShow(show.id);
         }
-    }, [show, status, hasRequest, requested, consume, playingUrl, load, startShow]);
+    }, [show, status, hasRequest, requested, consume, playingUrl, busy, load, startShow]);
 };
 
 /**
@@ -97,21 +103,47 @@ const useShowStrip = (
     );
 };
 
+/** 撳播放先開始播呢個節目：播緊其他嘢先有（見 useStandbyStart） */
+const useShowStart = (show: ShowConfig | undefined, isThisShow: boolean) => {
+    const { startShow } = useStartPlayback();
+    return useStandbyStart(isThisShow, () => {
+        if (show) startShow(show.id);
+    });
+};
+
+/**
+ * 集數清單每行：只有載入緊呢個節目先用 player 即時時間、先當播緊；
+ * 未載入（未開始播，或者播緊其他嘢）揀中集係預設嗰集，用返 localStorage 進度
+ */
+const useShowEpisodeItems = (
+    entries: Parameters<typeof toEpisodeItems>[0],
+    currentUrl: string | undefined,
+    isThisShow: boolean,
+) => {
+    const player = usePlayer();
+    // 轉集或者有集數變成聽過先重新讀 localStorage
+    const progressMap = useRefreshedOn(getProgressMap, [player.watchedRevision, currentUrl]);
+    const live = isThisShow
+        ? { currentTime: player.currentTime, duration: player.duration }
+        : undefined;
+    const isPlayingCurrent = isThisShow && player.isPlaying;
+    const episodeItems = toEpisodeItems(entries, currentUrl, live, progressMap, isPlayingCurrent);
+    return { episodeItems, isPlayingCurrent };
+};
+
 /** 節目頁嘅資料同動作 */
 export const useShowPage = (showId: string) => {
     const show = findShow(showId);
     const { status, isSearching } = useRecordings();
-    const player = usePlayer();
     const { episodes, entries, playing, current } = useShowEpisodes(show);
     useAutoplayShow(show, episodes, playing?.url);
-
-    // 轉集或者有集數變成聽過先重新讀 localStorage
+    const start = useShowStart(show, playing !== null);
     const currentUrl = current?.url;
-    const progressMap = useRefreshedOn(getProgressMap, [player.watchedRevision, currentUrl]);
-    const live = { currentTime: player.currentTime, duration: player.duration };
-    // 只有播緊呢個節目先當播緊（未開始播時揀中集係預設嗰集）
-    const isPlayingCurrent = playing !== null && player.isPlaying;
-    const episodeItems = toEpisodeItems(entries, currentUrl, live, progressMap, isPlayingCurrent);
+    const { episodeItems, isPlayingCurrent } = useShowEpisodeItems(
+        entries,
+        currentUrl,
+        playing !== null,
+    );
 
     // 集數清單：撳播緊嗰集就暫停（掣係暫停樣），其他同日子條一樣播嗰集
     const press = useEpisodePress(episodes, currentUrl, isPlayingCurrent);
@@ -121,6 +153,7 @@ export const useShowPage = (showId: string) => {
         status,
         isSearching,
         current,
+        start,
         episodeItems,
         // 日子條：同撳集數行同一條路（未聽完續播、聽過由頭播）
         strip: useShowStrip(show, episodes, currentUrl),

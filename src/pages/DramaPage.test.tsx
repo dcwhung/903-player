@@ -15,10 +15,17 @@ const XMAS = CHISEE.filter((e) => e.arc === 'Ｘ時mas時小提議');
 
 const openDrama = (id: string) =>
     renderWithProviders(<DramaPage />, { route: `/drama/${id}`, path: PATH });
+/** 短篇劇集頁入頁唔自動播：入頁再撳播放 */
+const pressPlay = () => userEvent.click(screen.getByRole('button', { name: '播放' }));
+const openDramaAndPlay = async (id: string) => {
+    const rendered = openDrama(id);
+    await pressPlay();
+    return rendered;
+};
 
 /** 同一個 player 入面主頁 mini player 會用嘅碟面 */
 const MiniArtProbe = () => <span data-testid="mini-art" data-art={useMiniPlayer()?.theme.art} />;
-/** 之前聽過芝See（第一集聽咗少少）：唔係第一次入，照舊自動播 */
+/** 之前聽過芝See（第一集聽咗少少）：唔係第一次入，唔開全集表 */
 const listenedBefore = () => saveProgress(CHISEE[0]?.url ?? '', 60, 1200);
 /** 入劇集頁之前，播緊另一樣嘢（例如今日節目） */
 const OTHER_REC = recording('gongzi', '2026-10-17');
@@ -78,7 +85,7 @@ describe('DramaPage', () => {
             const s2 = seriesEpisodesOf('golden').filter((e) => e.arc === 'Season 2');
             const s2Art = s2[2] ? dramaArtFor(s2[2]) : '';
             saveProgress(s2[2]?.url ?? '', 60, 1200);
-            const { audio } = openDrama('golden');
+            const { audio } = await openDramaAndPlay('golden');
             const discArt = () => screen.getByRole('main').querySelector('img');
 
             await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
@@ -96,7 +103,7 @@ describe('DramaPage', () => {
             const s4 = golden.find((e) => e.arc === 'Season 4');
             const s4Art = s4 ? dramaArtFor(s4) : '';
             saveProgress(s2[2]?.url ?? '', 60, 1200);
-            const { audio } = openDrama('golden');
+            const { audio } = await openDramaAndPlay('golden');
             const discArt = () => screen.getByRole('main').querySelector('img');
 
             await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
@@ -131,6 +138,7 @@ describe('DramaPage', () => {
                 { route: '/drama/golden', path: PATH },
             );
             const miniArt = () => screen.getByTestId('mini-art').dataset.art;
+            await pressPlay();
 
             await waitFor(() => expect(audio.src).toBe(s2[2]?.url));
             expect(miniArt()).toBe(s2Art);
@@ -143,9 +151,13 @@ describe('DramaPage', () => {
             expect(miniArt()).toBe(s2Art);
         });
 
-        it('autoplays where it left off on a light themed page with the drama name as title', async () => {
+        it('waits on entry, then plays where it left off on a light themed page with the drama name as title', async () => {
             listenedBefore();
             const { audio } = openDrama('chisee');
+            expect(audio.src).toBe('');
+            expect(audio.play).not.toHaveBeenCalled();
+
+            await pressPlay();
 
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
             expect(audio.play).toHaveBeenCalled();
@@ -159,7 +171,7 @@ describe('DramaPage', () => {
 
         it('resumes the last episode and lists only its arc, with the arc chip pressed', async () => {
             saveProgress(XMAS[1]?.url ?? '', 120, 1200);
-            const { audio } = openDrama('chisee');
+            const { audio } = await openDramaAndPlay('chisee');
 
             await waitFor(() => expect(audio.src).toBe(XMAS[1]?.url));
             // 未讀到時長：標籤同節目頁日子條一樣講「連線中…」
@@ -188,7 +200,7 @@ describe('DramaPage', () => {
 
         it('switches the list to another arc without interrupting playback, then plays a tapped episode', async () => {
             listenedBefore();
-            const { audio } = openDrama('chisee');
+            const { audio } = await openDramaAndPlay('chisee');
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
 
             await userEvent.click(screen.getByRole('button', { name: 'Ｘ時mas時小提議' }));
@@ -324,12 +336,14 @@ describe('DramaPage', () => {
             );
         });
 
-        it('keeps 全集 closed once the drama has been listened to', async () => {
+        it('keeps 全集 closed and plays nothing on entry once the drama has been listened to', async () => {
             listenedBefore();
             const { audio } = openDrama('chisee');
 
-            await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
+            await waitFor(() => expect(screen.getByRole('button', { name: '播放' })).toBeVisible());
             expect(screen.queryByRole('dialog', { name: '全集' })).not.toBeInTheDocument();
+            expect(audio.src).toBe('');
+            expect(audio.play).not.toHaveBeenCalled();
         });
     });
 
@@ -420,7 +434,7 @@ describe('DramaPage', () => {
         it('counts a 第零集 短篇 by position, so its last episode reads 第 26 / 26 集', async () => {
             const chuluen = CHISEE.filter((e) => e.arc === '初戀嗱喳麵');
             saveProgress(chuluen.at(-1)?.url ?? '', 120, 1200);
-            const { audio } = openDrama('chisee');
+            const { audio } = await openDramaAndPlay('chisee');
             await waitFor(() => expect(audio.src).toBe(chuluen.at(-1)?.url));
             act(() => audio.emitMetadata(1200));
 
@@ -429,7 +443,7 @@ describe('DramaPage', () => {
 
         it('says 已暫停 under the disc once paused part way', async () => {
             saveProgress(XMAS[1]?.url ?? '', 120, 1200);
-            const { audio } = openDrama('chisee');
+            const { audio } = await openDramaAndPlay('chisee');
             await waitFor(() => expect(audio.src).toBe(XMAS[1]?.url));
             act(() => audio.emitMetadata(1200));
             await waitFor(() => expect(screen.getByRole('button', { name: '暫停' })).toBeVisible());
@@ -441,7 +455,7 @@ describe('DramaPage', () => {
 
         it('shows the 短篇, position and episode title under the disc, header above the list', async () => {
             saveProgress(XMAS[1]?.url ?? '', 120, 1200);
-            const { audio } = openDrama('chisee');
+            const { audio } = await openDramaAndPlay('chisee');
             await waitFor(() => expect(audio.src).toBe(XMAS[1]?.url));
             act(() => audio.emitMetadata(1200));
 
@@ -457,7 +471,7 @@ describe('DramaPage', () => {
 
         it('opens 全集 inside the list column, leaving the player usable', async () => {
             listenedBefore();
-            const { audio } = openDrama('chisee');
+            const { audio } = await openDramaAndPlay('chisee');
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
 
             await userEvent.click(screen.getByRole('button', { name: '全集' }));
@@ -477,7 +491,7 @@ describe('DramaPage', () => {
 
     it('plays the next episode by itself when one finishes, and the list follows', async () => {
         listenedBefore();
-        const { audio } = openDrama('chisee');
+        const { audio } = await openDramaAndPlay('chisee');
         await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
         act(() => audio.emitMetadata(1200));
 
@@ -499,7 +513,7 @@ describe('DramaPage', () => {
             saveProgress(FRIENDS[0]?.url ?? '', 990, 1000);
             vi.setSystemTime(new Date('2026-10-23T08:05:00Z')); // 最近聽緊嘅係好朋友手牽手第 2 集
             saveProgress(FRIENDS[1]?.url ?? '', 400, 1000);
-            const { audio } = openDrama('chisee');
+            const { audio } = await openDramaAndPlay('chisee');
             await waitFor(() => expect(audio.src).toBe(FRIENDS[1]?.url));
 
             await userEvent.click(screen.getByRole('button', { name: '全集' }));
@@ -535,7 +549,7 @@ describe('DramaPage', () => {
             const sammy = seriesEpisodesOf('sammy-kitty');
             // 聽過先會自動播（第一次入唔播，見 first-visit 測試）
             saveProgress(sammy[0]?.url ?? '', 60, 1200);
-            const { audio } = openDrama('sammy-kitty');
+            const { audio } = await openDramaAndPlay('sammy-kitty');
             await waitFor(() => expect(audio.src).not.toBe(''));
             await userEvent.click(screen.getByRole('button', { name: '全集' }));
 
@@ -556,7 +570,7 @@ describe('DramaPage', () => {
 
         it('shows the drama disc on every row when no 短篇 has its own (芝See)', async () => {
             listenedBefore();
-            const { audio } = openDrama('chisee');
+            const { audio } = await openDramaAndPlay('chisee');
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
             await userEvent.click(screen.getByRole('button', { name: '全集' }));
 
@@ -569,7 +583,7 @@ describe('DramaPage', () => {
 
         it('moves the playing 短篇 to the front of the chips, after 全集', async () => {
             listenedBefore();
-            const { audio } = openDrama('chisee');
+            const { audio } = await openDramaAndPlay('chisee');
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
             await userEvent.click(screen.getByRole('button', { name: '全集' }));
             await userEvent.click(screen.getByRole('button', { name: '播放 青春期 第 1 集' }));
@@ -584,7 +598,7 @@ describe('DramaPage', () => {
 
         it('switches the list to a 短篇 picked by its row, without changing playback', async () => {
             listenedBefore();
-            const { audio } = openDrama('chisee');
+            const { audio } = await openDramaAndPlay('chisee');
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
             await userEvent.click(screen.getByRole('button', { name: '全集' }));
 
