@@ -204,6 +204,37 @@ describe('useMiniPlayer', () => {
         });
     });
 
+    // W-485：storage 已經有舊集（status 已 ready），今日嗰集未 probe 到：今日節目都唔好標「重溫」
+    it('tags a today show 今日 while today is still being probed, even with older ones stored', async () => {
+        const probing = new Promise<Recording[]>(() => {});
+        const older = RECORDINGS[0] as Recording;
+        const { result } = setup([older], () => probing);
+        await waitFor(() => expect(result.current.player).toBeDefined());
+
+        await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
+
+        expect(result.current.mini).toMatchObject({
+            keys: [BADGIRL.url],
+            tags: ['today'],
+            region: '正在播放（今日節目）',
+        });
+    });
+
+    // W-485：清單未載入完都要認得舊集係「重溫」，唔好講成今日節目
+    it('tags an older episode 重溫 while the recordings are still loading', async () => {
+        const probing = new Promise<Recording[]>(() => {});
+        const older = RECORDINGS[0] as Recording;
+        const { result } = setup([], () => probing);
+
+        await act(() => result.current.player.load(older, { autoplay: true }));
+
+        expect(result.current.mini).toMatchObject({
+            keys: [older.url],
+            tags: ['rewatch'],
+            region: '正在播放（重溫）',
+        });
+    });
+
     it('tags today’s shows 今日 and leaves 今日 out of the date-only subtitle', async () => {
         const { mini } = await ready(setup().result);
 
