@@ -85,8 +85,9 @@ export const zhHK = {
         openDrama: '開啟 {name} 廣播劇頁',
         withTime: '{label} · {time}',
         position: '今日第 {index} 個節目，共 {total} 個',
-        // 節目頁揀嘅舊集排喺今日節目前面（重溫）：成個播放器、開頁掣、指示點、第幾個嘅讀屏名
+        // 聽緊嘅舊集排喺今日節目前面（重溫）：成個播放器（今日冇節目就只有重溫）、開頁掣、指示點、第幾個嘅讀屏名
         regionRewatch: '正在播放（重溫及今日節目）',
+        regionRewatchOnly: '正在播放（重溫）',
         openRewatch: '開啟 {name} 節目頁，重溫 {date}',
         rewatchDot: '{name}，重溫 {date}',
         positionRewatch: '第 {index} 個節目，共 {total} 個',

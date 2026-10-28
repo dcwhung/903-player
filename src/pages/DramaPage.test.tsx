@@ -61,6 +61,9 @@ const arcLine = () =>
     (screen.getByRole('group', { name: '短篇' }).parentElement as HTMLElement).textContent;
 const arcChips = () => within(screen.getByRole('group', { name: '短篇' })).getAllByRole('button');
 
+/** 唱片格碟面嘅圖（黑碟就冇） */
+const gaugeArt = () => screen.getByRole('main').querySelector('.discArea img');
+
 describe('DramaPage', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
@@ -205,11 +208,9 @@ describe('DramaPage', () => {
             expect(await screen.findByRole('dialog', { name: '全集' })).toBeInTheDocument();
             expect(audio.src).toBe('');
             expect(audio.play).not.toHaveBeenCalled();
-            // 未載入任何一集：碟面用第一集，時間係佔位，掣係播放樣
+            // 未載入任何一集：碟面係冇圖嘅黑碟（同今日冇節目一樣），時間係佔位，掣係播放樣
             expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('芝See菇Bi Family');
-            expect(screen.getByRole('main').querySelector('img')?.getAttribute('src')).toBe(
-                dramaArtFor(CHISEE[0]!),
-            );
+            expect(gaugeArt()).toBeNull();
             expect(screen.getAllByText('--:--')).toHaveLength(2);
             expect(screen.getByRole('button', { name: '播放', hidden: true })).toBeInTheDocument();
         });
@@ -226,6 +227,8 @@ describe('DramaPage', () => {
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
             await waitFor(() => expect(audio.src).toBe(youth?.url));
             expect(audio.play).not.toHaveBeenCalled();
+            // 揀咗短篇：黑碟換做嗰個短篇嘅 cover
+            expect(gaugeArt()?.getAttribute('src')).toBe(dramaArtFor(youth!));
             expect(screen.getByRole('button', { name: '青春期' })).toHaveAttribute(
                 'aria-pressed',
                 'true',
@@ -336,6 +339,7 @@ describe('DramaPage', () => {
             await closeSheet();
 
             expect(audio.src).toBe(OTHER_REC.url);
+            expect(gaugeArt()).toBeNull();
             expect(screen.getAllByText('--:--')).toHaveLength(2);
             expect(screen.queryByText('1:40')).not.toBeInTheDocument();
             expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
@@ -362,13 +366,40 @@ describe('DramaPage', () => {
         });
 
         it('marks no 短篇 chip as 播緊 while another 短篇 is browsed', async () => {
-            await openDramaWhileOtherPlays('chisee');
+            const { audio } = await openDramaWhileOtherPlays('chisee');
             await closeSheet();
 
             await userEvent.click(screen.getByRole('button', { name: '青春期' }));
 
+            // 播緊其他嘢：揀短篇唔載入，碟面保持黑碟
+            expect(audio.src).toBe(OTHER_REC.url);
+            expect(gaugeArt()).toBeNull();
+
             const first = screen.getByRole('button', { name: CHISEE[0]?.arc ?? '' });
             expect(first).not.toHaveAccessibleDescription(/播緊/);
+        });
+
+        // CUI-0007：揀咗短篇再撳 ▶，播嘅係揀咗嗰個短篇（續聽位置），唔係成套劇第一集
+        it('starts the picked 短篇 when play is pressed', async () => {
+            const { audio } = await openDramaWhileOtherPlays('golden');
+            await closeSheet();
+            const season3 = seriesEpisodesOf('golden').find((e) => e.arc === 'Season 3');
+
+            await userEvent.click(screen.getByRole('button', { name: /^Season 3/ }));
+            expect(audio.src).toBe(OTHER_REC.url);
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+
+            await waitFor(() => expect(audio.src).toBe(season3?.url));
+            expect(gaugeArt()?.getAttribute('src')).toBe(dramaArtFor(season3!));
+        });
+
+        it('starts the drama’s first episode when no 短篇 was picked', async () => {
+            const { audio } = await openDramaWhileOtherPlays('golden');
+            await closeSheet();
+
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+
+            await waitFor(() => expect(audio.src).toBe(seriesEpisodesOf('golden')[0]?.url));
         });
 
         it('prompts under the disc in landscape too', async () => {

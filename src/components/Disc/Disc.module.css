@@ -9,6 +9,12 @@
     background: var(--color-disc);
 }
 
+/* 冇圖：中性黑碟，唔跟頁面主題（碟邊同碟心都用 --color-disc-rim，一齊換） */
+.blank {
+    --color-disc: var(--color-disc-blank);
+    --color-disc-rim: var(--color-disc-blank-rim);
+}
+
 .large {
     width: 72%;
     aspect-ratio: 1;
