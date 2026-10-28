@@ -23,6 +23,7 @@
 | 2026-10-28 | [reviews/2026-10-28_review_v1.19.1.md](reviews/2026-10-28_review_v1.19.1.md)                     |
 | 2026-10-28 | [reviews/2026-10-28_review_v1.19.2.md](reviews/2026-10-28_review_v1.19.2.md)                     |
 | 2026-10-28 | [reviews/2026-10-28_review_v1.19.3.md](reviews/2026-10-28_review_v1.19.3.md)                     |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.19.4.md](reviews/2026-10-28_review_v1.19.4.md)                     |
 
 ## QA
 
