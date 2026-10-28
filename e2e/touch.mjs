@@ -33,7 +33,9 @@ const DISC_SCRUB_RADIUS_RATIO = 0.3;
 const DISC_QUARTER_TURN_S = 15;
 // 慢慢捽：每格 9°（90° / STEPS）隔 90ms ≈ 0.1°/ms，低過加速門檻（DISC_SCRUB_SLOW_DEGREES_PER_MS 0.15）
 const DISC_SLOW_STEP_MS = 90;
-const MS_PER_SECOND = 1000;
+// 減少動畫嗰個 check 再慢啲：每格 3°（90° / 30）≈ 0.03°/ms。捽碟用相鄰 event.timeStamp 計轉速，
+// 機忙時兩格擠埋（隔 < 60ms）每格 9° 就會過加速門檻，seek 去到 +19s；每格 3° 要隔 < 20ms 先會（CUI-0003）
+const DISC_FINE_STEPS = 30;
 // 快速撥：每格 18°（半圈 / STEPS）隔 STEP_MS ≈ 1.1°/ms，加速；半圈要行多過慢慢捽嘅兩倍（> 60s）
 const HALF_TURN_DEGREES = 180;
 const DISC_FLICK_MIN_S = 60;
@@ -208,24 +210,17 @@ const circlePoint = (centre, radius, degrees) => {
     return { x: centre.x + radius * Math.cos(radians), y: centre.y + radius * Math.sin(radians) };
 };
 
-/** 一隻手指沿圓周由 from 度轉去 to 度（0° 指向右，順時針為正），分 STEPS 格，每格隔 stepMs */
-const touchArc = async (cdp, p, centre, radius, from, to, stepMs = STEP_MS) => {
+/** 一隻手指沿圓周由 from 度轉去 to 度（0° 指向右，順時針為正），分 steps 格，每格隔 stepMs */
+const touchArc = async (cdp, p, centre, radius, from, to, stepMs = STEP_MS, steps = STEPS) => {
     const at = (degrees) => circlePoint(centre, radius, degrees);
-    // 每步明確俾 timestamp（秒）：捽碟用相鄰 event.timeStamp 計轉速，唔俾就係瀏覽器處理嗰刻，
-    // 機忙時兩步擠埋一齊，慢捽會被當成快撥而加速（CUI-0003）
-    const start = Date.now() / MS_PER_SECOND;
-    const send = (type, points, step) =>
-        cdp.send('Input.dispatchTouchEvent', {
-            type,
-            touchPoints: points,
-            timestamp: start + (step * stepMs) / MS_PER_SECOND,
-        });
-    await send('touchStart', [at(from)], 0);
-    for (let i = 1; i <= STEPS; i += 1) {
-        await send('touchMove', [at(from + ((to - from) * i) / STEPS)], i);
+    const send = (type, points) =>
+        cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+    await send('touchStart', [at(from)]);
+    for (let i = 1; i <= steps; i += 1) {
+        await send('touchMove', [at(from + ((to - from) * i) / steps)]);
         await p.waitForTimeout(stepMs);
     }
-    await send('touchEnd', [], STEPS + 1);
+    await send('touchEnd', []);
     await p.waitForTimeout(SETTLE_MS);
 };
 
@@ -492,6 +487,7 @@ const checkReducedMotion = async (env, label) => {
         DISC_START_DEGREES,
         DISC_START_DEGREES + QUARTER_TURN_DEGREES,
         DISC_SLOW_STEP_MS,
+        DISC_FINE_STEPS,
     );
     const moved = Number(await slider.getAttribute('aria-valuenow')) - before;
     const transform = await face.evaluate((el) => el.style.transform);
