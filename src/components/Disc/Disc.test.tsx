@@ -23,9 +23,17 @@ describe('Disc', () => {
         expect(container.querySelector('.face')?.className).not.toMatch(/spinning/);
     });
 
-    it('renders without artwork', () => {
+    // 冇圖：用中性黑碟（.blank），唔跟頁面主題色（CUI-0006）
+    it('renders without artwork as the blank black disc', () => {
         const { container } = render(<Disc />);
 
         expect(container.querySelector('img')).toBeNull();
+        expect(container.firstElementChild?.className).toMatch(/\bblank\b/);
+    });
+
+    it('does not mark a disc with artwork as blank', () => {
+        const { container } = render(<Disc art="/art/gongzi.jpg" />);
+
+        expect(container.firstElementChild?.className).not.toMatch(/\bblank\b/);
     });
 });

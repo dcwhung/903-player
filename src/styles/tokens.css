@@ -37,6 +37,13 @@
     --font-size-xxl: calc(26px * var(--ui-scale));
     --letter-spacing-caps: 0.18em;
 
+    /*
+     * 冇圖嘅黑碟（今日冇節目、廣播劇未載入）：固定中性色，唔跟頁面主題；
+     * 同 NEUTRAL_THEME shadowDark / surface 一致（scripts/blankDiscTokens.test.ts 鎖住）
+     */
+    --color-disc-blank: #0a0a0a;
+    --color-disc-blank-rim: #1e1e1e;
+
     /* 細過 --space-1 嘅間隔：mini player 名同副題之間、「⏻ 關閉」icon 同字之間 */
     --space-half: calc(2px * var(--ui-scale));
     --space-1: calc(4px * var(--ui-scale));

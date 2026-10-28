@@ -3,7 +3,7 @@ import styles from './Disc.module.css';
 
 interface DiscProps {
     size?: 'large' | 'small';
-    /** 節目圖；冇就顯示純色碟 */
+    /** 節目圖；冇就顯示中性黑碟（唔跟頁面主題色） */
     art?: string | undefined;
     /** 節目頁日子條拖動時轉節目圖（直接寫 style，唔經 render） */
     artRef?: Ref<HTMLImageElement> | undefined;
@@ -34,7 +34,7 @@ export const Disc = ({
     scrub,
 }: DiscProps) => (
     <div
-        className={`${styles.disc} ${styles[size]} ${scrub ? styles.scrubbable : ''}`}
+        className={`${styles.disc} ${styles[size]} ${art ? '' : styles.blank} ${scrub ? styles.scrubbable : ''}`}
         aria-hidden="true"
         {...scrub}
     >
