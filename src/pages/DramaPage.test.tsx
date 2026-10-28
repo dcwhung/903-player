@@ -61,6 +61,9 @@ const arcLine = () =>
     (screen.getByRole('group', { name: '短篇' }).parentElement as HTMLElement).textContent;
 const arcChips = () => within(screen.getByRole('group', { name: '短篇' })).getAllByRole('button');
 
+/** 唱片格碟面嘅圖（黑碟就冇） */
+const gaugeArt = () => screen.getByRole('main').querySelector('.discArea img');
+
 describe('DramaPage', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
@@ -205,11 +208,9 @@ describe('DramaPage', () => {
             expect(await screen.findByRole('dialog', { name: '全集' })).toBeInTheDocument();
             expect(audio.src).toBe('');
             expect(audio.play).not.toHaveBeenCalled();
-            // 未載入任何一集：碟面用第一集，時間係佔位，掣係播放樣
+            // 未載入任何一集：碟面係冇圖嘅黑碟（同今日冇節目一樣），時間係佔位，掣係播放樣
             expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('芝See菇Bi Family');
-            expect(screen.getByRole('main').querySelector('img')?.getAttribute('src')).toBe(
-                dramaArtFor(CHISEE[0]!),
-            );
+            expect(gaugeArt()).toBeNull();
             expect(screen.getAllByText('--:--')).toHaveLength(2);
             expect(screen.getByRole('button', { name: '播放', hidden: true })).toBeInTheDocument();
         });
@@ -336,6 +337,7 @@ describe('DramaPage', () => {
             await closeSheet();
 
             expect(audio.src).toBe(OTHER_REC.url);
+            expect(gaugeArt()).toBeNull();
             expect(screen.getAllByText('--:--')).toHaveLength(2);
             expect(screen.queryByText('1:40')).not.toBeInTheDocument();
             expect(screen.getByRole('button', { name: '播放' })).toBeVisible();

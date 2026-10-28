@@ -51,14 +51,17 @@ interface SeriesPlayerColumnProps {
     connecting: boolean;
 }
 
-/** 唱片欄：直版頁頭 + 唱片（未有集數就講冇）；橫版唱片下面加「現正播放」 */
+/**
+ * 唱片欄：直版頁頭 + 唱片（未有集數就講冇）；橫版唱片下面加「現正播放」。
+ * 未載入呢套劇（第一次入未揀短篇，或者播緊其他嘢）：碟面係冇圖嘅黑碟，同今日冇節目一樣
+ */
 const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayerColumnProps) => {
     const { theme, current, start, status } = view;
     return (
         <div className={`${page.playerColumn} ${current?.title ? page.detailedNowPlaying : ''}`}>
             {!landscape && <DramaHeader title={title} />}
             {current ? (
-                <PlayerGauge art={theme.art} onStart={start} />
+                <PlayerGauge art={start ? undefined : theme.art} onStart={start} />
             ) : (
                 <StatusMessage message={t('episodes.noneUp')} />
             )}
