@@ -590,7 +590,7 @@ describe('HomePage', () => {
             const nav = await openDramas();
 
             const strip = within(nav).getByRole('button', {
-                name: '芝See菇Bi Family，繼續收聽 好朋友手牽手 · 第 2 集 朋友不同',
+                name: '芝See菇Bi Family，繼續收聽 好朋友手牽手 · 第 2 集 · 朋友不同',
             });
             expect(within(strip).getByText('繼續收聽')).toBeInTheDocument();
             expect(strip.querySelector('[data-continue-fill]')).toHaveStyle({ width: '25%' });
@@ -635,7 +635,7 @@ describe('HomePage', () => {
             expect(screen.getByTestId('location')).toHaveTextContent('/drama/golden');
         });
 
-        const CONTINUE_FRIENDS = '芝See菇Bi Family，繼續收聽 好朋友手牽手 · 第 2 集 朋友不同';
+        const CONTINUE_FRIENDS = '芝See菇Bi Family，繼續收聽 好朋友手牽手 · 第 2 集 · 朋友不同';
         const listenedToFriends = () => {
             const friends = seriesEpisodesOf('chisee').filter((e) => e.arc === '好朋友手牽手');
             saveProgress(friends[1]?.url ?? '', 250, 1000);

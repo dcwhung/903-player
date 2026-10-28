@@ -185,7 +185,7 @@ describe('DramaPage', () => {
                 'true',
             );
             expect(
-                screen.getByText('現正播放：Ｘ時mas時小提議 · 第 2 集 哥哥你洽我'),
+                screen.getByText('現正播放：Ｘ時mas時小提議 · 第 2 集 · 哥哥你洽我'),
             ).toBeInTheDocument();
             const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole(
                 'button',
@@ -264,7 +264,7 @@ describe('DramaPage', () => {
             openDrama('chisee');
             await closeSheet();
 
-            expect(arcLine()).toContain('揀一個短篇開始');
+            expect(arcLine()).toContain('揀一個短篇開始收聽');
             expect(screen.queryByText(/連線中/)).not.toBeInTheDocument();
             const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole(
                 'button',
@@ -362,7 +362,7 @@ describe('DramaPage', () => {
                 'aria-valuenow',
                 '0',
             );
-            expect(arcLine()).toContain('揀一個短篇開始');
+            expect(arcLine()).toContain('揀一個短篇開始收聽');
             expect(screen.queryByText(/連線中/)).not.toBeInTheDocument();
         });
 
@@ -420,9 +420,61 @@ describe('DramaPage', () => {
             stubLandscape();
             await openDramaWhileOtherPlays('chisee');
 
-            expect(screen.getAllByText('揀一個短篇開始').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('揀一個短篇開始收聽').length).toBeGreaterThan(0);
             expect(screen.queryByText(/連線中/)).not.toBeInTheDocument();
             expect(screen.queryByText(/^現正播放：/)).not.toBeInTheDocument();
+            vi.unstubAllGlobals();
+        });
+    });
+
+    describe('listened before, not loaded yet', () => {
+        const golden = seriesEpisodesOf('golden');
+        const s2 = golden.filter((e) => e.arc === 'Season 2');
+        const s4 = golden.find((e) => e.arc === 'Season 4');
+        const listenedS2 = () => saveProgress(s2[2]?.url ?? '', 60, 1200);
+
+        it('shows the episode to continue on the disc and above the chips, playing nothing', async () => {
+            listenedS2();
+            const { audio } = openDrama('golden');
+
+            await waitFor(() => expect(gaugeArt()?.getAttribute('src')).toBe(dramaArtFor(s2[2]!)));
+            expect(arcLine()).toMatch(new RegExp(`繼續收聽：Season 2 · 第 ${s2[2]?.no} 集`));
+            expect(arcLine()).not.toContain('揀一個短篇開始收聽');
+            expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
+            expect(audio.src).toBe('');
+        });
+
+        it('shows where it will resume on both sides of the disc, the ring locked there', async () => {
+            listenedS2();
+            openDrama('golden');
+
+            const slider = await screen.findByRole('slider', { name: '播放進度' });
+            expect(screen.getByText('1:00')).toBeVisible();
+            expect(screen.getByText('20:00')).toBeVisible();
+            expect(slider).toHaveAttribute('aria-valuenow', '60');
+        });
+
+        it('follows a 短篇 picked while something else plays', async () => {
+            listenedS2();
+            await openDramaWhileOtherPlays('golden');
+
+            await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
+
+            expect(gaugeArt()?.getAttribute('src')).toBe(dramaArtFor(s4!));
+            expect(arcLine()).toMatch(new RegExp(`繼續收聽：Season 4 · 第 ${s4?.no} 集`));
+            // 未聽過嘅短篇：冇續播位置，時間用佔位
+            expect(screen.queryByText('1:00')).not.toBeInTheDocument();
+            expect(screen.getAllByText('--:--')).toHaveLength(2);
+        });
+
+        it('says 繼續收聽 under the disc in landscape', async () => {
+            stubLandscape();
+            listenedS2();
+            openDrama('golden');
+
+            expect(
+                await screen.findByText(/^繼續收聽：Season 2 · 第 3 \/ \d+ 集$/),
+            ).toBeInTheDocument();
             vi.unstubAllGlobals();
         });
     });

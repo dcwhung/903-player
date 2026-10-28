@@ -16,8 +16,9 @@ import { SeriesArcSheet, SeriesListColumn } from './SeriesListColumn';
 import { useSeriesDramaPage, type SeriesDramaView } from './useDramaPage';
 
 /**
- * 短篇 chips 上面嗰行：未載入呢套劇叫用戶揀短篇；載入咗同日子條一樣，未讀到時長講「連線中…」，
- * 否則「現正播放：短篇 · 第 N 集 集名」（暫停講「已暫停：」，載入咗未開始講「下一集：」）
+ * 短篇 chips 上面嗰行：未聽過又未載入呢套劇叫用戶揀短篇；載入咗同日子條一樣，未讀到時長講「連線中…」，
+ * 否則「現正播放：短篇 · 第 N 集 集名」（暫停講「已暫停：」，載入咗未開始講「下一集：」，
+ * 聽過未載入講「繼續收聽：」）
  */
 const arcPickerLabel = (
     connecting: boolean,
@@ -44,7 +45,7 @@ const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, arcTotal:
 interface SeriesPlayerColumnProps {
     view: Pick<
         SeriesDramaView,
-        'theme' | 'current' | 'start' | 'status' | 'arcPosition' | 'arcTotal'
+        'theme' | 'upNext' | 'start' | 'standbyTime' | 'status' | 'arcPosition' | 'arcTotal'
     >;
     title: string;
     landscape: boolean;
@@ -53,15 +54,20 @@ interface SeriesPlayerColumnProps {
 
 /**
  * 唱片欄：直版頁頭 + 唱片（未有集數就講冇）；橫版唱片下面加「現正播放」。
- * 未載入呢套劇（第一次入未揀短篇，或者播緊其他嘢）：碟面係冇圖嘅黑碟，同今日冇節目一樣
+ * 未聽過又未載入呢套劇（第一次入未揀短篇）：碟面係冇圖嘅黑碟，同今日冇節目一樣；
+ * 聽過未載入：碟面同「繼續收聽」跟撳播放會播嗰集（upNext）
  */
 const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayerColumnProps) => {
-    const { theme, current, start, status } = view;
+    const { theme, upNext: current, start, status } = view;
     return (
         <div className={`${page.playerColumn} ${current?.title ? page.detailedNowPlaying : ''}`}>
             {!landscape && <DramaHeader title={title} />}
             {current ? (
-                <PlayerGauge art={start ? undefined : theme.art} onStart={start} />
+                <PlayerGauge
+                    art={status === 'unloaded' ? undefined : theme.art}
+                    onStart={start}
+                    standbyTime={view.standbyTime}
+                />
             ) : (
                 <StatusMessage message={t('episodes.noneUp')} />
             )}
@@ -97,7 +103,7 @@ export const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
                 <SeriesPlayerColumn {...column} connecting={connecting} />
                 <SeriesListColumn
                     {...column}
-                    label={arcPickerLabel(connecting, view.current, view.status)}
+                    label={arcPickerLabel(connecting, view.upNext, view.status)}
                     dockedSheet={landscape && arcSheet}
                 />
                 {!landscape && arcSheet}

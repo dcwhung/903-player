@@ -143,7 +143,7 @@ describe('dramaHasNew', () => {
 describe('dramaEpisodeLabel', () => {
     it('names a series episode by arc, number and title', () => {
         expect(dramaEpisodeLabel(series('Ｘ時mas時小提議', 2, '哥哥你洽我'))).toBe(
-            'Ｘ時mas時小提議 · 第 2 集 哥哥你洽我',
+            'Ｘ時mas時小提議 · 第 2 集 · 哥哥你洽我',
         );
         expect(dramaEpisodeLabel({ ...series('大妒忌', 1), title: undefined })).toBe(
             '大妒忌 · 第 1 集',
