@@ -167,7 +167,8 @@
     gap: var(--space-3);
     min-width: 0;
     min-height: var(--arc-sheet-row-height);
-    padding: var(--space-2);
+    /* 上下 4px 同 preview 一樣：行高由 --arc-sheet-row-height 話事，唔會俾碟面撐高 */
+    padding: var(--space-1) var(--space-2);
     border: none;
     background: transparent;
     text-align: left;
