@@ -454,8 +454,9 @@ describe('HomePage', () => {
                 '蘭茜夫人劇場',
                 '少爺占系列',
                 '森美小儀系列',
-                '黃金少年',
+                // S-482：芝See 冇頂層 addedAt，用最新短篇（10-25），排喺黃金少年（10-24）前面
                 '芝See菇Bi Family',
+                '黃金少年',
             ]);
             expect(screen.queryByRole('navigation', { name: '節目' })).not.toBeInTheDocument();
         });
