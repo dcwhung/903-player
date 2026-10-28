@@ -19,6 +19,7 @@
 | 2026-10-27 | [reviews/2026-10-27_review_v1.12.0.md](reviews/2026-10-27_review_v1.12.0.md)                     |
 | 2026-10-27 | [reviews/2026-10-27_review_size-limits_batch.md](reviews/2026-10-27_review_size-limits_batch.md) |
 | 2026-10-27 | [reviews/2026-10-27_review_size-guard_batch.md](reviews/2026-10-27_review_size-guard_batch.md)   |
+| 2026-10-27 | [reviews/2026-10-27_review_cleanup_batch.md](reviews/2026-10-27_review_cleanup_batch.md)         |
 
 ## QA
 
@@ -31,6 +32,7 @@
 | 2026-10-27 | [qa/2026-10-27_qa_v1.12.0.md](qa/2026-10-27_qa_v1.12.0.md)                     |
 | 2026-10-27 | [qa/2026-10-27_qa_size-limits_batch.md](qa/2026-10-27_qa_size-limits_batch.md) |
 | 2026-10-27 | [qa/2026-10-27_qa_size-guard_batch.md](qa/2026-10-27_qa_size-guard_batch.md)   |
+| 2026-10-27 | [qa/2026-10-27_qa_cleanup_batch.md](qa/2026-10-27_qa_cleanup_batch.md)         |
 
 ## Deploys
 
@@ -38,3 +40,4 @@
 | ---------- | ---------------------------------------------------------------------------- |
 | 2026-10-27 | [deploys/2026-10-27_deploy_v1.18.4.md](deploys/2026-10-27_deploy_v1.18.4.md) |
 | 2026-10-27 | [deploys/2026-10-27_deploy_v1.18.5.md](deploys/2026-10-27_deploy_v1.18.5.md) |
+| 2026-10-27 | [deploys/2026-10-27_deploy_v1.18.6.md](deploys/2026-10-27_deploy_v1.18.6.md) |

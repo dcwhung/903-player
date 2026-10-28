@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { dragIntent } from '../../hooks/swipe';
-import type { SheetDragControls, SheetElements } from './sheetDragCore';
+import type { SheetDragControls, SheetElements } from './useSheetDragControls';
 
 interface ListTouch {
     id: number;

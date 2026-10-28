@@ -11,7 +11,8 @@ const TSX_FILE_MAX_LINES = 150;
 const SIZE_LINES = { skipBlankLines: false, skipComments: false };
 
 export default tseslint.config(
-    { ignores: ['dist', 'coverage'] },
+    // .claude/**：agent worktree（.claude/worktrees/）各有 tsconfig，會令 typescript-eslint 搵到多個 tsconfig root
+    { ignores: ['dist', 'coverage', '.claude/**'] },
     {
         files: ['**/*.{ts,tsx}'],
         extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -30,7 +31,7 @@ export default tseslint.config(
     {
         // .ts（含 hook / service）：函數 ≤ 30 行，冇檔案上限
         files: ['src/**/*.ts'],
-        ignores: ['**/*.test.ts', '**/*.node.test.ts'],
+        ignores: ['**/*.test.ts'], // 已包 *.node.test.ts
         rules: {
             'max-lines-per-function': ['error', { max: TS_FN_MAX_LINES, ...SIZE_LINES }],
         },
@@ -45,12 +46,14 @@ export default tseslint.config(
         },
     },
     {
-        // 資料檔豁免：只豁免檔案行數，函數上限照用
+        // 預留：.ts 而家冇 max-lines（hook / service 唔限檔案行數），呢個 block 暫時係 no-op；
+        // 將來如果幫 .ts 加 max-lines，資料檔照樣豁免（函數上限照用）
         files: ['src/i18n/zh-HK.ts', 'src/dramas/schema.ts', 'src/dramas/registry.ts'],
         rules: { 'max-lines': 'off' },
     },
     {
-        // test / e2e / scripts：describe / it callback 天生長，唔受限
+        // 雙保險：上面 src block 已 ignore test 檔，e2e / scripts 亦唔喺 src/** glob；
+        // 保留呢個 block 確保將來改 glob 時 test / e2e / scripts 照樣唔受尺寸限制
         files: ['**/*.test.{ts,tsx}', 'e2e/**', 'scripts/**'],
         rules: { 'max-lines-per-function': 'off', 'max-lines': 'off' },
     },
