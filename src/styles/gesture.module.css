@@ -14,7 +14,11 @@
     -webkit-user-drag: none;
 }
 
-/* 擋拖容器入面所有圖片（例如 ShowCardStack 嘅 .stack：卡入面嘅唱片 / 節目圖） */
+/*
+ * 擋拖容器入面所有圖片（例如 ShowCardStack 嘅 .stack：卡入面嘅唱片 / 節目圖）；
+ * iOS 長撳都唔出圖片選單，同書架卡圖（DramaShelf .art）一樣（S-548）
+ */
 .noImageDragWithin img {
     -webkit-user-drag: none;
+    -webkit-touch-callout: none;
 }

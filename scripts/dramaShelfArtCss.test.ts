@@ -14,9 +14,10 @@ describe('DramaShelf .art CSS', () => {
         expect(cssDeclarations(css(DRAMA_CSS), '.art')['-webkit-touch-callout']).toBe('none');
     });
 
-    it('should stop Safari dragging any image inside a noImageDragWithin container', () => {
-        expect(
-            cssDeclarations(css(GESTURE_CSS), '.noImageDragWithin img')['-webkit-user-drag'],
-        ).toBe('none');
+    // S-548：卡疊入面嘅唱片 / 節目圖，iOS 長撳都唔好出圖片選單（同書架卡圖一樣）
+    it('should stop Safari dragging any image inside a noImageDragWithin container, and its callout', () => {
+        const within = cssDeclarations(css(GESTURE_CSS), '.noImageDragWithin img');
+        expect(within['-webkit-user-drag']).toBe('none');
+        expect(within['-webkit-touch-callout']).toBe('none');
     });
 });
