@@ -3,6 +3,7 @@
 // 用法：npm run e2e（截圖輸出去 e2e/screenshots/）
 import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
+import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import { runArcSheetChecks } from './arcSheet.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
@@ -44,7 +45,21 @@ const log = (ok, msg) => {
     console.log(`${ok ? 'PASS' : 'FAIL'}  ${msg}`);
 };
 
+/** port 有冇人用緊：有就即刻停，唔好 poll 到第二個 worktree 嘅 preview，誤測人哋嘅 build（S-549） */
+const assertPortFree = () =>
+    new Promise((resolve) => {
+        const probe = createServer();
+        probe.once('error', () => {
+            console.error(
+                `port ${PORT} 有人用緊（可能係另一個 worktree 嘅 e2e），用 E2E_PORT 揀第二個`,
+            );
+            process.exit(1);
+        });
+        probe.listen(PORT, () => probe.close(resolve));
+    });
+
 const startPreview = async () => {
+    await assertPortFree();
     // 直接用 node 行 vite（唔經 npx），kill 先會停到真正嘅 server
     const viteBin = new URL('../node_modules/vite/bin/vite.js', import.meta.url).pathname;
     const server = spawn(
@@ -53,6 +68,8 @@ const startPreview = async () => {
         { stdio: 'ignore' },
     );
     for (let i = 0; i < 30; i += 1) {
+        // vite 自己退出（例如 strictPort 撞 port）就唔使再等
+        if (server.exitCode !== null) break;
         try {
             if ((await fetch(BASE)).ok) return server;
         } catch {
