@@ -24,6 +24,8 @@
 | 2026-10-28 | [reviews/2026-10-28_review_v1.19.2.md](reviews/2026-10-28_review_v1.19.2.md)                     |
 | 2026-10-28 | [reviews/2026-10-28_review_v1.19.3.md](reviews/2026-10-28_review_v1.19.3.md)                     |
 | 2026-10-28 | [reviews/2026-10-28_review_v1.19.4.md](reviews/2026-10-28_review_v1.19.4.md)                     |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.20.3.md](reviews/2026-10-28_review_v1.20.3.md)                     |
+| 2026-10-28 | [reviews/2026-10-28_review_e2e_hardening.md](reviews/2026-10-28_review_e2e_hardening.md)         |
 
 ## QA
 
@@ -41,6 +43,8 @@
 | 2026-10-28 | [qa/2026-10-28_qa_v1.19.2.md](qa/2026-10-28_qa_v1.19.2.md)                                    |
 | 2026-10-28 | [qa/2026-10-28_qa_v1.19.3.md](qa/2026-10-28_qa_v1.19.3.md)（fail → Re-verify `9098549` pass） |
 | 2026-10-28 | [qa/2026-10-28_qa_v1.19.4.md](qa/2026-10-28_qa_v1.19.4.md)                                    |
+| 2026-10-28 | [qa/2026-10-28_qa_v1.20.3.md](qa/2026-10-28_qa_v1.20.3.md)                                    |
+| 2026-10-28 | [qa/2026-10-28_qa_e2e_hardening.md](qa/2026-10-28_qa_e2e_hardening.md)                        |
 
 ## Deploys
 

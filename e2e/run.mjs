@@ -5,8 +5,10 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { runArcSheetChecks } from './arcSheet.mjs';
+import { runDramaPageChecks } from './dramaPages.mjs';
 import { AUDIO_HOST, PROBE_STORAGE_KEY, ensurePlaying, newE2EContext } from './harness.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
+import { runMiniPlayerRuleChecks } from './miniPlayerRules.mjs';
 import { runTouchChecks } from './touch.mjs';
 
 const DEFAULT_PORT = 4173;
@@ -1504,6 +1506,12 @@ try {
 
     // 全集表向下拉閂：拉唔夠彈返、拉夠閂（觸控 header + 清單、滑鼠 header）
     await runArcSheetChecks({ browser, base: BASE, errors, log });
+
+    // 主頁 mini player 重溫規則：平日重溫 + 今日節目、星期日冇節目
+    await runMiniPlayerRuleChecks({ browser, base: BASE, errors, log });
+
+    // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
+    await runDramaPageChecks({ browser, base: BASE, errors, log });
 
     const light = await newE2EContext(browser, {
         viewport: { width: 390, height: 844 },
