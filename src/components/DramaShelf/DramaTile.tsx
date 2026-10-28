@@ -86,7 +86,8 @@ export const DramaTile = ({ item, focus }: DramaTileProps) => (
             onClick={item.onOpen}
             {...focus?.open}
         >
-            <img className={styles.art} src={item.art} alt="" />
+            {/* 唔畀拖圖片：滑鼠撳住捽書架會變咗 HTML5 拖放（CUI-0004） */}
+            <img className={styles.art} src={item.art} alt="" draggable={false} />
             {item.newLabel && <NewBadge className={styles.newBadge} />}
             <span
                 className={`${styles.meta} ${item.resume ? styles.metaTop : ''}`}

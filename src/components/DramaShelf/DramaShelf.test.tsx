@@ -56,6 +56,13 @@ describe('DramaShelf', () => {
         expect(onResume).not.toHaveBeenCalled();
     });
 
+    // CUI-0004：滑鼠撳住劇集卡拖會變咗拖圖片（dragstart → pointercancel），捽唔到 focus
+    it('keeps the tile art from being dragged, so a mouse can scrub the shelf', () => {
+        const { container } = render(<DramaShelf items={[item()]} />);
+
+        expect(container.querySelector('img')).toHaveAttribute('draggable', 'false');
+    });
+
     it('shows 新 top-left and reads out why', () => {
         render(<DramaShelf items={[item({ newLabel: '有新短篇' })]} />);
 
