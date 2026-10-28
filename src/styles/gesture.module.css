@@ -1,8 +1,12 @@
 /*
  * 共用手勢樣式：組件 import 呢個 module，將 class 同自己嘅 class 一齊加落元素。
  * 唔用 CSS Modules 嘅 composes：Vite build 會喺每個 composes 嘅檔各抄一份規則，仲會出 PostCSS 警告。
- * Safari 唔理 <img draggable="false">，滑鼠拖卡 / 捽碟時會變成拖圖片，要靠 -webkit-user-drag 擋。
- * JS 一邊嘅 dragstart 後備見 src/utils/dragStart.ts（preventDragStart）。
+ * Safari 唔理 <img draggable="false">，滑鼠拖卡時會變成拖圖片，要靠 -webkit-user-drag 擋。
+ *
+ * 邊度用邊個組合：
+ * - 有 JS 手勢嘅容器（ShowCardStack 拖卡）：容器加 noImageDragWithin + onDragStart={preventDragStart}
+ * - 冇 JS 手勢嘅單張圖（DramaShelf 卡圖）：<img draggable={false}> + noImageDrag
+ * - 卡疊以外嘅唱片（PlayerGauge 捽碟）：只用 preventDragStart（src/utils/dragStart.ts），冇 CSS
  */
 
 /* 擋拖呢張圖片本身（例如 DramaShelf 嘅 .art） */
