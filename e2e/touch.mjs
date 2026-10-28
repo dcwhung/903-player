@@ -470,6 +470,9 @@ const checkReducedMotion = async (env, label) => {
     const face = discFace(p);
     const animation = await face.evaluate((el) => getComputedStyle(el).animationName);
     log(animation === 'none', `${label}：碟面冇自轉 animation（${animation}）`);
+    // 先暫停：慢速捽碟成個手勢要 1–2 秒，播緊嘅話量到嘅 seek 會包埋播放前進咗嘅時間（CUI-0003）
+    await p.getByRole('button', { name: '暫停', exact: true }).click();
+    await p.getByRole('button', { name: '播放', exact: true }).waitFor();
     const slider = p.getByRole('slider', { name: '播放進度' });
     const box = await slider.boundingBox();
     const before = Number(await slider.getAttribute('aria-valuenow'));
