@@ -98,3 +98,6 @@ export const useTodayPage = () => {
     const view = { status, isSearching, current, start, index, items, cards, cardKeys, theme };
     return { ...view, ...actions };
 };
+
+/** 今日節目頁嘅資料同動作（畀頁面兩欄揀需要嘅部分做 props） */
+export type TodayView = ReturnType<typeof useTodayPage>;

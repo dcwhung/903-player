@@ -9,7 +9,7 @@ import { formatDateLabel } from '../utils/date';
 import { hasKnownDuration } from '../utils/time';
 import { LoadState } from './LoadState';
 import page from './Page.module.css';
-import type { useTodayPage } from './useTodayPage';
+import type { TodayView } from './useTodayPage';
 
 interface TodayStackProps {
     cards: StackCard[];
@@ -56,7 +56,18 @@ const TodayNowPlaying = ({
 };
 
 interface TodayPlayerColumnProps {
-    state: ReturnType<typeof useTodayPage>;
+    state: Pick<
+        TodayView,
+        | 'status'
+        | 'isSearching'
+        | 'current'
+        | 'start'
+        | 'index'
+        | 'items'
+        | 'cards'
+        | 'theme'
+        | 'selectIndex'
+    >;
     /** 今日節目表有嘢（ready 且非空） */
     listed: boolean;
     landscape: boolean;
