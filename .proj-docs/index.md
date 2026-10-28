@@ -29,6 +29,7 @@
 | 2026-10-29 | [reviews/2026-10-29_review_batch-a_refactor.md](reviews/2026-10-29_review_batch-a_refactor.md)                 |
 | 2026-10-29 | [reviews/2026-10-29_review_batch-b_fixes.md](reviews/2026-10-29_review_batch-b_fixes.md)                       |
 | 2026-10-29 | [reviews/2026-10-29_review_batch-c_audio-controller.md](reviews/2026-10-29_review_batch-c_audio-controller.md) |
+| 2026-10-29 | [reviews/2026-10-29_review_v1.20.6.md](reviews/2026-10-29_review_v1.20.6.md)                                   |
 
 ## QA
 
@@ -49,6 +50,7 @@
 | 2026-10-28 | [qa/2026-10-28_qa_v1.20.3.md](qa/2026-10-28_qa_v1.20.3.md)                                    |
 | 2026-10-28 | [qa/2026-10-28_qa_e2e_hardening.md](qa/2026-10-28_qa_e2e_hardening.md)                        |
 | 2026-10-29 | [qa/2026-10-29_qa_v1.20.5.md](qa/2026-10-29_qa_v1.20.5.md)                                    |
+| 2026-10-29 | [qa/2026-10-29_qa_v1.20.6.md](qa/2026-10-29_qa_v1.20.6.md)                                    |
 
 ## Deploys
 
