@@ -3,7 +3,6 @@ import {
     PROGRESS_SAVE_INTERVAL_MS,
     REPLAY_RESET_SECONDS,
     STALL_MAX_RETRIES,
-    STALL_RETRY_MS,
     WATCHED_RATIO,
 } from '../config/constants';
 import {
@@ -15,6 +14,7 @@ import {
 import type { Track } from '../types/track';
 import { recordPlayback } from './playbackLog';
 import type { LoadOptions, PlayerState } from './playerContext';
+import { StallWatchdog } from './stallWatchdog';
 
 const INITIAL_STATE: PlayerState = {
     recording: null,
@@ -55,9 +55,11 @@ export class AudioController {
     private playPending = false;
     /** 每次 play() +1：舊嘅 play()（例如被換集 abort）settle 時唔可以清走新一次嘅意圖 */
     private playGeneration = 0;
-    /** 自動接住播嘅集仲未出聲：剩低幾多次重試；undefined = 冇睇住 */
-    private stallRetriesLeft: number | undefined;
-    private stallTimer: ReturnType<typeof setTimeout> | undefined;
+    /** 自動接住播嘅集仲未出聲就重試（iOS 鎖屏） */
+    private readonly stall = new StallWatchdog({
+        canRetry: () => this.hasPlayIntent(),
+        retry: (retriesLeft) => this.retryStalled(retriesLeft),
+    });
 
     /** 播完一集之後接住播邊集；冇設定或者返回 undefined 就停 */
     private nextTrack: ((track: Track) => Track | undefined) | undefined;
@@ -102,7 +104,7 @@ export class AudioController {
             window.removeEventListener('pagehide', this.persist);
             window.removeEventListener('online', this.recoverSource);
             document.removeEventListener('visibilitychange', this.onVisibilityChange);
-            this.unwatchStall();
+            this.stall.cancel();
         };
     };
 
@@ -186,7 +188,7 @@ export class AudioController {
 
     private switchTo(recording: Track): void {
         // 用戶自己揀咗另一集：唔好再重試自動接住播嗰集
-        this.unwatchStall();
+        this.stall.cancel();
         this.persist();
         this.watched = isWatched(recording.url);
         this.pendingStart = getResumePosition(recording.url);
@@ -311,7 +313,7 @@ export class AudioController {
 
     /** 數據到咗、真正開始出聲 */
     private onAudible = (): void => {
-        this.unwatchStall();
+        this.stall.cancel();
         this.update({ isAudible: true });
     };
 
@@ -350,7 +352,7 @@ export class AudioController {
 
     /** pause / ended（包括拔耳筒、來電等系統暫停）：用戶冇再想播 */
     private onStopped = (): void => {
-        this.unwatchStall();
+        this.stall.cancel();
         this.playIntent = false;
         this.update({ isPlaying: false, isAudible: false });
         this.persist();
@@ -378,44 +380,25 @@ export class AudioController {
         this.persist();
         this.update({ isAudible: false });
         void this.load(next, { autoplay: true });
-        this.watchStall(STALL_MAX_RETRIES);
+        this.stall.watch(STALL_MAX_RETRIES);
         return true;
     }
 
-    /** 自動接住播嘅集等一陣都未出聲，就重新載入 */
-    private watchStall(retriesLeft: number): void {
-        this.unwatchStall();
-        this.stallRetriesLeft = retriesLeft;
-        this.stallTimer = setTimeout(this.retryStalled, STALL_RETRY_MS);
-    }
-
-    private unwatchStall(): void {
-        clearTimeout(this.stallTimer);
-        this.stallTimer = undefined;
-        this.stallRetriesLeft = undefined;
-    }
-
     /** iOS 鎖屏時下一集可能一直唔載（停喺 0:00 但顯示播緊）：重新 load 同一集再播 */
-    private retryStalled = (): void => {
-        const retriesLeft = this.stallRetriesLeft;
-        if (retriesLeft === undefined || retriesLeft <= 0 || !this.hasPlayIntent()) {
-            this.unwatchStall();
-            return;
-        }
+    private retryStalled(retriesLeft: number): void {
         recordPlayback('retry', this.audio, `left=${retriesLeft}`);
         this.pendingStart = this.state.currentTime;
         this.lastTickPosition = this.pendingStart;
         this.audio.load();
         void this.play();
-        this.watchStall(retriesLeft - 1);
-    };
+    }
 
     private onVisibilityChange = (): void => {
         if (document.visibilityState === 'hidden') {
             this.persist();
-        } else if (this.stallRetriesLeft !== undefined) {
+        } else if (this.stall.pending) {
             // 亮返屏幕時仲卡住：唔使等 timer（背景 timer 可能冇行過）
-            this.retryStalled();
+            this.stall.retryNow();
         }
     };
 
