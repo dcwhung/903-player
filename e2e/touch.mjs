@@ -1,7 +1,7 @@
 // 觸控 e2e：Chromium 手機模擬（hasTouch + isMobile）+ CDP Input.dispatchTouchEvent。
 // page.touchscreen 只識 tap，拖動要自己逐格發 touchMove。
 // 模擬唔到 iOS 橡筋同 standalone 嘅 viewport 怪癖，所以另外斷言根元素嘅 CSS 鎖。
-import { ensurePlaying, newE2EContext } from './harness.mjs';
+import { SHOT, ensurePlaying, newE2EContext } from './harness.mjs';
 
 const TOUCH_VIEWPORTS = [
     // iPhone 14/15（有 Dynamic Island：頂 47–59px、底 34px 安全區）同 iPhone SE（Home 掣）
@@ -470,7 +470,7 @@ const checkToday = async (env, label) => {
     await checkDiscSpins(p, log, label);
     await checkDiscScrub(cdp, p, log, label);
     await checkDiscFlick(cdp, p, log, label);
-    await p.screenshot({ path: `${env.out}/touch-today-${label.split(' ')[0]}.png` });
+    await p.screenshot({ ...SHOT, path: `${env.out}/touch-today-${label.split(' ')[0]}.png` });
 };
 
 /** 減少動畫：碟面唔自轉、捽碟唔跟手指轉，但照樣 seek */

@@ -107,6 +107,13 @@ export const newE2EContext = async (
     return ctx;
 };
 
+/**
+ * 截圖共用選項：跑馬燈、唱片自轉呢啲無限 CSS 動畫回到起點（finite 嘅就行到尾），
+ * 唔會因為 bundle 載入快慢令相位浮動，兩個 branch 嘅截圖可以逐 pixel 比對（S-510）。
+ * 只影響截圖，唔影響斷言
+ */
+export const SHOT = { animations: 'disabled' };
+
 /** e2e 手機尺寸（直向）：劇集頁、mini player 規則、全集表都用呢個 */
 export const PHONE = { width: 390, height: 844 };
 

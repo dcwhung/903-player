@@ -6,7 +6,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { runArcSheetChecks } from './arcSheet.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
-import { AUDIO_HOST, PROBE_STORAGE_KEY, ensurePlaying, newE2EContext } from './harness.mjs';
+import { AUDIO_HOST, PROBE_STORAGE_KEY, SHOT, ensurePlaying, newE2EContext } from './harness.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { runMiniPlayerRuleChecks } from './miniPlayerRules.mjs';
 import { runTouchChecks } from './touch.mjs';
@@ -152,7 +152,7 @@ const checkHomeBanner = async (p, label, shot) => {
     );
     log(radius > 0, `${label}：橫額有圓角（${radius}px）`);
     log((await horizontalOverflow(p)) === 0, `${label}：冇橫向捲動`);
-    await p.screenshot({ path: `${OUT}/${shot}` });
+    await p.screenshot({ ...SHOT, path: `${OUT}/${shot}` });
 };
 
 // 今日有新一集嘅節目格讀屏名後面加「，今日有新一集」（i18n home.showNew），比較節目名時去走
@@ -357,7 +357,7 @@ const checkFixedShowPage = async (p, label, shot) => {
         `${label}：播放器佔畫面高 ${(share * 100).toFixed(1)}%${short || isLandscape(p) ? '' : `（≤ ${PLAYER_MAX_SHARE * 100}%）`}`,
     );
     await recordMetrics(p, label, rows.toFixed(2), share);
-    await p.screenshot({ path: `${OUT}/${shot}` });
+    await p.screenshot({ ...SHOT, path: `${OUT}/${shot}` });
 };
 
 /** 播放器（PlayerPanel：唱片連弧 → 日子條）佔畫面高幾多 */
@@ -536,7 +536,7 @@ const checkStripFollows = async (p, x, y, shot) => {
     await p.mouse.move(x - STRIP_DRAG_PX, y + 2, { steps: 4 });
     const transform = await p.locator(STRIP).evaluate((el) => el.firstElementChild.style.transform);
     log(/-\s?\d[\d.]*px\)\)$/.test(transform), `拖緊日子條成條跟住郁：${transform}`);
-    if (shot) await p.screenshot({ path: `${OUT}/${shot}` });
+    if (shot) await p.screenshot({ ...SHOT, path: `${OUT}/${shot}` });
 };
 
 /** 日子條入面某一日（「轉去 20/10（二）」）嘅中心離日子條中心幾遠（px） */
@@ -759,7 +759,7 @@ const checkTodayMidDrag = async (p) => {
         `今日節目拖到一半：卡跟手指傾斜、後面張卡上前 ${JSON.stringify(pose)}`,
     );
     log((await horizontalOverflow(p)) === 0, '今日節目拖動中冇橫向捲動');
-    await p.screenshot({ path: `${OUT}/5b-today-mid-drag.png` });
+    await p.screenshot({ ...SHOT, path: `${OUT}/5b-today-mid-drag.png` });
     // 停咗（影相）先放手：唔算甩，又未過門檻 → 彈返，唔轉節目
     const before = await todayCardTitle(p).textContent();
     await p.mouse.up();
@@ -861,11 +861,15 @@ const checkShellMismatch = async (browser, errors) => {
                 `${label} 對照：舊做法（唱片跟 100dvh）真係會出事（${describeFit(dvhFit)}）`,
             );
             await sp.screenshot({
+                ...SHOT,
                 path: `${OUT}/shell-mismatch-dvh-${width}x${height}-${name}.png`,
             });
             await legacy.evaluate((el) => el.remove());
             await sp.waitForTimeout(LAYOUT_SETTLE_MS);
-            await sp.screenshot({ path: `${OUT}/shell-mismatch-${width}x${height}-${name}.png` });
+            await sp.screenshot({
+                ...SHOT,
+                path: `${OUT}/shell-mismatch-${width}x${height}-${name}.png`,
+            });
             await shrunk.evaluate((el) => el.remove());
             shellMetrics.push({ label, normal, fit, dvhFit });
         }
@@ -1003,7 +1007,10 @@ const checkNarrowLayout = async (browser, errors) => {
             overlap <= 0,
             `${label} ${name}：長時間 ${LONG_TIMES.join(' / ')} 唔疊住掣（重疊 ${overlap.toFixed(1)}px）`,
         );
-        await p.screenshot({ path: `${OUT}/narrow-long-times-${route.replace(/\W/g, '')}.png` });
+        await p.screenshot({
+            ...SHOT,
+            path: `${OUT}/narrow-long-times-${route.replace(/\W/g, '')}.png`,
+        });
     }
     for (const dx of [-NARROW_HALF_DRAG_PX, NARROW_HALF_DRAG_PX]) {
         await p.goto(`${BASE}#/today`);
@@ -1015,7 +1022,10 @@ const checkNarrowLayout = async (browser, errors) => {
             opacity > 0,
             `${label} 今日節目卡向${side}拖一半：後面嗰張卡見到節目名（opacity ${opacity.toFixed(2)}）`,
         );
-        await p.screenshot({ path: `${OUT}/narrow-today-drag-${dx < 0 ? 'left' : 'right'}.png` });
+        await p.screenshot({
+            ...SHOT,
+            path: `${OUT}/narrow-today-drag-${dx < 0 ? 'left' : 'right'}.png`,
+        });
         await p.mouse.up();
     }
     await p.goto(BASE);
@@ -1030,7 +1040,7 @@ const checkNarrowLayout = async (browser, errors) => {
         fit.gap >= 0 && fit.overflow && fit.shift < 0,
         `${label} 主頁 mini player：字唔疊住播放掣（相距 ${fit.gap.toFixed(1)}px），副題放唔落就跑馬燈（捲咗 ${fit.shift.toFixed(1)}px）`,
     );
-    await p.screenshot({ path: `${OUT}/narrow-mini-marquee.png` });
+    await p.screenshot({ ...SHOT, path: `${OUT}/narrow-mini-marquee.png` });
     await ctx.close();
 };
 
@@ -1203,7 +1213,7 @@ try {
 
     await page.goto(BASE);
     await page.waitForSelector('nav[aria-busy="false"]');
-    await page.screenshot({ path: `${OUT}/1-home.png` });
+    await page.screenshot({ ...SHOT, path: `${OUT}/1-home.png` });
     const tiles = await page
         .locator('nav button')
         .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.textContent));
@@ -1244,7 +1254,7 @@ try {
     log(accent.trim() === '#d4af5a', `節目頁用公子會色調：${accent}`);
     await checkThemeColor(page, GONGZI_BG, '公子會節目頁');
     await page.waitForTimeout(1500);
-    await page.screenshot({ path: `${OUT}/2-show-playing.png` });
+    await page.screenshot({ ...SHOT, path: `${OUT}/2-show-playing.png` });
 
     const slider = page.getByRole('slider', { name: '播放進度' });
     const box = await slider.boundingBox();
@@ -1253,7 +1263,7 @@ try {
     await page.mouse.down();
     await page.mouse.move(...at(60, 40), { steps: 5 });
     await page.mouse.move(...at(10, 150), { steps: 5 });
-    await page.screenshot({ path: `${OUT}/3-show-dragging.png` });
+    await page.screenshot({ ...SHOT, path: `${OUT}/3-show-dragging.png` });
     await page.mouse.up();
     await page.waitForTimeout(300);
     const afterDrag = Number(await slider.getAttribute('aria-valuenow'));
@@ -1280,7 +1290,7 @@ try {
     log(/^(?:播放|暫停) 10\/10/.test(sel), `撳集數轉集：${sel}`);
     const visible = await page.locator('button[aria-current="true"]').first().isVisible();
     log(visible, '揀中集數喺畫面內');
-    await page.screenshot({ path: `${OUT}/4-show-date-changed.png` });
+    await page.screenshot({ ...SHOT, path: `${OUT}/4-show-date-changed.png` });
 
     // 冇咗跳秒掣：用弧形 slider 嘅鍵盤 →（KEYBOARD_SEEK_SECONDS = 30 秒）
     await slider.focus();
@@ -1356,7 +1366,7 @@ try {
     const heading = await todayCardTitle(page).textContent();
     log(heading === '在晴朗的一天出發', `今日撳播放播第一個節目：${heading}`);
     await checkThemeColor(page, SUNNYDAY_BG, '今日節目（在晴朗的一天出發）');
-    await page.screenshot({ path: `${OUT}/5-today.png` });
+    await page.screenshot({ ...SHOT, path: `${OUT}/5-today.png` });
     await checkTodayMidDrag(page);
     // 卡疊次序：在晴朗的一天出發 → Bad Girl大過佬 → 雲妮鍾情 → 循環返第一個
     await dragTodayCard(page, -TODAY_SWIPE_PX);
@@ -1375,7 +1385,7 @@ try {
     await page.getByRole('button', { name: /播放 雲妮鍾情/ }).click();
     await page.waitForTimeout(500);
     log((await todayCardTitle(page).textContent()) === '雲妮鍾情', '撳節目掣轉播');
-    await page.screenshot({ path: `${OUT}/6-today-switched.png` });
+    await page.screenshot({ ...SHOT, path: `${OUT}/6-today-switched.png` });
 
     await page.goBack();
     await page.waitForTimeout(500);
@@ -1386,7 +1396,7 @@ try {
         `播緊今日節目用返回手勢返主頁會繼續播，mini player 顯示：${backState} / ${miniText}`,
     );
     await checkVersionOnBanner(page, '390×844');
-    await page.screenshot({ path: `${OUT}/7-home-mini-player.png` });
+    await page.screenshot({ ...SHOT, path: `${OUT}/7-home-mini-player.png` });
 
     const narrow = await newE2EContext(browser, { viewport: { width: 320, height: 640 } });
     const np = await narrow.newPage();
@@ -1394,7 +1404,7 @@ try {
     await np.waitForSelector('nav[aria-busy="false"]');
     await checkSplashRemoved(np);
     await checkVersionOnBanner(np, '320×640');
-    await np.screenshot({ path: `${OUT}/8-home-version-320.png` });
+    await np.screenshot({ ...SHOT, path: `${OUT}/8-home-version-320.png` });
     for (const route of ['#/show/gongzi', '#/today']) {
         await np.goto(`${BASE}${route}`);
         // 由節目頁轉去今日節目頁時 player 已經載入咗節目，今日節目頁唔自動播（冇「由頭播放」），等唱片出就得
@@ -1427,7 +1437,7 @@ try {
     await sp.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
     await sp.waitForTimeout(800);
     log((await horizontalOverflow(sp)) === 0, '320×568 今日節目冇橫向捲動');
-    await sp.screenshot({ path: `${OUT}/5c-today-320x568.png` });
+    await sp.screenshot({ ...SHOT, path: `${OUT}/5c-today-320x568.png` });
     await dragTodayCard(sp, -TODAY_SWIPE_PX / 2);
     await checkTodayShow(sp, 'Bad Girl大過佬', BADGIRL_BG, '320×568 今日節目向左掃');
     log((await horizontalOverflow(sp)) === 0, '320×568 今日節目掃完冇橫向捲動');
@@ -1476,7 +1486,7 @@ try {
         const todayLabel = `${width}×${height} 今日節目頁`;
         await fp.waitForTimeout(500);
         await checkFixedTodayPage(fp, todayLabel);
-        await fp.screenshot({ path: `${OUT}/today-${width}x${height}.png` });
+        await fp.screenshot({ ...SHOT, path: `${OUT}/today-${width}x${height}.png` });
         if (homeFixed) {
             await fp.goto(BASE);
             await fp.waitForSelector('nav[aria-busy="false"]');
@@ -1484,7 +1494,7 @@ try {
             await checkFixedHome(fp, `${width}×${height} 主頁`);
             if (pagedHome) await checkPagedHome(fp, `${width}×${height} 主頁`);
             if (landscapeHome) await checkLandscapeHome(fp, `${width}×${height} 主頁（橫版）`);
-            await fp.screenshot({ path: `${OUT}/home-${width}x${height}.png` });
+            await fp.screenshot({ ...SHOT, path: `${OUT}/home-${width}x${height}.png` });
         }
         await ctx.close();
     }
@@ -1521,7 +1531,7 @@ try {
     const lp = await light.newPage();
     await lp.goto(BASE);
     await lp.waitForSelector('nav[aria-busy="false"]');
-    await lp.screenshot({ path: `${OUT}/7-home-light.png` });
+    await lp.screenshot({ ...SHOT, path: `${OUT}/7-home-light.png` });
 
     // 靜靜雞更新靠 registration.update()：build 出嚟嘅 sw.js 要註冊到同啟用
     const swScript = await lp.evaluate(async () => {
