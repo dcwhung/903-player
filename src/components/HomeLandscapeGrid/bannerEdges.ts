@@ -23,7 +23,7 @@ const SIDE_SAMPLES = 16;
 const TOP_BOTTOM_ROWS = 8;
 const TOP_SAMPLES = 8;
 const BOTTOM_SAMPLES = 1;
-const RGBA = 4;
+const BYTES_PER_PIXEL = 4;
 const PERCENT = 100;
 const HALF = 0.5;
 
@@ -48,9 +48,12 @@ export const segmentAverages = (
     }));
     for (let y = 0; y < height; y += 1) {
         for (let x = 0; x < width; x += 1) {
-            const seg = Math.min(samples - 1, Math.floor(((horizontal ? x : y) * samples) / along));
-            const i = (y * width + x) * RGBA;
-            const sum = sums[seg] as ColorSum;
+            const segment = Math.min(
+                samples - 1,
+                Math.floor(((horizontal ? x : y) * samples) / along),
+            );
+            const i = (y * width + x) * BYTES_PER_PIXEL;
+            const sum = sums[segment] as ColorSum;
             sum.r += data[i] ?? 0;
             sum.g += data[i + 1] ?? 0;
             sum.b += data[i + 2] ?? 0;
@@ -78,20 +81,20 @@ export const edgeGradient = (colors: readonly Rgb[], direction: string): string 
     return `linear-gradient(${direction}, ${stops.join(', ')})`;
 };
 
-/** 由圖嘅 (x, y, w, h) 一條帶讀 pixel 再分段平均 */
+/** 由圖嘅 (x, y, width, height) 一條帶讀 pixel 再分段平均 */
 const bandColors = (ctx: CanvasRenderingContext2D, x: number, y: number, band: Band): Rgb[] =>
     segmentAverages(ctx.getImageData(x, y, band.width, band.height).data, band);
 
 /** 已畫咗圖嘅 canvas 讀四條邊 */
-const edgesOf = (ctx: CanvasRenderingContext2D, w: number, h: number): BannerEdges => {
-    const side: Band = { width: SIDE_PX, height: h, horizontal: false, samples: SIDE_SAMPLES };
-    const edge = { width: w, height: TOP_BOTTOM_ROWS, horizontal: true };
+const edgesOf = (ctx: CanvasRenderingContext2D, width: number, height: number): BannerEdges => {
+    const side: Band = { width: SIDE_PX, height, horizontal: false, samples: SIDE_SAMPLES };
+    const edge = { width, height: TOP_BOTTOM_ROWS, horizontal: true };
     return {
         left: edgeGradient(bandColors(ctx, 0, 0, side), 'to bottom'),
-        right: edgeGradient(bandColors(ctx, w - SIDE_PX, 0, side), 'to bottom'),
+        right: edgeGradient(bandColors(ctx, width - SIDE_PX, 0, side), 'to bottom'),
         top: edgeGradient(bandColors(ctx, 0, 0, { ...edge, samples: TOP_SAMPLES }), 'to right'),
         bottom: edgeGradient(
-            bandColors(ctx, 0, h - TOP_BOTTOM_ROWS, { ...edge, samples: BOTTOM_SAMPLES }),
+            bandColors(ctx, 0, height - TOP_BOTTOM_ROWS, { ...edge, samples: BOTTOM_SAMPLES }),
             'to right',
         ),
     };
@@ -103,15 +106,15 @@ const edgesOf = (ctx: CanvasRenderingContext2D, w: number, h: number): BannerEdg
  * 一樣當讀唔到：唔接住嘅話 onload 永遠唔 resolve，仲會變 uncaught error
  */
 export const readBannerEdges = (img: HTMLImageElement): BannerEdges | null => {
-    const { naturalWidth: w, naturalHeight: h } = img;
+    const { naturalWidth: width, naturalHeight: height } = img;
     const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx || w === 0 || h === 0) return null;
+    if (!ctx || width === 0 || height === 0) return null;
     try {
         ctx.drawImage(img, 0, 0);
-        return edgesOf(ctx, w, h);
+        return edgesOf(ctx, width, height);
     } catch {
         return null;
     }
