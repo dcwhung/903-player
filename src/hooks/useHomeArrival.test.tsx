@@ -1,8 +1,9 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { StrictMode, useState, type ReactNode } from 'react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
 import { seriesEpisodesOf } from '../dramas';
+import { PlayerContext, type PlayerContextValue } from '../player/playerContext';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';
 import type { Track } from '../types/track';
@@ -48,13 +49,46 @@ const arrive = async (
     props: { target?: Track; later?: Recording },
     recordings: Recording[] = RECORDINGS,
     prober?: () => Promise<Recording[]>,
+    strict = false,
 ) => {
-    const { audio, wrapper } = createHookWrapper(recordings, prober);
+    const { audio, wrapper: Providers } = createHookWrapper(recordings, prober);
+    const wrapper = ({ children }: { children: ReactNode }) =>
+        strict ? (
+            <StrictMode>
+                <Providers>{children}</Providers>
+            </StrictMode>
+        ) : (
+            <Providers>{children}</Providers>
+        );
     render(<Harness {...props} />, { wrapper });
     await userEvent.click(screen.getByRole('button', { name: 'arrive' }));
     await screen.findByText('home');
     return audio;
 };
+
+/** 直接畀 context：可以換 stop（identity 變）睇 effect 再行會唔會再停 */
+const playerValue = (stop: () => void): PlayerContextValue => ({
+    recording: null,
+    isPlaying: false,
+    isAudible: false,
+    currentTime: 0,
+    duration: 0,
+    watchedRevision: 0,
+    load: vi.fn(),
+    play: vi.fn(),
+    pause: vi.fn(),
+    toggle: vi.fn(),
+    restart: vi.fn(),
+    seek: vi.fn(),
+    skip: vi.fn(),
+    stop,
+});
+
+const ArrivalWith = ({ stop }: { stop: () => void }) => (
+    <PlayerContext.Provider value={playerValue(stop)}>
+        <Home />
+    </PlayerContext.Provider>
+);
 
 const deferred = () => {
     let resolve: (value: Recording[]) => void = () => {};
@@ -136,5 +170,25 @@ describe('useHomeArrival', () => {
 
         expect(audio.src).toBe(OLD.url);
         expect(audio.pause).not.toHaveBeenCalled();
+    });
+
+    // StrictMode 會 mount → cleanup → mount 多行一次 effect：decided ref 要擋住第二次 stop
+    it('stops only once under StrictMode double effects', async () => {
+        const audio = await arrive({}, RECORDINGS, undefined, true);
+
+        await waitFor(() => expect(audio.pause).toHaveBeenCalled());
+        await act(async () => {});
+        expect(audio.pause).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not stop again when stop changes identity and the effect re-runs', () => {
+        const firstStop = vi.fn();
+        const nextStop = vi.fn();
+        const { rerender } = render(<ArrivalWith stop={firstStop} />);
+
+        rerender(<ArrivalWith stop={nextStop} />);
+
+        expect(firstStop).toHaveBeenCalledTimes(1);
+        expect(nextStop).not.toHaveBeenCalled();
     });
 });
