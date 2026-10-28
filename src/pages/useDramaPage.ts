@@ -25,6 +25,7 @@ import {
     type PlaybackLineState,
     type PlaybackState,
 } from '../utils/playbackState';
+import type { StandbyTime } from '../components/PlayerPanel/PlayerGauge';
 import { toDailyItems, toSeriesItems } from './dramaItems';
 import type { RowContext } from './episodeItems';
 
@@ -185,6 +186,24 @@ const useArcPick = (groups: ArcGroups, setArc: (arc: string) => void) => {
     };
 };
 
+/** 未載入時撳播放會續播嘅位置 / 總長：聽到一半先有（未聽、聽完由頭播就冇，時間照用佔位） */
+const standbyTimeOf = (
+    isLoaded: boolean,
+    progress: Progress | undefined,
+): StandbyTime | undefined =>
+    !isLoaded && progress && !progress.watched
+        ? { position: progress.position, duration: progress.duration }
+        : undefined;
+
+interface StandbyOptions {
+    episodes: readonly SeriesEpisode[];
+    progressMap: Readonly<Record<string, Progress>>;
+    /** 用戶揀咗嘅另一個短篇嘅續聽集 */
+    pickedResume: SeriesEpisode | undefined;
+    /** 唱片區顯示嘅集（未載入就係撳播放會播嗰集） */
+    upNext: SeriesEpisode | undefined;
+}
+
 /**
  * 未載入呢套劇（未揀 / 未撳播放，或者播緊其他嘢）：唱片區（時間、掣、「現正播放」）係未開始樣，
  * 撳播放（start）先開始播呢套劇、換走其他嘢；載入咗就跟返 player（start 係 undefined）。
@@ -195,14 +214,17 @@ const useStandby = (
     drama: DramaConfig,
     isLoaded: boolean,
     playState: PlaybackState,
-    { listened, picked }: { listened: boolean; picked: SeriesEpisode | undefined },
+    { episodes, progressMap, pickedResume: picked, upNext }: StandbyOptions,
 ) => {
     const startDrama = useStartDrama();
     const { load } = usePlayer();
+    const listened = !hasNoProgress(episodes, progressMap);
+    const progress = upNext && progressMap[upNext.url];
     const idle: PlaybackLineState = listened ? 'resume' : 'unloaded';
     const status: PlaybackLineState = isLoaded ? playState : idle;
     const start = () => (picked ? void load(picked, { autoplay: true }) : startDrama(drama));
-    return { status, start: isLoaded ? undefined : start };
+    const standbyTime = standbyTimeOf(isLoaded, progress);
+    return { status, start: isLoaded ? undefined : start, standbyTime };
 };
 
 /**
@@ -265,16 +287,14 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
     const rows = usePlaybackRows(episodes, current, !!loaded);
     const arcs = useSeriesArcs(episodes, progressMap, current, loaded);
     const { upNext, pickArc, groups } = arcs;
-    const listened = !hasNoProgress(episodes, progressMap);
+    const standbyOptions = { ...arcs, episodes, progressMap };
+    const standby = useStandby(drama, loaded !== null, rows.playState, standbyOptions);
     return {
         // 碟面跟唱片區嗰集（未聽過未載入嘅黑碟由 SeriesDramaPage 揀）；冇播放時揀短篇會載入嗰個短篇，碟面就跟住轉
         theme: upNext ? dramaEpisodeTheme(upNext) : drama.theme,
         current,
         upNext,
-        ...useStandby(drama, loaded !== null, rows.playState, {
-            listened,
-            picked: arcs.pickedResume,
-        }),
+        ...standby,
         ...arcCounter(episodes, upNext),
         arcs: arcs.chips,
         arc: arcs.arc,

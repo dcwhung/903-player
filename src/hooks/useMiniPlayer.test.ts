@@ -368,7 +368,7 @@ describe('useMiniPlayer', () => {
                 region: '正在播放（廣播劇）',
                 openLabel: '開啟 芝See菇Bi Family 廣播劇頁',
                 theme: dramaThemeFor('chisee'),
-                subtitle: 'Ｘ時mas時小提議 · 第 2 集 哥哥你洽我 · 5:00 / 20:00',
+                subtitle: 'Ｘ時mas時小提議 · 第 2 集 · 哥哥你洽我 · 5:00 / 20:00',
                 isPlaying: true,
                 progress: 0.25,
                 labels: ['芝See菇Bi Family'],

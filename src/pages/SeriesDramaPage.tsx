@@ -45,7 +45,7 @@ const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, arcTotal:
 interface SeriesPlayerColumnProps {
     view: Pick<
         SeriesDramaView,
-        'theme' | 'upNext' | 'start' | 'status' | 'arcPosition' | 'arcTotal'
+        'theme' | 'upNext' | 'start' | 'standbyTime' | 'status' | 'arcPosition' | 'arcTotal'
     >;
     title: string;
     landscape: boolean;
@@ -63,7 +63,11 @@ const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayer
         <div className={`${page.playerColumn} ${current?.title ? page.detailedNowPlaying : ''}`}>
             {!landscape && <DramaHeader title={title} />}
             {current ? (
-                <PlayerGauge art={status === 'unloaded' ? undefined : theme.art} onStart={start} />
+                <PlayerGauge
+                    art={status === 'unloaded' ? undefined : theme.art}
+                    onStart={start}
+                    standbyTime={view.standbyTime}
+                />
             ) : (
                 <StatusMessage message={t('episodes.noneUp')} />
             )}

@@ -74,7 +74,7 @@ describe('useMediaSession', () => {
         const init = () => (session.metadata as unknown as { init: MediaMetadataInit }).init;
         expect(init()).toMatchObject({
             title: '芝See菇Bi Family',
-            artist: 'Ｘ時mas時小提議 · 第 2 集 哥哥你洽我',
+            artist: 'Ｘ時mas時小提議 · 第 2 集 · 哥哥你洽我',
         });
 
         rerender({ s: state({ recording: rerun ?? null }) });

@@ -140,7 +140,7 @@ export const zhHK = {
         newEpisode: '今日有新一集',
         // 短篇劇集：清單每行細字、mini player / 鎖屏副標題
         episodeNo: '第 {no} 集',
-        seriesLabel: '{arc} · 第 {no} 集 {title}',
+        seriesLabel: '{arc} · 第 {no} 集 · {title}',
         // 冇集名嘅集數
         seriesLabelUntitled: '{arc} · 第 {no} 集',
         // 每日劇集重播舊集
@@ -165,7 +165,7 @@ export const zhHK = {
         arcResumeAt: '聽到第 {no} 集 {time}',
         arcNext: '下一集係第 {no} 集',
         // 短篇劇集頁未載入呢套劇（第一次入未揀，或者播緊其他嘢）：唱片下面 / chips 上面嗰行
-        pickArcToStart: '揀一個短篇開始',
+        pickArcToStart: '揀一個短篇開始收聽',
         // 聽過但未載入（入頁唔自動播，或者播緊其他嘢）：撳播放會繼續收聽嗰集
         continueLine: '繼續收聽：{label}',
         arcNew: '未聽 · {count} 集',
@@ -178,7 +178,7 @@ export const zhHK = {
         arcPlayAgain: '由第 1 集重聽 {arc}',
         arcPause: '暫停 {arc}',
         arcPlay: '播放 {arc}',
-        nowPlayingShort: '第 {no} 集 {title}',
+        nowPlayingShort: '第 {no} 集 · {title}',
         // 直版 chips 上面「現正播放：好朋友手牽手 · 第 2 集 集名」
         nowPlayingArcShort: '{arc} · {episode}',
         // 橫版唱片下面「現正播放：好朋友手牽手 · 第 2 / 4 集」（下一行集名）

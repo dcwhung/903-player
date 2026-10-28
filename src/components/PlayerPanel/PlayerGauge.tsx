@@ -19,6 +19,17 @@ interface PlayerGaugeProps {
      * 撳播放 / 由頭播放就叫呢個開始播呢頁；唔跟住顯示其他嘢嘅時間同播放狀態
      */
     onStart?: (() => void) | undefined;
+    /**
+     * 未開始樣（onStart）時撳播放會續播嘅位置同總長（例如廣播劇聽過未載入）：時間、弧形顯示返佢（鎖住，
+     * 拖唔到）；冇就時間佔位、弧形空
+     */
+    standbyTime?: StandbyTime | undefined;
+}
+
+/** 未開始樣時要顯示嘅續播位置 / 總長（秒） */
+export interface StandbyTime {
+    position: number;
+    duration: number;
 }
 
 const RESTART_ICON_SIZE = 22;
@@ -35,16 +46,21 @@ const ignore = () => undefined;
  * 唱片格要顯示嘅嘢：平時跟 player；有 onStart（未載入呢頁嘅嘢）就成個係未開始樣，唔跟 player，
  * 冇「由頭播放」（未載入時 onStart 會續播，唔係由頭，S-485）
  */
-const useGaugeView = (held: boolean, onStart: (() => void) | undefined) => {
+const useGaugeView = (
+    held: boolean,
+    onStart: (() => void) | undefined,
+    standbyTime: StandbyTime | undefined,
+) => {
     const { player, known, shownTime, arc, disc } = useGaugeGestures(held);
     if (onStart) {
+        const position = standbyTime?.position ?? 0;
         return {
-            known: false,
-            shownTime: 0,
-            max: 0,
+            known: standbyTime !== undefined,
+            shownTime: position,
+            max: standbyTime?.duration ?? 0,
             seek: ignore,
             isPlaying: false,
-            arc: { value: 0, locked: true, onPreview: ignore },
+            arc: { value: position, locked: true, onPreview: ignore },
             disc: { faceRef: disc.faceRef, spinning: false, upright: true, scrub: undefined },
             toggle: onStart,
             restart: undefined,
@@ -92,8 +108,14 @@ const GaugeActions = ({ isPlaying, onRestart, onToggle }: GaugeActionsProps) => 
 );
 
 /** 唱片 + 弧形進度 + 時間 + 由頭播放：節目頁播放器同今日節目卡共用 */
-export const PlayerGauge = ({ art, artRef, held = false, onStart }: PlayerGaugeProps) => {
-    const { known, shownTime, max, isPlaying, ...view } = useGaugeView(held, onStart);
+export const PlayerGauge = ({
+    art,
+    artRef,
+    held = false,
+    onStart,
+    standbyTime,
+}: PlayerGaugeProps) => {
+    const { known, shownTime, max, isPlaying, ...view } = useGaugeView(held, onStart, standbyTime);
     // 讀屏同畫面一樣：未知時長讀佔位，唔讀 0:00
     const total = formatClock(max, known);
     const formatValueText = (seconds: number) =>
