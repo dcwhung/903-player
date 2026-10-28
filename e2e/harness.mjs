@@ -73,6 +73,7 @@ const seedProbeStore = ({ key, found }) => {
  * 開一個 e2e context：時鐘由 E2E_NOW 開始照常行（clock.install 唔會暫停，
  * setTimeout / setInterval / Date.now 跟真實時間前進，播放進度、定時存進度、更新檢查照行），
  * audio host 用上面嘅似真版本，劇集音檔（R2）一律 404。extraAudioUrls：額外當係存在嘅檔（例如測 probe 搵到新一集）。
+ * now：時鐘起點（預設 E2E_NOW），例如測冇節目嘅星期日
  */
 /** 啟動畫面最少顯示 2 秒，期間會蓋住成頁：用坐標嘅手勢會撳中佢，所以要等佢移走 */
 const SPLASH_GONE_TIMEOUT_MS = 10_000;
@@ -92,9 +93,13 @@ const waitForSplashOnLoad = (page) => {
     }
 };
 
-export const newE2EContext = async (browser, options = {}, { extraAudioUrls = [] } = {}) => {
+export const newE2EContext = async (
+    browser,
+    options = {},
+    { extraAudioUrls = [], now = E2E_NOW } = {},
+) => {
     const ctx = await browser.newContext(options);
-    await ctx.clock.install({ time: new Date(E2E_NOW) });
+    await ctx.clock.install({ time: new Date(now) });
     await ctx.route(`${AUDIO_HOST}/**`, audioResponder(extraAudioUrls));
     await ctx.route(`${DRAMA_AUDIO_BASE}/**`, (route) => route.fulfill({ status: 404, body: '' }));
     await ctx.addInitScript(seedProbeStore, { key: PROBE_STORAGE_KEY, found: SAMPLE_RECORDINGS });
