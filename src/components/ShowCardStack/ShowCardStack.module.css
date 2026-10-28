@@ -6,6 +6,7 @@
  * 用 pan-y 嘅話 iOS 一見手指有少少直向郁就開始原生 pan、發 pointercancel，
  * 張卡即刻彈返（實機完全拖唔到）。雙指放大照得（無障礙）。
  * 弧形進度條（圓環）同捽碟都係 none，而且 stopPropagation，拖佢哋唔會郁張卡；唱片格四角照交畀卡疊。
+ * 卡入面啲圖片（唱片 / 節目圖）嘅 Safari 擋拖：ShowCardStack.tsx 加共用 gesture.module.css 嘅 noImageDragWithin。
  */
 .stack {
     --card-dx: 0px;
@@ -34,10 +35,6 @@
 .stack:focus-visible {
     outline: var(--focus-ring-width) solid var(--color-title);
     outline-offset: calc(var(--focus-ring-width) * -1);
-}
-
-.stack img {
-    -webkit-user-drag: none;
 }
 
 .card {

@@ -1,6 +1,7 @@
-import { useRef, type DragEvent, type PointerEvent } from 'react';
+import { useRef, type PointerEvent } from 'react';
 import { DISC_SCRUB_DEAD_ZONE_RATIO, DISC_SCRUB_MIN_DEGREES } from '../../config/constants';
 import { angleDelta, pointerAngle, scrubSecondsPerTurn, scrubStep } from '../../utils/discScrub';
+import { preventDragStart } from '../../utils/dragStart';
 import type { DiscTurn } from './useDiscTurn';
 
 type DiscPointerEvent = PointerEvent<HTMLElement>;
@@ -127,7 +128,7 @@ export const useDiscScrub = (options: DiscScrubOptions) => {
             session.current = finish(session.current, event, false, options);
         },
         // 滑鼠拖節目圖會觸發原生拖放（之後 pointercancel），要擋住
-        onDragStart: (event: DragEvent<HTMLElement>) => event.preventDefault(),
+        onDragStart: preventDragStart,
     };
 };
 

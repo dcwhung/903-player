@@ -1,0 +1,16 @@
+/*
+ * 共用手勢樣式：組件 import 呢個 module，將 class 同自己嘅 class 一齊加落元素。
+ * 唔用 CSS Modules 嘅 composes：Vite build 會喺每個 composes 嘅檔各抄一份規則，仲會出 PostCSS 警告。
+ * Safari 唔理 <img draggable="false">，滑鼠拖卡 / 捽碟時會變成拖圖片，要靠 -webkit-user-drag 擋。
+ * JS 一邊嘅 dragstart 後備見 src/utils/dragStart.ts（preventDragStart）。
+ */
+
+/* 擋拖呢張圖片本身（例如 DramaShelf 嘅 .art） */
+.noImageDrag {
+    -webkit-user-drag: none;
+}
+
+/* 擋拖容器入面所有圖片（例如 ShowCardStack 嘅 .stack：卡入面嘅唱片 / 節目圖） */
+.noImageDragWithin img {
+    -webkit-user-drag: none;
+}

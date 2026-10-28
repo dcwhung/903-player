@@ -1,6 +1,7 @@
-import { useRef, type DragEvent, type MouseEvent, type PointerEvent, type RefObject } from 'react';
+import { useRef, type MouseEvent, type PointerEvent, type RefObject } from 'react';
 import { dragIntent, type SwipeDirection } from '../../hooks/swipe';
 import { useClickSuppression } from '../../hooks/useSwipe';
+import { preventDragStart } from '../../utils/dragStart';
 import { pushSample, releaseDirection, velocityOf, type DragSample } from './cardStack';
 import type { CardMotion } from './useCardMotion';
 
@@ -166,6 +167,6 @@ export const useCardDrag = (
         },
         onClickCapture: (event: MouseEvent<HTMLElement>) => clickCapture(event, motion, clicks),
         // 滑鼠拖節目圖會觸發原生拖放（之後 pointercancel），要擋住
-        onDragStart: (event: DragEvent<HTMLElement>) => event.preventDefault(),
+        onDragStart: preventDragStart,
     };
 };

@@ -61,6 +61,8 @@ describe('DramaShelf', () => {
         const { container } = render(<DramaShelf items={[item()]} />);
 
         expect(container.querySelector('img')).toHaveAttribute('draggable', 'false');
+        // Safari 唔理 draggable，要靠共用 gesture.module.css 嘅 -webkit-user-drag（測試用原 class 名）
+        expect(container.querySelector('img')).toHaveClass('noImageDrag');
     });
 
     it('shows 新 top-left and reads out why', () => {

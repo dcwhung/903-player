@@ -58,13 +58,13 @@
 }
 
 .art {
+    /* 擋拖圖片（Safari 唔理 draggable 屬性）：DramaTile.tsx 加共用 gesture.module.css 嘅 noImageDrag（CUI-0004） */
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* 同 ShowCardStack 一樣：Safari 唔理 draggable 屬性，要靠呢個擋拖圖片；長撳唔出圖片選單（CUI-0004） */
-    -webkit-user-drag: none;
+    /* 長撳唔出圖片選單（CUI-0004） */
     -webkit-touch-callout: none;
     user-select: none;
 }
