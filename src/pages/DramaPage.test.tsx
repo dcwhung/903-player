@@ -227,6 +227,8 @@ describe('DramaPage', () => {
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
             await waitFor(() => expect(audio.src).toBe(youth?.url));
             expect(audio.play).not.toHaveBeenCalled();
+            // 揀咗短篇：黑碟換做嗰個短篇嘅 cover
+            expect(gaugeArt()?.getAttribute('src')).toBe(dramaArtFor(youth!));
             expect(screen.getByRole('button', { name: '青春期' })).toHaveAttribute(
                 'aria-pressed',
                 'true',
@@ -364,10 +366,14 @@ describe('DramaPage', () => {
         });
 
         it('marks no 短篇 chip as 播緊 while another 短篇 is browsed', async () => {
-            await openDramaWhileOtherPlays('chisee');
+            const { audio } = await openDramaWhileOtherPlays('chisee');
             await closeSheet();
 
             await userEvent.click(screen.getByRole('button', { name: '青春期' }));
+
+            // 播緊其他嘢：揀短篇唔載入，碟面保持黑碟
+            expect(audio.src).toBe(OTHER_REC.url);
+            expect(gaugeArt()).toBeNull();
 
             const first = screen.getByRole('button', { name: CHISEE[0]?.arc ?? '' });
             expect(first).not.toHaveAccessibleDescription(/播緊/);

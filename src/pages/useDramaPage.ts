@@ -233,7 +233,7 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
         loaded,
     );
     return {
-        // 碟面跟播緊（未播就係準備播）嗰集；冇播放時揀短篇會載入嗰個短篇，碟面就跟住轉
+        // 碟面跟載入咗嗰集（未載入嘅黑碟由 SeriesDramaPage 揀）；冇播放時揀短篇會載入嗰個短篇，碟面就跟住轉
         theme: current ? dramaEpisodeTheme(current) : drama.theme,
         current,
         ...useStandby(drama, loaded !== null, rows.playState),
