@@ -60,9 +60,8 @@ describe('DramaShelf', () => {
     it('keeps the tile art from being dragged, so a mouse can scrub the shelf', () => {
         const { container } = render(<DramaShelf items={[item()]} />);
 
+        // Safari 唔理 draggable，要靠 global.css 嘅 img 規則（scripts/globalImgCss.test.ts 鎖住）
         expect(container.querySelector('img')).toHaveAttribute('draggable', 'false');
-        // Safari 唔理 draggable，要靠共用 gesture.module.css 嘅 -webkit-user-drag（測試用原 class 名）
-        expect(container.querySelector('img')).toHaveClass('noImageDrag');
     });
 
     it('shows 新 top-left and reads out why', () => {

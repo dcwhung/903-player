@@ -10,6 +10,16 @@
  * 好矮嘅畫面就由 main 自己捲（Page.module.css .locked）。
  * 用 100% 而唔用 100dvh：跟 ICB（即 innerHeight），唔會因為 dvh 同 viewport 對唔齊而多出一截。
  */
+/*
+ * app 入面嘅圖都係裝飾（節目圖、唱片、banner、短篇碟面）：唔畀拖（Safari 唔理 draggable 屬性），
+ * iOS 長撳唔好出圖片選單（CUI-0004、S-548）。Firefox 唔識 -webkit-user-drag，
+ * 有手勢嘅地方另外有 draggable={false} / preventDragStart（src/utils/dragStart.ts）
+ */
+img {
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+}
+
 html,
 body,
 #root {

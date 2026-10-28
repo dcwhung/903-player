@@ -1,7 +1,6 @@
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { arrowKeyDirection, type SwipeDirection, wrapIndex } from '../../hooks/swipe';
 import { t } from '../../i18n/t';
-import gesture from '../../styles/gesture.module.css';
 import { stackSlots } from './cardStack';
 import { GhostCard, type GhostSlot, type StackCard } from './GhostCard';
 import styles from './ShowCardStack.module.css';
@@ -61,7 +60,7 @@ export const ShowCardStack = ({ cards, index, onChange, children }: ShowCardStac
     return (
         <div
             ref={stackRef}
-            className={`${styles.stack} ${gesture.noImageDragWithin}`}
+            className={styles.stack}
             role="group"
             aria-roledescription={t('cardStack.roleDescription')}
             aria-label={t('cardStack.label')}

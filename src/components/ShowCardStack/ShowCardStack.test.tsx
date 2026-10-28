@@ -57,12 +57,11 @@ describe('ShowCardStack', () => {
         vi.unstubAllGlobals();
     });
 
-    // 滑鼠拖到節目圖會觸發原生拖放（之後 pointercancel）：JS 擋 dragstart，Safari 再靠共用 CSS 擋
+    // 滑鼠拖到節目圖會觸發原生拖放（之後 pointercancel）：JS 擋 dragstart，Safari 再靠 global.css 嘅 img 規則
     it('should keep the images inside the stack from being dragged', () => {
         const { group } = setup();
 
         expect(fireEvent.dragStart(group)).toBe(false);
-        expect(group).toHaveClass('noImageDragWithin');
     });
 
     it('should move the card with the finger and tilt it while dragging', () => {
