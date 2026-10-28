@@ -1,6 +1,6 @@
 # 903-player 項目文件索引
 
-**最後更新**：2026-10-28
+**最後更新**：2026-10-29
 
 ## Audits
 
@@ -26,6 +26,7 @@
 | 2026-10-28 | [reviews/2026-10-28_review_v1.19.4.md](reviews/2026-10-28_review_v1.19.4.md)                     |
 | 2026-10-28 | [reviews/2026-10-28_review_v1.20.3.md](reviews/2026-10-28_review_v1.20.3.md)                     |
 | 2026-10-28 | [reviews/2026-10-28_review_e2e_hardening.md](reviews/2026-10-28_review_e2e_hardening.md)         |
+| 2026-10-29 | [reviews/2026-10-29_review_batch-a_refactor.md](reviews/2026-10-29_review_batch-a_refactor.md)   |
 
 ## QA
 
