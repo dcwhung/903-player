@@ -379,6 +379,29 @@ describe('DramaPage', () => {
             expect(first).not.toHaveAccessibleDescription(/播緊/);
         });
 
+        // CUI-0007：揀咗短篇再撳 ▶，播嘅係揀咗嗰個短篇（續聽位置），唔係成套劇第一集
+        it('starts the picked 短篇 when play is pressed', async () => {
+            const { audio } = await openDramaWhileOtherPlays('golden');
+            await closeSheet();
+            const season3 = seriesEpisodesOf('golden').find((e) => e.arc === 'Season 3');
+
+            await userEvent.click(screen.getByRole('button', { name: /^Season 3/ }));
+            expect(audio.src).toBe(OTHER_REC.url);
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+
+            await waitFor(() => expect(audio.src).toBe(season3?.url));
+            expect(gaugeArt()?.getAttribute('src')).toBe(dramaArtFor(season3!));
+        });
+
+        it('starts where the drama left off when no 短篇 was picked', async () => {
+            const { audio } = await openDramaWhileOtherPlays('golden');
+            await closeSheet();
+
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+
+            await waitFor(() => expect(audio.src).toBe(seriesEpisodesOf('golden')[0]?.url));
+        });
+
         it('prompts under the disc in landscape too', async () => {
             stubLandscape();
             await openDramaWhileOtherPlays('chisee');
