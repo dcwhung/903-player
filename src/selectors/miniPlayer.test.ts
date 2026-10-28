@@ -52,9 +52,9 @@ describe('miniPlayerRecordings', () => {
         expect(miniPlayerRecordings(TODAY_LIST, drama)).toBe(TODAY_LIST);
     });
 
-    it('puts an older episode before the latest-day fallback too', () => {
-        const fallback = [recording('gongzi', '2026-10-17')];
-        expect(miniPlayerRecordings(fallback, OLD)).toEqual([OLD, ...fallback]);
+    it('puts an older episode before another listed day too', () => {
+        const other = [recording('gongzi', '2026-10-17')];
+        expect(miniPlayerRecordings(other, OLD)).toEqual([OLD, ...other]);
     });
 
     it('shows the older episode alone while nothing of today is up yet', () => {
@@ -75,7 +75,7 @@ describe('miniPlayerTags', () => {
         expect(miniPlayerTags(TODAY_LIST, false, '2026-10-19')).toEqual(['today', 'today']);
     });
 
-    it('leaves the latest-day fallback untagged, as it is not today', () => {
+    it('leaves a recording that is not today untagged', () => {
         const fallback = [recording('gongzi', '2026-10-17')];
         expect(miniPlayerTags(fallback, false, '2026-10-18')).toEqual([undefined]);
         expect(miniPlayerTags([OLD, ...fallback], true, '2026-10-18')).toEqual([

@@ -177,6 +177,8 @@ describe('useMiniPlayer', () => {
             keys: [saturday.url],
             tags: ['rewatch'],
             isPlaying: true,
+            // S-533：冇今日節目就唔好讀「及今日節目」
+            region: '正在播放（重溫）',
         });
     });
 

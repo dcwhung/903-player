@@ -4,7 +4,7 @@ import { asShowRecording, type Track } from '../types/track';
 import { formatDateLabel } from '../utils/date';
 import { formatDuration } from '../utils/time';
 
-/** 節目名旁邊嘅細標籤：rewatch = 由節目頁揀嘅舊集（「重溫」），today = 今日節目（「今日」） */
+/** 節目名旁邊嘅細標籤：rewatch = 聽緊嘅舊集（「重溫」），today = 今日節目（「今日」） */
 export type MiniPlayerTag = 'rewatch' | 'today';
 
 /** 「12:40 / 1:58:30」；未知長度就冇 */
@@ -33,7 +33,7 @@ export const miniPlayerRecordings = (listed: Recording[], loaded: Track | null):
 
 /**
  * 每段錄音嘅標籤：排最前嘅舊集係「重溫」，日子係今日就「今日」。
- * 其他日子（例如今日節目頁用嘅最近一日）唔係今日，所以冇標籤
+ * 清單除咗重溫都係今日節目；日子唔係今日就唔標（防守用，正常唔會發生）
  */
 export const miniPlayerTags = (
     list: Recording[],

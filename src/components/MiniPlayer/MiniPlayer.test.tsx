@@ -245,7 +245,7 @@ describe('MiniPlayer', () => {
             );
         });
 
-        it('should leave untagged dots plain (latest-day fallback)', () => {
+        it('should leave untagged dots plain', () => {
             render(<MiniPlayer {...props({ tags: [undefined, undefined, undefined] })} />);
 
             expect(screen.getByRole('region').querySelectorAll('[data-variant]')).toHaveLength(0);
@@ -261,7 +261,7 @@ describe('MiniPlayer', () => {
             expect(screen.getByRole('region')).toHaveTextContent('今日');
         });
 
-        it('should show no tag without tags (latest-day fallback, drama)', () => {
+        it('should show no tag without tags (drama)', () => {
             render(<MiniPlayer {...props()} />);
 
             expect(screen.getByRole('region').querySelector('[data-tag]')).toBeNull();

@@ -145,12 +145,18 @@ const openLabel = (recording: Recording, tag: MiniPlayerTag | undefined): string
 const rewatchPosition = (index: number, total: number) =>
     t('miniPlayer.positionRewatch', { index, total });
 
+/** 成個播放器讀屏名：有重溫唔講「今日」；只有重溫（今日冇節目）就唔講「及今日節目」 */
+const regionKey = (hasRewatch: boolean, count: number) => {
+    if (!hasRewatch) return 'miniPlayer.region';
+    return count > 1 ? 'miniPlayer.regionRewatch' : 'miniPlayer.regionRewatchOnly';
+};
+
 /** 讀屏名同標籤：清單有重溫舊集就成個播放器、第幾個都唔再講「今日」 */
 const listLabels = (list: Recording[], tags: (MiniPlayerTag | undefined)[], index: number) => {
     const hasRewatch = tags[0] === 'rewatch';
     const current = list[index];
     return {
-        region: t(hasRewatch ? 'miniPlayer.regionRewatch' : 'miniPlayer.region'),
+        region: t(regionKey(hasRewatch, list.length)),
         openLabel: current ? openLabel(current, tags[index]) : '',
         labels: list.map((r, i) => dotLabel(r, tags[i])),
         tags,
