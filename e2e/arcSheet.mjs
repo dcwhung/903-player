@@ -88,9 +88,11 @@ const FLING = { steps: FLING_STEPS, stepMs: 0, holdMs: 0 };
 /**
  * 一下拖動：start → 逐格 move 到 dy → 量一次拖緊嘅樣（measureDrag）→ 停定 holdMs → 放手 → 等表定落嚟。
  * input 係 { down, move, up }，觸控 / 滑鼠共用；返回拖緊時嘅量度同放手後狀態（waitSettled）。
- * fling 唔量（evaluate 要時間，會拖慢最後一格同放手之間）
+ * fling 唔量（evaluate 要時間，會拖慢最後一格同放手之間）。
+ * delivered：放手後等 app 真係收到放手先判斷（CDP 可能未 dispatch 到 JS 就返）
  */
-const dragDown = async (p, input, { x, y }, dy, { steps, stepMs, holdMs } = SLOW) => {
+const dragDown = async (p, input, { x, y }, dy, motion = SLOW, delivered = async () => {}) => {
+    const { steps, stepMs, holdMs } = motion;
     const sheet = await sheetOf(p).elementHandle();
     await input.down(x, y);
     for (let i = 1; i <= steps; i += 1) {
@@ -100,6 +102,7 @@ const dragDown = async (p, input, { x, y }, dy, { steps, stepMs, holdMs } = SLOW
     const during = holdMs > 0 ? await measureDrag(sheet) : undefined;
     if (holdMs > 0) await p.waitForTimeout(holdMs);
     await input.up(x, y + dy);
+    await delivered();
     const settled = await waitSettled(p, sheet);
     await sheet.dispose();
     return { during, settled };
@@ -180,16 +183,110 @@ const checkDismiss = async (env, grip, label) => {
     );
 };
 
-/** 甩：唔夠門檻嘅距離，快速拉完即刻放手 → 速度夠快，表照閂（Q-6） */
-const checkFling = async (env, grip, label) => {
-    const { p, log, input } = env;
-    if (!(await openSheet(env, label))) return;
+// 甩嘅手勢機忙時可能送得太慢（CDP 每下來回 30–50ms，窗口得 VELOCITY_WINDOW_MS）：
+// 量到唔算甩就當前提唔成立，重做最多咁多次（W-484）
+const FLING_RETRIES = 2;
+// 等 app 收到手勢完結（記錄入面有放手或者取消）最多咁耐
+const RELEASE_DELIVERED_TIMEOUT_MS = 2000;
+const RELEASE_TYPE = /up|end/;
+const FINISHED_TYPE = /up|end|cancel/;
+// 每個起手點 app 用邊組 event 計速度：表頭行 pointer（滑鼠、手指都係），清單行 touch。
+// 取消（例如滑鼠拖成揀字）都記，手勢冇放手就唔算甩
+const GESTURE_EVENTS = {
+    header: ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'],
+    list: ['touchstart', 'touchmove', 'touchend', 'touchcancel'],
+};
+
+/**
+ * 喺 window 掛 capture listener（app handler 之前），記低 app 真正收到嘅 clientY 同 event.timeStamp。
+ * CDP 嘅 timestamp 去唔到 event.timeStamp，所以只可以事後量；每次重做都換一個新記錄
+ */
+const recordGesture = (p, grip) =>
+    p.evaluate((types) => {
+        window.__flingRecorder?.abort();
+        const recorder = new AbortController();
+        const samples = [];
+        const record = (event) => {
+            const point = event.changedTouches?.[0] ?? event;
+            samples.push({ type: event.type, y: point.clientY, t: event.timeStamp });
+        };
+        for (const type of types) {
+            window.addEventListener(type, record, { capture: true, signal: recorder.signal });
+        }
+        Object.assign(window, { __flingRecorder: recorder, __flingSamples: samples });
+    }, GESTURE_EVENTS[grip]);
+
+/**
+ * 用 app 同一條式（cardStack.ts pushSample / velocityOf）計放手速度：
+ * 由最後一下按低開始，只計放手前 VELOCITY_WINDOW_MS 內嘅樣本，頭尾相減。
+ * gapMs：放手同上一個樣本相隔幾耐（診斷用）
+ */
+const flingOf = (samples) => {
+    // 滑鼠按低前會先 move 去起手點：由最後一下 pointerdown / touchstart 先算手勢
+    const pressed = samples.findLastIndex((s) => /down|start/.test(s.type));
+    const gesture = samples.slice(Math.max(0, pressed));
+    const release = gesture.at(-1);
+    // 記錄唔齊（冇按低 / 冇放手 / 取消咗）就量唔到，當唔算甩
+    if (pressed < 0 || !RELEASE_TYPE.test(release?.type)) return { velocity: 0, gapMs: NaN };
+    const first = gesture.find((s) => release.t - s.t <= VELOCITY_WINDOW_MS);
+    const velocity = release.t > first.t ? (release.y - first.y) / (release.t - first.t) : 0;
+    return { velocity, gapMs: release.t - gesture.at(-2).t };
+};
+
+/** 等記錄見到手勢完結：CDP 返咗唔代表 JS 已經收到（機忙時 move / up 會遲 dispatch） */
+const releaseDelivered = (p) => () =>
+    succeeds(
+        p.waitForFunction(
+            (pattern) => window.__flingSamples.some((s) => new RegExp(pattern).test(s.type)),
+            FINISHED_TYPE.source,
+            { timeout: RELEASE_DELIVERED_TIMEOUT_MS },
+        ),
+    );
+
+/** 一次甩：開表 → 記錄 → 拉完即刻放手；返回放手後狀態同 app 量到嘅速度 */
+const flingOnce = async (env, grip, label) => {
+    const { p, input } = env;
+    if (!(await openSheet(env, label))) return null;
     const height = (await sheetOf(p).boundingBox()).height;
     const dy = Math.round(height * SHEET_DISMISS_RATIO * FLING_RATIO);
-    const { settled } = await dragDown(p, input, await GRIPS[grip](p), dy, FLING);
-    log(
-        settled === 'closed' && dy >= SHEET_FLICK_MIN_PX,
-        `${label}：快速甩 ${dy}px（≥ ${SHEET_FLICK_MIN_PX}px，< 表高 ${height.toFixed(0)} × ${SHEET_DISMISS_RATIO}）放手，全集表照閂（${settled}）`,
+    await recordGesture(p, grip);
+    const grab = await GRIPS[grip](p);
+    const { settled } = await dragDown(p, input, grab, dy, FLING, releaseDelivered(p));
+    const fling = flingOf(await p.evaluate(() => window.__flingSamples));
+    const valid = fling.velocity >= SHEET_FLICK_VELOCITY_PX_PER_MS && dy >= SHEET_FLICK_MIN_PX;
+    return { dy, height, settled, valid, ...fling };
+};
+
+/** 量度講法（log 用）；記錄唔齊就直講 */
+const describeFling = ({ velocity, gapMs }) =>
+    Number.isNaN(gapMs)
+        ? '記錄唔齊（冇放手或者取消咗）'
+        : `速度 ${velocity.toFixed(2)} px/ms，放手同上一下相隔 ${gapMs.toFixed(1)}ms`;
+
+/** 重開表只報 fail：成功唔加 check，check 數唔會因重做而變 */
+const quietEnv = (env) => ({ ...env, log: (ok, msg) => ok || env.log(ok, msg) });
+
+/**
+ * 甩：唔夠門檻嘅距離，快速拉完即刻放手 → 速度夠快，表照閂（Q-6）。
+ * 手勢真係夠快（app 計到嘅速度 ≥ 門檻）先判；夠快但冇閂就係 app 壞，即刻 FAIL、唔重做。
+ * 機太慢送唔到甩先重做，重做完都唔得就 FAIL 講明係前提唔成立
+ */
+const checkFling = async (env, grip, label) => {
+    let result = await flingOnce(env, grip, label);
+    for (let retry = 1; result && !result.valid && retry <= FLING_RETRIES; retry += 1) {
+        console.log(
+            `RETRY ${label}：送出去嘅手勢唔算甩（${describeFling(result)}），重做第 ${retry} 次`,
+        );
+        result = await flingOnce(quietEnv(env), grip, label);
+    }
+    if (!result) return;
+    const { dy, height, settled, valid } = result;
+    const measured = describeFling(result);
+    env.log(
+        valid && settled === 'closed',
+        valid
+            ? `${label}：快速甩 ${dy}px（≥ ${SHEET_FLICK_MIN_PX}px，< 表高 ${height.toFixed(0)} × ${SHEET_DISMISS_RATIO}，${measured}）放手，全集表照閂（${settled}）`
+            : `${label}：重做 ${FLING_RETRIES} 次都送唔到甩（${measured}，要 ≥ ${SHEET_FLICK_VELOCITY_PX_PER_MS}），前提唔成立，驗唔到`,
     );
 };
 
