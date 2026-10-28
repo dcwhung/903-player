@@ -14,14 +14,24 @@ const TODAY_SHOWS = ['在晴朗的一天出發', 'Bad Girl大過佬', '雲妮鍾
 const REGION_REWATCH_AND_TODAY = '正在播放（重溫及今日節目）';
 const REGION_REWATCH_ONLY = '正在播放（重溫）';
 const ANY_MINI_REGION = /^正在播放/;
-// 主頁 render 完再等咁耐先斷言「冇 mini player」（有嘅話平日呢段時間內早就出咗）
-const MINI_ABSENT_SETTLE_MS = 1000;
+// 主頁節目格數：7 個節目 + 今日節目
+const HOME_TILE_COUNT = 8;
 // 量兩次播放進度之間隔幾耐：照播嘅話進度會行
 const PROGRESS_GAP_MS = 2000;
 
+/**
+ * 入主頁，等正面錨點：節目格錄音讀好（aria-busy false）兼 8 格（7 個節目 + 今日節目）render 晒。
+ * mini player 同節目格喺同一個 render 由錄音 + player 決定，所以到呢度有冇 mini player 已經定咗
+ * （checkAnchorShowsMini 對照證明），唔使固定等
+ */
 const openHome = async (p, base) => {
     await p.goto(base);
-    await p.waitForSelector('nav[aria-busy="false"]');
+    const grid = p.locator('nav[aria-busy="false"]');
+    await grid.waitFor();
+    await grid
+        .getByRole('button')
+        .nth(HOME_TILE_COUNT - 1)
+        .waitFor();
 };
 
 /** 入公子會節目頁（冇其他嘢載入 → 自動播最近一集 17/10），確認播緊嗰集，再撳返回主頁 */
@@ -79,11 +89,29 @@ const checkRewatchWithToday = async ({ browser, base, errors, log }) => {
         dots.join(' | ') === expected.join(' | '),
         `${label}：次序係重溫 + 今日節目（${dots.join(' | ')}）`,
     );
-    const open = await mini.getByRole('button', { name: REWATCH_OPEN, exact: true }).count();
-    const text = (await mini.textContent()) ?? '';
+    // 「重溫」標籤（data-tag）喺舊集嘅開頁掣入面，唔靠成段 textContent 嘅字序
+    const open = mini.getByRole('button', { name: REWATCH_OPEN, exact: true });
+    const tags = await open
+        .locator('[data-tag]')
+        .evaluateAll((els) => els.map((e) => `${e.dataset.tag}「${e.textContent}」`));
     log(
-        open === 1 && text.startsWith(`${REWATCH_SHOW.name}重溫`),
-        `${label}：而家顯示嘅第一項係舊集，標「重溫」（${text}）`,
+        (await open.count()) === 1 && tags.join() === 'rewatch「重溫」',
+        `${label}：而家顯示嘅第一項係舊集，標「重溫」（開頁掣 ${await open.count()} 個，標籤 ${tags.join() || '冇'}）`,
+    );
+    await ctx.close();
+};
+
+/**
+ * 對照：平日冇嘢載入，openHome 個錨點一到就已經有 mini player（今日節目），唔使再等。
+ * 證明星期日數到 0 個係規則，唔係未 render 到；將來 mini player 遲過錨點先出，呢度會 fail
+ */
+const checkAnchorShowsMini = async ({ browser, base, errors, log }) => {
+    const { ctx, p } = await newE2EPage(browser, errors);
+    await openHome(p, base);
+    const regions = await p.getByRole('region', { name: ANY_MINI_REGION }).count();
+    log(
+        regions === 1,
+        `主頁 mini player 對照（平日冇嘢載入）：節目格一 render 完就已經有 mini player（${regions} 個）`,
     );
     await ctx.close();
 };
@@ -93,7 +121,6 @@ const checkNoShowDay = async ({ browser, base, errors, log }) => {
     const label = '主頁 mini player（星期日冇節目）';
     const { ctx, p } = await newE2EPage(browser, errors, {}, { now: E2E_SUNDAY });
     await openHome(p, base);
-    await p.waitForTimeout(MINI_ABSENT_SETTLE_MS);
     const idle = await p.getByRole('region', { name: ANY_MINI_REGION }).count();
     log(idle === 0, `${label}：冇嘢載入，主頁冇 mini player（${idle} 個）`);
     await playOlderEpisodeThenGoHome(p, base, log, label);
@@ -119,5 +146,6 @@ const checkNoShowDay = async ({ browser, base, errors, log }) => {
 /** 主頁 mini player 重溫規則：平日（重溫 + 今日）同星期日（冇節目） */
 export const runMiniPlayerRuleChecks = async (env) => {
     await checkRewatchWithToday(env);
+    await checkAnchorShowsMini(env);
     await checkNoShowDay(env);
 };
