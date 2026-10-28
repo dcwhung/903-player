@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
@@ -323,6 +323,11 @@ describe('HomePage', () => {
         expect(
             screen.getByRole('button', { name: /^(?:播放|暫停) 19\/10/, current: true }),
         ).toBeInTheDocument();
+
+        // 帶入嚟嘅 state 用完就清：之後自己揀返舊集，唔會再被拉返今日（S-532）
+        await userEvent.click(screen.getByRole('button', { name: /^(?:播放|暫停) 12\/10/ }));
+        await act(async () => {});
+        expect(audio.src).toBe(old.url);
     });
 
     it('keeps the 重溫 episode when opened from the 重溫 item', async () => {

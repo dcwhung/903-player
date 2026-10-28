@@ -46,7 +46,7 @@ const useShowEpisodes = (show: ShowConfig | undefined) => {
 
 /**
  * 帶入嚟要播嘅集（S-507）：同一個節目有重溫又有今日，由今日嗰項撳入就播今日，唔係跟住播緊嘅舊集。
- * 用完即刻清走 history state，返上一頁再入唔會再觸發
+ * 清單載入完就清走 history state（搵唔搵到都清，S-531），之後 refresh 清單或者返上一頁再入唔會再觸發
  */
 const useRequestedEpisode = (episodes: readonly Recording[]) => {
     const location = useLocation();
@@ -58,12 +58,12 @@ const useRequestedEpisode = (episodes: readonly Recording[]) => {
         () => void navigate(pathname, { replace: true, state: null }),
         [navigate, pathname],
     );
-    return { requested, consume };
+    return { hasRequest: url !== undefined, requested, consume };
 };
 
 /**
- * 直接開呢頁（例如 deep link / mini player）時都自動播放；自動播嘅唔算用戶揀（清走 showPick），
- * 返主頁唔會當重溫
+ * 直接開呢頁（例如 deep link / mini player）時都自動播放；自動播嘅唔算用戶揀（清走 showPick，
+ * startShow 自己會清），返主頁唔會當重溫
  */
 const useAutoplayShow = (
     show: ShowConfig | undefined,
@@ -73,18 +73,17 @@ const useAutoplayShow = (
     const { status } = useRecordings();
     const { load } = usePlayer();
     const { startShow } = useStartPlayback();
-    const { requested, consume } = useRequestedEpisode(episodes);
+    const { hasRequest, requested, consume } = useRequestedEpisode(episodes);
     useEffect(() => {
         if (!show || status !== 'ready') return;
-        if (requested) consume();
+        if (hasRequest) consume();
         if (requested && requested.url !== playingUrl) {
             clearShowPick();
             void load(requested, { autoplay: true });
         } else if (!requested && playingUrl === undefined) {
-            clearShowPick();
             startShow(show.id);
         }
-    }, [show, status, requested, consume, playingUrl, load, startShow]);
+    }, [show, status, hasRequest, requested, consume, playingUrl, load, startShow]);
 };
 
 /**
