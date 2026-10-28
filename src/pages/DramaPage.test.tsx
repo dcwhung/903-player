@@ -393,7 +393,7 @@ describe('DramaPage', () => {
             expect(gaugeArt()?.getAttribute('src')).toBe(dramaArtFor(season3!));
         });
 
-        it('starts where the drama left off when no 短篇 was picked', async () => {
+        it('starts the drama’s first episode when no 短篇 was picked', async () => {
             const { audio } = await openDramaWhileOtherPlays('golden');
             await closeSheet();
 

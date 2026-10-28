@@ -154,19 +154,22 @@ const useArcSheetActions = (
     return { openSheet: () => setOpen(true), close: () => setOpen(false), pick, play };
 };
 
+type ArcGroups = readonly { items: readonly ArcSummary[] }[];
+
+/** 某個短篇嘅續聽集（全集表 summary 計好嘅 resume） */
+const arcResume = (groups: ArcGroups, arc: string | undefined): SeriesEpisode | undefined =>
+    groups.flatMap((g) => g.items).find((s) => s.arc === arc)?.resume;
+
 /**
  * 揀短篇：播緊就淨係換清單（碟面、時間照跟播緊嗰集）；
  * 冇播放就順便載入嗰個短篇嘅續聽集（唔自動播），碟面同時間即刻跟住轉
  */
-const useArcPick = (
-    groups: readonly { items: readonly ArcSummary[] }[],
-    setArc: (arc: string) => void,
-) => {
+const useArcPick = (groups: ArcGroups, setArc: (arc: string) => void) => {
     const player = usePlayer();
     return (arc: string) => {
         setArc(arc);
         if (player.isPlaying) return;
-        const resume = groups.flatMap((g) => g.items).find((s) => s.arc === arc)?.resume;
+        const resume = arcResume(groups, arc);
         if (resume) void player.load(resume);
     };
 };
@@ -210,14 +213,16 @@ const arcCounter = (episodes: readonly SeriesEpisode[], current: SeriesEpisode |
 };
 
 /** 揀咗嘅短篇（同預設嗰集唔同短篇先算）嘅續聽集；冇揀就 undefined */
+/**
+ * 揀短篇（同預設嗰集唔同短篇先算）：而家未載入狀態只會係冇進度，預設短篇嘅 resume 同
+ * pickSeriesStart 係同一集，所以呢個 guard 暫時測唔出分別；留住係為咗將來有進度都未載入時，
+ * 冇揀短篇仍然跟 pickSeriesStart（S-537）
+ */
 const pickedArcResume = (
-    groups: readonly { items: readonly ArcSummary[] }[],
+    groups: ArcGroups,
     arc: string | undefined,
     current: SeriesEpisode | undefined,
-): SeriesEpisode | undefined =>
-    arc === current?.arc
-        ? undefined
-        : groups.flatMap((g) => g.items).find((s) => s.arc === arc)?.resume;
+): SeriesEpisode | undefined => (arc === current?.arc ? undefined : arcResume(groups, arc));
 
 /** 揀緊睇邊個短篇、chips / 全集表次序，同嗰個短篇要列出嘅集數 */
 const useSeriesArcs = (
