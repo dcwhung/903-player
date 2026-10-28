@@ -373,6 +373,50 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         expect(scrollTo).not.toHaveBeenCalled();
     });
 
+    /** 撳完冇 click（S-483）之後，鍵盤 Tab 去第二張都要捲過去做 focus */
+    const expectTabStillScrolls = async () => {
+        await userEvent.tab();
+        await userEvent.tab();
+        expect(focused()).toEqual(['劇 2']);
+        expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ top: 56 }));
+    };
+    const MOUSE = { pointerId: 2, pointerType: 'mouse', button: 0 };
+
+    it('lets the keyboard scroll again after a mouse press is dragged off a card (S-483)', async () => {
+        renderShelf();
+
+        fireEvent.pointerDown(tile('劇 1'), MOUSE);
+        // React 嘅 onPointerLeave 係由 pointerout 模擬
+        fireEvent.pointerOut(tile('劇 1'), { ...MOUSE, relatedTarget: document.body });
+        fireEvent.pointerUp(document.body, MOUSE);
+
+        await expectTabStillScrolls();
+    });
+
+    it('lets the keyboard scroll again after a press opens the context menu (S-483)', async () => {
+        renderShelf();
+
+        fireEvent.pointerDown(tile('劇 1'), TOUCH);
+        fireEvent.contextMenu(tile('劇 1'));
+
+        await expectTabStillScrolls();
+    });
+
+    it('still only focuses a dimmed card on a tap whose pointer leaves before the click', () => {
+        const onOpen = renderShelf();
+
+        // touch：放手先 pointerleave，跟住先 focus、click
+        press('劇 3', 150);
+        lift('劇 3', 150);
+        fireEvent.pointerOut(tile('劇 3'), { ...TOUCH, relatedTarget: document.body });
+        fireEvent.focus(tile('劇 3'));
+        fireEvent.click(tile('劇 3'), { detail: 1 });
+
+        expect(onOpen[2]).not.toHaveBeenCalled();
+        expect(focused()).toEqual(['劇 3']);
+        expect(scrollTo).toHaveBeenCalledTimes(1);
+    });
+
     /** 假 ResizeObserver：記住 callback，test 自己觸發（模擬書架變高 / 矮） */
     const stubResizeObserver = () => {
         const observer = { trigger: () => {} };
