@@ -8,7 +8,7 @@ import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { useStartDrama } from '../hooks/useStartDrama';
 import { t } from '../i18n/t';
 import { usePlayer } from '../player/usePlayer';
-import { seriesArcs } from '../selectors/dramas';
+import { isEpisodeOfDrama, seriesArcs } from '../selectors/dramas';
 import { dramaShelfOrder } from '../selectors/dramaShelf';
 import { getProgressMap } from '../services/progressStore';
 
@@ -28,13 +28,14 @@ const useShelfDramas = (): DramaConfig[] => {
 
 /**
  * 廣播劇 tab 嘅劇集格：
- * - 撳格：入頁。短篇劇集永遠唔播（用戶可能只係想睇清單）；每日劇集同節目格一樣，冇其他嘢佔住先播
+ * - 撳格：入頁。短篇劇集永遠唔播（用戶可能只係想睇清單）；每日劇集同節目格一樣，冇其他嘢佔住、亦未載入呢套劇先播
  * - 撳「繼續收聽」條：唔入頁，淨係播續聽嗰集（mini player 跟住顯示）；用戶明確要播，會蓋過其他嘢
  */
 export const useDramaItems = (): DramaShelfItem[] => {
     const navigate = useNavigate();
     const startDrama = useStartDrama();
     const busy = useAudioBusy();
+    const { recording } = usePlayer();
     const newLabels = useDramaNewLabels();
     const continueOf = useDramaContinue();
     const shelf = useShelfDramas();
@@ -46,7 +47,10 @@ export const useDramaItems = (): DramaShelfItem[] => {
         newLabel: newLabels.get(drama.id),
         resume: continueOf(drama),
         onOpen: () => {
-            if (drama.kind === 'daily' && !busy) startDrama(drama);
+            // 已載入呢套劇就算 mini player 關咗都唔播，保持暫停（S-538）
+            if (drama.kind === 'daily' && !busy && !isEpisodeOfDrama(recording, drama.id)) {
+                startDrama(drama);
+            }
             navigate(`/drama/${drama.id}`);
         },
         onResume: () => startDrama(drama),

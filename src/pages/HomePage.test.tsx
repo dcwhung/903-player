@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { HOME_THEME } from '../config/showThemes';
+import { restoreMiniPlayer } from '../hooks/miniPlayerDismissed';
 import { usePlayer } from '../player/usePlayer';
 import { seriesEpisodesOf } from '../dramas';
 import { findShow } from '../shows';
@@ -408,6 +409,46 @@ describe('HomePage', () => {
             expect(screen.getByTestId('location')).toHaveTextContent('/show/gongzi');
         },
     );
+
+    describe('after the mini player is swiped away', () => {
+        afterEach(() => restoreMiniPlayer());
+        const closeMiniPlayer = async () => {
+            await userEvent.click(await screen.findByRole('button', { name: '關閉播放器' }));
+        };
+
+        it('keeps the show still loaded paused when its tile is tapped', async () => {
+            const { audio } = await arriveHomeWith(RECORDINGS[3] as Recording);
+            await closeMiniPlayer();
+            const plays = audio.play.mock.calls.length;
+
+            await userEvent.click(screen.getByRole('button', { name: /^雲妮鍾情/ }));
+
+            expect(audio.src).toBe(RECORDINGS[3]?.url);
+            expect(audio.play).toHaveBeenCalledTimes(plays);
+            expect(screen.getByTestId('location')).toHaveTextContent('/show/wanni');
+        });
+
+        it('keeps today’s show still loaded paused when 今日節目 is tapped', async () => {
+            const { audio } = await arriveHomeWith(RECORDINGS[3] as Recording);
+            await closeMiniPlayer();
+            const plays = audio.play.mock.calls.length;
+
+            await userEvent.click(screen.getByRole('button', { name: '今日節目' }));
+
+            expect(audio.src).toBe(RECORDINGS[3]?.url);
+            expect(audio.play).toHaveBeenCalledTimes(plays);
+        });
+
+        it('starts another show as if nothing were loaded', async () => {
+            const { audio } = await arriveHomeWith(RECORDINGS[3] as Recording);
+            await closeMiniPlayer();
+
+            await userEvent.click(screen.getByRole('button', { name: '公子會' }));
+
+            expect(audio.src).toBe(RECORDINGS[1]?.url);
+            expect(audio.play).toHaveBeenCalled();
+        });
+    });
 
     it('opens the today page without replacing what already plays', async () => {
         const other = recording('gongzi', '2026-10-17');

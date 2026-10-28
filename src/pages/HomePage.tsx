@@ -22,18 +22,39 @@ import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useMiniPlayer } from '../hooks/useMiniPlayer';
 import { useNewShowIds } from '../hooks/useNewShowIds';
 import { useStartPlayback } from '../hooks/useStartPlayback';
+import { usePlayer } from '../player/usePlayer';
+import { todayRecordings } from '../selectors/recordings';
+import type { ShowId } from '../types/recording';
+import { asShowRecording } from '../types/track';
+import { hkToday } from '../utils/date';
 import { t } from '../i18n/t';
 import styles from './HomePage.module.css';
 import page from './Page.module.css';
 
 /**
- * 7 個節目格（今日有新一集就有「New」）+ 今日節目格：撳落入頁；
- * 冇其他嘢播緊 / 暫停緊（useAudioBusy）先順便開始播，唔蓋過用戶本身嗰樣（可能只係想睇清單）
+ * 撳節目格 / 今日節目格時順便開始播嘅條件：冇其他嘢播緊 / 暫停緊（useAudioBusy），
+ * 而且嗰個節目（今日節目格：今日任何一個節目）本身未載入。
+ * 已載入就算 mini player 左滑關咗都唔播，保持暫停（S-538）
  */
+const useTileAutoplay = () => {
+    const busy = useAudioBusy();
+    const { recording } = usePlayer();
+    const { recordings } = useRecordings();
+    const loadedShowId = asShowRecording(recording)?.showId;
+    const todayLoaded = todayRecordings(recordings, hkToday()).some(
+        (r) => r.url === recording?.url,
+    );
+    return {
+        canStartShow: (showId: ShowId) => !busy && loadedShowId !== showId,
+        canStartToday: () => !busy && !todayLoaded,
+    };
+};
+
+/** 7 個節目格（今日有新一集就有「New」）+ 今日節目格：撳落入頁，按 useTileAutoplay 順便開始播 */
 const useHomeTiles = () => {
     const navigate = useNavigate();
     const { startShow, startToday } = useStartPlayback();
-    const busy = useAudioBusy();
+    const { canStartShow, canStartToday } = useTileAutoplay();
     const newShowIds = useNewShowIds();
     return [
         ...SHOWS.map((show) => (
@@ -43,7 +64,7 @@ const useHomeTiles = () => {
                 art={show.tileArt}
                 isNew={newShowIds.has(show.id)}
                 onClick={() => {
-                    if (!busy) startShow(show.id);
+                    if (canStartShow(show.id)) startShow(show.id);
                     navigate(`/show/${show.id}`);
                 }}
             />
@@ -53,7 +74,7 @@ const useHomeTiles = () => {
             variant="today"
             label={t('home.today')}
             onClick={() => {
-                if (!busy) startToday();
+                if (canStartToday()) startToday();
                 navigate('/today');
             }}
         />,
