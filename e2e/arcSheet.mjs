@@ -7,20 +7,22 @@ const PHONE = { width: 390, height: 844 };
 const SIZE = `${PHONE.width}×${PHONE.height}`;
 // 短篇劇集（kind: series）：第一次入頁冇進度，全集表會自己彈出
 const DRAMA_ROUTE = '#/drama/chisee';
-// 同 src/config/constants.ts DRAMA_AUDIO_BASE 一樣：e2e 唔出外網，劇集音檔一律 404
-const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
-
-// 拉過表高咁多先閂（同 src/components/ArcSheet/sheetDrag.ts SHEET_DISMISS_RATIO 一樣）
-const SHEET_DISMISS_RATIO = 0.25;
+// 以下 export 嘅常數係手抄 src（e2e 係純 node，import 唔到 TS），由 scripts/e2eSrcConstants.test.ts 鎖住一致
+// 拉過表高咁多先閂（src/components/ArcSheet/sheetDrag.ts SHEET_DISMISS_RATIO）
+export const SHEET_DISMISS_RATIO = 0.25;
+// 速度只計放手前咁多 ms 入面嘅樣本（src/components/ShowCardStack/cardStack.ts VELOCITY_WINDOW_MS）
+export const VELOCITY_WINDOW_MS = 100;
+// 清單路要郁過咁多 px 先睇得出方向、由表接手（src/hooks/swipe.ts DRAG_INTENT_PX）
+export const DRAG_INTENT_PX = 10;
 // 拉唔夠：門檻一半，肯定彈返
 const SNAP_BACK_RATIO = SHEET_DISMISS_RATIO / 2;
 // 拉夠：門檻再加咁多 px，唔會因為量高度 / 捨入差少少而唔閂
 const DISMISS_MARGIN_PX = 40;
-// 放手前停定咁耐：長過 VELOCITY_WINDOW_MS（src/components/ShowCardStack/cardStack.ts，100ms），
+// 放手前停定咁耐：VELOCITY_WINDOW_MS 兩倍，窗口只剩放手樣本，
 // 速度當 0，閂唔閂淨係睇距離（唔會變咗「甩」）
-const HOLD_BEFORE_RELEASE_MS = 200;
-// 跟手指位移容差（px）：清單路要郁過 DRAG_INTENT_PX 先接手，起點會遲少少
-const FOLLOW_TOLERANCE_PX = 16;
+const HOLD_BEFORE_RELEASE_MS = VELOCITY_WINDOW_MS * 2;
+// 跟手指位移容差（px）：清單路要郁過 DRAG_INTENT_PX 先接手，起點會遲少少（再加少少捨入位）
+const FOLLOW_TOLERANCE_PX = DRAG_INTENT_PX + 6;
 const STEPS = 10;
 const STEP_MS = 16;
 // 放手後等滑走 / 彈返動畫（SHEET_SLIDE_MS 250ms）同 onClose 完
@@ -136,10 +138,9 @@ const checkDismiss = async (env, grip, label) => {
     );
 };
 
-/** 開一個劇集頁；劇集音檔 404（唔出外網） */
+/** 開一個劇集頁；劇集音檔 404 由 newE2EContext 處理（唔出外網） */
 const openDramaPage = async (browser, errors, base, options) => {
     const ctx = await newE2EContext(browser, { viewport: PHONE, colorScheme: 'dark', ...options });
-    await ctx.route(`${DRAMA_AUDIO_BASE}/**`, (route) => route.fulfill({ status: 404, body: '' }));
     const p = await ctx.newPage();
     p.on('pageerror', (e) => errors.push(e.message));
     await p.goto(`${base}${DRAMA_ROUTE}`);

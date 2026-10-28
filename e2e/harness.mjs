@@ -12,7 +12,13 @@ import { silenceWav } from './silenceWav.mjs';
  */
 export const E2E_NOW = '2026-10-19T22:30:00+08:00';
 
+/** 同 src/config/constants.ts ALLOWED_AUDIO_ORIGIN 一樣（scripts/e2eSrcConstants.test.ts 鎖住） */
 export const AUDIO_HOST = 'https://audio.hkfm903.live';
+/**
+ * 廣播劇音檔（R2）：同 src/config/constants.ts DRAMA_AUDIO_BASE 一樣（scripts/e2eSrcConstants.test.ts 鎖住）。
+ * e2e 唔出外網，所有 context 一律答 404，唔使每個劇集測試自己 route
+ */
+export const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
 const AUDIO_SECONDS = 600;
 const wav = silenceWav(AUDIO_SECONDS);
 /** 同 src/services/probeStore.ts 嘅 PROBE_STORAGE_KEY 一樣：app 嘅錄音列表只會由呢度讀 */
@@ -66,7 +72,7 @@ const seedProbeStore = ({ key, found }) => {
 /**
  * 開一個 e2e context：時鐘由 E2E_NOW 開始照常行（clock.install 唔會暫停，
  * setTimeout / setInterval / Date.now 跟真實時間前進，播放進度、定時存進度、更新檢查照行），
- * audio host 用上面嘅似真版本。extraAudioUrls：額外當係存在嘅檔（例如測 probe 搵到新一集）。
+ * audio host 用上面嘅似真版本，劇集音檔（R2）一律 404。extraAudioUrls：額外當係存在嘅檔（例如測 probe 搵到新一集）。
  */
 /** 啟動畫面最少顯示 2 秒，期間會蓋住成頁：用坐標嘅手勢會撳中佢，所以要等佢移走 */
 const SPLASH_GONE_TIMEOUT_MS = 10_000;
@@ -90,6 +96,7 @@ export const newE2EContext = async (browser, options = {}, { extraAudioUrls = []
     const ctx = await browser.newContext(options);
     await ctx.clock.install({ time: new Date(E2E_NOW) });
     await ctx.route(`${AUDIO_HOST}/**`, audioResponder(extraAudioUrls));
+    await ctx.route(`${DRAMA_AUDIO_BASE}/**`, (route) => route.fulfill({ status: 404, body: '' }));
     await ctx.addInitScript(seedProbeStore, { key: PROBE_STORAGE_KEY, found: SAMPLE_RECORDINGS });
     ctx.on('page', waitForSplashOnLoad);
     return ctx;
