@@ -212,7 +212,6 @@ const arcCounter = (episodes: readonly SeriesEpisode[], current: SeriesEpisode |
     };
 };
 
-/** 揀咗嘅短篇（同預設嗰集唔同短篇先算）嘅續聽集；冇揀就 undefined */
 /**
  * 揀短篇（同預設嗰集唔同短篇先算）：而家未載入狀態只會係冇進度，預設短篇嘅 resume 同
  * pickSeriesStart 係同一集，所以呢個 guard 暫時測唔出分別；留住係為咗將來有進度都未載入時，
