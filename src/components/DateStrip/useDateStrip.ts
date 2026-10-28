@@ -59,8 +59,11 @@ const useStripStep = ({ dateLabel, days, current, onPick, spinRef }: DateStripSt
     return { motion, go, announcement };
 };
 
-/** 日子條嘅方向鍵同撳日子：都行 go（同拖動同一條路） */
-const useStripInput = ({ days, current }: DateStripStepOptions, go: (index: number) => void) => {
+/** 日子條嘅方向鍵同撳日子：都行 go（同拖動同一條路）。純 handler 工廠，入面冇 hook / state */
+const stripInputHandlers = (
+    { days, current }: DateStripStepOptions,
+    go: (index: number) => void,
+) => {
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
         const direction = arrowKeyDirection(event.key);
         // 只係焦點喺日子條本身先處理
@@ -94,7 +97,7 @@ export const useDateStrip = (options: DateStripStepOptions) => {
         onGo: go,
         onHold: options.onHold,
     });
-    const { onKeyDown, onTrackClick } = useStripInput(options, go);
+    const { onKeyDown, onTrackClick } = stripInputHandlers(options, go);
     const zone = {
         role: 'group',
         'aria-roledescription': t('episodes.switchRoleDescription'),
