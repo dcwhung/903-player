@@ -10,6 +10,7 @@ import { usePlayer } from '../player/usePlayer';
 import {
     dailyNewestFirst,
     episodesInArc,
+    hasNoProgress,
     isEpisodeOfDrama,
     pickDailyStart,
     pickSeriesStart,
@@ -185,19 +186,21 @@ const useArcPick = (groups: ArcGroups, setArc: (arc: string) => void) => {
 };
 
 /**
- * 未載入呢套劇（第一次入未揀，或者播緊其他嘢）：唱片區（時間、掣、「現正播放」）係未開始樣，
+ * 未載入呢套劇（未揀 / 未撳播放，或者播緊其他嘢）：唱片區（時間、掣、「現正播放」）係未開始樣，
  * 撳播放（start）先開始播呢套劇、換走其他嘢；載入咗就跟返 player（start 係 undefined）。
+ * 未載入時聽過呢套劇就係 resume（講繼續收聽邊集），未聽過係 unloaded（叫用戶揀短篇）。
  * picked：用戶揀咗另一個短篇（播緊其他嘢時揀短篇唔會載入）就播嗰個短篇嘅續聽集（CUI-0007）
  */
 const useStandby = (
     drama: DramaConfig,
     isLoaded: boolean,
     playState: PlaybackState,
-    picked?: SeriesEpisode,
+    { listened, picked }: { listened: boolean; picked: SeriesEpisode | undefined },
 ) => {
     const startDrama = useStartDrama();
     const { load } = usePlayer();
-    const status: PlaybackLineState = isLoaded ? playState : 'unloaded';
+    const idle: PlaybackLineState = listened ? 'resume' : 'unloaded';
+    const status: PlaybackLineState = isLoaded ? playState : idle;
     const start = () => (picked ? void load(picked, { autoplay: true }) : startDrama(drama));
     return { status, start: isLoaded ? undefined : start };
 };
@@ -246,7 +249,9 @@ const useSeriesArcs = (
     // 照集數次序（聽完嘅留喺原位）；入頁 / 轉集由 EpisodeList 捲到播緊嗰集
     const shown = arc ? episodesInArc(episodes, arc) : [];
     const pickedResume = pickedArcResume(groups, arc, current);
-    return { arc, pickArc, groups, chips, shown, pickedResume };
+    // 唱片區顯示嘅集：載入咗就係嗰集；未載入就係撳播放會播嗰集（揀咗短篇就係嗰個短篇嘅續聽集）
+    const upNext = loaded ?? pickedResume ?? current;
+    return { arc, pickArc, groups, chips, shown, pickedResume, upNext };
 };
 
 /** 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 全集 / 短篇 chips + 嗰個短篇嘅集數 */
@@ -258,22 +263,23 @@ export const useSeriesDramaPage = (drama: DramaConfig) => {
     const { sheetOpen, setSheetOpen, progressMap } = useSeriesSheet(firstVisit, loaded?.url);
     const current = loaded ?? pickSeriesStart(episodes, progressMap);
     const rows = usePlaybackRows(episodes, current, !!loaded);
-    const { arc, pickArc, groups, chips, shown, pickedResume } = useSeriesArcs(
-        episodes,
-        progressMap,
-        current,
-        loaded,
-    );
+    const arcs = useSeriesArcs(episodes, progressMap, current, loaded);
+    const { upNext, pickArc, groups } = arcs;
+    const listened = !hasNoProgress(episodes, progressMap);
     return {
-        // 碟面跟載入咗嗰集（未載入嘅黑碟由 SeriesDramaPage 揀）；冇播放時揀短篇會載入嗰個短篇，碟面就跟住轉
-        theme: current ? dramaEpisodeTheme(current) : drama.theme,
+        // 碟面跟唱片區嗰集（未聽過未載入嘅黑碟由 SeriesDramaPage 揀）；冇播放時揀短篇會載入嗰個短篇，碟面就跟住轉
+        theme: upNext ? dramaEpisodeTheme(upNext) : drama.theme,
         current,
-        ...useStandby(drama, loaded !== null, rows.playState, pickedResume),
-        ...arcCounter(episodes, current),
-        arcs: chips,
-        arc,
+        upNext,
+        ...useStandby(drama, loaded !== null, rows.playState, {
+            listened,
+            picked: arcs.pickedResume,
+        }),
+        ...arcCounter(episodes, upNext),
+        arcs: arcs.chips,
+        arc: arcs.arc,
         pickArc,
-        items: toSeriesItems(shown, rows.ctx),
+        items: toSeriesItems(arcs.shown, rows.ctx),
         selectEpisode: rows.selectEpisode,
         pressEpisode: rows.pressEpisode,
         sheet: { open: sheetOpen, groups, ...useArcSheetActions(loaded, pickArc, setSheetOpen) },

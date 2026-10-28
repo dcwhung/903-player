@@ -427,6 +427,45 @@ describe('DramaPage', () => {
         });
     });
 
+    describe('listened before, not loaded yet', () => {
+        const golden = seriesEpisodesOf('golden');
+        const s2 = golden.filter((e) => e.arc === 'Season 2');
+        const s4 = golden.find((e) => e.arc === 'Season 4');
+        const listenedS2 = () => saveProgress(s2[2]?.url ?? '', 60, 1200);
+
+        it('shows the episode to continue on the disc and above the chips, playing nothing', async () => {
+            listenedS2();
+            const { audio } = openDrama('golden');
+
+            await waitFor(() => expect(gaugeArt()?.getAttribute('src')).toBe(dramaArtFor(s2[2]!)));
+            expect(arcLine()).toMatch(new RegExp(`繼續收聽：Season 2 · 第 ${s2[2]?.no} 集`));
+            expect(arcLine()).not.toContain('揀一個短篇開始');
+            expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
+            expect(audio.src).toBe('');
+        });
+
+        it('follows a 短篇 picked while something else plays', async () => {
+            listenedS2();
+            await openDramaWhileOtherPlays('golden');
+
+            await userEvent.click(screen.getByRole('button', { name: /^Season 4/ }));
+
+            expect(gaugeArt()?.getAttribute('src')).toBe(dramaArtFor(s4!));
+            expect(arcLine()).toMatch(new RegExp(`繼續收聽：Season 4 · 第 ${s4?.no} 集`));
+        });
+
+        it('says 繼續收聽 under the disc in landscape', async () => {
+            stubLandscape();
+            listenedS2();
+            openDrama('golden');
+
+            expect(
+                await screen.findByText(/^繼續收聽：Season 2 · 第 3 \/ \d+ 集$/),
+            ).toBeInTheDocument();
+            vi.unstubAllGlobals();
+        });
+    });
+
     describe('landscape', () => {
         beforeEach(stubLandscape);
         afterEach(() => vi.unstubAllGlobals());
