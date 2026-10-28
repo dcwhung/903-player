@@ -108,6 +108,34 @@ describe('TodayPage', () => {
             },
         );
 
+        it('only browses the cards on a swipe, then plays the one in view when play is pressed', async () => {
+            const { audio } = await open();
+            await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+
+            const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+            fireEvent.pointerDown(stack, { clientX: 300, clientY: 100 });
+            fireEvent.pointerUp(stack, { clientX: 150, clientY: 100 });
+
+            expect(
+                await screen.findByRole('heading', { name: 'Bad Girl大過佬' }),
+            ).toBeInTheDocument();
+            expect(audio.src).toBe(OTHER.url);
+            expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
+
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+
+            expect(audio.src).toBe(TODAY[1]?.url);
+        });
+
+        it('plays a show tapped in the schedule straight away', async () => {
+            const { audio } = await open();
+            await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+
+            await userEvent.click(screen.getByRole('button', { name: /^播放 雲妮鍾情/ }));
+
+            expect(audio.src).toBe(TODAY[0]?.url);
+        });
+
         it('starts the first show only when play is pressed', async () => {
             const { audio } = await open();
             await screen.findByRole('heading', { name: '在晴朗的一天出發' });
