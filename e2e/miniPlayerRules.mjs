@@ -1,9 +1,8 @@
 // 主頁 mini player 重溫規則 e2e（v1.19.2 起）：聽緊舊集返主頁照播，排第一標「重溫」，後面跟今日節目；
 // 今日冇節目（星期日）：冇嘢載入就唔出 mini player，有嘢載入就只出嗰集（region「正在播放（重溫）」）。
 // 每個情境用獨立 context，唔受 run.mjs 主流程之前播過乜影響
-import { ensurePlaying, newE2EContext } from './harness.mjs';
+import { ensurePlaying, isShown, newE2EPage } from './harness.mjs';
 
-const PHONE = { width: 390, height: 844 };
 // 星期日：假錄音（sampleData.mjs）冇節目喺星期日播，公子會（星期六）17/10 係最近一集
 const E2E_SUNDAY = '2026-10-18T22:30:00+08:00';
 // 公子會最近一集（今日之前）：入節目頁自動播呢集，返主頁就係重溫
@@ -23,18 +22,6 @@ const PROGRESS_GAP_MS = 2000;
 const openHome = async (p, base) => {
     await p.goto(base);
     await p.waitForSelector('nav[aria-busy="false"]');
-};
-
-/** 開一個 context，可以指定「而家」 */
-const openPage = async (browser, errors, now) => {
-    const ctx = await newE2EContext(
-        browser,
-        { viewport: PHONE, colorScheme: 'dark' },
-        now ? { now } : {},
-    );
-    const p = await ctx.newPage();
-    p.on('pageerror', (e) => errors.push(e.message));
-    return { ctx, p };
 };
 
 /** 入公子會節目頁（冇其他嘢載入 → 自動播最近一集 17/10），確認播緊嗰集，再撳返回主頁 */
@@ -75,13 +62,10 @@ const checkKeepsPlaying = async (p, mini) => {
 /** 平日：播緊舊集返主頁照播，第一項係重溫，後面係今日三個節目 */
 const checkRewatchWithToday = async ({ browser, base, errors, log }) => {
     const label = '主頁 mini player（平日）';
-    const { ctx, p } = await openPage(browser, errors);
+    const { ctx, p } = await newE2EPage(browser, errors);
     await playOlderEpisodeThenGoHome(p, base, log, label);
     const mini = p.getByRole('region', { name: REGION_REWATCH_AND_TODAY, exact: true });
-    const shown = await mini
-        .waitFor({ timeout: 5000 })
-        .then(() => true)
-        .catch(() => false);
+    const shown = await isShown(mini, { timeout: 5000 });
     log(shown, `${label}：返主頁 mini player 讀屏名係「${REGION_REWATCH_AND_TODAY}」`);
     if (!shown) return ctx.close();
     const playing = await checkKeepsPlaying(p, mini);
@@ -107,17 +91,14 @@ const checkRewatchWithToday = async ({ browser, base, errors, log }) => {
 /** 星期日（今日冇節目）：冇嘢載入唔出 mini player；播緊舊集返主頁只出嗰集 */
 const checkNoShowDay = async ({ browser, base, errors, log }) => {
     const label = '主頁 mini player（星期日冇節目）';
-    const { ctx, p } = await openPage(browser, errors, E2E_SUNDAY);
+    const { ctx, p } = await newE2EPage(browser, errors, {}, { now: E2E_SUNDAY });
     await openHome(p, base);
     await p.waitForTimeout(MINI_ABSENT_SETTLE_MS);
     const idle = await p.getByRole('region', { name: ANY_MINI_REGION }).count();
     log(idle === 0, `${label}：冇嘢載入，主頁冇 mini player（${idle} 個）`);
     await playOlderEpisodeThenGoHome(p, base, log, label);
     const mini = p.getByRole('region', { name: REGION_REWATCH_ONLY, exact: true });
-    const shown = await mini
-        .waitFor({ timeout: 5000 })
-        .then(() => true)
-        .catch(() => false);
+    const shown = await isShown(mini, { timeout: 5000 });
     const regions = await p.getByRole('region', { name: ANY_MINI_REGION }).count();
     log(
         shown && regions === 1,

@@ -1,9 +1,8 @@
 // 全集表（ArcSheet）向下拉閂 e2e：手機尺寸（390×844），觸控同滑鼠各做一次。
 // useSheetDrag 有兩條路：清單以外（grab bar / header）用 pointer（滑鼠、手指都係），
 // 清單入面用 touch（捲到頂再向下拉先由表接手）。觸控 context 兩條路都測，滑鼠 context 測 header pointer。
-import { newE2EContext } from './harness.mjs';
+import { PHONE, isShown, newE2EPage, succeeds } from './harness.mjs';
 
-const PHONE = { width: 390, height: 844 };
 const SIZE = `${PHONE.width}×${PHONE.height}`;
 // 短篇劇集（kind: series）：第一次入頁冇進度，全集表會自己彈出
 const DRAMA_ROUTE = '#/drama/chisee';
@@ -59,8 +58,8 @@ const translateYOf = (transform) => Number(/translateY\(([\d.]+)px\)/.exec(trans
  * 返回 'closed' / 'open'；等唔到（例如卡喺拖緊）就 'stuck'，交畀斷言報錯
  */
 const waitSettled = async (p, sheet) => {
-    const settled = await p
-        .waitForFunction(
+    const settled = await succeeds(
+        p.waitForFunction(
             (el) =>
                 !el.isConnected ||
                 (el.style.transform === '' &&
@@ -68,9 +67,8 @@ const waitSettled = async (p, sheet) => {
                     !el.hasAttribute('data-closing')),
             sheet,
             { timeout: SETTLE_TIMEOUT_MS },
-        )
-        .then(() => true)
-        .catch(() => false);
+        ),
+    );
     if (!settled) return 'stuck';
     return (await sheet.evaluate((el) => el.isConnected)) ? 'open' : 'closed';
 };
@@ -148,10 +146,7 @@ const openSheet = async (env, label) => {
         const button = p.getByRole('button', { name: '全集', exact: true });
         await (tap ? button.tap() : button.click());
     }
-    const visible = await sheetOf(p)
-        .waitFor({ state: 'visible', timeout: 5000 })
-        .then(() => true)
-        .catch(() => false);
+    const visible = await isShown(sheetOf(p), { state: 'visible', timeout: 5000 });
     const transform = visible ? await sheetTransform(p) : '(冇表)';
     log(visible && transform === '', `${label}：全集表打開咗，喺原位（transform「${transform}」）`);
     return visible;
@@ -226,9 +221,7 @@ const checkListScrollsFirst = async (env, label) => {
 
 /** 開一個劇集頁；劇集音檔 404 由 newE2EContext 處理（唔出外網） */
 const openDramaPage = async (browser, errors, base, options) => {
-    const ctx = await newE2EContext(browser, { viewport: PHONE, colorScheme: 'dark', ...options });
-    const p = await ctx.newPage();
-    p.on('pageerror', (e) => errors.push(e.message));
+    const { ctx, p } = await newE2EPage(browser, errors, options);
     await p.goto(`${base}${DRAMA_ROUTE}`);
     return { ctx, p };
 };

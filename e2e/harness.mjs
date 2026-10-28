@@ -107,6 +107,34 @@ export const newE2EContext = async (
     return ctx;
 };
 
+/** e2e 手機尺寸（直向）：劇集頁、mini player 規則、全集表都用呢個 */
+export const PHONE = { width: 390, height: 844 };
+
+/**
+ * 開一個手機尺寸（PHONE、深色）嘅 e2e context 同 page，page 嘅 JS error 收入 errors。
+ * contextOptions 蓋過預設（例如 hasTouch）；clock 傳畀 newE2EContext（例如 { now }）
+ */
+export const newE2EPage = async (browser, errors, contextOptions = {}, clock = {}) => {
+    const ctx = await newE2EContext(
+        browser,
+        { viewport: PHONE, colorScheme: 'dark', ...contextOptions },
+        clock,
+    );
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => errors.push(e.message));
+    return { ctx, p };
+};
+
+/** 等一個 Playwright promise：成功 true、timeout / 失敗 false（唔 throw，交畀斷言 log） */
+export const succeeds = (promise) =>
+    promise.then(
+        () => true,
+        () => false,
+    );
+
+/** locator.waitFor（options 例如 { state: 'detached', timeout }）等到就 true，等唔到 false */
+export const isShown = (locator, options) => succeeds(locator.waitFor(options));
+
 /** 入頁等幾耐自動播（之後當係播緊其他嘢，唔會自動播） */
 const AUTOPLAY_WAIT_MS = 2000;
 
