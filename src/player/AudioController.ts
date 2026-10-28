@@ -255,6 +255,8 @@ export class AudioController {
         this.update({ duration: this.audio.duration });
         if (this.pendingStart > 0) {
             this.audio.currentTime = this.pendingStart;
+            // 按 spec 呢度本身已經係 pendingStart；但 iOS 有可能喺 metadata 到之前發 timeupdate（位置 0），
+            // 唔重設嘅話跳返續播位置嗰下會當咗收聽時間，錯清「已收聽」（S-550）
             this.replay.moveTo(this.pendingStart);
             this.pendingStart = 0;
         }

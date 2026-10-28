@@ -791,4 +791,23 @@ describe('AudioController replay timing details', () => {
         expect(isWatched(NEXT.url)).toBe(false);
         detach();
     });
+
+    // S-550：斷網重載之後，iOS 可能喺 metadata 到之前發 timeupdate（位置 0），跳返續播位置唔可以當收聽時間
+    it('does not count the resume jump when a timeupdate slips in before metadata', async () => {
+        const RESUME_AT = 6;
+        const { audio, detach } = await replayWatched();
+        playThrough(audio, 0, RESUME_AT);
+        audio.fail(2);
+        window.dispatchEvent(new Event('online'));
+        // iOS 唔跟 spec：metadata 未到、duration 仲係舊值時已經發 timeupdate
+        audio.duration = DURATION;
+        audio.emitTime(0);
+        audio.emitMetadata(DURATION);
+        audio.paused = false;
+
+        playThrough(audio, RESUME_AT + TICK_SECONDS, RESUME_AT + 1);
+
+        expect(isWatched(RECORDING.url)).toBe(true);
+        detach();
+    });
 });
