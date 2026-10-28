@@ -1,7 +1,6 @@
 import {
     EARLY_ADVANCE_SECONDS,
     PROGRESS_SAVE_INTERVAL_MS,
-    REPLAY_RESET_SECONDS,
     STALL_MAX_RETRIES,
     WATCHED_RATIO,
 } from '../config/constants';
@@ -14,6 +13,7 @@ import {
 import type { Track } from '../types/track';
 import { recordPlayback } from './playbackLog';
 import type { LoadOptions, PlayerState } from './playerContext';
+import { ReplayTracker } from './replayTracker';
 import { StallWatchdog } from './stallWatchdog';
 
 const INITIAL_STATE: PlayerState = {
@@ -45,10 +45,8 @@ export class AudioController {
     private pendingStart = 0;
     private lastSavedAt = 0;
     private watched = false;
-    /** 聽過嘅錄音由頭重播時累計嘅真正播放秒數；undefined = 唔係重播，唔使計 */
-    private replayedSeconds: number | undefined;
-    /** 上一次 timeupdate 嘅位置，用嚟計兩次之間播咗幾耐 */
-    private lastTickPosition = 0;
+    /** 聽過嘅錄音由頭重播：計夠時間就清走「已收聽」 */
+    private readonly replay = new ReplayTracker();
     /** 撳咗 Play 但 play event 未到（瀏覽器仲準備緊）；PWA 更新要當播緊，唔好搶走呢下撳 */
     private playIntent = false;
     /** 最新一次 audio.play() 仲未 settle */
@@ -117,7 +115,7 @@ export class AudioController {
             this.switchTo(recording);
         } else if (this.isParkedAtEnd()) {
             this.seek(0);
-            this.armReplay();
+            this.replay.arm(this.watched);
         }
         if (autoplay) {
             await this.play();
@@ -162,7 +160,7 @@ export class AudioController {
 
     restart = async (): Promise<void> => {
         this.seek(0);
-        this.armReplay();
+        this.replay.arm(this.watched);
         await this.play();
     };
 
@@ -172,7 +170,7 @@ export class AudioController {
         this.pendingStart = this.hasMetadata() ? 0 : target;
         this.audio.currentTime = target;
         // seek 唔算收聽時間：由新位置重新起計
-        this.lastTickPosition = target;
+        this.replay.moveTo(target);
         this.update({ currentTime: target });
         this.persist();
     };
@@ -192,9 +190,9 @@ export class AudioController {
         this.persist();
         this.watched = isWatched(recording.url);
         this.pendingStart = getResumePosition(recording.url);
-        this.lastTickPosition = this.pendingStart;
+        this.replay.moveTo(this.pendingStart);
         // 聽過嘅集 getResumePosition 係 0，即係由頭重播
-        this.armReplay();
+        this.replay.arm(this.watched);
         this.audio.src = recording.url;
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
     }
@@ -208,7 +206,7 @@ export class AudioController {
             return;
         }
         this.pendingStart = this.state.currentTime;
-        this.lastTickPosition = this.pendingStart;
+        this.replay.moveTo(this.pendingStart);
         this.audio.load();
         this.update({ duration: 0 });
     };
@@ -227,28 +225,8 @@ export class AudioController {
         );
     }
 
-    /** 聽過嘅錄音由頭播：開始計重播時間；未聽過就唔使計 */
-    private armReplay(): void {
-        this.replayedSeconds = this.watched ? 0 : undefined;
-    }
-
-    /** 累計真正播放時間（暫停、seek 唔計），夠 REPLAY_RESET_SECONDS 就重新開始記錄 */
-    private trackReplay(): void {
-        const position = this.audio.currentTime;
-        const delta = position - this.lastTickPosition;
-        this.lastTickPosition = position;
-        if (this.replayedSeconds === undefined || this.audio.paused || delta <= 0) {
-            return;
-        }
-        this.replayedSeconds += delta;
-        if (this.replayedSeconds >= REPLAY_RESET_SECONDS) {
-            this.resetReplay();
-        }
-    }
-
-    /** 清走「已收聽」，之後當新一次收聽照常存進度，再到 95% 先再打剔 */
+    /** 重播夠鐘：清走「已收聽」，之後當新一次收聽照常存進度，再到 95% 先再打剔 */
     private resetReplay(): void {
-        this.replayedSeconds = undefined;
         const { recording } = this.state;
         if (!recording) {
             return;
@@ -277,7 +255,7 @@ export class AudioController {
         this.update({ duration: this.audio.duration });
         if (this.pendingStart > 0) {
             this.audio.currentTime = this.pendingStart;
-            this.lastTickPosition = this.pendingStart;
+            this.replay.moveTo(this.pendingStart);
             this.pendingStart = 0;
         }
     };
@@ -288,7 +266,9 @@ export class AudioController {
             return;
         }
         this.update({ currentTime: this.audio.currentTime });
-        this.trackReplay();
+        if (this.replay.track(this.audio.currentTime, this.audio.paused)) {
+            this.resetReplay();
+        }
         const intervalElapsed = Date.now() - this.lastSavedAt >= PROGRESS_SAVE_INTERVAL_MS;
         const crossedWatched =
             !this.watched && this.audio.currentTime / this.audio.duration >= WATCHED_RATIO;
@@ -388,7 +368,7 @@ export class AudioController {
     private retryStalled(retriesLeft: number): void {
         recordPlayback('retry', this.audio, `left=${retriesLeft}`);
         this.pendingStart = this.state.currentTime;
-        this.lastTickPosition = this.pendingStart;
+        this.replay.moveTo(this.pendingStart);
         this.audio.load();
         void this.play();
     }
