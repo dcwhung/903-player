@@ -43,8 +43,11 @@ const useLoadedEpisode = <K extends DramaEpisode['kind']>(
  * 已經載入咗呢套劇，或者有其他嘢播緊 / 暫停緊就唔播（唔蓋過，用戶可能只係想睇清單）。
  * 短篇劇集頁唔自動播，一律等用戶撳播放 / 揀集
  */
-const useAutoplayDaily = (drama: DramaConfig, isLoaded: boolean) => {
-    const startDrama = useStartDrama();
+const useAutoplayDaily = (
+    drama: DramaConfig,
+    isLoaded: boolean,
+    startDrama: (drama: DramaConfig) => void,
+) => {
     const busy = useAudioBusy();
     useEffect(() => {
         if (!isLoaded && !busy) {
@@ -84,8 +87,8 @@ const usePlaybackRows = (
 export const useDailyDramaPage = (drama: DramaConfig) => {
     const episodes = useMemo(() => dailyNewestFirst(dailyEpisodesOf(drama.id)), [drama]);
     const loaded = useLoadedEpisode(drama, 'daily');
-    useAutoplayDaily(drama, loaded !== null);
     const startDrama = useStartDrama();
+    useAutoplayDaily(drama, loaded !== null, startDrama);
     const start = useStandbyStart(loaded !== null, () => startDrama(drama));
     const current = loaded ?? pickDailyStart(episodes, hkToday());
     const { ctx, selectEpisode, pressEpisode } = usePlaybackRows(episodes, current, !!loaded);

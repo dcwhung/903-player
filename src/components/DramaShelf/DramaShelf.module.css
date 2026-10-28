@@ -30,10 +30,7 @@
     box-shadow: var(--shadow-clay-tile);
 }
 
-/*
- * 入頁掣：鋪滿成格（「繼續收聽」掣疊喺佢上面）。
- * 卡有 overflow hidden，focus 框畫喺入面先唔會被裁走
- */
+/* 入頁掣：鋪滿成格（「繼續收聽」掣疊喺佢上面） */
 .open {
     position: absolute;
     inset: 0;
@@ -42,7 +39,20 @@
     background: none;
 }
 
-.open:focus-visible,
+/*
+ * 入頁掣嘅 focus 框畫喺卡（外框）度：畫喺掣入面會俾卡嘅圓角裁走、底部俾「繼續收聽」掣蓋住。
+ * 卡自己嘅 outline 唔受自己 overflow hidden 裁
+ */
+.open:focus-visible {
+    outline: none;
+}
+
+.tile:has(> .open:focus-visible) {
+    outline: 2px solid var(--color-title);
+    outline-offset: 2px;
+}
+
+/* 「繼續收聽」掣喺卡底：focus 框畫喺入面，底兩角跟卡嘅圓角 */
 .continue:focus-visible {
     outline-offset: calc(-1 * var(--space-1));
 }
@@ -156,6 +166,7 @@
     align-items: flex-start;
     padding: var(--space-6) calc(var(--touch-target) + var(--space-4)) var(--space-3) var(--space-3);
     border: none;
+    border-radius: 0 0 var(--radius-tile) var(--radius-tile);
     background: linear-gradient(transparent, var(--drama-continue-scrim));
     color: var(--version-badge-text);
     text-align: left;
