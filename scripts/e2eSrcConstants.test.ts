@@ -2,7 +2,11 @@
 // 放喺 scripts/：e2e/*.mjs 係純 node 模組（冇型別），喺 node 環境 import 佢哋嘅 export，
 // 同 src 常數逐個比較。e2e import 唔到 TS，只可以手抄；呢個測試保證改 src 時 e2e 唔會靜靜雞脫節（S-528）
 import { DRAG_INTENT_PX } from '../src/hooks/swipe';
-import { SHEET_DISMISS_RATIO } from '../src/components/ArcSheet/sheetDrag';
+import {
+    SHEET_DISMISS_RATIO,
+    SHEET_FLICK_MIN_PX,
+    SHEET_FLICK_VELOCITY_PX_PER_MS,
+} from '../src/components/ArcSheet/sheetDrag';
 import { VELOCITY_WINDOW_MS } from '../src/components/ShowCardStack/cardStack';
 import { ALLOWED_AUDIO_ORIGIN, DRAMA_AUDIO_BASE } from '../src/config/constants';
 
@@ -26,6 +30,8 @@ describe('e2e copies of src constants', () => {
 
     it.each([
         ['SHEET_DISMISS_RATIO', SHEET_DISMISS_RATIO],
+        ['SHEET_FLICK_VELOCITY_PX_PER_MS', SHEET_FLICK_VELOCITY_PX_PER_MS],
+        ['SHEET_FLICK_MIN_PX', SHEET_FLICK_MIN_PX],
         ['VELOCITY_WINDOW_MS', VELOCITY_WINDOW_MS],
         ['DRAG_INTENT_PX', DRAG_INTENT_PX],
     ])('should keep arcSheet.mjs %s equal to src', async (name, expected) => {
