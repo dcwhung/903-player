@@ -1,7 +1,7 @@
 // 觸控 e2e：Chromium 手機模擬（hasTouch + isMobile）+ CDP Input.dispatchTouchEvent。
 // page.touchscreen 只識 tap，拖動要自己逐格發 touchMove。
 // 模擬唔到 iOS 橡筋同 standalone 嘅 viewport 怪癖，所以另外斷言根元素嘅 CSS 鎖。
-import { newE2EContext } from './harness.mjs';
+import { ensurePlaying, newE2EContext } from './harness.mjs';
 
 const TOUCH_VIEWPORTS = [
     // iPhone 14/15（有 Dynamic Island：頂 47–59px、底 34px 安全區）同 iPhone SE（Home 掣）
@@ -395,8 +395,7 @@ const checkMiniSwipe = async (cdp, p, log, label) => {
     );
 };
 
-const waitPlaying = (p) =>
-    p.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
+const waitPlaying = ensurePlaying;
 
 const checkHome = async (env, label) => {
     const { p, cdp, log } = env;

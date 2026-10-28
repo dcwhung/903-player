@@ -16,16 +16,18 @@ interface TodayStackProps {
     index: number;
     title: string;
     art: string | undefined;
+    /** 播緊其他嘢先有：卡疊最上面嗰張係未開始樣，撳播放先播佢 */
+    onStart: (() => void) | undefined;
     onChange: (index: number) => void;
     /** 卡疊下面嘅指示點；手機打橫搬咗上頁頭就冇 */
     dots: ReactNode;
 }
 
 /** 今日節目卡疊（最上面係播放器）+ 卡外嘅指示點，一組唔縮 */
-const TodayStack = ({ cards, index, title, art, onChange, dots }: TodayStackProps) => (
+const TodayStack = ({ cards, index, title, art, onStart, onChange, dots }: TodayStackProps) => (
     <div className={page.todayPlayer}>
         <ShowCardStack cards={cards} index={index} onChange={onChange}>
-            <PlayerCard title={title} art={art} />
+            <PlayerCard title={title} art={art} onStart={onStart} />
         </ShowCardStack>
         {dots}
     </div>
@@ -36,10 +38,13 @@ const TodayNowPlaying = ({
     date,
     index,
     total,
+    standby,
 }: {
     date: string;
     index: number;
     total: number;
+    /** 播緊其他嘢：duration 唔係呢個節目嘅，唔講「連線中…」 */
+    standby: boolean;
 }) => {
     const { duration } = usePlayer();
     const label = t('today.nowPlayingIndex', {
@@ -47,7 +52,7 @@ const TodayNowPlaying = ({
         no: index + 1,
         total,
     });
-    return <NowPlaying label={label} connecting={!hasKnownDuration(duration)} />;
+    return <NowPlaying label={label} connecting={!standby && !hasKnownDuration(duration)} />;
 };
 
 interface TodayPlayerColumnProps {
@@ -69,7 +74,7 @@ export const TodayPlayerColumn = ({
     header,
     dots,
 }: TodayPlayerColumnProps) => {
-    const { status, isSearching, current, index, items, cards, theme, selectIndex } = state;
+    const { status, isSearching, current, start, index, items, cards, theme, selectIndex } = state;
     return (
         <div className={`${page.playerColumn} ${page.todayColumn}`}>
             {header}
@@ -82,7 +87,8 @@ export const TodayPlayerColumn = ({
                             cards={cards}
                             index={index}
                             title={cards[index]?.title ?? ''}
-                            art={theme.art}
+                            art={start ? undefined : theme.art}
+                            onStart={start}
                             onChange={selectIndex}
                             dots={dots}
                         />
@@ -91,6 +97,7 @@ export const TodayPlayerColumn = ({
                                 date={current.date}
                                 index={index}
                                 total={cards.length}
+                                standby={start !== undefined}
                             />
                         )}
                     </>

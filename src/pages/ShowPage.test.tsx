@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { stubLandscape } from '../../tests/landscape';
+import { openWhileOtherLoaded } from '../../tests/otherPlayback';
 import {
     recording,
     renderWithProviders,
@@ -43,6 +44,43 @@ describe('ShowPage', () => {
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
         expect(audio.play).toHaveBeenCalled();
         expect(screen.getByRole('heading', { name: '公子會' })).toBeInTheDocument();
+    });
+
+    describe('while something else is loaded', () => {
+        const OTHER = RECORDINGS[3] as Recording;
+        const open = (playing = true) =>
+            openWhileOtherLoaded(<ShowPage />, OTHER, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+                playing,
+            });
+
+        it.each([
+            ['playing', true],
+            ['paused', false],
+        ])(
+            'leaves what is %s alone and shows its own player as not started',
+            async (_, playing) => {
+                const { audio } = await open(playing);
+                const plays = audio.play.mock.calls.length;
+
+                await screen.findByRole('heading', { name: '公子會' });
+                expect(audio.src).toBe(OTHER.url);
+                expect(audio.play).toHaveBeenCalledTimes(plays);
+                expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
+                expect(currentRow()).toHaveAccessibleName(/^播放 17\/10/);
+            },
+        );
+
+        it('replaces the other playback with its latest episode only when play is pressed', async () => {
+            const { audio } = await open();
+            await screen.findByRole('heading', { name: '公子會' });
+
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+
+            expect(audio.src).toBe(RECORDINGS[0]?.url);
+            expect(audio.play).toHaveBeenCalled();
+        });
     });
 
     it('puts the show name in the header instead of 正在播放 and under the disc', async () => {

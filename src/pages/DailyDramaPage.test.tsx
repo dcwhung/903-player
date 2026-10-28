@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderWithProviders } from '../../tests/renderWithProviders';
+import { openWhileOtherLoaded } from '../../tests/otherPlayback';
+import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { dailyEpisodesOf } from '../dramas';
 import { DramaPage } from './DramaPage';
 
@@ -35,6 +36,23 @@ describe('DramaPage (daily drama, once enabled)', () => {
             expect(rows).toHaveLength(C18.length);
             expect(rows[0]).toHaveAccessibleName('暫停 23/10 星期五，連線中…');
             expect(rows.at(-1)).toHaveAccessibleName('播放 11/08 星期一 重溫，未收聽');
+        });
+
+        it('leaves other playback alone, starting today’s episode only when play is pressed', async () => {
+            const other = recording('gongzi', '2026-10-17');
+            const { audio } = await openWhileOtherLoaded(<DramaPage />, other, {
+                route: '/drama/c18',
+                path: '/drama/:dramaId',
+            });
+            const plays = audio.play.mock.calls.length;
+
+            await screen.findByRole('heading', { level: 1 });
+            expect(audio.src).toBe(other.url);
+            expect(audio.play).toHaveBeenCalledTimes(plays);
+
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+
+            expect(audio.src).toBe(C18[0]?.url);
         });
 
         it('lines up only the days with an episode in the date strip', async () => {

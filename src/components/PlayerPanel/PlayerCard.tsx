@@ -6,15 +6,17 @@ interface PlayerCardProps {
     title: string;
     /** 節目圖，做碟嘅底色 */
     art?: string | undefined;
+    /** player 載入緊其他嘢先有：唱片係未開始樣，撳播放就開始播呢張卡（見 PlayerGauge） */
+    onStart?: (() => void) | undefined;
 }
 
 /**
  * 今日節目卡疊最上面嗰張：唱片、進度弧、由頭播放 / 播放掣同節目名
  * （後面嘅 GhostCard 只有唱片同節目名）
  */
-export const PlayerCard = ({ title, art }: PlayerCardProps) => (
+export const PlayerCard = ({ title, art, onStart }: PlayerCardProps) => (
     <div className={styles.panel}>
-        <PlayerGauge art={art} />
+        <PlayerGauge art={art} onStart={onStart} />
         <h2 className={styles.title}>
             <Marquee text={title} />
         </h2>

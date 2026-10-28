@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { stubLandscape } from '../../tests/landscape';
+import { openWhileOtherLoaded } from '../../tests/otherPlayback';
 import {
     recording,
     renderWithProviders,
@@ -80,6 +81,69 @@ describe('TodayPage', () => {
             screen.getByRole('button', { name: /(?:播放|暫停) 在晴朗的一天出發/ }),
         ).toHaveAttribute('aria-current', 'true');
         expect(screen.getByRole('heading', { name: '在晴朗的一天出發' })).toBeInTheDocument();
+    });
+
+    describe('while something else is loaded', () => {
+        const OTHER = RECORDINGS[3]!;
+        const open = (playing = true) =>
+            openWhileOtherLoaded(<TodayPage />, OTHER, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+                playing,
+            });
+
+        it.each([
+            ['playing', true],
+            ['paused', false],
+        ])(
+            'leaves what is %s alone and shows the first show as not started',
+            async (_, playing) => {
+                const { audio } = await open(playing);
+                const plays = audio.play.mock.calls.length;
+
+                await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+                expect(audio.src).toBe(OTHER.url);
+                expect(audio.play).toHaveBeenCalledTimes(plays);
+                expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
+            },
+        );
+
+        it('only browses the cards on a swipe, then plays the one in view when play is pressed', async () => {
+            const { audio } = await open();
+            await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+
+            const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+            fireEvent.pointerDown(stack, { clientX: 300, clientY: 100 });
+            fireEvent.pointerUp(stack, { clientX: 150, clientY: 100 });
+
+            expect(
+                await screen.findByRole('heading', { name: 'Bad Girl大過佬' }),
+            ).toBeInTheDocument();
+            expect(audio.src).toBe(OTHER.url);
+            expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
+
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+
+            expect(audio.src).toBe(TODAY[1]?.url);
+        });
+
+        it('plays a show tapped in the schedule straight away', async () => {
+            const { audio } = await open();
+            await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+
+            await userEvent.click(screen.getByRole('button', { name: /^播放 雲妮鍾情/ }));
+
+            expect(audio.src).toBe(TODAY[0]?.url);
+        });
+
+        it('starts the first show only when play is pressed', async () => {
+            const { audio } = await open();
+            await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+
+            expect(audio.src).toBe(TODAY[2]?.url);
+        });
     });
 
     it('pauses when the playing show row is tapped', async () => {

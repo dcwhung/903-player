@@ -9,8 +9,12 @@ const item = (overrides: Partial<DramaShelfItem> = {}): DramaShelfItem => ({
     art: '/art.webp',
     meta: '10 個短篇',
     onOpen: () => {},
+    onResume: () => {},
     ...overrides,
 });
+
+const RESUME = { label: '大妒忌 · 第 2 集', ratio: 0.5 };
+const CONTINUE_NAME = '芝See菇Bi Family，繼續收聽 大妒忌 · 第 2 集';
 
 const metaCorner = () => screen.getByText('10 個短篇').dataset.corner;
 
@@ -24,14 +28,32 @@ describe('DramaShelf', () => {
     });
 
     it('moves the count top-right to make room for 繼續收聽', () => {
-        render(
-            <DramaShelf items={[item({ resume: { label: '大妒忌 · 第 2 集', ratio: 0.5 } })]} />,
-        );
+        render(<DramaShelf items={[item({ resume: RESUME })]} />);
 
-        expect(
-            screen.getByRole('button', { name: '芝See菇Bi Family，繼續收聽 大妒忌 · 第 2 集' }),
-        ).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: CONTINUE_NAME })).toBeInTheDocument();
         expect(metaCorner()).toBe('top');
+    });
+
+    it('plays from the 繼續收聽 strip without opening the drama', async () => {
+        const onOpen = vi.fn();
+        const onResume = vi.fn();
+        render(<DramaShelf items={[item({ resume: RESUME, onOpen, onResume })]} />);
+
+        await userEvent.click(screen.getByRole('button', { name: CONTINUE_NAME }));
+
+        expect(onResume).toHaveBeenCalledTimes(1);
+        expect(onOpen).not.toHaveBeenCalled();
+    });
+
+    it('opens the drama from the rest of the tile without playing', async () => {
+        const onOpen = vi.fn();
+        const onResume = vi.fn();
+        render(<DramaShelf items={[item({ resume: RESUME, onOpen, onResume })]} />);
+
+        await userEvent.click(screen.getByRole('button', { name: '芝See菇Bi Family' }));
+
+        expect(onOpen).toHaveBeenCalledTimes(1);
+        expect(onResume).not.toHaveBeenCalled();
     });
 
     it('shows 新 top-left and reads out why', () => {
@@ -120,11 +142,11 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         return onOpen;
     };
     const tile = (name: string) => screen.getByRole('button', { name });
+    // data-focused 喺卡（外框）度；讀返卡入面入頁掣個名
     const focused = () =>
-        screen
-            .getAllByRole('button')
-            .filter((b) => b.hasAttribute('data-focused'))
-            .map((b) => b.getAttribute('aria-label'));
+        Array.from(document.querySelectorAll('[data-focused]')).map((card) =>
+            card.querySelector('button')?.getAttribute('aria-label'),
+        );
 
     beforeEach(() => mockShelf());
     afterEach(() => {
@@ -160,6 +182,25 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         await userEvent.click(tile('劇 1'));
 
         expect(onOpen[0]).toHaveBeenCalledTimes(1);
+    });
+
+    it('only focuses a dimmed card when its 繼續收聽 strip is tapped, then plays on the next tap', async () => {
+        const onResume = vi.fn();
+        render(
+            <DramaShelf
+                items={NAMES.map((name, i) =>
+                    item({ id: name, name, ...(i === 2 && { resume: RESUME, onResume }) }),
+                )}
+            />,
+        );
+        const strip = screen.getByRole('button', { name: '劇 3，繼續收聽 大妒忌 · 第 2 集' });
+
+        await userEvent.click(strip);
+        expect(onResume).not.toHaveBeenCalled();
+        expect(focused()).toEqual(['劇 3']);
+
+        await userEvent.click(strip);
+        expect(onResume).toHaveBeenCalledTimes(1);
     });
 
     it('follows the scroll position to pick the focused card', () => {
