@@ -9,7 +9,7 @@ export interface PlayerState {
     /** 載入咗嘅節目錄音或者廣播劇一集 */
     recording: Track | null;
     isPlaying: boolean;
-    /** 真正出緊聲（playing event 之後）；撳咗 Play 仲載緊 / 緩衝緊係 false */
+    /** 真正出緊聲（播緊而位置真係行緊，S-551）；撳咗 Play 仲載緊 / 緩衝緊 / 卡住都係 false */
     isAudible: boolean;
     currentTime: number;
     duration: number;

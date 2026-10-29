@@ -1,12 +1,14 @@
 import { FakeAudio } from '../../tests/fakeAudio';
 import type { Recording } from '../types/recording';
 import {
+    AUDIBLE_ADVANCE_SECONDS,
     EARLY_ADVANCE_SECONDS,
     REPLAY_RESET_SECONDS,
+    STALL_FIRST_RETRY_MS,
     STALL_MAX_RETRIES,
     STALL_RETRY_MS,
 } from '../config/constants';
-import { isWatched, saveProgress } from '../services/progressStore';
+import { getResumePosition, isWatched, saveProgress } from '../services/progressStore';
 import { AudioController } from './AudioController';
 import { readPlaybackLog } from './playbackLog';
 
@@ -216,32 +218,81 @@ describe('AudioController.isAudible', () => {
         expect(controller.getSnapshot().isPlaying).toBe(true);
         expect(controller.getSnapshot().isAudible).toBe(false);
 
-        audio.emitPlaying();
+        audio.emitAudible();
         expect(controller.getSnapshot().isAudible).toBe(true);
         detach();
     });
 
     it('should go silent while buffering and resume when data arrives', async () => {
         const { audio, controller, detach } = await setupPlaying();
-        audio.emitPlaying();
+        audio.emitAudible();
 
         audio.emitWaiting();
         expect(controller.getSnapshot().isAudible).toBe(false);
 
-        audio.emitPlaying();
+        audio.emitAudible();
         expect(controller.getSnapshot().isAudible).toBe(true);
         detach();
     });
 
     it('should go silent when paused or ended', async () => {
         const { audio, controller, detach } = await setupPlaying();
-        audio.emitPlaying();
+        audio.emitAudible();
         audio.pause();
         expect(controller.getSnapshot().isAudible).toBe(false);
 
         await controller.play();
-        audio.emitPlaying();
+        audio.emitAudible();
         audio.end();
+        expect(controller.getSnapshot().isAudible).toBe(false);
+        detach();
+    });
+
+    // S-551：iOS 拔 AirPods 之後喺鎖屏撳 Play，有 playing event 但位置凍結 82 秒、冇聲
+    it('should stay silent on a playing event while the position is frozen', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+
+        audio.emitPlaying();
+        audio.emitTime(audio.currentTime);
+
+        expect(controller.getSnapshot().isAudible).toBe(false);
+        detach();
+    });
+
+    it('should stay silent while the position moves less than the audible threshold', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+        audio.emitPlaying();
+
+        audio.emitTime(audio.currentTime + AUDIBLE_ADVANCE_SECONDS / 2);
+
+        expect(controller.getSnapshot().isAudible).toBe(false);
+        detach();
+    });
+
+    it('should not count a seek jump as sound', async () => {
+        const SEEK_TO = 300;
+        const { audio, controller, detach } = await setupPlaying();
+        audio.emitPlaying();
+
+        controller.seek(SEEK_TO);
+        audio.emitTime(SEEK_TO);
+
+        expect(controller.getSnapshot().isAudible).toBe(false);
+        detach();
+    });
+
+    it('should not count the resume jump on metadata as sound', async () => {
+        const RESUME_AT = 521.4;
+        saveProgress(RECORDING.url, RESUME_AT, 1000);
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitPlaying();
+
+        audio.emitMetadata(1000);
+        audio.emitTime(RESUME_AT);
+
         expect(controller.getSnapshot().isAudible).toBe(false);
         detach();
     });
@@ -412,7 +463,8 @@ describe('AudioController stalled auto-advance', () => {
     it('leaves the next track alone once it is audible', async () => {
         const { audio, detach } = await advance();
 
-        audio.emitPlaying();
+        audio.emitMetadata(1200);
+        audio.emitAudible();
         vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
 
         expect(audio.load).not.toHaveBeenCalled();
@@ -633,7 +685,8 @@ describe('AudioController stall watchdog details', () => {
     it('ignores a screen wake-up once the next track is audible', async () => {
         const { audio, detach } = await advance();
 
-        audio.emitPlaying();
+        audio.emitMetadata(DURATION);
+        audio.emitAudible();
         showScreen('visible');
 
         expect(audio.load).not.toHaveBeenCalled();
@@ -660,23 +713,21 @@ describe('AudioController stall watchdog details', () => {
         expect(audio.load).not.toHaveBeenCalled();
     });
 
-    it('stops watching on a system pause even if playback is resumed later', async () => {
-        const { audio, controller, detach } = await advance();
+    it('stops watching on a system pause', async () => {
+        const { audio, detach } = await advance();
 
         audio.pause(); // 例如拔耳筒
-        void controller.play();
-        vi.advanceTimersByTime(STALL_RETRY_MS);
+        vi.advanceTimersByTime(GIVE_UP_MS);
 
         expect(audio.load).not.toHaveBeenCalled();
         detach();
     });
 
     it('gives up for good once play intent was lost when the timer fired', async () => {
-        const { audio, controller, detach } = await advance();
+        const { audio, detach } = await advance();
 
         audio.dispatchEvent(new Event('error'));
         vi.advanceTimersByTime(STALL_RETRY_MS);
-        void controller.play();
         showScreen('visible');
         vi.advanceTimersByTime(GIVE_UP_MS);
 
@@ -808,6 +859,208 @@ describe('AudioController replay timing details', () => {
         playThrough(audio, RESUME_AT + TICK_SECONDS, RESUME_AT + 1);
 
         expect(isWatched(RECORDING.url)).toBe(true);
+        detach();
+    });
+});
+
+/**
+ * S-551 iPhone 實機 log 重現：
+ * 情境 1：鎖屏、轉過網絡、自動接住播 → stalled，第二個 timer 被 iOS 暫停 34 秒，亮屏時 timer + visibility 連住重試兩次
+ * 情境 2：AirPods 斷線系統暫停，之後喺鎖屏撳 Play → playing 但位置凍結 82 秒、冇聲，鎖屏進度條照行
+ */
+describe('AudioController S-551 lock-screen stall', () => {
+    const DURATION = 798.3;
+    const RESUME_AT = 521.4;
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
+    });
+
+    /** 情境 2：聽緊（位置真係行）→ 拔 AirPods 系統暫停 */
+    const pausedBySystem = async () => {
+        saveProgress(RECORDING.url, RESUME_AT, DURATION);
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.emitAudible();
+        // 最後真正播到嘅位置（續播位置再行咗少少）
+        const heardAt = audio.currentTime;
+        audio.pause();
+        audio.load.mockClear();
+        audio.play.mockClear();
+        return { audio, controller, detach, heardAt };
+    };
+
+    /** play / playing 都到，play() resolve，但位置凍結（冇 timeupdate） */
+    const playFrozen = async (audio: FakeAudio, play: () => Promise<void>) => {
+        await play();
+        audio.emitPlaying();
+    };
+
+    it('reloads and resumes where it was when a resumed play never advances', async () => {
+        const { audio, controller, detach, heardAt } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.play).toHaveBeenCalledTimes(2);
+        audio.emitMetadata(DURATION);
+        expect(audio.currentTime).toBe(heardAt);
+        detach();
+    });
+
+    it('reloads straight away when lock-screen play is pressed while stalled', async () => {
+        const { audio, controller, detach, heardAt } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        await controller.resume();
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.play).toHaveBeenCalledTimes(2);
+        audio.emitMetadata(DURATION);
+        expect(audio.currentTime).toBe(heardAt);
+        const retries = readPlaybackLog().filter((line) => line.includes(' retry '));
+        expect(retries).toEqual([expect.stringMatching(/ remote$/)]);
+        detach();
+    });
+
+    it('gives lock-screen play a fresh retry budget while stalled', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        await controller.resume();
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(2);
+        const retries = readPlaybackLog().filter((line) => line.includes(' retry '));
+        expect(retries.at(-1)).toMatch(new RegExp(` left=${STALL_MAX_RETRIES}$`));
+        detach();
+    });
+
+    it('just plays on lock-screen play when paused normally', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+
+        await controller.resume();
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(audio.play).toHaveBeenCalledTimes(1);
+        detach();
+    });
+
+    it('just plays on lock-screen play while audible', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await controller.play();
+        audio.emitAudible();
+
+        await controller.resume();
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('does not reload before the first stall timeout', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('leaves a resumed play alone once the position advances', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        audio.emitAudible();
+        vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('does not retry once the user pauses again', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        controller.pause();
+        vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('does not watch a play() call while already audible', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+        audio.emitAudible();
+        audio.load.mockClear();
+
+        await controller.load(RECORDING, { autoplay: true });
+        vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('never advances the saved or shown position while stalled', async () => {
+        const { audio, controller, detach, heardAt } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        audio.emitTime(heardAt);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+        audio.emitMetadata(DURATION);
+
+        expect(controller.getSnapshot().currentTime).toBe(heardAt);
+        expect(controller.getSnapshot().isAudible).toBe(false);
+        expect(getResumePosition(RECORDING.url)).toBe(heardAt);
+        detach();
+    });
+
+    it('retries a stalled auto-advance after the shorter first timeout', async () => {
+        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.end();
+        await Promise.resolve();
+        audio.load.mockClear();
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.src).toBe(NEXT.url);
+        detach();
+    });
+
+    // 情境 1：10:02:52.342 遲咗嘅 timer 重試，65 ms 後亮屏又重試一次，嘥咗一次機會
+    it('spends one retry when a late timer and a screen wake-up land together', async () => {
+        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const WAKE_AFTER_TIMER_MS = 65;
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.end();
+        await Promise.resolve();
+        audio.load.mockClear();
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS + STALL_RETRY_MS + WAKE_AFTER_TIMER_MS);
+        vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        const retries = readPlaybackLog().filter((line) => line.includes(' retry '));
+        expect(retries).toHaveLength(2);
+        expect(audio.load).toHaveBeenCalledTimes(2);
         detach();
     });
 });

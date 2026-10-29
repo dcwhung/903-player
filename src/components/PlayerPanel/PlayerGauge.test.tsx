@@ -278,7 +278,7 @@ describe('PlayerGauge disc motion', () => {
         expect(face.className).not.toMatch(/spinning/);
 
         await userEvent.click(screen.getByRole('button', { name: 'toggle' }));
-        act(() => audio.emitPlaying());
+        act(() => audio.emitAudible());
         expect(face.className).toMatch(/spinning/);
 
         turn(disc, 0, 90);
@@ -291,7 +291,7 @@ describe('PlayerGauge disc motion', () => {
     it('stops spinning right when the disc is pressed and spins again after a tap or cancel', async () => {
         const { audio, disc, face } = await setup();
         await userEvent.click(screen.getByRole('button', { name: 'toggle' }));
-        act(() => audio.emitPlaying());
+        act(() => audio.emitAudible());
 
         fireEvent.pointerDown(disc, { ...rim(0), pointerId: 1 });
         expect(face.className).not.toMatch(/spinning/);

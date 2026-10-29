@@ -54,7 +54,21 @@ const audioFileName = (src: string): string => {
     }
 };
 
-/** 一行：時間 event ct dur rs ns paused vis [note] */
+/** 包住而家位置嗰段已載入範圍嘅尾（1 位小數）；冇就 -（S-551：分得出卡住時有冇數據） */
+const bufferedEnd = (audio: HTMLAudioElement): string => {
+    // 舊瀏覽器 / 假 element 可能冇 buffered
+    const ranges = audio.buffered as TimeRanges | undefined;
+    const count = ranges?.length ?? 0;
+    for (let index = 0; ranges && index < count; index += 1) {
+        const end = ranges.end(index);
+        if (ranges.start(index) <= audio.currentTime && audio.currentTime <= end) {
+            return end.toFixed(TIME_DECIMALS);
+        }
+    }
+    return '-';
+};
+
+/** 一行：時間 event ct dur buf rs ns paused vis [note] */
 const formatLine = (event: string, audio: HTMLAudioElement, note?: string): string => {
     const time = new Date().toISOString().slice(TIME_OF_DAY_START, TIME_OF_DAY_END);
     const fields = [
@@ -62,6 +76,7 @@ const formatLine = (event: string, audio: HTMLAudioElement, note?: string): stri
         event,
         `ct=${audio.currentTime.toFixed(TIME_DECIMALS)}`,
         `dur=${audio.duration.toFixed(TIME_DECIMALS)}`,
+        `buf=${bufferedEnd(audio)}`,
         `rs=${audio.readyState}`,
         `ns=${audio.networkState}`,
         `paused=${audio.paused ? 1 : 0}`,

@@ -51,7 +51,12 @@ export const PlayerProvider = ({
         }),
         [controller],
     );
-    useMediaSession(actions, state);
+    // 鎖屏專用：卡住時 Play 即刻重新載入，同埋記低鎖屏操作（S-551）
+    const remote = useMemo(
+        () => ({ resume: controller.resume, log: controller.logRemote }),
+        [controller],
+    );
+    useMediaSession(actions, state, remote);
     const value = useMemo(() => ({ ...state, ...actions }), [state, actions]);
 
     return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
