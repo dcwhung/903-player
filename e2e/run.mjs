@@ -106,14 +106,17 @@ const POPPINS_WEIGHTS = [400, 500, 600];
 /**
  * 頁頭標題、日子條、mini player 跑馬燈嘅「冇剪走 / 有冇超出」斷言靠字型度量：
  * 拉丁字 / 數字要用真 Poppins（比 fallback 闊），否則會 false negative（W-497）。
- * document.fonts.load 回傳真係載入咗嘅 FontFace：冇 @font-face 或者字型檔 404 就係空 / 唔係 loaded
+ * document.fonts.load 回傳真係載入咗嘅 FontFace：冇 @font-face 就係空；字型檔 404 會 reject（NetworkError），
+ * 當冇載入計，照出 FAIL 而唔係成個 run crash（CUI-0009）
  */
 const checkPoppinsLoaded = async (p, label) => {
     const loaded = await p.evaluate(async (weights) => {
         await document.fonts.ready;
         const results = await Promise.all(
             weights.map(async (w) => {
-                const faces = await document.fonts.load(`${w} 16px Poppins`, 'Ag 0123');
+                const faces = await document.fonts
+                    .load(`${w} 16px Poppins`, 'Ag 0123')
+                    .catch(() => []);
                 const ok =
                     faces.some((f) => f.status === 'loaded') &&
                     document.fonts.check(`${w} 16px Poppins`, 'Ag 0123');
