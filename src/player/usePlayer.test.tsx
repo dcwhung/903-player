@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { FakeAudio } from '../../tests/fakeAudio';
+import { STALL_FIRST_RETRY_MS } from '../config/constants';
 import { getProgress, isWatched, saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import { AudioController } from './AudioController';
@@ -413,6 +414,7 @@ describe('PlayerProvider lock-screen wiring', () => {
     type Handler = (details: MediaSessionActionDetails) => void;
 
     afterEach(() => {
+        vi.useRealTimers();
         vi.unstubAllGlobals();
         Reflect.deleteProperty(navigator, 'mediaSession');
     });
@@ -432,6 +434,7 @@ describe('PlayerProvider lock-screen wiring', () => {
     };
 
     it('reloads a stalled recording when lock-screen play is pressed', async () => {
+        vi.useFakeTimers();
         const { session, handlers } = installMediaSession();
         const { audio, result } = setup();
         await act(async () => result.current.load(RECORDING, { autoplay: true }));
@@ -439,6 +442,9 @@ describe('PlayerProvider lock-screen wiring', () => {
             audio.emitMetadata(DURATION);
             audio.emitPlaying();
         });
+        // C-010：首個 deadline 之前仲係正常開播，鎖屏維持 playing
+        expect(session.playbackState).toBe('playing');
+        act(() => vi.advanceTimersByTime(STALL_FIRST_RETRY_MS));
         expect(session.playbackState).toBe('paused');
         audio.load.mockClear();
 

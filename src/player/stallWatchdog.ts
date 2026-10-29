@@ -5,6 +5,8 @@ export interface StallWatchdogHooks {
     canRetry: () => boolean;
     /** 重新載入再播；retriesLeft 係今次之前仲剩幾多次（記 log 用） */
     retry: (retriesLeft: number) => void;
+    /** deadline 過咗仲未出聲、決定要重試：懷疑卡住（鎖屏顯示停咗，C-010） */
+    onStalled: () => void;
 }
 
 /**
@@ -63,6 +65,7 @@ export class StallWatchdog {
             this.cancel();
             return;
         }
+        this.hooks.onStalled();
         this.hooks.retry(retriesLeft);
         this.watch(retriesLeft - 1);
     };

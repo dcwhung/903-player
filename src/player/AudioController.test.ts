@@ -1082,4 +1082,87 @@ describe('AudioController S-551 lock-screen stall', () => {
         expect(audio.load).toHaveBeenCalledTimes(2);
         detach();
     });
+
+    /** C-010：只有 watchdog 首個 deadline 過咗而未出聲先算卡住（鎖屏先顯示 Play） */
+    describe('isStalled', () => {
+        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const OTHER: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/other.aac' };
+
+        const stalledStart = async () => {
+            const audio = new FakeAudio();
+            const controller = new AudioController(audio.asAudio());
+            const detach = controller.attach();
+            await controller.load(RECORDING, { autoplay: true });
+            audio.emitMetadata(DURATION);
+            audio.emitPlaying();
+            return { audio, controller, detach };
+        };
+
+        it('is not stalled during a normal start before the first deadline', async () => {
+            const { controller, detach } = await stalledStart();
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        it('is stalled once the first deadline passes without sound', async () => {
+            const { controller, detach } = await stalledStart();
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(controller.getSnapshot().isStalled).toBe(true);
+            detach();
+        });
+
+        it('clears the stall once sound starts', async () => {
+            const { audio, controller, detach } = await stalledStart();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            audio.emitMetadata(DURATION);
+            audio.emitAudible();
+
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        it('clears the stall when paused', async () => {
+            const { controller, detach } = await stalledStart();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            controller.pause();
+
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        it('clears the stall when another track is picked', async () => {
+            const { controller, detach } = await stalledStart();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            await controller.load(OTHER, { autoplay: true });
+
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        it('is not stalled while auto-advancing to the next track', async () => {
+            const audio = new FakeAudio();
+            const controller = new AudioController(audio.asAudio());
+            controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+            const detach = controller.attach();
+            await controller.load(RECORDING, { autoplay: true });
+            audio.emitMetadata(DURATION);
+            const seen: boolean[] = [];
+            controller.subscribe(() => seen.push(controller.getSnapshot().isStalled));
+
+            audio.end();
+            await Promise.resolve();
+
+            expect(seen.length).toBeGreaterThan(0);
+            expect(seen.some(Boolean)).toBe(false);
+            detach();
+        });
+    });
 });

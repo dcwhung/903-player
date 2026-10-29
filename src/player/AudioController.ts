@@ -21,6 +21,7 @@ const INITIAL_STATE: PlayerState = {
     recording: null,
     isPlaying: false,
     isAudible: false,
+    isStalled: false,
     currentTime: 0,
     duration: 0,
     watchedRevision: 0,
@@ -60,6 +61,7 @@ export class AudioController {
     private readonly stall = new StallWatchdog({
         canRetry: () => this.hasPlayIntent(),
         retry: (retriesLeft) => this.retryStalled(retriesLeft),
+        onStalled: () => this.markStalled(),
     });
 
     /** 播完一集之後接住播邊集；冇設定或者返回 undefined 就停 */
@@ -105,7 +107,7 @@ export class AudioController {
             window.removeEventListener('pagehide', this.persist);
             window.removeEventListener('online', this.recoverSource);
             document.removeEventListener('visibilitychange', this.onVisibilityChange);
-            this.stall.cancel();
+            this.stopWatchingStall();
         };
     };
 
@@ -159,7 +161,7 @@ export class AudioController {
      */
     resume = async (): Promise<void> => {
         if (this.isWaitingForSound()) {
-            this.stall.cancel();
+            this.stopWatchingStall();
             this.reload('remote');
         }
         await this.play();
@@ -205,7 +207,7 @@ export class AudioController {
 
     private switchTo(recording: Track): void {
         // 用戶自己揀咗另一集：唔好再重試自動接住播嗰集
-        this.stall.cancel();
+        this.stopWatchingStall();
         this.persist();
         this.watched = isWatched(recording.url);
         this.pendingStart = getResumePosition(recording.url);
@@ -343,9 +345,24 @@ export class AudioController {
         if (this.audio.paused || advanced < AUDIBLE_ADVANCE_SECONDS) {
             return;
         }
-        this.stall.cancel();
+        this.stopWatchingStall();
         if (!this.state.isAudible) {
             this.update({ isAudible: true });
+        }
+    }
+
+    /** watchdog 首個 deadline 過咗而未出聲：懷疑卡住，鎖屏改為顯示停咗（C-010） */
+    private markStalled(): void {
+        if (!this.state.isStalled) {
+            this.update({ isStalled: true });
+        }
+    }
+
+    /** 唔再睇住卡住（出聲 / 停 / 換集）：同時清走「卡住」 */
+    private stopWatchingStall(): void {
+        this.stall.cancel();
+        if (this.state.isStalled) {
+            this.update({ isStalled: false });
         }
     }
 
@@ -387,7 +404,7 @@ export class AudioController {
 
     /** pause / ended（包括拔耳筒、來電等系統暫停）：用戶冇再想播 */
     private onStopped = (): void => {
-        this.stall.cancel();
+        this.stopWatchingStall();
         this.playIntent = false;
         this.update({ isPlaying: false, isAudible: false });
         this.persist();

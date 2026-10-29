@@ -71,6 +71,7 @@ const playerValue = (stop: () => void): PlayerContextValue => ({
     recording: null,
     isPlaying: false,
     isAudible: false,
+    isStalled: false,
     currentTime: 0,
     duration: 0,
     watchedRevision: 0,

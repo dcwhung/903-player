@@ -28,6 +28,7 @@ const state = (overrides: Partial<PlayerState> = {}): PlayerState => ({
     recording: { showId: 'gongzi', date: '2026-10-17', time: '2308', url: 'u' },
     isPlaying: true,
     isAudible: true,
+    isStalled: false,
     currentTime: 0,
     duration: 100,
     watchedRevision: 0,
@@ -139,10 +140,19 @@ describe('useMediaSession S-551 lock-screen state', () => {
 
     const remote = (): RemoteControls => ({ resume: vi.fn(), log: vi.fn() });
 
-    it('reports paused while play is wanted but nothing is audible', () => {
+    // C-010：正常開播 / 轉集 / 自動接住播 / 短暫緩衝都維持 playing，鎖屏唔好閃 Play
+    it('keeps reporting playing while a normal start or short buffer is under way', () => {
         const { session } = installMediaSession();
 
         renderHook(() => useMediaSession(actions(), state({ isAudible: false })));
+
+        expect(session.playbackState).toBe('playing');
+    });
+
+    it('reports paused once the first stall deadline passes', () => {
+        const { session } = installMediaSession();
+
+        renderHook(() => useMediaSession(actions(), state({ isAudible: false, isStalled: true })));
 
         expect(session.playbackState).toBe('paused');
     });
@@ -153,7 +163,12 @@ describe('useMediaSession S-551 lock-screen state', () => {
         renderHook(() =>
             useMediaSession(
                 actions(),
-                state({ isAudible: false, currentTime: POSITION, duration: DURATION }),
+                state({
+                    isAudible: false,
+                    isStalled: true,
+                    currentTime: POSITION,
+                    duration: DURATION,
+                }),
             ),
         );
 
@@ -164,12 +179,17 @@ describe('useMediaSession S-551 lock-screen state', () => {
         });
     });
 
-    it('publishes the position again when sound starts', () => {
+    it('publishes the position again when a stall clears', () => {
         const { session, setPositionState } = withPositionState();
         const a = actions();
         const { rerender } = renderHook(({ s }) => useMediaSession(a, s), {
             initialProps: {
-                s: state({ isAudible: false, currentTime: POSITION, duration: DURATION }),
+                s: state({
+                    isAudible: false,
+                    isStalled: true,
+                    currentTime: POSITION,
+                    duration: DURATION,
+                }),
             },
         });
         setPositionState.mockClear();

@@ -4,8 +4,9 @@ import { StallWatchdog } from './stallWatchdog';
 const setup = (canRetry = true) => {
     const retry = vi.fn<(retriesLeft: number) => void>();
     const allow = vi.fn(() => canRetry);
-    const watchdog = new StallWatchdog({ canRetry: allow, retry });
-    return { watchdog, retry, allow };
+    const onStalled = vi.fn();
+    const watchdog = new StallWatchdog({ canRetry: allow, retry, onStalled });
+    return { watchdog, retry, allow, onStalled };
 };
 
 describe('StallWatchdog', () => {
@@ -206,5 +207,29 @@ describe('StallWatchdog', () => {
 
         expect(retry).toHaveBeenCalledTimes(1);
         expect(watchdog.pending).toBe(true);
+    });
+
+    it('should report a stall before retrying once a deadline passes', () => {
+        const { watchdog, retry, onStalled } = setup();
+        retry.mockImplementation(() => expect(onStalled).toHaveBeenCalledTimes(1));
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+        expect(onStalled).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1);
+
+        expect(onStalled).toHaveBeenCalledTimes(1);
+        expect(retry).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not report a stall when no longer wanted or cancelled', () => {
+        const { watchdog, onStalled } = setup(false);
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+        watchdog.start(STALL_MAX_RETRIES);
+        watchdog.cancel();
+        vi.advanceTimersByTime(STALL_RETRY_MS);
+
+        expect(onStalled).not.toHaveBeenCalled();
     });
 });

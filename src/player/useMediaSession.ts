@@ -53,9 +53,10 @@ export const useMediaSession = (
     state: PlayerState,
     remote?: RemoteControls,
 ): void => {
-    const { recording, isPlaying, isAudible } = state;
-    // 播緊但未出聲（載緊 / 卡住）報 paused：iOS 先唔會自己推進度條，鎖屏亦會顯示 Play（S-551）
-    const playbackState: MediaSessionPlaybackState = isPlaying && isAudible ? 'playing' : 'paused';
+    const { recording, isPlaying, isStalled } = state;
+    // 只有懷疑卡住先報 paused（iOS 唔再自己推進度條、鎖屏顯示 Play，S-551）；
+    // 正常開播 / 轉集 / 自動接住播 / 短暫緩衝維持 playing，鎖屏唔會閃 Play（C-010）
+    const playbackState: MediaSessionPlaybackState = isPlaying && !isStalled ? 'playing' : 'paused';
 
     useEffect(() => {
         if (hasMediaSession()) {
