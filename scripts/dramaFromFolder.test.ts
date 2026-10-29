@@ -113,9 +113,11 @@ const appEpisodes = (id: string, json: unknown) => {
     return buildEpisodes(id, def);
 };
 
-/** 錄音網址去咗 base 之後 → root 底下嘅相對路徑（每段 decode） */
-const decodedPath = (url: string, base: string): string =>
-    url.slice(base.length).split('/').map(decodeURIComponent).join('/');
+/** 錄音網址去咗 base 之後 → root 底下嘅相對路徑（每段 decode）；唔係由 base 開頭即係 host 揀錯 */
+const decodedPath = (url: string, base: string): string => {
+    if (!url.startsWith(base)) throw new Error(`${url} 唔係由 ${base} 開頭`);
+    return url.slice(base.length).split('/').map(decodeURIComponent).join('/');
+};
 
 /** R2 網址 → root 底下嘅相對路徑 */
 const pathOfUrl = (url: string): string => decodedPath(url, `${APP_AUDIO_BASE}/`);
@@ -422,8 +424,13 @@ describe('generateDraft — committed dramas round-trip', () => {
     });
 
     it.each(COMMITTED_IDS)('should rebuild the same audio paths for %s from scratch', (id) => {
-        // 由零生成一律 host: r2；c18 commit 咗係 host: app，所以比相對路徑（r2 base 一樣，等同比網址）
+        // 由零生成一律 host: r2（先驗呢個前提）；c18 commit 咗係 host: app，所以比相對路徑：
+        // 生成嗰邊 host r2 + 網址由 R2 base 開頭 + 路徑一樣，先等同網址指住同一個上載檔
         const json = jsonOf(generateDraft(mirrorTree(id), { now: NOW }));
+        expect((json.audio as Json).host).toBe('r2');
+        appEpisodes(id, json).forEach((e) =>
+            expect(e.url.startsWith(`${APP_AUDIO_BASE}/`)).toBe(true),
+        );
         expect(audioPaths(id, json)).toEqual(audioPaths(id, committed(id)));
     });
 
