@@ -156,6 +156,13 @@ npx playwright install chromium
 - 瀏覽器已經裝咗喺其他位置（例如 CI / 雲端容器預先裝好）：設 `PLAYWRIGHT_BROWSERS_PATH` 指去嗰個資料夾，
   `npx playwright install` 同 `npm run e2e` 都會用佢，唔使再下載
 - 幾個 worktree 同時跑：用 `E2E_PORT=4174 npm run e2e` 避開撞 port
+- 唔使網絡：所有 context 都經 `e2e/harness.mjs` 嘅 `newE2EContext` 開，外部 host 全部 mock 晒——
+  audio host 答假錄音（WAV）、廣播劇 R2 答 404、Google Fonts 答空 CSS（字型檔 404）。
+  字體因此用 `tokens.css` 嘅 system-ui / sans-serif fallback：冇本機字型檔，唔值得為 e2e 加
+  `@fontsource` 呢類大依賴，而且唔使等網絡 swap 字，layout / 截圖更穩定。
+  其他外部 request 一律 abort，`run.mjs` 最尾嘅檢查見到有就 FAIL；`index.html` 新加外部 host 要喺
+  harness 加 mock（`src/e2eSrcConstants.test.ts` 會鎖住）。驗證離線：
+  `HTTPS_PROXY=http://127.0.0.1:9 HTTP_PROXY=http://127.0.0.1:9 npm run e2e`（Chromium 跟 proxy 環境變數，連唔到外網）
 
 ### App icon
 

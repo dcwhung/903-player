@@ -7,7 +7,14 @@ import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import { runArcSheetChecks } from './arcSheet.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
-import { AUDIO_HOST, PROBE_STORAGE_KEY, SHOT, ensurePlaying, newE2EContext } from './harness.mjs';
+import {
+    AUDIO_HOST,
+    PROBE_STORAGE_KEY,
+    SHOT,
+    ensurePlaying,
+    externalRequests,
+    newE2EContext,
+} from './harness.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { runMiniPlayerRuleChecks } from './miniPlayerRules.mjs';
 import { runTouchChecks } from './touch.mjs';
@@ -1558,6 +1565,9 @@ try {
     log(swScript.endsWith('/903-player/sw.js'), `Service worker 已啟用：${swScript}`);
 
     log(errors.length === 0, `冇 JS error ${errors.join('; ')}`);
+    // e2e 唔靠外網：除咗刻意 mock 嘅 host，冇任何 request 出去（例如 Google Fonts）
+    const external = [...new Set(externalRequests.map((url) => new URL(url).origin))];
+    log(external.length === 0, `冇 request 出外網（mock 咗嘅 host 除外）：${external.join(', ')}`);
 } finally {
     await browser?.close();
     server.kill();

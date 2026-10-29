@@ -1,4 +1,4 @@
-// e2e 共用嘅瀏覽器環境：固定時鐘 + 似真嘅 audio host。run.mjs 同 touch.mjs 所有 context 都經呢度開，
+// e2e 共用嘅瀏覽器環境：固定時鐘 + 似真嘅 audio host + 唔出外網。run.mjs 同 touch.mjs 所有 context 都經呢度開，
 // 兩邊唔會各自為政（例如一邊冇固定時鐘就會喺香港時間過咗午夜之後錯）。
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { silenceWav } from './silenceWav.mjs';
@@ -19,6 +19,41 @@ export const AUDIO_HOST = 'https://audio.hkfm903.live';
  * e2e 唔出外網，所有 context 一律答 404，唔使每個劇集測試自己 route
  */
 export const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
+/**
+ * Google Fonts（index.html 嘅 preload stylesheet + 字型檔）：e2e 答空 CSS，字體用返 tokens.css 嘅
+ * system-ui / sans-serif fallback。冇本機字型檔（唔想為 e2e 加 @fontsource 呢類大依賴），
+ * 而且唔靠網絡：載唔載到、幾時 swap 字都唔會令 layout / 截圖浮動
+ */
+export const GOOGLE_FONTS_CSS = 'https://fonts.googleapis.com';
+export const GOOGLE_FONTS_FILES = 'https://fonts.gstatic.com';
+const EMPTY_CSS = { status: 200, contentType: 'text/css', body: '' };
+
+/**
+ * e2e 唔出外網：刻意 mock 咗嘅外部 origin（newE2EContext 入面 route 住）。
+ * 其他外部 request 一律 abort，同時記低入 externalRequests，run.mjs 最尾斷言要係空
+ */
+const MOCKED_ORIGINS = new Set([
+    AUDIO_HOST,
+    DRAMA_AUDIO_BASE,
+    GOOGLE_FONTS_CSS,
+    GOOGLE_FONTS_FILES,
+]);
+/** 本機 preview server（run.mjs 嘅 BASE） */
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
+/** 出咗外網（唔係本機、唔係刻意 mock 嘅 host）嘅 request URL；所有 context 共用 */
+export const externalRequests = [];
+
+/** http(s) 先算網絡 request；data: / blob: 等唔會出網 */
+const isExternal = (url) => {
+    const { protocol, hostname, origin } = new URL(url);
+    if (protocol !== 'http:' && protocol !== 'https:') return false;
+    return !LOCAL_HOSTS.has(hostname) && !MOCKED_ORIGINS.has(origin);
+};
+
+const recordExternal = (request) => {
+    if (isExternal(request.url())) externalRequests.push(request.url());
+};
+
 const AUDIO_SECONDS = 600;
 const wav = silenceWav(AUDIO_SECONDS);
 /** 同 src/services/probeStore.ts 嘅 PROBE_STORAGE_KEY 一樣（src/e2eSrcConstants.test.ts 鎖住）：app 嘅錄音列表只會由呢度讀 */
@@ -99,6 +134,16 @@ export const newE2EContext = async (
     { extraAudioUrls = [], now = E2E_NOW } = {},
 ) => {
     const ctx = await browser.newContext(options);
+    ctx.on('request', recordExternal);
+    // 最先註冊 = 最低優先（Playwright 後註冊嘅 route 先試）：下面 mock 咗嘅 host 唔會跌落嚟
+    await ctx.route(
+        (url) => isExternal(url.href),
+        (route) => route.abort('blockedbyclient'),
+    );
+    await ctx.route(`${GOOGLE_FONTS_CSS}/**`, (route) => route.fulfill(EMPTY_CSS));
+    await ctx.route(`${GOOGLE_FONTS_FILES}/**`, (route) =>
+        route.fulfill({ status: 404, body: '' }),
+    );
     await ctx.clock.install({ time: new Date(now) });
     await ctx.route(`${AUDIO_HOST}/**`, audioResponder(extraAudioUrls));
     await ctx.route(`${DRAMA_AUDIO_BASE}/**`, (route) => route.fulfill({ status: 404, body: '' }));
