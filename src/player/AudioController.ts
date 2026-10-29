@@ -149,9 +149,11 @@ export class AudioController {
             }
         } catch (error) {
             recordPlayback('play()', this.audio, `rejected ${(error as Error).name}`);
-            // 瀏覽器擋自動播放：維持暫停，等用戶撳 Play；被新一次 play() 取代就交畀佢
+            // 瀏覽器擋自動播放：維持暫停，等用戶撳 Play；被新一次 play() 取代就交畀佢。
+            // 冇播緊就唔使再睇住卡住；清埋 isStalled，否則之後同一集正常開播鎖屏會顯示 Play（S-581）
             if (isLatest()) {
                 this.playIntent = false;
+                this.stopWatchingStall();
                 this.update({ isPlaying: false });
             }
         } finally {
@@ -379,8 +381,12 @@ export class AudioController {
         this.update({ isAudible: false });
     };
 
-    /** 來源出錯（例如斷網）：等緊嘅 play 冇可能成功，亦冇嘢播緊 */
+    /**
+     * 來源出錯（例如斷網）：等緊嘅 play 冇可能成功，亦冇嘢播緊。
+     * 停止睇住並清走 isStalled：之後再撳播（recoverSource）係新一次開播，有自己嘅 deadline（S-581）
+     */
     private onError = (): void => {
+        this.stopWatchingStall();
         this.playIntent = false;
         this.update({ isPlaying: false, isAudible: false });
     };

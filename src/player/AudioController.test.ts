@@ -1246,6 +1246,60 @@ describe('AudioController S-551 lock-screen stall', () => {
             detach();
         });
 
+        // S-581：出錯之後同一集再正常開播，唔可以由頭到尾顯示「停咗」
+        it('clears the stall when the source fails', async () => {
+            const { audio, controller, detach } = await stalledStart();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            audio.fail(2);
+
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        it('does not reload on lock-screen play during a normal start after a failure', async () => {
+            const { audio, controller, detach } = await stalledStart();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+            audio.fail(2);
+            await controller.play();
+            audio.load.mockClear();
+
+            await controller.resume();
+
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+
+        // 重試入面嘅 play() 被拒（或者用戶再撳被拒）：已經冇播緊，之後正常開播唔應該帶住「卡住」
+        it('clears the stall when play() is rejected', async () => {
+            const { audio, controller, detach } = await stalledStart();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+            audio.rejectPlay = true;
+
+            await controller.play();
+
+            expect(controller.getSnapshot().isPlaying).toBe(false);
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        it('does not reload on lock-screen play during a normal start after a rejected play', async () => {
+            const { audio, controller, detach } = await stalledStart();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+            audio.rejectPlay = true;
+            await controller.play();
+            audio.rejectPlay = false;
+            await controller.play();
+            audio.load.mockClear();
+
+            await controller.resume();
+
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+
         it('is not stalled while auto-advancing to the next track', async () => {
             const audio = new FakeAudio();
             const controller = new AudioController(audio.asAudio());
