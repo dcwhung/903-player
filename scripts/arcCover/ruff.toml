@@ -1,0 +1,9 @@
+# Python 工具嘅 lint / format 設定（ruff）
+line-length = 110
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[lint.isort]
+known-first-party = ["analysis", "compose", "constants", "generate", "preview"]
