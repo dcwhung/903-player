@@ -1,0 +1,6 @@
+# 短篇碟面 / tile 候選圖 generator（唔屬於 app build）
+# OpenCV 要 4.x：5.0 將 Haar cascade 搬咗去 contrib
+opencv-python-headless>=4.8,<5
+numpy>=1.26
+pillow>=10.0
+pytest>=8.0

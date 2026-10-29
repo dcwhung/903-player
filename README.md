@@ -148,6 +148,32 @@ node scripts/generateIcons.mjs
 用 Playwright 嘅 Chromium 縮放（唔使另外裝套件）；maskable 同 apple-touch-icon 填 `#98bdde` 底色，
 maskable 內容縮到 80%（安全區）。有 ImageMagick 就順手無損壓縮（像素唔變），冇就跳過。
 
+### 短篇碟面 / tile 候選圖（`scripts/arcCover/`）
+
+將短篇（或者廣播劇本身）嘅封面相生成幾款候選圖畀人揀：碟面 `disc` 600×600 webp、
+長方形 `tile` webp（短篇 16:9 1216×684；唔填 `--arc` 即係廣播劇本身，書架 2:1 1216×608）。
+Python 工具，唔屬於 app build，唔入 npm scripts；依賴裝喺 venv（OpenCV 要 4.x：5.0 拎走咗 Haar cascade）：
+
+```bash
+python3 -m venv /tmp/arcCover-venv
+/tmp/arcCover-venv/bin/pip install -r scripts/arcCover/requirements.txt
+/tmp/arcCover-venv/bin/python scripts/arcCover/generate.py \
+    --input "cover photo.png" --drama lancy --arc half --out /tmp/arcCover
+/tmp/arcCover-venv/bin/python -m pytest scripts/arcCover/tests   # 唔使網絡
+```
+
+- 封面喺 R2：`<DRAMA_AUDIO_BASE>/<劇集 folder>/<短篇 folder>/cover photo.(png|jpg)`；r2.dev 對 Python urllib 回 403，用 `curl` 下載
+- 輸出 `<out>/<drama>/<arc>/round-N/`（唔填 `--round` 就自動下一個；已有 round 要 `--force` 先覆蓋），入面有：
+    - 候選圖 `<arc>-disc-<方法>.webp`、`<arc>-tile-<方法>.webp`
+    - `previews/*.png`：碟面照 app 咁疊（圓形、暗角、坑紋、碟心、碟邊，跟 `drama.json` theme 色）+ 全集表 52px 圓碟 + 40px 細碟；tile 加圓角同書架 2:1 crop 框
+    - `analysis.png`（saliency 熱圖、人面綠框、標題字紅框、焦點）、`contact.png`（全部預覽一張睇晒）
+    - `manifest.json`：drama / arc / round / 原圖 sha256 / 分析結果 / 每個候選圖 `{ kind, file, method, params, width, height, sha256 }`；一個 round 一份，方便跨 round 砌 review 頁
+- 方法：`center-crop`（中間）、`saliency-crop`（可見 saliency 最多：碟面計埋圓形、碟心同暗角）、`face-crop`（包住人面，人面放碟心上面；冇人面就用最突出範圍）、
+  `text-safe-crop`（唔切開標題字；避唔到就至少成行字喺圖入面）、`fit-blur`（成張圖 + 模糊放大底）、`fit-extend`（成張圖 + 由邊緣生成延伸：平滑漸變底色 + 同高度抽返顆粒）；
+  加 `--title-box x,y,w,h` 會用手動字框（代替自動偵測），並多出一張 `title-shrink` 碟面（標題縮到 `--title-scale`，預設 0.85）
+- 同一張圖、同一組參數輸出完全一樣（冇隨機；補底顆粒用固定 seed）
+- 人面 / 標題字偵測係 heuristic（Haar cascade + 眼睛過濾、筆劃密度 + 顏色），風格化封面會漏 / 誤報，睇 `analysis.png` 判斷；揀好之後要手動 copy 入 `src/dramas/<id>/`
+
 ## 部署（只需做一次）
 
 GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 **GitHub Actions**。
