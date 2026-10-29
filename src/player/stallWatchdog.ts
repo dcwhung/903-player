@@ -21,13 +21,19 @@ export interface StallWatchdogHooks {
      * reload 會 abort 佢而之後背景再唔載完（v1.20.8）
      */
     isHidden: () => boolean;
+    /**
+     * 今次嘗試已發 playing、數據夠播（rs ≥ HAVE_FUTURE_DATA）而位置凍結咗 FROZEN_PLAYING_MS：
+     * pipeline 死咗、數據已喺本機，reload 唔會 abort 下載，鎖屏都照樣 reload（v1.20.9）
+     */
+    isFrozenPlaying: () => boolean;
 }
 
 /**
  * iOS 鎖屏撳播 / 自動接住播嘅集可能一直唔出聲（停喺 0:00，或者位置凍結但顯示播緊）：
  * 前景等一陣都未出聲、下載亦冇進展就叫 retry，最多 n 次。
- * 鎖屏（hidden）時唔 retry、唔扣次數，只係保持 overdue，等亮屏 / 鎖屏 Play；
- * 等夠 STALL_HIDDEN_MARK_MS 先報卡住（v1.20.8）。
+ * 鎖屏（hidden，包括切 app / 背景 tab）仲載緊時唔 retry、唔扣次數，只係保持 overdue，等亮屏 / 鎖屏 Play；
+ * 等夠 STALL_HIDDEN_MARK_MS 先報卡住（v1.20.8）。鎖屏但 playing 已發、數據夠播而位置凍結
+ * 就同前景一樣即刻 retry（v1.20.9）。
  * 只管次數同 timer，點樣重試由 AudioController 決定。
  */
 export class StallWatchdog {
@@ -120,10 +126,13 @@ export class StallWatchdog {
         this.hiddenStallReported = false;
     }
 
-    /** 到期：鎖屏就唔郁（v1.20.8）；慢網仲載緊就再等（唔扣次數，W-498），否則重試 */
+    /**
+     * 到期：鎖屏仲載緊就唔郁（v1.20.8），鎖屏但 pipeline 死咗（playing 後凍結）照樣重試（v1.20.9）；
+     * 前景慢網仲載緊就再等（唔扣次數，W-498），否則重試
+     */
     private onDeadline = (): void => {
         const wanted = this.pending && this.hooks.canRetry();
-        if (wanted && this.hooks.isHidden()) {
+        if (wanted && this.hooks.isHidden() && !this.hooks.isFrozenPlaying()) {
             this.waitWhileHidden();
             return;
         }

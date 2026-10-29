@@ -3,6 +3,7 @@ import type { Recording } from '../types/recording';
 import {
     AUDIBLE_ADVANCE_SECONDS,
     EARLY_ADVANCE_SECONDS,
+    FROZEN_PLAYING_MS,
     REPLAY_RESET_SECONDS,
     STALL_DATA_AHEAD_SECONDS,
     STALL_FIRST_RETRY_MS,
@@ -1657,6 +1658,198 @@ describe('AudioController locked auto-advance (v1.20.8)', () => {
         vi.advanceTimersByTime(STALL_RETRY_MS);
 
         expect(audio.load).toHaveBeenCalledTimes(2);
+        detach();
+    });
+});
+
+/**
+ * v1.20.9 回歸（v1.20.8 iPhone log，鎖屏拔 AirPods 5 s 再插返、鎖屏 Play 冇聲，鎖屏時間照行）：
+ * 17:38:39.563 ms:pause ct=28.9 rs=4 vis=h（AirPods 拔走，之前位置真係行緊）
+ * 17:38:45.465 ms:play → .487 play / playing / play() resolved，ct 凍結 28.9、buf=859.5（成集已載）
+ * 17:38:52.354 ms:pause → 52.935 ms:play → playing（仍然凍結）→ 57.565 ms:pause → 17:39:02 亮屏
+ * v1.20.8 鎖屏唔 reload，每次 ms:play 又由頭計，12 s mark 永遠到唔到。
+ * 規則：鎖屏時 playing 已發、rs ≥ 3 而位置唔行 = pipeline 死咗，數據喺本機，照樣 reload；
+ * 鎖屏 Play 見到上一次嘗試係咁就即刻 reload。仲載緊（冇 playing / rs ≤ 2）維持 v1.20.8
+ */
+describe('AudioController hidden frozen playing (v1.20.9)', () => {
+    const DURATION = 859.5;
+    const HEARD_AT = 24.7;
+    /** log：AirPods 拔走前位置行到 28.9 */
+    const PAUSED_AT = 28.9;
+    /** log：playing 17:38:45.488 → ms:pause 17:38:52.354 */
+    const FROZEN_BEFORE_PAUSE_MS = 6866;
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
+    });
+
+    const setScreen = (state: DocumentVisibilityState) => {
+        vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
+        document.dispatchEvent(new Event('visibilitychange'));
+    };
+
+    /** 鎖屏聽緊（成集已載）→ 拔 AirPods：iOS 送 ms:pause */
+    const lockedListeningThenPaused = async () => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = attachController(controller);
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.buffered = timeRanges([[0, DURATION]]);
+        audio.emitPlaying(HAVE_ENOUGH_DATA);
+        audio.emitTime(HEARD_AT);
+        audio.emitTime(PAUSED_AT);
+        setScreen('hidden');
+        controller.pause();
+        audio.load.mockClear();
+        audio.play.mockClear();
+        return { audio, controller, detach };
+    };
+
+    /** 鎖屏 Play：play / playing / play() resolve，但位置凍結（冇 timeupdate） */
+    const lockScreenPlayFrozen = async (audio: FakeAudio, controller: AudioController) => {
+        await controller.resume();
+        audio.emitPlaying(HAVE_ENOUGH_DATA);
+    };
+
+    const retryLines = () => readPlaybackLog().filter((line) => line.includes(' retry '));
+
+    it('reloads at the first deadline while locked when playing froze with the data present', async () => {
+        const { audio, controller, detach } = await lockedListeningThenPaused();
+        await lockScreenPlayFrozen(audio, controller);
+        expect(audio.load).not.toHaveBeenCalled();
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.play).toHaveBeenCalledTimes(2);
+        expect(controller.getSnapshot().isStalled).toBe(true);
+        expect(retryLines()).toEqual([
+            expect.stringMatching(new RegExp(` left=${STALL_MAX_RETRIES}$`)),
+        ]);
+        audio.emitMetadata(DURATION);
+        expect(audio.currentTime).toBe(PAUSED_AT);
+        detach();
+    });
+
+    it('reloads straight away on the next lock-screen play after a frozen attempt', async () => {
+        const { audio, controller, detach } = await lockedListeningThenPaused();
+        await lockScreenPlayFrozen(audio, controller);
+        // iOS 凍結咗 timer：deadline 冇行過，用戶喺鎖屏暫停再撳 Play
+        vi.setSystemTime(Date.now() + FROZEN_BEFORE_PAUSE_MS);
+        controller.pause();
+        expect(audio.load).not.toHaveBeenCalled();
+
+        await controller.resume();
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(retryLines()).toEqual([expect.stringMatching(/ remote$/)]);
+        audio.emitMetadata(DURATION);
+        expect(audio.currentTime).toBe(PAUSED_AT);
+        detach();
+    });
+
+    it('reloads on the next lock-screen play once frozen past the short limit, before any deadline', async () => {
+        const { audio, controller, detach } = await lockedListeningThenPaused();
+        await lockScreenPlayFrozen(audio, controller);
+        vi.advanceTimersByTime(FROZEN_PLAYING_MS);
+        controller.pause();
+
+        await controller.resume();
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(retryLines()).toEqual([expect.stringMatching(/ remote$/)]);
+        detach();
+    });
+
+    it('reloads on lock-screen play pressed again while still frozen without a pause', async () => {
+        const { audio, controller, detach } = await lockedListeningThenPaused();
+        await lockScreenPlayFrozen(audio, controller);
+        vi.advanceTimersByTime(FROZEN_PLAYING_MS);
+
+        await controller.resume();
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        detach();
+    });
+
+    it('only reloads once for a frozen attempt, then starts a fresh one', async () => {
+        const { audio, controller, detach } = await lockedListeningThenPaused();
+        await lockScreenPlayFrozen(audio, controller);
+        vi.setSystemTime(Date.now() + FROZEN_BEFORE_PAUSE_MS);
+        controller.pause();
+        await controller.resume();
+        audio.emitMetadata(DURATION);
+        audio.emitPlaying(HAVE_ENOUGH_DATA);
+        audio.emitTime(PAUSED_AT + 1);
+        controller.pause();
+
+        await controller.resume();
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        detach();
+    });
+
+    it('just plays on lock-screen play after a healthy locked pause and resume', async () => {
+        const { audio, controller, detach } = await lockedListeningThenPaused();
+        await controller.resume();
+        audio.emitPlaying(HAVE_ENOUGH_DATA);
+        audio.emitTime(PAUSED_AT + 1);
+        vi.advanceTimersByTime(FROZEN_BEFORE_PAUSE_MS);
+        controller.pause();
+
+        await controller.resume();
+        audio.emitPlaying(HAVE_ENOUGH_DATA);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+        audio.emitTime(PAUSED_AT + 2);
+        vi.advanceTimersByTime(STALL_MAX_WAIT_MS);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(audio.play).toHaveBeenCalledTimes(2);
+        expect(controller.getSnapshot().isStalled).toBe(false);
+        detach();
+    });
+
+    it('just plays on lock-screen play when paused right after playing, before it could advance', async () => {
+        const { audio, controller, detach } = await lockedListeningThenPaused();
+        await lockScreenPlayFrozen(audio, controller);
+        vi.advanceTimersByTime(FROZEN_PLAYING_MS - 1);
+        controller.pause();
+
+        await controller.resume();
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    // 仲載緊（playing 已發但冇可播數據，S-551 iOS 早發 playing）：維持 v1.20.8，唔 reload
+    it('does not reload while locked when playing fired without playable data', async () => {
+        const { audio, controller, detach } = await lockedListeningThenPaused();
+        audio.readyState = HAVE_CURRENT_DATA;
+        await controller.resume();
+        audio.emitPlaying();
+
+        vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS - 1);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(controller.getSnapshot().isStalled).toBe(false);
+        detach();
+    });
+
+    it('keeps the foreground first retry for a frozen resume', async () => {
+        const { audio, controller, detach } = await lockedListeningThenPaused();
+        setScreen('visible');
+        await controller.play();
+        audio.emitPlaying(HAVE_ENOUGH_DATA);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(retryLines()).toEqual([
+            expect.stringMatching(new RegExp(` left=${STALL_MAX_RETRIES}$`)),
+        ]);
         detach();
     });
 });
