@@ -71,7 +71,7 @@ export interface CliIo {
 export const DRAMA_AUDIO_BASE: string;
 export const SERIES_TEMPLATES: readonly string[];
 export const DAILY_TEMPLATE: string;
-export const EXIT: Readonly<{ ok: 0; blocked: 1; usage: 2; verifyFailed: 3 }>;
+export const EXIT: Readonly<{ ok: 0; blocked: 1; usage: 2; verifyFailed: 3; internal: 4 }>;
 export const USAGE: string;
 
 export function toChineseNumeral(n: number): string;
@@ -84,9 +84,9 @@ export function parseEpisodeFileName(file: string): ParsedEpisodeFile | null;
 export function todayInHongKong(now: Date): string;
 export function generateDraft(
     root: string,
-    options: { id?: string; existing?: DramaJson; now: Date },
+    options: { id?: string; existing?: unknown; now: Date },
 ): DraftResult;
-export function formatReport(result: DraftResult, options?: { existing?: DramaJson }): string;
+export function formatReport(result: DraftResult, options?: { existing?: unknown }): string;
 export function episodeUrls(json: DramaJson, base?: string): string[];
 export function coverUrls(scan: DramaScan, folder: string, base?: string): string[];
 export function verifyUrls(

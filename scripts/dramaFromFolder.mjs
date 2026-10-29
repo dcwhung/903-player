@@ -32,8 +32,11 @@ export const SERIES_TEMPLATES = [
 ];
 export const DAILY_TEMPLATE = '{yyyymmdd}.m4a';
 
-/** 0：成功；1：有錯誤，冇寫檔；2：參數錯；3：已寫檔但 --verify 有網址唔得 */
-export const EXIT = Object.freeze({ ok: 0, blocked: 1, usage: 2, verifyFailed: 3 });
+/**
+ * 0：成功；1：有錯誤，冇寫檔；2：參數錯；3：已寫檔但 --verify 有網址唔得；
+ * 4：程式本身出錯（唔係 folder 問題，要將成段輸出傳返嚟）
+ */
+export const EXIT = Object.freeze({ ok: 0, blocked: 1, usage: 2, verifyFailed: 3, internal: 4 });
 
 const AUDIO_EXTENSIONS = new Set(['.m4a', '.mp3', '.aac', '.mp4']);
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -485,11 +488,48 @@ const mergeDaily = (oldEpisodes, dates, issues) => {
     return merged.sort((a, b) => b.date.localeCompare(a.date));
 };
 
-const checkExisting = (scan, existing, kind, issues) => {
+/* ───────────── 驗 --existing 形狀 ───────────── */
+
+const isPlainObject = (value) =>
+    value !== null && typeof value === 'object' && !Array.isArray(value);
+
+/** 試砌一次 template 用嘅樣本日期（每日劇 token 要有日期先砌得） */
+const SAMPLE_DATE = '2000-01-01';
+
+/** 試砌一次 audio.file：打錯 token 會 throw，要喺真正用之前轉做訊息 */
+const templateProblem = (template, kind) => {
+    if (typeof template !== 'string') return '冇 audio.file（檔名 template）';
+    const tokens = kind === 'series' ? seriesTokens('', '', 1, '') : dailyTokens('', SAMPLE_DATE);
+    try {
+        renderFileName(template, tokens);
+        return undefined;
+    } catch (error) {
+        return `audio.file「${template}」有問題：${error.message}`;
+    }
+};
+
+/** 每種劇嘅 list 欄位，同每項一定要有嘅識別欄位 */
+const LIST_SHAPE = { series: ['arcs', 'name'], daily: ['episodes', 'date'] };
+
+const listProblem = (existing, kind) => {
+    const [listKey, idKey] = LIST_SHAPE[kind];
+    const list = existing[listKey];
+    if (list === undefined) return undefined;
+    if (!Array.isArray(list)) return `${listKey} 唔係 list（要係 [ … ]）`;
+    const bad = list.findIndex((item) => !isPlainObject(item) || typeof item[idKey] !== 'string');
+    return bad === -1 ? undefined : `${listKey} 第 ${bad + 1} 項唔係 { "${idKey}": … }`;
+};
+
+/** --existing 唔啱用（唔係 object、kind 唔夾、list / template 壞咗）就回傳原因 */
+const existingProblem = (existing, kind) => {
+    if (!isPlainObject(existing)) return '--existing 唔係 drama.json（要係一個 { … } object）';
     if (existing.kind !== kind)
-        issues.push(
-            issue('error', scan.name, `--existing 係 ${existing.kind}，但 folder 睇落係 ${kind}`),
-        );
+        return `--existing 係 ${existing.kind ?? '（冇 kind）'}，但 folder 睇落係 ${kind}`;
+    const problem = listProblem(existing, kind) ?? templateProblem(existing.audio?.file, kind);
+    return problem === undefined ? undefined : `--existing 嘅 ${problem}`;
+};
+
+const checkExisting = (scan, existing, issues) => {
     const folder = existing.audio?.folder;
     if (existing.audio?.host === 'r2' && folder !== scan.name)
         issues.push(
@@ -511,7 +551,7 @@ const seriesJson = (scan, existing, today) => {
         };
         return { ...analysis, json };
     }
-    checkExisting(scan, existing, 'series', analysis.issues);
+    checkExisting(scan, existing, analysis.issues);
     const arcs = mergeArcs(existing.arcs ?? [], analysis.arcs, today, analysis.issues);
     return { ...analysis, json: { ...existing, arcs } };
 };
@@ -522,7 +562,7 @@ const dailyJson = (scan, existing) => {
         const episodes = analysis.dates.map((date) => ({ date }));
         return { ...analysis, json: { ...newDramaBase(scan, 'daily', DAILY_TEMPLATE), episodes } };
     }
-    checkExisting(scan, existing, 'daily', analysis.issues);
+    checkExisting(scan, existing, analysis.issues);
     const episodes = mergeDaily(existing.episodes ?? [], analysis.dates, analysis.issues);
     return { ...analysis, json: { ...existing, episodes } };
 };
@@ -556,6 +596,12 @@ export const generateDraft = (root, { id, existing, now }) => {
     const today = todayInHongKong(now);
     const base = { scan, kind, today, issues: dramaIssues(scan, id, kind) };
     if (kind === 'none') return { ...base, json: null, summaries: [] };
+    // 壞 / 唔夾嘅 --existing 要喺用之前停，唔好砌到一半 throw
+    const problem = existing === undefined ? undefined : existingProblem(existing, kind);
+    if (problem !== undefined) {
+        const issues = [...base.issues, issue('error', scan.name, problem)];
+        return { ...base, issues, json: null, summaries: [] };
+    }
     const built = kind === 'series' ? seriesJson(scan, existing, today) : dailyJson(scan, existing);
     const issues = [...base.issues, ...built.issues];
     const blocked = issues.some((i) => i.level === 'error');
@@ -784,6 +830,28 @@ const defaultIo = {
     fetch: (...args) => globalThis.fetch(...args),
 };
 
+/** 生成 → 報告 → 寫檔 → （--verify）；回傳 exit code */
+const generateAndWrite = async (args, existing, io) => {
+    const result = generateDraft(args.folder, { id: args.id, existing, now: io.now() });
+    io.out(formatReport(result, { existing }));
+    if (result.json === null) {
+        io.out('\n有 [錯誤]，冇寫 drama.json；按上面改好 folder（或者 --existing 嘅檔）再行一次。');
+        return EXIT.blocked;
+    }
+    const out = resolve(args.out ?? `${args.id ?? result.scan.name}.drama.json`);
+    writeFileSync(out, `${JSON.stringify(result.json, null, JSON_INDENT)}\n`);
+    io.out(`\n已寫入：${out}`);
+    return args.verify ? verifyAll(result, args, io) : EXIT.ok;
+};
+
+/** 預計之外嘅錯誤：同「有 [錯誤]」分開 exit code，印埋技術資料方便跟進 */
+const reportInternalError = (error, io) => {
+    io.out(`\n程式出錯：${error?.message ?? error}`);
+    io.out('呢個唔係 folder 嘅問題；請將成段輸出（連下面嘅技術資料）傳返嚟。');
+    if (error?.stack) io.out(`\n技術資料：\n${error.stack}`);
+    return EXIT.internal;
+};
+
 /** CLI 主流程；回傳 exit code（test 直接 call，唔使開 process） */
 export const run = async (argv, ioOverrides = {}) => {
     const io = { ...defaultIo, ...ioOverrides };
@@ -791,21 +859,17 @@ export const run = async (argv, ioOverrides = {}) => {
     let existing;
     try {
         args = readArgs(argv);
-        existing = args.existing ? readExisting(args.existing) : undefined;
+        // 有畀 --existing 就一定要驗：檔入面係 null 都唔可以當冇畀
+        existing = args.existing === undefined ? undefined : readExisting(args.existing);
     } catch (error) {
         io.out(`${error.message}\n${USAGE}`);
         return EXIT.usage;
     }
-    const result = generateDraft(args.folder, { id: args.id, existing, now: io.now() });
-    io.out(formatReport(result, { existing }));
-    if (result.json === null) {
-        io.out('\n有 [錯誤]，冇寫 drama.json；改好 folder 再行一次。');
-        return EXIT.blocked;
+    try {
+        return await generateAndWrite(args, existing, io);
+    } catch (error) {
+        return reportInternalError(error, io);
     }
-    const out = resolve(args.out ?? `${args.id ?? result.scan.name}.drama.json`);
-    writeFileSync(out, `${JSON.stringify(result.json, null, JSON_INDENT)}\n`);
-    io.out(`\n已寫入：${out}`);
-    return args.verify ? verifyAll(result, args, io) : EXIT.ok;
 };
 
 /** 直接 node 行先跑 main；被 import（test）就唔跑 */

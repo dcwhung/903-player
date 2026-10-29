@@ -378,6 +378,37 @@ describe('generateDraft — merging with --existing', () => {
             generateDraft(join(root, DRAMA), { existing: existing(), now: NOW }).json,
         ).toBeNull();
     });
+
+    /** 壞 / 唔夾嘅 --existing：唔可以 throw，要 [錯誤] 兼唔出 json */
+    const blockedBy = (bad: unknown): string => {
+        touch([`${DRAMA}/${episodeFile('甲', 1)}`]);
+        const result = generateDraft(join(root, DRAMA), {
+            existing: bad as Json,
+            now: NOW,
+        });
+        expect(result.json).toBeNull();
+        return messagesOf(result.issues, 'error');
+    };
+
+    it('should report a daily drama.json given for a series folder instead of crashing', () => {
+        const c18 = JSON.parse(readFileSync(new URL('c18/drama.json', DRAMAS_DIR), 'utf8'));
+        expect(blockedBy(c18)).toContain('--existing 係 daily，但 folder 睇落係 series');
+    });
+
+    it('should report a typo in the existing audio.file template', () => {
+        const bad = { ...existing(), audio: { host: 'r2', folder: DRAMA, file: '{arcc}.m4a' } };
+        expect(blockedBy(bad)).toContain('{arcc}');
+    });
+
+    it('should report arcs that are not a list, or arcs without a name', () => {
+        expect(blockedBy({ ...existing(), arcs: { name: '甲' } })).toContain('arcs');
+        expect(blockedBy({ ...existing(), arcs: [null] })).toContain('arcs');
+    });
+
+    it('should report a null or non-object existing file instead of treating it as new', () => {
+        expect(blockedBy(null)).toContain('--existing 唔係 drama.json');
+        expect(blockedBy([])).toContain('--existing 唔係 drama.json');
+    });
 });
 
 describe('generateDraft — daily drama', () => {
@@ -512,6 +543,34 @@ describe('run (CLI)', () => {
         expect(code).toBe(EXIT.blocked);
         expect(text).toContain('缺第 2 集');
         expect(listFiles(root)).not.toContain('x.drama.json');
+    });
+
+    it('should exit "blocked" with an [錯誤] report for a null --existing file', async () => {
+        touch([`劇/${episodeFile('甲', 1)}`]);
+        writeFileSync(join(root, 'null.json'), 'null');
+        const outFile = join(root, 'x.drama.json');
+        const { code, text } = await runCli([
+            join(root, '劇'),
+            '--existing',
+            join(root, 'null.json'),
+            '--out',
+            outFile,
+        ]);
+        expect(code).toBe(EXIT.blocked);
+        expect(text).toContain('[錯誤]');
+        expect(listFiles(root)).not.toContain('x.drama.json');
+    });
+
+    it('should exit with a distinct "internal" code on an unexpected error', async () => {
+        touch([`劇/${episodeFile('甲', 1)}`]);
+        const out: string[] = [];
+        const code = await run([join(root, '劇'), '--out', join(root, 'x.json')], {
+            out: (s: string) => out.push(s),
+            now: () => new Date(Number.NaN),
+        });
+        expect(EXIT.internal).toBe(4);
+        expect(code).toBe(EXIT.internal);
+        expect(out.join('\n')).toContain('程式出錯');
     });
 
     it('should reject a missing folder or unknown option', async () => {
