@@ -1,0 +1,940 @@
+<title>劇集封面 Review</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+/>
+<style>
+    /* Layout: sticky picker bar (劇集 select → 整套劇 + 短篇 chips with progress) → one 短篇 at a time → 碟面 / Tile tabs → 現用 vs candidates → comment + save. */
+    :root {
+        --bg: #f3f4f6;
+        --panel: #ffffff;
+        --ink: #1c2230;
+        --muted: #5d6677;
+        --line: #d9dde5;
+        --accent: #0e6f6a;
+        --accent-ink: #ffffff;
+        --pick: #e3f2f0;
+        --done: #1f7a3d;
+        --own: #9a4b00;
+        --keep: #2f62b8;
+        --font-body: 'Noto Sans HK', 'PingFang HK', 'Microsoft JhengHei', system-ui, sans-serif;
+        --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+            --bg: #12151c;
+            --panel: #1b2029;
+            --ink: #e8ebf1;
+            --muted: #9aa3b5;
+            --line: #2e3542;
+            --accent: #4cc3b8;
+            --accent-ink: #0b1f1d;
+            --pick: #183530;
+            --done: #6fd18f;
+            --own: #f0a868;
+            --keep: #8fb3f5;
+            color-scheme: dark;
+        }
+    }
+    :root[data-theme='dark'] {
+        --bg: #12151c;
+        --panel: #1b2029;
+        --ink: #e8ebf1;
+        --muted: #9aa3b5;
+        --line: #2e3542;
+        --accent: #4cc3b8;
+        --accent-ink: #0b1f1d;
+        --pick: #183530;
+        --done: #6fd18f;
+        --own: #f0a868;
+        --keep: #8fb3f5;
+        color-scheme: dark;
+    }
+    body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font-body);
+        line-height: 1.5;
+    }
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0 0 auto;
+        height: env(safe-area-inset-top, 0px);
+        z-index: 10;
+        background: var(--panel);
+    }
+    .gutter {
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+    }
+    .inner {
+        max-width: 1080px;
+        margin: 0 auto;
+    }
+    h1,
+    h2 {
+        margin: 0;
+        text-wrap: balance;
+    }
+    h1 {
+        font-size: 1.15rem;
+        font-weight: 700;
+    }
+    h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+    .mono {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        letter-spacing: 0.02em;
+        color: var(--muted);
+    }
+
+    /* 揀短篇 bar */
+    .bar {
+        position: sticky;
+        top: env(safe-area-inset-top, 0px);
+        z-index: 5;
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+        padding-block: 10px;
+    }
+    .bar .inner {
+        display: grid;
+        gap: 8px;
+    }
+    .bar-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    select {
+        font: inherit;
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+    }
+    .chips {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: thin;
+    }
+    .chip {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.9rem;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .chip[aria-current='true'] {
+        border-color: var(--accent);
+        background: var(--pick);
+        font-weight: 500;
+    }
+    .chip:focus-visible,
+    .tab:focus-visible,
+    button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+    .dots {
+        display: inline-flex;
+        gap: 3px;
+    }
+    .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        border: 1px solid var(--muted);
+    }
+    .dot.is-done {
+        background: var(--done);
+        border-color: var(--done);
+    }
+    .dot.is-own {
+        background: var(--own);
+        border-color: var(--own);
+    }
+    .dot.is-keep {
+        background: var(--keep);
+        border-color: var(--keep);
+    }
+    .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        align-items: center;
+    }
+    .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .bar-pick {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+    .bar-pick select {
+        min-width: 0;
+        max-width: 100%;
+        flex: 0 1 auto;
+    }
+    .step {
+        flex: none;
+        font: inherit;
+        font-size: 1.1rem;
+        line-height: 1;
+        width: 34px;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+        cursor: pointer;
+    }
+    .step:disabled {
+        opacity: 0.35;
+        cursor: default;
+    }
+    .chip .lvl {
+        font-size: 0.72rem;
+        color: var(--muted);
+    }
+    .seg {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .seg-group {
+        display: inline-flex;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .seg-group button {
+        font: inherit;
+        font-size: 0.85rem;
+        min-width: 36px;
+        padding: 4px 12px;
+        border: 0;
+        border-left: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--ink);
+        cursor: pointer;
+    }
+    .seg-group button:first-child {
+        border-left: 0;
+    }
+    .seg-group button[aria-pressed='true'] {
+        background: var(--accent);
+        color: var(--accent-ink);
+        font-weight: 500;
+    }
+    .opt.keep-opt:has(input:checked) {
+        border-color: var(--keep);
+        box-shadow: 0 0 0 1px var(--keep) inset;
+    }
+    .opt .tag {
+        font-size: 0.72rem;
+        color: var(--keep);
+        font-weight: 500;
+    }
+    .opt img.circle {
+        border-radius: 50%;
+    }
+    .level-tag {
+        display: inline-block;
+        font-size: 0.8rem;
+        font-weight: 500;
+        padding: 1px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        margin-right: 6px;
+        vertical-align: 2px;
+    }
+    #notes:empty {
+        display: none;
+    }
+    #notes {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    /* 一個短篇 */
+    main {
+        padding-block: 16px 64px;
+    }
+    body {
+        margin: 0;
+    }
+    [hidden] {
+        display: none !important;
+    }
+    main .inner,
+    #view {
+        display: grid;
+        gap: 14px;
+    }
+    .arc-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        min-width: 0;
+        overflow: hidden;
+    }
+    .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--line);
+        background: var(--bg);
+    }
+    .card .panel {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+    .card .panel + .panel {
+        border-top: 1px solid var(--line);
+    }
+    .tab {
+        font: inherit;
+        padding: 10px 22px;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -1px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+    }
+    .tab[aria-selected='true'] {
+        background: var(--panel);
+        color: var(--ink);
+        border-bottom-color: var(--accent);
+        font-weight: 700;
+    }
+    .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 14px;
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+    }
+    .compare {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: flex-end;
+    }
+    .compare figure {
+        margin: 0;
+        display: grid;
+        gap: 4px;
+    }
+    .compare img {
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        height: 112px;
+        width: auto;
+        max-width: 100%;
+    }
+    .compare img.circle {
+        border-radius: 50%;
+        width: 112px;
+        object-fit: cover;
+    }
+    figcaption {
+        font-size: 0.8rem;
+        color: var(--muted);
+    }
+    .options {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+    }
+    .kind-tile .options {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    .opt {
+        position: relative;
+        display: grid;
+        gap: 4px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        cursor: pointer;
+        background: var(--panel);
+        min-width: 0;
+    }
+    .opt:has(input:checked) {
+        border-color: var(--accent);
+        background: var(--pick);
+        box-shadow: 0 0 0 1px var(--accent) inset;
+    }
+    .opt:has(input:focus-visible) {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+    .opt input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+    .opt img {
+        width: 100%;
+        height: auto;
+        border-radius: 6px;
+        background: var(--bg);
+    }
+    .opt .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 6px;
+    }
+    .opt .name {
+        font-size: 0.85rem;
+    }
+    .zoom {
+        flex: none;
+        font: inherit;
+        font-size: 0.75rem;
+        color: var(--accent);
+        background: none;
+        border: 0;
+        padding: 0;
+        cursor: zoom-in;
+    }
+    .own {
+        display: grid;
+        place-items: center;
+        min-height: 100px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+    }
+    textarea {
+        width: 100%;
+        min-height: 64px;
+        box-sizing: border-box;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+        font: inherit;
+        resize: vertical;
+    }
+    .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+    }
+    button.save {
+        background: var(--accent);
+        color: var(--accent-ink);
+        border: 0;
+        border-radius: 8px;
+        padding: 9px 18px;
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    button.save:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .status {
+        font-size: 0.85rem;
+        color: var(--muted);
+    }
+    .kind-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    button.clear {
+        font: inherit;
+        font-size: 0.85rem;
+        background: none;
+        border: 1px solid var(--line);
+        color: var(--ink);
+        border-radius: 8px;
+        padding: 5px 12px;
+        cursor: pointer;
+    }
+    button.clear:disabled {
+        opacity: 0.4;
+        cursor: default;
+    }
+    .note {
+        margin: 0;
+        padding: 10px 12px;
+        border: 1px solid var(--own);
+        color: var(--own);
+        border-radius: 8px;
+    }
+    .label {
+        font-size: 0.85rem;
+        color: var(--muted);
+    }
+    dialog {
+        border: 0;
+        border-radius: 12px;
+        padding: 0;
+        background: var(--panel);
+        color: var(--ink);
+        max-width: min(96vw, 960px);
+    }
+    dialog img {
+        display: block;
+        max-width: 100%;
+        max-height: 82vh;
+    }
+    dialog form {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        gap: 8px;
+    }
+    dialog button {
+        font: inherit;
+        background: none;
+        border: 1px solid var(--line);
+        color: var(--ink);
+        border-radius: 6px;
+        padding: 4px 12px;
+        cursor: pointer;
+    }
+    .empty {
+        color: var(--muted);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+        .opt,
+        .chip {
+            transition:
+                border-color 120ms,
+                background 120ms;
+        }
+    }
+</style>
+
+<header class="bar gutter">
+    <div class="inner">
+        <div class="bar-top">
+            <h1>劇集封面 Review</h1>
+        </div>
+        <div class="bar-pick">
+            <label class="bar-pick" for="drama"><span class="label">劇集</span></label
+            ><button type="button" class="step" id="prev-drama" aria-label="上一套劇">‹</button
+            ><select id="drama"></select
+            ><button type="button" class="step" id="next-drama" aria-label="下一套劇">›</button>
+        </div>
+        <nav class="chips" id="arcs" aria-label="整套劇封面 / 短篇封面"></nav>
+        <div class="legend mono">
+            <span><span class="dot is-done"></span>揀咗候選</span
+            ><span><span class="dot is-keep"></span>沿用現有圖</span
+            ><span><span class="dot is-own"></span>另外畀圖</span
+            ><span><span class="dot"></span>未揀</span><span>（左：碟面，右：tile）</span>
+        </div>
+    </div>
+</header>
+<main class="gutter">
+    <div class="inner">
+        <div id="notes"></div>
+        <div id="view"><p class="empty">載入緊候選圖…</p></div>
+    </div>
+</main>
+<dialog id="zoom">
+    <img id="zoom-img" alt="" />
+    <form method="dialog"><span id="zoom-cap" class="mono"></span><button>關閉</button></form>
+</dialog>
+
+<script>
+    const OWN = 'own';
+    const KEEP = 'keep';
+    const KINDS = [
+        ['disc', '碟面'],
+        ['tile', 'Tile'],
+    ];
+    let rounds = { dramas: [] };
+    let db = null;
+    let saved = {};
+    const drafts = {}; // docId -> 未儲存嘅 {disc, tile, comment}
+    const ui = { drama: null, arc: null, kind: 'disc', round: {} };
+
+    const esc = (s) =>
+        String(s).replace(
+            /[&<>"]/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c],
+        );
+    const docId = (drama, slug, round) => `${drama}--${slug}--r${round}`;
+    const hashOf = (drama, slug) => `${drama}-${slug === '_drama' ? 'cover' : slug}`;
+    const currentDrama = () => rounds.dramas.find((d) => d.id === ui.drama);
+    const currentArc = () => currentDrama()?.arcs.find((a) => a.slug === ui.arc);
+    // 未有候選圖嘅（搵唔到原圖）都當第 1 輪，咁之後出第 1 輪候選時揀選會跟住
+    const latestRound = (arc) => Math.max(1, ...arc.rounds.map((r) => r.round));
+    const shownRound = (arc) => ui.round[`${ui.drama}--${arc.slug}`] ?? latestRound(arc);
+    // 未儲存過：有現用圖就預設「沿用現有圖」
+    const defaultRecord = (arc) => ({
+        disc: arc.current.disc ? KEEP : null,
+        tile: arc.current.tile ? KEEP : null,
+        comment: '',
+    });
+    const recordFor = (drama, arc) => {
+        const id = docId(drama, arc.slug, latestRound(arc));
+        return drafts[id] ?? saved[id] ?? defaultRecord(arc);
+    };
+
+    function dotFor(rec, kind) {
+        const v = rec?.[kind];
+        return `<span class="dot ${v === OWN ? 'is-own' : v === KEEP ? 'is-keep' : v ? 'is-done' : ''}" aria-hidden="true"></span>`;
+    }
+
+    function renderBar() {
+        const select = document.getElementById('drama');
+        select.innerHTML = rounds.dramas
+            .map((d) => `<option value="${esc(d.id)}">${esc(d.name)}</option>`)
+            .join('');
+        select.value = ui.drama;
+        const at = rounds.dramas.findIndex((d) => d.id === ui.drama);
+        document.getElementById('prev-drama').disabled = at <= 0;
+        document.getElementById('next-drama').disabled = at >= rounds.dramas.length - 1;
+        const drama = currentDrama();
+        document.getElementById('arcs').innerHTML = (drama?.arcs ?? [])
+            .map((a) => {
+                const rec = recordFor(drama.id, a);
+                const name = a.level === 'drama' ? '整套劇' : a.name;
+                const title = a.level === 'drama' ? `整套劇封面：${a.name}` : `短篇封面：${a.name}`;
+                return `<button type="button" class="chip" data-arc="${esc(a.slug)}" aria-current="${a.slug === ui.arc}" title="${esc(title)}" aria-label="${esc(title)}"><span class="dots">${dotFor(rec, 'disc')}${dotFor(rec, 'tile')}</span>${esc(name)}</button>`;
+            })
+            .join('');
+    }
+
+    function optionCard(id, kind, value, img, label, extra = {}) {
+        const body = img
+            ? `<img${extra.circle ? ' class="circle"' : ''} src="${esc(img)}" alt="${esc(label)}" loading="lazy"><span class="row"><span class="name">${esc(label)}</span><button type="button" class="zoom" data-src="${esc(img)}" data-cap="${esc(label)}">放大</button></span>`
+            : `<span class="own">${esc(label)}</span>`;
+        return `<label class="opt${extra.cls ? ` ${extra.cls}` : ''}"><input type="radio" name="${kind}" id="${esc(id)}--${kind}--${esc(value)}" value="${esc(value)}">${body}</label>`;
+    }
+
+    function compareRow(arc, r, kind) {
+        const cur = arc.current[kind];
+        const curFig = cur
+            ? `<figure><img class="${kind === 'disc' ? 'circle' : ''}" src="${esc(cur)}" alt="app 現用${kind === 'disc' ? '碟面' : ' tile'}"><figcaption>app 現用</figcaption></figure>`
+            : '<figure><figcaption>app 未有呢張圖</figcaption></figure>';
+        const src = r?.source
+            ? `<figure><img src="${esc(r.source)}" alt="原圖"><figcaption>原圖 ${r.sourceSize.join('×')}</figcaption></figure>`
+            : '';
+        return `<div class="compare">${curFig}${src}</div>`;
+    }
+
+    function renderArc() {
+        const view = document.getElementById('view');
+        const drama = currentDrama();
+        const arc = currentArc();
+        if (!drama || !arc) {
+            view.innerHTML = '<p class="empty">未有候選圖</p>';
+            return;
+        }
+        const roundNo = shownRound(arc);
+        const r = arc.rounds.find((x) => x.round === roundNo);
+        const id = docId(drama.id, arc.slug, roundNo);
+        const sortedRounds = [...arc.rounds].sort((a, b) => a.round - b.round);
+        const roundPicker = sortedRounds.length
+            ? `<div class="seg"><span class="label" id="round-label">輪次</span><div class="seg-group" role="group" aria-labelledby="round-label">${sortedRounds.map((x) => `<button type="button" data-round="${x.round}" aria-pressed="${x.round === roundNo}" title="第 ${x.round} 輪${x.round === latestRound(arc) ? '（最新）' : ''}">${x.round}</button>`).join('')}</div></div>`
+            : '<span class="mono">未有候選圖</span>';
+        const missing = arc.rounds.length
+            ? ''
+            : '<p class="note">搵唔到呢個封面嘅原圖（R2 冇 cover photo），所以未有候選圖。可以揀「沿用現有圖」或者「另外畀圖」。</p>';
+        const levelTag = arc.level === 'drama' ? '整套劇封面' : '短篇封面';
+        const tabs = KINDS.map(
+            ([k, label]) =>
+                `<button type="button" class="tab" role="tab" data-kind="${k}" aria-selected="${k === ui.kind}">${label}</button>`,
+        ).join('');
+        const groups = KINDS.map(([k, label]) => {
+            const opts = (r?.variants ?? [])
+                .filter((v) => v.kind === k)
+                .map((v) => optionCard(id, k, v.id, v.preview, v.label))
+                .join('');
+            const cur = arc.current[k];
+            const keep = optionCard(id, k, KEEP, arc.current[`${k}Preview`] ?? cur, '沿用現有圖', {
+                cls: 'keep-opt',
+                circle: !arc.current[`${k}Preview`] && k === 'disc',
+            });
+            return `<div class="panel kind-${k}" data-kind="${k}" ${k === ui.kind ? '' : 'hidden'}>
+            ${compareRow(arc, r, k)}
+            <div class="kind-head"><span class="label">${label}${r ? `候選（第 ${roundNo} 輪）` : ''}・再撳已揀嗰張可以取消</span><button type="button" class="clear" data-kind="${k}">清除${label}揀選</button></div>
+            <div class="options">${keep}${opts}${optionCard(id, k, OWN, null, '全部唔得，我另外畀圖')}</div>
+        </div>`;
+        }).join('');
+        view.innerHTML = `
+        <div class="arc-head"><h2><span class="level-tag">${levelTag}</span>${esc(arc.level === 'drama' ? drama.name : arc.name)}</h2>${roundPicker}</div>
+        ${missing}
+        <form class="pick card" data-id="${esc(id)}" data-drama="${esc(drama.id)}" data-arc="${esc(arc.slug)}" data-round="${roundNo}">
+            <div class="tabs" role="tablist">${tabs}</div>
+            ${groups}
+            <div class="panel"><label class="label" for="${esc(id)}--comment">Comment（碟面同 tile 共用）</label>
+                <textarea id="${esc(id)}--comment" name="comment" placeholder="例如：碟面要人臉大啲、標題唔好切到、下一輪試星空補底…"></textarea>
+                <div class="actions"><button type="submit" class="save"${db ? '' : ' disabled'}>儲存</button><span class="status mono" aria-live="polite"></span></div>
+            </div>
+        </form>`;
+        fillForm();
+    }
+
+    function fillForm() {
+        const form = document.querySelector('form.pick');
+        if (!form) return;
+        const id = form.dataset.id;
+        const rec = drafts[id] ?? saved[id] ?? defaultRecord(currentArc());
+        form.querySelectorAll('input[type=radio]').forEach((i) => {
+            i.checked = !!rec && rec[i.name] === i.value;
+        });
+        form.querySelector('textarea').value = rec?.comment ?? '';
+        form.querySelectorAll('button.clear').forEach((b) => {
+            b.disabled = !form.querySelector(`input[name="${b.dataset.kind}"]:checked`);
+        });
+        const status = form.querySelector('.status');
+        status.textContent = drafts[id]
+            ? '未儲存嘅改動'
+            : saved[id]?.updatedAt
+              ? `已儲存 ${new Date(saved[id].updatedAt).toLocaleString('zh-HK')}`
+              : db
+                ? '未儲存'
+                : '';
+    }
+
+    function clearKind(form, kind) {
+        form.querySelectorAll(`input[name="${kind}"]`).forEach((i) => {
+            i.checked = false;
+        });
+        drafts[form.dataset.id] = readForm(form);
+        fillForm();
+        renderBar();
+    }
+
+    function readForm(form) {
+        const data = new FormData(form);
+        return {
+            disc: data.get('disc') || null,
+            tile: data.get('tile') || null,
+            comment: String(data.get('comment') || '').trim(),
+        };
+    }
+
+    async function save(form) {
+        const id = form.dataset.id;
+        const button = form.querySelector('.save');
+        const status = form.querySelector('.status');
+        const record = {
+            drama: form.dataset.drama,
+            arc: form.dataset.arc,
+            round: Number(form.dataset.round),
+            ...readForm(form),
+            updatedAt: new Date().toISOString(),
+        };
+        button.disabled = true;
+        status.textContent = '儲存緊…';
+        try {
+            await db.collection('reviews').doc(id).set(record);
+            delete drafts[id];
+            saved[id] = record;
+            fillForm();
+            renderBar();
+        } catch (e) {
+            status.textContent = `儲存唔到（${e?.code || '錯誤'}），請再撳一次`;
+        } finally {
+            button.disabled = !db;
+        }
+    }
+
+    function stepDrama(delta) {
+        const i = rounds.dramas.findIndex((d) => d.id === ui.drama) + delta;
+        if (i >= 0 && i < rounds.dramas.length) go(rounds.dramas[i].id);
+    }
+
+    function go(drama, slug) {
+        ui.drama = drama;
+        ui.arc = slug ?? currentDrama()?.arcs[0]?.slug;
+        const h = `#${hashOf(ui.drama, ui.arc)}`;
+        if (location.hash !== h) history.replaceState(null, '', h);
+        renderBar();
+        renderArc();
+        document
+            .querySelector('.chip[aria-current="true"]')
+            ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+
+    function fromHash() {
+        const h = location.hash.slice(1);
+        for (const d of rounds.dramas)
+            for (const a of d.arcs) if (hashOf(d.id, a.slug) === h) return [d.id, a.slug];
+        const d = rounds.dramas[0];
+        return [d?.id, d?.arcs[0]?.slug];
+    }
+
+    function wire() {
+        document.getElementById('drama').addEventListener('change', (e) => go(e.target.value));
+        document.getElementById('prev-drama').addEventListener('click', () => stepDrama(-1));
+        document.getElementById('next-drama').addEventListener('click', () => stepDrama(1));
+        document.getElementById('arcs').addEventListener('click', (e) => {
+            const chip = e.target.closest('.chip');
+            if (chip) go(ui.drama, chip.dataset.arc);
+        });
+        document.getElementById('view').addEventListener('click', (e) => {
+            const tab = e.target.closest('.tab');
+            if (tab) {
+                ui.kind = tab.dataset.kind;
+                document
+                    .querySelectorAll('.tab')
+                    .forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
+                document.querySelectorAll('form.pick .panel[data-kind]').forEach((p) => {
+                    p.hidden = p.dataset.kind !== ui.kind;
+                });
+                return;
+            }
+            const seg = e.target.closest('.seg-group button');
+            if (seg) {
+                ui.round[`${ui.drama}--${ui.arc}`] = Number(seg.dataset.round);
+                renderArc();
+                return;
+            }
+            const clear = e.target.closest('button.clear');
+            if (clear) {
+                clearKind(clear.closest('form.pick'), clear.dataset.kind);
+                return;
+            }
+            const z = e.target.closest('button.zoom');
+            if (z) {
+                e.preventDefault();
+                document.getElementById('zoom-img').src = z.dataset.src;
+                document.getElementById('zoom-cap').textContent = z.dataset.cap;
+                document.getElementById('zoom').showModal();
+            }
+        });
+        // 再撳已揀嗰張 = 取消（radio 本身唔識取消）
+        let wasChecked = null;
+        document.getElementById('view').addEventListener('pointerdown', (e) => {
+            const input = e.target.closest('.opt')?.querySelector('input');
+            wasChecked = input?.checked ? input : null;
+        });
+        document.getElementById('view').addEventListener('click', (e) => {
+            const opt = e.target.closest('.opt');
+            if (!opt || e.target.closest('button.zoom')) return;
+            const input = opt.querySelector('input');
+            if (wasChecked && wasChecked === input) {
+                e.preventDefault();
+                wasChecked = null;
+                clearKind(opt.closest('form.pick'), input.name);
+            }
+        });
+        document.getElementById('view').addEventListener('change', (e) => {
+            const form = e.target.closest('form.pick');
+            if (form) {
+                drafts[form.dataset.id] = readForm(form);
+                fillForm();
+                renderBar();
+            }
+        });
+        document.getElementById('view').addEventListener('input', (e) => {
+            const form = e.target.closest('form.pick');
+            if (form && e.target.tagName === 'TEXTAREA') {
+                drafts[form.dataset.id] = readForm(form);
+                form.querySelector('.status').textContent = '未儲存嘅改動';
+            }
+        });
+        document.getElementById('view').addEventListener('submit', (e) => {
+            const form = e.target.closest('form.pick');
+            if (!form) return;
+            e.preventDefault();
+            if (db) save(form);
+        });
+        window.addEventListener('hashchange', () => {
+            const [d, a] = fromHash();
+            if (d) go(d, a);
+        });
+    }
+
+    async function start() {
+        wire();
+        try {
+            rounds = await (await fetch('rounds.json')).json();
+        } catch {
+            document.getElementById('view').innerHTML =
+                '<p class="empty">載入唔到候選圖，請重新整理。</p>';
+            return;
+        }
+        const [d, a] = fromHash();
+        if (!d) {
+            document.getElementById('view').innerHTML = '<p class="empty">未有候選圖</p>';
+            return;
+        }
+        go(d, a);
+        db = (await window.claude?.use?.('db').catch(() => null)) ?? null;
+        if (!db) {
+            document
+                .getElementById('notes')
+                .insertAdjacentHTML(
+                    'beforeend',
+                    '<p class="note">而家儲存唔到揀選（要登入 claude.ai 開呢頁）。可以照睇圖，但「儲存」唔會生效。</p>',
+                );
+            return;
+        }
+        document.querySelectorAll('button.save').forEach((b) => (b.disabled = false));
+        db.collection('reviews').onSnapshot(
+            (snap) => {
+                saved = Object.fromEntries(
+                    snap.docs.filter((x) => x.exists).map((x) => [x.id, x.data()]),
+                );
+                renderBar();
+                fillForm();
+            },
+            () => {
+                document
+                    .getElementById('notes')
+                    .insertAdjacentHTML(
+                        'beforeend',
+                        '<p class="note">同儲存位置斷咗線，重新整理頁面就會再連。</p>',
+                    );
+            },
+        );
+    }
+    start();
+</script>

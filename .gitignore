@@ -9,3 +9,18 @@ e2e/screenshots/
 __pycache__/
 .pytest_cache/
 .ruff_cache/
+# 封面 review 頁（scripts/arcCover/review）：生成物預設寫去 repo 外嘅 work 資料夾；
+# 萬一 --work 指咗 repo 根 / review 資料夾，淨係擋 build / generate / fetch 嘅確實輸出（大 binary、rounds / files / publish json）
+/arcCover/*/*/round-*/
+/arcCover-src/*/*.png
+/arcCover-src/*/*.jpg
+/review/site/
+/review/files.json
+/review/publish-*.json
+scripts/arcCover/review/**/site/
+scripts/arcCover/review/**/rounds.json
+scripts/arcCover/review/**/files.json
+scripts/arcCover/review/**/publish-*.json
+scripts/arcCover/review/**/*.png
+scripts/arcCover/review/**/*.jpg
+scripts/arcCover/review/**/*.webp

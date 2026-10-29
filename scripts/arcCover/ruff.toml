@@ -6,4 +6,7 @@ target-version = "py311"
 select = ["E", "F", "W", "I", "B", "UP"]
 
 [lint.isort]
-known-first-party = ["analysis", "compose", "constants", "fakes", "generate", "geometry", "preview"]
+known-first-party = [
+    "analysis", "build", "compose", "constants", "fakes", "fetch_sources", "generate", "geometry", "preview",
+    "publish",
+]
