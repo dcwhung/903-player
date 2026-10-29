@@ -60,6 +60,52 @@ GitHub Actions 只負責 build 同 deploy。
 - ⚠️ `name` / `fileTime` / `audio` / 檔名唔可以亂改：錄音網址係已儲進度（localStorage）嘅 key
 - 橫版主頁 grid 寫死 4 欄 × 2 行 = 7 個節目 + 今日格；加減節目要一齊改 `ShowGrid.module.css`（`src/shows/shows.test.ts` 會提醒）
 
+### 由本機 folder 生成 drama.json（`scripts/dramaFromFolder.mjs`）
+
+R2 嘅 r2.dev 網址冇 listing，所以由**上載去 R2 嗰份本機 folder** 生成 `drama.json` 草稿同檢查報告。
+個 script 係單一檔案、只用 Node 內置功能（Node 18 或以上），**唔使 clone 呢個 repo、唔使 `npm install`**。
+
+folder 結構（同 R2 一樣）：
+
+```text
+<劇名>/
+  cover photo.png                      ← 劇集封面（cover photo.jpg / cover-photo.jpg 都得）
+  <短篇>/
+    cover photo.jpg                    ← 短篇封面（可以冇）
+    01 - <短篇> - 第一集.m4a
+    02 - <短篇> - 第二集 - <集名>.m4a   ← 有集名就加「 - 集名」
+```
+
+每日劇就直接喺 `<劇名>/` 放 `YYYYMMDD.m4a`。
+
+```bash
+# 1. 下載（一個檔）
+curl -LO https://raw.githubusercontent.com/dcwhung/903-player/main/scripts/dramaFromFolder.mjs
+
+# 2. 新劇：生成草稿，順手 HEAD 驗晒 R2 網址
+node dramaFromFolder.mjs "/路徑/森美小儀系列" --id sammy-kitty --verify | tee report.txt
+
+# 3. 已上架嘅劇加集 / 加短篇：畀埋現有 drama.json，人手欄位（名、色調、次序、圖…）照留
+node dramaFromFolder.mjs "/路徑/森美小儀系列" --existing drama.json --out sammy-kitty.drama.json
+```
+
+| 選項              | 作用                                                                                          |
+| ----------------- | --------------------------------------------------------------------------------------------- |
+| `--id <id>`       | app 嘅 folder 名（細楷英數同連字號）；預設輸出檔名 `<id>.drama.json`，冇就用劇名              |
+| `--existing <檔>` | 現有 `drama.json`：只更新集數；folder 冇嘅短篇照留兼提示，新短篇 `addedAt` = 今日（香港時間） |
+| `--out <檔>`      | 輸出路徑                                                                                      |
+| `--verify`        | 逐條 HEAD R2 錄音同封面網址（同時最多 6 條、每條 10 秒 timeout），列出唔得嘅                  |
+
+報告會列：每個短篇幾多集 / 集數範圍 / 封面、跳號、重複、檔名唔合格式、檔名入面短篇名同 folder 名唔一樣、
+可疑字元（羅馬數字 `Ⅱ` 對 `II`、全形半形、macOS 嘅 NFD、頭尾空格、隱形字元）、略過咗嘅檔。
+
+- exit code：`0` 成功、`1` 有 `[錯誤]`（跳號 / 重複 / 檔名讀唔到，**冇寫檔**）、`2` 參數錯、`3` 已寫檔但 `--verify` 有網址唔得
+- `[注意]` 唔會阻住生成，但要睇：例如檔名用 `Ⅱ`、folder 用 `II`，script 會用 `files` 逐集寫明真檔名
+- 短篇次序跟 R2 listing（UTF-8 字典序）；新劇嘅 `theme` 係中性色、`enabled: false`，上架前要改
+- **要傳返嚟**：生成嘅 `*.drama.json`、成份報告（`report.txt`）、劇集同每個短篇嘅封面圖
+- 規則同 app 一致：`scripts/dramaFromFolder.test.ts` 將輸出餵畀 app 嘅 `parseDramaDefinition` + `buildEpisodes` 驗，
+  亦會由現有每套劇嘅網址砌返 folder 樹，再生成要同 commit 咗嘅 `drama.json` 一樣；改 `src/dramas/` 規則時要一齊改 script
+
 ## 開發
 
 ```bash
