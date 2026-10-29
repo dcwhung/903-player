@@ -153,6 +153,21 @@ export class AudioController {
         }
     };
 
+    /**
+     * 鎖屏 / 耳機嘅 Play：卡住時（鎖屏因為冇聲顯示 Play）element 本身仲係播緊，
+     * 淨係 audio.play() 乜都唔會發生，要即刻重新載入再播，當新一次撳播重新計重試次數（S-551）
+     */
+    resume = async (): Promise<void> => {
+        if (this.isWaitingForSound()) {
+            this.stall.cancel();
+            this.reload('remote');
+        }
+        await this.play();
+    };
+
+    /** 記低鎖屏 / 耳機操作（播放 log） */
+    logRemote = (action: string, note?: string): void => recordPlayback(action, this.audio, note);
+
     pause = (): void => {
         this.setPlayIntent(false);
         this.audio.pause();
@@ -406,11 +421,21 @@ export class AudioController {
 
     /** iOS 鎖屏時可能一直唔載 / 位置凍結冇聲：重新 load 同一集，由最後真正播到嘅位置再播 */
     private retryStalled(retriesLeft: number): void {
-        recordPlayback('retry', this.audio, `left=${retriesLeft}`);
+        this.reload(`left=${retriesLeft}`);
+        void this.play();
+    }
+
+    /** 重新載入同一集，續播位置用 state（最後真正播到嘅位置；load 會將 audio.currentTime reset 做 0） */
+    private reload(note: string): void {
+        recordPlayback('retry', this.audio, note);
         this.pendingStart = this.state.currentTime;
         this.moveTo(this.pendingStart);
         this.audio.load();
-        void this.play();
+    }
+
+    /** 想播但未出聲：載緊、緩衝緊，或者卡住 */
+    private isWaitingForSound(): boolean {
+        return this.hasPlayIntent() && !this.state.isAudible;
     }
 
     private onVisibilityChange = (): void => {

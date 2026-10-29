@@ -39,6 +39,15 @@ export const PROGRESS_STORAGE_KEY = '903player:progress:v1';
 /** 主頁上次揀咗「節目」定「廣播劇」tab */
 export const HOME_TAB_STORAGE_KEY = '903player:home-tab:v1';
 
+export const MS_PER_SECOND = 1000;
+/** 報畀鎖屏嘅播放速度（app 冇變速） */
+export const MEDIA_SESSION_PLAYBACK_RATE = 1;
+/**
+ * 鎖屏位置同真正位置差過咁多秒（即係 seek 咗）先再 setPositionState；
+ * 平時 timeupdate 每 0.25 秒一次，唔使逐下報
+ */
+export const MEDIA_POSITION_DRIFT_SECONDS = 2;
+
 /** 鎖屏 / 耳機嘅前後掣每次跳幾多秒 */
 export const LOCK_SCREEN_SKIP_SECONDS = 30;
 export const KEYBOARD_SEEK_SECONDS = 30;

@@ -914,6 +914,55 @@ describe('AudioController S-551 lock-screen stall', () => {
         detach();
     });
 
+    it('reloads straight away when lock-screen play is pressed while stalled', async () => {
+        const { audio, controller, detach, heardAt } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        await controller.resume();
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.play).toHaveBeenCalledTimes(2);
+        audio.emitMetadata(DURATION);
+        expect(audio.currentTime).toBe(heardAt);
+        const retries = readPlaybackLog().filter((line) => line.includes(' retry '));
+        expect(retries).toEqual([expect.stringMatching(/ remote$/)]);
+        detach();
+    });
+
+    it('gives lock-screen play a fresh retry budget while stalled', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        await controller.resume();
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(2);
+        const retries = readPlaybackLog().filter((line) => line.includes(' retry '));
+        expect(retries.at(-1)).toMatch(new RegExp(` left=${STALL_MAX_RETRIES}$`));
+        detach();
+    });
+
+    it('just plays on lock-screen play when paused normally', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+
+        await controller.resume();
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(audio.play).toHaveBeenCalledTimes(1);
+        detach();
+    });
+
+    it('just plays on lock-screen play while audible', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await controller.play();
+        audio.emitAudible();
+
+        await controller.resume();
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
     it('does not reload before the first stall timeout', async () => {
         const { audio, controller, detach } = await pausedBySystem();
         await playFrozen(audio, controller.play);

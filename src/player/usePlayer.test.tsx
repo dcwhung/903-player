@@ -5,6 +5,7 @@ import { getProgress, isWatched, saveProgress } from '../services/progressStore'
 import type { Recording } from '../types/recording';
 import { AudioController } from './AudioController';
 import { PlayerProvider } from './PlayerProvider';
+import { readPlaybackLog } from './playbackLog';
 import { usePlayer } from './usePlayer';
 
 const RECORDING: Recording = {
@@ -404,5 +405,46 @@ describe('usePlayer', () => {
     it('throws when used outside the provider', () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         expect(() => renderHook(() => usePlayer())).toThrow();
+    });
+});
+
+/** S-551：PlayerProvider 將鎖屏 Play 接去 controller.resume（卡住即刻重新載入），亦記低 log */
+describe('PlayerProvider lock-screen wiring', () => {
+    type Handler = (details: MediaSessionActionDetails) => void;
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        Reflect.deleteProperty(navigator, 'mediaSession');
+    });
+
+    const installMediaSession = () => {
+        const handlers = new Map<string, Handler | null>();
+        const session = {
+            metadata: null,
+            playbackState: 'none',
+            setPositionState: vi.fn(),
+            setActionHandler: (action: string, handler: Handler | null) =>
+                handlers.set(action, handler),
+        };
+        Object.defineProperty(navigator, 'mediaSession', { value: session, configurable: true });
+        vi.stubGlobal('MediaMetadata', class {});
+        return { session, handlers };
+    };
+
+    it('reloads a stalled recording when lock-screen play is pressed', async () => {
+        const { session, handlers } = installMediaSession();
+        const { audio, result } = setup();
+        await act(async () => result.current.load(RECORDING, { autoplay: true }));
+        act(() => {
+            audio.emitMetadata(DURATION);
+            audio.emitPlaying();
+        });
+        expect(session.playbackState).toBe('paused');
+        audio.load.mockClear();
+
+        await act(async () => handlers.get('play')?.({ action: 'play' }));
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(readPlaybackLog().some((line) => line.includes(' ms:play '))).toBe(true);
     });
 });
