@@ -37,6 +37,10 @@ const NOW = new Date('2026-10-28T20:00:00Z');
 const TODAY = '2026-10-29';
 const NFD_NAME = 'Café'.normalize('NFD');
 const SERIES_IDS = ['lancy', 'chisee', 'golden', 'jim', 'sammy-kitty'] as const;
+/** 已上架嘅劇（短篇 + 每日劇 c18），全部要 round-trip */
+const COMMITTED_IDS = [...SERIES_IDS, 'c18'] as const;
+/** host: app 嘅錄音喺 app 自己嘅 public/dramas/（同 src/dramas/episodes.ts 一致） */
+const APP_AUDIO_DIR = 'dramas/';
 const VERIFY_TIMEOUT_MS = 300;
 const HANG_MS = 2000;
 const CONCURRENCY = 2;
@@ -106,13 +110,18 @@ const appEpisodes = (id: string, json: unknown) => {
     return buildEpisodes(id, def);
 };
 
+/** 錄音網址去咗 base 之後 → root 底下嘅相對路徑（每段 decode） */
+const decodedPath = (url: string, base: string): string =>
+    url.slice(base.length).split('/').map(decodeURIComponent).join('/');
+
 /** R2 網址 → root 底下嘅相對路徑 */
-const pathOfUrl = (url: string): string =>
-    url
-        .slice(APP_AUDIO_BASE.length + 1)
-        .split('/')
-        .map(decodeURIComponent)
-        .join('/');
+const pathOfUrl = (url: string): string => decodedPath(url, `${APP_AUDIO_BASE}/`);
+
+/** 跟 audio.host 揀 base：r2 用 R2 網址，app（例如 c18）用 app 自己嘅 dramas/ */
+const audioPathOf = (json: Json, url: string): string =>
+    (json.audio as Json).host === 'r2'
+        ? pathOfUrl(url)
+        : decodedPath(url, `${import.meta.env.BASE_URL}${APP_AUDIO_DIR}`);
 
 const listFiles = (dir: string, prefix = ''): string[] =>
     readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
@@ -365,39 +374,40 @@ describe('generateDraft — committed dramas round-trip', () => {
     const committed = (id: string): Json =>
         JSON.parse(readFileSync(new URL(`${id}/drama.json`, DRAMAS_DIR), 'utf8')) as Json;
 
-    /** 照 app 砌出嚟嘅網址喺 root 建返成棵 R2 folder 樹（連 cover） */
-    const mirrorR2 = (id: string): string => {
+    /** 每集錄音喺 folder 樹入面嘅相對路徑（排好序，host 唔同都比得） */
+    const audioPaths = (id: string, json: Json): string[] =>
+        appEpisodes(id, json)
+            .map((e) => audioPathOf(json, e.url))
+            .sort();
+
+    /** 照 app 砌出嚟嘅網址喺 root 建返成棵上載 folder 樹（連 cover；每日劇冇短篇） */
+    const mirrorTree = (id: string): string => {
         const json = committed(id);
         const folder = (json.audio as Json).folder as string;
         const arcs = ((json.arcs as Json[]) ?? []).map(
             (a) => `${folder}/${a.name as string}/cover photo.jpg`,
         );
-        touch([
-            ...appEpisodes(id, json).map((e) => pathOfUrl(e.url)),
-            `${folder}/cover photo.png`,
-            ...arcs,
-        ]);
+        touch([...audioPaths(id, json), `${folder}/cover photo.png`, ...arcs]);
         return join(root, folder);
     };
 
-    it.each(SERIES_IDS)('should regenerate %s unchanged with --existing', (id) => {
-        const { json, issues } = generateDraft(mirrorR2(id), { existing: committed(id), now: NOW });
+    it.each(COMMITTED_IDS)('should regenerate %s unchanged with --existing', (id) => {
+        const { json, issues } = generateDraft(mirrorTree(id), {
+            existing: committed(id),
+            now: NOW,
+        });
         expect(errorsOf(issues)).toEqual([]);
         expect(json).toEqual(committed(id));
     });
 
-    it.each(SERIES_IDS)('should rebuild the same URLs for %s from scratch', (id) => {
-        const json = jsonOf(generateDraft(mirrorR2(id), { now: NOW }));
-        const urls = appEpisodes(id, json).map((e) => e.url);
-        expect([...urls].sort()).toEqual(
-            appEpisodes(id, committed(id))
-                .map((e) => e.url)
-                .sort(),
-        );
+    it.each(COMMITTED_IDS)('should rebuild the same audio paths for %s from scratch', (id) => {
+        // 由零生成一律 host: r2；c18 commit 咗係 host: app，所以比相對路徑（r2 base 一樣，等同比網址）
+        const json = jsonOf(generateDraft(mirrorTree(id), { now: NOW }));
+        expect(audioPaths(id, json)).toEqual(audioPaths(id, committed(id)));
     });
 
     it('should regenerate the lancy arcs exactly (diff against committed drama.json)', () => {
-        const json = jsonOf(generateDraft(mirrorR2('lancy'), { now: NOW }));
+        const json = jsonOf(generateDraft(mirrorTree('lancy'), { now: NOW }));
         const strip = (arcs: Json[]) =>
             arcs
                 .map(({ name, episodes }) => ({ name, episodes }))
@@ -523,9 +533,6 @@ describe('generateDraft — reporting arc changes with --existing', () => {
 });
 
 describe('generateDraft — daily drama', () => {
-    const c18 = (): Json =>
-        JSON.parse(readFileSync(new URL('c18/drama.json', DRAMAS_DIR), 'utf8')) as Json;
-
     it('should build a newest-first daily drama the app accepts', () => {
         touch(['每日劇/20261022.m4a', '每日劇/20261023.m4a', '每日劇/cover photo.jpg']);
         const { json, issues } = generateDraft(join(root, '每日劇'), { now: NOW });
@@ -539,13 +546,6 @@ describe('generateDraft — daily drama', () => {
             '每日劇/20261023.m4a',
             '每日劇/20261022.m4a',
         ]);
-    });
-
-    it('should regenerate c18 unchanged with --existing (rerun flags kept)', () => {
-        const dates = (c18().episodes as Json[]).map((e) => String(e.date).replaceAll('-', ''));
-        touch(dates.map((d) => `c18/${d}.m4a`));
-        const { json } = generateDraft(join(root, 'c18'), { existing: c18(), now: NOW });
-        expect(json).toEqual(c18());
     });
 
     it('should block on audio files that are not YYYYMMDD.m4a', () => {
