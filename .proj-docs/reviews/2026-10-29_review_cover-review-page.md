@@ -355,3 +355,104 @@ branch: "chore/tools/cover-review-page"
 blockers: []
 context: "Round 2 of 344e28a..b837d82 (4145d34 renumber, 16ca75d build/publish, bcd4f64 fetch_sources, b837d82 docs). W-501..W-503 and S-587..S-593 all fixed and verified. Gates: pytest 79 passed + 17 subtests; ruff check/format clean; prettier clean; eslint review/ 0; coverage review/ 92% (publish.py 100%, fetch_sources 99%, build 86%). Real-repo build.py smoke: 89 files, slug validation passes on all current dramas. New W-504: mark_published hashes the current files.json, not the batches actually sent; repro: rebuild after a new round, mark without publishing, next build reports no changes while the artifact lacks the new rounds.json. Forgetting to mark or starting a fresh session only resends everything, which is harmless. S-595: stale paths never listed for null deletion and the 511 check counts local files only. S-596: --mark-published before any build raises FileNotFoundError. S-597: published.json does not record the artifact URL. Recommend fixing W-504 (per-batch mark with hashes recorded at build time) before relying on incremental publish. Docs-only commit; not pushed."
 ```
+
+---
+
+# Round 3 — 2026-10-29 — 覆核 W-504（拎走增量 publish）、S-595（`--previous` → null）
+
+- 目標：`git diff 837fdc2 01ae9b3`
+    - `01ad4c3` fix(tools)：拎走 `published.json` / `--mark-published` / hash 比較，每次 build 都將全部檔分批寫入 `publish-N.json`（每批 ≤ 255 個 / 64MB，`rounds.json` 擺最尾）；新增 `--previous <舊 files.json>`，上次有、今次冇嘅 path 喺最後以 `null` 列出
+    - `01ae9b3` docs(tools)：兩份 README 改寫；`.gitignore` 拎走 `published.json` 規則
+- Review Item ID：今次由 **S-598** 開始用（**S-598–S-600**），冇新 Warning。
+- 總評：W-504 嘅根源（記住「送咗乜」嘅狀態）成個拎走咗，S-596 / S-597 亦跟住冇咗意義。`null` 嘅位置同 batch 計數都啱。剩低三個 Suggestion，都係關於 Artifact tool 喺**新 session** 嘅行為同上限嘅邊界。**97 分 ✅ pass**。
+
+## Round 3 Hard Gates
+
+| Gate          | 結果    | 證據                                                                                                                |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| Lint          | ✅ pass | `ruff check .` All checks passed；`ruff format --check .` 22 files already formatted；`prettier --check .` 全部合規 |
+| Type check    | n/a     | 同 Round 1                                                                                                          |
+| Tests         | ✅ pass | `pytest scripts/arcCover/tests -q`：**82 passed, 17 subtests passed**（63 秒）                                      |
+| Coverage      | ✅ pass | `build.py` 98%、`fetch_sources.py` 99%、`publish.py` 100%；`review/` 合共 99%                                       |
+| No Critical   | ✅ pass | 🔴 = 0                                                                                                              |
+| Security scan | n/a     | 冇新依賴                                                                                                            |
+
+`verify.cjs`（可選）冇跑：今次只改 Python 嘅分批邏輯同 README，`index.html` 冇改。
+
+## Round 3 逐項覆核
+
+| Item  | 結果      | 說明                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-504 | ✅ 修好   | `grep -rn 'mark-published\|published.json\|mark_published'`（`.proj-docs` 以外）只剩一行：`test_review.py:238` 嘅 `assertFalse(... "published.json" .exists())`，即係有 test 鎖住「唔會再寫狀態檔」。`test_should_send_every_file_each_time_with_rounds_last` 連續 build 兩次，兩次都係 601 個檔全部送。冇咗狀態，就冇咗「標記錯但其實未送」嘅可能                                                |
+| S-596 | ✅ 冇意義 | `--mark-published` 已經拎走                                                                                                                                                                                                                                                                                                                                                                       |
+| S-597 | ✅ 冇意義 | `published.json` 已經拎走：無論換唔換 URL，每次都係全部送                                                                                                                                                                                                                                                                                                                                         |
+| S-595 | ✅ 修好   | `stale_paths(previous, files)` 列出上次有、今次冇嘅 path，`write_batches` 將佢哋以 `null` 擺喺最尾。`main` 喺 build **之前**讀 `--previous`，所以傳 `<out>/files.json` 本身都得。我實測：喺 `files.json` 插入 `img/old/x.png`，再用 `--previous $W/review/files.json` 重新 build，`publish-1.json` 最尾兩個係 `rounds.json` 同 `img/old/x.png: null`，而新嘅 `files.json` 冇咗 `img/old/x.png` ✅ |
+
+## `null` 擺喺 `rounds.json` 後面，Artifact publish 收唔收？
+
+收。根據 Artifact tool 嘅 `files` 定義：「On an update, files Claude passes are added or replaced, files it leaves out are kept, and `null` removes one」，同埋「`null` removes that path on an update」。一次 publish 係一個版本，map 入面嘅次序唔影響結果，所以 `null` 擺最尾冇問題。
+
+至於 `rounds.json` 擺最尾，係為咗分幾批送嘅情況：最後一批先換新嘅 `rounds.json`，佢引用嘅圖喺之前嗰幾批已經上咗。要刪嘅舊 path 喺新嘅 `rounds.json` 入面唔會再被引用，所以喺同一批或者之後一批刪都安全。
+
+## Batch 計數
+
+- **檔案數**：`len(current) >= max_files` 喺加入之前判斷，所以每批最多 255 個。600 + 1 個檔分成 [255, 255, 91]（test 驗咗 600 個切成 255 / 255 / 90）。
+- **大小**：`total + size > max_bytes` 就開新一批；單一個超過上限嘅檔會自己一批（`test_should_split_by_bytes`）。`null` 嘅 size 當 0。
+- **邊界**：254 張圖 + `rounds.json` + 3 個 `null`，結果係 [255, 3]，第一批最尾係 `rounds.json`，第二批淨係 3 個 `null`。中間嗰段時間，舊 path 仲喺度，但已經冇被引用，所以冇害。
+- **真 repo smoke**：89 個檔一批，最尾係 `rounds.json`。
+
+## Round 3 問題清單
+
+### 🟢 S-598 — 新 session publish 去舊 artifact 要先 `read` 同 `list scope:"files"`，README 冇講
+
+- 位置：`scripts/arcCover/review/README.md` step 5、root `README.md` step 4
+- 描述：而家每次都全部重送，即係每次 publish 都會**覆蓋**舊 session publish 過嘅 path（`null` 就係刪）。Artifact tool 規定，publish 去一個今個 session 未 `read` 過嘅 artifact 會被拒；而用 `files` 覆蓋或者刪走一個今個 session 未 read、未 list、亦都唔係自己 publish 過嘅 path，都會被拒，拒絕訊息會列出每個 path。呢個係會大聲報錯嘅失敗，唔會靜靜出錯，但下一個 session 第一次 publish 一定會撞到。
+- 方案 A（推薦）：step 5 前面加一句：「新 session 先 `Artifact action:"read" url=…`，再 `action:"list" scope:"files" url=…`，之後先逐份 publish」。
+- 方案 B：叫用家授權用 `overwrite_unread`。唔推薦，因為要逐個 path 列，而且呢個參數係畀「用家明確要求唔睇就覆蓋」嘅情況用。
+
+### 🟢 S-599 — 新 session 冇上次嘅 `files.json`，舊 path 永遠唔會被刪
+
+- 位置：`build.py` `--previous`；README「唔記得上次嘅 `files.json` 就算」
+- 描述：work 資料夾喺 session scratchpad，新 session 冇咗舊 `files.json`，`--previous` 就用唔到，舊 round 嘅圖會一直累積喺 artifact。每個 round 大約 9 個檔，好多個 session 之後先會接近 511。
+- 方案 A：`--previous` 亦接受 Artifact `list scope:"files"` 嘅輸出（一行一個 path，或者 JSON 陣列），跟住撇走 `index.html`。咁 S-598 規定要做嘅 listing 就可以順便用嚟清理。
+- 方案 B：README 寫明：快到上限時，用 listing 手動計出要刪嘅 path。
+
+### 🟢 S-600 — 上限冇預留主頁 `index.html` 嘅位置
+
+- 位置：`publish.py` `batches` / `MAX_FILES_PER_VERSION`；`build.py` `report`
+- 描述：`len(files) > 511` 冇計 `index.html`（實際總數係 `len(files) + 1`）；每批 64MB 亦冇扣主頁大概 40KB。仲有，`report` 淨係計今次嘅檔，冇計 artifact 上面仲保留住嘅舊 path（S-599）。而家 89 個檔，離上限好遠。
+- 方案 A：`max_bytes = MAX_BYTES_PER_PUBLISH - TEMPLATE.stat().st_size`，檔案數用 `>= MAX_FILES_PER_VERSION`。方案 B：README 註明上限要預留主頁。
+
+## Round 3 評分
+
+| 維度     | 得分   | 滿分    | 備注                         |
+| -------- | ------ | ------- | ---------------------------- |
+| 正確性   | 24     | 25      | S-600                        |
+| 安全性   | 20     | 20      |                              |
+| 可維護性 | 18     | 20      | S-598、S-599                 |
+| 測試覆蓋 | 15     | 15      | 82 個 test，`review/` 99%    |
+| 性能     | 10     | 10      | 全部重送大約 90 個檔，可接受 |
+| 代碼風格 | 10     | 10      |                              |
+| **總分** | **97** | **100** |                              |
+
+**結果：✅ pass**（hard gates 全 pass、≥ 90、冇 Critical、冇 Warning）
+
+## Round 3 Handoff receipt
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 97/100
+hard_gates:
+  lint: pass
+  type_check: n/a
+  tests: pass
+  coverage: pass
+  no_critical: pass
+  security_scan: n/a
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "chore/tools/cover-review-page"
+blockers: []
+context: "Round 3 of 837fdc2..01ae9b3 (01ad4c3 full publish + --previous null deletions, 01ae9b3 docs). W-504 fixed: published.json, --mark-published and hash diffing are all removed; the only remaining reference is a test asserting published.json is never written; consecutive builds always batch every file. S-596 and S-597 are moot. S-595 fixed: --previous is read before build, so passing <out>/files.json itself works (smoke: the vanished path comes out as null after rounds.json). The null entries are valid because a null in the files map removes that path on an update, and map order within one publish does not matter. Batch math is correct: at most 255 per batch with the check made before insert, a byte split with an oversize file alone, nulls sized 0; 254+rounds+3 nulls gives [255,3] with rounds.json last in batch 1. Gates: pytest 82 passed + 17 subtests; ruff check/format clean; prettier clean; coverage review/ 99%. verify.cjs not run because index.html is unchanged. New suggestions: S-598 (README should tell a fresh session to Artifact read + list scope files before publishing, otherwise overwriting or nulling unread paths is refused), S-599 (a fresh session has no old files.json, so stale paths are never deleted; let --previous accept a files listing), S-600 (limits do not reserve the index.html page: the 511 count is off by one and the 64MB batch budget does not subtract the page). Docs-only commit; not pushed."
+```
