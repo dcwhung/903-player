@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 from PIL import Image
@@ -236,6 +237,33 @@ class BuildTest(unittest.TestCase):
         last = json.loads(batches[-1].read_text(encoding="utf-8"))
         self.assertEqual(list(last.items())[-1], ("img/lancy/heart/round-1/gone.png", None))
         self.assertFalse((self.paths.out / "published.json").exists())
+
+    def test_main_previous_should_accept_artifact_file_listing(self) -> None:
+        self.paths.out.mkdir(parents=True)
+        listing = self.paths.out / "listing.txt"
+        listing.write_text("index.html\nrounds.json\nimg/lancy/heart/round-1/gone.png\n")
+        argv = ["--work", str(self.work), "--repo", str(self.repo), "--previous", str(listing)]
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(main(argv), 0)
+        batches = sorted(self.paths.out.glob("publish-*.json"))
+        last = json.loads(batches[-1].read_text(encoding="utf-8"))
+        self.assertEqual(list(last.items())[-1], ("img/lancy/heart/round-1/gone.png", None))
+        self.assertNotIn(
+            "index.html", {k for b in batches for k in json.loads(b.read_text(encoding="utf-8"))}
+        )
+
+    def test_build_should_reserve_the_page_size_in_each_batch(self) -> None:
+        with mock.patch("build.write_batches") as write:
+            build(self.paths)
+        page = (self.paths.site / "index.html").stat().st_size
+        self.assertGreater(page, 0)
+        self.assertEqual(write.call_args.kwargs["page_bytes"], page)
+
+    def test_main_page_bytes_should_override_the_page_size(self) -> None:
+        argv = ["--work", str(self.work), "--repo", str(self.repo), "--page-bytes", "123"]
+        with mock.patch("build.write_batches") as write, contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(main(argv), 0)
+        self.assertEqual(write.call_args.kwargs["page_bytes"], 123)
 
     def test_build_should_crop_disc_preview_to_big_disc(self) -> None:
         build(self.paths)

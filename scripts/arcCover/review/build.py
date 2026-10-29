@@ -6,7 +6,10 @@ work 資料夾結構（全部喺 repo 外面，唔入 git）：
     <work>/review/site/        review 頁（index.html + rounds.json + img/）
     <work>/review/files.json   全部要 publish 嘅檔 {published path: 本機檔}
     <work>/review/publish-N.json  publish 批次：全部檔，每批 ≤ 255 個 / 64MB，rounds.json 擺最尾
-                                  （加 --previous <舊 files.json>：冇咗嘅舊 path 喺最後一批傳 null 刪走）
+                                  每批 64MB 預留主頁 index.html 嘅大小（--page-bytes 改）
+                                  （加 --previous <舊 files.json 或 Artifact 檔案 listing>：
+                                  冇咗嘅舊 path 喺最後一批傳 null 刪走；index.html 唔刪；
+                                  listing = JSON path 陣列，或者一行一個 path）
 
 work 預設 $ARC_COVER_WORK，冇就 $TMPDIR/903-player-covers。每出一個新 round 就重新跑一次。
 """
@@ -20,6 +23,7 @@ import re
 import shutil
 import sys
 import tempfile
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -36,7 +40,15 @@ if str(TOOL_DIR) not in sys.path:
 
 from generate import theme_for  # noqa: E402
 from preview import disc_preview, tile_preview  # noqa: E402
-from publish import MAX_FILES_PER_VERSION, sha256_file, stale_paths, write_batches  # noqa: E402
+from publish import (  # noqa: E402
+    MAX_FILES_PER_VERSION,
+    PAGE,
+    over_version_limit,
+    read_previous,
+    sha256_file,
+    stale_paths,
+    write_batches,
+)
 
 DRAMA_SLUG = "_drama"
 # 細楷英文 / 數字，用單一個 `-` 連接：冇 `/`、`..`，亦唔會整出 docId 嘅 `--` 分隔
@@ -281,35 +293,47 @@ def collect(site: Site, paths: Paths) -> dict:
     return {"dramas": dramas}
 
 
-def build(paths: Paths, previous: dict[str, str] | None = None) -> dict[str, str]:
+def build(paths: Paths, previous: Iterable[str] = (), page_bytes: int | None = None) -> dict[str, str]:
     """寫 site/index.html、site/rounds.json、files.json、publish-N.json（previous 有、今次冇嘅 path = null）；
-    回傳 files（唔包 index.html：佢係 publish 嘅主頁，每次 publish 都會送）"""
+    回傳 files（唔包 index.html：佢係 publish 嘅主頁，每次 publish 都會送）。
+    page_bytes 預設 = site/index.html 大小，每批 64MB 預留畀佢"""
     site = Site(paths.site)
     rounds = collect(site, paths)
-    shutil.copyfile(TEMPLATE, site.target("index.html"))
+    page = site.target(PAGE)
+    shutil.copyfile(TEMPLATE, page)
     site.target("rounds.json").write_text(json.dumps(rounds, ensure_ascii=False, indent=1), encoding="utf-8")
     site.add("rounds.json")
     files_json = json.dumps(site.files, ensure_ascii=False, indent=1)
     (paths.out / "files.json").write_text(files_json, encoding="utf-8")
-    write_batches(paths.out, site.files, removed=stale_paths(previous or {}, site.files))
+    removed = stale_paths(previous, site.files)
+    page_size = page.stat().st_size if page_bytes is None else page_bytes
+    write_batches(paths.out, site.files, removed=removed, page_bytes=page_size)
     return site.files
 
 
-def parse_args(argv: list[str]) -> tuple[Paths, Path | None]:
+def parse_args(argv: list[str]) -> tuple[Paths, Path | None, int | None]:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--work", type=Path, default=DEFAULT_WORK, help=f"work 資料夾（預設 {DEFAULT_WORK}）")
     parser.add_argument("--out", type=Path, help="review 輸出資料夾（預設 <work>/review）")
     parser.add_argument(
-        "--previous", type=Path, help="上次 publish 用嘅 files.json：冇咗嘅 path 會喺最後一批傳 null 刪走"
+        "--previous",
+        type=Path,
+        help="上次 publish 用嘅 files.json，或者 Artifact list scope:files 嘅 path（JSON 陣列 / 一行一個）："
+        "冇咗嘅 path 會喺最後一批傳 null 刪走（index.html 唔刪）",
+    )
+    parser.add_argument(
+        "--page-bytes",
+        type=int,
+        help="每批 64MB 預留畀主頁嘅 bytes（預設 = build 出嚟嘅 site/index.html 大小）",
     )
     parser.add_argument("--repo", type=Path, default=REPO_ROOT, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     work = args.work.resolve()
     out = (args.out or work / "review").resolve()
     paths = Paths(gen=work / "arcCover", src=work / "arcCover-src", out=out, repo=args.repo.resolve())
-    return paths, args.previous
+    return paths, args.previous, args.page_bytes
 
 
 def report(paths: Paths, files: dict[str, str], removed: list[str]) -> None:
@@ -320,18 +344,19 @@ def report(paths: Paths, files: dict[str, str], removed: list[str]) -> None:
         print(f"  files = {batch}（{len(read_json(batch))} 個）")
     for rel in removed:
         print(f"  刪走（null）：{rel}")
-    if len(files) > MAX_FILES_PER_VERSION:
+    if over_version_limit(len(files)):
         print(
-            f"warning: {len(files)} 個檔 > 每版上限 {MAX_FILES_PER_VERSION}，要喺 files 傳 null 刪走舊 round",
+            f"warning: {len(files)} 個檔 + {PAGE} > 每版上限 {MAX_FILES_PER_VERSION}，"
+            "要喺 files 傳 null 刪走舊 round",
             file=sys.stderr,
         )
 
 
 def main(argv: list[str]) -> int:
-    paths, previous_json = parse_args(argv)
+    paths, previous_path, page_bytes = parse_args(argv)
     # 喺 build 之前讀：--previous 可能就係今次會覆蓋嘅 <out>/files.json
-    previous = read_json(previous_json) if previous_json else {}
-    files = build(paths, previous)
+    previous = read_previous(previous_path) if previous_path else []
+    files = build(paths, previous, page_bytes)
     report(paths, files, stale_paths(previous, files))
     return 0
 
