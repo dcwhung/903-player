@@ -225,10 +225,10 @@ python3 -m venv /tmp/arcCover-venv
    新短篇加 `--arc "短篇名=slug"`；exit 1 = R2 冇，exit 3 = 網絡 / proxy 出錯）
 2. **出 round**：`generate.py --input $WORK/arcCover-src/<id>/<slug>.png --drama <id> [--arc <slug>] --out $WORK/arcCover`
 3. **砌頁**：`review/build.py --work $WORK` → `$WORK/review/site/`（`index.html` + `rounds.json` + 圖）、`files.json`（全部）、
-   `publish-N.json`（今次要送嘅批次）
-4. **Publish**：Claude 用 Artifact tool 逐份 `publish-N.json` 更新同一條 URL（`file_path` = `site/index.html`，`files` = 嗰份 json），
-   全部成功後 `build.py --work $WORK --mark-published`。Artifact 上限：每次 publish ≤ 255 個檔 / 64MB、每版 ≤ 511 個檔；
-   冇傳嘅檔會保留，所以之後淨係送新 / 改咗嘅檔（`build.py` 比 sha256 自動揀）；
+   `publish-N.json`（全部檔分批；加 `--previous <上次 files.json>` 會喺最後一批對冇咗嘅舊 path 傳 `null` 刪走）
+4. **Publish**：Claude 用 Artifact tool 逐份 `publish-N.json` 更新同一條 URL（`file_path` = `site/index.html`，`files` = 嗰份 json）。
+   Artifact 上限：每次 publish ≤ 255 個檔 / 64MB、每版 ≤ 511 個檔；冇傳嘅檔會保留。每次都全部重送（而家大約 90 個檔），
+   唔做增量，免得記錯「送咗乜」令頁面靜靜冇咗新 `rounds.json`；
    用家揀完，Claude 用 ArtifactData 讀 `reviews` collection（doc id `<drama>--<slug>--r<round>`，值 = 候選 id / `keep` / `own` / `null`；
    未儲存 = `keep` 沿用現有圖）
 5. **入 app**：揀中嘅 webp copy 去 `src/dramas/<id>/`：整套劇 `tile.webp` / `disc.webp`，短篇 `<slug>-tile.webp` / `<slug>-disc.webp`

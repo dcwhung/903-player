@@ -17,12 +17,10 @@ __pycache__/
 /review/site/
 /review/files.json
 /review/publish-*.json
-/review/published.json
 scripts/arcCover/review/**/site/
 scripts/arcCover/review/**/rounds.json
 scripts/arcCover/review/**/files.json
 scripts/arcCover/review/**/publish-*.json
-scripts/arcCover/review/**/published.json
 scripts/arcCover/review/**/*.png
 scripts/arcCover/review/**/*.jpg
 scripts/arcCover/review/**/*.webp
