@@ -35,6 +35,7 @@
 | 2026-10-29 | [reviews/2026-10-29_review_catalog-tools-rereview.md](reviews/2026-10-29_review_catalog-tools-rereview.md)     |
 | 2026-10-29 | [reviews/2026-10-29_review_cui-0008.md](reviews/2026-10-29_review_cui-0008.md)                                 |
 | 2026-10-29 | [reviews/2026-10-29_review_tool-polish.md](reviews/2026-10-29_review_tool-polish.md)                           |
+| 2026-10-29 | [reviews/2026-10-29_review_e2e-offline.md](reviews/2026-10-29_review_e2e-offline.md)                           |
 
 ## QA
 
