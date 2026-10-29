@@ -467,3 +467,93 @@ context: "Round 3 of 837fdc2..01ae9b3 (01ad4c3 full publish + --previous null de
 
 - Tests：`pytest scripts/arcCover/tests -q` **92 passed, 20 subtests passed**（新增 10 個 test：`ReadPreviousTest` ×4、`index.html` 唔刪、511 預留、`page_bytes` 分批、listing 做 `--previous`、`build` 傳主頁大小、`--page-bytes`）；先 red 後 green
 - Lint：`ruff check` / `ruff format --check` clean；`prettier --check .` clean
+
+---
+
+# Round 4 — 2026-10-29 — 覆核 S-598–S-600（merge `a9eeb21` 入 `claude/keen-pascal-5iifg0`）
+
+- 目標：`669498a`（S-599 / S-600 code）、`c0f6342`（S-598–S-600 docs）、`eb93516`（record），merge `a9eeb21`；喺主 checkout 審（冇轉 branch）
+- Review Item ID：平行 review 由 W-505 / S-601 開始，所以今次由 **S-610** 開始用（**S-610–S-612**），冇新 Warning
+- 總評：三項都修好，test 有齊。剩低三個 Suggestion，都係邊界情況：分幾批 publish 期間檔數可能超過上限、listing 格式唔啱時靜靜咁刪唔到嘢、`--page-bytes` 冇驗證輸入。**97 分 ✅ pass**
+
+## Round 4 Hard Gates
+
+| Gate          | 結果    | 證據                                                                                                                                                           |
+| ------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint          | ✅ pass | `ruff check` All checks passed；`ruff format --check` 22 files already formatted（cwd `scripts/arcCover`，加 `--no-cache`）；`npx prettier --check .` 全部合規 |
+| Type check    | n/a     | 同 Round 1                                                                                                                                                     |
+| Tests         | ✅ pass | `pytest -p no:cacheprovider scripts/arcCover/tests -q`：**92 passed, 20 subtests passed**（62 秒）                                                             |
+| Coverage      | ✅ pass | `build.py` 99%、`fetch_sources.py` 99%、`publish.py` 100%；`review/` 合共 99%                                                                                  |
+| No Critical   | ✅ pass | 🔴 = 0                                                                                                                                                         |
+| Security scan | n/a     | 冇新依賴                                                                                                                                                       |
+
+跑完 gate 之後 `git status` 係乾淨嘅（coverage 嘅 data file 放咗喺 scratchpad）。
+
+## Round 4 逐項覆核
+
+| Item  | 結果    | 說明                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| S-598 | ✅ 修好 | 兩份 README 都寫咗新 session 要做嘅步驟：先 `read`，再 `list scope:"files"`，將 listing 存檔，然後用 `--previous` 重新 build，最後逐份 publish。`overwrite_unread` 淨係喺用家明確要求時先逐個 path 列出。我逐點對過 Artifact tool 嘅規定，全部吻合：未 read 過嘅 artifact publish 會被拒；未 read / list / publish 過嘅 path 覆蓋或者傳 `null` 會被拒；`overwrite_unread` 只可以喺用家要求「唔睇就覆蓋」時用 |
+| S-599 | ✅ 修好 | `read_previous` 接受三種格式：`{path: str}` 會取 key、JSON 陣列、一行一個 path（略過空行）；其他 JSON 會 `SystemExit`。`stale_paths` 會撇走 `PAGE`。有 4 個 `ReadPreviousTest`，另外 `test_main_previous_should_accept_artifact_file_listing` 由 listing 一路驗到 `null` 擺喺最後一批                                                                                                                        |
+| S-600 | ✅ 修好 | `over_version_limit(510)` 係 False、`(511)` 係 True（510 + 主頁 = 511，啱好喺上限）。每批上限 = 64MB 減 `page_bytes`，預設用 build 出嚟嘅 `site/index.html` 大小，有 test 鎖住；`--page-bytes` 可以覆蓋，亦有 test                                                                                                                                                                                           |
+
+## Round 4 問題清單
+
+### 🟢 S-610 — 分幾批 publish 期間，檔數可能超過 511
+
+- 位置：`publish.py` `write_batches`（`null` 擺最後一批）、`over_version_limit`（只計今次嘅檔）
+- 描述：舊 path 要到最後一批先刪。如果 artifact 上面有 N 個舊 path、今次有 M 個新 path，中間嗰幾個版本會有 N + M + 1 個檔，第一批就可能因為超過 511 被拒。而家 89 個檔，冇問題；要累積好多輪而且路徑全部唔同先會撞到。
+- 方案 A：`build` 收到 `previous` 之後計 `len(set(previous) | set(files)) + 1`，超過就警告，或者將 `null` 擺第一批。
+    - Trade-off：`null` 擺第一批，即係舊 `rounds.json` 仲生效嗰陣圖已經刪咗，頁面會短暫出現爛圖。
+- 方案 B：README 加一句：「接近上限時先單獨 publish 一次淨係 `null` 嘅 `files`」。
+- 推薦：A 嘅警告部分。
+
+### 🟢 S-611 — 純文字 listing 照抄埋其他欄位，會靜靜咁刪唔到嘢
+
+- 位置：`publish.py:36-48`（`read_previous`）
+- 描述：我實測：如果將 listing 成行抄落檔（例如 `index.html  text/html  40 KB`），整行會被當成 path。結果有兩個：
+    1. `index.html` 保護失效，嗰行會被列做 `null`（publish 時會刪一個唔存在嘅 path，可能被拒）；
+    2. 真正嘅舊 path 一個都對唔到，所以冇刪到。`report` 雖然有印出嚟，但唔明顯。
+- 方案 A：一行入面有 tab 或者連續空格就淨係攞第一欄；或者直接拒絕含空白嘅行（今個工具出嘅 path 冇空格）。
+- 方案 B：如果 previous 同今次 files 冇任何重疊（即係格式好可能錯咗），就警告。
+- 推薦：A + B。
+
+### 🟢 S-612 — `--page-bytes` 冇驗證
+
+- 位置：`build.py` `parse_args`
+- 描述：負數會令每批上限超過 64MB；大過 64MB 會令每批上限 ≤ 0，結果每個檔自己一批（實測 `max_bytes=-1` 出 [1, 1]）。
+- 方案 A：限制 `0 ≤ page_bytes < MAX_BYTES_PER_PUBLISH`，超出範圍就 `parser.error`。方案 B：直接 clamp 去合法範圍。
+
+## Round 4 評分
+
+| 維度     | 得分   | 滿分    | 備注                      |
+| -------- | ------ | ------- | ------------------------- |
+| 正確性   | 23     | 25      | S-610、S-611              |
+| 安全性   | 20     | 20      |                           |
+| 可維護性 | 19     | 20      | S-612                     |
+| 測試覆蓋 | 15     | 15      | 92 個 test，`review/` 99% |
+| 性能     | 10     | 10      |                           |
+| 代碼風格 | 10     | 10      |                           |
+| **總分** | **97** | **100** |                           |
+
+**結果：✅ pass**（hard gates 全 pass、≥ 90、冇 Critical、冇 Warning）
+
+## Round 4 Handoff receipt
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 97/100
+hard_gates:
+  lint: pass
+  type_check: n/a
+  tests: pass
+  coverage: pass
+  no_critical: pass
+  security_scan: n/a
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "claude/keen-pascal-5iifg0"
+blockers: []
+context: "Round 4 of 669498a / c0f6342 / eb93516 (merge a9eeb21), reviewed in the main checkout without switching branch. S-598 fixed: both READMEs give the fresh-session steps (Artifact read, list scope files, save the listing, rebuild with --previous, overwrite_unread only on the user's explicit request), checked against the Artifact tool contract. S-599 fixed: read_previous accepts files.json keys, a JSON array, or one path per line, rejects other JSON, and stale_paths never nulls index.html. S-600 fixed: over_version_limit(510)=False and (511)=True; the per-batch budget is 64MB minus page_bytes, defaulting to the built index.html size, with --page-bytes override tested. Gates: pytest 92 passed + 20 subtests; ruff check/format clean; prettier clean; coverage review/ 99%; working tree clean afterwards. New suggestions: S-610 (old paths are nulled only in the last batch, so a multi-batch publish can briefly exceed 511 files; warn on len(previous|files)+1), S-611 (pasting full listing rows into the plain-text format makes each whole row a 'path', which bypasses the index.html guard and deletes nothing real; strip to the first column or reject whitespace, and warn when previous has no overlap with files), S-612 (--page-bytes is not range-checked; probe max_bytes=-1 gives one file per batch). Docs-only commit; not pushed."
+```
