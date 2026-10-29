@@ -1017,6 +1017,27 @@ describe('AudioController S-551 lock-screen stall', () => {
             detach();
         });
 
+        /**
+         * S-584：每次 audio.load() 都係新嘗試。error 已設但 error event 仲 queue 緊（watchdog 未 cancel）時
+         * 網絡返嚟重新載入，舊 playing 唔可以帶入新載入，否則 rs 0→2 唔算進展（W-498 退化）
+         */
+        it('counts playable data as progress again after the source is recovered', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            await controller.play();
+            bufferAhead(audio, LITTLE_AHEAD_SECONDS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            audio.error = { code: MEDIA_ERR_SRC_NOT_SUPPORTED };
+
+            window.dispatchEvent(new Event('online'));
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            audio.load.mockClear();
+            audio.emitLoadedData();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+
         // 重試係新一次嘗試：重新載入之後 playing 未發，數據到（rs 0→2）照算進展（W-500 / W-498）
         it('counts playable data as progress again after the retry reloads', async () => {
             const { audio, controller, detach } = await pausedBySystem();

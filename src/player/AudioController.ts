@@ -240,7 +240,7 @@ export class AudioController {
         }
         this.pendingStart = this.state.currentTime;
         this.moveTo(this.pendingStart);
-        this.audio.load();
+        this.loadSource();
         this.update({ duration: 0 });
     };
 
@@ -466,10 +466,17 @@ export class AudioController {
     /** 重新載入同一集，續播位置用 state（最後真正播到嘅位置；load 會將 audio.currentTime reset 做 0） */
     private reload(note: string): void {
         recordPlayback('retry', this.audio, note);
-        // 重新載入係新一次嘗試：數據由零再嚟，未發 playing 前 rs 升照算進展
-        this.playingFired = false;
         this.pendingStart = this.state.currentTime;
         this.moveTo(this.pendingStart);
+        this.loadSource();
+    }
+
+    /**
+     * 所有重新載入都經呢度：每次 audio.load() 都係新一次嘗試，數據由零再嚟，
+     * 舊 playing 唔可以帶入新載入，未發 playing 前 rs 升照算進展（S-584）
+     */
+    private loadSource(): void {
+        this.playingFired = false;
         this.audio.load();
     }
 
