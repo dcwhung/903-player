@@ -1678,6 +1678,12 @@ describe('AudioController hidden frozen playing (v1.20.9)', () => {
     const PAUSED_AT = 28.9;
     /** log：playing 17:38:45.488 → ms:pause 17:38:52.354 */
     const FROZEN_BEFORE_PAUSE_MS = 6866;
+    /** W-506：playing 喺 deadline 前幾耐先到（快嘅鎖屏載入） */
+    const PLAYING_BEFORE_DEADLINE_MS = 2000;
+    /** deadline 前 100 ms 先開始出聲（playing 之後 1.9 s） */
+    const SILENT_STEP_MS = 100;
+    /** 出聲咗 0.1 s：未過出聲門檻，冇 timeupdate */
+    const SILENT_ADVANCE_SECONDS = 0.1;
 
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => {
@@ -1751,10 +1757,30 @@ describe('AudioController hidden frozen playing (v1.20.9)', () => {
         detach();
     });
 
-    it('reloads on the next lock-screen play once frozen past the short limit, before any deadline', async () => {
+    /**
+     * W-506 / W-507：鎖屏 timeupdate 約 5 秒先一次，位置靜靜雞行；playing 喺 deadline 前 2 秒先到、
+     * 再慢 1.9 秒先出聲（健康）都唔可以當凍結 reload（會重演 v1.20.7 鎖屏 abort）
+     */
+    it('does not reload a healthy locked start whose sound begins late with throttled timeupdates', async () => {
+        const { audio, controller, detach } = await lockedListeningThenPaused();
+        await controller.resume();
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - PLAYING_BEFORE_DEADLINE_MS);
+        audio.emitPlaying(HAVE_ENOUGH_DATA);
+        vi.advanceTimersByTime(PLAYING_BEFORE_DEADLINE_MS - SILENT_STEP_MS);
+        audio.currentTime += SILENT_ADVANCE_SECONDS; // 出咗聲，但鎖屏未發 timeupdate
+
+        vi.advanceTimersByTime(SILENT_STEP_MS);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(controller.getSnapshot().isStalled).toBe(false);
+        detach();
+    });
+
+    // iOS 鎖屏凍結 timer：deadline 冇行過，時鐘已經過咗 FROZEN_PLAYING_MS
+    it('reloads on the next lock-screen play once frozen past the limit while timers were frozen', async () => {
         const { audio, controller, detach } = await lockedListeningThenPaused();
         await lockScreenPlayFrozen(audio, controller);
-        vi.advanceTimersByTime(FROZEN_PLAYING_MS);
+        vi.setSystemTime(Date.now() + FROZEN_PLAYING_MS);
         controller.pause();
 
         await controller.resume();
@@ -1767,7 +1793,7 @@ describe('AudioController hidden frozen playing (v1.20.9)', () => {
     it('reloads on lock-screen play pressed again while still frozen without a pause', async () => {
         const { audio, controller, detach } = await lockedListeningThenPaused();
         await lockScreenPlayFrozen(audio, controller);
-        vi.advanceTimersByTime(FROZEN_PLAYING_MS);
+        vi.setSystemTime(Date.now() + FROZEN_PLAYING_MS);
 
         await controller.resume();
 
