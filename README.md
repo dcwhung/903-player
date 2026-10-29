@@ -216,6 +216,22 @@ python3 -m venv /tmp/arcCover-venv
 - 同一張圖、同一組參數、同一個 venv（`manifest.env` 一樣）輸出完全一樣（冇隨機；補底顆粒用固定 seed）；換 library 版本 sha256 / `duplicateOf` 可能會變
 - 人面 / 標題字偵測係 heuristic（Haar cascade + 眼睛過濾、筆劃密度 + 顏色），風格化封面會漏 / 誤報，睇 `analysis.png` 判斷；揀好之後要手動 copy 入 `src/dramas/<id>/`
 
+#### 新劇 / 新短篇封面 workflow（review 頁：`scripts/arcCover/review/`）
+
+候選圖喺 claude.ai Artifact review 頁揀（<https://claude.ai/artifact/4xzNxQTTy9XjCQg46TLKiT>），詳細見
+`scripts/arcCover/review/README.md`。生成物全部放 repo 外嘅 work 資料夾（`--work`，預設 `$TMPDIR/903-player-covers`），唔入 git。
+
+1. **原圖**：`fetch_sources.py <id> --work $WORK`（由 R2 下載 `cover photo.png|jpg` / `cover-photo.jpg`，名轉 NFC 再 URL-encode；
+   新短篇加 `--arc "短篇名=slug"`）
+2. **出 round**：`generate.py --input $WORK/arcCover-src/<id>/<slug>.png --drama <id> [--arc <slug>] --out $WORK/arcCover`
+3. **砌頁**：`review/build.py --work $WORK` → `$WORK/review/site/`（`index.html` + `rounds.json` + 圖）同 `$WORK/review/files.json`
+4. **Publish**：Claude 用 Artifact tool 更新同一條 URL（`file_path` = `site/index.html`，`files` = `files.json`）；
+   用家揀完，Claude 用 ArtifactData 讀 `reviews` collection（doc id `<drama>--<slug>--r<round>`，值 = 候選 id / `keep` / `own` / `null`；
+   未儲存 = `keep` 沿用現有圖）
+5. **入 app**：揀中嘅 webp copy 去 `src/dramas/<id>/`：整套劇 `tile.webp` / `disc.webp`，短篇 `<slug>-tile.webp` / `<slug>-disc.webp`
+   （新短篇喺 `drama.json` 加 `disc` / `tile`）
+6. **PATCH bump** `package.json` version
+
 ## 部署（只需做一次）
 
 GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 **GitHub Actions**。
