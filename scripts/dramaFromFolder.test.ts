@@ -1,6 +1,6 @@
 // @vitest-environment node
-// 經 src/dramas/episodes.ts 用到 import.meta.env：只喺呢個檔開 vite/client 型別，唔好放落 tsconfig.node.json
-/// <reference types="vite/client" />
+// 經 src/dramas/episodes.ts 用到 import.meta.env：vite/client 型別由 tsconfig.scripts-test.json（只包 scripts/*.test.ts）提供。
+// 唔好用 /// <reference types> 或者放落 tsconfig.node.json：兩樣都會令成個 Node program 以為有 import.meta.env
 /*
  * scripts/dramaFromFolder.mjs：由本機劇集 folder 生成 drama.json 草稿。
  * 最重要嘅保證：輸出經 app 真正嘅 validator（parseDramaDefinition）+ buildEpisodes 之後，
@@ -11,6 +11,8 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 import { DRAMA_AUDIO_BASE as APP_AUDIO_BASE } from '../src/config/constants';
 import { buildEpisodes } from '../src/dramas/episodes';
 import { parseDramaDefinition } from '../src/dramas/schema';
@@ -32,6 +34,7 @@ import {
 
 const SCRIPT = new URL('./dramaFromFolder.mjs', import.meta.url);
 const DRAMAS_DIR = new URL('../src/dramas/', import.meta.url);
+const NODE_TSCONFIG = new URL('../tsconfig.node.json', import.meta.url);
 /** 香港時間 2026-10-29 04:00（UTC 仲係 28 號），驗 addedAt 用香港日期 */
 const NOW = new Date('2026-10-28T20:00:00Z');
 const TODAY = '2026-10-29';
@@ -122,6 +125,24 @@ const audioPathOf = (json: Json, url: string): string =>
     (json.audio as Json).host === 'r2'
         ? pathOfUrl(url)
         : decodedPath(url, `${import.meta.env.BASE_URL}${APP_AUDIO_DIR}`);
+
+/** tsconfig.node.json 成個 program（加埋 extraFile）入面 extraFile 嘅 type error */
+const nodeProgramErrors = (extraFile: string): readonly ts.Diagnostic[] => {
+    const configPath = fileURLToPath(NODE_TSCONFIG);
+    const parsed = ts.getParsedCommandLineOfConfigFile(
+        configPath,
+        {},
+        {
+            ...ts.sys,
+            onUnRecoverableConfigFileDiagnostic: (d) => {
+                throw new Error(ts.flattenDiagnosticMessageText(d.messageText, '\n'));
+            },
+        },
+    );
+    if (parsed === undefined) throw new Error(`讀唔到 ${configPath}`);
+    const program = ts.createProgram([...parsed.fileNames, extraFile], parsed.options);
+    return ts.getPreEmitDiagnostics(program, program.getSourceFile(extraFile));
+};
 
 const listFiles = (dir: string, prefix = ''): string[] =>
     readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
@@ -869,14 +890,15 @@ describe('script packaging', () => {
         expect(DRAMA_AUDIO_BASE).toBe(APP_AUDIO_BASE);
     });
 
-    it('should not give every Node-run file vite/client types (import.meta.env)', () => {
-        // 只有呢個 test 經 episodes.ts 用到 import.meta.env，所以喺檔頭 reference；
-        // 放落 tsconfig.node.json 會令 scripts/ 入面純 Node 行嘅檔都以為有 import.meta.env
-        const config = JSON.parse(readFileSync(new URL('../tsconfig.node.json', SCRIPT), 'utf8'));
-        expect(config.compilerOptions.types).not.toContain('vite/client');
-        expect(readFileSync(new URL(import.meta.url), 'utf8')).toContain(
-            '/// <reference types="vite/client" />',
+    it('should not give Node-run scripts vite/client types (import.meta.env)', () => {
+        // 呢個 test 經 episodes.ts 用到 import.meta.env，所以 scripts/*.test.ts 自己一個 project
+        // （tsconfig.scripts-test.json）先有 vite/client；tsconfig.node.json 底下純 Node 檔用 import.meta.env 要報錯
+        const probe = join(root, 'probe.ts');
+        writeFileSync(probe, 'export const base: string = import.meta.env.BASE_URL;\n');
+        const messages = nodeProgramErrors(probe).map((d) =>
+            ts.flattenDiagnosticMessageText(d.messageText, '\n'),
         );
+        expect(messages.join('\n')).toContain("Property 'env' does not exist");
     });
 
     it('should be self-contained: only node: built-in imports', () => {
