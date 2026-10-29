@@ -91,6 +91,11 @@ export function episodeUrls(json: DramaJson, base?: string): string[];
 export function coverUrls(scan: DramaScan, folder: string, base?: string): string[];
 export function verifyUrls(
     urls: readonly string[],
-    options?: { concurrency?: number; timeoutMs?: number; fetch?: typeof fetch },
+    options?: {
+        concurrency?: number;
+        timeoutMs?: number;
+        retryDelayMs?: number;
+        fetch?: typeof fetch;
+    },
 ): Promise<VerifyFailure[]>;
 export function run(argv: readonly string[], io?: CliIo): Promise<number>;

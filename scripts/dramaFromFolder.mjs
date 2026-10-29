@@ -56,6 +56,10 @@ const USUAL_FIRST_NOS = new Set([0, 1]);
 const HONG_KONG_TIME_ZONE = 'Asia/Hong_Kong';
 const VERIFY_CONCURRENCY = 6;
 const VERIFY_TIMEOUT_MS = 10_000;
+/** r2.dev 有 rate limit：429 / 5xx / 逾時等一陣再試一次 */
+const VERIFY_RETRY_DELAY_MS = 1_000;
+const HTTP_TOO_MANY_REQUESTS = 429;
+const HTTP_SERVER_ERROR_MIN = 500;
 const JSON_INDENT = 4;
 const HEX_WIDTH = 4;
 const HEX_RADIX = 16;
@@ -781,32 +785,52 @@ export const coverUrls = (scan, folder, base = DRAMA_AUDIO_BASE) => [
 
 /* ───────────── --verify ───────────── */
 
+/** 一次 HEAD：OK 就 null；唔得就 { url, reason, retryable }（429 / 5xx / 逾時值得再試） */
 const headOnce = async (url, fetchImpl, timeoutMs) => {
     try {
         const res = await fetchImpl(url, {
             method: 'HEAD',
             signal: AbortSignal.timeout(timeoutMs),
         });
-        return res.ok ? null : { url, reason: `HTTP ${res.status}` };
+        if (res.ok) return null;
+        const retryable =
+            res.status === HTTP_TOO_MANY_REQUESTS || res.status >= HTTP_SERVER_ERROR_MIN;
+        return { url, reason: `HTTP ${res.status}`, retryable };
     } catch (error) {
         const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
-        return {
-            url,
-            reason: timedOut ? `逾時（${timeoutMs}ms）` : `連線失敗：${error?.message ?? error}`,
-        };
+        const reason = timedOut ? `逾時（${timeoutMs}ms）` : `連線失敗：${error?.message ?? error}`;
+        return { url, reason, retryable: timedOut };
     }
 };
 
-/** HEAD 每條網址（限同時幾多條 + timeout），回傳唔得嘅（跟原本次序） */
+const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
+
+/** 暫時性失敗（429 / 5xx / 逾時）等一陣再試一次；404 之類即刻當唔得 */
+const headWithRetry = async (url, fetchImpl, { timeoutMs, retryDelayMs }) => {
+    const first = await headOnce(url, fetchImpl, timeoutMs);
+    if (first === null || !first.retryable) return first && { url, reason: first.reason };
+    await sleep(retryDelayMs);
+    const second = await headOnce(url, fetchImpl, timeoutMs);
+    return second && { url, reason: `${second.reason}（再試一次都唔得）` };
+};
+
+/** HEAD 每條網址（限同時幾多條 + timeout + 暫時性失敗再試一次），回傳唔得嘅（跟原本次序） */
 export const verifyUrls = async (urls, options = {}) => {
-    const { concurrency = VERIFY_CONCURRENCY, timeoutMs = VERIFY_TIMEOUT_MS } = options;
+    const {
+        concurrency = VERIFY_CONCURRENCY,
+        timeoutMs = VERIFY_TIMEOUT_MS,
+        retryDelayMs = VERIFY_RETRY_DELAY_MS,
+    } = options;
     const fetchImpl = options.fetch ?? globalThis.fetch;
     const results = new Array(urls.length).fill(null);
     let next = 0;
     const worker = async () => {
         while (next < urls.length) {
             const index = next++;
-            results[index] = await headOnce(urls[index], fetchImpl, timeoutMs);
+            results[index] = await headWithRetry(urls[index], fetchImpl, {
+                timeoutMs,
+                retryDelayMs,
+            });
         }
     };
     await Promise.all(Array.from({ length: Math.min(concurrency, urls.length) }, worker));

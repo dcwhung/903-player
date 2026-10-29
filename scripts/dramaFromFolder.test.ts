@@ -39,6 +39,20 @@ const HANG_MS = 2000;
 const CONCURRENCY = 2;
 const HTTP_OK = 200;
 const HTTP_NOT_FOUND = 404;
+const HTTP_TOO_MANY_REQUESTS = 429;
+const HTTP_SERVER_ERROR = 500;
+const HTTP_UNAVAILABLE = 503;
+const RETRY_DELAY_MS = 10;
+const SERVER_DELAY_MS = 20;
+
+/** 本機測試 server：第幾次 hit 回乜 status（flaky / limited 第一次失敗，第二次 OK） */
+const statusFor = (url: string, hit: number): number => {
+    if (url.startsWith('/ok') || url.startsWith('/slow-once')) return HTTP_OK;
+    if (url.startsWith('/flaky')) return hit === 1 ? HTTP_UNAVAILABLE : HTTP_OK;
+    if (url.startsWith('/limited')) return hit === 1 ? HTTP_TOO_MANY_REQUESTS : HTTP_OK;
+    if (url.startsWith('/down')) return HTTP_SERVER_ERROR;
+    return HTTP_NOT_FOUND;
+};
 
 type Json = Record<string, unknown>;
 type Issue = { level: string; where: string; message: string };
@@ -533,22 +547,27 @@ describe('verifyUrls', () => {
     let base: string;
     let inFlight = 0;
     let maxInFlight = 0;
+    const hits = new Map<string, number>();
 
     beforeEach(async () => {
         // tests/setup.ts 預設封咗 fetch；呢度只連本機 server，換返真 fetch
         vi.unstubAllGlobals();
         inFlight = 0;
         maxInFlight = 0;
+        hits.clear();
         server = createServer((req, res) => {
             inFlight += 1;
             maxInFlight = Math.max(maxInFlight, inFlight);
+            const url = req.url ?? '';
+            const hit = (hits.get(url) ?? 0) + 1;
+            hits.set(url, hit);
             const finish = (status: number) => {
                 inFlight -= 1;
                 res.writeHead(status).end();
             };
-            if (req.url?.startsWith('/hang'))
-                return void setTimeout(() => finish(HTTP_OK), HANG_MS);
-            setTimeout(() => finish(req.url?.startsWith('/ok') ? HTTP_OK : HTTP_NOT_FOUND), 20);
+            const hangs = url.startsWith('/hang') || (url.startsWith('/slow-once') && hit === 1);
+            if (hangs) return void setTimeout(() => finish(HTTP_OK), HANG_MS);
+            setTimeout(() => finish(statusFor(url, hit)), SERVER_DELAY_MS);
         });
         await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
         base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -567,6 +586,7 @@ describe('verifyUrls', () => {
         const failures = await verifyUrls(urls, {
             concurrency: CONCURRENCY,
             timeoutMs: VERIFY_TIMEOUT_MS,
+            retryDelayMs: RETRY_DELAY_MS,
         });
         expect(failures.map((f: { url: string }) => f.url)).toEqual([
             `${base}/missing`,
@@ -575,6 +595,26 @@ describe('verifyUrls', () => {
         expect(failures[0]?.reason).toContain('404');
         expect(failures[1]?.reason).toContain('逾時');
         expect(maxInFlight).toBeLessThanOrEqual(CONCURRENCY);
+    });
+
+    it('should retry once on 429, 5xx and timeouts, but not on 404', async () => {
+        const paths = ['/flaky', '/limited', '/slow-once', '/down', '/missing'];
+        const failures = await verifyUrls(
+            paths.map((p) => `${base}${p}`),
+            { timeoutMs: VERIFY_TIMEOUT_MS, retryDelayMs: RETRY_DELAY_MS },
+        );
+        expect(failures.map((f: { url: string }) => f.url)).toEqual([
+            `${base}/down`,
+            `${base}/missing`,
+        ]);
+        expect(failures[0]?.reason).toContain(String(HTTP_SERVER_ERROR));
+        expect(Object.fromEntries(hits)).toEqual({
+            '/flaky': 2,
+            '/limited': 2,
+            '/slow-once': 2,
+            '/down': 2,
+            '/missing': 1,
+        });
     });
 
     it('should verify a generated drama end to end through the CLI', async () => {
