@@ -811,3 +811,67 @@ describe('AudioController replay timing details', () => {
         detach();
     });
 });
+
+/** S-551 之前嘅行為：鎖死先，之後逐項改（改嘅時候呢度會跟住改） */
+describe('AudioController S-551 characterization', () => {
+    const NEXT: Recording = {
+        ...RECORDING,
+        date: '2026-10-24',
+        url: 'https://audio.hkfm903.live/next.aac',
+    };
+    const DURATION = 1200;
+    const RESUME_AT = 521.4;
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
+    });
+
+    const showScreen = (state: DocumentVisibilityState) => {
+        vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
+        document.dispatchEvent(new Event('visibilitychange'));
+    };
+
+    it('treats the playing event as audible even when the position never moves', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+
+        audio.emitPlaying();
+
+        expect(controller.getSnapshot().isAudible).toBe(true);
+        detach();
+    });
+
+    it('does not watch for a stall after a plain user play', async () => {
+        saveProgress(RECORDING.url, RESUME_AT, DURATION);
+        const { audio, controller, detach } = await setupPlaying();
+        audio.emitMetadata(DURATION);
+        audio.pause();
+        audio.load.mockClear();
+
+        await controller.play();
+        audio.emitPlaying();
+        vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('spends two retries when a late timer and a screen wake-up land together', async () => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.end();
+        await Promise.resolve();
+        audio.load.mockClear();
+
+        vi.advanceTimersByTime(STALL_RETRY_MS);
+        showScreen('visible');
+
+        expect(audio.load).toHaveBeenCalledTimes(2);
+        detach();
+    });
+});

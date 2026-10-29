@@ -118,3 +118,29 @@ describe('useMediaSession', () => {
         expect(() => renderHook(() => useMediaSession(actions(), state()))).not.toThrow();
     });
 });
+
+/** S-551 之前嘅行為：鎖死先，之後逐項改 */
+describe('useMediaSession S-551 characterization', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        Reflect.deleteProperty(navigator, 'mediaSession');
+    });
+
+    it('reports playing while play is wanted even if nothing is audible', () => {
+        const { session } = installMediaSession();
+
+        renderHook(() => useMediaSession(actions(), state({ isAudible: false })));
+
+        expect(session.playbackState).toBe('playing');
+    });
+
+    it('sends lock-screen play straight to player play', () => {
+        const { handlers } = installMediaSession();
+        const a = actions();
+
+        renderHook(() => useMediaSession(a, state({ isAudible: false })));
+        handlers.get('play')?.({ action: 'play' });
+
+        expect(a.play).toHaveBeenCalledTimes(1);
+    });
+});
