@@ -107,13 +107,13 @@ node dramaFromFolder.mjs "/路徑/森美小儀系列" --existing drama.json --ou
 
 - exit code：
 
-    | code | 意思                                                                                     |
-    | ---- | ---------------------------------------------------------------------------------------- |
-    | `0`  | 成功                                                                                     |
-    | `1`  | 有 `[錯誤]`（跳號 / 重複 / 檔名讀唔到、`--existing` 壞咗或者同 folder 唔夾），**冇寫檔** |
-    | `2`  | 參數錯，或者輸出檔已經存在（冇加 `--force`，冇寫檔）                                     |
-    | `3`  | 已寫檔，但 `--verify` 有網址唔得                                                         |
-    | `4`  | 程式出錯（唔係 folder 問題）：請將成段輸出傳返嚟                                         |
+    | code | 意思                                                                                                                                          |
+    | ---- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+    | `0`  | 成功                                                                                                                                          |
+    | `1`  | 有 `[錯誤]`（跳號 / 重複 / 檔名讀唔到 / 冇錄音檔、`--existing` 壞咗或者同 folder 唔夾），**冇寫檔**                                           |
+    | `2`  | 參數錯（包括 `--out` / `--report` 嘅 folder 唔存在、或者本身係 folder：掃 folder 之前就停），或者輸出檔已經存在（冇加 `--force`），**冇寫檔** |
+    | `3`  | 已寫檔，但 `--verify` 有網址唔得                                                                                                              |
+    | `4`  | 程式出錯（唔係 folder 問題）：請將成段輸出傳返嚟                                                                                              |
 
 - `[注意]` 唔會阻住生成，但要睇：例如檔名用 `Ⅱ`、folder 用 `II`，script 會用 `files` 逐集寫明真檔名
 - 短篇次序跟 R2 listing（UTF-8 字典序）；新劇嘅 `theme` 係中性色、`enabled: false`，上架前要改
@@ -198,7 +198,7 @@ python3 -m venv /tmp/arcCover-venv
           `level`（`arc` / `drama`）、`round`、`source { file, sha256, width, height }`、`analysis { faces, textBoxes, textSource, focal }`、`analysisImage`、`contactSheet`、`variants`
         - `variants[]`：`{ id, kind, method, file, preview, width, height, sha256, params, duplicateOf }`；`id` = `<kind>-<方法>`，
           `duplicateOf` = 同一個 kind 入面 bytes 一樣嘅前一個候選 `id`（冇就 `null`），crop 類 `params` 有 `crop` 同 `upscale`（> 1 即係要放大）
-- 方法：`center-crop`（中間）、`saliency-crop`（可見 saliency 最多：碟面計埋圓形、碟心同暗角）、`face-crop`（包住人面，人面放碟心上面；冇人面就用最突出範圍；最多放大 1.25 倍）、
+- 方法：`center-crop`（中間）、`saliency-crop`（可見 saliency 最多：碟面計埋圓形、碟心同暗角）、`face-crop`（包住人面，人面放碟心上面；冇人面就用最突出範圍；最多放大 1.25 倍；原圖本身太細就例外，按需要放大，manifest `params.upscale` 記實際倍數）、
   `text-safe-crop`（唔切開標題字；避唔到就至少成行字喺圖入面）、`fit-blur`（成張圖 + 模糊放大底）、`fit-extend`（成張圖 + 由邊緣生成延伸：平滑漸變底色 + 同高度抽返顆粒）；
   加 `--title-box x,y,w,h` 會用手動字框（代替自動偵測），並多出一張 `title-shrink` 碟面（標題縮到 `--title-scale`，預設 0.85）
 - 同一張圖、同一組參數、同一個 venv（`manifest.env` 一樣）輸出完全一樣（冇隨機；補底顆粒用固定 seed）；換 library 版本 sha256 / `duplicateOf` 可能會變

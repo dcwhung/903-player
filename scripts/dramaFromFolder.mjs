@@ -19,7 +19,7 @@ import {
     statSync,
     writeFileSync,
 } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
@@ -34,7 +34,7 @@ export const SERIES_TEMPLATES = [
 export const DAILY_TEMPLATE = '{yyyymmdd}.m4a';
 
 /**
- * 0：成功；1：有錯誤，冇寫檔；2：參數錯；3：已寫檔但 --verify 有網址唔得；
+ * 0：成功；1：有錯誤，冇寫檔；2：參數錯（包括 --out / --report 路徑錯），冇寫檔；3：已寫檔但 --verify 有網址唔得；
  * 4：程式本身出錯（唔係 folder 問題，要將成段輸出傳返嚟）
  */
 export const EXIT = Object.freeze({ ok: 0, blocked: 1, usage: 2, verifyFailed: 3, internal: 4 });
@@ -950,6 +950,33 @@ const readArgs = (argv) => {
     return { folder, ...values };
 };
 
+/** 冇 --out 就用 <id>.drama.json（冇 --id 用劇名），喺而家嘅 folder；同 scanDramaFolder 一樣用 NFC 劇名 */
+const outputPath = (args) =>
+    resolve(args.out ?? `${args.id ?? basename(resolve(args.folder)).normalize('NFC')}.drama.json`);
+
+const isDirectory = (path) => existsSync(path) && statSync(path).isDirectory();
+
+/** 一個要寫嘅檔：上層 folder 要存在，本身唔可以係 folder；錯就回傳點改，啱就 undefined */
+const destinationProblem = (label, path) => {
+    const parent = dirname(path);
+    if (!isDirectory(parent))
+        return `[錯誤] ${label} 嘅 folder 唔存在：${parent}\n請先開好個 folder，或者檢查路徑有冇打錯（有空格要用引號包住）。`;
+    if (isDirectory(path))
+        return `[錯誤] ${label} 係一個 folder：${path}\n要畀檔案路徑，例如 ${join(path, 'drama.json')}`;
+    return undefined;
+};
+
+/**
+ * 掃 folder 之前驗晒要寫嘅路徑（輸出 drama.json、--report）：
+ * 唔係就要等成份報告印完、甚至 drama.json 寫咗先發現（CUI-0008 / S-568）
+ */
+const checkDestinations = (args) => {
+    const targets = [['輸出檔（--out）', outputPath(args)]];
+    if (args.report !== undefined) targets.push(['--report', resolve(args.report)]);
+    const problem = targets.map(([label, path]) => destinationProblem(label, path)).find(Boolean);
+    if (problem !== undefined) throw new Error(problem);
+};
+
 const readExisting = (path) => {
     try {
         return JSON.parse(readFileSync(path, 'utf8'));
@@ -998,7 +1025,7 @@ const generateAndWrite = async (args, existing, io) => {
         io.out('\n有 [錯誤]，冇寫 drama.json；按上面改好 folder（或者 --existing 嘅檔）再行一次。');
         return EXIT.blocked;
     }
-    const out = resolve(args.out ?? `${args.id ?? result.scan.name}.drama.json`);
+    const out = outputPath(args);
     const refusal = overwriteRefusal(out, args);
     if (refusal !== undefined) {
         io.out(`\n${refusal}`);
@@ -1048,6 +1075,7 @@ export const run = async (argv, ioOverrides = {}) => {
     let existing;
     try {
         args = readArgs(argv);
+        checkDestinations(args);
         // 有畀 --existing 就一定要驗：檔入面係 null 都唔可以當冇畀
         existing = args.existing === undefined ? undefined : readExisting(args.existing);
     } catch (error) {
