@@ -23,6 +23,21 @@ const RECORDING: Recording = {
     url: 'https://audio.hkfm903.live/gongzi/20261017.aac',
 };
 
+/**
+ * 測試失敗時都要解除綁定：expect 一紅就唔會行到測試尾嘅 detach()，controller 嘅
+ * window / document listener（visibilitychange、online）會洩漏到後面嘅測試（S-594）
+ */
+const detachers: (() => void)[] = [];
+const attachController = (controller: AudioController): (() => void) => {
+    const detach = controller.attach();
+    detachers.push(detach);
+    return detach;
+};
+afterEach(() => {
+    // detach 重複叫冇問題：removeEventListener / stall.cancel 都係 idempotent
+    detachers.splice(0).forEach((detach) => detach());
+});
+
 /** play() 未 resolve、未發 play event：模擬撳 Play 之後瀏覽器仲準備緊 */
 const setupPendingPlay = () => {
     const audio = new FakeAudio();
@@ -38,7 +53,7 @@ const setupPendingPlay = () => {
             }),
     );
     const controller = new AudioController(audio.asAudio());
-    const detach = controller.attach();
+    const detach = attachController(controller);
     return { audio, controller, detach, resolvePlay: () => resolvePlay() };
 };
 
@@ -70,7 +85,7 @@ describe('AudioController.hasPlayIntent', () => {
         const audio = new FakeAudio();
         audio.rejectPlay = true;
         const controller = new AudioController(audio.asAudio());
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.play();
         expect(controller.hasPlayIntent()).toBe(false);
         detach();
@@ -104,7 +119,7 @@ describe('AudioController.hasPlayIntent', () => {
 const setupPlaying = async () => {
     const audio = new FakeAudio({ strictPlayEvents: true });
     const controller = new AudioController(audio.asAudio());
-    const detach = controller.attach();
+    const detach = attachController(controller);
     await controller.load(RECORDING, { autoplay: true });
     audio.emitMetadata(1000);
     return { audio, controller, detach };
@@ -177,7 +192,7 @@ const setupManualPlays = () => {
         () => new Promise<void>((_resolve, reject) => rejects.push(reject)),
     );
     const controller = new AudioController(audio.asAudio());
-    const detach = controller.attach();
+    const detach = attachController(controller);
     const abort = (index: number) => rejects[index]?.(new DOMException('aborted', 'AbortError'));
     return { audio, controller, detach, abort };
 };
@@ -290,7 +305,7 @@ describe('AudioController.isAudible', () => {
         saveProgress(RECORDING.url, RESUME_AT, 1000);
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitPlaying();
 
@@ -310,7 +325,7 @@ const RESUME_SECONDS = 967;
 const setupOfflineLoad = async () => {
     const audio = new FakeAudio();
     const controller = new AudioController(audio.asAudio());
-    const detach = controller.attach();
+    const detach = attachController(controller);
     await controller.load(RECORDING, { autoplay: true });
     controller.seek(RESUME_SECONDS);
     // play event 先到（瀏覽器開始載），之後先因為斷網失敗
@@ -373,7 +388,7 @@ describe('AudioController auto-advance', () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack(nextTrack && ((track) => nextTrack(track.url)));
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(1200);
         audio.play.mockClear();
@@ -414,7 +429,7 @@ describe('AudioController auto-advance', () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack(() => NEXT);
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(1200);
         const seen: boolean[] = [];
@@ -443,7 +458,7 @@ describe('AudioController stalled auto-advance', () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(1200);
         audio.end();
@@ -523,7 +538,7 @@ describe('AudioController early auto-advance', () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack(nextTrack);
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
         await Promise.resolve();
@@ -588,7 +603,7 @@ describe('AudioController next track loading', () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(1200);
         await Promise.resolve();
@@ -623,7 +638,7 @@ describe('AudioController stall watchdog details', () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
         audio.end();
@@ -685,7 +700,7 @@ describe('AudioController stall watchdog details', () => {
         const WAKE_AFTER_PLAY_MS = 1000;
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
 
@@ -780,7 +795,7 @@ describe('AudioController replay timing details', () => {
         saveProgress(RECORDING.url, DURATION, DURATION);
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
         return { audio, controller, detach };
@@ -817,7 +832,7 @@ describe('AudioController replay timing details', () => {
     it('does not count replay time on a track that was never watched', async () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
         const revision = controller.getSnapshot().watchedRevision;
@@ -834,7 +849,7 @@ describe('AudioController replay timing details', () => {
         saveProgress(WATCHED.url, DURATION, DURATION);
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
         audio.emitTime(OLD_POSITION);
@@ -852,7 +867,7 @@ describe('AudioController replay timing details', () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack(() => NEXT);
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
         audio.end();
@@ -906,7 +921,7 @@ describe('AudioController S-551 lock-screen stall', () => {
         saveProgress(RECORDING.url, RESUME_AT, DURATION);
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
         audio.emitAudible();
@@ -1218,7 +1233,7 @@ describe('AudioController S-551 lock-screen stall', () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
         audio.end();
@@ -1238,7 +1253,7 @@ describe('AudioController S-551 lock-screen stall', () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
         audio.end();
@@ -1258,7 +1273,7 @@ describe('AudioController S-551 lock-screen stall', () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
         audio.end();
@@ -1281,7 +1296,7 @@ describe('AudioController S-551 lock-screen stall', () => {
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         audio.emitMetadata(DURATION);
         audio.end();
@@ -1306,7 +1321,7 @@ describe('AudioController S-551 lock-screen stall', () => {
         const stalledStart = async () => {
             const audio = new FakeAudio();
             const controller = new AudioController(audio.asAudio());
-            const detach = controller.attach();
+            const detach = attachController(controller);
             await controller.load(RECORDING, { autoplay: true });
             audio.emitMetadata(DURATION);
             audio.emitPlaying();
@@ -1420,7 +1435,7 @@ describe('AudioController S-551 lock-screen stall', () => {
             const audio = new FakeAudio();
             const controller = new AudioController(audio.asAudio());
             controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
-            const detach = controller.attach();
+            const detach = attachController(controller);
             await controller.load(RECORDING, { autoplay: true });
             audio.emitMetadata(DURATION);
             const seen: boolean[] = [];
@@ -1458,7 +1473,7 @@ describe('AudioController CUI-0011 slow header', () => {
         saveProgress(RECORDING.url, RESUME_AT, DURATION);
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
-        const detach = controller.attach();
+        const detach = attachController(controller);
         await controller.load(RECORDING, { autoplay: true });
         await Promise.resolve();
         audio.load.mockClear();
