@@ -1,9 +1,4 @@
-import {
-    STALL_FIRST_RETRY_MS,
-    STALL_MAX_RETRIES,
-    STALL_RETRY_DEDUPE_MS,
-    STALL_RETRY_MS,
-} from '../config/constants';
+import { STALL_FIRST_RETRY_MS, STALL_MAX_RETRIES, STALL_RETRY_MS } from '../config/constants';
 import { StallWatchdog } from './stallWatchdog';
 
 const setup = (canRetry = true) => {
@@ -146,34 +141,70 @@ describe('StallWatchdog', () => {
         expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
     });
 
-    it('should skip a wake-up retry right after another retry', () => {
+    it('should not be overdue before the deadline', () => {
+        const { watchdog } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+
+        expect(watchdog.overdue).toBe(false);
+    });
+
+    it('should be overdue once the deadline passes while the timer is frozen', () => {
+        // iOS 鎖屏暫停 JS：timer 冇行，但 wall clock 照行
         const { watchdog, retry } = setup();
         watchdog.start(STALL_MAX_RETRIES);
-        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
 
-        vi.advanceTimersByTime(STALL_RETRY_DEDUPE_MS - 1);
-        watchdog.retryUnlessRecent();
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
 
-        expect(retry).toHaveBeenCalledTimes(1);
+        expect(retry).not.toHaveBeenCalled();
+        expect(watchdog.overdue).toBe(true);
+    });
+
+    it('should not be overdue when not watching', () => {
+        const { watchdog } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
+
+        watchdog.cancel();
+
+        expect(watchdog.overdue).toBe(false);
+    });
+
+    it('should not retry on wake-up before the deadline', () => {
+        // C-009：撳播之後即刻切 app / 鎖屏再開，正常載緊唔好 reload
+        const { watchdog, retry } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS / 4);
+
+        watchdog.retryIfOverdue();
+
+        expect(retry).not.toHaveBeenCalled();
         expect(watchdog.pending).toBe(true);
     });
 
-    it('should retry on wake-up once the last retry is old enough', () => {
+    it('should retry once on wake-up when the deadline passed while the timer was frozen', () => {
         const { watchdog, retry } = setup();
         watchdog.start(STALL_MAX_RETRIES);
-        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS + STALL_RETRY_DEDUPE_MS);
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
 
-        watchdog.retryUnlessRecent();
-
-        expect(retry).toHaveBeenLastCalledWith(STALL_MAX_RETRIES - 1);
-    });
-
-    it('should retry on wake-up when nothing has retried yet', () => {
-        const { watchdog, retry } = setup();
-        watchdog.start(STALL_MAX_RETRIES);
-
-        watchdog.retryUnlessRecent();
+        watchdog.retryIfOverdue();
+        // 被凍結嘅舊 timer 已經由新一輪取代，唔會再補一次
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
 
         expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+    });
+
+    it('should skip a wake-up retry right after a late timer retried', () => {
+        // S-551 情境 1：遲咗嘅 timer 先行，65 ms 後亮屏
+        const WAKE_AFTER_TIMER_MS = 65;
+        const { watchdog, retry } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS + WAKE_AFTER_TIMER_MS);
+
+        watchdog.retryIfOverdue();
+
+        expect(retry).toHaveBeenCalledTimes(1);
+        expect(watchdog.pending).toBe(true);
     });
 });

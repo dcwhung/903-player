@@ -490,9 +490,11 @@ describe('AudioController stalled auto-advance', () => {
         detach();
     });
 
-    it('retries straight away when the screen wakes up while stalled', async () => {
+    it('retries straight away when the screen wakes up past a frozen deadline', async () => {
         const { audio, detach } = await advance();
         const visibility = vi.spyOn(document, 'visibilityState', 'get');
+        // iOS 鎖屏暫停咗 JS：timer 冇行，但時間過咗 deadline
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
 
         visibility.mockReturnValue('visible');
         document.dispatchEvent(new Event('visibilitychange'));
@@ -665,11 +667,28 @@ describe('AudioController stall watchdog details', () => {
     it('counts a screen wake-up retry against the retry limit', async () => {
         const { audio, detach } = await advance();
 
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
         showScreen('visible');
         expect(audio.load).toHaveBeenCalledTimes(1);
         vi.advanceTimersByTime(GIVE_UP_MS);
 
         expect(audio.load).toHaveBeenCalledTimes(STALL_MAX_RETRIES);
+        detach();
+    });
+
+    // C-009：撳播之後即刻切 app / 拉通知中心再返嚟，正常載緊唔好 reload
+    it('does not reload a normal start when the screen wakes up before the first deadline', async () => {
+        const WAKE_AFTER_PLAY_MS = 1000;
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+
+        vi.advanceTimersByTime(WAKE_AFTER_PLAY_MS);
+        showScreen('visible');
+
+        expect(audio.load).not.toHaveBeenCalled();
         detach();
     });
 

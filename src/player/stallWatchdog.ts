@@ -1,4 +1,4 @@
-import { STALL_FIRST_RETRY_MS, STALL_RETRY_DEDUPE_MS, STALL_RETRY_MS } from '../config/constants';
+import { STALL_FIRST_RETRY_MS, STALL_RETRY_MS } from '../config/constants';
 
 export interface StallWatchdogHooks {
     /** 仲想唔想播：唔想（例如用戶暫停咗）就唔再重試 */
@@ -16,14 +16,19 @@ export class StallWatchdog {
     /** 剩低幾多次重試；undefined = 冇睇住 */
     private retriesLeft: number | undefined;
     private timer: ReturnType<typeof setTimeout> | undefined;
-    /** 對上一次重試嘅時間（Date.now()） */
-    private lastRetryAt = Number.NEGATIVE_INFINITY;
+    /** 而家呢次等待幾時到期（Date.now()）：iOS 暫停 JS 時 timer 唔行，但 wall clock 照行 */
+    private deadline = Number.POSITIVE_INFINITY;
 
     constructor(private readonly hooks: StallWatchdogHooks) {}
 
     /** 睇住緊（未出聲、未放棄） */
     get pending(): boolean {
         return this.retriesLeft !== undefined;
+    }
+
+    /** 睇緊而 deadline 已經過咗（timer 可能被 iOS 凍結咗未行） */
+    get overdue(): boolean {
+        return this.pending && Date.now() >= this.deadline;
     }
 
     /**
@@ -40,6 +45,7 @@ export class StallWatchdog {
     watch(retriesLeft: number, delayMs = STALL_RETRY_MS): void {
         this.cancel();
         this.retriesLeft = retriesLeft;
+        this.deadline = Date.now() + delayMs;
         this.timer = setTimeout(this.retryNow, delayMs);
     }
 
@@ -47,6 +53,7 @@ export class StallWatchdog {
         clearTimeout(this.timer);
         this.timer = undefined;
         this.retriesLeft = undefined;
+        this.deadline = Number.POSITIVE_INFINITY;
     }
 
     /** 即刻重試（timer 到，或者亮返屏幕時背景 timer 可能冇行過）；用完次數或者唔想播就放棄 */
@@ -56,14 +63,16 @@ export class StallWatchdog {
             this.cancel();
             return;
         }
-        this.lastRetryAt = Date.now();
         this.hooks.retry(retriesLeft);
         this.watch(retriesLeft - 1);
     };
 
-    /** 亮屏時用：啱啱先重試過（例如遲咗嘅 timer 啱啱先行）就唔再嘥一次 */
-    retryUnlessRecent = (): void => {
-        if (Date.now() - this.lastRetryAt >= STALL_RETRY_DEDUPE_MS) {
+    /**
+     * 亮屏時用：timer 到期咗但 iOS 冇畀佢行先補做（C-009）。未到期（例如撳播之後即刻切 app 再返嚟）唔郁；
+     * 遲咗嘅 timer 啱啱先行過會將 deadline 推後，所以亦唔會連續重試兩次
+     */
+    retryIfOverdue = (): void => {
+        if (this.overdue) {
             this.retryNow();
         }
     };

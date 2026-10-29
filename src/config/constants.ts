@@ -18,11 +18,6 @@ export const STALL_RETRY_MS = 8000;
  * 因為 iOS 鎖屏時用戶操作之後 JS 只會再行一陣（S-551 log：第二個 8 秒 timer 等咗 34 秒先行）
  */
 export const STALL_FIRST_RETRY_MS = 4000;
-/**
- * 亮屏時重試前，對上一次重試要隔咗咁耐：iOS 鎖屏暫停咗嘅 timer 會喺亮屏嗰下先行，
- * 唔擋嘅話 timer + visibilitychange 65 ms 內連續重試兩次（S-551）
- */
-export const STALL_RETRY_DEDUPE_MS = 1000;
 /** 每次撳播之後卡住最多重試幾次 */
 export const STALL_MAX_RETRIES = 3;
 /**
