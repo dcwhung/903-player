@@ -11,6 +11,13 @@ export interface FakeAudioOptions {
     strictPlayEvents?: boolean;
 }
 
+/** 假 TimeRanges：[[start, end], ...] */
+export const timeRanges = (ranges: [number, number][]): TimeRanges => ({
+    length: ranges.length,
+    start: (index: number) => ranges[index]?.[0] ?? Number.NaN,
+    end: (index: number) => ranges[index]?.[1] ?? Number.NaN,
+});
+
 /** jsdom 唔支援播放，用呢個假 audio element 模擬 HTMLAudioElement 嘅事件 */
 export class FakeAudio extends EventTarget {
     preload = '';
@@ -19,6 +26,8 @@ export class FakeAudio extends EventTarget {
     paused = true;
     readyState = 0;
     networkState = 0;
+    /** 已載入嘅範圍（播放 log 用） */
+    buffered: TimeRanges = timeRanges([]);
     /** 播到尾：同真 element 一樣，換 src / 再 play 就清走 */
     ended = false;
     rejectPlay = false;

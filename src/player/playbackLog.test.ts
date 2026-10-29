@@ -1,4 +1,4 @@
-import { FakeAudio } from '../../tests/fakeAudio';
+import { FakeAudio, timeRanges } from '../../tests/fakeAudio';
 import { APP_VERSION } from '../config/appVersion';
 import { PLAYBACK_LOG_MAX_ENTRIES, PLAYBACK_LOG_TICK_MS } from '../config/constants';
 import { attachPlaybackLog, copyPlaybackLog, readPlaybackLog, recordPlayback } from './playbackLog';
@@ -24,6 +24,33 @@ describe('playbackLog', () => {
         expect(line).toContain('paused=1');
         expect(line).toContain('vis=');
         expect(line).toMatch(/ early$/);
+    });
+
+    // S-551：要睇到卡住時其實有冇載到數據
+    it('records where the buffered range around the position ends', () => {
+        const audio = new FakeAudio();
+        audio.buffered = timeRanges([
+            [0, 10],
+            [100, 200.04],
+        ]);
+        audio.currentTime = 150;
+
+        recordPlayback('stalled', audio.asAudio());
+        audio.currentTime = 50;
+        recordPlayback('stalled', audio.asAudio());
+
+        const [inRange, outside] = readPlaybackLog();
+        expect(inRange).toContain(' buf=200.0 ');
+        expect(outside).toContain(' buf=- ');
+    });
+
+    it('records no buffer when the element reports none', () => {
+        const audio = new FakeAudio();
+        Reflect.deleteProperty(audio, 'buffered');
+
+        recordPlayback('play', audio.asAudio());
+
+        expect(readPlaybackLog()[0]).toContain(' buf=- ');
     });
 
     it('keeps only the newest entries', () => {
