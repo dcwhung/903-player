@@ -54,6 +54,7 @@
 | 2026-10-28 | [qa/2026-10-28_qa_e2e_hardening.md](qa/2026-10-28_qa_e2e_hardening.md)                        |
 | 2026-10-29 | [qa/2026-10-29_qa_v1.20.5.md](qa/2026-10-29_qa_v1.20.5.md)                                    |
 | 2026-10-29 | [qa/2026-10-29_qa_v1.20.6.md](qa/2026-10-29_qa_v1.20.6.md)                                    |
+| 2026-10-29 | [qa/2026-10-29_qa_catalog-tools.md](qa/2026-10-29_qa_catalog-tools.md)（CUI-0008 🟢）         |
 
 ## Deploys
 
