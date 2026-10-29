@@ -102,6 +102,25 @@ describe('playbackLog', () => {
             expect(readPlaybackLog().filter((l) => l.includes('timeupdate'))).toHaveLength(2);
         });
 
+        // CUI-0011：progress 約每 350 ms 一次，只記每次載入嘅第一次，分得出 metadata 前有冇 bytes 入緊
+        it('logs only the first progress event of each load', () => {
+            const audio = new FakeAudio();
+            const detach = attachPlaybackLog(audio.asAudio());
+
+            audio.dispatchEvent(new Event('loadstart'));
+            audio.emitProgress();
+            audio.emitProgress();
+            audio.dispatchEvent(new Event('loadstart'));
+            audio.emitProgress();
+            audio.emitProgress();
+            detach();
+
+            const events = readPlaybackLog()
+                .slice(1)
+                .map((line) => line.split(' ')[1]);
+            expect(events).toEqual(['loadstart', 'progress', 'loadstart', 'progress']);
+        });
+
         it('starts with the app version so a log names the build it came from', () => {
             const detach = attachPlaybackLog(new FakeAudio().asAudio());
             detach();

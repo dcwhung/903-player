@@ -96,6 +96,28 @@ export const recordPlayback = (event: string, audio: HTMLAudioElement, note?: st
     }
 };
 
+/**
+ * progress 約每 350 ms 一次，太密：每次載入（loadstart）只記第一次，
+ * 睇得出 metadata 前有冇 bytes 入緊（CUI-0011：Chromium metadata 前唔發）
+ */
+const attachFirstProgressLog = (audio: HTMLAudioElement): (() => void) => {
+    let logged = false;
+    const onLoadStart = () => {
+        logged = false;
+    };
+    const onProgress = () => {
+        if (logged) return;
+        logged = true;
+        recordPlayback('progress', audio);
+    };
+    audio.addEventListener('loadstart', onLoadStart);
+    audio.addEventListener('progress', onProgress);
+    return () => {
+        audio.removeEventListener('loadstart', onLoadStart);
+        audio.removeEventListener('progress', onProgress);
+    };
+};
+
 /** 聽住 audio 同頁面 event 自動記 log，返回解除 function；先記一行 boot + 版本號，分得出係邊個 build */
 export const attachPlaybackLog = (audio: HTMLAudioElement): (() => void) => {
     recordPlayback('boot', audio, `v${APP_VERSION}`);
@@ -114,11 +136,13 @@ export const attachPlaybackLog = (audio: HTMLAudioElement): (() => void) => {
     const onPage = (event: Event) => recordPlayback(event.type, audio);
     MEDIA_EVENTS.forEach((name) => audio.addEventListener(name, onMedia));
     audio.addEventListener('timeupdate', onTick);
+    const detachProgress = attachFirstProgressLog(audio);
     document.addEventListener('visibilitychange', onPage);
     PAGE_EVENTS.forEach((name) => window.addEventListener(name, onPage));
     return () => {
         MEDIA_EVENTS.forEach((name) => audio.removeEventListener(name, onMedia));
         audio.removeEventListener('timeupdate', onTick);
+        detachProgress();
         document.removeEventListener('visibilitychange', onPage);
         PAGE_EVENTS.forEach((name) => window.removeEventListener(name, onPage));
     };

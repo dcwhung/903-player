@@ -9,12 +9,13 @@ import {
 import type { LoadProbe } from './loadProgress';
 import { StallWatchdog } from './stallWatchdog';
 
-/** 冇下載進展（buffer / readyState 唔變）：每次到期都當卡住 */
+/** 冇下載進展（buffer / readyState / progress 唔變）：每次到期都當卡住 */
 const idleProbe = (): LoadProbe => ({
     bufferedEnd: undefined,
     readyState: 0,
     currentTime: 0,
     playingFired: false,
+    progressEvents: 0,
 });
 
 const setup = (canRetry = true) => {
@@ -36,6 +37,7 @@ const growingProbe = (aheadSeconds = 1) => {
             readyState: 2,
             currentTime: end - aheadSeconds,
             playingFired: false,
+            progressEvents: 0,
         };
     };
 };
