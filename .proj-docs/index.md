@@ -42,6 +42,7 @@
 | 2026-10-29 | [reviews/2026-10-29_review_s551-round3.md](reviews/2026-10-29_review_s551-round3.md)                                                                                                                                                   |
 | 2026-10-29 | [reviews/2026-10-29_review_s583.md](reviews/2026-10-29_review_s583.md)                                                                                                                                                                 |
 | 2026-10-29 | [reviews/2026-10-29_review_cover-review-page.md](reviews/2026-10-29_review_cover-review-page.md)（78 warn，W-501–W-503、S-587–S-593；Round 2 92 pass，W-504、S-595–S-597；Round 3 97 pass，S-598–S-600；Round 4 97 pass，S-610–S-612） |
+| 2026-10-29 | [reviews/2026-10-29_review_cui-0011.md](reviews/2026-10-29_review_cui-0011.md)（93 warn，W-505、S-601–S-602；同意延遲 `stalled` 規則）                                                                                                 |
 
 ## QA
 
