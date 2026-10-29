@@ -33,6 +33,7 @@
 | 2026-10-29 | [reviews/2026-10-29_review_catalog-tools.md](reviews/2026-10-29_review_catalog-tools.md)                       |
 | 2026-10-29 | [reviews/2026-10-29_review_arc-cover-generator.md](reviews/2026-10-29_review_arc-cover-generator.md)           |
 | 2026-10-29 | [reviews/2026-10-29_review_catalog-tools-rereview.md](reviews/2026-10-29_review_catalog-tools-rereview.md)     |
+| 2026-10-29 | [reviews/2026-10-29_review_cui-0008.md](reviews/2026-10-29_review_cui-0008.md)                                 |
 
 ## QA
 
