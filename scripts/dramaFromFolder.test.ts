@@ -1,4 +1,6 @@
 // @vitest-environment node
+// 經 src/dramas/episodes.ts 用到 import.meta.env：只喺呢個檔開 vite/client 型別，唔好放落 tsconfig.node.json
+/// <reference types="vite/client" />
 /*
  * scripts/dramaFromFolder.mjs：由本機劇集 folder 生成 drama.json 草稿。
  * 最重要嘅保證：輸出經 app 真正嘅 validator（parseDramaDefinition）+ buildEpisodes 之後，
@@ -791,6 +793,16 @@ describe('run (CLI)', () => {
 describe('script packaging', () => {
     it('should use the same R2 base as the app', () => {
         expect(DRAMA_AUDIO_BASE).toBe(APP_AUDIO_BASE);
+    });
+
+    it('should not give every Node-run file vite/client types (import.meta.env)', () => {
+        // 只有呢個 test 經 episodes.ts 用到 import.meta.env，所以喺檔頭 reference；
+        // 放落 tsconfig.node.json 會令 scripts/ 入面純 Node 行嘅檔都以為有 import.meta.env
+        const config = JSON.parse(readFileSync(new URL('../tsconfig.node.json', SCRIPT), 'utf8'));
+        expect(config.compilerOptions.types).not.toContain('vite/client');
+        expect(readFileSync(new URL(import.meta.url), 'utf8')).toContain(
+            '/// <reference types="vite/client" />',
+        );
     });
 
     it('should be self-contained: only node: built-in imports', () => {
