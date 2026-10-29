@@ -37,6 +37,7 @@
 | 2026-10-29 | [reviews/2026-10-29_review_tool-polish.md](reviews/2026-10-29_review_tool-polish.md)                           |
 | 2026-10-29 | [reviews/2026-10-29_review_e2e-offline.md](reviews/2026-10-29_review_e2e-offline.md)                           |
 | 2026-10-29 | [reviews/2026-10-29_review_e2e-offline-w497.md](reviews/2026-10-29_review_e2e-offline-w497.md)                 |
+| 2026-10-29 | [reviews/2026-10-29_review_s551-lockscreen-stall.md](reviews/2026-10-29_review_s551-lockscreen-stall.md)       |
 
 ## QA
 
