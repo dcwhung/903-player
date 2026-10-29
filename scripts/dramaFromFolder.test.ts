@@ -797,6 +797,66 @@ describe('run (CLI)', () => {
         expect(text).toContain('尾唔好加');
     });
 
+    /** 目的地路徑錯：掃 folder 之前就停（冇報告內容、冇 stack trace、乜檔都冇寫） */
+    const expectRejectedUpFront = (result: { code: number; text: string }, hint: string) => {
+        expect(result.code).toBe(EXIT.usage);
+        expect(result.text).toContain('[錯誤]');
+        expect(result.text).toContain(hint);
+        expect(result.text).not.toContain('技術資料');
+        expect(result.text).not.toContain('劇集 folder：');
+    };
+
+    describe('destination checks (CUI-0008 / S-568)', () => {
+        beforeEach(() => touch([`劇/${episodeFile('甲', 1)}`]));
+
+        it('should reject --out whose parent folder does not exist', async () => {
+            const outFile = join(root, 'nope', 'x.json');
+            const result = await runCli([join(root, '劇'), '--out', outFile]);
+            expectRejectedUpFront(result, join(root, 'nope'));
+            expect(listFiles(root)).toEqual([`劇/${episodeFile('甲', 1)}`]);
+        });
+
+        it('should reject --out that is an existing folder even with --force', async () => {
+            mkdirSync(join(root, 'dir'));
+            const result = await runCli([join(root, '劇'), '--out', join(root, 'dir'), '--force']);
+            expectRejectedUpFront(result, join(root, 'dir'));
+        });
+
+        it('should reject a default output path that is an existing folder', async () => {
+            mkdirSync(join(root, 'xyz.drama.json'));
+            const cwd = process.cwd();
+            process.chdir(root);
+            try {
+                const result = await runCli([join(root, '劇'), '--id', 'xyz']);
+                expectRejectedUpFront(result, 'xyz.drama.json');
+            } finally {
+                process.chdir(cwd);
+            }
+        });
+
+        it('should reject --report whose parent folder does not exist before writing drama.json', async () => {
+            const outFile = join(root, 'x.drama.json');
+            const reportFile = join(root, 'nope', 'r.txt');
+            const result = await runCli([
+                join(root, '劇'),
+                '--out',
+                outFile,
+                '--report',
+                reportFile,
+            ]);
+            expectRejectedUpFront(result, join(root, 'nope'));
+            expect(listFiles(root)).toEqual([`劇/${episodeFile('甲', 1)}`]);
+        });
+
+        it('should reject --report that is an existing folder', async () => {
+            mkdirSync(join(root, 'dir'));
+            const outFile = join(root, 'x.drama.json');
+            const args = [join(root, '劇'), '--out', outFile, '--report', join(root, 'dir')];
+            expectRejectedUpFront(await runCli(args), join(root, 'dir'));
+            expect(listFiles(root)).not.toContain('x.drama.json');
+        });
+    });
+
     it('should reject a missing folder or unknown option', async () => {
         expect((await runCli([join(root, 'nope')])).code).toBe(EXIT.usage);
         expect((await runCli([])).code).toBe(EXIT.usage);
