@@ -219,13 +219,16 @@ python3 -m venv /tmp/arcCover-venv
 #### 新劇 / 新短篇封面 workflow（review 頁：`scripts/arcCover/review/`）
 
 候選圖喺 claude.ai Artifact review 頁揀（<https://claude.ai/artifact/4xzNxQTTy9XjCQg46TLKiT>），詳細見
-`scripts/arcCover/review/README.md`。生成物全部放 repo 外嘅 work 資料夾（`--work`，預設 `$TMPDIR/903-player-covers`），唔入 git。
+`scripts/arcCover/review/README.md`。生成物全部放 repo 外嘅 work 資料夾（`--work`；唔填用 `$ARC_COVER_WORK`，再冇就 `$TMPDIR/903-player-covers`），唔入 git。
 
 1. **原圖**：`fetch_sources.py <id> --work $WORK`（由 R2 下載 `cover photo.png|jpg` / `cover-photo.jpg`，名轉 NFC 再 URL-encode；
-   新短篇加 `--arc "短篇名=slug"`）
+   新短篇加 `--arc "短篇名=slug"`；exit 1 = R2 冇，exit 3 = 網絡 / proxy 出錯）
 2. **出 round**：`generate.py --input $WORK/arcCover-src/<id>/<slug>.png --drama <id> [--arc <slug>] --out $WORK/arcCover`
-3. **砌頁**：`review/build.py --work $WORK` → `$WORK/review/site/`（`index.html` + `rounds.json` + 圖）同 `$WORK/review/files.json`
-4. **Publish**：Claude 用 Artifact tool 更新同一條 URL（`file_path` = `site/index.html`，`files` = `files.json`）；
+3. **砌頁**：`review/build.py --work $WORK` → `$WORK/review/site/`（`index.html` + `rounds.json` + 圖）、`files.json`（全部）、
+   `publish-N.json`（今次要送嘅批次）
+4. **Publish**：Claude 用 Artifact tool 逐份 `publish-N.json` 更新同一條 URL（`file_path` = `site/index.html`，`files` = 嗰份 json），
+   全部成功後 `build.py --work $WORK --mark-published`。Artifact 上限：每次 publish ≤ 255 個檔 / 64MB、每版 ≤ 511 個檔；
+   冇傳嘅檔會保留，所以之後淨係送新 / 改咗嘅檔（`build.py` 比 sha256 自動揀）；
    用家揀完，Claude 用 ArtifactData 讀 `reviews` collection（doc id `<drama>--<slug>--r<round>`，值 = 候選 id / `keep` / `own` / `null`；
    未儲存 = `keep` 沿用現有圖）
 5. **入 app**：揀中嘅 webp copy 去 `src/dramas/<id>/`：整套劇 `tile.webp` / `disc.webp`，短篇 `<slug>-tile.webp` / `<slug>-disc.webp`
