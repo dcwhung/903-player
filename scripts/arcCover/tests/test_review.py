@@ -1,5 +1,7 @@
 """封面 review 頁：build.py 收集 round → rounds.json / files.json / publish 批次。"""
 
+import contextlib
+import io
 import json
 import sys
 import tempfile
@@ -22,6 +24,7 @@ from build import (  # noqa: E402
     check_page_ids,
     check_slug,
     doc_id,
+    main,
     page_hash,
     round_dirs,
     unique_variants,
@@ -143,6 +146,7 @@ class BuildTest(unittest.TestCase):
         drama_dir.mkdir(parents=True)
         (drama_dir / "drama.json").write_text(json.dumps(LANCY, ensure_ascii=False), encoding="utf-8")
         work = root / "work"
+        self.work = work
         self.paths = Paths(
             gen=work / "arcCover", src=work / "arcCover-src", out=work / "review", repo=self.repo
         )
@@ -219,6 +223,19 @@ class BuildTest(unittest.TestCase):
         (self.paths.gen / "lancy" / "a--b" / "round-1" / "manifest.json").write_text("{}")
         with self.assertRaises(SystemExit):
             build(self.paths)
+
+    def test_main_previous_should_delete_vanished_paths_in_last_batch(self) -> None:
+        self.paths.out.mkdir(parents=True)
+        previous = self.paths.out / "old-files.json"
+        previous.write_text(json.dumps({"img/lancy/heart/round-1/gone.png": "/x", "rounds.json": "/r"}))
+        argv = ["--work", str(self.work), "--repo", str(self.repo), "--previous", str(previous)]
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(main(argv), 0)
+        self.assertIn("gone.png", out.getvalue())
+        batches = sorted(self.paths.out.glob("publish-*.json"))
+        last = json.loads(batches[-1].read_text(encoding="utf-8"))
+        self.assertEqual(list(last.items())[-1], ("img/lancy/heart/round-1/gone.png", None))
+        self.assertFalse((self.paths.out / "published.json").exists())
 
     def test_build_should_crop_disc_preview_to_big_disc(self) -> None:
         build(self.paths)

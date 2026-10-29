@@ -5,8 +5,8 @@ work 資料夾結構（全部喺 repo 外面，唔入 git）：
     <work>/arcCover-src/<drama>/<slug|drama>.(png|jpg)            原圖（fetch_sources.py 下載）
     <work>/review/site/        review 頁（index.html + rounds.json + img/）
     <work>/review/files.json   全部要 publish 嘅檔 {published path: 本機檔}
-    <work>/review/publish-N.json  今次要送嘅批次（同 published.json 比 hash，淨係新 / 改咗嘅檔）
-    <work>/review/published.json  上次 publish 成功嘅 hash（--mark-published 寫）
+    <work>/review/publish-N.json  publish 批次：全部檔，每批 ≤ 255 個 / 64MB，rounds.json 擺最尾
+                                  （加 --previous <舊 files.json>：冇咗嘅舊 path 喺最後一批傳 null 刪走）
 
 work 預設 $ARC_COVER_WORK，冇就 $TMPDIR/903-player-covers。每出一個新 round 就重新跑一次。
 """
@@ -36,7 +36,7 @@ if str(TOOL_DIR) not in sys.path:
 
 from generate import theme_for  # noqa: E402
 from preview import disc_preview, tile_preview  # noqa: E402
-from publish import MAX_FILES_PER_VERSION, mark_published, sha256_file, write_batches  # noqa: E402
+from publish import MAX_FILES_PER_VERSION, sha256_file, stale_paths, write_batches  # noqa: E402
 
 DRAMA_SLUG = "_drama"
 # 細楷英文 / 數字，用單一個 `-` 連接：冇 `/`、`..`，亦唔會整出 docId 嘅 `--` 分隔
@@ -281,8 +281,8 @@ def collect(site: Site, paths: Paths) -> dict:
     return {"dramas": dramas}
 
 
-def build(paths: Paths) -> dict[str, str]:
-    """寫 site/index.html、site/rounds.json、files.json、publish-N.json；
+def build(paths: Paths, previous: dict[str, str] | None = None) -> dict[str, str]:
+    """寫 site/index.html、site/rounds.json、files.json、publish-N.json（previous 有、今次冇嘅 path = null）；
     回傳 files（唔包 index.html：佢係 publish 嘅主頁，每次 publish 都會送）"""
     site = Site(paths.site)
     rounds = collect(site, paths)
@@ -291,38 +291,35 @@ def build(paths: Paths) -> dict[str, str]:
     site.add("rounds.json")
     files_json = json.dumps(site.files, ensure_ascii=False, indent=1)
     (paths.out / "files.json").write_text(files_json, encoding="utf-8")
-    write_batches(paths.out, site.files)
+    write_batches(paths.out, site.files, removed=stale_paths(previous or {}, site.files))
     return site.files
 
 
-def parse_args(argv: list[str]) -> tuple[Paths, bool]:
+def parse_args(argv: list[str]) -> tuple[Paths, Path | None]:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--work", type=Path, default=DEFAULT_WORK, help=f"work 資料夾（預設 {DEFAULT_WORK}）")
     parser.add_argument("--out", type=Path, help="review 輸出資料夾（預設 <work>/review）")
     parser.add_argument(
-        "--mark-published",
-        action="store_true",
-        help="全部 publish-N.json 都 publish 咗之後跑：記低 hash，下次淨係送改咗嘅檔",
+        "--previous", type=Path, help="上次 publish 用嘅 files.json：冇咗嘅 path 會喺最後一批傳 null 刪走"
     )
     parser.add_argument("--repo", type=Path, default=REPO_ROOT, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     work = args.work.resolve()
     out = (args.out or work / "review").resolve()
     paths = Paths(gen=work / "arcCover", src=work / "arcCover-src", out=out, repo=args.repo.resolve())
-    return paths, args.mark_published
+    return paths, args.previous
 
 
-def report(paths: Paths, files: dict[str, str]) -> None:
+def report(paths: Paths, files: dict[str, str], removed: list[str]) -> None:
     batch_paths = sorted(paths.out.glob("publish-*.json"), key=lambda p: int(p.stem.split("-")[1]))
     print(f"{len(files)} files → {paths.site}")
-    print(f"publish：file_path={paths.site / 'index.html'}，url 用返同一條 artifact")
+    print(f"publish：file_path={paths.site / 'index.html'}，url 用返同一條 artifact，逐份送：")
     for batch in batch_paths:
         print(f"  files = {batch}（{len(read_json(batch))} 個）")
-    if not batch_paths:
-        print("  冇改動嘅檔：淨係 publish index.html 就得（或者唔使 publish）")
-    print(f"全部 publish 完：build.py --out {paths.out} --mark-published")
+    for rel in removed:
+        print(f"  刪走（null）：{rel}")
     if len(files) > MAX_FILES_PER_VERSION:
         print(
             f"warning: {len(files)} 個檔 > 每版上限 {MAX_FILES_PER_VERSION}，要喺 files 傳 null 刪走舊 round",
@@ -331,11 +328,11 @@ def report(paths: Paths, files: dict[str, str]) -> None:
 
 
 def main(argv: list[str]) -> int:
-    paths, mark = parse_args(argv)
-    if mark:
-        print(f"記低 {mark_published(paths.out)} 個檔嘅 hash → {paths.out / 'published.json'}")
-        return 0
-    report(paths, build(paths))
+    paths, previous_json = parse_args(argv)
+    # 喺 build 之前讀：--previous 可能就係今次會覆蓋嘅 <out>/files.json
+    previous = read_json(previous_json) if previous_json else {}
+    files = build(paths, previous)
+    report(paths, files, stale_paths(previous, files))
     return 0
 
 

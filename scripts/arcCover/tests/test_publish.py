@@ -1,4 +1,4 @@
-"""publish.py：Artifact 上限分批（W-502）、同上次 publish 比 hash 淨係送改咗嘅檔。"""
+"""publish.py：Artifact 上限分批（每次全部送）、rounds.json 擺最尾、舊 path 傳 null 刪走。"""
 
 import json
 import sys
@@ -12,8 +12,8 @@ from publish import (  # noqa: E402
     MAX_FILES_PER_PUBLISH,
     ROUNDS,
     batches,
-    changed,
-    mark_published,
+    ordered,
+    stale_paths,
     write_batches,
 )
 
@@ -23,18 +23,20 @@ BIG = 40
 
 def _files(root: Path, count: int) -> dict[str, str]:
     files = {}
+    (root / ROUNDS).parent.mkdir(parents=True, exist_ok=True)
+    (root / ROUNDS).write_text("{}")
+    files[ROUNDS] = str(root / ROUNDS)
     for i in range(count):
         path = root / f"img/{i}.png"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(f"{i}".encode())
         files[f"img/{i}.png"] = str(path)
-    (root / ROUNDS).write_text("{}")
-    files[ROUNDS] = str(root / ROUNDS)
     return files
 
 
-def _batch_files(out: Path) -> list[Path]:
-    return sorted(out.glob("publish-*.json"), key=lambda p: int(p.stem.split("-")[1]))
+def _read_batches(out: Path) -> list[dict]:
+    paths = sorted(out.glob("publish-*.json"), key=lambda p: int(p.stem.split("-")[1]))
+    return [json.loads(p.read_text()) for p in paths]
 
 
 class BatchesTest(unittest.TestCase):
@@ -50,39 +52,42 @@ class BatchesTest(unittest.TestCase):
         sizes = {"a": BIG, "b": BIG, "c": 1}
         self.assertEqual(batches(files, sizes, max_bytes=BIG + 1), [{"a": "/a"}, {"b": "/b", "c": "/c"}])
 
-    def test_changed_should_keep_only_new_hashes_and_put_rounds_last(self) -> None:
-        files = {ROUNDS: "/r", "a": "/a", "b": "/b"}
-        now = {ROUNDS: "r2", "a": "a1", "b": "b2"}
-        published = {ROUNDS: "r1", "a": "a1", "b": "b1"}
-        self.assertEqual(list(changed(files, now, published)), ["b", ROUNDS])
+    def test_ordered_should_put_rounds_last(self) -> None:
+        self.assertEqual(list(ordered({ROUNDS: "/r", "a": "/a", "b": "/b"})), ["a", "b", ROUNDS])
+
+    def test_stale_paths_should_list_paths_that_disappeared(self) -> None:
+        previous = {"a": "/a", "old": "/old", ROUNDS: "/r"}
+        self.assertEqual(stale_paths(previous, {"a": "/a", ROUNDS: "/r", "new": "/n"}), ["old"])
 
 
 class WriteBatchesTest(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         self.out = Path(self._tmp.name)
-        self.site = self.out / "site"
-        self.files = _files(self.site, MANY)
-        (self.out / "files.json").write_text(json.dumps(self.files))
+        self.files = _files(self.out / "site", MANY)
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
 
-    def test_first_publish_should_send_everything_in_batches_with_rounds_last(self) -> None:
-        write_batches(self.out, self.files)
-        found = [json.loads(p.read_text()) for p in _batch_files(self.out)]
-        self.assertTrue(all(len(b) <= MAX_FILES_PER_PUBLISH for b in found))
-        self.assertEqual(sum(len(b) for b in found), MANY + 1)
-        self.assertEqual(list(found[-1])[-1], ROUNDS)
+    def test_should_send_every_file_each_time_with_rounds_last(self) -> None:
+        for _ in range(2):  # 冇增量：再 build 一次都係全部送
+            write_batches(self.out, self.files)
+            found = _read_batches(self.out)
+            self.assertTrue(all(len(b) <= MAX_FILES_PER_PUBLISH for b in found))
+            self.assertEqual(sum(len(b) for b in found), MANY + 1)
+            self.assertEqual(list(found[-1])[-1], ROUNDS)
 
-    def test_after_mark_should_send_only_changed_files(self) -> None:
+    def test_should_drop_old_batch_files(self) -> None:
         write_batches(self.out, self.files)
-        mark_published(self.out)
-        self.assertEqual(write_batches(self.out, self.files), [])
-        self.assertEqual(_batch_files(self.out), [])
-        Path(self.files["img/3.png"]).write_bytes(b"new")
-        [only] = write_batches(self.out, self.files)
-        self.assertEqual(json.loads(only.read_text()), {"img/3.png": self.files["img/3.png"]})
+        write_batches(self.out, {ROUNDS: self.files[ROUNDS]})
+        self.assertEqual(_read_batches(self.out), [{ROUNDS: self.files[ROUNDS]}])
+
+    def test_removed_paths_should_go_last_as_null(self) -> None:
+        small = {ROUNDS: self.files[ROUNDS], "img/0.png": self.files["img/0.png"]}
+        write_batches(self.out, small, removed=["img/gone.png"])
+        [batch] = _read_batches(self.out)
+        self.assertEqual(list(batch.items())[-1], ("img/gone.png", None))
+        self.assertEqual(list(batch)[-2], ROUNDS)
 
 
 if __name__ == "__main__":
