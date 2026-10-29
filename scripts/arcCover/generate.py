@@ -70,6 +70,7 @@ EXIT_USAGE = 2
 # 寫緊嘅 round 先放 round-N.partial，成功先 rename；--force 時舊 round 暫時改名 round-N.old
 PARTIAL_SUFFIX = ".partial"
 RETIRED_SUFFIX = ".old"
+UPSCALE_DECIMALS = 3
 
 DISC_METHODS: tuple[Method, ...] = (
     CENTER_CROP,
@@ -115,8 +116,9 @@ def _seed_for(kind: Kind, method: Method) -> int:
     return DETERMINISTIC_SEED + zlib.crc32(f"{kind}:{method}".encode())
 
 
-def _crop_params(box: Box) -> dict[str, object]:
-    return {"crop": box.to_list()}
+def _crop_params(box: Box, size: tuple[int, int]) -> dict[str, object]:
+    # upscale > 1 = 窗口細過輸出要放大，review 頁可以提示「可能朦」
+    return {"crop": box.to_list(), "upscale": round(size[0] / box.w, UPSCALE_DECIMALS)}
 
 
 def _render_crop(
@@ -127,16 +129,16 @@ def _render_crop(
     params: dict[str, object]
     if method == CENTER_CROP:
         box = centre_window(image_size, aspect)
-        params = _crop_params(box)
+        params = _crop_params(box, size)
     elif method == SALIENCY_CROP:
         box = best_window(analysis, aspect, disc=disc, avoid_text=False)
-        params = {**_crop_params(box), "discWeighted": disc}
+        params = {**_crop_params(box, size), "discWeighted": disc}
     elif method == FACE_CROP:
-        box, subject = subject_window(analysis, aspect, disc=disc)
-        params = {**_crop_params(box), "subject": subject, "faces": len(analysis.faces)}
+        box, subject = subject_window(analysis, aspect, disc, size[1])
+        params = {**_crop_params(box, size), "subject": subject, "faces": len(analysis.faces)}
     else:
         box = best_window(analysis, aspect, disc=disc, avoid_text=True)
-        params = {**_crop_params(box), "textSource": analysis.text_source, "discWeighted": disc}
+        params = {**_crop_params(box, size), "textSource": analysis.text_source, "discWeighted": disc}
     return Rendered(kind, method, crop_to(rgb, box, size), params)
 
 
@@ -150,7 +152,7 @@ def _render_title_shrink(
     shrunk_analysis = replace(analysis, text_boxes=(new_box,), text_source="manual")
     box = best_window(shrunk_analysis, size[0] / size[1], disc=True, avoid_text=True)
     params = {
-        **_crop_params(box),
+        **_crop_params(box, size),
         "titleBox": options.title_box.to_list(),
         "titleScale": options.title_scale,
         "shrunkTitleBox": new_box.to_list(),

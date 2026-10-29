@@ -84,6 +84,8 @@ EYE_REGION_RATIO: Final[float] = 0.6
 EYE_MIN_RATIO: Final[float] = 0.1
 FACE_MERGE_IOU: Final[float] = 0.3
 FACE_CROP_MARGIN: Final[float] = 0.9  # 人面框四邊再加幾多倍框邊
+# face-crop 最多放大幾多倍（輸出邊長 ÷ 窗口邊長）：人面細就撐大窗口，唔好放大到朦；原圖本身太細除外
+FACE_CROP_MAX_UPSCALE: Final[float] = 1.25
 TEXT_MIN_AREA_RATIO: Final[float] = 0.002
 TEXT_MAX_AREA_RATIO: Final[float] = 0.15
 TEXT_MIN_FILL: Final[float] = 0.08

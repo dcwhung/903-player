@@ -15,6 +15,7 @@ from constants import (
     EXTEND_SEAM_PX,
     EXTEND_SMOOTH_SIGMA,
     FACE_CROP_MARGIN,
+    FACE_CROP_MAX_UPSCALE,
     SPINDLE_RATIO,
     TEXT_CUT_PENALTY,
     TITLE_DIFF_THRESHOLD,
@@ -159,8 +160,11 @@ def _salient_box(analysis: Analysis) -> Box:
     return Box(*(int(value) for value in cv2.boundingRect(mask)))
 
 
-def subject_window(analysis: Analysis, aspect: float, disc: bool) -> tuple[Box, str]:
-    """包住所有人面（加邊）嘅最細窗口；冇人面就用最突出嗰 10% 嘅範圍。回傳窗口同用咗咩做主體。"""
+def subject_window(analysis: Analysis, aspect: float, disc: bool, output_height: int) -> tuple[Box, str]:
+    """包住所有人面（加邊）嘅最細窗口；冇人面就用最突出嗰 10% 嘅範圍。回傳窗口同用咗咩做主體。
+
+    窗口最少要 output_height ÷ FACE_CROP_MAX_UPSCALE 高，唔會放大到朦（原圖本身太細除外）。
+    """
     subject, source = (
         (_union(analysis.faces), "faces") if analysis.faces else (_salient_box(analysis), "saliency")
     )
@@ -168,7 +172,8 @@ def subject_window(analysis: Analysis, aspect: float, disc: bool) -> tuple[Box, 
     need_w, need_h = subject.w + 2 * margin, subject.h + 2 * margin
     height, width = analysis.saliency.shape
     max_w, max_h = window_size((width, height), aspect)
-    window_h = min(max_h, max(need_h, need_w / aspect))
+    min_h = output_height / FACE_CROP_MAX_UPSCALE
+    window_h = min(max_h, max(need_h, need_w / aspect, min_h))
     window = (min(max_w, round(window_h * aspect)), round(window_h))
     centre_y_ratio = DISC_FACE_CENTRE_Y if disc else TILE_FACE_CENTRE_Y
     centre = (subject.x + subject.w / 2, subject.y + subject.h / 2 + (0.5 - centre_y_ratio) * window[1])
