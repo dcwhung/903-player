@@ -5,6 +5,7 @@ import { findShow } from '../shows';
 import { dramaEpisodeLabel } from '../selectors/dramas';
 import { isDramaEpisode, type Track } from '../types/track';
 import { formatDateLabel } from '../utils/date';
+import { formatLogSeconds } from './playbackLog';
 import type { PlayerActions, PlayerState } from './playerContext';
 import { useMediaPosition } from './useMediaPosition';
 
@@ -40,7 +41,10 @@ const bindActions = (
     Object.entries(handlers).forEach(([action, handler]) =>
         mediaSession.setActionHandler(action as MediaSessionAction, (details) => {
             // 鎖屏操作記入 log（S-551：要知用戶喺鎖屏撳過乜）
-            const seekTo = details.seekTime === undefined ? undefined : `to=${details.seekTime}`;
+            const seekTo =
+                details.seekTime === undefined
+                    ? undefined
+                    : `to=${formatLogSeconds(details.seekTime)}`;
             remote?.log(`ms:${action}`, seekTo);
             handler(details);
         }),
@@ -53,9 +57,10 @@ export const useMediaSession = (
     state: PlayerState,
     remote?: RemoteControls,
 ): void => {
-    const { recording, isPlaying, isAudible } = state;
-    // 播緊但未出聲（載緊 / 卡住）報 paused：iOS 先唔會自己推進度條，鎖屏亦會顯示 Play（S-551）
-    const playbackState: MediaSessionPlaybackState = isPlaying && isAudible ? 'playing' : 'paused';
+    const { recording, isPlaying, isStalled } = state;
+    // 只有懷疑卡住先報 paused（iOS 唔再自己推進度條、鎖屏顯示 Play，S-551）；
+    // 正常開播 / 轉集 / 自動接住播 / 短暫緩衝維持 playing，鎖屏唔會閃 Play（C-010）
+    const playbackState: MediaSessionPlaybackState = isPlaying && !isStalled ? 'playing' : 'paused';
 
     useEffect(() => {
         if (hasMediaSession()) {

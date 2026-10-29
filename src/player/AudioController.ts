@@ -12,6 +12,7 @@ import {
     saveProgress,
 } from '../services/progressStore';
 import type { Track } from '../types/track';
+import { bufferedEnd } from '../utils/bufferedEnd';
 import { recordPlayback } from './playbackLog';
 import type { LoadOptions, PlayerState } from './playerContext';
 import { ReplayTracker } from './replayTracker';
@@ -21,6 +22,7 @@ const INITIAL_STATE: PlayerState = {
     recording: null,
     isPlaying: false,
     isAudible: false,
+    isStalled: false,
     currentTime: 0,
     duration: 0,
     watchedRevision: 0,
@@ -60,6 +62,12 @@ export class AudioController {
     private readonly stall = new StallWatchdog({
         canRetry: () => this.hasPlayIntent(),
         retry: (retriesLeft) => this.retryStalled(retriesLeft),
+        onStalled: () => this.markStalled(),
+        probe: () => ({
+            bufferedEnd: bufferedEnd(this.audio),
+            readyState: this.audio.readyState,
+            currentTime: this.audio.currentTime,
+        }),
     });
 
     /** 播完一集之後接住播邊集；冇設定或者返回 undefined 就停 */
@@ -105,7 +113,7 @@ export class AudioController {
             window.removeEventListener('pagehide', this.persist);
             window.removeEventListener('online', this.recoverSource);
             document.removeEventListener('visibilitychange', this.onVisibilityChange);
-            this.stall.cancel();
+            this.stopWatchingStall();
         };
     };
 
@@ -154,12 +162,13 @@ export class AudioController {
     };
 
     /**
-     * 鎖屏 / 耳機嘅 Play：卡住時（鎖屏因為冇聲顯示 Play）element 本身仲係播緊，
-     * 淨係 audio.play() 乜都唔會發生，要即刻重新載入再播，當新一次撳播重新計重試次數（S-551）
+     * 鎖屏 / 耳機嘅 Play：卡住時（鎖屏顯示 Play）element 本身仲係播緊，淨係 audio.play() 乜都唔會發生，
+     * 要即刻重新載入再播，當新一次撳播重新計重試次數（S-551）。
+     * 正常載緊（首個 deadline 未到）就照 play()，唔好打斷（W-499）
      */
     resume = async (): Promise<void> => {
-        if (this.isWaitingForSound()) {
-            this.stall.cancel();
+        if (this.isSuspectedStall()) {
+            this.stopWatchingStall();
             this.reload('remote');
         }
         await this.play();
@@ -205,7 +214,7 @@ export class AudioController {
 
     private switchTo(recording: Track): void {
         // 用戶自己揀咗另一集：唔好再重試自動接住播嗰集
-        this.stall.cancel();
+        this.stopWatchingStall();
         this.persist();
         this.watched = isWatched(recording.url);
         this.pendingStart = getResumePosition(recording.url);
@@ -343,9 +352,24 @@ export class AudioController {
         if (this.audio.paused || advanced < AUDIBLE_ADVANCE_SECONDS) {
             return;
         }
-        this.stall.cancel();
+        this.stopWatchingStall();
         if (!this.state.isAudible) {
             this.update({ isAudible: true });
+        }
+    }
+
+    /** watchdog 首個 deadline 過咗而未出聲：懷疑卡住，鎖屏改為顯示停咗（C-010） */
+    private markStalled(): void {
+        if (!this.state.isStalled) {
+            this.update({ isStalled: true });
+        }
+    }
+
+    /** 唔再睇住卡住（出聲 / 停 / 換集）：同時清走「卡住」 */
+    private stopWatchingStall(): void {
+        this.stall.cancel();
+        if (this.state.isStalled) {
+            this.update({ isStalled: false });
         }
     }
 
@@ -387,7 +411,7 @@ export class AudioController {
 
     /** pause / ended（包括拔耳筒、來電等系統暫停）：用戶冇再想播 */
     private onStopped = (): void => {
-        this.stall.cancel();
+        this.stopWatchingStall();
         this.playIntent = false;
         this.update({ isPlaying: false, isAudible: false });
         this.persist();
@@ -433,17 +457,17 @@ export class AudioController {
         this.audio.load();
     }
 
-    /** 想播但未出聲：載緊、緩衝緊，或者卡住 */
-    private isWaitingForSound(): boolean {
-        return this.hasPlayIntent() && !this.state.isAudible;
+    /** 懷疑卡住：已經標咗卡住，或者 deadline 過咗但 timer 被 iOS 凍結未行 */
+    private isSuspectedStall(): boolean {
+        return this.state.isStalled || this.stall.overdue;
     }
 
     private onVisibilityChange = (): void => {
         if (document.visibilityState === 'hidden') {
             this.persist();
         } else if (this.stall.pending) {
-            // 亮返屏幕時仲卡住：唔使等 timer（背景 timer 可能冇行過）；遲咗嘅 timer 啱啱先行過就唔再試
-            this.stall.retryUnlessRecent();
+            // 亮返屏幕：背景 timer 可能被凍結冇行過，過咗 deadline 先補做；未到期就繼續等（C-009）
+            this.stall.retryIfOverdue();
         }
     };
 

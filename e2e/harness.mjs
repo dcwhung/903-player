@@ -244,6 +244,25 @@ export const succeeds = (promise) =>
 /** locator.waitFor（options 例如 { state: 'detached', timeout }）等到就 true，等唔到 false */
 export const isShown = (locator, options) => succeeds(locator.waitFor(options));
 
+/**
+ * 等鎖屏狀態最多幾耐：要短過 app 嘅 STALL_FIRST_RETRY_MS（4 秒），
+ * 卡住 deadline 過咗先會轉 paused，唔可以等到嗰陣先讀
+ */
+const PLAYBACK_STATE_WAIT_MS = 3000;
+
+/**
+ * 等 navigator.mediaSession.playbackState 變成 expected（React effect commit 之後先寫），
+ * 唔用固定 waitForTimeout，CPU 爭用時唔會 flake（S-579）；返回最後讀到嘅狀態畀斷言 log
+ */
+export const waitForPlaybackState = async (p, expected) => {
+    await succeeds(
+        p.waitForFunction((want) => navigator.mediaSession.playbackState === want, expected, {
+            timeout: PLAYBACK_STATE_WAIT_MS,
+        }),
+    );
+    return p.evaluate(() => navigator.mediaSession.playbackState);
+};
+
 /** 入頁等幾耐自動播（之後當係播緊其他嘢，唔會自動播） */
 const AUTOPLAY_WAIT_MS = 2000;
 

@@ -1,9 +1,10 @@
-import { FakeAudio } from '../../tests/fakeAudio';
+import { FakeAudio, timeRanges } from '../../tests/fakeAudio';
 import type { Recording } from '../types/recording';
 import {
     AUDIBLE_ADVANCE_SECONDS,
     EARLY_ADVANCE_SECONDS,
     REPLAY_RESET_SECONDS,
+    STALL_DATA_AHEAD_SECONDS,
     STALL_FIRST_RETRY_MS,
     STALL_MAX_RETRIES,
     STALL_RETRY_MS,
@@ -490,9 +491,11 @@ describe('AudioController stalled auto-advance', () => {
         detach();
     });
 
-    it('retries straight away when the screen wakes up while stalled', async () => {
+    it('retries straight away when the screen wakes up past a frozen deadline', async () => {
         const { audio, detach } = await advance();
         const visibility = vi.spyOn(document, 'visibilityState', 'get');
+        // iOS 鎖屏暫停咗 JS：timer 冇行，但時間過咗 deadline
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
 
         visibility.mockReturnValue('visible');
         document.dispatchEvent(new Event('visibilitychange'));
@@ -665,11 +668,28 @@ describe('AudioController stall watchdog details', () => {
     it('counts a screen wake-up retry against the retry limit', async () => {
         const { audio, detach } = await advance();
 
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
         showScreen('visible');
         expect(audio.load).toHaveBeenCalledTimes(1);
         vi.advanceTimersByTime(GIVE_UP_MS);
 
         expect(audio.load).toHaveBeenCalledTimes(STALL_MAX_RETRIES);
+        detach();
+    });
+
+    // C-009：撳播之後即刻切 app / 拉通知中心再返嚟，正常載緊唔好 reload
+    it('does not reload a normal start when the screen wakes up before the first deadline', async () => {
+        const WAKE_AFTER_PLAY_MS = 1000;
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+
+        vi.advanceTimersByTime(WAKE_AFTER_PLAY_MS);
+        showScreen('visible');
+
+        expect(audio.load).not.toHaveBeenCalled();
         detach();
     });
 
@@ -901,6 +921,34 @@ describe('AudioController S-551 lock-screen stall', () => {
         audio.emitPlaying();
     };
 
+    // W-498：慢網開播，buffer 一直增長（但前面數據仲未夠）就唔好 reload
+    it('does not reload a slow start while the buffer keeps growing', async () => {
+        const SLOW_START_CHECKS = 3;
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+        for (let check = 1; check <= SLOW_START_CHECKS; check += 1) {
+            audio.buffered = timeRanges([[audio.currentTime, audio.currentTime + check]]);
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+        }
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(controller.getSnapshot().isStalled).toBe(false);
+        detach();
+    });
+
+    it('reloads when data is buffered ahead but the position is frozen', async () => {
+        const HAVE_ENOUGH_DATA = 4;
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+        audio.buffered = timeRanges([[0, audio.currentTime + STALL_DATA_AHEAD_SECONDS * 2]]);
+        audio.readyState = HAVE_ENOUGH_DATA;
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        detach();
+    });
+
     it('reloads and resumes where it was when a resumed play never advances', async () => {
         const { audio, controller, detach, heardAt } = await pausedBySystem();
         await playFrozen(audio, controller.play);
@@ -914,9 +962,11 @@ describe('AudioController S-551 lock-screen stall', () => {
         detach();
     });
 
-    it('reloads straight away when lock-screen play is pressed while stalled', async () => {
+    it('reloads straight away when lock-screen play is pressed past a frozen deadline', async () => {
         const { audio, controller, detach, heardAt } = await pausedBySystem();
         await playFrozen(audio, controller.play);
+        // iOS 鎖屏凍結咗 timer：deadline 過咗但未行
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
 
         await controller.resume();
 
@@ -932,6 +982,7 @@ describe('AudioController S-551 lock-screen stall', () => {
     it('gives lock-screen play a fresh retry budget while stalled', async () => {
         const { audio, controller, detach } = await pausedBySystem();
         await playFrozen(audio, controller.play);
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
 
         await controller.resume();
         vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
@@ -939,6 +990,31 @@ describe('AudioController S-551 lock-screen stall', () => {
         expect(audio.load).toHaveBeenCalledTimes(2);
         const retries = readPlaybackLog().filter((line) => line.includes(' retry '));
         expect(retries.at(-1)).toMatch(new RegExp(` left=${STALL_MAX_RETRIES}$`));
+        detach();
+    });
+
+    it('reloads on lock-screen play once a retry has already marked it stalled', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+        expect(controller.getSnapshot().isStalled).toBe(true);
+
+        await controller.resume();
+
+        expect(audio.load).toHaveBeenCalledTimes(2);
+        detach();
+    });
+
+    // W-499：正常載緊（首個 deadline 之前）撳鎖屏 Play 唔好打斷
+    it('just plays on lock-screen play during a normal start before the first deadline', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+
+        await controller.resume();
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(audio.play).toHaveBeenCalledTimes(2);
         detach();
     });
 
@@ -1062,5 +1138,88 @@ describe('AudioController S-551 lock-screen stall', () => {
         expect(retries).toHaveLength(2);
         expect(audio.load).toHaveBeenCalledTimes(2);
         detach();
+    });
+
+    /** C-010：只有 watchdog 首個 deadline 過咗而未出聲先算卡住（鎖屏先顯示 Play） */
+    describe('isStalled', () => {
+        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const OTHER: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/other.aac' };
+
+        const stalledStart = async () => {
+            const audio = new FakeAudio();
+            const controller = new AudioController(audio.asAudio());
+            const detach = controller.attach();
+            await controller.load(RECORDING, { autoplay: true });
+            audio.emitMetadata(DURATION);
+            audio.emitPlaying();
+            return { audio, controller, detach };
+        };
+
+        it('is not stalled during a normal start before the first deadline', async () => {
+            const { controller, detach } = await stalledStart();
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        it('is stalled once the first deadline passes without sound', async () => {
+            const { controller, detach } = await stalledStart();
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(controller.getSnapshot().isStalled).toBe(true);
+            detach();
+        });
+
+        it('clears the stall once sound starts', async () => {
+            const { audio, controller, detach } = await stalledStart();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            audio.emitMetadata(DURATION);
+            audio.emitAudible();
+
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        it('clears the stall when paused', async () => {
+            const { controller, detach } = await stalledStart();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            controller.pause();
+
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        it('clears the stall when another track is picked', async () => {
+            const { controller, detach } = await stalledStart();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            await controller.load(OTHER, { autoplay: true });
+
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        it('is not stalled while auto-advancing to the next track', async () => {
+            const audio = new FakeAudio();
+            const controller = new AudioController(audio.asAudio());
+            controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+            const detach = controller.attach();
+            await controller.load(RECORDING, { autoplay: true });
+            audio.emitMetadata(DURATION);
+            const seen: boolean[] = [];
+            controller.subscribe(() => seen.push(controller.getSnapshot().isStalled));
+
+            audio.end();
+            await Promise.resolve();
+
+            expect(seen.length).toBeGreaterThan(0);
+            expect(seen.some(Boolean)).toBe(false);
+            detach();
+        });
     });
 });

@@ -12,6 +12,7 @@ import {
     PROBE_STORAGE_KEY,
     SHOT,
     ensurePlaying,
+    waitForPlaybackState,
     externalRequests,
     newE2EContext,
 } from './harness.mjs';
@@ -623,7 +624,7 @@ const checkSwipeToOlder = async (p, dragShot) => {
         now.includes(` ${olderDate}，`) && now.includes('播放中'),
         `向左拖轉舊一集：${labels[from]} → ${now}`,
     );
-    const playing = await p.evaluate(() => navigator.mediaSession.playbackState);
+    const playing = await waitForPlaybackState(p, 'playing');
     log(playing === 'playing', `拖完即刻播：${playing}`);
 };
 
@@ -1395,7 +1396,7 @@ try {
     await page.getByRole('button', { name: '返回主頁' }).click();
     await page.waitForTimeout(300);
     // T9 B：播緊舊集返主頁照播，mini player 將佢排最前、標「重溫」（以前係暫停）
-    const oldEpisodeState = await page.evaluate(() => navigator.mediaSession.playbackState);
+    const oldEpisodeState = await waitForPlaybackState(page, 'playing');
     const rewatchMini = page.getByRole('region', { name: '正在播放（重溫及今日節目）' });
     const rewatchText = (await rewatchMini.textContent()) ?? '';
     log(
@@ -1436,7 +1437,7 @@ try {
     await dragTodayCard(page, -TODAY_SWIPE_PX);
     await checkTodayShow(page, 'Bad Girl大過佬', BADGIRL_BG, '今日節目再向左掃');
     log((await horizontalOverflow(page)) === 0, '今日節目掃完冇橫向捲動');
-    const playingAfterSwipes = await page.evaluate(() => navigator.mediaSession.playbackState);
+    const playingAfterSwipes = await waitForPlaybackState(page, 'playing');
     log(playingAfterSwipes === 'playing', `掃卡轉節目即刻播：${playingAfterSwipes}`);
     await page.getByRole('button', { name: /播放 雲妮鍾情/ }).click();
     await page.waitForTimeout(500);
@@ -1445,7 +1446,7 @@ try {
 
     await page.goBack();
     await page.waitForTimeout(500);
-    const backState = await page.evaluate(() => navigator.mediaSession.playbackState);
+    const backState = await waitForPlaybackState(page, 'playing');
     const miniText = await page.getByRole('region', { name: '正在播放（今日節目）' }).textContent();
     log(
         page.url().endsWith('#/') && backState === 'playing' && miniText.includes('雲妮鍾情'),
