@@ -14,30 +14,16 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from analysis import Box, analyse  # noqa: E402
 from compose import best_window, disc_visibility  # noqa: E402
+from fakes import FAKE_SIZE, fake_cover  # noqa: E402
 from generate import GeneratorError, Options, run  # noqa: E402
 
-FAKE_SIZE = (800, 450)
 DISC_COUNT = 6
 TILE_COUNT = 5
 VARIANT_KEYS = {"id", "kind", "method", "file", "preview", "width", "height", "sha256", "params"}
-
-
-def _fake_cover(path: Path) -> None:
-    """米色漸變底 + 左邊一個深色「人」+ 右上一嚿紅底白條紋嘅「標題字」。"""
-    width, height = FAKE_SIZE
-    gradient = np.linspace(200, 240, width, dtype=np.float32)
-    image = np.dstack(
-        [np.tile(gradient, (height, 1)), np.tile(gradient - 10, (height, 1)), np.full((height, width), 190.0)]
-    )
-    image = image.astype(np.uint8)
-    cv2.ellipse(image, (220, 260), (90, 120), 0, 0, 360, (40, 35, 30), -1)
-    cv2.rectangle(image, (520, 40), (700, 120), (200, 20, 30), -1)
-    for x in range(530, 700, 14):
-        cv2.rectangle(image, (x, 55), (x + 5, 105), (250, 250, 250), -1)
-    Image.fromarray(image).save(path)
 
 
 class GenerateTest(unittest.TestCase):
@@ -45,7 +31,7 @@ class GenerateTest(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory()
         self.root = Path(self._tmp.name)
         self.cover = self.root / "cover photo.png"
-        _fake_cover(self.cover)
+        fake_cover(self.cover)
 
     def tearDown(self) -> None:
         self._tmp.cleanup()

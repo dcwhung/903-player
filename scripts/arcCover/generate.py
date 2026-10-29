@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import re
+import shutil
 import sys
 import zlib
 from dataclasses import dataclass, replace
@@ -63,6 +64,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ROUND_PATTERN = re.compile(r"^round-(\d+)$")
 SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 EXIT_USAGE = 2
+# 寫緊嘅 round 先放 round-N.partial，成功先 rename；--force 時舊 round 暫時改名 round-N.old
+PARTIAL_SUFFIX = ".partial"
+RETIRED_SUFFIX = ".old"
 
 DISC_METHODS: tuple[Method, ...] = (
     CENTER_CROP,
@@ -136,7 +140,9 @@ def _render_crop(
 def _render_title_shrink(
     rgb: np.ndarray, analysis: Analysis, options: Options, size: tuple[int, int]
 ) -> Rendered:
-    assert options.title_box is not None
+    # 唔用 assert：python -O 會拎走
+    if options.title_box is None:
+        raise ValueError("title-shrink 要有 --title-box")
     shrunk, new_box = shrink_title(rgb, options.title_box, options.title_scale)
     shrunk_analysis = replace(analysis, text_boxes=(new_box,), text_source="manual")
     box = best_window(shrunk_analysis, size[0] / size[1], disc=True, avoid_text=True)
@@ -168,11 +174,41 @@ def render_variants(rgb: np.ndarray, analysis: Analysis, options: Options) -> li
     return rendered
 
 
+def _validate(options: Options) -> None:
+    """唔使讀圖嘅檢查：喺分析、開資料夾之前做晒，錯就 GeneratorError（CLI 唔會出 traceback）。"""
+    for slug in filter(None, (options.drama, options.arc)):
+        if not SLUG_PATTERN.match(slug):
+            raise GeneratorError(f"slug 只可以用細楷英文、數字同 -：{slug!r}")
+    if not options.input.is_file():
+        raise GeneratorError(f"搵唔到封面相：{options.input}")
+    if options.round is not None and options.round < 1:
+        raise GeneratorError(f"--round 要 ≥ 1：{options.round}")
+    if not 0 < options.title_scale <= 1:
+        raise GeneratorError(f"--title-scale 要大過 0、最多 1：{options.title_scale}")
+    box = options.title_box
+    if box is not None and (box.w <= 0 or box.h <= 0 or box.x < 0 or box.y < 0):
+        raise GeneratorError(f"--title-box 要 x,y ≥ 0、w,h > 0：{box.to_list()}")
+
+
+def _load_source(options: Options) -> np.ndarray:
+    """讀圖（跟 EXIF 轉正）；--title-box 要完全喺轉正後嘅原圖入面。"""
+    try:
+        rgb = load_rgb(str(options.input))
+    except (OSError, ValueError, Image.DecompressionBombError) as error:
+        raise GeneratorError(f"讀唔到圖：{options.input}（{error}）") from error
+    height, width = rgb.shape[:2]
+    box = options.title_box
+    if box is not None and (box.right > width or box.bottom > height):
+        raise GeneratorError(f"--title-box {box.to_list()} 超出原圖 {width}×{height}")
+    return rgb
+
+
 def _round_dir(options: Options) -> tuple[int, Path]:
     arc_dir = options.out / options.drama / (options.arc or DRAMA_LEVEL_SLUG)
     if options.round is not None:
         number = options.round
     else:
+        # ROUND_PATTERN 唔認 round-N.partial，crash 留低嘅暫存唔會令自動號跳
         existing = [
             int(match.group(1))
             for child in arc_dir.glob("round-*")
@@ -180,8 +216,8 @@ def _round_dir(options: Options) -> tuple[int, Path]:
         ]
         number = max(existing, default=0) + 1
     target = arc_dir / f"round-{number}"
-    if (target / "manifest.json").exists() and not options.force:
-        raise GeneratorError(f"{target} 已經有 manifest.json；換 --round 或者加 --force 覆蓋")
+    if target.exists() and not options.force:
+        raise GeneratorError(f"{target} 已經存在；換 --round 或者加 --force 覆蓋")
     return number, target
 
 
@@ -199,6 +235,32 @@ def _save_webp(image: np.ndarray, path: Path) -> bytes:
     return path.read_bytes()
 
 
+def _write_one(
+    item: Rendered, target: Path, prefix: str, theme: dict[str, str]
+) -> tuple[dict[str, object], Image.Image]:
+    """寫一個候選 webp + 預覽 PNG；預覽由解碼返嘅 webp 砌，睇到真正嘅壓縮效果。"""
+    variant_id = f"{item.kind}-{item.method}"
+    file_name = f"{prefix}-{variant_id}.webp"
+    preview_name = f"previews/{prefix}-{variant_id}.png"
+    digest = _sha256(_save_webp(item.image, target / file_name))
+    with Image.open(target / file_name) as image:
+        decoded = np.asarray(image.convert("RGB"))
+    preview = disc_preview(decoded, theme) if item.kind == DISC else tile_preview(decoded, theme)
+    preview.save(target / preview_name, "PNG")
+    entry: dict[str, object] = {
+        "id": variant_id,
+        "kind": item.kind,
+        "method": item.method,
+        "file": file_name,
+        "preview": preview_name,
+        "width": int(item.image.shape[1]),
+        "height": int(item.image.shape[0]),
+        "sha256": digest,
+        "params": item.params,
+    }
+    return entry, preview
+
+
 def _write_variants(
     rendered: list[Rendered], target: Path, prefix: str, theme: dict[str, str]
 ) -> list[dict[str, object]]:
@@ -207,47 +269,22 @@ def _write_variants(
     seen: dict[str, str] = {}
     sheet_items = []
     for item in rendered:
-        variant_id = f"{item.kind}-{item.method}"
-        file_name = f"{prefix}-{variant_id}.webp"
-        digest = _sha256(_save_webp(item.image, target / file_name))
-        preview_name = f"previews/{prefix}-{variant_id}.png"
-        decoded = np.asarray(Image.open(target / file_name).convert("RGB"))
-        preview = disc_preview(decoded, theme) if item.kind == DISC else tile_preview(decoded, theme)
-        preview.save(target / preview_name, "PNG")
-        sheet_items.append((variant_id, preview))
-        entry: dict[str, object] = {
-            "id": variant_id,
-            "kind": item.kind,
-            "method": item.method,
-            "file": file_name,
-            "preview": preview_name,
-            "width": int(item.image.shape[1]),
-            "height": int(item.image.shape[0]),
-            "sha256": digest,
-            "params": item.params,
-        }
+        entry, preview = _write_one(item, target, prefix, theme)
+        variant_id, digest = str(entry["id"]), str(entry["sha256"])
         # 同一個 kind 兩個方法出到一模一樣（例如原圖已經係 16:9）就標返，review 時唔使睇兩次
         if digest in seen:
             entry["duplicateOf"] = seen[digest]
         seen.setdefault(digest, variant_id)
         entries.append(entry)
+        sheet_items.append((variant_id, preview))
     contact_sheet(sheet_items).save(target / "contact.png", "PNG")
     return entries
 
 
-def run(options: Options) -> dict[str, object]:
-    """生成一個 round，寫 manifest.json，回傳 manifest 內容。"""
-    for slug in filter(None, (options.drama, options.arc)):
-        if not SLUG_PATTERN.match(slug):
-            raise GeneratorError(f"slug 只可以用細楷英文、數字同 -：{slug!r}")
-    rgb = load_rgb(str(options.input))
-    analysis = analyse(rgb, options.title_box)
-    number, target = _round_dir(options)
-    target.mkdir(parents=True, exist_ok=True)
-    analysis_overlay(rgb, analysis).save(target / "analysis.png", "PNG")
-    rendered = render_variants(rgb, analysis, options)
-    prefix = options.arc or "drama"
-    manifest: dict[str, object] = {
+def _build_manifest(
+    options: Options, number: int, rgb: np.ndarray, analysis: Analysis, variants: list[dict[str, object]]
+) -> dict[str, object]:
+    return {
         "schema": MANIFEST_SCHEMA,
         "tool": "scripts/arcCover/generate.py",
         "toolVersion": TOOL_VERSION,
@@ -264,19 +301,65 @@ def run(options: Options) -> dict[str, object]:
         "analysis": analysis.summary(),
         "analysisImage": "analysis.png",
         "contactSheet": "contact.png",
-        "variants": _write_variants(rendered, target, prefix, _theme_for(options.drama)),
+        "variants": variants,
     }
-    (target / "manifest.json").write_text(
+
+
+def _write_round(options: Options, number: int, rgb: np.ndarray, staging: Path) -> dict[str, object]:
+    """分析 + 合成 + 寫晒所有檔去 staging（round-N.partial）。"""
+    analysis = analyse(rgb, options.title_box)
+    staging.mkdir(parents=True)
+    analysis_overlay(rgb, analysis).save(staging / "analysis.png", "PNG")
+    rendered = render_variants(rgb, analysis, options)
+    variants = _write_variants(rendered, staging, options.arc or "drama", _theme_for(options.drama))
+    manifest = _build_manifest(options, number, rgb, analysis, variants)
+    (staging / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     return manifest
 
 
+def _publish(staging: Path, target: Path) -> None:
+    """成個 round 寫好先 rename 做 round-N；--force 時舊 round 成個換走（唔會留低舊檔）。"""
+    if not target.exists():
+        staging.rename(target)
+        return
+    retired = target.with_name(target.name + RETIRED_SUFFIX)
+    shutil.rmtree(retired, ignore_errors=True)
+    target.rename(retired)
+    staging.rename(target)
+    shutil.rmtree(retired)
+
+
+def run(options: Options) -> dict[str, object]:
+    """生成一個 round，寫 manifest.json，回傳 manifest 內容。"""
+    _validate(options)
+    number, target = _round_dir(options)
+    rgb = _load_source(options)
+    staging = target.with_name(target.name + PARTIAL_SUFFIX)
+    shutil.rmtree(staging, ignore_errors=True)  # 上次 crash 留低嘅暫存
+    try:
+        manifest = _write_round(options, number, rgb, staging)
+    except BaseException:
+        # 中途出錯：只刪今次嘅暫存，舊 round（--force 時）原封不動
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    _publish(staging, target)
+    return manifest
+
+
 def _parse_box(value: str) -> Box:
     parts = [int(part) for part in value.split(",")]
-    if len(parts) != 4 or parts[2] <= 0 or parts[3] <= 0:
-        raise argparse.ArgumentTypeError("要 x,y,w,h（原圖 px，w / h > 0）")
+    if len(parts) != 4 or parts[0] < 0 or parts[1] < 0 or parts[2] <= 0 or parts[3] <= 0:
+        raise argparse.ArgumentTypeError("要 x,y,w,h（原圖 px，x / y ≥ 0，w / h > 0）")
     return Box(*parts)
+
+
+def _positive_int(value: str) -> int:
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError("round 要 ≥ 1")
+    return number
 
 
 def _parse_args(argv: list[str]) -> Options:
@@ -285,14 +368,14 @@ def _parse_args(argv: list[str]) -> Options:
     parser.add_argument("--drama", required=True, help="廣播劇 id（src/dramas/<id>）")
     parser.add_argument("--arc", help="短篇 slug（例如 half）；唔填 = 廣播劇本身封面（tile 2:1）")
     parser.add_argument("--out", required=True, type=Path, help="輸出根目錄（建議放 repo 外面）")
-    parser.add_argument("--round", type=int, help="round 號；唔填 = 下一個")
+    parser.add_argument("--round", type=_positive_int, help="round 號（≥ 1）；唔填 = 下一個")
     parser.add_argument(
         "--title-box", type=_parse_box, help="標題字框 x,y,w,h：蓋過自動偵測，並加 title-shrink 碟面"
     )
     parser.add_argument(
-        "--title-scale", type=float, default=TITLE_SHRINK_SCALE, help="title-shrink 縮到幾多倍"
+        "--title-scale", type=float, default=TITLE_SHRINK_SCALE, help="title-shrink 縮到幾多倍（0–1]"
     )
-    parser.add_argument("--force", action="store_true", help="覆蓋已有 round")
+    parser.add_argument("--force", action="store_true", help="成個 round 重新生成（舊檔會清走）")
     args = parser.parse_args(argv)
     return Options(
         args.input, args.drama, args.arc, args.out, args.round, args.title_box, args.title_scale, args.force
@@ -303,11 +386,12 @@ def main(argv: list[str]) -> int:
     options = _parse_args(argv)
     try:
         manifest = run(options)
-    except GeneratorError as error:
+    except (GeneratorError, OSError) as error:
         print(f"error: {error}", file=sys.stderr)
         return EXIT_USAGE
     variants = manifest["variants"]
-    assert isinstance(variants, list)
+    if not isinstance(variants, list):
+        raise TypeError("manifest variants 應該係 list")
     print(f"round {manifest['round']}: {len(variants)} variants")
     for variant in variants:
         print(f"  {variant['file']}  {variant['width']}x{variant['height']}  {variant['method']}")
