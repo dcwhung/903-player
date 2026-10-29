@@ -73,6 +73,12 @@ const VERIFY_RETRY_DELAY_MS = 1_000;
 const HTTP_TOO_MANY_REQUESTS = 429;
 const HTTP_SERVER_ERROR_MIN = 500;
 const JSON_INDENT = 4;
+/** 冇 --out 時預設輸出檔名 = <id 或劇名> + 呢個尾 */
+const DRAFT_EXTENSION = '.drama.json';
+/** --report 係 folder 時建議嘅檔名（唔好叫人寫 drama.json，會同輸出檔撞名） */
+const REPORT_EXAMPLE_NAME = 'report.txt';
+/** 預設輸出檔撞 folder 時，例子入面「第二個 folder」嘅位置 */
+const OTHER_FOLDER_PLACEHOLDER = '<另一個 folder>';
 const HEX_WIDTH = 4;
 const HEX_RADIX = 16;
 /** 新劇未有設計色調：先用 app 嘅中性色（NEUTRAL_THEME），上架前要按封面改 */
@@ -963,10 +969,30 @@ const readArgs = (argv) => {
 };
 
 /** 冇 --out 就用 <id>.drama.json（冇 --id 用劇名），喺而家嘅 folder；同 scanDramaFolder 一樣用 NFC 劇名 */
-const outputPath = (args) =>
-    resolve(args.out ?? `${args.id ?? basename(resolve(args.folder)).normalize('NFC')}.drama.json`);
+const draftName = (args) =>
+    `${args.id ?? basename(resolve(args.folder)).normalize('NFC')}${DRAFT_EXTENSION}`;
+const outputPath = (args) => resolve(args.out ?? draftName(args));
 
 const isDirectory = (path) => existsSync(path) && statSync(path).isDirectory();
+
+/** 目的地本身係 folder：叫人喺 folder 後面加檔名（引號包住，有空格都照抄得） */
+const fileHint = (option, folder, fileName) =>
+    `要畀檔案路徑，例如 ${option} "${join(folder, fileName)}"`;
+
+/** 路徑上面最近一個真係存在嘅地方（上層係檔案時 existsSync 會因 ENOTDIR 回 false，所以一路行上去） */
+const nearestExisting = (path) => {
+    let current = path;
+    while (!existsSync(current)) current = dirname(current);
+    return current;
+};
+
+/** 上層 folder 唔啱：分清楚「其實係檔案」同「未開」（QA O-2） */
+const parentProblem = (label, path) => {
+    const found = nearestExisting(dirname(path));
+    if (!isDirectory(found))
+        return `[錯誤] ${label} 路徑入面嘅「${found}」係一個檔案，唔係 folder：${path}\n請檢查路徑有冇打錯（有空格要用引號包住）。`;
+    return `[錯誤] ${label} 嘅 folder 唔存在：${dirname(path)}\n請先開好個 folder，或者檢查路徑有冇打錯（有空格要用引號包住）。`;
+};
 
 /** 寫得入嗎：POSIX 權限 / 唯讀 mount 擋得到；Windows ACL 唔保證準（最尾寫唔到仲有 EXIT.reportFailed 兜底） */
 const canWrite = (path) => {
@@ -979,12 +1005,10 @@ const canWrite = (path) => {
 };
 
 /** 一個要寫嘅檔：上層 folder 要存在、寫得入，本身唔可以係 folder；錯就回傳點改，啱就 undefined */
-const destinationProblem = ({ label, path }, io) => {
+const destinationProblem = ({ label, path, folderHint }, io) => {
     const parent = dirname(path);
-    if (!isDirectory(parent))
-        return `[錯誤] ${label} 嘅 folder 唔存在：${parent}\n請先開好個 folder，或者檢查路徑有冇打錯（有空格要用引號包住）。`;
-    if (isDirectory(path))
-        return `[錯誤] ${label} 係一個 folder：${path}\n要畀檔案路徑，例如 ${join(path, 'drama.json')}`;
+    if (!isDirectory(parent)) return parentProblem(label, path);
+    if (isDirectory(path)) return `[錯誤] ${label} 係一個 folder：${path}\n${folderHint}`;
     // 已經有個檔（--force 覆蓋）睇個檔本身；未有就睇上層 folder 開唔開得新檔
     const target = existsSync(path) ? path : parent;
     if (!io.canWrite(target))
@@ -996,9 +1020,28 @@ const destinationProblem = ({ label, path }, io) => {
  * 掃 folder 之前驗晒要寫嘅路徑（輸出 drama.json、--report）：
  * 唔係就要等成份報告印完、甚至 drama.json 寫咗先發現（CUI-0008 / S-568）
  */
+/** 輸出 drama.json：有 --out 就叫人喺 folder 後面加 <id>.drama.json；預設名撞 folder 就叫人加 --out 或者搬走（QA O-1） */
+const outputTarget = (args) => {
+    const path = outputPath(args);
+    if (args.out !== undefined)
+        return {
+            label: '輸出檔（--out）',
+            path,
+            folderHint: fileHint('--out', path, draftName(args)),
+        };
+    const example = `--out "${OTHER_FOLDER_PLACEHOLDER}/${draftName(args)}"`;
+    const folderHint = `請加 --out 揀檔案路徑，例如 ${example}；或者將嗰個 folder 改名 / 搬走。`;
+    return { label: '預設輸出檔（冇畀 --out）', path, folderHint };
+};
+
+const reportTarget = (report) => {
+    const path = resolve(report);
+    return { label: '--report', path, folderHint: fileHint('--report', path, REPORT_EXAMPLE_NAME) };
+};
+
 const checkDestinations = (args, io) => {
-    const targets = [{ label: '輸出檔（--out）', path: outputPath(args) }];
-    if (args.report !== undefined) targets.push({ label: '--report', path: resolve(args.report) });
+    const targets = [outputTarget(args)];
+    if (args.report !== undefined) targets.push(reportTarget(args.report));
     const problem = targets.map((target) => destinationProblem(target, io)).find(Boolean);
     if (problem !== undefined) throw new Error(problem);
 };

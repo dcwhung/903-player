@@ -884,6 +884,71 @@ describe('run (CLI)', () => {
             expect(listFiles(root)).not.toContain('x.drama.json');
         });
 
+        it('should suggest <dir>/report.txt (not drama.json) when --report is a folder', async () => {
+            mkdirSync(join(root, 'dir'));
+            const args = [
+                join(root, '劇'),
+                '--out',
+                join(root, 'x.json'),
+                '--report',
+                join(root, 'dir'),
+            ];
+            const { text } = await runCli(args);
+            expect(text).toContain(`--report "${join(root, 'dir', 'report.txt')}"`);
+            expect(text).not.toContain(join(root, 'dir', 'drama.json'));
+        });
+
+        it('should suggest <dir>/<id>.drama.json when --out is a folder', async () => {
+            mkdirSync(join(root, 'dir'));
+            const { text } = await runCli([
+                join(root, '劇'),
+                '--id',
+                'xyz',
+                '--out',
+                join(root, 'dir'),
+            ]);
+            expect(text).toContain(`--out "${join(root, 'dir', 'xyz.drama.json')}"`);
+        });
+
+        /** 喺 root 做 cwd 行（預設輸出檔喺 cwd） */
+        const runInRoot = async (argv: string[]) => {
+            const cwd = process.cwd();
+            process.chdir(root);
+            try {
+                return await runCli(argv);
+            } finally {
+                process.chdir(cwd);
+            }
+        };
+
+        it('should suggest --out (not a file inside it) when the default output is a folder', async () => {
+            // O-1：唔好叫人寫入 xyz.drama.json/drama.json
+            mkdirSync(join(root, 'xyz.drama.json'));
+            const { text } = await runInRoot([join(root, '劇'), '--id', 'xyz']);
+            expect(text).toContain('冇畀 --out');
+            expect(text).toContain('--out "<另一個 folder>/xyz.drama.json"');
+            expect(text).not.toContain(`xyz.drama.json/`);
+        });
+
+        it('should reject a default name from a Chinese folder name with spaces that is a folder (QA C12)', async () => {
+            touch([`森美 劇集/${episodeFile('甲', 1)}`]);
+            mkdirSync(join(root, '森美 劇集.drama.json'));
+            const result = await runInRoot([join(root, '森美 劇集')]);
+            expectRejectedUpFront(result, join(root, '森美 劇集.drama.json'));
+            expect(result.text).toContain('--out "<另一個 folder>/森美 劇集.drama.json"');
+            expect(listFiles(root)).not.toContain('森美 劇集.drama.json');
+        });
+
+        it('should say the parent is a file, not a missing folder (QA C8 / O-2)', async () => {
+            const cover = join(root, '劇', '甲', 'cover photo.jpg');
+            touch(['劇/甲/cover photo.jpg']);
+            const before = listFiles(root);
+            const result = await runCli([join(root, '劇'), '--out', join(cover, 'x.json')]);
+            expectRejectedUpFront(result, `「${cover}」係一個檔案，唔係 folder`);
+            expect(result.text).not.toContain('唔存在');
+            expect(listFiles(root)).toEqual(before);
+        });
+
         /** 當 lockedDir 冇權限寫（test 用 root 跑，chmod 擋唔到，所以經 io 注入） */
         const runWithLockedDir = (argv: string[], lockedDir: string) => {
             const out: string[] = [];
