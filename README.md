@@ -225,10 +225,15 @@ python3 -m venv /tmp/arcCover-venv
    新短篇加 `--arc "短篇名=slug"`；exit 1 = R2 冇，exit 3 = 網絡 / proxy 出錯）
 2. **出 round**：`generate.py --input $WORK/arcCover-src/<id>/<slug>.png --drama <id> [--arc <slug>] --out $WORK/arcCover`
 3. **砌頁**：`review/build.py --work $WORK` → `$WORK/review/site/`（`index.html` + `rounds.json` + 圖）、`files.json`（全部）、
-   `publish-N.json`（全部檔分批；加 `--previous <上次 files.json>` 會喺最後一批對冇咗嘅舊 path 傳 `null` 刪走）
-4. **Publish**：Claude 用 Artifact tool 逐份 `publish-N.json` 更新同一條 URL（`file_path` = `site/index.html`，`files` = 嗰份 json）。
-   Artifact 上限：每次 publish ≤ 255 個檔 / 64MB、每版 ≤ 511 個檔；冇傳嘅檔會保留。每次都全部重送（而家大約 90 個檔），
-   唔做增量，免得記錯「送咗乜」令頁面靜靜冇咗新 `rounds.json`；
+   `publish-N.json`（全部檔分批；加 `--previous <上次 files.json 或 Artifact 檔案 listing>` 會喺最後一批對冇咗嘅舊 path
+   傳 `null` 刪走，`index.html` 唔刪；listing = JSON path 陣列或一行一個 path）
+4. **Publish**：新 session 第一次 publish 之前，Claude 一定要先對 URL 叫 Artifact `action:"read"`，再叫
+   `action:"list", scope:"files"`，否則 publish（以及覆蓋 / `null` 刪走舊 session 送過嘅 path）會被拒；
+   將 listing 嘅 path 存落檔，用 `build.py --previous <嗰個檔>` 重新 build，舊 path 就會刪走。
+   真係要唔睇就覆蓋某啲 path（用家明確要求），先喺 publish 用 `overwrite_unread` 逐個列出。
+   然後逐份 `publish-N.json` 更新同一條 URL（`file_path` = `site/index.html`，`files` = 嗰份 json）。
+   Artifact 上限：每次 publish ≤ 255 個檔 / 64MB、每版 ≤ 511 個檔（連 `index.html`；每批 64MB 亦預留主頁大小）；
+   冇傳嘅檔會保留。每次都全部重送（而家大約 90 個檔），唔做增量，免得記錯「送咗乜」令頁面靜靜冇咗新 `rounds.json`；
    用家揀完，Claude 用 ArtifactData 讀 `reviews` collection（doc id `<drama>--<slug>--r<round>`，值 = 候選 id / `keep` / `own` / `null`；
    未儲存 = `keep` 沿用現有圖）
 5. **入 app**：揀中嘅 webp copy 去 `src/dramas/<id>/`：整套劇 `tile.webp` / `disc.webp`，短篇 `<slug>-tile.webp` / `<slug>-disc.webp`
