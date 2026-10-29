@@ -1,9 +1,8 @@
-"""封面 review 頁：build.py 收集 round → rounds.json / files.json、fetch_sources.py 嘅 URL / slug 處理。"""
+"""封面 review 頁：build.py 收集 round → rounds.json / files.json / publish 批次。"""
 
 import json
 import sys
 import tempfile
-import unicodedata
 import unittest
 from pathlib import Path
 
@@ -20,12 +19,14 @@ from build import (  # noqa: E402
     arc_list,
     big_disc_box,
     build,
+    check_page_ids,
+    check_slug,
     doc_id,
+    page_hash,
     round_dirs,
     unique_variants,
     with_new_arcs,
 )
-from fetch_sources import cover_url, parse_slugs, targets  # noqa: E402
 
 PREVIEW_SIZE = (40, 20)
 BG = (200, 200, 200)
@@ -104,6 +105,25 @@ class PureTest(unittest.TestCase):
             self.assertEqual([p.name for p in round_dirs(Path(tmp))], ["round-2", "round-10"])
             self.assertEqual(round_dirs(Path(tmp) / "missing"), [])
 
+    def test_check_slug_should_reject_unsafe_or_reserved(self) -> None:
+        for slug in ("../x", "a/b", "cover", "drama", "a--b", "Heart", "-a", "a-", ""):
+            with self.subTest(slug=slug), self.assertRaises(SystemExit):
+                check_slug(slug, "slug")
+        self.assertEqual(check_slug("love-2", "slug"), "love-2")
+
+    def test_page_hash_should_match_page(self) -> None:
+        self.assertEqual(page_hash("lancy", DRAMA_SLUG), "lancy-cover")
+        self.assertEqual(page_hash("lancy", "heart"), "lancy-heart")
+
+    def test_check_page_ids_should_reject_hash_collision(self) -> None:
+        dramas = [
+            {"id": "sammy-kitty", "arcs": [{"slug": "love"}]},
+            {"id": "sammy", "arcs": [{"slug": "kitty-love"}]},
+        ]
+        with self.assertRaises(SystemExit):
+            check_page_ids(dramas)
+        check_page_ids(dramas[:1])
+
     def test_big_disc_box_should_cover_first_blob_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             _preview_png(Path(tmp) / "p.png")
@@ -166,35 +186,46 @@ class BuildTest(unittest.TestCase):
             self.assertEqual(Path(local), site / rel)
             self.assertTrue(Path(local).is_file(), rel)
 
+    def test_build_should_render_current_image_previews(self) -> None:
+        art = np.zeros((90, 160, 3), np.uint8)
+        art[:, :80] = (250, 40, 40)
+        for name in ("heart-disc.webp", "heart-tile.webp"):
+            Image.fromarray(art).save(self.repo / "src" / "dramas" / "lancy" / name)
+        build(self.paths)
+        current = json.loads((self.paths.site / "rounds.json").read_text(encoding="utf-8"))["dramas"][0][
+            "arcs"
+        ][2]["current"]
+        self.assertEqual(sorted(current), ["disc", "discPreview", "tile", "tilePreview"])
+        with Image.open(self.paths.site / current["discPreview"]) as disc:
+            self.assertLess(disc.width, disc.height)  # 淨係大碟，細碟裁走咗
+        with Image.open(self.paths.site / current["tilePreview"]) as tile:
+            self.assertGreater(tile.width, tile.height)
+
+    def test_build_should_refresh_same_size_copies(self) -> None:
+        build(self.paths)
+        copied = self.paths.site / "img/lancy/heart/round-2/source.jpg"
+        (self.paths.src / "lancy" / "heart.jpg").write_bytes(b"JPG")
+        build(self.paths)
+        self.assertEqual(copied.read_bytes(), b"JPG")
+
+    def test_build_should_reject_unsafe_slugs(self) -> None:
+        bad = {**LANCY, "arcs": [{"name": "x", "disc": "cover-disc.webp"}]}
+        drama_json = self.repo / "src" / "dramas" / "lancy" / "drama.json"
+        drama_json.write_text(json.dumps(bad, ensure_ascii=False), encoding="utf-8")
+        with self.assertRaises(SystemExit):
+            build(self.paths)
+        drama_json.write_text(json.dumps(LANCY, ensure_ascii=False), encoding="utf-8")
+        (self.paths.gen / "lancy" / "a--b" / "round-1").mkdir(parents=True)
+        (self.paths.gen / "lancy" / "a--b" / "round-1" / "manifest.json").write_text("{}")
+        with self.assertRaises(SystemExit):
+            build(self.paths)
+
     def test_build_should_crop_disc_preview_to_big_disc(self) -> None:
         build(self.paths)
         disc = Image.open(self.paths.site / "img/lancy/heart/round-2/heart-disc-center-crop.png")
         tile = Image.open(self.paths.site / "img/lancy/heart/round-2/heart-tile-center-crop.png")
         self.assertLess(disc.width, PREVIEW_SIZE[0])
         self.assertEqual(tile.size, PREVIEW_SIZE)
-
-
-class FetchSourcesTest(unittest.TestCase):
-    def test_cover_url_should_encode_nfc_segments(self) -> None:
-        decomposed = unicodedata.normalize("NFD", "芝See菇Bi Family")
-        url = cover_url([decomposed, "cover photo.png"])
-        self.assertTrue(url.endswith("/%E8%8A%9DSee%E8%8F%87Bi%20Family/cover%20photo.png"), url)
-
-    def test_targets_should_use_disc_slug_or_given_slug(self) -> None:
-        found = targets(LANCY, parse_slugs(["未有碟面=new-arc"]))
-        self.assertEqual(
-            found,
-            [
-                ("drama", ["蘭茜夫人劇場"]),
-                ("half", ["蘭茜夫人劇場", "戀愛二分一"]),
-                ("new-arc", ["蘭茜夫人劇場", "未有碟面"]),
-                ("heart", ["蘭茜夫人劇場", "我心不死"]),
-            ],
-        )
-
-    def test_parse_slugs_should_reject_missing_slug(self) -> None:
-        with self.assertRaises(SystemExit):
-            parse_slugs(["我心不死"])
 
 
 if __name__ == "__main__":

@@ -227,7 +227,7 @@ def _round_dir(options: Options) -> tuple[int, Path]:
     return number, target
 
 
-def _theme_for(drama: str) -> dict[str, str]:
+def theme_for(drama: str) -> dict[str, str]:
     """預覽顏色跟 src/dramas/<drama>/drama.json 嘅 theme；搵唔到就用預設。"""
     drama_json = REPO_ROOT / "src" / "dramas" / drama / "drama.json"
     if not drama_json.is_file():
@@ -329,7 +329,7 @@ def _write_round(options: Options, number: int, rgb: np.ndarray, staging: Path) 
     staging.mkdir(parents=True)
     analysis_overlay(rgb, analysis).save(staging / "analysis.png", "PNG")
     rendered = render_variants(rgb, analysis, options)
-    variants = _write_variants(rendered, staging, options.arc or "drama", _theme_for(options.drama))
+    variants = _write_variants(rendered, staging, options.arc or "drama", theme_for(options.drama))
     manifest = _build_manifest(options, number, rgb, analysis, variants)
     (staging / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

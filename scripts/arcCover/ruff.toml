@@ -8,4 +8,5 @@ select = ["E", "F", "W", "I", "B", "UP"]
 [lint.isort]
 known-first-party = [
     "analysis", "build", "compose", "constants", "fakes", "fetch_sources", "generate", "geometry", "preview",
+    "publish",
 ]

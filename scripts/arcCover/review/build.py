@@ -4,9 +4,11 @@ work 資料夾結構（全部喺 repo 外面，唔入 git）：
     <work>/arcCover/<drama>/<slug|_drama>/round-N/manifest.json  generate.py 輸出（--out <work>/arcCover）
     <work>/arcCover-src/<drama>/<slug|drama>.(png|jpg)            原圖（fetch_sources.py 下載）
     <work>/review/site/        review 頁（index.html + rounds.json + img/）
-    <work>/review/files.json   Artifact publish 用嘅 {published path: 本機檔}
+    <work>/review/files.json   全部要 publish 嘅檔 {published path: 本機檔}
+    <work>/review/publish-N.json  今次要送嘅批次（同 published.json 比 hash，淨係新 / 改咗嘅檔）
+    <work>/review/published.json  上次 publish 成功嘅 hash（--mark-published 寫）
 
-每出一個新 round 就重新跑一次。
+work 預設 $ARC_COVER_WORK，冇就 $TMPDIR/903-player-covers。每出一個新 round 就重新跑一次。
 """
 
 from __future__ import annotations
@@ -14,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -28,8 +31,18 @@ TOOL_DIR = REVIEW_DIR.parent
 REPO_ROOT = TOOL_DIR.parents[1]
 TEMPLATE = REVIEW_DIR / "index.html"
 DEFAULT_WORK = Path(os.environ.get("ARC_COVER_WORK") or Path(tempfile.gettempdir()) / "903-player-covers")
+if str(TOOL_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOL_DIR))
+
+from generate import theme_for  # noqa: E402
+from preview import disc_preview, tile_preview  # noqa: E402
+from publish import MAX_FILES_PER_VERSION, mark_published, sha256_file, write_batches  # noqa: E402
 
 DRAMA_SLUG = "_drama"
+# 細楷英文 / 數字，用單一個 `-` 連接：冇 `/`、`..`，亦唔會整出 docId 嘅 `--` 分隔
+SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+# cover：頁面 hash 用 `<drama>-cover` 代表整套劇；drama：fetch_sources 整套劇原圖檔名
+RESERVED_SLUGS = frozenset({"cover", "drama"})
 DISC_SUFFIX = "-disc.webp"
 KINDS = ("disc", "tile")
 MISSING_ORDER = 999
@@ -81,7 +94,7 @@ class Site:
 
     def copy(self, src: Path, rel: str) -> str:
         dest = self.target(rel)
-        if not dest.exists() or dest.stat().st_size != src.stat().st_size:
+        if not dest.exists() or sha256_file(dest) != sha256_file(src):
             shutil.copyfile(src, dest)
         return self.add(rel)
 
@@ -102,6 +115,32 @@ def doc_id(drama: str, slug: str, round_no: int) -> str:
     return f"{drama}--{slug}--r{round_no}"
 
 
+def check_slug(slug: str, what: str, reserved: frozenset[str] = RESERVED_SLUGS) -> str:
+    """唔安全（路徑 / 撞 id）就停：slug 會變檔名、URL hash 同 db doc id"""
+    if not SLUG_PATTERN.match(slug) or slug in reserved:
+        raise SystemExit(
+            f"error: {what} {slug!r} 唔啱：只可以細楷英文、數字同單一個 -，亦唔可以係 {sorted(reserved)}"
+        )
+    return slug
+
+
+def page_hash(drama: str, slug: str) -> str:
+    """同 index.html hashOf() 一樣"""
+    return f"{drama}-{'cover' if slug == DRAMA_SLUG else slug}"
+
+
+def check_page_ids(dramas: list[dict]) -> None:
+    """唔同劇集 / 短篇砌出同一個頁面 hash（例如 sammy-kitty + love 同 sammy + kitty-love）就停"""
+    seen: dict[str, str] = {}
+    for drama in dramas:
+        for arc in drama["arcs"]:
+            key = page_hash(drama["id"], arc["slug"])
+            where = f"{drama['id']}/{arc['slug']}"
+            if key in seen:
+                raise SystemExit(f"error: {where} 同 {seen[key]} 嘅頁面 hash 都係 #{key}")
+            seen[key] = where
+
+
 def app_image_name(slug: str, kind: str) -> str:
     """app 入面嘅檔名：整套劇 `disc.webp`，短篇 `<slug>-disc.webp`"""
     return f"{kind}.webp" if slug == DRAMA_SLUG else f"{slug}-{kind}.webp"
@@ -113,7 +152,7 @@ def arc_list(data: dict) -> list[tuple[str, str]]:
     for arc in data.get("arcs", []):
         disc = arc.get("disc") or ""
         if disc.endswith(DISC_SUFFIX):
-            arcs.append((disc[: -len(DISC_SUFFIX)], arc["name"]))
+            arcs.append((check_slug(disc[: -len(DISC_SUFFIX)], f"{arc['name']} 嘅 disc slug"), arc["name"]))
     return arcs
 
 
@@ -140,7 +179,7 @@ def with_new_arcs(arcs: list[tuple[str, str]], gen_drama_dir: Path) -> list[tupl
         if gen_drama_dir.is_dir()
         else []
     )
-    return arcs + [(slug, slug) for slug in found if slug not in known]
+    return arcs + [(check_slug(slug, "generator 資料夾"), slug) for slug in found if slug not in known]
 
 
 def unique_variants(variants: list[dict]) -> list[dict]:
@@ -172,13 +211,10 @@ def read_json(path: Path) -> dict:
 
 def render_current_preview(src: Path, drama: str, kind: str) -> Image.Image:
     """現用圖都用 generator 同一個預覽（碟：碟心、坑紋、暗角；tile：圓角），同候選公平比較"""
-    sys.path.insert(0, str(TOOL_DIR))
-    from generate import _theme_for
-    from preview import disc_preview, tile_preview
-
-    art = np.array(Image.open(src).convert("RGB"))
+    with Image.open(src) as opened:
+        art = np.array(opened.convert("RGB"))
     render = disc_preview if kind == "disc" else tile_preview
-    image = render(art, _theme_for(drama))
+    image = render(art, theme_for(drama))
     return crop_big_disc(image) if kind == "disc" else image
 
 
@@ -229,7 +265,7 @@ def arc_entry(site: Site, paths: Paths, drama: str, slug: str, name: str) -> dic
 
 def drama_entry(site: Site, paths: Paths, drama_dir: Path) -> dict:
     data = read_json(drama_dir / "drama.json")
-    drama = drama_dir.name
+    drama = check_slug(drama_dir.name, "劇集 id", reserved=frozenset())
     arc_names = with_new_arcs(arc_list(data), paths.gen / drama)
     arcs = [arc_entry(site, paths, drama, slug, name) for slug, name in arc_names]
     return {"id": drama, "name": data["name"], "order": data.get("order", MISSING_ORDER), "arcs": arcs}
@@ -241,11 +277,13 @@ def collect(site: Site, paths: Paths) -> dict:
     drama_dirs = sorted(p for p in dramas_dir.iterdir() if (p / "drama.json").is_file())
     dramas = [drama_entry(site, paths, d) for d in drama_dirs]
     dramas.sort(key=lambda d: (d["order"], d["id"]))
+    check_page_ids(dramas)
     return {"dramas": dramas}
 
 
 def build(paths: Paths) -> dict[str, str]:
-    """寫 site/index.html、site/rounds.json、files.json；回傳 files（唔包 index.html：佢係 publish 嘅主頁）"""
+    """寫 site/index.html、site/rounds.json、files.json、publish-N.json；
+    回傳 files（唔包 index.html：佢係 publish 嘅主頁，每次 publish 都會送）"""
     site = Site(paths.site)
     rounds = collect(site, paths)
     shutil.copyfile(TEMPLATE, site.target("index.html"))
@@ -253,27 +291,51 @@ def build(paths: Paths) -> dict[str, str]:
     site.add("rounds.json")
     files_json = json.dumps(site.files, ensure_ascii=False, indent=1)
     (paths.out / "files.json").write_text(files_json, encoding="utf-8")
+    write_batches(paths.out, site.files)
     return site.files
 
 
-def parse_args(argv: list[str]) -> Paths:
+def parse_args(argv: list[str]) -> tuple[Paths, bool]:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--work", type=Path, default=DEFAULT_WORK, help=f"work 資料夾（預設 {DEFAULT_WORK}）")
     parser.add_argument("--out", type=Path, help="review 輸出資料夾（預設 <work>/review）")
+    parser.add_argument(
+        "--mark-published",
+        action="store_true",
+        help="全部 publish-N.json 都 publish 咗之後跑：記低 hash，下次淨係送改咗嘅檔",
+    )
     parser.add_argument("--repo", type=Path, default=REPO_ROOT, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     work = args.work.resolve()
     out = (args.out or work / "review").resolve()
-    return Paths(gen=work / "arcCover", src=work / "arcCover-src", out=out, repo=args.repo.resolve())
+    paths = Paths(gen=work / "arcCover", src=work / "arcCover-src", out=out, repo=args.repo.resolve())
+    return paths, args.mark_published
+
+
+def report(paths: Paths, files: dict[str, str]) -> None:
+    batch_paths = sorted(paths.out.glob("publish-*.json"), key=lambda p: int(p.stem.split("-")[1]))
+    print(f"{len(files)} files → {paths.site}")
+    print(f"publish：file_path={paths.site / 'index.html'}，url 用返同一條 artifact")
+    for batch in batch_paths:
+        print(f"  files = {batch}（{len(read_json(batch))} 個）")
+    if not batch_paths:
+        print("  冇改動嘅檔：淨係 publish index.html 就得（或者唔使 publish）")
+    print(f"全部 publish 完：build.py --out {paths.out} --mark-published")
+    if len(files) > MAX_FILES_PER_VERSION:
+        print(
+            f"warning: {len(files)} 個檔 > 每版上限 {MAX_FILES_PER_VERSION}，要喺 files 傳 null 刪走舊 round",
+            file=sys.stderr,
+        )
 
 
 def main(argv: list[str]) -> int:
-    paths = parse_args(argv)
-    files = build(paths)
-    print(f"{len(files)} files → {paths.site}")
-    print(f"publish：file_path={paths.site / 'index.html'}，files={paths.out / 'files.json'}")
+    paths, mark = parse_args(argv)
+    if mark:
+        print(f"記低 {mark_published(paths.out)} 個檔嘅 hash → {paths.out / 'published.json'}")
+        return 0
+    report(paths, build(paths))
     return 0
 
 

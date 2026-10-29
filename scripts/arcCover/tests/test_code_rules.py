@@ -15,6 +15,7 @@ CHECKED = (
     "generate.py",
     "review/build.py",
     "review/fetch_sources.py",
+    "review/publish.py",
     "review/serve.py",
 )
 
