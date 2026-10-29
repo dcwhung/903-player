@@ -49,12 +49,13 @@ class RenderDiscTest(unittest.TestCase):
 class FunctionLengthTest(unittest.TestCase):
     def test_functions_should_be_at_most_30_lines(self) -> None:
         too_long = []
-        for path in sorted(TOOL_DIR.glob("*.py")):
+        # review/ 嘅 build / fetch / serve 都跟同一條規矩
+        for path in sorted([*TOOL_DIR.glob("*.py"), *TOOL_DIR.glob("review/*.py")]):
             for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                     length = (node.end_lineno or node.lineno) - node.lineno + 1
                     if length > MAX_FUNCTION_LINES:
-                        too_long.append(f"{path.name}:{node.name} {length}")
+                        too_long.append(f"{path.relative_to(TOOL_DIR)}:{node.name} {length}")
         self.assertEqual(too_long, [])
 
 

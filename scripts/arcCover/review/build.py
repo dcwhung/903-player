@@ -1,0 +1,281 @@
+"""砌封面 review 頁：收集 generator 每個 round → <out>/site（rounds.json + 圖）同 <out>/files.json。
+
+work 資料夾結構（全部喺 repo 外面，唔入 git）：
+    <work>/arcCover/<drama>/<slug|_drama>/round-N/manifest.json  generate.py 輸出（--out <work>/arcCover）
+    <work>/arcCover-src/<drama>/<slug|drama>.(png|jpg)            原圖（fetch_sources.py 下載）
+    <work>/review/site/        review 頁（index.html + rounds.json + img/）
+    <work>/review/files.json   Artifact publish 用嘅 {published path: 本機檔}
+
+每出一個新 round 就重新跑一次。
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import sys
+import tempfile
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import numpy as np
+from PIL import Image
+
+REVIEW_DIR = Path(__file__).resolve().parent
+TOOL_DIR = REVIEW_DIR.parent
+REPO_ROOT = TOOL_DIR.parents[1]
+TEMPLATE = REVIEW_DIR / "index.html"
+DEFAULT_WORK = Path(os.environ.get("ARC_COVER_WORK") or Path(tempfile.gettempdir()) / "903-player-covers")
+
+DRAMA_SLUG = "_drama"
+DISC_SUFFIX = "-disc.webp"
+KINDS = ("disc", "tile")
+MISSING_ORDER = 999
+# 碟面預覽：大碟右邊嗰幾個細碟裁走；背景色喺左下角（距左 2px、距底 3px）攞
+DISC_MARGIN = 16
+BG_TOLERANCE = 30
+BG_PROBE_X = 2
+BG_PROBE_FROM_BOTTOM = 3
+SCAN_STEP = 4
+
+METHOD_LABEL = {
+    "center-crop": "置中裁",
+    "saliency-crop": "重點區域裁",
+    "face-crop": "人臉置中裁",
+    "text-safe-crop": "避開標題裁",
+    "fit-blur": "完整圖・模糊底",
+    "fit-extend": "完整圖・延伸底",
+    "title-shrink": "縮細標題",
+}
+
+
+@dataclass(frozen=True)
+class Paths:
+    gen: Path
+    src: Path
+    out: Path
+    repo: Path
+
+    @property
+    def site(self) -> Path:
+        return self.out / "site"
+
+
+@dataclass
+class Site:
+    """review 頁資料夾；記低每個要 publish 嘅檔（published path → 本機檔）"""
+
+    root: Path
+    files: dict[str, str] = field(default_factory=dict)
+
+    def target(self, rel: str) -> Path:
+        dest = self.root / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        return dest
+
+    def add(self, rel: str) -> str:
+        self.files[rel] = str(self.root / rel)
+        return rel
+
+    def copy(self, src: Path, rel: str) -> str:
+        dest = self.target(rel)
+        if not dest.exists() or dest.stat().st_size != src.stat().st_size:
+            shutil.copyfile(src, dest)
+        return self.add(rel)
+
+    def save(self, image: Image.Image, rel: str) -> str:
+        image.save(self.target(rel), optimize=True)
+        return self.add(rel)
+
+    def disc_only(self, src: Path, rel: str) -> str:
+        with Image.open(src) as image:
+            return self.save(crop_big_disc(image.convert("RGB")), rel)
+
+
+# ---- 純函數（有 test） ----
+
+
+def doc_id(drama: str, slug: str, round_no: int) -> str:
+    """同 index.html docId() 一樣：artifact db `reviews` collection 嘅 doc id"""
+    return f"{drama}--{slug}--r{round_no}"
+
+
+def app_image_name(slug: str, kind: str) -> str:
+    """app 入面嘅檔名：整套劇 `disc.webp`，短篇 `<slug>-disc.webp`"""
+    return f"{kind}.webp" if slug == DRAMA_SLUG else f"{slug}-{kind}.webp"
+
+
+def arc_list(data: dict) -> list[tuple[str, str]]:
+    """(slug, 名)：整套劇行先，再跟 drama.json 次序列有自己碟面嘅短篇"""
+    arcs = [(DRAMA_SLUG, data["name"])]
+    for arc in data.get("arcs", []):
+        disc = arc.get("disc") or ""
+        if disc.endswith(DISC_SUFFIX):
+            arcs.append((disc[: -len(DISC_SUFFIX)], arc["name"]))
+    return arcs
+
+
+def round_number(round_dir: Path) -> int | None:
+    """`round-3` → 3；`round-3.partial` 之類 → None"""
+    _, _, number = round_dir.name.partition("-")
+    return int(number) if number.isdigit() else None
+
+
+def round_dirs(arc_dir: Path) -> list[Path]:
+    if not arc_dir.is_dir():
+        return []
+    found = [
+        r for r in arc_dir.glob("round-*") if round_number(r) is not None and (r / "manifest.json").is_file()
+    ]
+    return sorted(found, key=round_number)
+
+
+def with_new_arcs(arcs: list[tuple[str, str]], gen_drama_dir: Path) -> list[tuple[str, str]]:
+    """drama.json 未有碟面（新短篇）但已經出咗 round 嘅 slug 都加埋，名暫時用 slug"""
+    known = {slug for slug, _ in arcs}
+    found = (
+        sorted(p.name for p in gen_drama_dir.glob("*") if p.is_dir() and round_dirs(p))
+        if gen_drama_dir.is_dir()
+        else []
+    )
+    return arcs + [(slug, slug) for slug in found if slug not in known]
+
+
+def unique_variants(variants: list[dict]) -> list[dict]:
+    """bytes 同前面一樣（duplicateOf）嘅候選唔使再畀人揀"""
+    return [v for v in variants if not v.get("duplicateOf")]
+
+
+def big_disc_box(rgb: np.ndarray) -> tuple[int, int, int, int]:
+    """碟面預覽由左邊數第一舊唔係背景色嘅範圍（即係大碟），左右加少少位"""
+    height, width = rgb.shape[:2]
+    bg = rgb[height - BG_PROBE_FROM_BOTTOM, BG_PROBE_X].astype(int)
+    rows = rgb[::SCAN_STEP].astype(int)
+    busy = (np.abs(rows - bg).sum(axis=2) > BG_TOLERANCE).any(axis=0).tolist()
+    left = busy.index(True) if True in busy else width
+    right = busy.index(False, left) if False in busy[left:] else width
+    return (max(0, left - DISC_MARGIN), 0, min(width, right + DISC_MARGIN), height)
+
+
+def crop_big_disc(image: Image.Image) -> Image.Image:
+    return image.crop(big_disc_box(np.asarray(image.convert("RGB"))))
+
+
+# ---- 收集 ----
+
+
+def read_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def render_current_preview(src: Path, drama: str, kind: str) -> Image.Image:
+    """現用圖都用 generator 同一個預覽（碟：碟心、坑紋、暗角；tile：圓角），同候選公平比較"""
+    sys.path.insert(0, str(TOOL_DIR))
+    from generate import _theme_for
+    from preview import disc_preview, tile_preview
+
+    art = np.array(Image.open(src).convert("RGB"))
+    render = disc_preview if kind == "disc" else tile_preview
+    image = render(art, _theme_for(drama))
+    return crop_big_disc(image) if kind == "disc" else image
+
+
+def current_images(site: Site, paths: Paths, drama: str, slug: str) -> dict[str, str]:
+    base = paths.repo / "src" / "dramas" / drama
+    out: dict[str, str] = {}
+    for kind in KINDS:
+        src = base / app_image_name(slug, kind)
+        if src.is_file():
+            out[kind] = site.copy(src, f"img/{drama}/{slug}/current-{kind}.webp")
+            preview = render_current_preview(src, drama, kind)
+            out[f"{kind}Preview"] = site.save(preview, f"img/{drama}/{slug}/current-{kind}-preview.png")
+    return out
+
+
+def variant_entry(site: Site, round_dir: Path, rel: str, variant: dict) -> dict:
+    put = site.disc_only if variant["kind"] == "disc" else site.copy
+    preview = put(round_dir / variant["preview"], f"{rel}/{Path(variant['preview']).name}")
+    keys = ("id", "kind", "method", "width", "height")
+    label = METHOD_LABEL.get(variant["method"], variant["method"])
+    return {**{k: variant[k] for k in keys}, "label": label, "preview": preview}
+
+
+def round_entry(site: Site, paths: Paths, drama: str, slug: str, round_dir: Path) -> dict:
+    manifest = read_json(round_dir / "manifest.json")
+    number = manifest["round"]
+    rel = f"img/{drama}/{slug}/round-{number}"
+    source = paths.src / drama / manifest["source"]["file"]
+    return {
+        "round": number,
+        "docId": doc_id(drama, slug, number),
+        "source": site.copy(source, f"{rel}/source{source.suffix}") if source.is_file() else None,
+        "sourceSize": [manifest["source"]["width"], manifest["source"]["height"]],
+        "variants": [variant_entry(site, round_dir, rel, v) for v in unique_variants(manifest["variants"])],
+    }
+
+
+def arc_entry(site: Site, paths: Paths, drama: str, slug: str, name: str) -> dict:
+    rounds = [round_entry(site, paths, drama, slug, r) for r in round_dirs(paths.gen / drama / slug)]
+    return {
+        "slug": slug,
+        "name": name,
+        "level": "drama" if slug == DRAMA_SLUG else "arc",
+        "current": current_images(site, paths, drama, slug),
+        "rounds": rounds,
+    }
+
+
+def drama_entry(site: Site, paths: Paths, drama_dir: Path) -> dict:
+    data = read_json(drama_dir / "drama.json")
+    drama = drama_dir.name
+    arc_names = with_new_arcs(arc_list(data), paths.gen / drama)
+    arcs = [arc_entry(site, paths, drama, slug, name) for slug, name in arc_names]
+    return {"id": drama, "name": data["name"], "order": data.get("order", MISSING_ORDER), "arcs": arcs}
+
+
+def collect(site: Site, paths: Paths) -> dict:
+    """全部劇集（跟 app 排序），每套劇：整套劇 + 有自己碟面嘅短篇，各有現用圖同每個 round 嘅候選"""
+    dramas_dir = paths.repo / "src" / "dramas"
+    drama_dirs = sorted(p for p in dramas_dir.iterdir() if (p / "drama.json").is_file())
+    dramas = [drama_entry(site, paths, d) for d in drama_dirs]
+    dramas.sort(key=lambda d: (d["order"], d["id"]))
+    return {"dramas": dramas}
+
+
+def build(paths: Paths) -> dict[str, str]:
+    """寫 site/index.html、site/rounds.json、files.json；回傳 files（唔包 index.html：佢係 publish 嘅主頁）"""
+    site = Site(paths.site)
+    rounds = collect(site, paths)
+    shutil.copyfile(TEMPLATE, site.target("index.html"))
+    site.target("rounds.json").write_text(json.dumps(rounds, ensure_ascii=False, indent=1), encoding="utf-8")
+    site.add("rounds.json")
+    files_json = json.dumps(site.files, ensure_ascii=False, indent=1)
+    (paths.out / "files.json").write_text(files_json, encoding="utf-8")
+    return site.files
+
+
+def parse_args(argv: list[str]) -> Paths:
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("--work", type=Path, default=DEFAULT_WORK, help=f"work 資料夾（預設 {DEFAULT_WORK}）")
+    parser.add_argument("--out", type=Path, help="review 輸出資料夾（預設 <work>/review）")
+    parser.add_argument("--repo", type=Path, default=REPO_ROOT, help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
+    work = args.work.resolve()
+    out = (args.out or work / "review").resolve()
+    return Paths(gen=work / "arcCover", src=work / "arcCover-src", out=out, repo=args.repo.resolve())
+
+
+def main(argv: list[str]) -> int:
+    paths = parse_args(argv)
+    files = build(paths)
+    print(f"{len(files)} files → {paths.site}")
+    print(f"publish：file_path={paths.site / 'index.html'}，files={paths.out / 'files.json'}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

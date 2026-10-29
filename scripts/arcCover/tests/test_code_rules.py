@@ -7,7 +7,16 @@ from pathlib import Path
 TOOL_DIR = Path(__file__).resolve().parents[1]
 # 0 / 1 / 2 / 0.5（一半、置中）同 255（uint8 最大）係算術本身，唔係可以調嘅參數
 ALLOWED = {0, 1, 2, 0.5, 255}
-CHECKED = ("analysis.py", "compose.py", "geometry.py", "preview.py", "generate.py")
+CHECKED = (
+    "analysis.py",
+    "compose.py",
+    "geometry.py",
+    "preview.py",
+    "generate.py",
+    "review/build.py",
+    "review/fetch_sources.py",
+    "review/serve.py",
+)
 
 
 class MagicNumberTest(unittest.TestCase):
