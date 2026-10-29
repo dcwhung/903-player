@@ -1,4 +1,5 @@
 import { AUDIBLE_ADVANCE_SECONDS } from '../src/config/constants';
+import { HAVE_CURRENT_DATA, HAVE_METADATA, HAVE_NOTHING } from '../src/player/mediaReadyState';
 
 /** emitAudible 行幾多倍出聲門檻（避開浮點數誤差） */
 const AUDIBLE_TEST_MARGIN = 2;
@@ -10,13 +11,6 @@ export interface FakeAudioOptions {
      */
     strictPlayEvents?: boolean;
 }
-
-/** HTMLMediaElement.readyState（jsdom 冇呢啲常數） */
-export const HAVE_NOTHING = 0;
-export const HAVE_METADATA = 1;
-export const HAVE_CURRENT_DATA = 2;
-export const HAVE_FUTURE_DATA = 3;
-export const HAVE_ENOUGH_DATA = 4;
 
 /** 假 TimeRanges：[[start, end], ...] */
 export const timeRanges = (ranges: [number, number][]): TimeRanges => ({
@@ -31,7 +25,7 @@ export class FakeAudio extends EventTarget {
     currentTime = 0;
     duration = Number.NaN;
     paused = true;
-    readyState = 0;
+    readyState = HAVE_NOTHING;
     networkState = 0;
     /** 已載入嘅範圍（播放 log 用） */
     buffered: TimeRanges = timeRanges([]);

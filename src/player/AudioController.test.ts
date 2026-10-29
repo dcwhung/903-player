@@ -1,4 +1,4 @@
-import { FakeAudio, HAVE_CURRENT_DATA, HAVE_ENOUGH_DATA, timeRanges } from '../../tests/fakeAudio';
+import { FakeAudio, timeRanges } from '../../tests/fakeAudio';
 import type { Recording } from '../types/recording';
 import {
     AUDIBLE_ADVANCE_SECONDS,
@@ -11,6 +11,7 @@ import {
 } from '../config/constants';
 import { getResumePosition, isWatched, saveProgress } from '../services/progressStore';
 import { AudioController } from './AudioController';
+import { HAVE_CURRENT_DATA, HAVE_ENOUGH_DATA } from './mediaReadyState';
 import { readPlaybackLog } from './playbackLog';
 
 const RECORDING: Recording = {
@@ -937,7 +938,6 @@ describe('AudioController S-551 lock-screen stall', () => {
     });
 
     it('reloads when data is buffered ahead but the position is frozen', async () => {
-        const HAVE_ENOUGH_DATA = 4;
         const { audio, controller, detach } = await pausedBySystem();
         await playFrozen(audio, controller.play);
         audio.buffered = timeRanges([[0, audio.currentTime + STALL_DATA_AHEAD_SECONDS * 2]]);

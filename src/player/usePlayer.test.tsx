@@ -1,10 +1,11 @@
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { FakeAudio, HAVE_ENOUGH_DATA, timeRanges } from '../../tests/fakeAudio';
+import { FakeAudio, timeRanges } from '../../tests/fakeAudio';
 import { STALL_DATA_AHEAD_SECONDS, STALL_FIRST_RETRY_MS } from '../config/constants';
 import { getProgress, isWatched, saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import { AudioController } from './AudioController';
+import { HAVE_ENOUGH_DATA } from './mediaReadyState';
 import { PlayerProvider } from './PlayerProvider';
 import { readPlaybackLog } from './playbackLog';
 import { usePlayer } from './usePlayer';

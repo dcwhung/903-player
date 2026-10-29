@@ -1,5 +1,6 @@
 import { STALL_DATA_AHEAD_SECONDS } from '../config/constants';
 import { isLoadProgressing, type LoadProbe } from './loadProgress';
+import { HAVE_CURRENT_DATA, HAVE_ENOUGH_DATA, HAVE_FUTURE_DATA } from './mediaReadyState';
 
 const POSITION = 521.4;
 const probe = (overrides: Partial<LoadProbe> = {}): LoadProbe => ({
@@ -51,10 +52,6 @@ describe('isLoadProgressing', () => {
 
     /** S-583：playing 已發（數據話可以播）而位置唔行，readyState 升唔再算下載有進展 */
     describe('after playing has fired', () => {
-        const HAVE_CURRENT_DATA = 2;
-        const HAVE_FUTURE_DATA = 3;
-        const HAVE_ENOUGH_DATA = 4;
-
         // S-551 情境 2（實機）：playing + play() resolve、rs=4、只載到少量、位置凍結 → 首個 deadline 重試
         it('should not be progressing when only the ready state rises to playable', () => {
             const before = probe();

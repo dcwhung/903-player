@@ -1,14 +1,5 @@
 import { STALL_DATA_AHEAD_SECONDS } from '../config/constants';
-
-/**
- * HTMLMediaElement.HAVE_CURRENT_DATA：有可播數據先算進展。
- * HAVE_METADATA（1）只係 header / 長度，冇任何數據；當進展會將情境 1 首次重試由 4 秒推到 8 秒，
- * 正正落入 iOS 鎖屏凍結 JS 嘅時間（W-500）
- */
-const HAVE_CURRENT_DATA = 2;
-
-/** HTMLMediaElement.HAVE_FUTURE_DATA：element 自己話數據夠播（spec 喺呢度先發 playing） */
-const HAVE_FUTURE_DATA = 3;
+import { HAVE_CURRENT_DATA, HAVE_FUTURE_DATA } from './mediaReadyState';
 
 /** 某一刻嘅載入狀態（卡住 watchdog 每次 arm / 到期時問一次） */
 export interface LoadProbe {
@@ -30,6 +21,8 @@ const hasGrown = (before: LoadProbe, after: LoadProbe): boolean => {
         // 等落去冇用；只有跌返去等數據（waiting，rs ≤ 2）時 buffer 增長先係真慢網（W-498）
         return after.readyState < HAVE_FUTURE_DATA && endAfter > endBefore;
     }
+    // 有可播數據（HAVE_CURRENT_DATA）先算進展。HAVE_METADATA 只係 header / 長度；當進展會將情境 1
+    // 首次重試由 4 秒推到 8 秒，正正落入 iOS 鎖屏凍結 JS 嘅時間（W-500）
     const gotData = after.readyState >= HAVE_CURRENT_DATA && after.readyState > before.readyState;
     return endAfter > endBefore || gotData;
 };
