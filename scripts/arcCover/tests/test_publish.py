@@ -9,10 +9,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "review"))
 
 from publish import (  # noqa: E402
+    MAX_BYTES_PER_PUBLISH,
     MAX_FILES_PER_PUBLISH,
+    MAX_FILES_PER_VERSION,
+    PAGE,
     ROUNDS,
     batches,
     ordered,
+    over_version_limit,
+    read_previous,
     stale_paths,
     write_batches,
 )
@@ -59,6 +64,42 @@ class BatchesTest(unittest.TestCase):
         previous = {"a": "/a", "old": "/old", ROUNDS: "/r"}
         self.assertEqual(stale_paths(previous, {"a": "/a", ROUNDS: "/r", "new": "/n"}), ["old"])
 
+    def test_stale_paths_should_never_delete_the_page(self) -> None:
+        self.assertEqual(stale_paths([PAGE, "old", ROUNDS], {ROUNDS: "/r"}), ["old"])
+
+    def test_version_limit_should_reserve_room_for_the_page(self) -> None:
+        self.assertFalse(over_version_limit(MAX_FILES_PER_VERSION - 1))  # + index.html = 511
+        self.assertTrue(over_version_limit(MAX_FILES_PER_VERSION))  # + index.html = 512
+
+
+class ReadPreviousTest(unittest.TestCase):
+    """--previous：舊 files.json、Artifact list scope:"files" 嘅 JSON 陣列、或者一行一個 path"""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.path = Path(self._tmp.name) / "previous"
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def test_should_read_files_json_keys(self) -> None:
+        self.path.write_text(json.dumps({"img/a.png": "/a", ROUNDS: "/r"}))
+        self.assertEqual(read_previous(self.path), ["img/a.png", ROUNDS])
+
+    def test_should_read_json_array_of_paths(self) -> None:
+        self.path.write_text(json.dumps([PAGE, "img/a.png", ROUNDS]))
+        self.assertEqual(read_previous(self.path), [PAGE, "img/a.png", ROUNDS])
+
+    def test_should_read_one_path_per_line(self) -> None:
+        self.path.write_text(f"{PAGE}\n  img/a.png  \n\n{ROUNDS}\n")
+        self.assertEqual(read_previous(self.path), [PAGE, "img/a.png", ROUNDS])
+
+    def test_should_reject_other_json(self) -> None:
+        for bad in ([1, 2], "x", {"a": 1}):
+            with self.subTest(bad=bad), self.assertRaises(SystemExit):
+                self.path.write_text(json.dumps(bad))
+                read_previous(self.path)
+
 
 class WriteBatchesTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -88,6 +129,15 @@ class WriteBatchesTest(unittest.TestCase):
         [batch] = _read_batches(self.out)
         self.assertEqual(list(batch.items())[-1], ("img/gone.png", None))
         self.assertEqual(list(batch)[-2], ROUNDS)
+
+    def test_page_bytes_should_come_out_of_each_batch_budget(self) -> None:
+        small = {"img/0.png": self.files["img/0.png"], "img/1.png": self.files["img/1.png"]}
+        write_batches(self.out, small)
+        self.assertEqual(len(_read_batches(self.out)), 1)
+        write_batches(self.out, small, page_bytes=MAX_BYTES_PER_PUBLISH - 1)
+        self.assertEqual(
+            _read_batches(self.out), [{"img/0.png": small["img/0.png"]}, {"img/1.png": small["img/1.png"]}]
+        )
 
 
 if __name__ == "__main__":
