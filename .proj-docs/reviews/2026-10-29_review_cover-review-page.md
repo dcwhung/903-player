@@ -7,7 +7,7 @@
 - Design Origin：`index.html` 係 Artifact 頁面模板（開發工具），唔係 app 嘅 `*.tsx` / `*.css`，唔入 app build；Design Fidelity / PWA 檢查 n/a。
 - Version：`package.json` 冇 bump。純開發工具，app build 唔變，跟 `review_tool-polish` / `review_catalog-tools` 先例，唔當 Warning。
 - TDD：test 同實作同一個 commit（由 scratchpad 搬入 repo，已有實作）。工具搬家可接受；新 test 係真 assertion（見「做得好」）。
-- Review Item ID：`grep -rhoE '\b[WSC]-[0-9]{3}\b' .proj-docs` 證實最高 C-010、W-500、S-583。今次用 **W-501–W-503**、**S-584–S-590**。
+- Review Item ID：`grep -rhoE '\b[WSC]-[0-9]{3}\b' .proj-docs` 證實最高 C-010、W-500、S-583。今次用 **W-501–W-503**、**S-587–S-593**（原本編 S-584–S-590，同平行 review `2026-10-29_review_s583.md` 撞號，順序不變整體 +3）。
 - 總評：結構清楚、生成物唔入 git、`curl` 用 args list（**冇 shell injection**）、頁面所有 `innerHTML` 插值都有 `esc()`、db 讀返嚟嘅值冇當 HTML 用。但 `fetch_sources.py` 將 curl 所有失敗（網絡 / TLS / proxy 403）都報成「搵唔到 cover photo」而且吞咗 stderr（W-501）；README 冇講 Artifact `files` 每次 publish 255 個 / 每版 511 個嘅上限，照而家 44 張現用圖已經佔 88 個檔，再加幾輪候選好快爆（W-502）；`fetch_sources.py` 嘅 IO 邏輯（`.part` 清理、fallback 次序、已有就跳過）冇 test，檔案覆蓋率 53%（W-503）。**78 分 ⚠️ warn**。
 
 ---
@@ -33,9 +33,9 @@ Secrets：`R2_BASE` 係 public r2.dev 網址（同 `src/config/constants.ts` `DR
 
 | 維度     | 得分   | 滿分    | 備注                                                                               |
 | -------- | ------ | ------- | ---------------------------------------------------------------------------------- |
-| 正確性   | 18     | 25      | W-501（curl 錯誤全部當 404）、S-589（hash / docId 撞名）、S-590（size-only cache） |
-| 安全性   | 19     | 20      | S-584（`--arc` slug / drama id 冇驗，`../` 寫出 work 資料夾）                      |
-| 可維護性 | 11     | 20      | W-502（publish 上限冇處理）、S-585–S-588                                           |
+| 正確性   | 18     | 25      | W-501（curl 錯誤全部當 404）、S-592（hash / docId 撞名）、S-593（size-only cache） |
+| 安全性   | 19     | 20      | S-587（`--arc` slug / drama id 冇驗，`../` 寫出 work 資料夾）                      |
+| 可維護性 | 11     | 20      | W-502（publish 上限冇處理）、S-588–S-591                                           |
 | 測試覆蓋 | 10     | 15      | W-503（`fetch_sources` IO 冇 test；`current_images` 預覽路徑冇 test）              |
 | 性能     | 10     | 10      |                                                                                    |
 | 代碼風格 | 10     | 10      |                                                                                    |
@@ -51,7 +51,7 @@ Secrets：`R2_BASE` 係 public r2.dev 網址（同 `src/config/constants.ts` `DR
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | curl shell injection？ | ✅ 冇。`subprocess.run(["curl", "-sSfL", "--max-time", ..., "-o", str(part), url], check=False)`，冇 `shell=True`。`url` 永遠由 `R2_BASE` 開頭（唔會以 `-` 開頭被當 option），每段 `quote(..., safe="")` encode 晒 `/ ? # & 空格`。 |
 | URL 段 encode          | ✅ NFC 後 `safe=""`，`/` 唔會出現喺段入面；test 驗咗中文 + 空格。                                                                                                                                                                   |
-| 本機路徑               | ⚠️ `--arc "x=../../evil"` 實測 `parse_slugs` 接受 → `dest_dir / "../../evil.png"` 寫出 `arcCover-src/<drama>/`；`drama` positional 亦一樣（S-584）。本機 CLI、輸入係用家自己打，所以係 Suggestion 唔係 Critical。                   |
+| 本機路徑               | ⚠️ `--arc "x=../../evil"` 實測 `parse_slugs` 接受 → `dest_dir / "../../evil.png"` 寫出 `arcCover-src/<drama>/`；`drama` positional 亦一樣（S-587）。本機 CLI、輸入係用家自己打，所以係 Suggestion 唔係 Critical。                   |
 | `serve.py`             | ✅ bind `127.0.0.1`，`SimpleHTTPRequestHandler` 有 directory 限制。                                                                                                                                                                 |
 | `index.html` XSS       | ✅ `rounds.json` 嘅字串全部經 `esc()`（attribute 全部用雙引號，`'` 唔 escape 都安全）；db `reviews` doc（其他 viewer 寫）只用嚟比較 / 填 `textarea.value` / `textContent`，冇入 `innerHTML`。                                       |
 | 外部資源               | Google Fonts stylesheet（Artifact 允許）；冇外部 script。                                                                                                                                                                           |
@@ -92,44 +92,44 @@ Secrets：`R2_BASE` 係 public r2.dev 網址（同 `src/config/constants.ts` `DR
     - Trade-off：唔使改 signature，但 patch 字串易同 import 方式脫節。
 - 推薦：A。
 
-### 🟢 S-584 — `--arc` slug / `drama` positional 冇驗格式
+### 🟢 S-587 — `--arc` slug / `drama` positional 冇驗格式
 
 - 位置：`fetch_sources.py:33-41`（`parse_slugs`）、`:96`、`:100`
 - 描述：實測 `parse_slugs(['x=../../evil'])` → `{'x': '../../evil'}`，之後 `dest_dir / f"{stem}.png"` 寫出 work 資料夾。
 - 方案 A（推薦）：slug / drama 用 `^[a-z0-9][a-z0-9-]*$` 驗（同 app slug 一致），唔啱就 `SystemExit`。
 - 方案 B：`dest.resolve().is_relative_to(dest_dir.resolve())` 檢查。
 
-### 🟢 S-585 — `render_current_preview` 每次 call 都 `sys.path.insert`、`Image.open` 冇關、import private `_theme_for`
+### 🟢 S-588 — `render_current_preview` 每次 call 都 `sys.path.insert`、`Image.open` 冇關、import private `_theme_for`
 
 - 位置：`build.py:173-182`
 - 描述：44 張現用圖 → `sys.path` 前面塞 44 次同一條路；`Image.open(src)` 冇 `with`；依賴 `generate._theme_for`（underscore = private）。
 - 方案 A：module 頂 import 一次（`TOOL_DIR` 加入 path 一次）+ `with Image.open(...)`；`generate.py` 將 `_theme_for` 改 public `theme_for`。
 - 方案 B：保持 lazy import 但 `if str(TOOL_DIR) not in sys.path`。
 
-### 🟢 S-586 — `ARC_COVER_WORK` env var 冇寫入 README
+### 🟢 S-589 — `ARC_COVER_WORK` env var 冇寫入 README
 
 - 位置：`build.py:30`
 - 描述：`DEFAULT_WORK` 讀 `ARC_COVER_WORK`，兩份 README 都冇提；README 反而叫人每個 command 傳 `--work $WORK`。
 - 方案 A：README 寫 `export ARC_COVER_WORK=...` 代替重複 `--work`。方案 B：刪 env var，淨係用 `--work`。
 
-### 🟢 S-587 — `R2_BASE` 同 `src/config/constants.ts` `DRAMA_AUDIO_BASE` 重複
+### 🟢 S-590 — `R2_BASE` 同 `src/config/constants.ts` `DRAMA_AUDIO_BASE` 重複
 
 - 位置：`fetch_sources.py:21`
 - 方案 A：test 讀 `constants.ts` 用 regex 驗兩邊一樣（防 bucket 搬家時漏改）。方案 B：runtime 由 `constants.ts` parse。推薦 A（簡單、唔影響 runtime）。
 
-### 🟢 S-588 — `.gitignore` 根目錄 `/review/`、`/arcCover/` 好泛
+### 🟢 S-591 — `.gitignore` 根目錄 `/review/`、`/arcCover/` 好泛
 
 - 位置：`.gitignore:14-16`
 - 描述：為咗「萬一 `--work .`」加嘅規則，但 `/review/` 係好普通嘅名，將來 repo 根真係開 `review/` folder 會靜靜被 ignore。
 - 方案 A：改成 `/review/site/`、`/review/files.json`（同 build 輸出精確對應）。方案 B：`build.py` 拒絕 `--work` 喺 repo 入面，刪呢三條規則。
 
-### 🟢 S-589 — 頁面 hash / docId 有撞名可能
+### 🟢 S-592 — 頁面 hash / docId 有撞名可能
 
 - 位置：`index.html:608-609`
 - 描述：`hashOf` 將 `_drama` 映射做 `cover`，如果有短篇 slug 叫 `cover` 就撞；`docId` 用 `--` 分隔，slug 含 `--` 亦會撞。現有 slug 冇呢個情況。
-- 方案 A：S-584 嘅 slug regex 禁 `cover` 同 `--`。方案 B：hash 用 `_drama` 原文。
+- 方案 A：S-587 嘅 slug regex 禁 `cover` 同 `--`。方案 B：hash 用 `_drama` 原文。
 
-### 🟢 S-590 — `Site.copy` 只比較檔案大小
+### 🟢 S-593 — `Site.copy` 只比較檔案大小
 
 - 位置：`build.py:82-86`
 - 描述：`src/dramas/<id>/disc.webp` 換咗張同 size 嘅新圖 → site 入面仍係舊圖（README 有寫，但係隱性陷阱）。
@@ -156,12 +156,12 @@ Secrets：`R2_BASE` 係 public r2.dev 網址（同 `src/config/constants.ts` `DR
 | 1    | W-501 | 錯誤會令用家揀錯封面，而且冇線索 |
 | 2    | W-502 | 下一次大 publish 一定撞          |
 | 3    | W-503 | 鎖住 W-501 修正 + `keep` 預覽    |
-| 4    | S-584 | 同 S-589 一齊用 slug regex 解決  |
-| 5    | 其餘  | S-585–S-588、S-590 有空先做      |
+| 4    | S-587 | 同 S-592 一齊用 slug regex 解決  |
+| 5    | 其餘  | S-588–S-591、S-593 有空先做      |
 
 ---
 
-## 修訂後代碼（W-501 + S-584 + W-503 seam）
+## 修訂後代碼（W-501 + S-587 + W-503 seam）
 
 ```python
 # fetch_sources.py
@@ -169,7 +169,7 @@ import re
 from collections.abc import Callable
 
 CURL_HTTP_ERROR = 22  # curl -f：HTTP >= 400
-SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")  # 同 app slug 一致；禁 `/`、`..`（S-584）
+SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")  # 同 app slug 一致；禁 `/`、`..`（S-587）
 
 
 class FetchError(RuntimeError):
@@ -234,5 +234,5 @@ next_action: invoke_developer
 next_agent: developer
 branch: "chore/tools/cover-review-page"
 blockers: ["W-501", "W-502", "W-503"]
-context: "Review of 51c0f59..09f5771 (1856b34 tool move, 09f5771 README). No shell injection: curl via args list, no shell=True, URL always starts with R2_BASE, segments NFC + quote(safe=''). No secrets (R2_BASE is the public r2.dev URL already in src/config/constants.ts). No binaries committed (stat + ls-files). .gitignore verified with git check-ignore (site/, rounds.json, files.json, img/*.webp ignored; src/dramas webp not). index.html: all innerHTML interpolation escaped; db docs never rendered as HTML. Gates: pytest 55 pass; ruff check/format clean (cwd scripts/arcCover); prettier clean; eslint verify.cjs 0. Coverage review/: build.py 85%, fetch_sources.py 53% (pure fns 100%, IO glue untested). W-501 curl network/TLS/proxy failures reported as 'cover not found' with stderr swallowed. W-502 files.json can exceed Artifact 255 files/publish (511/version, omitted files kept) - 44 current webp already = 88 files; README silent. W-503 download/fetch_one/main + current-image preview path untested. S-584 --arc slug / drama allow ../ (verified parse_slugs('x=../../evil')). S-585 sys.path insert per call + unclosed Image + private _theme_for. S-586 ARC_COVER_WORK undocumented. S-587 R2_BASE duplicates DRAMA_AUDIO_BASE. S-588 root /review/ /arcCover/ ignore rules too broad. S-589 hashOf 'cover' / docId '--' collision. S-590 size-only copy cache. No version bump needed (tooling only). Not pushed."
+context: "Review of 51c0f59..09f5771 (1856b34 tool move, 09f5771 README). No shell injection: curl via args list, no shell=True, URL always starts with R2_BASE, segments NFC + quote(safe=''). No secrets (R2_BASE is the public r2.dev URL already in src/config/constants.ts). No binaries committed (stat + ls-files). .gitignore verified with git check-ignore (site/, rounds.json, files.json, img/*.webp ignored; src/dramas webp not). index.html: all innerHTML interpolation escaped; db docs never rendered as HTML. Gates: pytest 55 pass; ruff check/format clean (cwd scripts/arcCover); prettier clean; eslint verify.cjs 0. Coverage review/: build.py 85%, fetch_sources.py 53% (pure fns 100%, IO glue untested). W-501 curl network/TLS/proxy failures reported as 'cover not found' with stderr swallowed. W-502 files.json can exceed Artifact 255 files/publish (511/version, omitted files kept) - 44 current webp already = 88 files; README silent. W-503 download/fetch_one/main + current-image preview path untested. S-587 --arc slug / drama allow ../ (verified parse_slugs('x=../../evil')). S-588 sys.path insert per call + unclosed Image + private _theme_for. S-589 ARC_COVER_WORK undocumented. S-590 R2_BASE duplicates DRAMA_AUDIO_BASE. S-591 root /review/ /arcCover/ ignore rules too broad. S-592 hashOf 'cover' / docId '--' collision. S-593 size-only copy cache. No version bump needed (tooling only). Not pushed."
 ```
