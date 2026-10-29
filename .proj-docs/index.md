@@ -30,6 +30,7 @@
 | 2026-10-29 | [reviews/2026-10-29_review_batch-b_fixes.md](reviews/2026-10-29_review_batch-b_fixes.md)                       |
 | 2026-10-29 | [reviews/2026-10-29_review_batch-c_audio-controller.md](reviews/2026-10-29_review_batch-c_audio-controller.md) |
 | 2026-10-29 | [reviews/2026-10-29_review_v1.20.6.md](reviews/2026-10-29_review_v1.20.6.md)                                   |
+| 2026-10-29 | [reviews/2026-10-29_review_catalog-tools.md](reviews/2026-10-29_review_catalog-tools.md)                       |
 
 ## QA
 
