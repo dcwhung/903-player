@@ -863,45 +863,6 @@ describe('AudioController replay timing details', () => {
     });
 });
 
-/** S-551 之前嘅行為：鎖死先，之後逐項改（改嘅時候呢度會跟住改） */
-describe('AudioController S-551 characterization', () => {
-    const NEXT: Recording = {
-        ...RECORDING,
-        date: '2026-10-24',
-        url: 'https://audio.hkfm903.live/next.aac',
-    };
-    const DURATION = 1200;
-
-    beforeEach(() => vi.useFakeTimers());
-    afterEach(() => {
-        vi.restoreAllMocks();
-        vi.useRealTimers();
-    });
-
-    const showScreen = (state: DocumentVisibilityState) => {
-        vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
-        document.dispatchEvent(new Event('visibilitychange'));
-    };
-
-    it('spends two retries when a late timer and a screen wake-up land together', async () => {
-        const audio = new FakeAudio();
-        const controller = new AudioController(audio.asAudio());
-        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
-        const detach = controller.attach();
-        await controller.load(RECORDING, { autoplay: true });
-        audio.emitMetadata(DURATION);
-        audio.end();
-        await Promise.resolve();
-        audio.load.mockClear();
-
-        vi.advanceTimersByTime(STALL_RETRY_MS);
-        showScreen('visible');
-
-        expect(audio.load).toHaveBeenCalledTimes(2);
-        detach();
-    });
-});
-
 /**
  * S-551 iPhone 實機 log 重現：
  * 情境 1：鎖屏、轉過網絡、自動接住播 → stalled，第二個 timer 被 iOS 暫停 34 秒，亮屏時 timer + visibility 連住重試兩次
@@ -1027,6 +988,30 @@ describe('AudioController S-551 lock-screen stall', () => {
 
         expect(audio.load).toHaveBeenCalledTimes(1);
         expect(audio.src).toBe(NEXT.url);
+        detach();
+    });
+
+    // 情境 1：10:02:52.342 遲咗嘅 timer 重試，65 ms 後亮屏又重試一次，嘥咗一次機會
+    it('spends one retry when a late timer and a screen wake-up land together', async () => {
+        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const WAKE_AFTER_TIMER_MS = 65;
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.end();
+        await Promise.resolve();
+        audio.load.mockClear();
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS + STALL_RETRY_MS + WAKE_AFTER_TIMER_MS);
+        vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        const retries = readPlaybackLog().filter((line) => line.includes(' retry '));
+        expect(retries).toHaveLength(2);
+        expect(audio.load).toHaveBeenCalledTimes(2);
         detach();
     });
 });

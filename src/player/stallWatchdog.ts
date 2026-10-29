@@ -1,4 +1,4 @@
-import { STALL_FIRST_RETRY_MS, STALL_RETRY_MS } from '../config/constants';
+import { STALL_FIRST_RETRY_MS, STALL_RETRY_DEDUPE_MS, STALL_RETRY_MS } from '../config/constants';
 
 export interface StallWatchdogHooks {
     /** 仲想唔想播：唔想（例如用戶暫停咗）就唔再重試 */
@@ -16,6 +16,8 @@ export class StallWatchdog {
     /** 剩低幾多次重試；undefined = 冇睇住 */
     private retriesLeft: number | undefined;
     private timer: ReturnType<typeof setTimeout> | undefined;
+    /** 對上一次重試嘅時間（Date.now()） */
+    private lastRetryAt = Number.NEGATIVE_INFINITY;
 
     constructor(private readonly hooks: StallWatchdogHooks) {}
 
@@ -54,7 +56,15 @@ export class StallWatchdog {
             this.cancel();
             return;
         }
+        this.lastRetryAt = Date.now();
         this.hooks.retry(retriesLeft);
         this.watch(retriesLeft - 1);
+    };
+
+    /** 亮屏時用：啱啱先重試過（例如遲咗嘅 timer 啱啱先行）就唔再嘥一次 */
+    retryUnlessRecent = (): void => {
+        if (Date.now() - this.lastRetryAt >= STALL_RETRY_DEDUPE_MS) {
+            this.retryNow();
+        }
     };
 }

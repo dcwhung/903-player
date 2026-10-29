@@ -1,4 +1,9 @@
-import { STALL_FIRST_RETRY_MS, STALL_MAX_RETRIES, STALL_RETRY_MS } from '../config/constants';
+import {
+    STALL_FIRST_RETRY_MS,
+    STALL_MAX_RETRIES,
+    STALL_RETRY_DEDUPE_MS,
+    STALL_RETRY_MS,
+} from '../config/constants';
 import { StallWatchdog } from './stallWatchdog';
 
 const setup = (canRetry = true) => {
@@ -137,6 +142,37 @@ describe('StallWatchdog', () => {
 
         watchdog.start(STALL_MAX_RETRIES);
         vi.advanceTimersByTime(1);
+
+        expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+    });
+
+    it('should skip a wake-up retry right after another retry', () => {
+        const { watchdog, retry } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        vi.advanceTimersByTime(STALL_RETRY_DEDUPE_MS - 1);
+        watchdog.retryUnlessRecent();
+
+        expect(retry).toHaveBeenCalledTimes(1);
+        expect(watchdog.pending).toBe(true);
+    });
+
+    it('should retry on wake-up once the last retry is old enough', () => {
+        const { watchdog, retry } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS + STALL_RETRY_DEDUPE_MS);
+
+        watchdog.retryUnlessRecent();
+
+        expect(retry).toHaveBeenLastCalledWith(STALL_MAX_RETRIES - 1);
+    });
+
+    it('should retry on wake-up when nothing has retried yet', () => {
+        const { watchdog, retry } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+
+        watchdog.retryUnlessRecent();
 
         expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
     });

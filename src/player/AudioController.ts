@@ -417,8 +417,8 @@ export class AudioController {
         if (document.visibilityState === 'hidden') {
             this.persist();
         } else if (this.stall.pending) {
-            // 亮返屏幕時仲卡住：唔使等 timer（背景 timer 可能冇行過）
-            this.stall.retryNow();
+            // 亮返屏幕時仲卡住：唔使等 timer（背景 timer 可能冇行過）；遲咗嘅 timer 啱啱先行過就唔再試
+            this.stall.retryUnlessRecent();
         }
     };
 
