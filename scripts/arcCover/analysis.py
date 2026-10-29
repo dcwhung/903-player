@@ -11,15 +11,31 @@ import numpy as np
 from PIL import Image, ImageOps
 
 from constants import (
+    COLOUR_CONTRAST_SIGMA_DIVISOR,
+    EYE_MIN_PX,
     EYE_MIN_RATIO,
     EYE_REGION_RATIO,
+    FACE_HEAT_HEIGHT_RATIO,
+    FACE_HEAT_SIGMA_DIVISOR,
     FACE_MERGE_IOU,
     FACE_MIN_NEIGHBOURS,
+    FACE_MIN_PX,
     FACE_MIN_RATIO,
     FACE_SCALE_STEP,
     FACE_WEIGHT,
+    FOCAL_PERCENTILE,
+    FULL_TURN_DEG,
+    NORMALISE_EPS,
     SALIENCY_BLUR_SIGMA,
+    SALIENCY_MIN_HEIGHT,
+    SALIENCY_SPECTRAL_WEIGHT,
     SALIENCY_WIDTH,
+    SPECTRAL_AVERAGE_PX,
+    SPECTRUM_EPS,
+    STROKE_KERNEL_PX,
+    TEXT_CLOSE_DIVISOR,
+    TEXT_CLOSE_MIN_PX,
+    TEXT_COLOUR_BLUR_SIGMA,
     TEXT_MAX_AREA_RATIO,
     TEXT_MAX_FILL,
     TEXT_MIN_AREA_RATIO,
@@ -28,6 +44,7 @@ from constants import (
     TEXT_SATURATION_PERCENTILE,
 )
 
+HSV_SATURATION = 1  # HSV 第二個 channel
 FACE_CASCADES: tuple[str, ...] = (
     "haarcascade_frontalface_default.xml",
     "haarcascade_frontalface_alt2.xml",
@@ -89,7 +106,7 @@ def load_rgb(path: str) -> np.ndarray:
 
 def _normalise(values: np.ndarray) -> np.ndarray:
     low, high = float(values.min()), float(values.max())
-    if high - low < 1e-9:
+    if high - low < NORMALISE_EPS:
         return np.zeros_like(values, dtype=np.float32)
     return ((values - low) / (high - low)).astype(np.float32)
 
@@ -97,12 +114,12 @@ def _normalise(values: np.ndarray) -> np.ndarray:
 def _spectral_residual(rgb: np.ndarray) -> np.ndarray:
     """Hou & Zhang spectral residual：用 numpy 寫，唔使 opencv-contrib 嘅 saliency module。"""
     height, width = rgb.shape[:2]
-    work_h = max(8, round(SALIENCY_WIDTH * height / width))
+    work_h = max(SALIENCY_MIN_HEIGHT, round(SALIENCY_WIDTH * height / width))
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     small = cv2.resize(gray, (SALIENCY_WIDTH, work_h), interpolation=cv2.INTER_AREA).astype(np.float64)
     spectrum = np.fft.fft2(small)
-    log_amplitude = np.log(np.abs(spectrum) + 1e-8)
-    residual = log_amplitude - cv2.blur(log_amplitude, (3, 3))
+    log_amplitude = np.log(np.abs(spectrum) + SPECTRUM_EPS)
+    residual = log_amplitude - cv2.blur(log_amplitude, (SPECTRAL_AVERAGE_PX, SPECTRAL_AVERAGE_PX))
     restored = np.abs(np.fft.ifft2(np.exp(residual + 1j * np.angle(spectrum)))) ** 2
     restored = cv2.GaussianBlur(restored, (0, 0), SALIENCY_BLUR_SIGMA)
     return _normalise(cv2.resize(restored.astype(np.float32), (width, height)))
@@ -111,8 +128,8 @@ def _spectral_residual(rgb: np.ndarray) -> np.ndarray:
 def _colour_contrast(rgb: np.ndarray) -> np.ndarray:
     """同全圖平均色差幾遠（Lab）：補 spectral residual 對大塊主體唔敏感嘅問題。"""
     lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
-    distance = np.linalg.norm(lab - lab.reshape(-1, 3).mean(axis=0), axis=2)
-    sigma = max(rgb.shape[:2]) / 80
+    distance = np.linalg.norm(lab - lab.reshape(-1, lab.shape[2]).mean(axis=0), axis=2)
+    sigma = max(rgb.shape[:2]) / COLOUR_CONTRAST_SIGMA_DIVISOR
     return _normalise(cv2.GaussianBlur(distance, (0, 0), sigma))
 
 
@@ -135,7 +152,7 @@ def _merge_boxes(boxes: list[Box]) -> tuple[Box, ...]:
 
 def _has_eye(gray: np.ndarray, face: Box, eye_cascade: "cv2.CascadeClassifier") -> bool:
     upper = gray[face.y : face.y + round(face.h * EYE_REGION_RATIO), face.x : face.right]
-    min_eye = max(8, round(face.w * EYE_MIN_RATIO))
+    min_eye = max(EYE_MIN_PX, round(face.w * EYE_MIN_RATIO))
     eyes = eye_cascade.detectMultiScale(
         upper, FACE_SCALE_STEP, FACE_MIN_NEIGHBOURS, minSize=(min_eye, min_eye)
     )
@@ -146,7 +163,7 @@ def detect_faces(rgb: np.ndarray) -> tuple[Box, ...]:
     """正面（兩個 cascade）+ 兩邊側面；封面多數係黑白 / 側面相，所以全部都試，再用眼過濾誤報。"""
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     width = gray.shape[1]
-    min_side = max(24, round(min(gray.shape) * FACE_MIN_RATIO))
+    min_side = max(FACE_MIN_PX, round(min(gray.shape) * FACE_MIN_RATIO))
     eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_eye.xml")
     found: list[Box] = []
     for name in FACE_CASCADES:
@@ -180,12 +197,16 @@ def detect_text_boxes(rgb: np.ndarray) -> tuple[Box, ...]:
     height, width = rgb.shape[:2]
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     gradient = cv2.morphologyEx(
-        gray, cv2.MORPH_GRADIENT, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        gray,
+        cv2.MORPH_GRADIENT,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (STROKE_KERNEL_PX, STROKE_KERNEL_PX)),
     )
     _, strokes = cv2.threshold(gradient, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     # 先模糊少少：筆劃邊緣嘅像素先食到字本身嘅顏色
-    saturation = cv2.cvtColor(cv2.GaussianBlur(rgb, (0, 0), 2), cv2.COLOR_RGB2HSV)[:, :, 1]
-    close_px = max(3, round(min(height, width) / 40))
+    saturation = cv2.cvtColor(cv2.GaussianBlur(rgb, (0, 0), TEXT_COLOUR_BLUR_SIGMA), cv2.COLOR_RGB2HSV)[
+        ..., HSV_SATURATION
+    ]
+    close_px = max(TEXT_CLOSE_MIN_PX, round(min(height, width) / TEXT_CLOSE_DIVISOR))
     blobs = cv2.morphologyEx(strokes, cv2.MORPH_CLOSE, np.ones((close_px, close_px), np.uint8))
     contours, _ = cv2.findContours(blobs, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     boxes = [Box(*(int(value) for value in cv2.boundingRect(contour))) for contour in contours]
@@ -196,8 +217,17 @@ def _face_heat(shape: tuple[int, int], faces: tuple[Box, ...]) -> np.ndarray:
     heat = np.zeros(shape, dtype=np.float32)
     for face in faces:
         centre = (face.x + face.w // 2, face.y + face.h // 2)
-        cv2.ellipse(heat, centre, (face.w // 2, round(face.h * 0.6)), 0, 0, 360, 1.0, -1)
-    sigma = max(shape) / 60
+        cv2.ellipse(
+            heat,
+            centre,
+            (face.w // 2, round(face.h * FACE_HEAT_HEIGHT_RATIO)),
+            0,
+            0,
+            FULL_TURN_DEG,
+            1.0,
+            cv2.FILLED,
+        )
+    sigma = max(shape) / FACE_HEAT_SIGMA_DIVISOR
     return _normalise(cv2.GaussianBlur(heat, (0, 0), sigma)) if faces else heat
 
 
@@ -216,8 +246,9 @@ def analyse(rgb: np.ndarray, manual_text: Box | None = None) -> Analysis:
     else:
         text_boxes = detect_text_boxes(rgb)
         text_source = "detected" if text_boxes else "none"
-    base = 0.5 * _spectral_residual(rgb) + 0.5 * _colour_contrast(rgb)
+    spectral = SALIENCY_SPECTRAL_WEIGHT
+    base = spectral * _spectral_residual(rgb) + (1 - spectral) * _colour_contrast(rgb)
     saliency = _normalise(base + FACE_WEIGHT * _face_heat(rgb.shape[:2], faces))
     # 焦點只計最突出嗰部分，唔畀成片背景拉返去中間
-    focus_weights = np.where(saliency > np.percentile(saliency, 80), saliency, 0)
+    focus_weights = np.where(saliency > np.percentile(saliency, FOCAL_PERCENTILE), saliency, 0)
     return Analysis(saliency, faces, text_boxes, text_source, _weighted_centroid(focus_weights))

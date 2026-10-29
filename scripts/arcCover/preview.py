@@ -35,11 +35,35 @@ PHONE_TILE_CSS_PX = 358  # 手機書架 tile 大約闊度
 CONTACT_CELL_WIDTH = 450
 CONTACT_LABEL_PX = 22
 FRAME_COLOUR = (220, 40, 40)
+# 預覽排版（PNG px）
+PAGE_MARGIN_PX = 40
+COLUMN_GAP_PX = 60
+ROW_GAP_PX = 24
+LABEL_GAP_PX = 16
+LABEL_HALF_HEIGHT_PX = 6
+TITLE_TOP_PX = 16
+FRAME_WIDTH_PX = 2
+FRAME_LABEL_INSET = (8, 6)
+SHELF_FRAME_TOLERANCE_PX = 2
+CONTACT_COLUMNS = 2
+CONTACT_LABEL_INSET = (6, 5)
+CONTACT_BACKGROUND = (255, 255, 255)
+# ArcSheet conic 進度由 12 點鐘（PIL 角度 -90）順時針
+ARC_START_DEG = -90
+FULL_TURN_DEG = 360
+# analysis.png：原圖同熱圖混色、框線
+OVERLAY_IMAGE_WEIGHT = 0.6
+OVERLAY_HEAT_WEIGHT = 0.4
+OVERLAY_LINE_PX = 3
+FOCAL_ARM_PX = 14
+FACE_BOX_COLOUR = (0, 220, 0)
+TEXT_BOX_COLOUR = (230, 0, 0)
+FOCAL_COLOUR = (0, 80, 255)
 
 
 def _hex_rgb(value: str) -> tuple[int, int, int]:
-    value = value.lstrip("#")
-    return int(value[0:2], 16), int(value[2:4], 16), int(value[4:6], 16)
+    red, green, blue = bytes.fromhex(value.lstrip("#"))
+    return red, green, blue
 
 
 def _circle_mask(diameter: int) -> Image.Image:
@@ -62,9 +86,9 @@ def _vignette(diameter: int) -> Image.Image:
     alpha = vignette_alpha((diameter, diameter))
     # 暗角只喺碟入面（.vignette 有 border-radius: 50%）
     alpha *= np.asarray(_circle_mask(diameter), dtype=np.float32) / 255
-    layer = np.zeros((diameter, diameter, 4), dtype=np.uint8)
-    layer[..., 3] = (alpha * 255).astype(np.uint8)
-    return Image.fromarray(layer, "RGBA")
+    layer = Image.new("RGBA", (diameter, diameter), (0, 0, 0, 0))
+    layer.putalpha(Image.fromarray((alpha * 255).astype(np.uint8), "L"))
+    return layer
 
 
 def render_disc(art: np.ndarray, diameter: int, theme: dict[str, str], large: bool) -> Image.Image:
@@ -123,8 +147,8 @@ def render_arc_thumb(art: np.ndarray, scale: float, theme: dict[str, str]) -> Im
     draw.ellipse((0, 0, big.width - 1, big.height - 1), fill=_hex_rgb(theme["track"]) + (255,))
     draw.pieslice(
         (0, 0, big.width - 1, big.height - 1),
-        -90,
-        -90 + 360 * ARC_PROGRESS,
+        ARC_START_DEG,
+        ARC_START_DEG + FULL_TURN_DEG * ARC_PROGRESS,
         fill=_hex_rgb(theme["accent"]) + (255,),
     )
     canvas = big.resize((ring_d, ring_d), Image.LANCZOS)
@@ -138,58 +162,66 @@ def disc_preview(art: np.ndarray, theme: dict[str, str]) -> Image.Image:
     page = Image.new("RGBA", PREVIEW_SIZE, _hex_rgb(theme["bg"]) + (255,))
     draw = ImageDraw.Draw(page)
     large = render_disc(art, LARGE_DISC_PX, theme, large=True)
-    page.alpha_composite(large, (40, (PREVIEW_SIZE[1] - large.height) // 2))
-    column = 40 + large.width + 60
+    page.alpha_composite(large, (PAGE_MARGIN_PX, (PREVIEW_SIZE[1] - large.height) // 2))
+    column = PAGE_MARGIN_PX + large.width + COLUMN_GAP_PX
     items = (
         ("arc row x2", render_arc_thumb(art, 2, theme)),
         ("arc row 52px", render_arc_thumb(art, 1, theme)),
         ("small disc x2", render_disc(art, SMALL_DISC_CSS_PX * 2, theme, large=False)),
         ("small disc 40px", render_disc(art, SMALL_DISC_CSS_PX, theme, large=False)),
     )
-    top = 40
+    top = PAGE_MARGIN_PX
     for label, image in items:
         page.alpha_composite(image, (column, top))
-        draw.text((column + image.width + 16, top + image.height // 2 - 6), label, fill=LABEL_COLOUR)
-        top += image.height + 24
-    draw.text((40, 16), "player disc (approx. phone size x1.5)", fill=LABEL_COLOUR)
+        label_at = (column + image.width + LABEL_GAP_PX, top + image.height // 2 - LABEL_HALF_HEIGHT_PX)
+        draw.text(label_at, label, fill=LABEL_COLOUR)
+        top += image.height + ROW_GAP_PX
+    draw.text((PAGE_MARGIN_PX, TITLE_TOP_PX), "player disc (approx. phone size x1.5)", fill=LABEL_COLOUR)
     return page.convert("RGB")
 
 
 def tile_preview(art: np.ndarray, theme: dict[str, str]) -> Image.Image:
     """tile 加圓角；唔係 2:1 就畫書架 object-fit: cover 會見到嘅 2:1 框。"""
-    width = PREVIEW_SIZE[0] - 80
+    width = PREVIEW_SIZE[0] - 2 * PAGE_MARGIN_PX
     height = round(width * art.shape[0] / art.shape[1])
-    page = Image.new("RGBA", (PREVIEW_SIZE[0], height + 80), _hex_rgb(theme["bg"]) + (255,))
+    page = Image.new("RGBA", (PREVIEW_SIZE[0], height + 2 * PAGE_MARGIN_PX), _hex_rgb(theme["bg"]) + (255,))
     tile = Image.fromarray(art).convert("RGBA").resize((width, height), Image.LANCZOS)
     radius = round(TILE_RADIUS_CSS_PX * width / PHONE_TILE_CSS_PX)
     mask = Image.new("L", (width * SUPERSAMPLE, height * SUPERSAMPLE), 0)
     ImageDraw.Draw(mask).rounded_rectangle(
         (0, 0, mask.width - 1, mask.height - 1), radius * SUPERSAMPLE, fill=255
     )
-    page.paste(tile, (40, 40), mask.resize((width, height), Image.LANCZOS))
+    page.paste(tile, (PAGE_MARGIN_PX, PAGE_MARGIN_PX), mask.resize((width, height), Image.LANCZOS))
     draw = ImageDraw.Draw(page)
     shelf_h = round(width / SHELF_ASPECT)
-    if abs(shelf_h - height) > 2:
-        top = 40 + (height - shelf_h) // 2
-        draw.rectangle((40, top, 40 + width - 1, top + shelf_h - 1), outline=FRAME_COLOUR, width=2)
-        draw.text((48, top + 6), "shelf 2:1 crop (object-fit: cover)", fill=FRAME_COLOUR)
-    draw.text((40, 16), f"tile {art.shape[1]}x{art.shape[0]}", fill=LABEL_COLOUR)
+    if abs(shelf_h - height) > SHELF_FRAME_TOLERANCE_PX:
+        top = PAGE_MARGIN_PX + (height - shelf_h) // 2
+        frame = (PAGE_MARGIN_PX, top, PAGE_MARGIN_PX + width - 1, top + shelf_h - 1)
+        draw.rectangle(frame, outline=FRAME_COLOUR, width=FRAME_WIDTH_PX)
+        label_at = (PAGE_MARGIN_PX + FRAME_LABEL_INSET[0], top + FRAME_LABEL_INSET[1])
+        draw.text(label_at, "shelf 2:1 crop (object-fit: cover)", fill=FRAME_COLOUR)
+    draw.text((PAGE_MARGIN_PX, TITLE_TOP_PX), f"tile {art.shape[1]}x{art.shape[0]}", fill=LABEL_COLOUR)
     return page.convert("RGB")
 
 
 def analysis_overlay(rgb: np.ndarray, analysis: Analysis) -> Image.Image:
     """原圖 + saliency 熱圖 + 人面（綠）+ 標題字（紅）+ 焦點（藍十字）。"""
     heat = cv2.applyColorMap((analysis.saliency * 255).astype(np.uint8), cv2.COLORMAP_JET)[..., ::-1]
-    blended = (rgb.astype(np.float32) * 0.6 + heat.astype(np.float32) * 0.4).astype(np.uint8)
+    blended = (
+        rgb.astype(np.float32) * OVERLAY_IMAGE_WEIGHT + heat.astype(np.float32) * OVERLAY_HEAT_WEIGHT
+    ).astype(np.uint8)
     image = Image.fromarray(blended)
     draw = ImageDraw.Draw(image)
     for face in analysis.faces:
-        draw.rectangle((face.x, face.y, face.right, face.bottom), outline=(0, 220, 0), width=3)
+        draw.rectangle(
+            (face.x, face.y, face.right, face.bottom), outline=FACE_BOX_COLOUR, width=OVERLAY_LINE_PX
+        )
     for box in analysis.text_boxes:
-        draw.rectangle((box.x, box.y, box.right, box.bottom), outline=(230, 0, 0), width=3)
+        draw.rectangle((box.x, box.y, box.right, box.bottom), outline=TEXT_BOX_COLOUR, width=OVERLAY_LINE_PX)
     focal_x, focal_y = analysis.focal
-    draw.line((focal_x - 14, focal_y, focal_x + 14, focal_y), fill=(0, 80, 255), width=3)
-    draw.line((focal_x, focal_y - 14, focal_x, focal_y + 14), fill=(0, 80, 255), width=3)
+    arm = FOCAL_ARM_PX
+    draw.line((focal_x - arm, focal_y, focal_x + arm, focal_y), fill=FOCAL_COLOUR, width=OVERLAY_LINE_PX)
+    draw.line((focal_x, focal_y - arm, focal_x, focal_y + arm), fill=FOCAL_COLOUR, width=OVERLAY_LINE_PX)
     return image
 
 
@@ -200,14 +232,22 @@ def contact_sheet(previews: list[tuple[str, Image.Image]]) -> Image.Image:
         height = round(image.height * CONTACT_CELL_WIDTH / image.width)
         cells.append((label, image.resize((CONTACT_CELL_WIDTH, height), Image.LANCZOS)))
     row_heights = []
-    for start in range(0, len(cells), 2):
-        row_heights.append(max(cell.height for _, cell in cells[start : start + 2]) + CONTACT_LABEL_PX)
-    sheet = Image.new("RGB", (CONTACT_CELL_WIDTH * 2, sum(row_heights) or 1), (255, 255, 255))
+    for start in range(0, len(cells), CONTACT_COLUMNS):
+        row_heights.append(
+            max(cell.height for _, cell in cells[start : start + CONTACT_COLUMNS]) + CONTACT_LABEL_PX
+        )
+    sheet = Image.new(
+        "RGB", (CONTACT_CELL_WIDTH * CONTACT_COLUMNS, sum(row_heights) or 1), CONTACT_BACKGROUND
+    )
     draw = ImageDraw.Draw(sheet)
     top = 0
     for row, row_height in enumerate(row_heights):
-        for column, (label, cell) in enumerate(cells[row * 2 : row * 2 + 2]):
-            draw.text((column * CONTACT_CELL_WIDTH + 6, top + 5), label, fill=LABEL_COLOUR)
+        for column, (label, cell) in enumerate(cells[row * CONTACT_COLUMNS : (row + 1) * CONTACT_COLUMNS]):
+            draw.text(
+                (column * CONTACT_CELL_WIDTH + CONTACT_LABEL_INSET[0], top + CONTACT_LABEL_INSET[1]),
+                label,
+                fill=LABEL_COLOUR,
+            )
             sheet.paste(cell, (column * CONTACT_CELL_WIDTH, top + CONTACT_LABEL_PX))
         top += row_height
     return sheet

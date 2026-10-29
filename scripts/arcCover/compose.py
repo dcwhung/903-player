@@ -11,34 +11,40 @@ from constants import (
     ANALYSIS_SHORT_SIDE,
     BLUR_DIM,
     BLUR_SIGMA_RATIO,
+    CENTRE_TIE_BREAK,
+    CIRCLE_CLIP_CUT,
+    DISC_FACE_CENTRE_Y,
+    EXTEND_BAND_MIN_ROWS,
     EXTEND_BAND_RATIO,
+    EXTEND_EDGE_SIGMA,
+    EXTEND_FADE_RATE,
+    EXTEND_FAR_SIGMA,
+    EXTEND_GRAIN_SIGMA,
+    EXTEND_ROW_SIGMA,
+    EXTEND_SEAM_KERNEL,
     EXTEND_SEAM_PX,
-    EXTEND_SMOOTH_SIGMA,
     FACE_CROP_MARGIN,
     FACE_CROP_MAX_UPSCALE,
+    GRAIN_CLIP_MAD,
+    SALIENT_BOX_PERCENTILE,
+    SNAP_MIN_PX,
+    SNAP_RATIO,
     SPINDLE_RATIO,
     TEXT_CUT_PENALTY,
+    TEXT_INSIDE,
+    TEXT_OUTSIDE,
+    TILE_FACE_CENTRE_Y,
+    TITLE_ALPHA_BLUR_SIGMA,
+    TITLE_ALPHA_DILATE_PX,
     TITLE_DIFF_THRESHOLD,
+    TITLE_HOLE_MIN_PX,
+    TITLE_HOLE_RATIO,
+    TITLE_INPAINT_RADIUS,
+    TITLE_PAD_RATIO,
 )
 from geometry import disc_radius, vignette_alpha
 
 Size = tuple[int, int]  # (闊, 高)
-
-# 碟面中間有碟心擋住：人面中心放喺窗口高度呢個比例，唔好畀碟心蓋住塊面
-DISC_FACE_CENTRE_Y = 0.40
-TILE_FACE_CENTRE_Y = 0.45
-# 「成個字喺入面 / 完全喺出面」嘅容差
-TEXT_INSIDE = 0.98
-TEXT_OUTSIDE = 0.02
-CENTRE_TIE_BREAK = 1e-6
-CIRCLE_CLIP_CUT = 0.3
-# 揀咗位之後，字框差幾多就推埋（縮圖 1 px ≈ 原圖幾 px）
-SNAP_MIN_PX = 4
-SNAP_RATIO = 0.05
-TITLE_HOLE_MIN_PX = 6
-TITLE_HOLE_RATIO = 0.08
-# 補底顆粒最多幾多個 MAD：只要細紋理，唔要邊緣嘅物件輪廓
-GRAIN_CLIP_MAD = 3.0
 
 
 def resize_to(rgb: np.ndarray, size: Size) -> np.ndarray:
@@ -156,7 +162,7 @@ def _union(boxes: tuple[Box, ...]) -> Box:
 
 
 def _salient_box(analysis: Analysis) -> Box:
-    mask = (analysis.saliency >= np.percentile(analysis.saliency, 90)).astype(np.uint8)
+    mask = (analysis.saliency >= np.percentile(analysis.saliency, SALIENT_BOX_PERCENTILE)).astype(np.uint8)
     return Box(*(int(value) for value in cv2.boundingRect(mask)))
 
 
@@ -198,23 +204,23 @@ def fit_blur(rgb: np.ndarray, size: Size) -> np.ndarray:
 
 
 def _smooth_columns(rows: np.ndarray, sigma: float) -> np.ndarray:
-    return cv2.GaussianBlur(rows, (0, 0), sigmaX=sigma, sigmaY=0.1)
+    return cv2.GaussianBlur(rows, (0, 0), sigmaX=sigma, sigmaY=EXTEND_ROW_SIGMA)
 
 
 def _grow_up(image: np.ndarray, rows: int, rng: np.random.Generator) -> np.ndarray:
     """向上生成 rows 行：底色由邊緣嗰行漸變到平滑平均色，顆粒由邊緣帶逐行抽返（唔用 inpaint + 模糊）。"""
-    band_rows = max(4, round(image.shape[0] * EXTEND_BAND_RATIO))
+    band_rows = max(EXTEND_BAND_MIN_ROWS, round(image.shape[0] * EXTEND_BAND_RATIO))
     band = image[:band_rows].astype(np.float32)
-    texture = band - cv2.GaussianBlur(band, (0, 0), 3)
+    texture = band - cv2.GaussianBlur(band, (0, 0), EXTEND_GRAIN_SIGMA)
     spread = float(np.median(np.abs(texture))) * GRAIN_CLIP_MAD + 1
     texture = np.clip(texture, -spread, spread)
-    near = _smooth_columns(image[:1].astype(np.float32), 3)[0]
-    far = _smooth_columns(band.mean(axis=0, keepdims=True), EXTEND_SMOOTH_SIGMA * 4)[0]
+    near = _smooth_columns(image[:1].astype(np.float32), EXTEND_EDGE_SIGMA)[0]
+    far = _smooth_columns(band.mean(axis=0, keepdims=True), EXTEND_FAR_SIGMA)[0]
     width = image.shape[1]
-    out = np.empty((rows, width, 3), dtype=np.float32)
+    out = np.empty((rows, width, image.shape[2]), dtype=np.float32)
     for index in range(rows):
         distance = (rows - index) / rows  # 0 = 貼住原圖，1 = 最外
-        blend = min(1.0, distance * 3)
+        blend = min(1.0, distance * EXTEND_FADE_RATE)
         grain = np.roll(texture[int(rng.integers(band_rows))], int(rng.integers(width)), axis=0)
         out[index] = near * (1 - blend) + far * blend + grain
     return np.clip(out, 0, 255).astype(np.uint8)
@@ -224,7 +230,7 @@ def _feather_seam(stacked: np.ndarray, seam_row: int) -> None:
     """接駁位上下幾行做少少垂直模糊，避免一條硬線。"""
     top, bottom = max(0, seam_row - EXTEND_SEAM_PX), min(stacked.shape[0], seam_row + EXTEND_SEAM_PX)
     if bottom - top > 2:
-        stacked[top:bottom] = cv2.GaussianBlur(stacked[top:bottom], (1, 5), 0)
+        stacked[top:bottom] = cv2.GaussianBlur(stacked[top:bottom], EXTEND_SEAM_KERNEL, 0)
 
 
 def _extend_vertical(image: np.ndarray, top: int, bottom: int, rng: np.random.Generator) -> np.ndarray:
@@ -259,7 +265,7 @@ def fit_extend(rgb: np.ndarray, size: Size, seed: int) -> np.ndarray:
 
 def shrink_title(rgb: np.ndarray, box: Box, scale: float) -> tuple[np.ndarray, Box]:
     """將標題字摳出嚟縮細貼返原位（中心不變），底用 inpaint 補。回傳新圖同縮細後嘅字框。"""
-    pad = round(max(box.w, box.h) * 0.15)
+    pad = round(max(box.w, box.h) * TITLE_PAD_RATIO)
     left, top = max(0, box.x - pad), max(0, box.y - pad)
     right, bottom = min(rgb.shape[1], box.right + pad), min(rgb.shape[0], box.bottom + pad)
     region = rgb[top:bottom, left:right]
@@ -270,9 +276,10 @@ def shrink_title(rgb: np.ndarray, box: Box, scale: float) -> tuple[np.ndarray, B
         max(0, box.y - margin - top) : box.bottom + margin - top,
         max(0, box.x - margin - left) : box.right + margin - left,
     ] = 255
-    background = cv2.inpaint(region, hole, 5, cv2.INPAINT_TELEA)
+    background = cv2.inpaint(region, hole, TITLE_INPAINT_RADIUS, cv2.INPAINT_TELEA)
     text = (np.abs(region.astype(np.int16) - background).sum(axis=2) > TITLE_DIFF_THRESHOLD) & (hole > 0)
-    alpha = cv2.GaussianBlur(cv2.dilate(text.astype(np.float32), np.ones((3, 3), np.uint8)), (0, 0), 1.2)
+    dilate = np.ones((TITLE_ALPHA_DILATE_PX, TITLE_ALPHA_DILATE_PX), np.uint8)
+    alpha = cv2.GaussianBlur(cv2.dilate(text.astype(np.float32), dilate), (0, 0), TITLE_ALPHA_BLUR_SIGMA)
     centre = ((box.x + box.right) / 2 - left, (box.y + box.bottom) / 2 - top)
     matrix = cv2.getRotationMatrix2D(centre, 0, scale)
     shrunk_text = cv2.warpAffine(region, matrix, region.shape[1::-1], flags=cv2.INTER_AREA)

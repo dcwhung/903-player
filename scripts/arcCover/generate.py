@@ -71,6 +71,7 @@ EXIT_USAGE = 2
 PARTIAL_SUFFIX = ".partial"
 RETIRED_SUFFIX = ".old"
 UPSCALE_DECIMALS = 3
+BOX_FIELDS = 4  # x,y,w,h
 
 DISC_METHODS: tuple[Method, ...] = (
     CENTER_CROP,
@@ -367,7 +368,10 @@ def run(options: Options) -> dict[str, object]:
 
 def _parse_box(value: str) -> Box:
     parts = [int(part) for part in value.split(",")]
-    if len(parts) != 4 or parts[0] < 0 or parts[1] < 0 or parts[2] <= 0 or parts[3] <= 0:
+    if len(parts) != BOX_FIELDS:
+        raise argparse.ArgumentTypeError("要 x,y,w,h 四個數")
+    x, y, w, h = parts
+    if x < 0 or y < 0 or w <= 0 or h <= 0:
         raise argparse.ArgumentTypeError("要 x,y,w,h（原圖 px，x / y ≥ 0，w / h > 0）")
     return Box(*parts)
 
