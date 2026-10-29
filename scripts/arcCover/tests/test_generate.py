@@ -23,7 +23,18 @@ from generate import GeneratorError, Options, run  # noqa: E402
 
 DISC_COUNT = 6
 TILE_COUNT = 5
-VARIANT_KEYS = {"id", "kind", "method", "file", "preview", "width", "height", "sha256", "params"}
+VARIANT_KEYS = {
+    "id",
+    "kind",
+    "method",
+    "file",
+    "preview",
+    "width",
+    "height",
+    "sha256",
+    "params",
+    "duplicateOf",
+}
 
 
 class GenerateTest(unittest.TestCase):
@@ -76,7 +87,7 @@ class GenerateTest(unittest.TestCase):
         run(self._options())
         path = self.root / "out" / "lancy" / "half" / "round-1" / "manifest.json"
         manifest = json.loads(path.read_text(encoding="utf-8"))
-        self.assertEqual(manifest["schema"], 1)
+        self.assertEqual(manifest["schema"], 2)
         self.assertEqual((manifest["drama"], manifest["arc"], manifest["round"]), ("lancy", "half", 1))
         self.assertEqual(manifest["source"]["file"], "cover photo.png")
         self.assertEqual((manifest["source"]["width"], manifest["source"]["height"]), FAKE_SIZE)

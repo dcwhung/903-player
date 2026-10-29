@@ -39,8 +39,9 @@ WEBP_METHOD: Final[int] = 6
 
 # 冇 --arc 時嘅資料夾名（廣播劇本身嘅封面）
 DRAMA_LEVEL_SLUG: Final[str] = "_drama"
-MANIFEST_SCHEMA: Final[int] = 1
-TOOL_VERSION: Final[str] = "1.0.0"
+# schema 2：加 env、duplicateOf 永遠有（冇重複 = null）；欄位見 manifest.schema.json
+MANIFEST_SCHEMA: Final[int] = 2
+TOOL_VERSION: Final[str] = "1.1.0"
 
 # ---- 碟面疊層（Disc.module.css） ----
 SPINDLE_RATIO: Final[float] = 0.12  # .spindle width: 12%

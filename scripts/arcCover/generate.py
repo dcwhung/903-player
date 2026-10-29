@@ -11,6 +11,7 @@ analysis.png、contact.png 同 manifest.json。同一張圖、同一組參數，
 import argparse
 import hashlib
 import json
+import platform
 import re
 import shutil
 import sys
@@ -18,8 +19,10 @@ import zlib
 from dataclasses import dataclass, replace
 from pathlib import Path
 
+import cv2
 import numpy as np
-from PIL import Image
+import PIL
+from PIL import Image, features
 
 from analysis import Analysis, Box, analyse, load_rgb
 from compose import (
@@ -271,14 +274,25 @@ def _write_variants(
     for item in rendered:
         entry, preview = _write_one(item, target, prefix, theme)
         variant_id, digest = str(entry["id"]), str(entry["sha256"])
-        # 同一個 kind 兩個方法出到一模一樣（例如原圖已經係 16:9）就標返，review 時唔使睇兩次
-        if digest in seen:
-            entry["duplicateOf"] = seen[digest]
+        # 同一個 kind 兩個方法出到一模一樣（例如原圖已經係 16:9）就標返，review 時唔使睇兩次；
+        # 冇重複都寫 null，review 頁唔使分「冇 key」同「null」
+        entry["duplicateOf"] = seen.get(digest)
         seen.setdefault(digest, variant_id)
         entries.append(entry)
         sheet_items.append((variant_id, preview))
     contact_sheet(sheet_items).save(target / "contact.png", "PNG")
     return entries
+
+
+def _environment() -> dict[str, str]:
+    """會影響輸出 bytes 嘅版本：唔同 env 出嘅 round，sha256 / duplicateOf 唔一定可以比。"""
+    return {
+        "python": platform.python_version(),
+        "pillow": PIL.__version__,
+        "libwebp": str(features.version("webp")),
+        "opencv": cv2.__version__,
+        "numpy": np.__version__,
+    }
 
 
 def _build_manifest(
@@ -288,6 +302,7 @@ def _build_manifest(
         "schema": MANIFEST_SCHEMA,
         "tool": "scripts/arcCover/generate.py",
         "toolVersion": TOOL_VERSION,
+        "env": _environment(),
         "drama": options.drama,
         "arc": options.arc,
         "level": "arc" if options.arc else "drama",

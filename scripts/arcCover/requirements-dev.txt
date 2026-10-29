@@ -1,0 +1,5 @@
+# 跑 test / lint 先要（generate.py 本身只需要 requirements.txt）
+-r requirements.txt
+pytest>=8.0
+jsonschema>=4.21
+ruff>=0.6
