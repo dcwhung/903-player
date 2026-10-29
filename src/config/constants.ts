@@ -35,10 +35,11 @@ export const STALL_HIDDEN_MARK_MS = 12000;
  * 拔 AirPods 再鎖屏 Play）。冇嘢載緊（已發 playing），唔 reload 就永遠救唔返，所以鎖屏都 reload
  * （load() 會清 buffer 重新下載，但唔會打斷一個進行中嘅載入，S-616）；
  * 鎖屏 Play（resume）見到上一次嘗試係咁亦即刻 reload，而唔係淨係 play()（v1.20.9）。
- * 鎖屏 timeupdate 約 5 秒先一次而 log 見過 playing 後 ~0.9 s 先出聲：用 4 s（約 4 倍）避免
- * 快嘅鎖屏載入（playing 喺 deadline 前 ~2 s 到）被誤判凍結 reload，重演 v1.20.7（W-506）
+ * 鎖屏 timeupdate 約 5 秒先一次而 log 見過 playing 後 ~0.9 s 先出聲：用 3.5 s（約 3.5 倍）避免
+ * 快嘅鎖屏載入被誤判凍結 reload，重演 v1.20.7（W-506）；又要短過 STALL_FIRST_RETRY_MS，
+ * 鎖屏 Play 後 ~22 ms 就發 playing 嘅凍結（AirPods log）先可以喺第一個 deadline 就 reload（W-508）
  */
-export const FROZEN_PLAYING_MS = 4000;
+export const FROZEN_PLAYING_MS = 3500;
 /**
  * 卡住 deadline 到咗但下載仲有進展（慢網）時，隔咁耐再睇一次：唔扣重試次數（W-498）
  */

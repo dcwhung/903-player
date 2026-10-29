@@ -1678,6 +1678,10 @@ describe('AudioController hidden frozen playing (v1.20.9)', () => {
     const PAUSED_AT = 28.9;
     /** log：playing 17:38:45.488 → ms:pause 17:38:52.354 */
     const FROZEN_BEFORE_PAUSE_MS = 6866;
+    /** log：ms:play 17:38:45.465 → playing 17:38:45.488（約 22 ms） */
+    const PLAY_TO_PLAYING_MS = 22;
+    /** W-507：過咗凍結門檻時，位置已經靜靜雞行咗（夠出聲門檻），冇 timeupdate */
+    const SILENT_AUDIBLE_SECONDS = 0.5;
     /** W-506：playing 喺 deadline 前幾耐先到（快嘅鎖屏載入） */
     const PLAYING_BEFORE_DEADLINE_MS = 2000;
     /** deadline 前 100 ms 先開始出聲（playing 之後 1.9 s） */
@@ -1714,9 +1718,10 @@ describe('AudioController hidden frozen playing (v1.20.9)', () => {
         return { audio, controller, detach };
     };
 
-    /** 鎖屏 Play：play / playing / play() resolve，但位置凍結（冇 timeupdate） */
+    /** 鎖屏 Play：play / playing / play() resolve，但位置凍結（冇 timeupdate）；log：playing 喺 Play 後 22 ms */
     const lockScreenPlayFrozen = async (audio: FakeAudio, controller: AudioController) => {
         await controller.resume();
+        vi.advanceTimersByTime(PLAY_TO_PLAYING_MS);
         audio.emitPlaying(HAVE_ENOUGH_DATA);
     };
 
@@ -1761,6 +1766,26 @@ describe('AudioController hidden frozen playing (v1.20.9)', () => {
      * W-506 / W-507：鎖屏 timeupdate 約 5 秒先一次，位置靜靜雞行；playing 喺 deadline 前 2 秒先到、
      * 再慢 1.9 秒先出聲（健康）都唔可以當凍結 reload（會重演 v1.20.7 鎖屏 abort）
      */
+    // W-508：凍結門檻要短過第一個 deadline，log 嘅 22 ms playing 先會喺 4 s 就 reload
+    it('keeps the frozen limit shorter than the first stall deadline', () => {
+        expect(FROZEN_PLAYING_MS).toBeLessThan(STALL_FIRST_RETRY_MS - PLAY_TO_PLAYING_MS);
+    });
+
+    // W-507：判斷凍結要讀 element 嘅即時位置，唔好靠鎖屏時好疏嘅 timeupdate
+    it('does not reload at the deadline when the position moved without any timeupdate', async () => {
+        const { audio, controller, detach } = await lockedListeningThenPaused();
+        await controller.resume();
+        vi.advanceTimersByTime(PLAY_TO_PLAYING_MS);
+        audio.emitPlaying(HAVE_ENOUGH_DATA);
+        audio.currentTime += SILENT_AUDIBLE_SECONDS; // 出咗聲，鎖屏未發 timeupdate
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - PLAY_TO_PLAYING_MS);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(controller.getSnapshot().isStalled).toBe(false);
+        detach();
+    });
+
     it('does not reload a healthy locked start whose sound begins late with throttled timeupdates', async () => {
         const { audio, controller, detach } = await lockedListeningThenPaused();
         await controller.resume();
