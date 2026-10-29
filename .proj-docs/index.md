@@ -40,6 +40,7 @@
 | 2026-10-29 | [reviews/2026-10-29_review_s551-lockscreen-stall.md](reviews/2026-10-29_review_s551-lockscreen-stall.md)       |
 | 2026-10-29 | [reviews/2026-10-29_review_s551-rereview.md](reviews/2026-10-29_review_s551-rereview.md)                       |
 | 2026-10-29 | [reviews/2026-10-29_review_s551-round3.md](reviews/2026-10-29_review_s551-round3.md)                           |
+| 2026-10-29 | [reviews/2026-10-29_review_cover-review-page.md](reviews/2026-10-29_review_cover-review-page.md)               |
 
 ## QA
 
