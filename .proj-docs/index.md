@@ -10,37 +10,37 @@
 
 ## Reviews
 
-| 日期       | 文件                                                                                                                                  |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-26 | [reviews/2026-10-26_review_v1.10.0_batch.md](reviews/2026-10-26_review_v1.10.0_batch.md)                                              |
-| 2026-10-26 | [reviews/2026-10-26_review_v1.10.1.md](reviews/2026-10-26_review_v1.10.1.md)                                                          |
-| 2026-10-27 | [reviews/2026-10-27_review_v1.10.2.md](reviews/2026-10-27_review_v1.10.2.md)                                                          |
-| 2026-10-27 | [reviews/2026-10-27_review_v1.11.0.md](reviews/2026-10-27_review_v1.11.0.md)                                                          |
-| 2026-10-27 | [reviews/2026-10-27_review_v1.12.0.md](reviews/2026-10-27_review_v1.12.0.md)                                                          |
-| 2026-10-27 | [reviews/2026-10-27_review_size-limits_batch.md](reviews/2026-10-27_review_size-limits_batch.md)                                      |
-| 2026-10-27 | [reviews/2026-10-27_review_size-guard_batch.md](reviews/2026-10-27_review_size-guard_batch.md)                                        |
-| 2026-10-27 | [reviews/2026-10-27_review_cleanup_batch.md](reviews/2026-10-27_review_cleanup_batch.md)                                              |
-| 2026-10-28 | [reviews/2026-10-28_review_v1.19.1.md](reviews/2026-10-28_review_v1.19.1.md)                                                          |
-| 2026-10-28 | [reviews/2026-10-28_review_v1.19.2.md](reviews/2026-10-28_review_v1.19.2.md)                                                          |
-| 2026-10-28 | [reviews/2026-10-28_review_v1.19.3.md](reviews/2026-10-28_review_v1.19.3.md)                                                          |
-| 2026-10-28 | [reviews/2026-10-28_review_v1.19.4.md](reviews/2026-10-28_review_v1.19.4.md)                                                          |
-| 2026-10-28 | [reviews/2026-10-28_review_v1.20.3.md](reviews/2026-10-28_review_v1.20.3.md)                                                          |
-| 2026-10-28 | [reviews/2026-10-28_review_e2e_hardening.md](reviews/2026-10-28_review_e2e_hardening.md)                                              |
-| 2026-10-29 | [reviews/2026-10-29_review_batch-a_refactor.md](reviews/2026-10-29_review_batch-a_refactor.md)                                        |
-| 2026-10-29 | [reviews/2026-10-29_review_batch-b_fixes.md](reviews/2026-10-29_review_batch-b_fixes.md)                                              |
-| 2026-10-29 | [reviews/2026-10-29_review_batch-c_audio-controller.md](reviews/2026-10-29_review_batch-c_audio-controller.md)                        |
-| 2026-10-29 | [reviews/2026-10-29_review_v1.20.6.md](reviews/2026-10-29_review_v1.20.6.md)                                                          |
-| 2026-10-29 | [reviews/2026-10-29_review_catalog-tools.md](reviews/2026-10-29_review_catalog-tools.md)                                              |
-| 2026-10-29 | [reviews/2026-10-29_review_arc-cover-generator.md](reviews/2026-10-29_review_arc-cover-generator.md)                                  |
-| 2026-10-29 | [reviews/2026-10-29_review_catalog-tools-rereview.md](reviews/2026-10-29_review_catalog-tools-rereview.md)                            |
-| 2026-10-29 | [reviews/2026-10-29_review_cui-0008.md](reviews/2026-10-29_review_cui-0008.md)                                                        |
-| 2026-10-29 | [reviews/2026-10-29_review_tool-polish.md](reviews/2026-10-29_review_tool-polish.md)                                                  |
-| 2026-10-29 | [reviews/2026-10-29_review_e2e-offline.md](reviews/2026-10-29_review_e2e-offline.md)                                                  |
-| 2026-10-29 | [reviews/2026-10-29_review_e2e-offline-w497.md](reviews/2026-10-29_review_e2e-offline-w497.md)                                        |
-| 2026-10-29 | [reviews/2026-10-29_review_s551-lockscreen-stall.md](reviews/2026-10-29_review_s551-lockscreen-stall.md)                              |
-| 2026-10-29 | [reviews/2026-10-29_review_s551-rereview.md](reviews/2026-10-29_review_s551-rereview.md)                                              |
-| 2026-10-29 | [reviews/2026-10-29_review_s551-round3.md](reviews/2026-10-29_review_s551-round3.md)                                                  |
-| 2026-10-29 | [reviews/2026-10-29_review_cover-review-page.md](reviews/2026-10-29_review_cover-review-page.md)（78 warn，W-501–W-503、S-587–S-593） |
+| 日期       | 文件                                                                                                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-26 | [reviews/2026-10-26_review_v1.10.0_batch.md](reviews/2026-10-26_review_v1.10.0_batch.md)                                                                                   |
+| 2026-10-26 | [reviews/2026-10-26_review_v1.10.1.md](reviews/2026-10-26_review_v1.10.1.md)                                                                                               |
+| 2026-10-27 | [reviews/2026-10-27_review_v1.10.2.md](reviews/2026-10-27_review_v1.10.2.md)                                                                                               |
+| 2026-10-27 | [reviews/2026-10-27_review_v1.11.0.md](reviews/2026-10-27_review_v1.11.0.md)                                                                                               |
+| 2026-10-27 | [reviews/2026-10-27_review_v1.12.0.md](reviews/2026-10-27_review_v1.12.0.md)                                                                                               |
+| 2026-10-27 | [reviews/2026-10-27_review_size-limits_batch.md](reviews/2026-10-27_review_size-limits_batch.md)                                                                           |
+| 2026-10-27 | [reviews/2026-10-27_review_size-guard_batch.md](reviews/2026-10-27_review_size-guard_batch.md)                                                                             |
+| 2026-10-27 | [reviews/2026-10-27_review_cleanup_batch.md](reviews/2026-10-27_review_cleanup_batch.md)                                                                                   |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.19.1.md](reviews/2026-10-28_review_v1.19.1.md)                                                                                               |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.19.2.md](reviews/2026-10-28_review_v1.19.2.md)                                                                                               |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.19.3.md](reviews/2026-10-28_review_v1.19.3.md)                                                                                               |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.19.4.md](reviews/2026-10-28_review_v1.19.4.md)                                                                                               |
+| 2026-10-28 | [reviews/2026-10-28_review_v1.20.3.md](reviews/2026-10-28_review_v1.20.3.md)                                                                                               |
+| 2026-10-28 | [reviews/2026-10-28_review_e2e_hardening.md](reviews/2026-10-28_review_e2e_hardening.md)                                                                                   |
+| 2026-10-29 | [reviews/2026-10-29_review_batch-a_refactor.md](reviews/2026-10-29_review_batch-a_refactor.md)                                                                             |
+| 2026-10-29 | [reviews/2026-10-29_review_batch-b_fixes.md](reviews/2026-10-29_review_batch-b_fixes.md)                                                                                   |
+| 2026-10-29 | [reviews/2026-10-29_review_batch-c_audio-controller.md](reviews/2026-10-29_review_batch-c_audio-controller.md)                                                             |
+| 2026-10-29 | [reviews/2026-10-29_review_v1.20.6.md](reviews/2026-10-29_review_v1.20.6.md)                                                                                               |
+| 2026-10-29 | [reviews/2026-10-29_review_catalog-tools.md](reviews/2026-10-29_review_catalog-tools.md)                                                                                   |
+| 2026-10-29 | [reviews/2026-10-29_review_arc-cover-generator.md](reviews/2026-10-29_review_arc-cover-generator.md)                                                                       |
+| 2026-10-29 | [reviews/2026-10-29_review_catalog-tools-rereview.md](reviews/2026-10-29_review_catalog-tools-rereview.md)                                                                 |
+| 2026-10-29 | [reviews/2026-10-29_review_cui-0008.md](reviews/2026-10-29_review_cui-0008.md)                                                                                             |
+| 2026-10-29 | [reviews/2026-10-29_review_tool-polish.md](reviews/2026-10-29_review_tool-polish.md)                                                                                       |
+| 2026-10-29 | [reviews/2026-10-29_review_e2e-offline.md](reviews/2026-10-29_review_e2e-offline.md)                                                                                       |
+| 2026-10-29 | [reviews/2026-10-29_review_e2e-offline-w497.md](reviews/2026-10-29_review_e2e-offline-w497.md)                                                                             |
+| 2026-10-29 | [reviews/2026-10-29_review_s551-lockscreen-stall.md](reviews/2026-10-29_review_s551-lockscreen-stall.md)                                                                   |
+| 2026-10-29 | [reviews/2026-10-29_review_s551-rereview.md](reviews/2026-10-29_review_s551-rereview.md)                                                                                   |
+| 2026-10-29 | [reviews/2026-10-29_review_s551-round3.md](reviews/2026-10-29_review_s551-round3.md)                                                                                       |
+| 2026-10-29 | [reviews/2026-10-29_review_cover-review-page.md](reviews/2026-10-29_review_cover-review-page.md)（78 warn，W-501–W-503、S-587–S-593；Round 2 92 pass，W-504、S-595–S-597） |
 
 ## QA
 

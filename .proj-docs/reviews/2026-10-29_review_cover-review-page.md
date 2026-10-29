@@ -236,3 +236,122 @@ branch: "chore/tools/cover-review-page"
 blockers: ["W-501", "W-502", "W-503"]
 context: "Review of 51c0f59..09f5771 (1856b34 tool move, 09f5771 README). No shell injection: curl via args list, no shell=True, URL always starts with R2_BASE, segments NFC + quote(safe=''). No secrets (R2_BASE is the public r2.dev URL already in src/config/constants.ts). No binaries committed (stat + ls-files). .gitignore verified with git check-ignore (site/, rounds.json, files.json, img/*.webp ignored; src/dramas webp not). index.html: all innerHTML interpolation escaped; db docs never rendered as HTML. Gates: pytest 55 pass; ruff check/format clean (cwd scripts/arcCover); prettier clean; eslint verify.cjs 0. Coverage review/: build.py 85%, fetch_sources.py 53% (pure fns 100%, IO glue untested). W-501 curl network/TLS/proxy failures reported as 'cover not found' with stderr swallowed. W-502 files.json can exceed Artifact 255 files/publish (511/version, omitted files kept) - 44 current webp already = 88 files; README silent. W-503 download/fetch_one/main + current-image preview path untested. S-587 --arc slug / drama allow ../ (verified parse_slugs('x=../../evil')). S-588 sys.path insert per call + unclosed Image + private _theme_for. S-589 ARC_COVER_WORK undocumented. S-590 R2_BASE duplicates DRAMA_AUDIO_BASE. S-591 root /review/ /arcCover/ ignore rules too broad. S-592 hashOf 'cover' / docId '--' collision. S-593 size-only copy cache. No version bump needed (tooling only). Not pushed."
 ```
+
+---
+
+# Round 2 — 2026-10-29 — 覆核 W-501–W-503、S-587–S-593
+
+- 目標：`git diff 344e28a b837d82`
+    - `4145d34` docs(review)：S-584–S-590 改號做 S-587–S-593（同平行 review 撞號）
+    - `16ca75d` fix(tools)：build side（W-502 新 `publish.py` 分批 + `published.json` / `--mark-published`；W-503；S-587；S-588；S-592；S-593）
+    - `bcd4f64` fix(tools)：`fetch_sources`（W-501 exit 22 同其他 curl 錯誤分開、exit code 0/1/2/3；W-503 test；S-590 R2_BASE 鎖）
+    - `b837d82` docs(tools)：W-502 上限、S-589、S-591
+- Review Item ID：最高 W-503；S-594 已經畀平行 review 用咗。今次用 **W-504**、**S-595–S-597**。
+- 總評：10 項全部修好，test 由 55 個加到 79 個（另加 17 個 subtest），`review/` 覆蓋率 92%。我用真 repo 跑 `build.py`，冇 regression：44 張現用圖 + `rounds.json` 一共 89 個檔，slug 驗證冇誤擋現有劇集。不過 `--mark-published` 記低嘅係**最新一次 build** 嘅 hash，唔係真係送咗出去嘅批次。我重現到「rebuild 咗未 publish 就 mark」之後，下次 build 話「冇改動」，而頁面其實冇收到新檔（W-504）。**92 分 ✅ pass**，建議喺依賴增量 publish 之前修 W-504。
+
+## Round 2 Hard Gates
+
+| Gate          | 結果    | 證據                                                                                                                                                         |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Lint          | ✅ pass | `ruff check .` All checks passed；`ruff format --check .` 22 files already formatted；`prettier --check .` 全部合規；`eslint scripts/arcCover/review` exit 0 |
+| Type check    | n/a     | 同 Round 1                                                                                                                                                   |
+| Tests         | ✅ pass | `pytest scripts/arcCover/tests -q`：**79 passed, 17 subtests passed**（60 秒）                                                                               |
+| Coverage      | ✅ pass | `build.py` 86%（未測嘅係 argparse / `report` / `main`）、`fetch_sources.py` 99%、`publish.py` 100%；`review/` 合共 92%                                       |
+| No Critical   | ✅ pass | 🔴 = 0                                                                                                                                                       |
+| Security scan | n/a     | 冇新依賴                                                                                                                                                     |
+
+冇 commit 任何 binary（`git diff 09f5771..HEAD --stat -- '*.png' '*.jpg' '*.webp'` 冇結果）。冇 version bump，因為只係改工具。
+
+## Round 2 逐項覆核
+
+| Item  | 結果    | 說明                                                                                                                                                                                                                                            |
+| ----- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-501 | ✅ 修好 | `download` 只有 exit 22 先回 `False`，其他 exit code 會 raise `FetchError` 連 curl stderr；`main` 回 exit 3，而且停 fallback（`test_network_error_should_stop_fallback`）。stderr 用 `decode(errors="replace")`，唔會因為編碼錯誤再拋 exception |
+| W-502 | ✅ 修好 | `batches` 每批 ≤ 255 個檔、≤ 64MB，單一大檔自己一批；`rounds.json` 擺最尾一批。超過 511 個檔會警告。兩份 README 都有寫上限。新問題見 W-504 / S-595 / S-597                                                                                      |
+| W-503 | ✅ 修好 | 有 `run=` seam，`download` / `fetch_one` / `main` 每條路徑都有 test（rename、`.part` 清理、名稱次序、已有就跳過、`--force`、非 R2、exit 3）；`build` 有現用圖預覽 test                                                                          |
+| S-587 | ✅ 修好 | `SLUG_PATTERN` = `^[a-z0-9]+(?:-[a-z0-9]+)*$`，禁 `/`、`..`、`--`。`--arc`、`drama.json` disc slug、generator 資料夾、劇集 id（build 同 fetch 兩邊）全部有驗                                                                                    |
+| S-588 | ✅ 修好 | `sys.path` 只喺 import 時加一次（有判斷避免重複），`with Image.open`，`theme_for` 改成 public，`generate.py` 嘅 caller 都改埋                                                                                                                   |
+| S-589 | ✅ 修好 | 兩份 README 都有寫 `ARC_COVER_WORK`，review README 改用 `export`                                                                                                                                                                                |
+| S-590 | ✅ 修好 | `test_r2_base_should_match_app_constant` 用 regex 讀 `constants.ts` 嚟比較                                                                                                                                                                      |
+| S-591 | ✅ 修好 | 根目錄 ignore 規則收窄到確實嘅輸出：`git check-ignore` 擋到 `review/site/`、`review/publish-1.json`、`review/published.json`、`arcCover/<d>/<s>/round-1/`、`arcCover-src/<d>/*.png`，但 `review/notes.md`、`arcCover/readme.md` 冇被擋          |
+| S-592 | ✅ 修好 | 保留字 `cover` / `drama`，`--` 被 regex 禁咗；另外 `check_page_ids` 會檢查唔同劇集 + 短篇砌出同一個 hash（例如 `sammy-kitty`+`love` 同 `sammy`+`kitty-love`），呢點比原本建議更完整                                                             |
+| S-593 | ✅ 修好 | 改用 sha256 比較，`test_build_should_refresh_same_size_copies` 驗過                                                                                                                                                                             |
+
+## `--mark-published` 係咪 usability trap？
+
+結論：**漏咗跑冇害，但跑錯時機就有害**，分兩方面講：
+
+- **漏咗跑 / 新 session**：冇 `published.json`，所以全部重送。因為 Artifact 更新會覆蓋同名 path，重送冇害，只係慢少少；而家 89 個檔一批就送完。developer 講嘅「session-local，新 session 全部重送」係安全嘅。
+- **跑錯時機（W-504）**：`mark_published` 讀嘅係**當刻嘅 `files.json`**，唔理邊幾批真係 publish 咗。我實測：
+    1. build，publish，然後 `--mark-published`
+    2. 加一個新 round，再 build，`publish-1.json` 有 1 個檔（`rounds.json`）
+    3. **未 publish** 就跑 `--mark-published`
+    4. 再 build，印出「冇改動嘅檔：淨係 publish index.html 就得（或者唔使 publish）」，但 Artifact 上面嘅 `rounds.json` 仍然係舊嘅
+
+    另一個情況：某一批 publish 被拒（例如超過 64MB），之後照跑 `--mark-published`，結果一樣。頁面會靜靜地少咗新 round，或者有爛圖，而 `verify.cjs` 只檢查本機 `site/`，所以捉唔到。
+
+- **換過 artifact URL（S-597）**：`published.json` 冇記 URL。如果之後要開新 artifact（README 叫人唔好開，但例如冇咗權限時就要），用同一個 work 資料夾 build 會乜都唔送。
+
+## Round 2 問題清單
+
+### 🟡 W-504 — `--mark-published` 記低最新 build 嘅 hash，唔係真係 publish 咗嘅批次
+
+- 位置：`scripts/arcCover/review/publish.py:77-83`（`mark_published`）、`build.py:334-337`
+- 影響：見上面嘅重現步驟。新 round 或者新候選圖可能永遠唔會上到 Artifact，而工具仲話「冇改動」。
+- 方案 A（推薦）：build 嘅時候將每批嘅 hash 寫入 `publish-N.hashes.json`（`publish-N.json` 本身要原封不動畀 Artifact `files` 用，所以唔可以加欄位）。之後改成 `--mark-published N`，每 publish 成功一批就 merge 嗰批嘅 hash 入 `published.json`，再刪嗰批。`report()` 逐批印出確實嘅 command。冇 `publish-N.hashes.json` 就 exit 2。
+    - Trade-off：多一個檔、多一個參數；但「publish 一批、mark 一批」一一對應，跑錯都只會影響嗰一批。
+- 方案 B：拎走增量功能，`publish-N.json` 永遠包晒全部檔，只按上限分批。
+    - Trade-off：零狀態、冇 trap；但超過 255 個檔之後每次要 publish 幾次。而家 89 個檔，一次就得。
+- 推薦：A。如果覺得增量唔值得維護，B 都可以接受。
+
+### 🟢 S-595 — 已經冇用嘅舊 path 冇工具列出，511 上限警告亦只計本機檔
+
+- 位置：`publish.py:77-80`、`build.py:322-326`
+- 描述：`mark_published` 每次都用當刻 `files.json` 覆蓋 `published.json`，build 唔再出嘅 path（例如被 `duplicateOf` 過濾咗、舊 round）就會被忘記。Artifact 上面嗰啲檔一直累積，但 `len(files) > 511` 只計本機嘅檔。README 叫人「傳 `null` 刪走」，但冇工具列出要刪邊啲。
+- 方案 A：`report` 計 `published.keys() - files.keys()`，寫一份 `stale.json`（`{path: null}`），可以直接當 `files` 傳；警告亦應該計 `len(files) + len(stale)`。方案 B：README 寫明用 Artifact `list` 嘅 `scope: "files"` 對照。
+
+### 🟢 S-596 — 未 build 過就跑 `--mark-published` 會出 traceback
+
+- 位置：`publish.py:79`
+- 描述：例如 `--work` 打錯、新 session 未 build，會拋 `FileNotFoundError: .../review/files.json`。
+- 方案 A：檢查檔案唔存在就印「未 build 過」，再 exit 2。方案 B：W-504 方案 A 實施咗之後自然解決。
+
+### 🟢 S-597 — `published.json` 冇記 artifact URL
+
+- 位置：`publish.py:77-83`
+- 描述：換咗 artifact URL 之後，舊 `published.json` 會令新 artifact 收唔到任何圖。
+- 方案 A：`--mark-published` 收 `--url`，記入 `published.json`；build 時如果 URL 唔同，或者冇提供 URL，就當未 publish 過。方案 B：README 寫明換 URL 要先刪 `published.json`。
+
+## Round 2 評分
+
+| 維度     | 得分   | 滿分    | 備注                      |
+| -------- | ------ | ------- | ------------------------- |
+| 正確性   | 19     | 25      | W-504、S-596              |
+| 安全性   | 20     | 20      | S-587 修好                |
+| 可維護性 | 18     | 20      | S-595、S-597              |
+| 測試覆蓋 | 15     | 15      | 79 個 test，`review/` 92% |
+| 性能     | 10     | 10      |                           |
+| 代碼風格 | 10     | 10      |                           |
+| **總分** | **92** | **100** |                           |
+
+**結果：✅ pass**（hard gates 全 pass、≥ 90、冇 Critical）。W-504 唔 block merge，但下一個用增量 publish 嘅 session 之前應該修好；在此之前，README 可以先加一句「唔肯定嘅話刪 `published.json`，全部重送」。
+
+## Round 2 Handoff receipt
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 92/100
+hard_gates:
+  lint: pass
+  type_check: n/a
+  tests: pass
+  coverage: pass
+  no_critical: pass
+  security_scan: n/a
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "chore/tools/cover-review-page"
+blockers: []
+context: "Round 2 of 344e28a..b837d82 (4145d34 renumber, 16ca75d build/publish, bcd4f64 fetch_sources, b837d82 docs). W-501..W-503 and S-587..S-593 all fixed and verified. Gates: pytest 79 passed + 17 subtests; ruff check/format clean; prettier clean; eslint review/ 0; coverage review/ 92% (publish.py 100%, fetch_sources 99%, build 86%). Real-repo build.py smoke: 89 files, slug validation passes on all current dramas. New W-504: mark_published hashes the current files.json, not the batches actually sent; repro: rebuild after a new round, mark without publishing, next build reports no changes while the artifact lacks the new rounds.json. Forgetting to mark or starting a fresh session only resends everything, which is harmless. S-595: stale paths never listed for null deletion and the 511 check counts local files only. S-596: --mark-published before any build raises FileNotFoundError. S-597: published.json does not record the artifact URL. Recommend fixing W-504 (per-batch mark with hashes recorded at build time) before relying on incremental publish. Docs-only commit; not pushed."
+```
