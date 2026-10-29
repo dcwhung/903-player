@@ -18,9 +18,8 @@ from constants import (
     SPINDLE_RATIO,
     TEXT_CUT_PENALTY,
     TITLE_DIFF_THRESHOLD,
-    VIGNETTE_ALPHA,
-    VIGNETTE_START,
 )
+from geometry import disc_radius, vignette_alpha
 
 Size = tuple[int, int]  # (闊, 高)
 
@@ -72,11 +71,8 @@ def centre_window(image_size: Size, aspect: float) -> Box:
 
 def disc_visibility(size: Size) -> np.ndarray:
     """碟面可見程度：圓形以外 0、碟心 0、碟邊跟暗角（Disc.module.css .vignette）遞減。"""
-    width, height = size
-    ys, xs = np.indices((height, width), dtype=np.float32)
-    radius = np.hypot((xs + 0.5) / width - 0.5, (ys + 0.5) / height - 0.5) * 2
-    fade = np.clip((radius - VIGNETTE_START) / (1 - VIGNETTE_START), 0, 1)
-    weight = 1 - VIGNETTE_ALPHA * fade
+    radius = disc_radius(size)
+    weight = 1 - vignette_alpha(size)
     weight[(radius > 1) | (radius < SPINDLE_RATIO)] = 0
     return weight.astype(np.float32)
 

@@ -3,6 +3,7 @@
 碟面幾何跟 src/components/Disc/Disc.module.css；尺寸跟 src/dramas/*/ 已 commit 嘅 webp。
 """
 
+import math
 from typing import Final, Literal, TypeAlias
 
 Kind: TypeAlias = Literal["disc", "tile"]
@@ -46,6 +47,8 @@ SPINDLE_RATIO: Final[float] = 0.12  # .spindle width: 12%
 SMALL_SPINDLE_RATIO: Final[float] = 0.20  # .small .spindle width: 20%
 VIGNETTE_START: Final[float] = 0.55  # radial-gradient transparent 55%
 VIGNETTE_ALPHA: Final[float] = 0.45  # --color-disc-vignette rgb(0 0 0 / 45%)
+# radial-gradient(circle, …) 冇寫大小 = farthest-corner：100% 喺角，即係碟半徑 × √2
+VIGNETTE_EXTENT: Final[float] = math.sqrt(2)
 GROOVE_INSETS: Final[tuple[float, ...]] = (0.10, 0.22, 0.34)
 GROOVE_ALPHA: Final[float] = 0.14  # --color-disc-groove
 SPINDLE_RING_ALPHA: Final[float] = 0.50  # --color-spindle-ring

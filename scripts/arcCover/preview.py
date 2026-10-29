@@ -22,9 +22,8 @@ from constants import (
     SPINDLE_RING_ALPHA,
     SPINDLE_RING_CSS_PX,
     TILE_RADIUS_CSS_PX,
-    VIGNETTE_ALPHA,
-    VIGNETTE_START,
 )
+from geometry import vignette_alpha
 
 SUPERSAMPLE = 3
 LARGE_DISC_PX = 420
@@ -59,9 +58,7 @@ def _ring(diameter: int, width_px: float, colour: tuple[int, int, int, int]) -> 
 
 
 def _vignette(diameter: int) -> Image.Image:
-    ys, xs = np.indices((diameter, diameter), dtype=np.float32)
-    radius = np.hypot((xs + 0.5) / diameter - 0.5, (ys + 0.5) / diameter - 0.5) * 2
-    alpha = np.clip((radius - VIGNETTE_START) / (1 - VIGNETTE_START), 0, 1) * VIGNETTE_ALPHA
+    alpha = vignette_alpha((diameter, diameter))
     # 暗角只喺碟入面（.vignette 有 border-radius: 50%）
     alpha *= np.asarray(_circle_mask(diameter), dtype=np.float32) / 255
     layer = np.zeros((diameter, diameter, 4), dtype=np.uint8)
