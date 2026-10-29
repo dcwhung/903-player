@@ -66,7 +66,7 @@ GitHub Actions 只負責 build 同 deploy。
 ### 由本機 folder 生成 drama.json（`scripts/dramaFromFolder.mjs`）
 
 R2 嘅 r2.dev 網址冇 listing，所以由**上載去 R2 嗰份本機 folder** 生成 `drama.json` 草稿同檢查報告。
-個 script 係單一檔案、只用 Node 內置功能（Node 18 或以上），**唔使 clone 呢個 repo、唔使 `npm install`**。
+個 script 係單一檔案、只用 Node 內置功能（**Node 18.3 或以上**，建議 20+；18.0–18.2 冇 `parseArgs`，會一開始就出 SyntaxError），**唔使 clone 呢個 repo、唔使 `npm install`**。
 
 folder 結構（同 R2 一樣）：
 

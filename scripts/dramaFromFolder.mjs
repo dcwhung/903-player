@@ -6,7 +6,8 @@
  *   node dramaFromFolder.mjs "<劇集 folder>" [--id <id>] [--existing <drama.json>]
  *                            [--out <檔案>] [--force] [--report <檔案>] [--verify]
  *
- * 單一檔案、只用 Node 內置 module（Node 18 或以上），下載落嚟就行得，唔使 npm install。
+ * 單一檔案、只用 Node 內置 module（Node 18.3 或以上，建議 20+；parseArgs 18.3 先有），
+ * 下載落嚟就行得，唔使 npm install。
  * 規則同 app 一致（src/dramas/schema.ts、filename.ts、episodes.ts）；app 規則一改，呢度要跟住改，
  * scripts/dramaFromFolder.test.ts 會將輸出餵畀 app 真正嘅 validator 驗。
  */
@@ -428,14 +429,20 @@ const analyseDaily = (scan) => {
 
 /* ───────────── 砌 drama.json ───────────── */
 
-/** 香港日期 YYYY-MM-DD（en-CA 格式剛好係 YYYY-MM-DD） */
-export const todayInHongKong = (now) =>
-    new Intl.DateTimeFormat('en-CA', {
+/**
+ * 香港日期 YYYY-MM-DD。用 formatToParts 逐部份砌：唔靠某個 locale 嘅格式
+ * （例如 en-CA 剛好係 YYYY-MM-DD，但 small-icu 嘅 Node 會退返 en-US 出 10/29/2026）。
+ */
+export const todayInHongKong = (now) => {
+    const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: HONG_KONG_TIME_ZONE,
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-    }).format(now);
+    }).formatToParts(now);
+    const part = (type) => parts.find((p) => p.type === type)?.value ?? '';
+    return `${part('year')}-${part('month')}-${part('day')}`;
+};
 
 const newDramaBase = (scan, kind, template) => ({
     name: scan.name,

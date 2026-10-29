@@ -177,6 +177,22 @@ describe('todayInHongKong', () => {
     it('should use the Hong Kong calendar date', () => {
         expect(todayInHongKong(NOW)).toBe(TODAY);
     });
+
+    it('should not depend on the en-CA locale data (small-icu falls back to en-US)', () => {
+        const RealFormat = Intl.DateTimeFormat;
+        // 要用 function（new 得）先 mock 到 constructor
+        const fallback = function (_locale?: unknown, options?: Intl.DateTimeFormatOptions) {
+            return new RealFormat('en-US', options);
+        };
+        vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(
+            fallback as unknown as typeof Intl.DateTimeFormat,
+        );
+        try {
+            expect(todayInHongKong(NOW)).toBe(TODAY);
+        } finally {
+            vi.restoreAllMocks();
+        }
+    });
 });
 
 describe('generateDraft — new series drama', () => {
