@@ -44,6 +44,7 @@
 | 2026-10-29 | [reviews/2026-10-29_review_cover-review-page.md](reviews/2026-10-29_review_cover-review-page.md)（78 warn，W-501–W-503、S-587–S-593；Round 2 92 pass，W-504、S-595–S-597；Round 3 97 pass，S-598–S-600；Round 4 97 pass，S-610–S-612） |
 | 2026-10-29 | [reviews/2026-10-29_review_cui-0011.md](reviews/2026-10-29_review_cui-0011.md)（93 warn，W-505、S-601–S-602；同意延遲 `stalled` 規則；Round 2 99 pass，S-603）                                                                         |
 | 2026-10-29 | [reviews/2026-10-29_review_v1.20.8_hotfix.md](reviews/2026-10-29_review_v1.20.8_hotfix.md)（hotfix 97 pass，S-613–S-615；鎖屏唔自動 reload stall watchdog）                                                                            |
+| 2026-10-29 | [reviews/2026-10-29_review_v1.20.9_hotfix.md](reviews/2026-10-29_review_v1.20.9_hotfix.md)（hotfix 88 pass，W-506–W-507、S-616–S-617；鎖屏 playing 後凍結照 reload）                                                                   |
 
 ## QA
 
