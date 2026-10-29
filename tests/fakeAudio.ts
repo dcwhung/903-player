@@ -11,6 +11,11 @@ export interface FakeAudioOptions {
     strictPlayEvents?: boolean;
 }
 
+/** HTMLMediaElement.readyState（jsdom 冇呢啲常數） */
+export const HAVE_NOTHING = 0;
+export const HAVE_METADATA = 1;
+export const HAVE_CURRENT_DATA = 2;
+
 /** 假 TimeRanges：[[start, end], ...] */
 export const timeRanges = (ranges: [number, number][]): TimeRanges => ({
     length: ranges.length,
@@ -53,6 +58,7 @@ export class FakeAudio extends EventTarget {
         this.ended = false;
         this.currentTime = 0;
         this.duration = Number.NaN;
+        this.readyState = HAVE_NOTHING;
         if (wasPlayingFrom !== 0) {
             // 真瀏覽器係 queue 一個 task 先發，即係喺 caller 執行完之後
             queueMicrotask(() => this.dispatchEvent(new Event('timeupdate')));
@@ -66,11 +72,12 @@ export class FakeAudio extends EventTarget {
         }
     }
 
-    /** 同真 element 一樣：重新載入會清走 error，位置同長度 reset */
+    /** 同真 element 一樣：重新載入會清走 error，位置、長度同 readyState reset（load algorithm） */
     load = vi.fn(() => {
         this.error = null;
         this.currentTime = 0;
         this.duration = Number.NaN;
+        this.readyState = HAVE_NOTHING;
     });
 
     play = vi.fn(async () => {
@@ -95,7 +102,10 @@ export class FakeAudio extends EventTarget {
         this.dispatchEvent(new Event('pause'));
     });
 
-    /** 有足夠數據、真正開始出聲（真瀏覽器喺 play event 之後，數據到先發） */
+    /**
+     * 有足夠數據、真正開始出聲（真瀏覽器喺 play event 之後，數據到先發）。
+     * 唔郁 readyState：S-551 iOS 會發 playing 但乜都冇載到；要模擬數據到就用 emitLoadedData
+     */
     emitPlaying(): void {
         this.dispatchEvent(new Event('playing'));
     }
@@ -120,8 +130,16 @@ export class FakeAudio extends EventTarget {
         this.dispatchEvent(new Event('error'));
     }
 
+    /** 第一段可播數據到咗（真瀏覽器：readyState 升到 HAVE_CURRENT_DATA，發 loadeddata） */
+    emitLoadedData(): void {
+        this.readyState = Math.max(this.readyState, HAVE_CURRENT_DATA);
+        this.dispatchEvent(new Event('loadeddata'));
+    }
+
     emitMetadata(duration: number): void {
         this.duration = duration;
+        // 只係 metadata（長度等），未有可播數據（W-500）
+        this.readyState = Math.max(this.readyState, HAVE_METADATA);
         this.dispatchEvent(new Event('loadedmetadata'));
     }
 

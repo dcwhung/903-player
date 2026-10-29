@@ -244,11 +244,15 @@ export const succeeds = (promise) =>
 /** locator.waitFor（options 例如 { state: 'detached', timeout }）等到就 true，等唔到 false */
 export const isShown = (locator, options) => succeeds(locator.waitFor(options));
 
+/** 同 src/config/constants.ts STALL_FIRST_RETRY_MS 一樣（src/e2eSrcConstants.test.ts 鎖住） */
+export const STALL_FIRST_RETRY_MS = 4000;
+/** 讀鎖屏狀態要比卡住 deadline 早咁耐：留位畀 CPU 爭用時 waitForFunction 遲咗 poll */
+const PLAYBACK_STATE_MARGIN_MS = 1000;
 /**
- * 等鎖屏狀態最多幾耐：要短過 app 嘅 STALL_FIRST_RETRY_MS（4 秒），
- * 卡住 deadline 過咗先會轉 paused，唔可以等到嗰陣先讀
+ * 等鎖屏狀態最多幾耐：要短過 app 嘅 STALL_FIRST_RETRY_MS，
+ * 卡住 deadline 過咗先會轉 paused，唔可以等到嗰陣先讀（S-582：由 app 常數計，唔再手抄）
  */
-const PLAYBACK_STATE_WAIT_MS = 3000;
+const PLAYBACK_STATE_WAIT_MS = STALL_FIRST_RETRY_MS - PLAYBACK_STATE_MARGIN_MS;
 
 /**
  * 等 navigator.mediaSession.playbackState 變成 expected（React effect commit 之後先寫），

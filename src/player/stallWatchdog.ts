@@ -103,11 +103,17 @@ export class StallWatchdog {
     /** 到期：慢網仲載緊就再等（唔扣次數，W-498），否則重試 */
     private onDeadline = (): void => {
         if (this.pending && this.hooks.canRetry() && this.isStillLoading()) {
-            this.arm(STALL_PROGRESS_RECHECK_MS);
+            this.arm(this.nextRecheckMs());
             return;
         }
         this.retryNow();
     };
+
+    /** 下一次 recheck：唔可以排喺 STALL_MAX_WAIT_MS 之後，上限先真係上限（S-582） */
+    private nextRecheckMs(): number {
+        const untilCap = this.startedAt + STALL_MAX_WAIT_MS - Date.now();
+        return Math.min(STALL_PROGRESS_RECHECK_MS, untilCap);
+    }
 
     /** 由 arm 到而家下載有進展，而且未等夠總上限 */
     private isStillLoading(): boolean {

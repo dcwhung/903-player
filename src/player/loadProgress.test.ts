@@ -17,8 +17,13 @@ describe('isLoadProgressing', () => {
         expect(isLoadProgressing(before, after)).toBe(true);
     });
 
-    it('should be progressing when the ready state grows', () => {
-        expect(isLoadProgressing(probe(), probe({ readyState: 1 }))).toBe(true);
+    it('should be progressing when the ready state reaches playable data', () => {
+        expect(isLoadProgressing(probe({ readyState: 1 }), probe({ readyState: 2 }))).toBe(true);
+    });
+
+    // W-500：HAVE_METADATA 冇任何可播數據，唔算下載有進展（S-551 情境 1 要喺 4 秒重試）
+    it('should not be progressing when only metadata arrives', () => {
+        expect(isLoadProgressing(probe(), probe({ readyState: 1 }))).toBe(false);
     });
 
     it('should be progressing when a buffered range appears around the position', () => {
