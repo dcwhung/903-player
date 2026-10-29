@@ -1,4 +1,5 @@
 import {
+    AUDIBLE_ADVANCE_SECONDS,
     EARLY_ADVANCE_SECONDS,
     PROGRESS_SAVE_INTERVAL_MS,
     STALL_MAX_RETRIES,
@@ -47,6 +48,8 @@ export class AudioController {
     private watched = false;
     /** 聽過嘅錄音由頭重播：計夠時間就清走「已收聽」 */
     private readonly replay = new ReplayTracker();
+    /** 開始播 / 緩衝完 / seek 嗰下嘅位置：位置由呢度行過 AUDIBLE_ADVANCE_SECONDS 先當真正出聲 */
+    private audibleFrom = 0;
     /** 撳咗 Play 但 play event 未到（瀏覽器仲準備緊）；PWA 更新要當播緊，唔好搶走呢下撳 */
     private playIntent = false;
     /** 最新一次 audio.play() 仲未 settle */
@@ -85,7 +88,7 @@ export class AudioController {
             loadedmetadata: this.onLoadedMetadata,
             timeupdate: this.onTimeUpdate,
             play: this.onPlay,
-            playing: this.onAudible,
+            playing: this.onPlaying,
             waiting: this.onSilent,
             pause: this.onPause,
             ended: this.onEnded,
@@ -170,7 +173,7 @@ export class AudioController {
         this.pendingStart = this.hasMetadata() ? 0 : target;
         this.audio.currentTime = target;
         // seek 唔算收聽時間：由新位置重新起計
-        this.replay.moveTo(target);
+        this.moveTo(target);
         this.update({ currentTime: target });
         this.persist();
     };
@@ -190,7 +193,7 @@ export class AudioController {
         this.persist();
         this.watched = isWatched(recording.url);
         this.pendingStart = getResumePosition(recording.url);
-        this.replay.moveTo(this.pendingStart);
+        this.moveTo(this.pendingStart);
         // 聽過嘅集 getResumePosition 係 0，即係由頭重播
         this.replay.arm(this.watched);
         this.audio.src = recording.url;
@@ -206,7 +209,7 @@ export class AudioController {
             return;
         }
         this.pendingStart = this.state.currentTime;
-        this.replay.moveTo(this.pendingStart);
+        this.moveTo(this.pendingStart);
         this.audio.load();
         this.update({ duration: 0 });
     };
@@ -257,7 +260,7 @@ export class AudioController {
             this.audio.currentTime = this.pendingStart;
             // 按 spec 呢度本身已經係 pendingStart；但 iOS 有可能喺 metadata 到之前發 timeupdate（位置 0），
             // 唔重設嘅話跳返續播位置嗰下會當咗收聽時間，錯清「已收聽」（S-550）
-            this.replay.moveTo(this.pendingStart);
+            this.moveTo(this.pendingStart);
             this.pendingStart = 0;
         }
     };
@@ -268,6 +271,7 @@ export class AudioController {
             return;
         }
         this.update({ currentTime: this.audio.currentTime });
+        this.checkAudible();
         if (this.replay.track(this.audio.currentTime, this.audio.paused)) {
             this.resetReplay();
         }
@@ -288,19 +292,43 @@ export class AudioController {
         return !this.audio.paused && remaining <= EARLY_ADVANCE_SECONDS;
     }
 
+    /** 跳位置（seek / 換集 / 重新載入 / 續播）：跳過嘅唔算收聽，亦唔算出聲 */
+    private moveTo(position: number): void {
+        this.replay.moveTo(position);
+        this.audibleFrom = position;
+    }
+
     private onPlay = (): void => {
         this.playIntent = false;
+        this.audibleFrom = this.audio.currentTime;
         this.update({ isPlaying: true });
     };
 
-    /** 數據到咗、真正開始出聲 */
-    private onAudible = (): void => {
-        this.stall.cancel();
-        this.update({ isAudible: true });
+    /**
+     * 數據到咗：iOS 有時發咗 playing 但位置凍結冇聲（S-551），所以只記低起點，
+     * 等 timeupdate 見到位置真係行先當出聲
+     */
+    private onPlaying = (): void => {
+        this.audibleFrom = this.audio.currentTime;
     };
 
-    /** 緩衝緊：仲係「播緊」（掣維持暫停），但冇聲 */
-    private onSilent = (): void => this.update({ isAudible: false });
+    /** 播緊而位置由起點行咗夠遠：真正出緊聲，唔使再睇住卡住 */
+    private checkAudible(): void {
+        const advanced = this.audio.currentTime - this.audibleFrom;
+        if (this.audio.paused || advanced < AUDIBLE_ADVANCE_SECONDS) {
+            return;
+        }
+        this.stall.cancel();
+        if (!this.state.isAudible) {
+            this.update({ isAudible: true });
+        }
+    }
+
+    /** 緩衝緊：仲係「播緊」（掣維持暫停），但冇聲；數據返嚟之後由而家位置重新確認 */
+    private onSilent = (): void => {
+        this.audibleFrom = this.audio.currentTime;
+        this.update({ isAudible: false });
+    };
 
     /** 來源出錯（例如斷網）：等緊嘅 play 冇可能成功，亦冇嘢播緊 */
     private onError = (): void => {
@@ -370,7 +398,7 @@ export class AudioController {
     private retryStalled(retriesLeft: number): void {
         recordPlayback('retry', this.audio, `left=${retriesLeft}`);
         this.pendingStart = this.state.currentTime;
-        this.replay.moveTo(this.pendingStart);
+        this.moveTo(this.pendingStart);
         this.audio.load();
         void this.play();
     }

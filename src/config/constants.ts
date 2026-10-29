@@ -12,6 +12,11 @@ export const EARLY_ADVANCE_SECONDS = 1;
 export const STALL_RETRY_MS = 8000;
 /** 自動播下一集卡住最多重試幾次 */
 export const STALL_MAX_RETRIES = 3;
+/**
+ * 位置由開始播嗰下行咗咁多秒先當「真正出聲」：iOS 鎖屏有 playing event 但位置凍結冇聲（S-551）。
+ * timeupdate 大約 0.25 秒一次，即係第二下 tick 左右確認
+ */
+export const AUDIBLE_ADVANCE_SECONDS = 0.3;
 /** 播放診斷 log（版本號連撳 5 下複製）：iPhone 鎖屏換集冇聲，要實機 event 先知原因 */
 export const PLAYBACK_LOG_STORAGE_KEY = '903player:playback-log:v1';
 /** log 最多留幾多行（舊嘅先清走） */

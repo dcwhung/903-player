@@ -1,3 +1,8 @@
+import { AUDIBLE_ADVANCE_SECONDS } from '../src/config/constants';
+
+/** emitAudible 行幾多倍出聲門檻（避開浮點數誤差） */
+const AUDIBLE_TEST_MARGIN = 2;
+
 export interface FakeAudioOptions {
     /**
      * 跟足 spec：本身已經播緊時 play() 唔會再發 play event。
@@ -84,6 +89,15 @@ export class FakeAudio extends EventTarget {
     /** 有足夠數據、真正開始出聲（真瀏覽器喺 play event 之後，數據到先發） */
     emitPlaying(): void {
         this.dispatchEvent(new Event('playing'));
+    }
+
+    /**
+     * 真正出聲：playing 之後位置真係行咗（S-551：iOS 會發 playing 但位置凍結冇聲）。
+     * 要 metadata 已到，否則 controller 唔信個位置。行兩倍門檻：浮點數 100 + 0.3 - 100 < 0.3
+     */
+    emitAudible(): void {
+        this.emitPlaying();
+        this.emitTime(this.currentTime + AUDIBLE_ADVANCE_SECONDS * AUDIBLE_TEST_MARGIN);
     }
 
     /** 播緊但數據唔夠（緩衝 / seek 去未載到嘅位置） */

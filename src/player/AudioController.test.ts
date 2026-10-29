@@ -1,6 +1,7 @@
 import { FakeAudio } from '../../tests/fakeAudio';
 import type { Recording } from '../types/recording';
 import {
+    AUDIBLE_ADVANCE_SECONDS,
     EARLY_ADVANCE_SECONDS,
     REPLAY_RESET_SECONDS,
     STALL_MAX_RETRIES,
@@ -216,32 +217,81 @@ describe('AudioController.isAudible', () => {
         expect(controller.getSnapshot().isPlaying).toBe(true);
         expect(controller.getSnapshot().isAudible).toBe(false);
 
-        audio.emitPlaying();
+        audio.emitAudible();
         expect(controller.getSnapshot().isAudible).toBe(true);
         detach();
     });
 
     it('should go silent while buffering and resume when data arrives', async () => {
         const { audio, controller, detach } = await setupPlaying();
-        audio.emitPlaying();
+        audio.emitAudible();
 
         audio.emitWaiting();
         expect(controller.getSnapshot().isAudible).toBe(false);
 
-        audio.emitPlaying();
+        audio.emitAudible();
         expect(controller.getSnapshot().isAudible).toBe(true);
         detach();
     });
 
     it('should go silent when paused or ended', async () => {
         const { audio, controller, detach } = await setupPlaying();
-        audio.emitPlaying();
+        audio.emitAudible();
         audio.pause();
         expect(controller.getSnapshot().isAudible).toBe(false);
 
         await controller.play();
-        audio.emitPlaying();
+        audio.emitAudible();
         audio.end();
+        expect(controller.getSnapshot().isAudible).toBe(false);
+        detach();
+    });
+
+    // S-551：iOS 拔 AirPods 之後喺鎖屏撳 Play，有 playing event 但位置凍結 82 秒、冇聲
+    it('should stay silent on a playing event while the position is frozen', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+
+        audio.emitPlaying();
+        audio.emitTime(audio.currentTime);
+
+        expect(controller.getSnapshot().isAudible).toBe(false);
+        detach();
+    });
+
+    it('should stay silent while the position moves less than the audible threshold', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+        audio.emitPlaying();
+
+        audio.emitTime(audio.currentTime + AUDIBLE_ADVANCE_SECONDS / 2);
+
+        expect(controller.getSnapshot().isAudible).toBe(false);
+        detach();
+    });
+
+    it('should not count a seek jump as sound', async () => {
+        const SEEK_TO = 300;
+        const { audio, controller, detach } = await setupPlaying();
+        audio.emitPlaying();
+
+        controller.seek(SEEK_TO);
+        audio.emitTime(SEEK_TO);
+
+        expect(controller.getSnapshot().isAudible).toBe(false);
+        detach();
+    });
+
+    it('should not count the resume jump on metadata as sound', async () => {
+        const RESUME_AT = 521.4;
+        saveProgress(RECORDING.url, RESUME_AT, 1000);
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitPlaying();
+
+        audio.emitMetadata(1000);
+        audio.emitTime(RESUME_AT);
+
         expect(controller.getSnapshot().isAudible).toBe(false);
         detach();
     });
@@ -412,7 +462,8 @@ describe('AudioController stalled auto-advance', () => {
     it('leaves the next track alone once it is audible', async () => {
         const { audio, detach } = await advance();
 
-        audio.emitPlaying();
+        audio.emitMetadata(1200);
+        audio.emitAudible();
         vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
 
         expect(audio.load).not.toHaveBeenCalled();
@@ -633,7 +684,8 @@ describe('AudioController stall watchdog details', () => {
     it('ignores a screen wake-up once the next track is audible', async () => {
         const { audio, detach } = await advance();
 
-        audio.emitPlaying();
+        audio.emitMetadata(DURATION);
+        audio.emitAudible();
         showScreen('visible');
 
         expect(audio.load).not.toHaveBeenCalled();
@@ -832,15 +884,6 @@ describe('AudioController S-551 characterization', () => {
         vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
         document.dispatchEvent(new Event('visibilitychange'));
     };
-
-    it('treats the playing event as audible even when the position never moves', async () => {
-        const { audio, controller, detach } = await setupPlaying();
-
-        audio.emitPlaying();
-
-        expect(controller.getSnapshot().isAudible).toBe(true);
-        detach();
-    });
 
     it('does not watch for a stall after a plain user play', async () => {
         saveProgress(RECORDING.url, RESUME_AT, DURATION);

@@ -252,7 +252,10 @@ describe('useMiniPlayer', () => {
             await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
             expect(result.current.mini).toMatchObject({ isPlaying: true, isAudible: false });
 
-            act(() => audio.emitPlaying());
+            act(() => {
+                audio.emitMetadata(7110);
+                audio.emitAudible();
+            });
             expect(result.current.mini?.isAudible).toBe(true);
 
             act(() => audio.emitWaiting());
@@ -263,7 +266,11 @@ describe('useMiniPlayer', () => {
             const { audio, result } = setup();
             await ready(result);
             await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
-            act(() => audio.emitPlaying());
+            act(() => {
+                audio.emitMetadata(7110);
+                audio.emitAudible();
+            });
+            expect(result.current.mini?.isAudible).toBe(true);
 
             await act(async () => result.current.mini?.onToggle());
 
@@ -290,7 +297,10 @@ describe('useMiniPlayer', () => {
                     autoplay: true,
                 }),
             );
-            act(() => audio.emitPlaying());
+            act(() => {
+                audio.emitMetadata(7110);
+                audio.emitAudible();
+            });
             expect(result.current.mini?.isAudible).toBe(true);
 
             act(() => result.current.mini?.onChange(1));
@@ -307,7 +317,7 @@ describe('useMiniPlayer', () => {
 
             act(() => {
                 audio.emitMetadata(1200);
-                audio.emitPlaying();
+                audio.emitAudible();
             });
 
             expect(result.current.mini).toMatchObject({ isAudible: true, upright: false });
