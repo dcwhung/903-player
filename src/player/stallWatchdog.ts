@@ -1,5 +1,6 @@
 import {
     STALL_FIRST_RETRY_MS,
+    STALL_HIDDEN_MARK_MS,
     STALL_MAX_WAIT_MS,
     STALL_PROGRESS_RECHECK_MS,
     STALL_RETRY_MS,
@@ -15,11 +16,18 @@ export interface StallWatchdogHooks {
     onStalled: () => void;
     /** 而家嘅載入狀態：到期時同 arm 嗰陣比較，睇下載有冇進展（W-498） */
     probe: () => LoadProbe;
+    /**
+     * 頁面喺背景 / 鎖屏（document hidden）：唔可以自動 reload，iOS 鎖屏載入要 ~4.3 s，
+     * reload 會 abort 佢而之後背景再唔載完（v1.20.8）
+     */
+    isHidden: () => boolean;
 }
 
 /**
  * iOS 鎖屏撳播 / 自動接住播嘅集可能一直唔出聲（停喺 0:00，或者位置凍結但顯示播緊）：
- * 等一陣都未出聲、下載亦冇進展就叫 retry，最多 n 次。
+ * 前景等一陣都未出聲、下載亦冇進展就叫 retry，最多 n 次。
+ * 鎖屏（hidden）時唔 retry、唔扣次數，只係保持 overdue，等亮屏 / 鎖屏 Play；
+ * 等夠 STALL_HIDDEN_MARK_MS 先報卡住（v1.20.8）。
  * 只管次數同 timer，點樣重試由 AudioController 決定。
  */
 export class StallWatchdog {
@@ -32,6 +40,10 @@ export class StallWatchdog {
     private startedAt = Number.NEGATIVE_INFINITY;
     /** arm 嗰陣嘅載入狀態，到期時用嚟睇有冇進展 */
     private baseline: LoadProbe | undefined;
+    /** 今次嘗試（start / 每次 retry reload）幾時開始：鎖屏時由呢度計 STALL_HIDDEN_MARK_MS */
+    private attemptStartedAt = Number.NEGATIVE_INFINITY;
+    /** 今次嘗試鎖屏時已經報過卡住，唔使再報 */
+    private hiddenStallReported = false;
 
     constructor(private readonly hooks: StallWatchdogHooks) {}
 
@@ -52,6 +64,7 @@ export class StallWatchdog {
     start(retriesLeft: number): void {
         if (!this.pending) {
             this.startedAt = Date.now();
+            this.startAttempt();
             this.watch(retriesLeft, STALL_FIRST_RETRY_MS);
         }
     }
@@ -79,6 +92,7 @@ export class StallWatchdog {
         }
         this.hooks.onStalled();
         this.hooks.retry(retriesLeft);
+        this.startAttempt();
         this.watch(retriesLeft - 1);
     };
 
@@ -100,14 +114,44 @@ export class StallWatchdog {
         this.timer = setTimeout(this.onDeadline, delayMs);
     }
 
-    /** 到期：慢網仲載緊就再等（唔扣次數，W-498），否則重試 */
+    /** 新一次嘗試（開播 / reload）：鎖屏報卡住由頭計 */
+    private startAttempt(): void {
+        this.attemptStartedAt = Date.now();
+        this.hiddenStallReported = false;
+    }
+
+    /** 到期：鎖屏就唔郁（v1.20.8）；慢網仲載緊就再等（唔扣次數，W-498），否則重試 */
     private onDeadline = (): void => {
-        if (this.pending && this.hooks.canRetry() && this.isStillLoading()) {
+        const wanted = this.pending && this.hooks.canRetry();
+        if (wanted && this.hooks.isHidden()) {
+            this.waitWhileHidden();
+            return;
+        }
+        if (wanted && this.isStillLoading()) {
             this.arm(this.nextRecheckMs());
             return;
         }
         this.retryNow();
     };
+
+    /**
+     * 鎖屏時到期：唔 reload（會 abort iOS 載緊嘅數據）、唔扣次數。deadline 唔推後，
+     * 保持 overdue 畀亮屏 / 鎖屏 Play 即刻 reload；等夠 STALL_HIDDEN_MARK_MS 先報卡住（鎖屏顯示 Play）。
+     * 繼續排 timer：iOS 有時會畀 timer 行，到時再睇一次（仍然 hidden 就再等）
+     */
+    private waitWhileHidden(): void {
+        const untilMark = this.attemptStartedAt + STALL_HIDDEN_MARK_MS - Date.now();
+        if (untilMark <= 0 && !this.hiddenStallReported) {
+            this.hiddenStallReported = true;
+            this.hooks.onStalled();
+        }
+        const delayMs =
+            untilMark > 0
+                ? Math.min(untilMark, STALL_PROGRESS_RECHECK_MS)
+                : STALL_PROGRESS_RECHECK_MS;
+        clearTimeout(this.timer);
+        this.timer = setTimeout(this.onDeadline, delayMs);
+    }
 
     /** 下一次 recheck：唔可以排喺 STALL_MAX_WAIT_MS 之後，上限先真係上限（S-582） */
     private nextRecheckMs(): number {

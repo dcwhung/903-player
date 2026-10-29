@@ -62,7 +62,10 @@ export class AudioController {
     private playingFired = false;
     /** 收過幾多次 progress event（只會加）：metadata 未到前睇下載有冇進展（CUI-0011） */
     private progressEvents = 0;
-    /** 撳咗播（任何來源）一陣都未出聲就重新載入再播（iOS 鎖屏，S-551） */
+    /**
+     * 撳咗播（任何來源）一陣都未出聲就重新載入再播（S-551）。
+     * 鎖屏時唔自動 reload：等亮屏或者鎖屏 Play（v1.20.8）
+     */
     private readonly stall = new StallWatchdog({
         canRetry: () => this.hasPlayIntent(),
         retry: (retriesLeft) => this.retryStalled(retriesLeft),
@@ -74,6 +77,7 @@ export class AudioController {
             playingFired: this.playingFired,
             progressEvents: this.progressEvents,
         }),
+        isHidden: () => document.visibilityState === 'hidden',
     });
 
     /** 播完一集之後接住播邊集；冇設定或者返回 undefined 就停 */
