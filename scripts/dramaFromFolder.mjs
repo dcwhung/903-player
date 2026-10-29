@@ -4,7 +4,7 @@
  * 生成 903-player 用嘅 drama.json 草稿，同埋一份檢查報告。
  *
  *   node dramaFromFolder.mjs "<劇集 folder>" [--id <id>] [--existing <drama.json>]
- *                            [--out <檔案>] [--force] [--verify]
+ *                            [--out <檔案>] [--force] [--report <檔案>] [--verify]
  *
  * 單一檔案、只用 Node 內置 module（Node 18 或以上），下載落嚟就行得，唔使 npm install。
  * 規則同 app 一致（src/dramas/schema.ts、filename.ts、episodes.ts）；app 規則一改，呢度要跟住改，
@@ -782,7 +782,7 @@ export const formatReport = (result, { existing } = {}) => {
 
 /* ───────────── CLI ───────────── */
 
-export const USAGE = `用法：node dramaFromFolder.mjs "<劇集 folder>" [--id <id>] [--existing <drama.json>] [--out <檔案>] [--force] [--verify]`;
+export const USAGE = `用法：node dramaFromFolder.mjs "<劇集 folder>" [--id <id>] [--existing <drama.json>] [--out <檔案>] [--force] [--report <檔案>] [--verify]`;
 
 const OPTIONS = {
     id: { type: 'string' },
@@ -790,9 +790,26 @@ const OPTIONS = {
     out: { type: 'string' },
     /** 輸出檔已經存在都照寫（預設唔覆蓋，免得冚走人手改過嘅 drama.json） */
     force: { type: 'boolean', default: false },
+    /** 報告同時用 UTF-8 寫落呢個檔（Windows PowerShell 嘅 | tee 會用 Big5 / UTF-16 搞亂中文） */
+    report: { type: 'string' },
     verify: { type: 'boolean', default: false },
     /** 測試用：換 R2 網址前綴（例如本機 server） */
     base: { type: 'string', default: DRAMA_AUDIO_BASE },
+};
+
+/** 路徑尾嘅 / 或者 \（Windows 用 \，macOS 拖 folder 入 Terminal 有時會加 /）；根目錄（/、C:\）唔郁 */
+const TRAILING_SEPARATORS = /(?<=[^:\\/])[\\/]+$/;
+
+/**
+ * Windows 用雙引號包住路徑而尾有 \（"D:\劇\"）：\" 會變做字面嘅 "，後面嘅參數仲會黐埋落嚟，
+ * 所以路徑有 " 就直接講點改；冇嘅話食走尾嘅分隔符。
+ */
+const folderArg = (raw) => {
+    if (raw.includes('"'))
+        throw new Error(
+            `路徑入面有「"」：${raw}\n用雙引號包住路徑嗰陣，路徑尾唔好加 \\（例如 "D:\\劇\\黃金少年"）`,
+        );
+    return raw.replace(TRAILING_SEPARATORS, '');
 };
 
 const readArgs = (argv) => {
@@ -802,7 +819,7 @@ const readArgs = (argv) => {
         allowPositionals: true,
     });
     if (positionals.length !== 1) throw new Error('要畀一個劇集 folder');
-    const folder = positionals[0];
+    const folder = folderArg(positionals[0]);
     if (!existsSync(folder) || !statSync(folder).isDirectory())
         throw new Error(`搵唔到 folder：${folder}`);
     return { folder, ...values };
@@ -867,6 +884,30 @@ const generateAndWrite = async (args, existing, io) => {
     return args.verify ? verifyAll(result, args, io) : EXIT.ok;
 };
 
+/**
+ * --report：輸出照印上畫面，同時收埋；完咗用 UTF-8（冇 BOM，Windows 10 起記事本識讀）寫落檔，
+ * 唔經 console code page，報告先唔會變亂碼。冇 --report 就原封不動。
+ */
+const withReportFile = (io, path) => {
+    if (path === undefined) return { io, flush: (code) => code };
+    const lines = [];
+    const out = (text) => {
+        lines.push(text);
+        io.out(text);
+    };
+    const flush = (code) => {
+        try {
+            writeFileSync(path, `${lines.join('\n')}\n`, 'utf8');
+        } catch (error) {
+            io.out(`\n寫唔到報告檔 ${resolve(path)}：${error.message}`);
+            return code === EXIT.ok ? EXIT.usage : code;
+        }
+        io.out(`報告已寫入：${resolve(path)}`);
+        return code;
+    };
+    return { io: { ...io, out }, flush };
+};
+
 /** 預計之外嘅錯誤：同「有 [錯誤]」分開 exit code，印埋技術資料方便跟進 */
 const reportInternalError = (error, io) => {
     io.out(`\n程式出錯：${error?.message ?? error}`);
@@ -888,11 +929,14 @@ export const run = async (argv, ioOverrides = {}) => {
         io.out(`${error.message}\n${USAGE}`);
         return EXIT.usage;
     }
+    const report = withReportFile(io, args.report);
+    let code;
     try {
-        return await generateAndWrite(args, existing, io);
+        code = await generateAndWrite(args, existing, report.io);
     } catch (error) {
-        return reportInternalError(error, io);
+        code = reportInternalError(error, report.io);
     }
+    return report.flush(code);
 };
 
 /** 直接 node 行先跑 main；被 import（test）就唔跑 */

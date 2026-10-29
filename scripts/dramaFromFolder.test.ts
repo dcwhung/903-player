@@ -620,6 +620,56 @@ describe('run (CLI)', () => {
         expect(out.join('\n')).toContain('程式出錯');
     });
 
+    it('should write the report to --report as UTF-8 without BOM', async () => {
+        touch([`劇/${episodeFile('甲', 1)}`]);
+        const reportFile = join(root, 'report.txt');
+        const outFile = join(root, 'x.drama.json');
+        const { code, text } = await runCli([
+            join(root, '劇'),
+            '--out',
+            outFile,
+            '--report',
+            reportFile,
+        ]);
+        expect(code).toBe(EXIT.ok);
+        const bytes = readFileSync(reportFile);
+        expect([...bytes.subarray(0, 3)]).not.toEqual([0xef, 0xbb, 0xbf]);
+        const report = bytes.toString('utf8');
+        expect(report).toContain('甲：1 集（第 1 集）');
+        expect(report).toContain(`已寫入：${outFile}`);
+        expect(text).toContain(`報告已寫入：${reportFile}`);
+    });
+
+    it('should still write --report when generation is blocked', async () => {
+        touch([...[1, 3].map((n) => `劇/${episodeFile('甲', n)}`)]);
+        const reportFile = join(root, 'report.txt');
+        const { code } = await runCli([join(root, '劇'), '--report', reportFile]);
+        expect(code).toBe(EXIT.blocked);
+        expect(readFileSync(reportFile, 'utf8')).toContain('缺第 2 集');
+    });
+
+    it('should strip trailing path separators from the folder', async () => {
+        touch([`劇/${episodeFile('甲', 1)}`]);
+        const outFile = join(root, 'x.drama.json');
+        for (const suffix of ['/', '\\']) {
+            const { code, text } = await runCli([
+                `${join(root, '劇')}${suffix}`,
+                '--out',
+                outFile,
+                '--force',
+            ]);
+            expect(code).toBe(EXIT.ok);
+            expect(text).toContain('劇集 folder：劇（短篇劇）');
+        }
+    });
+
+    it('should explain a stray double quote from a quoted Windows path ending in a backslash', async () => {
+        // PowerShell / cmd："D:\劇\" 入面 \" 會變做字面嘅 "，後面嘅參數仲會黐埋落去
+        const { code, text } = await runCli([`${join(root, '劇')}" --id x`]);
+        expect(code).toBe(EXIT.usage);
+        expect(text).toContain('尾唔好加');
+    });
+
     it('should reject a missing folder or unknown option', async () => {
         expect((await runCli([join(root, 'nope')])).code).toBe(EXIT.usage);
         expect((await runCli([])).code).toBe(EXIT.usage);
