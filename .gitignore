@@ -5,3 +5,7 @@ coverage/
 .DS_Store
 .env*
 e2e/screenshots/
+# Python 工具（scripts/arcCover）喺 repo 根跑 pytest / ruff 會留低 cache；prettier 跟 root .gitignore
+__pycache__/
+.pytest_cache/
+.ruff_cache/
