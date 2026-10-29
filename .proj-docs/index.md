@@ -39,6 +39,7 @@
 | 2026-10-29 | [reviews/2026-10-29_review_e2e-offline-w497.md](reviews/2026-10-29_review_e2e-offline-w497.md)                 |
 | 2026-10-29 | [reviews/2026-10-29_review_s551-lockscreen-stall.md](reviews/2026-10-29_review_s551-lockscreen-stall.md)       |
 | 2026-10-29 | [reviews/2026-10-29_review_s551-rereview.md](reviews/2026-10-29_review_s551-rereview.md)                       |
+| 2026-10-29 | [reviews/2026-10-29_review_s551-round3.md](reviews/2026-10-29_review_s551-round3.md)                           |
 
 ## QA
 
