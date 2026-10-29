@@ -12,6 +12,8 @@
  * scripts/dramaFromFolder.test.ts 會將輸出餵畀 app 真正嘅 validator 驗。
  */
 import {
+    accessSync,
+    constants as fsConstants,
     existsSync,
     readFileSync,
     readdirSync,
@@ -34,10 +36,20 @@ export const SERIES_TEMPLATES = [
 export const DAILY_TEMPLATE = '{yyyymmdd}.m4a';
 
 /**
- * 0：成功；1：有錯誤，冇寫檔；2：參數錯（包括 --out / --report 路徑錯），冇寫檔；3：已寫檔但 --verify 有網址唔得；
- * 4：程式本身出錯（唔係 folder 問題，要將成段輸出傳返嚟）
+ * 0：成功；1：有錯誤，冇寫檔；2：參數錯（包括 --out / --report 路徑錯 / 冇權限），冇寫檔；3：已寫檔但 --verify 有網址唔得；
+ * 4：程式本身出錯（唔係 folder 問題，要將成段輸出傳返嚟）；
+ * 5：drama.json 已寫好，只係最尾寫唔到 --report 報告檔（預檢過咗之後先出事，例如磁碟滿）
  */
-export const EXIT = Object.freeze({ ok: 0, blocked: 1, usage: 2, verifyFailed: 3, internal: 4 });
+export const EXIT = Object.freeze({
+    ok: 0,
+    blocked: 1,
+    usage: 2,
+    verifyFailed: 3,
+    internal: 4,
+    reportFailed: 5,
+});
+/** 呢啲 exit code 代表 drama.json 已經寫咗（報告檔寫唔到時要講清楚） */
+const DRAFT_WRITTEN_CODES = new Set([EXIT.ok, EXIT.verifyFailed]);
 
 const AUDIO_EXTENSIONS = new Set(['.m4a', '.mp3', '.aac', '.mp4']);
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -956,13 +968,27 @@ const outputPath = (args) =>
 
 const isDirectory = (path) => existsSync(path) && statSync(path).isDirectory();
 
-/** 一個要寫嘅檔：上層 folder 要存在，本身唔可以係 folder；錯就回傳點改，啱就 undefined */
-const destinationProblem = (label, path) => {
+/** 寫得入嗎：POSIX 權限 / 唯讀 mount 擋得到；Windows ACL 唔保證準（最尾寫唔到仲有 EXIT.reportFailed 兜底） */
+const canWrite = (path) => {
+    try {
+        accessSync(path, fsConstants.W_OK);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+/** 一個要寫嘅檔：上層 folder 要存在、寫得入，本身唔可以係 folder；錯就回傳點改，啱就 undefined */
+const destinationProblem = ({ label, path }, io) => {
     const parent = dirname(path);
     if (!isDirectory(parent))
         return `[錯誤] ${label} 嘅 folder 唔存在：${parent}\n請先開好個 folder，或者檢查路徑有冇打錯（有空格要用引號包住）。`;
     if (isDirectory(path))
         return `[錯誤] ${label} 係一個 folder：${path}\n要畀檔案路徑，例如 ${join(path, 'drama.json')}`;
+    // 已經有個檔（--force 覆蓋）睇個檔本身；未有就睇上層 folder 開唔開得新檔
+    const target = existsSync(path) ? path : parent;
+    if (!io.canWrite(target))
+        return `[錯誤] ${label} 冇權限寫入：${target}\n請揀另一個 folder，或者檢查權限 / 係咪唯讀磁碟。`;
     return undefined;
 };
 
@@ -970,10 +996,10 @@ const destinationProblem = (label, path) => {
  * 掃 folder 之前驗晒要寫嘅路徑（輸出 drama.json、--report）：
  * 唔係就要等成份報告印完、甚至 drama.json 寫咗先發現（CUI-0008 / S-568）
  */
-const checkDestinations = (args) => {
-    const targets = [['輸出檔（--out）', outputPath(args)]];
-    if (args.report !== undefined) targets.push(['--report', resolve(args.report)]);
-    const problem = targets.map(([label, path]) => destinationProblem(label, path)).find(Boolean);
+const checkDestinations = (args, io) => {
+    const targets = [{ label: '輸出檔（--out）', path: outputPath(args) }];
+    if (args.report !== undefined) targets.push({ label: '--report', path: resolve(args.report) });
+    const problem = targets.map((target) => destinationProblem(target, io)).find(Boolean);
     if (problem !== undefined) throw new Error(problem);
 };
 
@@ -1007,6 +1033,7 @@ const defaultIo = {
     out: (text) => process.stdout.write(`${text}\n`),
     now: () => new Date(),
     fetch: (...args) => globalThis.fetch(...args),
+    canWrite,
 };
 
 /** 輸出檔已存在又冇 --force：回傳點解唔寫（用戶通常冇版本控制，冚咗就冇得返轉頭） */
@@ -1040,7 +1067,20 @@ const generateAndWrite = async (args, existing, io) => {
  * --report：輸出照印上畫面，同時收埋；完咗用 UTF-8（冇 BOM，Windows 10 起記事本識讀）寫落檔，
  * 唔經 console code page，報告先唔會變亂碼。冇 --report 就原封不動。
  */
-const withReportFile = (io, path) => {
+/** 最尾寫唔到報告檔：drama.json 寫咗就講明（唔好令人以為乜都冇寫而重行），回傳最終 exit code */
+const reportWriteFailed = (code, args, error, io) => {
+    const where = `${resolve(args.report)}（${error.message}）`;
+    if (!DRAFT_WRITTEN_CODES.has(code)) {
+        io.out(`\n寫唔到報告檔 ${where}`);
+        return code;
+    }
+    io.out(`\ndrama.json 已經寫好（${outputPath(args)}），只係報告檔寫唔到：${where}`);
+    io.out('上面畫面就係成份報告，可以直接複製；唔使重行。');
+    return code === EXIT.ok ? EXIT.reportFailed : code;
+};
+
+const withReportFile = (io, args) => {
+    const path = args.report;
     if (path === undefined) return { io, flush: (code) => code };
     const lines = [];
     const out = (text) => {
@@ -1051,8 +1091,7 @@ const withReportFile = (io, path) => {
         try {
             writeFileSync(path, `${lines.join('\n')}\n`, 'utf8');
         } catch (error) {
-            io.out(`\n寫唔到報告檔 ${resolve(path)}：${error.message}`);
-            return code === EXIT.ok ? EXIT.usage : code;
+            return reportWriteFailed(code, args, error, io);
         }
         io.out(`報告已寫入：${resolve(path)}`);
         return code;
@@ -1075,14 +1114,14 @@ export const run = async (argv, ioOverrides = {}) => {
     let existing;
     try {
         args = readArgs(argv);
-        checkDestinations(args);
+        checkDestinations(args, io);
         // 有畀 --existing 就一定要驗：檔入面係 null 都唔可以當冇畀
         existing = args.existing === undefined ? undefined : readExisting(args.existing);
     } catch (error) {
         io.out(`${error.message}\n${USAGE}`);
         return EXIT.usage;
     }
-    const report = withReportFile(io, args.report);
+    const report = withReportFile(io, args);
     let code;
     try {
         code = await generateAndWrite(args, existing, report.io);

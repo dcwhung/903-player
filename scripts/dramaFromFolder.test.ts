@@ -883,6 +883,70 @@ describe('run (CLI)', () => {
             expectRejectedUpFront(await runCli(args), join(root, 'dir'));
             expect(listFiles(root)).not.toContain('x.drama.json');
         });
+
+        /** 當 lockedDir 冇權限寫（test 用 root 跑，chmod 擋唔到，所以經 io 注入） */
+        const runWithLockedDir = (argv: string[], lockedDir: string) => {
+            const out: string[] = [];
+            const canWrite = (path: string) => path !== lockedDir;
+            return run(argv, { out: (s: string) => out.push(s), now: () => NOW, canWrite }).then(
+                (code) => ({ code, text: out.join('\n') }),
+            );
+        };
+
+        it.each(['--out', '--report'])(
+            'should reject %s in a folder without write permission',
+            async (option) => {
+                const locked = join(root, 'locked');
+                mkdirSync(locked);
+                const target = join(locked, 'x.txt');
+                const args = [join(root, '劇'), '--out', join(root, 'x.drama.json')];
+                const result = await runWithLockedDir([...args, option, target], locked);
+                expectRejectedUpFront(result, `冇權限寫入：${locked}`);
+                expect(listFiles(root)).toEqual([`劇/${episodeFile('甲', 1)}`]);
+            },
+        );
+    });
+
+    it('should say drama.json was written when only the report write fails at the end', async () => {
+        touch([`劇/${episodeFile('甲', 1)}`]);
+        const outFile = join(root, 'x.drama.json');
+        const reportFile = join(root, 'report.txt');
+        const out: string[] = [];
+        // 預檢之後先有人喺報告路徑開咗個 folder：最尾寫報告先會失敗
+        const io = {
+            out: (s: string) => {
+                out.push(s);
+                if (s.includes('\n已寫入：')) mkdirSync(reportFile, { recursive: true });
+            },
+            now: () => NOW,
+        };
+        const code = await run([join(root, '劇'), '--out', outFile, '--report', reportFile], io);
+        expect(code).toBe(EXIT.reportFailed);
+        expect(Object.values(EXIT).filter((c) => c === EXIT.reportFailed)).toHaveLength(1);
+        expect(out.join('\n')).toContain(`drama.json 已經寫好（${outFile}），只係報告檔寫唔到`);
+        expect(JSON.parse(readFileSync(outFile, 'utf8'))).toMatchObject({ kind: 'series' });
+    });
+
+    it('should not claim drama.json was written when the report fails on a blocked run', async () => {
+        touch([...[1, 3].map((n) => `劇/${episodeFile('甲', n)}`)]);
+        const reportFile = join(root, 'report.txt');
+        const out: string[] = [];
+        const io = {
+            out: (s: string) => {
+                out.push(s);
+                if (s.includes('冇寫 drama.json')) mkdirSync(reportFile, { recursive: true });
+            },
+            now: () => NOW,
+        };
+        const code = await run([join(root, '劇'), '--report', reportFile], io);
+        expect(code).toBe(EXIT.blocked);
+        expect(out.join('\n')).toContain('寫唔到報告檔');
+        expect(out.join('\n')).not.toContain('drama.json 已經寫好');
+    });
+
+    it('should document every exit code in the README table', () => {
+        const readme = readFileSync(new URL('../README.md', SCRIPT), 'utf8');
+        Object.values(EXIT).forEach((code) => expect(readme).toContain(`| \`${code}\`  |`));
     });
 
     it('should reject a missing folder or unknown option', async () => {
