@@ -60,6 +60,7 @@ PHONE_DISC_CSS_PX: Final[int] = 280
 ARC_RING_CSS_PX: Final[int] = 52  # --arc-sheet-ring
 ARC_RING_WIDTH_CSS_PX: Final[int] = 4  # --arc-sheet-ring-width（--space-1）
 SMALL_DISC_CSS_PX: Final[int] = 40
+SMALL_RING_CSS_PX: Final[int] = 3  # .small box-shadow 0 0 0 3px var(--color-divider)（= theme track）
 TILE_RADIUS_CSS_PX: Final[int] = 14  # --radius-tile
 
 # 冇 drama.json theme 時嘅預覽顏色（蘭茜夫人劇場淺色主題）

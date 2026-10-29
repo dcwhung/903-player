@@ -17,6 +17,7 @@ from constants import (
     RIM_CSS_PX,
     SHELF_ASPECT,
     SMALL_DISC_CSS_PX,
+    SMALL_RING_CSS_PX,
     SMALL_SPINDLE_RATIO,
     SPINDLE_RATIO,
     SPINDLE_RING_ALPHA,
@@ -69,37 +70,48 @@ def _vignette(diameter: int) -> Image.Image:
 def render_disc(art: np.ndarray, diameter: int, theme: dict[str, str], large: bool) -> Image.Image:
     """跟 Disc.module.css：.face 圓形 art → .vignette → .groove ×3 → .spindle（+ ring）；large 有碟邊。"""
     css_scale = diameter / (PHONE_DISC_CSS_PX if large else SMALL_DISC_CSS_PX)
-    rim_px = round(RIM_CSS_PX * css_scale) if large else 0
-    outer = diameter + 2 * rim_px
-    rim = _hex_rgb(theme["surface"])
+    # box-shadow 向外畫：大碟 10px 碟邊（--color-disc-rim = theme surface）；
+    # 細碟 3px 外圈（--color-divider = theme track）
+    outset_px = round((RIM_CSS_PX if large else SMALL_RING_CSS_PX) * css_scale)
+    outset_colour = _hex_rgb(theme["surface"] if large else theme["track"])
+    outer = diameter + 2 * outset_px
     canvas = Image.new("RGBA", (outer, outer), (0, 0, 0, 0))
-    if rim_px:
-        canvas.paste(Image.new("RGBA", (outer, outer), rim + (255,)), (0, 0), _circle_mask(outer))
+    canvas.paste(Image.new("RGBA", (outer, outer), outset_colour + (255,)), (0, 0), _circle_mask(outer))
     face = Image.fromarray(art).convert("RGBA").resize((diameter, diameter), Image.LANCZOS)
-    canvas.paste(face, (rim_px, rim_px), _circle_mask(diameter))
+    canvas.paste(face, (outset_px, outset_px), _circle_mask(diameter))
     if large:
-        canvas.alpha_composite(_vignette(diameter), (rim_px, rim_px))
-        for inset in GROOVE_INSETS:
-            groove_d = round(diameter * (1 - 2 * inset))
-            offset = rim_px + round(diameter * inset)
-            canvas.alpha_composite(
-                _ring(groove_d, css_scale, (255, 255, 255, round(GROOVE_ALPHA * 255))), (offset, offset)
-            )
+        canvas.alpha_composite(_vignette(diameter), (outset_px, outset_px))
+        _draw_grooves(canvas, diameter, outset_px, css_scale)
+    _draw_spindle(canvas, diameter, _hex_rgb(theme["surface"]), large, css_scale)
+    return canvas
+
+
+def _draw_grooves(canvas: Image.Image, diameter: int, offset: int, css_scale: float) -> None:
+    """.groove ×3：1px 白色半透明圓，inset 10% / 22% / 34%。"""
+    colour = (255, 255, 255, round(GROOVE_ALPHA * 255))
+    for inset in GROOVE_INSETS:
+        groove_d = round(diameter * (1 - 2 * inset))
+        at = offset + round(diameter * inset)
+        canvas.alpha_composite(_ring(groove_d, css_scale, colour), (at, at))
+
+
+def _draw_spindle(
+    canvas: Image.Image, diameter: int, rim: tuple[int, int, int], large: bool, css_scale: float
+) -> None:
+    """.spindle：碟邊色圓點（大碟 12%、細碟 20%）；大碟外面再有 3px 半透明黑 ring。"""
+    outer = canvas.width
     spindle_d = round(diameter * (SPINDLE_RATIO if large else SMALL_SPINDLE_RATIO))
     spindle_at = (outer - spindle_d) // 2
-    canvas.paste(
-        Image.new("RGBA", (spindle_d, spindle_d), rim + (255,)),
-        (spindle_at, spindle_at),
-        _circle_mask(spindle_d),
+    dot = Image.new("RGBA", (spindle_d, spindle_d), rim + (255,))
+    canvas.paste(dot, (spindle_at, spindle_at), _circle_mask(spindle_d))
+    if not large:
+        return
+    ring_px = SPINDLE_RING_CSS_PX * css_scale
+    ring_d = spindle_d + round(2 * ring_px)
+    ring_at = (outer - ring_d) // 2
+    canvas.alpha_composite(
+        _ring(ring_d, ring_px, (0, 0, 0, round(SPINDLE_RING_ALPHA * 255))), (ring_at, ring_at)
     )
-    if large:
-        ring_px = SPINDLE_RING_CSS_PX * css_scale
-        ring_d = spindle_d + round(2 * ring_px)
-        ring_at = (outer - ring_d) // 2
-        canvas.alpha_composite(
-            _ring(ring_d, ring_px, (0, 0, 0, round(SPINDLE_RING_ALPHA * 255))), (ring_at, ring_at)
-        )
-    return canvas
 
 
 def render_arc_thumb(art: np.ndarray, scale: float, theme: dict[str, str]) -> Image.Image:
