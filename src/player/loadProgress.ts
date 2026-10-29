@@ -9,6 +9,11 @@ export interface LoadProbe {
     currentTime: number;
     /** 今次嘗試（開播 / 重試）已經發過 playing */
     playingFired: boolean;
+    /**
+     * 收過幾多次 progress event（只會加）：bytes 入緊。metadata 未到時 Chromium 唯一嘅下載訊號，
+     * buffered / readyState 都未郁（CUI-0011）
+     */
+    progressEvents: number;
 }
 
 /** 有新數據：buffer 尾增長，或者（未發 playing 時）readyState 升到有可播數據 */
@@ -24,7 +29,10 @@ const hasGrown = (before: LoadProbe, after: LoadProbe): boolean => {
     // 有可播數據（HAVE_CURRENT_DATA）先算進展。HAVE_METADATA 只係 header / 長度；當進展會將情境 1
     // 首次重試由 4 秒推到 8 秒，正正落入 iOS 鎖屏凍結 JS 嘅時間（W-500）
     const gotData = after.readyState >= HAVE_CURRENT_DATA && after.readyState > before.readyState;
-    return endAfter > endBefore || gotData;
+    // CUI-0011：極慢網開播 header 未載完，bytes 入緊（有新 progress event）都算；reload 會 abort 個 request
+    // 由 byte 0 再嚟。progress 停咗（情境 1 轉網絡後乜都冇嚟）就冇新 event，照樣喺 deadline 重試
+    const gotBytes = after.progressEvents > before.progressEvents;
+    return endAfter > endBefore || gotData || gotBytes;
 };
 
 /**

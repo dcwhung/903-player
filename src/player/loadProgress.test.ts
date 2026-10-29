@@ -8,6 +8,7 @@ const probe = (overrides: Partial<LoadProbe> = {}): LoadProbe => ({
     readyState: 0,
     currentTime: POSITION,
     playingFired: false,
+    progressEvents: 0,
     ...overrides,
 });
 
@@ -26,6 +27,42 @@ describe('isLoadProgressing', () => {
     // W-500：HAVE_METADATA 冇任何可播數據，唔算下載有進展（S-551 情境 1 要喺 4 秒重試）
     it('should not be progressing when only metadata arrives', () => {
         expect(isLoadProgressing(probe(), probe({ readyState: 1 }))).toBe(false);
+    });
+
+    /**
+     * CUI-0011：極慢網開播，metadata 未到之前 Chromium 唔公開 buffered / readyState，
+     * 但 bytes 入緊時會發 progress event（約每 350 ms 一次）。冇 progress event 就照當冇進展（情境 1）
+     */
+    describe('progress events before metadata', () => {
+        it('should be progressing when progress events fire while nothing else is exposed', () => {
+            expect(isLoadProgressing(probe(), probe({ progressEvents: 3 }))).toBe(true);
+        });
+
+        it('should not be progressing when no new progress event fired', () => {
+            const before = probe({ progressEvents: 5 });
+
+            expect(isLoadProgressing(before, probe({ progressEvents: 5 }))).toBe(false);
+        });
+
+        // S-583：playing 已發而位置唔行，下載緊唔代表等落去會好（情境 2 pipeline 死咗）
+        it('should not be progressing on progress events after playing has fired', () => {
+            const before = probe({ playingFired: true, progressEvents: 1 });
+            const after = probe({ playingFired: true, progressEvents: 9 });
+
+            expect(isLoadProgressing(before, after)).toBe(false);
+        });
+
+        it('should not be progressing on progress events when plenty of data is ahead', () => {
+            const ahead = POSITION + STALL_DATA_AHEAD_SECONDS;
+            const before = probe({ bufferedEnd: ahead, readyState: HAVE_ENOUGH_DATA });
+            const after = probe({
+                bufferedEnd: ahead,
+                readyState: HAVE_ENOUGH_DATA,
+                progressEvents: 4,
+            });
+
+            expect(isLoadProgressing(before, after)).toBe(false);
+        });
     });
 
     it('should be progressing when a buffered range appears around the position', () => {

@@ -120,6 +120,14 @@ export class FakeAudio extends EventTarget {
         this.emitTime(this.currentTime + AUDIBLE_ADVANCE_SECONDS * AUDIBLE_TEST_MARGIN);
     }
 
+    /**
+     * 下載緊、bytes 入緊（真 element 約每 350 ms 發一次）。metadata 未到時 Chromium 只有呢個訊號，
+     * buffered / readyState 都未郁（CUI-0011）
+     */
+    emitProgress(): void {
+        this.dispatchEvent(new Event('progress'));
+    }
+
     /** 播緊但數據唔夠（緩衝 / seek 去未載到嘅位置） */
     emitWaiting(): void {
         this.dispatchEvent(new Event('waiting'));

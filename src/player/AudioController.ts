@@ -60,6 +60,8 @@ export class AudioController {
     private playGeneration = 0;
     /** 今次嘗試（watchdog 新一輪 / 重試 reload）已經發過 playing：之後 readyState 升唔算進展（S-583） */
     private playingFired = false;
+    /** 收過幾多次 progress event（只會加）：metadata 未到前睇下載有冇進展（CUI-0011） */
+    private progressEvents = 0;
     /** 撳咗播（任何來源）一陣都未出聲就重新載入再播（iOS 鎖屏，S-551） */
     private readonly stall = new StallWatchdog({
         canRetry: () => this.hasPlayIntent(),
@@ -70,6 +72,7 @@ export class AudioController {
             readyState: this.audio.readyState,
             currentTime: this.audio.currentTime,
             playingFired: this.playingFired,
+            progressEvents: this.progressEvents,
         }),
     });
 
@@ -100,6 +103,7 @@ export class AudioController {
             timeupdate: this.onTimeUpdate,
             play: this.onPlay,
             playing: this.onPlaying,
+            progress: this.onProgress,
             waiting: this.onSilent,
             pause: this.onPause,
             ended: this.onEnded,
@@ -354,6 +358,11 @@ export class AudioController {
     private onPlaying = (): void => {
         this.audibleFrom = this.audio.currentTime;
         this.playingFired = true;
+    };
+
+    /** bytes 入緊（約每 350 ms）：只計數畀 watchdog 比較，唔記 log（太密） */
+    private onProgress = (): void => {
+        this.progressEvents += 1;
     };
 
     /** 播緊而位置由起點行咗夠遠：真正出緊聲，唔使再睇住卡住 */
