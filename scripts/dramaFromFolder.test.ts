@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 import { DRAMA_AUDIO_BASE as APP_AUDIO_BASE } from '../src/config/constants';
 import { buildEpisodes } from '../src/dramas/episodes';
 import { parseDramaDefinition } from '../src/dramas/schema';
+import { compileSchema } from '../tests/jsonSchemas';
 import {
     DRAMA_AUDIO_BASE,
     EXIT,
@@ -87,8 +88,19 @@ const imagesOf = (json: Json): string[] => {
     );
 };
 
-/** 用 app 真正嘅 validator + episode builder 展開（唔合格會 throw） */
+/** schemas/drama.schema.json（用戶喺 VS Code 打開草稿見到嘅規則；嚴過 runtime） */
+const dramaSchema = compileSchema('drama');
+
+/** 草稿要過 JSON Schema，唔係嘅話列出 ajv 嘅錯誤 */
+const expectSchemaValid = (json: unknown): void => {
+    const valid = dramaSchema(json);
+    expect(dramaSchema.errors ?? []).toEqual([]);
+    expect(valid).toBe(true);
+};
+
+/** 用 app 真正嘅 validator + episode builder 展開（唔合格會 throw），亦要過 JSON Schema */
 const appEpisodes = (id: string, json: unknown) => {
+    expectSchemaValid(json);
     const files = new Set(imagesOf(json as Json));
     const def = parseDramaDefinition(json, { id, source: `${id}.drama.json`, files });
     return buildEpisodes(id, def);
@@ -646,7 +658,9 @@ describe('run (CLI)', () => {
         expect(code).toBe(EXIT.ok);
         expect(text).toContain('甲：2 集（第 1–2 集）');
         expect(text).toContain('cover photo.jpg');
-        expect(JSON.parse(readFileSync(outFile, 'utf8'))).toMatchObject({ kind: 'series' });
+        const written = JSON.parse(readFileSync(outFile, 'utf8'));
+        expect(written).toMatchObject({ kind: 'series' });
+        expectSchemaValid(written);
     });
 
     it('should default the output name to <id>.drama.json in the working directory', async () => {
