@@ -1,5 +1,6 @@
 // e2e 共用嘅瀏覽器環境：固定時鐘 + 似真嘅 audio host + 唔出外網。run.mjs 同 touch.mjs 所有 context 都經呢度開，
 // 兩邊唔會各自為政（例如一邊冇固定時鐘就會喺香港時間過咗午夜之後錯）。
+import { readFileSync } from 'node:fs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { silenceWav } from './silenceWav.mjs';
 
@@ -20,13 +21,71 @@ export const AUDIO_HOST = 'https://audio.hkfm903.live';
  */
 export const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
 /**
- * Google Fonts（index.html 嘅 preload stylesheet + 字型檔）：e2e 答空 CSS，字體用返 tokens.css 嘅
- * system-ui / sans-serif fallback。冇本機字型檔（唔想為 e2e 加 @fontsource 呢類大依賴），
- * 而且唔靠網絡：載唔載到、幾時 swap 字都唔會令 layout / 截圖浮動
+ * Google Fonts（index.html 嘅 preload stylesheet + 字型檔）：e2e 唔出外網，由本機答。
+ * Poppins 用 @fontsource/poppins（devDependency，OFL-1.1）嘅 latin / latin-ext woff2：頁頭標題、日子條、
+ * mini player 跑馬燈嘅「冇剪走 / 有冇超出」斷言靠字型度量，Poppins 比 fallback（Inter 等）闊，
+ * 用 fallback 量會 false negative（W-497）。Noto Sans TC / Noto Serif TC 唔供應：中文字喺任何字型都係約 1em 闊，
+ * 用系統 CJK fallback 量出嚟差唔多，唔值得為 e2e 加十幾 MB 字型檔
  */
 export const GOOGLE_FONTS_CSS = 'https://fonts.googleapis.com';
 export const GOOGLE_FONTS_FILES = 'https://fonts.gstatic.com';
-const EMPTY_CSS = { status: 200, contentType: 'text/css', body: '' };
+/** 本機字型檔喺 gstatic 嘅假路徑前綴（真 gstatic 唔會用 /e2e/，唔會同真網址混淆） */
+const LOCAL_FONT_PREFIX = '/e2e/';
+const FONTSOURCE_POPPINS = new URL('../node_modules/@fontsource/poppins/', import.meta.url);
+/** 只供應拉丁字（UI 嘅英文、數字）；其他 subset（devanagari）app 用唔著 */
+const POPPINS_SUBSETS = new Set(['latin', 'latin-ext']);
+/** fontsource 每個字重嘅 CSS 入面一段 @font-face（前面有 /* poppins-<subset>-<weight>-normal *\/ 註解） */
+const FONTSOURCE_FACE = /\/\* (poppins-([a-z-]+)-\d+-normal) \*\/\s*(@font-face \{[^}]*\})/g;
+
+/** 某個字重嘅 @font-face（只要 latin / latin-ext），src 改指 gstatic 假路徑，unicode-range 照用 fontsource 嘅 */
+const poppinsFaces = (weight) => {
+    const css = readFileSync(new URL(`${weight}.css`, FONTSOURCE_POPPINS), 'utf8');
+    return [...css.matchAll(FONTSOURCE_FACE)]
+        .filter(([, , subset]) => POPPINS_SUBSETS.has(subset))
+        .map(([, name, , face]) =>
+            face.replace(
+                /src:[^;]*;/,
+                `src: url(${GOOGLE_FONTS_FILES}${LOCAL_FONT_PREFIX}${name}.woff2) format('woff2');`,
+            ),
+        );
+};
+
+/** css2 網址嘅 family=Poppins:wght@400;500;600 → [400, 500, 600]；冇 Poppins 就 [] */
+const requestedPoppinsWeights = (url) =>
+    new URL(url).searchParams
+        .getAll('family')
+        .filter((family) => family.split(':')[0] === 'Poppins')
+        .flatMap((family) => (/wght@([\d;]+)/.exec(family)?.[1] ?? '').split(';'))
+        .filter(Boolean)
+        .map(Number);
+
+/** fonts.googleapis.com：答 index.html 要嘅 Poppins 字重；其他字體（Noto）冇 @font-face，用系統 fallback */
+const fontsCssResponder = (route) => {
+    const body = requestedPoppinsWeights(route.request().url()).flatMap(poppinsFaces).join('\n');
+    return route.fulfill({ status: 200, contentType: 'text/css', body });
+};
+
+/** fonts.gstatic.com：只答本機有嘅 Poppins woff2（latin / latin-ext × 任何字重），其他一律 404 */
+const fontFilesResponder = (route) => {
+    const { pathname } = new URL(route.request().url());
+    const file = pathname.slice(LOCAL_FONT_PREFIX.length);
+    const known =
+        pathname.startsWith(LOCAL_FONT_PREFIX) &&
+        /^poppins-(latin|latin-ext)-\d+-normal\.woff2$/.test(file);
+    if (!known) return route.fulfill({ status: 404, body: '' });
+    let body;
+    try {
+        body = readFileSync(new URL(`files/${file}`, FONTSOURCE_POPPINS));
+    } catch {
+        return route.fulfill({ status: 404, body: '' });
+    }
+    // 字型係 CORS request（index.html preconnect 有 crossorigin），冇 ACAO 瀏覽器會拒用
+    return route.fulfill({
+        status: 200,
+        headers: { 'Content-Type': 'font/woff2', 'Access-Control-Allow-Origin': '*' },
+        body,
+    });
+};
 
 /**
  * e2e 唔出外網：刻意 mock 咗嘅外部 origin（newE2EContext 入面 route 住）。
@@ -140,10 +199,8 @@ export const newE2EContext = async (
         (url) => isExternal(url.href),
         (route) => route.abort('blockedbyclient'),
     );
-    await ctx.route(`${GOOGLE_FONTS_CSS}/**`, (route) => route.fulfill(EMPTY_CSS));
-    await ctx.route(`${GOOGLE_FONTS_FILES}/**`, (route) =>
-        route.fulfill({ status: 404, body: '' }),
-    );
+    await ctx.route(`${GOOGLE_FONTS_CSS}/**`, fontsCssResponder);
+    await ctx.route(`${GOOGLE_FONTS_FILES}/**`, fontFilesResponder);
     await ctx.clock.install({ time: new Date(now) });
     await ctx.route(`${AUDIO_HOST}/**`, audioResponder(extraAudioUrls));
     await ctx.route(`${DRAMA_AUDIO_BASE}/**`, (route) => route.fulfill({ status: 404, body: '' }));
