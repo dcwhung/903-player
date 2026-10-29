@@ -1,6 +1,6 @@
 // @vitest-environment node
 // 放喺 scripts/：要用 node:fs 讀 CSS（Vitest 會將 CSS 連 ?raw 都處理成空字串），
-// 而 Node 型別只屬 tsconfig.node.json，唔會漏入 app 程式（tsconfig.app.json）
+// 而 Node 型別只屬 tsconfig.scripts-test.json（scripts/*.test.ts），唔會漏入 app 程式（tsconfig.app.json）
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { LAUNCH_THEME_COLOR } from '../src/config/launchTheme';

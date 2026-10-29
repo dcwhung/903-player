@@ -21,5 +21,6 @@
         "tests/cssRule.ts",
         "tests/jsonSchemas.ts",
         "src/**/*.node.test.ts"
-    ]
+    ],
+    "exclude": ["scripts/*.test.ts"]
 }

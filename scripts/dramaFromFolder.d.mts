@@ -66,12 +66,21 @@ export interface CliIo {
     out?: (text: string) => void;
     now?: () => Date;
     fetch?: typeof fetch;
+    /** 預檢用：個路徑寫唔寫得入（預設 accessSync W_OK） */
+    canWrite?: (path: string) => boolean;
 }
 
 export const DRAMA_AUDIO_BASE: string;
 export const SERIES_TEMPLATES: readonly string[];
 export const DAILY_TEMPLATE: string;
-export const EXIT: Readonly<{ ok: 0; blocked: 1; usage: 2; verifyFailed: 3; internal: 4 }>;
+export const EXIT: Readonly<{
+    ok: 0;
+    blocked: 1;
+    usage: 2;
+    verifyFailed: 3;
+    internal: 4;
+    reportFailed: 5;
+}>;
 export const USAGE: string;
 
 export function toChineseNumeral(n: number): string;

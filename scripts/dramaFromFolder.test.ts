@@ -1,6 +1,6 @@
 // @vitest-environment node
-// 經 src/dramas/episodes.ts 用到 import.meta.env：只喺呢個檔開 vite/client 型別，唔好放落 tsconfig.node.json
-/// <reference types="vite/client" />
+// 經 src/dramas/episodes.ts 用到 import.meta.env：vite/client 型別由 tsconfig.scripts-test.json（只包 scripts/*.test.ts）提供。
+// 唔好用 /// <reference types> 或者放落 tsconfig.node.json：兩樣都會令成個 Node program 以為有 import.meta.env
 /*
  * scripts/dramaFromFolder.mjs：由本機劇集 folder 生成 drama.json 草稿。
  * 最重要嘅保證：輸出經 app 真正嘅 validator（parseDramaDefinition）+ buildEpisodes 之後，
@@ -11,6 +11,8 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 import { DRAMA_AUDIO_BASE as APP_AUDIO_BASE } from '../src/config/constants';
 import { buildEpisodes } from '../src/dramas/episodes';
 import { parseDramaDefinition } from '../src/dramas/schema';
@@ -32,6 +34,7 @@ import {
 
 const SCRIPT = new URL('./dramaFromFolder.mjs', import.meta.url);
 const DRAMAS_DIR = new URL('../src/dramas/', import.meta.url);
+const NODE_TSCONFIG = new URL('../tsconfig.node.json', import.meta.url);
 /** 香港時間 2026-10-29 04:00（UTC 仲係 28 號），驗 addedAt 用香港日期 */
 const NOW = new Date('2026-10-28T20:00:00Z');
 const TODAY = '2026-10-29';
@@ -110,9 +113,11 @@ const appEpisodes = (id: string, json: unknown) => {
     return buildEpisodes(id, def);
 };
 
-/** 錄音網址去咗 base 之後 → root 底下嘅相對路徑（每段 decode） */
-const decodedPath = (url: string, base: string): string =>
-    url.slice(base.length).split('/').map(decodeURIComponent).join('/');
+/** 錄音網址去咗 base 之後 → root 底下嘅相對路徑（每段 decode）；唔係由 base 開頭即係 host 揀錯 */
+const decodedPath = (url: string, base: string): string => {
+    if (!url.startsWith(base)) throw new Error(`${url} 唔係由 ${base} 開頭`);
+    return url.slice(base.length).split('/').map(decodeURIComponent).join('/');
+};
 
 /** R2 網址 → root 底下嘅相對路徑 */
 const pathOfUrl = (url: string): string => decodedPath(url, `${APP_AUDIO_BASE}/`);
@@ -122,6 +127,24 @@ const audioPathOf = (json: Json, url: string): string =>
     (json.audio as Json).host === 'r2'
         ? pathOfUrl(url)
         : decodedPath(url, `${import.meta.env.BASE_URL}${APP_AUDIO_DIR}`);
+
+/** tsconfig.node.json 成個 program（加埋 extraFile）入面 extraFile 嘅 type error */
+const nodeProgramErrors = (extraFile: string): readonly ts.Diagnostic[] => {
+    const configPath = fileURLToPath(NODE_TSCONFIG);
+    const parsed = ts.getParsedCommandLineOfConfigFile(
+        configPath,
+        {},
+        {
+            ...ts.sys,
+            onUnRecoverableConfigFileDiagnostic: (d) => {
+                throw new Error(ts.flattenDiagnosticMessageText(d.messageText, '\n'));
+            },
+        },
+    );
+    if (parsed === undefined) throw new Error(`讀唔到 ${configPath}`);
+    const program = ts.createProgram([...parsed.fileNames, extraFile], parsed.options);
+    return ts.getPreEmitDiagnostics(program, program.getSourceFile(extraFile));
+};
 
 const listFiles = (dir: string, prefix = ''): string[] =>
     readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
@@ -401,8 +424,13 @@ describe('generateDraft — committed dramas round-trip', () => {
     });
 
     it.each(COMMITTED_IDS)('should rebuild the same audio paths for %s from scratch', (id) => {
-        // 由零生成一律 host: r2；c18 commit 咗係 host: app，所以比相對路徑（r2 base 一樣，等同比網址）
+        // 由零生成一律 host: r2（先驗呢個前提）；c18 commit 咗係 host: app，所以比相對路徑：
+        // 生成嗰邊 host r2 + 網址由 R2 base 開頭 + 路徑一樣，先等同網址指住同一個上載檔
         const json = jsonOf(generateDraft(mirrorTree(id), { now: NOW }));
+        expect((json.audio as Json).host).toBe('r2');
+        appEpisodes(id, json).forEach((e) =>
+            expect(e.url.startsWith(`${APP_AUDIO_BASE}/`)).toBe(true),
+        );
         expect(audioPaths(id, json)).toEqual(audioPaths(id, committed(id)));
     });
 
@@ -855,6 +883,135 @@ describe('run (CLI)', () => {
             expectRejectedUpFront(await runCli(args), join(root, 'dir'));
             expect(listFiles(root)).not.toContain('x.drama.json');
         });
+
+        it('should suggest <dir>/report.txt (not drama.json) when --report is a folder', async () => {
+            mkdirSync(join(root, 'dir'));
+            const args = [
+                join(root, '劇'),
+                '--out',
+                join(root, 'x.json'),
+                '--report',
+                join(root, 'dir'),
+            ];
+            const { text } = await runCli(args);
+            expect(text).toContain(`--report "${join(root, 'dir', 'report.txt')}"`);
+            expect(text).not.toContain(join(root, 'dir', 'drama.json'));
+        });
+
+        it('should suggest <dir>/<id>.drama.json when --out is a folder', async () => {
+            mkdirSync(join(root, 'dir'));
+            const { text } = await runCli([
+                join(root, '劇'),
+                '--id',
+                'xyz',
+                '--out',
+                join(root, 'dir'),
+            ]);
+            expect(text).toContain(`--out "${join(root, 'dir', 'xyz.drama.json')}"`);
+        });
+
+        /** 喺 root 做 cwd 行（預設輸出檔喺 cwd） */
+        const runInRoot = async (argv: string[]) => {
+            const cwd = process.cwd();
+            process.chdir(root);
+            try {
+                return await runCli(argv);
+            } finally {
+                process.chdir(cwd);
+            }
+        };
+
+        it('should suggest --out (not a file inside it) when the default output is a folder', async () => {
+            // O-1：唔好叫人寫入 xyz.drama.json/drama.json
+            mkdirSync(join(root, 'xyz.drama.json'));
+            const { text } = await runInRoot([join(root, '劇'), '--id', 'xyz']);
+            expect(text).toContain('冇畀 --out');
+            expect(text).toContain('--out "<另一個 folder>/xyz.drama.json"');
+            expect(text).not.toContain(`xyz.drama.json/`);
+        });
+
+        it('should reject a default name from a Chinese folder name with spaces that is a folder (QA C12)', async () => {
+            touch([`森美 劇集/${episodeFile('甲', 1)}`]);
+            mkdirSync(join(root, '森美 劇集.drama.json'));
+            const result = await runInRoot([join(root, '森美 劇集')]);
+            expectRejectedUpFront(result, join(root, '森美 劇集.drama.json'));
+            expect(result.text).toContain('--out "<另一個 folder>/森美 劇集.drama.json"');
+            expect(listFiles(root)).not.toContain('森美 劇集.drama.json');
+        });
+
+        it('should say the parent is a file, not a missing folder (QA C8 / O-2)', async () => {
+            const cover = join(root, '劇', '甲', 'cover photo.jpg');
+            touch(['劇/甲/cover photo.jpg']);
+            const before = listFiles(root);
+            const result = await runCli([join(root, '劇'), '--out', join(cover, 'x.json')]);
+            expectRejectedUpFront(result, `「${cover}」係一個檔案，唔係 folder`);
+            expect(result.text).not.toContain('唔存在');
+            expect(listFiles(root)).toEqual(before);
+        });
+
+        /** 當 lockedDir 冇權限寫（test 用 root 跑，chmod 擋唔到，所以經 io 注入） */
+        const runWithLockedDir = (argv: string[], lockedDir: string) => {
+            const out: string[] = [];
+            const canWrite = (path: string) => path !== lockedDir;
+            return run(argv, { out: (s: string) => out.push(s), now: () => NOW, canWrite }).then(
+                (code) => ({ code, text: out.join('\n') }),
+            );
+        };
+
+        it.each(['--out', '--report'])(
+            'should reject %s in a folder without write permission',
+            async (option) => {
+                const locked = join(root, 'locked');
+                mkdirSync(locked);
+                const target = join(locked, 'x.txt');
+                const args = [join(root, '劇'), '--out', join(root, 'x.drama.json')];
+                const result = await runWithLockedDir([...args, option, target], locked);
+                expectRejectedUpFront(result, `冇權限寫入：${locked}`);
+                expect(listFiles(root)).toEqual([`劇/${episodeFile('甲', 1)}`]);
+            },
+        );
+    });
+
+    it('should say drama.json was written when only the report write fails at the end', async () => {
+        touch([`劇/${episodeFile('甲', 1)}`]);
+        const outFile = join(root, 'x.drama.json');
+        const reportFile = join(root, 'report.txt');
+        const out: string[] = [];
+        // 預檢之後先有人喺報告路徑開咗個 folder：最尾寫報告先會失敗
+        const io = {
+            out: (s: string) => {
+                out.push(s);
+                if (s.includes('\n已寫入：')) mkdirSync(reportFile, { recursive: true });
+            },
+            now: () => NOW,
+        };
+        const code = await run([join(root, '劇'), '--out', outFile, '--report', reportFile], io);
+        expect(code).toBe(EXIT.reportFailed);
+        expect(Object.values(EXIT).filter((c) => c === EXIT.reportFailed)).toHaveLength(1);
+        expect(out.join('\n')).toContain(`drama.json 已經寫好（${outFile}），只係報告檔寫唔到`);
+        expect(JSON.parse(readFileSync(outFile, 'utf8'))).toMatchObject({ kind: 'series' });
+    });
+
+    it('should not claim drama.json was written when the report fails on a blocked run', async () => {
+        touch([...[1, 3].map((n) => `劇/${episodeFile('甲', n)}`)]);
+        const reportFile = join(root, 'report.txt');
+        const out: string[] = [];
+        const io = {
+            out: (s: string) => {
+                out.push(s);
+                if (s.includes('冇寫 drama.json')) mkdirSync(reportFile, { recursive: true });
+            },
+            now: () => NOW,
+        };
+        const code = await run([join(root, '劇'), '--report', reportFile], io);
+        expect(code).toBe(EXIT.blocked);
+        expect(out.join('\n')).toContain('寫唔到報告檔');
+        expect(out.join('\n')).not.toContain('drama.json 已經寫好');
+    });
+
+    it('should document every exit code in the README table', () => {
+        const readme = readFileSync(new URL('../README.md', SCRIPT), 'utf8');
+        Object.values(EXIT).forEach((code) => expect(readme).toContain(`| \`${code}\`  |`));
     });
 
     it('should reject a missing folder or unknown option', async () => {
@@ -869,14 +1026,15 @@ describe('script packaging', () => {
         expect(DRAMA_AUDIO_BASE).toBe(APP_AUDIO_BASE);
     });
 
-    it('should not give every Node-run file vite/client types (import.meta.env)', () => {
-        // 只有呢個 test 經 episodes.ts 用到 import.meta.env，所以喺檔頭 reference；
-        // 放落 tsconfig.node.json 會令 scripts/ 入面純 Node 行嘅檔都以為有 import.meta.env
-        const config = JSON.parse(readFileSync(new URL('../tsconfig.node.json', SCRIPT), 'utf8'));
-        expect(config.compilerOptions.types).not.toContain('vite/client');
-        expect(readFileSync(new URL(import.meta.url), 'utf8')).toContain(
-            '/// <reference types="vite/client" />',
+    it('should not give Node-run scripts vite/client types (import.meta.env)', () => {
+        // 呢個 test 經 episodes.ts 用到 import.meta.env，所以 scripts/*.test.ts 自己一個 project
+        // （tsconfig.scripts-test.json）先有 vite/client；tsconfig.node.json 底下純 Node 檔用 import.meta.env 要報錯
+        const probe = join(root, 'probe.ts');
+        writeFileSync(probe, 'export const base: string = import.meta.env.BASE_URL;\n');
+        const messages = nodeProgramErrors(probe).map((d) =>
+            ts.flattenDiagnosticMessageText(d.messageText, '\n'),
         );
+        expect(messages.join('\n')).toContain("Property 'env' does not exist");
     });
 
     it('should be self-contained: only node: built-in imports', () => {
