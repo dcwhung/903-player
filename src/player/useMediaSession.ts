@@ -5,6 +5,7 @@ import { findShow } from '../shows';
 import { dramaEpisodeLabel } from '../selectors/dramas';
 import { isDramaEpisode, type Track } from '../types/track';
 import { formatDateLabel } from '../utils/date';
+import { formatLogSeconds } from './playbackLog';
 import type { PlayerActions, PlayerState } from './playerContext';
 import { useMediaPosition } from './useMediaPosition';
 
@@ -40,7 +41,10 @@ const bindActions = (
     Object.entries(handlers).forEach(([action, handler]) =>
         mediaSession.setActionHandler(action as MediaSessionAction, (details) => {
             // 鎖屏操作記入 log（S-551：要知用戶喺鎖屏撳過乜）
-            const seekTo = details.seekTime === undefined ? undefined : `to=${details.seekTime}`;
+            const seekTo =
+                details.seekTime === undefined
+                    ? undefined
+                    : `to=${formatLogSeconds(details.seekTime)}`;
             remote?.log(`ms:${action}`, seekTo);
             handler(details);
         }),

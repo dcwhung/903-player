@@ -55,9 +55,14 @@ const audioFileName = (src: string): string => {
     }
 };
 
+/** log 入面嘅秒數（位置、長度、鎖屏 seek 目標）一律 1 位小數 */
+export const formatLogSeconds = (seconds: number): string => seconds.toFixed(TIME_DECIMALS);
+
 /** 包住而家位置嗰段已載入範圍嘅尾（1 位小數）；冇就 -（S-551：分得出卡住時有冇數據） */
-const formatBufferedEnd = (audio: HTMLAudioElement): string =>
-    bufferedEnd(audio)?.toFixed(TIME_DECIMALS) ?? '-';
+const formatBufferedEnd = (audio: HTMLAudioElement): string => {
+    const end = bufferedEnd(audio);
+    return end === undefined ? '-' : formatLogSeconds(end);
+};
 
 /** 一行：時間 event ct dur buf rs ns paused vis [note] */
 const formatLine = (event: string, audio: HTMLAudioElement, note?: string): string => {
@@ -65,8 +70,8 @@ const formatLine = (event: string, audio: HTMLAudioElement, note?: string): stri
     const fields = [
         time,
         event,
-        `ct=${audio.currentTime.toFixed(TIME_DECIMALS)}`,
-        `dur=${audio.duration.toFixed(TIME_DECIMALS)}`,
+        `ct=${formatLogSeconds(audio.currentTime)}`,
+        `dur=${formatLogSeconds(audio.duration)}`,
         `buf=${formatBufferedEnd(audio)}`,
         `rs=${audio.readyState}`,
         `ns=${audio.networkState}`,

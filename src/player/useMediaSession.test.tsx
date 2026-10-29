@@ -309,7 +309,18 @@ describe('useMediaSession S-551 lock-screen state', () => {
             ['ms:pause', undefined],
             ['ms:seekbackward', undefined],
             ['ms:seekforward', undefined],
-            ['ms:seekto', 'to=42'],
+            ['ms:seekto', 'to=42.0'],
         ]);
+    });
+
+    // S-578：同其他 log 欄位一樣 1 位小數
+    it('logs the lock-screen seek target with one decimal', () => {
+        const { handlers } = installMediaSession();
+        const r = remote();
+
+        renderHook(() => useMediaSession(actions(), state(), r));
+        handlers.get('seekto')?.({ action: 'seekto', seekTime: 123.45678901 });
+
+        expect(r.log).toHaveBeenCalledWith('ms:seekto', 'to=123.5');
     });
 });
