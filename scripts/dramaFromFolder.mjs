@@ -51,6 +51,8 @@ const DAILY_PATTERN = /^(\d{4})(\d{2})(\d{2})$/;
 /** app 嘅 folder id：細楷英數同連字號 */
 const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 const FILE_NO_WIDTH = 2;
+/** 短篇正常由第 0 集（前傳）或者第 1 集開始 */
+const USUAL_FIRST_NOS = new Set([0, 1]);
 const HONG_KONG_TIME_ZONE = 'Asia/Hong_Kong';
 const VERIFY_CONCURRENCY = 6;
 const VERIFY_TIMEOUT_MS = 10_000;
@@ -293,6 +295,12 @@ const numberingIssues = (arc, episodes) => {
     if (nos.length === 0) return [issue('error', arc.name, '冇錄音檔')];
     const missing = rangeOf(Math.min(...nos), Math.max(...nos)).filter((n) => !counts.has(n));
     if (missing.length > 0) issues.push(issue('error', arc.name, `缺第 ${missing.join('、')} 集`));
+    const first = Math.min(...nos);
+    // 唔當錯誤：將來可能真係有由第 N 集開始嘅劇；但現有資料全部由 0 / 1 開始，多數係漏咗上載
+    if (!USUAL_FIRST_NOS.has(first))
+        issues.push(
+            issue('warn', arc.name, `由第 ${first} 集開始；確認係咪漏咗上載第 1 集（或者第 0 集）`),
+        );
     return issues;
 };
 

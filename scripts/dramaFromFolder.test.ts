@@ -255,6 +255,13 @@ describe('generateDraft — new series drama', () => {
         expect(errors).toContain('錯號：');
     });
 
+    it('should warn (not block) when an arc does not start at episode 0 or 1', () => {
+        touch(range(2, 3).map((n) => `${DRAMA}/${episodeFile('甲', n)}`));
+        const result = build();
+        expect((jsonOf(result).arcs as Json[])[0]).toEqual({ name: '甲', firstNo: 2, episodes: 2 });
+        expect(messagesOf(result.issues, 'warn')).toContain('甲：由第 2 集開始');
+    });
+
     it('should normalise NFD names to NFC and warn about suspicious names', () => {
         touch([
             `${DRAMA}/${episodeFile(NFD_NAME, 1)}`,
