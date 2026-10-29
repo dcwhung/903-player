@@ -1,3 +1,9 @@
+import { AUDIBLE_ADVANCE_SECONDS } from '../src/config/constants';
+import { HAVE_CURRENT_DATA, HAVE_METADATA, HAVE_NOTHING } from '../src/player/mediaReadyState';
+
+/** emitAudible 行幾多倍出聲門檻（避開浮點數誤差） */
+const AUDIBLE_TEST_MARGIN = 2;
+
 export interface FakeAudioOptions {
     /**
      * 跟足 spec：本身已經播緊時 play() 唔會再發 play event。
@@ -6,14 +12,23 @@ export interface FakeAudioOptions {
     strictPlayEvents?: boolean;
 }
 
+/** 假 TimeRanges：[[start, end], ...] */
+export const timeRanges = (ranges: [number, number][]): TimeRanges => ({
+    length: ranges.length,
+    start: (index: number) => ranges[index]?.[0] ?? Number.NaN,
+    end: (index: number) => ranges[index]?.[1] ?? Number.NaN,
+});
+
 /** jsdom 唔支援播放，用呢個假 audio element 模擬 HTMLAudioElement 嘅事件 */
 export class FakeAudio extends EventTarget {
     preload = '';
     currentTime = 0;
     duration = Number.NaN;
     paused = true;
-    readyState = 0;
+    readyState = HAVE_NOTHING;
     networkState = 0;
+    /** 已載入嘅範圍（播放 log 用） */
+    buffered: TimeRanges = timeRanges([]);
     /** 播到尾：同真 element 一樣，換 src / 再 play 就清走 */
     ended = false;
     rejectPlay = false;
@@ -39,6 +54,7 @@ export class FakeAudio extends EventTarget {
         this.ended = false;
         this.currentTime = 0;
         this.duration = Number.NaN;
+        this.readyState = HAVE_NOTHING;
         if (wasPlayingFrom !== 0) {
             // 真瀏覽器係 queue 一個 task 先發，即係喺 caller 執行完之後
             queueMicrotask(() => this.dispatchEvent(new Event('timeupdate')));
@@ -52,11 +68,13 @@ export class FakeAudio extends EventTarget {
         }
     }
 
-    /** 同真 element 一樣：重新載入會清走 error，位置同長度 reset */
+    /** 同真 element 一樣：重新載入會清走 error，位置、長度、readyState 同已載入範圍 reset（load algorithm） */
     load = vi.fn(() => {
         this.error = null;
         this.currentTime = 0;
         this.duration = Number.NaN;
+        this.readyState = HAVE_NOTHING;
+        this.buffered = timeRanges([]);
     });
 
     play = vi.fn(async () => {
@@ -81,9 +99,33 @@ export class FakeAudio extends EventTarget {
         this.dispatchEvent(new Event('pause'));
     });
 
-    /** 有足夠數據、真正開始出聲（真瀏覽器喺 play event 之後，數據到先發） */
-    emitPlaying(): void {
+    /**
+     * 有足夠數據、真正開始出聲（真瀏覽器喺 play event 之後，數據到先發）。
+     * 預設唔郁 readyState：S-551 iOS 會發 playing 但乜都冇載到。
+     * 傳 readyState（例如 HAVE_ENOUGH_DATA）就模擬 spec 正常路徑：數據夠先發 playing（S-583）
+     */
+    emitPlaying(readyState?: number): void {
+        if (readyState !== undefined) {
+            this.readyState = Math.max(this.readyState, readyState);
+        }
         this.dispatchEvent(new Event('playing'));
+    }
+
+    /**
+     * 真正出聲：playing 之後位置真係行咗（S-551：iOS 會發 playing 但位置凍結冇聲）。
+     * 要 metadata 已到，否則 controller 唔信個位置。行兩倍門檻：浮點數 100 + 0.3 - 100 < 0.3
+     */
+    emitAudible(): void {
+        this.emitPlaying();
+        this.emitTime(this.currentTime + AUDIBLE_ADVANCE_SECONDS * AUDIBLE_TEST_MARGIN);
+    }
+
+    /**
+     * 下載緊、bytes 入緊（真 element 約每 350 ms 發一次）。metadata 未到時 Chromium 只有呢個訊號，
+     * buffered / readyState 都未郁（CUI-0011）
+     */
+    emitProgress(): void {
+        this.dispatchEvent(new Event('progress'));
     }
 
     /** 播緊但數據唔夠（緩衝 / seek 去未載到嘅位置） */
@@ -97,8 +139,16 @@ export class FakeAudio extends EventTarget {
         this.dispatchEvent(new Event('error'));
     }
 
+    /** 第一段可播數據到咗（真瀏覽器：readyState 升到 HAVE_CURRENT_DATA，發 loadeddata） */
+    emitLoadedData(): void {
+        this.readyState = Math.max(this.readyState, HAVE_CURRENT_DATA);
+        this.dispatchEvent(new Event('loadeddata'));
+    }
+
     emitMetadata(duration: number): void {
         this.duration = duration;
+        // 只係 metadata（長度等），未有可播數據（W-500）
+        this.readyState = Math.max(this.readyState, HAVE_METADATA);
         this.dispatchEvent(new Event('loadedmetadata'));
     }
 

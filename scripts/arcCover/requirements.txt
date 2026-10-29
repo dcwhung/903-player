@@ -1,0 +1,7 @@
+# 短篇碟面 / tile 候選圖 generator（唔屬於 app build）
+# 下限避開 libwebp CVE-2023-4863（Pillow 10.0.1 / OpenCV 4.8.1.78 修）同 Pillow CVE-2023-50447（10.2.0 修）；
+# 工具會讀 webp 輸入，所以要緊。要 byte 一樣嘅輸出就用 requirements.lock 裝（manifest env 會記低版本）
+# OpenCV 要 4.x：5.0 將 Haar cascade 搬咗去 contrib
+opencv-python-headless>=4.8.1.78,<5
+numpy>=1.26,<3
+pillow>=10.3

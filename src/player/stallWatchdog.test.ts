@@ -1,11 +1,45 @@
-import { STALL_MAX_RETRIES, STALL_RETRY_MS } from '../config/constants';
+import {
+    STALL_DATA_AHEAD_SECONDS,
+    STALL_FIRST_RETRY_MS,
+    STALL_MAX_RETRIES,
+    STALL_MAX_WAIT_MS,
+    STALL_PROGRESS_RECHECK_MS,
+    STALL_RETRY_MS,
+} from '../config/constants';
+import type { LoadProbe } from './loadProgress';
 import { StallWatchdog } from './stallWatchdog';
+
+/** 冇下載進展（buffer / readyState / progress 唔變）：每次到期都當卡住 */
+const idleProbe = (): LoadProbe => ({
+    bufferedEnd: undefined,
+    readyState: 0,
+    currentTime: 0,
+    playingFired: false,
+    progressEvents: 0,
+});
 
 const setup = (canRetry = true) => {
     const retry = vi.fn<(retriesLeft: number) => void>();
     const allow = vi.fn(() => canRetry);
-    const watchdog = new StallWatchdog({ canRetry: allow, retry });
-    return { watchdog, retry, allow };
+    const onStalled = vi.fn();
+    const probe = vi.fn(idleProbe);
+    const watchdog = new StallWatchdog({ canRetry: allow, retry, onStalled, probe });
+    return { watchdog, retry, allow, onStalled, probe };
+};
+
+/** 慢網：每次問都多咗少少數據，但前面數據仲未夠 */
+const growingProbe = (aheadSeconds = 1) => {
+    let end = 0;
+    return (): LoadProbe => {
+        end += aheadSeconds;
+        return {
+            bufferedEnd: end,
+            readyState: 2,
+            currentTime: end - aheadSeconds,
+            playingFired: false,
+            progressEvents: 0,
+        };
+    };
 };
 
 describe('StallWatchdog', () => {
@@ -114,5 +148,173 @@ describe('StallWatchdog', () => {
         vi.advanceTimersByTime(STALL_RETRY_MS);
 
         expect(watchdog.pending).toBe(true);
+    });
+
+    it('should retry after the shorter first timeout when started', () => {
+        const { watchdog, retry } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+        expect(retry).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1);
+        expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_RETRY_MS);
+        expect(retry).toHaveBeenLastCalledWith(STALL_MAX_RETRIES - 1);
+    });
+
+    it('should keep the running count and timer when started while already watching', () => {
+        // 重試入面嘅 play() 會再 start：唔可以補返次數，亦唔可以推遲 timer
+        const { watchdog, retry } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.advanceTimersByTime(1);
+
+        expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+    });
+
+    it('should not be overdue before the deadline', () => {
+        const { watchdog } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+
+        expect(watchdog.overdue).toBe(false);
+    });
+
+    it('should be overdue once the deadline passes while the timer is frozen', () => {
+        // iOS 鎖屏暫停 JS：timer 冇行，但 wall clock 照行
+        const { watchdog, retry } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
+
+        expect(retry).not.toHaveBeenCalled();
+        expect(watchdog.overdue).toBe(true);
+    });
+
+    it('should not be overdue when not watching', () => {
+        const { watchdog } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
+
+        watchdog.cancel();
+
+        expect(watchdog.overdue).toBe(false);
+    });
+
+    it('should not retry on wake-up before the deadline', () => {
+        // C-009：撳播之後即刻切 app / 鎖屏再開，正常載緊唔好 reload
+        const { watchdog, retry } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS / 4);
+
+        watchdog.retryIfOverdue();
+
+        expect(retry).not.toHaveBeenCalled();
+        expect(watchdog.pending).toBe(true);
+    });
+
+    it('should retry once on wake-up when the deadline passed while the timer was frozen', () => {
+        const { watchdog, retry } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
+
+        watchdog.retryIfOverdue();
+        // 被凍結嘅舊 timer 已經由新一輪取代，唔會再補一次
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+    });
+
+    it('should skip a wake-up retry right after a late timer retried', () => {
+        // S-551 情境 1：遲咗嘅 timer 先行，65 ms 後亮屏
+        const WAKE_AFTER_TIMER_MS = 65;
+        const { watchdog, retry } = setup();
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS + WAKE_AFTER_TIMER_MS);
+
+        watchdog.retryIfOverdue();
+
+        expect(retry).toHaveBeenCalledTimes(1);
+        expect(watchdog.pending).toBe(true);
+    });
+
+    it('should report a stall before retrying once a deadline passes', () => {
+        const { watchdog, retry, onStalled } = setup();
+        retry.mockImplementation(() => expect(onStalled).toHaveBeenCalledTimes(1));
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+        expect(onStalled).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1);
+
+        expect(onStalled).toHaveBeenCalledTimes(1);
+        expect(retry).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not report a stall when no longer wanted or cancelled', () => {
+        const { watchdog, onStalled } = setup(false);
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+        watchdog.start(STALL_MAX_RETRIES);
+        watchdog.cancel();
+        vi.advanceTimersByTime(STALL_RETRY_MS);
+
+        expect(onStalled).not.toHaveBeenCalled();
+    });
+
+    // W-498：慢網開播，下載有進展就唔好 reload
+    it('should re-arm without spending a retry while the load is progressing', () => {
+        const { watchdog, retry, probe, onStalled } = setup();
+        probe.mockImplementation(growingProbe());
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+        expect(retry).not.toHaveBeenCalled();
+        expect(onStalled).not.toHaveBeenCalled();
+        expect(watchdog.overdue).toBe(false);
+
+        // 之後冇再增長：下一次到期就重試，次數冇扣過
+        probe.mockImplementation(idleProbe);
+        vi.advanceTimersByTime(STALL_PROGRESS_RECHECK_MS * 2);
+        expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+    });
+
+    it('should retry when data is buffered ahead but the position is frozen', () => {
+        const { watchdog, retry, probe } = setup();
+        probe.mockImplementation(growingProbe(STALL_DATA_AHEAD_SECONDS + 1));
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+    });
+
+    it('should stop waiting for a progressing load after the total cap', () => {
+        const { watchdog, retry, probe } = setup();
+        probe.mockImplementation(growingProbe());
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_MAX_WAIT_MS - 1);
+        expect(retry).not.toHaveBeenCalled();
+        // S-582：剛好喺上限重試，唔會因為 recheck 排咗喺上限之後而多等
+        vi.advanceTimersByTime(1);
+
+        expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+    });
+
+    it('should keep waiting on wake-up when the load progressed while frozen', () => {
+        const { watchdog, retry, probe } = setup();
+        probe.mockImplementation(growingProbe());
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
+
+        watchdog.retryIfOverdue();
+
+        expect(retry).not.toHaveBeenCalled();
+        expect(watchdog.overdue).toBe(false);
     });
 });

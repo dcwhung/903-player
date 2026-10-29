@@ -58,7 +58,77 @@ GitHub Actions 只負責 build 同 deploy。
 - 短篇劇 `arcs[]`：`name`（= R2 folder 名）、`episodes`（集數，或者集名 list，冇集名寫 `null`）、`titles`（`{ "集數": "集名" }` 零散補集名）、`firstNo`（有第零集寫 `0`）、`addedAt`（上架日，14 日內出「新」）、`disc`（短篇自己碟面）、`tile`（短篇長方形圖，暫時未用）、`files`（`{ "集數": "完整檔名" }` 不規則檔名）
 - 檔名 template token：`{no}` `{no2}` `{noZh}`（中文數字）`{arc}` `{folder}` `{title}`；`[ … ]` 入面 token 空值就整段略去，例如 `{no2} - {arc} - 第{noZh}集[ - {title}].m4a`。每日劇用 `{date}` / `{yyyymmdd}`
 - ⚠️ `name` / `fileTime` / `audio` / 檔名唔可以亂改：錄音網址係已儲進度（localStorage）嘅 key
+- Editor 自動完成 + 即時驗證：`schemas/drama.schema.json`、`schemas/show.schema.json`（JSON Schema draft-07，hover 有廣東話說明，色有色盤）。VS Code 靠 `.vscode/settings.json` 嘅 `json.schemas` 自動套用，資料檔唔使加 `$schema`；其他 editor 可以喺檔頭加 `"$schema": "../../../schemas/drama.schema.json"`（runtime 唔理呢個 key）。
+  Schema 刻意嚴過 runtime：多出嚟 / 打錯嘅 key 會出紅線（runtime 只係唔理）。以下淨係 runtime（`npm test`）驗：圖檔真係喺 folder、folder 名格式、arc name / 每日 date 唔重複、`titles` / `files` 集數喺範圍之內。
+  兩邊規則由 `src/catalog/jsonSchemas.node.test.ts` 對住同一批例子鎖住；改 `schema.ts` 記得一齊改 schema
 - 橫版主頁 grid 寫死 4 欄 × 2 行 = 7 個節目 + 今日格；加減節目要一齊改 `ShowGrid.module.css`（`src/shows/shows.test.ts` 會提醒）
+
+### 由本機 folder 生成 drama.json（`scripts/dramaFromFolder.mjs`）
+
+R2 嘅 r2.dev 網址冇 listing，所以由**上載去 R2 嗰份本機 folder** 生成 `drama.json` 草稿同檢查報告。
+個 script 係單一檔案、只用 Node 內置功能（**Node 18.3 或以上**，建議 20+；18.0–18.2 冇 `parseArgs`，會一開始就出 SyntaxError），**唔使 clone 呢個 repo、唔使 `npm install`**。
+
+folder 結構（同 R2 一樣）：
+
+```text
+<劇名>/
+  cover photo.png                      ← 劇集封面（cover photo.jpg / cover-photo.jpg 都得）
+  <短篇>/
+    cover photo.jpg                    ← 短篇封面（可以冇）
+    01 - <短篇> - 第一集.m4a
+    02 - <短篇> - 第二集 - <集名>.m4a   ← 有集名就加「 - 集名」
+```
+
+每日劇就直接喺 `<劇名>/` 放 `YYYYMMDD.m4a`。
+
+```bash
+# 1. 下載（一個檔）；Windows 要打 curl.exe（見下面），或者用瀏覽器開條網址「另存新檔」
+curl -LO https://raw.githubusercontent.com/dcwhung/903-player/main/scripts/dramaFromFolder.mjs
+
+# 2. 新劇：生成草稿，順手 HEAD 驗晒 R2 網址，報告同時寫落 report.txt
+node dramaFromFolder.mjs "/路徑/森美小儀系列" --id sammy-kitty --verify --report report.txt
+
+# 3. 已上架嘅劇加集 / 加短篇：畀埋現有 drama.json，人手欄位（名、色調、次序、圖…）照留
+node dramaFromFolder.mjs "/路徑/森美小儀系列" --existing drama.json --out sammy-kitty.drama.json
+```
+
+| 選項              | 作用                                                                                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--id <id>`       | app 嘅 folder 名（細楷英數同連字號）；預設輸出檔名 `<id>.drama.json`，冇就用劇名                                                                                                                        |
+| `--existing <檔>` | 現有 `drama.json`：集數 / 集名 / `files` / `firstNo` 以 folder 為準，有變報 `[資料]`；人手補嘅集名（檔名冇）照留兼用 `files` 寫明真檔名；folder 冇嘅短篇照留兼提示，新短篇 `addedAt` = 今日（香港時間） |
+| `--out <檔>`      | 輸出路徑                                                                                                                                                                                                |
+| `--report <檔>`   | 報告同時寫落呢個檔（UTF-8，冇 BOM）；`[錯誤]` 冇寫 `drama.json` 都照寫報告                                                                                                                              |
+| `--force`         | 輸出檔已經存在都覆蓋（預設唔覆蓋：已有同名檔就停，exit `2`，免得冚走人手改過嘅 `drama.json`）                                                                                                           |
+| `--verify`        | 逐條 HEAD R2 錄音同封面網址（同時最多 6 條、每條 10 秒 timeout；429 / 5xx / 逾時等 1 秒再試一次），列出唔得嘅                                                                                           |
+
+報告會列：每個短篇幾多集 / 集數範圍 / 封面、跳號、重複、檔名唔合格式、檔名入面短篇名同 folder 名唔一樣、
+可疑字元（羅馬數字 `Ⅱ` 對 `II`、全形英文字母 / 數字（例如 `Ｘ`、`０`）、macOS 嘅 NFD、頭尾空格、隱形字元）、略過咗嘅檔。
+中文全形標點（`？`、`！`、`，`、`：`）係正常寫法，唔會報；**唔好**將佢哋改做半形（Windows 檔名唔准 `?`，而且改名會令網址變，用戶已儲嘅進度會冇）。
+
+- exit code：
+
+    | code | 意思                                                                                                                                                                             |
+    | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | `0`  | 成功                                                                                                                                                                             |
+    | `1`  | 有 `[錯誤]`（跳號 / 重複 / 檔名讀唔到 / 冇錄音檔、`--existing` 壞咗或者同 folder 唔夾），**冇寫檔**                                                                              |
+    | `2`  | 參數錯（包括 `--out` / `--report` 嘅 folder 唔存在、上層其實係檔案、本身係 folder、冇權限寫入：掃 folder 之前就停），或者輸出檔已經存在（冇加 `--force`），**冇寫 `drama.json`** |
+    | `3`  | 已寫檔，但 `--verify` 有網址唔得                                                                                                                                                 |
+    | `4`  | 程式出錯（唔係 folder 問題）：請將成段輸出傳返嚟                                                                                                                                 |
+    | `5`  | `drama.json` **已經寫好**，只係最尾寫唔到 `--report` 報告檔（預檢過咗之後先出事，例如磁碟滿）；畫面有成份報告，唔使重行                                                          |
+
+- `[注意]` 唔會阻住生成，但要睇：例如檔名用 `Ⅱ`、folder 用 `II`，script 會用 `files` 逐集寫明真檔名
+- 短篇次序跟 R2 listing（UTF-8 字典序）；新劇嘅 `theme` 係中性色、`enabled: false`，上架前要改
+- **要傳返嚟**：生成嘅 `*.drama.json`、成份報告（`report.txt`）、劇集同每個短篇嘅封面圖
+- Windows（PowerShell / cmd）：
+    - 下載用 `curl.exe -LO …`：Windows PowerShell 5.1 入面 `curl` 係 `Invoke-WebRequest` 嘅別名，`-LO` 會出錯；
+      或者直接用瀏覽器開 raw 網址「另存新檔」
+    - 報告用 `--report report.txt`，**唔好**用 `| tee report.txt` 或者 `> report.txt`：PowerShell 會用 console code page
+      （香港 Windows 預設 Big5）或者 UTF-16 轉碼，中文會變亂碼。`--report` 寫 UTF-8 冇 BOM，Windows 10（1903）或以上嘅
+      記事本識讀；舊版記事本見到亂碼就用 VS Code 或者瀏覽器開
+    - 路徑用雙引號包住嗰陣，**尾唔好加 `\`**：`"D:\劇\黃金少年\"` 入面嘅 `\"` 會當咗係字面嘅 `"`，連後面嘅參數都黐埋落去。
+      寫 `"D:\劇\黃金少年"`（script 見到路徑有 `"` 會講點改；冇引號嘅尾 `\` / `/` 會自動食走）
+- 規則同 app 一致：`scripts/dramaFromFolder.test.ts` 將輸出餵畀 app 嘅 `parseDramaDefinition` + `buildEpisodes` 驗，
+  亦會由現有每套劇嘅網址砌返 folder 樹，再生成要同 commit 咗嘅 `drama.json` 一樣；改 `src/dramas/` 規則時要一齊改 script
 
 ## 開發
 
@@ -86,6 +156,17 @@ npx playwright install chromium
 - 瀏覽器已經裝咗喺其他位置（例如 CI / 雲端容器預先裝好）：設 `PLAYWRIGHT_BROWSERS_PATH` 指去嗰個資料夾，
   `npx playwright install` 同 `npm run e2e` 都會用佢，唔使再下載
 - 幾個 worktree 同時跑：用 `E2E_PORT=4174 npm run e2e` 避開撞 port
+- 唔使網絡：所有 context 都經 `e2e/harness.mjs` 嘅 `newE2EContext` 開，外部 host 全部 mock 晒——
+  audio host 答假錄音（WAV）、廣播劇 R2 答 404、Google Fonts 由本機答。
+    - **Poppins 本機供應**：`fonts.googleapis.com` 照 `index.html` css2 網址要嘅字重（400 / 500 / 600）答
+      `@font-face`，字型檔由 `fonts.gstatic.com/e2e/…` 答 devDependency `@fontsource/poppins`（OFL-1.1）嘅
+      latin / latin-ext woff2，其他路徑 404。頁頭標題完整顯示、日子條冇剪走、mini player 跑馬燈呢啲斷言靠字型度量，
+      Poppins 比 fallback 字型（例如 Inter）闊，用 fallback 量會 false negative；`run.mjs` 有檢查確認 Poppins 真係載入咗
+    - **中文字用系統 fallback**：Noto Sans TC / Noto Serif TC 唔供應（冇 `@font-face`）。中文字喺任何字型都係約 1em 闊，
+      用系統 CJK 字型（例如 WenQuanYi）量出嚟同 Noto 差唔多，唔值得為 e2e 加十幾 MB 字型檔
+      其他外部 request 一律 abort，`run.mjs` 最尾嘅檢查見到有就 FAIL；`index.html` 新加外部 host 要喺
+      harness 加 mock（`src/e2eSrcConstants.test.ts` 掃晒 `index.html` 所有 `http(s)://` 網址鎖住）。驗證離線：
+      `HTTPS_PROXY=http://127.0.0.1:9 HTTP_PROXY=http://127.0.0.1:9 npm run e2e`（Chromium 跟 proxy 環境變數，連唔到外網）
 
 ### App icon
 
@@ -98,6 +179,66 @@ node scripts/generateIcons.mjs
 
 用 Playwright 嘅 Chromium 縮放（唔使另外裝套件）；maskable 同 apple-touch-icon 填 `#98bdde` 底色，
 maskable 內容縮到 80%（安全區）。有 ImageMagick 就順手無損壓縮（像素唔變），冇就跳過。
+
+### 短篇碟面 / tile 候選圖（`scripts/arcCover/`）
+
+將短篇（或者廣播劇本身）嘅封面相生成幾款候選圖畀人揀：碟面 `disc` 600×600 webp、
+長方形 `tile` webp（短篇 16:9 1216×684；唔填 `--arc` 即係廣播劇本身，書架 2:1 1216×608）。
+Python 工具，唔屬於 app build，唔入 npm scripts；依賴裝喺 venv（OpenCV 要 4.x：5.0 拎走咗 Haar cascade）：
+
+```bash
+python3 -m venv /tmp/arcCover-venv
+/tmp/arcCover-venv/bin/pip install -r scripts/arcCover/requirements.lock   # 確實版本（輸出 byte 一樣）
+/tmp/arcCover-venv/bin/python scripts/arcCover/generate.py \
+    --input "cover photo.png" --drama lancy --arc half --out /tmp/arcCover
+/tmp/arcCover-venv/bin/python -m pytest scripts/arcCover/tests   # 唔使網絡
+/tmp/arcCover-venv/bin/ruff check scripts/arcCover && /tmp/arcCover-venv/bin/ruff format --check scripts/arcCover
+```
+
+- 依賴：`requirements.txt`（淨係 generator，下限避開 libwebp CVE-2023-4863）、`requirements-dev.txt`（加 pytest / jsonschema / ruff）、
+  `requirements.lock`（`pip freeze` 出嚟嘅確實版本，升級後要重新 freeze）。喺 repo 根跑 pytest / ruff 留低嘅 cache 已經喺 root `.gitignore`，唔會整爛 `npm run lint`
+- 封面喺 R2：`<DRAMA_AUDIO_BASE>/<劇集 folder>/<短篇 folder>/cover photo.(png|jpg)`；r2.dev 對 Python urllib 回 403，用 `curl` 下載
+- 輸入喺分析之前驗晒（搵唔到 / 唔係圖、`--title-box` 超出原圖、`--round` < 1、`--title-scale` 唔喺 (0, 1]），錯就印 `error: …`、exit 2，唔會出 traceback
+- 輸出 `<out>/<drama>/<arc>/round-N/`（唔填 `--round` 就自動下一個；已有 round 要 `--force` 先覆蓋，舊檔會成個清走）。
+  先寫去 `round-N.partial/`，成功先 rename，中途出錯唔會留低半個 round。入面有：
+    - 候選圖 `<arc>-disc-<方法>.webp`、`<arc>-tile-<方法>.webp`（廣播劇本身用 `drama-` 開頭）
+    - `previews/*.png`：碟面照 app 咁疊（圓形、暗角、坑紋、碟心、碟邊，跟 `drama.json` theme 色）+ 全集表 52px 圓碟 + 40px 細碟（連 3px divider 外圈）；tile 加圓角同書架 2:1 crop 框。
+      暗角跟 CSS `radial-gradient(circle, …)` 嘅 farthest-corner：由 0.78 個半徑開始，碟邊約 16% 黑
+    - `analysis.png`（saliency 熱圖、人面綠框、標題字紅框、焦點）、`contact.png`（全部預覽一張睇晒）
+    - `manifest.json`：一個 round 一份，方便跨 round 砌 review 頁；格式見 `scripts/arcCover/manifest.schema.json`（schema 2，test 有驗）：
+        - 頂層：`schema`、`tool`、`toolVersion`、`env`（`python` / `pillow` / `libwebp` / `opencv` / `numpy` 版本）、`drama`、`arc`（廣播劇本身係 `null`）、
+          `level`（`arc` / `drama`）、`round`、`source { file, sha256, width, height }`、`analysis { faces, textBoxes, textSource, focal }`、`analysisImage`、`contactSheet`、`variants`
+        - `variants[]`：`{ id, kind, method, file, preview, width, height, sha256, params, duplicateOf }`；`id` = `<kind>-<方法>`，
+          `duplicateOf` = 同一個 kind 入面 bytes 一樣嘅前一個候選 `id`（冇就 `null`），crop 類 `params` 有 `crop` 同 `upscale`（> 1 即係要放大）
+- 方法：`center-crop`（中間）、`saliency-crop`（可見 saliency 最多：碟面計埋圓形、碟心同暗角）、`face-crop`（包住人面，人面放碟心上面；冇人面就用最突出範圍；最多放大 1.25 倍；原圖本身太細就例外，按需要放大，manifest `params.upscale` 記實際倍數）、
+  `text-safe-crop`（唔切開標題字；避唔到就至少成行字喺圖入面）、`fit-blur`（成張圖 + 模糊放大底）、`fit-extend`（成張圖 + 由邊緣生成延伸：平滑漸變底色 + 同高度抽返顆粒）；
+  加 `--title-box x,y,w,h` 會用手動字框（代替自動偵測），並多出一張 `title-shrink` 碟面（標題縮到 `--title-scale`，預設 0.85）
+- 同一張圖、同一組參數、同一個 venv（`manifest.env` 一樣）輸出完全一樣（冇隨機；補底顆粒用固定 seed）；換 library 版本 sha256 / `duplicateOf` 可能會變
+- 人面 / 標題字偵測係 heuristic（Haar cascade + 眼睛過濾、筆劃密度 + 顏色），風格化封面會漏 / 誤報，睇 `analysis.png` 判斷；揀好之後要手動 copy 入 `src/dramas/<id>/`
+
+#### 新劇 / 新短篇封面 workflow（review 頁：`scripts/arcCover/review/`）
+
+候選圖喺 claude.ai Artifact review 頁揀（<https://claude.ai/artifact/4xzNxQTTy9XjCQg46TLKiT>），詳細見
+`scripts/arcCover/review/README.md`。生成物全部放 repo 外嘅 work 資料夾（`--work`；唔填用 `$ARC_COVER_WORK`，再冇就 `$TMPDIR/903-player-covers`），唔入 git。
+
+1. **原圖**：`fetch_sources.py <id> --work $WORK`（由 R2 下載 `cover photo.png|jpg` / `cover-photo.jpg`，名轉 NFC 再 URL-encode；
+   新短篇加 `--arc "短篇名=slug"`；exit 1 = R2 冇，exit 3 = 網絡 / proxy 出錯）
+2. **出 round**：`generate.py --input $WORK/arcCover-src/<id>/<slug>.png --drama <id> [--arc <slug>] --out $WORK/arcCover`
+3. **砌頁**：`review/build.py --work $WORK` → `$WORK/review/site/`（`index.html` + `rounds.json` + 圖）、`files.json`（全部）、
+   `publish-N.json`（全部檔分批；加 `--previous <上次 files.json 或 Artifact 檔案 listing>` 會喺最後一批對冇咗嘅舊 path
+   傳 `null` 刪走，`index.html` 唔刪；listing = JSON path 陣列或一行一個 path）
+4. **Publish**：新 session 第一次 publish 之前，Claude 一定要先對 URL 叫 Artifact `action:"read"`，再叫
+   `action:"list", scope:"files"`，否則 publish（以及覆蓋 / `null` 刪走舊 session 送過嘅 path）會被拒；
+   將 listing 嘅 path 存落檔，用 `build.py --previous <嗰個檔>` 重新 build，舊 path 就會刪走。
+   真係要唔睇就覆蓋某啲 path（用家明確要求），先喺 publish 用 `overwrite_unread` 逐個列出。
+   然後逐份 `publish-N.json` 更新同一條 URL（`file_path` = `site/index.html`，`files` = 嗰份 json）。
+   Artifact 上限：每次 publish ≤ 255 個檔 / 64MB、每版 ≤ 511 個檔（連 `index.html`；每批 64MB 亦預留主頁大小）；
+   冇傳嘅檔會保留。每次都全部重送（而家大約 90 個檔），唔做增量，免得記錯「送咗乜」令頁面靜靜冇咗新 `rounds.json`；
+   用家揀完，Claude 用 ArtifactData 讀 `reviews` collection（doc id `<drama>--<slug>--r<round>`，值 = 候選 id / `keep` / `own` / `null`；
+   未儲存 = `keep` 沿用現有圖）
+5. **入 app**：揀中嘅 webp copy 去 `src/dramas/<id>/`：整套劇 `tile.webp` / `disc.webp`，短篇 `<slug>-tile.webp` / `<slug>-disc.webp`
+   （新短篇喺 `drama.json` 加 `disc` / `tile`）
+6. **PATCH bump** `package.json` version
 
 ## 部署（只需做一次）
 
@@ -119,3 +260,4 @@ GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 *
 | `src/components/`       | UI component（每個 folder 有 `.tsx`、`.module.css`、`.test.tsx`）                                     |
 | `src/pages/`            | 主頁、節目頁、今日節目頁                                                                              |
 | `src/styles/tokens.css` | Design tokens（來源：mockup）                                                                         |
+| `schemas/`              | `drama.json` / `show.json` 嘅 JSON Schema（editor 自動完成 + 驗證，`.vscode/settings.json` 套用）     |

@@ -1,7 +1,7 @@
 // 主頁 mini player 重溫規則 e2e（v1.19.2 起）：聽緊舊集返主頁照播，排第一標「重溫」，後面跟今日節目；
 // 今日冇節目（星期日）：冇嘢載入就唔出 mini player，有嘢載入就只出嗰集（region「正在播放（重溫）」）。
 // 每個情境用獨立 context，唔受 run.mjs 主流程之前播過乜影響
-import { ensurePlaying, isShown, newE2EPage } from './harness.mjs';
+import { ensurePlaying, isShown, newE2EPage, waitForPlaybackState } from './harness.mjs';
 
 // 星期日：假錄音（sampleData.mjs）冇節目喺星期日播，公子會（星期六）17/10 係最近一集
 const E2E_SUNDAY = '2026-10-18T22:30:00+08:00';
@@ -62,7 +62,7 @@ const checkKeepsPlaying = async (p, mini) => {
     const before = await readProgress();
     await p.waitForTimeout(PROGRESS_GAP_MS);
     const after = await readProgress();
-    const state = await p.evaluate(() => navigator.mediaSession.playbackState);
+    const state = await waitForPlaybackState(p, 'playing');
     return {
         ok: state === 'playing' && after > before,
         detail: `${state}，${before}s → ${after}s`,

@@ -1,0 +1,284 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "903 Player 廣播劇（drama.json）",
+    "description": "一個 folder = 一套廣播劇（src/dramas/<id>/drama.json）。runtime 驗證喺 src/dramas/schema.ts；以下幾樣 JSON Schema 表達唔到，淨係 runtime 驗：圖檔要真係喺 folder 入面、folder 名要係細楷英數同連字號、arc name 唔可以重複、每日劇 date 唔可以重複、titles / files 嘅集數要喺 firstNo 至最後一集之內。",
+    "type": "object",
+    "required": ["name", "kind", "enabled", "tile", "disc", "audio", "theme"],
+    "additionalProperties": false,
+    "properties": {
+        "$schema": {
+            "type": "string",
+            "description": "指去呢份 JSON Schema（editor 用，app 唔理）"
+        },
+        "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "劇集名（顯示用）"
+        },
+        "kind": {
+            "enum": ["series", "daily"],
+            "description": "series = 短篇劇集（要寫 arcs）；daily = 每日劇集（要寫 episodes）"
+        },
+        "enabled": {
+            "type": "boolean",
+            "description": "false = 暫時停用：主頁唔出、劇集頁當搵唔到"
+        },
+        "order": {
+            "type": "integer",
+            "description": "主頁次序（細嘅排先）；冇寫就排喺有寫嘅後面，按 id 排"
+        },
+        "arcUnit": {
+            "enum": ["season"],
+            "description": "（optional）短篇單位叫「季」（例如主頁角落「全 4 季」）；唔寫 = 短篇"
+        },
+        "tile": {
+            "type": "string",
+            "minLength": 1,
+            "description": "主頁劇集格圖：folder 內檔名（2:1，1216×608 webp）"
+        },
+        "disc": {
+            "type": "string",
+            "minLength": 1,
+            "description": "劇集碟面圖：folder 內檔名（正方形 webp）"
+        },
+        "audio": {
+            "type": "object",
+            "description": "錄音位置。⚠️ 錄音網址係已儲進度嘅 key，host / folder / file 唔可以亂改",
+            "required": ["host", "folder", "file"],
+            "additionalProperties": false,
+            "properties": {
+                "host": {
+                    "enum": ["r2", "app"],
+                    "description": "r2 = Cloudflare R2（DRAMA_AUDIO_BASE）；app = app 自己 host（BASE_URL/dramas/）"
+                },
+                "folder": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "host 上面嘅劇集 folder"
+                },
+                "file": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "檔名 template。series 用 {no} {no2} {noZh}（中文數字）{arc} {folder} {title}；daily 用 {date} {yyyymmdd} {folder}。[ … ] 入面 token 空值就整段略去，例如 \"{no2} - {arc} - 第{noZh}集[ - {title}].m4a\""
+                }
+            }
+        },
+        "theme": { "$ref": "#/definitions/theme" },
+        "addedAt": {
+            "$ref": "#/definitions/date",
+            "description": "（series 先用）全劇預設上架日 YYYY-MM-DD；arc 自己有 addedAt 就用 arc 嘅。14 日內出「新」"
+        },
+        "arcs": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/definitions/arc" },
+            "description": "（series 必填）短篇 / 季 list，照播放次序；name 唔可以重複"
+        },
+        "episodes": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/definitions/dailyEpisode" },
+            "description": "（daily 必填）每日集數 list；date 唔可以重複"
+        }
+    },
+    "allOf": [
+        {
+            "if": {
+                "type": "object",
+                "required": ["kind"],
+                "properties": { "kind": { "const": "series" } }
+            },
+            "then": {
+                "type": "object",
+                "required": ["arcs"],
+                "properties": {
+                    "episodes": false,
+                    "audio": {
+                        "type": "object",
+                        "properties": {
+                            "file": {
+                                "type": "string",
+                                "pattern": "^(?:[^{]|\\{(?:no|no2|noZh|arc|folder|title)\\}|\\{(?!\\w+\\}))*$",
+                                "description": "series 檔名 template：只可以用 {no} {no2} {noZh} {arc} {folder} {title}"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "type": "object",
+                "required": ["kind"],
+                "properties": { "kind": { "const": "daily" } }
+            },
+            "then": {
+                "type": "object",
+                "required": ["episodes"],
+                "properties": {
+                    "arcs": false,
+                    "addedAt": false,
+                    "audio": {
+                        "type": "object",
+                        "properties": {
+                            "file": {
+                                "type": "string",
+                                "pattern": "^(?:[^{]|\\{(?:date|yyyymmdd|folder)\\}|\\{(?!\\w+\\}))*$",
+                                "description": "daily 檔名 template：只可以用 {date} {yyyymmdd} {folder}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "definitions": {
+        "date": {
+            "type": "string",
+            "pattern": "^(?:0[1-9][0-9]{2}|[1-9][0-9]{3})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])$",
+            "format": "date",
+            "description": "YYYY-MM-DD，要係真實存在嘅日子（例如唔可以 2026-02-30）"
+        },
+        "episodeNumberMap": {
+            "type": "object",
+            "propertyNames": { "pattern": "^(?:0|[1-9][0-9]*)$" },
+            "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "arc": {
+            "type": "object",
+            "required": ["name", "episodes"],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "短篇名（= R2 folder 名，亦係 template 嘅 {arc}）；唔可以重複"
+                },
+                "episodes": {
+                    "description": "集數（正整數），或者集名 list（冇集名寫 null）",
+                    "anyOf": [
+                        { "type": "integer", "minimum": 1 },
+                        { "type": "array", "minItems": 1, "items": { "type": ["string", "null"] } }
+                    ]
+                },
+                "firstNo": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 1,
+                    "description": "第一集集數；唔寫 = 1，有第零集寫 0"
+                },
+                "titles": {
+                    "$ref": "#/definitions/episodeNumberMap",
+                    "description": "{ \"集數\": \"集名\" } 零散補集名；集數要喺呢個短篇範圍之內"
+                },
+                "files": {
+                    "$ref": "#/definitions/episodeNumberMap",
+                    "description": "{ \"集數\": \"完整檔名\" } 不規則檔名；集數要喺呢個短篇範圍之內"
+                },
+                "addedAt": {
+                    "$ref": "#/definitions/date",
+                    "description": "（optional）短篇上架日 YYYY-MM-DD，14 日內出「新」；冇就用全劇 addedAt"
+                },
+                "disc": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "（optional）短篇自己嘅碟面圖：folder 內檔名；冇就用劇集碟面"
+                },
+                "tile": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "（optional）短篇長方形圖：folder 內檔名（16:9，1216×684）；暫時未用，留底防將來要"
+                }
+            }
+        },
+        "dailyEpisode": {
+            "type": "object",
+            "required": ["date"],
+            "additionalProperties": false,
+            "properties": {
+                "date": {
+                    "$ref": "#/definitions/date",
+                    "description": "播出日 YYYY-MM-DD；唔可以重複"
+                },
+                "rerun": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "true = 重播舊集（標「重溫」）"
+                },
+                "file": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "（optional）完整檔名，蓋過 audio.file template"
+                }
+            }
+        },
+        "hexColour": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "format": "color-hex",
+            "description": "#rrggbb 色（六位 hex，大細楷都得）"
+        },
+        "nonEmptyString": { "type": "string", "minLength": 1 },
+        "theme": {
+            "type": "object",
+            "description": "色調：10 隻必填色（#rrggbb）+ optional 嘅 statusBar / accentText / titleFont / headerRule / scheme",
+            "required": [
+                "bg",
+                "surface",
+                "track",
+                "accent",
+                "onAccent",
+                "title",
+                "text",
+                "muted",
+                "shadowDark",
+                "shadowLight"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "bg": { "$ref": "#/definitions/hexColour", "description": "頁面底色" },
+                "surface": { "$ref": "#/definitions/hexColour", "description": "卡 / 掣嘅面色" },
+                "track": { "$ref": "#/definitions/hexColour", "description": "進度條路軌色" },
+                "accent": {
+                    "$ref": "#/definitions/hexColour",
+                    "description": "主色（播放掣、進度）"
+                },
+                "onAccent": {
+                    "$ref": "#/definitions/hexColour",
+                    "description": "主色上面嘅字 / icon 色"
+                },
+                "title": { "$ref": "#/definitions/hexColour", "description": "標題字色" },
+                "text": { "$ref": "#/definitions/hexColour", "description": "內文字色" },
+                "muted": { "$ref": "#/definitions/hexColour", "description": "次要字色" },
+                "shadowDark": {
+                    "$ref": "#/definitions/hexColour",
+                    "description": "立體陰影（暗邊）"
+                },
+                "shadowLight": {
+                    "$ref": "#/definitions/hexColour",
+                    "description": "立體陰影（光邊）"
+                },
+                "statusBar": {
+                    "$ref": "#/definitions/hexColour",
+                    "description": "（optional，淺色主題先要）iOS 狀態列色帶 / Android theme-color，墊住白字"
+                },
+                "accentText": {
+                    "$ref": "#/definitions/hexColour",
+                    "description": "（optional）強調色做文字（播緊嗰集、現正播放標籤）；淺色底 accent 唔夠對比先另外設，冇就用 accent"
+                },
+                "titleFont": {
+                    "$ref": "#/definitions/nonEmptyString",
+                    "description": "（optional）頁頭標題字體（CSS font-family）；冇就跟 app 字體"
+                },
+                "headerRule": {
+                    "$ref": "#/definitions/nonEmptyString",
+                    "description": "（optional）頁頭底部裝飾線（CSS background）；冇就冇"
+                },
+                "scheme": {
+                    "enum": ["light"],
+                    "description": "（optional）淺色底（廣播劇）寫 \"light\"；唔寫 = 深色（全部 903 節目）"
+                }
+            }
+        }
+    }
+}

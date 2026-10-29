@@ -1,0 +1,137 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "scripts/arcCover/manifest.schema.json",
+    "title": "arcCover round manifest",
+    "description": "scripts/arcCover/generate.py 每個 round 寫嘅 manifest.json（schema 2）。review 頁跟呢份讀。",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "schema",
+        "tool",
+        "toolVersion",
+        "env",
+        "drama",
+        "arc",
+        "level",
+        "round",
+        "source",
+        "analysis",
+        "analysisImage",
+        "contactSheet",
+        "variants"
+    ],
+    "properties": {
+        "schema": { "const": 2, "description": "manifest 格式版本" },
+        "tool": { "const": "scripts/arcCover/generate.py" },
+        "toolVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "env": {
+            "description": "會影響輸出 bytes 嘅版本；唔同 env 出嘅 round，sha256 / duplicateOf 唔一定可以比",
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["python", "pillow", "libwebp", "opencv", "numpy"],
+            "properties": {
+                "python": { "type": "string" },
+                "pillow": { "type": "string" },
+                "libwebp": { "type": "string" },
+                "opencv": { "type": "string" },
+                "numpy": { "type": "string" }
+            }
+        },
+        "drama": { "$ref": "#/definitions/slug", "description": "廣播劇 id（src/dramas/<id>）" },
+        "arc": {
+            "description": "短篇 slug；廣播劇本身封面係 null",
+            "oneOf": [{ "$ref": "#/definitions/slug" }, { "type": "null" }]
+        },
+        "level": { "enum": ["arc", "drama"] },
+        "round": { "type": "integer", "minimum": 1 },
+        "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "sha256", "width", "height"],
+            "properties": {
+                "file": { "type": "string", "minLength": 1, "description": "原圖檔名（唔包路徑）" },
+                "sha256": { "$ref": "#/definitions/sha256" },
+                "width": { "type": "integer", "minimum": 1 },
+                "height": { "type": "integer", "minimum": 1 }
+            }
+        },
+        "analysis": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["faces", "textBoxes", "textSource", "focal"],
+            "properties": {
+                "faces": { "type": "array", "items": { "$ref": "#/definitions/box" } },
+                "textBoxes": { "type": "array", "items": { "$ref": "#/definitions/box" } },
+                "textSource": { "enum": ["detected", "manual", "none"] },
+                "focal": {
+                    "type": "array",
+                    "items": { "type": "integer" },
+                    "minItems": 2,
+                    "maxItems": 2
+                }
+            }
+        },
+        "analysisImage": { "const": "analysis.png" },
+        "contactSheet": { "const": "contact.png" },
+        "variants": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/variant" } }
+    },
+    "definitions": {
+        "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "box": {
+            "description": "x, y, w, h（原圖 px）",
+            "type": "array",
+            "items": { "type": "integer" },
+            "minItems": 4,
+            "maxItems": 4
+        },
+        "variant": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "id",
+                "kind",
+                "method",
+                "file",
+                "preview",
+                "width",
+                "height",
+                "sha256",
+                "params",
+                "duplicateOf"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "pattern": "^(disc|tile)-[a-z-]+$",
+                    "description": "<kind>-<method>"
+                },
+                "kind": { "enum": ["disc", "tile"] },
+                "method": {
+                    "enum": [
+                        "center-crop",
+                        "saliency-crop",
+                        "face-crop",
+                        "text-safe-crop",
+                        "fit-blur",
+                        "fit-extend",
+                        "title-shrink"
+                    ]
+                },
+                "file": { "type": "string", "pattern": "\\.webp$" },
+                "preview": { "type": "string", "pattern": "^previews/.+\\.png$" },
+                "width": { "type": "integer", "minimum": 1 },
+                "height": { "type": "integer", "minimum": 1 },
+                "sha256": { "$ref": "#/definitions/sha256" },
+                "params": {
+                    "description": "方法參數（crop 窗口、seed 等），每個方法唔同",
+                    "type": "object"
+                },
+                "duplicateOf": {
+                    "description": "同一個 kind 入面 bytes 一模一樣嘅前一個候選 id；冇就 null",
+                    "type": ["string", "null"]
+                }
+            }
+        }
+    }
+}

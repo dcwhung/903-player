@@ -9,6 +9,7 @@ import {
     PLAYBACK_LOG_STORAGE_KEY,
     PLAYBACK_LOG_TICK_MS,
 } from '../config/constants';
+import { bufferedEnd } from '../utils/bufferedEnd';
 
 /** 換集、載入、緩衝、播放同停止相關嘅 media event（timeupdate 另外限流） */
 const MEDIA_EVENTS = [
@@ -54,14 +55,24 @@ const audioFileName = (src: string): string => {
     }
 };
 
-/** 一行：時間 event ct dur rs ns paused vis [note] */
+/** log 入面嘅秒數（位置、長度、鎖屏 seek 目標）一律 1 位小數 */
+export const formatLogSeconds = (seconds: number): string => seconds.toFixed(TIME_DECIMALS);
+
+/** 包住而家位置嗰段已載入範圍嘅尾（1 位小數）；冇就 -（S-551：分得出卡住時有冇數據） */
+const formatBufferedEnd = (audio: HTMLAudioElement): string => {
+    const end = bufferedEnd(audio);
+    return end === undefined ? '-' : formatLogSeconds(end);
+};
+
+/** 一行：時間 event ct dur buf rs ns paused vis [note] */
 const formatLine = (event: string, audio: HTMLAudioElement, note?: string): string => {
     const time = new Date().toISOString().slice(TIME_OF_DAY_START, TIME_OF_DAY_END);
     const fields = [
         time,
         event,
-        `ct=${audio.currentTime.toFixed(TIME_DECIMALS)}`,
-        `dur=${audio.duration.toFixed(TIME_DECIMALS)}`,
+        `ct=${formatLogSeconds(audio.currentTime)}`,
+        `dur=${formatLogSeconds(audio.duration)}`,
+        `buf=${formatBufferedEnd(audio)}`,
         `rs=${audio.readyState}`,
         `ns=${audio.networkState}`,
         `paused=${audio.paused ? 1 : 0}`,
@@ -85,6 +96,28 @@ export const recordPlayback = (event: string, audio: HTMLAudioElement, note?: st
     }
 };
 
+/**
+ * progress 約每 350 ms 一次，太密：每次載入（loadstart）只記第一次，
+ * 睇得出 metadata 前有冇 bytes 入緊（CUI-0011：Chromium metadata 前唔發）
+ */
+const attachFirstProgressLog = (audio: HTMLAudioElement): (() => void) => {
+    let logged = false;
+    const onLoadStart = () => {
+        logged = false;
+    };
+    const onProgress = () => {
+        if (logged) return;
+        logged = true;
+        recordPlayback('progress', audio);
+    };
+    audio.addEventListener('loadstart', onLoadStart);
+    audio.addEventListener('progress', onProgress);
+    return () => {
+        audio.removeEventListener('loadstart', onLoadStart);
+        audio.removeEventListener('progress', onProgress);
+    };
+};
+
 /** 聽住 audio 同頁面 event 自動記 log，返回解除 function；先記一行 boot + 版本號，分得出係邊個 build */
 export const attachPlaybackLog = (audio: HTMLAudioElement): (() => void) => {
     recordPlayback('boot', audio, `v${APP_VERSION}`);
@@ -103,11 +136,13 @@ export const attachPlaybackLog = (audio: HTMLAudioElement): (() => void) => {
     const onPage = (event: Event) => recordPlayback(event.type, audio);
     MEDIA_EVENTS.forEach((name) => audio.addEventListener(name, onMedia));
     audio.addEventListener('timeupdate', onTick);
+    const detachProgress = attachFirstProgressLog(audio);
     document.addEventListener('visibilitychange', onPage);
     PAGE_EVENTS.forEach((name) => window.addEventListener(name, onPage));
     return () => {
         MEDIA_EVENTS.forEach((name) => audio.removeEventListener(name, onMedia));
         audio.removeEventListener('timeupdate', onTick);
+        detachProgress();
         document.removeEventListener('visibilitychange', onPage);
         PAGE_EVENTS.forEach((name) => window.removeEventListener(name, onPage));
     };

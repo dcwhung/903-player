@@ -7,7 +7,15 @@ import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import { runArcSheetChecks } from './arcSheet.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
-import { AUDIO_HOST, PROBE_STORAGE_KEY, SHOT, ensurePlaying, newE2EContext } from './harness.mjs';
+import {
+    AUDIO_HOST,
+    PROBE_STORAGE_KEY,
+    SHOT,
+    ensurePlaying,
+    waitForPlaybackState,
+    externalRequests,
+    newE2EContext,
+} from './harness.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { runMiniPlayerRuleChecks } from './miniPlayerRules.mjs';
 import { runTouchChecks } from './touch.mjs';
@@ -91,6 +99,37 @@ const checkSplashRemoved = async (p) => {
         .then(() => true)
         .catch(() => false);
     log(removed, `啟動畫面 render 完已經移走`);
+};
+
+/** index.html 用嘅 Poppins 字重（css2 網址 wght@400;500;600）；harness 由 @fontsource/poppins 本機供應 */
+const POPPINS_WEIGHTS = [400, 500, 600];
+
+/**
+ * 頁頭標題、日子條、mini player 跑馬燈嘅「冇剪走 / 有冇超出」斷言靠字型度量：
+ * 拉丁字 / 數字要用真 Poppins（比 fallback 闊），否則會 false negative（W-497）。
+ * document.fonts.load 回傳真係載入咗嘅 FontFace：冇 @font-face 就係空；字型檔 404 會 reject（NetworkError），
+ * 當冇載入計，照出 FAIL 而唔係成個 run crash（CUI-0009）
+ */
+const checkPoppinsLoaded = async (p, label) => {
+    const loaded = await p.evaluate(async (weights) => {
+        await document.fonts.ready;
+        const results = await Promise.all(
+            weights.map(async (w) => {
+                const faces = await document.fonts
+                    .load(`${w} 16px Poppins`, 'Ag 0123')
+                    .catch(() => []);
+                const ok =
+                    faces.some((f) => f.status === 'loaded') &&
+                    document.fonts.check(`${w} 16px Poppins`, 'Ag 0123');
+                return ok ? null : w;
+            }),
+        );
+        return results.filter((w) => w !== null);
+    }, POPPINS_WEIGHTS);
+    log(
+        loaded.length === 0,
+        `${label}：Poppins ${POPPINS_WEIGHTS.join(' / ')} 都載入咗（${loaded.length ? `冇：${loaded.join(' / ')}` : '全部 loaded'}）`,
+    );
 };
 
 /** 版本號喺主頁橫額右下角：見到、成個喺橫額圖入面、喺圖右下嗰一半，唔係標題嘅一部分 */
@@ -585,7 +624,7 @@ const checkSwipeToOlder = async (p, dragShot) => {
         now.includes(` ${olderDate}，`) && now.includes('播放中'),
         `向左拖轉舊一集：${labels[from]} → ${now}`,
     );
-    const playing = await p.evaluate(() => navigator.mediaSession.playbackState);
+    const playing = await waitForPlaybackState(p, 'playing');
     log(playing === 'playing', `拖完即刻播：${playing}`);
 };
 
@@ -1249,6 +1288,7 @@ try {
     log(cols === 2, `主頁每行 ${cols} 粒`);
     await checkThemeColor(page, HOME_TOP, '主頁');
     await checkFixedHome(page, '390×844 主頁');
+    await checkPoppinsLoaded(page, '390×844 主頁');
 
     const mini = page.getByRole('region', { name: '正在播放（今日節目）' });
     log(
@@ -1356,7 +1396,7 @@ try {
     await page.getByRole('button', { name: '返回主頁' }).click();
     await page.waitForTimeout(300);
     // T9 B：播緊舊集返主頁照播，mini player 將佢排最前、標「重溫」（以前係暫停）
-    const oldEpisodeState = await page.evaluate(() => navigator.mediaSession.playbackState);
+    const oldEpisodeState = await waitForPlaybackState(page, 'playing');
     const rewatchMini = page.getByRole('region', { name: '正在播放（重溫及今日節目）' });
     const rewatchText = (await rewatchMini.textContent()) ?? '';
     log(
@@ -1397,7 +1437,7 @@ try {
     await dragTodayCard(page, -TODAY_SWIPE_PX);
     await checkTodayShow(page, 'Bad Girl大過佬', BADGIRL_BG, '今日節目再向左掃');
     log((await horizontalOverflow(page)) === 0, '今日節目掃完冇橫向捲動');
-    const playingAfterSwipes = await page.evaluate(() => navigator.mediaSession.playbackState);
+    const playingAfterSwipes = await waitForPlaybackState(page, 'playing');
     log(playingAfterSwipes === 'playing', `掃卡轉節目即刻播：${playingAfterSwipes}`);
     await page.getByRole('button', { name: /播放 雲妮鍾情/ }).click();
     await page.waitForTimeout(500);
@@ -1406,7 +1446,7 @@ try {
 
     await page.goBack();
     await page.waitForTimeout(500);
-    const backState = await page.evaluate(() => navigator.mediaSession.playbackState);
+    const backState = await waitForPlaybackState(page, 'playing');
     const miniText = await page.getByRole('region', { name: '正在播放（今日節目）' }).textContent();
     log(
         page.url().endsWith('#/') && backState === 'playing' && miniText.includes('雲妮鍾情'),
@@ -1558,6 +1598,9 @@ try {
     log(swScript.endsWith('/903-player/sw.js'), `Service worker 已啟用：${swScript}`);
 
     log(errors.length === 0, `冇 JS error ${errors.join('; ')}`);
+    // e2e 唔靠外網：除咗刻意 mock 嘅 host，冇任何 request 出去（例如 Google Fonts）
+    const external = [...new Set(externalRequests.map((url) => new URL(url).origin))];
+    log(external.length === 0, `冇 request 出外網（mock 咗嘅 host 除外）：${external.join(', ')}`);
 } finally {
     await browser?.close();
     server.kill();

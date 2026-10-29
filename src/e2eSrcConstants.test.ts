@@ -10,8 +10,10 @@ import {
     SHEET_FLICK_VELOCITY_PX_PER_MS,
 } from './components/ArcSheet/sheetDrag';
 import { VELOCITY_WINDOW_MS } from './components/ShowCardStack/cardStack';
-import { ALLOWED_AUDIO_ORIGIN, DRAMA_AUDIO_BASE } from './config/constants';
+import { ALLOWED_AUDIO_ORIGIN, DRAMA_AUDIO_BASE, STALL_FIRST_RETRY_MS } from './config/constants';
 import { PROBE_STORAGE_KEY } from './services/probeStore';
+// ?raw：index.html 原始字串，搵出佢引用嘅外部 host
+import indexHtml from '../index.html?raw';
 
 type E2EModule = Record<string, unknown>;
 
@@ -27,6 +29,8 @@ describe('e2e copies of src constants', () => {
         ['DRAMA_AUDIO_BASE', DRAMA_AUDIO_BASE],
         // e2e seed 假錄音用嘅 key：脫節嘅話 app 讀唔到假錄音，清單全空
         ['PROBE_STORAGE_KEY', PROBE_STORAGE_KEY],
+        // 鎖屏狀態要喺首個卡住 deadline 之前讀（PLAYBACK_STATE_WAIT_MS 由佢計），S-582
+        ['STALL_FIRST_RETRY_MS', STALL_FIRST_RETRY_MS],
     ])('should keep harness.mjs %s equal to src', async (name, expected) => {
         const harness = await importE2E('harness.mjs');
 
@@ -43,5 +47,19 @@ describe('e2e copies of src constants', () => {
         const arcSheet = await importE2E('arcSheet.mjs');
 
         expect(arcSheet[name]).toBe(expected);
+    });
+});
+
+describe('e2e offline mocks', () => {
+    it('should mock every external host index.html references', async () => {
+        const harness = await importE2E('harness.mjs');
+        const mocked = [harness.GOOGLE_FONTS_CSS, harness.GOOGLE_FONTS_FILES];
+        // 掃晒所有 http(s) 網址，唔止 href=：<script src>、inline script / style 嘅 url(...) 都會出網（S-576）
+        const linked = [...indexHtml.matchAll(/https?:\/\/[^\s"'`<>()]+/g)].map(
+            ([url]) => new URL(url).origin,
+        );
+
+        expect(linked.length).toBeGreaterThan(0);
+        expect(new Set(linked)).toEqual(new Set(mocked));
     });
 });

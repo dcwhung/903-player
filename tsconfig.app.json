@@ -23,5 +23,5 @@
         ]
     },
     "include": ["src", "tests"],
-    "exclude": ["src/**/*.node.test.ts", "tests/cssRule.ts"]
+    "exclude": ["src/**/*.node.test.ts", "tests/cssRule.ts", "tests/jsonSchemas.ts"]
 }
