@@ -1268,6 +1268,28 @@ describe('AudioController S-551 lock-screen stall', () => {
         detach();
     });
 
+    // W-505：header 到咗加一個 progress 之後就冇嘢嚟，都要喺首個 deadline 重試（唔好推到 8 秒）
+    it('retries at the first timeout when a progress event follows metadata and then nothing arrives', async () => {
+        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = attachController(controller);
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.end();
+        await Promise.resolve();
+        audio.load.mockClear();
+
+        audio.emitMetadata(DURATION);
+        audio.emitProgress();
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(controller.getSnapshot().isStalled).toBe(true);
+        detach();
+    });
+
     it('keeps waiting at the first timeout when playable data has started to arrive', async () => {
         const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
         const audio = new FakeAudio();

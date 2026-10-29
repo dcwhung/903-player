@@ -1,5 +1,5 @@
 import { STALL_DATA_AHEAD_SECONDS } from '../config/constants';
-import { HAVE_CURRENT_DATA, HAVE_FUTURE_DATA } from './mediaReadyState';
+import { HAVE_CURRENT_DATA, HAVE_FUTURE_DATA, HAVE_METADATA } from './mediaReadyState';
 
 /** 某一刻嘅載入狀態（卡住 watchdog 每次 arm / 到期時問一次） */
 export interface LoadProbe {
@@ -16,7 +16,7 @@ export interface LoadProbe {
     progressEvents: number;
 }
 
-/** 有新數據：buffer 尾增長，或者（未發 playing 時）readyState 升到有可播數據 */
+/** 有新數據：buffer 尾增長，或者（未發 playing 時）readyState 升到有可播數據，或者 metadata 未到前有新 progress event */
 const hasGrown = (before: LoadProbe, after: LoadProbe): boolean => {
     const endBefore = before.bufferedEnd ?? Number.NEGATIVE_INFINITY;
     const endAfter = after.bufferedEnd ?? Number.NEGATIVE_INFINITY;
@@ -30,13 +30,16 @@ const hasGrown = (before: LoadProbe, after: LoadProbe): boolean => {
     // 首次重試由 4 秒推到 8 秒，正正落入 iOS 鎖屏凍結 JS 嘅時間（W-500）
     const gotData = after.readyState >= HAVE_CURRENT_DATA && after.readyState > before.readyState;
     // CUI-0011：極慢網開播 header 未載完，bytes 入緊（有新 progress event）都算；reload 會 abort 個 request
-    // 由 byte 0 再嚟。progress 停咗（情境 1 轉網絡後乜都冇嚟）就冇新 event，照樣喺 deadline 重試
-    const gotBytes = after.progressEvents > before.progressEvents;
+    // 由 byte 0 再嚟。progress 停咗（情境 1 轉網絡後乜都冇嚟）就冇新 event，照樣喺 deadline 重試。
+    // metadata 到咗之後就由 buffered / readyState 話事：否則 header 後一個 progress 就將重試推到 8 秒（W-505）
+    const gotBytes =
+        after.readyState < HAVE_METADATA && after.progressEvents > before.progressEvents;
     return endAfter > endBefore || gotData || gotBytes;
 };
 
 /**
- * 仲載緊而且有進展（慢網）：唔好 reload，否則會 abort 緊進行中嘅下載（W-498）。
+ * 仲載緊而且有進展（慢網，包括 metadata 未到前不斷有 progress event）：唔好 reload，
+ * 否則會 abort 緊進行中嘅下載（W-498、CUI-0011）。
  * 冇增長（S-551 情境 1：轉網絡後 stalled）、前面已經有夠數據但位置唔行，
  * 或者 playing 已發、數據夠播但位置唔行（情境 2：pipeline 死咗，S-583）都唔算進展，照樣重試
  */

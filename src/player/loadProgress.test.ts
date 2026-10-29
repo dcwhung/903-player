@@ -1,6 +1,11 @@
 import { STALL_DATA_AHEAD_SECONDS } from '../config/constants';
 import { isLoadProgressing, type LoadProbe } from './loadProgress';
-import { HAVE_CURRENT_DATA, HAVE_ENOUGH_DATA, HAVE_FUTURE_DATA } from './mediaReadyState';
+import {
+    HAVE_CURRENT_DATA,
+    HAVE_ENOUGH_DATA,
+    HAVE_FUTURE_DATA,
+    HAVE_METADATA,
+} from './mediaReadyState';
 
 const POSITION = 521.4;
 const probe = (overrides: Partial<LoadProbe> = {}): LoadProbe => ({
@@ -36,6 +41,14 @@ describe('isLoadProgressing', () => {
     describe('progress events before metadata', () => {
         it('should be progressing when progress events fire while nothing else is exposed', () => {
             expect(isLoadProgressing(probe(), probe({ progressEvents: 3 }))).toBe(true);
+        });
+
+        // W-505：metadata 到咗之後嘅 progress 唔算（W-500 情境：淨係 header 到就冇嘢嚟）
+        it('should not be progressing on progress events once metadata has arrived', () => {
+            const before = probe({ readyState: HAVE_METADATA });
+            const after = probe({ readyState: HAVE_METADATA, progressEvents: 1 });
+
+            expect(isLoadProgressing(before, after)).toBe(false);
         });
 
         it('should not be progressing when no new progress event fired', () => {
