@@ -18,16 +18,28 @@ export const STALL_RETRY_MS = 8000;
  * 因為 iOS 鎖屏時用戶操作之後 JS 只會再行一陣（S-551 log：第二個 8 秒 timer 等咗 34 秒先行）。
  * 只喺前景（document visible）先會因為佢 reload：鎖屏時 iOS 由 loadstart 到 loadeddata 要 ~4.3 s，
  * 4 s reload 會 abort 載緊嘅下一集，之後背景再唔載完（v1.20.7 回歸，v1.20.8 修正）。
- * 鎖屏時過咗佢只係「overdue」：亮屏（retryIfOverdue）/ 鎖屏 Play（resume）先 reload。
+ * 鎖屏時過咗佢只係「overdue」：亮屏（retryIfOverdue）/ 鎖屏 Play（resume）先 reload；
+ * 例外：已發 playing、數據夠播而位置凍結（pipeline 死咗，見 FROZEN_PLAYING_MS）照樣 reload（v1.20.9）。
+ * 「鎖屏」泛指所有 document hidden（切 app / 背景 tab 都一樣，S-615）。
  * e2e/harness.mjs 有副本（等鎖屏狀態嘅時間由佢計），src/e2eSrcConstants.test.ts 鎖住
  */
 export const STALL_FIRST_RETRY_MS = 4000;
 /**
  * 鎖屏（document hidden）時由今次嘗試開始計，等咁耐都未出聲先標 isStalled（鎖屏顯示 Play，畀用戶撳）。
  * 要遠長過正常鎖屏載入（~4–5 s，v1.20.6 log loadstart → loadeddata 4.07 s），
- * 否則正常接住播都會閃一下「停咗」。鎖屏時永遠唔自動 reload，亦唔扣重試次數（v1.20.8）
+ * 否則正常接住播都會閃一下「停咗」。鎖屏仲載緊時唔自動 reload，亦唔扣重試次數（v1.20.8）
  */
 export const STALL_HIDDEN_MARK_MS = 12000;
+/**
+ * 發咗 playing、readyState ≥ HAVE_FUTURE_DATA 而位置咁耐都冇行：當 pipeline 死咗（S-551 情境 2，
+ * 拔 AirPods 再鎖屏 Play）。冇嘢載緊（已發 playing），唔 reload 就永遠救唔返，所以鎖屏都 reload
+ * （load() 會清 buffer 重新下載，但唔會打斷一個進行中嘅載入，S-616）；
+ * 鎖屏 Play（resume）見到上一次嘗試係咁亦即刻 reload，而唔係淨係 play()（v1.20.9）。
+ * 鎖屏 timeupdate 約 5 秒先一次而 log 見過 playing 後 ~0.9 s 先出聲：用 3.5 s（約 3.5 倍）避免
+ * 快嘅鎖屏載入被誤判凍結 reload，重演 v1.20.7（W-506）；又要短過 STALL_FIRST_RETRY_MS，
+ * 鎖屏 Play 後 ~22 ms 就發 playing 嘅凍結（AirPods log）先可以喺第一個 deadline 就 reload（W-508）
+ */
+export const FROZEN_PLAYING_MS = 3500;
 /**
  * 卡住 deadline 到咗但下載仲有進展（慢網）時，隔咁耐再睇一次：唔扣重試次數（W-498）
  */

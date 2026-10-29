@@ -473,4 +473,29 @@ describe('PlayerProvider lock-screen wiring', () => {
         expect(session.playbackState).toBe('paused');
         expect(audio.load).toHaveBeenCalledTimes(1);
     });
+
+    // v1.20.9：鎖屏、成集已載、playing 已發而位置凍結：鎖屏都要喺首個 deadline reload 兼顯示 Play
+    it('shows paused and reloads at the first deadline while locked when playing froze with the data present', async () => {
+        vi.useFakeTimers();
+        const { session, handlers } = installMediaSession();
+        const { audio, result } = setup();
+        await act(async () => result.current.load(RECORDING, { autoplay: true }));
+        act(() => {
+            audio.emitMetadata(DURATION);
+            audio.buffered = timeRanges([[0, DURATION]]);
+            audio.emitAudible();
+        });
+        vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+        act(() => handlers.get('pause')?.({ action: 'pause' }));
+        await act(async () => handlers.get('play')?.({ action: 'play' }));
+        act(() => audio.emitPlaying(HAVE_ENOUGH_DATA));
+        expect(session.playbackState).toBe('playing');
+        audio.load.mockClear();
+
+        act(() => vi.advanceTimersByTime(STALL_FIRST_RETRY_MS));
+
+        expect(session.playbackState).toBe('paused');
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        vi.restoreAllMocks();
+    });
 });
