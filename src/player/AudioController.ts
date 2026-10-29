@@ -58,6 +58,8 @@ export class AudioController {
     private playPending = false;
     /** 每次 play() +1：舊嘅 play()（例如被換集 abort）settle 時唔可以清走新一次嘅意圖 */
     private playGeneration = 0;
+    /** 今次嘗試（watchdog 新一輪 / 重試 reload）已經發過 playing：之後 readyState 升唔算進展（S-583） */
+    private playingFired = false;
     /** 撳咗播（任何來源）一陣都未出聲就重新載入再播（iOS 鎖屏，S-551） */
     private readonly stall = new StallWatchdog({
         canRetry: () => this.hasPlayIntent(),
@@ -67,6 +69,7 @@ export class AudioController {
             bufferedEnd: bufferedEnd(this.audio),
             readyState: this.audio.readyState,
             currentTime: this.audio.currentTime,
+            playingFired: this.playingFired,
         }),
     });
 
@@ -237,7 +240,7 @@ export class AudioController {
         }
         this.pendingStart = this.state.currentTime;
         this.moveTo(this.pendingStart);
-        this.audio.load();
+        this.loadSource();
         this.update({ duration: 0 });
     };
 
@@ -336,6 +339,10 @@ export class AudioController {
     /** 撳播 / 開始播而未出聲：睇住佢，一陣都唔出聲就重試；已經出緊聲就唔使 */
     private watchStall(): void {
         if (!this.state.isAudible) {
+            // 新一輪：之前嗰次嘅 playing 唔關今次事
+            if (!this.stall.pending) {
+                this.playingFired = false;
+            }
             this.stall.start(STALL_MAX_RETRIES);
         }
     }
@@ -346,6 +353,7 @@ export class AudioController {
      */
     private onPlaying = (): void => {
         this.audibleFrom = this.audio.currentTime;
+        this.playingFired = true;
     };
 
     /** 播緊而位置由起點行咗夠遠：真正出緊聲，唔使再睇住卡住 */
@@ -460,6 +468,15 @@ export class AudioController {
         recordPlayback('retry', this.audio, note);
         this.pendingStart = this.state.currentTime;
         this.moveTo(this.pendingStart);
+        this.loadSource();
+    }
+
+    /**
+     * 所有重新載入都經呢度：每次 audio.load() 都係新一次嘗試，數據由零再嚟，
+     * 舊 playing 唔可以帶入新載入，未發 playing 前 rs 升照算進展（S-584）
+     */
+    private loadSource(): void {
+        this.playingFired = false;
         this.audio.load();
     }
 

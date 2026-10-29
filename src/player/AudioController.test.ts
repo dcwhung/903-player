@@ -11,6 +11,7 @@ import {
 } from '../config/constants';
 import { getResumePosition, isWatched, saveProgress } from '../services/progressStore';
 import { AudioController } from './AudioController';
+import { HAVE_CURRENT_DATA, HAVE_ENOUGH_DATA } from './mediaReadyState';
 import { readPlaybackLog } from './playbackLog';
 
 const RECORDING: Recording = {
@@ -937,7 +938,6 @@ describe('AudioController S-551 lock-screen stall', () => {
     });
 
     it('reloads when data is buffered ahead but the position is frozen', async () => {
-        const HAVE_ENOUGH_DATA = 4;
         const { audio, controller, detach } = await pausedBySystem();
         await playFrozen(audio, controller.play);
         audio.buffered = timeRanges([[0, audio.currentTime + STALL_DATA_AHEAD_SECONDS * 2]]);
@@ -947,6 +947,120 @@ describe('AudioController S-551 lock-screen stall', () => {
 
         expect(audio.load).toHaveBeenCalledTimes(1);
         detach();
+    });
+
+    /**
+     * S-583：spec 正常路徑 playing 喺 readyState ≥ 3 先發。情境 2（拔 AirPods → 鎖屏 Play →
+     * playing + play() resolve、rs=4、位置凍結）只載到少過 STALL_DATA_AHEAD_SECONDS 都要喺首個 deadline 重試
+     */
+    describe('frozen after playing with playable data', () => {
+        const LITTLE_AHEAD_SECONDS = STALL_DATA_AHEAD_SECONDS / 2;
+
+        const bufferAhead = (audio: FakeAudio, seconds: number) => {
+            audio.buffered = timeRanges([[audio.currentTime, audio.currentTime + seconds]]);
+        };
+
+        it('retries at the first deadline when only a little data is buffered', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            await controller.play();
+            bufferAhead(audio, LITTLE_AHEAD_SECONDS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            expect(controller.getSnapshot().isStalled).toBe(true);
+            detach();
+        });
+
+        // 個 element 話數據夠播、buffer 仲增長但位置唔行：iOS pipeline 死咗，唔係慢網
+        it('retries at the first deadline even while the buffer keeps growing', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            await controller.play();
+            bufferAhead(audio, 1);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS / 2);
+            bufferAhead(audio, 2);
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS / 2);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+
+        // W-498：開咗播之後數據唔夠（waiting，rs 跌返）而 buffer 仲增長，係真慢網，唔好 abort
+        it('keeps waiting when it went back to waiting for data and the buffer grows', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            await controller.play();
+            bufferAhead(audio, 1);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            audio.readyState = HAVE_CURRENT_DATA;
+            audio.emitWaiting();
+            bufferAhead(audio, 2);
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(audio.load).not.toHaveBeenCalled();
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        /**
+         * S-586：新一次撳播係新一輪，暫停之前嗰次嘅 playing 唔算。真 element 播過再暫停 rs 已經係 4，
+         * 前面只有少量數據；新 play() 之後 playing 未到而 buffer 增長，係慢網載緊（W-498），唔好 reload。
+         * 舊 playing 未清就會當「話夠播但位置唔行」即刻重試
+         */
+        it('ignores playing from before the pause when a new play starts slowly', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            audio.readyState = HAVE_ENOUGH_DATA;
+            bufferAhead(audio, 1);
+            await controller.play();
+
+            bufferAhead(audio, 2);
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+
+        /**
+         * S-584：每次 audio.load() 都係新嘗試。error 已設但 error event 仲 queue 緊（watchdog 未 cancel）時
+         * 網絡返嚟重新載入，舊 playing 唔可以帶入新載入，否則 rs 0→2 唔算進展（W-498 退化）
+         */
+        it('counts playable data as progress again after the source is recovered', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            await controller.play();
+            bufferAhead(audio, LITTLE_AHEAD_SECONDS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            audio.error = { code: MEDIA_ERR_SRC_NOT_SUPPORTED };
+
+            window.dispatchEvent(new Event('online'));
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            audio.load.mockClear();
+            audio.emitLoadedData();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+
+        // 重試係新一次嘗試：重新載入之後 playing 未發，數據到（rs 0→2）照算進展（W-500 / W-498）
+        it('counts playable data as progress again after the retry reloads', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            await controller.play();
+            bufferAhead(audio, LITTLE_AHEAD_SECONDS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+            await Promise.resolve();
+            audio.load.mockClear();
+
+            audio.emitMetadata(DURATION);
+            audio.emitLoadedData();
+            vi.advanceTimersByTime(STALL_RETRY_MS);
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
     });
 
     it('reloads and resumes where it was when a resumed play never advances', async () => {

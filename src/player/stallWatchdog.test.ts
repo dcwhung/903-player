@@ -10,7 +10,12 @@ import type { LoadProbe } from './loadProgress';
 import { StallWatchdog } from './stallWatchdog';
 
 /** 冇下載進展（buffer / readyState 唔變）：每次到期都當卡住 */
-const idleProbe = (): LoadProbe => ({ bufferedEnd: undefined, readyState: 0, currentTime: 0 });
+const idleProbe = (): LoadProbe => ({
+    bufferedEnd: undefined,
+    readyState: 0,
+    currentTime: 0,
+    playingFired: false,
+});
 
 const setup = (canRetry = true) => {
     const retry = vi.fn<(retriesLeft: number) => void>();
@@ -26,7 +31,12 @@ const growingProbe = (aheadSeconds = 1) => {
     let end = 0;
     return (): LoadProbe => {
         end += aheadSeconds;
-        return { bufferedEnd: end, readyState: 2, currentTime: end - aheadSeconds };
+        return {
+            bufferedEnd: end,
+            readyState: 2,
+            currentTime: end - aheadSeconds,
+            playingFired: false,
+        };
     };
 };
 
