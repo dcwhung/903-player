@@ -4,7 +4,7 @@
  * 生成 903-player 用嘅 drama.json 草稿，同埋一份檢查報告。
  *
  *   node dramaFromFolder.mjs "<劇集 folder>" [--id <id>] [--existing <drama.json>]
- *                            [--out <檔案>] [--verify]
+ *                            [--out <檔案>] [--force] [--verify]
  *
  * 單一檔案、只用 Node 內置 module（Node 18 或以上），下載落嚟就行得，唔使 npm install。
  * 規則同 app 一致（src/dramas/schema.ts、filename.ts、episodes.ts）；app 規則一改，呢度要跟住改，
@@ -774,12 +774,14 @@ export const formatReport = (result, { existing } = {}) => {
 
 /* ───────────── CLI ───────────── */
 
-export const USAGE = `用法：node dramaFromFolder.mjs "<劇集 folder>" [--id <id>] [--existing <drama.json>] [--out <檔案>] [--verify]`;
+export const USAGE = `用法：node dramaFromFolder.mjs "<劇集 folder>" [--id <id>] [--existing <drama.json>] [--out <檔案>] [--force] [--verify]`;
 
 const OPTIONS = {
     id: { type: 'string' },
     existing: { type: 'string' },
     out: { type: 'string' },
+    /** 輸出檔已經存在都照寫（預設唔覆蓋，免得冚走人手改過嘅 drama.json） */
+    force: { type: 'boolean', default: false },
     verify: { type: 'boolean', default: false },
     /** 測試用：換 R2 網址前綴（例如本機 server） */
     base: { type: 'string', default: DRAMA_AUDIO_BASE },
@@ -830,6 +832,14 @@ const defaultIo = {
     fetch: (...args) => globalThis.fetch(...args),
 };
 
+/** 輸出檔已存在又冇 --force：回傳點解唔寫（用戶通常冇版本控制，冚咗就冇得返轉頭） */
+const overwriteRefusal = (out, args) => {
+    if (args.force || !existsSync(out)) return undefined;
+    const isExisting = args.existing !== undefined && resolve(args.existing) === out;
+    const what = isExisting ? `${out} 就係 --existing 嗰個檔` : `${out} 已經存在`;
+    return `${what}，冇覆蓋（冇寫任何檔）。要覆蓋請加 --force，或者用 --out 揀第二個名。`;
+};
+
 /** 生成 → 報告 → 寫檔 → （--verify）；回傳 exit code */
 const generateAndWrite = async (args, existing, io) => {
     const result = generateDraft(args.folder, { id: args.id, existing, now: io.now() });
@@ -839,6 +849,11 @@ const generateAndWrite = async (args, existing, io) => {
         return EXIT.blocked;
     }
     const out = resolve(args.out ?? `${args.id ?? result.scan.name}.drama.json`);
+    const refusal = overwriteRefusal(out, args);
+    if (refusal !== undefined) {
+        io.out(`\n${refusal}`);
+        return EXIT.usage;
+    }
     writeFileSync(out, `${JSON.stringify(result.json, null, JSON_INDENT)}\n`);
     io.out(`\n已寫入：${out}`);
     return args.verify ? verifyAll(result, args, io) : EXIT.ok;

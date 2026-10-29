@@ -536,6 +536,41 @@ describe('run (CLI)', () => {
         expect(listFiles(root)).toContain('xyz.drama.json');
     });
 
+    it('should refuse to overwrite an existing output file unless --force', async () => {
+        touch([`劇/${episodeFile('甲', 1)}`]);
+        const outFile = join(root, 'x.drama.json');
+        writeFileSync(outFile, 'hand-edited');
+        const refused = await runCli([join(root, '劇'), '--out', outFile]);
+        expect(refused.code).toBe(EXIT.usage);
+        expect(refused.text).toContain('--force');
+        expect(readFileSync(outFile, 'utf8')).toBe('hand-edited');
+        const forced = await runCli([join(root, '劇'), '--out', outFile, '--force']);
+        expect(forced.code).toBe(EXIT.ok);
+        expect(JSON.parse(readFileSync(outFile, 'utf8'))).toMatchObject({ kind: 'series' });
+    });
+
+    it('should refuse --out pointing at the --existing file unless --force', async () => {
+        touch([`劇/${episodeFile('甲', 1)}`]);
+        const first = join(root, 'first.json');
+        expect((await runCli([join(root, '劇'), '--out', first])).code).toBe(EXIT.ok);
+        const before = readFileSync(first, 'utf8');
+        const { code } = await runCli([join(root, '劇'), '--existing', first, '--out', first]);
+        expect(code).toBe(EXIT.usage);
+        expect(readFileSync(first, 'utf8')).toBe(before);
+    });
+
+    it('should refuse to overwrite the default <id>.drama.json on a second run', async () => {
+        touch([`劇/${episodeFile('甲', 1)}`]);
+        const cwd = process.cwd();
+        process.chdir(root);
+        try {
+            expect((await runCli([join(root, '劇'), '--id', 'xyz'])).code).toBe(EXIT.ok);
+            expect((await runCli([join(root, '劇'), '--id', 'xyz'])).code).toBe(EXIT.usage);
+        } finally {
+            process.chdir(cwd);
+        }
+    });
+
     it('should not write anything when generation is blocked', async () => {
         touch([...[1, 3].map((n) => `劇/${episodeFile('甲', n)}`)]);
         const outFile = join(root, 'x.drama.json');
