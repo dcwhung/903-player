@@ -108,3 +108,9 @@ export function verifyUrls(
     },
 ): Promise<VerifyFailure[]>;
 export function run(argv: readonly string[], io?: CliIo): Promise<number>;
+
+/** 最近一個存在嘅上層路徑；去到頂都唔存在（例如 Windows 冇呢個磁碟）就 undefined */
+export function nearestExisting(
+    path: string,
+    deps?: { exists?: (path: string) => boolean; parentOf?: (path: string) => string },
+): string | undefined;

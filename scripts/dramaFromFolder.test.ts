@@ -10,7 +10,7 @@ import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSyn
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, win32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { DRAMA_AUDIO_BASE as APP_AUDIO_BASE } from '../src/config/constants';
@@ -23,6 +23,7 @@ import {
     generateDraft,
     episodeUrls,
     findSuspicious,
+    nearestExisting,
     parseEpisodeFileName,
     parseEpisodeNumeral,
     run,
@@ -937,6 +938,15 @@ describe('run (CLI)', () => {
             expectRejectedUpFront(result, join(root, '森美 劇集.drama.json'));
             expect(result.text).toContain('--out "<另一個 folder>/森美 劇集.drama.json"');
             expect(listFiles(root)).not.toContain('森美 劇集.drama.json');
+        });
+
+        it('should stop at a missing Windows drive instead of looping forever (W-496)', () => {
+            const missingDrive = 'Z:\\劇\\out.json';
+            const found = nearestExisting(missingDrive, {
+                exists: () => false,
+                parentOf: win32.dirname,
+            });
+            expect(found).toBeUndefined();
         });
 
         it('should say the parent is a file, not a missing folder (QA C8 / O-2)', async () => {

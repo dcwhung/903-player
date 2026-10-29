@@ -980,16 +980,21 @@ const fileHint = (option, folder, fileName) =>
     `要畀檔案路徑，例如 ${option} "${join(folder, fileName)}"`;
 
 /** 路徑上面最近一個真係存在嘅地方（上層係檔案時 existsSync 會因 ENOTDIR 回 false，所以一路行上去） */
-const nearestExisting = (path) => {
+export const nearestExisting = (path, { exists = existsSync, parentOf = dirname } = {}) => {
     let current = path;
-    while (!existsSync(current)) current = dirname(current);
+    while (!exists(current)) {
+        const parent = parentOf(current);
+        // 去到頂都唔存在（Windows 冇呢個磁碟 / 網絡 share 連唔到）：dirname('Z:\\') 仲係自己（W-496）
+        if (parent === current) return undefined;
+        current = parent;
+    }
     return current;
 };
 
 /** 上層 folder 唔啱：分清楚「其實係檔案」同「未開」（QA O-2） */
 const parentProblem = (label, path) => {
     const found = nearestExisting(dirname(path));
-    if (!isDirectory(found))
+    if (found !== undefined && !isDirectory(found))
         return `[錯誤] ${label} 路徑入面嘅「${found}」係一個檔案，唔係 folder：${path}\n請檢查路徑有冇打錯（有空格要用引號包住）。`;
     return `[錯誤] ${label} 嘅 folder 唔存在：${dirname(path)}\n請先開好個 folder，或者檢查路徑有冇打錯（有空格要用引號包住）。`;
 };
