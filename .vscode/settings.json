@@ -1,0 +1,12 @@
+{
+    "json.schemas": [
+        {
+            "fileMatch": ["/src/dramas/*/drama.json"],
+            "url": "./schemas/drama.schema.json"
+        },
+        {
+            "fileMatch": ["/src/shows/*/show.json"],
+            "url": "./schemas/show.schema.json"
+        }
+    ]
+}

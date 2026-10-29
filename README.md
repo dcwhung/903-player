@@ -58,6 +58,9 @@ GitHub Actions 只負責 build 同 deploy。
 - 短篇劇 `arcs[]`：`name`（= R2 folder 名）、`episodes`（集數，或者集名 list，冇集名寫 `null`）、`titles`（`{ "集數": "集名" }` 零散補集名）、`firstNo`（有第零集寫 `0`）、`addedAt`（上架日，14 日內出「新」）、`disc`（短篇自己碟面）、`tile`（短篇長方形圖，暫時未用）、`files`（`{ "集數": "完整檔名" }` 不規則檔名）
 - 檔名 template token：`{no}` `{no2}` `{noZh}`（中文數字）`{arc}` `{folder}` `{title}`；`[ … ]` 入面 token 空值就整段略去，例如 `{no2} - {arc} - 第{noZh}集[ - {title}].m4a`。每日劇用 `{date}` / `{yyyymmdd}`
 - ⚠️ `name` / `fileTime` / `audio` / 檔名唔可以亂改：錄音網址係已儲進度（localStorage）嘅 key
+- Editor 自動完成 + 即時驗證：`schemas/drama.schema.json`、`schemas/show.schema.json`（JSON Schema draft-07，hover 有廣東話說明，色有色盤）。VS Code 靠 `.vscode/settings.json` 嘅 `json.schemas` 自動套用，資料檔唔使加 `$schema`；其他 editor 可以喺檔頭加 `"$schema": "../../../schemas/drama.schema.json"`（runtime 唔理呢個 key）。
+  Schema 刻意嚴過 runtime：多出嚟 / 打錯嘅 key 會出紅線（runtime 只係唔理）。以下淨係 runtime（`npm test`）驗：圖檔真係喺 folder、folder 名格式、arc name / 每日 date 唔重複、`titles` / `files` 集數喺範圍之內。
+  兩邊規則由 `src/catalog/jsonSchemas.node.test.ts` 對住同一批例子鎖住；改 `schema.ts` 記得一齊改 schema
 - 橫版主頁 grid 寫死 4 欄 × 2 行 = 7 個節目 + 今日格；加減節目要一齊改 `ShowGrid.module.css`（`src/shows/shows.test.ts` 會提醒）
 
 ## 開發
@@ -119,3 +122,4 @@ GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 *
 | `src/components/`       | UI component（每個 folder 有 `.tsx`、`.module.css`、`.test.tsx`）                                     |
 | `src/pages/`            | 主頁、節目頁、今日節目頁                                                                              |
 | `src/styles/tokens.css` | Design tokens（來源：mockup）                                                                         |
+| `schemas/`              | `drama.json` / `show.json` 嘅 JSON Schema（editor 自動完成 + 驗證，`.vscode/settings.json` 套用）     |
