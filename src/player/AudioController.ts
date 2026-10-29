@@ -1,6 +1,7 @@
 import {
     AUDIBLE_ADVANCE_SECONDS,
     EARLY_ADVANCE_SECONDS,
+    FROZEN_PLAYING_MS,
     PROGRESS_SAVE_INTERVAL_MS,
     STALL_MAX_RETRIES,
     WATCHED_RATIO,
@@ -14,6 +15,7 @@ import {
 import type { Track } from '../types/track';
 import { bufferedEnd } from '../utils/bufferedEnd';
 import { recordPlayback } from './playbackLog';
+import { HAVE_FUTURE_DATA } from './mediaReadyState';
 import type { LoadOptions, PlayerState } from './playerContext';
 import { ReplayTracker } from './replayTracker';
 import { StallWatchdog } from './stallWatchdog';
@@ -60,11 +62,18 @@ export class AudioController {
     private playGeneration = 0;
     /** 今次嘗試（watchdog 新一輪 / 重試 reload）已經發過 playing：之後 readyState 升唔算進展（S-583） */
     private playingFired = false;
+    /** 今次嘗試幾時發 playing（Date.now()）：位置由嗰陣起凍結幾耐（v1.20.9） */
+    private playingAt = 0;
+    /**
+     * 上一次嘗試喺暫停嗰陣係懷疑卡住 / playing 後凍結：下一次鎖屏 Play 要即刻 reload，
+     * 因為 iOS 每次 ms:play 都由頭計，plain play() 只會再凍結（v1.20.9）
+     */
+    private frozenBeforeStop = false;
     /** 收過幾多次 progress event（只會加）：metadata 未到前睇下載有冇進展（CUI-0011） */
     private progressEvents = 0;
     /**
      * 撳咗播（任何來源）一陣都未出聲就重新載入再播（S-551）。
-     * 鎖屏時唔自動 reload：等亮屏或者鎖屏 Play（v1.20.8）
+     * 鎖屏仲載緊時唔自動 reload：等亮屏或者鎖屏 Play（v1.20.8）；playing 後凍結照 reload（v1.20.9）
      */
     private readonly stall = new StallWatchdog({
         canRetry: () => this.hasPlayIntent(),
@@ -78,6 +87,7 @@ export class AudioController {
             progressEvents: this.progressEvents,
         }),
         isHidden: () => document.visibilityState === 'hidden',
+        isFrozenPlaying: () => this.isFrozenPlaying(),
     });
 
     /** 播完一集之後接住播邊集；冇設定或者返回 undefined 就停 */
@@ -177,10 +187,11 @@ export class AudioController {
     /**
      * 鎖屏 / 耳機嘅 Play：卡住時（鎖屏顯示 Play）element 本身仲係播緊，淨係 audio.play() 乜都唔會發生，
      * 要即刻重新載入再播，當新一次撳播重新計重試次數（S-551）。
-     * 正常載緊（首個 deadline 未到）就照 play()，唔好打斷（W-499）
+     * 上一次嘗試（暫停之前）係卡住 / playing 後凍結都一樣：iOS 每次撳都由頭計，plain play() 只會再凍結（v1.20.9）。
+     * 正常載緊（首個 deadline 未到）或者暫停前播得好地地就照 play()，唔好打斷（W-499）
      */
     resume = async (): Promise<void> => {
-        if (this.isSuspectedStall()) {
+        if (this.frozenBeforeStop || this.isSuspectedStall() || this.isFrozenPlaying()) {
             this.stopWatchingStall();
             this.reload('remote');
         }
@@ -350,6 +361,7 @@ export class AudioController {
             // 新一輪：之前嗰次嘅 playing 唔關今次事
             if (!this.stall.pending) {
                 this.playingFired = false;
+                this.frozenBeforeStop = false;
             }
             this.stall.start(STALL_MAX_RETRIES);
         }
@@ -362,6 +374,7 @@ export class AudioController {
     private onPlaying = (): void => {
         this.audibleFrom = this.audio.currentTime;
         this.playingFired = true;
+        this.playingAt = Date.now();
     };
 
     /** bytes 入緊（約每 350 ms）：只計數畀 watchdog 比較，唔記 log（太密） */
@@ -391,6 +404,7 @@ export class AudioController {
     /** 唔再睇住卡住（出聲 / 停 / 換集）：同時清走「卡住」 */
     private stopWatchingStall(): void {
         this.stall.cancel();
+        this.frozenBeforeStop = false;
         if (this.state.isStalled) {
             this.update({ isStalled: false });
         }
@@ -438,7 +452,10 @@ export class AudioController {
 
     /** pause / ended（包括拔耳筒、來電等系統暫停）：用戶冇再想播 */
     private onStopped = (): void => {
+        // 暫停前已經卡住：記低畀下一次鎖屏 Play 即刻 reload（v1.20.9）
+        const frozen = this.isSuspectedStall() || this.isFrozenPlaying();
         this.stopWatchingStall();
+        this.frozenBeforeStop = frozen;
         this.playIntent = false;
         this.update({ isPlaying: false, isAudible: false });
         this.persist();
@@ -496,6 +513,21 @@ export class AudioController {
     /** 懷疑卡住：已經標咗卡住，或者 deadline 過咗但 timer 被 iOS 凍結未行 */
     private isSuspectedStall(): boolean {
         return this.state.isStalled || this.stall.overdue;
+    }
+
+    /**
+     * 睇緊卡住而今次嘗試已發 playing、數據夠播（rs ≥ 3），但位置由 playing 起冇行過、已經 FROZEN_PLAYING_MS：
+     * S-551 情境 2 pipeline 死咗。唔係載緊，數據喺本機，reload 唔會 abort 下載（v1.20.9）
+     */
+    private isFrozenPlaying(): boolean {
+        const advanced = this.audio.currentTime - this.audibleFrom;
+        return (
+            this.stall.pending &&
+            this.playingFired &&
+            this.audio.readyState >= HAVE_FUTURE_DATA &&
+            advanced < AUDIBLE_ADVANCE_SECONDS &&
+            Date.now() - this.playingAt >= FROZEN_PLAYING_MS
+        );
     }
 
     private onVisibilityChange = (): void => {

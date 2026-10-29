@@ -26,8 +26,17 @@ const setup = (canRetry = true) => {
     const probe = vi.fn(idleProbe);
     // 預設前景（亮屏）；鎖屏測試改返 true
     const isHidden = vi.fn(() => false);
-    const watchdog = new StallWatchdog({ canRetry: allow, retry, onStalled, probe, isHidden });
-    return { watchdog, retry, allow, onStalled, probe, isHidden };
+    // 預設未發 playing / 冇凍結；pipeline 死咗嘅測試改返 true（v1.20.9）
+    const isFrozenPlaying = vi.fn(() => false);
+    const watchdog = new StallWatchdog({
+        canRetry: allow,
+        retry,
+        onStalled,
+        probe,
+        isHidden,
+        isFrozenPlaying,
+    });
+    return { watchdog, retry, allow, onStalled, probe, isHidden, isFrozenPlaying };
 };
 
 /** 慢網：每次問都多咗少少數據，但前面數據仲未夠 */
@@ -390,6 +399,38 @@ describe('StallWatchdog', () => {
 
             expect(retry).toHaveBeenCalledTimes(1);
             expect(watchdog.overdue).toBe(true);
+        });
+
+        /**
+         * v1.20.9：已發 playing、數據夠播而位置凍結（S-551 情境 2）唔係載緊，數據喺本機，reload 唔會 abort 下載：
+         * 鎖屏都要喺 deadline 即刻 reload、扣一次，同前景一樣報卡住
+         */
+        it('should retry at the first deadline when playing froze with data present', () => {
+            const { watchdog, retry, onStalled, isHidden, isFrozenPlaying } = setup();
+            isHidden.mockReturnValue(true);
+            isFrozenPlaying.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+            expect(retry).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(1);
+
+            expect(onStalled).toHaveBeenCalledTimes(1);
+            expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+            expect(watchdog.overdue).toBe(false);
+        });
+
+        it('should go back to waiting when the reloaded attempt is still loading', () => {
+            const { watchdog, retry, isHidden, isFrozenPlaying } = setup();
+            isHidden.mockReturnValue(true);
+            isFrozenPlaying.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+            isFrozenPlaying.mockReturnValue(false);
+
+            vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
+
+            expect(retry).toHaveBeenCalledTimes(1);
         });
 
         it('should give up when play is no longer wanted while hidden', () => {
