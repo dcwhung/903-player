@@ -1005,12 +1005,18 @@ describe('AudioController S-551 lock-screen stall', () => {
             detach();
         });
 
-        // 新一次撳播：暫停之前嗰次嘅 playing 唔算，playing 未發前數據到（rs 0→2）照算進展（W-498）
+        /**
+         * S-586：新一次撳播係新一輪，暫停之前嗰次嘅 playing 唔算。真 element 播過再暫停 rs 已經係 4，
+         * 前面只有少量數據；新 play() 之後 playing 未到而 buffer 增長，係慢網載緊（W-498），唔好 reload。
+         * 舊 playing 未清就會當「話夠播但位置唔行」即刻重試
+         */
         it('ignores playing from before the pause when a new play starts slowly', async () => {
             const { audio, controller, detach } = await pausedBySystem();
+            audio.readyState = HAVE_ENOUGH_DATA;
+            bufferAhead(audio, 1);
             await controller.play();
 
-            audio.emitLoadedData();
+            bufferAhead(audio, 2);
             vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
 
             expect(audio.load).not.toHaveBeenCalled();
