@@ -100,6 +100,34 @@ const checkSplashRemoved = async (p) => {
     log(removed, `啟動畫面 render 完已經移走`);
 };
 
+/** index.html 用嘅 Poppins 字重（css2 網址 wght@400;500;600）；harness 由 @fontsource/poppins 本機供應 */
+const POPPINS_WEIGHTS = [400, 500, 600];
+
+/**
+ * 頁頭標題、日子條、mini player 跑馬燈嘅「冇剪走 / 有冇超出」斷言靠字型度量：
+ * 拉丁字 / 數字要用真 Poppins（比 fallback 闊），否則會 false negative（W-497）。
+ * document.fonts.load 回傳真係載入咗嘅 FontFace：冇 @font-face 或者字型檔 404 就係空 / 唔係 loaded
+ */
+const checkPoppinsLoaded = async (p, label) => {
+    const loaded = await p.evaluate(async (weights) => {
+        await document.fonts.ready;
+        const results = await Promise.all(
+            weights.map(async (w) => {
+                const faces = await document.fonts.load(`${w} 16px Poppins`, 'Ag 0123');
+                const ok =
+                    faces.some((f) => f.status === 'loaded') &&
+                    document.fonts.check(`${w} 16px Poppins`, 'Ag 0123');
+                return ok ? null : w;
+            }),
+        );
+        return results.filter((w) => w !== null);
+    }, POPPINS_WEIGHTS);
+    log(
+        loaded.length === 0,
+        `${label}：Poppins ${POPPINS_WEIGHTS.join(' / ')} 都載入咗（${loaded.length ? `冇：${loaded.join(' / ')}` : '全部 loaded'}）`,
+    );
+};
+
 /** 版本號喺主頁橫額右下角：見到、成個喺橫額圖入面、喺圖右下嗰一半，唔係標題嘅一部分 */
 const checkVersionOnBanner = async (p, label) => {
     // 限 #root：啟動畫面淡出期間 #splash 都有同一個版本號
@@ -1256,6 +1284,7 @@ try {
     log(cols === 2, `主頁每行 ${cols} 粒`);
     await checkThemeColor(page, HOME_TOP, '主頁');
     await checkFixedHome(page, '390×844 主頁');
+    await checkPoppinsLoaded(page, '390×844 主頁');
 
     const mini = page.getByRole('region', { name: '正在播放（今日節目）' });
     log(

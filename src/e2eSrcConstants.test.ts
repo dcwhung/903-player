@@ -12,7 +12,7 @@ import {
 import { VELOCITY_WINDOW_MS } from './components/ShowCardStack/cardStack';
 import { ALLOWED_AUDIO_ORIGIN, DRAMA_AUDIO_BASE } from './config/constants';
 import { PROBE_STORAGE_KEY } from './services/probeStore';
-// ?raw：index.html 原始字串，搵出佢 link 去嘅外部 host
+// ?raw：index.html 原始字串，搵出佢引用嘅外部 host
 import indexHtml from '../index.html?raw';
 
 type E2EModule = Record<string, unknown>;
@@ -49,12 +49,12 @@ describe('e2e copies of src constants', () => {
 });
 
 describe('e2e offline mocks', () => {
-    it('should mock every external host index.html links to', async () => {
+    it('should mock every external host index.html references', async () => {
         const harness = await importE2E('harness.mjs');
         const mocked = [harness.GOOGLE_FONTS_CSS, harness.GOOGLE_FONTS_FILES];
-        // node 環境冇 DOMParser：直接搵 href="https://..."（preconnect、字體 stylesheet 都係 <link>）
-        const linked = [...indexHtml.matchAll(/href="(?<href>https?:\/\/[^"]+)"/g)].map(
-            (match) => new URL(match.groups?.href ?? '').origin,
+        // 掃晒所有 http(s) 網址，唔止 href=：<script src>、inline script / style 嘅 url(...) 都會出網（S-576）
+        const linked = [...indexHtml.matchAll(/https?:\/\/[^\s"'`<>()]+/g)].map(
+            ([url]) => new URL(url).origin,
         );
 
         expect(linked.length).toBeGreaterThan(0);
