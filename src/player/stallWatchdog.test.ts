@@ -1,6 +1,7 @@
 import {
     STALL_DATA_AHEAD_SECONDS,
     STALL_FIRST_RETRY_MS,
+    STALL_HIDDEN_MARK_MS,
     STALL_MAX_RETRIES,
     STALL_MAX_WAIT_MS,
     STALL_PROGRESS_RECHECK_MS,
@@ -23,8 +24,10 @@ const setup = (canRetry = true) => {
     const allow = vi.fn(() => canRetry);
     const onStalled = vi.fn();
     const probe = vi.fn(idleProbe);
-    const watchdog = new StallWatchdog({ canRetry: allow, retry, onStalled, probe });
-    return { watchdog, retry, allow, onStalled, probe };
+    // 預設前景（亮屏）；鎖屏測試改返 true
+    const isHidden = vi.fn(() => false);
+    const watchdog = new StallWatchdog({ canRetry: allow, retry, onStalled, probe, isHidden });
+    return { watchdog, retry, allow, onStalled, probe, isHidden };
 };
 
 /** 慢網：每次問都多咗少少數據，但前面數據仲未夠 */
@@ -316,5 +319,89 @@ describe('StallWatchdog', () => {
 
         expect(retry).not.toHaveBeenCalled();
         expect(watchdog.overdue).toBe(false);
+    });
+
+    /**
+     * v1.20.8：鎖屏（document hidden）時 iOS 由 loadstart 到 loadeddata 要 ~4.3 s；喺 4 s reload 會 abort 佢，
+     * 之後 iOS 喺背景再唔載完。鎖屏時永遠唔自動 reload，等亮屏（retryIfOverdue）或者鎖屏 Play（resume）
+     */
+    describe('while the page is hidden', () => {
+        it('should not retry or report a stall when the first deadline passes', () => {
+            const { watchdog, retry, onStalled, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(retry).not.toHaveBeenCalled();
+            expect(onStalled).not.toHaveBeenCalled();
+            expect(watchdog.pending).toBe(true);
+            // deadline 過咗：亮屏 / 鎖屏 Play 照樣當懷疑卡住
+            expect(watchdog.overdue).toBe(true);
+        });
+
+        it('should never spend a retry however long it stays hidden', () => {
+            const LOCKED_MS = 77_000;
+            const { watchdog, retry, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+
+            vi.advanceTimersByTime(LOCKED_MS);
+
+            expect(retry).not.toHaveBeenCalled();
+            expect(watchdog.pending).toBe(true);
+            expect(watchdog.overdue).toBe(true);
+        });
+
+        it('should report a stall only after the hidden grace from the attempt start', () => {
+            const { watchdog, onStalled, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS - 1);
+            expect(onStalled).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(1);
+
+            expect(onStalled).toHaveBeenCalledTimes(1);
+        });
+
+        it('should spend the first retry once the screen wakes up past the deadline', () => {
+            const LOCKED_MS = 77_000;
+            const { watchdog, retry, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(LOCKED_MS);
+
+            isHidden.mockReturnValue(false);
+            watchdog.retryIfOverdue();
+
+            expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+        });
+
+        it('should skip a later retry timer that fires after the page was hidden', () => {
+            // 前景已經重試過一次，之後鎖屏：下一個 timer（iOS 有時畀佢行）唔可以 reload
+            const { watchdog, retry, isHidden } = setup();
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+            expect(retry).toHaveBeenCalledTimes(1);
+
+            isHidden.mockReturnValue(true);
+            vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
+
+            expect(retry).toHaveBeenCalledTimes(1);
+            expect(watchdog.overdue).toBe(true);
+        });
+
+        it('should give up when play is no longer wanted while hidden', () => {
+            const { watchdog, retry, allow, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+            allow.mockReturnValue(false);
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(retry).not.toHaveBeenCalled();
+            expect(watchdog.pending).toBe(false);
+        });
     });
 });

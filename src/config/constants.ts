@@ -9,16 +9,25 @@ export const PROGRESS_SAVE_INTERVAL_MS = 5000;
  */
 export const EARLY_ADVANCE_SECONDS = 1;
 /**
- * 卡住重試之間嘅時間（第一次用 STALL_FIRST_RETRY_MS）：咁耐都未出聲就重新載入
- * （iOS 鎖屏見過停喺 0:00，亦見過位置凍結）
+ * 卡住重試之間嘅時間（第一次用 STALL_FIRST_RETRY_MS）：前景咁耐都未出聲就重新載入
+ * （iOS 鎖屏見過停喺 0:00，亦見過位置凍結；鎖屏時唔自動 reload，見 STALL_HIDDEN_MARK_MS）
  */
 export const STALL_RETRY_MS = 8000;
 /**
  * 每次撳播（包括鎖屏 / AirPods / 自動接住播）之後第一次檢查卡住嘅時間：比 STALL_RETRY_MS 短，
  * 因為 iOS 鎖屏時用戶操作之後 JS 只會再行一陣（S-551 log：第二個 8 秒 timer 等咗 34 秒先行）。
+ * 只喺前景（document visible）先會因為佢 reload：鎖屏時 iOS 由 loadstart 到 loadeddata 要 ~4.3 s，
+ * 4 s reload 會 abort 載緊嘅下一集，之後背景再唔載完（v1.20.7 回歸，v1.20.8 修正）。
+ * 鎖屏時過咗佢只係「overdue」：亮屏（retryIfOverdue）/ 鎖屏 Play（resume）先 reload。
  * e2e/harness.mjs 有副本（等鎖屏狀態嘅時間由佢計），src/e2eSrcConstants.test.ts 鎖住
  */
 export const STALL_FIRST_RETRY_MS = 4000;
+/**
+ * 鎖屏（document hidden）時由今次嘗試開始計，等咁耐都未出聲先標 isStalled（鎖屏顯示 Play，畀用戶撳）。
+ * 要遠長過正常鎖屏載入（~4–5 s，v1.20.6 log loadstart → loadeddata 4.07 s），
+ * 否則正常接住播都會閃一下「停咗」。鎖屏時永遠唔自動 reload，亦唔扣重試次數（v1.20.8）
+ */
+export const STALL_HIDDEN_MARK_MS = 12000;
 /**
  * 卡住 deadline 到咗但下載仲有進展（慢網）時，隔咁耐再睇一次：唔扣重試次數（W-498）
  */

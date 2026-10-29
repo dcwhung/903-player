@@ -6,6 +6,7 @@ import {
     REPLAY_RESET_SECONDS,
     STALL_DATA_AHEAD_SECONDS,
     STALL_FIRST_RETRY_MS,
+    STALL_HIDDEN_MARK_MS,
     STALL_MAX_RETRIES,
     STALL_MAX_WAIT_MS,
     STALL_PROGRESS_RECHECK_MS,
@@ -443,7 +444,10 @@ describe('AudioController auto-advance', () => {
     });
 });
 
-/** 鎖屏時 iOS 可能卡住唔載下一集（停喺 0:00 但顯示播緊）：等一陣冇聲就重新載入 */
+/**
+ * iOS 可能卡住唔載下一集（停喺 0:00 但顯示播緊）：前景等一陣冇聲就重新載入。
+ * jsdom 預設 visible，呢度全部係前景行為；鎖屏（hidden）唔自動 reload，見 locked auto-advance（v1.20.8）
+ */
 describe('AudioController stalled auto-advance', () => {
     const NEXT: Recording = {
         ...RECORDING,
@@ -905,6 +909,9 @@ describe('AudioController replay timing details', () => {
  * S-551 iPhone 實機 log 重現：
  * 情境 1：鎖屏、轉過網絡、自動接住播 → stalled，第二個 timer 被 iOS 暫停 34 秒，亮屏時 timer + visibility 連住重試兩次
  * 情境 2：AirPods 斷線系統暫停，之後喺鎖屏撳 Play → playing 但位置凍結 82 秒、冇聲，鎖屏進度條照行
+ * v1.20.8：以前假設鎖屏時都會自動 reload（錯：會 abort iOS ~4.3 s 嘅鎖屏載入）。
+ * 呢度嘅 timer 規則（S-583 / W-498 / W-500 / W-505）而家只係前景（jsdom 預設 visible）；
+ * 鎖屏只會喺亮屏（retryIfOverdue）或者鎖屏 Play（resume）先 reload
  */
 describe('AudioController S-551 lock-screen stall', () => {
     const DURATION = 798.3;
@@ -1228,7 +1235,7 @@ describe('AudioController S-551 lock-screen stall', () => {
         detach();
     });
 
-    it('retries a stalled auto-advance after the shorter first timeout', async () => {
+    it('retries a stalled auto-advance after the shorter first timeout in the foreground', async () => {
         const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
@@ -1311,7 +1318,7 @@ describe('AudioController S-551 lock-screen stall', () => {
         detach();
     });
 
-    // 情境 1：10:02:52.342 遲咗嘅 timer 重試，65 ms 後亮屏又重試一次，嘥咗一次機會
+    // 情境 1 前景版：timer 啱啱重試完，65 ms 後 visibility 唔會再重試多次
     it('spends one retry when a late timer and a screen wake-up land together', async () => {
         const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
         const WAKE_AFTER_TIMER_MS = 65;
@@ -1332,6 +1339,32 @@ describe('AudioController S-551 lock-screen stall', () => {
         const retries = readPlaybackLog().filter((line) => line.includes(' retry '));
         expect(retries).toHaveLength(2);
         expect(audio.load).toHaveBeenCalledTimes(2);
+        detach();
+    });
+
+    // 情境 1 鎖屏版（v1.20.8）：鎖屏時 timer 行過都唔 reload，亮屏先重試一次
+    it('spends only the wake-up retry when timers ran while locked', async () => {
+        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const WAKE_AFTER_TIMER_MS = 65;
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = attachController(controller);
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+        audio.end();
+        await Promise.resolve();
+        audio.load.mockClear();
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS + STALL_RETRY_MS + WAKE_AFTER_TIMER_MS);
+        expect(audio.load).not.toHaveBeenCalled();
+        visibility.mockReturnValue('visible');
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        const retries = readPlaybackLog().filter((line) => line.includes(' retry '));
+        expect(retries).toHaveLength(1);
+        expect(audio.load).toHaveBeenCalledTimes(1);
         detach();
     });
 
@@ -1470,6 +1503,161 @@ describe('AudioController S-551 lock-screen stall', () => {
             expect(seen.some(Boolean)).toBe(false);
             detach();
         });
+    });
+});
+
+/**
+ * v1.20.8 回歸（v1.20.7 iPhone log，鎖屏自動接住播）：
+ * 15:38:37.938 advance → .989 loadstart → 38.839 loadedmetadata → 39.041 progress →
+ * 41.943 retry（~3.95 s，abort 咗載緊嘅下一集）→ 之後 iOS 喺背景再唔載完，JS 凍結 77 s，亮屏先播。
+ * v1.20.6 鎖屏 loadstart → loadeddata 要 ~4.3 s，冇重試就播到。
+ * 規則：鎖屏（hidden）永遠唔自動 reload；過咗 STALL_HIDDEN_MARK_MS 先標 isStalled（鎖屏顯示 Play），
+ * 鎖屏 Play / 亮屏先 reload
+ */
+describe('AudioController locked auto-advance (v1.20.8)', () => {
+    const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.m4a' };
+    const DURATION = 845.6;
+    const NEXT_DURATION = 898.4;
+    /** log：advance → loadedmetadata 0.9 s，再 0.2 s 一個 progress */
+    const METADATA_AFTER_MS = 900;
+    const PROGRESS_AFTER_METADATA_MS = 200;
+    /** v1.20.6 log：鎖屏 loadstart → loadeddata 4.07 s（advance 計約 4.3 s） */
+    const LOCKED_DATA_AFTER_MS = 4300;
+    /** log：凍結 77 s 之後用戶亮屏 */
+    const LOCKED_MS = 77_000;
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
+    });
+
+    const setScreen = (state: DocumentVisibilityState) => {
+        vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
+        document.dispatchEvent(new Event('visibilitychange'));
+    };
+
+    /** 鎖屏聽緊 → 自動接住播下一集 → metadata + 一個 progress（同 log 一樣） */
+    const lockedAdvance = async () => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = attachController(controller);
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.emitAudible();
+        setScreen('hidden');
+        audio.end();
+        await Promise.resolve();
+        audio.load.mockClear();
+        audio.play.mockClear();
+        const stalledSeen: boolean[] = [];
+        controller.subscribe(() => stalledSeen.push(controller.getSnapshot().isStalled));
+
+        vi.advanceTimersByTime(METADATA_AFTER_MS);
+        audio.emitMetadata(NEXT_DURATION);
+        vi.advanceTimersByTime(PROGRESS_AFTER_METADATA_MS);
+        audio.emitProgress();
+        return { audio, controller, detach, stalledSeen };
+    };
+
+    const retryLines = () => readPlaybackLog().filter((line) => line.includes(' retry '));
+
+    it('lets a normal ~4.3 s locked load finish and play without reloading', async () => {
+        const { audio, controller, detach, stalledSeen } = await lockedAdvance();
+
+        vi.advanceTimersByTime(
+            LOCKED_DATA_AFTER_MS - METADATA_AFTER_MS - PROGRESS_AFTER_METADATA_MS,
+        );
+        audio.emitLoadedData();
+        audio.emitAudible();
+        vi.advanceTimersByTime(STALL_MAX_WAIT_MS);
+
+        expect(audio.src).toBe(NEXT.url);
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(retryLines()).toHaveLength(0);
+        expect(controller.getSnapshot().isAudible).toBe(true);
+        expect(stalledSeen.some(Boolean)).toBe(false);
+        detach();
+    });
+
+    it('never reloads while locked when the data never arrives', async () => {
+        const { audio, detach } = await lockedAdvance();
+
+        vi.advanceTimersByTime(LOCKED_MS);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(retryLines()).toHaveLength(0);
+        detach();
+    });
+
+    it('shows the lock screen as stalled only after the hidden grace', async () => {
+        const { controller, detach } = await lockedAdvance();
+        const elapsed = METADATA_AFTER_MS + PROGRESS_AFTER_METADATA_MS;
+
+        vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS - elapsed - 1);
+        expect(controller.getSnapshot().isStalled).toBe(false);
+        vi.advanceTimersByTime(1);
+
+        expect(controller.getSnapshot().isStalled).toBe(true);
+        detach();
+    });
+
+    it('reloads on lock-screen play once marked stalled, with a fresh retry budget', async () => {
+        const { audio, controller, detach } = await lockedAdvance();
+        vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+
+        await controller.resume();
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.play).toHaveBeenCalledTimes(1);
+        expect(retryLines().at(-1)).toMatch(/remote$/);
+        expect(controller.getSnapshot().isStalled).toBe(false);
+        detach();
+    });
+
+    it('reloads once when the screen wakes up past the deadline', async () => {
+        const { audio, detach } = await lockedAdvance();
+        vi.advanceTimersByTime(LOCKED_MS);
+
+        setScreen('visible');
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.play).toHaveBeenCalledTimes(1);
+        expect(retryLines().at(-1)).toMatch(new RegExp(`left=${STALL_MAX_RETRIES}$`));
+        detach();
+    });
+
+    it('reloads on wake-up even when the JS timers were frozen the whole time', async () => {
+        const { audio, detach } = await lockedAdvance();
+        // iOS 凍結 JS：timer 冇行，但 wall clock 照行
+        vi.setSystemTime(Date.now() + LOCKED_MS);
+
+        setScreen('visible');
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        detach();
+    });
+
+    it('does not reload on wake-up before the first deadline', async () => {
+        const { audio, detach } = await lockedAdvance();
+
+        setScreen('visible');
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('goes back to the foreground retry schedule after waking up', async () => {
+        const { audio, detach } = await lockedAdvance();
+        vi.advanceTimersByTime(LOCKED_MS);
+        setScreen('visible');
+        expect(audio.load).toHaveBeenCalledTimes(1);
+
+        vi.advanceTimersByTime(STALL_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(2);
+        detach();
     });
 });
 
