@@ -1,9 +1,10 @@
-import { FakeAudio } from '../../tests/fakeAudio';
+import { FakeAudio, timeRanges } from '../../tests/fakeAudio';
 import type { Recording } from '../types/recording';
 import {
     AUDIBLE_ADVANCE_SECONDS,
     EARLY_ADVANCE_SECONDS,
     REPLAY_RESET_SECONDS,
+    STALL_DATA_AHEAD_SECONDS,
     STALL_FIRST_RETRY_MS,
     STALL_MAX_RETRIES,
     STALL_RETRY_MS,
@@ -919,6 +920,34 @@ describe('AudioController S-551 lock-screen stall', () => {
         await play();
         audio.emitPlaying();
     };
+
+    // W-498：慢網開播，buffer 一直增長（但前面數據仲未夠）就唔好 reload
+    it('does not reload a slow start while the buffer keeps growing', async () => {
+        const SLOW_START_CHECKS = 3;
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+        for (let check = 1; check <= SLOW_START_CHECKS; check += 1) {
+            audio.buffered = timeRanges([[audio.currentTime, audio.currentTime + check]]);
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+        }
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(controller.getSnapshot().isStalled).toBe(false);
+        detach();
+    });
+
+    it('reloads when data is buffered ahead but the position is frozen', async () => {
+        const HAVE_ENOUGH_DATA = 4;
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+        audio.buffered = timeRanges([[0, audio.currentTime + STALL_DATA_AHEAD_SECONDS * 2]]);
+        audio.readyState = HAVE_ENOUGH_DATA;
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        detach();
+    });
 
     it('reloads and resumes where it was when a resumed play never advances', async () => {
         const { audio, controller, detach, heardAt } = await pausedBySystem();

@@ -12,6 +12,7 @@ import {
     saveProgress,
 } from '../services/progressStore';
 import type { Track } from '../types/track';
+import { bufferedEnd } from '../utils/bufferedEnd';
 import { recordPlayback } from './playbackLog';
 import type { LoadOptions, PlayerState } from './playerContext';
 import { ReplayTracker } from './replayTracker';
@@ -62,6 +63,11 @@ export class AudioController {
         canRetry: () => this.hasPlayIntent(),
         retry: (retriesLeft) => this.retryStalled(retriesLeft),
         onStalled: () => this.markStalled(),
+        probe: () => ({
+            bufferedEnd: bufferedEnd(this.audio),
+            readyState: this.audio.readyState,
+            currentTime: this.audio.currentTime,
+        }),
     });
 
     /** 播完一集之後接住播邊集；冇設定或者返回 undefined 就停 */

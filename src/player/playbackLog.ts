@@ -9,6 +9,7 @@ import {
     PLAYBACK_LOG_STORAGE_KEY,
     PLAYBACK_LOG_TICK_MS,
 } from '../config/constants';
+import { bufferedEnd } from '../utils/bufferedEnd';
 
 /** 換集、載入、緩衝、播放同停止相關嘅 media event（timeupdate 另外限流） */
 const MEDIA_EVENTS = [
@@ -55,18 +56,8 @@ const audioFileName = (src: string): string => {
 };
 
 /** 包住而家位置嗰段已載入範圍嘅尾（1 位小數）；冇就 -（S-551：分得出卡住時有冇數據） */
-const bufferedEnd = (audio: HTMLAudioElement): string => {
-    // 舊瀏覽器 / 假 element 可能冇 buffered
-    const ranges = audio.buffered as TimeRanges | undefined;
-    const count = ranges?.length ?? 0;
-    for (let index = 0; ranges && index < count; index += 1) {
-        const end = ranges.end(index);
-        if (ranges.start(index) <= audio.currentTime && audio.currentTime <= end) {
-            return end.toFixed(TIME_DECIMALS);
-        }
-    }
-    return '-';
-};
+const formatBufferedEnd = (audio: HTMLAudioElement): string =>
+    bufferedEnd(audio)?.toFixed(TIME_DECIMALS) ?? '-';
 
 /** 一行：時間 event ct dur buf rs ns paused vis [note] */
 const formatLine = (event: string, audio: HTMLAudioElement, note?: string): string => {
@@ -76,7 +67,7 @@ const formatLine = (event: string, audio: HTMLAudioElement, note?: string): stri
         event,
         `ct=${audio.currentTime.toFixed(TIME_DECIMALS)}`,
         `dur=${audio.duration.toFixed(TIME_DECIMALS)}`,
-        `buf=${bufferedEnd(audio)}`,
+        `buf=${formatBufferedEnd(audio)}`,
         `rs=${audio.readyState}`,
         `ns=${audio.networkState}`,
         `paused=${audio.paused ? 1 : 0}`,

@@ -1,12 +1,33 @@
-import { STALL_FIRST_RETRY_MS, STALL_MAX_RETRIES, STALL_RETRY_MS } from '../config/constants';
+import {
+    STALL_DATA_AHEAD_SECONDS,
+    STALL_FIRST_RETRY_MS,
+    STALL_MAX_RETRIES,
+    STALL_MAX_WAIT_MS,
+    STALL_PROGRESS_RECHECK_MS,
+    STALL_RETRY_MS,
+} from '../config/constants';
+import type { LoadProbe } from './loadProgress';
 import { StallWatchdog } from './stallWatchdog';
+
+/** 冇下載進展（buffer / readyState 唔變）：每次到期都當卡住 */
+const idleProbe = (): LoadProbe => ({ bufferedEnd: undefined, readyState: 0, currentTime: 0 });
 
 const setup = (canRetry = true) => {
     const retry = vi.fn<(retriesLeft: number) => void>();
     const allow = vi.fn(() => canRetry);
     const onStalled = vi.fn();
-    const watchdog = new StallWatchdog({ canRetry: allow, retry, onStalled });
-    return { watchdog, retry, allow, onStalled };
+    const probe = vi.fn(idleProbe);
+    const watchdog = new StallWatchdog({ canRetry: allow, retry, onStalled, probe });
+    return { watchdog, retry, allow, onStalled, probe };
+};
+
+/** 慢網：每次問都多咗少少數據，但前面數據仲未夠 */
+const growingProbe = (aheadSeconds = 1) => {
+    let end = 0;
+    return (): LoadProbe => {
+        end += aheadSeconds;
+        return { bufferedEnd: end, readyState: 2, currentTime: end - aheadSeconds };
+    };
 };
 
 describe('StallWatchdog', () => {
@@ -231,5 +252,56 @@ describe('StallWatchdog', () => {
         vi.advanceTimersByTime(STALL_RETRY_MS);
 
         expect(onStalled).not.toHaveBeenCalled();
+    });
+
+    // W-498：慢網開播，下載有進展就唔好 reload
+    it('should re-arm without spending a retry while the load is progressing', () => {
+        const { watchdog, retry, probe, onStalled } = setup();
+        probe.mockImplementation(growingProbe());
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+        expect(retry).not.toHaveBeenCalled();
+        expect(onStalled).not.toHaveBeenCalled();
+        expect(watchdog.overdue).toBe(false);
+
+        // 之後冇再增長：下一次到期就重試，次數冇扣過
+        probe.mockImplementation(idleProbe);
+        vi.advanceTimersByTime(STALL_PROGRESS_RECHECK_MS * 2);
+        expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+    });
+
+    it('should retry when data is buffered ahead but the position is frozen', () => {
+        const { watchdog, retry, probe } = setup();
+        probe.mockImplementation(growingProbe(STALL_DATA_AHEAD_SECONDS + 1));
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+    });
+
+    it('should stop waiting for a progressing load after the total cap', () => {
+        const { watchdog, retry, probe } = setup();
+        probe.mockImplementation(growingProbe());
+        watchdog.start(STALL_MAX_RETRIES);
+
+        vi.advanceTimersByTime(STALL_MAX_WAIT_MS - 1);
+        expect(retry).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(STALL_PROGRESS_RECHECK_MS);
+
+        expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+    });
+
+    it('should keep waiting on wake-up when the load progressed while frozen', () => {
+        const { watchdog, retry, probe } = setup();
+        probe.mockImplementation(growingProbe());
+        watchdog.start(STALL_MAX_RETRIES);
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
+
+        watchdog.retryIfOverdue();
+
+        expect(retry).not.toHaveBeenCalled();
+        expect(watchdog.overdue).toBe(false);
     });
 });

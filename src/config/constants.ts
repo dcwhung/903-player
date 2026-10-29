@@ -18,6 +18,19 @@ export const STALL_RETRY_MS = 8000;
  * 因為 iOS 鎖屏時用戶操作之後 JS 只會再行一陣（S-551 log：第二個 8 秒 timer 等咗 34 秒先行）
  */
 export const STALL_FIRST_RETRY_MS = 4000;
+/**
+ * 卡住 deadline 到咗但下載仲有進展（慢網）時，隔咁耐再睇一次：唔扣重試次數（W-498）
+ */
+export const STALL_PROGRESS_RECHECK_MS = 4000;
+/**
+ * 下載有進展都最多等咁耐（由撳播計）：避免一直「有少少進展」拖住永遠唔重試（W-498）
+ */
+export const STALL_MAX_WAIT_MS = 30000;
+/**
+ * 位置前面已經載咗咁多秒但位置唔行，就算 buffer 仲增長都當卡住（S-551 情境 2：
+ * 數據到晒但 pipeline 死咗）；少過呢個數當仲載緊、慢網開播（W-498）
+ */
+export const STALL_DATA_AHEAD_SECONDS = 10;
 /** 每次撳播之後卡住最多重試幾次 */
 export const STALL_MAX_RETRIES = 3;
 /**
