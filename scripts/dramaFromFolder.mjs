@@ -142,6 +142,13 @@ export const encodePath = (segments) => segments.map(encodeURIComponent).join('/
 const uPlus = (ch) =>
     `U+${(ch.codePointAt(0) ?? 0).toString(HEX_RADIX).toUpperCase().padStart(HEX_WIDTH, '0')}`;
 
+/**
+ * 全形英數（０–９、Ａ–Ｚ、ａ–ｚ）：同半形睇落一樣但 byte 唔同，先係陷阱。
+ * 中文全形標點（？！，：（））係正常寫法，R2 key 就係咁，唔報；亦唔可以叫用戶改半形：
+ * Windows 檔名唔准「?」，改名要重新上載，網址一變已儲進度（localStorage key）就冇。
+ */
+const FULL_WIDTH_ALPHANUMERIC = /[\uff10-\uff19\uff21-\uff3a\uff41-\uff5a]/u;
+
 /** [regex, 描述]：全部係「睇落一樣但係 byte 唔同」嘅陷阱 */
 const CHARACTER_TRAPS = [
     [
@@ -149,8 +156,9 @@ const CHARACTER_TRAPS = [
         (ch) => `羅馬數字「${ch}」(${uPlus(ch)})，ASCII 寫法係「${ch.normalize('NFKC')}」`,
     ],
     [
-        /[\uff01-\uff5e]/u,
-        (ch) => `全形字「${ch}」(${uPlus(ch)})，半形係「${ch.normalize('NFKC')}」`,
+        FULL_WIDTH_ALPHANUMERIC,
+        (ch) =>
+            `全形英數「${ch}」(${uPlus(ch)})，同半形「${ch.normalize('NFKC')}」睇落一樣但 byte 唔同；確認 R2 上面都係全形`,
     ],
     [/\u3000/u, (ch) => `有全形空格 (${uPlus(ch)})`],
     [/[\u200b-\u200d\u2060\ufeff]/u, (ch) => `有隱形字元 (${uPlus(ch)})`],

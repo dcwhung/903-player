@@ -159,6 +159,18 @@ describe('findSuspicious', () => {
         expect(findSuspicious('短篇\u3000名').join()).toContain('U+3000');
         expect(findSuspicious('蘭茜夫人劇場')).toEqual([]);
     });
+
+    it('should flag full-width Latin letters and digits only', () => {
+        expect(findSuspicious('第０集').join()).toContain('U+FF10');
+        expect(findSuspicious('ａ篇').join()).toContain('U+FF41');
+    });
+
+    it('should not flag Chinese full-width punctuation, nor suggest ASCII punctuation', () => {
+        // lancy 已上架嘅集名真係用「？」；R2 key 就係咁，改名會令網址（已儲進度嘅 key）變
+        expect(findSuspicious('39 - 公子森林 - 第三十九集 - 大結局？.m4a')).toEqual([]);
+        expect(findSuspicious('！，：（）；～')).toEqual([]);
+        expect(findSuspicious('Ｘ時mas').join()).not.toContain('半形係');
+    });
 });
 
 describe('todayInHongKong', () => {
