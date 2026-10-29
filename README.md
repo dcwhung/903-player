@@ -246,6 +246,10 @@ GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 *
 之後每次 push `main`（或者喺 Actions 手動執行）都會自動 build 同重新 deploy 去
 `https://<owner>.github.io/903-player/`。
 
+另外 Vercel 都由 `main` 部署（`vite.config.ts` 見到 `VERCEL` 就用根路徑 `/`）。`vercel.json` 關咗工作 branch
+（`claude/**`、`fix/**`、`hotfix/**` 等）嘅 preview 部署：免費 plan 每日部署次數有限，一個 session push 多次
+會用晒額度，令 merge 入 `main` 嗰次被拒（「Deployment rate limited」）。新增 branch 前綴要記得加入呢個清單。
+
 ## 目錄
 
 | 路徑                    | 用途                                                                                                  |
