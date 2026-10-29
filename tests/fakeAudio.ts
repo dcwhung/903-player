@@ -15,6 +15,8 @@ export interface FakeAudioOptions {
 export const HAVE_NOTHING = 0;
 export const HAVE_METADATA = 1;
 export const HAVE_CURRENT_DATA = 2;
+export const HAVE_FUTURE_DATA = 3;
+export const HAVE_ENOUGH_DATA = 4;
 
 /** 假 TimeRanges：[[start, end], ...] */
 export const timeRanges = (ranges: [number, number][]): TimeRanges => ({
@@ -72,12 +74,13 @@ export class FakeAudio extends EventTarget {
         }
     }
 
-    /** 同真 element 一樣：重新載入會清走 error，位置、長度同 readyState reset（load algorithm） */
+    /** 同真 element 一樣：重新載入會清走 error，位置、長度、readyState 同已載入範圍 reset（load algorithm） */
     load = vi.fn(() => {
         this.error = null;
         this.currentTime = 0;
         this.duration = Number.NaN;
         this.readyState = HAVE_NOTHING;
+        this.buffered = timeRanges([]);
     });
 
     play = vi.fn(async () => {
@@ -104,9 +107,13 @@ export class FakeAudio extends EventTarget {
 
     /**
      * 有足夠數據、真正開始出聲（真瀏覽器喺 play event 之後，數據到先發）。
-     * 唔郁 readyState：S-551 iOS 會發 playing 但乜都冇載到；要模擬數據到就用 emitLoadedData
+     * 預設唔郁 readyState：S-551 iOS 會發 playing 但乜都冇載到。
+     * 傳 readyState（例如 HAVE_ENOUGH_DATA）就模擬 spec 正常路徑：數據夠先發 playing（S-583）
      */
-    emitPlaying(): void {
+    emitPlaying(readyState?: number): void {
+        if (readyState !== undefined) {
+            this.readyState = Math.max(this.readyState, readyState);
+        }
         this.dispatchEvent(new Event('playing'));
     }
 

@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { FakeAudio } from '../../tests/fakeAudio';
-import { STALL_FIRST_RETRY_MS } from '../config/constants';
+import { FakeAudio, HAVE_ENOUGH_DATA, timeRanges } from '../../tests/fakeAudio';
+import { STALL_DATA_AHEAD_SECONDS, STALL_FIRST_RETRY_MS } from '../config/constants';
 import { getProgress, isWatched, saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import { AudioController } from './AudioController';
@@ -452,5 +452,24 @@ describe('PlayerProvider lock-screen wiring', () => {
 
         expect(audio.load).toHaveBeenCalledTimes(1);
         expect(readPlaybackLog().some((line) => line.includes(' ms:play '))).toBe(true);
+    });
+
+    // S-583：playing 已發（rs=4）、只載到少量、位置凍結：首個 deadline 鎖屏就要顯示 Play
+    it('shows paused on the lock screen at the first deadline when playable data is frozen', async () => {
+        vi.useFakeTimers();
+        const { session } = installMediaSession();
+        const { audio, result } = setup();
+        await act(async () => result.current.load(RECORDING, { autoplay: true }));
+        act(() => {
+            audio.emitMetadata(DURATION);
+            audio.buffered = timeRanges([[0, STALL_DATA_AHEAD_SECONDS / 2]]);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+        });
+        expect(session.playbackState).toBe('playing');
+
+        act(() => vi.advanceTimersByTime(STALL_FIRST_RETRY_MS));
+
+        expect(session.playbackState).toBe('paused');
+        expect(audio.load).toHaveBeenCalledTimes(1);
     });
 });

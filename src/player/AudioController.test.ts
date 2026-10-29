@@ -1,4 +1,4 @@
-import { FakeAudio, timeRanges } from '../../tests/fakeAudio';
+import { FakeAudio, HAVE_CURRENT_DATA, HAVE_ENOUGH_DATA, timeRanges } from '../../tests/fakeAudio';
 import type { Recording } from '../types/recording';
 import {
     AUDIBLE_ADVANCE_SECONDS,
@@ -947,6 +947,93 @@ describe('AudioController S-551 lock-screen stall', () => {
 
         expect(audio.load).toHaveBeenCalledTimes(1);
         detach();
+    });
+
+    /**
+     * S-583：spec 正常路徑 playing 喺 readyState ≥ 3 先發。情境 2（拔 AirPods → 鎖屏 Play →
+     * playing + play() resolve、rs=4、位置凍結）只載到少過 STALL_DATA_AHEAD_SECONDS 都要喺首個 deadline 重試
+     */
+    describe('frozen after playing with playable data', () => {
+        const LITTLE_AHEAD_SECONDS = STALL_DATA_AHEAD_SECONDS / 2;
+
+        const bufferAhead = (audio: FakeAudio, seconds: number) => {
+            audio.buffered = timeRanges([[audio.currentTime, audio.currentTime + seconds]]);
+        };
+
+        it('retries at the first deadline when only a little data is buffered', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            await controller.play();
+            bufferAhead(audio, LITTLE_AHEAD_SECONDS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            expect(controller.getSnapshot().isStalled).toBe(true);
+            detach();
+        });
+
+        // 個 element 話數據夠播、buffer 仲增長但位置唔行：iOS pipeline 死咗，唔係慢網
+        it('retries at the first deadline even while the buffer keeps growing', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            await controller.play();
+            bufferAhead(audio, 1);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS / 2);
+            bufferAhead(audio, 2);
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS / 2);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+
+        // W-498：開咗播之後數據唔夠（waiting，rs 跌返）而 buffer 仲增長，係真慢網，唔好 abort
+        it('keeps waiting when it went back to waiting for data and the buffer grows', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            await controller.play();
+            bufferAhead(audio, 1);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            audio.readyState = HAVE_CURRENT_DATA;
+            audio.emitWaiting();
+            bufferAhead(audio, 2);
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(audio.load).not.toHaveBeenCalled();
+            expect(controller.getSnapshot().isStalled).toBe(false);
+            detach();
+        });
+
+        // 新一次撳播：暫停之前嗰次嘅 playing 唔算，playing 未發前數據到（rs 0→2）照算進展（W-498）
+        it('ignores playing from before the pause when a new play starts slowly', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            await controller.play();
+
+            audio.emitLoadedData();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+
+        // 重試係新一次嘗試：重新載入之後 playing 未發，數據到（rs 0→2）照算進展（W-500 / W-498）
+        it('counts playable data as progress again after the retry reloads', async () => {
+            const { audio, controller, detach } = await pausedBySystem();
+            await controller.play();
+            bufferAhead(audio, LITTLE_AHEAD_SECONDS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+            await Promise.resolve();
+            audio.load.mockClear();
+
+            audio.emitMetadata(DURATION);
+            audio.emitLoadedData();
+            vi.advanceTimersByTime(STALL_RETRY_MS);
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
     });
 
     it('reloads and resumes where it was when a resumed play never advances', async () => {
