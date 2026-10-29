@@ -461,16 +461,101 @@ const pickHandWritten = (old) =>
         HAND_WRITTEN_ARC_KEYS.filter((k) => old[k] !== undefined).map((k) => [k, old[k]]),
     );
 
-/** 舊短篇：人手欄位照留，集數部份用 folder 嘅 */
-const mergeArc = (old, fresh, issues) => {
-    const { name, ...episodePart } = fresh;
-    const [before, after] = [episodeCountOf(old), episodeCountOf(fresh)];
-    if (before !== after) issues.push(issue('info', name, `集數由 ${before} 變 ${after}`));
-    return { name: old.name, ...pickHandWritten(old), ...episodePart };
+const firstNoOf = (arc) => arc.firstNo ?? 1;
+
+/** 一個短篇每集嘅集名（episodes list 同 titles 合埋，titles 優先；null = 冇集名） */
+const titlesOf = (arc) => {
+    const list = Array.isArray(arc.episodes) ? arc.episodes : [];
+    const titles = new Map(
+        list.flatMap((t, i) => (typeof t === 'string' ? [[firstNoOf(arc) + i, t]] : [])),
+    );
+    Object.entries(arc.titles ?? {}).forEach(([no, t]) => titles.set(Number(no), t));
+    return titles;
 };
 
-/** --existing：舊短篇照原次序，folder 冇嘅保留兼提示；新短篇加喺尾，addedAt = 今日 */
-const mergeArcs = (oldArcs, freshArcs, today, issues) => {
+const filesOf = (arc) => new Map(Object.entries(arc.files ?? {}).map(([no, f]) => [Number(no), f]));
+
+/** 兩個 集數 → 值 map 有邊幾集唔同 */
+const changedNos = (before, after) =>
+    [...new Set([...before.keys(), ...after.keys()])]
+        .filter((no) => before.get(no) !== after.get(no))
+        .sort((a, b) => a - b);
+
+/** 舊 drama.json 有、檔名冇嘅集名（人手補嘅），只計 folder 而家有嘅集數 */
+const handOnlyTitles = (old, fresh) => {
+    const folderTitles = titlesOf(fresh);
+    const last = firstNoOf(fresh) + episodeCountOf(fresh) - 1;
+    return [...titlesOf(old)].filter(
+        ([no, title]) =>
+            title !== '' && no >= firstNoOf(fresh) && no <= last && !folderTitles.has(no),
+    );
+};
+
+/** 由 集數 → 集名 map 砌返 episodes / titles（全部有集名就用 list，同 episodeFields 一樣） */
+const episodeShape = (fresh, titles, files) => {
+    const [first, count] = [firstNoOf(fresh), episodeCountOf(fresh)];
+    const all = titles.size === count;
+    const sorted = (map) => Object.fromEntries([...map].sort(([a], [b]) => a - b));
+    return {
+        ...(first === 1 ? {} : { firstNo: first }),
+        episodes: all ? rangeOf(first, first + count - 1).map((no) => titles.get(no)) : count,
+        ...(!all && titles.size > 0 ? { titles: sorted(titles) } : {}),
+        ...(files.size > 0 ? { files: sorted(files) } : {}),
+    };
+};
+
+/**
+ * 人手補嘅集名（檔名冇）照留：template 有 {title} 嘅話加埋集名會砌錯檔名，
+ * 所以嗰集用 files 寫明真檔名，網址先唔會變。
+ */
+const keepHandTitles = (old, fresh, ctx, issues) => {
+    const kept = handOnlyTitles(old, fresh);
+    if (kept.length === 0) return fresh;
+    const [titles, files] = [titlesOf(fresh), filesOf(fresh)];
+    kept.forEach(([no, title]) => {
+        const file = arcEpisodeFile(ctx, fresh, no);
+        titles.set(no, title);
+        if (
+            renderFileName(
+                ctx.audio.file,
+                seriesTokens(ctx.audio.folder, fresh.name, no, title),
+            ) !== file
+        )
+            files.set(no, file);
+        const message = `第 ${no} 集嘅集名「${title}」檔名冇，係人手加嘅；已保留（用 files 寫明真檔名，網址唔變）`;
+        issues.push(issue('warn', fresh.name, message));
+    });
+    return { name: fresh.name, ...episodeShape(fresh, titles, files) };
+};
+
+/** 集數、第幾集開始、集名、files 有變就講一聲（以 folder 為準，但唔好靜靜雞改） */
+const arcChangeIssues = (old, merged) => {
+    const where = merged.name;
+    const changes = [];
+    const [before, after] = [episodeCountOf(old), episodeCountOf(merged)];
+    if (before !== after) changes.push(`集數由 ${before} 變 ${after}`);
+    if (firstNoOf(old) !== firstNoOf(merged))
+        changes.push(`由第 ${firstNoOf(old)} 集開始變第 ${firstNoOf(merged)} 集開始`);
+    const titles = changedNos(titlesOf(old), titlesOf(merged));
+    if (titles.length > 0) changes.push(`集名有變（第 ${titles.join('、')} 集）`);
+    const files = changedNos(filesOf(old), filesOf(merged));
+    if (files.length > 0) changes.push(`files 有變（第 ${files.join('、')} 集）`);
+    return changes.map((message) => issue('info', where, message));
+};
+
+/** 舊短篇：人手欄位（同人手補嘅集名）照留，集數部份用 folder 嘅 */
+const mergeArc = (old, fresh, ctx, issues) => {
+    const { name, ...episodePart } = keepHandTitles(old, fresh, ctx, issues);
+    const merged = { name: old.name, ...pickHandWritten(old), ...episodePart };
+    issues.push(...arcChangeIssues(old, merged));
+    return merged;
+};
+
+/**
+ * --existing：舊短篇照原次序，folder 冇嘅保留兼提示；新短篇加喺尾，addedAt = 今日。
+ * ctx：{ audio: { file, folder }（砌檔名用）, today }
+ */
+const mergeArcs = (oldArcs, freshArcs, ctx, issues) => {
     const fresh = new Map(freshArcs.map((a) => [a.name, a]));
     const kept = oldArcs.map((old) => {
         const match = fresh.get(old.name);
@@ -485,11 +570,11 @@ const mergeArcs = (oldArcs, freshArcs, today, issues) => {
             return old;
         }
         fresh.delete(old.name);
-        return mergeArc(old, match, issues);
+        return mergeArc(old, match, ctx, issues);
     });
     const added = [...fresh.values()].map(({ name, ...rest }) => {
-        issues.push(issue('info', name, `新短篇，addedAt = ${today}`));
-        return { name, addedAt: today, ...rest };
+        issues.push(issue('info', name, `新短篇，addedAt = ${ctx.today}`));
+        return { name, addedAt: ctx.today, ...rest };
     });
     return [...kept, ...added];
 };
@@ -567,7 +652,8 @@ const seriesJson = (scan, existing, today) => {
         return { ...analysis, json };
     }
     checkExisting(scan, existing, analysis.issues);
-    const arcs = mergeArcs(existing.arcs ?? [], analysis.arcs, today, analysis.issues);
+    const ctx = { audio: { file: analysis.template, folder: scan.name }, today };
+    const arcs = mergeArcs(existing.arcs ?? [], analysis.arcs, ctx, analysis.issues);
     return { ...analysis, json: { ...existing, arcs } };
 };
 

@@ -439,6 +439,54 @@ describe('generateDraft — merging with --existing', () => {
     });
 });
 
+describe('generateDraft — reporting arc changes with --existing', () => {
+    const DRAMA = '合併劇';
+    /** 先由 folder 生成一次，再按需要改舊 arc，當做 --existing */
+    const mergeWith = (editArc: (arc: Json) => Json) => {
+        const base = jsonOf(generateDraft(join(root, DRAMA), { now: NOW }));
+        const arcs = (base.arcs as Json[]).map(editArc);
+        const existing = { ...base, arcs };
+        const result = generateDraft(join(root, DRAMA), { existing, now: NOW });
+        return { result, arc: (jsonOf(result).arcs as Json[])[0] };
+    };
+
+    it('should keep a hand-written title the filenames cannot express, with files for the URL', () => {
+        touch(range(1, 2).map((n) => `${DRAMA}/${episodeFile('甲', n)}`));
+        const { result, arc } = mergeWith((a) => ({ ...a, titles: { 1: '人手補嘅集名' } }));
+        expect(arc).toEqual({
+            name: '甲',
+            episodes: 2,
+            titles: { 1: '人手補嘅集名' },
+            files: { 1: '01 - 甲 - 第一集.m4a' },
+        });
+        expect(messagesOf(result.issues, 'warn')).toContain('甲：第 1 集嘅集名「人手補嘅集名」');
+        const urls = appEpisodes('test', jsonOf(result)).map((e) => pathOfUrl(e.url));
+        expect(urls).toEqual(range(1, 2).map((n) => `${DRAMA}/${episodeFile('甲', n)}`));
+    });
+
+    it('should report titles that changed in the folder', () => {
+        touch([
+            `${DRAMA}/${episodeFile('甲', 1, '新名')}`,
+            `${DRAMA}/${episodeFile('甲', 2, 'B')}`,
+        ]);
+        const { result, arc } = mergeWith((a) => ({ ...a, episodes: ['舊名', 'B'] }));
+        expect(arc).toEqual({ name: '甲', episodes: ['新名', 'B'] });
+        expect(messagesOf(result.issues, 'info')).toContain('甲：集名有變（第 1 集）');
+    });
+
+    it('should report firstNo and files changes', () => {
+        touch(range(0, 1).map((n) => `${DRAMA}/${episodeFile('甲', n)}`));
+        const { result, arc } = mergeWith(({ firstNo: _f, ...a }) => ({
+            ...a,
+            files: { 2: 'x.m4a' },
+        }));
+        expect(arc).toEqual({ name: '甲', firstNo: 0, episodes: 2 });
+        const info = messagesOf(result.issues, 'info');
+        expect(info).toContain('甲：由第 1 集開始變第 0 集開始');
+        expect(info).toContain('甲：files 有變（第 2 集）');
+    });
+});
+
 describe('generateDraft — daily drama', () => {
     const c18 = (): Json =>
         JSON.parse(readFileSync(new URL('c18/drama.json', DRAMAS_DIR), 'utf8')) as Json;
