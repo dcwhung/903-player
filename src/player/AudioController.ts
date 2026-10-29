@@ -156,11 +156,12 @@ export class AudioController {
     };
 
     /**
-     * 鎖屏 / 耳機嘅 Play：卡住時（鎖屏因為冇聲顯示 Play）element 本身仲係播緊，
-     * 淨係 audio.play() 乜都唔會發生，要即刻重新載入再播，當新一次撳播重新計重試次數（S-551）
+     * 鎖屏 / 耳機嘅 Play：卡住時（鎖屏顯示 Play）element 本身仲係播緊，淨係 audio.play() 乜都唔會發生，
+     * 要即刻重新載入再播，當新一次撳播重新計重試次數（S-551）。
+     * 正常載緊（首個 deadline 未到）就照 play()，唔好打斷（W-499）
      */
     resume = async (): Promise<void> => {
-        if (this.isWaitingForSound()) {
+        if (this.isSuspectedStall()) {
             this.stopWatchingStall();
             this.reload('remote');
         }
@@ -450,9 +451,9 @@ export class AudioController {
         this.audio.load();
     }
 
-    /** 想播但未出聲：載緊、緩衝緊，或者卡住 */
-    private isWaitingForSound(): boolean {
-        return this.hasPlayIntent() && !this.state.isAudible;
+    /** 懷疑卡住：已經標咗卡住，或者 deadline 過咗但 timer 被 iOS 凍結未行 */
+    private isSuspectedStall(): boolean {
+        return this.state.isStalled || this.stall.overdue;
     }
 
     private onVisibilityChange = (): void => {

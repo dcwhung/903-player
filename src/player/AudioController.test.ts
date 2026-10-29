@@ -933,9 +933,11 @@ describe('AudioController S-551 lock-screen stall', () => {
         detach();
     });
 
-    it('reloads straight away when lock-screen play is pressed while stalled', async () => {
+    it('reloads straight away when lock-screen play is pressed past a frozen deadline', async () => {
         const { audio, controller, detach, heardAt } = await pausedBySystem();
         await playFrozen(audio, controller.play);
+        // iOS 鎖屏凍結咗 timer：deadline 過咗但未行
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
 
         await controller.resume();
 
@@ -951,6 +953,7 @@ describe('AudioController S-551 lock-screen stall', () => {
     it('gives lock-screen play a fresh retry budget while stalled', async () => {
         const { audio, controller, detach } = await pausedBySystem();
         await playFrozen(audio, controller.play);
+        vi.setSystemTime(Date.now() + STALL_FIRST_RETRY_MS);
 
         await controller.resume();
         vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
@@ -958,6 +961,31 @@ describe('AudioController S-551 lock-screen stall', () => {
         expect(audio.load).toHaveBeenCalledTimes(2);
         const retries = readPlaybackLog().filter((line) => line.includes(' retry '));
         expect(retries.at(-1)).toMatch(new RegExp(` left=${STALL_MAX_RETRIES}$`));
+        detach();
+    });
+
+    it('reloads on lock-screen play once a retry has already marked it stalled', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+        expect(controller.getSnapshot().isStalled).toBe(true);
+
+        await controller.resume();
+
+        expect(audio.load).toHaveBeenCalledTimes(2);
+        detach();
+    });
+
+    // W-499：正常載緊（首個 deadline 之前）撳鎖屏 Play 唔好打斷
+    it('just plays on lock-screen play during a normal start before the first deadline', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+
+        await controller.resume();
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(audio.play).toHaveBeenCalledTimes(2);
         detach();
     });
 
