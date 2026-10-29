@@ -15,7 +15,8 @@ export const EARLY_ADVANCE_SECONDS = 1;
 export const STALL_RETRY_MS = 8000;
 /**
  * 每次撳播（包括鎖屏 / AirPods / 自動接住播）之後第一次檢查卡住嘅時間：比 STALL_RETRY_MS 短，
- * 因為 iOS 鎖屏時用戶操作之後 JS 只會再行一陣（S-551 log：第二個 8 秒 timer 等咗 34 秒先行）
+ * 因為 iOS 鎖屏時用戶操作之後 JS 只會再行一陣（S-551 log：第二個 8 秒 timer 等咗 34 秒先行）。
+ * e2e/harness.mjs 有副本（等鎖屏狀態嘅時間由佢計），src/e2eSrcConstants.test.ts 鎖住
  */
 export const STALL_FIRST_RETRY_MS = 4000;
 /**
@@ -23,7 +24,8 @@ export const STALL_FIRST_RETRY_MS = 4000;
  */
 export const STALL_PROGRESS_RECHECK_MS = 4000;
 /**
- * 下載有進展都最多等咁耐（由撳播計）：避免一直「有少少進展」拖住永遠唔重試（W-498）
+ * 下載有進展都最多等咁耐（由撳播計）：避免一直「有少少進展」拖住永遠唔重試（W-498）。
+ * 最後一次 recheck 會截短，剛好喺呢個時間重試（S-582）
  */
 export const STALL_MAX_WAIT_MS = 30000;
 /**

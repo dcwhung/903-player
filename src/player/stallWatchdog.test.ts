@@ -288,7 +288,8 @@ describe('StallWatchdog', () => {
 
         vi.advanceTimersByTime(STALL_MAX_WAIT_MS - 1);
         expect(retry).not.toHaveBeenCalled();
-        vi.advanceTimersByTime(STALL_PROGRESS_RECHECK_MS);
+        // S-582：剛好喺上限重試，唔會因為 recheck 排咗喺上限之後而多等
+        vi.advanceTimersByTime(1);
 
         expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
     });
