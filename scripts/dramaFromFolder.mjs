@@ -4,9 +4,10 @@
  * 生成 903-player 用嘅 drama.json 草稿，同埋一份檢查報告。
  *
  *   node dramaFromFolder.mjs "<劇集 folder>" [--id <id>] [--existing <drama.json>]
- *                            [--out <檔案>] [--verify]
+ *                            [--out <檔案>] [--force] [--report <檔案>] [--verify]
  *
- * 單一檔案、只用 Node 內置 module（Node 18 或以上），下載落嚟就行得，唔使 npm install。
+ * 單一檔案、只用 Node 內置 module（Node 18.3 或以上，建議 20+；parseArgs 18.3 先有），
+ * 下載落嚟就行得，唔使 npm install。
  * 規則同 app 一致（src/dramas/schema.ts、filename.ts、episodes.ts）；app 規則一改，呢度要跟住改，
  * scripts/dramaFromFolder.test.ts 會將輸出餵畀 app 真正嘅 validator 驗。
  */
@@ -32,8 +33,11 @@ export const SERIES_TEMPLATES = [
 ];
 export const DAILY_TEMPLATE = '{yyyymmdd}.m4a';
 
-/** 0：成功；1：有錯誤，冇寫檔；2：參數錯；3：已寫檔但 --verify 有網址唔得 */
-export const EXIT = Object.freeze({ ok: 0, blocked: 1, usage: 2, verifyFailed: 3 });
+/**
+ * 0：成功；1：有錯誤，冇寫檔；2：參數錯；3：已寫檔但 --verify 有網址唔得；
+ * 4：程式本身出錯（唔係 folder 問題，要將成段輸出傳返嚟）
+ */
+export const EXIT = Object.freeze({ ok: 0, blocked: 1, usage: 2, verifyFailed: 3, internal: 4 });
 
 const AUDIO_EXTENSIONS = new Set(['.m4a', '.mp3', '.aac', '.mp4']);
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -47,9 +51,15 @@ const DAILY_PATTERN = /^(\d{4})(\d{2})(\d{2})$/;
 /** app 嘅 folder id：細楷英數同連字號 */
 const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 const FILE_NO_WIDTH = 2;
+/** 短篇正常由第 0 集（前傳）或者第 1 集開始 */
+const USUAL_FIRST_NOS = new Set([0, 1]);
 const HONG_KONG_TIME_ZONE = 'Asia/Hong_Kong';
 const VERIFY_CONCURRENCY = 6;
 const VERIFY_TIMEOUT_MS = 10_000;
+/** r2.dev 有 rate limit：429 / 5xx / 逾時等一陣再試一次 */
+const VERIFY_RETRY_DELAY_MS = 1_000;
+const HTTP_TOO_MANY_REQUESTS = 429;
+const HTTP_SERVER_ERROR_MIN = 500;
 const JSON_INDENT = 4;
 const HEX_WIDTH = 4;
 const HEX_RADIX = 16;
@@ -139,6 +149,13 @@ export const encodePath = (segments) => segments.map(encodeURIComponent).join('/
 const uPlus = (ch) =>
     `U+${(ch.codePointAt(0) ?? 0).toString(HEX_RADIX).toUpperCase().padStart(HEX_WIDTH, '0')}`;
 
+/**
+ * 全形英數（０–９、Ａ–Ｚ、ａ–ｚ）：同半形睇落一樣但 byte 唔同，先係陷阱。
+ * 中文全形標點（？！，：（））係正常寫法，R2 key 就係咁，唔報；亦唔可以叫用戶改半形：
+ * Windows 檔名唔准「?」，改名要重新上載，網址一變已儲進度（localStorage key）就冇。
+ */
+const FULL_WIDTH_ALPHANUMERIC = /[\uff10-\uff19\uff21-\uff3a\uff41-\uff5a]/u;
+
 /** [regex, 描述]：全部係「睇落一樣但係 byte 唔同」嘅陷阱 */
 const CHARACTER_TRAPS = [
     [
@@ -146,8 +163,9 @@ const CHARACTER_TRAPS = [
         (ch) => `羅馬數字「${ch}」(${uPlus(ch)})，ASCII 寫法係「${ch.normalize('NFKC')}」`,
     ],
     [
-        /[\uff01-\uff5e]/u,
-        (ch) => `全形字「${ch}」(${uPlus(ch)})，半形係「${ch.normalize('NFKC')}」`,
+        FULL_WIDTH_ALPHANUMERIC,
+        (ch) =>
+            `全形英數「${ch}」(${uPlus(ch)})，同半形「${ch.normalize('NFKC')}」睇落一樣但 byte 唔同；確認 R2 上面都係全形`,
     ],
     [/\u3000/u, (ch) => `有全形空格 (${uPlus(ch)})`],
     [/[\u200b-\u200d\u2060\ufeff]/u, (ch) => `有隱形字元 (${uPlus(ch)})`],
@@ -281,6 +299,12 @@ const numberingIssues = (arc, episodes) => {
     if (nos.length === 0) return [issue('error', arc.name, '冇錄音檔')];
     const missing = rangeOf(Math.min(...nos), Math.max(...nos)).filter((n) => !counts.has(n));
     if (missing.length > 0) issues.push(issue('error', arc.name, `缺第 ${missing.join('、')} 集`));
+    const first = Math.min(...nos);
+    // 唔當錯誤：將來可能真係有由第 N 集開始嘅劇；但現有資料全部由 0 / 1 開始，多數係漏咗上載
+    if (!USUAL_FIRST_NOS.has(first))
+        issues.push(
+            issue('warn', arc.name, `由第 ${first} 集開始；確認係咪漏咗上載第 1 集（或者第 0 集）`),
+        );
     return issues;
 };
 
@@ -417,14 +441,20 @@ const analyseDaily = (scan) => {
 
 /* ───────────── 砌 drama.json ───────────── */
 
-/** 香港日期 YYYY-MM-DD（en-CA 格式剛好係 YYYY-MM-DD） */
-export const todayInHongKong = (now) =>
-    new Intl.DateTimeFormat('en-CA', {
+/**
+ * 香港日期 YYYY-MM-DD。用 formatToParts 逐部份砌：唔靠某個 locale 嘅格式
+ * （例如 en-CA 剛好係 YYYY-MM-DD，但 small-icu 嘅 Node 會退返 en-US 出 10/29/2026）。
+ */
+export const todayInHongKong = (now) => {
+    const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: HONG_KONG_TIME_ZONE,
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-    }).format(now);
+    }).formatToParts(now);
+    const part = (type) => parts.find((p) => p.type === type)?.value ?? '';
+    return `${part('year')}-${part('month')}-${part('day')}`;
+};
 
 const newDramaBase = (scan, kind, template) => ({
     name: scan.name,
@@ -443,16 +473,101 @@ const pickHandWritten = (old) =>
         HAND_WRITTEN_ARC_KEYS.filter((k) => old[k] !== undefined).map((k) => [k, old[k]]),
     );
 
-/** 舊短篇：人手欄位照留，集數部份用 folder 嘅 */
-const mergeArc = (old, fresh, issues) => {
-    const { name, ...episodePart } = fresh;
-    const [before, after] = [episodeCountOf(old), episodeCountOf(fresh)];
-    if (before !== after) issues.push(issue('info', name, `集數由 ${before} 變 ${after}`));
-    return { name: old.name, ...pickHandWritten(old), ...episodePart };
+const firstNoOf = (arc) => arc.firstNo ?? 1;
+
+/** 一個短篇每集嘅集名（episodes list 同 titles 合埋，titles 優先；null = 冇集名） */
+const titlesOf = (arc) => {
+    const list = Array.isArray(arc.episodes) ? arc.episodes : [];
+    const titles = new Map(
+        list.flatMap((t, i) => (typeof t === 'string' ? [[firstNoOf(arc) + i, t]] : [])),
+    );
+    Object.entries(arc.titles ?? {}).forEach(([no, t]) => titles.set(Number(no), t));
+    return titles;
 };
 
-/** --existing：舊短篇照原次序，folder 冇嘅保留兼提示；新短篇加喺尾，addedAt = 今日 */
-const mergeArcs = (oldArcs, freshArcs, today, issues) => {
+const filesOf = (arc) => new Map(Object.entries(arc.files ?? {}).map(([no, f]) => [Number(no), f]));
+
+/** 兩個 集數 → 值 map 有邊幾集唔同 */
+const changedNos = (before, after) =>
+    [...new Set([...before.keys(), ...after.keys()])]
+        .filter((no) => before.get(no) !== after.get(no))
+        .sort((a, b) => a - b);
+
+/** 舊 drama.json 有、檔名冇嘅集名（人手補嘅），只計 folder 而家有嘅集數 */
+const handOnlyTitles = (old, fresh) => {
+    const folderTitles = titlesOf(fresh);
+    const last = firstNoOf(fresh) + episodeCountOf(fresh) - 1;
+    return [...titlesOf(old)].filter(
+        ([no, title]) =>
+            title !== '' && no >= firstNoOf(fresh) && no <= last && !folderTitles.has(no),
+    );
+};
+
+/** 由 集數 → 集名 map 砌返 episodes / titles（全部有集名就用 list，同 episodeFields 一樣） */
+const episodeShape = (fresh, titles, files) => {
+    const [first, count] = [firstNoOf(fresh), episodeCountOf(fresh)];
+    const all = titles.size === count;
+    const sorted = (map) => Object.fromEntries([...map].sort(([a], [b]) => a - b));
+    return {
+        ...(first === 1 ? {} : { firstNo: first }),
+        episodes: all ? rangeOf(first, first + count - 1).map((no) => titles.get(no)) : count,
+        ...(!all && titles.size > 0 ? { titles: sorted(titles) } : {}),
+        ...(files.size > 0 ? { files: sorted(files) } : {}),
+    };
+};
+
+/**
+ * 人手補嘅集名（檔名冇）照留：template 有 {title} 嘅話加埋集名會砌錯檔名，
+ * 所以嗰集用 files 寫明真檔名，網址先唔會變。
+ */
+const keepHandTitles = (old, fresh, ctx, issues) => {
+    const kept = handOnlyTitles(old, fresh);
+    if (kept.length === 0) return fresh;
+    const [titles, files] = [titlesOf(fresh), filesOf(fresh)];
+    kept.forEach(([no, title]) => {
+        const file = arcEpisodeFile(ctx, fresh, no);
+        titles.set(no, title);
+        if (
+            renderFileName(
+                ctx.audio.file,
+                seriesTokens(ctx.audio.folder, fresh.name, no, title),
+            ) !== file
+        )
+            files.set(no, file);
+        const message = `第 ${no} 集嘅集名「${title}」檔名冇，係人手加嘅；已保留（用 files 寫明真檔名，網址唔變）`;
+        issues.push(issue('warn', fresh.name, message));
+    });
+    return { name: fresh.name, ...episodeShape(fresh, titles, files) };
+};
+
+/** 集數、第幾集開始、集名、files 有變就講一聲（以 folder 為準，但唔好靜靜雞改） */
+const arcChangeIssues = (old, merged) => {
+    const where = merged.name;
+    const changes = [];
+    const [before, after] = [episodeCountOf(old), episodeCountOf(merged)];
+    if (before !== after) changes.push(`集數由 ${before} 變 ${after}`);
+    if (firstNoOf(old) !== firstNoOf(merged))
+        changes.push(`由第 ${firstNoOf(old)} 集開始變第 ${firstNoOf(merged)} 集開始`);
+    const titles = changedNos(titlesOf(old), titlesOf(merged));
+    if (titles.length > 0) changes.push(`集名有變（第 ${titles.join('、')} 集）`);
+    const files = changedNos(filesOf(old), filesOf(merged));
+    if (files.length > 0) changes.push(`files 有變（第 ${files.join('、')} 集）`);
+    return changes.map((message) => issue('info', where, message));
+};
+
+/** 舊短篇：人手欄位（同人手補嘅集名）照留，集數部份用 folder 嘅 */
+const mergeArc = (old, fresh, ctx, issues) => {
+    const { name, ...episodePart } = keepHandTitles(old, fresh, ctx, issues);
+    const merged = { name: old.name, ...pickHandWritten(old), ...episodePart };
+    issues.push(...arcChangeIssues(old, merged));
+    return merged;
+};
+
+/**
+ * --existing：舊短篇照原次序，folder 冇嘅保留兼提示；新短篇加喺尾，addedAt = 今日。
+ * ctx：{ audio: { file, folder }（砌檔名用）, today }
+ */
+const mergeArcs = (oldArcs, freshArcs, ctx, issues) => {
     const fresh = new Map(freshArcs.map((a) => [a.name, a]));
     const kept = oldArcs.map((old) => {
         const match = fresh.get(old.name);
@@ -467,11 +582,11 @@ const mergeArcs = (oldArcs, freshArcs, today, issues) => {
             return old;
         }
         fresh.delete(old.name);
-        return mergeArc(old, match, issues);
+        return mergeArc(old, match, ctx, issues);
     });
     const added = [...fresh.values()].map(({ name, ...rest }) => {
-        issues.push(issue('info', name, `新短篇，addedAt = ${today}`));
-        return { name, addedAt: today, ...rest };
+        issues.push(issue('info', name, `新短篇，addedAt = ${ctx.today}`));
+        return { name, addedAt: ctx.today, ...rest };
     });
     return [...kept, ...added];
 };
@@ -485,11 +600,48 @@ const mergeDaily = (oldEpisodes, dates, issues) => {
     return merged.sort((a, b) => b.date.localeCompare(a.date));
 };
 
-const checkExisting = (scan, existing, kind, issues) => {
+/* ───────────── 驗 --existing 形狀 ───────────── */
+
+const isPlainObject = (value) =>
+    value !== null && typeof value === 'object' && !Array.isArray(value);
+
+/** 試砌一次 template 用嘅樣本日期（每日劇 token 要有日期先砌得） */
+const SAMPLE_DATE = '2000-01-01';
+
+/** 試砌一次 audio.file：打錯 token 會 throw，要喺真正用之前轉做訊息 */
+const templateProblem = (template, kind) => {
+    if (typeof template !== 'string') return '冇 audio.file（檔名 template）';
+    const tokens = kind === 'series' ? seriesTokens('', '', 1, '') : dailyTokens('', SAMPLE_DATE);
+    try {
+        renderFileName(template, tokens);
+        return undefined;
+    } catch (error) {
+        return `audio.file「${template}」有問題：${error.message}`;
+    }
+};
+
+/** 每種劇嘅 list 欄位，同每項一定要有嘅識別欄位 */
+const LIST_SHAPE = { series: ['arcs', 'name'], daily: ['episodes', 'date'] };
+
+const listProblem = (existing, kind) => {
+    const [listKey, idKey] = LIST_SHAPE[kind];
+    const list = existing[listKey];
+    if (list === undefined) return undefined;
+    if (!Array.isArray(list)) return `${listKey} 唔係 list（要係 [ … ]）`;
+    const bad = list.findIndex((item) => !isPlainObject(item) || typeof item[idKey] !== 'string');
+    return bad === -1 ? undefined : `${listKey} 第 ${bad + 1} 項唔係 { "${idKey}": … }`;
+};
+
+/** --existing 唔啱用（唔係 object、kind 唔夾、list / template 壞咗）就回傳原因 */
+const existingProblem = (existing, kind) => {
+    if (!isPlainObject(existing)) return '--existing 唔係 drama.json（要係一個 { … } object）';
     if (existing.kind !== kind)
-        issues.push(
-            issue('error', scan.name, `--existing 係 ${existing.kind}，但 folder 睇落係 ${kind}`),
-        );
+        return `--existing 係 ${existing.kind ?? '（冇 kind）'}，但 folder 睇落係 ${kind}`;
+    const problem = listProblem(existing, kind) ?? templateProblem(existing.audio?.file, kind);
+    return problem === undefined ? undefined : `--existing 嘅 ${problem}`;
+};
+
+const checkExisting = (scan, existing, issues) => {
     const folder = existing.audio?.folder;
     if (existing.audio?.host === 'r2' && folder !== scan.name)
         issues.push(
@@ -511,8 +663,9 @@ const seriesJson = (scan, existing, today) => {
         };
         return { ...analysis, json };
     }
-    checkExisting(scan, existing, 'series', analysis.issues);
-    const arcs = mergeArcs(existing.arcs ?? [], analysis.arcs, today, analysis.issues);
+    checkExisting(scan, existing, analysis.issues);
+    const ctx = { audio: { file: analysis.template, folder: scan.name }, today };
+    const arcs = mergeArcs(existing.arcs ?? [], analysis.arcs, ctx, analysis.issues);
     return { ...analysis, json: { ...existing, arcs } };
 };
 
@@ -522,7 +675,7 @@ const dailyJson = (scan, existing) => {
         const episodes = analysis.dates.map((date) => ({ date }));
         return { ...analysis, json: { ...newDramaBase(scan, 'daily', DAILY_TEMPLATE), episodes } };
     }
-    checkExisting(scan, existing, 'daily', analysis.issues);
+    checkExisting(scan, existing, analysis.issues);
     const episodes = mergeDaily(existing.episodes ?? [], analysis.dates, analysis.issues);
     return { ...analysis, json: { ...existing, episodes } };
 };
@@ -556,6 +709,12 @@ export const generateDraft = (root, { id, existing, now }) => {
     const today = todayInHongKong(now);
     const base = { scan, kind, today, issues: dramaIssues(scan, id, kind) };
     if (kind === 'none') return { ...base, json: null, summaries: [] };
+    // 壞 / 唔夾嘅 --existing 要喺用之前停，唔好砌到一半 throw
+    const problem = existing === undefined ? undefined : existingProblem(existing, kind);
+    if (problem !== undefined) {
+        const issues = [...base.issues, issue('error', scan.name, problem)];
+        return { ...base, issues, json: null, summaries: [] };
+    }
     const built = kind === 'series' ? seriesJson(scan, existing, today) : dailyJson(scan, existing);
     const issues = [...base.issues, ...built.issues];
     const blocked = issues.some((i) => i.level === 'error');
@@ -626,32 +785,52 @@ export const coverUrls = (scan, folder, base = DRAMA_AUDIO_BASE) => [
 
 /* ───────────── --verify ───────────── */
 
+/** 一次 HEAD：OK 就 null；唔得就 { url, reason, retryable }（429 / 5xx / 逾時值得再試） */
 const headOnce = async (url, fetchImpl, timeoutMs) => {
     try {
         const res = await fetchImpl(url, {
             method: 'HEAD',
             signal: AbortSignal.timeout(timeoutMs),
         });
-        return res.ok ? null : { url, reason: `HTTP ${res.status}` };
+        if (res.ok) return null;
+        const retryable =
+            res.status === HTTP_TOO_MANY_REQUESTS || res.status >= HTTP_SERVER_ERROR_MIN;
+        return { url, reason: `HTTP ${res.status}`, retryable };
     } catch (error) {
         const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
-        return {
-            url,
-            reason: timedOut ? `逾時（${timeoutMs}ms）` : `連線失敗：${error?.message ?? error}`,
-        };
+        const reason = timedOut ? `逾時（${timeoutMs}ms）` : `連線失敗：${error?.message ?? error}`;
+        return { url, reason, retryable: timedOut };
     }
 };
 
-/** HEAD 每條網址（限同時幾多條 + timeout），回傳唔得嘅（跟原本次序） */
+const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
+
+/** 暫時性失敗（429 / 5xx / 逾時）等一陣再試一次；404 之類即刻當唔得 */
+const headWithRetry = async (url, fetchImpl, { timeoutMs, retryDelayMs }) => {
+    const first = await headOnce(url, fetchImpl, timeoutMs);
+    if (first === null || !first.retryable) return first && { url, reason: first.reason };
+    await sleep(retryDelayMs);
+    const second = await headOnce(url, fetchImpl, timeoutMs);
+    return second && { url, reason: `${second.reason}（再試一次都唔得）` };
+};
+
+/** HEAD 每條網址（限同時幾多條 + timeout + 暫時性失敗再試一次），回傳唔得嘅（跟原本次序） */
 export const verifyUrls = async (urls, options = {}) => {
-    const { concurrency = VERIFY_CONCURRENCY, timeoutMs = VERIFY_TIMEOUT_MS } = options;
+    const {
+        concurrency = VERIFY_CONCURRENCY,
+        timeoutMs = VERIFY_TIMEOUT_MS,
+        retryDelayMs = VERIFY_RETRY_DELAY_MS,
+    } = options;
     const fetchImpl = options.fetch ?? globalThis.fetch;
     const results = new Array(urls.length).fill(null);
     let next = 0;
     const worker = async () => {
         while (next < urls.length) {
             const index = next++;
-            results[index] = await headOnce(urls[index], fetchImpl, timeoutMs);
+            results[index] = await headWithRetry(urls[index], fetchImpl, {
+                timeoutMs,
+                retryDelayMs,
+            });
         }
     };
     await Promise.all(Array.from({ length: Math.min(concurrency, urls.length) }, worker));
@@ -728,15 +907,34 @@ export const formatReport = (result, { existing } = {}) => {
 
 /* ───────────── CLI ───────────── */
 
-export const USAGE = `用法：node dramaFromFolder.mjs "<劇集 folder>" [--id <id>] [--existing <drama.json>] [--out <檔案>] [--verify]`;
+export const USAGE = `用法：node dramaFromFolder.mjs "<劇集 folder>" [--id <id>] [--existing <drama.json>] [--out <檔案>] [--force] [--report <檔案>] [--verify]`;
 
 const OPTIONS = {
     id: { type: 'string' },
     existing: { type: 'string' },
     out: { type: 'string' },
+    /** 輸出檔已經存在都照寫（預設唔覆蓋，免得冚走人手改過嘅 drama.json） */
+    force: { type: 'boolean', default: false },
+    /** 報告同時用 UTF-8 寫落呢個檔（Windows PowerShell 嘅 | tee 會用 Big5 / UTF-16 搞亂中文） */
+    report: { type: 'string' },
     verify: { type: 'boolean', default: false },
     /** 測試用：換 R2 網址前綴（例如本機 server） */
     base: { type: 'string', default: DRAMA_AUDIO_BASE },
+};
+
+/** 路徑尾嘅 / 或者 \（Windows 用 \，macOS 拖 folder 入 Terminal 有時會加 /）；根目錄（/、C:\）唔郁 */
+const TRAILING_SEPARATORS = /(?<=[^:\\/])[\\/]+$/;
+
+/**
+ * Windows 用雙引號包住路徑而尾有 \（"D:\劇\"）：\" 會變做字面嘅 "，後面嘅參數仲會黐埋落嚟，
+ * 所以路徑有 " 就直接講點改；冇嘅話食走尾嘅分隔符。
+ */
+const folderArg = (raw) => {
+    if (raw.includes('"'))
+        throw new Error(
+            `路徑入面有「"」：${raw}\n用雙引號包住路徑嗰陣，路徑尾唔好加 \\（例如 "D:\\劇\\黃金少年"）`,
+        );
+    return raw.replace(TRAILING_SEPARATORS, '');
 };
 
 const readArgs = (argv) => {
@@ -746,7 +944,7 @@ const readArgs = (argv) => {
         allowPositionals: true,
     });
     if (positionals.length !== 1) throw new Error('要畀一個劇集 folder');
-    const folder = positionals[0];
+    const folder = folderArg(positionals[0]);
     if (!existsSync(folder) || !statSync(folder).isDirectory())
         throw new Error(`搵唔到 folder：${folder}`);
     return { folder, ...values };
@@ -784,6 +982,65 @@ const defaultIo = {
     fetch: (...args) => globalThis.fetch(...args),
 };
 
+/** 輸出檔已存在又冇 --force：回傳點解唔寫（用戶通常冇版本控制，冚咗就冇得返轉頭） */
+const overwriteRefusal = (out, args) => {
+    if (args.force || !existsSync(out)) return undefined;
+    const isExisting = args.existing !== undefined && resolve(args.existing) === out;
+    const what = isExisting ? `${out} 就係 --existing 嗰個檔` : `${out} 已經存在`;
+    return `${what}，冇覆蓋（冇寫任何檔）。要覆蓋請加 --force，或者用 --out 揀第二個名。`;
+};
+
+/** 生成 → 報告 → 寫檔 → （--verify）；回傳 exit code */
+const generateAndWrite = async (args, existing, io) => {
+    const result = generateDraft(args.folder, { id: args.id, existing, now: io.now() });
+    io.out(formatReport(result, { existing }));
+    if (result.json === null) {
+        io.out('\n有 [錯誤]，冇寫 drama.json；按上面改好 folder（或者 --existing 嘅檔）再行一次。');
+        return EXIT.blocked;
+    }
+    const out = resolve(args.out ?? `${args.id ?? result.scan.name}.drama.json`);
+    const refusal = overwriteRefusal(out, args);
+    if (refusal !== undefined) {
+        io.out(`\n${refusal}`);
+        return EXIT.usage;
+    }
+    writeFileSync(out, `${JSON.stringify(result.json, null, JSON_INDENT)}\n`);
+    io.out(`\n已寫入：${out}`);
+    return args.verify ? verifyAll(result, args, io) : EXIT.ok;
+};
+
+/**
+ * --report：輸出照印上畫面，同時收埋；完咗用 UTF-8（冇 BOM，Windows 10 起記事本識讀）寫落檔，
+ * 唔經 console code page，報告先唔會變亂碼。冇 --report 就原封不動。
+ */
+const withReportFile = (io, path) => {
+    if (path === undefined) return { io, flush: (code) => code };
+    const lines = [];
+    const out = (text) => {
+        lines.push(text);
+        io.out(text);
+    };
+    const flush = (code) => {
+        try {
+            writeFileSync(path, `${lines.join('\n')}\n`, 'utf8');
+        } catch (error) {
+            io.out(`\n寫唔到報告檔 ${resolve(path)}：${error.message}`);
+            return code === EXIT.ok ? EXIT.usage : code;
+        }
+        io.out(`報告已寫入：${resolve(path)}`);
+        return code;
+    };
+    return { io: { ...io, out }, flush };
+};
+
+/** 預計之外嘅錯誤：同「有 [錯誤]」分開 exit code，印埋技術資料方便跟進 */
+const reportInternalError = (error, io) => {
+    io.out(`\n程式出錯：${error?.message ?? error}`);
+    io.out('呢個唔係 folder 嘅問題；請將成段輸出（連下面嘅技術資料）傳返嚟。');
+    if (error?.stack) io.out(`\n技術資料：\n${error.stack}`);
+    return EXIT.internal;
+};
+
 /** CLI 主流程；回傳 exit code（test 直接 call，唔使開 process） */
 export const run = async (argv, ioOverrides = {}) => {
     const io = { ...defaultIo, ...ioOverrides };
@@ -791,21 +1048,20 @@ export const run = async (argv, ioOverrides = {}) => {
     let existing;
     try {
         args = readArgs(argv);
-        existing = args.existing ? readExisting(args.existing) : undefined;
+        // 有畀 --existing 就一定要驗：檔入面係 null 都唔可以當冇畀
+        existing = args.existing === undefined ? undefined : readExisting(args.existing);
     } catch (error) {
         io.out(`${error.message}\n${USAGE}`);
         return EXIT.usage;
     }
-    const result = generateDraft(args.folder, { id: args.id, existing, now: io.now() });
-    io.out(formatReport(result, { existing }));
-    if (result.json === null) {
-        io.out('\n有 [錯誤]，冇寫 drama.json；改好 folder 再行一次。');
-        return EXIT.blocked;
+    const report = withReportFile(io, args.report);
+    let code;
+    try {
+        code = await generateAndWrite(args, existing, report.io);
+    } catch (error) {
+        code = reportInternalError(error, report.io);
     }
-    const out = resolve(args.out ?? `${args.id ?? result.scan.name}.drama.json`);
-    writeFileSync(out, `${JSON.stringify(result.json, null, JSON_INDENT)}\n`);
-    io.out(`\n已寫入：${out}`);
-    return args.verify ? verifyAll(result, args, io) : EXIT.ok;
+    return report.flush(code);
 };
 
 /** 直接 node 行先跑 main；被 import（test）就唔跑 */

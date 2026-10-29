@@ -1,10 +1,10 @@
 // @vitest-environment node
 // 要用 node:fs 讀 schemas/ 同資料 folder：*.node.test.ts 行 tsconfig.node.json（有 Node 型別）
 import { readdirSync, readFileSync } from 'node:fs';
-import Ajv, { type ValidateFunction } from 'ajv';
-import addFormats from 'ajv-formats';
+import type { ValidateFunction } from 'ajv';
 import { DAILY_TOKENS, parseDramaDefinition, SERIES_TOKENS } from '../dramas/schema';
 import { parseShowDefinition } from '../shows/schema';
+import { compileSchema } from '../../tests/jsonSchemas';
 
 /*
  * schemas/*.schema.json（editor 自動完成 + 即時驗證用）同 runtime validator（dramas/shows schema.ts）
@@ -18,23 +18,8 @@ type Parser = (value: unknown, ctx: { id: string; source: string; files: Set<str
 
 const readJson = (url: URL): Json => JSON.parse(readFileSync(url, 'utf8')) as Json;
 
-const compile = (name: string): ValidateFunction => {
-    // strict：schema 有打錯嘅 keyword 即刻 throw；union type（string | null）係刻意用；
-    // if/then 入面 required 嘅欄位喺上層 properties 已定義，所以關 strictRequired
-    const ajv = new Ajv({
-        allErrors: true,
-        strict: true,
-        strictRequired: false,
-        allowUnionTypes: true,
-    });
-    addFormats(ajv, ['date']);
-    // color-hex 只係畀 VS Code 出色盤；真正規則喺 pattern，所以 ajv 呢度唔使再驗
-    ajv.addFormat('color-hex', true);
-    return ajv.compile(readJson(new URL(`schemas/${name}.schema.json`, ROOT)));
-};
-
-const dramaSchema = compile('drama');
-const showSchema = compile('show');
+const dramaSchema = compileSchema('drama');
+const showSchema = compileSchema('show');
 
 const IMAGES = new Set(['tile.webp', 'disc.webp', 'arc-disc.webp', 'arc-tile.webp']);
 const ctxOf = (files: Set<string> = IMAGES) => ({ id: 'sample', source: 'sample.json', files });

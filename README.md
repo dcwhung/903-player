@@ -66,7 +66,7 @@ GitHub Actions 只負責 build 同 deploy。
 ### 由本機 folder 生成 drama.json（`scripts/dramaFromFolder.mjs`）
 
 R2 嘅 r2.dev 網址冇 listing，所以由**上載去 R2 嗰份本機 folder** 生成 `drama.json` 草稿同檢查報告。
-個 script 係單一檔案、只用 Node 內置功能（Node 18 或以上），**唔使 clone 呢個 repo、唔使 `npm install`**。
+個 script 係單一檔案、只用 Node 內置功能（**Node 18.3 或以上**，建議 20+；18.0–18.2 冇 `parseArgs`，會一開始就出 SyntaxError），**唔使 clone 呢個 repo、唔使 `npm install`**。
 
 folder 結構（同 R2 一樣）：
 
@@ -82,30 +82,50 @@ folder 結構（同 R2 一樣）：
 每日劇就直接喺 `<劇名>/` 放 `YYYYMMDD.m4a`。
 
 ```bash
-# 1. 下載（一個檔）
+# 1. 下載（一個檔）；Windows 要打 curl.exe（見下面），或者用瀏覽器開條網址「另存新檔」
 curl -LO https://raw.githubusercontent.com/dcwhung/903-player/main/scripts/dramaFromFolder.mjs
 
-# 2. 新劇：生成草稿，順手 HEAD 驗晒 R2 網址
-node dramaFromFolder.mjs "/路徑/森美小儀系列" --id sammy-kitty --verify | tee report.txt
+# 2. 新劇：生成草稿，順手 HEAD 驗晒 R2 網址，報告同時寫落 report.txt
+node dramaFromFolder.mjs "/路徑/森美小儀系列" --id sammy-kitty --verify --report report.txt
 
 # 3. 已上架嘅劇加集 / 加短篇：畀埋現有 drama.json，人手欄位（名、色調、次序、圖…）照留
 node dramaFromFolder.mjs "/路徑/森美小儀系列" --existing drama.json --out sammy-kitty.drama.json
 ```
 
-| 選項              | 作用                                                                                          |
-| ----------------- | --------------------------------------------------------------------------------------------- |
-| `--id <id>`       | app 嘅 folder 名（細楷英數同連字號）；預設輸出檔名 `<id>.drama.json`，冇就用劇名              |
-| `--existing <檔>` | 現有 `drama.json`：只更新集數；folder 冇嘅短篇照留兼提示，新短篇 `addedAt` = 今日（香港時間） |
-| `--out <檔>`      | 輸出路徑                                                                                      |
-| `--verify`        | 逐條 HEAD R2 錄音同封面網址（同時最多 6 條、每條 10 秒 timeout），列出唔得嘅                  |
+| 選項              | 作用                                                                                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--id <id>`       | app 嘅 folder 名（細楷英數同連字號）；預設輸出檔名 `<id>.drama.json`，冇就用劇名                                                                                                                        |
+| `--existing <檔>` | 現有 `drama.json`：集數 / 集名 / `files` / `firstNo` 以 folder 為準，有變報 `[資料]`；人手補嘅集名（檔名冇）照留兼用 `files` 寫明真檔名；folder 冇嘅短篇照留兼提示，新短篇 `addedAt` = 今日（香港時間） |
+| `--out <檔>`      | 輸出路徑                                                                                                                                                                                                |
+| `--report <檔>`   | 報告同時寫落呢個檔（UTF-8，冇 BOM）；`[錯誤]` 冇寫 `drama.json` 都照寫報告                                                                                                                              |
+| `--force`         | 輸出檔已經存在都覆蓋（預設唔覆蓋：已有同名檔就停，exit `2`，免得冚走人手改過嘅 `drama.json`）                                                                                                           |
+| `--verify`        | 逐條 HEAD R2 錄音同封面網址（同時最多 6 條、每條 10 秒 timeout；429 / 5xx / 逾時等 1 秒再試一次），列出唔得嘅                                                                                           |
 
 報告會列：每個短篇幾多集 / 集數範圍 / 封面、跳號、重複、檔名唔合格式、檔名入面短篇名同 folder 名唔一樣、
-可疑字元（羅馬數字 `Ⅱ` 對 `II`、全形半形、macOS 嘅 NFD、頭尾空格、隱形字元）、略過咗嘅檔。
+可疑字元（羅馬數字 `Ⅱ` 對 `II`、全形英文字母 / 數字（例如 `Ｘ`、`０`）、macOS 嘅 NFD、頭尾空格、隱形字元）、略過咗嘅檔。
+中文全形標點（`？`、`！`、`，`、`：`）係正常寫法，唔會報；**唔好**將佢哋改做半形（Windows 檔名唔准 `?`，而且改名會令網址變，用戶已儲嘅進度會冇）。
 
-- exit code：`0` 成功、`1` 有 `[錯誤]`（跳號 / 重複 / 檔名讀唔到，**冇寫檔**）、`2` 參數錯、`3` 已寫檔但 `--verify` 有網址唔得
+- exit code：
+
+    | code | 意思                                                                                     |
+    | ---- | ---------------------------------------------------------------------------------------- |
+    | `0`  | 成功                                                                                     |
+    | `1`  | 有 `[錯誤]`（跳號 / 重複 / 檔名讀唔到、`--existing` 壞咗或者同 folder 唔夾），**冇寫檔** |
+    | `2`  | 參數錯，或者輸出檔已經存在（冇加 `--force`，冇寫檔）                                     |
+    | `3`  | 已寫檔，但 `--verify` 有網址唔得                                                         |
+    | `4`  | 程式出錯（唔係 folder 問題）：請將成段輸出傳返嚟                                         |
+
 - `[注意]` 唔會阻住生成，但要睇：例如檔名用 `Ⅱ`、folder 用 `II`，script 會用 `files` 逐集寫明真檔名
 - 短篇次序跟 R2 listing（UTF-8 字典序）；新劇嘅 `theme` 係中性色、`enabled: false`，上架前要改
 - **要傳返嚟**：生成嘅 `*.drama.json`、成份報告（`report.txt`）、劇集同每個短篇嘅封面圖
+- Windows（PowerShell / cmd）：
+    - 下載用 `curl.exe -LO …`：Windows PowerShell 5.1 入面 `curl` 係 `Invoke-WebRequest` 嘅別名，`-LO` 會出錯；
+      或者直接用瀏覽器開 raw 網址「另存新檔」
+    - 報告用 `--report report.txt`，**唔好**用 `| tee report.txt` 或者 `> report.txt`：PowerShell 會用 console code page
+      （香港 Windows 預設 Big5）或者 UTF-16 轉碼，中文會變亂碼。`--report` 寫 UTF-8 冇 BOM，Windows 10（1903）或以上嘅
+      記事本識讀；舊版記事本見到亂碼就用 VS Code 或者瀏覽器開
+    - 路徑用雙引號包住嗰陣，**尾唔好加 `\`**：`"D:\劇\黃金少年\"` 入面嘅 `\"` 會當咗係字面嘅 `"`，連後面嘅參數都黐埋落去。
+      寫 `"D:\劇\黃金少年"`（script 見到路徑有 `"` 會講點改；冇引號嘅尾 `\` / `/` 會自動食走）
 - 規則同 app 一致：`scripts/dramaFromFolder.test.ts` 將輸出餵畀 app 嘅 `parseDramaDefinition` + `buildEpisodes` 驗，
   亦會由現有每套劇嘅網址砌返 folder 樹，再生成要同 commit 咗嘅 `drama.json` 一樣；改 `src/dramas/` 規則時要一齊改 script
 

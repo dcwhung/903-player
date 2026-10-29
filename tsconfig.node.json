@@ -13,7 +13,13 @@
         "skipLibCheck": true,
         "noEmit": true,
         "allowImportingTsExtensions": true,
-        "types": ["node", "vite/client", "vitest/globals"]
+        "types": ["node", "vitest/globals"]
     },
-    "include": ["vite.config.ts", "scripts", "tests/cssRule.ts", "src/**/*.node.test.ts"]
+    "include": [
+        "vite.config.ts",
+        "scripts",
+        "tests/cssRule.ts",
+        "tests/jsonSchemas.ts",
+        "src/**/*.node.test.ts"
+    ]
 }
