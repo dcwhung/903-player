@@ -198,7 +198,7 @@ python3 -m venv /tmp/arcCover-venv
           `level`（`arc` / `drama`）、`round`、`source { file, sha256, width, height }`、`analysis { faces, textBoxes, textSource, focal }`、`analysisImage`、`contactSheet`、`variants`
         - `variants[]`：`{ id, kind, method, file, preview, width, height, sha256, params, duplicateOf }`；`id` = `<kind>-<方法>`，
           `duplicateOf` = 同一個 kind 入面 bytes 一樣嘅前一個候選 `id`（冇就 `null`），crop 類 `params` 有 `crop` 同 `upscale`（> 1 即係要放大）
-- 方法：`center-crop`（中間）、`saliency-crop`（可見 saliency 最多：碟面計埋圓形、碟心同暗角）、`face-crop`（包住人面，人面放碟心上面；冇人面就用最突出範圍；最多放大 1.25 倍）、
+- 方法：`center-crop`（中間）、`saliency-crop`（可見 saliency 最多：碟面計埋圓形、碟心同暗角）、`face-crop`（包住人面，人面放碟心上面；冇人面就用最突出範圍；最多放大 1.25 倍；原圖本身太細就例外，按需要放大，manifest `params.upscale` 記實際倍數）、
   `text-safe-crop`（唔切開標題字；避唔到就至少成行字喺圖入面）、`fit-blur`（成張圖 + 模糊放大底）、`fit-extend`（成張圖 + 由邊緣生成延伸：平滑漸變底色 + 同高度抽返顆粒）；
   加 `--title-box x,y,w,h` 會用手動字框（代替自動偵測），並多出一張 `title-shrink` 碟面（標題縮到 `--title-scale`，預設 0.85）
 - 同一張圖、同一組參數、同一個 venv（`manifest.env` 一樣）輸出完全一樣（冇隨機；補底顆粒用固定 seed）；換 library 版本 sha256 / `duplicateOf` 可能會變
