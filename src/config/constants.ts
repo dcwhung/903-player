@@ -8,7 +8,10 @@ export const PROGRESS_SAVE_INTERVAL_MS = 5000;
  * 鎖屏 / 背景開唔返，下一集會「播緊但冇聲」或者卡喺 0:00
  */
 export const EARLY_ADVANCE_SECONDS = 1;
-/** 自動播下一集之後咁耐都未出聲，就當卡住（iOS 鎖屏時見過停喺 0:00）重新載入 */
+/**
+ * 卡住重試之間嘅時間（第一次用 STALL_FIRST_RETRY_MS）：咁耐都未出聲就重新載入
+ * （iOS 鎖屏見過停喺 0:00，亦見過位置凍結）
+ */
 export const STALL_RETRY_MS = 8000;
 /**
  * 每次撳播（包括鎖屏 / AirPods / 自動接住播）之後第一次檢查卡住嘅時間：比 STALL_RETRY_MS 短，
@@ -20,7 +23,7 @@ export const STALL_FIRST_RETRY_MS = 4000;
  * 唔擋嘅話 timer + visibilitychange 65 ms 內連續重試兩次（S-551）
  */
 export const STALL_RETRY_DEDUPE_MS = 1000;
-/** 自動播下一集卡住最多重試幾次 */
+/** 每次撳播之後卡住最多重試幾次 */
 export const STALL_MAX_RETRIES = 3;
 /**
  * 位置由開始播嗰下行咗咁多秒先當「真正出聲」：iOS 鎖屏有 playing event 但位置凍結冇聲（S-551）。
