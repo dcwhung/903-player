@@ -1116,6 +1116,48 @@ describe('AudioController S-551 lock-screen stall', () => {
         detach();
     });
 
+    // W-500：新一集 metadata 到咗但數據冇嚟（readyState 0→1）都要喺首個 deadline 重試
+    it('retries a stalled auto-advance at the first timeout when only metadata arrived', async () => {
+        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.end();
+        await Promise.resolve();
+        audio.load.mockClear();
+
+        audio.emitMetadata(DURATION);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(controller.getSnapshot().isStalled).toBe(true);
+        detach();
+    });
+
+    it('keeps waiting at the first timeout when playable data has started to arrive', async () => {
+        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.end();
+        await Promise.resolve();
+        audio.load.mockClear();
+
+        audio.emitMetadata(DURATION);
+        audio.emitLoadedData();
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(controller.getSnapshot().isStalled).toBe(false);
+        detach();
+    });
+
     // 情境 1：10:02:52.342 遲咗嘅 timer 重試，65 ms 後亮屏又重試一次，嘥咗一次機會
     it('spends one retry when a late timer and a screen wake-up land together', async () => {
         const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
