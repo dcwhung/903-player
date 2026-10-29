@@ -4,10 +4,11 @@ import {
     AUDIBLE_ADVANCE_SECONDS,
     EARLY_ADVANCE_SECONDS,
     REPLAY_RESET_SECONDS,
+    STALL_FIRST_RETRY_MS,
     STALL_MAX_RETRIES,
     STALL_RETRY_MS,
 } from '../config/constants';
-import { isWatched, saveProgress } from '../services/progressStore';
+import { getResumePosition, isWatched, saveProgress } from '../services/progressStore';
 import { AudioController } from './AudioController';
 import { readPlaybackLog } from './playbackLog';
 
@@ -712,23 +713,21 @@ describe('AudioController stall watchdog details', () => {
         expect(audio.load).not.toHaveBeenCalled();
     });
 
-    it('stops watching on a system pause even if playback is resumed later', async () => {
-        const { audio, controller, detach } = await advance();
+    it('stops watching on a system pause', async () => {
+        const { audio, detach } = await advance();
 
         audio.pause(); // 例如拔耳筒
-        void controller.play();
-        vi.advanceTimersByTime(STALL_RETRY_MS);
+        vi.advanceTimersByTime(GIVE_UP_MS);
 
         expect(audio.load).not.toHaveBeenCalled();
         detach();
     });
 
     it('gives up for good once play intent was lost when the timer fired', async () => {
-        const { audio, controller, detach } = await advance();
+        const { audio, detach } = await advance();
 
         audio.dispatchEvent(new Event('error'));
         vi.advanceTimersByTime(STALL_RETRY_MS);
-        void controller.play();
         showScreen('visible');
         vi.advanceTimersByTime(GIVE_UP_MS);
 
@@ -872,7 +871,6 @@ describe('AudioController S-551 characterization', () => {
         url: 'https://audio.hkfm903.live/next.aac',
     };
     const DURATION = 1200;
-    const RESUME_AT = 521.4;
 
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => {
@@ -884,21 +882,6 @@ describe('AudioController S-551 characterization', () => {
         vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
         document.dispatchEvent(new Event('visibilitychange'));
     };
-
-    it('does not watch for a stall after a plain user play', async () => {
-        saveProgress(RECORDING.url, RESUME_AT, DURATION);
-        const { audio, controller, detach } = await setupPlaying();
-        audio.emitMetadata(DURATION);
-        audio.pause();
-        audio.load.mockClear();
-
-        await controller.play();
-        audio.emitPlaying();
-        vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
-
-        expect(audio.load).not.toHaveBeenCalled();
-        detach();
-    });
 
     it('spends two retries when a late timer and a screen wake-up land together', async () => {
         const audio = new FakeAudio();
@@ -915,6 +898,135 @@ describe('AudioController S-551 characterization', () => {
         showScreen('visible');
 
         expect(audio.load).toHaveBeenCalledTimes(2);
+        detach();
+    });
+});
+
+/**
+ * S-551 iPhone 實機 log 重現：
+ * 情境 1：鎖屏、轉過網絡、自動接住播 → stalled，第二個 timer 被 iOS 暫停 34 秒，亮屏時 timer + visibility 連住重試兩次
+ * 情境 2：AirPods 斷線系統暫停，之後喺鎖屏撳 Play → playing 但位置凍結 82 秒、冇聲，鎖屏進度條照行
+ */
+describe('AudioController S-551 lock-screen stall', () => {
+    const DURATION = 798.3;
+    const RESUME_AT = 521.4;
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
+    });
+
+    /** 情境 2：聽緊（位置真係行）→ 拔 AirPods 系統暫停 */
+    const pausedBySystem = async () => {
+        saveProgress(RECORDING.url, RESUME_AT, DURATION);
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.emitAudible();
+        // 最後真正播到嘅位置（續播位置再行咗少少）
+        const heardAt = audio.currentTime;
+        audio.pause();
+        audio.load.mockClear();
+        audio.play.mockClear();
+        return { audio, controller, detach, heardAt };
+    };
+
+    /** play / playing 都到，play() resolve，但位置凍結（冇 timeupdate） */
+    const playFrozen = async (audio: FakeAudio, play: () => Promise<void>) => {
+        await play();
+        audio.emitPlaying();
+    };
+
+    it('reloads and resumes where it was when a resumed play never advances', async () => {
+        const { audio, controller, detach, heardAt } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.play).toHaveBeenCalledTimes(2);
+        audio.emitMetadata(DURATION);
+        expect(audio.currentTime).toBe(heardAt);
+        detach();
+    });
+
+    it('does not reload before the first stall timeout', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('leaves a resumed play alone once the position advances', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        audio.emitAudible();
+        vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('does not retry once the user pauses again', async () => {
+        const { audio, controller, detach } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        controller.pause();
+        vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('does not watch a play() call while already audible', async () => {
+        const { audio, controller, detach } = await setupPlaying();
+        audio.emitAudible();
+        audio.load.mockClear();
+
+        await controller.load(RECORDING, { autoplay: true });
+        vi.advanceTimersByTime(STALL_RETRY_MS * STALL_MAX_RETRIES);
+
+        expect(audio.load).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('never advances the saved or shown position while stalled', async () => {
+        const { audio, controller, detach, heardAt } = await pausedBySystem();
+        await playFrozen(audio, controller.play);
+
+        audio.emitTime(heardAt);
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+        audio.emitMetadata(DURATION);
+
+        expect(controller.getSnapshot().currentTime).toBe(heardAt);
+        expect(controller.getSnapshot().isAudible).toBe(false);
+        expect(getResumePosition(RECORDING.url)).toBe(heardAt);
+        detach();
+    });
+
+    it('retries a stalled auto-advance after the shorter first timeout', async () => {
+        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
+        const detach = controller.attach();
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.end();
+        await Promise.resolve();
+        audio.load.mockClear();
+
+        vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        expect(audio.src).toBe(NEXT.url);
         detach();
     });
 });

@@ -10,6 +10,11 @@ export const PROGRESS_SAVE_INTERVAL_MS = 5000;
 export const EARLY_ADVANCE_SECONDS = 1;
 /** 自動播下一集之後咁耐都未出聲，就當卡住（iOS 鎖屏時見過停喺 0:00）重新載入 */
 export const STALL_RETRY_MS = 8000;
+/**
+ * 每次撳播（包括鎖屏 / AirPods / 自動接住播）之後第一次檢查卡住嘅時間：比 STALL_RETRY_MS 短，
+ * 因為 iOS 鎖屏時用戶操作之後 JS 只會再行一陣（S-551 log：第二個 8 秒 timer 等咗 34 秒先行）
+ */
+export const STALL_FIRST_RETRY_MS = 4000;
 /** 自動播下一集卡住最多重試幾次 */
 export const STALL_MAX_RETRIES = 3;
 /**
