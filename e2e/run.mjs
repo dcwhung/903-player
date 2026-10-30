@@ -6,6 +6,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import { runArcSheetChecks } from './arcSheet.mjs';
+import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
 import {
     AUDIO_HOST,
@@ -1575,6 +1576,7 @@ try {
 
     // 全集表向下拉閂：拉唔夠彈返、拉夠閂（觸控 header + 清單、滑鼠 header）
     sheetMissedTaps = await runArcSheetChecks({ browser, base: BASE, errors, log });
+    await runHiddenPlaybackChecks({ browser, base: BASE, errors, log });
 
     // 主頁 mini player 重溫規則：平日重溫 + 今日節目、星期日冇節目
     await runMiniPlayerRuleChecks({ browser, base: BASE, errors, log });
