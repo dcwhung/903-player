@@ -721,7 +721,88 @@
             };
 
             /** 右邊：主頁底色上面一張節目色泥膠卡，入面係內頁播放器縮細；高畫面多「下一集」 */
-            const playerCard = (scr, box, H, theme) => {
+            /** 入口 B：卡頂頁頭列（細唱片 + 節目名 + 展開掣），成條撳得 */
+            const headerRow = (theme) => {
+                const row = el('div', '', {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    width: '100%',
+                    padding: '8px 8px 8px 10px',
+                    borderRadius: '18px',
+                    background: theme.surface,
+                    boxShadow: `inset 2px 2px 6px rgba(0,0,0,0.12)`,
+                });
+                row.append(
+                    el('div', 'disc', {
+                        width: '34px',
+                        height: '34px',
+                        flex: 'none',
+                        backgroundImage: `url(${IMG[theme.disc]})`,
+                    }),
+                );
+                row.append(
+                    el(
+                        'div',
+                        '',
+                        {
+                            flex: '1 1 auto',
+                            minWidth: 0,
+                            fontSize: '17px',
+                            fontWeight: 700,
+                            color: theme.titleC,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        },
+                        theme.title,
+                    ),
+                );
+                row.append(
+                    el(
+                        'div',
+                        '',
+                        {
+                            display: 'grid',
+                            placeItems: 'center',
+                            width: '38px',
+                            height: '38px',
+                            flex: 'none',
+                            borderRadius: '50%',
+                            background: theme.accent,
+                            color: theme.bg,
+                            fontSize: '18px',
+                            fontWeight: 700,
+                        },
+                        '⤢',
+                    ),
+                );
+                return row;
+            };
+
+            /** 入口 C：卡底闊掣「入節目頁 ›」 */
+            const openButton = (theme) =>
+                el(
+                    'div',
+                    '',
+                    {
+                        width: '100%',
+                        marginTop: 'auto',
+                        padding: '11px 0',
+                        flex: 'none',
+                        borderRadius: '999px',
+                        background: theme.surface,
+                        border: `2px solid ${theme.track}`,
+                        color: theme.titleC,
+                        fontSize: '15px',
+                        fontWeight: 700,
+                        textAlign: 'center',
+                    },
+                    '入節目頁 ›',
+                );
+
+            /** entry：入內頁入口款式（A 標題 › / B 頁頭列 / C 底部大掣） */
+            const playerCard = (scr, box, H, theme, entry = 'A') => {
                 const tall = H >= TALL_H;
                 const card = el('div', '', {
                     position: 'absolute',
@@ -740,20 +821,29 @@
                     justifyContent: tall ? 'flex-start' : 'center',
                     gap: '10px',
                 });
-                card.append(
-                    el(
-                        'div',
-                        '',
-                        {
-                            fontSize: px(Math.min(26, box.w / 12)),
-                            fontWeight: 700,
-                            color: theme.titleC,
-                            textAlign: 'center',
-                        },
-                        `${theme.title} <span style="opacity:.7">›</span>`,
-                    ),
+                if (entry === 'B') card.append(headerRow(theme));
+                else
+                    card.append(
+                        el(
+                            'div',
+                            '',
+                            {
+                                fontSize: px(Math.min(26, box.w / 12)),
+                                fontWeight: 700,
+                                color: theme.titleC,
+                                textAlign: 'center',
+                            },
+                            entry === 'A'
+                                ? `${theme.title} <span style="opacity:.7">›</span>`
+                                : theme.title,
+                        ),
+                    );
+                // C 底部掣佔一行、B 頁頭列較高：唱片細少少
+                const shrink = entry === 'A' ? 1 : 0.86;
+                const discSize = Math.min(
+                    box.w * 0.78,
+                    (tall ? box.h * 0.42 : box.h * 0.55) * shrink,
                 );
-                const discSize = Math.min(box.w * 0.78, tall ? box.h * 0.42 : box.h * 0.55);
                 arcDisc(card, discSize, theme, 0.35);
                 const row = el('div', '', {
                     display: 'flex',
@@ -788,10 +878,11 @@
                     ),
                 );
                 if (tall) card.append(nextList(theme));
+                if (entry === 'C') card.append(openButton(theme));
                 scr.append(card);
             };
 
-            const layoutSplit = (scr, W, H, tab) => {
+            const layoutSplit = (scr, W, H, tab, entry = 'A') => {
                 const paneW = W * PANE_RATIO;
                 const leftW = W - paneW - PAD;
                 tabsBar(scr, { x: PAD, y: PAD, w: leftW - PAD, h: TABS_H }, tab);
@@ -803,6 +894,7 @@
                     { x: leftW + 6, y: PAD, w: paneW - PAD - 6, h: H - 2 * PAD },
                     H,
                     NOW[tab],
+                    entry,
                 );
                 return { ...info, paneW };
             };
@@ -899,15 +991,41 @@
                 }),
             );
 
-            out.append(el('h2', '', {}, '右邊卡點樣入內頁'));
-            const how = el('ul');
-            [
-                '撳卡頂節目名（有 ›）或者唱片 → 入嗰個節目 / 廣播劇內頁（完整播放器 + 全部集數），同而家撳 mini player 一樣。',
-                '撳 ▷ / ⏸ 淨係播 / 停，唔入頁；撳「下一集」某一行 ▷ 淨係播嗰集。',
-                '「下一集」右上「全部 ›」→ 入內頁，捲到集數清單。',
-                '入咗內頁之後撳返回 → 返主頁，右邊卡照舊。',
-            ].forEach((text) => how.append(el('li', '', {}, text)));
-            out.append(how);
+            const ENTRIES = [
+                [
+                    'A',
+                    '入口 A · 標題 ›',
+                    '撳卡頂節目名（有 ›）或者唱片入內頁。最簡潔；但入口唔夠明顯，唱片可能被當成播放掣。',
+                ],
+                [
+                    'B',
+                    '入口 B · 卡頂頁頭列',
+                    '卡頂一條同內頁頁頭咁嘅列：細唱片 + 節目名 + ⤢ 展開圓掣，成條撳得入內頁。最似「內頁縮細咗」，入口清楚；佔少少高度。',
+                ],
+                [
+                    'C',
+                    '入口 C · 底部大掣',
+                    '卡最底一粒闊掣「入節目頁 ›」；節目名同唱片唔再係入口（唔會誤撳）。最明顯、最易撳；佔一行高度，唱片細少少。',
+                ],
+            ];
+            const gridEntry = section(
+                '右邊卡入內頁 · 三款揀一',
+                '三款都係：撳 ▷ / ⏸ 淨係播 / 停；撳「下一集」某行 ▷ 淨係播嗰集；「全部 ›」入內頁捲到集數清單；內頁撳返回 → 返主頁，右邊卡照舊。',
+            );
+            ENTRIES.forEach(([entry, title, note]) => {
+                [
+                    [1180, 820, 'dramas'],
+                    [1012, 562, 'shows'],
+                ].forEach(([W, H, tab]) =>
+                    frame(
+                        gridEntry,
+                        W,
+                        H,
+                        (scr) => layoutSplit(scr, W, H, tab, entry),
+                        () => `${title} · ${TAB_NAMES[tab]} · ${note}`,
+                    ),
+                );
+            });
         </script>
     </body>
 </html>
