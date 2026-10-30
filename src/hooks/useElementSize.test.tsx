@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import { useRef, type CSSProperties } from 'react';
+import { flushSync } from 'react-dom';
 import { useElementSize } from './useElementSize';
 
 /** 假版面：clientWidth / clientHeight 由測試話幾大 */
@@ -53,6 +54,21 @@ describe('useElementSize', () => {
         act(() => rerender(<Probe tick={2} />));
 
         expect(screen.getByText('968×452@1')).toBeInTheDocument();
+    });
+
+    it('should already show the new size when a flushSync render returns (view transition capture)', () => {
+        Object.assign(layout, { width: 600, height: 452 });
+        const { rerender } = render(<Probe tick={1} />);
+        let shown = '';
+
+        Object.assign(layout, { width: 968, height: 452 });
+        act(() => {
+            // View Transitions 喺 flushSync 返嚟之後即刻影新畫面：嗰陣 DOM 已經要係新大細
+            flushSync(() => rerender(<Probe tick={2} />));
+            shown = screen.getByText(/×/).textContent ?? '';
+        });
+
+        expect(shown).toBe('968×452@1');
     });
 
     it('should follow resizes from outside React', () => {
