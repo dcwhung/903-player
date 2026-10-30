@@ -8,25 +8,47 @@ import { prefersReducedMotion } from './motion';
  */
 export type ViewTransitionKind = 'expand' | 'back' | 'close' | 'open';
 
+/** 已經開始、但 update 未行嘅過場（瀏覽器影緊舊畫面）：期間再撳（例如連撳 ⤢）唔理 */
+let pending = false;
+/** 最新嗰個過場：舊嘅完咗唔好清走新嘅標記（同 kind 連續兩次都係） */
+let latest: ViewTransition | null = null;
+
+const ignore = () => undefined;
+
+/** 過場完（或者失敗）：仲係最新嗰個先清標記 */
+const cleanupAfter = (transition: ViewTransition) => () => {
+    if (latest !== transition) return;
+    latest = null;
+    delete document.documentElement.dataset.viewTransition;
+};
+
+/** 瀏覽器影完舊畫面先叫：同步 render 新畫面（flushSync），瀏覽器先影到 */
+const runUpdate = (update: () => void) => () => {
+    pending = false;
+    flushSync(update);
+};
+
 /**
  * 用 View Transitions API 做過場：瀏覽器影低前後畫面，同名（view-transition-name）嘅元素自己移位變形。
  * 唔支援、或者用戶要求減少動畫就直接更新，冇動畫。
- * update 要喺 callback 入面同步 render 完（flushSync），瀏覽器先影到新畫面
+ * update throw / 過場畀瀏覽器跳過都唔會變 unhandled rejection（S-631）
  */
 export const withViewTransition = (update: () => void, kind: ViewTransitionKind): void => {
     if (typeof document.startViewTransition !== 'function' || prefersReducedMotion()) {
         update();
         return;
     }
-    const root = document.documentElement;
-    root.dataset.viewTransition = kind;
-    const transition = document.startViewTransition(() => flushSync(update));
-    // 過場畀瀏覽器跳過（例如連撳）ready 會 reject，唔當錯
-    transition.ready.catch(() => undefined);
-    // 畀新嘅過場蓋過就唔好清走人哋嘅標記
-    void transition.finished.finally(() => {
-        if (root.dataset.viewTransition === kind) delete root.dataset.viewTransition;
+    if (pending) return;
+    pending = true;
+    document.documentElement.dataset.viewTransition = kind;
+    const transition = document.startViewTransition(runUpdate(update));
+    latest = transition;
+    transition.ready.catch(ignore);
+    transition.updateCallbackDone.catch(() => {
+        pending = false;
     });
+    const cleanup = cleanupAfter(transition);
+    transition.finished.then(cleanup, cleanup);
 };
 
 /** 過場時兩邊同名就移位變形嘅元素（global.css 揀動畫） */
