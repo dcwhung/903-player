@@ -1989,6 +1989,34 @@ describe('AudioController CUI-0011 slow header', () => {
             detach();
         });
 
+        it('should still reload on lock-screen play while fetching before metadata (W-514)', async () => {
+            const LOCK_SCREEN_PLAY_AT_MS = 15_000;
+            const { audio, controller, detach } = await slowStart();
+            vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+            document.dispatchEvent(new Event('visibilitychange'));
+            audio.startFetching();
+            vi.advanceTimersByTime(LOCK_SCREEN_PLAY_AT_MS);
+
+            await controller.resume();
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+
+        it('should forget stalled from the previous episode after switching (S-626)', async () => {
+            const OTHER: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/other.aac' };
+            const { audio, controller, detach } = await slowStart();
+            audio.startFetching();
+            audio.emitStalled();
+            await controller.load(OTHER, { autoplay: true });
+            audio.load.mockClear();
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+
         it('should forget stalled from the previous load after a retry', async () => {
             const { audio, detach } = await slowStart();
             audio.startFetching();

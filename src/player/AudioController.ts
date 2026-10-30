@@ -87,7 +87,11 @@ export class AudioController {
             currentTime: this.audio.currentTime,
             playingFired: this.playingFired,
             progressEvents: this.progressEvents,
-            fetching: this.audio.networkState === NETWORK_LOADING && !this.stalledSinceLoad,
+            // 只喺前景算：鎖屏 stalled 同 Play 冇先後保證，鎖屏 Play 要照舊 reload（W-514）
+            fetching:
+                document.visibilityState !== 'hidden' &&
+                this.audio.networkState === NETWORK_LOADING &&
+                !this.stalledSinceLoad,
         }),
         isHidden: () => document.visibilityState === 'hidden',
         isFrozenPlaying: () => this.isFrozenPlaying(),

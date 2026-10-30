@@ -15,8 +15,9 @@ export interface LoadProbe {
      */
     progressEvents: number;
     /**
-     * 今次載入仲喺網絡攞緊（NETWORK_LOADING）而未發過 stalled：Chromium metadata 前唔發 progress，
-     * 呢個係極慢網開播唯一嘅「仲載緊」訊號；斷咗網約 3 s 會發 stalled（CUI-0011）
+     * 前景、今次載入仲喺網絡攞緊（NETWORK_LOADING）而未發過 stalled：Chromium metadata 前唔發 progress，
+     * 呢個係極慢網開播唯一嘅「仲載緊」訊號；斷咗網約 3 s 會發 stalled（CUI-0011）。
+     * 鎖屏唔算：唔係進展證據，鎖屏 Play 要照舊 reload（W-514）
      */
     fetching: boolean;
 }
