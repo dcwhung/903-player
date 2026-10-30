@@ -34,7 +34,8 @@ export const App = ({ playerController }: AppProps) => {
         <RecordingsProvider>
             <PlayerProvider controller={playerController} nextTrack={nextTrack}>
                 <PlaybackObservers />
-                <HashRouter>
+                {/* 轉頁要同步 render（唔用 startTransition），View Transitions 先影到新一頁（utils/viewTransition） */}
+                <HashRouter useTransitions={false}>
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/show/:showId" element={<ShowPage />} />
