@@ -48,6 +48,7 @@
 | 2026-10-30 | [reviews/2026-10-30_review_v1.20.10.md](reviews/2026-10-30_review_v1.20.10.md)（76 fail，C-011、W-510、S-618–S-621；S-613 / S-614 / S-617 鎖屏卡住收尾 + QA S-551 邊界 test + arc-cover S-610–S-612；Round 2 94 pass，W-511、S-622；Round 3 94 pass，W-512、S-623；Round 4 99 pass，S-624；Round 5 99 pass，CUI-0012 確認修好） |
 | 2026-10-30 | [reviews/2026-10-30_review_cui-0010-0013.md](reviews/2026-10-30_review_cui-0010-0013.md)（94 pass，W-513、S-625；e2e 全集表補撳 + tsconfig typecheck test timeout，v1.20.11）                                                                                                                                                   |
 | 2026-10-30 | [reviews/2026-10-30_review_cui-0011.md](reviews/2026-10-30_review_cui-0011.md)（94 pass，W-514、S-626；v1.20.12 metadata 前「未 stalled 就當載緊」；Round 2 100 pass）                                                                                                                                                          |
+| 2026-10-30 | [reviews/2026-10-30_review_hidden-e2e.md](reviews/2026-10-30_review_hidden-e2e.md)（97 pass，S-627–S-629；背景播放 e2e）                                                                                                                                                                                                        |
 
 ## QA
 
