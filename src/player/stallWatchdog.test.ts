@@ -444,5 +444,65 @@ describe('StallWatchdog', () => {
             expect(retry).not.toHaveBeenCalled();
             expect(watchdog.pending).toBe(false);
         });
+        /** S-613：報咗卡住就停輪詢；之後只喺 recheckWhenParked 先再睇 */
+        it('should stop polling once the stall has been reported', () => {
+            const { watchdog, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+
+            expect(vi.getTimerCount()).toBe(0);
+            expect(watchdog.overdue).toBe(true);
+        });
+
+        it('should check once more after a parked recheck and retry a frozen attempt', () => {
+            const RECHECK_MS = 1000;
+            const { watchdog, retry, isHidden, isFrozenPlaying } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+            isFrozenPlaying.mockReturnValue(true);
+
+            watchdog.recheckWhenParked(RECHECK_MS);
+            vi.advanceTimersByTime(RECHECK_MS);
+
+            expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+        });
+
+        it('should ignore a parked recheck before the stall is reported', () => {
+            const RECHECK_MS = 1000;
+            const { watchdog, retry, isFrozenPlaying } = setup();
+            watchdog.start(STALL_MAX_RETRIES);
+            isFrozenPlaying.mockReturnValue(true);
+
+            // 前景：唔可以提早過 deadline 重試
+            watchdog.recheckWhenParked(RECHECK_MS);
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+
+            expect(retry).not.toHaveBeenCalled();
+        });
+
+        /** S-614：慢但仲載緊，鎖屏 Play 唔 reload；過咗總上限就唔算 */
+        it('should report loading only while the download grows within the wait cap', () => {
+            const { watchdog, probe, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            probe.mockImplementation(growingProbe());
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+
+            expect(watchdog.loading).toBe(true);
+            vi.advanceTimersByTime(STALL_MAX_WAIT_MS);
+            expect(watchdog.loading).toBe(false);
+        });
+
+        it('should not report loading when nothing has arrived', () => {
+            const { watchdog, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+
+            expect(watchdog.loading).toBe(false);
+        });
     });
 });

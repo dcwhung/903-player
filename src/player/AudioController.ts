@@ -188,10 +188,10 @@ export class AudioController {
      * 鎖屏 / 耳機嘅 Play：卡住時（鎖屏顯示 Play）element 本身仲係播緊，淨係 audio.play() 乜都唔會發生，
      * 要即刻重新載入再播，當新一次撳播重新計重試次數（S-551）。
      * 上一次嘗試（暫停之前）係卡住 / playing 後凍結都一樣：iOS 每次撳都由頭計，plain play() 只會再凍結（v1.20.9）。
-     * 正常載緊（首個 deadline 未到）或者暫停前播得好地地就照 play()，唔好打斷（W-499）
+     * 正常載緊（首個 deadline 未到）、慢但下載仲有進展（S-614），或者暫停前播得好地地就照 play()，唔好打斷（W-499）
      */
     resume = async (): Promise<void> => {
-        if (this.frozenBeforeStop || this.isSuspectedStall() || this.isFrozenPlaying()) {
+        if (this.frozenBeforeStop || this.isStuck()) {
             this.stopWatchingStall();
             this.reload('remote');
         }
@@ -375,6 +375,8 @@ export class AudioController {
         this.audibleFrom = this.audio.currentTime;
         this.playingFired = true;
         this.playingAt = Date.now();
+        // 鎖屏報咗卡住之後冇再輪詢：等夠凍結門檻再睇一次（S-613）
+        this.stall.recheckWhenParked(FROZEN_PLAYING_MS);
     };
 
     /** bytes 入緊（約每 350 ms）：只計數畀 watchdog 比較，唔記 log（太密） */
@@ -413,6 +415,8 @@ export class AudioController {
     /** 緩衝緊：仲係「播緊」（掣維持暫停），但冇聲；數據返嚟之後由而家位置重新確認 */
     private onSilent = (): void => {
         this.audibleFrom = this.audio.currentTime;
+        // 凍結時間同出聲起點一齊由而家計，唔好用之前嘅 playing（S-617）
+        this.playingAt = Date.now();
         this.update({ isAudible: false });
     };
 
@@ -453,7 +457,7 @@ export class AudioController {
     /** pause / ended（包括拔耳筒、來電等系統暫停）：用戶冇再想播 */
     private onStopped = (): void => {
         // 暫停前已經卡住：記低畀下一次鎖屏 Play 即刻 reload（v1.20.9）
-        const frozen = this.isSuspectedStall() || this.isFrozenPlaying();
+        const frozen = this.isStuck();
         this.stopWatchingStall();
         this.frozenBeforeStop = frozen;
         this.playIntent = false;
@@ -513,6 +517,14 @@ export class AudioController {
     /** 懷疑卡住：已經標咗卡住，或者 deadline 過咗但 timer 被 iOS 凍結未行 */
     private isSuspectedStall(): boolean {
         return this.state.isStalled || this.stall.overdue;
+    }
+
+    /**
+     * 要 reload 先救得返：位置凍結，或者懷疑卡住而下載冇進展。
+     * 慢但仲載緊（S-614）就唔算：reload 會 abort 佢，iOS 背景之後可能再唔載完（v1.20.7）
+     */
+    private isStuck(): boolean {
+        return this.isFrozenPlaying() || (this.isSuspectedStall() && !this.stall.loading);
     }
 
     /**

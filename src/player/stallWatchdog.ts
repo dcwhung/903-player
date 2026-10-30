@@ -58,6 +58,14 @@ export class StallWatchdog {
         return this.retriesLeft !== undefined;
     }
 
+    /**
+     * 睇緊而由 arm 到而家下載有進展、未等夠 STALL_MAX_WAIT_MS：慢但正常載緊。
+     * 鎖屏 Play 見到就唔 reload，免得 abort 佢（S-614）
+     */
+    get loading(): boolean {
+        return this.pending && this.isStillLoading();
+    }
+
     /** 睇緊而 deadline 已經過咗（timer 可能被 iOS 凍結咗未行） */
     get overdue(): boolean {
         return this.pending && Date.now() >= this.deadline;
@@ -112,6 +120,16 @@ export class StallWatchdog {
         }
     };
 
+    /**
+     * 鎖屏報咗卡住、已經停咗輪詢：delayMs 後再睇一次（S-613）。
+     * AudioController 收到 playing 時叫，等夠 FROZEN_PLAYING_MS 睇下係咪凍結（v1.20.9）；其他情況唔郁
+     */
+    recheckWhenParked(delayMs: number): void {
+        if (this.pending && this.hiddenStallReported && this.timer === undefined) {
+            this.timer = setTimeout(this.onDeadline, delayMs);
+        }
+    }
+
     /** 重新排 timer，記低而家嘅載入狀態做比較基準 */
     private arm(delayMs: number): void {
         clearTimeout(this.timer);
@@ -146,20 +164,22 @@ export class StallWatchdog {
     /**
      * 鎖屏時到期：唔 reload（會 abort iOS 載緊嘅數據）、唔扣次數。deadline 唔推後，
      * 保持 overdue 畀亮屏 / 鎖屏 Play 即刻 reload；等夠 STALL_HIDDEN_MARK_MS 先報卡住（鎖屏顯示 Play）。
-     * 繼續排 timer：iOS 有時會畀 timer 行，到時再睇一次（仍然 hidden 就再等）
+     * 報咗之後唔再排 timer：亮屏由 visibilitychange、鎖屏 Play 由 resume() 接手，
+     * 之後先到嘅 playing 由 recheckWhenParked 睇凍結（S-613）
      */
     private waitWhileHidden(): void {
         const untilMark = this.attemptStartedAt + STALL_HIDDEN_MARK_MS - Date.now();
-        if (untilMark <= 0 && !this.hiddenStallReported) {
+        clearTimeout(this.timer);
+        this.timer = undefined;
+        if (untilMark > 0) {
+            this.timer = setTimeout(
+                this.onDeadline,
+                Math.min(untilMark, STALL_PROGRESS_RECHECK_MS),
+            );
+        } else if (!this.hiddenStallReported) {
             this.hiddenStallReported = true;
             this.hooks.onStalled();
         }
-        const delayMs =
-            untilMark > 0
-                ? Math.min(untilMark, STALL_PROGRESS_RECHECK_MS)
-                : STALL_PROGRESS_RECHECK_MS;
-        clearTimeout(this.timer);
-        this.timer = setTimeout(this.onDeadline, delayMs);
     }
 
     /** 下一次 recheck：唔可以排喺 STALL_MAX_WAIT_MS 之後，上限先真係上限（S-582） */
