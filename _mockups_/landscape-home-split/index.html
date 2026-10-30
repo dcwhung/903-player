@@ -47,28 +47,12 @@
                 border-bottom: 1px solid var(--rule);
                 padding-bottom: 6px;
             }
-            p {
+            p,
+            li {
                 color: var(--muted);
             }
             .note {
                 margin: 4px 0 12px;
-            }
-            .tableWrap {
-                overflow-x: auto;
-            }
-            table {
-                width: 100%;
-                min-width: 620px;
-                border-collapse: collapse;
-                margin: 12px 0;
-                font-size: 14px;
-            }
-            th,
-            td {
-                text-align: left;
-                padding: 8px;
-                border-bottom: 1px solid var(--rule);
-                vertical-align: top;
             }
             .frames {
                 display: grid;
@@ -105,24 +89,6 @@
                 color: #fff;
                 background: linear-gradient(180deg, #4f749c, #42658a);
             }
-            .banner {
-                position: absolute;
-                border-radius: 22px;
-                background-size: cover;
-                background-position: center;
-                box-shadow:
-                    6px 6px 14px #33506e,
-                    -4px -4px 12px #5d86b0;
-            }
-            .ver {
-                position: absolute;
-                right: 12px;
-                bottom: 10px;
-                padding: 1px 10px;
-                border-radius: 999px;
-                background: rgba(0, 0, 0, 0.45);
-                font-size: 13px;
-            }
             .tabs {
                 position: absolute;
                 display: grid;
@@ -145,25 +111,29 @@
                 background: #f6d499;
                 color: #3a2a10;
             }
-            .strip {
+            .grid {
                 position: absolute;
-                overflow: hidden;
-            }
-            .track {
-                position: absolute;
-                top: 0;
-                left: 0;
                 display: grid;
-                grid-auto-flow: column;
             }
             .card {
                 position: relative;
+                min-width: 0;
+                min-height: 0;
                 border-radius: 18px;
                 background-size: cover;
                 background-position: center;
                 box-shadow:
                     5px 5px 12px #33506e,
                     -3px -3px 10px #5d86b0;
+            }
+            .ver {
+                position: absolute;
+                right: 10px;
+                bottom: 8px;
+                padding: 1px 10px;
+                border-radius: 999px;
+                background: rgba(0, 0, 0, 0.45);
+                font-size: 13px;
             }
             .badge {
                 position: absolute;
@@ -186,25 +156,27 @@
                 font-size: 12px;
                 line-height: 22px;
             }
-            .fade {
+            .dots {
                 position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                width: 46px;
-                display: grid;
-                place-items: center;
-                background: linear-gradient(90deg, transparent, rgba(66, 101, 138, 0.9));
-                font-size: 30px;
-            }
-            .pane {
-                position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
                 display: flex;
-                flex-direction: column;
+                justify-content: center;
                 align-items: center;
+                gap: 8px;
+            }
+            .dots i {
+                width: 8px;
+                height: 8px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.5);
+            }
+            .dots i.on {
+                width: 22px;
+                background: #f6d499;
+            }
+            .swipe {
+                position: absolute;
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.75);
             }
             .disc {
                 position: relative;
@@ -241,51 +213,24 @@
     </head>
     <body>
         <main>
-            <h1>CUI-0015 橫版主頁 preview（高 ≥ 562px）</h1>
-            <p class="note">
-                靜態 mockup，唔係真 app（字型 / 落影近似）。規則：冇 mini player → 方案 B；有 mini
-                player → 左右分（左主頁、右精簡 player）。card
-                放唔落一律<b>左右捲</b>（右邊露出下一欄 + ›）。手機打橫（≤ 561px 高）唔變。
-            </p>
-            <div class="tableWrap">
-                <table>
-                    <tr>
-                        <th>畫面</th>
-                        <th>右欄</th>
-                        <th>左邊 card</th>
-                        <th>點去完整內頁</th>
-                        <th>取捨</th>
-                    </tr>
-                    <tr>
-                        <td>B（冇 mini player）</td>
-                        <td>—</td>
-                        <td>橫額下面 1–2 行，原比例，左右捲</td>
-                        <td>—</td>
-                        <td>同而家最接近；矮畫面得 1 行</td>
-                    </tr>
-                    <tr>
-                        <td>設計 1 內頁縮細</td>
-                        <td>38%，節目主題色，大唱片 + 弧形進度 + 現正播放</td>
-                        <td>細橫額 + tab + 2 行</td>
-                        <td>撳唱片 / 節目名</td>
-                        <td>同內頁一樣、最易認；左邊 card 最細</td>
-                    </tr>
-                    <tr>
-                        <td>設計 2 卡片式</td>
-                        <td>34%，主頁底色上一張節目色泥膠卡（高畫面加繼續收聽）</td>
-                        <td>tab + 橫額做第一格 + 2 行</td>
-                        <td>撳卡</td>
-                        <td>主頁感覺統一；player 資訊較少</td>
-                    </tr>
-                    <tr>
-                        <td>設計 3 側邊直條</td>
-                        <td>26%，直排：唱片、節目名、直立進度、大掣</td>
-                        <td>tab + 橫額做第一格 + 2–3 行，card 最多</td>
-                        <td>撳唱片</td>
-                        <td>最用盡畫面；player 最精簡</td>
-                    </tr>
-                </table>
-            </div>
+            <h1>CUI-0015 橫版主頁 preview v2（高 ≥ 562px）</h1>
+            <p class="note">靜態 mockup，唔係真 app（字型 / 落影近似）。按你 v1 意見改：</p>
+            <ul>
+                <li>
+                    <b>冇 mini player = A</b>：同而家手機打橫（&lt; 562px
+                    高）一樣，橫額縮做第一格，card 填滿畫面（B 取消）。
+                </li>
+                <li><b>放唔落就 swipe 分頁</b>，下面頁點，同直版節目主頁一樣；冇箭咀。</li>
+                <li>
+                    <b>左邊永遠用盡上下空間</b>：card 拉滿格（同手機打橫一樣唔鎖比例，圖 cover
+                    裁）。
+                </li>
+                <li>
+                    <b>有 mini player</b>：右邊 =
+                    主頁底色上面一張節目色泥膠卡，入面係內頁播放器縮細（節目名、唱片 +
+                    弧形進度、時間、播放掣、現正播放）；高畫面（≥ 700px）多「下一集」。
+                </li>
+            </ul>
             <div id="out"></div>
         </main>
         <script>
@@ -360,20 +305,16 @@
                 ['drama_chisee', '12 個短篇'],
                 ['drama_golden', '全 4 季'],
             ];
-            const SPLIT_SIZES = [
+            const SIZES = [
                 [1012, 562],
                 [1180, 820],
-                [1366, 1024],
-            ];
-            const B_SIZES = [
-                [1012, 562],
                 [1366, 1024],
             ];
             const NOW = {
                 shows: {
                     title: 'Bad Girl大過佬',
                     ep: '現正播放 · 30/10（五）',
-                    list: ['29/10（四）未上架', '28/10（三）未上架', '27/10（二）聽到 1:19'],
+                    next: ['29/10（四）未上架', '28/10（三）未上架', '27/10（二）聽到 1:19'],
                     disc: 'disc_badgirl',
                     bg: '#21151a',
                     surface: '#2e1e24',
@@ -385,7 +326,7 @@
                 dramas: {
                     title: '森美小儀系列',
                     ep: '公子森林 · 第 32 集 · 白海娟的決定',
-                    list: [
+                    next: [
                         '第 33 集 · 兩張紙巾',
                         '第 34 集 · Sandra & Mama',
                         '第 35 集 · 浪費的愛情',
@@ -399,8 +340,16 @@
                     text: '#3b1212',
                 },
             };
-            const GAP = 14;
             const TAB_NAMES = { shows: '節目', dramas: '廣播劇' };
+            const GAP = 14;
+            const PAD = 22;
+            const TABS_H = 50;
+            /** 頁點行高 */
+            const DOTS_H = 22;
+            /** 「下一集」只喺夠高嘅畫面先出 */
+            const TALL_H = 700;
+            /** 右欄（泥膠卡）闊度 */
+            const PANE_RATIO = 0.36;
 
             const el = (tag, cls, style = {}, html = '') => {
                 const node = document.createElement(tag);
@@ -410,62 +359,6 @@
                 return node;
             };
             const px = (n) => `${Math.round(n)}px`;
-
-            /** 一屏最少見幾多欄（再加 PEEK 露出下一欄） */
-            const MIN_VISIBLE_COLS = 2;
-            const PEEK = 48;
-
-            /**
-             * 左右捲 card strip：最多 maxRows 行，高按 box 計，闊按比例；
-             * 太闊（一屏見唔到 MIN_VISIBLE_COLS 欄）就縮細 card、可能排多行，上下置中；放唔落就裁走 + › 提示
-             */
-            const strip = (scr, box, tab, maxRows, bannerCell = false) => {
-                const ratio = tab === 'shows' ? 16 / 9 : 2;
-                let rows = maxRows;
-                let cardH = (box.h - GAP * (rows - 1)) / rows;
-                let cardW = cardH * ratio;
-                const maxW = (box.w - PEEK - GAP * MIN_VISIBLE_COLS) / MIN_VISIBLE_COLS;
-                if (cardW > maxW) {
-                    cardW = maxW;
-                    cardH = cardW / ratio;
-                }
-                rows = Math.max(
-                    1,
-                    Math.min(maxRows + 1, Math.floor((box.h + GAP) / (cardH + GAP))),
-                );
-                const offsetY = (box.h - rows * cardH - (rows - 1) * GAP) / 2;
-                const items =
-                    tab === 'shows'
-                        ? SHOWS.map(([k, isNew]) => ({ k, isNew }))
-                        : DRAMAS.map(([k, meta]) => ({ k, meta, isNew: true }));
-                if (bannerCell) items.unshift({ k: 'bannerSmall', banner: true });
-                const wrap = el('div', 'strip', {
-                    left: px(box.x),
-                    top: px(box.y),
-                    width: px(box.w),
-                    height: px(box.h),
-                });
-                const track = el('div', 'track', {
-                    top: px(offsetY),
-                    gridTemplateRows: `repeat(${rows}, ${px(cardH)})`,
-                    gridAutoColumns: px(cardW),
-                    gap: px(GAP),
-                });
-                items.forEach((item) => {
-                    const card = el('div', 'card', { backgroundImage: `url(${IMG[item.k]})` });
-                    if (item.banner) card.append(el('span', 'ver', {}, 'v1.21.0'));
-                    if (item.isNew) card.append(el('span', 'badge', {}, '新'));
-                    if (item.meta) card.append(el('span', 'meta', {}, item.meta));
-                    track.append(card);
-                });
-                wrap.append(track);
-                const cols = Math.ceil(items.length / rows);
-                const used = cols * cardW + (cols - 1) * GAP;
-                const scrolls = used > box.w + 1;
-                if (scrolls) wrap.append(el('div', 'fade', {}, '›'));
-                scr.append(wrap);
-                return { cols, rows, scrolls, visible: Math.floor((box.w + GAP) / (cardW + GAP)) };
-            };
 
             const tabsBar = (scr, box, tab) => {
                 const bar = el('div', 'tabs', {
@@ -480,32 +373,76 @@
                 scr.append(bar);
             };
 
-            const bannerBox = (scr, box) => {
-                const banner = el('div', 'banner', {
+            const itemsOf = (tab) =>
+                tab === 'shows'
+                    ? SHOWS.map(([k, isNew]) => ({ k, isNew }))
+                    : DRAMAS.map(([k, meta]) => ({ k, meta, isNew: true }));
+
+            /**
+             * 填滿 box 嘅格：cols × rows，第一格係橫額（跨 bannerSpan 欄），其餘按次序；
+             * 一頁放唔晒就分頁（下面頁點，左右 swipe），每格拉滿（card 唔鎖比例）
+             */
+            const fillGrid = (scr, box, tab, { cols, rows, bannerSpan }) => {
+                const items = itemsOf(tab);
+                const perPage = cols * rows - bannerSpan;
+                const pages = Math.max(1, Math.ceil(items.length / perPage));
+                const gridH = pages > 1 ? box.h - DOTS_H - 8 : box.h;
+                const grid = el('div', 'grid', {
                     left: px(box.x),
                     top: px(box.y),
                     width: px(box.w),
-                    height: px(box.h),
-                    backgroundImage: `url(${IMG.banner})`,
+                    height: px(gridH),
+                    gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                    gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+                    gap: px(GAP),
+                });
+                const banner = el('div', 'card', {
+                    gridColumn: `span ${bannerSpan}`,
+                    backgroundImage: `url(${IMG.bannerSmall})`,
                 });
                 banner.append(el('span', 'ver', {}, 'v1.21.0'));
-                scr.append(banner);
+                grid.append(banner);
+                items.slice(0, perPage).forEach((item) => {
+                    const card = el('div', 'card', { backgroundImage: `url(${IMG[item.k]})` });
+                    if (item.isNew) card.append(el('span', 'badge', {}, '新'));
+                    if (item.meta) card.append(el('span', 'meta', {}, item.meta));
+                    grid.append(card);
+                });
+                scr.append(grid);
+                if (pages > 1) {
+                    const dots = el('div', 'dots', {
+                        left: px(box.x),
+                        top: px(box.y + gridH + 8),
+                        width: px(box.w),
+                        height: px(DOTS_H),
+                    });
+                    for (let i = 0; i < pages; i += 1) dots.append(el('i', i === 0 ? 'on' : ''));
+                    scr.append(dots);
+                }
+                return { cols, rows, pages };
             };
 
-            /** card 最少咁高先排兩 / 三行 */
-            const MIN_CARD_H = 150;
-            const rowsFit = (h, max) =>
-                Math.max(1, Math.min(max, Math.floor((h + GAP) / (MIN_CARD_H + GAP))));
+            /** 手機打橫 landscapeLayout.ts SCREEN_SHAPES：卡數 → 欄 × 行、橫額跨幾欄 */
+            const SCREEN_SHAPES = {
+                5: { cols: 3, rows: 2, bannerSpan: 1 },
+                8: { cols: 5, rows: 2, bannerSpan: 2 },
+            };
 
-            const layoutB = (scr, W, H, tab) => {
-                const pad = 24;
-                const bannerH = Math.min(W * 0.2, H * 0.3);
-                bannerBox(scr, { x: pad, y: pad, w: W - 2 * pad, h: bannerH });
-                const tabsY = pad + bannerH + 16;
-                tabsBar(scr, { x: pad, y: tabsY, w: W - 2 * pad, h: 56 }, tab);
-                const y = tabsY + 56 + 18;
-                const h = H - y - pad;
-                return strip(scr, { x: pad, y, w: W - pad, h }, tab, rowsFit(h, 2));
+            /** 冇 mini player（A）：同手機打橫一樣，tab 喺頂，下面橫額入格、填滿 */
+            const layoutA = (scr, W, H, tab) => {
+                tabsBar(scr, { x: PAD, y: PAD, w: W - 2 * PAD, h: TABS_H }, tab);
+                const y = PAD + TABS_H + 16;
+                const shape = SCREEN_SHAPES[itemsOf(tab).length];
+                return fillGrid(scr, { x: PAD, y, w: W - 2 * PAD, h: H - y - PAD }, tab, shape);
+            };
+
+            /** 左右分嘅左邊：欄數按格嘅形狀揀（接近原圖比例），行數按高度：高畫面 3 行 */
+            const splitShape = (box, tab) => {
+                const rows = box.h >= TALL_H - 120 ? 3 : 2;
+                const ratio = tab === 'shows' ? 16 / 9 : 2;
+                const cellH = (box.h - GAP * (rows - 1)) / rows;
+                const cols = Math.max(2, Math.round((box.w + GAP) / (cellH * ratio + GAP)));
+                return { cols, rows, bannerSpan: 1 };
             };
 
             const arcDisc = (parent, size, theme, progress) => {
@@ -537,47 +474,49 @@
                 parent.append(ring);
             };
 
-            const design1 = (scr, W, H, tab, theme) => {
-                const R = W * 0.38;
-                const L = W - R;
-                const pad = 22;
-                const bannerH = Math.min((L - 2 * pad) / 5, H * 0.2);
-                bannerBox(scr, { x: pad, y: pad, w: L - 2 * pad, h: bannerH });
-                const tabsY = pad + bannerH + 14;
-                tabsBar(scr, { x: pad, y: tabsY, w: L - 2 * pad, h: 50 }, tab);
-                const y = tabsY + 50 + 16;
-                const h = H - y - pad;
-                const info = strip(scr, { x: pad, y, w: L - pad - 6, h }, tab, rowsFit(h, 3));
-                const pane = el('div', 'pane', {
-                    width: px(R),
+            /** 右邊：主頁底色上面一張節目色泥膠卡，入面係內頁播放器縮細；高畫面多「下一集」 */
+            const playerCard = (scr, box, H, theme) => {
+                const tall = H >= TALL_H;
+                const card = el('div', '', {
+                    position: 'absolute',
+                    left: px(box.x),
+                    top: px(box.y),
+                    width: px(box.w),
+                    height: px(box.h),
+                    borderRadius: '26px',
                     background: theme.bg,
                     color: theme.text,
-                    padding: `${px(pad)} 18px`,
-                    gap: '12px',
-                    justifyContent: 'center',
-                    boxShadow: '-10px 0 30px rgba(0,0,0,0.25)',
+                    boxShadow: '8px 8px 20px #33506e, -6px -6px 16px #5d86b0',
+                    padding: '18px 18px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: tall ? 'flex-start' : 'center',
+                    gap: '10px',
                 });
-                pane.append(
+                card.append(
                     el(
                         'div',
                         '',
                         {
-                            fontSize: px(Math.min(30, R / 12)),
+                            fontSize: px(Math.min(26, box.w / 12)),
                             fontWeight: 700,
                             color: theme.titleC,
+                            textAlign: 'center',
                         },
                         theme.title,
                     ),
                 );
-                arcDisc(pane, Math.min(R * 0.8, H * 0.52), theme, 0.35);
+                const discSize = Math.min(box.w * 0.78, tall ? box.h * 0.42 : box.h * 0.55);
+                arcDisc(card, discSize, theme, 0.35);
                 const row = el('div', '', {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    width: '84%',
+                    width: '86%',
                     fontSize: '15px',
                 });
-                const btn = Math.min(78, H * 0.12);
+                const btn = Math.min(72, box.h * 0.13);
                 row.append(el('span', '', {}, '5:39'));
                 row.append(
                     el('div', 'play', {
@@ -588,13 +527,13 @@
                     }),
                 );
                 row.append(el('span', '', {}, '14:19'));
-                pane.append(row);
-                pane.append(
+                card.append(row);
+                card.append(
                     el(
                         'div',
                         '',
                         {
-                            fontSize: '14px',
+                            fontSize: '13px',
                             fontWeight: 600,
                             color: theme.accent,
                             textAlign: 'center',
@@ -602,102 +541,9 @@
                         theme.ep,
                     ),
                 );
-                scr.append(pane);
-                return { ...info, R };
-            };
-
-            const design2 = (scr, W, H, tab, theme) => {
-                const R = W * 0.34;
-                const L = W - R;
-                const pad = 22;
-                tabsBar(scr, { x: pad, y: pad, w: L - pad, h: 52 }, tab);
-                const y = pad + 52 + 18;
-                const h = H - y - pad;
-                const info = strip(scr, { x: pad, y, w: L - pad + 6, h }, tab, rowsFit(h, 3), true);
-                const pane = el('div', 'pane', {
-                    width: px(R),
-                    padding: `${px(pad)} ${px(pad)} ${px(pad)} 12px`,
-                });
-                const card = el('div', '', {
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '26px',
-                    background: theme.bg,
-                    color: theme.text,
-                    boxShadow: '8px 8px 20px #33506e, -6px -6px 16px #5d86b0',
-                    padding: '20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    gap: '16px',
-                });
-                const top = el('div', '', { display: 'flex', gap: '14px', alignItems: 'center' });
-                const discSize = Math.min(R * 0.36, H * 0.22);
-                top.append(
-                    el('div', 'disc', {
-                        width: px(discSize),
-                        height: px(discSize),
-                        flex: 'none',
-                        backgroundImage: `url(${IMG[theme.disc]})`,
-                        boxShadow: `0 0 0 4px ${theme.surface}`,
-                    }),
-                );
-                const titles = el('div', '', { minWidth: 0 });
-                titles.append(
-                    el(
-                        'div',
-                        '',
-                        { fontSize: '20px', fontWeight: 700, color: theme.titleC },
-                        theme.title,
-                    ),
-                );
-                titles.append(el('div', '', { fontSize: '13px', opacity: 0.85 }, theme.ep));
-                top.append(titles);
-                card.append(top);
-                const bar = el('div', '', {
-                    height: '7px',
-                    borderRadius: '999px',
-                    background: theme.track,
-                });
-                bar.append(
-                    el('div', '', {
-                        width: '38%',
-                        height: '100%',
-                        borderRadius: '999px',
-                        background: theme.accent,
-                    }),
-                );
-                card.append(bar);
-                const times = el('div', '', {
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: '13px',
-                    marginTop: '-10px',
-                });
-                times.append(el('span', '', {}, '5:39'));
-                times.append(el('span', '', {}, '14:19'));
-                card.append(times);
-                const controls = el('div', '', {
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '28px',
-                    fontSize: '24px',
-                    color: theme.accent,
-                });
-                controls.append(el('span', '', {}, '⏮'));
-                controls.append(
-                    el('div', 'play', {
-                        width: '64px',
-                        height: '64px',
-                        background: theme.accent,
-                        color: theme.bg,
-                    }),
-                );
-                controls.append(el('span', '', {}, '⏭'));
-                card.append(controls);
-                if (H >= 700) {
-                    card.append(
+                if (tall) {
+                    const list = el('div', '', { width: '100%', marginTop: '8px' });
+                    list.append(
                         el(
                             'div',
                             '',
@@ -705,148 +551,44 @@
                                 fontSize: '14px',
                                 fontWeight: 700,
                                 color: theme.titleC,
-                                marginTop: '4px',
+                                padding: '0 4px 6px',
                             },
                             '下一集',
                         ),
                     );
-                    theme.list.forEach((text) =>
-                        card.append(
+                    theme.next.forEach((text) =>
+                        list.append(
                             el(
                                 'div',
                                 '',
                                 {
                                     fontSize: '14px',
-                                    padding: '8px 0',
+                                    padding: '10px 4px',
                                     borderTop: `1px solid ${theme.track}`,
                                 },
                                 text,
                             ),
                         ),
                     );
+                    card.append(list);
                 }
-                pane.append(card);
-                scr.append(pane);
-                return { ...info, R };
+                scr.append(card);
             };
 
-            const design3 = (scr, W, H, tab, theme) => {
-                const R = W * 0.26;
-                const L = W - R;
-                const pad = 20;
-                tabsBar(scr, { x: pad, y: pad, w: L - 2 * pad, h: 48 }, tab);
-                const y = pad + 48 + 16;
-                const h = H - y - pad;
-                const info = strip(scr, { x: pad, y, w: L - pad - 6, h }, tab, rowsFit(h, 3), true);
-                const pane = el('div', 'pane', {
-                    width: px(R),
-                    background: `linear-gradient(180deg, ${theme.surface}, ${theme.bg})`,
-                    color: theme.text,
-                    padding: `${px(pad)} 16px`,
-                    justifyContent: 'space-between',
-                    borderRadius: '28px 0 0 28px',
-                    boxShadow: '-8px 0 24px rgba(0,0,0,0.3)',
-                });
-                const discSize = Math.min(R * 0.78, H * 0.36);
-                pane.append(
-                    el('div', 'disc', {
-                        width: px(discSize),
-                        height: px(discSize),
-                        flex: 'none',
-                        marginTop: '8px',
-                        backgroundImage: `url(${IMG[theme.disc]})`,
-                        boxShadow: `0 0 0 6px ${theme.surface}, 6px 10px 20px rgba(0,0,0,0.35)`,
-                    }),
+            const layoutSplit = (scr, W, H, tab) => {
+                const paneW = W * PANE_RATIO;
+                const leftW = W - paneW - PAD;
+                tabsBar(scr, { x: PAD, y: PAD, w: leftW - PAD, h: TABS_H }, tab);
+                const y = PAD + TABS_H + 16;
+                const box = { x: PAD, y, w: leftW - PAD, h: H - y - PAD };
+                const info = fillGrid(scr, box, tab, splitShape(box, tab));
+                playerCard(
+                    scr,
+                    { x: leftW + 6, y: PAD, w: paneW - PAD - 6, h: H - 2 * PAD },
+                    H,
+                    NOW[tab],
                 );
-                const name = el('div', '', {
-                    textAlign: 'center',
-                    width: '100%',
-                    overflow: 'hidden',
-                });
-                name.append(
-                    el(
-                        'div',
-                        '',
-                        {
-                            fontSize: '19px',
-                            fontWeight: 700,
-                            color: theme.titleC,
-                            whiteSpace: 'nowrap',
-                        },
-                        theme.title,
-                    ),
-                );
-                name.append(
-                    el(
-                        'div',
-                        '',
-                        { fontSize: '12px', opacity: 0.85, whiteSpace: 'nowrap' },
-                        theme.ep,
-                    ),
-                );
-                pane.append(name);
-                const middle = el('div', '', {
-                    display: 'flex',
-                    gap: '14px',
-                    alignItems: 'center',
-                    flex: '1 1 auto',
-                    minHeight: '60px',
-                    padding: '12px 0',
-                });
-                const track = el('div', '', {
-                    position: 'relative',
-                    width: '8px',
-                    height: '100%',
-                    borderRadius: '999px',
-                    background: theme.track,
-                });
-                track.append(
-                    el('div', '', {
-                        position: 'absolute',
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        height: '38%',
-                        borderRadius: '999px',
-                        background: theme.accent,
-                    }),
-                );
-                track.append(
-                    el('div', '', {
-                        position: 'absolute',
-                        left: '-6px',
-                        bottom: 'calc(38% - 10px)',
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: '50%',
-                        background: theme.accent,
-                    }),
-                );
-                middle.append(track);
-                const times = el('div', '', {
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    height: '100%',
-                    fontSize: '13px',
-                });
-                times.append(el('span', '', {}, '14:19'));
-                times.append(el('span', '', {}, '5:39'));
-                middle.append(times);
-                pane.append(middle);
-                const btn = Math.min(90, R * 0.42);
-                pane.append(
-                    el('div', 'play', {
-                        width: px(btn),
-                        height: px(btn),
-                        flex: 'none',
-                        marginBottom: '8px',
-                        background: theme.accent,
-                        color: theme.bg,
-                    }),
-                );
-                scr.append(pane);
-                return { ...info, R };
+                return { ...info, paneW };
             };
 
             const out = document.getElementById('out');
@@ -871,52 +613,41 @@
                 out.append(grid);
                 return grid;
             };
-            const stripCaption = (info) =>
-                `${info.rows} 行 × ${info.cols} 欄${info.scrolls ? `，左右捲（一屏見 ${info.visible} 欄）` : '，一屏放晒'}`;
+            const gridCaption = (info) =>
+                `${info.cols} 欄 × ${info.rows} 行${info.pages > 1 ? `，${info.pages} 頁（swipe）` : '，一頁放晒'}`;
 
-            const gridB = section(
-                'B · 冇 mini player',
-                '未播過任何嘢：橫額成行，card 原比例（節目 16:9、劇集 2:1），放唔落向右捲。',
+            const gridA = section(
+                'A · 冇 mini player',
+                '同而家手機打橫一樣嘅格仔（landscapeLayout.ts），只係擴展到高 ≥ 562px。',
             );
-            B_SIZES.forEach(([W, H]) =>
+            SIZES.forEach(([W, H]) =>
                 Object.keys(TAB_NAMES).forEach((tab) =>
                     frame(
-                        gridB,
+                        gridA,
                         W,
                         H,
-                        (scr) => layoutB(scr, W, H, tab),
-                        (info) => `${TAB_NAMES[tab]} · ${stripCaption(info)}`,
+                        (scr) => layoutA(scr, W, H, tab),
+                        (info) => `${TAB_NAMES[tab]} · ${gridCaption(info)}`,
                     ),
                 ),
             );
 
-            [
-                [
-                    '設計 1 · 內頁縮細',
-                    '右欄 = 內頁播放器縮細（跟節目主題色），左邊細橫額 + tab + card。',
-                    design1,
-                ],
-                [
-                    '設計 2 · 卡片式 Now Playing',
-                    '右欄 = 主頁底色上面一張節目色泥膠卡（高畫面多「下一集」），橫額變左邊第一格。',
-                    design2,
-                ],
-                ['設計 3 · 側邊直條', '右欄窄、直排；左邊 card 位最多。', design3],
-            ].forEach(([title, note, draw]) => {
-                const grid = section(title, note);
-                SPLIT_SIZES.forEach(([W, H]) =>
-                    Object.keys(TAB_NAMES).forEach((tab) =>
-                        frame(
-                            grid,
-                            W,
-                            H,
-                            (scr) => draw(scr, W, H, tab, NOW[tab]),
-                            (info) =>
-                                `${TAB_NAMES[tab]}（播緊 ${NOW[tab].title}）· 右欄 ${Math.round(info.R)}px · ${stripCaption(info)}`,
-                        ),
+            const gridSplit = section(
+                '左右分 · 有 mini player',
+                '左邊 tab + 填滿嘅格（橫額第一格，放唔落 swipe 分頁）；右邊泥膠卡 = 內頁播放器縮細，高畫面多「下一集」。底部 mini player 收埋。',
+            );
+            SIZES.forEach(([W, H]) =>
+                Object.keys(TAB_NAMES).forEach((tab) =>
+                    frame(
+                        gridSplit,
+                        W,
+                        H,
+                        (scr) => layoutSplit(scr, W, H, tab),
+                        (info) =>
+                            `${TAB_NAMES[tab]}（播緊 ${NOW[tab].title}）· 右卡 ${Math.round(info.paneW)}px · ${gridCaption(info)}`,
                     ),
-                );
-            });
+                ),
+            );
         </script>
     </body>
 </html>
