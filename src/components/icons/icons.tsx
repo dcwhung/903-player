@@ -51,6 +51,13 @@ export const CloseIcon = (props: IconProps) => (
     </StrokeIcon>
 );
 
+/** 展開 ⤢：主頁播放卡入節目 / 劇集頁 */
+export const ExpandIcon = (props: IconProps) => (
+    <StrokeIcon {...props}>
+        <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />
+    </StrokeIcon>
+);
+
 /** 電源 ⏻：mini player 左滑露出嘅「關閉」掣 */
 export const PowerIcon = (props: IconProps) => (
     <StrokeIcon {...props}>

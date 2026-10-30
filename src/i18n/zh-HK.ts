@@ -101,6 +101,14 @@ export const zhHK = {
             today: '今日',
         },
     },
+    // 闊橫版主頁右邊播放卡（HomePlayerCard）同收埋後右邊嘅把手
+    homeCard: {
+        close: '收埋播放器',
+        reopen: '打開播放器：{name}',
+        next: '下一集',
+        all: '全部',
+        allLabel: '全部集數',
+    },
     cardStack: {
         label: '今日節目，左右掃動轉節目',
         roleDescription: '節目卡疊',

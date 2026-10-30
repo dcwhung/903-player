@@ -1,0 +1,174 @@
+/* 卡嘅 ThemeScope（跟節目色）：定位 ✕，佔晒右欄高度 */
+.scope {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+}
+
+/* 主頁底色上面一張節目色泥膠卡（落影同節目格一樣）；頁頭列置頂，唱片格食晒中間 */
+.card {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-height: 0;
+    padding: var(--space-4);
+    border-radius: var(--radius-home-card);
+    background: var(--color-bg);
+    color: var(--color-text);
+    box-shadow: var(--shadow-clay-tile);
+}
+
+/* 頁頭列（入口 B）：細碟 + 節目名 + ⤢，成條係入頁掣 */
+.header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: var(--touch-target);
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    color: var(--color-title);
+    text-align: left;
+}
+
+.name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--theme-title-font);
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.expand {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border-radius: var(--radius-full);
+    background: var(--color-accent-fill);
+    color: var(--color-on-accent);
+}
+
+/*
+ * 唱片格 + 現正播放：喺剩低嘅位置中。唱片按呢格（size container）嘅闊高計，
+ * 同橫版內頁播放器一樣夾喺 --landscape-disc-min / --landscape-disc-max 之間（Page.module.css .playerColumn）
+ */
+.player {
+    --player-disc-size: max(
+        var(--landscape-disc-min),
+        min(
+            calc(100cqw * var(--landscape-disc-fill)),
+            calc(
+                (100cqh - var(--now-playing-line) - var(--space-3)) * var(--player-gauge-w) /
+                    var(--player-gauge-h)
+            ),
+            var(--landscape-disc-max)
+        )
+    );
+
+    container-type: size;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: 0;
+}
+
+/* 「下一集」同唱片格平分剩低嘅高度，行多過放得落就自己捲 */
+.next {
+    display: flex;
+    flex: 1 1 0;
+    min-height: 0;
+    margin: 0 calc(-1 * var(--space-4));
+}
+
+.all {
+    display: flex;
+    align-items: center;
+    gap: var(--space-half);
+    min-height: var(--touch-target-min);
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+/* 「›」：返回箭咀反轉 */
+.allIcon {
+    transform: scaleX(-1);
+}
+
+/* ✕（閂卡款式 ②）：深色細圓掣，半浮喺卡右上角 */
+.close {
+    position: absolute;
+    top: var(--home-card-close-offset);
+    right: var(--home-card-close-offset);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--home-card-close-size);
+    height: var(--home-card-close-size);
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--home-card-close-bg);
+    box-shadow: var(--shadow-home-card-close);
+    color: var(--home-card-close-text);
+}
+
+/* 收埋後右邊緣把手（重開款式 ②）：喺預留嘅位入面，上下置中 */
+.handleScope {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+}
+
+.handle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    width: var(--home-handle-width);
+    height: var(--home-handle-height);
+    padding: var(--space-3) 0;
+    overflow: hidden;
+    border: none;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    background: var(--color-bg);
+    box-shadow: var(--shadow-home-handle);
+    color: var(--color-title);
+}
+
+.handleDisc {
+    flex-shrink: 0;
+    width: var(--home-handle-disc);
+    height: var(--home-handle-disc);
+    border-radius: var(--radius-full);
+    object-fit: cover;
+}
+
+.handleName {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    writing-mode: vertical-rl;
+}

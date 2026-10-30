@@ -24,6 +24,8 @@ interface PlayerGaugeProps {
      * 拖唔到）；冇就時間佔位、弧形空
      */
     standbyTime?: StandbyTime | undefined;
+    /** 過場名：主頁播放卡 ↔ 內頁嘅唱片格一齊移位變形（utils/viewTransition） */
+    transitionName?: string | undefined;
 }
 
 /** 未開始樣時要顯示嘅續播位置 / 總長（秒） */
@@ -114,15 +116,15 @@ export const PlayerGauge = ({
     held = false,
     onStart,
     standbyTime,
+    transitionName,
 }: PlayerGaugeProps) => {
     const { known, shownTime, max, isPlaying, ...view } = useGaugeView(held, onStart, standbyTime);
     // 讀屏同畫面一樣：未知時長讀佔位，唔讀 0:00
     const total = formatClock(max, known);
     const formatValueText = (seconds: number) =>
         t('player.progressText', { current: formatClock(seconds, known), total });
-
     return (
-        <div className={styles.gauge}>
+        <div className={styles.gauge} style={{ viewTransitionName: transitionName }}>
             <div className={styles.arc}>
                 <ArcSlider
                     {...view.arc}
