@@ -10,7 +10,15 @@ import {
     SHEET_FLICK_VELOCITY_PX_PER_MS,
 } from './components/ArcSheet/sheetDrag';
 import { VELOCITY_WINDOW_MS } from './components/ShowCardStack/cardStack';
-import { ALLOWED_AUDIO_ORIGIN, DRAMA_AUDIO_BASE, STALL_FIRST_RETRY_MS } from './config/constants';
+import {
+    ALLOWED_AUDIO_ORIGIN,
+    DRAMA_AUDIO_BASE,
+    EARLY_ADVANCE_SECONDS,
+    PLAYBACK_LOG_STORAGE_KEY,
+    PROGRESS_STORAGE_KEY,
+    STALL_FIRST_RETRY_MS,
+    STALL_HIDDEN_MARK_MS,
+} from './config/constants';
 import { PROBE_STORAGE_KEY } from './services/probeStore';
 // ?raw：index.html 原始字串，搵出佢引用嘅外部 host
 import indexHtml from '../index.html?raw';
@@ -47,6 +55,18 @@ describe('e2e copies of src constants', () => {
         const arcSheet = await importE2E('arcSheet.mjs');
 
         expect(arcSheet[name]).toBe(expected);
+    });
+
+    // 背景播放 e2e：讀 app 嘅 storage、按 app 嘅 deadline 等（脫節會讀錯 key / 等錯時間）
+    it.each([
+        ['PLAYBACK_LOG_STORAGE_KEY', PLAYBACK_LOG_STORAGE_KEY],
+        ['PROGRESS_STORAGE_KEY', PROGRESS_STORAGE_KEY],
+        ['STALL_HIDDEN_MARK_MS', STALL_HIDDEN_MARK_MS],
+        ['EARLY_ADVANCE_SECONDS', EARLY_ADVANCE_SECONDS],
+    ])('should keep hiddenPlayback.mjs %s equal to src', async (name, expected) => {
+        const hidden = await importE2E('hiddenPlayback.mjs');
+
+        expect(hidden[name]).toBe(expected);
     });
 });
 

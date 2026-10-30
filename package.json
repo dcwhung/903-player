@@ -1,7 +1,7 @@
 {
     "name": "903-player",
     "private": true,
-    "version": "1.20.11",
+    "version": "1.20.12",
     "type": "module",
     "scripts": {
         "dev": "vite",

@@ -7,7 +7,7 @@ const SHELF_ORDER = ['蘭茜夫人劇場', '少爺占系列', '森美小儀系�
 // 劇集格讀屏名有新嘢會加「，有新短篇」等（drama.tileNew），比較劇名時去走
 const tileName = (label) => label.split('，')[0];
 // 短篇劇集（kind: series）：第一次入頁冇進度
-const SERIES_ROUTE = '#/drama/chisee';
+export const SERIES_ROUTE = '#/drama/chisee';
 // 星期二：平日有節目，但假錄音最後一日係 19/10，20/10 全部未上架 → 今日節目頁顯示 TodayEmpty
 const E2E_TUESDAY_NOT_UPLOADED = '2026-10-20T22:30:00+08:00';
 const TODAY_EMPTY_TITLE = '今日節目未上架';
@@ -72,7 +72,7 @@ const todayEmptyDisc = async ({ browser, base, errors, log }) => {
  * 第一次入短篇劇集頁：全集表自己彈出（modal），閂咗佢背後嘅掣先喺 accessibility tree 入面。
  * 彈唔出 / 閂唔到就 log fail，返回 false（唔 throw，其他 check 照行）
  */
-const dismissAutoSheet = async (p, log, label) => {
+export const dismissAutoSheet = async (p, log, label) => {
     const sheet = p.getByRole('dialog', { name: '全集' });
     const popped = await isShown(sheet, { timeout: WAIT_MS });
     if (popped) await p.keyboard.press('Escape');

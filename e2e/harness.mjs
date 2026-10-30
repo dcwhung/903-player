@@ -121,31 +121,33 @@ export const PROBE_STORAGE_KEY = '903player:probed:v1';
 /** 同一個網址可能有唔同編碼寫法（中文字 / %XX），比較前統一 */
 const normalizeUrl = (url) => new URL(url).href;
 
+/** 用靜音 WAV 答一個音檔 request；支援 Range（206 Partial Content），seek 先會成功 */
+export const serveWav = (route) => {
+    const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? '');
+    const start = range ? Number(range[1]) : 0;
+    const end = range && range[2] ? Number(range[2]) : wav.length - 1;
+    return route.fulfill({
+        status: range ? 206 : 200,
+        headers: {
+            'Content-Type': 'audio/wav',
+            'Accept-Ranges': 'bytes',
+            'Content-Length': String(end - start + 1),
+            ...(range ? { 'Content-Range': `bytes ${start}-${end}/${wav.length}` } : {}),
+        },
+        body: wav.subarray(start, end + 1),
+    });
+};
+
 /**
  * 似真嘅 audio host：只答假錄音列表入面（同 extraUrls）嘅檔，其他一律 404，同原站一樣。
- * 以前乜都答 200，app 嘅 audio probe（PR #29）就會「搵到」列表冇嘅集數，令最近一集變咗。
- * 認得嘅檔支援 Range（206 Partial Content），seek 先會成功。
+ * 以前乜都答 200，app 嘅 audio probe（PR #29）就會「搵到」列表冇嘅集數，令最近一集變咗
  */
 const audioResponder = (extraUrls) => {
     const known = new Set([...SAMPLE_RECORDINGS.map((r) => r.url), ...extraUrls].map(normalizeUrl));
-    return (route) => {
-        if (!known.has(normalizeUrl(route.request().url()))) {
-            return route.fulfill({ status: 404, body: '' });
-        }
-        const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? '');
-        const start = range ? Number(range[1]) : 0;
-        const end = range && range[2] ? Number(range[2]) : wav.length - 1;
-        return route.fulfill({
-            status: range ? 206 : 200,
-            headers: {
-                'Content-Type': 'audio/wav',
-                'Accept-Ranges': 'bytes',
-                'Content-Length': String(end - start + 1),
-                ...(range ? { 'Content-Range': `bytes ${start}-${end}/${wav.length}` } : {}),
-            },
-            body: wav.subarray(start, end + 1),
-        });
-    };
+    return (route) =>
+        known.has(normalizeUrl(route.request().url()))
+            ? serveWav(route)
+            : route.fulfill({ status: 404, body: '' });
 };
 
 /**
