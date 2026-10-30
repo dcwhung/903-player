@@ -405,7 +405,10 @@
                 scr.append(bar);
             };
 
-            const itemsOf = (tab) =>
+            /** preview 用：限制卡數（睇 1–5 個嘅樣） */
+            let itemLimit = Number.POSITIVE_INFINITY;
+            const itemsOf = (tab) => allItemsOf(tab).slice(0, itemLimit);
+            const allItemsOf = (tab) =>
                 tab === 'shows'
                     ? SHOWS.map((k) => ({ k, label: k === 'today' ? '今日節目' : null }))
                     : DRAMAS.map(([k, meta, isNew, resume, progress]) => ({
@@ -474,15 +477,32 @@
              * 填滿 box 嘅格：cols × rows，第一格係橫額（跨 bannerSpan 欄），其餘按次序；
              * 一頁放唔晒就分頁（下面頁點，左右 swipe），每格拉滿（card 唔鎖比例）
              */
-            const fillGrid = (scr, box, tab, { cols, rows, bannerSpan }) => {
+            const fillGrid = (scr, box, tab, { cols, rows, bannerSpan }, keepRatio = false) => {
                 const items = itemsOf(tab);
                 const perPage = cols * rows - bannerSpan;
                 const pages = Math.max(1, Math.ceil(items.length / perPage));
-                const gridH = pages > 1 ? box.h - DOTS_H - 8 : box.h;
+                let gridH = pages > 1 ? box.h - DOTS_H - 8 : box.h;
+                let gridW = box.w;
+                let offX = 0;
+                let offY = 0;
+                if (keepRatio) {
+                    // 保持原圖比例：格太闊就收窄、太高就收矮，成組置中（周圍留位）
+                    const target = TILE_RATIO[tab];
+                    let cellW = (gridW - GAP * (cols - 1)) / cols;
+                    let cellH = (gridH - GAP * (rows - 1)) / rows;
+                    if (cellW / cellH > target) cellW = cellH * target;
+                    else cellH = cellW / target;
+                    const w = cols * cellW + GAP * (cols - 1);
+                    const h = rows * cellH + GAP * (rows - 1);
+                    offX = (gridW - w) / 2;
+                    offY = (gridH - h) / 2;
+                    gridW = w;
+                    gridH = h;
+                }
                 const grid = el('div', 'grid', {
-                    left: px(box.x),
-                    top: px(box.y),
-                    width: px(box.w),
+                    left: px(box.x + offX),
+                    top: px(box.y + offY),
+                    width: px(gridW),
                     height: px(gridH),
                     gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
                     gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
@@ -562,24 +582,29 @@
                     for (let cols = 1; cols <= MAX_COLS; cols += 1) {
                         const cellW = (box.w - GAP * (cols - 1)) / cols;
                         const cellH = (box.h - GAP * (rows - 1)) / rows;
-                        if (cellH < MIN_CELL_H) continue;
+                        // 最少要有橫額以外一格
+                        if (cellH < MIN_CELL_H || rows * cols < 2) continue;
                         const pages = Math.ceil(count / (rows * cols));
                         const crop = Math.abs(Math.log(cellW / cellH / target));
                         const empty = (pages * rows * cols - count) / (rows * cols);
                         const score = crop + PAGE_COST * (pages - 1) + EMPTY_COST * empty;
-                        if (!best || score < best.score)
-                            best = { cols, rows, bannerSpan: 1, score };
+                        // 一頁放得晒嘅一定贏分頁嘅（卡少唔使 swipe）
+                        const better =
+                            !best ||
+                            (pages === 1 && best.pages > 1) ||
+                            ((pages === 1) === (best.pages === 1) && score < best.score);
+                        if (better) best = { cols, rows, bannerSpan: 1, score, pages };
                     }
                 }
                 return best;
             };
 
             /** 冇 mini player（A）：tab 喺頂，下面橫額入格、填滿 */
-            const layoutA = (scr, W, H, tab) => {
+            const layoutA = (scr, W, H, tab, keepRatio = false) => {
                 tabsBar(scr, { x: PAD, y: PAD, w: W - 2 * PAD, h: TABS_H }, tab);
                 const y = PAD + TABS_H + 16;
                 const box = { x: PAD, y, w: W - 2 * PAD, h: H - y - PAD };
-                return fillGrid(scr, box, tab, bestShape(box, tab));
+                return fillGrid(scr, box, tab, bestShape(box, tab), keepRatio);
             };
 
             const arcDisc = (parent, size, theme, progress) => {
@@ -728,7 +753,7 @@
                             color: theme.titleC,
                             textAlign: 'center',
                         },
-                        theme.title,
+                        `${theme.title} <span style="opacity:.7">›</span>`,
                     ),
                 );
                 const discSize = Math.min(box.w * 0.78, tall ? box.h * 0.42 : box.h * 0.55);
@@ -769,13 +794,13 @@
                 scr.append(card);
             };
 
-            const layoutSplit = (scr, W, H, tab) => {
+            const layoutSplit = (scr, W, H, tab, keepRatio = false) => {
                 const paneW = W * PANE_RATIO;
                 const leftW = W - paneW - PAD;
                 tabsBar(scr, { x: PAD, y: PAD, w: leftW - PAD, h: TABS_H }, tab);
                 const y = PAD + TABS_H + 16;
                 const box = { x: PAD, y, w: leftW - PAD, h: H - y - PAD };
-                const info = fillGrid(scr, box, tab, bestShape(box, tab));
+                const info = fillGrid(scr, box, tab, bestShape(box, tab), keepRatio);
                 playerCard(
                     scr,
                     { x: leftW + 6, y: PAD, w: paneW - PAD - 6, h: H - 2 * PAD },
@@ -842,6 +867,68 @@
                     ),
                 ),
             );
+
+            /** 少卡：1–5 個（節目 / 廣播劇一樣規則） */
+            const withLimit = (limit, draw) => (scr) => {
+                itemLimit = limit;
+                const info = draw(scr);
+                itemLimit = Number.POSITIVE_INFINITY;
+                return info;
+            };
+            const FEW_SIZES = [
+                [1012, 562],
+                [1366, 1024],
+            ];
+            const gridFew = section(
+                '少卡 · 得 1–5 個節目 / 廣播劇',
+                '卡少時有兩個做法，想你揀：① 填滿（左邊用盡上下，但卡大、圖裁多）；② 保持原圖比例（唔裁，成組置中，周圍留位）。卡多時兩者差唔多。',
+            );
+            [1, 2, 3, 5].forEach((limit) =>
+                FEW_SIZES.forEach(([W, H]) => {
+                    frame(
+                        gridFew,
+                        W,
+                        H,
+                        withLimit(limit, (scr) => layoutA(scr, W, H, 'dramas')),
+                        (info) =>
+                            `① 填滿 · 冇 mini player · 廣播劇 ${limit} 套 · ${gridCaption(info)}`,
+                    );
+                    frame(
+                        gridFew,
+                        W,
+                        H,
+                        withLimit(limit, (scr) => layoutA(scr, W, H, 'dramas', true)),
+                        (info) =>
+                            `② 保持比例 · 冇 mini player · 廣播劇 ${limit} 套 · ${gridCaption(info)}`,
+                    );
+                    frame(
+                        gridFew,
+                        W,
+                        H,
+                        withLimit(limit, (scr) => layoutSplit(scr, W, H, 'shows')),
+                        (info) =>
+                            `① 填滿 · 有 mini player · 節目 ${limit} 個 · ${gridCaption(info)}`,
+                    );
+                    frame(
+                        gridFew,
+                        W,
+                        H,
+                        withLimit(limit, (scr) => layoutSplit(scr, W, H, 'shows', true)),
+                        (info) =>
+                            `② 保持比例 · 有 mini player · 節目 ${limit} 個 · ${gridCaption(info)}`,
+                    );
+                }),
+            );
+
+            out.append(el('h2', '', {}, '右邊卡點樣入內頁'));
+            const how = el('ul');
+            [
+                '撳卡頂節目名（有 ›）或者唱片 → 入嗰個節目 / 廣播劇內頁（完整播放器 + 全部集數），同而家撳 mini player 一樣。',
+                '撳 ▷ / ⏸ 淨係播 / 停，唔入頁；撳「下一集」某一行 ▷ 淨係播嗰集。',
+                '「下一集」右上「全部 ›」→ 入內頁，捲到集數清單。',
+                '入咗內頁之後撳返回 → 返主頁，右邊卡照舊。',
+            ].forEach((text) => how.append(el('li', '', {}, text)));
+            out.append(how);
         </script>
     </body>
 </html>
