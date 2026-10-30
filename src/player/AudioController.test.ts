@@ -1945,6 +1945,65 @@ describe('AudioController CUI-0011 slow header', () => {
         }
     };
 
+    /**
+     * v1.20.12：Chromium 喺 metadata 前完全唔發 progress（0.1× 慢網要 ~33 s 先有 metadata）。
+     * 仲連緊網（NETWORK_LOADING）而未發過 stalled 就當載緊，唔好 abort 佢；
+     * 斷咗（Chromium ~3 s 發 stalled）照樣喺第一個 deadline 重試
+     */
+    describe('fetching before metadata without stalled', () => {
+        /** Chromium hang 時約 3.1 s 發 stalled */
+        const STALLED_AFTER_MS = 3100;
+
+        it('should not reload before the cap while still fetching and never stalled', async () => {
+            const { audio, detach } = await slowStart();
+            audio.startFetching();
+
+            vi.advanceTimersByTime(STALL_MAX_WAIT_MS - 1);
+            expect(audio.load).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(1);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+
+        it('should retry at the first deadline once stalled fired', async () => {
+            const { audio, detach } = await slowStart();
+            audio.startFetching();
+            vi.advanceTimersByTime(STALLED_AFTER_MS);
+            audio.emitStalled();
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - STALLED_AFTER_MS);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+
+        it('should retry at the first deadline once metadata is in (W-500)', async () => {
+            const { audio, detach } = await slowStart();
+            audio.startFetching();
+            audio.emitMetadata(DURATION);
+
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+
+        it('should forget stalled from the previous load after a retry', async () => {
+            const { audio, detach } = await slowStart();
+            audio.startFetching();
+            vi.advanceTimersByTime(STALLED_AFTER_MS);
+            audio.emitStalled();
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - STALLED_AFTER_MS);
+            expect(audio.load).toHaveBeenCalledTimes(1);
+
+            vi.advanceTimersByTime(STALL_RETRY_MS);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+    });
+
     it('should not reload a slow header before the cap while progress events keep firing', async () => {
         const { audio, controller, detach } = await slowStart();
 

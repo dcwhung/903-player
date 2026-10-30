@@ -14,6 +14,11 @@ export interface LoadProbe {
      * buffered / readyState 都未郁（CUI-0011）
      */
     progressEvents: number;
+    /**
+     * 今次載入仲喺網絡攞緊（NETWORK_LOADING）而未發過 stalled：Chromium metadata 前唔發 progress，
+     * 呢個係極慢網開播唯一嘅「仲載緊」訊號；斷咗網約 3 s 會發 stalled（CUI-0011）
+     */
+    fetching: boolean;
 }
 
 /** 有新數據：buffer 尾增長，或者（未發 playing 時）readyState 升到有可播數據，或者 metadata 未到前有新 progress event */
@@ -32,9 +37,11 @@ const hasGrown = (before: LoadProbe, after: LoadProbe): boolean => {
     // CUI-0011：極慢網開播 header 未載完，bytes 入緊（有新 progress event）都算；reload 會 abort 個 request
     // 由 byte 0 再嚟。progress 停咗（情境 1 轉網絡後乜都冇嚟）就冇新 event，照樣喺 deadline 重試。
     // metadata 到咗之後就由 buffered / readyState 話事：否則 header 後一個 progress 就將重試推到 8 秒（W-505）
-    const gotBytes =
-        after.readyState < HAVE_METADATA && after.progressEvents > before.progressEvents;
-    return endAfter > endBefore || gotData || gotBytes;
+    const beforeMetadata = after.readyState < HAVE_METADATA;
+    const gotBytes = beforeMetadata && after.progressEvents > before.progressEvents;
+    // CUI-0011：Chromium metadata 前連 progress 都冇，仲連緊網而未 stalled 就當載緊（上限照用 STALL_MAX_WAIT_MS）
+    const stillFetching = beforeMetadata && after.fetching;
+    return endAfter > endBefore || gotData || gotBytes || stillFetching;
 };
 
 /**

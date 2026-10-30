@@ -17,6 +17,7 @@ const idleProbe = (): LoadProbe => ({
     currentTime: 0,
     playingFired: false,
     progressEvents: 0,
+    fetching: false,
 });
 
 const setup = (canRetry = true) => {
@@ -50,6 +51,7 @@ const growingProbe = (aheadSeconds = 1) => {
             currentTime: end - aheadSeconds,
             playingFired: false,
             progressEvents: 0,
+            fetching: false,
         };
     };
 };

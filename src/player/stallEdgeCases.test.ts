@@ -127,6 +127,7 @@ describe('QA S-551 edge cases', () => {
             currentTime: 120,
             playingFired: false,
             progressEvents: 0,
+            fetching: false,
         };
         expect(isLoadProgressing(base, { ...base, readyState: HAVE_CURRENT_DATA })).toBe(false);
         expect(isLoadProgressing(base, { ...base, bufferedEnd: undefined })).toBe(false);

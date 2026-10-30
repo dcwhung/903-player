@@ -54,7 +54,7 @@ export class StallWatchdog {
      * 鎖屏 Play / 亮屏之前更新 baseline，同最新嗰個比會當冇進展而 abort 慢載（W-511、CUI-0012）
      */
     private previousBaseline: LoadProbe | undefined;
-    /** baseline 幾時影（Date.now()） */
+    /** baseline 幾時影（Date.now()）：同 baseline 一齊更新（arm / refreshHiddenBaseline），唔可以單獨改（S-624） */
     private baselineAt = Number.NEGATIVE_INFINITY;
     /** 今次嘗試（start / 每次 retry reload）幾時開始：鎖屏時由呢度計 STALL_HIDDEN_MARK_MS */
     private attemptStartedAt = Number.NEGATIVE_INFINITY;
