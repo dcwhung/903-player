@@ -477,28 +477,17 @@
              * 填滿 box 嘅格：cols × rows，第一格係橫額（跨 bannerSpan 欄），其餘按次序；
              * 一頁放唔晒就分頁（下面頁點，左右 swipe），每格拉滿（card 唔鎖比例）
              */
-            const fillGrid = (scr, box, tab, { cols, rows, bannerSpan }, keepRatio = false) => {
+            const fillGrid = (scr, box, tab, { cols, rows, bannerSpan }) => {
                 const items = itemsOf(tab);
                 const perPage = cols * rows - bannerSpan;
                 const pages = Math.max(1, Math.ceil(items.length / perPage));
-                let gridH = pages > 1 ? box.h - DOTS_H - 8 : box.h;
-                let gridW = box.w;
-                let offX = 0;
-                let offY = 0;
-                if (keepRatio) {
-                    // 保持原圖比例：格太闊就收窄、太高就收矮，成組置中（周圍留位）
-                    const target = TILE_RATIO[tab];
-                    let cellW = (gridW - GAP * (cols - 1)) / cols;
-                    let cellH = (gridH - GAP * (rows - 1)) / rows;
-                    if (cellW / cellH > target) cellW = cellH * target;
-                    else cellH = cellW / target;
-                    const w = cols * cellW + GAP * (cols - 1);
-                    const h = rows * cellH + GAP * (rows - 1);
-                    offX = (gridW - w) / 2;
-                    offY = (gridH - h) / 2;
-                    gridW = w;
-                    gridH = h;
-                }
+                const gridH = pages > 1 ? box.h - DOTS_H - 8 : box.h;
+                // 每格最闊到橫額比例（橫額睇得晒）；上下照填滿，左右有多就成組置中
+                const cellH = (gridH - GAP * (rows - 1)) / rows;
+                const cellW = Math.min((box.w - GAP * (cols - 1)) / cols, cellH * BANNER_RATIO);
+                const gridW = cols * cellW + GAP * (cols - 1);
+                const offX = (box.w - gridW) / 2;
+                const offY = 0;
                 const grid = el('div', 'grid', {
                     left: px(box.x + offX),
                     top: px(box.y + offY),
@@ -521,7 +510,7 @@
                 shown.forEach((item, index) => {
                     const card = el('div', 'card', { backgroundImage: `url(${IMG[item.k]})` });
                     if (spare > 0 && index === shown.length - 1)
-                        card.style.gridColumn = `span ${spare + 1}`;
+                        card.style.gridColumn = `span ${Math.min(spare + 1, cols)}`;
                     if (item.label)
                         card.append(
                             el(
@@ -559,8 +548,11 @@
                 return { cols, rows, pages };
             };
 
-            /** 原圖比例：節目 tile 1216×684、劇集 tile 1216×608 */
+            /** 原圖比例：節目 tile 1216×684、劇集 tile 1216×608、橫額 1200×517 */
             const TILE_RATIO = { shows: 1216 / 684, dramas: 2 };
+            const BANNER_RATIO = 1200 / 517;
+            /** 橫額裁圖嘅權重：盡量睇得晒橫額內容 */
+            const BANNER_WEIGHT = 2;
             /** 每格最少咁高（再細字同掣放唔落） */
             const MIN_CELL_H = 120;
             /** 分頁嘅代價：寧願裁少少都唔好分太多頁 */
@@ -571,7 +563,8 @@
             const MAX_COLS = 6;
 
             /**
-             * 揀欄 × 行：每格比例盡量貼近原圖（裁得最少），唔固定 2 行；
+             * 揀欄 × 行：每格比例盡量貼近原圖（裁得最少），橫額嘅比例計重啲（盡量睇得晒），唔固定 2 行；
+             * 每格最闊到橫額比例，左右有多就成組置中；
              * 一頁放唔晒就分頁（swipe），每多一頁扣 PAGE_COST，留空格扣 EMPTY_COST。橫額佔第一格
              */
             const bestShape = (box, tab) => {
@@ -580,12 +573,20 @@
                 let best;
                 for (let rows = 1; rows <= MAX_ROWS; rows += 1) {
                     for (let cols = 1; cols <= MAX_COLS; cols += 1) {
-                        const cellW = (box.w - GAP * (cols - 1)) / cols;
                         const cellH = (box.h - GAP * (rows - 1)) / rows;
+                        const cellW = Math.min(
+                            (box.w - GAP * (cols - 1)) / cols,
+                            cellH * BANNER_RATIO,
+                        );
                         // 最少要有橫額以外一格
                         if (cellH < MIN_CELL_H || rows * cols < 2) continue;
                         const pages = Math.ceil(count / (rows * cols));
-                        const crop = Math.abs(Math.log(cellW / cellH / target));
+                        // 唔可以有成行空：最尾一頁空格要少過一行
+                        if (pages * rows * cols - count >= cols) continue;
+                        const ratio = cellW / cellH;
+                        const crop =
+                            Math.abs(Math.log(ratio / target)) +
+                            BANNER_WEIGHT * Math.abs(Math.log(ratio / BANNER_RATIO));
                         const empty = (pages * rows * cols - count) / (rows * cols);
                         const score = crop + PAGE_COST * (pages - 1) + EMPTY_COST * empty;
                         // 一頁放得晒嘅一定贏分頁嘅（卡少唔使 swipe）
@@ -600,11 +601,11 @@
             };
 
             /** 冇 mini player（A）：tab 喺頂，下面橫額入格、填滿 */
-            const layoutA = (scr, W, H, tab, keepRatio = false) => {
+            const layoutA = (scr, W, H, tab) => {
                 tabsBar(scr, { x: PAD, y: PAD, w: W - 2 * PAD, h: TABS_H }, tab);
                 const y = PAD + TABS_H + 16;
                 const box = { x: PAD, y, w: W - 2 * PAD, h: H - y - PAD };
-                return fillGrid(scr, box, tab, bestShape(box, tab), keepRatio);
+                return fillGrid(scr, box, tab, bestShape(box, tab));
             };
 
             const arcDisc = (parent, size, theme, progress) => {
@@ -794,13 +795,13 @@
                 scr.append(card);
             };
 
-            const layoutSplit = (scr, W, H, tab, keepRatio = false) => {
+            const layoutSplit = (scr, W, H, tab) => {
                 const paneW = W * PANE_RATIO;
                 const leftW = W - paneW - PAD;
                 tabsBar(scr, { x: PAD, y: PAD, w: leftW - PAD, h: TABS_H }, tab);
                 const y = PAD + TABS_H + 16;
                 const box = { x: PAD, y, w: leftW - PAD, h: H - y - PAD };
-                const info = fillGrid(scr, box, tab, bestShape(box, tab), keepRatio);
+                const info = fillGrid(scr, box, tab, bestShape(box, tab));
                 playerCard(
                     scr,
                     { x: leftW + 6, y: PAD, w: paneW - PAD - 6, h: H - 2 * PAD },
@@ -881,7 +882,7 @@
             ];
             const gridFew = section(
                 '少卡 · 得 1–5 個節目 / 廣播劇',
-                '卡少時有兩個做法，想你揀：① 填滿（左邊用盡上下，但卡大、圖裁多）；② 保持原圖比例（唔裁，成組置中，周圍留位）。卡多時兩者差唔多。',
+                '同一條規則（填滿上下、橫額比例優先）：卡少時排成直行，每格用橫額嘅高闊比例，橫額睇得晒；左右有多就置中。',
             );
             [1, 2, 3, 5].forEach((limit) =>
                 FEW_SIZES.forEach(([W, H]) => {
@@ -890,32 +891,14 @@
                         W,
                         H,
                         withLimit(limit, (scr) => layoutA(scr, W, H, 'dramas')),
-                        (info) =>
-                            `① 填滿 · 冇 mini player · 廣播劇 ${limit} 套 · ${gridCaption(info)}`,
-                    );
-                    frame(
-                        gridFew,
-                        W,
-                        H,
-                        withLimit(limit, (scr) => layoutA(scr, W, H, 'dramas', true)),
-                        (info) =>
-                            `② 保持比例 · 冇 mini player · 廣播劇 ${limit} 套 · ${gridCaption(info)}`,
+                        (info) => `冇 mini player · 廣播劇 ${limit} 套 · ${gridCaption(info)}`,
                     );
                     frame(
                         gridFew,
                         W,
                         H,
                         withLimit(limit, (scr) => layoutSplit(scr, W, H, 'shows')),
-                        (info) =>
-                            `① 填滿 · 有 mini player · 節目 ${limit} 個 · ${gridCaption(info)}`,
-                    );
-                    frame(
-                        gridFew,
-                        W,
-                        H,
-                        withLimit(limit, (scr) => layoutSplit(scr, W, H, 'shows', true)),
-                        (info) =>
-                            `② 保持比例 · 有 mini player · 節目 ${limit} 個 · ${gridCaption(info)}`,
+                        (info) => `有 mini player · 節目 ${limit} 個 · ${gridCaption(info)}`,
                     );
                 }),
             );
