@@ -16,8 +16,10 @@ export const useCardSwipe = (index: number, total: number, onChange: (index: num
     return {
         ...swipe,
         onPointerDown: (event: PointerEvent<HTMLElement>) => {
-            if ((event.target as Element).closest(OWN_GESTURES)) return;
             swipe.onPointerDown(event);
+            // 唱片格 / 清單自己處理拖動：唔當掃嘅開始；但上面已經清咗「食下一下 click」，
+            // 掃完即刻撳播放 / 清單行唔會畀人食咗（W-518）
+            if ((event.target as Element).closest(OWN_GESTURES)) swipe.onPointerCancel();
         },
     };
 };

@@ -213,6 +213,18 @@ describe('HomePage on a wide landscape screen', () => {
             expect(card).toHaveTextContent('Bad Girl大過佬');
         });
 
+        it('should play on the first tap of 播放 right after a swipe changed show', async () => {
+            stubWideLandscape();
+            const { audio } = renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            const card = await screen.findByRole('region', { name: SHOW_CARD });
+            swipeLeft(within(card).getByRole('button', { name: '開啟 Bad Girl大過佬 節目頁' }));
+
+            await userEvent.click(within(card).getByRole('button', { name: '播放' }));
+
+            expect(audio.src).toBe(WANNI_TODAY.url);
+            expect(audio.play).toHaveBeenCalled();
+        });
+
         it('should tag today’s show next to its name in the header row', async () => {
             stubWideLandscape();
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
