@@ -227,7 +227,7 @@
     </head>
     <body>
         <main>
-            <h1>CUI-0015 橫版主頁 preview v4（高 ≥ 562px）</h1>
+            <h1>CUI-0015 橫版主頁 preview v7（高 ≥ 562px）</h1>
             <p class="note">靜態 mockup，唔係真 app（字型 / 落影近似）。按你 v1 意見改：</p>
             <ul>
                 <li>
@@ -482,9 +482,9 @@
                 const perPage = cols * rows - bannerSpan;
                 const pages = Math.max(1, Math.ceil(items.length / perPage));
                 const gridH = pages > 1 ? box.h - DOTS_H - 8 : box.h;
-                // 每格最闊到橫額比例（橫額睇得晒）；上下照填滿，左右有多就成組置中
+                // 上下左右都填滿
                 const cellH = (gridH - GAP * (rows - 1)) / rows;
-                const cellW = Math.min((box.w - GAP * (cols - 1)) / cols, cellH * BANNER_RATIO);
+                const cellW = (box.w - GAP * (cols - 1)) / cols;
                 const gridW = cols * cellW + GAP * (cols - 1);
                 const offX = (box.w - gridW) / 2;
                 const offY = 0;
@@ -551,8 +551,8 @@
             /** 原圖比例：節目 tile 1216×684、劇集 tile 1216×608、橫額 1200×517 */
             const TILE_RATIO = { shows: 1216 / 684, dramas: 2 };
             const BANNER_RATIO = 1200 / 517;
-            /** 橫額裁圖嘅權重：盡量睇得晒橫額內容 */
-            const BANNER_WEIGHT = 2;
+            /** 橫額裁圖嘅權重：同 card 一樣計，唔優先 */
+            const BANNER_WEIGHT = 1;
             /** 每格最少咁高（再細字同掣放唔落） */
             const MIN_CELL_H = 120;
             /** 分頁嘅代價：寧願裁少少都唔好分太多頁 */
@@ -563,8 +563,7 @@
             const MAX_COLS = 6;
 
             /**
-             * 揀欄 × 行：每格比例盡量貼近原圖（裁得最少），橫額嘅比例計重啲（盡量睇得晒），唔固定 2 行；
-             * 每格最闊到橫額比例，左右有多就成組置中；
+             * 揀欄 × 行：每格比例盡量貼近原圖（裁得最少；橫額同 card 一樣計），唔固定 2 行；
              * 一頁放唔晒就分頁（swipe），每多一頁扣 PAGE_COST，留空格扣 EMPTY_COST。橫額佔第一格
              */
             const bestShape = (box, tab) => {
@@ -574,10 +573,7 @@
                 for (let rows = 1; rows <= MAX_ROWS; rows += 1) {
                     for (let cols = 1; cols <= MAX_COLS; cols += 1) {
                         const cellH = (box.h - GAP * (rows - 1)) / rows;
-                        const cellW = Math.min(
-                            (box.w - GAP * (cols - 1)) / cols,
-                            cellH * BANNER_RATIO,
-                        );
+                        const cellW = (box.w - GAP * (cols - 1)) / cols;
                         // 最少要有橫額以外一格
                         if (cellH < MIN_CELL_H || rows * cols < 2) continue;
                         const pages = Math.ceil(count / (rows * cols));
@@ -882,7 +878,7 @@
             ];
             const gridFew = section(
                 '少卡 · 得 1–5 個節目 / 廣播劇',
-                '同一條規則（填滿上下、橫額比例優先）：卡少時排成直行，每格用橫額嘅高闊比例，橫額睇得晒；左右有多就置中。',
+                '同一條規則：上下左右填滿，揀裁得最少嘅欄 × 行（橫額同 card 一樣計）；唔留成行空位，最尾一行唔夠就拉闊最後一張。',
             );
             [1, 2, 3, 5].forEach((limit) =>
                 FEW_SIZES.forEach(([W, H]) => {
