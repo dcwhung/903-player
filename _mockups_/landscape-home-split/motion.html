@@ -352,6 +352,39 @@
             const closeBtn = make('round', '✕');
             closeBtn.style.cssText += 'background:#f2b9b9;color:#3b1212;font-size:16px';
             closeBtn.addEventListener('click', () => go('closed'));
+            /* ✕-2：卡右上角半浮出嘅閂掣 */
+            const cornerClose = make('round', '✕');
+            cornerClose.style.cssText +=
+                'background:#3b1212;color:#fff;font-size:14px;box-shadow:0 3px 10px rgba(0,0,0,.35);z-index:3';
+            cornerClose.addEventListener('click', () => go('closed'));
+            /* ✕-3：頁頭列最左「⟩⟩ 收埋」 */
+            const collapseBtn = make('round', '⟩⟩');
+            collapseBtn.style.cssText +=
+                'background:#f2b9b9;color:#3b1212;font-size:15px;letter-spacing:-3px';
+            collapseBtn.addEventListener('click', () => go('closed'));
+            /* 重開-1：tab 列右邊細圓掣（細碟 + ▶） */
+            const tabReopen = make(
+                'round',
+                '<span style="position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;border-radius:50%;background:#e7010e;color:#fff;font-size:10px;display:grid;place-items:center">▶</span>',
+            );
+            tabReopen.style.cssText += `background:url(${IMG.forestDisc}) center/cover;box-shadow:0 0 0 4px #fff5f5,3px 4px 10px rgba(0,0,0,.3)`;
+            tabReopen.addEventListener('click', () => go('split'));
+            /* 重開-2：右邊緣把手 */
+            const edgeHandle = make(
+                '',
+                `<div style="width:14px;height:14px;margin:14px auto 10px;border-radius:50%;background:url(${IMG.forestDisc}) center/cover"></div><div style="writing-mode:vertical-rl;margin:0 auto;font-size:13px;font-weight:700;color:#b00010">森美小儀</div><div style="text-align:center;color:#b00010;font-size:14px;margin-top:6px">‹</div>`,
+            );
+            edgeHandle.style.cssText +=
+                'background:#ffe3e3;border-radius:14px 0 0 14px;box-shadow:-4px 0 12px rgba(0,0,0,.3);cursor:pointer;overflow:hidden';
+            edgeHandle.addEventListener('click', () => go('split'));
+            /* 重開-3：右下浮動細 player 膠囊 */
+            const floatPill = make(
+                '',
+                `<div style="width:44px;height:44px;flex:none;border-radius:50%;background:url(${IMG.forestDisc}) center/cover"></div><div style="flex:1;min-width:0;color:#3b1212"><b style="display:block;font-size:14px;color:#b00010">森美小儀系列</b><small style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">公子森林 · 第 32 集 · 白海娟的決定</small></div><div style="width:44px;height:44px;flex:none;border-radius:50%;background:#e7010e;color:#fff;display:grid;place-items:center">❚❚</div>`,
+            );
+            floatPill.style.cssText +=
+                'display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:999px;background:#ffe3e3;box-shadow:6px 6px 16px #33506e,-4px -4px 12px #5d86b0;cursor:pointer';
+            floatPill.addEventListener('click', () => go('split'));
             const back = make('round', '‹');
             back.style.cssText += 'color:#3b1212;font-size:44px;font-weight:300';
             back.addEventListener('click', () => go('split'));
@@ -414,6 +447,14 @@
             const gridTop = PAD + TABS_H + 16;
             const listW = W * INNER_LIST_RATIO;
 
+            /** 款式：close 1 = ✕ 喺 ⤢ 左邊、2 = 卡角浮掣、3 = 頁頭列左邊收埋；reopen 1 = tab 隔籬、2 = 右邊把手、3 = 浮動膠囊 */
+            const variant = { close: 1, reopen: 1 };
+            const REOPEN_HIDDEN = (r) => ({ ...r, o: 0, tx: 40 });
+            const reopenRects = () => ({
+                tabReopen: { x: W - PAD - 48, y: PAD + 1, w: 48, h: 48 },
+                edgeHandle: { x: W - 26, y: H / 2 - 100, w: 26, h: 200 },
+                floatPill: { x: W - PAD - 330, y: H - PAD - 64, w: 330, h: 64 },
+            });
             const layout = {
                 split: () => {
                     const box = { x: PAD, y: gridTop, w: leftW - PAD, h: H - gridTop - PAD };
@@ -442,6 +483,11 @@
                             w: 40,
                             h: 40,
                         },
+                        cornerClose: { x: card.x + card.w - 26, y: card.y - 8, w: 34, h: 34, o: 0 },
+                        collapseBtn: { x: hx + 8, y: card.y + 22, w: 40, h: 40, o: 0 },
+                        ...Object.fromEntries(
+                            Object.entries(reopenRects()).map(([k, r]) => [k, REOPEN_HIDDEN(r)]),
+                        ),
                         back: { x: card.x + 20, y: card.y + 20, w: 50, h: 50, o: 0 },
                         rule: { x: card.x, y: card.y + 80, w: 0, h: 4, o: 0 },
                         chips: { x: card.x + 20, y: card.y + 100, w: card.w - 40, h: 52, o: 0 },
@@ -503,6 +549,8 @@
                 },
                 inner: () => {
                     const s = layout.split();
+                    s.cornerClose = { ...s.cornerClose, o: 0 };
+                    s.collapseBtn = { ...s.collapseBtn, o: 0 };
                     const discSize = H * 0.5;
                     const pcx = listW + (W - listW) / 2;
                     const discY = H * 0.2;
@@ -553,7 +601,14 @@
                 },
                 closed: () => {
                     const s = layout.split();
-                    const box = { x: PAD, y: gridTop, w: W - 2 * PAD, h: H - gridTop - PAD };
+                    const reserveRight = variant.reopen === 2 ? 30 : 0;
+                    const reserveBottom = variant.reopen === 3 ? 76 : 0;
+                    const box = {
+                        x: PAD,
+                        y: gridTop,
+                        w: W - 2 * PAD - reserveRight,
+                        h: H - gridTop - PAD - reserveBottom,
+                    };
                     const cells = gridRects(box, 3, 2, 6);
                     const off = (r) => ({ ...r, o: 0, tx: 60 });
                     const out = {};
@@ -564,11 +619,24 @@
                               ? v
                               : off(v);
                     });
+                    const reopen = reopenRects();
+                    const pick = (k, n) =>
+                        variant.reopen === n
+                            ? { ...reopen[k], o: 1, delay: 220 }
+                            : REOPEN_HIDDEN(reopen[k]);
                     return {
                         ...out,
-                        tabs: { x: PAD, y: PAD, w: W - 2 * PAD, h: TABS_H },
+                        tabs: {
+                            x: PAD,
+                            y: PAD,
+                            w: W - 2 * PAD - (variant.reopen === 1 ? 60 : 0) - reserveRight,
+                            h: TABS_H,
+                        },
                         banner: cells[0],
                         tiles: cells.slice(1),
+                        tabReopen: pick('tabReopen', 1),
+                        edgeHandle: pick('edgeHandle', 2),
+                        floatPill: pick('floatPill', 3),
                     };
                 },
             };
@@ -582,6 +650,11 @@
                 title,
                 expandBtn,
                 closeBtn,
+                cornerClose,
+                collapseBtn,
+                tabReopen,
+                edgeHandle,
+                floatPill,
                 back,
                 rule,
                 chips,
@@ -595,8 +668,23 @@
                 nextHead,
             };
             let state = 'split';
+            /** 按 ✕ 款式改頁頭列（split 時先見到） */
+            const withCloseVariant = (l, name) => {
+                if (name !== 'split') return l;
+                if (variant.close === 2) {
+                    l.closeBtn = { ...l.closeBtn, o: 0 };
+                    l.cornerClose = { ...l.cornerClose, o: 1 };
+                }
+                if (variant.close === 3) {
+                    l.closeBtn = { ...l.closeBtn, o: 0 };
+                    l.collapseBtn = { ...l.collapseBtn, o: 1 };
+                    l.headDisc = { ...l.headDisc, x: l.headDisc.x + 46 };
+                    l.title = { ...l.title, x: l.title.x + 46 };
+                }
+                return l;
+            };
             const apply = (name) => {
-                const l = layout[name]();
+                const l = withCloseVariant(layout[name](), name);
                 Object.entries(NODES).forEach(([k, node]) => place(node, { tx: 0, ...l[k] }));
                 tiles.forEach((t, i) => place(t, { tx: 0, ...l.tiles[i] }));
                 rows.forEach((r, i) => place(r, { tx: 0, ...l.rows[i] }));
@@ -626,6 +714,52 @@
                 reduce.textContent = `減少動態：${on ? '開' : '關'}`;
             });
             controls.append(reduce);
+
+            /** 一組款式切換掣：撳完即刻去相應狀態睇 */
+            const variantRow = (label, key, options, showState) => {
+                const row = document.createElement('div');
+                row.className = 'controls';
+                const name = document.createElement('span');
+                name.textContent = label;
+                name.style.cssText = 'align-self:center;color:var(--muted)';
+                row.append(name);
+                const own = options.map(([n, text]) => {
+                    const b = document.createElement('button');
+                    b.textContent = text;
+                    b.addEventListener('click', () => {
+                        variant[key] = n;
+                        own.forEach(([ob, on]) =>
+                            ob.setAttribute('aria-pressed', String(on === n)),
+                        );
+                        go(showState);
+                    });
+                    row.append(b);
+                    return [b, n];
+                });
+                own[0][0].setAttribute('aria-pressed', 'true');
+                controls.after(row);
+                return row;
+            };
+            variantRow(
+                '重開 player：',
+                'reopen',
+                [
+                    [1, '① tab 隔籬圓掣'],
+                    [2, '② 右邊緣把手'],
+                    [3, '③ 浮動細 player'],
+                ],
+                'closed',
+            );
+            variantRow(
+                '✕ 位置：',
+                'close',
+                [
+                    [1, '① ⤢ 左邊'],
+                    [2, '② 卡角浮掣'],
+                    [3, '③ 左邊「⟩⟩ 收埋」'],
+                ],
+                'split',
+            );
             go('split');
         </script>
     </body>
