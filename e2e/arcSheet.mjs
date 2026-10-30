@@ -42,6 +42,11 @@ const SETTLE_TIMEOUT_MS = 5000;
 // 起手點喺清單頂下面咁多 px（第一行入面）
 const LIST_GRIP_OFFSET_PX = 30;
 
+// 撳「全集」之後最多等咁耐表出現
+const SHEET_OPEN_TIMEOUT_MS = 5000;
+// 甩閂之後第一下 tap 偶然被食（CUI-0010），最多試咁多次（每次表唔喺度先撳）
+const SHEET_OPEN_TAPS = 2;
+
 const sheetOf = (p) => p.getByRole('dialog', { name: '全集' });
 
 const centreOf = (box) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
@@ -142,16 +147,28 @@ const GRIPS = {
     },
 };
 
-/** 表未開就撳「全集」掣開返；斷言表開咗兼喺原位（冇殘留 transform） */
+/**
+ * 表未開就撳「全集」掣開返；斷言表開咗兼喺原位（冇殘留 transform）。
+ * 甩閂之後第一下 tap 偶然被食（觸控手勢啱啱完），等唔到就再撳一次，只報最後結果（CUI-0010）
+ */
 const openSheet = async (env, label) => {
     const { p, log, tap } = env;
-    if ((await sheetOf(p).count()) === 0) {
-        const button = p.getByRole('button', { name: '全集', exact: true });
-        await (tap ? button.tap() : button.click());
+    const button = p.getByRole('button', { name: '全集', exact: true });
+    let taps = 0;
+    let visible = false;
+    for (let attempt = 0; attempt < SHEET_OPEN_TAPS && !visible; attempt += 1) {
+        if ((await sheetOf(p).count()) === 0) {
+            await (tap ? button.tap() : button.click());
+            taps += 1;
+        }
+        visible = await isShown(sheetOf(p), { state: 'visible', timeout: SHEET_OPEN_TIMEOUT_MS });
     }
-    const visible = await isShown(sheetOf(p), { state: 'visible', timeout: 5000 });
     const transform = visible ? await sheetTransform(p) : '(冇表)';
-    log(visible && transform === '', `${label}：全集表打開咗，喺原位（transform「${transform}」）`);
+    const retried = taps > 1 ? `，撳咗 ${taps} 下` : '';
+    log(
+        visible && transform === '',
+        `${label}：全集表打開咗，喺原位（transform「${transform}」${retried}）`,
+    );
     return visible;
 };
 
