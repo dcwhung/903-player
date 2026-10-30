@@ -2316,4 +2316,34 @@ describe('AudioController hidden stall follow-ups (v1.20.10)', () => {
             detach();
         });
     });
+    describe('CUI-0012 wake while a slow locked load is progressing', () => {
+        /** iOS 凍結 JS 咁耐，期間 buffer 多咗幾秒 */
+        const FROZEN_JS_MS = 10_000;
+        const GROWN_WHILE_FROZEN_SECONDS = 2;
+        const TRICKLE_BEFORE_FREEZE_MS = 5000;
+
+        it('does not reload on wake right after a hidden tick while data still arrives', async () => {
+            const { audio, detach } = await lockedStart();
+            trickle(audio, 2 * STALL_PROGRESS_RECHECK_MS);
+
+            setScreen('visible');
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+
+        it('does not reload on wake when the overdue hidden tick runs just before visibilitychange', async () => {
+            const { audio, detach } = await lockedStart();
+            trickle(audio, TRICKLE_BEFORE_FREEZE_MS);
+            vi.setSystemTime(Date.now() + FROZEN_JS_MS);
+            const end = (bufferedEndOf(audio) ?? 0) + GROWN_WHILE_FROZEN_SECONDS;
+            audio.buffered = timeRanges([[0, end]]);
+            vi.advanceTimersByTime(STALL_PROGRESS_RECHECK_MS);
+
+            setScreen('visible');
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+    });
 });

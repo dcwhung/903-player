@@ -50,8 +50,8 @@ export class StallWatchdog {
     /** arm 嗰陣嘅載入狀態，到期時用嚟睇有冇進展 */
     private baseline: LoadProbe | undefined;
     /**
-     * 鎖屏上一次 tick 嘅載入狀態：loading 同佢比較。iOS 亮 JS 時遲咗嘅 tick 可能啱啱喺
-     * 鎖屏 Play 之前更新 baseline，同最新嗰個比會當冇進展而 abort 慢載（W-511）
+     * 鎖屏上一次 tick 嘅載入狀態：判斷仲載緊時同佢比較。iOS 亮 JS 時遲咗嘅 tick 可能啱啱喺
+     * 鎖屏 Play / 亮屏之前更新 baseline，同最新嗰個比會當冇進展而 abort 慢載（W-511、CUI-0012）
      */
     private previousBaseline: LoadProbe | undefined;
     /** baseline 幾時影（Date.now()） */
@@ -73,7 +73,7 @@ export class StallWatchdog {
      * 鎖屏 Play 見到就唔 reload，免得 abort 佢（S-614）
      */
     get loading(): boolean {
-        return this.pending && this.isStillLoading(this.previousBaseline ?? this.baseline);
+        return this.pending && this.isStillLoading();
     }
 
     /** 睇緊而 deadline 已經過咗（timer 可能被 iOS 凍結咗未行） */
@@ -217,8 +217,12 @@ export class StallWatchdog {
         return Math.min(STALL_PROGRESS_RECHECK_MS, untilCap);
     }
 
-    /** 由 since（預設 arm / 最近一次 tick）到而家下載有進展，而且未等夠總上限 */
-    private isStillLoading(since = this.baseline): boolean {
+    /**
+     * 由比較基準到而家下載有進展，而且未等夠總上限。預設同鎖屏上一次 tick 比（冇就用 arm 嗰陣）：
+     * 鎖屏 Play（loading）同亮屏補做（onDeadline）都可能喺 tick 啱啱更新咗 baseline 之後即刻問（W-511、CUI-0012）
+     */
+    private isStillLoading(): boolean {
+        const since = this.previousBaseline ?? this.baseline;
         const withinCap = Date.now() - this.startedAt < STALL_MAX_WAIT_MS;
         return withinCap && !!since && isLoadProgressing(since, this.hooks.probe());
     }
