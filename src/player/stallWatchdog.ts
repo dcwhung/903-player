@@ -48,6 +48,11 @@ export class StallWatchdog {
     private startedAt = Number.NEGATIVE_INFINITY;
     /** arm 嗰陣嘅載入狀態，到期時用嚟睇有冇進展 */
     private baseline: LoadProbe | undefined;
+    /**
+     * 鎖屏上一次 tick 嘅載入狀態：loading 同佢比較。iOS 亮 JS 時遲咗嘅 tick 可能啱啱喺
+     * 鎖屏 Play 之前更新 baseline，同最新嗰個比會當冇進展而 abort 慢載（W-511）
+     */
+    private previousBaseline: LoadProbe | undefined;
     /** 今次嘗試（start / 每次 retry reload）幾時開始：鎖屏時由呢度計 STALL_HIDDEN_MARK_MS */
     private attemptStartedAt = Number.NEGATIVE_INFINITY;
     /** 今次嘗試鎖屏時已經報過卡住，唔使再報 */
@@ -65,7 +70,7 @@ export class StallWatchdog {
      * 鎖屏 Play 見到就唔 reload，免得 abort 佢（S-614）
      */
     get loading(): boolean {
-        return this.pending && this.isStillLoading();
+        return this.pending && this.isStillLoading(this.previousBaseline ?? this.baseline);
     }
 
     /** 睇緊而 deadline 已經過咗（timer 可能被 iOS 凍結咗未行） */
@@ -99,6 +104,7 @@ export class StallWatchdog {
         this.retriesLeft = undefined;
         this.deadline = Number.POSITIVE_INFINITY;
         this.baseline = undefined;
+        this.previousBaseline = undefined;
     }
 
     /** 即刻重試（timer 到，或者亮返屏幕時背景 timer 可能冇行過）；用完次數或者唔想播就放棄 */
@@ -141,6 +147,7 @@ export class StallWatchdog {
         clearTimeout(this.timer);
         this.deadline = Date.now() + delayMs;
         this.baseline = this.hooks.probe();
+        this.previousBaseline = undefined;
         this.timer = setTimeout(this.onDeadline, delayMs);
     }
 
@@ -172,10 +179,11 @@ export class StallWatchdog {
      * 保持 overdue 畀亮屏 / 鎖屏 Play 即刻 reload；等夠 STALL_HIDDEN_MARK_MS 先報卡住（鎖屏顯示 Play）。
      * 報咗之後唔再排 timer：亮屏由 visibilitychange、鎖屏 Play 由 resume() 接手，
      * 凍結由 checkFrozenIn 睇（S-613、C-011）。每次都更新進展基準，
-     * loading 先係「最近仲載緊」而唔係「開播之後載過嘢」（W-510）
+     * loading 先係「最近仲載緊」而唔係「開播之後載過嘢」（W-510）；loading 用上一個，見 previousBaseline
      */
     private waitWhileHidden(): void {
         const untilMark = this.attemptStartedAt + STALL_HIDDEN_MARK_MS - Date.now();
+        this.previousBaseline = this.baseline;
         this.baseline = this.hooks.probe();
         clearTimeout(this.timer);
         this.timer = undefined;
@@ -196,9 +204,9 @@ export class StallWatchdog {
         return Math.min(STALL_PROGRESS_RECHECK_MS, untilCap);
     }
 
-    /** 由 arm 到而家下載有進展，而且未等夠總上限 */
-    private isStillLoading(): boolean {
+    /** 由 since（預設 arm / 最近一次 tick）到而家下載有進展，而且未等夠總上限 */
+    private isStillLoading(since = this.baseline): boolean {
         const withinCap = Date.now() - this.startedAt < STALL_MAX_WAIT_MS;
-        return withinCap && !!this.baseline && isLoadProgressing(this.baseline, this.hooks.probe());
+        return withinCap && !!since && isLoadProgressing(since, this.hooks.probe());
     }
 }

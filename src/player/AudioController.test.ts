@@ -2260,4 +2260,36 @@ describe('AudioController hidden stall follow-ups (v1.20.10)', () => {
             detach();
         });
     });
+    describe('W-511 loading survives a fresh hidden snapshot', () => {
+        /** mark 之後好快就撳鎖屏 Play：mark tick 啱啱更新咗基準 */
+        const PLAY_AFTER_MARK_MS = 500;
+
+        it('keeps a progressing load when Play comes right after a hidden tick', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            trickle(audio, STALL_HIDDEN_MARK_MS);
+            vi.advanceTimersByTime(PLAY_AFTER_MARK_MS);
+
+            await controller.resume();
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+    });
+
+    describe('S-622 waiting restarts the frozen check', () => {
+        const WAITING_AFTER_PLAYING_MS = 1000;
+
+        it('reloads when playing is followed by waiting with data still present', async () => {
+            const { audio, detach } = await lockedStart();
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS + AFTER_MARK_MS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            vi.advanceTimersByTime(WAITING_AFTER_PLAYING_MS);
+            audio.emitWaiting();
+
+            vi.advanceTimersByTime(FROZEN_PLAYING_MS);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+    });
 });
