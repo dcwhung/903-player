@@ -194,6 +194,9 @@ export class AudioController {
         if (this.frozenBeforeStop || this.isStuck()) {
             this.stopWatchingStall();
             this.reload('remote');
+        } else if (this.isSuspectedStall()) {
+            // 慢但仲載緊：唔 reload，記低方便對實機 log（S-614、S-621）
+            recordPlayback('keep', this.audio, 'loading');
         }
         await this.play();
     };
@@ -375,8 +378,8 @@ export class AudioController {
         this.audibleFrom = this.audio.currentTime;
         this.playingFired = true;
         this.playingAt = Date.now();
-        // 鎖屏報咗卡住之後冇再輪詢：等夠凍結門檻再睇一次（S-613）
-        this.stall.recheckWhenParked(FROZEN_PLAYING_MS);
+        // 等夠凍結門檻再睇一次：鎖屏報咗卡住之後冇輪詢（S-613、C-011）
+        this.stall.checkFrozenIn(FROZEN_PLAYING_MS);
     };
 
     /** bytes 入緊（約每 350 ms）：只計數畀 watchdog 比較，唔記 log（太密） */
@@ -417,6 +420,7 @@ export class AudioController {
         this.audibleFrom = this.audio.currentTime;
         // 凍結時間同出聲起點一齊由而家計，唔好用之前嘅 playing（S-617）
         this.playingAt = Date.now();
+        this.stall.checkFrozenIn(FROZEN_PLAYING_MS);
         this.update({ isAudible: false });
     };
 

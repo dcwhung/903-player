@@ -85,23 +85,18 @@ describe('QA S-551 edge cases', () => {
 
     it('should never overwrite saved progress with 0 across all stalled retries', async () => {
         const { audio, controller, detach } = await stalledStart();
+        const screen = vi.spyOn(document, 'visibilityState', 'get');
         for (let i = 0; i < STALL_MAX_RETRIES; i += 1) {
+            // 前景先會 reload；reload 將 currentTime reset 做 0，metadata 未到就切走都唔可以存 0（S-620）
+            screen.mockReturnValue('visible');
             vi.advanceTimersByTime(STALL_RETRY_MS);
-            // reload resets currentTime to 0 before metadata: hidden page must not persist 0
-            Object.defineProperty(document, 'visibilityState', {
-                configurable: true,
-                get: () => 'hidden',
-            });
+            screen.mockReturnValue('hidden');
             document.dispatchEvent(new Event('visibilitychange'));
             window.dispatchEvent(new Event('pagehide'));
         }
-        Object.defineProperty(document, 'visibilityState', {
-            configurable: true,
-            get: () => 'visible',
-        });
+        expect(audio.load).toHaveBeenCalledTimes(STALL_MAX_RETRIES);
         expect(getResumePosition(RECORDING.url)).toBe(RESUME_AT);
         expect(controller.getSnapshot().currentTime).toBe(RESUME_AT);
-        void audio;
         detach();
     });
 

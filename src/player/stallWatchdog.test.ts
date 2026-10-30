@@ -444,7 +444,7 @@ describe('StallWatchdog', () => {
             expect(retry).not.toHaveBeenCalled();
             expect(watchdog.pending).toBe(false);
         });
-        /** S-613：報咗卡住就停輪詢；之後只喺 recheckWhenParked 先再睇 */
+        /** S-613：報咗卡住就停輪詢；凍結由 checkFrozenIn 睇（C-011） */
         it('should stop polling once the stall has been reported', () => {
             const { watchdog, isHidden } = setup();
             isHidden.mockReturnValue(true);
@@ -456,7 +456,7 @@ describe('StallWatchdog', () => {
             expect(watchdog.overdue).toBe(true);
         });
 
-        it('should check once more after a parked recheck and retry a frozen attempt', () => {
+        it('should retry a frozen attempt from a frozen check once past the deadline', () => {
             const RECHECK_MS = 1000;
             const { watchdog, retry, isHidden, isFrozenPlaying } = setup();
             isHidden.mockReturnValue(true);
@@ -464,20 +464,38 @@ describe('StallWatchdog', () => {
             vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
             isFrozenPlaying.mockReturnValue(true);
 
-            watchdog.recheckWhenParked(RECHECK_MS);
+            watchdog.checkFrozenIn(RECHECK_MS);
             vi.advanceTimersByTime(RECHECK_MS);
 
             expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
         });
 
-        it('should ignore a parked recheck before the stall is reported', () => {
+        it('should restart the frozen check on every call', () => {
+            const RECHECK_MS = 1000;
+            const { watchdog, retry, isHidden, isFrozenPlaying } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+            watchdog.checkFrozenIn(RECHECK_MS);
+            vi.advanceTimersByTime(RECHECK_MS - 1);
+            isFrozenPlaying.mockReturnValue(true);
+
+            watchdog.checkFrozenIn(RECHECK_MS);
+            vi.advanceTimersByTime(RECHECK_MS - 1);
+            expect(retry).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(1);
+
+            expect(retry).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not retry from a frozen check before the deadline', () => {
             const RECHECK_MS = 1000;
             const { watchdog, retry, isFrozenPlaying } = setup();
             watchdog.start(STALL_MAX_RETRIES);
             isFrozenPlaying.mockReturnValue(true);
 
             // 前景：唔可以提早過 deadline 重試
-            watchdog.recheckWhenParked(RECHECK_MS);
+            watchdog.checkFrozenIn(RECHECK_MS);
             vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
 
             expect(retry).not.toHaveBeenCalled();

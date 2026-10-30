@@ -40,6 +40,8 @@ export class StallWatchdog {
     /** 剩低幾多次重試；undefined = 冇睇住 */
     private retriesLeft: number | undefined;
     private timer: ReturnType<typeof setTimeout> | undefined;
+    /** checkFrozenIn 排嘅凍結檢查 */
+    private frozenTimer: ReturnType<typeof setTimeout> | undefined;
     /** 而家呢次等待幾時到期（Date.now()）：iOS 暫停 JS 時 timer 唔行，但 wall clock 照行 */
     private deadline = Number.POSITIVE_INFINITY;
     /** 呢一輪由幾時開始睇住（start()）：下載有進展都最多等 STALL_MAX_WAIT_MS */
@@ -91,7 +93,9 @@ export class StallWatchdog {
 
     cancel(): void {
         clearTimeout(this.timer);
+        clearTimeout(this.frozenTimer);
         this.timer = undefined;
+        this.frozenTimer = undefined;
         this.retriesLeft = undefined;
         this.deadline = Number.POSITIVE_INFINITY;
         this.baseline = undefined;
@@ -121,12 +125,14 @@ export class StallWatchdog {
     };
 
     /**
-     * 鎖屏報咗卡住、已經停咗輪詢：delayMs 後再睇一次（S-613）。
-     * AudioController 收到 playing 時叫，等夠 FROZEN_PLAYING_MS 睇下係咪凍結（v1.20.9）；其他情況唔郁
+     * delayMs 後睇下 playing 係咪凍結咗：過咗 deadline 先郁，同亮屏補做一樣（retryIfOverdue）。
+     * AudioController 每次 playing / waiting 都叫，凍結時間由最新嗰個計（v1.20.9、S-617）；
+     * 鎖屏報咗卡住之後唔再輪詢，靠呢個 timer 救凍結（S-613、C-011）
      */
-    recheckWhenParked(delayMs: number): void {
-        if (this.pending && this.hiddenStallReported && this.timer === undefined) {
-            this.timer = setTimeout(this.onDeadline, delayMs);
+    checkFrozenIn(delayMs: number): void {
+        if (this.pending) {
+            clearTimeout(this.frozenTimer);
+            this.frozenTimer = setTimeout(this.retryIfOverdue, delayMs);
         }
     }
 
@@ -165,10 +171,12 @@ export class StallWatchdog {
      * 鎖屏時到期：唔 reload（會 abort iOS 載緊嘅數據）、唔扣次數。deadline 唔推後，
      * 保持 overdue 畀亮屏 / 鎖屏 Play 即刻 reload；等夠 STALL_HIDDEN_MARK_MS 先報卡住（鎖屏顯示 Play）。
      * 報咗之後唔再排 timer：亮屏由 visibilitychange、鎖屏 Play 由 resume() 接手，
-     * 之後先到嘅 playing 由 recheckWhenParked 睇凍結（S-613）
+     * 凍結由 checkFrozenIn 睇（S-613、C-011）。每次都更新進展基準，
+     * loading 先係「最近仲載緊」而唔係「開播之後載過嘢」（W-510）
      */
     private waitWhileHidden(): void {
         const untilMark = this.attemptStartedAt + STALL_HIDDEN_MARK_MS - Date.now();
+        this.baseline = this.hooks.probe();
         clearTimeout(this.timer);
         this.timer = undefined;
         if (untilMark > 0) {

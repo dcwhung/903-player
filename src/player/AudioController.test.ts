@@ -2194,4 +2194,70 @@ describe('AudioController hidden stall follow-ups (v1.20.10)', () => {
             detach();
         });
     });
+    describe('C-011 frozen playing near or after the hidden mark', () => {
+        /** playing 喺 mark 前幾耐先到（少過 FROZEN_PLAYING_MS） */
+        const PLAYING_BEFORE_MARK_MS = 2000;
+        const WAITING_AFTER_PLAYING_MS = 1000;
+
+        it('reloads a frozen playing that arrived just before the mark', async () => {
+            const { audio, detach } = await lockedStart();
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS - PLAYING_BEFORE_MARK_MS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+
+            vi.advanceTimersByTime(FROZEN_PLAYING_MS);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+
+        it('reloads after playing, waiting and playing again once parked', async () => {
+            const { audio, detach } = await lockedStart();
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS + AFTER_MARK_MS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            vi.advanceTimersByTime(WAITING_AFTER_PLAYING_MS);
+            audio.emitWaiting();
+            vi.advanceTimersByTime(WAITING_AFTER_PLAYING_MS);
+            audio.emitPlaying();
+
+            vi.advanceTimersByTime(FROZEN_PLAYING_MS);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+    });
+
+    describe('W-510 loading compares with a recent snapshot', () => {
+        /** 開播後第一秒有少少數據，之後斷網 */
+        const EARLY_DATA_MS = 1000;
+        /** 鎖屏 Play：mark 之後、總上限之前 */
+        const PLAY_AT_MS = 20_000;
+
+        it('reloads on lock-screen play when data stopped arriving long ago', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            audio.buffered = timeRanges([[0, TRICKLE_SECONDS]]);
+            vi.advanceTimersByTime(EARLY_DATA_MS);
+            vi.advanceTimersByTime(PLAY_AT_MS - EARLY_DATA_MS);
+
+            await controller.resume();
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+    });
+
+    describe('S-621 log a lock-screen play that keeps the load', () => {
+        it('records that the reload was skipped because it is still loading', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            trickle(audio, STALL_HIDDEN_MARK_MS + AFTER_MARK_MS);
+
+            await controller.resume();
+
+            expect(
+                readPlaybackLog().some(
+                    (line) => line.includes(' keep ') && line.endsWith(' loading'),
+                ),
+            ).toBe(true);
+            detach();
+        });
+    });
 });
