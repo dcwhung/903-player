@@ -11,6 +11,8 @@ export const PROGRESS_STORAGE_KEY = '903player:progress:v1';
 export const STALL_HIDDEN_MARK_MS = 12000;
 /** 離尾咁多秒就換下一集 */
 export const EARLY_ADVANCE_SECONDS = 1;
+/** 每輪最多重試幾多次：第一次 retry 嘅 log 係 left=STALL_MAX_RETRIES */
+export const STALL_MAX_RETRIES = 3;
 
 // 跳去離尾幾秒，等 app 自己喺尾段換集
 const SEEK_BEFORE_END_SECONDS = EARLY_ADVANCE_SECONDS + 2;
@@ -18,8 +20,6 @@ const SEEK_BEFORE_END_SECONDS = EARLY_ADVANCE_SECONDS + 2;
 const AUDIBLE_SECONDS = 1;
 // 撳播放 / 換集之後最多等咁耐出聲
 const PLAY_WAIT_MS = 10_000;
-// 換集之後等卡住 deadline 過咗再睇：比 STALL_FIRST_RETRY_MS（4 s）多留位
-const PAST_FIRST_DEADLINE_MS = 5000;
 // 報卡住 / 亮屏重試最多等咁耐（CPU 爭用留位）
 const MARK_MARGIN_MS = 3000;
 // 存進度嘅位置同轉背景嗰刻位置最多差咁多秒
@@ -169,33 +169,33 @@ const checkHiddenStall = async (env) => {
         await seekNearEnd(p);
         const switched = await waitSwitched(p, first.src);
         log(switched, `${label}：背景播完換咗去下一集`);
-        await p.waitForTimeout(PAST_FIRST_DEADLINE_MS);
-        const early = await retryLines(p);
-        log(
-            early.length === 0,
-            `${label}：過咗首個 deadline 背景都唔 reload（retry ${early.length}）`,
-        );
         const marked = await succeeds(
             p.waitForFunction(() => navigator.mediaSession.playbackState === 'paused', undefined, {
                 timeout: STALL_HIDDEN_MARK_MS + MARK_MARGIN_MS,
             }),
         );
         log(marked, `${label}：等夠 ${STALL_HIDDEN_MARK_MS / 1000}s 鎖屏報卡住（顯示 Play）`);
+        // 報卡住先數：4 s / 8 s / 12 s 嘅 deadline 都過咗，唔使固定 sleep（S-529、S-627）
+        const early = await retryLines(p);
+        log(
+            early.length === 0,
+            `${label}：背景過咗所有 deadline 都唔 reload（retry ${early.length}）`,
+        );
         await setHidden(p, false);
         const retried = await succeeds(
             p.waitForFunction(
-                (key) =>
-                    JSON.parse(localStorage.getItem(key) ?? '[]').some((l) =>
-                        /^.* retry .* left=3$/.test(l),
+                ({ key, left }) =>
+                    JSON.parse(localStorage.getItem(key) ?? '[]').some(
+                        (l) => l.includes(' retry ') && l.endsWith(` left=${left}`),
                     ),
-                PLAYBACK_LOG_STORAGE_KEY,
+                { key: PLAYBACK_LOG_STORAGE_KEY, left: STALL_MAX_RETRIES },
                 { timeout: MARK_MARGIN_MS },
             ),
         );
         const total = (await retryLines(p)).length;
         log(
             retried && total === 1,
-            `${label}：返前景即刻重試一次（left=3 ${retried}，retry ${total}）`,
+            `${label}：返前景即刻重試一次（left=${STALL_MAX_RETRIES} ${retried}，retry ${total}）`,
         );
     }
     await ctx.close();

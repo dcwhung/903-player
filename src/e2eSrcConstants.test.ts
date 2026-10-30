@@ -18,6 +18,7 @@ import {
     PROGRESS_STORAGE_KEY,
     STALL_FIRST_RETRY_MS,
     STALL_HIDDEN_MARK_MS,
+    STALL_MAX_RETRIES,
 } from './config/constants';
 import { PROBE_STORAGE_KEY } from './services/probeStore';
 // ?raw：index.html 原始字串，搵出佢引用嘅外部 host
@@ -63,6 +64,7 @@ describe('e2e copies of src constants', () => {
         ['PROGRESS_STORAGE_KEY', PROGRESS_STORAGE_KEY],
         ['STALL_HIDDEN_MARK_MS', STALL_HIDDEN_MARK_MS],
         ['EARLY_ADVANCE_SECONDS', EARLY_ADVANCE_SECONDS],
+        ['STALL_MAX_RETRIES', STALL_MAX_RETRIES],
     ])('should keep hiddenPlayback.mjs %s equal to src', async (name, expected) => {
         const hidden = await importE2E('hiddenPlayback.mjs');
 
