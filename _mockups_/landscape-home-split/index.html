@@ -227,7 +227,7 @@
     </head>
     <body>
         <main>
-            <h1>CUI-0015 橫版主頁 preview v2（高 ≥ 562px）</h1>
+            <h1>CUI-0015 橫版主頁 preview v4（高 ≥ 562px）</h1>
             <p class="note">靜態 mockup，唔係真 app（字型 / 落影近似）。按你 v1 意見改：</p>
             <ul>
                 <li>
@@ -236,13 +236,16 @@
                 </li>
                 <li><b>放唔落就 swipe 分頁</b>，下面頁點，同直版節目主頁一樣；冇箭咀。</li>
                 <li>
-                    <b>左邊永遠用盡上下空間</b>：card 拉滿格（同手機打橫一樣唔鎖比例，圖 cover
-                    裁）。
+                    <b>左邊永遠用盡上下空間，盡量少裁</b>：唔固定 2 行，按畫面揀欄 × 行（2–5
+                    行、一行少幾個都得），令每格比例最貼近原圖（節目 16:9、劇集
+                    2:1）；分頁同留空格都扣分， 最尾一行唔夠格就拉闊最後一張。
                 </li>
                 <li>
                     <b>有 mini player</b>：右邊 =
                     主頁底色上面一張節目色泥膠卡，入面係內頁播放器縮細（節目名、唱片 +
-                    弧形進度、時間、播放掣、現正播放）；高畫面（≥ 700px）多「下一集」。
+                    弧形進度、時間、播放掣、現正播放）；高畫面（≥
+                    700px）多「下一集」，樣式同內頁集數清單一樣（標題 / 副題、進度條、狀態、▷
+                    播放掣；未上架虛線冇掣）。
                 </li>
             </ul>
             <div id="out"></div>
@@ -336,7 +339,13 @@
                 shows: {
                     title: 'Bad Girl大過佬',
                     ep: '現正播放 · 30/10（五）',
-                    next: ['29/10（四）未上架', '28/10（三）未上架', '27/10（二）聽到 1:19'],
+                    /** [標題, 副題, 狀態, 進度, 未上架] — 同內頁清單一樣 */
+                    next: [
+                        ['29/10', '星期四', '未上架', 0, true],
+                        ['28/10', '星期三', '未上架', 0, true],
+                        ['27/10', '星期二', '聽到 1:19', 0.02, false],
+                        ['26/10', '星期一', '未收聽', 0, false],
+                    ],
                     disc: 'disc_badgirl',
                     bg: '#21151a',
                     surface: '#2e1e24',
@@ -349,9 +358,10 @@
                     title: '森美小儀系列',
                     ep: '公子森林 · 第 32 集 · 白海娟的決定',
                     next: [
-                        '第 33 集 · 兩張紙巾',
-                        '第 34 集 · Sandra & Mama',
-                        '第 35 集 · 浪費的愛情',
+                        ['兩張紙巾', '第 33 集', '未收聽', 0, false],
+                        ['Sandra & Mama', '第 34 集', '未收聽', 0, false],
+                        ['浪費的愛情', '第 35 集', '未收聽', 0, false],
+                        ['十九樓半', '第 36 集', '未收聽', 0, false],
                     ],
                     disc: 'ddisc_sammy-kitty',
                     bg: '#ffe3e3',
@@ -485,8 +495,13 @@
                 });
                 banner.append(el('span', 'ver', {}, 'v1.21.0'));
                 grid.append(banner);
-                items.slice(0, perPage).forEach((item) => {
+                const shown = items.slice(0, perPage);
+                // 最尾一行唔夠格：最後一張拉闊填返，唔留空位（左邊要用盡畫面）
+                const spare = perPage - shown.length;
+                shown.forEach((item, index) => {
                     const card = el('div', 'card', { backgroundImage: `url(${IMG[item.k]})` });
+                    if (spare > 0 && index === shown.length - 1)
+                        card.style.gridColumn = `span ${spare + 1}`;
                     if (item.label)
                         card.append(
                             el(
@@ -524,28 +539,47 @@
                 return { cols, rows, pages };
             };
 
-            /** 手機打橫 landscapeLayout.ts SCREEN_SHAPES：卡數 → 欄 × 行、橫額跨幾欄 */
-            const SCREEN_SHAPES = {
-                5: { cols: 3, rows: 2, bannerSpan: 1 },
-                8: { cols: 5, rows: 2, bannerSpan: 2 },
+            /** 原圖比例：節目 tile 1216×684、劇集 tile 1216×608 */
+            const TILE_RATIO = { shows: 1216 / 684, dramas: 2 };
+            /** 每格最少咁高（再細字同掣放唔落） */
+            const MIN_CELL_H = 120;
+            /** 分頁嘅代價：寧願裁少少都唔好分太多頁 */
+            const PAGE_COST = 0.4;
+            /** 最後一頁留空格嘅代價（按空格佔一頁幾多計）：左邊要用盡畫面 */
+            const EMPTY_COST = 1.5;
+            const MAX_ROWS = 5;
+            const MAX_COLS = 6;
+
+            /**
+             * 揀欄 × 行：每格比例盡量貼近原圖（裁得最少），唔固定 2 行；
+             * 一頁放唔晒就分頁（swipe），每多一頁扣 PAGE_COST，留空格扣 EMPTY_COST。橫額佔第一格
+             */
+            const bestShape = (box, tab) => {
+                const count = itemsOf(tab).length + 1;
+                const target = TILE_RATIO[tab];
+                let best;
+                for (let rows = 1; rows <= MAX_ROWS; rows += 1) {
+                    for (let cols = 1; cols <= MAX_COLS; cols += 1) {
+                        const cellW = (box.w - GAP * (cols - 1)) / cols;
+                        const cellH = (box.h - GAP * (rows - 1)) / rows;
+                        if (cellH < MIN_CELL_H) continue;
+                        const pages = Math.ceil(count / (rows * cols));
+                        const crop = Math.abs(Math.log(cellW / cellH / target));
+                        const empty = (pages * rows * cols - count) / (rows * cols);
+                        const score = crop + PAGE_COST * (pages - 1) + EMPTY_COST * empty;
+                        if (!best || score < best.score)
+                            best = { cols, rows, bannerSpan: 1, score };
+                    }
+                }
+                return best;
             };
 
-            /** 冇 mini player（A）：同手機打橫一樣，tab 喺頂，下面橫額入格、填滿 */
+            /** 冇 mini player（A）：tab 喺頂，下面橫額入格、填滿 */
             const layoutA = (scr, W, H, tab) => {
                 tabsBar(scr, { x: PAD, y: PAD, w: W - 2 * PAD, h: TABS_H }, tab);
                 const y = PAD + TABS_H + 16;
-                const shape = SCREEN_SHAPES[itemsOf(tab).length];
-                return fillGrid(scr, { x: PAD, y, w: W - 2 * PAD, h: H - y - PAD }, tab, shape);
-            };
-
-            /** 左右分嘅左邊：欄數按格嘅形狀揀（接近原圖比例），行數按高度：高畫面 3 行 */
-            const splitShape = (box, tab) => {
-                const rows = box.h >= TALL_H - 120 ? 3 : 2;
-                // 同現有手機打橫：節目格接近正方形，劇集格約 1.7:1
-                const ratio = tab === 'shows' ? 1 : 1.7;
-                const cellH = (box.h - GAP * (rows - 1)) / rows;
-                const cols = Math.max(2, Math.round((box.w + GAP) / (cellH * ratio + GAP)));
-                return { cols, rows, bannerSpan: 1 };
+                const box = { x: PAD, y, w: W - 2 * PAD, h: H - y - PAD };
+                return fillGrid(scr, box, tab, bestShape(box, tab));
             };
 
             const arcDisc = (parent, size, theme, progress) => {
@@ -575,6 +609,93 @@
                     }),
                 );
                 parent.append(ring);
+            };
+
+            /** 「下一集」：同內頁集數清單一樣（標題 / 副題、進度條、狀態、▷），未上架用虛線冇掣 */
+            const nextList = (theme) => {
+                const list = el('div', '', {
+                    width: '100%',
+                    marginTop: '6px',
+                    flex: '1 1 auto',
+                    minHeight: 0,
+                    overflow: 'hidden',
+                });
+                const head = el('div', '', {
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '13px',
+                    opacity: 0.75,
+                    padding: '0 6px 6px',
+                });
+                head.append(el('span', '', {}, '下一集'));
+                head.append(el('span', '', {}, '全部 ›'));
+                list.append(head);
+                theme.next.forEach(([title, sub, status, progress, pending]) => {
+                    const row = el('div', '', {
+                        display: 'grid',
+                        gridTemplateColumns: '34% 1fr 30px',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '10px 6px',
+                        borderTop: `1px solid ${theme.track}`,
+                        opacity: pending ? 0.55 : 1,
+                    });
+                    const names = el('div', '', { minWidth: 0 });
+                    names.append(
+                        el(
+                            'div',
+                            '',
+                            {
+                                fontSize: '15px',
+                                fontWeight: 700,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            },
+                            title,
+                        ),
+                    );
+                    names.append(el('div', '', { fontSize: '12px', opacity: 0.75 }, sub));
+                    row.append(names);
+                    const mid = el('div', '', { minWidth: 0 });
+                    const bar = el('div', '', {
+                        height: '4px',
+                        borderRadius: '999px',
+                        background: pending ? 'none' : theme.track,
+                        borderTop: pending ? `4px dotted ${theme.track}` : 'none',
+                    });
+                    if (!pending)
+                        bar.append(
+                            el('div', '', {
+                                width: `${progress * 100}%`,
+                                height: '100%',
+                                borderRadius: '999px',
+                                background: theme.accent,
+                            }),
+                        );
+                    mid.append(bar);
+                    mid.append(
+                        el(
+                            'div',
+                            '',
+                            { fontSize: '12px', marginTop: '4px', opacity: 0.85 },
+                            status,
+                        ),
+                    );
+                    row.append(mid);
+                    row.append(
+                        pending
+                            ? el('span')
+                            : el(
+                                  'span',
+                                  '',
+                                  { fontSize: '20px', color: theme.text, textAlign: 'center' },
+                                  '▷',
+                              ),
+                    );
+                    list.append(row);
+                });
+                return list;
             };
 
             /** 右邊：主頁底色上面一張節目色泥膠卡，入面係內頁播放器縮細；高畫面多「下一集」 */
@@ -644,37 +765,7 @@
                         theme.ep,
                     ),
                 );
-                if (tall) {
-                    const list = el('div', '', { width: '100%', marginTop: '8px' });
-                    list.append(
-                        el(
-                            'div',
-                            '',
-                            {
-                                fontSize: '14px',
-                                fontWeight: 700,
-                                color: theme.titleC,
-                                padding: '0 4px 6px',
-                            },
-                            '下一集',
-                        ),
-                    );
-                    theme.next.forEach((text) =>
-                        list.append(
-                            el(
-                                'div',
-                                '',
-                                {
-                                    fontSize: '14px',
-                                    padding: '10px 4px',
-                                    borderTop: `1px solid ${theme.track}`,
-                                },
-                                text,
-                            ),
-                        ),
-                    );
-                    card.append(list);
-                }
+                if (tall) card.append(nextList(theme));
                 scr.append(card);
             };
 
@@ -684,7 +775,7 @@
                 tabsBar(scr, { x: PAD, y: PAD, w: leftW - PAD, h: TABS_H }, tab);
                 const y = PAD + TABS_H + 16;
                 const box = { x: PAD, y, w: leftW - PAD, h: H - y - PAD };
-                const info = fillGrid(scr, box, tab, splitShape(box, tab));
+                const info = fillGrid(scr, box, tab, bestShape(box, tab));
                 playerCard(
                     scr,
                     { x: leftW + 6, y: PAD, w: paneW - PAD - 6, h: H - 2 * PAD },
