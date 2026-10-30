@@ -1,0 +1,106 @@
+import type { ReactNode } from 'react';
+import { AppVersion } from '../components/AppVersion/AppVersion';
+import { DramaTile, type DramaShelfItem } from '../components/DramaShelf/DramaTile';
+import { HomeBanner } from '../components/HomeBanner/HomeBanner';
+import { CoverBanner } from '../components/HomeLandscapeGrid/CoverBanner';
+import { DRAMA_TILE_RATIO, SHOW_TILE_RATIO } from '../components/HomeLandscapeGrid/fillShape';
+import { HomeFillGrid } from '../components/HomeLandscapeGrid/HomeFillGrid';
+import { HomePlayerCard } from '../components/HomePlayerCard/HomePlayerCard';
+import { HomePlayerHandle } from '../components/HomePlayerCard/HomePlayerHandle';
+import { HomeTabs } from '../components/HomeTabs/HomeTabs';
+import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
+import { APP_VERSION } from '../config/appVersion';
+import { TALL_CARD_QUERY } from '../config/layout';
+import { closeHomePlayerCard, openHomePlayerCard } from '../hooks/homePlayerCardClosed';
+import type { HomeTab } from '../hooks/useHomeTab';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { t } from '../i18n/t';
+import { withViewTransition } from '../utils/viewTransition';
+import styles from './HomePage.module.css';
+import type { HomeLayoutMode } from './homeLayoutMode';
+import page from './Page.module.css';
+import { useHomeCardGauge } from './useHomeCardGauge';
+import { useHomeNextEpisodes } from './useHomeNextEpisodes';
+
+interface WideGridProps {
+    tab: HomeTab;
+    showTiles: ReactNode[];
+    dramaItems: readonly DramaShelfItem[];
+    busy: boolean;
+}
+
+/** 填滿格：橫額（標準版圖 + 版本號）做第一格，跟住係而家 tab 嘅卡；換 tab 由第一頁開始 */
+const WideGrid = ({ tab, showTiles, dramaItems, busy }: WideGridProps) => {
+    const banner = (
+        <HomeBanner corner={<AppVersion version={APP_VERSION} />} art={<CoverBanner />} fill />
+    );
+    return tab === 'shows' ? (
+        <HomeFillGrid
+            key={tab}
+            label={t('home.showsNav')}
+            busy={busy}
+            tiles={showTiles}
+            banner={banner}
+            tileRatio={SHOW_TILE_RATIO}
+        />
+    ) : (
+        <HomeFillGrid
+            key={tab}
+            label={t('home.dramasNav')}
+            tiles={dramaItems.map((item) => (
+                <DramaTile key={item.id} item={item} />
+            ))}
+            banner={banner}
+            tileRatio={DRAMA_TILE_RATIO}
+        />
+    );
+};
+
+/**
+ * 右邊播放卡：mini player 嘅節目 / 劇集，唱片格跟 useHomeCardGauge；高畫面多「下一集」。
+ * 入頁、收埋都用過場（View Transitions，減少動畫就即刻轉）
+ */
+const SplitCard = ({ miniPlayer }: { miniPlayer: MiniPlayerProps }) => {
+    const tall = useMediaQuery(TALL_CARD_QUERY);
+    const gauge = useHomeCardGauge(miniPlayer);
+    const next = useHomeNextEpisodes(miniPlayer.keys[miniPlayer.index]);
+    const expand = () => withViewTransition(miniPlayer.onOpen, 'expand');
+    return (
+        <div className={styles.cardColumn}>
+            <HomePlayerCard
+                {...miniPlayer}
+                gauge={gauge}
+                next={tall ? { ...next, onAll: expand } : undefined}
+                onExpand={expand}
+                onClose={() => withViewTransition(closeHomePlayerCard, 'close')}
+            />
+        </div>
+    );
+};
+
+interface HomeWideProps extends WideGridProps {
+    mode: Exclude<HomeLayoutMode, 'stack'>;
+    onTab: (tab: HomeTab) => void;
+    miniPlayer: MiniPlayerProps | null;
+}
+
+/**
+ * 闊橫版主頁（WIDE_BANNER_QUERY）：冇橫額釘頂，tab 喺頂，下面填滿格；
+ * 有 mini player 就右邊播放卡（split，底部冇 mini player），收埋咗就全闊 + 右邊把手（fillWithHandle）
+ */
+export const HomeWide = ({ mode, onTab, miniPlayer, ...grid }: HomeWideProps) => (
+    <main className={`${page.page} ${page.locked} ${styles.wide}`} data-layout={mode}>
+        <div className={styles.gridColumn}>
+            <HomeTabs tab={grid.tab} onChange={onTab} />
+            <WideGrid {...grid} />
+        </div>
+        {mode === 'split' && miniPlayer && <SplitCard miniPlayer={miniPlayer} />}
+        {mode === 'fillWithHandle' && miniPlayer && (
+            <HomePlayerHandle
+                theme={miniPlayer.theme}
+                showName={miniPlayer.showName}
+                onOpen={() => withViewTransition(openHomePlayerCard, 'open')}
+            />
+        )}
+    </main>
+);

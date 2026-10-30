@@ -62,7 +62,10 @@ const stubPhoneSideways = () => {
     vi.stubGlobal(
         'matchMedia',
         vi.fn((query: string) => ({
-            matches: query.includes('max-height: 561px') || query.includes('landscape'),
+            // 手機打橫唔夠高，闊橫版（min-height: 562px）唔符合
+            matches:
+                query.includes('max-height: 561px') ||
+                (query.includes('landscape') && !query.includes('min-height: 562px')),
             addEventListener: vi.fn(),
             removeEventListener: vi.fn(),
         })),

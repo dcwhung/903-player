@@ -37,3 +37,43 @@ main.home[data-mini-player='multi'] {
 main.home[data-mini-player='single'] {
     --home-mini-player-height: var(--mini-player-height-single);
 }
+
+/*
+ * 闊橫版（HomeWide，WIDE_BANNER_QUERY）：左邊 tab + 填滿格，右邊播放卡（split）或者把手（fillWithHandle）。
+ * 冇底部 mini player，底部淨係留安全區 + 一格
+ */
+main.wide {
+    position: relative;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+    padding-bottom: calc(env(safe-area-inset-bottom) + var(--space-3));
+}
+
+/* 左欄：tab 喺頂，下面填滿格食晒剩低嘅高度；tab 過場時跟住伸縮（收埋 / 再出返播放卡） */
+.gridColumn {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: var(--fixed-page-gap);
+    min-width: 0;
+    min-height: 0;
+}
+
+.gridColumn > :first-child {
+    view-transition-name: home-tabs;
+}
+
+/* 右欄播放卡：佔畫面 --home-pane-ratio 闊，同 tab 頂對齊、用盡高度；右邊留白同格仔一樣 */
+.cardColumn {
+    display: flex;
+    flex: 0 0 calc(100% * var(--home-pane-ratio));
+    flex-direction: column;
+    min-height: 0;
+    padding-right: var(--home-gutter);
+}
+
+/* 播放卡收埋咗：右邊預留把手嘅位，唔會遮住格仔 */
+main.wide[data-layout='fillWithHandle'] {
+    padding-right: calc(env(safe-area-inset-right) + var(--home-handle-reserve));
+}

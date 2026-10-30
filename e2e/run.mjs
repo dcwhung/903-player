@@ -335,7 +335,8 @@ const checkPagedHome = async (p, label) => {
 
 /**
  * 橫版主頁：唔分頁（冇頁數指示點），8 格全部完整喺畫面、喺 mini player 上面；
- * 手機打橫橫額入節目格（nav 入面），其他橫版橫額成行喺節目格上面、用闊版圖
+ * 手機打橫橫額入節目格（nav 入面）。闊橫版（CUI-0015）橫額都入格（標準版圖），
+ * mini player 變成右邊播放卡，8 格要喺張卡左邊
  */
 const checkLandscapeHome = async (p, label) => {
     const nav = p.getByRole('navigation', { name: '節目' });
@@ -343,7 +344,11 @@ const checkLandscapeHome = async (p, label) => {
     const fit = await p.evaluate(
         ({ names, suffix }) => {
             const mini = document.querySelector('[aria-label="正在播放（今日節目）"]');
-            const miniTop = mini ? mini.getBoundingClientRect().top : innerHeight;
+            // 闊橫版播放卡喺右邊（split）：格仔要喺卡左邊；手機打橫 mini player 喺底：格仔要喺佢上面
+            const split = document.querySelector('main[data-layout="split"]') !== null;
+            const box = mini?.getBoundingClientRect();
+            const miniTop = box && !split ? box.top : innerHeight;
+            const right = box && split ? box.left : innerWidth;
             const nav = document.querySelector('nav');
             return [...nav.querySelectorAll('button')]
                 .filter((b) =>
@@ -352,10 +357,8 @@ const checkLandscapeHome = async (p, label) => {
                     ),
                 )
                 .map((b) => b.getBoundingClientRect())
-                .filter(
-                    (r) =>
-                        r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= miniTop,
-                ).length;
+                .filter((r) => r.left >= 0 && r.right <= right && r.top >= 0 && r.bottom <= miniTop)
+                .length;
         },
         { names: HOME_TILES, suffix: NEW_SUFFIX },
     );
@@ -368,8 +371,8 @@ const checkLandscapeHome = async (p, label) => {
     const phone = p.viewportSize().height <= SHORT_HEIGHT_PX;
     const src = await banner.evaluate((img) => img.currentSrc);
     log(
-        phone ? inGrid : !inGrid && /banner-wide/.test(src),
-        `${label}：${phone ? '橫額入節目格' : '橫額成行、用闊版圖'}（${src.split('/').pop()}）`,
+        inGrid && (phone || !/banner-wide/.test(src)),
+        `${label}：橫額入節目格${phone ? '' : '、用標準版圖'}（${src.split('/').pop()}）`,
     );
     log((await horizontalOverflow(p)) === 0, `${label}：冇橫向捲動`);
 };
