@@ -10,6 +10,7 @@ import { t } from '../i18n/t';
 import type { SeriesEpisode } from '../types/drama';
 import { PLAYBACK_LINE_KEY, type PlaybackLineState } from '../utils/playbackState';
 import { hasKnownDuration } from '../utils/time';
+import { TRANSITION_NAME } from '../utils/viewTransition';
 import { DramaHeader } from './DramaHeader';
 import page from './Page.module.css';
 import { SeriesArcSheet, SeriesListColumn } from './SeriesListColumn';
@@ -67,6 +68,7 @@ const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayer
                     art={status === 'unloaded' ? undefined : theme.art}
                     onStart={start}
                     standbyTime={view.standbyTime}
+                    transitionName={TRANSITION_NAME.gauge}
                 />
             ) : (
                 <StatusMessage message={t('episodes.noneUp')} />
@@ -99,7 +101,7 @@ export const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const column = { view, title: drama.name, landscape };
     return (
         <ThemeScope theme={view.theme}>
-            <main className={`${page.page} ${page.locked} ${page.fixed}`}>
+            <main className={`${page.page} ${page.locked} ${page.fixed}`} data-player-page="">
                 <SeriesPlayerColumn {...column} connecting={connecting} />
                 <SeriesListColumn
                     {...column}

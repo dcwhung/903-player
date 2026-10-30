@@ -10,6 +10,7 @@ import { usePlayer } from '../player/usePlayer';
 import { t } from '../i18n/t';
 import { formatDateLabel } from '../utils/date';
 import { hasKnownDuration } from '../utils/time';
+import { TRANSITION_NAME } from '../utils/viewTransition';
 import { DramaHeader } from './DramaHeader';
 import page from './Page.module.css';
 import { useDailyDramaPage } from './useDramaPage';
@@ -28,7 +29,7 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
     // 橫版頁頭喺左欄清單上面（清單成日都有）
     return (
         <ThemeScope theme={theme}>
-            <main className={`${page.page} ${page.locked} ${page.fixed}`}>
+            <main className={`${page.page} ${page.locked} ${page.fixed}`} data-player-page="">
                 <div className={page.playerColumn}>
                     {!landscape && <DramaHeader title={drama.name} />}
                     {!current && <StatusMessage message={t('episodes.noneUp')} />}
@@ -41,6 +42,7 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
                             currentDay={strip.current}
                             onPick={selectEpisode}
                             onStart={start}
+                            transitionName={TRANSITION_NAME.gauge}
                         />
                     )}
                     {current && landscape && (

@@ -12,6 +12,7 @@ import { t } from '../i18n/t';
 import { usePlayer } from '../player/usePlayer';
 import { formatDateLabel } from '../utils/date';
 import { hasKnownDuration } from '../utils/time';
+import { TRANSITION_NAME } from '../utils/viewTransition';
 import { LoadState } from './LoadState';
 import page from './Page.module.css';
 import { useShowPage } from './useShowPage';
@@ -50,6 +51,7 @@ const ShowPlayer = ({
                 currentDay={strip.current}
                 onPick={selectEpisode}
                 onStart={start}
+                transitionName={TRANSITION_NAME.gauge}
             />
             {landscape && (
                 <NowPlaying label={dateLabel} connecting={!start && !hasKnownDuration(duration)} />
@@ -80,7 +82,7 @@ export const ShowPage = () => {
     // 橫版左欄（頁頭 + 集數）、右欄（播放器 + 現正播放）；直版兩欄 display: contents，次序照舊
     return (
         <ThemeScope theme={theme}>
-            <main className={`${page.page} ${page.locked} ${page.fixed}`}>
+            <main className={`${page.page} ${page.locked} ${page.fixed}`} data-player-page="">
                 <div className={page.playerColumn}>
                     {!headerInList && header}
                     {!show ? (
