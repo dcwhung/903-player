@@ -11,10 +11,17 @@ interface HomePlayerHandleProps {
     theme: ShowTheme;
     showName: string;
     onOpen: () => void;
+    /** 用戶撳 ✕ 收埋：出現時焦點跟去把手（S-630） */
+    focusOnMount?: boolean;
 }
 
 /** 播放卡收埋咗：右邊緣一條窄把手（節目色、細碟、直寫節目名、‹），撳就再出返張卡 */
-export const HomePlayerHandle = ({ theme, showName, onOpen }: HomePlayerHandleProps) => (
+export const HomePlayerHandle = ({
+    theme,
+    showName,
+    onOpen,
+    focusOnMount = false,
+}: HomePlayerHandleProps) => (
     <ThemeScope theme={theme} fullPage={false} className={styles.handleScope}>
         <button
             type="button"
@@ -22,6 +29,7 @@ export const HomePlayerHandle = ({ theme, showName, onOpen }: HomePlayerHandlePr
             aria-label={t('homeCard.reopen', { name: showName })}
             style={{ viewTransitionName: TRANSITION_NAME.handle }}
             onClick={onOpen}
+            autoFocus={focusOnMount}
         >
             {theme.art && <img className={styles.handleDisc} src={theme.art} alt="" />}
             <span className={styles.handleName}>{showName}</span>

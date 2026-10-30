@@ -20,10 +20,18 @@ interface CardHeaderProps {
     art: string | undefined;
     openLabel: string;
     onExpand: () => void;
+    focusOnMount: boolean;
 }
 
-const CardHeader = ({ name, art, openLabel, onExpand }: CardHeaderProps) => (
-    <button type="button" className={styles.header} aria-label={openLabel} onClick={onExpand}>
+const CardHeader = ({ name, art, openLabel, onExpand, focusOnMount }: CardHeaderProps) => (
+    <button
+        type="button"
+        className={styles.header}
+        aria-label={openLabel}
+        onClick={onExpand}
+        // 用戶撳把手再出返張卡：焦點跟去張卡（自動因播放再出返就唔搶焦點，S-630）
+        autoFocus={focusOnMount}
+    >
         <Disc size="small" art={art} />
         <span className={styles.name} style={{ viewTransitionName: TRANSITION_NAME.title }}>
             {name}
@@ -97,6 +105,8 @@ interface HomePlayerCardProps {
     onExpand: () => void;
     /** 卡角 ✕：淨係收埋張卡，照播 */
     onClose: () => void;
+    /** 用戶撳把手再出返：出現時焦點去頁頭列 */
+    focusOnMount?: boolean;
 }
 
 /**
@@ -115,6 +125,7 @@ export const HomePlayerCard = ({ theme, gauge, next, ...props }: HomePlayerCardP
                 art={theme.art}
                 openLabel={props.openLabel}
                 onExpand={props.onExpand}
+                focusOnMount={props.focusOnMount ?? false}
             />
             <CardGauge art={theme.art} gauge={gauge} />
             {next && <CardNext {...next} />}

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
@@ -171,6 +171,34 @@ describe('HomePage on a wide landscape screen', () => {
 
             expect(screen.getByRole('region', { name: SHOW_CARD })).toBeInTheDocument();
             expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'split');
+        });
+    });
+
+    describe('focus after closing or reopening the card', () => {
+        const HEADER = '開啟 Bad Girl大過佬 節目頁';
+        const HANDLE = '打開播放器：Bad Girl大過佬';
+
+        it('should move focus to the handle after ✕, and to the card after reopening from it', async () => {
+            stubWideLandscape();
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            await screen.findByRole('region', { name: SHOW_CARD });
+
+            await userEvent.click(screen.getByRole('button', { name: '收埋播放器' }));
+            expect(screen.getByRole('button', { name: HANDLE })).toHaveFocus();
+
+            await userEvent.click(screen.getByRole('button', { name: HANDLE }));
+            expect(screen.getByRole('button', { name: HEADER })).toHaveFocus();
+        });
+
+        it('should leave focus alone when the card comes back because playback started', async () => {
+            stubWideLandscape();
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            await screen.findByRole('region', { name: SHOW_CARD });
+            await userEvent.click(screen.getByRole('button', { name: '收埋播放器' }));
+
+            act(() => openHomePlayerCard());
+
+            expect(screen.getByRole('button', { name: HEADER })).not.toHaveFocus();
         });
     });
 
