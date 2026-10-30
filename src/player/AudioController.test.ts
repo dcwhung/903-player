@@ -2292,4 +2292,28 @@ describe('AudioController hidden stall follow-ups (v1.20.10)', () => {
             detach();
         });
     });
+    describe('W-512 two hidden ticks on wake', () => {
+        /** 鎖屏開播後幾耐先發 playing（rs 仲係 metadata） */
+        const PLAYING_AT_MS = 5000;
+        /** iOS 凍結 JS 咁耐 */
+        const FROZEN_JS_MS = 10_000;
+        /** 凍結期間 buffer 多咗幾秒 */
+        const GROWN_WHILE_FROZEN_SECONDS = 2;
+
+        it('keeps a progressing load when the main tick and the frozen check both run at wake', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            trickle(audio, PLAYING_AT_MS);
+            audio.emitPlaying();
+            vi.setSystemTime(Date.now() + FROZEN_JS_MS);
+            const end = (bufferedEndOf(audio) ?? 0) + GROWN_WHILE_FROZEN_SECONDS;
+            audio.buffered = timeRanges([[0, end]]);
+            // 亮 JS：遲咗嘅 main tick 同凍結檢查連住行
+            vi.advanceTimersByTime(STALL_PROGRESS_RECHECK_MS);
+
+            await controller.resume();
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+    });
 });

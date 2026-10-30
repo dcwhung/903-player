@@ -522,5 +522,21 @@ describe('StallWatchdog', () => {
 
             expect(watchdog.loading).toBe(false);
         });
+        /** S-623：retry 之後 arm 要清走上一次嘗試嘅 tick 狀態，否則新載入同舊 buffer 比會當冇進展 */
+        it('should compare loading with the new attempt after a retry', () => {
+            const OLD_BUFFERED_END = 100;
+            const { watchdog, probe, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            probe.mockReturnValue({ ...idleProbe(), bufferedEnd: OLD_BUFFERED_END, readyState: 2 });
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+
+            isHidden.mockReturnValue(false);
+            probe.mockImplementation(growingProbe());
+            watchdog.retryIfOverdue();
+            isHidden.mockReturnValue(true);
+
+            expect(watchdog.loading).toBe(true);
+        });
     });
 });

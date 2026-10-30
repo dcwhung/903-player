@@ -41,6 +41,11 @@ export const STALL_HIDDEN_MARK_MS = 12000;
  */
 export const FROZEN_PLAYING_MS = 3500;
 /**
+ * 鎖屏 tick 嘅進展基準最少要咁舊先換做「上一個」：iOS 亮 JS 時遲咗嘅 main tick 同凍結檢查
+ * 會連住行，冇呢個下限兩個基準都會係「而家」，鎖屏 Play 會當慢載冇進展而 abort 佢（W-512）
+ */
+export const STALL_BASELINE_MIN_AGE_MS = 1000;
+/**
  * 卡住 deadline 到咗但下載仲有進展（慢網）時，隔咁耐再睇一次：唔扣重試次數（W-498）
  */
 export const STALL_PROGRESS_RECHECK_MS = 4000;

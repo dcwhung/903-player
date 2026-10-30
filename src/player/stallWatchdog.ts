@@ -1,4 +1,5 @@
 import {
+    STALL_BASELINE_MIN_AGE_MS,
     STALL_FIRST_RETRY_MS,
     STALL_HIDDEN_MARK_MS,
     STALL_MAX_WAIT_MS,
@@ -53,6 +54,8 @@ export class StallWatchdog {
      * 鎖屏 Play 之前更新 baseline，同最新嗰個比會當冇進展而 abort 慢載（W-511）
      */
     private previousBaseline: LoadProbe | undefined;
+    /** baseline 幾時影（Date.now()） */
+    private baselineAt = Number.NEGATIVE_INFINITY;
     /** 今次嘗試（start / 每次 retry reload）幾時開始：鎖屏時由呢度計 STALL_HIDDEN_MARK_MS */
     private attemptStartedAt = Number.NEGATIVE_INFINITY;
     /** 今次嘗試鎖屏時已經報過卡住，唔使再報 */
@@ -147,6 +150,7 @@ export class StallWatchdog {
         clearTimeout(this.timer);
         this.deadline = Date.now() + delayMs;
         this.baseline = this.hooks.probe();
+        this.baselineAt = Date.now();
         this.previousBaseline = undefined;
         this.timer = setTimeout(this.onDeadline, delayMs);
     }
@@ -183,8 +187,7 @@ export class StallWatchdog {
      */
     private waitWhileHidden(): void {
         const untilMark = this.attemptStartedAt + STALL_HIDDEN_MARK_MS - Date.now();
-        this.previousBaseline = this.baseline;
-        this.baseline = this.hooks.probe();
+        this.refreshHiddenBaseline();
         clearTimeout(this.timer);
         this.timer = undefined;
         if (untilMark > 0) {
@@ -196,6 +199,16 @@ export class StallWatchdog {
             this.hiddenStallReported = true;
             this.hooks.onStalled();
         }
+    }
+
+    /** 鎖屏 tick 更新進展基準；舊基準未夠 STALL_BASELINE_MIN_AGE_MS 就唔換，免得兩個都係「而家」（W-512） */
+    private refreshHiddenBaseline(): void {
+        if (Date.now() - this.baselineAt < STALL_BASELINE_MIN_AGE_MS) {
+            return;
+        }
+        this.previousBaseline = this.baseline;
+        this.baseline = this.hooks.probe();
+        this.baselineAt = Date.now();
     }
 
     /** 下一次 recheck：唔可以排喺 STALL_MAX_WAIT_MS 之後，上限先真係上限（S-582） */
