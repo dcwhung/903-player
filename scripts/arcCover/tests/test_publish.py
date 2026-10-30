@@ -90,6 +90,7 @@ class BatchesTest(unittest.TestCase):
         self.assertTrue(shares_no_path([PAGE, "img/old.png"], files))  # index.html 唔喺 files，唔計重疊
         self.assertFalse(shares_no_path([PAGE, ROUNDS], files))
         self.assertFalse(shares_no_path([], files))  # 冇 --previous 唔使警告
+        self.assertFalse(shares_no_path([PAGE], files))  # 淨係主頁：冇舊檔要刪，唔使警告（S-619）
 
 
 class ReadPreviousTest(unittest.TestCase):

@@ -63,8 +63,8 @@ def peak_file_count(previous: Iterable[str], files: dict[str, str]) -> int:
 
 def shares_no_path(previous: Iterable[str], files: dict[str, str]) -> bool:
     """previous 有嘢但同今次 files 一個 path 都對唔到 = --previous 格式好可能錯咗
-    （index.html 唔喺 files，唔計重疊）"""
-    old = set(previous)
+    （index.html 唔喺 files，唔計重疊，亦唔算「有嘢」，S-619）"""
+    old = set(previous) - {PAGE}
     return bool(old) and not old & set(files)
 
 
