@@ -3,11 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
-import { seriesEpisodesOf } from '../dramas';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../dramas';
 import { openHomePlayerCard } from '../hooks/homePlayerCardClosed';
 import { restoreMiniPlayer } from '../hooks/miniPlayerDismissed';
 import { usePlayer } from '../player/usePlayer';
-import { episodesInArc } from '../selectors/dramas';
+import { dailyNewestFirst, episodesInArc } from '../selectors/dramas';
 import type { Track } from '../types/track';
 import { HomePage } from './HomePage';
 
@@ -220,6 +220,16 @@ describe('HomePage on a wide landscape screen', () => {
             expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
         });
 
+        it('should list the older episodes of a daily drama under 昔日集數', async () => {
+            stubWideLandscape({ tall: true });
+            const episodes = dailyNewestFirst(dailyEpisodesOf('c18'));
+            await arriveHomeWith(episodes[1]!);
+            const card = await screen.findByRole('region', { name: DRAMA_CARD });
+
+            const older = within(card).getByRole('region', { name: '昔日集數' });
+            expect(within(older).getAllByRole('listitem').length).toBeGreaterThan(0);
+        });
+
         it('should open the drama page from 全部', async () => {
             stubWideLandscape({ tall: true });
             await arriveHomeWith(FIRST);
@@ -230,12 +240,13 @@ describe('HomePage on a wide landscape screen', () => {
             expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
         });
 
-        it('should list the older episodes of the show after the one shown', async () => {
+        it('should list the older episodes of the show under 昔日集數', async () => {
             stubWideLandscape({ tall: true });
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
             const card = await screen.findByRole('region', { name: SHOW_CARD });
 
-            const next = within(card).getByRole('region', { name: '下一集' });
+            expect(within(card).queryByRole('region', { name: '下一集' })).not.toBeInTheDocument();
+            const next = within(card).getByRole('region', { name: '昔日集數' });
             expect(
                 within(next)
                     .getAllByRole('listitem')
