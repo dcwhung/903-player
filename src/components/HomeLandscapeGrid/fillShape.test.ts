@@ -69,6 +69,12 @@ describe('fillShape', () => {
         }
     });
 
+    it('should keep a single page even when paging would crop less', () => {
+        // 窄矮嘅 box：一頁 4 欄格好窄（裁好多），兩頁 2 欄分數低啲，但一頁放得晒就一定一頁
+        const shape = shapeOf({ width: 300, height: 130 }, 3, SHOW_TILE_RATIO);
+        expect(dims(shape)).toEqual([4, 1, 1]);
+    });
+
     it('should page when too many cards fit on one screen', () => {
         expect(dims(shapeOf(PHONE_TALL_FULL, 20, SHOW_TILE_RATIO))).toEqual([4, 3, 2]);
     });
