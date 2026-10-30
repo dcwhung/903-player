@@ -84,3 +84,13 @@
         right: var(--space-2);
     }
 }
+
+/* 闊橫版填滿格（HomeFillGrid）：同手機打橫一樣喺格入面，圖（CoverBanner）填滿個格 */
+.banner[data-fill] {
+    height: 100%;
+    padding: 0;
+}
+
+.banner[data-fill] .corner {
+    right: var(--space-2);
+}

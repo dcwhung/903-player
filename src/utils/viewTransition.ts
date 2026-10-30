@@ -28,3 +28,20 @@ export const withViewTransition = (update: () => void, kind: ViewTransitionKind)
         if (root.dataset.viewTransition === kind) delete root.dataset.viewTransition;
     });
 };
+
+/** 過場時兩邊同名就移位變形嘅元素（global.css 揀動畫） */
+export const TRANSITION_NAME = {
+    /** 主頁播放卡 ↔ 節目 / 劇集頁成頁底 */
+    panel: 'player-panel',
+    /** 唱片格（唱片 + 弧形 + 播放掣） */
+    gauge: 'player-gauge',
+    /** 播放卡頁頭列節目名 ↔ 內頁頁頭 */
+    title: 'player-title',
+    /** 播放卡收埋後右邊嘅把手 */
+    handle: 'player-handle',
+    banner: 'home-banner',
+} as const;
+
+/** 主頁每格（按卡嘅 key）：收埋 / 再出返播放卡時格仔由舊位移去新位 */
+export const tileTransitionName = (key: string | number): string =>
+    `home-tile-${String(key).replace(/[^\w-]/g, '-')}`;

@@ -1,4 +1,4 @@
-import { withViewTransition } from './viewTransition';
+import { tileTransitionName, withViewTransition } from './viewTransition';
 
 const stubReducedMotion = (reduce: boolean) =>
     vi.stubGlobal(
@@ -74,5 +74,12 @@ describe('withViewTransition', () => {
         await vi.waitFor(() =>
             expect(document.documentElement.dataset.viewTransition).toBeUndefined(),
         );
+    });
+});
+
+describe('tileTransitionName', () => {
+    it('should give each tile a stable name a view transition accepts', () => {
+        expect(tileTransitionName('sammy-kitty')).toBe('home-tile-sammy-kitty');
+        expect(tileTransitionName('.$today')).toBe('home-tile---today');
     });
 });
