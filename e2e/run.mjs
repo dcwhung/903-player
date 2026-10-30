@@ -48,6 +48,8 @@ const WANNI_BG = '#1c1c1e'; // SHOW_THEMES.wanni.bg
 const APP_VERSION_TEXT = `v${JSON.parse(readFileSync(new URL('../package.json', import.meta.url))).version}`;
 
 let failures = 0;
+/** 全集表第一下撳被食咗幾多次（CUI-0010）：唔算 FAIL，但結尾要見到 */
+let sheetMissedTaps = 0;
 const log = (ok, msg) => {
     if (!ok) failures += 1;
     console.log(`${ok ? 'PASS' : 'FAIL'}  ${msg}`);
@@ -1572,7 +1574,7 @@ try {
     await runTouchChecks({ browser, base: BASE, out: OUT, errors, log });
 
     // 全集表向下拉閂：拉唔夠彈返、拉夠閂（觸控 header + 清單、滑鼠 header）
-    await runArcSheetChecks({ browser, base: BASE, errors, log });
+    sheetMissedTaps = await runArcSheetChecks({ browser, base: BASE, errors, log });
 
     // 主頁 mini player 重溫規則：平日重溫 + 今日節目、星期日冇節目
     await runMiniPlayerRuleChecks({ browser, base: BASE, errors, log });
@@ -1604,6 +1606,11 @@ try {
 } finally {
     await browser?.close();
     server.kill();
+}
+if (sheetMissedTaps > 0) {
+    console.log(
+        `\nINFO  全集表第一下撳被食咗 ${sheetMissedTaps} 次，補撳先開到（CUI-0010）：次次都有就要查 app`,
+    );
 }
 console.log(failures === 0 ? '\nAll E2E checks passed' : `\n${failures} E2E check(s) failed`);
 process.exitCode = failures === 0 ? 0 : 1;

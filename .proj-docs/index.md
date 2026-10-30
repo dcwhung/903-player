@@ -46,34 +46,38 @@
 | 2026-10-29 | [reviews/2026-10-29_review_v1.20.8_hotfix.md](reviews/2026-10-29_review_v1.20.8_hotfix.md)（hotfix 97 pass，S-613–S-615；鎖屏唔自動 reload stall watchdog）                                                                                                                                                                     |
 | 2026-10-29 | [reviews/2026-10-29_review_v1.20.9_hotfix.md](reviews/2026-10-29_review_v1.20.9_hotfix.md)（hotfix 88 pass，W-506–W-507、S-616–S-617；鎖屏 playing 後凍結照 reload；Round 2 84 pass，W-508–W-509）                                                                                                                              |
 | 2026-10-30 | [reviews/2026-10-30_review_v1.20.10.md](reviews/2026-10-30_review_v1.20.10.md)（76 fail，C-011、W-510、S-618–S-621；S-613 / S-614 / S-617 鎖屏卡住收尾 + QA S-551 邊界 test + arc-cover S-610–S-612；Round 2 94 pass，W-511、S-622；Round 3 94 pass，W-512、S-623；Round 4 99 pass，S-624；Round 5 99 pass，CUI-0012 確認修好） |
+| 2026-10-30 | [reviews/2026-10-30_review_cui-0010-0013.md](reviews/2026-10-30_review_cui-0010-0013.md)（94 pass，W-513、S-625；e2e 全集表補撳 + tsconfig typecheck test timeout，v1.20.11）                                                                                                                                                   |
+| 2026-10-30 | [reviews/2026-10-30_review_cui-0011.md](reviews/2026-10-30_review_cui-0011.md)（94 pass，W-514、S-626；v1.20.12 metadata 前「未 stalled 就當載緊」；Round 2 100 pass）                                                                                                                                                          |
 
 ## QA
 
-| 日期       | 文件                                                                                                                                                                                  |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-26 | [qa/2026-10-26_qa_v1.10.0_batch.md](qa/2026-10-26_qa_v1.10.0_batch.md)                                                                                                                |
-| 2026-10-26 | [qa/2026-10-26_qa_v1.10.1.md](qa/2026-10-26_qa_v1.10.1.md)                                                                                                                            |
-| 2026-10-27 | [qa/2026-10-27_qa_v1.10.2.md](qa/2026-10-27_qa_v1.10.2.md)                                                                                                                            |
-| 2026-10-27 | [qa/2026-10-27_qa_v1.11.0.md](qa/2026-10-27_qa_v1.11.0.md)                                                                                                                            |
-| 2026-10-27 | [qa/2026-10-27_qa_v1.12.0.md](qa/2026-10-27_qa_v1.12.0.md)                                                                                                                            |
-| 2026-10-27 | [qa/2026-10-27_qa_size-limits_batch.md](qa/2026-10-27_qa_size-limits_batch.md)                                                                                                        |
-| 2026-10-27 | [qa/2026-10-27_qa_size-guard_batch.md](qa/2026-10-27_qa_size-guard_batch.md)                                                                                                          |
-| 2026-10-27 | [qa/2026-10-27_qa_cleanup_batch.md](qa/2026-10-27_qa_cleanup_batch.md)                                                                                                                |
-| 2026-10-28 | [qa/2026-10-28_qa_v1.19.1.md](qa/2026-10-28_qa_v1.19.1.md)                                                                                                                            |
-| 2026-10-28 | [qa/2026-10-28_qa_v1.19.2.md](qa/2026-10-28_qa_v1.19.2.md)                                                                                                                            |
-| 2026-10-28 | [qa/2026-10-28_qa_v1.19.3.md](qa/2026-10-28_qa_v1.19.3.md)（fail → Re-verify `9098549` pass）                                                                                         |
-| 2026-10-28 | [qa/2026-10-28_qa_v1.19.4.md](qa/2026-10-28_qa_v1.19.4.md)                                                                                                                            |
-| 2026-10-28 | [qa/2026-10-28_qa_v1.20.3.md](qa/2026-10-28_qa_v1.20.3.md)                                                                                                                            |
-| 2026-10-28 | [qa/2026-10-28_qa_e2e_hardening.md](qa/2026-10-28_qa_e2e_hardening.md)                                                                                                                |
-| 2026-10-29 | [qa/2026-10-29_qa_v1.20.5.md](qa/2026-10-29_qa_v1.20.5.md)                                                                                                                            |
-| 2026-10-29 | [qa/2026-10-29_qa_v1.20.6.md](qa/2026-10-29_qa_v1.20.6.md)                                                                                                                            |
-| 2026-10-29 | [qa/2026-10-29_qa_catalog-tools.md](qa/2026-10-29_qa_catalog-tools.md)（CUI-0008 🟢）                                                                                                 |
-| 2026-10-29 | [qa/2026-10-29_qa_cui-0008.md](qa/2026-10-29_qa_cui-0008.md)（CUI-0008 驗證 pass）                                                                                                    |
-| 2026-10-29 | [qa/2026-10-29_qa_tool-polish.md](qa/2026-10-29_qa_tool-polish.md)（S-567/S-570–S-572/W-496 pass）                                                                                    |
-| 2026-10-29 | [qa/2026-10-29_qa_e2e-offline.md](qa/2026-10-29_qa_e2e-offline.md)（e2e offline / W-497 pass；CUI-0009 🟡、CUI-0010 🟢）                                                              |
-| 2026-10-29 | [qa/2026-10-29_qa_s551-lockscreen-stall.md](qa/2026-10-29_qa_s551-lockscreen-stall.md)（S-551 鎖屏卡住 + 芝See菇Bi tile pass；CUI-0011 🟢）                                           |
-| 2026-10-29 | [qa/2026-10-29_qa_v1.20.7.md](qa/2026-10-29_qa_v1.20.7.md)（v1.20.7 release pass；S-583 / W-505 Chromium 4 s；CUI-0011 c0 仍 4 / 12 / 20 s）                                          |
-| 2026-10-30 | [qa/2026-10-30_qa_v1.20.10.md](qa/2026-10-30_qa_v1.20.10.md)（v1.20.10 fail：CUI-0012 🔴 鎖屏慢載途中亮屏被 reload；CUI-0013 🟢 coverage run timeout flake → Re-test `2293d00` pass） |
+| 日期       | 文件                                                                                                                                                                                                               |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-26 | [qa/2026-10-26_qa_v1.10.0_batch.md](qa/2026-10-26_qa_v1.10.0_batch.md)                                                                                                                                             |
+| 2026-10-26 | [qa/2026-10-26_qa_v1.10.1.md](qa/2026-10-26_qa_v1.10.1.md)                                                                                                                                                         |
+| 2026-10-27 | [qa/2026-10-27_qa_v1.10.2.md](qa/2026-10-27_qa_v1.10.2.md)                                                                                                                                                         |
+| 2026-10-27 | [qa/2026-10-27_qa_v1.11.0.md](qa/2026-10-27_qa_v1.11.0.md)                                                                                                                                                         |
+| 2026-10-27 | [qa/2026-10-27_qa_v1.12.0.md](qa/2026-10-27_qa_v1.12.0.md)                                                                                                                                                         |
+| 2026-10-27 | [qa/2026-10-27_qa_size-limits_batch.md](qa/2026-10-27_qa_size-limits_batch.md)                                                                                                                                     |
+| 2026-10-27 | [qa/2026-10-27_qa_size-guard_batch.md](qa/2026-10-27_qa_size-guard_batch.md)                                                                                                                                       |
+| 2026-10-27 | [qa/2026-10-27_qa_cleanup_batch.md](qa/2026-10-27_qa_cleanup_batch.md)                                                                                                                                             |
+| 2026-10-28 | [qa/2026-10-28_qa_v1.19.1.md](qa/2026-10-28_qa_v1.19.1.md)                                                                                                                                                         |
+| 2026-10-28 | [qa/2026-10-28_qa_v1.19.2.md](qa/2026-10-28_qa_v1.19.2.md)                                                                                                                                                         |
+| 2026-10-28 | [qa/2026-10-28_qa_v1.19.3.md](qa/2026-10-28_qa_v1.19.3.md)（fail → Re-verify `9098549` pass）                                                                                                                      |
+| 2026-10-28 | [qa/2026-10-28_qa_v1.19.4.md](qa/2026-10-28_qa_v1.19.4.md)                                                                                                                                                         |
+| 2026-10-28 | [qa/2026-10-28_qa_v1.20.3.md](qa/2026-10-28_qa_v1.20.3.md)                                                                                                                                                         |
+| 2026-10-28 | [qa/2026-10-28_qa_e2e_hardening.md](qa/2026-10-28_qa_e2e_hardening.md)                                                                                                                                             |
+| 2026-10-29 | [qa/2026-10-29_qa_v1.20.5.md](qa/2026-10-29_qa_v1.20.5.md)                                                                                                                                                         |
+| 2026-10-29 | [qa/2026-10-29_qa_v1.20.6.md](qa/2026-10-29_qa_v1.20.6.md)                                                                                                                                                         |
+| 2026-10-29 | [qa/2026-10-29_qa_catalog-tools.md](qa/2026-10-29_qa_catalog-tools.md)（CUI-0008 🟢）                                                                                                                              |
+| 2026-10-29 | [qa/2026-10-29_qa_cui-0008.md](qa/2026-10-29_qa_cui-0008.md)（CUI-0008 驗證 pass）                                                                                                                                 |
+| 2026-10-29 | [qa/2026-10-29_qa_tool-polish.md](qa/2026-10-29_qa_tool-polish.md)（S-567/S-570–S-572/W-496 pass）                                                                                                                 |
+| 2026-10-29 | [qa/2026-10-29_qa_e2e-offline.md](qa/2026-10-29_qa_e2e-offline.md)（e2e offline / W-497 pass；CUI-0009 🟡、CUI-0010 🟢）                                                                                           |
+| 2026-10-29 | [qa/2026-10-29_qa_s551-lockscreen-stall.md](qa/2026-10-29_qa_s551-lockscreen-stall.md)（S-551 鎖屏卡住 + 芝See菇Bi tile pass；CUI-0011 🟢）                                                                        |
+| 2026-10-29 | [qa/2026-10-29_qa_v1.20.7.md](qa/2026-10-29_qa_v1.20.7.md)（v1.20.7 release pass；S-583 / W-505 Chromium 4 s；CUI-0011 c0 仍 4 / 12 / 20 s）                                                                       |
+| 2026-10-30 | [qa/2026-10-30_qa_v1.20.10.md](qa/2026-10-30_qa_v1.20.10.md)（v1.20.10 fail：CUI-0012 🔴 鎖屏慢載途中亮屏被 reload；CUI-0013 🟢 coverage run timeout flake → Re-test `2293d00` pass）                              |
+| 2026-10-30 | [qa/2026-10-30_qa_cui-0010-0013.md](qa/2026-10-30_qa_cui-0010-0013.md)（v1.20.11 pass：CUI-0010 e2e 5 × 590 / 0、被食 tap 0；CUI-0013 coverage 4 × 1956 綠；兩張 ticket completed）                                |
+| 2026-10-30 | [qa/2026-10-30_qa_cui-0011.md](qa/2026-10-30_qa_cui-0011.md)（v1.20.12 fail：CUI-0011 0.1× 開播 38.8 → 18.8 s ✅；CUI-0014 🔴 0.05× metadata 交接 reload，57 → 81 s；部分 bytes 後斷網 retry 30 s，記入 CUI-0011） |
 
 ## Deploys
 

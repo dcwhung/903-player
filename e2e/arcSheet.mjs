@@ -42,7 +42,31 @@ const SETTLE_TIMEOUT_MS = 5000;
 // 起手點喺清單頂下面咁多 px（第一行入面）
 const LIST_GRIP_OFFSET_PX = 30;
 
+// 撳「全集」之後最多等咁耐表出現
+const SHEET_OPEN_TIMEOUT_MS = 5000;
+// 甩閂之後第一下 tap 偶然被食（CUI-0010），最多試咁多次（每次表唔喺度先撳）
+const SHEET_OPEN_TAPS = 2;
+
+// 第一下撳唔到時嘅截圖（e2e/screenshots/ 唔入 git）
+const MISSED_TAP_SHOT = new URL('./screenshots/cui-0010-missed-tap.png', import.meta.url).pathname;
+
 const sheetOf = (p) => p.getByRole('dialog', { name: '全集' });
+
+/** 第一下撳「全集」冇開到表：記低嗰刻 DOM 狀態同截圖，查係咪閂緊嘅表 / 手勢仲未完（CUI-0010、W-513） */
+const reportMissedTap = async (env, label) => {
+    const state = await env.p.evaluate(() => ({
+        dialogs: document.querySelectorAll('[role="dialog"]').length,
+        closing: document.querySelector('[data-closing]') !== null,
+        dragging: document.querySelector('[data-dragging]') !== null,
+        active: document.activeElement?.tagName ?? '-',
+    }));
+    await env.p.screenshot({ path: MISSED_TAP_SHOT });
+    env.missedTaps.count += 1;
+    console.log(
+        `INFO  ${label}：第一下撳「全集」冇開到表（dialog ${state.dialogs}、closing ${state.closing}、` +
+            `dragging ${state.dragging}、focus ${state.active}），截圖 ${MISSED_TAP_SHOT}`,
+    );
+};
 
 const centreOf = (box) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
 
@@ -142,16 +166,31 @@ const GRIPS = {
     },
 };
 
-/** 表未開就撳「全集」掣開返；斷言表開咗兼喺原位（冇殘留 transform） */
+/**
+ * 表未開就撳「全集」掣開返；斷言表開咗兼喺原位（冇殘留 transform）。
+ * 甩閂之後第一下 tap 偶然被食（觸控手勢啱啱完），等唔到就再撳一次，只報最後結果（CUI-0010）。
+ * 被食嗰次記 INFO + 截圖，總數由 runArcSheetChecks 交畀 run.mjs 印：次次都要補撳就係 app 有事（W-513）。
+ * 只喺表唔喺 DOM 先撳，假設 SHEET_OPEN_TIMEOUT_MS 內表一定出現，唔會撳中背景閂咗佢（S-625）
+ */
 const openSheet = async (env, label) => {
     const { p, log, tap } = env;
-    if ((await sheetOf(p).count()) === 0) {
-        const button = p.getByRole('button', { name: '全集', exact: true });
-        await (tap ? button.tap() : button.click());
+    const button = p.getByRole('button', { name: '全集', exact: true });
+    let taps = 0;
+    let visible = false;
+    for (let attempt = 0; attempt < SHEET_OPEN_TAPS && !visible; attempt += 1) {
+        if ((await sheetOf(p).count()) === 0) {
+            await (tap ? button.tap() : button.click());
+            taps += 1;
+        }
+        visible = await isShown(sheetOf(p), { state: 'visible', timeout: SHEET_OPEN_TIMEOUT_MS });
+        if (!visible && taps === 1) await reportMissedTap(env, label);
     }
-    const visible = await isShown(sheetOf(p), { state: 'visible', timeout: 5000 });
     const transform = visible ? await sheetTransform(p) : '(冇表)';
-    log(visible && transform === '', `${label}：全集表打開咗，喺原位（transform「${transform}」）`);
+    const retried = taps > 1 ? `，撳咗 ${taps} 下` : '';
+    log(
+        visible && transform === '',
+        `${label}：全集表打開咗，喺原位（transform「${transform}」${retried}）`,
+    );
     return visible;
 };
 
@@ -327,14 +366,16 @@ const openDramaPage = async (browser, errors, base, options) => {
  * 全集表拉閂：觸控（header pointer + 清單 touch）同滑鼠（header pointer），各測彈返、閂同甩；
  * 觸控再測清單未捲到頂向下拉係捲清單
  */
+/** 返回第一下撳「全集」被食咗幾多次（CUI-0010） */
 export const runArcSheetChecks = async ({ browser, base, errors, log }) => {
+    const missedTaps = { count: 0 };
     const touch = await openDramaPage(browser, errors, base, {
         hasTouch: true,
         isMobile: true,
         deviceScaleFactor: 3,
     });
     const cdp = await touch.ctx.newCDPSession(touch.p);
-    const touchEnv = { p: touch.p, log, tap: true, input: touchInput(cdp) };
+    const touchEnv = { p: touch.p, log, tap: true, input: touchInput(cdp), missedTaps };
     for (const grip of ['header', 'list']) {
         const label = `${SIZE} 觸控全集表（${grip === 'header' ? '表頭' : '清單'}）`;
         await checkSnapBack(touchEnv, grip, label);
@@ -345,10 +386,11 @@ export const runArcSheetChecks = async ({ browser, base, errors, log }) => {
     await touch.ctx.close();
 
     const mouse = await openDramaPage(browser, errors, base, { deviceScaleFactor: 2 });
-    const mouseEnv = { p: mouse.p, log, tap: false, input: mouseInput(mouse.p) };
+    const mouseEnv = { p: mouse.p, log, tap: false, input: mouseInput(mouse.p), missedTaps };
     const label = `${SIZE} 滑鼠全集表（表頭）`;
     await checkSnapBack(mouseEnv, 'header', label);
     await checkDismiss(mouseEnv, 'header', label);
     await checkFling(mouseEnv, 'header', label);
     await mouse.ctx.close();
+    return missedTaps.count;
 };

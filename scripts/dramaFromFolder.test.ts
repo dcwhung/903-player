@@ -46,6 +46,11 @@ const COMMITTED_IDS = [...SERIES_IDS, 'c18'] as const;
 /** host: app 嘅錄音喺 app 自己嘅 public/dramas/（同 src/dramas/episodes.ts 一致） */
 const APP_AUDIO_DIR = 'dramas/';
 const VERIFY_TIMEOUT_MS = 300;
+/**
+ * 用 TypeScript API 建成個 tsconfig.node.json program：單獨跑 ~1.4 s，coverage 全 suite 平行時去到 7.5 s，
+ * 超過 vitest 預設 5 s（CUI-0013、S-574）
+ */
+const TYPECHECK_TIMEOUT_MS = 20_000;
 const HANG_MS = 2000;
 const CONCURRENCY = 2;
 const HTTP_OK = 200;
@@ -1036,16 +1041,20 @@ describe('script packaging', () => {
         expect(DRAMA_AUDIO_BASE).toBe(APP_AUDIO_BASE);
     });
 
-    it('should not give Node-run scripts vite/client types (import.meta.env)', () => {
-        // 呢個 test 經 episodes.ts 用到 import.meta.env，所以 scripts/*.test.ts 自己一個 project
-        // （tsconfig.scripts-test.json）先有 vite/client；tsconfig.node.json 底下純 Node 檔用 import.meta.env 要報錯
-        const probe = join(root, 'probe.ts');
-        writeFileSync(probe, 'export const base: string = import.meta.env.BASE_URL;\n');
-        const messages = nodeProgramErrors(probe).map((d) =>
-            ts.flattenDiagnosticMessageText(d.messageText, '\n'),
-        );
-        expect(messages.join('\n')).toContain("Property 'env' does not exist");
-    });
+    it(
+        'should not give Node-run scripts vite/client types (import.meta.env)',
+        () => {
+            // 呢個 test 經 episodes.ts 用到 import.meta.env，所以 scripts/*.test.ts 自己一個 project
+            // （tsconfig.scripts-test.json）先有 vite/client；tsconfig.node.json 底下純 Node 檔用 import.meta.env 要報錯
+            const probe = join(root, 'probe.ts');
+            writeFileSync(probe, 'export const base: string = import.meta.env.BASE_URL;\n');
+            const messages = nodeProgramErrors(probe).map((d) =>
+                ts.flattenDiagnosticMessageText(d.messageText, '\n'),
+            );
+            expect(messages.join('\n')).toContain("Property 'env' does not exist");
+        },
+        TYPECHECK_TIMEOUT_MS,
+    );
 
     it('should be self-contained: only node: built-in imports', () => {
         const source = readFileSync(SCRIPT, 'utf8');
