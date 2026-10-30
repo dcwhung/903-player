@@ -19,6 +19,8 @@
     background: var(--color-bg);
     color: var(--color-text);
     box-shadow: var(--shadow-clay-tile);
+    /* 卡入面左右掃轉節目（useCardSwipe）：直向捲（清單）交返畀瀏覽器 */
+    touch-action: pan-y;
 }
 
 /* 頁頭列（入口 B）：細碟 + 節目名 + ⤢，成條係入頁掣 */
@@ -46,6 +48,34 @@
     font-weight: 700;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+
+/* 今日 / 重溫標籤：同 mini player（MiniPlayer.module.css .tag）一樣大細同顏色 */
+.tag {
+    flex-shrink: 0;
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-2xs);
+    font-weight: 700;
+    line-height: var(--new-badge-line);
+    white-space: nowrap;
+}
+
+.tag[data-tag='rewatch'] {
+    background: var(--color-rewatch);
+    color: var(--color-on-rewatch);
+}
+
+.tag[data-tag='today'] {
+    background: var(--today-tag-bg);
+    color: var(--today-tag-text);
+}
+
+/* 今日多個節目嘅指示點：喺頁頭列下面置中 */
+.dots {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
 }
 
 .expand {

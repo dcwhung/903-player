@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
@@ -171,6 +171,63 @@ describe('HomePage on a wide landscape screen', () => {
 
             expect(screen.getByRole('region', { name: SHOW_CARD })).toBeInTheDocument();
             expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'split');
+        });
+    });
+
+    describe('switching between today’s shows on the card', () => {
+        const swipeLeft = (target: HTMLElement) => {
+            fireEvent.pointerDown(target, { clientX: 300, clientY: 10 });
+            fireEvent.pointerUp(target, { clientX: 150, clientY: 10 });
+        };
+
+        it('should show dots under the header row and switch show from a dot', async () => {
+            stubWideLandscape();
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            const card = await screen.findByRole('region', { name: SHOW_CARD });
+
+            const dots = within(card).getByRole('group', { name: '今日第 1 個節目，共 2 個' });
+            await userEvent.click(within(dots).getByRole('button', { name: '雲妮鍾情' }));
+
+            expect(
+                within(card).getByRole('button', { name: '開啟 雲妮鍾情 節目頁' }),
+            ).toBeInTheDocument();
+        });
+
+        it('should switch show with a horizontal swipe on the card', async () => {
+            stubWideLandscape();
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            const card = await screen.findByRole('region', { name: SHOW_CARD });
+
+            swipeLeft(within(card).getByRole('button', { name: '開啟 Bad Girl大過佬 節目頁' }));
+
+            expect(card).toHaveTextContent('雲妮鍾情');
+        });
+
+        it('should leave the show alone when the swipe starts on the disc', async () => {
+            stubWideLandscape();
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            const card = await screen.findByRole('region', { name: SHOW_CARD });
+
+            swipeLeft(within(card).getByRole('slider', { name: '播放進度' }));
+
+            expect(card).toHaveTextContent('Bad Girl大過佬');
+        });
+
+        it('should tag today’s show next to its name in the header row', async () => {
+            stubWideLandscape();
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            const card = await screen.findByRole('region', { name: SHOW_CARD });
+
+            const header = within(card).getByRole('button', { name: '開啟 Bad Girl大過佬 節目頁' });
+            expect(header.querySelector('[data-tag]')).toHaveTextContent('今日');
+        });
+
+        it('should have no dots for a single drama episode', async () => {
+            stubWideLandscape();
+            await arriveHomeWith(seriesEpisodesOf('chisee')[0]!);
+            const card = await screen.findByRole('region', { name: DRAMA_CARD });
+
+            expect(within(card).queryByRole('group')).not.toBeInTheDocument();
         });
     });
 

@@ -5,7 +5,7 @@ import type { MiniPlayerProps } from './miniPlayerTypes';
 
 /** 指示點跟標籤色：重溫 = 藍（未揀中淡啲），今日 = 揀中時奶油金；冇標籤就普通點 */
 const DOT_VARIANTS: Record<MiniPlayerTag, PageDotVariant> = { rewatch: 'blue', today: 'gold' };
-const dotVariant = (tag: MiniPlayerTag | undefined): PageDotVariant | undefined =>
+export const dotVariant = (tag: MiniPlayerTag | undefined): PageDotVariant | undefined =>
     tag && DOT_VARIANTS[tag];
 
 type DotsProps = Pick<
