@@ -10,6 +10,3 @@ export const HAVE_CURRENT_DATA = 2;
 /** 數據夠播一陣：spec 喺呢度先發 playing */
 export const HAVE_FUTURE_DATA = 3;
 export const HAVE_ENOUGH_DATA = 4;
-
-/** HTMLMediaElement.networkState：揀咗來源、正喺網絡攞數據（CUI-0011） */
-export const NETWORK_LOADING = 2;

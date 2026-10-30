@@ -1,10 +1,5 @@
 import { AUDIBLE_ADVANCE_SECONDS } from '../src/config/constants';
-import {
-    HAVE_CURRENT_DATA,
-    HAVE_METADATA,
-    HAVE_NOTHING,
-    NETWORK_LOADING,
-} from '../src/player/mediaReadyState';
+import { HAVE_CURRENT_DATA, HAVE_METADATA, HAVE_NOTHING } from '../src/player/mediaReadyState';
 
 /** emitAudible 行幾多倍出聲門檻（避開浮點數誤差） */
 const AUDIBLE_TEST_MARGIN = 2;
@@ -131,16 +126,6 @@ export class FakeAudio extends EventTarget {
      */
     emitProgress(): void {
         this.dispatchEvent(new Event('progress'));
-    }
-
-    /** 開始由網絡攞數據（networkState NETWORK_LOADING），未必有 progress（Chromium metadata 前唔發） */
-    startFetching(): void {
-        this.networkState = NETWORK_LOADING;
-    }
-
-    /** 冇數據入咗一陣（Chromium hang 約 3 s 發） */
-    emitStalled(): void {
-        this.dispatchEvent(new Event('stalled'));
     }
 
     /** 播緊但數據唔夠（緩衝 / seek 去未載到嘅位置） */

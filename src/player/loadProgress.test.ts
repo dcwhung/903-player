@@ -14,7 +14,6 @@ const probe = (overrides: Partial<LoadProbe> = {}): LoadProbe => ({
     currentTime: POSITION,
     playingFired: false,
     progressEvents: 0,
-    fetching: false,
     ...overrides,
 });
 
@@ -76,22 +75,6 @@ describe('isLoadProgressing', () => {
             });
 
             expect(isLoadProgressing(before, after)).toBe(false);
-        });
-    });
-
-    describe('still fetching before metadata (CUI-0011)', () => {
-        it('should be progressing while fetching before metadata with no other signal', () => {
-            expect(isLoadProgressing(probe(), probe({ fetching: true }))).toBe(true);
-        });
-
-        it('should not be progressing on fetching once metadata has arrived', () => {
-            const after = probe({ readyState: HAVE_METADATA, fetching: true });
-            expect(isLoadProgressing(probe(), after)).toBe(false);
-        });
-
-        it('should not be progressing on fetching after playing has fired', () => {
-            const after = probe({ playingFired: true, fetching: true });
-            expect(isLoadProgressing(probe({ playingFired: true }), after)).toBe(false);
         });
     });
 

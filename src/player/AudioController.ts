@@ -15,7 +15,7 @@ import {
 import type { Track } from '../types/track';
 import { bufferedEnd } from '../utils/bufferedEnd';
 import { recordPlayback } from './playbackLog';
-import { HAVE_FUTURE_DATA, NETWORK_LOADING } from './mediaReadyState';
+import { HAVE_FUTURE_DATA } from './mediaReadyState';
 import type { LoadOptions, PlayerState } from './playerContext';
 import { ReplayTracker } from './replayTracker';
 import { StallWatchdog } from './stallWatchdog';
@@ -71,8 +71,6 @@ export class AudioController {
     private frozenBeforeStop = false;
     /** 收過幾多次 progress event（只會加）：metadata 未到前睇下載有冇進展（CUI-0011） */
     private progressEvents = 0;
-    /** 今次載入（換集 / reload）收過 stalled：唔再當「仲連緊網」（CUI-0011） */
-    private stalledSinceLoad = false;
     /**
      * 撳咗播（任何來源）一陣都未出聲就重新載入再播（S-551）。
      * 鎖屏仲載緊時唔自動 reload：等亮屏或者鎖屏 Play（v1.20.8）；playing 後凍結照 reload（v1.20.9）
@@ -87,11 +85,6 @@ export class AudioController {
             currentTime: this.audio.currentTime,
             playingFired: this.playingFired,
             progressEvents: this.progressEvents,
-            // 只喺前景算：鎖屏 stalled 同 Play 冇先後保證，鎖屏 Play 要照舊 reload（W-514）
-            fetching:
-                document.visibilityState !== 'hidden' &&
-                this.audio.networkState === NETWORK_LOADING &&
-                !this.stalledSinceLoad,
         }),
         isHidden: () => document.visibilityState === 'hidden',
         isFrozenPlaying: () => this.isFrozenPlaying(),
@@ -125,7 +118,6 @@ export class AudioController {
             play: this.onPlay,
             playing: this.onPlaying,
             progress: this.onProgress,
-            stalled: this.onNetworkStalled,
             waiting: this.onSilent,
             pause: this.onPause,
             ended: this.onEnded,
@@ -257,7 +249,6 @@ export class AudioController {
         // 聽過嘅集 getResumePosition 係 0，即係由頭重播
         this.replay.arm(this.watched);
         this.audio.src = recording.url;
-        this.stalledSinceLoad = false;
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
     }
 
@@ -396,11 +387,6 @@ export class AudioController {
         this.progressEvents += 1;
     };
 
-    /** 冇數據入咗一陣（Chromium hang 約 3 s）：之後唔再當「仲連緊網」（CUI-0011） */
-    private onNetworkStalled = (): void => {
-        this.stalledSinceLoad = true;
-    };
-
     /** 播緊而位置由起點行咗夠遠：真正出緊聲，唔使再睇住卡住 */
     private checkAudible(): void {
         const advanced = this.audio.currentTime - this.audibleFrom;
@@ -529,7 +515,6 @@ export class AudioController {
      */
     private loadSource(): void {
         this.playingFired = false;
-        this.stalledSinceLoad = false;
         this.audio.load();
     }
 
