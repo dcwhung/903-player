@@ -41,11 +41,14 @@ if str(TOOL_DIR) not in sys.path:
 from generate import theme_for  # noqa: E402
 from preview import disc_preview, tile_preview  # noqa: E402
 from publish import (  # noqa: E402
+    MAX_BYTES_PER_PUBLISH,
     MAX_FILES_PER_VERSION,
     PAGE,
     over_version_limit,
+    peak_file_count,
     read_previous,
     sha256_file,
+    shares_no_path,
     stale_paths,
     write_batches,
 )
@@ -330,13 +333,17 @@ def parse_args(argv: list[str]) -> tuple[Paths, Path | None, int | None]:
     )
     parser.add_argument("--repo", type=Path, default=REPO_ROOT, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+    # 負數會令每批上限超過 64MB；≥ 64MB 會令每批上限 ≤ 0（每個檔自己一批）
+    if args.page_bytes is not None and not 0 <= args.page_bytes < MAX_BYTES_PER_PUBLISH:
+        parser.error(f"--page-bytes 要喺 0 至 {MAX_BYTES_PER_PUBLISH - 1} 之間（而家係 {args.page_bytes}）")
     work = args.work.resolve()
     out = (args.out or work / "review").resolve()
     paths = Paths(gen=work / "arcCover", src=work / "arcCover-src", out=out, repo=args.repo.resolve())
     return paths, args.previous, args.page_bytes
 
 
-def report(paths: Paths, files: dict[str, str], removed: list[str]) -> None:
+def report(paths: Paths, files: dict[str, str], previous: list[str]) -> None:
+    removed = stale_paths(previous, files)
     batch_paths = sorted(paths.out.glob("publish-*.json"), key=lambda p: int(p.stem.split("-")[1]))
     print(f"{len(files)} files → {paths.site}")
     print(f"publish：file_path={paths.site / 'index.html'}，url 用返同一條 artifact，逐份送：")
@@ -350,6 +357,20 @@ def report(paths: Paths, files: dict[str, str], removed: list[str]) -> None:
             "要喺 files 傳 null 刪走舊 round",
             file=sys.stderr,
         )
+    # null 喺最後一批先刪：中途版本 = 舊 path ∪ 新 path + 主頁，可能超過每版上限而被拒
+    peak = peak_file_count(previous, files)
+    if not over_version_limit(len(files)) and over_version_limit(peak):
+        print(
+            f"warning: publish 中途舊 + 新 path 共 {peak} 個 + {PAGE} > 每版上限 {MAX_FILES_PER_VERSION}："
+            "先單獨 publish 一次淨係 null 嘅 files（刪走上面列出嘅舊 path），再逐份 publish-N.json",
+            file=sys.stderr,
+        )
+    if shares_no_path(previous, files):
+        print(
+            f"warning: --previous 嘅 {len(previous)} 個 path 同今次 files 一個都對唔到，"
+            "格式好可能錯咗（一行一個 path，或者 JSON path 陣列），舊 path 可能刪唔到",
+            file=sys.stderr,
+        )
 
 
 def main(argv: list[str]) -> int:
@@ -357,7 +378,7 @@ def main(argv: list[str]) -> int:
     # 喺 build 之前讀：--previous 可能就係今次會覆蓋嘅 <out>/files.json
     previous = read_previous(previous_path) if previous_path else []
     files = build(paths, previous, page_bytes)
-    report(paths, files, stale_paths(previous, files))
+    report(paths, files, previous)
     return 0
 
 

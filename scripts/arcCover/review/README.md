@@ -74,12 +74,16 @@ PLAYWRIGHT_PATH=<repo>/node_modules/playwright node scripts/arcCover/review/veri
 - 舊 path 唔會自己消失：`--previous` 列出上次有、今次冇嘅 path，喺最後一批傳 `null` 刪走。接受三種格式：
     - 上次嘅 `files.json`（`{path: 本機檔}`）
     - JSON path 陣列（`["index.html", "rounds.json", "img/…"]`）
-    - 純文字一行一個 path（空行略過）
+    - 純文字一行一個 path（空行略過；每行淨係攞第一欄，成行抄 listing 例如 `index.html  text/html  40 KB` 都得）
+
+    `--previous` 同今次 files 一個 path 都對唔到（格式好可能錯咗）`build.py` 會警告
 
     新 session 冇咗上次嘅 `files.json`，就用 Artifact `list scope:"files"` 嘅 path（見 step 5）。`index.html` 永遠唔會刪
 
 - `index.html` 係主頁，每次 publish 都會送，所以上限要預留佢：每版檔數 = `files` + 1，超過 511 `build.py` 會警告；
-  每批 64MB 會扣走主頁大小（預設 = build 出嚟嘅 `site/index.html`，`--page-bytes` 改）
+  每批 64MB 會扣走主頁大小（預設 = build 出嚟嘅 `site/index.html`，`--page-bytes` 改，要 `0 ≤ x < 64MB`）
+- `null` 擺最後一批，publish 中途舊 path + 新 path + `index.html` 會並存；超過 511 `build.py` 會警告：
+  **接近上限時先單獨 publish 一次淨係 `null` 嘅 `files`（刪走舊 path），再逐份 `publish-N.json`**
 
 ## 備註
 

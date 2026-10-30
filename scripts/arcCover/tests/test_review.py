@@ -31,7 +31,9 @@ from build import (  # noqa: E402
     unique_variants,
     with_new_arcs,
 )
+from publish import MAX_BYTES_PER_PUBLISH, MAX_FILES_PER_VERSION  # noqa: E402
 
+ARGPARSE_ERROR = 2  # argparse parser.error 嘅 exit code
 PREVIEW_SIZE = (40, 20)
 BG = (200, 200, 200)
 DISC_SPAN = (5, 15)
@@ -264,6 +266,54 @@ class BuildTest(unittest.TestCase):
         with mock.patch("build.write_batches") as write, contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(main(argv), 0)
         self.assertEqual(write.call_args.kwargs["page_bytes"], 123)
+
+    def test_main_should_reject_page_bytes_out_of_range(self) -> None:
+        # S-612：負數會令每批上限 > 64MB；≥ 64MB 會令每批上限 ≤ 0
+        for bad in ("-1", str(MAX_BYTES_PER_PUBLISH)):
+            argv = ["--work", str(self.work), "--repo", str(self.repo), "--page-bytes", bad]
+            with self.subTest(bad=bad), contextlib.redirect_stderr(io.StringIO()) as err:
+                with self.assertRaises(SystemExit) as stop:
+                    main(argv)
+                self.assertEqual(stop.exception.code, ARGPARSE_ERROR)
+                self.assertIn("--page-bytes", err.getvalue())
+
+    def test_main_should_accept_page_bytes_range_edges(self) -> None:
+        for good in (0, MAX_BYTES_PER_PUBLISH - 1):
+            argv = ["--work", str(self.work), "--repo", str(self.repo), "--page-bytes", str(good)]
+            with self.subTest(good=good), mock.patch("build.write_batches") as write:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(argv), 0)
+                self.assertEqual(write.call_args.kwargs["page_bytes"], good)
+
+    def test_main_should_warn_when_old_and_new_paths_exceed_version_limit(self) -> None:
+        # S-610：null 喺最後一批先刪，中間版本 = 舊 path ∪ 新 path + index.html
+        self.paths.out.mkdir(parents=True)
+        listing = self.paths.out / "listing.json"
+        listing.write_text(json.dumps([f"img/old/{i}.png" for i in range(MAX_FILES_PER_VERSION)]))
+        argv = ["--work", str(self.work), "--repo", str(self.repo), "--previous", str(listing)]
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(main(argv), 0)
+        self.assertIn(str(MAX_FILES_PER_VERSION), err.getvalue())
+        self.assertIn("null", err.getvalue())
+
+    def test_main_should_warn_when_previous_shares_no_path(self) -> None:
+        # S-611：previous 同今次 files 冇重疊 = 格式好可能錯咗
+        self.paths.out.mkdir(parents=True)
+        listing = self.paths.out / "listing.txt"
+        listing.write_text("index.html\nimg/other/x.png\n")
+        argv = ["--work", str(self.work), "--repo", str(self.repo), "--previous", str(listing)]
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(main(argv), 0)
+        self.assertIn("--previous", err.getvalue())
+
+    def test_main_should_not_warn_for_matching_previous(self) -> None:
+        self.paths.out.mkdir(parents=True)
+        listing = self.paths.out / "listing.txt"
+        listing.write_text("index.html\nrounds.json\n")
+        argv = ["--work", str(self.work), "--repo", str(self.repo), "--previous", str(listing)]
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(main(argv), 0)
+        self.assertEqual(err.getvalue(), "")
 
     def test_build_should_crop_disc_preview_to_big_disc(self) -> None:
         build(self.paths)

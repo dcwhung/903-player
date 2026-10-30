@@ -2026,3 +2026,324 @@ describe('AudioController CUI-0011 slow header', () => {
         });
     });
 });
+
+/**
+ * v1.20.10：鎖屏卡住嘅收尾（review S-613、S-614、S-617）
+ * - S-613：鎖屏報咗卡住之後唔再每 4 s 輪詢，但之後先到嘅 playing 凍結仍然要救
+ * - S-614：鎖屏 Play 時下載仲有進展（慢但正常）就唔 reload，免得 abort 佢
+ * - S-617：waiting 之後由 waiting 嗰刻計凍結時間，唔好用舊 playing
+ */
+describe('AudioController hidden stall follow-ups (v1.20.10)', () => {
+    const DURATION = 845.6;
+    const HEARD_AT = 24.7;
+    /** 慢網：每秒多載 0.2 s（遠少過 STALL_DATA_AHEAD_SECONDS） */
+    const TRICKLE_STEP_MS = 1000;
+    const TRICKLE_SECONDS = 0.2;
+    /** mark 之後幾耐先撳鎖屏 Play */
+    const AFTER_MARK_MS = 3000;
+    /** playing 之後幾耐先發 waiting（rs 仲係 ≥ 3） */
+    const WAITING_AFTER_PLAYING_MS = 2000;
+    /** waiting 之後只行咗少少（未過出聲門檻） */
+    const SILENT_ADVANCE_SECONDS = 0.1;
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
+    });
+
+    const setScreen = (state: DocumentVisibilityState) => {
+        vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
+        document.dispatchEvent(new Event('visibilitychange'));
+    };
+
+    const retryLines = () => readPlaybackLog().filter((line) => line.includes(' retry '));
+
+    /** 鎖屏撳播：metadata 到咗但未有可播數據 */
+    const lockedStart = async () => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        const detach = attachController(controller);
+        setScreen('hidden');
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.load.mockClear();
+        audio.play.mockClear();
+        return { audio, controller, detach };
+    };
+
+    /** 慢網：每秒 buffer 尾行少少，一共 ms 咁耐 */
+    const trickle = (audio: FakeAudio, ms: number) => {
+        for (let elapsed = 0; elapsed < ms; elapsed += TRICKLE_STEP_MS) {
+            const end = (bufferedEndOf(audio) ?? 0) + TRICKLE_SECONDS;
+            audio.buffered = timeRanges([[0, end]]);
+            vi.advanceTimersByTime(TRICKLE_STEP_MS);
+        }
+    };
+    const bufferedEndOf = (audio: FakeAudio) =>
+        audio.buffered.length ? audio.buffered.end(0) : undefined;
+
+    describe('S-614 lock-screen play while still loading', () => {
+        it('only calls play() when the download is still progressing', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            trickle(audio, STALL_HIDDEN_MARK_MS + AFTER_MARK_MS);
+            expect(controller.getSnapshot().isStalled).toBe(true);
+
+            await controller.resume();
+
+            expect(audio.load).not.toHaveBeenCalled();
+            expect(audio.play).toHaveBeenCalledTimes(1);
+            expect(retryLines()).toHaveLength(0);
+            detach();
+        });
+
+        it('keeps the download when the user pauses and plays again while it is progressing', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            trickle(audio, STALL_HIDDEN_MARK_MS + AFTER_MARK_MS);
+            controller.pause();
+
+            await controller.resume();
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+
+        it('reloads when nothing arrived since the attempt started', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS + AFTER_MARK_MS);
+
+            await controller.resume();
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            expect(retryLines().at(-1)).toMatch(/ remote$/);
+            detach();
+        });
+
+        it('reloads once the total wait cap has passed even if data still trickles in', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            trickle(audio, STALL_MAX_WAIT_MS);
+
+            await controller.resume();
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+    });
+
+    describe('S-613 no polling after the hidden mark', () => {
+        it('leaves no timer running once the lock screen shows stalled', async () => {
+            const { controller, detach } = await lockedStart();
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+            expect(controller.getSnapshot().isStalled).toBe(true);
+
+            expect(vi.getTimerCount()).toBe(0);
+            detach();
+        });
+
+        it('still reloads a playing attempt that freezes after the mark', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS + AFTER_MARK_MS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+
+            vi.advanceTimersByTime(FROZEN_PLAYING_MS - 1);
+            expect(audio.load).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(1);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            expect(retryLines().at(-1)).toMatch(new RegExp(` left=${STALL_MAX_RETRIES}$`));
+            expect(controller.getSnapshot().isStalled).toBe(true);
+            detach();
+        });
+
+        it('does not reload a playing attempt after the mark when sound starts', async () => {
+            const { audio, detach } = await lockedStart();
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            audio.emitAudible();
+
+            vi.advanceTimersByTime(STALL_MAX_WAIT_MS);
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+    });
+
+    describe('S-617 frozen clock restarts on waiting', () => {
+        it('measures the freeze from waiting, not from the earlier playing', async () => {
+            const audio = new FakeAudio();
+            const controller = new AudioController(audio.asAudio());
+            const detach = attachController(controller);
+            await controller.load(RECORDING, { autoplay: true });
+            audio.emitMetadata(DURATION);
+            audio.buffered = timeRanges([[0, DURATION]]);
+            audio.emitTime(HEARD_AT);
+            setScreen('hidden');
+            controller.pause();
+            audio.load.mockClear();
+
+            await controller.resume();
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            vi.advanceTimersByTime(WAITING_AFTER_PLAYING_MS);
+            audio.emitWaiting();
+            audio.emitTime(HEARD_AT + SILENT_ADVANCE_SECONDS);
+            vi.advanceTimersByTime(FROZEN_PLAYING_MS - WAITING_AFTER_PLAYING_MS);
+
+            await controller.resume();
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+    });
+    describe('C-011 frozen playing near or after the hidden mark', () => {
+        /** playing 喺 mark 前幾耐先到（少過 FROZEN_PLAYING_MS） */
+        const PLAYING_BEFORE_MARK_MS = 2000;
+        const WAITING_AFTER_PLAYING_MS = 1000;
+
+        it('reloads a frozen playing that arrived just before the mark', async () => {
+            const { audio, detach } = await lockedStart();
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS - PLAYING_BEFORE_MARK_MS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+
+            vi.advanceTimersByTime(FROZEN_PLAYING_MS);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+
+        it('reloads after playing, waiting and playing again once parked', async () => {
+            const { audio, detach } = await lockedStart();
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS + AFTER_MARK_MS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            vi.advanceTimersByTime(WAITING_AFTER_PLAYING_MS);
+            audio.emitWaiting();
+            vi.advanceTimersByTime(WAITING_AFTER_PLAYING_MS);
+            audio.emitPlaying();
+
+            vi.advanceTimersByTime(FROZEN_PLAYING_MS);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+    });
+
+    describe('W-510 loading compares with a recent snapshot', () => {
+        /** 開播後第一秒有少少數據，之後斷網 */
+        const EARLY_DATA_MS = 1000;
+        /** 鎖屏 Play：mark 之後、總上限之前 */
+        const PLAY_AT_MS = 20_000;
+
+        it('reloads on lock-screen play when data stopped arriving long ago', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            audio.buffered = timeRanges([[0, TRICKLE_SECONDS]]);
+            vi.advanceTimersByTime(EARLY_DATA_MS);
+            vi.advanceTimersByTime(PLAY_AT_MS - EARLY_DATA_MS);
+
+            await controller.resume();
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+    });
+
+    describe('S-621 log a lock-screen play that keeps the load', () => {
+        it('records that the reload was skipped because it is still loading', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            trickle(audio, STALL_HIDDEN_MARK_MS + AFTER_MARK_MS);
+
+            await controller.resume();
+
+            expect(
+                readPlaybackLog().some(
+                    (line) => line.includes(' keep ') && line.endsWith(' loading'),
+                ),
+            ).toBe(true);
+            detach();
+        });
+    });
+    describe('W-511 loading survives a fresh hidden snapshot', () => {
+        /** mark 之後好快就撳鎖屏 Play：mark tick 啱啱更新咗基準 */
+        const PLAY_AFTER_MARK_MS = 500;
+
+        it('keeps a progressing load when Play comes right after a hidden tick', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            trickle(audio, STALL_HIDDEN_MARK_MS);
+            vi.advanceTimersByTime(PLAY_AFTER_MARK_MS);
+
+            await controller.resume();
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+    });
+
+    describe('S-622 waiting restarts the frozen check', () => {
+        const WAITING_AFTER_PLAYING_MS = 1000;
+
+        it('reloads when playing is followed by waiting with data still present', async () => {
+            const { audio, detach } = await lockedStart();
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS + AFTER_MARK_MS);
+            audio.emitPlaying(HAVE_ENOUGH_DATA);
+            vi.advanceTimersByTime(WAITING_AFTER_PLAYING_MS);
+            audio.emitWaiting();
+
+            vi.advanceTimersByTime(FROZEN_PLAYING_MS);
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            detach();
+        });
+    });
+    describe('W-512 two hidden ticks on wake', () => {
+        /** 鎖屏開播後幾耐先發 playing（rs 仲係 metadata） */
+        const PLAYING_AT_MS = 5000;
+        /** iOS 凍結 JS 咁耐 */
+        const FROZEN_JS_MS = 10_000;
+        /** 凍結期間 buffer 多咗幾秒 */
+        const GROWN_WHILE_FROZEN_SECONDS = 2;
+
+        it('keeps a progressing load when the main tick and the frozen check both run at wake', async () => {
+            const { audio, controller, detach } = await lockedStart();
+            trickle(audio, PLAYING_AT_MS);
+            audio.emitPlaying();
+            vi.setSystemTime(Date.now() + FROZEN_JS_MS);
+            const end = (bufferedEndOf(audio) ?? 0) + GROWN_WHILE_FROZEN_SECONDS;
+            audio.buffered = timeRanges([[0, end]]);
+            // 亮 JS：遲咗嘅 main tick 同凍結檢查連住行
+            vi.advanceTimersByTime(STALL_PROGRESS_RECHECK_MS);
+
+            await controller.resume();
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+    });
+    describe('CUI-0012 wake while a slow locked load is progressing', () => {
+        /** iOS 凍結 JS 咁耐，期間 buffer 多咗幾秒 */
+        const FROZEN_JS_MS = 10_000;
+        const GROWN_WHILE_FROZEN_SECONDS = 2;
+        const TRICKLE_BEFORE_FREEZE_MS = 5000;
+
+        it('does not reload on wake right after a hidden tick while data still arrives', async () => {
+            const { audio, detach } = await lockedStart();
+            trickle(audio, 2 * STALL_PROGRESS_RECHECK_MS);
+
+            setScreen('visible');
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+
+        it('does not reload on wake when the overdue hidden tick runs just before visibilitychange', async () => {
+            const { audio, detach } = await lockedStart();
+            trickle(audio, TRICKLE_BEFORE_FREEZE_MS);
+            vi.setSystemTime(Date.now() + FROZEN_JS_MS);
+            const end = (bufferedEndOf(audio) ?? 0) + GROWN_WHILE_FROZEN_SECONDS;
+            audio.buffered = timeRanges([[0, end]]);
+            vi.advanceTimersByTime(STALL_PROGRESS_RECHECK_MS);
+
+            setScreen('visible');
+
+            expect(audio.load).not.toHaveBeenCalled();
+            detach();
+        });
+    });
+});

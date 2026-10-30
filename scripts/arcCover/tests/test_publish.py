@@ -17,7 +17,9 @@ from publish import (  # noqa: E402
     batches,
     ordered,
     over_version_limit,
+    peak_file_count,
     read_previous,
+    shares_no_path,
     stale_paths,
     write_batches,
 )
@@ -71,6 +73,25 @@ class BatchesTest(unittest.TestCase):
         self.assertFalse(over_version_limit(MAX_FILES_PER_VERSION - 1))  # + index.html = 511
         self.assertTrue(over_version_limit(MAX_FILES_PER_VERSION))  # + index.html = 512
 
+    def test_peak_file_count_should_count_old_and_new_paths_before_the_null_batch(self) -> None:
+        # S-610：null 擺最後一批，之前嘅版本舊 path + 新 path 並存；index.html 由 over_version_limit 另計
+        previous = [PAGE, "old", ROUNDS]
+        self.assertEqual(peak_file_count(previous, {ROUNDS: "/r", "new": "/n"}), 3)  # old + rounds + new
+
+    def test_peak_file_count_should_trip_version_limit_when_union_is_too_big(self) -> None:
+        half = MAX_FILES_PER_VERSION // 2 + 1
+        previous = [f"old/{i}" for i in range(half)]
+        files = {f"new/{i}": "/n" for i in range(half)}
+        self.assertFalse(over_version_limit(len(files)))
+        self.assertTrue(over_version_limit(peak_file_count(previous, files)))
+
+    def test_shares_no_path_should_flag_listing_that_matches_nothing(self) -> None:
+        files = {ROUNDS: "/r", "img/a.png": "/a"}
+        self.assertTrue(shares_no_path([PAGE, "img/old.png"], files))  # index.html 唔喺 files，唔計重疊
+        self.assertFalse(shares_no_path([PAGE, ROUNDS], files))
+        self.assertFalse(shares_no_path([], files))  # 冇 --previous 唔使警告
+        self.assertFalse(shares_no_path([PAGE], files))  # 淨係主頁：冇舊檔要刪，唔使警告（S-619）
+
 
 class ReadPreviousTest(unittest.TestCase):
     """--previous：舊 files.json、Artifact list scope:"files" 嘅 JSON 陣列、或者一行一個 path"""
@@ -92,6 +113,11 @@ class ReadPreviousTest(unittest.TestCase):
 
     def test_should_read_one_path_per_line(self) -> None:
         self.path.write_text(f"{PAGE}\n  img/a.png  \n\n{ROUNDS}\n")
+        self.assertEqual(read_previous(self.path), [PAGE, "img/a.png", ROUNDS])
+
+    def test_should_take_first_column_of_pasted_listing_rows(self) -> None:
+        # S-611：成行抄 listing（path + type + size）都只攞 path；呢個工具出嘅 path 冇空格
+        self.path.write_text(f"{PAGE}  text/html  40 KB\nimg/a.png\timage/png\t3 KB\n\n{ROUNDS}\n")
         self.assertEqual(read_previous(self.path), [PAGE, "img/a.png", ROUNDS])
 
     def test_should_reject_other_json(self) -> None:

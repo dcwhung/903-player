@@ -35,12 +35,14 @@ def ordered(files: dict[str, str]) -> dict[str, str]:
 
 def read_previous(path: Path) -> list[str]:
     """--previous：舊 files.json（{path: 本機檔}）、JSON 陣列（["index.html", "img/…", …]）
-    或者純文字一行一個 path（例如 Artifact `list scope:"files"` 列出嘅 path 抄落檔）"""
+    或者純文字一行一個 path（例如 Artifact `list scope:"files"` 列出嘅 path 抄落檔）。
+    純文字每行淨係攞第一欄：成行抄 listing（`index.html  text/html  40 KB`）都唔會將 type / size 當埋 path；
+    呢個工具出嘅 path 冇空格"""
     text = path.read_text(encoding="utf-8")
     try:
         data = json.loads(text)
     except json.JSONDecodeError:
-        return [line.strip() for line in text.splitlines() if line.strip()]
+        return [line.split()[0] for line in text.splitlines() if line.strip()]
     if isinstance(data, dict) and all(isinstance(local, str) for local in data.values()):
         data = list(data)
     if not isinstance(data, list) or not all(isinstance(rel, str) for rel in data):
@@ -51,6 +53,19 @@ def read_previous(path: Path) -> list[str]:
 def stale_paths(previous: Iterable[str], files: dict[str, str]) -> list[str]:
     """上次有、今次冇嘅 published path（artifact 仲保留住，要傳 null 先刪）；主頁 index.html 永遠唔刪"""
     return [rel for rel in previous if rel not in files and rel != PAGE]
+
+
+def peak_file_count(previous: Iterable[str], files: dict[str, str]) -> int:
+    """publish 中途版本最多有幾多個檔（唔計主頁 index.html，交畀 over_version_limit 加）：
+    null 喺最後一批先刪，之前嘅批次舊 path 同新 path 會同時存在"""
+    return len((set(previous) | set(files)) - {PAGE})
+
+
+def shares_no_path(previous: Iterable[str], files: dict[str, str]) -> bool:
+    """previous 有嘢但同今次 files 一個 path 都對唔到 = --previous 格式好可能錯咗
+    （index.html 唔喺 files，唔計重疊，亦唔算「有嘢」，S-619）"""
+    old = set(previous) - {PAGE}
+    return bool(old) and not old & set(files)
 
 
 def over_version_limit(file_count: int) -> bool:

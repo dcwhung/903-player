@@ -1,4 +1,5 @@
 import {
+    STALL_BASELINE_MIN_AGE_MS,
     STALL_FIRST_RETRY_MS,
     STALL_HIDDEN_MARK_MS,
     STALL_MAX_WAIT_MS,
@@ -40,12 +41,21 @@ export class StallWatchdog {
     /** 剩低幾多次重試；undefined = 冇睇住 */
     private retriesLeft: number | undefined;
     private timer: ReturnType<typeof setTimeout> | undefined;
+    /** checkFrozenIn 排嘅凍結檢查 */
+    private frozenTimer: ReturnType<typeof setTimeout> | undefined;
     /** 而家呢次等待幾時到期（Date.now()）：iOS 暫停 JS 時 timer 唔行，但 wall clock 照行 */
     private deadline = Number.POSITIVE_INFINITY;
     /** 呢一輪由幾時開始睇住（start()）：下載有進展都最多等 STALL_MAX_WAIT_MS */
     private startedAt = Number.NEGATIVE_INFINITY;
     /** arm 嗰陣嘅載入狀態，到期時用嚟睇有冇進展 */
     private baseline: LoadProbe | undefined;
+    /**
+     * 鎖屏上一次 tick 嘅載入狀態：判斷仲載緊時同佢比較。iOS 亮 JS 時遲咗嘅 tick 可能啱啱喺
+     * 鎖屏 Play / 亮屏之前更新 baseline，同最新嗰個比會當冇進展而 abort 慢載（W-511、CUI-0012）
+     */
+    private previousBaseline: LoadProbe | undefined;
+    /** baseline 幾時影（Date.now()） */
+    private baselineAt = Number.NEGATIVE_INFINITY;
     /** 今次嘗試（start / 每次 retry reload）幾時開始：鎖屏時由呢度計 STALL_HIDDEN_MARK_MS */
     private attemptStartedAt = Number.NEGATIVE_INFINITY;
     /** 今次嘗試鎖屏時已經報過卡住，唔使再報 */
@@ -56,6 +66,14 @@ export class StallWatchdog {
     /** 睇住緊（未出聲、未放棄） */
     get pending(): boolean {
         return this.retriesLeft !== undefined;
+    }
+
+    /**
+     * 睇緊而由 arm 到而家下載有進展、未等夠 STALL_MAX_WAIT_MS：慢但正常載緊。
+     * 鎖屏 Play 見到就唔 reload，免得 abort 佢（S-614）
+     */
+    get loading(): boolean {
+        return this.pending && this.isStillLoading();
     }
 
     /** 睇緊而 deadline 已經過咗（timer 可能被 iOS 凍結咗未行） */
@@ -83,10 +101,13 @@ export class StallWatchdog {
 
     cancel(): void {
         clearTimeout(this.timer);
+        clearTimeout(this.frozenTimer);
         this.timer = undefined;
+        this.frozenTimer = undefined;
         this.retriesLeft = undefined;
         this.deadline = Number.POSITIVE_INFINITY;
         this.baseline = undefined;
+        this.previousBaseline = undefined;
     }
 
     /** 即刻重試（timer 到，或者亮返屏幕時背景 timer 可能冇行過）；用完次數或者唔想播就放棄 */
@@ -112,11 +133,25 @@ export class StallWatchdog {
         }
     };
 
+    /**
+     * delayMs 後睇下 playing 係咪凍結咗：過咗 deadline 先郁，同亮屏補做一樣（retryIfOverdue）。
+     * AudioController 每次 playing / waiting 都叫，凍結時間由最新嗰個計（v1.20.9、S-617）；
+     * 鎖屏報咗卡住之後唔再輪詢，靠呢個 timer 救凍結（S-613、C-011）
+     */
+    checkFrozenIn(delayMs: number): void {
+        if (this.pending) {
+            clearTimeout(this.frozenTimer);
+            this.frozenTimer = setTimeout(this.retryIfOverdue, delayMs);
+        }
+    }
+
     /** 重新排 timer，記低而家嘅載入狀態做比較基準 */
     private arm(delayMs: number): void {
         clearTimeout(this.timer);
         this.deadline = Date.now() + delayMs;
         this.baseline = this.hooks.probe();
+        this.baselineAt = Date.now();
+        this.previousBaseline = undefined;
         this.timer = setTimeout(this.onDeadline, delayMs);
     }
 
@@ -146,20 +181,34 @@ export class StallWatchdog {
     /**
      * 鎖屏時到期：唔 reload（會 abort iOS 載緊嘅數據）、唔扣次數。deadline 唔推後，
      * 保持 overdue 畀亮屏 / 鎖屏 Play 即刻 reload；等夠 STALL_HIDDEN_MARK_MS 先報卡住（鎖屏顯示 Play）。
-     * 繼續排 timer：iOS 有時會畀 timer 行，到時再睇一次（仍然 hidden 就再等）
+     * 報咗之後唔再排 timer：亮屏由 visibilitychange、鎖屏 Play 由 resume() 接手，
+     * 凍結由 checkFrozenIn 睇（S-613、C-011）。每次都更新進展基準，
+     * loading 先係「最近仲載緊」而唔係「開播之後載過嘢」（W-510）；loading 用上一個，見 previousBaseline
      */
     private waitWhileHidden(): void {
         const untilMark = this.attemptStartedAt + STALL_HIDDEN_MARK_MS - Date.now();
-        if (untilMark <= 0 && !this.hiddenStallReported) {
+        this.refreshHiddenBaseline();
+        clearTimeout(this.timer);
+        this.timer = undefined;
+        if (untilMark > 0) {
+            this.timer = setTimeout(
+                this.onDeadline,
+                Math.min(untilMark, STALL_PROGRESS_RECHECK_MS),
+            );
+        } else if (!this.hiddenStallReported) {
             this.hiddenStallReported = true;
             this.hooks.onStalled();
         }
-        const delayMs =
-            untilMark > 0
-                ? Math.min(untilMark, STALL_PROGRESS_RECHECK_MS)
-                : STALL_PROGRESS_RECHECK_MS;
-        clearTimeout(this.timer);
-        this.timer = setTimeout(this.onDeadline, delayMs);
+    }
+
+    /** 鎖屏 tick 更新進展基準；舊基準未夠 STALL_BASELINE_MIN_AGE_MS 就唔換，免得兩個都係「而家」（W-512） */
+    private refreshHiddenBaseline(): void {
+        if (Date.now() - this.baselineAt < STALL_BASELINE_MIN_AGE_MS) {
+            return;
+        }
+        this.previousBaseline = this.baseline;
+        this.baseline = this.hooks.probe();
+        this.baselineAt = Date.now();
     }
 
     /** 下一次 recheck：唔可以排喺 STALL_MAX_WAIT_MS 之後，上限先真係上限（S-582） */
@@ -168,9 +217,13 @@ export class StallWatchdog {
         return Math.min(STALL_PROGRESS_RECHECK_MS, untilCap);
     }
 
-    /** 由 arm 到而家下載有進展，而且未等夠總上限 */
+    /**
+     * 由比較基準到而家下載有進展，而且未等夠總上限。預設同鎖屏上一次 tick 比（冇就用 arm 嗰陣）：
+     * 鎖屏 Play（loading）同亮屏補做（onDeadline）都可能喺 tick 啱啱更新咗 baseline 之後即刻問（W-511、CUI-0012）
+     */
     private isStillLoading(): boolean {
+        const since = this.previousBaseline ?? this.baseline;
         const withinCap = Date.now() - this.startedAt < STALL_MAX_WAIT_MS;
-        return withinCap && !!this.baseline && isLoadProgressing(this.baseline, this.hooks.probe());
+        return withinCap && !!since && isLoadProgressing(since, this.hooks.probe());
     }
 }

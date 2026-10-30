@@ -444,5 +444,99 @@ describe('StallWatchdog', () => {
             expect(retry).not.toHaveBeenCalled();
             expect(watchdog.pending).toBe(false);
         });
+        /** S-613：報咗卡住就停輪詢；凍結由 checkFrozenIn 睇（C-011） */
+        it('should stop polling once the stall has been reported', () => {
+            const { watchdog, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+
+            expect(vi.getTimerCount()).toBe(0);
+            expect(watchdog.overdue).toBe(true);
+        });
+
+        it('should retry a frozen attempt from a frozen check once past the deadline', () => {
+            const RECHECK_MS = 1000;
+            const { watchdog, retry, isHidden, isFrozenPlaying } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+            isFrozenPlaying.mockReturnValue(true);
+
+            watchdog.checkFrozenIn(RECHECK_MS);
+            vi.advanceTimersByTime(RECHECK_MS);
+
+            expect(retry).toHaveBeenCalledExactlyOnceWith(STALL_MAX_RETRIES);
+        });
+
+        it('should restart the frozen check on every call', () => {
+            const RECHECK_MS = 1000;
+            const { watchdog, retry, isHidden, isFrozenPlaying } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+            watchdog.checkFrozenIn(RECHECK_MS);
+            vi.advanceTimersByTime(RECHECK_MS - 1);
+            isFrozenPlaying.mockReturnValue(true);
+
+            watchdog.checkFrozenIn(RECHECK_MS);
+            vi.advanceTimersByTime(RECHECK_MS - 1);
+            expect(retry).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(1);
+
+            expect(retry).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not retry from a frozen check before the deadline', () => {
+            const RECHECK_MS = 1000;
+            const { watchdog, retry, isFrozenPlaying } = setup();
+            watchdog.start(STALL_MAX_RETRIES);
+            isFrozenPlaying.mockReturnValue(true);
+
+            // 前景：唔可以提早過 deadline 重試
+            watchdog.checkFrozenIn(RECHECK_MS);
+            vi.advanceTimersByTime(STALL_FIRST_RETRY_MS - 1);
+
+            expect(retry).not.toHaveBeenCalled();
+        });
+
+        /** S-614：慢但仲載緊，鎖屏 Play 唔 reload；過咗總上限就唔算 */
+        it('should report loading only while the download grows within the wait cap', () => {
+            const { watchdog, probe, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            probe.mockImplementation(growingProbe());
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+
+            expect(watchdog.loading).toBe(true);
+            vi.advanceTimersByTime(STALL_MAX_WAIT_MS);
+            expect(watchdog.loading).toBe(false);
+        });
+
+        it('should not report loading when nothing has arrived', () => {
+            const { watchdog, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+
+            expect(watchdog.loading).toBe(false);
+        });
+        /** S-623：retry 之後 arm 要清走上一次嘗試嘅 tick 狀態，否則新載入同舊 buffer 比會當冇進展 */
+        it('should compare loading with the new attempt after a retry', () => {
+            const OLD_BUFFERED_END = 100;
+            const { watchdog, probe, isHidden } = setup();
+            isHidden.mockReturnValue(true);
+            probe.mockReturnValue({ ...idleProbe(), bufferedEnd: OLD_BUFFERED_END, readyState: 2 });
+            watchdog.start(STALL_MAX_RETRIES);
+            vi.advanceTimersByTime(STALL_HIDDEN_MARK_MS);
+
+            isHidden.mockReturnValue(false);
+            probe.mockImplementation(growingProbe());
+            watchdog.retryIfOverdue();
+            isHidden.mockReturnValue(true);
+
+            expect(watchdog.loading).toBe(true);
+        });
     });
 });
