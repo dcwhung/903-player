@@ -99,7 +99,7 @@ export const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const column = { view, title: drama.name, landscape };
     return (
         <ThemeScope theme={view.theme}>
-            <main className={`${page.page} ${page.locked} ${page.fixed}`}>
+            <main className={`${page.page} ${page.locked} ${page.fixed}`} data-player-page="">
                 <SeriesPlayerColumn {...column} connecting={connecting} />
                 <SeriesListColumn
                     {...column}

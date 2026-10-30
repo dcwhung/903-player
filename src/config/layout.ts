@@ -12,3 +12,6 @@ export const SHORT_LANDSCAPE_QUERY = `${LANDSCAPE_QUERY} and (max-height: 561px)
 
 /** 橫版但唔係手機打橫（細視窗、桌面、iPad）：主頁橫額成行，用闊版橫額圖 */
 export const WIDE_BANNER_QUERY = `${LANDSCAPE_QUERY} and (min-height: 562px)`;
+
+/** 闊橫版主頁播放卡夠高（≥ 700px）先多「下一集」清單（mockup TALL_H） */
+export const TALL_CARD_QUERY = '(min-height: 700px)';

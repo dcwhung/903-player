@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>橫版廣播劇 card</title>
+        <style>
+            :root {
+                --bg: #f4f1ea;
+                --surface: #ffffff;
+                --text: #1f2328;
+                --muted: #5f6670;
+                --rule: #d9d4c7;
+                --accent: #b4541a;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: #16181c;
+                    --surface: #202329;
+                    --text: #e8e6e1;
+                    --muted: #a0a4ab;
+                    --rule: #33373e;
+                    --accent: #f0a46a;
+                }
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 24px 16px 64px;
+                background: var(--bg);
+                color: var(--text);
+                font:
+                    15px/1.6 system-ui,
+                    sans-serif;
+            }
+            main {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            h1 {
+                margin: 0 0 4px;
+                font-size: 22px;
+            }
+            h2 {
+                margin: 40px 0 8px;
+                font-size: 18px;
+                border-bottom: 1px solid var(--rule);
+                padding-bottom: 6px;
+            }
+            p,
+            li {
+                color: var(--muted);
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 12px 0;
+                font-size: 14px;
+            }
+            th,
+            td {
+                text-align: left;
+                padding: 8px;
+                border-bottom: 1px solid var(--rule);
+                vertical-align: top;
+            }
+            .row {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 12px;
+            }
+            figure {
+                margin: 0;
+                padding: 8px;
+                background: var(--surface);
+                border: 1px solid var(--rule);
+                border-radius: 8px;
+            }
+            figure img {
+                display: block;
+                width: 100%;
+                height: auto;
+                border-radius: 4px;
+            }
+            figcaption {
+                margin-top: 6px;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            figcaption b {
+                color: var(--text);
+            }
+            .rec {
+                color: var(--accent);
+                font-weight: 600;
+            }
+            @media (max-width: 720px) {
+                .row {
+                    grid-template-columns: minmax(0, 1fr);
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>CUI-0015 橫版廣播劇 card preview</h1>
+            <p>
+                真 app build 截圖（v1.20.12 假資料，5 套劇 + mini player）。「而家」= 現時 main；A /
+                B 係候選方案，未寫入 repo code。
+            </p>
+
+            <table>
+                <tr>
+                    <th>方案</th>
+                    <th>做法</th>
+                    <th>結果（5 個尺寸量度）</th>
+                </tr>
+                <tr>
+                    <td>而家</td>
+                    <td>橫額釘頂，劇集兩欄；高 ≥ 562px 時格高被壓扁</td>
+                    <td>每個尺寸都有 4 對 card 疊住</td>
+                </tr>
+                <tr>
+                    <td class="rec">A（推薦）</td>
+                    <td>
+                        廣播劇 tab 喺所有橫版（≥ 640px
+                        闊）都用手機打橫嘅格仔：橫額縮做第一格，劇集逐格完整顯示（即係你圖 2）。節目
+                        tab 唔變
+                    </td>
+                    <td>
+                        0 對重疊；5 套全部一屏見晒。大 iPad（1366 ×
+                        1024）格接近正方形，圖兩邊會裁多啲
+                    </td>
+                </tr>
+                <tr>
+                    <td>B</td>
+                    <td>只改 CSS：橫額照釘頂，兩欄 card 保持 2:1 原大，放唔落就上下捲</td>
+                    <td>0 對重疊，但每個尺寸都有 3 張要捲先見到</td>
+                </tr>
+            </table>
+
+            <h2>1012 × 562（你嘅圖 1 尺寸）</h2>
+            <div class="row">
+                <figure>
+                    <img src="shots/now-1012x562.webp" alt="而家 1012 × 562" />
+                    <figcaption><b>而家</b>：疊住</figcaption>
+                </figure>
+                <figure>
+                    <img src="shots/A-1012x562.webp" alt="方案 A 1012 × 562" />
+                    <figcaption><b>A</b>：一屏見晒，唔疊</figcaption>
+                </figure>
+                <figure>
+                    <img src="shots/B-1012x562.webp" alt="方案 B 1012 × 562" />
+                    <figcaption><b>B</b>：唔疊，要捲</figcaption>
+                </figure>
+            </div>
+
+            <h2>640 × 562（開始出問題嘅最細尺寸）</h2>
+            <div class="row">
+                <figure>
+                    <img src="shots/now-640x562.webp" alt="而家 640 × 562" />
+                    <figcaption><b>而家</b></figcaption>
+                </figure>
+                <figure>
+                    <img src="shots/A-640x562.webp" alt="方案 A 640 × 562" />
+                    <figcaption><b>A</b></figcaption>
+                </figure>
+                <figure>
+                    <img src="shots/B-640x562.webp" alt="方案 B 640 × 562" />
+                    <figcaption><b>B</b></figcaption>
+                </figure>
+            </div>
+
+            <h2>1180 × 820（iPad Air 打橫）</h2>
+            <div class="row">
+                <figure>
+                    <img src="shots/now-1180x820.webp" alt="而家 1180 × 820" />
+                    <figcaption><b>而家</b></figcaption>
+                </figure>
+                <figure>
+                    <img src="shots/A-1180x820.webp" alt="方案 A 1180 × 820" />
+                    <figcaption><b>A</b></figcaption>
+                </figure>
+                <figure>
+                    <img src="shots/B-1180x820.webp" alt="方案 B 1180 × 820" />
+                    <figcaption><b>B</b></figcaption>
+                </figure>
+            </div>
+
+            <h2>1366 × 1024（iPad Pro 打橫）</h2>
+            <div class="row">
+                <figure>
+                    <img src="shots/now-1366x1024.webp" alt="而家 1366 × 1024" />
+                    <figcaption><b>而家</b></figcaption>
+                </figure>
+                <figure>
+                    <img src="shots/A-1366x1024.webp" alt="方案 A 1366 × 1024" />
+                    <figcaption><b>A</b>：格近正方形，圖兩邊裁多啲</figcaption>
+                </figure>
+                <figure>
+                    <img src="shots/B-1366x1024.webp" alt="方案 B 1366 × 1024" />
+                    <figcaption><b>B</b></figcaption>
+                </figure>
+            </div>
+
+            <h2>1920 × 1080（桌面）</h2>
+            <div class="row">
+                <figure>
+                    <img src="shots/now-1920x1080.webp" alt="而家 1920 × 1080" />
+                    <figcaption><b>而家</b></figcaption>
+                </figure>
+                <figure>
+                    <img src="shots/A-1920x1080.webp" alt="方案 A 1920 × 1080" />
+                    <figcaption><b>A</b></figcaption>
+                </figure>
+                <figure>
+                    <img src="shots/B-1920x1080.webp" alt="方案 B 1920 × 1080" />
+                    <figcaption><b>B</b></figcaption>
+                </figure>
+            </div>
+        </main>
+    </body>
+</html>

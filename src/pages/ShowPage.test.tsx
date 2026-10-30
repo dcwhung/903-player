@@ -83,6 +83,17 @@ describe('ShowPage', () => {
         });
     });
 
+    it('should leave the disc unnamed for view transitions, but mark it for the CSS that names it during one', () => {
+        renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+
+        const gauge = screen
+            .getByRole('slider', { name: '播放進度' })
+            .closest('[data-player-gauge]') as HTMLElement;
+        expect(gauge).not.toBeNull();
+        expect(gauge.style.getPropertyValue('view-transition-name')).toBe('');
+        expect(gauge.closest('main')).toHaveAttribute('data-player-page');
+    });
+
     it('puts the show name in the header instead of 正在播放 and under the disc', async () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));

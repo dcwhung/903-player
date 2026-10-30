@@ -59,3 +59,81 @@ h1,
 h2 {
     margin: 0;
 }
+
+/*
+ * View Transitions（src/utils/viewTransition.ts；html[data-view-transition] 話係邊款過場）。
+ * 兩邊同名嘅元素（播放卡 ↔ 內頁、主頁每格）移位變形；得一邊有嘅淡入淡出，新出現嘅遲啲先淡入。
+ * 時間同 _mockups_/landscape-home-split/motion.html 一樣
+ */
+::view-transition-group(*) {
+    animation-duration: var(--view-transition-move);
+    animation-timing-function: var(--ease-view-transition);
+}
+
+::view-transition-old(*):only-child {
+    animation: view-fade-out var(--view-transition-fade) var(--ease-view-transition) both;
+}
+
+::view-transition-new(*):only-child {
+    animation: view-fade-in var(--view-transition-fade) var(--ease-view-transition)
+        var(--view-transition-delay) both;
+}
+
+/* 內頁成頁做播放卡過場嘅「panel」（只喺過場期間改名，平時唔會因為 view-transition-name 變成 stacking context） */
+html[data-view-transition] main[data-player-page] {
+    view-transition-name: player-panel;
+}
+
+/* 內頁唱片格 ↔ 播放卡唱片格（主頁張卡長期有名，見 HomePlayerCard） */
+html[data-view-transition] main[data-player-page] [data-player-gauge] {
+    view-transition-name: player-gauge;
+}
+
+/* 內頁頁頭節目 / 劇名 ↔ 播放卡頁頭列嘅名 */
+html[data-view-transition] main[data-player-page] h1 {
+    view-transition-name: player-title;
+}
+
+/* 收埋播放卡：向右淡出；再出返：由右淡入（格仔同 tab 自己移位伸縮） */
+html[data-view-transition='close'] ::view-transition-old(player-panel):only-child {
+    animation: view-slide-out var(--view-transition-move) var(--ease-view-transition) both;
+}
+
+html[data-view-transition='open'] ::view-transition-new(player-panel):only-child {
+    animation: view-slide-in var(--view-transition-move) var(--ease-view-transition) both;
+}
+
+@keyframes view-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes view-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes view-slide-out {
+    to {
+        opacity: 0;
+        transform: translateX(var(--view-transition-slide));
+    }
+}
+
+@keyframes view-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(var(--view-transition-slide));
+    }
+}
+
+/* 減少動畫：utils/viewTransition 已經唔開過場；保險起見連 CSS 動畫都熄 */
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none;
+    }
+}

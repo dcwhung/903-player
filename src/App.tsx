@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { RecordingsProvider } from './data/RecordingsProvider';
+import { useReopenHomePlayerCardOnPlay } from './hooks/homePlayerCardClosed';
 import { useRestoreMiniPlayerOnPlay } from './hooks/miniPlayerDismissed';
 import { DramaPage } from './pages/DramaPage';
 import { HomePage } from './pages/HomePage';
@@ -15,6 +16,8 @@ import { hideSplash } from './splash/hideSplash';
 const PlaybackObservers = () => {
     // 主頁 mini player 關閉咗：喺任何一頁開始播就再出返
     useRestoreMiniPlayerOnPlay();
+    // 闊橫版主頁播放卡收埋咗：一樣喺任何一頁開始播就再出返
+    useReopenHomePlayerCardOnPlay();
     return null;
 };
 
@@ -31,7 +34,8 @@ export const App = ({ playerController }: AppProps) => {
         <RecordingsProvider>
             <PlayerProvider controller={playerController} nextTrack={nextTrack}>
                 <PlaybackObservers />
-                <HashRouter>
+                {/* 轉頁要同步 render（唔用 startTransition），View Transitions 先影到新一頁（utils/viewTransition） */}
+                <HashRouter useTransitions={false}>
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/show/:showId" element={<ShowPage />} />

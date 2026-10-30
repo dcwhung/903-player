@@ -80,7 +80,7 @@ export const ShowPage = () => {
     // 橫版左欄（頁頭 + 集數）、右欄（播放器 + 現正播放）；直版兩欄 display: contents，次序照舊
     return (
         <ThemeScope theme={theme}>
-            <main className={`${page.page} ${page.locked} ${page.fixed}`}>
+            <main className={`${page.page} ${page.locked} ${page.fixed}`} data-player-page="">
                 <div className={page.playerColumn}>
                     {!headerInList && header}
                     {!show ? (

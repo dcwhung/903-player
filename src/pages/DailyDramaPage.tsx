@@ -28,7 +28,7 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
     // 橫版頁頭喺左欄清單上面（清單成日都有）
     return (
         <ThemeScope theme={theme}>
-            <main className={`${page.page} ${page.locked} ${page.fixed}`}>
+            <main className={`${page.page} ${page.locked} ${page.fixed}`} data-player-page="">
                 <div className={page.playerColumn}>
                     {!landscape && <DramaHeader title={drama.name} />}
                     {!current && <StatusMessage message={t('episodes.noneUp')} />}

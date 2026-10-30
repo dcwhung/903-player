@@ -10,6 +10,8 @@ interface HomeBannerProps {
     corner?: ReactNode;
     /** 代替預設 <picture> 嘅圖（手機打橫橫額格用 FittedBanner）；要自己帶 alt，h1 個名由佢嚟 */
     art?: ReactNode;
+    /** 放喺格仔入面（闊橫版填滿格）：唔留左右白邊，拉滿個格，art 自己填滿 */
+    fill?: boolean;
 }
 
 /**
@@ -18,8 +20,8 @@ interface HomeBannerProps {
  * 橫版成行（WIDE_BANNER_QUERY）換闊版圖（5:1，原圖喺 design/banner-wide.webp），內容集中喺中間，
  * 大部分畫面 cover 只裁走兩邊天空；好闊好矮嘅視窗（扁過 5:1）先會裁走少少上下。
  */
-export const HomeBanner = ({ corner, art }: HomeBannerProps) => (
-    <div className={styles.banner}>
+export const HomeBanner = ({ corner, art, fill = false }: HomeBannerProps) => (
+    <div className={styles.banner} data-fill={fill ? '' : undefined}>
         <h1 className={styles.heading}>
             {art ?? (
                 <picture>
