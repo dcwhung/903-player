@@ -84,6 +84,11 @@ html[data-view-transition] main[data-player-page] {
     view-transition-name: player-panel;
 }
 
+/* 內頁唱片格 ↔ 播放卡唱片格（主頁張卡長期有名，見 HomePlayerCard） */
+html[data-view-transition] main[data-player-page] [data-player-gauge] {
+    view-transition-name: player-gauge;
+}
+
 /* 內頁頁頭節目 / 劇名 ↔ 播放卡頁頭列嘅名 */
 html[data-view-transition] main[data-player-page] h1 {
     view-transition-name: player-title;

@@ -3,7 +3,7 @@ import { t } from '../../i18n/t';
 import { formatDuration } from '../../utils/time';
 import { ArcSlider } from '../ArcSlider/ArcSlider';
 import { Disc } from '../Disc/Disc';
-import { PauseIcon, PlayIcon, RestartIcon } from '../icons/icons';
+import { GaugeActions } from './GaugeActions';
 import styles from './PlayerPanel.module.css';
 import { useGaugeGestures } from './useGaugeGestures';
 
@@ -24,7 +24,7 @@ interface PlayerGaugeProps {
      * 拖唔到）；冇就時間佔位、弧形空
      */
     standbyTime?: StandbyTime | undefined;
-    /** 過場名：主頁播放卡 ↔ 內頁嘅唱片格一齊移位變形（utils/viewTransition） */
+    /** 主頁播放卡嘅過場名（內頁由 global.css 喺過場期間先改名） */
     transitionName?: string | undefined;
 }
 
@@ -33,9 +33,6 @@ export interface StandbyTime {
     position: number;
     duration: number;
 }
-
-const RESTART_ICON_SIZE = 22;
-const TOGGLE_ICON_SIZE = 26;
 
 /** 未知時長（未載到 metadata，例如斷網）時間都唔可信：顯示佔位，唔顯示 0:00 / 續播位置 */
 const formatClock = (seconds: number, known: boolean): string =>
@@ -74,41 +71,6 @@ const useGaugeView = (
     return { known, shownTime, max, seek, isPlaying, arc, disc, toggle, restart };
 };
 
-interface GaugeActionsProps {
-    isPlaying: boolean;
-    /** 冇就唔出由頭播放掣（播放掣位置唔變） */
-    onRestart?: () => void;
-    onToggle: () => void;
-}
-
-/** 由頭播放 + 播放 / 暫停兩粒掣 */
-const GaugeActions = ({ isPlaying, onRestart, onToggle }: GaugeActionsProps) => (
-    <div className={styles.actions}>
-        {onRestart && (
-            <button
-                type="button"
-                className={styles.restart}
-                aria-label={t('player.restart')}
-                onClick={onRestart}
-            >
-                <RestartIcon size={RESTART_ICON_SIZE} />
-            </button>
-        )}
-        <button
-            type="button"
-            className={styles.toggle}
-            aria-label={t(isPlaying ? 'player.pause' : 'player.play')}
-            onClick={onToggle}
-        >
-            {isPlaying ? (
-                <PauseIcon size={TOGGLE_ICON_SIZE} />
-            ) : (
-                <PlayIcon size={TOGGLE_ICON_SIZE} />
-            )}
-        </button>
-    </div>
-);
-
 /** 唱片 + 弧形進度 + 時間 + 由頭播放：節目頁播放器同今日節目卡共用 */
 export const PlayerGauge = ({
     art,
@@ -124,7 +86,11 @@ export const PlayerGauge = ({
     const formatValueText = (seconds: number) =>
         t('player.progressText', { current: formatClock(seconds, known), total });
     return (
-        <div className={styles.gauge} style={{ viewTransitionName: transitionName }}>
+        <div
+            className={styles.gauge}
+            style={{ viewTransitionName: transitionName }}
+            data-player-gauge=""
+        >
             <div className={styles.arc}>
                 <ArcSlider
                     {...view.arc}

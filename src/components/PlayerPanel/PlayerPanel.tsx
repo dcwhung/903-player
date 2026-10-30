@@ -19,8 +19,6 @@ interface PlayerPanelProps {
     onPick: (url: string) => void;
     /** player 載入緊其他嘢先有：唱片係未開始樣，撳播放就開始播呢頁（見 PlayerGauge） */
     onStart?: (() => void) | undefined;
-    /** 唱片格嘅過場名（主頁播放卡入頁 / 返主頁時一齊移位變形） */
-    transitionName?: string | undefined;
 }
 
 /** 節目頁播放器：唱片 + 弧形進度 + 播放掣 + 日子條 */
@@ -32,7 +30,6 @@ export const PlayerPanel = ({
     currentDay,
     onPick,
     onStart,
-    transitionName,
 }: PlayerPanelProps) => {
     // 日子條拖動時跟住轉嘅節目圖
     const artRef = useRef<HTMLImageElement>(null);
@@ -41,13 +38,7 @@ export const PlayerPanel = ({
     const { duration } = usePlayer();
     return (
         <div className={styles.panel}>
-            <PlayerGauge
-                art={art}
-                artRef={artRef}
-                held={held}
-                onStart={onStart}
-                transitionName={transitionName}
-            />
+            <PlayerGauge art={art} artRef={artRef} held={held} onStart={onStart} />
             <DateStrip
                 title={title}
                 // 未開始（onStart）時 duration 係其他嘢嘅，唔講「連線中…」

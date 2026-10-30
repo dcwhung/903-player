@@ -10,7 +10,6 @@ import { usePlayer } from '../player/usePlayer';
 import { t } from '../i18n/t';
 import { formatDateLabel } from '../utils/date';
 import { hasKnownDuration } from '../utils/time';
-import { TRANSITION_NAME } from '../utils/viewTransition';
 import { DramaHeader } from './DramaHeader';
 import page from './Page.module.css';
 import { useDailyDramaPage } from './useDramaPage';
@@ -42,7 +41,6 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
                             currentDay={strip.current}
                             onPick={selectEpisode}
                             onStart={start}
-                            transitionName={TRANSITION_NAME.gauge}
                         />
                     )}
                     {current && landscape && (
