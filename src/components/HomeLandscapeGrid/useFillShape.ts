@@ -1,34 +1,27 @@
 import type { RefObject } from 'react';
 import { useElementSize } from '../../hooks/useElementSize';
 import { fallbackShape, fillShape, type FillShape } from './fillShape';
+import { FILL_SPACING_PX, MIN_CELL_PX } from './fillSpacing';
 
 /**
- * 以下 px 同 tokens.css 一樣（× --ui-scale）：--home-gutter、--home-tile-gap、
- * 格仔上下留畀泥膠落影嘅 --space-2、頁點 --touch-target-min。每格最矮 120px（mockup MIN_CELL_H）
+ * 量 nav 嘅大細，揀橫額 + count 張卡嘅欄 × 行；未量到或者放唔落就用 fallbackShape。
+ * layoutKey 一變（例如收埋播放卡）就喺同一個 commit 重新量（見 useElementSize）
  */
-const GUTTER_PX = 16;
-const TILE_GAP_PX = 12;
-const SHADOW_PAD_PX = 8;
-const DOTS_PX = 24;
-const MIN_CELL_PX = 120;
-
-/** 量 nav 嘅大細，揀橫額 + count 張卡嘅欄 × 行；未量到或者放唔落就用 fallbackShape */
 export const useFillShape = (
     ref: RefObject<HTMLElement | null>,
     count: number,
     tileRatio: number,
+    layoutKey?: unknown,
 ): FillShape => {
-    const { width, height, uiScale } = useElementSize(ref);
-    const box = {
-        width: width - 2 * GUTTER_PX * uiScale,
-        height: height - SHADOW_PAD_PX * uiScale,
-    };
+    const { width, height, uiScale } = useElementSize(ref, layoutKey);
+    const { gutter, tileGap, shadowPad, dots } = FILL_SPACING_PX;
+    const box = { width: width - 2 * gutter * uiScale, height: height - shadowPad * uiScale };
     const options = {
         count,
         tileRatio,
-        gapPx: TILE_GAP_PX * uiScale,
+        gapPx: tileGap * uiScale,
         minCellPx: MIN_CELL_PX * uiScale,
-        dotsPx: DOTS_PX * uiScale,
+        dotsPx: dots * uiScale,
     };
     const measured = width > 0 && height > 0 ? fillShape(box, options) : null;
     return measured ?? fallbackShape(count + 1);

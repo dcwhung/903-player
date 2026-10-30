@@ -42,6 +42,8 @@ export const TRANSITION_NAME = {
     banner: 'home-banner',
 } as const;
 
-/** 主頁每格（按卡嘅 key）：收埋 / 再出返播放卡時格仔由舊位移去新位 */
-export const tileTransitionName = (key: string | number): string =>
-    `home-tile-${String(key).replace(/[^\w-]/g, '-')}`;
+/**
+ * 主頁每格（按排位，橫額之後由 0 數起）：收埋 / 再出返播放卡時同一張卡排位唔變，由舊位移去新位。
+ * 用排位而唔係卡嘅 key：key 可以有任何字元，換字會撞名（撞名成個過場會 abort，S-633）
+ */
+export const tileTransitionName = (index: number): string => `home-tile-${index}`;

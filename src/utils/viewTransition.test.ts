@@ -78,8 +78,9 @@ describe('withViewTransition', () => {
 });
 
 describe('tileTransitionName', () => {
-    it('should give each tile a stable name a view transition accepts', () => {
-        expect(tileTransitionName('sammy-kitty')).toBe('home-tile-sammy-kitty');
-        expect(tileTransitionName('.$today')).toBe('home-tile---today');
+    it('should give every position its own name a view transition accepts', () => {
+        const names = Array.from({ length: 40 }, (_, i) => tileTransitionName(i));
+        expect(new Set(names).size).toBe(names.length);
+        names.forEach((name) => expect(name).toMatch(/^[a-z][a-z0-9-]*$/));
     });
 });

@@ -16,6 +16,8 @@ interface HomeFillGridProps {
     tileRatio: number;
     label: string;
     busy?: boolean;
+    /** 會改變格仔範圍大細嘅版面狀態（主頁版面模式）：一變就同步重新量 */
+    layoutKey?: unknown;
 }
 
 interface Cell {
@@ -34,22 +36,29 @@ const toCells = (banner: ReactNode, tiles: ReactNode[]): Cell[] => [
     { key: BANNER_KEY, node: banner, transitionName: TRANSITION_NAME.banner },
     ...tiles.map((tile, i) => {
         const key = isValidElement(tile) && tile.key !== null ? tile.key : String(i);
-        return { key, node: tile, transitionName: tileTransitionName(key) };
+        return { key, node: tile, transitionName: tileTransitionName(i) };
     }),
 ];
 
+interface FillPageProps {
+    cells: Cell[];
+    shape: FillShape;
+    /** 而家見到嘅一頁先有過場名：過場畫喺最頂層，唔受 scroller 裁，其他頁會疊住播放卡飛（S-632） */
+    onScreen: boolean;
+}
+
 /** 一頁：最後一張卡喺最後一行唔夠格就拉闊補返 */
-const FillPage = ({ cells, shape }: { cells: Cell[]; shape: FillShape }) => {
+const FillPage = ({ cells, shape, onScreen }: FillPageProps) => {
     const span = lastCellSpan(shape, cells.length);
     const vars = { '--fill-cols': shape.cols, '--fill-rows': shape.rows } as CSSProperties;
     return (
-        <div className={styles.page} style={vars}>
+        <div className={styles.page} style={vars} data-fill-page="">
             {cells.map((cell, i) => (
                 <div
                     key={cell.key}
                     className={styles.cell}
                     style={{
-                        viewTransitionName: cell.transitionName,
+                        viewTransitionName: onScreen ? cell.transitionName : undefined,
                         gridColumn: i === cells.length - 1 ? `span ${span}` : undefined,
                     }}
                 >
@@ -64,9 +73,16 @@ const FillPage = ({ cells, shape }: { cells: Cell[]; shape: FillShape }) => {
  * 闊橫版主頁（節目 / 廣播劇共用）：橫額做第一格，卡跟住排，填滿剩低嘅闊同高（每格拉滿，唔鎖比例）。
  * 欄 × 行由 fillShape 按量到嘅大細揀；一頁放唔晒就分頁（左右掃，下面頁點），同直版節目格一樣
  */
-export const HomeFillGrid = ({ tiles, banner, tileRatio, label, busy }: HomeFillGridProps) => {
+export const HomeFillGrid = ({
+    tiles,
+    banner,
+    tileRatio,
+    label,
+    busy,
+    ...rest
+}: HomeFillGridProps) => {
     const navRef = useRef<HTMLElement>(null);
-    const shape = useFillShape(navRef, tiles.length, tileRatio);
+    const shape = useFillShape(navRef, tiles.length, tileRatio, rest.layoutKey);
     const pages = pageCells(toCells(banner, tiles), shape);
     const { scrollerRef, index, onScroll, goTo } = useGridPager(pages.length);
     const pageLabels = pages.map((_, i) => t('home.page', { index: i + 1 }));
@@ -74,7 +90,12 @@ export const HomeFillGrid = ({ tiles, banner, tileRatio, label, busy }: HomeFill
         <nav ref={navRef} className={styles.nav} aria-label={label} aria-busy={busy}>
             <div className={styles.scroller} ref={scrollerRef} onScroll={onScroll}>
                 {pages.map((cells, i) => (
-                    <FillPage key={pageLabels[i]} cells={cells} shape={shape} />
+                    <FillPage
+                        key={pageLabels[i]}
+                        cells={cells}
+                        shape={shape}
+                        onScreen={i === index}
+                    />
                 ))}
             </div>
             <PageDots

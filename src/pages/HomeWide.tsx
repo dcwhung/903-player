@@ -29,8 +29,13 @@ interface WideGridProps {
     busy: boolean;
 }
 
+interface WideGridLayoutProps extends WideGridProps {
+    /** 版面模式一變（收埋 / 再出返播放卡）格仔範圍就變闊 / 收窄，要同步重新量 */
+    mode: Exclude<HomeLayoutMode, 'stack'>;
+}
+
 /** 填滿格：橫額（標準版圖 + 版本號）做第一格，跟住係而家 tab 嘅卡；換 tab 由第一頁開始 */
-const WideGrid = ({ tab, showTiles, dramaItems, busy }: WideGridProps) => {
+const WideGrid = ({ tab, showTiles, dramaItems, busy, mode }: WideGridLayoutProps) => {
     const banner = (
         <HomeBanner corner={<AppVersion version={APP_VERSION} />} art={<CoverBanner />} fill />
     );
@@ -39,6 +44,7 @@ const WideGrid = ({ tab, showTiles, dramaItems, busy }: WideGridProps) => {
             key={tab}
             label={t('home.showsNav')}
             busy={busy}
+            layoutKey={mode}
             tiles={showTiles}
             banner={banner}
             tileRatio={SHOW_TILE_RATIO}
@@ -47,6 +53,7 @@ const WideGrid = ({ tab, showTiles, dramaItems, busy }: WideGridProps) => {
         <HomeFillGrid
             key={tab}
             label={t('home.dramasNav')}
+            layoutKey={mode}
             tiles={dramaItems.map((item) => (
                 <DramaTile key={item.id} item={item} />
             ))}
@@ -92,7 +99,7 @@ export const HomeWide = ({ mode, onTab, miniPlayer, ...grid }: HomeWideProps) =>
     <main className={`${page.page} ${page.locked} ${styles.wide}`} data-layout={mode}>
         <div className={styles.gridColumn}>
             <HomeTabs tab={grid.tab} onChange={onTab} />
-            <WideGrid {...grid} />
+            <WideGrid {...grid} mode={mode} />
         </div>
         {mode === 'split' && miniPlayer && <SplitCard miniPlayer={miniPlayer} />}
         {mode === 'fillWithHandle' && miniPlayer && (
