@@ -75,6 +75,7 @@
 | 2026-10-29 | [qa/2026-10-29_qa_s551-lockscreen-stall.md](qa/2026-10-29_qa_s551-lockscreen-stall.md)（S-551 鎖屏卡住 + 芝See菇Bi tile pass；CUI-0011 🟢）                                           |
 | 2026-10-29 | [qa/2026-10-29_qa_v1.20.7.md](qa/2026-10-29_qa_v1.20.7.md)（v1.20.7 release pass；S-583 / W-505 Chromium 4 s；CUI-0011 c0 仍 4 / 12 / 20 s）                                          |
 | 2026-10-30 | [qa/2026-10-30_qa_v1.20.10.md](qa/2026-10-30_qa_v1.20.10.md)（v1.20.10 fail：CUI-0012 🔴 鎖屏慢載途中亮屏被 reload；CUI-0013 🟢 coverage run timeout flake → Re-test `2293d00` pass） |
+| 2026-10-30 | [qa/2026-10-30_qa_cui-0010-0013.md](qa/2026-10-30_qa_cui-0010-0013.md)（v1.20.11 pass：CUI-0010 e2e 5 × 590 / 0、被食 tap 0；CUI-0013 coverage 4 × 1956 綠；兩張 ticket completed）   |
 
 ## Deploys
 
