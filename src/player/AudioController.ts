@@ -206,7 +206,11 @@ export class AudioController {
 
     pause = (): void => {
         this.setPlayIntent(false);
+        // 本身已經暫停嘅 element 唔會發 pause event（spec）：直接當停咗，收 watchdog、
+        // 照記低凍結狀態畀下一次鎖屏 Play（S-643，同 stop 嘅 S-640 一樣）
+        const alreadyPaused = this.audio.paused;
         this.audio.pause();
+        if (alreadyPaused) this.onStopped();
     };
 
     /** 載入失敗咗嘅 element paused 可能仲係 false，但其實冇播緊：當暫停處理 */

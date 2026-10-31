@@ -1762,6 +1762,38 @@ describe('AudioController hidden frozen playing (v1.20.9)', () => {
         detach();
     });
 
+    describe('pause on an element that is already paused (no pause event, S-643)', () => {
+        it('should not resume after the user paused while the watchdog was armed', async () => {
+            const { audio, controller, detach } = await lockedListeningThenPaused();
+            await lockScreenPlayFrozen(audio, controller);
+            audio.paused = true;
+            controller.pause();
+            audio.play.mockClear();
+            audio.load.mockClear();
+
+            vi.advanceTimersByTime(STALL_MAX_WAIT_MS);
+
+            expect(audio.play).not.toHaveBeenCalled();
+            expect(audio.load).not.toHaveBeenCalled();
+            expect(controller.getSnapshot().isPlaying).toBe(false);
+            detach();
+        });
+
+        it('should still remember a frozen attempt for the next lock-screen play', async () => {
+            const { audio, controller, detach } = await lockedListeningThenPaused();
+            await lockScreenPlayFrozen(audio, controller);
+            vi.setSystemTime(Date.now() + FROZEN_BEFORE_PAUSE_MS);
+            audio.paused = true;
+            controller.pause();
+
+            await controller.resume();
+
+            expect(audio.load).toHaveBeenCalledTimes(1);
+            expect(retryLines()).toEqual([expect.stringMatching(/ remote$/)]);
+            detach();
+        });
+    });
+
     /**
      * W-506 / W-507：鎖屏 timeupdate 約 5 秒先一次，位置靜靜雞行；playing 喺 deadline 前 2 秒先到、
      * 再慢 1.9 秒先出聲（健康）都唔可以當凍結 reload（會重演 v1.20.7 鎖屏 abort）
