@@ -29,6 +29,21 @@ const runUpdate = (update: () => void) => () => {
 };
 
 /**
+ * 開過場；瀏覽器同步 throw（例如 document 未 visible / 狀態唔啱）就清返標記、直接更新，
+ * 之後再撳仍然得（S-641）
+ */
+const tryStart = (update: () => void): ViewTransition | null => {
+    try {
+        return document.startViewTransition(runUpdate(update));
+    } catch {
+        pending = false;
+        delete document.documentElement.dataset.viewTransition;
+        update();
+        return null;
+    }
+};
+
+/**
  * 用 View Transitions API 做過場：瀏覽器影低前後畫面，同名（view-transition-name）嘅元素自己移位變形。
  * 唔支援、或者用戶要求減少動畫就直接更新，冇動畫。
  * update throw / 過場畀瀏覽器跳過都唔會變 unhandled rejection（S-631）
@@ -41,7 +56,8 @@ export const withViewTransition = (update: () => void, kind: ViewTransitionKind)
     if (pending) return;
     pending = true;
     document.documentElement.dataset.viewTransition = kind;
-    const transition = document.startViewTransition(runUpdate(update));
+    const transition = tryStart(update);
+    if (!transition) return;
     latest = transition;
     transition.ready.catch(ignore);
     transition.updateCallbackDone.catch(() => {
