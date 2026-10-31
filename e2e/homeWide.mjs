@@ -17,8 +17,10 @@ const LAYOUT_WAIT_MS = 5000;
 const NO_AUTOPLAY_WAIT_MS = 1500;
 // 把手喺右邊緣：右邊最多留幾多 px（安全區 + 預留位）
 const HANDLE_EDGE_PX = 40;
-// 清單捲落去幾多 px：夠證明清單自己捲
+// 滑鼠轆捲幾多 px：夠證明清單自己捲
 const LIST_SCROLL_PX = 200;
+// 滑鼠轆之後等捲動完（smooth scroll / 事件處理）
+const WHEEL_SETTLE_MS = 300;
 
 const ANY_MINI_REGION = /^正在播放/;
 // 平日冇嘢載入：張卡係今日節目（同直版 mini player 一樣）
@@ -27,6 +29,8 @@ const CLOSE_LABEL = '關閉播放器';
 // 公子會（星期六）最近一集 17/10：入節目頁自動播，返主頁就係重溫
 const REWATCH_SHOW = { name: '公子會', route: '#/show/gongzi' };
 const REOPEN_LABEL = `打開播放器：${REWATCH_SHOW.name}`;
+// 張卡頁頭列嘅開頁掣（後面跟「，重溫 17/10（六）」）
+const REWATCH_OPEN = new RegExp(`^開啟 ${REWATCH_SHOW.name} 節目頁`);
 const LIST_COUNT = /^共 \d+ 集/;
 
 const card = (p) => p.locator('section[data-home-card]');
@@ -86,13 +90,19 @@ const checkCardEpisodes = async (p, log, label) => {
         (await list.count()) === 1 && LIST_COUNT.test(count),
         `${label}：卡入面有集數清單（集數 · ${count}）`,
     );
-    const scroll = await list.locator('ul').evaluate((ul, px) => {
-        ul.scrollTop = px;
-        return { list: ul.scrollTop, page: document.scrollingElement.scrollTop };
-    }, LIST_SCROLL_PX);
+    // 真滑鼠轆（唔係 JS 設 scrollTop）：捲得郁先證明清單自己捲，同時睇張卡同成頁有冇被帶住郁
+    const ul = list.locator('ul');
+    const cardTop = () => card(p).evaluate((el) => el.getBoundingClientRect().top);
+    const topBefore = await cardTop();
+    await ul.hover();
+    await p.mouse.wheel(0, LIST_SCROLL_PX);
+    await p.waitForTimeout(WHEEL_SETTLE_MS);
+    const listTop = await ul.evaluate((el) => el.scrollTop);
+    const pageTop = await p.evaluate(() => document.scrollingElement.scrollTop);
+    const topAfter = await cardTop();
     log(
-        scroll.list > 0 && scroll.page === 0,
-        `${label}：清單喺卡入面自己捲，成頁唔郁（清單 ${scroll.list}px、頁 ${scroll.page}px）`,
+        listTop > 0 && pageTop === 0 && topAfter === topBefore,
+        `${label}：滑鼠轆喺卡入面捲清單，成頁唔郁（清單 ${listTop}px、頁 ${pageTop}px、卡頂 ${topBefore} → ${topAfter}）`,
     );
 };
 
@@ -134,7 +144,8 @@ const checkCloseAndReopen = async ({ browser, base, errors, log }) => {
     log(split && before.column !== null, `${label}：播緊${REWATCH_SHOW.name}返主頁出右邊播放卡`);
     if (!split) return ctx.close();
 
-    await card(p).locator('..').getByRole('button', { name: CLOSE_LABEL }).click();
+    // 闊橫版冇底部 mini player：成頁得張卡角一粒關閉掣
+    await p.getByRole('button', { name: CLOSE_LABEL, exact: true }).click();
     const closed = await hasLayout(p, 'fillWithHandle');
     const stopped = await waitForPlaybackState(p, 'paused');
     log(
@@ -159,10 +170,10 @@ const checkCloseAndReopen = async ({ browser, base, errors, log }) => {
 
     await handle.click();
     const reopened = await hasLayout(p, 'split');
-    const header = await card(p).getByRole('button').first().getAttribute('aria-label');
+    const header = card(p).getByRole('button', { name: REWATCH_OPEN });
     log(
-        reopened && (header ?? '').includes(REWATCH_SHOW.name),
-        `${label}：撳把手開返張卡，係閂咗嗰個節目（${await layoutOf(p)}，${header}）`,
+        reopened && (await header.count()) === 1,
+        `${label}：撳把手開返張卡，係閂咗嗰個節目（${await layoutOf(p)}，${await header.getAttribute('aria-label')}）`,
     );
     await p.waitForTimeout(NO_AUTOPLAY_WAIT_MS);
     const state = await p.evaluate(() => navigator.mediaSession.playbackState);
