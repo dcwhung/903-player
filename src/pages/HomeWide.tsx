@@ -10,10 +10,8 @@ import { HomePlayerHandle } from '../components/HomePlayerCard/HomePlayerHandle'
 import { HomeTabs } from '../components/HomeTabs/HomeTabs';
 import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
 import { APP_VERSION } from '../config/appVersion';
-import { TALL_CARD_QUERY } from '../config/layout';
 import { useClosedHomePlayerCard } from '../hooks/homePlayerCardClosed';
 import type { HomeTab } from '../hooks/useHomeTab';
-import { useMediaQuery } from '../hooks/useMediaQuery';
 import { t } from '../i18n/t';
 import { withViewTransition } from '../utils/viewTransition';
 import styles from './HomePage.module.css';
@@ -21,7 +19,7 @@ import type { HomeLayoutMode } from './homeLayoutMode';
 import page from './Page.module.css';
 import { useHomeCardGauge } from './useHomeCardGauge';
 import { useHomeCardToggle } from './useHomeCardToggle';
-import { useHomeNextEpisodes } from './useHomeNextEpisodes';
+import { useHomeCardEpisodes } from './useHomeCardEpisodes';
 
 interface WideGridProps {
     tab: HomeTab;
@@ -65,20 +63,19 @@ const WideGrid = ({ tab, showTiles, dramaItems, busy, mode }: WideGridLayoutProp
 };
 
 /**
- * 右邊播放卡：mini player 嘅節目 / 劇集，唱片格跟 useHomeCardGauge；高畫面多「下一集」。
+ * 右邊播放卡：mini player 嘅節目 / 劇集，唱片格跟 useHomeCardGauge，下面係同內頁一樣嘅集數清單。
  * 入頁、收埋都用過場（View Transitions，減少動畫就即刻轉）
  */
 const SplitCard = ({ miniPlayer, onClose, focusOnMount }: SplitCardProps) => {
-    const tall = useMediaQuery(TALL_CARD_QUERY);
     const gauge = useHomeCardGauge(miniPlayer);
-    const next = useHomeNextEpisodes(miniPlayer.keys[miniPlayer.index]);
+    const episodes = useHomeCardEpisodes(miniPlayer.keys[miniPlayer.index]);
     const expand = () => withViewTransition(miniPlayer.onOpen, 'expand');
     return (
         <div className={styles.cardColumn}>
             <HomePlayerCard
                 {...miniPlayer}
                 gauge={gauge}
-                next={tall ? { ...next, onAll: expand } : undefined}
+                episodes={episodes}
                 onExpand={expand}
                 onClose={onClose}
                 focusOnMount={focusOnMount}

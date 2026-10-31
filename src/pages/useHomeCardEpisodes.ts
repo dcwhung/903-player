@@ -1,4 +1,8 @@
-import type { EpisodeItem, EpisodeLabels } from '../components/EpisodeList/EpisodeList';
+import type {
+    EpisodeItem,
+    EpisodeLabels,
+    EpisodeScrollAlign,
+} from '../components/EpisodeList/EpisodeList';
 import { useRecordings } from '../data/useRecordings';
 import { dailyEpisodesOf, seriesEpisodesOf } from '../dramas';
 import { useEpisodePress } from '../hooks/useEpisodePress';
@@ -10,58 +14,50 @@ import { getProgressMap } from '../services/progressStore';
 import type { DramaEpisode } from '../types/drama';
 import type { Recording, UnavailableEpisode } from '../types/recording';
 import { isDramaEpisode, type Track } from '../types/track';
-import { t, type MessageKey } from '../i18n/t';
 import { toDailyItems, toSeriesItems } from './dramaItems';
 import { toEpisodeItems, type RowContext } from './episodeItems';
 
-/** 主頁播放卡「下一集」列幾多行（mockup 4 行，卡放唔晒就自己捲） */
-export const NEXT_EPISODE_COUNT = 4;
-
-const NEXT_TITLE: MessageKey = 'homeCard.next';
-const OLDER_TITLE: MessageKey = 'homeCard.older';
-
-/** 一張清單（同內頁一樣嘅行）同撳行播得嘅集 */
-interface EpisodeSource {
+/** 一張清單（同內頁一樣嘅行、行頭欄、捲法）同撳行播得嘅集 */
+export interface CardEpisodeList {
     items: EpisodeItem[];
     labels: EpisodeLabels;
+    scrollAlign: EpisodeScrollAlign;
     tracks: readonly Track[];
-    /** 清單標題：短篇照集數次序係「下一集」；節目 / 每日劇最新喺頂，後面係舊集 */
-    title: MessageKey;
 }
 
-/** 廣播劇：短篇 = 同一個短篇嘅集（集數次序）；每日 = 最新喺頂（同劇集頁清單一樣） */
-const dramaSource = (episode: DramaEpisode, ctx: RowContext): EpisodeSource => {
+/** 廣播劇：短篇 = 嗰個短篇嘅集（同短篇劇集頁一樣）；每日 = 最新喺頂（同每日劇集頁一樣） */
+const dramaList = (episode: DramaEpisode, ctx: RowContext): CardEpisodeList => {
     if (episode.kind === 'series') {
         const tracks = episodesInArc(seriesEpisodesOf(episode.dramaId), episode.arc);
-        return { items: toSeriesItems(tracks, ctx), labels: 'title', tracks, title: NEXT_TITLE };
+        return { items: toSeriesItems(tracks, ctx), labels: 'title', scrollAlign: 'top', tracks };
     }
     const tracks = dailyNewestFirst(dailyEpisodesOf(episode.dramaId));
-    return { items: toDailyItems(tracks, ctx), labels: 'taggedDate', tracks, title: OLDER_TITLE };
+    const items = toDailyItems(tracks, ctx);
+    return { items, labels: 'taggedDate', scrollAlign: 'nearest', tracks };
 };
 
 /** 節目：同節目頁清單一樣（最新喺頂，連未上架） */
-const showSource = (
+const showList = (
     show: Recording,
     ctx: RowContext,
     recordings: Recording[],
     unavailable: UnavailableEpisode[],
-): EpisodeSource => {
+): CardEpisodeList => {
     const entries = entriesNewestFirst(recordings, unavailable, show.showId);
     const { currentUrl, live, progressMap, isPlaying } = ctx;
     return {
         items: toEpisodeItems(entries, currentUrl, live, progressMap, isPlaying),
         labels: 'date',
+        scrollAlign: 'nearest',
         tracks: recordingsForShow(recordings, show.showId),
-        title: OLDER_TITLE,
     };
 };
 
-const EMPTY_SOURCE: EpisodeSource = { items: [], labels: 'date', tracks: [], title: OLDER_TITLE };
-
-/** 清單入面顯示緊嗰集之後嘅幾行（搵唔到嗰集就冇） */
-const itemsAfter = (items: EpisodeItem[], url: string | undefined): EpisodeItem[] => {
-    const index = items.findIndex((item) => item.key === url);
-    return index < 0 ? [] : items.slice(index + 1, index + 1 + NEXT_EPISODE_COUNT);
+const EMPTY_LIST: CardEpisodeList = {
+    items: [],
+    labels: 'date',
+    scrollAlign: 'nearest',
+    tracks: [],
 };
 
 /** 顯示緊嗰集（載入咗就係 player 嗰集）同計清單行要嘅 player / 進度資料 */
@@ -79,24 +75,20 @@ const useRowContext = (url: string | undefined) => {
 };
 
 /**
- * 主頁播放卡「下一集」：同內頁清單一樣嘅行（標題 / 副題、進度、狀態、▷），淨係顯示緊嗰集後面幾行；
- * 撳行就播嗰集（留喺主頁，唔入頁）
+ * 主頁播放卡嘅集數清單：同內頁一模一樣（短篇 = 短篇劇集頁嗰個短篇；節目 / 每日劇 = 節目頁 / 每日劇集頁），
+ * 顯示緊嗰集係揀中行、捲入畫面。撳行同內頁一樣：撳播緊嗰集暫停，其他集播嗰集（留喺主頁）
  */
-export const useHomeNextEpisodes = (url: string | undefined) => {
+export const useHomeCardEpisodes = (url: string | undefined) => {
     const { recordings, unavailable } = useRecordings();
     const { ctx, loaded } = useRowContext(url);
     const show = recordings.find((r) => r.url === url) ?? null;
     const drama = loaded && isDramaEpisode(loaded) ? loaded : null;
-    const source = drama
-        ? dramaSource(drama, ctx)
+    const list = drama
+        ? dramaList(drama, ctx)
         : show
-          ? showSource(show, ctx, recordings, unavailable)
-          : EMPTY_SOURCE;
-    const { pressEpisode } = useEpisodePress(source.tracks, url, ctx.isPlaying);
-    return {
-        items: itemsAfter(source.items, url),
-        labels: source.labels,
-        title: t(source.title),
-        onSelect: pressEpisode,
-    };
+          ? showList(show, ctx, recordings, unavailable)
+          : EMPTY_LIST;
+    const { pressEpisode } = useEpisodePress(list.tracks, url, ctx.isPlaying);
+    const { items, labels, scrollAlign } = list;
+    return { items, labels, scrollAlign, onSelect: pressEpisode };
 };

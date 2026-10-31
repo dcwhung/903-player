@@ -7,11 +7,11 @@ import { NowPlaying } from '../NowPlaying/NowPlaying';
 import { PlayerGauge, type StandbyTime } from '../PlayerPanel/PlayerGauge';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import { CardDots, CardHeader, type CardSwitchProps } from './CardHeader';
-import { CardNext, type HomeCardNext } from './CardNext';
+import { CardEpisodes, type HomeCardEpisodes } from './CardEpisodes';
 import styles from './HomePlayerCard.module.css';
 import { useCardSwipe } from './useCardSwipe';
 
-export type { HomeCardNext } from './CardNext';
+export type { HomeCardEpisodes } from './CardEpisodes';
 
 const CLOSE_ICON_SIZE = 16;
 
@@ -42,8 +42,8 @@ interface HomePlayerCardProps extends CardSwitchProps {
     openLabel: string;
     theme: ShowTheme;
     gauge: HomeCardGaugeView;
-    /** 高畫面先有「下一集」 */
-    next?: HomeCardNext | undefined;
+    /** 集數清單（同內頁一樣），任何高度都有 */
+    episodes: HomeCardEpisodes;
     onExpand: () => void;
     /** 卡角閂掣（同 mini player 關閉一樣 ⏻）：停播，張卡縮入右邊把手 */
     onClose: () => void;
@@ -53,10 +53,10 @@ interface HomePlayerCardProps extends CardSwitchProps {
 
 /**
  * 闊橫版主頁右邊播放卡（代替底部 mini player）：節目色泥膠卡，入面係內頁播放器縮細
- * （頁頭列、唱片 + 弧形進度 + 播放掣、現正播放；高畫面多「下一集」）。✕ 半浮喺卡右上角。
+ * （頁頭列、唱片 + 弧形進度 + 播放掣、現正播放、集數清單）。✕ 半浮喺卡右上角。
  * 今日多個節目：同 mini player 一樣左右掃 / 撳指示點轉節目（W-516）
  */
-export const HomePlayerCard = ({ theme, gauge, next, ...props }: HomePlayerCardProps) => {
+export const HomePlayerCard = ({ theme, gauge, episodes, ...props }: HomePlayerCardProps) => {
     const swipe = useCardSwipe(props.index, props.keys.length, props.onChange);
     return (
         <ThemeScope theme={theme} fullPage={false} className={styles.scope}>
@@ -77,7 +77,7 @@ export const HomePlayerCard = ({ theme, gauge, next, ...props }: HomePlayerCardP
                 />
                 <CardDots {...props} />
                 <CardGauge art={theme.art} gauge={gauge} />
-                {next && <CardNext {...next} />}
+                <CardEpisodes {...episodes} />
             </section>
             <button
                 type="button"
