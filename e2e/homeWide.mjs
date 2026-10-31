@@ -1,7 +1,13 @@
 // 闊橫版主頁 e2e（v1.21.x，CUI-0015）：iPad 打橫（1180×820）主頁按 main[data-layout] 分流。
 // fill = 冇 mini player 全闊填滿格；split = 左格 + 右邊播放卡；fillWithHandle = ✕ 閂咗卡、右邊把手。
 // 每個情境用獨立 context，唔受 run.mjs 主流程之前播過乜影響
-import { ensurePlaying, isShown, newE2EPage, waitForPlaybackState } from './harness.mjs';
+import {
+    ensurePlaying,
+    isShown,
+    newE2EPage,
+    runSection,
+    waitForPlaybackState,
+} from './harness.mjs';
 
 // iPad 打橫：高 ≥ 562 先係闊橫版（src/config/layout.ts WIDE_BANNER_QUERY）
 const WIDE = { width: 1180, height: 820 };
@@ -181,9 +187,15 @@ const checkCloseAndReopen = async ({ browser, base, errors, log }) => {
     await ctx.close();
 };
 
-/** 闊橫版主頁：fill / split（卡闊、卡清單）/ ✕ 閂卡 → 把手 → 開返 */
+const SCENARIOS = [
+    ['闊橫版主頁（冇 mini player）', checkFill],
+    ['闊橫版主頁（有 mini player）', checkSplit],
+    ['闊橫版主頁播放卡閂卡 / 開返', checkCloseAndReopen],
+];
+
+/** 闊橫版主頁：fill / split（卡闊、卡清單）/ ✕ 閂卡 → 把手 → 開返；每個情境各自一個 section，一個 throw 唔會跳過其他（O3） */
 export const runHomeWideChecks = async (env) => {
-    await checkFill(env);
-    await checkSplit(env);
-    await checkCloseAndReopen(env);
+    for (const [label, check] of SCENARIOS) {
+        await runSection(env.log, label, () => check(env), env.browser);
+    }
 };

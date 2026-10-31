@@ -249,17 +249,28 @@ export const isShown = (locator, options) => succeeds(locator.waitFor(options));
 /** Playwright error 第一行就係原因；後面嘅 Call log 太長，洗晒 e2e 輸出 */
 const firstLine = (error) => String(error instanceof Error ? error.message : error).split('\n')[0];
 
+/** 閂晒 section 期間新開嘅 context：已經閂咗嘅 close 會 reject，唔緊要 */
+const closeNewContexts = async (browser, before) => {
+    const opened = browser.contexts().filter((ctx) => !before.includes(ctx));
+    await Promise.all(opened.map((ctx) => ctx.close().catch(() => undefined)));
+};
+
 /**
  * 行一個 e2e section：中途 throw（例如 waitFor 超時）就 log 一個 FAIL 再行落去，
- * 唔會令成個 run 中止、冇結尾總結。section 自己嘅 check 照用 log；完成就唔另外 log
+ * 唔會令成個 run 中止、冇結尾總結。section 自己嘅 check 照用 log；完成就唔另外 log。
+ * 有 browser 就喺完結時閂晒 section 開咗嘅 context：throw 咗行唔到自己嘅 ctx.close()，
+ * 留低嘅 page 會繼續播 / 食 CPU，連累後面 section（S-644）
  */
-export const runSection = async (log, label, run) => {
+export const runSection = async (log, label, run, browser) => {
+    const before = browser?.contexts() ?? [];
     try {
         await run();
         return true;
     } catch (error) {
         log(false, `${label}：中途中止（${firstLine(error)}）`);
         return false;
+    } finally {
+        if (browser) await closeNewContexts(browser, before);
     }
 };
 

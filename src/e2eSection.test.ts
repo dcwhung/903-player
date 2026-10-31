@@ -2,7 +2,18 @@
 // e2e/harness.mjs 嘅 runSection：一個 section throw（例如 waitFor 超時）要 log FAIL 再行落去，
 // 唔可以令成個 e2e 中止、冇結尾總結。用網址動態 import（同 e2eSrcConstants.test.ts 一樣，唔使 allowJs）
 type Log = (ok: boolean, msg: string) => void;
-type RunSection = (log: Log, label: string, run: () => Promise<unknown>) => Promise<boolean>;
+interface FakeContext {
+    close: () => Promise<void>;
+}
+interface FakeBrowser {
+    contexts: () => FakeContext[];
+}
+type RunSection = (
+    log: Log,
+    label: string,
+    run: () => Promise<unknown>,
+    browser?: FakeBrowser,
+) => Promise<boolean>;
 
 const loadRunSection = async (): Promise<RunSection> => {
     const harness = (await import(
@@ -58,5 +69,73 @@ describe('e2e runSection', () => {
         await runSection(log, 'x', () => Promise.reject('boom'));
 
         expect(log).toHaveBeenCalledWith(false, expect.stringContaining('boom'));
+    });
+
+    // S-644：section 中途 throw 唔會行到自己嘅 ctx.close()，開咗嘅 page 會一直播 / 食 CPU 到 run 完
+    describe('with a browser', () => {
+        const fakeContext = (): FakeContext => ({ close: vi.fn(async () => undefined) });
+        const fakeBrowser = (contexts: FakeContext[]): FakeBrowser => ({
+            contexts: () => [...contexts],
+        });
+
+        it('should close the contexts a throwing section opened and keep older ones', async () => {
+            const runSection = await loadRunSection();
+            const older = fakeContext();
+            const opened = fakeContext();
+            const contexts = [older];
+            const browser = fakeBrowser(contexts);
+
+            await runSection(
+                vi.fn<Log>(),
+                'x',
+                async () => {
+                    contexts.push(opened);
+                    throw new Error('Timeout');
+                },
+                browser,
+            );
+
+            expect(opened.close).toHaveBeenCalledTimes(1);
+            expect(older.close).not.toHaveBeenCalled();
+        });
+
+        it('should also close leftovers when the section finishes', async () => {
+            const runSection = await loadRunSection();
+            const opened = fakeContext();
+            const contexts: FakeContext[] = [];
+            const browser = fakeBrowser(contexts);
+
+            const ok = await runSection(
+                vi.fn<Log>(),
+                'x',
+                async () => {
+                    contexts.push(opened);
+                },
+                browser,
+            );
+
+            expect(ok).toBe(true);
+            expect(opened.close).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not fail the section when closing a context rejects', async () => {
+            const runSection = await loadRunSection();
+            const log = vi.fn<Log>();
+            const broken = { close: vi.fn(async () => Promise.reject(new Error('closed'))) };
+            const contexts: FakeContext[] = [];
+            const browser = fakeBrowser(contexts);
+
+            const ok = await runSection(
+                log,
+                'x',
+                async () => {
+                    contexts.push(broken);
+                },
+                browser,
+            );
+
+            expect(ok).toBe(true);
+            expect(log).not.toHaveBeenCalled();
+        });
     });
 });

@@ -1261,16 +1261,18 @@ const checkProbeFindsNewEpisode = async (browser, errors) => {
 
 const server = await startPreview();
 let browser;
+/** 每個 section 完結都閂返佢開咗嘅 context（S-644） */
+const section = (label, run) => runSection(log, label, run, browser);
 try {
     browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
     const errors = [];
     // 先驗 probe 同 audio host：佢哋錯咗，下面最近一集嘅斷言會一連串錯（甚至 crash），睇唔到成因
-    await runSection(log, '先驗 probe 同 audio host', async () => {
+    await section('先驗 probe 同 audio host', async () => {
         await checkProbeIgnoresUnknown(browser, errors);
         await checkProbeFindsNewEpisode(browser, errors);
     });
 
-    await runSection(log, '390×844 主流程', async () => {
+    await section('390×844 主流程', async () => {
         const context = await newE2EContext(browser, {
             viewport: { width: 390, height: 844 },
             deviceScaleFactor: 2,
@@ -1477,7 +1479,7 @@ try {
         await page.screenshot({ ...SHOT, path: `${OUT}/7-home-mini-player.png` });
     });
 
-    await runSection(log, '320×640 窄畫面', async () => {
+    await section('320×640 窄畫面', async () => {
         const narrow = await newE2EContext(browser, { viewport: { width: 320, height: 640 } });
         const np = await narrow.newPage();
         await np.goto(BASE);
@@ -1498,7 +1500,7 @@ try {
     });
 
     // 主頁 mini player 循環掃：獨立 context，未載入任何節目
-    await runSection(log, '主頁 mini player 循環掃', async () => {
+    await section('主頁 mini player 循環掃', async () => {
         const loop = await newE2EContext(browser, { viewport: { width: 390, height: 844 } });
         const lpp = await loop.newPage();
         lpp.on('pageerror', (e) => errors.push(e.message));
@@ -1509,7 +1511,7 @@ try {
     });
 
     // 細 iPhone（320×568）：今日節目卡疊靜止嘅樣
-    await runSection(log, '320×568 今日節目', async () => {
+    await section('320×568 今日節目', async () => {
         const small = await newE2EContext(browser, {
             viewport: { width: 320, height: 568 },
             deviceScaleFactor: 2,
@@ -1529,7 +1531,7 @@ try {
     });
 
     // 主頁頁頂橫額：常見手機闊度（細 iPhone、一般、Pro Max）
-    await runSection(log, '主頁頁頂橫額', async () => {
+    await section('主頁頁頂橫額', async () => {
         for (const { width, height, fixedHome } of HOME_BANNER_VIEWPORTS) {
             const ctx = await newE2EContext(browser, {
                 viewport: { width, height },
@@ -1551,7 +1553,7 @@ try {
         }
     });
     // 節目頁 / 今日節目頁：任何高度都固定、只有清單自己捲。badgirl 集數多過一個畫面
-    await runSection(log, '節目頁 / 今日節目頁尺寸', async () => {
+    await section('節目頁 / 今日節目頁尺寸', async () => {
         for (const {
             width,
             height,
@@ -1605,40 +1607,36 @@ try {
     for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.headroom}｜${m.rows}`);
     console.log('');
 
-    await runSection(log, 'Shell 高度', () => checkShellMismatch(browser, errors));
-    await runSection(log, 'Mini player 位置', () => checkMiniPlayerPosition(browser, errors));
-    await runSection(log, 'Mini player 同 viewport 距離', () =>
+    await section('Shell 高度', () => checkShellMismatch(browser, errors));
+    await section('Mini player 位置', () => checkMiniPlayerPosition(browser, errors));
+    await section('Mini player 同 viewport 距離', () =>
         checkMiniPlayerViewportGap(browser, errors),
     );
-    await runSection(log, '窄畫面 mini player', () => checkNarrowLayout(browser, errors));
+    await section('窄畫面 mini player', () => checkNarrowLayout(browser, errors));
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
-    await runSection(log, '真手指 touch', () =>
+    await section('真手指 touch', () =>
         runTouchChecks({ browser, base: BASE, out: OUT, errors, log }),
     );
 
     // 全集表向下拉閂：拉唔夠彈返、拉夠閂（觸控 header + 清單、滑鼠 header）
-    await runSection(log, '全集表向下拉閂', async () => {
+    await section('全集表向下拉閂', async () => {
         sheetMissedTaps = await runArcSheetChecks({ browser, base: BASE, errors, log });
     });
-    await runSection(log, '背景播放', () =>
-        runHiddenPlaybackChecks({ browser, base: BASE, errors, log }),
-    );
+    await section('背景播放', () => runHiddenPlaybackChecks({ browser, base: BASE, errors, log }));
 
     // 主頁 mini player 重溫規則：平日重溫 + 今日節目、星期日冇節目
-    await runSection(log, 'Mini player 重溫規則', () =>
+    await section('Mini player 重溫規則', () =>
         runMiniPlayerRuleChecks({ browser, base: BASE, errors, log }),
     );
 
-    // 闊橫版主頁（iPad 打橫）：fill / split、卡闊 + 卡清單、✕ 閂卡 → 把手 → 開返
-    await runSection(log, '闊橫版主頁', () =>
-        runHomeWideChecks({ browser, base: BASE, errors, log }),
-    );
+    // 闊橫版主頁（iPad 打橫）：fill / split、卡闊 + 卡清單、✕ 閂卡 → 把手 → 開返（每個情境各自一個 section）
+    await runHomeWideChecks({ browser, base: BASE, errors, log });
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
-    await runSection(log, '廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));
+    await section('廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));
 
-    await runSection(log, '淺色主頁 + service worker', async () => {
+    await section('淺色主頁 + service worker', async () => {
         const light = await newE2EContext(browser, {
             viewport: { width: 390, height: 844 },
             deviceScaleFactor: 2,
