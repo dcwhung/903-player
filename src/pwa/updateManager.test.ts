@@ -388,6 +388,19 @@ describe('UpdateManager.handleControllerChange', () => {
         expect(h.deps.reload).toHaveBeenCalledTimes(1);
     });
 
+    // S-647：第一次開 app，另一個 tab 搶先 skipWaiting；呢個 tab 未 apply 但已經知有新版（pendingAction）
+    it('should reload when another tab activated an update this page was waiting on', () => {
+        const h = createHarness();
+        h.manager.handleNeedRefresh();
+        expect(h.deps.applyUpdate).not.toHaveBeenCalled();
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).not.toHaveBeenCalled();
+        h.hide();
+        vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+        expect(h.deps.applyUpdate).not.toHaveBeenCalled();
+    });
+
     it('should reload only once when the library also calls handleNeedReload', () => {
         const h = createHarness();
         h.setLoaded(false);

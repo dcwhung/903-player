@@ -105,10 +105,11 @@ export class UpdateManager {
     /**
      * navigator.serviceWorker 嘅 controllerchange（main.tsx 自己聽）。第一次開 app 時 register 冇 controller，
      * workbox 嘅 isUpdate 一直係 false，library 唔會 call onNeedReload，頁面停喺舊版。
-     * 只有自己發過 SKIP_WAITING 先當係換版；未發過嘅（第一次安裝 clientsClaim 接管）唔使 reload
+     * 自己發過 SKIP_WAITING、或者已經知有新版等緊（另一個 tab 搶先啟用咗，S-647）先當係換版；
+     * 兩樣都冇（第一次安裝 clientsClaim 接管）唔使 reload
      */
     handleControllerChange = (): void => {
-        if (this.applied) {
+        if (this.applied || this.pendingAction !== undefined) {
             this.handleNeedReload();
         }
     };
