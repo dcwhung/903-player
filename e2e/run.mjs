@@ -16,6 +16,7 @@ import {
     waitForPlaybackState,
     externalRequests,
     newE2EContext,
+    runSection,
 } from './harness.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { runMiniPlayerRuleChecks } from './miniPlayerRules.mjs';
@@ -1261,306 +1262,340 @@ const server = await startPreview();
 let browser;
 try {
     browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
-    const context = await newE2EContext(browser, {
-        viewport: { width: 390, height: 844 },
-        deviceScaleFactor: 2,
-        colorScheme: 'dark',
-    });
-    const page = await context.newPage();
     const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
     // 先驗 probe 同 audio host：佢哋錯咗，下面最近一集嘅斷言會一連串錯（甚至 crash），睇唔到成因
-    await checkProbeIgnoresUnknown(browser, errors);
-    await checkProbeFindsNewEpisode(browser, errors);
-
-    await page.goto(BASE);
-    await page.waitForSelector('nav[aria-busy="false"]');
-    await page.screenshot({ ...SHOT, path: `${OUT}/1-home.png` });
-    const tiles = await page
-        .locator('nav button')
-        .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.textContent));
-    // 每個節目一粒（src/config/shows.ts 次序）+ 最尾「今日節目」；刻意寫死做獨立對照
-    log(
-        tiles.map(tileName).join(' | ') === HOME_TILES.join(' | '),
-        `主頁 ${HOME_TILES.length} 粒掣：${tiles.join(' | ')}`,
-    );
-    const cols = await page.evaluate(
-        // 節目格喺分頁入面：nav > 捲動容器 > 每頁一個 grid
-        () =>
-            getComputedStyle(document.querySelector('nav > div > div')).gridTemplateColumns.split(
-                ' ',
-            ).length,
-    );
-    log(cols === 2, `主頁每行 ${cols} 粒`);
-    await checkThemeColor(page, HOME_TOP, '主頁');
-    await checkFixedHome(page, '390×844 主頁');
-    await checkPoppinsLoaded(page, '390×844 主頁');
-
-    const mini = page.getByRole('region', { name: '正在播放（今日節目）' });
-    log(
-        (await mini.textContent()).includes('在晴朗的一天出發'),
-        `主頁 mini player 顯示今日第一個節目：${await mini.textContent()}`,
-    );
-    await page.getByRole('button', { name: '公子會', exact: true }).click();
-    await page.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
-    log(page.url().endsWith('#/show/gongzi'), `轉到節目頁並自動播放：${page.url()}`);
-    await checkShowHeader(page, '公子會', '公子會節目頁');
-    const currentEpisode = () =>
-        page.locator('button[aria-current="true"]').first().getAttribute('aria-label');
-    const current = await currentEpisode();
-    log(/^(?:播放|暫停) 17\/10/.test(current), `揀中最近一集（今日之前）：${current}`);
-    const accent = await page.evaluate(() =>
-        getComputedStyle(document.querySelector('[data-theme-scope]')).getPropertyValue(
-            '--theme-accent',
-        ),
-    );
-    log(accent.trim() === '#d4af5a', `節目頁用公子會色調：${accent}`);
-    await checkThemeColor(page, GONGZI_BG, '公子會節目頁');
-    await page.waitForTimeout(1500);
-    await page.screenshot({ ...SHOT, path: `${OUT}/2-show-playing.png` });
-
-    const slider = page.getByRole('slider', { name: '播放進度' });
-    const box = await slider.boundingBox();
-    const at = (vx, vy) => [box.x + (vx / 300) * box.width, box.y + (vy / 300) * box.height];
-    await page.mouse.move(...at(150, 10));
-    await page.mouse.down();
-    await page.mouse.move(...at(60, 40), { steps: 5 });
-    await page.mouse.move(...at(10, 150), { steps: 5 });
-    await page.screenshot({ ...SHOT, path: `${OUT}/3-show-dragging.png` });
-    await page.mouse.up();
-    await page.waitForTimeout(300);
-    const afterDrag = Number(await slider.getAttribute('aria-valuenow'));
-    log(
-        Math.abs(afterDrag - 100) <= 3,
-        `拖弧形 slider 去左邊 → ${afterDrag}s（預期約 100s / 600s）`,
-    );
-
-    await page.getByRole('button', { name: RESTART }).click();
-    await page.waitForTimeout(300);
-    const afterRestart = Number(await slider.getAttribute('aria-valuenow'));
-    log(afterRestart <= 2, `由頭播放 → ${afterRestart}s（預期約 0s）`);
-
-    await slider.focus();
-    await page.keyboard.press('End');
-    await page.waitForTimeout(800);
-    await page.getByRole('button', { name: /^(?:播放|暫停) 10\/10/ }).click();
-    await page.waitForTimeout(800);
-    const row17 = await page
-        .getByRole('button', { name: /^(?:播放|暫停) 17\/10/ })
-        .getAttribute('aria-label');
-    log(row17.endsWith('已收聽'), `聽到尾嘅 17/10 顯示已收聽：${row17}`);
-    const sel = await currentEpisode();
-    log(/^(?:播放|暫停) 10\/10/.test(sel), `撳集數轉集：${sel}`);
-    const visible = await page.locator('button[aria-current="true"]').first().isVisible();
-    log(visible, '揀中集數喺畫面內');
-    await page.screenshot({ ...SHOT, path: `${OUT}/4-show-date-changed.png` });
-
-    // 冇咗跳秒掣：用弧形 slider 嘅鍵盤 →（KEYBOARD_SEEK_SECONDS = 30 秒）
-    await slider.focus();
-    await page.keyboard.press('ArrowRight');
-    await page.getByRole('button', { name: '暫停', exact: true }).click();
-    const saved = await page.evaluate(() =>
-        JSON.parse(localStorage.getItem('903player:progress:v1')),
-    );
-    const entry = Object.entries(saved).find(([u]) => u.includes('20261010'));
-    log(entry && entry[1].position >= 29, `暫停時存低進度：${entry?.[1].position.toFixed(1)}s`);
-
-    await page.getByRole('button', { name: '返回主頁' }).click();
-    log(page.url().endsWith('#/'), '返回主頁');
-    await checkThemeColor(page, HOME_TOP, '返回主頁');
-    await page.getByRole('button', { name: '公子會', exact: true }).click();
-    await page.waitForTimeout(800);
-    // mini player 暫停緊 10/10：再入節目頁唔自動播、唔換集，停喺 10/10
-    const kept = await currentEpisode();
-    log(/^播放 10\/10/.test(kept), `再入節目頁：暫停緊嘅 10/10 唔會被蓋過 ${kept}`);
-    await page.getByRole('button', { name: /^(?:播放|暫停) 17\/10/ }).click();
-    await page.waitForTimeout(800);
-    const resumed = await currentEpisode();
-    log(/^(?:播放|暫停) 17\/10/.test(resumed), `撳返最近一集 ${resumed}（17/10 已聽過 → 由頭播）`);
-    const restartPos = Number(await slider.getAttribute('aria-valuenow'));
-    log(restartPos <= 3, `已聽過嘅集由頭播：${restartPos}s`);
-    const watched17 = () =>
-        page.evaluate(
-            () =>
-                Object.entries(JSON.parse(localStorage.getItem('903player:progress:v1'))).find(
-                    ([u]) => u.includes('20261017'),
-                )[1].watched,
-        );
-    log(await watched17(), '重播頭幾秒仍然保留已收聽');
-    // 真正播超過 REPLAY_RESET_SECONDS（10 秒）先清走已收聽
-    await page.waitForTimeout(11000);
-    log(!(await watched17()), '重播超過 10 秒清走已收聽');
-    await page.getByRole('button', { name: /^(?:播放|暫停) 10\/10/ }).click();
-    await page.waitForTimeout(800);
-    const replayed = await page
-        .getByRole('button', { name: /^(?:播放|暫停) 17\/10/ })
-        .getAttribute('aria-label');
-    log(/聽到 0:1\d$/.test(replayed), `重播超過 10 秒後清單顯示聽到：${replayed}`);
-    const resumePos = Number(await slider.getAttribute('aria-valuenow'));
-    log(resumePos >= 29, `未聽完嘅 10/10 續播：${resumePos}s`);
-
-    await page.getByRole('button', { name: '返回主頁' }).click();
-    await page.waitForTimeout(300);
-    // T9 B：播緊舊集返主頁照播，mini player 將佢排最前、標「重溫」（以前係暫停）
-    const oldEpisodeState = await waitForPlaybackState(page, 'playing');
-    const rewatchMini = page.getByRole('region', { name: '正在播放（重溫及今日節目）' });
-    const rewatchText = (await rewatchMini.textContent()) ?? '';
-    log(
-        oldEpisodeState === 'playing' &&
-            /公子會重溫/.test(rewatchText) &&
-            rewatchText.includes('10/10'),
-        `播緊舊集返主頁繼續播，mini player 第一個係重溫：${oldEpisodeState} / ${rewatchText}`,
-    );
-    await page.getByRole('button', { name: '今日節目', exact: true }).click();
-    // 播緊 10/10 入今日節目頁：唔自動播、唔蓋過，卡疊係未開始樣，撳播放先播今日第一個
-    await page.getByRole('button', { name: '播放', exact: true }).waitFor({ timeout: 5000 });
-    const keptPlaying = await page.evaluate(() => navigator.mediaSession.metadata?.title ?? '');
-    log(keptPlaying.includes('公子會'), `入今日節目頁唔蓋過播緊嘅重溫：${keptPlaying}`);
-    await page.getByRole('button', { name: '播放', exact: true }).click();
-    await page.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
-    await page.waitForTimeout(1000);
-    const items = await page
-        .getByRole('region', { name: '節目表' })
-        .locator('li button')
-        .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
-    log(items.length === 3, `今日節目列表：${items.join(' | ')}`);
-    const pageTitle = await page.getByRole('heading', { level: 1 }).textContent();
-    log(pageTitle === '今日節目', `今日節目頁頁頭大字標題：${pageTitle}`);
-    const heading = await todayCardTitle(page).textContent();
-    log(heading === '在晴朗的一天出發', `今日撳播放播第一個節目：${heading}`);
-    await checkThemeColor(page, SUNNYDAY_BG, '今日節目（在晴朗的一天出發）');
-    await page.screenshot({ ...SHOT, path: `${OUT}/5-today.png` });
-    await checkTodayMidDrag(page);
-    // 卡疊次序：在晴朗的一天出發 → Bad Girl大過佬 → 雲妮鍾情 → 循環返第一個
-    await dragTodayCard(page, -TODAY_SWIPE_PX);
-    await checkTodayShow(page, 'Bad Girl大過佬', BADGIRL_BG, '今日節目向左掃轉下一個');
-    await dragTodayCard(page, TODAY_SWIPE_PX);
-    await checkTodayShow(page, '在晴朗的一天出發', SUNNYDAY_BG, '今日節目向右掃返上一個');
-    await dragTodayCard(page, TODAY_SWIPE_PX);
-    await checkTodayShow(page, '雲妮鍾情', WANNI_BG, '今日節目第一個向右掃循環去最後');
-    await dragTodayCard(page, -TODAY_SWIPE_PX);
-    await checkTodayShow(page, '在晴朗的一天出發', SUNNYDAY_BG, '今日節目最後一個向左掃循環返第一');
-    await dragTodayCard(page, -TODAY_SWIPE_PX);
-    await checkTodayShow(page, 'Bad Girl大過佬', BADGIRL_BG, '今日節目再向左掃');
-    log((await horizontalOverflow(page)) === 0, '今日節目掃完冇橫向捲動');
-    const playingAfterSwipes = await waitForPlaybackState(page, 'playing');
-    log(playingAfterSwipes === 'playing', `掃卡轉節目即刻播：${playingAfterSwipes}`);
-    await page.getByRole('button', { name: /播放 雲妮鍾情/ }).click();
-    await page.waitForTimeout(500);
-    log((await todayCardTitle(page).textContent()) === '雲妮鍾情', '撳節目掣轉播');
-    await page.screenshot({ ...SHOT, path: `${OUT}/6-today-switched.png` });
-
-    await page.goBack();
-    await page.waitForTimeout(500);
-    const backState = await waitForPlaybackState(page, 'playing');
-    const miniText = await page.getByRole('region', { name: '正在播放（今日節目）' }).textContent();
-    log(
-        page.url().endsWith('#/') && backState === 'playing' && miniText.includes('雲妮鍾情'),
-        `播緊今日節目用返回手勢返主頁會繼續播，mini player 顯示：${backState} / ${miniText}`,
-    );
-    await checkVersionOnBanner(page, '390×844');
-    await page.screenshot({ ...SHOT, path: `${OUT}/7-home-mini-player.png` });
-
-    const narrow = await newE2EContext(browser, { viewport: { width: 320, height: 640 } });
-    const np = await narrow.newPage();
-    await np.goto(BASE);
-    await np.waitForSelector('nav[aria-busy="false"]');
-    await checkSplashRemoved(np);
-    await checkVersionOnBanner(np, '320×640');
-    await np.screenshot({ ...SHOT, path: `${OUT}/8-home-version-320.png` });
-    for (const route of ['#/show/gongzi', '#/today']) {
-        await np.goto(`${BASE}${route}`);
-        // 由節目頁轉去今日節目頁時 player 已經載入咗節目，今日節目頁唔自動播（冇「由頭播放」），等唱片出就得
-        await np.getByRole('slider', { name: '播放進度' }).waitFor();
-        const overflow = await np.evaluate(
-            () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        );
-        log(overflow === 0, `320px 闊冇橫向捲動（${route}，超出 ${overflow}px）`);
-    }
-    await narrow.close();
-
-    // 主頁 mini player 循環掃：獨立 context，未載入任何節目
-    const loop = await newE2EContext(browser, { viewport: { width: 390, height: 844 } });
-    const lpp = await loop.newPage();
-    lpp.on('pageerror', (e) => errors.push(e.message));
-    await lpp.goto(BASE);
-    await lpp.waitForSelector('nav[aria-busy="false"]');
-    await checkMiniPlayerLoop(lpp);
-    await loop.close();
-
-    // 細 iPhone（320×568）：今日節目卡疊靜止嘅樣
-    const small = await newE2EContext(browser, {
-        viewport: { width: 320, height: 568 },
-        deviceScaleFactor: 2,
-        colorScheme: 'dark',
+    await runSection(log, '先驗 probe 同 audio host', async () => {
+        await checkProbeIgnoresUnknown(browser, errors);
+        await checkProbeFindsNewEpisode(browser, errors);
     });
-    const sp = await small.newPage();
-    sp.on('pageerror', (e) => errors.push(e.message));
-    await sp.goto(`${BASE}#/today`);
-    await sp.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
-    await sp.waitForTimeout(800);
-    log((await horizontalOverflow(sp)) === 0, '320×568 今日節目冇橫向捲動');
-    await sp.screenshot({ ...SHOT, path: `${OUT}/5c-today-320x568.png` });
-    await dragTodayCard(sp, -TODAY_SWIPE_PX / 2);
-    await checkTodayShow(sp, 'Bad Girl大過佬', BADGIRL_BG, '320×568 今日節目向左掃');
-    log((await horizontalOverflow(sp)) === 0, '320×568 今日節目掃完冇橫向捲動');
-    await small.close();
 
-    // 主頁頁頂橫額：常見手機闊度（細 iPhone、一般、Pro Max）
-    for (const { width, height, fixedHome } of HOME_BANNER_VIEWPORTS) {
-        const ctx = await newE2EContext(browser, {
-            viewport: { width, height },
+    await runSection(log, '390×844 主流程', async () => {
+        const context = await newE2EContext(browser, {
+            viewport: { width: 390, height: 844 },
             deviceScaleFactor: 2,
             colorScheme: 'dark',
         });
-        const hp = await ctx.newPage();
-        hp.on('pageerror', (e) => errors.push(e.message));
-        await hp.goto(BASE);
-        await hp.waitForSelector('nav[aria-busy="false"]');
-        await hp.getByRole('region', { name: '正在播放（今日節目）' }).waitFor();
-        await checkHomeBanner(hp, `${width}×${height} 主頁`, `home-banner-${width}x${height}.png`);
-        if (fixedHome) await checkFixedHome(hp, `${width}×${height} 主頁`);
-        await ctx.close();
-    }
+        const page = await context.newPage();
+        page.on('pageerror', (e) => errors.push(e.message));
+        await page.goto(BASE);
+        await page.waitForSelector('nav[aria-busy="false"]');
+        await page.screenshot({ ...SHOT, path: `${OUT}/1-home.png` });
+        const tiles = await page
+            .locator('nav button')
+            .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.textContent));
+        // 每個節目一粒（src/config/shows.ts 次序）+ 最尾「今日節目」；刻意寫死做獨立對照
+        log(
+            tiles.map(tileName).join(' | ') === HOME_TILES.join(' | '),
+            `主頁 ${HOME_TILES.length} 粒掣：${tiles.join(' | ')}`,
+        );
+        const cols = await page.evaluate(
+            // 節目格喺分頁入面：nav > 捲動容器 > 每頁一個 grid
+            () =>
+                getComputedStyle(
+                    document.querySelector('nav > div > div'),
+                ).gridTemplateColumns.split(' ').length,
+        );
+        log(cols === 2, `主頁每行 ${cols} 粒`);
+        await checkThemeColor(page, HOME_TOP, '主頁');
+        await checkFixedHome(page, '390×844 主頁');
+        await checkPoppinsLoaded(page, '390×844 主頁');
 
-    // 節目頁 / 今日節目頁：任何高度都固定、只有清單自己捲。badgirl 集數多過一個畫面
-    for (const { width, height, swipe, homeFixed, pagedHome, landscapeHome } of SHOW_VIEWPORTS) {
-        const ctx = await newE2EContext(browser, {
-            viewport: { width, height },
+        const mini = page.getByRole('region', { name: '正在播放（今日節目）' });
+        log(
+            (await mini.textContent()).includes('在晴朗的一天出發'),
+            `主頁 mini player 顯示今日第一個節目：${await mini.textContent()}`,
+        );
+        await page.getByRole('button', { name: '公子會', exact: true }).click();
+        await page.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
+        log(page.url().endsWith('#/show/gongzi'), `轉到節目頁並自動播放：${page.url()}`);
+        await checkShowHeader(page, '公子會', '公子會節目頁');
+        const currentEpisode = () =>
+            page.locator('button[aria-current="true"]').first().getAttribute('aria-label');
+        const current = await currentEpisode();
+        log(/^(?:播放|暫停) 17\/10/.test(current), `揀中最近一集（今日之前）：${current}`);
+        const accent = await page.evaluate(() =>
+            getComputedStyle(document.querySelector('[data-theme-scope]')).getPropertyValue(
+                '--theme-accent',
+            ),
+        );
+        log(accent.trim() === '#d4af5a', `節目頁用公子會色調：${accent}`);
+        await checkThemeColor(page, GONGZI_BG, '公子會節目頁');
+        await page.waitForTimeout(1500);
+        await page.screenshot({ ...SHOT, path: `${OUT}/2-show-playing.png` });
+
+        const slider = page.getByRole('slider', { name: '播放進度' });
+        const box = await slider.boundingBox();
+        const at = (vx, vy) => [box.x + (vx / 300) * box.width, box.y + (vy / 300) * box.height];
+        await page.mouse.move(...at(150, 10));
+        await page.mouse.down();
+        await page.mouse.move(...at(60, 40), { steps: 5 });
+        await page.mouse.move(...at(10, 150), { steps: 5 });
+        await page.screenshot({ ...SHOT, path: `${OUT}/3-show-dragging.png` });
+        await page.mouse.up();
+        await page.waitForTimeout(300);
+        const afterDrag = Number(await slider.getAttribute('aria-valuenow'));
+        log(
+            Math.abs(afterDrag - 100) <= 3,
+            `拖弧形 slider 去左邊 → ${afterDrag}s（預期約 100s / 600s）`,
+        );
+
+        await page.getByRole('button', { name: RESTART }).click();
+        await page.waitForTimeout(300);
+        const afterRestart = Number(await slider.getAttribute('aria-valuenow'));
+        log(afterRestart <= 2, `由頭播放 → ${afterRestart}s（預期約 0s）`);
+
+        await slider.focus();
+        await page.keyboard.press('End');
+        await page.waitForTimeout(800);
+        await page.getByRole('button', { name: /^(?:播放|暫停) 10\/10/ }).click();
+        await page.waitForTimeout(800);
+        const row17 = await page
+            .getByRole('button', { name: /^(?:播放|暫停) 17\/10/ })
+            .getAttribute('aria-label');
+        log(row17.endsWith('已收聽'), `聽到尾嘅 17/10 顯示已收聽：${row17}`);
+        const sel = await currentEpisode();
+        log(/^(?:播放|暫停) 10\/10/.test(sel), `撳集數轉集：${sel}`);
+        const visible = await page.locator('button[aria-current="true"]').first().isVisible();
+        log(visible, '揀中集數喺畫面內');
+        await page.screenshot({ ...SHOT, path: `${OUT}/4-show-date-changed.png` });
+
+        // 冇咗跳秒掣：用弧形 slider 嘅鍵盤 →（KEYBOARD_SEEK_SECONDS = 30 秒）
+        await slider.focus();
+        await page.keyboard.press('ArrowRight');
+        await page.getByRole('button', { name: '暫停', exact: true }).click();
+        const saved = await page.evaluate(() =>
+            JSON.parse(localStorage.getItem('903player:progress:v1')),
+        );
+        const entry = Object.entries(saved).find(([u]) => u.includes('20261010'));
+        log(entry && entry[1].position >= 29, `暫停時存低進度：${entry?.[1].position.toFixed(1)}s`);
+
+        await page.getByRole('button', { name: '返回主頁' }).click();
+        log(page.url().endsWith('#/'), '返回主頁');
+        await checkThemeColor(page, HOME_TOP, '返回主頁');
+        await page.getByRole('button', { name: '公子會', exact: true }).click();
+        await page.waitForTimeout(800);
+        // mini player 暫停緊 10/10：再入節目頁唔自動播、唔換集，停喺 10/10
+        const kept = await currentEpisode();
+        log(/^播放 10\/10/.test(kept), `再入節目頁：暫停緊嘅 10/10 唔會被蓋過 ${kept}`);
+        await page.getByRole('button', { name: /^(?:播放|暫停) 17\/10/ }).click();
+        await page.waitForTimeout(800);
+        const resumed = await currentEpisode();
+        log(
+            /^(?:播放|暫停) 17\/10/.test(resumed),
+            `撳返最近一集 ${resumed}（17/10 已聽過 → 由頭播）`,
+        );
+        const restartPos = Number(await slider.getAttribute('aria-valuenow'));
+        log(restartPos <= 3, `已聽過嘅集由頭播：${restartPos}s`);
+        const watched17 = () =>
+            page.evaluate(
+                () =>
+                    Object.entries(JSON.parse(localStorage.getItem('903player:progress:v1'))).find(
+                        ([u]) => u.includes('20261017'),
+                    )[1].watched,
+            );
+        log(await watched17(), '重播頭幾秒仍然保留已收聽');
+        // 真正播超過 REPLAY_RESET_SECONDS（10 秒）先清走已收聽
+        await page.waitForTimeout(11000);
+        log(!(await watched17()), '重播超過 10 秒清走已收聽');
+        await page.getByRole('button', { name: /^(?:播放|暫停) 10\/10/ }).click();
+        await page.waitForTimeout(800);
+        const replayed = await page
+            .getByRole('button', { name: /^(?:播放|暫停) 17\/10/ })
+            .getAttribute('aria-label');
+        log(/聽到 0:1\d$/.test(replayed), `重播超過 10 秒後清單顯示聽到：${replayed}`);
+        const resumePos = Number(await slider.getAttribute('aria-valuenow'));
+        log(resumePos >= 29, `未聽完嘅 10/10 續播：${resumePos}s`);
+
+        await page.getByRole('button', { name: '返回主頁' }).click();
+        await page.waitForTimeout(300);
+        // T9 B：播緊舊集返主頁照播，mini player 將佢排最前、標「重溫」（以前係暫停）
+        const oldEpisodeState = await waitForPlaybackState(page, 'playing');
+        const rewatchMini = page.getByRole('region', { name: '正在播放（重溫及今日節目）' });
+        const rewatchText = (await rewatchMini.textContent()) ?? '';
+        log(
+            oldEpisodeState === 'playing' &&
+                /公子會重溫/.test(rewatchText) &&
+                rewatchText.includes('10/10'),
+            `播緊舊集返主頁繼續播，mini player 第一個係重溫：${oldEpisodeState} / ${rewatchText}`,
+        );
+        await page.getByRole('button', { name: '今日節目', exact: true }).click();
+        // 播緊 10/10 入今日節目頁：唔自動播、唔蓋過，卡疊係未開始樣，撳播放先播今日第一個
+        await page.getByRole('button', { name: '播放', exact: true }).waitFor({ timeout: 5000 });
+        const keptPlaying = await page.evaluate(() => navigator.mediaSession.metadata?.title ?? '');
+        log(keptPlaying.includes('公子會'), `入今日節目頁唔蓋過播緊嘅重溫：${keptPlaying}`);
+        await page.getByRole('button', { name: '播放', exact: true }).click();
+        await page.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
+        await page.waitForTimeout(1000);
+        const items = await page
+            .getByRole('region', { name: '節目表' })
+            .locator('li button')
+            .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+        log(items.length === 3, `今日節目列表：${items.join(' | ')}`);
+        const pageTitle = await page.getByRole('heading', { level: 1 }).textContent();
+        log(pageTitle === '今日節目', `今日節目頁頁頭大字標題：${pageTitle}`);
+        const heading = await todayCardTitle(page).textContent();
+        log(heading === '在晴朗的一天出發', `今日撳播放播第一個節目：${heading}`);
+        await checkThemeColor(page, SUNNYDAY_BG, '今日節目（在晴朗的一天出發）');
+        await page.screenshot({ ...SHOT, path: `${OUT}/5-today.png` });
+        await checkTodayMidDrag(page);
+        // 卡疊次序：在晴朗的一天出發 → Bad Girl大過佬 → 雲妮鍾情 → 循環返第一個
+        await dragTodayCard(page, -TODAY_SWIPE_PX);
+        await checkTodayShow(page, 'Bad Girl大過佬', BADGIRL_BG, '今日節目向左掃轉下一個');
+        await dragTodayCard(page, TODAY_SWIPE_PX);
+        await checkTodayShow(page, '在晴朗的一天出發', SUNNYDAY_BG, '今日節目向右掃返上一個');
+        await dragTodayCard(page, TODAY_SWIPE_PX);
+        await checkTodayShow(page, '雲妮鍾情', WANNI_BG, '今日節目第一個向右掃循環去最後');
+        await dragTodayCard(page, -TODAY_SWIPE_PX);
+        await checkTodayShow(
+            page,
+            '在晴朗的一天出發',
+            SUNNYDAY_BG,
+            '今日節目最後一個向左掃循環返第一',
+        );
+        await dragTodayCard(page, -TODAY_SWIPE_PX);
+        await checkTodayShow(page, 'Bad Girl大過佬', BADGIRL_BG, '今日節目再向左掃');
+        log((await horizontalOverflow(page)) === 0, '今日節目掃完冇橫向捲動');
+        const playingAfterSwipes = await waitForPlaybackState(page, 'playing');
+        log(playingAfterSwipes === 'playing', `掃卡轉節目即刻播：${playingAfterSwipes}`);
+        await page.getByRole('button', { name: /播放 雲妮鍾情/ }).click();
+        await page.waitForTimeout(500);
+        log((await todayCardTitle(page).textContent()) === '雲妮鍾情', '撳節目掣轉播');
+        await page.screenshot({ ...SHOT, path: `${OUT}/6-today-switched.png` });
+
+        await page.goBack();
+        await page.waitForTimeout(500);
+        const backState = await waitForPlaybackState(page, 'playing');
+        const miniText = await page
+            .getByRole('region', { name: '正在播放（今日節目）' })
+            .textContent();
+        log(
+            page.url().endsWith('#/') && backState === 'playing' && miniText.includes('雲妮鍾情'),
+            `播緊今日節目用返回手勢返主頁會繼續播，mini player 顯示：${backState} / ${miniText}`,
+        );
+        await checkVersionOnBanner(page, '390×844');
+        await page.screenshot({ ...SHOT, path: `${OUT}/7-home-mini-player.png` });
+    });
+
+    await runSection(log, '320×640 窄畫面', async () => {
+        const narrow = await newE2EContext(browser, { viewport: { width: 320, height: 640 } });
+        const np = await narrow.newPage();
+        await np.goto(BASE);
+        await np.waitForSelector('nav[aria-busy="false"]');
+        await checkSplashRemoved(np);
+        await checkVersionOnBanner(np, '320×640');
+        await np.screenshot({ ...SHOT, path: `${OUT}/8-home-version-320.png` });
+        for (const route of ['#/show/gongzi', '#/today']) {
+            await np.goto(`${BASE}${route}`);
+            // 由節目頁轉去今日節目頁時 player 已經載入咗節目，今日節目頁唔自動播（冇「由頭播放」），等唱片出就得
+            await np.getByRole('slider', { name: '播放進度' }).waitFor();
+            const overflow = await np.evaluate(
+                () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            );
+            log(overflow === 0, `320px 闊冇橫向捲動（${route}，超出 ${overflow}px）`);
+        }
+        await narrow.close();
+    });
+
+    // 主頁 mini player 循環掃：獨立 context，未載入任何節目
+    await runSection(log, '主頁 mini player 循環掃', async () => {
+        const loop = await newE2EContext(browser, { viewport: { width: 390, height: 844 } });
+        const lpp = await loop.newPage();
+        lpp.on('pageerror', (e) => errors.push(e.message));
+        await lpp.goto(BASE);
+        await lpp.waitForSelector('nav[aria-busy="false"]');
+        await checkMiniPlayerLoop(lpp);
+        await loop.close();
+    });
+
+    // 細 iPhone（320×568）：今日節目卡疊靜止嘅樣
+    await runSection(log, '320×568 今日節目', async () => {
+        const small = await newE2EContext(browser, {
+            viewport: { width: 320, height: 568 },
             deviceScaleFactor: 2,
+            colorScheme: 'dark',
         });
-        const fp = await ctx.newPage();
-        fp.on('pageerror', (e) => errors.push(e.message));
-        await fp.goto(`${BASE}#/show/badgirl`);
-        await fp.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
-        await fp.waitForTimeout(800);
-        const label = `${width}×${height} 節目頁`;
-        const shot = `show-${width}x${height}.png`;
-        await checkShowHeader(fp, 'Bad Girl大過佬', label);
-        await checkDayCellsFit(fp, label);
-        if (swipe) {
-            await checkSwipeToOlder(fp, width === 390 ? 'show-strip-dragging.png' : null);
-            // 拖去舊一集之後正中仍然對齊
-            await checkShowHeader(fp, 'Bad Girl大過佬', `${label}（拖完）`);
+        const sp = await small.newPage();
+        sp.on('pageerror', (e) => errors.push(e.message));
+        await sp.goto(`${BASE}#/today`);
+        await sp.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
+        await sp.waitForTimeout(800);
+        log((await horizontalOverflow(sp)) === 0, '320×568 今日節目冇橫向捲動');
+        await sp.screenshot({ ...SHOT, path: `${OUT}/5c-today-320x568.png` });
+        await dragTodayCard(sp, -TODAY_SWIPE_PX / 2);
+        await checkTodayShow(sp, 'Bad Girl大過佬', BADGIRL_BG, '320×568 今日節目向左掃');
+        log((await horizontalOverflow(sp)) === 0, '320×568 今日節目掃完冇橫向捲動');
+        await small.close();
+    });
+
+    // 主頁頁頂橫額：常見手機闊度（細 iPhone、一般、Pro Max）
+    await runSection(log, '主頁頁頂橫額', async () => {
+        for (const { width, height, fixedHome } of HOME_BANNER_VIEWPORTS) {
+            const ctx = await newE2EContext(browser, {
+                viewport: { width, height },
+                deviceScaleFactor: 2,
+                colorScheme: 'dark',
+            });
+            const hp = await ctx.newPage();
+            hp.on('pageerror', (e) => errors.push(e.message));
+            await hp.goto(BASE);
+            await hp.waitForSelector('nav[aria-busy="false"]');
+            await hp.getByRole('region', { name: '正在播放（今日節目）' }).waitFor();
+            await checkHomeBanner(
+                hp,
+                `${width}×${height} 主頁`,
+                `home-banner-${width}x${height}.png`,
+            );
+            if (fixedHome) await checkFixedHome(hp, `${width}×${height} 主頁`);
+            await ctx.close();
         }
-        await checkFixedShowPage(fp, label, shot);
-        await checkDiscMatchesToday(fp, label);
-        // checkDiscMatchesToday 之後已經喺今日節目頁：同樣固定
-        const todayLabel = `${width}×${height} 今日節目頁`;
-        await fp.waitForTimeout(500);
-        await checkFixedTodayPage(fp, todayLabel);
-        await fp.screenshot({ ...SHOT, path: `${OUT}/today-${width}x${height}.png` });
-        if (homeFixed) {
-            await fp.goto(BASE);
-            await fp.waitForSelector('nav[aria-busy="false"]');
-            await fp.waitForTimeout(300);
-            await checkFixedHome(fp, `${width}×${height} 主頁`);
-            if (pagedHome) await checkPagedHome(fp, `${width}×${height} 主頁`);
-            if (landscapeHome) await checkLandscapeHome(fp, `${width}×${height} 主頁（橫版）`);
-            await fp.screenshot({ ...SHOT, path: `${OUT}/home-${width}x${height}.png` });
+    });
+    // 節目頁 / 今日節目頁：任何高度都固定、只有清單自己捲。badgirl 集數多過一個畫面
+    await runSection(log, '節目頁 / 今日節目頁尺寸', async () => {
+        for (const {
+            width,
+            height,
+            swipe,
+            homeFixed,
+            pagedHome,
+            landscapeHome,
+        } of SHOW_VIEWPORTS) {
+            const ctx = await newE2EContext(browser, {
+                viewport: { width, height },
+                deviceScaleFactor: 2,
+            });
+            const fp = await ctx.newPage();
+            fp.on('pageerror', (e) => errors.push(e.message));
+            await fp.goto(`${BASE}#/show/badgirl`);
+            await fp.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
+            await fp.waitForTimeout(800);
+            const label = `${width}×${height} 節目頁`;
+            const shot = `show-${width}x${height}.png`;
+            await checkShowHeader(fp, 'Bad Girl大過佬', label);
+            await checkDayCellsFit(fp, label);
+            if (swipe) {
+                await checkSwipeToOlder(fp, width === 390 ? 'show-strip-dragging.png' : null);
+                // 拖去舊一集之後正中仍然對齊
+                await checkShowHeader(fp, 'Bad Girl大過佬', `${label}（拖完）`);
+            }
+            await checkFixedShowPage(fp, label, shot);
+            await checkDiscMatchesToday(fp, label);
+            // checkDiscMatchesToday 之後已經喺今日節目頁：同樣固定
+            const todayLabel = `${width}×${height} 今日節目頁`;
+            await fp.waitForTimeout(500);
+            await checkFixedTodayPage(fp, todayLabel);
+            await fp.screenshot({ ...SHOT, path: `${OUT}/today-${width}x${height}.png` });
+            if (homeFixed) {
+                await fp.goto(BASE);
+                await fp.waitForSelector('nav[aria-busy="false"]');
+                await fp.waitForTimeout(300);
+                await checkFixedHome(fp, `${width}×${height} 主頁`);
+                if (pagedHome) await checkPagedHome(fp, `${width}×${height} 主頁`);
+                if (landscapeHome) await checkLandscapeHome(fp, `${width}×${height} 主頁（橫版）`);
+                await fp.screenshot({ ...SHOT, path: `${OUT}/home-${width}x${height}.png` });
+            }
+            await ctx.close();
         }
-        await ctx.close();
-    }
+    });
     console.log('\n節目頁尺寸｜播放器佔高｜唱片｜清單行數');
     for (const m of metrics) console.log(`${m.label}｜${m.share}｜${m.disc}px｜${m.rows}`);
     console.log(
@@ -1569,40 +1604,52 @@ try {
     for (const m of todayMetrics) console.log(`${m.label}｜${m.share}｜${m.headroom}｜${m.rows}`);
     console.log('');
 
-    await checkShellMismatch(browser, errors);
-    await checkMiniPlayerPosition(browser, errors);
-    await checkMiniPlayerViewportGap(browser, errors);
-    await checkNarrowLayout(browser, errors);
+    await runSection(log, 'Shell 高度', () => checkShellMismatch(browser, errors));
+    await runSection(log, 'Mini player 位置', () => checkMiniPlayerPosition(browser, errors));
+    await runSection(log, 'Mini player 同 viewport 距離', () =>
+        checkMiniPlayerViewportGap(browser, errors),
+    );
+    await runSection(log, '窄畫面 mini player', () => checkNarrowLayout(browser, errors));
 
     // 真手指（CDP touch）：成頁唔捲、清單自己捲、卡 / 日子條 / mini player 掃得郁
-    await runTouchChecks({ browser, base: BASE, out: OUT, errors, log });
+    await runSection(log, '真手指 touch', () =>
+        runTouchChecks({ browser, base: BASE, out: OUT, errors, log }),
+    );
 
     // 全集表向下拉閂：拉唔夠彈返、拉夠閂（觸控 header + 清單、滑鼠 header）
-    sheetMissedTaps = await runArcSheetChecks({ browser, base: BASE, errors, log });
-    await runHiddenPlaybackChecks({ browser, base: BASE, errors, log });
+    await runSection(log, '全集表向下拉閂', async () => {
+        sheetMissedTaps = await runArcSheetChecks({ browser, base: BASE, errors, log });
+    });
+    await runSection(log, '背景播放', () =>
+        runHiddenPlaybackChecks({ browser, base: BASE, errors, log }),
+    );
 
     // 主頁 mini player 重溫規則：平日重溫 + 今日節目、星期日冇節目
-    await runMiniPlayerRuleChecks({ browser, base: BASE, errors, log });
+    await runSection(log, 'Mini player 重溫規則', () =>
+        runMiniPlayerRuleChecks({ browser, base: BASE, errors, log }),
+    );
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
-    await runDramaPageChecks({ browser, base: BASE, errors, log });
+    await runSection(log, '廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));
 
-    const light = await newE2EContext(browser, {
-        viewport: { width: 390, height: 844 },
-        deviceScaleFactor: 2,
-        colorScheme: 'light',
-    });
-    const lp = await light.newPage();
-    await lp.goto(BASE);
-    await lp.waitForSelector('nav[aria-busy="false"]');
-    await lp.screenshot({ ...SHOT, path: `${OUT}/7-home-light.png` });
+    await runSection(log, '淺色主頁 + service worker', async () => {
+        const light = await newE2EContext(browser, {
+            viewport: { width: 390, height: 844 },
+            deviceScaleFactor: 2,
+            colorScheme: 'light',
+        });
+        const lp = await light.newPage();
+        await lp.goto(BASE);
+        await lp.waitForSelector('nav[aria-busy="false"]');
+        await lp.screenshot({ ...SHOT, path: `${OUT}/7-home-light.png` });
 
-    // 靜靜雞更新靠 registration.update()：build 出嚟嘅 sw.js 要註冊到同啟用
-    const swScript = await lp.evaluate(async () => {
-        const registration = await navigator.serviceWorker.ready;
-        return registration.active?.scriptURL ?? '';
+        // 靜靜雞更新靠 registration.update()：build 出嚟嘅 sw.js 要註冊到同啟用
+        const swScript = await lp.evaluate(async () => {
+            const registration = await navigator.serviceWorker.ready;
+            return registration.active?.scriptURL ?? '';
+        });
+        log(swScript.endsWith('/903-player/sw.js'), `Service worker 已啟用：${swScript}`);
     });
-    log(swScript.endsWith('/903-player/sw.js'), `Service worker 已啟用：${swScript}`);
 
     log(errors.length === 0, `冇 JS error ${errors.join('; ')}`);
     // e2e 唔靠外網：除咗刻意 mock 嘅 host，冇任何 request 出去（例如 Google Fonts）

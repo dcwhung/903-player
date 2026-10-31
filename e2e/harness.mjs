@@ -246,6 +246,23 @@ export const succeeds = (promise) =>
 /** locator.waitFor（options 例如 { state: 'detached', timeout }）等到就 true，等唔到 false */
 export const isShown = (locator, options) => succeeds(locator.waitFor(options));
 
+/** Playwright error 第一行就係原因；後面嘅 Call log 太長，洗晒 e2e 輸出 */
+const firstLine = (error) => String(error instanceof Error ? error.message : error).split('\n')[0];
+
+/**
+ * 行一個 e2e section：中途 throw（例如 waitFor 超時）就 log 一個 FAIL 再行落去，
+ * 唔會令成個 run 中止、冇結尾總結。section 自己嘅 check 照用 log；完成就唔另外 log
+ */
+export const runSection = async (log, label, run) => {
+    try {
+        await run();
+        return true;
+    } catch (error) {
+        log(false, `${label}：中途中止（${firstLine(error)}）`);
+        return false;
+    }
+};
+
 /** 同 src/config/constants.ts STALL_FIRST_RETRY_MS 一樣（src/e2eSrcConstants.test.ts 鎖住） */
 export const STALL_FIRST_RETRY_MS = 4000;
 /** 讀鎖屏狀態要比卡住 deadline 早咁耐：留位畀 CPU 爭用時 waitForFunction 遲咗 poll */
