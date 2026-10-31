@@ -7,6 +7,7 @@ import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import { runArcSheetChecks } from './arcSheet.mjs';
 import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
+import { runHomeWideChecks } from './homeWide.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
 import {
     AUDIO_HOST,
@@ -1627,6 +1628,11 @@ try {
     // 主頁 mini player 重溫規則：平日重溫 + 今日節目、星期日冇節目
     await runSection(log, 'Mini player 重溫規則', () =>
         runMiniPlayerRuleChecks({ browser, base: BASE, errors, log }),
+    );
+
+    // 闊橫版主頁（iPad 打橫）：fill / split、卡闊 + 卡清單、✕ 閂卡 → 把手 → 開返
+    await runSection(log, '闊橫版主頁', () =>
+        runHomeWideChecks({ browser, base: BASE, errors, log }),
     );
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
