@@ -172,17 +172,17 @@ describe('HomePage on a wide landscape screen', () => {
             expect(button.querySelector('svg')?.innerHTML).toBe(icon?.innerHTML);
         });
 
-        it('should morph the card into the handle (same view-transition name)', async () => {
+        it('should name the handle only through the close / open transition CSS', async () => {
             stubWideLandscape();
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
-            const card = await screen.findByRole('region', { name: SHOW_CARD });
-            const name = card.style.getPropertyValue('view-transition-name');
+            await screen.findByRole('region', { name: SHOW_CARD });
 
             await userEvent.click(screen.getByRole('button', { name: CLOSE }));
 
+            // 平時冇名：返主頁（back）時成頁唔會縮入 26px 把手（S-642）
             const handle = screen.getByRole('button', { name: '打開播放器：Bad Girl大過佬' });
-            expect(name).not.toBe('');
-            expect(handle.style.getPropertyValue('view-transition-name')).toBe(name);
+            expect(handle.style.getPropertyValue('view-transition-name')).toBe('');
+            expect(handle).toHaveAttribute('data-home-handle');
         });
 
         it('should bring the closed show back paused from the handle', async () => {

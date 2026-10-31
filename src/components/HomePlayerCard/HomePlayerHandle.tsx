@@ -1,6 +1,5 @@
 import type { ShowTheme } from '../../config/showThemes';
 import { t } from '../../i18n/t';
-import { TRANSITION_NAME } from '../../utils/viewTransition';
 import { BackIcon } from '../icons/icons';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import styles from './HomePlayerCard.module.css';
@@ -27,8 +26,8 @@ export const HomePlayerHandle = ({
             type="button"
             className={styles.handle}
             aria-label={t('homeCard.reopen', { name: showName })}
-            // 同張卡同一個過場名：閂卡時張卡縮入把手，開返時由把手伸返出嚟
-            style={{ viewTransitionName: TRANSITION_NAME.panel }}
+            // 閂卡 / 開返過場期間先同張卡同名（global.css）：返主頁時成頁唔會縮入把手（S-642）
+            data-home-handle=""
             onClick={onOpen}
             autoFocus={focusOnMount}
         >

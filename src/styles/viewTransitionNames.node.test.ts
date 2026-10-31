@@ -24,4 +24,12 @@ describe('card ↔ handle morph', () => {
             "html:is([data-view-transition='close'], [data-view-transition='open']) [data-home-card] *";
         expect(cssDeclarations(global, selector)['view-transition-name']).toBe('none !important');
     });
+
+    it('should give the handle the card’s name only while closing or reopening', () => {
+        const selector =
+            "html:is([data-view-transition='close'], [data-view-transition='open']) [data-home-handle]";
+        expect(cssDeclarations(global, selector)['view-transition-name']).toBe(
+            TRANSITION_NAME.panel,
+        );
+    });
 });

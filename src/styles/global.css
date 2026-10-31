@@ -102,6 +102,11 @@ html:is([data-view-transition='close'], [data-view-transition='open']) [data-hom
     view-transition-name: none !important;
 }
 
+/* 把手只喺閂卡 / 開返期間同張卡同名；平時冇名，由內頁返主頁時成頁唔會縮入把手（S-642） */
+html:is([data-view-transition='close'], [data-view-transition='open']) [data-home-handle] {
+    view-transition-name: player-panel;
+}
+
 @keyframes view-fade-out {
     to {
         opacity: 0;
