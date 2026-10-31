@@ -94,7 +94,9 @@ export class FakeAudio extends EventTarget {
         queueMicrotask(() => this.dispatchEvent(new Event('play')));
     });
 
+    /** 同 spec 一樣：本身已經暫停就唔再發 pause event（S-640） */
     pause = vi.fn(() => {
+        if (this.paused) return;
         this.paused = true;
         this.dispatchEvent(new Event('pause'));
     });

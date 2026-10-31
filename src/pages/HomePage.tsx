@@ -8,7 +8,7 @@ import { useRecordings } from '../data/useRecordings';
 import { useAudioBusy } from '../hooks/useAudioBusy';
 import { useDramaItems } from './useHomeDramaItems';
 import { useHomeArrival } from '../hooks/useHomeArrival';
-import { useHomePlayerCardClosed } from '../hooks/homePlayerCardClosed';
+import { useClosedHomePlayerCard } from '../hooks/homePlayerCardClosed';
 import { useHomeTab } from '../hooks/useHomeTab';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useMiniPlayer } from '../hooks/useMiniPlayer';
@@ -75,10 +75,10 @@ const useHomeTiles = () => {
     ];
 };
 
-/** 用邊款版面（homeLayoutMode）：闊橫版睇有冇 mini player、播放卡收埋咗未 */
+/** 用邊款版面（homeLayoutMode）：闊橫版睇有冇 mini player、播放卡畀 ✕ 閂咗未 */
 const useLayoutMode = (hasMiniPlayer: boolean) => {
     const wide = useMediaQuery(WIDE_BANNER_QUERY);
-    const cardClosed = useHomePlayerCardClosed();
+    const cardClosed = useClosedHomePlayerCard() !== null;
     return homeLayoutMode({ wide, hasMiniPlayer, cardClosed });
 };
 

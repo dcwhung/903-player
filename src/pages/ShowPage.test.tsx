@@ -8,6 +8,7 @@ import {
     unavailableEpisode,
 } from '../../tests/renderWithProviders';
 import { saveProgress } from '../services/progressStore';
+import { themeFor } from '../shows';
 import type { Recording } from '../types/recording';
 import { ShowPage } from './ShowPage';
 
@@ -71,6 +72,16 @@ describe('ShowPage', () => {
                 expect(currentRow()).toHaveAccessibleName(/^播放 17\/10/);
             },
         );
+
+        it('should show the show’s own disc cover before its episode is started', async () => {
+            await open();
+            await screen.findByRole('heading', { name: '公子會' });
+
+            const gauge = screen
+                .getByRole('slider', { name: '播放進度' })
+                .closest('[data-player-gauge]') as HTMLElement;
+            expect(gauge.querySelector('img')).toHaveAttribute('src', themeFor('gongzi').art);
+        });
 
         it('replaces the other playback with its latest episode only when play is pressed', async () => {
             const { audio } = await open();

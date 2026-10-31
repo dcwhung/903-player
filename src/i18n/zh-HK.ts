@@ -103,13 +103,7 @@ export const zhHK = {
     },
     // 闊橫版主頁右邊播放卡（HomePlayerCard）同收埋後右邊嘅把手
     homeCard: {
-        close: '收埋播放器',
         reopen: '打開播放器：{name}',
-        next: '下一集',
-        // 節目 / 每日劇：清單最新喺頂，顯示緊嗰集之後其實係舊集
-        older: '昔日集數',
-        all: '全部',
-        allLabel: '全部集數',
     },
     cardStack: {
         label: '今日節目，左右掃動轉節目',

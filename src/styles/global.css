@@ -94,13 +94,17 @@ html[data-view-transition] main[data-player-page] h1 {
     view-transition-name: player-title;
 }
 
-/* 收埋播放卡：向右淡出；再出返：由右淡入（格仔同 tab 自己移位伸縮） */
-html[data-view-transition='close'] ::view-transition-old(player-panel):only-child {
-    animation: view-slide-out var(--view-transition-move) var(--ease-view-transition) both;
+/*
+ * 閂播放卡 / 開返：張卡（player-panel）同右邊把手同名，成個 group 由卡縮入把手（或者倒返轉）；
+ * 卡入面嘅唱片格、節目名唔好自己另外飛（只有入頁 / 返主頁先用佢哋嘅名）
+ */
+html:is([data-view-transition='close'], [data-view-transition='open']) [data-home-card] * {
+    view-transition-name: none !important;
 }
 
-html[data-view-transition='open'] ::view-transition-new(player-panel):only-child {
-    animation: view-slide-in var(--view-transition-move) var(--ease-view-transition) both;
+/* 把手只喺閂卡 / 開返期間同張卡同名；平時冇名，由內頁返主頁時成頁唔會縮入把手（S-642） */
+html:is([data-view-transition='close'], [data-view-transition='open']) [data-home-handle] {
+    view-transition-name: player-panel;
 }
 
 @keyframes view-fade-out {
@@ -112,20 +116,6 @@ html[data-view-transition='open'] ::view-transition-new(player-panel):only-child
 @keyframes view-fade-in {
     from {
         opacity: 0;
-    }
-}
-
-@keyframes view-slide-out {
-    to {
-        opacity: 0;
-        transform: translateX(var(--view-transition-slide));
-    }
-}
-
-@keyframes view-slide-in {
-    from {
-        opacity: 0;
-        transform: translateX(var(--view-transition-slide));
     }
 }
 

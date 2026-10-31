@@ -1,6 +1,5 @@
 import type { ShowTheme } from '../../config/showThemes';
 import { t } from '../../i18n/t';
-import { TRANSITION_NAME } from '../../utils/viewTransition';
 import { BackIcon } from '../icons/icons';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import styles from './HomePlayerCard.module.css';
@@ -15,7 +14,7 @@ interface HomePlayerHandleProps {
     focusOnMount?: boolean;
 }
 
-/** 播放卡收埋咗：右邊緣一條窄把手（節目色、細碟、直寫節目名、‹），撳就再出返張卡 */
+/** 播放卡閂咗：右邊緣一條窄把手（閂咗嗰個節目嘅色、細碟、直寫名、‹），撳就再出返張卡（暫停） */
 export const HomePlayerHandle = ({
     theme,
     showName,
@@ -27,7 +26,8 @@ export const HomePlayerHandle = ({
             type="button"
             className={styles.handle}
             aria-label={t('homeCard.reopen', { name: showName })}
-            style={{ viewTransitionName: TRANSITION_NAME.handle }}
+            // 閂卡 / 開返過場期間先同張卡同名（global.css）：返主頁時成頁唔會縮入把手（S-642）
+            data-home-handle=""
             onClick={onOpen}
             autoFocus={focusOnMount}
         >

@@ -1,7 +1,8 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
+import { PowerIcon } from '../components/icons/icons';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { dailyEpisodesOf, seriesEpisodesOf } from '../dramas';
 import { openHomePlayerCard } from '../hooks/homePlayerCardClosed';
@@ -14,6 +15,8 @@ import { HomePage } from './HomePage';
 const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 const SHOW_CARD = '正在播放（今日節目）';
 const DRAMA_CARD = '正在播放（廣播劇）';
+/** 卡角 ✕：同 mini player 左滑關閉一樣（停播） */
+const CLOSE = '關閉播放器';
 
 const BADGIRL_TODAY = recording('badgirl', '2026-10-19', '1000');
 const WANNI_TODAY = recording('wanni', '2026-10-19', '1300');
@@ -25,16 +28,14 @@ const RECORDINGS = [
 ];
 
 /**
- * 闊橫版（WIDE_BANNER_QUERY：打橫、≥ 640 闊、≥ 562 高）；tall = 再高過 700px（播放卡多「下一集」）。
+ * 闊橫版（WIDE_BANNER_QUERY：打橫、≥ 640 闊、≥ 562 高）。
  * 手機打橫（max-height: 561px）同減少動畫唔符合
  */
-const stubWideLandscape = ({ tall = false } = {}) => {
+const stubWideLandscape = () => {
     vi.stubGlobal(
         'matchMedia',
         vi.fn((query: string) => ({
-            matches:
-                (query.includes('landscape') && !query.includes('max-height')) ||
-                (tall && query === '(min-height: 700px)'),
+            matches: query.includes('landscape') && !query.includes('max-height'),
             media: query,
             addEventListener: vi.fn(),
             removeEventListener: vi.fn(),
@@ -145,32 +146,74 @@ describe('HomePage on a wide landscape screen', () => {
             expect(screen.getByTestId('location')).toHaveTextContent('/show/badgirl');
         });
 
-        it('should hide only the card from its corner ✕, keeping playback going', async () => {
+        it('should stop playback from the corner ✕ and keep a handle for the closed show', async () => {
             stubWideLandscape();
             const { audio } = await arriveHomeWith(WANNI_TODAY);
             await screen.findByRole('region', { name: SHOW_CARD });
             audio.pause.mockClear();
 
-            await userEvent.click(screen.getByRole('button', { name: '收埋播放器' }));
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
 
             expect(screen.queryByRole('region', { name: SHOW_CARD })).not.toBeInTheDocument();
             expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'fillWithHandle');
-            expect(audio.pause).not.toHaveBeenCalled();
-            expect(audio.src).toBe(WANNI_TODAY.url);
+            expect(audio.pause).toHaveBeenCalled();
+            expect(
+                screen.getByRole('button', { name: '打開播放器：雲妮鍾情' }),
+            ).toBeInTheDocument();
         });
 
-        it('should bring the card back from the handle on the right edge', async () => {
+        it('should use the mini player’s close icon on the corner button', async () => {
             stubWideLandscape();
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
             await screen.findByRole('region', { name: SHOW_CARD });
-            await userEvent.click(screen.getByRole('button', { name: '收埋播放器' }));
+
+            const icon = render(<PowerIcon />).container.querySelector('svg');
+            const button = screen.getByRole('button', { name: CLOSE });
+            expect(button.querySelector('svg')?.innerHTML).toBe(icon?.innerHTML);
+        });
+
+        it('should name the handle only through the close / open transition CSS', async () => {
+            stubWideLandscape();
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            await screen.findByRole('region', { name: SHOW_CARD });
+
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
+
+            // 平時冇名：返主頁（back）時成頁唔會縮入 26px 把手（S-642）
+            const handle = screen.getByRole('button', { name: '打開播放器：Bad Girl大過佬' });
+            expect(handle.style.getPropertyValue('view-transition-name')).toBe('');
+            expect(handle).toHaveAttribute('data-home-handle');
+        });
+
+        it('should bring the closed show back paused from the handle', async () => {
+            stubWideLandscape();
+            const { audio } = await arriveHomeWith(WANNI_TODAY);
+            await screen.findByRole('region', { name: SHOW_CARD });
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
+            const plays = audio.play.mock.calls.length;
+
+            await userEvent.click(screen.getByRole('button', { name: '打開播放器：雲妮鍾情' }));
+
+            const card = screen.getByRole('region', { name: SHOW_CARD });
+            expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'split');
+            expect(card).toHaveTextContent('雲妮鍾情');
+            expect(within(card).getByRole('button', { name: '播放' })).toBeInTheDocument();
+            expect(audio.play).toHaveBeenCalledTimes(plays);
+        });
+
+        it('should keep a handle for a closed drama and bring it back paused', async () => {
+            stubWideLandscape();
+            const { audio } = await arriveHomeWith(seriesEpisodesOf('chisee')[0]!);
+            await screen.findByRole('region', { name: DRAMA_CARD });
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
+            const plays = audio.play.mock.calls.length;
 
             await userEvent.click(
-                screen.getByRole('button', { name: '打開播放器：Bad Girl大過佬' }),
+                screen.getByRole('button', { name: '打開播放器：芝See菇Bi Family' }),
             );
 
-            expect(screen.getByRole('region', { name: SHOW_CARD })).toBeInTheDocument();
-            expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'split');
+            expect(screen.getByRole('region', { name: DRAMA_CARD })).toBeInTheDocument();
+            expect(audio.play).toHaveBeenCalledTimes(plays);
         });
     });
 
@@ -252,7 +295,7 @@ describe('HomePage on a wide landscape screen', () => {
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
             await screen.findByRole('region', { name: SHOW_CARD });
 
-            await userEvent.click(screen.getByRole('button', { name: '收埋播放器' }));
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
             expect(screen.getByRole('button', { name: HANDLE })).toHaveFocus();
 
             await userEvent.click(screen.getByRole('button', { name: HANDLE }));
@@ -263,72 +306,94 @@ describe('HomePage on a wide landscape screen', () => {
             stubWideLandscape();
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
             await screen.findByRole('region', { name: SHOW_CARD });
-            await userEvent.click(screen.getByRole('button', { name: '收埋播放器' }));
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
 
-            act(() => openHomePlayerCard());
+            act(() => {
+                restoreMiniPlayer();
+                openHomePlayerCard();
+            });
 
             expect(screen.getByRole('button', { name: HEADER })).not.toHaveFocus();
         });
     });
 
-    describe('下一集 on a tall screen', () => {
+    describe('episode list on the card (same as the page list)', () => {
         const FIRST = seriesEpisodesOf('chisee')[0]!;
-        const NEXT = episodesInArc(seriesEpisodesOf('chisee'), FIRST.arc).slice(1);
+        const ARC = episodesInArc(seriesEpisodesOf('chisee'), FIRST.arc);
+        const scrollTo = vi.fn();
 
-        it('should list the next episodes of the arc and play one without leaving home', async () => {
-            stubWideLandscape({ tall: true });
-            const { audio } = await arriveHomeWith(FIRST);
-            const card = await screen.findByRole('region', { name: DRAMA_CARD });
-            const next = within(card).getByRole('region', { name: '下一集' });
-
-            const rows = within(next).getAllByRole('button', { name: /^播放 / });
-            expect(rows.length).toBeGreaterThan(0);
-            await userEvent.click(rows[0] as HTMLElement);
-
-            expect(audio.src).toBe(NEXT[0]?.url);
-            expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
+        beforeEach(() => {
+            HTMLElement.prototype.scrollTo = scrollTo;
+            Element.prototype.scrollIntoView = vi.fn();
         });
 
-        it('should list the older episodes of a daily drama under 昔日集數', async () => {
-            stubWideLandscape({ tall: true });
-            const episodes = dailyNewestFirst(dailyEpisodesOf('c18'));
-            await arriveHomeWith(episodes[1]!);
-            const card = await screen.findByRole('region', { name: DRAMA_CARD });
+        const listOf = (card: HTMLElement) => within(card).getByRole('region', { name: '集數' });
 
-            const older = within(card).getByRole('region', { name: '昔日集數' });
-            expect(within(older).getAllByRole('listitem').length).toBeGreaterThan(0);
-        });
-
-        it('should open the drama page from 全部', async () => {
-            stubWideLandscape({ tall: true });
+        it('should list the whole arc of a series drama, current row marked and scrolled to', async () => {
+            stubWideLandscape();
             await arriveHomeWith(FIRST);
             const card = await screen.findByRole('region', { name: DRAMA_CARD });
 
-            await userEvent.click(within(card).getByRole('button', { name: '全部集數' }));
-
-            expect(screen.getByTestId('location')).toHaveTextContent('/drama/chisee');
+            const list = listOf(card);
+            expect(list).toHaveTextContent(`共 ${ARC.length} 集`);
+            expect(within(list).getAllByRole('listitem')).toHaveLength(ARC.length);
+            expect(within(list).getByRole('button', { current: true })).toHaveAccessibleName(
+                new RegExp(FIRST.title ?? ''),
+            );
+            expect(scrollTo).toHaveBeenCalled();
         });
 
-        it('should list the older episodes of the show under 昔日集數', async () => {
-            stubWideLandscape({ tall: true });
-            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
-            const card = await screen.findByRole('region', { name: SHOW_CARD });
+        it('should play another row without leaving home', async () => {
+            stubWideLandscape();
+            const { audio } = await arriveHomeWith(FIRST);
+            const list = listOf(await screen.findByRole('region', { name: DRAMA_CARD }));
 
-            expect(within(card).queryByRole('region', { name: '下一集' })).not.toBeInTheDocument();
-            const next = within(card).getByRole('region', { name: '昔日集數' });
+            const rows = within(list).getAllByRole('button', { name: /^播放 / });
+            await userEvent.click(rows[rows.length - 1] as HTMLElement);
+
+            expect(audio.src).toBe(ARC[ARC.length - 1]?.url);
+            expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
+        });
+
+        it('should list every episode of a daily drama like its page', async () => {
+            stubWideLandscape();
+            const episodes = dailyNewestFirst(dailyEpisodesOf('c18'));
+            await arriveHomeWith(episodes[1]!);
+            const list = listOf(await screen.findByRole('region', { name: DRAMA_CARD }));
+
+            expect(within(list).getAllByRole('listitem')).toHaveLength(episodes.length);
+            expect(within(list).getByRole('button', { current: true })).toBeInTheDocument();
+        });
+
+        it('should list every episode of the show like the show page, on any height', async () => {
+            stubWideLandscape();
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            const list = listOf(await screen.findByRole('region', { name: SHOW_CARD }));
+
+            expect(list).toHaveTextContent('共 3 集');
             expect(
-                within(next)
+                within(list)
                     .getAllByRole('listitem')
                     .map((row) => row.textContent),
-            ).toEqual([expect.stringContaining('16/10'), expect.stringContaining('15/10')]);
+            ).toEqual([
+                expect.stringContaining('19/10'),
+                expect.stringContaining('16/10'),
+                expect.stringContaining('15/10'),
+            ]);
+            expect(within(list).getByRole('button', { current: true })).toHaveAccessibleName(
+                /19\/10/,
+            );
         });
 
-        it('should leave 下一集 out on a shorter screen', async () => {
+        it('should keep the page heading, with no 下一集 / 昔日集數 / 全部', async () => {
             stubWideLandscape();
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
             const card = await screen.findByRole('region', { name: SHOW_CARD });
 
-            expect(within(card).queryByRole('region', { name: '下一集' })).not.toBeInTheDocument();
+            expect(card).not.toHaveTextContent(/下一集|昔日集數/);
+            expect(
+                within(card).queryByRole('button', { name: '全部集數' }),
+            ).not.toBeInTheDocument();
         });
     });
 });

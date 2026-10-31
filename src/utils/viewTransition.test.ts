@@ -162,6 +162,36 @@ describe('withViewTransition edge cases', () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
 
         expect(document.documentElement.dataset.viewTransition).toBe('close');
+        // 行埋第二個過場嘅 update，唔好留低「等緊」狀態畀下一個測試
+        await runs[1]?.();
+    });
+});
+
+describe('withViewTransition when startViewTransition throws', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        removeStartViewTransition();
+        delete document.documentElement.dataset.viewTransition;
+    });
+
+    it('should update without a transition and still accept the next call (S-641)', () => {
+        stubReducedMotion(false);
+        const start = vi.fn(() => {
+            throw new DOMException('invalid state', 'InvalidStateError');
+        });
+        Object.defineProperty(document, 'startViewTransition', {
+            value: start,
+            configurable: true,
+        });
+        const first = vi.fn();
+        const second = vi.fn();
+
+        withViewTransition(first, 'expand');
+        withViewTransition(second, 'expand');
+
+        expect(first).toHaveBeenCalledOnce();
+        expect(second).toHaveBeenCalledOnce();
+        expect(document.documentElement.dataset.viewTransition).toBeUndefined();
     });
 });
 

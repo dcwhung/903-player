@@ -1,4 +1,4 @@
-import { useId, useRef, type ReactNode } from 'react';
+import { useId, useRef } from 'react';
 import { t } from '../../i18n/t';
 import styles from './EpisodeList.module.css';
 import { EpisodeRow } from './EpisodeRow';
@@ -13,10 +13,6 @@ interface EpisodeListProps {
     onSelect: (key: string) => void;
     labels?: EpisodeLabels;
     scrollAlign?: EpisodeScrollAlign;
-    /** 標題：預設「集數」（主頁播放卡用「下一集」） */
-    title?: string;
-    /** 標題右邊：預設「共 N 集」（主頁播放卡放「全部 ›」掣） */
-    aside?: ReactNode;
 }
 
 /** 標題右邊：「共 N 集」只計播得到嘅；有未上架就加埋幾多集 */
@@ -37,8 +33,6 @@ export const EpisodeList = ({
     onSelect,
     labels = 'date',
     scrollAlign = 'nearest',
-    title = t('episodes.title'),
-    aside,
 }: EpisodeListProps) => {
     const headingId = useId();
     const listRef = useRef<HTMLUListElement>(null);
@@ -48,9 +42,9 @@ export const EpisodeList = ({
         <section className={styles.section} aria-labelledby={headingId} data-labels={labels}>
             <div className={styles.header}>
                 <h2 id={headingId} className={styles.heading}>
-                    {title}
+                    {t('episodes.title')}
                 </h2>
-                {aside ?? <span>{countText(items)}</span>}
+                <span>{countText(items)}</span>
             </div>
             <ul ref={listRef} className={styles.list}>
                 {items.map((item) => (

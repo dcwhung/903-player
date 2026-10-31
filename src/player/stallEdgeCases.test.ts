@@ -45,6 +45,22 @@ describe('QA S-551 edge cases', () => {
         vi.useRealTimers();
     });
 
+    it('should not retry after stop when the element was already paused (no pause event, S-640)', async () => {
+        const { audio, controller, detach } = await stalledStart();
+        // 真 element 已經暫停：pause() 唔會再發 pause event，onPause 收唔到
+        audio.paused = true;
+        controller.stop();
+        audio.play.mockClear();
+        audio.load.mockClear();
+
+        vi.advanceTimersByTime(STALL_MAX_WAIT_MS);
+
+        expect(audio.play).not.toHaveBeenCalled();
+        expect(audio.load).not.toHaveBeenCalled();
+        expect(controller.getSnapshot().isPlaying).toBe(false);
+        detach();
+    });
+
     it('should stop at exactly STALL_MAX_RETRIES reloads when audio never arrives, and keep reporting stalled', async () => {
         const { audio, controller, detach } = await stalledStart();
         vi.advanceTimersByTime(STALL_FIRST_RETRY_MS + STALL_RETRY_MS * (STALL_MAX_RETRIES + 3));

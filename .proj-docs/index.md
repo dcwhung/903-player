@@ -50,6 +50,7 @@
 | 2026-10-30 | [reviews/2026-10-30_review_cui-0011.md](reviews/2026-10-30_review_cui-0011.md)（94 pass，W-514、S-626；v1.20.12 metadata 前「未 stalled 就當載緊」；Round 2 100 pass）                                                                                                                                                          |
 | 2026-10-30 | [reviews/2026-10-30_review_hidden-e2e.md](reviews/2026-10-30_review_hidden-e2e.md)（97 pass，S-627–S-629；背景播放 e2e）                                                                                                                                                                                                        |
 | 2026-10-30 | [reviews/2026-10-30_review_cui-0015.md](reviews/2026-10-30_review_cui-0015.md)（76 warn，W-515–W-517、S-630–S-638；v1.21.0 闊橫版主頁填滿格 + 右邊播放卡 + View Transitions；Round 2 93 pass，W-518、S-639；Round 3 99 pass）                                                                                                   |
+| 2026-10-31 | [reviews/2026-10-31_review_v1.21.1.md](reviews/2026-10-31_review_v1.21.1.md)（97 pass，S-640–S-642；✕ = 關閉播放器、卡縮入把手、同闊、卡清單同內頁一樣；Round 2 99 pass，S-643；Round 3 100 pass）                                                                                                                              |
 
 ## QA
 
@@ -82,6 +83,7 @@
 | 2026-10-30 | [qa/2026-10-30_qa_cui-0011.md](qa/2026-10-30_qa_cui-0011.md)（v1.20.12 fail：CUI-0011 0.1× 開播 38.8 → 18.8 s ✅；CUI-0014 🔴 0.05× metadata 交接 reload，57 → 81 s；部分 bytes 後斷網 retry 30 s，記入 CUI-0011）                                                       |
 | 2026-10-30 | [qa/2026-10-30_qa_hidden-e2e.md](qa/2026-10-30_qa_hidden-e2e.md)（背景播放 e2e pass：3 × 598 / 0（1 次 CPU 滿載），8 個背景 check 全過；mutation 2 / 2 紅）                                                                                                              |
 | 2026-10-30 | [qa/2026-10-30_qa_cui-0015.md](qa/2026-10-30_qa_cui-0015.md)（v1.21.0 pass：e2e 598 / 0；探索 135 / 0（3 個闊橫版尺寸、觸控 W-518、減少動畫、改尺寸、8 個 edge）；直版 / 手機打橫同 v1.20.12 截圖一樣；PWA 1.20.12 → 1.21.0 4 × 4/4；CUI-0016 🟢 W-518 unit test flake） |
+| 2026-10-31 | [qa/2026-10-31_qa_v1.21.1.md](qa/2026-10-31_qa_v1.21.1.md)（v1.21.1 pass @ `e4897d5`：unit 3 × 2058、e2e 598 / 0、探索 69 / 69；冇檔集數 → 關閉播放器 30 s 撳唔到 Chromium 重現唔到、修正後關閉冇再播（冇 CUI-0017）；S-642 修正證實；PWA 1.21.0 → 1.21.1 4 × 4/4）      |
 
 ## Deploys
 

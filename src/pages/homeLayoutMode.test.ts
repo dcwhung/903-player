@@ -7,7 +7,8 @@ describe('homeLayoutMode', () => {
         [false, true, false, 'stack'],
         [false, true, true, 'stack'],
         [true, false, false, 'fill'],
-        [true, false, true, 'fill'],
+        // ✕ 停咗播、收埋 mini player：冇 mini player 都要留把手畀用戶開返
+        [true, false, true, 'fillWithHandle'],
         [true, true, false, 'split'],
         [true, true, true, 'fillWithHandle'],
     ] as const)(
