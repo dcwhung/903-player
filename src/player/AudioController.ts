@@ -236,6 +236,12 @@ export class AudioController {
     stop = (): void => {
         this.setPlayIntent(false);
         this.audio.pause();
+        // 本身已經暫停嘅 element 唔會再發 pause event（spec）：唔好靠 onPause 收 watchdog，
+        // 否則佢之後照重試 play()，閂咗嘅播放器又出返（S-640）
+        this.stopWatchingStall();
+        if (this.state.isPlaying || this.state.isAudible) {
+            this.update({ isPlaying: false, isAudible: false });
+        }
         this.persist();
     };
 
