@@ -50,6 +50,7 @@
 | 2026-10-30 | [reviews/2026-10-30_review_cui-0011.md](reviews/2026-10-30_review_cui-0011.md)（94 pass，W-514、S-626；v1.20.12 metadata 前「未 stalled 就當載緊」；Round 2 100 pass）                                                                                                                                                          |
 | 2026-10-30 | [reviews/2026-10-30_review_hidden-e2e.md](reviews/2026-10-30_review_hidden-e2e.md)（97 pass，S-627–S-629；背景播放 e2e）                                                                                                                                                                                                        |
 | 2026-10-30 | [reviews/2026-10-30_review_cui-0015.md](reviews/2026-10-30_review_cui-0015.md)（76 warn，W-515–W-517、S-630–S-638；v1.21.0 闊橫版主頁填滿格 + 右邊播放卡 + View Transitions；Round 2 93 pass，W-518、S-639；Round 3 99 pass）                                                                                                   |
+| 2026-10-31 | [reviews/2026-10-31_review_v1.21.1.md](reviews/2026-10-31_review_v1.21.1.md)（97 pass，S-640–S-642；✕ = 關閉播放器、卡縮入把手、同闊、卡清單同內頁一樣）                                                                                                                                                                        |
 
 ## QA
 
