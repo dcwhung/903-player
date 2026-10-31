@@ -1,7 +1,8 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
+import { PowerIcon } from '../components/icons/icons';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { dailyEpisodesOf, seriesEpisodesOf } from '../dramas';
 import { openHomePlayerCard } from '../hooks/homePlayerCardClosed';
@@ -14,6 +15,8 @@ import { HomePage } from './HomePage';
 const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 const SHOW_CARD = '正在播放（今日節目）';
 const DRAMA_CARD = '正在播放（廣播劇）';
+/** 卡角 ✕：同 mini player 左滑關閉一樣（停播） */
+const CLOSE = '關閉播放器';
 
 const BADGIRL_TODAY = recording('badgirl', '2026-10-19', '1000');
 const WANNI_TODAY = recording('wanni', '2026-10-19', '1300');
@@ -145,32 +148,74 @@ describe('HomePage on a wide landscape screen', () => {
             expect(screen.getByTestId('location')).toHaveTextContent('/show/badgirl');
         });
 
-        it('should hide only the card from its corner ✕, keeping playback going', async () => {
+        it('should stop playback from the corner ✕ and keep a handle for the closed show', async () => {
             stubWideLandscape();
             const { audio } = await arriveHomeWith(WANNI_TODAY);
             await screen.findByRole('region', { name: SHOW_CARD });
             audio.pause.mockClear();
 
-            await userEvent.click(screen.getByRole('button', { name: '收埋播放器' }));
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
 
             expect(screen.queryByRole('region', { name: SHOW_CARD })).not.toBeInTheDocument();
             expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'fillWithHandle');
-            expect(audio.pause).not.toHaveBeenCalled();
-            expect(audio.src).toBe(WANNI_TODAY.url);
+            expect(audio.pause).toHaveBeenCalled();
+            expect(
+                screen.getByRole('button', { name: '打開播放器：雲妮鍾情' }),
+            ).toBeInTheDocument();
         });
 
-        it('should bring the card back from the handle on the right edge', async () => {
+        it('should use the mini player’s close icon on the corner button', async () => {
             stubWideLandscape();
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
             await screen.findByRole('region', { name: SHOW_CARD });
-            await userEvent.click(screen.getByRole('button', { name: '收埋播放器' }));
+
+            const icon = render(<PowerIcon />).container.querySelector('svg');
+            const button = screen.getByRole('button', { name: CLOSE });
+            expect(button.querySelector('svg')?.innerHTML).toBe(icon?.innerHTML);
+        });
+
+        it('should morph the card into the handle (same view-transition name)', async () => {
+            stubWideLandscape();
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            const card = await screen.findByRole('region', { name: SHOW_CARD });
+            const name = card.style.getPropertyValue('view-transition-name');
+
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
+
+            const handle = screen.getByRole('button', { name: '打開播放器：Bad Girl大過佬' });
+            expect(name).not.toBe('');
+            expect(handle.style.getPropertyValue('view-transition-name')).toBe(name);
+        });
+
+        it('should bring the closed show back paused from the handle', async () => {
+            stubWideLandscape();
+            const { audio } = await arriveHomeWith(WANNI_TODAY);
+            await screen.findByRole('region', { name: SHOW_CARD });
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
+            const plays = audio.play.mock.calls.length;
+
+            await userEvent.click(screen.getByRole('button', { name: '打開播放器：雲妮鍾情' }));
+
+            const card = screen.getByRole('region', { name: SHOW_CARD });
+            expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'split');
+            expect(card).toHaveTextContent('雲妮鍾情');
+            expect(within(card).getByRole('button', { name: '播放' })).toBeInTheDocument();
+            expect(audio.play).toHaveBeenCalledTimes(plays);
+        });
+
+        it('should keep a handle for a closed drama and bring it back paused', async () => {
+            stubWideLandscape();
+            const { audio } = await arriveHomeWith(seriesEpisodesOf('chisee')[0]!);
+            await screen.findByRole('region', { name: DRAMA_CARD });
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
+            const plays = audio.play.mock.calls.length;
 
             await userEvent.click(
-                screen.getByRole('button', { name: '打開播放器：Bad Girl大過佬' }),
+                screen.getByRole('button', { name: '打開播放器：芝See菇Bi Family' }),
             );
 
-            expect(screen.getByRole('region', { name: SHOW_CARD })).toBeInTheDocument();
-            expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'split');
+            expect(screen.getByRole('region', { name: DRAMA_CARD })).toBeInTheDocument();
+            expect(audio.play).toHaveBeenCalledTimes(plays);
         });
     });
 
@@ -252,7 +297,7 @@ describe('HomePage on a wide landscape screen', () => {
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
             await screen.findByRole('region', { name: SHOW_CARD });
 
-            await userEvent.click(screen.getByRole('button', { name: '收埋播放器' }));
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
             expect(screen.getByRole('button', { name: HANDLE })).toHaveFocus();
 
             await userEvent.click(screen.getByRole('button', { name: HANDLE }));
@@ -263,9 +308,12 @@ describe('HomePage on a wide landscape screen', () => {
             stubWideLandscape();
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
             await screen.findByRole('region', { name: SHOW_CARD });
-            await userEvent.click(screen.getByRole('button', { name: '收埋播放器' }));
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
 
-            act(() => openHomePlayerCard());
+            act(() => {
+                restoreMiniPlayer();
+                openHomePlayerCard();
+            });
 
             expect(screen.getByRole('button', { name: HEADER })).not.toHaveFocus();
         });

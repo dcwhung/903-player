@@ -2,7 +2,7 @@ import type { ShowTheme } from '../../config/showThemes';
 import { t } from '../../i18n/t';
 import type { PlaybackLineState } from '../../utils/playbackState';
 import { TRANSITION_NAME } from '../../utils/viewTransition';
-import { CloseIcon } from '../icons/icons';
+import { PowerIcon } from '../icons/icons';
 import { NowPlaying } from '../NowPlaying/NowPlaying';
 import { PlayerGauge, type StandbyTime } from '../PlayerPanel/PlayerGauge';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
@@ -45,7 +45,7 @@ interface HomePlayerCardProps extends CardSwitchProps {
     /** 高畫面先有「下一集」 */
     next?: HomeCardNext | undefined;
     onExpand: () => void;
-    /** 卡角 ✕：淨係收埋張卡，照播 */
+    /** 卡角閂掣（同 mini player 關閉一樣 ⏻）：停播，張卡縮入右邊把手 */
     onClose: () => void;
     /** 用戶撳把手再出返：出現時焦點去頁頭列 */
     focusOnMount?: boolean;
@@ -61,6 +61,7 @@ export const HomePlayerCard = ({ theme, gauge, next, ...props }: HomePlayerCardP
     return (
         <ThemeScope theme={theme} fullPage={false} className={styles.scope}>
             <section
+                data-home-card=""
                 className={styles.card}
                 aria-label={props.region}
                 style={{ viewTransitionName: TRANSITION_NAME.panel }}
@@ -81,10 +82,10 @@ export const HomePlayerCard = ({ theme, gauge, next, ...props }: HomePlayerCardP
             <button
                 type="button"
                 className={styles.close}
-                aria-label={t('homeCard.close')}
+                aria-label={t('miniPlayer.dismissLabel')}
                 onClick={props.onClose}
             >
-                <CloseIcon size={CLOSE_ICON_SIZE} />
+                <PowerIcon size={CLOSE_ICON_SIZE} />
             </button>
         </ThemeScope>
     );

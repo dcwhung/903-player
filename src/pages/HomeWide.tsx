@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { AppVersion } from '../components/AppVersion/AppVersion';
 import { DramaTile, type DramaShelfItem } from '../components/DramaShelf/DramaTile';
 import { HomeBanner } from '../components/HomeBanner/HomeBanner';
@@ -11,7 +11,7 @@ import { HomeTabs } from '../components/HomeTabs/HomeTabs';
 import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
 import { APP_VERSION } from '../config/appVersion';
 import { TALL_CARD_QUERY } from '../config/layout';
-import { closeHomePlayerCard, openHomePlayerCard } from '../hooks/homePlayerCardClosed';
+import { useClosedHomePlayerCard } from '../hooks/homePlayerCardClosed';
 import type { HomeTab } from '../hooks/useHomeTab';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { t } from '../i18n/t';
@@ -20,6 +20,7 @@ import styles from './HomePage.module.css';
 import type { HomeLayoutMode } from './homeLayoutMode';
 import page from './Page.module.css';
 import { useHomeCardGauge } from './useHomeCardGauge';
+import { useHomeCardToggle } from './useHomeCardToggle';
 import { useHomeNextEpisodes } from './useHomeNextEpisodes';
 
 interface WideGridProps {
@@ -92,22 +93,6 @@ interface SplitCardProps {
     focusOnMount: boolean;
 }
 
-/** 用戶撳 ✕ / 把手之後焦點去邊（自動因播放再出返唔郁焦點）：記低最後一個用戶動作 */
-const useCardToggle = () => {
-    const [focus, setFocus] = useState<'card' | 'handle' | null>(null);
-    return {
-        focus,
-        close: () => {
-            setFocus('handle');
-            withViewTransition(closeHomePlayerCard, 'close');
-        },
-        open: () => {
-            setFocus('card');
-            withViewTransition(openHomePlayerCard, 'open');
-        },
-    };
-};
-
 interface HomeWideProps extends WideGridProps {
     mode: Exclude<HomeLayoutMode, 'stack'>;
     onTab: (tab: HomeTab) => void;
@@ -116,10 +101,11 @@ interface HomeWideProps extends WideGridProps {
 
 /**
  * 闊橫版主頁（WIDE_BANNER_QUERY）：冇橫額釘頂，tab 喺頂，下面填滿格；
- * 有 mini player 就右邊播放卡（split，底部冇 mini player），收埋咗就全闊 + 右邊把手（fillWithHandle）
+ * 有 mini player 就右邊播放卡（split，底部冇 mini player），✕ 閂咗就全闊 + 右邊把手（fillWithHandle）
  */
 export const HomeWide = ({ mode, onTab, miniPlayer, ...grid }: HomeWideProps) => {
-    const toggle = useCardToggle();
+    const toggle = useHomeCardToggle(miniPlayer);
+    const closed = useClosedHomePlayerCard();
     return (
         <main className={`${page.page} ${page.locked} ${styles.wide}`} data-layout={mode}>
             <div className={styles.gridColumn}>
@@ -133,10 +119,10 @@ export const HomeWide = ({ mode, onTab, miniPlayer, ...grid }: HomeWideProps) =>
                     focusOnMount={toggle.focus === 'card'}
                 />
             )}
-            {mode === 'fillWithHandle' && miniPlayer && (
+            {mode === 'fillWithHandle' && closed && (
                 <HomePlayerHandle
-                    theme={miniPlayer.theme}
-                    showName={miniPlayer.showName}
+                    theme={closed.theme}
+                    showName={closed.showName}
                     onOpen={toggle.open}
                     focusOnMount={toggle.focus === 'handle'}
                 />

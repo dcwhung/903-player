@@ -8,8 +8,6 @@ export const TRANSITION_NAME = {
     gauge: 'player-gauge',
     /** 播放卡頁頭列節目名 ↔ 內頁頁頭 */
     title: 'player-title',
-    /** 播放卡收埋後右邊嘅把手 */
-    handle: 'player-handle',
     banner: 'home-banner',
 } as const;
 

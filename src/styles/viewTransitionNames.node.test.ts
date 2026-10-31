@@ -16,3 +16,12 @@ describe('inner page view transition names', () => {
         expect(cssDeclarations(global, `${DURING}${part}`)['view-transition-name']).toBe(name);
     });
 });
+
+/** 閂卡 / 開返：張卡成個縮入把手，入面嘅唱片格、名唔另外飛 */
+describe('card ↔ handle morph', () => {
+    it('should drop the names inside the card while closing or reopening it', () => {
+        const selector =
+            "html:is([data-view-transition='close'], [data-view-transition='open']) [data-home-card] *";
+        expect(cssDeclarations(global, selector)['view-transition-name']).toBe('none !important');
+    });
+});

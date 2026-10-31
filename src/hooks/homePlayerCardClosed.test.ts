@@ -1,39 +1,43 @@
 import { act, renderHook } from '@testing-library/react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
+import { NEUTRAL_THEME } from '../config/showThemes';
 import { usePlayer } from '../player/usePlayer';
 import {
     closeHomePlayerCard,
     openHomePlayerCard,
-    useHomePlayerCardClosed,
+    useClosedHomePlayerCard,
     useReopenHomePlayerCardOnPlay,
 } from './homePlayerCardClosed';
+
+/** 啱啱撳 ✕ 嗰個節目：把手要照顯示佢 */
+const CLOSED = { theme: NEUTRAL_THEME, showName: 'Bad Girl大過佬' };
 
 describe('homePlayerCardClosed', () => {
     afterEach(() => openHomePlayerCard());
 
     it('should start open', () => {
-        const { result } = renderHook(() => useHomePlayerCardClosed());
-        expect(result.current).toBe(false);
+        const { result } = renderHook(() => useClosedHomePlayerCard());
+        expect(result.current).toBeNull();
     });
 
     it('should tell every listener when the card is closed and opened again', () => {
-        const first = renderHook(() => useHomePlayerCardClosed());
-        const second = renderHook(() => useHomePlayerCardClosed());
+        const first = renderHook(() => useClosedHomePlayerCard());
+        const second = renderHook(() => useClosedHomePlayerCard());
 
-        act(() => closeHomePlayerCard());
-        expect(first.result.current).toBe(true);
-        expect(second.result.current).toBe(true);
+        act(() => closeHomePlayerCard(CLOSED));
+        expect(first.result.current).toEqual(CLOSED);
+        expect(second.result.current).toEqual(CLOSED);
 
         act(() => openHomePlayerCard());
-        expect(first.result.current).toBe(false);
+        expect(first.result.current).toBeNull();
     });
 
     it('should remember being closed for a later mount (back on the home page)', () => {
-        act(() => closeHomePlayerCard());
+        act(() => closeHomePlayerCard(CLOSED));
 
-        const { result } = renderHook(() => useHomePlayerCardClosed());
+        const { result } = renderHook(() => useClosedHomePlayerCard());
 
-        expect(result.current).toBe(true);
+        expect(result.current).toEqual(CLOSED);
     });
 
     describe('useReopenHomePlayerCardOnPlay (mounted once at app level)', () => {
@@ -44,7 +48,7 @@ describe('homePlayerCardClosed', () => {
             return renderHook(
                 () => {
                     useReopenHomePlayerCardOnPlay();
-                    return { player: usePlayer(), closed: useHomePlayerCardClosed() };
+                    return { player: usePlayer(), closed: useClosedHomePlayerCard() };
                 },
                 { wrapper },
             );
@@ -52,28 +56,28 @@ describe('homePlayerCardClosed', () => {
 
         it('should open the card again once anything starts playing', async () => {
             const { result } = setup();
-            act(() => closeHomePlayerCard());
+            act(() => closeHomePlayerCard(CLOSED));
 
             await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
 
-            expect(result.current.closed).toBe(false);
+            expect(result.current.closed).toBeNull();
         });
 
         it('should keep it closed while nothing new plays', () => {
             const { result } = setup();
 
-            act(() => closeHomePlayerCard());
+            act(() => closeHomePlayerCard(CLOSED));
 
-            expect(result.current.closed).toBe(true);
+            expect(result.current.closed).toEqual(CLOSED);
         });
 
         it('should keep it closed when closed while already playing', async () => {
             const { result } = setup();
             await act(() => result.current.player.load(BADGIRL, { autoplay: true }));
 
-            act(() => closeHomePlayerCard());
+            act(() => closeHomePlayerCard(CLOSED));
 
-            expect(result.current.closed).toBe(true);
+            expect(result.current.closed).toEqual(CLOSED);
         });
     });
 });

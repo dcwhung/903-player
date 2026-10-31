@@ -15,7 +15,7 @@ interface HomePlayerHandleProps {
     focusOnMount?: boolean;
 }
 
-/** 播放卡收埋咗：右邊緣一條窄把手（節目色、細碟、直寫節目名、‹），撳就再出返張卡 */
+/** 播放卡閂咗：右邊緣一條窄把手（閂咗嗰個節目嘅色、細碟、直寫名、‹），撳就再出返張卡（暫停） */
 export const HomePlayerHandle = ({
     theme,
     showName,
@@ -27,7 +27,8 @@ export const HomePlayerHandle = ({
             type="button"
             className={styles.handle}
             aria-label={t('homeCard.reopen', { name: showName })}
-            style={{ viewTransitionName: TRANSITION_NAME.handle }}
+            // 同張卡同一個過場名：閂卡時張卡縮入把手，開返時由把手伸返出嚟
+            style={{ viewTransitionName: TRANSITION_NAME.panel }}
             onClick={onOpen}
             autoFocus={focusOnMount}
         >
