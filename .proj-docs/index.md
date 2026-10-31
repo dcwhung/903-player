@@ -1,6 +1,6 @@
 # 903-player 項目文件索引
 
-**最後更新**：2026-10-29
+**最後更新**：2026-10-31
 
 ## Audits
 
@@ -51,6 +51,7 @@
 | 2026-10-30 | [reviews/2026-10-30_review_hidden-e2e.md](reviews/2026-10-30_review_hidden-e2e.md)（97 pass，S-627–S-629；背景播放 e2e）                                                                                                                                                                                                        |
 | 2026-10-30 | [reviews/2026-10-30_review_cui-0015.md](reviews/2026-10-30_review_cui-0015.md)（76 warn，W-515–W-517、S-630–S-638；v1.21.0 闊橫版主頁填滿格 + 右邊播放卡 + View Transitions；Round 2 93 pass，W-518、S-639；Round 3 99 pass）                                                                                                   |
 | 2026-10-31 | [reviews/2026-10-31_review_v1.21.1.md](reviews/2026-10-31_review_v1.21.1.md)（97 pass，S-640–S-642；✕ = 關閉播放器、卡縮入把手、同闊、卡清單同內頁一樣；Round 2 99 pass，S-643；Round 3 100 pass）                                                                                                                              |
+| 2026-10-31 | [reviews/2026-10-31_review_e2e-section-homewide_batch.md](reviews/2026-10-31_review_e2e-section-homewide_batch.md)（batch 98 pass：A 99 / B 98，S-644–S-646；v1.21.2 e2e runSection 失敗都有總結 + v1.21.3 闊橫版主頁 e2e）                                                                                                     |
 
 ## QA
 
