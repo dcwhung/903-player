@@ -359,6 +359,45 @@ describe('UpdateManager.handleNeedReload', () => {
     });
 });
 
+// 第一次開 app（冇 controller 時 register）：workbox 嘅 isUpdate 一直係 false，library 唔會 call onNeedReload，
+// 所以 main.tsx 自己聽 controllerchange；只有自己發過 SKIP_WAITING 先當係換版
+describe('UpdateManager.handleControllerChange', () => {
+    it('should ignore the first-install claim before any update was applied', () => {
+        const h = createHarness();
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).not.toHaveBeenCalled();
+    });
+
+    it('should reload once after applying an update on a first visit', () => {
+        const h = createHarness();
+        h.setLoaded(false);
+        h.manager.handleNeedRefresh();
+        expect(h.deps.applyUpdate).toHaveBeenCalledTimes(1);
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('should wait for playback to stop like handleNeedReload', () => {
+        const h = createHarness();
+        h.setLoaded(false);
+        h.manager.handleNeedRefresh();
+        h.setPlaying(true);
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).not.toHaveBeenCalled();
+        h.setPlaying(false);
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('should reload only once when the library also calls handleNeedReload', () => {
+        const h = createHarness();
+        h.setLoaded(false);
+        h.manager.handleNeedRefresh();
+        h.manager.handleNeedReload();
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+});
+
 describe('createReloadOnce', () => {
     it('should reload only once when called repeatedly', () => {
         const reload = vi.fn();
