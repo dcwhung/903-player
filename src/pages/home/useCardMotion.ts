@@ -21,17 +21,25 @@ export const useCardMotion = (mode: WideLayoutMode, item: PlayerItem | undefined
     const next = cardFace(mode, item);
     const [shown, setShown] = useState<CardFace>(next);
     const latest = useRef(next);
+    /** 自己開咗、update 未行嘅過場（W-526） */
+    const waiting = useRef(false);
     const motion = cardMotion(shown, next);
+    // render 讀 module global 都安全：app 冇 concurrent rendering（HashRouter useTransitions={false}、冇 startTransition）（S-672）
     const deferred = motion !== null && !isViewTransitionUpdating();
     // 唔使過場：即刻跟（React「props 變就調整 state」寫法，唔會多一次 commit）
     if (!deferred && !sameCardFace(shown, next)) setShown(next);
     useLayoutEffect(() => {
         latest.current = { mode: next.mode, kind: next.kind, id: next.id };
-        if (!deferred || !motion) return;
+        // 自己嘅過場等緊影舊畫面：佢嘅 update 會用最新嗰個，唔好即刻轉（否則舊 snapshot 已經係新卡，W-526）
+        if (!deferred || !motion || waiting.current) return;
+        waiting.current = true;
         // update 用最新嗰個：等影舊畫面期間版面 / 節目再變都唔會轉去過時嘅
-        const started = withViewTransition(() => setShown(latest.current), motion);
+        const apply = () => {
+            waiting.current = false;
+            setShown(latest.current);
+        };
         // 另一個過場未 update（例如啱啱撳咗 ⤢）：唔做動畫，直接轉
-        if (!started) setShown(latest.current);
+        if (!withViewTransition(apply, motion)) apply();
     }, [deferred, motion, next.mode, next.kind, next.id]);
     return { mode: deferred ? shown.mode : mode, frozen: deferred && motion === 'switch' };
 };
