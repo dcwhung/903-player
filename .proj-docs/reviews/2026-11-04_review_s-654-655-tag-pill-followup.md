@@ -19,7 +19,7 @@
 
 | ID    | 級別 | 內容                                                                      | 狀態                                       |
 | ----- | ---- | ------------------------------------------------------------------------- | ------------------------------------------ |
-| W-522 | 🟡   | 跟進 commit 冇 bump version（`sw-git-flow` 例外只限修對上一個指令嘅 bug） | 待用戶決定：A bump 1.21.11 / B 加明文例外  |
+| W-522 | 🟡   | 跟進 commit 冇 bump version（`sw-git-flow` 例外只限修對上一個指令嘅 bug） | ✅ 用戶揀 A：bump 1.21.11（`5aab4fd`）     |
 | S-656 | 🟢   | `PX_TIMES` `/g` regex 同 `.test()` 共用，`lastIndex` 有狀態               | ✅ 已修：改「計到冇嘢再變」loop            |
 | S-657 | 🟢   | `checkCardTag` 頁頭唔係 `<button>` 會 throw，拖冧成個 section             | ✅ 已修：`?.` + `Boolean(h)`；上下內邊都驗 |
 
