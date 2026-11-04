@@ -1,10 +1,25 @@
 name: CI
 
 # PR 同 main 以外嘅 push：lint + unit + build，之後 e2e。main 嘅部署照舊由 deploy.yml 負責。
+# 淨係改 docs（全部改動檔都中 paths-ignore）唔跑 CI；有任何一個 code 檔就照跑。
 on:
     pull_request:
+        paths-ignore: # 同下面 push 嘅清單保持一致
+            - '**.md'
+            - '.proj-docs/**'
+            - '.tickets/**'
+            - '.claude/**'
+            - 'docs/**'
+            - 'LICENSE*'
     push:
         branches-ignore: [main]
+        paths-ignore: # 同上面 pull_request 嘅清單保持一致
+            - '**.md'
+            - '.proj-docs/**'
+            - '.tickets/**'
+            - '.claude/**'
+            - 'docs/**'
+            - 'LICENSE*'
 
 permissions:
     contents: read
