@@ -3,12 +3,13 @@
 // 數頁面 load 咗幾多次。用 port 0，唔會同 run.mjs 嘅 vite preview 撞
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { extname, join } from 'node:path';
+import { extname, resolve } from 'node:path';
 import { ensurePlaying, newE2EContext, waitForPlaybackState } from './harness.mjs';
 
 const DIST = new URL('../dist/', import.meta.url).pathname;
 const BASE_PATH = '/903-player/';
 const SW_PATH = 'sw.js';
+const LOOPBACK = '127.0.0.1';
 const CONTENT_TYPES = {
     '.html': 'text/html; charset=utf-8',
     '.js': 'text/javascript',
@@ -37,23 +38,39 @@ const PHONE = { width: 390, height: 844 };
 const PLAY_ROUTE = '#/show/gongzi';
 
 /**
+ * request URL → dist 入面嘅檔案；唔喺 BASE_PATH 底、decode 唔到（壞 %）、或者 resolve 出咗 dist
+ * （例如 ..%2F..%2F）一律 null（W-520）
+ */
+const distFile = (url) => {
+    let pathname;
+    try {
+        pathname = decodeURIComponent(new URL(url, 'http://e2e').pathname);
+    } catch {
+        return null;
+    }
+    if (!pathname.startsWith(BASE_PATH)) return null;
+    const name = pathname.slice(BASE_PATH.length) || 'index.html';
+    const path = resolve(DIST, name);
+    return path.startsWith(DIST) ? { name, path } : null;
+};
+
+/**
  * 細 static server：dist 照出，sw.js 尾加「第幾版」註解。所有檔案 no-cache（同 hosting 規則一樣，
  * 瀏覽器每次 update() 都會拎到最新 sw.js）
  */
 const startDistServer = async () => {
     let revision = 0;
     const server = createServer(async (req, res) => {
-        const pathname = decodeURIComponent(new URL(req.url, 'http://e2e').pathname);
-        if (!pathname.startsWith(BASE_PATH)) {
+        const file = distFile(req.url);
+        if (file === null) {
             res.writeHead(404).end();
             return;
         }
-        const file = pathname.slice(BASE_PATH.length) || 'index.html';
         try {
-            let body = await readFile(join(DIST, file));
-            if (file === SW_PATH) body = `${body}\n// e2e revision ${revision}\n`;
+            let body = await readFile(file.path);
+            if (file.name === SW_PATH) body = `${body}\n// e2e revision ${revision}\n`;
             res.writeHead(200, {
-                'content-type': CONTENT_TYPES[extname(file)] ?? 'application/octet-stream',
+                'content-type': CONTENT_TYPES[extname(file.name)] ?? 'application/octet-stream',
                 'cache-control': 'no-cache',
             });
             res.end(body);
@@ -61,9 +78,10 @@ const startDistServer = async () => {
             res.writeHead(404).end();
         }
     });
-    await new Promise((resolve) => server.listen(0, resolve));
+    // 只聽本機：唔好將 dist 開放畀同一個網絡嘅其他機（W-520）
+    await new Promise((resolve) => server.listen(0, LOOPBACK, resolve));
     return {
-        base: `http://localhost:${server.address().port}${BASE_PATH}`,
+        base: `http://${LOOPBACK}:${server.address().port}${BASE_PATH}`,
         /** 部署新版：之後 fetch 嘅 sw.js 唔同 */
         release: () => (revision += 1),
         close: () => new Promise((resolve) => server.close(resolve)),
