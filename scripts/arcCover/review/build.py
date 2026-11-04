@@ -58,7 +58,9 @@ DRAMA_SLUG = "_drama"
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 # cover：頁面 hash 用 `<drama>-cover` 代表整套劇；drama：fetch_sources 整套劇原圖檔名
 RESERVED_SLUGS = frozenset({"cover", "drama"})
-DISC_SUFFIX = "-disc.webp"
+# 短篇圖喺劇 folder 入面嘅 arcs/<slug>/<kind>.webp
+ARC_DIR = "arcs"
+ARC_DISC_PATTERN = re.compile(rf"^{ARC_DIR}/([^/]+)/disc\.webp$")
 KINDS = ("disc", "tile")
 MISSING_ORDER = 999
 # 碟面預覽：大碟右邊嗰幾個細碟裁走；背景色喺左下角（距左 2px、距底 3px）攞
@@ -157,8 +159,14 @@ def check_page_ids(dramas: list[dict]) -> None:
 
 
 def app_image_name(slug: str, kind: str) -> str:
-    """app 入面嘅檔名：整套劇 `disc.webp`，短篇 `<slug>-disc.webp`"""
-    return f"{kind}.webp" if slug == DRAMA_SLUG else f"{slug}-{kind}.webp"
+    """app 入面劇 folder 內嘅 path：整套劇 `disc.webp`，短篇 `arcs/<slug>/disc.webp`"""
+    return f"{kind}.webp" if slug == DRAMA_SLUG else f"{ARC_DIR}/{slug}/{kind}.webp"
+
+
+def arc_slug_of(disc: str) -> str | None:
+    """drama.json 短篇 `disc`（`arcs/<slug>/disc.webp`）→ slug；唔跟慣例 → None"""
+    match = ARC_DISC_PATTERN.match(disc)
+    return match.group(1) if match else None
 
 
 def arc_list(data: dict) -> list[tuple[str, str]]:
@@ -166,8 +174,9 @@ def arc_list(data: dict) -> list[tuple[str, str]]:
     arcs = [(DRAMA_SLUG, data["name"])]
     for arc in data.get("arcs", []):
         disc = arc.get("disc") or ""
-        if disc.endswith(DISC_SUFFIX):
-            arcs.append((check_slug(disc[: -len(DISC_SUFFIX)], f"{arc['name']} 嘅 disc slug"), arc["name"]))
+        slug = arc_slug_of(disc)
+        if slug is not None:
+            arcs.append((check_slug(slug, f"{arc['name']} 嘅 disc slug"), arc["name"]))
     return arcs
 
 

@@ -25,7 +25,7 @@ const SERIES = {
     arcUnit: 'season',
     addedAt: '2026-10-24',
     tile: 'tile.webp',
-    disc: 'season-1-disc.webp',
+    disc: 'arcs/season-1/disc.webp',
     audio: {
         host: 'r2',
         folder: '黃金少年',
@@ -35,8 +35,8 @@ const SERIES = {
     arcs: [
         {
             name: 'Season 1',
-            disc: 'season-1-disc.webp',
-            tile: 'season-1-tile.webp',
+            disc: 'arcs/season-1/disc.webp',
+            tile: 'arcs/season-1/tile.webp',
             episodes: 2,
         },
         { name: 'Season 2', episodes: ['前傳', null, '後傳'], firstNo: 0, addedAt: '2026-10-25' },
@@ -60,7 +60,12 @@ const DAILY = {
     episodes: [{ date: '2026-10-23' }, { date: '2025-08-13', rerun: true, file: 'old.m4a' }],
 };
 
-const FILES = new Set(['tile.webp', 'disc.webp', 'season-1-disc.webp', 'season-1-tile.webp']);
+const FILES = new Set([
+    'tile.webp',
+    'disc.webp',
+    'arcs/season-1/disc.webp',
+    'arcs/season-1/tile.webp',
+]);
 const ctx = (id: string) => ({
     id,
     source: `src/catalog/dramas/library/${id}/drama.json`,
@@ -91,8 +96,8 @@ describe('parseDramaDefinition', () => {
 
         const [s1, s2, s3] = def.arcs;
         expect(s1).toMatchObject({
-            disc: 'season-1-disc.webp',
-            tile: 'season-1-tile.webp',
+            disc: 'arcs/season-1/disc.webp',
+            tile: 'arcs/season-1/tile.webp',
             firstNo: 1,
             count: 2,
         });
@@ -166,6 +171,11 @@ describe('parseDramaDefinition', () => {
             'an arc tile not in the folder',
             seriesWith({ arcs: [{ name: 'S', tile: 'x.webp', episodes: 1 }] }),
             /arcs\[0\]\.tile: no file x\.webp/,
+        ],
+        [
+            'an arc disc outside the drama folder',
+            seriesWith({ arcs: [{ name: 'S', disc: '../golden/disc.webp', episodes: 1 }] }),
+            /arcs\[0\]\.disc: no file \.\.\/golden\/disc\.webp/,
         ],
         [
             'an unknown audio host',

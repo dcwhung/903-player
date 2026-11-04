@@ -21,7 +21,7 @@ const readJson = (url: URL): Json => JSON.parse(readFileSync(url, 'utf8')) as Js
 const dramaSchema = compileSchema('drama');
 const showSchema = compileSchema('show');
 
-const IMAGES = new Set(['tile.webp', 'disc.webp', 'arc-disc.webp', 'arc-tile.webp']);
+const IMAGES = new Set(['tile.webp', 'disc.webp', 'arcs/arc/disc.webp', 'arcs/arc/tile.webp']);
 const ctxOf = (files: Set<string> = IMAGES) => ({ id: 'sample', source: 'sample.json', files });
 
 const runtimeAccepts = (parse: Parser, value: unknown, files?: Set<string>): boolean => {
@@ -75,8 +75,8 @@ const SERIES: Json = {
     arcs: [
         {
             name: 'Season 1',
-            disc: 'arc-disc.webp',
-            tile: 'arc-tile.webp',
+            disc: 'arcs/arc/disc.webp',
+            tile: 'arcs/arc/tile.webp',
             addedAt: '2026-10-25',
             firstNo: 0,
             episodes: ['前傳', null, ''],

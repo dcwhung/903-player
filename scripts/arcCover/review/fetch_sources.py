@@ -21,7 +21,7 @@ from collections.abc import Callable
 from pathlib import Path
 from urllib.parse import quote
 
-from build import DEFAULT_WORK, DISC_SUFFIX, REPO_ROOT, check_slug
+from build import DEFAULT_WORK, REPO_ROOT, arc_slug_of, check_slug
 
 # 同 src/config/constants.ts DRAMA_AUDIO_BASE 一樣（test_fetch_sources 鎖住）
 R2_BASE = "https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev"
@@ -63,7 +63,7 @@ def targets(data: dict, slugs: dict[str, str]) -> list[tuple[str, list[str]]]:
     for arc in data.get("arcs", []):
         name = unicodedata.normalize("NFC", arc["name"])
         disc = arc.get("disc") or ""
-        slug = slugs.get(name) or (disc[: -len(DISC_SUFFIX)] if disc.endswith(DISC_SUFFIX) else None)
+        slug = slugs.get(name) or arc_slug_of(disc)
         if slug:
             found.append((check_slug(slug, f"{arc['name']} 嘅 slug"), [folder, arc["name"]]))
     return found

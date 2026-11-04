@@ -182,12 +182,12 @@
                 "disc": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "（optional）短篇自己嘅碟面圖：folder 內檔名；冇就用劇集碟面"
+                    "description": "（optional）短篇自己嘅碟面圖：folder 內相對 path，慣例 arcs/<slug>/disc.webp；冇就用劇集碟面"
                 },
                 "tile": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "（optional）短篇長方形圖：folder 內檔名（16:9，1216×684）；暫時未用，留底防將來要"
+                    "description": "（optional）短篇長方形圖：folder 內相對 path，慣例 arcs/<slug>/tile.webp（16:9，1216×684）；暫時未用，留底防將來要"
                 }
             }
         },

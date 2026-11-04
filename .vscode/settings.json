@@ -1,11 +1,11 @@
 {
     "json.schemas": [
         {
-            "fileMatch": ["/src/dramas/*/drama.json"],
+            "fileMatch": ["/src/catalog/dramas/library/*/drama.json"],
             "url": "./schemas/drama.schema.json"
         },
         {
-            "fileMatch": ["/src/shows/*/show.json"],
+            "fileMatch": ["/src/catalog/shows/library/*/show.json"],
             "url": "./schemas/show.schema.json"
         }
     ]

@@ -30,14 +30,14 @@
     "arcs": [
         {
             "name": "來不及聽你說愛我",
-            "disc": "too-late-disc.webp",
-            "tile": "too-late-tile.webp",
+            "disc": "arcs/too-late/disc.webp",
+            "tile": "arcs/too-late/tile.webp",
             "episodes": 10
         },
         {
             "name": "公子森林",
-            "disc": "forest-disc.webp",
-            "tile": "forest-tile.webp",
+            "disc": "arcs/forest/disc.webp",
+            "tile": "arcs/forest/tile.webp",
             "episodes": [
                 "秘撈",
                 "兩個危機",
@@ -83,14 +83,14 @@
         },
         {
             "name": "十九樓半的夏天",
-            "disc": "summer-disc.webp",
-            "tile": "summer-tile.webp",
+            "disc": "arcs/summer/disc.webp",
+            "tile": "arcs/summer/tile.webp",
             "episodes": 10
         },
         {
             "name": "森之愛情I - 森之聖誕",
-            "disc": "love-1-disc.webp",
-            "tile": "love-1-tile.webp",
+            "disc": "arcs/love-1/disc.webp",
+            "tile": "arcs/love-1/tile.webp",
             "episodes": [
                 "我的病人",
                 "十年後的答案",
@@ -106,14 +106,14 @@
         },
         {
             "name": "森之愛情II - 電燈膽",
-            "disc": "love-2-disc.webp",
-            "tile": "love-2-tile.webp",
+            "disc": "arcs/love-2/disc.webp",
+            "tile": "arcs/love-2/tile.webp",
             "episodes": 9
         },
         {
             "name": "森之聖誕2010",
-            "disc": "xmas-2010-disc.webp",
-            "tile": "xmas-2010-tile.webp",
+            "disc": "arcs/xmas-2010/disc.webp",
+            "tile": "arcs/xmas-2010/tile.webp",
             "episodes": [
                 "不會飛走的氣球",
                 "你在世界那邊",
@@ -134,8 +134,8 @@
         },
         {
             "name": "森美幻想劇",
-            "disc": "fantasy-disc.webp",
-            "tile": "fantasy-tile.webp",
+            "disc": "arcs/fantasy/disc.webp",
+            "tile": "arcs/fantasy/tile.webp",
             "episodes": 15
         }
     ]

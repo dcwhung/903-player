@@ -19,10 +19,12 @@ export interface FolderSource {
 }
 
 /** ../library/golden/drama.json → ['golden', 'drama.json']（glob 由 <domain>/lib/ 掃隔籬嘅 library/） */
-const FOLDER_FILE_PATTERN = /^\.\.\/library\/([^/]+)\/([^/]+)$/;
+const DEFINITION_KEY_PATTERN = /^\.\.\/library\/([^/]+)\/([^/]+)$/;
+/** ../library/golden/arcs/season-1/disc.webp → ['golden', 'arcs/season-1/disc.webp']：短篇圖放 sub-folder */
+const IMAGE_KEY_PATTERN = /^\.\.\/library\/([^/]+)\/((?:[^/]+\/)*[^/]+)$/;
 
-const splitKey = (key: string): [folder: string, file: string] => {
-    const match = FOLDER_FILE_PATTERN.exec(key);
+const splitKey = (key: string, pattern: RegExp): [folder: string, file: string] => {
+    const match = pattern.exec(key);
     if (!match?.[1] || !match[2]) throw new Error(`unexpected glob key ${key}`);
     return [match[1], match[2]];
 };
@@ -33,7 +35,7 @@ const imagesOf = (
 ): Record<string, string> =>
     Object.fromEntries(
         Object.entries(images)
-            .map(([key, url]) => [splitKey(key), url] as const)
+            .map(([key, url]) => [splitKey(key, IMAGE_KEY_PATTERN), url] as const)
             .filter(([[dir]]) => dir === folder)
             .map(([[, file], url]) => [file, url]),
     );
@@ -49,7 +51,7 @@ export const foldersFromGlobs = (
 ): FolderSource => ({
     folders: () =>
         Object.entries(definitions).map(([key, definition]) => {
-            const [id, file] = splitKey(key);
+            const [id, file] = splitKey(key, DEFINITION_KEY_PATTERN);
             return {
                 id,
                 source: `${sourceDir}/${id}/${file}`,

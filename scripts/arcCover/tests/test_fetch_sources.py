@@ -33,9 +33,9 @@ LANCY = {
     "name": "蘭茜夫人劇場",
     "audio": {"host": "r2", "folder": "蘭茜夫人劇場"},
     "arcs": [
-        {"name": "戀愛二分一", "disc": "half-disc.webp"},
+        {"name": "戀愛二分一", "disc": "arcs/half/disc.webp"},
         {"name": "未有碟面"},
-        {"name": "我心不死", "disc": "heart-disc.webp"},
+        {"name": "我心不死", "disc": "arcs/heart/disc.webp"},
     ],
 }
 

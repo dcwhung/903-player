@@ -8,7 +8,7 @@ describe('foldersFromGlobs', () => {
         },
         {
             '../library/golden/tile.webp': '/a/tile.webp',
-            '../library/golden/season-1-disc.webp': '/a/s1.webp',
+            '../library/golden/arcs/season-1/disc.webp': '/a/s1.webp',
             '../library/chisee/tile.webp': '/b/tile.webp',
         },
         'src/catalog/dramas/library',
@@ -20,7 +20,7 @@ describe('foldersFromGlobs', () => {
                 id: 'golden',
                 source: 'src/catalog/dramas/library/golden/drama.json',
                 definition: { name: '黃金少年' },
-                images: { 'tile.webp': '/a/tile.webp', 'season-1-disc.webp': '/a/s1.webp' },
+                images: { 'tile.webp': '/a/tile.webp', 'arcs/season-1/disc.webp': '/a/s1.webp' },
             },
             {
                 id: 'chisee',
@@ -45,7 +45,16 @@ describe('foldersFromGlobs', () => {
         });
     });
 
-    it('refuses a glob key that is not ../library/<folder>/<file>', () => {
+    it('keys an image in a sub-folder by its path inside the folder', () => {
+        const [golden] = foldersFromGlobs(
+            { '../library/golden/drama.json': {} },
+            { '../library/golden/arcs/season-1/disc.webp': '/a/s1.webp' },
+            'src/catalog/dramas/library',
+        ).folders();
+        expect(golden?.images).toEqual({ 'arcs/season-1/disc.webp': '/a/s1.webp' });
+    });
+
+    it('refuses a definition glob key that is not ../library/<folder>/<file>', () => {
         expect(() =>
             foldersFromGlobs({ '../library/deep/er/x.json': {} }, {}, 'src').folders(),
         ).toThrow('unexpected glob key ../library/deep/er/x.json');

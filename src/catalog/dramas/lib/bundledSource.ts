@@ -10,7 +10,7 @@ const definitions = import.meta.glob<unknown>('../library/*/drama.json', {
     eager: true,
     import: 'default',
 });
-const images = import.meta.glob<string>('../library/*/*.webp', {
+const images = import.meta.glob<string>('../library/*/**/*.webp', {
     eager: true,
     import: 'default',
     query: '?url',
