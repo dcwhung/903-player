@@ -5,8 +5,9 @@
     padding: 0 var(--home-gutter);
 }
 
-/* 主頁漸變底上面一條半透明深色膠囊，揀中嗰邊用主頁強調色（奶油黃） */
+/* 主頁漸變底上面一條半透明深色膠囊，揀中嗰邊由一粒主頁強調色（奶油黃）膠囊墊底 */
 .tabs {
+    position: relative;
     display: flex;
     gap: var(--home-tab-inset);
     padding: var(--home-tab-inset);
@@ -14,7 +15,29 @@
     background: var(--home-tab-track);
 }
 
+/* 成條軌道得一粒膠囊（_mockups_/elastic-tabs E2）：用 left / right 定位，換 tab 先可以兩邊分開郁 */
+.pill {
+    position: absolute;
+    top: var(--home-tab-inset);
+    bottom: var(--home-tab-inset);
+    border-radius: var(--radius-full);
+    background: var(--color-accent);
+    pointer-events: none;
+}
+
+.pill[data-tab='shows'] {
+    left: var(--home-tab-inset);
+    right: var(--home-tab-far);
+}
+
+.pill[data-tab='dramas'] {
+    left: var(--home-tab-far);
+    right: var(--home-tab-inset);
+}
+
+/* position: relative 令掣疊喺膠囊上面（同係 positioned，DOM 後面嘅喺上） */
 .tab {
+    position: relative;
     flex: 1 1 0;
     min-height: var(--home-tab-height);
     border: none;
@@ -26,7 +49,29 @@
 }
 
 .tab[aria-pressed='true'] {
-    background: var(--color-accent);
     color: var(--color-on-accent);
     font-weight: 700;
+}
+
+/*
+ * 拉長：前面嗰邊即刻郁，後面嗰邊遲 --home-tab-trail-delay 先跟，中途膠囊橫跨兩格再收入新 tab。
+ * 第一次顯示冇 data-direction，所以唔會滑入；要求減少動畫就冇 transition，即刻換
+ */
+@media (prefers-reduced-motion: no-preference) {
+    .tab {
+        transition: color var(--home-tab-label-fade) var(--ease-view-transition);
+    }
+
+    .pill[data-direction='right'] {
+        transition:
+            right var(--view-transition-move) var(--ease-view-transition),
+            left var(--view-transition-move) var(--ease-view-transition) var(--home-tab-trail-delay);
+    }
+
+    .pill[data-direction='left'] {
+        transition:
+            left var(--view-transition-move) var(--ease-view-transition),
+            right var(--view-transition-move) var(--ease-view-transition)
+                var(--home-tab-trail-delay);
+    }
 }
