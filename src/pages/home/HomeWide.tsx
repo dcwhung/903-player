@@ -8,7 +8,6 @@ import {
     SHOW_TILE_RATIO,
 } from '../../components/pages/home/HomeLandscapeGrid/fillShape';
 import { HomeFillGrid } from '../../components/pages/home/HomeLandscapeGrid/HomeFillGrid';
-import { HomePlayerCard } from '../../components/pages/home/HomePlayerCard/HomePlayerCard';
 import { HomePlayerHandle } from '../../components/pages/home/HomePlayerCard/HomePlayerHandle';
 import { HomeTabs } from '../../components/pages/home/HomeTabs/HomeTabs';
 import type { MiniPlayerProps } from '../../components/pages/home/MiniPlayer/MiniPlayer';
@@ -16,13 +15,12 @@ import { APP_VERSION } from '../../config/appVersion';
 import { useClosedHomePlayerCard } from '../../hooks/homePlayerCardClosed';
 import type { HomeTab } from '../../hooks/useHomeTab';
 import { t } from '../../i18n/t';
-import { withViewTransition } from '../../utils/viewTransition';
 import styles from './HomePage.module.css';
 import type { HomeLayoutMode } from './homeLayoutMode';
 import page from '../shared/Page.module.css';
-import { useHomeCardGauge } from './useHomeCardGauge';
 import { useHomeCardToggle } from './useHomeCardToggle';
-import { useHomeCardEpisodes } from './useHomeCardEpisodes';
+import { useCardMotion } from './useCardMotion';
+import { HomeWideCard } from './HomeWideCard';
 
 interface WideGridProps {
     tab: HomeTab;
@@ -65,34 +63,6 @@ const WideGrid = ({ tab, showTiles, dramaItems, busy, mode }: WideGridLayoutProp
     );
 };
 
-/**
- * 右邊播放卡：mini player 嘅節目 / 劇集，唱片格跟 useHomeCardGauge，下面係同內頁一樣嘅集數清單。
- * 入頁、收埋都用過場（View Transitions，減少動畫就即刻轉）
- */
-const SplitCard = ({ miniPlayer, onClose, focusOnMount }: SplitCardProps) => {
-    const gauge = useHomeCardGauge(miniPlayer);
-    const episodes = useHomeCardEpisodes(miniPlayer.keys[miniPlayer.index]);
-    const expand = () => withViewTransition(miniPlayer.onOpen, 'expand');
-    return (
-        <div className={styles.cardColumn}>
-            <HomePlayerCard
-                {...miniPlayer}
-                gauge={gauge}
-                episodes={episodes}
-                onExpand={expand}
-                onClose={onClose}
-                focusOnMount={focusOnMount}
-            />
-        </div>
-    );
-};
-
-interface SplitCardProps {
-    miniPlayer: MiniPlayerProps;
-    onClose: () => void;
-    focusOnMount: boolean;
-}
-
 interface HomeWideProps extends WideGridProps {
     mode: Exclude<HomeLayoutMode, 'stack'>;
     onTab: (tab: HomeTab) => void;
@@ -101,11 +71,13 @@ interface HomeWideProps extends WideGridProps {
 
 /**
  * 闊橫版主頁（WIDE_BANNER_QUERY）：冇橫額釘頂，tab 喺頂，下面填滿格；
- * 有 mini player 就右邊播放卡（split，底部冇 mini player），✕ 閂咗就全闊 + 右邊把手（fillWithHandle）
+ * 有 mini player 就右邊播放卡（split，底部冇 mini player），✕ 閂咗就全闊 + 右邊把手（fillWithHandle）。
+ * 張卡出現 / 換節目嘅過場見 useCardMotion：過場影舊畫面期間照顯示舊版面（mode）同舊卡（frozen）
  */
-export const HomeWide = ({ mode, onTab, miniPlayer, ...grid }: HomeWideProps) => {
+export const HomeWide = ({ mode: latestMode, onTab, miniPlayer, ...grid }: HomeWideProps) => {
     const toggle = useHomeCardToggle(miniPlayer);
     const closed = useClosedHomePlayerCard();
+    const { mode, frozen } = useCardMotion(latestMode, miniPlayer?.item);
     return (
         <main className={`${page.page} ${page.locked} ${styles.wide}`} data-layout={mode}>
             <div className={styles.gridColumn}>
@@ -113,10 +85,11 @@ export const HomeWide = ({ mode, onTab, miniPlayer, ...grid }: HomeWideProps) =>
                 <WideGrid {...grid} mode={mode} />
             </div>
             {mode === 'split' && miniPlayer && (
-                <SplitCard
+                <HomeWideCard
                     miniPlayer={miniPlayer}
                     onClose={toggle.close}
                     focusOnMount={toggle.focus === 'card'}
+                    frozen={frozen}
                 />
             )}
             {mode === 'fillWithHandle' && closed && (

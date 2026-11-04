@@ -17,20 +17,27 @@ describe('inner page view transition names', () => {
     });
 });
 
-/** 閂卡 / 開返：張卡成個縮入把手，入面嘅唱片格、名唔另外飛 */
+/**
+ * 閂卡：張卡成個縮入把手；開卡（P4 #3b O1）/ 換節目（S3）：成張卡一齊郁。
+ * 入面嘅唱片格、名唔另外飛
+ */
 describe('card ↔ handle morph', () => {
-    it('should drop the names inside the card while closing or reopening it', () => {
+    it('should drop the names inside the card while closing, opening or switching it', () => {
+        // prettier 將長 :is() 拆行：cssDeclarations 將空白壓成一格
         const selector =
-            "html:is([data-view-transition='close'], [data-view-transition='open']) [data-home-card] *";
+            "html:is( [data-view-transition='close'], [data-view-transition='open'], [data-view-transition='switch'] ) [data-home-card] *";
         expect(cssDeclarations(global, selector)['view-transition-name']).toBe('none !important');
     });
 
-    it('should give the handle the card’s name only while closing or reopening', () => {
-        const selector =
-            "html:is([data-view-transition='close'], [data-view-transition='open']) [data-home-handle]";
+    it('should give the handle the card’s name only while closing', () => {
+        const selector = "html[data-view-transition='close'] [data-home-handle]";
         expect(cssDeclarations(global, selector)['view-transition-name']).toBe(
             TRANSITION_NAME.panel,
         );
+    });
+
+    it('should not morph the handle into the card on open: the card slides in instead (O1)', () => {
+        expect(global).not.toMatch(/'open'\][^{]*\[data-home-handle\]/);
     });
 });
 

@@ -95,16 +95,88 @@ html[data-view-transition] main[data-player-page] h1 {
 }
 
 /*
- * 閂播放卡 / 開返：張卡（player-panel）同右邊把手同名，成個 group 由卡縮入把手（或者倒返轉）；
- * 卡入面嘅唱片格、節目名唔好自己另外飛（只有入頁 / 返主頁先用佢哋嘅名）
+ * 閂播放卡 / 開卡 / 換節目：成張卡一齊郁，卡入面嘅唱片格、節目名唔好自己另外飛
+ *（只有入頁 / 返主頁先用佢哋嘅名）
  */
-html:is([data-view-transition='close'], [data-view-transition='open']) [data-home-card] * {
+html:is(
+        [data-view-transition='close'],
+        [data-view-transition='open'],
+        [data-view-transition='switch']
+    )
+    [data-home-card]
+    * {
     view-transition-name: none !important;
 }
 
-/* 把手只喺閂卡 / 開返期間同張卡同名；平時冇名，由內頁返主頁時成頁唔會縮入把手（S-642） */
-html:is([data-view-transition='close'], [data-view-transition='open']) [data-home-handle] {
+/*
+ * 閂卡：張卡（player-panel）同右邊把手同名，成個 group 由卡縮入把手。
+ * 把手只喺閂卡期間有名；平時冇名，由內頁返主頁時成頁唔會縮入把手（S-642）。
+ * 開返唔再由把手變形：同其他開卡一樣由右 slide 入（P4 #3b O1），把手跟成頁淡走
+ */
+html[data-view-transition='close'] [data-home-handle] {
     view-transition-name: player-panel;
+}
+
+/*
+ * 開卡 / 換節目（useCardMotion）：名由卡本身搬去佢個 ThemeScope，連半浮喺卡角嘅 ✕ 一齊 slide 入 / 反轉。
+ * 入頁 / 返主頁（expand / back）照舊用卡本身嘅名
+ */
+html:is([data-view-transition='open'], [data-view-transition='switch'])
+    [data-theme-scope]:has(> [data-home-card]) {
+    view-transition-name: player-panel;
+}
+
+html:is([data-view-transition='open'], [data-view-transition='switch']) [data-home-card] {
+    view-transition-name: none !important;
+}
+
+/*
+ * 闊橫版主頁播放卡動畫（_mockups_/player-card-motion）：
+ * 開卡 O1 = 張卡（只有新畫面有）由右 slide 入 + 淡入，左邊 tab / 格仔照用排位過場收窄；
+ * 換節目 S3 = 成張卡反轉：前半舊卡轉走（ease-in），後半新卡轉返嚟。
+ * 減少動畫：JS 唔開過場（utils/viewTransition），呢度亦只喺冇要求減少動畫先有
+ */
+@media (prefers-reduced-motion: no-preference) {
+    html[data-view-transition='open']::view-transition-new(player-panel):only-child {
+        animation: card-open var(--view-transition-move) var(--ease-view-transition) both;
+    }
+
+    html[data-view-transition='switch']::view-transition-old(player-panel) {
+        animation: card-flip-out var(--card-flip-half) ease-in both;
+    }
+
+    html[data-view-transition='switch']::view-transition-new(player-panel) {
+        animation: card-flip-in var(--card-flip-half) var(--ease-view-transition)
+            var(--card-flip-half) both;
+    }
+}
+
+@keyframes card-open {
+    from {
+        transform: translateX(var(--card-open-offset));
+        opacity: 0;
+    }
+}
+
+@keyframes card-flip-out {
+    from {
+        transform: perspective(var(--card-flip-perspective)) rotateY(0deg);
+    }
+
+    to {
+        transform: perspective(var(--card-flip-perspective))
+            rotateY(calc(-1 * var(--card-flip-angle)));
+    }
+}
+
+@keyframes card-flip-in {
+    from {
+        transform: perspective(var(--card-flip-perspective)) rotateY(var(--card-flip-angle));
+    }
+
+    to {
+        transform: perspective(var(--card-flip-perspective)) rotateY(0deg);
+    }
 }
 
 /*
