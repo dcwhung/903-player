@@ -124,6 +124,23 @@ const openTab = async (ctx, url, errors) => {
 const checkForUpdate = (p) =>
     p.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.update());
 
+/** 新 SW 裝好喺 waiting（未 skipWaiting） */
+const readWaiting = (p) =>
+    p.evaluate(async () => Boolean((await navigator.serviceWorker.getRegistration())?.waiting));
+
+/** 等新 SW 裝好喺 waiting；等唔到 false */
+const waitForWaiting = (p) =>
+    p
+        .waitForFunction(
+            async () => Boolean((await navigator.serviceWorker.getRegistration())?.waiting),
+            undefined,
+            { timeout: CONTROLLER_WAIT_MS, polling: POLL_MS },
+        )
+        .then(
+            () => true,
+            () => false,
+        );
+
 /** 等到 tab load 夠 expected 次（等唔到就返回而家幾多次） */
 const waitForLoads = async (tab, expected, timeout = RELOAD_WAIT_MS) => {
     const deadline = Date.now() + timeout;
@@ -205,12 +222,15 @@ const checkPlaying = async (env, server) => {
     const before = tab.loads;
     server.release();
     await checkForUpdate(tab.p);
+    // update() resolve 嗰陣新 SW 仲 installing：等佢裝好喺 waiting 先快轉，否則未有新版就驗咗（W-519）
+    const detected = await waitForWaiting(tab.p);
     await setHidden(tab.p, true);
     await tab.p.clock.fastForward(GRACE_PLUS_MS);
     await tab.p.waitForTimeout(PLAYING_HOLD_MS);
+    const stillWaiting = await readWaiting(tab.p);
     env.log(
-        tab.loads === before,
-        `${label}：收埋 app 播緊嘢，過咗 grace period 都唔 reload（reload ${tab.loads - before} 次）`,
+        detected && stillWaiting && tab.loads === before,
+        `${label}：收埋 app 播緊嘢，新版裝好喺 waiting（${detected} → ${stillWaiting}），過咗 grace period 都唔換、唔 reload（reload ${tab.loads - before} 次）`,
     );
     // 鎖屏掣暫停：收埋咗都撳得（Playwright click 唔睇 visibilityState）
     await tab.p.getByRole('button', { name: '暫停', exact: true }).click();
