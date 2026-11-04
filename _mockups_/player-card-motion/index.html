@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>播放卡動畫</title>
+        <style>
+            /* 時間同 easing 跟 src/styles/tokens.css（--view-transition-*） */
+            :root {
+                --move: 520ms;
+                --fade: 260ms;
+                --delay: 200ms;
+                --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+                --stage-scale: 0.6;
+                --page: #f2f2f4;
+                --ink: #1c1c1e;
+                --note: #6b6b70;
+                --accent: #2f6fe4;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 24px 16px 48px;
+                background: var(--page);
+                color: var(--ink);
+                font-family: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+            }
+            h1 {
+                margin: 0 0 4px;
+                font-size: 22px;
+            }
+            p,
+            li {
+                color: var(--note);
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            .panel {
+                margin-bottom: 24px;
+                padding: 16px;
+                border-radius: 16px;
+                background: #fff;
+            }
+            .panel h2 {
+                margin: 0 0 8px;
+                font-size: 18px;
+            }
+            .buttons {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin: 8px 0 12px;
+            }
+            button.pick {
+                padding: 8px 14px;
+                border: 1px solid #d0d0d5;
+                border-radius: 999px;
+                background: #fff;
+                font: inherit;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            button.pick[aria-pressed='true'] {
+                border-color: var(--accent);
+                background: var(--accent);
+                color: #fff;
+            }
+            label {
+                font-size: 14px;
+                color: var(--note);
+            }
+            .viewport {
+                position: relative;
+                width: calc(1300px * var(--stage-scale));
+                height: calc(800px * var(--stage-scale));
+                max-width: 100%;
+                overflow: hidden;
+                border-radius: 12px;
+                box-shadow: 0 2px 12px rgb(0 0 0 / 15%);
+                background: #42658a;
+            }
+            .stage {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 1300px;
+                height: 800px;
+                transform: scale(var(--stage-scale));
+                transform-origin: 0 0;
+                background: url(grid.webp) left top / 1300px 800px no-repeat;
+            }
+            /* 主頁右邊播放卡位（同截圖一樣：x 832、y 24、444 × 758） */
+            .slot {
+                position: absolute;
+                left: 832px;
+                top: 24px;
+                width: 444px;
+                height: 758px;
+                perspective: 1600px;
+            }
+            .card {
+                position: absolute;
+                inset: 0;
+                border-radius: 36px;
+                background: center / cover no-repeat;
+                box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+                backface-visibility: hidden;
+            }
+            .a {
+                background-image: url(card-a.webp);
+            }
+            .b {
+                background-image: url(card-b.webp);
+            }
+            .hidden {
+                visibility: hidden;
+            }
+
+            /* ── 開卡：由冇卡變有卡 ── */
+            @keyframes open-slide {
+                from {
+                    transform: translateX(110%);
+                    opacity: 0;
+                }
+                to {
+                    transform: none;
+                    opacity: 1;
+                }
+            }
+            @keyframes open-rise {
+                from {
+                    transform: translateY(40px) scale(0.96);
+                    opacity: 0;
+                }
+                to {
+                    transform: none;
+                    opacity: 1;
+                }
+            }
+            @keyframes open-grow {
+                from {
+                    transform: scale(0.06, 0.4);
+                    transform-origin: 100% 50%;
+                    opacity: 0.4;
+                    border-radius: 120px;
+                }
+                to {
+                    transform: none;
+                    transform-origin: 100% 50%;
+                    opacity: 1;
+                }
+            }
+            .open-slide {
+                animation: open-slide var(--move) var(--ease) both;
+            }
+            .open-rise {
+                animation: open-rise var(--move) var(--ease) both;
+            }
+            .open-grow {
+                animation: open-grow var(--move) var(--ease) both;
+            }
+
+            /* ── 轉節目：A → B ── */
+            @keyframes fade-out {
+                to {
+                    opacity: 0;
+                }
+            }
+            @keyframes fade-in {
+                from {
+                    opacity: 0;
+                }
+            }
+            @keyframes slide-out {
+                to {
+                    transform: translateY(-60px);
+                    opacity: 0;
+                }
+            }
+            @keyframes slide-in {
+                from {
+                    transform: translateY(60px);
+                    opacity: 0;
+                }
+            }
+            @keyframes flip-out {
+                to {
+                    transform: rotateY(-90deg);
+                }
+            }
+            @keyframes flip-in {
+                from {
+                    transform: rotateY(90deg);
+                }
+            }
+            .x-fade-out {
+                animation: fade-out var(--fade) var(--ease) both;
+            }
+            .x-fade-in {
+                animation: fade-in var(--fade) var(--ease) var(--delay) both;
+            }
+            .x-slide-out {
+                animation: slide-out var(--fade) var(--ease) both;
+            }
+            .x-slide-in {
+                animation: slide-in var(--move) var(--ease) var(--delay) both;
+            }
+            .x-flip-out {
+                animation: flip-out calc(var(--move) / 2) ease-in both;
+            }
+            .x-flip-in {
+                animation: flip-in calc(var(--move) / 2) var(--ease) calc(var(--move) / 2) both;
+            }
+            .reduced * {
+                animation: none !important;
+            }
+            .caption {
+                margin-top: 8px;
+                font-size: 13px;
+                color: var(--note);
+            }
+        </style>
+    </head>
+    <body>
+        <h1>P4 #3b：右邊播放卡「開卡」同「轉節目」動畫</h1>
+        <p>
+            闊橫版 1300×800 縮細 0.6 倍；卡係 v1.23.1 真截圖（A = 今日節目、B =
+            公子會）。時間跟現有過場 token（移動 520ms、淡出 260ms、延遲 200ms）。撳掣播一次。
+        </p>
+
+        <section class="panel">
+            <h2>① 開卡：所有「由冇卡變有卡」</h2>
+            <p>
+                包括：開 app 主頁第一次出卡、主頁冇卡時撳廣播劇 ▶
+                繼續收聽、撳把手開返（而家已經係「由右淡入」，會統一用你揀嘅款）。<br />
+                由內頁返主頁唔郁：繼續用而家「內頁縮做卡 /
+                內頁把手放大做卡」。左邊格仔收窄沿用而家嘅排位過場。
+            </p>
+            <div class="buttons" id="open-buttons">
+                <button class="pick" data-open="open-slide">O1 由右 slide 入 + 淡入</button>
+                <button class="pick" data-open="open-rise">O2 由下浮起 + 淡入</button>
+                <button class="pick" data-open="open-grow">O3 由右邊緣（把手位）放大</button>
+            </div>
+            <div class="viewport">
+                <div class="stage">
+                    <div class="slot" id="open-slot">
+                        <div class="card a hidden" id="open-card"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>② 轉節目：播緊 A，喺左邊撳 B 開播</h2>
+            <p>
+                主頁原地開播嘅入口係廣播劇格嘅 ▶
+                繼續收聽（節目格係直接入節目頁）。張卡位置唔變，只係內容由 A 換做 B。
+            </p>
+            <div class="buttons" id="swap-buttons">
+                <button class="pick" data-swap="fade">S1 Crossfade</button>
+                <button class="pick" data-swap="slide">S2 舊卡向上淡出、新卡由下浮入</button>
+                <button class="pick" data-swap="flip">S3 成張卡反轉（翻牌）</button>
+            </div>
+            <div class="viewport">
+                <div class="stage">
+                    <div class="slot" id="swap-slot">
+                        <div class="card a" id="swap-a"></div>
+                        <div class="card b hidden" id="swap-b"></div>
+                    </div>
+                </div>
+            </div>
+            <p class="caption">再撳一次會由 B 轉返 A。</p>
+        </section>
+
+        <section class="panel">
+            <h2>③ 減少動態</h2>
+            <label
+                ><input type="checkbox" id="reduced" />
+                模擬系統「減少動態」：直接切換，冇動畫（同現有過場一樣）</label
+            >
+        </section>
+
+        <script>
+            const restart = (el, cls) => {
+                el.className = el.className
+                    .split(' ')
+                    .filter((c) => !c.startsWith('open-') && !c.startsWith('x-') && c !== 'hidden')
+                    .join(' ');
+                void el.offsetWidth;
+                if (cls) el.classList.add(cls);
+            };
+            const press = (group, btn) => {
+                group
+                    .querySelectorAll('button')
+                    .forEach((b) => b.setAttribute('aria-pressed', b === btn));
+            };
+            const openCard = document.getElementById('open-card');
+            const openButtons = document.getElementById('open-buttons');
+            openButtons.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                press(openButtons, btn);
+                restart(openCard, btn.dataset.open);
+            });
+
+            const swapButtons = document.getElementById('swap-buttons');
+            let showing = 'a';
+            swapButtons.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                press(swapButtons, btn);
+                const kind = btn.dataset.swap;
+                const from = document.getElementById(`swap-${showing}`);
+                showing = showing === 'a' ? 'b' : 'a';
+                const to = document.getElementById(`swap-${showing}`);
+                restart(from, `x-${kind}-out`);
+                restart(to, `x-${kind}-in`);
+                from.style.zIndex = 0;
+                to.style.zIndex = 1;
+                from.addEventListener('animationend', () => from.classList.add('hidden'), {
+                    once: true,
+                });
+                if (document.body.classList.contains('reduced')) from.classList.add('hidden');
+            });
+
+            document.getElementById('reduced').addEventListener('change', (e) => {
+                document.body.classList.toggle('reduced', e.target.checked);
+            });
+        </script>
+    </body>
+</html>
