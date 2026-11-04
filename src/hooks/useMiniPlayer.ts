@@ -13,6 +13,7 @@ import {
     miniPlayerTimeText,
     type MiniPlayerTag,
 } from '../selectors/miniPlayer';
+import { trackItem } from '../selectors/pageHandle';
 import { showsOnDate } from '../selectors/recordings';
 import { getProgress } from '../services/progressStore';
 import type { DramaEpisode } from '../types/drama';
@@ -110,6 +111,7 @@ const dramaMiniPlayer = (
     const label = dramaEpisodeLabel(episode);
     return {
         showName: name,
+        item: trackItem(episode),
         region: t('miniPlayer.regionDrama'),
         openLabel: t('miniPlayer.openDrama', { name }),
         theme: dramaEpisodeTheme(episode),
@@ -189,6 +191,7 @@ const showMiniPlayer = (
     return {
         ...listLabels(list, tags, index),
         showName: showName(current),
+        item: trackItem(current),
         theme: themeFor(current.showId),
         subtitle: miniPlayerSubtitle(current.date, timeText),
         timeText,

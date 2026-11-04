@@ -1,9 +1,11 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
-import { stubLandscape } from '../../../tests/landscape';
+import { stubLandscape, stubWideLandscape } from '../../../tests/landscape';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
-import { dramaArtFor, findDrama, seriesEpisodesOf } from '../../catalog/dramas';
+import { dramaArtFor, dramaEpisodeTheme, findDrama, seriesEpisodesOf } from '../../catalog/dramas';
+import { themeFor } from '../../catalog/shows';
+import { closeHomePlayerCard, openHomePlayerCard } from '../../hooks/homePlayerCardClosed';
 import { useMiniPlayer } from '../../hooks/useMiniPlayer';
 import { usePlayer } from '../../player/usePlayer';
 import { saveProgress } from '../../services/progressStore';
@@ -676,5 +678,67 @@ describe('DramaPage', () => {
         openDrama('nope');
 
         expect(screen.getByText('找不到此廣播劇')).toBeInTheDocument();
+    });
+    describe('right-edge handle on a wide landscape screen (P3 #4)', () => {
+        const HANDLE = /^(播放中|已暫停)：/;
+        const GONGZI_THEME = themeFor('gongzi');
+        beforeEach(() => stubWideLandscape());
+        afterEach(() => {
+            vi.unstubAllGlobals();
+            openHomePlayerCard();
+        });
+
+        it('should show a handle for another show that is playing, in its theme', async () => {
+            await openDramaWhileOtherPlays('chisee');
+            await closeSheet();
+
+            const handle = screen.getByRole('button', { name: '播放中：公子會，返回主頁' });
+            expect(within(handle).getByText('播放中')).toBeInTheDocument();
+            expect(handle.querySelector('img')).toHaveAttribute('src', GONGZI_THEME.art);
+        });
+
+        it('should have no handle while the page plays its own drama', async () => {
+            listenedBefore();
+            const { audio } = await openDramaAndPlay('chisee');
+            await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
+
+            expect(screen.queryByRole('button', { name: HANDLE })).not.toBeInTheDocument();
+        });
+
+        it('should show the card closed on the home page as paused', async () => {
+            closeHomePlayerCard({
+                theme: GONGZI_THEME,
+                showName: '公子會',
+                item: { kind: 'show', id: 'gongzi', date: '2026-10-17' },
+            });
+            listenedBefore();
+            openDrama('chisee');
+
+            const handle = await screen.findByRole('button', { name: '已暫停：公子會，返回主頁' });
+            expect(within(handle).getByText('已暫停')).toBeInTheDocument();
+        });
+
+        it('should have no handle for a closed card of this very drama', async () => {
+            const theme = dramaEpisodeTheme(CHISEE[0]!);
+            closeHomePlayerCard({
+                theme,
+                showName: '芝See菇Bi Family',
+                item: { kind: 'drama', id: 'chisee' },
+            });
+            listenedBefore();
+            openDrama('chisee');
+            await screen.findByRole('heading', { level: 1 });
+
+            expect(screen.queryByRole('button', { name: HANDLE })).not.toBeInTheDocument();
+        });
+
+        it('should go home when the handle is tapped', async () => {
+            await openDramaWhileOtherPlays('chisee');
+            await closeSheet();
+
+            await userEvent.click(screen.getByRole('button', { name: HANDLE }));
+
+            expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
+        });
     });
 });

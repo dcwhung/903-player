@@ -33,3 +33,29 @@ describe('card ↔ handle morph', () => {
         );
     });
 });
+
+/**
+ * 內頁有把手（播緊其他嘢，P3 #4）時返主頁：係把手放大做主頁播放卡，唔係成頁縮入去；
+ * 只限 back，主頁把手嘅閂卡 / 開返規則（S-642）唔郁
+ */
+describe('inner page handle → home card morph', () => {
+    const BACK = "html[data-view-transition='back']";
+    const WITH_HANDLE = `${BACK} main[data-player-page]:has([data-page-handle])`;
+
+    it.each([
+        ['the page', WITH_HANDLE],
+        ['its header and gauge', `${WITH_HANDLE} :is(h1, [data-player-gauge])`],
+    ])('should drop the names of %s while going back', (_, selector) => {
+        expect(cssDeclarations(global, selector)['view-transition-name']).toBe('none');
+    });
+
+    it('should give the page handle the card’s name while going back', () => {
+        expect(cssDeclarations(global, `${BACK} [data-page-handle]`)['view-transition-name']).toBe(
+            TRANSITION_NAME.panel,
+        );
+    });
+
+    it('should leave the home handle rules to close / open only', () => {
+        expect(global).not.toMatch(/'back'\][^{]*\[data-home-handle\]/);
+    });
+});

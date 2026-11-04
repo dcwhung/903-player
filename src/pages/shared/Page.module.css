@@ -39,6 +39,14 @@
     padding-left: env(safe-area-inset-left);
 }
 
+/*
+ * 闊橫版內頁右邊有把手（InnerPageHandle，播緊 / 暫停緊其他節目 / 劇集）：右邊預留把手嘅位，
+ * 同主頁閂咗卡（HomePage.module.css fillWithHandle）一樣；把手拆走就收返
+ */
+.fixed:has([data-page-handle]) {
+    padding-right: calc(env(safe-area-inset-right) + var(--home-handle-reserve));
+}
+
 .header {
     width: 100%;
     padding: 0 var(--space-3);
@@ -106,8 +114,11 @@
         grid-column: 2;
     }
 
-    /* 載入中 / 搵唔到節目：未有清單欄，播放器欄（頁頭 + 訊息）用晒成行，訊息喺正中 */
-    .playerColumn:only-child {
+    /*
+     * 載入中 / 搵唔到節目：未有清單欄，播放器欄（頁頭 + 訊息）用晒成行，訊息喺正中。
+     * 唔用 :only-child：闊橫版內頁把手（InnerPageHandle）都係 main 嘅子元素
+     */
+    .playerColumn:not(:has(~ .listColumn)) {
         grid-column: 1 / -1;
     }
 

@@ -1,11 +1,12 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../../package.json';
 import { PowerIcon } from '../../components/shared/common/icons/icons';
+import { stubWideLandscape } from '../../../tests/landscape';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
 import { dailyEpisodesOf, seriesEpisodesOf } from '../../catalog/dramas';
-import { openHomePlayerCard } from '../../hooks/homePlayerCardClosed';
+import { openHomePlayerCard, useClosedHomePlayerCard } from '../../hooks/homePlayerCardClosed';
 import { restoreMiniPlayer } from '../../hooks/miniPlayerDismissed';
 import { usePlayer } from '../../player/usePlayer';
 import { dailyNewestFirst, episodesInArc } from '../../selectors/dramas';
@@ -26,22 +27,6 @@ const RECORDINGS = [
     BADGIRL_TODAY,
     WANNI_TODAY,
 ];
-
-/**
- * 闊橫版（WIDE_BANNER_QUERY：打橫、≥ 640 闊、≥ 562 高）。
- * 手機打橫（max-height: 561px）同減少動畫唔符合
- */
-const stubWideLandscape = () => {
-    vi.stubGlobal(
-        'matchMedia',
-        vi.fn((query: string) => ({
-            matches: query.includes('landscape') && !query.includes('max-height'),
-            media: query,
-            addEventListener: vi.fn(),
-            removeEventListener: vi.fn(),
-        })),
-    );
-};
 
 /** 模擬喺其他頁播緊某集，再返主頁 */
 const PlayThenGoHome = ({ target }: { target: Track }) => {
@@ -175,6 +160,23 @@ describe('HomePage on a wide landscape screen', () => {
             expect(within(handle).getByText('已暫停')).toBeInTheDocument();
             expect(within(handle).getByText('雲妮鍾情')).toBeInTheDocument();
         });
+
+        it.each([
+            ['show', WANNI_TODAY, SHOW_CARD, { kind: 'show', id: 'wanni', date: '2026-10-19' }],
+            ['drama', seriesEpisodesOf('chisee')[0]!, DRAMA_CARD, { kind: 'drama', id: 'chisee' }],
+        ])(
+            'should remember which %s was closed, for the inner page handle',
+            async (_, track, region, item) => {
+                stubWideLandscape();
+                await arriveHomeWith(track);
+                await screen.findByRole('region', { name: region });
+
+                await userEvent.click(screen.getByRole('button', { name: CLOSE }));
+
+                const { result } = renderHook(() => useClosedHomePlayerCard());
+                expect(result.current?.item).toEqual(item);
+            },
+        );
 
         it('should use the mini player’s close icon on the corner button', async () => {
             stubWideLandscape();

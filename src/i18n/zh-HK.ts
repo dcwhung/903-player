@@ -107,6 +107,12 @@ export const zhHK = {
         reopen: '已暫停：{name}，打開播放器',
         pausedStatus: '已暫停',
     },
+    // 闊橫版內頁右邊把手（InnerPageHandle）：播緊 / 暫停緊其他節目 / 劇集，撳 = 返主頁
+    pageHandle: {
+        playingStatus: '播放中',
+        playing: '播放中：{name}，返回主頁',
+        paused: '已暫停：{name}，返回主頁',
+    },
     cardStack: {
         label: '今日節目，左右掃動轉節目',
         roleDescription: '節目卡疊',

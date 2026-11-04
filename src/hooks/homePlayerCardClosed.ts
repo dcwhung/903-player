@@ -1,4 +1,5 @@
 import type { ShowTheme } from '../config/showThemes';
+import type { PlayerItem } from '../types/playerItem';
 import { createValueStore } from './flagStore';
 import { useOnPlayStart } from './useOnPlayStart';
 
@@ -6,6 +7,8 @@ import { useOnPlayStart } from './useOnPlayStart';
 export interface ClosedPlayerCard {
     theme: ShowTheme;
     showName: string;
+    /** 閂咗嘅係邊個節目 / 劇集：內頁把手用嚟判斷係咪嗰頁自己嘅；唔知就照出把手 */
+    item?: PlayerItem;
 }
 
 /**

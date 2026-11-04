@@ -1,0 +1,86 @@
+/*
+ * 右邊緣把手（主頁閂咗卡 = 重開款式 ②；內頁播緊 / 暫停緊其他嘢 = _mockups_/inner-page-handle）：
+ * 喺預留嘅位入面，上下置中
+ */
+.handleScope {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+}
+
+.handle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    width: var(--home-handle-width);
+    height: var(--home-handle-height);
+    padding: var(--space-3) 0;
+    overflow: hidden;
+    border: none;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    background: var(--color-bg);
+    box-shadow: var(--shadow-home-handle);
+    color: var(--color-title);
+}
+
+/*
+ * 「已暫停」：比名細一級、muted 色，喺碟上面；flex: none 唔會俾長名擠走（_mockups_/home-handle-paused 方案 B）。
+ * 唔用 vertical-rl：flex: none 嘅直寫元素靠字型 vertical metrics 量高度，冇呢啲 metrics 嘅字型會量出 0 高；
+ * 改為 1em 闊、每個字自己一行，中文字直排效果一樣
+ */
+.handleStatus {
+    flex: none;
+    width: 1em;
+    font-size: var(--font-size-2xs);
+    font-weight: 500;
+    line-height: var(--home-handle-status-line);
+    text-align: center;
+    overflow-wrap: anywhere;
+    color: var(--color-text-muted);
+}
+
+/* 內頁把手：播緊就「播放中」，用主題播緊嘅色（淺色底已另設夠對比嘅 accent text） */
+.handleStatus[data-status='playing'] {
+    color: var(--color-status-playing);
+}
+
+.handleDisc {
+    flex-shrink: 0;
+    width: var(--home-handle-disc);
+    height: var(--home-handle-disc);
+    border-radius: var(--radius-full);
+    object-fit: cover;
+}
+
+.handleName {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    /* button 預設 text-align: center，直寫會將名喺剩餘高度上下置中，同碟隔得太遠：貼返碟下面 */
+    text-align: start;
+    writing-mode: vertical-rl;
+}
+
+/* 內頁把手：播緊嘅變咗係呢頁自己嘅嘢 → 先淡出，animationend 先拆走（InnerPageHandle），預留位跟住收 */
+.handle[data-leaving] {
+    animation: handle-fade-out var(--duration-page-handle-fade) var(--ease-view-transition) both;
+}
+
+@keyframes handle-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+/* 減少動畫：JS 已經即刻拆走唔淡出（prefersReducedMotion）；保險起見 CSS 都唔郁 */
+@media (prefers-reduced-motion: reduce) {
+    .handle[data-leaving] {
+        animation: none;
+    }
+}

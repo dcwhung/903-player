@@ -3,6 +3,7 @@ import { PageDots } from '../../components/shared/common/PageDots/PageDots';
 import { PageHeader } from '../../components/shared/common/PageHeader/PageHeader';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import { TodayShowList } from '../../components/pages/today/TodayShowList/TodayShowList';
+import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { LANDSCAPE_QUERY, SHORT_LANDSCAPE_QUERY } from '../../config/layout';
 import { useGoHome } from '../../hooks/useGoHome';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -10,6 +11,8 @@ import { t } from '../../i18n/t';
 import page from '../shared/Page.module.css';
 import { TodayPlayerColumn } from './TodayPlayerColumn';
 import { useTodayPage } from './useTodayPage';
+
+const TODAY_PAGE = { kind: 'today' } as const;
 
 /** 今日頁頭（大字 h1）；手機打橫指示點搬上右邊 */
 const TodayHeader = ({ trailing }: { trailing: ReactNode }) => {
@@ -60,6 +63,7 @@ export const TodayPage = () => {
                         <TodayShowList items={items} onSelect={state.selectShow} />
                     </div>
                 )}
+                <InnerPageHandle page={TODAY_PAGE} />
             </main>
         </ThemeScope>
     );
