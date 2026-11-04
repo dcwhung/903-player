@@ -50,14 +50,18 @@
     text-overflow: ellipsis;
 }
 
-/* 今日 / 重溫標籤：同 mini player（MiniPlayer.module.css .tag）一樣大細同顏色 */
+/*
+ * 今日 / 重溫標籤：同 mini player（MiniPlayer.module.css .tag）一樣顏色。
+ * 播放卡只喺橫版大畫面出（--ui-scale 1.3 / 1.5 放大字）：行高同上下內邊要跟住放大，
+ * 唔係字高大過行高，上下冇留白、字頂住膠囊邊（3a）
+ */
 .tag {
     flex-shrink: 0;
-    padding: 0 var(--space-1);
+    padding: calc(var(--new-badge-pad-block) * var(--ui-scale)) var(--space-2);
     border-radius: var(--radius-full);
     font-size: var(--font-size-2xs);
     font-weight: 700;
-    line-height: var(--new-badge-line);
+    line-height: calc(var(--new-badge-line) * var(--ui-scale));
     white-space: nowrap;
 }
 
