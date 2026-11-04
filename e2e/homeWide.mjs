@@ -127,12 +127,13 @@ const checkCardTag = async (p, log, label, kind) => {
     const m = await tag.evaluate((el) => {
         const s = getComputedStyle(el);
         const r = el.getBoundingClientRect();
-        const h = el.closest('button').getBoundingClientRect();
+        // 頁頭列唔再係 <button> 都只係記一項失敗，唔好成個 section throw
+        const h = el.closest('button')?.getBoundingClientRect();
         return {
             font: parseFloat(s.fontSize),
             line: parseFloat(s.lineHeight),
-            pad: parseFloat(s.paddingTop),
-            inside: r.top >= h.top && r.bottom <= h.bottom,
+            pad: Math.min(parseFloat(s.paddingTop), parseFloat(s.paddingBottom)),
+            inside: Boolean(h) && r.top >= h.top && r.bottom <= h.bottom,
         };
     });
     log(
