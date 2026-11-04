@@ -27,7 +27,7 @@ const SIZED = '@supports (height: 1cqh) or (height: 100dvh)';
 describe('player disc sizing source (W-390)', () => {
     it('should make the full-page theme scope a size container that fills the shell', () => {
         const scope = cssDeclarations(
-            css('../components/ThemeScope/ThemeScope.module.css'),
+            css('../components/shared/common/ThemeScope/ThemeScope.module.css'),
             '.scope',
         );
 

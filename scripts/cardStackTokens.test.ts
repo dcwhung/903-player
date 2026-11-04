@@ -3,7 +3,7 @@
 // 而 Node 型別只屬 tsconfig.scripts-test.json（scripts/*.test.ts），唔會漏入 app 程式（tsconfig.app.json）
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { CARD_FLY_MS, CARD_SPRING_MS } from '../src/components/ShowCardStack/cardStack';
+import { CARD_FLY_MS, CARD_SPRING_MS } from '../src/components/pages/today/ShowCardStack/cardStack';
 
 const tokensCss = readFileSync(
     fileURLToPath(new URL('../src/styles/tokens.css', import.meta.url)),

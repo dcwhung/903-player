@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
 import type { RecordingsProber } from '../data/RecordingsProvider';
-import { dramaArtFor, dramaThemeFor, seriesEpisodesOf } from '../dramas';
+import { dramaArtFor, dramaThemeFor, seriesEpisodesOf } from '../catalog/dramas';
 import type { SeriesEpisode } from '../types/drama';
 import { saveProgress } from '../services/progressStore';
 import { usePlayer } from '../player/usePlayer';

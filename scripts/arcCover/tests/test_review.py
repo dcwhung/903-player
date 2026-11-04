@@ -42,9 +42,9 @@ LANCY = {
     "order": 3,
     "audio": {"host": "r2", "folder": "蘭茜夫人劇場"},
     "arcs": [
-        {"name": "戀愛二分一", "disc": "half-disc.webp", "tile": "half-tile.webp"},
+        {"name": "戀愛二分一", "disc": "arcs/half/disc.webp", "tile": "arcs/half/tile.webp"},
         {"name": "未有碟面"},
-        {"name": "我心不死", "disc": "heart-disc.webp"},
+        {"name": "我心不死", "disc": "arcs/heart/disc.webp"},
     ],
 }
 
@@ -79,7 +79,7 @@ class PureTest(unittest.TestCase):
 
     def test_app_image_name_should_prefix_arc_slug(self) -> None:
         self.assertEqual(app_image_name(DRAMA_SLUG, "disc"), "disc.webp")
-        self.assertEqual(app_image_name("heart", "tile"), "heart-tile.webp")
+        self.assertEqual(app_image_name("heart", "tile"), "arcs/heart/tile.webp")
 
     def test_arc_list_should_keep_drama_first_and_skip_arcs_without_disc(self) -> None:
         expected = [(DRAMA_SLUG, "蘭茜夫人劇場"), ("half", "戀愛二分一"), ("heart", "我心不死")]
@@ -145,7 +145,7 @@ class BuildTest(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory()
         root = Path(self._tmp.name)
         self.repo = root / "repo"
-        drama_dir = self.repo / "src" / "dramas" / "lancy"
+        drama_dir = self.repo / "src" / "catalog" / "dramas" / "library" / "lancy"
         drama_dir.mkdir(parents=True)
         (drama_dir / "drama.json").write_text(json.dumps(LANCY, ensure_ascii=False), encoding="utf-8")
         work = root / "work"
@@ -196,8 +196,10 @@ class BuildTest(unittest.TestCase):
     def test_build_should_render_current_image_previews(self) -> None:
         art = np.zeros((90, 160, 3), np.uint8)
         art[:, :80] = (250, 40, 40)
-        for name in ("heart-disc.webp", "heart-tile.webp"):
-            Image.fromarray(art).save(self.repo / "src" / "dramas" / "lancy" / name)
+        lancy = self.repo / "src" / "catalog" / "dramas" / "library" / "lancy"
+        (lancy / "arcs" / "heart").mkdir(parents=True)
+        for name in ("arcs/heart/disc.webp", "arcs/heart/tile.webp"):
+            Image.fromarray(art).save(lancy / name)
         build(self.paths)
         current = json.loads((self.paths.site / "rounds.json").read_text(encoding="utf-8"))["dramas"][0][
             "arcs"
@@ -216,8 +218,8 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(copied.read_bytes(), b"JPG")
 
     def test_build_should_reject_unsafe_slugs(self) -> None:
-        bad = {**LANCY, "arcs": [{"name": "x", "disc": "cover-disc.webp"}]}
-        drama_json = self.repo / "src" / "dramas" / "lancy" / "drama.json"
+        bad = {**LANCY, "arcs": [{"name": "x", "disc": "arcs/cover/disc.webp"}]}
+        drama_json = self.repo / "src" / "catalog" / "dramas" / "library" / "lancy" / "drama.json"
         drama_json.write_text(json.dumps(bad, ensure_ascii=False), encoding="utf-8")
         with self.assertRaises(SystemExit):
             build(self.paths)

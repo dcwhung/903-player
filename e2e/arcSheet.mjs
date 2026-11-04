@@ -7,13 +7,13 @@ const SIZE = `${PHONE.width}×${PHONE.height}`;
 // 短篇劇集（kind: series）：第一次入頁冇進度，全集表會自己彈出
 const DRAMA_ROUTE = '#/drama/chisee';
 // 以下 export 嘅常數係手抄 src（e2e 係純 node，import 唔到 TS），由 src/e2eSrcConstants.test.ts 鎖住一致
-// 拉過表高咁多先閂（src/components/ArcSheet/sheetDrag.ts SHEET_DISMISS_RATIO）
+// 拉過表高咁多先閂（src/components/pages/drama/ArcSheet/sheetDrag.ts SHEET_DISMISS_RATIO）
 export const SHEET_DISMISS_RATIO = 0.25;
-// 速度只計放手前咁多 ms 入面嘅樣本（src/components/ShowCardStack/cardStack.ts VELOCITY_WINDOW_MS）
+// 速度只計放手前咁多 ms 入面嘅樣本（src/components/pages/today/ShowCardStack/cardStack.ts VELOCITY_WINDOW_MS）
 export const VELOCITY_WINDOW_MS = 100;
 // 清單路要郁過咁多 px 先睇得出方向、由表接手（src/hooks/swipe.ts DRAG_INTENT_PX）
 export const DRAG_INTENT_PX = 10;
-// 放手前向下甩得咁快（px/ms）兼拉過咁多 px，唔夠距離都閂（src/components/ArcSheet/sheetDrag.ts）
+// 放手前向下甩得咁快（px/ms）兼拉過咁多 px，唔夠距離都閂（src/components/pages/drama/ArcSheet/sheetDrag.ts）
 export const SHEET_FLICK_VELOCITY_PX_PER_MS = 0.6;
 export const SHEET_FLICK_MIN_PX = 24;
 // 拉唔夠：門檻一半，肯定彈返

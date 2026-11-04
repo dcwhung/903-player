@@ -18,9 +18,9 @@ describe('player gauge aspect ratio', () => {
     });
 
     it.each([
-        'components/PlayerPanel/PlayerPanel.module.css',
-        'components/ShowCardStack/ShowCardStack.module.css',
-        'components/TodayEmpty/TodayEmpty.module.css',
+        'components/shared/player/PlayerPanel/PlayerPanel.module.css',
+        'components/pages/today/ShowCardStack/ShowCardStack.module.css',
+        'components/pages/today/TodayEmpty/TodayEmpty.module.css',
     ])('sizes .gauge in %s with the tokens', (file) => {
         const gauge = cssDeclarations(readCss(new URL(file, SRC)), '.gauge');
 

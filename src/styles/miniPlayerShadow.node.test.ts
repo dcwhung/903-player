@@ -4,7 +4,7 @@ import { cssDeclarations, readCss } from '../../tests/cssRule';
 
 const tokens = readCss(new URL('./tokens.css', import.meta.url));
 const miniPlayer = readCss(
-    new URL('../components/MiniPlayer/MiniPlayer.module.css', import.meta.url),
+    new URL('../components/pages/home/MiniPlayer/MiniPlayer.module.css', import.meta.url),
 );
 const rootTokens = cssDeclarations(tokens, ':root, [data-theme-scope]');
 // 主頁 mini player 卡底離 viewport 底最少嘅距離（iOS viewport 矮咗、安全區扣晒時）= --space-2

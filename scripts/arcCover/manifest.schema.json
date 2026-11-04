@@ -37,7 +37,10 @@
                 "numpy": { "type": "string" }
             }
         },
-        "drama": { "$ref": "#/definitions/slug", "description": "廣播劇 id（src/dramas/<id>）" },
+        "drama": {
+            "$ref": "#/definitions/slug",
+            "description": "廣播劇 id（src/catalog/dramas/library/<id>）"
+        },
         "arc": {
             "description": "短篇 slug；廣播劇本身封面係 null",
             "oneOf": [{ "$ref": "#/definitions/slug" }, { "type": "null" }]

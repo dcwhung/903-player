@@ -20,10 +20,13 @@ describe('short-height breakpoint', () => {
     });
 
     it.each([
-        ['Page.module.css', '../pages/Page.module.css'],
-        ['HomePage.module.css', '../pages/HomePage.module.css'],
-        ['ShowCardStack.module.css', '../components/ShowCardStack/ShowCardStack.module.css'],
-        ['DateStrip.module.css', '../components/DateStrip/DateStrip.module.css'],
+        ['Page.module.css', '../pages/shared/Page.module.css'],
+        ['HomePage.module.css', '../pages/home/HomePage.module.css'],
+        [
+            'ShowCardStack.module.css',
+            '../components/pages/today/ShowCardStack/ShowCardStack.module.css',
+        ],
+        ['DateStrip.module.css', '../components/shared/player/DateStrip/DateStrip.module.css'],
     ])('should keep %s fixed at every height (no short-height override)', (_name, path) => {
         const css = readCss(new URL(path, import.meta.url));
 

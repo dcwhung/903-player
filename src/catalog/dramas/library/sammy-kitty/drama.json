@@ -1,0 +1,142 @@
+{
+    "name": "森美小儀系列",
+    "kind": "series",
+    "enabled": true,
+    "order": 4,
+    "addedAt": "2026-10-26",
+    "tile": "tile.webp",
+    "disc": "disc.webp",
+    "audio": {
+        "host": "r2",
+        "folder": "森美小儀系列",
+        "file": "{no2} - {arc} - 第{noZh}集[ - {title}].m4a"
+    },
+    "theme": {
+        "bg": "#ffe3e3",
+        "surface": "#fff1f1",
+        "track": "#f3b9b9",
+        "accent": "#e7010e",
+        "onAccent": "#ffffff",
+        "title": "#b00010",
+        "accentText": "#b00010",
+        "text": "#2e0f12",
+        "muted": "#7d3c40",
+        "shadowDark": "#e9b7b7",
+        "shadowLight": "#fff8f8",
+        "scheme": "light",
+        "statusBar": "#b00010",
+        "headerRule": "linear-gradient(90deg, #e7010e, #1a1a1a) 0 100% / 100% 3px no-repeat"
+    },
+    "arcs": [
+        {
+            "name": "來不及聽你說愛我",
+            "disc": "arcs/too-late/disc.webp",
+            "tile": "arcs/too-late/tile.webp",
+            "episodes": 10
+        },
+        {
+            "name": "公子森林",
+            "disc": "arcs/forest/disc.webp",
+            "tile": "arcs/forest/tile.webp",
+            "episodes": [
+                "秘撈",
+                "兩個危機",
+                "選擇困難",
+                "愛屋及烏",
+                "童年",
+                "單純",
+                "文藝青年神經",
+                "教科書與八卦雜誌",
+                "經常性男性幻想",
+                "踩單車愛情論",
+                "信不信緣份",
+                "楊過與小龍女",
+                "講大話的藝術",
+                "攞著數",
+                "愛情二五仔",
+                "理智不理智",
+                "傑仔崩潰",
+                "真相大白",
+                "整定",
+                "約定",
+                "開心防衛系統",
+                "齊人之福",
+                "重回單身",
+                "袋鼠死的疑問",
+                "上天堂",
+                "冷戰",
+                "空櫃桶",
+                "Mama的秘密",
+                "Mama的故事",
+                "薰衣草味道",
+                "Lavender走了",
+                "白海娟的決定",
+                "兩張紙巾",
+                "Sandra & Mama",
+                "浪費的愛情",
+                "Sandra BB",
+                "悼念",
+                "再見",
+                "大結局？",
+                "Fly me to the moon"
+            ]
+        },
+        {
+            "name": "十九樓半的夏天",
+            "disc": "arcs/summer/disc.webp",
+            "tile": "arcs/summer/tile.webp",
+            "episodes": 10
+        },
+        {
+            "name": "森之愛情I - 森之聖誕",
+            "disc": "arcs/love-1/disc.webp",
+            "tile": "arcs/love-1/tile.webp",
+            "episodes": [
+                "我的病人",
+                "十年後的答案",
+                "兩個人的聖誕",
+                "我愛土瓜灣",
+                "滿天星",
+                "My Cup Of Coffee",
+                "我好愛你",
+                "45度的Bunny",
+                "想愛不相愛",
+                "Magic Eleven"
+            ]
+        },
+        {
+            "name": "森之愛情II - 電燈膽",
+            "disc": "arcs/love-2/disc.webp",
+            "tile": "arcs/love-2/tile.webp",
+            "episodes": 9
+        },
+        {
+            "name": "森之聖誕2010",
+            "disc": "arcs/xmas-2010/disc.webp",
+            "tile": "arcs/xmas-2010/tile.webp",
+            "episodes": [
+                "不會飛走的氣球",
+                "你在世界那邊",
+                "不死心",
+                "我的公園女王",
+                "愛情狗仔隊",
+                "斯德哥爾摩症候群",
+                "提神咖啡",
+                "兒嬉愛情",
+                "我的家",
+                "我的主診醫生",
+                "聖誕小屋",
+                "聖誕再造爸爸",
+                "兩個男人",
+                "聖誕村",
+                "愛情保險"
+            ]
+        },
+        {
+            "name": "森美幻想劇",
+            "disc": "arcs/fantasy/disc.webp",
+            "tile": "arcs/fantasy/tile.webp",
+            "episodes": 15
+        }
+    ]
+}

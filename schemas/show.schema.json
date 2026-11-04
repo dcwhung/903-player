@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "903 Player 節目（show.json）",
-    "description": "一個 folder = 一個 903 節目（src/shows/<id>/show.json）。runtime 驗證喺 src/shows/schema.ts；圖檔要真係喺 folder 入面、folder 名要係細楷英數同連字號，呢兩樣淨係 runtime 驗。",
+    "description": "一個 folder = 一個 903 節目（src/catalog/shows/library/<id>/show.json）。runtime 驗證喺 src/catalog/shows/lib/schema.ts；圖檔要真係喺 folder 入面、folder 名要係細楷英數同連字號，呢兩樣淨係 runtime 驗。",
     "type": "object",
     "required": ["name", "fileTime", "airDays", "tile", "disc", "theme"],
     "additionalProperties": false,

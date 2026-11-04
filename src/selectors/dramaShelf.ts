@@ -1,4 +1,4 @@
-import type { DramaConfig } from '../dramas';
+import type { DramaConfig } from '../catalog/dramas';
 import type { Progress } from '../services/progressStore';
 import type { DramaEpisode } from '../types/drama';
 

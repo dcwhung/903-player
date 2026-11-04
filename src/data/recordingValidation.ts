@@ -1,5 +1,5 @@
 import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
-import { SHOWS } from '../shows';
+import { SHOWS } from '../catalog/shows';
 import type { Recording } from '../types/recording';
 import { isCalendarDate } from '../utils/date';
 

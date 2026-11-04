@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, type NavigateOptions } from 'react-router-dom';
-import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
-import { dramaEpisodeTheme, findDrama } from '../dramas';
-import { findShow, themeFor } from '../shows';
+import type { MiniPlayerProps } from '../components/pages/home/MiniPlayer/MiniPlayer';
+import { dramaEpisodeTheme, findDrama } from '../catalog/dramas';
+import { findShow, themeFor } from '../catalog/shows';
 import { useRecordings } from '../data/useRecordings';
 import { usePlayer } from '../player/usePlayer';
 import { dramaEpisodeLabel } from '../selectors/dramas';

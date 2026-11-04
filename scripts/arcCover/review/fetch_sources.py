@@ -21,7 +21,7 @@ from collections.abc import Callable
 from pathlib import Path
 from urllib.parse import quote
 
-from build import DEFAULT_WORK, DISC_SUFFIX, REPO_ROOT, check_slug
+from build import DEFAULT_WORK, REPO_ROOT, arc_slug_of, check_slug
 
 # 同 src/config/constants.ts DRAMA_AUDIO_BASE 一樣（test_fetch_sources 鎖住）
 R2_BASE = "https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev"
@@ -63,7 +63,7 @@ def targets(data: dict, slugs: dict[str, str]) -> list[tuple[str, list[str]]]:
     for arc in data.get("arcs", []):
         name = unicodedata.normalize("NFC", arc["name"])
         disc = arc.get("disc") or ""
-        slug = slugs.get(name) or (disc[: -len(DISC_SUFFIX)] if disc.endswith(DISC_SUFFIX) else None)
+        slug = slugs.get(name) or arc_slug_of(disc)
         if slug:
             found.append((check_slug(slug, f"{arc['name']} 嘅 slug"), [folder, arc["name"]]))
     return found
@@ -102,7 +102,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("drama", help="src/dramas/<id>")
+    parser.add_argument("drama", help="src/catalog/dramas/library/<id>")
     parser.add_argument("--work", type=Path, default=DEFAULT_WORK, help=f"work 資料夾（預設 {DEFAULT_WORK}）")
     parser.add_argument(
         "--arc", action="append", default=[], help="未有碟面嘅短篇：「短篇名=slug」，可以重複"
@@ -127,7 +127,7 @@ def fetch_all(args: argparse.Namespace, data: dict, run: Runner) -> int:
 
 def main(argv: list[str], run: Runner = subprocess.run) -> int:
     args = parse_args(argv)
-    data = json.loads((args.repo / "src" / "dramas" / args.drama / "drama.json").read_text(encoding="utf-8"))
+    data = json.loads((args.repo / "src" / "catalog" / "dramas" / "library" / args.drama / "drama.json").read_text(encoding="utf-8"))
     if data["audio"].get("host") != "r2":
         print(f"error: {args.drama} 唔係放喺 R2（audio.host = {data['audio'].get('host')}）", file=sys.stderr)
         return EXIT_MISSING

@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode, useState, type ReactNode } from 'react';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
-import { seriesEpisodesOf } from '../dramas';
+import { seriesEpisodesOf } from '../catalog/dramas';
 import { PlayerContext, type PlayerContextValue } from '../player/playerContext';
 import { usePlayer } from '../player/usePlayer';
 import type { Recording } from '../types/recording';

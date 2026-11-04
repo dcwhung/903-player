@@ -126,7 +126,7 @@
     --arc-sheet-row-height: calc(64px * var(--ui-scale));
     --arc-sheet-ring: calc(52px * var(--ui-scale));
     --arc-sheet-z: 10;
-    /* 向下拉閂：放手後滑走 / 彈返嘅時間（同 src/components/ArcSheet/sheetDrag.ts SHEET_SLIDE_MS 一致） */
+    /* 向下拉閂：放手後滑走 / 彈返嘅時間（同 src/components/pages/drama/ArcSheet/sheetDrag.ts SHEET_SLIDE_MS 一致） */
     --arc-sheet-slide-ms: 250ms;
     /*
      * 碟面圓環細節：外圈進度環粗幼、碟面底「1/4」pill（字、行高、
@@ -240,7 +240,7 @@
     --mini-player-height-single: calc(var(--touch-target) + var(--space-4) * 2);
     /*
      * mini player 長按 → 左滑關閉（useDismissGesture）：撳住縮少少、浮起大少少；
-     * 時間同 src/components/MiniPlayer/miniPlayerDismiss.ts LONG_PRESS_MS / DISMISS_SLIDE_MS 一致
+     * 時間同 src/components/pages/home/MiniPlayer/miniPlayerDismiss.ts LONG_PRESS_MS / DISMISS_SLIDE_MS 一致
      */
     --mini-press-scale: 0.97;
     --mini-lift-scale: 1.02;

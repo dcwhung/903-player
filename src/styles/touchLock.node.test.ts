@@ -11,9 +11,9 @@ import {
 
 const css = (path: string) => readCss(new URL(path, import.meta.url));
 const SHORT_HEIGHT_MEDIA = `(max-height: ${e2eShortHeightPx()}px)`;
-const STACK_CSS = '../components/ShowCardStack/ShowCardStack.module.css';
-const STRIP_CSS = '../components/DateStrip/DateStrip.module.css';
-const DRAMA_CSS = '../components/DramaShelf/DramaShelf.module.css';
+const STACK_CSS = '../components/pages/today/ShowCardStack/ShowCardStack.module.css';
+const STRIP_CSS = '../components/shared/player/DateStrip/DateStrip.module.css';
+const DRAMA_CSS = '../components/pages/home/DramaShelf/DramaShelf.module.css';
 
 /*
  * iOS standalone PWA：成頁唔可以捲 / 橡筋，只有清單 panel 自己捲；
@@ -39,8 +39,8 @@ describe('iOS touch lock', () => {
     });
 
     it('should make the full-page theme scope and locked main fill the shell exactly', () => {
-        const scope = css('../components/ThemeScope/ThemeScope.module.css');
-        const page = css('../pages/Page.module.css');
+        const scope = css('../components/shared/common/ThemeScope/ThemeScope.module.css');
+        const page = css('../pages/shared/Page.module.css');
 
         expect(cssDeclarations(scope, '.scope').height).toBe('100%');
         expect(cssDeclarations(page, '.locked')).toMatchObject({
@@ -53,7 +53,11 @@ describe('iOS touch lock', () => {
     it.each([
         ['ShowCardStack .stack', STACK_CSS, '.stack'],
         ['DateStrip .strip', STRIP_CSS, '.strip'],
-        ['MiniPlayer .player', '../components/MiniPlayer/MiniPlayer.module.css', '.player'],
+        [
+            'MiniPlayer .player',
+            '../components/pages/home/MiniPlayer/MiniPlayer.module.css',
+            '.player',
+        ],
     ])('should block single-finger pan but allow pinch-zoom on the %s', (_name, path, selector) => {
         expect(cssValues(css(path), selector, 'touch-action')).toEqual(['none', 'pinch-zoom']);
     });
@@ -116,8 +120,8 @@ describe('iOS touch lock', () => {
     });
 
     it.each([
-        ['EpisodeList', '../components/EpisodeList/EpisodeList.module.css'],
-        ['TodayShowList', '../components/TodayShowList/TodayShowList.module.css'],
+        ['EpisodeList', '../components/shared/player/EpisodeList/EpisodeList.module.css'],
+        ['TodayShowList', '../components/pages/today/TodayShowList/TodayShowList.module.css'],
     ])('should keep native scrolling in the %s panel', (_name, path) => {
         expect(cssDeclarations(css(path), '.list')).toMatchObject({
             'overflow-y': 'auto',

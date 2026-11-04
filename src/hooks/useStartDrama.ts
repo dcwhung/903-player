@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { dailyEpisodesOf, seriesEpisodesOf, type DramaConfig } from '../dramas';
+import { dailyEpisodesOf, seriesEpisodesOf, type DramaConfig } from '../catalog/dramas';
 import { usePlayer } from '../player/usePlayer';
 import {
     dailyNewestFirst,

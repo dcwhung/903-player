@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { createHookWrapper } from '../../tests/renderWithProviders';
-import { dailyEpisodesOf, seriesEpisodesOf } from '../dramas';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../catalog/dramas';
 import { saveProgress } from '../services/progressStore';
 import { useDramaNewLabels } from './useDramaNewLabels';
 
@@ -9,8 +9,8 @@ import { useDramaNewLabels } from './useDramaNewLabels';
 // 黃金少年用真日子（24/10 成套一齊上架），個別 test 可以將 Season 4 改做遲啲先上架
 const goldenOverride = vi.hoisted(() => ({ season4AddedAt: undefined as string | undefined }));
 // 停用咗嘅 18 樓 C 座都當開咗，一齊測
-vi.mock('../dramas', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../dramas')>();
+vi.mock('../catalog/dramas', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../catalog/dramas')>();
     const withLaterSeason4 = (e: ReturnType<typeof actual.seriesEpisodesOf>[number]) =>
         goldenOverride.season4AddedAt && e.arc === 'Season 4'
             ? { ...e, addedAt: goldenOverride.season4AddedAt }

@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "903 Player 廣播劇（drama.json）",
-    "description": "一個 folder = 一套廣播劇（src/dramas/<id>/drama.json）。runtime 驗證喺 src/dramas/schema.ts；以下幾樣 JSON Schema 表達唔到，淨係 runtime 驗：圖檔要真係喺 folder 入面、folder 名要係細楷英數同連字號、arc name 唔可以重複、每日劇 date 唔可以重複、titles / files 嘅集數要喺 firstNo 至最後一集之內。",
+    "description": "一個 folder = 一套廣播劇（src/catalog/dramas/library/<id>/drama.json）。runtime 驗證喺 src/catalog/dramas/lib/schema.ts；以下幾樣 JSON Schema 表達唔到，淨係 runtime 驗：圖檔要真係喺 folder 入面、folder 名要係細楷英數同連字號、arc name 唔可以重複、每日劇 date 唔可以重複、titles / files 嘅集數要喺 firstNo 至最後一集之內。",
     "type": "object",
     "required": ["name", "kind", "enabled", "tile", "disc", "audio", "theme"],
     "additionalProperties": false,
@@ -182,12 +182,12 @@
                 "disc": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "（optional）短篇自己嘅碟面圖：folder 內檔名；冇就用劇集碟面"
+                    "description": "（optional）短篇自己嘅碟面圖：folder 內相對 path，慣例 arcs/<slug>/disc.webp；冇就用劇集碟面"
                 },
                 "tile": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "（optional）短篇長方形圖：folder 內檔名（16:9，1216×684）；暫時未用，留底防將來要"
+                    "description": "（optional）短篇長方形圖：folder 內相對 path，慣例 arcs/<slug>/tile.webp（16:9，1216×684）；暫時未用，留底防將來要"
                 }
             }
         },

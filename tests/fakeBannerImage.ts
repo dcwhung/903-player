@@ -1,4 +1,4 @@
-import type { Rgb } from '../src/components/HomeLandscapeGrid/bannerEdges';
+import type { Rgb } from '../src/components/pages/home/HomeLandscapeGrid/bannerEdges';
 
 /** 假圖嘅 natural 大細（夠 16 段，每段都有 pixel） */
 export const FAKE_IMAGE_SIZE = 32;
