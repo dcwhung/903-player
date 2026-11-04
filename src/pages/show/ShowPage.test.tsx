@@ -11,7 +11,10 @@ import {
     renderWithProviders,
     unavailableEpisode,
 } from '../../../tests/renderWithProviders';
+import { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { saveProgress } from '../../services/progressStore';
+import { zoomFromState, zoomKey, zoomState } from '../../utils/cardZoom';
 import { themeFor } from '../../catalog/shows';
 import type { Recording } from '../../types/recording';
 import { ShowPage } from './ShowPage';
@@ -34,6 +37,17 @@ const swipe = (zone: HTMLElement, dx: number) => {
 };
 const currentRow = () => screen.getByRole('button', { current: true });
 
+/** 帶住 state 入節目頁（例如 mini player 帶集數，再加 zoom 來源） */
+const EnterWith = ({ state }: { state: object }) => {
+    const navigate = useNavigate();
+    useEffect(() => void navigate('/show/gongzi', { state }), [navigate, state]);
+    return null;
+};
+
+const StateProbe = () => (
+    <div data-testid="zoom-from">{zoomFromState(useLocation().state) ?? 'none'}</div>
+);
+
 describe('ShowPage', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
@@ -42,6 +56,28 @@ describe('ShowPage', () => {
         HTMLElement.prototype.scrollTo = vi.fn();
     });
     afterEach(() => vi.useRealTimers());
+
+    // W-527：zoom 來源綁喺入頁嘅 history entry；清走帶入嚟嘅集數時唔好連來源都食咗
+    it('should keep the zoom tile in the history state when it clears the requested episode', async () => {
+        const key = zoomKey.show('gongzi');
+        const state = { url: RECORDINGS[2]?.url, ...zoomState(key) };
+        const { audio } = renderWithProviders(
+            <>
+                <ShowPage />
+                <StateProbe />
+            </>,
+            {
+                route: '/start',
+                path: '/show/:showId',
+                recordings: RECORDINGS,
+                extraRoutes: [{ path: '/start', element: <EnterWith state={state} /> }],
+            },
+        );
+
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[2]?.url));
+        await act(async () => {});
+        expect(screen.getByTestId('zoom-from')).toHaveTextContent(key);
+    });
 
     it('autoplays the latest episode when opened directly', async () => {
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });

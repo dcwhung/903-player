@@ -8,7 +8,7 @@
 | 項目                  | 設定                                                                                                                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Ledger                | `.proj-docs/qa/verification-ledger.tsv`（tracked）                                                                                                                             |
-| Frozen plans          | `.proj-docs/qa/plans/<chain_id>.md`（chains：`pwa-shell` `ui-foundation` `player-core` `catalog-data` `drama` `mini-player` `home` `show-today-page`）                         |
+| Frozen plans          | `.proj-docs/qa/plans/<chain_id>.md`（chains：`pwa-shell` `ui-foundation` `player-core` `catalog-data` `drama` `mini-player` `home` `show-today-page` `card-zoom`）             |
 | Known issues          | `.proj-docs/qa/known-issues.md`                                                                                                                                                |
 | S1 / S2 `impact` base | integration branch 係 `main`（冇 `develop`）：`impact --since "$(git merge-base HEAD origin/main)"`                                                                            |
 | S3 `impact` base      | 上次 release tag；未有 tag 時用 `main` 上面最後一個改 `package.json` version 嘅 commit：`impact --since "$(git log -1 --format=%h -G'"version"' origin/main -- package.json)"` |

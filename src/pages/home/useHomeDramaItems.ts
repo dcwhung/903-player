@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { DramaShelfItem } from '../../components/pages/home/DramaShelf/DramaShelf';
 import {
     dramaEpisodesOf,
@@ -12,11 +11,13 @@ import { useDramaContinue } from '../../hooks/useDramaContinue';
 import { useDramaNewLabels } from '../../hooks/useDramaNewLabels';
 import { useRefreshedOn } from '../../hooks/useRefreshedOn';
 import { useStartDrama } from '../../hooks/useStartDrama';
+import { useZoomNavigate } from '../../hooks/useZoomNavigate';
 import { t } from '../../i18n/t';
 import { usePlayer } from '../../player/usePlayer';
 import { isEpisodeOfDrama, seriesArcs } from '../../selectors/dramas';
 import { dramaShelfOrder } from '../../selectors/dramaShelf';
 import { getProgressMap } from '../../services/progressStore';
+import { zoomKey } from '../../utils/cardZoom';
 
 /** 劇集格右下角：短篇劇集「N 個短篇」（分季嘅「全 N 季」），每日劇集「每日更新」 */
 const dramaMeta = (drama: DramaConfig): string => {
@@ -39,11 +40,11 @@ const useShelfDramas = (): DramaConfig[] => {
 
 /**
  * 廣播劇 tab 嘅劇集格：
- * - 撳格：入頁。短篇劇集永遠唔播（用戶可能只係想睇清單）；每日劇集同節目格一樣，冇其他嘢佔住、亦未載入呢套劇先播
+ * - 撳格：由嗰格 zoom 入頁（Z3）。短篇劇集永遠唔播（用戶可能只係想睇清單）；每日劇集同節目格一樣，冇其他嘢佔住、亦未載入呢套劇先播
  * - 撳「繼續收聽」條：唔入頁，淨係播續聽嗰集（mini player 跟住顯示）；用戶明確要播，會蓋過其他嘢
  */
 export const useDramaItems = (): DramaShelfItem[] => {
-    const navigate = useNavigate();
+    const open = useZoomNavigate();
     const startDrama = useStartDrama();
     const busy = useAudioBusy();
     const { recording } = usePlayer();
@@ -62,7 +63,7 @@ export const useDramaItems = (): DramaShelfItem[] => {
             if (drama.kind === 'daily' && !busy && !isEpisodeOfDrama(recording, drama.id)) {
                 startDrama(drama);
             }
-            navigate(`/drama/${drama.id}`);
+            open(zoomKey.drama(drama.id), `/drama/${drama.id}`);
         },
         onResume: () => startDrama(drama),
     }));

@@ -9,6 +9,8 @@ export const TRANSITION_NAME = {
     /** 播放卡頁頭列節目名 ↔ 內頁頁頭 */
     title: 'player-title',
     banner: 'home-banner',
+    /** 主頁格仔 zoom 入內頁 / 返主頁時，被撳嗰格（data-zoom-source，utils/cardZoom） */
+    zoomTile: 'zoom-tile',
 } as const;
 
 /**

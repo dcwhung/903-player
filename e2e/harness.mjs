@@ -246,6 +246,16 @@ export const succeeds = (promise) =>
 /** locator.waitFor（options 例如 { state: 'detached', timeout }）等到就 true，等唔到 false */
 export const isShown = (locator, options) => succeeds(locator.waitFor(options));
 
+/** 轉頁最多等幾耐（過場嘅 update 喺瀏覽器影完舊畫面先行，晚一格先轉，CUI-0018） */
+const ROUTE_WAIT_MS = 5000;
+
+/**
+ * 等到 URL hash 變做 hash 就 true，等唔到 false。撳格仔（zoom）/ 窄版返回（unzoom）嘅 navigate
+ * 喺 View Transition 嘅 update 入面先行，撳完即刻讀 page.url() 仲係舊頁
+ */
+export const reachesHash = (p, hash) =>
+    succeeds(p.waitForURL((url) => new URL(url).hash === hash, { timeout: ROUTE_WAIT_MS }));
+
 /** Playwright error 第一行就係原因；後面嘅 Call log 太長，洗晒 e2e 輸出 */
 const firstLine = (error) => String(error instanceof Error ? error.message : error).split('\n')[0];
 
