@@ -5,12 +5,12 @@ import { zoomInto, zoomKey } from '../../utils/cardZoom';
 import { HomePage } from './HomePage';
 import { useDramaItems } from './useHomeDramaItems';
 
-// 包住 zoomInto：記低撳咗邊格、去邊，照行 update（jsdom 冇 View Transition）
+// 包住 zoomInto：記低撳咗邊格，照行 update（jsdom 冇 View Transition）
 vi.mock('../../utils/cardZoom', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../utils/cardZoom')>();
     return {
         ...actual,
-        zoomInto: vi.fn((_key: string, _path: string, update: () => void) => update()),
+        zoomInto: vi.fn((_key: string, update: (zoomed: boolean) => void) => update(true)),
     };
 });
 
@@ -27,7 +27,7 @@ describe('home tiles zoom into their pages (Z3)', () => {
 
         const key = zoomKey.show('gongzi');
         expect(tile).toHaveAttribute('data-zoom-key', key);
-        expect(zoomInto).toHaveBeenCalledWith(key, '/show/gongzi', expect.any(Function));
+        expect(zoomInto).toHaveBeenCalledWith(key, expect.any(Function));
         expect(screen.getByTestId('location')).toHaveTextContent('/show/gongzi');
     });
 
@@ -38,7 +38,7 @@ describe('home tiles zoom into their pages (Z3)', () => {
         await userEvent.click(tile);
 
         expect(tile).toHaveAttribute('data-zoom-key', zoomKey.today);
-        expect(zoomInto).toHaveBeenCalledWith(zoomKey.today, '/today', expect.any(Function));
+        expect(zoomInto).toHaveBeenCalledWith(zoomKey.today, expect.any(Function));
         expect(screen.getByTestId('location')).toHaveTextContent('/today');
     });
 
@@ -65,11 +65,7 @@ describe('drama tiles zoom into their pages (Z3)', () => {
 
         item?.onOpen();
 
-        expect(zoomInto).toHaveBeenCalledWith(
-            zoomKey.drama(item?.id ?? ''),
-            `/drama/${item?.id ?? ''}`,
-            expect.any(Function),
-        );
+        expect(zoomInto).toHaveBeenCalledWith(zoomKey.drama(item?.id ?? ''), expect.any(Function));
     });
 
     it('should not zoom when only resuming (stays on the home page)', () => {

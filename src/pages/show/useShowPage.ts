@@ -20,6 +20,7 @@ import { hkToday } from '../../utils/date';
 import type { Recording } from '../../types/recording';
 import type { ShowPageState } from '../../types/showPageState';
 import { asShowRecording } from '../../types/track';
+import { zoomFromState, zoomState } from '../../utils/cardZoom';
 import { toEpisodeItems } from '../shared/episodeItems';
 
 /** 呢個節目嘅集數同揀中嗰集：播緊呢個節目就用播緊嗰集，否則用預設嗰集 */
@@ -55,10 +56,12 @@ const useRequestedEpisode = (episodes: readonly Recording[]) => {
     const url = (location.state as ShowPageState | null)?.url;
     const requested = url === undefined ? undefined : episodes.find((e) => e.url === url);
     const { pathname } = location;
-    const consume = useCallback(
-        () => void navigate(pathname, { replace: true, state: null }),
-        [navigate, pathname],
-    );
+    // 只清集數：zoom 來源（入頁嗰格）要留低，返回先縮得返入去（W-527）
+    const zoomFrom = zoomFromState(location.state);
+    const consume = useCallback(() => {
+        const state = zoomFrom === null ? null : zoomState(zoomFrom);
+        void navigate(pathname, { replace: true, state });
+    }, [navigate, pathname, zoomFrom]);
     return { hasRequest: url !== undefined, requested, consume };
 };
 

@@ -1,10 +1,12 @@
-import { isViewTransitionPending, withViewTransition } from './viewTransition';
+import { canViewTransition, isViewTransitionPending, withViewTransition } from './viewTransition';
 import { zoomInset, type ZoomInset } from './zoomInset';
 
 /**
  * 主頁格仔 zoom 入內頁（Z3，_mockups_/card-zoom）：
  * 撳格仔嗰刻量格仔框寫入 html 嘅 --zoom-inset-*，格仔標 data-zoom-source（global.css 先畀佢 zoom-tile 名），
- * 內頁由嗰個框開窗咁展開；窄版返主頁（unzoom）縮返入同一格。過場完就清走標記同框
+ * 內頁由嗰個框開窗咁展開；窄版返主頁（unzoom）縮返入同一格。過場完就清走標記同框。
+ * 由邊格入嚟綁喺入頁嗰個 history entry（location.state 嘅 zoomFrom，W-527）：
+ * 系統返回、mini player 入頁嘅 entry 自然冇，返回就直接轉頁
  */
 
 /** 每格嘅 data-zoom-key：用穩定 key（唔係排位），返主頁先搵得返同一格 */
@@ -19,8 +21,19 @@ const SOURCE_ATTR = 'data-zoom-source';
 const SIDES = ['top', 'right', 'bottom', 'left'] as const;
 const insetVar = (side: (typeof SIDES)[number]) => `--zoom-inset-${side}`;
 
-/** 上次由邊格 zoom 入咗邊頁：返回時仲喺嗰頁先 unzoom */
-let source: { key: string; path: string } | null = null;
+/** 入頁 history state 入面嘅 zoom 來源 */
+export interface ZoomState {
+    zoomFrom: string;
+}
+
+export const zoomState = (key: string): ZoomState => ({ zoomFrom: key });
+
+/** 由 location.state 攞返 zoom 來源；唔係 zoom 入嚟就 null */
+export const zoomFromState = (state: unknown): string | null => {
+    const from: unknown = (state as Partial<Record<keyof ZoomState, unknown>> | null)?.zoomFrom;
+    return typeof from === 'string' ? from : null;
+};
+
 /** 每次標記 +1：舊過場完咗唔好清走新一次嘅標記 */
 let generation = 0;
 
@@ -58,33 +71,30 @@ const unmarkIf = (mine: number | null) => {
 };
 
 /**
- * 撳主頁格仔入頁：update（轉頁）放入 zoom 過場。
- * 格仔唔喺畫面、或者上一個過場未 update，就照直接轉，唔會食咗個 click
+ * 撳主頁格仔入頁：update（轉頁）放入 zoom 過場，update(true) = 真係開到過場（先好記低來源）。
+ * 格仔框喺撳嗰刻量：瀏覽器喺下一格先影舊畫面、影完先行 update；撳嗰下開播令版面喺 update 之前變咗
+ * （例如闊橫版播放卡出咗、格仔移位）都唔會入舊 snapshot，所以 update 入面唔再量（S-681）。
+ * 格仔唔喺畫面、唔開到過場、或者上一個過場未 update，就照直接轉（update(false)），唔會食咗個 click
  */
-export const zoomInto = (key: string, path: string, update: () => void): void => {
-    source = { key, path };
+export const zoomInto = (key: string, update: (zoomed: boolean) => void): void => {
     const tile = findTile(key);
     const inset = tile && insetOf(tile);
-    if (!tile || !inset || isViewTransitionPending()) {
-        update();
+    if (!tile || !inset || !canViewTransition() || isViewTransitionPending()) {
+        update(false);
         return;
     }
     const mine = mark(tile, inset);
-    // 影完舊畫面先轉頁：嗰陣再量一次（例如同一下撳開播令闊橫版播放卡出咗，格仔移咗位）
-    const measured = () => {
-        writeInset(insetOf(tile) ?? inset);
-        update();
-    };
-    if (!withViewTransition(measured, 'zoom', { onEnd: () => unmarkIf(mine) })) update();
+    const zoomed = withViewTransition(() => update(true), 'zoom', {
+        onEnd: () => unmarkIf(mine),
+    });
+    if (!zoomed) update(false);
 };
 
 /**
- * 窄版由內頁返主頁：之前由邊格 zoom 入嚟就縮返入嗰格（轉咗頁先搵得到）；
- * 冇記錄、唔係嗰頁就直接轉；返到主頁嗰格唔喺畫面就跳過動畫（唔會留低半透明）
+ * 窄版由內頁返主頁：入頁時由邊格 zoom 入嚟（key，見 zoomFromState）就縮返入嗰格（轉咗頁先搵得到）；
+ * 唔係 zoom 入嚟就直接轉；返到主頁嗰格唔喺畫面就跳過動畫（唔會留低半透明）
  */
-export const unzoomHome = (pathname: string, update: () => void): void => {
-    const key = source?.path === pathname ? source.key : null;
-    source = null;
+export const unzoomHome = (key: string | null, update: () => void): void => {
     if (key === null || isViewTransitionPending()) {
         update();
         return;

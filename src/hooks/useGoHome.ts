@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { WIDE_BANNER_QUERY } from '../config/layout';
-import { unzoomHome } from '../utils/cardZoom';
+import { unzoomHome, zoomFromState } from '../utils/cardZoom';
 import { withViewTransition } from '../utils/viewTransition';
 import { useMediaQuery } from './useMediaQuery';
 
@@ -12,11 +12,12 @@ import { useMediaQuery } from './useMediaQuery';
  */
 export const useGoHome = () => {
     const navigate = useNavigate();
-    const { pathname } = useLocation();
+    // 入頁嗰個 history entry 有記低 zoom 來源先 unzoom（系統返回、mini player 入頁都冇，W-527）
+    const zoomFrom = zoomFromState(useLocation().state);
     const wide = useMediaQuery(WIDE_BANNER_QUERY);
     return useCallback(() => {
         const go = () => void navigate('/');
         if (wide) withViewTransition(go, 'back');
-        else unzoomHome(pathname, go);
-    }, [navigate, pathname, wide]);
+        else unzoomHome(zoomFrom, go);
+    }, [navigate, zoomFrom, wide]);
 };

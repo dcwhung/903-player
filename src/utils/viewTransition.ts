@@ -55,6 +55,10 @@ const runUpdate = (update: () => void, afterUpdate: () => void) => () => {
  */
 export const isViewTransitionUpdating = (): boolean => updating;
 
+/** 開唔開到過場：瀏覽器支援、用戶冇要求減少動畫（喺開始嗰刻先問，唔 cache） */
+export const canViewTransition = (): boolean =>
+    typeof document.startViewTransition === 'function' && !prefersReducedMotion();
+
 /** 已經開始、但 update 未行嘅過場（瀏覽器影緊舊畫面）：呢陣唔好郁舊畫面上面過場要用嘅標記（utils/cardZoom） */
 export const isViewTransitionPending = (): boolean => pending;
 
@@ -107,7 +111,7 @@ export const withViewTransition = (
     hooks: ViewTransitionHooks = {},
 ): boolean => {
     const { onEnd = ignore } = hooks;
-    if (typeof document.startViewTransition !== 'function' || prefersReducedMotion()) {
+    if (!canViewTransition()) {
         update();
         onEnd();
         return true;
