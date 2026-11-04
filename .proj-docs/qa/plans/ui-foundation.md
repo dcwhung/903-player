@@ -5,7 +5,7 @@
     - AC-1 文案只經 src/i18n/t.ts + zh-HK.ts（README §架構）
     - AC-2 節目色調 / theme-color 跟 src/config/showThemes.ts（e2e 主流程寫死對照色）
     - AC-3 CSS token / breakpoint / view-transition 名由 src/styles/*.node.test.ts 鎖住
-- Scope files（70 個 + 1-hop importers 0 個；確實清單 = ledger 入面呢條鏈嘅行）:
+- Scope files（71 個 + 1-hop importers 0 個；確實清單 = ledger 入面呢條鏈嘅行）:
     - Core（glob）: `src/styles/*` `src/i18n/*` `src/hooks/useThemeColorMeta*` `src/types/*` `src/config/constants.ts` `src/hooks/useViewportGap*` `src/hooks/viewportGap*` `src/hooks/usePageCanvas*` `src/hooks/useMediaQuery*` `src/hooks/useElementSize*` `src/hooks/useBox*` `src/components/shared/common/ThemeScope/*` `src/components/shared/common/StatusMessage/*` `src/components/shared/common/icons/*` `src/config/layout.ts` `src/config/showThemes*` `src/utils/viewTransition*` `src/utils/transitionNames*` `src/utils/motion*` `src/utils/cssLength*` `src/utils/ratio*` `src/utils/scroll*` `src/components/shared/common/PageHeader/*` `tests/*`
 - Commands:
     - npx vitest run src/components/shared/common/PageHeader/ src/components/shared/common/StatusMessage/ src/components/shared/common/ThemeScope/ src/components/shared/common/icons/ src/config/showThemes.test.ts src/hooks/useElementSize.test.tsx src/hooks/useMediaQuery.test.ts src/hooks/useThemeColorMeta.test.tsx src/hooks/useViewportGap.test.tsx src/hooks/viewportGap.test.ts src/i18n/ src/styles/ src/utils/cssLength.test.ts src/utils/motion.test.ts src/utils/ratio.test.ts src/utils/scroll.test.ts src/utils/viewTransition.test.ts （28 個 test 檔）
