@@ -255,16 +255,17 @@ GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 *
 
 ## 目錄
 
-| 路徑                    | 用途                                                                                                  |
-| ----------------------- | ----------------------------------------------------------------------------------------------------- |
-| `src/config/`           | 常數、theme primitive（`showThemes.ts`）、版面 breakpoint                                             |
-| `src/catalog/`          | 資料檔共用層：JSON reader、theme schema、folder source                                                |
-| `src/catalog/shows/`    | 7 個節目：`<id>/show.json` + `tile.webp` + `disc.webp`，registry（`SHOWS` / `findShow` / `themeFor`） |
-| `src/catalog/dramas/`   | 廣播劇：`<id>/drama.json` + 圖，schema / 檔名 template / 集數 builder / registry                      |
-| `src/services/`         | `audioProbe.ts`（喺部機度 probe 錄音）、`probeStore.ts`（localStorage 錄音清單）                      |
-| `src/i18n/`             | 語言包（zh-HK 書面語）                                                                                |
-| `src/player/`           | `AudioController`（唯一 audio element）、Media Session                                                |
-| `src/components/`       | UI component（每個 folder 有 `.tsx`、`.module.css`、`.test.tsx`）                                     |
-| `src/pages/`            | 主頁、節目頁、今日節目頁                                                                              |
-| `src/styles/tokens.css` | Design tokens（來源：mockup）                                                                         |
-| `schemas/`              | `drama.json` / `show.json` 嘅 JSON Schema（editor 自動完成 + 驗證，`.vscode/settings.json` 套用）     |
+| 路徑                     | 用途                                                                                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/config/`            | 常數、theme primitive（`showThemes.ts`）、版面 breakpoint                                                                                         |
+| `src/catalog/core/`      | 資料檔共用層：JSON reader、theme schema、folder source                                                                                            |
+| `src/catalog/shows/`     | 節目：`lib/`（schema / registry：`SHOWS` / `findShow` / `themeFor`）+ `library/<id>/`（`show.json` + `tile.webp` + `disc.webp`）                  |
+| `src/catalog/dramas/`    | 廣播劇：`lib/`（schema / 檔名 template / 集數 builder / registry）+ `library/<id>/`（`drama.json`、`drama.test.ts`、圖；短篇圖喺 `arcs/<slug>/`） |
+| `src/services/`          | `audioProbe.ts`（喺部機度 probe 錄音）、`probeStore.ts`（localStorage 錄音清單）                                                                  |
+| `src/i18n/`              | 語言包（zh-HK 書面語）                                                                                                                            |
+| `src/player/`            | `AudioController`（唯一 audio element）、Media Session                                                                                            |
+| `src/components/shared/` | 跨 page 共用 component：`common/`（Disc、Marquee、PageHeader…）、`player/`（PlayerPanel、NowPlaying、EpisodeList、DateStrip）                     |
+| `src/components/pages/`  | 只俾單一 page 用嘅 component：`home/`、`today/`、`drama/`（每個 folder 有 `.tsx`、`.module.css`、`.test.tsx`）                                    |
+| `src/pages/`             | `home/`、`today/`、`show/`、`drama/` 頁面同 page hook；`shared/` 放多頁共用（`Page.module.css`、`LoadState`、item builder）                       |
+| `src/styles/tokens.css`  | Design tokens（來源：mockup）                                                                                                                     |
+| `schemas/`               | `drama.json` / `show.json` 嘅 JSON Schema（editor 自動完成 + 驗證，`.vscode/settings.json` 套用）                                                 |
