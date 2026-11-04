@@ -3,6 +3,9 @@ import {
     EARLY_ADVANCE_SECONDS,
     FROZEN_PLAYING_MS,
     PROGRESS_SAVE_INTERVAL_MS,
+    REMOTE_AUTO_RESUME_MAX,
+    REMOTE_AUTO_RESUME_WINDOW_MS,
+    STALL_DATA_AHEAD_SECONDS,
     STALL_MAX_RETRIES,
     WATCHED_RATIO,
 } from '../config/constants';
@@ -69,6 +72,12 @@ export class AudioController {
      * 因為 iOS 每次 ms:play 都由頭計，plain play() 只會再凍結（v1.20.9）
      */
     private frozenBeforeStop = false;
+    /** 上一次鎖屏 / AirPods Play 嘅時間：之後 REMOTE_AUTO_RESUME_WINDOW_MS 內系統 pause 就自動再播 */
+    private remoteResumeAt = Number.NEGATIVE_INFINITY;
+    /** 今次鎖屏 Play 仲可以自動再播幾多次 */
+    private autoResumesLeft = 0;
+    /** pause event 係 app 自己（用戶 / ms:pause / stop）叫嘅；冇呢個 flag 嘅 pause 係 iOS 系統停 */
+    private pauseRequested = false;
     /** 收過幾多次 progress event（只會加）：metadata 未到前睇下載有冇進展（CUI-0011） */
     private progressEvents = 0;
     /**
@@ -191,24 +200,64 @@ export class AudioController {
      * 正常載緊（首個 deadline 未到）、慢但下載仲有進展（S-614），或者暫停前播得好地地就照 play()，唔好打斷（W-499）
      */
     resume = async (): Promise<void> => {
+        this.remoteResumeAt = Date.now();
+        this.autoResumesLeft = REMOTE_AUTO_RESUME_MAX;
+        await this.recoverAndPlay('remote');
+    };
+
+    /**
+     * 鎖屏 Play 同系統暫停後自動再播共用：凍結 / 卡住就 reload，慢但仲載緊就唔郁，
+     * 否則鎖屏時重設位置（nudge），之後 play()
+     */
+    private recoverAndPlay(source: 'remote' | 'auto-resume'): Promise<void> {
         if (this.frozenBeforeStop || this.isStuck()) {
             this.stopWatchingStall();
-            this.reload('remote');
+            this.reload(source);
         } else if (this.isSuspectedStall()) {
             // 慢但仲載緊：唔 reload，記低方便對實機 log（S-614、S-621）
             recordPlayback('keep', this.audio, 'loading');
+        } else if (this.shouldNudge()) {
+            this.nudge();
         }
-        await this.play();
-    };
+        return this.play();
+    }
+
+    /**
+     * 鎖屏時由暫停恢復、位置前面已經載咗夠多：iOS 凍結 JS，watchdog timer 救唔到，要喺撳 Play 嗰刻處理。
+     * 數據未載到就唔 seek，否則背景會重新開 range request（同 v1.20.7 reload 一樣嘅風險，Review W2）
+     */
+    private shouldNudge(): boolean {
+        // 而家位置未載到（undefined）= 前面冇數據
+        const ahead = (bufferedEnd(this.audio) ?? this.audio.currentTime) - this.audio.currentTime;
+        return (
+            document.visibilityState === 'hidden' &&
+            this.audio.paused &&
+            this.hasMetadata() &&
+            ahead >= STALL_DATA_AHEAD_SECONDS
+        );
+    }
+
+    /**
+     * 戴返 AirPods 再鎖屏 Play：發咗 playing 但位置凍結 22 秒（2026-11-04 09:34 log）。
+     * 將位置重設返原位，等 iOS 重新起動播放流程；只喺數據已喺本機時做（shouldNudge）
+     */
+    private nudge(): void {
+        recordPlayback('nudge', this.audio);
+        const position = this.audio.currentTime;
+        this.audio.currentTime = position;
+    }
 
     /** 記低鎖屏 / 耳機操作（播放 log） */
     logRemote = (action: string, note?: string): void => recordPlayback(action, this.audio, note);
 
     pause = (): void => {
         this.setPlayIntent(false);
+        // 用戶 / AirPods 要停：唔好再自動再播
+        this.autoResumesLeft = 0;
         // 本身已經暫停嘅 element 唔會發 pause event（spec）：直接當停咗，收 watchdog、
         // 照記低凍結狀態畀下一次鎖屏 Play（S-643，同 stop 嘅 S-640 一樣）
         const alreadyPaused = this.audio.paused;
+        this.pauseRequested = !alreadyPaused;
         this.audio.pause();
         if (alreadyPaused) this.onStopped();
     };
@@ -239,6 +288,8 @@ export class AudioController {
 
     stop = (): void => {
         this.setPlayIntent(false);
+        this.autoResumesLeft = 0;
+        this.pauseRequested = !this.audio.paused;
         this.audio.pause();
         // 本身已經暫停嘅 element 唔會再發 pause event（spec）：唔好靠 onPause 收 watchdog，
         // 否則佢之後照重試 play()，閂咗嘅播放器又出返（S-640）
@@ -258,6 +309,8 @@ export class AudioController {
         this.moveTo(this.pendingStart);
         // 聽過嘅集 getResumePosition 係 0，即係由頭重播
         this.replay.arm(this.watched);
+        // 換 src 同 load() 一樣會清走排緊隊嘅 pause event（Review S2）
+        this.pauseRequested = false;
         this.audio.src = recording.url;
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
     }
@@ -461,12 +514,33 @@ export class AudioController {
         this.notify();
     }
 
-    /** 播到尾嘅 pause 交畀 onEnded：有下一集就唔好中途報「停咗」 */
+    /**
+     * 播到尾嘅 pause 交畀 onEnded：有下一集就唔好中途報「停咗」。
+     * 鎖屏 Play 之後短時間內 iOS 系統自己停（冇 ms:pause，AirPods 仲連緊線）就自動再播
+     */
     private onPause = (): void => {
-        if (!this.audio.ended) {
-            this.onStopped();
+        if (this.audio.ended) {
+            return;
+        }
+        const requested = this.pauseRequested;
+        this.pauseRequested = false;
+        this.onStopped();
+        if (!requested && this.canAutoResume()) {
+            this.autoResumesLeft -= 1;
+            recordPlayback('auto-resume', this.audio, `left=${this.autoResumesLeft}`);
+            // onStopped 啱啱記低咗 frozenBeforeStop：凍結就 reload，唔好淨係 play()（Review W1）
+            void this.recoverAndPlay('auto-resume');
         }
     };
+
+    /** 只限鎖屏 / 背景：前景用戶睇住畫面，系統停就由佢自己撳（Review W3） */
+    private canAutoResume(): boolean {
+        return (
+            document.visibilityState === 'hidden' &&
+            this.autoResumesLeft > 0 &&
+            Date.now() - this.remoteResumeAt <= REMOTE_AUTO_RESUME_WINDOW_MS
+        );
+    }
 
     /** pause / ended（包括拔耳筒、來電等系統暫停）：用戶冇再想播 */
     private onStopped = (): void => {
@@ -524,6 +598,8 @@ export class AudioController {
      * 舊 playing 唔可以帶入新載入，未發 playing 前 rs 升照算進展（S-584）
      */
     private loadSource(): void {
+        // load algorithm 會清走排緊隊嘅 pause event：要停嘅標記唔好留到下一次系統暫停（Review S2）
+        this.pauseRequested = false;
         this.playingFired = false;
         this.audio.load();
     }
