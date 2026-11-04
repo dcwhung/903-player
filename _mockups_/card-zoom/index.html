@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>格仔 Zoom 過場</title>
+        <meta name="claude:viewport-fit-sides" content="cover" />
+        <style>
+            /* 版面：一欄，上面揀款，下面直版同闊橫版兩個舞台；時間跟 src/styles/tokens.css（--view-transition-*） */
+            :root {
+                --move: 520ms;
+                --fade: 260ms;
+                --delay: 200ms;
+                --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+                --bg: #eef1f5;
+                --surface: #ffffff;
+                --ink: #18202b;
+                --note: #5d6775;
+                --line: #d3d9e2;
+                --accent: #3b6fb6;
+                --on-accent: #ffffff;
+                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #10151c;
+                    --surface: #1a212b;
+                    --ink: #e8edf3;
+                    --note: #9aa5b3;
+                    --line: #2e3845;
+                    --accent: #7fa8e6;
+                    --on-accent: #0d1420;
+                    color-scheme: dark;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #10151c;
+                --surface: #1a212b;
+                --ink: #e8edf3;
+                --note: #9aa5b3;
+                --line: #2e3845;
+                --accent: #7fa8e6;
+                --on-accent: #0d1420;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding-block: 24px 48px;
+                padding-left: max(16px, env(safe-area-inset-left, 0px));
+                padding-right: max(16px, env(safe-area-inset-right, 0px));
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font);
+            }
+            main {
+                display: grid;
+                gap: 20px;
+                max-width: 900px;
+                margin: 0 auto;
+            }
+            h1 {
+                margin: 0;
+                font-size: 22px;
+                text-wrap: balance;
+            }
+            h2 {
+                margin: 0;
+                font-size: 17px;
+            }
+            p,
+            li {
+                margin: 0;
+                color: var(--note);
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            ul {
+                margin: 0;
+                padding-left: 20px;
+            }
+            .panel {
+                display: grid;
+                gap: 12px;
+                padding: 16px;
+                border-radius: 16px;
+                background: var(--surface);
+                min-width: 0;
+            }
+            .row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            button {
+                padding: 8px 14px;
+                border: 1px solid var(--line);
+                border-radius: 999px;
+                background: var(--surface);
+                color: var(--ink);
+                font: inherit;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            button:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
+            button[aria-pressed='true'],
+            button.play {
+                border-color: var(--accent);
+                background: var(--accent);
+                color: var(--on-accent);
+            }
+            label {
+                display: flex;
+                gap: 6px;
+                align-items: center;
+                font-size: 14px;
+                color: var(--note);
+            }
+            #desc {
+                min-height: 3.2em;
+            }
+            .viewport {
+                position: relative;
+                overflow: hidden;
+                border-radius: 12px;
+                box-shadow: 0 2px 12px rgb(0 0 0 / 18%);
+                background: #000;
+                max-width: 100%;
+            }
+            .stage {
+                position: absolute;
+                top: 0;
+                left: 0;
+                transform-origin: 0 0;
+                overflow: hidden;
+            }
+            .layer {
+                position: absolute;
+                inset: 0;
+                background: center / 100% 100% no-repeat;
+            }
+            .tile {
+                position: absolute;
+                overflow: hidden;
+                background-repeat: no-repeat;
+            }
+            .tile > div {
+                position: absolute;
+                inset: 0;
+                background-repeat: no-repeat;
+            }
+            .caption {
+                font-size: 13px;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header style="display: grid; gap: 6px">
+                <h1>P6 #2 主頁格仔 Zoom 入節目頁</h1>
+                <p>
+                    v1.25.0 真截圖（撳「公子會」格）。時間跟現有過場 token：移動 520ms、淡出
+                    260ms、延遲 200ms。播放卡 ⤢ 嘅 expand、闊橫版返主頁嘅 back 唔郁。
+                </p>
+            </header>
+
+            <section class="panel">
+                <h2>揀款</h2>
+                <div class="row" id="kinds">
+                    <button type="button" id="k-z1" data-kind="z1" aria-pressed="true">
+                        Z1 格仔變形做成頁
+                    </button>
+                    <button type="button" id="k-z2" data-kind="z2" aria-pressed="false">
+                        Z2 原位放大交替
+                    </button>
+                    <button type="button" id="k-z3" data-kind="z3" aria-pressed="false">
+                        Z3 由格仔位展開
+                    </button>
+                </div>
+                <p id="desc"></p>
+                <div class="row">
+                    <label><input type="checkbox" id="slow" /> 慢鏡 ×3</label>
+                    <label><input type="checkbox" id="reduced" /> 模擬「減少動態」（直接切換）</label>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>手機直版 390 × 844</h2>
+                <div class="row">
+                    <button type="button" class="play" id="phone-go">入頁 ▶</button>
+                    <button type="button" id="phone-back">◀ 返回（倒轉 zoom）</button>
+                </div>
+                <div class="viewport" id="phone-view"></div>
+            </section>
+
+            <section class="panel">
+                <h2>闊橫版 1300 × 800</h2>
+                <div class="row">
+                    <button type="button" class="play" id="wide-go">入頁 ▶</button>
+                    <button type="button" id="wide-reset">重設</button>
+                </div>
+                <div class="viewport" id="wide-view"></div>
+                <p class="caption">
+                    闊橫版返主頁照用而家嘅 back（成頁縮入右邊播放卡），所以呢度只示範入頁。
+                </p>
+            </section>
+        </main>
+
+        <script>
+            const DESC = {
+                z1: '格仔由自己個位同大細一路長大到填滿畫面，一邊長一邊由格仔圖淡變做內頁。位置同大細有連繫，最似「打開咗呢格」。',
+                z2: '照需求字面：格仔喺原位放大少少同淡出，主頁一齊淡走；內頁由略細放大到正常同淡入，唔跟格仔位置。最簡單、最穩陣。',
+                z3: '格仔淡出；內頁唔變形，由格仔嗰個框（圓角）開窗咁展開到成頁。內頁內容一開始就喺正確位置，只係可見範圍變大。',
+            };
+            /** 真截圖（v1.25.0，e2e harness 假資料） */
+            const IMG = {
+                'phone-home': 'phone-home.webp',
+                'phone-page': 'phone-page.webp',
+                'wide-home': 'wide-home.webp',
+                'wide-page': 'wide-page.webp',
+            };
+            const LAYOUTS = {
+                phone: {
+                    w: 390,
+                    h: 844,
+                    tile: { x: 201, y: 203.3, w: 173, h: 123.3 },
+                    radius: 14,
+                    maxScale: 0.8,
+                },
+                wide: {
+                    w: 1300,
+                    h: 800,
+                    tile: { x: 558.7, y: 129, w: 249.3, h: 201.7 },
+                    radius: 14,
+                    maxScale: 0.7,
+                },
+            };
+            const PAGE_SCALE_FROM = 0.92;
+            const TILE_SCALE_TO = 1.15;
+            const SLOW_FACTOR = 3;
+            const css = (name) =>
+                parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+            const EASE = getComputedStyle(document.documentElement)
+                .getPropertyValue('--ease')
+                .trim();
+
+            let kind = 'z1';
+            const stages = {};
+
+            const build = (name) => {
+                const L = LAYOUTS[name];
+                const view = document.getElementById(`${name}-view`);
+                view.innerHTML = '';
+                const stage = document.createElement('div');
+                stage.className = 'stage';
+                stage.style.width = `${L.w}px`;
+                stage.style.height = `${L.h}px`;
+                const home = document.createElement('div');
+                home.className = 'layer';
+                home.style.backgroundImage = `url(${IMG[`${name}-home`]})`;
+                const page = document.createElement('div');
+                page.className = 'layer';
+                page.style.backgroundImage = `url(${IMG[`${name}-page`]})`;
+                page.style.opacity = '0';
+                stage.append(home, page);
+                view.append(stage);
+                const fit = () => {
+                    const scale = Math.min(L.maxScale, view.parentElement.clientWidth / L.w);
+                    stage.style.transform = `scale(${scale})`;
+                    view.style.width = `${L.w * scale}px`;
+                    view.style.height = `${L.h * scale}px`;
+                };
+                fit();
+                stages[name] = { L, stage, home, page, fit, anims: [], at: 'home' };
+            };
+
+            /** 格仔圖：用主頁截圖裁出嗰格，盒仔變大時圖跟住拉（同 View Transition 快照一樣） */
+            const tileArt = (name, L) => {
+                const { x, y, w, h } = L.tile;
+                const el = document.createElement('div');
+                el.style.backgroundImage = `url(${IMG[`${name}-home`]})`;
+                el.style.backgroundSize = `${(L.w / w) * 100}% ${(L.h / h) * 100}%`;
+                el.style.backgroundPosition = `${(x / (L.w - w)) * 100}% ${(y / (L.h - h)) * 100}%`;
+                return el;
+            };
+
+            const rectFrame = (L, r) => ({
+                left: `${r.x}px`,
+                top: `${r.y}px`,
+                width: `${r.w}px`,
+                height: `${r.h}px`,
+            });
+
+            /** 每款嘅動畫：[元素, keyframes(入頁方向), delay, duration, easing] */
+            const plans = {
+                z1: (s, name) => {
+                    const { L } = s;
+                    const box = document.createElement('div');
+                    box.className = 'tile';
+                    const art = tileArt(name, L);
+                    const inner = document.createElement('div');
+                    inner.style.backgroundImage = `url(${IMG[`${name}-page`]})`;
+                    inner.style.backgroundSize = '100% 100%';
+                    box.append(art, inner);
+                    s.stage.append(box);
+                    const full = { x: 0, y: 0, w: L.w, h: L.h };
+                    return {
+                        temp: [box],
+                        steps: [
+                            [
+                                box,
+                                [
+                                    { ...rectFrame(L, L.tile), borderRadius: `${L.radius}px` },
+                                    { ...rectFrame(L, full), borderRadius: '0px' },
+                                ],
+                                0,
+                                css('--move'),
+                                EASE,
+                            ],
+                            [art, [{ opacity: 1 }, { opacity: 0 }], 0, css('--fade'), EASE],
+                            [
+                                inner,
+                                [{ opacity: 0 }, { opacity: 1 }],
+                                css('--delay') / 2,
+                                css('--fade'),
+                                EASE,
+                            ],
+                            [
+                                s.home,
+                                [{ opacity: 1 }, { opacity: 0.35 }],
+                                0,
+                                css('--move'),
+                                EASE,
+                            ],
+                        ],
+                        pageHiddenDuring: true,
+                    };
+                },
+                z2: (s, name) => {
+                    const { L } = s;
+                    const box = document.createElement('div');
+                    box.className = 'tile';
+                    Object.assign(box.style, rectFrame(L, L.tile));
+                    box.style.borderRadius = `${L.radius}px`;
+                    box.append(tileArt(name, L));
+                    s.stage.append(box);
+                    return {
+                        temp: [box],
+                        steps: [
+                            [
+                                box,
+                                [
+                                    { transform: 'scale(1)', opacity: 1 },
+                                    { transform: `scale(${TILE_SCALE_TO})`, opacity: 0 },
+                                ],
+                                0,
+                                css('--fade'),
+                                EASE,
+                            ],
+                            [s.home, [{ opacity: 1 }, { opacity: 0 }], 0, css('--fade'), EASE],
+                            [
+                                s.page,
+                                [
+                                    { transform: `scale(${PAGE_SCALE_FROM})`, opacity: 0 },
+                                    { transform: 'scale(1)', opacity: 1 },
+                                ],
+                                css('--delay'),
+                                css('--move'),
+                                EASE,
+                            ],
+                        ],
+                    };
+                },
+                z3: (s, name) => {
+                    const { L } = s;
+                    const { x, y, w, h } = L.tile;
+                    const box = document.createElement('div');
+                    box.className = 'tile';
+                    Object.assign(box.style, rectFrame(L, L.tile));
+                    box.append(tileArt(name, L));
+                    s.stage.append(box);
+                    const from = `inset(${y}px ${L.w - x - w}px ${L.h - y - h}px ${x}px round ${L.radius}px)`;
+                    return {
+                        temp: [box],
+                        steps: [
+                            [box, [{ opacity: 1 }, { opacity: 0 }], 0, css('--fade'), EASE],
+                            [
+                                s.page,
+                                [
+                                    { clipPath: from, opacity: 0.4 },
+                                    { clipPath: 'inset(0px 0px 0px 0px round 0px)', opacity: 1 },
+                                ],
+                                0,
+                                css('--move'),
+                                EASE,
+                            ],
+                            [
+                                s.home,
+                                [{ opacity: 1 }, { opacity: 0.35 }],
+                                0,
+                                css('--move'),
+                                EASE,
+                            ],
+                        ],
+                    };
+                },
+            };
+
+            const settle = (s, at) => {
+                s.anims.forEach((a) => a.cancel());
+                s.anims = [];
+                s.stage.querySelectorAll('.tile').forEach((el) => el.remove());
+                s.at = at;
+                s.home.style.opacity = at === 'home' ? '1' : '0';
+                s.page.style.opacity = at === 'page' ? '1' : '0';
+            };
+
+            /** 返回 = 同一條時間線倒播：delay 鏡像（L - delay - duration），先走嘅變後走 */
+            const run = (name, dir) => {
+                const s = stages[name];
+                const target = dir === 'go' ? 'page' : 'home';
+                if (s.at === target) settle(s, dir === 'go' ? 'home' : 'page');
+                settle(s, s.at);
+                if (document.getElementById('reduced').checked) {
+                    settle(s, target);
+                    return;
+                }
+                const slow = document.getElementById('slow').checked ? SLOW_FACTOR : 1;
+                const plan = plans[kind](s, name);
+                s.home.style.opacity = '1';
+                s.page.style.opacity = plan.pageHiddenDuring ? '0' : s.page.style.opacity;
+                const total = Math.max(...plan.steps.map(([, , d, t]) => d + t));
+                s.anims = plan.steps.map(([el, frames, delay, duration, easing]) => {
+                    const back = dir === 'back';
+                    return el.animate(back ? [...frames].reverse() : frames, {
+                        delay: (back ? total - delay - duration : delay) * slow,
+                        duration: duration * slow,
+                        easing,
+                        fill: 'both',
+                    });
+                });
+                Promise.all(s.anims.map((a) => a.finished))
+                    .then(() => settle(s, target))
+                    .catch(() => undefined);
+            };
+
+            document.getElementById('kinds').addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                kind = btn.dataset.kind;
+                document
+                    .querySelectorAll('#kinds button')
+                    .forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+                document.getElementById('desc').textContent = DESC[kind];
+                Object.keys(stages).forEach((n) => settle(stages[n], 'home'));
+            });
+            document.getElementById('phone-go').onclick = () => run('phone', 'go');
+            document.getElementById('phone-back').onclick = () => run('phone', 'back');
+            document.getElementById('wide-go').onclick = () => run('wide', 'go');
+            document.getElementById('wide-reset').onclick = () => settle(stages.wide, 'home');
+
+            document.getElementById('desc').textContent = DESC[kind];
+            build('phone');
+            build('wide');
+            addEventListener('resize', () => Object.values(stages).forEach((s) => s.fit()));
+        </script>
+    </body>
+</html>
