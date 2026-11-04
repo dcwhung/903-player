@@ -35,6 +35,8 @@ export interface UpdateManagerDeps {
     /** setTimeout 包裝，返回取消 function；iOS 背景可能唔行，只係額外觸發 */
     schedule: (callback: () => void, ms: number) => () => void;
     subscribePlayback: (listener: () => void) => () => void;
+    /** 頁面載入時已經有 SW controller：有就之後每次 controllerchange 都係換版（CUI-0017） */
+    controlledAtLoad: boolean;
 }
 
 /**
@@ -47,6 +49,8 @@ export class UpdateManager {
     private pendingAction: 'refresh' | 'reload' | undefined;
     /** 已經叫咗 updateSW(true)（SKIP_WAITING 已發） */
     private applied = false;
+    /** 見過 controller 未：載入時有，或者第一次安裝 clientsClaim 接管咗；之後嘅 controllerchange 就係換版 */
+    private hasSeenController: boolean;
     /** 播放上一次停低嘅時間；播緊就係 undefined */
     private stoppedAt: number | undefined;
     private cancelTimer: (() => void) | undefined;
@@ -54,6 +58,7 @@ export class UpdateManager {
     private readonly reloadOnce: () => void;
 
     constructor(private readonly deps: UpdateManagerDeps) {
+        this.hasSeenController = deps.controlledAtLoad;
         this.reloadOnce = createReloadOnce(deps.reload);
     }
 
@@ -105,11 +110,15 @@ export class UpdateManager {
     /**
      * navigator.serviceWorker 嘅 controllerchange（main.tsx 自己聽）。第一次開 app 時 register 冇 controller，
      * workbox 嘅 isUpdate 一直係 false，library 唔會 call onNeedReload，頁面停喺舊版。
-     * 自己發過 SKIP_WAITING、或者已經知有新版等緊（另一個 tab 搶先啟用咗，S-647）先當係換版；
-     * 兩樣都冇（第一次安裝 clientsClaim 接管）唔使 reload
+     * 以下任何一樣就當係換版：之前已經見過 controller（載入時有，或者第一次安裝已經接管咗）；
+     * 另一個 tab 喺 workbox 200 ms waiting delay 入面搶先 skipWaiting，呢個 tab 冇收過 onNeedRefresh（CUI-0017）；
+     * 自己發過 SKIP_WAITING；已經知有新版等緊（S-647）。
+     * 載入時冇 controller 嘅第一下係第一次安裝 clientsClaim 接管，唔使 reload
      */
     handleControllerChange = (): void => {
-        if (this.applied || this.pendingAction !== undefined) {
+        const isUpdate = this.hasSeenController || this.applied || this.pendingAction !== undefined;
+        this.hasSeenController = true;
+        if (isUpdate) {
             this.handleNeedReload();
         }
     };
