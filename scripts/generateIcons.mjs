@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { chromiumExecutablePath } from './chromiumLaunch.mjs';
 
 const SOURCE = fileURLToPath(new URL('../design/app-icon.png', import.meta.url));
 const OUT_DIR = fileURLToPath(new URL('../public/', import.meta.url));
@@ -74,7 +75,7 @@ const optimise = (command, path) =>
     ]);
 
 const dataUrl = `data:image/png;base64,${readFileSync(SOURCE).toString('base64')}`;
-const browser = await chromium.launch();
+const browser = await chromium.launch({ executablePath: chromiumExecutablePath() });
 try {
     const page = await browser.newPage();
     for (const icon of ICONS) {
