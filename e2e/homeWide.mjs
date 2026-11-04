@@ -112,6 +112,35 @@ const checkCardEpisodes = async (p, log, label) => {
     );
 };
 
+/**
+ * 頁頭列今日 / 重溫標籤（3a）：橫版大畫面 --ui-scale 放大字，量瀏覽器實際計出嚟嘅樣式：
+ * 行高唔細過字、上下有內邊、膠囊喺頁頭列入面，字唔會頂住膠囊邊
+ */
+const TAG_TEXT = { today: '今日', rewatch: '重溫' };
+
+const checkCardTag = async (p, log, label, kind) => {
+    const tag = card(p).locator(`[data-tag="${kind}"]`);
+    if ((await tag.count()) !== 1) {
+        log(false, `${label}：頁頭列有${TAG_TEXT[kind]}標籤`);
+        return;
+    }
+    const m = await tag.evaluate((el) => {
+        const s = getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        const h = el.closest('button').getBoundingClientRect();
+        return {
+            font: parseFloat(s.fontSize),
+            line: parseFloat(s.lineHeight),
+            pad: parseFloat(s.paddingTop),
+            inside: r.top >= h.top && r.bottom <= h.bottom,
+        };
+    });
+    log(
+        m.line >= m.font && m.pad > 0 && m.inside,
+        `${label}：${TAG_TEXT[kind]}標籤字唔頂邊（字 ${m.font}px、行高 ${m.line}px、上下內邊 ${m.pad}px）`,
+    );
+};
+
 /** 平日冇嘢載入：右邊今日節目播放卡，佔 36% 闊，節目格喺卡左邊 */
 const checkSplit = async ({ browser, base, errors, log }) => {
     const label = '闊橫版主頁（有 mini player）';
@@ -134,6 +163,7 @@ const checkSplit = async ({ browser, base, errors, log }) => {
         m.column !== null && m.nav.right <= m.column.left && m.overflow === 0,
         `${label}：節目格喺卡左邊、冇橫向捲動（格右 ${m.nav.right}、卡左 ${m.column?.left}）`,
     );
+    await checkCardTag(p, log, label, 'today');
     await checkCardEpisodes(p, log, label);
     await ctx.close();
 };
@@ -149,6 +179,7 @@ const checkCloseAndReopen = async ({ browser, base, errors, log }) => {
     const before = await measure(p);
     log(split && before.column !== null, `${label}：播緊${REWATCH_SHOW.name}返主頁出右邊播放卡`);
     if (!split) return ctx.close();
+    await checkCardTag(p, log, label, 'rewatch');
 
     // 闊橫版冇底部 mini player：成頁得張卡角一粒關閉掣
     await p.getByRole('button', { name: CLOSE_LABEL, exact: true }).click();

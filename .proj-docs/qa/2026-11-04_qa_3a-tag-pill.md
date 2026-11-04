@@ -102,3 +102,13 @@ tickets: none
 next_action: merge_main
 context: e2e/run.mjs not run (no section filter); suggest full e2e before release
 ```
+
+---
+
+## 跟進（S-654 / S-655 / QA 建議）
+
+| 項目                                                                              | Commit          | 驗證                                                                                    |
+| --------------------------------------------------------------------------------- | --------------- | --------------------------------------------------------------------------------------- |
+| S-654 跟 scale 嘅公式抽做 `--scaled-tag-pad-block` / `--scaled-tag-line` token    | `2a1ceaa`       | 畫面數值不變（1300×800：字 16.5px、行高 24px、內邊 3px）                                |
+| S-655 node test 改驗「每個 `--ui-scale`（1 / 1.3 / 1.5）行高 ≥ 字、上下內邊 > 0」 | `732ba2d`       | 套舊 CSS：3 fail；新 CSS：5 / 5 pass                                                    |
+| QA 建議：`e2e/homeWide.mjs` `checkCardTag` 量實際 computed style（今日 + 重溫）   | 見下一個 commit | 只跑 `runHomeWideChecks`：舊 CSS 2 ❌、新 CSS 16 / 16 ✅；full e2e 未跑（release 前跑） |
