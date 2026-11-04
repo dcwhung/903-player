@@ -5,6 +5,7 @@ import {
     PROGRESS_SAVE_INTERVAL_MS,
     REMOTE_AUTO_RESUME_MAX,
     REMOTE_AUTO_RESUME_WINDOW_MS,
+    STALL_DATA_AHEAD_SECONDS,
     STALL_MAX_RETRIES,
     WATCHED_RATIO,
 } from '../config/constants';
@@ -201,26 +202,44 @@ export class AudioController {
     resume = async (): Promise<void> => {
         this.remoteResumeAt = Date.now();
         this.autoResumesLeft = REMOTE_AUTO_RESUME_MAX;
+        await this.recoverAndPlay('remote');
+    };
+
+    /**
+     * 鎖屏 Play 同系統暫停後自動再播共用：凍結 / 卡住就 reload，慢但仲載緊就唔郁，
+     * 否則鎖屏時重設位置（nudge），之後 play()
+     */
+    private recoverAndPlay(source: 'remote' | 'auto-resume'): Promise<void> {
         if (this.frozenBeforeStop || this.isStuck()) {
             this.stopWatchingStall();
-            this.reload('remote');
+            this.reload(source);
         } else if (this.isSuspectedStall()) {
             // 慢但仲載緊：唔 reload，記低方便對實機 log（S-614、S-621）
             recordPlayback('keep', this.audio, 'loading');
         } else if (this.shouldNudge()) {
             this.nudge();
         }
-        await this.play();
-    };
+        return this.play();
+    }
 
-    /** 鎖屏時由暫停恢復、而成集已有 metadata：iOS 凍結 JS，watchdog timer 救唔到，要喺撳 Play 嗰刻處理 */
+    /**
+     * 鎖屏時由暫停恢復、位置前面已經載咗夠多：iOS 凍結 JS，watchdog timer 救唔到，要喺撳 Play 嗰刻處理。
+     * 數據未載到就唔 seek，否則背景會重新開 range request（同 v1.20.7 reload 一樣嘅風險，Review W2）
+     */
     private shouldNudge(): boolean {
-        return document.visibilityState === 'hidden' && this.audio.paused && this.hasMetadata();
+        // 而家位置未載到（undefined）= 前面冇數據
+        const ahead = (bufferedEnd(this.audio) ?? this.audio.currentTime) - this.audio.currentTime;
+        return (
+            document.visibilityState === 'hidden' &&
+            this.audio.paused &&
+            this.hasMetadata() &&
+            ahead >= STALL_DATA_AHEAD_SECONDS
+        );
     }
 
     /**
      * 戴返 AirPods 再鎖屏 Play：發咗 playing 但位置凍結 22 秒（2026-11-04 09:34 log）。
-     * 將位置重設返原位，等 iOS 重新起動播放流程；數據喺本機，唔使上網
+     * 將位置重設返原位，等 iOS 重新起動播放流程；只喺數據已喺本機時做（shouldNudge）
      */
     private nudge(): void {
         recordPlayback('nudge', this.audio);
@@ -290,6 +309,8 @@ export class AudioController {
         this.moveTo(this.pendingStart);
         // 聽過嘅集 getResumePosition 係 0，即係由頭重播
         this.replay.arm(this.watched);
+        // 換 src 同 load() 一樣會清走排緊隊嘅 pause event（Review S2）
+        this.pauseRequested = false;
         this.audio.src = recording.url;
         this.update({ recording, currentTime: this.pendingStart, duration: 0 });
     }
@@ -507,12 +528,15 @@ export class AudioController {
         if (!requested && this.canAutoResume()) {
             this.autoResumesLeft -= 1;
             recordPlayback('auto-resume', this.audio, `left=${this.autoResumesLeft}`);
-            void this.play();
+            // onStopped 啱啱記低咗 frozenBeforeStop：凍結就 reload，唔好淨係 play()（Review W1）
+            void this.recoverAndPlay('auto-resume');
         }
     };
 
+    /** 只限鎖屏 / 背景：前景用戶睇住畫面，系統停就由佢自己撳（Review W3） */
     private canAutoResume(): boolean {
         return (
+            document.visibilityState === 'hidden' &&
             this.autoResumesLeft > 0 &&
             Date.now() - this.remoteResumeAt <= REMOTE_AUTO_RESUME_WINDOW_MS
         );
@@ -574,6 +598,8 @@ export class AudioController {
      * 舊 playing 唔可以帶入新載入，未發 playing 前 rs 升照算進展（S-584）
      */
     private loadSource(): void {
+        // load algorithm 會清走排緊隊嘅 pause event：要停嘅標記唔好留到下一次系統暫停（Review S2）
+        this.pauseRequested = false;
         this.playingFired = false;
         this.audio.load();
     }

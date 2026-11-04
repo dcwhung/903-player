@@ -4,7 +4,11 @@
  * - 10:31 情境：ms:play 後 1–2 秒內 iOS 系統直接 pause（冇 ms:pause），AirPods 仲連緊線（auto-resume）
  */
 import { FakeAudio, timeRanges } from '../../tests/fakeAudio';
-import { REMOTE_AUTO_RESUME_MAX, REMOTE_AUTO_RESUME_WINDOW_MS } from '../config/constants';
+import {
+    FROZEN_PLAYING_MS,
+    REMOTE_AUTO_RESUME_MAX,
+    REMOTE_AUTO_RESUME_WINDOW_MS,
+} from '../config/constants';
 import type { Recording } from '../types/recording';
 import { AudioController } from './AudioController';
 import { HAVE_ENOUGH_DATA } from './mediaReadyState';
@@ -28,13 +32,13 @@ const setScreen = (state: DocumentVisibilityState) =>
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
 
 /** 聽緊（成集已載）→ ms:pause（拔 AirPods） */
-const pausedMidEpisode = async (screen: DocumentVisibilityState) => {
+const pausedMidEpisode = async (screen: DocumentVisibilityState, bufferedTo: number = DURATION) => {
     const audio = new FakeAudio();
     const controller = new AudioController(audio.asAudio());
     const detach = controller.attach();
     await controller.load(RECORDING, { autoplay: true });
     audio.emitMetadata(DURATION);
-    audio.buffered = timeRanges([[0, DURATION]]);
+    audio.buffered = timeRanges([[0, bufferedTo]]);
     audio.emitPlaying(HAVE_ENOUGH_DATA);
     audio.emitTime(PAUSED_AT);
     setScreen(screen);
@@ -69,6 +73,15 @@ describe('AudioController remote resume nudge (AirPods back, locked)', () => {
         expect(audio.play).toHaveBeenCalledTimes(1);
         expect(audio.load).toHaveBeenCalledTimes(0);
         expect(logLines('nudge')).toHaveLength(1);
+        detach();
+    });
+
+    it('does not seek into data that is not downloaded yet (would refetch in the background)', async () => {
+        const { controller, detach, seeks } = await pausedMidEpisode('hidden', PAUSED_AT + 1);
+
+        await controller.resume();
+
+        expect(seeks).toEqual([]);
         detach();
     });
 
@@ -151,6 +164,67 @@ describe('AudioController auto-resume after a system pause (AirPods reconnecting
         audio.pause(); // 例如來電
 
         expect(audio.play).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('does not auto-resume while the app is on screen', async () => {
+        const { audio, detach } = await resumed();
+        setScreen('visible');
+
+        audio.pause();
+
+        expect(audio.play).not.toHaveBeenCalled();
+        detach();
+    });
+
+    it('respects stop() (e.g. closing the player)', async () => {
+        const { audio, controller, detach } = await resumed();
+
+        controller.stop();
+
+        expect(audio.play).not.toHaveBeenCalled();
+        expect(logLines('auto-resume')).toHaveLength(0);
+        detach();
+    });
+
+    // Review W1：凍結要 playing 後 FROZEN_PLAYING_MS 先成立，窗口要短過佢先唔會喺凍結時淨係 play()；
+    // 就算日後放寬窗口，auto-resume 都經 recoverAndPlay 走 reload
+    it('keeps the auto-resume window shorter than the frozen-playing limit', () => {
+        expect(REMOTE_AUTO_RESUME_WINDOW_MS).toBeLessThan(FROZEN_PLAYING_MS);
+    });
+
+    it('treats a late pause event from a requested pause as requested (real browsers queue it)', async () => {
+        const { audio, controller, detach } = await resumed();
+        audio.pause.mockImplementation(() => {
+            audio.paused = true;
+            queueMicrotask(() => audio.dispatchEvent(new Event('pause')));
+        });
+
+        controller.pause(); // ms:pause
+        await controller.resume(); // 即刻 ms:play：pause event 喺之後先到
+        audio.play.mockClear();
+        await Promise.resolve();
+
+        expect(logLines('auto-resume')).toHaveLength(0);
+        detach();
+    });
+
+    it('forgets a requested pause whose event was dropped by a track change', async () => {
+        const { audio, controller, detach } = await resumed();
+        audio.pause.mockImplementation(() => {
+            audio.paused = true; // load algorithm 清走咗排隊嘅 pause event
+        });
+        controller.pause();
+        await controller.load({ ...RECORDING, url: `${RECORDING.url}?next` }, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.pause.mockRestore();
+        await controller.resume();
+        audio.paused = false;
+        audio.play.mockClear();
+
+        audio.dispatchEvent(new Event('pause')); // 系統停
+
+        expect(logLines('auto-resume')).toHaveLength(1);
         detach();
     });
 });
