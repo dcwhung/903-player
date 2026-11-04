@@ -37,6 +37,7 @@ const createHarness = (overrides: Partial<UpdateManagerDeps> = {}) => {
             listeners.add(listener);
             return () => listeners.delete(listener);
         },
+        controlledAtLoad: false,
         ...overrides,
     };
     const manager = new UpdateManager(deps);
@@ -406,6 +407,39 @@ describe('UpdateManager.handleControllerChange', () => {
         h.setLoaded(false);
         h.manager.handleNeedRefresh();
         h.manager.handleNeedReload();
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+});
+
+// CUI-0017：另一個 tab 喺 workbox 嘅 200 ms waiting delay 入面 skipWaiting，呢個 tab 冇收過 onNeedRefresh；
+// 靠「載入時有冇 controller」分第一次安裝（clientsClaim）定換版
+describe('UpdateManager.handleControllerChange without onNeedRefresh (CUI-0017)', () => {
+    it('should reload right away when the page was controlled at load and nothing is loaded', () => {
+        const h = createHarness({ controlledAtLoad: true });
+        h.setLoaded(false);
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+        expect(h.deps.applyUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should wait for stop + grace + hidden when the page was controlled and is playing', () => {
+        const h = createHarness({ controlledAtLoad: true });
+        h.setPlaying(true);
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).not.toHaveBeenCalled();
+        h.setPlaying(false);
+        expect(h.deps.reload).not.toHaveBeenCalled();
+        h.hide();
+        vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('should ignore the first claim on a first visit but reload on the next change', () => {
+        const h = createHarness();
+        h.setLoaded(false);
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).not.toHaveBeenCalled();
         h.manager.handleControllerChange();
         expect(h.deps.reload).toHaveBeenCalledTimes(1);
     });

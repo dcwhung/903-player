@@ -39,6 +39,8 @@ const updateManager = new UpdateManager({
         return () => window.clearTimeout(id);
     },
     subscribePlayback: playerController.subscribe,
+    // 一定要喺 registerSW 之前讀：第一次安裝 clientsClaim 之後就會有
+    controlledAtLoad: Boolean(navigator.serviceWorker?.controller),
 });
 // 由開 app 就追蹤播放停低嘅時間，grace period 先計得準
 updateManager.start();
@@ -58,7 +60,7 @@ const updateSW = registerSW({
     },
 });
 
-// 第一次開 app 換版：library 嘅 controlling isUpdate 係 false，唔會 call onNeedReload，自己聽補返
+// library 漏咗嘅換版自己聽補返：第一次開 app（controlling isUpdate 係 false）、另一個 tab 搶先 skipWaiting（CUI-0017）
 navigator.serviceWorker?.addEventListener('controllerchange', updateManager.handleControllerChange);
 
 createRoot(document.getElementById('root') as HTMLElement).render(
