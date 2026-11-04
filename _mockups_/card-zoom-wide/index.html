@@ -171,8 +171,9 @@
             <section class="panel">
                 <h2>① 卡播緊 A（在晴朗的一天出發），撳另一個節目 B（公子會）</h2>
                 <p>
-                    入頁：右邊卡先縮入右邊把手（「播放中：A」），之後格仔 B zoom
-                    入頁；內頁右邊照舊有把手。返回：內頁倒 zoom 縮入格仔 B，之後把手放大返做卡 A。
+                    入頁：右邊卡縮入右邊把手（「播放中：A」），同一時間格仔 B zoom
+                    入頁；內頁右邊照舊有把手。返回：內頁倒 zoom 縮入格仔 B，同一時間把手放大返做卡
+                    A（用戶 2026-11-04 揀：同步）。
                 </p>
                 <div class="row">
                     <button type="button" class="play" data-demo="a" data-dir="go">入頁 ▶</button>
@@ -182,7 +183,7 @@
             </section>
 
             <section class="panel">
-                <h2>② 主頁冇卡（未播過嘢），撳節目 B</h2>
+                <h2>② 主頁冇卡（未播過嘢），撳節目 B（用戶揀 R2）</h2>
                 <p>
                     入頁 = 格仔 zoom（而家做法），入頁會開始播 B，內頁冇把手。返主頁時右邊會多咗張 B
                     嘅卡、格仔收窄。揀返回款式：
@@ -207,7 +208,7 @@
             </section>
 
             <section class="panel">
-                <h2>③ 卡已經用 ⏻ 閂咗（右邊得把手「已暫停：A」），撳節目 B</h2>
+                <h2>③ 卡已經用 ⏻ 閂咗（右邊得把手「已暫停：A」），撳節目 B（用戶揀 C1）</h2>
                 <p>
                     實測：閂咗卡時撳 B 會開始播 B，內頁冇把手（同 ② 一樣）。入頁 = 格仔
                     zoom，主頁把手跟主頁一齊變暗。揀返回款式：
@@ -341,7 +342,7 @@
                                 s(card, [box(R.card), box(R.handle)], 0, MOVE),
                                 s(card, [{ opacity: 1 }, { opacity: 0 }], MOVE - FADE, FADE),
                                 s(handle, [{ opacity: 0 }, { opacity: 1 }], MOVE - FADE, FADE),
-                                ...zoomSteps(home, tile, page, P2),
+                                ...zoomSteps(home, tile, page, 0),
                             ],
                         };
                     },
