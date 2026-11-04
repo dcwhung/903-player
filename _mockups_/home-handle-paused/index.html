@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>把手已暫停字眼</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <!-- 直寫要有 vertical metrics 嘅中文字型；冇 PingFang 嘅機（Linux / Android）用 Noto Sans TC -->
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            /* 闊橫版 1300×800：--ui-scale 1.5（同 src/styles/tokens.css） */
+            :root {
+                --ui-scale: 1.5;
+                --font-size-2xs: calc(11px * var(--ui-scale));
+                --font-size-xs: calc(12px * var(--ui-scale));
+                --space-1: calc(4px * var(--ui-scale));
+                --space-2: calc(8px * var(--ui-scale));
+                --space-3: calc(12px * var(--ui-scale));
+                --radius-md: calc(12px * var(--ui-scale));
+                --home-handle-width: calc(26px * var(--ui-scale));
+                --home-handle-wide: calc(36px * var(--ui-scale));
+                --home-handle-height: calc(200px * var(--ui-scale));
+                --home-handle-disc: calc(14px * var(--ui-scale));
+                --shadow-home-handle: -4px 0 12px rgb(0 0 0 / 30%);
+                --page: #f2f2f4;
+                --ink: #1c1c1e;
+                --note: #6b6b70;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 24px 16px 48px;
+                background: var(--page);
+                color: var(--ink);
+                font-family: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+            }
+            h1 {
+                font-size: 22px;
+                margin: 0 0 4px;
+            }
+            .lead {
+                margin: 0 0 24px;
+                color: var(--note);
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            .option {
+                margin-bottom: 32px;
+                padding: 16px;
+                border-radius: 16px;
+                background: #fff;
+            }
+            .option h2 {
+                margin: 0 0 4px;
+                font-size: 18px;
+            }
+            .option p {
+                margin: 0 0 16px;
+                color: var(--note);
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            .row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 16px;
+            }
+            /* 模擬主頁右邊緣：灰底代表節目格，把手貼右邊 */
+            .edge {
+                position: relative;
+                width: 180px;
+                height: calc(var(--home-handle-height) + 40px);
+                border-radius: 12px;
+                background: repeating-linear-gradient(135deg, #d9d9de 0 12px, #e3e3e7 12px 24px);
+                overflow: hidden;
+            }
+            .edge figcaption {
+                position: absolute;
+                left: 8px;
+                bottom: 6px;
+                font-size: 12px;
+                color: var(--note);
+            }
+            .handle {
+                position: absolute;
+                top: 50%;
+                right: 0;
+                transform: translateY(-50%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: var(--space-2);
+                width: var(--home-handle-width);
+                height: var(--home-handle-height);
+                padding: var(--space-3) 0;
+                overflow: hidden;
+                border: none;
+                border-radius: var(--radius-md) 0 0 var(--radius-md);
+                background: var(--bg);
+                box-shadow: var(--shadow-home-handle);
+                color: var(--title);
+                font: inherit;
+            }
+            .disc {
+                flex-shrink: 0;
+                width: var(--home-handle-disc);
+                height: var(--home-handle-disc);
+                border-radius: 50%;
+                object-fit: cover;
+            }
+            .vert {
+                writing-mode: vertical-rl;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                min-height: 0;
+            }
+            .name {
+                flex: 1 1 auto;
+                font-size: var(--font-size-xs);
+                font-weight: 700;
+            }
+            .back {
+                flex-shrink: 0;
+                font-size: var(--font-size-xs);
+                line-height: 1;
+            }
+            /* A：同一行直寫「已暫停：名」 */
+            .a .name {
+                font-weight: 700;
+            }
+            /* B：狀態字細啲、muted 色，喺碟上面；名照舊 */
+            .b .status {
+                flex: none;
+                font-size: var(--font-size-2xs);
+                font-weight: 500;
+                color: var(--muted);
+            }
+            /* C：把手闊啲，兩行直寫：右行狀態（accent），左行名 */
+            .c .handle {
+                width: var(--home-handle-wide);
+            }
+            .c .lines {
+                flex: 1 1 auto;
+                display: flex;
+                flex-direction: row-reverse;
+                gap: var(--space-1);
+                min-height: 0;
+            }
+            .c .status {
+                font-size: var(--font-size-2xs);
+                font-weight: 500;
+                color: var(--accentText, var(--accent));
+            }
+            .dark {
+                --bg: #1c1c1e;
+                --title: #f4f1ec;
+                --muted: #afafb5;
+                --accent: #f26b5f;
+            }
+            .light {
+                --bg: #ffe3e3;
+                --title: #b00010;
+                --muted: #7d3c40;
+                --accent: #e7010e;
+                --accentText: #b00010;
+            }
+            .before {
+                opacity: 0.85;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>P2 #5：把手加「已暫停」字眼</h1>
+        <p class="lead">
+            闊橫版 1300×800（--ui-scale 1.5）實際尺寸。撳 ✕ 收埋播放卡後右邊嘅把手；行為唔變（撳把手
+            = 開返張卡，唔會自動播）。<br />
+            每個方案示範：深色節目（雲妮鍾情）、淺色廣播劇（森美小儀系列）、長名（截斷時點顯示）。
+        </p>
+
+        <section class="option">
+            <h2>而家（v1.21.15）</h2>
+            <p>只有碟 + 名 + ‹，睇唔出係暫停咗。</p>
+            <div class="row before">
+                <figure class="edge">
+                    <button class="handle dark">
+                        <img
+                            class="disc"
+                            src="../../src/catalog/shows/library/wanni/disc.webp"
+                            alt=""
+                        />
+                        <span class="vert name">雲妮鍾情</span>
+                        <span class="back">‹</span>
+                    </button>
+                    <figcaption>深色節目</figcaption>
+                </figure>
+                <figure class="edge">
+                    <button class="handle light">
+                        <img
+                            class="disc"
+                            src="../../src/catalog/dramas/library/sammy-kitty/disc.webp"
+                            alt=""
+                        />
+                        <span class="vert name">森美小儀系列</span>
+                        <span class="back">‹</span>
+                    </button>
+                    <figcaption>淺色廣播劇</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="option a">
+            <h2>方案 A：同一行「已暫停：名」</h2>
+            <p>
+                最細改動：把手唔變大，字串改做「已暫停：xxx」，同樣粗體。<br />
+                缺點：名長嗰陣會先截走個名（例如「已暫停：森美小儀系…」），狀態同名冇分主次。
+            </p>
+            <div class="row">
+                <figure class="edge">
+                    <button class="handle dark">
+                        <img
+                            class="disc"
+                            src="../../src/catalog/shows/library/wanni/disc.webp"
+                            alt=""
+                        />
+                        <span class="vert name">已暫停：雲妮鍾情</span>
+                        <span class="back">‹</span>
+                    </button>
+                    <figcaption>深色節目</figcaption>
+                </figure>
+                <figure class="edge">
+                    <button class="handle light">
+                        <img
+                            class="disc"
+                            src="../../src/catalog/dramas/library/sammy-kitty/disc.webp"
+                            alt=""
+                        />
+                        <span class="vert name">已暫停：森美小儀系列</span>
+                        <span class="back">‹</span>
+                    </button>
+                    <figcaption>淺色廣播劇</figcaption>
+                </figure>
+                <figure class="edge">
+                    <button class="handle light">
+                        <img
+                            class="disc"
+                            src="../../src/catalog/dramas/library/lancy/disc.webp"
+                            alt=""
+                        />
+                        <span class="vert name">已暫停：蘭茜夫人劇場之戀愛二分一</span>
+                        <span class="back">‹</span>
+                    </button>
+                    <figcaption>長名</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="option b">
+            <h2>方案 B：碟上面細字「已暫停」，名照舊（推薦）</h2>
+            <p>
+                把手闊度唔變；「已暫停」用細一級字、muted 色，放喺碟上面，名照舊粗體。<br />
+                名長都只會截名，「已暫停」一定見到；主次清楚。
+            </p>
+            <div class="row">
+                <figure class="edge">
+                    <button class="handle dark">
+                        <span class="vert status">已暫停</span>
+                        <img
+                            class="disc"
+                            src="../../src/catalog/shows/library/wanni/disc.webp"
+                            alt=""
+                        />
+                        <span class="vert name">雲妮鍾情</span>
+                        <span class="back">‹</span>
+                    </button>
+                    <figcaption>深色節目</figcaption>
+                </figure>
+                <figure class="edge">
+                    <button class="handle light">
+                        <span class="vert status">已暫停</span>
+                        <img
+                            class="disc"
+                            src="../../src/catalog/dramas/library/sammy-kitty/disc.webp"
+                            alt=""
+                        />
+                        <span class="vert name">森美小儀系列</span>
+                        <span class="back">‹</span>
+                    </button>
+                    <figcaption>淺色廣播劇</figcaption>
+                </figure>
+                <figure class="edge">
+                    <button class="handle light">
+                        <span class="vert status">已暫停</span>
+                        <img
+                            class="disc"
+                            src="../../src/catalog/dramas/library/lancy/disc.webp"
+                            alt=""
+                        />
+                        <span class="vert name">蘭茜夫人劇場之戀愛二分一</span>
+                        <span class="back">‹</span>
+                    </button>
+                    <figcaption>長名</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="option c">
+            <h2>方案 C：把手闊啲，兩行直寫</h2>
+            <p>
+                把手由 26 → 36（× scale）；右行「已暫停」用主題 accent 色，左行名。<br />
+                最醒目，但把手變闊，要同時加大右邊預留位（--home-handle-reserve），左邊節目格會窄少少。
+            </p>
+            <div class="row">
+                <figure class="edge">
+                    <button class="handle dark">
+                        <img
+                            class="disc"
+                            src="../../src/catalog/shows/library/wanni/disc.webp"
+                            alt=""
+                        />
+                        <span class="lines"
+                            ><span class="vert status">已暫停</span
+                            ><span class="vert name">雲妮鍾情</span></span
+                        >
+                        <span class="back">‹</span>
+                    </button>
+                    <figcaption>深色節目</figcaption>
+                </figure>
+                <figure class="edge">
+                    <button class="handle light">
+                        <img
+                            class="disc"
+                            src="../../src/catalog/dramas/library/sammy-kitty/disc.webp"
+                            alt=""
+                        />
+                        <span class="lines"
+                            ><span class="vert status">已暫停</span
+                            ><span class="vert name">森美小儀系列</span></span
+                        >
+                        <span class="back">‹</span>
+                    </button>
+                    <figcaption>淺色廣播劇</figcaption>
+                </figure>
+                <figure class="edge">
+                    <button class="handle light">
+                        <img
+                            class="disc"
+                            src="../../src/catalog/dramas/library/lancy/disc.webp"
+                            alt=""
+                        />
+                        <span class="lines"
+                            ><span class="vert status">已暫停</span
+                            ><span class="vert name">蘭茜夫人劇場之戀愛二分一</span></span
+                        >
+                        <span class="back">‹</span>
+                    </button>
+                    <figcaption>長名</figcaption>
+                </figure>
+            </div>
+        </section>
+    </body>
+</html>

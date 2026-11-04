@@ -14,7 +14,7 @@ interface HomePlayerHandleProps {
     focusOnMount?: boolean;
 }
 
-/** 播放卡閂咗：右邊緣一條窄把手（閂咗嗰個節目嘅色、細碟、直寫名、‹），撳就再出返張卡（暫停） */
+/** 播放卡閂咗：右邊緣一條窄把手（閂咗嗰個節目嘅色、細字「已暫停」、細碟、直寫名、‹），撳就再出返張卡（暫停） */
 export const HomePlayerHandle = ({
     theme,
     showName,
@@ -31,6 +31,9 @@ export const HomePlayerHandle = ({
             onClick={onOpen}
             autoFocus={focusOnMount}
         >
+            <span className={styles.handleStatus} aria-hidden="true">
+                {t('homeCard.pausedStatus')}
+            </span>
             {theme.art && <img className={styles.handleDisc} src={theme.art} alt="" />}
             <span className={styles.handleName}>{showName}</span>
             <BackIcon size={HANDLE_ICON_SIZE} />

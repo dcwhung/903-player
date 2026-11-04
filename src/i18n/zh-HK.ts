@@ -103,7 +103,9 @@ export const zhHK = {
     },
     // 闊橫版主頁右邊播放卡（HomePlayerCard）同收埋後右邊嘅把手
     homeCard: {
-        reopen: '打開播放器：{name}',
+        // 把手出現 = 撳咗 ✕ 停咗播（useHomeCardToggle），所以名入面講埋狀態
+        reopen: '已暫停：{name}，打開播放器',
+        pausedStatus: '已暫停',
     },
     cardStack: {
         label: '今日節目，左右掃動轉節目',

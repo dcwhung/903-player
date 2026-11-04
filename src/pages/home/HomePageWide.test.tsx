@@ -71,6 +71,8 @@ const arriveHomeWith = async (target: Track) => {
     return view;
 };
 
+/** 收埋後把手嘅名：狀態（已暫停）+ 節目 / 劇集名 + 動作 */
+const reopenLabel = (name: string) => `已暫停：${name}，打開播放器`;
 describe('HomePage on a wide landscape screen', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
@@ -158,8 +160,20 @@ describe('HomePage on a wide landscape screen', () => {
             expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'fillWithHandle');
             expect(audio.pause).toHaveBeenCalled();
             expect(
-                screen.getByRole('button', { name: '打開播放器：雲妮鍾情' }),
+                screen.getByRole('button', { name: reopenLabel('雲妮鍾情') }),
             ).toBeInTheDocument();
+        });
+
+        it('should say on the handle that the closed show is paused', async () => {
+            stubWideLandscape();
+            await arriveHomeWith(WANNI_TODAY);
+            await screen.findByRole('region', { name: SHOW_CARD });
+
+            await userEvent.click(screen.getByRole('button', { name: CLOSE }));
+
+            const handle = screen.getByRole('button', { name: reopenLabel('雲妮鍾情') });
+            expect(within(handle).getByText('已暫停')).toBeInTheDocument();
+            expect(within(handle).getByText('雲妮鍾情')).toBeInTheDocument();
         });
 
         it('should use the mini player’s close icon on the corner button', async () => {
@@ -180,7 +194,7 @@ describe('HomePage on a wide landscape screen', () => {
             await userEvent.click(screen.getByRole('button', { name: CLOSE }));
 
             // 平時冇名：返主頁（back）時成頁唔會縮入 26px 把手（S-642）
-            const handle = screen.getByRole('button', { name: '打開播放器：Bad Girl大過佬' });
+            const handle = screen.getByRole('button', { name: reopenLabel('Bad Girl大過佬') });
             expect(handle.style.getPropertyValue('view-transition-name')).toBe('');
             expect(handle).toHaveAttribute('data-home-handle');
         });
@@ -192,7 +206,7 @@ describe('HomePage on a wide landscape screen', () => {
             await userEvent.click(screen.getByRole('button', { name: CLOSE }));
             const plays = audio.play.mock.calls.length;
 
-            await userEvent.click(screen.getByRole('button', { name: '打開播放器：雲妮鍾情' }));
+            await userEvent.click(screen.getByRole('button', { name: reopenLabel('雲妮鍾情') }));
 
             const card = screen.getByRole('region', { name: SHOW_CARD });
             expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'split');
@@ -209,7 +223,7 @@ describe('HomePage on a wide landscape screen', () => {
             const plays = audio.play.mock.calls.length;
 
             await userEvent.click(
-                screen.getByRole('button', { name: '打開播放器：芝See菇Bi Family' }),
+                screen.getByRole('button', { name: reopenLabel('芝See菇Bi Family') }),
             );
 
             expect(screen.getByRole('region', { name: DRAMA_CARD })).toBeInTheDocument();
@@ -288,7 +302,7 @@ describe('HomePage on a wide landscape screen', () => {
 
     describe('focus after closing or reopening the card', () => {
         const HEADER = '開啟 Bad Girl大過佬 節目頁';
-        const HANDLE = '打開播放器：Bad Girl大過佬';
+        const HANDLE = reopenLabel('Bad Girl大過佬');
 
         it('should move focus to the handle after ✕, and to the card after reopening from it', async () => {
             stubWideLandscape();

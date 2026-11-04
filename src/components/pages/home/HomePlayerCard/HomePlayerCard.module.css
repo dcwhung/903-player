@@ -171,6 +171,16 @@
     color: var(--color-title);
 }
 
+/* 「已暫停」：比名細一級、muted 色，喺碟上面；flex: none 唔會俾長名擠走（_mockups_/home-handle-paused 方案 B） */
+.handleStatus {
+    flex: none;
+    font-size: var(--font-size-2xs);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    writing-mode: vertical-rl;
+}
+
 .handleDisc {
     flex-shrink: 0;
     width: var(--home-handle-disc);
