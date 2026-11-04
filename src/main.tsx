@@ -20,7 +20,7 @@ const updateManager = new UpdateManager({
     applyUpdate: () => {
         // stop = pause + persist：reload 前先存低進度
         playerController.stop();
-        void updateSW(true);
+        void updateSW?.(true);
     },
     reload: () => {
         playerController.stop();
@@ -45,19 +45,39 @@ const updateManager = new UpdateManager({
 // 由開 app 就追蹤播放停低嘅時間，grace period 先計得準
 updateManager.start();
 
+/**
+ * Shift-reload：頁面冇 controller，但 SW 一早 active（S-648）。要喺 registerSW 之前查：
+ * 第一次開 app 未 register，一定查唔到 registration，唔會將第一次安裝誤當換版
+ */
+const detectHardReload = async (): Promise<void> => {
+    const serviceWorker = navigator.serviceWorker;
+    if (!serviceWorker || serviceWorker.controller) {
+        return;
+    }
+    const existing = await serviceWorker.getRegistration().catch(() => undefined);
+    if (existing?.active) {
+        updateManager.markControlled();
+    }
+};
+
 // prompt 模式：新 SW 喺 waiting 等，由 updateManager 決定幾時 skipWaiting
-const updateSW = registerSW({
-    immediate: true,
-    onNeedRefresh: updateManager.handleNeedRefresh,
-    // 只會 reload 一次；播緊（例如另一個 tab 換咗版本）就等停咗先 reload
-    onNeedReload: updateManager.handleNeedReload,
-    onRegisteredSW: (_swUrl, swRegistration) => {
-        if (!swRegistration) {
-            return;
-        }
-        registration = swRegistration;
-        startUpdateChecks(updateManager, { document, window });
-    },
+const startServiceWorker = () =>
+    registerSW({
+        immediate: true,
+        onNeedRefresh: updateManager.handleNeedRefresh,
+        // 只會 reload 一次；播緊（例如另一個 tab 換咗版本）就等停咗先 reload
+        onNeedReload: updateManager.handleNeedReload,
+        onRegisteredSW: (_swUrl, swRegistration) => {
+            if (!swRegistration) {
+                return;
+            }
+            registration = swRegistration;
+            startUpdateChecks(updateManager, { document, window });
+        },
+    });
+let updateSW: ReturnType<typeof registerSW> | undefined;
+void detectHardReload().finally(() => {
+    updateSW = startServiceWorker();
 });
 
 // library 漏咗嘅換版自己聽補返：第一次開 app（controlling isUpdate 係 false）、另一個 tab 搶先 skipWaiting（CUI-0017）

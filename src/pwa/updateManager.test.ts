@@ -445,6 +445,29 @@ describe('UpdateManager.handleControllerChange without onNeedRefresh (CUI-0017)'
     });
 });
 
+// S-648：Shift-reload 嘅頁冇 controller，但 SW 一早 active；main.tsx 喺 registerSW 前用 getRegistration 認出嚟
+describe('UpdateManager.markControlled (S-648)', () => {
+    it('should treat the first controllerchange as an update after markControlled', () => {
+        const h = createHarness();
+        h.setLoaded(false);
+        h.manager.markControlled();
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('should still wait for playback to stop after markControlled', () => {
+        const h = createHarness();
+        h.setPlaying(true);
+        h.manager.markControlled();
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).not.toHaveBeenCalled();
+        h.setPlaying(false);
+        h.hide();
+        vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+});
+
 describe('createReloadOnce', () => {
     it('should reload only once when called repeatedly', () => {
         const reload = vi.fn();

@@ -123,6 +123,14 @@ export class UpdateManager {
         }
     };
 
+    /**
+     * 頁面冇 controller 但 SW 一早 active（Shift-reload，S-648）：當係見過 controller，
+     * 之後新版 clientsClaim 接管嘅第一下 controllerchange 就係換版。main.tsx 喺 registerSW 之前判斷
+     */
+    markControlled = (): void => {
+        this.hasSeenController = true;
+    };
+
     /** 返到前景（visibilitychange / bfcache）：感覺似重新開 app，停夠耐就換 */
     handleBecameVisible = (): void => this.evaluate(true);
 
