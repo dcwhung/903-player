@@ -1,6 +1,6 @@
 # 903-player 項目文件索引
 
-**最後更新**：2026-10-31
+**最後更新**：2026-11-04
 
 ## Audits
 
@@ -53,6 +53,7 @@
 | 2026-10-31 | [reviews/2026-10-31_review_v1.21.1.md](reviews/2026-10-31_review_v1.21.1.md)（97 pass，S-640–S-642；✕ = 關閉播放器、卡縮入把手、同闊、卡清單同內頁一樣；Round 2 99 pass，S-643；Round 3 100 pass）                                                                                                                              |
 | 2026-10-31 | [reviews/2026-10-31_review_e2e-section-homewide_batch.md](reviews/2026-10-31_review_e2e-section-homewide_batch.md)（batch 98 pass：A 99 / B 98，S-644–S-646；v1.21.2 e2e runSection 失敗都有總結 + v1.21.3 闊橫版主頁 e2e）                                                                                                     |
 | 2026-10-31 | [reviews/2026-10-31_review_pwa-first-visit-e2e-cleanup_batch.md](reviews/2026-10-31_review_pwa-first-visit-e2e-cleanup_batch.md)（batch 99 pass：A 99 / B 100，S-647；v1.21.4 第一次開 app 換版都 reload（controllerchange）+ v1.21.5 e2e section 完結閂 context、闊橫版主頁 3 個 section）                                     |
+| 2026-11-04 | [reviews/2026-11-04_review_cui-0017-pwa-update-e2e_batch.md](reviews/2026-11-04_review_cui-0017-pwa-update-e2e_batch.md)（batch 94 warn：A 99 pass / B 88 warn，W-519–W-520、S-648–S-650；Round 2 batch pass：A 99 / B 100，S-648 defer；v1.21.6 CUI-0017 兩個 tab 搶輸 skip-waiting 都 reload + v1.21.7 PWA 換版 e2e）         |
 
 ## QA
 
@@ -88,6 +89,7 @@
 | 2026-10-31 | [qa/2026-10-31_qa_v1.21.1.md](qa/2026-10-31_qa_v1.21.1.md)（v1.21.1 pass @ `e4897d5`：unit 3 × 2058、e2e 598 / 0、探索 69 / 69；冇檔集數 → 關閉播放器 30 s 撳唔到 Chromium 重現唔到、修正後關閉冇再播（冇 CUI-0017）；S-642 修正證實；PWA 1.21.0 → 1.21.1 4 × 4/4）                                                                                                             |
 | 2026-10-31 | [qa/2026-10-31_qa_e2e-section-homewide_batch.md](qa/2026-10-31_qa_e2e-section-homewide_batch.md)（batch pass @ `172ff5b`：unit 2062、e2e 2 × 612 / 0（1 次 CPU 搶用）；runSection 注入 2 / 2 只得 1 個 FAIL、照行到總結、exit 1；闊橫版主頁 14 check 穩定；PWA 1.21.1 → 1.21.3 8 / 8；冇 ticket）                                                                               |
 | 2026-10-31 | [qa/2026-10-31_qa_pwa-first-visit-e2e-cleanup_batch.md](qa/2026-10-31_qa_pwa-first-visit-e2e-cleanup_batch.md)（batch pass @ `a1f6192`：unit 2070、e2e 612 / 0；PWA 第一次開 1.21.5 → 1.21.6 8 / 8 reload 1 次（main 對照 0 次）、返嚟 8 / 8、播緊唔 reload 4 / 4、兩 tab S-647 2 / 2；runSection 注入 3 / 3 contexts 清晒；CUI-0017 🟡 兩個冇播 tab 搶輸嘅停喺舊版（舊問題）） |
+| 2026-11-04 | [qa/2026-11-04_qa_cui-0017-pwa-update-e2e_batch.md](qa/2026-11-04_qa_cui-0017-pwa-update-e2e_batch.md)（batch pass @ `a7d6a3e`：unit 2073、e2e 2 × 617 / 0（1 次 CPU 搶用），5 個 PWA check 冇 flake；兩個 tab 1.21.7 → 1.21.8 30 / 30 都 reload 1 次（main 對照 9 / 9 一個 tab 停喺舊版）、播緊唔 reload 16 / 16；第一次開 / 返嚟 16 / 16；CUI-0017 completed）                |
 
 ## Deploys
 
