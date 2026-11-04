@@ -20,7 +20,7 @@ describe('mini player width on a phone held sideways', () => {
 
     it('should match the gutters the home grid really uses', () => {
         const page = cssDeclarations(
-            css('../../../../pages/Page.module.css'),
+            css('../../../../pages/shared/Page.module.css'),
             '.page',
             LANDSCAPE_QUERY,
         );

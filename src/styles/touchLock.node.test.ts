@@ -40,7 +40,7 @@ describe('iOS touch lock', () => {
 
     it('should make the full-page theme scope and locked main fill the shell exactly', () => {
         const scope = css('../components/shared/common/ThemeScope/ThemeScope.module.css');
-        const page = css('../pages/Page.module.css');
+        const page = css('../pages/shared/Page.module.css');
 
         expect(cssDeclarations(scope, '.scope').height).toBe('100%');
         expect(cssDeclarations(page, '.locked')).toMatchObject({

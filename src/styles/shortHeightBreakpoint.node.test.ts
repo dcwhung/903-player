@@ -20,8 +20,8 @@ describe('short-height breakpoint', () => {
     });
 
     it.each([
-        ['Page.module.css', '../pages/Page.module.css'],
-        ['HomePage.module.css', '../pages/HomePage.module.css'],
+        ['Page.module.css', '../pages/shared/Page.module.css'],
+        ['HomePage.module.css', '../pages/home/HomePage.module.css'],
         [
             'ShowCardStack.module.css',
             '../components/pages/today/ShowCardStack/ShowCardStack.module.css',
