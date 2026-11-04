@@ -52,10 +52,10 @@ describe('useCardMotion', () => {
         rerender({ mode: 'split', item: JIM });
 
         // 瀏覽器仲未影舊畫面：舊卡要定住，唔可以即刻轉去 JIM（W-526）
-        expect(result.current).toEqual({ mode: 'split', frozen: true });
+        expect(result.current).toEqual({ mode: 'split', frozen: true, holding: true });
         expect(vt.start).toHaveBeenCalledOnce();
         vt.flush();
-        expect(result.current).toEqual({ mode: 'split', frozen: false });
+        expect(result.current).toEqual({ mode: 'split', frozen: false, holding: false });
         // update 用最新嗰個：之後唔會再為 CHISEE → JIM 開多一個過場
         expect(vt.start).toHaveBeenCalledOnce();
     });
@@ -81,7 +81,7 @@ describe('useCardMotion', () => {
         rerender({ mode: 'split', item: JIM });
 
         // ⤢ 嗰個過場等緊：唔做動畫，即刻轉
-        expect(result.current).toEqual({ mode: 'split', frozen: false });
+        expect(result.current).toEqual({ mode: 'split', frozen: false, holding: false });
         expect(vt.start).toHaveBeenCalledOnce();
     });
 
@@ -92,7 +92,18 @@ describe('useCardMotion', () => {
 
         rerender({ mode: 'split', item: JIM });
 
-        expect(result.current).toEqual({ mode: 'split', frozen: true });
+        expect(result.current).toEqual({ mode: 'split', frozen: true, holding: true });
         expect(vt.start).toHaveBeenCalledTimes(2);
+    });
+
+    it('should hold the previous layout (and its handle) while the card opens from the handle', () => {
+        const { result, rerender } = renderCardMotion({ mode: 'fillWithHandle', item: undefined });
+
+        rerender({ mode: 'split', item: CHISEE });
+
+        // 舊畫面仲有把手：HomeWide 照顯示佢，O1 開卡時先跟舊 snapshot 淡走
+        expect(result.current).toEqual({ mode: 'fillWithHandle', frozen: false, holding: true });
+        vt.flush();
+        expect(result.current).toEqual({ mode: 'split', frozen: false, holding: false });
     });
 });

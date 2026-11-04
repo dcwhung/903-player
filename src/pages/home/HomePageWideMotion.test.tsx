@@ -3,9 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { stubWideLandscape } from '../../../tests/landscape';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
 import { seriesEpisodesOf } from '../../catalog/dramas';
-import { openHomePlayerCard } from '../../hooks/homePlayerCardClosed';
-import { restoreMiniPlayer } from '../../hooks/miniPlayerDismissed';
+import {
+    openHomePlayerCard,
+    useReopenHomePlayerCardOnPlay,
+} from '../../hooks/homePlayerCardClosed';
+import { restoreMiniPlayer, useRestoreMiniPlayerOnPlay } from '../../hooks/miniPlayerDismissed';
 import { saveProgress } from '../../services/progressStore';
+import { withViewTransition } from '../../utils/viewTransition';
 import { HomePage } from './HomePage';
 
 const SHOW_CARD = '正在播放（今日節目）';
@@ -43,6 +47,23 @@ const resumeButton = (name: string) =>
     screen.getByRole('button', { name: new RegExp(`^${name}，繼續收聽`) });
 
 const openDramasTab = () => userEvent.click(screen.getByRole('button', { name: '廣播劇' }));
+
+/** 同 App（PlaybackObservers）一樣：開始播就再出返 mini player 同張卡 */
+const HomeInApp = () => {
+    useRestoreMiniPlayerOnPlay();
+    useReopenHomePlayerCardOnPlay();
+    return <HomePage />;
+};
+
+const HANDLE = /^已暫停：Bad Girl大過佬/;
+const handle = () => screen.queryByRole('button', { name: HANDLE });
+
+/** 撳 ✕ 閂卡（過場行埋），轉做 fillWithHandle + 右邊把手 */
+const closeCard = async (vt: { flush: () => void }) => {
+    await screen.findByRole('region', { name: SHOW_CARD });
+    await userEvent.click(screen.getByRole('button', { name: CLOSE }));
+    vt.flush();
+};
 
 const layout = () => screen.getByRole('main').getAttribute('data-layout');
 
@@ -136,7 +157,54 @@ describe('HomePage wide player card motion', () => {
 
         expect(vt.kinds).toEqual(['close', 'open']);
         expect(layout()).toBe('split');
+        expect(handle()).not.toBeInTheDocument();
         expect(screen.getByRole('region', { name: SHOW_CARD })).toBeInTheDocument();
+    });
+
+    it('should keep the handle in the old view until the open transition updates when a drama is resumed', async () => {
+        stubWideLandscape();
+        renderWithProviders(<HomeInApp />, { recordings: RECORDINGS });
+        await closeCard(vt);
+        await openDramasTab();
+
+        await userEvent.click(resumeButton(CHISEE));
+
+        // 瀏覽器影緊舊畫面：把手要喺舊 snapshot 入面，張卡 slide 入時把手先淡走
+        expect(vt.kinds).toEqual(['close', 'open']);
+        expect(layout()).toBe('fillWithHandle');
+        expect(handle()).toBeInTheDocument();
+        vt.flush();
+        expect(layout()).toBe('split');
+        expect(handle()).not.toBeInTheDocument();
+        expect(screen.getByRole('region', { name: DRAMA_CARD })).toHaveTextContent(CHISEE);
+        expect(vt.kinds).toEqual(['close', 'open']);
+    });
+
+    it('should drop the handle straight away when the open transition is skipped', async () => {
+        stubWideLandscape();
+        renderWithProviders(<HomeInApp />, { recordings: RECORDINGS });
+        await closeCard(vt);
+        await openDramasTab();
+        // 另一個過場未 update：開卡唔做動畫，直接轉
+        withViewTransition(() => undefined, 'expand');
+
+        await userEvent.click(resumeButton(CHISEE));
+
+        expect(layout()).toBe('split');
+        expect(handle()).not.toBeInTheDocument();
+    });
+
+    it('should drop the handle straight away when a drama is resumed with reduced motion', async () => {
+        stubWideLandscape({ reducedMotion: true });
+        renderWithProviders(<HomeInApp />, { recordings: RECORDINGS });
+        await closeCard(vt);
+        await openDramasTab();
+
+        await userEvent.click(resumeButton(CHISEE));
+
+        expect(vt.kinds).toEqual([]);
+        expect(layout()).toBe('split');
+        expect(handle()).not.toBeInTheDocument();
     });
 
     it('should switch straight away, with no transition, when the user prefers reduced motion', async () => {

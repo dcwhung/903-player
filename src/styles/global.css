@@ -182,19 +182,21 @@ html:is([data-view-transition='open'], [data-view-transition='switch']) [data-ho
 /*
  * 闊橫版內頁有把手（播緊 / 暫停緊其他節目 / 劇集，InnerPageHandle）時返主頁：
  * 係把手放大做主頁播放卡（_mockups_/inner-page-handle ④），成頁同頁頭、唱片格唔再同張卡同名。
- * 用 data-page-handle，唔郁主頁把手（data-home-handle）嘅閂卡 / 開返規則
+ * 用 data-page-handle，唔郁主頁把手（data-home-handle）嘅閂卡 / 開返規則。
+ * 淡出緊（data-leaving）嘅把手唔算：播緊嘅已經係呢頁自己嘅嘢，照舊成頁縮入張卡，唔由半透明把手放大（S-664）
  */
-html[data-view-transition='back'] main[data-player-page]:has([data-page-handle]) {
+html[data-view-transition='back']
+    main[data-player-page]:has([data-page-handle]:not([data-leaving])) {
     view-transition-name: none;
 }
 
 html[data-view-transition='back']
-    main[data-player-page]:has([data-page-handle])
+    main[data-player-page]:has([data-page-handle]:not([data-leaving]))
     :is(h1, [data-player-gauge]) {
     view-transition-name: none;
 }
 
-html[data-view-transition='back'] [data-page-handle] {
+html[data-view-transition='back'] [data-page-handle]:not([data-leaving]) {
     view-transition-name: player-panel;
 }
 

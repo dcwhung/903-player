@@ -78,7 +78,10 @@
     }
 }
 
-/* 減少動畫：JS 已經即刻拆走唔淡出（prefersReducedMotion）；保險起見 CSS 都唔郁 */
+/*
+ * 減少動畫：開始離開嗰刻 JS 已經即刻拆走唔淡出（useFadeOut 嗰刻讀 prefersReducedMotion）；
+ * 淡出途中先轉：呢度停咗個動畫 → animationcancel / 後備 timer 拆走（useLeaveFallback，S-668）
+ */
 @media (prefers-reduced-motion: reduce) {
     .handle[data-leaving] {
         animation: none;

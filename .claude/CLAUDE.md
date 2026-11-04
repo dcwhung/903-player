@@ -17,3 +17,9 @@
 | E2E 單檔              | `e2e/*.mjs` 嘅 section module 唔可以單獨跑，入口只有 `node e2e/run.mjs`（要先 build）；plan 列嘅係對應 section                                                                 |
 | S3 可引用嘅 CI        | `.github/workflows/ci.yml`（非 main push：lint、unit、build、e2e；淨係改 docs 嘅 push 由 `changes` job 跳過，跳過當 Success）；同一個 SHA 綠咗就引用個 run，唔重跑             |
 | Cloud sandbox         | `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run e2e`（預裝 Chromium 同鎖住嘅 Playwright 唔夾時用）                                                                         |
+
+## Motion / 減少動態（用戶 2026-11-04 決定：以後同類情況唔使再問）
+
+- 新動畫一律跟 app 現有統一做法：CSS 動畫放喺 `@media (prefers-reduced-motion: no-preference)`（或者用 `reduce` 關掉），設定一改即刻生效；JS 喺動畫開始嗰刻先叫 `prefersReducedMotion()`（`src/utils/motion.ts`），唔 cache 之前 render 嘅值
+- 減少動態 = 唔播動畫、直接切換；唔可以因為等 `animationend` 而令元素卡住
+- 時間 / easing 用 `tokens.css` 現有過場 token（`--view-transition-*`）

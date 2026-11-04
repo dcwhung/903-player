@@ -20,6 +20,7 @@ import type { HomeLayoutMode } from './homeLayoutMode';
 import page from '../shared/Page.module.css';
 import { useHomeCardToggle } from './useHomeCardToggle';
 import { useCardMotion } from './useCardMotion';
+import { useHeldWhile } from './useHeldWhile';
 import { HomeWideCard } from './HomeWideCard';
 
 interface WideGridProps {
@@ -72,12 +73,13 @@ interface HomeWideProps extends WideGridProps {
 /**
  * 闊橫版主頁（WIDE_BANNER_QUERY）：冇橫額釘頂，tab 喺頂，下面填滿格；
  * 有 mini player 就右邊播放卡（split，底部冇 mini player），✕ 閂咗就全闊 + 右邊把手（fillWithHandle）。
- * 張卡出現 / 換節目嘅過場見 useCardMotion：過場影舊畫面期間照顯示舊版面（mode）同舊卡（frozen）
+ * 張卡出現 / 換節目嘅過場見 useCardMotion：過場影舊畫面期間照顯示舊版面（mode）、舊卡（frozen）同舊把手（holding）
  */
 export const HomeWide = ({ mode: latestMode, onTab, miniPlayer, ...grid }: HomeWideProps) => {
     const toggle = useHomeCardToggle(miniPlayer);
-    const closed = useClosedHomePlayerCard();
-    const { mode, frozen } = useCardMotion(latestMode, miniPlayer?.item);
+    const { mode, frozen, holding } = useCardMotion(latestMode, miniPlayer?.item);
+    // 開始播就即刻清走閂咗嘅卡（useReopenHomePlayerCardOnPlay），但 O1 影舊畫面前把手要仲喺度先淡得走
+    const closed = useHeldWhile(useClosedHomePlayerCard(), holding);
     return (
         <main className={`${page.page} ${page.locked} ${styles.wide}`} data-layout={mode}>
             <div className={styles.gridColumn}>

@@ -1,6 +1,10 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { stubLandscape, stubWideLandscape } from '../../../tests/landscape';
+import {
+    stubLandscape,
+    stubRotatableWideLandscape,
+    stubWideLandscape,
+} from '../../../tests/landscape';
 import { openWhileOtherLoaded } from '../../../tests/otherPlayback';
 import {
     recording,
@@ -408,7 +412,13 @@ describe('ShowPage', () => {
                 recordings: RECORDINGS,
                 playing,
             });
-        afterEach(() => vi.unstubAllGlobals());
+        // jsdom 冇 tokens.css：畀淡出後備 timer（useLeaveFallback）一個真時長，唔會一開始淡就拆走
+        const FADE_VAR = '--duration-page-handle-fade';
+        beforeEach(() => document.documentElement.style.setProperty(FADE_VAR, '240ms'));
+        afterEach(() => {
+            vi.unstubAllGlobals();
+            document.documentElement.style.removeProperty(FADE_VAR);
+        });
 
         it('should show a handle for another show that is playing, in its name', async () => {
             stubWideLandscape();
@@ -470,6 +480,17 @@ describe('ShowPage', () => {
             expect(handle).toHaveAttribute('data-leaving');
             fireEvent.animationEnd(handle);
             expect(screen.queryByRole('button', { name: HANDLE })).not.toBeInTheDocument();
+        });
+
+        it('should remove the handle without a fade when the screen leaves wide landscape', async () => {
+            const screenSize = stubRotatableWideLandscape();
+            await open();
+            await screen.findByRole('button', { name: HANDLE });
+
+            act(() => screenSize.rotate());
+
+            // 唔淡出：直版唔應該見到把手同右邊預留位（S-665）
+            expect(document.querySelector('[data-page-handle]')).not.toBeInTheDocument();
         });
 
         it('should remove the handle straight away when the user asks for reduced motion', async () => {
