@@ -171,14 +171,20 @@
     color: var(--color-title);
 }
 
-/* 「已暫停」：比名細一級、muted 色，喺碟上面；flex: none 唔會俾長名擠走（_mockups_/home-handle-paused 方案 B） */
+/*
+ * 「已暫停」：比名細一級、muted 色，喺碟上面；flex: none 唔會俾長名擠走（_mockups_/home-handle-paused 方案 B）。
+ * 唔用 vertical-rl：flex: none 嘅直寫元素靠字型 vertical metrics 量高度，冇呢啲 metrics 嘅字型會量出 0 高；
+ * 改為 1em 闊、每個字自己一行，中文字直排效果一樣
+ */
 .handleStatus {
     flex: none;
+    width: 1em;
     font-size: var(--font-size-2xs);
     font-weight: 500;
+    line-height: var(--home-handle-status-line);
+    text-align: center;
+    overflow-wrap: anywhere;
     color: var(--color-text-muted);
-    white-space: nowrap;
-    writing-mode: vertical-rl;
 }
 
 .handleDisc {

@@ -22,7 +22,13 @@ describe('把手「已暫停」字眼（P2 #5）', () => {
 
     it('should not shrink, so a long name cannot squeeze the status out', () => {
         expect(status.flex).toBe('none');
-        expect(status['writing-mode']).toBe('vertical-rl');
+    });
+
+    it('should stack the glyphs one per line instead of using vertical-rl', () => {
+        // flex: none 嘅直寫元素靠字型 vertical metrics 量高度：冇呢啲 metrics 嘅字型（e2e 擋咗 webfont）量出 0 高
+        expect(status['writing-mode']).toBeUndefined();
+        expect(status.width).toBe('1em');
+        expect(status['overflow-wrap']).toBe('anywhere');
     });
 
     it('should start the name right under the disc instead of centring it in the spare height', () => {
