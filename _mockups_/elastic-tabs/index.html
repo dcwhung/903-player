@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>主頁 tab 拉長</title>
+        <style>
+            /* 時間同 easing 跟 src/styles/tokens.css（--view-transition-move / --ease-view-transition） */
+            :root {
+                --move: 520ms;
+                --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+                /* 後面嗰邊遲幾多（移動時間嘅比例） */
+                --trail-ratio: 0.3;
+                --trail-delay: calc(var(--move) * var(--trail-ratio));
+                --label-fade: calc(var(--move) / 2);
+                --inset: 3px;
+                --far: calc(50% + var(--inset) / 2);
+                --page: #1d3557;
+                --track: rgb(0 0 0 / 18%);
+                --text: #ffffff;
+                --accent: #fdf0c2;
+                --on-accent: #1c1c1e;
+                --note: rgb(255 255 255 / 70%);
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 24px 16px 48px;
+                background: var(--page);
+                color: var(--text);
+                font-family: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+            }
+            h1 {
+                margin: 0 0 4px;
+                font-size: 22px;
+            }
+            p {
+                color: var(--note);
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            .wrap {
+                max-width: 480px;
+            }
+            .tabs {
+                position: relative;
+                display: flex;
+                gap: var(--inset);
+                padding: var(--inset);
+                border-radius: 999px;
+                background: var(--track);
+            }
+            .pill {
+                position: absolute;
+                top: var(--inset);
+                bottom: var(--inset);
+                border-radius: 999px;
+                background: var(--accent);
+                pointer-events: none;
+            }
+            .pill[data-tab='shows'] {
+                left: var(--inset);
+                right: var(--far);
+            }
+            .pill[data-tab='dramas'] {
+                left: var(--far);
+                right: var(--inset);
+            }
+            .tab {
+                position: relative;
+                flex: 1 1 0;
+                min-height: 44px;
+                border: none;
+                border-radius: 999px;
+                background: transparent;
+                color: var(--text);
+                font-size: 15px;
+                font-weight: 500;
+            }
+            .tab[aria-pressed='true'] {
+                color: var(--on-accent);
+                font-weight: 700;
+            }
+            @media (prefers-reduced-motion: no-preference) {
+                .tab {
+                    transition: color var(--label-fade) var(--ease);
+                }
+                /* E2 拉長：前面嗰邊即刻郁，後面嗰邊遲啲跟，中途橫跨兩格 */
+                .pill[data-direction='right'] {
+                    transition:
+                        right var(--move) var(--ease),
+                        left var(--move) var(--ease) var(--trail-delay);
+                }
+                .pill[data-direction='left'] {
+                    transition:
+                        left var(--move) var(--ease),
+                        right var(--move) var(--ease) var(--trail-delay);
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <h1>E2 拉長（elastic）</h1>
+        <p>
+            一粒強調色膠囊喺兩個掣後面。換 tab 時前面嗰邊先郁，後面嗰邊遲移動時間嘅 30%
+            先跟，中途拉長橫跨兩格，之後收入新 tab。第一次顯示唔郁；要求減少動畫就即刻換。
+        </p>
+        <div class="wrap">
+            <div class="tabs" role="group" aria-label="主頁分類">
+                <span class="pill" data-tab="shows" aria-hidden="true"></span>
+                <button type="button" class="tab" data-id="shows" aria-pressed="true">節目</button>
+                <button type="button" class="tab" data-id="dramas" aria-pressed="false">
+                    廣播劇
+                </button>
+            </div>
+        </div>
+        <script>
+            const ORDER = ['shows', 'dramas'];
+            const pill = document.querySelector('.pill');
+            document.querySelectorAll('.tab').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const next = button.dataset.id;
+                    const prev = pill.dataset.tab;
+                    if (next === prev) return;
+                    pill.dataset.direction =
+                        ORDER.indexOf(next) > ORDER.indexOf(prev) ? 'right' : 'left';
+                    pill.dataset.tab = next;
+                    document.querySelectorAll('.tab').forEach((other) => {
+                        other.setAttribute('aria-pressed', String(other === button));
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
