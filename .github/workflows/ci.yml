@@ -1,0 +1,64 @@
+name: CI
+
+# PR 同 main 以外嘅 push：lint + unit + build，之後 e2e。main 嘅部署照舊由 deploy.yml 負責。
+on:
+    pull_request:
+    push:
+        branches-ignore: [main]
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    check:
+        name: Lint, unit & build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - run: npm ci
+
+            - run: npm run lint
+
+            - run: npm test
+
+            - run: npm run build
+
+    e2e:
+        name: E2E (Playwright)
+        needs: check
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - run: npm ci
+
+            # npx 用 node_modules 鎖住嘅 Playwright，所以裝到嘅 Chromium revision 一定夾
+            - name: Install Playwright Chromium
+              run: npx playwright install --with-deps chromium
+
+            # 同本機一樣：npm run e2e = build + node e2e/run.mjs（自己起 vite preview，port 4173）
+            - run: npm run e2e
+
+            - name: Upload e2e screenshots
+              if: failure()
+              uses: actions/upload-artifact@v5
+              with:
+                  name: e2e-screenshots
+                  path: e2e/screenshots/
+                  if-no-files-found: ignore
+                  retention-days: 7
