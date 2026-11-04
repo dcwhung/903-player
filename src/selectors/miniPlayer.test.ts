@@ -1,5 +1,5 @@
 import { recording } from '../../tests/renderWithProviders';
-import { seriesEpisodesOf } from '../dramas';
+import { seriesEpisodesOf } from '../catalog/dramas';
 import {
     miniPlayerRecordings,
     miniPlayerSubtitle,

@@ -61,7 +61,7 @@ PLAYWRIGHT_PATH=<repo>/node_modules/playwright node scripts/arcCover/review/veri
     - `keep` 或者冇 doc（未儲存）→ 沿用現有圖，唔使改
     - `own` → 用家會另外畀圖；`null` → 未決定
     - `comment` → 下一輪要點改（例如 `--title-box`）
-7. **入 app**：揀咗嘅 webp copy 去 `src/dramas/<id>/`：整套劇 `disc.webp` / `tile.webp`；短篇 `<slug>-disc.webp` / `<slug>-tile.webp`
+7. **入 app**：揀咗嘅 webp copy 去 `src/catalog/dramas/library/<id>/`：整套劇 `disc.webp` / `tile.webp`；短篇 `<slug>-disc.webp` / `<slug>-tile.webp`
    （新短篇要喺 `drama.json` 個 arc 加 `"disc"` / `"tile"`）。
 8. **PATCH bump**（`package.json` version）。
 

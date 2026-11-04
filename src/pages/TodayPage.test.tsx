@@ -7,7 +7,7 @@ import {
     renderWithProviders,
     unavailableEpisode,
 } from '../../tests/renderWithProviders';
-import { themeFor } from '../shows';
+import { themeFor } from '../catalog/shows';
 import { saveProgress } from '../services/progressStore';
 import { TodayPage } from './TodayPage';
 

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { ArcPicker } from '../components/ArcPicker/ArcPicker';
 import { ArcSheet } from '../components/ArcSheet/ArcSheet';
 import { EpisodeList } from '../components/EpisodeList/EpisodeList';
-import { dramaArtFor } from '../dramas';
+import { dramaArtFor } from '../catalog/dramas';
 import { usePlayer } from '../player/usePlayer';
 import type { ArcSummary } from '../selectors/arcProgress';
 import { DramaHeader } from './DramaHeader';

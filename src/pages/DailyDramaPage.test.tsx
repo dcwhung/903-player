@@ -2,12 +2,12 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openWhileOtherLoaded } from '../../tests/otherPlayback';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
-import { dailyEpisodesOf } from '../dramas';
+import { dailyEpisodesOf } from '../catalog/dramas';
 import { DramaPage } from './DramaPage';
 
 // 18 樓 C 座暫時停用（config/dramas.ts enabled: false）；每日劇集頁照測，當佢開咗
-vi.mock('../dramas', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../dramas')>();
+vi.mock('../catalog/dramas', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../catalog/dramas')>();
     return { ...actual, findEnabledDrama: actual.findDrama };
 });
 

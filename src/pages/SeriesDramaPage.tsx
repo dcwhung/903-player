@@ -2,7 +2,7 @@ import { NowPlaying } from '../components/NowPlaying/NowPlaying';
 import { PlayerGauge } from '../components/PlayerPanel/PlayerGauge';
 import { StatusMessage } from '../components/StatusMessage/StatusMessage';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
-import type { DramaConfig } from '../dramas';
+import type { DramaConfig } from '../catalog/dramas';
 import { LANDSCAPE_QUERY } from '../config/layout';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { usePlayer } from '../player/usePlayer';

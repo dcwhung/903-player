@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import { stubLandscape } from '../../tests/landscape';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
-import { dramaArtFor, findDrama, seriesEpisodesOf } from '../dramas';
+import { dramaArtFor, findDrama, seriesEpisodesOf } from '../catalog/dramas';
 import { useMiniPlayer } from '../hooks/useMiniPlayer';
 import { usePlayer } from '../player/usePlayer';
 import { saveProgress } from '../services/progressStore';

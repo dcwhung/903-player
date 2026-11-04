@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react';
-import { dailyEpisodesOf, seriesEpisodesOf } from '../dramas';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../catalog/dramas';
 import type { PlayerActions, PlayerState } from './playerContext';
 import { useMediaSession, type RemoteControls } from './useMediaSession';
 

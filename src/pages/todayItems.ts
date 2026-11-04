@@ -1,6 +1,6 @@
 import type { StackCard } from '../components/ShowCardStack/ShowCardStack';
 import type { ShowStatus, TodayShowItem } from '../components/TodayShowList/TodayShowList';
-import { findShow, themeFor } from '../shows';
+import { findShow, themeFor } from '../catalog/shows';
 import { entryKey, isAvailable } from '../selectors/recordings';
 import type { EpisodeEntry, Recording } from '../types/recording';
 import { formatBroadcastTime } from '../utils/time';

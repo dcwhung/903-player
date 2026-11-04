@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { themeFor } from '../shows';
+import { themeFor } from '../catalog/shows';
 import { useRecordings } from '../data/useRecordings';
 import { useAudioBusy } from '../hooks/useAudioBusy';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';

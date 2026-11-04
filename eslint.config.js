@@ -48,7 +48,11 @@ export default tseslint.config(
     {
         // 預留：.ts 而家冇 max-lines（hook / service 唔限檔案行數），呢個 block 暫時係 no-op；
         // 將來如果幫 .ts 加 max-lines，資料檔照樣豁免（函數上限照用）
-        files: ['src/i18n/zh-HK.ts', 'src/dramas/schema.ts', 'src/dramas/registry.ts'],
+        files: [
+            'src/i18n/zh-HK.ts',
+            'src/catalog/dramas/lib/schema.ts',
+            'src/catalog/dramas/lib/registry.ts',
+        ],
         rules: { 'max-lines': 'off' },
     },
     {

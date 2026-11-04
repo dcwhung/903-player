@@ -102,7 +102,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("drama", help="src/dramas/<id>")
+    parser.add_argument("drama", help="src/catalog/dramas/library/<id>")
     parser.add_argument("--work", type=Path, default=DEFAULT_WORK, help=f"work 資料夾（預設 {DEFAULT_WORK}）")
     parser.add_argument(
         "--arc", action="append", default=[], help="未有碟面嘅短篇：「短篇名=slug」，可以重複"
@@ -127,7 +127,7 @@ def fetch_all(args: argparse.Namespace, data: dict, run: Runner) -> int:
 
 def main(argv: list[str], run: Runner = subprocess.run) -> int:
     args = parse_args(argv)
-    data = json.loads((args.repo / "src" / "dramas" / args.drama / "drama.json").read_text(encoding="utf-8"))
+    data = json.loads((args.repo / "src" / "catalog" / "dramas" / "library" / args.drama / "drama.json").read_text(encoding="utf-8"))
     if data["audio"].get("host") != "r2":
         print(f"error: {args.drama} 唔係放喺 R2（audio.host = {data['audio'].get('host')}）", file=sys.stderr)
         return EXIT_MISSING

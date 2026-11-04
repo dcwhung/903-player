@@ -228,8 +228,8 @@ def _round_dir(options: Options) -> tuple[int, Path]:
 
 
 def theme_for(drama: str) -> dict[str, str]:
-    """預覽顏色跟 src/dramas/<drama>/drama.json 嘅 theme；搵唔到就用預設。"""
-    drama_json = REPO_ROOT / "src" / "dramas" / drama / "drama.json"
+    """預覽顏色跟 src/catalog/dramas/library/<drama>/drama.json 嘅 theme；搵唔到就用預設。"""
+    drama_json = REPO_ROOT / "src" / "catalog" / "dramas" / "library" / drama / "drama.json"
     if not drama_json.is_file():
         return dict(DEFAULT_THEME)
     theme = json.loads(drama_json.read_text(encoding="utf-8")).get("theme", {})
@@ -386,7 +386,7 @@ def _positive_int(value: str) -> int:
 def _parse_args(argv: list[str]) -> Options:
     parser = argparse.ArgumentParser(description="短篇 / 廣播劇封面 → disc + tile 候選圖")
     parser.add_argument("--input", required=True, type=Path, help="封面相（jpg / png / webp）")
-    parser.add_argument("--drama", required=True, help="廣播劇 id（src/dramas/<id>）")
+    parser.add_argument("--drama", required=True, help="廣播劇 id（src/catalog/dramas/library/<id>）")
     parser.add_argument("--arc", help="短篇 slug（例如 half）；唔填 = 廣播劇本身封面（tile 2:1）")
     parser.add_argument("--out", required=True, type=Path, help="輸出根目錄（建議放 repo 外面）")
     parser.add_argument("--round", type=_positive_int, help="round 號（≥ 1）；唔填 = 下一個")

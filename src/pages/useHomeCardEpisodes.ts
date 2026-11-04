@@ -4,7 +4,7 @@ import type {
     EpisodeScrollAlign,
 } from '../components/EpisodeList/EpisodeList';
 import { useRecordings } from '../data/useRecordings';
-import { dailyEpisodesOf, seriesEpisodesOf } from '../dramas';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../catalog/dramas';
 import { useEpisodePress } from '../hooks/useEpisodePress';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { usePlayer } from '../player/usePlayer';

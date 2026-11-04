@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShowTile } from '../components/ShowTile/ShowTile';
 import { ThemeScope } from '../components/ThemeScope/ThemeScope';
 import { WIDE_BANNER_QUERY } from '../config/layout';
-import { SHOWS } from '../shows';
+import { SHOWS } from '../catalog/shows';
 import { HOME_THEME } from '../config/showThemes';
 import { useRecordings } from '../data/useRecordings';
 import { useAudioBusy } from '../hooks/useAudioBusy';

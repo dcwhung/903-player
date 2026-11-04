@@ -1,4 +1,4 @@
-import { dailyEpisodesOf, seriesEpisodesOf } from '../dramas';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../catalog/dramas';
 import type { RowContext } from './episodeItems';
 import { toDailyItems, toSeriesItems } from './dramaItems';
 

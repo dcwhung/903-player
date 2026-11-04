@@ -234,7 +234,7 @@ def render_current_preview(src: Path, drama: str, kind: str) -> Image.Image:
 
 
 def current_images(site: Site, paths: Paths, drama: str, slug: str) -> dict[str, str]:
-    base = paths.repo / "src" / "dramas" / drama
+    base = paths.repo / "src" / "catalog" / "dramas" / "library" / drama
     out: dict[str, str] = {}
     for kind in KINDS:
         src = base / app_image_name(slug, kind)
@@ -288,7 +288,7 @@ def drama_entry(site: Site, paths: Paths, drama_dir: Path) -> dict:
 
 def collect(site: Site, paths: Paths) -> dict:
     """全部劇集（跟 app 排序），每套劇：整套劇 + 有自己碟面嘅短篇，各有現用圖同每個 round 嘅候選"""
-    dramas_dir = paths.repo / "src" / "dramas"
+    dramas_dir = paths.repo / "src" / "catalog" / "dramas" / "library"
     drama_dirs = sorted(p for p in dramas_dir.iterdir() if (p / "drama.json").is_file())
     dramas = [drama_entry(site, paths, d) for d in drama_dirs]
     dramas.sort(key=lambda d: (d["order"], d["id"]))

@@ -1,5 +1,5 @@
 // @vitest-environment node
-// 經 src/dramas/episodes.ts 用到 import.meta.env：vite/client 型別由 tsconfig.scripts-test.json（只包 scripts/*.test.ts）提供。
+// 經 src/catalog/dramas/lib/episodes.ts 用到 import.meta.env：vite/client 型別由 tsconfig.scripts-test.json（只包 scripts/*.test.ts）提供。
 // 唔好用 /// <reference types> 或者放落 tsconfig.node.json：兩樣都會令成個 Node program 以為有 import.meta.env
 /*
  * scripts/dramaFromFolder.mjs：由本機劇集 folder 生成 drama.json 草稿。
@@ -14,8 +14,8 @@ import { dirname, join, win32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { DRAMA_AUDIO_BASE as APP_AUDIO_BASE } from '../src/config/constants';
-import { buildEpisodes } from '../src/dramas/episodes';
-import { parseDramaDefinition } from '../src/dramas/schema';
+import { buildEpisodes } from '../src/catalog/dramas/lib/episodes';
+import { parseDramaDefinition } from '../src/catalog/dramas/lib/schema';
 import { compileSchema } from '../tests/jsonSchemas';
 import {
     DRAMA_AUDIO_BASE,
@@ -34,7 +34,7 @@ import {
 } from './dramaFromFolder.mjs';
 
 const SCRIPT = new URL('./dramaFromFolder.mjs', import.meta.url);
-const DRAMAS_DIR = new URL('../src/dramas/', import.meta.url);
+const DRAMAS_DIR = new URL('../src/catalog/dramas/library/', import.meta.url);
 const NODE_TSCONFIG = new URL('../tsconfig.node.json', import.meta.url);
 /** 香港時間 2026-10-29 04:00（UTC 仲係 28 號），驗 addedAt 用香港日期 */
 const NOW = new Date('2026-10-28T20:00:00Z');
@@ -43,7 +43,7 @@ const NFD_NAME = 'Café'.normalize('NFD');
 const SERIES_IDS = ['lancy', 'chisee', 'golden', 'jim', 'sammy-kitty'] as const;
 /** 已上架嘅劇（短篇 + 每日劇 c18），全部要 round-trip */
 const COMMITTED_IDS = [...SERIES_IDS, 'c18'] as const;
-/** host: app 嘅錄音喺 app 自己嘅 public/dramas/（同 src/dramas/episodes.ts 一致） */
+/** host: app 嘅錄音喺 app 自己嘅 public/dramas/（同 src/catalog/dramas/lib/episodes.ts 一致） */
 const APP_AUDIO_DIR = 'dramas/';
 const VERIFY_TIMEOUT_MS = 300;
 /**

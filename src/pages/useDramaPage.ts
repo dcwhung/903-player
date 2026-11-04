@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { stripDays } from '../components/DateStrip/dateStrip';
-import { dailyEpisodesOf, dramaEpisodeTheme, seriesEpisodesOf, type DramaConfig } from '../dramas';
+import {
+    dailyEpisodesOf,
+    dramaEpisodeTheme,
+    seriesEpisodesOf,
+    type DramaConfig,
+} from '../catalog/dramas';
 import { useAudioBusy } from '../hooks/useAudioBusy';
 import { useEpisodePress } from '../hooks/useEpisodePress';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';

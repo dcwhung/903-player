@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { dramaThemeFor } from '../../dramas';
-import { themeFor } from '../../shows';
+import { dramaThemeFor } from '../../catalog/dramas';
+import { themeFor } from '../../catalog/shows';
 import { ThemeScope } from './ThemeScope';
 
 const SUNNYDAY_THEME = themeFor('sunnyday');

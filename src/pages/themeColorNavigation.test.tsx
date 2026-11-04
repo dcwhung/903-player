@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
-import { themeFor } from '../shows';
+import { themeFor } from '../catalog/shows';
 import { HOME_THEME } from '../config/showThemes';
 import { HomePage } from './HomePage';
 import { ShowPage } from './ShowPage';

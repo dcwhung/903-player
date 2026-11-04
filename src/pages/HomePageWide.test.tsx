@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
 import { PowerIcon } from '../components/icons/icons';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
-import { dailyEpisodesOf, seriesEpisodesOf } from '../dramas';
+import { dailyEpisodesOf, seriesEpisodesOf } from '../catalog/dramas';
 import { openHomePlayerCard } from '../hooks/homePlayerCardClosed';
 import { restoreMiniPlayer } from '../hooks/miniPlayerDismissed';
 import { usePlayer } from '../player/usePlayer';

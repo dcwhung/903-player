@@ -1,7 +1,12 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { DramaShelfItem } from '../components/DramaShelf/DramaShelf';
-import { dramaEpisodesOf, enabledDramas, seriesEpisodesOf, type DramaConfig } from '../dramas';
+import {
+    dramaEpisodesOf,
+    enabledDramas,
+    seriesEpisodesOf,
+    type DramaConfig,
+} from '../catalog/dramas';
 import { useAudioBusy } from '../hooks/useAudioBusy';
 import { useDramaContinue } from '../hooks/useDramaContinue';
 import { useDramaNewLabels } from '../hooks/useDramaNewLabels';

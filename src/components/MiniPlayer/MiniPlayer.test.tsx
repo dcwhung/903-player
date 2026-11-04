@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { themeFor } from '../../shows';
+import { themeFor } from '../../catalog/shows';
 import { MiniPlayer, type MiniPlayerProps } from './MiniPlayer';
 import { ARMED_IDLE_MS, DISMISS_SLIDE_MS, LONG_PRESS_MS } from './miniPlayerDismiss';
 

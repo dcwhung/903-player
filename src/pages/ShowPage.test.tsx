@@ -8,7 +8,7 @@ import {
     unavailableEpisode,
 } from '../../tests/renderWithProviders';
 import { saveProgress } from '../services/progressStore';
-import { themeFor } from '../shows';
+import { themeFor } from '../catalog/shows';
 import type { Recording } from '../types/recording';
 import { ShowPage } from './ShowPage';
 

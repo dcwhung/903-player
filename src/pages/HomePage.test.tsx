@@ -6,8 +6,8 @@ import { recording, renderWithProviders } from '../../tests/renderWithProviders'
 import { HOME_THEME } from '../config/showThemes';
 import { restoreMiniPlayer } from '../hooks/miniPlayerDismissed';
 import { usePlayer } from '../player/usePlayer';
-import { seriesEpisodesOf } from '../dramas';
-import { findShow } from '../shows';
+import { seriesEpisodesOf } from '../catalog/dramas';
+import { findShow } from '../catalog/shows';
 import { saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import type { Track } from '../types/track';

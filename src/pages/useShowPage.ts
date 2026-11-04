@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { airsWeekly, findShow, themeFor, type ShowConfig } from '../shows';
+import { airsWeekly, findShow, themeFor, type ShowConfig } from '../catalog/shows';
 import { useRecordings } from '../data/useRecordings';
 import { useEpisodePress } from '../hooks/useEpisodePress';
 import { useAudioBusy } from '../hooks/useAudioBusy';

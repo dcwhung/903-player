@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { themeFor } from '../../shows';
+import { themeFor } from '../../catalog/shows';
 import { ArcSlider } from '../ArcSlider/ArcSlider';
 import { CARD_FLY_MS, CARD_SPRING_MS } from './cardStack';
 import { ShowCardStack, type StackCard } from './ShowCardStack';

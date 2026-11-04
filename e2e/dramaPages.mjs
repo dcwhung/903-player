@@ -2,7 +2,7 @@
 // （S-485、v1.19.3 CUI-0006）。黑碟色要喺真瀏覽器量 computed style：jsdom 計唔到 CSS 顏色
 import { isShown, newE2EPage, succeeds } from './harness.mjs';
 
-// 主頁「廣播劇」書架次序（按上架日，新嘅先；src/dramas/*/drama.json）；刻意寫死做獨立對照
+// 主頁「廣播劇」書架次序（按上架日，新嘅先；src/catalog/dramas/library/*/drama.json）；刻意寫死做獨立對照
 const SHELF_ORDER = ['蘭茜夫人劇場', '少爺占系列', '森美小儀系列', '芝See菇Bi Family', '黃金少年'];
 // 劇集格讀屏名有新嘢會加「，有新短篇」等（drama.tileNew），比較劇名時去走
 const tileName = (label) => label.split('，')[0];

@@ -152,9 +152,9 @@ class MainTest(unittest.TestCase):
         self.repo = root / "repo"
         self.work = root / "work"
         for drama, data in (("lancy", LANCY), ("c18", {**LANCY, "audio": {"host": "app", "folder": "c18"}})):
-            (self.repo / "src" / "dramas" / drama).mkdir(parents=True)
+            (self.repo / "src" / "catalog" / "dramas" / "library" / drama).mkdir(parents=True)
             text = json.dumps(data, ensure_ascii=False)
-            (self.repo / "src" / "dramas" / drama / "drama.json").write_text(text, encoding="utf-8")
+            (self.repo / "src" / "catalog" / "dramas" / "library" / drama / "drama.json").write_text(text, encoding="utf-8")
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
