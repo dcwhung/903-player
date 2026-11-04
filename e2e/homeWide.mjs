@@ -8,6 +8,7 @@ import {
     runSection,
     waitForPlaybackState,
 } from './harness.mjs';
+import { dismissAutoSheet, SERIES_ROUTE } from './dramaPages.mjs';
 
 // iPad 打橫：高 ≥ 562 先係闊橫版（src/config/layout.ts WIDE_BANNER_QUERY）
 const WIDE = { width: 1180, height: 820 };
@@ -230,10 +231,128 @@ const checkCloseAndReopen = async ({ browser, base, errors, log }) => {
     await ctx.close();
 };
 
+// 內頁把手（P3 #4）：mockup 嘅闊橫版 1300×800（--ui-scale 1.5）
+const INNER_WIDE = { width: 1300, height: 800 };
+// 把手讀屏名：狀態 + 播緊嘅節目名 + 返回主頁（src/i18n/zh-HK.ts pageHandle）；刻意寫死做獨立對照
+const PAGE_HANDLE_PLAYING = `播放中：${REWATCH_SHOW.name}，返回主頁`;
+const PAGE_HANDLE_ANY = new RegExp(`^(播放中|已暫停)：${REWATCH_SHOW.name}，返回主頁$`);
+const PLAYING_STATUS = '播放中';
+// 喺呢頁開始播：把手淡出（tokens.css --duration-page-handle-fade）再拆走，最多等幾耐
+const HANDLE_GONE_MS = 3000;
+
+const pageHandle = (p) => p.locator('[data-page-handle]');
+
+/** 用 app 自己嘅 hash route 轉頁（唔重新載入，player 照播） */
+const goToRoute = (p, route) =>
+    p.evaluate((hash) => {
+        window.location.hash = hash;
+    }, route);
+
+/** 把手位置、狀態字高同字大、播放器欄有冇讓開把手（main 內容右邊唔過把手左邊） */
+const measurePageHandle = (p) =>
+    p.evaluate(() => {
+        const handle = document.querySelector('[data-page-handle]');
+        const main = document.querySelector('main');
+        if (!handle || !main) return null;
+        const status = handle.querySelector('[aria-hidden="true"]');
+        const box = handle.getBoundingClientRect();
+        const contentRight =
+            main.getBoundingClientRect().right - parseFloat(getComputedStyle(main).paddingRight);
+        return {
+            right: box.right,
+            left: box.left,
+            contentRight,
+            statusHeight: status?.getBoundingClientRect().height ?? 0,
+            statusFont: status ? parseFloat(getComputedStyle(status).fontSize) : 0,
+        };
+    });
+
+// 再入短篇劇集頁：未聽過呢套劇，全集表可能再彈出；等佢最多幾耐
+const SHEET_WAIT_MS = 2000;
+
+/** 全集表彈咗出嚟就撳 Esc 閂（佢係 modal，背後嘅掣唔喺 accessibility tree） */
+const closeSheetIfOpen = async (p) => {
+    const sheet = p.getByRole('dialog', { name: '全集' });
+    if (!(await isShown(sheet, { timeout: SHEET_WAIT_MS }))) return;
+    await p.keyboard.press('Escape');
+    await isShown(sheet, { state: 'detached', timeout: SHEET_WAIT_MS });
+};
+
+/** 播緊公子會入劇集頁：右邊出「播放中：公子會」把手，播放器讓位，唔遮 */
+const checkHandleOnOtherPage = async (p, log, label) => {
+    const handle = p.getByRole('button', { name: PAGE_HANDLE_PLAYING, exact: true });
+    const shown = await isShown(handle, { timeout: LAYOUT_WAIT_MS });
+    const m = shown ? await measurePageHandle(p) : null;
+    log(
+        m !== null && INNER_WIDE.width - m.right <= HANDLE_EDGE_PX,
+        `${label}：劇集頁右邊緣出把手「${PAGE_HANDLE_PLAYING}」（把手右 ${m?.right}）`,
+    );
+    log(
+        m !== null && m.statusHeight >= PLAYING_STATUS.length * m.statusFont,
+        `${label}：把手見到「${PLAYING_STATUS}」（高 ${m?.statusHeight}px，字 ${m?.statusFont}px）`,
+    );
+    log(
+        m !== null && m.contentRight <= m.left,
+        `${label}：內頁右邊預留把手位（內容右 ${m?.contentRight}、把手左 ${m?.left}）`,
+    );
+    return shown;
+};
+
+/** 撳把手 = 返回：返主頁出返右邊播放卡（公子會） */
+const checkHandleGoesHome = async (p, log, label) => {
+    await pageHandle(p).click();
+    const split = await hasLayout(p, 'split');
+    const header = card(p).getByRole('button', { name: REWATCH_OPEN });
+    log(
+        split && (await header.count()) === 1,
+        `${label}：撳把手返主頁，右邊係${REWATCH_SHOW.name}播放卡（${await layoutOf(p)}）`,
+    );
+};
+
+/** 喺劇集頁開始播呢套劇：把手淡出拆走，預留位收返 */
+const checkHandleLeaves = async (p, log, label) => {
+    const shown = await isShown(p.getByRole('button', { name: PAGE_HANDLE_ANY }), {
+        timeout: LAYOUT_WAIT_MS,
+    });
+    await p.getByRole('button', { name: '播放', exact: true }).click();
+    const gone = await isShown(pageHandle(p), { state: 'detached', timeout: HANDLE_GONE_MS });
+    const padding = await p
+        .locator('main')
+        .first()
+        .evaluate((el) => parseFloat(getComputedStyle(el).paddingRight));
+    log(
+        shown && gone && padding === 0,
+        `${label}：喺劇集頁開始播，把手消失、預留位收返（出過 ${shown}，消失 ${gone}，右邊 ${padding}px）`,
+    );
+};
+
+/**
+ * 內頁把手（P3 #4）：播緊公子會時自己節目頁冇把手；入劇集頁出「播放中」把手（讓位、狀態字排到出嚟）；
+ * 撳把手返主頁；再入劇集頁開始播呢套劇，把手消失
+ */
+const checkInnerPageHandle = async ({ browser, base, errors, log }) => {
+    const label = '闊橫版內頁把手';
+    const { ctx, p } = await newE2EPage(browser, errors, { viewport: INNER_WIDE });
+    await p.goto(`${base}${REWATCH_SHOW.route}`);
+    await ensurePlaying(p);
+    const own = await pageHandle(p).count();
+    log(own === 0, `${label}：喺播緊嘅${REWATCH_SHOW.name}節目頁冇把手（${own} 個）`);
+
+    await goToRoute(p, SERIES_ROUTE);
+    if (!(await dismissAutoSheet(p, log, label))) return ctx.close();
+    if (await checkHandleOnOtherPage(p, log, label)) await checkHandleGoesHome(p, log, label);
+
+    await goToRoute(p, SERIES_ROUTE);
+    await closeSheetIfOpen(p);
+    await checkHandleLeaves(p, log, label);
+    await ctx.close();
+};
+
 const SCENARIOS = [
     ['闊橫版主頁（冇 mini player）', checkFill],
     ['闊橫版主頁（有 mini player）', checkSplit],
     ['闊橫版主頁播放卡閂卡 / 開返', checkCloseAndReopen],
+    ['闊橫版內頁把手', checkInnerPageHandle],
 ];
 
 /** 闊橫版主頁：fill / split（卡闊、卡清單）/ ✕ 閂卡 → 把手 → 開返；每個情境各自一個 section，一個 throw 唔會跳過其他（O3） */
