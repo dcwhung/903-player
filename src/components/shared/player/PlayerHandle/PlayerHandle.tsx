@@ -1,10 +1,11 @@
-import type { AnimationEvent } from 'react';
+import { useRef, type AnimationEvent } from 'react';
 import type { ShowTheme } from '../../../../config/showThemes';
 import { t } from '../../../../i18n/t';
 import type { HandleStatus } from '../../../../selectors/pageHandle';
 import { BackIcon } from '../../common/icons/icons';
 import { ThemeScope } from '../../common/ThemeScope/ThemeScope';
 import styles from './PlayerHandle.module.css';
+import { useLeaveFallback } from './useLeaveFallback';
 
 const HANDLE_ICON_SIZE = 14;
 
@@ -26,13 +27,15 @@ export interface PlayerHandleProps {
      */
     variant: 'home' | 'page';
     focusOnMount?: boolean;
-    /** 淡出緊：淡完（animationend）叫 onLeft 先拆走 */
+    /** 淡出緊：淡完（animationend；cancel 咗或者冇動畫就靠 useLeaveFallback）叫 onLeft 先拆走 */
     leaving?: boolean;
     onLeft?: () => void;
 }
 
 /** 右邊緣一條窄把手：而家嘅嘢嘅色、細字狀態、細碟、直寫名、‹ */
 export const PlayerHandle = ({ theme, status, leaving = false, ...props }: PlayerHandleProps) => {
+    const ref = useRef<HTMLButtonElement>(null);
+    useLeaveFallback(ref, leaving, props.onLeft);
     // 只認把手自己嘅淡出動畫，唔好俾入面元素嘅動畫觸發
     const onAnimationEnd = (event: AnimationEvent) => {
         if (leaving && event.target === event.currentTarget) props.onLeft?.();
@@ -40,6 +43,7 @@ export const PlayerHandle = ({ theme, status, leaving = false, ...props }: Playe
     return (
         <ThemeScope theme={theme} fullPage={false} className={styles.handleScope}>
             <button
+                ref={ref}
                 type="button"
                 className={styles.handle}
                 aria-label={props.label}

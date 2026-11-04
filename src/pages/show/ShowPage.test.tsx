@@ -412,7 +412,13 @@ describe('ShowPage', () => {
                 recordings: RECORDINGS,
                 playing,
             });
-        afterEach(() => vi.unstubAllGlobals());
+        // jsdom 冇 tokens.css：畀淡出後備 timer（useLeaveFallback）一個真時長，唔會一開始淡就拆走
+        const FADE_VAR = '--duration-page-handle-fade';
+        beforeEach(() => document.documentElement.style.setProperty(FADE_VAR, '240ms'));
+        afterEach(() => {
+            vi.unstubAllGlobals();
+            document.documentElement.style.removeProperty(FADE_VAR);
+        });
 
         it('should show a handle for another show that is playing, in its name', async () => {
             stubWideLandscape();
