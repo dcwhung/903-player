@@ -244,3 +244,88 @@ describe('tileTransitionName', () => {
         names.forEach((name) => expect(name).toMatch(/^[a-z][a-z0-9-]*$/));
     });
 });
+
+describe('withViewTransition hooks', () => {
+    /** update 等測試叫 run 先行；finish 先完；skipTransition 記低 */
+    const stubControlled = () => {
+        const calls: { run: () => void; finish: () => void; skip: ReturnType<typeof vi.fn> }[] = [];
+        Object.defineProperty(document, 'startViewTransition', {
+            value: (update: () => void) => {
+                let finish = () => {};
+                const finished = new Promise<void>((resolve) => {
+                    finish = resolve;
+                });
+                const skip = vi.fn();
+                calls.push({ run: update, finish, skip });
+                return {
+                    finished,
+                    ready: finished,
+                    updateCallbackDone: finished,
+                    skipTransition: skip,
+                };
+            },
+            configurable: true,
+        });
+        return calls;
+    };
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        removeStartViewTransition();
+        delete document.documentElement.dataset.viewTransition;
+    });
+
+    it('should end straight after the update when there is no transition', () => {
+        stubReducedMotion(true);
+        const order: string[] = [];
+
+        withViewTransition(() => order.push('update'), 'zoom', { onEnd: () => order.push('end') });
+
+        expect(order).toEqual(['update', 'end']);
+    });
+
+    it('should end once the transition has finished', async () => {
+        stubReducedMotion(false);
+        const calls = stubControlled();
+        const onEnd = vi.fn();
+
+        withViewTransition(() => {}, 'zoom', { onEnd });
+        calls[0]?.run();
+        expect(onEnd).not.toHaveBeenCalled();
+        calls[0]?.finish();
+
+        await vi.waitFor(() => expect(onEnd).toHaveBeenCalledOnce());
+    });
+
+    it('should end at once when it is turned away because an earlier one has not updated', () => {
+        stubReducedMotion(false);
+        const calls = stubControlled();
+        const onEnd = vi.fn();
+
+        withViewTransition(() => {}, 'zoom');
+        expect(withViewTransition(() => {}, 'unzoom', { onEnd })).toBe(false);
+
+        expect(onEnd).toHaveBeenCalledOnce();
+        calls[0]?.run();
+    });
+
+    it.each([
+        [false, 1],
+        [true, 0],
+    ])('should skip the animation when afterUpdate gives %s (skips %i)', (keep, skips) => {
+        stubReducedMotion(false);
+        const calls = stubControlled();
+        const order: string[] = [];
+
+        withViewTransition(() => order.push('update'), 'unzoom', {
+            afterUpdate: () => {
+                order.push('after');
+                return keep;
+            },
+        });
+        calls[0]?.run();
+
+        expect(order).toEqual(['update', 'after']);
+        expect(calls[0]?.skip).toHaveBeenCalledTimes(skips);
+    });
+});

@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import { ShowTile } from '../../components/pages/home/ShowTile/ShowTile';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import { WIDE_BANNER_QUERY } from '../../config/layout';
@@ -14,10 +13,12 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useMiniPlayer } from '../../hooks/useMiniPlayer';
 import { useNewShowIds } from '../../hooks/useNewShowIds';
 import { useStartPlayback } from '../../hooks/useStartPlayback';
+import { useZoomNavigate } from '../../hooks/useZoomNavigate';
 import { usePlayer } from '../../player/usePlayer';
 import { todayRecordings } from '../../selectors/recordings';
 import type { ShowId } from '../../types/recording';
 import { asShowRecording } from '../../types/track';
+import { zoomKey } from '../../utils/cardZoom';
 import { hkToday } from '../../utils/date';
 import { t } from '../../i18n/t';
 import styles from './HomePage.module.css';
@@ -44,9 +45,12 @@ const useTileAutoplay = () => {
     };
 };
 
-/** 7 個節目格（今日有新一集就有「New」）+ 今日節目格：撳落入頁，按 useTileAutoplay 順便開始播 */
+/**
+ * 7 個節目格（今日有新一集就有「New」）+ 今日節目格：撳落按 useTileAutoplay 順便開始播，
+ * 再由嗰格 zoom 入頁（Z3）
+ */
 const useHomeTiles = () => {
-    const navigate = useNavigate();
+    const open = useZoomNavigate();
     const { startShow, startToday } = useStartPlayback();
     const { canStartShow, canStartToday } = useTileAutoplay();
     const newShowIds = useNewShowIds();
@@ -57,9 +61,10 @@ const useHomeTiles = () => {
                 label={show.name}
                 art={show.tileArt}
                 isNew={newShowIds.has(show.id)}
+                zoomKey={zoomKey.show(show.id)}
                 onClick={() => {
                     if (canStartShow(show.id)) startShow(show.id);
-                    navigate(`/show/${show.id}`);
+                    open(zoomKey.show(show.id), `/show/${show.id}`);
                 }}
             />
         )),
@@ -67,9 +72,10 @@ const useHomeTiles = () => {
             key="today"
             variant="today"
             label={t('home.today')}
+            zoomKey={zoomKey.today}
             onClick={() => {
                 if (canStartToday()) startToday();
-                navigate('/today');
+                open(zoomKey.today, '/today');
             }}
         />,
     ];

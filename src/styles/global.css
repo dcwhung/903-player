@@ -200,6 +200,79 @@ html[data-view-transition='back'] [data-page-handle]:not([data-leaving]) {
     view-transition-name: player-panel;
 }
 
+/*
+ * 主頁格仔 zoom 入內頁（Z3，_mockups_/card-zoom，src/utils/cardZoom.ts）：
+ * 被撳嗰格（data-zoom-source）做 zoom-tile 淡走，內頁唔變形，由格仔個框（圓角）開窗咁展開到成頁；
+ * 窄版返主頁（unzoom）倒轉，格仔遲啲先淡返入（共用 only-child 淡入）。
+ * 期間得 root 同 zoom-tile 有名，其他（連 inline style）一律熄：否則闊橫版播放卡會同內頁做 expand 式變形
+ */
+html:is([data-view-transition='zoom'], [data-view-transition='unzoom']) * {
+    view-transition-name: none !important;
+}
+
+html:is([data-view-transition='zoom'], [data-view-transition='unzoom']) [data-zoom-source] {
+    view-transition-name: zoom-tile !important;
+}
+
+/* 新舊頁照疊（唔用預設 plus-lighter 光加光）；返主頁時內頁要疊喺主頁上面縮 */
+@media (prefers-reduced-motion: no-preference) {
+    html[data-view-transition='zoom']::view-transition-old(root) {
+        mix-blend-mode: normal;
+        animation: zoom-home-dim var(--view-transition-move) var(--ease-view-transition) both;
+    }
+
+    html[data-view-transition='zoom']::view-transition-new(root) {
+        mix-blend-mode: normal;
+        animation: zoom-page-open var(--view-transition-move) var(--ease-view-transition) both;
+    }
+
+    html[data-view-transition='unzoom']::view-transition-old(root) {
+        z-index: 1;
+        mix-blend-mode: normal;
+        animation: zoom-page-close var(--view-transition-move) var(--ease-view-transition) both;
+    }
+
+    html[data-view-transition='unzoom']::view-transition-new(root) {
+        mix-blend-mode: normal;
+        animation: zoom-home-undim var(--view-transition-move) var(--ease-view-transition) both;
+    }
+}
+
+@keyframes zoom-page-open {
+    from {
+        clip-path: var(--zoom-tile-clip);
+        opacity: var(--card-zoom-page-opacity);
+    }
+
+    to {
+        clip-path: inset(0 round 0);
+        opacity: 1;
+    }
+}
+
+@keyframes zoom-page-close {
+    from {
+        clip-path: inset(0 round 0);
+    }
+
+    to {
+        clip-path: var(--zoom-tile-clip);
+        opacity: var(--card-zoom-page-opacity);
+    }
+}
+
+@keyframes zoom-home-dim {
+    to {
+        opacity: var(--card-zoom-home-opacity);
+    }
+}
+
+@keyframes zoom-home-undim {
+    from {
+        opacity: var(--card-zoom-home-opacity);
+    }
+}
+
 @keyframes view-fade-out {
     to {
         opacity: 0;

@@ -1,3 +1,4 @@
+import { zoomKey } from '../../../../utils/cardZoom';
 import { toPercent } from '../../../../utils/ratio';
 import { PlayIcon } from '../../../shared/common/icons/icons';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';
@@ -78,7 +79,12 @@ interface DramaTileProps {
  * 聽過就喺圖底疊一粒「繼續收聽」掣（同入頁掣並排，唔可以掣包掣）
  */
 export const DramaTile = ({ item, focus }: DramaTileProps) => (
-    <div className={styles.tile} data-focused={focus?.focused ? '' : undefined}>
+    // data-zoom-key：撳入頁時由成格（連繼續收聽條）zoom 入劇集頁（utils/cardZoom）
+    <div
+        className={styles.tile}
+        data-focused={focus?.focused ? '' : undefined}
+        data-zoom-key={zoomKey.drama(item.id)}
+    >
         <button
             type="button"
             className={styles.open}

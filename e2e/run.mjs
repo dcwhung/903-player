@@ -7,6 +7,7 @@ import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import { chromiumExecutablePath } from '../scripts/chromiumLaunch.mjs';
 import { runArcSheetChecks } from './arcSheet.mjs';
+import { runCardZoomChecks } from './cardZoom.mjs';
 import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runHomeWideChecks } from './homeWide.mjs';
 import { runPwaUpdateChecks } from './pwaUpdate.mjs';
@@ -1637,6 +1638,9 @@ try {
 
     // 闊橫版主頁（iPad 打橫）：fill / split、卡闊 + 卡清單、✕ 閂卡 → 把手 → 開返（每個情境各自一個 section）
     await runHomeWideChecks({ browser, base: BASE, errors, log });
+
+    // 主頁格仔 zoom 入內頁（P6 #2 Z3）：直版 zoom / 返回 unzoom、闊橫版都係 zoom（唔係 expand）
+    await runCardZoomChecks({ browser, base: BASE, errors, log });
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
     await section('廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));
