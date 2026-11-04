@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>內頁右邊把手</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <!-- 直寫要有 vertical metrics 嘅中文字型；冇 PingFang 嘅機用 Noto Sans TC -->
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            /* 闊橫版 1300×800：--ui-scale 1.5（同 src/styles/tokens.css）；畫面縮細 0.6 倍顯示 */
+            :root {
+                --ui-scale: 1.5;
+                --font-size-2xs: calc(11px * var(--ui-scale));
+                --font-size-xs: calc(12px * var(--ui-scale));
+                --space-2: calc(8px * var(--ui-scale));
+                --space-3: calc(12px * var(--ui-scale));
+                --radius-md: calc(12px * var(--ui-scale));
+                --home-handle-width: calc(26px * var(--ui-scale));
+                --home-handle-height: calc(200px * var(--ui-scale));
+                --home-handle-reserve: calc(30px * var(--ui-scale));
+                --home-handle-disc: calc(14px * var(--ui-scale));
+                --home-handle-status-line: 1.15;
+                --shadow-home-handle: -4px 0 12px rgb(0 0 0 / 30%);
+                --stage-scale: 0.6;
+                --page: #f2f2f4;
+                --ink: #1c1c1e;
+                --note: #6b6b70;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 24px 16px 48px;
+                background: var(--page);
+                color: var(--ink);
+                font-family: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+            }
+            h1 {
+                margin: 0 0 4px;
+                font-size: 22px;
+            }
+            .lead,
+            .option p {
+                margin: 0 0 16px;
+                color: var(--note);
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            .option {
+                margin-bottom: 32px;
+                padding: 16px;
+                border-radius: 16px;
+                background: #fff;
+            }
+            .option h2 {
+                margin: 0 0 4px;
+                font-size: 18px;
+            }
+            /* 1300×800 舞台縮細顯示；外框跟縮細後尺寸 */
+            .viewport {
+                width: calc(1300px * var(--stage-scale));
+                height: calc(800px * var(--stage-scale));
+                max-width: 100%;
+                overflow: hidden;
+                border-radius: 12px;
+                box-shadow: 0 2px 12px rgb(0 0 0 / 15%);
+            }
+            .stage {
+                position: relative;
+                width: 1300px;
+                height: 800px;
+                transform: scale(var(--stage-scale));
+                transform-origin: 0 0;
+                background: var(--page-bg);
+            }
+            /* 現有內頁截圖：右邊預留 --home-handle-reserve 畀把手（真 app 播放器欄會跟住窄少少再置中） */
+            .shot {
+                position: absolute;
+                inset: 0 var(--home-handle-reserve) 0 0;
+                background: var(--shot) left top / 1300px 800px no-repeat;
+            }
+            .handle {
+                position: absolute;
+                top: 50%;
+                right: 0;
+                transform: translateY(-50%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: var(--space-2);
+                width: var(--home-handle-width);
+                height: var(--home-handle-height);
+                padding: var(--space-3) 0;
+                overflow: hidden;
+                border: none;
+                border-radius: var(--radius-md) 0 0 var(--radius-md);
+                background: var(--bg);
+                box-shadow: var(--shadow-home-handle);
+                color: var(--title);
+                font: inherit;
+            }
+            .status {
+                flex: none;
+                width: 1em;
+                font-size: var(--font-size-2xs);
+                font-weight: 500;
+                line-height: var(--home-handle-status-line);
+                text-align: center;
+                overflow-wrap: anywhere;
+            }
+            .status.paused {
+                color: var(--muted);
+            }
+            .status.playing {
+                color: var(--accent);
+            }
+            .disc {
+                flex-shrink: 0;
+                width: var(--home-handle-disc);
+                height: var(--home-handle-disc);
+                border-radius: 50%;
+                object-fit: cover;
+            }
+            .name {
+                flex: 1 1 auto;
+                min-height: 0;
+                overflow: hidden;
+                font-size: var(--font-size-xs);
+                font-weight: 700;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                text-align: start;
+                writing-mode: vertical-rl;
+            }
+            .back {
+                flex-shrink: 0;
+                font-size: var(--font-size-xs);
+                line-height: 1;
+            }
+            /* 把手用播緊嗰個節目嘅色（公子會），唔跟頁面 */
+            .gongzi {
+                --bg: #111111;
+                --title: #f2e3b3;
+                --muted: #aba79c;
+                --accent: #d4af5a;
+            }
+            .flow {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 12px;
+                font-size: 14px;
+                color: var(--note);
+            }
+            .flow .viewport {
+                --stage-scale: 0.32;
+            }
+            .arrow {
+                font-size: 28px;
+                color: var(--ink);
+            }
+        </style>
+    </head>
+    <body>
+        <h1>P3 #4：內頁右邊把手</h1>
+        <p class="lead">
+            闊橫版 1300×800（--ui-scale 1.5），畫面縮細 0.6 倍顯示；底圖係 v1.22.2 現有內頁截圖。<br />
+            已決定：只限闊橫版；只有「播緊（或暫停咗）嘅唔係呢頁嘅節目 /
+            劇」先出把手；把手用預留位（右邊
+            --home-handle-reserve），唔遮播放器；把手色跟播緊嗰個節目；播緊顯示「播放中」，暫停顯示「已暫停」（同主頁把手同一個
+            component）。撳把手 = 撳返回：返主頁，把手放大做右邊播放卡。
+        </p>
+
+        <section class="option">
+            <h2>① 喺公子會頁播緊公子會：唔出把手</h2>
+            <p>
+                左邊播放器已經係播緊嗰樣，唔使把手；版面同而家一樣（冇預留位）。返主頁 =
+                而家嘅行為：右邊播放卡（split）。
+            </p>
+            <div class="viewport">
+                <div class="stage" style="--page-bg: #111111">
+                    <div class="shot" style="--shot: url(show-playing.webp); inset: 0"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="option">
+            <h2>② 喺森美小儀系列頁，播緊嘅係公子會</h2>
+            <p>
+                左邊播放器係呢頁（森美小儀，未開始）；右邊把手話你播緊另一樣嘢，色跟公子會（深色），喺粉紅頁面上一眼分得出。<br />
+                喺呢頁揀一個短篇開始播 → 變咗「喺自己頁播」，把手 fade out
+                消失（預留位一齊收返），版面變返 ① 咁。
+            </p>
+            <div class="viewport">
+                <div class="stage" style="--page-bg: #ffe3e3">
+                    <div class="shot" style="--shot: url(drama-other.webp)"></div>
+                    <button class="handle gongzi" aria-label="播放中：公子會，返回主頁">
+                        <span class="status playing" aria-hidden="true">播放中</span>
+                        <img
+                            class="disc"
+                            src="../../src/catalog/shows/library/gongzi/disc.webp"
+                            alt=""
+                        />
+                        <span class="name">公子會</span>
+                        <span class="back">‹</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="option">
+            <h2>③ 暫停咗（或者喺主頁撳咗 ✕ 先入嚟）</h2>
+            <p>
+                同 P2 主頁把手一樣：muted 色「已暫停」。喺主頁撳 ✕
+                閂咗卡再入內頁都係呢個樣；返主頁之後照舊係把手，唔會放大做卡。
+            </p>
+            <div class="viewport">
+                <div class="stage" style="--page-bg: #ffe3e3">
+                    <div class="shot" style="--shot: url(drama-other.webp)"></div>
+                    <button class="handle gongzi" aria-label="已暫停：公子會，返回主頁">
+                        <span class="status paused" aria-hidden="true">已暫停</span>
+                        <img
+                            class="disc"
+                            src="../../src/catalog/shows/library/gongzi/disc.webp"
+                            alt=""
+                        />
+                        <span class="name">公子會</span>
+                        <span class="back">‹</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="option">
+            <h2>④ 撳返回 / 撳把手：把手放大做主頁右邊卡</h2>
+            <p>
+                View Transition：內頁淡出，把手由右邊緣放大成主頁右邊播放卡（同主頁「把手 →
+                卡」嘅開返動畫一樣方向）。<br />
+                冇嘢播（未載入任何嘢）或者播緊嘅係呢頁 → 內頁唔出把手，返主頁照舊。
+            </p>
+            <div class="flow">
+                <div class="viewport">
+                    <div class="stage" style="--page-bg: #ffe3e3">
+                        <div class="shot" style="--shot: url(drama-other.webp)"></div>
+                        <button class="handle gongzi" aria-label="播放中：公子會，返回主頁">
+                            <span class="status playing" aria-hidden="true">播放中</span>
+                            <img
+                                class="disc"
+                                src="../../src/catalog/shows/library/gongzi/disc.webp"
+                                alt=""
+                            />
+                            <span class="name">公子會</span>
+                            <span class="back">‹</span>
+                        </button>
+                    </div>
+                </div>
+                <span class="arrow">→</span>
+                <div class="viewport">
+                    <div class="stage" style="--page-bg: #4a6a94">
+                        <div class="shot" style="--shot: url(home.webp); inset: 0"></div>
+                    </div>
+                </div>
+                <span>把手位置 → 右邊卡位置</span>
+            </div>
+        </section>
+    </body>
+</html>
