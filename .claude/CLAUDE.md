@@ -23,3 +23,9 @@
 - 新動畫一律跟 app 現有統一做法：CSS 動畫放喺 `@media (prefers-reduced-motion: no-preference)`（或者用 `reduce` 關掉），設定一改即刻生效；JS 喺動畫開始嗰刻先叫 `prefersReducedMotion()`（`src/utils/motion.ts`），唔 cache 之前 render 嘅值
 - 減少動態 = 唔播動畫、直接切換；唔可以因為等 `animationend` 而令元素卡住
 - 時間 / easing 用 `tokens.css` 現有過場 token（`--view-transition-*`）
+
+## 回覆語言（用戶 2026-11-04 決定）
+
+- 同用戶嘅所有回覆一律用繁體中文（廣東話書面語）；code、指令、技術名詞先用英文
+- 收到英文嘅 subagent 報告、GitHub 通知、CI log 之後都照用中文回覆，唔好跟住轉英文
+- PR description、commit message 照舊用英文；repo 入面其他文件跟現有慣例
