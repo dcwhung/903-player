@@ -58,3 +58,38 @@ tickets: [CUI-0018, CUI-0019]
 branch: "feature/motion/card-zoom"
 context: "card zoom S1 fail @2570e85, product OK (unit 2068/2068, e2e 633/634 incl cardZoom). CUI-0018: e2e/run.mjs:1381 checks URL right after back; unzoom navigates in VT callback -> add waitForURL. CUI-0019: prettier on mockup + review md (CI lint red). Frozen S1 catalog-data, drama; new plan card-zoom. Rerun lint + e2e then freeze rest. Uncommitted"
 ```
+
+---
+
+## S1 重驗 @4dcd1f5（HEAD `f4707f8`）— ✅ pass
+
+- 改動：`4dcd1f5` 只改 `e2e/harness.mjs`（`reachesHash`）、`e2e/run.mjs` 3 處、2 個檔 prettier；`f4707f8` 只改 `.claude/CLAUDE.md`；`git diff 2570e85 HEAD -- src` 空 → unit 引用上面 `2570e85` 嘅 2068 / 2068
+- CI：41924171144 @ `4dcd1f5` 畀 `f4707f8` push cancel；41924530294 @ `f4707f8` docs-only skipped → 冇可引用 run，本機跑
+
+| Command                                                                        | Result                                  | Time |
+| ------------------------------------------------------------------------------ | --------------------------------------- | ---- |
+| `npm run lint`                                                                 | exit 0                                  | 50s  |
+| `E2E_PORT=4174 PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run e2e`（一次） | 635 / 635 PASS「All E2E checks passed」 | 479s |
+
+- C-1 → CUI-0018 verified：「轉到節目頁並自動播放」「返回主頁」「返回主頁（續播 10/10 後）」PASS；`cardZoom` 3 個 check PASS
+- C-2 → CUI-0019 verified：lint exit 0。兩張 ticket 移去 `.tickets/completed/0001-0200/`
+- Hard Gates：all pass；Findings：冇新 🔴 / 🟡
+- Ledger：`freeze <chain> S1` @ `f4707f8`：home 128（+ `useGoHome.test.tsx` `HomePageZoom.test.tsx`）、mini-player 52、player-core 94、show-today-page 95、ui-foundation 77（+ `cardZoom.node.test.ts`）、card-zoom 17。之後 `impact` 得 home / ui-foundation REVERIFY，全部係舊 S3 行（S1 已 FROZEN），等 release S3
+
+```handoff-receipt
+protocol: 2
+status: pass
+score: n/a
+stage: S1
+ledger: "SKIP 1 / REVERIFY 7 / UNCOVERED 18 (base ce10808); after freeze S1 all FROZEN"
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+next_action: merge_main
+next_agent: null
+tickets: [CUI-0018 completed, CUI-0019 completed]
+branch: "feature/motion/card-zoom"
+context: "card zoom S1 re-verify pass @4dcd1f5 (HEAD f4707f8, src unchanged since 2570e85 -> unit 2068/2068 cited). lint exit 0; e2e 635/635 local (CI 4dcd1f5 cancelled, f4707f8 docs-only skipped). CUI-0018/0019 completed. Frozen S1: home mini-player player-core show-today-page ui-foundation card-zoom (+ catalog-data drama earlier). QA files uncommitted"
+```
