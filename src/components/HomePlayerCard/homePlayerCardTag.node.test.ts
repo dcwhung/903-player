@@ -22,7 +22,9 @@ const resolvePx = (value: string | undefined, scale: number): number[] => {
             name === '--ui-scale' ? String(scale) : (tokens[name] ?? name),
         );
     }
-    while (PX_TIMES.test(text)) {
+    // 計到冇嘢再變為止（唔用 /g regex 嘅 .test()：lastIndex 有狀態，易跳漏）
+    for (let prev = ''; prev !== text;) {
+        prev = text;
         text = text.replace(PX_TIMES, (_, px: string, k: string) => `${Number(px) * Number(k)}px`);
     }
     return text.split(' ').map((part) => parseFloat(part));
