@@ -47,7 +47,9 @@ describe('card ↔ handle morph', () => {
  */
 describe('inner page handle → home card morph', () => {
     const BACK = "html[data-view-transition='back']";
-    const WITH_HANDLE = `${BACK} main[data-player-page]:has([data-page-handle])`;
+    // 淡出緊（data-leaving）嘅把手已經唔係播緊嘅嘢：返主頁照舊成頁縮入卡，唔由半透明把手放大（S-664）
+    const SHOWN_HANDLE = '[data-page-handle]:not([data-leaving])';
+    const WITH_HANDLE = `${BACK} main[data-player-page]:has(${SHOWN_HANDLE})`;
 
     it.each([
         ['the page', WITH_HANDLE],
@@ -57,9 +59,14 @@ describe('inner page handle → home card morph', () => {
     });
 
     it('should give the page handle the card’s name while going back', () => {
-        expect(cssDeclarations(global, `${BACK} [data-page-handle]`)['view-transition-name']).toBe(
+        expect(cssDeclarations(global, `${BACK} ${SHOWN_HANDLE}`)['view-transition-name']).toBe(
             TRANSITION_NAME.panel,
         );
+    });
+
+    it('should not name a handle that is fading out while going back', () => {
+        expect(cssDeclarations(global, `${BACK} [data-page-handle]`)).toEqual({});
+        expect(global).not.toMatch(/:has\(\[data-page-handle\]\)/);
     });
 
     it('should leave the home handle rules to close / open only', () => {
