@@ -290,7 +290,7 @@ if (swRegistration.active && !navigator.serviceWorker.controller) {
 
 ---
 
-## Handoff receipt
+## Handoff receipt（Round 1，已被 Round 2 取代）
 
 ```handoff-receipt
 protocol: 1
@@ -308,4 +308,72 @@ context: "Batch warn: A 8593986 CUI-0017 two-tab reload pass 99 (S-648 hard-relo
 blockers:
   - "W-519 e2e/pwaUpdate.mjs:186-196 wait for registration.waiting before fastForward and assert still waiting after hold"
   - "W-520 e2e/pwaUpdate.mjs:46,53,64 listen on 127.0.0.1, reject paths resolving outside dist, catch decodeURIComponent"
+```
+
+---
+
+## Round 2 — Section B re-review（`feature/e2e/pwa-update` HEAD `bcf8593`）
+
+- 涵蓋 commit（全部喺 `401918b` 上面，一個 finding 一個 commit）：`07b8275`（W-520）、`88d90ed`（W-519）、`a224b40`（S-650）、`bcf8593`（S-649）
+- Section A（`8593986`）冇改動，維持 99 pass；S-648 由 developer 決定 defer（理由：喺 `onRegisteredSW` 用 `registration.active` 判斷，SW 喺 callback 前已 activate 嘅真第一次開會多 reload 一次）。接受，記入 session log follow-up。
+
+### Hard Gates（重跑）
+
+| Gate          | 結果    | 證據                                                                                                                                                                                 |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Lint          | ✅ pass | `npx eslint e2e/pwaUpdate.mjs e2e/run.mjs src/main.tsx src/pwa/updateManager.ts src/pwa/updateManager.test.ts` exit 0；`npx prettier --check`（同上 + `package.json`）合規           |
+| Type check    | ✅ pass | `npx tsc -b --noEmit` exit 0                                                                                                                                                         |
+| Tests         | ✅ pass | `npx vitest run src/pwa/updateManager.test.ts src/e2eSection.test.ts src/e2eSrcConstants.test.ts`：3 files / 65 tests 全綠；developer 報 PWA section 5 / 5 PASS（full e2e 由 QA 跑） |
+| Coverage      | ✅ pass | `src/pwa/updateManager.ts` 冇改動（lines 100% / branch 97.72%）                                                                                                                      |
+| No Critical   | ✅ pass | 🔴 = 0                                                                                                                                                                               |
+| Security scan | ✅ n/a  | 冇依賴改動                                                                                                                                                                           |
+
+### 逐項核實
+
+| ID    | Commit    | 結果     | 核實                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----- | --------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| W-520 | `07b8275` | ✅ fixed | `server.listen(0, '127.0.0.1')`，base 改 `http://127.0.0.1:<port>/903-player/`（potentially trustworthy，SW 照用得）。`distFile()` decode 包 try/catch；`resolve(DIST, name).startsWith(DIST)`，`DIST` 帶尾 `/` → `dist-x` 唔會誤中。我用同一段邏輯 node 實測：`/903-player/`、`sw.js`、`%2E`、`assets/../sw.js` → dist 內；`..%2Fdist-x/a`、`..%2F..%2Fetc%2Fpasswd`、`%E0%A4%A` → null。 |
+| W-519 | `88d90ed` | ✅ fixed | `waitForWaiting`（15 s，100 ms poll，等唔到返 `false` 唔 throw）喺 `setHidden` + `fastForward` 之前；hold 後 `readWaiting` 再讀；斷言 `detected && stillWaiting && loads === before`，log 帶 `（true → false）` 方便睇。等唔到 waiting 會明確 FAIL，唔再白 pass；developer mutation（拎走兩個播放保護）仍然 FAIL。                                                                         |
+| S-650 | `a224b40` | ✅ fixed | `SCENARIOS` 改 `[label, check]` 中文 label，同 `homeWide.mjs` 一致。`'/903-player/'` 重複嗰點：`run.mjs` 嘅 `BASE` 係另一個 server（vite preview），同意唔使抽；no change needed。                                                                                                                                                                                                         |
+| S-649 | `bcf8593` | ✅ fixed | 註釋寫明 no-cache 唔係模擬 hosting（Pages `max-age=600`）、`updateViaCache` 預設 `imports` 令 sw.js 檢查 bypass HTTP cache、lazy chunk 換 hash 唔喺範圍。準確。                                                                                                                                                                                                                            |
+
+### 觀察（唔開 ID、唔扣分）
+
+- 4 個 commit 冇 bump version，body 寫明「fixes review finding on 401918b (same session, same command)」→ 符合 `sw-git-flow` §Version Bump 例外 ✅。
+- Commit subject 冇帶 review ID（ID 喺 body 第一行）；之前 main 上嘅慣例係 subject 尾 `(S-643)`。可追溯，但下次建議放返 subject，方便 `git log --oneline` grep。
+- `DIST = new URL('../dist/', import.meta.url).pathname` 喺路徑有空格 / 非 ASCII 時會係 percent-encoded（`fileURLToPath` 先啱）；`401918b` 已經係咁，本 repo 路徑冇呢個問題。
+
+### Section B 評分（Round 2）
+
+| 維度     | 得分    | 滿分    | 備注                             |
+| -------- | ------- | ------- | -------------------------------- |
+| 正確性   | 25      | 25      | S-649 註釋改準                   |
+| 安全性   | 20      | 20      | W-520 loopback + traversal guard |
+| 可維護性 | 20      | 20      | `distFile` 抽出，邏輯清楚        |
+| 測試覆蓋 | 15      | 15      | W-519 負向斷言有前提 + 事後確認  |
+| 性能     | 10      | 10      |                                  |
+| 代碼風格 | 10      | 10      | S-650 中文 label                 |
+| **總分** | **100** | **100** |                                  |
+
+**結果：✅ pass**
+
+### 整體 verdict（Round 2）
+
+- A 99 pass（S-648 deferred）/ B 100 pass → **Batch ✅ pass**（hard gates 全 pass、冇 Critical、冇未處理 Warning）
+
+## Handoff receipt（Round 2）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 99/100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "100%"
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/e2e/pwa-update"
+context: "Batch pass (round 2): A 8593986 CUI-0017 two-tab reload 99 pass (S-648 hard-reload residual deferred to session-log follow-up); B 401918b + 07b8275 (W-520) + 88d90ed (W-519) + a224b40 (S-650) + bcf8593 (S-649) PWA update e2e 100 pass. Stacked: fix/pwa/cui-0017-two-tab-reload then feature/e2e/pwa-update. QA to run full unit + full e2e + two-tab swapped-build PWA regression."
 ```
