@@ -503,6 +503,13 @@ describe('isHardReload (S-648)', () => {
         ).resolves.toBe(false);
     });
 
+    // S-651：第一次安裝嘅 SW 啱啱入 activating（clients.claim 未行），第二個 tab 喺呢個空隙查到佢
+    it('should be false while the first worker is still activating', async () => {
+        await expect(isHardReload(withWorker({ active: { state: 'activating' } }))).resolves.toBe(
+            false,
+        );
+    });
+
     it('should be true when uncontrolled with an activated worker', async () => {
         await expect(isHardReload(withWorker({ active: { state: 'activated' } }))).resolves.toBe(
             true,

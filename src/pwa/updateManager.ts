@@ -210,8 +210,10 @@ export class UpdateManager {
 }
 
 /**
- * Shift-reload：頁面冇 controller，但 SW 一早 active（S-648）。要喺 registerSW 之前查，
- * 第一次開 app 未 register 就查唔到 registration
+ * Shift-reload：頁面冇 controller，但 SW 一早已經 activated（S-648）。要喺 registerSW 之前查：
+ * 單一 tab 第一次開 app 未 register，查唔到 registration。
+ * 要 activated 唔係 activating（S-651）：第一次安裝嘅 SW 入咗 activating 但 clients.claim 未行嗰陣，
+ * 另一個 tab 查到佢都係第一次安裝，唔係 Shift-reload
  */
 export const isHardReload = async (
     container: Pick<ServiceWorkerContainer, 'controller' | 'getRegistration'> | undefined,
@@ -220,7 +222,7 @@ export const isHardReload = async (
         return false;
     }
     const existing = await container.getRegistration().catch(() => undefined);
-    return Boolean(existing?.active);
+    return existing?.active?.state === 'activated';
 };
 
 export interface UpdateCheckEnv {
