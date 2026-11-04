@@ -185,7 +185,9 @@
                 <p id="desc"></p>
                 <div class="row">
                     <label><input type="checkbox" id="slow" /> 慢鏡 ×3</label>
-                    <label><input type="checkbox" id="reduced" /> 模擬「減少動態」（直接切換）</label>
+                    <label
+                        ><input type="checkbox" id="reduced" /> 模擬「減少動態」（直接切換）</label
+                    >
                 </div>
             </section>
 
@@ -330,13 +332,7 @@
                                 css('--fade'),
                                 EASE,
                             ],
-                            [
-                                s.home,
-                                [{ opacity: 1 }, { opacity: 0.35 }],
-                                0,
-                                css('--move'),
-                                EASE,
-                            ],
+                            [s.home, [{ opacity: 1 }, { opacity: 0.35 }], 0, css('--move'), EASE],
                         ],
                         pageHiddenDuring: true,
                     };
@@ -399,13 +395,7 @@
                                 css('--move'),
                                 EASE,
                             ],
-                            [
-                                s.home,
-                                [{ opacity: 1 }, { opacity: 0.35 }],
-                                0,
-                                css('--move'),
-                                EASE,
-                            ],
+                            [s.home, [{ opacity: 1 }, { opacity: 0.35 }], 0, css('--move'), EASE],
                         ],
                     };
                 },

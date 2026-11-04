@@ -20,6 +20,7 @@ import {
     waitForPlaybackState,
     externalRequests,
     newE2EContext,
+    reachesHash,
     runSection,
 } from './harness.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
@@ -1315,8 +1316,10 @@ try {
             `主頁 mini player 顯示今日第一個節目：${await mini.textContent()}`,
         );
         await page.getByRole('button', { name: '公子會', exact: true }).click();
+        // 主頁 mini player 都有「暫停」：先等轉到節目頁（zoom 過場 update 先轉頁，CUI-0018）
+        const reachedShow = await reachesHash(page, '#/show/gongzi');
         await page.getByRole('button', { name: '暫停', exact: true }).waitFor({ timeout: 5000 });
-        log(page.url().endsWith('#/show/gongzi'), `轉到節目頁並自動播放：${page.url()}`);
+        log(reachedShow, `轉到節目頁並自動播放：${page.url()}`);
         await checkShowHeader(page, '公子會', '公子會節目頁');
         const currentEpisode = () =>
             page.locator('button[aria-current="true"]').first().getAttribute('aria-label');
@@ -1379,7 +1382,8 @@ try {
         log(entry && entry[1].position >= 29, `暫停時存低進度：${entry?.[1].position.toFixed(1)}s`);
 
         await page.getByRole('button', { name: '返回主頁' }).click();
-        log(page.url().endsWith('#/'), '返回主頁');
+        // 窄版返回行 unzoom：navigate('/') 喺過場 update 先行，要等（CUI-0018）
+        log(await reachesHash(page, '#/'), '返回主頁');
         await checkThemeColor(page, HOME_TOP, '返回主頁');
         await page.getByRole('button', { name: '公子會', exact: true }).click();
         await page.waitForTimeout(800);
@@ -1416,6 +1420,7 @@ try {
         log(resumePos >= 29, `未聽完嘅 10/10 續播：${resumePos}s`);
 
         await page.getByRole('button', { name: '返回主頁' }).click();
+        log(await reachesHash(page, '#/'), '返回主頁（續播 10/10 後）');
         await page.waitForTimeout(300);
         // T9 B：播緊舊集返主頁照播，mini player 將佢排最前、標「重溫」（以前係暫停）
         const oldEpisodeState = await waitForPlaybackState(page, 'playing');

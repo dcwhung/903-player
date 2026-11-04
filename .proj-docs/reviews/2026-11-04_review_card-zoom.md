@@ -12,15 +12,15 @@ all pass —— lint（eslint 改動檔 0 error、prettier 全 pass）、`tsc -b
 
 ## 評分結果
 
-| 維度 | 得分 | 滿分 | 備注 |
-|------|------|------|------|
-| 正確性 | 20 | 25 | W-527 |
-| 安全性 | 20 | 20 | |
-| 可維護性 | 20 | 20 | |
-| 測試覆蓋 | 15 | 15 | |
-| 性能 | 10 | 10 | |
-| 代碼風格 | 10 | 10 | |
-| **總分** | **95** | **100** | |
+| 維度     | 得分   | 滿分    | 備注  |
+| -------- | ------ | ------- | ----- |
+| 正確性   | 20     | 25      | W-527 |
+| 安全性   | 20     | 20      |       |
+| 可維護性 | 20     | 20      |       |
+| 測試覆蓋 | 15     | 15      |       |
+| 性能     | 10     | 10      |       |
+| 代碼風格 | 10     | 10      |       |
+| **總分** | **95** | **100** |       |
 
 **結果：✅ pass**（hard gates 全 pass、≥ 90、冇 🔴；W-527 建議 merge 前修）
 
@@ -58,7 +58,9 @@ all pass —— lint（eslint 改動檔 0 error、prettier 全 pass）、`tsc -b
 ```ts
 // src/utils/cardZoom.ts
 let source: { key: string; path: string; entry: string } | null = null;
-export const zoomInto = (key: string, path: string, entry: () => string, update: () => void) => { /* 轉頁後記 entry() */ };
+export const zoomInto = (key: string, path: string, entry: () => string, update: () => void) => {
+    /* 轉頁後記 entry() */
+};
 export const unzoomHome = (pathname: string, entry: string, update: () => void): void => {
     const key = source?.path === pathname && source.entry === entry ? source.key : null; // 系統返回 / mini player 入頁 entry 唔同
     source = null;
@@ -111,14 +113,14 @@ context: "Card zoom Z3 pass 95/100; W-527 stale zoom source after system back (m
 
 ## 評分（re-review）
 
-| 維度 | 得分 | 滿分 |
-|------|------|------|
-| 正確性 | 25 | 25 |
-| 安全性 | 20 | 20 |
-| 可維護性 | 20 | 20 |
-| 測試覆蓋 | 15 | 15 |
-| 性能 | 10 | 10 |
-| 代碼風格 | 10 | 10 |
+| 維度     | 得分    | 滿分    |
+| -------- | ------- | ------- |
+| 正確性   | 25      | 25      |
+| 安全性   | 20      | 20      |
+| 可維護性 | 20      | 20      |
+| 測試覆蓋 | 15      | 15      |
+| 性能     | 10      | 10      |
+| 代碼風格 | 10      | 10      |
 | **總分** | **100** | **100** |
 
 **結果：✅ pass**（上一輪 🟡 全部已修，冇 🔴 / 🟡）
