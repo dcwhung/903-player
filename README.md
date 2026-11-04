@@ -15,11 +15,11 @@
   闊 ≥ 1024px 字同掣 × 1.3、iPad 打橫 × 1.5（`--ui-scale`）。Preview：`design/previews/landscape-preview.html`
 - 廣播劇（`src/catalog/dramas/library/<id>/drama.json`，見下面「資料檔」）：主頁廣播劇 tab 一行一套劇；全部用淺色主題（頁頂狀態列墊深色帶，iOS 白字睇得清），碟面用劇集圖
     - 芝See菇Bi Family（短篇劇集）：唱片下面「現正播放：短篇 · 第 N 集」（暫停講「已暫停」、揀短篇載入咗未開始講「下一集」，清單行同樣講「已暫停 / 未開始」）+ 短篇 chips 左右掃，揀短篇換集數清單（冇播放時順便載入嗰個短篇嘅續聽集，唔自動播，碟面同時間跟住轉；播緊就淨係換清單）（有集名大字顯示集名，冇就顯示「第 N 集」）；入頁揀中上次聽緊嗰集（聽完就下一集），撳播放先播：未播時碟面係嗰集嘅短篇碟面、唱片兩邊時間同弧形顯示續播位置 / 總長（未聽過嗰集就 --:--）、唱片下面 / chips 上面講「繼續收聽：短篇 · 第 N 集 · 集名」（第一次入未聽過就係黑碟 +「揀一個短篇開始收聽」）；集數同集名之間一律用「 · 」分隔（chips 上面、mini player、鎖屏、主頁「繼續收聽」）；一集播完自動接下一集（播完一個短篇接下一個短篇，最後一集播完就停）；「☰ 全集」釘住 chips 最左，打開全集一覽表（分組：播放中 → 新上架 → 未聽完 → 已聽完；圓環 = 聽完幾多集；右邊掣續聽 / 播未收聽 / ↺ 重聽；✕ / 遮罩 / Escape 或者向下拉閂，直版橫版都得），短篇 chips 同一次序；集數清單照集數次序（聽完嘅留喺原位），入頁 / 轉短篇即刻捲到播緊（或者下一集）嗰集，放喺清單頂、露出半行上一集，向上捲睇返之前集數；自動播下一集就順滑捲過去；轉畫面（打橫 / 打直）都會重新捲返播緊嗰集；新短篇（catalog `addedAt`）上架 14 日內有「新」；主頁劇集格：未聽過 / 播緊時只有短篇數（右下），聽過未播緊就喺圖底出「繼續收聽」掣（短篇數移去右上；直版疊卡撳暗咗嘅卡任何位置都係先 focus），有未聽過嘅新短篇左上角出「新」
-    - 黃金少年（短篇劇集，`arcUnit: "season"`）：4 季 126 集，主頁角落「全 4 季」，碟面跟播緊（或者暫停時揀咗）嗰季（每季一張 `season-N-disc.webp`），未揀季時用系列碟面 `disc.webp`
-    - 森美小儀系列（短篇劇集）：7 個短篇 109 集（來不及聽你說愛我 10、公子森林 40（每集有集名）、十九樓半的夏天 10、森之愛情I - 森之聖誕 10（每集有集名）、森之愛情II - 電燈膽 9、森之聖誕2010 15（每集有集名）、森美幻想劇 15），每個短篇有自己碟面（`<短篇>-disc.webp`）
+    - 黃金少年（短篇劇集，`arcUnit: "season"`）：4 季 126 集，主頁角落「全 4 季」，碟面跟播緊（或者暫停時揀咗）嗰季（每季一張 `arcs/season-N/disc.webp`），未揀季時用系列碟面 `disc.webp`
+    - 森美小儀系列（短篇劇集）：7 個短篇 109 集（來不及聽你說愛我 10、公子森林 40（每集有集名）、十九樓半的夏天 10、森之愛情I - 森之聖誕 10（每集有集名）、森之愛情II - 電燈膽 9、森之聖誕2010 15（每集有集名）、森美幻想劇 15），每個短篇有自己碟面（`arcs/<短篇>/disc.webp`）
     - 少爺占系列（短篇劇集）：2 個短篇 38 集（八王子 21、忠孝公路 17），每個短篇有自己碟面
     - 蘭茜夫人劇場（短篇劇集）：3 個短篇 100 集（戀愛二分一 30、初戀無限次 33、我心不死 37），每個短篇有自己碟面
-    - 短篇圖：每個短篇有正方形碟面（`<短篇>-disc.webp`）同長方形圖（`<短篇>-tile.webp`，16:9 1216×684，`drama.json` arc `tile`）；長方形圖暫時未用，留底防將來要。芝See 嘅短篇喺 R2 冇 cover，兩樣都冇
+    - 短篇圖：每個短篇有正方形碟面（`arcs/<短篇>/disc.webp`）同長方形圖（`arcs/<短篇>/tile.webp`，16:9 1216×684，`drama.json` arc `tile`）；長方形圖暫時未用，留底防將來要。芝See 嘅短篇喺 R2 冇 cover，兩樣都冇
     - 18 樓 C 座（每日劇集，⚠️ 暫時停用：`src/catalog/dramas/library/c18/drama.json` `enabled: false`，主頁唔出、劇集頁當搵唔到）：同節目頁一樣嘅日子條 + 集數清單，日子條只排有集數嘅日子，重播舊集標「重溫」
     - 播緊廣播劇返主頁唔會停，mini player 改為顯示嗰套劇
     - 集數清單喺每套劇嘅 `drama.json`：芝See 係真清單（12 個短篇、97 集）、黃金少年 4 季 126 集、森美小儀系列 7 個短篇 109 集、少爺占系列 2 個短篇 38 集、蘭茜夫人劇場 3 個短篇 100 集，錄音喺 Cloudflare R2（`DRAMA_AUDIO_BASE`，`<劇集 folder>/<短篇>/<原檔名>`，檔名由 template 砌）；18樓C座 ⚠️ 仲係假資料，錄音未 host，撳播放會一直「連線中…」。Preview：`design/previews/radio-drama-preview.html`
@@ -46,7 +46,7 @@ GitHub Actions 只負責 build 同 deploy。
 
 ## 資料檔（節目 / 廣播劇）
 
-節目同廣播劇都唔寫喺 TypeScript，而係**一個 folder 一套**，build time 由 `import.meta.glob` 自動發現（`src/catalog/` 係共用嘅 JSON reader / theme schema / folder source）。
+節目同廣播劇都唔寫喺 TypeScript，而係**一個 folder 一套**，build time 由 `import.meta.glob` 自動發現（`src/catalog/core/` 係共用嘅 JSON reader / theme schema / folder source）。
 加一套 = 新開 folder，放 JSON + 圖，**唔使改 code**；JSON 唔合格 `npm test` 會指出邊個檔邊個欄位（`src/*/catalog.test.ts` / schema validator）。
 
 | 路徑                                                                     | 內容                                                                                                                                                                                                                                            |
@@ -58,9 +58,9 @@ GitHub Actions 只負責 build 同 deploy。
 - 短篇劇 `arcs[]`：`name`（= R2 folder 名）、`episodes`（集數，或者集名 list，冇集名寫 `null`）、`titles`（`{ "集數": "集名" }` 零散補集名）、`firstNo`（有第零集寫 `0`）、`addedAt`（上架日，14 日內出「新」）、`disc`（短篇自己碟面）、`tile`（短篇長方形圖，暫時未用）、`files`（`{ "集數": "完整檔名" }` 不規則檔名）
 - 檔名 template token：`{no}` `{no2}` `{noZh}`（中文數字）`{arc}` `{folder}` `{title}`；`[ … ]` 入面 token 空值就整段略去，例如 `{no2} - {arc} - 第{noZh}集[ - {title}].m4a`。每日劇用 `{date}` / `{yyyymmdd}`
 - ⚠️ `name` / `fileTime` / `audio` / 檔名唔可以亂改：錄音網址係已儲進度（localStorage）嘅 key
-- Editor 自動完成 + 即時驗證：`schemas/drama.schema.json`、`schemas/show.schema.json`（JSON Schema draft-07，hover 有廣東話說明，色有色盤）。VS Code 靠 `.vscode/settings.json` 嘅 `json.schemas` 自動套用，資料檔唔使加 `$schema`；其他 editor 可以喺檔頭加 `"$schema": "../../../schemas/drama.schema.json"`（runtime 唔理呢個 key）。
+- Editor 自動完成 + 即時驗證：`schemas/drama.schema.json`、`schemas/show.schema.json`（JSON Schema draft-07，hover 有廣東話說明，色有色盤）。VS Code 靠 `.vscode/settings.json` 嘅 `json.schemas` 自動套用，資料檔唔使加 `$schema`；其他 editor 可以喺檔頭加 `"$schema": "../../../../../schemas/drama.schema.json"`（runtime 唔理呢個 key）。
   Schema 刻意嚴過 runtime：多出嚟 / 打錯嘅 key 會出紅線（runtime 只係唔理）。以下淨係 runtime（`npm test`）驗：圖檔真係喺 folder、folder 名格式、arc name / 每日 date 唔重複、`titles` / `files` 集數喺範圍之內。
-  兩邊規則由 `src/catalog/jsonSchemas.node.test.ts` 對住同一批例子鎖住；改 `schema.ts` 記得一齊改 schema
+  兩邊規則由 `src/catalog/core/jsonSchemas.node.test.ts` 對住同一批例子鎖住；改 `schema.ts` 記得一齊改 schema
 - 橫版主頁 grid 寫死 4 欄 × 2 行 = 7 個節目 + 今日格；加減節目要一齊改 `ShowGrid.module.css`（`src/catalog/shows/lib/shows.test.ts` 會提醒）
 
 ### 由本機 folder 生成 drama.json（`scripts/dramaFromFolder.mjs`）

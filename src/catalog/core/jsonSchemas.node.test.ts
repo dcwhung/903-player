@@ -185,7 +185,7 @@ const DRAMA_VALID: Case[] = [
     ['arc episodes 全部 null', SERIES, 'arcs.1.episodes', [null, null]],
     ['titles 係空 object', SERIES, 'arcs.0.titles', {}],
     ['daily episode rerun false', DAILY, 'episodes.0.rerun', false],
-    ['加 $schema 指返 schema', SERIES, '$schema', '../../../schemas/drama.schema.json'],
+    ['加 $schema 指返 schema', SERIES, '$schema', '../../../../../schemas/drama.schema.json'],
 ];
 
 const SHOW_INVALID: Case[] = [
