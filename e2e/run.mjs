@@ -8,6 +8,7 @@ import { chromium } from 'playwright';
 import { runArcSheetChecks } from './arcSheet.mjs';
 import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runHomeWideChecks } from './homeWide.mjs';
+import { runPwaUpdateChecks } from './pwaUpdate.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
 import {
     AUDIO_HOST,
@@ -1635,6 +1636,9 @@ try {
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
     await section('廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));
+
+    // PWA 換版：有新版自己 reload 一次、播緊唔打斷、兩個 tab 都換（CUI-0017）
+    await runPwaUpdateChecks({ browser, errors, log }, section);
 
     await section('淺色主頁 + service worker', async () => {
         const light = await newE2EContext(browser, {

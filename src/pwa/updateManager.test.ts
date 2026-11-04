@@ -4,6 +4,7 @@ import {
     UPDATE_IDLE_GRACE_MS,
     UpdateManager,
     createReloadOnce,
+    isHardReload,
     startUpdateChecks,
     type UpdateManagerDeps,
 } from './updateManager';
@@ -37,6 +38,7 @@ const createHarness = (overrides: Partial<UpdateManagerDeps> = {}) => {
             listeners.add(listener);
             return () => listeners.delete(listener);
         },
+        controlledAtLoad: false,
         ...overrides,
     };
     const manager = new UpdateManager(deps);
@@ -408,6 +410,116 @@ describe('UpdateManager.handleControllerChange', () => {
         h.manager.handleNeedReload();
         h.manager.handleControllerChange();
         expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+});
+
+// CUI-0017：另一個 tab 喺 workbox 嘅 200 ms waiting delay 入面 skipWaiting，呢個 tab 冇收過 onNeedRefresh；
+// 靠「載入時有冇 controller」分第一次安裝（clientsClaim）定換版
+describe('UpdateManager.handleControllerChange without onNeedRefresh (CUI-0017)', () => {
+    it('should reload right away when the page was controlled at load and nothing is loaded', () => {
+        const h = createHarness({ controlledAtLoad: true });
+        h.setLoaded(false);
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+        expect(h.deps.applyUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should wait for stop + grace + hidden when the page was controlled and is playing', () => {
+        const h = createHarness({ controlledAtLoad: true });
+        h.setPlaying(true);
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).not.toHaveBeenCalled();
+        h.setPlaying(false);
+        expect(h.deps.reload).not.toHaveBeenCalled();
+        h.hide();
+        vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('should ignore the first claim on a first visit but reload on the next change', () => {
+        const h = createHarness();
+        h.setLoaded(false);
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).not.toHaveBeenCalled();
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+});
+
+// S-648：Shift-reload 嘅頁冇 controller，但 SW 一早 active；main.tsx 喺 registerSW 前用 getRegistration 認出嚟
+describe('UpdateManager.markControlled (S-648)', () => {
+    it('should treat the first controllerchange as an update after markControlled', () => {
+        const h = createHarness();
+        h.setLoaded(false);
+        h.manager.markControlled();
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('should still wait for playback to stop after markControlled', () => {
+        const h = createHarness();
+        h.setPlaying(true);
+        h.manager.markControlled();
+        h.manager.handleControllerChange();
+        expect(h.deps.reload).not.toHaveBeenCalled();
+        h.setPlaying(false);
+        h.hide();
+        vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
+        expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('isHardReload (S-648)', () => {
+    type Container = Parameters<typeof isHardReload>[0];
+    /** 假 ServiceWorkerContainer：controller 有冇、getRegistration 返乜 */
+    const container = (
+        controller: boolean,
+        registration: Promise<unknown> = Promise.resolve(undefined),
+    ): Container =>
+        ({
+            controller: controller ? {} : null,
+            getRegistration: () => registration,
+        }) as unknown as Container;
+    const withWorker = (worker: Record<string, unknown>) =>
+        container(false, Promise.resolve({ active: null, installing: null, ...worker }));
+
+    it('should be false without service worker support', async () => {
+        await expect(isHardReload(undefined)).resolves.toBe(false);
+    });
+
+    it('should be false when the page is controlled', async () => {
+        await expect(
+            isHardReload(container(true, Promise.resolve({ active: { state: 'activated' } }))),
+        ).resolves.toBe(false);
+    });
+
+    it('should be false on a first visit with no registration', async () => {
+        await expect(isHardReload(container(false))).resolves.toBe(false);
+    });
+
+    it('should be false while the first worker is only installing', async () => {
+        await expect(
+            isHardReload(withWorker({ installing: { state: 'installing' } })),
+        ).resolves.toBe(false);
+    });
+
+    // S-651：第一次安裝嘅 SW 啱啱入 activating（clients.claim 未行），第二個 tab 喺呢個空隙查到佢
+    it('should be false while the first worker is still activating', async () => {
+        await expect(isHardReload(withWorker({ active: { state: 'activating' } }))).resolves.toBe(
+            false,
+        );
+    });
+
+    it('should be true when uncontrolled with an activated worker', async () => {
+        await expect(isHardReload(withWorker({ active: { state: 'activated' } }))).resolves.toBe(
+            true,
+        );
+    });
+
+    it('should be false when getRegistration rejects', async () => {
+        await expect(
+            isHardReload(container(false, Promise.reject(new Error('denied')))),
+        ).resolves.toBe(false);
     });
 });
 
