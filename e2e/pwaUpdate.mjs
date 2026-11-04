@@ -245,14 +245,19 @@ const checkPlaying = async (env, server) => {
     await ctx.close();
 };
 
-const SCENARIOS = [checkFirstVisit, checkReturningVisit, checkTwoTabs, checkPlaying];
+const SCENARIOS = [
+    ['PWA 換版（第一次開 app）', checkFirstVisit],
+    ['PWA 換版（返嚟嘅用戶）', checkReturningVisit],
+    ['PWA 換版（兩個 tab）', checkTwoTabs],
+    ['PWA 換版（播緊嘢）', checkPlaying],
+];
 
 /** PWA 換版：第一次開 / 返嚟 / 兩個 tab / 播緊嘢；每個情境一個 section（runSection 由 run.mjs 傳入） */
 export const runPwaUpdateChecks = async (env, section) => {
     const server = await startDistServer();
     try {
-        for (const check of SCENARIOS) {
-            await section(`PWA 換版：${check.name}`, () => check(env, server));
+        for (const [label, check] of SCENARIOS) {
+            await section(label, () => check(env, server));
         }
     } finally {
         await server.close();
