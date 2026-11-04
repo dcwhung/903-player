@@ -188,7 +188,7 @@ describe('HomePage on a wide landscape screen', () => {
             expect(button.querySelector('svg')?.innerHTML).toBe(icon?.innerHTML);
         });
 
-        it('should name the handle only through the close / open transition CSS', async () => {
+        it('should name the handle only through the close transition CSS', async () => {
             stubWideLandscape();
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
             await screen.findByRole('region', { name: SHOW_CARD });

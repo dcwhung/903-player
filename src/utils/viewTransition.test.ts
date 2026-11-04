@@ -1,4 +1,4 @@
-import { tileTransitionName, withViewTransition } from './viewTransition';
+import { isViewTransitionUpdating, tileTransitionName, withViewTransition } from './viewTransition';
 
 const stubReducedMotion = (reduce: boolean) =>
     vi.stubGlobal(
@@ -143,8 +143,8 @@ describe('withViewTransition edge cases', () => {
         const { start, runs } = stubDeferred();
         const update = vi.fn();
 
-        withViewTransition(update, 'expand');
-        withViewTransition(update, 'expand');
+        expect(withViewTransition(update, 'expand')).toBe(true);
+        expect(withViewTransition(update, 'expand')).toBe(false);
         await Promise.all(runs.map((run) => run()));
 
         expect(start).toHaveBeenCalledOnce();
@@ -164,6 +164,48 @@ describe('withViewTransition edge cases', () => {
         expect(document.documentElement.dataset.viewTransition).toBe('close');
         // 行埋第二個過場嘅 update，唔好留低「等緊」狀態畀下一個測試
         await runs[1]?.();
+    });
+});
+
+describe('isViewTransitionUpdating', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        removeStartViewTransition();
+        delete document.documentElement.dataset.viewTransition;
+    });
+
+    it('should be true only while the update of a transition runs', () => {
+        stubReducedMotion(false);
+        let pendingUpdate = () => {};
+        let updatingInside = false;
+        const finished = new Promise<void>(() => {});
+        Object.defineProperty(document, 'startViewTransition', {
+            value: (update: () => void) => {
+                pendingUpdate = update;
+                return { finished, ready: finished, updateCallbackDone: finished };
+            },
+            configurable: true,
+        });
+
+        withViewTransition(() => {
+            updatingInside = isViewTransitionUpdating();
+        }, 'switch');
+        expect(isViewTransitionUpdating()).toBe(false);
+        pendingUpdate();
+
+        expect(updatingInside).toBe(true);
+        expect(isViewTransitionUpdating()).toBe(false);
+    });
+
+    it('should be false when the update ran straight away without a transition', () => {
+        stubReducedMotion(true);
+        let updatingInside = true;
+
+        withViewTransition(() => {
+            updatingInside = isViewTransitionUpdating();
+        }, 'open');
+
+        expect(updatingInside).toBe(false);
     });
 });
 

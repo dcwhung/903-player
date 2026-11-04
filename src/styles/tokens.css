@@ -297,6 +297,14 @@
     --view-transition-fade: 260ms;
     --view-transition-delay: 200ms;
     --ease-view-transition: cubic-bezier(0.2, 0.8, 0.2, 1);
+    /*
+     * 闊橫版主頁播放卡（_mockups_/player-card-motion）：開卡由右邊幾遠 slide 入（自己闊度嘅 %，O1）；
+     * 換節目成張卡反轉（S3）：前後各半個移動時間、轉幾多度、透視距離
+     */
+    --card-open-offset: 110%;
+    --card-flip-half: calc(var(--view-transition-move) / 2);
+    --card-flip-angle: 90deg;
+    --card-flip-perspective: 1600px;
     /* 今日節目插畫係藍色：落影用插畫底部深藍，同其他節目格一樣泥膠感 */
     --shadow-today-tile: 0 6px 0 #1f7fd0, 0 10px 18px rgb(20 40 65 / 30%);
 

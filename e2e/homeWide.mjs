@@ -348,11 +348,106 @@ const checkInnerPageHandle = async ({ browser, base, errors, log }) => {
     await ctx.close();
 };
 
+// 播放卡動畫（P4 #3b，_mockups_/player-card-motion）：開卡 O1、換節目 S3 都係 View Transition
+// （src/utils/viewTransition.ts 嘅 kind，html[data-view-transition]）
+const PROGRESS_KEY = '903player:progress:v1';
+// 兩套短篇劇集第一集（src/catalog/dramas/library/*/drama.json 推出嚟）；刻意寫死做獨立對照
+const DRAMA_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
+const MOTION_DRAMAS = [
+    {
+        name: '芝See菇Bi Family',
+        url: `${DRAMA_BASE}/%E8%8A%9DSee%E8%8F%87Bi%20Family/%E4%B8%89%E5%8D%81%E5%85%AD%E8%A8%88/01%20-%20%E4%B8%89%E5%8D%81%E5%85%AD%E8%A8%88%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86%20-%20%E7%9E%9E%E5%A4%A9%E9%81%8E%E6%B5%B7%20_%20%E9%9A%A0%E5%BD%A2%E5%A2%A8%E6%B0%B4%E7%AD%86.m4a`,
+    },
+    {
+        name: '少爺占系列',
+        url: `${DRAMA_BASE}/%E5%B0%91%E7%88%BA%E5%8D%A0%E7%B3%BB%E5%88%97/%E5%85%AB%E7%8E%8B%E5%AD%90/01%20-%20%E5%85%AB%E7%8E%8B%E5%AD%90%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a`,
+    },
+];
+// 聽咗一截（未聽完）：書架先有「繼續收聽」
+const PARTIAL_PROGRESS = { position: 60, duration: 600, watched: false };
+const DRAMA_REGION = '正在播放（廣播劇）';
+// 過場等幾耐先睇結果（--view-transition-move 520ms + render）
+const MOTION_SETTLE_MS = 1500;
+
+/**
+ * 喺瀏覽器入面行（addInitScript）：寫入兩套劇嘅進度；記低每個 View Transition 嘅 kind，
+ * 同佢有冇真係行到（ready）定係畀瀏覽器跳過（例如撞名，S-633）
+ */
+const installMotionProbe = ({ key, urls, progress }) => {
+    const map = Object.fromEntries(
+        urls.map((url) => [url, { ...progress, updatedAt: Date.now() }]),
+    );
+    localStorage.setItem(key, JSON.stringify(map));
+    window.__e2eTransitions = [];
+    const start = document.startViewTransition?.bind(document);
+    if (!start) return;
+    document.startViewTransition = (update) => {
+        const transition = start(update);
+        const entry = { kind: document.documentElement.dataset.viewTransition, ran: null };
+        window.__e2eTransitions.push(entry);
+        transition.ready.then(
+            () => (entry.ran = true),
+            () => (entry.ran = false),
+        );
+        return transition;
+    };
+};
+
+const transitionsOf = (p) => p.evaluate(() => window.__e2eTransitions);
+
+const resumeDrama = (p, name) =>
+    p.getByRole('button', { name: new RegExp(`^${name}，繼續收聽`) }).click();
+
+const cardShows = (p, name) =>
+    isShown(card(p).getByRole('button', { name: `開啟 ${name} 廣播劇頁` }), {
+        timeout: LAYOUT_WAIT_MS,
+    });
+
+/** 冇卡（星期日）撳繼續收聽：張卡經 open 過場出嚟；再撳另一套劇：張卡經 switch 反轉 */
+const checkCardMotion = async ({ browser, base, errors, log }) => {
+    const label = '闊橫版主頁播放卡動畫';
+    const { ctx, p } = await newE2EPage(browser, errors, { viewport: WIDE }, { now: E2E_SUNDAY });
+    const urls = MOTION_DRAMAS.map((d) => d.url);
+    await ctx.addInitScript(installMotionProbe, {
+        key: PROGRESS_KEY,
+        urls,
+        progress: PARTIAL_PROGRESS,
+    });
+    await openWideHome(p, base);
+    await p.getByRole('button', { name: '廣播劇', exact: true }).click();
+    const [first, second] = MOTION_DRAMAS;
+
+    await resumeDrama(p, first.name);
+    const opened = (await hasLayout(p, 'split')) && (await cardShows(p, first.name));
+    await p.waitForTimeout(MOTION_SETTLE_MS);
+    const afterOpen = await transitionsOf(p);
+    log(
+        opened && afterOpen.length === 1 && afterOpen[0].kind === 'open' && afterOpen[0].ran,
+        `${label}：冇卡撳「${first.name}」繼續收聽，張卡經 open 過場出（${JSON.stringify(afterOpen)}）`,
+    );
+
+    await resumeDrama(p, second.name);
+    const switched = await cardShows(p, second.name);
+    await p.waitForTimeout(MOTION_SETTLE_MS);
+    const flips = (await transitionsOf(p)).slice(afterOpen.length);
+    const region = await card(p).getAttribute('aria-label');
+    log(
+        switched &&
+            region === DRAMA_REGION &&
+            flips.length === 1 &&
+            flips[0].kind === 'switch' &&
+            flips[0].ran,
+        `${label}：再撳「${second.name}」繼續收聽，張卡反轉（switch）做新劇集（${JSON.stringify(flips)}）`,
+    );
+    await ctx.close();
+};
+
 const SCENARIOS = [
     ['闊橫版主頁（冇 mini player）', checkFill],
     ['闊橫版主頁（有 mini player）', checkSplit],
     ['闊橫版主頁播放卡閂卡 / 開返', checkCloseAndReopen],
     ['闊橫版內頁把手', checkInnerPageHandle],
+    ['闊橫版主頁播放卡動畫', checkCardMotion],
 ];
 
 /** 闊橫版主頁：fill / split（卡闊、卡清單）/ ✕ 閂卡 → 把手 → 開返；每個情境各自一個 section，一個 throw 唔會跳過其他（O3） */

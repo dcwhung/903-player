@@ -4,12 +4,15 @@ import { prefersReducedMotion } from './motion';
 /**
  * 邊款過場（global.css 按 html[data-view-transition] 揀動畫）：
  * expand = 主頁播放卡入節目 / 劇集頁；back = 由嗰頁返主頁（倒返轉）；
- * close = 收埋播放卡（向右淡出、格仔伸闊）；open = 再出返（由右淡入）
+ * close = 收埋播放卡（向右淡出、格仔伸闊）；
+ * open = 張卡由冇變有（由右 slide 入 + 淡入、格仔收窄）；switch = 張卡換節目 / 劇集（成張反轉）
  */
-export type ViewTransitionKind = 'expand' | 'back' | 'close' | 'open';
+export type ViewTransitionKind = 'expand' | 'back' | 'close' | 'open' | 'switch';
 
 /** 已經開始、但 update 未行嘅過場（瀏覽器影緊舊畫面）：期間再撳（例如連撳 ⤢）唔理 */
 let pending = false;
+/** 過場嘅 update 行緊（flushSync 入面）：呢陣 render 嘅就係新畫面 */
+let updating = false;
 /** 最新嗰個過場：舊嘅完咗唔好清走新嘅標記（同 kind 連續兩次都係） */
 let latest: ViewTransition | null = null;
 
@@ -25,8 +28,19 @@ const cleanupAfter = (transition: ViewTransition) => () => {
 /** 瀏覽器影完舊畫面先叫：同步 render 新畫面（flushSync），瀏覽器先影到 */
 const runUpdate = (update: () => void) => () => {
     pending = false;
-    flushSync(update);
+    updating = true;
+    try {
+        flushSync(update);
+    } finally {
+        updating = false;
+    }
 };
+
+/**
+ * 過場嘅 update 行緊（例如撳把手開返、返主頁）：呢陣 render 嘅就係新畫面，
+ * 唔好再另外開過場（會打斷而家嗰個，useCardMotion）
+ */
+export const isViewTransitionUpdating = (): boolean => updating;
 
 /**
  * 開過場；瀏覽器同步 throw（例如 document 未 visible / 狀態唔啱）就清返標記、直接更新，
@@ -46,18 +60,19 @@ const tryStart = (update: () => void): ViewTransition | null => {
 /**
  * 用 View Transitions API 做過場：瀏覽器影低前後畫面，同名（view-transition-name）嘅元素自己移位變形。
  * 唔支援、或者用戶要求減少動畫就直接更新，冇動畫。
- * update throw / 過場畀瀏覽器跳過都唔會變 unhandled rejection（S-631）
+ * update throw / 過場畀瀏覽器跳過都唔會變 unhandled rejection（S-631）。
+ * 回傳 false = 上一個過場未 update，今次唔理（update 冇行、之後都唔會行）
  */
-export const withViewTransition = (update: () => void, kind: ViewTransitionKind): void => {
+export const withViewTransition = (update: () => void, kind: ViewTransitionKind): boolean => {
     if (typeof document.startViewTransition !== 'function' || prefersReducedMotion()) {
         update();
-        return;
+        return true;
     }
-    if (pending) return;
+    if (pending) return false;
     pending = true;
     document.documentElement.dataset.viewTransition = kind;
     const transition = tryStart(update);
-    if (!transition) return;
+    if (!transition) return true;
     latest = transition;
     transition.ready.catch(ignore);
     transition.updateCallbackDone.catch(() => {
@@ -65,6 +80,7 @@ export const withViewTransition = (update: () => void, kind: ViewTransitionKind)
     });
     const cleanup = cleanupAfter(transition);
     transition.finished.then(cleanup, cleanup);
+    return true;
 };
 
 export { TRANSITION_NAME, tileTransitionName } from './transitionNames';
