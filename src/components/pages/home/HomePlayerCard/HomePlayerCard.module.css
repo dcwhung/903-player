@@ -197,5 +197,7 @@
     font-weight: 700;
     white-space: nowrap;
     text-overflow: ellipsis;
+    /* button 預設 text-align: center，直寫會將名喺剩餘高度上下置中，同碟隔得太遠：貼返碟下面 */
+    text-align: start;
     writing-mode: vertical-rl;
 }
