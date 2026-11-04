@@ -1,4 +1,10 @@
-import { canViewTransition, isViewTransitionPending, withViewTransition } from './viewTransition';
+import {
+    canViewTransition,
+    isViewTransitionPending,
+    retargetViewTransition,
+    withViewTransition,
+    type ViewTransitionKind,
+} from './viewTransition';
 import { zoomInset, type ZoomInset } from './zoomInset';
 
 /**
@@ -6,8 +12,15 @@ import { zoomInset, type ZoomInset } from './zoomInset';
  * 撳格仔嗰刻量格仔框寫入 html 嘅 --zoom-inset-*，格仔標 data-zoom-source（global.css 先畀佢 zoom-tile 名），
  * 內頁由嗰個框開窗咁展開；窄版返主頁（unzoom）縮返入同一格。過場完就清走標記同框。
  * 由邊格入嚟綁喺入頁嗰個 history entry（location.state 嘅 zoomFrom，W-527）：
- * 系統返回、mini player 入頁嘅 entry 自然冇，返回就直接轉頁
+ * 系統返回、mini player 入頁嘅 entry 自然冇，返回就直接轉頁。
+ * 闊橫版（_mockups_/card-zoom-wide）入頁 / 返回可以用 zoom-handle / unzoom-handle：同時卡 ↔ 內頁把手變形
  */
+
+/** 入頁款式：淨係 zoom，或者連埋卡縮入內頁把手 */
+export type ZoomKind = Extract<ViewTransitionKind, 'zoom' | 'zoom-handle'>;
+
+/** 返主頁款式：淨係 unzoom，或者連埋內頁把手放大返做卡 */
+export type UnzoomKind = Extract<ViewTransitionKind, 'unzoom' | 'unzoom-handle'>;
 
 /** 每格嘅 data-zoom-key：用穩定 key（唔係排位），返主頁先搵得返同一格 */
 export const zoomKey = {
@@ -76,7 +89,11 @@ const unmarkIf = (mine: number | null) => {
  * （例如闊橫版播放卡出咗、格仔移位）都唔會入舊 snapshot，所以 update 入面唔再量（S-681）。
  * 格仔唔喺畫面、唔開到過場、或者上一個過場未 update，就照直接轉（update(false)），唔會食咗個 click
  */
-export const zoomInto = (key: string, update: (zoomed: boolean) => void): void => {
+export const zoomInto = (
+    key: string,
+    update: (zoomed: boolean) => void,
+    kind: ZoomKind = 'zoom',
+): void => {
     const tile = findTile(key);
     const inset = tile && insetOf(tile);
     if (!tile || !inset || !canViewTransition() || isViewTransitionPending()) {
@@ -84,17 +101,27 @@ export const zoomInto = (key: string, update: (zoomed: boolean) => void): void =
         return;
     }
     const mine = mark(tile, inset);
-    const zoomed = withViewTransition(() => update(true), 'zoom', {
+    const zoomed = withViewTransition(() => update(true), kind, {
         onEnd: () => unmarkIf(mine),
     });
     if (!zoomed) update(false);
 };
 
+export interface UnzoomOptions {
+    kind?: UnzoomKind;
+    /** 返到主頁嗰格唔喺畫面時改用嘅過場（闊橫版 back）；冇就跳過動畫 */
+    fallback?: ViewTransitionKind;
+}
+
 /**
- * 窄版由內頁返主頁：入頁時由邊格 zoom 入嚟（key，見 zoomFromState）就縮返入嗰格（轉咗頁先搵得到）；
- * 唔係 zoom 入嚟就直接轉；返到主頁嗰格唔喺畫面就跳過動畫（唔會留低半透明）
+ * 由內頁返主頁：入頁時由邊格 zoom 入嚟（key，見 zoomFromState）就縮返入嗰格（轉咗頁先搵得到）；
+ * 唔係 zoom 入嚟就直接轉；返到主頁嗰格唔喺畫面就改用 fallback，冇 fallback 就跳過動畫（唔會留低半透明）
  */
-export const unzoomHome = (key: string | null, update: () => void): void => {
+export const unzoomHome = (
+    key: string | null,
+    update: () => void,
+    { kind = 'unzoom', fallback }: UnzoomOptions = {},
+): void => {
     if (key === null || isViewTransitionPending()) {
         update();
         return;
@@ -104,8 +131,9 @@ export const unzoomHome = (key: string | null, update: () => void): void => {
         const tile = findTile(key);
         const inset = tile && insetOf(tile);
         if (tile && inset) mine = mark(tile, inset);
-        return mine !== null;
+        else if (fallback) retargetViewTransition(fallback);
+        return mine !== null || fallback !== undefined;
     };
     const hooks = { afterUpdate, onEnd: () => unmarkIf(mine) };
-    if (!withViewTransition(update, 'unzoom', hooks)) update();
+    if (!withViewTransition(update, kind, hooks)) update();
 };

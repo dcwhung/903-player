@@ -31,8 +31,17 @@ describe('useZoomNavigate', () => {
 
         act(() => result.current.open(KEY, '/show/gongzi'));
 
-        expect(zoomInto).toHaveBeenCalledWith(KEY, expect.any(Function));
+        expect(zoomInto).toHaveBeenCalledWith(KEY, expect.any(Function), 'zoom');
         expect(result.current.location.pathname).toBe('/show/gongzi');
+        expect(zoomFromState(result.current.location.state)).toBe(KEY);
+    });
+
+    it('should pass on the handle-paired zoom and still tie the tile to the entry', () => {
+        const { result } = renderOpen();
+
+        act(() => result.current.open(KEY, '/show/gongzi', 'zoom-handle'));
+
+        expect(zoomInto).toHaveBeenCalledWith(KEY, expect.any(Function), 'zoom-handle');
         expect(zoomFromState(result.current.location.state)).toBe(KEY);
     });
 

@@ -160,6 +160,25 @@ describe('zoomInto', () => {
         calls[0]?.run();
     });
 
+    it('should run the handle-paired zoom when asked (wide card ↔ inner handle)', () => {
+        stubReducedMotion(false);
+        const { calls } = stubTransition();
+        const tile = addTile(KEY, ON_SCREEN);
+        let kind: string | undefined;
+
+        zoomInto(
+            KEY,
+            () => {
+                kind = document.documentElement.dataset.viewTransition;
+            },
+            'zoom-handle',
+        );
+        calls[0]?.run();
+
+        expect(kind).toBe('zoom-handle');
+        expect(tile.hasAttribute('data-zoom-source')).toBe(true);
+    });
+
     it('should update without leaving a mark when the user prefers reduced motion', () => {
         stubReducedMotion(true);
         const { start } = stubTransition();
@@ -233,6 +252,37 @@ describe('unzoomHome', () => {
 
         expect(calls[1]?.skip).toHaveBeenCalledOnce();
         calls[1]?.finish();
+    });
+
+    it('should run the handle-paired unzoom when asked', async () => {
+        stubReducedMotion(false);
+        const { calls } = await zoomedIn();
+
+        unzoomHome(KEY, () => void addTile(KEY, ON_SCREEN), { kind: 'unzoom-handle' });
+        calls[1]?.run();
+
+        expect(document.documentElement.dataset.viewTransition).toBe('unzoom-handle');
+        expect(document.querySelector('[data-zoom-source]')).not.toBeNull();
+        expect(calls[1]?.skip).not.toHaveBeenCalled();
+        calls[1]?.finish();
+    });
+
+    it('should switch to the fallback transition when the tile is not on screen (wide back)', async () => {
+        stubReducedMotion(false);
+        const { calls } = await zoomedIn();
+
+        unzoomHome(KEY, () => void addTile(KEY, OFF_SCREEN), {
+            kind: 'unzoom-handle',
+            fallback: 'back',
+        });
+        calls[1]?.run();
+
+        expect(document.documentElement.dataset.viewTransition).toBe('back');
+        expect(calls[1]?.skip).not.toHaveBeenCalled();
+        expect(document.querySelector('[data-zoom-source]')).toBeNull();
+        calls[1]?.finish();
+        await settle();
+        expect(document.documentElement.dataset.viewTransition).toBeUndefined();
     });
 
     it('should just update when the page was not zoomed into (W-527)', async () => {

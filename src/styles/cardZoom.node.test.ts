@@ -20,9 +20,13 @@ const undeclared = (declarations: Record<string, string>) =>
 
 // 減少動畫：JS 已經唔開過場；CSS 動畫只喺冇要求減少動畫先有
 const MOTION = '@media (prefers-reduced-motion: no-preference)';
-const ZOOM = "html[data-view-transition='zoom']";
-const UNZOOM = "html[data-view-transition='unzoom']";
-const DURING = "html:is([data-view-transition='zoom'], [data-view-transition='unzoom'])";
+// prettier 將長 :is() 拆行：cssDeclarations 將空白壓成一格
+const ZOOM = "html:is( [data-view-transition='zoom'], [data-view-transition='zoom-handle'] )";
+const UNZOOM = "html:is( [data-view-transition='unzoom'], [data-view-transition='unzoom-handle'] )";
+const DURING =
+    "html:is( [data-view-transition='zoom'], [data-view-transition='unzoom'], [data-view-transition='zoom-handle'], [data-view-transition='unzoom-handle'] )";
+const PAIRED =
+    "html:is([data-view-transition='zoom-handle'], [data-view-transition='unzoom-handle'])";
 const MOVE = 'var(--view-transition-move) var(--ease-view-transition) both';
 
 const keyframe = (name: string, step: string) =>
@@ -45,7 +49,8 @@ describe('card zoom names', () => {
     });
 
     it('should not give the tile a name outside a zoom', () => {
-        expect(global).not.toMatch(/(^|\n)\s*\[data-zoom-source\]\s*\{/);
+        // prettier 拆行後 [data-zoom-source] 會自己一行：用 postcss 對成個 selector
+        expect(cssDeclarations(global, '[data-zoom-source]')).toEqual({});
     });
 });
 
@@ -107,6 +112,53 @@ describe('unzooming back home', () => {
 
     it('should leave the tile to the shared late fade-in', () => {
         expect(global).not.toMatch(/::view-transition-new\(zoom-tile\)/);
+    });
+});
+
+/**
+ * 闊橫版 ①（_mockups_/card-zoom-wide，同步）：zoom / unzoom 同一個過場入面，
+ * 主頁卡（或者主頁把手）↔ 內頁把手同名變形；其他名照熄
+ */
+describe('wide zoom pairs the card with the inner handle', () => {
+    const pair = cssDeclarations(
+        global,
+        `${PAIRED} :is([data-home-card], [data-home-handle], [data-page-handle]:not([data-leaving]))`,
+    );
+
+    it('should give the card, the home handle and the shown inner handle the panel name', () => {
+        expect(TRANSITION_NAME.panel).toBe('player-panel');
+        expect(pair['view-transition-name']).toBe(`${TRANSITION_NAME.panel} !important`);
+    });
+
+    it('should stretch both snapshots to the morphing box like the mockup', () => {
+        const paired =
+            "html:is( [data-view-transition='zoom-handle'], [data-view-transition='unzoom-handle'] )";
+        const stretch = cssDeclarations(
+            global,
+            `${paired}::view-transition-old(player-panel), ${paired}::view-transition-new(player-panel)`,
+        );
+        expect(stretch).toEqual({ 'block-size': '100%' });
+    });
+
+    it('should keep the pair out of the plain zoom and unzoom', () => {
+        expect(global).not.toMatch(/'zoom'\][^{]*\[data-page-handle\]/);
+        expect(global).not.toMatch(/'unzoom'\][^{]*\[data-home-card\]/);
+    });
+
+    it('should move the pair with the shared group timing, with no phase delay', () => {
+        expect(global).not.toMatch(/::view-transition-[\w-]+\(player-panel\)[^{]*\{[^}]*delay/);
+        expect(global).not.toMatch(/'(un)?zoom-handle'\][^{]*::view-transition-group/);
+    });
+
+    it('should zoom the page and dim the home page the same way, only without reduced motion', () => {
+        expect(motionRule(`${ZOOM}::view-transition-new(root)`).animation).toBe(
+            `zoom-page-open ${MOVE}`,
+        );
+        expect(motionRule(`${UNZOOM}::view-transition-old(root)`).animation).toBe(
+            `zoom-page-close ${MOVE}`,
+        );
+        expect(cssDeclarations(global, `${ZOOM}::view-transition-new(root)`)).toEqual({});
+        expect(cssDeclarations(global, `${UNZOOM}::view-transition-old(root)`)).toEqual({});
     });
 });
 

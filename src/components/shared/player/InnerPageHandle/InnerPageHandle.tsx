@@ -21,7 +21,7 @@ const handleKey = ({ status, name }: PageHandleView) => `${status}:${name}`;
 export const InnerPageHandle = ({ page }: { page: InnerPage }) => {
     const { view, wide } = usePageHandle(page);
     const { shown, leaving, onLeft } = useFadeOut(view, handleKey, { fade: wide });
-    const goHome = useGoHome();
+    const goHome = useGoHome(page);
     if (!shown) return null;
     return (
         <PlayerHandle

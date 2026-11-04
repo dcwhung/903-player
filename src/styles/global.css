@@ -204,35 +204,86 @@ html[data-view-transition='back'] [data-page-handle]:not([data-leaving]) {
  * 主頁格仔 zoom 入內頁（Z3，_mockups_/card-zoom，src/utils/cardZoom.ts）：
  * 被撳嗰格（data-zoom-source）做 zoom-tile 淡走，內頁唔變形，由格仔個框（圓角）開窗咁展開到成頁；
  * 窄版返主頁（unzoom）倒轉，格仔遲啲先淡返入（共用 only-child 淡入）。
- * 期間得 root 同 zoom-tile 有名，其他（連 inline style）一律熄：否則闊橫版播放卡會同內頁做 expand 式變形
+ * 期間得 root 同 zoom-tile 有名，其他（連 inline style）一律熄：否則闊橫版播放卡會同內頁做 expand 式變形。
+ * zoom-handle / unzoom-handle = 闊橫版同時有卡 ↔ 把手配對（見下面）
  */
-html:is([data-view-transition='zoom'], [data-view-transition='unzoom']) * {
+html:is(
+        [data-view-transition='zoom'],
+        [data-view-transition='unzoom'],
+        [data-view-transition='zoom-handle'],
+        [data-view-transition='unzoom-handle']
+    )
+    * {
     view-transition-name: none !important;
 }
 
-html:is([data-view-transition='zoom'], [data-view-transition='unzoom']) [data-zoom-source] {
+html:is(
+        [data-view-transition='zoom'],
+        [data-view-transition='unzoom'],
+        [data-view-transition='zoom-handle'],
+        [data-view-transition='unzoom-handle']
+    )
+    [data-zoom-source] {
     view-transition-name: zoom-tile !important;
 }
 
-/* 新舊頁照疊（唔用預設 plus-lighter 光加光）；返主頁時內頁要疊喺主頁上面縮 */
+/*
+ * 闊橫版播緊 / 暫停緊另一樣嘢時撳格（_mockups_/card-zoom-wide ①，同步）：
+ * 入頁時主頁卡（閂咗卡就係主頁把手）同內頁把手同名，成個 group 由卡縮入把手，同格仔 zoom 一齊行；
+ * 返主頁倒轉，把手放大返做卡。淡出緊（data-leaving）嘅內頁把手唔算（同 back 嘅 S-664 一樣）。
+ * 每邊畫面只會有其中一個（卡 / 主頁把手 / 內頁把手），唔會撞名；時間用共用 group 動畫（--view-transition-move）
+ */
+html:is([data-view-transition='zoom-handle'], [data-view-transition='unzoom-handle'])
+    :is([data-home-card], [data-home-handle], [data-page-handle]:not([data-leaving])) {
+    view-transition-name: player-panel !important;
+}
+
+/*
+ * 卡同把手闊高比差好遠：新舊快照跟住 group 個框拉（同 mockup 一樣），
+ * 唔用預設嘅按闊度等比例（否則窄把手放大時直寫名會大到凸出卡外）
+ */
+html:is(
+        [data-view-transition='zoom-handle'],
+        [data-view-transition='unzoom-handle']
+    )::view-transition-old(player-panel),
+html:is(
+        [data-view-transition='zoom-handle'],
+        [data-view-transition='unzoom-handle']
+    )::view-transition-new(player-panel) {
+    block-size: 100%;
+}
+
+/* 新舊頁照疊（唔用預設 plus-lighter 光加光）；返主頁時內頁要疊喺主頁上面縮；連把手配對嘅款式一樣 */
 @media (prefers-reduced-motion: no-preference) {
-    html[data-view-transition='zoom']::view-transition-old(root) {
+    html:is(
+            [data-view-transition='zoom'],
+            [data-view-transition='zoom-handle']
+        )::view-transition-old(root) {
         mix-blend-mode: normal;
         animation: zoom-home-dim var(--view-transition-move) var(--ease-view-transition) both;
     }
 
-    html[data-view-transition='zoom']::view-transition-new(root) {
+    html:is(
+            [data-view-transition='zoom'],
+            [data-view-transition='zoom-handle']
+        )::view-transition-new(root) {
         mix-blend-mode: normal;
         animation: zoom-page-open var(--view-transition-move) var(--ease-view-transition) both;
     }
 
-    html[data-view-transition='unzoom']::view-transition-old(root) {
+    html:is(
+            [data-view-transition='unzoom'],
+            [data-view-transition='unzoom-handle']
+        )::view-transition-old(root) {
         z-index: 1;
         mix-blend-mode: normal;
         animation: zoom-page-close var(--view-transition-move) var(--ease-view-transition) both;
     }
 
-    html[data-view-transition='unzoom']::view-transition-new(root) {
+    html:is(
+            [data-view-transition='unzoom'],
+            [data-view-transition='unzoom-handle']
+        )::view-transition-new(root) {
         mix-blend-mode: normal;
         animation: zoom-home-undim var(--view-transition-move) var(--ease-view-transition) both;
     }

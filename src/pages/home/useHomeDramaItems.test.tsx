@@ -2,6 +2,9 @@ import { renderHook } from '@testing-library/react';
 import { createHookWrapper } from '../../../tests/renderWithProviders';
 import { dramaShelfOrder } from '../../selectors/dramaShelf';
 import { useDramaItems } from './useHomeDramaItems';
+import type { HomeRight } from './useTileOpen';
+
+const NO_CARD: HomeRight = { side: 'none', card: null };
 
 // 包住真嘅 dramaShelfOrder，數佢俾人叫咗幾多次
 vi.mock('../../selectors/dramaShelf', async (importOriginal) => {
@@ -12,7 +15,7 @@ vi.mock('../../selectors/dramaShelf', async (importOriginal) => {
 describe('useDramaItems', () => {
     it('should not re-sort the shelf when the home page re-renders for an unrelated reason', () => {
         const { wrapper } = createHookWrapper();
-        const { result, rerender } = renderHook(() => useDramaItems(), { wrapper });
+        const { result, rerender } = renderHook(() => useDramaItems(NO_CARD), { wrapper });
         const firstOrder = result.current.map((item) => item.id);
         vi.mocked(dramaShelfOrder).mockClear();
 
