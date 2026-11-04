@@ -20,6 +20,8 @@ const updateManager = new UpdateManager({
     applyUpdate: () => {
         // stop = pause + persist：reload 前先存低進度
         playerController.stop();
+        // 一定已經 set 咗：applyUpdate 只會由 'refresh' 觸發，而 'refresh' 只會由 registerSW 自己嘅
+        // onNeedRefresh 設定，即係 startServiceWorker() 已經返回（S-652）
         void updateSW?.(true);
     },
     reload: () => {
@@ -60,6 +62,7 @@ const startServiceWorker = () =>
             startUpdateChecks(updateManager, { document, window });
         },
     });
+// registerSW 要等 isHardReload 查完先叫（S-648），所以係 let；用法見上面 applyUpdate
 let updateSW: ReturnType<typeof registerSW> | undefined;
 void isHardReload(navigator.serviceWorker)
     .then((hardReload) => {
