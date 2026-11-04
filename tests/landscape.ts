@@ -34,3 +34,30 @@ export const stubWideLandscape = ({ reducedMotion = false } = {}) => {
         })),
     );
 };
+
+/**
+ * 闊橫版，之後可以轉直（rotate）：所有打橫 query 變唔符合，並通知 useMediaQuery 嘅 listener。
+ * 用完要 vi.unstubAllGlobals()
+ */
+export const stubRotatableWideLandscape = () => {
+    let landscape = true;
+    const listeners = new Set<() => void>();
+    vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+            get matches() {
+                return landscape && query.includes('landscape') && !query.includes('max-height');
+            },
+            media: query,
+            addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+            removeEventListener: (_type: string, listener: () => void) =>
+                listeners.delete(listener),
+        })),
+    );
+    return {
+        rotate: () => {
+            landscape = false;
+            listeners.forEach((listener) => listener());
+        },
+    };
+};
