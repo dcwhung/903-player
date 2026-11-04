@@ -34,7 +34,9 @@ const TODAY_REGION = '正在播放（今日節目）';
 const CLOSE_LABEL = '關閉播放器';
 // 公子會（星期六）最近一集 17/10：入節目頁自動播，返主頁就係重溫
 const REWATCH_SHOW = { name: '公子會', route: '#/show/gongzi' };
-const REOPEN_LABEL = `打開播放器：${REWATCH_SHOW.name}`;
+const REOPEN_LABEL = `已暫停：${REWATCH_SHOW.name}，打開播放器`;
+// 把手上面嘅狀態字（src/i18n/zh-HK.ts homeCard.pausedStatus）；刻意寫死做獨立對照
+const PAUSED_STATUS = '已暫停';
 // 張卡頁頭列嘅開頁掣（後面跟「，重溫 17/10（六）」）
 const REWATCH_OPEN = new RegExp(`^開啟 ${REWATCH_SHOW.name} 節目頁`);
 const LIST_COUNT = /^共 \d+ 集/;
@@ -198,6 +200,15 @@ const checkCloseAndReopen = async ({ browser, base, errors, log }) => {
             after.handle !== null &&
             WIDE.width - after.handle.right <= HANDLE_EDGE_PX,
         `${label}：張卡收埋，右邊緣出把手「${REOPEN_LABEL}」（把手右 ${after.handle?.right}）`,
+    );
+    // 「已暫停」直寫要真係排到出嚟（jsdom 冇 layout）：三個字至少三個字高，唔俾長名擠走
+    const status = await handle.getByText(PAUSED_STATUS, { exact: true }).boundingBox();
+    const statusFont = await handle
+        .getByText(PAUSED_STATUS, { exact: true })
+        .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    log(
+        status !== null && status.height >= PAUSED_STATUS.length * statusFont,
+        `${label}：把手見到「${PAUSED_STATUS}」（高 ${status?.height}px，字 ${statusFont}px）`,
     );
     log(
         after.nav.width > before.nav.width &&
