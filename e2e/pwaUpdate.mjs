@@ -31,6 +31,8 @@ const RELOAD_WAIT_MS = 15_000;
 const NO_SECOND_RELOAD_MS = 3000;
 // 播緊嘢時等咁耐：會 reload 嘅話呢段時間已經 reload 咗
 const PLAYING_HOLD_MS = 4000;
+// workbox-window REGISTRATION_TIMEOUT_DURATION（60 s）再多 1 s：註冊咗咁耐先搵到嘅更新當 external
+const EXTERNAL_UPDATE_AGE_MS = 61_000;
 // 同 src/pwa/updateManager.ts UPDATE_IDLE_GRACE_MS（60 s）再多 1 s；刻意寫死做獨立對照
 const GRACE_PLUS_MS = 61_000;
 const POLL_MS = 100;
@@ -197,6 +199,10 @@ const checkTwoTabs = async (env, server) => {
     const a = await openTab(ctx, server.base, env.errors);
     await a.p.reload();
     await waitForLoads(a, 2);
+    // 令 race 必然發生（QA O1：唔整嘅話冇修正都有一半機會 pass）：workbox 註冊咗 60 s 以上先搵到嘅更新
+    // 當 external，即刻 onNeedRefresh；未夠 60 s 嘅要等 200 ms 先 dispatch waiting。
+    // A 快轉過 60 s 先開 B → A 一定搶先 skipWaiting，B 一定冇 onNeedRefresh，淨係靠 controllerchange
+    await a.p.clock.fastForward(EXTERNAL_UPDATE_AGE_MS);
     const b = await openTab(ctx, server.base, env.errors);
     const [aBefore, bBefore] = [a.loads, b.loads];
     server.release();
