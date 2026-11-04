@@ -2,41 +2,50 @@
 // 要用 node:fs 讀 CSS 原文：*.node.test.ts 行 tsconfig.node.json（有 Node 型別），唔會漏入 app 程式
 import { cssDeclarations, readCss } from '../../../tests/cssRule';
 
+const tokensCss = readCss(new URL('../../styles/tokens.css', import.meta.url));
 const cardCss = readCss(new URL('./HomePlayerCard.module.css', import.meta.url));
-const tokens = cssDeclarations(
-    readCss(new URL('../../styles/tokens.css', import.meta.url)),
-    ':root',
-);
+const tokens = cssDeclarations(tokensCss, ':root');
+const tag = cssDeclarations(cardCss, '.tag');
 
 const VAR = /var\((--[\w-]+)\)/g;
-const UI_SCALE = 'var(--ui-scale)';
+/** 代入 token 之後最內層嘅 `calc(<px>px * <倍數>)` */
+const PX_TIMES = /calc\(([\d.]+)px \* ([\d.]+)\)/g;
+/** tokens.css 每個 --ui-scale 宣告（:root 預設 + 橫版 @media），將來加新倍數自動驗埋 */
+const UI_SCALE_DECL = /--ui-scale:\s*([\d.]+);/g;
+const UI_SCALES = [...tokensCss.matchAll(UI_SCALE_DECL)].map(([, scale]) => Number(scale));
 
-/** var(--x) 換做 tokens.css :root 嘅值（直版 --ui-scale = 1），`calc(8px * 1)` 收返做 `8px` */
-const resolve = (value: string | undefined): string => {
+/** var(--x) 換做 tokens.css 嘅值、--ui-scale 換做 scale，再計晒 calc，返回 px 數值（空格分隔多個值） */
+const resolvePx = (value: string | undefined, scale: number): number[] => {
     let text = value ?? '';
     while (text.includes('var(--')) {
-        text = text.replace(VAR, (_, name: string) => tokens[name] ?? name);
+        text = text.replace(VAR, (_, name: string) =>
+            name === '--ui-scale' ? String(scale) : (tokens[name] ?? name),
+        );
     }
-    return text.replace(/calc\((\d+px) \* 1\)/g, '$1');
+    while (PX_TIMES.test(text)) {
+        text = text.replace(PX_TIMES, (_, px: string, k: string) => `${Number(px) * Number(k)}px`);
+    }
+    return text.split(' ').map((part) => parseFloat(part));
 };
 
 describe('播放卡頁頭今日 / 重溫標籤（3a）', () => {
-    const tag = cssDeclarations(cardCss, '.tag');
-
     it('should size the pill with tokens instead of hardcoded px', () => {
         expect(tag.padding).not.toMatch(/\dpx/);
         expect(tag['line-height']).not.toMatch(/\dpx/);
+        expect(tag['font-size']).not.toMatch(/\dpx/);
     });
 
-    // 橫版大畫面 --ui-scale 1.3 / 1.5 會放大字：行高同上下內邊要一齊放大，唔係字會頂住膠囊邊
-    it('should scale the line height and block padding with --ui-scale', () => {
-        expect(tag['line-height']).toContain(UI_SCALE);
-        // padding 第一個值（上下）：calc(<token> * var(--ui-scale))
-        expect(tag.padding).toMatch(/^calc\(var\(--[\w-]+\) \* var\(--ui-scale\)\) /);
+    it('should read every --ui-scale from tokens.css (base + wide landscape)', () => {
+        expect(UI_SCALES).toEqual(expect.arrayContaining([1, 1.3, 1.5]));
     });
 
-    it('should keep breathing room around the text at the base scale', () => {
-        expect(resolve(tag.padding)).toBe('2px 8px');
-        expect(resolve(tag['line-height'])).toBe('16px');
+    // 橫版大畫面 --ui-scale 放大字：行高唔可以細過字，上下要有內邊，唔係字頂住膠囊邊
+    it.each(UI_SCALES)('should keep room around the text at --ui-scale %s', (scale) => {
+        const [fontSize = Number.NaN] = resolvePx(tag['font-size'], scale);
+        const [lineHeight = Number.NaN] = resolvePx(tag['line-height'], scale);
+        const [padBlock = Number.NaN, padInline = Number.NaN] = resolvePx(tag.padding, scale);
+        expect(lineHeight).toBeGreaterThanOrEqual(fontSize);
+        expect(padBlock).toBeGreaterThan(0);
+        expect(padInline).toBeGreaterThan(padBlock);
     });
 });
