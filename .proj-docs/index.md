@@ -98,7 +98,7 @@
 | 2026-10-31 | [qa/2026-10-31_qa_pwa-first-visit-e2e-cleanup_batch.md](qa/2026-10-31_qa_pwa-first-visit-e2e-cleanup_batch.md)（batch pass @ `a1f6192`：unit 2070、e2e 612 / 0；PWA 第一次開 1.21.5 → 1.21.6 8 / 8 reload 1 次（main 對照 0 次）、返嚟 8 / 8、播緊唔 reload 4 / 4、兩 tab S-647 2 / 2；runSection 注入 3 / 3 contexts 清晒；CUI-0017 🟡 兩個冇播 tab 搶輸嘅停喺舊版（舊問題）） |
 | 2026-11-04 | [qa/2026-11-04_qa_cui-0017-pwa-update-e2e_batch.md](qa/2026-11-04_qa_cui-0017-pwa-update-e2e_batch.md)（batch pass @ `a7d6a3e`：unit 2073、e2e 2 × 617 / 0（1 次 CPU 搶用），5 個 PWA check 冇 flake；兩個 tab 1.21.7 → 1.21.8 30 / 30 都 reload 1 次（main 對照 9 / 9 一個 tab 停喺舊版）、播緊唔 reload 16 / 16；第一次開 / 返嚟 16 / 16；CUI-0017 completed）                |
 | 2026-11-04 | [qa/2026-11-04_qa_s-648-hard-reload.md](qa/2026-11-04_qa_s-648-hard-reload.md)（v1.21.8 pass @ `0b9b389`：unit 2082、e2e 2 × 619 / 0（1 次 CPU 搶用），7 個 PWA check 冇 flake；Shift-reload 1.21.8 → 1.21.9 22 / 22 兩個 tab 都 reload 1 次（main 對照 7 / 7 停喺舊版）、第一次開兩 tab 46 / 46 冇假 reload、播緊 12 / 12；冇 ticket）                                         |
-| 2026-11-04 | [qa/2026-11-04_qa_baseline.md](qa/2026-11-04_qa_baseline.md)（Verification Ledger baseline S3 @ `a561a46`：unit 2095 / 2095、e2e 617 / 619（2 FAIL 未登記）；凍結 5 / 8 條鏈，`show-today-page` / `home` / `player-core` 未凍結；plans 喺 `qa/plans/`，ledger `qa/verification-ledger.tsv`，KI `qa/known-issues.md`）                                                           |
+| 2026-11-04 | [qa/2026-11-04_qa_baseline.md](qa/2026-11-04_qa_baseline.md)（Verification Ledger baseline S3 @ `a561a46`：unit 2095 / 2095、e2e 617 / 619 → 低負載 rerun 619 / 619（2 個 load flake 記做 Observation）；8 / 8 條鏈凍結；plans 喺 `qa/plans/`，ledger `qa/verification-ledger.tsv`，KI `qa/known-issues.md`）                                                                   |
 
 ## Deploys
 
