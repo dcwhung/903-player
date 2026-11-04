@@ -4,7 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { AudioController, createAudioElement } from './player/AudioController';
 import { attachPlaybackLog } from './player/playbackLog';
-import { UpdateManager, startUpdateChecks } from './pwa/updateManager';
+import { UpdateManager, isHardReload, startUpdateChecks } from './pwa/updateManager';
 import './styles/tokens.css';
 import './styles/global.css';
 
@@ -45,21 +45,6 @@ const updateManager = new UpdateManager({
 // 由開 app 就追蹤播放停低嘅時間，grace period 先計得準
 updateManager.start();
 
-/**
- * Shift-reload：頁面冇 controller，但 SW 一早 active（S-648）。要喺 registerSW 之前查：
- * 第一次開 app 未 register，一定查唔到 registration，唔會將第一次安裝誤當換版
- */
-const detectHardReload = async (): Promise<void> => {
-    const serviceWorker = navigator.serviceWorker;
-    if (!serviceWorker || serviceWorker.controller) {
-        return;
-    }
-    const existing = await serviceWorker.getRegistration().catch(() => undefined);
-    if (existing?.active) {
-        updateManager.markControlled();
-    }
-};
-
 // prompt 模式：新 SW 喺 waiting 等，由 updateManager 決定幾時 skipWaiting
 const startServiceWorker = () =>
     registerSW({
@@ -76,9 +61,15 @@ const startServiceWorker = () =>
         },
     });
 let updateSW: ReturnType<typeof registerSW> | undefined;
-void detectHardReload().finally(() => {
-    updateSW = startServiceWorker();
-});
+void isHardReload(navigator.serviceWorker)
+    .then((hardReload) => {
+        if (hardReload) {
+            updateManager.markControlled();
+        }
+    })
+    .finally(() => {
+        updateSW = startServiceWorker();
+    });
 
 // library 漏咗嘅換版自己聽補返：第一次開 app（controlling isUpdate 係 false）、另一個 tab 搶先 skipWaiting（CUI-0017）
 navigator.serviceWorker?.addEventListener('controllerchange', updateManager.handleControllerChange);

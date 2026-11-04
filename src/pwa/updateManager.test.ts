@@ -4,6 +4,7 @@ import {
     UPDATE_IDLE_GRACE_MS,
     UpdateManager,
     createReloadOnce,
+    isHardReload,
     startUpdateChecks,
     type UpdateManagerDeps,
 } from './updateManager';
@@ -465,6 +466,53 @@ describe('UpdateManager.markControlled (S-648)', () => {
         h.hide();
         vi.advanceTimersByTime(UPDATE_IDLE_GRACE_MS);
         expect(h.deps.reload).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('isHardReload (S-648)', () => {
+    type Container = Parameters<typeof isHardReload>[0];
+    /** 假 ServiceWorkerContainer：controller 有冇、getRegistration 返乜 */
+    const container = (
+        controller: boolean,
+        registration: Promise<unknown> = Promise.resolve(undefined),
+    ): Container =>
+        ({
+            controller: controller ? {} : null,
+            getRegistration: () => registration,
+        }) as unknown as Container;
+    const withWorker = (worker: Record<string, unknown>) =>
+        container(false, Promise.resolve({ active: null, installing: null, ...worker }));
+
+    it('should be false without service worker support', async () => {
+        await expect(isHardReload(undefined)).resolves.toBe(false);
+    });
+
+    it('should be false when the page is controlled', async () => {
+        await expect(
+            isHardReload(container(true, Promise.resolve({ active: { state: 'activated' } }))),
+        ).resolves.toBe(false);
+    });
+
+    it('should be false on a first visit with no registration', async () => {
+        await expect(isHardReload(container(false))).resolves.toBe(false);
+    });
+
+    it('should be false while the first worker is only installing', async () => {
+        await expect(
+            isHardReload(withWorker({ installing: { state: 'installing' } })),
+        ).resolves.toBe(false);
+    });
+
+    it('should be true when uncontrolled with an activated worker', async () => {
+        await expect(isHardReload(withWorker({ active: { state: 'activated' } }))).resolves.toBe(
+            true,
+        );
+    });
+
+    it('should be false when getRegistration rejects', async () => {
+        await expect(
+            isHardReload(container(false, Promise.reject(new Error('denied')))),
+        ).resolves.toBe(false);
     });
 });
 

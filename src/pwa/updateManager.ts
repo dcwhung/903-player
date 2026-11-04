@@ -209,6 +209,20 @@ export class UpdateManager {
     }
 }
 
+/**
+ * Shift-reload：頁面冇 controller，但 SW 一早 active（S-648）。要喺 registerSW 之前查，
+ * 第一次開 app 未 register 就查唔到 registration
+ */
+export const isHardReload = async (
+    container: Pick<ServiceWorkerContainer, 'controller' | 'getRegistration'> | undefined,
+): Promise<boolean> => {
+    if (!container || container.controller) {
+        return false;
+    }
+    const existing = await container.getRegistration().catch(() => undefined);
+    return Boolean(existing?.active);
+};
+
 export interface UpdateCheckEnv {
     document: Pick<Document, 'visibilityState' | 'addEventListener' | 'removeEventListener'>;
     window: Pick<

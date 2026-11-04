@@ -257,6 +257,7 @@ const checkHardReload = async (env, server) => {
     );
     await ctx.close();
 };
+
 /**
  * 播緊嘢：收埋 app 過咗 grace period 都唔 reload（前景本身已經唔換，要喺背景先驗到「播緊唔換」）；
  * 停播之後喺背景再過 grace period 先 reload 一次
