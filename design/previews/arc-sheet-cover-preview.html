@@ -263,7 +263,7 @@
                 ['大妒忌', 0, 7, '未聽 · 7 集'],
             ];
             const pct = (w, t) => `${Math.round((w / t) * 100)}%`;
-            const art = (slug) => `url(../../src/dramas/sammy-kitty/${slug}-disc.webp)`;
+            const art = (slug) => `url(../../src/catalog/dramas/library/sammy-kitty/arcs/${slug}/disc.webp)`;
             const discCell = (face, w, t) =>
                 `<span class="disc" style="--fill:${pct(w, t)}">${face}${w === t ? '<span class="check">✓</span>' : ''}</span>`;
             const row = (cls, thumb, name, status, tail) =>
@@ -286,7 +286,7 @@
             const p1 = chisee((n) => `<span class="face p1">${[...n][0]}</span>`);
             const p2 = chisee(
                 () =>
-                    '<span class="face" style="background-image:url(../../src/dramas/chisee/disc.webp)"></span>',
+                    '<span class="face" style="background-image:url(../../src/catalog/dramas/library/chisee/disc.webp)"></span>',
             );
             const p3 = chisee(() => '<span class="face p3">903</span>');
 
