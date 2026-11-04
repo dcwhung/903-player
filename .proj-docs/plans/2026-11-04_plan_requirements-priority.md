@@ -17,29 +17,36 @@
 | 5   | 關閉語意  | 只限闊橫版；**唔改行為**（✕ 照舊 = v1.21.1 行為），只係把手加字眼「已暫停：xxx」                                                              |
 | 6   | 即將上架  | 劇集未來短篇：`drama.json` 預先登記未來上架日嘅短篇 / 集數，顯示「即將上架」+ 日期                                                            |
 | 7   | Bookmark  | 成集收藏，有「我的收藏」清單                                                                                                                  |
-| 9   | Home view | Apple 新產品 Home view 適用 UI；**Park**，等用戶補 link / 規格                                                                                |
+| 9   | Home view | Apple 新產品 Home view 適用 UI；規格未有（等用戶補 link），**同 10 iPhone Duo 一齊出 v2.0.0 MAJOR**                                           |
 | 11  | Scan QR   | 跨機搬進度：A 機出 QR，B 機 scan 即 import（無 server，數據入 URL）；test 性質                                                                |
 
 ---
 
 ## Priority 表
 
-| Priority | #        | Item                                                                                                      | 類型           | Command / Branch                                   | Version | Preview-First                    | 依賴                                  | Size |
-| -------- | -------- | --------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------- | ------- | -------------------------------- | ------------------------------------- | ---- |
-| P0       | 3a       | 右邊 player「重溫」pill margin 唔夠（1300×800）                                                           | Bug            | `/fix` `fix/home-card/rewatch-pill-margin`         | PATCH   | ❌（修 baseline）                | —                                     | S    |
-| P0       | CUI-0017 | 兩個 tab 搶輸嘅停喺舊版（現有 ticket，Medium）                                                            | Bug            | `/fix` `fix/pwa/CUI-0017_second-tab-update`        | PATCH   | ❌                               | —                                     | M    |
-| P1       | 8        | Folder restructure（`dramas/` + `shows/` 歸同一 parent；component 按 page / 功能分 sub-folder；唔改功能） | Refactor       | `/refactor` `refactor/structure/folder-hierarchy`  | PATCH   | ❌                               | 要喺所有 UI 工作之前做，避免 conflict | L    |
-| P2       | 5        | 把手加「已暫停：xxx」字眼（唔改 ✕ 行為）                                                                  | UX             | `/feature` `feature/home-card/handle-paused-label` | MINOR   | ✅ 把手文字                      | P1                                    | S    |
-| P3       | 4        | 內頁右邊把手 + 返回放大 + 同步                                                                            | UX             | `/feature` `feature/home-card/inner-page-handle`   | MINOR   | ✅                               | P2                                    | L    |
-| P4       | 3b       | 右邊 player 開 / 轉節目動畫                                                                               | UX             | `/feature` `feature/motion/player-card`            | MINOR   | ✅（同 1、2 一份 motion mockup） | P3                                    | M    |
-| P5       | 1        | 節目 / 廣播劇 Elastic tab animation                                                                       | UX             | `/feature` `feature/motion/elastic-tabs`           | MINOR   | ✅                               | P1                                    | S    |
-| P6       | 2        | 開節目 / 劇集：card 放大 fade out + 內頁放大 fade in                                                      | UX             | `/feature` `feature/motion/card-zoom`              | MINOR   | ✅                               | P1；要兼容現有 View Transitions       | M    |
-| P7       | 7        | 成集收藏 + 我的收藏清單                                                                                   | 新功能         | `/feature` `feature/bookmark/episode`              | MINOR   | ✅                               | P1                                    | M    |
-| P8       | 6        | 劇集「即將上架」短篇                                                                                      | 新功能         | `/feature` `feature/drama/coming-soon`             | MINOR   | ✅                               | P1；schema + JSON schema 改動         | M    |
-| P9       | 11       | QR 跨機搬進度（test）                                                                                     | 新功能（實驗） | `/feature` `feature/sync/qr-transfer`              | MINOR   | ✅                               | P7（收藏都要搬）                      | M    |
-| P10      | 10       | iPhone Duo 四種姿勢適配                                                                                   | 新裝置         | `/feature` `feature/layout/iphone-duo`             | MINOR   | ✅                               | P1–P6 layout 穩定之後                 | L    |
-| Parked   | 9        | Apple Home view UI                                                                                        | 新裝置         | —                                                  | —       | —                                | 等用戶規格                            | ?    |
-| Backlog  | CUI-0016 | `HomePageWide.test.tsx` flake（Low）                                                                      | Test           | `/fix`                                             | PATCH   | ❌                               | —                                     | S    |
+| Priority | #        | Item                                                                                                      | 類型           | Command / Branch                                   | Version                         | Preview-First                    | 依賴                                  | Size |
+| -------- | -------- | --------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------- | ------------------------------- | -------------------------------- | ------------------------------------- | ---- |
+| P0       | 3a       | 右邊 player「重溫」pill margin 唔夠（1300×800）                                                           | Bug            | `/fix` `fix/home-card/rewatch-pill-margin`         | PATCH                           | ❌（修 baseline）                | —                                     | S    |
+| P0       | CUI-0017 | 兩個 tab 搶輸嘅停喺舊版（現有 ticket，Medium）                                                            | Bug            | `/fix` `fix/pwa/CUI-0017_second-tab-update`        | PATCH                           | ❌                               | —                                     | M    |
+| P1       | 8        | Folder restructure（`dramas/` + `shows/` 歸同一 parent；component 按 page / 功能分 sub-folder；唔改功能） | Refactor       | `/refactor` `refactor/structure/folder-hierarchy`  | PATCH                           | ❌                               | 要喺所有 UI 工作之前做，避免 conflict | L    |
+| P2       | 5        | 把手加「已暫停：xxx」字眼（唔改 ✕ 行為）                                                                  | UX             | `/feature` `feature/home-card/handle-paused-label` | MINOR                           | ✅ 把手文字                      | P1                                    | S    |
+| P3       | 4        | 內頁右邊把手 + 返回放大 + 同步                                                                            | UX             | `/feature` `feature/home-card/inner-page-handle`   | MINOR                           | ✅                               | P2                                    | L    |
+| P4       | 3b       | 右邊 player 開 / 轉節目動畫                                                                               | UX             | `/feature` `feature/motion/player-card`            | MINOR                           | ✅（同 1、2 一份 motion mockup） | P3                                    | M    |
+| P5       | 1        | 節目 / 廣播劇 Elastic tab animation                                                                       | UX             | `/feature` `feature/motion/elastic-tabs`           | MINOR                           | ✅                               | P1                                    | S    |
+| P6       | 2        | 開節目 / 劇集：card 放大 fade out + 內頁放大 fade in                                                      | UX             | `/feature` `feature/motion/card-zoom`              | MINOR                           | ✅                               | P1；要兼容現有 View Transitions       | M    |
+| P7       | 7        | 成集收藏 + 我的收藏清單                                                                                   | 新功能         | `/feature` `feature/bookmark/episode`              | MINOR                           | ✅                               | P1                                    | M    |
+| P8       | 6        | 劇集「即將上架」短篇                                                                                      | 新功能         | `/feature` `feature/drama/coming-soon`             | MINOR                           | ✅                               | P1；schema + JSON schema 改動         | M    |
+| P9       | 11       | QR 跨機搬進度（test）                                                                                     | 新功能（實驗） | `/feature` `feature/sync/qr-transfer`              | MINOR                           | ✅                               | P7（收藏都要搬）                      | M    |
+| P10      | 10       | iPhone Duo 四種姿勢適配                                                                                   | 新裝置         | `/feature` `feature/layout/iphone-duo`             | **MAJOR（v2.0.0，同 9 一齊）**  | ✅                               | P1–P6 layout 穩定之後                 | L    |
+| P10      | 9        | Apple Home view UI（等用戶規格）                                                                          | 新裝置         | `/feature` `feature/layout/home-view`              | **MAJOR（v2.0.0，同 10 一齊）** | ✅                               | 用戶規格 + link                       | ?    |
+| Backlog  | CUI-0016 | `HomePageWide.test.tsx` flake（Low）                                                                      | Test           | `/fix`                                             | PATCH                           | ❌                               | —                                     | S    |
+
+### v2.0.0 MAJOR release（9 + 10）
+
+- 9 同 10 各自 feature branch 開發，**唔獨立 release**；兩個都 merge 晒先一齊 bump `1.x.x → 2.0.0`
+- 做法：兩條 branch 先 merge 入 `release/v2.0.0` 整合 branch，所有 2.0.0 之前嘅 MINOR / PATCH（P0–P9）照常喺 `main` 出 1.x
+- Hard Rule 7：release 前**必須跑 full suite**（unit + e2e），開跑前先知會用戶（版本變化、指令、預計時間）；唔全綠唔可以 tag / merge / deploy
+- Blocker：9 規格未到 → v2.0.0 時間表要等用戶提供 Home view 資料
 
 ### 可平行 lane（`sw-parallel-dispatch`）
 
