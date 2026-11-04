@@ -1,7 +1,6 @@
 import { WIDE_BANNER_QUERY } from '../config/layout';
 import { usePlayer } from '../player/usePlayer';
 import { pageHandle, type InnerPage, type PageHandleView } from '../selectors/pageHandle';
-import { hkToday } from '../utils/date';
 import { useClosedHomePlayerCard } from './homePlayerCardClosed';
 import { useMediaQuery } from './useMediaQuery';
 
@@ -11,5 +10,5 @@ export const usePageHandle = (page: InnerPage): PageHandleView | null => {
     const { recording, isPlaying } = usePlayer();
     const closed = useClosedHomePlayerCard();
     if (!wide) return null;
-    return pageHandle({ track: recording, isPlaying, closed, page, today: hkToday() });
+    return pageHandle({ track: recording, isPlaying, closed, page });
 };

@@ -7,9 +7,14 @@ import type { PlayerItem } from '../types/playerItem';
 import type { ShowId } from '../types/recording';
 import { isDramaEpisode, type Track } from '../types/track';
 
-/** 有右邊把手嘅內頁：節目頁、劇集頁、今日節目頁 */
+/**
+ * 有右邊把手嘅內頁：節目頁、劇集頁、今日節目頁。
+ * 今日頁帶住佢列緊嘅日子（todayView().date：今日冇節目播就係最近有錄音嗰日），唔係 hkToday()
+ */
 export type InnerPage =
-    { kind: 'show'; showId: ShowId } | { kind: 'drama'; dramaId: DramaId } | { kind: 'today' };
+    | { kind: 'show'; showId: ShowId }
+    | { kind: 'drama'; dramaId: DramaId }
+    | { kind: 'today'; date: string | undefined };
 
 /** 把手細字：播緊（主題強調色）定係暫停 / 閂咗（muted） */
 export type HandleStatus = 'playing' | 'paused';
@@ -27,8 +32,6 @@ export interface PageHandleInput {
     /** 主頁撳 ✕ 閂咗嘅卡（停咗播，track 係 null） */
     closed: ClosedPlayerCard | null;
     page: InnerPage;
-    /** 香港今日（hkToday），YYYY-MM-DD */
-    today: string;
 }
 
 export const trackItem = (track: Track): PlayerItem =>
@@ -36,9 +39,9 @@ export const trackItem = (track: Track): PlayerItem =>
         ? { kind: 'drama', id: track.dramaId }
         : { kind: 'show', id: track.showId, date: track.date };
 
-/** 係咪呢頁自己嘅嘢：節目頁同一個節目、劇集頁同一套劇、今日節目頁今日嘅錄音 */
-const belongsTo = (item: PlayerItem, page: InnerPage, today: string): boolean => {
-    if (page.kind === 'today') return item.kind === 'show' && item.date === today;
+/** 係咪呢頁自己嘅嘢：節目頁同一個節目、劇集頁同一套劇、今日節目頁列緊嗰日嘅錄音 */
+const belongsTo = (item: PlayerItem, page: InnerPage): boolean => {
+    if (page.kind === 'today') return item.kind === 'show' && item.date === page.date;
     if (page.kind === 'show') return item.kind === 'show' && item.id === page.showId;
     return item.kind === 'drama' && item.id === page.dramaId;
 };
@@ -61,10 +64,9 @@ export const pageHandle = ({
     isPlaying,
     closed,
     page,
-    today,
 }: PageHandleInput): PageHandleView | null => {
-    if (track) return belongsTo(trackItem(track), page, today) ? null : trackView(track, isPlaying);
+    if (track) return belongsTo(trackItem(track), page) ? null : trackView(track, isPlaying);
     if (!closed) return null;
-    if (closed.item && belongsTo(closed.item, page, today)) return null;
+    if (closed.item && belongsTo(closed.item, page)) return null;
     return { theme: closed.theme, name: closed.showName, status: 'paused' };
 };

@@ -364,5 +364,16 @@ describe('TodayPage', () => {
 
             expect(screen.queryByRole('button', { name: HANDLE })).not.toBeInTheDocument();
         });
+
+        it('should have no handle while a show of the fallback day it lists plays (W-525)', async () => {
+            vi.setSystemTime(new Date('2026-10-18T08:00:00Z')); // 星期日，列 17/10
+            const { audio } = renderWithProviders(<TodayPage />, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+            });
+            await waitFor(() => expect(audio.src).toBe(RECORDINGS[3]?.url));
+
+            expect(screen.queryByRole('button', { name: HANDLE })).not.toBeInTheDocument();
+        });
     });
 });

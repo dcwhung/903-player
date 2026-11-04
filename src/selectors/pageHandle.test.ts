@@ -13,7 +13,9 @@ const C18 = dailyEpisodesOf('c18')[0] as DramaEpisode;
 
 const SHOW_PAGE: InnerPage = { kind: 'show', showId: 'gongzi' };
 const DRAMA_PAGE: InnerPage = { kind: 'drama', dramaId: 'chisee' };
-const TODAY_PAGE: InnerPage = { kind: 'today' };
+const TODAY_PAGE: InnerPage = { kind: 'today', date: TODAY };
+// 星期日（2026-10-18）冇節目播，今日頁列最近有錄音嗰日（pickTodayDate）
+const SUNDAY_FALLBACK_PAGE: InnerPage = { kind: 'today', date: '2026-10-17' };
 
 const CLOSED_GONGZI: ClosedPlayerCard = {
     theme: themeFor('gongzi'),
@@ -26,7 +28,6 @@ const input = (overrides: Partial<PageHandleInput>): PageHandleInput => ({
     isPlaying: false,
     closed: null,
     page: SHOW_PAGE,
-    today: TODAY,
     ...overrides,
 });
 
@@ -75,6 +76,18 @@ describe('pageHandle', () => {
 
     it('should treat an older episode on the today page as not this page’s item', () => {
         expect(pageHandle(input({ page: TODAY_PAGE, track: GONGZI }))?.name).toBe('公子會');
+    });
+
+    it('should be null on the today page listing a fallback day, playing a show of that day', () => {
+        const handle = pageHandle(
+            input({ page: SUNDAY_FALLBACK_PAGE, track: GONGZI, isPlaying: true }),
+        );
+        expect(handle).toBeNull();
+    });
+
+    it('should show a show of another day on the today page listing a fallback day', () => {
+        const handle = pageHandle(input({ page: SUNDAY_FALLBACK_PAGE, track: BADGIRL_TODAY }));
+        expect(handle?.name).toBe('Bad Girl大過佬');
     });
 
     it('should show a closed card as paused', () => {
