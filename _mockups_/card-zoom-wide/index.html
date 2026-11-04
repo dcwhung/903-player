@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>闊橫版 Zoom 返回</title>
+        <meta name="claude:viewport-fit-sides" content="cover" />
+        <style>
+            /* 版面：一欄，每個情境一張卡，入面一個 1300×800 舞台（按闊度縮細）；時間跟 tokens.css --view-transition-* */
+            :root {
+                --move: 520ms;
+                --fade: 260ms;
+                --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+                --bg: #eef1f5;
+                --surface: #ffffff;
+                --ink: #18202b;
+                --note: #5d6775;
+                --line: #d3d9e2;
+                --accent: #3b6fb6;
+                --on-accent: #ffffff;
+                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #10151c;
+                    --surface: #1a212b;
+                    --ink: #e8edf3;
+                    --note: #9aa5b3;
+                    --line: #2e3845;
+                    --accent: #7fa8e6;
+                    --on-accent: #0d1420;
+                    color-scheme: dark;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #10151c;
+                --surface: #1a212b;
+                --ink: #e8edf3;
+                --note: #9aa5b3;
+                --line: #2e3845;
+                --accent: #7fa8e6;
+                --on-accent: #0d1420;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding-block: 24px 48px;
+                padding-left: max(16px, env(safe-area-inset-left, 0px));
+                padding-right: max(16px, env(safe-area-inset-right, 0px));
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font);
+            }
+            main {
+                display: grid;
+                gap: 20px;
+                max-width: 960px;
+                margin: 0 auto;
+            }
+            h1 {
+                margin: 0;
+                font-size: 22px;
+                text-wrap: balance;
+            }
+            h2 {
+                margin: 0;
+                font-size: 17px;
+            }
+            p {
+                margin: 0;
+                color: var(--note);
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            .panel {
+                display: grid;
+                gap: 12px;
+                padding: 16px;
+                border-radius: 16px;
+                background: var(--surface);
+                min-width: 0;
+            }
+            .row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                align-items: center;
+            }
+            button {
+                padding: 8px 14px;
+                border: 1px solid var(--line);
+                border-radius: 999px;
+                background: var(--surface);
+                color: var(--ink);
+                font: inherit;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            button:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
+            button[aria-pressed='true'],
+            button.play {
+                border-color: var(--accent);
+                background: var(--accent);
+                color: var(--on-accent);
+            }
+            label {
+                display: flex;
+                gap: 6px;
+                align-items: center;
+                font-size: 14px;
+                color: var(--note);
+            }
+            .viewport {
+                position: relative;
+                overflow: hidden;
+                border-radius: 12px;
+                box-shadow: 0 2px 12px rgb(0 0 0 / 18%);
+                background: #000;
+                max-width: 100%;
+            }
+            .stage {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 1300px;
+                height: 800px;
+                transform-origin: 0 0;
+                overflow: hidden;
+            }
+            .stage > div {
+                position: absolute;
+                background-repeat: no-repeat;
+            }
+            .full {
+                inset: 0;
+                background-size: 100% 100%;
+            }
+            .opt-desc {
+                min-height: 3.2em;
+            }
+            .sticky {
+                position: sticky;
+                top: env(safe-area-inset-top, 0px);
+                z-index: 5;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header style="display: grid; gap: 6px">
+                <h1>P6 #2 跟進：闊橫版格仔入頁 / 返回</h1>
+                <p>
+                    v1.26.0 真截圖，闊橫版 1300×800。主流程跟你嘅描述：卡縮做把手 → 格仔 zoom
+                    入頁；返回倒轉。撳「同一個節目」嘅格就用現有 ⤢ expand / back，呢度唔重複示範。
+                </p>
+            </header>
+
+            <section class="panel sticky">
+                <div class="row">
+                    <label><input type="checkbox" id="slow" /> 慢鏡 ×3</label>
+                    <label><input type="checkbox" id="reduced" /> 模擬「減少動態」</label>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>① 卡播緊 A（在晴朗的一天出發），撳另一個節目 B（公子會）</h2>
+                <p>
+                    入頁：右邊卡先縮入右邊把手（「播放中：A」），之後格仔 B zoom
+                    入頁；內頁右邊照舊有把手。返回：內頁倒 zoom 縮入格仔 B，之後把手放大返做卡 A。
+                </p>
+                <div class="row">
+                    <button type="button" class="play" data-demo="a" data-dir="go">入頁 ▶</button>
+                    <button type="button" data-demo="a" data-dir="back">◀ 返回</button>
+                </div>
+                <div class="viewport" data-view="a"></div>
+            </section>
+
+            <section class="panel">
+                <h2>② 主頁冇卡（未播過嘢），撳節目 B</h2>
+                <p>
+                    入頁 = 格仔 zoom（而家做法），入頁會開始播 B，內頁冇把手。返主頁時右邊會多咗張 B
+                    嘅卡、格仔收窄。揀返回款式：
+                </p>
+                <div class="row" data-options="n">
+                    <button type="button" data-opt="r1" aria-pressed="true">
+                        R1 倒 zoom → 卡由右 slide 入
+                    </button>
+                    <button type="button" data-opt="r2" aria-pressed="false">
+                        R2 照舊 back（內頁縮做卡）
+                    </button>
+                    <button type="button" data-opt="r3" aria-pressed="false">
+                        R3 倒 zoom → 卡由右邊緣放大
+                    </button>
+                </div>
+                <p class="opt-desc" data-desc="n"></p>
+                <div class="row">
+                    <button type="button" class="play" data-demo="n" data-dir="go">入頁 ▶</button>
+                    <button type="button" data-demo="n" data-dir="back">◀ 返回</button>
+                </div>
+                <div class="viewport" data-view="n"></div>
+            </section>
+
+            <section class="panel">
+                <h2>③ 卡已經用 ⏻ 閂咗（右邊得把手「已暫停：A」），撳節目 B</h2>
+                <p>
+                    實測：閂咗卡時撳 B 會開始播 B，內頁冇把手（同 ② 一樣）。入頁 = 格仔
+                    zoom，主頁把手跟主頁一齊變暗。揀返回款式：
+                </p>
+                <div class="row" data-options="c">
+                    <button type="button" data-opt="c1" aria-pressed="true">
+                        C1 倒 zoom，保持閂卡
+                    </button>
+                    <button type="button" data-opt="c2" aria-pressed="false">
+                        C2 倒 zoom → 把手放大做卡
+                    </button>
+                </div>
+                <p class="opt-desc" data-desc="c"></p>
+                <div class="row">
+                    <button type="button" class="play" data-demo="c" data-dir="go">入頁 ▶</button>
+                    <button type="button" data-demo="c" data-dir="back">◀ 返回</button>
+                </div>
+                <div class="viewport" data-view="c"></div>
+            </section>
+        </main>
+
+        <script>
+            /** 真截圖（v1.26.0，e2e harness 假資料） */
+            const IMG = {
+                aHome: 'a-home.webp',
+                aHomeNoCard: 'a-home-nocard.webp',
+                aPage: 'a-page.webp',
+                cHome: 'c-home.webp',
+                cPage: 'c-page.webp',
+                nHome: 'n-home.webp',
+                nPage: 'n-page.webp',
+                nAfter: 'n-after.webp',
+                nAfterNoCard: 'n-after-nocard.webp',
+            };
+            const W = 1300;
+            const H = 800;
+            const MAX_SCALE = 0.7;
+            const SLOW_FACTOR = 3;
+            /** 第二段（zoom / 卡出現）喺第一段做到呢個比例先開始：先後但唔會停頓 */
+            const PHASE_RATIO = 0.75;
+            const DIM = 0.35;
+            const PAGE_FROM = 0.4;
+            const R = {
+                full: { x: 0, y: 0, w: W, h: H, r: 0 },
+                card: { x: 832, y: 24, w: 444, h: 758, r: 26 },
+                handle: { x: 1261, y: 250, w: 39, h: 300, r: 20 },
+                tileSplit: { x: 558.7, y: 129, w: 249.3, h: 201.7, r: 14 },
+                tileFill: { x: 840.7, y: 129, w: 390.3, h: 201.7, r: 14 },
+            };
+            const root = getComputedStyle(document.documentElement);
+            const MOVE = parseFloat(root.getPropertyValue('--move'));
+            const FADE = parseFloat(root.getPropertyValue('--fade'));
+            const EASE = root.getPropertyValue('--ease').trim();
+            const P2 = MOVE * PHASE_RATIO;
+
+            const box = (r) => ({
+                left: `${r.x}px`,
+                top: `${r.y}px`,
+                width: `${r.w}px`,
+                height: `${r.h}px`,
+                borderRadius: `${r.r}px`,
+            });
+            const clip = (r) =>
+                `inset(${r.y}px ${W - r.x - r.w}px ${H - r.y - r.h}px ${r.x}px round ${r.r}px)`;
+
+            /** 全畫面一張截圖 */
+            const layer = (img, opacity = 1) => {
+                const el = document.createElement('div');
+                el.className = 'full';
+                el.style.backgroundImage = `url(${IMG[img]})`;
+                el.style.opacity = String(opacity);
+                return el;
+            };
+            /** 由截圖裁出 r 嗰格；盒仔變大變細時圖跟住拉（同 View Transition 快照一樣） */
+            const crop = (img, r, at = r) => {
+                const el = document.createElement('div');
+                el.style.backgroundImage = `url(${IMG[img]})`;
+                el.style.backgroundSize = `${(W / r.w) * 100}% ${(H / r.h) * 100}%`;
+                el.style.backgroundPosition = `${(r.x / (W - r.w)) * 100}% ${(r.y / (H - r.h)) * 100}%`;
+                Object.assign(el.style, box(at));
+                return el;
+            };
+            const s = (el, frames, delay, duration) => ({ el, frames, delay, duration });
+
+            /** 格仔 zoom 入頁（P6 #2 Z3）：start = 開始 zoom 嘅時間 */
+            const zoomSteps = (home, tile, page, start) => [
+                s(home, [{ opacity: 1 }, { opacity: DIM }], start, MOVE),
+                s(
+                    page,
+                    [
+                        { clipPath: clip(tile.r), opacity: PAGE_FROM },
+                        { clipPath: clip(R.full), opacity: 1 },
+                    ],
+                    start,
+                    MOVE,
+                ),
+                s(tile.el, [{ opacity: 1 }, { opacity: 0 }], start, FADE),
+            ];
+            /** 倒 zoom：內頁縮入格仔，格仔遲啲淡返出嚟，主頁由暗變返光 */
+            const unzoomSteps = (home, tile, page) => [
+                s(home, [{ opacity: DIM }, { opacity: 1 }], 0, MOVE),
+                s(
+                    page,
+                    [
+                        { clipPath: clip(R.full), opacity: 1 },
+                        { clipPath: clip(tile.r), opacity: PAGE_FROM, offset: 0.9 },
+                        { clipPath: clip(tile.r), opacity: 0 },
+                    ],
+                    0,
+                    MOVE,
+                ),
+                s(tile.el, [{ opacity: 0 }, { opacity: 1 }], MOVE - FADE, FADE),
+            ];
+            const tileOf = (img, r) => ({ r, el: crop(img, r) });
+
+            /** 主頁 → 內頁（三個情境入頁都係呢款，① 前面多咗卡縮入把手） */
+            const PLANS = {
+                a: {
+                    home: 'aHome',
+                    page: 'aPage',
+                    go: () => {
+                        const home = layer('aHomeNoCard');
+                        const card = crop('aHome', R.card);
+                        const handle = crop('aPage', R.handle);
+                        handle.style.opacity = '0';
+                        const page = layer('aPage', 0);
+                        const tile = tileOf('aHome', R.tileSplit);
+                        return {
+                            els: [home, card, handle, page, tile.el],
+                            steps: [
+                                s(card, [box(R.card), box(R.handle)], 0, MOVE),
+                                s(card, [{ opacity: 1 }, { opacity: 0 }], MOVE - FADE, FADE),
+                                s(handle, [{ opacity: 0 }, { opacity: 1 }], MOVE - FADE, FADE),
+                                ...zoomSteps(home, tile, page, P2),
+                            ],
+                        };
+                    },
+                    /** 返回 = 入頁成條時間線倒播 */
+                    back: { reverseOf: 'go', end: 'aHome' },
+                },
+                n: {
+                    home: 'nHome',
+                    page: 'nPage',
+                    go: () => zoomOnly('nHome', 'nPage'),
+                    back: {
+                        r1: () => unzoomThenCard('nHome', 'nPage', 'slide'),
+                        r2: () => shrinkIntoCard(),
+                        r3: () => unzoomThenCard('nHome', 'nPage', 'grow'),
+                    },
+                    end: 'nAfter',
+                },
+                c: {
+                    home: 'cHome',
+                    page: 'cPage',
+                    go: () => zoomOnly('cHome', 'cPage'),
+                    back: {
+                        c1: { reverseOf: 'go', end: 'cHome' },
+                        c2: () => unzoomThenCard('cHome', 'cPage', 'grow'),
+                    },
+                    end: 'nAfter',
+                },
+            };
+
+            function zoomOnly(homeImg, pageImg) {
+                const home = layer(homeImg);
+                const page = layer(pageImg, 0);
+                const tile = tileOf(homeImg, R.tileFill);
+                return { els: [home, page, tile.el], steps: zoomSteps(home, tile, page, 0) };
+            }
+
+            /** 倒 zoom 入格仔（冇卡版面），之後格仔收窄、張卡出現（slide = 由右 slide 入；grow = 由右邊緣放大） */
+            function unzoomThenCard(homeImg, pageImg, how) {
+                const home = layer(homeImg, DIM);
+                const after = layer('nAfterNoCard', 0);
+                const page = layer(pageImg);
+                const tile = tileOf(homeImg, R.tileFill);
+                tile.el.style.opacity = '0';
+                const card = crop('nAfter', R.card);
+                card.style.opacity = '0';
+                const cardFrames =
+                    how === 'slide'
+                        ? [
+                              { transform: 'translateX(110%)', opacity: 0 },
+                              { transform: 'none', opacity: 1 },
+                          ]
+                        : [
+                              { ...box(R.handle), opacity: 0.6 },
+                              { ...box(R.card), opacity: 1 },
+                          ];
+                return {
+                    els: [home, after, card, page, tile.el],
+                    steps: [
+                        ...unzoomSteps(home, tile, page),
+                        s(home, [{ opacity: 1 }, { opacity: 0 }], P2, MOVE),
+                        s(tile.el, [{ opacity: 1 }, { opacity: 0 }], P2 + FADE, FADE),
+                        s(after, [{ opacity: 0 }, { opacity: 1 }], P2, MOVE),
+                        s(card, cardFrames, P2, MOVE),
+                    ],
+                };
+            }
+
+            /** R2：照舊 back，成頁縮做右邊卡 */
+            function shrinkIntoCard() {
+                const after = layer('nAfterNoCard', DIM);
+                const card = crop('nAfter', R.card, R.full);
+                card.style.opacity = '0';
+                const page = layer('nPage');
+                const sx = R.card.w / W;
+                const sy = R.card.h / H;
+                return {
+                    els: [after, card, page],
+                    steps: [
+                        s(after, [{ opacity: DIM }, { opacity: 1 }], 0, MOVE),
+                        s(card, [box(R.full), box(R.card)], 0, MOVE),
+                        s(card, [{ opacity: 0 }, { opacity: 1 }], 0, FADE),
+                        s(
+                            page,
+                            [
+                                { transform: 'none', transformOrigin: '0 0', opacity: 1 },
+                                {
+                                    transform: `translate(${R.card.x}px, ${R.card.y}px) scale(${sx}, ${sy})`,
+                                    transformOrigin: '0 0',
+                                    opacity: 0,
+                                },
+                            ],
+                            0,
+                            MOVE,
+                        ),
+                    ],
+                };
+            }
+
+            const DESC = {
+                r1: '先倒 zoom 縮入格仔 B（冇卡版面），之後格仔收窄、B 嘅卡用開卡 O1 由右 slide 入。',
+                r2: '內頁直接縮做右邊 B 卡（同 ⤢ 入頁嘅 back 一樣），唔經格仔。最短，但同入頁唔對稱。',
+                r3: '先倒 zoom 縮入格仔 B，之後 B 嘅卡由右邊緣（把手位）放大出嚟，雖然之前冇把手。',
+                c1: '倒 zoom 入格仔 B，返到主頁仍然係閂卡狀態，右邊把手照舊（會變做「播放中：B」）。',
+                c2: '倒 zoom 入格仔 B，之後把手放大做 B 嘅卡、格仔收窄（即係返主頁會自動開返張卡）。',
+            };
+
+            const stages = {};
+            const choice = { n: 'r1', c: 'c1' };
+
+            const build = (name) => {
+                const view = document.querySelector(`[data-view="${name}"]`);
+                const stage = document.createElement('div');
+                stage.className = 'stage';
+                view.append(stage);
+                const fit = () => {
+                    const scale = Math.min(MAX_SCALE, view.parentElement.clientWidth / W);
+                    stage.style.transform = `scale(${scale})`;
+                    view.style.width = `${W * scale}px`;
+                    view.style.height = `${H * scale}px`;
+                };
+                fit();
+                stages[name] = { stage, fit, anims: [], at: 'home' };
+                show(name, PLANS[name].home);
+            };
+
+            /** 靜止畫面：一張截圖 */
+            const show = (name, img) => {
+                const st = stages[name];
+                st.anims.forEach((a) => a.cancel());
+                st.anims = [];
+                st.stage.replaceChildren(layer(img));
+            };
+
+            const backPlan = (name) => {
+                const back = PLANS[name].back;
+                return back.reverseOf ? back : back[choice[name]];
+            };
+            const endOfBack = (name) => {
+                const plan = backPlan(name);
+                return plan.end ?? PLANS[name].end;
+            };
+
+            const run = (name, dir) => {
+                const st = stages[name];
+                const P = PLANS[name];
+                show(name, dir === 'go' ? P.home : P.page);
+                const end = dir === 'go' ? P.page : endOfBack(name);
+                if (document.getElementById('reduced').checked) {
+                    show(name, end);
+                    return;
+                }
+                const plan = dir === 'go' ? P.go : backPlan(name);
+                const reverse = typeof plan !== 'function';
+                const { els, steps } = (reverse ? P[plan.reverseOf] : plan)();
+                st.stage.replaceChildren(...els);
+                const slow = document.getElementById('slow').checked ? SLOW_FACTOR : 1;
+                const total = Math.max(...steps.map((x) => x.delay + x.duration));
+                st.anims = steps.map(({ el, frames, delay, duration }) =>
+                    el.animate(reverse ? [...frames].reverse() : frames, {
+                        delay: (reverse ? total - delay - duration : delay) * slow,
+                        duration: duration * slow,
+                        easing: EASE,
+                        fill: 'both',
+                    }),
+                );
+                Promise.all(st.anims.map((a) => a.finished))
+                    .then(() => show(name, end))
+                    .catch(() => undefined);
+            };
+
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                if (btn.dataset.demo) {
+                    run(btn.dataset.demo, btn.dataset.dir);
+                    return;
+                }
+                const group = btn.closest('[data-options]');
+                if (!group) return;
+                const name = group.dataset.options;
+                choice[name] = btn.dataset.opt;
+                group
+                    .querySelectorAll('button')
+                    .forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+                document.querySelector(`[data-desc="${name}"]`).textContent = DESC[choice[name]];
+                show(name, PLANS[name].home);
+            });
+
+            ['a', 'n', 'c'].forEach(build);
+            document.querySelector('[data-desc="n"]').textContent = DESC.r1;
+            document.querySelector('[data-desc="c"]').textContent = DESC.c1;
+            addEventListener('resize', () => Object.values(stages).forEach((x) => x.fit()));
+        </script>
+    </body>
+</html>
