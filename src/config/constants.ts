@@ -62,6 +62,13 @@ export const STALL_DATA_AHEAD_SECONDS = 10;
 /** 每次撳播之後卡住最多重試幾次 */
 export const STALL_MAX_RETRIES = 3;
 /**
+ * 鎖屏 / AirPods 撳 Play 之後咁耐內，iOS 系統自己 pause（冇 ms:pause）就自動再播：
+ * 戴返 AirPods 時佢仲連緊線，log 見過 Play 後 1.4–1.9 秒被系統停（2026-11-04 10:32）
+ */
+export const REMOTE_AUTO_RESUME_WINDOW_MS = 5000;
+/** 每次鎖屏 Play 最多自動再播幾次：限住次數，唔會同來電 / Siri 爭到停唔到 */
+export const REMOTE_AUTO_RESUME_MAX = 2;
+/**
  * 位置由開始播嗰下行咗咁多秒先當「真正出聲」：iOS 鎖屏有 playing event 但位置凍結冇聲（S-551）。
  * timeupdate 大約 0.25 秒一次，即係第二下 tick 左右確認
  */
