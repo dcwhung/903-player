@@ -4,7 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { AudioController, createAudioElement } from './player/AudioController';
 import { attachPlaybackLog } from './player/playbackLog';
-import { UpdateManager, startUpdateChecks } from './pwa/updateManager';
+import { UpdateManager, isHardReload, startUpdateChecks } from './pwa/updateManager';
 import './styles/tokens.css';
 import './styles/global.css';
 
@@ -20,7 +20,9 @@ const updateManager = new UpdateManager({
     applyUpdate: () => {
         // stop = pause + persist：reload 前先存低進度
         playerController.stop();
-        void updateSW(true);
+        // 一定已經 set 咗：applyUpdate 只會由 'refresh' 觸發，而 'refresh' 只會由 registerSW 自己嘅
+        // onNeedRefresh 設定，即係 startServiceWorker() 已經返回（S-652）
+        void updateSW?.(true);
     },
     reload: () => {
         playerController.stop();
@@ -46,19 +48,31 @@ const updateManager = new UpdateManager({
 updateManager.start();
 
 // prompt 模式：新 SW 喺 waiting 等，由 updateManager 決定幾時 skipWaiting
-const updateSW = registerSW({
-    immediate: true,
-    onNeedRefresh: updateManager.handleNeedRefresh,
-    // 只會 reload 一次；播緊（例如另一個 tab 換咗版本）就等停咗先 reload
-    onNeedReload: updateManager.handleNeedReload,
-    onRegisteredSW: (_swUrl, swRegistration) => {
-        if (!swRegistration) {
-            return;
+const startServiceWorker = () =>
+    registerSW({
+        immediate: true,
+        onNeedRefresh: updateManager.handleNeedRefresh,
+        // 只會 reload 一次；播緊（例如另一個 tab 換咗版本）就等停咗先 reload
+        onNeedReload: updateManager.handleNeedReload,
+        onRegisteredSW: (_swUrl, swRegistration) => {
+            if (!swRegistration) {
+                return;
+            }
+            registration = swRegistration;
+            startUpdateChecks(updateManager, { document, window });
+        },
+    });
+// registerSW 要等 isHardReload 查完先叫（S-648），所以係 let；用法見上面 applyUpdate
+let updateSW: ReturnType<typeof registerSW> | undefined;
+void isHardReload(navigator.serviceWorker)
+    .then((hardReload) => {
+        if (hardReload) {
+            updateManager.markControlled();
         }
-        registration = swRegistration;
-        startUpdateChecks(updateManager, { document, window });
-    },
-});
+    })
+    .finally(() => {
+        updateSW = startServiceWorker();
+    });
 
 // library 漏咗嘅換版自己聽補返：第一次開 app（controlling isUpdate 係 false）、另一個 tab 搶先 skipWaiting（CUI-0017）
 navigator.serviceWorker?.addEventListener('controllerchange', updateManager.handleControllerChange);

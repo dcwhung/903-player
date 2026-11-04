@@ -171,6 +171,12 @@ const newContext = async (env, ctxOptions = {}) => {
 const checkFirstVisit = async (env, server) => {
     const ctx = await newContext(env);
     const tab = await openTab(ctx, server.base, env.errors);
+    // 第一次安裝 clientsClaim 接管唔係換版：唔可以 reload（S-648 嘅 Shift-reload 判斷唔可以誤中）
+    await tab.p.waitForTimeout(NO_SECOND_RELOAD_MS);
+    env.log(
+        tab.loads === 1,
+        `PWA 換版（第一次開 app）：第一次安裝接管冇 reload（load ${tab.loads} 次，預期 1）`,
+    );
     const before = tab.loads;
     server.release();
     await checkForUpdate(tab.p);
@@ -194,26 +200,60 @@ const checkReturningVisit = async (env, server) => {
 };
 
 /** 兩個 tab 都冇播嘢（CUI-0017）：搶輸 skipWaiting 嗰個 tab 都要 reload 去新版 */
-const checkTwoTabs = async (env, server) => {
-    const ctx = await newContext(env);
-    const a = await openTab(ctx, server.base, env.errors);
+/**
+ * 返嚟嘅 tab A，令佢喺之後嘅 race 必然搶先（QA O1：唔整嘅話冇修正都有一半機會 pass）：
+ * workbox 註冊咗 60 s 以上先搵到嘅更新當 external，即刻 onNeedRefresh；未夠 60 s 嘅要等 200 ms
+ * 先 dispatch waiting。A 快轉過 60 s 先開 B → A 一定搶先 skipWaiting，B 冇 onNeedRefresh，淨係靠 controllerchange
+ */
+const openRaceWinner = async (ctx, server, errors) => {
+    const a = await openTab(ctx, server.base, errors);
     await a.p.reload();
     await waitForLoads(a, 2);
-    // 令 race 必然發生（QA O1：唔整嘅話冇修正都有一半機會 pass）：workbox 註冊咗 60 s 以上先搵到嘅更新
-    // 當 external，即刻 onNeedRefresh；未夠 60 s 嘅要等 200 ms 先 dispatch waiting。
-    // A 快轉過 60 s 先開 B → A 一定搶先 skipWaiting，B 一定冇 onNeedRefresh，淨係靠 controllerchange
     await a.p.clock.fastForward(EXTERNAL_UPDATE_AGE_MS);
-    const b = await openTab(ctx, server.base, env.errors);
+    return a;
+};
+
+/** B 叫 update()，等兩個 tab 各自 reload；返回 [A, B] reload 次數 */
+const raceReloads = async (a, b, server) => {
     const [aBefore, bBefore] = [a.loads, b.loads];
     server.release();
     await checkForUpdate(b.p);
-    const [aReloads, bReloads] = await Promise.all([
-        reloadsAfterUpdate(a, aBefore),
-        reloadsAfterUpdate(b, bBefore),
-    ]);
+    return Promise.all([reloadsAfterUpdate(a, aBefore), reloadsAfterUpdate(b, bBefore)]);
+};
+
+const checkTwoTabs = async (env, server) => {
+    const ctx = await newContext(env);
+    const a = await openRaceWinner(ctx, server, env.errors);
+    const b = await openTab(ctx, server.base, env.errors);
+    const [aReloads, bReloads] = await raceReloads(a, b, server);
     env.log(
         aReloads === 1 && bReloads === 1,
         `PWA 換版（兩個 tab，CUI-0017）：兩個 tab 都 reload 一次（A ${aReloads}、B ${bReloads}）`,
+    );
+    await ctx.close();
+};
+
+/** Shift-reload（CDP ignoreCache 繞過 SW）：頁面冇 controller，但 SW 一早 active */
+const hardReload = async (tab) => {
+    const cdp = await tab.p.context().newCDPSession(tab.p);
+    const loaded = tab.p.waitForEvent('load');
+    await cdp.send('Page.reload', { ignoreCache: true });
+    await loaded;
+    await cdp.detach();
+};
+
+/** B Shift-reload 過再搶輸（S-648）：B 嘅第一下 controllerchange 係換版，唔係第一次安裝 */
+const checkHardReload = async (env, server) => {
+    const label = 'PWA 換版（Shift-reload 嘅 tab，S-648）';
+    const ctx = await newContext(env);
+    const a = await openRaceWinner(ctx, server, env.errors);
+    const b = await openTab(ctx, server.base, env.errors);
+    await hardReload(b);
+    const uncontrolled = await b.p.evaluate(() => navigator.serviceWorker.controller === null);
+    const [aReloads, bReloads] = await raceReloads(a, b, server);
+    env.log(
+        uncontrolled && aReloads === 1 && bReloads === 1,
+        `${label}：B 冇 controller（${uncontrolled}），兩個 tab 都 reload 一次（A ${aReloads}、B ${bReloads}）`,
     );
     await ctx.close();
 };
@@ -257,10 +297,11 @@ const SCENARIOS = [
     ['PWA 換版（第一次開 app）', checkFirstVisit],
     ['PWA 換版（返嚟嘅用戶）', checkReturningVisit],
     ['PWA 換版（兩個 tab）', checkTwoTabs],
+    ['PWA 換版（Shift-reload）', checkHardReload],
     ['PWA 換版（播緊嘢）', checkPlaying],
 ];
 
-/** PWA 換版：第一次開 / 返嚟 / 兩個 tab / 播緊嘢；每個情境一個 section（runSection 由 run.mjs 傳入） */
+/** PWA 換版：第一次開 / 返嚟 / 兩個 tab / Shift-reload / 播緊嘢；每個情境一個 section（runSection 由 run.mjs 傳入） */
 export const runPwaUpdateChecks = async (env, section) => {
     const server = await startDistServer();
     try {
