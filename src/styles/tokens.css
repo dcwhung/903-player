@@ -154,6 +154,12 @@
     /* 「新」標籤（NewBadge）：上下內邊、行高 */
     --new-badge-pad-block: 2px;
     --new-badge-line: 16px;
+    /*
+     * 跟 --ui-scale 放大嘅標籤內邊 / 行高（播放卡今日 / 重溫，3a）：橫版大畫面字放大，
+     * 膠囊要一齊放大，唔係字高大過行高、頂住膠囊邊
+     */
+    --scaled-tag-pad-block: calc(var(--new-badge-pad-block) * var(--ui-scale));
+    --scaled-tag-line: calc(var(--new-badge-line) * var(--ui-scale));
     /* 「新」統一紅底白字（NewBadge） */
     --new-badge-bg: #c0362c;
     --new-badge-text: #ffffff;
