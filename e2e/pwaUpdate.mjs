@@ -55,8 +55,10 @@ const distFile = (url) => {
 };
 
 /**
- * 細 static server：dist 照出，sw.js 尾加「第幾版」註解。所有檔案 no-cache（同 hosting 規則一樣，
- * 瀏覽器每次 update() 都會拎到最新 sw.js）
+ * 細 static server：dist 照出，sw.js 尾加「第幾版」註解。所有檔案 no-cache：唔係模擬 hosting
+ * （GitHub Pages 係 max-age=600），只係令每次 update() 即刻拎到新 sw.js；瀏覽器檢查 sw.js 本身
+ * 唔理 HTTP cache（updateViaCache 預設 imports），所以換版偵測同真機一樣。
+ * 換版只改 sw.js 一行註解：precache 嘅 chunk hash 冇變，lazy chunk 換 hash 嘅情況唔喺呢度測
  */
 const startDistServer = async () => {
     let revision = 0;
