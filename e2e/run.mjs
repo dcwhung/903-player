@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { chromium } from 'playwright';
+import { chromiumExecutablePath } from '../scripts/chromiumLaunch.mjs';
 import { runArcSheetChecks } from './arcSheet.mjs';
 import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runHomeWideChecks } from './homeWide.mjs';
@@ -1265,7 +1266,10 @@ let browser;
 /** 每個 section 完結都閂返佢開咗嘅 context（S-644） */
 const section = (label, run) => runSection(log, label, run, browser);
 try {
-    browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
+    browser = await chromium.launch({
+        executablePath: chromiumExecutablePath(),
+        args: ['--autoplay-policy=no-user-gesture-required'],
+    });
     const errors = [];
     // 先驗 probe 同 audio host：佢哋錯咗，下面最近一集嘅斷言會一連串錯（甚至 crash），睇唔到成因
     await section('先驗 probe 同 audio host', async () => {

@@ -1,0 +1,99 @@
+name: CI
+
+# main 以外嘅 push：lint + unit + build，之後 e2e。main 嘅部署照舊由 deploy.yml 負責。
+# 只用 push trigger：check run 掛喺 commit 上面，PR 頁照樣見到；同時用 pull_request 會令同一個 SHA 跑兩次。
+# 今次 push 淨係改 docs → check / e2e 兩個 job 被 `if` 跳過。GitHub 當跳過嘅 job 係 Success，
+# 所以 branch protection 嘅 required check 唔會卡住（workflow 層 paths-ignore 會令佢永遠 pending）。
+on:
+    push:
+        branches-ignore: [main]
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    changes:
+        name: Detect code changes
+        runs-on: ubuntu-latest
+        outputs:
+            code: ${{ steps.diff.outputs.code }}
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            # 比較今次 push 之前同之後；新 branch / force push 搵唔到 before 就用同 main 嘅 merge-base。
+            # 判斷唔到（冇 base、diff 係空）一律當有 code 改動，照跑全套。
+            - id: diff
+              env:
+                  BEFORE: ${{ github.event.before }}
+                  DOCS_ONLY_PATTERN: '^(\.proj-docs/|\.tickets/|\.claude/|docs/|LICENSE)|\.md$'
+              run: |
+                  base="$BEFORE"
+                  if [[ "$base" =~ ^0+$ ]] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+                      base="$(git merge-base origin/main "$GITHUB_SHA" 2>/dev/null || true)"
+                  fi
+                  code=true
+                  if [[ -n "$base" ]]; then
+                      changed="$(git diff --name-only "$base" "$GITHUB_SHA")"
+                      if [[ -n "$changed" ]] && ! grep -qvE "$DOCS_ONLY_PATTERN" <<<"$changed"; then
+                          code=false
+                      fi
+                  fi
+                  echo "base=${base:-none} code=$code"
+                  echo "code=$code" >> "$GITHUB_OUTPUT"
+
+    check:
+        name: Lint, unit & build
+        needs: changes
+        if: needs.changes.outputs.code == 'true'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - run: npm ci
+
+            - run: npm run lint
+
+            - run: npm test
+
+            - run: npm run build
+
+    e2e:
+        name: E2E (Playwright)
+        needs: check
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - run: npm ci
+
+            # npx 用 node_modules 鎖住嘅 Playwright，所以裝到嘅 Chromium revision 一定夾
+            - name: Install Playwright Chromium
+              run: npx playwright install --with-deps chromium
+
+            # 同本機一樣：npm run e2e = build + node e2e/run.mjs（自己起 vite preview，port 4173）
+            - run: npm run e2e
+
+            - name: Upload e2e screenshots
+              if: failure()
+              uses: actions/upload-artifact@v5
+              with:
+                  name: e2e-screenshots
+                  path: e2e/screenshots/
+                  if-no-files-found: ignore
+                  retention-days: 7

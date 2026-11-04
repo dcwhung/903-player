@@ -84,7 +84,9 @@ async function checkViewport(browser, [width, height, tag], expected, problems) 
     const { chromium } = loadPlaywright();
     const rounds = await (await fetch(`${BASE}/rounds.json`)).json();
     const expected = rounds.dramas.map((d) => d.id);
-    const browser = await chromium.launch();
+    // ESM helper（PW_CHROMIUM_PATH）：CJS 用 dynamic import
+    const { chromiumExecutablePath } = await import('../../chromiumLaunch.mjs');
+    const browser = await chromium.launch({ executablePath: chromiumExecutablePath() });
     const problems = [];
     for (const viewport of VIEWPORTS) await checkViewport(browser, viewport, expected, problems);
     await browser.close();

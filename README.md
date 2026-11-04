@@ -155,6 +155,9 @@ npx playwright install chromium
 
 - 瀏覽器已經裝咗喺其他位置（例如 CI / 雲端容器預先裝好）：設 `PLAYWRIGHT_BROWSERS_PATH` 指去嗰個資料夾，
   `npx playwright install` 同 `npm run e2e` 都會用佢，唔使再下載
+- 預裝 Chromium 版本同鎖住嘅 Playwright 唔夾（例如雲端 sandbox）：設 `PW_CHROMIUM_PATH` 直接指去 Chromium 執行檔，
+  例如 `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run e2e`。`e2e/run.mjs`、`scripts/generateIcons.mjs`、
+  `scripts/arcCover/review/verify.cjs` 都經 `scripts/chromiumLaunch.mjs` 讀佢；冇 set 就由 Playwright 自己揀
 - 幾個 worktree 同時跑：用 `E2E_PORT=4174 npm run e2e` 避開撞 port
 - 唔使網絡：所有 context 都經 `e2e/harness.mjs` 嘅 `newE2EContext` 開，外部 host 全部 mock 晒——
   audio host 答假錄音（WAV）、廣播劇 R2 答 404、Google Fonts 由本機答。
