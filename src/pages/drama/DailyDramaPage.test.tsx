@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { stubWideLandscape } from '../../../tests/landscape';
 import { openWhileOtherLoaded } from '../../../tests/otherPlayback';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
 import { dailyEpisodesOf } from '../../catalog/dramas';
@@ -66,5 +67,16 @@ describe('DramaPage (daily drama, once enabled)', () => {
             await userEvent.click(screen.getByRole('button', { name: /^播放 15\/10/ }));
             expect(screen.getByRole('button', { name: '轉去 13/08（三）' })).toBeInTheDocument();
         });
+    });
+    it('should show a right-edge handle for another show playing on a wide landscape screen', async () => {
+        stubWideLandscape();
+        await openWhileOtherLoaded(<DramaPage />, recording('gongzi', '2026-10-17'), {
+            route: '/drama/c18',
+            path: '/drama/:dramaId',
+        });
+
+        const handle = await screen.findByRole('button', { name: '播放中：公子會，返回主頁' });
+        expect(screen.getByRole('main')).toContainElement(handle);
+        vi.unstubAllGlobals();
     });
 });

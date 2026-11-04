@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom';
 import { EpisodeList } from '../../components/shared/player/EpisodeList/EpisodeList';
 import { NowPlaying } from '../../components/shared/player/NowPlaying/NowPlaying';
 import { PageHeader } from '../../components/shared/common/PageHeader/PageHeader';
+import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPanel';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
@@ -102,6 +103,7 @@ export const ShowPage = () => {
                         <EpisodeList items={episodeItems} onSelect={data.pressEpisode} />
                     </div>
                 )}
+                <InnerPageHandle page={{ kind: 'show', showId }} />
             </main>
         </ThemeScope>
     );

@@ -17,10 +17,10 @@ export const useHomeCardToggle = (miniPlayer: MiniPlayerProps | null) => {
         close: () => {
             if (!miniPlayer) return;
             setFocus('handle');
-            const { theme, showName, onDismiss } = miniPlayer;
+            const { theme, showName, item, onDismiss } = miniPlayer;
             withViewTransition(() => {
                 onDismiss();
-                closeHomePlayerCard({ theme, showName });
+                closeHomePlayerCard({ theme, showName, item });
             }, 'close');
         },
         open: () => {

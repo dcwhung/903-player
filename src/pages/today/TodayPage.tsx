@@ -1,12 +1,14 @@
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { PageDots } from '../../components/shared/common/PageDots/PageDots';
 import { PageHeader } from '../../components/shared/common/PageHeader/PageHeader';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import { TodayShowList } from '../../components/pages/today/TodayShowList/TodayShowList';
+import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { LANDSCAPE_QUERY, SHORT_LANDSCAPE_QUERY } from '../../config/layout';
 import { useGoHome } from '../../hooks/useGoHome';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { t } from '../../i18n/t';
+import type { InnerPage } from '../../selectors/pageHandle';
 import page from '../shared/Page.module.css';
 import { TodayPlayerColumn } from './TodayPlayerColumn';
 import { useTodayPage } from './useTodayPage';
@@ -28,7 +30,9 @@ const TodayHeader = ({ trailing }: { trailing: ReactNode }) => {
 
 export const TodayPage = () => {
     const state = useTodayPage();
-    const { status, current, index, items, cards, cardKeys, theme } = state;
+    const { status, date, current, index, items, cards, cardKeys, theme } = state;
+    // 把手「呢頁自己嘅嘢」= 呢頁列緊嗰日（星期日係備用日子），同頁面同一個日子來源（W-525）
+    const handlePage = useMemo<InnerPage>(() => ({ kind: 'today', date }), [date]);
     // 卡疊同指示點只有播得到嘅節目；節目表（items）另外有未上架嘅
     const names = cards.map((card) => card.title);
     const listed = status === 'ready' && items.length > 0;
@@ -60,6 +64,7 @@ export const TodayPage = () => {
                         <TodayShowList items={items} onSelect={state.selectShow} />
                     </div>
                 )}
+                <InnerPageHandle page={handlePage} />
             </main>
         </ThemeScope>
     );

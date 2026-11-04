@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { stubLandscape } from '../../../tests/landscape';
+import { stubLandscape, stubWideLandscape } from '../../../tests/landscape';
 import { openWhileOtherLoaded } from '../../../tests/otherPlayback';
 import {
     recording,
@@ -338,5 +338,42 @@ describe('TodayPage', () => {
         renderWithProviders(<TodayPage />, ROUTE);
 
         expect(await screen.findByText('暫時未有錄音')).toBeInTheDocument();
+    });
+    describe('right-edge handle on a wide landscape screen (P3 #4)', () => {
+        const HANDLE = /^(播放中|已暫停)：/;
+        beforeEach(() => stubWideLandscape());
+        afterEach(() => vi.unstubAllGlobals());
+
+        it('should show a handle for an older episode that is playing', async () => {
+            await openWhileOtherLoaded(<TodayPage />, RECORDINGS[3]!, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+            });
+
+            expect(
+                await screen.findByRole('button', { name: '播放中：公子會，返回主頁' }),
+            ).toBeInTheDocument();
+        });
+
+        it('should have no handle while one of today’s shows plays', async () => {
+            const { audio } = renderWithProviders(<TodayPage />, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+            });
+            await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
+
+            expect(screen.queryByRole('button', { name: HANDLE })).not.toBeInTheDocument();
+        });
+
+        it('should have no handle while a show of the fallback day it lists plays (W-525)', async () => {
+            vi.setSystemTime(new Date('2026-10-18T08:00:00Z')); // 星期日，列 17/10
+            const { audio } = renderWithProviders(<TodayPage />, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+            });
+            await waitFor(() => expect(audio.src).toBe(RECORDINGS[3]?.url));
+
+            expect(screen.queryByRole('button', { name: HANDLE })).not.toBeInTheDocument();
+        });
     });
 });

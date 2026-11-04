@@ -86,7 +86,7 @@ export const useTodayPage = () => {
     const { status, recordings, unavailable, isSearching } = useRecordings();
     // 每次 render 重新計，app 開過香港午夜都會轉日；日子只喺 todayView 計一次
     const today = hkToday();
-    const { playable, entries } = useMemo(
+    const { date, playable, entries } = useMemo(
         () => todayView(recordings, unavailable, today),
         [recordings, unavailable, today],
     );
@@ -95,7 +95,18 @@ export const useTodayPage = () => {
     const cards = useMemo(() => toStackCards(playable), [playable]);
     const cardKeys = useMemo(() => playable.map((r) => r.url), [playable]);
     const theme = themeFor(current?.showId);
-    const view = { status, isSearching, current, start, index, items, cards, cardKeys, theme };
+    const view = {
+        status,
+        isSearching,
+        date,
+        current,
+        start,
+        index,
+        items,
+        cards,
+        cardKeys,
+        theme,
+    };
     return { ...view, ...actions };
 };
 

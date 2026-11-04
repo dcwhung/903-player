@@ -287,6 +287,8 @@
     /* 把手「已暫停」逐字一行：行距收緊少少，三個字唔會太散 */
     --home-handle-status-line: 1.15;
     --shadow-home-handle: -4px 0 12px rgb(0 0 0 / 30%);
+    /* 內頁把手：播緊嘅變咗係呢頁自己嘅嘢，淡出幾耐先拆走（預留位之後先收） */
+    --duration-page-handle-fade: 240ms;
     /*
      * View Transitions（src/utils/viewTransition.ts，用戶喺 motion.html 揀定）：移位變形、淡入淡出、
      * 新出現嘅元素遲啲先淡入

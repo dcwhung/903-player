@@ -1,8 +1,11 @@
 import type { ShowTheme } from '../../../../config/showThemes';
 import type { MiniPlayerTag } from '../../../../selectors/miniPlayer';
+import type { PlayerItem } from '../../../../types/playerItem';
 
 export interface MiniPlayerProps {
     showName: string;
+    /** 顯示緊嘅係邊個節目 / 劇集：闊橫版撳 ✕ 閂卡時記低，內頁把手用（pageHandle） */
+    item?: PlayerItem;
     /** 成個播放器嘅讀屏名：今日節目 / 廣播劇 */
     region: string;
     /** 開頁掣嘅讀屏名：節目頁 / 廣播劇頁 */

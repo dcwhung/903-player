@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { stubLandscape } from '../../../tests/landscape';
+import { stubLandscape, stubWideLandscape } from '../../../tests/landscape';
 import { openWhileOtherLoaded } from '../../../tests/otherPlayback';
 import {
     recording,
@@ -398,5 +398,88 @@ describe('ShowPage', () => {
         renderWithProviders(<ShowPage />, { route: '/show/nope', path: '/show/:showId' });
 
         expect(screen.getByText('找不到此節目')).toBeInTheDocument();
+    });
+    describe('right-edge handle on a wide landscape screen (P3 #4)', () => {
+        const OTHER = RECORDINGS[3] as Recording;
+        const HANDLE = /^(播放中|已暫停)：/;
+        const open = (playing = true) =>
+            openWhileOtherLoaded(<ShowPage />, OTHER, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+                playing,
+            });
+        afterEach(() => vi.unstubAllGlobals());
+
+        it('should show a handle for another show that is playing, in its name', async () => {
+            stubWideLandscape();
+            await open();
+
+            const handle = await screen.findByRole('button', {
+                name: '播放中：Bad Girl大過佬，返回主頁',
+            });
+            expect(within(handle).getByText('播放中')).toHaveAttribute('aria-hidden', 'true');
+            expect(within(handle).getByText('Bad Girl大過佬')).toBeInTheDocument();
+            expect(screen.getByRole('main')).toContainElement(handle);
+        });
+
+        it('should say 已暫停 when the other show is loaded but paused', async () => {
+            stubWideLandscape();
+            await open(false);
+
+            const handle = await screen.findByRole('button', {
+                name: '已暫停：Bad Girl大過佬，返回主頁',
+            });
+            expect(within(handle).getByText('已暫停')).toBeInTheDocument();
+        });
+
+        it('should have no handle while the page plays its own show', async () => {
+            stubWideLandscape();
+            const { audio } = renderWithProviders(<ShowPage />, {
+                ...ROUTE,
+                recordings: RECORDINGS,
+            });
+            await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+
+            expect(screen.queryByRole('button', { name: HANDLE })).not.toBeInTheDocument();
+        });
+
+        it('should have no handle outside the wide landscape layout', async () => {
+            stubLandscape();
+            await open();
+            await screen.findByRole('heading', { name: '公子會' });
+
+            expect(screen.queryByRole('button', { name: HANDLE })).not.toBeInTheDocument();
+        });
+
+        it('should go home when the handle is tapped, like the back button', async () => {
+            stubWideLandscape();
+            await open();
+
+            await userEvent.click(await screen.findByRole('button', { name: HANDLE }));
+
+            expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
+        });
+
+        it('should fade the handle out before removing it once the page plays its own show', async () => {
+            stubWideLandscape();
+            await open();
+            const handle = await screen.findByRole('button', { name: HANDLE });
+
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+
+            expect(handle).toHaveAttribute('data-leaving');
+            fireEvent.animationEnd(handle);
+            expect(screen.queryByRole('button', { name: HANDLE })).not.toBeInTheDocument();
+        });
+
+        it('should remove the handle straight away when the user asks for reduced motion', async () => {
+            stubWideLandscape({ reducedMotion: true });
+            await open();
+            await screen.findByRole('button', { name: HANDLE });
+
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+
+            expect(screen.queryByRole('button', { name: HANDLE })).not.toBeInTheDocument();
+        });
     });
 });

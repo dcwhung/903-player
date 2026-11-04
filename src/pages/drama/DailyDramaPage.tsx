@@ -1,4 +1,5 @@
 import { EpisodeList } from '../../components/shared/player/EpisodeList/EpisodeList';
+import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { NowPlaying } from '../../components/shared/player/NowPlaying/NowPlaying';
 import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPanel';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
@@ -54,6 +55,7 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
                     {landscape && <DramaHeader title={drama.name} />}
                     <EpisodeList items={items} onSelect={pressEpisode} labels="taggedDate" />
                 </div>
+                <InnerPageHandle page={{ kind: 'drama', dramaId: drama.id }} />
             </main>
         </ThemeScope>
     );

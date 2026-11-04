@@ -1,4 +1,5 @@
 import { NowPlaying } from '../../components/shared/player/NowPlaying/NowPlaying';
+import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { PlayerGauge } from '../../components/shared/player/PlayerPanel/PlayerGauge';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
@@ -107,6 +108,7 @@ export const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
                     dockedSheet={landscape && arcSheet}
                 />
                 {!landscape && arcSheet}
+                <InnerPageHandle page={{ kind: 'drama', dramaId: drama.id }} />
             </main>
         </ThemeScope>
     );

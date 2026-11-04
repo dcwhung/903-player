@@ -1,10 +1,6 @@
 import type { ShowTheme } from '../../../../config/showThemes';
 import { t } from '../../../../i18n/t';
-import { BackIcon } from '../../../shared/common/icons/icons';
-import { ThemeScope } from '../../../shared/common/ThemeScope/ThemeScope';
-import styles from './HomePlayerCard.module.css';
-
-const HANDLE_ICON_SIZE = 14;
+import { PlayerHandle } from '../../../shared/player/PlayerHandle/PlayerHandle';
 
 interface HomePlayerHandleProps {
     theme: ShowTheme;
@@ -14,29 +10,23 @@ interface HomePlayerHandleProps {
     focusOnMount?: boolean;
 }
 
-/** 播放卡閂咗：右邊緣一條窄把手（閂咗嗰個節目嘅色、細字「已暫停」、細碟、直寫名、‹），撳就再出返張卡（暫停） */
+/**
+ * 播放卡閂咗：右邊緣把手（閂咗嗰個節目嘅色、「已暫停」），撳就再出返張卡（暫停）。
+ * 閂卡 / 開返過場期間先同張卡同名（data-home-handle，global.css）：返主頁時成頁唔會縮入把手（S-642）
+ */
 export const HomePlayerHandle = ({
     theme,
     showName,
     onOpen,
     focusOnMount = false,
 }: HomePlayerHandleProps) => (
-    <ThemeScope theme={theme} fullPage={false} className={styles.handleScope}>
-        <button
-            type="button"
-            className={styles.handle}
-            aria-label={t('homeCard.reopen', { name: showName })}
-            // 閂卡 / 開返過場期間先同張卡同名（global.css）：返主頁時成頁唔會縮入把手（S-642）
-            data-home-handle=""
-            onClick={onOpen}
-            autoFocus={focusOnMount}
-        >
-            <span className={styles.handleStatus} aria-hidden="true">
-                {t('homeCard.pausedStatus')}
-            </span>
-            {theme.art && <img className={styles.handleDisc} src={theme.art} alt="" />}
-            <span className={styles.handleName}>{showName}</span>
-            <BackIcon size={HANDLE_ICON_SIZE} />
-        </button>
-    </ThemeScope>
+    <PlayerHandle
+        variant="home"
+        theme={theme}
+        name={showName}
+        status="paused"
+        label={t('homeCard.reopen', { name: showName })}
+        onActivate={onOpen}
+        focusOnMount={focusOnMount}
+    />
 );
