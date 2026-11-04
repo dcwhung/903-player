@@ -49,7 +49,11 @@ export const PlayerHandle = ({ theme, status, leaving = false, ...props }: Playe
                 aria-label={props.label}
                 {...{ [`data-${props.variant}-handle`]: '' }}
                 data-leaving={leaving ? '' : undefined}
-                onClick={props.onActivate}
+                // 淡出緊 = 播緊嘅已經係呢頁自己嘅嘢：唔再 focus / 撳得到，讀屏都唔再讀舊名（S-667）。
+                // inert 已經擋咗撳，onClick 再擋一次畀未支援 inert 嘅瀏覽器
+                inert={leaving}
+                aria-hidden={leaving || undefined}
+                onClick={leaving ? undefined : props.onActivate}
                 onAnimationEnd={onAnimationEnd}
                 autoFocus={props.focusOnMount ?? false}
             >

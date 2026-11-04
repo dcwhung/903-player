@@ -81,4 +81,30 @@ describe('PlayerHandle', () => {
             expect(onLeft).toHaveBeenCalled();
         });
     });
+
+    describe('while leaving (S-667)', () => {
+        it('should be focusable and named while it shows', () => {
+            renderHandle();
+
+            expect(
+                screen.getByRole('button', { name: '播放中：公子會，返回主頁' }),
+            ).not.toHaveAttribute('inert');
+        });
+
+        it('should drop out of the tab order and the accessibility tree', () => {
+            const { handle } = renderHandle({ leaving: true });
+
+            expect(handle).toHaveAttribute('inert');
+            expect(handle).toHaveAttribute('aria-hidden', 'true');
+            expect(screen.queryByRole('button')).not.toBeInTheDocument();
+        });
+
+        it('should ignore taps', () => {
+            const { handle, onActivate } = renderHandle({ leaving: true });
+
+            fireEvent.click(handle);
+
+            expect(onActivate).not.toHaveBeenCalled();
+        });
+    });
 });
