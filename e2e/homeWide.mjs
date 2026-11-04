@@ -403,7 +403,34 @@ const cardShows = (p, name) =>
         timeout: LAYOUT_WAIT_MS,
     });
 
-/** 冇卡（星期日）撳繼續收聽：張卡經 open 過場出嚟；再撳另一套劇：張卡經 switch 反轉 */
+const homeHandle = (p) => p.locator('[data-home-handle]');
+
+/**
+ * ✕ 閂卡（fillWithHandle）再撳書架繼續收聽：同撳把手一樣經 open 過場 slide 入，
+ * 把手留喺舊畫面跟住淡走，之後冇咗（P4 #3b 跟進）
+ */
+const checkResumeFromHandle = async (p, log, label, name) => {
+    await p.getByRole('button', { name: CLOSE_LABEL, exact: true }).click();
+    const closed = (await hasLayout(p, 'fillWithHandle')) && (await homeHandle(p).count()) === 1;
+    await p.waitForTimeout(MOTION_SETTLE_MS);
+    const before = (await transitionsOf(p)).length;
+    await resumeDrama(p, name);
+    const opened = (await hasLayout(p, 'split')) && (await cardShows(p, name));
+    await p.waitForTimeout(MOTION_SETTLE_MS);
+    const runs = (await transitionsOf(p)).slice(before);
+    const handles = await homeHandle(p).count();
+    log(
+        closed &&
+            opened &&
+            runs.length === 1 &&
+            runs[0].kind === 'open' &&
+            runs[0].ran &&
+            handles === 0,
+        `${label}：✕ 閂卡後撳「${name}」繼續收聽，張卡經 open 過場出、把手淡走（${JSON.stringify(runs)}，把手 ${handles}）`,
+    );
+};
+
+/** 冇卡（星期日）撳繼續收聽：張卡經 open 過場出嚟；再撳另一套劇：張卡經 switch 反轉；✕ 後再繼續收聽：把手淡走 */
 const checkCardMotion = async ({ browser, base, errors, log }) => {
     const label = '闊橫版主頁播放卡動畫';
     const { ctx, p } = await newE2EPage(browser, errors, { viewport: WIDE }, { now: E2E_SUNDAY });
@@ -439,6 +466,7 @@ const checkCardMotion = async ({ browser, base, errors, log }) => {
             flips[0].ran,
         `${label}：再撳「${second.name}」繼續收聽，張卡反轉（switch）做新劇集（${JSON.stringify(flips)}）`,
     );
+    await checkResumeFromHandle(p, log, label, first.name);
     await ctx.close();
 };
 

@@ -15,7 +15,8 @@ import {
  * 直接開播，iOS 先容許自動播），所以唔包住觸發嘅動作，改為喺 render 攔住：
  * 要過場就先照舊顯示舊畫面（shown），layout effect 開 View Transition，瀏覽器影完舊畫面先 flushSync 轉新。
  * 其他過場嘅 update 入面（撳把手開返、返主頁）render 嘅已經係新畫面，直接跟，唔好開第二個。
- * frozen = 換節目時張卡要定住舊內容（HomeWide 用 memo 唔 re-render），等瀏覽器影低先換
+ * frozen = 換節目時張卡要定住舊內容（HomeWide 用 memo 唔 re-render），等瀏覽器影低先換；
+ * holding = 照顯示緊舊畫面（開卡 / 換節目等緊 update）：HomeWide 連舊版面嘅把手都要留低，O1 時先跟舊 snapshot 淡走
  */
 export const useCardMotion = (mode: WideLayoutMode, item: PlayerItem | undefined) => {
     const next = cardFace(mode, item);
@@ -41,5 +42,9 @@ export const useCardMotion = (mode: WideLayoutMode, item: PlayerItem | undefined
         // 另一個過場未 update（例如啱啱撳咗 ⤢）：唔做動畫，直接轉
         if (!withViewTransition(apply, motion)) apply();
     }, [deferred, motion, next.mode, next.kind, next.id]);
-    return { mode: deferred ? shown.mode : mode, frozen: deferred && motion === 'switch' };
+    return {
+        mode: deferred ? shown.mode : mode,
+        frozen: deferred && motion === 'switch',
+        holding: deferred,
+    };
 };
