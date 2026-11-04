@@ -58,6 +58,9 @@ const updateSW = registerSW({
     },
 });
 
+// 第一次開 app 換版：library 嘅 controlling isUpdate 係 false，唔會 call onNeedReload，自己聽補返
+navigator.serviceWorker?.addEventListener('controllerchange', updateManager.handleControllerChange);
+
 createRoot(document.getElementById('root') as HTMLElement).render(
     <StrictMode>
         <App playerController={playerController} />
