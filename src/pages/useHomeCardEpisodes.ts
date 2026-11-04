@@ -2,7 +2,7 @@ import type {
     EpisodeItem,
     EpisodeLabels,
     EpisodeScrollAlign,
-} from '../components/EpisodeList/EpisodeList';
+} from '../components/shared/player/EpisodeList/EpisodeList';
 import { useRecordings } from '../data/useRecordings';
 import { dailyEpisodesOf, seriesEpisodesOf } from '../catalog/dramas';
 import { useEpisodePress } from '../hooks/useEpisodePress';

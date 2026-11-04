@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { ShowTile } from '../components/ShowTile/ShowTile';
-import { ThemeScope } from '../components/ThemeScope/ThemeScope';
+import { ShowTile } from '../components/pages/home/ShowTile/ShowTile';
+import { ThemeScope } from '../components/shared/common/ThemeScope/ThemeScope';
 import { WIDE_BANNER_QUERY } from '../config/layout';
 import { SHOWS } from '../catalog/shows';
 import { HOME_THEME } from '../config/showThemes';

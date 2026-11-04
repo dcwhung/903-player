@@ -1,7 +1,7 @@
-import { NowPlaying } from '../components/NowPlaying/NowPlaying';
-import { PlayerGauge } from '../components/PlayerPanel/PlayerGauge';
-import { StatusMessage } from '../components/StatusMessage/StatusMessage';
-import { ThemeScope } from '../components/ThemeScope/ThemeScope';
+import { NowPlaying } from '../components/shared/player/NowPlaying/NowPlaying';
+import { PlayerGauge } from '../components/shared/player/PlayerPanel/PlayerGauge';
+import { StatusMessage } from '../components/shared/common/StatusMessage/StatusMessage';
+import { ThemeScope } from '../components/shared/common/ThemeScope/ThemeScope';
 import type { DramaConfig } from '../catalog/dramas';
 import { LANDSCAPE_QUERY } from '../config/layout';
 import { useMediaQuery } from '../hooks/useMediaQuery';

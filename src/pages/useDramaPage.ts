@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { stripDays } from '../components/DateStrip/dateStrip';
+import { stripDays } from '../components/shared/player/DateStrip/dateStrip';
 import {
     dailyEpisodesOf,
     dramaEpisodeTheme,
@@ -30,7 +30,7 @@ import {
     type PlaybackLineState,
     type PlaybackState,
 } from '../utils/playbackState';
-import type { StandbyTime } from '../components/PlayerPanel/PlayerGauge';
+import type { StandbyTime } from '../components/shared/player/PlayerPanel/PlayerGauge';
 import { toDailyItems, toSeriesItems } from './dramaItems';
 import type { RowContext } from './episodeItems';
 

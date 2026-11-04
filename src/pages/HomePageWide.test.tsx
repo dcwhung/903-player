@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../package.json';
-import { PowerIcon } from '../components/icons/icons';
+import { PowerIcon } from '../components/shared/common/icons/icons';
 import { recording, renderWithProviders } from '../../tests/renderWithProviders';
 import { dailyEpisodesOf, seriesEpisodesOf } from '../catalog/dramas';
 import { openHomePlayerCard } from '../hooks/homePlayerCardClosed';

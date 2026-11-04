@@ -8,8 +8,8 @@ import {
     SHEET_DISMISS_RATIO,
     SHEET_FLICK_MIN_PX,
     SHEET_FLICK_VELOCITY_PX_PER_MS,
-} from './components/ArcSheet/sheetDrag';
-import { VELOCITY_WINDOW_MS } from './components/ShowCardStack/cardStack';
+} from './components/pages/drama/ArcSheet/sheetDrag';
+import { VELOCITY_WINDOW_MS } from './components/pages/today/ShowCardStack/cardStack';
 import {
     ALLOWED_AUDIO_ORIGIN,
     DRAMA_AUDIO_BASE,

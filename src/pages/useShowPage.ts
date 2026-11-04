@@ -14,7 +14,7 @@ import {
     pickInitialRecording,
     recordingsForShow,
 } from '../selectors/recordings';
-import { stripDays } from '../components/DateStrip/dateStrip';
+import { stripDays } from '../components/shared/player/DateStrip/dateStrip';
 import { getProgressMap } from '../services/progressStore';
 import { hkToday } from '../utils/date';
 import type { Recording } from '../types/recording';

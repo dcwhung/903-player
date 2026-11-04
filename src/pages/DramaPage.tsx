@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
-import { StatusMessage } from '../components/StatusMessage/StatusMessage';
-import { ThemeScope } from '../components/ThemeScope/ThemeScope';
+import { StatusMessage } from '../components/shared/common/StatusMessage/StatusMessage';
+import { ThemeScope } from '../components/shared/common/ThemeScope/ThemeScope';
 import { NEUTRAL_THEME } from '../config/showThemes';
 import { findEnabledDrama } from '../catalog/dramas';
 import { t } from '../i18n/t';

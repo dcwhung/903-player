@@ -1,4 +1,4 @@
-import type { DramaShelfItem } from '../components/DramaShelf/DramaShelf';
+import type { DramaShelfItem } from '../components/pages/home/DramaShelf/DramaShelf';
 import { seriesEpisodesOf, type DramaConfig } from '../catalog/dramas';
 import { usePlayer } from '../player/usePlayer';
 import { seriesContinue } from '../selectors/arcProgress';

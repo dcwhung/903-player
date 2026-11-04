@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react';
-import { NowPlaying } from '../components/NowPlaying/NowPlaying';
-import { PlayerCard } from '../components/PlayerPanel/PlayerCard';
-import { ShowCardStack, type StackCard } from '../components/ShowCardStack/ShowCardStack';
-import { TodayEmpty } from '../components/TodayEmpty/TodayEmpty';
+import { NowPlaying } from '../components/shared/player/NowPlaying/NowPlaying';
+import { PlayerCard } from '../components/shared/player/PlayerPanel/PlayerCard';
+import {
+    ShowCardStack,
+    type StackCard,
+} from '../components/pages/today/ShowCardStack/ShowCardStack';
+import { TodayEmpty } from '../components/pages/today/TodayEmpty/TodayEmpty';
 import { t } from '../i18n/t';
 import { usePlayer } from '../player/usePlayer';
 import { formatDateLabel } from '../utils/date';

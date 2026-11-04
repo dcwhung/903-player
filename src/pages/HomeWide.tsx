@@ -1,14 +1,17 @@
 import type { ReactNode } from 'react';
-import { AppVersion } from '../components/AppVersion/AppVersion';
-import { DramaTile, type DramaShelfItem } from '../components/DramaShelf/DramaTile';
-import { HomeBanner } from '../components/HomeBanner/HomeBanner';
-import { CoverBanner } from '../components/HomeLandscapeGrid/CoverBanner';
-import { DRAMA_TILE_RATIO, SHOW_TILE_RATIO } from '../components/HomeLandscapeGrid/fillShape';
-import { HomeFillGrid } from '../components/HomeLandscapeGrid/HomeFillGrid';
-import { HomePlayerCard } from '../components/HomePlayerCard/HomePlayerCard';
-import { HomePlayerHandle } from '../components/HomePlayerCard/HomePlayerHandle';
-import { HomeTabs } from '../components/HomeTabs/HomeTabs';
-import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
+import { AppVersion } from '../components/pages/home/AppVersion/AppVersion';
+import { DramaTile, type DramaShelfItem } from '../components/pages/home/DramaShelf/DramaTile';
+import { HomeBanner } from '../components/pages/home/HomeBanner/HomeBanner';
+import { CoverBanner } from '../components/pages/home/HomeLandscapeGrid/CoverBanner';
+import {
+    DRAMA_TILE_RATIO,
+    SHOW_TILE_RATIO,
+} from '../components/pages/home/HomeLandscapeGrid/fillShape';
+import { HomeFillGrid } from '../components/pages/home/HomeLandscapeGrid/HomeFillGrid';
+import { HomePlayerCard } from '../components/pages/home/HomePlayerCard/HomePlayerCard';
+import { HomePlayerHandle } from '../components/pages/home/HomePlayerCard/HomePlayerHandle';
+import { HomeTabs } from '../components/pages/home/HomeTabs/HomeTabs';
+import type { MiniPlayerProps } from '../components/pages/home/MiniPlayer/MiniPlayer';
 import { APP_VERSION } from '../config/appVersion';
 import { useClosedHomePlayerCard } from '../hooks/homePlayerCardClosed';
 import type { HomeTab } from '../hooks/useHomeTab';

@@ -1,4 +1,4 @@
-import type { EpisodeItem } from '../components/EpisodeList/EpisodeList';
+import type { EpisodeItem } from '../components/shared/player/EpisodeList/EpisodeList';
 import { t } from '../i18n/t';
 import type { DailyEpisode, SeriesEpisode } from '../types/drama';
 import { formatDayMonth, formatWeekday } from '../utils/date';

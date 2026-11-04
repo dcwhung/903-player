@@ -1,5 +1,5 @@
-import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
-import type { StandbyTime } from '../components/PlayerPanel/PlayerGauge';
+import type { MiniPlayerProps } from '../components/pages/home/MiniPlayer/MiniPlayer';
+import type { StandbyTime } from '../components/shared/player/PlayerPanel/PlayerGauge';
 import { useRecordings } from '../data/useRecordings';
 import { useRefreshedOn } from '../hooks/useRefreshedOn';
 import { usePlayer } from '../player/usePlayer';

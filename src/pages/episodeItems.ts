@@ -1,5 +1,8 @@
-import type { EpisodeItem } from '../components/EpisodeList/EpisodeList';
-import { episodeStatus, unavailableStatus } from '../components/EpisodeList/episodeStatus';
+import type { EpisodeItem } from '../components/shared/player/EpisodeList/EpisodeList';
+import {
+    episodeStatus,
+    unavailableStatus,
+} from '../components/shared/player/EpisodeList/episodeStatus';
 import { entryKey, isAvailable } from '../selectors/recordings';
 import type { Progress } from '../services/progressStore';
 import type { EpisodeEntry, UnavailableEpisode } from '../types/recording';

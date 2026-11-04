@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { DramaShelfItem } from '../components/DramaShelf/DramaShelf';
+import type { DramaShelfItem } from '../components/pages/home/DramaShelf/DramaShelf';
 import {
     dramaEpisodesOf,
     enabledDramas,

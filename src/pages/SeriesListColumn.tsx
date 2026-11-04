@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { ArcPicker } from '../components/ArcPicker/ArcPicker';
-import { ArcSheet } from '../components/ArcSheet/ArcSheet';
-import { EpisodeList } from '../components/EpisodeList/EpisodeList';
+import { ArcPicker } from '../components/pages/drama/ArcPicker/ArcPicker';
+import { ArcSheet } from '../components/pages/drama/ArcSheet/ArcSheet';
+import { EpisodeList } from '../components/shared/player/EpisodeList/EpisodeList';
 import { dramaArtFor } from '../catalog/dramas';
 import { usePlayer } from '../player/usePlayer';
 import type { ArcSummary } from '../selectors/arcProgress';

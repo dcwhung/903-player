@@ -21,7 +21,7 @@ const STRIP_SWIPE_PX = 140;
 const MINI_SWIPE_PX = 160;
 // 拖卡途中播放進度最多可以自然行咁多秒（唔可以係 seek）
 const SEEK_TOLERANCE_S = 3;
-// 唱片格 viewBox 同弧形半徑（同 src/components/ArcSlider/ArcSlider.constants.ts 一樣）
+// 唱片格 viewBox 同弧形半徑（同 src/components/shared/common/ArcSlider/ArcSlider.constants.ts 一樣）
 const GAUGE_VIEWBOX = 300;
 const GAUGE_CENTRE = { x: GAUGE_VIEWBOX / 2, y: GAUGE_VIEWBOX / 2 };
 const RING_RADIUS = 140;

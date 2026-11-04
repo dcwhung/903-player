@@ -1,4 +1,4 @@
-import { StatusMessage } from '../components/StatusMessage/StatusMessage';
+import { StatusMessage } from '../components/shared/common/StatusMessage/StatusMessage';
 import type { LoadStatus } from '../data/recordingsContext';
 import { t } from '../i18n/t';
 

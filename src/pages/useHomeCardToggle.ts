@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { MiniPlayerProps } from '../components/MiniPlayer/MiniPlayer';
+import type { MiniPlayerProps } from '../components/pages/home/MiniPlayer/MiniPlayer';
 import { closeHomePlayerCard, openHomePlayerCard } from '../hooks/homePlayerCardClosed';
 import { restoreMiniPlayer } from '../hooks/miniPlayerDismissed';
 import { withViewTransition } from '../utils/viewTransition';

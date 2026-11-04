@@ -1,6 +1,6 @@
 """封面 generator 用嘅常數：app 實際尺寸、碟面疊層幾何、各個方法嘅參數。
 
-碟面幾何跟 src/components/Disc/Disc.module.css；尺寸跟 src/catalog/dramas/library/*/ 已 commit 嘅 webp。
+碟面幾何跟 src/components/shared/common/Disc/Disc.module.css；尺寸跟 src/catalog/dramas/library/*/ 已 commit 嘅 webp。
 """
 
 import math

@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { PageDots } from '../components/PageDots/PageDots';
-import { PageHeader } from '../components/PageHeader/PageHeader';
-import { ThemeScope } from '../components/ThemeScope/ThemeScope';
-import { TodayShowList } from '../components/TodayShowList/TodayShowList';
+import { PageDots } from '../components/shared/common/PageDots/PageDots';
+import { PageHeader } from '../components/shared/common/PageHeader/PageHeader';
+import { ThemeScope } from '../components/shared/common/ThemeScope/ThemeScope';
+import { TodayShowList } from '../components/pages/today/TodayShowList/TodayShowList';
 import { LANDSCAPE_QUERY, SHORT_LANDSCAPE_QUERY } from '../config/layout';
 import { useGoHome } from '../hooks/useGoHome';
 import { useMediaQuery } from '../hooks/useMediaQuery';

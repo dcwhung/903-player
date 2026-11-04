@@ -1,5 +1,8 @@
-import type { StackCard } from '../components/ShowCardStack/ShowCardStack';
-import type { ShowStatus, TodayShowItem } from '../components/TodayShowList/TodayShowList';
+import type { StackCard } from '../components/pages/today/ShowCardStack/ShowCardStack';
+import type {
+    ShowStatus,
+    TodayShowItem,
+} from '../components/pages/today/TodayShowList/TodayShowList';
 import { findShow, themeFor } from '../catalog/shows';
 import { entryKey, isAvailable } from '../selectors/recordings';
 import type { EpisodeEntry, Recording } from '../types/recording';

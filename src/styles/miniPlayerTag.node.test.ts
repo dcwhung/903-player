@@ -4,9 +4,11 @@ import { cssDeclarations, readCss } from '../../tests/cssRule';
 
 const tokens = readCss(new URL('./tokens.css', import.meta.url));
 const miniPlayer = readCss(
-    new URL('../components/MiniPlayer/MiniPlayer.module.css', import.meta.url),
+    new URL('../components/pages/home/MiniPlayer/MiniPlayer.module.css', import.meta.url),
 );
-const pageDots = readCss(new URL('../components/PageDots/PageDots.module.css', import.meta.url));
+const pageDots = readCss(
+    new URL('../components/shared/common/PageDots/PageDots.module.css', import.meta.url),
+);
 const root = cssDeclarations(tokens, ':root');
 
 // 用戶揀定（T9 B）：「今日」= 主頁奶油金、深藍字；「重溫」= 固定藍色（唔跟節目強調色）

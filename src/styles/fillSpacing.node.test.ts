@@ -1,7 +1,10 @@
 // @vitest-environment node
 // 要用 node:fs 讀 CSS 原文：*.node.test.ts 行 tsconfig.node.json（有 Node 型別），唔會漏入 app 程式
 import { cssDeclarations, readCss } from '../../tests/cssRule';
-import { FILL_SPACING_PX, FILL_SPACING_TOKENS } from '../components/HomeLandscapeGrid/fillSpacing';
+import {
+    FILL_SPACING_PX,
+    FILL_SPACING_TOKENS,
+} from '../components/pages/home/HomeLandscapeGrid/fillSpacing';
 
 const tokens = cssDeclarations(readCss(new URL('./tokens.css', import.meta.url)), ':root');
 

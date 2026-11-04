@@ -1,8 +1,8 @@
-import { EpisodeList } from '../components/EpisodeList/EpisodeList';
-import { NowPlaying } from '../components/NowPlaying/NowPlaying';
-import { PlayerPanel } from '../components/PlayerPanel/PlayerPanel';
-import { StatusMessage } from '../components/StatusMessage/StatusMessage';
-import { ThemeScope } from '../components/ThemeScope/ThemeScope';
+import { EpisodeList } from '../components/shared/player/EpisodeList/EpisodeList';
+import { NowPlaying } from '../components/shared/player/NowPlaying/NowPlaying';
+import { PlayerPanel } from '../components/shared/player/PlayerPanel/PlayerPanel';
+import { StatusMessage } from '../components/shared/common/StatusMessage/StatusMessage';
+import { ThemeScope } from '../components/shared/common/ThemeScope/ThemeScope';
 import type { DramaConfig } from '../catalog/dramas';
 import { LANDSCAPE_QUERY } from '../config/layout';
 import { useMediaQuery } from '../hooks/useMediaQuery';
