@@ -257,3 +257,61 @@ context: >
   QA to re-freeze chains touched by the merge.
 report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
 ```
+
+## Re-review 4 62e0a85（主頁格同日下架只講一次、繼續收聽條位唔夠收埋下架字）
+
+- 範圍：`git diff 34e4e54..62e0a85`（用戶新決定：同一張格同日下架只出較高一層，廣播劇 > 短篇 > 集；繼續收聽條位唔夠就成段收埋下架字，集名優先）。今次喺獨立 worktree（detached `origin/feature/drama/coming-soon`）review，commit 只 add 報告檔
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（`DramaTileAvailability`、`DramaShelf`、`dramaTileNotices`、`selectors/availability`、`seriesAvailability`、`ArcPickerAvailability`、`HomePage`、`HomePageWide`、`Marquee`）9 files / 151 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `62e0a85`）：run [#95 / 42107452301](https://github.com/dcwhung/903-player/actions/runs/42107452301) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)` 全部 success）
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡）
+
+### 34e4e54 嘅問題（reviewer 自己做錯）
+
+- 上次（re-review 3）喺 developer 嘅 worktree commit 報告時，`git add <報告>` 之後用咗冇路徑嘅 `git commit`，連 developer 已經 stage 嘅 `git mv useTightCount.ts → useHideWhenTight.ts` 一齊 commit 咗（`34e4e54` stat：報告 +45、`{useTightCount.ts => useHideWhenTight.ts}` 0 行）。`DramaTile.tsx` 仲 import `./useTightCount`，所以 `34e4e54` 單獨 build 唔到
+- 證據：CI run [#93 / 42106939629](https://github.com/dcwhung/903-player/actions/runs/42106939629)（`34e4e54`）`Lint, unit & build` → `Run npm test` failure：`Failed to resolve import "./useTightCount" from "src/components/pages/home/DramaShelf/DramaTile.tsx"`，e2e skipped
+- 影響：只係 `34e4e54` 一個 commit；`62e0a85` 已經補返 import，branch HEAD 正常。歷史入面留低一個紅 commit（bisect 會撞到），唔好 rebase 改（禁止 force push）
+- 之後做法：用自己嘅 worktree；commit 用 `git commit <報告路徑>`（只 commit 指定檔），唔用 `git add -A` / `commit -a` / 冇路徑嘅 `git commit`
+
+### 覆核
+
+| 項目                                 | 結果                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sameRemovalDay` 共用                | `selectors/availability.ts` 新 pure function（`outer === inner`），劇集頁 `chipLeavingOf` 同主頁 `withoutRepeatedLeaving` 都用；unit 覆蓋同日 / 唔同日 / 冇上層 ✅                                                                                                                                                                |
+| chip 行為冇變                        | 由 `dramaRemovedAt <= leaving.date` 改成 `===`。schema `checkNotAfter`（`availabilitySchema.ts:47-56`）規定短篇下架日唔可以遲過成套劇，合法資料入面「成套劇早過短篇」唔會出現，所以兩個寫法結果一樣 ✅                                                                                                                            |
+| `withoutRepeatedLeaving`             | 左上角日子（`leavingCorner` 新加 `date` = `dramaLeaving` 取最早嗰日，順序成套劇 > 部分短篇 > 部分集數）同續聽嗰集嘅有效下架日（三層最早）同一日 → 條上面收埋（視覺 + 讀屏名都冇）；唔同日兩度都出。續聽嗰集嘅日子一定 ≤ 成套劇日子，所以成套劇快將下架時只會「同日收埋」或者「集數早啲落架兩度都講」，符合「只出較高一層」✅      |
+| `useHideWhenTight`                   | 改名同抽出 `Fits`：角落字用 `fitsWithoutOverflow`（同之前 `useTightCount` 一樣），繼續收聽條用 `continueFits`（`[data-marquee-text]` 全長 `scrollWidth` + flex gap + 下架字 `offsetWidth` ≤ 條 `clientWidth`）。`fits` 係 module 層面 function，reference 穩定，加入 deps 冇問題 ✅                                               |
+| 量度 / loop                          | 先除 `data-tight` 再量（下架字顯示緊先量得到 `offsetWidth`），同一個 task 入面完成，冇閃。observe 嘅係 parent（繼續收聽掣，`position: absolute; inset: auto 0 0`），闊度跟格唔跟內容；收埋下架字只係令 Marquee 有多啲位，Marquee 自己嘅 `useOverflow` ResizeObserver 睇嘅係佢自己個 box，唔會改條嘅闊度，所以唔會互相觸發 loop ✅ |
+| cleanup                              | `observer.disconnect()` ✅；`fonts.ready` 冇 cancel，unmount 後量 detach node，無害（同上次一樣）                                                                                                                                                                                                                                 |
+| S-706（字變唔重量）                  | **未處理**：deps 仍然係 `[enabled, fits]`。繼續收聽條方面風險細：載入緊呢套劇就冇條，所以條出現期間 `resume.label` 好少變（轉集會 unmount / remount 重新量）；過午夜「後日下架」→「明日下架」闊度相近。S-706 照留 backlog                                                                                                         |
+| 刪咗 `continue-line` container query | 只影響繼續收聽條嘅窄條短版「⏳ 05/12」（`2938d84` 加嘅），而家改成「全句或者成段收埋」，係用戶今次決定。W-533 / S-705 用嘅係 `drama-tile` container query（角落字 `noteFull` / `noteTag`），冇郁；`DramaShelf.module.css` 冇殘留 `leavingTag` / `leavingFull` 引用 ✅                                                             |
+| 讀屏名                               | 條收埋下架字（位唔夠）時讀屏名照有長版日子（`continueLabel` 跟 `resume.leaving`，同 CSS 無關）；同日去重時讀屏名都冇，因為左上角日子已經喺 `tileLabel` 入面 ✅                                                                                                                                                                    |
+
+🟢：
+
+- S-714 `src/hooks/useDramaContinue.ts:20-24`：`leavingOf` 仲出 `tag: dayWhen(...)`，但繼續收聽條已經冇短版（`dramaTileTypes.ts` `resume.leaving` type 都冇 `tag`），變咗冇人用嘅欄；可以刪走
+- S-715 `src/pages/home/dramaTileNotices.ts:88-93`：`ResumeWithLeaving` 重寫咗一次 `DramaShelfItem['resume']` 嘅形狀；可以直接用 `NonNullable<DramaShelfItem['resume']>`（或者抽一個共用 type），避免兩邊改漏
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 4 feature/drama/coming-soon 34e4e54..62e0a85 (same-day leaving once per tile, 繼續收聽 hides leaving when tight, useHideWhenTight) v1.28.0
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (9 related unit files, 151 tests; full suite / e2e not run per scope rule; CI run 42107452301 on 62e0a85 success incl. e2e)
+  coverage: pass (sameRemovalDay, withoutRepeatedLeaving, strip hide / show covered)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: [S-714, S-715]
+next_action: proceed_to_qa
+context: >
+  User decisions implemented; chip behaviour unchanged for schema-valid data.
+  S-706 (re-measure on text change) still open in backlog. Reviewer's own
+  34e4e54 swept in the developer's staged rename and fails CI run 42106939629
+  on its own; fixed at 62e0a85, history left as is (no force push).
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
