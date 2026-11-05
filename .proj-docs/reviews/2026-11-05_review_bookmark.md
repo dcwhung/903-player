@@ -124,3 +124,24 @@ const liveState = playbackStateOf({
 新增 🟢：
 
 - S-694 `src/pages/drama/useDramaPage.ts:248` × `SeriesDramaPage.tsx:30`：未聽過呢套短篇劇、由收藏入頁時，「現正播放」嗰行仍然寫「揀一個短篇開始收聽」，碟面係黑碟，但短篇已經揀好、撳 ▶ 會播收藏嗰集。字眼同實際做法有少少出入，但唔會令用戶做錯（撳 ▶ 結果正確），亦冇違反 AC → 🟢。建議：有 `focused` 時 idle 狀態用 `resume` / `ready`（「下一集：短篇 · 第 N 集」）同顯示碟面
+
+## Re-review 49a3d2c
+
+- 範圍：`git diff 1e32e13..49a3d2c`（跳過 docs）— `9b543ca` test(e2e) CUI-0020、`49a3d2c` fix(bookmark) 碟欄對齊
+- Hard gates：本機 `npm run lint` exit 0、`npx tsc -b` exit 0；相關 unit `npx vitest run src/components/pages/home/SavedTab src/pages/home/HomeSaved.test.tsx` 2 files / 16 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA，`.github/workflows/ci.yml`）：
+    - `49a3d2c` → run [#72 / 42046494846](https://github.com/dcwhung/903-player/actions/runs/42046494846)：**未完**（覆核嗰陣 `Detect code changes` success，`Lint, unit & build` 行緊 lint；unit / build / e2e 未有結果）
+    - `9b543ca` → run [#69 / 42038930736](https://github.com/dcwhung/903-player/actions/runs/42038930736)：success（CUI-0020 嘅 e2e 修正喺 CI 過咗）
+    - 對照：`a8378ea` run #65 failure，即 CUI-0020 本身
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡）
+
+覆核：
+
+- `9b543ca` e2e：`ROW_PLAY_BUTTONS` 用讀屏名前綴「播放 」/「暫停 」揀行掣，同 `zh-HK.ts` `episodes.play` / `episodes.pause` / `today.playShowWithStatus` / `today.pauseShowWithStatus` 吻合，☆（「收藏 …」）唔會數埋 ✅；`HOME_HASHES` 收 `''` 同 `#/`：HashRouter 直接開 base 時 hash 係空，兩個都係主頁，斷言冇放鬆到誤判 ✅
+- `49a3d2c` 對齊：最近收聽改用 `--saved-disc` 同收藏段一樣嘅 `--space-3` gap，panel `padding-left` 扣返 `--saved-recent-border`，碟同文字起點同上面收藏段對齊；`align-phone.png` / `align-wide.png` 睇過，碟欄同文字 x 一致 ✅。舊 `--saved-recent-disc` 已刪，冇殘留引用；`10px` / `6px` 改用 `--space-*` token、`3px` 外圈抽做 `--saved-disc-ring` ✅
+- 窄橫版最近收聽喺右邊，唔同收藏段上下排，對齊唔適用；碟由 34 → `--saved-disc`（窄橫版 44）令 250px 闊 panel 文字位少咗，屬用戶要求嘅取捨
+
+🟢：
+
+- S-697 `SavedTab.module.css:298-307`：`.recentList` 左右只留 `--saved-disc-ring`（3px），但碟仲有 `--saved-disc-shadow`（`0 2px 6px`），捲動區會剪走少少落影邊；純外觀，可以改用 ring + 陰影半徑做留位
+- S-698 `discColumn.node.test.ts:22-30`：逐字比對 CSS 字串（例如 `padding` `toContain(') var(--space-3) calc(')`），格式一改就紅；可接受（repo 已有同類 node test），只記錄
