@@ -120,6 +120,10 @@
                 overflow-x: auto;
                 line-height: 1.5;
             }
+            /* grid 子項預設 min-width: auto，入面嘅 pre 會撐闊成頁；設 0 等 pre 自己橫捲 */
+            .panel > * {
+                min-width: 0;
+            }
             .panel {
                 display: grid;
                 gap: 12px;
@@ -361,6 +365,78 @@
             }
             .chip.soon-c2::before {
                 background: color-mix(in srgb, var(--t-surface) 45%, var(--t-bg));
+            }
+            /* ⑥ 未上架集數：灰行，蓋住截圖嗰行（底線留返） */
+            .ep-row {
+                position: absolute;
+                display: flex;
+                align-items: center;
+                padding: 0 0 0 calc(6px * var(--k));
+                border: 0;
+                background: var(--t-bg);
+                text-align: left;
+            }
+            .ep-title {
+                color: var(--t-muted);
+                font-size: calc(16px * var(--k));
+                font-weight: 700;
+            }
+            .ep-status {
+                position: absolute;
+                color: var(--t-muted);
+                font-size: calc(12px * var(--k));
+            }
+            .ep-mark {
+                position: absolute;
+                display: grid;
+                place-items: center;
+                width: calc(28px * var(--k));
+                height: calc(28px * var(--k));
+                color: var(--t-muted);
+            }
+            .ep-mark .ico {
+                width: calc(18px * var(--k));
+                height: calc(18px * var(--k));
+            }
+            /* ⑦ 即將上架劇集格：疊喺真截圖嗰格上面 */
+            .z-tile {
+                position: absolute;
+                display: grid;
+                place-items: center;
+                overflow: hidden;
+                padding: 0;
+                border: 0;
+                border-radius: calc(16px * var(--k));
+                background: transparent;
+            }
+            /* Z1：backdrop-filter 將截圖嗰格變灰階（連右下角細字） */
+            .z-tile.z1 {
+                background: rgb(0 0 0 / 20%);
+                -webkit-backdrop-filter: grayscale(1);
+                backdrop-filter: grayscale(1);
+            }
+            .z-center {
+                padding: calc(4px * var(--k)) calc(12px * var(--k));
+                font-size: calc(14px * var(--k));
+                line-height: calc(20px * var(--k));
+            }
+            .z-bar {
+                position: absolute;
+                inset: auto 0 0;
+                display: flex;
+                align-items: center;
+                gap: calc(6px * var(--k));
+                /* 夠高、夠實，蓋住原本右下角「每日更新」/「N 個短篇」 */
+                min-height: calc(40px * var(--k));
+                padding: 0 calc(12px * var(--k));
+                background: rgb(12 12 12 / 92%);
+                color: #ffffff;
+                font-size: calc(14px * var(--k));
+                font-weight: 700;
+            }
+            .z-bar .ico {
+                width: calc(14px * var(--k));
+                height: calc(14px * var(--k));
             }
             /* 不可按：冇 pointer、冇 hover / press 效果 */
             .stage [aria-disabled='true'] {
@@ -631,6 +707,17 @@
                         </button>
                     </div>
                 </div>
+                <div class="row">
+                    <span class="row-label">XXX 集數</span>
+                    <div class="row" data-group="known">
+                        <button type="button" class="pick" data-val="yes" aria-pressed="true">
+                            已知（20 集）
+                        </button>
+                        <button type="button" class="pick" data-val="no" aria-pressed="false">
+                            未知（drama.json 唔寫 episodes）
+                        </button>
+                    </div>
+                </div>
                 <p id="place-desc"></p>
                 <div class="stages" data-sec="place"></div>
                 <p>
@@ -723,7 +810,107 @@
             </section>
 
             <section class="panel">
-                <h2>⑤ drama.json schema 建議（未改真 schema）</h2>
+                <h2>⑥ 逐集上架（已上架短篇入面，部分集數遲啲先出）</h2>
+                <p>
+                    例子：「戀愛二分一」第 1–10 集已上架，第 11–20 集 <b>11/19（四）</b>、第 21–30
+                    集 <b>11/26（四）</b>上架（<code>episodeDates</code>）。日期跟
+                    F3，跟頁頂「示範日子」。
+                </p>
+                <ul>
+                    <li>
+                        集數清單：未上架嗰啲變灰行，<code>aria-disabled</code>，撳唔到、冇播放掣（時鐘標記），讀屏「第
+                        11 集，11/19（四）上架，未可以收聽」
+                    </li>
+                    <li>「共 30 集」照寫；續播 / 自動播下一集去到第 10 集就停</li>
+                    <li>chips 唔使特別處理：短篇已經上咗架，chip 照舊</li>
+                </ul>
+                <div class="row">
+                    <span class="row-label">一覽表行</span>
+                    <div class="row" data-group="a">
+                        <button type="button" class="pick" data-val="a1" aria-pressed="true">
+                            A1 膠囊只計已上架「0/10」+「已上架 10/30 集 · 11/19 再出」
+                        </button>
+                        <button type="button" class="pick" data-val="a2" aria-pressed="false">
+                            A2 膠囊計全部「0/30」+「第 11 集起 11/19 上架」
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <span class="row-label">收聽進度</span>
+                    <div class="row" data-group="prog">
+                        <button type="button" class="pick" data-val="0" aria-pressed="true">
+                            未聽
+                        </button>
+                        <button type="button" class="pick" data-val="10" aria-pressed="false">
+                            聽晒已上架嘅 10 集
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <span class="row-label">主頁劇集格</span>
+                    <div class="row" data-group="e">
+                        <button type="button" class="pick" data-val="e1" aria-pressed="true">
+                            E1 字尾「· 新集數 11/19 上架」
+                        </button>
+                        <button type="button" class="pick" data-val="e2" aria-pressed="false">
+                            E2 唔提示
+                        </button>
+                    </div>
+                </div>
+                <div class="stages" data-sec="eps"></div>
+            </section>
+
+            <section class="panel">
+                <h2>⑦ 整套新劇未上架</h2>
+                <p>
+                    例子：一套新劇（借用 18 樓 C 座嘅圖）劇集層 <code>addedAt</code> =
+                    <b>12/1（二）</b
+                    >。主頁書架出一格「即將上架」，<code>aria-disabled</code>，撳唔到、唔入劇集頁，讀屏「18
+                    樓 C 座，12/1（二）上架，未可以收聽」。日期跟 F3。
+                </p>
+                <div class="row">
+                    <span class="row-label">樣式</span>
+                    <div class="row" data-group="z">
+                        <button type="button" class="pick" data-val="z1" aria-pressed="true">
+                            Z1 灰階圖 + 中間「⏱ 12/1 上架」
+                        </button>
+                        <button type="button" class="pick" data-val="z2" aria-pressed="false">
+                            Z2 原色圖 + 底部深色條「即將上架 · 12/1」
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <span class="row-label">書架位置</span>
+                    <div class="row" data-group="zpos">
+                        <button type="button" class="pick" data-val="end" aria-pressed="true">
+                            排最尾
+                        </button>
+                        <button type="button" class="pick" data-val="front" aria-pressed="false">
+                            排最前
+                        </button>
+                    </div>
+                </div>
+                <div class="stages" data-sec="upcoming"></div>
+                <ul>
+                    <li>
+                        截圖係真 app
+                        多咗一格劇集嘅排位（手機疊卡、窄橫版同闊橫版格仔；闊橫版排最尾時最後一行剩一格，會成行闊）
+                    </li>
+                    <li>
+                        排最前：手機疊卡最前嗰張係焦點卡，一入廣播劇 tab
+                        就見到一張撳唔到嘅卡；排最尾唔阻正常劇集
+                    </li>
+                    <li>
+                        冇 tile 圖點算：建議 schema 照舊要求
+                        <code>tile</code>（登記新劇就要有圖）；萬一真係未有，用劇集
+                        <code>theme.bg</code> 做底 + 劇名文字做 placeholder，唔好出空白格
+                    </li>
+                    <li>上架當日自動變正常劇集格 + 左上角「新」，排位跟返現有規則（新上架排前）</li>
+                </ul>
+            </section>
+
+            <section class="panel">
+                <h2>⑤ drama.json schema 建議（未改真 schema，放最底）</h2>
                 <p>
                     而家 <code>ArcDefinition</code> 已經有 optional <code>addedAt</code>（用嚟計 14
                     日「新」）。建議<b>直接用佢做上架日</b>，唔加新欄位：
@@ -755,26 +942,35 @@
                         <code>UpcomingArc { arc, addedAt, count? , disc? }</code> 畀 UI
                     </li>
                     <li>
-                        <b>episodes 可唔可以省略</b>：建議 schema 容許「addedAt 係將來」嘅 arc 唔寫
-                        <code>episodes</code>（顯示「集數待定」）；已上架嘅 arc 照舊必填，parse 時按
-                        <code>addedAt</code> 同 build 日子驗唔到（日子會過），所以驗證只係「冇
-                        episodes 就一定要有 addedAt」，到上架當日仲未補 episodes 就當未上架（log
-                        warning）
+                        <b>episodes 可以唔寫</b>（用戶已確認）：只限未上架嘅 arc（arc 或劇集層有
+                        <code>addedAt</code
+                        >）。一覽表「即將上架」行第二行淨係「11/12（四）上架」，唔出集數。parse
+                        驗證：冇 <code>episodes</code> 就一定要有 <code>addedAt</code>（日子 parse
+                        時驗唔到，因為會過）；到咗上架日仲未補 <code>episodes</code> →
+                        繼續當即將上架 + console.warn，唔會出空短篇
                     </li>
                     <li>
-                        <b>逐集上架</b>（P8 寫「短篇 / 集數」）：第一步淨係做 arc
-                        層。如果要一個短篇逐集出，可以之後加 optional
-                        <code>episodeDates: { "11": "2026-11-19" }</code>（集數 → 日子，冇寫跟 arc
-                        嘅 <code>addedAt</code>），未到期嘅集數喺清單顯示「11/19 上架」灰行
+                        <b>逐集上架</b>：arc 加 optional <code>episodeDates</code>（集數 →
+                        日子，即「呢集起」）：
+                        <pre>
+{ "name": "戀愛二分一", "episodes": 30,
+  "episodeDates": { "11": "2026-11-19", "21": "2026-11-26" } }</pre>
+                        規則：key 要喺 arc 集數範圍入面、日子跟集數遞增、要遲過 arc
+                        <code>addedAt</code>；第 11 集起至下一個 key 之前都係
+                        11/19。未到期嘅集數唔產生 <code>SeriesEpisode</code>，清單出灰行（<code
+                            >UpcomingEpisode { no, date }</code
+                        >）
                     </li>
                     <li>
-                        <b>整套新劇</b>：劇集層 <code>addedAt</code> 係將來日子 →
-                        呢期唔處理（主頁照唔顯示 / 或者 <code>enabled: false</code>），要嘅話另開
-                        issue
+                        <b>整套新劇</b>：劇集層 <code>addedAt</code> 係將來日子 =
+                        即將上架劇集：主頁書架出灰格、撳唔到、唔出劇集頁（直接開 URL
+                        就返主頁）；全部 arc 唔產生集數。daily 劇集而家冇劇集層
+                        <code>addedAt</code>，要一併加落 <code>DailyDefinition</code>
                     </li>
                     <li>
-                        <b>JSON schema / 測試</b>：<code>schema.ts</code> readArc 放寬
-                        episodes、<code>dramas.schema.json</code>（如有）同步；<code>arcTiles</code>「N
+                        <b>JSON schema / 測試</b>：<code>schema.ts</code> readArc 放寬 episodes + 加
+                        <code>episodeDates</code>、劇集層 <code>addedAt</code>（daily
+                        都有），<code>dramas.schema.json</code>（如有）同步；<code>arcTiles</code>「N
                         個短篇」只數已上架嘅；e2e 用固定時鐘（E2E_NOW 10/19）加一個將來 arc 測
                     </li>
                 </ul>
@@ -797,6 +993,15 @@
                 firstLove: 'disc-first-love.webp',
                 heart: 'disc-heart.webp',
                 lancy: 'disc-lancy.webp',
+                nEps: 'n-eps.webp',
+                lEps: 'l-eps.webp',
+                wEps: 'w-eps.webp',
+                nHomeEnd: 'n-home-end.webp',
+                lHomeEnd: 'l-home-end.webp',
+                wHomeEnd: 'w-home-end.webp',
+                nHomeFront: 'n-home-front.webp',
+                lHomeFront: 'l-home-front.webp',
+                wHomeFront: 'w-home-front.webp',
             };
             const ARCS = [
                 { name: '戀愛二分一', count: 30, disc: 'half' },
@@ -804,6 +1009,13 @@
                 { name: '我心不死', count: 37, disc: 'heart' },
             ];
             const SOON = { name: 'XXX', count: 20, disc: 'lancy', md: '11/12', wd: '四' };
+            /* ⑥ 逐集上架：第 from 集起嘅日子；off = 同 11/12 差幾多日 */
+            const EP_BATCHES = [
+                { from: 11, md: '11/19', wd: '四', off: 7 },
+                { from: 21, md: '11/26', wd: '四', off: 14 },
+            ];
+            /* ⑦ 新劇：12/1（二），同 11/12 差 19 日 */
+            const NEW_DRAMA = { name: '18 樓 C 座', md: '12/1', wd: '二', off: 19 };
             const NEW_DAYS = 14;
 
             /* 各版面：截圖尺寸、--ui-scale、主頁劇集格、chips 行、清單欄、全集表位置（css px） */
@@ -815,6 +1027,11 @@
                     tile: { x: 16, y: 211, w: 358, h: 179 },
                     chips: { x: 86, y: 448, right: 390, h: 44 },
                     sheet: { docked: false },
+                    eps: { x: 16, w: 358, h: 56, y9: 539, status: 156 },
+                    zTile: {
+                        end: { x: 27, y: 645, w: 337, h: 168 },
+                        front: { x: 16, y: 211, w: 358, h: 179 },
+                    },
                 },
                 l: {
                     name: '窄橫版',
@@ -823,6 +1040,11 @@
                     tile: { x: 291, y: 78, w: 263, h: 140 },
                     chips: { x: 86, y: 72, right: 455, h: 44 },
                     sheet: { docked: true, x: 0, y: 72, w: 455, h: 318 },
+                    eps: { x: 16, w: 423, h: 56, y9: 143, status: 182 },
+                    zTile: {
+                        end: { x: 634, y: 230, w: 194, h: 140 },
+                        front: { x: 428, y: 78, w: 194, h: 140 },
+                    },
                 },
                 w: {
                     name: '闊橫版',
@@ -831,6 +1053,11 @@
                     tile: { x: 659, y: 129, w: 617, h: 202 },
                     chips: { x: 129, y: 120, right: 448, h: 66 },
                     sheet: { docked: true, x: 0, y: 120, w: 448, h: 680 },
+                    eps: { x: 24, w: 401, h: 84, y9: 226, status: 180 },
+                    zTile: {
+                        end: { x: 24, y: 568, w: 1252, h: 202 },
+                        front: { x: 447, y: 129, w: 405, h: 202 },
+                    },
                 },
             };
 
@@ -842,6 +1069,12 @@
                 s: 's1',
                 f: 'f3',
                 after: 0,
+                known: 'yes',
+                a: 'a1',
+                prog: 0,
+                e: 'e1',
+                z: 'z1',
+                zpos: 'end',
             };
 
             const PLACE_DESC = {
@@ -852,16 +1085,16 @@
             /* ── 日期字 ── */
             const rel = (d) => (d === 1 ? '明日' : d === 2 ? '後日' : `${d} 日後`);
             /** kind：short（chip / 主頁）或 long（一覽表 / 清單卡） */
-            const fmt = (f, d, kind) => {
-                const abs = kind === 'short' ? SOON.md : `${SOON.md}（${SOON.wd}）上架`;
+            const fmt = (f, d, kind, t = SOON) => {
+                const abs = kind === 'short' ? t.md : `${t.md}（${t.wd}）上架`;
                 const r = kind === 'short' ? rel(d) : `${rel(d)}上架`;
                 if (f === 'f1') return abs;
                 if (f === 'f2') return r;
                 return d <= 2 ? r : abs;
             };
             /** 短版 + 後綴：倒數（「7 日後」）直接接，日期（「11/12」）中間加空格 */
-            const withSuffix = (f, d, suffix) => {
-                const s = fmt(f, d, 'short');
+            const withSuffix = (f, d, suffix, t = SOON) => {
+                const s = fmt(f, d, 'short', t);
                 return s.endsWith('日') ? `${s}${suffix}` : `${s} ${suffix}`;
             };
 
@@ -1056,7 +1289,15 @@
                 const t = el('span', 'arc-text');
                 t.append(
                     el('span', 'arc-name', {}, SOON.name),
-                    el('span', 'arc-status', {}, `${fmt(opts.f, d, 'long')} · ${SOON.count} 集`),
+                    // 集數未知（drama.json 唔寫 episodes）：淨係出上架日
+                    el(
+                        'span',
+                        'arc-status',
+                        {},
+                        opts.known === 'no'
+                            ? fmt(opts.f, d, 'long')
+                            : `${fmt(opts.f, d, 'long')} · ${SOON.count} 集`,
+                    ),
                 );
                 const mark = el('span', 'soon-mark');
                 mark.innerHTML = CLOCK;
@@ -1112,6 +1353,146 @@
                 return stage;
             };
 
+            /* ── ⑥ 逐集上架 ── */
+            const batchOf = (no) => [...EP_BATCHES].reverse().find((b) => no >= b.from);
+            /** 下一批未上架（冇就 undefined） */
+            const nextBatch = (today) => EP_BATCHES.find((b) => today + b.off > 0);
+            const releasedCount = (today) => (nextBatch(today)?.from ?? ARCS[0].count + 1) - 1;
+
+            const renderEps = (host, L, today, opts) => {
+                const stage = makeStage(host, L, `${state.device}Eps`, `${L.name} · 集數清單`);
+                const E = L.eps;
+                for (let no = 9; no <= ARCS[0].count; no += 1) {
+                    const y = E.y9 + (no - 9) * E.h;
+                    if (y >= L.size.h) break;
+                    const b = batchOf(no);
+                    if (!b || today + b.off <= 0) continue;
+                    const d = today + b.off;
+                    const row = el('button', 'ep-row', {
+                        left: px(E.x),
+                        top: px(y),
+                        width: px(E.w),
+                        height: px(E.h - 1),
+                    });
+                    row.type = 'button';
+                    row.setAttribute('aria-disabled', 'true');
+                    row.setAttribute(
+                        'aria-label',
+                        `第 ${no} 集，${fmt('f1', d, 'long', b)}，未可以收聽`,
+                    );
+                    const mark = el('span', 'ep-mark', { right: px(8 * L.k) });
+                    mark.innerHTML = CLOCK;
+                    row.append(
+                        el('span', 'ep-title', {}, `第 ${no} 集`),
+                        el('span', 'ep-status', { left: px(E.status) }, fmt(opts.f, d, 'long', b)),
+                        mark,
+                    );
+                    stage.append(row);
+                }
+                return stage;
+            };
+
+            /** 一覽表「戀愛二分一」行（A1 / A2 × 進度） */
+            const partialRow = (today, opts) => {
+                const nb = nextBatch(today);
+                if (!nb) return arcRow(ARCS[0]);
+                const d = today + nb.off;
+                const out = releasedCount(today);
+                const heard = Math.min(opts.prog, out);
+                const total = ARCS[0].count;
+                const again = withSuffix(opts.f, d, '再出', nb);
+                const isA1 = opts.a === 'a1';
+                let status;
+                if (isA1)
+                    status =
+                        heard >= out ? `已追上 · ${again}` : `已上架 ${out}/${total} 集 · ${again}`;
+                else
+                    status = `${heard ? `聽到第 ${heard} 集` : '未聽'} · 第 ${nb.from} 集起 ${withSuffix(opts.f, d, '上架', nb)}`;
+                const r = arcRow(ARCS[0], status);
+                r.querySelector('.count').textContent = `${heard}/${isA1 ? out : total}`;
+                const fill = (heard / (isA1 ? out : total)) * 100;
+                r.querySelector('.ring').style.background =
+                    `conic-gradient(var(--t-accent) ${fill}%, var(--t-track) 0)`;
+                return r;
+            };
+
+            const renderSheet6 = (host, L, today, opts) => {
+                const stage = makeStage(host, L, `${state.device}Sheet`, `${L.name} · 全集一覽表`);
+                const s = L.sheet;
+                const box = s.docked
+                    ? { left: px(s.x), top: px(s.y), width: px(s.w), height: px(s.h) }
+                    : { left: '0', bottom: '0', width: px(L.size.w) };
+                const sheet = el('div', 'sheet', box);
+                const head = el('div', 'sheet-head');
+                head.append(
+                    el('span', 'sheet-title', {}, '全集'),
+                    el('span', 'sheet-sum', {}, '聽完 0 / 3 個'),
+                    el('span', 'sheet-x', {}, '✕'),
+                );
+                const list = el('div', 'sheet-list');
+                list.append(
+                    group('未聽完', [
+                        partialRow(today, opts),
+                        ...ARCS.slice(1).map((a) => arcRow(a)),
+                    ]),
+                );
+                sheet.append(el('div', 'grab'), head, list);
+                stage.append(sheet);
+            };
+
+            const renderHome6 = (host, L, today, opts) => {
+                const stage = makeStage(host, L, `${state.device}Home`, `${L.name} · 主頁劇集格`);
+                const nb = nextBatch(today);
+                if (!nb || opts.e === 'e2') return;
+                const { x, y, w, h } = L.tile;
+                stage.append(
+                    el(
+                        'span',
+                        'pill-dark abs',
+                        {
+                            right: px(L.size.w - x - w + 8 * L.k),
+                            bottom: px(L.size.h - y - h + 8 * L.k),
+                        },
+                        `3 個短篇 · 新集數 ${withSuffix(opts.f, today + nb.off, '上架', nb)}`,
+                    ),
+                );
+            };
+
+            /* ── ⑦ 整套新劇 ── */
+            const renderUpcomingDrama = (host, L, today, opts) => {
+                const front = opts.zpos === 'front';
+                const stage = makeStage(
+                    host,
+                    L,
+                    `${state.device}Home${front ? 'Front' : 'End'}`,
+                    `${L.name} · 主頁書架（${front ? '排最前' : '排最尾'}）`,
+                );
+                const r = L.zTile[opts.zpos];
+                const d = today + NEW_DRAMA.off;
+                const tile = el('button', `z-tile ${opts.z}`, {
+                    left: px(r.x),
+                    top: px(r.y),
+                    width: px(r.w),
+                    height: px(r.h),
+                });
+                tile.type = 'button';
+                tile.setAttribute('aria-disabled', 'true');
+                tile.setAttribute(
+                    'aria-label',
+                    `${NEW_DRAMA.name}，${fmt('f1', d, 'long', NEW_DRAMA)}，未可以收聽`,
+                );
+                if (opts.z === 'z1') {
+                    const pill = el('span', 'pill-dark md z-center');
+                    pill.innerHTML = `${CLOCK}<span>${withSuffix(opts.f, d, '上架', NEW_DRAMA)}</span>`;
+                    tile.append(pill);
+                } else {
+                    const bar = el('span', 'z-bar');
+                    bar.innerHTML = `${CLOCK}<span>即將上架 · ${fmt(opts.f, d, 'short', NEW_DRAMA)}</span>`;
+                    tile.append(bar);
+                }
+                stage.append(tile);
+            };
+
             /* ── 畫晒 ── */
             const sections = {
                 place: (host, L) => {
@@ -1128,6 +1509,14 @@
                     const d = Math.max(state.today, 1);
                     renderHome(host, L, d, state);
                     renderDrama(host, L, d, state);
+                },
+                eps: (host, L) => {
+                    renderEps(host, L, state.today, state);
+                    renderSheet6(host, L, state.today, state);
+                    renderHome6(host, L, state.today, state);
+                },
+                upcoming: (host, L) => {
+                    renderUpcomingDrama(host, L, state.today, state);
                 },
                 after: (host, L) => {
                     renderHome(host, L, state.after, state);
@@ -1185,7 +1574,7 @@
                     );
                     const key = g.dataset.group;
                     const v = b.dataset.val;
-                    state[key] = ['today', 'after'].includes(key) ? Number(v) : v;
+                    state[key] = ['today', 'after', 'prog'].includes(key) ? Number(v) : v;
                     render();
                 });
             });
