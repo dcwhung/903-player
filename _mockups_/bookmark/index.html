@@ -9,8 +9,8 @@
             /* 版面：一欄；每節一張卡，入面係按闊度縮細嘅手機 / 闊橫版舞台。舞台入面嘅顏色跟 app（tokens.css）截圖取色 */
             :root {
                 --move: 520ms;
+                --fade: 260ms;
                 --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-                --trail: calc(var(--move) * 0.3);
                 --bg: #eef1f5;
                 --surface: #ffffff;
                 --ink: #18202b;
@@ -21,13 +21,15 @@
                 --font: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
                 /* app 入面嘅顏色（唔跟頁面主題轉） */
                 --app-cream: #f5d294;
-                --app-track: rgb(20 34 52 / 38%);
+                --app-track: #3e5c7c;
+                --app-box: #2d4560;
                 --app-ink: #ffffff;
                 --app-muted: rgb(255 255 255 / 62%);
-                --app-row: rgb(14 24 38 / 42%);
                 --app-line: rgb(255 255 255 / 22%);
+                --app-divider: rgb(255 255 255 / 12%);
                 --app-gold: #d4ae5c;
                 --app-danger: #c8463d;
+                --app-toast: rgb(10 16 24 / 88%);
             }
             @media (prefers-color-scheme: dark) {
                 :root:not([data-theme='light']) {
@@ -66,7 +68,7 @@
             main {
                 display: grid;
                 gap: 20px;
-                max-width: 960px;
+                max-width: 1000px;
                 margin: 0 auto;
             }
             h1 {
@@ -162,22 +164,18 @@
                 width: 60%;
                 height: 60%;
             }
-            .bm[aria-pressed='true'] .off,
-            .bm[aria-pressed='false'] .on {
-                display: none;
-            }
             .patch {
                 position: absolute;
                 pointer-events: none;
             }
-            /* 主頁 tab 複製品 */
+            /* 主頁 tab 複製品（尺寸由 JS 按版面設定 --inset / --font-size / --icon-tab） */
             .tabs {
                 position: absolute;
                 display: flex;
-                gap: 6px;
-                padding: 6px;
+                gap: var(--inset);
+                padding: var(--inset);
                 border-radius: 999px;
-                background: #3e5c7c;
+                background: var(--app-track);
             }
             .tab {
                 position: relative;
@@ -190,111 +188,113 @@
                 border-radius: 999px;
                 background: transparent;
                 color: var(--app-ink);
-                font: 500 14px/1 var(--font);
+                font: 500 var(--font-size) / 1 var(--font);
                 cursor: pointer;
                 overflow: hidden;
-                transition:
-                    flex-grow var(--move) var(--ease),
-                    opacity var(--move) var(--ease),
-                    color 260ms var(--ease);
+                transition: color var(--fade) var(--ease);
             }
             .tab[aria-pressed='true'] {
                 color: #1c2330;
                 font-weight: 700;
             }
             .tab.icon {
-                flex: 0 0 var(--icon-tab, 64px);
-            }
-            .tab.icon svg {
-                width: 22px;
-                height: 22px;
-            }
-            .tab.icon.gone {
-                flex-basis: 0;
-                opacity: 0;
-                margin-left: -6px;
-                pointer-events: none;
-            }
-            .tab.icon {
+                flex: 0 0 var(--icon-tab);
                 transition:
                     flex-basis var(--move) var(--ease),
                     margin var(--move) var(--ease),
                     opacity var(--move) var(--ease),
-                    color 260ms var(--ease);
+                    color var(--fade) var(--ease);
+            }
+            .tab.icon svg {
+                width: calc(var(--font-size) * 1.6);
+                height: calc(var(--font-size) * 1.6);
+            }
+            .tab.icon.gone {
+                flex-basis: 0;
+                opacity: 0;
+                margin-left: calc(-1 * var(--inset));
+                pointer-events: none;
             }
             .pill {
                 position: absolute;
-                top: 6px;
-                bottom: 6px;
+                top: var(--inset);
+                bottom: var(--inset);
                 border-radius: 999px;
                 background: var(--app-cream);
                 transition:
                     left var(--move) var(--ease),
                     right var(--move) var(--ease);
             }
-            /* 收藏清單 */
+            /* 收藏清單：每個節目 / 短篇一個 box，box 頂係 banner */
             .list {
                 position: absolute;
                 overflow-y: auto;
-                display: grid;
-                align-content: start;
-                grid-auto-rows: max-content;
-                gap: 8px;
+                column-gap: var(--gap);
                 padding-bottom: 16px;
             }
-            .group {
-                margin: 6px 4px 0;
-                font: 600 13px/1.4 var(--font);
-                color: var(--app-muted);
-                letter-spacing: 0.04em;
+            .box {
+                break-inside: avoid;
+                margin-bottom: var(--gap);
+                border-radius: 16px;
+                overflow: hidden;
+                background: var(--app-box);
+            }
+            .banner {
+                position: relative;
+                height: var(--banner-h);
+                background: center / cover no-repeat;
+            }
+            .banner::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(transparent 40%, rgb(8 14 24 / 82%));
+            }
+            .banner div {
+                position: absolute;
+                z-index: 1;
+                left: 14px;
+                right: 14px;
+                bottom: 10px;
+            }
+            .banner b {
+                display: block;
+                font: 700 16px/1.3 var(--font);
+                text-shadow: 0 1px 3px rgb(0 0 0 / 60%);
+            }
+            .banner small {
+                display: block;
+                font: 13px/1.3 var(--font);
+                color: var(--app-cream);
             }
             .item {
                 position: relative;
-                border-radius: 14px;
                 overflow: hidden;
-                background: transparent;
                 touch-action: pan-y;
+            }
+            .item + .item .card {
+                border-top: 1px solid var(--app-divider);
             }
             .item .del {
                 position: absolute;
-                inset: 2px;
+                inset: 0;
                 display: grid;
                 place-items: center end;
                 padding-right: 16px;
-                border-radius: 12px;
                 background: var(--app-danger);
                 font: 600 14px var(--font);
                 color: #fff;
             }
             .card {
                 position: relative;
-                display: grid;
-                grid-template-columns: 76px 1fr;
-                gap: 12px;
-                align-items: center;
-                padding: 10px 12px;
-                background: #2d4560;
+                padding: 10px 14px 12px;
+                background: var(--app-box);
                 cursor: grab;
                 user-select: none;
-            }
-            .thumb {
-                width: 76px;
-                aspect-ratio: 16 / 9;
-                border-radius: 8px;
-                background: center / cover no-repeat;
             }
             .card b {
                 display: block;
                 font: 700 15px/1.3 var(--font);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .card small {
-                display: block;
-                margin-top: 2px;
-                font: 13px/1.3 var(--font);
-                color: var(--app-muted);
             }
             .bar {
                 height: 3px;
@@ -315,9 +315,18 @@
             }
             .collapse {
                 transition:
-                    height 260ms var(--ease),
-                    opacity 260ms var(--ease),
-                    margin 260ms var(--ease);
+                    height var(--fade) var(--ease),
+                    opacity var(--fade) var(--ease);
+            }
+            .toast {
+                position: absolute;
+                left: 24px;
+                right: 24px;
+                padding: 12px 14px;
+                border-radius: 12px;
+                background: var(--app-toast);
+                font: 14px/1.4 var(--font);
+                text-align: center;
             }
             .opt-desc {
                 min-height: 3.2em;
@@ -338,12 +347,12 @@
                 <h1>P7 #7 成集收藏 + 我的收藏</h1>
                 <p>
                     v1.26.1 真截圖加上收藏掣同收藏 tab。收藏單位係「一集」（節目某日 /
-                    廣播劇一集）。撳收藏掣會即刻 ☆ ↔ ★ 切換。
+                    廣播劇一集）。用戶已揀：I1 星星、P2 播放掣右邊、L3 分組。
                 </p>
             </header>
 
             <section class="panel">
-                <h2>① 收藏 icon</h2>
+                <h2>① 收藏 icon（已揀 I1）</h2>
                 <div class="row" data-group="icon">
                     <button type="button" class="pick" data-val="star" aria-pressed="true">
                         I1 星星
@@ -355,16 +364,15 @@
                         I3 心心
                     </button>
                 </div>
-                <p>下面所有畫面都會跟住換 icon。</p>
             </section>
 
             <section class="panel">
-                <h2>② 播放器入面收藏掣放邊</h2>
+                <h2>② 播放器入面收藏掣（已揀 P2）</h2>
                 <div class="row" data-group="place">
-                    <button type="button" class="pick" data-val="p1" aria-pressed="true">
+                    <button type="button" class="pick" data-val="p1" aria-pressed="false">
                         P1 頁頭右上角
                     </button>
-                    <button type="button" class="pick" data-val="p2" aria-pressed="false">
+                    <button type="button" class="pick" data-val="p2" aria-pressed="true">
                         P2 播放掣右邊
                     </button>
                     <button type="button" class="pick" data-val="p3" aria-pressed="false">
@@ -376,37 +384,27 @@
                     <div class="viewport" id="v-show"></div>
                     <div class="viewport" id="v-card"></div>
                 </div>
-                <p>
-                    左：手機節目頁（集數清單每行都加一粒，喺 ▶ 左邊）。右：闊橫版主頁右邊卡（P1 =
-                    卡頁頭 ⤢ 左邊）。
-                </p>
+                <p>左：手機節目頁（集數清單每行 ▶ 左邊都有一粒）。右：闊橫版主頁右邊卡。</p>
             </section>
 
             <section class="panel">
-                <h2>③ 主頁「收藏」tab + 清單</h2>
+                <h2>③ 主頁「收藏」tab（L3：同一個節目 / 短篇一個 box）</h2>
                 <p>
-                    第三個 tab 窄啲、淨係
-                    icon，有收藏先出現。撳佢睇收藏清單；喺清單左滑一行移除，移除晒最後一集 tab
-                    會淡走、跳返「節目」。
+                    box 頂嘅
+                    banner：節目用節目圖；廣播劇按短篇分組，用短篇自己嘅圖（冇短篇圖就用成套劇嘅圖）。box
+                    次序跟最新收藏；box 入面節目按日子新到舊、劇集按集數。撳一行 =
+                    入嗰頁跳去嗰集（唔播）；左滑一行 = 移除；一個 box 冇晒就收埋；全部冇晒，tab
+                    淡走跳返「節目」。
                 </p>
-                <div class="row" data-group="sort">
-                    <button type="button" class="pick" data-val="l1" aria-pressed="true">
-                        L1 一個清單（新收藏行頭）
-                    </button>
-                    <button type="button" class="pick" data-val="l2" aria-pressed="false">
-                        L2 分「節目 / 廣播劇」
-                    </button>
-                    <button type="button" class="pick" data-val="l3" aria-pressed="false">
-                        L3 按節目 / 劇分組
-                    </button>
-                </div>
                 <div class="row">
-                    <button type="button" class="act" id="reset">重新加返 6 集收藏</button>
+                    <button type="button" class="act" id="reset">重新加返 8 集收藏</button>
                     <button type="button" class="act" id="clear">清晒收藏（tab 消失）</button>
                 </div>
                 <div class="stages">
-                    <div class="viewport" id="v-home"></div>
+                    <div class="viewport" id="v-home-phone"></div>
+                    <div class="viewport" id="v-home-wide"></div>
                 </div>
+                <p>上：手機直版。下：闊橫版（左邊兩欄 box，右邊播放卡照舊）。兩部機各自獨立試。</p>
             </section>
         </main>
 
@@ -415,26 +413,19 @@
                 nHome: 'n-home.webp',
                 nShow: 'n-show.webp',
                 wHome: 'w-home.webp',
-                gongzi: 'thumb-gongzi.webp',
-                badgirl: 'thumb-badgirl.webp',
-                wanni: 'thumb-wanni.webp',
-                lancy: 'thumb-lancy.webp',
-                chisee: 'thumb-chisee.webp',
+                gongzi: 'banner-gongzi.webp',
+                badgirl: 'banner-badgirl.webp',
+                wanni: 'banner-wanni.webp',
+                chisee: 'banner-chisee.webp',
+                lancyHalf: 'banner-lancy-half.webp',
+                lancyFirstLove: 'banner-lancy-first-love.webp',
             };
-            const ICONS = {
-                star: {
-                    off: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
-                    on: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
-                },
-                ribbon: {
-                    off: '<path d="M6.5 3.5h11v17l-5.5-4-5.5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
-                    on: '<path d="M6.5 3.5h11v17l-5.5-4-5.5 4z" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
-                },
-                heart: {
-                    off: '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
-                    on: '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
-                },
-            };
+            const STAR =
+                'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z';
+            const RIBBON = 'M6.5 3.5h11v17l-5.5-4-5.5 4z';
+            const HEART =
+                'M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z';
+            const ICON_PATH = { star: STAR, ribbon: RIBBON, heart: HEART };
             const PLACE_DESC = {
                 p1: '頁頭右上角，同左上角「返回」對稱。唔會擠到播放掣，但同播放器有啲距離。',
                 p2: '控制列：播放掣右邊，同左邊「由頭播放」對稱。最就手，聽緊覺得好就撳。',
@@ -464,80 +455,137 @@
             const ROW_BM = { x: 292, s: 40 };
             const PATCH_X = 284;
             const PATCH_W = 44;
-            const PHONE = { w: 390, h: 844, max: 0.82 };
-            const WIDE = { w: 1300, h: 800, max: 0.62 };
-            const TABS = { x: 16, y: 133, w: 358, h: 50 };
-            const LIST = { x: 16, y: 195, w: 358, h: 548 };
             const SWIPE_REMOVE = 0.4;
+            const TOAST_MS = 1800;
+            const FOLLOW_MS = 560;
+            const COLLAPSE_MS = 280;
 
-            const state = { icon: 'star', place: 'p1', sort: 'l1', tab: 'shows' };
+            /** 兩款主頁版面：tab 同清單位置都係 v1.26.1 量到嘅 */
+            const LAYOUTS = {
+                phone: {
+                    view: 'v-home-phone',
+                    img: 'nHome',
+                    size: { w: 390, h: 844, max: 0.82 },
+                    tabs: { x: 16, y: 133, w: 358, h: 50, inset: 6, font: 14, icon: 64 },
+                    list: { x: 16, y: 195, w: 358, h: 548, cols: 1, gap: 12, banner: 104 },
+                    cover: { y: 187, h: 564 },
+                    toastBottom: 120,
+                },
+                wide: {
+                    view: 'v-home-wide',
+                    img: 'wHome',
+                    size: { w: 1300, h: 800, max: 0.72 },
+                    tabs: { x: 24, y: 24, w: 784, h: 75, inset: 8, font: 18, icon: 120 },
+                    list: { x: 24, y: 115, w: 784, h: 667, cols: 2, gap: 16, banner: 128 },
+                    cover: { y: 107, h: 693, w: 820 },
+                    toastBottom: 40,
+                },
+            };
 
+            const GROUPS = {
+                gongzi: { title: '公子會', img: 'gongzi', order: 'date' },
+                badgirl: { title: 'Bad Girl大過佬', img: 'badgirl', order: 'date' },
+                wanni: { title: '雲妮鍾情', img: 'wanni', order: 'date' },
+                chisee36: {
+                    title: '芝See菇Bi Family',
+                    sub: '三十六計',
+                    img: 'chisee',
+                    order: 'ep',
+                },
+                lancyHalf: {
+                    title: '蘭茜夫人劇場',
+                    sub: '戀愛二分一',
+                    img: 'lancyHalf',
+                    order: 'ep',
+                },
+                lancyFirstLove: {
+                    title: '蘭茜夫人劇場',
+                    sub: '初戀無限次',
+                    img: 'lancyFirstLove',
+                    order: 'ep',
+                },
+            };
+            /** added = 收藏先後（大 = 新）；sort = box 入面次序（日子 / 集數） */
             const SAMPLE = [
                 {
                     id: 1,
-                    kind: 'show',
-                    who: 'gongzi',
-                    name: '公子會',
+                    g: 'gongzi',
                     label: '17/10（六）',
+                    sort: 1017,
                     ratio: 0.01,
                     text: '聽到 0:02 / 10:00',
-                    added: 6,
+                    added: 9,
                 },
                 {
                     id: 2,
-                    kind: 'drama',
-                    who: 'chisee',
-                    name: '芝See菇Bi Family',
-                    label: '三十六計 · 第 3 集',
-                    ratio: 1,
-                    text: '已聽完',
-                    added: 5,
+                    g: 'lancyHalf',
+                    label: '第 2 集',
+                    sort: 2,
+                    ratio: 0.33,
+                    text: '聽到 3:10 / 9:30',
+                    added: 8,
                 },
                 {
                     id: 3,
-                    kind: 'show',
-                    who: 'badgirl',
-                    name: 'Bad Girl大過佬',
-                    label: '15/10（四）',
-                    ratio: 0.27,
-                    text: '聽到 32:10 / 2:00:00',
-                    added: 4,
+                    g: 'chisee36',
+                    label: '第 3 集',
+                    sort: 3,
+                    ratio: 1,
+                    text: '已聽完',
+                    added: 7,
                 },
                 {
                     id: 4,
-                    kind: 'show',
-                    who: 'gongzi',
-                    name: '公子會',
+                    g: 'badgirl',
+                    label: '15/10（四）',
+                    sort: 1015,
+                    ratio: 0.27,
+                    text: '聽到 32:10 / 2:00:00',
+                    added: 6,
+                },
+                {
+                    id: 5,
+                    g: 'gongzi',
                     label: '03/10（六）',
+                    sort: 1003,
+                    ratio: 0,
+                    text: '未收聽',
+                    added: 5,
+                },
+                {
+                    id: 6,
+                    g: 'lancyHalf',
+                    label: '第 1 集',
+                    sort: 1,
+                    ratio: 1,
+                    text: '已聽完',
+                    added: 4,
+                },
+                {
+                    id: 7,
+                    g: 'lancyFirstLove',
+                    label: '第 5 集',
+                    sort: 5,
                     ratio: 0,
                     text: '未收聽',
                     added: 3,
                 },
                 {
-                    id: 5,
-                    kind: 'drama',
-                    who: 'lancy',
-                    name: '蘭茜夫人劇場',
-                    label: '戀愛二分一 · 第 1 集',
-                    ratio: 1,
-                    text: '已聽完',
-                    added: 2,
-                },
-                {
-                    id: 6,
-                    kind: 'show',
-                    who: 'wanni',
-                    name: '雲妮鍾情',
+                    id: 8,
+                    g: 'wanni',
                     label: '14/10（三）',
+                    sort: 1014,
                     ratio: 0,
                     text: '未收聽',
-                    added: 1,
+                    added: 2,
                 },
             ];
-            let items = SAMPLE.map((x) => ({ ...x }));
+
+            const state = { icon: 'star', place: 'p2' };
 
             const svg = (name, on) =>
-                `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name][on ? 'on' : 'off']}</svg>`;
+                `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON_PATH[name]}" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+
             const bmButton = (x, y, s, color, pressed = false) => {
                 const b = document.createElement('button');
                 b.type = 'button';
@@ -549,36 +597,14 @@
                     height: `${s}px`,
                 });
                 b.style.setProperty('--bm-color', color);
-                b.setAttribute('aria-pressed', String(pressed));
                 b.setAttribute('aria-label', '收藏呢集');
-                paintBm(b);
-                b.addEventListener('click', () => {
-                    b.setAttribute(
-                        'aria-pressed',
-                        String(b.getAttribute('aria-pressed') !== 'true'),
-                    );
-                    paintBm(b);
-                });
+                const paint = (on) => {
+                    b.setAttribute('aria-pressed', String(on));
+                    b.innerHTML = svg(state.icon, on);
+                };
+                paint(pressed);
+                b.addEventListener('click', () => paint(b.getAttribute('aria-pressed') !== 'true'));
                 return b;
-            };
-            const paintBm = (b) => {
-                b.innerHTML = `<span class="off">${svg(state.icon, false)}</span><span class="on">${svg(state.icon, true)}</span>`;
-                b.querySelectorAll('span').forEach((s) =>
-                    Object.assign(s.style, {
-                        display: '',
-                        width: '100%',
-                        height: '100%',
-                        placeItems: 'center',
-                    }),
-                );
-                b.querySelectorAll('span').forEach(
-                    (s) =>
-                        (s.style.display = s.classList.contains(
-                            b.getAttribute('aria-pressed') === 'true' ? 'on' : 'off',
-                        )
-                            ? 'grid'
-                            : 'none'),
-                );
             };
 
             const makeStage = (id, size, img) => {
@@ -591,11 +617,11 @@
                 stage.style.backgroundImage = `url(${IMG[img]})`;
                 view.append(stage);
                 const fit = () => {
-                    const avail = view.parentElement.clientWidth;
-                    const scale = Math.min(size.max, avail / size.w);
+                    const scale = Math.min(size.max, view.parentElement.clientWidth / size.w);
                     stage.style.transform = `scale(${scale})`;
                     view.style.width = `${size.w * scale}px`;
                     view.style.height = `${size.h * scale}px`;
+                    stage.dataset.scale = String(scale);
                 };
                 fit();
                 addEventListener('resize', fit);
@@ -603,7 +629,7 @@
             };
 
             const renderShow = () => {
-                const stage = makeStage('v-show', PHONE, 'nShow');
+                const stage = makeStage('v-show', { w: 390, h: 844, max: 0.82 }, 'nShow');
                 SHOW_ROWS.forEach((r, i) => {
                     const patch = document.createElement('div');
                     patch.className = 'patch';
@@ -629,170 +655,168 @@
                 stage.append(bmButton(p.x, p.y, p.s, p.color, true));
             };
             const renderCard = () => {
-                const stage = makeStage('v-card', WIDE, 'wHome');
+                const stage = makeStage('v-card', { w: 1300, h: 800, max: 0.62 }, 'wHome');
                 const p = PLACES.card[state.place];
                 stage.append(bmButton(p.x, p.y, p.s, p.color));
             };
 
-            /* ── ③ 主頁 tab + 清單 ── */
-            let home;
-            const renderHome = () => {
-                const stage = makeStage('v-home', PHONE, 'nHome');
-                const cover = document.createElement('div');
-                cover.className = 'abs';
-                Object.assign(cover.style, {
-                    left: 0,
-                    top: `${LIST.y - 8}px`,
-                    width: '390px',
-                    height: `${LIST.h + 16}px`,
+            /* ── ③ 主頁收藏 tab：每款版面一個獨立 instance ── */
+            const homes = {};
+
+            const createHome = (key) => {
+                const L = LAYOUTS[key];
+                const stage = makeStage(L.view, L.size, L.img);
+                const home = { L, stage, tab: 'saved', items: SAMPLE.map((x) => ({ ...x })) };
+                home.cover = div('abs', {
+                    left: '0px',
+                    top: `${L.cover.y}px`,
+                    width: `${L.cover.w ?? L.size.w}px`,
+                    height: `${L.cover.h}px`,
                     background: 'linear-gradient(#4b7096, #3f6087)',
-                    display: 'none',
                 });
-                const list = document.createElement('div');
-                list.className = 'list';
-                Object.assign(list.style, {
-                    left: `${LIST.x}px`,
-                    top: `${LIST.y}px`,
-                    width: `${LIST.w}px`,
-                    height: `${LIST.h}px`,
-                    display: 'none',
+                home.list = div('list', {
+                    left: `${L.list.x}px`,
+                    top: `${L.list.y}px`,
+                    width: `${L.list.w}px`,
+                    height: `${L.list.h}px`,
+                    columnCount: String(L.list.cols),
                 });
-                const tabs = document.createElement('div');
-                tabs.className = 'tabs';
-                Object.assign(tabs.style, {
-                    left: `${TABS.x}px`,
-                    top: `${TABS.y}px`,
-                    width: `${TABS.w}px`,
-                    height: `${TABS.h}px`,
+                home.list.style.setProperty('--gap', `${L.list.gap}px`);
+                home.list.style.setProperty('--banner-h', `${L.list.banner}px`);
+                home.tabs = div('tabs', {
+                    left: `${L.tabs.x}px`,
+                    top: `${L.tabs.y}px`,
+                    width: `${L.tabs.w}px`,
+                    height: `${L.tabs.h}px`,
                 });
-                const pill = document.createElement('div');
-                pill.className = 'pill';
-                const mk = (key, html, extra = '') => {
+                home.tabs.style.setProperty('--inset', `${L.tabs.inset}px`);
+                home.tabs.style.setProperty('--font-size', `${L.tabs.font}px`);
+                home.tabs.style.setProperty('--icon-tab', `${L.tabs.icon}px`);
+                home.pill = div('pill', {});
+                const mk = (k, html, extra = '') => {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = `tab ${extra}`;
-                    b.dataset.tab = key;
+                    b.dataset.tab = k;
                     b.innerHTML = html;
-                    b.addEventListener('click', () => selectTab(key));
+                    b.addEventListener('click', () => selectTab(home, k));
                     return b;
                 };
-                const tShows = mk('shows', '節目');
-                const tDramas = mk('dramas', '廣播劇');
-                const tSaved = mk('saved', svg(state.icon, true), 'icon');
-                tSaved.setAttribute('aria-label', '我的收藏');
-                tabs.append(pill, tShows, tDramas, tSaved);
-                stage.append(cover, list, tabs);
-                home = { stage, cover, list, tabs, pill, tSaved, tShows, tDramas };
-                syncTabs(false);
-                renderList();
+                home.tSaved = mk('saved', svg(state.icon, true), 'icon');
+                home.tSaved.setAttribute('aria-label', '我的收藏');
+                home.tabs.append(
+                    home.pill,
+                    mk('shows', '節目'),
+                    mk('dramas', '廣播劇'),
+                    home.tSaved,
+                );
+                stage.append(home.cover, home.list, home.tabs);
+                homes[key] = home;
+                renderList(home);
+                syncTabs(home, false);
             };
 
-            const placePill = () => {
-                const t = home.tabs.querySelector(`[data-tab="${state.tab}"]`);
-                const left = t.offsetLeft;
-                const right = home.tabs.clientWidth - left - t.offsetWidth;
-                home.pill.style.left = `${left}px`;
-                home.pill.style.right = `${right}px`;
+            const div = (cls, style) => {
+                const el = document.createElement('div');
+                el.className = cls;
+                Object.assign(el.style, style);
+                return el;
             };
-            const syncTabs = (animate = true) => {
-                home.tSaved.classList.toggle('gone', items.length === 0);
+
+            const placePill = (home) => {
+                const t = home.tabs.querySelector(`[data-tab="${home.tab}"]`);
+                home.pill.style.left = `${t.offsetLeft}px`;
+                home.pill.style.right = `${home.tabs.clientWidth - t.offsetLeft - t.offsetWidth}px`;
+            };
+            const syncTabs = (home, animate = true) => {
+                home.tSaved.classList.toggle('gone', home.items.length === 0);
                 home.tabs
                     .querySelectorAll('.tab')
                     .forEach((t) =>
-                        t.setAttribute('aria-pressed', String(t.dataset.tab === state.tab)),
+                        t.setAttribute('aria-pressed', String(t.dataset.tab === home.tab)),
                     );
-                const showList = state.tab === 'saved';
+                const showList = home.tab === 'saved';
                 home.cover.style.display = showList ? 'block' : 'none';
-                home.list.style.display = showList ? 'grid' : 'none';
+                home.list.style.display = showList ? 'block' : 'none';
                 if (!animate) home.pill.style.transition = 'none';
-                placePill();
+                placePill(home);
                 // tab 闊度郁緊：每格跟住更新膠囊位置
-                const until = performance.now() + 560;
+                const until = performance.now() + FOLLOW_MS;
                 const follow = () => {
-                    placePill();
+                    placePill(home);
                     if (performance.now() < until) requestAnimationFrame(follow);
                 };
                 requestAnimationFrame(follow);
                 if (!animate) requestAnimationFrame(() => (home.pill.style.transition = ''));
             };
-            const selectTab = (key) => {
-                if (key === 'saved' && items.length === 0) return;
-                state.tab = key;
-                syncTabs();
+            const selectTab = (home, k) => {
+                if (k === 'saved' && home.items.length === 0) return;
+                home.tab = k;
+                syncTabs(home);
             };
 
-            const groupsOf = () => {
-                const byNew = [...items].sort((a, b) => b.added - a.added);
-                if (state.sort === 'l1') return [{ title: null, rows: byNew }];
-                if (state.sort === 'l2')
-                    return [
-                        { title: '節目', rows: byNew.filter((x) => x.kind === 'show') },
-                        { title: '廣播劇', rows: byNew.filter((x) => x.kind === 'drama') },
-                    ].filter((g) => g.rows.length);
-                const names = [...new Set(byNew.map((x) => x.name))];
-                return names.map((n) => ({
-                    title: n,
-                    rows: byNew.filter((x) => x.name === n),
-                    compact: true,
-                }));
-            };
-
-            const renderList = () => {
-                home.list.innerHTML = '';
-                groupsOf().forEach((g) => {
-                    if (g.title) {
-                        const h = document.createElement('div');
-                        h.className = 'group';
-                        h.textContent = g.title;
-                        home.list.append(h);
-                    }
-                    g.rows.forEach((it) => home.list.append(rowOf(it, g.compact)));
+            /** box 次序：最新收藏嗰集所屬嘅 box 行頭；box 入面節目日子新到舊、劇集集數細到大 */
+            const groupsOf = (items) => {
+                const keys = [
+                    ...new Set([...items].sort((a, b) => b.added - a.added).map((x) => x.g)),
+                ];
+                return keys.map((g) => {
+                    const rows = items.filter((x) => x.g === g);
+                    const byEp = GROUPS[g].order === 'ep';
+                    rows.sort((a, b) => (byEp ? a.sort - b.sort : b.sort - a.sort));
+                    return { g, rows };
                 });
             };
 
-            const rowOf = (it, compact) => {
-                const wrap = document.createElement('div');
-                wrap.className = 'item collapse';
+            const renderList = (home) => {
+                home.list.innerHTML = '';
+                groupsOf(home.items).forEach(({ g, rows }) => {
+                    const meta = GROUPS[g];
+                    const box = div('box collapse', {});
+                    box.dataset.g = g;
+                    box.innerHTML = `<div class="banner" style="background-image:url(${IMG[meta.img]})"><div><b>${meta.title}</b>${meta.sub ? `<small>${meta.sub}</small>` : ''}</div></div>`;
+                    rows.forEach((it) => box.append(rowOf(home, it, meta)));
+                    home.list.append(box);
+                });
+            };
+
+            const rowOf = (home, it, meta) => {
+                const wrap = div('item collapse', {});
                 wrap.innerHTML = `<span class="del">移除</span>
                     <div class="card">
-                        <div class="thumb" style="background-image:url(${IMG[it.who]})"></div>
-                        <div style="min-width:0">
-                            <b>${compact ? it.label : it.name}</b>
-                            ${compact ? '' : `<small>${it.label}</small>`}
-                            <div class="bar"><i style="width:${Math.round(it.ratio * 100)}%"></i></div>
-                            <div class="state">${it.text}</div>
-                        </div>
+                        <b>${it.label}</b>
+                        <div class="bar"><i style="width:${Math.round(it.ratio * 100)}%"></i></div>
+                        <div class="state">${it.text}</div>
                     </div>`;
-                swipe(wrap, it);
+                swipe(home, wrap, it, meta);
                 return wrap;
             };
 
             /** 左滑：拖過一定比例就移除（同 mini player 一樣），唔夠就彈返 */
-            const swipe = (wrap, it) => {
+            const swipe = (home, wrap, it, meta) => {
                 const card = wrap.querySelector('.card');
                 let startX = null;
                 let dx = 0;
                 let moved = false;
                 card.addEventListener('pointerdown', (e) => {
                     startX = e.clientX;
+                    moved = false;
                     card.setPointerCapture(e.pointerId);
                     card.style.transition = 'none';
-                    moved = false;
                 });
                 card.addEventListener('pointermove', (e) => {
                     if (startX === null) return;
-                    const scale = home.stage.getBoundingClientRect().width / PHONE.w;
-                    dx = Math.min(0, (e.clientX - startX) / scale);
+                    dx = Math.min(0, (e.clientX - startX) / Number(home.stage.dataset.scale));
                     if (Math.abs(dx) > 4) moved = true;
                     card.style.transform = `translateX(${dx}px)`;
                 });
                 const end = () => {
                     if (startX === null) return;
                     startX = null;
-                    card.style.transition = 'transform 260ms var(--ease)';
+                    card.style.transition = `transform var(--fade) var(--ease)`;
                     if (-dx > card.offsetWidth * SWIPE_REMOVE) {
                         card.style.transform = 'translateX(-110%)';
-                        setTimeout(() => remove(wrap, it), 260);
+                        setTimeout(() => remove(home, wrap, it), COLLAPSE_MS);
                     } else {
                         card.style.transform = '';
                     }
@@ -801,49 +825,46 @@
                 card.addEventListener('pointerup', end);
                 card.addEventListener('pointercancel', end);
                 card.addEventListener('click', () => {
-                    if (!moved) flash(`入「${it.name}」頁，跳去 ${it.label}（唔會自動播）`);
+                    if (!moved)
+                        flash(
+                            home,
+                            `入「${meta.title}」頁，跳去 ${meta.sub ? `${meta.sub} ` : ''}${it.label}（唔會自動播）`,
+                        );
                 });
             };
 
-            const remove = (wrap, it) => {
-                wrap.style.height = `${wrap.offsetHeight}px`;
+            /** 收埋一行；佢係個 box 最後一行就連 box 一齊收 */
+            const remove = (home, wrap, it) => {
+                const box = wrap.closest('.box');
+                const last = box.querySelectorAll('.item').length === 1;
+                const target = last ? box : wrap;
+                target.style.height = `${target.offsetHeight}px`;
                 requestAnimationFrame(() => {
-                    wrap.style.height = '0px';
-                    wrap.style.opacity = '0';
-                    wrap.style.marginTop = '-8px';
+                    target.style.height = '0px';
+                    target.style.opacity = '0';
+                    if (last) target.style.marginBottom = '0px';
                 });
                 setTimeout(() => {
-                    items = items.filter((x) => x.id !== it.id);
-                    if (items.length === 0) state.tab = 'shows';
-                    renderList();
-                    syncTabs();
-                }, 280);
+                    home.items = home.items.filter((x) => x.id !== it.id);
+                    if (home.items.length === 0) home.tab = 'shows';
+                    renderList(home);
+                    syncTabs(home);
+                }, COLLAPSE_MS);
             };
 
-            let toast;
-            const flash = (text) => {
-                toast?.remove();
-                toast = document.createElement('div');
-                toast.className = 'abs';
-                Object.assign(toast.style, {
-                    left: '24px',
-                    right: '24px',
-                    bottom: '120px',
-                    padding: '12px 14px',
-                    borderRadius: '12px',
-                    background: 'rgb(10 16 24 / 88%)',
-                    font: '14px/1.4 var(--font)',
-                    textAlign: 'center',
-                });
-                toast.textContent = text;
-                home.stage.append(toast);
-                setTimeout(() => toast?.remove(), 1800);
+            const flash = (home, text) => {
+                home.toast?.remove();
+                home.toast = div('toast', { bottom: `${home.L.toastBottom}px` });
+                home.toast.textContent = text;
+                home.stage.append(home.toast);
+                setTimeout(() => home.toast?.remove(), TOAST_MS);
             };
 
             const renderAll = () => {
                 renderShow();
                 renderCard();
-                renderHome();
+                createHome('phone');
+                createHome('wide');
             };
 
             document.querySelectorAll('[data-group]').forEach((group) =>
@@ -854,30 +875,28 @@
                         .querySelectorAll('button')
                         .forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
                     state[group.dataset.group] = btn.dataset.val;
-                    if (group.dataset.group === 'place')
-                        document.getElementById('place-desc').textContent = PLACE_DESC[state.place];
-                    if (group.dataset.group === 'sort') {
-                        renderList();
-                        if (items.length) selectTab('saved');
-                    } else renderAll();
+                    document.getElementById('place-desc').textContent = PLACE_DESC[state.place];
+                    renderAll();
                 }),
             );
             document.getElementById('reset').addEventListener('click', () => {
-                items = SAMPLE.map((x) => ({ ...x }));
-                renderList();
-                syncTabs();
+                Object.values(homes).forEach((home) => {
+                    home.items = SAMPLE.map((x) => ({ ...x }));
+                    renderList(home);
+                    syncTabs(home);
+                });
             });
             document.getElementById('clear').addEventListener('click', () => {
-                items = [];
-                state.tab = 'shows';
-                renderList();
-                syncTabs();
+                Object.values(homes).forEach((home) => {
+                    home.items = [];
+                    home.tab = 'shows';
+                    renderList(home);
+                    syncTabs(home);
+                });
             });
 
             document.getElementById('place-desc').textContent = PLACE_DESC[state.place];
             renderAll();
-            state.tab = 'saved';
-            syncTabs(false);
         </script>
     </body>
 </html>
