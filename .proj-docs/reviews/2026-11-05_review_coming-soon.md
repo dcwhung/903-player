@@ -103,3 +103,55 @@ context: >
   production build verified free of e2e fixtures.
 report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
 ```
+
+## Re-review 5f2e550
+
+- 範圍：`git diff d568c06..5f2e550` — `ae81140`（W-531 / S-699）、`4c38f5c`（用戶決定：灰格撳落冇反應、橫版第二行唔再被裁）、`5f2e550`（`.claude/CLAUDE.md` e2e 指令）
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit `npx vitest run src/components/pages/home/DramaShelf src/pages/drama src/pages/home src/selectors/{dramaShelf,availability,continueListening}.test.ts` 26 files / 318 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `5f2e550`）：run [#78 / 42072852107](https://github.com/dcwhung/903-player/actions/runs/42072852107) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)` 全部 success）。三個 commit 係同一次 push，`changes` job 由 push 前 SHA 比較，所以見到 code 改動，冇跳過 lint / unit / build / e2e；`4c38f5c` 冇自己嘅 run（唔使，5f2e550 個 run 已經包埋佢）
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡）
+
+| ID    | 狀態    | 覆核                                                                                                                                                                                                                                                                                                                                                      |
+| ----- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-531 | ✅ 已修 | `useHomeDramaItems.ts` `shelfEpisodesOf` = `releasedEpisodes(catalogEpisodesOf(id), today)`，同 `liveSeriesContinue` 共用 `releasedEpisodes`（`selectors/availability.ts`），即係報告方案 A。`dramaShelf.test.ts` 新加 3 個 test：收聽中嗰集下架、未聽嗰集下架（唔會變「聽完」）、未上架唔計。上次嘅重現情況（`[A,B]` → `[B,A]`）而家下架前後都係 `[A,B]` |
+| S-699 | ✅ 已修 | 新 `useTodaysEpisodes(drama, read)` 按 `[drama, read, today]` memo，每日 / 短篇劇集頁都用；`read` 係 module 層面 function（`dailyNewestFirstOf`）同 registry method（`seriesEpisodesOf`，reference 穩定）                                                                                                                                                 |
+
+用戶決定（`4c38f5c`）：
+
+- 灰格：`UpcomingTile` 唔再接 `focus?.open`（疊卡撳卡 focus / 捲動 handler），撳落完全冇反應；`aria-disabled` 照留，Tab / 讀屏照行到。`DramaShelf.test.tsx` 新 test 撳兩下：focus 冇郁、冇 `scrollTo`、冇 `onOpen` ✅；e2e 加咗直版撳灰格條 ✅
+- 橫版第二行：`hasSecondLine` 喺有集名，或者聽緊時有成套劇下架字時都加 `detailedNowPlaying`，預留兩行高，同 `NowPlaying` `SecondLine` 嘅規則一樣（unloaded 時下架字取代第一行，唔使預留）✅
+- `CLAUDE.md`：E2E 兩行改成 `npm run build -- --mode e2e`，同 `package.json` 一致 ✅
+
+S-699 test 冇經過 red，覆蓋評估：
+
+- Hook 本身：我將 deps 改返 `[drama, read]`（即係舊行為），`useTodaysEpisodes.test.ts` 會紅（1 failed），test 真係鎖住「過午夜重新攞」✅
+- 接駁位：兩個頁面改用 hook 只係兩行 diff，冇 page 層 test；同樣，將 `useShelfDramas` 改返 live 清單，`src/pages/home` 同 `dramaShelf.test.ts` 173 個 test 全綠，即係 W-531 個接駁位冇 test 鎖住（見 S-703）。邏輯本身已經由 selector test 覆蓋，判斷**夠用**，接駁位建議補
+
+🟢：
+
+- S-703 `src/pages/home/useHomeDramaItems.ts:62-63`（同 `useDramaPage.ts:124,347`）：W-531 / S-699 嘅 test 只鎖住 selector / hook，冇 test 鎖住「主頁書架用 catalog 已上架清單」同「頁面用 `useTodaysEpisodes`」；改返舊寫法唔會有 test 紅。建議 `HomePage.test.tsx` 加一個 mock `catalogEpisodesOf` 有已下架集數嘅排位 test
+- S-704 `useTodaysEpisodes`：`today` 喺下一次 render 先更新；頁面暫停緊又冇其他 state 變，過咗午夜唔會自己 re-render（commit message 寫「refresh pages at HK midnight」講多咗少少）。同 app 其他「每次 render 重新攞 `hkToday()`」做法一致，唔扣分；真係要準時轉可以加一個午夜 timer 觸發 render
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review feature/drama/coming-soon d568c06..5f2e550 (W-531, S-699, user decisions, CLAUDE.md) v1.28.0
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (26 related unit files, 318 tests; full suite / e2e not run per scope rule; CI run 42072852107 on 5f2e550 success incl. e2e)
+  coverage: pass (releasedEpisodes / useTodaysEpisodes covered; S-699 hook test verified red by mutation)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: [S-703, S-704]
+next_action: proceed_to_qa
+context: >
+  W-531 and S-699 fixed and verified; user decisions (upcoming tile ignores
+  taps, landscape second line) implemented with unit + e2e. Wiring of both
+  fixes not guarded by tests (S-703, backlog). No re-review needed.
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
