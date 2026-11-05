@@ -110,6 +110,13 @@ export const nextRelease = (
 export const arcFreshDate = (inArc: readonly SeriesEpisode[]): MaybeDate =>
     latestDate(inArc.map((e) => e.addedAt));
 
+/**
+ * 下層（短篇 / 集）嘅下架日係咪已經由上層（成套劇 / 左上角）講咗：同一日就係。
+ * 同一個位只出較高一層（劇集頁「全集」chip、主頁格繼續收聽條共用）
+ */
+export const sameRemovalDay = (outer: MaybeDate, inner: string): boolean =>
+    outer !== undefined && outer === inner;
+
 /** 快將下架嘅範圍：成套劇 / 部分短篇 / 部分集數 */
 export type LeavingScope = 'drama' | 'arc' | 'episodes';
 

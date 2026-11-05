@@ -15,6 +15,7 @@ import {
     arcLeaving,
     isLeavingSoon,
     pendingBatches,
+    sameRemovalDay,
     upcomingArcs,
     type DateWindow,
     type UpcomingArc,
@@ -70,7 +71,7 @@ export const chipLeavingOf = (
 ): ArcChip['leaving'] => {
     const leaving = arcLeaving(arc, today);
     if (leaving?.scope !== 'arc') return undefined;
-    if (dramaRemovedAt && dramaRemovedAt <= leaving.date) return undefined;
+    if (sameRemovalDay(dramaRemovedAt, leaving.date)) return undefined;
     return { tag: dayWhen(leaving.date, today), label: removalDateLong(leaving.date) };
 };
 

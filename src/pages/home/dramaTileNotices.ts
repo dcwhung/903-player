@@ -8,6 +8,7 @@ import {
     dramaLeaving,
     nextRelease,
     type DateWindow,
+    sameRemovalDay,
     type LeavingScope,
 } from '../../selectors/availability';
 import {
@@ -57,13 +58,14 @@ export const leavingCorner = (
     drama: DateWindow,
     arcs: readonly ArcAvailability[],
     today: string,
-): TileNoticeWithTag | undefined => {
+): (TileNoticeWithTag & { date: string }) | undefined => {
     const leaving = dramaLeaving(drama, arcs, today);
     if (!leaving) return undefined;
     const key = LEAVING_KEYS[leaving.scope];
     return {
         text: t(key, { when: removalWhen(leaving.date, today, 'short') }),
         tag: dayWhen(leaving.date, today),
+        date: leaving.date,
         label: t(key, { when: removalDateLong(leaving.date) }),
     };
 };
@@ -81,4 +83,24 @@ export const upcomingTile = (
             when: releaseDateLong(date),
         }),
     };
+};
+
+/** 繼續收聽條（有下架日 date） */
+interface ResumeWithLeaving {
+    label: string;
+    ratio: number;
+    leaving?: (TileNotice & { date?: string | undefined }) | undefined;
+}
+
+/**
+ * 同一張格只講一次下架日：左上角（成套劇 / 部分短篇 / 部分集數）已經講咗同一日，
+ * 繼續收聽條就唔再出（讀屏一樣），日子唔同先兩度都出
+ */
+export const withoutRepeatedLeaving = <R extends ResumeWithLeaving>(
+    resume: R | undefined,
+    cornerDate: string | undefined,
+): R | undefined => {
+    const date = resume?.leaving?.date;
+    if (!resume || date === undefined || !sameRemovalDay(cornerDate, date)) return resume;
+    return { ...resume, leaving: undefined };
 };

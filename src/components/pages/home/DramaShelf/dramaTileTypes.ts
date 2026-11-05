@@ -30,8 +30,8 @@ export interface DramaShelfItem {
         | {
               label: string;
               ratio: number;
-              /** tag：窄格放唔落全句就淨係出「⏳ 05/12」 */
-              leaving?: (TileNotice & { tag: string }) | undefined;
+              /** 放唔落（集名優先）就成段收埋；date：同左上角同一日就唔出（去重） */
+              leaving?: (TileNotice & { date?: string | undefined }) | undefined;
           }
         | undefined;
     /** 整套劇即將上架：灰階 + 底部深色條「⏱ 即將上架 · 01/12」，aria-disabled，撳唔到（書架最尾） */

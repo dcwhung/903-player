@@ -1,5 +1,10 @@
 import type { ArcAvailability } from '../../types/drama';
-import { leavingCorner, releaseNote, upcomingTile } from './dramaTileNotices';
+import {
+    leavingCorner,
+    releaseNote,
+    upcomingTile,
+    withoutRepeatedLeaving,
+} from './dramaTileNotices';
 
 const TODAY = '2026-11-05';
 
@@ -36,6 +41,7 @@ describe('drama tile notices', () => {
             text: '05/12 下架',
             tag: '05/12',
             label: '05/12（六）下架',
+            date: '2026-12-05',
         });
         const arcs = [arcInfo('戀愛二分一', { removedAt: '2026-11-07' })];
         expect(leavingCorner({}, arcs, TODAY)?.text).toBe('部分短篇 後日下架');
@@ -52,5 +58,23 @@ describe('drama tile notices', () => {
         expect(upcomingTile({ name: 'X', launchedAt: '2026-11-06' }, TODAY).text).toBe(
             '即將上架 · 明日',
         );
+    });
+});
+
+describe('withoutRepeatedLeaving', () => {
+    const resume = (date: string) => ({
+        label: '初戀無限次 · 第 2 集',
+        ratio: 0.2,
+        leaving: { text: 'x', tag: 'x', label: 'x', date },
+    });
+
+    it('should drop the 繼續收聽 date when the corner already says the same day', () => {
+        expect(withoutRepeatedLeaving(resume('2026-12-19'), '2026-12-19')?.leaving).toBeUndefined();
+    });
+
+    it('should keep it when the days differ, or the corner says nothing', () => {
+        expect(withoutRepeatedLeaving(resume('2026-12-01'), '2026-12-19')?.leaving).toBeDefined();
+        expect(withoutRepeatedLeaving(resume('2026-12-01'), undefined)?.leaving).toBeDefined();
+        expect(withoutRepeatedLeaving(undefined, '2026-12-19')).toBeUndefined();
     });
 });

@@ -21,7 +21,12 @@ import { dramaShelfOrder } from '../../selectors/dramaShelf';
 import { getProgressMap } from '../../services/progressStore';
 import { zoomKey } from '../../utils/cardZoom';
 import { hkToday } from '../../utils/date';
-import { leavingCorner, releaseNote, upcomingTile } from './dramaTileNotices';
+import {
+    leavingCorner,
+    releaseNote,
+    upcomingTile,
+    withoutRepeatedLeaving,
+} from './dramaTileNotices';
 import { useTileOpen, type HomeRight } from './useTileOpen';
 
 /**
@@ -34,15 +39,23 @@ const dramaMeta = (drama: DramaConfig, today: string): string => {
     return t(drama.arcUnit === 'season' ? 'drama.seasonCount' : 'drama.arcCount', { count });
 };
 
-/** 劇集格嘅圖同字：右下角短篇數（+ 即將上架字尾）、左上角快將下架 */
-const tileText = (drama: DramaConfig, today: string) => ({
-    id: drama.id,
-    name: drama.name,
-    art: drama.tileArt,
-    meta: dramaMeta(drama, today),
-    leaving: leavingCorner(drama, arcAvailabilityOf(drama.id), today),
-    release: releaseNote(arcAvailabilityOf(drama.id), today),
-});
+/**
+ * 劇集格嘅圖同字：右下角短篇數（+ 即將上架字尾）、左上角快將下架、繼續收聽條；
+ * 繼續收聽嗰集同左上角同一日落架就淨係左上角講（withoutRepeatedLeaving）
+ */
+const tileText = (drama: DramaConfig, today: string, resume: DramaShelfItem['resume']) => {
+    const arcs = arcAvailabilityOf(drama.id);
+    const leaving = leavingCorner(drama, arcs, today);
+    return {
+        id: drama.id,
+        name: drama.name,
+        art: drama.tileArt,
+        meta: dramaMeta(drama, today),
+        leaving,
+        release: releaseNote(arcs, today),
+        resume: withoutRepeatedLeaving(resume, leaving?.date),
+    };
+};
 
 /** 整套即將上架嘅劇：書架最尾灰格，撳唔到（一登記即刻出） */
 const upcomingItems = (today: string): DramaShelfItem[] =>
@@ -91,9 +104,8 @@ export const useDramaItems = (right: HomeRight): DramaShelfItem[] => {
     const continueOf = useDramaContinue();
     const today = hkToday();
     const items = useShelfDramas().map((drama) => ({
-        ...tileText(drama, today),
+        ...tileText(drama, today, continueOf(drama)),
         newLabel: newLabels.get(drama.id),
-        resume: continueOf(drama),
         onOpen: () => {
             // 已載入呢套劇就算 mini player 關咗都唔播，保持暫停（S-538）
             // 用實際有冇開到播（S-682）

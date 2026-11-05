@@ -10,6 +10,7 @@ import {
     isRemoved,
     latestDate,
     leavingRanges,
+    sameRemovalDay,
     nextRelease,
     pendingBatches,
     upcomingArcs,
@@ -167,5 +168,13 @@ describe('leaving soon', () => {
         });
         expect(leavingRanges(ranged, TODAY)).toHaveLength(1);
         expect(arcLeaving(arcInfo('A'), TODAY)).toBeUndefined();
+    });
+});
+
+describe('sameRemovalDay', () => {
+    it('should say an inner removal is already told by the outer one only on the same day', () => {
+        expect(sameRemovalDay('2026-12-19', '2026-12-19')).toBe(true);
+        expect(sameRemovalDay('2026-12-19', '2026-12-01')).toBe(false);
+        expect(sameRemovalDay(undefined, '2026-12-01')).toBe(false);
     });
 });

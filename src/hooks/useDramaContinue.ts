@@ -19,6 +19,7 @@ const leavingOf = (removedAt: string | undefined, today: string) =>
         ? {
               text: removalWhen(removedAt, today, 'short'),
               tag: dayWhen(removedAt, today),
+              date: removedAt,
               label: removalDateLong(removedAt),
           }
         : undefined;

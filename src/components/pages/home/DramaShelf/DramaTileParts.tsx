@@ -5,6 +5,7 @@ import { Marquee } from '../../../shared/common/Marquee/Marquee';
 import { NewBadge } from '../../../shared/common/NewBadge/NewBadge';
 import { t } from '../../../../i18n/t';
 import styles from './DramaShelf.module.css';
+import { useHideWhenTight, type Fits } from './useHideWhenTight';
 import type {
     ContinueButtonProps,
     DramaShelfItem,
@@ -58,6 +59,30 @@ const continueLabel = (name: string, resume: NonNullable<DramaShelfItem['resume'
         : label;
 };
 
+/** 集名（全長）+ 間距 + 下架字放唔放得落條入面：放唔落就收埋下架字，集名優先 */
+const continueFits: Fits = (line) => {
+    const text = line.querySelector<HTMLElement>('[data-marquee-text]');
+    const leaving = line.querySelector<HTMLElement>('[data-role="continue-leaving"]');
+    const gap = parseFloat(getComputedStyle(line).columnGap) || 0;
+    return (text?.scrollWidth ?? 0) + gap + (leaving?.offsetWidth ?? 0) <= line.clientWidth;
+};
+
+/** 集名一行 + 下架字（LC2）；放唔落成段收埋下架字（讀屏照講） */
+const ContinueLine = ({ resume }: { resume: ContinueButtonProps['resume'] }) => {
+    const lineRef = useHideWhenTight<HTMLSpanElement>(resume.leaving !== undefined, continueFits);
+    return (
+        <span ref={lineRef} className={styles.continueLine} data-continue-line="">
+            <Marquee className={styles.continueLabel} text={resume.label} />
+            {resume.leaving && (
+                <span className={styles.continueLeaving} data-role="continue-leaving">
+                    <HourglassIcon size={NOTICE_ICON_SIZE} />
+                    {resume.leaving.text}
+                </span>
+            )}
+        </span>
+    );
+};
+
 /** 圖底「繼續收聽」條（獨立一粒掣）：短篇 · 集數、進度線、▶；撳落淨係播，唔入頁 */
 export const ContinueButton = ({ name, resume, onResume, focusProps }: ContinueButtonProps) => (
     <button
@@ -68,16 +93,7 @@ export const ContinueButton = ({ name, resume, onResume, focusProps }: ContinueB
         {...focusProps}
     >
         <span className={styles.continueTitle}>{t('drama.continue')}</span>
-        <span className={styles.continueLine}>
-            <Marquee className={styles.continueLabel} text={resume.label} />
-            {resume.leaving && (
-                <span className={styles.continueLeaving}>
-                    <HourglassIcon size={NOTICE_ICON_SIZE} />
-                    <span className={styles.leavingFull}>{resume.leaving.text}</span>
-                    <span className={styles.leavingTag}>{resume.leaving.tag}</span>
-                </span>
-            )}
-        </span>
+        <ContinueLine resume={resume} />
         <span className={styles.continueBar}>
             <span data-continue-fill="" style={{ width: `${toPercent(resume.ratio)}%` }} />
         </span>

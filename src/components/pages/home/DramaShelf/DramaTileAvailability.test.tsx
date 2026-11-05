@@ -113,12 +113,55 @@ describe('DramaTile availability', () => {
             render(<DramaShelf items={[item({ release })]} />);
 
             layout(180, 120);
-            expect(meta()).toHaveAttribute('data-count-hidden');
+            expect(meta()).toHaveAttribute('data-tight');
             layout(180, 200);
-            expect(meta()).not.toHaveAttribute('data-count-hidden');
+            expect(meta()).not.toHaveAttribute('data-tight');
             expect(
                 screen.getByRole('button', { name: /新短篇 02\/12（三）上架/ }),
             ).toBeInTheDocument();
+        });
+    });
+
+    // 用戶決定：繼續收聽條放唔落就成段收埋下架字（連「·」），集名優先；讀屏照有長版日子
+    describe('leaving date on 繼續收聽', () => {
+        let notify = () => {};
+        beforeEach(() => {
+            vi.stubGlobal(
+                'ResizeObserver',
+                class {
+                    constructor(callback: () => void) {
+                        notify = callback;
+                    }
+                    observe = vi.fn();
+                    disconnect = vi.fn();
+                },
+            );
+        });
+        afterEach(() => {
+            vi.unstubAllGlobals();
+            vi.restoreAllMocks();
+        });
+
+        /** 集名、下架字要幾闊，條有幾闊（jsdom 冇排版，自己假） */
+        const layout = (text: number, leaving: number, room: number) => {
+            vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(text);
+            vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(leaving);
+            vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(room);
+            act(() => notify());
+        };
+        const line = () => document.querySelector<HTMLElement>('[data-continue-line]');
+
+        it('should hide the whole leaving date when the episode name would be cut, and bring it back', () => {
+            const resume = { label: '初戀無限次 · 第 2 集', ratio: 0.2, leaving: LEAVING };
+            render(<DramaShelf items={[item({ resume })]} />);
+
+            layout(120, 80, 150);
+            expect(line()).toHaveAttribute('data-tight');
+            expect(
+                screen.getByRole('button', { name: /^蘭茜夫人劇場，繼續收聽 .*05\/12（六）下架$/ }),
+            ).toBeInTheDocument();
+            layout(120, 80, 260);
+            expect(line()).not.toHaveAttribute('data-tight');
         });
     });
 });

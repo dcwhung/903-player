@@ -39,7 +39,16 @@ const BOOKMARKS = [
 /** 聽過初戀無限次第 2 集（短篇 19/12 下架）：主頁繼續收聽 LC2、最近收聽 LR1 */
 const HEARD = episodeUrl('初戀無限次', 2);
 
-const seedStorage = (ctx) =>
+/**
+ * 另外聽過嘅集（覆蓋預設）：我心不死第 3 集（01/12 下架，同左上角 19/12 唔同日 → 繼續收聽條照出）、
+ * 下架劇場第 1 集（同成套劇同日 19/12 → 繼續收聽條唔再出）
+ */
+const LEAVING_PROGRESS = {
+    [episodeUrl('我心不死', 3)]: { position: 60, duration: 600, watched: false, updatedAt: 3 },
+    [episodeUrl('戀愛二分一', 1)]: { position: 60, duration: 600, watched: false, updatedAt: 2 },
+};
+
+const seedStorage = (ctx, extraProgress = {}) =>
     ctx.addInitScript(
         ({ flagKey, bookmarkKey, bookmarks, progressKey, progress }) => {
             localStorage.setItem(flagKey, '1');
@@ -54,14 +63,15 @@ const seedStorage = (ctx) =>
             bookmarks: JSON.stringify({ version: BOOKMARK_STORE_VERSION, items: BOOKMARKS }),
             progressKey: PROGRESS_STORAGE_KEY,
             progress: JSON.stringify({
-                [HEARD]: { position: 120, duration: 600, watched: false, updatedAt: Date.now() },
+                [HEARD]: { position: 120, duration: 600, watched: false, updatedAt: 1 },
+                ...extraProgress,
             }),
         },
     );
 
-const openPage = async (env, options = {}) => {
+const openPage = async (env, options = {}, extraProgress = {}) => {
     const { ctx, p } = await newE2EPage(env.browser, env.errors, options);
-    await seedStorage(ctx);
+    await seedStorage(ctx, extraProgress);
     return { ctx, p };
 };
 
@@ -139,13 +149,31 @@ const releaseFit = (tile) =>
     });
 
 /**
+ * 繼續收聽條：集名冇俾截（下架字顯示緊嘅時候）；下架字要麼成段出齊要麼成段收埋
+ */
+const continueFit = (tile) =>
+    tile.evaluate((button) => {
+        const line = button.parentElement?.querySelector('[data-continue-line]');
+        const name = line?.querySelector('[data-marquee-text]');
+        const leaving = line?.querySelector('[data-role="continue-leaving"]');
+        if (!line || !name) return null;
+        const leavingShown = leaving && getComputedStyle(leaving).display !== 'none';
+        const box = name.parentElement?.parentElement;
+        return {
+            nameWhole: !leavingShown || (box ? name.scrollWidth <= box.clientWidth : false),
+            leaving: leavingShown ? leaving.textContent : null,
+            leavingWhole: leavingShown ? leaving.scrollWidth <= leaving.clientWidth : true,
+        };
+    });
+
+/**
  * W-533：有「繼續收聽」+ 左上角下架字嘅格，右上角上架字尾成截睇得到（窄就短版「後日上架」），
  * 讀屏名有長版上架日
  */
 const checkReleaseNote = async (env) => {
     const { log } = env;
     for (const { full, ...viewport } of RELEASE_VIEWPORTS) {
-        const { ctx, p } = await openPage(env, { viewport });
+        const { ctx, p } = await openPage(env, { viewport }, LEAVING_PROGRESS);
         await p.goto(env.base);
         await p.getByRole('button', { name: SHELF, exact: true }).click();
         const tile = p.getByRole('button', { name: SOON_TILE_LABEL });
@@ -159,6 +187,11 @@ const checkReleaseNote = async (env) => {
             fit !== null && fit.cornerFits && (fit.count === null || fit.count === '3 個短篇'),
             `${viewport.width}×${viewport.height} 主頁：短篇數成段出齊或者成段收埋（${fit?.count ?? '收埋'}）`,
         );
+        const strip = (await isShown(tile, { timeout: WAIT_MS })) ? await continueFit(tile) : null;
+        log(
+            strip !== null && strip.nameWhole && (strip.leaving === null || strip.leavingWhole),
+            `${viewport.width}×${viewport.height} 主頁：繼續收聽集名完整，下架字要麼完整要麼冇（${JSON.stringify(strip)}）`,
+        );
         await ctx.close();
     }
 };
@@ -166,7 +199,8 @@ const checkReleaseNote = async (env) => {
 /** 主頁劇集格：H2 字尾、左上角琥珀、LC2、新劇灰格排最尾、已下架劇唔出 */
 const checkHomeShelf = async (env) => {
     const { log } = env;
-    const { ctx, p } = await openPage(env, { viewport: { width: 1024, height: 768 } });
+    const viewport = { width: 1024, height: 768 };
+    const { ctx, p } = await openPage(env, { viewport }, LEAVING_PROGRESS);
     await p.goto(env.base);
     await p.getByRole('button', { name: SHELF, exact: true }).click();
     const shelf = p.getByRole('navigation', { name: SHELF });
@@ -186,8 +220,15 @@ const checkHomeShelf = async (env) => {
         `主頁：整套新劇排最尾（${labels.at(-1)}）`,
     );
     log(
-        labels.includes('E2E 即將劇場，繼續收聽 初戀無限次 · 第 2 集，19/12（六）下架'),
-        '主頁：繼續收聽條集名後面加下架日（LC2）',
+        labels.includes('E2E 即將劇場，繼續收聽 我心不死 · 第 3 集，01/12（二）下架'),
+        '主頁：繼續收聽嗰集同左上角唔同日落架，條上照加下架日（LC2）',
+    );
+    log(
+        labels.includes('E2E 下架劇場，繼續收聽 戀愛二分一 · 第 1 集') &&
+            !(await shelf.locator('[data-role="continue-leaving"]').allTextContents()).some((t) =>
+                t.includes('19/12'),
+            ),
+        '主頁：繼續收聽嗰集同成套劇同日落架，淨係左上角講（條上冇下架字）',
     );
     const upcoming = shelf.getByRole('button', { name: /^E2E 新劇/ });
     log(

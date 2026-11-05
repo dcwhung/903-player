@@ -241,7 +241,6 @@
  * 窄格（手機打橫格仔，條闊約 15 個字以下）琥珀字淨係「⏳ 05/12」，集名有返位跑馬燈
  */
 .continueLine {
-    container: continue-line / inline-size;
     display: flex;
     align-items: center;
     gap: var(--space-1);
@@ -270,12 +269,13 @@
     content: '·';
 }
 
-.leavingTag {
+/* 放唔落（useHideWhenTight 量到）：集名優先，成段「· ⏳ 19/12 下架」收埋 */
+.continueLine[data-tight] .continueLeaving {
     display: none;
 }
 
 /*
- * 短篇數 + 即將上架字尾（W-533）：字尾一截唔縮、唔收尾；位唔夠短篇數成段收埋（useTightCount）；
+ * 短篇數 + 即將上架字尾（W-533）：字尾一截唔縮、唔收尾；位唔夠短篇數成段收埋（useHideWhenTight）；
  * 格闊 280px 以下（手機打橫格、闊橫版三欄格）字尾同左上角下架字都換短版
  *（「⏱ 後日上架」/「⏳ 19/12」），讀屏名照有長版日子
  */
@@ -294,8 +294,8 @@
     content: '·';
 }
 
-/* 放唔落（useTightCount 量到）：成段「N 個短篇 ·」收埋，唔出半截 */
-.meta[data-count-hidden] .metaCount {
+/* 放唔落（useHideWhenTight 量到）：成段「N 個短篇 ·」收埋，唔出半截 */
+.meta[data-tight] .metaCount {
     display: none;
 }
 
@@ -316,16 +316,6 @@
     }
 
     .noteTag {
-        display: inline;
-    }
-}
-
-@container continue-line (max-width: 200px) {
-    .continueLeaving .leavingFull {
-        display: none;
-    }
-
-    .continueLeaving .leavingTag {
         display: inline;
     }
 }
