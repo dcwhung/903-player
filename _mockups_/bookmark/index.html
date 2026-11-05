@@ -240,6 +240,9 @@
                 column-gap: var(--gap);
                 padding-bottom: 16px;
             }
+            .cols {
+                column-gap: var(--gap);
+            }
             .box {
                 break-inside: avoid;
                 margin-bottom: var(--gap);
@@ -247,9 +250,54 @@
                 overflow: hidden;
                 background: var(--app-box);
             }
-            .box > .title {
-                padding: 10px 12px 0;
+            /* 大類 banner（節目 / 成套劇嘅橫圖）：B1 = box 頂一條矮 banner 名疊上面；B2 = header 一行細 banner + 名 */
+            .bhead {
+                position: relative;
+            }
+            .bimg {
+                background: center / cover no-repeat;
+            }
+            .btitle {
                 font: 700 15px/1.3 var(--font);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .b1 .bhead {
+                height: var(--strip-h);
+            }
+            .b1 .bimg {
+                position: absolute;
+                inset: 0;
+            }
+            .b1 .bhead::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(90deg, rgb(8 14 24 / 78%) 0%, rgb(8 14 24 / 20%) 70%);
+            }
+            .b1 .btitle {
+                position: absolute;
+                z-index: 1;
+                left: 12px;
+                right: 12px;
+                bottom: 8px;
+                text-shadow: 0 1px 3px rgb(0 0 0 / 60%);
+            }
+            .b2 .bhead {
+                display: grid;
+                grid-template-columns: var(--banner-w) 1fr;
+                gap: 12px;
+                align-items: center;
+                padding: 10px 12px 0;
+            }
+            .b2 .bimg {
+                aspect-ratio: 16 / 9;
+                border-radius: 8px;
+            }
+            .del svg {
+                width: 22px;
+                height: 22px;
             }
             .section {
                 display: grid;
@@ -411,21 +459,30 @@
             </section>
 
             <section class="panel">
-                <h2>③ 主頁「收藏」tab（L3 + D2 disc）</h2>
+                <h2>③ 主頁「收藏」tab（L3 + D2 disc + 大類 banner）</h2>
                 <ul>
                     <li>
-                        每個節目一個 box；每套廣播劇一個 box，入面按短篇分段，每段用短篇自己嘅 disc
+                        每個節目 / 每套劇一個 box：box 頂係大類 banner（節目 / 成套劇嘅橫圖，揀 B1 /
+                        B2）；入面每段左邊係細類 disc（劇集按短篇分段，用短篇自己嘅 disc）
                     </li>
                     <li>box 次序跟最新收藏；段入面節目按日子新到舊、劇集按集數</li>
                     <li>撳一行 = 入嗰頁跳去嗰集（唔播）</li>
                     <li>
-                        移除：左滑一行見到紅色「移除」，拉過四成放手 → 嗰行滑走、收埋；段 / box
+                        移除：左滑一行見到紅底 🗑 icon，拉過四成放手 → 嗰行滑走、收埋；段 / box
                         冇晒集就跟住收埋；全部冇晒 → tab
                         淡走、跳返「節目」。拉唔夠四成放手就彈返原位
                     </li>
                 </ul>
                 <div class="row">
                     <button type="button" class="act" id="demo">▶ 示範左滑移除（慢鏡）</button>
+                </div>
+                <div class="row" data-group="banner">
+                    <button type="button" class="pick" data-val="b1" aria-pressed="true">
+                        B1 頂部 banner 條
+                    </button>
+                    <button type="button" class="pick" data-val="b2" aria-pressed="false">
+                        B2 header 細 banner
+                    </button>
                     <button type="button" class="act" id="reset">重新加返 8 集收藏</button>
                     <button type="button" class="act" id="clear">清晒收藏（tab 消失）</button>
                 </div>
@@ -442,6 +499,11 @@
                 nHome: 'n-home.webp',
                 nShow: 'n-show.webp',
                 wHome: 'w-home.webp',
+                bGongzi: 'banner-gongzi.webp',
+                bBadgirl: 'banner-badgirl.webp',
+                bWanni: 'banner-wanni.webp',
+                bChisee: 'banner-chisee.webp',
+                bLancy: 'banner-lancy.webp',
                 gongzi: 'disc-gongzi.webp',
                 badgirl: 'disc-badgirl.webp',
                 wanni: 'disc-wanni.webp',
@@ -492,7 +554,17 @@
                     img: 'nHome',
                     size: { w: 390, h: 844, max: 0.82 },
                     tabs: { x: 16, y: 133, w: 358, h: 50, inset: 6, font: 14, icon: 64 },
-                    list: { x: 16, y: 195, w: 358, h: 548, cols: 1, gap: 10, disc: 64 },
+                    list: {
+                        x: 16,
+                        y: 195,
+                        w: 358,
+                        h: 548,
+                        cols: 1,
+                        gap: 10,
+                        disc: 56,
+                        strip: 56,
+                        bannerW: 72,
+                    },
                     cover: { y: 187, h: 564 },
                     toastBottom: 120,
                 },
@@ -501,7 +573,17 @@
                     img: 'wHome',
                     size: { w: 1300, h: 800, max: 0.72 },
                     tabs: { x: 24, y: 24, w: 784, h: 75, inset: 8, font: 18, icon: 120 },
-                    list: { x: 24, y: 115, w: 784, h: 667, cols: 2, gap: 14, disc: 80 },
+                    list: {
+                        x: 24,
+                        y: 115,
+                        w: 784,
+                        h: 667,
+                        cols: 2,
+                        gap: 14,
+                        disc: 68,
+                        strip: 64,
+                        bannerW: 88,
+                    },
                     cover: { y: 107, h: 693, w: 820 },
                     toastBottom: 40,
                 },
@@ -509,11 +591,11 @@
 
             /** box = 一個節目 / 一套劇；section = box 入面一段（節目本身 / 一個短篇） */
             const BOXES = {
-                gongzi: { title: '公子會', drama: false },
-                badgirl: { title: 'Bad Girl大過佬', drama: false },
-                wanni: { title: '雲妮鍾情', drama: false },
-                chisee: { title: '芝See菇Bi Family', drama: true },
-                lancy: { title: '蘭茜夫人劇場', drama: true },
+                gongzi: { title: '公子會', banner: 'bGongzi' },
+                badgirl: { title: 'Bad Girl大過佬', banner: 'bBadgirl' },
+                wanni: { title: '雲妮鍾情', banner: 'bWanni' },
+                chisee: { title: '芝See菇Bi Family', banner: 'bChisee' },
+                lancy: { title: '蘭茜夫人劇場', banner: 'bLancy' },
             };
             const SECTIONS = {
                 gongzi: { box: 'gongzi', disc: 'gongzi', order: 'date' },
@@ -604,7 +686,9 @@
                 },
             ];
 
-            const state = { icon: 'star', place: 'p2' };
+            const state = { icon: 'star', place: 'p2', banner: 'b1' };
+            const TRASH =
+                '<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
             const svg = (name, on) =>
                 `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON_PATH[name]}" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
@@ -720,10 +804,14 @@
                     top: `${L.list.y}px`,
                     width: `${L.list.w}px`,
                     height: `${L.list.h}px`,
-                    columnCount: String(L.list.cols),
                 });
+                home.cols = div('cols', { columnCount: String(L.list.cols) });
+                home.list.append(home.cols);
                 home.list.style.setProperty('--gap', `${L.list.gap}px`);
                 home.list.style.setProperty('--disc', `${L.list.disc}px`);
+                home.list.style.setProperty('--strip-h', `${L.list.strip}px`);
+                home.list.style.setProperty('--banner-w', `${L.list.bannerW}px`);
+                home.list.classList.add(state.banner);
                 home.tabs = div('tabs', {
                     left: `${L.tabs.x}px`,
                     top: `${L.tabs.y}px`,
@@ -811,17 +899,15 @@
             };
 
             const renderList = (home) => {
-                home.list.innerHTML = '';
+                home.cols.innerHTML = '';
                 layoutOf(home.items).forEach(({ b, sections }) => {
                     const meta = BOXES[b];
                     const box = div('box collapse');
-                    if (meta.drama) {
-                        const title = div('title');
-                        title.textContent = meta.title;
-                        box.append(title);
-                    }
+                    const head = div('bhead');
+                    head.innerHTML = `<div class="bimg" style="background-image:url(${IMG[meta.banner]})"></div><div class="btitle">${meta.title}</div>`;
+                    box.append(head);
                     sections.forEach(({ s, rows }) => box.append(sectionOf(home, s, rows, meta)));
-                    home.list.append(box);
+                    home.cols.append(box);
                 });
             };
 
@@ -829,7 +915,7 @@
                 const meta = SECTIONS[s];
                 const sec = div('section collapse');
                 sec.innerHTML = `<div class="disc" style="background-image:url(${IMG[meta.disc]})"></div>
-                    <div class="sbody"><div class="shead ${meta.sub ? 'sub' : ''}">${meta.sub ?? boxMeta.title}</div></div>`;
+                    <div class="sbody">${meta.sub ? `<div class="shead sub">${meta.sub}</div>` : ''}</div>`;
                 const body = sec.querySelector('.sbody');
                 rows.forEach((it) => body.append(rowOf(home, it, boxMeta, meta)));
                 return sec;
@@ -837,7 +923,7 @@
 
             const rowOf = (home, it, boxMeta, meta) => {
                 const wrap = div('item collapse');
-                wrap.innerHTML = `<span class="del">移除</span>
+                wrap.innerHTML = `<span class="del" aria-hidden="true">${TRASH}</span>
                     <div class="card">
                         <div class="line"><b>${it.label}</b><span class="state">${it.text}</span></div>
                         <div class="bar"><i style="width:${Math.round(it.ratio * 100)}%"></i></div>
