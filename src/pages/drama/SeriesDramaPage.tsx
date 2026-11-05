@@ -44,6 +44,12 @@ const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, arcTotal:
     detail: current.title,
 });
 
+/**
+ * 橫版「現正播放」有冇第二行（集名，或者聽緊時嘅成套劇下架字）：有就預留兩行高，唔係第二行會俾版面裁走
+ */
+const hasSecondLine = ({ upNext, notice, status }: SeriesPlayerColumnProps['view']): boolean =>
+    Boolean(upNext?.title) || (notice !== undefined && status !== 'unloaded');
+
 interface SeriesPlayerColumnProps {
     view: Pick<
         SeriesDramaView,
@@ -69,7 +75,9 @@ interface SeriesPlayerColumnProps {
 const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayerColumnProps) => {
     const { theme, upNext: current, start, status } = view;
     return (
-        <div className={`${page.playerColumn} ${current?.title ? page.detailedNowPlaying : ''}`}>
+        <div
+            className={`${page.playerColumn} ${hasSecondLine(view) ? page.detailedNowPlaying : ''}`}
+        >
             {!landscape && <DramaHeader title={title} />}
             {current ? (
                 <PlayerGauge

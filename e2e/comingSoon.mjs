@@ -11,6 +11,9 @@ export const E2E_FIXTURES_KEY = '903player:e2e:dramas';
 const WAIT_MS = 5000;
 // 撳咗撳唔到嘅格之後等幾耐：會轉頁嘅話呢段時間內已經轉咗
 const NO_NAVIGATION_WAIT_MS = 1500;
+// 撳灰格離格底幾多 px（底部深色條嗰度，唔會撳中上面蓋住佢嘅卡）
+const TILE_BOTTOM_TAP_PX = 10;
+const TALL_PHONE = { width: 390, height: 1400 };
 const SHELF = '廣播劇';
 const SAVED_TAB = '我的收藏';
 
@@ -66,6 +69,43 @@ const labelsIn = (scope) =>
     scope
         .getByRole('button')
         .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? ''));
+
+/** 疊卡入面而家 focus 緊嗰張卡嘅讀屏名 */
+const focusedTile = (shelf) =>
+    shelf.locator('[data-focused] > button').first().getAttribute('aria-label');
+
+/**
+ * 直版疊卡：撳新劇灰格（撳佢見到嘅底部條）完全冇反應——唔 focus、唔捲、唔入頁。
+ * 灰格排最尾、俾上面嘅卡蓋住上半，所以撳格底
+ */
+const checkStackedUpcoming = async (env) => {
+    const { log } = env;
+    // 高身直版：疊卡放得晒唔使捲，灰格底一定喺畫面入面（捲動情況由 unit test 鎖住）
+    const { ctx, p } = await openPage(env, { viewport: TALL_PHONE });
+    await p.goto(env.base);
+    await p.getByRole('button', { name: SHELF, exact: true }).click();
+    const shelf = p.getByRole('navigation', { name: SHELF });
+    await shelf.waitFor({ timeout: WAIT_MS });
+    const before = await focusedTile(shelf);
+    const upcoming = shelf.getByRole('button', { name: /^E2E 新劇/ });
+    const box = await upcoming.boundingBox();
+    const point = box && { x: box.x + box.width / 2, y: box.y + box.height - TILE_BOTTOM_TAP_PX };
+    // 撳嗰點真係落喺灰格度（唔係畫面外、唔係其他卡）
+    const hits = point
+        ? await upcoming.evaluate(
+              (el, { x, y }) => el.contains(document.elementFromPoint(x, y)),
+              point,
+          )
+        : false;
+    if (point) await p.mouse.click(point.x, point.y);
+    await p.waitForTimeout(NO_NAVIGATION_WAIT_MS);
+    const after = await focusedTile(shelf);
+    log(
+        hits && after === before && !new URL(p.url()).hash.startsWith('#/drama'),
+        `直版疊卡：撳新劇灰格冇反應（focus ${before} → ${after}，${p.url()}）`,
+    );
+    await ctx.close();
+};
 
 /** 主頁劇集格：H2 字尾、左上角琥珀、LC2、新劇灰格排最尾、已下架劇唔出 */
 const checkHomeShelf = async (env) => {
@@ -265,6 +305,7 @@ const checkSavedTab = async (env) => {
 /** 即將上架 / 快將下架（P8 #6） */
 export const runComingSoonChecks = async (env) => {
     await checkHomeShelf(env);
+    await checkStackedUpcoming(env);
     await checkDramaPage(env);
     await checkLeavingDrama(env);
     await checkOffShelfUrls(env);
