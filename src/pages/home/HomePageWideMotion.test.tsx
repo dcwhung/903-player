@@ -16,8 +16,8 @@ const SHOW_CARD = '正在播放（今日節目）';
 const DRAMA_CARD = '正在播放（廣播劇）';
 const CLOSE = '關閉播放器';
 const RECORDINGS = [
-    recording('badgirl', '2026-10-19', '1000'),
-    recording('wanni', '2026-10-19', '1300'),
+    recording('badgirl', '2026-11-16', '1000'),
+    recording('wanni', '2026-11-16', '1300'),
 ];
 const CHISEE = '芝See菇Bi Family';
 const JIM = '少爺占系列';
@@ -72,7 +72,8 @@ describe('HomePage wide player card motion', () => {
 
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
-        vi.setSystemTime(new Date('2026-10-19T08:00:00Z')); // 香港 19/10 16:00
+        // 香港 16/11（一）16:00：真 catalog 嘅劇集 10/24–10/27 先上架（P8 #6），之前嘅日子佢哋仲係「即將上架」
+        vi.setSystemTime(new Date('2026-11-16T08:00:00Z'));
         saveProgress(seriesEpisodesOf('chisee')[0]?.url ?? '', 250, 1000);
         saveProgress(seriesEpisodesOf('jim')[0]?.url ?? '', 250, 1000);
         vt = stubViewTransitions();

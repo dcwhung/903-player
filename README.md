@@ -49,17 +49,18 @@ GitHub Actions 只負責 build 同 deploy。
 節目同廣播劇都唔寫喺 TypeScript，而係**一個 folder 一套**，build time 由 `import.meta.glob` 自動發現（`src/catalog/core/` 係共用嘅 JSON reader / theme schema / folder source）。
 加一套 = 新開 folder，放 JSON + 圖，**唔使改 code**；JSON 唔合格 `npm test` 會指出邊個檔邊個欄位（`src/*/catalog.test.ts` / schema validator）。
 
-| 路徑                                                                     | 內容                                                                                                                                                                                                                                            |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/catalog/shows/library/<id>/show.json` + `tile.webp` + `disc.webp`   | `name`（原站節目名，亦用嚟砌錄音網址）、`fileTime`（HHMM）、`airDays`（0 = 日 … 6 = 六）、`order`、`tile`（主頁節目格，16:9 1216×684）、`disc`（碟面，600×600）、`theme`（深色 10 隻色）                                                        |
-| `src/catalog/dramas/library/<id>/drama.json` + `tile.webp` + `disc.webp` | `name`、`kind`（`series` 短篇劇 / `daily` 每日劇）、`enabled`、`order`、`arcUnit`、`addedAt`、`audio`（`host`：`r2` / `app`、`folder`、檔名 `file` template）、`theme`（淺色 + `statusBar` / `headerRule` / `titleFont`）、`arcs` 或 `episodes` |
+| 路徑                                                                     | 內容                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/catalog/shows/library/<id>/show.json` + `tile.webp` + `disc.webp`   | `name`（原站節目名，亦用嚟砌錄音網址）、`fileTime`（HHMM）、`airDays`（0 = 日 … 6 = 六）、`order`、`tile`（主頁節目格，16:9 1216×684）、`disc`（碟面，600×600）、`theme`（深色 10 隻色）                                                                      |
+| `src/catalog/dramas/library/<id>/drama.json` + `tile.webp` + `disc.webp` | `name`、`kind`（`series` 短篇劇 / `daily` 每日劇）、`enabled`、`order`、`arcUnit`、`addedAt` / `removedAt`、`audio`（`host`：`r2` / `app`、`folder`、檔名 `file` template）、`theme`（淺色 + `statusBar` / `headerRule` / `titleFont`）、`arcs` 或 `episodes` |
 
 - folder 名 = id = route（`/show/:id`、`/drama/:id`），只可以細楷英數同連字號
-- 短篇劇 `arcs[]`：`name`（= R2 folder 名）、`episodes`（集數，或者集名 list，冇集名寫 `null`）、`titles`（`{ "集數": "集名" }` 零散補集名）、`firstNo`（有第零集寫 `0`）、`addedAt`（上架日，14 日內出「新」）、`disc`（短篇自己碟面）、`tile`（短篇長方形圖，暫時未用）、`files`（`{ "集數": "完整檔名" }` 不規則檔名）
+- 短篇劇 `arcs[]`：`name`（= R2 folder 名）、`episodes`（集數，或者集名 list，冇集名寫 `null`）、`titles`（`{ "集數": "集名" }` 零散補集名）、`firstNo`（有第零集寫 `0`）、`addedAt`（上架日，14 日內出「新」）、`removedAt`（下架日）、`episodeDates`（`{ "11": "2026-11-19" }` 逐集上架：呢集起嘅上架日）、`episodeRemovedAt`（`{ "3": 日子 }` / `{ "1-5": 日子 }` 集數下架）、`disc`（短篇自己碟面）、`tile`（短篇長方形圖，暫時未用）、`files`（`{ "集數": "完整檔名" }` 不規則檔名）
+- 上架 / 下架（P8 #6，`_mockups_/coming-soon`）：日子一律係香港時間當日 00:00 起。`addedAt` 係將來日子 = 即將上架（劇集層 = 整套新劇喺主頁書架最尾出灰格、撳唔到；短篇層 = chips / 全集一覽表最尾「即將上架」；`episodeDates` = 集數清單摺埋「第 11–20 集 · 19/11（四）上架」），上架當日自動變正常 + 14 日「新」；未上架短篇可以唔寫 `episodes`（一定要有 `addedAt`）。`removedAt` / `episodeRemovedAt` 前 30 日出琥珀色「⏳ 快將下架」，當日起清單、chips、書架、最近收聽、繼續收聽全部收埋，收藏 tab 保留灰色「已下架」行（進度唔刪，刪咗 `removedAt` 就返晒出嚟）；一集嘅有效下架日 = 劇集 / 短篇 / 集數三層最早嗰個
 - 檔名 template token：`{no}` `{no2}` `{noZh}`（中文數字）`{arc}` `{folder}` `{title}`；`[ … ]` 入面 token 空值就整段略去，例如 `{no2} - {arc} - 第{noZh}集[ - {title}].m4a`。每日劇用 `{date}` / `{yyyymmdd}`
 - ⚠️ `name` / `fileTime` / `audio` / 檔名唔可以亂改：錄音網址係已儲進度（localStorage）嘅 key
 - Editor 自動完成 + 即時驗證：`schemas/drama.schema.json`、`schemas/show.schema.json`（JSON Schema draft-07，hover 有廣東話說明，色有色盤）。VS Code 靠 `.vscode/settings.json` 嘅 `json.schemas` 自動套用，資料檔唔使加 `$schema`；其他 editor 可以喺檔頭加 `"$schema": "../../../../../schemas/drama.schema.json"`（runtime 唔理呢個 key）。
-  Schema 刻意嚴過 runtime：多出嚟 / 打錯嘅 key 會出紅線（runtime 只係唔理）。以下淨係 runtime（`npm test`）驗：圖檔真係喺 folder、folder 名格式、arc name / 每日 date 唔重複、`titles` / `files` 集數喺範圍之內。
+  Schema 刻意嚴過 runtime：多出嚟 / 打錯嘅 key 會出紅線（runtime 只係唔理）。以下淨係 runtime（`npm test`）驗：圖檔真係喺 folder、folder 名格式、arc name / 每日 date 唔重複、`titles` / `files` / `episodeDates` / `episodeRemovedAt` 集數喺範圍之內、上架 / 下架日先後（下架遲過上架；短篇唔遲過劇集、集數唔遲過短篇；`episodeDates` 遞增）、`episodeRemovedAt` 範圍唔重疊。
   兩邊規則由 `src/catalog/core/jsonSchemas.node.test.ts` 對住同一批例子鎖住；改 `schema.ts` 記得一齊改 schema
 - 橫版主頁 grid 寫死 4 欄 × 2 行 = 7 個節目 + 今日格；加減節目要一齊改 `ShowGrid.module.css`（`src/catalog/shows/lib/shows.test.ts` 會提醒）
 

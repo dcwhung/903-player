@@ -25,6 +25,8 @@ const arc = (
     count,
     titles: new Map(),
     files: new Map(),
+    episodeDates: new Map(),
+    episodeRemovedAt: [],
     ...extra,
 });
 
@@ -149,5 +151,45 @@ describe('buildEpisodes (daily)', () => {
     it('keeps rerun and honours a per-episode file override', () => {
         expect(episodes[1]).toMatchObject({ rerun: true, date: '2025-08-13' });
         expect(episodes[1]?.url).toBe(`${import.meta.env.BASE_URL}dramas/c18/legacy.m4a`);
+    });
+});
+
+describe('buildEpisodes availability', () => {
+    const lancy = (extra: Partial<SeriesDefinition>, arcs: SeriesDefinition['arcs']) =>
+        buildEpisodes('lancy', { ...SERIES, ...extra, arcs });
+
+    it('should give each episode its batch date: latest of drama, arc and episodeDates', () => {
+        const episodes = lancy({ addedAt: '2026-10-27' }, [
+            arc('戀愛二分一', 4, { episodeDates: new Map([[3, '2026-11-19']]) }),
+            arc('XXX', 1, { addedAt: '2026-11-12' }),
+        ]);
+        expect(episodes.map((e) => e.kind === 'series' && e.addedAt)).toEqual([
+            '2026-10-27',
+            '2026-10-27',
+            '2026-11-19',
+            '2026-11-19',
+            '2026-11-12',
+        ]);
+    });
+
+    it('should give each episode the earliest removedAt of drama, arc and episode ranges', () => {
+        const episodes = lancy({ removedAt: '2026-12-05' }, [
+            arc('戀愛二分一', 3, {
+                removedAt: '2026-12-04',
+                episodeRemovedAt: [{ first: 2, last: 2, date: '2026-12-01' }],
+            }),
+            arc('初戀無限次', 1),
+        ]);
+        expect(episodes.map((e) => e.kind === 'series' && e.removedAt)).toEqual([
+            '2026-12-04',
+            '2026-12-01',
+            '2026-12-04',
+            '2026-12-05',
+        ]);
+    });
+
+    it('should build no episodes for an upcoming arc whose count is not known yet', () => {
+        const episodes = lancy({}, [arc('XXX', 1, { count: undefined, addedAt: '2026-11-12' })]);
+        expect(episodes).toEqual([]);
     });
 });

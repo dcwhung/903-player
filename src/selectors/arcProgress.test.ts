@@ -174,3 +174,31 @@ describe('seriesContinue', () => {
         });
     });
 });
+
+describe('new batches of episodes (P8 #6)', () => {
+    const BATCHED = [
+        ep('戀愛二分一', 1, '2026-10-01'),
+        ep('戀愛二分一', 2, '2026-10-01'),
+        ep('戀愛二分一', 3, '2026-10-20'),
+    ];
+    const urlOf = (i: number) => BATCHED[i]?.url ?? '';
+
+    it('should mark an arc new for 14 days after its latest released batch', () => {
+        expect(arcSummaries(BATCHED, {}, TODAY)[0]?.isNew).toBe(true);
+        expect(arcSummaries(BATCHED, {}, '2026-11-03')[0]?.isNew).toBe(false);
+    });
+
+    it('should keep a caught-up arc with more batches to come out of 已聽完', () => {
+        const heard = Object.fromEntries(BATCHED.map((e) => [e.url, done()]));
+        const summaries = arcSummaries(BATCHED, heard, '2026-11-03');
+        expect(arcGroups(summaries, undefined)[0]?.group).toBe('done');
+        expect(arcGroups(summaries, undefined, new Set(['戀愛二分一']))[0]?.group).toBe(
+            'unfinished',
+        );
+    });
+
+    it('should show the home 新 when the new batch is untouched, even if older ones were heard', () => {
+        expect(hasNewUnheardArc(BATCHED, { [urlOf(0)]: done() }, TODAY)).toBe(true);
+        expect(hasNewUnheardArc(BATCHED, { [urlOf(2)]: partway(10) }, TODAY)).toBe(false);
+    });
+});

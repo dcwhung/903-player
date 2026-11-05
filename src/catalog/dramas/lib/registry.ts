@@ -3,8 +3,16 @@
  * 所有 lookup 都有明確 fallback（唔靠 closed union），加劇唔使改呢度。
  */
 import { NEUTRAL_THEME, type ShowTheme } from '../../../config/showThemes';
-import type { DramaEpisode, DramaKind, DailyEpisode, SeriesEpisode } from '../../../types/drama';
+import type {
+    ArcAvailability,
+    DramaEpisode,
+    DramaKind,
+    DailyEpisode,
+    SeriesEpisode,
+} from '../../../types/drama';
+import { hkToday } from '../../../utils/date';
 import { compareOrderThenId } from '../../core/ordering';
+import { arcAvailabilityOf, isLiveEpisode, windowStatus, type DramaStatus } from './availability';
 import { buildEpisodes } from './episodes';
 import { DramaSchemaError, parseDramaDefinition, type DramaDefinition } from './schema';
 import type { DramaFolder, DramaSource } from './source';
@@ -23,6 +31,10 @@ export interface Drama {
      * addedAt；都冇（或者每日劇）就當最舊
      */
     addedAt?: string;
+    /** 劇集層 addedAt（短篇劇、每日劇都有）：將來日子 = 整套即將上架（主頁書架最尾灰格、劇集頁打唔開） */
+    launchedAt?: string;
+    /** 劇集層 removedAt：當日起成套劇唔再提供（劇集頁 URL 返主頁） */
+    removedAt?: string;
     /** 劇集色調 + 碟面圖 */
     theme: ShowTheme;
     /** 主頁劇集格用嘅原圖（16:9，已經有劇名） */
@@ -32,19 +44,35 @@ export interface Drama {
 /** 舊名，consumer 繼續用得 */
 export type DramaConfig = Drama;
 
+export type { DramaStatus } from './availability';
+
+/**
+ * 以下 today 一律預設 hkToday()：未上架 / 已下架嘅集數同劇集唔會出（唔 probe、唔入續播、自動播、最近收聽），
+ * 每次叫都重新判斷，過咗香港午夜自動轉
+ */
 export interface DramaRegistry {
     /** 全部劇集（包括停用咗嘅），按顯示次序 */
     dramas: readonly Drama[];
-    /** 主頁「廣播劇」tab 列出嘅劇集 */
-    enabledDramas(): readonly Drama[];
+    /** 主頁「廣播劇」tab 列出嘅劇集（開咗、已上架、未下架） */
+    enabledDramas(today?: string): readonly Drama[];
+    /** 開咗但整套未上架：主頁書架最尾嘅灰格 */
+    upcomingDramas(today?: string): readonly Drama[];
+    /** 劇集頁用：今日有得聽 / 未上架 / 已下架 / 搵唔到（停用當搵唔到） */
+    dramaStatus(id: string, today?: string): DramaStatus;
     /** 劇名（mini player / 鎖屏用）：停用咗都搵到 */
     findDrama(id: string): Drama | undefined;
     /** 劇集頁用：停用咗嘅當搵唔到 */
     findEnabledDrama(id: string): Drama | undefined;
-    /** 某套劇全部集數；唔識嘅 id 回傳空 */
-    dramaEpisodesOf(id: string): readonly DramaEpisode[];
-    seriesEpisodesOf(id: string): SeriesEpisode[];
-    dailyEpisodesOf(id: string): DailyEpisode[];
+    /** 某套劇今日有得聽嘅集數；唔識嘅 id 回傳空 */
+    dramaEpisodesOf(id: string, today?: string): readonly DramaEpisode[];
+    seriesEpisodesOf(id: string, today?: string): SeriesEpisode[];
+    dailyEpisodesOf(id: string, today?: string): DailyEpisode[];
+    /** catalog 入面全部集數（唔理上架 / 下架）：續聽嗰集下架咗就跳去下一集用 */
+    catalogEpisodesOf(id: string): readonly DramaEpisode[];
+    /** catalog 入面嘅一集（唔理上架 / 下架）：收藏 tab 出「已下架」行用 */
+    catalogEpisodeOf(id: string, url: string): DramaEpisode | undefined;
+    /** 每個短篇嘅上架 / 下架資料（即將上架、快將下架 UI 用） */
+    arcAvailabilityOf(id: string): readonly ArcAvailability[];
     /** 唔識 / 冇 id → NEUTRAL_THEME */
     dramaThemeFor(id: string | undefined): ShowTheme;
     /** 某集嘅碟面：短篇有自己圖就用，冇就用劇集圖，再冇就空字串 */
@@ -60,6 +88,7 @@ interface DramaEntry {
     episodes: readonly DramaEpisode[];
     arcArt: ReadonlyMap<string, string>;
     arcTiles: ReadonlyMap<string, string>;
+    arcs: readonly ArcAvailability[];
 }
 
 const requireImage = (folder: DramaFolder, file: string): string => {
@@ -85,6 +114,8 @@ const toDrama = (folder: DramaFolder, def: DramaDefinition): Drama => {
         enabled: def.enabled,
         ...(def.arcUnit ? { arcUnit: def.arcUnit } : {}),
         ...(addedAt ? { addedAt } : {}),
+        ...(def.addedAt ? { launchedAt: def.addedAt } : {}),
+        ...(def.removedAt ? { removedAt: def.removedAt } : {}),
         theme: { ...def.theme, art: requireImage(folder, def.disc) },
         tileArt: requireImage(folder, def.tile),
     };
@@ -115,6 +146,7 @@ const toEntry = (folder: DramaFolder): { entry: DramaEntry; order: number | unde
             episodes: buildEpisodes(folder.id, def),
             arcArt: arcImagesOf(folder, def, 'disc'),
             arcTiles: arcImagesOf(folder, def, 'tile'),
+            arcs: arcAvailabilityOf(def),
         },
         order: def.order,
     };
@@ -136,32 +168,66 @@ const indexEntries = (source: DramaSource): Map<string, DramaEntry> => {
     return entries;
 };
 
-export const buildRegistry = (source: DramaSource): DramaRegistry => {
-    const entries = indexEntries(source);
-    const dramas = [...entries.values()].map((e) => e.drama);
-    const enabled = dramas.filter((d) => d.enabled);
-    const episodesOf = (id: string) => entries.get(id)?.episodes ?? [];
+/** 按今日篩：開咗嘅劇、集數 */
+const liveLookups = (entries: ReadonlyMap<string, DramaEntry>, enabled: readonly Drama[]) => {
+    const statusOf = (id: string, today = hkToday()): DramaStatus => {
+        const drama = enabled.find((d) => d.id === id);
+        return drama ? windowStatus(drama, today) : 'missing';
+    };
+    const episodesOf = (id: string, today = hkToday()): readonly DramaEpisode[] => {
+        const entry = entries.get(id);
+        if (!entry) return [];
+        return entry.episodes.filter((e) => isLiveEpisode(e, entry.drama, today));
+    };
+    return {
+        statusOf,
+        episodesOf,
+        enabledDramas: (today = hkToday()) =>
+            enabled.filter((d) => statusOf(d.id, today) === 'live'),
+        upcomingDramas: (today = hkToday()) =>
+            enabled.filter((d) => statusOf(d.id, today) === 'upcoming'),
+    };
+};
+
+/** 碟面 / 色調 lookup */
+const artLookups = (entries: ReadonlyMap<string, DramaEntry>) => {
     const artFor = (episode: DramaEpisode): string => {
         const entry = entries.get(episode.dramaId);
         const arcArt = episode.kind === 'series' ? entry?.arcArt.get(episode.arc) : undefined;
         return arcArt ?? entry?.drama.theme.art ?? NEUTRAL_THEME.art;
     };
     return {
-        dramas,
-        enabledDramas: () => enabled,
-        findDrama: (id) => entries.get(id)?.drama,
-        findEnabledDrama: (id) => enabled.find((d) => d.id === id),
-        dramaEpisodesOf: episodesOf,
-        seriesEpisodesOf: (id) =>
-            episodesOf(id).filter((e): e is SeriesEpisode => e.kind === 'series'),
-        dailyEpisodesOf: (id) =>
-            episodesOf(id).filter((e): e is DailyEpisode => e.kind === 'daily'),
-        dramaThemeFor: (id) => (id ? entries.get(id)?.drama.theme : undefined) ?? NEUTRAL_THEME,
+        dramaThemeFor: (id: string | undefined) =>
+            (id ? entries.get(id)?.drama.theme : undefined) ?? NEUTRAL_THEME,
         dramaArtFor: artFor,
-        dramaEpisodeTheme: (episode) => ({
+        dramaEpisodeTheme: (episode: DramaEpisode) => ({
             ...(entries.get(episode.dramaId)?.drama.theme ?? NEUTRAL_THEME),
             art: artFor(episode),
         }),
-        arcTileFor: (dramaId, arc) => entries.get(dramaId)?.arcTiles.get(arc),
+        arcTileFor: (dramaId: string, arc: string) => entries.get(dramaId)?.arcTiles.get(arc),
+    };
+};
+
+export const buildRegistry = (source: DramaSource): DramaRegistry => {
+    const entries = indexEntries(source);
+    const dramas = [...entries.values()].map((e) => e.drama);
+    const enabled = dramas.filter((d) => d.enabled);
+    const live = liveLookups(entries, enabled);
+    return {
+        dramas,
+        enabledDramas: live.enabledDramas,
+        upcomingDramas: live.upcomingDramas,
+        dramaStatus: live.statusOf,
+        findDrama: (id) => entries.get(id)?.drama,
+        findEnabledDrama: (id) => enabled.find((d) => d.id === id),
+        dramaEpisodesOf: live.episodesOf,
+        seriesEpisodesOf: (id, today) =>
+            live.episodesOf(id, today).filter((e): e is SeriesEpisode => e.kind === 'series'),
+        dailyEpisodesOf: (id, today) =>
+            live.episodesOf(id, today).filter((e): e is DailyEpisode => e.kind === 'daily'),
+        catalogEpisodesOf: (id) => entries.get(id)?.episodes ?? [],
+        catalogEpisodeOf: (id, url) => entries.get(id)?.episodes.find((e) => e.url === url),
+        arcAvailabilityOf: (id) => entries.get(id)?.arcs ?? [],
+        ...artLookups(entries),
     };
 };

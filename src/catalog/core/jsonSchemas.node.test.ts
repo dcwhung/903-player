@@ -168,6 +168,18 @@ const DRAMA_INVALID: Case[] = [
     ['daily episode date 唔存在', DAILY, 'episodes.0.date', '2025-13-01'],
     ['daily episode rerun 係字串', DAILY, 'episodes.1.rerun', 'true'],
     ['daily episode file 空字串', DAILY, 'episodes.1.file', ''],
+    ['removedAt 格式錯', SERIES, 'removedAt', '5/12/2026'],
+    ['arc removedAt 唔存在', SERIES, 'arcs.0.removedAt', '2026-02-30'],
+    ['episodeDates key 唔係集數', SERIES, 'arcs.0.episodeDates', { x: '2026-12-01' }],
+    ['episodeDates 日子格式錯', SERIES, 'arcs.0.episodeDates', { '2': '1/12' }],
+    ['episodeRemovedAt key 唔係範圍', SERIES, 'arcs.0.episodeRemovedAt', { '1~2': '2026-12-05' }],
+    ['episodeRemovedAt 日子格式錯', SERIES, 'arcs.0.episodeRemovedAt', { '1': 'soon' }],
+    [
+        '未知集數但寫咗 titles',
+        SERIES,
+        'arcs.1',
+        { name: 'S', addedAt: '2026-11-12', titles: { '1': 'x' } },
+    ],
 ];
 
 const DRAMA_VALID: Case[] = [
@@ -186,6 +198,17 @@ const DRAMA_VALID: Case[] = [
     ['titles 係空 object', SERIES, 'arcs.0.titles', {}],
     ['daily episode rerun false', DAILY, 'episodes.0.rerun', false],
     ['加 $schema 指返 schema', SERIES, '$schema', '../../../../../schemas/drama.schema.json'],
+    ['daily 有劇集層 addedAt（整套即將上架）', DAILY, 'addedAt', '2026-12-01'],
+    ['daily 有 removedAt', DAILY, 'removedAt', '2027-01-01'],
+    ['series 有 removedAt', SERIES, 'removedAt', '2027-01-01'],
+    ['未知集數嘅即將上架短篇', SERIES, 'arcs.1', { name: 'Season 2', addedAt: '2026-11-12' }],
+    ['逐集上架', SERIES, 'arcs.1.episodeDates', { '2': '2026-11-19' }],
+    [
+        '集數下架（單集 + 範圍）',
+        SERIES,
+        'arcs.1.episodeRemovedAt',
+        { '1': '2026-12-05', '2-3': '2026-12-06' },
+    ],
 ];
 
 const SHOW_INVALID: Case[] = [
@@ -320,7 +343,8 @@ describe('catalog JSON schemas', () => {
             ['多出嚟嘅 key（例如打錯 enabeld）', SERIES, 'enabeld', true],
             ['theme 多出嚟嘅 key', SERIES, 'theme.background', '#000000'],
             ['daily 寫咗 series 先用嘅 arcs', DAILY, 'arcs', SERIES.arcs],
-            ['daily 寫咗 series 先用嘅 addedAt', DAILY, 'addedAt', '2026-10-24'],
+            // 劇集層 addedAt 頂住：runtime 收；schema 睇唔到上層，要 arc 自己寫 addedAt
+            ['arc 冇 episodes、淨係劇集層有 addedAt', SERIES, 'arcs.1.episodes', undefined],
             ['series 寫咗 daily 先用嘅 episodes', SERIES, 'episodes', DAILY.episodes],
             ['titles key 有前置 0', SERIES, 'arcs.0.titles', { '01': '中篇' }],
             ['show 多出嚟嘅 key', SHOW, 'airday', [1]],
@@ -340,6 +364,15 @@ describe('catalog JSON schemas', () => {
             ['titles 集數超出範圍', SERIES, 'arcs.1.titles', { '9': '集名' }],
             ['files 集數超出範圍', SERIES, 'arcs.1.files', { '0': 'a.m4a' }],
             ['daily date 重複', DAILY, 'episodes.1.date', '2026-10-23'],
+            ['removedAt 唔遲過 addedAt', SERIES, 'removedAt', '2026-10-24'],
+            ['episodeDates 集數超出範圍', SERIES, 'arcs.1.episodeDates', { '9': '2026-11-19' }],
+            ['episodeDates 唔遲過 addedAt', SERIES, 'arcs.0.episodeDates', { '2': '2026-10-25' }],
+            [
+                'episodeRemovedAt 範圍重疊',
+                SERIES,
+                'arcs.1.episodeRemovedAt',
+                { '1-2': '2026-12-05', '2': '2026-12-06' },
+            ],
         ];
 
         it.each(RUNTIME_ONLY)('runtime only: should reject %s', (_label, base, path, value) => {

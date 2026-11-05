@@ -18,7 +18,8 @@ describe('dramaStartEpisode', () => {
     it('resumes the series from saved progress', () => {
         const url = SERIES[6]?.url ?? '';
         const map = { [url]: { position: 60, duration: 600, watched: false, updatedAt: 1 } };
-        expect(dramaStartEpisode(CHISEE, map, '2026-10-23')).toBe(SERIES[6]);
+        // 三十六計 10/24 先上架（P8 #6）：用上咗架之後嘅日子
+        expect(dramaStartEpisode(CHISEE, map, '2026-11-13')).toBe(SERIES[6]);
     });
 
     it('starts the daily drama on today’s episode', () => {

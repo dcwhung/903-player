@@ -1,5 +1,10 @@
 import { useCallback } from 'react';
-import { dailyEpisodesOf, seriesEpisodesOf, type DramaConfig } from '../catalog/dramas';
+import {
+    catalogEpisodesOf,
+    dailyEpisodesOf,
+    seriesEpisodesOf,
+    type DramaConfig,
+} from '../catalog/dramas';
 import { usePlayer } from '../player/usePlayer';
 import {
     dailyNewestFirst,
@@ -8,20 +13,29 @@ import {
     pickDailyStart,
     pickSeriesStart,
 } from '../selectors/dramas';
+import { liveSeriesContinue } from '../selectors/continueListening';
 import { getProgressMap, type Progress } from '../services/progressStore';
-import type { DramaEpisode } from '../types/drama';
+import type { DramaEpisode, SeriesEpisode } from '../types/drama';
 import type { Track } from '../types/track';
 import { hkToday } from '../utils/date';
 
-/** 入劇集播邊集：短篇劇集續播 / 下一集；每日劇集今日（或者之前最近）嗰集 */
+/** 某套短篇劇 catalog 全部集數（包括已下架，續聽跳集用） */
+export const catalogSeriesOf = (id: string): SeriesEpisode[] =>
+    catalogEpisodesOf(id).filter((e): e is SeriesEpisode => e.kind === 'series');
+
+/**
+ * 入劇集播邊集：短篇劇集續播 / 下一集（續聽嗰集下架咗就跳去下一集未下架嘅，同主頁「繼續收聽」一樣）；
+ * 每日劇集今日（或者之前最近）嗰集
+ */
 export const dramaStartEpisode = (
     drama: DramaConfig,
     progressMap: Readonly<Record<string, Progress>>,
     today: string,
 ): DramaEpisode | undefined =>
     drama.kind === 'series'
-        ? pickSeriesStart(seriesEpisodesOf(drama.id), progressMap)
-        : pickDailyStart(dailyNewestFirst(dailyEpisodesOf(drama.id)), today);
+        ? (liveSeriesContinue(catalogSeriesOf(drama.id), progressMap, today)?.episode ??
+          pickSeriesStart(seriesEpisodesOf(drama.id, today), progressMap))
+        : pickDailyStart(dailyNewestFirst(dailyEpisodesOf(drama.id, today)), today);
 
 /**
  * 第一次入短篇劇集（呢套劇任何一集都未有進度，亦未載入緊佢嘅任何一集）：

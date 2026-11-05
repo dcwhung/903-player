@@ -3,6 +3,7 @@ import type { Progress } from '../services/progressStore';
 import type { SeriesEpisode } from '../types/drama';
 import { daysBetween } from '../utils/date';
 import { ratio } from '../utils/ratio';
+import { arcFreshDate } from './availability';
 import { episodesInArc, pickSeriesStart, seriesArcs } from './dramas';
 
 type ProgressMap = Readonly<Record<string, Progress>>;
@@ -50,7 +51,8 @@ const summarise = (
     const unfinished = episodes.find((e) => !progressMap[e.url]?.watched);
     const resume = state === 'done' ? first : (unfinished ?? first);
     const resumeAt = state === 'done' ? 0 : (progressMap[resume.url]?.position ?? 0);
-    const isNew = isArcNew(first.addedAt, today);
+    // 新一批集數上架都算「新」：用已上架集數最遲嗰批計
+    const isNew = isArcNew(arcFreshDate(episodes), today);
     return { arc: first.arc, total: episodes.length, watched, state, isNew, resume, resumeAt };
 };
 
@@ -66,10 +68,17 @@ export const arcSummaries = (
 
 export type ArcGroup = 'playing' | 'new' | 'unfinished' | 'done';
 
-/** 每個短篇屬於邊組：載入緊 → 播放中；新上架（未聽完）→ 新上架；聽完 → 已聽完；其他 → 未聽完 */
-const groupOf = (s: ArcSummary, playingArc: string | undefined): ArcGroup => {
+/**
+ * 每個短篇屬於邊組：載入緊 → 播放中；新上架（未聽完）→ 新上架；聽完 → 已聽完；其他 → 未聽完。
+ * 聽晒已上架嘅集數但仲有下一批未上架（pending）唔算聽完，排返未聽完
+ */
+const groupOf = (
+    s: ArcSummary,
+    playingArc: string | undefined,
+    pending: ReadonlySet<string>,
+): ArcGroup => {
     if (s.arc === playingArc) return 'playing';
-    if (s.state === 'done') return 'done';
+    if (s.state === 'done' && !pending.has(s.arc)) return 'done';
     return s.isNew ? 'new' : 'unfinished';
 };
 
@@ -79,13 +88,20 @@ const GROUP_ORDER: readonly ArcGroup[] = ['playing', 'new', 'unfinished', 'done'
 export const arcGroups = (
     summaries: readonly ArcSummary[],
     playingArc: string | undefined,
+    pending: ReadonlySet<string> = new Set(),
 ): { group: ArcGroup; items: ArcSummary[] }[] =>
     GROUP_ORDER.map((group) => ({
         group,
-        items: summaries.filter((s) => groupOf(s, playingArc) === group),
+        items: summaries.filter((s) => groupOf(s, playingArc, pending) === group),
     })).filter((g) => g.items.length > 0);
 
-/** 主頁劇集格「新」：有新上架短篇而且嗰個短篇一集都未掂過 */
+/** 某短篇最新上架嗰批集數（成個短篇一齊上架就係全部） */
+const latestBatch = (inArc: readonly SeriesEpisode[]): SeriesEpisode[] => {
+    const fresh = arcFreshDate(inArc);
+    return inArc.filter((e) => e.addedAt === fresh);
+};
+
+/** 主頁劇集格「新」：有新上架短篇（或者新一批集數）而且嗰批一集都未掂過 */
 export const hasNewUnheardArc = (
     episodes: readonly SeriesEpisode[],
     progressMap: ProgressMap,
@@ -94,8 +110,8 @@ export const hasNewUnheardArc = (
     seriesArcs(episodes).some((arc) => {
         const inArc = episodesInArc(episodes, arc);
         return (
-            isArcNew(inArc[0]?.addedAt, today) &&
-            inArc.every((e) => progressMap[e.url] === undefined)
+            isArcNew(arcFreshDate(inArc), today) &&
+            latestBatch(inArc).every((e) => progressMap[e.url] === undefined)
         );
     });
 

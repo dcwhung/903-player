@@ -1,6 +1,7 @@
 import type { DramaConfig } from '../catalog/dramas';
 import type { Progress } from '../services/progressStore';
 import type { DramaEpisode } from '../types/drama';
+import { latestDate } from './availability';
 
 /**
  * 劇名排序用香港中文 collation：ICU 預設按筆劃
@@ -33,7 +34,9 @@ const shelfKey = (
     progressMap: Readonly<Record<string, Progress>>,
 ): ShelfKey => {
     const touched = episodes.flatMap((e) => progressMap[e.url] ?? []);
-    const addedAt = drama.addedAt ?? OLDEST_ADDED_AT;
+    // 用已上架集數最遲嗰批（未上架嘅短篇唔會令套劇排前；新一批集數上架就排前）
+    const released = latestDate(episodes.map((e) => (e.kind === 'series' ? e.addedAt : undefined)));
+    const addedAt = released ?? drama.addedAt ?? OLDEST_ADDED_AT;
     if (touched.length === 0) {
         return { rank: SHELF_RANK.unheard, listenedAt: NOT_LISTENING_AT, addedAt };
     }

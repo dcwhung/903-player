@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "903 Player 廣播劇（drama.json）",
-    "description": "一個 folder = 一套廣播劇（src/catalog/dramas/library/<id>/drama.json）。runtime 驗證喺 src/catalog/dramas/lib/schema.ts；以下幾樣 JSON Schema 表達唔到，淨係 runtime 驗：圖檔要真係喺 folder 入面、folder 名要係細楷英數同連字號、arc name 唔可以重複、每日劇 date 唔可以重複、titles / files 嘅集數要喺 firstNo 至最後一集之內。",
+    "description": "一個 folder = 一套廣播劇（src/catalog/dramas/library/<id>/drama.json）。runtime 驗證喺 src/catalog/dramas/lib/schema.ts；以下幾樣 JSON Schema 表達唔到，淨係 runtime 驗：圖檔要真係喺 folder 入面、folder 名要係細楷英數同連字號、arc name 唔可以重複、每日劇 date 唔可以重複、titles / files / episodeDates / episodeRemovedAt 嘅集數要喺 firstNo 至最後一集之內、上架 / 下架日嘅先後（下架遲過上架；arc 下架唔可以遲過劇集、集數下架唔可以遲過 arc；episodeDates 跟集數遞增、遲過 arc addedAt）、episodeRemovedAt 範圍唔可以重疊。",
     "type": "object",
     "required": ["name", "kind", "enabled", "tile", "disc", "audio", "theme"],
     "additionalProperties": false,
@@ -66,7 +66,11 @@
         "theme": { "$ref": "#/definitions/theme" },
         "addedAt": {
             "$ref": "#/definitions/date",
-            "description": "（series 先用）全劇預設上架日 YYYY-MM-DD；arc 自己有 addedAt 就用 arc 嘅。14 日內出「新」"
+            "description": "（optional）全劇上架日 YYYY-MM-DD（香港時間當日 00:00 起）：將來日子 = 整套即將上架（主頁書架最尾灰格、劇集頁打唔開）；短篇劇亦係短篇預設上架日（arc 自己有就用 arc 嘅）。14 日內出「新」"
+        },
+        "removedAt": {
+            "$ref": "#/definitions/date",
+            "description": "（optional）全劇下架日 YYYY-MM-DD：香港時間當日 00:00 起唔再提供（前 30 日出「快將下架」）；要遲過 addedAt"
         },
         "arcs": {
             "type": "array",
@@ -117,7 +121,6 @@
                 "required": ["episodes"],
                 "properties": {
                     "arcs": false,
-                    "addedAt": false,
                     "audio": {
                         "type": "object",
                         "properties": {
@@ -146,8 +149,20 @@
         },
         "arc": {
             "type": "object",
-            "required": ["name", "episodes"],
+            "required": ["name"],
             "additionalProperties": false,
+            "if": { "not": { "required": ["episodes"] } },
+            "then": {
+                "required": ["addedAt"],
+                "not": {
+                    "anyOf": [
+                        { "required": ["titles"] },
+                        { "required": ["files"] },
+                        { "required": ["episodeDates"] },
+                        { "required": ["episodeRemovedAt"] }
+                    ]
+                }
+            },
             "properties": {
                 "name": {
                     "type": "string",
@@ -155,7 +170,7 @@
                     "description": "短篇名（= R2 folder 名，亦係 template 嘅 {arc}）；唔可以重複"
                 },
                 "episodes": {
-                    "description": "集數（正整數），或者集名 list（冇集名寫 null）",
+                    "description": "集數（正整數），或者集名 list（冇集名寫 null）。未上架嘅短篇未知集數可以唔寫，但一定要有 addedAt（runtime 亦接受用劇集層 addedAt）；到期仍未補就繼續當未上架",
                     "anyOf": [
                         { "type": "integer", "minimum": 1 },
                         { "type": "array", "minItems": 1, "items": { "type": ["string", "null"] } }
@@ -177,7 +192,23 @@
                 },
                 "addedAt": {
                     "$ref": "#/definitions/date",
-                    "description": "（optional）短篇上架日 YYYY-MM-DD，14 日內出「新」；冇就用全劇 addedAt"
+                    "description": "（optional）短篇上架日 YYYY-MM-DD（香港時間當日 00:00 起），將來日子 = 即將上架；14 日內出「新」；冇就用全劇 addedAt"
+                },
+                "removedAt": {
+                    "$ref": "#/definitions/date",
+                    "description": "（optional）短篇下架日 YYYY-MM-DD；要遲過 addedAt、唔可以遲過全劇 removedAt"
+                },
+                "episodeDates": {
+                    "type": "object",
+                    "propertyNames": { "pattern": "^(?:0|[1-9][0-9]*)$" },
+                    "additionalProperties": { "$ref": "#/definitions/date" },
+                    "description": "（optional）逐集上架：{ \"集數\": \"YYYY-MM-DD\" } = 呢集起嘅上架日（第一批跟 addedAt）；日子跟集數遞增、遲過 addedAt。新一批上架出 14 日「新」"
+                },
+                "episodeRemovedAt": {
+                    "type": "object",
+                    "propertyNames": { "pattern": "^(?:0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*))?$" },
+                    "additionalProperties": { "$ref": "#/definitions/date" },
+                    "description": "（optional）集數下架：{ \"3\": 日子 } 單集或者 { \"1-5\": 日子 } 範圍；範圍唔可以重疊、唔可以遲過短篇 removedAt"
                 },
                 "disc": {
                     "type": "string",

@@ -4,6 +4,7 @@
  */
 import { DRAMA_AUDIO_BASE } from '../../../config/constants';
 import type { DailyEpisode, DramaEpisode, DramaId, SeriesEpisode } from '../../../types/drama';
+import { batchDateOf } from './availabilitySchema';
 import { displayTitle, encodePath, renderFileName, toChineseNumeral } from './filename';
 import type {
     ArcDefinition,
@@ -33,6 +34,19 @@ const seriesTokens = (audio: AudioDefinition, arc: ArcDefinition, no: number, ti
     title,
 });
 
+const definedDates = (dates: readonly (string | undefined)[]): string[] =>
+    dates.filter((d): d is string => d !== undefined).sort();
+
+/** 呢集幾時上架：劇集、短篇、逐集（episodeDates）三層最遲嗰個（YYYY-MM-DD 字串比較） */
+const episodeAddedAt = (def: SeriesDefinition, arc: ArcDefinition, no: number) =>
+    definedDates([def.addedAt, arc.addedAt, batchDateOf(arc.episodeDates, no, undefined)]).at(-1);
+
+/** 呢集幾時下架：劇集、短篇、集數範圍三層最早嗰個 */
+const episodeRemovedAt = (def: SeriesDefinition, arc: ArcDefinition, no: number) => {
+    const range = arc.episodeRemovedAt.find((r) => no >= r.first && no <= r.last);
+    return definedDates([def.removedAt, arc.removedAt, range?.date])[0];
+};
+
 const seriesEpisode = (
     dramaId: DramaId,
     def: SeriesDefinition,
@@ -43,7 +57,8 @@ const seriesEpisode = (
     const file =
         arc.files.get(no) ??
         renderFileName(def.audio.file, seriesTokens(def.audio, arc, no, title ?? ''));
-    const addedAt = arc.addedAt ?? def.addedAt;
+    const addedAt = episodeAddedAt(def, arc, no);
+    const removedAt = episodeRemovedAt(def, arc, no);
     return {
         kind: 'series',
         dramaId,
@@ -52,12 +67,14 @@ const seriesEpisode = (
         no,
         ...(title ? { title: displayTitle(title) } : {}),
         ...(addedAt ? { addedAt } : {}),
+        ...(removedAt ? { removedAt } : {}),
     };
 };
 
 const seriesEpisodes = (dramaId: DramaId, def: SeriesDefinition): SeriesEpisode[] =>
     def.arcs.flatMap((arc) =>
-        Array.from({ length: arc.count }, (_, i) =>
+        // 未知集數（未上架、drama.json 未寫 episodes）就一集都唔砌
+        Array.from({ length: arc.count ?? 0 }, (_, i) =>
             seriesEpisode(dramaId, def, arc, arc.firstNo + i),
         ),
     );
@@ -77,6 +94,7 @@ const dailyEpisodes = (dramaId: DramaId, def: DailyDefinition): DailyEpisode[] =
         ]),
         date,
         rerun,
+        ...(def.removedAt ? { removedAt: def.removedAt } : {}),
     }));
 
 /** 一套劇全部集數（短篇劇按短篇 → 集數排；每日劇照 JSON 次序） */

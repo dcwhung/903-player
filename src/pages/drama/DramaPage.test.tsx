@@ -76,7 +76,7 @@ const gaugeArt = () => screen.getByRole('main').querySelector('.discArea img');
 describe('DramaPage', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
-        vi.setSystemTime(new Date('2026-10-23T08:00:00Z')); // 香港 23/10（五）16:00
+        vi.setSystemTime(new Date('2026-11-13T08:00:00Z')); // 香港 13/11（五）16:00：真 catalog 全部短篇已上架、過咗「新」期
         Element.prototype.scrollIntoView = vi.fn();
         HTMLElement.prototype.scrollTo = vi.fn();
     });
@@ -569,7 +569,7 @@ describe('DramaPage', () => {
         it('groups 短篇 playing → unfinished → finished, and plays one from its row button', async () => {
             BIRTHDAY.forEach((e) => saveProgress(e.url, 990, 1000));
             saveProgress(FRIENDS[0]?.url ?? '', 990, 1000);
-            vi.setSystemTime(new Date('2026-10-23T08:05:00Z')); // 最近聽緊嘅係好朋友手牽手第 2 集
+            vi.setSystemTime(new Date('2026-11-13T08:05:00Z')); // 最近聽緊嘅係好朋友手牽手第 2 集
             saveProgress(FRIENDS[1]?.url ?? '', 400, 1000);
             const { audio } = await openDramaAndPlay('chisee');
             await waitFor(() => expect(audio.src).toBe(FRIENDS[1]?.url));

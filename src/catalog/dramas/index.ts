@@ -5,7 +5,7 @@
 import { bundledSource } from './lib/bundledSource';
 import { buildRegistry } from './lib/registry';
 
-export type { Drama, DramaConfig } from './lib/registry';
+export type { Drama, DramaConfig, DramaStatus } from './lib/registry';
 export { DramaSchemaError } from './lib/schema';
 
 const REGISTRY = buildRegistry(bundledSource);
@@ -13,11 +13,16 @@ const REGISTRY = buildRegistry(bundledSource);
 export const DRAMAS = REGISTRY.dramas;
 export const {
     enabledDramas,
+    upcomingDramas,
+    dramaStatus,
     findDrama,
     findEnabledDrama,
     dramaEpisodesOf,
     seriesEpisodesOf,
     dailyEpisodesOf,
+    catalogEpisodesOf,
+    catalogEpisodeOf,
+    arcAvailabilityOf,
     dramaThemeFor,
     dramaArtFor,
     dramaEpisodeTheme,

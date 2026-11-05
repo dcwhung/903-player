@@ -221,6 +221,62 @@ export const zhHK = {
         // 橫版唱片下面「現正播放：好朋友手牽手 · 第 2 / 4 集」（下一行集名）
         nowPlayingArc: '{arc} · 第 {no} / {total} 集',
     },
+    // 即將上架 / 快將下架（P8 #6，_mockups_/coming-soon）。日子格式 F3：兩日內講「明日 / 後日」，遠就寫日子
+    availability: {
+        // {date}：短版 dates.dayMonth（12/11）；長版 dates.label（12/11（四））
+        releaseShort: '{date} 上架',
+        releaseLong: '{date}上架',
+        releaseTomorrow: '明日上架',
+        releaseDayAfter: '後日上架',
+        removalShort: '{date} 下架',
+        removalLong: '{date}下架',
+        removalTomorrow: '明日下架',
+        removalDayAfter: '後日下架',
+        // 冇動詞嘅短版（主頁新劇灰格「即將上架 · 1/12」、chip 琥珀小標「⏳ 5/12」）
+        tomorrow: '明日',
+        dayAfter: '後日',
+        // 撳唔到嘅 chip / 一覽表行 / 集數 / 劇集格嘅讀屏：{when} 一律係長版日子
+        unavailableLabel: '{name}，{when}，未可以收聽',
+        // 主頁劇集格右下角字尾（H2 / E1）：{meta} = 「3 個短篇」，{when} = 「12/11 上架」/「明日上架」
+        tileNewArc: '{meta} · 新短篇 {when}',
+        tileNewEpisodes: '{meta} · 全新集數 {when}',
+        // 主頁書架最尾嘅新劇灰格（底部深色條）
+        upcomingDrama: '即將上架 · {when}',
+        // 全集一覽表最底一組
+        groupUpcoming: '即將上架',
+        // 一覽表即將上架行第二行（集數未知就淨係 {when}）
+        upcomingArcCount: '{when} · {count} 集',
+        // 一覽表已上架短篇仲有下一批（A2）：「未聽 · 30 集 · 第 11 集起 19/11 上架」
+        nextBatch: '第 {no} 集起 {when}',
+        // 聽晒已上架嘅集數、仲有下一批未上架
+        caughtUp: '聽到第 {no} 集',
+        // 集數清單摺埋嘅未上架批次（一批一行）
+        batchTitle: '第 {first}–{last} 集',
+        batchLabel: '第 {first} 至 {last} 集',
+        // 快將下架（琥珀色 + ⏳）：主頁劇集格左上角
+        leavingDrama: '{when}',
+        leavingArcs: '部分短篇 {when}',
+        leavingEpisodes: '部分集數 {when}',
+        // 劇集格讀屏名加埋下架
+        tileLeaving: '{name}，{label}',
+        // 劇集頁唱片下面（成套劇快將下架）；一覽表表頭下面
+        dramaLeavingLine: '呢套劇 {when}',
+        sheetLeavingLine: '成套劇 {when}',
+        // 一覽表行名後面嘅膠囊
+        leavingBadge: '快將下架',
+        leavingBadgePartial: '部分快將下架',
+        // 一覽表行第二行加嘅下架字（集數層講第幾集）
+        leavingRange: '第 {first}–{last} 集 {when}',
+        // chip 讀屏名
+        arcLeavingLabel: '{arc}，{when}',
+        // 集數清單 / 收藏 tab / 最近收聽 / 繼續收聽讀屏句加嘅一截
+        withLeaving: '{label}，{when}',
+        // 收藏 tab 已下架行（灰色、冇播放掣、可以左滑移除）
+        removed: '已下架',
+        removedRow: '{name} {label}，已下架，未可以收聽',
+        // 打開已下架劇集嘅舊 URL：返主頁 + 提示
+        dramaRemovedToast: '呢套劇已下架',
+    },
 } as const;
 
 /** 星期日至星期六，配合 Date#getUTCDay() */

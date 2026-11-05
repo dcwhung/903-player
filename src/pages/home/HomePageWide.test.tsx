@@ -58,6 +58,9 @@ const arriveHomeWith = async (target: Track) => {
 
 /** 收埋後把手嘅名：狀態（已暫停）+ 節目 / 劇集名 + 動作 */
 const reopenLabel = (name: string) => `已暫停：${name}，打開播放器`;
+// 真 catalog 嘅劇集 / 短篇 addedAt 係 10/24–10/27：之前嘅日子佢哋仲係「即將上架」（P8 #6），所以劇集測試用 16/11（一）
+const CATALOG_LIVE = '2026-11-16T08:00:00Z';
+
 describe('HomePage on a wide landscape screen', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
@@ -86,7 +89,7 @@ describe('HomePage on a wide landscape screen', () => {
 
         it('should fill the grid with the dramas on the 廣播劇 tab', async () => {
             stubWideLandscape();
-            vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
+            vi.setSystemTime(new Date(CATALOG_LIVE));
             renderWithProviders(<HomePage />);
 
             await userEvent.click(screen.getByRole('button', { name: '廣播劇' }));
@@ -346,6 +349,7 @@ describe('HomePage on a wide landscape screen', () => {
         const listOf = (card: HTMLElement) => within(card).getByRole('region', { name: '集數' });
 
         it('should list the whole arc of a series drama, current row marked and scrolled to', async () => {
+            vi.setSystemTime(new Date(CATALOG_LIVE));
             stubWideLandscape();
             await arriveHomeWith(FIRST);
             const card = await screen.findByRole('region', { name: DRAMA_CARD });
@@ -360,6 +364,7 @@ describe('HomePage on a wide landscape screen', () => {
         });
 
         it('should play another row without leaving home', async () => {
+            vi.setSystemTime(new Date(CATALOG_LIVE));
             stubWideLandscape();
             const { audio } = await arriveHomeWith(FIRST);
             const list = listOf(await screen.findByRole('region', { name: DRAMA_CARD }));
