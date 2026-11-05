@@ -127,3 +127,65 @@ context: >
   chains incl. coming-soon; home / pwa-shell SKIP. S-706..S-708 backlog only.
 report: .proj-docs/qa/2026-11-05_qa_coming-soon.md
 ```
+
+---
+
+# Re-test 3 — S1 — `1bb06b6`（code = `62e0a85`）— ✅ pass
+
+- 範圍：`8477b12..1bb06b6`：`e7b981a`（merge P7 `feature/bookmark/episode`：第三格 A / B / C 三態 + 最近收聽 tab，`plans/bookmark.md` AC-9）、`62e0a85`（用戶新決定：同日下架只喺左上角出；「繼續收聽」條位唔夠成段收埋下架字、集名優先）；其餘 review docs
+- 喺獨立 worktree（`.claude/worktrees/qa-p8`，detached @ `1bb06b6`）做，commit 只 add 指定檔
+- Ledger（`impact --since ab58d0d`）：SKIP 0 / REVERIFY 11（全部鏈：merge 帶入 P7 新改動，加 `62e0a85`）/ UNCOVERED 3（`useHideWhenTight.ts`、`icons/noticeIcons.tsx`、`icons/strokeIcon.tsx` → 入 `coming-soon`）；ledger 有兩邊 parent 嘅舊 freeze 行，今次逐條鏈用兩邊 scope 嘅聯集重新 freeze
+- 用戶新決定已寫入 `plans/coming-soon.md`
+
+| Command                                                                                                                                      | Result                                                                     | Time  |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----- |
+| CI [42107452301](https://github.com/dcwhung/903-player/actions/runs/42107452301)（#95）@ `62e0a85`（lint / unit / build / e2e）              | success（引用）                                                            | —     |
+| CI #93 [42106939629](https://github.com/dcwhung/903-player/actions/runs/42106939629) @ `34e4e54`                                             | failure：reviewer commit 帶錯 rename，`62e0a85` 已修；只記錄，唔當 finding | —     |
+| `npm run build -- --mode e2e` + `npx vite preview --port 4187`                                                                               | ok                                                                         | 25s   |
+| Playwright：(1) 第三格 A / B / C × 3 viewport；(2)(3)(4) 繼續收聽條同日 / 唔同日 × 3 viewport；(5) re-test 2 嘅 W-533、全集 chip、smoke 重跑 | 全部符合（下面 2 個 script 誤判之外）                                      | 4 min |
+
+## (1) P7 tab 喺 P8 上面（390×844、844×390、1300×800 一致）
+
+- A 有收藏 → 第三格「我的收藏」；C 冇收藏冇記錄 → 冇第三格 ✅
+- B 冇收藏、12 集記錄（11 集 sample + 初戀無限次第 2 集）→ 第三格「最近收聽」，清單 10 行；逐行 `scrollIntoView` 後第 1–10 行（包括第 7–10 行）全部喺捲動區可視範圍入面，冇橫向溢出 ✅
+- B 嘅 LR1：行見到「19/12 下架」，讀屏「開啟 E2E 即將劇場 初戀無限次 · 第 2 集，19/12（六）下架」✅
+
+## (2)–(4) 主頁格下架字（時鐘 30/11 22:30）
+
+| 情況                                           | 左上角                                 | 繼續收聽條（見到）                                              | 讀屏（繼續收聽）         |
+| ---------------------------------------------- | -------------------------------------- | --------------------------------------------------------------- | ------------------------ |
+| 同日：即將劇場 初戀無限次第 2 集（短篇 19/12） | 「部分短篇 19/12 下架」/ 窄格「19/12」 | 冇下架字                                                        | 冇下架日 ✅              |
+| 同日：下架劇場 成套 19/12，第 2 集             | 「19/12 下架」/「19/12」               | 冇下架字                                                        | 冇下架日 ✅              |
+| 唔同日：即將劇場 我心不死第 3 集（01/12）      | 「19/12」                              | 390×844「⏳ 明日下架」完整（67/67）；844×390、1300×800 成段收埋 | 「…，01/12（二）下架」✅ |
+
+- 集名：390×844 靜止完整；窄格同闊橫版集名太長，係 main 已經有嘅 Marquee 捲動（`DramaTile` 繼續收聽一向用 `Marquee`），有冇下架字嘅情況闊度一樣（141px），即係收埋咗嘅下架字冇霸位 ✅
+- 右上角：有續聽時見到「⏱ 後日上架」，短篇數成段收埋，冇「3·」或者單獨一粒「·」✅
+
+## (5) 冇回歸
+
+- W-533：3 viewport × 有 / 冇續聽，上架字 `clientWidth = scrollWidth`、喺格入面；讀屏名有「新短篇 02/12（三）上架」✅
+- 全集 chip：直版聽緊「全集 ⏳ 19/12」，讀屏「全集，19/12（六）下架」；未聽改講「呢套劇 19/12（六）下架」；橫版 chip 小標收埋，唱片下面有字 ✅
+- smoke（灰格、chips、一覽表、集數清單、收藏 tab、舊 URL + Toast、W-531）冇新 FAIL；`pageerror` 0
+- script 誤判（同之前一樣，唔計）：390×844 疊卡灰格撳中上面嘅卡；chip 虛線喺 `::before`
+
+## Findings
+
+- 冇新 🔴 / 🟡 / 🟢
+
+## Freeze
+
+- S1 freeze @1bb06b6：全部 11 條鏈（coming-soon、bookmark、drama、card-zoom、catalog-data、home、mini-player、player-core、pwa-shell、show-today-page、ui-foundation）
+
+```handoff-receipt
+agent: quality-assurance
+task: S1 re-test 3 coming-soon (P8 #6, merged P7 tabs + 62e0a85) v1.28.0 @ 1bb06b6
+stage: S1
+status: pass
+next_action: proceed
+findings: { critical: [], warning: [], suggestion: [] }
+context: >
+  CI 42107452301 @ 62e0a85 cited (run #93 red on 34e4e54 noted, fixed). P7 tab states A/B/C, LR1 and rows
+  7-10 reachable in 3 viewports. Same-day leaving only in corner, different day both (strip hides when tight,
+  name priority, SR keeps date). No "3·". W-533 / 全集 chip no regression. All 11 chains re-frozen at S1.
+report: .proj-docs/qa/2026-11-05_qa_coming-soon.md
+```
