@@ -61,3 +61,69 @@ context: >
   coming-soon / drama / card-zoom left open. Pending user decision (not a finding): portrait leaving text inline.
 report: .proj-docs/qa/2026-11-05_qa_coming-soon.md
 ```
+
+---
+
+# Re-test 2 — S1 — `9dda550`（code = `a13ec07`）— ✅ pass
+
+- 範圍：`a27d5a0..9dda550` — `f37aa6d`（W-533 / CUI-0021、S-700、S-705、全集 chip 下架字）、`a13ec07`（`useTightCount`）；其餘 docs
+- Ledger（`impact --since ab58d0d`）：SKIP 2（home、pwa-shell frozen @5eb23cf）/ REVERIFY 8（bookmark、card-zoom、catalog-data、drama、mini-player、player-core、show-today-page、ui-foundation；STALE 檔全部係今次 fix 改嘅 `useDramaPage.ts` `useHomeDramaItems.ts` `SeriesListColumn.tsx` `DramaTile.tsx` `zh-HK.ts` 等）/ UNCOVERED → `coming-soon`
+- 用戶決定（取代上面「待用戶確認」）：直版成套劇快將下架改喺「全集」chip 出「⏳ X」，「繼續收聽」行唔加字；格位唔夠「N 個短篇 ·」成段收埋、上架字優先（(b)+(c)）
+
+| Command                                                                                                                                          | Result                                     | Time |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ | ---- |
+| CI [42080750515](https://github.com/dcwhung/903-player/actions/runs/42080750515) @ `a13ec07`（lint / unit / build / e2e，含 `checkReleaseNote`） | success（引用）                            | —    |
+| `npm run build -- --mode e2e` + `npx vite preview --port 4181`                                                                                   | ok                                         | 25s  |
+| Playwright：主頁角落字 3 viewport × 有 / 冇續聽；全集 chip 3 viewport × 聽緊 / 未聽                                                              | 全部符合                                   | 60s  |
+| 上次 scratch smoke 重跑（灰格 / chips / 一覽表 / 集數 / 收藏 / 舊 URL / W-531）                                                                  | 冇新 FAIL（淨係下面 4 個已知 script 誤判） | 70s  |
+
+更正上次 Runs 行：實際係 49 PASS / 2 FAIL（W-533，844×390 同 1300×800）/ 4 script 誤判（灰格 1 + chip 虛線 3），唔係「61 / 1 / 2」；結論唔變。
+
+## W-533 / CUI-0021 驗收（「E2E 即將劇場」格，時鐘 30/11 22:30）
+
+| Viewport | 續聽 | 角落見到嘅字               | 短篇數                          | 上架字 cw/sw | 喺格內 |
+| -------- | ---- | -------------------------- | ------------------------------- | ------------ | ------ |
+| 390×844  | 有   | 3 個短篇 · 新短篇 後日上架 | 出齊 53/53                      | 80/80        | ✅     |
+| 390×844  | 冇   | 3 個短篇 · 新短篇 後日上架 | 出齊                            | 80/80        | ✅     |
+| 844×390  | 有   | ⏱ 後日上架                 | 成段收埋（`data-count-hidden`） | 58/58        | ✅     |
+| 844×390  | 冇   | 3 個短篇 · ⏱ 後日上架      | 出齊                            | 58/58        | ✅     |
+| 1300×800 | 有   | ⏱ 後日上架                 | 成段收埋                        | 87/87        | ✅     |
+| 1300×800 | 冇   | 3 個短篇 · ⏱ 後日上架      | 出齊                            | 87/87        | ✅     |
+
+- 「·」係 `.metaCount::after`，跟短篇數一齊收埋；冇半截短篇數、冇孤零零「·」（截圖 scratchpad `shots2/*-home.png`、`shots2/tile-*-nocont.png`）
+- 讀屏名（3 viewport 一樣）：「E2E 即將劇場，部分短篇 19/12（六）下架，新短篇 02/12（三）上架」（S-700 ✅）
+- 左上角下架字窄格短版「⏳ 19/12」完整（cw = sw）
+- → **W-533 已修，CUI-0021 close**
+
+## 全集 chip 下架字（`e2e-leaving`，成套劇 19/12 下架）
+
+- 390×844 聽緊：「☰ 全集 ⏳ 19/12」，讀屏「全集，19/12（六）下架」；「繼續收聽：戀愛二分一 · 第 1 集」冇下架字 ✅
+- 390×844 未聽：chips 上面「呢套劇 19/12（六）下架」取代標籤，chip 冇小標 ✅
+- 844×390 / 1300×800：chip 小標收埋（讀屏名照有），唱片下面「呢套劇 19/12（六）下架」✅
+
+## Findings
+
+- 冇新 🔴 / 🟡。S-706（`useTightCount` 字變格唔變唔重量）review backlog 🟢，唔 block；S-707 / S-708 同樣 backlog
+
+## Freeze
+
+- S1 freeze @9dda550：`coming-soon`（新）、drama、card-zoom、bookmark、catalog-data、mini-player、player-core、show-today-page、ui-foundation；home、pwa-shell SKIP（frozen @5eb23cf）
+
+## 建議補測
+
+- none（`checkReleaseNote` e2e 已鎖三個 viewport；S-706 修嗰陣加 unit）
+
+```handoff-receipt
+agent: quality-assurance
+task: S1 re-test 2 coming-soon (P8 #6) v1.28.0 @ 9dda550
+stage: S1
+status: pass
+next_action: proceed
+findings: { critical: [], warning: [], suggestion: [] }
+tickets_closed: [CUI-0021]
+context: >
+  CI 42080750515 @ a13ec07 cited. W-533 fixed: release note whole in 3 viewports, arc count shown whole or
+  hidden whole, no stray dot; SR label has release date. 全集 chip leaving tag per user decision. Frozen 9
+  chains incl. coming-soon; home / pwa-shell SKIP. S-706..S-708 backlog only.
+report: .proj-docs/qa/2026-11-05_qa_coming-soon.md
+```
