@@ -36,7 +36,6 @@
                 --version-badge-text: #ffffff;
                 --shadow-new-badge: 0 2px 6px rgb(0 0 0 / 35%);
                 --scrim: rgb(0 0 0 / 40%);
-                --toast-bg: rgb(10 16 24 / 88%);
             }
             @media (prefers-color-scheme: dark) {
                 :root:not([data-theme='light']) {
@@ -252,9 +251,10 @@
                 font-weight: 700;
                 white-space: nowrap;
             }
+            /* 主頁格：字同左右 padding 跟 --ui-scale（--k），行高 / 上下 padding 固定（同 tokens.css） */
             .badge-new.md {
-                padding: 2px 8px;
-                font-size: 12px;
+                padding: 2px calc(8px * var(--k));
+                font-size: calc(12px * var(--k));
                 line-height: 16px;
                 box-shadow: var(--shadow-new-badge);
             }
@@ -267,23 +267,23 @@
             .pill-dark {
                 display: inline-flex;
                 align-items: center;
-                gap: 4px;
-                padding: 2px 8px;
+                gap: calc(4px * var(--k));
+                padding: 2px calc(8px * var(--k));
                 border-radius: 999px;
                 background: var(--version-badge-bg);
                 color: var(--version-badge-text);
-                font-size: 11px;
+                font-size: calc(11px * var(--k));
                 font-weight: 500;
                 line-height: 16px;
                 white-space: nowrap;
             }
             .pill-dark.md {
-                font-size: 12px;
+                font-size: calc(12px * var(--k));
                 font-weight: 700;
             }
             .pill-dark svg {
-                width: 12px;
-                height: 12px;
+                width: calc(12px * var(--k));
+                height: calc(12px * var(--k));
                 fill: none;
                 stroke: currentColor;
                 stroke-width: 2.2;
@@ -330,18 +330,19 @@
             .chip[aria-pressed='true']::before {
                 background: var(--t-accent);
             }
-            /* C1：虛線外框、透明底 + 日期小標 */
+            /* 已揀：虛線框 + 淡底 + 時鐘 +「11/12 上架」（C1 + C2 混合） */
+            .chip.soon-mix {
+                gap: calc(4px * var(--k));
+                color: var(--t-muted);
+            }
+            .chip.soon-mix::before {
+                border: calc(1.5px * var(--k)) dashed var(--t-muted);
+                background: color-mix(in srgb, var(--t-surface) 45%, var(--t-bg));
+            }
+            /* 對比 C1：虛線外框、透明底 + 日期小標 */
             .chip.soon-c1::before {
                 border: calc(1.5px * var(--k)) dashed var(--t-muted);
                 background: transparent;
-            }
-            .chip.soon-c1[aria-pressed='true'] {
-                color: var(--t-text);
-            }
-            .chip.soon-c1[aria-pressed='true']::before {
-                border-style: solid;
-                border-color: var(--t-accent);
-                background: var(--t-surface);
             }
             .date-tag {
                 margin-left: calc(6px * var(--k));
@@ -353,7 +354,7 @@
                 font-weight: 600;
                 line-height: calc(16px * var(--k));
             }
-            /* C2：淡底 + 時鐘 icon + 「11/12 上架」字 */
+            /* 對比 C2：淡底 + 時鐘 icon */
             .chip.soon-c2 {
                 gap: calc(4px * var(--k));
                 color: var(--t-muted);
@@ -361,12 +362,10 @@
             .chip.soon-c2::before {
                 background: color-mix(in srgb, var(--t-surface) 45%, var(--t-bg));
             }
-            .chip.soon-c2[aria-pressed='true'] {
-                color: var(--t-text);
-                font-weight: 700;
-            }
-            .chip.soon-c2[aria-pressed='true']::before {
-                background: var(--t-track);
+            /* 不可按：冇 pointer、冇 hover / press 效果 */
+            .stage [aria-disabled='true'] {
+                cursor: default;
+                -webkit-tap-highlight-color: transparent;
             }
             .chip svg,
             .ico {
@@ -542,150 +541,6 @@
                 width: calc(18px * var(--k));
                 height: calc(18px * var(--k));
             }
-
-            /* B3：清單位置嘅「即將上架」 */
-            .soon-panel {
-                position: absolute;
-                display: flex;
-                flex-direction: column;
-                gap: calc(12px * var(--k));
-                padding: calc(12px * var(--k)) calc(16px * var(--k));
-                background: var(--t-bg);
-            }
-            .soon-head {
-                display: flex;
-                justify-content: space-between;
-                color: var(--t-muted);
-                font-size: calc(13px * var(--k));
-                letter-spacing: 0.1em;
-            }
-            .soon-card {
-                display: grid;
-                justify-items: center;
-                gap: calc(6px * var(--k));
-                padding: calc(20px * var(--k)) calc(16px * var(--k));
-                border: calc(1.5px * var(--k)) dashed var(--t-track);
-                border-radius: calc(16px * var(--k));
-                text-align: center;
-            }
-            .soon-card img {
-                width: calc(88px * var(--k));
-                height: calc(88px * var(--k));
-                border-radius: 50%;
-                filter: grayscale(1);
-                opacity: 0.55;
-            }
-            .soon-card .t1 {
-                color: var(--t-text);
-                font-size: calc(16px * var(--k));
-                font-weight: 700;
-            }
-            .soon-card .t2 {
-                color: var(--t-title);
-                font-size: calc(14px * var(--k));
-                font-weight: 600;
-            }
-            .soon-card .t3 {
-                color: var(--t-muted);
-                font-size: calc(12px * var(--k));
-            }
-
-            /* B1 toast / B2 細卡 */
-            .toast {
-                position: absolute;
-                left: 50%;
-                max-width: 90%;
-                padding: calc(10px * var(--k)) calc(16px * var(--k));
-                border-radius: 999px;
-                background: var(--toast-bg);
-                color: #ffffff;
-                font-size: calc(13px * var(--k));
-                white-space: nowrap;
-                transform: translateX(-50%);
-            }
-            .pop-scrim {
-                position: absolute;
-                inset: 0;
-                background: var(--scrim);
-            }
-            .pop {
-                position: absolute;
-                display: grid;
-                gap: calc(10px * var(--k));
-                padding: calc(16px * var(--k));
-                border-radius: calc(20px * var(--k));
-                background: var(--t-bg);
-                box-shadow: 0 6px 24px rgb(0 0 0 / 30%);
-            }
-            .pop-top {
-                display: flex;
-                align-items: center;
-                gap: calc(12px * var(--k));
-            }
-            .pop-top img {
-                width: calc(56px * var(--k));
-                height: calc(56px * var(--k));
-                border-radius: 50%;
-                filter: grayscale(1);
-                opacity: 0.55;
-            }
-            .pop-btn {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: calc(6px * var(--k));
-                height: calc(44px * var(--k));
-                border: 0;
-                border-radius: 999px;
-                background: var(--t-accent);
-                color: var(--t-on-accent);
-                font-size: calc(14px * var(--k));
-                font-weight: 700;
-            }
-            .pop-btn[aria-pressed='true'] {
-                background: var(--t-track);
-                color: var(--t-text);
-            }
-            .pop-close {
-                position: absolute;
-                top: calc(4px * var(--k));
-                right: calc(4px * var(--k));
-                width: calc(44px * var(--k));
-                height: calc(44px * var(--k));
-                border: 0;
-                background: transparent;
-                color: var(--t-text);
-                font-size: calc(18px * var(--k));
-            }
-            /* 動畫只喺冇要求減少動態先播；設定一改即刻生效 */
-            @media (prefers-reduced-motion: no-preference) {
-                .toast {
-                    animation: toast-in var(--fade) var(--ease);
-                }
-                .pop {
-                    animation: pop-in var(--fade) var(--ease);
-                }
-                .pop-scrim {
-                    animation: fade-in var(--fade) var(--ease);
-                }
-            }
-            @keyframes toast-in {
-                from {
-                    opacity: 0;
-                    transform: translate(-50%, 8px);
-                }
-            }
-            @keyframes pop-in {
-                from {
-                    opacity: 0;
-                    transform: translateY(12px);
-                }
-            }
-            @keyframes fade-in {
-                from {
-                    opacity: 0;
-                }
-            }
         </style>
     </head>
     <body>
@@ -738,111 +593,106 @@
             </div>
 
             <section class="panel">
-                <h2>① 顯示位置（可以多選）</h2>
+                <h2>① 顯示位置（已揀：三個位置都顯示）</h2>
+                <p>預設係用戶揀咗嘅款式；「對比」掣只係畀你同未揀嘅款式比較。</p>
                 <div class="row">
                     <span class="row-label">主頁劇集格</span>
-                    <button type="button" class="pick" data-toggle="home" aria-pressed="true">
-                        顯示
-                    </button>
                     <div class="row" data-group="h">
-                        <button type="button" class="pick" data-val="h1" aria-pressed="true">
-                            H1 右上角 badge
+                        <button type="button" class="pick" data-val="h2" aria-pressed="true">
+                            ✓ 已揀 H2 右下角字尾「· 新短篇 11/12 上架」
                         </button>
-                        <button type="button" class="pick" data-val="h2" aria-pressed="false">
-                            H2 右下角字尾加一句
+                        <button type="button" class="pick" data-val="h1" aria-pressed="false">
+                            對比 H1 右上角 badge
                         </button>
                     </div>
                 </div>
                 <div class="row">
                     <span class="row-label">劇集頁 chips</span>
-                    <button type="button" class="pick" data-toggle="chips" aria-pressed="true">
-                        顯示
-                    </button>
                     <div class="row" data-group="c">
-                        <button type="button" class="pick" data-val="c1" aria-pressed="true">
-                            C1 虛線 chip + 日期小標
+                        <button type="button" class="pick" data-val="mix" aria-pressed="true">
+                            ✓ 已揀 虛線框 + 淡底 + ⏱「11/12 上架」（排最尾）
+                        </button>
+                        <button type="button" class="pick" data-val="c1" aria-pressed="false">
+                            對比 C1
                         </button>
                         <button type="button" class="pick" data-val="c2" aria-pressed="false">
-                            C2 淡色 chip + 時鐘
+                            對比 C2
                         </button>
                     </div>
                 </div>
                 <div class="row">
                     <span class="row-label">全集一覽表</span>
-                    <button type="button" class="pick" data-toggle="sheet" aria-pressed="true">
-                        顯示
-                    </button>
                     <div class="row" data-group="s">
                         <button type="button" class="pick" data-val="s1" aria-pressed="true">
-                            S1 獨立「即將上架」組（最底）
+                            ✓ 已揀 S1 最底「即將上架」組
                         </button>
                         <button type="button" class="pick" data-val="s2" aria-pressed="false">
-                            S2 混入「未聽完」最尾、虛線框
+                            對比 S2 混入「未聽完」最尾
                         </button>
                     </div>
                 </div>
                 <p id="place-desc"></p>
                 <div class="stages" data-sec="place"></div>
                 <p>
-                    chips 會排喺最尾（app 嘅次序：播放中 → 新上架 → 未聽完 →
-                    已聽完；未上架排最後）。手機直版要向左掃先見到，preview 入頁先捲到最尾方便睇。
+                    chips 排喺最尾（app 嘅次序：播放中 → 新上架 → 未聽完 →
+                    已聽完；未上架排最後，用戶已確認）。手機直版要向左掃先見到，preview
+                    入頁先捲到最尾方便睇。
                 </p>
             </section>
 
             <section class="panel">
-                <h2>② 撳落去嘅行為（唔可以預先聽）</h2>
-                <div class="row" data-group="b">
-                    <button type="button" class="pick" data-val="b1" aria-pressed="false">
-                        B1 底部提示
-                    </button>
-                    <button type="button" class="pick" data-val="b2" aria-pressed="false">
-                        B2 細卡 +「上架當日提我」
-                    </button>
-                    <button type="button" class="pick" data-val="b3" aria-pressed="true">
-                        B3 揀中，清單位置顯示「即將上架」
-                    </button>
-                </div>
-                <p id="b-desc"></p>
+                <h2>② 撳落去嘅行為（已揀：不可按）</h2>
+                <ul>
+                    <li>
+                        「XXX」chip 同全集一覽表嘅「XXX」行都係
+                        <code>aria-disabled="true"</code>：撳落乜都唔做，冇 hover / press
+                        效果，唔會揀中、唔會轉清單、唔可以預先聽
+                    </li>
+                    <li>
+                        仍然可以用 Tab / 讀屏行到（唔用
+                        <code>disabled</code
+                        >，否則讀屏會跳過）：讀屏讀「XXX，11/12（四）上架，未可以收聽」
+                    </li>
+                    <li>一覽表嗰行右邊冇播放掣，只係一個時鐘標記（裝飾）</li>
+                    <li>主頁劇集格嘅字尾唔係獨立掣，撳格照舊入劇集頁</li>
+                </ul>
                 <div class="stages" data-sec="tap"></div>
-                <p>
-                    撳舞台入面嘅「XXX」chip，或者全集一覽表入面嘅「XXX」行試吓。主頁劇集格嘅 badge
-                    唔係獨立掣，撳格照舊入劇集頁。
-                </p>
+                <p>試吓撳舞台入面嘅「XXX」：乜都唔會發生（係刻意嘅）。</p>
             </section>
 
             <section class="panel">
-                <h2>③ 日期顯示格式</h2>
+                <h2>③ 日期顯示格式（已揀：F3）</h2>
                 <div class="row" data-group="f">
+                    <button type="button" class="pick" data-val="f3" aria-pressed="true">
+                        ✓ 已揀 F3 遠就日期，兩日內講「後日 / 明日」
+                    </button>
                     <button type="button" class="pick" data-val="f1" aria-pressed="false">
-                        F1 日期「11/12（四）上架」
+                        對比 F1 淨日期
                     </button>
                     <button type="button" class="pick" data-val="f2" aria-pressed="false">
-                        F2 倒數「7 日後上架」
-                    </button>
-                    <button type="button" class="pick" data-val="f3" aria-pressed="true">
-                        F3 混合：遠就日期，兩日內講「後日 / 明日」
+                        對比 F2 淨倒數
                     </button>
                 </div>
                 <div class="tbl">
                     <table>
                         <caption>
-                            短版（chip、主頁格）同長版（全集一覽表、清單卡）喺唔同日子顯示乜（揀咗嘅格式用粗體）
+                            短版（chip、主頁格）同長版（全集一覽表）喺唔同日子顯示乜（揀咗嘅格式用粗體）
                         </caption>
                         <thead>
                             <tr>
                                 <th scope="col">今日</th>
                                 <th scope="col">F1 日期</th>
                                 <th scope="col">F2 倒數</th>
-                                <th scope="col">F3 混合</th>
+                                <th scope="col">F3 混合（已揀）</th>
                             </tr>
                         </thead>
                         <tbody id="fmt-table"></tbody>
                     </table>
                 </div>
                 <p>
-                    chip 同主頁 badge 位細，只出短版（「11/12」/「7 日後」）；全集一覽表同 B3
-                    清單位有位，出長版（星期 + 「上架」）。日子按香港時間（同「新」一樣用
-                    hkToday），過咗午夜自動轉。
+                    chip 同主頁格位細，只出短版（「11/12
+                    上架」/「明日上架」）；全集一覽表出長版（加星期）。上架 = 香港時間當日
+                    00:00（用戶已確認），日子同「新」一樣用 hkToday，過咗午夜自動轉。
                 </p>
                 <div class="stages" data-sec="fmt"></div>
             </section>
@@ -893,6 +743,11 @@
                         <b>判斷</b>：<code>addedAt &gt; hkToday()</code> = 即將上架；selector 一個
                         <code>isArcUpcoming(addedAt, today)</code>，同
                         <code>isArcNew</code> 放埋一齊
+                    </li>
+                    <li>
+                        <b>上架時間</b>：上架 = 香港時間 <code>addedAt</code> 當日
+                        00:00（用戶已確認），即係
+                        <code>hkToday() &gt;= addedAt</code> 就當已上架，唔使寫時間
                     </li>
                     <li>
                         <b>未上架嘅集數</b>：唔產生 <code>SeriesEpisode</code>（唔砌音檔 URL、唔
@@ -950,7 +805,6 @@
             ];
             const SOON = { name: 'XXX', count: 20, disc: 'lancy', md: '11/12', wd: '四' };
             const NEW_DAYS = 14;
-            const TOAST_MS = 2000;
 
             /* 各版面：截圖尺寸、--ui-scale、主頁劇集格、chips 行、清單欄、全集表位置（css px） */
             const LAYOUTS = {
@@ -960,9 +814,7 @@
                     k: 1,
                     tile: { x: 16, y: 211, w: 358, h: 179 },
                     chips: { x: 86, y: 448, right: 390, h: 44 },
-                    list: { x: 0, y: 500, w: 390, h: 344 },
                     sheet: { docked: false },
-                    toast: 120,
                 },
                 l: {
                     name: '窄橫版',
@@ -970,9 +822,7 @@
                     k: 1,
                     tile: { x: 291, y: 78, w: 263, h: 140 },
                     chips: { x: 86, y: 72, right: 455, h: 44 },
-                    list: { x: 0, y: 116, w: 455, h: 274 },
                     sheet: { docked: true, x: 0, y: 72, w: 455, h: 318 },
-                    toast: 40,
                 },
                 w: {
                     name: '闊橫版',
@@ -980,32 +830,23 @@
                     k: 1.5,
                     tile: { x: 659, y: 129, w: 617, h: 202 },
                     chips: { x: 129, y: 120, right: 448, h: 66 },
-                    list: { x: 0, y: 190, w: 448, h: 610 },
                     sheet: { docked: true, x: 0, y: 120, w: 448, h: 680 },
-                    toast: 80,
                 },
             };
 
             const state = {
                 device: 'n',
                 today: 7,
-                places: { home: true, chips: true, sheet: true },
-                h: 'h1',
-                c: 'c1',
+                h: 'h2',
+                c: 'mix',
                 s: 's1',
-                b: 'b3',
                 f: 'f3',
                 after: 0,
             };
 
-            const DESC = {
-                b1: '撳 chip / 行：唔揀中、唔轉清單，底部出一句「XXX 11/12（四）上架」兩秒後自己消失。最簡單，但撳完乜都冇變，似壞咗。',
-                b2: '撳 chip / 行：彈出細卡（灰碟、上架日、集數）+「上架當日提我」。⚠️ PWA 冇 server push，「提我」只可以做到「上架當日開 app 出提示」，唔係手機通知。',
-                b3: '撳 chip：好似揀其他短篇一樣揀中，下面集數清單位置變成「即將上架」卡（灰碟 + 日期 + 集數）；一覽表撳行 = 閂表 + 揀中。同現有「撳 chip 換清單」一致，將來 P9.5 簡介都可以放呢度。',
-            };
             const PLACE_DESC = {
-                h1: 'H1：劇集格右上角深色膠囊「⏱ 11/12 上架」（同右下「3 個短篇」同一款底色），唔搶左上角「新」嘅位。',
-                h2: 'H2：唔加新 badge，右下角「3 個短篇」後面加「· 11/12 新短篇」。最低調，但細字易錯過。',
+                h2: '已揀 H2：唔加新 badge，右下角「3 個短篇」後面加「· 新短篇 11/12 上架」（兩日內變「新短篇 明日上架」）。',
+                h1: '對比 H1：劇集格右上角深色膠囊「⏱ 11/12 上架」。',
             };
 
             /* ── 日期字 ── */
@@ -1071,14 +912,6 @@
                 fitters.forEach((f) => f());
             });
 
-            const toast = (stage, L, text) => {
-                stage.querySelector('.toast')?.remove();
-                const t = el('div', 'toast', { bottom: px(L.toast) }, text);
-                t.setAttribute('role', 'status');
-                stage.append(t);
-                setTimeout(() => t.remove(), TOAST_MS);
-            };
-
             /* ── 主頁劇集格 ── */
             const renderHome = (host, L, d, opts) => {
                 const stage = makeStage(host, L, `${state.device}Home`, `${L.name} · 主頁劇集格`);
@@ -1089,7 +922,7 @@
                             el(
                                 'span',
                                 'badge-new md abs',
-                                { left: px(x + 8), top: px(y + 8) },
+                                { left: px(x + 8 * L.k), top: px(y + 8 * L.k) },
                                 '新',
                             ),
                         );
@@ -1097,17 +930,19 @@
                         el(
                             'span',
                             'pill-dark abs',
-                            { right: px(L.size.w - x - w + 8), bottom: px(L.size.h - y - h + 8) },
+                            {
+                                right: px(L.size.w - x - w + 8 * L.k),
+                                bottom: px(L.size.h - y - h + 8 * L.k),
+                            },
                             '4 個短篇',
                         ),
                     );
                     return;
                 }
-                if (!opts.places.home) return;
                 if (opts.h === 'h1') {
                     const p = el('span', 'pill-dark md abs', {
-                        right: px(L.size.w - x - w + 8),
-                        top: px(y + 8),
+                        right: px(L.size.w - x - w + 8 * L.k),
+                        top: px(y + 8 * L.k),
                     });
                     p.innerHTML = `${CLOCK}<span>${withSuffix(opts.f, d, '上架')}</span>`;
                     stage.append(p);
@@ -1116,25 +951,32 @@
                         el(
                             'span',
                             'pill-dark abs',
-                            { right: px(L.size.w - x - w + 8), bottom: px(L.size.h - y - h + 8) },
-                            `3 個短篇 · ${withSuffix(opts.f, d, '新短篇')}`,
+                            {
+                                right: px(L.size.w - x - w + 8 * L.k),
+                                bottom: px(L.size.h - y - h + 8 * L.k),
+                            },
+                            `3 個短篇 · 新短篇 ${withSuffix(opts.f, d, '上架')}`,
                         ),
                     );
                 }
             };
 
-            /* ── 劇集頁 chips（+ B3 清單卡） ── */
-            const soonChip = (opts, d, pressed, onTap) => {
+            /* ── 劇集頁 chips ── */
+            const SOON_LABEL = (d) => `${SOON.name}，${fmt('f1', d, 'long')}，未可以收聽`;
+
+            /** 未上架 chip：不可按（aria-disabled，冇 click、冇 hover / press），讀屏讀「未可以收聽」 */
+            const soonChip = (opts, d) => {
                 const b = el('button', `chip soon-${opts.c}`);
                 b.type = 'button';
-                b.setAttribute('aria-pressed', String(pressed));
-                b.setAttribute('aria-label', `${SOON.name}，${fmt('f1', d, 'long')}，未可以收聽`);
+                b.setAttribute('aria-disabled', 'true');
+                b.setAttribute('aria-label', SOON_LABEL(d));
                 const when = fmt(opts.f, d, 'short');
                 if (opts.c === 'c1')
                     b.innerHTML = `${SOON.name}<span class="date-tag">${when}</span>`;
-                else
+                else if (opts.c === 'c2')
                     b.innerHTML = `${CLOCK}<span>${SOON.name} · ${withSuffix(opts.f, d, '上架')}</span>`;
-                b.addEventListener('click', onTap);
+                else
+                    b.innerHTML = `<span>${SOON.name}</span>${CLOCK}<span>${withSuffix(opts.f, d, '上架')}</span>`;
                 return b;
             };
 
@@ -1147,91 +989,13 @@
                 return b;
             };
 
-            const soonPanel = (L, d, opts) => {
-                const p = el('div', 'soon-panel', {
-                    left: px(L.list.x),
-                    top: px(L.list.y),
-                    width: px(L.list.w),
-                    height: px(L.list.h),
-                });
-                const head = el('div', 'soon-head');
-                head.append(el('span', '', {}, '集 數'), el('span', '', {}, `共 ${SOON.count} 集`));
-                const card = el('div', 'soon-card');
-                const img = el('img');
-                img.src = IMG[SOON.disc];
-                img.alt = '';
-                card.append(
-                    img,
-                    el('span', 't1', {}, SOON.name),
-                    el('span', 't2', {}, fmt(opts.f, d, 'long')),
-                    el('span', 't3', {}, '上架之後喺呢度揀集收聽'),
-                );
-                p.append(head, card);
-                return p;
-            };
-
-            const popCard = (stage, L, d, opts) => {
-                stage.querySelector('.pop-layer')?.remove();
-                const layer = el('div', 'pop-layer abs', { inset: '0' });
-                const scrim = el('div', 'pop-scrim');
-                const k = L.k;
-                const w = Math.min(L.size.w - 32 * k, 340 * k);
-                const pop = el('div', 'pop', {
-                    left: px((L.size.w - w) / 2),
-                    width: px(w),
-                    bottom: px(L.toast),
-                });
-                pop.setAttribute('role', 'dialog');
-                pop.setAttribute('aria-label', `${SOON.name} 即將上架`);
-                const top = el('div', 'pop-top');
-                const img = el('img');
-                img.src = IMG[SOON.disc];
-                img.alt = '';
-                const txt = el('div', 'arc-text');
-                txt.append(
-                    el('span', 'arc-name', {}, SOON.name),
-                    el('span', 'arc-status', {}, `${fmt(opts.f, d, 'long')} · ${SOON.count} 集`),
-                );
-                top.append(img, txt);
-                const btn = el('button', 'pop-btn');
-                btn.type = 'button';
-                btn.setAttribute('aria-pressed', 'false');
-                const paint = () => {
-                    const on = btn.getAttribute('aria-pressed') === 'true';
-                    btn.innerHTML = on
-                        ? '✓ 上架當日會提你'
-                        : `${CLOCK.replace('class="ico"', 'class="ico" style="width:1.1em;height:1.1em"')}上架當日提我`;
-                };
-                paint();
-                btn.addEventListener('click', () => {
-                    btn.setAttribute(
-                        'aria-pressed',
-                        String(btn.getAttribute('aria-pressed') !== 'true'),
-                    );
-                    paint();
-                });
-                const close = el('button', 'pop-close', {}, '✕');
-                close.type = 'button';
-                close.setAttribute('aria-label', '閂');
-                const shut = () => layer.remove();
-                close.addEventListener('click', shut);
-                scrim.addEventListener('click', shut);
-                layer.addEventListener('keydown', (e) => e.key === 'Escape' && shut());
-                pop.append(close, top, btn);
-                layer.append(scrim, pop);
-                stage.append(layer);
-                btn.focus();
-            };
-
-            const renderDrama = (host, L, d, opts, selectSoon = false) => {
+            const renderDrama = (host, L, d, opts) => {
                 const stage = makeStage(
                     host,
                     L,
                     `${state.device}Drama`,
                     `${L.name} · 劇集頁 chips`,
                 );
-                const released = isReleased(d);
-                if (!released && !opts.places.chips) return stage;
                 const c = L.chips;
                 const row = el('div', 'chips', {
                     left: px(c.x),
@@ -1240,7 +1004,7 @@
                     height: px(c.h),
                 });
                 stage.append(row);
-                if (released) {
+                if (isReleased(d)) {
                     // 上咗架：14 日內排「新上架」最前，之後排返未聽完最尾
                     const fresh = isNewRelease(d);
                     const chips = ARCS.map((a, i) => normalChip(a.name, i === 0, false));
@@ -1249,38 +1013,14 @@
                     else row.append(...chips, xxx);
                     return stage;
                 }
-                let selected = selectSoon;
-                const draw = () => {
-                    row.replaceChildren(
-                        ...ARCS.map((a, i) => normalChip(a.name, !selected && i === 0, false)),
-                        soonChip(opts, d, selected, () =>
-                            tap(stage, L, d, opts, 'chip', () => {
-                                selected = true;
-                                draw();
-                            }),
-                        ),
-                    );
-                    row.querySelectorAll('.chip:not([class*="soon"])').forEach((b) =>
-                        b.addEventListener('click', () => {
-                            selected = false;
-                            draw();
-                            stage.querySelector('.soon-panel')?.remove();
-                        }),
-                    );
-                    stage.querySelector('.soon-panel')?.remove();
-                    if (selected) stage.append(soonPanel(L, d, opts));
-                };
-                draw();
+                // 未上架排最尾（用戶已確認）
+                row.append(
+                    ...ARCS.map((a, i) => normalChip(a.name, i === 0, false)),
+                    soonChip(opts, d),
+                );
                 // 真 app 入頁捲去揀中嗰粒；preview 捲到最尾，等「XXX」一入眼就見到
                 requestAnimationFrame(() => (row.scrollLeft = row.scrollWidth));
                 return stage;
-            };
-
-            /** 撳「XXX」：按 B 做嘢；select 係 B3 揀中嘅 callback */
-            const tap = (stage, L, d, opts, from, select) => {
-                if (opts.b === 'b1') toast(stage, L, `${SOON.name} ${fmt('f1', d, 'long')}`);
-                else if (opts.b === 'b2') popCard(stage, L, d, opts);
-                else select();
             };
 
             /* ── 全集一覽表 ── */
@@ -1302,10 +1042,12 @@
                 return r;
             };
 
-            const soonRow = (d, opts, onTap) => {
+            /** 未上架行：不可按（aria-disabled），右邊冇播放掣 */
+            const soonRow = (d, opts) => {
                 const r = el('button', `arc-row soon ${opts.s}`);
                 r.type = 'button';
-                r.setAttribute('aria-label', `${SOON.name}，${fmt('f1', d, 'long')}，未可以收聽`);
+                r.setAttribute('aria-disabled', 'true');
+                r.setAttribute('aria-label', SOON_LABEL(d));
                 const ring = el('span', 'ring');
                 const img = el('img');
                 img.src = IMG[SOON.disc];
@@ -1319,7 +1061,6 @@
                 const mark = el('span', 'soon-mark');
                 mark.innerHTML = CLOCK;
                 r.append(ring, t, mark);
-                r.addEventListener('click', onTap);
                 return r;
             };
 
@@ -1363,28 +1104,9 @@
                         xxx.querySelector('.arc-name').append(el('span', 'badge-new sm', {}, '新'));
                         list.append(group('新上架', [xxx]), group('未聽完', rows));
                     } else list.append(group('未聽完', [...rows, xxx]));
-                } else if (opts.places.sheet) {
-                    const onTap = () =>
-                        tap(stage, L, d, opts, 'sheet', () => {
-                            // B3：閂表 + 揀中 XXX（用劇集頁舞台代替）
-                            const wrap = stage.parentElement.parentElement;
-                            renderDrama(
-                                host,
-                                L,
-                                d,
-                                { ...opts, places: { ...opts.places, chips: true } },
-                                true,
-                            );
-                            host.insertBefore(host.lastElementChild, wrap);
-                            wrap.remove();
-                        });
-                    if (opts.s === 's1')
-                        list.append(
-                            group('未聽完', rows),
-                            group('即將上架', [soonRow(d, opts, onTap)]),
-                        );
-                    else list.append(group('未聽完', [...rows, soonRow(d, opts, onTap)]));
-                } else list.append(group('未聽完', rows));
+                } else if (opts.s === 's1')
+                    list.append(group('未聽完', rows), group('即將上架', [soonRow(d, opts)]));
+                else list.append(group('未聽完', [...rows, soonRow(d, opts)]));
                 sheet.append(el('div', 'grab'), head, list);
                 stage.append(sheet);
                 return stage;
@@ -1399,19 +1121,13 @@
                 },
                 tap: (host, L) => {
                     const d = Math.max(state.today, 1);
-                    const o = { ...state, places: { home: true, chips: true, sheet: true } };
-                    renderDrama(host, L, d, o);
-                    renderSheet(host, L, d, o);
+                    renderDrama(host, L, d, state);
+                    renderSheet(host, L, d, state);
                 },
                 fmt: (host, L) => {
                     const d = Math.max(state.today, 1);
-                    const o = {
-                        ...state,
-                        b: 'b3',
-                        places: { home: true, chips: true, sheet: true },
-                    };
-                    renderHome(host, L, d, o);
-                    renderDrama(host, L, d, o, true);
+                    renderHome(host, L, d, state);
+                    renderDrama(host, L, d, state);
                 },
                 after: (host, L) => {
                     renderHome(host, L, state.after, state);
@@ -1452,7 +1168,6 @@
                     host.replaceChildren();
                     sections[host.dataset.sec](host, L);
                 });
-                document.getElementById('b-desc').textContent = DESC[state.b];
                 document.getElementById('place-desc').textContent =
                     state.today <= 0
                         ? '示範日子係上架日或之後：「XXX」已經係正常短篇（見 ④），即將上架嘅樣式唔再出。'
@@ -1471,15 +1186,6 @@
                     const key = g.dataset.group;
                     const v = b.dataset.val;
                     state[key] = ['today', 'after'].includes(key) ? Number(v) : v;
-                    render();
-                });
-            });
-            document.querySelectorAll('[data-toggle]').forEach((b) => {
-                b.addEventListener('click', () => {
-                    const key = b.dataset.toggle;
-                    state.places[key] = !state.places[key];
-                    b.setAttribute('aria-pressed', String(state.places[key]));
-                    b.textContent = state.places[key] ? '顯示' : '唔顯示';
                     render();
                 });
             });
