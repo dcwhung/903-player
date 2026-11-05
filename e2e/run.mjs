@@ -615,9 +615,14 @@ const dayOffset = async (p, dayMonth) => {
     return day.x + day.width / 2 - (zone.x + zone.width / 2);
 };
 
+/**
+ * 集數清單 / 節目表每行嘅播放 / 暫停掣（每行旁邊仲有 ☆ 收藏掣，P7 #7，唔好數埋佢）
+ */
+const ROW_PLAY_BUTTONS = 'li button[aria-label^="播放 "], li button[aria-label^="暫停 "]';
+
 /** 喺唱片下面嘅日子條向左拖，將下一行（舊一集）嗰日拖入正中 → 播放中轉去嗰集 */
 const checkSwipeToOlder = async (p, dragShot) => {
-    const rows = p.getByRole('region', { name: '集數' }).locator('li button');
+    const rows = p.getByRole('region', { name: '集數' }).locator(ROW_PLAY_BUTTONS);
     const labels = await rows.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
     const from = labels.findIndex((l) => l.includes('播放中'));
     // 去走行首動作（播放 / 暫停），淨低「日/月 星期X」
@@ -1443,7 +1448,7 @@ try {
         await page.waitForTimeout(1000);
         const items = await page
             .getByRole('region', { name: '節目表' })
-            .locator('li button')
+            .locator(ROW_PLAY_BUTTONS)
             .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
         log(items.length === 3, `今日節目列表：${items.join(' | ')}`);
         const pageTitle = await page.getByRole('heading', { level: 1 }).textContent();

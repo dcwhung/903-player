@@ -12,7 +12,8 @@ export const SWIPE_REMOVE_RATIO = 0.4;
 
 // 闊橫版：高 ≥ 562 先係（src/config/layout.ts WIDE_BANNER_QUERY）；同 mockup 截圖一樣大
 const WIDE = { width: 1300, height: 800 };
-const HOME_HASH = '#/';
+// 主頁：直接開 base 時 hash 係空，轉頁返嚟係 #/，兩個都算
+const HOME_HASHES = new Set(['', '#/']);
 const SHOW_HASH = '#/show/gongzi';
 const SAVED_TAB = '我的收藏';
 // 公子會（星期六）17/10：sampleData 有嘅最近一集；行嘅讀屏名（src/i18n/zh-HK.ts bookmark.*）刻意寫死做獨立對照
@@ -99,7 +100,8 @@ const checkPlayInPlace = async ({ browser, base, errors, log }, label, viewport)
     await p.getByRole('button', { name: ROW_PLAY, exact: true }).click();
     const state = await waitForPlaybackState(p, 'playing');
     log(state === 'playing', `${label}：撳 ▷ 開始播（mediaSession ${state}）`);
-    log(new URL(p.url()).hash === HOME_HASH, `${label}：播嗰陣留喺主頁收藏 tab`);
+    const hash = new URL(p.url()).hash;
+    log(HOME_HASHES.has(hash), `${label}：播嗰陣留喺主頁收藏 tab（hash「${hash}」）`);
     const pause = await isShown(p.getByRole('button', { name: ROW_PAUSE, exact: true }));
     log(pause, `${label}：播緊嗰行掣變 ⏸`);
     await ctx.close();
