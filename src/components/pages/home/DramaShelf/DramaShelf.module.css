@@ -22,6 +22,8 @@
 
 /* 一行一套：2:1（原圖 16:9，cover 裁走少少上下），泥膠感落影同節目格一樣 */
 .tile {
+    /* 角落字按格闊揀全句定短版（drama-tile container query，W-533） */
+    container: drama-tile / inline-size;
     position: relative;
     aspect-ratio: var(--drama-tile-aspect-w) / var(--drama-tile-aspect-h);
     overflow: hidden;
@@ -270,6 +272,48 @@
 
 .leavingTag {
     display: none;
+}
+
+/*
+ * 短篇數 + 即將上架字尾（W-533）：字尾一截唔縮、唔收尾，位唔夠就短篇數先 … ；
+ * 格闊 280px 以下（手機打橫格、闊橫版三欄格）字尾同左上角下架字都換短版
+ *（「⏱ 後日上架」/「⏳ 19/12」），讀屏名照有長版日子
+ */
+.meta:has(.metaRelease) {
+    display: flex;
+    align-items: center;
+}
+
+.metaCount {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.metaRelease {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: var(--notice-icon-gap);
+}
+
+.metaRelease::before {
+    margin-right: var(--space-1);
+    content: '·';
+}
+
+.noteTag {
+    display: none;
+}
+
+@container drama-tile (max-width: 280px) {
+    .noteFull {
+        display: none;
+    }
+
+    .noteTag {
+        display: inline;
+    }
 }
 
 @container continue-line (max-width: 200px) {

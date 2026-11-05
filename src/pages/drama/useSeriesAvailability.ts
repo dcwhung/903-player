@@ -44,11 +44,11 @@ const listWithAvailability = (
 const arcLookups = (
     infoOf: (arc: string) => ArcAvailability | undefined,
     episodes: readonly SeriesEpisode[],
-    today: string,
+    { today, dramaRemovedAt }: { today: string; dramaRemovedAt: string | undefined },
 ) => ({
     withChipLeaving: (chip: ArcChip): ArcChip => {
         const info = infoOf(chip.arc);
-        return info ? { ...chip, leaving: chipLeavingOf(info, today) } : chip;
+        return info ? { ...chip, leaving: chipLeavingOf(info, today, dramaRemovedAt) } : chip;
     },
     notesOf: (s: ArcSummary) => {
         const info = infoOf(s.arc);
@@ -76,7 +76,7 @@ export const useSeriesAvailability = (drama: DramaConfig, episodes: readonly Ser
         notice,
         upcomingChips: upcomingChipsOf(arcs, today),
         upcomingRows: upcomingRowsOf(arcs, today, (arc) => arcCover(drama.id, arc)),
-        ...arcLookups(infoOf, episodes, today),
+        ...arcLookups(infoOf, episodes, { today, dramaRemovedAt: drama.removedAt }),
         listItems: (
             arc: string | undefined,
             items: EpisodeItem[],

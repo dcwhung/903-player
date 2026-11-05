@@ -2,10 +2,11 @@ import { useEffect, useId, useRef } from 'react';
 import { t } from '../../../../i18n/t';
 import { scrollBehavior } from '../../../../utils/motion';
 import { scrollChipToCentre } from '../../../../utils/scroll';
-import { HourglassIcon, ListIcon } from '../../../shared/common/icons/icons';
+import { HourglassIcon } from '../../../shared/common/icons/icons';
 import { NewBadge } from '../../../shared/common/NewBadge/NewBadge';
 import styles from './ArcPicker.module.css';
 import {
+    AllChip,
     NOTICE_ICON_SIZE,
     PickerLabel,
     SoonChip,
@@ -40,8 +41,6 @@ interface ArcPickerProps {
     /** 「全集」：打開全集一覽表 */
     onOpenAll: () => void;
 }
-
-const LIST_ICON_SIZE = 14;
 
 /** chip 讀屏名：短篇名（+ 快將下架日子） */
 const chipLabel = (chip: ArcChip): string =>
@@ -111,15 +110,7 @@ export const ArcPicker = ({
         <div className={styles.group}>
             <PickerLabel label={label} notice={notice} />
             <div className={styles.row} role="group" aria-label={t('drama.arcs')}>
-                <button
-                    type="button"
-                    className={`${styles.chip} ${styles.all}`}
-                    aria-haspopup="dialog"
-                    onClick={onOpenAll}
-                >
-                    <ListIcon size={LIST_ICON_SIZE} />
-                    {t('drama.allArcs')}
-                </button>
+                <AllChip notice={notice} onOpenAll={onOpenAll} />
                 <div ref={rowRef} className={styles.chips}>
                     {arcs.map((chip) => (
                         <Chip key={chip.arc} chip={chip} ids={ids} {...chipProps} />

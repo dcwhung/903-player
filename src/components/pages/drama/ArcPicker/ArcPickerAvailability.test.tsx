@@ -5,7 +5,9 @@ import { ArcPicker } from './ArcPicker';
 
 const UPCOMING = [{ arc: 'XXX', text: '12/11 上架', label: 'XXX，12/11（四）上架，未可以收聽' }];
 
-const renderPicker = (onPick = vi.fn(), notice?: { text: string; replace: boolean }) =>
+const NOTICE = { text: '呢套劇 05/12（六）下架', tag: '05/12', label: '05/12（六）下架' };
+
+const renderPicker = (onPick = vi.fn(), notice?: typeof NOTICE & { replace: boolean }) =>
     render(
         <ArcPicker
             arcs={[
@@ -54,16 +56,19 @@ describe('ArcPicker availability', () => {
     });
 
     it('should swap the pick line for the whole-drama leaving note when nothing has started', () => {
-        renderPicker(vi.fn(), { text: '呢套劇 05/12（六）下架', replace: true });
+        renderPicker(vi.fn(), { ...NOTICE, replace: true });
 
         expect(screen.getByText('呢套劇 05/12（六）下架')).toBeInTheDocument();
         expect(screen.queryByText('揀一個短篇開始收聽')).not.toBeInTheDocument();
     });
 
-    it('should keep the playing line and add the leaving note after it once started', () => {
-        renderPicker(vi.fn(), { text: '呢套劇 05/12（六）下架', replace: false });
+    // 用戶決定（QA S1 後）：已開始聽就唔喺標籤後面加字，改喺「全集」chip 出 LK1 款式小標
+    it('should leave the playing line alone and tag the 全集 chip once started', () => {
+        renderPicker(vi.fn(), { ...NOTICE, replace: false });
 
-        expect(screen.getByText('揀一個短篇開始收聽')).toBeInTheDocument();
-        expect(screen.getByText('呢套劇 05/12（六）下架')).toBeInTheDocument();
+        expect(screen.getByText('揀一個短篇開始收聽').textContent).toBe('揀一個短篇開始收聽');
+        expect(screen.queryByText('呢套劇 05/12（六）下架')).not.toBeInTheDocument();
+        const all = screen.getByRole('button', { name: '全集，05/12（六）下架' });
+        expect(all).toHaveTextContent('全集05/12');
     });
 });

@@ -330,6 +330,11 @@ const useSeriesArcs = (
 const pageAvailability = (availability: SeriesAvailabilityView) => ({
     upcomingArcs: availability.upcomingChips,
     notice: availability.notice?.page,
+    /** 直版已開始聽：「全集」chip 嘅琥珀小標同讀屏日子 */
+    noticeTag: availability.notice && {
+        tag: availability.notice.tag,
+        label: availability.notice.label,
+    },
 });
 
 /** 全集一覽表嘅即將上架組（S1）、成套劇下架字、每行補充（A2 / LS2） */

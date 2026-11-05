@@ -21,18 +21,17 @@ import { dramaShelfOrder } from '../../selectors/dramaShelf';
 import { getProgressMap } from '../../services/progressStore';
 import { zoomKey } from '../../utils/cardZoom';
 import { hkToday } from '../../utils/date';
-import { leavingCorner, upcomingTile, withReleaseSuffix } from './dramaTileNotices';
+import { leavingCorner, releaseNote, upcomingTile } from './dramaTileNotices';
 import { useTileOpen, type HomeRight } from './useTileOpen';
 
 /**
  * 劇集格右下角：短篇劇集「N 個短篇」（分季嘅「全 N 季」；只數已上架未下架嘅），每日劇集「每日更新」；
- * 有新短篇 / 新一批集數即將上架就加字尾（H2 / E1）
+ * 即將上架嘅字尾（H2 / E1）另外由 releaseNote 出（獨立一截，W-533）
  */
 const dramaMeta = (drama: DramaConfig, today: string): string => {
     if (drama.kind !== 'series') return t('drama.daily');
     const count = seriesArcs(seriesEpisodesOf(drama.id, today)).length;
-    const meta = t(drama.arcUnit === 'season' ? 'drama.seasonCount' : 'drama.arcCount', { count });
-    return withReleaseSuffix(meta, arcAvailabilityOf(drama.id), today);
+    return t(drama.arcUnit === 'season' ? 'drama.seasonCount' : 'drama.arcCount', { count });
 };
 
 /** 劇集格嘅圖同字：右下角短篇數（+ 即將上架字尾）、左上角快將下架 */
@@ -42,6 +41,7 @@ const tileText = (drama: DramaConfig, today: string) => ({
     art: drama.tileArt,
     meta: dramaMeta(drama, today),
     leaving: leavingCorner(drama, arcAvailabilityOf(drama.id), today),
+    release: releaseNote(arcAvailabilityOf(drama.id), today),
 });
 
 /** 整套即將上架嘅劇：書架最尾灰格，撳唔到（一登記即刻出） */

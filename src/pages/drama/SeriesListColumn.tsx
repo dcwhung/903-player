@@ -52,6 +52,7 @@ type SeriesListView = Pick<
     | 'arcs'
     | 'upcomingArcs'
     | 'notice'
+    | 'noticeTag'
     | 'status'
     | 'arc'
     | 'pickArc'
@@ -59,6 +60,14 @@ type SeriesListView = Pick<
     | 'pressEpisode'
     | 'sheet'
 >;
+
+/**
+ * 成套劇快將下架：未開始聽取代「揀一個短篇開始收聽」；聽緊就出喺「全集」chip（標籤行唔加字）
+ */
+const pickerNotice = ({ notice, noticeTag, status }: SeriesListView) =>
+    notice && noticeTag
+        ? { text: notice, ...noticeTag, replace: status === 'unloaded' }
+        : undefined;
 
 interface SeriesListColumnProps {
     view: SeriesListView;
@@ -89,11 +98,7 @@ export const SeriesListColumn = ({
                 <ArcPicker
                     arcs={view.arcs}
                     upcoming={view.upcomingArcs}
-                    notice={
-                        view.notice
-                            ? { text: view.notice, replace: view.status === 'unloaded' }
-                            : undefined
-                    }
+                    notice={pickerNotice(view)}
                     selected={view.arc}
                     playing={view.start ? undefined : view.current?.arc}
                     label={label}

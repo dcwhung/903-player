@@ -19,18 +19,6 @@ import {
 } from '../../selectors/availabilityLabels';
 import type { ArcAvailability } from '../../types/drama';
 
-/** 「3 個短篇」後面加最快上架嗰個新短篇 / 新一批集數；冇就照舊 */
-export const withReleaseSuffix = (
-    meta: string,
-    arcs: readonly ArcAvailability[],
-    today: string,
-): string => {
-    const next = nextRelease(arcs, today);
-    if (!next) return meta;
-    const key = next.kind === 'arc' ? 'availability.tileNewArc' : 'availability.tileNewEpisodes';
-    return t(key, { meta, when: releaseWhen(next.date, today, 'short') });
-};
-
 const LEAVING_KEYS = {
     drama: 'availability.leavingDrama',
     arc: 'availability.leavingArcs',
@@ -43,16 +31,39 @@ export interface TileNotice {
     label: string;
 }
 
+/** 格窄時改出嘅短版（tag，例如「05/12」/「後日上架」） */
+export type TileNoticeWithTag = TileNotice & { tag: string };
+
+/**
+ * 短篇數後面嘅字尾（H2 新短篇 / E1 全新集數）：最快上架嗰個；冇就 undefined。
+ * 獨立一截，格窄時短篇數先收尾（W-533）；讀屏名用長版日子（S-700）
+ */
+export const releaseNote = (
+    arcs: readonly ArcAvailability[],
+    today: string,
+): TileNoticeWithTag | undefined => {
+    const next = nextRelease(arcs, today);
+    if (!next) return undefined;
+    const key = next.kind === 'arc' ? 'availability.tileNewArc' : 'availability.tileNewEpisodes';
+    const when = releaseWhen(next.date, today, 'short');
+    return {
+        text: t(key, { when }),
+        tag: when,
+        label: t(key, { when: releaseDateLong(next.date) }),
+    };
+};
+
 export const leavingCorner = (
     drama: DateWindow,
     arcs: readonly ArcAvailability[],
     today: string,
-): TileNotice | undefined => {
+): TileNoticeWithTag | undefined => {
     const leaving = dramaLeaving(drama, arcs, today);
     if (!leaving) return undefined;
     const key = LEAVING_KEYS[leaving.scope];
     return {
         text: t(key, { when: removalWhen(leaving.date, today, 'short') }),
+        tag: dayWhen(leaving.date, today),
         label: t(key, { when: removalDateLong(leaving.date) }),
     };
 };

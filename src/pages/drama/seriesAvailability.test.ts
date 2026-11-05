@@ -60,6 +60,10 @@ describe('series drama availability builders', () => {
             label: '05/12（六）下架',
         });
         expect(chipLeavingOf(arcInfo('A'), TODAY)).toBeUndefined();
+        // 成套劇同日（或者更早）下架：只喺「全集」chip 講一次，短篇 chip 唔重覆
+        const sameDay = arcInfo('A', { removedAt: '2026-12-05' });
+        expect(chipLeavingOf(sameDay, TODAY, '2026-12-05')).toBeUndefined();
+        expect(chipLeavingOf(sameDay, TODAY, '2026-12-20')?.tag).toBe('05/12');
     });
 
     it('should count every episode and name the next batch (A2)', () => {
@@ -110,6 +114,8 @@ describe('series drama availability builders', () => {
         expect(dramaNoticeOf({ removedAt: '2026-12-05' }, TODAY)).toEqual({
             page: '呢套劇 05/12（六）下架',
             sheet: '成套劇 05/12（六）下架',
+            tag: '05/12',
+            label: '05/12（六）下架',
         });
         expect(dramaNoticeOf({ removedAt: '2027-02-01' }, TODAY)).toBeUndefined();
     });

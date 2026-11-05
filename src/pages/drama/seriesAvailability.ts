@@ -59,10 +59,18 @@ export const upcomingRowsOf = (
         label: unavailableLabel(upcoming.arc, upcoming.addedAt),
     }));
 
-/** chip 琥珀小標（LK1）：只係短篇自己快將下架先出（成套劇嘅由頁面嗰行講） */
-export const chipLeavingOf = (arc: ArcAvailability, today: string): ArcChip['leaving'] => {
+/**
+ * chip 琥珀小標（LK1）：只係短篇自己快將下架先出；成套劇同日或者更早落架就唔重覆
+ *（成套劇嘅由「全集」chip / 唱片下面講一次）
+ */
+export const chipLeavingOf = (
+    arc: ArcAvailability,
+    today: string,
+    dramaRemovedAt?: string,
+): ArcChip['leaving'] => {
     const leaving = arcLeaving(arc, today);
     if (leaving?.scope !== 'arc') return undefined;
+    if (dramaRemovedAt && dramaRemovedAt <= leaving.date) return undefined;
     return { tag: dayWhen(leaving.date, today), label: removalDateLong(leaving.date) };
 };
 
@@ -147,12 +155,14 @@ export const episodeLeavingOf = (
 export const dramaNoticeOf = (
     drama: DateWindow,
     today: string,
-): { page: string; sheet: string } | undefined => {
+): { page: string; sheet: string; tag: string; label: string } | undefined => {
     const { removedAt } = drama;
     if (!removedAt || !isLeavingSoon(removedAt, today)) return undefined;
     const when = removalWhen(removedAt, today, 'long');
     return {
         page: t('availability.dramaLeavingLine', { when }),
         sheet: t('availability.sheetLeavingLine', { when }),
+        tag: dayWhen(removedAt, today),
+        label: removalDateLong(removedAt),
     };
 };

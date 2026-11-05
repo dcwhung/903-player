@@ -237,9 +237,10 @@ export const zhHK = {
         dayAfter: '後日',
         // 撳唔到嘅 chip / 一覽表行 / 集數 / 劇集格嘅讀屏：{when} 一律係長版日子
         unavailableLabel: '{name}，{when}，未可以收聽',
-        // 主頁劇集格右下角字尾（H2 / E1）：{meta} = 「3 個短篇」，{when} = 「12/11 上架」/「明日上架」
-        tileNewArc: '{meta} · 新短篇 {when}',
-        tileNewEpisodes: '{meta} · 全新集數 {when}',
+        // 主頁劇集格短篇數後面嘅字尾（H2 / E1，前面自動加「·」）：{when} = 「12/11 上架」/「明日上架」；
+        // 讀屏名用長版日子。格窄就淨係出 {when}（前面一粒 ⏱）
+        tileNewArc: '新短篇 {when}',
+        tileNewEpisodes: '全新集數 {when}',
         // 主頁書架最尾嘅新劇灰格（底部深色條）
         upcomingDrama: '即將上架 · {when}',
         // 全集一覽表最底一組

@@ -26,7 +26,27 @@ describe('DramaTile availability', () => {
             name: '蘭茜夫人劇場，有新短篇，05/12（六）下架',
         });
         const corner = tile.querySelector('[data-corner-notes]');
-        expect(corner?.textContent).toBe('新05/12 下架');
+        expect(corner?.textContent).toContain('新05/12 下架');
+    });
+
+    // W-533 / S-700：上架字獨立一截（唔收尾），短篇數先俾位；讀屏名有長版上架日
+    it('should keep the release note whole after the arc count, and read it out', () => {
+        const release = {
+            text: '新短篇 後日上架',
+            tag: '後日上架',
+            label: '新短篇 02/12（三）上架',
+        };
+        const resume = { label: '初戀無限次 · 第 2 集', ratio: 0.2, leaving: LEAVING };
+        render(<DramaShelf items={[item({ leaving: LEAVING, release, resume })]} />);
+
+        const tile = screen.getByRole('button', {
+            name: '蘭茜夫人劇場，05/12（六）下架，新短篇 02/12（三）上架',
+        });
+        const meta = tile.querySelector('[data-corner]');
+        expect(meta?.querySelector('[data-role="meta-count"]')?.textContent).toBe('3 個短篇');
+        expect(meta?.querySelector('[data-role="meta-release"]')?.textContent).toContain(
+            '新短篇 後日上架',
+        );
     });
 
     it('should add the leaving note after the episode on 繼續收聽', () => {

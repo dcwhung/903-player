@@ -107,6 +107,50 @@ const checkStackedUpcoming = async (env) => {
     await ctx.close();
 };
 
+const SOON_TILE_LABEL = 'E2E 即將劇場，部分短篇 19/12（六）下架，新短篇 02/12（三）上架';
+/** 主頁格角落字闊橫版 / 窄橫版（有繼續收聽 + 左上角下架字，W-533） */
+const RELEASE_VIEWPORTS = [
+    { width: 1300, height: 800, full: false },
+    { width: 844, height: 390, full: false },
+    { width: 390, height: 844, full: true },
+];
+
+/** 字尾嗰截：見到、冇俾截（scrollWidth ≤ clientWidth）、喺格入面；同顯示緊嘅字 */
+const releaseFit = (tile) =>
+    tile.evaluate((button) => {
+        const release = button.querySelector('[data-role="meta-release"]');
+        if (!release) return null;
+        const box = release.getBoundingClientRect();
+        const card = button.getBoundingClientRect();
+        const shown = [...release.children].filter((el) => getComputedStyle(el).display !== 'none');
+        return {
+            whole: release.scrollWidth <= release.clientWidth && box.width > 0,
+            inside: box.left >= card.left && box.right <= card.right,
+            text: shown.map((el) => el.textContent).join(''),
+        };
+    });
+
+/**
+ * W-533：有「繼續收聽」+ 左上角下架字嘅格，右上角上架字尾成截睇得到（窄就短版「後日上架」），
+ * 讀屏名有長版上架日
+ */
+const checkReleaseNote = async (env) => {
+    const { log } = env;
+    for (const { full, ...viewport } of RELEASE_VIEWPORTS) {
+        const { ctx, p } = await openPage(env, { viewport });
+        await p.goto(env.base);
+        await p.getByRole('button', { name: SHELF, exact: true }).click();
+        const tile = p.getByRole('button', { name: SOON_TILE_LABEL });
+        const fit = (await isShown(tile, { timeout: WAIT_MS })) ? await releaseFit(tile) : null;
+        const expected = full ? '新短篇 後日上架' : '後日上架';
+        log(
+            fit !== null && fit.whole && fit.inside && fit.text === expected,
+            `${viewport.width}×${viewport.height} 主頁：上架字尾冇俾截（${JSON.stringify(fit)}）`,
+        );
+        await ctx.close();
+    }
+};
+
 /** 主頁劇集格：H2 字尾、左上角琥珀、LC2、新劇灰格排最尾、已下架劇唔出 */
 const checkHomeShelf = async (env) => {
     const { log } = env;
@@ -117,8 +161,8 @@ const checkHomeShelf = async (env) => {
     await shelf.waitFor({ timeout: WAIT_MS });
     const labels = await labelsIn(shelf);
     log(
-        labels.includes('E2E 即將劇場，部分短篇 19/12（六）下架'),
-        '主頁：即將劇場左上角讀「部分短篇 19/12（六）下架」',
+        labels.includes(SOON_TILE_LABEL),
+        '主頁：即將劇場讀「部分短篇 19/12（六）下架，新短篇 02/12（三）上架」',
     );
     log(
         labels.includes('E2E 下架劇場，19/12（六）下架'),
@@ -132,11 +176,6 @@ const checkHomeShelf = async (env) => {
     log(
         labels.includes('E2E 即將劇場，繼續收聽 初戀無限次 · 第 2 集，19/12（六）下架'),
         '主頁：繼續收聽條集名後面加下架日（LC2）',
-    );
-    const soonTile = shelf.getByRole('button', { name: /^E2E 即將劇場，部分短篇/ });
-    log(
-        (await soonTile.textContent())?.includes('3 個短篇 · 新短篇 後日上架') ?? false,
-        `主頁：右下角「3 個短篇 · 新短篇 後日上架」（${await soonTile.textContent()}）`,
     );
     const upcoming = shelf.getByRole('button', { name: /^E2E 新劇/ });
     log(
@@ -306,6 +345,7 @@ const checkSavedTab = async (env) => {
 export const runComingSoonChecks = async (env) => {
     await checkHomeShelf(env);
     await checkStackedUpcoming(env);
+    await checkReleaseNote(env);
     await checkDramaPage(env);
     await checkLeavingDrama(env);
     await checkOffShelfUrls(env);

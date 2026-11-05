@@ -1,6 +1,6 @@
 import { zoomKey } from '../../../../utils/cardZoom';
 import styles from './DramaShelf.module.css';
-import { ContinueButton, CornerNotes, UpcomingTile, tileLabel } from './DramaTileParts';
+import { ContinueButton, CornerNotes, MetaText, UpcomingTile, tileLabel } from './DramaTileParts';
 import type { DramaShelfItem, DramaTileProps, TileFocus, TileProps } from './dramaTileTypes';
 
 export type { DramaShelfItem, TileNotice, TileProps } from './dramaTileTypes';
@@ -16,7 +16,7 @@ const TileCorners = ({ item }: { item: DramaShelfItem }) => {
             data-corner={item.resume ? 'top' : 'bottom'}
             aria-hidden="true"
         >
-            {item.meta}
+            <MetaText item={item} />
         </span>
     );
     if (!item.resume) {

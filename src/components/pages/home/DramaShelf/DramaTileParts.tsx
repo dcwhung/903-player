@@ -16,11 +16,39 @@ const CONTINUE_ICON_SIZE = 16;
 const NOTICE_ICON_SIZE = 12;
 const UPCOMING_ICON_SIZE = 14;
 
-/** 入頁掣讀屏名：劇名（+ 有新嘢）（+ 快將下架） */
-export const tileLabel = ({ name, newLabel, leaving }: DramaShelfItem): string => {
-    const named = newLabel ? t('drama.tileNew', { name, label: newLabel }) : name;
-    return leaving ? t('availability.tileLeaving', { name: named, label: leaving.label }) : named;
-};
+/** 入頁掣讀屏名：劇名（+ 有新嘢）（+ 快將下架）（+ 即將上架） */
+export const tileLabel = ({ name, newLabel, leaving, release }: DramaShelfItem): string =>
+    [leaving?.label, release?.label].reduce<string>(
+        (label, part) =>
+            part ? t('availability.tileLeaving', { name: label, label: part }) : label,
+        newLabel ? t('drama.tileNew', { name, label: newLabel }) : name,
+    );
+
+/** 字同佢嘅短版：格窄（container query）先換做短版 */
+const FullOrTag = ({ text, tag }: { text: string; tag: string | undefined }) => (
+    <>
+        <span className={styles.noteFull}>{text}</span>
+        <span className={styles.noteTag}>{tag ?? text}</span>
+    </>
+);
+
+/**
+ * 角落短篇數（「3 個短篇」）+ 即將上架字尾：字尾唔收尾，位唔夠就短篇數先 … （W-533）
+ */
+export const MetaText = ({ item }: { item: DramaShelfItem }) =>
+    item.release ? (
+        <>
+            <span className={styles.metaCount} data-role="meta-count">
+                {item.meta}
+            </span>
+            <span className={styles.metaRelease} data-role="meta-release">
+                <ClockIcon className={styles.noteTag} size={NOTICE_ICON_SIZE} />
+                <FullOrTag text={item.release.text} tag={item.release.tag} />
+            </span>
+        </>
+    ) : (
+        item.meta
+    );
 
 /** 「繼續收聽」讀屏名（+ 嗰集快將下架） */
 const continueLabel = (name: string, resume: NonNullable<DramaShelfItem['resume']>): string => {
@@ -68,7 +96,7 @@ export const CornerNotes = ({ item }: { item: DramaShelfItem }) => {
             {item.leaving && (
                 <span className={styles.leaving}>
                     <HourglassIcon size={NOTICE_ICON_SIZE} />
-                    {item.leaving.text}
+                    <FullOrTag text={item.leaving.text} tag={item.leaving.tag} />
                 </span>
             )}
         </span>
