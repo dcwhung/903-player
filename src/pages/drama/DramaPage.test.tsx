@@ -764,11 +764,24 @@ describe('DramaPage opened from 我的收藏', () => {
 
         await screen.findByRole('region', { name: '集數' });
         expect(audio.play).not.toHaveBeenCalled();
-        expect(audio.src).toBe(target?.url);
+        expect(audio.src).toBe('');
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(container.querySelector('li[data-focused]')).toHaveAttribute(
             'data-episode-key',
             target?.url,
         );
+    });
+
+    it('should play the bookmarked episode from the play button', async () => {
+        const target = XMAS[1];
+        const { audio } = renderWithProviders(<DramaPage />, {
+            route: '/drama/chisee',
+            path: PATH,
+            state: { focusUrl: target?.url },
+        });
+
+        await userEvent.click(await screen.findByRole('button', { name: '播放' }));
+
+        await waitFor(() => expect(audio.src).toBe(target?.url));
     });
 });

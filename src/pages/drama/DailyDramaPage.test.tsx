@@ -37,11 +37,15 @@ describe('DramaPage (daily drama, once enabled)', () => {
 
             await screen.findByRole('region', { name: '集數' });
             expect(audio.play).not.toHaveBeenCalled();
-            expect(audio.src).toBe(target?.url);
+            expect(audio.src).toBe('');
             expect(container.querySelector('li[data-focused]')).toHaveAttribute(
                 'data-episode-key',
                 target?.url,
             );
+
+            // 撳播放掣播收藏嗰集（唔係今日嗰集）
+            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+            await waitFor(() => expect(audio.src).toBe(target?.url));
         });
 
         it('autoplays today’s episode and lists every episode newest first, tagging reruns', async () => {

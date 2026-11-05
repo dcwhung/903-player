@@ -69,13 +69,14 @@ export const toEpisodeItems = (
     live: LiveTime | undefined,
     progressMap: Readonly<Record<string, Progress>>,
     isPlaying: boolean,
+    liveState?: PlaybackState,
 ): EpisodeItem[] =>
     episodes.map((r) =>
         isAvailable(r)
             ? toPlayableItem(
                   r,
                   { dayMonth: formatDayMonth(r.date), weekday: formatWeekday(r.date) },
-                  { currentUrl, live, progressMap, isPlaying },
+                  { currentUrl, live, progressMap, isPlaying, liveState },
               )
             : toUnavailableItem(r),
     );

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { airsWeekly, findShow, themeFor, type ShowConfig } from '../../catalog/shows';
 import { useRecordings } from '../../data/useRecordings';
-import { useCueFocused } from '../../hooks/useEpisodeFocus';
 import { useEpisodePress } from '../../hooks/useEpisodePress';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
 import { useRefreshedOn } from '../../hooks/useRefreshedOn';
@@ -22,10 +21,14 @@ import type { Recording } from '../../types/recording';
 import type { ShowPageState } from '../../types/showPageState';
 import { asShowRecording } from '../../types/track';
 import { zoomFromState, zoomState } from '../../utils/cardZoom';
+import { playbackStateOf } from '../../utils/playbackState';
 import { toEpisodeItems } from '../shared/episodeItems';
 
-/** 呢個節目嘅集數同揀中嗰集：播緊呢個節目就用播緊嗰集，否則用預設嗰集 */
-const useShowEpisodes = (show: ShowConfig | undefined) => {
+/**
+ * 呢個節目嘅集數同揀中嗰集：播緊呢個節目就用播緊嗰集；未載入就用由「我的收藏」撳入嚟嗰集
+ * （focused，唔 load player，W-530），再冇就用預設嗰集
+ */
+const useShowEpisodes = (show: ShowConfig | undefined, focusUrl: string | undefined) => {
     const { recordings, unavailable } = useRecordings();
     const player = usePlayer();
     const episodes = useMemo(
@@ -39,12 +42,14 @@ const useShowEpisodes = (show: ShowConfig | undefined) => {
     );
     const loaded = asShowRecording(player.recording);
     const playing = loaded?.showId === show?.id ? loaded : null;
+    const focused = playing ? undefined : episodes.find((e) => e.url === focusUrl);
     const current =
         playing ??
+        focused ??
         (show
             ? pickInitialRecording(recordingsForShow(recordings, show.id), hkToday())
             : undefined);
-    return { episodes, entries, playing, current };
+    return { episodes, entries, playing, current, focused };
 };
 
 /**
@@ -133,18 +138,38 @@ const useShowEpisodeItems = (
         ? { currentTime: player.currentTime, duration: player.duration }
         : undefined;
     const isPlayingCurrent = isThisShow && player.isPlaying;
-    const episodeItems = toEpisodeItems(entries, currentUrl, live, progressMap, isPlayingCurrent);
+    // 揀中集嘅字眼跟實際狀態（暫停 / 未開始唔講「播放中」，W-529，同劇集頁一樣）
+    const state = playbackStateOf({
+        isPlaying: isPlayingCurrent,
+        position: live?.currentTime ?? 0,
+    });
+    const episodeItems = toEpisodeItems(
+        entries,
+        currentUrl,
+        live,
+        progressMap,
+        isPlayingCurrent,
+        state,
+    );
     return { episodeItems, isPlayingCurrent };
+};
+
+/**
+ * 由「我的收藏」入嚟、未播（focused）：唱片係未開始樣，撳播放播嗰集（唔係預設嗰集）；
+ * 否則照舊（播緊其他嘢先有 standby start）
+ */
+const useFocusedStart = (focused: Recording | undefined, standby: (() => void) | undefined) => {
+    const { load } = usePlayer();
+    return focused ? () => void load(focused, { autoplay: true }) : standby;
 };
 
 /** 節目頁嘅資料同動作；focusUrl = 由「我的收藏」撳入嚟嗰集（唔自動播） */
 export const useShowPage = (showId: string, focusUrl?: string) => {
     const show = findShow(showId);
     const { status, isSearching } = useRecordings();
-    const { episodes, entries, playing, current } = useShowEpisodes(show);
+    const { episodes, entries, playing, current, focused } = useShowEpisodes(show, focusUrl);
     useAutoplayShow(show, episodes, playing?.url, focusUrl !== undefined);
-    useCueFocused(focusUrl === undefined ? undefined : episodes.find((e) => e.url === focusUrl));
-    const start = useShowStart(show, playing !== null);
+    const start = useFocusedStart(focused, useShowStart(show, playing !== null));
     const currentUrl = current?.url;
     const { episodeItems, isPlayingCurrent } = useShowEpisodeItems(
         entries,

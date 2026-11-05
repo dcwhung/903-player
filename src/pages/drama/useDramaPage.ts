@@ -7,7 +7,6 @@ import {
     type DramaConfig,
 } from '../../catalog/dramas';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
-import { useCueFocused } from '../../hooks/useEpisodeFocus';
 import { useEpisodePress } from '../../hooks/useEpisodePress';
 import { useRefreshedOn } from '../../hooks/useRefreshedOn';
 import { useStandbyStart } from '../../hooks/useStandbyStart';
@@ -93,15 +92,27 @@ const usePlaybackRows = (
     return { ctx, playState, ...useEpisodePress(episodes, currentUrl, isPlaying) };
 };
 
+/**
+ * 由「我的收藏」撳入嚟嗰集（W-530）：未載入呢套劇先算；唔 load player，淨係做揀中集，
+ * 唱片係未開始樣，撳播放先播佢
+ */
+const focusedEpisode = <T extends DramaEpisode>(
+    episodes: readonly T[],
+    focusUrl: string | undefined,
+    loaded: T | null,
+): T | undefined => (loaded ? undefined : episodes.find((e) => e.url === focusUrl));
+
 /** 每日劇集頁（例如 18 樓 C 座）：同節目頁一樣，唱片 + 日子條 + 集數清單；focusUrl 見 useEpisodeFocus */
 export const useDailyDramaPage = (drama: DramaConfig, focusUrl?: string) => {
     const episodes = useMemo(() => dailyNewestFirst(dailyEpisodesOf(drama.id)), [drama]);
     const loaded = useLoadedEpisode(drama, 'daily');
     const startDrama = useStartDrama();
     useAutoplayDaily(drama, loaded !== null, startDrama, focusUrl !== undefined);
-    useCueFocused(episodes.find((e) => e.url === focusUrl));
-    const start = useStandbyStart(loaded !== null, () => startDrama(drama));
-    const current = loaded ?? pickDailyStart(episodes, hkToday());
+    const focused = focusedEpisode(episodes, focusUrl, loaded);
+    const { load } = usePlayer();
+    const standby = useStandbyStart(loaded !== null, () => startDrama(drama));
+    const start = focused ? () => void load(focused, { autoplay: true }) : standby;
+    const current = loaded ?? focused ?? pickDailyStart(episodes, hkToday());
     const { ctx, selectEpisode, pressEpisode } = usePlaybackRows(episodes, current, !!loaded);
     // 重播舊集同新集隔成年：只排有集數嘅日子，唔排中間成年灰色日子
     const strip = useMemo(
@@ -139,12 +150,6 @@ const useViewedArc = (playingArc: string | undefined, initialArc: string | undef
     const [picked, setPicked] = useState<string | null>(initialArc ?? null);
     return { arc: picked ?? playingArc, pickArc: setPicked };
 };
-
-/** 由「我的收藏」撳入嚟嗰集喺邊個短篇（唔係呢套劇嘅集就冇） */
-const focusArcOf = (
-    episodes: readonly SeriesEpisode[],
-    focusUrl: string | undefined,
-): string | undefined => episodes.find((e) => e.url === focusUrl)?.arc;
 
 /** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已聽完（today 每次 render 重新攞） */
 const useArcOrder = (
@@ -284,14 +289,16 @@ const useSeriesArcs = (
     progressMap: Readonly<Record<string, Progress>>,
     current: SeriesEpisode | undefined,
     loaded: SeriesEpisode | null,
-    focusArc?: string,
+    focused?: SeriesEpisode,
 ) => {
-    const { arc, pickArc: setArc } = useViewedArc(current?.arc, focusArc);
+    const { arc, pickArc: setArc } = useViewedArc(current?.arc, focused?.arc);
     const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc);
     const pickArc = useArcPick(groups, setArc);
     // 照集數次序（聽完嘅留喺原位）；入頁 / 轉集由 EpisodeList 捲到播緊嗰集
     const shown = arc ? episodesInArc(episodes, arc) : [];
-    const pickedResume = pickedArcResume(groups, arc, current);
+    // 由「我的收藏」入嚟：睇緊嗰集嘅短篇就播嗰集（唔係短篇續聽集）
+    const pickedResume =
+        pickedArcResume(groups, arc, current) ?? (arc === focused?.arc ? focused : undefined);
     // 唱片區顯示嘅集：載入咗就係嗰集；未載入就係撳播放會播嗰集（揀咗短篇就係嗰個短篇嘅續聽集）
     const upNext = loaded ?? pickedResume ?? current;
     return { arc, pickArc, groups, chips, shown, pickedResume, upNext };
@@ -303,12 +310,11 @@ export const useSeriesDramaPage = (drama: DramaConfig, focusUrl?: string) => {
     const loaded = useLoadedEpisode(drama, 'series');
     // 第一次入：一入嚟就開全集表，等用戶揀短篇
     const firstVisit = useFirstVisitOnEntry(drama, focusUrl !== undefined);
-    useCueFocused(episodes.find((e) => e.url === focusUrl));
     const { sheetOpen, setSheetOpen, progressMap } = useSeriesSheet(firstVisit, loaded?.url);
-    const current = loaded ?? pickSeriesStart(episodes, progressMap);
+    const focused = focusedEpisode(episodes, focusUrl, loaded);
+    const current = loaded ?? focused ?? pickSeriesStart(episodes, progressMap);
     const rows = usePlaybackRows(episodes, current, !!loaded);
-    const focusArc = focusArcOf(episodes, focusUrl);
-    const arcs = useSeriesArcs(episodes, progressMap, current, loaded, focusArc);
+    const arcs = useSeriesArcs(episodes, progressMap, current, loaded, focused);
     const { upNext, pickArc, groups } = arcs;
     const standbyOptions = { ...arcs, episodes, progressMap };
     const standby = useStandby(drama, loaded !== null, rows.playState, standbyOptions);

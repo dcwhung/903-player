@@ -58,6 +58,20 @@ describe('toEpisodeItems', () => {
         ]);
     });
 
+    // W-529：暫停 / 未開始唔寫「播放中」（同劇集頁一樣傳實際狀態）
+    it('should label a paused current episode by its real playback state', () => {
+        const items = toEpisodeItems(
+            [NEWEST],
+            NEWEST.url,
+            { currentTime: 760, duration: 7110 },
+            {},
+            false,
+            'paused',
+        );
+
+        expect(items[0]?.status.text).toBe('已暫停 · 12:40 / 1:58:30');
+    });
+
     it('has no current episode when the url matches none', () => {
         const items = toEpisodeItems(
             [NEWEST],

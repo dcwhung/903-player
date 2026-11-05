@@ -18,6 +18,7 @@ import { saveProgress } from '../../services/progressStore';
 import { zoomFromState, zoomKey, zoomState } from '../../utils/cardZoom';
 import { themeFor } from '../../catalog/shows';
 import type { Recording } from '../../types/recording';
+import { HomePage } from '../home/HomePage';
 import { ShowPage } from './ShowPage';
 
 const RECORDINGS = [
@@ -69,13 +70,50 @@ describe('ShowPage', () => {
 
         await screen.findByRole('button', { name: /^播放 03\/10/ });
         await act(async () => {});
-        // 冇其他嘢佔住：載入嗰集（唱片跟佢）但唔播
+        // W-530：唔 load player；揀中行（aria-current）係嗰集，狀態用存低進度，唔寫播放中
         expect(audio.play).not.toHaveBeenCalled();
-        expect(audio.src).toBe(target?.url);
+        expect(audio.src).toBe('');
         expect(container.querySelector('li[data-focused]')).toHaveAttribute(
             'data-episode-key',
             target?.url,
         );
+        expect(currentRow()).toHaveAccessibleName('播放 03/10 星期六，未收聽');
+    });
+
+    it.each([
+        ['the row ▶', /^播放 03\/10/],
+        ['the player play button', /^播放$/],
+    ])('should play the bookmarked episode from %s', async (_how, name) => {
+        const target = RECORDINGS[1];
+        const { audio } = renderWithProviders(<ShowPage />, {
+            ...ROUTE,
+            recordings: RECORDINGS,
+            state: { focusUrl: target?.url },
+        });
+
+        await userEvent.click(await screen.findByRole('button', { name }));
+
+        await waitFor(() => expect(audio.src).toBe(target?.url));
+        expect(audio.play).toHaveBeenCalled();
+    });
+
+    it('should leave home without an extra mini player and still autoplay a tile after 我的收藏', async () => {
+        const gongziOnly = RECORDINGS.filter((r) => r.showId === 'gongzi');
+        const { audio } = renderWithProviders(<ShowPage />, {
+            ...ROUTE,
+            recordings: gongziOnly,
+            state: { focusUrl: gongziOnly[1]?.url },
+            extraRoutes: [{ path: '/', element: <HomePage /> }],
+        });
+        await screen.findByRole('button', { name: /^播放 03\/10/ });
+
+        await userEvent.click(screen.getByRole('button', { name: '返回主頁' }));
+        await screen.findByRole('navigation', { name: '節目' });
+        expect(screen.queryByRole('region', { name: /^正在播放/ })).not.toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole('button', { name: '公子會' }));
+        await waitFor(() => expect(audio.play).toHaveBeenCalled());
+        expect(audio.src).toBe(gongziOnly[0]?.url);
     });
 
     it('should leave another show that is playing alone when opened from 我的收藏', async () => {
@@ -104,6 +142,19 @@ describe('ShowPage', () => {
         await screen.findByRole('button', { name: /^播放 03\/10/ });
         await act(async () => {});
         expect(audio.src).toBe(other.url);
+    });
+
+    // W-529：載入咗呢個節目但暫停：揀中行唔再寫「播放中」
+    it('should not say 播放中 on the current row while paused', async () => {
+        const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
+        await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
+        act(() => audio.emitPlaying());
+        act(() => audio.emitMetadata(600));
+        act(() => audio.emitTime(60));
+
+        await userEvent.click(screen.getByRole('button', { name: '暫停' }));
+
+        expect(currentRow()).toHaveAccessibleName('播放 17/10 星期六，已暫停 · 1:00 / 10:00');
     });
 
     // W-527：zoom 來源綁喺入頁嘅 history entry；清走帶入嚟嘅集數時唔好連來源都食咗
