@@ -315,3 +315,84 @@ context: >
   on its own; fixed at 62e0a85, history left as is (no force push).
 report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
 ```
+
+## Re-review 5 8c5f61f（P8 文案決定 + merge P7 文案）
+
+- 範圍：`ae18bf9..8c5f61f` — `a9b6d15`（P8 文案 D2 / D3 / D5 / E1 / E2 / F1–F6 / G1–G3，`useHideWhenTight` 加 `steps`、`Separator`、`UpcomingTile` 拆檔）、`8c5f61f`（merge P7 `5af9931`：`formatSpokenDate` / `dates.spoken`、`common.status.*`、8 個 conflict）。P7 部分本身已 review（`2026-11-05_review_copy-p7.md`），唔再睇。決定清單：用戶 2026-11-05 確認嘅 P7 + P8 文案決定表
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（改過嘅 test 檔 + `zhHKCopy` / `t` / `DramaShelf` / `ArcSheet` / `arcProgress`）36 files / 575 tests 全綠，`zhHKCopy.test.ts` 綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `8c5f61f`）：run [#102 / 42130627352](https://github.com/dcwhung/903-player/actions/runs/42130627352) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)` 全部 success）
+- 新分數：**90 / 100**（正確性 15 / 25：W-536、W-537），✅ pass（≥ 90、無 🔴；W-536 / W-537 建議 merge 前修）
+
+### 🟡 Warning
+
+#### W-536 主頁格頂行第 2 步（E2）喺格闊 > 280px 時，左上角下架字會出兩次
+
+- 位置：`src/components/pages/home/DramaShelf/DramaShelf.module.css:327-334`（`.topBar:has(> .meta[data-tight='2'])`）× `DramaTileParts.tsx` `FullOrTag`
+- L1：E2「夠位時『⏳ 05/12 下架』，唔夠位先淨『⏳ 05/12』」
+- L2：將 `DramaShelf.module.css` 嗰幾條 rule 抽出嚟，用預裝 Chromium 試（scratch，唔係 e2e suite）：格 320px + `data-tight="2"` → 左上角顯示 `["部分短篇 19/12 下架","19/12"]`，即係畫面「部分短篇 19/12 下架19/12」；格 260px 正常（「19/12」）。原因：第 2 步只係收 `.noteTag`、開 `.noteNarrow`，但 > 280px 時顯示緊嘅係 `.noteFull`，冇收
+- L3：要格 > 280px、有繼續收聽、短篇數收埋都仲放唔落先會去到第 2 步；而且第 2 步令字變長，`fit` 量完仲係放唔落，會停喺第 2 步。e2e 嘅 1300×800 / 844×390 / 390×844 冇中呢個闊度
+- 方案 A（推薦）：第 2 步 rule 加埋 `.noteFull`：`.topBar:has(> .meta[data-tight='2']) .leaving:has(.noteNarrow) :is(.noteFull, .noteTag) { display: none }`，再加一個 Chromium / e2e 斷言（格 > 280px、第 2 步，左上角淨係日期）
+- 方案 B：第 2 步改成直接喺 `.leaving` 加 attribute，由 JS 揀顯示邊個 form（唔靠 container query 疊加）；改動較大
+
+#### W-537 成套劇下架嗰句（唱片下面 / chips 上面 / 一覽表表頭）讀屏照讀畫面字：會讀「明日 / 後日」同「（六）」
+
+- 位置：`src/pages/drama/seriesAvailability.ts` `dramaNoticeOf` 嘅 `page`（`removalWhen(removedAt, today, 'long')`）→ `NowPlaying.tsx:25` `NoticeLine`、`ArcPickerNotices.tsx:96-100` `PickerLabel`、`ArcSheet.tsx:82-85` `SheetHeader`，三度都係普通可見文字，冇讀屏版
+- L1：E1「讀屏一律讀日期（『06/11 星期五 下架』），唔讀明日 / 後日」；F1 指明橫版係由「唱片下面」嗰句讀一次
+- L2：`availabilityLabels.ts` `when()` 喺相差 1 / 2 日時一律回傳 `releaseTomorrow` / `removalTomorrow`（唔理 long / short），所以下架前一日 `page` =「本廣播劇系列 明日下架」；遠啲就係「本廣播劇系列 05/12（六）下架」。三個 component 直接 render 呢句，冇 `aria-hidden` 亦冇 sr-only 版本，讀屏讀到嘅就係呢句。`dramaNoticeOf` 其實已經有 `label`（「本廣播劇系列 05/12 星期六 下架」），只係冇傳落去
+- 方案 A（推薦）：`NoticeLine` / `PickerLabel` / `SheetHeader` 收 `{ text, label }`：可見字 `aria-hidden`，旁邊加 visually-hidden `label`（或者用 `role="text"` 唔穩陣，唔建議）；test 斷言讀屏句冇「明日」
+- 方案 B：成套劇嗰句畫面都唔用明日 / 後日（`removalWhen` 一律寫日子）；但會改到 F3「兩日內講明日 / 後日」嘅畫面規則，要用戶再決定
+
+### 覆核（決定清單逐條）
+
+| 代號    | 結果                                                                                                                                                                                                                                                                                                                                                 |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D2      | `dramaLeavingLine: '本廣播劇系列 {when}'`、`dramaRemovedToast: '本廣播劇系列已下架'`；主頁格左上角成套劇照係淨日期（`leavingDrama: '{when}'`），讀屏用「本廣播劇系列 … 下架」✅                                                                                                                                                                      |
+| D3 / F6 | `removed: '已下架'`、`removedRow: '{name} {label}，已下架'`；`grep` 冇「未可以收聽」；`unavailableLabel: '{name}，{when}'`，靠 `aria-disabled` ✅                                                                                                                                                                                                    |
+| D5      | `caughtUp: '已收聽到第 {no} 集（最新）'` ✅                                                                                                                                                                                                                                                                                                          |
+| E1      | `spokenRelease` / `spokenRemoval` = `releaseShort` / `removalShort` + `formatSpokenDate`（`dates.spoken`「05/12 星期六」），冇明日 / 後日；所有 `label` 欄（chip、一覽表、批次、灰格、主頁格、繼續收聽、收藏 / 最近收聽）都用佢 ✅；**例外見 W-537**                                                                                                 |
+| E2      | chip 小標夠位一定連「下架」（chips 可以左右滑）；主頁格左上角 container query 280px → `short`、200px → 淨日期；頂行再用 `useHideWhenTight` 第 2 步。`steps` loop：每步 `setAttribute` 之後即刻量，夠位即停，最多 `steps` 步；observe 嘅 `.topBar` 係 absolute + 左右 inset，收字唔會改佢尺寸，冇 ResizeObserver loop ✅；**> 280px 第 2 步見 W-536** |
+| F1      | `AllChip` 用 `useMediaQuery(LANDSCAPE_QUERY)`：橫版冇小標、讀屏淨係「全集」；直版聽緊「全集，本廣播劇系列 19/12 星期六 下架」。新 test 覆蓋橫版 ✅（唱片下面嗰句本身見 W-537）                                                                                                                                                                       |
+| F2      | `spokenRowLabel` 逐段：`drama.arcRow`「{短篇}，{狀態}，{N} 集，{讀屏日子} 下架」；部分集數用 `rangeText(spokenWhen)`「第 1 至 2 集 24/11 星期二 下架」；膠囊「快將下架」喺有 `aria-label` 嘅掣入面，唔會讀；分隔符只喺畫面 ✅                                                                                                                        |
+| F3      | `tileLabel`：「{劇名}，有新短篇；下個短篇 02/12 星期三 上架；部分短篇 05/12 星期六 下架」，`noteSeparator: '；'`，`tileNextArcSpoken` / `tileNextEpisodesSpoken` ✅                                                                                                                                                                                  |
+| F4      | `upcomingArcLabel: '{name}，{when}，{count} 集'`；集數未知就唔講 ✅                                                                                                                                                                                                                                                                                  |
+| F5      | `tileLeaving` → `tileWithNote`，`grep` 冇殘留 ✅                                                                                                                                                                                                                                                                                                     |
+| G1      | 註解寫入 `availability` 開頭；`releaseShort: '{date} 上架'`、`releaseLong: '{date}上架'`（全形括號後冇空格）✅                                                                                                                                                                                                                                       |
+| G2      | `common.separator: ' · '`；`Separator` component（`aria-hidden`）同 `joinWithSeparator`；`src` 冇 `content: '·'`、冇寫死 `' · '`（`e2e/touch.mjs` 一個 log 字串唔計）✅                                                                                                                                                                              |
+| G3      | `batchTitle` / `leavingRange` 用「至」✅                                                                                                                                                                                                                                                                                                             |
+
+### Merge `8c5f61f`
+
+- `useDramaPage` / `arcProgress`：只係 doc comment conflict；`groupOf(s, playingArc, pending)` 同 `pending.has(s.arc)` 保留，字眼跟 P7 改「已收聽」✅
+- `SavedRow` / `RecentPanel`：讀屏名（`openLabel`、`PlayButton`）用 `spokenLabel`（「17/10 星期六」），畫面照 `row.label`；P8 嘅 LB1 / LR1、已下架 `removedRow` 保留 ✅
+- 刪 key：`availability.spokenDate` / `releaseSpoken` / `removalSpoken` / `arcUnheard` / `arcHeard` 喺 `src` / `e2e` 冇殘留引用；`GROUP_TITLES` 改用 `common.status.playing` / `watched` ✅
+- e2e 日期 conflict：P8 30/11 時鐘 + P7 讀屏「星期六」格式（例如 `ROW_OPEN = /^開啟 公子會 28\/11 星期六/`），CI e2e 會驗
+- 記錄（唔扣分，用戶之後 grill）：S-716 讀屏讀「·」— H1 已下架行用 `bookmark.seriesName`（`'{title}{sep}{arc}'`），所以 `removedRow` 讀屏名而家係「蘭茜夫人劇場 · 戀愛二分一 第 3 集，已下架」，多咗「 · 」
+
+🟢：冇新 finding（S-719 起冇用）。S-706（字變唔重量）仍然喺 backlog。
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 5 feature/drama/coming-soon ae18bf9..8c5f61f (P8 copy decisions D2-G3 + merge P7 copy) v1.28.0
+status: pass
+score: 90
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (36 related unit files, 575 tests incl. zhHKCopy; full suite / e2e not run per scope rule; CI run 42130627352 on 8c5f61f success incl. e2e)
+  coverage: pass (spokenRelease / spokenRemoval, F1 landscape chip, F2 row names, F3 tile name, F4 upcoming row, Separator covered)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: [W-536, W-537]
+  suggestion: []
+next_action: proceed_to_qa
+context: >
+  All P8 copy codes applied and merge resolution correct. W-536: top-row
+  step 2 shows the leaving text twice on tiles wider than 280px (CSS
+  reproduced in Chromium). W-537: whole-drama leaving line under the disc /
+  above chips / sheet header is plain visible text, so screen readers hear
+  明日 / 後日 and （六）, against E1 / F1. Both recommended to fix before
+  merge (plan A in report). S-716 recorded, not scored.
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
