@@ -1,5 +1,5 @@
 /* 主頁劇集格：快將下架琥珀字、即將上架新劇灰格（P8 #6，_mockups_/coming-soon ⑦ ⑧） */
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { stubLandscape } from '../../../../../tests/landscape';
 import { DramaShelf, type DramaShelfItem } from './DramaShelf';
@@ -74,5 +74,51 @@ describe('DramaTile availability', () => {
         expect(screen.queryByText('3 個短篇')).not.toBeInTheDocument();
         await userEvent.click(tile);
         expect(onOpen).not.toHaveBeenCalled();
+    });
+
+    // W-533 跟進：短篇數放唔落就成段（連「·」）收埋，唔出半截
+    describe('arc count beside the release note', () => {
+        const release = {
+            text: '新短篇 後日上架',
+            tag: '後日上架',
+            label: '新短篇 02/12（三）上架',
+        };
+        let notify = () => {};
+        beforeEach(() => {
+            vi.stubGlobal(
+                'ResizeObserver',
+                class {
+                    constructor(callback: () => void) {
+                        notify = callback;
+                    }
+                    observe = vi.fn();
+                    disconnect = vi.fn();
+                },
+            );
+        });
+        afterEach(() => {
+            vi.unstubAllGlobals();
+            vi.restoreAllMocks();
+        });
+
+        /** 角落字要幾闊 / 有幾闊（jsdom 冇排版，自己假） */
+        const layout = (needed: number, room: number) => {
+            vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(needed);
+            vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(room);
+            act(() => notify());
+        };
+        const meta = () => document.querySelector<HTMLElement>('[data-corner]');
+
+        it('should hide the whole arc count when the corner is too tight, and bring it back', () => {
+            render(<DramaShelf items={[item({ release })]} />);
+
+            layout(180, 120);
+            expect(meta()).toHaveAttribute('data-count-hidden');
+            layout(180, 200);
+            expect(meta()).not.toHaveAttribute('data-count-hidden');
+            expect(
+                screen.getByRole('button', { name: /新短篇 02\/12（三）上架/ }),
+            ).toBeInTheDocument();
+        });
     });
 });

@@ -115,18 +115,26 @@ const RELEASE_VIEWPORTS = [
     { width: 390, height: 844, full: true },
 ];
 
-/** 字尾嗰截：見到、冇俾截（scrollWidth ≤ clientWidth）、喺格入面；同顯示緊嘅字 */
+/**
+ * 角落字：字尾嗰截見到、冇俾截、喺格入面；短篇數要麼成段「N 個短篇」出齊（冇俾截），要麼成段收埋，
+ * 唔可以出半截或者淨低分隔點（成個角落冇 overflow）
+ */
 const releaseFit = (tile) =>
     tile.evaluate((button) => {
         const release = button.querySelector('[data-role="meta-release"]');
-        if (!release) return null;
+        const count = button.querySelector('[data-role="meta-count"]');
+        const meta = release?.parentElement;
+        if (!release || !count || !meta) return null;
         const box = release.getBoundingClientRect();
         const card = button.getBoundingClientRect();
         const shown = [...release.children].filter((el) => getComputedStyle(el).display !== 'none');
+        const countShown = getComputedStyle(count).display !== 'none';
         return {
             whole: release.scrollWidth <= release.clientWidth && box.width > 0,
             inside: box.left >= card.left && box.right <= card.right,
             text: shown.map((el) => el.textContent).join(''),
+            count: countShown ? count.textContent : null,
+            cornerFits: meta.scrollWidth <= meta.clientWidth,
         };
     });
 
@@ -146,6 +154,10 @@ const checkReleaseNote = async (env) => {
         log(
             fit !== null && fit.whole && fit.inside && fit.text === expected,
             `${viewport.width}×${viewport.height} 主頁：上架字尾冇俾截（${JSON.stringify(fit)}）`,
+        );
+        log(
+            fit !== null && fit.cornerFits && (fit.count === null || fit.count === '3 個短篇'),
+            `${viewport.width}×${viewport.height} 主頁：短篇數成段出齊或者成段收埋（${fit?.count ?? '收埋'}）`,
         );
         await ctx.close();
     }

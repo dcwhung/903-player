@@ -275,7 +275,7 @@
 }
 
 /*
- * 短篇數 + 即將上架字尾（W-533）：字尾一截唔縮、唔收尾，位唔夠就短篇數先 … ；
+ * 短篇數 + 即將上架字尾（W-533）：字尾一截唔縮、唔收尾；位唔夠短篇數成段收埋（useTightCount）；
  * 格闊 280px 以下（手機打橫格、闊橫版三欄格）字尾同左上角下架字都換短版
  *（「⏱ 後日上架」/「⏳ 19/12」），讀屏名照有長版日子
  */
@@ -285,9 +285,18 @@
 }
 
 .metaCount {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 分隔「·」屬於短篇數嗰截：短篇數收埋就一齊收，唔會淨低一粒點 */
+.metaCount::after {
+    margin: 0 var(--space-1);
+    content: '·';
+}
+
+/* 放唔落（useTightCount 量到）：成段「N 個短篇 ·」收埋，唔出半截 */
+.meta[data-count-hidden] .metaCount {
+    display: none;
 }
 
 .metaRelease {
@@ -295,11 +304,6 @@
     flex: none;
     align-items: center;
     gap: var(--notice-icon-gap);
-}
-
-.metaRelease::before {
-    margin-right: var(--space-1);
-    content: '·';
 }
 
 .noteTag {

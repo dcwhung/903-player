@@ -2,6 +2,7 @@ import { zoomKey } from '../../../../utils/cardZoom';
 import styles from './DramaShelf.module.css';
 import { ContinueButton, CornerNotes, MetaText, UpcomingTile, tileLabel } from './DramaTileParts';
 import type { DramaShelfItem, DramaTileProps, TileFocus, TileProps } from './dramaTileTypes';
+import { useTightCount } from './useTightCount';
 
 export type { DramaShelfItem, TileNotice, TileProps } from './dramaTileTypes';
 
@@ -10,8 +11,10 @@ export type { DramaShelfItem, TileNotice, TileProps } from './dramaTileTypes';
  * 同左上角放同一條頂行（窄格放唔落就換行），唔會疊住
  */
 const TileCorners = ({ item }: { item: DramaShelfItem }) => {
+    const metaRef = useTightCount<HTMLSpanElement>(item.release !== undefined);
     const meta = (
         <span
+            ref={metaRef}
             className={`${styles.meta} ${item.resume ? styles.metaTop : ''}`}
             data-corner={item.resume ? 'top' : 'bottom'}
             aria-hidden="true"
