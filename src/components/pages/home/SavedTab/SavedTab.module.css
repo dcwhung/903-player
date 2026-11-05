@@ -118,7 +118,8 @@
 /* 碟：同播放器唱片一樣（圓形、深色外圈、中間孔），Disc size="fill" 填滿呢格 */
 .disc {
     --color-disc-rim: var(--saved-disc-hole);
-    --disc-fill-shadow: 0 0 0 3px var(--saved-disc-rim), var(--saved-disc-shadow);
+    --disc-fill-shadow:
+        0 0 0 var(--saved-disc-ring) var(--saved-disc-rim), var(--saved-disc-shadow);
     --disc-fill-hole-ring: var(--saved-disc-hole-ring);
 
     display: block;
@@ -265,14 +266,18 @@
     color: var(--saved-text);
 }
 
-/* 最近收聽（E2）：虛線框，入面自己捲；直版 / 闊橫版固定高，窄橫版固定闊 */
+/*
+ * 最近收聽（E2）：虛線框，入面自己捲；直版 / 闊橫版固定高，窄橫版固定闊。
+ * 碟欄同收藏段一樣闊（--saved-disc），左邊留白扣返框粗幼，碟同文字起點同上面收藏段對齊
+ */
 .recent {
     display: flex;
     flex: none;
     flex-direction: column;
     height: var(--saved-recent-height);
     padding: var(--space-3) var(--space-3) var(--space-1);
-    border: 1px dashed var(--saved-line);
+    padding-left: calc(var(--space-3) - var(--saved-recent-border));
+    border: var(--saved-recent-border) dashed var(--saved-line);
     border-radius: var(--radius-tile);
     color: var(--saved-muted);
     font-size: var(--font-size-sm);
@@ -290,11 +295,12 @@
     font-weight: 700;
 }
 
+/* 捲動會剪走碟外圈：左右多留一圈外圈位（margin 負返出去，碟同文字位置唔變） */
 .recentList {
     flex: 1 1 0;
     min-height: 0;
-    margin: 0;
-    padding: 0;
+    margin: 0 calc(-1 * var(--saved-disc-ring));
+    padding: 0 var(--saved-disc-ring);
     overflow-y: auto;
     overscroll-behavior: contain;
     list-style: none;
@@ -313,11 +319,11 @@
 
 .recentOpen {
     display: grid;
-    grid-template-columns: var(--saved-recent-disc) minmax(0, 1fr);
-    gap: calc(10px * var(--ui-scale));
+    grid-template-columns: var(--saved-disc) minmax(0, 1fr);
+    gap: var(--space-3);
     align-items: center;
     min-width: 0;
-    padding: calc(6px * var(--ui-scale)) 0;
+    padding: var(--space-1) 0;
     border: none;
     background: transparent;
     color: var(--saved-muted);
@@ -326,11 +332,12 @@
 
 .recentDisc {
     --color-disc-rim: var(--saved-disc-hole);
-    --disc-fill-shadow: 0 0 0 2px var(--saved-disc-rim);
+    --disc-fill-shadow:
+        0 0 0 var(--saved-disc-ring) var(--saved-disc-rim), var(--saved-disc-shadow);
     --disc-fill-hole-ring: var(--saved-disc-hole-ring);
 
     display: block;
-    width: var(--saved-recent-disc);
+    width: var(--saved-disc);
 }
 
 .recentText {

@@ -253,7 +253,8 @@
     --saved-disc: calc(52px * var(--ui-scale));
     --saved-recent-height: calc(200px * var(--ui-scale));
     --saved-recent-width: calc(250px * var(--ui-scale));
-    --saved-recent-disc: calc(34px * var(--ui-scale));
+    /* 最近收聽 panel 虛線框粗幼（入面左邊留白扣返佢，碟同文字先同收藏段對齊） */
+    --saved-recent-border: 1px;
     --saved-play-size: calc(40px * var(--ui-scale));
     --saved-progress-height: 2px;
     /* box 底色（播緊嗰行深少少）、白字、淡字、進度線底、分隔線、左滑移除嘅紅底 */
@@ -268,6 +269,7 @@
     --saved-banner-title-shadow: 0 1px 3px rgb(0 0 0 / 60%);
     /* 碟（同播放器唱片一樣：圓形、深色外圈、中間孔）：外圈、落影、中間孔色同孔邊 */
     --saved-disc-rim: rgb(10 14 20 / 85%);
+    --saved-disc-ring: 3px;
     --saved-disc-shadow: 0 2px 6px rgb(0 0 0 / 40%);
     --saved-disc-hole: #10141a;
     --saved-disc-hole-ring: rgb(255 255 255 / 18%);
