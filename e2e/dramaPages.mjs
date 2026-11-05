@@ -8,8 +8,8 @@ const SHELF_ORDER = ['蘭茜夫人劇場', '少爺占系列', '森美小儀系�
 const tileName = (label) => label.split('，')[0];
 // 短篇劇集（kind: series）：第一次入頁冇進度
 export const SERIES_ROUTE = '#/drama/chisee';
-// 星期二：平日有節目，但假錄音最後一日係 19/10，20/10 全部未上架 → 今日節目頁顯示 TodayEmpty
-const E2E_TUESDAY_NOT_UPLOADED = '2026-10-20T22:30:00+08:00';
+// 星期二：平日有節目，但假錄音最後一日係 30/11，01/12 全部未上架 → 今日節目頁顯示 TodayEmpty
+const E2E_TUESDAY_NOT_UPLOADED = '2026-12-01T22:30:00+08:00';
 const TODAY_EMPTY_TITLE = '今日節目未上架';
 // 冇圖黑碟：tokens.css --color-disc-blank（#0a0a0a）；刻意寫死做獨立對照
 const BLANK_DISC_BG = 'rgb(10, 10, 10)';

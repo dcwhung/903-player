@@ -9,6 +9,7 @@ import { chromiumExecutablePath } from '../scripts/chromiumLaunch.mjs';
 import { runArcSheetChecks } from './arcSheet.mjs';
 import { runBookmarkChecks } from './bookmark.mjs';
 import { runCardZoomChecks } from './cardZoom.mjs';
+import { runComingSoonChecks } from './comingSoon.mjs';
 import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runHomeWideChecks } from './homeWide.mjs';
 import { runPwaUpdateChecks } from './pwaUpdate.mjs';
@@ -239,7 +240,7 @@ const HOME_TILES = [
 const MIN_VISIBLE_ROWS = 3;
 /** 唱片底嘅由頭播放掣（播放 / 暫停掣喺佢隔籬） */
 const RESTART = '由頭播放';
-/** 唱片底嘅播放 / 暫停掣（錨定成個名，唔會撞到集數行嘅「播放 19/10…」） */
+/** 唱片底嘅播放 / 暫停掣（錨定成個名，唔會撞到集數行嘅「播放 30/11…」） */
 const PLAY_TOGGLE = /^(播放|暫停)$/;
 // tokens.css 嘅 --player-max-share（0.6）係設計目標；用戶接受 62–66%，
 // 所以 e2e 只要求節目頁播放器同今日節目播放器（卡 → 指示點）≤ 66%，實際比例照印出嚟
@@ -608,7 +609,7 @@ const checkStripFollows = async (p, x, y, shot) => {
     if (shot) await p.screenshot({ ...SHOT, path: `${OUT}/${shot}` });
 };
 
-/** 日子條入面某一日（「轉去 20/10（二）」）嘅中心離日子條中心幾遠（px） */
+/** 日子條入面某一日（「轉去 01/12（二）」）嘅中心離日子條中心幾遠（px） */
 const dayOffset = async (p, dayMonth) => {
     const zone = await p.locator(STRIP).boundingBox();
     const day = await p.locator(`${STRIP} button[aria-label^="轉去 ${dayMonth}"]`).boundingBox();
@@ -1158,10 +1159,10 @@ const checkMiniPlayerViewportGap = async (browser, errors) => {
 
 // audio probe（PR #29）：回看期內、storage 未有嘅節目會直接 probe 原站。
 // 西加航空只喺星期六播（src/config/shows.ts 嘅 airDays），假資料（sampleData.mjs）就只有平日嗰幾集，
-// 所以 17/10（六）一定喺回看期內、storage 又未有，一定會 probe
+// 所以 28/11（六）一定喺回看期內、storage 又未有，一定會 probe
 // 同 src/config/shows.ts 嘅 westair 一致；刻意寫死做獨立對照
 const PROBE_SHOW = { id: 'westair', name: '西加航空', fileTime: '0905' };
-const PROBE_DATE = '2026-10-17';
+const PROBE_DATE = '2026-11-28';
 const PROBE_WAIT_MS = 20000;
 const PROBE_POLL_MS = 100;
 
@@ -1174,7 +1175,7 @@ const probeUrl = ({ name, fileTime }, date) =>
     `${AUDIO_HOST}/${encodeURIComponent(name)}/${encodeURIComponent(
         `${date.replaceAll('-', '')}_${fileTime}_${name.replace(/ /g, '_')}`,
     )}.aac`;
-/** 2026-10-16 → 16/10（集數掣 aria-label 嘅寫法） */
+/** 2026-11-27 → 27/11（集數掣 aria-label 嘅寫法） */
 const dayMonth = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 /** probe 自己搵到嘅（唔計 harness seed 落 storage 嘅假資料） */
 const SAMPLE_URLS = new Set(SAMPLE_RECORDINGS.map((r) => r.url));
@@ -1330,7 +1331,7 @@ try {
         const currentEpisode = () =>
             page.locator('button[aria-current="true"]').first().getAttribute('aria-label');
         const current = await currentEpisode();
-        log(/^(?:播放|暫停) 17\/10/.test(current), `揀中最近一集（今日之前）：${current}`);
+        log(/^(?:播放|暫停) 28\/11/.test(current), `揀中最近一集（今日之前）：${current}`);
         const accent = await page.evaluate(() =>
             getComputedStyle(document.querySelector('[data-theme-scope]')).getPropertyValue(
                 '--theme-accent',
@@ -1365,14 +1366,14 @@ try {
         await slider.focus();
         await page.keyboard.press('End');
         await page.waitForTimeout(800);
-        await page.getByRole('button', { name: /^(?:播放|暫停) 10\/10/ }).click();
+        await page.getByRole('button', { name: /^(?:播放|暫停) 21\/11/ }).click();
         await page.waitForTimeout(800);
         const row17 = await page
-            .getByRole('button', { name: /^(?:播放|暫停) 17\/10/ })
+            .getByRole('button', { name: /^(?:播放|暫停) 28\/11/ })
             .getAttribute('aria-label');
-        log(row17.endsWith('已收聽'), `聽到尾嘅 17/10 顯示已收聽：${row17}`);
+        log(row17.endsWith('已收聽'), `聽到尾嘅 28/11 顯示已收聽：${row17}`);
         const sel = await currentEpisode();
-        log(/^(?:播放|暫停) 10\/10/.test(sel), `撳集數轉集：${sel}`);
+        log(/^(?:播放|暫停) 21\/11/.test(sel), `撳集數轉集：${sel}`);
         const visible = await page.locator('button[aria-current="true"]').first().isVisible();
         log(visible, '揀中集數喺畫面內');
         await page.screenshot({ ...SHOT, path: `${OUT}/4-show-date-changed.png` });
@@ -1384,7 +1385,7 @@ try {
         const saved = await page.evaluate(() =>
             JSON.parse(localStorage.getItem('903player:progress:v1')),
         );
-        const entry = Object.entries(saved).find(([u]) => u.includes('20261010'));
+        const entry = Object.entries(saved).find(([u]) => u.includes('20261121'));
         log(entry && entry[1].position >= 29, `暫停時存低進度：${entry?.[1].position.toFixed(1)}s`);
 
         await page.getByRole('button', { name: '返回主頁' }).click();
@@ -1393,15 +1394,15 @@ try {
         await checkThemeColor(page, HOME_TOP, '返回主頁');
         await page.getByRole('button', { name: '公子會', exact: true }).click();
         await page.waitForTimeout(800);
-        // mini player 暫停緊 10/10：再入節目頁唔自動播、唔換集，停喺 10/10
+        // mini player 暫停緊 21/11：再入節目頁唔自動播、唔換集，停喺 21/11
         const kept = await currentEpisode();
-        log(/^播放 10\/10/.test(kept), `再入節目頁：暫停緊嘅 10/10 唔會被蓋過 ${kept}`);
-        await page.getByRole('button', { name: /^(?:播放|暫停) 17\/10/ }).click();
+        log(/^播放 21\/11/.test(kept), `再入節目頁：暫停緊嘅 21/11 唔會被蓋過 ${kept}`);
+        await page.getByRole('button', { name: /^(?:播放|暫停) 28\/11/ }).click();
         await page.waitForTimeout(800);
         const resumed = await currentEpisode();
         log(
-            /^(?:播放|暫停) 17\/10/.test(resumed),
-            `撳返最近一集 ${resumed}（17/10 已聽過 → 由頭播）`,
+            /^(?:播放|暫停) 28\/11/.test(resumed),
+            `撳返最近一集 ${resumed}（28/11 已聽過 → 由頭播）`,
         );
         const restartPos = Number(await slider.getAttribute('aria-valuenow'));
         log(restartPos <= 3, `已聽過嘅集由頭播：${restartPos}s`);
@@ -1409,24 +1410,24 @@ try {
             page.evaluate(
                 () =>
                     Object.entries(JSON.parse(localStorage.getItem('903player:progress:v1'))).find(
-                        ([u]) => u.includes('20261017'),
+                        ([u]) => u.includes('20261128'),
                     )[1].watched,
             );
         log(await watched17(), '重播頭幾秒仍然保留已收聽');
         // 真正播超過 REPLAY_RESET_SECONDS（10 秒）先清走已收聽
         await page.waitForTimeout(11000);
         log(!(await watched17()), '重播超過 10 秒清走已收聽');
-        await page.getByRole('button', { name: /^(?:播放|暫停) 10\/10/ }).click();
+        await page.getByRole('button', { name: /^(?:播放|暫停) 21\/11/ }).click();
         await page.waitForTimeout(800);
         const replayed = await page
-            .getByRole('button', { name: /^(?:播放|暫停) 17\/10/ })
+            .getByRole('button', { name: /^(?:播放|暫停) 28\/11/ })
             .getAttribute('aria-label');
         log(/聽到 0:1\d$/.test(replayed), `重播超過 10 秒後清單顯示聽到：${replayed}`);
         const resumePos = Number(await slider.getAttribute('aria-valuenow'));
-        log(resumePos >= 29, `未聽完嘅 10/10 續播：${resumePos}s`);
+        log(resumePos >= 29, `未聽完嘅 21/11 續播：${resumePos}s`);
 
         await page.getByRole('button', { name: '返回主頁' }).click();
-        log(await reachesHash(page, '#/'), '返回主頁（續播 10/10 後）');
+        log(await reachesHash(page, '#/'), '返回主頁（續播 21/11 後）');
         await page.waitForTimeout(300);
         // T9 B：播緊舊集返主頁照播，mini player 將佢排最前、標「重溫」（以前係暫停）
         const oldEpisodeState = await waitForPlaybackState(page, 'playing');
@@ -1435,11 +1436,11 @@ try {
         log(
             oldEpisodeState === 'playing' &&
                 /公子會重溫/.test(rewatchText) &&
-                rewatchText.includes('10/10'),
+                rewatchText.includes('21/11'),
             `播緊舊集返主頁繼續播，mini player 第一個係重溫：${oldEpisodeState} / ${rewatchText}`,
         );
         await page.getByRole('button', { name: '今日節目', exact: true }).click();
-        // 播緊 10/10 入今日節目頁：唔自動播、唔蓋過，卡疊係未開始樣，撳播放先播今日第一個
+        // 播緊 21/11 入今日節目頁：唔自動播、唔蓋過，卡疊係未開始樣，撳播放先播今日第一個
         await page.getByRole('button', { name: '播放', exact: true }).waitFor({ timeout: 5000 });
         const keptPlaying = await page.evaluate(() => navigator.mediaSession.metadata?.title ?? '');
         log(keptPlaying.includes('公子會'), `入今日節目頁唔蓋過播緊嘅重溫：${keptPlaying}`);
@@ -1658,6 +1659,11 @@ try {
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
     await section('廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));
+
+    // 即將上架 / 快將下架（P8 #6）：e2e/fixtures/dramas 測試劇（主頁格、chips、一覽表、清單、收藏 tab、舊 URL）
+    await section('即將上架 / 快將下架', () =>
+        runComingSoonChecks({ browser, base: BASE, errors, log }),
+    );
 
     // PWA 換版：有新版自己 reload 一次、播緊唔打斷、兩個 tab 都換（CUI-0017）
     await runPwaUpdateChecks({ browser, errors, log }, section);

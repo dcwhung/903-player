@@ -13,7 +13,7 @@ import { dismissAutoSheet, SERIES_ROUTE } from './dramaPages.mjs';
 // iPad 打橫：高 ≥ 562 先係闊橫版（src/config/layout.ts WIDE_BANNER_QUERY）
 const WIDE = { width: 1180, height: 820 };
 // 星期日：假錄音（sampleData.mjs）冇節目，主頁冇 mini player（同 miniPlayerRules.mjs 一樣）
-const E2E_SUNDAY = '2026-10-18T22:30:00+08:00';
+const E2E_SUNDAY = '2026-11-29T22:30:00+08:00';
 // 播放卡佔 main 內容闊（tokens.css --home-pane-ratio）；刻意寫死做獨立對照
 const PANE_RATIO = 0.36;
 // 闊度比例容差：subpixel 捨入
@@ -33,12 +33,12 @@ const ANY_MINI_REGION = /^正在播放/;
 // 平日冇嘢載入：張卡係今日節目（同直版 mini player 一樣）
 const TODAY_REGION = '正在播放（今日節目）';
 const CLOSE_LABEL = '關閉播放器';
-// 公子會（星期六）最近一集 17/10：入節目頁自動播，返主頁就係重溫
+// 公子會（星期六）最近一集 28/11：入節目頁自動播，返主頁就係重溫
 const REWATCH_SHOW = { name: '公子會', route: '#/show/gongzi' };
 const REOPEN_LABEL = `已暫停：${REWATCH_SHOW.name}，打開播放器`;
 // 把手上面嘅狀態字（src/i18n/zh-HK.ts homeCard.pausedStatus）；刻意寫死做獨立對照
 const PAUSED_STATUS = '已暫停';
-// 張卡頁頭列嘅開頁掣（後面跟「，重溫 17/10（六）」）
+// 張卡頁頭列嘅開頁掣（後面跟「，重溫 28/11（六）」）
 const REWATCH_OPEN = new RegExp(`^開啟 ${REWATCH_SHOW.name} 節目頁`);
 const LIST_COUNT = /^共 \d+ 集/;
 

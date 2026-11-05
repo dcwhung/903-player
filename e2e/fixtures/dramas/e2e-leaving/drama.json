@@ -1,0 +1,37 @@
+{
+    "name": "E2E 下架劇場",
+    "kind": "series",
+    "enabled": true,
+    "addedAt": "2026-10-15",
+    "tile": "tile.webp",
+    "disc": "disc.webp",
+    "audio": {
+        "host": "r2",
+        "folder": "e2e",
+        "file": "{no2}.m4a"
+    },
+    "theme": {
+        "bg": "#f3efde",
+        "surface": "#faf7ec",
+        "track": "#e0d6b8",
+        "accent": "#d45f32",
+        "onAccent": "#ffffff",
+        "title": "#a8401a",
+        "accentText": "#a8401a",
+        "text": "#33281d",
+        "muted": "#6b5a47",
+        "shadowDark": "#dcd3b8",
+        "shadowLight": "#ffffff",
+        "scheme": "light",
+        "statusBar": "#a8401a",
+        "headerRule": "linear-gradient(90deg, #d45f32 0 60%, #8fbcb2 60%) 0 100% / 100% 3px no-repeat"
+    },
+    "removedAt": "2026-12-19",
+    "arcs": [
+        {
+            "name": "戀愛二分一",
+            "disc": "arcs/half/disc.webp",
+            "episodes": 3
+        }
+    ]
+}

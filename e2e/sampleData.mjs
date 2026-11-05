@@ -7,8 +7,8 @@ const shows = [
     ['sunnyday', '在晴朗的一天出發', '0600', [1, 2, 3, 4, 5]],
     ['westair', '西加航空', '2000', [1, 2, 3, 4, 5]],
 ];
-const FIRST_DAY = '2026-09-21T00:00:00Z';
-const LAST_DAY = '2026-10-19T00:00:00Z';
+const FIRST_DAY = '2026-11-02T00:00:00Z';
+const LAST_DAY = '2026-11-30T00:00:00Z';
 
 const buildSampleRecordings = () => {
     const recordings = [];
@@ -16,7 +16,7 @@ const buildSampleRecordings = () => {
         const iso = d.toISOString().slice(0, 10);
         for (const [id, name, time, days] of shows) {
             if (!days.includes(d.getUTCDay())) continue;
-            if (id === 'westair' && iso === '2026-10-19') continue; // 晚間節目今日未播
+            if (id === 'westair' && iso === '2026-11-30') continue; // 晚間節目今日未播
             const file = `${iso.replaceAll('-', '')}_${time}_${name}.aac`;
             recordings.push({
                 showId: id,

@@ -16,12 +16,12 @@ const WIDE = { width: 1300, height: 800 };
 const HOME_HASHES = new Set(['', '#/']);
 const SHOW_HASH = '#/show/gongzi';
 const SAVED_TAB = '我的收藏';
-// 公子會（星期六）17/10：sampleData 有嘅最近一集；行嘅讀屏名（src/i18n/zh-HK.ts bookmark.*）刻意寫死做獨立對照
-const GONGZI = SAMPLE_RECORDINGS.find((r) => r.showId === 'gongzi' && r.date === '2026-10-17');
-const ROW_OPEN = /^開啟 公子會 17\/10（六）/;
-const ROW_PLAY = '播放 公子會 17/10（六）';
-const ROW_PAUSE = '暫停 公子會 17/10（六）';
-const LIST_STAR = '收藏 17/10 星期六';
+// 公子會（星期六）28/11：sampleData 有嘅最近一集；行嘅讀屏名（src/i18n/zh-HK.ts bookmark.*）刻意寫死做獨立對照
+const GONGZI = SAMPLE_RECORDINGS.find((r) => r.showId === 'gongzi' && r.date === '2026-11-28');
+const ROW_OPEN = /^開啟 公子會 28\/11（六）/;
+const ROW_PLAY = '播放 公子會 28/11（六）';
+const ROW_PAUSE = '暫停 公子會 28/11（六）';
+const LIST_STAR = '收藏 28/11 星期六';
 const ADDED_TOAST = '已加入收藏';
 // 等 UI 反應（toast、tab 闊度過場 520ms、轉頁）最多幾耐
 const UI_WAIT_MS = 5000;
@@ -31,7 +31,7 @@ const NO_AUTOPLAY_WAIT_MS = 1500;
 const SWIPE_PAST_RATIO = SWIPE_REMOVE_RATIO + 0.2;
 const SWIPE_STEPS = 12;
 
-/** 用戶之前已經收藏咗公子會 17/10（入主頁之前寫入 localStorage） */
+/** 用戶之前已經收藏咗公子會 28/11（入主頁之前寫入 localStorage） */
 const seedBookmark = async (ctx) => {
     const item = {
         kind: 'show',
