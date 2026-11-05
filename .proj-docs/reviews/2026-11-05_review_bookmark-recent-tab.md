@@ -112,3 +112,42 @@ next_agent: quality-assurance
 branch: "feature/bookmark/episode"
 context: "Recent-only third tab e286912 passes at 95 (CI run 87 green). W-535: in narrow landscape the two-column recent list pushes rows 7-10 into horizontal overflow columns that cannot be scrolled to; fix before merging to main. Integration branch is main."
 ```
+
+## Re-review 4327328（W-535）
+
+- 範圍：`b541785..4327328`（1 個 commit：`fix(bookmark): scroll the recent list wrapper so columned rows stay reachable`）
+- Hard gates：all pass：`npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（SavedTab、HomeSaved、HomePage）4 files / 84 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `4327328`）：run [#89 / 42097862989](https://github.com/dcwhung/903-player/actions/runs/42097862989)：**success**（Detect code changes ✅、Lint, unit & build ✅、E2E (Playwright) ✅）
+- 新分數：**100 / 100**，✅ pass
+
+| ID    | 狀態    | 覆核                                                                                                                                                                                                                                                                                                |
+| ----- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-535 | ✅ 已修 | `RecentPanel.tsx:56-63` 加 `div.recentScroll`（`flex: 1 1 0`、`min-height: 0`、`overflow-y: auto`），`ul.recentList` 冇固定高度，分欄自動平衡、保持直排次序（`SavedTab.module.css:355-374`）。CI e2e `rowsReachable` 喺直版 / 窄橫版 / 闊橫版逐行 `scrollIntoView` 都喺可視範圍、冇橫向溢出，全部過 |
+| S-711 | ✅ 已補 | e2e `rowsReachable`（`e2e/bookmark.mjs:214-246`）：developer 報修之前紅（直版 682 > 339、窄橫版 1590 > 793），修完 CI 綠                                                                                                                                                                            |
+
+Developer 講「A 狀態第 4 行之後都溢出，即係 v1.27.0 原有 bug 一齊修咗」：**部分唔啱**。
+
+- `8cfbd15`（v1.27.0 嘅收藏 tab）A 狀態 `ul` 冇 `column-count`，係普通直向捲動清單，冇呢個 bug
+- 係 `e286912` 加咗 `style={{ columnCount: columns }}`（A 狀態預設 `1`）之後，`column-count: 1` 都令 `ul` 變成 multi-column 容器，喺固定高度入面同樣開溢出欄。即係 A 狀態嘅溢出係 W-535 同一個 commit 帶入嚟，今次一齊修咗，結論冇變，只係來源唔係 v1.27.0
+- 修完 A / B 兩個狀態用同一結構 ✅
+
+新增 🟢：
+
+- S-713 `RecentPanel.tsx:58`：A 狀態 `columns = 1` 都照寫 `column-count: 1`，令清單仍然係 multi-column 容器。而家高度跟內容所以冇害；可以 `columns > 1` 先設，少一層 multicol layout
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/bookmark/episode"
+context: "Re-review 4327328: W-535 fixed and S-711 e2e added (CI run 89 green). The A-state overflow came from e286912, not v1.27.0. Only new 🟢 is S-713. Integration branch is main."
+```
