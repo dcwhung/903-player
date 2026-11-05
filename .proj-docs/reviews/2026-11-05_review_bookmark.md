@@ -101,3 +101,26 @@ const liveState = playbackStateOf({
     position: live?.currentTime ?? 0,
 });
 ```
+
+## Re-review a8378ea
+
+- 範圍：`git diff 0c8f148..a8378ea`（只驗 W-529 / W-530 嘅修正同佢嘅 diff）
+- Hard gates：all pass — `npx tsc -b` exit 0；改動檔 `eslint` exit 0；相關 unit（`src/pages/show`、`src/pages/drama`、`src/pages/shared`、`src/pages/home`、`useEpisodeFocus.test.tsx`）19 files / 262 tests 全綠
+- 新分數：**100 / 100**（正確性 25 / 25），✅ pass
+
+| ID    | 狀態    | 覆核                                                                                                                                                                                                                                                                                                   |
+| ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| W-529 | ✅ 已修 | `episodeItems.ts:72,79` 加 `liveState`；`useShowPage.ts:141-153` 傳 `playbackStateOf(...)`，同劇集頁一致，暫停 / 未開始唔再講「播放中」。新 test `should not say 播放中 on the current row while paused`、`should label a paused current episode by its real playback state`                           |
+| W-530 | ✅ 已修 | `useCueFocused` 刪走（`grep` 冇殘留）；focus 只係頁面揀中（`useShowPage.ts:45-52`、`useDramaPage.ts:95-115,313-316`），`onStart` 先 `load(..., { autoplay: true })`。player 唔郁，`useAudioBusy` 唔受影響；`shots7/back-home-phone.png` 底部只係原有「今日節目」mini player（未載入），冇 cue 出嚟嘅集 |
+
+重點核對：
+
+- 主頁格仔自動播：新 test `should leave home without an extra mini player and still autoplay a tile after 我的收藏` 覆蓋 ✅
+- 普通入頁（冇 `focusUrl`）：`focused` 恆為 `undefined`，`current` / `start` 同改之前一樣；`useAutoplayShow` / `useAutoplayDaily` 規則冇變 ✅。唯一普通入頁都會見到嘅改變係 W-529 嘅字眼（暫停 → 「已暫停 · x / y」），屬預期修正
+- 已載入呢個節目 / 呢套劇時 `focused` 讓位畀 player（`playing ? undefined`、`loaded ? undefined`），唔會蓋過播緊嘅嘢 ✅
+- 短篇劇：睇緊 focus 嗰集嘅短篇時 `pickedResume` 退回 focus 集，轉其他短篇照用續聽集（`useDramaPage.ts:299-301`）✅
+- S-690 隨 W-530 一齊消失（冇 cue 就冇「聽到 0:00 / 10:00」）
+
+新增 🟢：
+
+- S-694 `src/pages/drama/useDramaPage.ts:248` × `SeriesDramaPage.tsx:30`：未聽過呢套短篇劇、由收藏入頁時，「現正播放」嗰行仍然寫「揀一個短篇開始收聽」，碟面係黑碟，但短篇已經揀好、撳 ▶ 會播收藏嗰集。字眼同實際做法有少少出入，但唔會令用戶做錯（撳 ▶ 結果正確），亦冇違反 AC → 🟢。建議：有 `focused` 時 idle 狀態用 `resume` / `ready`（「下一集：短篇 · 第 N 集」）同顯示碟面
