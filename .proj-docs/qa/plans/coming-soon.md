@@ -15,7 +15,7 @@
     - Selectors: `src/selectors/availability.ts` `availabilityLabels.ts` `continueListening.ts` `dramaShelf.ts` `arcProgress.ts`（+ tests）
     - Home: `src/components/pages/home/DramaShelf/`（DramaTile / DramaTileParts / dramaTileTypes / DramaShelf.module.css + tests）`src/pages/home/dramaTileNotices.ts` `useHomeDramaItems.ts` `savedItems.ts` `useSavedView.ts` `src/components/pages/home/SavedTab/`
     - Drama page: `src/components/pages/drama/ArcPicker/` `ArcSheet/` `src/pages/drama/`（seriesAvailability / useSeriesAvailability / useTodaysEpisodes / useDramaPage / DramaPage / SeriesDramaPage / SeriesListColumn）`src/components/shared/player/EpisodeList/` `NowPlaying/`
-    - Shared: `src/splash/afterSplash.ts` `src/i18n/zh-HK.ts`（availability.*）`src/styles/tokens.css`（--leave-* / --upcoming-*）`src/config/constants.ts`（LEAVING_SOON_DAYS）
+    - Shared: `src/splash/afterSplash.ts` `src/i18n/zh-HK.ts`（availability._）`src/styles/tokens.css`（--leave-_ / --upcoming-*）`src/config/constants.ts`（LEAVING_SOON_DAYS）
 - Commands:
     - npx vitest run src/catalog/dramas/ src/selectors/availability.test.ts src/selectors/availabilityLabels.test.ts src/selectors/continueListening.test.ts src/selectors/dramaShelf.test.ts src/selectors/arcProgress.test.ts src/components/pages/home/DramaShelf/ src/components/pages/home/SavedTab/ src/components/pages/drama/ src/components/shared/player/EpisodeList/ src/components/shared/player/NowPlaying/ src/pages/drama/ src/pages/home/ src/splash/
     - e2e: e2e/comingSoon.mjs section「即將上架 / 快將下架」（入口只有 `npm run e2e`；CI 同 SHA 綠就引用）

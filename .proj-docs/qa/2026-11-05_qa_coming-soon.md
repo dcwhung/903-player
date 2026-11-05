@@ -7,12 +7,12 @@
 
 ## Runs
 
-| Command | Result | Time |
-|---------|--------|------|
-| CI [42072852107](https://github.com/dcwhung/903-player/actions/runs/42072852107) @ `5f2e550`（lint / unit / build / e2e，含 `e2e/comingSoon.mjs`）| success（引用）| — |
-| `npm run build -- --mode e2e` + `npx vite preview --port 4181` | ok | 25s |
-| Playwright scratch（harness `newE2EContext` + fixture flag；390×844、844×390、1300×800 × 主頁 / 劇集頁 / 一覽表 / 集數 / 收藏 / 舊 URL + W-531）| 61 PASS / 1 FAIL（W-533）/ 2 script 誤判 | 70s |
-| 補量 `DramaTile` 短篇數 span `clientWidth/scrollWidth`（有 / 冇續聽 × 3 viewport）| 見 W-533 | 30s |
+| Command                                                                                                                                            | Result                                   | Time |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ---- |
+| CI [42072852107](https://github.com/dcwhung/903-player/actions/runs/42072852107) @ `5f2e550`（lint / unit / build / e2e，含 `e2e/comingSoon.mjs`） | success（引用）                          | —    |
+| `npm run build -- --mode e2e` + `npx vite preview --port 4181`                                                                                     | ok                                       | 25s  |
+| Playwright scratch（harness `newE2EContext` + fixture flag；390×844、844×390、1300×800 × 主頁 / 劇集頁 / 一覽表 / 集數 / 收藏 / 舊 URL + W-531）   | 61 PASS / 1 FAIL（W-533）/ 2 script 誤判 | 70s  |
+| 補量 `DramaTile` 短篇數 span `clientWidth/scrollWidth`（有 / 冇續聽 × 3 viewport）                                                                 | 見 W-533                                 | 30s  |
 
 10 條 REVERIFY 鏈 plan 嘅 unit 子集 + e2e section 全部喺同一 SHA 嘅 CI run 入面 → 引用，唔重跑。
 
@@ -24,12 +24,14 @@
 ## Findings
 
 ### 🟡 W-533 有「繼續收聽」條時，主頁格右上角「N 個短篇 · 新短篇 X 上架」被截剩「3」/「3.」，上架資訊睇唔到亦讀唔到 → CUI-0021
+
 - L1: `_mockups_/coming-soon/index.html` ①「三個位置都顯示」，主頁格 = H2「3 個短篇 · 新短篇 11/12 上架」；⑧ 左上角琥珀字同其他角落字「唔會撞」
 - L2: fixture `e2e-soon` + 聽過初戀無限次第 2 集（同 `e2e/comingSoon.mjs`），時鐘 30/11 22:30；短篇數 span（`DramaTile.tsx:15`，`aria-hidden`）`clientWidth/scrollWidth`：844×390 有續聽 **16/147**、1300×800 有續聽 **28/220**（格闊 249px）、390×844 147/147；冇續聽 1300×800 220/220。截圖 scratchpad `shots/wide-home.png`、`shots/narrowLand-home.png` 右上角只見「3.」；格讀屏名「E2E 即將劇場，部分短篇 19/12（六）下架」冇上架資訊
 - L3: `DramaShelf.module.css:189-211` `.topBar`：左上角（新 + 琥珀下架字）`flex-shrink: 0`，右上角 `.meta` `min-width: 0` + ellipsis；「⏳ 部分短篇 19/12 下架」食晒頂行。註釋話只係「窄格」先收尾，但 1300×800 都中；字尾一向 `aria-hidden`（S-700），所以呢個狀態視覺 + 讀屏都冇上架資訊
 - 建議（用戶 / developer 揀）：(a) 字尾移去續聽條上面另一行；(b) 頂行放唔落只截「N 個短篇」、保留「新短篇 X 上架」；(c) 上架字加入 tile `aria-label`（順手解 S-700）
 
 ### 🟢 / Observation
+
 - S-705 844×390 冇續聽時右下角字尾截走最尾 1 字（137/147px）；可仿窄欄下架字出短版（backlog）
 - Observation：390×844 疊卡灰格 script 撳中上面嘅卡（`elementFromPoint` 唔喺灰格），focus / URL 冇郁；e2e 用 390×1400 + `DramaShelf.test.tsx` 已鎖。chip 虛線喺 `.soon::before`（`ArcPicker.module.css:135`），script 量 element `borderStyle` 誤判。兩個都唔計
 - 待用戶確認（唔當 finding）：直版成套劇下架字接喺「繼續收聽」同一行後面（390×844：「初戀無限次 · 第 2 集 · ⏳ 19/12 下架」）
