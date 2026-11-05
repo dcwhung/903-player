@@ -102,3 +102,67 @@ context: >
   Suggestions go to backlog; no re-review needed.
 report: .proj-docs/reviews/2026-11-05_review_card-zoom-wide.md
 ```
+
+---
+
+# Re-review f6e6429 — 2026-11-05
+
+- 範圍：只睇 `git diff 1f439b7..f6e6429`（S-682..S-685 修正）；唔重新 review 成個 branch，亦唔再搵新 🟢
+- Version 維持 1.26.1：同一個未 release 嘅 patch 入面修 review item，接受
+- Hard gates：all pass（lint + prettier、`tsc -b`、16 個相關 unit test 檔 289 tests 全綠；冇跑 full suite / e2e）
+
+## 逐條狀態
+
+| ID    | 狀態     | 驗證                                                                                                                                                                                                                                                                                                          |
+| ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-682 | ✅ fixed | `useStartPlayback.ts` `startShow` / `startToday` 同 `useStartDrama.ts` 而家只喺真係叫咗 `load` / `play` 先回 `true`（`!ready`、冇錄音、冇集數就回 `false`）；格仔用 `canStart*() && start*()`，`&&` 短路，開播仍然喺 click 入面同步做。新 test「閂卡撳雲妮鍾情（冇錄音）→ zoom-handle」覆蓋原本嗰個唔對稱情況 |
+| S-683 | ✅ fixed | `selectors/miniPlayer.ts` 新增 `hasMiniPlayerContent`，`useHasMiniPlayer` 俾 `useMiniPlayer` 同 `useHomeSide` 共用；有 selector unit test                                                                                                                                                                     |
+| S-684 | ✅ fixed | `cardZoom.ts` `UnzoomOptions.fallback` 註解寫清楚兩款 fallback 嘅實際變形，同上一輪分析一致（閂卡時內頁把手淡走都有寫）                                                                                                                                                                                       |
+| S-685 | ✅ fixed | `HomePageWideZoom.test.tsx` 新 integration test：閂卡 + 短篇劇集格 → `zoom-handle`，內頁有把手；返回用真嘅 `useGoHome` 行 `unzoom-handle`（fallback back），返到主頁仍然閂卡                                                                                                                                  |
+
+## 重點覆核
+
+**S-682 有冇令其他 caller 行為變咗**：冇。`start*` 只加咗回傳值，side effect（`load` / `play` 嘅條件同參數）同之前一樣。其他 caller：
+
+- `useDramaPage.ts:61`（`useAutoplayDaily` effect）、`useTodayPage.ts:25`、`useShowPage.ts:88` 都係 block body 入面叫，effect 唔會 return boolean（React 唔會當佢係 cleanup）
+- `useDramaPage.ts:99`、`:230`、`useShowPage.ts:113`（standby start）同 `useHomeDramaItems.ts:72` `onResume`（已經加咗 `void`）：都係當 click handler 用，React 唔理 handler 嘅回傳值
+- `tsc -b` 過；`useAutoplayDaily` 參數型別仍然係 `=> void`，接得到 boolean 函數，冇問題
+
+**`true` / `false` 係咪等於「真係開咗播」**：`true` = 已經發出 `load(…, { autoplay: true })` 或者 `play()`；之後 autoplay 畀瀏覽器拒絕呢類非同步失敗，click 嗰刻冇得知，亦唔應該等（iOS 規則）。用嚟揀入頁過場，呢個定義啱。劇集嘅 `isEpisodeOfDrama → play()` 分支喺格仔路徑永遠唔會行（`onOpen` 已經先排除 `isEpisodeOfDrama`），所以唔影響過場判斷。
+
+**`useDismissal` → `dismissWith` 有冇改行為**：冇。
+
+- 左滑 handler 照舊係 `player.stop()` + `dismissMiniPlayer()`；之前每次 render 都會整個新 closure，而家都係
+- `useMiniPlayer` 而家用 `content && useHasMiniPlayer()`，等於 `content && !dismissed && hasMiniPlayerContent(...)`。`content` 唔係 null 嘅條件（載入緊劇集，或者 `miniPlayerRecordings` list 唔係空）同 `hasMiniPlayerContent` 一模一樣，所以多出嚟嗰個條件冇改到結果，只係將 dismissed 同 content 判斷集中喺一個地方
+
+截圖 `shots4/n1-into-35`（撳格開播 → zoom，內頁冇把手）同預期一致。
+
+## Re-review 結論
+
+4 條 🟢 全部修好，冇引入新嘅 🔴 / 🟡，原評分 96 維持。**✅ pass**
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review f6e6429 (S-682..S-685) on feature/motion/card-zoom-wide, v1.26.1
+status: pass
+score: 96
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (16 related unit files, 289 tests; full suite / e2e not run per scope rule)
+  coverage: pass (new start* return paths, hasMiniPlayerContent and closed-card series flow covered)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: []
+  resolved: [S-682, S-683, S-684, S-685]
+next_action: proceed_to_qa
+context: >
+  start* now return whether load/play was issued; tile `starts` short-circuits so
+  playback still begins synchronously in the click. Other callers (drama / today /
+  show page effects, standby start, onResume) unchanged in behaviour.
+  dismissWith + useHasMiniPlayer is behaviour-equivalent to the old useDismissal.
+report: .proj-docs/reviews/2026-11-05_review_card-zoom-wide.md
+```
