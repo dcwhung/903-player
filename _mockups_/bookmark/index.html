@@ -280,9 +280,30 @@
                 height: var(--strip-h);
             }
             /* 得一個收藏：banner 按原圖比例完整顯示；橫版（.solo-side）左邊 banner、右邊集數 */
+            /*
+             * 得一個收藏：box 最多填滿收藏區（唔使 scroll）；banner 最高 = 原圖比例全幅，
+             * 位唔夠就 banner 壓矮（裁圖），集數照完整顯示
+             */
+            .solo-mode .cols {
+                height: 100%;
+                container-type: inline-size;
+            }
+            .solo-mode .scroll {
+                overflow: hidden;
+            }
+            .box.solo {
+                display: flex;
+                flex-direction: column;
+                max-height: 100%;
+                margin-bottom: 0;
+            }
+            .box.solo > .section {
+                flex: none;
+            }
             .b1 .solo .bhead {
-                height: auto;
-                aspect-ratio: var(--banner-ratio);
+                flex: 0 1 auto;
+                height: calc(100cqw / var(--banner-ratio-num));
+                min-height: var(--strip-h);
             }
             .solo-side .solo {
                 display: grid;
@@ -1160,6 +1181,8 @@
                     const meta = BOXES[b];
                     const box = div('box collapse');
                     box.style.setProperty('--banner-ratio', meta.ratio);
+                    const [rw, rh] = meta.ratio.split('/').map(Number);
+                    box.style.setProperty('--banner-ratio-num', String(rw / rh));
                     const head = div('bhead');
                     head.innerHTML = `<div class="bimg" style="background-image:url(${IMG[meta.banner]})"></div><div class="btitle">${meta.title}</div>`;
                     box.append(head);
@@ -1176,6 +1199,7 @@
                 const cols = boxes === 1 ? 1 : roomy ? Math.min(boxes, base) : base;
                 home.cols.style.columnCount = String(cols);
                 home.cols.querySelector('.box')?.classList.toggle('solo', boxes === 1);
+                home.list.classList.toggle('solo-mode', boxes === 1);
                 home.list.classList.toggle('solo-side', boxes === 1 && Boolean(home.L.soloBannerW));
                 home.list.style.setProperty('--solo-banner-w', `${home.L.soloBannerW ?? 0}px`);
                 home.list.querySelectorAll('.extra').forEach((x) => x.remove());
