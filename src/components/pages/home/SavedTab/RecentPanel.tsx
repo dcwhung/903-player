@@ -53,11 +53,14 @@ export const RecentPanel = ({ rows, fill = false, columns = 1 }: RecentPanelProp
             <h2 id={headingId} className={styles.recentTitle}>
                 {t('bookmark.recent')}
             </h2>
-            <ul className={styles.recentList} style={{ columnCount: columns }}>
-                {rows.map((row) => (
-                    <RecentRow key={row.key} row={row} />
-                ))}
-            </ul>
+            {/* 捲動喺外層、ul 高度跟內容：分欄先唔會溢出去右邊（W-535） */}
+            <div className={styles.recentScroll}>
+                <ul className={styles.recentList} style={{ columnCount: columns }}>
+                    {rows.map((row) => (
+                        <RecentRow key={row.key} row={row} />
+                    ))}
+                </ul>
+            </div>
         </section>
     );
 };

@@ -45,8 +45,22 @@ describe('recent-only tab', () => {
             height: 'auto',
             'min-height': '0',
         });
-        expect(cssDeclarations(css, '.recentList')['overflow-y']).toBe('auto');
         expect(cssDeclarations(css, '.recentList')['column-gap']).toBe('var(--saved-gap)');
+        expect(cssDeclarations(css, '.recentRow')['break-inside']).toBe('avoid');
+    });
+
+    // W-535：分欄喺固定高度入面，放唔落嘅行會開新欄向右溢出、捲唔到；捲動要喺外層，ul 高度跟內容
+    it('should scroll an outer wrapper and let the columned list grow to its content', () => {
+        expect(cssDeclarations(css, '.recentScroll')).toMatchObject({
+            flex: '1 1 0',
+            'min-height': '0',
+            'overflow-y': 'auto',
+            'overscroll-behavior': 'contain',
+        });
+        const list = cssDeclarations(css, '.recentList');
+        expect(list['overflow-y']).toBeUndefined();
+        expect(list.flex).toBeUndefined();
+        expect(list.height).toBeUndefined();
         expect(cssDeclarations(css, '.recentRow')['break-inside']).toBe('avoid');
     });
 

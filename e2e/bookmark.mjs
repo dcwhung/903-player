@@ -211,6 +211,40 @@ const starsAligned = (region) =>
         { epsilon: ALIGN_EPSILON, longName: LONG_NAME },
     );
 
+/**
+ * 每一行逐行 scrollIntoView 之後，成行都喺清單捲動範圍嘅可視區入面；捲動區冇橫向溢出（W-535：
+ * CSS 分欄喺固定高度入面，放唔落嘅行會開新欄溢出去右邊，DOM 有但睇唔到、捲唔到）
+ */
+const rowsReachable = (region) =>
+    region.evaluate((el, epsilon) => {
+        const rows = [...el.querySelectorAll('li')];
+        // 由第一行向上搵捲動嘅容器（overflow-y auto / scroll），搵唔到就用 region 本身
+        let scroller = rows[0]?.parentElement ?? el;
+        while (scroller !== el && !/auto|scroll/.test(getComputedStyle(scroller).overflowY)) {
+            scroller = scroller.parentElement;
+        }
+        const unreachable = rows
+            .map((row, i) => {
+                row.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                const view = scroller.getBoundingClientRect();
+                const r = row.getBoundingClientRect();
+                const inside =
+                    r.top >= view.top - epsilon &&
+                    r.bottom <= view.bottom + epsilon &&
+                    r.left >= view.left - epsilon &&
+                    r.right <= view.right + epsilon;
+                return inside ? null : i + 1;
+            })
+            .filter((i) => i !== null);
+        scroller.scrollTop = 0;
+        return {
+            unreachable,
+            noSideOverflow: scroller.scrollWidth <= scroller.clientWidth,
+            scrollWidth: scroller.scrollWidth,
+            clientWidth: scroller.clientWidth,
+        };
+    }, ALIGN_EPSILON);
+
 /** B：第三格係歷史 icon「最近收聽」；撳入去成個 tab 係清單（最多 10 集）、☆ 對齊、冇收藏 box */
 const checkRecentOnly = async ({ browser, base, errors, log }, label, viewport) => {
     const { ctx, p } = await newE2EPage(browser, errors, viewport ? { viewport } : {});
@@ -228,6 +262,15 @@ const checkRecentOnly = async ({ browser, base, errors, log }, label, viewport) 
     const aligned = await starsAligned(region);
     log(aligned.rows === RECENT_MAX, `${label}：清單最多 ${RECENT_MAX} 集（${aligned.rows}）`);
     log(aligned.ok, `${label}：每行 ☆ 上下對齊（${JSON.stringify(aligned.stars.slice(0, 3))}…）`);
+    const reach = await rowsReachable(region);
+    log(
+        reach.unreachable.length === 0,
+        `${label}：每一行捲得到、喺清單可視範圍入面（睇唔到：${reach.unreachable.join() || '冇'}）`,
+    );
+    log(
+        reach.noSideOverflow,
+        `${label}：清單冇橫向溢出（${reach.scrollWidth} ≤ ${reach.clientWidth}）`,
+    );
     await ctx.close();
 };
 
