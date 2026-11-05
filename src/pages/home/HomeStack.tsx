@@ -25,6 +25,10 @@ export interface HomeStackProps {
     dramaItems: readonly DramaShelfItem[];
     busy: boolean;
     miniPlayer: MiniPlayerProps | null;
+    /** 有收藏先出 ★ tab */
+    hasSaved: boolean;
+    /** 我的收藏 tab 嘅內容（HomeSaved，揀中先 render） */
+    saved: ReactNode;
 }
 
 /** 直版 / 手機打橫：橫額、tab、格仔上下排，底部浮住 mini player */
@@ -35,6 +39,8 @@ export const HomeStack = ({
     dramaItems,
     busy,
     miniPlayer,
+    hasSaved,
+    saved,
 }: HomeStackProps) => {
     // 手機打橫：橫額變成節目 / 劇集格第一格（HomeLandscapeGrid 按卡數排）；其他情況釘喺頂
     const bannerInGrid = useMediaQuery(SHORT_LANDSCAPE_QUERY);
@@ -54,17 +60,17 @@ export const HomeStack = ({
             data-mini-player={miniPlayer ? miniPlayerMode(miniPlayer.keys) : undefined}
         >
             {!bannerInGrid && <HomeBanner corner={version} />}
-            <HomeTabs tab={tab} onChange={onTab} />
-            {tab === 'shows' ? (
+            <HomeTabs tab={tab} onChange={onTab} hasSaved={hasSaved} />
+            {tab === 'shows' && (
                 <ShowGrid
                     label={t('home.showsNav')}
                     busy={busy}
                     tiles={showTiles}
                     renderBanner={renderBanner}
                 />
-            ) : (
-                <DramaShelf items={dramaItems} renderBanner={renderBanner} />
             )}
+            {tab === 'dramas' && <DramaShelf items={dramaItems} renderBanner={renderBanner} />}
+            {tab === 'saved' && saved}
             {miniPlayer && <MiniPlayer {...miniPlayer} />}
         </main>
     );

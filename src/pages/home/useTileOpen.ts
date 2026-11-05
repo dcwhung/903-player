@@ -21,6 +21,8 @@ export interface TileTarget {
     page: InnerPage;
     /** 呢下撳格真係開咗播（start* 嘅結果，S-682；開播就係呢頁自己嘅嘢，內頁冇把手） */
     starts: boolean;
+    /** 入頁要帶嘅 history state（例如收藏 tab 撳行：focusUrl，唔播、捲去嗰集） */
+    state?: object;
 }
 
 /**
@@ -33,11 +35,12 @@ export const useTileOpen = ({ side, card }: HomeRight) => {
     const navigate = useNavigate();
     const { recording, isPlaying } = usePlayer();
     const closed = useClosedHomePlayerCard();
-    return ({ key, path, page, starts }: TileTarget) => {
+    return ({ key, path, page, starts, state }: TileTarget) => {
         const handle =
             !starts && pageHandle({ track: recording, isPlaying, closed, page }) !== null;
         const motion = wideTileMotion({ side, card, page, handle });
-        if (motion === 'expand') withViewTransition(() => void navigate(path), 'expand');
-        else zoom(key, path, motion);
+        const go = () => void navigate(path, state ? { state } : undefined);
+        if (motion === 'expand') withViewTransition(go, 'expand');
+        else zoom(key, path, motion, state);
     };
 };

@@ -6,6 +6,7 @@ import { StatusMessage } from '../../components/shared/common/StatusMessage/Stat
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import type { DramaConfig } from '../../catalog/dramas';
 import { LANDSCAPE_QUERY } from '../../config/layout';
+import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePlayer } from '../../player/usePlayer';
 import { t } from '../../i18n/t';
@@ -21,8 +22,12 @@ import { useDailyDramaPage } from './useDramaPage';
  * 播緊其他嘢（start 有值）：黑碟、未開始樣，同短篇劇集頁一樣
  */
 export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
-    const { theme, current, start, strip, items, selectEpisode, pressEpisode } =
-        useDailyDramaPage(drama);
+    // 由「我的收藏」撳行入嚟：唔播，清單捲去嗰集、短暫 highlight
+    const focusUrl = useEpisodeFocus();
+    const { theme, current, start, strip, items, selectEpisode, pressEpisode } = useDailyDramaPage(
+        drama,
+        focusUrl,
+    );
     const { duration } = usePlayer();
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
     const dateLabel = current ? formatDateLabel(current.date) : '';
@@ -42,6 +47,7 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
                             currentDay={strip.current}
                             onPick={selectEpisode}
                             onStart={start}
+                            bookmark={current}
                         />
                     )}
                     {current && landscape && (
@@ -53,7 +59,12 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
                 </div>
                 <div className={page.listColumn}>
                     {landscape && <DramaHeader title={drama.name} />}
-                    <EpisodeList items={items} onSelect={pressEpisode} labels="taggedDate" />
+                    <EpisodeList
+                        items={items}
+                        onSelect={pressEpisode}
+                        labels="taggedDate"
+                        focusKey={focusUrl}
+                    />
                 </div>
                 <InnerPageHandle page={{ kind: 'drama', dramaId: drama.id }} />
             </main>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { airsWeekly, findShow, themeFor, type ShowConfig } from '../../catalog/shows';
 import { useRecordings } from '../../data/useRecordings';
+import { useCueFocused } from '../../hooks/useEpisodeFocus';
 import { useEpisodePress } from '../../hooks/useEpisodePress';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
 import { useRefreshedOn } from '../../hooks/useRefreshedOn';
@@ -67,12 +68,14 @@ const useRequestedEpisode = (episodes: readonly Recording[]) => {
 
 /**
  * 入頁（主頁撳格、deep link）冇其他嘢佔住（useAudioBusy）先自動播；有其他嘢播緊 / 暫停緊就唔蓋過
- * （用戶可能只係想睇清單），唱片係未開始樣等用戶撳。mini player 帶咗集數入嚟係明確要播，照播嗰集
+ * （用戶可能只係想睇清單），唱片係未開始樣等用戶撳。mini player 帶咗集數入嚟係明確要播，照播嗰集。
+ * 由「我的收藏」撳行入嚟（focused）明確唔播
  */
 const useAutoplayShow = (
     show: ShowConfig | undefined,
     episodes: readonly Recording[],
     playingUrl: string | undefined,
+    focused: boolean,
 ) => {
     const { status } = useRecordings();
     const { load } = usePlayer();
@@ -84,10 +87,10 @@ const useAutoplayShow = (
         if (hasRequest) consume();
         if (requested && requested.url !== playingUrl) {
             void load(requested, { autoplay: true });
-        } else if (!requested && playingUrl === undefined && !busy) {
+        } else if (!requested && !focused && playingUrl === undefined && !busy) {
             startShow(show.id);
         }
-    }, [show, status, hasRequest, requested, consume, playingUrl, busy, load, startShow]);
+    }, [show, status, hasRequest, requested, consume, playingUrl, busy, focused, load, startShow]);
 };
 
 /**
@@ -134,12 +137,13 @@ const useShowEpisodeItems = (
     return { episodeItems, isPlayingCurrent };
 };
 
-/** 節目頁嘅資料同動作 */
-export const useShowPage = (showId: string) => {
+/** 節目頁嘅資料同動作；focusUrl = 由「我的收藏」撳入嚟嗰集（唔自動播） */
+export const useShowPage = (showId: string, focusUrl?: string) => {
     const show = findShow(showId);
     const { status, isSearching } = useRecordings();
     const { episodes, entries, playing, current } = useShowEpisodes(show);
-    useAutoplayShow(show, episodes, playing?.url);
+    useAutoplayShow(show, episodes, playing?.url, focusUrl !== undefined);
+    useCueFocused(focusUrl === undefined ? undefined : episodes.find((e) => e.url === focusUrl));
     const start = useShowStart(show, playing !== null);
     const currentUrl = current?.url;
     const { episodeItems, isPlayingCurrent } = useShowEpisodeItems(

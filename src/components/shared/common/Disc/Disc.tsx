@@ -2,7 +2,8 @@ import type { DOMAttributes, Ref } from 'react';
 import styles from './Disc.module.css';
 
 interface DiscProps {
-    size?: 'large' | 'small';
+    /** fill = 填滿外層（大細、外圈由外層決定，例如收藏 tab） */
+    size?: 'large' | 'small' | 'fill';
     /** 節目圖；冇就顯示中性黑碟（唔跟頁面主題色） */
     art?: string | undefined;
     /** 節目頁日子條拖動時轉節目圖（直接寫 style，唔經 render） */

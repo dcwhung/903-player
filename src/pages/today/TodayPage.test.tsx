@@ -270,7 +270,9 @@ describe('TodayPage', () => {
         expect(rows[4]).toHaveTextContent('聖艾粒LaLaLaLa17:10 · 未上架');
         expect(rows[4] && within(rows[4]).queryByRole('button')).toBeNull();
         const list = screen.getByRole('region', { name: '節目表' });
-        expect(within(list).getAllByRole('button')).toHaveLength(TODAY.length);
+        expect(within(list).getAllByRole('button', { name: /^(播放|暫停) / })).toHaveLength(
+            TODAY.length,
+        );
         await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
         await userEvent.click(within(list).getByText('聖艾粒LaLaLaLa'));
         expect(audio.src).toBe(TODAY[2]?.url);

@@ -112,3 +112,20 @@ export const SoundWaveIcon = (props: IconProps) => (
         })}
     </StrokeIcon>
 );
+
+/** 收藏星（_mockups_/bookmark I1）：未收藏 ☆ 淨係框；收藏咗 ★ 填色 */
+const STAR_PATH = 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z';
+const STAR_STROKE_WIDTH = 1.8;
+
+export const StarIcon = ({ filled = false, ...props }: IconProps & { filled?: boolean }) => (
+    <StrokeIcon strokeWidth={STAR_STROKE_WIDTH} fill={filled ? 'currentColor' : 'none'} {...props}>
+        <path d={STAR_PATH} />
+    </StrokeIcon>
+);
+
+/** 垃圾桶 🗑：收藏 tab 左滑移除時跟住行出現 */
+export const TrashIcon = (props: IconProps) => (
+    <StrokeIcon strokeWidth={STAR_STROKE_WIDTH} {...props}>
+        <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" />
+    </StrokeIcon>
+);

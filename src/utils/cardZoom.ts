@@ -27,6 +27,8 @@ export const zoomKey = {
     show: (id: string) => `show:${id}`,
     drama: (id: string) => `drama:${id}`,
     today: 'today',
+    /** 收藏 tab 嘅一行（一集，用網址） */
+    episode: (url: string) => `episode:${url}`,
 } as const;
 
 const KEY_ATTR = 'data-zoom-key';

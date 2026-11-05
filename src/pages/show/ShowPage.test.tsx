@@ -13,6 +13,7 @@ import {
 } from '../../../tests/renderWithProviders';
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { usePlayer } from '../../player/usePlayer';
 import { saveProgress } from '../../services/progressStore';
 import { zoomFromState, zoomKey, zoomState } from '../../utils/cardZoom';
 import { themeFor } from '../../catalog/shows';
@@ -56,6 +57,54 @@ describe('ShowPage', () => {
         HTMLElement.prototype.scrollTo = vi.fn();
     });
     afterEach(() => vi.useRealTimers());
+
+    // P7 #7：收藏 tab 撳行入嚟（focusUrl）：唔播、捲去嗰集、短暫 highlight
+    it('should not autoplay and should highlight the episode opened from 我的收藏', async () => {
+        const target = RECORDINGS[1];
+        const { audio, container } = renderWithProviders(<ShowPage />, {
+            ...ROUTE,
+            recordings: RECORDINGS,
+            state: { focusUrl: target?.url },
+        });
+
+        await screen.findByRole('button', { name: /^播放 03\/10/ });
+        await act(async () => {});
+        // 冇其他嘢佔住：載入嗰集（唱片跟佢）但唔播
+        expect(audio.play).not.toHaveBeenCalled();
+        expect(audio.src).toBe(target?.url);
+        expect(container.querySelector('li[data-focused]')).toHaveAttribute(
+            'data-episode-key',
+            target?.url,
+        );
+    });
+
+    it('should leave another show that is playing alone when opened from 我的收藏', async () => {
+        const other = RECORDINGS[3] as Recording;
+        const LoadThenEnter = () => {
+            const { load } = usePlayer();
+            const navigate = useNavigate();
+            const enter = async () => {
+                await load(other, { autoplay: true });
+                await navigate('/show/gongzi', { state: { focusUrl: RECORDINGS[1]?.url } });
+            };
+            return (
+                <button type="button" onClick={() => void enter()}>
+                    enter
+                </button>
+            );
+        };
+        const { audio } = renderWithProviders(<ShowPage />, {
+            route: '/start',
+            path: '/show/:showId',
+            recordings: RECORDINGS,
+            extraRoutes: [{ path: '/start', element: <LoadThenEnter /> }],
+        });
+
+        await userEvent.click(screen.getByRole('button', { name: 'enter' }));
+        await screen.findByRole('button', { name: /^播放 03\/10/ });
+        await act(async () => {});
+        expect(audio.src).toBe(other.url);
+    });
 
     // W-527：zoom 來源綁喺入頁嘅 history entry；清走帶入嚟嘅集數時唔好連來源都食咗
     it('should keep the zoom tile in the history state when it clears the requested episode', async () => {
@@ -231,7 +280,9 @@ describe('ShowPage', () => {
             unavailable: [unavailableEpisode('gongzi', '2026-09-26')],
         });
 
-        const rows = await screen.findAllByRole('button', { name: /\d{2}\/\d{2} 星期/ });
+        const rows = await screen.findAllByRole('button', {
+            name: /^(播放|暫停) \d{2}\/\d{2} 星期/,
+        });
         expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual([
             '暫停 17/10 星期六，連線中…',
             '播放 10/10 星期六，未收聽',

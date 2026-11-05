@@ -68,6 +68,10 @@ interface HomeWideProps extends WideGridProps {
     mode: Exclude<HomeLayoutMode, 'stack'>;
     onTab: (tab: HomeTab) => void;
     miniPlayer: MiniPlayerProps | null;
+    /** 有收藏先出 ★ tab */
+    hasSaved: boolean;
+    /** 我的收藏 tab 嘅內容（左欄，右邊播放卡照舊） */
+    saved: ReactNode;
 }
 
 /**
@@ -75,7 +79,14 @@ interface HomeWideProps extends WideGridProps {
  * 有 mini player 就右邊播放卡（split，底部冇 mini player），✕ 閂咗就全闊 + 右邊把手（fillWithHandle）。
  * 張卡出現 / 換節目嘅過場見 useCardMotion：過場影舊畫面期間照顯示舊版面（mode）、舊卡（frozen）同舊把手（holding）
  */
-export const HomeWide = ({ mode: latestMode, onTab, miniPlayer, ...grid }: HomeWideProps) => {
+export const HomeWide = ({
+    mode: latestMode,
+    onTab,
+    miniPlayer,
+    hasSaved,
+    saved,
+    ...grid
+}: HomeWideProps) => {
     const toggle = useHomeCardToggle(miniPlayer);
     const { mode, frozen, holding } = useCardMotion(latestMode, miniPlayer?.item);
     // 開始播就即刻清走閂咗嘅卡（useReopenHomePlayerCardOnPlay），但 O1 影舊畫面前把手要仲喺度先淡得走
@@ -83,8 +94,8 @@ export const HomeWide = ({ mode: latestMode, onTab, miniPlayer, ...grid }: HomeW
     return (
         <main className={`${page.page} ${page.locked} ${styles.wide}`} data-layout={mode}>
             <div className={styles.gridColumn}>
-                <HomeTabs tab={grid.tab} onChange={onTab} />
-                <WideGrid {...grid} mode={mode} />
+                <HomeTabs tab={grid.tab} onChange={onTab} hasSaved={hasSaved} />
+                {grid.tab === 'saved' ? saved : <WideGrid {...grid} mode={mode} />}
             </div>
             {mode === 'split' && miniPlayer && (
                 <HomeWideCard

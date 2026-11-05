@@ -32,6 +32,16 @@
     box-shadow: 0 0 0 3px var(--color-divider);
 }
 
+/*
+ * 填滿外層（收藏 tab 嘅碟，P7 #7）：大細由外層決定；外圈 / 落影（--disc-fill-shadow）、
+ * 中間孔邊（--disc-fill-hole-ring）由外層傳入，孔色跟 --color-disc-rim
+ */
+.fill {
+    width: 100%;
+    aspect-ratio: 1;
+    box-shadow: var(--disc-fill-shadow, none);
+}
+
 /* 碟面：自轉用獨立嘅 rotate property，同手動角度（inline transform）疊埋計 */
 .face {
     position: absolute;
@@ -131,4 +141,9 @@
 .small .spindle {
     width: 20%;
     box-shadow: none;
+}
+
+.fill .spindle {
+    width: 18%;
+    box-shadow: 0 0 0 2px var(--disc-fill-hole-ring, transparent);
 }

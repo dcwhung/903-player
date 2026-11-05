@@ -19,6 +19,7 @@ describe('toTodayItems', () => {
                 art: themeFor('sunnyday').art,
                 active: true,
                 status: 'playing',
+                track: SUNNY,
             },
             {
                 key: BADGIRL.url,
@@ -27,6 +28,7 @@ describe('toTodayItems', () => {
                 art: themeFor('badgirl').art,
                 active: false,
                 status: 'unwatched',
+                track: BADGIRL,
             },
             {
                 key: WANNI.url,
@@ -35,6 +37,7 @@ describe('toTodayItems', () => {
                 art: themeFor('wanni').art,
                 active: false,
                 status: 'watched',
+                track: WANNI,
             },
         ]);
     });

@@ -1,5 +1,7 @@
 import { t } from '../../../../i18n/t';
+import type { Track } from '../../../../types/track';
 import { PauseIcon, PlayIcon, RestartIcon } from '../../common/icons/icons';
+import { BookmarkButton } from '../BookmarkButton/BookmarkButton';
 import styles from './PlayerPanel.module.css';
 
 const RESTART_ICON_SIZE = 22;
@@ -10,10 +12,12 @@ interface GaugeActionsProps {
     /** 冇就唔出由頭播放掣（播放掣位置唔變） */
     onRestart?: () => void;
     onToggle: () => void;
+    /** 顯示緊嘅一集：有就喺播放掣右邊出收藏掣（P7 #7 P2，同左邊由頭播放對稱） */
+    bookmark?: Track | undefined;
 }
 
-/** 由頭播放 + 播放 / 暫停兩粒掣 */
-export const GaugeActions = ({ isPlaying, onRestart, onToggle }: GaugeActionsProps) => (
+/** 由頭播放 + 播放 / 暫停 + 收藏 */
+export const GaugeActions = ({ isPlaying, onRestart, onToggle, bookmark }: GaugeActionsProps) => (
     <div className={styles.actions}>
         {onRestart && (
             <button
@@ -37,5 +41,12 @@ export const GaugeActions = ({ isPlaying, onRestart, onToggle }: GaugeActionsPro
                 <PlayIcon size={TOGGLE_ICON_SIZE} />
             )}
         </button>
+        {bookmark && (
+            <BookmarkButton
+                track={bookmark}
+                label={t('bookmark.toggleCurrent')}
+                className={styles.bookmark}
+            />
+        )}
     </div>
 );

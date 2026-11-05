@@ -3,6 +3,7 @@ import { t } from '../../../../i18n/t';
 import styles from './EpisodeList.module.css';
 import { EpisodeRow } from './EpisodeRow';
 import type { EpisodeItem, EpisodeLabels, EpisodeScrollAlign } from './episodeListTypes';
+import { useFocusRow } from './useFocusRow';
 import { useScrollToCurrent } from './useScrollToCurrent';
 
 // 型別喺 episodeListTypes（EpisodeRow 都用，免循環）；re-export 令 pages/ 舊 import 路徑照用
@@ -13,6 +14,8 @@ interface EpisodeListProps {
     onSelect: (key: string) => void;
     labels?: EpisodeLabels;
     scrollAlign?: EpisodeScrollAlign;
+    /** 由「我的收藏」撳入嚟嗰集（網址）：捲過去、短暫 highlight，唔播 */
+    focusKey?: string;
 }
 
 /** 標題右邊：「共 N 集」只計播得到嘅；有未上架就加埋幾多集 */
@@ -33,10 +36,12 @@ export const EpisodeList = ({
     onSelect,
     labels = 'date',
     scrollAlign = 'nearest',
+    focusKey,
 }: EpisodeListProps) => {
     const headingId = useId();
     const listRef = useRef<HTMLUListElement>(null);
     useScrollToCurrent(listRef, items, scrollAlign);
+    useFocusRow(listRef, items, focusKey, scrollAlign);
 
     return (
         <section className={styles.section} aria-labelledby={headingId} data-labels={labels}>
@@ -48,7 +53,7 @@ export const EpisodeList = ({
             </div>
             <ul ref={listRef} className={styles.list}>
                 {items.map((item) => (
-                    <li key={item.key}>
+                    <li key={item.key} className={styles.item} data-episode-key={item.key}>
                         <EpisodeRow item={item} onSelect={onSelect} />
                     </li>
                 ))}
