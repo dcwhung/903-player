@@ -23,6 +23,7 @@
                 --app-cream: #f5d294;
                 --app-track: #3e5c7c;
                 --app-box: #2d4560;
+                --app-box-playing: #263b54;
                 --app-ink: #ffffff;
                 --app-muted: rgb(255 255 255 / 62%);
                 --app-line: rgb(255 255 255 / 22%);
@@ -237,10 +238,12 @@
             .list {
                 position: absolute;
                 overflow-y: auto;
+                flex-direction: column;
                 column-gap: var(--gap);
                 padding-bottom: 16px;
             }
             .cols {
+                flex: none;
                 column-gap: var(--gap);
             }
             .box {
@@ -346,15 +349,29 @@
                 border-radius: 8px;
                 touch-action: pan-y;
             }
-            .item .del {
+            /* 左滑時跟住嗰行一齊向左走嘅紅底 🗑（貼喺行嘅右邊外面） */
+            .card .trash {
                 position: absolute;
-                inset: 0;
-                display: grid;
-                place-items: center end;
-                padding-right: 14px;
+                top: 0;
+                bottom: 0;
+                left: 100%;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                padding-left: 18px;
                 background: var(--app-danger);
-                font: 600 14px var(--font);
                 color: #fff;
+            }
+            .card .trash svg {
+                width: 22px;
+                height: 22px;
+            }
+            .item.playing .card {
+                background: var(--app-box-playing);
+            }
+            .item.playing .line b,
+            .item.playing .state {
+                color: var(--app-cream);
             }
             .card {
                 position: relative;
@@ -371,26 +388,21 @@
                 min-width: 0;
             }
             /* 每行嘅播放 / 暫停掣：撳掣 = 原地播；掣以外 = 入頁 */
+            /* 跟內頁集數清單：冇框，白色 ▷ / ⏸ */
             .play {
                 display: grid;
                 place-items: center;
-                width: 34px;
-                height: 34px;
-                border: 1.5px solid var(--app-line);
-                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                border: 0;
                 background: transparent;
                 color: var(--app-ink);
                 cursor: pointer;
                 padding: 0;
             }
-            .play[aria-pressed='true'] {
-                border-color: var(--app-cream);
-                background: var(--app-cream);
-                color: #1c2330;
-            }
             .play svg {
-                width: 14px;
-                height: 14px;
+                width: 22px;
+                height: 22px;
             }
             /* E1：box 得一兩個就放大 */
             .roomy .box {
@@ -399,6 +411,7 @@
             }
             /* E2：「最近收聽」補位 / E3：提示卡 */
             .extra {
+                flex: none;
                 break-inside: avoid;
                 margin-bottom: var(--gap);
                 padding: 12px;
@@ -412,12 +425,26 @@
                 font: 700 14px/1.3 var(--font);
                 color: var(--app-ink);
             }
+            /* 最近收聽：填滿收藏下面剩低嘅位（最少 --recent-min），入面 scroll */
+            .extra.recent {
+                flex: 1 1 0;
+                min-height: var(--recent-min);
+                display: flex;
+                flex-direction: column;
+                padding-bottom: 4px;
+            }
+            .recent-list {
+                flex: 1 1 0;
+                min-height: 0;
+                overflow-y: auto;
+            }
             .recent-row {
                 display: grid;
                 grid-template-columns: 34px 1fr auto;
                 gap: 10px;
                 align-items: center;
                 padding: 6px 0;
+                cursor: pointer;
             }
             .recent-row + .recent-row {
                 border-top: 1px solid var(--app-divider);
@@ -590,6 +617,14 @@
                         E3 下面提示卡
                     </button>
                 </div>
+                <div class="row" data-group="history">
+                    <button type="button" class="pick" data-val="yes" aria-pressed="true">
+                        有收聽記錄（10 集）
+                    </button>
+                    <button type="button" class="pick" data-val="no" aria-pressed="false">
+                        從未收聽過（唔出最近收聽）
+                    </button>
+                </div>
                 <p class="opt-desc" id="empty-desc"></p>
                 <div class="stages">
                     <div class="viewport" id="v-home-phone"></div>
@@ -607,6 +642,8 @@
             const IMG = {
                 nHome: 'n-home.webp',
                 lHome: 'l-home.webp',
+                lalala: 'disc-lalala.webp',
+                waves: 'disc-waves.webp',
                 sunnyday: 'disc-sunnyday.webp',
                 westair: 'disc-westair.webp',
                 nShow: 'n-show.webp',
@@ -679,6 +716,7 @@
                         discRoomy: 76,
                         stripRoomy: 132,
                     },
+                    recentMin: 180,
                     cover: { y: 187, h: 564 },
                     toastBottom: 120,
                 },
@@ -700,6 +738,7 @@
                         discRoomy: 60,
                         stripRoomy: 96,
                     },
+                    recentMin: 150,
                     cover: { y: 72, h: 222 },
                     toastBottom: 100,
                 },
@@ -721,6 +760,7 @@
                         discRoomy: 88,
                         stripRoomy: 160,
                     },
+                    recentMin: 220,
                     cover: { y: 107, h: 693, w: 820 },
                     toastBottom: 40,
                 },
@@ -823,23 +863,39 @@
                 },
             ];
 
-            const state = { icon: 'star', place: 'p2', banner: 'b1', count: 'many', empty: 'e2' };
+            const state = {
+                icon: 'star',
+                place: 'p2',
+                banner: 'b1',
+                count: 'many',
+                empty: 'e2',
+                history: 'yes',
+            };
             const FEW_IDS = [1, 6];
             const PLAY =
-                '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>';
+                '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
             const PAUSE =
-                '<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>';
+                '<svg viewBox="0 0 24 24"><path d="M8 5h2.6v14H8zM13.4 5H16v14h-2.6z" fill="currentColor"/></svg>';
             const EMPTY_DESC = {
                 e0: '唔處理：收藏少就喺下面留空。',
                 e1: 'box 得一兩個時自動放大：banner 高啲、碟大啲，闊版 / 窄橫版唔再分欄留空。',
-                e2: '收藏下面補一個「最近收聽」：最近聽過、未收藏嘅幾集，每行有 ☆ 即刻收藏。收藏多嗰陣都喺最尾。',
+                e2: '收藏下面補「最近收聽」：最近聽過、未收藏嘅最多 10 集；panel 填滿剩低嘅位（最少三行高），入面 scroll；撳一行 = 入嗰集，撳 ☆ = 收藏。從未收聽過就唔出。',
                 e3: '收藏下面加一張淡色提示卡，教人喺集數清單或者播放器撳 ☆ 加入收藏。',
             };
+            /** 最近收聽：最多記 10 集（新到舊） */
+            const RECENT_MAX = 10;
             const RECENT = [
                 { disc: 'sunnyday', name: '在晴朗的一天出發', label: '19/10（一）' },
                 { disc: 'westair', name: '西加航空', label: '16/10（五）' },
                 { disc: 'badgirl', name: 'Bad Girl大過佬', label: '16/10（五）' },
-            ];
+                { disc: 'wanni', name: '雲妮鍾情', label: '16/10（五）' },
+                { disc: 'lalala', name: '聖艾粒LaLaLa', label: '15/10（四）' },
+                { disc: 'waves', name: '火多過浪花', label: '15/10（四）' },
+                { disc: 'sunnyday', name: '在晴朗的一天出發', label: '15/10（四）' },
+                { disc: 'westair', name: '西加航空', label: '14/10（三）' },
+                { disc: 'badgirl', name: 'Bad Girl大過佬', label: '14/10（三）' },
+                { disc: 'wanni', name: '雲妮鍾情', label: '13/10（二）' },
+            ].slice(0, RECENT_MAX);
             const itemsFor = () =>
                 SAMPLE.filter((x) => state.count === 'many' || FEW_IDS.includes(x.id)).map((x) => ({
                     ...x,
@@ -969,6 +1025,7 @@
                 home.list.style.setProperty('--strip-h', `${L.list.strip}px`);
                 home.list.style.setProperty('--banner-w', `${L.list.bannerW}px`);
                 home.list.style.setProperty('--disc-roomy', `${L.list.discRoomy}px`);
+                home.list.style.setProperty('--recent-min', `${L.recentMin}px`);
                 home.list.style.setProperty('--strip-roomy', `${L.list.stripRoomy}px`);
                 home.list.classList.add(state.banner);
                 home.tabs = div('tabs', {
@@ -1018,7 +1075,7 @@
                     );
                 const showList = home.tab === 'saved';
                 home.cover.style.display = showList ? 'block' : 'none';
-                home.list.style.display = showList ? 'block' : 'none';
+                home.list.style.display = showList ? 'flex' : 'none';
                 if (!animate) home.pill.style.transition = 'none';
                 placePill(home);
                 // tab 闊度郁緊：每格跟住更新膠囊位置
@@ -1074,21 +1131,32 @@
                 home.cols.style.columnCount = String(
                     roomy ? Math.min(boxes, home.L.list.cols) : home.L.list.cols,
                 );
-                if (state.empty === 'e2') home.cols.append(recentOf(home));
-                if (state.empty === 'e3') home.cols.append(hintOf());
+                home.list.querySelector('.extra')?.remove();
+                if (state.empty === 'e2' && state.history === 'yes')
+                    home.list.append(recentOf(home));
+                if (state.empty === 'e3') home.list.append(hintOf());
             };
 
             /** E2：最近聽過、未收藏嘅幾集 */
             const recentOf = (home) => {
-                const box = div('extra');
-                box.innerHTML = '<h4>最近收聽</h4>';
+                const box = div('extra recent');
+                box.innerHTML = '<h4>最近收聽</h4><div class="recent-list"></div>';
+                const list = box.querySelector('.recent-list');
                 RECENT.forEach((r) => {
                     const row = div('recent-row');
                     row.innerHTML = `<div class="disc" style="background-image:url(${IMG[r.disc]})"></div><div><b>${r.name}</b>${r.label}</div>`;
                     row.append(
                         bmButton(home.stage, 0, 0, 34, '#f5d294', false, home.L.toastBottom),
                     );
-                    box.append(row);
+                    row.addEventListener('click', (e) => {
+                        if (e.target.closest('.bm')) return;
+                        flashIn(
+                            home.stage,
+                            home.L.toastBottom,
+                            `入「${r.name}」頁，跳去 ${r.label}（唔會自動播）`,
+                        );
+                    });
+                    list.append(row);
                 });
                 return box;
             };
@@ -1111,10 +1179,11 @@
 
             const rowOf = (home, it, boxMeta, meta) => {
                 const wrap = div('item collapse');
-                wrap.innerHTML = `<span class="del" aria-hidden="true">${TRASH}</span>
-                    <div class="card">
+                wrap.classList.toggle('playing', home.playing === it.id);
+                wrap.innerHTML = `<div class="card">
+                        <span class="trash" aria-hidden="true">${TRASH}</span>
                         <div class="cbody">
-                            <div class="line"><b>${it.label}</b><span class="state">${it.text}</span></div>
+                            <div class="line"><b>${it.label}</b><span class="state">${home.playing === it.id ? '播放中' : it.text}</span></div>
                             <div class="bar"><i style="width:${Math.round(it.ratio * 100)}%"></i></div>
                         </div>
                         <button type="button" class="play" aria-pressed="${home.playing === it.id}" aria-label="播放 / 暫停">${home.playing === it.id ? PAUSE : PLAY}</button>
@@ -1132,6 +1201,9 @@
                         const mine = on && w.dataset.id === String(it.id);
                         b.setAttribute('aria-pressed', String(mine));
                         b.innerHTML = mine ? PAUSE : PLAY;
+                        w.classList.toggle('playing', mine);
+                        const row = home.items.find((x) => String(x.id) === w.dataset.id);
+                        w.querySelector('.state').textContent = mine ? '播放中' : row.text;
                     });
                     flashIn(
                         home.stage,
