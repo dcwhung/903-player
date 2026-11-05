@@ -35,6 +35,22 @@ import { toDailyItems, toSeriesItems } from '../shared/dramaItems';
 import type { RowContext } from '../shared/episodeItems';
 import { useSeriesAvailability, type SeriesAvailabilityView } from './useSeriesAvailability';
 
+/** 每日劇集今日有得聽嘅集數，最新喺頂 */
+const dailyNewestFirstOf = (id: string, today: string) =>
+    dailyNewestFirst(dailyEpisodesOf(id, today));
+
+/**
+ * 今日有得聽嘅集數：按劇集同香港日子 memo，留喺劇集頁過咗午夜都會出新一批 / 收走已下架（S-699）。
+ * read 要係 module 層面嘅 function（reference 穩定）
+ */
+export const useTodaysEpisodes = <T>(
+    drama: DramaConfig,
+    read: (id: string, today: string) => T,
+): T => {
+    const today = hkToday();
+    return useMemo(() => read(drama.id, today), [drama, read, today]);
+};
+
 /** player 載入緊呢套劇、呢款（kind）嘅一集；未載入（或者載入緊其他嘢）係 null */
 const useLoadedEpisode = <K extends DramaEpisode['kind']>(
     drama: DramaConfig,
@@ -105,7 +121,7 @@ const focusedEpisode = <T extends DramaEpisode>(
 
 /** 每日劇集頁（例如 18 樓 C 座）：同節目頁一樣，唱片 + 日子條 + 集數清單；focusUrl 見 useEpisodeFocus */
 export const useDailyDramaPage = (drama: DramaConfig, focusUrl?: string) => {
-    const episodes = useMemo(() => dailyNewestFirst(dailyEpisodesOf(drama.id)), [drama]);
+    const episodes = useTodaysEpisodes(drama, dailyNewestFirstOf);
     const loaded = useLoadedEpisode(drama, 'daily');
     const startDrama = useStartDrama();
     useAutoplayDaily(drama, loaded !== null, startDrama, focusUrl !== undefined);
@@ -328,7 +344,7 @@ const sheetAvailability = (availability: SeriesAvailabilityView) => ({
  * 第一次入：一入嚟就開全集表，等用戶揀短篇
  */
 export const useSeriesDramaPage = (drama: DramaConfig, focusUrl?: string) => {
-    const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
+    const episodes = useTodaysEpisodes(drama, seriesEpisodesOf);
     const loaded = useLoadedEpisode(drama, 'series');
     const firstVisit = useFirstVisitOnEntry(drama, focusUrl !== undefined);
     const { sheetOpen, setSheetOpen, progressMap } = useSeriesSheet(firstVisit, loaded?.url);

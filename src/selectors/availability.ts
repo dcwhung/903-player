@@ -4,7 +4,7 @@
  * YYYY-MM-DD 字串比較就係日子先後
  */
 import { LEAVING_SOON_DAYS } from '../config/constants';
-import type { ArcAvailability, EpisodeRange, SeriesEpisode } from '../types/drama';
+import type { ArcAvailability, DramaEpisode, EpisodeRange, SeriesEpisode } from '../types/drama';
 import { daysBetween } from '../utils/date';
 
 type MaybeDate = string | undefined;
@@ -36,6 +36,15 @@ export interface DateWindow {
     addedAt?: MaybeDate;
     removedAt?: MaybeDate;
 }
+
+/**
+ * catalog 入面已上架嘅集數（包括已下架，進度唔刪）：主頁書架排位、續聽揀集用，
+ * 下架之後排位唔郁（W-531）。每日劇只有劇集層日子，未上架嘅劇唔會上書架，全部照計
+ */
+export const releasedEpisodes = <E extends DramaEpisode>(
+    episodes: readonly E[],
+    today: string,
+): E[] => episodes.filter((e) => e.kind !== 'series' || !isArcUpcoming(e.addedAt, today));
 
 /** 上咗架又未落架 */
 export const isAvailable = (window: DateWindow, today: string): boolean =>

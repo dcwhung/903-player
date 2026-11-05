@@ -1,7 +1,7 @@
 import type { Progress } from '../services/progressStore';
 import type { SeriesEpisode } from '../types/drama';
 import { seriesContinue } from './arcProgress';
-import { isArcUpcoming, isAvailable } from './availability';
+import { isAvailable, releasedEpisodes } from './availability';
 
 type ProgressMap = Readonly<Record<string, Progress>>;
 
@@ -14,7 +14,7 @@ export const liveSeriesContinue = (
     progressMap: ProgressMap,
     today: string,
 ): { episode: SeriesEpisode; ratio: number } | undefined => {
-    const released = catalog.filter((e) => !isArcUpcoming(e.addedAt, today));
+    const released = releasedEpisodes(catalog, today);
     const next = seriesContinue(released, progressMap);
     if (!next || isAvailable(next.episode, today)) return next;
     const after = released.slice(released.indexOf(next.episode) + 1);

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { DramaShelfItem } from '../../components/pages/home/DramaShelf/DramaShelf';
 import {
     arcAvailabilityOf,
-    dramaEpisodesOf,
+    catalogEpisodesOf,
     enabledDramas,
     seriesEpisodesOf,
     upcomingDramas,
@@ -15,6 +15,7 @@ import { useRefreshedOn } from '../../hooks/useRefreshedOn';
 import { useStartDrama } from '../../hooks/useStartDrama';
 import { t } from '../../i18n/t';
 import { usePlayer } from '../../player/usePlayer';
+import { releasedEpisodes } from '../../selectors/availability';
 import { isEpisodeOfDrama, seriesArcs } from '../../selectors/dramas';
 import { dramaShelfOrder } from '../../selectors/dramaShelf';
 import { getProgressMap } from '../../services/progressStore';
@@ -55,6 +56,12 @@ const upcomingItems = (today: string): DramaShelfItem[] =>
         onResume: () => undefined,
     }));
 
+/**
+ * 排位用 catalog 已上架嘅集數（包括已下架，同續聽一樣）：部分集數 / 短篇下架之後書架排位唔郁（W-531）
+ */
+const shelfEpisodesOf = (id: string, today: string) =>
+    releasedEpisodes(catalogEpisodesOf(id), today);
+
 /** 廣播劇 tab 嘅劇集次序（見 dramaShelfOrder）；轉集、有集數聽完就按新進度重新排 */
 const useShelfDramas = (): DramaConfig[] => {
     const player = usePlayer();
@@ -65,7 +72,7 @@ const useShelfDramas = (): DramaConfig[] => {
     const today = hkToday();
     return useMemo(
         () =>
-            dramaShelfOrder(enabledDramas(today), (id) => dramaEpisodesOf(id, today), progressMap),
+            dramaShelfOrder(enabledDramas(today), (id) => shelfEpisodesOf(id, today), progressMap),
         [progressMap, today],
     );
 };

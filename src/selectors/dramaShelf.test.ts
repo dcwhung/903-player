@@ -1,5 +1,6 @@
 import type { Progress } from '../services/progressStore';
 import type { SeriesEpisode } from '../types/drama';
+import { releasedEpisodes } from './availability';
 import { dramaShelfOrder, type ShelfDrama } from './dramaShelf';
 
 const EPISODES_PER_DRAMA = 2;
@@ -147,5 +148,36 @@ describe('dramaShelfOrder', () => {
 
         expect(dramaShelfOrder(dramas, episodesOf, {}).map((d) => d.extra)).toEqual([2, 1]);
         expect(dramas.map((d) => d.name)).toEqual(['甲', '乙']);
+    });
+});
+
+// W-531：用戶規則「下架後書架排位唔郁」——排位用 catalog 已上架嘅集數（包括已下架）
+describe('dramaShelfOrder with removed episodes (W-531)', () => {
+    const removedFirst = (id: string): SeriesEpisode[] =>
+        episodesOf(id).map((e) => (e.no === 1 ? { ...e, removedAt: '2026-12-01' } : e));
+    const catalogOf = (id: string) => (id === 'A' ? removedFirst(id) : episodesOf(id));
+    const shelfAt = (today: string, progressMap: Readonly<Record<string, Progress>>) =>
+        dramaShelfOrder(
+            [drama('A'), drama('B')],
+            (id) => releasedEpisodes(catalogOf(id), today),
+            progressMap,
+        ).map((d) => d.id);
+
+    it('should keep the drama heard most recently first after that episode is removed', () => {
+        const heard = { ...at('A', 1, progress(9)), ...at('B', 1, progress(5)) };
+        expect(shelfAt('2026-11-30', heard)).toEqual(['A', 'B']);
+        expect(shelfAt('2026-12-01', heard)).toEqual(['A', 'B']);
+    });
+
+    it('should not treat a drama as finished because its unheard episode was removed', () => {
+        const heard = at('A', 2, progress(1, true));
+        expect(shelfAt('2026-11-30', heard)).toEqual(['A', 'B']);
+        expect(shelfAt('2026-12-01', heard)).toEqual(['A', 'B']);
+    });
+
+    it('should leave out episodes not released yet', () => {
+        const [first] = episodesOf('A');
+        const later = [...episodesOf('A'), { ...first!, no: 3, url: '/x', addedAt: '2026-12-05' }];
+        expect(releasedEpisodes(later, '2026-12-01')).toHaveLength(EPISODES_PER_DRAMA);
     });
 });
