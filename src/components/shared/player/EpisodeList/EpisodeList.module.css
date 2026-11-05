@@ -228,11 +228,11 @@
     );
 }
 
-/* 快將下架（LE1）：狀態字後面琥珀色「· ⏳ 05/12 下架」，同一行 */
+/* 快將下架（LE1）：狀態字後面琥珀色「· ⏳ 05/12 下架」；欄窄放唔落先成粒換落下一行（唔會溢出蓋住 ☆） */
 .withLeaving {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    white-space: nowrap;
 }
 
 .leaving {

@@ -187,7 +187,7 @@
     /* 主頁劇集格左上角「新」同下架字之間；⏳ / ⏱ 同字之間 */
     --tile-corner-gap: calc(6px * var(--ui-scale));
     --notice-icon-gap: calc(2px * var(--ui-scale));
-    /* 主頁「繼續收聽」條：集名最少佔一行幾多（後面有快將下架字都唔會擠到得一個字） */
+    /* 主頁「繼續收聽」條：集名最少佔一行幾多（後面有快將下架字都唔會擠走集名） */
     --continue-label-min: 50%;
 
     /* 今日節目卡疊（ShowCardStack）：每疊後一層向下移、縮細、變淡幾多（第一張後面嘅卡 scale 0.92） */

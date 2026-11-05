@@ -183,8 +183,8 @@
 }
 
 /*
- * 有「繼續收聽」：左上角（新 + 快將下架）同右上角短篇數放同一條頂行，
- * 窄格（手機打橫格仔）放唔落就短篇數換落第二行，唔會疊住
+ * 有「繼續收聽」：左上角（新 + 快將下架）同右上角短篇數放同一條頂行（唔疊住）；
+ * 窄格（手機打橫格仔）放唔落就短篇數 … 收尾，左上角唔縮（下架日子要睇得到）
  */
 .topBar {
     position: absolute;
@@ -192,9 +192,12 @@
     right: var(--space-2);
     left: var(--space-2);
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-1);
+}
+
+.topBar .corner {
+    flex-shrink: 0;
 }
 
 .topBar .corner,
@@ -203,6 +206,7 @@
 }
 
 .topBar .meta {
+    min-width: 0;
     max-width: 100%;
     margin-left: auto;
 }
@@ -230,9 +234,13 @@
     font-weight: 700;
 }
 
-/* 集名一行（放唔落就跑馬燈），快將下架就後面接琥珀字（LC2），琥珀字唔縮 */
+/*
+ * 集名一行（放唔落就跑馬燈），快將下架就後面接琥珀字（LC2），琥珀字唔縮；
+ * 窄格（手機打橫格仔）集名最少留一半位，琥珀字放唔落就換落下一行
+ */
 .continueLine {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-1);
     width: 100%;
@@ -241,16 +249,13 @@
 
 .continueLabel {
     flex: 0 1 auto;
-    /* 窄格都留返集名最少一半位，下架字唔夠位就 … 收尾 */
     min-width: var(--continue-label-min);
     font-size: var(--font-size-xs);
 }
 
 .continueLeaving {
     display: inline-flex;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex-shrink: 0;
     align-items: center;
     gap: var(--notice-icon-gap);
     color: var(--leave-on-dark);

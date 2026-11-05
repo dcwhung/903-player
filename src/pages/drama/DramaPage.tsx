@@ -5,16 +5,21 @@ import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope
 import { showToast } from '../../components/shared/common/Toast/toastStore';
 import { NEUTRAL_THEME } from '../../config/showThemes';
 import { dramaStatus, findEnabledDrama } from '../../catalog/dramas';
+import { afterSplash } from '../../splash/afterSplash';
 import { t } from '../../i18n/t';
 import { DailyDramaPage } from './DailyDramaPage';
 import { DramaHeader } from './DramaHeader';
 import page from '../shared/Page.module.css';
 import { SeriesDramaPage } from './SeriesDramaPage';
 
-/** 劇集未上架 / 已下架（舊 URL、書籤）：返主頁；已下架順便出提示 */
+/**
+ * 劇集未上架 / 已下架（舊 URL、書籤）：返主頁；已下架順便出提示
+ * （直接開 URL 有啟動畫面，等佢走咗先出，唔係用戶睇唔到）
+ */
 const OffShelf = ({ removed }: { removed: boolean }) => {
     useEffect(() => {
-        if (removed) showToast(t('availability.dramaRemovedToast'));
+        // 唔 cancel：呢個 component 一轉頁就 unmount，提示係全 app 嘅，要等到啟動畫面走咗都照出
+        if (removed) afterSplash(document, () => showToast(t('availability.dramaRemovedToast')));
     }, [removed]);
     return <Navigate to="/" replace />;
 };
