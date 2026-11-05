@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <title>903 QR 搬進度</title>
+        <title>903 QR 同步</title>
         <style>
             /* 版面跟 _mockups_/bookmark：一欄卡，入面係按闊度縮細嘅 v1.27.0 真截圖舞台 */
             :root {
@@ -35,6 +35,17 @@
                 --app-warn: #ffb4a8;
                 --app-toast: rgb(10 16 24 / 88%);
                 --app-scrim: rgb(6 12 20 / 58%);
+                /* 同步面板：藍 → 藍綠（同 QR 漸變同一個色系） */
+                --sync-blue: #2c6ea6;
+                --sync-teal: #1f8a7e;
+                --sync-deep: #0d2236;
+                --qr-dark-a: #0b4f7a;
+                --qr-dark-b: #0d6b62;
+                /* A 淺色卡 */
+                --card-light: #fbf6ea;
+                --card-ink: #1c2330;
+                --card-muted: #5b6472;
+                --card-line: rgb(28 35 48 / 16%);
             }
             @media (prefers-color-scheme: dark) {
                 :root:not([data-theme='light']) {
@@ -178,12 +189,11 @@
                 outline: 2px solid var(--accent);
                 outline-offset: 2px;
             }
-            .pick .sw {
+            .sw {
                 display: inline-block;
                 width: 18px;
                 height: 18px;
                 vertical-align: -4px;
-                margin-right: 6px;
             }
             .stages {
                 display: flex;
@@ -279,7 +289,7 @@
                 opacity: 0;
                 margin-left: calc(-1 * var(--inset));
             }
-            /* ★ / 🕒 疊埋喺同一格：轉 icon = 一個縮細轉走、一個轉入嚟 */
+            /* ★ / 最近收聽 icon 疊埋喺同一格：轉 icon = 一個縮細轉走、一個轉入嚟 */
             .ico {
                 grid-area: 1 / 1;
                 display: grid;
@@ -346,25 +356,33 @@
                 list-style: none;
                 column-gap: calc(var(--rf) * 1.6);
             }
+            /* 碟 | 名（minmax(0, 1fr)：長名唔會推走 ☆，用 … 收尾）| 固定闊度 ☆ 欄：每行 ☆ 垂直對齊 */
             .recent-row {
                 display: grid;
-                grid-template-columns: var(--disc) 1fr auto;
+                grid-template-columns: var(--disc) minmax(0, 1fr) var(--star-col);
                 gap: calc(var(--rf) * 0.9);
                 align-items: center;
                 padding: 4px 0;
                 break-inside: avoid;
                 border-bottom: 1px solid var(--app-divider);
                 color: var(--app-ink);
+                text-align: left;
+                --star-col: calc(var(--rf) * 2.8);
             }
-            .recent-row b {
+            .recent-text {
+                min-width: 0;
+            }
+            .recent-row b,
+            .recent-row small {
                 display: block;
-                font: 600 var(--rf) / 1.35 var(--font);
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
+            .recent-row b {
+                font: 600 var(--rf) / 1.35 var(--font);
+            }
             .recent-row small {
-                display: block;
                 font: 400 calc(var(--rf) * 0.95) / 1.4 var(--font);
                 color: var(--app-muted);
             }
@@ -386,8 +404,8 @@
             .star-btn {
                 display: grid;
                 place-items: center;
-                width: calc(var(--rf) * 2.8);
-                height: calc(var(--rf) * 2.8);
+                width: var(--star-col);
+                height: var(--star-col);
                 border: 0;
                 border-radius: 999px;
                 background: transparent;
@@ -399,13 +417,13 @@
                 width: 62%;
                 height: 62%;
             }
-            /* 分享掣：最近收聽標題右邊，icon + 「搬機」 */
-            .share-btn {
+            /* 同步掣：最近收聽標題右邊，⇅ + 「同步」 */
+            .sync-btn {
                 display: inline-flex;
                 align-items: center;
-                gap: calc(var(--rf) * 0.35);
+                gap: calc(var(--rf) * 0.3);
                 height: calc(var(--rf) * 2.2);
-                padding: 0 calc(var(--rf) * 0.8) 0 calc(var(--rf) * 0.6);
+                padding: 0 calc(var(--rf) * 0.85) 0 calc(var(--rf) * 0.6);
                 border: 1px solid var(--app-line);
                 border-radius: 999px;
                 background: rgb(255 255 255 / 8%);
@@ -414,15 +432,15 @@
                 cursor: pointer;
                 white-space: nowrap;
             }
-            .share-btn svg {
+            .sync-btn svg {
                 width: calc(var(--rf) * 1.3);
                 height: calc(var(--rf) * 1.3);
             }
-            .share-btn.callout {
+            .sync-btn.callout {
                 box-shadow: 0 0 0 3px var(--app-cream);
             }
 
-            /* ---------- 面板（分享 / 匯入確認）---------- */
+            /* ---------- 面板共用 ---------- */
             .scrim {
                 position: absolute;
                 inset: 0;
@@ -446,6 +464,9 @@
                 font-size: var(--pf);
                 line-height: 1.5;
                 box-shadow: 0 -6px 30px rgb(0 0 0 / 40%);
+                --muted: var(--app-muted);
+                --btn-line: var(--app-line);
+                --x-bg: rgb(255 255 255 / 10%);
             }
             .scrim[data-pos='sheet'] .sheet {
                 border-radius: 22px 22px 0 0;
@@ -460,22 +481,35 @@
             .sheet-head {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                gap: 8px;
+                gap: 10px;
             }
-            .sheet h4 {
+            .sheet-head h4 {
+                flex: 1;
                 margin: 0;
                 font: 700 calc(var(--pf) * 1.25) / 1.3 var(--font);
+            }
+            .head-ico {
+                display: none;
+                place-items: center;
+                flex: none;
+                width: calc(var(--pf) * 2.6);
+                height: calc(var(--pf) * 2.6);
+                border-radius: 50%;
+            }
+            .head-ico svg {
+                width: 55%;
+                height: 55%;
             }
             .x-btn {
                 display: grid;
                 place-items: center;
+                flex: none;
                 width: calc(var(--pf) * 2.6);
                 height: calc(var(--pf) * 2.6);
                 border: 0;
                 border-radius: 999px;
-                background: rgb(255 255 255 / 10%);
-                color: var(--app-ink);
+                background: var(--x-bg);
+                color: inherit;
                 cursor: pointer;
                 padding: 0;
             }
@@ -495,28 +529,44 @@
                 justify-items: stretch;
                 align-items: center;
                 text-align: left;
-                gap: 20px;
+                gap: 22px;
+            }
+            .qr-card {
+                display: grid;
+                gap: 6px;
+                justify-items: center;
+                padding: calc(var(--qr) * 0.035);
+                border-radius: 18px;
+                background: #fff;
             }
             .qr {
                 width: var(--qr);
                 height: var(--qr);
-                padding: calc(var(--qr) * 0.06);
-                border-radius: 14px;
-                background: #fff;
                 display: grid;
                 place-items: center;
             }
-            .qr canvas,
-            .qr img {
+            .qr svg {
                 display: block;
-                width: 100% !important;
-                height: 100% !important;
-                image-rendering: pixelated;
+                width: 100%;
+                height: 100%;
             }
-            .qr .qr-miss {
+            .qr-miss {
                 color: #333;
                 font-size: 12px;
                 text-align: center;
+            }
+            /* logo 放 QR 外面（L 版）：卡頂一行 app icon + 名 */
+            .qr-brand {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                color: #1c2330;
+                font: 700 calc(var(--pf) * 0.9) / 1 var(--font);
+            }
+            .qr-brand img {
+                width: calc(var(--pf) * 1.7);
+                height: calc(var(--pf) * 1.7);
+                border-radius: 22%;
             }
             .share-text {
                 display: grid;
@@ -528,7 +578,7 @@
                 font-size: calc(var(--pf) * 1.05);
             }
             .muted {
-                color: var(--app-muted);
+                color: var(--muted);
             }
             .warn {
                 padding: 8px 10px;
@@ -542,9 +592,6 @@
                 gap: 8px;
                 width: 100%;
             }
-            .btns.two {
-                grid-template-columns: 1fr 1fr;
-            }
             .abtn {
                 display: inline-flex;
                 align-items: center;
@@ -552,10 +599,10 @@
                 gap: 6px;
                 min-height: calc(var(--pf) * 3);
                 padding: 6px 14px;
-                border: 1px solid var(--app-line);
+                border: 1px solid var(--btn-line);
                 border-radius: 999px;
                 background: transparent;
-                color: var(--app-ink);
+                color: inherit;
                 font: 600 var(--pf) / 1.2 var(--font);
                 cursor: pointer;
             }
@@ -566,14 +613,14 @@
             }
             .abtn.plain {
                 border-color: transparent;
-                color: var(--app-muted);
+                color: var(--muted);
             }
             .abtn svg {
                 width: 1.2em;
                 height: 1.2em;
             }
             .abtn:focus-visible,
-            .share-btn:focus-visible,
+            .sync-btn:focus-visible,
             .x-btn:focus-visible,
             .star-btn:focus-visible {
                 outline: 2px solid var(--app-cream);
@@ -581,7 +628,7 @@
             }
             .fine {
                 font-size: calc(var(--pf) * 0.86);
-                color: var(--app-muted);
+                color: var(--muted);
             }
             /* 匯入確認：兩部機比較 */
             .compare {
@@ -610,6 +657,134 @@
             }
             .choice .fine.warn-text {
                 color: var(--app-warn);
+            }
+
+            /* ---------- 同步面板三個風格 ---------- */
+            /* A 浮起淺色卡：同深色主頁對比最大，四邊圓角 + 大陰影，手機唔貼底（離邊 12px） */
+            .scrim[data-look='a'] {
+                background: rgb(6 12 20 / 66%);
+            }
+            .scrim[data-look='a'] .sheet {
+                background: var(--card-light);
+                color: var(--card-ink);
+                box-shadow:
+                    0 24px 60px rgb(0 0 0 / 50%),
+                    0 0 0 1px rgb(255 255 255 / 40%);
+                --muted: var(--card-muted);
+                --btn-line: var(--card-line);
+                --x-bg: rgb(28 35 48 / 7%);
+            }
+            .scrim[data-look='a'][data-pos='sheet'] {
+                padding: 12px;
+            }
+            .scrim[data-look='a'][data-pos='sheet'] .sheet {
+                border-radius: 26px;
+                padding-bottom: 22px;
+            }
+            .scrim[data-look='a'] .qr-card {
+                box-shadow:
+                    0 0 0 1px var(--card-line),
+                    0 8px 20px rgb(28 35 48 / 12%);
+            }
+            .scrim[data-look='a'] .abtn.primary {
+                border-color: var(--card-ink);
+                background: var(--card-ink);
+                color: #fff;
+            }
+            .scrim[data-look='a'] .warn {
+                background: #f6e2b8;
+                color: #6b4a12;
+            }
+            .scrim[data-look='a'] .abtn:focus-visible,
+            .scrim[data-look='a'] .x-btn:focus-visible {
+                outline-color: var(--sync-blue);
+            }
+
+            /* B 色帶 header：頂部藍 → 藍綠色帶 + ⇅ 圓章，QR 白卡疊落色帶下緣 */
+            .scrim[data-look='b'] .sheet {
+                padding-top: 0;
+                overflow: hidden;
+            }
+            .scrim[data-look='b'] .sheet-head {
+                margin: 0 -20px;
+                padding: 18px 20px calc(var(--pf) * 3.4);
+                background:
+                    radial-gradient(circle at 85% -20%, rgb(255 255 255 / 22%), transparent 55%),
+                    linear-gradient(120deg, var(--sync-blue), var(--sync-teal));
+            }
+            .scrim[data-look='b'] .head-ico {
+                display: grid;
+                background: rgb(255 255 255 / 20%);
+                color: #fff;
+            }
+            .scrim[data-look='b'] .x-btn {
+                background: rgb(255 255 255 / 18%);
+            }
+            .scrim[data-look='b'] .share-body {
+                margin-top: calc(var(--pf) * -3);
+            }
+            .scrim[data-look='b'] .share-body.side {
+                margin-top: 0;
+            }
+            .scrim[data-look='b'] .share-body.side .sheet-head {
+                margin: 0 0 4px;
+                padding: 12px 14px;
+                border-radius: 14px;
+            }
+            .scrim[data-look='b'] .sheet:has(.share-body.side) {
+                padding-top: 20px;
+            }
+            .scrim[data-look='b'] .qr-card {
+                box-shadow: 0 10px 28px rgb(0 0 0 / 35%);
+            }
+
+            /* C 全屏沉浸：成個畫面深藍 → 藍綠漸變，QR 大、置中、有光暈 */
+            .scrim[data-look='c'] {
+                background: none;
+                place-items: stretch;
+                align-items: stretch;
+                padding: 0;
+            }
+            .scrim[data-look='c'] .sheet,
+            .scrim[data-look='c'][data-pos='sheet'] .sheet,
+            .scrim[data-look='c'][data-pos='center'] .sheet {
+                width: 100%;
+                height: 100%;
+                max-height: none;
+                border-radius: 0;
+                align-content: center;
+                padding: 24px 28px;
+                background:
+                    radial-gradient(circle at 50% 38%, rgb(74 178 168 / 38%), transparent 60%),
+                    linear-gradient(160deg, var(--sync-deep), #123f5e 55%, #0f5f59);
+                box-shadow: none;
+            }
+            .scrim[data-look='c'] .sheet > .sheet-head {
+                position: absolute;
+                top: 18px;
+                left: 24px;
+                right: 18px;
+            }
+            .scrim[data-look='c'] .head-ico {
+                display: grid;
+                background: rgb(255 255 255 / 12%);
+                color: #8fe3d6;
+            }
+            .scrim[data-look='c'] .share-body:not(.side) {
+                margin-top: calc(var(--pf) * 2);
+            }
+            .scrim[data-look='c'] .qr-card {
+                box-shadow:
+                    0 0 0 10px rgb(255 255 255 / 8%),
+                    0 0 60px rgb(120 220 210 / 30%);
+            }
+            .scrim[data-look='c'] .count {
+                font-size: calc(var(--pf) * 1.3);
+            }
+            .scrim[data-look='c'] .share-body.side {
+                justify-content: center;
+                grid-template-columns: auto minmax(0, var(--side-text, 360px));
+                gap: 40px;
             }
 
             .toast {
@@ -675,8 +850,15 @@
                 .scrim[data-pos='sheet'] .sheet {
                     animation: sheet-up var(--move) var(--ease);
                 }
-                .scrim[data-pos='center'] .sheet {
+                .scrim[data-pos='center'] .sheet,
+                .scrim[data-look='a'] .sheet {
                     animation: pop-in var(--move) var(--ease);
+                }
+                .scrim[data-look='c'] .sheet {
+                    animation: scrim-in var(--move) var(--ease);
+                }
+                .scrim[data-look='c'] .qr-card {
+                    animation: pop-in var(--move) var(--ease) var(--view-delay, 120ms) both;
                 }
             }
             @keyframes scrim-in {
@@ -692,7 +874,7 @@
             @keyframes pop-in {
                 from {
                     opacity: 0;
-                    transform: scale(0.94);
+                    transform: translateY(16px) scale(0.96);
                 }
             }
         </style>
@@ -700,38 +882,34 @@
     <body>
         <main>
             <header style="display: grid; gap: 6px">
-                <h1>QR 搬進度（P9 #11）+ 冇收藏版收藏 tab（P7 改動）</h1>
+                <h1>QR 同步進度（P9 #11）+ 冇收藏版收藏 tab（P7 改動）</h1>
                 <p>
                     底圖係 v1.27.0（<code>feature/bookmark/episode</code>）真截圖：手機直版
                     390×844、窄橫版 844×390、闊橫版 1300×800（當
-                    laptop）。tab、最近收聽、面板、Toast 係疊上去嘅 HTML。舞台入面嘅掣撳得。
+                    laptop）。tab、最近收聽、面板、Toast 係疊上去嘅 HTML，舞台入面嘅掣撳得。
+                </p>
+                <p>
+                    <b>用戶已決定</b>：最近收聽 icon = 歷史（R2）；同步掣 = ⇅ +「同步」；太大時 QR
+                    截短、分享連結有齊；連結 24 小時過期；B 機全新淨出「匯入」；匯入完跳去第三個
+                    tab；淨係一粒分享 / 複製掣。
                 </p>
             </header>
 
             <!-- ① -->
             <section class="panel" aria-labelledby="h-1">
-                <h2 id="h-1">① 主頁第三個 tab：三種狀態 + 最近收聽 icon</h2>
+                <h2 id="h-1">① 主頁第三個 tab：三種狀態</h2>
                 <ul>
-                    <li><b>A 有收藏</b> → ★（同 v1.27.0 一樣）：收藏 box + 最近收聽</li>
+                    <li><b>A 有收藏</b> → ★：收藏 box + 最近收聽</li>
                     <li>
-                        <b>B 冇收藏、有收聽記錄</b> → tab 照出，換最近收聽 icon；成個 tab
-                        係最近收聽清單（見 ②）
+                        <b>B 冇收藏、有收聽記錄</b> → <span class="sw" data-swatch="history"></span>
+                        歷史 icon：成個 tab 係最近收聽（見 ②）
                     </li>
-                    <li><b>C 兩樣都冇</b> → tab 唔出（同而家）</li>
+                    <li><b>C 兩樣都冇</b> → tab 唔出</li>
                     <li>
-                        收藏由有變冇：唔再淡走跳返「節目」，膠囊留喺第三格，★ 縮細轉走、新 icon
-                        轉入嚟（--view-transition-move 520ms / fade 260ms）；減少動態 = 直接換
+                        收藏由有變冇：膠囊留喺第三格，★ 縮細轉走、歷史 icon 轉入嚟（520ms /
+                        260ms）；減少動態 = 直接換
                     </li>
                 </ul>
-                <p><b>最近收聽 icon</b>（揀一款）：</p>
-                <div class="row" data-group="icon">
-                    <button type="button" class="pick" data-val="r1" aria-pressed="true">
-                        <span class="sw" data-swatch="r1"></span>R1 實心時鐘
-                    </button>
-                    <button type="button" class="pick" data-val="r2" aria-pressed="false">
-                        <span class="sw" data-swatch="r2"></span>R2 歷史（逆時針箭咀時鐘）
-                    </button>
-                </div>
                 <div class="row" data-group="state">
                     <button type="button" class="pick" data-val="A" aria-pressed="true">
                         A 有收藏 ★
@@ -745,32 +923,25 @@
                 </div>
                 <div class="row">
                     <button type="button" class="act" id="demo-clear">
-                        ▶ 示範：移除最後一個收藏（★ → 最近收聽 icon）
+                        ▶ 示範：移除最後一個收藏（★ → 歷史）
                     </button>
                     <button type="button" class="act" id="demo-add">
-                        ▶ 示範：喺最近收聽撳 ☆（最近收聽 icon → ★）
+                        ▶ 示範：喺最近收聽撳 ☆（歷史 → ★）
                     </button>
                 </div>
                 <div class="stages" id="stages-1"></div>
-                <p>
-                    B 狀態撳任何一行嘅 ☆ 都會即刻變返 A（★）。A ↔ C、B ↔ C 嘅 tab 出入維持 v1.27.0
-                    嘅闊度 + 淡入淡出。
-                </p>
             </section>
 
             <!-- ② -->
             <section class="panel" aria-labelledby="h-2">
-                <h2 id="h-2">② 冇收藏版收藏 tab = 最近收聽清單 + 分享掣</h2>
+                <h2 id="h-2">② 冇收藏版收藏 tab = 最近收聽 + 同步掣</h2>
                 <ul>
+                    <li>最近收聽最多 10 集，佔滿 tab 區、自己捲；手機一欄，橫版兩欄</li>
+                    <li>每行：碟 | 名（左對齊，太長用 … 收尾）| 固定闊度 ☆ 欄，☆ 全部垂直對齊</li>
                     <li>
-                        最近收聽最多 10 集（同 v1.27.0 <code>RECENT_MAX</code>），佔滿 tab
-                        區，清單自己捲；手機一欄，窄橫版 / 闊橫版兩欄
+                        同步掣（框住嗰粒）喺最近收聽標題右邊，有收藏 / 冇收藏都係；冇收聽記錄 =
+                        冇同步掣
                     </li>
-                    <li>
-                        分享掣（框住嘅「搬機」）：最近收聽 panel 標題右邊，有收藏 /
-                        冇收藏兩個版本都係；冇收聽記錄 = 冇最近收聽 panel = 冇分享掣
-                    </li>
-                    <li>撳分享掣 → 出 ③ 嘅「搬去另一部機」面板（喺下面舞台撳得）</li>
                 </ul>
                 <div class="row" data-group="version">
                     <button type="button" class="pick" data-val="B" aria-pressed="true">
@@ -785,18 +956,41 @@
 
             <!-- ③ -->
             <section class="panel" aria-labelledby="h-3">
-                <h2 id="h-3">③「搬去另一部機」面板</h2>
+                <h2 id="h-3">③「同步去另一部機」面板：三個風格</h2>
                 <ul>
+                    <li><b>A 浮起淺色卡</b>：深色主頁上面一張米白卡，對比最強，手機離邊浮起</li>
+                    <li><b>B 色帶 header</b>：頂部藍 → 藍綠色帶 + ⇅ 圓章，QR 白卡疊落色帶</li>
+                    <li><b>C 全屏沉浸</b>：成個畫面變深藍漸變，QR 置中放大、有光暈</li>
                     <li>
-                        手機：由底升上嚟嘅 sheet；窄橫版 / 闊橫版：中間 dialog，QR
-                        左、字同掣右（laptop 都出 QR，畀手機相機掃）
+                        淨係一粒掣：支援 Web Share →「分享連結」；唔支援（例如 Firefox
+                        桌面）→「複製連結」
                     </li>
-                    <li>
-                        QR 係即場用 sample 資料壓縮、qrcodejs 畫嘅真 <code>#import=</code> 連結（⑤
-                        有內容同字數）
-                    </li>
-                    <li>「分享連結」= Web Share；瀏覽器唔支援就成粒隱藏，淨係得「複製連結」</li>
                 </ul>
+                <div class="row" data-group="look">
+                    <button type="button" class="pick" data-val="a" aria-pressed="true">
+                        A 浮起淺色卡
+                    </button>
+                    <button type="button" class="pick" data-val="b" aria-pressed="false">
+                        B 色帶 header
+                    </button>
+                    <button type="button" class="pick" data-val="c" aria-pressed="false">
+                        C 全屏沉浸
+                    </button>
+                </div>
+                <div class="row" data-group="qrstyle">
+                    <button type="button" class="pick" data-val="M" aria-pressed="true">
+                        QR：M + 細 logo（建議）
+                    </button>
+                    <button type="button" class="pick" data-val="L" aria-pressed="false">
+                        QR：L 冇 logo
+                    </button>
+                    <button type="button" class="pick" data-val="Q" aria-pressed="false">
+                        QR：Q + 中 logo
+                    </button>
+                    <button type="button" class="pick" data-val="out" aria-pressed="false">
+                        QR：L + logo 放外面
+                    </button>
+                </div>
                 <div class="row" data-group="size">
                     <button type="button" class="pick" data-val="normal" aria-pressed="true">
                         資料量一般（11 集 + 3 收藏）
@@ -807,10 +1001,10 @@
                 </div>
                 <div class="row" data-group="webshare">
                     <button type="button" class="pick" data-val="yes" aria-pressed="true">
-                        支援 Web Share（手機）
+                        支援 Web Share →「分享連結」
                     </button>
                     <button type="button" class="pick" data-val="no" aria-pressed="false">
-                        唔支援（例如 Firefox 桌面）
+                        唔支援 →「複製連結」
                     </button>
                 </div>
                 <div class="stages" id="stages-3"></div>
@@ -823,16 +1017,15 @@
                 <ul>
                     <li>
                         <b>合併</b
-                        >（預設、primary）：每集取較新（<code>updatedAt</code>）嘅位置；任何一邊聽完當聽完；收藏兩邊加埋
+                        >（預設）：每集取較新（<code>updatedAt</code>）嘅位置；任何一邊聽完當聽完；收藏兩邊加埋
                     </li>
-                    <li><b>覆蓋</b>（次要 + 警告字）：清走呢部機現有嘅，換成來源</li>
+                    <li><b>覆蓋</b>（次要 + 警告字）：清走呢部機嘅，換成連結入面嘅</li>
                     <li><b>取消</b>：乜都唔改</li>
                     <li>
-                        三個掣撳完都會清走網址嘅
-                        <code>#import=</code
-                        >（<code>history.replaceState</code>，唔留喺上一頁記錄），睇舞台上面嘅假網址列
+                        撳完都會用 <code>history.replaceState</code> 清走
+                        <code>#import=</code>（睇假網址列）
                     </li>
-                    <li>壞 / 過期 / 版本唔啱 → 「連結唔啱用」</li>
+                    <li>B 機全新：淨出「匯入」+「取消」；匯入完膠囊跳去第三個 tab</li>
                 </ul>
                 <div class="row" data-group="link">
                     <button type="button" class="pick" data-val="ok" aria-pressed="true">
@@ -847,79 +1040,68 @@
                         B 機有記錄（4 集 + 1 收藏）
                     </button>
                     <button type="button" class="pick" data-val="empty" aria-pressed="false">
-                        B 機全新（冇記錄）
+                        B 機全新
                     </button>
                 </div>
                 <div class="row">
                     <button type="button" class="act" id="import-reset">↺ 再開一次連結</button>
                 </div>
                 <div class="stages" id="stages-4"></div>
-                <p>
-                    B
-                    機全新：冇嘢可以蓋，所以唔出「覆蓋」，淨係「匯入」+「取消」。匯入完膠囊跳去第三個
-                    tab（有收藏 ★ / 冇收藏就最近收聽 icon），一眼見到搬咗乜過嚟。
-                </p>
             </section>
 
             <!-- ⑤ -->
             <section class="panel" aria-labelledby="h-5">
                 <h2 id="h-5">⑤ 實作建議（純文字）</h2>
 
-                <h3>壓縮格式（建議 v1）</h3>
+                <h3>壓縮格式（v1）</h3>
                 <ol>
                     <li>
                         <b>只放 id，唔放 URL</b>：進度 key 而家係音檔 URL（約 120–200
-                        字），匯出時轉做短 ref，匯入時用 catalog 砌返 URL（<code>episodes.ts</code>
-                        同節目錄音嘅砌法）：
+                        字），匯出時轉短 ref，匯入時用 catalog 砌返 URL：
                         <ul>
                             <li>
-                                節目：<code>s&lt;節目 index&gt;.&lt;日數&gt;</code>（日數 =
-                                2020-01-01 起計；開咪時間唔同 <code>fileTime</code> 先加
-                                <code>.HHMM</code>）
+                                節目：<code>s&lt;節目&gt;.&lt;日數&gt;</code>（2020-01-01
+                                起計；開咪時間唔同
+                                <code>fileTime</code> 先加 <code>.HHMM</code>）
                             </li>
                             <li>
-                                短篇劇：<code
-                                    >r&lt;劇 index&gt;.&lt;短篇 index&gt;.&lt;集數&gt;</code
-                                >
+                                短篇劇：<code>r&lt;劇&gt;.&lt;短篇 index&gt;.&lt;集數&gt;</code>
                             </li>
                             <li>
-                                每日劇：<code>y&lt;劇 index&gt;.&lt;日數&gt;</code>（重播加
+                                每日劇：<code>y&lt;劇&gt;.&lt;日數&gt;</code>（重播加
                                 <code>.r</code>）
                             </li>
                         </ul>
                     </li>
                     <li>
-                        節目 / 劇 id 用 payload 入面嘅字典（<code>s</code> /
-                        <code>d</code> 陣列），唔靠 catalog 次序；短篇 index 就要 drama.json 嘅
-                        <code>arcs</code> 只可以加喺尾（或者改用短篇名，大約每集多 6–9 byte）
+                        節目 / 劇 id 放 payload 字典（<code>s</code> / <code>d</code>），唔靠
+                        catalog 次序；短篇 index 要 drama.json
+                        <code>arcs</code> 只加喺尾（或者用短篇名，每集多 6–9 byte）
                     </li>
                     <li>
-                        JSON 陣列短 key：<code
-                            >{"v":1,"t":匯出分鐘,"s":[…],"d":[…],"p":[[ref,幾耐前(分鐘),長度(秒),位置(秒，-1
+                        <code
+                            >{"v":1,"t":匯出分鐘,"s":[…],"d":[…],"p":[[ref,幾耐前(分),長度(秒),位置(秒；-1
                             = 聽完)]…],"b":[[ref,幾耐前]…]}</code
-                        >；時間全部用「匯出前幾多分鐘」，數字細、deflate 食得落
+                        >
                     </li>
                     <li>
                         <code>TextEncoder</code> → <code>CompressionStream('deflate-raw')</code> →
-                        base64url（冇 <code>=</code>）；Safari 16.4+ / Chrome 103+ / Firefox 113+
-                        先有 deflate-raw，冇就唔出搬機掣
+                        base64url；Safari 16.4+ / Chrome 103+ / Firefox 113+，冇就唔出同步掣
                     </li>
                     <li>
-                        連結：<code>https://…/903-player/#import=1.&lt;base64url&gt;</code>；<b
-                            >版本號 <code>1.</code> 放喺壓縮外面</b
-                        >，未解壓已經知道識唔識讀；新版讀舊版 OK，舊版見到
-                        <code>2.</code> 就話「連結唔啱用，請先更新 app」
+                        連結
+                        <code>https://…/903-player/#import=1.&lt;base64url&gt;</code
+                        >：<b>版本號放喺壓縮外面</b>；舊版見到 <code>2.</code> 就話「連結唔啱用」
                     </li>
                     <li>
-                        <b>過期</b>：<code>t</code> 超過 7 日當過期（建議值，見問題）；合併用
-                        updatedAt 比較，舊連結其實唔危險，但「覆蓋」就會倒退
+                        <b>過期：<code>t</code> 超過 24 小時</b>當過期
                     </li>
                     <li>
-                        壞連結（base64 / 解壓 / JSON / schema
-                        驗證任何一步失敗）一律「連結唔啱用」，唔寫任何嘢入 storage
+                        任何一步（base64 / 解壓 / JSON / schema）失敗都係「連結唔啱用」，唔寫
+                        storage
                     </li>
                 </ol>
-                <p>今次 preview 用 sample 資料（同 ③ 嘅 QR 同一條）：</p>
+                <p>Sample 資料（同 ③ 嘅 QR 同一條）：</p>
                 <div class="table-wrap">
                     <table>
                         <tbody id="sample-stats"></tbody>
@@ -928,96 +1110,124 @@
                 <pre id="sample-json"></pre>
                 <pre id="sample-url"></pre>
 
-                <h3>容量估算</h3>
+                <h3>QR 容量：一個 QR 放到幾多集（上限 version 25 = 117×117 格）</h3>
                 <p>
-                    合成資料（八成節目、兩成劇集，位置 / 時間亂數）即場壓縮，每集大約 9–11 byte。QR
-                    用 byte mode（base64url 有細楷，用唔到 alphanumeric mode）。
+                    合成資料（八成節目、兩成劇集）即場壓縮，每集約 9–11 byte。QR 用 byte mode。logo
+                    蓋住嘅格要靠錯誤校正補返，所以有 logo 一定要升級別，容量跟住跌。
                 </p>
                 <div class="table-wrap">
                     <table>
                         <thead>
                             <tr>
-                                <th>進度集數 + 收藏</th>
+                                <th>方案</th>
+                                <th>錯誤校正</th>
+                                <th>logo 佔面積</th>
+                                <th>v25 容量</th>
+                                <th>3 收藏時</th>
+                                <th>20 收藏時</th>
+                            </tr>
+                        </thead>
+                        <tbody id="qr-capacity"></tbody>
+                    </table>
+                </div>
+                <ul>
+                    <li>
+                        <b>建議：M + 細 logo</b>（logo 邊長 = QR 20%，約 4% 面積，M 補得返
+                        15%，有餘裕）：比 L 少大約兩成集數，但有品牌感
+                    </li>
+                    <li>
+                        想放最多：<b>L + logo 放外面</b>（卡頂 icon + 名），容量最大，QR 本身最易掃
+                    </li>
+                    <li>Q + 中 logo 容量跌大約一半，唔建議（用戶聽得多好快爆）</li>
+                    <li>
+                        超出上限：QR 放全部收藏 + 最近 N 集（二分搜尋），寫「QR 只放到最近 N
+                        集」；分享連結冇上限、有齊所有集數
+                    </li>
+                </ul>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>進度 + 收藏</th>
                                 <th>連結字數</th>
-                                <th>QR 版本（L）</th>
-                                <th>QR 版本（M）</th>
+                                <th>L</th>
+                                <th>M</th>
+                                <th>Q</th>
                             </tr>
                         </thead>
                         <tbody id="capacity"></tbody>
                     </table>
                 </div>
+
+                <h3>QR 畫法</h3>
                 <ul>
                     <li>
-                        <b>建議錯誤校正 L（7%）</b>：QR 喺螢幕上面掃，唔會污糟 / 爛，L 容量最大；M
-                        要細 2 成左右
+                        Library 淨係攞 module matrix（<code>qrcode(0, 'M')</code> →
+                        <code>addData</code> → <code>make</code> →
+                        <code>isDark(r, c)</code>），自己用 SVG 畫：每格圓角方塊、三個 finder
+                        畫成圓角方框 + 圓角實心，填 <code>linearGradient</code>（深藍 #0b4f7a →
+                        深藍綠 #0d6b62，對白底對比 &gt; 7:1）
                     </li>
                     <li>
-                        <b>建議上限 version 25（117×117 格，L = 1,273 byte）</b>：手機螢幕 QR 約 260
-                        CSS px，每格 ≈ 2.2 CSS px（3x 螢幕 ≈ 6.7 實際 pixel），相機掃得穩；version
-                        40（177 格）喺手機螢幕太密
+                        掃得到嘅底線：finder 唔變形（7×7 比例照舊，只係轉角圓）；四邊留 4 格白 quiet
+                        zone；淨係深色點 + 白底，唔反色、唔用淺色漸變；logo 用白底圓角方塊包住，清走
+                        logo 範圍 + 半格嘅點
                     </li>
-                    <li>即係一個 QR 大約放到 <b id="cap-n">90</b> 集進度 + 20 個收藏</li>
                     <li>
-                        超過：QR 優先放全部收藏 + 最近嘅 N 集進度（二分搜尋搵最大
-                        N），寫明「只搬咗最近 N 集」；
-                        <b>「分享 / 複製連結」唔受 QR 限制，可以搬晒</b>（URL 幾 KB WhatsApp / 電郵
-                        / AirDrop 都冇問題）——呢點想用戶確認
+                        <b>alignment pattern（5×5 小框）都要畫成實心圓角框</b
+                        >：拆做一粒粒分開嘅點，高解像度時 scanner 搵唔到（preview 實測過）
                     </li>
+                    <li>
+                        <b>QR 最少 260 CSS px</b>：v25（117 格）細過呢個，連標準方格 QR
+                        都解唔穩；所以橫版標題放右欄，QR 用盡高度
+                    </li>
+                    <li>
+                        Preview 已經用 jsQR 喺 2x / 3x 螢幕、260 / 300 px 解返四款 ×
+                        兩個資料量（v12–v25）；入 app 前要真手機（iPhone 相機 / Android Google
+                        Lens）由 laptop 螢幕同手機螢幕各掃一次
+                    </li>
+                    <li>
+                        Library：<b><code>qrcode-generator</code></b
+                        >（MIT、冇 dependency、有 .d.ts、約 20 KB min、可以攞 matrix），用
+                        <code>import()</code> 撳「同步」先載入；後備
+                        <code>uqr</code>（MIT、ESM、0.x）。加完行 <code>npm audit</code> + license
+                        檢查（冇 GPL）
+                    </li>
+                    <li>Preview 用 cdnjs 固定版本 qrcode-generator 1.4.4 攞 matrix</li>
                 </ul>
 
-                <h3>QR library</h3>
-                <ul>
-                    <li>
-                        <b>建議 <code>qrcode-generator</code></b
-                        >（kazuhikoarase，MIT，冇 dependency，有 .d.ts，單檔 ~56 KB 未 minify、約 20
-                        KB min，可以揀 version / 錯誤校正，出 SVG / canvas）
-                    </li>
-                    <li>
-                        後備 <code>uqr</code>（unjs，MIT，ESM，tree-shake，出 SVG；但仲係
-                        0.x）。唔用 <code>qrcode</code>（node-qrcode）：拖 yargs / pngjs，app 用唔著
-                    </li>
-                    <li>
-                        今次 preview 用 qrcodejs 1.0.0（cdnjs 固定版本，MIT）淨係為咗即場畫；佢 2015
-                        年後冇維護，長資料有「code length overflow」舊 bug，唔建議入 app
-                    </li>
-                    <li>
-                        入 app：<code>import()</code> 動態載入，撳「搬機」先下載，唔加大主
-                        bundle；加完行 <code>npm audit</code> 同 license 檢查（冇 GPL）
-                    </li>
-                </ul>
+                <h3>點解淨係一粒「分享連結 / 複製連結」</h3>
+                <p>
+                    支援 Web Share 嘅瀏覽器（iOS / Android / Safari 桌面 / Chrome 桌面大部分）嘅分享
+                    sheet 本身已經有「複製」，再出一粒複製掣係重複。冇
+                    <code>navigator.share</code>（例如 Firefox 桌面）先出「複製連結」，撳完
+                    Toast「已複製連結」。
+                </p>
 
                 <h3>私隱</h3>
                 <ul>
                     <li>
-                        資料淨係喺 URL <code>#</code> 後面：瀏覽器唔會將 hash 送去 server（GitHub
-                        Pages / Vercel 都收唔到），app 讀完即刻 <code>replaceState</code> 清走
+                        資料只喺 <code>#</code> 後面，瀏覽器唔會送去 server；讀完即刻
+                        <code>replaceState</code> 清走
                     </li>
                     <li>
-                        但連結本身 = 你嘅收聽記錄同收藏：傳出去（WhatsApp 群組、電郵
-                        cc）等於分享收聽記錄；聊天 app 可能會出連結預覽 /
-                        備份。面板會寫一句「連結入面有你嘅收聽記錄，只傳畀自己部機」
+                        但條連結本身 = 收聽記錄 + 收藏：傳出去等於分享；聊天 app 可能出預覽 /
+                        備份。面板寫一句「連結包含你嘅收聽記錄」
                     </li>
-                    <li>
-                        冇帳戶、冇 server、冇
-                        token；連結冇加密（加密要另一條密碼，對「自己兩部機」太麻煩）
-                    </li>
-                    <li>過期時間（7 日）限制咗舊連結被人拎嚟「覆蓋」嘅影響</li>
+                    <li>冇帳戶、冇 server、冇加密；24 小時過期限制舊連結嘅影響</li>
                 </ul>
 
-                <h3>仲要問用戶</h3>
+                <h3>仲要用戶揀</h3>
                 <ol>
-                    <li>最近收聽 icon：R1 實心時鐘定 R2 歷史？</li>
-                    <li>分享掣用「icon + 搬機」細膠囊（preview 做法），定淨係 icon？</li>
-                    <li>太大時：QR 截短但「分享 / 複製連結」搬晒，定兩樣都一樣截短？</li>
-                    <li>連結幾耐過期：7 日？24 小時？唔設？</li>
-                    <li>B 機全新時淨出「匯入」（唔出覆蓋）OK 嗎？</li>
-                    <li>匯入完自動跳去第三個 tab 好唔好？</li>
+                    <li>③ 面板風格：A 浮起淺色卡 / B 色帶 header / C 全屏沉浸？</li>
+                    <li>QR：M + 細 logo（建議）/ L 冇 logo / Q + 中 logo / L + logo 放外面？</li>
+                    <li>文案之後一次過睇（今次已精簡）</li>
                 </ol>
             </section>
         </main>
 
-        <!-- QR：preview 即場畫（qrcodejs 1.0.0，MIT，cdnjs 固定版本）。入 app 建議 qrcode-generator（見 ⑤） -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+        <!-- QR matrix：qrcode-generator 1.4.4（MIT，cdnjs 固定版本）；點同框由下面 SVG 自己畫 -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
         <script>
             const IMG = {
                 phoneSaved: 'phone-saved.webp',
@@ -1026,6 +1236,7 @@
                 landHome: 'land-home.webp',
                 wideSaved: 'wide-saved.webp',
                 wideHome: 'wide-home.webp',
+                appIcon: 'app-icon.webp',
                 badgirl: 'disc-badgirl.webp',
                 wanni: 'disc-wanni.webp',
                 sunnyday: 'disc-sunnyday.webp',
@@ -1040,25 +1251,18 @@
             /* ---------- icon ---------- */
             const STAR =
                 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z';
-            const SVG_NS = 'http://www.w3.org/2000/svg';
             const ICONS = {
                 starFill: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${STAR}" fill="currentColor"/></svg>`,
                 starLine: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${STAR}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
-                /* R1：實心圓 + 鏤空時針（同實心 ★ 一樣重） */
-                r1: `<svg viewBox="0 0 24 24" aria-hidden="true"><mask id="MID"><rect width="24" height="24" fill="#fff"/><path d="M12 7v5.4l3.6 2.2" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></mask><circle cx="12" cy="12" r="9.2" fill="currentColor" mask="url(#MID)"/></svg>`,
-                /* R2：逆時針箭咀 + 時針（「歷史」） */
-                r2: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3.8 12a8.2 8.2 0 1 0 2.4-5.8"/><path d="M3.4 3.6v4h4"/><path d="M12 7.6v4.6l3.2 2"/></svg>`,
-                share: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="8" height="14" rx="1.6"/><rect x="15" y="7" width="6" height="12" rx="1.4"/><path d="M8 3.2h4.5a3 3 0 0 1 3 3V9"/><path d="m13.4 7.2 2.1 2.1 2.1-2.1"/></svg>`,
+                /* 已揀 R2：逆時針箭咀 + 時針（歷史） */
+                history: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3.8 12a8.2 8.2 0 1 0 2.4-5.8"/><path d="M3.4 3.6v4h4"/><path d="M12 7.6v4.6l3.2 2"/></svg>`,
+                /* 同步 ⇅：左邊向上、右邊向下 */
+                sync: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 19.5V4.5"/><path d="M4 8.5l4-4 4 4"/><path d="M16 4.5v15"/><path d="M12 15.5l4 4 4-4"/></svg>`,
                 webShare: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5"/><path d="m7.5 8 4.5-4.5L16.5 8"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>`,
                 copy: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>`,
                 close: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>`,
             };
-            let maskSeq = 0;
-            /** R1 用 mask：每次出一個新 id，同一頁多個唔會撞 */
-            const icon = (name) => {
-                maskSeq += 1;
-                return ICONS[name].replaceAll('MID', `m${maskSeq}`);
-            };
+            const icon = (name) => ICONS[name];
 
             /* ---------- v1.27.0 量到嘅位置（CSS px） ---------- */
             const LAYOUTS = {
@@ -1077,7 +1281,8 @@
                     rf: 14,
                     disc: 56,
                     pf: 15,
-                    qr: 236,
+                    qr: 260,
+                    qrBig: 300,
                     toastBottom: 104,
                     pos: 'sheet',
                 },
@@ -1096,8 +1301,10 @@
                     rf: 14,
                     disc: 46,
                     pf: 13,
-                    qr: 196,
+                    qr: 260,
+                    qrBig: 300,
                     dialogW: 600,
+                    sideText: 320,
                     toastBottom: 100,
                     pos: 'center',
                 },
@@ -1117,7 +1324,9 @@
                     disc: 70,
                     pf: 18,
                     qr: 300,
-                    dialogW: 760,
+                    qrBig: 420,
+                    dialogW: 780,
+                    sideText: 420,
                     toastBottom: 40,
                     /* 闊橫版：toast 喺左欄（唔蓋右邊播放卡） */
                     toastRight: 492,
@@ -1141,6 +1350,7 @@
 
             const TOAST_MS = 1800;
             const DEMO_STEP_MS = 700;
+            /** 每次要用先問（設定一改即刻生效，唔 cache） */
             const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
             const el = (tag, cls, attrs = {}) => {
@@ -1183,8 +1393,7 @@
                 device.append(view, el('span', '', { text: caption || L.label }));
                 host.append(device);
                 const fit = () => {
-                    const avail = host.clientWidth;
-                    const scale = Math.min(L.max, avail / L.w);
+                    const scale = Math.min(L.max, host.clientWidth / L.w);
                     stage.style.transform = `scale(${scale})`;
                     view.style.width = px(L.w * scale);
                     view.style.height = px(L.h * scale);
@@ -1227,7 +1436,7 @@
             };
 
             /* ---------- 主頁 tab ---------- */
-            const makeTabs = (stage, L, iconKind) => {
+            const makeTabs = (stage, L) => {
                 const T = L.tabs;
                 stage.append(patch(L, { x: T.x - 4, y: T.y - 4, w: T.w + 8, h: T.h + 8 }));
                 const tabs = el('div', 'tabs', {
@@ -1245,12 +1454,10 @@
                 const dramas = el('button', 'tab', { type: 'button', text: '廣播劇' });
                 const third = el('button', 'tab icon', { type: 'button' });
                 const star = el('span', 'ico star', { html: icon('starFill') });
-                const recent = el('span', 'ico recent');
+                const recent = el('span', 'ico recent', { html: icon('history') });
                 third.append(star, recent);
                 tabs.append(pill, shows, dramas, third);
                 stage.append(tabs);
-                const setIcon = (kind) => (recent.innerHTML = icon(kind));
-                setIcon(iconKind);
                 /** mode：star / recent / gone */
                 const set = (mode, selected) => {
                     const gone = mode === 'gone';
@@ -1263,7 +1470,7 @@
                     [shows, dramas, third].forEach((b) =>
                         b.setAttribute('aria-pressed', String(b === target)),
                     );
-                    // 膠囊位置：等 flex 過場完先量就會遲；直接用目標闊度計
+                    // 膠囊位置用目標闊度計（唔使等 flex 過場完先量）
                     const inner = T.w - 2 * T.inset;
                     const iconW = gone ? 0 : T.icon;
                     const textW = (inner - iconW - (gone ? 0 : T.inset) - T.inset) / 2;
@@ -1277,15 +1484,20 @@
                     pill.style.left = px(T.inset + lefts[key]);
                     pill.style.right = px(T.w - T.inset - lefts[key] - widths[key]);
                 };
-                return { set, setIcon, third };
+                return { set };
             };
 
             /* ---------- 最近收聽 ---------- */
             const recentRow = (L, [name, label, art], onStar) => {
                 const li = el('li', 'recent-row', { style: { '--disc': px(L.disc) } });
+                const text = el('span', 'recent-text');
+                text.append(
+                    el('b', '', { text: name, title: name }),
+                    el('small', '', { text: label }),
+                );
                 li.append(
                     el('span', 'disc', { style: { backgroundImage: `url(${IMG[art]})` } }),
-                    el('span', '', { html: `<b>${name}</b><small>${label}</small>` }),
+                    text,
                 );
                 const btn = el('button', 'star-btn', {
                     type: 'button',
@@ -1297,18 +1509,18 @@
                 return li;
             };
 
-            const shareButton = (onClick, callout) => {
-                const b = el('button', `share-btn${callout ? ' callout' : ''}`, {
+            const syncButton = (onClick, callout) => {
+                const b = el('button', `sync-btn${callout ? ' callout' : ''}`, {
                     type: 'button',
-                    'aria-label': '搬去另一部機',
-                    html: `${icon('share')}<span>搬機</span>`,
+                    'aria-label': '同步去另一部機',
+                    html: `${icon('sync')}<span>同步</span>`,
                 });
                 b.addEventListener('click', onClick);
                 return b;
             };
 
             /** B：成個 tab 區 = 最近收聽清單 */
-            const recentOnly = (L, { onShare, onStar, callout }) => {
+            const recentOnly = (L, { onSync, onStar, callout }) => {
                 const layer = el('div', 'fade-layer');
                 layer.append(patch(L, L.cover));
                 const panel = el('section', 'recent', {
@@ -1316,7 +1528,7 @@
                     style: { ...box(L.region), '--rf': px(L.rf) },
                 });
                 const head = el('div', 'recent-head');
-                head.append(el('h4', '', { text: '最近收聽' }), shareButton(onShare, callout));
+                head.append(el('h4', '', { text: '最近收聽' }), syncButton(onSync, callout));
                 const list = el('ul', 'recent-list', { style: { columnCount: L.cols } });
                 RECENT.forEach((r) => list.append(recentRow(L, r, onStar)));
                 panel.append(head, list);
@@ -1324,8 +1536,8 @@
                 return layer;
             };
 
-            /** A：截圖本身已經有收藏 box + 最近收聽，淨係喺標題右邊加分享掣 */
-            const savedOverlay = (L, { onShare, callout }) => {
+            /** A：截圖本身已經有收藏 box + 最近收聽，淨係喺標題右邊加同步掣 */
+            const savedOverlay = (L, { onSync, callout }) => {
                 const layer = el('div', 'fade-layer');
                 const R = L.recent;
                 const holder = el('div', 'abs', {
@@ -1336,19 +1548,98 @@
                         '--rf': px(L.rf),
                     },
                 });
-                holder.append(shareButton(onShare, callout));
+                holder.append(syncButton(onSync, callout));
                 layer.append(holder);
                 return layer;
             };
 
+            /* ---------- QR：library 攞 matrix，SVG 自己畫 ---------- */
+            const QUIET = 4;
+            /** logo 邊長佔 QR 幾多（0 = 冇）；out = 放 QR 外面 */
+            const QR_STYLES = {
+                L: { ecc: 'L', logo: 0, label: 'L 冇 logo' },
+                M: { ecc: 'M', logo: 0.2, label: 'M + 細 logo' },
+                Q: { ecc: 'Q', logo: 0.28, label: 'Q + 中 logo' },
+                out: { ecc: 'L', logo: 0, outside: true, label: 'L + logo 放外面' },
+            };
+            let qrSeq = 0;
+            const qrMatrix = (text, ecc) => {
+                const q = qrcode(0, ecc);
+                q.addData(text);
+                q.make();
+                return q;
+            };
+            /** alignment pattern 中心（QR 規格表；同 nayuki 演算法） */
+            const alignmentCenters = (version) => {
+                if (version === 1) return [];
+                const count = Math.floor(version / 7) + 2;
+                const step =
+                    version === 32 ? 26 : Math.ceil((version * 4 + 4) / (count * 2 - 2)) * 2;
+                const pos = [6];
+                for (let i = 0, p = version * 4 + 10; i < count - 1; i += 1, p -= step)
+                    pos.splice(1, 0, p);
+                return pos.flatMap((r) => pos.map((c) => [r, c]));
+            };
+            const qrSvg = (text, style) => {
+                const q = qrMatrix(text, style.ecc);
+                const n = q.getModuleCount();
+                const finder = (r, c) =>
+                    (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+                // logo 範圍：置中、奇數格，再清多半格
+                const logoMods = style.logo ? Math.round((n * style.logo) / 2) * 2 + 1 : 0;
+                const lo = (n - logoMods) / 2 - 0.5;
+                const hi = (n + logoMods) / 2 + 0.5;
+                const underLogo = (r, c) =>
+                    logoMods && r + 0.5 > lo && r + 0.5 < hi && c + 0.5 > lo && c + 0.5 < hi;
+                // alignment pattern（5×5）要畫成實心圓角框：拆做分開嘅點，高解像度時 scanner 認唔到
+                const aligns = alignmentCenters((n - 17) / 4).filter(
+                    ([r, c]) => !finder(r, c) && !underLogo(r, c),
+                );
+                const inAlign = (r, c) =>
+                    aligns.some(([ar, ac]) => Math.abs(r - ar) <= 2 && Math.abs(c - ac) <= 2);
+                const dot = 0.9;
+                const off = (1 - dot) / 2;
+                let dots = '';
+                for (let r = 0; r < n; r += 1)
+                    for (let c = 0; c < n; c += 1)
+                        if (q.isDark(r, c) && !finder(r, c) && !inAlign(r, c) && !underLogo(r, c))
+                            dots += `M${c + off} ${r + off + 0.26}v${dot - 0.52}a.26 .26 0 0 0 .26 .26h${dot - 0.52}a.26 .26 0 0 0 .26 -.26v${-(dot - 0.52)}a.26 .26 0 0 0 -.26 -.26h${-(dot - 0.52)}a.26 .26 0 0 0 -.26 .26z`;
+                const finderPath = (x, y) =>
+                    // 外框 7×7 圓角（evenodd 挖走中間 5×5），中間 3×3 圓角實心；比例同標準 finder 一樣
+                    `<path fill-rule="evenodd" d="M${x + 2} ${y}h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zM${x + 2.2} ${y + 1}h2.6a1.2 1.2 0 0 1 1.2 1.2v2.6a1.2 1.2 0 0 1-1.2 1.2h-2.6a1.2 1.2 0 0 1-1.2-1.2v-2.6a1.2 1.2 0 0 1 1.2-1.2z"/><rect x="${x + 2}" y="${y + 2}" width="3" height="3" rx=".9"/>`;
+                const alignPath = ([r, c]) =>
+                    // 第 (r, c) 格佔 [c, c + 1]：外框 5×5（c-2 至 c+3），挖走中間 3×3，再加中心一格
+                    `<path fill-rule="evenodd" d="M${c - 0.5} ${r - 2}h2a1.5 1.5 0 0 1 1.5 1.5v2a1.5 1.5 0 0 1-1.5 1.5h-2a1.5 1.5 0 0 1-1.5-1.5v-2a1.5 1.5 0 0 1 1.5-1.5zM${c - 0.4} ${r - 1}h1.8a.6 .6 0 0 1 .6 .6v1.8a.6 .6 0 0 1-.6 .6h-1.8a.6 .6 0 0 1-.6-.6v-1.8a.6 .6 0 0 1 .6-.6z"/><rect x="${c}" y="${r}" width="1" height="1" rx=".3"/>`;
+                qrSeq += 1;
+                const grad = `qg${qrSeq}`;
+                const size = n + QUIET * 2;
+                let logo = '';
+                if (logoMods) {
+                    const s = logoMods;
+                    const p = (n - s) / 2;
+                    logo = `<rect x="${p}" y="${p}" width="${s}" height="${s}" rx="${s * 0.24}" fill="#fff"/><image href="${IMG.appIcon}" x="${p + s * 0.08}" y="${p + s * 0.08}" width="${s * 0.84}" height="${s * 0.84}" preserveAspectRatio="xMidYMid slice" clip-path="inset(0 round ${s * 0.2}px)"/>`;
+                }
+                return {
+                    modules: n,
+                    version: (n - 17) / 4,
+                    svg: `<svg viewBox="${-QUIET} ${-QUIET} ${size} ${size}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="${-QUIET}" y="${-QUIET}" width="${size}" height="${size}" fill="#fff"/><defs><linearGradient id="${grad}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${n}" y2="${n}"><stop offset="0" stop-color="#0b4f7a"/><stop offset="1" stop-color="#0d6b62"/></linearGradient></defs><g fill="url(#${grad})"><path d="${dots}"/>${finderPath(0, 0)}${finderPath(n - 7, 0)}${finderPath(0, n - 7)}${aligns.map(alignPath).join('')}</g>${logo}</svg>`,
+                };
+            };
+
             /* ---------- 面板 ---------- */
-            const openScrim = (stage, L, labelText, build) => {
+            const openScrim = (stage, L, labelText, build, look) => {
                 const scrim = el('div', 'scrim', { 'data-pos': L.pos });
+                if (look) scrim.dataset.look = look;
                 const sheet = el('div', 'sheet', {
                     role: 'dialog',
                     'aria-modal': 'true',
                     'aria-label': labelText,
-                    style: { '--pf': px(L.pf), '--qr': px(L.qr), '--dialog-w': px(L.dialogW || 0) },
+                    style: {
+                        '--pf': px(L.pf),
+                        '--qr': px(look === 'c' ? L.qrBig : L.qr),
+                        '--dialog-w': px(L.dialogW || 0),
+                        '--side-text': px(L.sideText || 360),
+                    },
                 });
                 scrim.append(sheet);
                 const close = () => scrim.remove();
@@ -1359,8 +1650,9 @@
                 return { scrim, close };
             };
 
-            const sheetHead = (title, onClose) => {
+            const sheetHead = (title, onClose, headIcon) => {
                 const head = el('div', 'sheet-head');
+                if (headIcon) head.append(el('span', 'head-ico', { html: icon(headIcon) }));
                 head.append(el('h4', '', { text: title }));
                 if (onClose) {
                     const x = el('button', 'x-btn', {
@@ -1374,27 +1666,6 @@
                 return head;
             };
 
-            const drawQr = (holder, text) => {
-                holder.textContent = '';
-                if (typeof QRCode !== 'function') {
-                    holder.append(el('div', 'qr-miss', { text: 'QR library 載入唔到（離線？）' }));
-                    return;
-                }
-                try {
-                    // 畫大啲再縮，唔會糊
-                    new QRCode(holder, {
-                        text,
-                        width: 600,
-                        height: 600,
-                        colorDark: '#000000',
-                        colorLight: '#ffffff',
-                        correctLevel: QRCode.CorrectLevel.L,
-                    });
-                } catch (error) {
-                    holder.append(el('div', 'qr-miss', { text: `QR 畫唔到：${error}` }));
-                }
-            };
-
             const copyText = async (text) => {
                 try {
                     await navigator.clipboard.writeText(text);
@@ -1404,63 +1675,77 @@
                 }
             };
 
-            /** 「搬去另一部機」 */
-            const buildShare = (sheet, close, L, { data, webShare, toast }) => {
-                sheet.append(sheetHead('搬去另一部機', close));
+            /** 「同步去另一部機」 */
+            const buildShare = (sheet, close, L, { data, webShare, qrStyle, toast }) => {
                 const side = L.pos === 'center';
+                const head = sheetHead('同步去另一部機', close, 'sync');
+                // 手機：標題喺頂；橫版：標題入右欄，QR 用盡高度（v25 要 ≥ 260 CSS px 先掃得穩）
+                if (!side) sheet.append(head);
                 const body = el('div', `share-body${side ? ' side' : ''}`);
-                const qr = el('div', 'qr', { role: 'img', 'aria-label': '搬機 QR code' });
-                drawQr(qr, data.qrUrl);
-                const text = el('div', 'share-text');
-                text.append(
-                    el('div', 'count', {
-                        text: `包含 ${data.qrCount} 集進度 · ${data.marks} 個收藏`,
-                    }),
-                    el('div', 'muted', {
-                        text: '用另一部機嘅相機掃，或者將連結傳去另一部機打開。',
-                    }),
-                );
-                if (data.truncated) {
-                    text.append(
-                        el('div', 'warn', {
-                            text: `資料太多：QR 只搬咗最近 ${data.qrCount} 集進度（${data.marks} 個收藏全部有）。用「分享連結」或「複製連結」就搬晒 ${data.total} 集。`,
+                const card = el('div', 'qr-card');
+                const style = QR_STYLES[qrStyle];
+                if (style.outside) {
+                    card.append(
+                        el('div', 'qr-brand', {
+                            html: `<img src="${IMG.appIcon}" alt="" />903 叱咤 Player`,
                         }),
                     );
                 }
-                const btns = el('div', `btns${webShare ? ' two' : ''}`);
-                if (webShare) {
-                    const s = el('button', 'abtn primary', {
-                        type: 'button',
-                        html: `${icon('webShare')}分享連結`,
-                    });
-                    s.addEventListener('click', async () => {
-                        if (navigator.share) {
-                            try {
-                                await navigator.share({ title: '903 收聽記錄', url: data.fullUrl });
-                            } catch {
-                                /* 用戶取消 */
-                            }
-                        } else toast('（preview：呢個瀏覽器冇 Web Share；真 app 會隱藏呢粒掣）');
-                    });
-                    btns.append(s);
+                const qr = el('div', 'qr', { role: 'img', 'aria-label': '同步 QR code' });
+                if (typeof qrcode !== 'function') {
+                    qr.append(el('div', 'qr-miss', { text: 'QR library 載入唔到（離線？）' }));
+                } else {
+                    try {
+                        const out = qrSvg(data.qr[qrStyle].url, style);
+                        qr.innerHTML = out.svg;
+                        qr.dataset.version = String(out.version);
+                    } catch (error) {
+                        qr.append(el('div', 'qr-miss', { text: `QR 畫唔到：${error}` }));
+                    }
                 }
-                const c = el('button', `abtn${webShare ? '' : ' primary'}`, {
-                    type: 'button',
-                    html: `${icon('copy')}複製連結`,
-                });
-                c.addEventListener('click', async () => {
-                    toast(
-                        (await copyText(data.fullUrl))
-                            ? '已複製連結'
-                            : '已複製連結（preview：剪貼簿唔畀用）',
-                    );
-                });
-                btns.append(c);
+                card.append(qr);
+                const fitted = data.qr[qrStyle];
+                const text = el('div', 'share-text');
+                if (side) text.append(head);
                 text.append(
-                    btns,
-                    el('div', 'fine', { text: '連結入面有你嘅收聽記錄，只傳畀自己部機。' }),
+                    el('div', 'count', { text: `${fitted.count} 集進度 · ${data.marks} 個收藏` }),
+                    el('div', 'muted', { text: '用另一部機嘅相機掃，或者傳條連結過去。' }),
                 );
-                body.append(qr, text);
+                if (fitted.count < data.total) {
+                    text.append(
+                        el('div', 'warn', {
+                            text: `QR 只放到最近 ${fitted.count} 集；分享連結有齊 ${data.total} 集。`,
+                        }),
+                    );
+                }
+                // 淨係一粒：有 Web Share 就分享（sheet 入面已經有複製），冇就複製
+                const btn = webShare
+                    ? el('button', 'abtn primary', {
+                          type: 'button',
+                          html: `${icon('webShare')}分享連結`,
+                      })
+                    : el('button', 'abtn primary', {
+                          type: 'button',
+                          html: `${icon('copy')}複製連結`,
+                      });
+                btn.addEventListener('click', async () => {
+                    if (!webShare) {
+                        await copyText(data.fullUrl);
+                        toast('已複製連結');
+                        return;
+                    }
+                    if (navigator.share) {
+                        try {
+                            await navigator.share({ title: '903 收聽記錄', url: data.fullUrl });
+                        } catch {
+                            /* 用戶取消 */
+                        }
+                    } else toast('（preview：呢個瀏覽器冇 Web Share）');
+                });
+                const btns = el('div', 'btns');
+                btns.append(btn);
+                text.append(btns, el('div', 'fine', { text: '連結包含你嘅收聽記錄。' }));
+                body.append(card, text);
                 sheet.append(body);
                 sheet.querySelector('button')?.focus({ preventScroll: true });
             };
@@ -1476,7 +1761,7 @@
                     sheet.append(
                         sheetHead('連結唔啱用'),
                         el('div', 'muted', {
-                            text: '呢條連結可能唔完整、過咗期（超過 7 日），或者係新版 app 出嘅。喺原本部機撳「搬機」再出一次。',
+                            text: '可能唔完整、過咗 24 小時，或者要先更新 app。喺原本部機再撳「同步」。',
                         }),
                     );
                     const b = el('button', 'abtn primary', { type: 'button', text: '知道' });
@@ -1491,7 +1776,7 @@
                 sheet.append(
                     sheetHead('匯入收聽記錄？'),
                     el('div', 'compare', {
-                        html: `<div><small>連結入面（19/10 22:30）</small><b>11 集進度</b><b>3 個收藏</b></div><div><small>呢部機而家</small><b>${empty ? '0' : '4'} 集進度</b><b>${empty ? '0' : '1'} 個收藏</b></div>`,
+                        html: `<div><small>連結（19/10 22:30）</small><b>11 集進度</b><b>3 個收藏</b></div><div><small>呢部機</small><b>${empty ? '0' : '4'} 集進度</b><b>${empty ? '0' : '1'} 個收藏</b></div>`,
                     }),
                 );
                 const btns = el('div', 'btns');
@@ -1500,31 +1785,23 @@
                     text: empty ? '匯入' : '合併（建議）',
                 });
                 merge.addEventListener('click', () =>
-                    finish(
-                        empty ? '已匯入 11 集進度、3 個收藏' : '已合併：而家有 13 集進度、4 個收藏',
-                    ),
+                    finish(empty ? '已匯入 11 集、3 個收藏' : '已合併：13 集、4 個收藏'),
                 );
                 const mergeWrap = el('div', 'choice');
                 mergeWrap.append(merge);
                 if (!empty) {
                     mergeWrap.append(
-                        el('div', 'fine', {
-                            text: '每集取較新嘅位置；任何一邊聽完都當聽完；收藏兩邊加埋。',
-                        }),
+                        el('div', 'fine', { text: '取較新嘅位置；聽完、收藏都保留。' }),
                     );
                 }
                 btns.append(mergeWrap);
                 if (!empty) {
                     const over = el('button', 'abtn', { type: 'button', text: '覆蓋' });
-                    over.addEventListener('click', () =>
-                        finish('已用連結取代：11 集進度、3 個收藏'),
-                    );
+                    over.addEventListener('click', () => finish('已覆蓋：11 集、3 個收藏'));
                     const overWrap = el('div', 'choice');
                     overWrap.append(
                         over,
-                        el('div', 'fine warn-text', {
-                            text: '⚠ 呢部機現有嘅 4 集進度同 1 個收藏會清走，換成連結入面嘅。',
-                        }),
+                        el('div', 'fine warn-text', { text: '⚠ 會清走呢部機嘅 4 集同 1 個收藏。' }),
                     );
                     btns.append(overWrap);
                 }
@@ -1593,22 +1870,32 @@
                         i % 3 === 0 ? -1 : (i * 977) % dur,
                     ];
                 });
+            const syntheticMarks = (b) => synthetic(b).map(([r], i) => [r, i * 7]);
 
             const BASE_URL = 'https://dcwhung.github.io/903-player/#import=1.';
-            const QR_MAX_BYTES = 1273; // version 25，錯誤校正 L
-            const QR_L = [
-                17, 32, 53, 78, 106, 134, 154, 192, 230, 271, 321, 367, 425, 458, 520, 586, 644,
-                718, 792, 858, 929, 1003, 1091, 1171, 1273, 1367, 1465, 1528, 1628, 1732, 1840,
-                1952, 2068, 2188, 2303, 2431, 2563, 2699, 2809, 2953,
-            ];
-            const QR_M = [
-                14, 26, 42, 62, 84, 106, 122, 152, 180, 213, 251, 287, 331, 362, 412, 450, 504, 560,
-                624, 666, 711, 779, 857, 911, 997, 1059, 1125, 1190, 1264, 1370, 1452, 1538, 1628,
-                1722, 1809, 1911, 1989, 2099, 2213, 2331,
-            ];
-            const versionFor = (table, bytes) => {
-                const v = table.findIndex((cap) => cap >= bytes) + 1;
-                return v === 0 ? '放唔落' : `v${v}（${17 + 4 * v} 格）`;
+            const QR_VERSION_MAX = 25;
+            /* byte mode 容量（version 1–40） */
+            const QR_CAP = {
+                L: [
+                    17, 32, 53, 78, 106, 134, 154, 192, 230, 271, 321, 367, 425, 458, 520, 586, 644,
+                    718, 792, 858, 929, 1003, 1091, 1171, 1273, 1367, 1465, 1528, 1628, 1732, 1840,
+                    1952, 2068, 2188, 2303, 2431, 2563, 2699, 2809, 2953,
+                ],
+                M: [
+                    14, 26, 42, 62, 84, 106, 122, 152, 180, 213, 251, 287, 331, 362, 412, 450, 504,
+                    560, 624, 666, 711, 779, 857, 911, 997, 1059, 1125, 1190, 1264, 1370, 1452,
+                    1538, 1628, 1722, 1809, 1911, 1989, 2099, 2213, 2331,
+                ],
+                Q: [
+                    11, 20, 32, 46, 60, 74, 86, 108, 130, 151, 177, 203, 241, 258, 292, 322, 364,
+                    394, 442, 482, 509, 565, 611, 661, 715, 751, 805, 868, 908, 982, 1030, 1112,
+                    1168, 1228, 1283, 1351, 1423, 1499, 1579, 1663,
+                ],
+            };
+            const capOf = (ecc) => QR_CAP[ecc][QR_VERSION_MAX - 1];
+            const versionFor = (ecc, bytes) => {
+                const v = QR_CAP[ecc].findIndex((cap) => cap >= bytes) + 1;
+                return v === 0 ? '放唔落' : `v${v}`;
             };
 
             const canCompress = typeof CompressionStream === 'function';
@@ -1640,45 +1927,35 @@
                 const z = await deflate(json);
                 return { json, url: BASE_URL + b64url(z), zBytes: z.length };
             };
-            /** 全部收藏 + 最近 N 集，揀最大嘅 N 令連結 ≤ QR 上限 */
-            const fitQr = async (progress, marks) => {
+            /** 全部收藏 + 最近 N 集，揀最大嘅 N 令連結 ≤ 上限 */
+            const fitQr = async (progress, marks, maxBytes) => {
                 let lo = 0;
                 let hi = progress.length;
                 while (lo < hi) {
                     const mid = Math.ceil((lo + hi) / 2);
                     const { url } = await encode(progress.slice(0, mid), marks);
-                    if (url.length <= QR_MAX_BYTES) lo = mid;
+                    if (url.length <= maxBytes) lo = mid;
                     else hi = mid - 1;
                 }
                 return { count: lo, ...(await encode(progress.slice(0, lo), marks)) };
             };
 
             const SHARE_DATA = {};
+            const shareDataFor = async (progress, marks) => {
+                const full = await encode(progress, marks);
+                const qr = {};
+                for (const [key, style] of Object.entries(QR_STYLES)) {
+                    qr[key] =
+                        full.url.length <= capOf(style.ecc)
+                            ? { count: progress.length, ...full }
+                            : await fitQr(progress, marks, capOf(style.ecc));
+                }
+                return { fullUrl: full.url, full, qr, total: progress.length, marks: marks.length };
+            };
             const prepareData = async () => {
-                const normal = await encode(SAMPLE_PROGRESS, SAMPLE_MARKS);
-                SHARE_DATA.normal = {
-                    qrUrl: normal.url,
-                    fullUrl: normal.url,
-                    qrCount: SAMPLE_PROGRESS.length,
-                    total: SAMPLE_PROGRESS.length,
-                    marks: SAMPLE_MARKS.length,
-                    truncated: false,
-                    encoded: normal,
-                };
-                const bigProgress = synthetic(300);
-                const full = await encode(bigProgress, SAMPLE_MARKS);
-                const fitted = await fitQr(bigProgress, SAMPLE_MARKS);
-                SHARE_DATA.big = {
-                    qrUrl: fitted.url,
-                    fullUrl: full.url,
-                    qrCount: fitted.count,
-                    total: bigProgress.length,
-                    marks: SAMPLE_MARKS.length,
-                    truncated: true,
-                    full,
-                    fitted,
-                };
-                // round-trip 驗證：解返出嚟要同原本一樣
+                SHARE_DATA.normal = await shareDataFor(SAMPLE_PROGRESS, SAMPLE_MARKS);
+                SHARE_DATA.big = await shareDataFor(synthetic(300), SAMPLE_MARKS);
+                const normal = SHARE_DATA.normal.full;
                 let roundTrip = '—';
                 if (canCompress) {
                     const back = await inflate(fromB64url(normal.url.slice(BASE_URL.length)));
@@ -1690,48 +1967,42 @@
                     ['deflate-raw', `${normal.zBytes} byte`],
                     [
                         '完整連結',
-                        `${normal.url.length} 字（QR ${versionFor(QR_L, normal.url.length)}，L）`,
-                    ],
-                    [
-                        '如果用完整 URL 做 key',
-                        `JSON 大約 ${JSON.stringify(SAMPLE_PROGRESS.map(() => 'https://audio.hkfm903.live/%E9%9B%B2%E5%A6%AE%E9%8D%BE%E6%83%85/20261019_1300_%E9%9B%B2%E5%A6%AE%E9%8D%BE%E6%83%85.aac')).length} byte（淨係 URL）`,
+                        `${normal.url.length} 字（L ${versionFor('L', normal.url.length)}、M ${versionFor('M', normal.url.length)}）`,
                     ],
                     ['Round-trip', roundTrip],
-                    [
-                        '300 集合成',
-                        `完整連結 ${full.url.length} 字；QR 版放到最近 ${fitted.count} 集（${fitted.url.length} 字）`,
-                    ],
+                    ['300 集合成', `分享連結 ${SHARE_DATA.big.fullUrl.length} 字`],
                 ];
                 document.getElementById('sample-stats').innerHTML = rows
                     .map(([k, v]) => `<tr><th scope="row">${k}</th><td>${v}</td></tr>`)
                     .join('');
                 document.getElementById('sample-json').textContent = normal.json;
                 document.getElementById('sample-url').textContent = normal.url;
-                document.getElementById('cap-n').textContent = String(
-                    (
-                        await fitQr(
-                            synthetic(300),
-                            synthetic(20).map(([r], i) => [r, i]),
-                        )
-                    ).count,
-                );
+
+                const many = synthetic(400);
+                const qrRows = [];
+                for (const [key, style] of Object.entries(QR_STYLES)) {
+                    const cap = capOf(style.ecc);
+                    const with3 = await fitQr(many, syntheticMarks(3), cap);
+                    const with20 = await fitQr(many, syntheticMarks(20), cap);
+                    const area = style.logo ? `${Math.round(style.logo * style.logo * 100)}%` : '—';
+                    qrRows.push(
+                        `<tr><td>${style.label}${key === 'M' ? '（建議）' : ''}</td><td>${style.ecc}</td><td>${area}</td><td>${cap} byte</td><td>${with3.count} 集</td><td>${with20.count} 集</td></tr>`,
+                    );
+                }
+                document.getElementById('qr-capacity').innerHTML = qrRows.join('');
                 const caps = [];
                 for (const [n, b] of [
                     [11, 3],
                     [25, 5],
                     [50, 10],
-                    [80, 20],
+                    [75, 10],
                     [100, 20],
                     [150, 20],
                     [200, 30],
-                    [300, 30],
                 ]) {
-                    const { url } = await encode(
-                        synthetic(n),
-                        synthetic(b).map(([r], i) => [r, i * 7]),
-                    );
+                    const { url } = await encode(synthetic(n), syntheticMarks(b));
                     caps.push(
-                        `<tr><td>${n} + ${b}</td><td>${url.length}</td><td>${versionFor(QR_L, url.length)}</td><td>${versionFor(QR_M, url.length)}</td></tr>`,
+                        `<tr><td>${n} + ${b}</td><td>${url.length}</td><td>${versionFor('L', url.length)}</td><td>${versionFor('M', url.length)}</td><td>${versionFor('Q', url.length)}</td></tr>`,
                     );
                 }
                 document.getElementById('capacity').innerHTML = caps.join('');
@@ -1739,9 +2010,10 @@
 
             /* ---------- 控制 ---------- */
             const state = {
-                icon: 'r1',
                 s1: 'A',
                 version: 'B',
+                look: 'a',
+                qrstyle: 'M',
                 size: 'normal',
                 webshare: 'yes',
                 link: 'ok',
@@ -1749,15 +2021,7 @@
             };
             const groupHandlers = {};
             document.querySelectorAll('[data-group]').forEach((group) => {
-                const key = {
-                    icon: 'icon',
-                    state: 's1',
-                    version: 'version',
-                    size: 'size',
-                    webshare: 'webshare',
-                    link: 'link',
-                    target: 'target',
-                }[group.dataset.group];
+                const key = group.dataset.group === 'state' ? 's1' : group.dataset.group;
                 group.addEventListener('click', (e) => {
                     const btn = e.target.closest('.pick');
                     if (!btn) return;
@@ -1776,6 +2040,24 @@
                 .querySelectorAll('[data-swatch]')
                 .forEach((s) => (s.innerHTML = icon(s.dataset.swatch)));
 
+            /** ① ② 撳同步掣：用 ③ 揀咗嘅風格 / QR */
+            const openSync =
+                (stage, L, toast, size = 'normal') =>
+                () =>
+                    openScrim(
+                        stage,
+                        L,
+                        '同步去另一部機',
+                        (sheet, close) =>
+                            buildShare(sheet, close, L, {
+                                data: SHARE_DATA[size],
+                                webShare: state.webshare === 'yes',
+                                qrStyle: state.qrstyle,
+                                toast,
+                            }),
+                        state.look,
+                    );
+
             /* ① 三種狀態 */
             const homes1 = [];
             const buildSection1 = () => {
@@ -1784,28 +2066,20 @@
                     const L = LAYOUTS[key];
                     const { stage } = makeStage(host, key, L.saved);
                     const toast = toastOf(stage, L);
-                    const openShare = () =>
-                        openScrim(stage, L, '搬去另一部機', (sheet, close) =>
-                            buildShare(sheet, close, L, {
-                                data: SHARE_DATA.normal,
-                                webShare: true,
-                                toast,
-                            }),
-                        );
-                    const tabs = makeTabs(stage, L, state.icon);
-                    const layerA = savedOverlay(L, { onShare: openShare });
-                    const home = { stage, L, tabs, toast };
+                    const tabs = makeTabs(stage, L);
+                    const onSync = openSync(stage, L, toast);
+                    const layerA = savedOverlay(L, { onSync });
                     const layerB = recentOnly(L, {
-                        onShare: openShare,
+                        onSync,
                         onStar: () => {
                             toast('已加入收藏');
                             setS1('A');
                         },
                     });
-                    stage.insertBefore(layerA, stage.querySelector('.tabs').previousSibling);
-                    stage.insertBefore(layerB, stage.querySelector('.tabs').previousSibling);
-                    Object.assign(home, { layerA, layerB });
-                    homes1.push(home);
+                    const anchor = stage.querySelector('.tabs').previousSibling;
+                    stage.insertBefore(layerA, anchor);
+                    stage.insertBefore(layerB, anchor);
+                    homes1.push({ stage, L, tabs, toast, layerA, layerB });
                 }
                 renderS1();
             };
@@ -1824,35 +2098,25 @@
                 renderS1();
             };
             groupHandlers.s1 = renderS1;
-            groupHandlers.icon = () => {
-                homes1.forEach((h) => h.tabs.setIcon(state.icon));
-                homes2.forEach((h) => h.tabs.setIcon(state.icon));
-                renderS1();
-                renderS2();
-            };
-            document.getElementById('demo-clear').addEventListener('click', () => {
-                setS1('A');
+            const demo = (from, to, msg) => {
+                setS1(from);
                 // 減少動態：直接切換，唔使等
                 setTimeout(
                     () => {
-                        homes1.forEach((h) => h.toast('已移除收藏'));
-                        setS1('B');
+                        homes1.forEach((h) => h.toast(msg));
+                        setS1(to);
                     },
                     reduced() ? 0 : DEMO_STEP_MS,
                 );
-            });
-            document.getElementById('demo-add').addEventListener('click', () => {
-                setS1('B');
-                setTimeout(
-                    () => {
-                        homes1.forEach((h) => h.toast('已加入收藏'));
-                        setS1('A');
-                    },
-                    reduced() ? 0 : DEMO_STEP_MS,
-                );
-            });
+            };
+            document
+                .getElementById('demo-clear')
+                .addEventListener('click', () => demo('A', 'B', '已移除收藏'));
+            document
+                .getElementById('demo-add')
+                .addEventListener('click', () => demo('B', 'A', '已加入收藏'));
 
-            /* ② 冇收藏版 + 分享掣 */
+            /* ② 冇收藏版 + 同步掣 */
             const homes2 = [];
             const buildSection2 = () => {
                 const host = document.getElementById('stages-2');
@@ -1860,24 +2124,18 @@
                     const L = LAYOUTS[key];
                     const { stage } = makeStage(host, key, L.saved);
                     const toast = toastOf(stage, L);
-                    const openShare = () =>
-                        openScrim(stage, L, '搬去另一部機', (sheet, close) =>
-                            buildShare(sheet, close, L, {
-                                data: SHARE_DATA.normal,
-                                webShare: true,
-                                toast,
-                            }),
-                        );
-                    const tabs = makeTabs(stage, L, state.icon);
-                    const layerA = savedOverlay(L, { onShare: openShare, callout: true });
+                    const tabs = makeTabs(stage, L);
+                    const onSync = openSync(stage, L, toast);
+                    const layerA = savedOverlay(L, { onSync, callout: true });
                     const layerB = recentOnly(L, {
-                        onShare: openShare,
+                        onSync,
                         onStar: () => toast('已加入收藏'),
                         callout: true,
                     });
-                    stage.insertBefore(layerA, stage.querySelector('.tabs').previousSibling);
-                    stage.insertBefore(layerB, stage.querySelector('.tabs').previousSibling);
-                    homes2.push({ stage, L, tabs, layerA, layerB });
+                    const anchor = stage.querySelector('.tabs').previousSibling;
+                    stage.insertBefore(layerA, anchor);
+                    stage.insertBefore(layerB, anchor);
+                    homes2.push({ tabs, layerA, layerB });
                 }
                 renderS2();
             };
@@ -1890,27 +2148,21 @@
             };
             groupHandlers.version = renderS2;
 
-            /* ③ 分享面板（一直開住） */
+            /* ③ 同步面板（一直開住；撳 ✕ 關咗會再開） */
+            let section3Gen = 0;
             const buildSection3 = () => {
+                section3Gen += 1;
+                const gen = section3Gen;
                 const host = document.getElementById('stages-3');
                 host.textContent = '';
                 for (const key of Object.keys(LAYOUTS)) {
                     const L = LAYOUTS[key];
                     const { stage } = makeStage(host, key, L.saved);
                     const toast = toastOf(stage, L);
-                    const tabs = makeTabs(stage, L, state.icon);
-                    tabs.set('star', 'third');
+                    makeTabs(stage, L).set('star', 'third');
                     const open = () => {
-                        const { scrim } = openScrim(stage, L, '搬去另一部機', (sheet, close) =>
-                            buildShare(sheet, close, L, {
-                                data: SHARE_DATA[state.size],
-                                webShare: state.webshare === 'yes',
-                                toast,
-                            }),
-                        );
-                        // 示範用：唔畀關（關咗再撳舞台就再開）
-                        scrim.style.animation = 'none';
-                        scrim.querySelector('.sheet').style.animation = 'none';
+                        if (gen !== section3Gen) return;
+                        const { scrim } = openSync(stage, L, toast, state.size)();
                         new MutationObserver((_, obs) => {
                             if (!scrim.isConnected) {
                                 obs.disconnect();
@@ -1921,12 +2173,17 @@
                     open();
                 }
                 const d = SHARE_DATA[state.size];
-                document.getElementById('share-note').textContent = d.truncated
-                    ? `QR 連結 ${d.qrUrl.length} 字（最近 ${d.qrCount} 集 + ${d.marks} 收藏，上限 ${QR_MAX_BYTES} = v25 L）；分享 / 複製嘅完整連結 ${d.fullUrl.length} 字（${d.total} 集）。`
-                    : `QR 連結 ${d.qrUrl.length} 字（${d.qrCount} 集 + ${d.marks} 收藏），${versionFor(QR_L, d.qrUrl.length)}，錯誤校正 L。撳 ✕ 會關，隔陣再開返。`;
+                const fitted = d.qr[state.qrstyle];
+                const ecc = QR_STYLES[state.qrstyle].ecc;
+                document.getElementById('share-note').textContent =
+                    `QR：${QR_STYLES[state.qrstyle].label}，連結 ${fitted.url.length} 字（${fitted.count} 集 + ${d.marks} 收藏），${versionFor(ecc, fitted.url.length)}。` +
+                    (fitted.count < d.total
+                        ? `分享連結 ${d.fullUrl.length} 字（${d.total} 集）。`
+                        : '');
             };
-            groupHandlers.size = buildSection3;
-            groupHandlers.webshare = buildSection3;
+            ['look', 'qrstyle', 'size', 'webshare'].forEach(
+                (k) => (groupHandlers[k] = buildSection3),
+            );
 
             /* ④ 匯入確認 */
             const buildSection4 = () => {
@@ -1936,14 +2193,18 @@
                     const L = LAYOUTS[key];
                     const caption =
                         key === 'phone'
-                            ? 'B 機：手機直版（相機掃 QR 開咗 app）'
+                            ? 'B 機：手機（相機掃 QR 開咗 app）'
                             : 'B 機：laptop（開咗分享過嚟嘅連結）';
                     const { stage, bar } = makeStage(host, key, L.home, caption, true);
                     const toast = toastOf(stage, L);
-                    const tabs = makeTabs(stage, L, state.icon);
+                    const tabs = makeTabs(stage, L);
                     tabs.set('gone', 'shows');
-                    const short = `dcwhung.github.io/903-player/`;
-                    bar.textContent = `${short}#import=${(SHARE_DATA.normal.qrUrl.split('#import=')[1] || '').slice(0, state.link === 'ok' ? 60 : 24)}${state.link === 'ok' ? '…' : '…（唔完整）'}`;
+                    const short = 'dcwhung.github.io/903-player/';
+                    const hash = SHARE_DATA.normal.fullUrl.split('#import=')[1] || '';
+                    bar.textContent =
+                        state.link === 'ok'
+                            ? `${short}#import=${hash.slice(0, 60)}…`
+                            : `${short}#import=${hash.slice(0, 24)}…（唔完整）`;
                     openScrim(
                         stage,
                         L,
@@ -1955,10 +2216,8 @@
                                 toast,
                                 onDone: (imported) => {
                                     bar.textContent = short;
-                                    if (imported) {
-                                        // 匯入咗：有收藏 → ★ tab 出現兼揀中
-                                        tabs.set('star', 'third');
-                                    }
+                                    // 匯入咗：有收藏 → ★ tab 出現兼揀中
+                                    if (imported) tabs.set('star', 'third');
                                 },
                             }),
                     );
@@ -1968,9 +2227,9 @@
             groupHandlers.target = buildSection4;
             document.getElementById('import-reset').addEventListener('click', buildSection4);
 
-            buildSection1();
-            buildSection2();
             prepareData().then(() => {
+                buildSection1();
+                buildSection2();
                 buildSection3();
                 buildSection4();
             });
