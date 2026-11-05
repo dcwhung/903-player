@@ -155,3 +155,60 @@ context: >
   fixes not guarded by tests (S-703, backlog). No re-review needed.
 report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
 ```
+
+## Re-review 2 a13ec07（QA S1 fail 之後）
+
+- 範圍：`git diff a27d5a0..a13ec07` — `f37aa6d`（W-533 / CUI-0021、S-700、S-705、直版成套劇下架改放「全集」chip，用戶決定）、`e67e021`（`CLAUDE.md` chain 清單加 `bookmark` `coming-soon`，用戶批准）、`4046913`（prettier QA 報告 / plan）、`a13ec07`（`useTightCount`：短篇數放唔落成段收埋）
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（`DramaShelf`、`ArcPicker`、`src/pages/drama`、`src/pages/home` 嘅 test 檔）25 files / 300 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `a13ec07`）：run [#84 / 42080750515](https://github.com/dcwhung/903-player/actions/runs/42080750515) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)` 全部 success）。`4046913` 個 run #83 被 #84 cancel 咗（同 branch 新 push），#84 嘅 `changes` 由 push 前 SHA 比較，包埋 `f37aa6d`–`a13ec07` 全部 code
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡）
+
+| ID               | 狀態    | 覆核                                                                                                                                                                                                                                |
+| ---------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-533 / CUI-0021 | ✅ 已修 | 短篇數（`metaCount`）同上架字尾（`metaRelease`，`flex: none`）拆開兩截；`useTightCount` 量到放唔落就成段收埋「N 個短篇 ·」，上架字一定完整。e2e `checkReleaseNote` 喺 1300×800 / 844×390 / 390×844 斷言字尾完整、喺格入面、喺讀屏名 |
+| S-700            | ✅ 已修 | `tileLabel` 加 `release.label`（長版日子，例如「新短篇 02/12（三）上架」）；unit 鎖住讀屏名                                                                                                                                         |
+| S-705            | ✅ 已修 | 同一個拆截修好；格闊 ≤ 280px（`@container drama-tile`）字尾 / 左上角下架字換短版「⏱ 後日上架」/「⏳ 19/12」                                                                                                                         |
+
+重點核對：
+
+- **`useTightCount` 量度邏輯**：
+    - Loop：observe 嘅係 parent（`.open` 掣或者 `.topBar`），兩個都係 `position: absolute` + 左右 inset，闊度由格決定，唔跟角落字變；`fitCount` 嘅結果只睇可用闊度，收埋 / 放返短篇數唔會改 parent 闊度，所以唔會 ResizeObserver loop ✅
+    - Layout thrash：每次 callback `removeAttribute` → 讀 `scrollWidth` / `clientWidth` → 可能 `setAttribute`，同一個 task 入面完成，冇中間 paint，冇閃；每格一次 forced layout，書架最多十幾格，可接受 ✅
+    - 字型：`document.fonts?.ready.then(fitCount)` 補量 Poppins 載完之後嘅闊度 ✅
+    - Cleanup：`observer.disconnect()` ✅；`fonts.ready` 冇 cancel，unmount 之後會量一次已經 detach 嘅 node，冇副作用。`enabled` 轉 false 時 attribute 留低，但 `MetaText` 唔再出 `metaCount`，selector 冇嘢可以收，無害
+    - 只係 `[enabled]` 做 deps：字變（見 S-706）唔會重新量
+- **i18n**：`tileNewArc` / `tileNewEpisodes` 改做「新短篇 {when}」/「全新集數 {when}」，`withReleaseSuffix` 刪咗，冇殘留引用（`grep` 冇 `{meta}`）；「·」改由 `.metaCount::after { content: '·' }` 出，跟短篇數一齊收埋，視覺上唔會淨低一粒點 ✅（S-707）
+- **讀屏名**：`tileLabel` 依次接「新」→ 下架 → 上架，例如「蘭茜夫人劇場，05/12（六）下架，新短篇 02/12（三）上架」；角落字成個 `aria-hidden`，資訊全部喺入頁掣個名度 ✅（S-708）
+- **chip 下架字唔重覆**：`chipLeavingOf(arc, today, dramaRemovedAt)` 喺成套劇同日或者更早下架時唔出短篇小標（成套劇已經講咗，而且短篇會一齊走）；成套劇遲過短篇先下架就照出短篇自己個日子。成套劇嘅日子：未開始聽 → 取代 chips 上面標籤；聽緊（直版）→「全集」chip LK1 小標，讀屏「全集，05/12（六）下架」；橫版 `.allLeaving` 收埋，由唱片下面第二行講。unit 覆蓋同日 / 遲過兩個情況 ✅
+- `CLAUDE.md`：chain 清單加 `bookmark` `coming-soon`，同 `.proj-docs/qa/plans/coming-soon.md` 一致 ✅
+
+🟢：
+
+- S-706 `src/components/pages/home/DramaShelf/useTightCount.ts:19-31`：effect 只跟 `enabled`，`item.meta` / `item.release.text` 變（例如過午夜「後日上架」→「明日上架」、新短篇上架「9 個短篇」→「10 個短篇」）但格冇變闊窄，就唔會重新量，可能放得落都收埋，或者 `metaRelease` 被 `overflow: hidden` 裁走（冇 …）。改法：deps 加 `item.meta`、`item.release?.text`（hook 加參數 `content`）
+- S-707 `DramaShelf.module.css` `.metaCount::after { content: '·' }`：分隔符喺 CSS 寫死，唔經 i18n；換語言要記得改 CSS。可以接受（標點、`aria-hidden`），只記錄
+- S-708 `DramaTileParts.tsx:20-25`：上架字接入讀屏名用咗 `availability.tileLeaving`（'{name}，{label}'），key 名講「下架」但而家兩樣都用；可以改名做通用 key（例如 `availability.tileWithNote`），避免之後改下架字句式時連上架都改埋
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 2 feature/drama/coming-soon a27d5a0..a13ec07 (W-533 / CUI-0021, S-700, S-705, 全集 chip leaving tag, useTightCount) v1.28.0
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (25 related unit files, 300 tests; full suite / e2e not run per scope rule; CI run 42080750515 on a13ec07 success incl. e2e)
+  coverage: pass (useTightCount hide / restore, release label, chipLeavingOf same-day / later, dramaNoticeOf tag covered)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: [S-706, S-707, S-708]
+next_action: proceed_to_qa
+context: >
+  W-533 / CUI-0021, S-700, S-705 fixed; user decision (whole-drama leaving
+  tag on 全集 chip in portrait) implemented. useTightCount has no resize
+  loop and cleans up; re-measure on content change is backlog (S-706).
+  QA S1 re-run for coming-soon (and drama / card-zoom chains touched).
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
