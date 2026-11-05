@@ -308,11 +308,24 @@
             .section + .section {
                 border-top: 1px solid var(--app-divider);
             }
+            /* 碟：跟 app 播放器唱片（圓形 + 深色外圈 + 中間孔） */
             .disc {
+                position: relative;
                 width: var(--disc);
                 aspect-ratio: 1;
-                border-radius: 10px;
+                border-radius: 50%;
                 background: center / cover no-repeat;
+                box-shadow:
+                    0 0 0 3px rgb(10 14 20 / 85%),
+                    0 2px 6px rgb(0 0 0 / 40%);
+            }
+            .disc::after {
+                content: '';
+                position: absolute;
+                inset: 41%;
+                border-radius: 50%;
+                background: #10141a;
+                box-shadow: 0 0 0 2px rgb(255 255 255 / 18%);
             }
             .sbody {
                 min-width: 0;
@@ -345,10 +358,83 @@
             }
             .card {
                 position: relative;
-                padding: 10px 0 11px;
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 10px;
+                align-items: center;
+                padding: 8px 0 9px;
                 background: var(--app-box);
                 cursor: grab;
                 user-select: none;
+            }
+            .cbody {
+                min-width: 0;
+            }
+            /* 每行嘅播放 / 暫停掣：撳掣 = 原地播；掣以外 = 入頁 */
+            .play {
+                display: grid;
+                place-items: center;
+                width: 34px;
+                height: 34px;
+                border: 1.5px solid var(--app-line);
+                border-radius: 50%;
+                background: transparent;
+                color: var(--app-ink);
+                cursor: pointer;
+                padding: 0;
+            }
+            .play[aria-pressed='true'] {
+                border-color: var(--app-cream);
+                background: var(--app-cream);
+                color: #1c2330;
+            }
+            .play svg {
+                width: 14px;
+                height: 14px;
+            }
+            /* E1：box 得一兩個就放大 */
+            .roomy .box {
+                --strip-h: var(--strip-roomy);
+                --disc: var(--disc-roomy);
+            }
+            /* E2：「最近收聽」補位 / E3：提示卡 */
+            .extra {
+                break-inside: avoid;
+                margin-bottom: var(--gap);
+                padding: 12px;
+                border-radius: 14px;
+                border: 1px dashed var(--app-line);
+                color: var(--app-muted);
+                font: 13px/1.5 var(--font);
+            }
+            .extra h4 {
+                margin: 0 0 6px;
+                font: 700 14px/1.3 var(--font);
+                color: var(--app-ink);
+            }
+            .recent-row {
+                display: grid;
+                grid-template-columns: 34px 1fr auto;
+                gap: 10px;
+                align-items: center;
+                padding: 6px 0;
+            }
+            .recent-row + .recent-row {
+                border-top: 1px solid var(--app-divider);
+            }
+            .recent-row .disc {
+                --disc: 34px;
+                box-shadow: 0 0 0 2px rgb(10 14 20 / 85%);
+            }
+            .recent-row b {
+                display: block;
+                font: 600 13px/1.3 var(--font);
+                color: var(--app-ink);
+            }
+            .recent-row .bm {
+                position: static;
+                width: 34px;
+                height: 34px;
             }
             .item + .item .card {
                 border-top: 1px solid var(--app-divider);
@@ -415,7 +501,7 @@
                 <h1>P7 #7 成集收藏 + 我的收藏</h1>
                 <p>
                     v1.26.1 真截圖加上收藏掣同收藏 tab。收藏單位係「一集」（節目某日 /
-                    廣播劇一集）。用戶已揀：I1 星星、P2 播放掣右邊、L3 分組 + D2（disc 正方封面）。
+                    廣播劇一集）。用戶已揀：I1 星星、P2 播放掣右邊、L3 分組 + B1 banner + 碟。
                 </p>
             </header>
 
@@ -459,14 +545,17 @@
             </section>
 
             <section class="panel">
-                <h2>③ 主頁「收藏」tab（L3 + D2 disc + 大類 banner）</h2>
+                <h2>③ 主頁「收藏」tab（L3 + B1 大類 banner + 碟）</h2>
                 <ul>
                     <li>
                         每個節目 / 每套劇一個 box：box 頂係大類 banner（節目 / 成套劇嘅橫圖，揀 B1 /
                         B2）；入面每段左邊係細類 disc（劇集按短篇分段，用短篇自己嘅 disc）
                     </li>
                     <li>box 次序跟最新收藏；段入面節目按日子新到舊、劇集按集數</li>
-                    <li>撳一行 = 入嗰頁跳去嗰集（唔播）</li>
+                    <li>
+                        每行右邊 ▶ / ⏸：撳掣 = 原地播 / 暫停（留喺收藏 tab）；撳掣以外 =
+                        入嗰頁跳去嗰集（唔播）
+                    </li>
                     <li>
                         移除：左滑一行見到紅底 🗑 icon，拉過四成放手 → 嗰行滑走、收埋；段 / box
                         冇晒集就跟住收埋；全部冇晒 → tab
@@ -475,28 +564,51 @@
                 </ul>
                 <div class="row">
                     <button type="button" class="act" id="demo">▶ 示範左滑移除（慢鏡）</button>
-                </div>
-                <div class="row" data-group="banner">
-                    <button type="button" class="pick" data-val="b1" aria-pressed="true">
-                        B1 頂部 banner 條
-                    </button>
-                    <button type="button" class="pick" data-val="b2" aria-pressed="false">
-                        B2 header 細 banner
-                    </button>
-                    <button type="button" class="act" id="reset">重新加返 8 集收藏</button>
+                    <button type="button" class="act" id="reset">重新加返收藏</button>
                     <button type="button" class="act" id="clear">清晒收藏（tab 消失）</button>
                 </div>
+                <p><b>收藏數量</b>（睇收藏少時空位點處理）：</p>
+                <div class="row" data-group="count">
+                    <button type="button" class="pick" data-val="many" aria-pressed="true">
+                        收藏多（8 集）
+                    </button>
+                    <button type="button" class="pick" data-val="few" aria-pressed="false">
+                        收藏少（2 集）
+                    </button>
+                </div>
+                <div class="row" data-group="empty">
+                    <button type="button" class="pick" data-val="e0" aria-pressed="false">
+                        E0 照排留空
+                    </button>
+                    <button type="button" class="pick" data-val="e1" aria-pressed="false">
+                        E1 少就放大
+                    </button>
+                    <button type="button" class="pick" data-val="e2" aria-pressed="true">
+                        E2 下面補「最近收聽」
+                    </button>
+                    <button type="button" class="pick" data-val="e3" aria-pressed="false">
+                        E3 下面提示卡
+                    </button>
+                </div>
+                <p class="opt-desc" id="empty-desc"></p>
                 <div class="stages">
                     <div class="viewport" id="v-home-phone"></div>
+                    <div class="viewport" id="v-home-land"></div>
                     <div class="viewport" id="v-home-wide"></div>
                 </div>
-                <p>上：手機直版。下：闊橫版（左邊兩欄 box，右邊播放卡照舊）。兩部機各自獨立試。</p>
+                <p>
+                    手機直版、窄橫版（手機打橫：三欄 box）、闊橫版（兩欄
+                    box，右邊播放卡照舊）。每部機各自獨立試。
+                </p>
             </section>
         </main>
 
         <script>
             const IMG = {
                 nHome: 'n-home.webp',
+                lHome: 'l-home.webp',
+                sunnyday: 'disc-sunnyday.webp',
+                westair: 'disc-westair.webp',
                 nShow: 'n-show.webp',
                 wHome: 'w-home.webp',
                 bGongzi: 'banner-gongzi.webp',
@@ -561,12 +673,35 @@
                         h: 548,
                         cols: 1,
                         gap: 10,
-                        disc: 56,
-                        strip: 56,
+                        disc: 52,
+                        strip: 80,
                         bannerW: 72,
+                        discRoomy: 76,
+                        stripRoomy: 132,
                     },
                     cover: { y: 187, h: 564 },
                     toastBottom: 120,
+                },
+                land: {
+                    view: 'v-home-land',
+                    img: 'lHome',
+                    size: { w: 844, h: 390, max: 0.9 },
+                    tabs: { x: 16, y: 16, w: 812, h: 50, inset: 6, font: 14, icon: 72 },
+                    list: {
+                        x: 16,
+                        y: 78,
+                        w: 812,
+                        h: 212,
+                        cols: 3,
+                        gap: 10,
+                        disc: 44,
+                        strip: 64,
+                        bannerW: 64,
+                        discRoomy: 60,
+                        stripRoomy: 96,
+                    },
+                    cover: { y: 72, h: 222 },
+                    toastBottom: 100,
                 },
                 wide: {
                     view: 'v-home-wide',
@@ -580,9 +715,11 @@
                         h: 667,
                         cols: 2,
                         gap: 14,
-                        disc: 68,
-                        strip: 64,
+                        disc: 60,
+                        strip: 96,
                         bannerW: 88,
+                        discRoomy: 88,
+                        stripRoomy: 160,
                     },
                     cover: { y: 107, h: 693, w: 820 },
                     toastBottom: 40,
@@ -686,7 +823,27 @@
                 },
             ];
 
-            const state = { icon: 'star', place: 'p2', banner: 'b1' };
+            const state = { icon: 'star', place: 'p2', banner: 'b1', count: 'many', empty: 'e2' };
+            const FEW_IDS = [1, 6];
+            const PLAY =
+                '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>';
+            const PAUSE =
+                '<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>';
+            const EMPTY_DESC = {
+                e0: '唔處理：收藏少就喺下面留空。',
+                e1: 'box 得一兩個時自動放大：banner 高啲、碟大啲，闊版 / 窄橫版唔再分欄留空。',
+                e2: '收藏下面補一個「最近收聽」：最近聽過、未收藏嘅幾集，每行有 ☆ 即刻收藏。收藏多嗰陣都喺最尾。',
+                e3: '收藏下面加一張淡色提示卡，教人喺集數清單或者播放器撳 ☆ 加入收藏。',
+            };
+            const RECENT = [
+                { disc: 'sunnyday', name: '在晴朗的一天出發', label: '19/10（一）' },
+                { disc: 'westair', name: '西加航空', label: '16/10（五）' },
+                { disc: 'badgirl', name: 'Bad Girl大過佬', label: '16/10（五）' },
+            ];
+            const itemsFor = () =>
+                SAMPLE.filter((x) => state.count === 'many' || FEW_IDS.includes(x.id)).map((x) => ({
+                    ...x,
+                }));
             const TRASH =
                 '<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
@@ -791,7 +948,7 @@
             const createHome = (key) => {
                 const L = LAYOUTS[key];
                 const stage = makeStage(L.view, L.size, L.img);
-                const home = { L, stage, tab: 'saved', items: SAMPLE.map((x) => ({ ...x })) };
+                const home = { L, stage, tab: 'saved', items: itemsFor(), playing: null };
                 home.cover = div('abs', {
                     left: '0px',
                     top: `${L.cover.y}px`,
@@ -811,6 +968,8 @@
                 home.list.style.setProperty('--disc', `${L.list.disc}px`);
                 home.list.style.setProperty('--strip-h', `${L.list.strip}px`);
                 home.list.style.setProperty('--banner-w', `${L.list.bannerW}px`);
+                home.list.style.setProperty('--disc-roomy', `${L.list.discRoomy}px`);
+                home.list.style.setProperty('--strip-roomy', `${L.list.stripRoomy}px`);
                 home.list.classList.add(state.banner);
                 home.tabs = div('tabs', {
                     left: `${L.tabs.x}px`,
@@ -909,6 +1068,35 @@
                     sections.forEach(({ s, rows }) => box.append(sectionOf(home, s, rows, meta)));
                     home.cols.append(box);
                 });
+                const boxes = home.cols.querySelectorAll('.box').length;
+                const roomy = state.empty === 'e1' && boxes > 0 && boxes <= 2;
+                home.list.classList.toggle('roomy', roomy);
+                home.cols.style.columnCount = String(
+                    roomy ? Math.min(boxes, home.L.list.cols) : home.L.list.cols,
+                );
+                if (state.empty === 'e2') home.cols.append(recentOf(home));
+                if (state.empty === 'e3') home.cols.append(hintOf());
+            };
+
+            /** E2：最近聽過、未收藏嘅幾集 */
+            const recentOf = (home) => {
+                const box = div('extra');
+                box.innerHTML = '<h4>最近收聽</h4>';
+                RECENT.forEach((r) => {
+                    const row = div('recent-row');
+                    row.innerHTML = `<div class="disc" style="background-image:url(${IMG[r.disc]})"></div><div><b>${r.name}</b>${r.label}</div>`;
+                    row.append(
+                        bmButton(home.stage, 0, 0, 34, '#f5d294', false, home.L.toastBottom),
+                    );
+                    box.append(row);
+                });
+                return box;
+            };
+            /** E3：提示卡 */
+            const hintOf = () => {
+                const box = div('extra');
+                box.innerHTML = `<h4>${svg(state.icon, false).replace('<svg', '<svg width="16" height="16" style="vertical-align:-3px"')} 加多啲收藏</h4>喺節目頁、劇集頁嘅集數清單，或者播放器播放掣右邊，撳 ☆ 就會加入呢度。`;
+                return box;
             };
 
             const sectionOf = (home, s, rows, boxMeta) => {
@@ -925,10 +1113,34 @@
                 const wrap = div('item collapse');
                 wrap.innerHTML = `<span class="del" aria-hidden="true">${TRASH}</span>
                     <div class="card">
-                        <div class="line"><b>${it.label}</b><span class="state">${it.text}</span></div>
-                        <div class="bar"><i style="width:${Math.round(it.ratio * 100)}%"></i></div>
+                        <div class="cbody">
+                            <div class="line"><b>${it.label}</b><span class="state">${it.text}</span></div>
+                            <div class="bar"><i style="width:${Math.round(it.ratio * 100)}%"></i></div>
+                        </div>
+                        <button type="button" class="play" aria-pressed="${home.playing === it.id}" aria-label="播放 / 暫停">${home.playing === it.id ? PAUSE : PLAY}</button>
                     </div>`;
                 wrap.dataset.id = String(it.id);
+                wrap.querySelector('.play').addEventListener('pointerdown', (e) =>
+                    e.stopPropagation(),
+                );
+                wrap.querySelector('.play').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const on = home.playing !== it.id;
+                    home.playing = on ? it.id : null;
+                    home.cols.querySelectorAll('.item').forEach((w) => {
+                        const b = w.querySelector('.play');
+                        const mine = on && w.dataset.id === String(it.id);
+                        b.setAttribute('aria-pressed', String(mine));
+                        b.innerHTML = mine ? PAUSE : PLAY;
+                    });
+                    flashIn(
+                        home.stage,
+                        home.L.toastBottom,
+                        on
+                            ? `播放 ${boxMeta.title} ${meta.sub ? `${meta.sub} ` : ''}${it.label}（留喺收藏 tab）`
+                            : '暫停',
+                    );
+                });
                 swipe(home, wrap, it, () =>
                     flashIn(
                         home.stage,
@@ -1010,7 +1222,7 @@
                 );
             };
 
-            /** 示範：手機第一行慢慢左滑，見到紅色「移除」，過咗四成放手 */
+            /** 示範：手機第一行慢慢左滑，見到紅底 🗑，過咗四成放手 */
             const demo = () => {
                 const home = homes.phone;
                 if (home.tab !== 'saved') selectTab(home, 'saved');
@@ -1028,7 +1240,9 @@
                 renderShow();
                 renderCard();
                 createHome('phone');
+                createHome('land');
                 createHome('wide');
+                document.getElementById('empty-desc').textContent = EMPTY_DESC[state.empty];
             };
 
             document.querySelectorAll('[data-group]').forEach((group) =>
@@ -1045,7 +1259,7 @@
             document.getElementById('demo').addEventListener('click', demo);
             document.getElementById('reset').addEventListener('click', () => {
                 Object.values(homes).forEach((home) => {
-                    home.items = SAMPLE.map((x) => ({ ...x }));
+                    home.items = itemsFor();
                     home.tab = 'saved';
                     renderList(home);
                     syncTabs(home);
