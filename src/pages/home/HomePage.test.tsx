@@ -8,11 +8,14 @@ import { restoreMiniPlayer } from '../../hooks/miniPlayerDismissed';
 import { usePlayer } from '../../player/usePlayer';
 import { seriesEpisodesOf } from '../../catalog/dramas';
 import { findShow } from '../../catalog/shows';
+import { addBookmark } from '../../services/bookmarkStore';
 import { saveProgress } from '../../services/progressStore';
 import type { Recording } from '../../types/recording';
 import type { Track } from '../../types/track';
 import { HomePage } from './HomePage';
 import { ShowPage } from '../show/ShowPage';
+
+const rowOpenOf = (name: RegExp) => screen.getByRole('button', { name });
 
 const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 
@@ -718,6 +721,45 @@ describe('HomePage', () => {
             renderWithProviders(<HomePage />);
 
             expect(screen.getByRole('navigation', { name: '廣播劇' })).toBeInTheDocument();
+        });
+    });
+
+    // P7 #7：第三個 tab「我的收藏」淨係有收藏先出；移除咗最後一集就跳返「節目」
+    describe('我的收藏 tab', () => {
+        const savedTab = () => screen.queryByRole('button', { name: '我的收藏' });
+
+        it('should not offer 我的收藏 without bookmarks', () => {
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+
+            expect(savedTab()).not.toBeInTheDocument();
+        });
+
+        it('should show the tab after bookmarking and open the saved list', async () => {
+            const target = RECORDINGS[1] as Recording;
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+
+            act(() => void addBookmark(target, 1));
+            await userEvent.click(savedTab() as HTMLElement);
+
+            expect(screen.getByRole('region', { name: '我的收藏' })).toBeInTheDocument();
+            expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+        });
+
+        it('should fade the tab away and jump back to 節目 when the last bookmark is removed', async () => {
+            const target = RECORDINGS[1] as Recording;
+            addBookmark(target, 1);
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            await userEvent.click(savedTab() as HTMLElement);
+
+            rowOpenOf(/^開啟 公子會/).focus();
+            await userEvent.keyboard('{Delete}');
+
+            await waitFor(() => expect(savedTab()).not.toBeInTheDocument());
+            expect(screen.getByRole('button', { name: '節目' })).toHaveAttribute(
+                'aria-pressed',
+                'true',
+            );
+            expect(screen.getByRole('navigation', { name: '節目' })).toBeInTheDocument();
         });
     });
 });

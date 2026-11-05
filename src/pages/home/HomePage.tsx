@@ -1,6 +1,6 @@
 import { ShowTile } from '../../components/pages/home/ShowTile/ShowTile';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import { WIDE_BANNER_QUERY } from '../../config/layout';
+import { SHORT_LANDSCAPE_QUERY, WIDE_BANNER_QUERY } from '../../config/layout';
 import { SHOWS } from '../../catalog/shows';
 import { HOME_THEME } from '../../config/showThemes';
 import { useRecordings } from '../../data/useRecordings';
@@ -25,7 +25,10 @@ import styles from './HomePage.module.css';
 import { homeLayoutMode } from './homeLayoutMode';
 import { HomeStack } from './HomeStack';
 import { HomeWide } from './HomeWide';
+import { HomeSaved } from './HomeSaved';
+import { useKnownBookmarks } from './useSavedView';
 import { useTileOpen, type HomeRight } from './useTileOpen';
+import type { SavedLayout } from '../../selectors/bookmarks';
 
 /**
  * 撳節目格 / 今日節目格時順便開始播嘅條件：冇其他嘢播緊 / 暫停緊（useAudioBusy），
@@ -103,11 +106,20 @@ const useLayoutMode = (hasMiniPlayer: boolean) => {
     return homeLayoutMode({ wide, hasMiniPlayer, cardClosed });
 };
 
+/** 收藏 tab 版面：闊橫版 wide；手機打橫 land；其他（直版）phone */
+const useSavedLayout = (mode: ReturnType<typeof homeLayoutMode>): SavedLayout => {
+    const sideways = useMediaQuery(SHORT_LANDSCAPE_QUERY);
+    if (mode !== 'stack') return 'wide';
+    return sideways ? 'land' : 'phone';
+};
+
 export const HomePage = () => {
     const { status } = useRecordings();
-    const [tab, setTab] = useHomeTab();
+    const hasSaved = useKnownBookmarks().length > 0;
+    const [tab, setTab] = useHomeTab(hasSaved);
     const miniPlayer = useMiniPlayer();
     const mode = useLayoutMode(miniPlayer !== null);
+    const savedLayout = useSavedLayout(mode);
     useHomeArrival();
     // 主頁右邊有乜：格仔入頁揀過場用（useTileOpen）
     const right: HomeRight = {
@@ -121,6 +133,8 @@ export const HomePage = () => {
         dramaItems: useDramaItems(right),
         busy: status === 'loading',
         miniPlayer,
+        hasSaved,
+        saved: <HomeSaved layout={savedLayout} right={right} />,
     };
     return (
         // 主頁用自己嘅色調（跟 app icon）；mini player / 播放卡入面另有 ThemeScope，照跟節目色。

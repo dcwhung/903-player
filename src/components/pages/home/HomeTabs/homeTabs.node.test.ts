@@ -45,12 +45,44 @@ describe('home tab pill (P5 #1 elastic)', () => {
         expect(undeclared(pill)).toEqual([]);
     });
 
-    it('should cover each half of the track with left / right', () => {
+    it('should cover each half of the track with left / right (no 我的收藏 tab)', () => {
         const shows = cssDeclarations(tabsCss, `${PILL}[data-tab='shows']`);
         const dramas = cssDeclarations(tabsCss, `${PILL}[data-tab='dramas']`);
-        expect(shows).toEqual({ left: 'var(--home-tab-inset)', right: 'var(--home-tab-far)' });
-        expect(dramas).toEqual({ left: 'var(--home-tab-far)', right: 'var(--home-tab-inset)' });
+        // 冇收藏：--home-tab-saved-room 係 0，即係半條軌道
+        expect(cssDeclarations(tabsCss, '.tabs')['--home-tab-saved-room']).toBe('0px');
+        expect(shows).toEqual({
+            left: 'var(--home-tab-inset)',
+            right: 'calc(var(--home-tab-far) + var(--home-tab-saved-room) / 2)',
+        });
+        expect(dramas).toEqual({
+            left: 'calc(var(--home-tab-far) - var(--home-tab-saved-room) / 2)',
+            right: 'calc(var(--home-tab-inset) + var(--home-tab-saved-room))',
+        });
         expect(TOKENS.get('--home-tab-far')).toBe('calc(50% + var(--home-tab-inset) / 2)');
+    });
+
+    it('should make room for the narrow 我的收藏 tab and put the pill on it', () => {
+        expect(cssDeclarations(tabsCss, ".tabs[data-saved='true']")).toEqual({
+            '--home-tab-saved-room': 'calc(var(--home-tab-icon-width) + var(--home-tab-inset))',
+        });
+        expect(cssDeclarations(tabsCss, `${PILL}[data-tab='saved']`)).toEqual({
+            left: 'calc(100% - var(--home-tab-inset) - var(--home-tab-icon-width))',
+            right: 'var(--home-tab-inset)',
+        });
+        expect(cssDeclarations(tabsCss, '.icon').flex).toBe('0 0 var(--home-tab-icon-width)');
+        expect(TOKENS.has('--home-tab-icon-width')).toBe(true);
+    });
+
+    it('should collapse and fade the 我的收藏 tab when there is nothing saved', () => {
+        expect(cssDeclarations(tabsCss, ".icon[data-gone='true']")).toMatchObject({
+            'flex-basis': '0',
+            'margin-left': 'calc(-1 * var(--home-tab-inset))',
+            opacity: '0',
+        });
+        const motion = atRuleDeclarations(tabsCss, MOTION, '.icon');
+        expect(motion.transition).toContain('flex-basis var(--view-transition-move)');
+        expect(motion.transition).toContain('opacity var(--view-transition-move)');
+        expect(undeclared(motion)).toEqual([]);
     });
 
     it('should stop the pressed button painting its own background', () => {
@@ -83,9 +115,13 @@ describe('home tab pill (P5 #1 elastic)', () => {
     });
 
     it('should only transition under prefers-reduced-motion: no-preference', () => {
-        for (const selector of [PILL, RIGHT, LEFT, '.tab', ".tab[aria-pressed='true']"]) {
+        for (const selector of [PILL, RIGHT, LEFT, '.tab', '.icon', ".tab[aria-pressed='true']"]) {
             expect(cssDeclarations(tabsCss, selector).transition).toBeUndefined();
         }
-        expect(tabsCss.match(/transition:/g)).toHaveLength(3);
+        // 換 tab（左 / 右）、字色、我的收藏 tab 闊度、膠囊跟格仔闊度
+        expect(tabsCss.match(/transition:/g)).toHaveLength(5);
+        expect(atRuleDeclarations(tabsCss, MOTION, PILL).transition).toBe(
+            `left ${MOVE}, right ${MOVE}`,
+        );
     });
 });

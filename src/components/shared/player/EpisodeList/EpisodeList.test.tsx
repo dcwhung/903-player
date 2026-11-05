@@ -1,6 +1,9 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { hasBookmark } from '../../../../services/bookmarkStore';
+import type { Recording } from '../../../../types/recording';
 import { EpisodeList, type EpisodeItem } from './EpisodeList';
+import { FOCUS_FLASH_MS } from './useFocusRow';
 
 const ITEMS: EpisodeItem[] = [
     {
@@ -193,6 +196,90 @@ describe('EpisodeList', () => {
         rerender(<EpisodeList items={[fresh, ...ITEMS]} onSelect={() => {}} />);
 
         expect(HTMLElement.prototype.scrollTo).not.toHaveBeenCalled();
+    });
+
+    describe('bookmark star (P7 #7)', () => {
+        const TRACK: Recording = {
+            showId: 'gongzi',
+            date: '2026-10-15',
+            time: '2300',
+            url: 'c',
+        };
+        const withTrack = ITEMS.map((item) =>
+            item.key === 'c' ? { ...item, track: TRACK } : item,
+        );
+
+        it('should put a star beside the play icon of rows that know their episode', () => {
+            render(<EpisodeList items={withTrack} onSelect={() => {}} />);
+
+            const star = screen.getByRole('button', { name: '收藏 15/10 星期四' });
+            expect(star).toHaveAttribute('aria-pressed', 'false');
+            expect(screen.getAllByRole('button', { name: /^收藏/ })).toHaveLength(1);
+            // 星同播放掣喺同一行（li）
+            expect(star.closest('li')).toBe(
+                screen.getByRole('button', { name: /^播放 15\/10/ }).closest('li'),
+            );
+        });
+
+        it('should bookmark without playing the row', async () => {
+            const onSelect = vi.fn();
+            render(<EpisodeList items={withTrack} onSelect={onSelect} />);
+
+            await userEvent.click(screen.getByRole('button', { name: '收藏 15/10 星期四' }));
+
+            expect(hasBookmark('c')).toBe(true);
+            expect(onSelect).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('focused episode (entered from 我的收藏)', () => {
+        beforeEach(() => vi.useFakeTimers());
+        afterEach(() => vi.useRealTimers());
+
+        const focused = (container: HTMLElement) =>
+            [...container.querySelectorAll('li[data-focused]')].map((li) =>
+                li.getAttribute('data-episode-key'),
+            );
+
+        it('should scroll to the focused episode and highlight it briefly', () => {
+            const { container } = render(
+                <EpisodeList items={ITEMS} onSelect={() => {}} focusKey="c" />,
+            );
+
+            expect(focused(container)).toEqual(['c']);
+            expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith(
+                expect.objectContaining({ behavior: 'auto' }),
+            );
+
+            act(() => vi.advanceTimersByTime(FOCUS_FLASH_MS));
+            expect(focused(container)).toEqual([]);
+        });
+
+        it('should wait until the focused episode is listed (recordings still loading)', () => {
+            const { container, rerender } = render(
+                <EpisodeList items={[]} onSelect={() => {}} focusKey="c" />,
+            );
+            expect(focused(container)).toEqual([]);
+
+            rerender(<EpisodeList items={ITEMS} onSelect={() => {}} focusKey="c" />);
+            expect(focused(container)).toEqual(['c']);
+        });
+
+        it('should highlight only once per focus', () => {
+            const { container, rerender } = render(
+                <EpisodeList items={ITEMS} onSelect={() => {}} focusKey="c" />,
+            );
+            act(() => vi.advanceTimersByTime(FOCUS_FLASH_MS));
+
+            rerender(
+                <EpisodeList
+                    items={ITEMS.map((i) => ({ ...i }))}
+                    onSelect={() => {}}
+                    focusKey="c"
+                />,
+            );
+            expect(focused(container)).toEqual([]);
+        });
     });
 
     describe('scrollAlign="top" (series drama)', () => {

@@ -12,6 +12,7 @@ import { formatDateLabel } from '../../utils/date';
 import { hasKnownDuration } from '../../utils/time';
 import { LoadState } from '../shared/LoadState';
 import page from '../shared/Page.module.css';
+import type { Recording } from '../../types/recording';
 import type { TodayView } from './useTodayPage';
 
 interface TodayStackProps {
@@ -24,13 +25,24 @@ interface TodayStackProps {
     onChange: (index: number) => void;
     /** 卡疊下面嘅指示點；手機打橫搬咗上頁頭就冇 */
     dots: ReactNode;
+    /** 顯示緊嘅一集（收藏掣用） */
+    bookmark: Recording | undefined;
 }
 
 /** 今日節目卡疊（最上面係播放器）+ 卡外嘅指示點，一組唔縮 */
-const TodayStack = ({ cards, index, title, art, onStart, onChange, dots }: TodayStackProps) => (
+const TodayStack = ({
+    cards,
+    index,
+    title,
+    art,
+    onStart,
+    onChange,
+    dots,
+    bookmark,
+}: TodayStackProps) => (
     <div className={page.todayPlayer}>
         <ShowCardStack cards={cards} index={index} onChange={onChange}>
-            <PlayerCard title={title} art={art} onStart={onStart} />
+            <PlayerCard title={title} art={art} onStart={onStart} bookmark={bookmark} />
         </ShowCardStack>
         {dots}
     </div>
@@ -105,6 +117,7 @@ export const TodayPlayerColumn = ({
                             onStart={start}
                             onChange={selectIndex}
                             dots={dots}
+                            bookmark={current}
                         />
                         {landscape && (
                             <TodayNowPlaying

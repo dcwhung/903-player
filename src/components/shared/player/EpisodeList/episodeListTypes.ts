@@ -1,3 +1,4 @@
+import type { Track } from '../../../../types/track';
 import type { EpisodeStatus } from './episodeStatus';
 
 export interface EpisodeItem {
@@ -12,6 +13,8 @@ export interface EpisodeItem {
     /** 揀中而且播緊：掣變暫停，撳落去暫停 */
     isPlaying: boolean;
     status: EpisodeStatus;
+    /** 呢行嘅一集：有就喺播放掣左邊出收藏掣（P7 #7）；未上架冇 */
+    track?: Track;
 }
 
 /**

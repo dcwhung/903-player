@@ -13,6 +13,12 @@
     padding: var(--home-tab-inset);
     border-radius: var(--radius-full);
     background: var(--home-tab-track);
+    /* 我的收藏 tab（P7 #7）出咗：佢嘅闊度 + 一個間隙，節目 / 廣播劇兩格平分剩低嘅位，膠囊跟住計 */
+    --home-tab-saved-room: 0px;
+}
+
+.tabs[data-saved='true'] {
+    --home-tab-saved-room: calc(var(--home-tab-icon-width) + var(--home-tab-inset));
 }
 
 /* 成條軌道得一粒膠囊（_mockups_/elastic-tabs E2）：用 left / right 定位，換 tab 先可以兩邊分開郁 */
@@ -27,11 +33,16 @@
 
 .pill[data-tab='shows'] {
     left: var(--home-tab-inset);
-    right: var(--home-tab-far);
+    right: calc(var(--home-tab-far) + var(--home-tab-saved-room) / 2);
 }
 
 .pill[data-tab='dramas'] {
-    left: var(--home-tab-far);
+    left: calc(var(--home-tab-far) - var(--home-tab-saved-room) / 2);
+    right: calc(var(--home-tab-inset) + var(--home-tab-saved-room));
+}
+
+.pill[data-tab='saved'] {
+    left: calc(100% - var(--home-tab-inset) - var(--home-tab-icon-width));
     right: var(--home-tab-inset);
 }
 
@@ -53,6 +64,25 @@
     font-weight: 700;
 }
 
+/* 我的收藏：窄啲、淨係 ★（_mockups_/bookmark .tab.icon） */
+.icon {
+    display: flex;
+    flex: 0 0 var(--home-tab-icon-width);
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* 冇收藏：闊度收到 0，連前面個間隙都食埋（margin 負一個間隙），淡走 */
+.icon[data-gone='true'] {
+    flex-basis: 0;
+    margin-left: calc(-1 * var(--home-tab-inset));
+    opacity: 0;
+    pointer-events: none;
+}
+
 /*
  * 拉長：前面嗰邊即刻郁，後面嗰邊遲 --home-tab-trail-delay 先跟，中途膠囊橫跨兩格再收入新 tab。
  * 第一次顯示冇 data-direction，所以唔會滑入；要求減少動畫就冇 transition，即刻換
@@ -60,6 +90,21 @@
 @media (prefers-reduced-motion: no-preference) {
     .tab {
         transition: color var(--home-tab-label-fade) var(--ease-view-transition);
+    }
+
+    /* 我的收藏 tab 出現 / 消失：闊度 + 淡入淡出；冇換 tab 時膠囊都跟住格仔闊度郁 */
+    .icon {
+        transition:
+            flex-basis var(--view-transition-move) var(--ease-view-transition),
+            margin-left var(--view-transition-move) var(--ease-view-transition),
+            opacity var(--view-transition-move) var(--ease-view-transition),
+            color var(--home-tab-label-fade) var(--ease-view-transition);
+    }
+
+    .pill {
+        transition:
+            left var(--view-transition-move) var(--ease-view-transition),
+            right var(--view-transition-move) var(--ease-view-transition);
     }
 
     .pill[data-direction='right'] {

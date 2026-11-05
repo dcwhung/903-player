@@ -5,6 +5,7 @@ import { StatusMessage } from '../../components/shared/common/StatusMessage/Stat
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import type { DramaConfig } from '../../catalog/dramas';
 import { LANDSCAPE_QUERY } from '../../config/layout';
+import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePlayer } from '../../player/usePlayer';
 import { t } from '../../i18n/t';
@@ -68,6 +69,7 @@ const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayer
                     art={status === 'unloaded' ? undefined : theme.art}
                     onStart={start}
                     standbyTime={view.standbyTime}
+                    bookmark={current}
                 />
             ) : (
                 <StatusMessage message={t('episodes.noneUp')} />
@@ -89,7 +91,9 @@ const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayer
  * 全集表橫版只蓋左欄（listBody），唔遮播放器
  */
 export const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
-    const view = useSeriesDramaPage(drama);
+    // 由「我的收藏」撳行入嚟：唔播、唔開全集表，轉去嗰集個短篇、捲去嗰集
+    const focusUrl = useEpisodeFocus();
+    const view = useSeriesDramaPage(drama, focusUrl);
     const { duration } = usePlayer();
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
     // 「連線中…」只講呢套劇嘅一集載緊 / 緩衝緊；未載入呢套劇（start 有值）唔講，亦冇 chip 係「播緊」
@@ -97,7 +101,7 @@ export const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const arcSheet = (
         <SeriesArcSheet sheet={view.sheet} current={view.current} docked={landscape} />
     );
-    const column = { view, title: drama.name, landscape };
+    const column = { view, title: drama.name, landscape, focusKey: focusUrl };
     return (
         <ThemeScope theme={view.theme}>
             <main className={`${page.page} ${page.locked} ${page.fixed}`} data-player-page="">

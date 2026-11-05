@@ -85,6 +85,9 @@ export const REPLAY_RESET_SECONDS = 10;
 export const PROGRESS_STORAGE_KEY = '903player:progress:v1';
 /** 主頁上次揀咗「節目」定「廣播劇」tab */
 export const HOME_TAB_STORAGE_KEY = '903player:home-tab:v1';
+/** 收藏咗嘅集數（P7 #7）：key 尾嘅 v1 同入面嘅 version 一齊改，舊資料就當冇 */
+export const BOOKMARK_STORAGE_KEY = '903player:bookmarks:v1';
+export const BOOKMARK_STORE_VERSION = 1;
 
 export const MS_PER_SECOND = 1000;
 /** 報畀鎖屏嘅播放速度（app 冇變速） */

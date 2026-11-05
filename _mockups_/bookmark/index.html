@@ -1,0 +1,1423 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>903 收藏</title>
+        <meta name="claude:viewport-fit-sides" content="cover" />
+        <style>
+            /* 版面：一欄；每節一張卡，入面係按闊度縮細嘅手機 / 闊橫版舞台。舞台入面嘅顏色跟 app（tokens.css）截圖取色 */
+            :root {
+                --move: 520ms;
+                --fade: 260ms;
+                --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+                --bg: #eef1f5;
+                --surface: #ffffff;
+                --ink: #18202b;
+                --note: #5d6775;
+                --line: #d3d9e2;
+                --accent: #3b6fb6;
+                --on-accent: #ffffff;
+                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+                /* app 入面嘅顏色（唔跟頁面主題轉） */
+                --app-cream: #f5d294;
+                --app-track: #3e5c7c;
+                --app-box: #2d4560;
+                --app-box-playing: #263b54;
+                --app-ink: #ffffff;
+                --app-muted: rgb(255 255 255 / 62%);
+                --app-line: rgb(255 255 255 / 22%);
+                --app-divider: rgb(255 255 255 / 12%);
+                --app-gold: #d4ae5c;
+                --app-danger: #c8463d;
+                --app-toast: rgb(10 16 24 / 88%);
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #10151c;
+                    --surface: #1a212b;
+                    --ink: #e8edf3;
+                    --note: #9aa5b3;
+                    --line: #2e3845;
+                    --accent: #7fa8e6;
+                    --on-accent: #0d1420;
+                    color-scheme: dark;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #10151c;
+                --surface: #1a212b;
+                --ink: #e8edf3;
+                --note: #9aa5b3;
+                --line: #2e3845;
+                --accent: #7fa8e6;
+                --on-accent: #0d1420;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding-block: 24px 48px;
+                padding-left: max(16px, env(safe-area-inset-left, 0px));
+                padding-right: max(16px, env(safe-area-inset-right, 0px));
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font);
+            }
+            main {
+                display: grid;
+                gap: 20px;
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+            h1 {
+                margin: 0;
+                font-size: 22px;
+                text-wrap: balance;
+            }
+            h2 {
+                margin: 0;
+                font-size: 17px;
+            }
+            p,
+            li {
+                margin: 0;
+                color: var(--note);
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            ul {
+                margin: 0;
+                padding-left: 20px;
+            }
+            .panel {
+                display: grid;
+                gap: 12px;
+                padding: 16px;
+                border-radius: 16px;
+                background: var(--surface);
+                min-width: 0;
+            }
+            .row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                align-items: center;
+            }
+            .pick,
+            .act {
+                padding: 8px 14px;
+                border: 1px solid var(--line);
+                border-radius: 999px;
+                background: var(--surface);
+                color: var(--ink);
+                font: inherit;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            .pick[aria-pressed='true'] {
+                border-color: var(--accent);
+                background: var(--accent);
+                color: var(--on-accent);
+            }
+            button:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
+            .stages {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 16px;
+                align-items: flex-start;
+            }
+            .viewport {
+                position: relative;
+                overflow: hidden;
+                border-radius: 14px;
+                box-shadow: 0 2px 12px rgb(0 0 0 / 18%);
+                background: #000;
+                max-width: 100%;
+                flex: none;
+            }
+            .stage {
+                position: absolute;
+                top: 0;
+                left: 0;
+                transform-origin: 0 0;
+                overflow: hidden;
+                background: center / 100% 100% no-repeat;
+                font-family: var(--font);
+                color: var(--app-ink);
+            }
+            .abs {
+                position: absolute;
+            }
+            /* 收藏掣 */
+            .bm {
+                position: absolute;
+                display: grid;
+                place-items: center;
+                border: 0;
+                border-radius: 999px;
+                background: transparent;
+                color: var(--bm-color, var(--app-gold));
+                cursor: pointer;
+                padding: 0;
+            }
+            .bm svg {
+                width: 60%;
+                height: 60%;
+            }
+            .patch {
+                position: absolute;
+                pointer-events: none;
+            }
+            /* 主頁 tab 複製品（尺寸由 JS 按版面設定 --inset / --font-size / --icon-tab） */
+            .tabs {
+                position: absolute;
+                display: flex;
+                gap: var(--inset);
+                padding: var(--inset);
+                border-radius: 999px;
+                background: var(--app-track);
+            }
+            .tab {
+                position: relative;
+                z-index: 1;
+                flex: 1 1 0;
+                min-width: 0;
+                display: grid;
+                place-items: center;
+                border: 0;
+                border-radius: 999px;
+                background: transparent;
+                color: var(--app-ink);
+                font: 500 var(--font-size) / 1 var(--font);
+                cursor: pointer;
+                overflow: hidden;
+                transition: color var(--fade) var(--ease);
+            }
+            .tab[aria-pressed='true'] {
+                color: #1c2330;
+                font-weight: 700;
+            }
+            .tab.icon {
+                flex: 0 0 var(--icon-tab);
+                transition:
+                    flex-basis var(--move) var(--ease),
+                    margin var(--move) var(--ease),
+                    opacity var(--move) var(--ease),
+                    color var(--fade) var(--ease);
+            }
+            .tab.icon svg {
+                width: calc(var(--font-size) * 1.6);
+                height: calc(var(--font-size) * 1.6);
+            }
+            .tab.icon.gone {
+                flex-basis: 0;
+                opacity: 0;
+                margin-left: calc(-1 * var(--inset));
+                pointer-events: none;
+            }
+            .pill {
+                position: absolute;
+                top: var(--inset);
+                bottom: var(--inset);
+                border-radius: 999px;
+                background: var(--app-cream);
+                transition:
+                    left var(--move) var(--ease),
+                    right var(--move) var(--ease);
+            }
+            /*
+             * 收藏清單（D2 + disc）：每個節目 / 每套劇一個 box；
+             * box 入面每個節目 / 短篇一段：左邊 disc 正方封面，右邊名 + 各集
+             */
+            /* 清單：上 / 左係收藏 box（自己 scroll），最近收聽固定喺底 / 右（.side = 窄橫版放右邊） */
+            .list {
+                position: absolute;
+                overflow: hidden;
+                flex-direction: column;
+                column-gap: var(--gap);
+                padding-bottom: 16px;
+            }
+            .side {
+                flex-direction: row;
+            }
+            .scroll {
+                flex: 1 1 0;
+                min-width: 0;
+                min-height: 0;
+                overflow-y: auto;
+            }
+            .cols {
+                flex: none;
+                column-gap: var(--gap);
+            }
+            .box {
+                break-inside: avoid;
+                margin-bottom: var(--gap);
+                border-radius: 14px;
+                overflow: hidden;
+                background: var(--app-box);
+            }
+            /* 大類 banner（節目 / 成套劇嘅橫圖）：B1 = box 頂一條矮 banner 名疊上面；B2 = header 一行細 banner + 名 */
+            .bhead {
+                position: relative;
+            }
+            .bimg {
+                background: center / cover no-repeat;
+            }
+            .btitle {
+                font: 700 15px/1.3 var(--font);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .b1 .bhead {
+                height: var(--strip-h);
+            }
+            /* 得一個收藏：banner 按原圖比例完整顯示；橫版（.solo-side）左邊 banner、右邊集數 */
+            /*
+             * 得一個收藏：box 最多填滿收藏區（唔使 scroll）；banner 最高 = 原圖比例全幅，
+             * 位唔夠就 banner 壓矮（裁圖），集數照完整顯示
+             */
+            .solo-mode .cols {
+                height: 100%;
+                container-type: inline-size;
+            }
+            .solo-mode .scroll {
+                overflow: hidden;
+            }
+            .box.solo {
+                display: flex;
+                flex-direction: column;
+                max-height: 100%;
+                margin-bottom: 0;
+            }
+            .box.solo > .section {
+                flex: none;
+            }
+            .b1 .solo .bhead {
+                flex: 0 1 auto;
+                height: calc(100cqw / var(--banner-ratio-num));
+                min-height: var(--strip-h);
+            }
+            .solo-side .solo {
+                display: grid;
+                grid-template-columns: var(--solo-banner-w) 1fr;
+                align-items: start;
+            }
+            .solo-side .solo .bhead {
+                grid-row: 1 / span 20;
+            }
+            .b1 .bimg {
+                position: absolute;
+                inset: 0;
+            }
+            .b1 .bhead::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(90deg, rgb(8 14 24 / 78%) 0%, rgb(8 14 24 / 20%) 70%);
+            }
+            .b1 .btitle {
+                position: absolute;
+                z-index: 1;
+                left: 12px;
+                right: 12px;
+                bottom: 8px;
+                text-shadow: 0 1px 3px rgb(0 0 0 / 60%);
+            }
+            .b2 .bhead {
+                display: grid;
+                grid-template-columns: var(--banner-w) 1fr;
+                gap: 12px;
+                align-items: center;
+                padding: 10px 12px 0;
+            }
+            .b2 .bimg {
+                aspect-ratio: 16 / 9;
+                border-radius: 8px;
+            }
+            .del svg {
+                width: 22px;
+                height: 22px;
+            }
+            .section {
+                display: grid;
+                grid-template-columns: var(--disc) 1fr;
+                gap: 12px;
+                padding: 10px 12px 6px;
+            }
+            .section + .section {
+                border-top: 1px solid var(--app-divider);
+            }
+            /* 碟：跟 app 播放器唱片（圓形 + 深色外圈 + 中間孔） */
+            .disc {
+                position: relative;
+                width: var(--disc);
+                aspect-ratio: 1;
+                border-radius: 50%;
+                background: center / cover no-repeat;
+                box-shadow:
+                    0 0 0 3px rgb(10 14 20 / 85%),
+                    0 2px 6px rgb(0 0 0 / 40%);
+            }
+            .disc::after {
+                content: '';
+                position: absolute;
+                inset: 41%;
+                border-radius: 50%;
+                background: #10141a;
+                box-shadow: 0 0 0 2px rgb(255 255 255 / 18%);
+            }
+            .sbody {
+                min-width: 0;
+            }
+            .shead {
+                font: 700 14px/1.3 var(--font);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .shead.sub {
+                font-weight: 600;
+                color: var(--app-cream);
+            }
+            .item {
+                position: relative;
+                overflow: hidden;
+                border-radius: 8px;
+                touch-action: pan-y;
+            }
+            /* 左滑時跟住嗰行一齊向左走嘅紅底 🗑（貼喺行嘅右邊外面） */
+            .card .trash {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 100%;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                padding-left: 18px;
+                background: var(--app-danger);
+                color: #fff;
+            }
+            .card .trash svg {
+                width: 22px;
+                height: 22px;
+            }
+            .item.playing .card {
+                background: var(--app-box-playing);
+            }
+            .item.playing .line b,
+            .item.playing .state {
+                color: var(--app-cream);
+            }
+            .card {
+                position: relative;
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 10px;
+                align-items: center;
+                padding: 8px 0 9px;
+                background: var(--app-box);
+                cursor: grab;
+                user-select: none;
+            }
+            .cbody {
+                min-width: 0;
+            }
+            /* 每行嘅播放 / 暫停掣：撳掣 = 原地播；掣以外 = 入頁 */
+            /* 跟內頁集數清單：冇框，白色 ▷ / ⏸ */
+            .play {
+                display: grid;
+                place-items: center;
+                width: 40px;
+                height: 40px;
+                border: 0;
+                background: transparent;
+                color: var(--app-ink);
+                cursor: pointer;
+                padding: 0;
+            }
+            .play svg {
+                width: 22px;
+                height: 22px;
+            }
+            /* E1：box 得一兩個就放大 */
+            .roomy .box {
+                --strip-h: var(--strip-roomy);
+                --disc: var(--disc-roomy);
+            }
+            /* E2：「最近收聽」補位 / E3：提示卡 */
+            .extra {
+                flex: none;
+                break-inside: avoid;
+                margin-bottom: var(--gap);
+                padding: 12px;
+                border-radius: 14px;
+                border: 1px dashed var(--app-line);
+                color: var(--app-muted);
+                font: 13px/1.5 var(--font);
+            }
+            .extra h4 {
+                margin: 0 0 6px;
+                font: 700 14px/1.3 var(--font);
+                color: var(--app-ink);
+            }
+            /* 最近收聽：填滿收藏下面剩低嘅位（最少 --recent-min），入面 scroll */
+            .extra.recent {
+                flex: none;
+                height: var(--recent-h);
+                margin: var(--gap) 0 0;
+                display: flex;
+                flex-direction: column;
+                padding-bottom: 4px;
+            }
+            .side .extra.recent {
+                width: var(--recent-w);
+                height: auto;
+                margin: 0 0 0 var(--gap);
+            }
+            .recent-list {
+                flex: 1 1 0;
+                min-height: 0;
+                overflow-y: auto;
+            }
+            .recent-row {
+                display: grid;
+                grid-template-columns: 34px 1fr auto;
+                gap: 10px;
+                align-items: center;
+                padding: 6px 0;
+                cursor: pointer;
+            }
+            .recent-row + .recent-row {
+                border-top: 1px solid var(--app-divider);
+            }
+            .recent-row .disc {
+                --disc: 34px;
+                box-shadow: 0 0 0 2px rgb(10 14 20 / 85%);
+            }
+            .recent-row b {
+                display: block;
+                font: 600 13px/1.3 var(--font);
+                color: var(--app-ink);
+            }
+            .recent-row .bm {
+                position: static;
+                width: 34px;
+                height: 34px;
+            }
+            .item + .item .card {
+                border-top: 1px solid var(--app-divider);
+            }
+            .line {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                gap: 8px;
+            }
+            .line b {
+                font: 600 14px/1.3 var(--font);
+            }
+            .state {
+                font: 12px/1.3 var(--font);
+                color: var(--app-muted);
+                white-space: nowrap;
+            }
+            .bar {
+                height: 2px;
+                margin-top: 7px;
+                border-radius: 1px;
+                background: var(--app-line);
+                overflow: hidden;
+            }
+            .bar i {
+                display: block;
+                height: 100%;
+                background: var(--app-cream);
+            }
+            .collapse {
+                transition:
+                    height var(--fade) var(--ease),
+                    opacity var(--fade) var(--ease),
+                    padding var(--fade) var(--ease),
+                    margin var(--fade) var(--ease);
+            }
+            .toast {
+                position: absolute;
+                left: 24px;
+                right: 24px;
+                padding: 12px 14px;
+                border-radius: 12px;
+                background: var(--app-toast);
+                font: 14px/1.4 var(--font);
+                text-align: center;
+            }
+            .opt-desc {
+                min-height: 3.2em;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .tab,
+                .tab.icon,
+                .pill,
+                .collapse {
+                    transition: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header style="display: grid; gap: 6px">
+                <h1>P7 #7 成集收藏 + 我的收藏</h1>
+                <p>
+                    v1.26.1 真截圖加上收藏掣同收藏 tab。收藏單位係「一集」（節目某日 /
+                    廣播劇一集）。用戶已揀：I1 星星、P2 播放掣右邊、L3 分組 + B1 banner + 碟。
+                </p>
+            </header>
+
+            <section class="panel">
+                <h2>① 收藏 icon（已揀 I1）</h2>
+                <div class="row" data-group="icon">
+                    <button type="button" class="pick" data-val="star" aria-pressed="true">
+                        I1 星星
+                    </button>
+                    <button type="button" class="pick" data-val="ribbon" aria-pressed="false">
+                        I2 書籤
+                    </button>
+                    <button type="button" class="pick" data-val="heart" aria-pressed="false">
+                        I3 心心
+                    </button>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>② 播放器 / 集數清單收藏掣（已揀 P2）</h2>
+                <div class="row" data-group="place">
+                    <button type="button" class="pick" data-val="p1" aria-pressed="false">
+                        P1 頁頭右上角
+                    </button>
+                    <button type="button" class="pick" data-val="p2" aria-pressed="true">
+                        P2 播放掣右邊
+                    </button>
+                    <button type="button" class="pick" data-val="p3" aria-pressed="false">
+                        P3「現正播放」旁邊
+                    </button>
+                </div>
+                <p>
+                    撳 ☆ = 加入收藏（變 ★）；再撳 ★ = 移除收藏（變返
+                    ☆）。兩樣都會喺底部出一個短提示，冇確認框。
+                </p>
+                <div class="stages">
+                    <div class="viewport" id="v-show"></div>
+                    <div class="viewport" id="v-card"></div>
+                </div>
+                <p>左：手機節目頁（集數清單每行 ▶ 左邊都有一粒）。右：闊橫版主頁右邊卡。</p>
+            </section>
+
+            <section class="panel">
+                <h2>③ 主頁「收藏」tab（L3 + B1 大類 banner + 碟）</h2>
+                <ul>
+                    <li>
+                        每個節目 / 每套劇一個 box：box 頂係大類 banner（節目 / 成套劇嘅橫圖，揀 B1 /
+                        B2）；入面每段左邊係細類 disc（劇集按短篇分段，用短篇自己嘅 disc）
+                    </li>
+                    <li>box 次序跟最新收藏；段入面節目按日子新到舊、劇集按集數</li>
+                    <li>
+                        每行右邊 ▶ / ⏸：撳掣 = 原地播 / 暫停（留喺收藏 tab）；撳掣以外 =
+                        入嗰頁跳去嗰集（唔播）
+                    </li>
+                    <li>
+                        移除：左滑一行見到紅底 🗑 icon，拉過四成放手 → 嗰行滑走、收埋；段 / box
+                        冇晒集就跟住收埋；全部冇晒 → tab
+                        淡走、跳返「節目」。拉唔夠四成放手就彈返原位
+                    </li>
+                </ul>
+                <div class="row">
+                    <button type="button" class="act" id="demo">▶ 示範左滑移除（慢鏡）</button>
+                    <button type="button" class="act" id="reset">重新加返收藏</button>
+                    <button type="button" class="act" id="clear">清晒收藏（tab 消失）</button>
+                </div>
+                <p><b>收藏數量</b>（睇收藏少時空位點處理）：</p>
+                <div class="row" data-group="count">
+                    <button type="button" class="pick" data-val="many" aria-pressed="true">
+                        收藏多（8 集）
+                    </button>
+                    <button type="button" class="pick" data-val="few" aria-pressed="false">
+                        收藏少（2 集）
+                    </button>
+                    <button type="button" class="pick" data-val="one" aria-pressed="false">
+                        得 1 個收藏
+                    </button>
+                </div>
+                <div class="row" data-group="empty">
+                    <button type="button" class="pick" data-val="e0" aria-pressed="false">
+                        E0 照排留空
+                    </button>
+                    <button type="button" class="pick" data-val="e1" aria-pressed="false">
+                        E1 少就放大
+                    </button>
+                    <button type="button" class="pick" data-val="e2" aria-pressed="true">
+                        E2 下面補「最近收聽」
+                    </button>
+                    <button type="button" class="pick" data-val="e3" aria-pressed="false">
+                        E3 下面提示卡
+                    </button>
+                </div>
+                <div class="row" data-group="history">
+                    <button type="button" class="pick" data-val="yes" aria-pressed="true">
+                        有收聽記錄（10 集）
+                    </button>
+                    <button type="button" class="pick" data-val="no" aria-pressed="false">
+                        從未收聽過（唔出最近收聽）
+                    </button>
+                </div>
+                <p class="opt-desc" id="empty-desc"></p>
+                <div class="stages">
+                    <div class="viewport" id="v-home-phone"></div>
+                    <div class="viewport" id="v-home-land"></div>
+                    <div class="viewport" id="v-home-wide"></div>
+                </div>
+                <p>
+                    手機直版、窄橫版（手機打橫：三欄 box）、闊橫版（兩欄
+                    box，右邊播放卡照舊）。每部機各自獨立試。
+                </p>
+            </section>
+        </main>
+
+        <script>
+            const IMG = {
+                nHome: 'n-home.webp',
+                lHome: 'l-home.webp',
+                lalala: 'disc-lalala.webp',
+                waves: 'disc-waves.webp',
+                sunnyday: 'disc-sunnyday.webp',
+                westair: 'disc-westair.webp',
+                nShow: 'n-show.webp',
+                wHome: 'w-home.webp',
+                bGongzi: 'banner-gongzi.webp',
+                bBadgirl: 'banner-badgirl.webp',
+                bWanni: 'banner-wanni.webp',
+                bChisee: 'banner-chisee.webp',
+                bLancy: 'banner-lancy.webp',
+                gongzi: 'disc-gongzi.webp',
+                badgirl: 'disc-badgirl.webp',
+                wanni: 'disc-wanni.webp',
+                chisee: 'disc-chisee.webp',
+                lancyHalf: 'disc-lancy-half.webp',
+                lancyFirstLove: 'disc-lancy-first-love.webp',
+            };
+            const STAR =
+                'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z';
+            const RIBBON = 'M6.5 3.5h11v17l-5.5-4-5.5 4z';
+            const HEART =
+                'M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z';
+            const ICON_PATH = { star: STAR, ribbon: RIBBON, heart: HEART };
+            /** 節目頁（390×844）同闊橫版卡（1300×800）入面三個位，用 v1.26.1 量到嘅 element 位置 */
+            const PLACES = {
+                show: {
+                    p1: { x: 334, y: 16, s: 44, color: '#d4ae5c' },
+                    p2: { x: 223, y: 362, s: 44, color: '#d4ae5c' },
+                    p3: { x: 232, y: 428, s: 24, color: '#d4ae5c' },
+                },
+                card: {
+                    p1: { x: 1124, y: 76, s: 40, color: '#7cc4ec' },
+                    p2: { x: 1098, y: 375, s: 40, color: '#7cc4ec' },
+                    p3: { x: 1158, y: 447, s: 28, color: '#7cc4ec' },
+                },
+            };
+            /** 節目頁集數清單：每行 ▶ 左邊加一粒（遮住進度線尾段） */
+            const SHOW_ROWS = [
+                { y: 539, bg: '#1c1a15' },
+                { y: 595, bg: '#111111' },
+                { y: 651, bg: '#111111' },
+                { y: 707, bg: '#111111' },
+            ];
+            const ROW_H = 56;
+            const ROW_BM = { x: 292, s: 40 };
+            const PATCH_X = 284;
+            const PATCH_W = 44;
+            const SWIPE_REMOVE = 0.4;
+            const TOAST_MS = 1800;
+            const FOLLOW_MS = 560;
+            const COLLAPSE_MS = 280;
+            const DEMO_MS = 1400;
+
+            /** 兩款主頁版面：tab 同清單位置都係 v1.26.1 量到嘅 */
+            const LAYOUTS = {
+                phone: {
+                    view: 'v-home-phone',
+                    img: 'nHome',
+                    size: { w: 390, h: 844, max: 0.82 },
+                    tabs: { x: 16, y: 133, w: 358, h: 50, inset: 6, font: 14, icon: 64 },
+                    list: {
+                        x: 16,
+                        y: 195,
+                        w: 358,
+                        h: 548,
+                        cols: 1,
+                        gap: 10,
+                        disc: 52,
+                        strip: 80,
+                        bannerW: 72,
+                        discRoomy: 76,
+                        stripRoomy: 132,
+                    },
+                    recent: { h: 200 },
+                    cover: { y: 187, h: 564 },
+                    toastBottom: 120,
+                },
+                land: {
+                    view: 'v-home-land',
+                    img: 'lHome',
+                    size: { w: 844, h: 390, max: 0.9 },
+                    tabs: { x: 16, y: 16, w: 812, h: 50, inset: 6, font: 14, icon: 72 },
+                    list: {
+                        x: 16,
+                        y: 78,
+                        w: 812,
+                        h: 212,
+                        cols: 3,
+                        gap: 10,
+                        disc: 44,
+                        strip: 64,
+                        bannerW: 64,
+                        discRoomy: 60,
+                        stripRoomy: 96,
+                    },
+                    recent: { side: true, w: 250 },
+                    cover: { y: 72, h: 222 },
+                    toastBottom: 100,
+                },
+                wide: {
+                    view: 'v-home-wide',
+                    img: 'wHome',
+                    size: { w: 1300, h: 800, max: 0.72 },
+                    tabs: { x: 24, y: 24, w: 784, h: 75, inset: 8, font: 18, icon: 120 },
+                    list: {
+                        x: 24,
+                        y: 115,
+                        w: 784,
+                        h: 667,
+                        cols: 2,
+                        gap: 14,
+                        disc: 60,
+                        strip: 96,
+                        bannerW: 88,
+                        discRoomy: 88,
+                        stripRoomy: 160,
+                    },
+                    recent: { h: 236 },
+                    cover: { y: 107, h: 693, w: 820 },
+                    toastBottom: 40,
+                },
+            };
+
+            /** box = 一個節目 / 一套劇；section = box 入面一段（節目本身 / 一個短篇） */
+            const BOXES = {
+                gongzi: { title: '公子會', banner: 'bGongzi', ratio: '16 / 9' },
+                badgirl: { title: 'Bad Girl大過佬', banner: 'bBadgirl', ratio: '16 / 9' },
+                wanni: { title: '雲妮鍾情', banner: 'bWanni', ratio: '16 / 9' },
+                chisee: { title: '芝See菇Bi Family', banner: 'bChisee', ratio: '2 / 1' },
+                lancy: { title: '蘭茜夫人劇場', banner: 'bLancy', ratio: '2 / 1' },
+            };
+            const SECTIONS = {
+                gongzi: { box: 'gongzi', disc: 'gongzi', order: 'date' },
+                badgirl: { box: 'badgirl', disc: 'badgirl', order: 'date' },
+                wanni: { box: 'wanni', disc: 'wanni', order: 'date' },
+                chisee36: { box: 'chisee', sub: '三十六計', disc: 'chisee', order: 'ep' },
+                lancyHalf: { box: 'lancy', sub: '戀愛二分一', disc: 'lancyHalf', order: 'ep' },
+                lancyFirstLove: {
+                    box: 'lancy',
+                    sub: '初戀無限次',
+                    disc: 'lancyFirstLove',
+                    order: 'ep',
+                },
+            };
+            /** added = 收藏先後（大 = 新）；sort = 段入面次序（日子 / 集數） */
+            const SAMPLE = [
+                {
+                    id: 1,
+                    s: 'gongzi',
+                    label: '17/10（六）',
+                    sort: 1017,
+                    ratio: 0.01,
+                    text: '聽到 0:02 / 10:00',
+                    added: 9,
+                },
+                {
+                    id: 2,
+                    s: 'lancyHalf',
+                    label: '第 2 集',
+                    sort: 2,
+                    ratio: 0.33,
+                    text: '聽到 3:10 / 9:30',
+                    added: 8,
+                },
+                {
+                    id: 3,
+                    s: 'chisee36',
+                    label: '第 3 集',
+                    sort: 3,
+                    ratio: 1,
+                    text: '已聽完',
+                    added: 7,
+                },
+                {
+                    id: 4,
+                    s: 'badgirl',
+                    label: '15/10（四）',
+                    sort: 1015,
+                    ratio: 0.27,
+                    text: '聽到 32:10 / 2:00:00',
+                    added: 6,
+                },
+                {
+                    id: 5,
+                    s: 'gongzi',
+                    label: '03/10（六）',
+                    sort: 1003,
+                    ratio: 0,
+                    text: '未收聽',
+                    added: 5,
+                },
+                {
+                    id: 6,
+                    s: 'lancyHalf',
+                    label: '第 1 集',
+                    sort: 1,
+                    ratio: 1,
+                    text: '已聽完',
+                    added: 4,
+                },
+                {
+                    id: 7,
+                    s: 'lancyFirstLove',
+                    label: '第 5 集',
+                    sort: 5,
+                    ratio: 0,
+                    text: '未收聽',
+                    added: 3,
+                },
+                {
+                    id: 8,
+                    s: 'wanni',
+                    label: '14/10（三）',
+                    sort: 1014,
+                    ratio: 0,
+                    text: '未收聽',
+                    added: 2,
+                },
+            ];
+
+            const state = {
+                icon: 'star',
+                place: 'p2',
+                banner: 'b1',
+                count: 'many',
+                empty: 'e2',
+                history: 'yes',
+            };
+            const FEW_IDS = [1, 6];
+            const PLAY =
+                '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+            const PAUSE =
+                '<svg viewBox="0 0 24 24"><path d="M8 5h2.6v14H8zM13.4 5H16v14h-2.6z" fill="currentColor"/></svg>';
+            const EMPTY_DESC = {
+                e0: '唔處理：收藏少就喺下面留空。',
+                e1: 'box 得一兩個時自動放大：banner 高啲、碟大啲，闊版 / 窄橫版唔再分欄留空。',
+                e2: '「最近收聽」固定位：直版喺底部、窄橫版喺最右、闊橫版喺左邊最底；收藏 box 自己 scroll。最多 10 集，panel 入面 scroll；撳一行 = 入嗰集，撳 ☆ = 收藏。從未收聽過就唔出，收藏用晒成個位。',
+                e3: '收藏下面加一張淡色提示卡，教人喺集數清單或者播放器撳 ☆ 加入收藏。',
+            };
+            /** 最近收聽：最多記 10 集（新到舊） */
+            const RECENT_MAX = 10;
+            const RECENT = [
+                { disc: 'sunnyday', name: '在晴朗的一天出發', label: '19/10（一）' },
+                { disc: 'westair', name: '西加航空', label: '16/10（五）' },
+                { disc: 'badgirl', name: 'Bad Girl大過佬', label: '16/10（五）' },
+                { disc: 'wanni', name: '雲妮鍾情', label: '16/10（五）' },
+                { disc: 'lalala', name: '聖艾粒LaLaLa', label: '15/10（四）' },
+                { disc: 'waves', name: '火多過浪花', label: '15/10（四）' },
+                { disc: 'sunnyday', name: '在晴朗的一天出發', label: '15/10（四）' },
+                { disc: 'westair', name: '西加航空', label: '14/10（三）' },
+                { disc: 'badgirl', name: 'Bad Girl大過佬', label: '14/10（三）' },
+                { disc: 'wanni', name: '雲妮鍾情', label: '13/10（二）' },
+            ].slice(0, RECENT_MAX);
+            const itemsFor = () =>
+                SAMPLE.filter(
+                    (x) =>
+                        state.count === 'many' ||
+                        (state.count === 'one' ? x.id === 1 : FEW_IDS.includes(x.id)),
+                ).map((x) => ({
+                    ...x,
+                }));
+            const TRASH =
+                '<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+            const svg = (name, on) =>
+                `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON_PATH[name]}" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+
+            const div = (cls, style = {}) => {
+                const el = document.createElement('div');
+                el.className = cls;
+                Object.assign(el.style, style);
+                return el;
+            };
+
+            const flashIn = (stage, bottom, text) => {
+                stage.querySelector('.toast')?.remove();
+                const t = div('toast', { bottom: `${bottom}px` });
+                t.textContent = text;
+                stage.append(t);
+                setTimeout(() => t.remove(), TOAST_MS);
+            };
+
+            const bmButton = (stage, x, y, s, color, pressed, toastBottom) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'bm';
+                Object.assign(b.style, {
+                    left: `${x}px`,
+                    top: `${y}px`,
+                    width: `${s}px`,
+                    height: `${s}px`,
+                });
+                b.style.setProperty('--bm-color', color);
+                const paint = (on) => {
+                    b.setAttribute('aria-pressed', String(on));
+                    b.setAttribute('aria-label', on ? '移除收藏' : '收藏呢集');
+                    b.innerHTML = svg(state.icon, on);
+                };
+                paint(pressed);
+                b.addEventListener('click', () => {
+                    const on = b.getAttribute('aria-pressed') !== 'true';
+                    paint(on);
+                    flashIn(stage, toastBottom, on ? '已加入收藏' : '已移除收藏');
+                });
+                return b;
+            };
+
+            const makeStage = (id, size, img) => {
+                const view = document.getElementById(id);
+                view.innerHTML = '';
+                const stage = document.createElement('div');
+                stage.className = 'stage';
+                stage.style.width = `${size.w}px`;
+                stage.style.height = `${size.h}px`;
+                stage.style.backgroundImage = `url(${IMG[img]})`;
+                view.append(stage);
+                const fit = () => {
+                    const scale = Math.min(size.max, view.parentElement.clientWidth / size.w);
+                    stage.style.transform = `scale(${scale})`;
+                    view.style.width = `${size.w * scale}px`;
+                    view.style.height = `${size.h * scale}px`;
+                    stage.dataset.scale = String(scale);
+                };
+                fit();
+                addEventListener('resize', fit);
+                return stage;
+            };
+
+            const renderShow = () => {
+                const stage = makeStage('v-show', { w: 390, h: 844, max: 0.82 }, 'nShow');
+                SHOW_ROWS.forEach((r, i) => {
+                    stage.append(
+                        div('patch', {
+                            left: `${PATCH_X}px`,
+                            top: `${r.y + 8}px`,
+                            width: `${PATCH_W}px`,
+                            height: `${ROW_H - 16}px`,
+                            background: r.bg,
+                        }),
+                        bmButton(
+                            stage,
+                            ROW_BM.x,
+                            r.y + (ROW_H - ROW_BM.s) / 2,
+                            ROW_BM.s,
+                            '#d4ae5c',
+                            i === 0,
+                            40,
+                        ),
+                    );
+                });
+                const p = PLACES.show[state.place];
+                stage.append(bmButton(stage, p.x, p.y, p.s, p.color, true, 40));
+            };
+            const renderCard = () => {
+                const stage = makeStage('v-card', { w: 1300, h: 800, max: 0.62 }, 'wHome');
+                const p = PLACES.card[state.place];
+                stage.append(bmButton(stage, p.x, p.y, p.s, p.color, false, 40));
+            };
+
+            /* ── ③ 主頁收藏 tab：每款版面一個獨立 instance ── */
+            const homes = {};
+
+            const createHome = (key) => {
+                const L = LAYOUTS[key];
+                const stage = makeStage(L.view, L.size, L.img);
+                const home = { L, stage, tab: 'saved', items: itemsFor(), playing: null };
+                home.cover = div('abs', {
+                    left: '0px',
+                    top: `${L.cover.y}px`,
+                    width: `${L.cover.w ?? L.size.w}px`,
+                    height: `${L.cover.h}px`,
+                    background: 'linear-gradient(#4b7096, #3f6087)',
+                });
+                home.list = div('list', {
+                    left: `${L.list.x}px`,
+                    top: `${L.list.y}px`,
+                    width: `${L.list.w}px`,
+                    height: `${L.list.h}px`,
+                });
+                home.scroll = div('scroll');
+                home.cols = div('cols', { columnCount: String(L.list.cols) });
+                home.scroll.append(home.cols);
+                home.list.append(home.scroll);
+                home.list.style.setProperty('--gap', `${L.list.gap}px`);
+                home.list.style.setProperty('--disc', `${L.list.disc}px`);
+                home.list.style.setProperty('--strip-h', `${L.list.strip}px`);
+                home.list.style.setProperty('--banner-w', `${L.list.bannerW}px`);
+                home.list.style.setProperty('--disc-roomy', `${L.list.discRoomy}px`);
+                home.list.style.setProperty('--recent-h', `${L.recent.h ?? 0}px`);
+                home.list.style.setProperty('--recent-w', `${L.recent.w ?? 0}px`);
+                home.list.classList.toggle('side', Boolean(L.recent.side));
+                home.list.style.setProperty('--strip-roomy', `${L.list.stripRoomy}px`);
+                home.list.classList.add(state.banner);
+                home.tabs = div('tabs', {
+                    left: `${L.tabs.x}px`,
+                    top: `${L.tabs.y}px`,
+                    width: `${L.tabs.w}px`,
+                    height: `${L.tabs.h}px`,
+                });
+                home.tabs.style.setProperty('--inset', `${L.tabs.inset}px`);
+                home.tabs.style.setProperty('--font-size', `${L.tabs.font}px`);
+                home.tabs.style.setProperty('--icon-tab', `${L.tabs.icon}px`);
+                home.pill = div('pill');
+                const mk = (k, html, extra = '') => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = `tab ${extra}`;
+                    b.dataset.tab = k;
+                    b.innerHTML = html;
+                    b.addEventListener('click', () => selectTab(home, k));
+                    return b;
+                };
+                home.tSaved = mk('saved', svg(state.icon, true), 'icon');
+                home.tSaved.setAttribute('aria-label', '我的收藏');
+                home.tabs.append(
+                    home.pill,
+                    mk('shows', '節目'),
+                    mk('dramas', '廣播劇'),
+                    home.tSaved,
+                );
+                stage.append(home.cover, home.list, home.tabs);
+                homes[key] = home;
+                renderList(home);
+                syncTabs(home, false);
+            };
+
+            const placePill = (home) => {
+                const t = home.tabs.querySelector(`[data-tab="${home.tab}"]`);
+                home.pill.style.left = `${t.offsetLeft}px`;
+                home.pill.style.right = `${home.tabs.clientWidth - t.offsetLeft - t.offsetWidth}px`;
+            };
+            const syncTabs = (home, animate = true) => {
+                home.tSaved.classList.toggle('gone', home.items.length === 0);
+                home.tabs
+                    .querySelectorAll('.tab')
+                    .forEach((t) =>
+                        t.setAttribute('aria-pressed', String(t.dataset.tab === home.tab)),
+                    );
+                const showList = home.tab === 'saved';
+                home.cover.style.display = showList ? 'block' : 'none';
+                home.list.style.display = showList ? 'flex' : 'none';
+                if (!animate) home.pill.style.transition = 'none';
+                placePill(home);
+                // tab 闊度郁緊：每格跟住更新膠囊位置
+                const until = performance.now() + FOLLOW_MS;
+                const follow = () => {
+                    placePill(home);
+                    if (performance.now() < until) requestAnimationFrame(follow);
+                };
+                requestAnimationFrame(follow);
+                if (!animate) requestAnimationFrame(() => (home.pill.style.transition = ''));
+            };
+            const selectTab = (home, k) => {
+                if (k === 'saved' && home.items.length === 0) return;
+                home.tab = k;
+                syncTabs(home);
+            };
+
+            const newest = (rows) => Math.max(...rows.map((x) => x.added));
+            /** box / 段次序跟最新收藏；段入面節目日子新到舊、劇集集數細到大 */
+            const layoutOf = (items) => {
+                const bySection = Object.keys(SECTIONS)
+                    .map((s) => ({ s, rows: items.filter((x) => x.s === s) }))
+                    .filter((x) => x.rows.length);
+                bySection.forEach(({ s, rows }) => {
+                    const byEp = SECTIONS[s].order === 'ep';
+                    rows.sort((a, b) => (byEp ? a.sort - b.sort : b.sort - a.sort));
+                });
+                const boxes = Object.keys(BOXES)
+                    .map((b) => ({ b, sections: bySection.filter((x) => SECTIONS[x.s].box === b) }))
+                    .filter((x) => x.sections.length);
+                boxes.forEach((x) => x.sections.sort((p, q) => newest(q.rows) - newest(p.rows)));
+                return boxes.sort(
+                    (p, q) =>
+                        newest(q.sections.flatMap((x) => x.rows)) -
+                        newest(p.sections.flatMap((x) => x.rows)),
+                );
+            };
+
+            const renderList = (home) => {
+                home.cols.innerHTML = '';
+                layoutOf(home.items).forEach(({ b, sections }) => {
+                    const meta = BOXES[b];
+                    const box = div('box collapse');
+                    box.style.setProperty('--banner-ratio', meta.ratio);
+                    const [rw, rh] = meta.ratio.split('/').map(Number);
+                    box.style.setProperty('--banner-ratio-num', String(rw / rh));
+                    const head = div('bhead');
+                    head.innerHTML = `<div class="bimg" style="background-image:url(${IMG[meta.banner]})"></div><div class="btitle">${meta.title}</div>`;
+                    box.append(head);
+                    sections.forEach(({ s, rows }) => box.append(sectionOf(home, s, rows, meta)));
+                    home.cols.append(box);
+                });
+                const boxes = home.cols.querySelectorAll('.box').length;
+                const roomy = state.empty === 'e1' && boxes > 0 && boxes <= 2;
+                home.list.classList.toggle('roomy', roomy);
+                // 窄橫版右邊有最近收聽：收藏少一欄；得一個收藏 box：用盡闊度（唔分欄）
+                const recentShown = state.empty === 'e2' && state.history === 'yes';
+                const base =
+                    home.L.recent.side && recentShown ? home.L.list.cols - 1 : home.L.list.cols;
+                const cols = boxes === 1 ? 1 : roomy ? Math.min(boxes, base) : base;
+                home.cols.style.columnCount = String(cols);
+                home.cols.querySelector('.box')?.classList.toggle('solo', boxes === 1);
+                home.list.classList.toggle('solo-mode', boxes === 1);
+                home.list.classList.toggle('solo-side', boxes === 1 && Boolean(home.L.soloBannerW));
+                home.list.style.setProperty('--solo-banner-w', `${home.L.soloBannerW ?? 0}px`);
+                home.list.querySelectorAll('.extra').forEach((x) => x.remove());
+                if (state.empty === 'e2' && state.history === 'yes')
+                    home.list.append(recentOf(home));
+                if (state.empty === 'e3') home.scroll.append(hintOf());
+            };
+
+            /** E2：最近聽過、未收藏嘅幾集 */
+            const recentOf = (home) => {
+                const box = div('extra recent');
+                box.innerHTML = '<h4>最近收聽</h4><div class="recent-list"></div>';
+                const list = box.querySelector('.recent-list');
+                RECENT.forEach((r) => {
+                    const row = div('recent-row');
+                    row.innerHTML = `<div class="disc" style="background-image:url(${IMG[r.disc]})"></div><div><b>${r.name}</b>${r.label}</div>`;
+                    row.append(
+                        bmButton(home.stage, 0, 0, 34, '#f5d294', false, home.L.toastBottom),
+                    );
+                    row.addEventListener('click', (e) => {
+                        if (e.target.closest('.bm')) return;
+                        flashIn(
+                            home.stage,
+                            home.L.toastBottom,
+                            `入「${r.name}」頁，跳去 ${r.label}（唔會自動播）`,
+                        );
+                    });
+                    list.append(row);
+                });
+                return box;
+            };
+            /** E3：提示卡 */
+            const hintOf = () => {
+                const box = div('extra');
+                box.innerHTML = `<h4>${svg(state.icon, false).replace('<svg', '<svg width="16" height="16" style="vertical-align:-3px"')} 加多啲收藏</h4>喺節目頁、劇集頁嘅集數清單，或者播放器播放掣右邊，撳 ☆ 就會加入呢度。`;
+                return box;
+            };
+
+            const sectionOf = (home, s, rows, boxMeta) => {
+                const meta = SECTIONS[s];
+                const sec = div('section collapse');
+                sec.innerHTML = `<div class="disc" style="background-image:url(${IMG[meta.disc]})"></div>
+                    <div class="sbody">${meta.sub ? `<div class="shead sub">${meta.sub}</div>` : ''}</div>`;
+                const body = sec.querySelector('.sbody');
+                rows.forEach((it) => body.append(rowOf(home, it, boxMeta, meta)));
+                return sec;
+            };
+
+            const rowOf = (home, it, boxMeta, meta) => {
+                const wrap = div('item collapse');
+                wrap.classList.toggle('playing', home.playing === it.id);
+                wrap.innerHTML = `<div class="card">
+                        <span class="trash" aria-hidden="true">${TRASH}</span>
+                        <div class="cbody">
+                            <div class="line"><b>${it.label}</b><span class="state">${home.playing === it.id ? '播放中' : it.text}</span></div>
+                            <div class="bar"><i style="width:${Math.round(it.ratio * 100)}%"></i></div>
+                        </div>
+                        <button type="button" class="play" aria-pressed="${home.playing === it.id}" aria-label="播放 / 暫停">${home.playing === it.id ? PAUSE : PLAY}</button>
+                    </div>`;
+                wrap.dataset.id = String(it.id);
+                wrap.querySelector('.play').addEventListener('pointerdown', (e) =>
+                    e.stopPropagation(),
+                );
+                wrap.querySelector('.play').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const on = home.playing !== it.id;
+                    home.playing = on ? it.id : null;
+                    home.cols.querySelectorAll('.item').forEach((w) => {
+                        const b = w.querySelector('.play');
+                        const mine = on && w.dataset.id === String(it.id);
+                        b.setAttribute('aria-pressed', String(mine));
+                        b.innerHTML = mine ? PAUSE : PLAY;
+                        w.classList.toggle('playing', mine);
+                        const row = home.items.find((x) => String(x.id) === w.dataset.id);
+                        w.querySelector('.state').textContent = mine ? '播放中' : row.text;
+                    });
+                    flashIn(
+                        home.stage,
+                        home.L.toastBottom,
+                        on
+                            ? `播放 ${boxMeta.title} ${meta.sub ? `${meta.sub} ` : ''}${it.label}（留喺收藏 tab）`
+                            : '暫停',
+                    );
+                });
+                swipe(home, wrap, it, () =>
+                    flashIn(
+                        home.stage,
+                        home.L.toastBottom,
+                        `入「${boxMeta.title}」頁，跳去 ${meta.sub ? `${meta.sub} ` : ''}${it.label}（唔會自動播）`,
+                    ),
+                );
+                return wrap;
+            };
+
+            /** 左滑：拖過一定比例就移除（同 mini player 一樣），唔夠就彈返 */
+            const swipe = (home, wrap, it, onTap) => {
+                const card = wrap.querySelector('.card');
+                let startX = null;
+                let dx = 0;
+                let moved = false;
+                card.addEventListener('pointerdown', (e) => {
+                    startX = e.clientX;
+                    moved = false;
+                    card.setPointerCapture(e.pointerId);
+                    card.style.transition = 'none';
+                });
+                card.addEventListener('pointermove', (e) => {
+                    if (startX === null) return;
+                    dx = Math.min(0, (e.clientX - startX) / Number(home.stage.dataset.scale));
+                    if (Math.abs(dx) > 4) moved = true;
+                    card.style.transform = `translateX(${dx}px)`;
+                });
+                const end = () => {
+                    if (startX === null) return;
+                    startX = null;
+                    release(home, wrap, it, -dx > card.offsetWidth * SWIPE_REMOVE);
+                    dx = 0;
+                };
+                card.addEventListener('pointerup', end);
+                card.addEventListener('pointercancel', end);
+                card.addEventListener('click', () => {
+                    if (!moved) onTap();
+                });
+            };
+
+            const release = (home, wrap, it, removeIt, slow = 1) => {
+                const card = wrap.querySelector('.card');
+                card.style.transition = `transform calc(var(--fade) * ${slow}) var(--ease)`;
+                if (!removeIt) {
+                    card.style.transform = '';
+                    return;
+                }
+                card.style.transform = 'translateX(-110%)';
+                setTimeout(() => remove(home, wrap, it, slow), COLLAPSE_MS * slow);
+            };
+
+            /** 收埋：一行；佢係段最後一行就收段；段係 box 最後一段就收 box */
+            const remove = (home, wrap, it, slow = 1) => {
+                const sec = wrap.closest('.section');
+                const box = wrap.closest('.box');
+                const lastInSec = sec.querySelectorAll('.item').length === 1;
+                const lastInBox = box.querySelectorAll('.item').length === 1;
+                const target = lastInBox ? box : lastInSec ? sec : wrap;
+                target.style.transitionDuration = `${(COLLAPSE_MS * slow) / 1000}s`;
+                target.style.height = `${target.offsetHeight}px`;
+                requestAnimationFrame(() => {
+                    Object.assign(target.style, {
+                        height: '0px',
+                        opacity: '0',
+                        paddingTop: '0px',
+                        paddingBottom: '0px',
+                        marginBottom: '0px',
+                    });
+                });
+                setTimeout(
+                    () => {
+                        home.items = home.items.filter((x) => x.id !== it.id);
+                        if (home.items.length === 0) home.tab = 'shows';
+                        renderList(home);
+                        syncTabs(home);
+                    },
+                    COLLAPSE_MS * slow + 20,
+                );
+            };
+
+            /** 示範：手機第一行慢慢左滑，見到紅底 🗑，過咗四成放手 */
+            const demo = () => {
+                const home = homes.phone;
+                if (home.tab !== 'saved') selectTab(home, 'saved');
+                const wrap = home.list.querySelector('.item');
+                if (!wrap) return;
+                const it = home.items.find((x) => String(x.id) === wrap.dataset.id);
+                const card = wrap.querySelector('.card');
+                const slow = 3;
+                card.style.transition = `transform ${DEMO_MS}ms var(--ease)`;
+                card.style.transform = `translateX(-${Math.round(card.offsetWidth * 0.55)}px)`;
+                setTimeout(() => release(home, wrap, it, true, slow), DEMO_MS + 200);
+            };
+
+            const renderAll = () => {
+                renderShow();
+                renderCard();
+                createHome('phone');
+                createHome('land');
+                createHome('wide');
+                document.getElementById('empty-desc').textContent = EMPTY_DESC[state.empty];
+            };
+
+            document.querySelectorAll('[data-group]').forEach((group) =>
+                group.addEventListener('click', (e) => {
+                    const btn = e.target.closest('button');
+                    if (!btn) return;
+                    group
+                        .querySelectorAll('button')
+                        .forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+                    state[group.dataset.group] = btn.dataset.val;
+                    renderAll();
+                }),
+            );
+            document.getElementById('demo').addEventListener('click', demo);
+            document.getElementById('reset').addEventListener('click', () => {
+                Object.values(homes).forEach((home) => {
+                    home.items = itemsFor();
+                    home.tab = 'saved';
+                    renderList(home);
+                    syncTabs(home);
+                });
+            });
+            document.getElementById('clear').addEventListener('click', () => {
+                Object.values(homes).forEach((home) => {
+                    home.items = [];
+                    home.tab = 'shows';
+                    renderList(home);
+                    syncTabs(home);
+                });
+            });
+
+            renderAll();
+        </script>
+    </body>
+</html>

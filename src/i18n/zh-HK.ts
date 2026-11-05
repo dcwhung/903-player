@@ -18,6 +18,8 @@ export const zhHK = {
         tabs: '分類',
         tabShows: '節目',
         tabDramas: '廣播劇',
+        // 第三個 tab：淨係 ★ icon（有收藏先出）
+        tabSaved: '我的收藏',
         dramasNav: '廣播劇',
         today: '今日節目',
         // 節目格：今日有已上架、未聽完嘅新一集
@@ -100,6 +102,29 @@ export const zhHK = {
             rewatch: '重溫',
             today: '今日',
         },
+    },
+    // 成集收藏（P7 #7，_mockups_/bookmark）
+    bookmark: {
+        // 集數清單每行嘅 ☆ / ★（aria-pressed 講收藏咗未）
+        toggleEpisode: '收藏 {label}',
+        // 播放器播放掣右邊
+        toggleCurrent: '收藏呢集',
+        added: '已加入收藏',
+        removed: '已移除收藏',
+        // 收藏 tab 每行
+        playing: '播放中',
+        resume: '聽到 {current} / {total}',
+        resumeNoTotal: '聽到 {current}',
+        watched: '已聽完',
+        unwatched: '未收聽',
+        open: '開啟 {name} {label}，{status}',
+        play: '播放 {name} {label}',
+        pause: '暫停 {name} {label}',
+        // 左滑移除嘅鍵盤代替（撳 Delete）
+        removeHint: '向左掃或者撳 Delete 移除收藏',
+        recent: '最近收聽',
+        openRecent: '開啟 {name} {label}',
+        bookmarkRecent: '收藏 {name} {label}',
     },
     // 闊橫版主頁右邊播放卡（HomePlayerCard）同收埋後右邊嘅把手
     homeCard: {

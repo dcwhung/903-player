@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { t } from '../../../../i18n/t';
+import type { Track } from '../../../../types/track';
 import { formatDuration } from '../../../../utils/time';
 import { ArcSlider } from '../../common/ArcSlider/ArcSlider';
 import { Disc } from '../../common/Disc/Disc';
@@ -26,6 +27,8 @@ interface PlayerGaugeProps {
     standbyTime?: StandbyTime | undefined;
     /** 主頁播放卡嘅過場名（內頁由 global.css 喺過場期間先改名） */
     transitionName?: string | undefined;
+    /** 顯示緊嘅一集：播放掣右邊出收藏掣（P7 #7） */
+    bookmark?: Track | undefined;
 }
 
 /** 未開始樣時要顯示嘅續播位置 / 總長（秒） */
@@ -79,6 +82,7 @@ export const PlayerGauge = ({
     onStart,
     standbyTime,
     transitionName,
+    bookmark,
 }: PlayerGaugeProps) => {
     const { known, shownTime, max, isPlaying, ...view } = useGaugeView(held, onStart, standbyTime);
     // 讀屏同畫面一樣：未知時長讀佔位，唔讀 0:00
@@ -110,7 +114,12 @@ export const PlayerGauge = ({
             <span className={`${styles.time} ${styles.total}`}>
                 <span>{total}</span>
             </span>
-            <GaugeActions isPlaying={isPlaying} onRestart={view.restart} onToggle={view.toggle} />
+            <GaugeActions
+                isPlaying={isPlaying}
+                onRestart={view.restart}
+                onToggle={view.toggle}
+                bookmark={bookmark}
+            />
         </div>
     );
 };

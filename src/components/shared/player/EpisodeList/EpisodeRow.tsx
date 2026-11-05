@@ -2,6 +2,7 @@ import { t } from '../../../../i18n/t';
 import { PERCENT, toPercent } from '../../../../utils/ratio';
 import { CheckIcon, PauseIcon, PlayIcon } from '../../common/icons/icons';
 import { Marquee } from '../../common/Marquee/Marquee';
+import { BookmarkButton } from '../BookmarkButton/BookmarkButton';
 import styles from './EpisodeList.module.css';
 import type { EpisodeItem } from './episodeListTypes';
 
@@ -48,6 +49,22 @@ const UnavailableRow = ({ item }: { item: EpisodeItem }) => (
     </div>
 );
 
+/** 進度條 + 狀態字 */
+const RowBody = ({ percent, text }: { percent: number; text: string }) => (
+    <span className={styles.body}>
+        <span
+            className={styles.bar}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={PERCENT}
+            aria-valuenow={percent}
+        >
+            <span className={styles.fill} style={{ width: `${percent}%` }} />
+        </span>
+        <span className={styles.status}>{text}</span>
+    </span>
+);
+
 export const EpisodeRow = ({
     item,
     onSelect,
@@ -55,37 +72,37 @@ export const EpisodeRow = ({
     item: EpisodeItem;
     onSelect: (key: string) => void;
 }) => {
-    const { status } = item;
+    const { status, track } = item;
     if (status.kind === 'unavailable') {
         return <UnavailableRow item={item} />;
     }
     const percent = toPercent(status.ratio);
     const date = [item.dayMonth, item.weekday, item.tag].filter(Boolean).join(' ');
+    // 收藏掣唔可以放入行掣入面（掣入面唔准再有掣）：行入面留位，星疊喺個位上面（同一個 li）
     return (
-        <button
-            type="button"
-            className={`${styles.row} ${item.current ? styles.current : ''} ${styles[status.kind] ?? ''}`}
-            aria-current={item.current ? 'true' : undefined}
-            aria-label={t(item.isPlaying ? 'episodes.pause' : 'episodes.play', {
-                date,
-                status: status.text,
-            })}
-            onClick={() => onSelect(item.key)}
-        >
-            <RowDate item={item} />
-            <span className={styles.body}>
-                <span
-                    className={styles.bar}
-                    role="progressbar"
-                    aria-valuemin={0}
-                    aria-valuemax={PERCENT}
-                    aria-valuenow={percent}
-                >
-                    <span className={styles.fill} style={{ width: `${percent}%` }} />
-                </span>
-                <span className={styles.status}>{status.text}</span>
-            </span>
-            <RowIcon item={item} />
-        </button>
+        <>
+            <button
+                type="button"
+                className={`${styles.row} ${item.current ? styles.current : ''} ${styles[status.kind] ?? ''}`}
+                aria-current={item.current ? 'true' : undefined}
+                aria-label={t(item.isPlaying ? 'episodes.pause' : 'episodes.play', {
+                    date,
+                    status: status.text,
+                })}
+                onClick={() => onSelect(item.key)}
+            >
+                <RowDate item={item} />
+                <RowBody percent={percent} text={status.text} />
+                {track && <span className={styles.bookmarkSpace} aria-hidden="true" />}
+                <RowIcon item={item} />
+            </button>
+            {track && (
+                <BookmarkButton
+                    track={track}
+                    label={t('bookmark.toggleEpisode', { label: date })}
+                    className={styles.bookmark}
+                />
+            )}
+        </>
     );
 };

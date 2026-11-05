@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { Toast } from './components/shared/common/Toast/Toast';
 import { RecordingsProvider } from './data/RecordingsProvider';
 import { useReopenHomePlayerCardOnPlay } from './hooks/homePlayerCardClosed';
 import { useRestoreMiniPlayerOnPlay } from './hooks/miniPlayerDismissed';
@@ -44,6 +45,8 @@ export const App = ({ playerController }: AppProps) => {
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                 </HashRouter>
+                {/* 全 app 一個短提示（例如「已加入收藏」） */}
+                <Toast />
             </PlayerProvider>
         </RecordingsProvider>
     );

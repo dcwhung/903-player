@@ -6,6 +6,7 @@ import {
 import { entryKey, isAvailable } from '../../selectors/recordings';
 import type { Progress } from '../../services/progressStore';
 import type { EpisodeEntry, UnavailableEpisode } from '../../types/recording';
+import type { Track } from '../../types/track';
 import { formatDayMonth, formatWeekday } from '../../utils/date';
 import type { PlaybackState } from '../../utils/playbackState';
 
@@ -39,12 +40,17 @@ export interface RowContext {
     liveState?: PlaybackState;
 }
 
-/** 播得嘅一行（key = 網址）：揀中嗰集用 player 即時時間，其他集用 localStorage 進度 */
-export const toPlayableItem = (url: string, labels: RowLabels, ctx: RowContext): EpisodeItem => {
+/**
+ * 播得嘅一行（key = 網址）：揀中嗰集用 player 即時時間，其他集用 localStorage 進度；
+ * 帶埋嗰集（track）畀收藏掣用
+ */
+export const toPlayableItem = (track: Track, labels: RowLabels, ctx: RowContext): EpisodeItem => {
+    const { url } = track;
     const isCurrent = url === ctx.currentUrl;
     return {
         key: url,
         ...labels,
+        track,
         current: isCurrent,
         isPlaying: isCurrent && ctx.isPlaying,
         status: episodeStatus({
@@ -63,13 +69,14 @@ export const toEpisodeItems = (
     live: LiveTime | undefined,
     progressMap: Readonly<Record<string, Progress>>,
     isPlaying: boolean,
+    liveState?: PlaybackState,
 ): EpisodeItem[] =>
     episodes.map((r) =>
         isAvailable(r)
             ? toPlayableItem(
-                  entryKey(r),
+                  r,
                   { dayMonth: formatDayMonth(r.date), weekday: formatWeekday(r.date) },
-                  { currentUrl, live, progressMap, isPlaying },
+                  { currentUrl, live, progressMap, isPlaying, liveState },
               )
             : toUnavailableItem(r),
     );

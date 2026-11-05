@@ -20,6 +20,8 @@ export interface HomeCardGauge {
     label: string;
     status: PlaybackLineState;
     connecting: boolean;
+    /** 顯示緊嘅一集（收藏掣用） */
+    track: Track | undefined;
 }
 
 /** 顯示緊嗰集：載入咗就係 player 嗰集，否則喺清單搵（今日節目未播） */
@@ -60,11 +62,13 @@ export const useHomeCardGauge = (mini: MiniPlayerProps): HomeCardGauge => {
     );
     const standbyTime = standbyOf(saved);
     const { isPlaying, currentTime: position } = player;
+    const track = shownTrack(url, player.recording, recordings);
     return {
         onStart: isLoaded ? undefined : mini.onToggle,
         standbyTime,
-        label: trackLabel(shownTrack(url, player.recording, recordings), mini.subtitle),
+        label: trackLabel(track, mini.subtitle),
         status: isLoaded ? playbackStateOf({ isPlaying, position }) : idleStatus(standbyTime),
         connecting: isLoaded && !hasKnownDuration(player.duration),
+        track,
     };
 };
