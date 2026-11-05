@@ -28,7 +28,7 @@ const RECORDINGS = [
     recording('badgirl', '2026-10-19', '1000'),
 ];
 const ROUTE = { route: '/show/gongzi', path: '/show/:showId' };
-const SWIPE_ZONE = { description: '左右方向鍵或左右掃動轉集' };
+const SWIPE_ZONE = { description: '左右方向鍵或左右滑動轉集' };
 // 掃一格：jsdom 冇 layout，日子條一格當 56px（公子會逢星期六，一格一集）
 const SWIPE_PX = 56;
 
@@ -154,7 +154,7 @@ describe('ShowPage', () => {
 
         await userEvent.click(screen.getByRole('button', { name: '暫停' }));
 
-        expect(currentRow()).toHaveAccessibleName('播放 17/10 星期六，已暫停 · 1:00 / 10:00');
+        expect(currentRow()).toHaveAccessibleName('播放 17/10 星期六，聽到 1:00 / 10:00');
     });
 
     // W-527：zoom 來源綁喺入頁嘅 history entry；清走帶入嚟嘅集數時唔好連來源都食咗

@@ -30,7 +30,8 @@ const RowText = ({ row }: { row: SavedRowView }) => (
  */
 export const SavedRow = ({ row }: { row: SavedRowView }) => {
     const { bindRow, bindCard, handlers, onKeyDown } = useRowSwipe(row.onRemove);
-    const { name, label, status } = row;
+    // 讀屏名用讀屏版日子（17/10 星期六），畫面照顯示 row.label
+    const { name, spokenLabel: label, status } = row;
     return (
         <li
             ref={bindRow}

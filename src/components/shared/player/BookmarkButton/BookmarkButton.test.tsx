@@ -14,8 +14,8 @@ const EPISODE: Recording = {
 
 describe('BookmarkButton', () => {
     it('should show an outlined star until the episode is bookmarked', () => {
-        render(<BookmarkButton track={EPISODE} label="收藏呢集" />);
-        const button = screen.getByRole('button', { name: '收藏呢集' });
+        render(<BookmarkButton track={EPISODE} label="收藏本集" />);
+        const button = screen.getByRole('button', { name: '收藏本集' });
 
         expect(button).toHaveAttribute('aria-pressed', 'false');
         expect(button.querySelector('svg')).toHaveAttribute('fill', 'none');
@@ -24,14 +24,14 @@ describe('BookmarkButton', () => {
     it('should add the episode, fill the star and say so in a toast without a confirm dialog', async () => {
         render(
             <>
-                <BookmarkButton track={EPISODE} label="收藏呢集" />
+                <BookmarkButton track={EPISODE} label="收藏本集" />
                 <Toast />
             </>,
         );
-        await userEvent.click(screen.getByRole('button', { name: '收藏呢集' }));
+        await userEvent.click(screen.getByRole('button', { name: '收藏本集' }));
 
         expect(hasBookmark(EPISODE.url)).toBe(true);
-        expect(screen.getByRole('button', { name: '收藏呢集' })).toHaveAttribute(
+        expect(screen.getByRole('button', { name: '收藏本集' })).toHaveAttribute(
             'aria-pressed',
             'true',
         );
@@ -45,12 +45,12 @@ describe('BookmarkButton', () => {
     it('should remove it again on the second press', async () => {
         render(
             <>
-                <BookmarkButton track={EPISODE} label="收藏呢集" />
+                <BookmarkButton track={EPISODE} label="收藏本集" />
                 <Toast />
             </>,
         );
-        await userEvent.click(screen.getByRole('button', { name: '收藏呢集' }));
-        await userEvent.click(screen.getByRole('button', { name: '收藏呢集' }));
+        await userEvent.click(screen.getByRole('button', { name: '收藏本集' }));
+        await userEvent.click(screen.getByRole('button', { name: '收藏本集' }));
 
         expect(hasBookmark(EPISODE.url)).toBe(false);
         expect(screen.getByRole('status')).toHaveTextContent('已移除收藏');
@@ -60,10 +60,10 @@ describe('BookmarkButton', () => {
         const onRow = vi.fn();
         render(
             <div onClick={onRow}>
-                <BookmarkButton track={EPISODE} label="收藏呢集" />
+                <BookmarkButton track={EPISODE} label="收藏本集" />
             </div>,
         );
-        await userEvent.click(screen.getByRole('button', { name: '收藏呢集' }));
+        await userEvent.click(screen.getByRole('button', { name: '收藏本集' }));
 
         expect(onRow).not.toHaveBeenCalled();
     });

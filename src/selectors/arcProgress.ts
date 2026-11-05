@@ -66,7 +66,7 @@ export const arcSummaries = (
 
 export type ArcGroup = 'playing' | 'new' | 'unfinished' | 'done';
 
-/** 每個短篇屬於邊組：載入緊 → 播放中；新上架（未聽完）→ 新上架；聽完 → 已聽完；其他 → 未聽完 */
+/** 每個短篇屬於邊組：載入緊 → 播放中；新上架（未聽完）→ 新上架；聽完 → 已收聽；其他 → 未聽完 */
 const groupOf = (s: ArcSummary, playingArc: string | undefined): ArcGroup => {
     if (s.arc === playingArc) return 'playing';
     if (s.state === 'done') return 'done';
@@ -75,7 +75,7 @@ const groupOf = (s: ArcSummary, playingArc: string | undefined): ArcGroup => {
 
 const GROUP_ORDER: readonly ArcGroup[] = ['playing', 'new', 'unfinished', 'done'];
 
-/** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已聽完（組內照 catalogue 次序；冇嘢嘅組唔出） */
+/** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已收聽（組內照 catalogue 次序；冇嘢嘅組唔出） */
 export const arcGroups = (
     summaries: readonly ArcSummary[],
     playingArc: string | undefined,

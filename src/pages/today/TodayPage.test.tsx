@@ -47,7 +47,7 @@ describe('TodayPage', () => {
 
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('今日節目');
         expect(screen.queryByText('19/10（一）')).not.toBeInTheDocument();
-        const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        const stack = screen.getByRole('group', { name: '今日節目，左右滑動轉節目' });
         expect(within(stack).getByRole('slider', { name: '播放進度' })).toBeInTheDocument();
         expect(within(stack).getByRole('button', { name: /^(播放|暫停)$/ })).toBeInTheDocument();
         expect(within(stack).queryByRole('group', { name: /^今日第/ })).not.toBeInTheDocument();
@@ -112,7 +112,7 @@ describe('TodayPage', () => {
             const { audio } = await open();
             await screen.findByRole('heading', { name: '在晴朗的一天出發' });
 
-            const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+            const stack = screen.getByRole('group', { name: '今日節目，左右滑動轉節目' });
             fireEvent.pointerDown(stack, { clientX: 300, clientY: 100 });
             fireEvent.pointerUp(stack, { clientX: 150, clientY: 100 });
 
@@ -161,9 +161,9 @@ describe('TodayPage', () => {
         renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
 
         await screen.findByRole('heading', { name: '在晴朗的一天出發' });
-        expect(screen.getByRole('group', { name: '今日節目，左右掃動轉節目' })).toBeInTheDocument();
+        expect(screen.getByRole('group', { name: '今日節目，左右滑動轉節目' })).toBeInTheDocument();
         expect(
-            screen.queryByRole('group', { description: '左右方向鍵或左右掃動轉集' }),
+            screen.queryByRole('group', { description: '左右方向鍵或左右滑動轉集' }),
         ).not.toBeInTheDocument();
         expect(document.querySelector('[aria-roledescription="轉集"]')).toBeNull();
     });
@@ -185,7 +185,7 @@ describe('TodayPage', () => {
         // play event 同真瀏覽器一樣遲啲先發（FakeAudio 用 microtask），所以要等
         expect(await screen.findByText('06:00 · 播放中')).toBeInTheDocument();
 
-        const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        const stack = screen.getByRole('group', { name: '今日節目，左右滑動轉節目' });
         fireEvent.pointerDown(stack, { clientX: 300, clientY: 100 });
         fireEvent.pointerUp(stack, { clientX: 150, clientY: 100 });
 
@@ -208,7 +208,7 @@ describe('TodayPage', () => {
             document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.content;
         expect(themeColor()).toBe(themeFor('sunnyday').bg);
 
-        const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        const stack = screen.getByRole('group', { name: '今日節目，左右滑動轉節目' });
         fireEvent.pointerDown(stack, { clientX: 300, clientY: 100 });
         fireEvent.pointerUp(stack, { clientX: 150, clientY: 100 });
 
@@ -229,7 +229,7 @@ describe('TodayPage', () => {
         const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
 
-        const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        const stack = screen.getByRole('group', { name: '今日節目，左右滑動轉節目' });
         fireEvent.pointerDown(stack, { clientX: 100, clientY: 100 });
         fireEvent.pointerUp(stack, { clientX: 250, clientY: 100 });
 
@@ -241,7 +241,7 @@ describe('TodayPage', () => {
         renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
         await screen.findByRole('heading', { name: '在晴朗的一天出發' });
 
-        const stack = screen.getByRole('group', { name: '今日節目，左右掃動轉節目' });
+        const stack = screen.getByRole('group', { name: '今日節目，左右滑動轉節目' });
         const backs = [...stack.querySelectorAll('[aria-hidden="true"][inert]')];
         expect(backs.map((card) => card.textContent)).toContain('Bad Girl大過佬');
         expect(screen.getAllByRole('slider')).toHaveLength(1);
@@ -303,7 +303,7 @@ describe('TodayPage', () => {
             const list = screen.getByRole('region', { name: '節目表' });
             expect(within(list).queryByRole('button')).not.toBeInTheDocument();
             expect(
-                screen.queryByRole('group', { name: '今日節目，左右掃動轉節目' }),
+                screen.queryByRole('group', { name: '今日節目，左右滑動轉節目' }),
             ).not.toBeInTheDocument();
             expect(screen.queryByRole('group', { name: /^今日第/ })).not.toBeInTheDocument();
         });

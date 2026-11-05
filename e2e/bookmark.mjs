@@ -21,9 +21,9 @@ const SHOW_HASH = '#/show/gongzi';
 const SAVED_TAB = '我的收藏';
 // 公子會（星期六）17/10：sampleData 有嘅最近一集；行嘅讀屏名（src/i18n/zh-HK.ts bookmark.*）刻意寫死做獨立對照
 const GONGZI = SAMPLE_RECORDINGS.find((r) => r.showId === 'gongzi' && r.date === '2026-10-17');
-const ROW_OPEN = /^開啟 公子會 17\/10（六）/;
-const ROW_PLAY = '播放 公子會 17/10（六）';
-const ROW_PAUSE = '暫停 公子會 17/10（六）';
+const ROW_OPEN = /^開啟 公子會 17\/10 星期六/;
+const ROW_PLAY = '播放 公子會 17/10 星期六';
+const ROW_PAUSE = '暫停 公子會 17/10 星期六';
 const LIST_STAR = '收藏 17/10 星期六';
 const ADDED_TOAST = '已加入收藏';
 // 等 UI 反應（toast、tab 闊度過場 520ms、轉頁）最多幾耐

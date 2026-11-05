@@ -5,9 +5,12 @@ import type { SeriesEpisode } from '../../types/drama';
 import {
     bookmarkLabel,
     bookmarkPage,
+    bookmarkSpokenLabel,
     bookmarkTrack,
     isKnownBookmark,
+    recentText,
     savedRowStatus,
+    seriesName,
 } from './savedItems';
 
 const SHOW = recording('gongzi', '2026-10-17');
@@ -39,6 +42,38 @@ describe('bookmarkPage / bookmarkLabel', () => {
     it('should label shows by date and series dramas by episode number', () => {
         expect(bookmarkLabel(bookmarkOf(SHOW, 1))).toBe('17/10（六）');
         expect(bookmarkLabel(bookmarkOf(SERIES, 1))).toBe(`第 ${SERIES.no} 集`);
+    });
+
+    // A3：讀屏日子「17/10 星期六」，畫面照「17/10（六）」
+    it('should read the date as 17/10 星期六 for screen readers', () => {
+        expect(bookmarkSpokenLabel(bookmarkOf(SHOW, 1))).toBe('17/10 星期六');
+        expect(bookmarkSpokenLabel(bookmarkOf(SERIES, 1))).toBe(`第 ${SERIES.no} 集`);
+    });
+});
+
+// B3：短篇劇名經 i18n 砌（G2 分隔符）
+describe('seriesName', () => {
+    it('should join the drama title and the arc with the common separator', () => {
+        expect(seriesName('芝See菇Bi Family', '三十六計')).toBe('芝See菇Bi Family · 三十六計');
+    });
+});
+
+describe('recentText', () => {
+    it('should show 17/10（六） but read 17/10 星期六', () => {
+        expect(recentText(SHOW)).toEqual({
+            name: '公子會',
+            label: '17/10（六）',
+            spokenLabel: '17/10 星期六',
+        });
+    });
+
+    it('should keep the arc and episode for series dramas', () => {
+        const label = `${SERIES.arc} · 第 ${SERIES.no} 集`;
+        expect(recentText(SERIES)).toEqual({
+            name: '芝See菇Bi Family',
+            label,
+            spokenLabel: label,
+        });
     });
 });
 
@@ -73,11 +108,11 @@ describe('savedRowStatus', () => {
         });
     });
 
-    it('should use saved progress otherwise: 聽到 / 已聽完 / 未收聽', () => {
+    it('should use saved progress otherwise: 聽到 / 已收聽 / 未收聽', () => {
         const progress = { position: 2, duration: 600, watched: false, updatedAt: 0 };
         expect(savedRowStatus({ ...base, progress }).text).toBe('聽到 0:02 / 10:00');
         expect(savedRowStatus({ ...base, progress: { ...progress, watched: true } })).toEqual({
-            text: '已聽完',
+            text: '已收聽',
             ratio: 1,
             playing: false,
         });

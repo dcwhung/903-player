@@ -4,10 +4,10 @@ import type { SeriesEpisode } from '../../../../types/drama';
 import { formatDuration } from '../../../../utils/time';
 
 export const GROUP_TITLES = {
-    playing: 'drama.groupPlaying',
+    playing: 'common.status.playing',
     new: 'drama.groupNew',
     unfinished: 'drama.groupUnfinished',
-    done: 'drama.groupDone',
+    done: 'common.status.watched',
 } as const satisfies Record<ArcGroup, string>;
 
 /** 行入面細字：播緊 / 聽到邊 / 下一集 / 未聽 / 聽完 */

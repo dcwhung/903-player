@@ -506,7 +506,8 @@ describe('DramaPage', () => {
 
             await userEvent.click(screen.getByRole('button', { name: '暫停' }));
             expect(screen.getByText('已暫停：Ｘ時mas時小提議 · 第 2 / 4 集')).toBeInTheDocument();
-            expect(screen.getByText('已暫停 · 2:00 / 20:00')).toBeInTheDocument();
+            // A2：清單行唔寫「已暫停」，寫聽到邊
+            expect(screen.getByText('聽到 2:00 / 20:00')).toBeInTheDocument();
         });
 
         it('shows the 短篇, position and episode title under the disc, header above the list', async () => {

@@ -69,7 +69,7 @@ describe('toEpisodeItems', () => {
             'paused',
         );
 
-        expect(items[0]?.status.text).toBe('已暫停 · 12:40 / 1:58:30');
+        expect(items[0]?.status.text).toBe('聽到 12:40 / 1:58:30');
     });
 
     it('has no current episode when the url matches none', () => {

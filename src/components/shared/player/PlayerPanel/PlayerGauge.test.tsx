@@ -373,7 +373,7 @@ describe('PlayerGauge bookmark', () => {
     it('should put a star right of the play button for the episode shown', async () => {
         renderWithProviders(<PlayerGauge onStart={vi.fn()} bookmark={REC} />);
         const actions = screen.getByRole('button', { name: '播放' }).parentElement;
-        const star = screen.getByRole('button', { name: '收藏呢集' });
+        const star = screen.getByRole('button', { name: '收藏本集' });
 
         expect(star.parentElement).toBe(actions);
         expect(actions?.lastElementChild).toBe(star);
@@ -384,6 +384,6 @@ describe('PlayerGauge bookmark', () => {
     it('should not show a star without an episode', () => {
         renderWithProviders(<PlayerGauge onStart={vi.fn()} />);
 
-        expect(screen.queryByRole('button', { name: '收藏呢集' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: '收藏本集' })).not.toBeInTheDocument();
     });
 });

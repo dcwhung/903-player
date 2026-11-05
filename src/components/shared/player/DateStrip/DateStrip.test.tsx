@@ -6,7 +6,7 @@ import { formatDateLabel } from '../../../../utils/date';
 import { DateStrip } from './DateStrip';
 import { stripDays } from './dateStrip';
 
-const ZONE = { description: '左右方向鍵或左右掃動轉集' };
+const ZONE = { description: '左右方向鍵或左右滑動轉集' };
 // 新一集喺左：24–22/10 留空、21/10、20/10、19/10、18–17/10 冇節目、16/10、15/10、14–12/10 留空
 const EPISODES = [
     recording('badgirl', '2026-10-21'),

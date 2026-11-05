@@ -27,9 +27,9 @@ interface TodayShowListProps {
 }
 
 const STATUS_MESSAGE: Record<ShowStatus, MessageKey> = {
-    playing: 'today.statusPlaying',
-    watched: 'today.statusWatched',
-    unwatched: 'today.statusUnwatched',
+    playing: 'common.status.playing',
+    watched: 'common.status.watched',
+    unwatched: 'common.status.unwatched',
     unavailable: 'today.statusUnavailable',
 };
 const STATUS_ICON_SIZE = 12;

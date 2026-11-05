@@ -151,7 +151,7 @@ const useViewedArc = (playingArc: string | undefined, initialArc: string | undef
     return { arc: picked ?? playingArc, pickArc: setPicked };
 };
 
-/** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已聽完（today 每次 render 重新攞） */
+/** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已收聽（today 每次 render 重新攞） */
 const useArcOrder = (
     episodes: readonly SeriesEpisode[],
     progressMap: Readonly<Record<string, Progress>>,

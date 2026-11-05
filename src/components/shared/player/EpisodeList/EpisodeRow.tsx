@@ -16,7 +16,7 @@ const RowIcon = ({ item }: { item: EpisodeItem }) => {
     }
     if (item.status.kind === 'watched') {
         return (
-            <span className={styles.check} role="img" aria-label={t('episodes.watched')}>
+            <span className={styles.check} role="img" aria-label={t('common.status.watched')}>
                 <CheckIcon size={CHECK_ICON_SIZE} />
             </span>
         );

@@ -18,10 +18,13 @@ export const PLAYBACK_LINE_KEY: Readonly<Record<PlaybackLineState, MessageKey>> 
     resume: 'drama.continueLine',
 };
 
-/** 清單行「播放中 · 0:05 / 21:56」嘅字眼 */
+/**
+ * 清單行「播放中 · 0:05 / 21:56」嘅字眼。暫停緊寫「聽到 0:05 / 21:56」：
+ * 「已暫停」只喺播放器同把手出（文案決定 A2）
+ */
 export const PLAYBACK_STATUS_KEY: Readonly<Record<PlaybackState, MessageKey>> = {
     playing: 'episodes.playing',
-    paused: 'episodes.paused',
+    paused: 'common.status.resumeOf',
     ready: 'episodes.ready',
 };
 

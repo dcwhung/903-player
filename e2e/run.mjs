@@ -743,7 +743,7 @@ const checkThemeColor = async (p, expected, label) => {
     log(ok, `${label}：theme-color ${(await read()).join(', ')}（預期 ${expected}）`);
 };
 
-const TODAY_STACK = '今日節目，左右掃動轉節目';
+const TODAY_STACK = '今日節目，左右滑動轉節目';
 /** 卡疊最上面嗰張卡嘅節目名（h1 係頁頭「今日節目」，卡入面係 h2）；畀 page.evaluate 用 */
 const TODAY_CARD_TITLE = '[role="group"] h2';
 /** 卡疊而家嘅節目名 */

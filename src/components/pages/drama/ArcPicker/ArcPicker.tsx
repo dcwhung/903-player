@@ -13,7 +13,7 @@ export interface ArcChip {
 }
 
 interface ArcPickerProps {
-    /** 已經排好次序（播放中 → 新上架 → 未聽完 → 已聽完，見 arcGroups） */
+    /** 已經排好次序（播放中 → 新上架 → 未聽完 → 已收聽，見 arcGroups） */
     arcs: readonly ArcChip[];
     /** 清單顯示緊邊個短篇 */
     selected: string | undefined;

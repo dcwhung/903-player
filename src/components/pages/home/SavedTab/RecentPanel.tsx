@@ -8,7 +8,8 @@ import type { RecentRowView } from './savedTypes';
 
 /** 最近收聽一行：細碟 + 名 + 日期 / 集數；撳行 = 入嗰集（唔播），撳 ☆ = 收藏 */
 const RecentRow = ({ row }: { row: RecentRowView }) => {
-    const { name, label } = row;
+    // 讀屏名用讀屏版日子（17/10 星期六），畫面照顯示 row.label
+    const { name, spokenLabel: label } = row;
     return (
         <li className={styles.recentRow} data-zoom-key={zoomKey.episode(row.key)}>
             <button
@@ -22,7 +23,7 @@ const RecentRow = ({ row }: { row: RecentRowView }) => {
                 </span>
                 <span className={styles.recentText}>
                     <span className={styles.recentName}>{name}</span>
-                    <span className={styles.recentLabel}>{label}</span>
+                    <span className={styles.recentLabel}>{row.label}</span>
                 </span>
             </button>
             <BookmarkButton
