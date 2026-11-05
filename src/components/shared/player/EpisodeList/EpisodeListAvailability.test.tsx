@@ -50,7 +50,7 @@ describe('EpisodeList availability', () => {
     });
 
     it('should add the amber leaving day after the status (LE1)', () => {
-        const leaving = { text: '05/12 下架', label: '05/12（六）下架' };
+        const leaving = { text: '05/12 下架', tag: '05/12', label: '05/12（六）下架' };
         render(<EpisodeList items={[row(1, { leaving })]} onSelect={vi.fn()} labels="title" />);
 
         const button = screen.getByRole('button', { name: /^播放 第 1 集/ });

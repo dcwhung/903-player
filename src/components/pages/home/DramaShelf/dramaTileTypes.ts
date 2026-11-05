@@ -21,7 +21,14 @@ export interface DramaShelfItem {
      * 聽過先有：繼續收聽邊集（「短篇 · 第 N 集 集名」）同嗰集聽到幾多（0–1）；
      * 嗰集快將下架就集名後面加琥珀字（LC2）
      */
-    resume?: { label: string; ratio: number; leaving?: TileNotice | undefined } | undefined;
+    resume?:
+        | {
+              label: string;
+              ratio: number;
+              /** tag：窄格放唔落全句就淨係出「⏳ 05/12」 */
+              leaving?: (TileNotice & { tag: string }) | undefined;
+          }
+        | undefined;
     /** 整套劇即將上架：灰階 + 底部深色條「⏱ 即將上架 · 01/12」，aria-disabled，撳唔到（書架最尾） */
     upcoming?: TileNotice | undefined;
     /** 撳格（「繼續收聽」條以外）：入劇集頁 */

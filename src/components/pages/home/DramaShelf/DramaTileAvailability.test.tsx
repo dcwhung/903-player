@@ -14,7 +14,7 @@ const item = (overrides: Partial<DramaShelfItem> = {}): DramaShelfItem => ({
     ...overrides,
 });
 
-const LEAVING = { text: '05/12 下架', label: '05/12（六）下架' };
+const LEAVING = { text: '05/12 下架', tag: '05/12', label: '05/12（六）下架' };
 
 describe('DramaTile availability', () => {
     beforeEach(() => stubLandscape());

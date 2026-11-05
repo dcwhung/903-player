@@ -100,6 +100,7 @@ describe('series drama availability builders', () => {
         const ranged = arcInfo('A', { removals: [{ first: 1, last: 5, date: '2026-11-06' }] });
         expect(episodeLeavingOf(ranged, 3, TODAY)).toEqual({
             text: '明日下架',
+            tag: '明日',
             label: '06/11（五）下架',
         });
         expect(episodeLeavingOf(ranged, 6, TODAY)).toBeUndefined();

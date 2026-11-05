@@ -2,7 +2,7 @@ import type { DramaShelfItem } from '../components/pages/home/DramaShelf/DramaSh
 import type { DramaConfig } from '../catalog/dramas';
 import { usePlayer } from '../player/usePlayer';
 import { isLeavingSoon } from '../selectors/availability';
-import { removalDateLong, removalWhen } from '../selectors/availabilityLabels';
+import { dayWhen, removalDateLong, removalWhen } from '../selectors/availabilityLabels';
 import { liveSeriesContinue } from '../selectors/continueListening';
 import { dramaEpisodeLabel } from '../selectors/dramas';
 import { getProgressMap } from '../services/progressStore';
@@ -16,7 +16,11 @@ type Continue = NonNullable<DramaShelfItem['resume']>;
 /** 嗰集快將下架：「05/12 下架」（讀屏長版）；唔係就冇 */
 const leavingOf = (removedAt: string | undefined, today: string) =>
     removedAt && isLeavingSoon(removedAt, today)
-        ? { text: removalWhen(removedAt, today, 'short'), label: removalDateLong(removedAt) }
+        ? {
+              text: removalWhen(removedAt, today, 'short'),
+              tag: dayWhen(removedAt, today),
+              label: removalDateLong(removedAt),
+          }
         : undefined;
 
 /**

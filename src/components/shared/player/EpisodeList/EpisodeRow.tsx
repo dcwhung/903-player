@@ -87,7 +87,8 @@ const RowBody = ({ percent, item }: { percent: number; item: EpisodeItem }) => (
             {item.leaving && (
                 <span className={styles.leaving}>
                     <HourglassIcon size={NOTICE_ICON_SIZE} />
-                    {item.leaving.text}
+                    <span className={styles.leavingFull}>{item.leaving.text}</span>
+                    <span className={styles.leavingTag}>{item.leaving.tag}</span>
                 </span>
             )}
         </span>

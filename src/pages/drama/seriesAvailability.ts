@@ -136,7 +136,11 @@ export const episodeLeavingOf = (
 ): EpisodeItem['leaving'] => {
     const range = arc.removals.find((r) => no >= r.first && no <= r.last);
     if (!range || !isLeavingSoon(range.date, today)) return undefined;
-    return { text: removalWhen(range.date, today, 'short'), label: removalDateLong(range.date) };
+    return {
+        text: removalWhen(range.date, today, 'short'),
+        tag: dayWhen(range.date, today),
+        label: removalDateLong(range.date),
+    };
 };
 
 /** 成套劇快將下架：劇集頁唱片下面嗰行（page）、一覽表表頭下面（sheet） */

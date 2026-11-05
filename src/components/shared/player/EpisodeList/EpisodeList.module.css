@@ -139,6 +139,8 @@
 }
 
 .body {
+    /* LE1 用：欄幾闊（container query），唔跟內容撐闊（唔會擠走 ▷） */
+    container: episode-body / inline-size;
     display: flex;
     flex-direction: column;
     flex-grow: 1;
@@ -242,6 +244,21 @@
     color: var(--leave-ink);
     font-weight: 700;
     white-space: nowrap;
+}
+
+/* 欄夠闊寫「05/12 下架」；闊橫版左欄嗰啲窄欄（約 7 個字闊以下）淨係「⏳ 05/12」 */
+.leavingTag {
+    display: none;
+}
+
+@container episode-body (max-width: 120px) {
+    .leavingFull {
+        display: none;
+    }
+
+    .leavingTag {
+        display: inline;
+    }
 }
 
 .leaving::before {

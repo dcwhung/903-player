@@ -45,7 +45,8 @@ export const ContinueButton = ({ name, resume, onResume, focusProps }: ContinueB
             {resume.leaving && (
                 <span className={styles.continueLeaving}>
                     <HourglassIcon size={NOTICE_ICON_SIZE} />
-                    {resume.leaving.text}
+                    <span className={styles.leavingFull}>{resume.leaving.text}</span>
+                    <span className={styles.leavingTag}>{resume.leaving.tag}</span>
                 </span>
             )}
         </span>

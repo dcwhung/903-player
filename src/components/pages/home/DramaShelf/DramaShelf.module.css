@@ -235,12 +235,12 @@
 }
 
 /*
- * 集名一行（放唔落就跑馬燈），快將下架就後面接琥珀字（LC2），琥珀字唔縮；
- * 窄格（手機打橫格仔）集名最少留一半位，琥珀字放唔落就換落下一行
+ * 集名一行（放唔落就跑馬燈），快將下架就後面接琥珀字（LC2，唔縮）；條高唔變（窄格唔會撞頂行）。
+ * 窄格（手機打橫格仔，條闊約 15 個字以下）琥珀字淨係「⏳ 05/12」，集名有返位跑馬燈
  */
 .continueLine {
+    container: continue-line / inline-size;
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-1);
     width: 100%;
@@ -249,7 +249,7 @@
 
 .continueLabel {
     flex: 0 1 auto;
-    min-width: var(--continue-label-min);
+    min-width: 0;
     font-size: var(--font-size-xs);
 }
 
@@ -266,6 +266,20 @@
 
 .continueLeaving::before {
     content: '·';
+}
+
+.leavingTag {
+    display: none;
+}
+
+@container continue-line (max-width: 200px) {
+    .continueLeaving .leavingFull {
+        display: none;
+    }
+
+    .continueLeaving .leavingTag {
+        display: inline;
+    }
 }
 
 .continueBar {
