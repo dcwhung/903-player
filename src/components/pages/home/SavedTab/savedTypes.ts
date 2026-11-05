@@ -1,4 +1,4 @@
-import type { SavedLayout } from '../../../../selectors/bookmarks';
+import type { SavedLayout, ThirdTab } from '../../../../selectors/bookmarks';
 import type { Track } from '../../../../types/track';
 
 /** 收藏 tab 一行（一集） */
@@ -61,9 +61,17 @@ export interface RecentRowView {
 }
 
 export interface SavedTabView {
+    /**
+     * saved = 有收藏：收藏 box + 最近收聽 panel；recent = 冇收藏：成個 tab 係最近收聽清單
+     * （_mockups_/qr-transfer ① A / B）
+     */
+    mode: ThirdTab;
     layout: SavedLayout;
     boxes: readonly SavedBoxView[];
     recent: readonly RecentRowView[];
+    /** 收藏 box 分幾欄（savedGrid） */
     columns: number;
     solo: boolean;
+    /** 冇收藏版最近收聽分幾欄（recentColumns） */
+    recentColumns: number;
 }

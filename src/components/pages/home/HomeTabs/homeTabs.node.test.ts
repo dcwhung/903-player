@@ -85,6 +85,26 @@ describe('home tab pill (P5 #1 elastic)', () => {
         expect(undeclared(motion)).toEqual([]);
     });
 
+    // _mockups_/qr-transfer ①：★ / 歷史 icon 疊喺同一格，一個縮細轉走、一個轉入（520ms / 260ms）
+    it('should stack ★ and the history icon in one cell, the hidden one shrunk and turned', () => {
+        expect(cssDeclarations(tabsCss, '.ico')['grid-area']).toBe('1 / 1');
+        expect(cssDeclarations(tabsCss, '.icon').display).toBe('grid');
+        expect(cssDeclarations(tabsCss, ".ico[data-on='false']")).toEqual({
+            opacity: '0',
+            transform: 'scale(var(--home-tab-icon-off-scale)) rotate(var(--home-tab-icon-turn))',
+        });
+        expect(cssDeclarations(tabsCss, ".ico[data-tab-icon='star']")['--home-tab-icon-turn']).toBe(
+            'calc(-1 * var(--home-tab-icon-turn-angle))',
+        );
+        expect(TOKENS.get('--home-tab-icon-off-scale')).toBe('0.3');
+        expect(TOKENS.get('--home-tab-icon-turn-angle')).toBe('90deg');
+        const motion = atRuleDeclarations(tabsCss, MOTION, '.ico');
+        expect(motion.transition).toBe(
+            'opacity var(--view-transition-fade) var(--ease-view-transition), transform var(--view-transition-move) var(--ease-view-transition)',
+        );
+        expect(cssDeclarations(tabsCss, '.ico').transition).toBeUndefined();
+    });
+
     it('should stop the pressed button painting its own background', () => {
         const pressed = cssDeclarations(tabsCss, ".tab[aria-pressed='true']");
         expect(pressed.background).toBeUndefined();
@@ -118,8 +138,8 @@ describe('home tab pill (P5 #1 elastic)', () => {
         for (const selector of [PILL, RIGHT, LEFT, '.tab', '.icon', ".tab[aria-pressed='true']"]) {
             expect(cssDeclarations(tabsCss, selector).transition).toBeUndefined();
         }
-        // 換 tab（左 / 右）、字色、我的收藏 tab 闊度、膠囊跟格仔闊度
-        expect(tabsCss.match(/transition:/g)).toHaveLength(5);
+        // 換 tab（左 / 右）、字色、我的收藏 tab 闊度、膠囊跟格仔闊度、★ / 歷史 icon 轉換
+        expect(tabsCss.match(/transition:/g)).toHaveLength(6);
         expect(atRuleDeclarations(tabsCss, MOTION, PILL).transition).toBe(
             `left ${MOVE}, right ${MOVE}`,
         );

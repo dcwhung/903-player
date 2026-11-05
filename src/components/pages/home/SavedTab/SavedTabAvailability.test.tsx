@@ -21,6 +21,8 @@ const row = (extra: Partial<SavedRowView> = {}): SavedRowView => ({
 });
 
 const view = (rows: SavedRowView[], recent: SavedTabView['recent'] = []): SavedTabView => ({
+    mode: 'saved',
+    recentColumns: 1,
     layout: 'phone',
     columns: 1,
     solo: false,
@@ -83,6 +85,34 @@ describe('SavedTab availability', () => {
             },
         ];
         render(<SavedTab view={view([], recent)} />);
+
+        const open = screen.getByRole('button', {
+            name: /^開啟 蘭茜夫人劇場 戀愛二分一 · 第 3 集/,
+        });
+        expect(open).toHaveTextContent('05/12 下架');
+        expect(open).toHaveAccessibleName(/05\/12（六）下架/);
+    });
+
+    it('should add the amber line on the recent-only tab too (LR1, no bookmarks)', () => {
+        const track = {
+            kind: 'series',
+            dramaId: 'lancy',
+            url: '/half/3',
+            arc: '戀愛二分一',
+            no: 3,
+        } as const;
+        const recent = [
+            {
+                key: '/half/3',
+                name: '蘭茜夫人劇場',
+                label: '戀愛二分一 · 第 3 集',
+                art: '/disc.webp',
+                track,
+                leaving: LEAVING,
+                onOpen: vi.fn(),
+            },
+        ];
+        render(<SavedTab view={{ ...view([], recent), mode: 'recent', boxes: [] }} />);
 
         const open = screen.getByRole('button', {
             name: /^開啟 蘭茜夫人劇場 戀愛二分一 · 第 3 集/,

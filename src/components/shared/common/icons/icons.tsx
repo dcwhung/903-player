@@ -1,29 +1,6 @@
-import type { SVGProps } from 'react';
+import { StrokeIcon, type IconProps } from './strokeIcon';
 
-type IconProps = SVGProps<SVGSVGElement> & { size?: number };
-
-const DEFAULT_ICON_SIZE = 24;
-
-/** 跟 tokens.css 嘅 --ui-scale 放大（橫版大畫面）；width / height attribute 留做冇 CSS 時嘅後備 */
-const scaledSize = (size: number) => `calc(${size}px * var(--ui-scale, 1))`;
-
-const StrokeIcon = ({ size = DEFAULT_ICON_SIZE, children, style, ...rest }: IconProps) => (
-    <svg
-        width={size}
-        height={size}
-        style={{ width: scaledSize(size), height: scaledSize(size), ...style }}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-        {...rest}
-    >
-        {children}
-    </svg>
-);
+export { ClockIcon, HourglassIcon } from './noticeIcons';
 
 export const BackIcon = (props: IconProps) => (
     <StrokeIcon {...props}>
@@ -123,27 +100,20 @@ export const StarIcon = ({ filled = false, ...props }: IconProps & { filled?: bo
     </StrokeIcon>
 );
 
+/** 歷史（R2 逆時針箭咀時鐘，_mockups_/qr-transfer ICONS.history）：冇收藏時主頁第三個 tab = 最近收聽 */
+const HISTORY_STROKE_WIDTH = 2.3;
+
+export const HistoryIcon = (props: IconProps) => (
+    <StrokeIcon strokeWidth={HISTORY_STROKE_WIDTH} {...props}>
+        <path d="M3.8 12a8.2 8.2 0 1 0 2.4-5.8" />
+        <path d="M3.4 3.6v4h4" />
+        <path d="M12 7.6v4.6l3.2 2" />
+    </StrokeIcon>
+);
+
 /** 垃圾桶 🗑：收藏 tab 左滑移除時跟住行出現 */
 export const TrashIcon = (props: IconProps) => (
     <StrokeIcon strokeWidth={STAR_STROKE_WIDTH} {...props}>
         <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" />
-    </StrokeIcon>
-);
-
-/** 時鐘 / 沙漏線粗少少：喺細字旁邊都睇得清（同 mockup 一樣） */
-const NOTICE_STROKE_WIDTH = 2.2;
-
-/** 時鐘 ⏱：即將上架（chip、一覽表、集數清單、主頁新劇灰格），同 mockup _mockups_/coming-soon CLOCK 一樣 */
-export const ClockIcon = (props: IconProps) => (
-    <StrokeIcon strokeWidth={NOTICE_STROKE_WIDTH} {...props}>
-        <circle cx="12" cy="12" r="8.5" />
-        <path d="M12 7.5V12l3 2" />
-    </StrokeIcon>
-);
-
-/** 沙漏 ⏳：快將下架（琥珀色），同 mockup HOURGLASS 一樣 */
-export const HourglassIcon = (props: IconProps) => (
-    <StrokeIcon strokeWidth={NOTICE_STROKE_WIDTH} {...props}>
-        <path d="M7 3.5h10M7 20.5h10M8 3.5c0 4.5 8 4.5 8 8.5s-8 4-8 8.5M16 3.5c0 4.5-8 4.5-8 8.5s8 4 8 8.5" />
     </StrokeIcon>
 );

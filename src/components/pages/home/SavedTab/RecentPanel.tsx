@@ -31,7 +31,7 @@ const RecentRow = ({ row }: { row: RecentRowView }) => {
                 </span>
                 <span className={styles.recentText}>
                     <span className={styles.recentName}>{name}</span>
-                    <span>{label}</span>
+                    <span className={styles.recentLabel}>{label}</span>
                     {row.leaving && (
                         <span className={styles.leaving}>
                             <HourglassIcon size={NOTICE_ICON_SIZE} />
@@ -49,22 +49,33 @@ const RecentRow = ({ row }: { row: RecentRowView }) => {
     );
 };
 
+interface RecentPanelProps {
+    rows: readonly RecentRowView[];
+    /** 冇收藏版：佔滿成個 tab 區（_mockups_/qr-transfer ②），唔係固定高 / 闊 */
+    fill?: boolean;
+    /** 清單分幾欄（冇收藏版：recentColumns）；有收藏版一欄 */
+    columns?: number;
+}
+
 /**
- * 「最近收聽」（E2）：有收聽記錄先出，固定位置（直版底、窄橫版最右、闊橫版左邊最底），
- * 最多 10 集，panel 入面自己捲
+ * 「最近收聽」（E2）：有收聽記錄先出，有收藏時固定位置（直版底、窄橫版最右、闊橫版左邊最底）；
+ * 冇收藏時佔滿成個 tab（fill）。最多 10 集，panel 入面自己捲
  */
-export const RecentPanel = ({ rows }: { rows: readonly RecentRowView[] }) => {
+export const RecentPanel = ({ rows, fill = false, columns = 1 }: RecentPanelProps) => {
     const headingId = useId();
     return (
-        <section className={styles.recent} aria-labelledby={headingId}>
+        <section className={styles.recent} data-fill={String(fill)} aria-labelledby={headingId}>
             <h2 id={headingId} className={styles.recentTitle}>
                 {t('bookmark.recent')}
             </h2>
-            <ul className={styles.recentList}>
-                {rows.map((row) => (
-                    <RecentRow key={row.key} row={row} />
-                ))}
-            </ul>
+            {/* 捲動喺外層、ul 高度跟內容：分欄先唔會溢出去右邊（W-535） */}
+            <div className={styles.recentScroll}>
+                <ul className={styles.recentList} style={{ columnCount: columns }}>
+                    {rows.map((row) => (
+                        <RecentRow key={row.key} row={row} />
+                    ))}
+                </ul>
+            </div>
         </section>
     );
 };

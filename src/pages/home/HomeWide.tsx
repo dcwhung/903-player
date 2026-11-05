@@ -14,6 +14,7 @@ import type { MiniPlayerProps } from '../../components/pages/home/MiniPlayer/Min
 import { APP_VERSION } from '../../config/appVersion';
 import { useClosedHomePlayerCard } from '../../hooks/homePlayerCardClosed';
 import type { HomeTab } from '../../hooks/useHomeTab';
+import type { ThirdTab } from '../../selectors/bookmarks';
 import { t } from '../../i18n/t';
 import styles from './HomePage.module.css';
 import type { HomeLayoutMode } from './homeLayoutMode';
@@ -68,9 +69,9 @@ interface HomeWideProps extends WideGridProps {
     mode: Exclude<HomeLayoutMode, 'stack'>;
     onTab: (tab: HomeTab) => void;
     miniPlayer: MiniPlayerProps | null;
-    /** 有收藏先出 ★ tab */
-    hasSaved: boolean;
-    /** 我的收藏 tab 嘅內容（左欄，右邊播放卡照舊） */
+    /** 第三個 tab：★ 我的收藏 / 最近收聽 / null 唔出（thirdTabOf） */
+    third: ThirdTab | null;
+    /** 第三個 tab 嘅內容（左欄，右邊播放卡照舊） */
     saved: ReactNode;
 }
 
@@ -83,7 +84,7 @@ export const HomeWide = ({
     mode: latestMode,
     onTab,
     miniPlayer,
-    hasSaved,
+    third,
     saved,
     ...grid
 }: HomeWideProps) => {
@@ -94,7 +95,7 @@ export const HomeWide = ({
     return (
         <main className={`${page.page} ${page.locked} ${styles.wide}`} data-layout={mode}>
             <div className={styles.gridColumn}>
-                <HomeTabs tab={grid.tab} onChange={onTab} hasSaved={hasSaved} />
+                <HomeTabs tab={grid.tab} onChange={onTab} third={third} />
                 {grid.tab === 'saved' ? saved : <WideGrid {...grid} mode={mode} />}
             </div>
             {mode === 'split' && miniPlayer && (
