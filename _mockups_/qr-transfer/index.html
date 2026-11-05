@@ -111,8 +111,7 @@
                 font-size: 14px;
                 line-height: 1.6;
             }
-            b,
-            strong {
+            :is(p, li, td, th) > :is(b, strong) {
                 color: var(--ink);
             }
             ul,
@@ -477,14 +476,16 @@
                 overflow: auto;
                 padding: 20px;
             }
+            /* 標題置中：icon | 標題 | ✕ 三格（冇 icon / ✕ 都留返同闊嘅位，標題先會喺正中） */
             .sheet-head {
-                display: flex;
+                display: grid;
+                grid-template-columns: calc(var(--pf) * 2.6) minmax(0, 1fr) calc(var(--pf) * 2.6);
                 align-items: center;
                 gap: 10px;
             }
             .sheet-head h4 {
-                flex: 1;
                 margin: 0;
+                text-align: center;
                 font: 700 calc(var(--pf) * 1.25) / 1.3 var(--font);
             }
             .head-ico {
@@ -655,35 +656,7 @@
                 color: #a3342b;
             }
 
-            /* ---------- 匯入確認：三個風格 ---------- */
-            /* A 對比卡 */
-            .tiles {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-                gap: 8px;
-            }
-            .tile {
-                padding: 10px 12px;
-                border-radius: 14px;
-                background: #fff;
-                box-shadow: 0 0 0 1px var(--card-line);
-            }
-            .tile.from {
-                background: linear-gradient(135deg, rgb(44 110 166 / 10%), rgb(31 138 126 / 12%));
-            }
-            .tile small {
-                display: block;
-                color: var(--muted);
-                font-size: calc(var(--pf) * 0.86);
-            }
-            .tile b {
-                display: block;
-                font-size: calc(var(--pf) * 1.02);
-            }
-            .choice {
-                display: grid;
-                gap: 4px;
-            }
+            /* ---------- 匯入確認（定稿：並排圖示） ---------- */
             /* B 並排圖示 + 箭咀 */
             .flow {
                 display: grid;
@@ -717,6 +690,7 @@
                 font-size: calc(var(--pf) * 0.86);
             }
             .dev b {
+                color: var(--card-ink);
                 font-size: calc(var(--pf) * 0.95);
             }
             .flow-arrow {
@@ -737,37 +711,78 @@
                 font-weight: 700;
                 text-align: center;
             }
+            /* 掣列：取消 / 返回靠左；動作一組靠右（手機窄位都保持左右分組） */
             .btn-row {
-                display: grid;
-                grid-auto-flow: column;
-                grid-auto-columns: minmax(0, 1fr);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
                 gap: 8px;
             }
-            /* C 一步式 */
-            .big-q {
-                margin: 4px 0 0;
-                font: 700 calc(var(--pf) * 1.4) / 1.35 var(--font);
+            .btn-group {
+                display: flex;
+                gap: 8px;
+            }
+            .btn-row .abtn.plain {
+                padding-left: 4px;
+                padding-right: 4px;
+            }
+            .actions {
+                display: grid;
+                gap: 8px;
+            }
+            .abtn.danger-fill {
+                border-color: #a3342b;
+                background: #a3342b;
+                color: #fff;
+            }
+            .abtn.small {
+                flex: none;
+                min-height: calc(var(--pf) * 2.3);
+                padding: 4px 14px;
+                font-size: calc(var(--pf) * 0.88);
+            }
+            .result.danger {
+                background: rgb(163 52 43 / 10%);
+                color: #8f2c24;
+            }
+            /* （建議）Safari / 內置瀏覽器開咗：教用戶喺主畫面 app 貼上 */
+            .tip {
+                display: grid;
+                gap: 8px;
+                justify-items: start;
+                padding: 10px 12px;
+                border-radius: 12px;
+                background: rgb(44 110 166 / 10%);
+                color: #1d4a72;
+                font-size: calc(var(--pf) * 0.9);
+            }
+            /* 由另一部機匯入：貼上連結 */
+            .paste-field {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            .paste-field input {
+                flex: 1;
+                min-width: 0;
+                height: calc(var(--pf) * 2.8);
+                padding: 0 12px;
+                border: 1px solid rgb(28 35 48 / 30%);
+                border-radius: 12px;
+                background: #fff;
+                color: var(--card-ink);
+                font: inherit;
+                font-size: calc(var(--pf) * 0.9);
+            }
+            .paste-field input::placeholder {
+                color: #6b7380;
+            }
+            .sheet input:focus-visible {
+                outline: 2px solid var(--sync-blue);
+                outline-offset: 1px;
+            }
+            .center {
                 text-align: center;
-            }
-            .sub {
-                text-align: center;
-            }
-            .more {
-                border-top: 1px solid var(--card-line);
-                padding-top: 8px;
-            }
-            .more summary {
-                cursor: pointer;
-                color: var(--muted);
-                font-size: calc(var(--pf) * 0.92);
-                text-align: center;
-                list-style: none;
-            }
-            .more summary::-webkit-details-marker {
-                display: none;
-            }
-            .more[open] summary {
-                margin-bottom: 8px;
             }
 
             .toast {
@@ -869,8 +884,9 @@
                 </p>
                 <p>
                     <b>用戶已決定</b>：最近收聽 icon = 歷史；同步掣 = ⇅ +「同步」；同步面板 = 米白卡
-                    + QR 做主角；QR = M + 細 logo，最多最近 50 集 + 全部收藏；分享連結有齊；連結 24
-                    小時過期；B 機全新淨出「匯入」；匯入完跳去第三個 tab；淨係一粒分享 / 複製掣。
+                    + QR 做主角、標題置中；QR = M + 細 logo，最多最近 50 集 +
+                    全部收藏；分享連結有齊；匯入確認 = 並排圖示；覆蓋要再確認；連結 24
+                    小時過期；本機全新淨出「匯入」；匯入完跳去第三個 tab；淨係一粒分享 / 複製掣。
                 </p>
             </header>
 
@@ -947,6 +963,14 @@
                         >；計數顯示用戶<b>完整</b>數字
                     </li>
                     <li>淨係一粒掣：支援 Web Share →「分享連結」；唔支援 →「複製連結」</li>
+                    <li>
+                        標題文字置中（icon 左、✕ 右）；橫版標題喺右欄入面置中（卡高唔夠放喺 QR
+                        上面）
+                    </li>
+                    <li>
+                        <b>（建議）</b>次要掣「由另一部機匯入」→ 貼上連結 →
+                        同一個匯入確認（最後一個舞台）；解決 iOS 主畫面 app 掃唔到 QR 嘅問題（見 ⑤）
+                    </li>
                 </ul>
                 <div class="row" data-group="size">
                     <button type="button" class="pick" data-val="normal" aria-pressed="true">
@@ -970,48 +994,42 @@
 
             <!-- ④ -->
             <section class="panel" aria-labelledby="h-4">
-                <h2 id="h-4">④ B 機開連結 → 匯入確認：三個風格</h2>
+                <h2 id="h-4">④ B 機開連結 → 匯入確認（定稿：並排圖示）</h2>
                 <ul>
                     <li>
-                        <b>A 對比卡</b>：同 ③
-                        一樣嘅米白卡；「連結」同「呢部機」兩格數字並排，三粒掣上下排
+                        標題置中（同 ③ 一致）；連結 → 本機兩個 icon + 箭咀，下面即場寫「合併後」幾多
                     </li>
                     <li>
-                        <b>B 並排圖示</b>：兩部機 icon +
-                        箭咀表示合併方向，下面即場寫「合併後」幾多，掣排一行
+                        掣列：「取消」靠左（文字掣）；「覆蓋」+「合併」一組靠右，手機窄位都係左右分組
                     </li>
                     <li>
-                        <b>C 一步式</b>：一句大字問題 +
-                        一粒大掣；「覆蓋」收埋喺「其他選項」入面，唔會誤撳
+                        撳「覆蓋」先出確認：掣列原位換成紅字「覆蓋會清走本機嘅
+                        …」+「返回」/「確認覆蓋」；平時冇紅字
                     </li>
                     <li>
-                        合併：每集取較新（<code>updatedAt</code>）嘅位置；任何一邊聽完當聽完；收藏兩邊加埋。覆蓋：清走呢部機嘅，換成連結入面嘅
+                        合併：每集取較新（<code>updatedAt</code>）嘅位置；任何一邊聽完當聽完；收藏兩邊加埋。覆蓋：清走本機嘅，換成連結入面嘅
                     </li>
                     <li>
                         撳完都會用 <code>history.replaceState</code> 清走
                         <code>#import=</code>（睇假網址列）；匯入完跳去第三個 tab
                     </li>
+                    <li>
+                        <b>（建議）喺 Safari 開咗</b>：iOS 主畫面 app 同 Safari
+                        儲存分開，所以頂部加提示教用戶喺 app 入面貼上（見 ⑤）
+                    </li>
                 </ul>
-                <div class="row" data-group="ilook">
-                    <button type="button" class="pick" data-val="a" aria-pressed="true">
-                        A 對比卡
-                    </button>
-                    <button type="button" class="pick" data-val="b" aria-pressed="false">
-                        B 並排圖示
-                    </button>
-                    <button type="button" class="pick" data-val="c" aria-pressed="false">
-                        C 一步式
-                    </button>
-                </div>
                 <div class="row" data-group="istatus">
                     <button type="button" class="pick" data-val="has" aria-pressed="true">
-                        B 機有記錄（合併 / 覆蓋 / 取消）
+                        本機有記錄（合併 / 覆蓋 / 取消）
                     </button>
                     <button type="button" class="pick" data-val="empty" aria-pressed="false">
-                        B 機全新（匯入 / 取消）
+                        本機全新（匯入 / 取消）
                     </button>
                     <button type="button" class="pick" data-val="bad" aria-pressed="false">
                         連結唔啱用
+                    </button>
+                    <button type="button" class="pick" data-val="safari" aria-pressed="false">
+                        （建議）喺 Safari 開咗
                     </button>
                 </div>
                 <div class="row">
@@ -1168,79 +1186,105 @@
                     <li>冇帳戶、冇 server、冇加密；24 小時過期限制舊連結嘅影響</li>
                 </ul>
 
+                <h3>實際匯入流程（建議，要用戶確認）</h3>
+                <ol type="a">
+                    <li>
+                        <b>手機 → 手機</b>：A 機撳「同步」出 QR → B 機用系統相機掃 → 相機開連結 →
+                        用<b>預設瀏覽器</b>開 app → 匯入確認（④）
+                    </li>
+                    <li>
+                        <b>手機 → laptop</b>：A 機撳「分享連結」/「複製連結」→ 經 AirDrop、WhatsApp
+                        Web、電郵傳去 laptop → laptop 瀏覽器開連結 → 匯入確認
+                    </li>
+                    <li>
+                        <b>限制</b>：
+                        <ul>
+                            <li>
+                                iOS：加咗落主畫面嘅 PWA 同 Safari <b>儲存分開</b>。掃 QR 一定喺
+                                Safari 開，記錄會匯入咗 Safari，而唔係主畫面 app
+                            </li>
+                            <li>
+                                聊天 app 內置瀏覽器（WhatsApp、IG 等）都係獨立儲存，喺入面開連結 =
+                                匯入咗去內置瀏覽器
+                            </li>
+                            <li>
+                                Android Chrome / 桌面 Chrome：已安裝嘅 PWA 同瀏覽器應該共用同一個
+                                origin 嘅儲存（<b>要真機確認</b>）
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <b>建議補救</b>：
+                        <ul>
+                            <li>
+                                app 入面加「<b>由另一部機匯入</b>」入口：同步面板入面一粒次要掣 →
+                                貼上連結 → 同一個匯入確認（③ 有示範）
+                            </li>
+                            <li>
+                                iOS Safari /
+                                內置瀏覽器開到匯入連結時，匯入確認頂部出提示：「如果你用緊主畫面嘅
+                                app：請複製連結，喺 app
+                                入面撳「同步」→「由另一部機匯入」貼上。」，附「複製連結」掣（④「喺
+                                Safari 開咗」有示範）
+                            </li>
+                            <li>
+                                點樣判斷：<code>navigator.standalone</code> /
+                                <code>display-mode: standalone</code> 係 false，而且係 iOS
+                                或者內置瀏覽器 user agent 先出提示；桌面同 Android
+                                唔出（要真機確認共用儲存之後再定）
+                            </li>
+                        </ul>
+                    </li>
+                </ol>
+
                 <h3>要用戶確認嘅字眼</h3>
                 <p><b>③ 同步面板</b></p>
                 <ul>
                     <li>
-                        說明句（preview 用）：<b>「用另一部機掃描 QR code，或分享連結。」</b
-                        >——講明係「另一部機」掃，同標題呼應，兩個動作對稱。備選：
+                        說明句（preview 用）：<b>「用另一部機掃描 QR code，或分享連結。」</b>備選：
                         <ol>
-                            <li>
-                                「掃描 QR
-                                code，或分享連結至另一部機。」（最貼近初稿，但「另一部機」只跟住連結）
-                            </li>
-                            <li>
-                                「用另一部機嘅相機掃描 QR
-                                code，或者分享連結。」（口語、最清楚，但長少少）
-                            </li>
-                            <li>
-                                「掃描 QR
-                                code，或共享連結。」（初稿修正「掃描」；最短，但冇講邊部機掃）
-                            </li>
+                            <li>「掃描 QR code，或分享連結至另一部機。」</li>
+                            <li>「用另一部機嘅相機掃描 QR code，或者分享連結。」</li>
+                            <li>「掃描 QR code，或共享連結。」</li>
                         </ol>
                     </li>
                     <li>
-                        記錄多過 50 集（preview 用）：<b
-                            >細膠囊「QR code 只收錄最近 50 集」（手機貼住 QR
-                            下面；橫版卡高唔夠，放右欄中段）</b
-                        >，私隱字照舊「連結包含所有收聽記錄。」——「連結有齊」已經由私隱字講咗，唔使再講一次；膠囊貼住
-                        QR，一睇就知限制係講 QR。備選：
-                        <ol>
-                            <li>
-                                合併成一句取代私隱字：「QR code 只收錄最近 50
-                                集；連結包含所有收聽記錄。」（一句講晒，但記錄少同記錄多嘅底部字唔同，位置會跳）
-                            </li>
-                            <li>
-                                寫入計數行：「3 個收藏 · 300 集進度（QR code：最近 50
-                                集）」（最慳位，但計數行太長，手機會斷行）
-                            </li>
-                        </ol>
+                        記錄多過 50 集（preview 用）：細膠囊「QR code 只收錄最近 50 集」（手機貼住
+                        QR
+                        下面；橫版放右欄），私隱字照舊「連結包含所有收聽記錄。」備選：太大時合一句「QR
+                        code 只收錄最近 50 集；連結包含所有收聽記錄。」或者寫入計數行
                     </li>
                     <li>
-                        其他：標題「同步至另一部機」、掣「分享連結」/「複製連結」、Toast「已複製連結」、計數「3
-                        個收藏 · 11 集進度」
+                        次要掣「由另一部機匯入」；貼上畫面：「貼上另一部機分享嘅連結。」「貼上」「返回」「繼續」；錯誤「呢條唔係同步連結。」（建議）
+                    </li>
+                    <li>
+                        其他：標題「同步至另一部機」、「分享連結」/「複製連結」、Toast「已複製連結」
                     </li>
                 </ul>
                 <p><b>④ 匯入確認</b></p>
                 <ul>
-                    <li>標題：A / B「匯入收聽記錄？」；C「匯入 3 個收藏 · 11 集進度？」</li>
+                    <li>標題「匯入收聽記錄？」；圖示標籤「連結」「本機」「全新」</li>
+                    <li>結果：「合併後：4 個收藏 · 13 集進度」/「匯入後：3 個收藏 · 11 集進度」</li>
+                    <li>掣：「取消」｜「覆蓋」「合併」；全新：「取消」｜「匯入」</li>
                     <li>
-                        格仔 / 圖示標籤：「連結」「呢部機」「全新」；B「合併後：4 個收藏 · 13
-                        集進度」/「匯入後：…」
+                        覆蓋確認：「覆蓋會清走本機嘅 1 個收藏 · 4 集進度。」+「返回」｜「確認覆蓋」
                     </li>
-                    <li>
-                        合併：「合併（建議）」+「取較新嘅位置；聽完、收藏都保留。」；C
-                        嘅說明「會同呢部機嘅記錄合併。」
-                    </li>
-                    <li>
-                        覆蓋：「覆蓋」+「會清走呢部機嘅 1 個收藏 · 4 集進度。」；C
-                        收埋喺「其他選項」
-                    </li>
-                    <li>全新：「匯入」；C 說明「呢部機未有記錄。」</li>
                     <li>
                         錯誤：「連結唔啱用」+「連結可能唔完整、已過 24 小時，或者 app
                         要更新。請喺原本部機再撳「同步」。」+「知道」
                     </li>
                     <li>
-                        Toast：「已合併：4 個收藏 · 13 集進度」「已匯入：3 個收藏 · 11
-                        集進度」「已覆蓋：3 個收藏 · 11 集進度」
+                        Safari 提示（建議）：「如果你用緊主畫面嘅 app：請複製連結，喺 app
+                        入面撳「同步」→「由另一部機匯入」貼上。」+「複製連結」
                     </li>
+                    <li>Toast：「已合併：…」「已匯入：…」「已覆蓋：…」</li>
                 </ul>
 
                 <h3>仲要用戶揀</h3>
                 <ol>
-                    <li>④ 匯入確認風格：A 對比卡 / B 並排圖示 / C 一步式？</li>
-                    <li>上面嘅字眼（③ 說明句、太大提示、④ 全部）</li>
+                    <li>「實際匯入流程」嘅建議（由另一部機匯入入口、Safari 提示）要唔要做</li>
+                    <li>上面嘅字眼</li>
+                    <li>Android / 桌面 Chrome PWA 共用儲存：要真機確認</li>
                 </ol>
             </section>
         </main>
@@ -1665,12 +1709,14 @@
                 return { scrim, close };
             };
 
+            /** icon | 標題 | ✕：冇 icon / ✕ 都放空格，標題先會喺卡正中 */
             const sheetHead = (title, onClose, headIcon, bad) => {
                 const head = el('div', 'sheet-head');
-                if (headIcon)
-                    head.append(
-                        el('span', `head-ico${bad ? ' bad' : ''}`, { html: icon(headIcon) }),
-                    );
+                head.append(
+                    headIcon
+                        ? el('span', `head-ico${bad ? ' bad' : ''}`, { html: icon(headIcon) })
+                        : el('span', '', { 'aria-hidden': 'true' }),
+                );
                 head.append(el('h4', '', { text: title }));
                 if (onClose) {
                     const x = el('button', 'x-btn', {
@@ -1680,7 +1726,7 @@
                     });
                     x.addEventListener('click', onClose);
                     head.append(x);
-                }
+                } else head.append(el('span', '', { 'aria-hidden': 'true' }));
                 return head;
             };
 
@@ -1753,7 +1799,23 @@
                     } else toast('（preview：呢個瀏覽器冇 Web Share）');
                 });
                 const end = el('div', 'end');
-                end.append(btn, el('div', 'fine', { text: PRIVACY_TEXT }));
+                // （建議）主畫面 app 掃唔到 QR（iOS 儲存分開）：喺 app 入面貼上連結
+                const importBtn = el('button', 'abtn', {
+                    type: 'button',
+                    html: `${icon('link')}由另一部機匯入`,
+                });
+                importBtn.addEventListener('click', () => {
+                    sheet.replaceChildren();
+                    buildPaste(sheet, close, L, {
+                        toast,
+                        onDone: () => {},
+                        onBack: () => {
+                            sheet.replaceChildren();
+                            buildShare(sheet, close, L, { data, webShare, toast });
+                        },
+                    });
+                });
+                end.append(btn, importBtn, el('div', 'fine', { text: PRIVACY_TEXT }));
                 if (side) {
                     const body = el('div', 'share-body side');
                     const info = el('div', 'share-info');
@@ -1768,14 +1830,15 @@
                 sheet.querySelector('button')?.focus({ preventScroll: true });
             };
 
-            /* ---------- 匯入確認（④）：三個風格 × 三個狀態 ---------- */
+            /* ---------- 匯入確認（④）：定咗 B 並排圖示 ---------- */
             const FROM = { marks: 3, eps: 11 };
             const HERE = { marks: 1, eps: 4 };
             const MERGED = { marks: 4, eps: 13 };
             const BAD_TEXT =
                 '連結可能唔完整、已過 24 小時，或者 app 要更新。請喺原本部機再撳「同步」。';
-            const MERGE_HINT = '取較新嘅位置；聽完、收藏都保留。';
-            const overWarn = () => `會清走呢部機嘅 ${countText(HERE)}。`;
+            const OVER_CONFIRM = `覆蓋會清走本機嘅 ${countText(HERE)}。`;
+            const SAFARI_TIP =
+                '如果你用緊主畫面嘅 app：請複製連結，喺 app 入面撳「同步」→「由另一部機匯入」貼上。';
             const TOASTS = {
                 merge: `已合併：${countText(MERGED)}`,
                 import: `已匯入：${countText(FROM)}`,
@@ -1787,13 +1850,8 @@
                 b.addEventListener('click', onClick);
                 return b;
             };
-            const choice = (btn, hint, warn) => {
-                const wrap = el('div', 'choice');
-                wrap.append(btn, el('div', `fine${warn ? ' warn-text' : ''}`, { text: hint }));
-                return wrap;
-            };
-            const device = (iconName, label, value, cls = '') => {
-                const d = el('div', `dev ${cls}`);
+            const device = (iconName, label, value) => {
+                const d = el('div', 'dev');
                 d.append(
                     el('span', 'dev-ico', { html: icon(iconName) }),
                     el('small', '', { text: label }),
@@ -1801,8 +1859,20 @@
                 );
                 return d;
             };
+            /** 掣列：左邊「取消 / 返回」（plain），右邊一組（覆蓋 + 合併 / 確認覆蓋 / 匯入） */
+            const actionRow = (left, ...right) => {
+                const row = el('div', 'btn-row');
+                const group = el('div', 'btn-group');
+                group.append(...right);
+                row.append(left ?? el('span'), group);
+                return row;
+            };
 
-            const buildImport = (sheet, close, L, { look, status, toast, onDone }) => {
+            /**
+             * status：has（本機有記錄）/ empty（全新）/ bad（連結唔啱用）/ safari（iOS Safari / 內置瀏覽器開咗，建議）。
+             * inline：喺「由另一部機匯入」貼上連結之後，喺同一張卡入面接住出
+             */
+            const buildImport = (sheet, close, L, { status, toast, onDone, onBack }) => {
                 const finish = (msg) => {
                     close();
                     onDone(Boolean(msg));
@@ -1811,116 +1881,130 @@
                 const hereIcon = L.pos === 'center' ? 'laptop' : 'phone';
                 const bad = status === 'bad';
                 const empty = status === 'empty';
-                const okBtn = () => button('primary', '知道', () => finish(''));
-                const cancel = () => button('plain', '取消', () => finish(''));
-                const mergeBtn = (extra = '') =>
-                    button(`primary ${extra}`, empty ? '匯入' : '合併（建議）', () =>
-                        finish(empty ? TOASTS.import : TOASTS.merge),
+                const head = bad
+                    ? sheetHead('連結唔啱用', null, 'alert', true)
+                    : sheetHead('匯入收聽記錄？', null, 'sync');
+                sheet.append(head);
+                if (status === 'safari') {
+                    const tip = el('div', 'tip');
+                    tip.append(el('span', '', { text: SAFARI_TIP }));
+                    tip.append(
+                        button('small', '複製連結', async () => {
+                            await copyText(SHARE_DATA.normal.fullUrl);
+                            toast('已複製連結');
+                        }),
                     );
-                const overBtn = () => button('danger', '覆蓋', () => finish(TOASTS.over));
-                const btns = el('div', 'btns');
-
-                if (look === 'a') {
-                    if (bad) {
-                        btns.append(okBtn());
-                        sheet.append(
-                            sheetHead('連結唔啱用', null, 'alert', true),
-                            el('div', 'muted', { text: BAD_TEXT }),
-                            btns,
-                        );
-                    } else {
-                        const tiles = el('div', 'tiles');
-                        tiles.append(
-                            el('div', 'tile from', {
-                                html: `<small>連結 · 19/10 22:30</small><b>${countText(FROM)}</b>`,
-                            }),
-                        );
-                        if (!empty)
-                            tiles.append(
-                                el('div', 'tile', {
-                                    html: `<small>呢部機</small><b>${countText(HERE)}</b>`,
-                                }),
-                            );
-                        if (empty) btns.append(mergeBtn());
-                        else
-                            btns.append(
-                                choice(mergeBtn(), MERGE_HINT),
-                                choice(overBtn(), overWarn(), true),
-                            );
-                        btns.append(cancel());
-                        sheet.append(sheetHead('匯入收聽記錄？', null, 'sync'), tiles, btns);
-                    }
-                } else if (look === 'b') {
-                    const flow = el('div', 'flow');
-                    const arrow = el('span', `flow-arrow${bad ? ' bad' : ''}`, {
-                        html: icon(bad ? 'brokenArrow' : 'arrowRight'),
-                    });
-                    flow.append(
-                        device('link', '連結', bad ? '—' : countText(FROM)),
-                        arrow,
-                        device(hereIcon, '呢部機', empty ? '全新' : countText(HERE)),
-                    );
-                    if (bad) {
-                        btns.append(okBtn());
-                        sheet.append(
-                            sheetHead('連結唔啱用', null, 'alert', true),
-                            flow,
-                            el('div', 'muted', { text: BAD_TEXT }),
-                            btns,
-                        );
-                    } else {
-                        const result = el('div', 'result', {
-                            text: empty
-                                ? `匯入後：${countText(FROM)}`
-                                : `合併後：${countText(MERGED)}`,
-                        });
-                        const row = el('div', 'btn-row');
-                        if (empty) row.append(cancel(), mergeBtn());
-                        else
-                            row.append(
-                                cancel(),
-                                overBtn(),
-                                button('primary', '合併', () => finish(TOASTS.merge)),
-                            );
-                        btns.append(row);
-                        if (!empty)
-                            btns.append(el('div', 'fine warn-text', { text: `覆蓋${overWarn()}` }));
-                        sheet.append(sheetHead('匯入收聽記錄？', null, 'sync'), flow, result, btns);
-                    }
-                } else {
-                    // C 一步式：一句大字問題 + 一粒大掣；覆蓋收埋喺「其他選項」
-                    if (bad) {
-                        btns.append(okBtn());
-                        sheet.append(
-                            el('h4', 'big-q', { text: '連結唔啱用' }),
-                            el('div', 'muted sub', { text: BAD_TEXT }),
-                            btns,
-                        );
-                    } else {
-                        btns.append(
-                            button('primary big', empty ? '匯入' : '合併', () =>
-                                finish(empty ? TOASTS.import : TOASTS.merge),
-                            ),
-                            cancel(),
-                        );
-                        sheet.append(
-                            el('h4', 'big-q', { text: `匯入 ${countText(FROM)}？` }),
-                            el('div', 'muted sub', {
-                                text: empty ? '呢部機未有記錄。' : '會同呢部機嘅記錄合併。',
-                            }),
-                            btns,
-                        );
-                        if (!empty) {
-                            const more = el('details', 'more');
-                            more.append(
-                                el('summary', '', { text: '其他選項' }),
-                                choice(overBtn(), overWarn(), true),
-                            );
-                            sheet.append(more);
-                        }
-                    }
+                    sheet.append(tip);
                 }
-                sheet.querySelector('button.primary')?.focus({ preventScroll: true });
+                const flow = el('div', 'flow');
+                flow.append(
+                    device('link', '連結', bad ? '—' : countText(FROM)),
+                    el('span', `flow-arrow${bad ? ' bad' : ''}`, {
+                        html: icon(bad ? 'brokenArrow' : 'arrowRight'),
+                    }),
+                    device(hereIcon, '本機', empty ? '全新' : countText(HERE)),
+                );
+                sheet.append(flow);
+                const cancelText = onBack ? '返回' : '取消';
+                const cancel = () => button('plain', cancelText, onBack ?? (() => finish('')));
+                const actions = el('div', 'actions');
+                if (bad) {
+                    sheet.append(el('div', 'muted', { text: BAD_TEXT }));
+                    actions.append(
+                        actionRow(
+                            null,
+                            button('primary', '知道', () => finish('')),
+                        ),
+                    );
+                    sheet.append(actions);
+                    actions.querySelector('.primary').focus({ preventScroll: true });
+                    return;
+                }
+                const result = el('div', 'result', {
+                    text: empty ? `匯入後：${countText(FROM)}` : `合併後：${countText(MERGED)}`,
+                });
+                sheet.append(result, actions);
+                const showMain = () => {
+                    result.textContent = empty
+                        ? `匯入後：${countText(FROM)}`
+                        : `合併後：${countText(MERGED)}`;
+                    result.classList.remove('danger');
+                    actions.replaceChildren(
+                        empty
+                            ? actionRow(
+                                  cancel(),
+                                  button('primary', '匯入', () => finish(TOASTS.import)),
+                              )
+                            : actionRow(
+                                  cancel(),
+                                  button('danger', '覆蓋', showOverConfirm),
+                                  button('primary', '合併', () => finish(TOASTS.merge)),
+                              ),
+                    );
+                    actions.querySelector('.primary').focus({ preventScroll: true });
+                };
+                // 撳「覆蓋」先出確認：掣列原位換成警告 +「返回」/「確認覆蓋」，平時唔顯示紅字
+                const showOverConfirm = () => {
+                    result.textContent = OVER_CONFIRM;
+                    result.classList.add('danger');
+                    actions.replaceChildren(
+                        actionRow(
+                            button('plain', '返回', showMain),
+                            button('danger-fill', '確認覆蓋', () => finish(TOASTS.over)),
+                        ),
+                    );
+                    actions.querySelector('.plain').focus({ preventScroll: true });
+                };
+                showMain();
+            };
+
+            /** 「由另一部機匯入」（建議）：貼上連結 → 同一個匯入確認 */
+            const buildPaste = (sheet, close, L, { toast, onBack, onDone }) => {
+                const render = () => {
+                    sheet.replaceChildren();
+                    sheet.append(sheetHead('由另一部機匯入', close, 'link'));
+                    sheet.append(el('div', 'muted center', { text: '貼上另一部機分享嘅連結。' }));
+                    const field = el('div', 'paste-field');
+                    const input = el('input', '', {
+                        type: 'url',
+                        'aria-label': '連結',
+                        placeholder: 'https://…/903-player/#import=…',
+                        autocomplete: 'off',
+                    });
+                    const err = el('div', 'fine warn-text', { role: 'alert' });
+                    field.append(
+                        input,
+                        button('small', '貼上', async () => {
+                            let text = '';
+                            try {
+                                text = await navigator.clipboard.readText();
+                            } catch {
+                                /* preview 唔畀讀剪貼簿：用示範連結 */
+                            }
+                            input.value = text.includes('#import=')
+                                ? text
+                                : SHARE_DATA.normal.fullUrl;
+                            err.textContent = '';
+                        }),
+                    );
+                    const next = button('primary', '繼續', () => {
+                        if (!/#import=\d+\./.test(input.value)) {
+                            err.textContent = '呢條唔係同步連結。';
+                            input.focus();
+                            return;
+                        }
+                        sheet.replaceChildren();
+                        buildImport(sheet, close, L, {
+                            status: 'has',
+                            toast,
+                            onDone,
+                            onBack: render,
+                        });
+                    });
+                    sheet.append(field, err, actionRow(button('plain', '返回', onBack), next));
+                    input.focus({ preventScroll: true });
+                };
+                render();
             };
 
             /* ---------- 壓縮（同 ⑤ 建議一樣） ---------- */
@@ -2089,7 +2173,6 @@
                 version: 'B',
                 size: 'normal',
                 webshare: 'yes',
-                ilook: 'a',
                 istatus: 'has',
             };
             const groupHandlers = {};
@@ -2239,6 +2322,30 @@
                     };
                     open();
                 }
+                // （建議）由另一部機匯入：貼上連結畫面（手機一個舞台）
+                const L = LAYOUTS.phone;
+                const { stage } = makeStage(
+                    host,
+                    'phone',
+                    L.saved,
+                    '（建議）手機：由另一部機匯入 → 貼上連結',
+                );
+                const toast = toastOf(stage, L);
+                makeTabs(stage, L).set('star', 'third');
+                openScrim(stage, L, '由另一部機匯入', (sheet, close) =>
+                    buildPaste(sheet, close, L, {
+                        toast,
+                        onDone: () => {},
+                        onBack: () => {
+                            sheet.replaceChildren();
+                            buildShare(sheet, close, L, {
+                                data: SHARE_DATA[state.size],
+                                webShare: state.webshare === 'yes',
+                                toast,
+                            });
+                        },
+                    }),
+                );
                 const d = SHARE_DATA[state.size];
                 document.getElementById('share-note').textContent = d.truncated
                     ? `QR：最近 ${QR_MAX_EPISODES} 集 + ${d.marks} 個收藏，${d.qrUrl.length} 字，M v${versionM(d.qrUrl)}；分享連結 ${d.fullUrl.length} 字（${d.total} 集）。`
@@ -2253,10 +2360,15 @@
                 host.textContent = '';
                 for (const key of ['phone', 'wide']) {
                     const L = LAYOUTS[key];
+                    const safari = state.istatus === 'safari';
                     const caption =
                         key === 'phone'
-                            ? 'B 機：手機（相機掃 QR 開咗 app）'
-                            : 'B 機：laptop（開咗分享過嚟嘅連結）';
+                            ? safari
+                                ? 'B 機：iPhone（相機掃 QR → 喺 Safari 開咗，唔係主畫面 app）'
+                                : 'B 機：手機（相機掃 QR 開咗 app）'
+                            : safari
+                              ? 'B 機：laptop（Safari 開咗；桌面一樣示範提示）'
+                              : 'B 機：laptop（開咗分享過嚟嘅連結）';
                     const { stage, bar } = makeStage(host, key, L.home, caption, true);
                     const toast = toastOf(stage, L);
                     const tabs = makeTabs(stage, L);
@@ -2273,7 +2385,6 @@
                         bad ? '連結唔啱用' : '匯入收聽記錄',
                         (sheet, close) =>
                             buildImport(sheet, close, L, {
-                                look: state.ilook,
                                 status: state.istatus,
                                 toast,
                                 onDone: (imported) => {
@@ -2286,7 +2397,6 @@
                     );
                 }
             };
-            groupHandlers.ilook = buildSection4;
             groupHandlers.istatus = buildSection4;
             document.getElementById('import-reset').addEventListener('click', buildSection4);
 
