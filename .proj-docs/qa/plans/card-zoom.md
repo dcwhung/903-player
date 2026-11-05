@@ -7,13 +7,15 @@
     - AC-3 闊橫版返回照用 `back`、撳格用 zoom 唔係 expand；expand / back / open / close / switch 唔壞
     - AC-4 劇集「繼續收聽」唔 zoom；減少動態 = 直接切換（CLAUDE.md Motion）
     - AC-5 撳格仔順便開播仍喺 click 同步做
+    - AC-6（v1.26.1 闊橫版）同卡同頁 → expand / back；卡播 A 撳 B → zoom-handle / unzoom-handle；冇卡或閂卡撳會開播格 → zoom / back；閂卡撳唔開播格 → zoom-handle / unzoom-handle 仍閂卡
 - Scope files:
     - Core: `src/utils/cardZoom.ts` `src/utils/cardZoom.test.ts` `src/utils/zoomInset.ts` `src/utils/zoomInset.test.ts` `src/hooks/useZoomNavigate.ts` `src/hooks/useZoomNavigate.test.tsx` `src/hooks/useGoHome.ts` `src/hooks/useGoHome.test.tsx` `src/pages/home/HomePageZoom.test.tsx` `src/styles/cardZoom.node.test.ts`
+    - Wide（v1.26.1，Design Origin `_mockups_/card-zoom-wide/index.html`）: `src/selectors/wideZoomMotion.ts` `src/selectors/wideZoomMotion.test.ts` `src/pages/home/useTileOpen.ts` `src/hooks/useHomeSide.ts` `src/pages/home/HomePageWideZoom.test.tsx`
     - 1-hop importers: `src/components/pages/home/ShowTile/ShowTile.tsx` `src/components/pages/home/DramaShelf/DramaTile.tsx` `src/pages/home/HomePage.tsx` `src/pages/home/useHomeDramaItems.ts` `src/pages/show/useShowPage.ts` `src/pages/show/ShowPage.test.tsx`
     - 共用（屬 ui-foundation，唔重複 freeze）: `src/utils/viewTransition.ts` `src/utils/transitionNames.ts` `src/styles/global.css` `src/styles/tokens.css`
 - Commands:
-    - npx vitest run src/utils/cardZoom.test.ts src/utils/zoomInset.test.ts src/hooks/useZoomNavigate.test.tsx src/hooks/useGoHome.test.tsx src/pages/home/HomePageZoom.test.tsx src/styles/cardZoom.node.test.ts src/pages/show/ShowPage.test.tsx src/utils/viewTransition.test.ts
-    - e2e: e2e/cardZoom.mjs（'直版格仔 zoom'、'闊橫版格仔 zoom'）+ run.mjs '390×844 主流程'（窄版撳格入頁 → 返回）
+    - npx vitest run src/utils/cardZoom.test.ts src/utils/zoomInset.test.ts src/hooks/useZoomNavigate.test.tsx src/hooks/useGoHome.test.tsx src/pages/home/HomePageZoom.test.tsx src/styles/cardZoom.node.test.ts src/pages/show/ShowPage.test.tsx src/utils/viewTransition.test.ts src/selectors/wideZoomMotion.test.ts src/pages/home/HomePageWideZoom.test.tsx
+    - e2e: e2e/cardZoom.mjs（'直版格仔 zoom'、'闊橫版格仔 zoom'）+ 闊橫版 4 個 section（'闊橫版同卡同節目'、'闊橫版播緊卡撳另一格'、'闊橫版撳格開播'、'闊橫版閂卡撳格'）+ run.mjs '390×844 主流程'（窄版撳格入頁 → 返回）
     - e2e 入口只有 `npm run e2e`（build + node e2e/run.mjs，跑晒所有 section）；未有單 section runner
 - PWA gate: no（唔掂 sw / manifest / build config）
-- Out of scope: `_mockups_/card-zoom/**`（design origin，唔入鏈）；播放卡 expand / open / close / switch 本身（屬 home）
+- Out of scope: `_mockups_/card-zoom/**` `_mockups_/card-zoom-wide/**`（design origin，唔入鏈）；播放卡 expand / open / close / switch 本身（屬 home）
