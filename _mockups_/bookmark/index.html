@@ -225,7 +225,7 @@
                     left var(--move) var(--ease),
                     right var(--move) var(--ease);
             }
-            /* 收藏清單：每個節目 / 短篇一個 box，box 頂係 banner */
+            /* 收藏清單：每個節目 / 短篇一個 box（D1 = 頂部窄 header 加細縮圖；D2 = 左邊直身封面） */
             .list {
                 position: absolute;
                 overflow-y: auto;
@@ -234,46 +234,75 @@
             }
             .box {
                 break-inside: avoid;
+                display: grid;
                 margin-bottom: var(--gap);
-                border-radius: 16px;
+                border-radius: 14px;
                 overflow: hidden;
                 background: var(--app-box);
             }
-            .banner {
-                position: relative;
-                height: var(--banner-h);
+            .art {
                 background: center / cover no-repeat;
             }
-            .banner::after {
-                content: '';
-                position: absolute;
-                inset: 0;
-                background: linear-gradient(transparent 40%, rgb(8 14 24 / 82%));
+            .head {
+                display: flex;
+                gap: 6px;
+                align-items: baseline;
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
             }
-            .banner div {
-                position: absolute;
-                z-index: 1;
-                left: 14px;
-                right: 14px;
-                bottom: 10px;
+            .head b {
+                font: 700 14px/1.3 var(--font);
             }
-            .banner b {
-                display: block;
-                font: 700 16px/1.3 var(--font);
-                text-shadow: 0 1px 3px rgb(0 0 0 / 60%);
-            }
-            .banner small {
-                display: block;
-                font: 13px/1.3 var(--font);
+            .head small {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font: 12px/1.3 var(--font);
                 color: var(--app-cream);
+            }
+            /* D1：一行 header（細縮圖 + 名），下面各集 */
+            .d1 .box {
+                grid-template-columns: calc(var(--thumb-w) + 10px) 1fr;
+            }
+            .d1 .body {
+                display: contents;
+            }
+            .d1 .art {
+                width: var(--thumb-w);
+                aspect-ratio: 16 / 9;
+                margin: 8px 0 8px 10px;
+                border-radius: 6px;
+            }
+            .d1 .head {
+                align-self: center;
+                padding: 0 12px 0 10px;
+            }
+            .d1 .rows {
+                grid-column: 1 / -1;
+            }
+            .d1 .item .card {
+                border-top: 1px solid var(--app-divider);
+            }
+            /* D2：左邊直身封面貫穿成個 box，右邊名 + 各集 */
+            .d2 .box {
+                grid-template-columns: var(--side-w) 1fr;
+            }
+            .d2 .art {
+                min-height: 100%;
+            }
+            .d2 .body {
+                min-width: 0;
+            }
+            .d2 .head {
+                padding: 8px 12px 2px;
+            }
+            .d2 .item + .item .card {
+                border-top: 1px solid var(--app-divider);
             }
             .item {
                 position: relative;
                 overflow: hidden;
                 touch-action: pan-y;
-            }
-            .item + .item .card {
-                border-top: 1px solid var(--app-divider);
             }
             .item .del {
                 position: absolute;
@@ -287,19 +316,29 @@
             }
             .card {
                 position: relative;
-                padding: 10px 14px 12px;
+                padding: 7px 12px 8px;
                 background: var(--app-box);
                 cursor: grab;
                 user-select: none;
             }
-            .card b {
-                display: block;
-                font: 700 15px/1.3 var(--font);
+            .line {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                gap: 8px;
+            }
+            .line b {
+                font: 600 14px/1.3 var(--font);
+            }
+            .state {
+                font: 12px/1.3 var(--font);
+                color: var(--app-muted);
+                white-space: nowrap;
             }
             .bar {
-                height: 3px;
-                margin-top: 8px;
-                border-radius: 2px;
+                height: 2px;
+                margin-top: 5px;
+                border-radius: 1px;
                 background: var(--app-line);
                 overflow: hidden;
             }
@@ -307,11 +346,6 @@
                 display: block;
                 height: 100%;
                 background: var(--app-cream);
-            }
-            .state {
-                margin-top: 4px;
-                font: 12px/1.3 var(--font);
-                color: var(--app-muted);
             }
             .collapse {
                 transition:
@@ -388,14 +422,21 @@
             </section>
 
             <section class="panel">
-                <h2>③ 主頁「收藏」tab（L3：同一個節目 / 短篇一個 box）</h2>
+                <h2>③ 主頁「收藏」tab（L3：同一個節目 / 短篇一個 box；揀 D1 / D2）</h2>
                 <p>
-                    box 頂嘅
-                    banner：節目用節目圖；廣播劇按短篇分組，用短篇自己嘅圖（冇短篇圖就用成套劇嘅圖）。box
+                    封面：節目用節目圖；廣播劇按短篇分組，用短篇自己嘅圖（冇短篇圖就用成套劇嘅圖）。box
                     次序跟最新收藏；box 入面節目按日子新到舊、劇集按集數。撳一行 =
                     入嗰頁跳去嗰集（唔播）；左滑一行 = 移除；一個 box 冇晒就收埋；全部冇晒，tab
                     淡走跳返「節目」。
                 </p>
+                <div class="row" data-group="design">
+                    <button type="button" class="pick" data-val="d1" aria-pressed="true">
+                        D1 窄 header（細縮圖 + 名）
+                    </button>
+                    <button type="button" class="pick" data-val="d2" aria-pressed="false">
+                        D2 左邊直身封面
+                    </button>
+                </div>
                 <div class="row">
                     <button type="button" class="act" id="reset">重新加返 8 集收藏</button>
                     <button type="button" class="act" id="clear">清晒收藏（tab 消失）</button>
@@ -467,7 +508,7 @@
                     img: 'nHome',
                     size: { w: 390, h: 844, max: 0.82 },
                     tabs: { x: 16, y: 133, w: 358, h: 50, inset: 6, font: 14, icon: 64 },
-                    list: { x: 16, y: 195, w: 358, h: 548, cols: 1, gap: 12, banner: 104 },
+                    list: { x: 16, y: 195, w: 358, h: 548, cols: 1, gap: 10, thumb: 56, side: 84 },
                     cover: { y: 187, h: 564 },
                     toastBottom: 120,
                 },
@@ -476,7 +517,7 @@
                     img: 'wHome',
                     size: { w: 1300, h: 800, max: 0.72 },
                     tabs: { x: 24, y: 24, w: 784, h: 75, inset: 8, font: 18, icon: 120 },
-                    list: { x: 24, y: 115, w: 784, h: 667, cols: 2, gap: 16, banner: 128 },
+                    list: { x: 24, y: 115, w: 784, h: 667, cols: 2, gap: 14, thumb: 64, side: 104 },
                     cover: { y: 107, h: 693, w: 820 },
                     toastBottom: 40,
                 },
@@ -581,7 +622,7 @@
                 },
             ];
 
-            const state = { icon: 'star', place: 'p2' };
+            const state = { icon: 'star', place: 'p2', design: 'd1' };
 
             const svg = (name, on) =>
                 `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON_PATH[name]}" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
@@ -682,7 +723,9 @@
                     columnCount: String(L.list.cols),
                 });
                 home.list.style.setProperty('--gap', `${L.list.gap}px`);
-                home.list.style.setProperty('--banner-h', `${L.list.banner}px`);
+                home.list.style.setProperty('--thumb-w', `${L.list.thumb}px`);
+                home.list.style.setProperty('--side-w', `${L.list.side}px`);
+                home.list.classList.add(state.design);
                 home.tabs = div('tabs', {
                     left: `${L.tabs.x}px`,
                     top: `${L.tabs.y}px`,
@@ -774,8 +817,10 @@
                     const meta = GROUPS[g];
                     const box = div('box collapse', {});
                     box.dataset.g = g;
-                    box.innerHTML = `<div class="banner" style="background-image:url(${IMG[meta.img]})"><div><b>${meta.title}</b>${meta.sub ? `<small>${meta.sub}</small>` : ''}</div></div>`;
-                    rows.forEach((it) => box.append(rowOf(home, it, meta)));
+                    box.innerHTML = `<div class="art" style="background-image:url(${IMG[meta.img]})"></div>
+                        <div class="body"><div class="head"><b>${meta.title}</b>${meta.sub ? `<small>${meta.sub}</small>` : ''}</div><div class="rows"></div></div>`;
+                    const list = box.querySelector('.rows');
+                    rows.forEach((it) => list.append(rowOf(home, it, meta)));
                     home.list.append(box);
                 });
             };
@@ -784,9 +829,8 @@
                 const wrap = div('item collapse', {});
                 wrap.innerHTML = `<span class="del">移除</span>
                     <div class="card">
-                        <b>${it.label}</b>
+                        <div class="line"><b>${it.label}</b><span class="state">${it.text}</span></div>
                         <div class="bar"><i style="width:${Math.round(it.ratio * 100)}%"></i></div>
-                        <div class="state">${it.text}</div>
                     </div>`;
                 swipe(home, wrap, it, meta);
                 return wrap;
