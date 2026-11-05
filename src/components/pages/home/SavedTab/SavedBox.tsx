@@ -41,6 +41,7 @@ export const SavedBox = ({ box, soloHeight }: SavedBoxProps) => {
         <article
             className={styles.box}
             data-kind={box.kind}
+            data-removed={box.removed ? '' : undefined}
             data-saved-box=""
             style={style as CSSProperties | undefined}
         >

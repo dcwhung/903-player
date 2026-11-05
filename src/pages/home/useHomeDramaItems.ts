@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
 import type { DramaShelfItem } from '../../components/pages/home/DramaShelf/DramaShelf';
 import {
+    arcAvailabilityOf,
     dramaEpisodesOf,
     enabledDramas,
     seriesEpisodesOf,
+    upcomingDramas,
     type DramaConfig,
 } from '../../catalog/dramas';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
@@ -17,24 +19,54 @@ import { isEpisodeOfDrama, seriesArcs } from '../../selectors/dramas';
 import { dramaShelfOrder } from '../../selectors/dramaShelf';
 import { getProgressMap } from '../../services/progressStore';
 import { zoomKey } from '../../utils/cardZoom';
+import { hkToday } from '../../utils/date';
+import { leavingCorner, upcomingTile, withReleaseSuffix } from './dramaTileNotices';
 import { useTileOpen, type HomeRight } from './useTileOpen';
 
-/** 劇集格右下角：短篇劇集「N 個短篇」（分季嘅「全 N 季」），每日劇集「每日更新」 */
-const dramaMeta = (drama: DramaConfig): string => {
+/**
+ * 劇集格右下角：短篇劇集「N 個短篇」（分季嘅「全 N 季」；只數已上架未下架嘅），每日劇集「每日更新」；
+ * 有新短篇 / 新一批集數即將上架就加字尾（H2 / E1）
+ */
+const dramaMeta = (drama: DramaConfig, today: string): string => {
     if (drama.kind !== 'series') return t('drama.daily');
-    const count = seriesArcs(seriesEpisodesOf(drama.id)).length;
-    return t(drama.arcUnit === 'season' ? 'drama.seasonCount' : 'drama.arcCount', { count });
+    const count = seriesArcs(seriesEpisodesOf(drama.id, today)).length;
+    const meta = t(drama.arcUnit === 'season' ? 'drama.seasonCount' : 'drama.arcCount', { count });
+    return withReleaseSuffix(meta, arcAvailabilityOf(drama.id), today);
 };
+
+/** 劇集格嘅圖同字：右下角短篇數（+ 即將上架字尾）、左上角快將下架 */
+const tileText = (drama: DramaConfig, today: string) => ({
+    id: drama.id,
+    name: drama.name,
+    art: drama.tileArt,
+    meta: dramaMeta(drama, today),
+    leaving: leavingCorner(drama, arcAvailabilityOf(drama.id), today),
+});
+
+/** 整套即將上架嘅劇：書架最尾灰格，撳唔到（一登記即刻出） */
+const upcomingItems = (today: string): DramaShelfItem[] =>
+    upcomingDramas(today).map((drama) => ({
+        id: drama.id,
+        name: drama.name,
+        art: drama.tileArt,
+        meta: '',
+        upcoming: upcomingTile(drama, today),
+        onOpen: () => undefined,
+        onResume: () => undefined,
+    }));
 
 /** 廣播劇 tab 嘅劇集次序（見 dramaShelfOrder）；轉集、有集數聽完就按新進度重新排 */
 const useShelfDramas = (): DramaConfig[] => {
     const player = usePlayer();
     const progressMap = useRefreshedOn(getProgressMap, [player.watchedRevision, player.recording]);
     // 播放中主頁跟 currentTime 成日 re-render；progressMap 由 useRefreshedOn 出，reference 穩定，
-    // 劇集清單又係 module 常數，所以只係進度真係重新讀過先再排（S-481）
+    // 劇集清單只跟日子變，所以只係進度真係重新讀過（或者過咗午夜）先再排（S-481）
+    // 上架 / 下架按香港日子：過咗午夜（today 變）都重新排
+    const today = hkToday();
     return useMemo(
-        () => dramaShelfOrder(enabledDramas(), dramaEpisodesOf, progressMap),
-        [progressMap],
+        () =>
+            dramaShelfOrder(enabledDramas(today), (id) => dramaEpisodesOf(id, today), progressMap),
+        [progressMap, today],
     );
 };
 
@@ -50,12 +82,9 @@ export const useDramaItems = (right: HomeRight): DramaShelfItem[] => {
     const { recording } = usePlayer();
     const newLabels = useDramaNewLabels();
     const continueOf = useDramaContinue();
-    const shelf = useShelfDramas();
-    return shelf.map((drama) => ({
-        id: drama.id,
-        name: drama.name,
-        art: drama.tileArt,
-        meta: dramaMeta(drama),
+    const today = hkToday();
+    const items = useShelfDramas().map((drama) => ({
+        ...tileText(drama, today),
         newLabel: newLabels.get(drama.id),
         resume: continueOf(drama),
         onOpen: () => {
@@ -71,4 +100,5 @@ export const useDramaItems = (right: HomeRight): DramaShelfItem[] => {
         },
         onResume: () => void startDrama(drama),
     }));
+    return [...items, ...upcomingItems(today)];
 };

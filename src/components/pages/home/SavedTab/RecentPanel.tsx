@@ -1,12 +1,21 @@
 import { useId } from 'react';
 import { t } from '../../../../i18n/t';
 import { Disc } from '../../../shared/common/Disc/Disc';
+import { HourglassIcon } from '../../../shared/common/icons/icons';
 import { BookmarkButton } from '../../../shared/player/BookmarkButton/BookmarkButton';
 import { zoomKey } from '../../../../utils/cardZoom';
 import styles from './SavedTab.module.css';
 import type { RecentRowView } from './savedTypes';
 
-/** 最近收聽一行：細碟 + 名 + 日期 / 集數；撳行 = 入嗰集（唔播），撳 ☆ = 收藏 */
+const NOTICE_ICON_SIZE = 12;
+
+/** 開行掣讀屏名（快將下架加日子） */
+const openLabel = ({ name, label, leaving }: RecentRowView): string => {
+    const named = t('bookmark.openRecent', { name, label });
+    return leaving ? t('availability.withLeaving', { label: named, when: leaving.label }) : named;
+};
+
+/** 最近收聽一行：細碟 + 名 + 日期 / 集數（快將下架第二行琥珀字，LR1）；撳行 = 入嗰集（唔播），撳 ☆ = 收藏 */
 const RecentRow = ({ row }: { row: RecentRowView }) => {
     const { name, label } = row;
     return (
@@ -14,7 +23,7 @@ const RecentRow = ({ row }: { row: RecentRowView }) => {
             <button
                 type="button"
                 className={styles.recentOpen}
-                aria-label={t('bookmark.openRecent', { name, label })}
+                aria-label={openLabel(row)}
                 onClick={row.onOpen}
             >
                 <span className={styles.recentDisc}>
@@ -23,6 +32,12 @@ const RecentRow = ({ row }: { row: RecentRowView }) => {
                 <span className={styles.recentText}>
                     <span className={styles.recentName}>{name}</span>
                     <span>{label}</span>
+                    {row.leaving && (
+                        <span className={styles.leaving}>
+                            <HourglassIcon size={NOTICE_ICON_SIZE} />
+                            {row.leaving.text}
+                        </span>
+                    )}
                 </span>
             </button>
             <BookmarkButton

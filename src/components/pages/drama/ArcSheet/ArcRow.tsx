@@ -8,6 +8,7 @@ import { Marquee } from '../../../shared/common/Marquee/Marquee';
 import { NewBadge } from '../../../shared/common/NewBadge/NewBadge';
 import { playLabel, rowLabel, visibleStatus } from './arcLabels';
 import styles from './ArcSheet.module.css';
+import type { ArcRowNotes } from './arcSheetTypes';
 
 /** 一行要嘅 props；ArcSheetProps 由呢度組合，避免 ArcRow ↔ ArcSheet 型別循環 */
 export interface ArcRowProps {
@@ -21,6 +22,8 @@ export interface ArcRowProps {
     onPlay: (summary: ArcSummary) => void;
     /** 每行碟面：短篇有自己碟面就用，冇就用劇集主碟面（DramaPage 用 dramaArtFor，同唱片一致） */
     coverOf: (summary: ArcSummary) => string;
+    /** 上架 / 下架補充（A2 逐集上架、LS2 快將下架）；冇就同以前一樣 */
+    notesOf?: ((summary: ArcSummary) => ArcRowNotes | undefined) | undefined;
 }
 
 const PLAY_ICON_SIZE = 18;
@@ -45,14 +48,21 @@ const PlayButtonIcon = ({
  * 碟面 + 外圈進度環（--arc-ring-fill = 聽完集數佔幾多）；未聽完碟面底中間有「1/4」pill，
  * 聽完冇 pill、右下角出 ✓。成粒係裝飾（aria-hidden），狀態喺行嘅 aria-label
  */
-const ArcCover = ({ summary: s, cover }: { summary: ArcSummary; cover: string }) => {
-    const isDone = s.state === 'done';
+const ArcCover = ({
+    summary: s,
+    cover,
+    total = s.total,
+}: {
+    summary: ArcSummary;
+    cover: string;
+    /** 分母（A2：有未上架批次就計埋）；聽晒已上架但仲有下一批唔算聽完 */
+    total?: number | undefined;
+}) => {
+    const isDone = s.state === 'done' && total === s.total;
     return (
         <span
             className={styles.ring}
-            style={
-                { '--arc-ring-fill': `${toPercent(ratio(s.watched, s.total))}%` } as CSSProperties
-            }
+            style={{ '--arc-ring-fill': `${toPercent(ratio(s.watched, total))}%` } as CSSProperties}
             aria-hidden="true"
         >
             <img className={styles.cover} src={cover} alt="" loading="lazy" decoding="async" />
@@ -62,7 +72,7 @@ const ArcCover = ({ summary: s, cover }: { summary: ArcSummary; cover: string })
                 </span>
             ) : (
                 <span className={styles.count} data-role="count">
-                    {`${s.watched}/${s.total}`}
+                    {`${s.watched}/${total}`}
                 </span>
             )}
         </span>
@@ -77,9 +87,11 @@ export const ArcRow = ({
     onPick,
     onPlay,
     coverOf,
+    notesOf,
 }: ArcRowProps) => {
     const isCurrent = current?.arc === s.arc;
-    const status = visibleStatus(s, current);
+    const notes = notesOf?.(s);
+    const status = visibleStatus(s, current, notes);
     return (
         <li className={`${styles.row} ${isCurrent ? styles.current : ''}`}>
             <button
@@ -87,14 +99,15 @@ export const ArcRow = ({
                 className={styles.pick}
                 data-role="pick"
                 aria-current={isCurrent ? 'true' : undefined}
-                aria-label={t('drama.arcRow', { arc: s.arc, status: rowLabel(s, current) })}
+                aria-label={t('drama.arcRow', { arc: s.arc, status: rowLabel(s, current, notes) })}
                 onClick={() => onPick(s.arc)}
             >
-                <ArcCover summary={s} cover={coverOf(s)} />
+                <ArcCover summary={s} cover={coverOf(s)} total={notes?.total} />
                 <span className={styles.text} aria-hidden="true">
                     <span className={styles.name}>
                         <Marquee className={styles.nameText} text={s.arc} />
                         {s.isNew && <NewBadge size="sm" className={styles.fresh} />}
+                        {notes?.badge && <span className={styles.leavingBadge}>{notes.badge}</span>}
                     </span>
                     <span className={styles.status}>{status}</span>
                 </span>

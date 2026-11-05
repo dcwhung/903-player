@@ -360,3 +360,34 @@
     height: calc(34px * var(--ui-scale));
     color: var(--color-gold);
 }
+
+/*
+ * 快將下架（P8 #6，LB1 / LR1）：狀態字後面 / 最近收聽第二行琥珀字（深色 box 上用 --leave-on-dark）
+ */
+.leaving {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--notice-icon-gap);
+    color: var(--leave-on-dark);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.state .leaving::before {
+    margin: 0 var(--space-1);
+    color: var(--saved-muted);
+    font-weight: 400;
+    content: '·';
+}
+
+/* 已下架行：內容淡咗、冇 ▷，撳唔到（冇 pointer），照可以左滑移除 */
+.row[data-removed] .open {
+    cursor: default;
+    opacity: var(--removed-opacity);
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 成套劇已下架：banner 變灰 */
+.box[data-removed] .bannerArt {
+    filter: grayscale(1);
+}

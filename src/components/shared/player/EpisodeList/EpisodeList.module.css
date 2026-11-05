@@ -227,3 +227,39 @@
         transparent var(--unavailable-dash) calc(var(--unavailable-dash) + var(--unavailable-gap))
     );
 }
+
+/* 快將下架（LE1）：狀態字後面琥珀色「· ⏳ 05/12 下架」，同一行 */
+.withLeaving {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.leaving {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--notice-icon-gap);
+    color: var(--leave-ink);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.leaving::before {
+    margin: 0 var(--space-1);
+    color: var(--color-text-muted);
+    font-weight: 400;
+    content: '·';
+}
+
+/*
+ * 未上架嘅一批集數（摺埋一行）：字淡色、冇進度條、右邊時鐘標記；撳唔到，冇 pointer、冇撳落效果
+ */
+.upcoming {
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.upcoming .dayMonth,
+.upcoming .play {
+    color: var(--color-text-muted);
+}

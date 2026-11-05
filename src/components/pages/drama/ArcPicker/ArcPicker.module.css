@@ -100,6 +100,62 @@
     content: '';
 }
 
+/* 標籤行：普通標籤可以 … 收尾；快將下架字唔縮（成套劇快將下架，琥珀色 ⏳） */
+.label {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-1);
+}
+
+.labelText {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.notice {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--notice-icon-gap);
+    color: var(--leave-ink);
+    font-weight: 700;
+}
+
+/*
+ * 即將上架 chip（_mockups_/coming-soon ① 已揀）：虛線框 + 淡底 + ⏱，排最尾。
+ * 撳唔到：冇 pointer、冇撳落效果
+ */
+.soon {
+    gap: var(--space-1);
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.soon::before {
+    border: var(--upcoming-dash-width) dashed var(--color-text-muted);
+    background: color-mix(
+        in srgb,
+        var(--color-surface) var(--upcoming-surface-mix),
+        var(--color-bg)
+    );
+}
+
+/* 快將下架（LK1）：chip 名後面琥珀小標「⏳ 05/12」 */
+.leavingTag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--notice-icon-gap);
+    margin-left: var(--space-1);
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--leave-tag-bg);
+    color: var(--leave-ink);
+    font-size: var(--font-size-2xs);
+    font-weight: 700;
+    line-height: var(--new-badge-line);
+}
+
 /* 新上架 chip 名後面嘅「新」 */
 .fresh {
     margin-left: var(--space-1);

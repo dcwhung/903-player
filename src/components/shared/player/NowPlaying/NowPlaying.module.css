@@ -20,3 +20,15 @@
     font-size: var(--font-size-xs);
     line-height: var(--now-playing-detail-line);
 }
+
+/* 成套劇快將下架（P8 #6）：琥珀色 + ⏳，一行放唔落就 … 收尾 */
+.notice {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--notice-icon-gap);
+    overflow: hidden;
+    color: var(--leave-ink);
+    font-weight: 700;
+    white-space: nowrap;
+}

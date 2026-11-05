@@ -1,6 +1,6 @@
 import { t } from '../../../../i18n/t';
 import { PERCENT, toPercent } from '../../../../utils/ratio';
-import { CheckIcon, PauseIcon, PlayIcon } from '../../common/icons/icons';
+import { CheckIcon, ClockIcon, HourglassIcon, PauseIcon, PlayIcon } from '../../common/icons/icons';
 import { Marquee } from '../../common/Marquee/Marquee';
 import { BookmarkButton } from '../BookmarkButton/BookmarkButton';
 import styles from './EpisodeList.module.css';
@@ -8,6 +8,8 @@ import type { EpisodeItem } from './episodeListTypes';
 
 const CHECK_ICON_SIZE = 12;
 const PLAY_ICON_SIZE = 22;
+const NOTICE_ICON_SIZE = 12;
+const CLOCK_ICON_SIZE = 18;
 
 /** 行尾圖示：播緊 → 暫停；聽過 → 剔；其他 → 播放 */
 const RowIcon = ({ item }: { item: EpisodeItem }) => {
@@ -49,8 +51,27 @@ const UnavailableRow = ({ item }: { item: EpisodeItem }) => (
     </div>
 );
 
-/** 進度條 + 狀態字 */
-const RowBody = ({ percent, text }: { percent: number; text: string }) => (
+/**
+ * 未上架嘅一批集數（短篇劇逐集上架，_mockups_/coming-soon ⑥）：摺埋一行「第 11–20 集 · 19/11（四）上架」，
+ * aria-disabled（Tab / 讀屏照行到），撳落乜都唔做；右邊時鐘標記，冇播放掣
+ */
+const UpcomingRow = ({ item }: { item: EpisodeItem }) => (
+    <button
+        type="button"
+        className={`${styles.row} ${styles.upcoming}`}
+        aria-disabled="true"
+        aria-label={item.label}
+    >
+        <RowDate item={item} />
+        <span className={styles.body}>
+            <span className={styles.status}>{item.status.text}</span>
+        </span>
+        <ClockIcon className={styles.play} size={CLOCK_ICON_SIZE} />
+    </button>
+);
+
+/** 進度條 + 狀態字（快將下架就後面接琥珀字，LE1） */
+const RowBody = ({ percent, item }: { percent: number; item: EpisodeItem }) => (
     <span className={styles.body}>
         <span
             className={styles.bar}
@@ -61,9 +82,25 @@ const RowBody = ({ percent, text }: { percent: number; text: string }) => (
         >
             <span className={styles.fill} style={{ width: `${percent}%` }} />
         </span>
-        <span className={styles.status}>{text}</span>
+        <span className={`${styles.status} ${item.leaving ? styles.withLeaving : ''}`}>
+            {item.status.text}
+            {item.leaving && (
+                <span className={styles.leaving}>
+                    <HourglassIcon size={NOTICE_ICON_SIZE} />
+                    {item.leaving.text}
+                </span>
+            )}
+        </span>
     </span>
 );
+
+/** 播放掣讀屏名：日子 / 集數 + 狀態（+ 快將下架日子） */
+const rowLabel = (item: EpisodeItem, date: string): string => {
+    const status = item.leaving
+        ? t('availability.withLeaving', { label: item.status.text, when: item.leaving.label })
+        : item.status.text;
+    return t(item.isPlaying ? 'episodes.pause' : 'episodes.play', { date, status });
+};
 
 export const EpisodeRow = ({
     item,
@@ -73,9 +110,8 @@ export const EpisodeRow = ({
     onSelect: (key: string) => void;
 }) => {
     const { status, track } = item;
-    if (status.kind === 'unavailable') {
-        return <UnavailableRow item={item} />;
-    }
+    if (status.kind === 'unavailable') return <UnavailableRow item={item} />;
+    if (status.kind === 'upcoming') return <UpcomingRow item={item} />;
     const percent = toPercent(status.ratio);
     const date = [item.dayMonth, item.weekday, item.tag].filter(Boolean).join(' ');
     // 收藏掣唔可以放入行掣入面（掣入面唔准再有掣）：行入面留位，星疊喺個位上面（同一個 li）
@@ -85,14 +121,11 @@ export const EpisodeRow = ({
                 type="button"
                 className={`${styles.row} ${item.current ? styles.current : ''} ${styles[status.kind] ?? ''}`}
                 aria-current={item.current ? 'true' : undefined}
-                aria-label={t(item.isPlaying ? 'episodes.pause' : 'episodes.play', {
-                    date,
-                    status: status.text,
-                })}
+                aria-label={rowLabel(item, date)}
                 onClick={() => onSelect(item.key)}
             >
                 <RowDate item={item} />
-                <RowBody percent={percent} text={status.text} />
+                <RowBody percent={percent} item={item} />
                 {track && <span className={styles.bookmarkSpace} aria-hidden="true" />}
                 <RowIcon item={item} />
             </button>

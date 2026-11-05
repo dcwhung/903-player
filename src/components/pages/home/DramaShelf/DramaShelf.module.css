@@ -127,11 +127,32 @@
     }
 }
 
-/* 「新」（NewBadge）喺左上角 */
-.newBadge {
+/*
+ * 左上角：「新」（NewBadge）同快將下架嘅琥珀字，同一行由左向右排（_mockups_/coming-soon ⑧），
+ * 中間 --tile-corner-gap；書架排位唔郁
+ */
+.corner {
     position: absolute;
     top: var(--space-2);
     left: var(--space-2);
+    display: flex;
+    align-items: center;
+    gap: var(--tile-corner-gap);
+}
+
+/* 快將下架：同角落細字一樣半透明深底，字用琥珀色（深底上睇得清） */
+.leaving {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--notice-icon-gap);
+    padding: var(--new-badge-pad-block) var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--version-badge-bg);
+    color: var(--leave-on-dark);
+    font-size: var(--font-size-2xs);
+    font-weight: 700;
+    line-height: var(--new-badge-line);
+    white-space: nowrap;
 }
 
 /*
@@ -149,11 +170,41 @@
     font-size: var(--font-size-2xs);
     font-weight: 500;
     line-height: var(--new-badge-line);
+    /* 一行：太長就 … 收尾，唔斷行 */
+    max-width: calc(100% - 2 * var(--space-2));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .metaTop {
     top: var(--space-2);
     bottom: auto;
+}
+
+/*
+ * 有「繼續收聽」：左上角（新 + 快將下架）同右上角短篇數放同一條頂行，
+ * 窄格（手機打橫格仔）放唔落就短篇數換落第二行，唔會疊住
+ */
+.topBar {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    left: var(--space-2);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.topBar .corner,
+.topBar .meta {
+    position: static;
+}
+
+.topBar .meta {
+    max-width: 100%;
+    margin-left: auto;
 }
 
 /*
@@ -179,10 +230,37 @@
     font-weight: 700;
 }
 
-/* 一行，放唔落就跑馬燈（Marquee） */
-.continueLabel {
+/* 集名一行（放唔落就跑馬燈），快將下架就後面接琥珀字（LC2），琥珀字唔縮 */
+.continueLine {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
     width: 100%;
+    min-width: 0;
+}
+
+.continueLabel {
+    flex: 0 1 auto;
+    /* 窄格都留返集名最少一半位，下架字唔夠位就 … 收尾 */
+    min-width: var(--continue-label-min);
     font-size: var(--font-size-xs);
+}
+
+.continueLeaving {
+    display: inline-flex;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    align-items: center;
+    gap: var(--notice-icon-gap);
+    color: var(--leave-on-dark);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.continueLeaving::before {
+    content: '·';
 }
 
 .continueBar {
@@ -212,6 +290,41 @@
     border-radius: var(--radius-full);
     background: var(--drama-continue-fill);
     color: var(--drama-continue-on-fill);
+}
+
+/*
+ * 整套劇即將上架（_mockups_/coming-soon ⑦ Z1）：圖變灰階再蓋淡遮罩，底部深色條寫上架日。
+ * 撳唔到：冇 pointer、冇撳落效果
+ */
+.upcoming .art {
+    filter: grayscale(1);
+}
+
+.upcoming .open {
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.upcoming .open::after {
+    position: absolute;
+    inset: 0;
+    background: var(--upcoming-tile-scrim);
+    content: '';
+}
+
+.upcomingBar {
+    position: absolute;
+    z-index: 1;
+    inset: auto 0 0;
+    display: flex;
+    align-items: center;
+    gap: var(--notice-icon-gap);
+    min-height: var(--upcoming-bar-height);
+    padding: 0 var(--space-3);
+    background: var(--upcoming-bar-bg);
+    color: var(--upcoming-bar-text);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
 }
 
 /* 橫版：並排（條件同 layout.ts 嘅 LANDSCAPE_QUERY 一樣） */

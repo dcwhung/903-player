@@ -1,18 +1,31 @@
-import { useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
+import { showToast } from '../../components/shared/common/Toast/toastStore';
 import { NEUTRAL_THEME } from '../../config/showThemes';
-import { findEnabledDrama } from '../../catalog/dramas';
+import { dramaStatus, findEnabledDrama } from '../../catalog/dramas';
 import { t } from '../../i18n/t';
 import { DailyDramaPage } from './DailyDramaPage';
 import { DramaHeader } from './DramaHeader';
 import page from '../shared/Page.module.css';
 import { SeriesDramaPage } from './SeriesDramaPage';
 
+/** 劇集未上架 / 已下架（舊 URL、書籤）：返主頁；已下架順便出提示 */
+const OffShelf = ({ removed }: { removed: boolean }) => {
+    useEffect(() => {
+        if (removed) showToast(t('availability.dramaRemovedToast'));
+    }, [removed]);
+    return <Navigate to="/" replace />;
+};
+
 /** 劇集頁 route：按劇集款式分派每日 / 短篇劇集頁；搵唔到（或者未開放）就講搵唔到 */
 export const DramaPage = () => {
     const { dramaId = '' } = useParams();
     const drama = findEnabledDrama(dramaId);
+    const status = dramaStatus(dramaId);
+    if (drama && (status === 'upcoming' || status === 'removed'))
+        return <OffShelf removed={status === 'removed'} />;
     if (!drama) {
         return (
             <ThemeScope theme={NEUTRAL_THEME}>

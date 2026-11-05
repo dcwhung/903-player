@@ -281,3 +281,66 @@
     background: var(--color-accent-fill);
     color: var(--color-on-accent);
 }
+
+/* 成套劇快將下架（P8 #6）：表頭下面一行琥珀字 */
+.notice {
+    display: flex;
+    align-items: center;
+    gap: var(--notice-icon-gap);
+    margin: 0;
+    color: var(--leave-ink);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+}
+
+/* 快將下架（LS2）：短篇名後面嘅琥珀膠囊 */
+.leavingBadge {
+    flex-shrink: 0;
+    margin-left: var(--space-1);
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--leave-pill-bg);
+    color: var(--leave-pill-text);
+    font-size: var(--font-size-2xs);
+    font-weight: 600;
+    line-height: var(--new-badge-line);
+}
+
+/*
+ * 即將上架行（S1）：碟面灰、膠囊用 track 色、名淡色；右邊時鐘標記（虛線圓，唔係掣）。
+ * 撳唔到：冇 pointer、冇撳落效果
+ */
+.soon .pick {
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.soon .ring {
+    background: var(--color-track);
+}
+
+.soon .cover {
+    opacity: var(--unavailable-opacity);
+    filter: grayscale(1);
+}
+
+.soon .count {
+    background: var(--color-track);
+    color: var(--color-text);
+}
+
+.soon .name {
+    color: var(--color-text-muted);
+}
+
+.soonMark {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border: var(--upcoming-dash-width) dashed var(--color-text-muted);
+    border-radius: var(--radius-full);
+    color: var(--color-text-muted);
+}

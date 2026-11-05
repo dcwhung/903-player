@@ -47,7 +47,14 @@ const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, arcTotal:
 interface SeriesPlayerColumnProps {
     view: Pick<
         SeriesDramaView,
-        'theme' | 'upNext' | 'start' | 'standbyTime' | 'status' | 'arcPosition' | 'arcTotal'
+        | 'theme'
+        | 'upNext'
+        | 'start'
+        | 'standbyTime'
+        | 'status'
+        | 'arcPosition'
+        | 'arcTotal'
+        | 'notice'
     >;
     title: string;
     landscape: boolean;
@@ -79,6 +86,7 @@ const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayer
                     {...seriesNowPlaying(current, view.arcPosition, view.arcTotal)}
                     status={status}
                     connecting={connecting}
+                    notice={view.notice}
                 />
             )}
         </div>
