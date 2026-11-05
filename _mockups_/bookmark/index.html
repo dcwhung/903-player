@@ -80,11 +80,16 @@
                 margin: 0;
                 font-size: 17px;
             }
-            p {
+            p,
+            li {
                 margin: 0;
                 color: var(--note);
                 font-size: 14px;
                 line-height: 1.6;
+            }
+            ul {
+                margin: 0;
+                padding-left: 20px;
             }
             .panel {
                 display: grid;
@@ -225,7 +230,10 @@
                     left var(--move) var(--ease),
                     right var(--move) var(--ease);
             }
-            /* 收藏清單：每個節目 / 短篇一個 box（D1 = 頂部窄 header 加細縮圖；D2 = 左邊直身封面） */
+            /*
+             * 收藏清單（D2 + disc）：每個節目 / 每套劇一個 box；
+             * box 入面每個節目 / 短篇一段：左邊 disc 正方封面，右邊名 + 各集
+             */
             .list {
                 position: absolute;
                 overflow-y: auto;
@@ -234,74 +242,47 @@
             }
             .box {
                 break-inside: avoid;
-                display: grid;
                 margin-bottom: var(--gap);
                 border-radius: 14px;
                 overflow: hidden;
                 background: var(--app-box);
             }
-            .art {
+            .box > .title {
+                padding: 10px 12px 0;
+                font: 700 15px/1.3 var(--font);
+            }
+            .section {
+                display: grid;
+                grid-template-columns: var(--disc) 1fr;
+                gap: 12px;
+                padding: 10px 12px 6px;
+            }
+            .section + .section {
+                border-top: 1px solid var(--app-divider);
+            }
+            .disc {
+                width: var(--disc);
+                aspect-ratio: 1;
+                border-radius: 10px;
                 background: center / cover no-repeat;
             }
-            .head {
-                display: flex;
-                gap: 6px;
-                align-items: baseline;
+            .sbody {
                 min-width: 0;
+            }
+            .shead {
+                font: 700 14px/1.3 var(--font);
                 white-space: nowrap;
                 overflow: hidden;
-            }
-            .head b {
-                font: 700 14px/1.3 var(--font);
-            }
-            .head small {
-                overflow: hidden;
                 text-overflow: ellipsis;
-                font: 12px/1.3 var(--font);
+            }
+            .shead.sub {
+                font-weight: 600;
                 color: var(--app-cream);
-            }
-            /* D1：一行 header（細縮圖 + 名），下面各集 */
-            .d1 .box {
-                grid-template-columns: calc(var(--thumb-w) + 10px) 1fr;
-            }
-            .d1 .body {
-                display: contents;
-            }
-            .d1 .art {
-                width: var(--thumb-w);
-                aspect-ratio: 16 / 9;
-                margin: 8px 0 8px 10px;
-                border-radius: 6px;
-            }
-            .d1 .head {
-                align-self: center;
-                padding: 0 12px 0 10px;
-            }
-            .d1 .rows {
-                grid-column: 1 / -1;
-            }
-            .d1 .item .card {
-                border-top: 1px solid var(--app-divider);
-            }
-            /* D2：左邊直身封面貫穿成個 box，右邊名 + 各集 */
-            .d2 .box {
-                grid-template-columns: var(--side-w) 1fr;
-            }
-            .d2 .art {
-                min-height: 100%;
-            }
-            .d2 .body {
-                min-width: 0;
-            }
-            .d2 .head {
-                padding: 8px 12px 2px;
-            }
-            .d2 .item + .item .card {
-                border-top: 1px solid var(--app-divider);
             }
             .item {
                 position: relative;
                 overflow: hidden;
+                border-radius: 8px;
                 touch-action: pan-y;
             }
             .item .del {
@@ -309,17 +290,20 @@
                 inset: 0;
                 display: grid;
                 place-items: center end;
-                padding-right: 16px;
+                padding-right: 14px;
                 background: var(--app-danger);
                 font: 600 14px var(--font);
                 color: #fff;
             }
             .card {
                 position: relative;
-                padding: 7px 12px 8px;
+                padding: 10px 0 11px;
                 background: var(--app-box);
                 cursor: grab;
                 user-select: none;
+            }
+            .item + .item .card {
+                border-top: 1px solid var(--app-divider);
             }
             .line {
                 display: flex;
@@ -337,7 +321,7 @@
             }
             .bar {
                 height: 2px;
-                margin-top: 5px;
+                margin-top: 7px;
                 border-radius: 1px;
                 background: var(--app-line);
                 overflow: hidden;
@@ -350,7 +334,9 @@
             .collapse {
                 transition:
                     height var(--fade) var(--ease),
-                    opacity var(--fade) var(--ease);
+                    opacity var(--fade) var(--ease),
+                    padding var(--fade) var(--ease),
+                    margin var(--fade) var(--ease);
             }
             .toast {
                 position: absolute;
@@ -381,7 +367,7 @@
                 <h1>P7 #7 成集收藏 + 我的收藏</h1>
                 <p>
                     v1.26.1 真截圖加上收藏掣同收藏 tab。收藏單位係「一集」（節目某日 /
-                    廣播劇一集）。用戶已揀：I1 星星、P2 播放掣右邊、L3 分組。
+                    廣播劇一集）。用戶已揀：I1 星星、P2 播放掣右邊、L3 分組 + D2（disc 正方封面）。
                 </p>
             </header>
 
@@ -401,7 +387,7 @@
             </section>
 
             <section class="panel">
-                <h2>② 播放器入面收藏掣（已揀 P2）</h2>
+                <h2>② 播放器 / 集數清單收藏掣（已揀 P2）</h2>
                 <div class="row" data-group="place">
                     <button type="button" class="pick" data-val="p1" aria-pressed="false">
                         P1 頁頭右上角
@@ -413,7 +399,10 @@
                         P3「現正播放」旁邊
                     </button>
                 </div>
-                <p class="opt-desc" id="place-desc"></p>
+                <p>
+                    撳 ☆ = 加入收藏（變 ★）；再撳 ★ = 移除收藏（變返
+                    ☆）。兩樣都會喺底部出一個短提示，冇確認框。
+                </p>
                 <div class="stages">
                     <div class="viewport" id="v-show"></div>
                     <div class="viewport" id="v-card"></div>
@@ -422,22 +411,21 @@
             </section>
 
             <section class="panel">
-                <h2>③ 主頁「收藏」tab（L3：同一個節目 / 短篇一個 box；揀 D1 / D2）</h2>
-                <p>
-                    封面：節目用節目圖；廣播劇按短篇分組，用短篇自己嘅圖（冇短篇圖就用成套劇嘅圖）。box
-                    次序跟最新收藏；box 入面節目按日子新到舊、劇集按集數。撳一行 =
-                    入嗰頁跳去嗰集（唔播）；左滑一行 = 移除；一個 box 冇晒就收埋；全部冇晒，tab
-                    淡走跳返「節目」。
-                </p>
-                <div class="row" data-group="design">
-                    <button type="button" class="pick" data-val="d1" aria-pressed="true">
-                        D1 窄 header（細縮圖 + 名）
-                    </button>
-                    <button type="button" class="pick" data-val="d2" aria-pressed="false">
-                        D2 左邊直身封面
-                    </button>
-                </div>
+                <h2>③ 主頁「收藏」tab（L3 + D2 disc）</h2>
+                <ul>
+                    <li>
+                        每個節目一個 box；每套廣播劇一個 box，入面按短篇分段，每段用短篇自己嘅 disc
+                    </li>
+                    <li>box 次序跟最新收藏；段入面節目按日子新到舊、劇集按集數</li>
+                    <li>撳一行 = 入嗰頁跳去嗰集（唔播）</li>
+                    <li>
+                        移除：左滑一行見到紅色「移除」，拉過四成放手 → 嗰行滑走、收埋；段 / box
+                        冇晒集就跟住收埋；全部冇晒 → tab
+                        淡走、跳返「節目」。拉唔夠四成放手就彈返原位
+                    </li>
+                </ul>
                 <div class="row">
+                    <button type="button" class="act" id="demo">▶ 示範左滑移除（慢鏡）</button>
                     <button type="button" class="act" id="reset">重新加返 8 集收藏</button>
                     <button type="button" class="act" id="clear">清晒收藏（tab 消失）</button>
                 </div>
@@ -454,12 +442,12 @@
                 nHome: 'n-home.webp',
                 nShow: 'n-show.webp',
                 wHome: 'w-home.webp',
-                gongzi: 'banner-gongzi.webp',
-                badgirl: 'banner-badgirl.webp',
-                wanni: 'banner-wanni.webp',
-                chisee: 'banner-chisee.webp',
-                lancyHalf: 'banner-lancy-half.webp',
-                lancyFirstLove: 'banner-lancy-first-love.webp',
+                gongzi: 'disc-gongzi.webp',
+                badgirl: 'disc-badgirl.webp',
+                wanni: 'disc-wanni.webp',
+                chisee: 'disc-chisee.webp',
+                lancyHalf: 'disc-lancy-half.webp',
+                lancyFirstLove: 'disc-lancy-first-love.webp',
             };
             const STAR =
                 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z';
@@ -467,11 +455,6 @@
             const HEART =
                 'M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z';
             const ICON_PATH = { star: STAR, ribbon: RIBBON, heart: HEART };
-            const PLACE_DESC = {
-                p1: '頁頭右上角，同左上角「返回」對稱。唔會擠到播放掣，但同播放器有啲距離。',
-                p2: '控制列：播放掣右邊，同左邊「由頭播放」對稱。最就手，聽緊覺得好就撳。',
-                p3: '「現正播放」字旁邊，即係講明係收藏而家呢集。比較細粒，唔搶眼。',
-            };
             /** 節目頁（390×844）同闊橫版卡（1300×800）入面三個位，用 v1.26.1 量到嘅 element 位置 */
             const PLACES = {
                 show: {
@@ -500,6 +483,7 @@
             const TOAST_MS = 1800;
             const FOLLOW_MS = 560;
             const COLLAPSE_MS = 280;
+            const DEMO_MS = 1400;
 
             /** 兩款主頁版面：tab 同清單位置都係 v1.26.1 量到嘅 */
             const LAYOUTS = {
@@ -508,7 +492,7 @@
                     img: 'nHome',
                     size: { w: 390, h: 844, max: 0.82 },
                     tabs: { x: 16, y: 133, w: 358, h: 50, inset: 6, font: 14, icon: 64 },
-                    list: { x: 16, y: 195, w: 358, h: 548, cols: 1, gap: 10, thumb: 56, side: 84 },
+                    list: { x: 16, y: 195, w: 358, h: 548, cols: 1, gap: 10, disc: 64 },
                     cover: { y: 187, h: 564 },
                     toastBottom: 120,
                 },
@@ -517,40 +501,38 @@
                     img: 'wHome',
                     size: { w: 1300, h: 800, max: 0.72 },
                     tabs: { x: 24, y: 24, w: 784, h: 75, inset: 8, font: 18, icon: 120 },
-                    list: { x: 24, y: 115, w: 784, h: 667, cols: 2, gap: 14, thumb: 64, side: 104 },
+                    list: { x: 24, y: 115, w: 784, h: 667, cols: 2, gap: 14, disc: 80 },
                     cover: { y: 107, h: 693, w: 820 },
                     toastBottom: 40,
                 },
             };
 
-            const GROUPS = {
-                gongzi: { title: '公子會', img: 'gongzi', order: 'date' },
-                badgirl: { title: 'Bad Girl大過佬', img: 'badgirl', order: 'date' },
-                wanni: { title: '雲妮鍾情', img: 'wanni', order: 'date' },
-                chisee36: {
-                    title: '芝See菇Bi Family',
-                    sub: '三十六計',
-                    img: 'chisee',
-                    order: 'ep',
-                },
-                lancyHalf: {
-                    title: '蘭茜夫人劇場',
-                    sub: '戀愛二分一',
-                    img: 'lancyHalf',
-                    order: 'ep',
-                },
+            /** box = 一個節目 / 一套劇；section = box 入面一段（節目本身 / 一個短篇） */
+            const BOXES = {
+                gongzi: { title: '公子會', drama: false },
+                badgirl: { title: 'Bad Girl大過佬', drama: false },
+                wanni: { title: '雲妮鍾情', drama: false },
+                chisee: { title: '芝See菇Bi Family', drama: true },
+                lancy: { title: '蘭茜夫人劇場', drama: true },
+            };
+            const SECTIONS = {
+                gongzi: { box: 'gongzi', disc: 'gongzi', order: 'date' },
+                badgirl: { box: 'badgirl', disc: 'badgirl', order: 'date' },
+                wanni: { box: 'wanni', disc: 'wanni', order: 'date' },
+                chisee36: { box: 'chisee', sub: '三十六計', disc: 'chisee', order: 'ep' },
+                lancyHalf: { box: 'lancy', sub: '戀愛二分一', disc: 'lancyHalf', order: 'ep' },
                 lancyFirstLove: {
-                    title: '蘭茜夫人劇場',
+                    box: 'lancy',
                     sub: '初戀無限次',
-                    img: 'lancyFirstLove',
+                    disc: 'lancyFirstLove',
                     order: 'ep',
                 },
             };
-            /** added = 收藏先後（大 = 新）；sort = box 入面次序（日子 / 集數） */
+            /** added = 收藏先後（大 = 新）；sort = 段入面次序（日子 / 集數） */
             const SAMPLE = [
                 {
                     id: 1,
-                    g: 'gongzi',
+                    s: 'gongzi',
                     label: '17/10（六）',
                     sort: 1017,
                     ratio: 0.01,
@@ -559,7 +541,7 @@
                 },
                 {
                     id: 2,
-                    g: 'lancyHalf',
+                    s: 'lancyHalf',
                     label: '第 2 集',
                     sort: 2,
                     ratio: 0.33,
@@ -568,7 +550,7 @@
                 },
                 {
                     id: 3,
-                    g: 'chisee36',
+                    s: 'chisee36',
                     label: '第 3 集',
                     sort: 3,
                     ratio: 1,
@@ -577,7 +559,7 @@
                 },
                 {
                     id: 4,
-                    g: 'badgirl',
+                    s: 'badgirl',
                     label: '15/10（四）',
                     sort: 1015,
                     ratio: 0.27,
@@ -586,7 +568,7 @@
                 },
                 {
                     id: 5,
-                    g: 'gongzi',
+                    s: 'gongzi',
                     label: '03/10（六）',
                     sort: 1003,
                     ratio: 0,
@@ -595,7 +577,7 @@
                 },
                 {
                     id: 6,
-                    g: 'lancyHalf',
+                    s: 'lancyHalf',
                     label: '第 1 集',
                     sort: 1,
                     ratio: 1,
@@ -604,7 +586,7 @@
                 },
                 {
                     id: 7,
-                    g: 'lancyFirstLove',
+                    s: 'lancyFirstLove',
                     label: '第 5 集',
                     sort: 5,
                     ratio: 0,
@@ -613,7 +595,7 @@
                 },
                 {
                     id: 8,
-                    g: 'wanni',
+                    s: 'wanni',
                     label: '14/10（三）',
                     sort: 1014,
                     ratio: 0,
@@ -622,12 +604,27 @@
                 },
             ];
 
-            const state = { icon: 'star', place: 'p2', design: 'd1' };
+            const state = { icon: 'star', place: 'p2' };
 
             const svg = (name, on) =>
                 `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON_PATH[name]}" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
 
-            const bmButton = (x, y, s, color, pressed = false) => {
+            const div = (cls, style = {}) => {
+                const el = document.createElement('div');
+                el.className = cls;
+                Object.assign(el.style, style);
+                return el;
+            };
+
+            const flashIn = (stage, bottom, text) => {
+                stage.querySelector('.toast')?.remove();
+                const t = div('toast', { bottom: `${bottom}px` });
+                t.textContent = text;
+                stage.append(t);
+                setTimeout(() => t.remove(), TOAST_MS);
+            };
+
+            const bmButton = (stage, x, y, s, color, pressed, toastBottom) => {
                 const b = document.createElement('button');
                 b.type = 'button';
                 b.className = 'bm';
@@ -638,13 +635,17 @@
                     height: `${s}px`,
                 });
                 b.style.setProperty('--bm-color', color);
-                b.setAttribute('aria-label', '收藏呢集');
                 const paint = (on) => {
                     b.setAttribute('aria-pressed', String(on));
+                    b.setAttribute('aria-label', on ? '移除收藏' : '收藏呢集');
                     b.innerHTML = svg(state.icon, on);
                 };
                 paint(pressed);
-                b.addEventListener('click', () => paint(b.getAttribute('aria-pressed') !== 'true'));
+                b.addEventListener('click', () => {
+                    const on = b.getAttribute('aria-pressed') !== 'true';
+                    paint(on);
+                    flashIn(stage, toastBottom, on ? '已加入收藏' : '已移除收藏');
+                });
                 return b;
             };
 
@@ -672,33 +673,32 @@
             const renderShow = () => {
                 const stage = makeStage('v-show', { w: 390, h: 844, max: 0.82 }, 'nShow');
                 SHOW_ROWS.forEach((r, i) => {
-                    const patch = document.createElement('div');
-                    patch.className = 'patch';
-                    Object.assign(patch.style, {
-                        left: `${PATCH_X}px`,
-                        top: `${r.y + 8}px`,
-                        width: `${PATCH_W}px`,
-                        height: `${ROW_H - 16}px`,
-                        background: r.bg,
-                    });
                     stage.append(
-                        patch,
+                        div('patch', {
+                            left: `${PATCH_X}px`,
+                            top: `${r.y + 8}px`,
+                            width: `${PATCH_W}px`,
+                            height: `${ROW_H - 16}px`,
+                            background: r.bg,
+                        }),
                         bmButton(
+                            stage,
                             ROW_BM.x,
                             r.y + (ROW_H - ROW_BM.s) / 2,
                             ROW_BM.s,
                             '#d4ae5c',
                             i === 0,
+                            40,
                         ),
                     );
                 });
                 const p = PLACES.show[state.place];
-                stage.append(bmButton(p.x, p.y, p.s, p.color, true));
+                stage.append(bmButton(stage, p.x, p.y, p.s, p.color, true, 40));
             };
             const renderCard = () => {
                 const stage = makeStage('v-card', { w: 1300, h: 800, max: 0.62 }, 'wHome');
                 const p = PLACES.card[state.place];
-                stage.append(bmButton(p.x, p.y, p.s, p.color));
+                stage.append(bmButton(stage, p.x, p.y, p.s, p.color, false, 40));
             };
 
             /* ── ③ 主頁收藏 tab：每款版面一個獨立 instance ── */
@@ -723,9 +723,7 @@
                     columnCount: String(L.list.cols),
                 });
                 home.list.style.setProperty('--gap', `${L.list.gap}px`);
-                home.list.style.setProperty('--thumb-w', `${L.list.thumb}px`);
-                home.list.style.setProperty('--side-w', `${L.list.side}px`);
-                home.list.classList.add(state.design);
+                home.list.style.setProperty('--disc', `${L.list.disc}px`);
                 home.tabs = div('tabs', {
                     left: `${L.tabs.x}px`,
                     top: `${L.tabs.y}px`,
@@ -735,7 +733,7 @@
                 home.tabs.style.setProperty('--inset', `${L.tabs.inset}px`);
                 home.tabs.style.setProperty('--font-size', `${L.tabs.font}px`);
                 home.tabs.style.setProperty('--icon-tab', `${L.tabs.icon}px`);
-                home.pill = div('pill', {});
+                home.pill = div('pill');
                 const mk = (k, html, extra = '') => {
                     const b = document.createElement('button');
                     b.type = 'button';
@@ -757,13 +755,6 @@
                 homes[key] = home;
                 renderList(home);
                 syncTabs(home, false);
-            };
-
-            const div = (cls, style) => {
-                const el = document.createElement('div');
-                el.className = cls;
-                Object.assign(el.style, style);
-                return el;
             };
 
             const placePill = (home) => {
@@ -798,46 +789,72 @@
                 syncTabs(home);
             };
 
-            /** box 次序：最新收藏嗰集所屬嘅 box 行頭；box 入面節目日子新到舊、劇集集數細到大 */
-            const groupsOf = (items) => {
-                const keys = [
-                    ...new Set([...items].sort((a, b) => b.added - a.added).map((x) => x.g)),
-                ];
-                return keys.map((g) => {
-                    const rows = items.filter((x) => x.g === g);
-                    const byEp = GROUPS[g].order === 'ep';
+            const newest = (rows) => Math.max(...rows.map((x) => x.added));
+            /** box / 段次序跟最新收藏；段入面節目日子新到舊、劇集集數細到大 */
+            const layoutOf = (items) => {
+                const bySection = Object.keys(SECTIONS)
+                    .map((s) => ({ s, rows: items.filter((x) => x.s === s) }))
+                    .filter((x) => x.rows.length);
+                bySection.forEach(({ s, rows }) => {
+                    const byEp = SECTIONS[s].order === 'ep';
                     rows.sort((a, b) => (byEp ? a.sort - b.sort : b.sort - a.sort));
-                    return { g, rows };
                 });
+                const boxes = Object.keys(BOXES)
+                    .map((b) => ({ b, sections: bySection.filter((x) => SECTIONS[x.s].box === b) }))
+                    .filter((x) => x.sections.length);
+                boxes.forEach((x) => x.sections.sort((p, q) => newest(q.rows) - newest(p.rows)));
+                return boxes.sort(
+                    (p, q) =>
+                        newest(q.sections.flatMap((x) => x.rows)) -
+                        newest(p.sections.flatMap((x) => x.rows)),
+                );
             };
 
             const renderList = (home) => {
                 home.list.innerHTML = '';
-                groupsOf(home.items).forEach(({ g, rows }) => {
-                    const meta = GROUPS[g];
-                    const box = div('box collapse', {});
-                    box.dataset.g = g;
-                    box.innerHTML = `<div class="art" style="background-image:url(${IMG[meta.img]})"></div>
-                        <div class="body"><div class="head"><b>${meta.title}</b>${meta.sub ? `<small>${meta.sub}</small>` : ''}</div><div class="rows"></div></div>`;
-                    const list = box.querySelector('.rows');
-                    rows.forEach((it) => list.append(rowOf(home, it, meta)));
+                layoutOf(home.items).forEach(({ b, sections }) => {
+                    const meta = BOXES[b];
+                    const box = div('box collapse');
+                    if (meta.drama) {
+                        const title = div('title');
+                        title.textContent = meta.title;
+                        box.append(title);
+                    }
+                    sections.forEach(({ s, rows }) => box.append(sectionOf(home, s, rows, meta)));
                     home.list.append(box);
                 });
             };
 
-            const rowOf = (home, it, meta) => {
-                const wrap = div('item collapse', {});
+            const sectionOf = (home, s, rows, boxMeta) => {
+                const meta = SECTIONS[s];
+                const sec = div('section collapse');
+                sec.innerHTML = `<div class="disc" style="background-image:url(${IMG[meta.disc]})"></div>
+                    <div class="sbody"><div class="shead ${meta.sub ? 'sub' : ''}">${meta.sub ?? boxMeta.title}</div></div>`;
+                const body = sec.querySelector('.sbody');
+                rows.forEach((it) => body.append(rowOf(home, it, boxMeta, meta)));
+                return sec;
+            };
+
+            const rowOf = (home, it, boxMeta, meta) => {
+                const wrap = div('item collapse');
                 wrap.innerHTML = `<span class="del">移除</span>
                     <div class="card">
                         <div class="line"><b>${it.label}</b><span class="state">${it.text}</span></div>
                         <div class="bar"><i style="width:${Math.round(it.ratio * 100)}%"></i></div>
                     </div>`;
-                swipe(home, wrap, it, meta);
+                wrap.dataset.id = String(it.id);
+                swipe(home, wrap, it, () =>
+                    flashIn(
+                        home.stage,
+                        home.L.toastBottom,
+                        `入「${boxMeta.title}」頁，跳去 ${meta.sub ? `${meta.sub} ` : ''}${it.label}（唔會自動播）`,
+                    ),
+                );
                 return wrap;
             };
 
             /** 左滑：拖過一定比例就移除（同 mini player 一樣），唔夠就彈返 */
-            const swipe = (home, wrap, it, meta) => {
+            const swipe = (home, wrap, it, onTap) => {
                 const card = wrap.querySelector('.card');
                 let startX = null;
                 let dx = 0;
@@ -857,51 +874,68 @@
                 const end = () => {
                     if (startX === null) return;
                     startX = null;
-                    card.style.transition = `transform var(--fade) var(--ease)`;
-                    if (-dx > card.offsetWidth * SWIPE_REMOVE) {
-                        card.style.transform = 'translateX(-110%)';
-                        setTimeout(() => remove(home, wrap, it), COLLAPSE_MS);
-                    } else {
-                        card.style.transform = '';
-                    }
+                    release(home, wrap, it, -dx > card.offsetWidth * SWIPE_REMOVE);
                     dx = 0;
                 };
                 card.addEventListener('pointerup', end);
                 card.addEventListener('pointercancel', end);
                 card.addEventListener('click', () => {
-                    if (!moved)
-                        flash(
-                            home,
-                            `入「${meta.title}」頁，跳去 ${meta.sub ? `${meta.sub} ` : ''}${it.label}（唔會自動播）`,
-                        );
+                    if (!moved) onTap();
                 });
             };
 
-            /** 收埋一行；佢係個 box 最後一行就連 box 一齊收 */
-            const remove = (home, wrap, it) => {
+            const release = (home, wrap, it, removeIt, slow = 1) => {
+                const card = wrap.querySelector('.card');
+                card.style.transition = `transform calc(var(--fade) * ${slow}) var(--ease)`;
+                if (!removeIt) {
+                    card.style.transform = '';
+                    return;
+                }
+                card.style.transform = 'translateX(-110%)';
+                setTimeout(() => remove(home, wrap, it, slow), COLLAPSE_MS * slow);
+            };
+
+            /** 收埋：一行；佢係段最後一行就收段；段係 box 最後一段就收 box */
+            const remove = (home, wrap, it, slow = 1) => {
+                const sec = wrap.closest('.section');
                 const box = wrap.closest('.box');
-                const last = box.querySelectorAll('.item').length === 1;
-                const target = last ? box : wrap;
+                const lastInSec = sec.querySelectorAll('.item').length === 1;
+                const lastInBox = box.querySelectorAll('.item').length === 1;
+                const target = lastInBox ? box : lastInSec ? sec : wrap;
+                target.style.transitionDuration = `${(COLLAPSE_MS * slow) / 1000}s`;
                 target.style.height = `${target.offsetHeight}px`;
                 requestAnimationFrame(() => {
-                    target.style.height = '0px';
-                    target.style.opacity = '0';
-                    if (last) target.style.marginBottom = '0px';
+                    Object.assign(target.style, {
+                        height: '0px',
+                        opacity: '0',
+                        paddingTop: '0px',
+                        paddingBottom: '0px',
+                        marginBottom: '0px',
+                    });
                 });
-                setTimeout(() => {
-                    home.items = home.items.filter((x) => x.id !== it.id);
-                    if (home.items.length === 0) home.tab = 'shows';
-                    renderList(home);
-                    syncTabs(home);
-                }, COLLAPSE_MS);
+                setTimeout(
+                    () => {
+                        home.items = home.items.filter((x) => x.id !== it.id);
+                        if (home.items.length === 0) home.tab = 'shows';
+                        renderList(home);
+                        syncTabs(home);
+                    },
+                    COLLAPSE_MS * slow + 20,
+                );
             };
 
-            const flash = (home, text) => {
-                home.toast?.remove();
-                home.toast = div('toast', { bottom: `${home.L.toastBottom}px` });
-                home.toast.textContent = text;
-                home.stage.append(home.toast);
-                setTimeout(() => home.toast?.remove(), TOAST_MS);
+            /** 示範：手機第一行慢慢左滑，見到紅色「移除」，過咗四成放手 */
+            const demo = () => {
+                const home = homes.phone;
+                if (home.tab !== 'saved') selectTab(home, 'saved');
+                const wrap = home.list.querySelector('.item');
+                if (!wrap) return;
+                const it = home.items.find((x) => String(x.id) === wrap.dataset.id);
+                const card = wrap.querySelector('.card');
+                const slow = 3;
+                card.style.transition = `transform ${DEMO_MS}ms var(--ease)`;
+                card.style.transform = `translateX(-${Math.round(card.offsetWidth * 0.55)}px)`;
+                setTimeout(() => release(home, wrap, it, true, slow), DEMO_MS + 200);
             };
 
             const renderAll = () => {
@@ -919,13 +953,14 @@
                         .querySelectorAll('button')
                         .forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
                     state[group.dataset.group] = btn.dataset.val;
-                    document.getElementById('place-desc').textContent = PLACE_DESC[state.place];
                     renderAll();
                 }),
             );
+            document.getElementById('demo').addEventListener('click', demo);
             document.getElementById('reset').addEventListener('click', () => {
                 Object.values(homes).forEach((home) => {
                     home.items = SAMPLE.map((x) => ({ ...x }));
+                    home.tab = 'saved';
                     renderList(home);
                     syncTabs(home);
                 });
@@ -939,7 +974,6 @@
                 });
             });
 
-            document.getElementById('place-desc').textContent = PLACE_DESC[state.place];
             renderAll();
         </script>
     </body>
