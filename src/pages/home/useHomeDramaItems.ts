@@ -60,12 +60,15 @@ export const useDramaItems = (right: HomeRight): DramaShelfItem[] => {
         resume: continueOf(drama),
         onOpen: () => {
             // 已載入呢套劇就算 mini player 關咗都唔播，保持暫停（S-538）
+            // 用實際有冇開到播（S-682）
             const starts =
-                drama.kind === 'daily' && !busy && !isEpisodeOfDrama(recording, drama.id);
-            if (starts) startDrama(drama);
+                drama.kind === 'daily' &&
+                !busy &&
+                !isEpisodeOfDrama(recording, drama.id) &&
+                startDrama(drama);
             const page = { kind: 'drama', dramaId: drama.id } as const;
             open({ key: zoomKey.drama(drama.id), path: `/drama/${drama.id}`, page, starts });
         },
-        onResume: () => startDrama(drama),
+        onResume: () => void startDrama(drama),
     }));
 };

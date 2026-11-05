@@ -41,20 +41,21 @@ export const isFirstSeriesVisit = (
  * 揀出要播嘅一集並即時開始播放。
  * 主頁喺 click handler 入面直接 call，令 iOS 容許自動播放（同 useStartPlayback 一樣）。
  * 已經載入緊呢套劇（mini player 顯示緊）就繼續播嗰集，唔好跳返續播 / 今日嗰集
- * （新揀嘅一集未存進度，按進度揀會跳返之前嗰集）
+ * （新揀嘅一集未存進度，按進度揀會跳返之前嗰集）。
+ * 回 true = 真係開始咗播；冇集數播就 false（主頁格仔用嚟揀入頁過場，S-682）
  */
 export const useStartDrama = () => {
     const { load, play, recording } = usePlayer();
     return useCallback(
-        (drama: DramaConfig) => {
+        (drama: DramaConfig): boolean => {
             if (isEpisodeOfDrama(recording, drama.id)) {
                 void play();
-                return;
+                return true;
             }
             const episode = dramaStartEpisode(drama, getProgressMap(), hkToday());
-            if (episode) {
-                void load(episode, { autoplay: true });
-            }
+            if (!episode) return false;
+            void load(episode, { autoplay: true });
+            return true;
         },
         [load, play, recording],
     );

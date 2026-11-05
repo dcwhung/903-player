@@ -109,7 +109,16 @@ export const zoomInto = (
 
 export interface UnzoomOptions {
     kind?: UnzoomKind;
-    /** 返到主頁嗰格唔喺畫面時改用嘅過場（闊橫版 back）；冇就跳過動畫 */
+    /**
+     * 返到主頁嗰格唔喺畫面時改用嘅過場（闊橫版 back）；冇就跳過動畫。
+     * 改嘅時候舊畫面（內頁）已經用 kind 嘅規則影咗：內頁成頁、頁頭、唱片格都冇名，
+     * 新畫面（主頁）先跟 back（張卡、卡入面唱片格 / 名照舊有名）。所以實際變形係（S-684）：
+     * - unzoom-handle → back：內頁把手（舊，player-panel）放大做主頁卡（新，player-panel）；
+     *   卡入面唱片格、名得新嗰邊，淡入；其餘 root 新舊 crossfade。閂咗卡（主頁把手喺 back 冇名）就冇新嗰邊，
+     *   內頁把手淡走
+     * - unzoom → back：舊畫面冇任何 player-panel，淨係 root crossfade，張卡（有嘅話）淡入；
+     *   唔會有 ⤢ back 嗰種成頁縮做卡
+     */
     fallback?: ViewTransitionKind;
 }
 

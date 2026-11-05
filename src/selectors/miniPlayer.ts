@@ -1,6 +1,6 @@
 import { t } from '../i18n/t';
 import type { Recording } from '../types/recording';
-import { asShowRecording, type Track } from '../types/track';
+import { asShowRecording, isDramaEpisode, type Track } from '../types/track';
 import { formatDateLabel } from '../utils/date';
 import { formatDuration } from '../utils/time';
 
@@ -44,3 +44,10 @@ export const miniPlayerTags = (
         if (hasRewatch && i === 0) return 'rewatch';
         return r.date === today ? 'today' : undefined;
     });
+
+/**
+ * mini player 有冇嘢顯示：載入緊廣播劇，或者清單（今日節目 + 載入緊嘅舊集）唔係空。
+ * 主頁 useMiniPlayer 同內頁 useHomeSide 共用（S-683）；左滑關咗另外睇
+ */
+export const hasMiniPlayerContent = (listed: Recording[], loaded: Track | null): boolean =>
+    (loaded !== null && isDramaEpisode(loaded)) || miniPlayerRecordings(listed, loaded).length > 0;

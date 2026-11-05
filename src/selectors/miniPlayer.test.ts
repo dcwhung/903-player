@@ -1,6 +1,7 @@
 import { recording } from '../../tests/renderWithProviders';
 import { seriesEpisodesOf } from '../catalog/dramas';
 import {
+    hasMiniPlayerContent,
     miniPlayerRecordings,
     miniPlayerSubtitle,
     miniPlayerTags,
@@ -82,5 +83,24 @@ describe('miniPlayerTags', () => {
             'rewatch',
             undefined,
         ]);
+    });
+});
+
+/** 主頁有冇 mini player（useMiniPlayer、內頁 useHomeSide 共用，S-683） */
+describe('hasMiniPlayerContent', () => {
+    it('should show when today has shows, even with nothing loaded', () => {
+        expect(hasMiniPlayerContent(TODAY_LIST, null)).toBe(true);
+    });
+
+    it('should show a loaded old show when today has none', () => {
+        expect(hasMiniPlayerContent([], OLD)).toBe(true);
+    });
+
+    it('should show a loaded drama episode', () => {
+        expect(hasMiniPlayerContent([], seriesEpisodesOf('chisee')[0] ?? null)).toBe(true);
+    });
+
+    it('should not show with nothing today and nothing loaded', () => {
+        expect(hasMiniPlayerContent([], null)).toBe(false);
     });
 });

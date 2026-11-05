@@ -14,9 +14,13 @@ describe('useStartPlayback', () => {
         const { audio, wrapper } = createHookWrapper([SATURDAY]);
         const { result } = renderHook(() => useStartPlayback(), { wrapper });
 
-        act(() => result.current.startToday());
+        let started: boolean | undefined;
+        act(() => {
+            started = result.current.startToday();
+        });
 
         expect(audio.src).toBe(SATURDAY.url);
+        expect(started).toBe(true);
     });
 
     it('starts nothing on a weekday with nothing up yet', () => {
@@ -24,8 +28,30 @@ describe('useStartPlayback', () => {
         const { audio, wrapper } = createHookWrapper([MONDAY]);
         const { result } = renderHook(() => useStartPlayback(), { wrapper });
 
-        act(() => result.current.startToday());
+        let started: boolean | undefined;
+        act(() => {
+            started = result.current.startToday();
+        });
 
         expect(audio.src).toBe('');
+        expect(started).toBe(false);
+    });
+
+    // S-682：格仔用實際有冇開到播決定入頁 / 返回過場
+    it('tells whether a show really started', () => {
+        vi.setSystemTime(new Date('2026-10-19T08:00:00Z'));
+        const { audio, wrapper } = createHookWrapper([SATURDAY]);
+        const { result } = renderHook(() => useStartPlayback(), { wrapper });
+
+        let gongzi: boolean | undefined;
+        let wanni: boolean | undefined;
+        act(() => {
+            gongzi = result.current.startShow('gongzi');
+            wanni = result.current.startShow('wanni');
+        });
+
+        expect(gongzi).toBe(true);
+        expect(wanni).toBe(false);
+        expect(audio.src).toBe(SATURDAY.url);
     });
 });

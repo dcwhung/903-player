@@ -88,4 +88,36 @@ describe('useStartDrama', () => {
         expect(audio.src).toBe(rerun.url);
         expect(audio.play).toHaveBeenCalledTimes(2);
     });
+
+    // S-682：主頁格仔用實際有冇開到播決定過場
+    it('tells whether it started playing', async () => {
+        const { result } = setup();
+        let started: boolean | undefined;
+
+        act(() => {
+            started = result.current.start(C18);
+        });
+        expect(started).toBe(true);
+
+        act(() => result.current.player.pause());
+        await act(async () => {
+            started = result.current.start(C18);
+        });
+        expect(started).toBe(true);
+    });
+
+    it('tells it started nothing when there is no episode to play', () => {
+        const { audio, wrapper } = createHookWrapper();
+        const { result } = renderHook(() => useStartDrama(), { wrapper });
+        // catalog 冇集數嘅劇（假 id）
+        const empty = { ...C18, id: 'no-episodes' };
+        let started: boolean | undefined;
+
+        act(() => {
+            started = result.current(empty);
+        });
+
+        expect(started).toBe(false);
+        expect(audio.src).toBe('');
+    });
 });

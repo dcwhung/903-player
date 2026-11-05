@@ -59,8 +59,8 @@ const useTodayTile = (open: ReturnType<typeof useTileOpen>) => {
             label={t('home.today')}
             zoomKey={zoomKey.today}
             onClick={() => {
-                const starts = canStartToday();
-                if (starts) startToday();
+                // 用實際有冇開到播（S-682）：未 ready / 冇錄音就當冇開播，內頁照出把手
+                const starts = canStartToday() && startToday();
                 open({ key: zoomKey.today, path: '/today', page: { kind: 'today', date }, starts });
             }}
         />
@@ -86,8 +86,7 @@ const useHomeTiles = (right: HomeRight) => {
                 isNew={newShowIds.has(show.id)}
                 zoomKey={zoomKey.show(show.id)}
                 onClick={() => {
-                    const starts = canStartShow(show.id);
-                    if (starts) startShow(show.id);
+                    const starts = canStartShow(show.id) && startShow(show.id);
                     const page = { kind: 'show', showId: show.id } as const;
                     open({ key: zoomKey.show(show.id), path: `/show/${show.id}`, page, starts });
                 }}

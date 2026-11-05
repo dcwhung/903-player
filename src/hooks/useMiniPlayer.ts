@@ -7,6 +7,7 @@ import { useRecordings } from '../data/useRecordings';
 import { usePlayer } from '../player/usePlayer';
 import { dramaEpisodeLabel } from '../selectors/dramas';
 import {
+    hasMiniPlayerContent,
     miniPlayerRecordings,
     miniPlayerSubtitle,
     miniPlayerTags,
@@ -91,13 +92,9 @@ type Player = ReturnType<typeof usePlayer>;
 type Open = (path: string, options?: NavigateOptions) => void;
 
 /** 左滑關閉：停播 + 收起；之後喺任何一頁開始播先再出返（App 層面 useRestoreMiniPlayerOnPlay） */
-const useDismissal = (player: Player) => {
-    const dismissed = useMiniPlayerDismissed();
-    const dismiss = () => {
-        player.stop();
-        dismissMiniPlayer();
-    };
-    return { dismissed, dismiss };
+const dismissWith = (player: Player) => () => {
+    player.stop();
+    dismissMiniPlayer();
 };
 
 /** 載入咗廣播劇：mini player 只顯示嗰套劇（得一個，唔使左右掃），撳入劇集頁 */
@@ -225,10 +222,22 @@ const useMiniPlayerContent = (): MiniPlayerContent | null => {
     return current ? showMiniPlayer({ ...selection, current }, time, player, navigate) : null;
 };
 
+/**
+ * 主頁有冇 mini player（闊橫版即係右邊播放卡）：有嘢顯示（hasMiniPlayerContent）而且冇畀左滑關咗。
+ * useMiniPlayer 同內頁（useHomeSide，唔使成個 useMiniPlayer 揀緊邊個嘅 state）共用（S-683）
+ */
+export const useHasMiniPlayer = (): boolean => {
+    const { recording } = usePlayer();
+    const { recordings } = useRecordings();
+    const today = hkToday();
+    const listed = useMemo(() => showsOnDate(recordings, today), [recordings, today]);
+    return !useMiniPlayerDismissed() && hasMiniPlayerContent(listed, recording);
+};
+
 /** 主頁 mini player；畀用戶左滑關閉咗（未再播嘢）就係 null */
 export const useMiniPlayer = (): MiniPlayerProps | null => {
     const player = usePlayer();
     const content = useMiniPlayerContent();
-    const { dismissed, dismiss } = useDismissal(player);
-    return content && !dismissed ? { ...content, onDismiss: dismiss } : null;
+    const shown = useHasMiniPlayer();
+    return content && shown ? { ...content, onDismiss: dismissWith(player) } : null;
 };
