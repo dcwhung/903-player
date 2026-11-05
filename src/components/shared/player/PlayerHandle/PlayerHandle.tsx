@@ -10,8 +10,8 @@ import { useLeaveFallback } from './useLeaveFallback';
 const HANDLE_ICON_SIZE = 14;
 
 const STATUS_TEXT = {
-    playing: 'pageHandle.playingStatus',
-    paused: 'homeCard.pausedStatus',
+    playing: 'common.status.playing',
+    paused: 'common.status.paused',
 } as const satisfies Record<HandleStatus, string>;
 
 export interface PlayerHandleProps {

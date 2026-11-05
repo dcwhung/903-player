@@ -20,7 +20,7 @@ interface EpisodeStatusInput {
     /** 揀中集用 player 即時時間 */
     live?: { currentTime: number; duration: number };
     progress?: Progress;
-    /** 揀中集嘅字眼：預設「播放中」；廣播劇頁會傳暫停 / 未開始 */
+    /** 揀中集嘅字眼：預設「播放中」；頁面會傳暫停（寫聽到邊，A2）/ 未開始 */
     liveState?: PlaybackState;
 }
 
@@ -42,13 +42,13 @@ export const episodeStatus = ({
         return { kind: 'playing', ratio: ratio(live.currentTime, live.duration), text };
     }
     if (progress?.watched) {
-        return { kind: 'watched', ratio: 1, text: t('episodes.watched') };
+        return { kind: 'watched', ratio: 1, text: t('common.status.watched') };
     }
     if (progress && progress.position > 0) {
-        const text = t('episodes.resume', { time: formatDuration(progress.position) });
+        const text = t('common.status.resume', { time: formatDuration(progress.position) });
         return { kind: 'resume', ratio: ratio(progress.position, progress.duration), text };
     }
-    return { kind: 'unwatched', ratio: 0, text: t('episodes.unwatched') };
+    return { kind: 'unwatched', ratio: 0, text: t('common.status.unwatched') };
 };
 
 /** 試過但原站未有嘅集數：撳唔到，冇進度 */

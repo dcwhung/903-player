@@ -7,7 +7,9 @@ export interface SavedRowView {
     key: string;
     /** 行頭：日子（17/10（六））/ 集數（第 2 集） */
     label: string;
-    /** 右邊狀態：播放中 / 聽到 x / y / 已聽完 / 未收聽 */
+    /** 讀屏名用嘅行頭：日子讀「17/10 星期六」（A3）/ 集數 */
+    spokenLabel: string;
+    /** 右邊狀態：播放中 / 聽到 x / y / 已收聽 / 未收聽 */
     status: string;
     /** 進度線 0–1 */
     ratio: number;
@@ -53,6 +55,8 @@ export interface RecentRowView {
     key: string;
     name: string;
     label: string;
+    /** 讀屏名用：日子讀「17/10 星期六」（A3） */
+    spokenLabel: string;
     art: string;
     track: Track;
     /** 快將下架（LR1）：第二行琥珀字 */

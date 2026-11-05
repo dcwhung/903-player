@@ -44,6 +44,7 @@ interface SavedTabProps {
 const SavedTab = ({ pressed, third, onPress }: SavedTabProps) => {
     const gone = third === null;
     const recent = third === 'recent';
+    const name = t(recent ? 'home.tabRecent' : 'home.tabSaved');
     return (
         <button
             type="button"
@@ -52,7 +53,9 @@ const SavedTab = ({ pressed, third, onPress }: SavedTabProps) => {
             data-gone={String(gone)}
             aria-hidden={gone || undefined}
             inert={gone}
-            aria-label={t(recent ? 'home.tabRecent' : 'home.tabSaved')}
+            aria-label={name}
+            // B7：淨係 icon，滑鼠 hover 都有提示
+            title={name}
             aria-pressed={pressed}
             onClick={onPress}
         >

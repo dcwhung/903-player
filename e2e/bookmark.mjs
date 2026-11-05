@@ -21,9 +21,9 @@ const SHOW_HASH = '#/show/gongzi';
 const SAVED_TAB = '我的收藏';
 // 公子會（星期六）28/11：sampleData 有嘅最近一集；行嘅讀屏名（src/i18n/zh-HK.ts bookmark.*）刻意寫死做獨立對照
 const GONGZI = SAMPLE_RECORDINGS.find((r) => r.showId === 'gongzi' && r.date === '2026-11-28');
-const ROW_OPEN = /^開啟 公子會 28\/11（六）/;
-const ROW_PLAY = '播放 公子會 28/11（六）';
-const ROW_PAUSE = '暫停 公子會 28/11（六）';
+const ROW_OPEN = /^開啟 公子會 28\/11 星期六/;
+const ROW_PLAY = '播放 公子會 28/11 星期六';
+const ROW_PAUSE = '暫停 公子會 28/11 星期六';
 const LIST_STAR = '收藏 28/11 星期六';
 const ADDED_TOAST = '已加入收藏';
 // 等 UI 反應（toast、tab 闊度過場 520ms、轉頁）最多幾耐
@@ -150,7 +150,7 @@ const RECENT_TAB = '最近收聽';
 // 最近收聽最多 10 集（src/selectors/bookmarks.ts RECENT_MAX）；sampleData 最新嘅 12 集，多兩集驗截到 10
 const RECENT_MAX = 10;
 const LISTENED = SAMPLE_RECORDINGS.slice(-(RECENT_MAX + 2));
-// 公子會 17/10 以外最新嗰集：移除最後一個收藏之後仲有收聽記錄
+// 公子會 28/11 以外最新嗰集：移除最後一個收藏之後仲有收聽記錄
 const OTHER_LISTEN = SAMPLE_RECORDINGS.findLast((r) => r.url !== GONGZI.url);
 // ☆ 對齊容差（px，subpixel 進位）
 const ALIGN_EPSILON = 0.5;

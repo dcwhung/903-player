@@ -9,15 +9,16 @@ import type { RecentRowView } from './savedTypes';
 
 const NOTICE_ICON_SIZE = 12;
 
-/** 開行掣讀屏名（快將下架加日子） */
-const openLabel = ({ name, label, leaving }: RecentRowView): string => {
+/** 開行掣讀屏名（讀屏版日子；快將下架加日子） */
+const openLabel = ({ name, spokenLabel: label, leaving }: RecentRowView): string => {
     const named = t('bookmark.openRecent', { name, label });
     return leaving ? t('availability.withLeaving', { label: named, when: leaving.label }) : named;
 };
 
 /** 最近收聽一行：細碟 + 名 + 日期 / 集數（快將下架第二行琥珀字，LR1）；撳行 = 入嗰集（唔播），撳 ☆ = 收藏 */
 const RecentRow = ({ row }: { row: RecentRowView }) => {
-    const { name, label } = row;
+    // 讀屏名用讀屏版日子（17/10 星期六），畫面照顯示 row.label
+    const { name, spokenLabel: label } = row;
     return (
         <li className={styles.recentRow} data-zoom-key={zoomKey.episode(row.key)}>
             <button
@@ -31,7 +32,7 @@ const RecentRow = ({ row }: { row: RecentRowView }) => {
                 </span>
                 <span className={styles.recentText}>
                     <span className={styles.recentName}>{name}</span>
-                    <span className={styles.recentLabel}>{label}</span>
+                    <span className={styles.recentLabel}>{row.label}</span>
                     {row.leaving && (
                         <span className={styles.leaving}>
                             <HourglassIcon size={NOTICE_ICON_SIZE} />

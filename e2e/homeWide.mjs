@@ -36,9 +36,9 @@ const CLOSE_LABEL = '關閉播放器';
 // 公子會（星期六）最近一集 28/11：入節目頁自動播，返主頁就係重溫
 const REWATCH_SHOW = { name: '公子會', route: '#/show/gongzi' };
 const REOPEN_LABEL = `已暫停：${REWATCH_SHOW.name}，打開播放器`;
-// 把手上面嘅狀態字（src/i18n/zh-HK.ts homeCard.pausedStatus）；刻意寫死做獨立對照
+// 把手上面嘅狀態字（src/i18n/zh-HK.ts common.status.paused）；刻意寫死做獨立對照
 const PAUSED_STATUS = '已暫停';
-// 張卡頁頭列嘅開頁掣（後面跟「，重溫 28/11（六）」）
+// 張卡頁頭列嘅開頁掣（後面跟「，重溫 28/11 星期六」）
 const REWATCH_OPEN = new RegExp(`^開啟 ${REWATCH_SHOW.name} 節目頁`);
 const LIST_COUNT = /^共 \d+ 集/;
 

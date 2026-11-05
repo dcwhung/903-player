@@ -76,7 +76,18 @@ describe('HomeSaved (我的收藏 tab)', () => {
             within(gongzi)
                 .getAllByRole('button', { name: /^開啟/ })
                 .map((b) => b.getAttribute('aria-label')),
-        ).toEqual(['開啟 公子會 17/10（六），未收聽', '開啟 公子會 03/10（六），未收聽']);
+        ).toEqual(['開啟 公子會 17/10 星期六，未收聽', '開啟 公子會 03/10 星期六，未收聽']);
+    });
+
+    // A3 + B3：讀屏日子「17/10 星期六」；短篇劇名「劇名 · 短篇名」
+    it('should read the series drama name with the separator and the date in full', () => {
+        bookmarkSample();
+        openSaved();
+
+        expect(
+            screen.getByRole('button', { name: `開啟 芝See菇Bi Family · ${ARC} 第 2 集，未收聽` }),
+        ).toBeInTheDocument();
+        expect(screen.getAllByText('17/10（六）')).not.toHaveLength(0);
     });
 
     it('should show saved progress on each row', () => {
@@ -85,7 +96,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
         openSaved();
 
         expect(rowOpen(/^開啟 公子會 03\/10/)).toHaveAccessibleName(
-            '開啟 公子會 03/10（六），聽到 3:10 / 9:30',
+            '開啟 公子會 03/10 星期六，聽到 3:10 / 9:30',
         );
     });
 
@@ -103,15 +114,15 @@ describe('HomeSaved (我的收藏 tab)', () => {
         bookmarkSample();
         const { audio } = openSaved();
 
-        await userEvent.click(screen.getByRole('button', { name: '播放 公子會 03/10（六）' }));
+        await userEvent.click(screen.getByRole('button', { name: '播放 公子會 03/10 星期六' }));
         act(() => audio.emitPlaying());
 
         expect(audio.src).toBe(GONGZI_OLD.url);
         expect(screen.queryByTestId('page')).not.toBeInTheDocument();
         expect(rowOpen(/^開啟 公子會 03\/10/)).toHaveAccessibleName(
-            '開啟 公子會 03/10（六），播放中',
+            '開啟 公子會 03/10 星期六，播放中',
         );
-        await userEvent.click(screen.getByRole('button', { name: '暫停 公子會 03/10（六）' }));
+        await userEvent.click(screen.getByRole('button', { name: '暫停 公子會 03/10 星期六' }));
         expect(audio.pause).toHaveBeenCalled();
     });
 
@@ -190,7 +201,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
                 within(recent)
                     .getAllByRole('button', { name: /^開啟/ })
                     .map((b) => b.getAttribute('aria-label')),
-            ).toEqual(['開啟 在晴朗的一天出發 19/10（一）', '開啟 Bad Girl大過佬 15/10（四）']);
+            ).toEqual(['開啟 在晴朗的一天出發 19/10 星期一', '開啟 Bad Girl大過佬 15/10 星期四']);
         });
 
         it('should not show the panel without any listening history', () => {
@@ -206,7 +217,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
             openSaved();
 
             await userEvent.click(
-                screen.getByRole('button', { name: '收藏 Bad Girl大過佬 15/10（四）' }),
+                screen.getByRole('button', { name: '收藏 Bad Girl大過佬 15/10 星期四' }),
             );
 
             expect(hasBookmark(BADGIRL.url)).toBe(true);
@@ -249,9 +260,9 @@ describe('HomeSaved (我的收藏 tab)', () => {
                     .getAllByRole('button', { name: /^開啟/ })
                     .map((b) => b.getAttribute('aria-label')),
             ).toEqual([
-                '開啟 公子會 03/10（六）',
-                '開啟 在晴朗的一天出發 19/10（一）',
-                '開啟 Bad Girl大過佬 15/10（四）',
+                '開啟 公子會 03/10 星期六',
+                '開啟 在晴朗的一天出發 19/10 星期一',
+                '開啟 Bad Girl大過佬 15/10 星期四',
             ]);
             expect(container.querySelector('[data-saved-mode]')).toHaveAttribute(
                 'data-saved-mode',
@@ -288,7 +299,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
             openSaved();
 
             await userEvent.click(
-                screen.getByRole('button', { name: '收藏 Bad Girl大過佬 15/10（四）' }),
+                screen.getByRole('button', { name: '收藏 Bad Girl大過佬 15/10 星期四' }),
             );
 
             expect(hasBookmark(BADGIRL.url)).toBe(true);

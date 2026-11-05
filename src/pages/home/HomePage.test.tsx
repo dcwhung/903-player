@@ -283,7 +283,7 @@ describe('HomePage', () => {
         expect(mini.querySelector('[data-tag]')).toHaveTextContent('重溫');
         expect(mini).toHaveTextContent('12/10（一）');
         expect(
-            within(mini).getByRole('button', { name: 'Bad Girl大過佬，重溫 12/10（一）' }),
+            within(mini).getByRole('button', { name: 'Bad Girl大過佬，重溫 12/10 星期一' }),
         ).toHaveAttribute('aria-current', 'true');
     });
 
@@ -357,7 +357,7 @@ describe('HomePage', () => {
 
         await userEvent.click(
             within(mini).getByRole('button', {
-                name: '開啟 Bad Girl大過佬 節目頁，重溫 12/10（一）',
+                name: '開啟 Bad Girl大過佬 節目頁，重溫 12/10 星期一',
             }),
         );
 

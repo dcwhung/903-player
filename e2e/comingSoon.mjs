@@ -374,7 +374,7 @@ const checkSavedTab = async (env) => {
     const saved = p.getByRole('region', { name: SAVED_TAB });
     await saved.waitFor({ timeout: WAIT_MS });
     const gone = saved.getByRole('button', {
-        name: 'E2E 舊劇場 戀愛二分一 第 1 集，已下架',
+        name: 'E2E 舊劇場 · 戀愛二分一 第 1 集，已下架',
     });
     log((await gone.getAttribute('aria-disabled')) === 'true', '收藏 tab：已下架行 aria-disabled');
     log(
@@ -385,7 +385,7 @@ const checkSavedTab = async (env) => {
     log(
         leaving.some(
             (l) =>
-                l.startsWith('開啟 E2E 即將劇場 我心不死 第 3 集') &&
+                l.startsWith('開啟 E2E 即將劇場 · 我心不死 第 3 集') &&
                 l.includes('01/12 星期二 下架'),
         ),
         '收藏 tab：快將下架行讀下架日（LB1）',

@@ -69,7 +69,7 @@ export const arcSummaries = (
 export type ArcGroup = 'playing' | 'new' | 'unfinished' | 'done';
 
 /**
- * 每個短篇屬於邊組：載入緊 → 播放中；新上架（未聽完）→ 新上架；聽完 → 已聽完；其他 → 未聽完。
+ * 每個短篇屬於邊組：載入緊 → 播放中；新上架（未聽完）→ 新上架；聽完 → 已收聽；其他 → 未聽完。
  * 聽晒已上架嘅集數但仲有下一批未上架（pending）唔算聽完，排返未聽完
  */
 const groupOf = (
@@ -84,7 +84,7 @@ const groupOf = (
 
 const GROUP_ORDER: readonly ArcGroup[] = ['playing', 'new', 'unfinished', 'done'];
 
-/** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已聽完（組內照 catalogue 次序；冇嘢嘅組唔出） */
+/** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已收聽（組內照 catalogue 次序；冇嘢嘅組唔出） */
 export const arcGroups = (
     summaries: readonly ArcSummary[],
     playingArc: string | undefined,

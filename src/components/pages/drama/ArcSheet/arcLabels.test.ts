@@ -107,12 +107,13 @@ describe('playLabel', () => {
 });
 
 describe('GROUP_TITLES', () => {
+    // A4：播放中 / 已收聽同其他地方共用 common.status
     it('should map every group to its i18n key', () => {
         expect(GROUP_TITLES).toEqual({
-            playing: 'drama.groupPlaying',
+            playing: 'common.status.playing',
             new: 'drama.groupNew',
             unfinished: 'drama.groupUnfinished',
-            done: 'drama.groupDone',
+            done: 'common.status.watched',
         });
     });
 });

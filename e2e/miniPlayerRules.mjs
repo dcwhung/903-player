@@ -7,8 +7,8 @@ import { ensurePlaying, isShown, newE2EPage, waitForPlaybackState } from './harn
 const E2E_SUNDAY = '2026-11-29T22:30:00+08:00';
 // 公子會最近一集（今日之前）：入節目頁自動播呢集，返主頁就係重溫
 const REWATCH_SHOW = { name: '公子會', route: '#/show/gongzi', dayMonth: '28/11' };
-const REWATCH_DOT = `${REWATCH_SHOW.name}，重溫 ${REWATCH_SHOW.dayMonth}（六）`;
-const REWATCH_OPEN = `開啟 ${REWATCH_SHOW.name} 節目頁，重溫 ${REWATCH_SHOW.dayMonth}（六）`;
+const REWATCH_DOT = `${REWATCH_SHOW.name}，重溫 ${REWATCH_SHOW.dayMonth} 星期六`;
+const REWATCH_OPEN = `開啟 ${REWATCH_SHOW.name} 節目頁，重溫 ${REWATCH_SHOW.dayMonth} 星期六`;
 // 30/11（一）今日節目，mini player 次序（同 run.mjs 主頁 mini player 一致）；刻意寫死做獨立對照
 const TODAY_SHOWS = ['在晴朗的一天出發', 'Bad Girl大過佬', '雲妮鍾情'];
 const REGION_REWATCH_AND_TODAY = '正在播放（重溫及今日節目）';

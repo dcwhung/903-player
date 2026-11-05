@@ -25,7 +25,7 @@ export interface ArcChip {
 }
 
 interface ArcPickerProps {
-    /** 已經排好次序（播放中 → 新上架 → 未聽完 → 已聽完，見 arcGroups） */
+    /** 已經排好次序（播放中 → 新上架 → 未聽完 → 已收聽，見 arcGroups） */
     arcs: readonly ArcChip[];
     /** 即將上架嘅短篇（排喺所有 chips 後面） */
     upcoming?: readonly UpcomingChip[] | undefined;

@@ -35,9 +35,9 @@ const RowText = ({ row }: { row: SavedRowView }) => (
     </>
 );
 
-/** ▷ / ⏸：原地播 / 暫停（已下架冇） */
+/** ▷ / ⏸：原地播 / 暫停（已下架冇）；讀屏名用讀屏版日子（17/10 星期六） */
 const PlayButton = ({ row }: { row: SavedRowView }) => {
-    const { name, label } = row;
+    const { name, spokenLabel: label } = row;
     return (
         <button
             type="button"
@@ -58,8 +58,16 @@ const PlayButton = ({ row }: { row: SavedRowView }) => {
     );
 };
 
-/** 開行掣讀屏名：已下架講「已下架」（D3）；快將下架加日子 */
-const openLabel = ({ name, label, status, removed, leaving }: SavedRowView): string => {
+/**
+ * 開行掣讀屏名（讀屏版日子，畫面照顯示 row.label）：已下架講「已下架」（D3）；快將下架加日子
+ */
+const openLabel = ({
+    name,
+    spokenLabel: label,
+    status,
+    removed,
+    leaving,
+}: SavedRowView): string => {
     if (removed) return t('availability.removedRow', { name, label });
     const shown = leaving
         ? t('availability.withLeaving', { label: status, when: leaving.label })

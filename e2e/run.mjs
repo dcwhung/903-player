@@ -686,7 +686,8 @@ const checkShowHeader = async (p, name, label) => {
         };
     });
     log(
-        above === '現正播放' && /^\d{2}\/\d{2}（.）$/.test(date) && Math.abs(centreGap) < 1,
+        // 轉集區個名嘅日子係讀屏版「17/10 星期六」（畫面上日子條兩行字另外顯示）
+        above === '現正播放' && /^\d{2}\/\d{2} 星期.$/.test(date) && Math.abs(centreGap) < 1,
         `${label}：日子條上面「${above}」、正中「${date}」（偏離 ${centreGap.toFixed(2)}px）`,
     );
 };
@@ -744,7 +745,7 @@ const checkThemeColor = async (p, expected, label) => {
     log(ok, `${label}：theme-color ${(await read()).join(', ')}（預期 ${expected}）`);
 };
 
-const TODAY_STACK = '今日節目，左右掃動轉節目';
+const TODAY_STACK = '今日節目，左右滑動轉節目';
 /** 卡疊最上面嗰張卡嘅節目名（h1 係頁頭「今日節目」，卡入面係 h2）；畀 page.evaluate 用 */
 const TODAY_CARD_TITLE = '[role="group"] h2';
 /** 卡疊而家嘅節目名 */

@@ -15,7 +15,7 @@ import type { Bookmark } from '../../services/bookmarkStore';
 import type { Progress } from '../../services/progressStore';
 import type { Recording } from '../../types/recording';
 import { isDramaEpisode, type Track } from '../../types/track';
-import { formatDateLabel } from '../../utils/date';
+import { formatDateLabel, formatSpokenDate } from '../../utils/date';
 import { ratio } from '../../utils/ratio';
 import { formatDuration, hasKnownDuration } from '../../utils/time';
 
@@ -99,6 +99,14 @@ export const trackPage = (track: Track): EpisodePage =>
 export const bookmarkLabel = (b: Bookmark): string =>
     b.kind === 'series' ? t('drama.episodeNo', { no: b.no }) : formatDateLabel(b.date);
 
+/** 行嘅讀屏名用：日子讀「17/10 星期六」（A3）；短篇劇集數同畫面一樣 */
+export const bookmarkSpokenLabel = (b: Bookmark): string =>
+    b.kind === 'series' ? t('drama.episodeNo', { no: b.no }) : formatSpokenDate(b.date);
+
+/** 短篇劇名（B3）：「芝See菇Bi Family · 三十六計」 */
+export const seriesName = (title: string, arc: string): string =>
+    t('bookmark.seriesName', { title, arc, sep: t('common.separator') });
+
 /** 節目 / 劇仲喺 app 度（停用咗嘅劇入唔到頁，當冇） */
 export const isKnownBookmark = (b: Bookmark): boolean =>
     b.kind === 'show'
@@ -123,22 +131,22 @@ export interface SavedRowStatus {
 
 const positionText = (position: number, duration: number): string =>
     hasKnownDuration(duration)
-        ? t('bookmark.resume', {
+        ? t('common.status.resumeOf', {
               current: formatDuration(position),
               total: formatDuration(duration),
           })
-        : t('bookmark.resumeNoTotal', { current: formatDuration(position) });
+        : t('common.status.resume', { time: formatDuration(position) });
 
-/** 收藏 tab 每行右邊嘅字同進度線：播放中 / 聽到 x / y / 已聽完 / 未收聽 */
+/** 收藏 tab 每行右邊嘅字同進度線：播放中 / 聽到 x / y / 已收聽 / 未收聽（暫停緊都係聽到 x / y，A2） */
 export const savedRowStatus = ({ loaded, isPlaying, live, progress }: RowStatusInput) => {
     if (loaded && live) {
         const shown = ratio(live.currentTime, live.duration);
         const text = isPlaying
-            ? t('bookmark.playing')
+            ? t('common.status.playing')
             : positionText(live.currentTime, live.duration);
         return { text, ratio: shown, playing: isPlaying };
     }
-    if (progress?.watched) return { text: t('bookmark.watched'), ratio: 1, playing: false };
+    if (progress?.watched) return { text: t('common.status.watched'), ratio: 1, playing: false };
     if (progress && progress.position > 0) {
         const shown = ratio(progress.position, progress.duration);
         return {
@@ -147,7 +155,7 @@ export const savedRowStatus = ({ loaded, isPlaying, live, progress }: RowStatusI
             playing: false,
         };
     }
-    return { text: t('bookmark.unwatched'), ratio: 0, playing: false };
+    return { text: t('common.status.unwatched'), ratio: 0, playing: false };
 };
 
 /** box 頂 banner：節目 / 成套劇嘅橫圖同名（isKnownBookmark 過咗先用，搵唔到就空） */
@@ -160,17 +168,27 @@ export const boxMeta = (kind: 'show' | 'drama', id: string): { title: string; ba
 export const trackArt = (track: Track): string =>
     isDramaEpisode(track) ? dramaArtFor(track) : themeFor(track.showId).art;
 
+interface RecentText {
+    name: string;
+    /** 畫面細字：17/10（六）或者「短篇 · 第 N 集」 */
+    label: string;
+    /** 讀屏用：日子讀「17/10 星期六」（A3）；短篇同畫面一樣 */
+    spokenLabel: string;
+}
+
+const dated = (name: string, date: string): RecentText => ({
+    name,
+    label: formatDateLabel(date),
+    spokenLabel: formatSpokenDate(date),
+});
+
 /** 最近收聽一行嘅名同細字：節目 / 劇名；日子或者「短篇 · 第 N 集」 */
-export const recentText = (track: Track): { name: string; label: string } => {
-    if (!isDramaEpisode(track)) {
-        return { name: findShow(track.showId)?.name ?? '', label: formatDateLabel(track.date) };
-    }
+export const recentText = (track: Track): RecentText => {
+    if (!isDramaEpisode(track)) return dated(findShow(track.showId)?.name ?? '', track.date);
     const name = findEnabledDrama(track.dramaId)?.name ?? '';
-    const label =
-        track.kind === 'series'
-            ? t('drama.seriesLabelUntitled', { arc: track.arc, no: track.no })
-            : formatDateLabel(track.date);
-    return { name, label };
+    if (track.kind !== 'series') return dated(name, track.date);
+    const label = t('drama.seriesLabelUntitled', { arc: track.arc, no: track.no });
+    return { name, label, spokenLabel: label };
 };
 
 /** 最近收聽認得嘅集：錄音清單 + 開咗嘅劇嘅全部集數（網址 → 集） */

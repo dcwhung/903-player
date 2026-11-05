@@ -16,7 +16,7 @@ import { useGoHome } from '../../hooks/useGoHome';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { t } from '../../i18n/t';
 import { usePlayer } from '../../player/usePlayer';
-import { formatDateLabel } from '../../utils/date';
+import { formatDateLabel, formatSpokenDate } from '../../utils/date';
 import { hasKnownDuration } from '../../utils/time';
 import { LoadState } from '../shared/LoadState';
 import page from '../shared/Page.module.css';
@@ -50,7 +50,8 @@ const ShowPlayer = ({
         <>
             <PlayerPanel
                 title={title}
-                dateLabel={dateLabel}
+                // 日子條嘅日子淨係畀讀屏用：讀「17/10 星期六」
+                dateLabel={formatSpokenDate(current.date)}
                 // 未揀集 / 播緊其他嘢（未開始樣）都照顯示節目碟面，唔再用黑碟（劇集頁唔變）
                 art={theme.art}
                 days={strip.days}

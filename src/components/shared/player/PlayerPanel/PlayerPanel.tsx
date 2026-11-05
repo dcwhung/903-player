@@ -10,6 +10,7 @@ import styles from './PlayerPanel.module.css';
 interface PlayerPanelProps {
     /** 節目名：畫面顯示喺頁頭，日子條只係攞嚟做轉集區個名 */
     title: string;
+    /** 讀屏版日子（formatSpokenDate「17/10 星期六」）：日子條轉集區個名 + 轉集通知 */
     dateLabel: string;
     /** 節目圖，做碟嘅底色 */
     art?: string | undefined;

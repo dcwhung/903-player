@@ -14,7 +14,7 @@ import { useStripGesture } from './useStripGesture';
 import { useStripMotion } from './useStripMotion';
 
 export interface DateStripStepOptions {
-    /** 現正播放嗰日（例如「19/10（一）」）：轉集區個名 + 轉集通知 */
+    /** 現正播放嗰日嘅讀屏版（例如「19/10 星期一」）：轉集區個名 + 轉集通知，唔會顯示喺畫面 */
     dateLabel: string;
     /** 由新到舊（左到右）嘅日子，見 stripDays */
     days: readonly StripDay[];

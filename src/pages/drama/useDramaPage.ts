@@ -169,7 +169,7 @@ const useViewedArc = (playingArc: string | undefined, initialArc: string | undef
 };
 
 /**
- * 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已聽完（today 每次 render 重新攞）；
+ * 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已收聽（today 每次 render 重新攞）；
  * 仲有下一批未上架嘅唔算聽完（availability.pending），chip 加快將下架小標
  */
 const useArcOrder = (

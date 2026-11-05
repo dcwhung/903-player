@@ -5,10 +5,10 @@ import { formatDuration } from '../../../../utils/time';
 import type { ArcRowNotes } from './arcSheetTypes';
 
 export const GROUP_TITLES = {
-    playing: 'drama.groupPlaying',
+    playing: 'common.status.playing',
     new: 'drama.groupNew',
     unfinished: 'drama.groupUnfinished',
-    done: 'drama.groupDone',
+    done: 'common.status.watched',
 } as const satisfies Record<ArcGroup, string>;
 
 /** 「即將上架」組（S1，排最底）嘅標題 */
@@ -45,8 +45,8 @@ const spokenStatus = (
 ): string => {
     if (current?.arc === s.arc) return arcStatus(s, current);
     if (notes.status) return notes.status;
-    if (s.state === 'new') return t('availability.arcUnheard');
-    if (s.state === 'done') return t('availability.arcHeard');
+    if (s.state === 'new') return t('common.status.unwatched');
+    if (s.state === 'done') return t('common.status.watched');
     return arcStatus(s, current);
 };
 

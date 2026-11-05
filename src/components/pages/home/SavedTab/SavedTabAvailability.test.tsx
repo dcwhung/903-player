@@ -9,10 +9,11 @@ const LEAVING = { text: '05/12 下架', label: '05/12 星期六 下架' };
 const row = (extra: Partial<SavedRowView> = {}): SavedRowView => ({
     key: '/half/3',
     label: '第 3 集',
+    spokenLabel: '第 3 集',
     status: '聽到 12:30 / 30:00',
     ratio: 0.4,
     playing: false,
-    name: '蘭茜夫人劇場 戀愛二分一',
+    name: '蘭茜夫人劇場 · 戀愛二分一',
     zoomKey: 'episode:/half/3',
     onOpen: vi.fn(),
     onPlay: vi.fn(),
@@ -44,7 +45,7 @@ describe('SavedTab availability', () => {
         render(<SavedTab view={view([removed])} />);
 
         const open = screen.getByRole('button', {
-            name: '蘭茜夫人劇場 戀愛二分一 第 3 集，已下架',
+            name: '蘭茜夫人劇場 · 戀愛二分一 第 3 集，已下架',
         });
         expect(open).toHaveAttribute('aria-disabled', 'true');
         expect(open).toHaveTextContent('已下架');
@@ -59,7 +60,9 @@ describe('SavedTab availability', () => {
     it('should add the amber leaving day to the status line (LB1)', () => {
         render(<SavedTab view={view([row({ leaving: LEAVING })])} />);
 
-        const open = screen.getByRole('button', { name: /^開啟 蘭茜夫人劇場 戀愛二分一 第 3 集/ });
+        const open = screen.getByRole('button', {
+            name: /^開啟 蘭茜夫人劇場 · 戀愛二分一 第 3 集/,
+        });
         expect(open).toHaveTextContent('聽到 12:30 / 30:00');
         expect(open).toHaveTextContent('05/12 下架');
         expect(open).toHaveAccessibleName(/05\/12 星期六 下架/);
@@ -78,6 +81,7 @@ describe('SavedTab availability', () => {
                 key: '/half/3',
                 name: '蘭茜夫人劇場',
                 label: '戀愛二分一 · 第 3 集',
+                spokenLabel: '戀愛二分一 · 第 3 集',
                 art: '/disc.webp',
                 track,
                 leaving: LEAVING,
@@ -106,6 +110,7 @@ describe('SavedTab availability', () => {
                 key: '/half/3',
                 name: '蘭茜夫人劇場',
                 label: '戀愛二分一 · 第 3 集',
+                spokenLabel: '戀愛二分一 · 第 3 集',
                 art: '/disc.webp',
                 track,
                 leaving: LEAVING,

@@ -148,6 +148,21 @@ describe('HomeTabs', () => {
             expect(container.querySelector('[role="group"]')).toHaveAttribute('data-saved', 'true');
         });
 
+        // B7：只有 icon，滑鼠 hover 都要有提示（同讀屏名一樣）
+        it('should give the icon tab a title matching its name', () => {
+            const { rerender } = render(<HomeTabs tab="shows" onChange={noop} third="recent" />);
+            expect(screen.getByRole('button', { name: '最近收聽' })).toHaveAttribute(
+                'title',
+                '最近收聽',
+            );
+
+            rerender(<HomeTabs tab="shows" onChange={noop} third="saved" />);
+            expect(screen.getByRole('button', { name: '我的收藏' })).toHaveAttribute(
+                'title',
+                '我的收藏',
+            );
+        });
+
         it('should draw the counter-clockwise clock (R2) with the mockup stroke', () => {
             const { container } = render(<HomeTabs tab="shows" onChange={noop} third="recent" />);
             const svg = icon(container, 'history')?.querySelector('svg');

@@ -88,3 +88,7 @@ export const formatDayMonth = (isoDate: string): string => t('dates.dayMonth', d
 
 /** 星期六 */
 export const formatWeekday = (isoDate: string): string => t('dates.weekday', dateParts(isoDate));
+
+/** 讀屏版日子「17/10 星期六」（全 app 讀屏一律咁讀，畫面先用 17/10（六）） */
+export const formatSpokenDate = (isoDate: string): string =>
+    t('dates.spoken', { dayMonth: formatDayMonth(isoDate), weekday: formatWeekday(isoDate) });

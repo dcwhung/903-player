@@ -28,7 +28,7 @@ const RECORDINGS = [
     recording('badgirl', '2026-10-19', '1000'),
 ];
 const ROUTE = { route: '/show/gongzi', path: '/show/:showId' };
-const SWIPE_ZONE = { description: '左右方向鍵或左右掃動轉集' };
+const SWIPE_ZONE = { description: '左右方向鍵或左右滑動轉集' };
 // 掃一格：jsdom 冇 layout，日子條一格當 56px（公子會逢星期六，一格一集）
 const SWIPE_PX = 56;
 
@@ -154,7 +154,7 @@ describe('ShowPage', () => {
 
         await userEvent.click(screen.getByRole('button', { name: '暫停' }));
 
-        expect(currentRow()).toHaveAccessibleName('播放 17/10 星期六，已暫停 · 1:00 / 10:00');
+        expect(currentRow()).toHaveAccessibleName('播放 17/10 星期六，聽到 1:00 / 10:00');
     });
 
     // W-527：zoom 來源綁喺入頁嘅 history entry；清走帶入嚟嘅集數時唔好連來源都食咗
@@ -287,14 +287,14 @@ describe('ShowPage', () => {
 
         const zone = screen.getByRole('group', SWIPE_ZONE);
         expect(screen.getByText('現正播放')).toHaveTextContent(/^現正播放$/);
-        expect(zone).toHaveAccessibleName(/^10\/10（六）/);
+        expect(zone).toHaveAccessibleName(/^10\/10 星期六/);
         // 公子會逢星期六：隔籬格就係 17/10 同 03/10，中間冇灰色平日
         const days = Array.from(zone.firstElementChild?.children ?? [])
             .map((cell) => cell.textContent)
             .filter(Boolean);
         expect(days).toEqual(['六17/10', '六10/10', '六03/10']);
-        expect(screen.getByRole('button', { name: '轉去 17/10（六）' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '轉去 03/10（六）' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '轉去 17/10 星期六' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '轉去 03/10 星期六' })).toBeInTheDocument();
     });
 
     it('plays a newer episode when its day is tapped in the strip', async () => {
@@ -302,7 +302,7 @@ describe('ShowPage', () => {
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
         await userEvent.click(screen.getByRole('button', { name: /^(?:播放|暫停) 03\/10/ }));
 
-        await userEvent.click(screen.getByRole('button', { name: '轉去 10/10（六）' }));
+        await userEvent.click(screen.getByRole('button', { name: '轉去 10/10 星期六' }));
 
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[2]?.url));
         expect(audio.play).toHaveBeenLastCalledWith();
@@ -410,14 +410,14 @@ describe('ShowPage', () => {
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
         const zone = screen.getByRole('group', SWIPE_ZONE);
         const announcer = screen.getByRole('status');
-        expect(zone).toHaveAccessibleName('17/10（六） 公子會');
+        expect(zone).toHaveAccessibleName('17/10 星期六 公子會');
         expect(announcer).toHaveAttribute('aria-live', 'polite');
         expect(announcer).toBeEmptyDOMElement();
 
         swipe(zone, -SWIPE_PX);
 
-        await waitFor(() => expect(announcer).toHaveTextContent('已轉到 10/10（六）'));
-        expect(zone).toHaveAccessibleName('10/10（六） 公子會');
+        await waitFor(() => expect(announcer).toHaveTextContent('已轉到 10/10 星期六'));
+        expect(zone).toHaveAccessibleName('10/10 星期六 公子會');
     });
 
     it('does not announce an episode change made by tapping a row after a swipe', async () => {
@@ -425,7 +425,7 @@ describe('ShowPage', () => {
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
         const announcer = screen.getByRole('status');
         swipe(screen.getByRole('group', SWIPE_ZONE), -SWIPE_PX);
-        await waitFor(() => expect(announcer).toHaveTextContent('已轉到 10/10（六）'));
+        await waitFor(() => expect(announcer).toHaveTextContent('已轉到 10/10 星期六'));
 
         await userEvent.click(screen.getByRole('button', { name: /^(?:播放|暫停) 03\/10/ }));
 
