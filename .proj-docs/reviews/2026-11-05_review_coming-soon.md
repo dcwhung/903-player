@@ -212,3 +212,48 @@ context: >
   QA S1 re-run for coming-soon (and drama / card-zoom chains touched).
 report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
 ```
+
+## Re-review 3 e7b981a（P7 → P8 merge）
+
+- 範圍：`8477b12..e7b981a`，只睇 merge 解決同 merge 帶入嘅改動（`git show --cc e7b981a`；P7 `e286912` / `4327328` 本身已 review 100 + QA S1 pass，唔再睇）
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（`SavedTab`、`HomeTabs`、`src/pages/home`、`selectors/bookmarks`、`icons`）22 files / 232 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `e7b981a`）：run [#92 / 42104960458](https://github.com/dcwhung/903-player/actions/runs/42104960458) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)` 全部 success）
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡 / 🟢）
+
+核對方法：將 merge 對 P8 parent（`e7b981a^1`）嘅 diff 同 P7 本身（merge-base `8cfbd15` → `e7b981a^2`）嘅 diff 逐行比較（`src`、`e2e`，icons 另外睇）；唯一多出嚟嘅係下面 P8 嘅接駁行同 test，冇其他改動混入，亦冇 P7 / P8 行被食咗。`git grep` 冇 conflict marker。
+
+| 項目                            | 結果                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RecentPanel.tsx`               | = P7 版本（`recentLabel` span 有 ellipsis、`recentScroll` / columns 喺 `SavedTab.tsx` 冇郁）+ P8 嘅 `openLabel`（讀屏加長版下架日）同 LR1 琥珀第二行。收藏版同淨最近收聽版（`mode: 'recent'`）都係用 `RecentPanel`，兩個都有 LR1 ✅                                                                                                                                                                                                                                               |
+| `useSavedView.ts`               | = P7 版本（`useProgressMap`、`useRecentTracks`、`mode`、`recentColumns`）+ P8 三樣：`today = hkToday()` 一次攞、傳入 `RowContext`；最近收聽行 `leaving: trackLeaving(track, today)`（之前 P8 喺 map 入面再叫一次 `hkToday()`，而家同一個 `today`，更一致）；`boxView` 嘅 `removed`（灰 banner）同 `bookmarkAvailability` ✅。第三個 tab 出唔出（`useThirdTab`）同 `mode` 都用同一個 `useRecentTracks`，P8 registry 已經濾走已下架集數，兩邊判斷一致，唔會出空嘅「最近收聽」tab ✅ |
+| icons 拆檔                      | `strokeIcon.tsx`（`StrokeIcon` + `IconProps`，同兩邊原本一樣）、`noticeIcons.tsx`（⏱ / ⏳，同 P8 原本一樣）、`icons.tsx` 由 `BackIcon` 起內容同 P7 版本逐字一樣，再 `export { ClockIcon, HourglassIcon } from './noticeIcons'`。export 名單 = 兩個 parent 嘅聯集（16 個），所有 import 唔使改；冇循環 import ✅                                                                                                                                                                   |
+| `SavedTabAvailability.test.tsx` | view 補返 P7 嘅 `mode` / `recentColumns`；新 test 鎖住淨最近收聽 tab 都有 LR1 ✅                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `SavedTab.module.css`           | P7 `.recentLabel` / `--saved-recent-star` 同 P8 `.leaving` / `[data-removed]` 灰行 / 灰 banner 兩邊都喺度 ✅                                                                                                                                                                                                                                                                                                                                                                      |
+| ledger 合併                     | 2399 行（連表頭）全部 7 欄；P8 parent 冇少行、P7 parent 冇少行、冇多出兩邊都冇嘅行、冇重覆行。同一個 chain 有新舊 freeze 行並存，跟註釋由 QA re-freeze ✅                                                                                                                                                                                                                                                                                                                         |
+
+🟢：冇新 finding（S-714 起冇用）。
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 3 feature/drama/coming-soon merge e7b981a (P7 recent-only tab + W-535 into P8)
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (22 related unit files, 232 tests; full suite / e2e not run per scope rule; CI run 42104960458 on e7b981a success incl. e2e)
+  coverage: pass (LR1 on recent-only pane added; merged files covered by existing SavedTab / HomeSaved / HomeTabs tests)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: []
+next_action: proceed_to_qa
+context: >
+  Merge resolution verified line by line: merged = P8 + P7 delta with only
+  the P8 wiring (today, trackLeaving, removed boxes, LR1) added; icons split
+  keeps the union of exports; ledger keeps every row from both parents.
+  QA to re-freeze chains touched by the merge.
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
