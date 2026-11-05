@@ -26,7 +26,7 @@ const arcStatus = (s: ArcSummary, current: SeriesEpisode | undefined): string =>
 
 const joinStatus = (parts: readonly (string | false)[]): string => parts.filter(Boolean).join('，');
 
-/** 上架 / 下架補充（A2 / LS2）：狀態字可以被取代，後面用「 · 」接埋批次 / 下架日 */
+/** 上架 / 下架補充（A2 / LS2）：狀態字可以被取代，後面用分隔符（common.separator）接埋批次 / 下架日 */
 const statusWithNotes = (
     s: ArcSummary,
     current: SeriesEpisode | undefined,
@@ -34,8 +34,37 @@ const statusWithNotes = (
 ): string => {
     const main =
         current?.arc === s.arc ? arcStatus(s, current) : (notes?.status ?? arcStatus(s, current));
-    return [main, ...(notes?.suffixes ?? [])].join(' · ');
+    return [main, ...(notes?.suffixes ?? [])].join(t('common.separator'));
 };
+
+/** 讀屏嘅狀態字（F2）：唔帶集數（集數另外一段講） */
+const spokenStatus = (
+    s: ArcSummary,
+    current: SeriesEpisode | undefined,
+    notes: ArcRowNotes,
+): string => {
+    if (current?.arc === s.arc) return arcStatus(s, current);
+    if (notes.status) return notes.status;
+    if (s.state === 'new') return t('availability.arcUnheard');
+    if (s.state === 'done') return t('availability.arcHeard');
+    return arcStatus(s, current);
+};
+
+/**
+ * 有上架 / 下架補充嘅行，讀屏名逐段砌（F2）：「{狀態}，{N} 集，{讀屏日子} 下架」，
+ * 唔讀分隔符、唔重覆「快將下架」
+ */
+const spokenRowLabel = (
+    s: ArcSummary,
+    current: SeriesEpisode | undefined,
+    notes: ArcRowNotes,
+): string =>
+    joinStatus([
+        spokenStatus(s, current, notes),
+        t('availability.arcEpisodeCount', { count: notes.total ?? s.total }),
+        ...notes.spokenSuffixes,
+        s.isNew && t('drama.arcNewLabel'),
+    ]);
 
 /** 行入面細字：狀態（+ 上架 / 下架補充）+ 新上架 */
 export const visibleStatus = (
@@ -53,15 +82,14 @@ export const rowLabel = (
     current: SeriesEpisode | undefined,
     notes?: ArcRowNotes,
 ): string =>
-    joinStatus(
-        [
-            statusWithNotes(s, current, notes),
-            s.state === 'started' &&
-                t('drama.arcWatchedCount', { watched: s.watched, total: notes?.total ?? s.total }),
-            notes?.badge,
-            s.isNew && t('drama.arcNewLabel'),
-        ].filter((part): part is string | false => part !== undefined),
-    );
+    notes
+        ? spokenRowLabel(s, current, notes)
+        : joinStatus([
+              arcStatus(s, current),
+              s.state === 'started' &&
+                  t('drama.arcWatchedCount', { watched: s.watched, total: s.total }),
+              s.isNew && t('drama.arcNewLabel'),
+          ]);
 
 /** 右邊播放掣嘅讀屏名 */
 export const playLabel = (s: ArcSummary, isCurrent: boolean, isPlaying: boolean): string => {

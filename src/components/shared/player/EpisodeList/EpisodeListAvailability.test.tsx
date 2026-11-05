@@ -22,7 +22,7 @@ const BATCH: EpisodeItem = {
     isPlaying: false,
     status: { kind: 'upcoming', ratio: 0, text: '19/11（四）上架' },
     episodeCount: 10,
-    label: '第 11 至 20 集，19/11（四）上架，未可以收聽',
+    label: '第 11 至 20 集，19/11 星期四 上架',
 };
 
 describe('EpisodeList availability', () => {
@@ -50,11 +50,11 @@ describe('EpisodeList availability', () => {
     });
 
     it('should add the amber leaving day after the status (LE1)', () => {
-        const leaving = { text: '05/12 下架', tag: '05/12', label: '05/12（六）下架' };
+        const leaving = { text: '05/12 下架', tag: '05/12', label: '05/12 星期六 下架' };
         render(<EpisodeList items={[row(1, { leaving })]} onSelect={vi.fn()} labels="title" />);
 
         const button = screen.getByRole('button', { name: /^播放 第 1 集/ });
-        expect(button).toHaveTextContent('未收聽05/12 下架');
-        expect(button).toHaveAccessibleName(/05\/12（六）下架/);
+        expect(button).toHaveTextContent('未收聽 · 05/12 下架');
+        expect(button).toHaveAccessibleName(/05\/12 星期六 下架/);
     });
 });

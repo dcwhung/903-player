@@ -180,9 +180,4 @@
     .label {
         display: none;
     }
-
-    /* 橫版成套劇下架字喺唱片下面第二行，「全集」chip 唔重覆 */
-    .allLeaving {
-        display: none;
-    }
 }

@@ -1,19 +1,26 @@
 import { zoomKey } from '../../../../utils/cardZoom';
 import styles from './DramaShelf.module.css';
-import { ContinueButton, CornerNotes, MetaText, UpcomingTile, tileLabel } from './DramaTileParts';
+import { ContinueButton, CornerNotes, MetaText, tileLabel } from './DramaTileParts';
+import { UpcomingTile } from './UpcomingTile';
 import type { DramaShelfItem, DramaTileProps, TileFocus, TileProps } from './dramaTileTypes';
 import { fitsWithoutOverflow, useHideWhenTight } from './useHideWhenTight';
 
 export type { DramaShelfItem, TileNotice, TileProps } from './dramaTileTypes';
 
+// 角落字放唔落：第 1 步收埋短篇數；同一條頂行嘅話第 2 步左上角下架字淨日期（E2）
+const META_STEPS = 1;
+const TOP_BAR_STEPS = 2;
+
 /**
  * 角落字：左上「新」+ 快將下架、短篇數（平時右下）。有「繼續收聽」短篇數讓去右上：
- * 同左上角放同一條頂行（窄格放唔落就換行），唔會疊住
+ * 同左上角放同一條頂行，唔會疊住；放唔落就逐步收（META_STEPS / TOP_BAR_STEPS）
  */
 const TileCorners = ({ item }: { item: DramaShelfItem }) => {
+    const sharesRow = item.resume !== undefined && item.leaving?.short !== undefined;
     const metaRef = useHideWhenTight<HTMLSpanElement>(
         item.release !== undefined,
         fitsWithoutOverflow,
+        sharesRow ? TOP_BAR_STEPS : META_STEPS,
     );
     const meta = (
         <span

@@ -14,7 +14,7 @@ const item = (overrides: Partial<DramaShelfItem> = {}): DramaShelfItem => ({
     ...overrides,
 });
 
-const LEAVING = { text: '05/12 下架', tag: '05/12', label: '05/12（六）下架' };
+const LEAVING = { text: '05/12 下架', tag: '05/12', label: '部分短篇 05/12 星期六 下架' };
 
 describe('DramaTile availability', () => {
     beforeEach(() => stubLandscape());
@@ -23,7 +23,7 @@ describe('DramaTile availability', () => {
         render(<DramaShelf items={[item({ newLabel: '有新短篇', leaving: LEAVING })]} />);
 
         const tile = screen.getByRole('button', {
-            name: '蘭茜夫人劇場，有新短篇，05/12（六）下架',
+            name: '蘭茜夫人劇場，有新短篇；部分短篇 05/12 星期六 下架',
         });
         const corner = tile.querySelector('[data-corner-notes]');
         expect(corner?.textContent).toContain('新05/12 下架');
@@ -34,16 +34,17 @@ describe('DramaTile availability', () => {
         const release = {
             text: '新短篇 後日上架',
             tag: '後日上架',
-            label: '新短篇 02/12（三）上架',
+            label: '下個短篇 02/12 星期三 上架',
         };
         const resume = { label: '初戀無限次 · 第 2 集', ratio: 0.2, leaving: LEAVING };
         render(<DramaShelf items={[item({ leaving: LEAVING, release, resume })]} />);
 
         const tile = screen.getByRole('button', {
-            name: '蘭茜夫人劇場，05/12（六）下架，新短篇 02/12（三）上架',
+            name: '蘭茜夫人劇場，下個短篇 02/12 星期三 上架；部分短篇 05/12 星期六 下架',
         });
         const meta = tile.querySelector('[data-corner]');
-        expect(meta?.querySelector('[data-role="meta-count"]')?.textContent).toBe('3 個短篇');
+        // 分隔符（common.separator）跟短篇數一齊收埋，所以喺 meta-count 入面
+        expect(meta?.querySelector('[data-role="meta-count"]')?.textContent).toBe('3 個短篇 · ');
         expect(meta?.querySelector('[data-role="meta-release"]')?.textContent).toContain(
             '新短篇 後日上架',
         );
@@ -55,7 +56,7 @@ describe('DramaTile availability', () => {
 
         expect(
             screen.getByRole('button', {
-                name: '蘭茜夫人劇場，繼續收聽 戀愛二分一 · 第 3 集，05/12（六）下架',
+                name: '蘭茜夫人劇場，繼續收聽 戀愛二分一 · 第 3 集，部分短篇 05/12 星期六 下架',
             }),
         ).toHaveTextContent('05/12 下架');
     });
@@ -64,7 +65,7 @@ describe('DramaTile availability', () => {
         const onOpen = vi.fn();
         const upcoming = {
             text: '即將上架 · 01/12',
-            label: '18 樓 C 座，01/12（二）上架，未可以收聽',
+            label: '18 樓 C 座，01/12 星期二 上架',
         };
         render(<DramaShelf items={[item({ id: 'c18', name: '18 樓 C 座', upcoming, onOpen })]} />);
 
@@ -81,15 +82,18 @@ describe('DramaTile availability', () => {
         const release = {
             text: '新短篇 後日上架',
             tag: '後日上架',
-            label: '新短篇 02/12（三）上架',
+            label: '下個短篇 02/12 星期三 上架',
         };
-        let notify = () => {};
+        // 有繼續收聽條嗰陣有兩個 observer（角落字 + 條），一齊通知
+        let callbacks: (() => void)[] = [];
+        const notify = () => callbacks.forEach((callback) => callback());
         beforeEach(() => {
+            callbacks = [];
             vi.stubGlobal(
                 'ResizeObserver',
                 class {
                     constructor(callback: () => void) {
-                        notify = callback;
+                        callbacks.push(callback);
                     }
                     observe = vi.fn();
                     disconnect = vi.fn();
@@ -117,8 +121,34 @@ describe('DramaTile availability', () => {
             layout(180, 200);
             expect(meta()).not.toHaveAttribute('data-tight');
             expect(
-                screen.getByRole('button', { name: /新短篇 02\/12（三）上架/ }),
+                screen.getByRole('button', { name: /下個短篇 02\/12 星期三 上架/ }),
             ).toBeInTheDocument();
+        });
+
+        // E2：同一條頂行（有繼續收聽），短篇數收埋都仲放唔落，左上角下架字先至淨日期
+        it('should drop 下架 from the corner date only when hiding the arc count is not enough', () => {
+            const resume = { label: '初戀無限次 · 第 2 集', ratio: 0.2 };
+            const leaving = { ...LEAVING, short: '05/12 下架' };
+            render(<DramaShelf items={[item({ release, resume, leaving })]} />);
+
+            layout(180, 120);
+            expect(meta()).toHaveAttribute('data-tight', '2');
+
+            // 收埋短篇數就夠位：停喺第一步，下架字照有「下架」
+            vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function (
+                this: HTMLElement,
+            ) {
+                return this.hasAttribute('data-tight') ? 100 : 180;
+            });
+            act(() => notify());
+            expect(meta()).toHaveAttribute('data-tight', '1');
+        });
+
+        it('should stop at hiding the arc count when the corner has no shorter date', () => {
+            render(<DramaShelf items={[item({ release })]} />);
+
+            layout(180, 120);
+            expect(meta()).toHaveAttribute('data-tight', '1');
         });
     });
 
@@ -158,7 +188,9 @@ describe('DramaTile availability', () => {
             layout(120, 80, 150);
             expect(line()).toHaveAttribute('data-tight');
             expect(
-                screen.getByRole('button', { name: /^蘭茜夫人劇場，繼續收聽 .*05\/12（六）下架$/ }),
+                screen.getByRole('button', {
+                    name: /^蘭茜夫人劇場，繼續收聽 .*05\/12 星期六 下架$/,
+                }),
             ).toBeInTheDocument();
             layout(120, 80, 260);
             expect(line()).not.toHaveAttribute('data-tight');

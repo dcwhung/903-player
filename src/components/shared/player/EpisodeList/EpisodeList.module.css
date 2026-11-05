@@ -261,11 +261,10 @@
     }
 }
 
-.leaving::before {
-    margin: 0 var(--space-1);
+/* 「 · 」（common.separator）：淡色，唔跟琥珀；icon 嘅 gap 已經當咗後面嗰個空位 */
+.leavingSeparator {
+    margin-right: calc(-1 * var(--notice-icon-gap));
     color: var(--color-text-muted);
-    font-weight: 400;
-    content: '·';
 }
 
 /*

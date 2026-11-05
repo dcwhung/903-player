@@ -23,7 +23,7 @@ describe('drama tile notices', () => {
         expect(releaseNote(soon, TODAY)).toEqual({
             text: '新短篇 12/11 上架',
             tag: '12/11 上架',
-            label: '新短篇 12/11（四）上架',
+            label: '下個短篇 12/11 星期四 上架',
         });
         const batch = [
             arcInfo('戀愛二分一', { batches: [{ first: 11, last: 20, date: '2026-11-06' }] }),
@@ -31,7 +31,7 @@ describe('drama tile notices', () => {
         expect(releaseNote(batch, TODAY)).toEqual({
             text: '全新集數 明日上架',
             tag: '明日上架',
-            label: '全新集數 06/11（五）上架',
+            label: '下一批集數 06/11 星期五 上架',
         });
         expect(releaseNote([arcInfo('A')], TODAY)).toBeUndefined();
     });
@@ -40,7 +40,8 @@ describe('drama tile notices', () => {
         expect(leavingCorner({ removedAt: '2026-12-05' }, [], TODAY)).toEqual({
             text: '05/12 下架',
             tag: '05/12',
-            label: '05/12（六）下架',
+            short: '05/12 下架',
+            label: '本廣播劇系列 05/12 星期六 下架',
             date: '2026-12-05',
         });
         const arcs = [arcInfo('戀愛二分一', { removedAt: '2026-11-07' })];
@@ -53,7 +54,7 @@ describe('drama tile notices', () => {
     it('should label a whole upcoming drama for its greyed tile', () => {
         expect(upcomingTile({ name: '18 樓 C 座', launchedAt: '2026-12-01' }, TODAY)).toEqual({
             text: '即將上架 · 01/12',
-            label: '18 樓 C 座，01/12（二）上架，未可以收聽',
+            label: '18 樓 C 座，01/12 星期二 上架',
         });
         expect(upcomingTile({ name: 'X', launchedAt: '2026-11-06' }, TODAY).text).toBe(
             '即將上架 · 明日',

@@ -243,7 +243,6 @@
 .continueLine {
     display: flex;
     align-items: center;
-    gap: var(--space-1);
     width: 100%;
     min-width: 0;
 }
@@ -265,10 +264,6 @@
     white-space: nowrap;
 }
 
-.continueLeaving::before {
-    content: '·';
-}
-
 /* 放唔落（useHideWhenTight 量到）：集名優先，成段「· ⏳ 19/12 下架」收埋 */
 .continueLine[data-tight] .continueLeaving {
     display: none;
@@ -288,11 +283,7 @@
     white-space: nowrap;
 }
 
-/* 分隔「·」屬於短篇數嗰截：短篇數收埋就一齊收，唔會淨低一粒點 */
-.metaCount::after {
-    margin: 0 var(--space-1);
-    content: '·';
-}
+/* 分隔符喺短篇數嗰截入面：短篇數收埋就一齊收，唔會淨低一粒點 */
 
 /* 放唔落（useHideWhenTight 量到）：成段「N 個短篇 ·」收埋，唔出半截 */
 .meta[data-tight] .metaCount {
@@ -306,10 +297,12 @@
     gap: var(--notice-icon-gap);
 }
 
-.noteTag {
+.noteTag,
+.noteNarrow {
     display: none;
 }
 
+/* 格窄：短版（「05/12 下架」/「⏱ 後日上架」） */
 @container drama-tile (max-width: 280px) {
     .noteFull {
         display: none;
@@ -318,6 +311,26 @@
     .noteTag {
         display: inline;
     }
+}
+
+/* 再窄（手機打橫格）：下架字淨日期「⏳ 05/12」（E2：夠位先加「下架」） */
+@container drama-tile (max-width: 200px) {
+    .noteTag:has(+ .noteNarrow) {
+        display: none;
+    }
+
+    .noteNarrow {
+        display: inline;
+    }
+}
+
+/* 同一條頂行，收埋短篇數都仲放唔落（useHideWhenTight 第 2 步）：左上角下架字都淨日期（E2） */
+.topBar:has(> .meta[data-tight='2']) .noteTag:has(+ .noteNarrow) {
+    display: none;
+}
+
+.topBar:has(> .meta[data-tight='2']) .noteNarrow {
+    display: inline;
 }
 
 .continueBar {

@@ -2,6 +2,7 @@ import { t } from '../../../../i18n/t';
 import { PERCENT, toPercent } from '../../../../utils/ratio';
 import { CheckIcon, ClockIcon, HourglassIcon, PauseIcon, PlayIcon } from '../../common/icons/icons';
 import { Marquee } from '../../common/Marquee/Marquee';
+import { Separator } from '../../common/Separator/Separator';
 import { BookmarkButton } from '../BookmarkButton/BookmarkButton';
 import styles from './EpisodeList.module.css';
 import type { EpisodeItem } from './episodeListTypes';
@@ -86,6 +87,7 @@ const RowBody = ({ percent, item }: { percent: number; item: EpisodeItem }) => (
             {item.status.text}
             {item.leaving && (
                 <span className={styles.leaving}>
+                    <Separator className={styles.leavingSeparator} />
                     <HourglassIcon size={NOTICE_ICON_SIZE} />
                     <span className={styles.leavingFull}>{item.leaving.text}</span>
                     <span className={styles.leavingTag}>{item.leaving.tag}</span>

@@ -35,6 +35,6 @@ describe('DramaPage for a drama off the shelf', () => {
         open('chisee');
 
         expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
-        expect(screen.getByRole('status')).toHaveTextContent('呢套劇已下架');
+        expect(screen.getByRole('status')).toHaveTextContent('本廣播劇系列已下架');
     });
 });

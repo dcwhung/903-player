@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { SavedTab } from './SavedTab';
 import type { SavedRowView, SavedTabView } from './savedTypes';
 
-const LEAVING = { text: '05/12 下架', label: '05/12（六）下架' };
+const LEAVING = { text: '05/12 下架', label: '05/12 星期六 下架' };
 
 const row = (extra: Partial<SavedRowView> = {}): SavedRowView => ({
     key: '/half/3',
@@ -44,7 +44,7 @@ describe('SavedTab availability', () => {
         render(<SavedTab view={view([removed])} />);
 
         const open = screen.getByRole('button', {
-            name: '蘭茜夫人劇場 戀愛二分一 第 3 集，已下架，未可以收聽',
+            name: '蘭茜夫人劇場 戀愛二分一 第 3 集，已下架',
         });
         expect(open).toHaveAttribute('aria-disabled', 'true');
         expect(open).toHaveTextContent('已下架');
@@ -62,7 +62,7 @@ describe('SavedTab availability', () => {
         const open = screen.getByRole('button', { name: /^開啟 蘭茜夫人劇場 戀愛二分一 第 3 集/ });
         expect(open).toHaveTextContent('聽到 12:30 / 30:00');
         expect(open).toHaveTextContent('05/12 下架');
-        expect(open).toHaveAccessibleName(/05\/12（六）下架/);
+        expect(open).toHaveAccessibleName(/05\/12 星期六 下架/);
     });
 
     it('should add a second amber line to a recent row leaving soon (LR1)', () => {
@@ -90,7 +90,7 @@ describe('SavedTab availability', () => {
             name: /^開啟 蘭茜夫人劇場 戀愛二分一 · 第 3 集/,
         });
         expect(open).toHaveTextContent('05/12 下架');
-        expect(open).toHaveAccessibleName(/05\/12（六）下架/);
+        expect(open).toHaveAccessibleName(/05\/12 星期六 下架/);
     });
 
     it('should add the amber line on the recent-only tab too (LR1, no bookmarks)', () => {
@@ -118,6 +118,6 @@ describe('SavedTab availability', () => {
             name: /^開啟 蘭茜夫人劇場 戀愛二分一 · 第 3 集/,
         });
         expect(open).toHaveTextContent('05/12 下架');
-        expect(open).toHaveAccessibleName(/05\/12（六）下架/);
+        expect(open).toHaveAccessibleName(/05\/12 星期六 下架/);
     });
 });

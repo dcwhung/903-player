@@ -1,35 +1,43 @@
-/* 劇集格嘅部件：「繼續收聽」掣、左上角「新」+ 快將下架、即將上架灰格（P8 #6，_mockups_/coming-soon ⑦ ⑧） */
+/* 劇集格嘅部件：「繼續收聽」掣、左上角「新」+ 快將下架（P8 #6，_mockups_/coming-soon ⑧）；灰格喺 UpcomingTile */
 import { toPercent } from '../../../../utils/ratio';
 import { ClockIcon, HourglassIcon, PlayIcon } from '../../../shared/common/icons/icons';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';
 import { NewBadge } from '../../../shared/common/NewBadge/NewBadge';
+import { Separator } from '../../../shared/common/Separator/Separator';
 import { t } from '../../../../i18n/t';
 import styles from './DramaShelf.module.css';
 import { useHideWhenTight, type Fits } from './useHideWhenTight';
-import type {
-    ContinueButtonProps,
-    DramaShelfItem,
-    DramaTileProps,
-    TileNotice,
-} from './dramaTileTypes';
+import type { ContinueButtonProps, DramaShelfItem } from './dramaTileTypes';
 
 const CONTINUE_ICON_SIZE = 16;
 const NOTICE_ICON_SIZE = 12;
-const UPCOMING_ICON_SIZE = 14;
 
-/** 入頁掣讀屏名：劇名（+ 有新嘢）（+ 快將下架）（+ 即將上架） */
-export const tileLabel = ({ name, newLabel, leaving, release }: DramaShelfItem): string =>
-    [leaving?.label, release?.label].reduce<string>(
-        (label, part) =>
-            part ? t('availability.tileLeaving', { name: label, label: part }) : label,
-        newLabel ? t('drama.tileNew', { name, label: newLabel }) : name,
-    );
+/**
+ * 入頁掣讀屏名（F3）：「劇名，有新短篇；下個短篇 02/12 星期三 上架；部分短篇 05/12 星期六 下架」，
+ * 冇嘢補充就淨係劇名
+ */
+export const tileLabel = ({ name, newLabel, leaving, release }: DramaShelfItem): string => {
+    const notes = [newLabel, release?.label, leaving?.label].filter(Boolean);
+    if (notes.length === 0) return name;
+    const label = notes.join(t('availability.noteSeparator'));
+    return t('availability.tileWithNote', { name, label });
+};
 
-/** 字同佢嘅短版：格窄（container query）先換做短版 */
-const FullOrTag = ({ text, tag }: { text: string; tag: string | undefined }) => (
+interface NoteForms {
+    /** 夠位：全句 */
+    text: string;
+    /** 格窄（280px 以下）：短版（「05/12 下架」/「後日上架」） */
+    tag: string | undefined;
+    /** 再窄（200px 以下）先出嘅最短版（「05/12」，E2）；冇就停喺 tag */
+    narrow?: string | undefined;
+}
+
+/** 字同佢嘅短版：格窄（container query）先換做短版，再窄先淨日期 */
+const FullOrTag = ({ text, tag, narrow }: NoteForms) => (
     <>
         <span className={styles.noteFull}>{text}</span>
         <span className={styles.noteTag}>{tag ?? text}</span>
+        {narrow && <span className={styles.noteNarrow}>{narrow}</span>}
     </>
 );
 
@@ -41,6 +49,7 @@ export const MetaText = ({ item }: { item: DramaShelfItem }) =>
         <>
             <span className={styles.metaCount} data-role="meta-count">
                 {item.meta}
+                <Separator />
             </span>
             <span className={styles.metaRelease} data-role="meta-release">
                 <ClockIcon className={styles.noteTag} size={NOTICE_ICON_SIZE} />
@@ -75,6 +84,7 @@ const ContinueLine = ({ resume }: { resume: ContinueButtonProps['resume'] }) => 
             <Marquee className={styles.continueLabel} text={resume.label} />
             {resume.leaving && (
                 <span className={styles.continueLeaving} data-role="continue-leaving">
+                    <Separator />
                     <HourglassIcon size={NOTICE_ICON_SIZE} />
                     {resume.leaving.text}
                 </span>
@@ -112,37 +122,13 @@ export const CornerNotes = ({ item }: { item: DramaShelfItem }) => {
             {item.leaving && (
                 <span className={styles.leaving}>
                     <HourglassIcon size={NOTICE_ICON_SIZE} />
-                    <FullOrTag text={item.leaving.text} tag={item.leaving.tag} />
+                    <FullOrTag
+                        text={item.leaving.text}
+                        tag={item.leaving.short ?? item.leaving.tag}
+                        narrow={item.leaving.short ? item.leaving.tag : undefined}
+                    />
                 </span>
             )}
         </span>
     );
 };
-
-/**
- * 整套劇即將上架（_mockups_/coming-soon ⑦ Z1）：灰階圖 + 底部深色條，冇短篇數、冇繼續收聽。
- * aria-disabled（唔用 disabled，Tab / 讀屏照行到），撳落完全冇反應：唔入頁，直版疊卡亦唔接
- * 撳卡 focus 嘅 handler（唔會撳嚟 focus / 捲動）；捲到佢 snap 位先會變 focus 卡
- */
-export const UpcomingTile = ({
-    item,
-    focus,
-}: DramaTileProps & { item: { upcoming: TileNotice } }) => (
-    <div
-        className={`${styles.tile} ${styles.upcoming}`}
-        data-focused={focus?.focused ? '' : undefined}
-    >
-        <button
-            type="button"
-            className={styles.open}
-            aria-disabled="true"
-            aria-label={item.upcoming.label}
-        >
-            <img className={styles.art} src={item.art} alt="" draggable={false} />
-            <span className={styles.upcomingBar} aria-hidden="true">
-                <ClockIcon size={UPCOMING_ICON_SIZE} />
-                {item.upcoming.text}
-            </span>
-        </button>
-    </div>
-);

@@ -16,7 +16,8 @@ export interface DramaShelfItem {
     /** 有新嘢先有：左上角出「新」，讀屏講呢句（例如「有新短篇」/「今日有新一集」） */
     newLabel?: string;
     /** 快將下架先有：左上角（「新」後面）琥珀色「⏳ 05/12 下架」/「部分短篇 …」/「部分集數 …」 */
-    leaving?: (TileNotice & { tag?: string | undefined }) | undefined;
+    /** tag / short：格窄時嘅短版（short「05/12 下架」先，再窄 tag「05/12」，E2） */
+    leaving?: (TileNotice & { tag?: string | undefined; short?: string | undefined }) | undefined;
     /**
      * 即將上架字尾（H2「新短篇 後日上架」/ E1「全新集數 …」）：接喺短篇數後面，獨立一截唔收尾（W-533）；
      * 格窄（--drama-tile-compact 以下）出 tag（「⏱ 後日上架」）；讀屏名加 label（S-700）

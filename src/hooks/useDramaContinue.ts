@@ -2,7 +2,7 @@ import type { DramaShelfItem } from '../components/pages/home/DramaShelf/DramaSh
 import type { DramaConfig } from '../catalog/dramas';
 import { usePlayer } from '../player/usePlayer';
 import { isLeavingSoon } from '../selectors/availability';
-import { dayWhen, removalDateLong, removalWhen } from '../selectors/availabilityLabels';
+import { dayWhen, spokenRemoval, removalWhen } from '../selectors/availabilityLabels';
 import { liveSeriesContinue } from '../selectors/continueListening';
 import { dramaEpisodeLabel } from '../selectors/dramas';
 import { getProgressMap } from '../services/progressStore';
@@ -20,7 +20,7 @@ const leavingOf = (removedAt: string | undefined, today: string) =>
               text: removalWhen(removedAt, today, 'short'),
               tag: dayWhen(removedAt, today),
               date: removedAt,
-              label: removalDateLong(removedAt),
+              label: spokenRemoval(removedAt),
           }
         : undefined;
 

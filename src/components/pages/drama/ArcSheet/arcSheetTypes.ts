@@ -6,6 +6,8 @@ export interface ArcRowNotes {
     status?: string | undefined;
     /** 狀態字後面加嘅（「第 11 集起 19/11 上架」、「05/12 下架」），用「 · 」接 */
     suffixes: readonly string[];
+    /** 讀屏版（讀屏日子，F2）：同 suffixes 一一對應 */
+    spokenSuffixes: readonly string[];
     /** 名後面嘅琥珀膠囊（「快將下架」/「部分快將下架」） */
     badge?: string | undefined;
 }
@@ -18,6 +20,6 @@ export interface UpcomingArcRowView {
     pill: string;
     /** 第二行：「12/11（四）上架 · 20 集」；集數未知就淨係日子 */
     status: string;
-    /** 讀屏：「XXX，12/11（四）上架，未可以收聽」 */
+    /** 讀屏：「XXX，12/11 星期四 上架，20 集」 */
     label: string;
 }

@@ -26,8 +26,17 @@ const HALF: ArcSummary = {
 const HEART: ArcSummary = { ...HALF, arc: '我心不死', total: 37, watched: 0, state: 'new' };
 
 const NOTES: Record<string, ArcRowNotes> = {
-    戀愛二分一: { total: 30, status: '聽到第 10 集', suffixes: ['第 11 集起 19/11 上架'] },
-    我心不死: { suffixes: ['05/12 下架'], badge: '快將下架' },
+    戀愛二分一: {
+        total: 30,
+        status: '已收聽到第 10 集（最新）',
+        suffixes: ['第 11 集起 19/11 上架'],
+        spokenSuffixes: ['第 11 集起 19/11 星期四 上架'],
+    },
+    我心不死: {
+        suffixes: ['05/12 下架'],
+        spokenSuffixes: ['05/12 星期六 下架'],
+        badge: '快將下架',
+    },
 };
 
 const UPCOMING = [
@@ -36,7 +45,7 @@ const UPCOMING = [
         cover: '/xxx.webp',
         pill: '12/11',
         status: '12/11（四）上架 · 20 集',
-        label: 'XXX，12/11（四）上架，未可以收聽',
+        label: 'XXX，12/11 星期四 上架，20 集',
     },
 ];
 
@@ -47,7 +56,7 @@ const renderSheet = (onPick = vi.fn()) =>
             groups={[{ group: 'unfinished', items: [HALF, HEART] }]}
             upcoming={UPCOMING}
             notesOf={(s) => NOTES[s.arc]}
-            notice="成套劇 05/12（六）下架"
+            notice="本廣播劇系列 05/12（六）下架"
             current={undefined}
             isPlaying={false}
             onPick={onPick}
@@ -77,8 +86,12 @@ describe('ArcSheet availability', () => {
 
         const row = screen.getByRole('button', { name: /^戀愛二分一，/ });
         expect(row).toHaveTextContent('10/30');
-        expect(row).toHaveTextContent('聽到第 10 集 · 第 11 集起 19/11 上架');
+        expect(row).toHaveTextContent('已收聽到第 10 集（最新） · 第 11 集起 19/11 上架');
         expect(row.querySelector('[data-role="done"]')).toBeNull();
+        // F2：讀屏逐段砌，讀屏日子，唔讀「·」
+        expect(row).toHaveAccessibleName(
+            '戀愛二分一，已收聽到第 10 集（最新），30 集，第 11 集起 19/11 星期四 上架',
+        );
     });
 
     it('should badge an arc leaving soon and add the day to its status (LS2)', () => {
@@ -87,14 +100,15 @@ describe('ArcSheet availability', () => {
         const row = screen.getByRole('button', { name: /^我心不死，/ });
         expect(row).toHaveTextContent('快將下架');
         expect(row).toHaveTextContent('未聽 · 37 集 · 05/12 下架');
-        expect(row).toHaveAccessibleName('我心不死，未聽 · 37 集 · 05/12 下架，快將下架');
+        // F2：「{短篇}，{狀態}，{N} 集，{讀屏日子} 下架」，唔重覆「快將下架」
+        expect(row).toHaveAccessibleName('我心不死，未收聽，37 集，05/12 星期六 下架');
     });
 
     it('should note under the header when the whole drama leaves soon', () => {
         renderSheet();
 
         expect(
-            within(screen.getByRole('dialog')).getByText('成套劇 05/12（六）下架'),
+            within(screen.getByRole('dialog')).getByText('本廣播劇系列 05/12（六）下架'),
         ).toBeVisible();
     });
 });

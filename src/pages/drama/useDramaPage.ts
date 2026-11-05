@@ -340,7 +340,7 @@ const pageAvailability = (availability: SeriesAvailabilityView) => ({
 /** 全集一覽表嘅即將上架組（S1）、成套劇下架字、每行補充（A2 / LS2） */
 const sheetAvailability = (availability: SeriesAvailabilityView) => ({
     upcoming: availability.upcomingRows,
-    notice: availability.notice?.sheet,
+    notice: availability.notice?.page,
     notesOf: availability.notesOf,
 });
 

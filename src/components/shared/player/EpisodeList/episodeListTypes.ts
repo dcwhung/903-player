@@ -22,7 +22,7 @@ export interface EpisodeItem {
     leaving?: { text: string; tag: string; label: string } | undefined;
     /** 摺埋嘅未上架批次（status.kind = upcoming）：呢行代表幾多集（「共 N 集」照計） */
     episodeCount?: number | undefined;
-    /** 摺埋批次嘅讀屏句（「第 11 至 20 集，19/11（四）上架，未可以收聽」） */
+    /** 摺埋批次嘅讀屏句（「第 11 至 20 集，19/11 星期四 上架」） */
     label?: string | undefined;
 }
 

@@ -51,7 +51,7 @@ describe('saved tab availability', () => {
     });
 
     it('should give the amber leaving day for an episode leaving soon (LB1 / LR1)', () => {
-        const leaving = { text: '05/12 下架', label: '05/12（六）下架' };
+        const leaving = { text: '05/12 下架', label: '05/12 星期六 下架' };
         expect(bookmarkAvailability(series('lancy', '/soon'), TODAY)).toEqual({
             removed: false,
             leaving,

@@ -1,6 +1,29 @@
-import { dayWhen, removalWhen, releaseWhen } from './availabilityLabels';
+import {
+    dayWhen,
+    removalWhen,
+    releaseWhen,
+    spokenDate,
+    spokenRelease,
+    spokenRemoval,
+} from './availabilityLabels';
 
 const TODAY = '2026-11-05';
+
+describe('spoken dates (E1)', () => {
+    it('should read the date and weekday, never 明日 / 後日', () => {
+        expect(spokenDate('2026-12-05')).toBe('05/12 星期六');
+        expect(spokenRelease('2026-11-06')).toBe('06/11 星期五 上架');
+        expect(spokenRemoval('2026-12-05')).toBe('05/12 星期六 下架');
+    });
+});
+
+describe('spoken dates (E1)', () => {
+    it('should read the date and weekday, never 明日 / 後日', () => {
+        expect(spokenDate('2026-12-05')).toBe('05/12 星期六');
+        expect(spokenRelease('2026-11-06')).toBe('06/11 星期五 上架');
+        expect(spokenRemoval('2026-12-05')).toBe('05/12 星期六 下架');
+    });
+});
 
 describe('availability date labels (F3)', () => {
     it('should write the date when far away, short and long', () => {

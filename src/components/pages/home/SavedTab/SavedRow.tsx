@@ -2,6 +2,7 @@ import type { PointerEvent } from 'react';
 import { t } from '../../../../i18n/t';
 import { toPercent } from '../../../../utils/ratio';
 import { HourglassIcon, PauseIcon, PlayIcon, TrashIcon } from '../../../shared/common/icons/icons';
+import { Separator } from '../../../shared/common/Separator/Separator';
 import styles from './SavedTab.module.css';
 import type { SavedRowView } from './savedTypes';
 import { useRowSwipe } from './useRowSwipe';
@@ -21,6 +22,7 @@ const RowText = ({ row }: { row: SavedRowView }) => (
                 {row.removed ? t('availability.removed') : row.status}
                 {row.leaving && !row.removed && (
                     <span className={styles.leaving}>
+                        <Separator className={styles.leavingSeparator} />
                         <HourglassIcon size={NOTICE_ICON_SIZE} />
                         {row.leaving.text}
                     </span>
@@ -56,7 +58,7 @@ const PlayButton = ({ row }: { row: SavedRowView }) => {
     );
 };
 
-/** 開行掣讀屏名：已下架講「已下架，未可以收聽」；快將下架加日子 */
+/** 開行掣讀屏名：已下架講「已下架」（D3）；快將下架加日子 */
 const openLabel = ({ name, label, status, removed, leaving }: SavedRowView): string => {
     if (removed) return t('availability.removedRow', { name, label });
     const shown = leaving

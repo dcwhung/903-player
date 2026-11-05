@@ -1,0 +1,5 @@
+/* 前後有空格：空格唔好俾 flex / 行尾食咗；字重唔跟住隔離（琥珀字係粗體） */
+.separator {
+    font-weight: 400;
+    white-space: pre;
+}

@@ -117,7 +117,8 @@ const checkStackedUpcoming = async (env) => {
     await ctx.close();
 };
 
-const SOON_TILE_LABEL = 'E2E 即將劇場，部分短篇 19/12（六）下架，新短篇 02/12（三）上架';
+// 讀屏名（F3）：劇名，未上架嗰個；快將下架（讀屏日子 E1：一律「日子 星期幾」）
+const SOON_TILE_LABEL = 'E2E 即將劇場，下個短篇 02/12 星期三 上架；部分短篇 19/12 星期六 下架';
 /** 主頁格角落字闊橫版 / 窄橫版（有繼續收聽 + 左上角下架字，W-533） */
 const RELEASE_VIEWPORTS = [
     { width: 1300, height: 800, full: false },
@@ -184,7 +185,7 @@ const checkReleaseNote = async (env) => {
             `${viewport.width}×${viewport.height} 主頁：上架字尾冇俾截（${JSON.stringify(fit)}）`,
         );
         log(
-            fit !== null && fit.cornerFits && (fit.count === null || fit.count === '3 個短篇'),
+            fit !== null && fit.cornerFits && (fit.count === null || fit.count === '3 個短篇 · '),
             `${viewport.width}×${viewport.height} 主頁：短篇數成段出齊或者成段收埋（${fit?.count ?? '收埋'}）`,
         );
         const strip = (await isShown(tile, { timeout: WAIT_MS })) ? await continueFit(tile) : null;
@@ -208,19 +209,19 @@ const checkHomeShelf = async (env) => {
     const labels = await labelsIn(shelf);
     log(
         labels.includes(SOON_TILE_LABEL),
-        '主頁：即將劇場讀「部分短篇 19/12（六）下架，新短篇 02/12（三）上架」',
+        '主頁：即將劇場讀「下個短篇 02/12 星期三 上架；部分短篇 19/12 星期六 下架」',
     );
     log(
-        labels.includes('E2E 下架劇場，19/12（六）下架'),
-        '主頁：成套劇快將下架讀「19/12（六）下架」',
+        labels.includes('E2E 下架劇場，本廣播劇系列 19/12 星期六 下架'),
+        '主頁：成套劇快將下架讀「本廣播劇系列 19/12 星期六 下架」',
     );
     log(!labels.some((l) => l.startsWith('E2E 舊劇場')), '主頁：已下架嘅劇唔出');
     log(
-        labels.at(-1) === 'E2E 新劇，15/12（二）上架，未可以收聽',
+        labels.at(-1) === 'E2E 新劇，15/12 星期二 上架',
         `主頁：整套新劇排最尾（${labels.at(-1)}）`,
     );
     log(
-        labels.includes('E2E 即將劇場，繼續收聽 我心不死 · 第 3 集，01/12（二）下架'),
+        labels.includes('E2E 即將劇場，繼續收聽 我心不死 · 第 3 集，01/12 星期二 下架'),
         '主頁：繼續收聽嗰集同左上角唔同日落架，條上照加下架日（LC2）',
     );
     log(
@@ -249,11 +250,13 @@ const checkDramaChips = async (env, p) => {
     const { log } = env;
     const chips = await labelsIn(chipsOf(p));
     log(
-        chips.slice(-2).join(' | ') ===
-            'XXX，02/12（三）上架，未可以收聽 | YYY，14/12（一）上架，未可以收聽',
+        chips.slice(-2).join(' | ') === 'XXX，02/12 星期三 上架 | YYY，14/12 星期一 上架',
         `劇集頁：即將上架 chips 排最尾（${chips.slice(-2).join(' | ')}）`,
     );
-    log(chips.includes('初戀無限次，19/12（六）下架'), '劇集頁：快將下架短篇 chip 讀下架日（LK1）');
+    log(
+        chips.includes('初戀無限次，19/12 星期六 下架'),
+        '劇集頁：快將下架短篇 chip 讀下架日（LK1）',
+    );
     const soon = chipsOf(p).getByRole('button', { name: /^XXX，/ });
     await soon.click({ force: true });
     log(
@@ -271,20 +274,29 @@ const checkSheet = async (env, p) => {
     await sheet.waitFor({ timeout: WAIT_MS });
     const groups = await sheet.getByRole('heading', { level: 3 }).allTextContents();
     log(groups.at(-1) === '即將上架', `一覽表：最底一組係即將上架（${groups.join(' / ')}）`);
-    const xxx = sheet.getByRole('button', { name: 'XXX，02/12（三）上架，未可以收聽' });
+    const xxx = sheet.getByRole('button', { name: 'XXX，02/12 星期三 上架，20 集' });
     log(
         (await xxx.textContent())?.includes('後日上架 · 20 集'),
         '一覽表：XXX 第二行「後日上架 · 20 集」',
     );
-    const yyy = sheet.getByRole('button', { name: 'YYY，14/12（一）上架，未可以收聽' });
+    const yyy = sheet.getByRole('button', { name: 'YYY，14/12 星期一 上架' });
     log((await yyy.textContent())?.endsWith('14/12（一）上架'), '一覽表：未知集數嘅 YYY 唔寫集數');
     const half = await sheet.getByRole('button', { name: /^戀愛二分一，/ }).textContent();
     log(
         half?.includes('0/30') && half.includes('第 11 集起 03/12 上架'),
         `一覽表：逐集上架 A2（${half}）`,
     );
-    const first = await sheet.getByRole('button', { name: /^初戀無限次，/ }).textContent();
+    const firstRow = sheet.getByRole('button', { name: /^初戀無限次，/ });
+    const first = await firstRow.textContent();
     log(first?.includes('快將下架') && first.includes('19/12 下架'), `一覽表：LS2（${first}）`);
+    // F2：讀屏逐段砌、冇「·」、唔重覆「快將下架」
+    const firstName = (await firstRow.getAttribute('aria-label')) ?? '';
+    log(
+        /^初戀無限次，.+，\d+ 集，19\/12 星期六 下架$/.test(firstName) &&
+            !firstName.includes('·') &&
+            !firstName.includes('快將下架'),
+        `一覽表：快將下架行讀屏名（F2：${firstName}）`,
+    );
     await p.keyboard.press('Escape');
     await sheet.waitFor({ state: 'detached', timeout: WAIT_MS });
 };
@@ -294,16 +306,16 @@ const checkEpisodeList = async (env, p) => {
     const { log } = env;
     await chipsOf(p).getByRole('button', { name: '戀愛二分一', exact: true }).click();
     const list = p.getByRole('region', { name: '集數' });
-    const batch = list.getByRole('button', { name: '第 11 至 20 集，03/12（四）上架，未可以收聽' });
-    log(await isShown(batch, { timeout: WAIT_MS }), '清單：第 11–20 集摺埋一行');
+    const batch = list.getByRole('button', { name: '第 11 至 20 集，03/12 星期四 上架' });
+    log(await isShown(batch, { timeout: WAIT_MS }), '清單：第 11 至 20 集摺埋一行');
     log((await batch.getAttribute('aria-disabled')) === 'true', '清單：摺埋行 aria-disabled');
     log((await list.getByText('共 30 集').count()) === 1, '清單：「共 30 集」計埋未上架');
     await chipsOf(p).getByRole('button', { name: '我心不死', exact: true }).click();
     const rows = await labelsIn(list);
     log(!rows.some((l) => /第 1 集|第 2 集/.test(l)), '清單：已下架嘅第 1、2 集唔出');
     log(
-        rows.some((l) => l.startsWith('播放 第 3 集') && l.includes('01/12（二）下架')),
-        '清單：第 3 集讀「01/12（二）下架」（LE1）',
+        rows.some((l) => l.startsWith('播放 第 3 集') && l.includes('01/12 星期二 下架')),
+        '清單：第 3 集讀「01/12 星期二 下架」（LE1）',
     );
 };
 
@@ -325,15 +337,15 @@ const checkLeavingDrama = async (env) => {
     const sheet = p.getByRole('dialog', { name: '全集' });
     await sheet.waitFor({ timeout: WAIT_MS });
     log(
-        await isShown(sheet.getByText('成套劇 19/12（六）下架')),
-        '一覽表：表頭下面「成套劇 19/12（六）下架」',
+        await isShown(sheet.getByText('本廣播劇系列 19/12（六）下架')),
+        '一覽表：表頭下面「本廣播劇系列 19/12（六）下架」',
     );
     await p.keyboard.press('Escape');
     await sheet.waitFor({ state: 'detached', timeout: WAIT_MS });
     log(
-        (await p.getByText('呢套劇 19/12（六）下架').count()) === 1 &&
+        (await p.getByText('本廣播劇系列 19/12（六）下架').count()) === 1 &&
             (await p.getByText('揀一個短篇開始收聽').count()) === 0,
-        '劇集頁：唱片下面改講「呢套劇 19/12（六）下架」',
+        '劇集頁：唱片下面改講「本廣播劇系列 19/12（六）下架」',
     );
     await ctx.close();
 };
@@ -345,8 +357,8 @@ const checkOffShelfUrls = async (env) => {
     await p.goto(`${env.base}#/drama/e2e-gone`);
     log(await reachesHash(p, '#/'), '已下架劇集頁 URL 返主頁');
     log(
-        await isShown(p.getByRole('status').getByText('呢套劇已下架')),
-        '已下架：Toast「呢套劇已下架」',
+        await isShown(p.getByRole('status').getByText('本廣播劇系列已下架')),
+        '已下架：Toast「本廣播劇系列已下架」',
     );
     await p.goto(`${env.base}#/drama/e2e-upcoming`);
     log(await reachesHash(p, '#/'), '即將上架劇集頁 URL 返主頁');
@@ -362,7 +374,7 @@ const checkSavedTab = async (env) => {
     const saved = p.getByRole('region', { name: SAVED_TAB });
     await saved.waitFor({ timeout: WAIT_MS });
     const gone = saved.getByRole('button', {
-        name: 'E2E 舊劇場 戀愛二分一 第 1 集，已下架，未可以收聽',
+        name: 'E2E 舊劇場 戀愛二分一 第 1 集，已下架',
     });
     log((await gone.getAttribute('aria-disabled')) === 'true', '收藏 tab：已下架行 aria-disabled');
     log(
@@ -373,7 +385,8 @@ const checkSavedTab = async (env) => {
     log(
         leaving.some(
             (l) =>
-                l.startsWith('開啟 E2E 即將劇場 我心不死 第 3 集') && l.includes('01/12（二）下架'),
+                l.startsWith('開啟 E2E 即將劇場 我心不死 第 3 集') &&
+                l.includes('01/12 星期二 下架'),
         ),
         '收藏 tab：快將下架行讀下架日（LB1）',
     );
@@ -381,7 +394,7 @@ const checkSavedTab = async (env) => {
         leaving.some(
             (l) =>
                 l.startsWith('開啟 E2E 即將劇場 初戀無限次 · 第 2 集') &&
-                l.includes('19/12（六）下架'),
+                l.includes('19/12 星期六 下架'),
         ),
         '最近收聽：快將下架行第二行（LR1）',
     );

@@ -1,10 +1,11 @@
 /*
  * 即將上架 / 快將下架嘅日子字（F3，_mockups_/coming-soon ③）：兩日內講「明日 / 後日」，遠就寫日子。
- * 短版（chip、主頁格）用 dates.dayMonth；長版（一覽表、清單、讀屏）用 dates.label（加星期）。
+ * 短版（chip、主頁格）用 dates.dayMonth；長版（一覽表、清單）用 dates.label（加星期）；
+ * 讀屏一律 spokenDate（「05/12 星期六」）。
  * 字眼全部喺 i18n availability.*
  */
 import { t, type MessageKey } from '../i18n/t';
-import { daysBetween, formatDateLabel, formatDayMonth } from '../utils/date';
+import { daysBetween, formatDateLabel, formatDayMonth, formatWeekday } from '../utils/date';
 
 export type WhenLength = 'short' | 'long';
 
@@ -49,12 +50,21 @@ export const releaseWhen = (date: string, today: string, length: WhenLength): st
 export const removalWhen = (date: string, today: string, length: WhenLength): string =>
     when(REMOVAL, date, today, length);
 
-/** 讀屏用：一律長版日子（唔講明日 / 後日，讀出嚟清楚啲） */
-export const releaseDateLong = (date: string): string =>
-    t('availability.releaseLong', { date: formatDateLabel(date) });
+/** 讀屏日子（E1）：一律「05/12 星期六」，唔講明日 / 後日 */
+export const spokenDate = (date: string): string =>
+    t('availability.spokenDate', { date: formatDayMonth(date), weekday: formatWeekday(date) });
 
-export const removalDateLong = (date: string): string =>
-    t('availability.removalLong', { date: formatDateLabel(date) });
+/** 讀屏：「02/12 星期三 上架」 */
+export const spokenRelease = (date: string): string =>
+    t('availability.releaseSpoken', { date: spokenDate(date) });
+
+/** 讀屏：「05/12 星期六 下架」 */
+export const spokenRemoval = (date: string): string =>
+    t('availability.removalSpoken', { date: spokenDate(date) });
+
+/** 幾截畫面字用全 app 嘅分隔符（common.separator，G2）接埋 */
+export const joinWithSeparator = (parts: readonly string[]): string =>
+    parts.join(t('common.separator'));
 
 /** 冇動詞嘅短版：「01/12」/「明日」/「後日」 */
 export const dayWhen = (date: string, today: string): string => {

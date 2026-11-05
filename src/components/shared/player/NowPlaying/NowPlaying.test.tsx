@@ -53,7 +53,7 @@ describe('NowPlaying', () => {
     });
 
     it('should swap the pick line for the leaving note, or put it under now playing (P8 #6)', () => {
-        const notice = '呢套劇 05/12（六）下架';
+        const notice = '本廣播劇系列 05/12（六）下架';
         const { rerender } = render(
             <NowPlaying label="" status="unloaded" notice={notice} connecting={false} />,
         );

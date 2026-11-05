@@ -13,10 +13,11 @@ import {
 } from '../../selectors/availability';
 import {
     dayWhen,
-    releaseDateLong,
+    joinWithSeparator,
     releaseWhen,
-    removalDateLong,
     removalWhen,
+    spokenRelease,
+    spokenRemoval,
 } from '../../selectors/availabilityLabels';
 import type { ArcAvailability } from '../../types/drama';
 
@@ -26,7 +27,7 @@ const LEAVING_KEYS = {
     episodes: 'availability.leavingEpisodes',
 } as const satisfies Record<LeavingScope, MessageKey>;
 
-/** 格上面嘅字（text）同讀屏句（label，長版日子） */
+/** 格上面嘅字（text）同讀屏句（label，讀屏日子「05/12 星期六」） */
 export interface TileNotice {
     text: string;
     label: string;
@@ -35,9 +36,14 @@ export interface TileNotice {
 /** 格窄時改出嘅短版（tag，例如「05/12」/「後日上架」） */
 export type TileNoticeWithTag = TileNotice & { tag: string };
 
+const NEXT_SPOKEN_KEYS = {
+    arc: 'availability.tileNextArcSpoken',
+    episodes: 'availability.tileNextEpisodesSpoken',
+} as const;
+
 /**
  * 短篇數後面嘅字尾（H2 新短篇 / E1 全新集數）：最快上架嗰個；冇就 undefined。
- * 獨立一截，格窄時短篇數先收尾（W-533）；讀屏名用長版日子（S-700）
+ * 獨立一截，格窄時短篇數先收尾（W-533）；讀屏講「下個短篇 / 下一批集數 02/12 星期三 上架」（F3）
  */
 export const releaseNote = (
     arcs: readonly ArcAvailability[],
@@ -50,23 +56,34 @@ export const releaseNote = (
     return {
         text: t(key, { when }),
         tag: when,
-        label: t(key, { when: releaseDateLong(next.date) }),
+        label: t(NEXT_SPOKEN_KEYS[next.kind], { when: spokenRelease(next.date) }),
     };
 };
 
+/** 左上角讀屏：成套劇講「本廣播劇系列 …」（D2），部分短篇 / 集數照講範圍 */
+const leavingSpoken = (scope: LeavingScope, date: string): string =>
+    scope === 'drama'
+        ? t('availability.dramaLeavingLine', { when: spokenRemoval(date) })
+        : t(LEAVING_KEYS[scope], { when: spokenRemoval(date) });
+
+/**
+ * 左上角琥珀字：text 全句（「部分短篇 05/12 下架」）；格窄就 short（「05/12 下架」），
+ * 再窄先 tag（「05/12」，E2）；label 讀屏
+ */
 export const leavingCorner = (
     drama: DateWindow,
     arcs: readonly ArcAvailability[],
     today: string,
-): (TileNoticeWithTag & { date: string }) | undefined => {
+): (TileNoticeWithTag & { short: string; date: string }) | undefined => {
     const leaving = dramaLeaving(drama, arcs, today);
     if (!leaving) return undefined;
-    const key = LEAVING_KEYS[leaving.scope];
+    const short = removalWhen(leaving.date, today, 'short');
     return {
-        text: t(key, { when: removalWhen(leaving.date, today, 'short') }),
+        text: t(LEAVING_KEYS[leaving.scope], { when: short }),
         tag: dayWhen(leaving.date, today),
+        short,
+        label: leavingSpoken(leaving.scope, leaving.date),
         date: leaving.date,
-        label: t(key, { when: removalDateLong(leaving.date) }),
     };
 };
 
@@ -77,10 +94,10 @@ export const upcomingTile = (
 ): TileNotice => {
     const date = drama.launchedAt ?? today;
     return {
-        text: t('availability.upcomingDrama', { when: dayWhen(date, today) }),
+        text: joinWithSeparator([t('availability.upcomingDrama'), dayWhen(date, today)]),
         label: t('availability.unavailableLabel', {
             name: drama.name,
-            when: releaseDateLong(date),
+            when: spokenRelease(date),
         }),
     };
 };

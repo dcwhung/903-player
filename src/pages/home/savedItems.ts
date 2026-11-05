@@ -9,7 +9,7 @@ import {
 import { findShow, themeFor } from '../../catalog/shows';
 import { t } from '../../i18n/t';
 import { isLeavingSoon, isRemoved } from '../../selectors/availability';
-import { removalDateLong, removalWhen } from '../../selectors/availabilityLabels';
+import { spokenRemoval, removalWhen } from '../../selectors/availabilityLabels';
 import type { InnerPage } from '../../selectors/pageHandle';
 import type { Bookmark } from '../../services/bookmarkStore';
 import type { Progress } from '../../services/progressStore';
@@ -27,7 +27,7 @@ export interface LeavingNote {
 
 const leavingNote = (removedAt: string | undefined, today: string): LeavingNote | undefined =>
     removedAt && isLeavingSoon(removedAt, today)
-        ? { text: removalWhen(removedAt, today, 'short'), label: removalDateLong(removedAt) }
+        ? { text: removalWhen(removedAt, today, 'short'), label: spokenRemoval(removedAt) }
         : undefined;
 
 /** 最近收聽一行（LR1）：嗰集快將下架（劇集；節目冇下架） */

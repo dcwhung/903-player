@@ -22,15 +22,16 @@ import {
 } from '../../selectors/availability';
 import {
     dayWhen,
-    releaseDateLong,
+    joinWithSeparator,
     releaseWhen,
-    removalDateLong,
     removalWhen,
+    spokenRelease,
+    spokenRemoval,
 } from '../../selectors/availabilityLabels';
 import type { ArcAvailability, EpisodeRange } from '../../types/drama';
 
 const unavailableLabel = (name: string, date: string): string =>
-    t('availability.unavailableLabel', { name, when: releaseDateLong(date) });
+    t('availability.unavailableLabel', { name, when: spokenRelease(date) });
 
 /** 即將上架 chips（排最尾）：「12/11 上架」/「明日上架」 */
 export const upcomingChipsOf = (arcs: readonly ArcAvailability[], today: string): UpcomingChip[] =>
@@ -43,8 +44,15 @@ export const upcomingChipsOf = (arcs: readonly ArcAvailability[], today: string)
 const upcomingStatus = ({ addedAt, count }: UpcomingArc, today: string): string => {
     const when = releaseWhen(addedAt, today, 'long');
     // 集數未知（drama.json 未寫 episodes）就淨係講日子
-    return count === undefined ? when : t('availability.upcomingArcCount', { when, count });
+    if (count === undefined) return when;
+    return joinWithSeparator([when, t('availability.arcEpisodeCount', { count })]);
 };
+
+/** 即將上架行讀屏（F4）：「XXX，02/12 星期三 上架，20 集」；集數未知就唔講 */
+const upcomingLabel = ({ arc, addedAt, count }: UpcomingArc): string =>
+    count === undefined
+        ? unavailableLabel(arc, addedAt)
+        : t('availability.upcomingArcLabel', { name: arc, when: spokenRelease(addedAt), count });
 
 /** 全集一覽表「即將上架」組（S1）；cover = 短篇碟面（冇就劇集碟面） */
 export const upcomingRowsOf = (
@@ -57,7 +65,7 @@ export const upcomingRowsOf = (
         cover: coverOf(upcoming.arc),
         pill: dayWhen(upcoming.addedAt, today),
         status: upcomingStatus(upcoming, today),
-        label: unavailableLabel(upcoming.arc, upcoming.addedAt),
+        label: upcomingLabel(upcoming),
     }));
 
 /**
@@ -72,21 +80,33 @@ export const chipLeavingOf = (
     const leaving = arcLeaving(arc, today);
     if (leaving?.scope !== 'arc') return undefined;
     if (sameRemovalDay(dramaRemovedAt, leaving.date)) return undefined;
-    return { tag: dayWhen(leaving.date, today), label: removalDateLong(leaving.date) };
+    // E2：chips 一行可以左右掃，位一定夠，小標連「下架」
+    return { tag: removalWhen(leaving.date, today, 'short'), label: spokenRemoval(leaving.date) };
 };
 
-/** 一覽表行快將下架嘅字同膠囊（LS2）：短篇「05/12 下架」；集數「第 1–5 集 05/12 下架」 */
+/** 部分集數下架嗰截：一段就講「第 1 至 5 集 …」，幾段就講「部分集數 …」 */
+const rangeText = (when: string, first: number | undefined, last: number | undefined) =>
+    first === undefined
+        ? t('availability.leavingEpisodes', { when })
+        : t('availability.leavingRange', { first, last: last ?? first, when });
+
+/**
+ * 一覽表行快將下架嘅字同膠囊（LS2）：短篇「05/12 下架」；集數「第 1 至 5 集 05/12 下架」；
+ * 讀屏用讀屏日子（spoken）
+ */
 const leavingNotes = (arc: ArcAvailability, today: string) => {
     const leaving = arcLeaving(arc, today);
     if (!leaving) return undefined;
     const when = removalWhen(leaving.date, today, 'short');
-    if (leaving.scope === 'arc') return { suffix: when, badge: t('availability.leavingBadge') };
+    const spokenWhen = spokenRemoval(leaving.date);
+    if (leaving.scope === 'arc')
+        return { suffix: when, spoken: spokenWhen, badge: t('availability.leavingBadge') };
     const { first, last } = leaving;
-    const suffix =
-        first === undefined
-            ? t('availability.leavingEpisodes', { when })
-            : t('availability.leavingRange', { first, last: last ?? first, when });
-    return { suffix, badge: t('availability.leavingBadgePartial') };
+    return {
+        suffix: rangeText(when, first, last),
+        spoken: rangeText(spokenWhen, first, last),
+        badge: t('availability.leavingBadgePartial'),
+    };
 };
 
 /** 一覽表行有下一批未上架（A2）：膠囊計全部集數、講第幾集起幾時上架；聽晒已上架就講聽到第幾集 */
@@ -97,6 +117,7 @@ const batchNotes = (arc: ArcAvailability, s: ArcSummary, lastNo: number, today: 
     return {
         total: arc.count,
         suffix: t('availability.nextBatch', { no: next.first, when }),
+        spoken: t('availability.nextBatch', { no: next.first, when: spokenRelease(next.date) }),
         status: s.state === 'done' ? t('availability.caughtUp', { no: lastNo }) : undefined,
     };
 };
@@ -115,6 +136,9 @@ export const arcNotesOf = (
         ...(batch && { total: batch.total }),
         ...(batch?.status && { status: batch.status }),
         suffixes: [batch?.suffix, leaving?.suffix].filter((x): x is string => x !== undefined),
+        spokenSuffixes: [batch?.spoken, leaving?.spoken].filter(
+            (x): x is string => x !== undefined,
+        ),
         ...(leaving && { badge: leaving.badge }),
     };
 };
@@ -129,7 +153,7 @@ const batchItem = (arc: string, batch: EpisodeRange, today: string): EpisodeItem
         isPlaying: false,
         status: { kind: 'upcoming', ratio: 0, text: releaseWhen(batch.date, today, 'long') },
         episodeCount: batch.last - batch.first + 1,
-        label: unavailableLabel(t('availability.batchLabel', range), batch.date),
+        label: unavailableLabel(t('availability.batchTitle', range), batch.date),
     };
 };
 
@@ -148,22 +172,23 @@ export const episodeLeavingOf = (
     return {
         text: removalWhen(range.date, today, 'short'),
         tag: dayWhen(range.date, today),
-        label: removalDateLong(range.date),
+        label: spokenRemoval(range.date),
     };
 };
 
-/** 成套劇快將下架：劇集頁唱片下面嗰行（page）、一覽表表頭下面（sheet） */
+/**
+ * 成套劇快將下架（D2「本廣播劇系列 …」）：劇集頁唱片下面 / chips 上面、一覽表表頭都係 page；
+ * 「全集」chip 小標 tag（「05/12 下架」）；讀屏 label（「本廣播劇系列 05/12 星期六 下架」）
+ */
 export const dramaNoticeOf = (
     drama: DateWindow,
     today: string,
-): { page: string; sheet: string; tag: string; label: string } | undefined => {
+): { page: string; tag: string; label: string } | undefined => {
     const { removedAt } = drama;
     if (!removedAt || !isLeavingSoon(removedAt, today)) return undefined;
-    const when = removalWhen(removedAt, today, 'long');
     return {
-        page: t('availability.dramaLeavingLine', { when }),
-        sheet: t('availability.sheetLeavingLine', { when }),
-        tag: dayWhen(removedAt, today),
-        label: removalDateLong(removedAt),
+        page: t('availability.dramaLeavingLine', { when: removalWhen(removedAt, today, 'long') }),
+        tag: removalWhen(removedAt, today, 'short'),
+        label: t('availability.dramaLeavingLine', { when: spokenRemoval(removedAt) }),
     };
 };

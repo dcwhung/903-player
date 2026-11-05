@@ -1,4 +1,6 @@
 /* 短篇 chips 嘅即將上架 chip 同成套劇快將下架標籤（P8 #6，_mockups_/coming-soon ① ⑧） */
+import { LANDSCAPE_QUERY } from '../../../../config/layout';
+import { useMediaQuery } from '../../../../hooks/useMediaQuery';
 import { t } from '../../../../i18n/t';
 import { ClockIcon, HourglassIcon, ListIcon } from '../../../shared/common/icons/icons';
 import styles from './ArcPicker.module.css';
@@ -11,13 +13,13 @@ export interface UpcomingChip {
     arc: string;
     /** 「12/11 上架」/「明日上架」 */
     text: string;
-    /** 讀屏：「XXX，12/11（四）上架，未可以收聽」 */
+    /** 讀屏：「XXX，12/11 星期四 上架」 */
     label: string;
 }
 
 /**
  * 成套劇快將下架：未開始聽（replace）就取代 chips 上面「揀一個短篇開始收聽」（text）；
- * 聽緊就喺「全集」chip 出 LK1 款式小標（tag「⏳ 19/12」，讀屏 label 長版日子），標籤行唔加字
+ * 聽緊就喺「全集」chip 出 LK1 款式小標（tag「⏳ 19/12 下架」，讀屏 label 讀屏日子），標籤行唔加字
  */
 export interface ArcPickerNotice {
     text: string;
@@ -27,8 +29,8 @@ export interface ArcPickerNotice {
 }
 
 /**
- * 「☰ 全集」（釘住左邊）：成套劇快將下架而且已經開始聽，就喺入面加琥珀小標（直版先見；
- * 橫版下架字喺唱片下面，小標收埋）
+ * 「☰ 全集」（釘住左邊）：成套劇快將下架而且已經開始聽，就喺入面加琥珀小標同讀屏日子（直版先有）。
+ * 橫版下架字喺唱片下面講咗一次（F1：讀屏都只讀一次），chip 唔出小標、讀屏淨係「全集」
  */
 export const AllChip = ({
     notice,
@@ -37,7 +39,8 @@ export const AllChip = ({
     notice: ArcPickerNotice | undefined;
     onOpenAll: () => void;
 }) => {
-    const tagged = notice && !notice.replace ? notice : undefined;
+    const landscape = useMediaQuery(LANDSCAPE_QUERY);
+    const tagged = notice && !notice.replace && !landscape ? notice : undefined;
     const name = t('drama.allArcs');
     return (
         <button
@@ -54,7 +57,7 @@ export const AllChip = ({
             <ListIcon size={LIST_ICON_SIZE} />
             {name}
             {tagged && (
-                <span className={`${styles.leavingTag} ${styles.allLeaving}`} aria-hidden="true">
+                <span className={styles.leavingTag} aria-hidden="true">
                     <HourglassIcon size={NOTICE_ICON_SIZE} />
                     {tagged.tag}
                 </span>
