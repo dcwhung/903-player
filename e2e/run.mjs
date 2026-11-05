@@ -7,6 +7,7 @@ import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import { chromiumExecutablePath } from '../scripts/chromiumLaunch.mjs';
 import { runArcSheetChecks } from './arcSheet.mjs';
+import { runBookmarkChecks } from './bookmark.mjs';
 import { runCardZoomChecks } from './cardZoom.mjs';
 import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runHomeWideChecks } from './homeWide.mjs';
@@ -1646,6 +1647,9 @@ try {
 
     // 主頁格仔 zoom 入內頁（P6 #2 Z3）：直版 zoom / 返回 unzoom、闊橫版都係 zoom（唔係 expand）
     await runCardZoomChecks({ browser, base: BASE, errors, log });
+
+    // 成集收藏（P7 #7）：清單 ☆ → ★ tab、撳行入頁唔播、▷ 原地播、左滑移除最後一集（手機 + 闊橫版）
+    await runBookmarkChecks({ browser, base: BASE, errors, log });
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
     await section('廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));

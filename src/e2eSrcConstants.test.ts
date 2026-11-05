@@ -10,8 +10,11 @@ import {
     SHEET_FLICK_VELOCITY_PX_PER_MS,
 } from './components/pages/drama/ArcSheet/sheetDrag';
 import { VELOCITY_WINDOW_MS } from './components/pages/today/ShowCardStack/cardStack';
+import { SWIPE_REMOVE_RATIO } from './components/pages/home/SavedTab/useRowSwipe';
 import {
     ALLOWED_AUDIO_ORIGIN,
+    BOOKMARK_STORAGE_KEY,
+    BOOKMARK_STORE_VERSION,
     DRAMA_AUDIO_BASE,
     EARLY_ADVANCE_SECONDS,
     PLAYBACK_LOG_STORAGE_KEY,
@@ -56,6 +59,17 @@ describe('e2e copies of src constants', () => {
         const arcSheet = await importE2E('arcSheet.mjs');
 
         expect(arcSheet[name]).toBe(expected);
+    });
+
+    // 收藏 e2e：seed 收藏用 app 嘅 key / 版本，左滑拖過 app 嘅移除比例
+    it.each([
+        ['BOOKMARK_STORAGE_KEY', BOOKMARK_STORAGE_KEY],
+        ['BOOKMARK_STORE_VERSION', BOOKMARK_STORE_VERSION],
+        ['SWIPE_REMOVE_RATIO', SWIPE_REMOVE_RATIO],
+    ])('should keep bookmark.mjs %s equal to src', async (name, expected) => {
+        const bookmark = await importE2E('bookmark.mjs');
+
+        expect(bookmark[name]).toBe(expected);
     });
 
     // 背景播放 e2e：讀 app 嘅 storage、按 app 嘅 deadline 等（脫節會讀錯 key / 等錯時間）
