@@ -685,7 +685,8 @@ const checkShowHeader = async (p, name, label) => {
         };
     });
     log(
-        above === '現正播放' && /^\d{2}\/\d{2}（.）$/.test(date) && Math.abs(centreGap) < 1,
+        // 轉集區個名嘅日子係讀屏版「17/10 星期六」（畫面上日子條兩行字另外顯示）
+        above === '現正播放' && /^\d{2}\/\d{2} 星期.$/.test(date) && Math.abs(centreGap) < 1,
         `${label}：日子條上面「${above}」、正中「${date}」（偏離 ${centreGap.toFixed(2)}px）`,
     );
 };

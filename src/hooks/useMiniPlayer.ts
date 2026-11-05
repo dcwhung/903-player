@@ -22,7 +22,7 @@ import type { Recording } from '../types/recording';
 import type { ShowPageState } from '../types/showPageState';
 import { isDramaEpisode, type Track } from '../types/track';
 import { t } from '../i18n/t';
-import { formatDateLabel, hkToday } from '../utils/date';
+import { formatSpokenDate, hkToday } from '../utils/date';
 import { dismissMiniPlayer, useMiniPlayerDismissed } from './miniPlayerDismissed';
 import { useRefreshedOn } from './useRefreshedOn';
 import { ratio } from '../utils/ratio';
@@ -127,20 +127,20 @@ const dramaMiniPlayer = (
     };
 };
 
-/** 指示點讀屏名：重溫舊集要講埋日子，同今日同一個節目分得開 */
+/** 指示點讀屏名：重溫舊集要講埋日子（讀屏版「17/10 星期六」），同今日同一個節目分得開 */
 const dotLabel = (recording: Recording, tag: MiniPlayerTag | undefined): string =>
     tag === 'rewatch'
         ? t('miniPlayer.rewatchDot', {
               name: showName(recording),
-              date: formatDateLabel(recording.date),
+              date: formatSpokenDate(recording.date),
           })
         : showName(recording);
 
-/** 開頁掣讀屏名：重溫舊集講埋係重溫邊日 */
+/** 開頁掣讀屏名：重溫舊集講埋係重溫邊日（讀屏版日子） */
 const openLabel = (recording: Recording, tag: MiniPlayerTag | undefined): string => {
     const name = showName(recording);
     return tag === 'rewatch'
-        ? t('miniPlayer.openRewatch', { name, date: formatDateLabel(recording.date) })
+        ? t('miniPlayer.openRewatch', { name, date: formatSpokenDate(recording.date) })
         : t('miniPlayer.open', { name });
 };
 

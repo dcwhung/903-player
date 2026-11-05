@@ -84,12 +84,12 @@ describe('DramaPage (daily drama, once enabled)', () => {
             const { audio } = openDrama('c18');
             await waitFor(() => expect(audio.src).toBe(C18[0]?.url));
 
-            await userEvent.click(screen.getByRole('button', { name: '轉去 22/10（四）' }));
+            await userEvent.click(screen.getByRole('button', { name: '轉去 22/10 星期四' }));
 
             await waitFor(() => expect(audio.src).toBe(C18[1]?.url));
             // 16/10 之後就係重播嘅 13/08：中間冇成年灰色日子
             await userEvent.click(screen.getByRole('button', { name: /^播放 15\/10/ }));
-            expect(screen.getByRole('button', { name: '轉去 13/08（三）' })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: '轉去 13/08 星期三' })).toBeInTheDocument();
         });
     });
     it('should show a right-edge handle for another show playing on a wide landscape screen', async () => {

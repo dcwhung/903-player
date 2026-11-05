@@ -345,10 +345,10 @@ describe('useMiniPlayer', () => {
             expect(mini).toMatchObject({
                 showName: 'Bad Girl大過佬',
                 region: '正在播放（重溫及今日節目）',
-                openLabel: '開啟 Bad Girl大過佬 節目頁，重溫 12/10（一）',
+                openLabel: '開啟 Bad Girl大過佬 節目頁，重溫 12/10 星期一',
                 subtitle: '12/10（一） · 12:40 / 1:58:30',
                 isPlaying: true,
-                labels: ['Bad Girl大過佬，重溫 12/10（一）', 'Bad Girl大過佬', '雲妮鍾情'],
+                labels: ['Bad Girl大過佬，重溫 12/10 星期一', 'Bad Girl大過佬', '雲妮鍾情'],
                 keys: [OLD.url, BADGIRL.url, WANNI.url],
                 tags: ['rewatch', 'today', 'today'],
                 index: 0,

@@ -10,7 +10,7 @@ import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePlayer } from '../../player/usePlayer';
 import { t } from '../../i18n/t';
-import { formatDateLabel } from '../../utils/date';
+import { formatDateLabel, formatSpokenDate } from '../../utils/date';
 import { hasKnownDuration } from '../../utils/time';
 import { DramaHeader } from './DramaHeader';
 import page from '../shared/Page.module.css';
@@ -41,7 +41,7 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
                     {current && (
                         <PlayerPanel
                             title={drama.name}
-                            dateLabel={dateLabel}
+                            dateLabel={formatSpokenDate(current.date)}
                             art={start ? undefined : theme.art}
                             days={strip.days}
                             currentDay={strip.current}

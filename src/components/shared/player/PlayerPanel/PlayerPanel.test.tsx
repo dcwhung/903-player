@@ -18,7 +18,7 @@ const Harness = () => {
             </button>
             <PlayerPanel
                 title="公子會"
-                dateLabel="17/10（六）"
+                dateLabel="17/10 星期六"
                 days={STRIP.days}
                 currentDay={STRIP.current}
                 onPick={() => undefined}
@@ -34,7 +34,7 @@ describe('PlayerPanel', () => {
         act(() => audio.emitMetadata(6836));
         act(() => audio.emitTime(2892));
 
-        expect(screen.getByText('17/10（六）')).toBeInTheDocument();
+        expect(screen.getByText('17/10 星期六')).toBeInTheDocument();
         expect(screen.getByText('48:12')).toBeInTheDocument();
         expect(screen.getByText('1:53:56')).toBeInTheDocument();
         expect(screen.getByRole('slider', { name: '播放進度' })).toHaveAttribute(
@@ -47,7 +47,7 @@ describe('PlayerPanel', () => {
         renderWithProviders(
             <PlayerPanel
                 title="公子會"
-                dateLabel="17/10（六）"
+                dateLabel="17/10 星期六"
                 days={STRIP.days}
                 currentDay={STRIP.current}
                 onPick={() => undefined}
@@ -55,8 +55,8 @@ describe('PlayerPanel', () => {
         );
 
         expect(screen.queryByRole('heading')).not.toBeInTheDocument();
-        expect(screen.getByRole('group', { name: '17/10（六） 公子會' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '轉去 10/10（六）' })).toBeInTheDocument();
+        expect(screen.getByRole('group', { name: '17/10 星期六 公子會' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '轉去 10/10 星期六' })).toBeInTheDocument();
     });
 
     it('shows a placeholder instead of 0:00 while the duration is unknown', async () => {
@@ -141,7 +141,7 @@ describe('PlayerPanel', () => {
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
         act(() => audio.emitAudible());
         const face = container.querySelector('[class*="face"]');
-        const strip = screen.getByRole('group', { name: '17/10（六） 公子會' });
+        const strip = screen.getByRole('group', { name: '17/10 星期六 公子會' });
         expect(face?.className).toMatch(/spinning/);
 
         fireEvent.pointerDown(strip, { clientX: 200, clientY: 10, pointerId: 1 });
@@ -159,7 +159,7 @@ describe('PlayerPanel', () => {
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
         act(() => audio.emitAudible());
         const face = container.querySelector('[class*="face"]');
-        const strip = screen.getByRole('group', { name: '17/10（六） 公子會' });
+        const strip = screen.getByRole('group', { name: '17/10 星期六 公子會' });
 
         fireEvent.pointerDown(strip, { clientX: 200, clientY: 10, pointerId: 1 });
         fireEvent.pointerMove(strip, { clientX: 150, clientY: 10, pointerId: 1 });
@@ -178,7 +178,7 @@ describe('PlayerPanel', () => {
         await userEvent.click(screen.getByRole('button', { name: '播放' }));
         act(() => audio.emitAudible());
         const face = container.querySelector('[class*="face"]');
-        const strip = screen.getByRole('group', { name: '17/10（六） 公子會' });
+        const strip = screen.getByRole('group', { name: '17/10 星期六 公子會' });
 
         fireEvent.pointerDown(strip, { clientX: 200, clientY: 10, pointerId: 1 });
         fireEvent.pointerMove(strip, { clientX: 150, clientY: 10, pointerId: 1 });

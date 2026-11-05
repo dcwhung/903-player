@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { recording } from '../../../../../tests/renderWithProviders';
-import { formatDateLabel } from '../../../../utils/date';
+import { formatSpokenDate } from '../../../../utils/date';
 import { DateStrip } from './DateStrip';
 import { stripDays } from './dateStrip';
 
@@ -37,7 +37,7 @@ const Harness = ({ start = '2026-10-19', onPick, onHold }: HarnessProps) => {
         <>
             <DateStrip
                 title="Bad Girl大過佬"
-                dateLabel={formatDateLabel(date)}
+                dateLabel={formatSpokenDate(date)}
                 days={days}
                 current={current}
                 onPick={pick}
@@ -82,7 +82,7 @@ describe('DateStrip', () => {
         ]);
         expect(track().children[ON_19]).toHaveAttribute('aria-current', 'date');
         expect(track().style.transform).toBe(settledAt(ON_19));
-        expect(zone()).toHaveAccessibleName('19/10（一） Bad Girl大過佬');
+        expect(zone()).toHaveAccessibleName('19/10 星期一 Bad Girl大過佬');
     });
 
     it('labels 現正播放 above the strip, without the date', () => {
@@ -101,7 +101,7 @@ describe('DateStrip', () => {
         const sunday = track().children[6] as HTMLElement;
         expect(sunday.tagName).toBe('SPAN');
         expect(sunday).toHaveAttribute('aria-hidden', 'true');
-        expect(screen.getByRole('button', { name: '轉去 16/10（五）' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '轉去 16/10 星期五' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /18\/10/ })).not.toBeInTheDocument();
     });
 
@@ -146,10 +146,10 @@ describe('DateStrip', () => {
 
         // 向左拖兩格停喺 17/10（冇節目）：最近有節目係 16/10
         drag(zone(), -2 * CELL_PX);
-        await waitFor(() => expect(zone()).toHaveAccessibleName(/^16\/10（五）/));
+        await waitFor(() => expect(zone()).toHaveAccessibleName(/^16\/10 星期五/));
         // 向右拖四格返去 20/10
         drag(zone(), 4 * CELL_PX);
-        await waitFor(() => expect(zone()).toHaveAccessibleName(/^20\/10（二）/));
+        await waitFor(() => expect(zone()).toHaveAccessibleName(/^20\/10 星期二/));
 
         expect(onPick.mock.calls).toEqual([[urlOn('2026-10-16')], [urlOn('2026-10-20')]]);
         expect(track().style.transform).toBe(settledAt(4));
@@ -174,17 +174,17 @@ describe('DateStrip', () => {
 
         expect(track().style.transform).toBe(settledAt(3));
         expect(onPick).not.toHaveBeenCalled();
-        expect(zone()).toHaveAccessibleName(/^21\/10（三）/);
+        expect(zone()).toHaveAccessibleName(/^21\/10 星期三/);
     });
 
     it('plays a day that is tapped', async () => {
         const onPick = vi.fn();
         render(<Harness onPick={onPick} />);
 
-        await userEvent.click(screen.getByRole('button', { name: '轉去 21/10（三）' }));
+        await userEvent.click(screen.getByRole('button', { name: '轉去 21/10 星期三' }));
 
         expect(onPick).toHaveBeenCalledWith(urlOn('2026-10-21'));
-        await waitFor(() => expect(zone()).toHaveAccessibleName(/^21\/10（三）/));
+        await waitFor(() => expect(zone()).toHaveAccessibleName(/^21\/10 星期三/));
         expect(track().style.transform).toBe(settledAt(3));
         // 撳嘅日子變咗正中（唔再係掣）：焦點留喺日子條，方向鍵照用得
         expect(zone()).toHaveFocus();
@@ -192,7 +192,7 @@ describe('DateStrip', () => {
 
     it('jumps without sliding when a newer episode is added and the playing day stays put', () => {
         const days = (episodes: typeof EPISODES) => stripDays(episodes, urlOn('2026-10-19'));
-        const props = { title: 'Bad Girl大過佬', dateLabel: '19/10（一）', onPick: vi.fn() };
+        const props = { title: 'Bad Girl大過佬', dateLabel: '19/10 星期一', onPick: vi.fn() };
         const before = days(EPISODES);
         const { rerender } = render(<DateStrip {...props} {...before} />);
 
@@ -207,7 +207,7 @@ describe('DateStrip', () => {
     it('swallows the click after a swipe released without any pointermove', () => {
         const onPick = vi.fn();
         render(<Harness onPick={onPick} />);
-        const newer = screen.getByRole('button', { name: '轉去 20/10（二）' });
+        const newer = screen.getByRole('button', { name: '轉去 20/10 星期二' });
 
         // 有啲瀏覽器 / 輔助工具冇 pointermove：撳喺日子向左撥，放手後仲會發 click
         fireEvent.pointerDown(newer, { clientX: 200, clientY: 20, pointerId: 1 });
@@ -239,7 +239,7 @@ describe('DateStrip', () => {
         expect(status).toHaveAttribute('aria-live', 'polite');
 
         drag(zone(), -2 * CELL_PX);
-        await waitFor(() => expect(status).toHaveTextContent('已轉到 16/10（五）'));
+        await waitFor(() => expect(status).toHaveTextContent('已轉到 16/10 星期五'));
 
         await userEvent.click(screen.getByRole('button', { name: '外面轉集' }));
         expect(status).toBeEmptyDOMElement();
@@ -253,7 +253,7 @@ describe('DateStrip', () => {
             render(<Harness />);
             act(() => drag(zone(), -2 * CELL_PX));
 
-            expect(zone()).toHaveAccessibleName(/^16\/10（五）/);
+            expect(zone()).toHaveAccessibleName(/^16\/10 星期五/);
             expect(track().style.transform).toBe(settledAt(8));
         } finally {
             vi.unstubAllGlobals();

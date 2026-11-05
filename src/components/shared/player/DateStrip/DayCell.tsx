@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { t } from '../../../../i18n/t';
 import { WEEKDAYS } from '../../../../i18n/zh-HK';
-import { formatDateLabel, formatDayMonth, weekdayOf } from '../../../../utils/date';
+import { formatDayMonth, formatSpokenDate, weekdayOf } from '../../../../utils/date';
 import { DAY_INDEX_ATTR, type StripDay } from './dateStrip';
 import styles from './DateStrip.module.css';
 
@@ -46,7 +46,8 @@ export const DayCell = memo(({ day, index, isCurrent }: DayCellProps) => {
             type="button"
             tabIndex={-1}
             className={`${styles.cell} ${styles.day}`}
-            aria-label={t('episodes.pickDay', { date: formatDateLabel(day.date) })}
+            // 讀屏日子「17/10 星期六」（畫面兩行字見 DayText）
+            aria-label={t('episodes.pickDay', { date: formatSpokenDate(day.date) })}
             {...{ [DAY_INDEX_ATTR]: index }}
         >
             <DayText date={day.date} />
