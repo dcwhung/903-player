@@ -40,7 +40,7 @@ export const trackItem = (track: Track): PlayerItem =>
         : { kind: 'show', id: track.showId, date: track.date };
 
 /** 係咪呢頁自己嘅嘢：節目頁同一個節目、劇集頁同一套劇、今日節目頁列緊嗰日嘅錄音 */
-const belongsTo = (item: PlayerItem, page: InnerPage): boolean => {
+export const belongsTo = (item: PlayerItem, page: InnerPage): boolean => {
     if (page.kind === 'today') return item.kind === 'show' && item.date === page.date;
     if (page.kind === 'show') return item.kind === 'show' && item.id === page.showId;
     return item.kind === 'drama' && item.id === page.dramaId;

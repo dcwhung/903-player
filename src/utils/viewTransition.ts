@@ -6,10 +6,19 @@ import { prefersReducedMotion } from './motion';
  * expand = 主頁播放卡入節目 / 劇集頁；back = 由嗰頁返主頁（倒返轉）；
  * close = 收埋播放卡（向右淡出、格仔伸闊）；
  * open = 張卡由冇變有（由右 slide 入 + 淡入、格仔收窄）；switch = 張卡換節目 / 劇集（成張反轉）；
- * zoom = 主頁格仔入內頁（Z3：內頁由格仔框開窗咁展開）；unzoom = 窄版由內頁返主頁（zoom 倒轉，utils/cardZoom）
+ * zoom = 主頁格仔入內頁（Z3：內頁由格仔框開窗咁展開）；unzoom = 由內頁返主頁（zoom 倒轉，utils/cardZoom）；
+ * zoom-handle / unzoom-handle = 闊橫版 zoom / unzoom 同時，主頁卡（或者主頁把手）↔ 內頁把手變形（_mockups_/card-zoom-wide ①）
  */
 export type ViewTransitionKind =
-    'expand' | 'back' | 'close' | 'open' | 'switch' | 'zoom' | 'unzoom';
+    | 'expand'
+    | 'back'
+    | 'close'
+    | 'open'
+    | 'switch'
+    | 'zoom'
+    | 'unzoom'
+    | 'zoom-handle'
+    | 'unzoom-handle';
 
 export interface ViewTransitionHooks {
     /**
@@ -58,6 +67,14 @@ export const isViewTransitionUpdating = (): boolean => updating;
 /** 開唔開到過場：瀏覽器支援、用戶冇要求減少動畫（喺開始嗰刻先問，唔 cache） */
 export const canViewTransition = (): boolean =>
     typeof document.startViewTransition === 'function' && !prefersReducedMotion();
+
+/**
+ * 喺 afterUpdate 入面改用另一款過場（例如返主頁搵唔到格仔就改做 back）：
+ * 新畫面同動畫跟新嗰款，舊 snapshot 已經影咗就照舊；過場完照樣清走
+ */
+export const retargetViewTransition = (kind: ViewTransitionKind): void => {
+    document.documentElement.dataset.viewTransition = kind;
+};
 
 /** 已經開始、但 update 未行嘅過場（瀏覽器影緊舊畫面）：呢陣唔好郁舊畫面上面過場要用嘅標記（utils/cardZoom） */
 export const isViewTransitionPending = (): boolean => pending;

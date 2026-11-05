@@ -14,8 +14,8 @@ import { TodayPlayerColumn } from './TodayPlayerColumn';
 import { useTodayPage } from './useTodayPage';
 
 /** 今日頁頭（大字 h1）；手機打橫指示點搬上右邊 */
-const TodayHeader = ({ trailing }: { trailing: ReactNode }) => {
-    const goHome = useGoHome();
+const TodayHeader = ({ trailing, handlePage }: { trailing: ReactNode; handlePage: InnerPage }) => {
+    const goHome = useGoHome(handlePage);
     return (
         <div className={page.header}>
             <PageHeader
@@ -44,7 +44,9 @@ export const TodayPage = () => {
     );
     // 橫版有節目表：頁頭喺左欄節目表上面；否則（直版 / 未有節目表）喺播放器上面
     const headerInList = landscape && listed;
-    const header = <TodayHeader trailing={dotsInHeader ? dots : undefined} />;
+    const header = (
+        <TodayHeader trailing={dotsInHeader ? dots : undefined} handlePage={handlePage} />
+    );
 
     // 標題同節目頁一樣（大字 h1）；卡入面係唱片、進度弧、播放掣同節目名，指示點喺卡外。
     // 橫版左欄（頁頭 + 節目表）、右欄（卡疊 + 現正播放）；直版兩欄 display: contents，次序照舊

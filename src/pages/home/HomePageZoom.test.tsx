@@ -4,6 +4,9 @@ import { createHookWrapper, renderWithProviders } from '../../../tests/renderWit
 import { zoomInto, zoomKey } from '../../utils/cardZoom';
 import { HomePage } from './HomePage';
 import { useDramaItems } from './useHomeDramaItems';
+import type { HomeRight } from './useTileOpen';
+
+const NO_CARD: HomeRight = { side: 'none', card: null };
 
 // 包住 zoomInto：記低撳咗邊格，照行 update（jsdom 冇 View Transition）
 vi.mock('../../utils/cardZoom', async (importOriginal) => {
@@ -27,7 +30,7 @@ describe('home tiles zoom into their pages (Z3)', () => {
 
         const key = zoomKey.show('gongzi');
         expect(tile).toHaveAttribute('data-zoom-key', key);
-        expect(zoomInto).toHaveBeenCalledWith(key, expect.any(Function));
+        expect(zoomInto).toHaveBeenCalledWith(key, expect.any(Function), 'zoom');
         expect(screen.getByTestId('location')).toHaveTextContent('/show/gongzi');
     });
 
@@ -38,7 +41,7 @@ describe('home tiles zoom into their pages (Z3)', () => {
         await userEvent.click(tile);
 
         expect(tile).toHaveAttribute('data-zoom-key', zoomKey.today);
-        expect(zoomInto).toHaveBeenCalledWith(zoomKey.today, expect.any(Function));
+        expect(zoomInto).toHaveBeenCalledWith(zoomKey.today, expect.any(Function), 'zoom');
         expect(screen.getByTestId('location')).toHaveTextContent('/today');
     });
 
@@ -60,17 +63,21 @@ describe('drama tiles zoom into their pages (Z3)', () => {
 
     it('should zoom from the drama tile when it is opened', () => {
         const { wrapper } = createHookWrapper();
-        const { result } = renderHook(() => useDramaItems(), { wrapper });
+        const { result } = renderHook(() => useDramaItems(NO_CARD), { wrapper });
         const [item] = result.current;
 
         item?.onOpen();
 
-        expect(zoomInto).toHaveBeenCalledWith(zoomKey.drama(item?.id ?? ''), expect.any(Function));
+        expect(zoomInto).toHaveBeenCalledWith(
+            zoomKey.drama(item?.id ?? ''),
+            expect.any(Function),
+            'zoom',
+        );
     });
 
     it('should not zoom when only resuming (stays on the home page)', () => {
         const { wrapper } = createHookWrapper();
-        const { result } = renderHook(() => useDramaItems(), { wrapper });
+        const { result } = renderHook(() => useDramaItems(NO_CARD), { wrapper });
 
         result.current[0]?.onResume();
 

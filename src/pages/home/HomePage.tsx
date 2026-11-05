@@ -13,9 +13,9 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useMiniPlayer } from '../../hooks/useMiniPlayer';
 import { useNewShowIds } from '../../hooks/useNewShowIds';
 import { useStartPlayback } from '../../hooks/useStartPlayback';
-import { useZoomNavigate } from '../../hooks/useZoomNavigate';
 import { usePlayer } from '../../player/usePlayer';
-import { todayRecordings } from '../../selectors/recordings';
+import { pickTodayDate, todayRecordings } from '../../selectors/recordings';
+import { homeSideOf } from '../../selectors/wideZoomMotion';
 import type { ShowId } from '../../types/recording';
 import { asShowRecording } from '../../types/track';
 import { zoomKey } from '../../utils/cardZoom';
@@ -25,6 +25,7 @@ import styles from './HomePage.module.css';
 import { homeLayoutMode } from './homeLayoutMode';
 import { HomeStack } from './HomeStack';
 import { HomeWide } from './HomeWide';
+import { useTileOpen, type HomeRight } from './useTileOpen';
 
 /**
  * 撳節目格 / 今日節目格時順便開始播嘅條件：冇其他嘢播緊 / 暫停緊（useAudioBusy），
@@ -45,15 +46,37 @@ const useTileAutoplay = () => {
     };
 };
 
+/** 今日節目格：撳落按 useTileAutoplay 順便開始播，入今日節目頁（把手按嗰頁列緊嘅日子，同 TodayPage） */
+const useTodayTile = (open: ReturnType<typeof useTileOpen>) => {
+    const { startToday } = useStartPlayback();
+    const { canStartToday } = useTileAutoplay();
+    const { recordings } = useRecordings();
+    const date = pickTodayDate(recordings, hkToday());
+    return (
+        <ShowTile
+            key="today"
+            variant="today"
+            label={t('home.today')}
+            zoomKey={zoomKey.today}
+            onClick={() => {
+                // 用實際有冇開到播（S-682）：未 ready / 冇錄音就當冇開播，內頁照出把手
+                const starts = canStartToday() && startToday();
+                open({ key: zoomKey.today, path: '/today', page: { kind: 'today', date }, starts });
+            }}
+        />
+    );
+};
+
 /**
  * 7 個節目格（今日有新一集就有「New」）+ 今日節目格：撳落按 useTileAutoplay 順便開始播，
- * 再由嗰格 zoom 入頁（Z3）
+ * 再入頁（過場按主頁右邊有乜揀，useTileOpen）
  */
-const useHomeTiles = () => {
-    const open = useZoomNavigate();
-    const { startShow, startToday } = useStartPlayback();
-    const { canStartShow, canStartToday } = useTileAutoplay();
+const useHomeTiles = (right: HomeRight) => {
+    const open = useTileOpen(right);
+    const { startShow } = useStartPlayback();
+    const { canStartShow } = useTileAutoplay();
     const newShowIds = useNewShowIds();
+    const today = useTodayTile(open);
     return [
         ...SHOWS.map((show) => (
             <ShowTile
@@ -63,21 +86,13 @@ const useHomeTiles = () => {
                 isNew={newShowIds.has(show.id)}
                 zoomKey={zoomKey.show(show.id)}
                 onClick={() => {
-                    if (canStartShow(show.id)) startShow(show.id);
-                    open(zoomKey.show(show.id), `/show/${show.id}`);
+                    const starts = canStartShow(show.id) && startShow(show.id);
+                    const page = { kind: 'show', showId: show.id } as const;
+                    open({ key: zoomKey.show(show.id), path: `/show/${show.id}`, page, starts });
                 }}
             />
         )),
-        <ShowTile
-            key="today"
-            variant="today"
-            label={t('home.today')}
-            zoomKey={zoomKey.today}
-            onClick={() => {
-                if (canStartToday()) startToday();
-                open(zoomKey.today, '/today');
-            }}
-        />,
+        today,
     ];
 };
 
@@ -94,11 +109,16 @@ export const HomePage = () => {
     const miniPlayer = useMiniPlayer();
     const mode = useLayoutMode(miniPlayer !== null);
     useHomeArrival();
+    // 主頁右邊有乜：格仔入頁揀過場用（useTileOpen）
+    const right: HomeRight = {
+        side: homeSideOf(mode),
+        card: mode === 'split' ? (miniPlayer?.item ?? null) : null,
+    };
     const props = {
         tab,
         onTab: setTab,
-        showTiles: useHomeTiles(),
-        dramaItems: useDramaItems(),
+        showTiles: useHomeTiles(right),
+        dramaItems: useDramaItems(right),
         busy: status === 'loading',
         miniPlayer,
     };

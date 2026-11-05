@@ -62,7 +62,7 @@ const ShowPlayer = ({
 
 export const ShowPage = () => {
     const { showId = '' } = useParams();
-    const goHome = useGoHome();
+    const goHome = useGoHome({ kind: 'show', showId });
     const data = useShowPage(showId);
     const { show, theme, status, isSearching, episodeItems } = data;
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
