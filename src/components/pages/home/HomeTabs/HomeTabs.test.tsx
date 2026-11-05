@@ -78,7 +78,7 @@ describe('HomeTabs', () => {
             container.querySelector<HTMLButtonElement>('[data-tab-id="saved"]');
 
         it('should keep the ★ tab collapsed, hidden and unfocusable without bookmarks', () => {
-            const { container } = render(<HomeTabs tab="shows" onChange={noop} hasSaved={false} />);
+            const { container } = render(<HomeTabs tab="shows" onChange={noop} third={null} />);
 
             expect(screen.queryByRole('button', { name: '我的收藏' })).not.toBeInTheDocument();
             expect(savedTab(container)).toHaveAttribute('data-gone', 'true');
@@ -91,7 +91,7 @@ describe('HomeTabs', () => {
         });
 
         it('should show a narrow star-only tab named 我的收藏 once something is bookmarked', () => {
-            const { container } = render(<HomeTabs tab="shows" onChange={noop} hasSaved />);
+            const { container } = render(<HomeTabs tab="shows" onChange={noop} third="saved" />);
             const tab = screen.getByRole('button', { name: '我的收藏' });
 
             expect(tab).toHaveAttribute('data-gone', 'false');
@@ -103,13 +103,13 @@ describe('HomeTabs', () => {
         it('should report 我的收藏 and slide the pill right onto it', async () => {
             const onChange = vi.fn<(tab: HomeTab) => void>();
             const { container, rerender } = render(
-                <HomeTabs tab="dramas" onChange={onChange} hasSaved />,
+                <HomeTabs tab="dramas" onChange={onChange} third="saved" />,
             );
 
             await userEvent.click(screen.getByRole('button', { name: '我的收藏' }));
             expect(onChange).toHaveBeenCalledWith('saved');
 
-            rerender(<HomeTabs tab="saved" onChange={onChange} hasSaved />);
+            rerender(<HomeTabs tab="saved" onChange={onChange} third="saved" />);
             expect(pill(container)).toHaveAttribute('data-tab', 'saved');
             expect(pill(container)).toHaveAttribute('data-direction', 'right');
             expect(screen.getByRole('button', { name: '我的收藏' })).toHaveAttribute(
@@ -120,13 +120,71 @@ describe('HomeTabs', () => {
 
         it('should slide the pill left back to 節目 when the last bookmark goes', () => {
             const { container, rerender } = render(
-                <HomeTabs tab="saved" onChange={noop} hasSaved />,
+                <HomeTabs tab="saved" onChange={noop} third="saved" />,
             );
 
-            rerender(<HomeTabs tab="shows" onChange={noop} hasSaved={false} />);
+            rerender(<HomeTabs tab="shows" onChange={noop} third={null} />);
             expect(pill(container)).toHaveAttribute('data-tab', 'shows');
             expect(pill(container)).toHaveAttribute('data-direction', 'left');
             expect(savedTab(container)).toHaveAttribute('data-gone', 'true');
+        });
+    });
+
+    // _mockups_/qr-transfer ①：冇收藏但有收聽記錄，第三格照出，icon 換做歷史
+    describe('最近收聽 tab (no bookmarks, some history)', () => {
+        const thirdTab = (container: HTMLElement) =>
+            container.querySelector<HTMLButtonElement>('[data-tab-id="saved"]');
+        const icon = (container: HTMLElement, name: 'star' | 'history') =>
+            thirdTab(container)?.querySelector(`[data-tab-icon="${name}"]`);
+
+        it('should show the third tab named 最近收聽 with the history icon on', () => {
+            const { container } = render(<HomeTabs tab="shows" onChange={noop} third="recent" />);
+            const tab = screen.getByRole('button', { name: '最近收聽' });
+
+            expect(tab).toHaveAttribute('data-gone', 'false');
+            expect(tab).not.toHaveAttribute('inert');
+            expect(icon(container, 'history')).toHaveAttribute('data-on', 'true');
+            expect(icon(container, 'star')).toHaveAttribute('data-on', 'false');
+            expect(container.querySelector('[role="group"]')).toHaveAttribute('data-saved', 'true');
+        });
+
+        it('should draw the counter-clockwise clock (R2) with the mockup stroke', () => {
+            const { container } = render(<HomeTabs tab="shows" onChange={noop} third="recent" />);
+            const svg = icon(container, 'history')?.querySelector('svg');
+
+            expect(svg).toHaveAttribute('stroke-width', '2.3');
+            expect(svg).toHaveAttribute('fill', 'none');
+            expect(
+                [...(svg?.querySelectorAll('path') ?? [])].map((p) => p.getAttribute('d')),
+            ).toEqual(['M3.8 12a8.2 8.2 0 1 0 2.4-5.8', 'M3.4 3.6v4h4', 'M12 7.6v4.6l3.2 2']);
+        });
+
+        it('should keep the pill on the third tab when ★ turns into 最近收聽', () => {
+            const { container, rerender } = render(
+                <HomeTabs tab="saved" onChange={noop} third="saved" />,
+            );
+
+            rerender(<HomeTabs tab="saved" onChange={noop} third="recent" />);
+
+            expect(pill(container)).toHaveAttribute('data-tab', 'saved');
+            expect(pill(container)).not.toHaveAttribute('data-direction');
+            expect(screen.getByRole('button', { name: '最近收聽' })).toHaveAttribute(
+                'aria-pressed',
+                'true',
+            );
+            expect(icon(container, 'star')).toHaveAttribute('data-on', 'false');
+        });
+
+        it('should turn back to ★ 我的收藏 once something is bookmarked', () => {
+            const { container, rerender } = render(
+                <HomeTabs tab="saved" onChange={noop} third="recent" />,
+            );
+
+            rerender(<HomeTabs tab="saved" onChange={noop} third="saved" />);
+
+            expect(screen.getByRole('button', { name: '我的收藏' })).toBeInTheDocument();
+            expect(icon(container, 'star')).toHaveAttribute('data-on', 'true');
+            expect(icon(container, 'history')).toHaveAttribute('data-on', 'false');
         });
     });
 });

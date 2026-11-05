@@ -123,6 +123,17 @@ export const StarIcon = ({ filled = false, ...props }: IconProps & { filled?: bo
     </StrokeIcon>
 );
 
+/** 歷史（R2 逆時針箭咀時鐘，_mockups_/qr-transfer ICONS.history）：冇收藏時主頁第三個 tab = 最近收聽 */
+const HISTORY_STROKE_WIDTH = 2.3;
+
+export const HistoryIcon = (props: IconProps) => (
+    <StrokeIcon strokeWidth={HISTORY_STROKE_WIDTH} {...props}>
+        <path d="M3.8 12a8.2 8.2 0 1 0 2.4-5.8" />
+        <path d="M3.4 3.6v4h4" />
+        <path d="M12 7.6v4.6l3.2 2" />
+    </StrokeIcon>
+);
+
 /** 垃圾桶 🗑：收藏 tab 左滑移除時跟住行出現 */
 export const TrashIcon = (props: IconProps) => (
     <StrokeIcon strokeWidth={STAR_STROKE_WIDTH} {...props}>

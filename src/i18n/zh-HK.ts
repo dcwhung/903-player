@@ -20,6 +20,8 @@ export const zhHK = {
         tabDramas: '廣播劇',
         // 第三個 tab：淨係 ★ icon（有收藏先出）
         tabSaved: '我的收藏',
+        // 第三個 tab：冇收藏但有收聽記錄時換做歷史 icon，成個 tab 係最近收聽
+        tabRecent: '最近收聽',
         dramasNav: '廣播劇',
         today: '今日節目',
         // 節目格：今日有已上架、未聽完嘅新一集

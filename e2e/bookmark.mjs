@@ -1,7 +1,10 @@
 // 成集收藏 e2e（P7 #7，_mockups_/bookmark）：集數清單 ☆ 收藏 → 主頁出 ★ tab；收藏 tab 撳行入頁唔播；
 // ▷ 原地播（留喺主頁）；左滑移除最後一集 → ★ tab 消失、跳返「節目」。手機直版 + 闊橫版。
+// 冇收藏有收聽記錄（_mockups_/qr-transfer ① B）：第三格係歷史 icon「最近收聽」、成個 tab 係清單、☆ 對齊；
+// 移除最後一個收藏但有收聽記錄 → tab 留低變最近收聽（直版 + 窄橫版 + 闊橫版）。
 // 每個情境用獨立 context，唔受 run.mjs 主流程之前播過乜影響
 import { isShown, newE2EPage, reachesHash, runSection, waitForPlaybackState } from './harness.mjs';
+import { PROGRESS_STORAGE_KEY } from './hiddenPlayback.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 
 /** 同 src/config/constants.ts BOOKMARK_STORAGE_KEY / VERSION 一樣（src/e2eSrcConstants.test.ts 鎖住） */
@@ -141,6 +144,124 @@ const checkSwipeRemoveLast = async ({ browser, base, errors, log }, label, viewp
     await ctx.close();
 };
 
+// ---------- 冇收藏、有收聽記錄（_mockups_/qr-transfer ① B / ②） ----------
+
+const RECENT_TAB = '最近收聽';
+// 最近收聽最多 10 集（src/selectors/bookmarks.ts RECENT_MAX）；sampleData 最新嘅 12 集，多兩集驗截到 10
+const RECENT_MAX = 10;
+const LISTENED = SAMPLE_RECORDINGS.slice(-(RECENT_MAX + 2));
+// 公子會 17/10 以外最新嗰集：移除最後一個收藏之後仲有收聽記錄
+const OTHER_LISTEN = SAMPLE_RECORDINGS.findLast((r) => r.url !== GONGZI.url);
+// ☆ 對齊容差（px，subpixel 進位）
+const ALIGN_EPSILON = 0.5;
+// 好長嘅名（短篇劇名 + 短篇名咁長都夠）：驗 ☆ 唔會被推出去
+const LONG_NAME = '芝See菇Bi Family 一個好長好長好長好長好長好長嘅短篇名';
+// 窄橫版（手機打橫，src/config/layout.ts SHORT_LANDSCAPE_QUERY：高 ≤ 561）
+const LAND = { width: 844, height: 390 };
+
+/** 用戶之前聽過呢啲集（未聽完，越後越新），入主頁之前寫入 localStorage */
+const seedProgress = async (ctx, recordings) => {
+    const map = Object.fromEntries(
+        recordings.map((r, i) => [
+            r.url,
+            { position: 60, duration: 600, watched: false, updatedAt: 1000 + i },
+        ]),
+    );
+    await ctx.addInitScript(
+        ({ key, value }) => {
+            if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+        },
+        { key: PROGRESS_STORAGE_KEY, value: JSON.stringify(map) },
+    );
+};
+
+const recentTab = (p) => p.getByRole('button', { name: RECENT_TAB, exact: true });
+
+/** 第三格嘅 icon 邊個著住 */
+const tabIconOn = (p) =>
+    p.evaluate(() =>
+        [...document.querySelectorAll('[data-tab-id="saved"] [data-tab-icon]')]
+            .filter((el) => el.dataset.on === 'true')
+            .map((el) => el.dataset.tabIcon),
+    );
+
+/**
+ * 每行 ☆ 闊度一樣、貼住嗰行右邊（即係每欄 ☆ 上下對齊），而且冇出咗行外面。
+ * 第一行個名先換做好長嘅字（用戶報過長名嗰行 ☆ 被推出右邊），sampleData 冇咁長嘅名
+ */
+const starsAligned = (region) =>
+    region.evaluate(
+        (el, { epsilon, longName }) => {
+            const rows = [...el.querySelectorAll('li')];
+            // 行入面：開啟掣 > [碟, 文字 > [名, 日期]]
+            const firstName = rows[0]?.querySelector('button > span:nth-child(2) > span');
+            if (firstName) firstName.textContent = longName;
+            const stars = rows.map((row) => {
+                const r = row.getBoundingClientRect();
+                const s = row.querySelector('button[aria-label^="收藏 "]').getBoundingClientRect();
+                return { gap: r.right - s.right, width: s.width };
+            });
+            const same = (values) => Math.max(...values) - Math.min(...values) <= epsilon;
+            return {
+                rows: rows.length,
+                ok: same(stars.map((s) => s.gap)) && same(stars.map((s) => s.width)),
+                stars,
+            };
+        },
+        { epsilon: ALIGN_EPSILON, longName: LONG_NAME },
+    );
+
+/** B：第三格係歷史 icon「最近收聽」；撳入去成個 tab 係清單（最多 10 集）、☆ 對齊、冇收藏 box */
+const checkRecentOnly = async ({ browser, base, errors, log }, label, viewport) => {
+    const { ctx, p } = await newE2EPage(browser, errors, viewport ? { viewport } : {});
+    await seedProgress(ctx, LISTENED);
+    await p.goto(base);
+    log(await isShown(recentTab(p), { timeout: UI_WAIT_MS }), `${label}：第三格叫「最近收聽」`);
+    const icons = await tabIconOn(p);
+    log(icons.join() === 'history', `${label}：第三格著住歷史 icon（${icons.join() || '冇'}）`);
+    await recentTab(p).click();
+    const region = p.getByRole('region', { name: RECENT_TAB });
+    await region.waitFor({ timeout: UI_WAIT_MS });
+    log((await region.getAttribute('data-fill')) === 'true', `${label}：最近收聽佔滿 tab 區`);
+    const boxes = await p.locator('[data-saved-box]').count();
+    log(boxes === 0, `${label}：冇收藏 box（${boxes}）`);
+    const aligned = await starsAligned(region);
+    log(aligned.rows === RECENT_MAX, `${label}：清單最多 ${RECENT_MAX} 集（${aligned.rows}）`);
+    log(aligned.ok, `${label}：每行 ☆ 上下對齊（${JSON.stringify(aligned.stars.slice(0, 3))}…）`);
+    await ctx.close();
+};
+
+/** A → B：有收聽記錄時左滑移除最後一個收藏，tab 留喺第三格、變最近收聽，唔跳返節目 */
+const checkRemoveLastKeepsRecent = async ({ browser, base, errors, log }, label, viewport) => {
+    const { ctx, p } = await newE2EPage(browser, errors, viewport ? { viewport } : {});
+    await seedBookmark(ctx);
+    await seedProgress(ctx, [OTHER_LISTEN]);
+    await openSavedTab(p, base);
+    await swipeRowLeft(p, p.locator('[data-saved-row] > div').first());
+    const stayed = await isShown(recentTab(p), { timeout: UI_WAIT_MS });
+    log(stayed, `${label}：移除最後一個收藏之後第三格變「最近收聽」`);
+    log(
+        (await recentTab(p).getAttribute('aria-pressed')) === 'true',
+        `${label}：仲揀住第三格，冇跳返「節目」`,
+    );
+    const list = await isShown(p.getByRole('region', { name: RECENT_TAB }), {
+        timeout: UI_WAIT_MS,
+    });
+    log(list, `${label}：內容換咗做最近收聽清單`);
+    await ctx.close();
+};
+
+const RECENT_LAYOUTS = [
+    ['手機直版', undefined],
+    ['窄橫版', LAND],
+    ['闊橫版', WIDE],
+];
+
+const RECENT_CHECKS = [
+    ['冇收藏有記錄 = 最近收聽 tab', checkRecentOnly],
+    ['移除最後收藏 → 最近收聽', checkRemoveLastKeepsRecent],
+];
+
 const LAYOUTS = [
     ['手機直版', undefined],
     ['闊橫版', WIDE],
@@ -157,6 +278,12 @@ const CHECKS = [
 export const runBookmarkChecks = async (env) => {
     for (const [layout, viewport] of LAYOUTS) {
         for (const [name, check] of CHECKS) {
+            const label = `收藏 ${layout}：${name}`;
+            await runSection(env.log, label, () => check(env, label, viewport), env.browser);
+        }
+    }
+    for (const [layout, viewport] of RECENT_LAYOUTS) {
+        for (const [name, check] of RECENT_CHECKS) {
             const label = `收藏 ${layout}：${name}`;
             await runSection(env.log, label, () => check(env, label, viewport), env.browser);
         }

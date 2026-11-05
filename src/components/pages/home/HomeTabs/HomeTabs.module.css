@@ -64,15 +64,32 @@
     font-weight: 700;
 }
 
-/* 我的收藏：窄啲、淨係 ★（_mockups_/bookmark .tab.icon） */
+/* 第三個 tab：窄啲、淨係 icon（_mockups_/bookmark .tab.icon）；★ / 歷史疊喺同一格（grid） */
 .icon {
-    display: flex;
+    display: grid;
     flex: 0 0 var(--home-tab-icon-width);
-    align-items: center;
-    justify-content: center;
+    place-items: center;
     min-width: 0;
     padding: 0;
     overflow: hidden;
+}
+
+/* _mockups_/qr-transfer ①：收埋嗰個縮細 + 轉開（★ 逆時針、歷史順時針），轉 icon = 一個轉走一個轉入 */
+.ico {
+    display: grid;
+    grid-area: 1 / 1;
+    place-items: center;
+
+    --home-tab-icon-turn: var(--home-tab-icon-turn-angle);
+}
+
+.ico[data-tab-icon='star'] {
+    --home-tab-icon-turn: calc(-1 * var(--home-tab-icon-turn-angle));
+}
+
+.ico[data-on='false'] {
+    opacity: 0;
+    transform: scale(var(--home-tab-icon-off-scale)) rotate(var(--home-tab-icon-turn));
 }
 
 /* 冇收藏：闊度收到 0，連前面個間隙都食埋（margin 負一個間隙），淡走 */
@@ -99,6 +116,13 @@
             margin-left var(--view-transition-move) var(--ease-view-transition),
             opacity var(--view-transition-move) var(--ease-view-transition),
             color var(--home-tab-label-fade) var(--ease-view-transition);
+    }
+
+    /* ★ ↔ 歷史：淡用 fade、縮放轉用 move（_mockups_/qr-transfer 520ms / 260ms） */
+    .ico {
+        transition:
+            opacity var(--view-transition-fade) var(--ease-view-transition),
+            transform var(--view-transition-move) var(--ease-view-transition);
     }
 
     .pill {

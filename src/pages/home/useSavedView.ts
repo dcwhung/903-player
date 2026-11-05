@@ -10,10 +10,13 @@ import { useRefreshedOn } from '../../hooks/useRefreshedOn';
 import { usePlayer } from '../../player/usePlayer';
 import {
     groupBookmarks,
+    recentColumns,
     recentListens,
     savedGrid,
+    thirdTabOf,
     type BookmarkBox,
     type SavedLayout,
+    type ThirdTab,
 } from '../../selectors/bookmarks';
 import { removeBookmark, useBookmarks, type Bookmark } from '../../services/bookmarkStore';
 import { getProgressMap, type Progress } from '../../services/progressStore';
@@ -90,42 +93,64 @@ const boxView = (box: BookmarkBox, ctx: RowContext): SavedBoxView => {
     return { key: box.key, kind: box.kind, title, banner, sections };
 };
 
+/**
+ * 進度記錄：轉集、有集數聽完、播 / 停（暫停時 AudioController 會存低進度，第一次聽嘅集先入到最近收聽）、
+ * 收藏有變先重新讀
+ */
+const useProgressMap = (bookmarks: readonly Bookmark[]) => {
+    const player = usePlayer();
+    return useRefreshedOn(getProgressMap, [
+        player.watchedRevision,
+        player.recording?.url,
+        player.isPlaying,
+        bookmarks,
+    ]);
+};
+
 /** 最近收聽：progressStore 最新 10 集（除走已收藏、認唔到嘅） */
-const useRecentRows = (
+const useRecentTracks = (
     bookmarks: readonly Bookmark[],
     progressMap: Readonly<Record<string, Progress>>,
-    openEpisode: RowContext['openEpisode'],
-): RecentRowView[] => {
+): Track[] => {
     const { recordings } = useRecordings();
     const index = useMemo(() => playableIndex(recordings), [recordings]);
     const bookmarked = new Set(bookmarks.map((b) => b.url));
-    const toRow = (track: Track): RecentRowView => ({
-        key: track.url,
-        ...recentText(track),
-        art: trackArt(track),
-        track,
-        onOpen: () => openEpisode(track.url, trackPage(track)),
-    });
-    return recentListens({ progressMap, bookmarked, resolve: (url) => index.get(url) }).map(toRow);
+    return recentListens({ progressMap, bookmarked, resolve: (url) => index.get(url) });
 };
 
 /**
- * 主頁「我的收藏」tab 要嘅嘢：box（分組 / 次序見 groupBookmarks）、最近收聽、分幾欄（savedGrid）。
- * 進度喺轉集、有集數聽完、收藏有變先重新讀
+ * 主頁第三個 tab 出唔出、出邊款（thirdTabOf）：★ 我的收藏 / 歷史 icon 最近收聽 / null 唔出。
+ * 主頁一直要知（tab 喺度），所以喺 HomePage 計，唔等揀中收藏 tab
+ */
+export const useThirdTab = (): ThirdTab | null => {
+    const bookmarks = useKnownBookmarks();
+    const recent = useRecentTracks(bookmarks, useProgressMap(bookmarks));
+    return thirdTabOf({ hasSaved: bookmarks.length > 0, hasRecent: recent.length > 0 });
+};
+
+/**
+ * 主頁第三個 tab 要嘅嘢：有收藏（saved）= box（分組 / 次序見 groupBookmarks）+ 最近收聽、分幾欄（savedGrid）；
+ * 冇收藏（recent）= 成個 tab 係最近收聽（分欄見 recentColumns）
  */
 export const useSavedView = (layout: SavedLayout, right: HomeRight): SavedTabView => {
     const bookmarks = useKnownBookmarks();
     const player = usePlayer();
     const { recordings } = useRecordings();
     const openEpisode = useOpenEpisode(right);
-    const progressMap = useRefreshedOn(getProgressMap, [
-        player.watchedRevision,
-        player.recording?.url,
-        bookmarks,
-    ]);
+    const progressMap = useProgressMap(bookmarks);
     const groups = useMemo(() => groupBookmarks(bookmarks), [bookmarks]);
     const ctx: RowContext = { recordings, progressMap, player, openEpisode };
-    const recent = useRecentRows(bookmarks, progressMap, openEpisode);
-    const grid = savedGrid({ layout, boxCount: groups.length, hasRecent: recent.length > 0 });
-    return { layout, boxes: groups.map((box) => boxView(box, ctx)), recent, ...grid };
+    const recent = useRecentTracks(bookmarks, progressMap).map((track): RecentRowView => ({
+        key: track.url,
+        ...recentText(track),
+        art: trackArt(track),
+        track,
+        onOpen: () => openEpisode(track.url, trackPage(track)),
+    }));
+    const hasRecent = recent.length > 0;
+    const grid = savedGrid({ layout, boxCount: groups.length, hasRecent });
+    // 兩樣都冇時主頁唔會出呢個 tab（useHomeTab 跳返節目）；呢度當有收藏版畫
+    const mode = thirdTabOf({ hasSaved: groups.length > 0, hasRecent }) ?? 'saved';
+    const boxes = groups.map((box) => boxView(box, ctx));
+    return { mode, layout, boxes, recent, ...grid, recentColumns: recentColumns(layout) };
 };

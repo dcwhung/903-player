@@ -234,6 +234,9 @@
     --home-tab-label-fade: calc(var(--view-transition-move) / 2);
     /* 主頁第三個 tab「我的收藏」（P7 #7，_mockups_/bookmark .tab.icon）：淨係 ★，窄過其他兩格 */
     --home-tab-icon-width: calc(64px * var(--ui-scale));
+    /* 冇收藏有收聽記錄：★ 換做歷史 icon（_mockups_/qr-transfer ①），收埋嗰個縮到幾細、轉幾多度 */
+    --home-tab-icon-off-scale: 0.3;
+    --home-tab-icon-turn-angle: 90deg;
     /*
      * 成集收藏（P7 #7，_mockups_/bookmark）：集數清單每行 ▶ 左邊嘅 ☆ / ★ 撳得到範圍；
      * 短提示（Toast）：深色半透明底白字，冇 mini player 時離頁底 40px，疊喺 debug panel 上面
@@ -255,6 +258,8 @@
     --saved-recent-width: calc(250px * var(--ui-scale));
     /* 最近收聽 panel 虛線框粗幼（入面左邊留白扣返佢，碟同文字先同收藏段對齊） */
     --saved-recent-border: 1px;
+    /* 最近收聽每行 ☆ 欄（固定闊度：所有 ☆ 上下對齊，長名唔會推走佢，_mockups_/qr-transfer ②） */
+    --saved-recent-star: calc(34px * var(--ui-scale));
     --saved-play-size: calc(40px * var(--ui-scale));
     --saved-progress-height: 2px;
     /* box 底色（播緊嗰行深少少）、白字、淡字、進度線底、分隔線、左滑移除嘅紅底 */

@@ -3,7 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { useLocation } from 'react-router-dom';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
 import { seriesEpisodesOf } from '../../catalog/dramas';
-import { addBookmark, hasBookmark, listBookmarks } from '../../services/bookmarkStore';
+import {
+    addBookmark,
+    hasBookmark,
+    listBookmarks,
+    removeBookmark,
+} from '../../services/bookmarkStore';
 import { saveProgress } from '../../services/progressStore';
 import type { SeriesEpisode } from '../../types/drama';
 import { focusUrlFromState } from '../../hooks/useEpisodeFocus';
@@ -217,6 +222,178 @@ describe('HomeSaved (我的收藏 tab)', () => {
 
             expect(screen.getByTestId('page')).toHaveTextContent(`/show/sunnyday ${SUNNY.url}`);
             expect(audio.play).not.toHaveBeenCalled();
+        });
+    });
+
+    // _mockups_/qr-transfer ① B / ②：冇收藏、有收聽記錄 = 成個 tab 區係最近收聽
+    describe('最近收聽 only (no bookmarks)', () => {
+        const listenToThree = () => {
+            saveProgress(BADGIRL.url, 60, 600);
+            vi.setSystemTime(new Date('2026-10-19T14:31:00Z'));
+            saveProgress(SUNNY.url, 60, 600);
+            vi.setSystemTime(new Date('2026-10-19T14:32:00Z'));
+            saveProgress(GONGZI_OLD.url, 60, 600);
+        };
+        const recentRegion = () => screen.getByRole('region', { name: '最近收聽' });
+        const listOf = (region: HTMLElement) => region.querySelector('ul') as HTMLElement;
+
+        it('should fill the tab with the recent list, newest first, and no saved boxes', () => {
+            listenToThree();
+            const { container } = openSaved();
+
+            expect(screen.queryByRole('article')).not.toBeInTheDocument();
+            expect(screen.queryByRole('region', { name: '我的收藏' })).not.toBeInTheDocument();
+            expect(recentRegion()).toHaveAttribute('data-fill', 'true');
+            expect(
+                within(recentRegion())
+                    .getAllByRole('button', { name: /^開啟/ })
+                    .map((b) => b.getAttribute('aria-label')),
+            ).toEqual([
+                '開啟 公子會 03/10（六）',
+                '開啟 在晴朗的一天出發 19/10（一）',
+                '開啟 Bad Girl大過佬 15/10（四）',
+            ]);
+            expect(container.querySelector('[data-saved-mode]')).toHaveAttribute(
+                'data-saved-mode',
+                'recent',
+            );
+        });
+
+        it('should list in one column on a phone and two on the landscape layouts', () => {
+            listenToThree();
+            const phone = openSaved('phone');
+            expect(listOf(recentRegion()).style.columnCount).toBe('1');
+            phone.unmount();
+
+            const land = openSaved('land');
+            expect(listOf(recentRegion()).style.columnCount).toBe('2');
+            land.unmount();
+
+            openSaved('wide');
+            expect(listOf(recentRegion()).style.columnCount).toBe('2');
+        });
+
+        it('should open the page without playing when a row is tapped', async () => {
+            listenToThree();
+            const { audio } = openSaved();
+
+            await userEvent.click(screen.getByRole('button', { name: /^開啟 在晴朗的一天出發/ }));
+
+            expect(screen.getByTestId('page')).toHaveTextContent(`/show/sunnyday ${SUNNY.url}`);
+            expect(audio.play).not.toHaveBeenCalled();
+        });
+
+        it('should turn into the saved boxes once ☆ is tapped', async () => {
+            listenToThree();
+            openSaved();
+
+            await userEvent.click(
+                screen.getByRole('button', { name: '收藏 Bad Girl大過佬 15/10（四）' }),
+            );
+
+            expect(hasBookmark(BADGIRL.url)).toBe(true);
+            await waitFor(() => expect(boxTitles()).toEqual(['Bad Girl大過佬', '最近收聽']));
+            expect(screen.getByRole('region', { name: '我的收藏' })).toBeInTheDocument();
+        });
+    });
+
+    // 收藏由有變冇 / 由冇變有：舊內容淡出、新內容淡入（減少動態 = 直接換）
+    describe('switching between 我的收藏 and 最近收聽', () => {
+        const stubMotion = (reduced: boolean) =>
+            vi.stubGlobal(
+                'matchMedia',
+                vi.fn((query: string) => ({
+                    matches: reduced && query.includes('prefers-reduced-motion'),
+                    media: query,
+                    addEventListener: vi.fn(),
+                    removeEventListener: vi.fn(),
+                })),
+            );
+        const panes = (container: HTMLElement) =>
+            [...container.querySelectorAll<HTMLElement>('[data-saved-mode]')].map((pane) => ({
+                mode: pane.dataset.savedMode,
+                leaving: pane.hasAttribute('data-leaving'),
+                entering: pane.hasAttribute('data-entering'),
+            }));
+        // 直接改 store（左滑 / Delete 嘅滑走時間都係讀同一個 token，見 useRowSwipe；呢度淨係睇內容點換）
+        const removeLast = () => act(() => removeBookmark(GONGZI_NEW.url));
+
+        // 淡出時長 token（後備 timer 讀佢）：設長啲，斷言期間唔會自己拆走
+        const FADE_VAR = '--view-transition-fade';
+        beforeEach(() => document.documentElement.style.setProperty(FADE_VAR, '60s'));
+        afterEach(() => {
+            vi.unstubAllGlobals();
+            document.documentElement.style.removeProperty(FADE_VAR);
+        });
+
+        it('should take the old pane away after the fade time even without animation events', async () => {
+            stubMotion(false);
+            document.documentElement.style.setProperty(FADE_VAR, '50ms');
+            addBookmark(GONGZI_NEW, 1);
+            saveProgress(BADGIRL.url, 60, 600);
+            const { container } = openSaved();
+
+            removeLast();
+
+            await waitFor(() => expect(container.querySelector('[data-leaving]')).toBeNull());
+            expect(panes(container)).toEqual([{ mode: 'recent', leaving: false, entering: true }]);
+        });
+
+        it('should fade the saved boxes out and the recent list in when the last bookmark goes', async () => {
+            stubMotion(false);
+            addBookmark(GONGZI_NEW, 1);
+            saveProgress(BADGIRL.url, 60, 600);
+            const { container } = openSaved();
+            expect(panes(container)).toEqual([{ mode: 'saved', leaving: false, entering: false }]);
+
+            removeLast();
+
+            expect(panes(container)).toEqual([
+                { mode: 'recent', leaving: false, entering: true },
+                { mode: 'saved', leaving: true, entering: false },
+            ]);
+            const leaving = container.querySelector('[data-leaving]') as HTMLElement;
+            expect(leaving).toHaveAttribute('inert');
+            expect(leaving).toHaveAttribute('aria-hidden', 'true');
+            fireEvent.animationEnd(leaving);
+            expect(panes(container)).toEqual([{ mode: 'recent', leaving: false, entering: true }]);
+        });
+
+        it('should not leave the old pane stuck when its fade is cancelled', async () => {
+            stubMotion(false);
+            addBookmark(GONGZI_NEW, 1);
+            saveProgress(BADGIRL.url, 60, 600);
+            const { container } = openSaved();
+
+            removeLast();
+            const leaving = container.querySelector('[data-leaving]') as HTMLElement;
+            act(() => void leaving.dispatchEvent(new Event('animationcancel')));
+
+            expect(container.querySelector('[data-leaving]')).toBeNull();
+        });
+
+        it('should ignore animations of elements inside the leaving pane', async () => {
+            stubMotion(false);
+            addBookmark(GONGZI_NEW, 1);
+            saveProgress(BADGIRL.url, 60, 600);
+            const { container } = openSaved();
+
+            removeLast();
+            const leaving = container.querySelector('[data-leaving]') as HTMLElement;
+            fireEvent.animationEnd(leaving.querySelector('li') as HTMLElement);
+
+            expect(container.querySelector('[data-leaving]')).not.toBeNull();
+        });
+
+        it('should swap straight away with reduced motion', async () => {
+            stubMotion(true);
+            addBookmark(GONGZI_NEW, 1);
+            saveProgress(BADGIRL.url, 60, 600);
+            const { container } = openSaved();
+
+            removeLast();
+
+            expect(panes(container)).toEqual([{ mode: 'recent', leaving: false, entering: false }]);
         });
     });
 

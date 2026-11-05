@@ -26,7 +26,7 @@ import { homeLayoutMode } from './homeLayoutMode';
 import { HomeStack } from './HomeStack';
 import { HomeWide } from './HomeWide';
 import { HomeSaved } from './HomeSaved';
-import { useKnownBookmarks } from './useSavedView';
+import { useThirdTab } from './useSavedView';
 import { useTileOpen, type HomeRight } from './useTileOpen';
 import type { SavedLayout } from '../../selectors/bookmarks';
 
@@ -115,8 +115,8 @@ const useSavedLayout = (mode: ReturnType<typeof homeLayoutMode>): SavedLayout =>
 
 export const HomePage = () => {
     const { status } = useRecordings();
-    const hasSaved = useKnownBookmarks().length > 0;
-    const [tab, setTab] = useHomeTab(hasSaved);
+    const third = useThirdTab();
+    const [tab, setTab] = useHomeTab(third !== null);
     const miniPlayer = useMiniPlayer();
     const mode = useLayoutMode(miniPlayer !== null);
     const savedLayout = useSavedLayout(mode);
@@ -133,7 +133,7 @@ export const HomePage = () => {
         dramaItems: useDramaItems(right),
         busy: status === 'loading',
         miniPlayer,
-        hasSaved,
+        third,
         saved: <HomeSaved layout={savedLayout} right={right} />,
     };
     return (

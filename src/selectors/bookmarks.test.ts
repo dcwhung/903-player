@@ -1,6 +1,13 @@
 import type { Progress } from '../services/progressStore';
 import type { Bookmark } from '../services/bookmarkStore';
-import { RECENT_MAX, groupBookmarks, recentListens, savedGrid } from './bookmarks';
+import {
+    RECENT_MAX,
+    groupBookmarks,
+    recentColumns,
+    recentListens,
+    savedGrid,
+    thirdTabOf,
+} from './bookmarks';
 
 const show = (showId: string, date: string, addedAt: number): Bookmark => ({
     kind: 'show',
@@ -147,5 +154,29 @@ describe('savedGrid', () => {
                 solo: true,
             });
         }
+    });
+});
+
+// 第三個 tab 三種狀態（_mockups_/qr-transfer ①）
+describe('thirdTabOf', () => {
+    it('should be ★ 我的收藏 whenever something is bookmarked', () => {
+        expect(thirdTabOf({ hasSaved: true, hasRecent: true })).toBe('saved');
+        expect(thirdTabOf({ hasSaved: true, hasRecent: false })).toBe('saved');
+    });
+
+    it('should be 最近收聽 with listening history but nothing bookmarked', () => {
+        expect(thirdTabOf({ hasSaved: false, hasRecent: true })).toBe('recent');
+    });
+
+    it('should hide the tab with neither', () => {
+        expect(thirdTabOf({ hasSaved: false, hasRecent: false })).toBeNull();
+    });
+});
+
+describe('recentColumns', () => {
+    it('should list in one column on a phone and two on either landscape layout', () => {
+        expect(recentColumns('phone')).toBe(1);
+        expect(recentColumns('land')).toBe(2);
+        expect(recentColumns('wide')).toBe(2);
     });
 });

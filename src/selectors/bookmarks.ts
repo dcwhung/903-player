@@ -83,6 +83,24 @@ export const recentListens = <T>({ progressMap, bookmarked, resolve }: RecentInp
         .filter((item): item is T => item !== undefined)
         .slice(0, RECENT_MAX);
 
+/**
+ * 主頁第三個 tab（_mockups_/qr-transfer ①）：saved = 有收藏（★，收藏 box + 最近收聽）；
+ * recent = 冇收藏、有收聽記錄（歷史 icon，成個 tab 係最近收聽）
+ */
+export type ThirdTab = 'saved' | 'recent';
+
+/** 兩樣都冇 = null，tab 唔出 */
+export const thirdTabOf = ({
+    hasSaved,
+    hasRecent,
+}: {
+    hasSaved: boolean;
+    hasRecent: boolean;
+}): ThirdTab | null => {
+    if (hasSaved) return 'saved';
+    return hasRecent ? 'recent' : null;
+};
+
 /** 收藏 tab 版面：phone = 直版；land = 手機打橫（SHORT_LANDSCAPE_QUERY）；wide = 闊橫版主頁 */
 export type SavedLayout = 'phone' | 'land' | 'wide';
 
@@ -105,3 +123,8 @@ export const savedGrid = ({ layout, boxCount, hasRecent }: SavedGridInput) => {
     const columns = solo ? 1 : BASE_COLUMNS[layout] - (sideRecent ? 1 : 0);
     return { columns, solo };
 };
+
+const RECENT_COLUMNS: Record<SavedLayout, number> = { phone: 1, land: 2, wide: 2 };
+
+/** 冇收藏版（成個 tab 係最近收聽）分幾欄：手機直版一欄，窄橫版 / 闊橫版兩欄 */
+export const recentColumns = (layout: SavedLayout): number => RECENT_COLUMNS[layout];

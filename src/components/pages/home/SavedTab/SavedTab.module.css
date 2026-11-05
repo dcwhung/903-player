@@ -2,7 +2,19 @@
  * 主頁「我的收藏」tab（P7 #7，_mockups_/bookmark）：上 / 左係收藏 box（自己捲），
  * 最近收聽固定喺底（直版、闊橫版）或者最右（窄橫版 data-layout='land'）
  */
-/* 主頁 .page 係 align-items: center，要寫明用盡闊度 */
+/*
+ * 有收藏版 ↔ 冇收藏版互換（_mockups_/qr-transfer ①）：淡出緊嘅舊版疊喺新版上面（.saved[data-leaving]）。
+ * 主頁 .page 係 align-items: center，要寫明用盡闊度
+ */
+.swap {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0;
+}
+
 .saved {
     display: flex;
     flex: 1 1 0;
@@ -16,6 +28,40 @@
 
 .saved[data-layout='land'] {
     flex-direction: row;
+}
+
+/* 淡出緊：疊喺新版上面，唔撳得（仲有 inert）；淡完 JS 拆走 */
+.saved[data-leaving] {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/*
+ * 舊版淡出（--view-transition-fade），新版等佢淡完先淡入；第一次顯示冇 data-entering 唔會淡入。
+ * 減少動態：冇動畫（JS 換嗰刻已經直接換，唔會有 data-leaving）
+ */
+@media (prefers-reduced-motion: no-preference) {
+    .saved[data-leaving] {
+        animation: saved-pane-out var(--view-transition-fade) var(--ease-view-transition) forwards;
+    }
+
+    .saved[data-entering] {
+        animation: saved-pane-in var(--view-transition-fade) var(--ease-view-transition)
+            var(--view-transition-fade) backwards;
+    }
+}
+
+@keyframes saved-pane-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes saved-pane-in {
+    from {
+        opacity: 0;
+    }
 }
 
 /* 收藏 box 區：唯一捲動嘅 panel，捲到盡頭唔帶動成頁 */
@@ -288,6 +334,17 @@
     height: auto;
 }
 
+/* 冇收藏版（_mockups_/qr-transfer ②）：佔滿成個 tab 區，清單自己捲（窄橫版都係全闊） */
+.recent[data-fill='true'] {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+}
+
+.saved[data-layout='land'] .recent[data-fill='true'] {
+    width: auto;
+}
+
 .recentTitle {
     margin: 0 0 calc(6px * var(--ui-scale));
     color: var(--saved-text);
@@ -304,17 +361,24 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     list-style: none;
+    column-gap: var(--saved-gap);
 }
 
+/*
+ * 名（minmax(0, 1fr)：長名用 … 收尾）| 固定闊度 ☆ 欄：每行 ☆ 上下對齊（_mockups_/qr-transfer ②）。
+ * 分欄（冇收藏版橫版兩欄）時一行唔會斷開兩欄
+ */
 .recentRow {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) var(--saved-recent-star);
     gap: calc(10px * var(--ui-scale));
     align-items: center;
+    break-inside: avoid;
 }
 
-.recentRow + .recentRow {
-    border-top: 1px solid var(--saved-divider);
+/* 分隔線畫喺行底（最後一行唔畫）：分欄時第二欄頂唔會多一條線 */
+.recentRow:not(:last-child) {
+    border-bottom: 1px solid var(--saved-divider);
 }
 
 .recentOpen {
@@ -324,10 +388,16 @@
     align-items: center;
     min-width: 0;
     padding: var(--space-1) 0;
+    overflow: hidden;
     border: none;
     background: transparent;
     color: var(--saved-muted);
     text-align: left;
+}
+
+/* overflow: hidden 會剪走外面嘅 focus ring：收入掣入面（同收藏行 .open） */
+.recentOpen:focus-visible {
+    outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
 .recentDisc {
@@ -354,9 +424,15 @@
     white-space: nowrap;
 }
 
-/* ☆ 用 cream（主頁色調），比清單嘅星細少少 */
+.recentLabel {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ☆ 用 cream（主頁色調），比清單嘅星細少少；闊度 = ☆ 欄 */
 .recentRow .recentStar {
-    width: calc(34px * var(--ui-scale));
-    height: calc(34px * var(--ui-scale));
+    width: var(--saved-recent-star);
+    height: var(--saved-recent-star);
     color: var(--color-gold);
 }

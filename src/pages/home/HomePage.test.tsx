@@ -761,5 +761,36 @@ describe('HomePage', () => {
             );
             expect(screen.getByRole('navigation', { name: '節目' })).toBeInTheDocument();
         });
+
+        // _mockups_/qr-transfer ①：冇收藏但有收聽記錄 → 第三格照出，叫「最近收聽」
+        it('should offer 最近收聽 as the third tab with history but no bookmarks', async () => {
+            saveProgress((RECORDINGS[2] as Recording).url, 60, 600);
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+
+            expect(savedTab()).not.toBeInTheDocument();
+            await userEvent.click(screen.getByRole('button', { name: '最近收聽' }));
+
+            const recent = screen.getByRole('region', { name: '最近收聽' });
+            expect(
+                within(recent).getByRole('button', { name: /^開啟 Bad Girl大過佬/ }),
+            ).toBeInTheDocument();
+        });
+
+        it('should stay on the third tab, now 最近收聽, when the last bookmark is removed', async () => {
+            const target = RECORDINGS[1] as Recording;
+            addBookmark(target, 1);
+            saveProgress((RECORDINGS[2] as Recording).url, 60, 600);
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            await userEvent.click(savedTab() as HTMLElement);
+
+            rowOpenOf(/^開啟 公子會/).focus();
+            await userEvent.keyboard('{Delete}');
+
+            const recentTab = await screen.findByRole('button', { name: '最近收聽' });
+            expect(recentTab).toHaveAttribute('aria-pressed', 'true');
+            expect(savedTab()).not.toBeInTheDocument();
+            expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+            expect(screen.getByRole('region', { name: '最近收聽' })).toBeInTheDocument();
+        });
     });
 });

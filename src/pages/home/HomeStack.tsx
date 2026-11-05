@@ -13,6 +13,7 @@ import { ShowGrid } from '../../components/pages/home/ShowGrid/ShowGrid';
 import { APP_VERSION } from '../../config/appVersion';
 import { SHORT_LANDSCAPE_QUERY } from '../../config/layout';
 import type { HomeTab } from '../../hooks/useHomeTab';
+import type { ThirdTab } from '../../selectors/bookmarks';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { t } from '../../i18n/t';
 import styles from './HomePage.module.css';
@@ -25,9 +26,9 @@ export interface HomeStackProps {
     dramaItems: readonly DramaShelfItem[];
     busy: boolean;
     miniPlayer: MiniPlayerProps | null;
-    /** 有收藏先出 ★ tab */
-    hasSaved: boolean;
-    /** 我的收藏 tab 嘅內容（HomeSaved，揀中先 render） */
+    /** 第三個 tab：★ 我的收藏 / 最近收聽 / null 唔出（thirdTabOf） */
+    third: ThirdTab | null;
+    /** 第三個 tab 嘅內容（HomeSaved，揀中先 render） */
     saved: ReactNode;
 }
 
@@ -39,7 +40,7 @@ export const HomeStack = ({
     dramaItems,
     busy,
     miniPlayer,
-    hasSaved,
+    third,
     saved,
 }: HomeStackProps) => {
     // 手機打橫：橫額變成節目 / 劇集格第一格（HomeLandscapeGrid 按卡數排）；其他情況釘喺頂
@@ -60,7 +61,7 @@ export const HomeStack = ({
             data-mini-player={miniPlayer ? miniPlayerMode(miniPlayer.keys) : undefined}
         >
             {!bannerInGrid && <HomeBanner corner={version} />}
-            <HomeTabs tab={tab} onChange={onTab} hasSaved={hasSaved} />
+            <HomeTabs tab={tab} onChange={onTab} third={third} />
             {tab === 'shows' && (
                 <ShowGrid
                     label={t('home.showsNav')}
