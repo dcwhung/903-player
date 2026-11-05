@@ -235,12 +235,22 @@
              * 收藏清單（D2 + disc）：每個節目 / 每套劇一個 box；
              * box 入面每個節目 / 短篇一段：左邊 disc 正方封面，右邊名 + 各集
              */
+            /* 清單：上 / 左係收藏 box（自己 scroll），最近收聽固定喺底 / 右（.side = 窄橫版放右邊） */
             .list {
                 position: absolute;
-                overflow-y: auto;
+                overflow: hidden;
                 flex-direction: column;
                 column-gap: var(--gap);
                 padding-bottom: 16px;
+            }
+            .side {
+                flex-direction: row;
+            }
+            .scroll {
+                flex: 1 1 0;
+                min-width: 0;
+                min-height: 0;
+                overflow-y: auto;
             }
             .cols {
                 flex: none;
@@ -427,11 +437,17 @@
             }
             /* 最近收聽：填滿收藏下面剩低嘅位（最少 --recent-min），入面 scroll */
             .extra.recent {
-                flex: 1 1 0;
-                min-height: var(--recent-min);
+                flex: none;
+                height: var(--recent-h);
+                margin: var(--gap) 0 0;
                 display: flex;
                 flex-direction: column;
                 padding-bottom: 4px;
+            }
+            .side .extra.recent {
+                width: var(--recent-w);
+                height: auto;
+                margin: 0 0 0 var(--gap);
             }
             .recent-list {
                 flex: 1 1 0;
@@ -602,6 +618,9 @@
                     <button type="button" class="pick" data-val="few" aria-pressed="false">
                         收藏少（2 集）
                     </button>
+                    <button type="button" class="pick" data-val="one" aria-pressed="false">
+                        得 1 個收藏
+                    </button>
                 </div>
                 <div class="row" data-group="empty">
                     <button type="button" class="pick" data-val="e0" aria-pressed="false">
@@ -716,7 +735,7 @@
                         discRoomy: 76,
                         stripRoomy: 132,
                     },
-                    recentMin: 180,
+                    recent: { h: 200 },
                     cover: { y: 187, h: 564 },
                     toastBottom: 120,
                 },
@@ -738,7 +757,7 @@
                         discRoomy: 60,
                         stripRoomy: 96,
                     },
-                    recentMin: 150,
+                    recent: { side: true, w: 250 },
                     cover: { y: 72, h: 222 },
                     toastBottom: 100,
                 },
@@ -760,7 +779,7 @@
                         discRoomy: 88,
                         stripRoomy: 160,
                     },
-                    recentMin: 220,
+                    recent: { h: 236 },
                     cover: { y: 107, h: 693, w: 820 },
                     toastBottom: 40,
                 },
@@ -879,7 +898,7 @@
             const EMPTY_DESC = {
                 e0: '唔處理：收藏少就喺下面留空。',
                 e1: 'box 得一兩個時自動放大：banner 高啲、碟大啲，闊版 / 窄橫版唔再分欄留空。',
-                e2: '收藏下面補「最近收聽」：最近聽過、未收藏嘅最多 10 集；panel 填滿剩低嘅位（最少三行高），入面 scroll；撳一行 = 入嗰集，撳 ☆ = 收藏。從未收聽過就唔出。',
+                e2: '「最近收聽」固定位：直版喺底部、窄橫版喺最右、闊橫版喺左邊最底；收藏 box 自己 scroll。最多 10 集，panel 入面 scroll；撳一行 = 入嗰集，撳 ☆ = 收藏。從未收聽過就唔出，收藏用晒成個位。',
                 e3: '收藏下面加一張淡色提示卡，教人喺集數清單或者播放器撳 ☆ 加入收藏。',
             };
             /** 最近收聽：最多記 10 集（新到舊） */
@@ -897,7 +916,11 @@
                 { disc: 'wanni', name: '雲妮鍾情', label: '13/10（二）' },
             ].slice(0, RECENT_MAX);
             const itemsFor = () =>
-                SAMPLE.filter((x) => state.count === 'many' || FEW_IDS.includes(x.id)).map((x) => ({
+                SAMPLE.filter(
+                    (x) =>
+                        state.count === 'many' ||
+                        (state.count === 'one' ? x.id === 1 : FEW_IDS.includes(x.id)),
+                ).map((x) => ({
                     ...x,
                 }));
             const TRASH =
@@ -1018,14 +1041,18 @@
                     width: `${L.list.w}px`,
                     height: `${L.list.h}px`,
                 });
+                home.scroll = div('scroll');
                 home.cols = div('cols', { columnCount: String(L.list.cols) });
-                home.list.append(home.cols);
+                home.scroll.append(home.cols);
+                home.list.append(home.scroll);
                 home.list.style.setProperty('--gap', `${L.list.gap}px`);
                 home.list.style.setProperty('--disc', `${L.list.disc}px`);
                 home.list.style.setProperty('--strip-h', `${L.list.strip}px`);
                 home.list.style.setProperty('--banner-w', `${L.list.bannerW}px`);
                 home.list.style.setProperty('--disc-roomy', `${L.list.discRoomy}px`);
-                home.list.style.setProperty('--recent-min', `${L.recentMin}px`);
+                home.list.style.setProperty('--recent-h', `${L.recent.h ?? 0}px`);
+                home.list.style.setProperty('--recent-w', `${L.recent.w ?? 0}px`);
+                home.list.classList.toggle('side', Boolean(L.recent.side));
                 home.list.style.setProperty('--strip-roomy', `${L.list.stripRoomy}px`);
                 home.list.classList.add(state.banner);
                 home.tabs = div('tabs', {
@@ -1128,13 +1155,16 @@
                 const boxes = home.cols.querySelectorAll('.box').length;
                 const roomy = state.empty === 'e1' && boxes > 0 && boxes <= 2;
                 home.list.classList.toggle('roomy', roomy);
-                home.cols.style.columnCount = String(
-                    roomy ? Math.min(boxes, home.L.list.cols) : home.L.list.cols,
-                );
-                home.list.querySelector('.extra')?.remove();
+                // 窄橫版右邊有最近收聽：收藏少一欄；得一個收藏 box：用盡闊度（唔分欄）
+                const recentShown = state.empty === 'e2' && state.history === 'yes';
+                const base =
+                    home.L.recent.side && recentShown ? home.L.list.cols - 1 : home.L.list.cols;
+                const cols = boxes === 1 ? 1 : roomy ? Math.min(boxes, base) : base;
+                home.cols.style.columnCount = String(cols);
+                home.list.querySelectorAll('.extra').forEach((x) => x.remove());
                 if (state.empty === 'e2' && state.history === 'yes')
                     home.list.append(recentOf(home));
-                if (state.empty === 'e3') home.list.append(hintOf());
+                if (state.empty === 'e3') home.scroll.append(hintOf());
             };
 
             /** E2：最近聽過、未收藏嘅幾集 */
