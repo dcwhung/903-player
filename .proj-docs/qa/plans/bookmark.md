@@ -11,6 +11,7 @@
     - AC-7 由收藏入頁返主頁冇多餘 mini player；格仔自動播照舊（W-530）；節目頁暫停 / 未播唔寫「播放中」（W-529）
     - AC-8 減少動態跟 CLAUDE.md；P6 card zoom（W-527、S-681）唔回歸（card-zoom 鏈）
     - AC-9 第三格三態：A 有收藏 ★「我的收藏」/ B 冇收藏有記錄 → 歷史 icon「最近收聽」、成個 tab 區最近收聽（≤10，手機 1 欄、橫版 2 欄直排、自己捲）/ C 都冇 → 唔出；A↔B ★ ↔ 歷史 icon 轉換 + 內容淡入淡出（唔跳返節目），減少動態直接換；每行左對齊 + 固定 ☆ 欄；唔做同步掣
+    - AC-10 文案（文案決定 SSoT：用戶 2026-11-05 copy decisions（總表 copy-sheet-p7-p8 #1–#87））：A1 全 app「已收聽」（唔再「已聽完」）；A2「已暫停」只喺 player / 把手，清單行暫停寫「聽到 {current} / {total}」；A3 讀屏日子「17/10 星期六」、畫面「17/10（六）」；A4 狀態字共用 `common.status`；B3 收藏行名 `{title} · {arc}`；B4「收藏本集」；B7 ★ / 歷史 tab `title`；C3「左右滑動」；H1 已下架行淨「已下架」；G2 分隔符 `common.separator`
 - Scope files:
     - Core: `src/services/bookmarkStore.ts` `src/services/bookmarkStore.test.ts` `src/selectors/bookmarks.ts` `src/selectors/bookmarks.test.ts` `src/pages/home/savedItems.ts` `src/pages/home/savedItems.test.ts` `src/pages/home/useSavedView.ts` `src/pages/home/HomeSaved.tsx` `src/pages/home/HomeSaved.test.tsx` `src/hooks/useEpisodeFocus.ts` `src/hooks/useEpisodeFocus.test.tsx` `src/hooks/useHomeTab.test.ts`
     - UI: `src/components/pages/home/SavedTab/`（RecentPanel / SavedBox / SavedRow / SavedTab / savedTypes / useRowSwipe / SavedTab.module.css / discColumn.node.test.ts / useModeSwap / recentTab.node.test.ts）`src/components/shared/player/BookmarkButton/`（tsx / test / css）`src/components/shared/common/Toast/`（Toast / toastStore / test / css）`src/components/shared/player/EpisodeList/useFocusRow.ts`

@@ -10,10 +10,11 @@
     - AC-6 ⑧ 快將下架 ≤ 30 日琥珀 ⏳（主頁格左上角同「新」同一行唔撞、LC2、LK1、LS2、LE1、LB1、LR1）；下架後收埋，收藏留灰「已下架」可左滑 / Delete；URL 返主頁 + Toast；進度唔刪
     - AC-7 書架排位下架前後唔郁（用戶揀；W-531）
     - 用戶已接受：窄欄短版下架字；聽晒已上架仲有下一批唔入「已聽完」組。用戶決定（re-test 2）：直版成套劇快將下架喺「全集」chip 出「⏳ X」，「繼續收聽」行唔加字；主頁格位唔夠時「N 個短篇 ·」成段收埋、上架字優先（W-533 (b)+(c)）。用戶決定（re-test 3）：主頁格左上角同「繼續收聽」條同日下架只喺左上角（較高一層）出，唔同日兩度都出；「繼續收聽」條位唔夠就成段收埋下架字、集名優先（讀屏照講）
+    - AC-8 文案（文案決定 SSoT：用戶 2026-11-05 copy decisions（總表 copy-sheet-p7-p8 #1–#87））：D2 成套劇主語「本廣播劇系列」（唱片下面 / chips 上面 / 一覽表表頭 / 讀屏 / Toast「本廣播劇系列已下架」；主頁格左上角淨日期 + 下架）；D3 / F6 刪「未可以收聽」（靠 aria-disabled）；D5「已收聽到第 {no} 集（最新）」；E1 讀屏一律「06/11 星期五」唔講明日 / 後日；E2 下架短版夠位「⏳ 05/12 下架」、唔夠位先淨「⏳ 05/12」；F1 成套劇下架每個版面讀一次；F2 一覽表行讀屏逐段砌；F3 主頁格讀屏「有新短篇；下個短篇 …上架；部分短篇 …下架」；F4 即將上架行加集數；F5 `availability.tileWithNote`；G1 空格規則；G2 `common.separator`；G3 範圍用「至」
 - Scope files:
     - Catalog: `src/catalog/dramas/lib/`（availability / availabilitySchema / schema / registry / episodes / e2eFixtures + tests）`schemas/drama.schema.json` `e2e/fixtures/dramas/`
     - Selectors: `src/selectors/availability.ts` `availabilityLabels.ts` `continueListening.ts` `dramaShelf.ts` `arcProgress.ts`（+ tests）
-    - Home: `src/components/pages/home/DramaShelf/`（DramaTile / DramaTileParts / dramaTileTypes / useTightCount / useHideWhenTight / DramaShelf.module.css + tests）`src/pages/home/dramaTileNotices.ts` `useHomeDramaItems.ts` `savedItems.ts` `useSavedView.ts` `src/components/pages/home/SavedTab/`
+    - Home: `src/components/pages/home/DramaShelf/`（DramaTile / DramaTileParts / dramaTileTypes / useHideWhenTight / UpcomingTile / dramaShelfCss.node.test / DramaShelf.module.css + tests）`src/pages/home/dramaTileNotices.ts` `useHomeDramaItems.ts` `savedItems.ts` `useSavedView.ts` `src/components/pages/home/SavedTab/`
     - Drama page: `src/components/pages/drama/ArcPicker/` `ArcSheet/` `src/pages/drama/`（seriesAvailability / useSeriesAvailability / useTodaysEpisodes / useDramaPage / DramaPage / SeriesDramaPage / SeriesListColumn）`src/components/shared/player/EpisodeList/` `NowPlaying/`
     - Shared: `src/splash/afterSplash.ts` `src/i18n/zh-HK.ts`（availability._）`src/styles/tokens.css`（--leave-_ / --upcoming-*）`src/config/constants.ts`（LEAVING_SOON_DAYS）
 - Commands:
