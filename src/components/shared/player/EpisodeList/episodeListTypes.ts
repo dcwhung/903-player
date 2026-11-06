@@ -15,6 +15,15 @@ export interface EpisodeItem {
     status: EpisodeStatus;
     /** 呢行嘅一集：有就喺播放掣左邊出收藏掣（P7 #7）；未上架冇 */
     track?: Track;
+    /**
+     * 快將下架（LE1）：狀態字後面琥珀色「⏳ 05/12 下架」（text）；欄太窄就淨係出「⏳ 05/12」（tag）；
+     * 讀屏講長版日子（label）
+     */
+    leaving?: { text: string; tag: string; label: string } | undefined;
+    /** 摺埋嘅未上架批次（status.kind = upcoming）：呢行代表幾多集（「共 N 集」照計） */
+    episodeCount?: number | undefined;
+    /** 摺埋批次嘅讀屏句（「第 11 至 20 集，19/11 星期四 上架」） */
+    label?: string | undefined;
 }
 
 /**

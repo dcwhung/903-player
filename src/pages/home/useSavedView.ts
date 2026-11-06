@@ -5,6 +5,7 @@ import type {
     SavedRowView,
     SavedTabView,
 } from '../../components/pages/home/SavedTab/savedTypes';
+import { dramaStatus } from '../../catalog/dramas';
 import { useRecordings } from '../../data/useRecordings';
 import { useRefreshedOn } from '../../hooks/useRefreshedOn';
 import { usePlayer } from '../../player/usePlayer';
@@ -22,7 +23,9 @@ import { removeBookmark, useBookmarks, type Bookmark } from '../../services/book
 import { getProgressMap, type Progress } from '../../services/progressStore';
 import type { Track } from '../../types/track';
 import { zoomKey } from '../../utils/cardZoom';
+import { hkToday } from '../../utils/date';
 import {
+    bookmarkAvailability,
     bookmarkLabel,
     bookmarkSpokenLabel,
     bookmarkPage,
@@ -34,6 +37,7 @@ import {
     seriesName,
     savedRowStatus,
     trackArt,
+    trackLeaving,
     trackPage,
     type EpisodePage,
 } from './savedItems';
@@ -57,6 +61,7 @@ interface RowContext {
     progressMap: Readonly<Record<string, Progress>>;
     player: ReturnType<typeof usePlayer>;
     openEpisode: ReturnType<typeof useOpenEpisode>;
+    today: string;
 }
 
 /** 一行：狀態跟 player（播緊呢集用即時時間）或者存低嘅進度；▷ 開播喺 click 入面直接做（iOS 自動播） */
@@ -80,6 +85,7 @@ const rowView = (b: Bookmark, name: string, ctx: RowContext): SavedRowView => {
         onOpen: () => ctx.openEpisode(b.url, bookmarkPage(b)),
         onPlay: () => void (loaded ? player.toggle() : player.load(track, { autoplay: true })),
         onRemove: () => removeBookmark(b.url),
+        ...bookmarkAvailability(b, ctx.today),
     };
 };
 
@@ -93,7 +99,9 @@ const boxView = (box: BookmarkBox, ctx: RowContext): SavedBoxView => {
         const rows = section.items.map((b) => rowView(b, name, ctx));
         return { key: section.key, art, rows, ...(section.arc && { heading: section.arc }) };
     });
-    return { key: box.key, kind: box.kind, title, banner, sections };
+    // 成套劇已下架：banner 變灰（每日劇 / 短篇劇都係）
+    const removed = box.kind === 'drama' && dramaStatus(box.id, ctx.today) === 'removed';
+    return { key: box.key, kind: box.kind, title, banner, sections, removed };
 };
 
 /**
@@ -142,12 +150,14 @@ export const useSavedView = (layout: SavedLayout, right: HomeRight): SavedTabVie
     const openEpisode = useOpenEpisode(right);
     const progressMap = useProgressMap(bookmarks);
     const groups = useMemo(() => groupBookmarks(bookmarks), [bookmarks]);
-    const ctx: RowContext = { recordings, progressMap, player, openEpisode };
+    const today = hkToday();
+    const ctx: RowContext = { recordings, progressMap, player, openEpisode, today };
     const recent = useRecentTracks(bookmarks, progressMap).map((track): RecentRowView => ({
         key: track.url,
         ...recentText(track),
         art: trackArt(track),
         track,
+        leaving: trackLeaving(track, today),
         onOpen: () => openEpisode(track.url, trackPage(track)),
     }));
     const hasRecent = recent.length > 0;

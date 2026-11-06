@@ -440,7 +440,8 @@ describe('useMiniPlayer', () => {
         });
 
         it('spins the disc of the season that plays', async () => {
-            const s3 = seriesEpisodesOf('golden').find((e) => e.arc === 'Season 3');
+            // 黃金少年 10/24 先上架（P8 #6）：攞集數用上咗架之後嘅日子
+            const s3 = seriesEpisodesOf('golden', '2026-11-16').find((e) => e.arc === 'Season 3');
             if (!s3) throw new Error('missing fixture');
             const { result } = setup();
             await act(() => result.current.player.load(s3, { autoplay: true }));

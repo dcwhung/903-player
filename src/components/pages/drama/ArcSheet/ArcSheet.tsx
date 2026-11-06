@@ -1,10 +1,13 @@
 import { useId } from 'react';
 import { t } from '../../../../i18n/t';
 import type { ArcGroup, ArcSummary } from '../../../../selectors/arcProgress';
-import { CloseIcon } from '../../../shared/common/icons/icons';
+import { CloseIcon, HourglassIcon } from '../../../shared/common/icons/icons';
+import { SpokenText, type SpokenNotice } from '../../../shared/common/SpokenText/SpokenText';
 import { GROUP_TITLES } from './arcLabels';
 import { ArcRow, type ArcRowProps } from './ArcRow';
 import styles from './ArcSheet.module.css';
+import type { UpcomingArcRowView } from './arcSheetTypes';
+import { UpcomingArcGroup } from './UpcomingArcRow';
 import { useSheetBehaviour } from './useSheetBehaviour';
 
 interface ArcSheetProps extends Omit<ArcRowProps, 'summary'> {
@@ -16,10 +19,15 @@ interface ArcSheetProps extends Omit<ArcRowProps, 'summary'> {
     docked?: boolean;
     /** 分好組嘅短篇（播放中 → 新上架 → 未聽完 → 已收聽，見 arcGroups） */
     groups: readonly { group: ArcGroup; items: readonly ArcSummary[] }[];
+    /** 即將上架嘅短篇：最底一組（S1），撳唔到 */
+    upcoming?: readonly UpcomingArcRowView[] | undefined;
+    /** 成套劇快將下架：表頭下面一行琥珀字（畫面字 + 讀屏字，W-537） */
+    notice?: SpokenNotice | undefined;
     onClose: () => void;
 }
 
 const CLOSE_ICON_SIZE = 20;
+const NOTICE_ICON_SIZE = 12;
 
 /** 一組：細標題（播放中 / 新上架 / 未聽完 / 已收聽）+ 嗰組嘅短篇 */
 const ArcGroupBlock = ({
@@ -48,17 +56,57 @@ const sheetProgress = (groups: ArcSheetProps['groups']) => {
     return { done: all.filter((s) => s.state === 'done').length, total: all.length };
 };
 
+interface SheetHeaderProps {
+    titleId: string;
+    progress: ReturnType<typeof sheetProgress>;
+    notice: SpokenNotice | undefined;
+    onClose: () => void;
+}
+
+/** 表頭：「全集」+「聽完 N / M 個」+ ✕；成套劇快將下架就下面加一行琥珀字 */
+const SheetHeader = ({ titleId, progress, notice, onClose }: SheetHeaderProps) => (
+    <>
+        <header className={styles.header}>
+            <h2 id={titleId} className={styles.title}>
+                {t('drama.sheetTitle')}
+            </h2>
+            <span className={styles.summary}>{t('drama.sheetDone', progress)}</span>
+            <button
+                type="button"
+                className={styles.close}
+                aria-label={t('drama.sheetClose')}
+                onClick={onClose}
+            >
+                <CloseIcon size={CLOSE_ICON_SIZE} />
+            </button>
+        </header>
+        {notice && (
+            <p className={styles.notice}>
+                <HourglassIcon size={NOTICE_ICON_SIZE} />
+                <SpokenText {...notice} />
+            </p>
+        )}
+    </>
+);
+
 /**
  * 全集一覽表（底部彈出）：分組 播放中 → 新上架 → 未聽完 → 已收聽，圓環 = 聽完幾多集；
  * 撳行轉去嗰個短篇，撳右邊掣直接播（續聽 / 未收聽 / ↺ 重聽）。
  * 閂：✕ 掣、撳遮罩、Escape，或者向下拉（grab bar / header；清單捲到頂都得，直版橫版一樣）。
  * 見 design/previews/drama-flow-preview.html；橫版 docked 見 landscape-list-left-preview.html
  */
-export const ArcSheet = ({ open, docked = false, groups, onClose, ...rowProps }: ArcSheetProps) => {
+export const ArcSheet = ({
+    open,
+    docked = false,
+    groups,
+    upcoming = [],
+    notice,
+    onClose,
+    ...rowProps
+}: ArcSheetProps) => {
     const titleId = useId();
     const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(open, onClose);
     if (!open) return null;
-    const progress = sheetProgress(groups);
     return (
         <div className={`${styles.overlay} ${docked ? styles.docked : ''}`}>
             {!docked && (
@@ -79,24 +127,17 @@ export const ArcSheet = ({ open, docked = false, groups, onClose, ...rowProps }:
                 {...handlers}
             >
                 <span className={styles.grab} aria-hidden="true" />
-                <header className={styles.header}>
-                    <h2 id={titleId} className={styles.title}>
-                        {t('drama.sheetTitle')}
-                    </h2>
-                    <span className={styles.summary}>{t('drama.sheetDone', progress)}</span>
-                    <button
-                        type="button"
-                        className={styles.close}
-                        aria-label={t('drama.sheetClose')}
-                        onClick={onClose}
-                    >
-                        <CloseIcon size={CLOSE_ICON_SIZE} />
-                    </button>
-                </header>
+                <SheetHeader
+                    titleId={titleId}
+                    progress={sheetProgress(groups)}
+                    notice={notice}
+                    onClose={onClose}
+                />
                 <div ref={listRef} className={styles.list} data-role="sheet-list">
                     {groups.map((g) => (
                         <ArcGroupBlock key={g.group} {...g} {...rowProps} />
                     ))}
+                    <UpcomingArcGroup rows={upcoming} />
                 </div>
             </section>
         </div>

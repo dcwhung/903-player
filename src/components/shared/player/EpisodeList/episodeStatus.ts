@@ -4,7 +4,9 @@ import { ratio } from '../../../../utils/ratio';
 import { PLAYBACK_STATUS_KEY, type PlaybackState } from '../../../../utils/playbackState';
 import { formatDuration, hasKnownDuration } from '../../../../utils/time';
 
-export type EpisodeKind = 'playing' | 'watched' | 'resume' | 'unwatched' | 'unavailable';
+/** upcoming：短篇劇未上架嘅一批集數（摺埋一行，P8 #6） */
+export type EpisodeKind =
+    'playing' | 'watched' | 'resume' | 'unwatched' | 'unavailable' | 'upcoming';
 
 export interface EpisodeStatus {
     kind: EpisodeKind;

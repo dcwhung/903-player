@@ -174,6 +174,27 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
         expect(shelf.style.getPropertyValue('--drama-shelf-step')).toBe('72px');
     });
 
+    it('ignores taps on an upcoming drama: no focus, no scroll, no open (P8 #6)', async () => {
+        const onOpen = vi.fn();
+        const upcoming = { text: '即將上架 · 01/12', label: '劇 3' };
+        render(
+            <DramaShelf
+                items={[
+                    ...NAMES.slice(0, 2).map((name) => item({ id: name, name })),
+                    item({ id: 'soon', name: '劇 3', upcoming, onOpen }),
+                ]}
+            />,
+        );
+
+        await userEvent.click(tile('劇 3'));
+        await userEvent.click(tile('劇 3'));
+
+        expect(tile('劇 3')).toHaveAttribute('aria-disabled', 'true');
+        expect(focused()).toEqual(['劇 1']);
+        expect(scrollTo).not.toHaveBeenCalled();
+        expect(onOpen).not.toHaveBeenCalled();
+    });
+
     it('scrolls a dimmed card into focus when tapped, without opening it', async () => {
         const onOpen = renderShelf();
 

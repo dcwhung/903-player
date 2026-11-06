@@ -1,0 +1,2467 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>劇集即將上架</title>
+        <meta name="claude:viewport-fit-sides" content="cover" />
+        <style>
+            /* 頁面：一欄，每節一張卡；卡入面係按闊度縮細嘅真截圖舞台（v1.26.1，深色，2026-11-10 21:00） */
+            :root {
+                --bg: #eef1f5;
+                --surface: #ffffff;
+                --ink: #18202b;
+                --note: #5d6775;
+                --line: #d3d9e2;
+                --accent: #3b6fb6;
+                --on-accent: #ffffff;
+                --rec: #2f7d4f;
+                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+                /* app 過場 token（tokens.css --view-transition-*） */
+                --move: 520ms;
+                --fade: 260ms;
+                --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+                /* 蘭茜夫人劇場 theme（drama.json）同 app tokens.css，唔跟頁面主題轉 */
+                --t-bg: #f3efde;
+                --t-surface: #faf7ec;
+                --t-track: #e0d6b8;
+                --t-accent: #d45f32;
+                --t-on-accent: #ffffff;
+                --t-title: #a8401a;
+                --t-text: #33281d;
+                --t-muted: #6b5a47;
+                --new-badge-bg: #c0362c;
+                --new-badge-text: #ffffff;
+                --version-badge-bg: rgb(0 0 0 / 55%);
+                --version-badge-text: #ffffff;
+                --shadow-new-badge: 0 2px 6px rgb(0 0 0 / 35%);
+                --scrim: rgb(0 0 0 / 40%);
+                /* ⑧ 快將下架：琥珀色（同即將上架嘅灰 / 虛線分開；白字喺 pill 底 5.3:1） */
+                --leave-pill-bg: #9c5a00;
+                --leave-pill-text: #ffffff;
+                --leave-ink: #8a4f00;
+                --leave-tag-bg: #f6dfb8;
+                --leave-on-dark: #ffc46b;
+                /* 收藏 tab 複製品（_mockups_/bookmark 嘅色） */
+                --app-bg: #4f749c;
+                --app-box: #2d4560;
+                --app-ink: #ffffff;
+                --app-muted: rgb(255 255 255 / 62%);
+                --app-divider: rgb(255 255 255 / 12%);
+                --app-cream: #f5d294;
+                --app-danger: #c8463d;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #10151c;
+                    --surface: #1a212b;
+                    --ink: #e8edf3;
+                    --note: #9aa5b3;
+                    --line: #2e3845;
+                    --accent: #7fa8e6;
+                    --on-accent: #0d1420;
+                    --rec: #6fcf97;
+                    color-scheme: dark;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #10151c;
+                --surface: #1a212b;
+                --ink: #e8edf3;
+                --note: #9aa5b3;
+                --line: #2e3845;
+                --accent: #7fa8e6;
+                --on-accent: #0d1420;
+                --rec: #6fcf97;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding-block: 24px 48px;
+                padding-left: max(16px, env(safe-area-inset-left, 0px));
+                padding-right: max(16px, env(safe-area-inset-right, 0px));
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font);
+            }
+            main {
+                display: grid;
+                gap: 20px;
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+            h1 {
+                margin: 0;
+                font-size: 22px;
+                text-wrap: balance;
+            }
+            h2 {
+                margin: 0;
+                font-size: 17px;
+            }
+            h3 {
+                margin: 4px 0 0;
+                font-size: 15px;
+            }
+            p,
+            li {
+                margin: 0;
+                color: var(--note);
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            ul {
+                margin: 0;
+                padding-left: 20px;
+            }
+            b {
+                color: var(--ink);
+            }
+            code,
+            pre {
+                font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+                font-size: 13px;
+            }
+            pre {
+                margin: 0;
+                padding: 12px;
+                border-radius: 10px;
+                background: var(--bg);
+                color: var(--ink);
+                overflow-x: auto;
+                line-height: 1.5;
+            }
+            /* grid 子項預設 min-width: auto，入面嘅 pre 會撐闊成頁；設 0 等 pre 自己橫捲 */
+            .panel > * {
+                min-width: 0;
+            }
+            .panel {
+                display: grid;
+                gap: 12px;
+                min-width: 0;
+                padding: 16px;
+                border-radius: 16px;
+                background: var(--surface);
+            }
+            .row {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+            }
+            .row-label {
+                min-width: 7em;
+                color: var(--ink);
+                font-size: 14px;
+                font-weight: 600;
+            }
+            .pick {
+                padding: 8px 14px;
+                border: 1px solid var(--line);
+                border-radius: 999px;
+                background: var(--surface);
+                color: var(--ink);
+                font: inherit;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            .pick[aria-pressed='true'] {
+                border-color: var(--accent);
+                background: var(--accent);
+                color: var(--on-accent);
+            }
+            .pick:disabled {
+                opacity: 0.45;
+                cursor: default;
+            }
+            .rec {
+                color: var(--rec);
+                font-size: 12px;
+                font-weight: 700;
+            }
+            button:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
+            .sticky {
+                position: sticky;
+                top: 0;
+                z-index: 5;
+                padding: 10px 16px;
+                border-radius: 0 0 16px 16px;
+                background: var(--surface);
+                box-shadow: 0 2px 10px rgb(0 0 0 / 12%);
+            }
+            .stages {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            .viewport {
+                position: relative;
+                flex: none;
+                max-width: 100%;
+                overflow: hidden;
+                border-radius: 14px;
+                background: #000;
+                box-shadow: 0 2px 12px rgb(0 0 0 / 18%);
+            }
+            .cap {
+                margin-top: 6px;
+                font-size: 12px;
+                text-align: center;
+            }
+            .stage {
+                position: absolute;
+                top: 0;
+                left: 0;
+                overflow: hidden;
+                transform-origin: 0 0;
+                background: center / 100% 100% no-repeat;
+                color: var(--t-text);
+                font-family: var(--font);
+            }
+            .stage button {
+                font-family: inherit;
+                cursor: pointer;
+            }
+            .abs {
+                position: absolute;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+            }
+            caption {
+                padding-bottom: 6px;
+                color: var(--note);
+                font-size: 13px;
+                text-align: left;
+            }
+            th,
+            td {
+                padding: 6px 8px;
+                border-bottom: 1px solid var(--line);
+                text-align: left;
+            }
+            th {
+                color: var(--ink);
+            }
+            td {
+                color: var(--note);
+            }
+            .tbl {
+                overflow-x: auto;
+            }
+
+            /* ── app 複製品（尺寸用 --k = 該版面 --ui-scale） ── */
+            .badge-new {
+                display: inline-flex;
+                align-items: center;
+                border-radius: 999px;
+                background: var(--new-badge-bg);
+                color: var(--new-badge-text);
+                font-weight: 700;
+                white-space: nowrap;
+            }
+            /* 主頁格：字同左右 padding 跟 --ui-scale（--k），行高 / 上下 padding 固定（同 tokens.css） */
+            .badge-new.md {
+                padding: 2px calc(8px * var(--k));
+                font-size: calc(12px * var(--k));
+                line-height: 16px;
+                box-shadow: var(--shadow-new-badge);
+            }
+            .badge-new.sm {
+                margin-left: calc(4px * var(--k));
+                padding: 0 calc(4px * var(--k));
+                font-size: calc(11px * var(--k));
+                line-height: calc(16px * var(--k));
+            }
+            .pill-dark {
+                display: inline-flex;
+                align-items: center;
+                gap: calc(4px * var(--k));
+                padding: 2px calc(8px * var(--k));
+                border-radius: 999px;
+                background: var(--version-badge-bg);
+                color: var(--version-badge-text);
+                font-size: calc(11px * var(--k));
+                font-weight: 500;
+                line-height: 16px;
+                white-space: nowrap;
+            }
+            .pill-dark.md {
+                font-size: calc(12px * var(--k));
+                font-weight: 700;
+            }
+            .pill-dark svg {
+                width: calc(12px * var(--k));
+                height: calc(12px * var(--k));
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 2.2;
+            }
+            .chips {
+                position: absolute;
+                display: flex;
+                align-items: center;
+                gap: calc(8px * var(--k));
+                padding: 0 calc(16px * var(--k)) 0 calc(4px * var(--k));
+                background: var(--t-bg);
+                overflow-x: auto;
+                scrollbar-width: none;
+            }
+            .chips::-webkit-scrollbar {
+                display: none;
+            }
+            .chip {
+                position: relative;
+                isolation: isolate;
+                display: inline-flex;
+                flex-shrink: 0;
+                align-items: center;
+                height: 100%;
+                padding: 0 calc(12px * var(--k));
+                border: 0;
+                background: transparent;
+                color: var(--t-muted);
+                font-size: calc(12px * var(--k));
+                white-space: nowrap;
+            }
+            .chip::before {
+                position: absolute;
+                inset: calc((100% - 32px * var(--k)) / 2) 0;
+                z-index: -1;
+                border-radius: 999px;
+                background: var(--t-surface);
+                content: '';
+            }
+            .chip[aria-pressed='true'] {
+                color: var(--t-on-accent);
+                font-weight: 700;
+            }
+            .chip[aria-pressed='true']::before {
+                background: var(--t-accent);
+            }
+            /* 已揀：虛線框 + 淡底 + 時鐘 +「11/12 上架」（C1 + C2 混合） */
+            .chip.soon-mix {
+                gap: calc(4px * var(--k));
+                color: var(--t-muted);
+            }
+            .chip.soon-mix::before {
+                border: calc(1.5px * var(--k)) dashed var(--t-muted);
+                background: color-mix(in srgb, var(--t-surface) 45%, var(--t-bg));
+            }
+            /* 對比 C1：虛線外框、透明底 + 日期小標 */
+            .chip.soon-c1::before {
+                border: calc(1.5px * var(--k)) dashed var(--t-muted);
+                background: transparent;
+            }
+            .date-tag {
+                margin-left: calc(6px * var(--k));
+                padding: 0 calc(5px * var(--k));
+                border-radius: 999px;
+                background: var(--t-track);
+                color: var(--t-text);
+                font-size: calc(11px * var(--k));
+                font-weight: 600;
+                line-height: calc(16px * var(--k));
+            }
+            /* 對比 C2：淡底 + 時鐘 icon */
+            .chip.soon-c2 {
+                gap: calc(4px * var(--k));
+                color: var(--t-muted);
+            }
+            .chip.soon-c2::before {
+                background: color-mix(in srgb, var(--t-surface) 45%, var(--t-bg));
+            }
+            /* ⑥ 未上架集數：灰行，蓋住截圖嗰行（底線留返） */
+            .ep-row {
+                position: absolute;
+                display: flex;
+                align-items: center;
+                padding: 0 0 0 calc(6px * var(--k));
+                border: 0;
+                background: var(--t-bg);
+                text-align: left;
+            }
+            .ep-title {
+                color: var(--t-muted);
+                font-size: calc(16px * var(--k));
+                font-weight: 700;
+            }
+            .ep-status {
+                position: absolute;
+                color: var(--t-muted);
+                font-size: calc(12px * var(--k));
+            }
+            .ep-mark {
+                position: absolute;
+                display: grid;
+                place-items: center;
+                width: calc(28px * var(--k));
+                height: calc(28px * var(--k));
+                color: var(--t-muted);
+            }
+            .ep-mark .ico {
+                width: calc(18px * var(--k));
+                height: calc(18px * var(--k));
+            }
+            /* ⑦ 即將上架劇集格：疊喺真截圖嗰格上面 */
+            .z-tile {
+                position: absolute;
+                display: grid;
+                place-items: center;
+                overflow: hidden;
+                padding: 0;
+                border: 0;
+                border-radius: calc(16px * var(--k));
+                background: transparent;
+            }
+            /* Z1：backdrop-filter 將截圖嗰格變灰階（連右下角細字） */
+            .z-tile.z1 {
+                background: rgb(0 0 0 / 20%);
+                -webkit-backdrop-filter: grayscale(1);
+                backdrop-filter: grayscale(1);
+            }
+            .z-center {
+                padding: calc(4px * var(--k)) calc(12px * var(--k));
+                font-size: calc(14px * var(--k));
+                line-height: calc(20px * var(--k));
+            }
+            .z-bar {
+                position: absolute;
+                inset: auto 0 0;
+                display: flex;
+                align-items: center;
+                gap: calc(6px * var(--k));
+                /* 夠高、夠實，蓋住原本右下角「每日更新」/「N 個短篇」 */
+                min-height: calc(40px * var(--k));
+                padding: 0 calc(12px * var(--k));
+                background: rgb(12 12 12 / 92%);
+                color: #ffffff;
+                font-size: calc(14px * var(--k));
+                font-weight: 700;
+            }
+            .z-bar .ico {
+                width: calc(14px * var(--k));
+                height: calc(14px * var(--k));
+            }
+            /* ⑥ 下架後補返嘅集數行（複製品） */
+            .ep-plain {
+                position: absolute;
+                display: flex;
+                align-items: center;
+                padding-left: calc(6px * var(--k));
+                background: var(--t-bg);
+            }
+            .ep-plain .ep-title {
+                color: var(--t-text);
+            }
+            .ep-plain.first {
+                background: var(--t-surface);
+            }
+            .ep-plain.first .ep-title,
+            .ep-plain.first .ep-status {
+                color: var(--t-title);
+            }
+            .ep-plain .ep-status {
+                transform: translateY(-50%);
+            }
+            .ep-plain .ep-mark {
+                color: var(--t-text);
+            }
+            .ep-plain .ep-mark .ico {
+                fill: none;
+            }
+            .ep-track {
+                position: absolute;
+                top: 27%;
+                height: calc(4px * var(--k));
+                border-radius: 999px;
+                background: var(--t-track);
+            }
+
+            /* ⑧ 快將下架：琥珀色 + ⏳ */
+            .mid {
+                transform: translateY(-50%);
+            }
+            .mid-x {
+                transform: translate(-50%, -50%);
+            }
+            .leave-txt .ico,
+            .leave-tag .ico,
+            .leave-ep .ico,
+            .leave-label .ico,
+            .leave-sheet-note .ico,
+            .leave-dark .ico,
+            .leave-corner .ico {
+                width: 1.05em;
+                height: 1.05em;
+                margin-right: 0.15em;
+                vertical-align: -0.15em;
+            }
+            /* 主頁格左上角：「新」（如有）+ 琥珀色下架字，同一行由左向右排 */
+            .tile-corner {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .leave-corner {
+                padding: 2px calc(8px * var(--k));
+                border-radius: 999px;
+                background: var(--version-badge-bg);
+                color: var(--leave-on-dark);
+                font-size: calc(11px * var(--k));
+                font-weight: 700;
+                line-height: 16px;
+                white-space: nowrap;
+            }
+            .leave-txt {
+                color: var(--leave-on-dark);
+                font-weight: 700;
+                white-space: nowrap;
+            }
+            .leave-txt.on-tile {
+                font-size: calc(13px * var(--k));
+                text-shadow: 0 1px 3px rgb(0 0 0 / 70%);
+            }
+            .leave-tag {
+                display: inline-flex;
+                align-items: center;
+                margin-left: calc(6px * var(--k));
+                padding: 0 calc(5px * var(--k));
+                border-radius: 999px;
+                background: var(--leave-tag-bg);
+                color: var(--leave-ink);
+                font-size: calc(11px * var(--k));
+                font-weight: 700;
+                line-height: calc(16px * var(--k));
+                white-space: nowrap;
+            }
+            .leave-ep {
+                padding-right: calc(8px * var(--k));
+                color: var(--leave-ink);
+                font-size: calc(12px * var(--k));
+                font-weight: 700;
+                white-space: nowrap;
+                transform: translateY(-50%);
+            }
+            .leave-ep .muted {
+                color: var(--t-muted);
+                font-weight: 400;
+            }
+            .leave-label {
+                padding: calc(2px * var(--k)) 0;
+                background: var(--t-bg);
+                color: var(--leave-ink);
+                font-size: calc(13px * var(--k));
+                font-weight: 700;
+                text-align: center;
+            }
+            .leave-sheet-note {
+                margin-top: calc(-6px * var(--k));
+                color: var(--leave-ink);
+                font-size: calc(12px * var(--k));
+                font-weight: 700;
+            }
+            .leave-badge {
+                margin-left: calc(4px * var(--k));
+                padding: 0 calc(5px * var(--k));
+                border-radius: 999px;
+                background: var(--leave-pill-bg);
+                color: var(--leave-pill-text);
+                font-size: calc(11px * var(--k));
+                line-height: calc(16px * var(--k));
+                white-space: nowrap;
+                vertical-align: middle;
+            }
+            .ep-count {
+                padding-left: calc(8px * var(--k));
+                background: var(--t-bg);
+                color: var(--t-muted);
+                font-size: calc(13px * var(--k));
+                letter-spacing: 0.08em;
+                transform: translateY(-50%);
+            }
+            .gone {
+                position: absolute;
+                display: grid;
+                place-items: center;
+                padding: 12px;
+                border-radius: calc(16px * var(--k));
+                background: repeating-linear-gradient(
+                    135deg,
+                    rgb(20 26 36 / 88%) 0 12px,
+                    rgb(36 44 58 / 88%) 12px 24px
+                );
+                color: #ffffff;
+                font-size: calc(14px * var(--k));
+                font-weight: 700;
+                text-align: center;
+            }
+
+            /* 收藏 tab / 最近收聽複製品（_mockups_/bookmark 樣式） */
+            .saved-app {
+                display: grid;
+                gap: 10px;
+                width: 320px;
+                max-width: 100%;
+                padding: 14px;
+                border-radius: 14px;
+                background: var(--app-bg);
+                color: var(--app-ink);
+            }
+            .saved-h {
+                margin: 0;
+                font-size: 14px;
+            }
+            .bm-box {
+                overflow: hidden;
+                border-radius: 14px;
+                background: var(--app-box);
+            }
+            .bm-bhead {
+                position: relative;
+                height: 64px;
+            }
+            .bm-bimg {
+                position: absolute;
+                inset: 0;
+                background: center / cover no-repeat;
+            }
+            .bm-bimg.grey {
+                filter: grayscale(1);
+            }
+            .bm-bhead::after {
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(90deg, rgb(8 14 24 / 78%) 0%, rgb(8 14 24 / 20%) 70%);
+                content: '';
+            }
+            .bm-btitle {
+                position: absolute;
+                z-index: 1;
+                bottom: 8px;
+                left: 12px;
+                font-size: 15px;
+                font-weight: 700;
+            }
+            .bm-section {
+                display: grid;
+                grid-template-columns: 44px 1fr;
+                gap: 12px;
+                padding: 10px 12px 6px;
+            }
+            .bm-disc {
+                position: relative;
+                width: 44px;
+                aspect-ratio: 1;
+                border-radius: 50%;
+                background: #1b2533 center / cover no-repeat;
+                box-shadow: 0 0 0 3px rgb(10 14 20 / 85%);
+            }
+            .bm-disc::after {
+                position: absolute;
+                inset: 41%;
+                border-radius: 50%;
+                background: #10141a;
+                content: '';
+            }
+            .bm-shead {
+                color: var(--app-cream);
+                font-size: 14px;
+                font-weight: 600;
+            }
+            .bm-item {
+                position: relative;
+                overflow: hidden;
+                border-radius: 8px;
+                touch-action: pan-y;
+            }
+            .bm-item + .bm-item {
+                border-top: 1px solid var(--app-divider);
+            }
+            .bm-card {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-height: 44px;
+                padding: 6px 0;
+                background: var(--app-box);
+                user-select: none;
+            }
+            .bm-cbody {
+                flex: 1;
+                min-width: 0;
+            }
+            .bm-line b,
+            .bm-recent-row b {
+                font-size: 14px;
+                font-weight: 600;
+            }
+            .bm-state {
+                color: var(--app-muted);
+                font-size: 12px;
+            }
+            .bm-play {
+                display: grid;
+                place-items: center;
+                width: 40px;
+                height: 40px;
+                color: var(--app-ink);
+            }
+            .bm-play .ico {
+                width: 20px;
+                height: 20px;
+            }
+            .gone-row .bm-cbody {
+                opacity: 0.5;
+            }
+            .gone-row .bm-card {
+                cursor: grab;
+            }
+            /* 左滑時跟住嗰行一齊走嘅紅底「移除」 */
+            .bm-trash {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 100%;
+                display: flex;
+                align-items: center;
+                width: 100%;
+                padding-left: 16px;
+                background: var(--app-danger);
+                color: #ffffff;
+                font-size: 13px;
+                font-weight: 700;
+            }
+            .leave-dark {
+                color: var(--leave-on-dark);
+                font-weight: 700;
+            }
+            .bm-recent {
+                padding: 4px 12px;
+                border-radius: 14px;
+                background: var(--app-box);
+            }
+            /* 碟同收藏段一樣 44px、間距 12px：兩邊文字起點對齊 */
+            .bm-recent-row {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 8px 0;
+            }
+            .bm-recent-row + .bm-recent-row {
+                border-top: 1px solid var(--app-divider);
+            }
+            @media (prefers-reduced-motion: no-preference) {
+                .bm-card {
+                    transition: transform var(--fade) var(--ease);
+                }
+                .bm-card.dragging {
+                    transition: none;
+                }
+                .bm-item {
+                    transition: height var(--fade) var(--ease);
+                }
+            }
+            .bm-item.removing .bm-card {
+                transform: translateX(-100%) !important;
+            }
+            /* 不可按：冇 pointer、冇 hover / press 效果 */
+            .stage [aria-disabled='true'] {
+                cursor: default;
+                -webkit-tap-highlight-color: transparent;
+            }
+            .chip svg,
+            .ico {
+                width: calc(13px * var(--k));
+                height: calc(13px * var(--k));
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 2.2;
+                stroke-linecap: round;
+            }
+
+            /* 全集一覽表 */
+            .sheet {
+                position: absolute;
+                display: flex;
+                flex-direction: column;
+                gap: calc(8px * var(--k));
+                padding: calc(8px * var(--k)) calc(16px * var(--k)) 0;
+                border-radius: calc(20px * var(--k)) calc(20px * var(--k)) 0 0;
+                background: var(--t-bg);
+                box-shadow: 0 -4px 18px rgb(0 0 0 / 18%);
+                overflow: hidden;
+            }
+            .grab {
+                align-self: center;
+                width: calc(40px * var(--k));
+                height: calc(4px * var(--k));
+                border-radius: 999px;
+                background: var(--t-track);
+            }
+            .sheet-head {
+                display: flex;
+                align-items: center;
+                gap: calc(8px * var(--k));
+                height: calc(44px * var(--k));
+            }
+            .sheet-title {
+                flex: 1;
+                color: var(--t-title);
+                font-size: calc(16px * var(--k));
+                font-weight: 700;
+            }
+            .sheet-sum {
+                color: var(--t-muted);
+                font-size: calc(12px * var(--k));
+            }
+            .sheet-x {
+                width: calc(44px * var(--k));
+                color: var(--t-text);
+                font-size: calc(20px * var(--k));
+                text-align: center;
+            }
+            .sheet-list {
+                display: flex;
+                min-height: 0;
+                flex-direction: column;
+                gap: calc(8px * var(--k));
+                padding-bottom: calc(12px * var(--k));
+                overflow-y: auto;
+            }
+            .g-title {
+                margin: 0 calc(8px * var(--k)) calc(4px * var(--k));
+                color: var(--t-muted);
+                font-size: calc(11px * var(--k));
+                font-weight: 500;
+                letter-spacing: 0.12em;
+            }
+            .g-list {
+                display: flex;
+                flex-direction: column;
+                gap: calc(4px * var(--k));
+            }
+            .arc-row {
+                display: flex;
+                align-items: center;
+                gap: calc(8px * var(--k));
+                min-height: calc(64px * var(--k));
+                padding: 0 calc(8px * var(--k));
+                border: 0;
+                border-radius: calc(16px * var(--k));
+                background: transparent;
+                color: inherit;
+                text-align: left;
+            }
+            .ring {
+                position: relative;
+                flex-shrink: 0;
+                width: calc(52px * var(--k));
+                height: calc(52px * var(--k));
+                padding: calc(4px * var(--k));
+                border-radius: 50%;
+                background: var(--t-track);
+            }
+            .ring img {
+                display: block;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                object-fit: cover;
+            }
+            .ring .count {
+                position: absolute;
+                bottom: calc(-6px * var(--k));
+                left: 50%;
+                padding: 0 calc(5px * var(--k));
+                border: calc(2px * var(--k)) solid var(--t-bg);
+                border-radius: 999px;
+                background: var(--t-accent);
+                color: var(--t-on-accent);
+                font-size: calc(11px * var(--k));
+                font-weight: 700;
+                line-height: calc(16px * var(--k));
+                white-space: nowrap;
+                transform: translateX(-50%);
+            }
+            .arc-text {
+                display: grid;
+                flex: 1;
+                gap: calc(2px * var(--k));
+                min-width: 0;
+                padding-left: calc(4px * var(--k));
+            }
+            .arc-name {
+                color: var(--t-text);
+                font-size: calc(16px * var(--k));
+                font-weight: 700;
+            }
+            .arc-status {
+                color: var(--t-muted);
+                font-size: calc(12px * var(--k));
+            }
+            .play {
+                display: grid;
+                flex-shrink: 0;
+                place-items: center;
+                width: calc(44px * var(--k));
+                height: calc(44px * var(--k));
+                border-radius: 50%;
+                background: var(--t-accent);
+                color: var(--t-on-accent);
+            }
+            .play svg {
+                width: 40%;
+                height: 40%;
+                fill: currentColor;
+            }
+            /* 未上架行：碟面灰、pill 用 track 色、右邊冇播放掣 */
+            .arc-row.soon .ring img {
+                filter: grayscale(1);
+                opacity: 0.55;
+            }
+            .arc-row.soon .count {
+                background: var(--t-track);
+                color: var(--t-text);
+            }
+            .arc-row.soon .arc-name {
+                color: var(--t-muted);
+            }
+            .arc-row.soon.s2 {
+                border: calc(1.5px * var(--k)) dashed var(--t-track);
+            }
+            .soon-mark {
+                display: grid;
+                flex-shrink: 0;
+                place-items: center;
+                width: calc(44px * var(--k));
+                height: calc(44px * var(--k));
+                border: calc(1.5px * var(--k)) dashed var(--t-muted);
+                border-radius: 50%;
+                color: var(--t-muted);
+            }
+            .soon-mark .ico {
+                width: calc(18px * var(--k));
+                height: calc(18px * var(--k));
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header style="display: grid; gap: 6px">
+                <h1>P8 #6 劇集「即將上架」短篇</h1>
+                <p>
+                    v1.26.1 真截圖（深色、蘭茜夫人劇場）加上 HTML。假設下一個短篇「XXX」（20 集）<b
+                        >11 月 12 日（四）</b
+                    >上架。截圖時鐘係 11/10 晚，所以現有三個短篇已經過咗 14 日「新」期；示範日子揀
+                    11/5 時，真 app 嗰三粒仲會有「新」。
+                </p>
+            </header>
+
+            <div class="sticky">
+                <div class="row">
+                    <span class="row-label">裝置</span>
+                    <div class="row" data-group="device">
+                        <button type="button" class="pick" data-val="n" aria-pressed="true">
+                            手機直版
+                        </button>
+                        <button type="button" class="pick" data-val="l" aria-pressed="false">
+                            窄橫版
+                        </button>
+                        <button type="button" class="pick" data-val="w" aria-pressed="false">
+                            闊橫版
+                        </button>
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 8px">
+                    <span class="row-label">示範日子</span>
+                    <div class="row" data-group="today">
+                        <button type="button" class="pick" data-val="7" aria-pressed="true">
+                            11/5（四）今日
+                        </button>
+                        <button type="button" class="pick" data-val="2" aria-pressed="false">
+                            11/10（二）
+                        </button>
+                        <button type="button" class="pick" data-val="1" aria-pressed="false">
+                            11/11（三）
+                        </button>
+                        <button type="button" class="pick" data-val="0" aria-pressed="false">
+                            11/12（四）上架日
+                        </button>
+                        <button type="button" class="pick" data-val="-14" aria-pressed="false">
+                            11/26（四）過咗新期
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <section class="panel">
+                <h2>① 顯示位置（已揀：三個位置都顯示）</h2>
+                <p>預設係用戶揀咗嘅款式；「對比」掣只係畀你同未揀嘅款式比較。</p>
+                <div class="row">
+                    <span class="row-label">主頁劇集格</span>
+                    <div class="row" data-group="h">
+                        <button type="button" class="pick" data-val="h2" aria-pressed="true">
+                            ✓ 已揀 H2 右下角字尾「· 新短篇 11/12 上架」
+                        </button>
+                        <button type="button" class="pick" data-val="h1" aria-pressed="false">
+                            對比 H1 右上角 badge
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <span class="row-label">劇集頁 chips</span>
+                    <div class="row" data-group="c">
+                        <button type="button" class="pick" data-val="mix" aria-pressed="true">
+                            ✓ 已揀 虛線框 + 淡底 + ⏱「11/12 上架」（排最尾）
+                        </button>
+                        <button type="button" class="pick" data-val="c1" aria-pressed="false">
+                            對比 C1
+                        </button>
+                        <button type="button" class="pick" data-val="c2" aria-pressed="false">
+                            對比 C2
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <span class="row-label">全集一覽表</span>
+                    <div class="row" data-group="s">
+                        <button type="button" class="pick" data-val="s1" aria-pressed="true">
+                            ✓ 已揀 S1 最底「即將上架」組
+                        </button>
+                        <button type="button" class="pick" data-val="s2" aria-pressed="false">
+                            對比 S2 混入「未聽完」最尾
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <span class="row-label">XXX 集數</span>
+                    <div class="row" data-group="known">
+                        <button type="button" class="pick" data-val="yes" aria-pressed="true">
+                            已知（20 集）
+                        </button>
+                        <button type="button" class="pick" data-val="no" aria-pressed="false">
+                            未知（drama.json 唔寫 episodes）
+                        </button>
+                    </div>
+                </div>
+                <p id="place-desc"></p>
+                <div class="stages" data-sec="place"></div>
+                <p>
+                    chips 排喺最尾（app 嘅次序：播放中 → 新上架 → 未聽完 →
+                    已聽完；未上架排最後，用戶已確認）。手機直版要向左掃先見到，preview
+                    入頁先捲到最尾方便睇。
+                </p>
+            </section>
+
+            <section class="panel">
+                <h2>② 撳落去嘅行為（已揀：不可按）</h2>
+                <ul>
+                    <li>
+                        「XXX」chip 同全集一覽表嘅「XXX」行都係
+                        <code>aria-disabled="true"</code>：撳落乜都唔做，冇 hover / press
+                        效果，唔會揀中、唔會轉清單、唔可以預先聽
+                    </li>
+                    <li>
+                        仍然可以用 Tab / 讀屏行到（唔用
+                        <code>disabled</code
+                        >，否則讀屏會跳過）：讀屏讀「XXX，11/12（四）上架，未可以收聽」
+                    </li>
+                    <li>一覽表嗰行右邊冇播放掣，只係一個時鐘標記（裝飾）</li>
+                    <li>主頁劇集格嘅字尾唔係獨立掣，撳格照舊入劇集頁</li>
+                </ul>
+                <div class="stages" data-sec="tap"></div>
+                <p>試吓撳舞台入面嘅「XXX」：乜都唔會發生（係刻意嘅）。</p>
+            </section>
+
+            <section class="panel">
+                <h2>③ 日期顯示格式（已揀：F3）</h2>
+                <div class="row" data-group="f">
+                    <button type="button" class="pick" data-val="f3" aria-pressed="true">
+                        ✓ 已揀 F3 遠就日期，兩日內講「後日 / 明日」
+                    </button>
+                    <button type="button" class="pick" data-val="f1" aria-pressed="false">
+                        對比 F1 淨日期
+                    </button>
+                    <button type="button" class="pick" data-val="f2" aria-pressed="false">
+                        對比 F2 淨倒數
+                    </button>
+                </div>
+                <div class="tbl">
+                    <table>
+                        <caption>
+                            短版（chip、主頁格）同長版（全集一覽表）喺唔同日子顯示乜（揀咗嘅格式用粗體）
+                        </caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">今日</th>
+                                <th scope="col">F1 日期</th>
+                                <th scope="col">F2 倒數</th>
+                                <th scope="col">F3 混合（已揀）</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fmt-table"></tbody>
+                    </table>
+                </div>
+                <p>
+                    chip 同主頁格位細，只出短版（「11/12
+                    上架」/「明日上架」）；全集一覽表出長版（加星期）。上架 = 香港時間當日
+                    00:00（用戶已確認），日子同「新」一樣用 hkToday，過咗午夜自動轉。
+                </p>
+                <div class="stages" data-sec="fmt"></div>
+            </section>
+
+            <section class="panel">
+                <h2>④ 上咗架之後</h2>
+                <ul>
+                    <li>
+                        上架當日（香港時間 00:00 起）自動變返正常短篇：chip / 一覽表行 /
+                        主頁格同其他短篇一樣，可以播
+                    </li>
+                    <li>
+                        跟現有 NewBadge：14
+                        日內有「新」，主頁格左上角「新」（讀屏「有新短篇」），一覽表排入「新上架」組
+                    </li>
+                    <li>14 日之後「新」消失，排返「未聽完」/「已聽完」</li>
+                    <li>唔使任何人手改 drama.json（上架日就係「新」嘅起計日）</li>
+                </ul>
+                <div class="row" data-group="after">
+                    <button type="button" class="pick" data-val="0" aria-pressed="true">
+                        11/12 上架日
+                    </button>
+                    <button type="button" class="pick" data-val="-14" aria-pressed="false">
+                        11/26 過咗新期
+                    </button>
+                </div>
+                <div class="stages" data-sec="after"></div>
+            </section>
+
+            <section class="panel">
+                <h2>⑥ 逐集上架（已揀：A2 + E1 + 摺埋 + 14 日「新」）</h2>
+                <p>
+                    例子：「戀愛二分一」第 1–10 集已上架，第 11–20 集 <b>11/19（四）</b>、第 21–30
+                    集 <b>11/26（四）</b>上架（<code>episodeDates</code>）。日期跟
+                    F3，跟頁頂「示範日子」；揀 11/26 睇兩批都上咗架之後嘅「新」。
+                </p>
+                <ul>
+                    <li>
+                        集數清單：未上架嘅集數<b>摺埋</b>，每批一行（「第 11–20 集 ·
+                        11/19（四）上架」、「第 21–30 集 ·
+                        11/26（四）上架」）：同一行講晒、日子唔同先分行；<code>aria-disabled</code>，撳唔到，讀屏「第
+                        11 至 20 集，11/19（四）上架，未可以收聽」
+                    </li>
+                    <li>
+                        ✓ 一覽表行 A2：膠囊計全部「0/30」，第二行「未聽 · 第 11 集起 11/19 上架」
+                    </li>
+                    <li>✓ 主頁劇集格 E1：字尾「3 個短篇 · 全新集數 11/19 上架」</li>
+                    <li>
+                        ✓ 新一批上架當日起 14 日：短篇
+                        chip、一覽表行（排入「新上架」組）、主頁劇集格左上角都出「新」，同新短篇一樣
+                    </li>
+                    <li>「共 30 集」照寫；續播 / 自動播下一集去到最後一集已上架嘅就停</li>
+                </ul>
+                <div class="row">
+                    <span class="row-label">收聽進度</span>
+                    <div class="row" data-group="prog">
+                        <button type="button" class="pick" data-val="0" aria-pressed="true">
+                            未聽
+                        </button>
+                        <button type="button" class="pick" data-val="10" aria-pressed="false">
+                            聽晒已上架嘅 10 集
+                        </button>
+                    </div>
+                </div>
+                <div class="stages" data-sec="eps"></div>
+            </section>
+
+            <section class="panel">
+                <h2>⑦ 整套新劇未上架（已揀：灰階 + 底部深色條，排最尾）</h2>
+                <p>
+                    例子：一套新劇（借用 18 樓 C 座嘅圖）劇集層 <code>addedAt</code> =
+                    <b>12/1（二）</b>。主頁書架<b>最尾</b>出一格灰階圖 + 底部「⏱ 即將上架 ·
+                    12/1」，<code>aria-disabled</code>，撳唔到、唔入劇集頁，讀屏「18 樓 C
+                    座，12/1（二）上架，未可以收聽」。日期跟 F3。
+                </p>
+                <div class="stages" data-sec="upcoming"></div>
+                <ul>
+                    <li>截圖係真 app 多咗一格劇集嘅排位（闊橫版最後一行剩一格，會成行闊）</li>
+                    <li>一登記（drama.json 加咗、<code>enabled: true</code>）即刻出，唔使等</li>
+                    <li>新劇一定要有 tile 圖先可以登記（schema 必填）</li>
+                    <li>上架當日自動變正常劇集格 + 左上角「新」，排位跟返現有規則（新上架排前）</li>
+                </ul>
+            </section>
+
+            <section class="panel">
+                <h2>⑧ 快將下架（新增，同 P8 一齊做）</h2>
+                <p>
+                    集數 / 短篇 / 整套劇可以按 drama.json 嘅下架日落架。例子：蘭茜夫人劇場
+                    <b>12/5（六）</b>下架；下架前
+                    <b>30 日</b>（<code>LEAVING_SOON_DAYS</code>）開始提示；香港時間 12/5 00:00
+                    起唔再提供。日期跟 F3（遠：「12/5 下架」；兩日內：「後日 /
+                    明日下架」）。用琥珀色 + ⏳，同「即將上架」嘅灰色 / 虛線 / ⏱ 分得開。
+                </p>
+                <div class="row">
+                    <span class="row-label">示範日子</span>
+                    <div class="row" data-group="ld">
+                        <button type="button" class="pick" data-val="31" aria-pressed="false">
+                            11/4（前 31 日，未提示）
+                        </button>
+                        <button type="button" class="pick" data-val="30" aria-pressed="true">
+                            11/5（前 30 日）
+                        </button>
+                        <button type="button" class="pick" data-val="2" aria-pressed="false">
+                            12/3（前兩日）
+                        </button>
+                        <button type="button" class="pick" data-val="1" aria-pressed="false">
+                            12/4（前一日）
+                        </button>
+                        <button type="button" class="pick" data-val="0" aria-pressed="false">
+                            12/5 下架後
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <span class="row-label">下架範圍</span>
+                    <div class="row" data-group="lvl">
+                        <button type="button" class="pick" data-val="drama" aria-pressed="true">
+                            成套劇
+                        </button>
+                        <button type="button" class="pick" data-val="arc" aria-pressed="false">
+                            短篇「戀愛二分一」
+                        </button>
+                        <button type="button" class="pick" data-val="eps" aria-pressed="false">
+                            集數（戀愛二分一 第 1–5 集）
+                        </button>
+                    </div>
+                </div>
+                <ul>
+                    <li>
+                        ✓ 主頁劇集格：<b>左上角</b>細字琥珀色（深色半透明底）「⏳ 12/5
+                        下架」；短篇層「⏳ 部分短篇 12/5 下架」、集數層「⏳ 部分集數 12/5
+                        下架」。同「新」同時出：排喺「新」<b>後面同一行</b>（中間
+                        6px），兩粒一齊由左上角向右排，唔會撞
+                    </li>
+                    <li>✓ 繼續收聽條：LC2 集名後面琥珀字「· ⏳ 12/5 下架」</li>
+                    <li>✓ 劇集頁 chips：LK1 名後面琥珀小標「⏳ 12/5」</li>
+                    <li>✓ 全集一覽表：LS2 名後面「快將下架」膠囊 + 第二行日期</li>
+                    <li>✓ 集數清單：LE1「未收聽 · ⏳ 12/5 下架」</li>
+                    <li>✓ 收藏 tab 行：LB1 狀態行琥珀字</li>
+                    <li>✓ 最近收聽行：LR1 第二行琥珀字</li>
+                </ul>
+                <div class="row">
+                    <span class="row-label">主頁格有「新」</span>
+                    <div class="row" data-group="lnew">
+                        <button type="button" class="pick" data-val="no" aria-pressed="true">
+                            冇
+                        </button>
+                        <button type="button" class="pick" data-val="yes" aria-pressed="false">
+                            有（睇點排）
+                        </button>
+                    </div>
+                </div>
+                <p id="leave-desc"></p>
+                <div class="stages" data-sec="leave"></div>
+                <ul>
+                    <li>
+                        下架之後：清單、chips、書架、最近收聽、繼續收聽<b>完全收埋</b>；劇集頁 URL
+                        打開就返主頁
+                    </li>
+                    <li>
+                        收藏 tab
+                        保留一行灰色「已下架」：<code>aria-disabled</code>、冇播放掣、撳唔到，可以<b>左滑移除</b>（上面收藏卡試得，拉過四成放手）
+                    </li>
+                    <li>
+                        進度資料保留唔刪：重新上架（改 / 刪 <code>removedAt</code>）就會返晒出嚟
+                    </li>
+                    <li>
+                        收藏 tab 同最近收聽係 P7 功能，<b>P7 未 merge 入 main</b>，呢度用
+                        <code>_mockups_/bookmark/</code> 嘅 HTML 樣式複製，唔係真截圖
+                    </li>
+                </ul>
+            </section>
+
+            <section class="panel">
+                <h2>⑤ drama.json schema 建議（未改真 schema，放最底）</h2>
+                <p>
+                    而家 <code>ArcDefinition</code> 已經有 optional <code>addedAt</code>（用嚟計 14
+                    日「新」）。建議<b>直接用佢做上架日</b>，唔加新欄位：
+                </p>
+                <pre>
+"arcs": [
+  { "name": "我心不死", "disc": "arcs/heart/disc.webp", "episodes": 37 },
+  {
+    "name": "XXX",
+    "addedAt": "2026-11-12",          // 將來日子 = 即將上架；當日起自動變正常 + 「新」
+    "disc": "arcs/xxx/disc.webp",     // optional，冇就用劇集碟面（灰咗）
+    "episodes": 20                    // 知道就寫；唔知可以唔寫（見下）
+  }
+]</pre>
+                <ul>
+                    <li>
+                        <b>判斷</b>：<code>addedAt &gt; hkToday()</code> = 即將上架；selector 一個
+                        <code>isArcUpcoming(addedAt, today)</code>，同
+                        <code>isArcNew</code> 放埋一齊
+                    </li>
+                    <li>
+                        <b>上架時間</b>：上架 = 香港時間 <code>addedAt</code> 當日
+                        00:00（用戶已確認），即係
+                        <code>hkToday() &gt;= addedAt</code> 就當已上架，唔使寫時間
+                    </li>
+                    <li>
+                        <b>未上架嘅集數</b>：唔產生 <code>SeriesEpisode</code>（唔砌音檔 URL、唔
+                        probe、唔入進度 / 收藏 / mini player / 續聽），只出一個
+                        <code>UpcomingArc { arc, addedAt, count? , disc? }</code> 畀 UI
+                    </li>
+                    <li>
+                        <b>episodes 可以唔寫</b>（用戶已確認）：只限未上架嘅 arc（arc 或劇集層有
+                        <code>addedAt</code
+                        >）。一覽表「即將上架」行第二行淨係「11/12（四）上架」，唔出集數。parse
+                        驗證：冇 <code>episodes</code> 就一定要有 <code>addedAt</code>（日子 parse
+                        時驗唔到，因為會過）；到咗上架日仲未補 <code>episodes</code> →
+                        繼續當即將上架 + console.warn，唔會出空短篇
+                    </li>
+                    <li>
+                        <b>逐集上架</b>：arc 加 optional <code>episodeDates</code>（集數 →
+                        日子，即「呢集起」）：
+                        <pre>
+{ "name": "戀愛二分一", "episodes": 30,
+  "episodeDates": { "11": "2026-11-19", "21": "2026-11-26" } }</pre>
+                        規則：key 要喺 arc 集數範圍入面、日子跟集數遞增、要遲過 arc
+                        <code>addedAt</code>；第 11 集起至下一個 key 之前都係
+                        11/19。未到期嘅集數唔產生 <code>SeriesEpisode</code>，清單出灰行（<code
+                            >UpcomingEpisode { no, date }</code
+                        >）
+                    </li>
+                    <li>
+                        <b>新一批集數嘅「新」</b>：<code>isArcNew</code> 改用「arc
+                        <code>addedAt</code> 同已到期 <code>episodeDates</code> 入面最遲嗰個」計 14
+                        日
+                    </li>
+                    <li>
+                        <b>整套新劇</b>（tile 必填，用戶已確認）：劇集層
+                        <code>addedAt</code> 係將來日子 =
+                        即將上架劇集，一登記即刻喺書架最尾出：主頁書架出灰格、撳唔到、唔出劇集頁（直接開
+                        URL 就返主頁）；全部 arc 唔產生集數。daily 劇集而家冇劇集層
+                        <code>addedAt</code>，要一併加落 <code>DailyDefinition</code>
+                    </li>
+                    <li>
+                        <b>下架日</b>（⑧）：三層都用同一個字眼 <code>removedAt</code>（同
+                        <code>addedAt</code> 對稱，意思係「呢日 HK 00:00 起唔再提供」）：
+                        <pre>
+{ "name": "蘭茜夫人劇場", "removedAt": "2026-12-05",        // 成套劇
+  "arcs": [
+    { "name": "戀愛二分一", "removedAt": "2026-12-05",       // 短篇
+      "episodeRemovedAt": { "1-5": "2026-12-05" } }        // 集數（單集 "3" 或範圍 "1-5"）
+  ] }</pre>
+                        驗證：下架日要遲過上架日（劇集 / arc 嘅 <code>addedAt</code>、該集
+                        <code>episodeDates</code>）；arc 嘅唔可以遲過劇集嘅、集數嘅唔可以遲過 arc
+                        嘅（有就取最早嗰個）；範圍 key 要喺集數範圍入面、唔可以重疊
+                    </li>
+                    <li>
+                        <b>selector</b>：<code>LEAVING_SOON_DAYS = 30</code>；<code
+                            >isLeavingSoon(removedAt, today)</code
+                        >
+                        = <code>today &lt; removedAt</code> 而且相差 ≤ 30 日；<code
+                            >isRemoved(removedAt, today)</code
+                        >
+                        = <code>today &gt;= removedAt</code>。一集嘅有效下架日 = 集數 / arc /
+                        劇集三層最早嗰個
+                    </li>
+                    <li>
+                        <b>下架後影響</b>：唔產生
+                        <code>SeriesEpisode</code
+                        >（清單、chips、書架、最近收聽、繼續收聽、自動播下一集全部唔見；唔再 request
+                        音檔）；但 catalog 要保留集名 / 碟面畀收藏 tab
+                        出灰色「已下架」行（可左滑移除）；進度 localStorage
+                        唔刪，重新上架即刻返出；續聽嗰集下架咗就跳去下一集未下架嘅，冇就收埋條
+                    </li>
+                    <li>
+                        <b>JSON schema / 測試</b>：<code>schema.ts</code> readArc 放寬 episodes + 加
+                        <code>episodeDates</code>、劇集層 <code>addedAt</code>（daily 都有）、三層
+                        <code>removedAt</code
+                        >，<code>dramas.schema.json</code>（如有）同步；<code>arcTiles</code>「N
+                        個短篇」只數已上架嘅；續播 / 自動播下一集唔可以跳入未上架 /
+                        已下架集數；加「快將下架 / 已下架」嘅固定時鐘測試；e2e 用固定時鐘（E2E_NOW
+                        10/19）加一個將來 arc 測
+                    </li>
+                </ul>
+            </section>
+        </main>
+
+        <script>
+            /* ── 資料 ── */
+            const IMG = {
+                nHome: 'n-home.webp',
+                lHome: 'l-home.webp',
+                wHome: 'w-home.webp',
+                nDrama: 'n-drama.webp',
+                lDrama: 'l-drama.webp',
+                wDrama: 'w-drama.webp',
+                nSheet: 'n-sheet.webp',
+                lSheet: 'l-sheet.webp',
+                wSheet: 'w-sheet.webp',
+                half: 'disc-half.webp',
+                firstLove: 'disc-first-love.webp',
+                heart: 'disc-heart.webp',
+                lancy: 'disc-lancy.webp',
+                nEps: 'n-eps.webp',
+                lEps: 'l-eps.webp',
+                wEps: 'w-eps.webp',
+                nHomeEnd: 'n-home-end.webp',
+                lHomeEnd: 'l-home-end.webp',
+                wHomeEnd: 'w-home-end.webp',
+                nHomeCont: 'n-home-cont.webp',
+                lHomeCont: 'l-home-cont.webp',
+                wHomeCont: 'w-home-cont.webp',
+                bannerLancy: 'banner-lancy.webp',
+            };
+            const ARCS = [
+                { name: '戀愛二分一', count: 30, disc: 'half' },
+                { name: '初戀無限次', count: 33, disc: 'firstLove' },
+                { name: '我心不死', count: 37, disc: 'heart' },
+            ];
+            const SOON = { name: 'XXX', count: 20, disc: 'lancy', md: '11/12', wd: '四' };
+            /* ⑥ 逐集上架：第 from 集起嘅日子；off = 同 11/12 差幾多日 */
+            const EP_BATCHES = [
+                { from: 11, md: '11/19', wd: '四', off: 7 },
+                { from: 21, md: '11/26', wd: '四', off: 14 },
+            ];
+            /* ⑦ 新劇：12/1（二），同 11/12 差 19 日 */
+            const NEW_DRAMA = { name: '18 樓 C 座', md: '12/1', wd: '二', off: 19 };
+            const NEW_DAYS = 14;
+
+            /* 各版面：截圖尺寸、--ui-scale、主頁劇集格、chips 行、清單欄、全集表位置（css px） */
+            const LAYOUTS = {
+                n: {
+                    name: '手機直版',
+                    size: { w: 390, h: 844, max: 0.8 },
+                    k: 1,
+                    tile: { x: 16, y: 211, w: 358, h: 179 },
+                    chips: { x: 86, y: 448, right: 390, h: 44 },
+                    sheet: { docked: false },
+                    eps: { x: 16, w: 358, h: 56, y9: 539, status: 156 },
+                    zTile: {
+                        end: { x: 27, y: 645, w: 337, h: 168 },
+                    },
+                },
+                l: {
+                    name: '窄橫版',
+                    size: { w: 844, h: 390, max: 0.9 },
+                    k: 1,
+                    tile: { x: 291, y: 78, w: 263, h: 140 },
+                    chips: { x: 86, y: 72, right: 455, h: 44 },
+                    sheet: { docked: true, x: 0, y: 72, w: 455, h: 318 },
+                    eps: { x: 16, w: 423, h: 56, y9: 143, status: 182 },
+                    zTile: {
+                        end: { x: 634, y: 230, w: 194, h: 140 },
+                    },
+                },
+                w: {
+                    name: '闊橫版',
+                    size: { w: 1300, h: 800, max: 0.72 },
+                    k: 1.5,
+                    tile: { x: 659, y: 129, w: 617, h: 202 },
+                    chips: { x: 129, y: 120, right: 448, h: 66 },
+                    sheet: { docked: true, x: 0, y: 120, w: 448, h: 680 },
+                    eps: { x: 24, w: 401, h: 84, y9: 226, status: 180 },
+                    zTile: {
+                        end: { x: 24, y: 568, w: 1252, h: 202 },
+                    },
+                },
+            };
+
+            const state = {
+                device: 'n',
+                today: 7,
+                h: 'h2',
+                c: 'mix',
+                s: 's1',
+                f: 'f3',
+                after: 0,
+                known: 'yes',
+                prog: 0,
+                ld: 30,
+                lvl: 'drama',
+                lnew: 'no',
+                lc: 'lc2',
+                lk: 'lk1',
+                ls: 'ls2',
+                le: 'le1',
+                lb: 'lb1',
+                lr: 'lr1',
+            };
+
+            const PLACE_DESC = {
+                h2: '已揀 H2：唔加新 badge，右下角「3 個短篇」後面加「· 新短篇 11/12 上架」（兩日內變「新短篇 明日上架」）。',
+                h1: '對比 H1：劇集格右上角深色膠囊「⏱ 11/12 上架」。',
+            };
+
+            /* ── 日期字 ── */
+            const rel = (d) => (d === 1 ? '明日' : d === 2 ? '後日' : `${d} 日後`);
+            /** kind：short（chip / 主頁）或 long（一覽表 / 清單卡） */
+            const fmt = (f, d, kind, t = SOON) => {
+                const verb = t.verb ?? '上架';
+                const abs = kind === 'short' ? t.md : `${t.md}（${t.wd}）${verb}`;
+                const r = kind === 'short' ? rel(d) : `${rel(d)}${verb}`;
+                if (f === 'f1') return abs;
+                if (f === 'f2') return r;
+                return d <= 2 ? r : abs;
+            };
+            /** 短版 + 後綴：倒數（「7 日後」）直接接，日期（「11/12」）中間加空格 */
+            const withSuffix = (f, d, suffix, t = SOON) => {
+                const s = fmt(f, d, 'short', t);
+                return s.endsWith('日') ? `${s}${suffix}` : `${s} ${suffix}`;
+            };
+
+            /* ── DOM 小工具 ── */
+            const el = (tag, cls, style = {}, text) => {
+                const n = document.createElement(tag);
+                if (cls) n.className = cls;
+                Object.assign(n.style, style);
+                if (text !== undefined) n.textContent = text;
+                return n;
+            };
+            const px = (v) => `${v}px`;
+            const CLOCK =
+                '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
+            const PLAY =
+                '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
+
+            const isReleased = (d) => d <= 0;
+            const isNewRelease = (d) => d <= 0 && -d < NEW_DAYS;
+
+            const makeStage = (host, L, img, caption) => {
+                const wrap = el('div');
+                const view = el('div', 'viewport');
+                const stage = el('div', 'stage', {
+                    width: px(L.size.w),
+                    height: px(L.size.h),
+                    backgroundImage: `url(${IMG[img]})`,
+                });
+                stage.style.setProperty('--k', String(L.k));
+                view.append(stage);
+                wrap.append(view, el('p', 'cap', {}, caption));
+                host.append(wrap);
+                const fit = () => {
+                    const avail = host.clientWidth;
+                    const scale = Math.min(L.size.max, avail / L.size.w);
+                    stage.style.transform = `scale(${scale})`;
+                    view.style.width = px(L.size.w * scale);
+                    view.style.height = px(L.size.h * scale);
+                };
+                fit();
+                fitters.push(fit);
+                return stage;
+            };
+            let fitters = [];
+            // 先將舞台闊度歸零再量，唔係舊闊度會撐住欄，收窄視窗時量錯
+            addEventListener('resize', () => {
+                document.querySelectorAll('.viewport').forEach((v) => (v.style.width = '0'));
+                fitters.forEach((f) => f());
+            });
+
+            /* ── 主頁劇集格 ── */
+            const renderHome = (host, L, d, opts) => {
+                const stage = makeStage(host, L, `${state.device}Home`, `${L.name} · 主頁劇集格`);
+                const { x, y, w, h } = L.tile;
+                if (isReleased(d)) {
+                    if (isNewRelease(d))
+                        stage.append(
+                            el(
+                                'span',
+                                'badge-new md abs',
+                                { left: px(x + 8 * L.k), top: px(y + 8 * L.k) },
+                                '新',
+                            ),
+                        );
+                    stage.append(
+                        el(
+                            'span',
+                            'pill-dark abs',
+                            {
+                                right: px(L.size.w - x - w + 8 * L.k),
+                                bottom: px(L.size.h - y - h + 8 * L.k),
+                            },
+                            '4 個短篇',
+                        ),
+                    );
+                    return;
+                }
+                if (opts.h === 'h1') {
+                    const p = el('span', 'pill-dark md abs', {
+                        right: px(L.size.w - x - w + 8 * L.k),
+                        top: px(y + 8 * L.k),
+                    });
+                    p.innerHTML = `${CLOCK}<span>${withSuffix(opts.f, d, '上架')}</span>`;
+                    stage.append(p);
+                } else {
+                    stage.append(
+                        el(
+                            'span',
+                            'pill-dark abs',
+                            {
+                                right: px(L.size.w - x - w + 8 * L.k),
+                                bottom: px(L.size.h - y - h + 8 * L.k),
+                            },
+                            `3 個短篇 · 新短篇 ${withSuffix(opts.f, d, '上架')}`,
+                        ),
+                    );
+                }
+            };
+
+            /* ── 劇集頁 chips ── */
+            const SOON_LABEL = (d) => `${SOON.name}，${fmt('f1', d, 'long')}，未可以收聽`;
+
+            /** 未上架 chip：不可按（aria-disabled，冇 click、冇 hover / press），讀屏讀「未可以收聽」 */
+            const soonChip = (opts, d) => {
+                const b = el('button', `chip soon-${opts.c}`);
+                b.type = 'button';
+                b.setAttribute('aria-disabled', 'true');
+                b.setAttribute('aria-label', SOON_LABEL(d));
+                const when = fmt(opts.f, d, 'short');
+                if (opts.c === 'c1')
+                    b.innerHTML = `${SOON.name}<span class="date-tag">${when}</span>`;
+                else if (opts.c === 'c2')
+                    b.innerHTML = `${CLOCK}<span>${SOON.name} · ${withSuffix(opts.f, d, '上架')}</span>`;
+                else
+                    b.innerHTML = `<span>${SOON.name}</span>${CLOCK}<span>${withSuffix(opts.f, d, '上架')}</span>`;
+                return b;
+            };
+
+            const normalChip = (name, pressed, isNew) => {
+                const b = el('button', 'chip');
+                b.type = 'button';
+                b.setAttribute('aria-pressed', String(pressed));
+                b.textContent = name;
+                if (isNew) b.append(el('span', 'badge-new sm', {}, '新'));
+                return b;
+            };
+
+            const renderDrama = (host, L, d, opts) => {
+                const stage = makeStage(
+                    host,
+                    L,
+                    `${state.device}Drama`,
+                    `${L.name} · 劇集頁 chips`,
+                );
+                const c = L.chips;
+                const row = el('div', 'chips', {
+                    left: px(c.x),
+                    top: px(c.y),
+                    width: px(c.right - c.x),
+                    height: px(c.h),
+                });
+                stage.append(row);
+                if (isReleased(d)) {
+                    // 上咗架：14 日內排「新上架」最前，之後排返未聽完最尾
+                    const fresh = isNewRelease(d);
+                    const chips = ARCS.map((a, i) => normalChip(a.name, i === 0, false));
+                    const xxx = normalChip(SOON.name, false, fresh);
+                    if (fresh) row.append(xxx, ...chips);
+                    else row.append(...chips, xxx);
+                    return stage;
+                }
+                // 未上架排最尾（用戶已確認）
+                row.append(
+                    ...ARCS.map((a, i) => normalChip(a.name, i === 0, false)),
+                    soonChip(opts, d),
+                );
+                // 真 app 入頁捲去揀中嗰粒；preview 捲到最尾，等「XXX」一入眼就見到
+                requestAnimationFrame(() => (row.scrollLeft = row.scrollWidth));
+                return stage;
+            };
+
+            /* ── 全集一覽表 ── */
+            const arcRow = (a, status) => {
+                const r = el('div', 'arc-row');
+                const ring = el('span', 'ring');
+                const img = el('img');
+                img.src = IMG[a.disc];
+                img.alt = '';
+                ring.append(img, el('span', 'count', {}, `0/${a.count}`));
+                const t = el('span', 'arc-text');
+                t.append(
+                    el('span', 'arc-name', {}, a.name),
+                    el('span', 'arc-status', {}, status ?? `未聽 · ${a.count} 集`),
+                );
+                const play = el('span', 'play');
+                play.innerHTML = PLAY;
+                r.append(ring, t, play);
+                return r;
+            };
+
+            /** 未上架行：不可按（aria-disabled），右邊冇播放掣 */
+            const soonRow = (d, opts) => {
+                const r = el('button', `arc-row soon ${opts.s}`);
+                r.type = 'button';
+                r.setAttribute('aria-disabled', 'true');
+                r.setAttribute('aria-label', SOON_LABEL(d));
+                const ring = el('span', 'ring');
+                const img = el('img');
+                img.src = IMG[SOON.disc];
+                img.alt = '';
+                ring.append(img, el('span', 'count', {}, fmt(opts.f, d, 'short')));
+                const t = el('span', 'arc-text');
+                t.append(
+                    el('span', 'arc-name', {}, SOON.name),
+                    // 集數未知（drama.json 唔寫 episodes）：淨係出上架日
+                    el(
+                        'span',
+                        'arc-status',
+                        {},
+                        opts.known === 'no'
+                            ? fmt(opts.f, d, 'long')
+                            : `${fmt(opts.f, d, 'long')} · ${SOON.count} 集`,
+                    ),
+                );
+                const mark = el('span', 'soon-mark');
+                mark.innerHTML = CLOCK;
+                r.append(ring, t, mark);
+                return r;
+            };
+
+            const group = (title, rows) => {
+                const g = el('div');
+                const list = el('div', 'g-list');
+                list.append(...rows);
+                g.append(el('div', 'g-title', {}, title), list);
+                return g;
+            };
+
+            const renderSheet = (host, L, d, opts) => {
+                const stage = makeStage(host, L, `${state.device}Sheet`, `${L.name} · 全集一覽表`);
+                const k = L.k;
+                const s = L.sheet;
+                const box = s.docked
+                    ? { left: px(s.x), top: px(s.y), width: px(s.w), height: px(s.h) }
+                    : {
+                          left: '0',
+                          bottom: '0',
+                          width: px(L.size.w),
+                          maxHeight: px(L.size.h * 0.8),
+                      };
+                const sheet = el('div', 'sheet', box);
+                const head = el('div', 'sheet-head');
+                const released = isReleased(d);
+                const total = released ? 4 : 3;
+                head.append(
+                    el('span', 'sheet-title', {}, '全集'),
+                    el('span', 'sheet-sum', {}, `聽完 0 / ${total} 個`),
+                    el('span', 'sheet-x', {}, '✕'),
+                );
+                const list = el('div', 'sheet-list');
+                const rows = ARCS.map((a) => arcRow(a));
+                if (released) {
+                    const xxx = arcRow(
+                        SOON,
+                        `未聽 · ${SOON.count} 集${isNewRelease(d) ? '，新上架' : ''}`,
+                    );
+                    if (isNewRelease(d)) {
+                        xxx.querySelector('.arc-name').append(el('span', 'badge-new sm', {}, '新'));
+                        list.append(group('新上架', [xxx]), group('未聽完', rows));
+                    } else list.append(group('未聽完', [...rows, xxx]));
+                } else if (opts.s === 's1')
+                    list.append(group('未聽完', rows), group('即將上架', [soonRow(d, opts)]));
+                else list.append(group('未聽完', [...rows, soonRow(d, opts)]));
+                sheet.append(el('div', 'grab'), head, list);
+                stage.append(sheet);
+                return stage;
+            };
+
+            /* ── ⑥ 逐集上架 ── */
+            const batchLast = (b) => {
+                const i = EP_BATCHES.indexOf(b);
+                return (EP_BATCHES[i + 1]?.from ?? ARCS[0].count + 1) - 1;
+            };
+            /** 下一批未上架（冇就 undefined） */
+            const nextBatch = (today) => EP_BATCHES.find((b) => today + b.off > 0);
+            /** 14 日內啱啱上架嗰批（有就出「新」） */
+            const freshBatch = (today) =>
+                EP_BATCHES.find((b) => {
+                    const d = today + b.off;
+                    return d <= 0 && -d < NEW_DAYS;
+                });
+
+            /** chips 行複製品（蓋住截圖嗰行） */
+            const chipsRow = (stage, L, chips) => {
+                const c = L.chips;
+                const row = el('div', 'chips', {
+                    left: px(c.x),
+                    top: px(c.y),
+                    width: px(c.right - c.x),
+                    height: px(c.h),
+                });
+                row.append(...chips);
+                stage.append(row);
+                return row;
+            };
+
+            const renderEps = (host, L, today, opts) => {
+                const stage = makeStage(host, L, `${state.device}Eps`, `${L.name} · 集數清單`);
+                const E = L.eps;
+                if (freshBatch(today))
+                    chipsRow(stage, L, [
+                        normalChip(ARCS[0].name, true, true),
+                        ...ARCS.slice(1).map((a) => normalChip(a.name, false, false)),
+                    ]);
+                const pending = EP_BATCHES.filter((b) => today + b.off > 0);
+                if (!pending.length) return stage;
+                // 摺埋：每批一行，由第一集未上架嗰行開始
+                const y0 = E.y9 + (pending[0].from - 9) * E.h;
+                pending.forEach((b, i) => {
+                    const d = today + b.off;
+                    const row = el('button', 'ep-row', {
+                        left: px(E.x),
+                        top: px(y0 + i * E.h),
+                        width: px(E.w),
+                        height: px(E.h - 1),
+                    });
+                    row.type = 'button';
+                    row.setAttribute('aria-disabled', 'true');
+                    row.setAttribute(
+                        'aria-label',
+                        `第 ${b.from} 至 ${batchLast(b)} 集，${fmt('f1', d, 'long', b)}，未可以收聽`,
+                    );
+                    const mark = el('span', 'ep-mark', { right: px(8 * L.k) });
+                    mark.innerHTML = CLOCK;
+                    row.append(
+                        el('span', 'ep-title', {}, `第 ${b.from}–${batchLast(b)} 集`),
+                        el('span', 'ep-status', { left: px(E.status) }, fmt(opts.f, d, 'long', b)),
+                        mark,
+                    );
+                    stage.append(row);
+                });
+                // 摺埋之後清單到此為止：下面截圖嘅行蓋走
+                const yEnd = y0 + pending.length * E.h;
+                if (yEnd < L.size.h)
+                    stage.append(
+                        el('div', 'abs', {
+                            left: px(E.x),
+                            top: px(yEnd),
+                            width: px(E.w),
+                            height: px(L.size.h - yEnd),
+                            background: 'var(--t-bg)',
+                        }),
+                    );
+                return stage;
+            };
+
+            /** 一覽表「戀愛二分一」行（已揀 A2：膠囊計全部集數） */
+            const partialRow = (today, opts) => {
+                const nb = nextBatch(today);
+                const total = ARCS[0].count;
+                const out = (nb?.from ?? total + 1) - 1;
+                const heard = Math.min(opts.prog, out);
+                const fresh = freshBatch(today);
+                const head = heard ? `聽到第 ${heard} 集` : '未聽';
+                const tail = nb
+                    ? `第 ${nb.from} 集起 ${withSuffix(opts.f, today + nb.off, '上架', nb)}`
+                    : `${total} 集${fresh ? '，有新集數' : ''}`;
+                const r = arcRow(ARCS[0], `${head} · ${tail}`);
+                r.querySelector('.count').textContent = `${heard}/${total}`;
+                r.querySelector('.ring').style.background =
+                    `conic-gradient(var(--t-accent) ${(heard / total) * 100}%, var(--t-track) 0)`;
+                if (fresh)
+                    r.querySelector('.arc-name').append(el('span', 'badge-new sm', {}, '新'));
+                return r;
+            };
+
+            /** 全集一覽表殼：bg 截圖 + 表頭；body(list, head) 填內容 */
+            const sheetShell = (host, L, caption, fill) => {
+                const stage = makeStage(host, L, `${state.device}Sheet`, caption);
+                const s = L.sheet;
+                const box = s.docked
+                    ? { left: px(s.x), top: px(s.y), width: px(s.w), height: px(s.h) }
+                    : { left: '0', bottom: '0', width: px(L.size.w) };
+                const sheet = el('div', 'sheet', box);
+                const head = el('div', 'sheet-head');
+                const list = el('div', 'sheet-list');
+                sheet.append(el('div', 'grab'), head, list);
+                stage.append(sheet);
+                fill(list, head, sheet);
+                return stage;
+            };
+            const sheetHead = (head, total) =>
+                head.append(
+                    el('span', 'sheet-title', {}, '全集'),
+                    el('span', 'sheet-sum', {}, `聽完 0 / ${total} 個`),
+                    el('span', 'sheet-x', {}, '✕'),
+                );
+
+            const renderSheet6 = (host, L, today, opts) =>
+                sheetShell(host, L, `${L.name} · 全集一覽表`, (list, head) => {
+                    sheetHead(head, 3);
+                    const others = ARCS.slice(1).map((a) => arcRow(a));
+                    const row = partialRow(today, opts);
+                    if (freshBatch(today))
+                        list.append(group('新上架', [row]), group('未聽完', others));
+                    else list.append(group('未聽完', [row, ...others]));
+                });
+
+            const renderHome6 = (host, L, today, opts) => {
+                const stage = makeStage(host, L, `${state.device}Home`, `${L.name} · 主頁劇集格`);
+                const { x, y, w, h } = L.tile;
+                if (freshBatch(today))
+                    stage.append(
+                        el(
+                            'span',
+                            'badge-new md abs',
+                            { left: px(x + 8 * L.k), top: px(y + 8 * L.k) },
+                            '新',
+                        ),
+                    );
+                const nb = nextBatch(today);
+                if (!nb) return;
+                stage.append(
+                    el(
+                        'span',
+                        'pill-dark abs',
+                        {
+                            right: px(L.size.w - x - w + 8 * L.k),
+                            bottom: px(L.size.h - y - h + 8 * L.k),
+                        },
+                        `3 個短篇 · 全新集數 ${withSuffix(opts.f, today + nb.off, '上架', nb)}`,
+                    ),
+                );
+            };
+
+            /* ── ⑦ 整套新劇（已揀：灰階 + 底部深色條，排最尾） ── */
+            const renderUpcomingDrama = (host, L, today, opts) => {
+                const stage = makeStage(
+                    host,
+                    L,
+                    `${state.device}HomeEnd`,
+                    `${L.name} · 主頁書架（排最尾）`,
+                );
+                const r = L.zTile.end;
+                const d = today + NEW_DRAMA.off;
+                const tile = el('button', 'z-tile z1', {
+                    left: px(r.x),
+                    top: px(r.y),
+                    width: px(r.w),
+                    height: px(r.h),
+                });
+                tile.type = 'button';
+                tile.setAttribute('aria-disabled', 'true');
+                tile.setAttribute(
+                    'aria-label',
+                    `${NEW_DRAMA.name}，${fmt('f1', d, 'long', NEW_DRAMA)}，未可以收聽`,
+                );
+                const bar = el('span', 'z-bar');
+                bar.innerHTML = `${CLOCK}<span>即將上架 · ${fmt(opts.f, d, 'short', NEW_DRAMA)}</span>`;
+                tile.append(bar);
+                stage.append(tile);
+            };
+
+            /* ── ⑧ 快將下架 ── */
+            /** 下架前幾多日開始提示 */
+            const LEAVING_SOON_DAYS = 30;
+            const LEAVE = { md: '12/5', wd: '六', verb: '下架' };
+            const REMOVED_EPS = 5;
+            /** 左滑拉過行闊幾多就移除 */
+            const SWIPE_REMOVE_RATIO = 0.4;
+            const isLeavingSoon = (d) => d > 0 && d <= LEAVING_SOON_DAYS;
+            const isRemoved = (d) => d <= 0;
+            const HOURGLASS =
+                '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10M7 20.5h10M8 3.5c0 4.5 8 4.5 8 8.5s-8 4-8 8.5M16 3.5c0 4.5-8 4.5-8 8.5s8 4 8 8.5"/></svg>';
+            /** 「12/5 下架」/「明日下架」 */
+            const leaveShort = (opts, d) => withSuffix(opts.f, d, '下架', LEAVE);
+            /** 「12/5（六）下架」/「明日下架」 */
+            const leaveLong = (opts, d) => fmt(opts.f, d, 'long', LEAVE);
+            /** 主頁格 / 一覽表講係邊部分落架 */
+            const LEVEL_WORD = { drama: '', arc: '部分短篇 ', eps: '部分集數 ' };
+
+            /* 續聽條、「揀一個短篇開始收聽」標籤、清單 track 嘅位置（真截圖量） */
+            const GEO8 = {
+                n: {
+                    tx: 84,
+                    ty: 341,
+                    lx: 138,
+                    ly: 361,
+                    label: { cx: 195, cy: 440, w: 320 },
+                    track: 154,
+                },
+                l: {
+                    tx: 360,
+                    ty: 170,
+                    lx: 413,
+                    ly: 189,
+                    label: { cx: 660, cy: 369, w: 300 },
+                    track: 193,
+                },
+                w: {
+                    tx: 760,
+                    ty: 260,
+                    lx: 842,
+                    ly: 288,
+                    label: { cx: 889, cy: 767, w: 420 },
+                    track: 149,
+                },
+            };
+
+            const LEAVE_DESC = (d) => {
+                if (d > LEAVING_SOON_DAYS) return '下架前 31 日：仲未開始提示，所有位置照舊。';
+                if (isRemoved(d))
+                    return '下架後：其他位置完全收埋，收藏 tab 保留灰色「已下架」行（可左滑移除）。';
+                return `下架前 ${d} 日：所有位置出琥珀色「⏳ ${leaveShort(state, d)}」提示。`;
+            };
+
+            /** 主頁劇集格 + 繼續收聽條 */
+            const renderLeaveHome = (host, L, d, opts) => {
+                const removed = isRemoved(d);
+                const stage = makeStage(
+                    host,
+                    L,
+                    `${state.device}${removed ? 'Home' : 'HomeCont'}`,
+                    `${L.name} · 主頁劇集格 + 繼續收聽條`,
+                );
+                const { x, y, w, h } = L.tile;
+                const k = L.k;
+                if (removed) {
+                    if (opts.lvl === 'drama') {
+                        const gone = el('div', 'gone', {
+                            left: px(x),
+                            top: px(y),
+                            width: px(w),
+                            height: px(h),
+                        });
+                        gone.textContent = '已下架：呢格唔再出現（其他劇補位）';
+                        stage.append(gone);
+                    } else if (opts.lvl === 'arc')
+                        stage.append(
+                            el(
+                                'span',
+                                'pill-dark abs',
+                                {
+                                    right: px(L.size.w - x - w + 8 * k),
+                                    bottom: px(L.size.h - y - h + 8 * k),
+                                },
+                                '2 個短篇',
+                            ),
+                        );
+                    return;
+                }
+                if (!isLeavingSoon(d)) return;
+                const g = GEO8[state.device];
+                // 主頁格左上角：「新」（如有）後面同一行接琥珀色「⏳ 12/5 下架」
+                const corner = el('span', 'tile-corner abs', {
+                    left: px(x + 8 * k),
+                    top: px(y + 8 * k),
+                });
+                if (opts.lnew === 'yes') corner.append(el('span', 'badge-new md', {}, '新'));
+                const tag = el('span', 'leave-corner');
+                tag.innerHTML = `${HOURGLASS}${LEVEL_WORD[opts.lvl]}${leaveShort(opts, d)}`;
+                corner.append(tag);
+                stage.append(corner);
+                // 繼續收聽條（續聽嗰集係第 3 集，三個範圍都包埋）：集名後面琥珀字
+                const t = el('span', 'leave-txt on-tile abs mid', {
+                    left: px(g.lx),
+                    top: px(g.ly),
+                });
+                t.innerHTML = `· ${HOURGLASS}${leaveShort(opts, d)}`;
+                stage.append(t);
+            };
+
+            /** 一行集數複製品（下架後由第 6 集起排返上去） */
+            const plainEpRow = (L, no, y, i) => {
+                const E = L.eps;
+                const g = GEO8[state.device];
+                const row = el('div', 'ep-plain', {
+                    left: px(E.x),
+                    top: px(y),
+                    width: px(E.w),
+                    height: px(E.h - 1),
+                });
+                if (i === 0) row.classList.add('first');
+                row.append(
+                    el('span', 'ep-title', {}, `第 ${no} 集`),
+                    el('span', 'ep-track', { left: px(E.status), width: px(g.track) }),
+                    el('span', 'ep-status', { left: px(E.status), top: '58%' }, '未收聽'),
+                );
+                const play = el('span', 'ep-mark', { right: px(8 * L.k) });
+                play.innerHTML = PLAY_OUTLINE;
+                row.append(play);
+                return row;
+            };
+            const PLAY_OUTLINE =
+                '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
+
+            /** 劇集頁：chips + 集數清單 */
+            const renderLeaveDrama = (host, L, d, opts) => {
+                const stage = makeStage(
+                    host,
+                    L,
+                    `${state.device}Drama`,
+                    `${L.name} · 劇集頁 chips + 集數清單`,
+                );
+                const removed = isRemoved(d);
+                const leaving = isLeavingSoon(d);
+                const k = L.k;
+                const g = GEO8[state.device];
+                const E = L.eps;
+                if (opts.lvl === 'drama') {
+                    if (removed) {
+                        const gone = el('div', 'gone', { inset: '0' });
+                        gone.textContent = '已下架：劇集頁打唔開（直接開 URL 就返主頁）';
+                        stage.append(gone);
+                    } else if (leaving) {
+                        const t = el('span', 'leave-label abs mid-x', {
+                            left: px(g.label.cx),
+                            top: px(g.label.cy),
+                            width: px(g.label.w),
+                        });
+                        t.innerHTML = `${HOURGLASS}呢套劇 ${leaveLong(opts, d)}`;
+                        stage.append(t);
+                    }
+                    return;
+                }
+                if (opts.lvl === 'arc') {
+                    if (removed) {
+                        chipsRow(stage, L, [
+                            normalChip(ARCS[1].name, true, false),
+                            normalChip(ARCS[2].name, false, false),
+                        ]);
+                        return;
+                    }
+                    if (!leaving) return;
+                    const first = normalChip(ARCS[0].name, true, false);
+                    const tag = el('span', 'leave-tag');
+                    tag.innerHTML = `${HOURGLASS}${fmt(opts.f, d, 'short', LEAVE)}`;
+                    first.append(tag);
+                    first.setAttribute(
+                        'aria-label',
+                        `${ARCS[0].name}，${fmt('f1', d, 'long', LEAVE)}`,
+                    );
+                    chipsRow(stage, L, [
+                        first,
+                        ...ARCS.slice(1).map((a) => normalChip(a.name, false, false)),
+                    ]);
+                    return;
+                }
+                // 集數層：第 1–5 集
+                if (removed) {
+                    stage.append(
+                        el('div', 'abs', {
+                            left: px(E.x),
+                            top: px(E.y9),
+                            width: px(E.w),
+                            height: px(L.size.h - E.y9),
+                            background: 'var(--t-bg)',
+                        }),
+                    );
+                    for (let i = 0; E.y9 + i * E.h < L.size.h; i += 1)
+                        stage.append(plainEpRow(L, REMOVED_EPS + 1 + i, E.y9 + i * E.h, i));
+                    // 清單頭「共 30 集」改做淨返嘅集數
+                    stage.append(
+                        el(
+                            'span',
+                            'ep-count abs',
+                            { right: px(L.size.w - E.x - E.w), top: px(E.y9 - 19 * L.k) },
+                            `共 ${ARCS[0].count - REMOVED_EPS} 集`,
+                        ),
+                    );
+                    return;
+                }
+                if (!leaving) return;
+                for (let no = 1; no <= REMOVED_EPS; no += 1) {
+                    const y = E.y9 + (no - 1) * E.h;
+                    if (y >= L.size.h) break;
+                    // 蓋住「未收聽」再寫過（第 1 集係揀中行，底色係 surface）
+                    const t = el('span', 'leave-ep abs', {
+                        left: px(E.x + E.status - 2),
+                        top: px(y + E.h * 0.58),
+                        background: no === 1 ? 'var(--t-surface)' : 'var(--t-bg)',
+                    });
+                    t.innerHTML = `<span class="muted">未收聽 · </span>${HOURGLASS}${leaveShort(opts, d)}`;
+                    stage.append(t);
+                }
+            };
+
+            /** 全集一覽表 */
+            const renderLeaveSheet = (host, L, d, opts) => {
+                const removed = isRemoved(d);
+                const leaving = isLeavingSoon(d);
+                if (opts.lvl === 'drama' && removed) {
+                    const stage = makeStage(
+                        host,
+                        L,
+                        `${state.device}Sheet`,
+                        `${L.name} · 全集一覽表`,
+                    );
+                    const gone = el('div', 'gone', { inset: '0' });
+                    gone.textContent = '已下架：劇集頁同一覽表都打唔開';
+                    stage.append(gone);
+                    return;
+                }
+                sheetShell(host, L, `${L.name} · 全集一覽表`, (list, head, sheet) => {
+                    const arcGone = opts.lvl === 'arc' && removed;
+                    sheetHead(head, arcGone ? 2 : 3);
+                    if (opts.lvl === 'drama' && leaving) {
+                        const t = el('div', 'leave-sheet-note');
+                        t.innerHTML = `${HOURGLASS}成套劇 ${leaveLong(opts, d)}`;
+                        head.after(t);
+                    }
+                    const rows = ARCS.map((a) => arcRow(a));
+                    if (arcGone) rows.shift();
+                    const first = rows[0];
+                    if (opts.lvl === 'eps' && removed) {
+                        first.querySelector('.count').textContent =
+                            `0/${ARCS[0].count - REMOVED_EPS}`;
+                        first.querySelector('.arc-status').textContent =
+                            `未聽 · ${ARCS[0].count - REMOVED_EPS} 集`;
+                    }
+                    if (leaving && opts.lvl !== 'drama') {
+                        const what = opts.lvl === 'eps' ? `第 1–${REMOVED_EPS} 集 ` : '';
+                        const status = first.querySelector('.arc-status');
+                        {
+                            first
+                                .querySelector('.arc-name')
+                                .append(
+                                    el(
+                                        'span',
+                                        'leave-badge',
+                                        {},
+                                        opts.lvl === 'eps' ? '部分快將下架' : '快將下架',
+                                    ),
+                                );
+                            status.textContent = `未聽 · ${ARCS[0].count} 集 · ${what}${leaveShort(opts, d)}`;
+                        }
+                    }
+                    list.append(group('未聽完', rows));
+                });
+            };
+
+            /* 收藏 tab / 最近收聽複製品（P7 未 merge，用 _mockups_/bookmark 樣式） */
+            const SAVED = [
+                { no: 3, state: '聽到 12:30', inEps: true },
+                { no: 7, state: '未聽', inEps: false },
+            ];
+            const RECENT = [
+                { title: '蘭茜夫人劇場', sub: '戀愛二分一 · 第 3 集', disc: 'half', ours: true },
+                { title: '少爺占系列', sub: '八王子 · 第 1 集', disc: null, ours: false },
+            ];
+            const affected = (opts, item) => opts.lvl !== 'eps' || item.inEps;
+
+            /** 左滑移除（只限已下架行）：拉過 SWIPE_REMOVE_RATIO 放手 → 收埋；唔夠就彈返 */
+            const swipeToRemove = (item, card) => {
+                let startX = null;
+                let dx = 0;
+                card.addEventListener('pointerdown', (e) => {
+                    startX = e.clientX;
+                    card.setPointerCapture(e.pointerId);
+                    card.classList.add('dragging');
+                });
+                card.addEventListener('pointermove', (e) => {
+                    if (startX === null) return;
+                    const scale = item.getBoundingClientRect().width / item.offsetWidth || 1;
+                    dx = Math.min(0, (e.clientX - startX) / scale);
+                    card.style.transform = `translateX(${dx}px)`;
+                });
+                const end = () => {
+                    if (startX === null) return;
+                    startX = null;
+                    card.classList.remove('dragging');
+                    if (-dx > item.offsetWidth * SWIPE_REMOVE_RATIO) {
+                        item.classList.add('removing');
+                        // 減少動態：唔等 transitionend，即刻移除
+                        const done = () => item.remove();
+                        if (prefersReducedMotion()) done();
+                        else item.addEventListener('transitionend', done, { once: true });
+                        requestAnimationFrame(() => (item.style.height = '0px'));
+                    } else card.style.transform = '';
+                    dx = 0;
+                };
+                card.addEventListener('pointerup', end);
+                card.addEventListener('pointercancel', end);
+            };
+            const prefersReducedMotion = () =>
+                matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            const renderSaved = (host, d, opts) => {
+                const wrap = el('div');
+                const card = el('div', 'saved-app');
+                const removed = isRemoved(d);
+                const leaving = isLeavingSoon(d);
+                // 收藏 tab
+                card.append(el('h4', 'saved-h', {}, '收藏'));
+                const box = el('div', 'bm-box');
+                const bhead = el('div', 'bm-bhead');
+                const bimg = el('div', 'bm-bimg', { backgroundImage: `url(${IMG.bannerLancy})` });
+                if (removed && opts.lvl === 'drama') bimg.classList.add('grey');
+                bhead.append(bimg, el('span', 'bm-btitle', {}, '蘭茜夫人劇場'));
+                const section = el('div', 'bm-section');
+                const disc = el('div', 'bm-disc', { backgroundImage: `url(${IMG.half})` });
+                const body = el('div', 'bm-sbody');
+                body.append(el('div', 'bm-shead', {}, '戀愛二分一'));
+                SAVED.forEach((s) => {
+                    const hit = affected(opts, s);
+                    const item = el('div', 'bm-item');
+                    const row = el('div', 'bm-card');
+                    const text = el('div', 'bm-cbody');
+                    const line = el('div', 'bm-line');
+                    line.append(el('b', '', {}, `第 ${s.no} 集`));
+                    const st = el('div', 'bm-state', {}, s.state);
+                    text.append(line, st);
+                    row.append(text);
+                    if (hit && removed) {
+                        item.classList.add('gone-row');
+                        row.setAttribute('role', 'button');
+                        row.setAttribute('tabindex', '0');
+                        row.setAttribute('aria-disabled', 'true');
+                        row.setAttribute('aria-label', `第 ${s.no} 集，已下架，左滑移除`);
+                        st.textContent = '已下架';
+                        const trash = el('span', 'bm-trash', {}, '移除');
+                        row.append(trash);
+                        swipeToRemove(item, row);
+                    } else {
+                        if (hit && leaving) {
+                            st.innerHTML = `${s.state} · <span class="leave-dark">${HOURGLASS}${leaveShort(opts, d)}</span>`;
+                        }
+                        const play = el('span', 'bm-play');
+                        play.innerHTML = PLAY_OUTLINE;
+                        row.append(play);
+                    }
+                    item.append(row);
+                    body.append(item);
+                });
+                section.append(disc, body);
+                box.append(bhead, section);
+                card.append(box);
+                // 最近收聽
+                card.append(el('h4', 'saved-h', {}, '最近收聽'));
+                const recent = el('div', 'bm-recent');
+                RECENT.forEach((r) => {
+                    const hit = r.ours; // 續聽嗰集係第 3 集，三個範圍都包埋
+                    if (hit && removed) return;
+                    const row = el('div', 'bm-recent-row');
+                    const rd = el(
+                        'div',
+                        'bm-disc',
+                        r.disc ? { backgroundImage: `url(${IMG[r.disc]})` } : {},
+                    );
+                    const t = el('div', 'bm-cbody');
+                    t.append(el('b', '', {}, r.title));
+                    const sub = el('div', 'bm-state', {}, r.sub);
+                    t.append(sub);
+                    row.append(rd, t);
+                    if (hit && leaving) {
+                        const l2 = el('div', 'bm-state');
+                        l2.innerHTML = `<span class="leave-dark">${HOURGLASS}${leaveShort(opts, d)}</span>`;
+                        t.append(l2);
+                    }
+                    recent.append(row);
+                });
+                card.append(recent);
+                wrap.append(
+                    card,
+                    el('p', 'cap', {}, '收藏 tab + 最近收聽（P7 未 merge，用 mockup 樣式）'),
+                );
+                host.append(wrap);
+            };
+
+            /* ── 畫晒 ── */
+            const sections = {
+                place: (host, L) => {
+                    renderHome(host, L, state.today, state);
+                    renderDrama(host, L, state.today, state);
+                    renderSheet(host, L, state.today, state);
+                },
+                tap: (host, L) => {
+                    const d = Math.max(state.today, 1);
+                    renderDrama(host, L, d, state);
+                    renderSheet(host, L, d, state);
+                },
+                fmt: (host, L) => {
+                    const d = Math.max(state.today, 1);
+                    renderHome(host, L, d, state);
+                    renderDrama(host, L, d, state);
+                },
+                eps: (host, L) => {
+                    renderEps(host, L, state.today, state);
+                    renderSheet6(host, L, state.today, state);
+                    renderHome6(host, L, state.today, state);
+                },
+                upcoming: (host, L) => {
+                    renderUpcomingDrama(host, L, state.today, state);
+                },
+                leave: (host, L) => {
+                    renderLeaveHome(host, L, state.ld, state);
+                    renderLeaveDrama(host, L, state.ld, state);
+                    renderLeaveSheet(host, L, state.ld, state);
+                    renderSaved(host, state.ld, state);
+                },
+                after: (host, L) => {
+                    renderHome(host, L, state.after, state);
+                    renderDrama(host, L, state.after, state);
+                    renderSheet(host, L, state.after, state);
+                },
+            };
+
+            const DATES = [
+                [7, '11/5（四）'],
+                [2, '11/10（二）'],
+                [1, '11/11（三）'],
+            ];
+            const renderTable = () => {
+                const body = document.getElementById('fmt-table');
+                body.replaceChildren(
+                    ...DATES.map(([d, label]) => {
+                        const tr = el('tr');
+                        const th = el('th', '', {}, label);
+                        th.scope = 'row';
+                        tr.append(th);
+                        ['f1', 'f2', 'f3'].forEach((f) => {
+                            const td = el('td');
+                            const text = `chip「${fmt(f, d, 'short')}」· 一覽表「${fmt(f, d, 'long')}」`;
+                            if (f === state.f) td.append(el('b', '', {}, text));
+                            else td.textContent = text;
+                            tr.append(td);
+                        });
+                        return tr;
+                    }),
+                );
+            };
+
+            const render = () => {
+                fitters = [];
+                const L = LAYOUTS[state.device];
+                document.querySelectorAll('[data-sec]').forEach((host) => {
+                    host.replaceChildren();
+                    sections[host.dataset.sec](host, L);
+                });
+                document.getElementById('place-desc').textContent =
+                    state.today <= 0
+                        ? '示範日子係上架日或之後：「XXX」已經係正常短篇（見 ④），即將上架嘅樣式唔再出。'
+                        : PLACE_DESC[state.h];
+                renderTable();
+                document.getElementById('leave-desc').textContent = LEAVE_DESC(state.ld);
+            };
+
+            /* ── 掣 ── */
+            document.querySelectorAll('[data-group]').forEach((g) => {
+                g.addEventListener('click', (e) => {
+                    const b = e.target.closest('.pick');
+                    if (!b) return;
+                    g.querySelectorAll('.pick').forEach((x) =>
+                        x.setAttribute('aria-pressed', String(x === b)),
+                    );
+                    const key = g.dataset.group;
+                    const v = b.dataset.val;
+                    state[key] = ['today', 'after', 'prog', 'ld'].includes(key) ? Number(v) : v;
+                    render();
+                });
+            });
+            render();
+        </script>
+    </body>
+</html>

@@ -24,6 +24,10 @@ export interface SavedRowView {
     onPlay: () => void;
     /** 左滑過四成（或者撳 Delete）：移除收藏 */
     onRemove: () => void;
+    /** 已下架（P8 #6）：灰色「已下架」行，冇播放掣、撳唔到（aria-disabled），照可以左滑移除 */
+    removed?: boolean | undefined;
+    /** 快將下架（LB1）：狀態字後面琥珀字（text），讀屏講長版日子（label） */
+    leaving?: { text: string; label: string } | undefined;
 }
 
 /** box 入面一段：左邊碟；短篇劇每個短篇一段，段頭寫短篇名 */
@@ -41,6 +45,8 @@ export interface SavedBoxView {
     title: string;
     /** 大類橫圖（主頁節目 / 劇集格嘅圖） */
     banner: string;
+    /** 成套劇已下架：banner 變灰 */
+    removed?: boolean | undefined;
     sections: readonly SavedSectionView[];
 }
 
@@ -53,6 +59,8 @@ export interface RecentRowView {
     spokenLabel: string;
     art: string;
     track: Track;
+    /** 快將下架（LR1）：第二行琥珀字 */
+    leaving?: { text: string; label: string } | undefined;
     onOpen: () => void;
 }
 

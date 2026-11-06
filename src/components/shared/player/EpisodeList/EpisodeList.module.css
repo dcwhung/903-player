@@ -139,6 +139,8 @@
 }
 
 .body {
+    /* LE1 用：欄幾闊（container query），唔跟內容撐闊（唔會擠走 ▷） */
+    container: episode-body / inline-size;
     display: flex;
     flex-direction: column;
     flex-grow: 1;
@@ -226,4 +228,54 @@
         var(--color-track) 0 var(--unavailable-dash),
         transparent var(--unavailable-dash) calc(var(--unavailable-dash) + var(--unavailable-gap))
     );
+}
+
+/* 快將下架（LE1）：狀態字後面琥珀色「· ⏳ 05/12 下架」；欄窄放唔落先成粒換落下一行（唔會溢出蓋住 ☆） */
+.withLeaving {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.leaving {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--notice-icon-gap);
+    color: var(--leave-ink);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* 欄夠闊寫「05/12 下架」；闊橫版左欄嗰啲窄欄（約 7 個字闊以下）淨係「⏳ 05/12」 */
+.leavingTag {
+    display: none;
+}
+
+@container episode-body (max-width: 120px) {
+    .leavingFull {
+        display: none;
+    }
+
+    .leavingTag {
+        display: inline;
+    }
+}
+
+/* 「 · 」（common.separator）：淡色，唔跟琥珀；icon 嘅 gap 已經當咗後面嗰個空位 */
+.leavingSeparator {
+    margin-right: calc(-1 * var(--notice-icon-gap));
+    color: var(--color-text-muted);
+}
+
+/*
+ * 未上架嘅一批集數（摺埋一行）：字淡色、冇進度條、右邊時鐘標記；撳唔到，冇 pointer、冇撳落效果
+ */
+.upcoming {
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.upcoming .dayMonth,
+.upcoming .play {
+    color: var(--color-text-muted);
 }

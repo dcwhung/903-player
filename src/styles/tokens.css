@@ -164,6 +164,30 @@
     --new-badge-bg: #c0362c;
     --new-badge-text: #ffffff;
 
+    /*
+     * 快將下架（P8 #6，_mockups_/coming-soon ⑧）：琥珀色 + ⏳，同即將上架嘅灰 / 虛線 / ⏱ 分開。
+     * pill 白字喺 --leave-pill-bg 上 5.3:1；--leave-ink 喺劇集淺色底（例如 #f3efde）5.6:1；
+     * --leave-on-dark 喺深色半透明底（--version-badge-bg、收藏 tab box）上用
+     */
+    --leave-pill-bg: #9c5a00;
+    --leave-pill-text: #ffffff;
+    --leave-ink: #8a4f00;
+    --leave-tag-bg: #f6dfb8;
+    --leave-on-dark: #ffc46b;
+    /* 即將上架嘅整套新劇（主頁書架最尾灰格）：灰階圖上蓋淡遮罩，底部深色條夠高夠實蓋住角落細字 */
+    --upcoming-tile-scrim: rgb(0 0 0 / 20%);
+    --upcoming-bar-bg: rgb(12 12 12 / 92%);
+    --upcoming-bar-text: #ffffff;
+    --upcoming-bar-height: calc(40px * var(--ui-scale));
+    /* 即將上架 chip：虛線框粗幼、淡底同 surface 混幾多（C1 + C2 混合） */
+    --upcoming-dash-width: 1.5px;
+    --upcoming-surface-mix: 45%;
+    /* 已下架行（收藏 tab）：內容淡咗 */
+    --removed-opacity: 0.5;
+    /* 主頁劇集格左上角「新」同下架字之間；⏳ / ⏱ 同字之間 */
+    --tile-corner-gap: calc(6px * var(--ui-scale));
+    --notice-icon-gap: calc(2px * var(--ui-scale));
+
     /* 今日節目卡疊（ShowCardStack）：每疊後一層向下移、縮細、變淡幾多（第一張後面嘅卡 scale 0.92） */
     --card-stack-offset: 12px;
     --card-stack-scale-step: 0.08;

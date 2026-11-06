@@ -2,19 +2,35 @@ import { useEffect, useId, useRef } from 'react';
 import { t } from '../../../../i18n/t';
 import { scrollBehavior } from '../../../../utils/motion';
 import { scrollChipToCentre } from '../../../../utils/scroll';
-import { ListIcon } from '../../../shared/common/icons/icons';
+import { HourglassIcon } from '../../../shared/common/icons/icons';
 import { NewBadge } from '../../../shared/common/NewBadge/NewBadge';
 import styles from './ArcPicker.module.css';
+import {
+    AllChip,
+    NOTICE_ICON_SIZE,
+    PickerLabel,
+    SoonChip,
+    type ArcPickerNotice,
+    type UpcomingChip,
+} from './ArcPickerNotices';
+
+export type { ArcPickerNotice, UpcomingChip } from './ArcPickerNotices';
 
 export interface ArcChip {
     arc: string;
     /** 上架 14 日內：chip 出「新」 */
     isNew: boolean;
+    /** 短篇快將下架（LK1）：名後面琥珀小標「⏳ 05/12」（tag），讀屏講長版日子（label） */
+    leaving?: { tag: string; label: string } | undefined;
 }
 
 interface ArcPickerProps {
     /** 已經排好次序（播放中 → 新上架 → 未聽完 → 已收聽，見 arcGroups） */
     arcs: readonly ArcChip[];
+    /** 即將上架嘅短篇（排喺所有 chips 後面） */
+    upcoming?: readonly UpcomingChip[] | undefined;
+    /** 成套劇快將下架（琥珀色 ⏳） */
+    notice?: ArcPickerNotice | undefined;
     /** 清單顯示緊邊個短篇 */
     selected: string | undefined;
     /** 播緊嗰集屬於邊個短篇（睇緊其他短篇時 chip 有粒點） */
@@ -26,7 +42,11 @@ interface ArcPickerProps {
     onOpenAll: () => void;
 }
 
-const LIST_ICON_SIZE = 14;
+/** chip 讀屏名：短篇名（+ 快將下架日子） */
+const chipLabel = (chip: ArcChip): string =>
+    chip.leaving
+        ? t('availability.arcLeavingLabel', { arc: chip.arc, when: chip.leaving.label })
+        : chip.arc;
 
 /** 一粒短篇 chip：揀中實心；播緊（睇緊其他短篇時）右上角一粒點；新上架加「新」 */
 const Chip = ({
@@ -48,12 +68,18 @@ const Chip = ({
             type="button"
             className={`${styles.chip} ${isPlayingElsewhere ? styles.playing : ''}`}
             aria-pressed={chip.arc === selected}
-            aria-label={chip.arc}
+            aria-label={chipLabel(chip)}
             aria-describedby={describedBy || undefined}
             onClick={() => onPick(chip.arc)}
         >
             {chip.arc}
             {chip.isNew && <NewBadge size="sm" className={styles.fresh} />}
+            {chip.leaving && (
+                <span className={styles.leavingTag} aria-hidden="true">
+                    <HourglassIcon size={NOTICE_ICON_SIZE} />
+                    {chip.leaving.tag}
+                </span>
+            )}
         </button>
     );
 };
@@ -62,7 +88,14 @@ const Chip = ({
  * 短篇劇集頁唱片下面：現正播放標籤 + 「☰ 全集」（釘住左邊）+ 一行短篇 chips（左右掃），
  * 揀短篇換下面嘅集數清單。高度同節目頁嘅「現正播放」+ 日子條一樣（tokens.css 嘅播放器高度計法唔使改）
  */
-export const ArcPicker = ({ arcs, label, onOpenAll, ...chipProps }: ArcPickerProps) => {
+export const ArcPicker = ({
+    arcs,
+    upcoming = [],
+    label,
+    notice,
+    onOpenAll,
+    ...chipProps
+}: ArcPickerProps) => {
     const rowRef = useRef<HTMLDivElement>(null);
     const ids = { playing: useId(), fresh: useId() };
 
@@ -75,20 +108,15 @@ export const ArcPicker = ({ arcs, label, onOpenAll, ...chipProps }: ArcPickerPro
 
     return (
         <div className={styles.group}>
-            <span className={styles.label}>{label}</span>
+            <PickerLabel label={label} notice={notice} />
             <div className={styles.row} role="group" aria-label={t('drama.arcs')}>
-                <button
-                    type="button"
-                    className={`${styles.chip} ${styles.all}`}
-                    aria-haspopup="dialog"
-                    onClick={onOpenAll}
-                >
-                    <ListIcon size={LIST_ICON_SIZE} />
-                    {t('drama.allArcs')}
-                </button>
+                <AllChip notice={notice} onOpenAll={onOpenAll} />
                 <div ref={rowRef} className={styles.chips}>
                     {arcs.map((chip) => (
                         <Chip key={chip.arc} chip={chip} ids={ids} {...chipProps} />
+                    ))}
+                    {upcoming.map((chip) => (
+                        <SoonChip key={chip.arc} chip={chip} />
                     ))}
                 </div>
             </div>

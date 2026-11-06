@@ -51,4 +51,30 @@ describe('NowPlaying', () => {
         expect(screen.getByText('連線中…')).toBeInTheDocument();
         expect(screen.queryByText('現正播放：21/10（三）')).not.toBeInTheDocument();
     });
+
+    it('should swap the pick line for the leaving note, or put it under now playing (P8 #6)', () => {
+        // W-537：畫面字讀屏唔讀（會講「明日」/「（六）」），改讀讀屏版日子
+        const notice = {
+            text: '本廣播劇系列 05/12（六）下架',
+            label: '本廣播劇系列 05/12 星期六 下架',
+        };
+        const { rerender } = render(
+            <NowPlaying label="" status="unloaded" notice={notice} connecting={false} />,
+        );
+        expect(screen.getByText(notice.text)).toHaveAttribute('aria-hidden', 'true');
+        expect(screen.getByText(notice.label)).toBeInTheDocument();
+        expect(screen.queryByText('揀一個短篇開始收聽')).not.toBeInTheDocument();
+
+        rerender(
+            <NowPlaying
+                label="戀愛二分一 · 第 3 / 30 集"
+                detail="集名"
+                notice={notice}
+                connecting={false}
+            />,
+        );
+        expect(screen.getByText('現正播放：戀愛二分一 · 第 3 / 30 集')).toBeInTheDocument();
+        expect(screen.getByText(notice.text)).toHaveAttribute('aria-hidden', 'true');
+        expect(screen.getByText(notice.label)).toBeInTheDocument();
+    });
 });

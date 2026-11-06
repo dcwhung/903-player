@@ -1,0 +1,501 @@
+# Code Review — 2026-11-05 — 即將上架 / 快將下架（feature/drama/coming-soon，P8 #6）
+
+- 審閱者：Code Reviewer（獨立）
+- 目標：`git diff origin/feature/bookmark/episode...HEAD`（HEAD `b2bb2c5`）— `52b2bc7`、`aeba564`、`a49c593`、`2938d84`、`b2bb2c5`（v1.27.0 → v1.28.0 MINOR）；`073ec3a` merge P7 唔睇
+- Design Origin：`mockup: _mockups_/coming-soon/index.html`（`b2bb2c5` commit message；未有 PR，開 PR 時 description 第一行要照寫）
+- Tier：T3（新 feature、跨 catalog / registry / 主頁 / 劇集頁 / 收藏 tab）
+- 總評：上架 / 下架判斷全部係 pure selector，registry 一律 `today` 參數 + `hkToday()` 預設，結構清楚，test 多。一個 🟡：部分集數下架之後，主頁書架次序會郁
+
+## Hard Gates
+
+all pass — `npx tsc -b` exit 0；`npm run lint`（eslint + prettier）exit 0；相關 unit `npx vitest run <改過嘅 folder>` 93 files / 1109 tests 全綠（冇跑 full suite / e2e）；新核心邏輯 coverage：`selectors/availability.ts` lines 100%、`catalog/dramas/lib/availability*.ts` lines 100%。Security：冇新依賴。
+
+CI（同一個 SHA `b2bb2c5`）：run [#75 / 42068391074](https://github.com/dcwhung/903-player/actions/runs/42068391074) — **success**（`Detect code changes`、`Lint, unit & build`（lint / unit / production build）、`E2E (Playwright)`（`npm run e2e`，包括新 section「即將上架 / 快將下架」）全部 success）
+
+## 評分結果
+
+| 維度     | 得分   | 滿分    | 備注  |
+| -------- | ------ | ------- | ----- |
+| 正確性   | 20     | 25      | W-531 |
+| 安全性   | 20     | 20      |       |
+| 可維護性 | 20     | 20      |       |
+| 測試覆蓋 | 15     | 15      |       |
+| 性能     | 10     | 10      |       |
+| 代碼風格 | 10     | 10      |       |
+| **總分** | **95** | **100** |       |
+
+**結果：✅ pass**（hard gates 全過、≥ 90、無 🔴；W-531 建議 merge 前修）
+
+## 🟡 Warning
+
+### W-531 部分集數 / 短篇下架之後，主頁書架次序會郁
+
+- 位置：`src/pages/home/useHomeDramaItems.ts:68`（`dramaEpisodesOf(id, today)` 只畀今日有得聽嘅集）→ `src/selectors/dramaShelf.ts:37-48`（`touched`、`finished` 判斷、`released` addedAt 全部用呢個清單）
+- L1：用戶揀咗「下架後 … 書架排位唔郁」
+- L2：臨時 unit test（跑完已刪）：A 聽緊第 1 集（最近），B 聽緊第 1 集；A 第 1 集 `removedAt: 2026-12-01`。`2026-11-30` 次序 `[A, B]`，`2026-12-01` 變 `[B, A]`（A 由「收聽中」跌落「未聽過」）
+- L3：同一原因仲有兩個情況：未聽嘅集下架咗 → 套劇變「全部聽完」排最尾；最新一批 / 最新短篇下架 → `released` addedAt 變舊，排後
+- 方案 A（推薦）：`useShelfDramas` 傳畀 `dramaShelfOrder` 嘅 `episodesOf` 改用 catalog 已上架嘅集數（`catalogEpisodesOf(id).filter((e) => !isArcUpcoming(e.addedAt, today))`），同 `liveSeriesContinue` 用嘅清單一樣；`dramaShelfOrder` 保持 pure，唔使改；加一個 test 鎖住「下架前後次序一樣」
+- 方案 B：`shelfKey` 分開兩個清單（排位用 catalog 已上架、其他用 live）；改動多啲，`ShelfDrama` signature 要改
+
+## 🟢 Suggestion / Observation
+
+- S-699 `src/pages/drama/useDramaPage.ts:108,331`：`useMemo(() => dailyEpisodesOf(drama.id) / seriesEpisodesOf(drama.id), [drama])` 冇 `today`，留喺劇集頁過香港午夜唔會出新一批 / 收走已下架嘅集（Developer 自報風險；registry 註釋寫「過咗香港午夜自動轉」）。改法：`const today = hkToday()` 傳入並加入 deps，同 `useShelfDramas` 一樣
+- S-700 `src/components/pages/home/DramaShelf/DramaTile.tsx:13-20` × `DramaTileParts.tsx:20-23`：短篇數個 span 一向 `aria-hidden`，H2 / E1 字尾（「· 新短篇 12/11 上架」）因此讀屏聽唔到；`tileLabel` 可以加長版日子句（mockup 冇明寫，所以只係建議）
+- S-701 `src/selectors/availability.ts:51-57`：`warned` 用短篇名做 key，兩套劇有同名短篇只會 warn 一次；可以用 `${addedAt}:${arc}` 或者加 dramaId
+- S-702 Design-Source Binding：`Design Origin:` 只喺 `b2bb2c5` commit body；開 PR 時 description 第一行要寫 `Design Origin: mockup: _mockups_/coming-soon/index.html`
+
+## Developer 自報偏離（唔扣分，等用戶決定）
+
+1. 日期用 app 現有「日/月」（`formatDayMonth`）唔係 mockup「月/日」：同 app 其他地方一致，等用戶拍板
+2. e2e 時鐘推到 30/11：真 catalog addedAt 係 10/24–10/27，19/10 會當全部未上架；週日相同、sample 錄音跟住移，合理
+3. e2e fixtures 只喺 `--mode e2e` 編入：**已核實** — 本機 `npx vite build`（production mode）輸出 grep `e2e-soon` / `e2e-upcoming` / `e2e-gone` / `903player:e2e:dramas` 冇結果；`bundledSource.ts` 用 `import.meta.env.MODE === 'e2e'` 靜態條件，tree-shaking 剷走。`package.json` `e2e` = `npm run build -- --mode e2e && node e2e/run.mjs`，CI `ci.yml` e2e job 都係 `npm run e2e`，一致；`check` job 嘅 `npm run build` 係 production mode
+4. 直版成套劇下架字接喺標籤後面（`PickerLabel` `replace` 只喺 unloaded）：等用戶拍板
+5. 窄欄短版下架字（container query，讀屏照讀長版）：a11y OK
+6. registry `hkToday()` 喺 useMemo 過午夜唔即時轉：見 S-699（改法好細，建議順手修）
+
+## 重點項目核對
+
+- 規則：上架 = `addedAt` 當日 HK 00:00（`addedAt > today` 先未上架）、下架 = `today >= removedAt`、快將下架 `≤ LEAVING_SOON_DAYS`（30，`config/constants.ts`）✅；集數有效上架日取三層最遲、下架日取三層最早 ✅；未知集數唔砌集（`count ?? 0`）✅
+- 續聽跳下一集未下架（`liveSeriesContinue`）、進度唔刪、收藏留灰「已下架」可左滑 / Delete（`aria-disabled` 但照 focus）、舊 URL 返主頁 + toast 等啟動畫面走先出 ✅
+- a11y：即將上架 chip / 一覽表行 / 摺埋批次 / 灰格全部 `aria-disabled="true"` 唔用 `disabled`；讀屏一律長版日子（`releaseDateLong` / `removalDateLong`）；圖示 `aria-hidden` ✅（S-700）
+- 減少動態：今次冇新 animation / transition ✅
+- i18n：新字全入 `zh-HK.ts` `availability.*`（grep 非 test `.ts/.tsx` 冇中文字串 literal）✅；顏色全部 token（`tokens.css` `--leave-*` / `--upcoming-*`，附對比度註釋）✅；magic number 有名常數 ✅
+
+## ✅ 做得好嘅地方
+
+- `selectors/availability.ts` / `availabilityLabels.ts` 全 pure、`today` 由外面傳，test 唔使 mock 時鐘
+- e2e fixtures 用 localStorage flag 逐個 context 開，其他 e2e section 照睇真 catalog；production 唔包
+- `nextRelease` 靠 stable sort 令同日新短篇排先，簡潔
+
+## 修訂代碼（W-531 方案 A 示意）
+
+```ts
+// src/pages/home/useHomeDramaItems.ts — 排位用 catalog 已上架嘅集（下架唔郁，W-531）
+const releasedEpisodesOf = (id: string, today: string) =>
+    catalogEpisodesOf(id).filter((e) => !isArcUpcoming(e.addedAt, today));
+// useShelfDramas
+() => dramaShelfOrder(enabledDramas(today), (id) => releasedEpisodesOf(id, today), progressMap),
+```
+
+## Handoff receipt
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: review feature/drama/coming-soon P8 #6 (52b2bc7, aeba564, a49c593, 2938d84, b2bb2c5) v1.28.0
+status: pass
+score: 95
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (93 related unit files, 1109 tests; full suite / e2e not run per scope rule; CI run 42068391074 on b2bb2c5 success incl. e2e)
+  coverage: pass (selectors/availability 100% lines, catalog/dramas/lib/availability 100% lines)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: [W-531]
+  suggestion: [S-699, S-700, S-701, S-702]
+next_action: proceed_to_qa
+context: >
+  W-531 (shelf order moves after partial removal; violates user pick
+  "書架排位唔郁") recommended to fix before merge, plan A in report.
+  Developer-reported deviations left for user decision (not scored);
+  production build verified free of e2e fixtures.
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
+
+## Re-review 5f2e550
+
+- 範圍：`git diff d568c06..5f2e550` — `ae81140`（W-531 / S-699）、`4c38f5c`（用戶決定：灰格撳落冇反應、橫版第二行唔再被裁）、`5f2e550`（`.claude/CLAUDE.md` e2e 指令）
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit `npx vitest run src/components/pages/home/DramaShelf src/pages/drama src/pages/home src/selectors/{dramaShelf,availability,continueListening}.test.ts` 26 files / 318 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `5f2e550`）：run [#78 / 42072852107](https://github.com/dcwhung/903-player/actions/runs/42072852107) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)` 全部 success）。三個 commit 係同一次 push，`changes` job 由 push 前 SHA 比較，所以見到 code 改動，冇跳過 lint / unit / build / e2e；`4c38f5c` 冇自己嘅 run（唔使，5f2e550 個 run 已經包埋佢）
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡）
+
+| ID    | 狀態    | 覆核                                                                                                                                                                                                                                                                                                                                                      |
+| ----- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-531 | ✅ 已修 | `useHomeDramaItems.ts` `shelfEpisodesOf` = `releasedEpisodes(catalogEpisodesOf(id), today)`，同 `liveSeriesContinue` 共用 `releasedEpisodes`（`selectors/availability.ts`），即係報告方案 A。`dramaShelf.test.ts` 新加 3 個 test：收聽中嗰集下架、未聽嗰集下架（唔會變「聽完」）、未上架唔計。上次嘅重現情況（`[A,B]` → `[B,A]`）而家下架前後都係 `[A,B]` |
+| S-699 | ✅ 已修 | 新 `useTodaysEpisodes(drama, read)` 按 `[drama, read, today]` memo，每日 / 短篇劇集頁都用；`read` 係 module 層面 function（`dailyNewestFirstOf`）同 registry method（`seriesEpisodesOf`，reference 穩定）                                                                                                                                                 |
+
+用戶決定（`4c38f5c`）：
+
+- 灰格：`UpcomingTile` 唔再接 `focus?.open`（疊卡撳卡 focus / 捲動 handler），撳落完全冇反應；`aria-disabled` 照留，Tab / 讀屏照行到。`DramaShelf.test.tsx` 新 test 撳兩下：focus 冇郁、冇 `scrollTo`、冇 `onOpen` ✅；e2e 加咗直版撳灰格條 ✅
+- 橫版第二行：`hasSecondLine` 喺有集名，或者聽緊時有成套劇下架字時都加 `detailedNowPlaying`，預留兩行高，同 `NowPlaying` `SecondLine` 嘅規則一樣（unloaded 時下架字取代第一行，唔使預留）✅
+- `CLAUDE.md`：E2E 兩行改成 `npm run build -- --mode e2e`，同 `package.json` 一致 ✅
+
+S-699 test 冇經過 red，覆蓋評估：
+
+- Hook 本身：我將 deps 改返 `[drama, read]`（即係舊行為），`useTodaysEpisodes.test.ts` 會紅（1 failed），test 真係鎖住「過午夜重新攞」✅
+- 接駁位：兩個頁面改用 hook 只係兩行 diff，冇 page 層 test；同樣，將 `useShelfDramas` 改返 live 清單，`src/pages/home` 同 `dramaShelf.test.ts` 173 個 test 全綠，即係 W-531 個接駁位冇 test 鎖住（見 S-703）。邏輯本身已經由 selector test 覆蓋，判斷**夠用**，接駁位建議補
+
+🟢：
+
+- S-703 `src/pages/home/useHomeDramaItems.ts:62-63`（同 `useDramaPage.ts:124,347`）：W-531 / S-699 嘅 test 只鎖住 selector / hook，冇 test 鎖住「主頁書架用 catalog 已上架清單」同「頁面用 `useTodaysEpisodes`」；改返舊寫法唔會有 test 紅。建議 `HomePage.test.tsx` 加一個 mock `catalogEpisodesOf` 有已下架集數嘅排位 test
+- S-704 `useTodaysEpisodes`：`today` 喺下一次 render 先更新；頁面暫停緊又冇其他 state 變，過咗午夜唔會自己 re-render（commit message 寫「refresh pages at HK midnight」講多咗少少）。同 app 其他「每次 render 重新攞 `hkToday()`」做法一致，唔扣分；真係要準時轉可以加一個午夜 timer 觸發 render
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review feature/drama/coming-soon d568c06..5f2e550 (W-531, S-699, user decisions, CLAUDE.md) v1.28.0
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (26 related unit files, 318 tests; full suite / e2e not run per scope rule; CI run 42072852107 on 5f2e550 success incl. e2e)
+  coverage: pass (releasedEpisodes / useTodaysEpisodes covered; S-699 hook test verified red by mutation)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: [S-703, S-704]
+next_action: proceed_to_qa
+context: >
+  W-531 and S-699 fixed and verified; user decisions (upcoming tile ignores
+  taps, landscape second line) implemented with unit + e2e. Wiring of both
+  fixes not guarded by tests (S-703, backlog). No re-review needed.
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
+
+## Re-review 2 a13ec07（QA S1 fail 之後）
+
+- 範圍：`git diff a27d5a0..a13ec07` — `f37aa6d`（W-533 / CUI-0021、S-700、S-705、直版成套劇下架改放「全集」chip，用戶決定）、`e67e021`（`CLAUDE.md` chain 清單加 `bookmark` `coming-soon`，用戶批准）、`4046913`（prettier QA 報告 / plan）、`a13ec07`（`useTightCount`：短篇數放唔落成段收埋）
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（`DramaShelf`、`ArcPicker`、`src/pages/drama`、`src/pages/home` 嘅 test 檔）25 files / 300 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `a13ec07`）：run [#84 / 42080750515](https://github.com/dcwhung/903-player/actions/runs/42080750515) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)` 全部 success）。`4046913` 個 run #83 被 #84 cancel 咗（同 branch 新 push），#84 嘅 `changes` 由 push 前 SHA 比較，包埋 `f37aa6d`–`a13ec07` 全部 code
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡）
+
+| ID               | 狀態    | 覆核                                                                                                                                                                                                                                |
+| ---------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-533 / CUI-0021 | ✅ 已修 | 短篇數（`metaCount`）同上架字尾（`metaRelease`，`flex: none`）拆開兩截；`useTightCount` 量到放唔落就成段收埋「N 個短篇 ·」，上架字一定完整。e2e `checkReleaseNote` 喺 1300×800 / 844×390 / 390×844 斷言字尾完整、喺格入面、喺讀屏名 |
+| S-700            | ✅ 已修 | `tileLabel` 加 `release.label`（長版日子，例如「新短篇 02/12（三）上架」）；unit 鎖住讀屏名                                                                                                                                         |
+| S-705            | ✅ 已修 | 同一個拆截修好；格闊 ≤ 280px（`@container drama-tile`）字尾 / 左上角下架字換短版「⏱ 後日上架」/「⏳ 19/12」                                                                                                                         |
+
+重點核對：
+
+- **`useTightCount` 量度邏輯**：
+    - Loop：observe 嘅係 parent（`.open` 掣或者 `.topBar`），兩個都係 `position: absolute` + 左右 inset，闊度由格決定，唔跟角落字變；`fitCount` 嘅結果只睇可用闊度，收埋 / 放返短篇數唔會改 parent 闊度，所以唔會 ResizeObserver loop ✅
+    - Layout thrash：每次 callback `removeAttribute` → 讀 `scrollWidth` / `clientWidth` → 可能 `setAttribute`，同一個 task 入面完成，冇中間 paint，冇閃；每格一次 forced layout，書架最多十幾格，可接受 ✅
+    - 字型：`document.fonts?.ready.then(fitCount)` 補量 Poppins 載完之後嘅闊度 ✅
+    - Cleanup：`observer.disconnect()` ✅；`fonts.ready` 冇 cancel，unmount 之後會量一次已經 detach 嘅 node，冇副作用。`enabled` 轉 false 時 attribute 留低，但 `MetaText` 唔再出 `metaCount`，selector 冇嘢可以收，無害
+    - 只係 `[enabled]` 做 deps：字變（見 S-706）唔會重新量
+- **i18n**：`tileNewArc` / `tileNewEpisodes` 改做「新短篇 {when}」/「全新集數 {when}」，`withReleaseSuffix` 刪咗，冇殘留引用（`grep` 冇 `{meta}`）；「·」改由 `.metaCount::after { content: '·' }` 出，跟短篇數一齊收埋，視覺上唔會淨低一粒點 ✅（S-707）
+- **讀屏名**：`tileLabel` 依次接「新」→ 下架 → 上架，例如「蘭茜夫人劇場，05/12（六）下架，新短篇 02/12（三）上架」；角落字成個 `aria-hidden`，資訊全部喺入頁掣個名度 ✅（S-708）
+- **chip 下架字唔重覆**：`chipLeavingOf(arc, today, dramaRemovedAt)` 喺成套劇同日或者更早下架時唔出短篇小標（成套劇已經講咗，而且短篇會一齊走）；成套劇遲過短篇先下架就照出短篇自己個日子。成套劇嘅日子：未開始聽 → 取代 chips 上面標籤；聽緊（直版）→「全集」chip LK1 小標，讀屏「全集，05/12（六）下架」；橫版 `.allLeaving` 收埋，由唱片下面第二行講。unit 覆蓋同日 / 遲過兩個情況 ✅
+- `CLAUDE.md`：chain 清單加 `bookmark` `coming-soon`，同 `.proj-docs/qa/plans/coming-soon.md` 一致 ✅
+
+🟢：
+
+- S-706 `src/components/pages/home/DramaShelf/useTightCount.ts:19-31`：effect 只跟 `enabled`，`item.meta` / `item.release.text` 變（例如過午夜「後日上架」→「明日上架」、新短篇上架「9 個短篇」→「10 個短篇」）但格冇變闊窄，就唔會重新量，可能放得落都收埋，或者 `metaRelease` 被 `overflow: hidden` 裁走（冇 …）。改法：deps 加 `item.meta`、`item.release?.text`（hook 加參數 `content`）
+- S-707 `DramaShelf.module.css` `.metaCount::after { content: '·' }`：分隔符喺 CSS 寫死，唔經 i18n；換語言要記得改 CSS。可以接受（標點、`aria-hidden`），只記錄
+- S-708 `DramaTileParts.tsx:20-25`：上架字接入讀屏名用咗 `availability.tileLeaving`（'{name}，{label}'），key 名講「下架」但而家兩樣都用；可以改名做通用 key（例如 `availability.tileWithNote`），避免之後改下架字句式時連上架都改埋
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 2 feature/drama/coming-soon a27d5a0..a13ec07 (W-533 / CUI-0021, S-700, S-705, 全集 chip leaving tag, useTightCount) v1.28.0
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (25 related unit files, 300 tests; full suite / e2e not run per scope rule; CI run 42080750515 on a13ec07 success incl. e2e)
+  coverage: pass (useTightCount hide / restore, release label, chipLeavingOf same-day / later, dramaNoticeOf tag covered)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: [S-706, S-707, S-708]
+next_action: proceed_to_qa
+context: >
+  W-533 / CUI-0021, S-700, S-705 fixed; user decision (whole-drama leaving
+  tag on 全集 chip in portrait) implemented. useTightCount has no resize
+  loop and cleans up; re-measure on content change is backlog (S-706).
+  QA S1 re-run for coming-soon (and drama / card-zoom chains touched).
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
+
+## Re-review 3 e7b981a（P7 → P8 merge）
+
+- 範圍：`8477b12..e7b981a`，只睇 merge 解決同 merge 帶入嘅改動（`git show --cc e7b981a`；P7 `e286912` / `4327328` 本身已 review 100 + QA S1 pass，唔再睇）
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（`SavedTab`、`HomeTabs`、`src/pages/home`、`selectors/bookmarks`、`icons`）22 files / 232 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `e7b981a`）：run [#92 / 42104960458](https://github.com/dcwhung/903-player/actions/runs/42104960458) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)` 全部 success）
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡 / 🟢）
+
+核對方法：將 merge 對 P8 parent（`e7b981a^1`）嘅 diff 同 P7 本身（merge-base `8cfbd15` → `e7b981a^2`）嘅 diff 逐行比較（`src`、`e2e`，icons 另外睇）；唯一多出嚟嘅係下面 P8 嘅接駁行同 test，冇其他改動混入，亦冇 P7 / P8 行被食咗。`git grep` 冇 conflict marker。
+
+| 項目                            | 結果                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RecentPanel.tsx`               | = P7 版本（`recentLabel` span 有 ellipsis、`recentScroll` / columns 喺 `SavedTab.tsx` 冇郁）+ P8 嘅 `openLabel`（讀屏加長版下架日）同 LR1 琥珀第二行。收藏版同淨最近收聽版（`mode: 'recent'`）都係用 `RecentPanel`，兩個都有 LR1 ✅                                                                                                                                                                                                                                               |
+| `useSavedView.ts`               | = P7 版本（`useProgressMap`、`useRecentTracks`、`mode`、`recentColumns`）+ P8 三樣：`today = hkToday()` 一次攞、傳入 `RowContext`；最近收聽行 `leaving: trackLeaving(track, today)`（之前 P8 喺 map 入面再叫一次 `hkToday()`，而家同一個 `today`，更一致）；`boxView` 嘅 `removed`（灰 banner）同 `bookmarkAvailability` ✅。第三個 tab 出唔出（`useThirdTab`）同 `mode` 都用同一個 `useRecentTracks`，P8 registry 已經濾走已下架集數，兩邊判斷一致，唔會出空嘅「最近收聽」tab ✅ |
+| icons 拆檔                      | `strokeIcon.tsx`（`StrokeIcon` + `IconProps`，同兩邊原本一樣）、`noticeIcons.tsx`（⏱ / ⏳，同 P8 原本一樣）、`icons.tsx` 由 `BackIcon` 起內容同 P7 版本逐字一樣，再 `export { ClockIcon, HourglassIcon } from './noticeIcons'`。export 名單 = 兩個 parent 嘅聯集（16 個），所有 import 唔使改；冇循環 import ✅                                                                                                                                                                   |
+| `SavedTabAvailability.test.tsx` | view 補返 P7 嘅 `mode` / `recentColumns`；新 test 鎖住淨最近收聽 tab 都有 LR1 ✅                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `SavedTab.module.css`           | P7 `.recentLabel` / `--saved-recent-star` 同 P8 `.leaving` / `[data-removed]` 灰行 / 灰 banner 兩邊都喺度 ✅                                                                                                                                                                                                                                                                                                                                                                      |
+| ledger 合併                     | 2399 行（連表頭）全部 7 欄；P8 parent 冇少行、P7 parent 冇少行、冇多出兩邊都冇嘅行、冇重覆行。同一個 chain 有新舊 freeze 行並存，跟註釋由 QA re-freeze ✅                                                                                                                                                                                                                                                                                                                         |
+
+🟢：冇新 finding（S-714 起冇用）。
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 3 feature/drama/coming-soon merge e7b981a (P7 recent-only tab + W-535 into P8)
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (22 related unit files, 232 tests; full suite / e2e not run per scope rule; CI run 42104960458 on e7b981a success incl. e2e)
+  coverage: pass (LR1 on recent-only pane added; merged files covered by existing SavedTab / HomeSaved / HomeTabs tests)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: []
+next_action: proceed_to_qa
+context: >
+  Merge resolution verified line by line: merged = P8 + P7 delta with only
+  the P8 wiring (today, trackLeaving, removed boxes, LR1) added; icons split
+  keeps the union of exports; ledger keeps every row from both parents.
+  QA to re-freeze chains touched by the merge.
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
+
+## Re-review 4 62e0a85（主頁格同日下架只講一次、繼續收聽條位唔夠收埋下架字）
+
+- 範圍：`git diff 34e4e54..62e0a85`（用戶新決定：同一張格同日下架只出較高一層，廣播劇 > 短篇 > 集；繼續收聽條位唔夠就成段收埋下架字，集名優先）。今次喺獨立 worktree（detached `origin/feature/drama/coming-soon`）review，commit 只 add 報告檔
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（`DramaTileAvailability`、`DramaShelf`、`dramaTileNotices`、`selectors/availability`、`seriesAvailability`、`ArcPickerAvailability`、`HomePage`、`HomePageWide`、`Marquee`）9 files / 151 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `62e0a85`）：run [#95 / 42107452301](https://github.com/dcwhung/903-player/actions/runs/42107452301) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)` 全部 success）
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡）
+
+### 34e4e54 嘅問題（reviewer 自己做錯）
+
+- 上次（re-review 3）喺 developer 嘅 worktree commit 報告時，`git add <報告>` 之後用咗冇路徑嘅 `git commit`，連 developer 已經 stage 嘅 `git mv useTightCount.ts → useHideWhenTight.ts` 一齊 commit 咗（`34e4e54` stat：報告 +45、`{useTightCount.ts => useHideWhenTight.ts}` 0 行）。`DramaTile.tsx` 仲 import `./useTightCount`，所以 `34e4e54` 單獨 build 唔到
+- 證據：CI run [#93 / 42106939629](https://github.com/dcwhung/903-player/actions/runs/42106939629)（`34e4e54`）`Lint, unit & build` → `Run npm test` failure：`Failed to resolve import "./useTightCount" from "src/components/pages/home/DramaShelf/DramaTile.tsx"`，e2e skipped
+- 影響：只係 `34e4e54` 一個 commit；`62e0a85` 已經補返 import，branch HEAD 正常。歷史入面留低一個紅 commit（bisect 會撞到），唔好 rebase 改（禁止 force push）
+- 之後做法：用自己嘅 worktree；commit 用 `git commit <報告路徑>`（只 commit 指定檔），唔用 `git add -A` / `commit -a` / 冇路徑嘅 `git commit`
+
+### 覆核
+
+| 項目                                 | 結果                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sameRemovalDay` 共用                | `selectors/availability.ts` 新 pure function（`outer === inner`），劇集頁 `chipLeavingOf` 同主頁 `withoutRepeatedLeaving` 都用；unit 覆蓋同日 / 唔同日 / 冇上層 ✅                                                                                                                                                                |
+| chip 行為冇變                        | 由 `dramaRemovedAt <= leaving.date` 改成 `===`。schema `checkNotAfter`（`availabilitySchema.ts:47-56`）規定短篇下架日唔可以遲過成套劇，合法資料入面「成套劇早過短篇」唔會出現，所以兩個寫法結果一樣 ✅                                                                                                                            |
+| `withoutRepeatedLeaving`             | 左上角日子（`leavingCorner` 新加 `date` = `dramaLeaving` 取最早嗰日，順序成套劇 > 部分短篇 > 部分集數）同續聽嗰集嘅有效下架日（三層最早）同一日 → 條上面收埋（視覺 + 讀屏名都冇）；唔同日兩度都出。續聽嗰集嘅日子一定 ≤ 成套劇日子，所以成套劇快將下架時只會「同日收埋」或者「集數早啲落架兩度都講」，符合「只出較高一層」✅      |
+| `useHideWhenTight`                   | 改名同抽出 `Fits`：角落字用 `fitsWithoutOverflow`（同之前 `useTightCount` 一樣），繼續收聽條用 `continueFits`（`[data-marquee-text]` 全長 `scrollWidth` + flex gap + 下架字 `offsetWidth` ≤ 條 `clientWidth`）。`fits` 係 module 層面 function，reference 穩定，加入 deps 冇問題 ✅                                               |
+| 量度 / loop                          | 先除 `data-tight` 再量（下架字顯示緊先量得到 `offsetWidth`），同一個 task 入面完成，冇閃。observe 嘅係 parent（繼續收聽掣，`position: absolute; inset: auto 0 0`），闊度跟格唔跟內容；收埋下架字只係令 Marquee 有多啲位，Marquee 自己嘅 `useOverflow` ResizeObserver 睇嘅係佢自己個 box，唔會改條嘅闊度，所以唔會互相觸發 loop ✅ |
+| cleanup                              | `observer.disconnect()` ✅；`fonts.ready` 冇 cancel，unmount 後量 detach node，無害（同上次一樣）                                                                                                                                                                                                                                 |
+| S-706（字變唔重量）                  | **未處理**：deps 仍然係 `[enabled, fits]`。繼續收聽條方面風險細：載入緊呢套劇就冇條，所以條出現期間 `resume.label` 好少變（轉集會 unmount / remount 重新量）；過午夜「後日下架」→「明日下架」闊度相近。S-706 照留 backlog                                                                                                         |
+| 刪咗 `continue-line` container query | 只影響繼續收聽條嘅窄條短版「⏳ 05/12」（`2938d84` 加嘅），而家改成「全句或者成段收埋」，係用戶今次決定。W-533 / S-705 用嘅係 `drama-tile` container query（角落字 `noteFull` / `noteTag`），冇郁；`DramaShelf.module.css` 冇殘留 `leavingTag` / `leavingFull` 引用 ✅                                                             |
+| 讀屏名                               | 條收埋下架字（位唔夠）時讀屏名照有長版日子（`continueLabel` 跟 `resume.leaving`，同 CSS 無關）；同日去重時讀屏名都冇，因為左上角日子已經喺 `tileLabel` 入面 ✅                                                                                                                                                                    |
+
+🟢：
+
+- S-714 `src/hooks/useDramaContinue.ts:20-24`：`leavingOf` 仲出 `tag: dayWhen(...)`，但繼續收聽條已經冇短版（`dramaTileTypes.ts` `resume.leaving` type 都冇 `tag`），變咗冇人用嘅欄；可以刪走
+- S-715 `src/pages/home/dramaTileNotices.ts:88-93`：`ResumeWithLeaving` 重寫咗一次 `DramaShelfItem['resume']` 嘅形狀；可以直接用 `NonNullable<DramaShelfItem['resume']>`（或者抽一個共用 type），避免兩邊改漏
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 4 feature/drama/coming-soon 34e4e54..62e0a85 (same-day leaving once per tile, 繼續收聽 hides leaving when tight, useHideWhenTight) v1.28.0
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (9 related unit files, 151 tests; full suite / e2e not run per scope rule; CI run 42107452301 on 62e0a85 success incl. e2e)
+  coverage: pass (sameRemovalDay, withoutRepeatedLeaving, strip hide / show covered)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: [S-714, S-715]
+next_action: proceed_to_qa
+context: >
+  User decisions implemented; chip behaviour unchanged for schema-valid data.
+  S-706 (re-measure on text change) still open in backlog. Reviewer's own
+  34e4e54 swept in the developer's staged rename and fails CI run 42106939629
+  on its own; fixed at 62e0a85, history left as is (no force push).
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
+
+## Re-review 5 8c5f61f（P8 文案決定 + merge P7 文案）
+
+- 範圍：`ae18bf9..8c5f61f` — `a9b6d15`（P8 文案 D2 / D3 / D5 / E1 / E2 / F1–F6 / G1–G3，`useHideWhenTight` 加 `steps`、`Separator`、`UpcomingTile` 拆檔）、`8c5f61f`（merge P7 `5af9931`：`formatSpokenDate` / `dates.spoken`、`common.status.*`、8 個 conflict）。P7 部分本身已 review（`2026-11-05_review_copy-p7.md`），唔再睇。決定清單：用戶 2026-11-05 確認嘅 P7 + P8 文案決定表
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（改過嘅 test 檔 + `zhHKCopy` / `t` / `DramaShelf` / `ArcSheet` / `arcProgress`）36 files / 575 tests 全綠，`zhHKCopy.test.ts` 綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `8c5f61f`）：run [#102 / 42130627352](https://github.com/dcwhung/903-player/actions/runs/42130627352) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)` 全部 success）
+- 新分數：**90 / 100**（正確性 15 / 25：W-536、W-537），✅ pass（≥ 90、無 🔴；W-536 / W-537 建議 merge 前修）
+
+### 🟡 Warning
+
+#### W-536 主頁格頂行第 2 步（E2）喺格闊 > 280px 時，左上角下架字會出兩次
+
+- 位置：`src/components/pages/home/DramaShelf/DramaShelf.module.css:327-334`（`.topBar:has(> .meta[data-tight='2'])`）× `DramaTileParts.tsx` `FullOrTag`
+- L1：E2「夠位時『⏳ 05/12 下架』，唔夠位先淨『⏳ 05/12』」
+- L2：將 `DramaShelf.module.css` 嗰幾條 rule 抽出嚟，用預裝 Chromium 試（scratch，唔係 e2e suite）：格 320px + `data-tight="2"` → 左上角顯示 `["部分短篇 19/12 下架","19/12"]`，即係畫面「部分短篇 19/12 下架19/12」；格 260px 正常（「19/12」）。原因：第 2 步只係收 `.noteTag`、開 `.noteNarrow`，但 > 280px 時顯示緊嘅係 `.noteFull`，冇收
+- L3：要格 > 280px、有繼續收聽、短篇數收埋都仲放唔落先會去到第 2 步；而且第 2 步令字變長，`fit` 量完仲係放唔落，會停喺第 2 步。e2e 嘅 1300×800 / 844×390 / 390×844 冇中呢個闊度
+- 方案 A（推薦）：第 2 步 rule 加埋 `.noteFull`：`.topBar:has(> .meta[data-tight='2']) .leaving:has(.noteNarrow) :is(.noteFull, .noteTag) { display: none }`，再加一個 Chromium / e2e 斷言（格 > 280px、第 2 步，左上角淨係日期）
+- 方案 B：第 2 步改成直接喺 `.leaving` 加 attribute，由 JS 揀顯示邊個 form（唔靠 container query 疊加）；改動較大
+
+#### W-537 成套劇下架嗰句（唱片下面 / chips 上面 / 一覽表表頭）讀屏照讀畫面字：會讀「明日 / 後日」同「（六）」
+
+- 位置：`src/pages/drama/seriesAvailability.ts` `dramaNoticeOf` 嘅 `page`（`removalWhen(removedAt, today, 'long')`）→ `NowPlaying.tsx:25` `NoticeLine`、`ArcPickerNotices.tsx:96-100` `PickerLabel`、`ArcSheet.tsx:82-85` `SheetHeader`，三度都係普通可見文字，冇讀屏版
+- L1：E1「讀屏一律讀日期（『06/11 星期五 下架』），唔讀明日 / 後日」；F1 指明橫版係由「唱片下面」嗰句讀一次
+- L2：`availabilityLabels.ts` `when()` 喺相差 1 / 2 日時一律回傳 `releaseTomorrow` / `removalTomorrow`（唔理 long / short），所以下架前一日 `page` =「本廣播劇系列 明日下架」；遠啲就係「本廣播劇系列 05/12（六）下架」。三個 component 直接 render 呢句，冇 `aria-hidden` 亦冇 sr-only 版本，讀屏讀到嘅就係呢句。`dramaNoticeOf` 其實已經有 `label`（「本廣播劇系列 05/12 星期六 下架」），只係冇傳落去
+- 方案 A（推薦）：`NoticeLine` / `PickerLabel` / `SheetHeader` 收 `{ text, label }`：可見字 `aria-hidden`，旁邊加 visually-hidden `label`（或者用 `role="text"` 唔穩陣，唔建議）；test 斷言讀屏句冇「明日」
+- 方案 B：成套劇嗰句畫面都唔用明日 / 後日（`removalWhen` 一律寫日子）；但會改到 F3「兩日內講明日 / 後日」嘅畫面規則，要用戶再決定
+
+### 覆核（決定清單逐條）
+
+| 代號    | 結果                                                                                                                                                                                                                                                                                                                                                 |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D2      | `dramaLeavingLine: '本廣播劇系列 {when}'`、`dramaRemovedToast: '本廣播劇系列已下架'`；主頁格左上角成套劇照係淨日期（`leavingDrama: '{when}'`），讀屏用「本廣播劇系列 … 下架」✅                                                                                                                                                                      |
+| D3 / F6 | `removed: '已下架'`、`removedRow: '{name} {label}，已下架'`；`grep` 冇「未可以收聽」；`unavailableLabel: '{name}，{when}'`，靠 `aria-disabled` ✅                                                                                                                                                                                                    |
+| D5      | `caughtUp: '已收聽到第 {no} 集（最新）'` ✅                                                                                                                                                                                                                                                                                                          |
+| E1      | `spokenRelease` / `spokenRemoval` = `releaseShort` / `removalShort` + `formatSpokenDate`（`dates.spoken`「05/12 星期六」），冇明日 / 後日；所有 `label` 欄（chip、一覽表、批次、灰格、主頁格、繼續收聽、收藏 / 最近收聽）都用佢 ✅；**例外見 W-537**                                                                                                 |
+| E2      | chip 小標夠位一定連「下架」（chips 可以左右滑）；主頁格左上角 container query 280px → `short`、200px → 淨日期；頂行再用 `useHideWhenTight` 第 2 步。`steps` loop：每步 `setAttribute` 之後即刻量，夠位即停，最多 `steps` 步；observe 嘅 `.topBar` 係 absolute + 左右 inset，收字唔會改佢尺寸，冇 ResizeObserver loop ✅；**> 280px 第 2 步見 W-536** |
+| F1      | `AllChip` 用 `useMediaQuery(LANDSCAPE_QUERY)`：橫版冇小標、讀屏淨係「全集」；直版聽緊「全集，本廣播劇系列 19/12 星期六 下架」。新 test 覆蓋橫版 ✅（唱片下面嗰句本身見 W-537）                                                                                                                                                                       |
+| F2      | `spokenRowLabel` 逐段：`drama.arcRow`「{短篇}，{狀態}，{N} 集，{讀屏日子} 下架」；部分集數用 `rangeText(spokenWhen)`「第 1 至 2 集 24/11 星期二 下架」；膠囊「快將下架」喺有 `aria-label` 嘅掣入面，唔會讀；分隔符只喺畫面 ✅                                                                                                                        |
+| F3      | `tileLabel`：「{劇名}，有新短篇；下個短篇 02/12 星期三 上架；部分短篇 05/12 星期六 下架」，`noteSeparator: '；'`，`tileNextArcSpoken` / `tileNextEpisodesSpoken` ✅                                                                                                                                                                                  |
+| F4      | `upcomingArcLabel: '{name}，{when}，{count} 集'`；集數未知就唔講 ✅                                                                                                                                                                                                                                                                                  |
+| F5      | `tileLeaving` → `tileWithNote`，`grep` 冇殘留 ✅                                                                                                                                                                                                                                                                                                     |
+| G1      | 註解寫入 `availability` 開頭；`releaseShort: '{date} 上架'`、`releaseLong: '{date}上架'`（全形括號後冇空格）✅                                                                                                                                                                                                                                       |
+| G2      | `common.separator: ' · '`；`Separator` component（`aria-hidden`）同 `joinWithSeparator`；`src` 冇 `content: '·'`、冇寫死 `' · '`（`e2e/touch.mjs` 一個 log 字串唔計）✅                                                                                                                                                                              |
+| G3      | `batchTitle` / `leavingRange` 用「至」✅                                                                                                                                                                                                                                                                                                             |
+
+### Merge `8c5f61f`
+
+- `useDramaPage` / `arcProgress`：只係 doc comment conflict；`groupOf(s, playingArc, pending)` 同 `pending.has(s.arc)` 保留，字眼跟 P7 改「已收聽」✅
+- `SavedRow` / `RecentPanel`：讀屏名（`openLabel`、`PlayButton`）用 `spokenLabel`（「17/10 星期六」），畫面照 `row.label`；P8 嘅 LB1 / LR1、已下架 `removedRow` 保留 ✅
+- 刪 key：`availability.spokenDate` / `releaseSpoken` / `removalSpoken` / `arcUnheard` / `arcHeard` 喺 `src` / `e2e` 冇殘留引用；`GROUP_TITLES` 改用 `common.status.playing` / `watched` ✅
+- e2e 日期 conflict：P8 30/11 時鐘 + P7 讀屏「星期六」格式（例如 `ROW_OPEN = /^開啟 公子會 28\/11 星期六/`），CI e2e 會驗
+- 記錄（唔扣分，用戶之後 grill）：S-716 讀屏讀「·」— H1 已下架行用 `bookmark.seriesName`（`'{title}{sep}{arc}'`），所以 `removedRow` 讀屏名而家係「蘭茜夫人劇場 · 戀愛二分一 第 3 集，已下架」，多咗「 · 」
+
+🟢：冇新 finding（S-719 起冇用）。S-706（字變唔重量）仍然喺 backlog。
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 5 feature/drama/coming-soon ae18bf9..8c5f61f (P8 copy decisions D2-G3 + merge P7 copy) v1.28.0
+status: pass
+score: 90
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (36 related unit files, 575 tests incl. zhHKCopy; full suite / e2e not run per scope rule; CI run 42130627352 on 8c5f61f success incl. e2e)
+  coverage: pass (spokenRelease / spokenRemoval, F1 landscape chip, F2 row names, F3 tile name, F4 upcoming row, Separator covered)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: [W-536, W-537]
+  suggestion: []
+next_action: proceed_to_qa
+context: >
+  All P8 copy codes applied and merge resolution correct. W-536: top-row
+  step 2 shows the leaving text twice on tiles wider than 280px (CSS
+  reproduced in Chromium). W-537: whole-drama leaving line under the disc /
+  above chips / sheet header is plain visible text, so screen readers hear
+  明日 / 後日 and （六）, against E1 / F1. Both recommended to fix before
+  merge (plan A in report). S-716 recorded, not scored.
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
+
+## Re-review 6 5dcc50b（W-536 / W-537）
+
+- 範圍：`git diff c919750..5dcc50b`（只驗 W-536 / W-537 嘅修正）；獨立 worktree，commit 只包報告
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（`ArcPickerAvailability`、`ArcSheetAvailability`、`ArcSheet`、`dramaShelfCss.node`、`SpokenText`、`NowPlaying`、`DramaPage` / `DramaPageAvailability`、`DramaTileAvailability`）9 files / 106 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `5dcc50b`）：run [#104 / 42133693244](https://github.com/dcwhung/903-player/actions/runs/42133693244) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)`（包括新 `checkCornerStepTwo`）全部 success）
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡）
+
+| ID    | 狀態    | 覆核                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-536 | ✅ 已修 | 第 2 步 rule 改做 `.topBar:has(> .meta[data-tight='2']) :is(.noteFull, .noteTag):has(~ .noteNarrow) { display: none }`。用上次同一個 Chromium scratch 頁、抽返新版 CSS 再試：320px + 第 2 步 →「19/12」（之前「部分短篇 19/12 下架19/12」）；320px 冇第 2 步 → 全句；260px / 180px 照舊淨日期。第 2 步而家一定令字變短，量完會停喺第一個放得落嘅步。`dramaShelfCss.node.test.ts`（postcss 讀 rule）鎖住兩條 declaration；e2e `checkCornerStepTwo` 1600×800（格約 313px）跑實際排版 |
+| W-537 | ✅ 已修 | 新 `SpokenText`：畫面字 `aria-hidden`，旁邊 visually-hidden 讀屏字（`dramaNoticeOf().label`，「本廣播劇系列 05/12 星期六 下架」）。三處（`NowPlaying` `NoticeLine`、`PickerLabel`、`SheetHeader`）都用；`useDramaPage` `notice` 改 `{ text, label }`，`SeriesListColumn` `pickerNotice` 取 `notice.text` + `noticeTag`（`tag` / `label`）。`SpokenText.test` 鎖住讀屏字唔喺任何 `aria-hidden` 入面；`NowPlaying` / `ArcSheet` / `ArcPicker` test 改用讀屏句                        |
+
+重點核對：
+
+- **`:has()` 支援**：repo 冇 browserslist，Vite 唔會轉 CSS selector，所以睇實際用法。app 已經大量靠 `:has()`（`global.css:125,189,194`、`Page.module.css:46,121`（亦係 `:has(~ …)` 兄弟寫法）、`Toast.module.css:26`、`DramaShelf.module.css:52,277,318`），今次冇提高最低要求：Safari 15.4+ / Chrome 105+ / Firefox 121+。新 selector 係 `:is(...)` 後面接 `:has(~ …)`，冇 `:has` 套 `:has`（無效寫法）✅。唔支援嘅瀏覽器兩條第 2 步 rule 一齊失效，只係停喺第 1 步（全句 / 短版），唔會出兩次 ✅
+- **F1 仍然只讀一次**：橫版 → `NowPlaying`（唱片下面）讀 `label` 一次；`PickerLabel` 喺橫版 `.label { display: none }`（讀屏都唔讀）；`AllChip` 橫版冇小標、讀屏淨係「全集」。直版冇 `NowPlaying`（直版用 chips 上面標籤）：未開始聽 → `PickerLabel`（replace）讀一次；聽緊 → 淨係「全集」chip 讀一次。全集一覽表係另一個 dialog，表頭讀一次屬正常 ✅
+- **sr-only class**：repo 冇共用 util，而家係第 4 份同樣嘅 CSS（`DateStrip.module.css:130` `.visuallyHidden`、`MiniPlayer.module.css:124` `.srOnly`、`AppVersion.module.css:13` `.srOnly`，再加 `SpokenText.module.css`），寫法一樣（`position: absolute; 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap`）。新嘅冇抄錯，但見 S-720
+
+🟢：
+
+- S-719 `src/pages/drama/useDramaPage.ts:329-331`：新加 `spokenNotice` 插咗喺原本 `pageAvailability` 嘅 JSDoc（「chips 最尾嘅即將上架短篇、唱片下面嘅成套劇下架字」）同 function 中間，變咗兩段 JSDoc 疊埋喺 `spokenNotice` 上面，`pageAvailability` 冇咗註解；將嗰段移返落 `pageAvailability` 上面
+- S-720 visually-hidden CSS 而家有 4 份（見上）；`SpokenText.module.css` 嘅 `.srOnly` 可以抽做共用（例如 `styles/` 一個 global utility 或者 `VisuallyHidden` component），其餘三處改用，避免之後改一份漏三份
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 6 feature/drama/coming-soon c919750..5dcc50b (W-536, W-537) v1.28.0
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (9 related unit files, 106 tests; full suite / e2e not run per scope rule; CI run 42133693244 on 5dcc50b success incl. e2e)
+  coverage: pass (step-2 CSS node test, SpokenText aria test, NowPlaying / ArcSheet / ArcPicker spoken names; W-536 re-checked in Chromium scratch page)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: [S-719, S-720]
+next_action: proceed_to_qa
+context: >
+  W-536 and W-537 fixed and verified. :has() use is in line with existing
+  app CSS (no new browser floor) and degrades to step 1 without it. F1 still
+  reads the whole-drama leaving once per layout. sr-only CSS duplicated a
+  fourth time (S-720, backlog).
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
+
+## Re-review 7 93a18a7（W-538 / CUI-0022）
+
+- 範圍：`git diff d2704d4..93a18a7`（QA finding W-538 / CUI-0022，見 `.proj-docs/qa/2026-11-06_qa_copy-p7-p8.md`）：頂行 `TOP_BAR_STEPS = 3`（全句 → 收短篇數 →「⏳ 19/12 下架」→「⏳ 19/12」）；冇繼續收聽嘅左上角用 `useHideWhenTight` + `fitsInParent` 2 步；刪 `@container drama-tile (max-width: 200px)`；e2e `checkCornerSteps` 4 個情況 + 500ms 再量。獨立 worktree，commit 只包報告
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（`DramaTileAvailability`、`dramaShelfCss.node`、`DramaShelf`、`HomePage`、`HomePageWide`）5 files / 124 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `93a18a7`）：run [#107 / 42137879434](https://github.com/dcwhung/903-player/actions/runs/42137879434) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)`（包括 `checkCornerSteps` 4 個 case）全部 success）
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡）
+
+| ID               | 狀態    | 覆核                                                                                     |
+| ---------------- | ------- | ---------------------------------------------------------------------------------------- |
+| W-538 / CUI-0022 | ✅ 已修 | 「夠位出『⏳ 19/12 下架』、唔夠先淨『⏳ 19/12』」而家兩款格都靠量度，唔再靠 200px 一刀切 |
+
+重點核對：
+
+- **每步一定變短**：抽新版 CSS 用 Chromium scratch 頁逐步試（唔係 e2e suite）：
+    - 320px 單獨左上角：`0` 全句「部分短篇 19/12 下架」→ `1`「19/12 下架」→ `2`「19/12」
+    - 320px 頂行：`0` 全句 → `1` 全句（呢步收短篇數，scratch 冇放短篇數）→ `2`「19/12 下架」→ `3`「19/12」
+    - 260px（≤ 280px container query 已經係短版）：單獨 `0`/`1`「19/12 下架」→ `2`「19/12」；頂行 `0`–`2`「19/12 下架」→ `3`「19/12」
+    - 每一步都係收字（同長或者更短），冇一步會令字變長；右上角上架字（`metaRelease`）全部步數都冇郁，因為新 selector 限咗 `.corner` 同 `:has(~/+ .noteNarrow)` ✅
+- **唔 loop / 兩個 hook 唔打交**：左上角 hook 只喺 `!item.resume`（冇頂行）開；頂行由右上角 meta hook 管（`sharesRow` 先用 3 步）。所以同一張格只會有一個 hook 管左上角：冇續聽時左上角 hook 量左上角、meta hook（1 步）量右下角，位置唔同唔爭位；有續聽時左上角 hook 關咗。兩個 hook observe 嘅都係 absolute / 跟格闊嘅 parent，收字唔會改 parent 尺寸，冇 ResizeObserver loop ✅。Hook 喺 `return null` 之前叫，hook 次序穩定；ref 係 null 時 effect 直接 return ✅
+- **`fitsInParent`**：`.corner` 係 absolute、闊度跟內容（冇 max-width），自己唔會溢出，所以改為對返格闊量：`scrollWidth + 2 × offsetLeft ≤ parent.clientWidth`（左右留返一樣嘅 `--space-2` 邊）✅
+- **刪 200px container query 之後**：
+    - W-533（上架字完整、短篇數成段收）：meta 嘅 rule 冇改，280px query（`noteFull` / `noteTag`）照留 ✅
+    - S-705（窄格冇續聽右下角字尾截字）：右下角 meta 冇改 ✅
+    - 窄格（手機打橫約 152px）：以前一律淨日期；而家量度，「19/12 下架」放得落就出全個，符合 E2「夠位先加『下架』」。e2e 844×390 冇續聽 case 驗咗 ✅
+- **e2e 斷言穩定性**：4 個 case 驗顯示字、只出一次日期、冇出格、頂行冇溢出，再隔 500ms 量多次要一樣（驗冇 loop）。斷言用嘅係 QA 喺呢幾個 viewport 量出嚟嘅實際字，CI 呢個 SHA 過咗。見 S-721
+
+🟢：
+
+- S-721 `e2e/comingSoon.mjs` `CORNER_CASES`：預期字（例如 1600×800「19/12 下架」、1300×800「19/12」）由字型實際闊度決定，同 CI runner 嘅字型、或者將來改 `--font-size-2xs` / 文案綁死；喺另一部機（例如 cloud sandbox `PW_CHROMIUM_PATH`）有機會差幾 px 翻轉。另外「first === again」比較嘅係成個 JSON（連 `width`），如果第一次量時字型未載完，`fonts.ready` 之後重新量會令兩次唔同，會報做 loop。建議：保留兩個極端 case 驗確實字，其餘改驗不變量（只出一次日期、冇出格、`data-tight` 唔超過步數），再量之前先 `await document.fonts.ready`
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 7 feature/drama/coming-soon d2704d4..93a18a7 (W-538 / CUI-0022 corner leaving steps) v1.28.0
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (5 related unit files, 124 tests; full suite / e2e not run per scope rule; CI run 42137879434 on 93a18a7 success incl. e2e)
+  coverage: pass (step-by-step hook tests for top row and lone corner, CSS node test; steps re-checked in Chromium scratch page)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: [S-721]
+next_action: proceed_to_qa
+context: >
+  W-538 / CUI-0022 fixed: every step only hides text (monotonic), only one
+  hook controls the top-left corner per tile, no resize loop. Removing the
+  200px container query does not affect W-533 / S-705. e2e exact-text
+  expectations are font-metric sensitive (S-721, backlog).
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```

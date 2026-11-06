@@ -31,6 +31,9 @@ export const SeriesArcSheet = ({ sheet, current, docked }: SeriesArcSheetProps) 
             groups={sheet.groups}
             current={recording === current ? current : undefined}
             isPlaying={isPlaying}
+            upcoming={sheet.upcoming}
+            notice={sheet.notice}
+            notesOf={sheet.notesOf}
             onPick={sheet.pick}
             onPlay={sheet.play}
             onClose={sheet.close}
@@ -44,8 +47,27 @@ const SERIES_LIST = { labels: 'title', scrollAlign: 'top' } as const;
 
 type SeriesListView = Pick<
     SeriesDramaView,
-    'current' | 'start' | 'arcs' | 'arc' | 'pickArc' | 'items' | 'pressEpisode' | 'sheet'
+    | 'current'
+    | 'start'
+    | 'arcs'
+    | 'upcomingArcs'
+    | 'notice'
+    | 'noticeTag'
+    | 'status'
+    | 'arc'
+    | 'pickArc'
+    | 'items'
+    | 'pressEpisode'
+    | 'sheet'
 >;
+
+/**
+ * 成套劇快將下架：未開始聽取代「揀一個短篇開始收聽」；聽緊就出喺「全集」chip（標籤行唔加字）
+ */
+const pickerNotice = ({ notice, noticeTag, status }: SeriesListView) =>
+    notice && noticeTag
+        ? { text: notice.text, ...noticeTag, replace: status === 'unloaded' }
+        : undefined;
 
 interface SeriesListColumnProps {
     view: SeriesListView;
@@ -75,6 +97,8 @@ export const SeriesListColumn = ({
             <div className={page.listContent} inert={landscape && view.sheet.open}>
                 <ArcPicker
                     arcs={view.arcs}
+                    upcoming={view.upcomingArcs}
+                    notice={pickerNotice(view)}
                     selected={view.arc}
                     playing={view.start ? undefined : view.current?.arc}
                     label={label}

@@ -18,10 +18,13 @@ interface EpisodeListProps {
     focusKey?: string;
 }
 
-/** 標題右邊：「共 N 集」只計播得到嘅；有未上架就加埋幾多集 */
+/** 一行代表幾多集：摺埋嘅未上架批次係成批（短篇劇「共 30 集」照寫），其他一行一集 */
+const episodesIn = (item: EpisodeItem): number => item.episodeCount ?? 1;
+
+/** 標題右邊：「共 N 集」只計播得到嘅（短篇劇未上架批次照計）；有試過但未上架嘅就加埋幾多集 */
 const countText = (items: EpisodeItem[]): string => {
     const unavailable = items.filter((item) => item.status.kind === 'unavailable').length;
-    const count = items.length - unavailable;
+    const count = items.reduce((sum, item) => sum + episodesIn(item), 0) - unavailable;
     return unavailable > 0
         ? t('episodes.countWithUnavailable', { count, unavailable })
         : t('episodes.count', { count });

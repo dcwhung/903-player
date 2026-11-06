@@ -5,13 +5,16 @@ import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { silenceWav } from './silenceWav.mjs';
 
 /**
- * 瀏覽器入面嘅「而家」：固定喺 2026-10-19（一）22:30 香港時間。
- * 假錄音列表（e2e/sampleData.mjs）最後一日係 2026-10-19，斷言都假設「今日」係 19/10：
- * 唔固定嘅話，香港時間一過午夜「今日」就變咗 20/10，今日節目、最近一集全部錯。
+ * 瀏覽器入面嘅「而家」：固定喺 2026-11-30（一）22:30 香港時間。
+ * 假錄音列表（e2e/sampleData.mjs）最後一日係 2026-11-30，斷言都假設「今日」係 30/11：
+ * 唔固定嘅話，香港時間一過午夜「今日」就變咗 01/12，今日節目、最近一集全部錯。
  * 揀 22:30：今日嘅日間節目（mini player 嘅在晴朗的一天出發等）已經播完，
  * 公子會（23:08）仲未開咪，所以 audio probe 唔會 probe 佢今日嗰集。
+ * 要遲過真 catalog 所有 addedAt（廣播劇 10/24–10/27）再加 14 日「新」期：之前嘅日子嗰啲劇 / 短篇仲係
+ * 「即將上架」（P8 #6），由 10/19 整體推後 6 個星期（同一個星期幾）。
+ * 揀 30/11 唔揀 16/11：窄屏 mini player 副題（「30/11（一） · 0:01 / 10:00」）要同以前「19/10」一樣闊、放唔落先跑馬燈
  */
-export const E2E_NOW = '2026-10-19T22:30:00+08:00';
+export const E2E_NOW = '2026-11-30T22:30:00+08:00';
 
 /** 同 src/config/constants.ts ALLOWED_AUDIO_ORIGIN 一樣（src/e2eSrcConstants.test.ts 鎖住） */
 export const AUDIO_HOST = 'https://audio.hkfm903.live';

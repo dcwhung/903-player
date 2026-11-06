@@ -18,7 +18,7 @@ export const zhHK = {
         searching: '搵緊最新錄音…',
         noRecordings: '暫時未有錄音',
         showNotFound: '找不到此節目',
-        // G2：「·」分隔符（前後有空格）
+        // 分隔符（G2）：全 app 一個，前後有空格；畫面用 <span aria-hidden> 出，唔寫死喺 CSS / code
         separator: ' · ',
         // A4：清單行 / 收藏 tab / 今日節目表 / 全集表 / 把手共用嘅狀態字
         status: {
@@ -231,6 +231,68 @@ export const zhHK = {
         nowPlayingArcShort: '{arc} · {episode}',
         // 橫版唱片下面「現正播放：好朋友手牽手 · 第 2 / 4 集」（下一行集名）
         nowPlayingArc: '{arc} · 第 {no} / {total} 集',
+    },
+    // 即將上架 / 快將下架（P8 #6，_mockups_/coming-soon）。文案決定：copy decisions 2026-11-05（D2–G3）
+    availability: {
+        // 空格規則（G1）：半形數字同中文之間有空格（「05/12 下架」）；全形括號後面冇空格（「05/12（六）下架」）。
+        // 畫面日子 F3：兩日內講「明日 / 後日」，遠就寫日子；{date}：短版 dates.dayMonth（05/12）、長版 dates.label（05/12（六））
+        releaseShort: '{date} 上架',
+        releaseLong: '{date}上架',
+        releaseTomorrow: '明日上架',
+        releaseDayAfter: '後日上架',
+        removalShort: '{date} 下架',
+        removalLong: '{date}下架',
+        removalTomorrow: '明日下架',
+        removalDayAfter: '後日下架',
+        // 冇動詞嘅短版（新劇灰格「即將上架 · 01/12」、窄位下架 tag「⏳ 05/12」）
+        tomorrow: '明日',
+        dayAfter: '後日',
+        // 讀屏日子（E1）：一律 dates.spoken（「05/12 星期六」）+ releaseShort / removalShort，唔講明日 / 後日
+        // 撳唔到嘅 chip / 一覽表行 / 批次行 / 灰格讀屏（F6：aria-disabled 讀屏自己會講停用，唔再加字）
+        unavailableLabel: '{name}，{when}',
+        // 一覽表即將上架行讀屏（F4：加集數）
+        upcomingArcLabel: '{name}，{when}，{count} 集',
+        // 主頁劇集格短篇數後面嘅字尾（H2 / E1，前面由 common.separator 接）：{when} = 「02/12 上架」/「明日上架」
+        tileNewArc: '新短篇 {when}',
+        tileNewEpisodes: '全新集數 {when}',
+        // 劇集格讀屏（F3）：未上架嗰個講「下個短篇 / 下一批集數」；幾段之間用 noteSeparator
+        tileNextArcSpoken: '下個短篇 {when}',
+        tileNextEpisodesSpoken: '下一批集數 {when}',
+        // 劇集格讀屏名：劇名，{幾段用「；」接}（F5：通用 key）
+        tileWithNote: '{name}，{label}',
+        noteSeparator: '；',
+        // 主頁書架最尾嘅新劇灰格（底部深色條）：「即將上架」+ common.separator + 日子
+        upcomingDrama: '即將上架',
+        // 全集一覽表最底一組
+        groupUpcoming: '即將上架',
+        // 一覽表 / 讀屏嘅集數（「20 集」）
+        arcEpisodeCount: '{count} 集',
+        // 一覽表已上架短篇仲有下一批（A2）：「第 11 集起 19/11 上架」
+        nextBatch: '第 {no} 集起 {when}',
+        // 收聽晒已上架嘅集數、仲有下一批未上架（D5）
+        caughtUp: '已收聽到第 {no} 集（最新）',
+        // 集數清單摺埋嘅未上架批次（一批一行；G3：範圍一律用「至」，畫面讀屏一樣）
+        batchTitle: '第 {first} 至 {last} 集',
+        // 快將下架（琥珀色 + ⏳）：主頁劇集格左上角（成套劇淨日期）
+        leavingDrama: '{when}',
+        leavingArcs: '部分短篇 {when}',
+        leavingEpisodes: '部分集數 {when}',
+        // 成套劇快將下架（D2）：劇集頁唱片下面 / chips 上面、一覽表表頭、讀屏同一句
+        dramaLeavingLine: '本廣播劇系列 {when}',
+        // 一覽表行名後面嘅膠囊
+        leavingBadge: '快將下架',
+        leavingBadgePartial: '部分快將下架',
+        // 一覽表行第二行加嘅下架字（集數層講第幾集）
+        leavingRange: '第 {first} 至 {last} 集 {when}',
+        // chip 讀屏名
+        arcLeavingLabel: '{arc}，{when}',
+        // 集數清單 / 收藏 tab / 最近收聽 / 繼續收聽讀屏句加嘅一截
+        withLeaving: '{label}，{when}',
+        // 收藏 tab 已下架行（灰色、冇播放掣、可以左滑移除；D3：淨係「已下架」）
+        removed: '已下架',
+        removedRow: '{name} {label}，已下架',
+        // 打開已下架劇集嘅舊 URL：返主頁 + 提示（D2）
+        dramaRemovedToast: '本廣播劇系列已下架',
     },
 } as const;
 

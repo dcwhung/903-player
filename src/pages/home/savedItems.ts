@@ -1,11 +1,15 @@
 import {
+    catalogEpisodeOf,
     dramaArtFor,
     dramaEpisodesOf,
+    dramaStatus,
     enabledDramas,
     findEnabledDrama,
 } from '../../catalog/dramas';
 import { findShow, themeFor } from '../../catalog/shows';
 import { t } from '../../i18n/t';
+import { isLeavingSoon, isRemoved } from '../../selectors/availability';
+import { spokenRemoval, removalWhen } from '../../selectors/availabilityLabels';
 import type { InnerPage } from '../../selectors/pageHandle';
 import type { Bookmark } from '../../services/bookmarkStore';
 import type { Progress } from '../../services/progressStore';
@@ -14,6 +18,37 @@ import { isDramaEpisode, type Track } from '../../types/track';
 import { formatDateLabel, formatSpokenDate } from '../../utils/date';
 import { ratio } from '../../utils/ratio';
 import { formatDuration, hasKnownDuration } from '../../utils/time';
+
+/** 快將下架嘅琥珀字（「05/12 下架」）同讀屏句；唔係就冇 */
+export interface LeavingNote {
+    text: string;
+    label: string;
+}
+
+const leavingNote = (removedAt: string | undefined, today: string): LeavingNote | undefined =>
+    removedAt && isLeavingSoon(removedAt, today)
+        ? { text: removalWhen(removedAt, today, 'short'), label: spokenRemoval(removedAt) }
+        : undefined;
+
+/** 最近收聽一行（LR1）：嗰集快將下架（劇集；節目冇下架） */
+export const trackLeaving = (track: Track, today: string): LeavingNote | undefined =>
+    isDramaEpisode(track) ? leavingNote(track.removedAt, today) : undefined;
+
+/**
+ * 收藏咗嘅一集今日點（P8 #6）：成套劇或者嗰集已下架 → removed（灰色「已下架」行，進度唔刪）；
+ * 快將下架就有 leaving（LB1）。catalog 保留已下架集數，所以搵得返嗰集嘅下架日
+ */
+export const bookmarkAvailability = (
+    b: Bookmark,
+    today: string,
+): { removed: boolean; leaving?: LeavingNote } => {
+    if (b.kind === 'show') return { removed: false };
+    if (dramaStatus(b.dramaId, today) === 'removed') return { removed: true };
+    const removedAt = catalogEpisodeOf(b.dramaId, b.url)?.removedAt;
+    if (isRemoved(removedAt, today)) return { removed: true };
+    const leaving = leavingNote(removedAt, today);
+    return leaving ? { removed: false, leaving } : { removed: false };
+};
 
 /** 收藏咗嘅一集 → player 播得嘅 Track：清單 / 劇集 catalog 有同一個網址就用返佢，冇就由收藏資料砌返 */
 export const bookmarkTrack = (b: Bookmark, recordings: readonly Recording[]): Track => {

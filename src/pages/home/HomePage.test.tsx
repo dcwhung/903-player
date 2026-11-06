@@ -75,6 +75,9 @@ const stubPhoneSideways = () => {
     );
 };
 
+// 真 catalog 嘅劇集 / 短篇 addedAt 係 10/24–10/27：之前嘅日子佢哋仲係「即將上架」（P8 #6），所以劇集測試用 16/11（一）
+const CATALOG_LIVE = '2026-11-16T08:00:00Z';
+
 describe('HomePage', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
@@ -176,7 +179,7 @@ describe('HomePage', () => {
 
     it('should put the banner and every drama in the shared grid on a phone held sideways', async () => {
         stubPhoneSideways();
-        vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
+        vi.setSystemTime(new Date(CATALOG_LIVE));
         renderWithProviders(<HomePage />);
 
         await userEvent.click(screen.getByRole('button', { name: '廣播劇' }));
@@ -503,6 +506,9 @@ describe('HomePage', () => {
     });
 
     describe('廣播劇 tab', () => {
+        beforeEach(() => {
+            vi.setSystemTime(new Date(CATALOG_LIVE));
+        });
         const openDramas = async () => {
             await userEvent.click(screen.getByRole('button', { name: '廣播劇' }));
             return screen.getByRole('navigation', { name: '廣播劇' });
@@ -527,7 +533,6 @@ describe('HomePage', () => {
         });
 
         it('lists the enabled dramas instead of the shows, leaving out 18 樓 C 座 for now', async () => {
-            vi.setSystemTime(new Date('2026-10-23T08:00:00Z')); // 18 樓 C 座今日有新集都唔出
             renderWithProviders(<HomePage />);
 
             const nav = await openDramas();
@@ -549,9 +554,9 @@ describe('HomePage', () => {
 
         it('puts the dramas being listened to first, finished ones last', async () => {
             seriesEpisodesOf('jim').forEach((e) => saveProgress(e.url, 990, 1000));
-            vi.setSystemTime(new Date('2026-10-23T08:05:00Z'));
+            vi.setSystemTime(new Date('2026-11-16T08:05:00Z'));
             saveProgress(seriesEpisodesOf('golden')[0]?.url ?? '', 250, 1000);
-            vi.setSystemTime(new Date('2026-10-23T08:10:00Z')); // 最近聽緊嘅係森美小儀
+            vi.setSystemTime(new Date('2026-11-16T08:10:00Z')); // 最近聽緊嘅係森美小儀
             saveProgress(seriesEpisodesOf('sammy-kitty')[0]?.url ?? '', 250, 1000);
             renderWithProviders(<HomePage />);
 

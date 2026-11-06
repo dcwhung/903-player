@@ -3,13 +3,13 @@
 // 每個情境用獨立 context，唔受 run.mjs 主流程之前播過乜影響
 import { ensurePlaying, isShown, newE2EPage, waitForPlaybackState } from './harness.mjs';
 
-// 星期日：假錄音（sampleData.mjs）冇節目喺星期日播，公子會（星期六）17/10 係最近一集
-const E2E_SUNDAY = '2026-10-18T22:30:00+08:00';
+// 星期日：假錄音（sampleData.mjs）冇節目喺星期日播，公子會（星期六）28/11 係最近一集
+const E2E_SUNDAY = '2026-11-29T22:30:00+08:00';
 // 公子會最近一集（今日之前）：入節目頁自動播呢集，返主頁就係重溫
-const REWATCH_SHOW = { name: '公子會', route: '#/show/gongzi', dayMonth: '17/10' };
+const REWATCH_SHOW = { name: '公子會', route: '#/show/gongzi', dayMonth: '28/11' };
 const REWATCH_DOT = `${REWATCH_SHOW.name}，重溫 ${REWATCH_SHOW.dayMonth} 星期六`;
 const REWATCH_OPEN = `開啟 ${REWATCH_SHOW.name} 節目頁，重溫 ${REWATCH_SHOW.dayMonth} 星期六`;
-// 19/10（一）今日節目，mini player 次序（同 run.mjs 主頁 mini player 一致）；刻意寫死做獨立對照
+// 30/11（一）今日節目，mini player 次序（同 run.mjs 主頁 mini player 一致）；刻意寫死做獨立對照
 const TODAY_SHOWS = ['在晴朗的一天出發', 'Bad Girl大過佬', '雲妮鍾情'];
 const REGION_REWATCH_AND_TODAY = '正在播放（重溫及今日節目）';
 const REGION_REWATCH_ONLY = '正在播放（重溫）';
@@ -34,7 +34,7 @@ const openHome = async (p, base) => {
         .waitFor();
 };
 
-/** 入公子會節目頁（冇其他嘢載入 → 自動播最近一集 17/10），確認播緊嗰集，再撳返回主頁 */
+/** 入公子會節目頁（冇其他嘢載入 → 自動播最近一集 28/11），確認播緊嗰集，再撳返回主頁 */
 const playOlderEpisodeThenGoHome = async (p, base, log, label) => {
     await p.goto(`${base}${REWATCH_SHOW.route}`);
     await ensurePlaying(p);

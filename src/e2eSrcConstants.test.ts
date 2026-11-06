@@ -24,6 +24,7 @@ import {
     STALL_MAX_RETRIES,
 } from './config/constants';
 import { PROBE_STORAGE_KEY } from './services/probeStore';
+import { E2E_FIXTURES_KEY } from './catalog/dramas/lib/e2eFixtures';
 // ?raw：index.html 原始字串，搵出佢引用嘅外部 host
 import indexHtml from '../index.html?raw';
 
@@ -36,6 +37,13 @@ const importE2E = (file: string): Promise<E2EModule> =>
     ) as Promise<E2EModule>;
 
 describe('e2e copies of src constants', () => {
+    // 測試劇（P8 #6）開關：脫節嘅話即將上架 / 快將下架 section 搵唔到測試劇
+    it('should keep comingSoon.mjs E2E_FIXTURES_KEY equal to src', async () => {
+        const comingSoon = await importE2E('comingSoon.mjs');
+
+        expect(comingSoon.E2E_FIXTURES_KEY).toBe(E2E_FIXTURES_KEY);
+    });
+
     it.each([
         ['AUDIO_HOST', ALLOWED_AUDIO_ORIGIN],
         ['DRAMA_AUDIO_BASE', DRAMA_AUDIO_BASE],

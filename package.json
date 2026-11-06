@@ -1,7 +1,7 @@
 {
     "name": "903-player",
     "private": true,
-    "version": "1.27.0",
+    "version": "1.28.0",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -12,7 +12,7 @@
         "coverage": "vitest run --coverage",
         "lint": "eslint . && prettier --check .",
         "format": "prettier --write .",
-        "e2e": "npm run build && node e2e/run.mjs"
+        "e2e": "npm run build -- --mode e2e && node e2e/run.mjs"
     },
     "dependencies": {
         "react": "^19.3.1",
