@@ -2,7 +2,7 @@ import { t } from '../i18n/t';
 import type { Progress } from '../services/progressStore';
 import type { DailyEpisode, DramaEpisode, SeriesEpisode } from '../types/drama';
 import { isDramaEpisode, type Track } from '../types/track';
-import { formatDateLabel } from '../utils/date';
+import { formatDateLabel, formatSpokenDate } from '../utils/date';
 
 const isDaily = (episode: DramaEpisode): episode is DailyEpisode => episode.kind === 'daily';
 
@@ -88,6 +88,14 @@ export const dramaEpisodeLabel = (
             : t('drama.seriesLabelUntitled', { arc, no, sep });
     }
     const date = formatDateLabel(episode.date);
+    return episode.rerun ? t('drama.dailyRerunLabel', { date, sep }) : date;
+};
+
+/** 讀屏版：短篇用「，」分隔；每日劇讀「23/10 星期五」，重溫前面用「，」（S-735，同 S-717 / E1） */
+export const dramaEpisodeSpokenLabel = (episode: DramaEpisode): string => {
+    const sep = t('common.spokenSeparator');
+    if (!isDaily(episode)) return dramaEpisodeLabel(episode, sep);
+    const date = formatSpokenDate(episode.date);
     return episode.rerun ? t('drama.dailyRerunLabel', { date, sep }) : date;
 };
 

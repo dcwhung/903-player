@@ -30,7 +30,6 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
     );
     const { duration } = usePlayer();
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
-    const dateLabel = current ? formatDateLabel(current.date) : '';
     // 橫版頁頭喺左欄清單上面（清單成日都有）
     return (
         <ThemeScope theme={theme}>
@@ -52,7 +51,8 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
                     )}
                     {current && landscape && (
                         <NowPlaying
-                            label={dateLabel}
+                            label={formatDateLabel(current.date)}
+                            spokenLabel={formatSpokenDate(current.date)}
                             connecting={!start && !hasKnownDuration(duration)}
                         />
                     )}

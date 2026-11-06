@@ -3,11 +3,11 @@ import type { StandbyTime } from '../../components/shared/player/PlayerPanel/Pla
 import { useRecordings } from '../../data/useRecordings';
 import { useRefreshedOn } from '../../hooks/useRefreshedOn';
 import { usePlayer } from '../../player/usePlayer';
-import { dramaEpisodeLabel } from '../../selectors/dramas';
+import { dramaEpisodeLabel, dramaEpisodeSpokenLabel } from '../../selectors/dramas';
 import { getProgress, type Progress } from '../../services/progressStore';
 import type { Recording } from '../../types/recording';
 import { isDramaEpisode, type Track } from '../../types/track';
-import { formatDateLabel } from '../../utils/date';
+import { formatDateLabel, formatSpokenDate } from '../../utils/date';
 import { playbackStateOf, type PlaybackLineState } from '../../utils/playbackState';
 import { hasKnownDuration } from '../../utils/time';
 
@@ -18,6 +18,8 @@ export interface HomeCardGauge {
     standbyTime: StandbyTime | undefined;
     /** 「現正播放：…」後面嘅字（日子 / 短篇 · 第 N 集 集名） */
     label: string;
+    /** 讀屏版：日子讀「星期三」、分隔用「，」（S-735） */
+    spokenLabel: string;
     status: PlaybackLineState;
     connecting: boolean;
     /** 顯示緊嘅一集（收藏掣用） */
@@ -35,6 +37,12 @@ const shownTrack = (
 const trackLabel = (track: Track | undefined, fallback: string): string => {
     if (!track) return fallback;
     return isDramaEpisode(track) ? dramaEpisodeLabel(track) : formatDateLabel(track.date);
+};
+
+/** trackLabel 嘅讀屏版（S-735）；搵唔到嗰集就讀返 mini player 副題 */
+const trackSpokenLabel = (track: Track | undefined, fallback: string): string => {
+    if (!track) return fallback;
+    return isDramaEpisode(track) ? dramaEpisodeSpokenLabel(track) : formatSpokenDate(track.date);
 };
 
 /** 聽到一半先有續播位置（同劇集頁 standbyTimeOf 一樣） */
@@ -67,6 +75,7 @@ export const useHomeCardGauge = (mini: MiniPlayerProps): HomeCardGauge => {
         onStart: isLoaded ? undefined : mini.onToggle,
         standbyTime,
         label: trackLabel(track, mini.subtitle),
+        spokenLabel: trackSpokenLabel(track, mini.subtitle),
         status: isLoaded ? playbackStateOf({ isPlaying, position }) : idleStatus(standbyTime),
         connecting: isLoaded && !hasKnownDuration(player.duration),
         track,

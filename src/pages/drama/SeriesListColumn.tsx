@@ -75,6 +75,8 @@ interface SeriesListColumnProps {
     landscape: boolean;
     /** 短篇 chips 上面嗰行 */
     label: string;
+    /** 讀屏版 label（「，」分隔，S-735） */
+    spokenLabel: string;
     /** 橫版 docked 全集表（直版係 false，全集表喺 <main> 尾） */
     dockedSheet: ReactNode;
     /** 由「我的收藏」撳入嚟嗰集（捲過去、highlight） */
@@ -87,6 +89,7 @@ export const SeriesListColumn = ({
     title,
     landscape,
     label,
+    spokenLabel,
     dockedSheet,
     focusKey,
 }: SeriesListColumnProps) => (
@@ -102,6 +105,7 @@ export const SeriesListColumn = ({
                     selected={view.arc}
                     playing={view.start ? undefined : view.current?.arc}
                     label={label}
+                    spokenLabel={spokenLabel}
                     onPick={view.pickArc}
                     onOpenAll={view.sheet.openSheet}
                 />

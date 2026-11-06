@@ -61,7 +61,11 @@ const ShowPlayer = ({
                 bookmark={current}
             />
             {landscape && (
-                <NowPlaying label={dateLabel} connecting={!start && !hasKnownDuration(duration)} />
+                <NowPlaying
+                    label={dateLabel}
+                    spokenLabel={formatSpokenDate(current.date)}
+                    connecting={!start && !hasKnownDuration(duration)}
+                />
             )}
         </>
     );

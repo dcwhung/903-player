@@ -64,7 +64,8 @@ const FirstLine = ({
 }: Pick<NowPlayingProps, 'label' | 'spokenLabel' | 'connecting'> & {
     status: PlaybackLineState;
 }) => {
-    const spoken = !connecting && spokenLabel !== undefined;
+    // 讀屏版同畫面一樣就唔使兩份
+    const spoken = !connecting && spokenLabel !== undefined && spokenLabel !== label;
     const text = connecting ? t('episodes.connecting') : t(PLAYBACK_LINE_KEY[status], { label });
     return (
         <>

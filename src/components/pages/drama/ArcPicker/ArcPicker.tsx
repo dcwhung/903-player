@@ -37,6 +37,8 @@ interface ArcPickerProps {
     playing: string | undefined;
     /** chips 上面嗰行（例如「現正播放：第 2 集 你洽我」） */
     label: string;
+    /** 讀屏版 label（「，」分隔，S-735）；冇就讀畫面字 */
+    spokenLabel?: string | undefined;
     onPick: (arc: string) => void;
     /** 「全集」：打開全集一覽表 */
     onOpenAll: () => void;
@@ -92,6 +94,7 @@ export const ArcPicker = ({
     arcs,
     upcoming = [],
     label,
+    spokenLabel,
     notice,
     onOpenAll,
     ...chipProps
@@ -108,7 +111,7 @@ export const ArcPicker = ({
 
     return (
         <div className={styles.group}>
-            <PickerLabel label={label} notice={notice} />
+            <PickerLabel label={label} spokenLabel={spokenLabel} notice={notice} />
             <div className={styles.row} role="group" aria-label={t('drama.arcs')}>
                 <AllChip notice={notice} onOpenAll={onOpenAll} />
                 <div ref={rowRef} className={styles.chips}>

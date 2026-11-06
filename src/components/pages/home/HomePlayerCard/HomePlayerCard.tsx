@@ -20,6 +20,8 @@ export interface HomeCardGaugeView {
     onStart: (() => void) | undefined;
     standbyTime: StandbyTime | undefined;
     label: string;
+    /** 讀屏版（S-735）；冇就讀畫面字 */
+    spokenLabel?: string | undefined;
     status: PlaybackLineState;
     connecting: boolean;
     /** 顯示緊嘅一集（收藏掣用）；搵唔到就冇收藏掣 */
@@ -36,7 +38,12 @@ const CardGauge = ({ art, gauge }: { art: string | undefined; gauge: HomeCardGau
             transitionName={TRANSITION_NAME.gauge}
             bookmark={gauge.track}
         />
-        <NowPlaying label={gauge.label} status={gauge.status} connecting={gauge.connecting} />
+        <NowPlaying
+            label={gauge.label}
+            spokenLabel={gauge.spokenLabel}
+            status={gauge.status}
+            connecting={gauge.connecting}
+        />
     </div>
 );
 
