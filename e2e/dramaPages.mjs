@@ -1,6 +1,14 @@
 // 廣播劇 e2e：主頁劇集書架次序（S-482）、短篇劇集頁第一次入（冇進度）嘅黑碟同冇「由頭播放」
 // （S-485、v1.19.3 CUI-0006）。黑碟色要喺真瀏覽器量 computed style：jsdom 計唔到 CSS 顏色
-import { isShown, newE2EPage, succeeds } from './harness.mjs';
+import {
+    DRAMA_AUDIO_BASE,
+    isShown,
+    newE2EPage,
+    serveWav,
+    succeeds,
+    waitForPlaybackState,
+} from './harness.mjs';
+import { silenceWav } from './silenceWav.mjs';
 
 // 主頁「廣播劇」書架次序（按上架日，新嘅先；src/catalog/dramas/library/*/drama.json）；刻意寫死做獨立對照
 const SHELF_ORDER = ['蘭茜夫人劇場', '少爺占系列', '森美小儀系列', '芝See菇Bi Family', '黃金少年'];
@@ -157,8 +165,97 @@ const checkNothingPicked = async (p, log, label) => {
     );
 };
 
-/** 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟 */
+// 闊橫版清單行（wide list preview O3）：1300×800（--ui-scale 1.5，用戶截圖嘅尺寸），少爺占短篇（集名欄 40%）
+const WIDE_LANDSCAPE = { width: 1300, height: 800 };
+const WIDE_ROW_ROUTE = '#/drama/jim';
+// 44 分鐘一集、停喺 33:32：最長嘅「聽到 33:32 / 44:00」（4 位數時間 × 2）
+const LONG_EPISODE_SECONDS = 2640;
+const STOP_AT_SECONDS = 2012;
+const STOP_AT_LABEL = '33:3';
+// 第三行：上面兩行唔揀中，揀中行喺清單中間（唔貼頂）
+const WIDE_ROW_INDEX = 2;
+// 量行數：兩個字行盒中心相差超過 0.7 個字高先當新一行
+const NEW_LINE_RATIO = 0.7;
+const ROW_BUTTON = 'li > button[aria-label^="播放"], li > button[aria-label^="暫停"]';
+
+/** 播放器揀中行：狀態字行數、狀態字、時間右邊同 ☆ 掣左邊嘅距離（負數 = 時間溢出入 ☆ 位） */
+const wideCurrentRow = (p, ratio) =>
+    p.locator('button[aria-current="true"]').evaluate((row, newLine) => {
+        const status = row.querySelector('[class*="status"]');
+        const times = [...row.querySelectorAll('[class*="time"]')].filter(
+            (el) => /\d:\d\d \//.test(el.textContent ?? '') && !el.querySelector('[class*="time"]'),
+        );
+        const star = row.closest('li')?.querySelector('[class*="bookmark"]:not([class*="Space"])');
+        const range = document.createRange();
+        range.selectNodeContents(status);
+        const size = parseFloat(getComputedStyle(status).fontSize);
+        const centres = [...range.getClientRects()]
+            .filter((rect) => rect.width > 0)
+            .map((rect) => rect.top + rect.height / 2)
+            .sort((a, b) => a - b);
+        const lines = centres.filter((c, i) => i === 0 || c - centres[i - 1] > size * newLine);
+        const time = times.at(-1);
+        return {
+            text: status?.textContent ?? '',
+            lines: lines.length,
+            timeToStar:
+                time && star
+                    ? Math.round(
+                          star.getBoundingClientRect().left - time.getBoundingClientRect().right,
+                      )
+                    : null,
+        };
+    }, ratio);
+
+/**
+ * 闊橫版短篇劇集頁（用戶截圖 v1.28.3）：揀中行暫停「聽到 33:32 / 44:00」一行；
+ * 播緊「播放中」pill + 時間可以換行，但時間唔可以溢出入 ☆ 位
+ */
+const checkWideRowStatus = async ({ browser, base, errors, log }) => {
+    const label = '闊橫版短篇劇集頁清單行（1300×800）';
+    const { ctx, p } = await newE2EPage(browser, errors, { viewport: WIDE_LANDSCAPE });
+    const longWav = silenceWav(LONG_EPISODE_SECONDS);
+    await ctx.route(`${DRAMA_AUDIO_BASE}/**`, (route) => serveWav(route, longWav));
+    await ctx.addInitScript(() => {
+        const play = HTMLMediaElement.prototype.play;
+        HTMLMediaElement.prototype.play = function capturePlay(...args) {
+            window.__e2eAudio = this;
+            return play.apply(this, args);
+        };
+    });
+    await p.goto(`${base}${WIDE_ROW_ROUTE}`);
+    const sheet = p.getByRole('dialog', { name: '全集' });
+    if (await isShown(sheet, { timeout: WAIT_MS })) await p.keyboard.press('Escape');
+    await p.locator(ROW_BUTTON).nth(WIDE_ROW_INDEX).click();
+    await p.waitForFunction(
+        (seconds) => window.__e2eAudio?.duration >= seconds && !window.__e2eAudio.paused,
+        LONG_EPISODE_SECONDS,
+        { timeout: WAIT_MS * 2 },
+    );
+    await p.evaluate((seconds) => {
+        window.__e2eAudio.currentTime = seconds;
+    }, STOP_AT_SECONDS);
+    const current = p.locator('button[aria-current="true"]');
+    await current.filter({ hasText: STOP_AT_LABEL }).waitFor({ timeout: WAIT_MS });
+    const playing = await wideCurrentRow(p, NEW_LINE_RATIO);
+    log(
+        playing.timeToStar !== null && playing.timeToStar >= 0,
+        `${label}：播緊時間唔溢出入 ☆ 位（「${playing.text}」${playing.lines} 行，時間右邊離 ☆ ${playing.timeToStar}px）`,
+    );
+    await p.getByRole('button', { name: '暫停', exact: true }).first().click();
+    await waitForPlaybackState(p, 'paused');
+    await current.filter({ hasText: '聽到' }).waitFor({ timeout: WAIT_MS });
+    const paused = await wideCurrentRow(p, NEW_LINE_RATIO);
+    log(
+        /^聽到 33:3\d \/ 44:00$/.test(paused.text) && paused.lines === 1,
+        `${label}：暫停揀中行「${paused.text}」一行（${paused.lines} 行）`,
+    );
+    await ctx.close();
+};
+
+/** 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟、闊橫版清單行狀態 */
 export const runDramaPageChecks = async (env) => {
     await checkShelfOrder(env);
     await checkSeriesFirstVisit(env);
+    await checkWideRowStatus(env);
 };

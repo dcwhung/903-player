@@ -88,6 +88,14 @@
     --landscape-disc-max: 640px;
     --landscape-disc-fill: 0.88;
     /*
+     * 橫版兩欄嘅左欄清單（Page.module.css .fixed）：佔頁闊 34%，最少 340px × --ui-scale。
+     * 狀態一行（「聽到 33:32 / 44:00」）由清單行自己用 em 保證（EpisodeList --episode-status-min），
+     * 呢度只係令短篇集名欄唔使縮得太細；手機打橫另外用 54%
+     */
+    --landscape-list-share: 34%;
+    --landscape-list-min: calc(340px * var(--ui-scale));
+    --landscape-list-width: max(var(--landscape-list-share), var(--landscape-list-min));
+    /*
      * 播放器唱片格（唱片 + 下面時間 / 播放掣嗰行）嘅比例：闊 300 × 高 332（同 mockup 一致）。
      * 節目頁播放器、今日節目卡、今日全部未上架嘅灰色唱片同下面計唱片大細都用呢對，唔好再寫死
      */
@@ -149,6 +157,11 @@
     --episode-label-date: calc(58px * var(--ui-scale));
     --episode-label-tagged-date: calc(76px * var(--ui-scale));
     --episode-label-title: 40%;
+    /*
+     * 闊橫版集數清單狀態欄最少闊度（EpisodeList.module.css .body）：「聽到 33:32 / 44:00」一行要約 8.56em。
+     * 主頁播放卡（HomePlayerCard .episodes）太窄，只保證時間一行（字眼同時間換行）
+     */
+    --episode-status-min: calc(var(--font-size-xs) * 8.75);
     /* 未上架嘅集數 / 節目（清單照列出但撳唔到）：日子、節目名、唱片變淡；進度條變虛線 */
     --unavailable-opacity: 0.45;
     --unavailable-dash: 6px;

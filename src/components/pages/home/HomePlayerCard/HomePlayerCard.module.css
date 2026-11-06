@@ -122,8 +122,15 @@
     min-height: 0;
 }
 
-/* 集數清單（同內頁一樣）：任何高度都有，同唱片格平分剩低嘅高度，清單自己捲 */
+/*
+ * 集數清單（同內頁一樣）：任何高度都有，同唱片格平分剩低嘅高度，清單自己捲。
+ * 卡欄得 36% 闊：狀態欄最少闊度（--episode-status-min，tokens.css）由成句「聽到 33:32 / 44:00」（8.75em）
+ * 減到淨係時間「33:32 / 44:00」（約 6.3em）一行，否則 iPad 闊度逼走行尾 ▷；字眼同時間換行，時間唔溢出入 ☆ 位，
+ * 唔夠位由短篇集名欄縮（☆ / ▷ 收緊照跟 EpisodeList 闊橫版）
+ */
 .episodes {
+    --episode-status-min: calc(var(--font-size-xs) * 6.4);
+
     display: flex;
     flex: 1 1 0;
     min-height: 0;

@@ -13,6 +13,8 @@
     --episode-row-gap: calc(14px * var(--ui-scale));
     --episode-row-pad-end: calc(12px * var(--ui-scale));
     --episode-row-icon: calc(22px * var(--ui-scale));
+    /* ☆ 同 ▷ 之間嘅空位：預設同行間距一樣（闊橫版收窄，見下面） */
+    --episode-icon-gap: var(--episode-row-gap);
     /* 狀態字眼同時間之間分隔符嘅闊度（「 · 」約 0.9 個字；空格約 0.3 個字，.timed[data-sep] 揀） */
     --status-sep-dot: 0.9em;
     --status-sep-space: 0.3em;
@@ -89,16 +91,20 @@
     }
 }
 
-/* 收藏掣：行入面留一格（播放掣左邊），星疊喺上面（_mockups_/bookmark P2：▶ 左邊） */
+/*
+ * 收藏掣：行入面留一格（播放掣左邊），星疊喺上面（_mockups_/bookmark P2：▶ 左邊）。
+ * 同 ▷ 之間用 --episode-icon-gap（行嘅 gap 由 margin 補差），星同留位一齊跟住
+ */
 .bookmarkSpace {
     flex-shrink: 0;
     width: var(--episode-bookmark-size);
+    margin-right: calc(var(--episode-icon-gap) - var(--episode-row-gap));
 }
 
 .item > .bookmark {
     position: absolute;
     top: 50%;
-    right: calc(var(--episode-row-pad-end) + var(--episode-row-icon) + var(--episode-row-gap));
+    right: calc(var(--episode-row-pad-end) + var(--episode-row-icon) + var(--episode-icon-gap));
     width: var(--episode-bookmark-size);
     height: var(--episode-bookmark-size);
     transform: translateY(-50%);
@@ -229,6 +235,30 @@
         var(--color-track) 0 var(--unavailable-dash),
         transparent var(--unavailable-dash) calc(var(--unavailable-dash) + var(--unavailable-gap))
     );
+}
+
+/*
+ * 闊橫版（WIDE_BANNER_QUERY，wide list preview O3）：行收緊，狀態「聽到 33:32 / 44:00」（約 8.56em）一行放得落，
+ * 播緊嗰行嘅時間唔再溢出入 ☆ 位。☆ 40 → 32px × --ui-scale（仍然 ≥ 24px 觸控目標），☆ 同 ▷ 之間 4px × --ui-scale；
+ * 狀態欄最少 --episode-status-min（8.75em，tokens.css；主頁播放卡淨係保證時間一行），唔夠位由短篇集名欄縮
+ * （最多 --episode-label-title，最少約 3.6 個字，太長跑馬燈 / … 收尾）。
+ * 手機打橫、直版唔郁（☆ 40px、間距照舊）
+ */
+@media (orientation: landscape) and (min-width: 640px) and (min-height: 562px) {
+    .section {
+        --episode-bookmark-size: calc(32px * var(--ui-scale));
+        --episode-icon-gap: calc(4px * var(--ui-scale));
+    }
+
+    .body {
+        min-width: var(--episode-status-min);
+    }
+
+    [data-labels='title'] .date {
+        flex: 0 1 var(--episode-label-title);
+        width: auto;
+        min-width: calc(var(--font-size-md) * 3.6);
+    }
 }
 
 /* 播緊：「播放中」pill + 時間；窄欄放唔落就時間換落 pill 下面（行高不變） */
