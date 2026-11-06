@@ -15,15 +15,20 @@ const REMOVAL_DAY = new Date('2026-12-01T08:00:00Z'); // 香港 01/12 16:00
 /*
  * 真 catalog，改幾個下架日（其他照舊）：
  * - 芝See：好朋友手牽手第 1 集下架
- * - 少爺占：忠孝公路最後一集（第 17 集）下架
+ * - 少爺占：忠孝公路最後一集下架（集數由 drama.json episodes 計，唔寫死，S-740）
  * - 森美小儀：森美幻想劇當係 20/11 先上架嘅最新短篇，同日（REMOVAL）成個下架
  */
 vi.mock('../../catalog/dramas/lib/bundledSource', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../catalog/dramas/lib/bundledSource')>();
-    const PATCHES: Record<string, Record<string, Record<string, unknown>>> = {
-        chisee: { 好朋友手牽手: { episodeRemovedAt: { '1': REMOVAL } } },
-        jim: { 忠孝公路: { episodeRemovedAt: { '17': REMOVAL } } },
-        'sammy-kitty': { 森美幻想劇: { addedAt: '2026-11-20', removedAt: REMOVAL } },
+    type ArcPatch = (arc: Record<string, unknown>) => Record<string, unknown>;
+    /** 最後一集：drama.json 嘅 episodes 數（catalog 加集都跟住郁） */
+    const lastEpisodeOff: ArcPatch = (arc) => ({
+        episodeRemovedAt: { [String(arc.episodes)]: REMOVAL },
+    });
+    const PATCHES: Record<string, Record<string, ArcPatch>> = {
+        chisee: { 好朋友手牽手: () => ({ episodeRemovedAt: { '1': REMOVAL } }) },
+        jim: { 忠孝公路: lastEpisodeOff },
+        'sammy-kitty': { 森美幻想劇: () => ({ addedAt: '2026-11-20', removedAt: REMOVAL }) },
     };
     return {
         bundledSource: {
@@ -34,7 +39,7 @@ vi.mock('../../catalog/dramas/lib/bundledSource', async (importOriginal) => {
                     const definition = folder.definition as { arcs: Record<string, unknown>[] };
                     const arcs = definition.arcs.map((arc) => ({
                         ...arc,
-                        ...patches[String(arc.name)],
+                        ...patches[String(arc.name)]?.(arc),
                     }));
                     return { ...folder, definition: { ...definition, arcs } };
                 }),
@@ -96,14 +101,8 @@ describe('HomePage drama shelf when episodes go off air', () => {
         const before = await shelfOrderOn(DAY_BEFORE);
         const after = await shelfOrderOn(REMOVAL_DAY);
 
-        // 森美小儀排位用最新短篇（森美幻想劇 20/11），排喺蘭茜夫人劇場（27/10）前面
-        expect(before).toEqual([
-            '森美小儀系列',
-            '蘭茜夫人劇場',
-            '少爺占系列',
-            '芝See菇Bi Family',
-            '黃金少年',
-        ]);
+        // 森美小儀排位用最新短篇（森美幻想劇 20/11）排第一；其他劇嘅次序跟 catalog，唔寫死（S-740）
+        expect(before[0]).toBe('森美小儀系列');
         expect(after).toEqual(before);
     });
 });
