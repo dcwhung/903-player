@@ -192,6 +192,10 @@ describe('DramaPage', () => {
             expect(
                 screen.getByText('現正播放：Ｘ時mas時小提議 · 第 2 集 · 哥哥你洽我'),
             ).toBeInTheDocument();
+            // 讀屏唔讀「·」（S-735）
+            expect(
+                screen.getByText('現正播放：Ｘ時mas時小提議，第 2 集，哥哥你洽我'),
+            ).toBeInTheDocument();
             const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole(
                 'button',
                 { name: /^(播放|暫停) / },

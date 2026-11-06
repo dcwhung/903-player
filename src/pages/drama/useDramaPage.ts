@@ -8,6 +8,7 @@ import {
 } from '../../catalog/dramas';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
 import { useEpisodePress } from '../../hooks/useEpisodePress';
+import { useHkToday } from '../../hooks/useHkToday';
 import { useRefreshedOn } from '../../hooks/useRefreshedOn';
 import { useStandbyStart } from '../../hooks/useStandbyStart';
 import { isFirstSeriesVisit, useStartDrama } from '../../hooks/useStartDrama';
@@ -47,7 +48,8 @@ export const useTodaysEpisodes = <T>(
     drama: DramaConfig,
     read: (id: string, today: string) => T,
 ): T => {
-    const today = hkToday();
+    // 午夜自己轉，唔使等其他 state 變先 re-render（S-704）
+    const today = useHkToday();
     return useMemo(() => read(drama.id, today), [drama, read, today]);
 };
 
@@ -330,11 +332,11 @@ const useSeriesArcs = (
     return { arc, pickArc, groups, chips, shown, pickedResume, upNext, availability, arcPicked };
 };
 
-/** chips 最尾嘅即將上架短篇、唱片下面嘅成套劇下架字 */
 /** 成套劇下架句：畫面字（page）+ 讀屏字（label，讀屏版日子，W-537） */
 const spokenNotice = ({ notice }: SeriesAvailabilityView) =>
     notice && { text: notice.page, label: notice.label };
 
+/** chips 最尾嘅即將上架短篇、唱片下面嘅成套劇下架字 */
 const pageAvailability = (availability: SeriesAvailabilityView) => ({
     upcomingArcs: availability.upcomingChips,
     notice: spokenNotice(availability),

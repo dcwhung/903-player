@@ -87,13 +87,25 @@ export const SoonChip = ({ chip }: { chip: UpcomingChip }) => (
 /** chips 上面嗰行：成套劇快將下架未開始聽就淨係講下架；聽緊照舊（下架字喺「全集」chip） */
 export const PickerLabel = ({
     label,
+    spokenLabel,
     notice,
 }: {
     label: string;
+    /** 讀屏版（唔讀「·」，S-735）；冇或者同畫面一樣就讀畫面字 */
+    spokenLabel?: string | undefined;
     notice: ArcPickerNotice | undefined;
 }) => (
     <span className={styles.label}>
-        {!notice?.replace && <span className={styles.labelText}>{label}</span>}
+        {!notice?.replace && (
+            <span className={styles.labelText}>
+                {/* 讀屏版同畫面一樣（例如「連線中…」）就唔使兩份 */}
+                {spokenLabel === undefined || spokenLabel === label ? (
+                    label
+                ) : (
+                    <SpokenText text={label} label={spokenLabel} />
+                )}
+            </span>
+        )}
         {notice?.replace && (
             <span className={styles.notice}>
                 <HourglassIcon size={NOTICE_ICON_SIZE} />

@@ -7,6 +7,7 @@ import {
     formatWeekday,
     hkTimeHHMM,
     hkToday,
+    msUntilNextHkMidnight,
     weekdayOf,
     isCalendarDate,
 } from './date';
@@ -98,5 +99,13 @@ describe('isCalendarDate', () => {
         expect(isCalendarDate('2026-02-29')).toBe(false);
         expect(isCalendarDate('2026-13-01')).toBe(false);
         expect(isCalendarDate('20261023')).toBe(false);
+    });
+});
+
+describe('msUntilNextHkMidnight', () => {
+    it('counts to the next Hong Kong midnight, whatever the device time zone (S-704)', () => {
+        expect(msUntilNextHkMidnight(new Date('2026-11-30T15:59:00Z'))).toBe(60_000);
+        expect(msUntilNextHkMidnight(new Date('2026-11-30T16:00:00Z'))).toBe(24 * 60 * 60 * 1000);
+        expect(msUntilNextHkMidnight(new Date('2026-12-31T15:59:59Z'))).toBe(1_000);
     });
 });

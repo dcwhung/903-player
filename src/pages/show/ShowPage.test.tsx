@@ -276,6 +276,8 @@ describe('ShowPage', () => {
             ).toBeInTheDocument();
             act(() => audio.emitMetadata(2400));
             expect(screen.getByText('現正播放：17/10（六）')).toBeInTheDocument();
+            // 讀屏讀星期全寫（S-735）
+            expect(screen.getByText('現正播放：17/10 星期六')).toBeInTheDocument();
         });
     });
 

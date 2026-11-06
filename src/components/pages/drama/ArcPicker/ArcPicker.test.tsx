@@ -13,6 +13,25 @@ describe('ArcPicker', () => {
         HTMLElement.prototype.scrollTo = vi.fn();
     });
 
+    it('reads the spoken label instead of the screen line when given (S-735)', () => {
+        render(
+            <ArcPicker
+                arcs={ARCS}
+                selected="X時mas時小提議"
+                playing="X時mas時小提議"
+                label="現正播放：X時mas時小提議 · 第 2 集 · 你洽我"
+                spokenLabel="現正播放：X時mas時小提議，第 2 集，你洽我"
+                onPick={() => {}}
+                onOpenAll={() => {}}
+            />,
+        );
+
+        const shown = screen.getByText('現正播放：X時mas時小提議 · 第 2 集 · 你洽我');
+        expect(shown.closest('[aria-hidden="true"]')).not.toBeNull();
+        const spoken = screen.getByText('現正播放：X時mas時小提議，第 2 集，你洽我');
+        expect(spoken.closest('[aria-hidden]')).toBeNull();
+    });
+
     it('shows what is playing above a chip per arc, with the viewed arc pressed', () => {
         render(
             <ArcPicker

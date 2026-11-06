@@ -71,6 +71,13 @@ export const isCalendarDate = (value: string): boolean => {
 export const addDays = (isoDate: string, days: number): string =>
     new Date(isoDateToUtcMs(isoDate) + days * MS_PER_DAY).toISOString().slice(0, ISO_DATE_LENGTH);
 
+/** 香港固定 UTC+8（冇夏令時間） */
+const HK_UTC_OFFSET_MS = 8 * 60 * 60 * 1_000;
+
+/** 由 now 計到下一個香港午夜仲有幾多 ms（S-704：午夜 timer 用） */
+export const msUntilNextHkMidnight = (now: Date = new Date()): number =>
+    isoDateToUtcMs(addDays(hkToday(now), 1)) - HK_UTC_OFFSET_MS - now.getTime();
+
 const dateParts = (isoDate: string) => {
     const [, month, day] = splitIsoDate(isoDate);
     return {

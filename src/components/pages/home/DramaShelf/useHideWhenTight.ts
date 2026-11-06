@@ -6,7 +6,11 @@ import { useLayoutEffect, useRef } from 'react';
  */
 export const TIGHT_ATTR = 'data-tight';
 
-/** 放唔放得落（次要嗰截顯示緊嘅時候量）；要係 module 層面嘅 function（reference 穩定） */
+/**
+ * 放唔放得落（次要嗰截顯示緊嘅時候量）；要係 module 層面嘅 function（reference 穩定）。
+ * ⚠️ e2e/comingSoon.mjs cornerLeaving 喺瀏覽器入面抄咗 fitsWithoutOverflow / fitsInParent 嘅計法
+ *（page.evaluate import 唔到），改呢度要同步改嗰度（S-737）
+ */
 export type Fits = (el: HTMLElement) => boolean;
 
 /** 自己冇溢出：角落字（短篇數 + 上架字尾） */

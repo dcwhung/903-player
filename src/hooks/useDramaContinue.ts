@@ -3,7 +3,7 @@ import type { DramaConfig } from '../catalog/dramas';
 import { t } from '../i18n/t';
 import { usePlayer } from '../player/usePlayer';
 import { isLeavingSoon } from '../selectors/availability';
-import { dayWhen, spokenRemoval, removalWhen } from '../selectors/availabilityLabels';
+import { spokenRemoval, removalWhen } from '../selectors/availabilityLabels';
 import { liveSeriesContinue } from '../selectors/continueListening';
 import { dramaEpisodeLabel } from '../selectors/dramas';
 import { getProgressMap } from '../services/progressStore';
@@ -19,7 +19,6 @@ const leavingOf = (removedAt: string | undefined, today: string) =>
     removedAt && isLeavingSoon(removedAt, today)
         ? {
               text: removalWhen(removedAt, today, 'short'),
-              tag: dayWhen(removedAt, today),
               date: removedAt,
               label: spokenRemoval(removedAt),
           }

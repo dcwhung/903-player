@@ -207,7 +207,8 @@ const SETTLE_MS = 500;
 
 /**
  * 左上角下架字顯示緊嘅字（每粒葉 span，收埋嘅唔計）、收字第幾步、有冇出格 / 頂行溢出；
- * looserFits = 鬆一步（data-tight 減 1）放唔放得落，量完即刻還原（同 useHideWhenTight 嘅 fits 一樣計法）
+ * looserFits = 鬆一步（data-tight 減 1）放唔放得落，量完即刻還原。fits 抄自 useHideWhenTight 嘅
+ * fitsWithoutOverflow / fitsInParent（evaluate 入面 import 唔到），改一邊要同步改另一邊（S-737）
  */
 const cornerLeaving = (tile, measure) =>
     tile.evaluate((button, kind) => {

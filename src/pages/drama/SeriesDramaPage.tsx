@@ -26,15 +26,16 @@ const arcPickerLabel = (
     connecting: boolean,
     current: SeriesEpisode | undefined,
     state: PlaybackLineState,
+    sep: string = t('common.separator'),
 ): string => {
     if (state === 'unloaded') return t(PLAYBACK_LINE_KEY.unloaded);
     if (connecting) return t('episodes.connecting');
     if (!current) return '';
     const episodeNo = t('drama.episodeNo', { no: current.no });
     const episode = current.title
-        ? t('drama.nowPlayingShort', { no: current.no, title: current.title })
+        ? t('drama.nowPlayingShort', { no: current.no, title: current.title, sep })
         : episodeNo;
-    const label = t('drama.nowPlayingArcShort', { arc: current.arc, episode });
+    const label = t('drama.nowPlayingArcShort', { arc: current.arc, episode, sep });
     return t(PLAYBACK_LINE_KEY[state], { label });
 };
 
@@ -132,6 +133,13 @@ export const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
                 <SeriesListColumn
                     {...column}
                     label={arcPickerLabel(connecting, view.upNext, view.status)}
+                    // 讀屏唔讀「·」（S-735）
+                    spokenLabel={arcPickerLabel(
+                        connecting,
+                        view.upNext,
+                        view.status,
+                        t('common.spokenSeparator'),
+                    )}
                     dockedSheet={landscape && arcSheet}
                 />
                 {!landscape && arcSheet}

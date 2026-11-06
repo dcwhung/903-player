@@ -19,6 +19,7 @@ import {
     spokenRelease,
     spokenRemoval,
 } from '../../selectors/availabilityLabels';
+import type { DramaShelfItem } from '../../components/pages/home/DramaShelf/dramaTileTypes';
 import type { ArcAvailability } from '../../types/drama';
 
 const LEAVING_KEYS = {
@@ -102,12 +103,8 @@ export const upcomingTile = (
     };
 };
 
-/** 繼續收聽條（有下架日 date） */
-interface ResumeWithLeaving {
-    label: string;
-    ratio: number;
-    leaving?: (TileNotice & { date?: string | undefined }) | undefined;
-}
+/** 繼續收聽條（有下架日 date）：直接用格嘅 resume 形狀，唔另外抄一份（S-715） */
+type ResumeWithLeaving = Pick<NonNullable<DramaShelfItem['resume']>, 'leaving'>;
 
 /**
  * 同一張格只講一次下架日：左上角（成套劇 / 部分短篇 / 部分集數）已經講咗同一日，

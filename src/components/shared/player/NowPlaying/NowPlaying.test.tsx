@@ -60,6 +60,32 @@ describe('NowPlaying', () => {
         expect(spoken.closest('[aria-hidden]')).toBeNull();
     });
 
+    it.each([
+        ['paused', '已暫停'],
+        ['resume', '繼續收聽'],
+    ] as const)('reads the spoken label with the %s wording too (S-736)', (status, word) => {
+        render(
+            <NowPlaying
+                label="大妒忌 · 第 1 集"
+                spokenLabel="大妒忌，第 1 集"
+                status={status}
+                connecting={false}
+            />,
+        );
+
+        expect(
+            screen.getByText(`${word}：大妒忌 · 第 1 集`).closest('[aria-hidden="true"]'),
+        ).not.toBeNull();
+        expect(screen.getByText(`${word}：大妒忌，第 1 集`).closest('[aria-hidden]')).toBeNull();
+    });
+
+    it('reads 連線中… as shown, without a spoken copy, while connecting', () => {
+        render(<NowPlaying label="大妒忌 · 第 1 集" spokenLabel="大妒忌，第 1 集" connecting />);
+
+        expect(screen.getByText('連線中…').closest('[aria-hidden]')).toBeNull();
+        expect(screen.queryByText(/大妒忌，第 1 集/)).not.toBeInTheDocument();
+    });
+
     it('says it is connecting until the duration is known', () => {
         render(<NowPlaying label="21/10（三）" connecting />);
 

@@ -1,6 +1,10 @@
 # 903-player 項目文件索引
 
-**最後更新**：2026-11-04
+**最後更新**：2026-11-06
+
+## Backlog
+
+- [backlog.md](backlog.md)：Review / QA 🟢 同 Observation 登記冊（Open / Closed）
 
 ## Plans
 

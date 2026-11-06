@@ -4,6 +4,7 @@ import type { DailyEpisode, SeriesEpisode } from '../types/drama';
 import {
     dailyNewestFirst,
     dramaEpisodeLabel,
+    dramaEpisodeSpokenLabel,
     dramaHasNew,
     nextSeriesEpisode,
     episodesInArc,
@@ -153,6 +154,19 @@ describe('dramaEpisodeLabel', () => {
     it('names a daily episode by its date, marking reruns', () => {
         expect(dramaEpisodeLabel(daily('2026-10-23'))).toBe('23/10（五）');
         expect(dramaEpisodeLabel(daily('2025-08-11', true))).toBe('11/08（一） · 重溫');
+    });
+});
+
+describe('dramaEpisodeSpokenLabel', () => {
+    it('reads a series episode with「，」instead of「·」(S-735)', () => {
+        expect(dramaEpisodeSpokenLabel(series('Ｘ時mas時小提議', 2, '哥哥你洽我'))).toBe(
+            'Ｘ時mas時小提議，第 2 集，哥哥你洽我',
+        );
+    });
+
+    it('reads a daily date with the full weekday, rerun after「，」(S-735)', () => {
+        expect(dramaEpisodeSpokenLabel(daily('2026-10-23'))).toBe('23/10 星期五');
+        expect(dramaEpisodeSpokenLabel(daily('2025-08-11', true))).toBe('11/08 星期一，重溫');
     });
 });
 
