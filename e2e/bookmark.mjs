@@ -245,6 +245,36 @@ const rowsReachable = (region) =>
         };
     }, ALIGN_EPSILON);
 
+/**
+ * G（用戶決定）：清單「左右左右」行先排——第 i 行（DOM 次序，最新先）喺第 i % 欄 欄、第 ⌊i / 欄⌋ 行；
+ * 同一行嘅格頂對齊，單數時左欄多一個。分隔線畫喺格頂：第一行冇線，其他每格一條（唔會疊兩條）
+ */
+const rowMajor = (region) =>
+    region.evaluate((el, epsilon) => {
+        const rows = [...el.querySelectorAll('li')].map((li) => {
+            const r = li.getBoundingClientRect();
+            return {
+                left: r.left,
+                top: r.top,
+                line: parseFloat(getComputedStyle(li).borderTopWidth),
+            };
+        });
+        const lefts = [...new Set(rows.map((r) => Math.round(r.left)))].sort((a, b) => a - b);
+        const cols = lefts.length;
+        const near = (a, b) => Math.abs(a - b) <= epsilon;
+        const wrong = rows
+            .map((r, i) => {
+                const first = rows[i - (i % cols)];
+                const ok =
+                    near(r.left, lefts[i % cols]) &&
+                    near(r.top, first.top) &&
+                    (i < cols ? r.line === 0 : r.line > 0);
+                return ok ? null : i + 1;
+            })
+            .filter((i) => i !== null);
+        return { cols, wrong };
+    }, ALIGN_EPSILON);
+
 /** B：第三格係歷史 icon「最近收聽」；撳入去成個 tab 係清單（最多 10 集）、☆ 對齊、冇收藏 box */
 const checkRecentOnly = async ({ browser, base, errors, log }, label, viewport) => {
     const { ctx, p } = await newE2EPage(browser, errors, viewport ? { viewport } : {});
@@ -262,6 +292,13 @@ const checkRecentOnly = async ({ browser, base, errors, log }, label, viewport) 
     const aligned = await starsAligned(region);
     log(aligned.rows === RECENT_MAX, `${label}：清單最多 ${RECENT_MAX} 集（${aligned.rows}）`);
     log(aligned.ok, `${label}：每行 ☆ 上下對齊（${JSON.stringify(aligned.stars.slice(0, 3))}…）`);
+    const order = await rowMajor(region);
+    // 手機直版一欄，橫版（窄 / 闊）兩欄（src/selectors/bookmarks.ts recentColumns）
+    const cols = viewport ? 2 : 1;
+    log(
+        order.cols === cols && order.wrong.length === 0,
+        `${label}：${cols} 欄、左右左右行先排、第一行冇分隔線（${order.cols} 欄，唔啱：${order.wrong.join() || '冇'}）`,
+    );
     const reach = await rowsReachable(region);
     log(
         reach.unreachable.length === 0,

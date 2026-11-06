@@ -289,6 +289,13 @@
      */
     --saved-gap: calc(10px * var(--ui-scale));
     --saved-banner-height: calc(80px * var(--ui-scale));
+    /*
+     * 收藏一行（.card）：頂 --space-2 + 底 --saved-row-pad-bottom + ▷ 高。banner 高多半行（用戶決定 F，
+     * saved banner preview + 半行，所有版面）：直版 108.5、窄橫版 92.5、闊橫版 1366×768 133.3
+     */
+    --saved-row-pad-bottom: calc(9px * var(--ui-scale));
+    --saved-row-height: calc(var(--space-2) + var(--saved-row-pad-bottom) + var(--saved-play-size));
+    --saved-banner-tall: calc(var(--saved-banner-height) + var(--saved-row-height) / 2);
     --saved-disc: calc(52px * var(--ui-scale));
     --saved-recent-height: calc(200px * var(--ui-scale));
     --saved-recent-width: calc(250px * var(--ui-scale));

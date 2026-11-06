@@ -89,3 +89,30 @@ describe('saved / list disc polish', () => {
         ).toBe('var(--saved-row-accent, var(--color-gold))');
     });
 });
+
+/** F（用戶決定，saved banner preview + 半行）：收藏 box banner 高多半行（所有版面），中間裁唔變 */
+describe('saved banner half a row taller', () => {
+    it('should derive one saved row height from the row paddings and the ▷ size', () => {
+        expect(tokens).toContain('--saved-row-pad-bottom: calc(9px * var(--ui-scale));');
+        expect(tokens).toContain(
+            '--saved-row-height: calc(var(--space-2) + var(--saved-row-pad-bottom) + var(--saved-play-size));',
+        );
+        expect(cssDeclarations(css, '.card').padding).toBe(
+            'var(--space-2) 0 var(--saved-row-pad-bottom)',
+        );
+    });
+
+    it('should make every banner half a row taller than the base banner height', () => {
+        expect(tokens).toContain(
+            '--saved-banner-tall: calc(var(--saved-banner-height) + var(--saved-row-height) / 2);',
+        );
+        expect(cssDeclarations(css, '.banner').height).toBe('var(--saved-banner-tall)');
+    });
+
+    it('should use the taller banner as the solo lower bound', () => {
+        expect(cssDeclarations(css, ".saved[data-solo='true'] .banner")).toMatchObject({
+            'min-height': 'var(--saved-banner-tall)',
+            'max-height': 'max(var(--saved-banner-tall), var(--saved-solo-room, 0px))',
+        });
+    });
+});
