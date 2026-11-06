@@ -49,6 +49,14 @@
 
 /*
  * 直版填滿（T8，useRowsPerPage 量到先有 data-fill）：行高由 inline grid-template-rows 定，
+ * 每行最多高到 16:9 × --show-tile-max-grow；再有剩就平分做行距（_mockups_/home-fill-bottom B3），
+ * 最尾一行貼住頁底。inline 係 n 條固定行，分頁最後一頁少格都係 n 條，行位同第一頁一樣
+ */
+.grid[data-fill] {
+    align-content: space-between;
+}
+
+/*
  * 格唔再鎖 16:9，拉滿個格（ShowTile 圖 object-fit: cover）。
  * > * 蓋過 ShowTile .tile 嘅 aspect-ratio（specificity 高過單一 class）
  */

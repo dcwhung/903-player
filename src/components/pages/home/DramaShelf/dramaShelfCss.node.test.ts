@@ -40,3 +40,32 @@ describe('DramaShelf corner leaving date (E2, W-536, W-538)', () => {
         expect(css).not.toMatch(/@container drama-tile \(max-width: 200px\)/);
     });
 });
+
+/*
+ * 疊卡填到底（_mockups_/home-fill-bottom C3）：未 focus 嘅卡縮 rest-scale。focus 上面嘅卡由頂縮；
+ * focus 下面嘅卡向下移返縮咗嘅高度再縮（= 以卡底做軸心），最尾一張卡底永遠喺書架底。
+ * 用 translateY + scale 唔用 transform-origin：focus 轉卡時 transform 順滑過渡，唔會因為 origin 突然換而跳
+ */
+describe('DramaShelf stack fills to the bottom (C3)', () => {
+    const REST = 'scale(var(--drama-shelf-rest-scale))';
+
+    it('should shrink cards above the focus from their top', () => {
+        const rest = cssDeclarations(css, '.shelf[data-stacked] .tile');
+        expect(rest['transform-origin']).toBe('top center');
+        expect(rest.transform).toBe(`translateY(0) ${REST}`);
+    });
+
+    it('should shrink cards below the focus towards their bottom edge', () => {
+        expect(
+            cssDeclarations(css, '.shelf[data-stacked] .tile[data-focused] ~ .tile').transform,
+        ).toBe(
+            `translateY(calc(var(--drama-shelf-card, 0px) * (1 - var(--drama-shelf-rest-scale)))) ${REST}`,
+        );
+    });
+
+    it('should keep the focused card full size with the same transform functions', () => {
+        expect(cssDeclarations(css, '.shelf[data-stacked] .tile[data-focused]').transform).toBe(
+            'translateY(0) scale(1)',
+        );
+    });
+});
