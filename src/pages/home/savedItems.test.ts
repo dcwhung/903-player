@@ -1,6 +1,5 @@
 import { recording } from '../../../tests/renderWithProviders';
-import { dramaThemeFor, seriesEpisodesOf } from '../../catalog/dramas';
-import { themeFor } from '../../catalog/shows';
+import { seriesEpisodesOf } from '../../catalog/dramas';
 import { bookmarkOf, type Bookmark } from '../../services/bookmarkStore';
 import type { SeriesEpisode } from '../../types/drama';
 import {
@@ -13,7 +12,6 @@ import {
     savedRowStatus,
     seriesName,
     seriesSpokenName,
-    trackAccent,
 } from './savedItems';
 
 const SHOW = recording('gongzi', '2026-10-17');
@@ -104,6 +102,7 @@ describe('savedRowStatus', () => {
             text: '播放中',
             ratio: 0.1,
             playing: true,
+            current: true,
         });
     });
 
@@ -113,6 +112,8 @@ describe('savedRowStatus', () => {
             text: '聽到 3:10 / 9:30',
             ratio: 190 / 570,
             playing: false,
+            // 暫停緊照係揀中嗰集：行左邊出灰條
+            current: true,
         });
     });
 
@@ -123,23 +124,18 @@ describe('savedRowStatus', () => {
             text: '已收聽',
             ratio: 1,
             playing: false,
+            current: false,
         });
-        expect(savedRowStatus(base)).toEqual({ text: '未收聽', ratio: 0, playing: false });
+        expect(savedRowStatus(base)).toEqual({
+            text: '未收聽',
+            ratio: 0,
+            playing: false,
+            current: false,
+        });
     });
 
     it('should leave out the total when the length was never known', () => {
         const progress = { position: 75, duration: 0, watched: false, updatedAt: 0 };
         expect(savedRowStatus({ ...base, progress }).text).toBe('聽到 1:15');
-    });
-});
-
-// 收藏 tab 播緊嗰行嘅字色（用戶截圖，v1.28.2）：跟嗰個節目 / 劇嘅主題色（播放卡播放掣嗰隻色），唔再同短篇名一樣 cream
-describe('trackAccent', () => {
-    it('should take the show theme accent for a show episode', () => {
-        expect(trackAccent(SHOW)).toBe(themeFor('gongzi').accent);
-    });
-
-    it('should take the drama theme accent for a drama episode', () => {
-        expect(trackAccent(SERIES)).toBe(dramaThemeFor('chisee').accent);
     });
 });

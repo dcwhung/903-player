@@ -284,12 +284,11 @@
 }
 
 /*
- * 播緊嗰行（冇底框）：日期 + 狀態用嗰個節目 / 劇嘅主題色（SavedRow inline --saved-row-accent），
- * 同上面短篇名（cream）分得開（用戶截圖，v1.28.2）；冇就照用 cream
+ * 播緊 / 暫停緊嗰行（冇底框，字用普通色）：.card 左邊出 3px 條（OnAirLamp，播緊紅、暫停灰），
+ * 行字向右移 10px 讓位
  */
-.row[data-playing='true'] .label,
-.row[data-playing='true'] .state {
-    color: var(--saved-row-accent, var(--color-gold));
+.row[data-current='true'] .open {
+    padding-left: calc(10px * var(--ui-scale));
 }
 
 .bar {

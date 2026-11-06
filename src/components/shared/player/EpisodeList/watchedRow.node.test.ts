@@ -28,6 +28,20 @@ describe('watched episode rows', () => {
     });
 });
 
+// ON AIR combo：揀中行標題 / 狀態用普通字色（播緊由 pill + 紅條講），底框留低；窄欄 pill 同時間可以換行
+describe('selected episode row', () => {
+    it('should keep the surface box but use the normal text colours', () => {
+        expect(cssDeclarations(css, '.current').background).toBe('var(--color-surface)');
+        expect(cssDeclarations(css, '.current .dayMonth, .current .status')).toEqual({});
+        expect(css).not.toContain('--color-status-playing');
+    });
+
+    it('should let the time wrap under the on-air pill in narrow columns', () => {
+        expect(cssDeclarations(css, '.onAir')['flex-wrap']).toBe('wrap');
+        expect(cssDeclarations(css, '.row').position).toBe('relative');
+    });
+});
+
 const tokens = readCss(new URL('../../../../styles/tokens.css', import.meta.url));
 
 describe('--color-watched', () => {

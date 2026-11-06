@@ -76,43 +76,25 @@ describe('saved / list disc polish', () => {
         );
     });
 
-    // 用戶截圖（v1.28.2，闊橫版收藏 tab）：播緊嗰行唔再有深色底框；字色用嗰個節目 / 劇嘅主題色
-    // （SavedRow inline --saved-row-accent），同上面短篇名（cream）分得開
-    it('should drop the playing row box and colour its text with the row theme colour', () => {
+    // 用戶截圖（v1.28.2，闊橫版收藏 tab）：播緊嗰行唔再有深色底框；ON AIR combo（2026-11-06）
+    // 拎走 c5212f5 嘅主題色字（--saved-row-accent），日期 / 狀態用普通字色，播緊由 pill + 左邊紅條講
+    it('should drop the playing row box and the theme-coloured text', () => {
         expect(cssDeclarations(css, ".row[data-playing='true'] .card").background).toBeUndefined();
         expect(tokens).not.toContain('--saved-box-playing-bg');
+        expect(css).not.toContain('--saved-row-accent');
         expect(
             cssDeclarations(
                 css,
                 ".row[data-playing='true'] .label, .row[data-playing='true'] .state",
-            ).color,
-        ).toBe('var(--saved-row-accent, var(--color-gold))');
-    });
-});
-
-/** F（用戶決定，saved banner preview + 半行）：收藏 box banner 高多半行（所有版面），中間裁唔變 */
-describe('saved banner half a row taller', () => {
-    it('should derive one saved row height from the row paddings and the ▷ size', () => {
-        expect(tokens).toContain('--saved-row-pad-bottom: calc(9px * var(--ui-scale));');
-        expect(tokens).toContain(
-            '--saved-row-height: calc(var(--space-2) + var(--saved-row-pad-bottom) + var(--saved-play-size));',
-        );
-        expect(cssDeclarations(css, '.card').padding).toBe(
-            'var(--space-2) 0 var(--saved-row-pad-bottom)',
-        );
+            ),
+        ).toEqual({});
     });
 
-    it('should make every banner half a row taller than the base banner height', () => {
-        expect(tokens).toContain(
-            '--saved-banner-tall: calc(var(--saved-banner-height) + var(--saved-row-height) / 2);',
+    // 左邊條喺 .card 左邊（以 .card 定位），有條嗰行（播緊 / 暫停）行字向右移 10px 讓位
+    it('should make room for the on-air bar on the current row', () => {
+        expect(cssDeclarations(css, '.card').position).toBe('relative');
+        expect(cssDeclarations(css, ".row[data-current='true'] .open")['padding-left']).toBe(
+            'calc(10px * var(--ui-scale))',
         );
-        expect(cssDeclarations(css, '.banner').height).toBe('var(--saved-banner-tall)');
-    });
-
-    it('should use the taller banner as the solo lower bound', () => {
-        expect(cssDeclarations(css, ".saved[data-solo='true'] .banner")).toMatchObject({
-            'min-height': 'var(--saved-banner-tall)',
-            'max-height': 'max(var(--saved-banner-tall), var(--saved-solo-room, 0px))',
-        });
     });
 });

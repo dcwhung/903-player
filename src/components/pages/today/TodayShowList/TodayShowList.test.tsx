@@ -49,9 +49,33 @@ describe('TodayShowList', () => {
             'aria-current',
             'true',
         );
-        expect(screen.getByText('10:09 · 播放中')).toBeInTheDocument();
+        // ON AIR combo：時間後面接「播放中」紅 pill（唔再寫「 · 播放中」）
+        expect(screen.getByText('10:09')).toBeInTheDocument();
+        expect(screen.getByText('播放中')).toHaveAttribute('data-on-air-badge');
         expect(screen.getByText('07:08 · 已收聽')).toBeInTheDocument();
         expect(screen.getByText('08:09 · 未收聽')).toBeInTheDocument();
+    });
+
+    it('should mark the playing show with a live bar and a paused selected show with a grey bar', () => {
+        const paused = ITEMS.map((item) =>
+            item.status === 'playing' ? { ...item, status: 'unwatched' as const } : item,
+        );
+        const { rerender } = render(<TodayShowList items={ITEMS} onSelect={() => {}} />);
+        const lamps = () =>
+            [...document.querySelectorAll('[data-on-air-lamp]')].map((el) =>
+                el.getAttribute('data-on-air-lamp'),
+            );
+
+        expect(lamps()).toEqual(['live']);
+
+        rerender(<TodayShowList items={paused} onSelect={() => {}} />);
+
+        expect(lamps()).toEqual(['idle']);
+        expect(screen.queryByText('播放中')).not.toBeInTheDocument();
+        expect(screen.getByText('10:09 · 未收聽')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /^播放 Bad Girl大過佬/ }).className).toMatch(
+            /active/,
+        );
     });
 
     it('shows a pause button only on the playing show', () => {

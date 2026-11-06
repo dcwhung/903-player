@@ -3,10 +3,11 @@ import { t, type MessageKey } from '../../../../i18n/t';
 import type { Recording } from '../../../../types/recording';
 import { formatSpokenDate } from '../../../../utils/date';
 import { Disc } from '../../../shared/common/Disc/Disc';
-import { CheckIcon, PauseIcon, PlayIcon } from '../../../shared/common/icons/icons';
+import { PauseIcon, PlayIcon } from '../../../shared/common/icons/icons';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';
 import { BookmarkButton } from '../../../shared/player/BookmarkButton/BookmarkButton';
 import styles from './TodayShowList.module.css';
+import { RowLamp, RowStatus } from './TodayShowRowParts';
 
 export type ShowStatus = 'playing' | 'watched' | 'unwatched' | 'unavailable';
 
@@ -33,7 +34,6 @@ const STATUS_MESSAGE: Record<ShowStatus, MessageKey> = {
     unwatched: 'common.status.unwatched',
     unavailable: 'today.statusUnavailable',
 };
-const STATUS_ICON_SIZE = 12;
 const PLAY_ICON_SIZE = 22;
 
 /**
@@ -86,13 +86,11 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
                 )}
                 onClick={() => onSelect(item.key)}
             >
+                <RowLamp item={item} />
                 <Disc size="small" art={item.art} />
                 <span className={styles.text}>
                     <Marquee className={styles.name} text={item.name} />
-                    <span className={`${styles.status} ${styles[item.status] ?? ''}`}>
-                        {item.status === 'watched' && <CheckIcon size={STATUS_ICON_SIZE} />}
-                        {t('today.timeWithStatus', { time: item.time, status: statusText })}
-                    </span>
+                    <RowStatus item={item} statusText={statusText} />
                 </span>
                 {item.track && <span className={styles.bookmarkSpace} aria-hidden="true" />}
                 {isPlaying ? (

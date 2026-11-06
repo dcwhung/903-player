@@ -43,6 +43,8 @@
 }
 
 .row {
+    /* 左邊條（OnAirLamp）以行定位 */
+    position: relative;
     display: flex;
     align-items: center;
     /* 寫死嘅 px 都跟 --ui-scale（橫版大畫面放大）；直版 / 手機係 × 1 */
@@ -57,6 +59,7 @@
     text-align: left;
 }
 
+/* 揀中嗰集（播緊 / 暫停都係）：淺底框；播緊另外有 pill + 紅條，暫停灰條（OnAirLamp） */
 .current {
     background: var(--color-surface);
 }
@@ -119,11 +122,6 @@
     font-weight: 600;
 }
 
-.current .dayMonth,
-.current .status {
-    color: var(--color-status-playing);
-}
-
 .weekday {
     font-size: var(--font-size-2xs);
     color: var(--color-text-muted);
@@ -173,7 +171,7 @@
 
 /*
  * 已收聽：成行淡色（--color-watched：淡色字再向背景淡 25%；集名唔粗體、進度條同剔都轉淡），
- * 同未聽嘅一眼分開。唔用 opacity（行仲撳得重聽）。重聽緊嗰集（.current）照用播放中嘅強調色
+ * 同未聽嘅一眼分開。唔用 opacity（行仲撳得重聽）。重聽緊嗰集（.current）唔淡，用普通字色
  */
 .watched:not(.current) .status {
     color: var(--color-watched);
@@ -228,6 +226,16 @@
         var(--color-track) 0 var(--unavailable-dash),
         transparent var(--unavailable-dash) calc(var(--unavailable-dash) + var(--unavailable-gap))
     );
+}
+
+/* 播緊：「播放中」pill + 時間；窄欄放唔落就時間換落 pill 下面（行高不變） */
+.onAir {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(3px * var(--ui-scale)) calc(6px * var(--ui-scale));
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 /* 快將下架（LE1）：狀態字後面琥珀色「· ⏳ 05/12 下架」；欄窄放唔落先成粒換落下一行（唔會溢出蓋住 ☆） */

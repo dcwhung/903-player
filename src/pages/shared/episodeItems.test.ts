@@ -46,8 +46,9 @@ describe('toEpisodeItems', () => {
                 status: {
                     kind: 'playing',
                     ratio: 760 / 7110,
-                    text: '播放中 · 12:40 / 1:58:30',
+                    text: '12:40 / 1:58:30',
                     spokenText: '播放中，12:40 / 1:58:30',
+                    onAir: true,
                 },
                 track: NEWEST,
             },

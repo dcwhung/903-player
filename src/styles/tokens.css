@@ -165,6 +165,16 @@
     /* 「新」統一紅底白字（NewBadge） */
     --new-badge-bg: #c0362c;
     --new-badge-text: #ffffff;
+    /*
+     * 「播放中」紅 pill + 播緊嗰行左邊條（OnAirBadge，ON AIR combo）：白字對 pill 5.88:1（所有主題一樣）；
+     * 左邊條係裝飾（「播放中」已經有字）。慢慢發光 / equaliser 週期由頁面過場時間推出（1560ms）
+     */
+    --color-on-air: #c8102e;
+    --color-on-on-air: #ffffff;
+    --onair-lamp: #ff3b30;
+    --onair-glow-strong: rgb(255 59 48 / 85%);
+    --onair-glow-faint: rgb(255 59 48 / 20%);
+    --onair-pulse: calc(var(--view-transition-move) * 3);
 
     /*
      * 快將下架（P8 #6，_mockups_/coming-soon ⑧）：琥珀色 + ⏳，同即將上架嘅灰 / 虛線 / ⏱ 分開。
@@ -630,6 +640,16 @@
     --shadow-mini-player-lifted: 0 1px 6px rgb(0 0 0 / 60%);
     /* 今日節目卡：細細一圈軌道色描邊 + 浮起陰影，令疊喺後面嘅卡睇得出邊 */
     --shadow-card: 0 0 0 1px var(--theme-track), 0 10px 26px rgb(0 0 0 / 45%);
+    /*
+     * 揀中但暫停 / 未開始嗰行左邊灰條（OnAirLamp idle）：一隻灰喺淺色清單、深色清單同收藏框（#2d4560）
+     * 唔可以全部過 3:1，按 scheme 揀：深色 #9a9a9a（深色清單 ≥ 4.6、收藏框 3.5），淺色見下面
+     */
+    --onair-lamp-idle: #9a9a9a;
+}
+
+/* 淺色主題（廣播劇）嘅灰條：對淺色清單底 / 揀中底框 ≥ 3.66:1 */
+[data-scheme='light'] {
+    --onair-lamp-idle: #6e6e6e;
 }
 
 /*

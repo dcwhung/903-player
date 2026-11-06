@@ -316,15 +316,16 @@ describe('HomeSaved (我的收藏 tab)', () => {
         it('should list in one column on a phone and two on the landscape layouts', () => {
             listenToThree();
             const phone = openSaved('phone');
-            expect(listOf(recentRegion()).style.columnCount).toBe('1');
+            // db27678：兩欄改用 grid（data-cols），唔再用 CSS columnCount
+            expect(listOf(recentRegion())).toHaveAttribute('data-cols', '1');
             phone.unmount();
 
             const land = openSaved('land');
-            expect(listOf(recentRegion()).style.columnCount).toBe('2');
+            expect(listOf(recentRegion())).toHaveAttribute('data-cols', '2');
             land.unmount();
 
             openSaved('wide');
-            expect(listOf(recentRegion()).style.columnCount).toBe('2');
+            expect(listOf(recentRegion())).toHaveAttribute('data-cols', '2');
         });
 
         it('should open the page without playing when a row is tapped', async () => {

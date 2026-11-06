@@ -1,7 +1,6 @@
 import {
     catalogEpisodeOf,
     dramaArtFor,
-    dramaEpisodeTheme,
     dramaEpisodesOf,
     dramaStatus,
     enabledDramas,
@@ -130,8 +129,10 @@ export interface SavedRowStatus {
     text: string;
     /** 進度線 0–1 */
     ratio: number;
-    /** 播緊：行變深、字變 cream、掣變 ⏸ */
+    /** 播緊：「播放中」紅 pill + 左邊紅條、掣變 ⏸ */
     playing: boolean;
+    /** player 載入緊呢集（播緊 / 暫停都係）：暫停就左邊灰條 */
+    current: boolean;
 }
 
 const positionText = (position: number, duration: number): string =>
@@ -149,18 +150,19 @@ export const savedRowStatus = ({ loaded, isPlaying, live, progress }: RowStatusI
         const text = isPlaying
             ? t('common.status.playing')
             : positionText(live.currentTime, live.duration);
-        return { text, ratio: shown, playing: isPlaying };
+        return { text, ratio: shown, playing: isPlaying, current: true };
     }
-    if (progress?.watched) return { text: t('common.status.watched'), ratio: 1, playing: false };
+    const idle = { playing: false, current: false };
+    if (progress?.watched) return { text: t('common.status.watched'), ratio: 1, ...idle };
     if (progress && progress.position > 0) {
         const shown = ratio(progress.position, progress.duration);
         return {
             text: positionText(progress.position, progress.duration),
             ratio: shown,
-            playing: false,
+            ...idle,
         };
     }
-    return { text: t('common.status.unwatched'), ratio: 0, playing: false };
+    return { text: t('common.status.unwatched'), ratio: 0, ...idle };
 };
 
 /** box 頂 banner：節目 / 成套劇嘅橫圖同名（isKnownBookmark 過咗先用，搵唔到就空） */
@@ -168,13 +170,6 @@ export const boxMeta = (kind: 'show' | 'drama', id: string): { title: string; ba
     const found = kind === 'show' ? findShow(id) : findEnabledDrama(id);
     return { title: found?.name ?? '', banner: found?.tileArt ?? '' };
 };
-
-/**
- * 嗰集嘅節目 / 劇主題色（播放卡播放掣嗰隻強調色）：收藏 tab 播緊嗰行嘅字色，
- * 同上面短篇名（cream）分得開（用戶截圖，v1.28.2）
- */
-export const trackAccent = (track: Track): string =>
-    (isDramaEpisode(track) ? dramaEpisodeTheme(track) : themeFor(track.showId)).accent;
 
 /** 段左邊嘅碟：節目碟；劇集用嗰集嘅碟（短篇有自己碟就用，冇就成套劇嘅碟） */
 export const trackArt = (track: Track): string =>

@@ -1,5 +1,8 @@
-/* 收藏 tab 播緊嗰行（用戶截圖，v1.28.2）：冇深色底框，日期 / 狀態用嗰個節目 / 劇嘅主題色 */
-import { render, screen } from '@testing-library/react';
+/*
+ * 收藏 tab 播緊 / 暫停嗰行（ON AIR combo，用戶 2026-11-06）：播緊 =「播放中」紅 pill + 左邊紅條，
+ * 日期 / 狀態用普通字色（唔再用主題色）；揀中但暫停 = 左邊灰條、照寫聽到邊；冇深色底框
+ */
+import { render, screen, within } from '@testing-library/react';
 import { SavedTab } from './SavedTab';
 import type { SavedRowView, SavedTabView } from './savedTypes';
 
@@ -10,6 +13,7 @@ const row = (extra: Partial<SavedRowView>): SavedRowView => ({
     status: '播放中',
     ratio: 0.1,
     playing: true,
+    current: true,
     name: '芝See菇Bi Family，三十六計',
     zoomKey: 'episode:/chisee/1',
     onOpen: vi.fn(),
@@ -36,19 +40,38 @@ const view = (rows: SavedRowView[]): SavedTabView => ({
     recent: [],
 });
 
-describe('SavedTab playing row colour', () => {
-    it('should hand the row its own theme colour for the playing highlight', () => {
-        render(<SavedTab view={view([row({ accent: '#f7901e' })])} />);
+const lampOf = (li: Element | null) =>
+    li?.querySelector('[data-on-air-lamp]')?.getAttribute('data-on-air-lamp') ?? null;
+
+describe('SavedTab playing row', () => {
+    it('should show the on-air pill and live bar instead of the 播放中 text colour', () => {
+        render(<SavedTab view={view([row({})])} />);
         const li = screen.getByText('第 1 集').closest('li');
 
         expect(li).toHaveAttribute('data-playing', 'true');
-        expect(li?.style.getPropertyValue('--saved-row-accent')).toBe('#f7901e');
+        expect(within(li as HTMLElement).getByText('播放中')).toHaveAttribute('data-on-air-badge');
+        expect(lampOf(li)).toBe('live');
+        expect(li?.getAttribute('style')).toBeNull();
+        // 讀屏照由行掣講一次「播放中」
+        expect(
+            within(li as HTMLElement).getByRole('button', { name: /^開啟 .*，播放中$/ }),
+        ).toBeInTheDocument();
     });
 
-    it('should not set a colour on a row without one', () => {
-        render(<SavedTab view={view([row({ playing: false })])} />);
+    it('should mark a paused current row with a grey bar and keep its status text', () => {
+        render(<SavedTab view={view([row({ playing: false, status: '聽到 0:06 / 10:00' })])} />);
         const li = screen.getByText('第 1 集').closest('li');
 
-        expect(li?.style.getPropertyValue('--saved-row-accent')).toBe('');
+        expect(lampOf(li)).toBe('idle');
+        expect(screen.queryByText('播放中')).not.toBeInTheDocument();
+        expect(screen.getByText('聽到 0:06 / 10:00')).toBeInTheDocument();
+    });
+
+    it('should leave other rows without a bar', () => {
+        render(
+            <SavedTab view={view([row({ playing: false, current: false, status: '未收聽' })])} />,
+        );
+
+        expect(lampOf(screen.getByText('第 1 集').closest('li'))).toBeNull();
     });
 });

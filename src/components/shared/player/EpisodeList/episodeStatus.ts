@@ -15,6 +15,11 @@ export interface EpisodeStatus {
     text: string;
     /** 讀屏版（播放掣讀屏名用）：唔讀「·」（S-717）；冇就同 text 一樣 */
     spokenText?: string;
+    /**
+     * 播緊（有時長）：行出「播放中」紅 pill（OnAirBadge）+ 左邊紅條，text 淨係時間「0:05 / 21:56」；
+     * spokenText 照講「播放中，0:05 / 21:56」
+     */
+    onAir?: true;
 }
 
 interface EpisodeStatusInput {
@@ -26,7 +31,10 @@ interface EpisodeStatusInput {
     liveState?: PlaybackState;
 }
 
-/** 揀中集（有時長）：「播放中 · 0:05 / 21:56」等；讀屏版用「，」（S-717） */
+/**
+ * 揀中集（有時長）：播緊 = pill +「0:05 / 21:56」；暫停「聽到 0:05 / 21:56」；未開始「未開始 · 0:00 / 11:17」。
+ * 讀屏版用「，」（S-717），播緊照讀「播放中，0:05 / 21:56」
+ */
 const liveStatus = (
     live: { currentTime: number; duration: number },
     liveState: PlaybackState,
@@ -37,12 +45,14 @@ const liveStatus = (
         total: formatDuration(live.duration),
     };
     const key = PLAYBACK_STATUS_KEY[liveState];
-    return {
-        kind: 'playing',
-        ratio: ratio(live.currentTime, live.duration),
-        text: t(key, params),
-        spokenText: t(key, { ...params, sep: t('common.spokenSeparator') }),
-    };
+    const spokenText = t(key, { ...params, sep: t('common.spokenSeparator') });
+    const shown = ratio(live.currentTime, live.duration);
+    if (liveState === 'playing') {
+        // 「播放中」由 pill 出，字唔再重複
+        const text = t('player.progressText', params);
+        return { kind: 'playing', ratio: shown, text, spokenText, onAir: true };
+    }
+    return { kind: 'playing', ratio: shown, text: t(key, params), spokenText };
 };
 
 /** 集數清單每一行嘅狀態：連線中 / 播放中 / 已收聽 / 聽到 mm:ss / 未收聽 */

@@ -9,14 +9,16 @@ const progress = (position: number, duration: number, watched = false): Progress
 });
 
 describe('episodeStatus', () => {
-    it('shows live time for the current episode', () => {
+    // ON AIR combo：「播放中」由紅 pill（OnAirBadge）出，字淨係時間；讀屏照講「播放中，…」
+    it('shows live time for the current episode next to the on-air pill', () => {
         expect(
             episodeStatus({ isCurrent: true, live: { currentTime: 760, duration: 7110 } }),
         ).toEqual({
             kind: 'playing',
             ratio: 760 / 7110,
-            text: '播放中 · 12:40 / 1:58:30',
+            text: '12:40 / 1:58:30',
             spokenText: '播放中，12:40 / 1:58:30',
+            onAir: true,
         });
     });
 
