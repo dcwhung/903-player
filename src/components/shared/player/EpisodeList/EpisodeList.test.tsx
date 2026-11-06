@@ -12,7 +12,12 @@ const ITEMS: EpisodeItem[] = [
         weekday: '星期一',
         current: true,
         isPlaying: true,
-        status: { kind: 'playing', ratio: 0.1, text: '播放中 · 12:40 / 1:58:30' },
+        status: {
+            kind: 'playing',
+            ratio: 0.1,
+            text: '播放中 · 12:40 / 1:58:30',
+            spokenText: '播放中，12:40 / 1:58:30',
+        },
     },
     {
         key: 'b',
@@ -43,7 +48,7 @@ describe('EpisodeList', () => {
         expect(screen.getByRole('heading', { name: '集數' })).toBeInTheDocument();
         expect(screen.getByText('共 3 集')).toBeInTheDocument();
         expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
-            '暫停 19/10 星期一，播放中 · 12:40 / 1:58:30',
+            '暫停 19/10 星期一，播放中，12:40 / 1:58:30',
             '播放 16/10 星期五，已收聽',
             '播放 15/10 星期四，聽到 45:10',
         ]);

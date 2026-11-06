@@ -93,10 +93,10 @@ describe('ArcSheet', () => {
         ]);
         expect(picks().map((b) => b.getAttribute('aria-label'))).toEqual([
             '好朋友手牽手，播緊第 2 集，聽完 1 / 4 集',
-            '青春期眞神奇，未聽 · 3 集，新上架',
-            '小苦妹撲水，未聽 · 4 集',
+            '青春期眞神奇，未聽，3 集，新上架',
+            '小苦妹撲水，未聽，4 集',
             '青春期，下一集係第 2 集，聽完 1 / 4 集',
-            '大妒忌，聽完 · 3 集',
+            '大妒忌，聽完，3 集',
         ]);
         expect(picks()[0]).toHaveAttribute('aria-current', 'true');
         expect(picks()[1]).toHaveTextContent('新');
@@ -133,7 +133,7 @@ describe('ArcSheet', () => {
     it('picks a 短篇 by its row, and closes with the button, the backdrop or Escape', async () => {
         const { onPick, onClose } = renderSheet();
 
-        await userEvent.click(screen.getByRole('button', { name: '小苦妹撲水，未聽 · 4 集' }));
+        await userEvent.click(screen.getByRole('button', { name: '小苦妹撲水，未聽，4 集' }));
         expect(onPick).toHaveBeenCalledWith('小苦妹撲水');
 
         await userEvent.click(screen.getByRole('button', { name: '關閉' }));

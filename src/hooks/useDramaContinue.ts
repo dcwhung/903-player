@@ -1,5 +1,6 @@
 import type { DramaShelfItem } from '../components/pages/home/DramaShelf/DramaShelf';
 import type { DramaConfig } from '../catalog/dramas';
+import { t } from '../i18n/t';
 import { usePlayer } from '../player/usePlayer';
 import { isLeavingSoon } from '../selectors/availability';
 import { dayWhen, spokenRemoval, removalWhen } from '../selectors/availabilityLabels';
@@ -40,6 +41,11 @@ export const useDramaContinue = (): ((drama: DramaConfig) => Continue | undefine
         const next = liveSeriesContinue(catalogSeriesOf(drama.id), progressMap, today);
         if (!next) return undefined;
         const leaving = leavingOf(next.episode.removedAt, today);
-        return { label: dramaEpisodeLabel(next.episode), ratio: next.ratio, leaving };
+        return {
+            label: dramaEpisodeLabel(next.episode),
+            spokenLabel: dramaEpisodeLabel(next.episode, t('common.spokenSeparator')),
+            ratio: next.ratio,
+            leaving,
+        };
     };
 };

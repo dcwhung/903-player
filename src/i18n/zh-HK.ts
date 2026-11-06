@@ -2,7 +2,8 @@
  * 文案規則（用戶 2026-11-05 決定）：
  * - G1 空格：半形數字同中文之間有空格，全形括號後面冇空格（「05/12 下架」「05/12（六）下架」）
  * - 日子：畫面「17/10（六）」（dates.label）/「17/10」；讀屏一律「17/10 星期六」（dates.spoken），唔講明日 / 後日
- * - G2「·」分隔符：common.separator（前後有空格），code 砌字用佢，唔另外寫死
+ * - G2「·」分隔符：common.separator（前後有空格），code 砌字用佢，唔另外寫死；字典入面寫 {sep}（t() 預設填 common.separator）
+ * - 讀屏句唔讀「·」：同一句傳 sep = common.spokenSeparator（「，」）（S-717 / S-718）
  * - G3 範圍一律用「至」：「第 11 至 20 集」
  * - 狀態字（播放中、已暫停、已收聽、未收聽、聽到…）只寫喺 common.status，各處引用同一個
  */
@@ -20,6 +21,8 @@ export const zhHK = {
         showNotFound: '找不到此節目',
         // 分隔符（G2）：全 app 一個，前後有空格；畫面用 <span aria-hidden> 出，唔寫死喺 CSS / code
         separator: ' · ',
+        // 讀屏版分隔符（S-717）：用嚟填讀屏句嘅 {sep}，唔會讀出「點」
+        spokenSeparator: '，',
         // A4：清單行 / 收藏 tab / 今日節目表 / 全集表 / 把手共用嘅狀態字
         status: {
             playing: '播放中',
@@ -73,14 +76,15 @@ export const zhHK = {
         title: '集數',
         count: '共 {count} 集',
         // 有未上架集數：「共 N 集」只計播得到嘅
-        countWithUnavailable: '共 {count} 集 · {unavailable} 集未上架',
+        countWithUnavailable: '共 {count} 集{sep}{unavailable} 集未上架',
         // 試過但原站未有（404）：行照列出但撳唔到
         unavailable: '未上架',
         // 節目頁：有未上架集數但一集都播唔到
         noneUp: '未有集數上架',
-        playing: '播放中 · {current} / {total}',
+        // {playing} = common.status.playing（S-718：狀態字唔重複寫）
+        playing: '{playing}{sep}{current} / {total}',
         // 揀中嗰集載入咗未開始（暫停緊就寫 common.status.resumeOf，A2）
-        ready: '未開始 · {current} / {total}',
+        ready: '未開始{sep}{current} / {total}',
         play: '播放 {date}，{status}',
         // 播緊嗰集：清單行嘅掣變暫停
         pause: '暫停 {date}，{status}',
@@ -105,7 +109,7 @@ export const zhHK = {
         regionDrama: '正在播放（廣播劇）',
         open: '開啟 {name} 節目頁',
         openDrama: '開啟 {name} 廣播劇頁',
-        withTime: '{label} · {time}',
+        withTime: '{label}{sep}{time}',
         position: '今日第 {index} 個節目，共 {total} 個',
         // 聽緊嘅舊集排喺今日節目前面（重溫）：成個播放器（今日冇節目就只有重溫）、開頁掣、指示點、第幾個嘅讀屏名
         regionRewatch: '正在播放（重溫及今日節目）',
@@ -127,18 +131,21 @@ export const zhHK = {
     bookmark: {
         // 集數清單每行嘅 ☆ / ★（aria-pressed 講收藏咗未）
         toggleEpisode: '收藏 {label}',
+        // 今日節目表嘅 ☆（C4）：{label} = 節目名 + 讀屏日子「公子會 06/11 星期五」
+        episodeOf: '{name} {label}',
         // 播放器播放掣右邊
         toggleCurrent: '收藏本集',
         added: '已加入收藏',
         removed: '已移除收藏',
         // 收藏 tab 每行（狀態字見 common.status）；{label} 係讀屏日子「17/10 星期六」或者「第 N 集」
-        // B3：短篇劇名「芝See菇Bi Family · 三十六計」（{sep} = common.separator）
+        // B3：短篇劇名「芝See菇Bi Family · 三十六計」（{sep} = common.separator）；讀屏名用 seriesSpokenName（S-716）
         seriesName: '{title}{sep}{arc}',
+        seriesSpokenName: '{title}，{arc}',
         open: '開啟 {name} {label}，{status}',
         play: '播放 {name} {label}',
         pause: '暫停 {name} {label}',
-        // 左滑移除嘅鍵盤代替（撳 Delete）
-        removeHint: '向左掃或者撳 Delete 移除收藏',
+        // 左滑移除嘅鍵盤代替（撳 Delete / Backspace）；收藏行用 aria-describedby 讀（唔用 title，B2b）
+        removeHint: '向左滑動或者撳刪除鍵移除收藏',
         recent: '最近收聽',
         openRecent: '開啟 {name} {label}',
         bookmarkRecent: '收藏 {name} {label}',
@@ -163,11 +170,11 @@ export const zhHK = {
         playShow: '播放 {name}',
         playShowWithStatus: '播放 {name}，{status}',
         pauseShowWithStatus: '暫停 {name}，{status}',
-        timeWithStatus: '{time} · {status}',
+        timeWithStatus: '{time}{sep}{status}',
         statusUnavailable: '未上架',
         unavailableCount: '{count} 個未上架',
         // 橫版唱片下面「現正播放：21/10（三）· 第 3 / 5 個節目」
-        nowPlayingIndex: '{date} · 第 {no} / {total} 個節目',
+        nowPlayingIndex: '{date}{sep}第 {no} / {total} 個節目',
         // 今日有節目播但一個都未上架：卡疊嘅位改為呢個空狀態
         emptyTitle: '今日節目未上架',
         emptyHint: '上架之後會自動顯示',
@@ -183,18 +190,18 @@ export const zhHK = {
         tileContinue: '{name}，繼續收聽 {label}',
         // 劇集格左上角「新」嘅讀屏
         tileNew: '{name}，{label}',
-        newArc: '有新短篇',
+        newArc: '有新上架短篇',
         // 成套劇一齊上架（全部短篇 / 季都新）
         newDrama: '新上架',
         newEpisode: '今日有新一集',
         // 短篇劇集：清單每行細字、mini player / 鎖屏副標題
         episodeNo: '第 {no} 集',
-        seriesLabel: '{arc} · 第 {no} 集 · {title}',
+        seriesLabel: '{arc}{sep}第 {no} 集{sep}{title}',
         // 冇集名嘅集數
-        seriesLabelUntitled: '{arc} · 第 {no} 集',
+        seriesLabelUntitled: '{arc}{sep}第 {no} 集',
         // 每日劇集重播舊集
         rerun: '重溫',
-        dailyRerunLabel: '{date} · 重溫',
+        dailyRerunLabel: '{date}{sep}重溫',
         // 短篇劇集頁：唱片下面嘅短篇 chips
         arcs: '短篇',
         // 睇緊其他短篇時，播緊嗰個短篇嘅 chip
@@ -216,8 +223,8 @@ export const zhHK = {
         pickArcToStart: '揀一個短篇開始收聽',
         // 聽過但未載入（入頁唔自動播，或者播緊其他嘢）：撳播放會繼續收聽嗰集
         continueLine: '繼續收聽：{label}',
-        arcNew: '未聽 · {count} 集',
-        arcDone: '聽完 · {count} 集',
+        arcNew: '未聽{sep}{count} 集',
+        arcDone: '聽完{sep}{count} 集',
         arcRow: '{arc}，{status}',
         // 行嘅讀屏名加埋聽完幾多（畫面上係碟面下面嘅「1/4」）
         arcWatchedCount: '聽完 {watched} / {total} 集',
@@ -226,11 +233,11 @@ export const zhHK = {
         arcPlayAgain: '由第 1 集重聽 {arc}',
         arcPause: '暫停 {arc}',
         arcPlay: '播放 {arc}',
-        nowPlayingShort: '第 {no} 集 · {title}',
+        nowPlayingShort: '第 {no} 集{sep}{title}',
         // 直版 chips 上面「現正播放：好朋友手牽手 · 第 2 集 集名」
-        nowPlayingArcShort: '{arc} · {episode}',
+        nowPlayingArcShort: '{arc}{sep}{episode}',
         // 橫版唱片下面「現正播放：好朋友手牽手 · 第 2 / 4 集」（下一行集名）
-        nowPlayingArc: '{arc} · 第 {no} / {total} 集',
+        nowPlayingArc: '{arc}{sep}第 {no} / {total} 集',
     },
     // 即將上架 / 快將下架（P8 #6，_mockups_/coming-soon）。文案決定：copy decisions 2026-11-05（D2–G3）
     availability: {
@@ -253,11 +260,11 @@ export const zhHK = {
         // 一覽表即將上架行讀屏（F4：加集數）
         upcomingArcLabel: '{name}，{when}，{count} 集',
         // 主頁劇集格短篇數後面嘅字尾（H2 / E1，前面由 common.separator 接）：{when} = 「02/12 上架」/「明日上架」
-        tileNewArc: '新短篇 {when}',
+        tileNewArc: '全新短篇 {when}',
         tileNewEpisodes: '全新集數 {when}',
-        // 劇集格讀屏（F3）：未上架嗰個講「下個短篇 / 下一批集數」；幾段之間用 noteSeparator
-        tileNextArcSpoken: '下個短篇 {when}',
-        tileNextEpisodesSpoken: '下一批集數 {when}',
+        // 劇集格讀屏（F3 / D4a）：同畫面一樣講「全新短篇 / 全新集數」；幾段之間用 noteSeparator
+        tileNextArcSpoken: '全新短篇 {when}',
+        tileNextEpisodesSpoken: '全新集數 {when}',
         // 劇集格讀屏名：劇名，{幾段用「；」接}（F5：通用 key）
         tileWithNote: '{name}，{label}',
         noteSeparator: '；',

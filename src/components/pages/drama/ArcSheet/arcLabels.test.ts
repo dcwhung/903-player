@@ -73,8 +73,8 @@ describe('rowLabel', () => {
     });
 
     it('should not add the watched count when the arc is new or done', () => {
-        expect(rowLabel(summary('new'), elsewhere)).toBe('未聽 · 4 集');
-        expect(rowLabel(summary('done'), elsewhere)).toBe('聽完 · 4 集');
+        expect(rowLabel(summary('new'), elsewhere)).toBe('未聽，4 集');
+        expect(rowLabel(summary('done'), elsewhere)).toBe('聽完，4 集');
     });
 
     it('should end with the new label when the arc is freshly added', () => {

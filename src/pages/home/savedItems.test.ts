@@ -11,6 +11,7 @@ import {
     recentText,
     savedRowStatus,
     seriesName,
+    seriesSpokenName,
 } from './savedItems';
 
 const SHOW = recording('gongzi', '2026-10-17');
@@ -56,6 +57,11 @@ describe('seriesName', () => {
     it('should join the drama title and the arc with the common separator', () => {
         expect(seriesName('芝See菇Bi Family', '三十六計')).toBe('芝See菇Bi Family · 三十六計');
     });
+
+    // S-716：讀屏名用「，」
+    it('should read the drama title and the arc with a comma', () => {
+        expect(seriesSpokenName('芝See菇Bi Family', '三十六計')).toBe('芝See菇Bi Family，三十六計');
+    });
 });
 
 describe('recentText', () => {
@@ -68,11 +74,11 @@ describe('recentText', () => {
     });
 
     it('should keep the arc and episode for series dramas', () => {
-        const label = `${SERIES.arc} · 第 ${SERIES.no} 集`;
         expect(recentText(SERIES)).toEqual({
             name: '芝See菇Bi Family',
-            label,
-            spokenLabel: label,
+            label: `${SERIES.arc} · 第 ${SERIES.no} 集`,
+            // S-717：讀屏唔讀「·」
+            spokenLabel: `${SERIES.arc}，第 ${SERIES.no} 集`,
         });
     });
 });

@@ -14,11 +14,15 @@ export const GROUP_TITLES = {
 /** 「即將上架」組（S1，排最底）嘅標題 */
 export const UPCOMING_GROUP_TITLE = 'availability.groupUpcoming' as const;
 
-/** 行入面細字：播緊 / 聽到邊 / 下一集 / 未聽 / 聽完 */
-const arcStatus = (s: ArcSummary, current: SeriesEpisode | undefined): string => {
+/** 行入面細字：播緊 / 聽到邊 / 下一集 / 未聽 / 聽完；sep：讀屏句傳「，」（S-717） */
+const arcStatus = (
+    s: ArcSummary,
+    current: SeriesEpisode | undefined,
+    sep: string = t('common.separator'),
+): string => {
     if (current?.arc === s.arc) return t('drama.arcPlayingEpisode', { no: current.no });
-    if (s.state === 'new') return t('drama.arcNew', { count: s.total });
-    if (s.state === 'done') return t('drama.arcDone', { count: s.total });
+    if (s.state === 'new') return t('drama.arcNew', { count: s.total, sep });
+    if (s.state === 'done') return t('drama.arcDone', { count: s.total, sep });
     return s.resumeAt > 0
         ? t('drama.arcResumeAt', { no: s.resume.no, time: formatDuration(s.resumeAt) })
         : t('drama.arcNext', { no: s.resume.no });
@@ -85,7 +89,7 @@ export const rowLabel = (
     notes
         ? spokenRowLabel(s, current, notes)
         : joinStatus([
-              arcStatus(s, current),
+              arcStatus(s, current, t('common.spokenSeparator')),
               s.state === 'started' &&
                   t('drama.arcWatchedCount', { watched: s.watched, total: s.total }),
               s.isNew && t('drama.arcNewLabel'),

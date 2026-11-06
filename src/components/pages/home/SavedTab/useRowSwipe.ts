@@ -120,8 +120,17 @@ const createHandlers = (box: Box<SwipeState>, clicks: Clicks, remove: () => void
     };
 };
 
-const createSwipe = (box: Box<SwipeState>, clicks: Clicks, onRemove: () => void) => {
-    const remove = () => slideAway(box.current.row, box.current.card, onRemove);
+const createSwipe = (
+    box: Box<SwipeState>,
+    clicks: Clicks,
+    onRemove: () => void,
+    onCommit: () => void,
+) => {
+    // 決定移除嗰刻就講（onCommit），唔等滑走 / 收埋完先講
+    const remove = () => {
+        onCommit();
+        slideAway(box.current.row, box.current.card, onRemove);
+    };
     return {
         bindRow: (el: HTMLLIElement | null) => void (box.current.row = el),
         bindCard: (el: HTMLDivElement | null) => void (box.current.card = el),
@@ -137,10 +146,10 @@ const createSwipe = (box: Box<SwipeState>, clicks: Clicks, onRemove: () => void)
 /**
  * 收藏 tab 每行左滑移除（_mockups_/bookmark）：行跟手指向左，紅底 🗑 貼喺行右邊外面一齊走；
  * 放手時過咗行闊四成就滑走、收埋再移除，唔夠就彈返。直向拖交返畀瀏覽器捲（touch-action: pan-y）。
- * 鍵盤：Delete / Backspace 移除（左滑嘅代替）
+ * 鍵盤：Delete / Backspace 移除（左滑嘅代替）。onCommit：決定移除嗰刻叫（例如出提示），onRemove 喺收埋完先叫
  */
-export const useRowSwipe = (onRemove: () => void) => {
+export const useRowSwipe = (onRemove: () => void, onCommit: () => void = () => {}) => {
     const box = useBox<SwipeState>({ row: null, card: null, drag: null });
     const clicks = useClickSuppression();
-    return createSwipe(box, clicks, onRemove);
+    return createSwipe(box, clicks, onRemove, onCommit);
 };

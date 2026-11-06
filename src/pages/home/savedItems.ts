@@ -105,7 +105,11 @@ export const bookmarkSpokenLabel = (b: Bookmark): string =>
 
 /** 短篇劇名（B3）：「芝See菇Bi Family · 三十六計」 */
 export const seriesName = (title: string, arc: string): string =>
-    t('bookmark.seriesName', { title, arc, sep: t('common.separator') });
+    t('bookmark.seriesName', { title, arc });
+
+/** 短篇劇名讀屏版（S-716）：「芝See菇Bi Family，三十六計」，唔讀「·」 */
+export const seriesSpokenName = (title: string, arc: string): string =>
+    t('bookmark.seriesSpokenName', { title, arc });
 
 /** 節目 / 劇仲喺 app 度（停用咗嘅劇入唔到頁，當冇） */
 export const isKnownBookmark = (b: Bookmark): boolean =>
@@ -172,7 +176,7 @@ interface RecentText {
     name: string;
     /** 畫面細字：17/10（六）或者「短篇 · 第 N 集」 */
     label: string;
-    /** 讀屏用：日子讀「17/10 星期六」（A3）；短篇同畫面一樣 */
+    /** 讀屏用：日子讀「17/10 星期六」（A3）；短篇「短篇，第 N 集」（S-717） */
     spokenLabel: string;
 }
 
@@ -187,8 +191,13 @@ export const recentText = (track: Track): RecentText => {
     if (!isDramaEpisode(track)) return dated(findShow(track.showId)?.name ?? '', track.date);
     const name = findEnabledDrama(track.dramaId)?.name ?? '';
     if (track.kind !== 'series') return dated(name, track.date);
-    const label = t('drama.seriesLabelUntitled', { arc: track.arc, no: track.no });
-    return { name, label, spokenLabel: label };
+    const { arc, no } = track;
+    return {
+        name,
+        label: t('drama.seriesLabelUntitled', { arc, no }),
+        // 讀屏唔讀「·」（S-717）
+        spokenLabel: t('drama.seriesLabelUntitled', { arc, no, sep: t('common.spokenSeparator') }),
+    };
 };
 
 /** 最近收聽認得嘅集：錄音清單 + 開咗嘅劇嘅全部集數（網址 → 集） */

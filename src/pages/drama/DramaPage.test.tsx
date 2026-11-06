@@ -195,7 +195,7 @@ describe('DramaPage', () => {
             );
             expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual([
                 '播放 不如休養下 第 1 集，未收聽',
-                '暫停 哥哥你洽我 第 2 集，播放中 · 2:00 / 20:00',
+                '暫停 哥哥你洽我 第 2 集，播放中，2:00 / 20:00',
                 '播放 著襪索腳汗 第 3 集，未收聽',
                 '播放 認認真真搵返個人 第 4 集，未收聽',
             ]);
@@ -235,7 +235,7 @@ describe('DramaPage', () => {
             const dialog = await screen.findByRole('dialog', { name: '全集' });
 
             await userEvent.click(
-                within(dialog).getByRole('button', { name: '青春期，未聽 · 4 集' }),
+                within(dialog).getByRole('button', { name: '青春期，未聽，4 集' }),
             );
 
             const youth = CHISEE.find((e) => e.arc === '青春期' && e.no === 1);
@@ -321,7 +321,7 @@ describe('DramaPage', () => {
             );
             const dialog = await screen.findByRole('dialog', { name: '全集' });
             await userEvent.click(
-                within(dialog).getByRole('button', { name: '青春期，未聽 · 4 集' }),
+                within(dialog).getByRole('button', { name: '青春期，未聽，4 集' }),
             );
             const youth = CHISEE.find((e) => e.arc === '青春期' && e.no === 1);
             expect(screen.getByRole('main').querySelector('img')?.getAttribute('src')).toBe(
@@ -585,10 +585,10 @@ describe('DramaPage', () => {
             expect(picks[0]).toHaveAccessibleName(
                 `好朋友手牽手，播緊第 2 集，聽完 1 / ${FRIENDS.length} 集`,
             );
-            expect(picks[1]).toHaveAccessibleName('三十六計，未聽 · 36 集');
-            expect(picks[2]).toHaveAccessibleName('初戀嗱喳麵，未聽 · 26 集');
-            expect(picks[3]).toHaveAccessibleName('大妒忌，未聽 · 3 集');
-            expect(picks.at(-1)).toHaveAccessibleName('你生日所以我生日，聽完 · 3 集');
+            expect(picks[1]).toHaveAccessibleName('三十六計，未聽，36 集');
+            expect(picks[2]).toHaveAccessibleName('初戀嗱喳麵，未聽，26 集');
+            expect(picks[3]).toHaveAccessibleName('大妒忌，未聽，3 集');
+            expect(picks.at(-1)).toHaveAccessibleName('你生日所以我生日，聽完，3 集');
             expect(within(dialog).getByText('聽完 1 / 12 個')).toBeInTheDocument();
 
             await userEvent.click(
@@ -661,7 +661,7 @@ describe('DramaPage', () => {
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
             await userEvent.click(screen.getByRole('button', { name: '全集' }));
 
-            await userEvent.click(screen.getByRole('button', { name: '青春期，未聽 · 4 集' }));
+            await userEvent.click(screen.getByRole('button', { name: '青春期，未聽，4 集' }));
 
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
             expect(screen.getByRole('button', { name: '青春期' })).toHaveAttribute(

@@ -73,16 +73,22 @@ export const dramaHasNew = (
     watchedUrls: ReadonlySet<string>,
 ): boolean => episodes.some((e) => isDaily(e) && e.date === today && !watchedUrls.has(e.url));
 
-/** mini player / 鎖屏嘅副標題：短篇劇集「短篇 · 第 N 集 標題」；每日劇集用日子（重播加「重溫」） */
-export const dramaEpisodeLabel = (episode: DramaEpisode): string => {
+/**
+ * mini player / 鎖屏嘅副標題：短篇劇集「短篇 · 第 N 集 · 標題」；每日劇集用日子（重播加「重溫」）。
+ * sep：讀屏名傳 common.spokenSeparator（「短篇，第 N 集，標題」，S-717）
+ */
+export const dramaEpisodeLabel = (
+    episode: DramaEpisode,
+    sep: string = t('common.separator'),
+): string => {
     if (!isDaily(episode)) {
         const { arc, no, title } = episode;
         return title
-            ? t('drama.seriesLabel', { arc, no, title })
-            : t('drama.seriesLabelUntitled', { arc, no });
+            ? t('drama.seriesLabel', { arc, no, title, sep })
+            : t('drama.seriesLabelUntitled', { arc, no, sep });
     }
     const date = formatDateLabel(episode.date);
-    return episode.rerun ? t('drama.dailyRerunLabel', { date }) : date;
+    return episode.rerun ? t('drama.dailyRerunLabel', { date, sep }) : date;
 };
 
 /** 短篇劇集嘅下一集（按 catalogue 次序，播完一個短篇接下一個短篇）；最後一集或者搵唔到就冇 */

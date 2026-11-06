@@ -64,7 +64,7 @@ export const MetaText = ({ item }: { item: DramaShelfItem }) =>
 
 /** 「繼續收聽」讀屏名（+ 嗰集快將下架） */
 const continueLabel = (name: string, resume: NonNullable<DramaShelfItem['resume']>): string => {
-    const label = t('drama.tileContinue', { name, label: resume.label });
+    const label = t('drama.tileContinue', { name, label: resume.spokenLabel });
     return resume.leaving
         ? t('availability.withLeaving', { label, when: resume.leaving.label })
         : label;

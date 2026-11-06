@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { t, type MessageKey } from '../../../../i18n/t';
 import type { Recording } from '../../../../types/recording';
+import { formatSpokenDate } from '../../../../utils/date';
 import { Disc } from '../../../shared/common/Disc/Disc';
 import { CheckIcon, PauseIcon, PlayIcon } from '../../../shared/common/icons/icons';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';
@@ -56,6 +57,12 @@ const UnavailableRow = ({ item }: { item: TodayShowItem }) => (
     </div>
 );
 
+/** ☆ 讀屏名講埋節目名同讀屏日子（C4：「收藏 公子會 06/11 星期五」） */
+const bookmarkLabel = (name: string, track: Recording): string =>
+    t('bookmark.toggleEpisode', {
+        label: t('bookmark.episodeOf', { name, label: formatSpokenDate(track.date) }),
+    });
+
 const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: string) => void }) => {
     if (item.status === 'unavailable') {
         return <UnavailableRow item={item} />;
@@ -97,7 +104,7 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
             {item.track && (
                 <BookmarkButton
                     track={item.track}
-                    label={t('bookmark.toggleEpisode', { label: item.name })}
+                    label={bookmarkLabel(item.name, item.track)}
                     className={styles.bookmark}
                 />
             )}

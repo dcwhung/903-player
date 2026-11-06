@@ -3,12 +3,17 @@ import { t } from '../../../../i18n/t';
 import { toPercent } from '../../../../utils/ratio';
 import { HourglassIcon, PauseIcon, PlayIcon, TrashIcon } from '../../../shared/common/icons/icons';
 import { Separator } from '../../../shared/common/Separator/Separator';
+import { showToast } from '../../../shared/common/Toast/toastStore';
 import styles from './SavedTab.module.css';
+import { useRemoveHintId } from './removeHint';
 import type { SavedRowView } from './savedTypes';
 import { useRowSwipe } from './useRowSwipe';
 
 const ICON_SIZE = 22;
 const NOTICE_ICON_SIZE = 12;
+
+/** 左滑 / Delete 決定移除嗰刻：同撳 ★ 一樣出「已移除收藏」（B1，冇復原） */
+const announceRemoved = () => showToast(t('bookmark.removed'));
 
 /** ▷ 唔好開始左滑（撳掣 = 原地播） */
 const keepPointer = (event: PointerEvent<HTMLButtonElement>) => event.stopPropagation();
@@ -79,10 +84,12 @@ const openLabel = ({
  * 收藏 tab 一行（_mockups_/bookmark）：日期 / 集數 + 進度字 + 2px 進度線，右邊 ▷ / ⏸（同內頁集數清單一樣冇框白色）。
  * 撳 ▷ = 原地播 / 暫停；撳行其他位置 = 入嗰集（唔播）；左滑過四成移除（useRowSwipe）
  *
- * 已下架（P8 #6）：灰色「已下架」、冇 ▷、撳唔到（aria-disabled），照可以左滑 / Delete 移除
+ * 已下架（P8 #6）：灰色「已下架」、冇 ▷、撳唔到（aria-disabled），照可以左滑 / Delete 移除。
+ * 移除提示用共用隱藏說明（aria-describedby，B2b），唔用 title
  */
 export const SavedRow = ({ row }: { row: SavedRowView }) => {
-    const { bindRow, bindCard, handlers, onKeyDown } = useRowSwipe(row.onRemove);
+    const hintId = useRemoveHintId();
+    const { bindRow, bindCard, handlers, onKeyDown } = useRowSwipe(row.onRemove, announceRemoved);
     return (
         <li
             ref={bindRow}
@@ -101,8 +108,8 @@ export const SavedRow = ({ row }: { row: SavedRowView }) => {
                     className={styles.open}
                     aria-label={openLabel(row)}
                     aria-disabled={row.removed ? 'true' : undefined}
-                    aria-keyshortcuts="Delete"
-                    title={t('bookmark.removeHint')}
+                    aria-keyshortcuts="Delete Backspace"
+                    aria-describedby={hintId}
                     onKeyDown={onKeyDown}
                     onClick={row.removed ? undefined : row.onOpen}
                 >
