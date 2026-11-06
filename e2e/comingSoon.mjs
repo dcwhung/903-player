@@ -118,7 +118,7 @@ const checkStackedUpcoming = async (env) => {
 };
 
 // 讀屏名（F3）：劇名，未上架嗰個；快將下架（讀屏日子 E1：一律「日子 星期幾」）
-const SOON_TILE_LABEL = 'E2E 即將劇場，下個短篇 02/12 星期三 上架；部分短篇 19/12 星期六 下架';
+const SOON_TILE_LABEL = 'E2E 即將劇場，全新短篇 02/12 星期三 上架；部分短篇 19/12 星期六 下架';
 /** 主頁格角落字闊橫版 / 窄橫版（有繼續收聽 + 左上角下架字，W-533） */
 const RELEASE_VIEWPORTS = [
     { width: 1300, height: 800, full: false },
@@ -180,12 +180,13 @@ const CORNER_CASES = [
         name: /^E2E 下架劇場，/,
         text: '19/12 下架',
     },
-    // 闊橫版三欄格約 313px（> 280px 本來出全句）、有繼續收聽：收短篇數之後短版夠位
+    // 闊橫版三欄格約 313px（> 280px 本來出全句）、有繼續收聽：D4 上架字改「全新短篇」長咗一個字，
+    // 收短篇數之後短版都放唔落（W-539，CI 字型量），跟 E2 淨出日期
     {
         viewport: { width: 1600, height: 800 },
         progress: LEAVING_PROGRESS,
         name: SOON_TILE_LABEL,
-        text: '19/12 下架',
+        text: '19/12',
     },
     // 有繼續收聽、頂行放唔落短版：淨日期
     {
@@ -263,7 +264,7 @@ const checkReleaseNote = async (env) => {
         await p.getByRole('button', { name: SHELF, exact: true }).click();
         const tile = p.getByRole('button', { name: SOON_TILE_LABEL });
         const fit = (await isShown(tile, { timeout: WAIT_MS })) ? await releaseFit(tile) : null;
-        const expected = full ? '新短篇 後日上架' : '後日上架';
+        const expected = full ? '全新短篇 後日上架' : '後日上架';
         log(
             fit !== null && fit.whole && fit.inside && fit.text === expected,
             `${viewport.width}×${viewport.height} 主頁：上架字尾冇俾截（${JSON.stringify(fit)}）`,
@@ -293,7 +294,7 @@ const checkHomeShelf = async (env) => {
     const labels = await labelsIn(shelf);
     log(
         labels.includes(SOON_TILE_LABEL),
-        '主頁：即將劇場讀「下個短篇 02/12 星期三 上架；部分短篇 19/12 星期六 下架」',
+        '主頁：即將劇場讀「全新短篇 02/12 星期三 上架；部分短篇 19/12 星期六 下架」',
     );
     log(
         labels.includes('E2E 下架劇場，本廣播劇系列 19/12 星期六 下架'),
@@ -305,11 +306,11 @@ const checkHomeShelf = async (env) => {
         `主頁：整套新劇排最尾（${labels.at(-1)}）`,
     );
     log(
-        labels.includes('E2E 即將劇場，繼續收聽 我心不死 · 第 3 集，01/12 星期二 下架'),
+        labels.includes('E2E 即將劇場，繼續收聽 我心不死，第 3 集，01/12 星期二 下架'),
         '主頁：繼續收聽嗰集同左上角唔同日落架，條上照加下架日（LC2）',
     );
     log(
-        labels.includes('E2E 下架劇場，繼續收聽 戀愛二分一 · 第 1 集') &&
+        labels.includes('E2E 下架劇場，繼續收聽 戀愛二分一，第 1 集') &&
             !(await shelf.locator('[data-role="continue-leaving"]').allTextContents()).some((t) =>
                 t.includes('19/12'),
             ),
@@ -458,7 +459,7 @@ const checkSavedTab = async (env) => {
     const saved = p.getByRole('region', { name: SAVED_TAB });
     await saved.waitFor({ timeout: WAIT_MS });
     const gone = saved.getByRole('button', {
-        name: 'E2E 舊劇場 · 戀愛二分一 第 1 集，已下架',
+        name: 'E2E 舊劇場，戀愛二分一 第 1 集，已下架',
     });
     log((await gone.getAttribute('aria-disabled')) === 'true', '收藏 tab：已下架行 aria-disabled');
     log(
@@ -469,7 +470,7 @@ const checkSavedTab = async (env) => {
     log(
         leaving.some(
             (l) =>
-                l.startsWith('開啟 E2E 即將劇場 · 我心不死 第 3 集') &&
+                l.startsWith('開啟 E2E 即將劇場，我心不死 第 3 集') &&
                 l.includes('01/12 星期二 下架'),
         ),
         '收藏 tab：快將下架行讀下架日（LB1）',
@@ -477,7 +478,7 @@ const checkSavedTab = async (env) => {
     log(
         leaving.some(
             (l) =>
-                l.startsWith('開啟 E2E 即將劇場 初戀無限次 · 第 2 集') &&
+                l.startsWith('開啟 E2E 即將劇場 初戀無限次，第 2 集') &&
                 l.includes('19/12 星期六 下架'),
         ),
         '最近收聽：快將下架行第二行（LR1）',

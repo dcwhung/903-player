@@ -13,6 +13,8 @@ export interface EpisodeStatus {
     /** 進度條 0–1 */
     ratio: number;
     text: string;
+    /** 讀屏版（播放掣讀屏名用）：唔讀「·」（S-717）；冇就同 text 一樣 */
+    spokenText?: string;
 }
 
 interface EpisodeStatusInput {
@@ -24,6 +26,25 @@ interface EpisodeStatusInput {
     liveState?: PlaybackState;
 }
 
+/** 揀中集（有時長）：「播放中 · 0:05 / 21:56」等；讀屏版用「，」（S-717） */
+const liveStatus = (
+    live: { currentTime: number; duration: number },
+    liveState: PlaybackState,
+): EpisodeStatus => {
+    const params = {
+        playing: t('common.status.playing'),
+        current: formatDuration(live.currentTime),
+        total: formatDuration(live.duration),
+    };
+    const key = PLAYBACK_STATUS_KEY[liveState];
+    return {
+        kind: 'playing',
+        ratio: ratio(live.currentTime, live.duration),
+        text: t(key, params),
+        spokenText: t(key, { ...params, sep: t('common.spokenSeparator') }),
+    };
+};
+
 /** 集數清單每一行嘅狀態：連線中 / 播放中 / 已收聽 / 聽到 mm:ss / 未收聽 */
 export const episodeStatus = ({
     isCurrent,
@@ -34,13 +55,7 @@ export const episodeStatus = ({
     if (isCurrent && live && !hasKnownDuration(live.duration)) {
         return { kind: 'playing', ratio: 0, text: t('episodes.connecting') };
     }
-    if (isCurrent && live) {
-        const text = t(PLAYBACK_STATUS_KEY[liveState], {
-            current: formatDuration(live.currentTime),
-            total: formatDuration(live.duration),
-        });
-        return { kind: 'playing', ratio: ratio(live.currentTime, live.duration), text };
-    }
+    if (isCurrent && live) return liveStatus(live, liveState);
     if (progress?.watched) {
         return { kind: 'watched', ratio: 1, text: t('common.status.watched') };
     }

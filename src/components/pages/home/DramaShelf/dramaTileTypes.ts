@@ -30,6 +30,8 @@ export interface DramaShelfItem {
     resume?:
         | {
               label: string;
+              /** 讀屏版集名（唔讀「·」，S-717） */
+              spokenLabel: string;
               ratio: number;
               /** 放唔落（集名優先）就成段收埋；date：同左上角同一日就唔出（去重） */
               leaving?: (TileNotice & { date?: string | undefined }) | undefined;

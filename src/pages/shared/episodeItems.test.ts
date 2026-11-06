@@ -43,7 +43,12 @@ describe('toEpisodeItems', () => {
                 weekday: '星期六',
                 current: true,
                 isPlaying: true,
-                status: { kind: 'playing', ratio: 760 / 7110, text: '播放中 · 12:40 / 1:58:30' },
+                status: {
+                    kind: 'playing',
+                    ratio: 760 / 7110,
+                    text: '播放中 · 12:40 / 1:58:30',
+                    spokenText: '播放中，12:40 / 1:58:30',
+                },
                 track: NEWEST,
             },
             {

@@ -13,8 +13,9 @@ const item = (overrides: Partial<DramaShelfItem> = {}): DramaShelfItem => ({
     ...overrides,
 });
 
-const RESUME = { label: '大妒忌 · 第 2 集', ratio: 0.5 };
-const CONTINUE_NAME = '芝See菇Bi Family，繼續收聽 大妒忌 · 第 2 集';
+const RESUME = { label: '大妒忌 · 第 2 集', spokenLabel: '大妒忌，第 2 集', ratio: 0.5 };
+// S-717：讀屏唔讀「·」
+const CONTINUE_NAME = '芝See菇Bi Family，繼續收聽 大妒忌，第 2 集';
 
 const metaCorner = () => screen.getByText('10 個短篇').dataset.corner;
 
@@ -65,9 +66,9 @@ describe('DramaShelf', () => {
     });
 
     it('shows 新 top-left and reads out why', () => {
-        render(<DramaShelf items={[item({ newLabel: '有新短篇' })]} />);
+        render(<DramaShelf items={[item({ newLabel: '有新上架短篇' })]} />);
 
-        const tile = screen.getByRole('button', { name: '芝See菇Bi Family，有新短篇' });
+        const tile = screen.getByRole('button', { name: '芝See菇Bi Family，有新上架短篇' });
         expect(tile).toHaveTextContent('新');
     });
 
@@ -222,7 +223,7 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
                 )}
             />,
         );
-        const strip = screen.getByRole('button', { name: '劇 3，繼續收聽 大妒忌 · 第 2 集' });
+        const strip = screen.getByRole('button', { name: '劇 3，繼續收聽 大妒忌，第 2 集' });
 
         await userEvent.click(strip);
         expect(onResume).not.toHaveBeenCalled();

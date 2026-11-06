@@ -99,9 +99,10 @@ const RowBody = ({ percent, item }: { percent: number; item: EpisodeItem }) => (
 
 /** 播放掣讀屏名：日子 / 集數 + 狀態（+ 快將下架日子） */
 const rowLabel = (item: EpisodeItem, date: string): string => {
+    const spoken = item.status.spokenText ?? item.status.text;
     const status = item.leaving
-        ? t('availability.withLeaving', { label: item.status.text, when: item.leaving.label })
-        : item.status.text;
+        ? t('availability.withLeaving', { label: spoken, when: item.leaving.label })
+        : spoken;
     return t(item.isPlaying ? 'episodes.pause' : 'episodes.play', { date, status });
 };
 

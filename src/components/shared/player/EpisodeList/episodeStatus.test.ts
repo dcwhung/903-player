@@ -12,7 +12,12 @@ describe('episodeStatus', () => {
     it('shows live time for the current episode', () => {
         expect(
             episodeStatus({ isCurrent: true, live: { currentTime: 760, duration: 7110 } }),
-        ).toEqual({ kind: 'playing', ratio: 760 / 7110, text: '播放中 · 12:40 / 1:58:30' });
+        ).toEqual({
+            kind: 'playing',
+            ratio: 760 / 7110,
+            text: '播放中 · 12:40 / 1:58:30',
+            spokenText: '播放中，12:40 / 1:58:30',
+        });
     });
 
     // A2：「已暫停」只喺播放器 / 把手出；清單行暫停緊照寫聽到邊
@@ -28,6 +33,17 @@ describe('episodeStatus', () => {
                 liveState: 'ready',
             }).text,
         ).toBe('未開始 · 0:00 / 11:17');
+    });
+
+    // S-717：讀屏版唔讀「·」
+    it('should read the live status with a comma instead of the dot', () => {
+        expect(
+            episodeStatus({
+                isCurrent: true,
+                live: { currentTime: 0, duration: 677 },
+                liveState: 'ready',
+            }).spokenText,
+        ).toBe('未開始，0:00 / 11:17');
     });
 
     it('shows connecting without times while the duration is unknown (offline)', () => {

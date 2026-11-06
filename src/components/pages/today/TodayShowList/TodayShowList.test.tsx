@@ -31,7 +31,8 @@ describe('TodayShowList', () => {
         const items = ITEMS.map((item, i) => (i === 0 ? { ...item, track } : item));
         render(<TodayShowList items={items} onSelect={onSelect} />);
 
-        const star = screen.getByRole('button', { name: `收藏 ${items[0]?.name ?? ''}` });
+        // C4：講埋節目名同讀屏日子
+        const star = screen.getByRole('button', { name: '收藏 Bad Girl大過佬 19/10 星期一' });
         await userEvent.click(star);
 
         expect(star).toHaveAttribute('aria-pressed', 'true');

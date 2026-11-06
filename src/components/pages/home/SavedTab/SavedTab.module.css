@@ -82,12 +82,13 @@
 }
 
 .boxItem {
-    margin-bottom: var(--saved-gap);
+    /* 間距用 padding（跟住格一齊唔斷開）：margin-bottom 喺 WebKit 會帶過下一欄頂，第二欄就矮過第一欄 */
+    padding-bottom: var(--saved-gap);
     break-inside: avoid;
 }
 
 .saved[data-solo='true'] .boxItem {
-    margin-bottom: 0;
+    padding-bottom: 0;
 }
 
 .box {
@@ -161,12 +162,9 @@
     border-top: 1px solid var(--saved-divider);
 }
 
-/* 碟：同播放器唱片一樣（圓形、深色外圈、中間孔），Disc size="fill" 填滿呢格 */
+/* 碟：同清單細碟一樣（Disc size="small"，幼身灰圈），大細跟呢格 */
 .disc {
-    --color-disc-rim: var(--saved-disc-hole);
-    --disc-fill-shadow:
-        0 0 0 var(--saved-disc-ring) var(--saved-disc-rim), var(--saved-disc-shadow);
-    --disc-fill-hole-ring: var(--saved-disc-hole-ring);
+    --disc-small-size: var(--saved-disc);
 
     display: block;
     align-self: start;
@@ -322,7 +320,8 @@
     flex-direction: column;
     height: var(--saved-recent-height);
     padding: var(--space-3) var(--space-3) var(--space-1);
-    padding-left: calc(var(--space-3) - var(--saved-recent-border));
+    /* 掣左邊留咗碟外圈位（.recentOpen）：呢度扣返，碟同文字照同收藏段對齊 */
+    padding-left: calc(var(--space-3) - var(--saved-recent-border) - var(--disc-small-ring));
     border: var(--saved-recent-border) dashed var(--saved-line);
     border-radius: var(--radius-tile);
     color: var(--saved-muted);
@@ -355,13 +354,11 @@
 /*
  * 捲動放喺清單外層（W-535）：ul 有固定高度時 CSS 分欄會將放唔落嘅行開新欄、向右溢出，捲唔到；
  * ul 高度跟內容，分欄自動平衡（直排：左欄由上至下再到右欄），長過 panel 就由呢層直向捲。
- * 捲動會剪走碟外圈：左右多留一圈外圈位（margin 負返出去，碟同文字位置唔變）
+ * 碟外圈喺行掣入面（.recentOpen 左邊留位），捲動唔會剪走佢
  */
 .recentScroll {
     flex: 1 1 0;
     min-height: 0;
-    margin: 0 calc(-1 * var(--saved-disc-ring));
-    padding: 0 var(--saved-disc-ring);
     overflow-y: auto;
     overscroll-behavior: contain;
 }
@@ -396,7 +393,8 @@
     gap: var(--space-3);
     align-items: center;
     min-width: 0;
-    padding: var(--space-1) 0;
+    /* overflow: hidden 會剪走碟左邊外圈（用戶截圖）：左邊留一圈外圈位 */
+    padding: var(--space-1) 0 var(--space-1) var(--disc-small-ring);
     overflow: hidden;
     border: none;
     background: transparent;
@@ -410,10 +408,7 @@
 }
 
 .recentDisc {
-    --color-disc-rim: var(--saved-disc-hole);
-    --disc-fill-shadow:
-        0 0 0 var(--saved-disc-ring) var(--saved-disc-rim), var(--saved-disc-shadow);
-    --disc-fill-hole-ring: var(--saved-disc-hole-ring);
+    --disc-small-size: var(--saved-disc);
 
     display: block;
     width: var(--saved-disc);
@@ -474,4 +469,14 @@
 /* 成套劇已下架：banner 變灰 */
 .box[data-removed] .bannerArt {
     filter: grayscale(1);
+}
+
+/* 收藏行共用嘅移除提示（removeHint.tsx）：畀讀屏讀，畫面唔顯示 */
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }

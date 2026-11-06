@@ -43,7 +43,7 @@ describe('useDramaNewLabels', () => {
 
     it('labels a series with an unheard new 短篇, and the daily drama with today’s episode', () => {
         expect(Object.fromEntries(labels())).toEqual({
-            chisee: '有新短篇',
+            chisee: '有新上架短篇',
             c18: '今日有新一集',
         });
     });
@@ -55,18 +55,18 @@ describe('useDramaNewLabels', () => {
         expect(labels().size).toBe(0);
     });
 
-    it('calls a drama added as a whole 新上架, but keeps 有新短篇 for one new 短篇', () => {
+    it('calls a drama added as a whole 新上架, but keeps 有新上架短篇 for one new 短篇', () => {
         vi.setSystemTime(new Date('2026-10-25T08:00:00Z'));
         expect(labels().get('golden')).toBe('新上架');
-        expect(labels().get('chisee')).toBe('有新短篇');
+        expect(labels().get('chisee')).toBe('有新上架短篇');
     });
 
-    it('turns 新上架 into 有新短篇 once only a later season is still new', () => {
+    it('turns 新上架 into 有新上架短篇 once only a later season is still new', () => {
         vi.setSystemTime(new Date('2026-11-07T08:00:00Z')); // 24/10 嗰 3 季過咗 14 日
         expect(labels().has('golden')).toBe(false);
 
         goldenOverride.season4AddedAt = '2026-11-01'; // Season 4 遲啲先上架，仲新
-        expect(labels().get('golden')).toBe('有新短篇');
+        expect(labels().get('golden')).toBe('有新上架短篇');
     });
 
     it('stops calling a 短篇 new 14 days after it was added', () => {

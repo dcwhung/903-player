@@ -34,7 +34,7 @@ import {
     isKnownBookmark,
     playableIndex,
     recentText,
-    seriesName,
+    seriesSpokenName,
     savedRowStatus,
     trackArt,
     trackLeaving,
@@ -95,7 +95,8 @@ const boxView = (box: BookmarkBox, ctx: RowContext): SavedBoxView => {
     const sections = box.sections.map((section) => {
         const first = section.items[0];
         const art = first ? trackArt(bookmarkTrack(first, ctx.recordings)) : '';
-        const name = section.arc ? seriesName(title, section.arc) : title;
+        // name 淨係用喺行嘅讀屏名：短篇劇名用讀屏版（S-716）
+        const name = section.arc ? seriesSpokenName(title, section.arc) : title;
         const rows = section.items.map((b) => rowView(b, name, ctx));
         return { key: section.key, art, rows, ...(section.arc && { heading: section.arc }) };
     });

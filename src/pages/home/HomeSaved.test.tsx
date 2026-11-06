@@ -13,6 +13,7 @@ import { saveProgress } from '../../services/progressStore';
 import type { SeriesEpisode } from '../../types/drama';
 import { focusUrlFromState } from '../../hooks/useEpisodeFocus';
 import { SWIPE_REMOVE_RATIO } from '../../components/pages/home/SavedTab/useRowSwipe';
+import { Toast } from '../../components/shared/common/Toast/Toast';
 import { HomeSaved } from './HomeSaved';
 
 const GONGZI_NEW = recording('gongzi', '2026-10-17');
@@ -36,13 +37,19 @@ const FocusProbe = () => {
 };
 
 const openSaved = (layout: 'phone' | 'land' | 'wide' = 'phone') =>
-    renderWithProviders(<HomeSaved layout={layout} right={RIGHT} />, {
-        recordings: RECORDINGS,
-        extraRoutes: [
-            { path: '/show/:showId', element: <FocusProbe /> },
-            { path: '/drama/:dramaId', element: <FocusProbe /> },
-        ],
-    });
+    renderWithProviders(
+        <>
+            <HomeSaved layout={layout} right={RIGHT} />
+            <Toast />
+        </>,
+        {
+            recordings: RECORDINGS,
+            extraRoutes: [
+                { path: '/show/:showId', element: <FocusProbe /> },
+                { path: '/drama/:dramaId', element: <FocusProbe /> },
+            ],
+        },
+    );
 
 /** 收藏先後：GONGZI_OLD（最舊）→ 芝See 第 2 集 → BADGIRL → GONGZI_NEW（最新） */
 const bookmarkSample = () => {
@@ -85,7 +92,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
         openSaved();
 
         expect(
-            screen.getByRole('button', { name: `開啟 芝See菇Bi Family · ${ARC} 第 2 集，未收聽` }),
+            screen.getByRole('button', { name: `開啟 芝See菇Bi Family，${ARC} 第 2 集，未收聽` }),
         ).toBeInTheDocument();
         expect(screen.getAllByText('17/10（六）')).not.toHaveLength(0);
     });
@@ -183,6 +190,42 @@ describe('HomeSaved (我的收藏 tab)', () => {
 
             await waitFor(() => expect(hasBookmark(BADGIRL.url)).toBe(false));
             expect(listBookmarks()).toHaveLength(3);
+        });
+
+        // B1：左滑 / Delete 移除同撳 ★ 一樣出「已移除收藏」
+        it('should toast 已移除收藏 when a row is swiped away', async () => {
+            bookmarkSample();
+            openSaved();
+
+            swipeRow(rowOf(/^開啟 公子會 03\/10/), -ROW_WIDTH * (SWIPE_REMOVE_RATIO + 0.1));
+
+            expect(await screen.findByRole('status')).toHaveTextContent('已移除收藏');
+        });
+
+        it('should toast 已移除收藏 when a row is removed with Backspace', async () => {
+            bookmarkSample();
+            openSaved();
+
+            rowOpen(/^開啟 Bad Girl/).focus();
+            await userEvent.keyboard('{Backspace}');
+
+            expect(await screen.findByRole('status')).toHaveTextContent('已移除收藏');
+            await waitFor(() => expect(hasBookmark(BADGIRL.url)).toBe(false));
+        });
+
+        // B2a / B2b：提示唔用 title（hover 唔出 tooltip），全部行共用一個隱藏說明（aria-describedby）
+        it('should describe every row with one shared hidden remove hint, not a title', () => {
+            bookmarkSample();
+            openSaved();
+
+            const rows = screen.getAllByRole('button', { name: /^開啟 / });
+            for (const row of rows) {
+                expect(row).not.toHaveAttribute('title');
+                expect(row).toHaveAttribute('aria-keyshortcuts', 'Delete Backspace');
+                expect(row).toHaveAccessibleDescription('向左滑動或者撳刪除鍵移除收藏');
+            }
+            const ids = new Set(rows.map((row) => row.getAttribute('aria-describedby')));
+            expect(ids.size).toBe(1);
         });
     });
 

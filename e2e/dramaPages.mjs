@@ -4,7 +4,7 @@ import { isShown, newE2EPage, succeeds } from './harness.mjs';
 
 // 主頁「廣播劇」書架次序（按上架日，新嘅先；src/catalog/dramas/library/*/drama.json）；刻意寫死做獨立對照
 const SHELF_ORDER = ['蘭茜夫人劇場', '少爺占系列', '森美小儀系列', '芝See菇Bi Family', '黃金少年'];
-// 劇集格讀屏名有新嘢會加「，有新短篇」等（drama.tileNew），比較劇名時去走
+// 劇集格讀屏名有新嘢會加「，有新上架短篇」等（drama.tileNew），比較劇名時去走
 const tileName = (label) => label.split('，')[0];
 // 短篇劇集（kind: series）：第一次入頁冇進度
 export const SERIES_ROUTE = '#/drama/chisee';
