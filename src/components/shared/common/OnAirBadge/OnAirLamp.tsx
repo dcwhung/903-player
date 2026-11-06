@@ -9,7 +9,7 @@ interface OnAirLampProps {
 }
 
 /**
- * 揀中 / 播緊嗰行左邊 3px 條（上下各留 18%）：純裝飾，狀態由行掣讀屏名講。
+ * 揀中 / 播緊嗰行左邊條（闊度 / 上下留位見 tokens.css --onair-lamp-*）：純裝飾，狀態由行掣讀屏名講。
  * 用佢嘅行要 position: relative，左邊自己留位
  */
 export const OnAirLamp = ({ state, className = '' }: OnAirLampProps) => (

@@ -90,11 +90,11 @@ describe('saved / list disc polish', () => {
         ).toEqual({});
     });
 
-    // 左邊條喺 .card 左邊（以 .card 定位），有條嗰行（播緊 / 暫停）行字向右移 10px 讓位
+    // 左邊條喺 .card 左邊（以 .card 定位），有條嗰行（播緊 / 暫停）行字向右移讓位（共用 token，S-731）
     it('should make room for the on-air bar on the current row', () => {
         expect(cssDeclarations(css, '.card').position).toBe('relative');
         expect(cssDeclarations(css, ".row[data-current='true'] .open")['padding-left']).toBe(
-            'calc(10px * var(--ui-scale))',
+            'var(--onair-lamp-text-shift)',
         );
     });
 });

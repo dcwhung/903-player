@@ -189,6 +189,14 @@
     --onair-glow-strong: rgb(255 59 48 / 85%);
     --onair-glow-faint: rgb(255 59 48 / 20%);
     --onair-pulse: calc(var(--view-transition-move) * 3);
+    /*
+     * 左邊條（OnAirLamp）幾何：集數清單、今日節目表、收藏 tab 共用。條闊 / 圓角唔跟 --ui-scale（幼線），
+     * 上下各留行高 18%；收藏行冇底框，行字要向右移讓位（跟 --ui-scale）
+     */
+    --onair-lamp-width: 3px;
+    --onair-lamp-radius: 2px;
+    --onair-lamp-inset: 18%;
+    --onair-lamp-text-shift: calc(10px * var(--ui-scale));
 
     /*
      * 快將下架（P8 #6，_mockups_/coming-soon ⑧）：琥珀色 + ⏳，同即將上架嘅灰 / 虛線 / ⏱ 分開。
