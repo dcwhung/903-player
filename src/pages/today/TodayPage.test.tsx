@@ -136,6 +136,16 @@ describe('TodayPage', () => {
             expect(audio.src).toBe(TODAY[0]?.url);
         });
 
+        // 2b：未開始樣都顯示節目碟面（同節目頁一樣），唔再係黑碟
+        it('shows the show cover on the disc while not started', async () => {
+            await open();
+            const title = await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+
+            // 播放卡（唱片 + 節目名）入面嘅碟面，唔係後面 GhostCard 嗰啲
+            const art = title.parentElement?.querySelector('img');
+            expect(art).toHaveAttribute('src', themeFor('sunnyday').art);
+        });
+
         it('starts the first show only when play is pressed', async () => {
             const { audio } = await open();
             await screen.findByRole('heading', { name: '在晴朗的一天出發' });

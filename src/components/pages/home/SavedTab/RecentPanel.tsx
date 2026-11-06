@@ -28,7 +28,7 @@ const RecentRow = ({ row }: { row: RecentRowView }) => {
                 onClick={row.onOpen}
             >
                 <span className={styles.recentDisc}>
-                    <Disc size="fill" art={row.art} />
+                    <Disc size="small" art={row.art} />
                 </span>
                 <span className={styles.recentText}>
                     <span className={styles.recentName}>{name}</span>

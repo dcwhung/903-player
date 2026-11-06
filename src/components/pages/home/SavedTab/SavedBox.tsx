@@ -9,7 +9,7 @@ import type { SavedBoxView, SavedSectionView } from './savedTypes';
 const SavedSection = ({ section }: { section: SavedSectionView }) => (
     <section className={styles.section} data-saved-section="">
         <span className={styles.disc}>
-            <Disc size="fill" art={section.art} />
+            <Disc size="small" art={section.art} />
         </span>
         <div className={styles.sectionBody}>
             {section.heading && <h3 className={styles.arc}>{section.heading}</h3>}
