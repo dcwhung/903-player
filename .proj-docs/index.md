@@ -8,9 +8,10 @@
 
 ## Plans
 
-| 日期       | 文件                                                                                             | 摘要                                                                     |
-| ---------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| 2026-11-04 | [plans/2026-11-04_plan_requirements-priority.md](plans/2026-11-04_plan_requirements-priority.md) | 2026-11 新需求 + bug fix grill 結論同 priority 表（P0 bug → P10 新裝置） |
+| 日期       | 文件                                                                                             | 摘要                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| 2026-11-04 | [plans/2026-11-04_plan_requirements-priority.md](plans/2026-11-04_plan_requirements-priority.md) | 2026-11 新需求 + bug fix grill 結論同 priority 表（P0 bug → P10 新裝置）                 |
+| 2026-11-06 | [plans/2026-11-06_plan_backend-admin.md](plans/2026-11-06_plan_backend-admin.md)                 | Backend admin（CF Workers + Hono + D1 + R2）+ runtime catalog.json + monorepo，Phase 0–5 |
 
 ## Audits
 
