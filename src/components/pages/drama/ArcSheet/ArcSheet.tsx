@@ -14,14 +14,14 @@ interface ArcSheetProps extends Omit<ArcRowProps, 'summary'> {
      * 直版（預設）由畫面底彈出蓋全頁
      */
     docked?: boolean;
-    /** 分好組嘅短篇（播放中 → 新上架 → 未聽完 → 已聽完，見 arcGroups） */
+    /** 分好組嘅短篇（播放中 → 新上架 → 未聽完 → 已收聽，見 arcGroups） */
     groups: readonly { group: ArcGroup; items: readonly ArcSummary[] }[];
     onClose: () => void;
 }
 
 const CLOSE_ICON_SIZE = 20;
 
-/** 一組：細標題（播放中 / 新上架 / 未聽完 / 已聽完）+ 嗰組嘅短篇 */
+/** 一組：細標題（播放中 / 新上架 / 未聽完 / 已收聽）+ 嗰組嘅短篇 */
 const ArcGroupBlock = ({
     group,
     items,
@@ -49,7 +49,7 @@ const sheetProgress = (groups: ArcSheetProps['groups']) => {
 };
 
 /**
- * 全集一覽表（底部彈出）：分組 播放中 → 新上架 → 未聽完 → 已聽完，圓環 = 聽完幾多集；
+ * 全集一覽表（底部彈出）：分組 播放中 → 新上架 → 未聽完 → 已收聽，圓環 = 聽完幾多集；
  * 撳行轉去嗰個短篇，撳右邊掣直接播（續聽 / 未收聽 / ↺ 重聽）。
  * 閂：✕ 掣、撳遮罩、Escape，或者向下拉（grab bar / header；清單捲到頂都得，直版橫版一樣）。
  * 見 design/previews/drama-flow-preview.html；橫版 docked 見 landscape-list-left-preview.html

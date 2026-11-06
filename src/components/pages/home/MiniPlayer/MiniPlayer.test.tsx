@@ -223,7 +223,7 @@ describe('MiniPlayer', () => {
 
     describe('tags', () => {
         const REWATCH = props({
-            labels: ['Bad Girl大過佬，重溫 12/10（一）', '雲妮鍾情', 'Bad Girl大過佬'],
+            labels: ['Bad Girl大過佬，重溫 12/10 星期一', '雲妮鍾情', 'Bad Girl大過佬'],
             tags: ['rewatch', 'today', 'today'],
             index: 0,
         });
@@ -237,7 +237,7 @@ describe('MiniPlayer', () => {
             expect(tag).toHaveTextContent('重溫');
             expect(tag).toHaveAttribute('aria-hidden', 'true');
             expect(
-                screen.getByRole('button', { name: 'Bad Girl大過佬，重溫 12/10（一）' }),
+                screen.getByRole('button', { name: 'Bad Girl大過佬，重溫 12/10 星期一' }),
             ).toHaveAttribute('data-variant', 'blue');
             expect(screen.getByRole('button', { name: '雲妮鍾情' })).toHaveAttribute(
                 'data-variant',

@@ -3,6 +3,7 @@ import {
     daysBetween,
     formatDateLabel,
     formatDayMonth,
+    formatSpokenDate,
     formatWeekday,
     hkTimeHHMM,
     hkToday,
@@ -51,6 +52,14 @@ describe('formatDayMonth / formatWeekday', () => {
     it('splits the label into day/month and weekday', () => {
         expect(formatDayMonth('2026-10-05')).toBe('05/10');
         expect(formatWeekday('2026-10-19')).toBe('星期一');
+    });
+});
+
+// 讀屏日子一律「17/10 星期六」（文案決定 2026-11-05 全域規則；畫面先用「17/10（六）」）
+describe('formatSpokenDate', () => {
+    it('reads day/month then the full weekday, separated by a space', () => {
+        expect(formatSpokenDate('2026-10-17')).toBe('17/10 星期六');
+        expect(formatSpokenDate('2026-11-06')).toBe('06/11 星期五');
     });
 });
 

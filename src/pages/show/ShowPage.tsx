@@ -1,5 +1,9 @@
 import { useParams } from 'react-router-dom';
-import { EpisodeList } from '../../components/shared/player/EpisodeList/EpisodeList';
+import type { ReactNode } from 'react';
+import {
+    EpisodeList,
+    type EpisodeItem,
+} from '../../components/shared/player/EpisodeList/EpisodeList';
 import { NowPlaying } from '../../components/shared/player/NowPlaying/NowPlaying';
 import { PageHeader } from '../../components/shared/common/PageHeader/PageHeader';
 import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
@@ -7,11 +11,12 @@ import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPa
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import { LANDSCAPE_QUERY } from '../../config/layout';
+import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useGoHome } from '../../hooks/useGoHome';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { t } from '../../i18n/t';
 import { usePlayer } from '../../player/usePlayer';
-import { formatDateLabel } from '../../utils/date';
+import { formatDateLabel, formatSpokenDate } from '../../utils/date';
 import { hasKnownDuration } from '../../utils/time';
 import { LoadState } from '../shared/LoadState';
 import page from '../shared/Page.module.css';
@@ -45,13 +50,15 @@ const ShowPlayer = ({
         <>
             <PlayerPanel
                 title={title}
-                dateLabel={dateLabel}
+                // 日子條嘅日子淨係畀讀屏用：讀「17/10 星期六」
+                dateLabel={formatSpokenDate(current.date)}
                 // 未揀集 / 播緊其他嘢（未開始樣）都照顯示節目碟面，唔再用黑碟（劇集頁唔變）
                 art={theme.art}
                 days={strip.days}
                 currentDay={strip.current}
                 onPick={selectEpisode}
                 onStart={start}
+                bookmark={current}
             />
             {landscape && (
                 <NowPlaying label={dateLabel} connecting={!start && !hasKnownDuration(duration)} />
@@ -60,13 +67,30 @@ const ShowPlayer = ({
     );
 };
 
+interface ShowListProps {
+    /** 橫版頁頭（直版喺播放器上面，呢度冇） */
+    header: ReactNode;
+    items: EpisodeItem[];
+    onSelect: (url: string) => void;
+    /** 由「我的收藏」撳入嚟嗰集：捲過去、短暫 highlight */
+    focusKey: string | undefined;
+}
+
+/** 清單欄：（橫版頁頭 +）集數清單 */
+const ShowList = ({ header, items, onSelect, focusKey }: ShowListProps) => (
+    <div className={page.listColumn}>
+        {header}
+        <EpisodeList items={items} onSelect={onSelect} focusKey={focusKey} />
+    </div>
+);
+
 export const ShowPage = () => {
     const { showId = '' } = useParams();
     const goHome = useGoHome({ kind: 'show', showId });
-    const data = useShowPage(showId);
+    const focusUrl = useEpisodeFocus(); // 由「我的收藏」撳行入嚟：唔播，捲去嗰集
+    const data = useShowPage(showId, focusUrl);
     const { show, theme, status, isSearching, episodeItems } = data;
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
-
     // 有集數（包括未上架）就列清單
     const listed = show && status === 'ready' && episodeItems.length > 0;
     // 橫版有清單：頁頭喺左欄清單上面；否則（直版 / 未有清單）喺播放器上面
@@ -98,10 +122,12 @@ export const ShowPage = () => {
                     {listed && <ShowPlayer {...data} title={show.name} landscape={landscape} />}
                 </div>
                 {listed && (
-                    <div className={page.listColumn}>
-                        {headerInList && header}
-                        <EpisodeList items={episodeItems} onSelect={data.pressEpisode} />
-                    </div>
+                    <ShowList
+                        header={headerInList && header}
+                        items={episodeItems}
+                        onSelect={data.pressEpisode}
+                        focusKey={focusUrl}
+                    />
                 )}
                 <InnerPageHandle page={{ kind: 'show', showId }} />
             </main>

@@ -2,6 +2,8 @@ import { useSyncExternalStore } from 'react';
 
 export interface ValueStore<T> {
     set: (value: T) => void;
+    /** 而家嘅值（React 以外讀，例如 timer callback） */
+    peek: () => T;
     useValue: () => T;
 }
 
@@ -26,6 +28,7 @@ export const createValueStore = <T>(initial: T): ValueStore<T> => {
             value = next;
             listeners.forEach((listener) => listener());
         },
+        peek: getSnapshot,
         useValue: () => useSyncExternalStore(subscribe, getSnapshot, getSnapshot),
     };
 };

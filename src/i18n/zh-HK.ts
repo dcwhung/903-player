@@ -1,3 +1,11 @@
+/*
+ * 文案規則（用戶 2026-11-05 決定）：
+ * - G1 空格：半形數字同中文之間有空格，全形括號後面冇空格（「05/12 下架」「05/12（六）下架」）
+ * - 日子：畫面「17/10（六）」（dates.label）/「17/10」；讀屏一律「17/10 星期六」（dates.spoken），唔講明日 / 後日
+ * - G2「·」分隔符：common.separator（前後有空格），code 砌字用佢，唔另外寫死
+ * - G3 範圍一律用「至」：「第 11 至 20 集」
+ * - 狀態字（播放中、已暫停、已收聽、未收聽、聽到…）只寫喺 common.status，各處引用同一個
+ */
 export const zhHK = {
     app: {
         version: 'v{version}',
@@ -10,6 +18,19 @@ export const zhHK = {
         searching: '搵緊最新錄音…',
         noRecordings: '暫時未有錄音',
         showNotFound: '找不到此節目',
+        // G2：「·」分隔符（前後有空格）
+        separator: ' · ',
+        // A4：清單行 / 收藏 tab / 今日節目表 / 全集表 / 把手共用嘅狀態字
+        status: {
+            playing: '播放中',
+            // A2：「已暫停」只喺播放器同把手出；清單行暫停緊用 resumeOf
+            paused: '已暫停',
+            // A1：全 app 統一「已收聽」（唔再用「已聽完」）
+            watched: '已收聽',
+            unwatched: '未收聽',
+            resume: '聽到 {time}',
+            resumeOf: '聽到 {current} / {total}',
+        },
     },
     home: {
         bannerAlt: '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽',
@@ -18,6 +39,10 @@ export const zhHK = {
         tabs: '分類',
         tabShows: '節目',
         tabDramas: '廣播劇',
+        // 第三個 tab：淨係 ★ icon（有收藏先出）
+        tabSaved: '我的收藏',
+        // 第三個 tab：冇收藏但有收聽記錄時換做歷史 icon，成個 tab 係最近收聽
+        tabRecent: '最近收聽',
         dramasNav: '廣播劇',
         today: '今日節目',
         // 節目格：今日有已上架、未聽完嘅新一集
@@ -38,10 +63,11 @@ export const zhHK = {
     },
     dates: {
         title: '日子',
-        watched: '已收聽',
         label: '{day}/{month}（{weekday}）',
         dayMonth: '{day}/{month}',
         weekday: '星期{weekday}',
+        // 讀屏版日子：「17/10 星期六」（dayMonth + 空格 + weekday）
+        spoken: '{dayMonth} {weekday}',
     },
     episodes: {
         title: '集數',
@@ -53,17 +79,13 @@ export const zhHK = {
         // 節目頁：有未上架集數但一集都播唔到
         noneUp: '未有集數上架',
         playing: '播放中 · {current} / {total}',
-        // 廣播劇頁：揀中嗰集聽到一半暫停 / 載入咗未開始
-        paused: '已暫停 · {current} / {total}',
+        // 揀中嗰集載入咗未開始（暫停緊就寫 common.status.resumeOf，A2）
         ready: '未開始 · {current} / {total}',
-        resume: '聽到 {time}',
-        watched: '已收聽',
-        unwatched: '未收聽',
         play: '播放 {date}，{status}',
         // 播緊嗰集：清單行嘅掣變暫停
         pause: '暫停 {date}，{status}',
-        // 節目頁唱片下面嘅日子條：左右掃（或者方向鍵）轉集
-        switchHint: '左右方向鍵或左右掃動轉集',
+        // 節目頁唱片下面嘅日子條：左右滑動（或者方向鍵）轉集
+        switchHint: '左右方向鍵或左右滑動轉集',
         switchRoleDescription: '轉集',
         switched: '已轉到 {date}',
         // 日子條上面嘅標籤（強調色），現正播放嗰日喺條正中
@@ -101,20 +123,38 @@ export const zhHK = {
             today: '今日',
         },
     },
+    // 成集收藏（P7 #7，_mockups_/bookmark）
+    bookmark: {
+        // 集數清單每行嘅 ☆ / ★（aria-pressed 講收藏咗未）
+        toggleEpisode: '收藏 {label}',
+        // 播放器播放掣右邊
+        toggleCurrent: '收藏本集',
+        added: '已加入收藏',
+        removed: '已移除收藏',
+        // 收藏 tab 每行（狀態字見 common.status）；{label} 係讀屏日子「17/10 星期六」或者「第 N 集」
+        // B3：短篇劇名「芝See菇Bi Family · 三十六計」（{sep} = common.separator）
+        seriesName: '{title}{sep}{arc}',
+        open: '開啟 {name} {label}，{status}',
+        play: '播放 {name} {label}',
+        pause: '暫停 {name} {label}',
+        // 左滑移除嘅鍵盤代替（撳 Delete）
+        removeHint: '向左掃或者撳 Delete 移除收藏',
+        recent: '最近收聽',
+        openRecent: '開啟 {name} {label}',
+        bookmarkRecent: '收藏 {name} {label}',
+    },
     // 闊橫版主頁右邊播放卡（HomePlayerCard）同收埋後右邊嘅把手
     homeCard: {
         // 把手出現 = 撳咗 ✕ 停咗播（useHomeCardToggle），所以名入面講埋狀態
         reopen: '已暫停：{name}，打開播放器',
-        pausedStatus: '已暫停',
     },
     // 闊橫版內頁右邊把手（InnerPageHandle）：播緊 / 暫停緊其他節目 / 劇集，撳 = 返主頁
     pageHandle: {
-        playingStatus: '播放中',
         playing: '播放中：{name}，返回主頁',
         paused: '已暫停：{name}，返回主頁',
     },
     cardStack: {
-        label: '今日節目，左右掃動轉節目',
+        label: '今日節目，左右滑動轉節目',
         roleDescription: '節目卡疊',
     },
     today: {
@@ -124,9 +164,6 @@ export const zhHK = {
         playShowWithStatus: '播放 {name}，{status}',
         pauseShowWithStatus: '暫停 {name}，{status}',
         timeWithStatus: '{time} · {status}',
-        statusPlaying: '播放中',
-        statusWatched: '已收聽',
-        statusUnwatched: '未收聽',
         statusUnavailable: '未上架',
         unavailableCount: '{count} 個未上架',
         // 橫版唱片下面「現正播放：21/10（三）· 第 3 / 5 個節目」
@@ -167,10 +204,9 @@ export const zhHK = {
         // chip 上「新」嘅讀屏說明
         arcNewLabel: '新上架',
         sheetTitle: '全集',
-        groupPlaying: '播放中',
+        // 「播放中」/「已收聽」兩組用 common.status
         groupNew: '新上架',
         groupUnfinished: '未聽完',
-        groupDone: '已聽完',
         sheetDone: '聽完 {done} / {total} 個',
         sheetClose: '關閉',
         arcPlayingEpisode: '播緊第 {no} 集',

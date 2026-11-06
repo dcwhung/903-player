@@ -89,7 +89,7 @@ describe('ArcSheet', () => {
             '播放中',
             '新上架',
             '未聽完',
-            '已聽完',
+            '已收聽',
         ]);
         expect(picks().map((b) => b.getAttribute('aria-label'))).toEqual([
             '好朋友手牽手，播緊第 2 集，聽完 1 / 4 集',

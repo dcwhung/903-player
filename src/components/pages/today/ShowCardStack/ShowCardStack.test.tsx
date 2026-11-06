@@ -10,7 +10,7 @@ const CARDS: StackCard[] = [
     { title: '乙節目', theme: themeFor('badgirl') },
     { title: '丙節目', theme: themeFor('wanni') },
 ];
-const LABEL = '今日節目，左右掃動轉節目';
+const LABEL = '今日節目，左右滑動轉節目';
 
 const setup = (index = 1, cards = CARDS, children?: ReactNode) => {
     const onChange = vi.fn();

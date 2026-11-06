@@ -1,0 +1,447 @@
+/*
+ * 主頁「我的收藏」tab（P7 #7，_mockups_/bookmark）：上 / 左係收藏 box（自己捲），
+ * 最近收聽固定喺底（直版、闊橫版）或者最右（窄橫版 data-layout='land'）
+ */
+/*
+ * 有收藏版 ↔ 冇收藏版互換（_mockups_/qr-transfer ①）：淡出緊嘅舊版疊喺新版上面（.saved[data-leaving]）。
+ * 主頁 .page 係 align-items: center，要寫明用盡闊度
+ */
+.swap {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0;
+}
+
+.saved {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: var(--saved-gap);
+    width: 100%;
+    min-height: 0;
+    padding: 0 var(--home-gutter);
+    color: var(--saved-text);
+}
+
+.saved[data-layout='land'] {
+    flex-direction: row;
+}
+
+/* 淡出緊：疊喺新版上面，唔撳得（仲有 inert）；淡完 JS 拆走 */
+.saved[data-leaving] {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/*
+ * 舊版淡出（--view-transition-fade），新版等佢淡完先淡入；第一次顯示冇 data-entering 唔會淡入。
+ * 減少動態：冇動畫（JS 換嗰刻已經直接換，唔會有 data-leaving）
+ */
+@media (prefers-reduced-motion: no-preference) {
+    .saved[data-leaving] {
+        animation: saved-pane-out var(--view-transition-fade) var(--ease-view-transition) forwards;
+    }
+
+    .saved[data-entering] {
+        animation: saved-pane-in var(--view-transition-fade) var(--ease-view-transition)
+            var(--view-transition-fade) backwards;
+    }
+}
+
+@keyframes saved-pane-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes saved-pane-in {
+    from {
+        opacity: 0;
+    }
+}
+
+/* 收藏 box 區：唯一捲動嘅 panel，捲到盡頭唔帶動成頁 */
+.scroll {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* 分欄（column-count 由 savedGrid 計，inline style）：box 唔會斷開兩欄 */
+.cols {
+    margin: 0;
+    padding: 0;
+    column-gap: var(--saved-gap);
+    list-style: none;
+}
+
+.boxItem {
+    margin-bottom: var(--saved-gap);
+    break-inside: avoid;
+}
+
+.saved[data-solo='true'] .boxItem {
+    margin-bottom: 0;
+}
+
+.box {
+    overflow: hidden;
+    border-radius: var(--radius-tile);
+    background: var(--saved-box-bg);
+}
+
+/* B1：box 頂一條 banner（大類橫圖 cover），名疊左下，左邊暗漸變 */
+.banner {
+    position: relative;
+    height: var(--saved-banner-height);
+}
+
+.banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--saved-banner-scrim);
+}
+
+.bannerArt {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bannerTitle {
+    position: absolute;
+    right: var(--space-3);
+    bottom: var(--space-2);
+    left: var(--space-3);
+    z-index: 1;
+    margin: 0;
+    overflow: hidden;
+    font-size: var(--font-size-md);
+    font-weight: 700;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    text-shadow: var(--saved-banner-title-shadow);
+    white-space: nowrap;
+}
+
+/*
+ * 得一個收藏：banner 最高 = 原圖比例全幅（節目 16:9、劇 2:1），位唔夠就壓矮（cover 裁上下）到
+ * 收藏區高減集數高（--saved-solo-room，SavedBox 量），最矮 = 普通 banner 高。位夠唔拉高
+ */
+.saved[data-solo='true'] .banner {
+    width: 100%;
+    height: auto;
+    min-height: var(--saved-banner-height);
+    max-height: max(var(--saved-banner-height), var(--saved-solo-room, 0px));
+    aspect-ratio: var(--tile-aspect-w) / var(--tile-aspect-h);
+}
+
+.saved[data-solo='true'] .box[data-kind='drama'] .banner {
+    aspect-ratio: var(--drama-tile-aspect-w) / var(--drama-tile-aspect-h);
+}
+
+/* 每段：左邊碟，右邊（短篇名 +）各集 */
+.section {
+    display: grid;
+    grid-template-columns: var(--saved-disc) minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: calc(10px * var(--ui-scale)) var(--space-3) calc(6px * var(--ui-scale));
+}
+
+.section + .section {
+    border-top: 1px solid var(--saved-divider);
+}
+
+/* 碟：同播放器唱片一樣（圓形、深色外圈、中間孔），Disc size="fill" 填滿呢格 */
+.disc {
+    --color-disc-rim: var(--saved-disc-hole);
+    --disc-fill-shadow:
+        0 0 0 var(--saved-disc-ring) var(--saved-disc-rim), var(--saved-disc-shadow);
+    --disc-fill-hole-ring: var(--saved-disc-hole-ring);
+
+    display: block;
+    align-self: start;
+    width: var(--saved-disc);
+}
+
+.sectionBody {
+    min-width: 0;
+}
+
+/* 段頭：短篇名（cream）；節目段唔重複寫名 */
+.arc {
+    margin: 0;
+    overflow: hidden;
+    color: var(--color-gold);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* 一行：左滑時 .card 跟手指，紅底 🗑 喺 .card 右邊外面一齊走；行本身唔畀佢露出嚟 */
+.row {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--space-2);
+}
+
+.row + .row .card {
+    border-top: 1px solid var(--saved-divider);
+}
+
+/* 橫拖交畀 JS（useRowSwipe），直向照畀瀏覽器捲 */
+.card {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: calc(10px * var(--ui-scale));
+    align-items: center;
+    padding: var(--space-2) 0 calc(9px * var(--ui-scale));
+    background: var(--saved-box-bg);
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.row[data-playing='true'] .card {
+    background: var(--saved-box-playing-bg);
+}
+
+.trash {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 100%;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding-left: calc(18px * var(--ui-scale));
+    background: var(--saved-danger);
+    color: var(--saved-text);
+}
+
+/* 撳行（▷ 以外）= 入嗰集；focus ring 收入行入面（行 overflow: hidden 會剪走外面嘅） */
+.open,
+.play {
+    border: none;
+    background: transparent;
+    color: inherit;
+}
+
+.open:focus-visible,
+.play:focus-visible {
+    outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+.open {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    text-align: left;
+}
+
+/* 日期 / 集數同進度字一行；位唔夠（窄欄、橫版大畫面放大字）就進度字落下一行靠右，唔會斷開日期 */
+.line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0 var(--space-2);
+}
+
+.label {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.state {
+    margin-left: auto;
+    color: var(--saved-muted);
+    font-size: var(--font-size-xs);
+    white-space: nowrap;
+}
+
+/* 播緊嗰行：日期 + 狀態 cream */
+.row[data-playing='true'] .label,
+.row[data-playing='true'] .state {
+    color: var(--color-gold);
+}
+
+.bar {
+    display: block;
+    height: var(--saved-progress-height);
+    margin-top: calc(7px * var(--ui-scale));
+    overflow: hidden;
+    border-radius: calc(var(--saved-progress-height) / 2);
+    background: var(--saved-line);
+}
+
+.fill {
+    display: block;
+    height: 100%;
+    background: var(--color-gold);
+}
+
+/* ▷ / ⏸：跟內頁集數清單，冇框白色 */
+.play {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--saved-play-size);
+    height: var(--saved-play-size);
+    padding: 0;
+    color: var(--saved-text);
+}
+
+/*
+ * 最近收聽（E2）：虛線框，入面自己捲；直版 / 闊橫版固定高，窄橫版固定闊。
+ * 碟欄同收藏段一樣闊（--saved-disc），左邊留白扣返框粗幼，碟同文字起點同上面收藏段對齊
+ */
+.recent {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    height: var(--saved-recent-height);
+    padding: var(--space-3) var(--space-3) var(--space-1);
+    padding-left: calc(var(--space-3) - var(--saved-recent-border));
+    border: var(--saved-recent-border) dashed var(--saved-line);
+    border-radius: var(--radius-tile);
+    color: var(--saved-muted);
+    font-size: var(--font-size-sm);
+}
+
+.saved[data-layout='land'] .recent {
+    width: var(--saved-recent-width);
+    height: auto;
+}
+
+/* 冇收藏版（_mockups_/qr-transfer ②）：佔滿成個 tab 區，清單自己捲（窄橫版都係全闊） */
+.recent[data-fill='true'] {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+}
+
+.saved[data-layout='land'] .recent[data-fill='true'] {
+    width: auto;
+}
+
+.recentTitle {
+    margin: 0 0 calc(6px * var(--ui-scale));
+    color: var(--saved-text);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+}
+
+/*
+ * 捲動放喺清單外層（W-535）：ul 有固定高度時 CSS 分欄會將放唔落嘅行開新欄、向右溢出，捲唔到；
+ * ul 高度跟內容，分欄自動平衡（直排：左欄由上至下再到右欄），長過 panel 就由呢層直向捲。
+ * 捲動會剪走碟外圈：左右多留一圈外圈位（margin 負返出去，碟同文字位置唔變）
+ */
+.recentScroll {
+    flex: 1 1 0;
+    min-height: 0;
+    margin: 0 calc(-1 * var(--saved-disc-ring));
+    padding: 0 var(--saved-disc-ring);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.recentList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    column-gap: var(--saved-gap);
+}
+
+/*
+ * 名（minmax(0, 1fr)：長名用 … 收尾）| 固定闊度 ☆ 欄：每行 ☆ 上下對齊（_mockups_/qr-transfer ②）。
+ * 分欄（冇收藏版橫版兩欄）時一行唔會斷開兩欄
+ */
+.recentRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--saved-recent-star);
+    gap: calc(10px * var(--ui-scale));
+    align-items: center;
+    break-inside: avoid;
+}
+
+/* 分隔線畫喺行底（最後一行唔畫）：分欄時第二欄頂唔會多一條線 */
+.recentRow:not(:last-child) {
+    border-bottom: 1px solid var(--saved-divider);
+}
+
+.recentOpen {
+    display: grid;
+    grid-template-columns: var(--saved-disc) minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: center;
+    min-width: 0;
+    padding: var(--space-1) 0;
+    overflow: hidden;
+    border: none;
+    background: transparent;
+    color: var(--saved-muted);
+    text-align: left;
+}
+
+/* overflow: hidden 會剪走外面嘅 focus ring：收入掣入面（同收藏行 .open） */
+.recentOpen:focus-visible {
+    outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+.recentDisc {
+    --color-disc-rim: var(--saved-disc-hole);
+    --disc-fill-shadow:
+        0 0 0 var(--saved-disc-ring) var(--saved-disc-rim), var(--saved-disc-shadow);
+    --disc-fill-hole-ring: var(--saved-disc-hole-ring);
+
+    display: block;
+    width: var(--saved-disc);
+}
+
+.recentText {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.recentName {
+    overflow: hidden;
+    color: var(--saved-text);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.recentLabel {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ☆ 用 cream（主頁色調），比清單嘅星細少少；闊度 = ☆ 欄 */
+.recentRow .recentStar {
+    width: var(--saved-recent-star);
+    height: var(--saved-recent-star);
+    color: var(--color-gold);
+}

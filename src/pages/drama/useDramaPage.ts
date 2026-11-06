@@ -54,13 +54,15 @@ const useAutoplayDaily = (
     drama: DramaConfig,
     isLoaded: boolean,
     startDrama: (drama: DramaConfig) => void,
+    focused: boolean,
 ) => {
     const busy = useAudioBusy();
     useEffect(() => {
-        if (!isLoaded && !busy) {
+        // 由「我的收藏」撳行入嚟（focused）明確唔播
+        if (!isLoaded && !busy && !focused) {
             startDrama(drama);
         }
-    }, [drama, isLoaded, busy, startDrama]);
+    }, [drama, isLoaded, busy, focused, startDrama]);
 };
 
 /** 清單行要嘅 player 狀態 + 撳行 / 揀集嘅動作（兩款劇集頁共用） */
@@ -90,14 +92,27 @@ const usePlaybackRows = (
     return { ctx, playState, ...useEpisodePress(episodes, currentUrl, isPlaying) };
 };
 
-/** 每日劇集頁（例如 18 樓 C 座）：同節目頁一樣，唱片 + 日子條 + 集數清單 */
-export const useDailyDramaPage = (drama: DramaConfig) => {
+/**
+ * 由「我的收藏」撳入嚟嗰集（W-530）：未載入呢套劇先算；唔 load player，淨係做揀中集，
+ * 唱片係未開始樣，撳播放先播佢
+ */
+const focusedEpisode = <T extends DramaEpisode>(
+    episodes: readonly T[],
+    focusUrl: string | undefined,
+    loaded: T | null,
+): T | undefined => (loaded ? undefined : episodes.find((e) => e.url === focusUrl));
+
+/** 每日劇集頁（例如 18 樓 C 座）：同節目頁一樣，唱片 + 日子條 + 集數清單；focusUrl 見 useEpisodeFocus */
+export const useDailyDramaPage = (drama: DramaConfig, focusUrl?: string) => {
     const episodes = useMemo(() => dailyNewestFirst(dailyEpisodesOf(drama.id)), [drama]);
     const loaded = useLoadedEpisode(drama, 'daily');
     const startDrama = useStartDrama();
-    useAutoplayDaily(drama, loaded !== null, startDrama);
-    const start = useStandbyStart(loaded !== null, () => startDrama(drama));
-    const current = loaded ?? pickDailyStart(episodes, hkToday());
+    useAutoplayDaily(drama, loaded !== null, startDrama, focusUrl !== undefined);
+    const focused = focusedEpisode(episodes, focusUrl, loaded);
+    const { load } = usePlayer();
+    const standby = useStandbyStart(loaded !== null, () => startDrama(drama));
+    const start = focused ? () => void load(focused, { autoplay: true }) : standby;
+    const current = loaded ?? focused ?? pickDailyStart(episodes, hkToday());
     const { ctx, selectEpisode, pressEpisode } = usePlaybackRows(episodes, current, !!loaded);
     // 重播舊集同新集隔成年：只排有集數嘅日子，唔排中間成年灰色日子
     const strip = useMemo(
@@ -117,21 +132,26 @@ export const useDailyDramaPage = (drama: DramaConfig) => {
 
 /**
  * 入頁嗰下係咪第一次入呢套短篇劇集（入頁時讀一次就定，揀咗 / 播咗都唔再變）：
- * 係就一入嚟就開全集表
+ * 係就一入嚟就開全集表；由「我的收藏」撳行入嚟（focused）唔開，直接睇嗰集
  */
-const useFirstVisitOnEntry = (drama: DramaConfig): boolean => {
+const useFirstVisitOnEntry = (drama: DramaConfig, focused: boolean): boolean => {
     const { recording } = usePlayer();
-    const [firstVisit] = useState(() => isFirstSeriesVisit(drama, getProgressMap(), recording));
+    const [firstVisit] = useState(
+        () => !focused && isFirstSeriesVisit(drama, getProgressMap(), recording),
+    );
     return firstVisit;
 };
 
-/** 揀咗睇邊個短篇；未揀（或者揀返播緊嗰個）就跟播緊嗰集嘅短篇 */
-const useViewedArc = (playingArc: string | undefined) => {
-    const [picked, setPicked] = useState<string | null>(null);
+/**
+ * 揀咗睇邊個短篇；未揀（或者揀返播緊嗰個）就跟播緊嗰集嘅短篇。
+ * 由「我的收藏」撳行入嚟：一開始睇嗰集嘅短篇（initialArc）
+ */
+const useViewedArc = (playingArc: string | undefined, initialArc: string | undefined) => {
+    const [picked, setPicked] = useState<string | null>(initialArc ?? null);
     return { arc: picked ?? playingArc, pickArc: setPicked };
 };
 
-/** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已聽完（today 每次 render 重新攞） */
+/** 全集一覽表 / chips 嘅次序：播放中 → 新上架 → 未聽完 → 已收聽（today 每次 render 重新攞） */
 const useArcOrder = (
     episodes: readonly SeriesEpisode[],
     progressMap: Readonly<Record<string, Progress>>,
@@ -269,28 +289,32 @@ const useSeriesArcs = (
     progressMap: Readonly<Record<string, Progress>>,
     current: SeriesEpisode | undefined,
     loaded: SeriesEpisode | null,
+    focused?: SeriesEpisode,
 ) => {
-    const { arc, pickArc: setArc } = useViewedArc(current?.arc);
+    const { arc, pickArc: setArc } = useViewedArc(current?.arc, focused?.arc);
     const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc);
     const pickArc = useArcPick(groups, setArc);
     // 照集數次序（聽完嘅留喺原位）；入頁 / 轉集由 EpisodeList 捲到播緊嗰集
     const shown = arc ? episodesInArc(episodes, arc) : [];
-    const pickedResume = pickedArcResume(groups, arc, current);
+    // 由「我的收藏」入嚟：睇緊嗰集嘅短篇就播嗰集（唔係短篇續聽集）
+    const pickedResume =
+        pickedArcResume(groups, arc, current) ?? (arc === focused?.arc ? focused : undefined);
     // 唱片區顯示嘅集：載入咗就係嗰集；未載入就係撳播放會播嗰集（揀咗短篇就係嗰個短篇嘅續聽集）
     const upNext = loaded ?? pickedResume ?? current;
     return { arc, pickArc, groups, chips, shown, pickedResume, upNext };
 };
 
-/** 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 全集 / 短篇 chips + 嗰個短篇嘅集數 */
-export const useSeriesDramaPage = (drama: DramaConfig) => {
+/** 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 全集 / 短篇 chips + 嗰個短篇嘅集數；focusUrl 見 useEpisodeFocus */
+export const useSeriesDramaPage = (drama: DramaConfig, focusUrl?: string) => {
     const episodes = useMemo(() => seriesEpisodesOf(drama.id), [drama]);
     const loaded = useLoadedEpisode(drama, 'series');
     // 第一次入：一入嚟就開全集表，等用戶揀短篇
-    const firstVisit = useFirstVisitOnEntry(drama);
+    const firstVisit = useFirstVisitOnEntry(drama, focusUrl !== undefined);
     const { sheetOpen, setSheetOpen, progressMap } = useSeriesSheet(firstVisit, loaded?.url);
-    const current = loaded ?? pickSeriesStart(episodes, progressMap);
+    const focused = focusedEpisode(episodes, focusUrl, loaded);
+    const current = loaded ?? focused ?? pickSeriesStart(episodes, progressMap);
     const rows = usePlaybackRows(episodes, current, !!loaded);
-    const arcs = useSeriesArcs(episodes, progressMap, current, loaded);
+    const arcs = useSeriesArcs(episodes, progressMap, current, loaded, focused);
     const { upNext, pickArc, groups } = arcs;
     const standbyOptions = { ...arcs, episodes, progressMap };
     const standby = useStandby(drama, loaded !== null, rows.playState, standbyOptions);

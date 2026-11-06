@@ -55,6 +55,8 @@ interface SeriesListColumnProps {
     label: string;
     /** 橫版 docked 全集表（直版係 false，全集表喺 <main> 尾） */
     dockedSheet: ReactNode;
+    /** 由「我的收藏」撳入嚟嗰集（捲過去、highlight） */
+    focusKey?: string | undefined;
 }
 
 /** 橫版左欄 / 直版唱片下面：頁頭（橫版）+ 短篇 chips + 集數清單；橫版全集表只蓋呢欄 */
@@ -64,6 +66,7 @@ export const SeriesListColumn = ({
     landscape,
     label,
     dockedSheet,
+    focusKey,
 }: SeriesListColumnProps) => (
     <div className={page.listColumn}>
         {landscape && <DramaHeader title={title} />}
@@ -78,7 +81,12 @@ export const SeriesListColumn = ({
                     onPick={view.pickArc}
                     onOpenAll={view.sheet.openSheet}
                 />
-                <EpisodeList items={view.items} onSelect={view.pressEpisode} {...SERIES_LIST} />
+                <EpisodeList
+                    items={view.items}
+                    onSelect={view.pressEpisode}
+                    focusKey={focusKey}
+                    {...SERIES_LIST}
+                />
             </div>
             {dockedSheet}
         </div>

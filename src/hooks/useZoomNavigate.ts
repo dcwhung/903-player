@@ -11,11 +11,13 @@ import { zoomInto, zoomState, type ZoomKind } from '../utils/cardZoom';
 export const useZoomNavigate = () => {
     const navigate = useNavigate();
     return useCallback(
-        (key: string, path: string, kind: ZoomKind = 'zoom') =>
+        (key: string, path: string, kind: ZoomKind = 'zoom', extra?: object) =>
             zoomInto(
                 key,
                 (zoomed) => {
-                    void navigate(path, zoomed ? { state: zoomState(key) } : undefined);
+                    // extra：入頁要帶嘅其他 state（例如收藏 tab 撳行帶嗰集，focusUrl）
+                    const state = zoomed ? { ...extra, ...zoomState(key) } : extra;
+                    void navigate(path, state ? { state } : undefined);
                 },
                 kind,
             ),

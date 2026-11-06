@@ -1,0 +1,14 @@
+/* 冇框透明底，星用強調色（同由頭播放掣一樣）；大細由用嘅地方決定（播放器 44px、清單 40px） */
+.bookmark {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-accent-text);
+}

@@ -1,5 +1,6 @@
 import type { ShowTheme } from '../../../../config/showThemes';
 import { t } from '../../../../i18n/t';
+import type { Track } from '../../../../types/track';
 import type { PlaybackLineState } from '../../../../utils/playbackState';
 import { TRANSITION_NAME } from '../../../../utils/viewTransition';
 import { PowerIcon } from '../../../shared/common/icons/icons';
@@ -21,6 +22,8 @@ export interface HomeCardGaugeView {
     label: string;
     status: PlaybackLineState;
     connecting: boolean;
+    /** 顯示緊嘅一集（收藏掣用）；搵唔到就冇收藏掣 */
+    track?: Track | undefined;
 }
 
 /** 唱片格 + 「現正播放」：喺卡中間剩低嘅位置中 */
@@ -31,6 +34,7 @@ const CardGauge = ({ art, gauge }: { art: string | undefined; gauge: HomeCardGau
             onStart={gauge.onStart}
             standbyTime={gauge.standbyTime}
             transitionName={TRANSITION_NAME.gauge}
+            bookmark={gauge.track}
         />
         <NowPlaying label={gauge.label} status={gauge.status} connecting={gauge.connecting} />
     </div>

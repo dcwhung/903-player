@@ -7,6 +7,7 @@ import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import { chromiumExecutablePath } from '../scripts/chromiumLaunch.mjs';
 import { runArcSheetChecks } from './arcSheet.mjs';
+import { runBookmarkChecks } from './bookmark.mjs';
 import { runCardZoomChecks } from './cardZoom.mjs';
 import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runHomeWideChecks } from './homeWide.mjs';
@@ -614,9 +615,14 @@ const dayOffset = async (p, dayMonth) => {
     return day.x + day.width / 2 - (zone.x + zone.width / 2);
 };
 
+/**
+ * 集數清單 / 節目表每行嘅播放 / 暫停掣（每行旁邊仲有 ☆ 收藏掣，P7 #7，唔好數埋佢）
+ */
+const ROW_PLAY_BUTTONS = 'li button[aria-label^="播放 "], li button[aria-label^="暫停 "]';
+
 /** 喺唱片下面嘅日子條向左拖，將下一行（舊一集）嗰日拖入正中 → 播放中轉去嗰集 */
 const checkSwipeToOlder = async (p, dragShot) => {
-    const rows = p.getByRole('region', { name: '集數' }).locator('li button');
+    const rows = p.getByRole('region', { name: '集數' }).locator(ROW_PLAY_BUTTONS);
     const labels = await rows.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
     const from = labels.findIndex((l) => l.includes('播放中'));
     // 去走行首動作（播放 / 暫停），淨低「日/月 星期X」
@@ -679,7 +685,8 @@ const checkShowHeader = async (p, name, label) => {
         };
     });
     log(
-        above === '現正播放' && /^\d{2}\/\d{2}（.）$/.test(date) && Math.abs(centreGap) < 1,
+        // 轉集區個名嘅日子係讀屏版「17/10 星期六」（畫面上日子條兩行字另外顯示）
+        above === '現正播放' && /^\d{2}\/\d{2} 星期.$/.test(date) && Math.abs(centreGap) < 1,
         `${label}：日子條上面「${above}」、正中「${date}」（偏離 ${centreGap.toFixed(2)}px）`,
     );
 };
@@ -737,7 +744,7 @@ const checkThemeColor = async (p, expected, label) => {
     log(ok, `${label}：theme-color ${(await read()).join(', ')}（預期 ${expected}）`);
 };
 
-const TODAY_STACK = '今日節目，左右掃動轉節目';
+const TODAY_STACK = '今日節目，左右滑動轉節目';
 /** 卡疊最上面嗰張卡嘅節目名（h1 係頁頭「今日節目」，卡入面係 h2）；畀 page.evaluate 用 */
 const TODAY_CARD_TITLE = '[role="group"] h2';
 /** 卡疊而家嘅節目名 */
@@ -1442,7 +1449,7 @@ try {
         await page.waitForTimeout(1000);
         const items = await page
             .getByRole('region', { name: '節目表' })
-            .locator('li button')
+            .locator(ROW_PLAY_BUTTONS)
             .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
         log(items.length === 3, `今日節目列表：${items.join(' | ')}`);
         const pageTitle = await page.getByRole('heading', { level: 1 }).textContent();
@@ -1646,6 +1653,9 @@ try {
 
     // 主頁格仔 zoom 入內頁（P6 #2 Z3）：直版 zoom / 返回 unzoom、闊橫版都係 zoom（唔係 expand）
     await runCardZoomChecks({ browser, base: BASE, errors, log });
+
+    // 成集收藏（P7 #7）：清單 ☆ → ★ tab、撳行入頁唔播、▷ 原地播、左滑移除最後一集（手機 + 闊橫版）
+    await runBookmarkChecks({ browser, base: BASE, errors, log });
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
     await section('廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));

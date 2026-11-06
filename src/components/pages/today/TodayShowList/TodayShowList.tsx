@@ -1,8 +1,10 @@
 import { useId } from 'react';
 import { t, type MessageKey } from '../../../../i18n/t';
+import type { Recording } from '../../../../types/recording';
 import { Disc } from '../../../shared/common/Disc/Disc';
 import { CheckIcon, PauseIcon, PlayIcon } from '../../../shared/common/icons/icons';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';
+import { BookmarkButton } from '../../../shared/player/BookmarkButton/BookmarkButton';
 import styles from './TodayShowList.module.css';
 
 export type ShowStatus = 'playing' | 'watched' | 'unwatched' | 'unavailable';
@@ -15,6 +17,8 @@ export interface TodayShowItem {
     art: string;
     status: ShowStatus;
     active: boolean;
+    /** 呢個節目今日嗰集：有就喺播放掣左邊出收藏掣（P7 #7）；未上架冇 */
+    track?: Recording;
 }
 
 interface TodayShowListProps {
@@ -23,9 +27,9 @@ interface TodayShowListProps {
 }
 
 const STATUS_MESSAGE: Record<ShowStatus, MessageKey> = {
-    playing: 'today.statusPlaying',
-    watched: 'today.statusWatched',
-    unwatched: 'today.statusUnwatched',
+    playing: 'common.status.playing',
+    watched: 'common.status.watched',
+    unwatched: 'common.status.unwatched',
     unavailable: 'today.statusUnavailable',
 };
 const STATUS_ICON_SIZE = 12;
@@ -59,31 +63,45 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
     const statusText = t(STATUS_MESSAGE[item.status]);
     // 播緊（status playing = 揀中 + 播放中）：掣變暫停，撳落去暫停
     const isPlaying = item.status === 'playing';
+    // 收藏掣唔可以放入行掣入面：行入面留位，星疊喺個位上面（同一個 li）
     return (
-        <button
-            type="button"
-            className={`${styles.item} ${item.active ? styles.active : ''}`}
-            aria-current={item.active ? 'true' : undefined}
-            aria-label={t(isPlaying ? 'today.pauseShowWithStatus' : 'today.playShowWithStatus', {
-                name: item.name,
-                status: statusText,
-            })}
-            onClick={() => onSelect(item.key)}
-        >
-            <Disc size="small" art={item.art} />
-            <span className={styles.text}>
-                <Marquee className={styles.name} text={item.name} />
-                <span className={`${styles.status} ${styles[item.status] ?? ''}`}>
-                    {item.status === 'watched' && <CheckIcon size={STATUS_ICON_SIZE} />}
-                    {t('today.timeWithStatus', { time: item.time, status: statusText })}
+        <>
+            <button
+                type="button"
+                className={`${styles.item} ${item.active ? styles.active : ''}`}
+                aria-current={item.active ? 'true' : undefined}
+                aria-label={t(
+                    isPlaying ? 'today.pauseShowWithStatus' : 'today.playShowWithStatus',
+                    {
+                        name: item.name,
+                        status: statusText,
+                    },
+                )}
+                onClick={() => onSelect(item.key)}
+            >
+                <Disc size="small" art={item.art} />
+                <span className={styles.text}>
+                    <Marquee className={styles.name} text={item.name} />
+                    <span className={`${styles.status} ${styles[item.status] ?? ''}`}>
+                        {item.status === 'watched' && <CheckIcon size={STATUS_ICON_SIZE} />}
+                        {t('today.timeWithStatus', { time: item.time, status: statusText })}
+                    </span>
                 </span>
-            </span>
-            {isPlaying ? (
-                <PauseIcon size={PLAY_ICON_SIZE} />
-            ) : (
-                <PlayIcon size={PLAY_ICON_SIZE} filled={false} />
+                {item.track && <span className={styles.bookmarkSpace} aria-hidden="true" />}
+                {isPlaying ? (
+                    <PauseIcon size={PLAY_ICON_SIZE} />
+                ) : (
+                    <PlayIcon size={PLAY_ICON_SIZE} filled={false} />
+                )}
+            </button>
+            {item.track && (
+                <BookmarkButton
+                    track={item.track}
+                    label={t('bookmark.toggleEpisode', { label: item.name })}
+                    className={styles.bookmark}
+                />
             )}
-        </button>
+        </>
     );
 };
 
@@ -102,7 +120,7 @@ export const TodayShowList = ({ items, onSelect }: TodayShowListProps) => {
             </div>
             <ul className={styles.list}>
                 {items.map((item) => (
-                    <li key={item.key}>
+                    <li key={item.key} className={styles.row}>
                         <ShowRow item={item} onSelect={onSelect} />
                     </li>
                 ))}

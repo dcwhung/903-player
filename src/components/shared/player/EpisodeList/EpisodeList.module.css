@@ -6,6 +6,13 @@
     width: 100%;
     min-height: 0;
     padding: 0 var(--space-4);
+    /*
+     * 每行嘅間距、右邊留白、行尾掣大細：收藏掣（.bookmark）疊喺行入面留低嘅位（.bookmarkSpace），
+     * 要用同一組數計佢離右邊幾遠。寫死嘅 px 都跟 --ui-scale（橫版大畫面放大）
+     */
+    --episode-row-gap: calc(14px * var(--ui-scale));
+    --episode-row-pad-end: calc(12px * var(--ui-scale));
+    --episode-row-icon: calc(22px * var(--ui-scale));
 }
 
 .header {
@@ -39,11 +46,11 @@
     display: flex;
     align-items: center;
     /* 寫死嘅 px 都跟 --ui-scale（橫版大畫面放大）；直版 / 手機係 × 1 */
-    gap: calc(14px * var(--ui-scale));
+    gap: var(--episode-row-gap);
     width: 100%;
     min-height: calc(56px * var(--ui-scale));
     /* 右邊播放 / 暫停掣離邊兩倍（12px），唔好貼住清單右邊 */
-    padding: 0 calc(12px * var(--ui-scale)) 0 calc(6px * var(--ui-scale));
+    padding: 0 var(--episode-row-pad-end) 0 calc(6px * var(--ui-scale));
     border: none;
     border-bottom: 1px solid var(--color-divider);
     background: transparent;
@@ -52,6 +59,43 @@
 
 .current {
     background: var(--color-surface);
+}
+
+/* 每行 li：收藏掣（.bookmark）以佢定位 */
+.item {
+    position: relative;
+}
+
+/*
+ * 由「我的收藏」撳入嚟嗰集（useFocusRow）：短暫 highlight，之後淡返；
+ * 用強調色描邊 + surface 底，淺色 / 深色節目都睇得到
+ */
+.item[data-focused] .row {
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 var(--focus-ring-width) var(--color-accent-text);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .item .row {
+        transition:
+            background-color var(--view-transition-fade) var(--ease-view-transition),
+            box-shadow var(--view-transition-fade) var(--ease-view-transition);
+    }
+}
+
+/* 收藏掣：行入面留一格（播放掣左邊），星疊喺上面（_mockups_/bookmark P2：▶ 左邊） */
+.bookmarkSpace {
+    flex-shrink: 0;
+    width: var(--episode-bookmark-size);
+}
+
+.item > .bookmark {
+    position: absolute;
+    top: 50%;
+    right: calc(var(--episode-row-pad-end) + var(--episode-row-icon) + var(--episode-row-gap));
+    width: var(--episode-bookmark-size);
+    height: var(--episode-bookmark-size);
+    transform: translateY(-50%);
 }
 
 /* 行頭欄成個清單一樣闊（EpisodeList labels），進度條先對齊；集名太長就跑馬燈（Marquee） */
@@ -155,8 +199,8 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    width: calc(22px * var(--ui-scale));
-    height: calc(22px * var(--ui-scale));
+    width: var(--episode-row-icon);
+    height: var(--episode-row-icon);
     border-radius: var(--radius-full);
     background: var(--color-badge);
     color: var(--color-on-badge);

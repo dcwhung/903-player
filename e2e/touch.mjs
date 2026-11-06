@@ -48,7 +48,7 @@ const GAP_DRAG_PX = 60;
 // 弧形頂（= 一半）拖去右邊（≈ 5/6）：如果 ring 冇被鎖，會 seek 去好遠
 const RING_TOP = { x: GAUGE_CENTRE.x, y: GAUGE_CENTRE.y - RING_RADIUS };
 const RING_RIGHT = { x: GAUGE_CENTRE.x + RING_RADIUS, y: GAUGE_CENTRE.y };
-const TODAY_STACK = '今日節目，左右掃動轉節目';
+const TODAY_STACK = '今日節目，左右滑動轉節目';
 const STRIP = '[aria-roledescription="轉集"]';
 const MINI_REGION = '正在播放（今日節目）';
 

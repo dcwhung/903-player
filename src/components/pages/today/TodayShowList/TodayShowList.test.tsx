@@ -1,5 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { recording } from '../../../../../tests/renderWithProviders';
+import { hasBookmark } from '../../../../services/bookmarkStore';
 import { TodayShowList, type TodayShowItem } from './TodayShowList';
 
 const ITEMS: TodayShowItem[] = [
@@ -23,6 +25,21 @@ const ITEMS: TodayShowItem[] = [
 ];
 
 describe('TodayShowList', () => {
+    it('should put a bookmark star beside the play icon of shows that are up', async () => {
+        const track = recording('sunnyday', '2026-10-19', '0600');
+        const onSelect = vi.fn();
+        const items = ITEMS.map((item, i) => (i === 0 ? { ...item, track } : item));
+        render(<TodayShowList items={items} onSelect={onSelect} />);
+
+        const star = screen.getByRole('button', { name: `收藏 ${items[0]?.name ?? ''}` });
+        await userEvent.click(star);
+
+        expect(star).toHaveAttribute('aria-pressed', 'true');
+        expect(hasBookmark(track.url)).toBe(true);
+        expect(onSelect).not.toHaveBeenCalled();
+        expect(screen.getAllByRole('button', { name: /^收藏/ })).toHaveLength(1);
+    });
+
     it('shows each show with its status', () => {
         render(<TodayShowList items={ITEMS} onSelect={() => {}} />);
 

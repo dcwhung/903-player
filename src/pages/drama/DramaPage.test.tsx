@@ -191,6 +191,7 @@ describe('DramaPage', () => {
             ).toBeInTheDocument();
             const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole(
                 'button',
+                { name: /^(播放|暫停) / },
             );
             expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual([
                 '播放 不如休養下 第 1 集，未收聽',
@@ -209,8 +210,8 @@ describe('DramaPage', () => {
 
             expect(audio.src).toBe(CHISEE[0]?.url);
             const list = screen.getByRole('region', { name: '集數' });
-            expect(within(list).getAllByRole('button')).toHaveLength(4);
-            await userEvent.click(within(list).getByRole('button', { name: /索腳汗/ }));
+            expect(within(list).getAllByRole('button', { name: /^(播放|暫停) / })).toHaveLength(4);
+            await userEvent.click(within(list).getByRole('button', { name: /^播放 著襪索腳汗/ }));
             await waitFor(() => expect(audio.src).toBe(XMAS[2]?.url));
         });
     });
@@ -270,6 +271,7 @@ describe('DramaPage', () => {
             expect(screen.queryByText(/連線中/)).not.toBeInTheDocument();
             const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole(
                 'button',
+                { name: /^(播放|暫停) / },
             );
             expect(rows[0]).toHaveAccessibleName(`播放 ${CHISEE[0]?.title ?? ''} 第 1 集，未收聽`);
         });
@@ -504,7 +506,8 @@ describe('DramaPage', () => {
 
             await userEvent.click(screen.getByRole('button', { name: '暫停' }));
             expect(screen.getByText('已暫停：Ｘ時mas時小提議 · 第 2 / 4 集')).toBeInTheDocument();
-            expect(screen.getByText('已暫停 · 2:00 / 20:00')).toBeInTheDocument();
+            // A2：清單行唔寫「已暫停」，寫聽到邊
+            expect(screen.getByText('聽到 2:00 / 20:00')).toBeInTheDocument();
         });
 
         it('shows the 短篇, position and episode title under the disc, header above the list', async () => {
@@ -552,7 +555,9 @@ describe('DramaPage', () => {
         act(() => audio.end());
 
         await waitFor(() => expect(audio.src).toBe(CHISEE[1]?.url));
-        const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole('button');
+        const rows = within(screen.getByRole('region', { name: '集數' })).getAllByRole('button', {
+            name: /^(播放|暫停) /,
+        });
         // 照集數次序：聽完嘅第 1 集留喺原位，播緊第 2 集喺佢下面（入頁會捲到播緊嗰集）
         expect(rows[0]).toHaveAccessibleName(`播放 ${CHISEE[0]?.title ?? ''} 第 1 集，已收聽`);
         expect(rows[1]).toHaveAttribute('aria-current', 'true');
@@ -740,5 +745,44 @@ describe('DramaPage', () => {
 
             expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
         });
+    });
+});
+
+// P7 #7：收藏 tab 撳行入短篇劇集頁：轉去嗰集個短篇、捲去嗰集、highlight；唔播、唔開全集表
+describe('DramaPage opened from 我的收藏', () => {
+    beforeEach(() => {
+        Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
+    });
+
+    it('should show the bookmarked episode’s 短篇 with that episode highlighted, without playing', async () => {
+        const target = XMAS[1];
+        const { audio, container } = renderWithProviders(<DramaPage />, {
+            route: '/drama/chisee',
+            path: PATH,
+            state: { focusUrl: target?.url },
+        });
+
+        await screen.findByRole('region', { name: '集數' });
+        expect(audio.play).not.toHaveBeenCalled();
+        expect(audio.src).toBe('');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(container.querySelector('li[data-focused]')).toHaveAttribute(
+            'data-episode-key',
+            target?.url,
+        );
+    });
+
+    it('should play the bookmarked episode from the play button', async () => {
+        const target = XMAS[1];
+        const { audio } = renderWithProviders(<DramaPage />, {
+            route: '/drama/chisee',
+            path: PATH,
+            state: { focusUrl: target?.url },
+        });
+
+        await userEvent.click(await screen.findByRole('button', { name: '播放' }));
+
+        await waitFor(() => expect(audio.src).toBe(target?.url));
     });
 });

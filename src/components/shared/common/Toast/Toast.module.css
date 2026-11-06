@@ -1,0 +1,41 @@
+/* 短提示（_mockups_/bookmark .toast）：深色半透明底、白字，置中浮喺頁底，唔擋撳 */
+.toast {
+    position: fixed;
+    right: var(--space-6);
+    bottom: var(--toast-offset-bottom);
+    left: var(--space-6);
+    z-index: var(--toast-z);
+    max-width: var(--page-max-width);
+    margin: 0 auto;
+    padding: var(--space-3) calc(14px * var(--ui-scale));
+    border-radius: var(--radius-cell);
+    background: var(--toast-bg);
+    color: var(--toast-text);
+    font-size: var(--font-size-md);
+    line-height: 1.4;
+    text-align: center;
+    pointer-events: none;
+}
+
+.toast[data-visible='false'] {
+    visibility: hidden;
+    opacity: 0;
+}
+
+/* 有 mini player（主頁 main[data-mini-player]）：浮喺 mini player 上面，唔遮住佢 */
+:global(html:has(main[data-mini-player])) .toast {
+    bottom: calc(var(--mini-player-height) + var(--mini-player-offset-bottom) + var(--space-3));
+}
+
+/* 淡入淡出；減少動態就即刻出 / 即刻收（visibility 喺淡完先轉） */
+@media (prefers-reduced-motion: no-preference) {
+    .toast {
+        transition:
+            opacity var(--view-transition-fade) var(--ease-view-transition),
+            visibility 0s linear var(--view-transition-fade);
+    }
+
+    .toast[data-visible='true'] {
+        transition: opacity var(--view-transition-fade) var(--ease-view-transition);
+    }
+}

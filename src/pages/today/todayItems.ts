@@ -36,7 +36,7 @@ export const toTodayItems = (
         }
         const isActive = r.url === activeUrl;
         const status = statusOf(isActive, isPlaying, watchedUrls.has(r.url));
-        return { ...rowBase(r), active: isActive, status };
+        return { ...rowBase(r), active: isActive, status, track: r };
     });
 
 /** 卡疊每張卡：節目名 + 自己節目嘅色調（後面嘅卡用自己嘅色） */

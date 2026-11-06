@@ -44,6 +44,7 @@ describe('toEpisodeItems', () => {
                 current: true,
                 isPlaying: true,
                 status: { kind: 'playing', ratio: 760 / 7110, text: '播放中 · 12:40 / 1:58:30' },
+                track: NEWEST,
             },
             {
                 key: OLDER.url,
@@ -52,8 +53,23 @@ describe('toEpisodeItems', () => {
                 current: false,
                 isPlaying: false,
                 status: { kind: 'resume', ratio: 0.25, text: '聽到 10:00' },
+                track: OLDER,
             },
         ]);
+    });
+
+    // W-529：暫停 / 未開始唔寫「播放中」（同劇集頁一樣傳實際狀態）
+    it('should label a paused current episode by its real playback state', () => {
+        const items = toEpisodeItems(
+            [NEWEST],
+            NEWEST.url,
+            { currentTime: 760, duration: 7110 },
+            {},
+            false,
+            'paused',
+        );
+
+        expect(items[0]?.status.text).toBe('聽到 12:40 / 1:58:30');
     });
 
     it('has no current episode when the url matches none', () => {
@@ -88,7 +104,7 @@ describe('toPlayableItem', () => {
     const LABELS = { dayMonth: '第 1 集', weekday: '不如休養下' };
 
     it('uses saved progress, not 連線中…, for the current row when nothing of it is loaded', () => {
-        const item = toPlayableItem(OLDER.url, LABELS, {
+        const item = toPlayableItem(OLDER, LABELS, {
             currentUrl: OLDER.url,
             live: undefined,
             progressMap: PROGRESS,
@@ -102,7 +118,7 @@ describe('toPlayableItem', () => {
     });
 
     it('still says 連線中… while the current row is loaded but its length is unknown', () => {
-        const item = toPlayableItem(OLDER.url, LABELS, {
+        const item = toPlayableItem(OLDER, LABELS, {
             currentUrl: OLDER.url,
             live: { currentTime: 0, duration: 0 },
             progressMap: PROGRESS,
@@ -110,5 +126,17 @@ describe('toPlayableItem', () => {
         });
 
         expect(item.status.text).toBe('連線中…');
+    });
+
+    it('should carry the episode for the bookmark star', () => {
+        const item = toPlayableItem(OLDER, LABELS, {
+            currentUrl: undefined,
+            live: undefined,
+            progressMap: {},
+            isPlaying: false,
+        });
+
+        expect(item.key).toBe(OLDER.url);
+        expect(item.track).toBe(OLDER);
     });
 });
