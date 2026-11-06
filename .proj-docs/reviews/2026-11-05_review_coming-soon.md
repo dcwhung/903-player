@@ -444,3 +444,58 @@ context: >
   fourth time (S-720, backlog).
 report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
 ```
+
+## Re-review 7 93a18a7（W-538 / CUI-0022）
+
+- 範圍：`git diff d2704d4..93a18a7`（QA finding W-538 / CUI-0022，見 `.proj-docs/qa/2026-11-06_qa_copy-p7-p8.md`）：頂行 `TOP_BAR_STEPS = 3`（全句 → 收短篇數 →「⏳ 19/12 下架」→「⏳ 19/12」）；冇繼續收聽嘅左上角用 `useHideWhenTight` + `fitsInParent` 2 步；刪 `@container drama-tile (max-width: 200px)`；e2e `checkCornerSteps` 4 個情況 + 500ms 再量。獨立 worktree，commit 只包報告
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（`DramaTileAvailability`、`dramaShelfCss.node`、`DramaShelf`、`HomePage`、`HomePageWide`）5 files / 124 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `93a18a7`）：run [#107 / 42137879434](https://github.com/dcwhung/903-player/actions/runs/42137879434) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)`（包括 `checkCornerSteps` 4 個 case）全部 success）
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡）
+
+| ID               | 狀態    | 覆核                                                                                     |
+| ---------------- | ------- | ---------------------------------------------------------------------------------------- |
+| W-538 / CUI-0022 | ✅ 已修 | 「夠位出『⏳ 19/12 下架』、唔夠先淨『⏳ 19/12』」而家兩款格都靠量度，唔再靠 200px 一刀切 |
+
+重點核對：
+
+- **每步一定變短**：抽新版 CSS 用 Chromium scratch 頁逐步試（唔係 e2e suite）：
+    - 320px 單獨左上角：`0` 全句「部分短篇 19/12 下架」→ `1`「19/12 下架」→ `2`「19/12」
+    - 320px 頂行：`0` 全句 → `1` 全句（呢步收短篇數，scratch 冇放短篇數）→ `2`「19/12 下架」→ `3`「19/12」
+    - 260px（≤ 280px container query 已經係短版）：單獨 `0`/`1`「19/12 下架」→ `2`「19/12」；頂行 `0`–`2`「19/12 下架」→ `3`「19/12」
+    - 每一步都係收字（同長或者更短），冇一步會令字變長；右上角上架字（`metaRelease`）全部步數都冇郁，因為新 selector 限咗 `.corner` 同 `:has(~/+ .noteNarrow)` ✅
+- **唔 loop / 兩個 hook 唔打交**：左上角 hook 只喺 `!item.resume`（冇頂行）開；頂行由右上角 meta hook 管（`sharesRow` 先用 3 步）。所以同一張格只會有一個 hook 管左上角：冇續聽時左上角 hook 量左上角、meta hook（1 步）量右下角，位置唔同唔爭位；有續聽時左上角 hook 關咗。兩個 hook observe 嘅都係 absolute / 跟格闊嘅 parent，收字唔會改 parent 尺寸，冇 ResizeObserver loop ✅。Hook 喺 `return null` 之前叫，hook 次序穩定；ref 係 null 時 effect 直接 return ✅
+- **`fitsInParent`**：`.corner` 係 absolute、闊度跟內容（冇 max-width），自己唔會溢出，所以改為對返格闊量：`scrollWidth + 2 × offsetLeft ≤ parent.clientWidth`（左右留返一樣嘅 `--space-2` 邊）✅
+- **刪 200px container query 之後**：
+    - W-533（上架字完整、短篇數成段收）：meta 嘅 rule 冇改，280px query（`noteFull` / `noteTag`）照留 ✅
+    - S-705（窄格冇續聽右下角字尾截字）：右下角 meta 冇改 ✅
+    - 窄格（手機打橫約 152px）：以前一律淨日期；而家量度，「19/12 下架」放得落就出全個，符合 E2「夠位先加『下架』」。e2e 844×390 冇續聽 case 驗咗 ✅
+- **e2e 斷言穩定性**：4 個 case 驗顯示字、只出一次日期、冇出格、頂行冇溢出，再隔 500ms 量多次要一樣（驗冇 loop）。斷言用嘅係 QA 喺呢幾個 viewport 量出嚟嘅實際字，CI 呢個 SHA 過咗。見 S-721
+
+🟢：
+
+- S-721 `e2e/comingSoon.mjs` `CORNER_CASES`：預期字（例如 1600×800「19/12 下架」、1300×800「19/12」）由字型實際闊度決定，同 CI runner 嘅字型、或者將來改 `--font-size-2xs` / 文案綁死；喺另一部機（例如 cloud sandbox `PW_CHROMIUM_PATH`）有機會差幾 px 翻轉。另外「first === again」比較嘅係成個 JSON（連 `width`），如果第一次量時字型未載完，`fonts.ready` 之後重新量會令兩次唔同，會報做 loop。建議：保留兩個極端 case 驗確實字，其餘改驗不變量（只出一次日期、冇出格、`data-tight` 唔超過步數），再量之前先 `await document.fonts.ready`
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 7 feature/drama/coming-soon d2704d4..93a18a7 (W-538 / CUI-0022 corner leaving steps) v1.28.0
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (5 related unit files, 124 tests; full suite / e2e not run per scope rule; CI run 42137879434 on 93a18a7 success incl. e2e)
+  coverage: pass (step-by-step hook tests for top row and lone corner, CSS node test; steps re-checked in Chromium scratch page)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: [S-721]
+next_action: proceed_to_qa
+context: >
+  W-538 / CUI-0022 fixed: every step only hides text (monotonic), only one
+  hook controls the top-left corner per tile, no resize loop. Removing the
+  200px container query does not affect W-533 / S-705. e2e exact-text
+  expectations are font-metric sensitive (S-721, backlog).
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
