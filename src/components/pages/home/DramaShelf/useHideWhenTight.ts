@@ -12,6 +12,13 @@ export type Fits = (el: HTMLElement) => boolean;
 /** 自己冇溢出：角落字（短篇數 + 上架字尾） */
 export const fitsWithoutOverflow: Fits = (el) => el.scrollWidth <= el.clientWidth;
 
+/**
+ * 喺上一層（格）入面放得落，左右留返一樣嘅邊：單獨嘅左上角（absolute、闊度跟內容，
+ * 自己唔會溢出，要對返格闊量）
+ */
+export const fitsInParent: Fits = (el) =>
+    el.scrollWidth + 2 * el.offsetLeft <= (el.parentElement?.clientWidth ?? Infinity);
+
 /** 先放返晒再量：放唔落就逐步收（data-tight="1" → "2" …），夠位即停 */
 const fit = (el: HTMLElement, fits: Fits, steps: number) => {
     el.removeAttribute(TIGHT_ATTR);

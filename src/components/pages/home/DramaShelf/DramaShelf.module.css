@@ -313,26 +313,28 @@
     }
 }
 
-/* 再窄（手機打橫格）：下架字淨日期「⏳ 05/12」（E2：夠位先加「下架」） */
-@container drama-tile (max-width: 200px) {
-    .noteTag:has(+ .noteNarrow) {
-        display: none;
-    }
-
-    .noteNarrow {
-        display: inline;
-    }
-}
-
 /*
- * 同一條頂行，收埋短篇數都仲放唔落（useHideWhenTight 第 2 步）：左上角下架字淨日期「⏳ 19/12」（E2）。
- * 全句（格闊 > 280px）同短版都收，收完一定短過之前（W-536）
+ * 左上角下架字放唔落（useHideWhenTight 量度，唔用固定格闊一刀切，W-538）：
+ * 頂行（有繼續收聽，右上角量）第 2 步 / 單獨左上角第 1 步 → 短版「⏳ 19/12 下架」；
+ * 頂行第 3 步 / 單獨左上角第 2 步 → 淨日期「⏳ 19/12」。全句同短版都收，每步一定短過上一步（W-536）
  */
-.topBar:has(> .meta[data-tight='2']) :is(.noteFull, .noteTag):has(~ .noteNarrow) {
+.topBar:has(> .meta[data-tight='2']) .corner .noteFull:has(~ .noteNarrow),
+.corner[data-tight='1'] .noteFull:has(~ .noteNarrow) {
     display: none;
 }
 
-.topBar:has(> .meta[data-tight='2']) .noteNarrow {
+.topBar:has(> .meta[data-tight='2']) .corner .noteTag:has(+ .noteNarrow),
+.corner[data-tight='1'] .noteTag:has(+ .noteNarrow) {
+    display: inline;
+}
+
+.topBar:has(> .meta[data-tight='3']) .corner :is(.noteFull, .noteTag):has(~ .noteNarrow),
+.corner[data-tight='2'] :is(.noteFull, .noteTag):has(~ .noteNarrow) {
+    display: none;
+}
+
+.topBar:has(> .meta[data-tight='3']) .corner .noteNarrow,
+.corner[data-tight='2'] .noteNarrow {
     display: inline;
 }
 

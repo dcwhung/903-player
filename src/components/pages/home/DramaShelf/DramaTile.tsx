@@ -7,9 +7,12 @@ import { fitsWithoutOverflow, useHideWhenTight } from './useHideWhenTight';
 
 export type { DramaShelfItem, TileNotice, TileProps } from './dramaTileTypes';
 
-// 角落字放唔落：第 1 步收埋短篇數；同一條頂行嘅話第 2 步左上角下架字淨日期（E2）
+/*
+ * 角落字放唔落逐步收（每步一定短過上一步）：第 1 步收埋短篇數；同一條頂行嘅話
+ * 第 2 步左上角下架字換短版「⏳ 19/12 下架」、第 3 步淨日期「⏳ 19/12」（E2 / W-538）
+ */
 const META_STEPS = 1;
-const TOP_BAR_STEPS = 2;
+const TOP_BAR_STEPS = 3;
 
 /**
  * 角落字：左上「新」+ 快將下架、短篇數（平時右下）。有「繼續收聽」短篇數讓去右上：

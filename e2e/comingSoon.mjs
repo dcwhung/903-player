@@ -167,42 +167,88 @@ const continueFit = (tile) =>
         };
     });
 
-// 格闊 300–330px（> 280px 出全句）而頂行要收到第 2 步（W-536）：1600×800 闊橫版三欄格約 313px
-const STEP_TWO_VIEWPORT = { width: 1600, height: 800 };
-const STEP_TWO_TILE = { min: 300, max: 330 };
+/**
+ * 左上角下架字逐步收（E2 / W-536 / W-538）：夠位「⏳ 19/12 下架」，放唔落先淨「⏳ 19/12」；
+ * 冇繼續收聽嘅格（單獨左上角）同有繼續收聽嘅格（頂行，同右上角爭位）都係量度，唔係固定格闊。
+ * text = 左上角顯示緊嘅下架字；預期值由 QA 喺呢啲 viewport 量過（CUI-0022）
+ */
+const CORNER_CASES = [
+    // 手機打橫、冇繼續收聽：格約 152px，「19/12 下架」放得落
+    {
+        viewport: { width: 844, height: 390 },
+        progress: {},
+        name: /^E2E 下架劇場，/,
+        text: '19/12 下架',
+    },
+    // 闊橫版三欄格約 313px（> 280px 本來出全句）、有繼續收聽：收短篇數之後短版夠位
+    {
+        viewport: { width: 1600, height: 800 },
+        progress: LEAVING_PROGRESS,
+        name: SOON_TILE_LABEL,
+        text: '19/12 下架',
+    },
+    // 有繼續收聽、頂行放唔落短版：淨日期
+    {
+        viewport: { width: 1300, height: 800 },
+        progress: LEAVING_PROGRESS,
+        name: SOON_TILE_LABEL,
+        text: '19/12',
+    },
+    {
+        viewport: { width: 844, height: 390 },
+        progress: LEAVING_PROGRESS,
+        name: SOON_TILE_LABEL,
+        text: '19/12',
+    },
+];
+// 量多一次之前等幾耐：收字唔會 loop（第二次量同第一次一樣）
+const SETTLE_MS = 500;
 
-/** 頂行左上角下架字顯示緊嘅字（每粒葉 span，收埋嘅唔計）同頂行收字第幾步 */
+/** 左上角下架字顯示緊嘅字（每粒葉 span，收埋嘅唔計）、收字第幾步、有冇出格 / 頂行溢出 */
 const cornerLeaving = (tile) =>
     tile.evaluate((button) => {
-        const corner = button.querySelector('[data-corner-notes]');
+        const corner = button.querySelector('[data-corner-leaving]');
         const leaves = [...(corner?.querySelectorAll('span') ?? [])].filter(
             (el) => el.children.length === 0 && getComputedStyle(el).display !== 'none',
         );
+        const meta = button.querySelector('[data-corner]');
+        const box = corner?.getBoundingClientRect();
+        const card = button.getBoundingClientRect();
         return {
-            width: Math.round(button.getBoundingClientRect().width),
-            tight: button.querySelector('[data-corner]')?.getAttribute('data-tight') ?? null,
+            width: Math.round(card.width),
+            tight: [
+                button.querySelector('[data-corner-notes]')?.getAttribute('data-tight') ?? null,
+                meta?.getAttribute('data-tight') ?? null,
+            ].join('/'),
             text: leaves.map((el) => el.textContent).join(''),
-            fits: corner ? corner.scrollWidth <= corner.clientWidth : false,
+            inside: box !== undefined && box.right <= card.right,
+            metaFits: meta ? meta.scrollWidth <= meta.clientWidth : true,
         };
     });
 
-/** W-536：頂行收到第 2 步，左上角淨係出一次日期（「⏳ 19/12」），唔會全句 + 日期一齊出 */
-const checkCornerStepTwo = async (env) => {
+/** 每個 case：左上角出預期嘅字，只出一次日期，冇出格，再量一次唔變（唔會 loop） */
+const checkCornerSteps = async (env) => {
     const { log } = env;
-    const { ctx, p } = await openPage(env, { viewport: STEP_TWO_VIEWPORT }, LEAVING_PROGRESS);
-    await p.goto(env.base);
-    await p.getByRole('button', { name: SHELF, exact: true }).click();
-    const tile = p.getByRole('button', { name: SOON_TILE_LABEL });
-    const corner = (await isShown(tile, { timeout: WAIT_MS })) ? await cornerLeaving(tile) : null;
-    log(
-        corner !== null &&
-            corner.width >= STEP_TWO_TILE.min &&
-            corner.width <= STEP_TWO_TILE.max &&
-            corner.tight === '2' &&
-            corner.text === '19/12',
-        `${STEP_TWO_VIEWPORT.width}×${STEP_TWO_VIEWPORT.height} 主頁：頂行第 2 步左上角淨係「19/12」一次（W-536，${JSON.stringify(corner)}）`,
-    );
-    await ctx.close();
+    for (const { viewport, progress, name, text } of CORNER_CASES) {
+        const { ctx, p } = await openPage(env, { viewport }, progress);
+        await p.goto(env.base);
+        await p.getByRole('button', { name: SHELF, exact: true }).click();
+        const tile = p.getByRole('button', { name });
+        const first = (await isShown(tile, { timeout: WAIT_MS }))
+            ? await cornerLeaving(tile)
+            : null;
+        await p.waitForTimeout(SETTLE_MS);
+        const again = first ? await cornerLeaving(tile) : null;
+        log(
+            first !== null &&
+                first.text === text &&
+                first.inside &&
+                first.metaFits &&
+                JSON.stringify(first) === JSON.stringify(again),
+            `${viewport.width}×${viewport.height} 主頁：左上角下架字「${text}」（W-538，${JSON.stringify(first)}）`,
+        );
+        await ctx.close();
+    }
 };
 
 /**
@@ -450,7 +496,7 @@ export const runComingSoonChecks = async (env) => {
     await checkHomeShelf(env);
     await checkStackedUpcoming(env);
     await checkReleaseNote(env);
-    await checkCornerStepTwo(env);
+    await checkCornerSteps(env);
     await checkDramaPage(env);
     await checkLeavingDrama(env);
     await checkOffShelfUrls(env);

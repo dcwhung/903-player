@@ -125,23 +125,48 @@ describe('DramaTile availability', () => {
             ).toBeInTheDocument();
         });
 
-        // E2：同一條頂行（有繼續收聽），短篇數收埋都仲放唔落，左上角下架字先至淨日期
-        it('should drop 下架 from the corner date only when hiding the arc count is not enough', () => {
+        /** 角落字要幾闊：收到第幾步（data-tight）就要幾闊，冇收係 widths[0] */
+        const layoutBySteps = (widths: readonly number[], room: number) => {
+            vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function (
+                this: HTMLElement,
+            ) {
+                return widths[Number(this.getAttribute('data-tight') ?? 0)] ?? 0;
+            });
+            vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(room);
+            act(() => notify());
+        };
+
+        // E2 / W-538：同一條頂行（有繼續收聽）逐步收：全句 → 收短篇數 →「⏳ 19/12 下架」→「⏳ 19/12」
+        it('should shrink the top row step by step and stop at the first step that fits', () => {
             const resume = { label: '初戀無限次 · 第 2 集', ratio: 0.2 };
             const leaving = { ...LEAVING, short: '05/12 下架' };
             render(<DramaShelf items={[item({ release, resume, leaving })]} />);
 
-            layout(180, 120);
+            // 每一步都短過上一步
+            const widths = [200, 170, 140, 110];
+            layoutBySteps(widths, 120);
+            expect(meta()).toHaveAttribute('data-tight', '3');
+            layoutBySteps(widths, 150);
             expect(meta()).toHaveAttribute('data-tight', '2');
-
-            // 收埋短篇數就夠位：停喺第一步，下架字照有「下架」
-            vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function (
-                this: HTMLElement,
-            ) {
-                return this.hasAttribute('data-tight') ? 100 : 180;
-            });
-            act(() => notify());
+            layoutBySteps(widths, 180);
             expect(meta()).toHaveAttribute('data-tight', '1');
+            layoutBySteps(widths, 200);
+            expect(meta()).not.toHaveAttribute('data-tight');
+        });
+
+        // W-538：冇頂行（冇繼續收聽），左上角自己量：夠位就「⏳ 19/12 下架」，唔夠位先淨日期
+        it('should shrink a lone corner date only when it does not fit the tile', () => {
+            const leaving = { ...LEAVING, short: '05/12 下架' };
+            render(<DramaShelf items={[item({ leaving })]} />);
+            const corner = () => document.querySelector<HTMLElement>('[data-corner-notes]');
+
+            const widths = [200, 140, 100];
+            layoutBySteps(widths, 150);
+            expect(corner()).toHaveAttribute('data-tight', '1');
+            layoutBySteps(widths, 120);
+            expect(corner()).toHaveAttribute('data-tight', '2');
+            layoutBySteps(widths, 200);
+            expect(corner()).not.toHaveAttribute('data-tight');
         });
 
         it('should stop at hiding the arc count when the corner has no shorter date', () => {

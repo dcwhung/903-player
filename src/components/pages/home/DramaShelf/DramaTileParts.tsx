@@ -6,11 +6,13 @@ import { NewBadge } from '../../../shared/common/NewBadge/NewBadge';
 import { Separator } from '../../../shared/common/Separator/Separator';
 import { t } from '../../../../i18n/t';
 import styles from './DramaShelf.module.css';
-import { useHideWhenTight, type Fits } from './useHideWhenTight';
+import { fitsInParent, useHideWhenTight, type Fits } from './useHideWhenTight';
 import type { ContinueButtonProps, DramaShelfItem } from './dramaTileTypes';
 
 const CONTINUE_ICON_SIZE = 16;
 const NOTICE_ICON_SIZE = 12;
+// 單獨左上角放唔落：第 1 步「⏳ 19/12 下架」、第 2 步「⏳ 19/12」
+const LONE_CORNER_STEPS = 2;
 
 /**
  * 入頁掣讀屏名（F3）：「劇名，有新短篇；下個短篇 02/12 星期三 上架；部分短篇 05/12 星期六 下架」，
@@ -115,12 +117,19 @@ export const ContinueButton = ({ name, resume, onResume, focusProps }: ContinueB
 
 /** 左上角：「新」（有新嘢）+ 琥珀色下架字，同一行由左向右排（_mockups_/coming-soon ⑧） */
 export const CornerNotes = ({ item }: { item: DramaShelfItem }) => {
+    // 冇頂行（冇繼續收聽）：左上角自己對格闊量，放唔落先換短版、再淨日期（W-538）；
+    // 有頂行就由右上角嗰粒量（TileCorners TOP_BAR_STEPS）
+    const ref = useHideWhenTight<HTMLSpanElement>(
+        !item.resume && item.leaving?.short !== undefined,
+        fitsInParent,
+        LONE_CORNER_STEPS,
+    );
     if (!item.newLabel && !item.leaving) return null;
     return (
-        <span className={styles.corner} data-corner-notes="">
+        <span ref={ref} className={styles.corner} data-corner-notes="">
             {item.newLabel && <NewBadge />}
             {item.leaving && (
-                <span className={styles.leaving}>
+                <span className={styles.leaving} data-corner-leaving="">
                     <HourglassIcon size={NOTICE_ICON_SIZE} />
                     <FullOrTag
                         text={item.leaving.text}
