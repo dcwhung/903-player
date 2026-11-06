@@ -87,6 +87,18 @@ describe('upcoming arcs and batches', () => {
         warn.mockRestore();
     });
 
+    it('should warn once per arc and release date, not once per arc name (S-701)', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const missing = (addedAt: string) => arcInfo('同名短篇', { addedAt, count: undefined });
+        upcomingArcs([missing('2026-10-01')], TODAY);
+        upcomingArcs([missing('2026-10-01')], TODAY);
+        upcomingArcs([missing('2026-10-02')], TODAY);
+
+        const calls = warn.mock.calls.filter(([msg]) => String(msg).includes('同名短篇'));
+        expect(calls).toHaveLength(2);
+        warn.mockRestore();
+    });
+
     it('should give the batches still to come, each with its first and last episode', () => {
         const arc = arcInfo('戀愛二分一', {
             batches: [

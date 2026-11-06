@@ -332,11 +332,11 @@ const useSeriesArcs = (
     return { arc, pickArc, groups, chips, shown, pickedResume, upNext, availability, arcPicked };
 };
 
-/** chips 最尾嘅即將上架短篇、唱片下面嘅成套劇下架字 */
 /** 成套劇下架句：畫面字（page）+ 讀屏字（label，讀屏版日子，W-537） */
 const spokenNotice = ({ notice }: SeriesAvailabilityView) =>
     notice && { text: notice.page, label: notice.label };
 
+/** chips 最尾嘅即將上架短篇、唱片下面嘅成套劇下架字 */
 const pageAvailability = (availability: SeriesAvailabilityView) => ({
     upcomingArcs: availability.upcomingChips,
     notice: spokenNotice(availability),

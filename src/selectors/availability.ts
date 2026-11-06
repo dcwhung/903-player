@@ -59,10 +59,14 @@ export interface UpcomingArc {
 
 const warned = new Set<string>();
 
-/** 過咗上架日仲未補 episodes：照當未上架（唔出空短篇），console.warn 一次提醒加劇嘅人 */
+/**
+ * 過咗上架日仲未補 episodes：照當未上架（唔出空短篇），console.warn 一次提醒加劇嘅人。
+ * key 用上架日 + 短篇名：兩套劇有同名短篇都各自 warn（S-701）
+ */
 const warnMissingEpisodes = (arc: ArcAvailability) => {
-    if (warned.has(arc.arc)) return;
-    warned.add(arc.arc);
+    const key = `${arc.addedAt}:${arc.arc}`;
+    if (warned.has(key)) return;
+    warned.add(key);
     console.warn(`drama arc ${arc.arc}: addedAt ${arc.addedAt} has passed but episodes is missing`);
 };
 
