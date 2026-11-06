@@ -105,3 +105,23 @@ next_action: invoke developer subagent fix W-539 (recommend option A after measu
 context: B1/B2/C4/D4/S-716/S-717/S-718 all match user decisions; UI fixes 1a/1b/2a/2b ok; saved-columns WebKit fix needs QA S1 on WebKit
 report: .proj-docs/reviews/2026-11-06_review_copy-grill-ui-polish.md
 ```
+
+## Re-review 1 — `c23d30a`（只驗 W-539）
+
+- 改動：`e2e/comingSoon.mjs` `CORNER_CASES[1].text` → `'19/12'`，註解寫明 D4「全新短篇」加長、跟 E2 淨出日期（方案 A）；順手修埋 S-722（`DramaTileParts.tsx:18` 註解改新字）。冇改產品代碼，唔使 bump version
+- CI：[run 42201282970](https://github.com/dcwhung/903-player/actions/runs/42201282970) @ `c23d30a`：lint / unit / build ✅、E2E ✅
+- W-539：✅ 已修（E2 規則「放唔落先淨日期」，CI 字型下結果合規）
+- S-725（🟢 backlog）：呢個 case 視乎字型：sandbox（WenQuanYi）放得落，出「19/12 下架」；CI 字型放唔落，出「19/12」。期望值寫死就會跟環境變。建議 e2e 固定一隻 CJK 字型，或者改做按實際闊度斷言（量到放得落就要出「下架」，放唔落先接受淨日期）
+- 分數：100 / 100（W-539 已修）
+
+```
+HANDOFF_RECEIPT
+agent: code-reviewer
+stage: re-review
+status: pass
+score: 100
+hard_gates: lint=pass, type=pass, unit=pass, ci_same_sha=pass (run 42201282970 @ c23d30a), coverage=pass, no_critical=pass, security=n/a
+findings: C=0, W=0 (W-539 fixed), S=3 open (S-723, S-724, S-725), S-722 fixed, observation=1 (saved columns WebKit unverified -> QA S1)
+next_action: proceed to QA S1 (include WebKit check for saved-tab landscape columns)
+report: .proj-docs/reviews/2026-11-06_review_copy-grill-ui-polish.md
+```
