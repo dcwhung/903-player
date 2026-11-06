@@ -396,3 +396,51 @@ context: >
   merge (plan A in report). S-716 recorded, not scored.
 report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
 ```
+
+## Re-review 6 5dcc50b（W-536 / W-537）
+
+- 範圍：`git diff c919750..5dcc50b`（只驗 W-536 / W-537 嘅修正）；獨立 worktree，commit 只包報告
+- Hard gates：all pass — `npx tsc -b` exit 0；`npm run lint` exit 0；相關 unit（`ArcPickerAvailability`、`ArcSheetAvailability`、`ArcSheet`、`dramaShelfCss.node`、`SpokenText`、`NowPlaying`、`DramaPage` / `DramaPageAvailability`、`DramaTileAvailability`）9 files / 106 tests 全綠（冇跑 full suite / e2e）
+- CI（同一個 SHA `5dcc50b`）：run [#104 / 42133693244](https://github.com/dcwhung/903-player/actions/runs/42133693244) — **success**（`Detect code changes`、`Lint, unit & build`、`E2E (Playwright)`（包括新 `checkCornerStepTwo`）全部 success）
+- 新分數：**100 / 100**，✅ pass（冇 🔴 / 🟡）
+
+| ID    | 狀態    | 覆核                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-536 | ✅ 已修 | 第 2 步 rule 改做 `.topBar:has(> .meta[data-tight='2']) :is(.noteFull, .noteTag):has(~ .noteNarrow) { display: none }`。用上次同一個 Chromium scratch 頁、抽返新版 CSS 再試：320px + 第 2 步 →「19/12」（之前「部分短篇 19/12 下架19/12」）；320px 冇第 2 步 → 全句；260px / 180px 照舊淨日期。第 2 步而家一定令字變短，量完會停喺第一個放得落嘅步。`dramaShelfCss.node.test.ts`（postcss 讀 rule）鎖住兩條 declaration；e2e `checkCornerStepTwo` 1600×800（格約 313px）跑實際排版 |
+| W-537 | ✅ 已修 | 新 `SpokenText`：畫面字 `aria-hidden`，旁邊 visually-hidden 讀屏字（`dramaNoticeOf().label`，「本廣播劇系列 05/12 星期六 下架」）。三處（`NowPlaying` `NoticeLine`、`PickerLabel`、`SheetHeader`）都用；`useDramaPage` `notice` 改 `{ text, label }`，`SeriesListColumn` `pickerNotice` 取 `notice.text` + `noticeTag`（`tag` / `label`）。`SpokenText.test` 鎖住讀屏字唔喺任何 `aria-hidden` 入面；`NowPlaying` / `ArcSheet` / `ArcPicker` test 改用讀屏句                        |
+
+重點核對：
+
+- **`:has()` 支援**：repo 冇 browserslist，Vite 唔會轉 CSS selector，所以睇實際用法。app 已經大量靠 `:has()`（`global.css:125,189,194`、`Page.module.css:46,121`（亦係 `:has(~ …)` 兄弟寫法）、`Toast.module.css:26`、`DramaShelf.module.css:52,277,318`），今次冇提高最低要求：Safari 15.4+ / Chrome 105+ / Firefox 121+。新 selector 係 `:is(...)` 後面接 `:has(~ …)`，冇 `:has` 套 `:has`（無效寫法）✅。唔支援嘅瀏覽器兩條第 2 步 rule 一齊失效，只係停喺第 1 步（全句 / 短版），唔會出兩次 ✅
+- **F1 仍然只讀一次**：橫版 → `NowPlaying`（唱片下面）讀 `label` 一次；`PickerLabel` 喺橫版 `.label { display: none }`（讀屏都唔讀）；`AllChip` 橫版冇小標、讀屏淨係「全集」。直版冇 `NowPlaying`（直版用 chips 上面標籤）：未開始聽 → `PickerLabel`（replace）讀一次；聽緊 → 淨係「全集」chip 讀一次。全集一覽表係另一個 dialog，表頭讀一次屬正常 ✅
+- **sr-only class**：repo 冇共用 util，而家係第 4 份同樣嘅 CSS（`DateStrip.module.css:130` `.visuallyHidden`、`MiniPlayer.module.css:124` `.srOnly`、`AppVersion.module.css:13` `.srOnly`，再加 `SpokenText.module.css`），寫法一樣（`position: absolute; 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap`）。新嘅冇抄錯，但見 S-720
+
+🟢：
+
+- S-719 `src/pages/drama/useDramaPage.ts:329-331`：新加 `spokenNotice` 插咗喺原本 `pageAvailability` 嘅 JSDoc（「chips 最尾嘅即將上架短篇、唱片下面嘅成套劇下架字」）同 function 中間，變咗兩段 JSDoc 疊埋喺 `spokenNotice` 上面，`pageAvailability` 冇咗註解；將嗰段移返落 `pageAvailability` 上面
+- S-720 visually-hidden CSS 而家有 4 份（見上）；`SpokenText.module.css` 嘅 `.srOnly` 可以抽做共用（例如 `styles/` 一個 global utility 或者 `VisuallyHidden` component），其餘三處改用，避免之後改一份漏三份
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: re-review 6 feature/drama/coming-soon c919750..5dcc50b (W-536, W-537) v1.28.0
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass (9 related unit files, 106 tests; full suite / e2e not run per scope rule; CI run 42133693244 on 5dcc50b success incl. e2e)
+  coverage: pass (step-2 CSS node test, SpokenText aria test, NowPlaying / ArcSheet / ArcPicker spoken names; W-536 re-checked in Chromium scratch page)
+  no_critical: pass
+  security_scan: n/a (no new dependencies)
+findings:
+  critical: []
+  warning: []
+  suggestion: [S-719, S-720]
+next_action: proceed_to_qa
+context: >
+  W-536 and W-537 fixed and verified. :has() use is in line with existing
+  app CSS (no new browser floor) and degrades to step 1 without it. F1 still
+  reads the whole-drama leaving once per layout. sr-only CSS duplicated a
+  fourth time (S-720, backlog).
+report: .proj-docs/reviews/2026-11-05_review_coming-soon.md
+```
