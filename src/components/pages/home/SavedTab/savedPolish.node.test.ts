@@ -55,4 +55,24 @@ describe('saved / list disc polish', () => {
         expect(cssDeclarations(css, '.boxItem')['margin-bottom']).toBeUndefined();
         expect(cssDeclarations(css, '.boxItem')['padding-bottom']).toBe('var(--saved-gap)');
     });
+
+    // 用戶 iPhone 截圖（v1.28.1）：捲動條頂嗰截畀第一個 box 嘅 banner 遮住。banner 入面有定位元素
+    // （.banner relative、圖 absolute、名 z-index: 1），捲動區自己唔係 stacking context，佢哋就畫喺
+    // 外面嗰層、蓋過捲動區嘅 overlay 捲動條。捲動區自己開 stacking context，捲動條先畫喺內容上面
+    it.each(['.scroll', '.recentScroll'])(
+        'should paint %s content below its own scrollbar (own stacking context)',
+        (selector) => {
+            expect(cssDeclarations(css, selector).isolation).toBe('isolate');
+        },
+    );
+
+    // 左滑到盡：紅底右邊係直角（行剪咗左邊圓角，紅底自己冇圓角）；紅底同行用同一個圓角 token
+    it('should round every corner of the swipe trash like the row', () => {
+        expect(cssDeclarations(css, '.row')['border-radius']).toBe('var(--radius-row)');
+        expect(cssDeclarations(css, '.trash')['border-radius']).toBe('var(--radius-row)');
+        // 行圓角保持原本 8px（以前寫 var(--space-2)），唔好順手改大
+        expect(cssDeclarations(tokens, ':root')['--radius-row']).toBe(
+            'calc(8px * var(--ui-scale))',
+        );
+    });
 });

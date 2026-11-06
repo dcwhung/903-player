@@ -27,7 +27,7 @@ const measure = (): number =>
 
 /**
  * 量 iOS standalone viewport 底離螢幕底幾遠，寫入 html 嘅 --viewport-gap-bottom，unmount 時清走。
- * 只畀單一個 mini player 用（主頁得一個）：多個同時 mount 嘅話，先 unmount 嗰個會清走變數
+ * 只喺 App mount 一次（mini player、短提示、主頁底部留位共用）：多個同時 mount 嘅話，先 unmount 嗰個會清走變數
  */
 export const useViewportGap = (): void => {
     useLayoutEffect(() => {

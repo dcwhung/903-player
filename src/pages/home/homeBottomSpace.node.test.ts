@@ -36,4 +36,14 @@ describe('home bottom space', () => {
     it('should use the same rule in every orientation (no @media override)', () => {
         expect(mediaQueries(css)).toEqual([]);
     });
+
+    // 我的收藏 tab、冇 mini player（用戶 iPhone 截圖，v1.28.1）：最近收聽 panel 底下面唔留空位，
+    // 底部留位 = mini player 平時離 viewport 底嘅距離（同短提示一樣），上面收藏區自己伸縮
+    it('should let the saved tab reach the mini player offset when no mini player is shown', () => {
+        expect(
+            cssDeclarations(css, 'main.home:not([data-mini-player]):has([data-saved-mode])')[
+                'padding-bottom'
+            ],
+        ).toBe('var(--mini-player-offset-bottom)');
+    });
 });

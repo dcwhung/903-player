@@ -61,6 +61,8 @@
     --radius-tile: calc(14px * var(--ui-scale));
     /* 節目頁日子條同正中 highlight box 嘅圓角 */
     --radius-cell: calc(12px * var(--ui-scale));
+    /* 收藏 tab 每行（同左滑移除嘅紅底）圓角：保持原本 8px（跟 --ui-scale），紅底四角同行一致 */
+    --radius-row: calc(8px * var(--ui-scale));
 
     --touch-target: calc(44px * var(--ui-scale));
     /* WCAG 2.2 target size (minimum)：細粒掣嘅撳得到範圍 */
@@ -263,7 +265,8 @@
     --home-tab-icon-turn-angle: 90deg;
     /*
      * 成集收藏（P7 #7，_mockups_/bookmark）：集數清單每行 ▶ 左邊嘅 ☆ / ★ 撳得到範圍；
-     * 短提示（Toast）：深色半透明底白字，冇 mini player 時離頁底 40px，疊喺 debug panel 上面
+     * 短提示（Toast）：深色半透明底白字，冇 mini player 時離頁底同 mini player 平時一樣（--mini-player-offset-bottom），
+     * 疊喺 debug panel 上面
      */
     --episode-bookmark-size: calc(40px * var(--ui-scale));
     /*
@@ -275,7 +278,7 @@
     --toast-bg: rgb(10 16 24 / 88%);
     --toast-text: #ffffff;
     --toast-z: 40;
-    --toast-offset-bottom: calc(env(safe-area-inset-bottom) + var(--space-8) + var(--space-2));
+    --toast-offset-bottom: var(--mini-player-offset-bottom);
     /*
      * 主頁「我的收藏」tab：每個節目 / 每套劇一個 box（頂 B1 banner = 大類橫圖、名疊左下、左邊暗漸變），
      * 入面每段左邊一隻碟。數值跟 mockup 量（手機直版；窄橫版 / 闊橫版見下面 @media）：

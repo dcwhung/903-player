@@ -4,6 +4,7 @@ import { Toast } from './components/shared/common/Toast/Toast';
 import { RecordingsProvider } from './data/RecordingsProvider';
 import { useReopenHomePlayerCardOnPlay } from './hooks/homePlayerCardClosed';
 import { useRestoreMiniPlayerOnPlay } from './hooks/miniPlayerDismissed';
+import { useViewportGap } from './hooks/useViewportGap';
 import { DramaPage } from './pages/drama/DramaPage';
 import { HomePage } from './pages/home/HomePage';
 import { ShowPage } from './pages/show/ShowPage';
@@ -31,6 +32,9 @@ interface AppProps {
 export const App = ({ playerController }: AppProps) => {
     // 第一次 commit 完先收 index.html 嘅啟動畫面（最少顯示夠時間），唔會見到中間嘅空白
     useEffect(() => hideSplash(document), []);
+    // iOS standalone viewport 矮過螢幕幾多（--viewport-gap-bottom）：成個 app 一直量，唔係淨係有 mini player 先量，
+    // 冇 mini player 時短提示 / 主頁底部留位用嘅 --mini-player-offset-bottom 先同 mini player 一樣準
+    useViewportGap();
     return (
         <RecordingsProvider>
             <PlayerProvider controller={playerController} nextTrack={nextTrack}>
