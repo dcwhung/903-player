@@ -8,7 +8,7 @@ const tokens = readCss(new URL('../../styles/tokens.css', import.meta.url));
 
 /*
  * 闊橫版清單欄（wide list preview O3）：34%，最少 340px × --ui-scale；
- * 狀態一行由清單行自己用 em 保證（EpisodeList --episode-status-min），唔再靠估欄闊
+ * 狀態一行由清單行自己跟實際字型保證（EpisodeList .body min-content），唔再靠估欄闊
  */
 describe('landscape list column', () => {
     it('should size the list column from the landscape list tokens', () => {

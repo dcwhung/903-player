@@ -92,8 +92,8 @@
 
 /*
  * 橫版兩欄（LANDSCAPE_QUERY）：左欄清單 --landscape-list-width（34%，最少 340px × --ui-scale，tokens.css），
- * 其餘畀播放器。狀態一行唔再靠估欄闊：清單行嘅狀態欄自己用 em 保證最少闊度
- * （EpisodeList.module.css --episode-status-min），欄闊只係令短篇集名欄唔使縮太細；
+ * 其餘畀播放器。狀態一行唔再靠估欄闊：清單行嘅狀態欄自己跟實際字型保證最少闊度
+ * （EpisodeList.module.css .body min-content），欄闊只係令短篇集名欄唔使縮太細；
  * 1300×800 播放器仍然係高度限住（gauge 唔變）。手機打橫清單要 54% 先放得落（見下面）。
  * DOM 次序係播放器先（直版次序），用 grid-column 對調。
  * 成頁固定唔捲，左欄頁頭釘頂、清單自己捲；右欄播放器 + 現正播放一組喺欄入面置中

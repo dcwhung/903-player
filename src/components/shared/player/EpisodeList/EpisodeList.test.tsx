@@ -499,4 +499,12 @@ describe('EpisodeList', () => {
             });
         });
     });
+
+    it('should mark the list with its variant so the narrow home card can keep its own row layout', () => {
+        const { container, rerender } = render(<EpisodeList items={ITEMS} onSelect={() => {}} />);
+        expect(container.querySelector('section')).toHaveAttribute('data-variant', 'page');
+
+        rerender(<EpisodeList items={ITEMS} onSelect={() => {}} variant="card" />);
+        expect(container.querySelector('section')).toHaveAttribute('data-variant', 'card');
+    });
 });

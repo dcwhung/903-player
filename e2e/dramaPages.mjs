@@ -174,38 +174,25 @@ const STOP_AT_SECONDS = 2012;
 const STOP_AT_LABEL = '33:3';
 // 第三行：上面兩行唔揀中，揀中行喺清單中間（唔貼頂）
 const WIDE_ROW_INDEX = 2;
-// 量行數：兩個字行盒中心相差超過 0.7 個字高先當新一行
-const NEW_LINE_RATIO = 0.7;
 const ROW_BUTTON = 'li > button[aria-label^="播放"], li > button[aria-label^="暫停"]';
 
-/** 播放器揀中行：狀態字行數、狀態字、時間右邊同 ☆ 掣左邊嘅距離（負數 = 時間溢出入 ☆ 位） */
-const wideCurrentRow = (p, ratio) =>
-    p.locator('button[aria-current="true"]').evaluate((row, newLine) => {
+/**
+ * 播放器揀中行：狀態字行數、狀態字、時間右邊同 ☆ 掣左邊嘅距離（負數 = 時間溢出入 ☆ 位）。
+ * 行數 = 狀態字塊高 ÷ 時間（nowrap，永遠一行）高：唔數 Range 行盒（換行時包住兩行嘅 flex box 會多數一行），
+ * 唔靠 line-height（normal 讀唔到數）
+ */
+const wideCurrentRow = (p) =>
+    p.locator('button[aria-current="true"]').evaluate((row) => {
         const status = row.querySelector('[class*="status"]');
-        const times = [...row.querySelectorAll('[class*="time"]')].filter(
-            (el) => /\d:\d\d \//.test(el.textContent ?? '') && !el.querySelector('[class*="time"]'),
-        );
+        const time = row.querySelector('[data-status-time]');
         const star = row.closest('li')?.querySelector('[class*="bookmark"]:not([class*="Space"])');
-        const range = document.createRange();
-        range.selectNodeContents(status);
-        const size = parseFloat(getComputedStyle(status).fontSize);
-        const centres = [...range.getClientRects()]
-            .filter((rect) => rect.width > 0)
-            .map((rect) => rect.top + rect.height / 2)
-            .sort((a, b) => a - b);
-        const lines = centres.filter((c, i) => i === 0 || c - centres[i - 1] > size * newLine);
-        const time = times.at(-1);
+        const box = (el) => el.getBoundingClientRect();
         return {
             text: status?.textContent ?? '',
-            lines: lines.length,
-            timeToStar:
-                time && star
-                    ? Math.round(
-                          star.getBoundingClientRect().left - time.getBoundingClientRect().right,
-                      )
-                    : null,
+            lines: status && time ? Math.round(box(status).height / box(time).height) : null,
+            timeToStar: time && star ? Math.round(box(star).left - box(time).right) : null,
         };
-    }, ratio);
+    });
 
 /**
  * 闊橫版短篇劇集頁（用戶截圖 v1.28.3）：揀中行暫停「聽到 33:32 / 44:00」一行；
@@ -237,7 +224,7 @@ const checkWideRowStatus = async ({ browser, base, errors, log }) => {
     }, STOP_AT_SECONDS);
     const current = p.locator('button[aria-current="true"]');
     await current.filter({ hasText: STOP_AT_LABEL }).waitFor({ timeout: WAIT_MS });
-    const playing = await wideCurrentRow(p, NEW_LINE_RATIO);
+    const playing = await wideCurrentRow(p);
     log(
         playing.timeToStar !== null && playing.timeToStar >= 0,
         `${label}：播緊時間唔溢出入 ☆ 位（「${playing.text}」${playing.lines} 行，時間右邊離 ☆ ${playing.timeToStar}px）`,
@@ -245,7 +232,7 @@ const checkWideRowStatus = async ({ browser, base, errors, log }) => {
     await p.getByRole('button', { name: '暫停', exact: true }).first().click();
     await waitForPlaybackState(p, 'paused');
     await current.filter({ hasText: '聽到' }).waitFor({ timeout: WAIT_MS });
-    const paused = await wideCurrentRow(p, NEW_LINE_RATIO);
+    const paused = await wideCurrentRow(p);
     log(
         /^聽到 33:3\d \/ 44:00$/.test(paused.text) && paused.lines === 1,
         `${label}：暫停揀中行「${paused.text}」一行（${paused.lines} 行）`,

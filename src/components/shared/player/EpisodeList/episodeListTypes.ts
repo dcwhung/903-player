@@ -38,3 +38,9 @@ export type EpisodeLabels = 'date' | 'taggedDate' | 'title';
  * top（短篇劇集）= 捲到頂、露出半行上一集，上面嘅舊集捲上就見
  */
 export type EpisodeScrollAlign = 'nearest' | 'top';
+
+/**
+ * 清單擺喺邊：page（節目頁 / 劇集頁左欄）；card（主頁闊橫版播放卡，欄窄，
+ * 闊橫版狀態照舊可以換行，見 EpisodeList.module.css [data-variant='card']）
+ */
+export type EpisodeListVariant = 'page' | 'card';

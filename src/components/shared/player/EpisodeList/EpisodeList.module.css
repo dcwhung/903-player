@@ -146,7 +146,7 @@
 }
 
 .body {
-    /* LE1 用：欄幾闊（container query），唔跟內容撐闊（唔會擠走 ▷） */
+    /* LE1 用：欄幾闊（container query），唔跟內容撐闊（唔會擠走 ▷）；闊橫版內頁改跟內容（見下面 @media） */
     container: episode-body / inline-size;
     display: flex;
     flex-direction: column;
@@ -237,30 +237,6 @@
     );
 }
 
-/*
- * 闊橫版（WIDE_BANNER_QUERY，wide list preview O3）：行收緊，狀態「聽到 33:32 / 44:00」（約 8.56em）一行放得落，
- * 播緊嗰行嘅時間唔再溢出入 ☆ 位。☆ 40 → 32px × --ui-scale（仍然 ≥ 24px 觸控目標），☆ 同 ▷ 之間 4px × --ui-scale；
- * 狀態欄最少 --episode-status-min（8.75em，tokens.css；主頁播放卡淨係保證時間一行），唔夠位由短篇集名欄縮
- * （最多 --episode-label-title，最少約 3.6 個字，太長跑馬燈 / … 收尾）。
- * 手機打橫、直版唔郁（☆ 40px、間距照舊）
- */
-@media (orientation: landscape) and (min-width: 640px) and (min-height: 562px) {
-    .section {
-        --episode-bookmark-size: calc(32px * var(--ui-scale));
-        --episode-icon-gap: calc(4px * var(--ui-scale));
-    }
-
-    .body {
-        min-width: var(--episode-status-min);
-    }
-
-    [data-labels='title'] .date {
-        flex: 0 1 var(--episode-label-title);
-        width: auto;
-        min-width: calc(var(--font-size-md) * 3.6);
-    }
-}
-
 /* 播緊：「播放中」pill + 時間；窄欄放唔落就時間換落 pill 下面（行高不變） */
 .onAir {
     display: flex;
@@ -329,7 +305,7 @@
     white-space: nowrap;
 }
 
-/* 欄夠闊寫「05/12 下架」；闊橫版左欄嗰啲窄欄（約 7 個字闊以下）淨係「⏳ 05/12」 */
+/* 欄夠闊寫「05/12 下架」；窄欄（約 7 個字闊以下，例如主頁播放卡）淨係「⏳ 05/12」；闊橫版內頁欄跟內容，永遠寫全 */
 .leavingTag {
     display: none;
 }
@@ -361,4 +337,47 @@
 .upcoming .dayMonth,
 .upcoming .play {
     color: var(--color-text-muted);
+}
+
+/*
+ * 闊橫版（WIDE_BANNER_QUERY，wide list preview O3）：行收緊，狀態「聽到 33:32 / 44:00」一行放得落，
+ * 播緊嗰行嘅時間唔再溢出入 ☆ 位。☆ 40 → 32px × --ui-scale（仍然 ≥ 24px 觸控目標），☆ 同 ▷ 之間 4px × --ui-scale。
+ * 內頁（variant page）狀態欄最少闊度跟實際字型量（W-697：用估嘅 8.75em，CI 字型闊少少就斷咗行）：
+ * 唔做 inline-size container（container 會令 min-content 變 0），min-width: min-content，
+ * 有時間嘅狀態唔換行；唔夠位由短篇集名欄縮（最多 --episode-label-title，最少 --episode-label-title-min，
+ * 太長跑馬燈 / … 收尾）。欄最少 --landscape-list-min，集名縮到最細都仲放得落。
+ * 要寫喺檔尾：同 specificity 嘅基本規則（.body、.timedLine、.date）後寫先蓋得到。
+ * 主頁播放卡（variant card，36% 闊）：成句一行會逼走行尾 ▷，狀態可以換行（時間成段落第二行），
+ * 最少闊度 = 時間一行（min-content）；有快將下架嘅行照舊 container（LE1 窄欄短標籤），最少放得落時間
+ * （--episode-time-min）。手機打橫、直版唔郁（☆ 40px、間距照舊）
+ */
+@media (orientation: landscape) and (min-width: 640px) and (min-height: 562px) {
+    .section {
+        --episode-bookmark-size: calc(32px * var(--ui-scale));
+        --episode-icon-gap: calc(4px * var(--ui-scale));
+    }
+
+    .body {
+        container-type: normal;
+        min-width: min-content;
+    }
+
+    .timedLine {
+        flex-wrap: nowrap;
+    }
+
+    [data-labels='title'] .date {
+        flex: 0 1 var(--episode-label-title);
+        width: auto;
+        min-width: var(--episode-label-title-min);
+    }
+
+    [data-variant='card'] .body:has(.leaving) {
+        container-type: inline-size;
+        min-width: var(--episode-time-min);
+    }
+
+    [data-variant='card'] .timedLine {
+        flex-wrap: wrap;
+    }
 }
