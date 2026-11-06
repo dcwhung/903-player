@@ -75,6 +75,7 @@ const playerValue = (stop: () => void): PlayerContextValue => ({
     currentTime: 0,
     duration: 0,
     watchedRevision: 0,
+    progressRevision: 0,
     load: vi.fn(),
     play: vi.fn(),
     pause: vi.fn(),

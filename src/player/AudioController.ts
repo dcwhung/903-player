@@ -31,6 +31,7 @@ const INITIAL_STATE: PlayerState = {
     currentTime: 0,
     duration: 0,
     watchedRevision: 0,
+    progressRevision: 0,
 };
 
 const clamp = (value: number, max: number): number =>
@@ -297,7 +298,7 @@ export class AudioController {
         if (this.state.isPlaying || this.state.isAudible) {
             this.update({ isPlaying: false, isAudible: false });
         }
-        this.persist();
+        this.persistStopped();
     };
 
     private switchTo(recording: Track): void {
@@ -368,6 +369,15 @@ export class AudioController {
             this.update({ watchedRevision: this.state.watchedRevision + 1 });
         }
     };
+
+    /**
+     * 停低（暫停 / 停 / 播完）：存完進度先 bump progressRevision（S-710）。
+     * 讀進度嘅 component 跟 revision 重讀，唔使靠 isPlaying 變 false 同 persist 嘅先後
+     */
+    private persistStopped(): void {
+        this.persist();
+        this.update({ progressRevision: this.state.progressRevision + 1 });
+    }
 
     private onLoadedMetadata = (): void => {
         this.update({ duration: this.audio.duration });
@@ -550,7 +560,7 @@ export class AudioController {
         this.frozenBeforeStop = frozen;
         this.playIntent = false;
         this.update({ isPlaying: false, isAudible: false });
-        this.persist();
+        this.persistStopped();
     };
 
     /** 播完：有下一集就接住播（通常 advance 已經喺 timeupdate 換咗，呢度係後備）；冇就停 */

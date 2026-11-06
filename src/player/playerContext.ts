@@ -20,6 +20,8 @@ export interface PlayerState {
     duration: number;
     /** 每次有錄音變成「聽過」就 +1，令顯示剔嘅 component 重新 render */
     watchedRevision: number;
+    /** 停低（暫停 / 停 / 播完）存完進度之後 +1：最近收聽等要重讀進度嘅 component 跟呢個（S-710） */
+    progressRevision: number;
 }
 
 export interface PlayerActions {
