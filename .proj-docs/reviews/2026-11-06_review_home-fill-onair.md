@@ -173,3 +173,71 @@ context: "Re-review 1 @ 1daf44c：S-730 已處理；W-697 新：CI run 422633456
 blockers:
   - "W-697：CI E2E 闊橫版暫停狀態一行斷言失敗（run 42263345650）"
 ```
+
+---
+
+## Re-review 2 — `5b1031a`（W-697 + S-734，@ `5b1031a`）
+
+- 範圍：淨係 `ac049d4` 之後嘅 `5b1031a`；只驗 W-697 同 S-734 嘅修正，唔再搵新 🟢
+- Design Origin：`mockup: wide list preview … (O3)` ✅
+
+### Hard Gates（Re-review 2）
+
+| Gate         | 結果    | 證據                                                                                                                                                                                                                                         |
+| ------------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint         | pass    | 改動檔 `eslint` 0 error、`prettier --check` 全過                                                                                                                                                                                             |
+| Type check   | pass    | `npx tsc -b` exit 0                                                                                                                                                                                                                          |
+| Unit（相關） | pass    | `npx vitest related` CardEpisodes / EpisodeList / episodeListTypes：13 files / 231 tests；`wideRow` / `landscapeColumns` node test + `EpisodeList.test`：3 files / 40 tests（冇跑 full suite / e2e）                                         |
+| CI（同 SHA） | ✅ pass | [run 42270100479](https://github.com/dcwhung/903-player/actions/runs/42270100479) @ `5b1031a`：lint / unit / build / E2E 全綠；log：`PASS … 暫停揀中行「聽到 33:32 / 44:00」一行（1 行）`、`PASS … 播緊時間唔溢出入 ☆ 位（2 行，離 ☆ 71px）` |
+| No Critical  | pass    | 0 個 🔴                                                                                                                                                                                                                                      |
+
+### 評分（Re-review 2）
+
+| 維度     | 得分   | 滿分    | 備注                         |
+| -------- | ------ | ------- | ---------------------------- |
+| 正確性   | 25     | 25      | W-697 已修                   |
+| 安全性   | 20     | 20      |                              |
+| 可維護性 | 15     | 20      | W-696 仍未處理（開 PR 時補） |
+| 測試覆蓋 | 15     | 15      |                              |
+| 性能     | 10     | 10      |                              |
+| 代碼風格 | 10     | 10      |                              |
+| **總分** | **95** | **100** |                              |
+
+**結果：✅ pass**
+
+### 上輪項目
+
+- W-697 ✅ 已修，排版同 e2e 兩邊都改咗：
+    - 排版：闊橫版內頁 `.body` 改做 `container-type: normal` + `min-width: min-content`，`.timedLine` `nowrap`，狀態欄跟實際字型撐闊，唔夠位由集名欄讓（最少 `--episode-label-title-min`）。規則搬咗去檔尾，蓋得到同 specificity 嘅基本規則（之前基本 `.timedLine` 後寫，闊橫版嗰條冇生效）
+    - 主頁播放卡：用 `variant="card"`（`data-variant`），狀態照舊可以換行，時間成段落第二行；有快將下架嘅行先保留 LE1 container（`.body:has(.leaving)`，最少 `--episode-time-min`）
+    - e2e：行數改做「狀態字塊高 ÷ 時間（nowrap）高」，唔再用 Range 行盒（之前會多數一行）
+- S-734 ✅ 已處理：3.6 / 6.4 倍數入咗 token（`--episode-label-title-min`、`--episode-time-min`）；`--episode-status-min` 同 HomePlayerCard 覆寫已刪
+- W-696 ⏳ 未處理：開 PR 時喺 description 補
+
+### 快將下架標籤 vs 用戶決定 E2（「放得落就寫『下架』」）
+
+可以接受，唔開 finding：
+
+- 闊橫版內頁冇咗 container，`@container episode-body (max-width: 120px)` 唔再生效，所以永遠寫全「⏳ 05/12 下架」
+- 但 `.body` 而家係 `min-width: min-content`，`.leaving` 係 `nowrap` 嘅一粒 flex item：成粒最少都放得落，唔夠位由集名欄縮（最少約 3.6 個字），唔會溢出蓋住 ☆ / ▷
+- 換句話講，闊橫版內頁「永遠放得落」，寫全符合 E2；短標籤「⏳ 05/12」本來就係放唔落時嘅後備，主頁播放卡（`card`）同手機打橫 / 直版仍然有
+- 呢點係由 CSS 推理（L3），CI 冇專門驗「最窄 340px × s 欄 + 長集名 + 快將下架」；QA S1 截圖時可以順手睇一眼
+
+### Handoff receipt（Re-review 2）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 95/100
+stage: T1
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: null
+branch: "fix/ui/home-fill-bottom"
+context: "Re-review 2 @ 5b1031a：W-697 已修（min-content 狀態欄 + card variant + e2e 量高），S-734 已入 token；CI run 42270100479 ✅ 全綠（E2E 暫停行 1 行）；E2 闊橫版內頁永遠寫全「下架」可接受（min-content 保證放得落）；W-696 仍要開 PR 時 description 補 Design Origin"
+```
