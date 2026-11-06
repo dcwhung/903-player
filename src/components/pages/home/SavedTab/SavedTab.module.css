@@ -488,13 +488,3 @@
 .box[data-removed] .bannerArt {
     filter: grayscale(1);
 }
-
-/* 收藏行共用嘅移除提示（removeHint.tsx）：畀讀屏讀，畫面唔顯示 */
-.srOnly {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-}

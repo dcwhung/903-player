@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { formatAppVersion } from '../../../../config/appVersion';
 import { copyPlaybackLog } from '../../../../player/playbackLog';
 import { t } from '../../../../i18n/t';
+import { SpokenText } from '../../../shared/common/SpokenText/SpokenText';
 import { useTapGesture } from '../ViewportDebug/tapGesture';
 import { ViewportDebug } from '../ViewportDebug/ViewportDebug';
 import styles from './AppVersion.module.css';
@@ -33,8 +34,10 @@ export const AppVersion = ({ version }: AppVersionProps) => {
     const closeDebug = useCallback(() => setDebugOpen(false), []);
     return (
         <p className={styles.version} onClick={onTap}>
-            <span aria-hidden="true">{formatAppVersion(version)}</span>
-            <span className={styles.srOnly}>{t('app.versionLabel', { version })}</span>
+            <SpokenText
+                text={formatAppVersion(version)}
+                label={t('app.versionLabel', { version })}
+            />
             {debugOpen && <ViewportDebug onClose={closeDebug} extraRows={logRow ? [logRow] : []} />}
         </p>
     );

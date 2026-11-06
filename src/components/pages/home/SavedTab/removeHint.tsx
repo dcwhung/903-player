@@ -1,6 +1,6 @@
 import { createContext, useContext, useId, type ReactNode } from 'react';
 import { t } from '../../../../i18n/t';
-import styles from './SavedTab.module.css';
+import { VisuallyHidden } from '../../../shared/common/VisuallyHidden/VisuallyHidden';
 
 /** 收藏行共用嘅移除提示 id（冇 provider 就冇提示） */
 const RemoveHintContext = createContext<string | undefined>(undefined);
@@ -16,9 +16,7 @@ export const RemoveHintProvider = ({ children }: { children: ReactNode }) => {
     const id = useId();
     return (
         <RemoveHintContext.Provider value={id}>
-            <span id={id} className={styles.srOnly}>
-                {t('bookmark.removeHint')}
-            </span>
+            <VisuallyHidden id={id}>{t('bookmark.removeHint')}</VisuallyHidden>
             {children}
         </RemoveHintContext.Provider>
     );
