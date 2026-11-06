@@ -63,7 +63,12 @@ describe('ArcPicker availability', () => {
     it('should swap the pick line for the whole-drama leaving note when nothing has started', () => {
         renderPicker(vi.fn(), { ...NOTICE, replace: true });
 
-        expect(screen.getByText('本廣播劇系列 05/12（六）下架')).toBeInTheDocument();
+        // W-537：畫面字讀屏唔讀，改讀讀屏版日子
+        expect(screen.getByText('本廣播劇系列 05/12（六）下架')).toHaveAttribute(
+            'aria-hidden',
+            'true',
+        );
+        expect(screen.getByText('本廣播劇系列 05/12 星期六 下架')).toBeInTheDocument();
         expect(screen.queryByText('揀一個短篇開始收聽')).not.toBeInTheDocument();
     });
 

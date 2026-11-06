@@ -2,6 +2,7 @@ import { t } from '../../../../i18n/t';
 import { PLAYBACK_LINE_KEY, type PlaybackLineState } from '../../../../utils/playbackState';
 import { HourglassIcon } from '../../common/icons/icons';
 import { Marquee } from '../../common/Marquee/Marquee';
+import { SpokenText, type SpokenNotice } from '../../common/SpokenText/SpokenText';
 import styles from './NowPlaying.module.css';
 
 interface NowPlayingProps {
@@ -15,17 +16,23 @@ interface NowPlayingProps {
     status?: PlaybackLineState;
     /**
      * 成套劇快將下架（琥珀色 ⏳，P8 #6）：未載入（unloaded）就取代「揀一個短篇開始收聽」；
-     * 聽緊就放喺第二行（「現正播放」下面，取代集名，高度唔變）
+     * 聽緊就放喺第二行（「現正播放」下面，取代集名，高度唔變）。讀屏讀 label（讀屏版日子，W-537）
      */
-    notice?: string | undefined;
+    notice?: SpokenNotice | undefined;
 }
 
 const NOTICE_ICON_SIZE = 12;
 
-const NoticeLine = ({ text, className }: { text: string; className: string | undefined }) => (
+const NoticeLine = ({
+    notice,
+    className,
+}: {
+    notice: SpokenNotice;
+    className: string | undefined;
+}) => (
     <span className={`${className} ${styles.notice}`}>
         <HourglassIcon size={NOTICE_ICON_SIZE} />
-        {text}
+        <SpokenText {...notice} />
     </span>
 );
 
@@ -39,9 +46,9 @@ const SecondLine = ({
     notice,
 }: {
     detail?: string | undefined;
-    notice?: string | undefined;
+    notice?: SpokenNotice | undefined;
 }) => {
-    if (notice) return <NoticeLine className={styles.detail} text={notice} />;
+    if (notice) return <NoticeLine className={styles.detail} notice={notice} />;
     return detail ? <Marquee className={styles.detail} text={detail} animate={false} /> : null;
 };
 
@@ -56,7 +63,7 @@ export const NowPlaying = ({
     return (
         <div className={styles.group}>
             {replaces ? (
-                <NoticeLine className={styles.line} text={notice} />
+                <NoticeLine className={styles.line} notice={notice} />
             ) : (
                 <Marquee
                     className={styles.line}

@@ -56,7 +56,10 @@ const renderSheet = (onPick = vi.fn()) =>
             groups={[{ group: 'unfinished', items: [HALF, HEART] }]}
             upcoming={UPCOMING}
             notesOf={(s) => NOTES[s.arc]}
-            notice="本廣播劇系列 05/12（六）下架"
+            notice={{
+                text: '本廣播劇系列 05/12（六）下架',
+                label: '本廣播劇系列 05/12 星期六 下架',
+            }}
             current={undefined}
             isPlaying={false}
             onPick={onPick}
@@ -107,8 +110,11 @@ describe('ArcSheet availability', () => {
     it('should note under the header when the whole drama leaves soon', () => {
         renderSheet();
 
-        expect(
-            within(screen.getByRole('dialog')).getByText('本廣播劇系列 05/12（六）下架'),
-        ).toBeVisible();
+        const dialog = within(screen.getByRole('dialog'));
+        const shown = dialog.getByText('本廣播劇系列 05/12（六）下架');
+        expect(shown).toBeVisible();
+        // W-537：讀屏讀讀屏版日子，唔讀畫面嘅「（六）」
+        expect(shown).toHaveAttribute('aria-hidden', 'true');
+        expect(dialog.getByText('本廣播劇系列 05/12 星期六 下架')).toBeInTheDocument();
     });
 });

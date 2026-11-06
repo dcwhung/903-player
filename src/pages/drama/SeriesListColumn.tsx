@@ -66,7 +66,7 @@ type SeriesListView = Pick<
  */
 const pickerNotice = ({ notice, noticeTag, status }: SeriesListView) =>
     notice && noticeTag
-        ? { text: notice, ...noticeTag, replace: status === 'unloaded' }
+        ? { text: notice.text, ...noticeTag, replace: status === 'unloaded' }
         : undefined;
 
 interface SeriesListColumnProps {

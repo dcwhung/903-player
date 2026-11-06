@@ -327,9 +327,13 @@ const useSeriesArcs = (
 };
 
 /** chips 最尾嘅即將上架短篇、唱片下面嘅成套劇下架字 */
+/** 成套劇下架句：畫面字（page）+ 讀屏字（label，讀屏版日子，W-537） */
+const spokenNotice = ({ notice }: SeriesAvailabilityView) =>
+    notice && { text: notice.page, label: notice.label };
+
 const pageAvailability = (availability: SeriesAvailabilityView) => ({
     upcomingArcs: availability.upcomingChips,
-    notice: availability.notice?.page,
+    notice: spokenNotice(availability),
     /** 直版已開始聽：「全集」chip 嘅琥珀小標同讀屏日子 */
     noticeTag: availability.notice && {
         tag: availability.notice.tag,
@@ -340,7 +344,7 @@ const pageAvailability = (availability: SeriesAvailabilityView) => ({
 /** 全集一覽表嘅即將上架組（S1）、成套劇下架字、每行補充（A2 / LS2） */
 const sheetAvailability = (availability: SeriesAvailabilityView) => ({
     upcoming: availability.upcomingRows,
-    notice: availability.notice?.page,
+    notice: spokenNotice(availability),
     notesOf: availability.notesOf,
 });
 

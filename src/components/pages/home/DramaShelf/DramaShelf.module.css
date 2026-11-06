@@ -324,8 +324,11 @@
     }
 }
 
-/* 同一條頂行，收埋短篇數都仲放唔落（useHideWhenTight 第 2 步）：左上角下架字都淨日期（E2） */
-.topBar:has(> .meta[data-tight='2']) .noteTag:has(+ .noteNarrow) {
+/*
+ * 同一條頂行，收埋短篇數都仲放唔落（useHideWhenTight 第 2 步）：左上角下架字淨日期「⏳ 19/12」（E2）。
+ * 全句（格闊 > 280px）同短版都收，收完一定短過之前（W-536）
+ */
+.topBar:has(> .meta[data-tight='2']) :is(.noteFull, .noteTag):has(~ .noteNarrow) {
     display: none;
 }
 

@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { t } from '../../../../i18n/t';
 import type { ArcGroup, ArcSummary } from '../../../../selectors/arcProgress';
 import { CloseIcon, HourglassIcon } from '../../../shared/common/icons/icons';
+import { SpokenText, type SpokenNotice } from '../../../shared/common/SpokenText/SpokenText';
 import { GROUP_TITLES } from './arcLabels';
 import { ArcRow, type ArcRowProps } from './ArcRow';
 import styles from './ArcSheet.module.css';
@@ -20,8 +21,8 @@ interface ArcSheetProps extends Omit<ArcRowProps, 'summary'> {
     groups: readonly { group: ArcGroup; items: readonly ArcSummary[] }[];
     /** 即將上架嘅短篇：最底一組（S1），撳唔到 */
     upcoming?: readonly UpcomingArcRowView[] | undefined;
-    /** 成套劇快將下架：表頭下面一行琥珀字 */
-    notice?: string | undefined;
+    /** 成套劇快將下架：表頭下面一行琥珀字（畫面字 + 讀屏字，W-537） */
+    notice?: SpokenNotice | undefined;
     onClose: () => void;
 }
 
@@ -58,7 +59,7 @@ const sheetProgress = (groups: ArcSheetProps['groups']) => {
 interface SheetHeaderProps {
     titleId: string;
     progress: ReturnType<typeof sheetProgress>;
-    notice: string | undefined;
+    notice: SpokenNotice | undefined;
     onClose: () => void;
 }
 
@@ -82,7 +83,7 @@ const SheetHeader = ({ titleId, progress, notice, onClose }: SheetHeaderProps) =
         {notice && (
             <p className={styles.notice}>
                 <HourglassIcon size={NOTICE_ICON_SIZE} />
-                {notice}
+                <SpokenText {...notice} />
             </p>
         )}
     </>

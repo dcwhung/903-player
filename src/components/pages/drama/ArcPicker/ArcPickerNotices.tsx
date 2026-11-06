@@ -3,6 +3,7 @@ import { LANDSCAPE_QUERY } from '../../../../config/layout';
 import { useMediaQuery } from '../../../../hooks/useMediaQuery';
 import { t } from '../../../../i18n/t';
 import { ClockIcon, HourglassIcon, ListIcon } from '../../../shared/common/icons/icons';
+import { SpokenText } from '../../../shared/common/SpokenText/SpokenText';
 import styles from './ArcPicker.module.css';
 
 export const NOTICE_ICON_SIZE = 12;
@@ -96,7 +97,8 @@ export const PickerLabel = ({
         {notice?.replace && (
             <span className={styles.notice}>
                 <HourglassIcon size={NOTICE_ICON_SIZE} />
-                {notice.text}
+                {/* 畫面字有「明日」/「（六）」，讀屏讀讀屏版日子（W-537） */}
+                <SpokenText text={notice.text} label={notice.label} />
             </span>
         )}
     </span>
