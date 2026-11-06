@@ -49,6 +49,7 @@ describe('toEpisodeItems', () => {
                     text: '12:40 / 1:58:30',
                     spokenText: '播放中，12:40 / 1:58:30',
                     onAir: true,
+                    time: '12:40 / 1:58:30',
                 },
                 track: NEWEST,
             },

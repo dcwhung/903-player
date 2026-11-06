@@ -13,6 +13,9 @@
     --episode-row-gap: calc(14px * var(--ui-scale));
     --episode-row-pad-end: calc(12px * var(--ui-scale));
     --episode-row-icon: calc(22px * var(--ui-scale));
+    /* 狀態字眼同時間之間分隔符嘅闊度（「 · 」約 0.9 個字；空格約 0.3 個字，.timed[data-sep] 揀） */
+    --status-sep-dot: 0.9em;
+    --status-sep-space: 0.3em;
 }
 
 .header {
@@ -236,6 +239,48 @@
     gap: calc(3px * var(--ui-scale)) calc(6px * var(--ui-scale));
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+}
+
+/*
+ * 有時間嘅狀態（聽到 / 未開始 + 時間）：放唔落就時間成段落下一行，字眼留第一行（用戶截圖 v1.28.2）。
+ * 分隔符跟住時間（.timeSep，固定闊 --status-sep）。入面嗰行（.timedLine）向左縮一個分隔符闊，
+ * 外層（.timed）喺欄左邊剪：時間換咗行就由行頭開始，分隔符剛好喺被剪走嘅位，唔會吊喺第一行尾 / 第二行頭。
+ * 右邊唔剪（-100vw），欄極窄時時間唔會被切走
+ */
+.timed {
+    --status-sep: var(--status-sep-space);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    clip-path: inset(0 -100vw 0 0);
+}
+
+.timed[data-sep='dot'] {
+    --status-sep: var(--status-sep-dot);
+}
+
+.timedLine {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    margin-left: calc(-1 * var(--status-sep));
+}
+
+.lead {
+    margin-left: var(--status-sep);
+    white-space: nowrap;
+}
+
+/* 時間「13:32 / 13:46」永遠一行（pill 後面嗰段都係） */
+.time {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.timeSep {
+    display: inline-block;
+    width: var(--status-sep);
+    text-align: center;
 }
 
 /* 快將下架（LE1）：狀態字後面琥珀色「· ⏳ 05/12 下架」；欄窄放唔落先成粒換落下一行（唔會溢出蓋住 ☆） */

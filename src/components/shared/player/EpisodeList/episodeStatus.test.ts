@@ -19,6 +19,24 @@ describe('episodeStatus', () => {
             text: '12:40 / 1:58:30',
             spokenText: '播放中，12:40 / 1:58:30',
             onAir: true,
+            time: '12:40 / 1:58:30',
+        });
+    });
+
+    // 用戶截圖（v1.28.2 打橫手機窄欄）：「13:32 /」「13:46」斷開。時間要成段分開出，換行就成段落下一行
+    it('should split the status word from the time so the time never breaks', () => {
+        const live = { currentTime: 812, duration: 826 };
+        expect(episodeStatus({ isCurrent: true, live, liveState: 'paused' })).toMatchObject({
+            text: '聽到 13:32 / 13:46',
+            lead: '聽到',
+            separator: 'space',
+            time: '13:32 / 13:46',
+        });
+        expect(episodeStatus({ isCurrent: true, live, liveState: 'ready' })).toMatchObject({
+            text: '未開始 · 13:32 / 13:46',
+            lead: '未開始',
+            separator: 'dot',
+            time: '13:32 / 13:46',
         });
     });
 

@@ -18,6 +18,7 @@ const ITEMS: EpisodeItem[] = [
             text: '12:40 / 1:58:30',
             spokenText: '播放中，12:40 / 1:58:30',
             onAir: true,
+            time: '12:40 / 1:58:30',
         },
     },
     {
@@ -98,6 +99,33 @@ describe('EpisodeList', () => {
         expect(row.querySelector('[data-on-air-lamp]')).toHaveAttribute('data-on-air-lamp', 'idle');
         expect(screen.queryByText('播放中')).not.toBeInTheDocument();
         expect(row).toHaveTextContent('聽到 12:40 / 1:58:30');
+    });
+
+    // 窄欄換行時時間成段落下一行（「13:32 /」「13:46」唔准斷開）：字眼同時間分開兩粒，時間 nowrap
+    it('should render the status word and the whole time as separate pieces', () => {
+        const status = {
+            kind: 'playing' as const,
+            ratio: 0.98,
+            text: '未開始 · 13:32 / 13:46',
+            lead: '未開始',
+            separator: 'dot' as const,
+            time: '13:32 / 13:46',
+        };
+        render(
+            <EpisodeList
+                items={[{ ...(ITEMS[0] as EpisodeItem), isPlaying: false, status }]}
+                onSelect={() => {}}
+            />,
+        );
+        const row = screen.getByRole('button', { name: /^播放 19\/10/ });
+        const time = row.querySelector('[data-status-time]');
+
+        expect(row.querySelector('[data-status-lead]')).toHaveTextContent('未開始');
+        expect(time?.parentElement?.className).toMatch(/timedLine/);
+        expect(time).toHaveTextContent('· 13:32 / 13:46');
+        // 分隔符跟時間走：換咗行就喺行頭被剪走，唔會吊喺第一行尾 / 第二行頭
+        expect(time?.firstElementChild).toHaveAttribute('aria-hidden', 'true');
+        expect(row).toHaveTextContent('未開始 · 13:32 / 13:46');
     });
 
     it('scrolls the current episode into view inside the list panel', () => {

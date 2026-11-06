@@ -20,6 +20,13 @@ export interface EpisodeStatus {
      * spokenText 照講「播放中，0:05 / 21:56」
      */
     onAir?: true;
+    /**
+     * 有時間嘅狀態：時間「13:32 / 13:46」成段（窄欄換行時成段落下一行，唔會喺中間斷開）；
+     * lead = 前面字眼（聽到 / 未開始），separator = 字眼同時間之間係空格定「 · 」。播緊（onAir）冇 lead
+     */
+    time?: string;
+    lead?: string;
+    separator?: 'space' | 'dot';
 }
 
 interface EpisodeStatusInput {
@@ -47,12 +54,25 @@ const liveStatus = (
     const key = PLAYBACK_STATUS_KEY[liveState];
     const spokenText = t(key, { ...params, sep: t('common.spokenSeparator') });
     const shown = ratio(live.currentTime, live.duration);
+    const time = t('player.progressText', params);
     if (liveState === 'playing') {
         // 「播放中」由 pill 出，字唔再重複
-        const text = t('player.progressText', params);
-        return { kind: 'playing', ratio: shown, text, spokenText, onAir: true };
+        return { kind: 'playing', ratio: shown, text: time, spokenText, onAir: true, time };
     }
-    return { kind: 'playing', ratio: shown, text: t(key, params), spokenText };
+    const text = t(key, params);
+    return { kind: 'playing', ratio: shown, text, spokenText, ...splitTime(text, time) };
+};
+
+/** 「聽到 13:32 / 13:46」/「未開始 · 0:00 / 11:17」拆做字眼 + 分隔 + 時間（文案改咗對唔上就唔拆） */
+const splitTime = (
+    text: string,
+    time: string,
+): Pick<EpisodeStatus, 'lead' | 'separator' | 'time'> => {
+    if (!text.endsWith(time)) return {};
+    const head = text.slice(0, text.length - time.length);
+    const dot = t('common.separator');
+    if (head.endsWith(dot)) return { lead: head.slice(0, -dot.length), separator: 'dot', time };
+    return { lead: head.trimEnd(), separator: 'space', time };
 };
 
 /** 集數清單每一行嘅狀態：連線中 / 播放中 / 已收聽 / 聽到 mm:ss / 未收聽 */

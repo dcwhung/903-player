@@ -123,7 +123,10 @@ describe('DramaPage', () => {
             expect(screen.getByText('25:00')).toBeVisible();
             // 直版 chips 上面都講埋短篇名；載入咗未開始講「下一集」，清單行講「未開始」
             expect(screen.getByText(`下一集：Season 4 · 第 ${s4?.no} 集`)).toBeInTheDocument();
-            expect(screen.getByText('未開始 · 0:00 / 25:00')).toBeInTheDocument();
+            // 清單行字眼同時間分開兩粒（時間成段換行）：睇成行文字
+            expect(screen.getByRole('button', { current: true })).toHaveTextContent(
+                '未開始 · 0:00 / 25:00',
+            );
             expect(audio.play).toHaveBeenCalledTimes(plays);
             expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
         });
@@ -531,7 +534,9 @@ describe('DramaPage', () => {
             await userEvent.click(screen.getByRole('button', { name: '暫停' }));
             expect(screen.getByText('已暫停：Ｘ時mas時小提議 · 第 2 / 4 集')).toBeInTheDocument();
             // A2：清單行唔寫「已暫停」，寫聽到邊
-            expect(screen.getByText('聽到 2:00 / 20:00')).toBeInTheDocument();
+            expect(screen.getByRole('button', { current: true })).toHaveTextContent(
+                '聽到 2:00 / 20:00',
+            );
         });
 
         it('shows the 短篇, position and episode title under the disc, header above the list', async () => {
