@@ -15,7 +15,7 @@ const NOTICE_ICON_SIZE = 12;
 const LONE_CORNER_STEPS = 2;
 
 /**
- * 入頁掣讀屏名（F3）：「劇名，有新短篇；下個短篇 02/12 星期三 上架；部分短篇 05/12 星期六 下架」，
+ * 入頁掣讀屏名（F3 / D4）：「劇名，有新上架短篇；全新短篇 02/12 星期三 上架；部分短篇 05/12 星期六 下架」，
  * 冇嘢補充就淨係劇名
  */
 export const tileLabel = ({ name, newLabel, leaving, release }: DramaShelfItem): string => {

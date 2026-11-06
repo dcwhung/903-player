@@ -180,12 +180,13 @@ const CORNER_CASES = [
         name: /^E2E 下架劇場，/,
         text: '19/12 下架',
     },
-    // 闊橫版三欄格約 313px（> 280px 本來出全句）、有繼續收聽：收短篇數之後短版夠位
+    // 闊橫版三欄格約 313px（> 280px 本來出全句）、有繼續收聽：D4 上架字改「全新短篇」長咗一個字，
+    // 收短篇數之後短版都放唔落（W-539，CI 字型量），跟 E2 淨出日期
     {
         viewport: { width: 1600, height: 800 },
         progress: LEAVING_PROGRESS,
         name: SOON_TILE_LABEL,
-        text: '19/12 下架',
+        text: '19/12',
     },
     // 有繼續收聽、頂行放唔落短版：淨日期
     {
