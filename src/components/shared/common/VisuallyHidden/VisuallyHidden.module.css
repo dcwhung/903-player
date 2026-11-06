@@ -1,5 +1,5 @@
-/* 視覺上隱藏，讀屏照讀 */
-.srOnly {
+/* 視覺上隱藏，讀屏照讀：全 app 一份（S-724），唔好喺各自 module 再抄一次 */
+.hidden {
     position: absolute;
     width: 1px;
     height: 1px;

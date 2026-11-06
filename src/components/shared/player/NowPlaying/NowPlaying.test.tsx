@@ -45,6 +45,21 @@ describe('NowPlaying', () => {
         expect(screen.getByText('交換禮物')).toBeInTheDocument();
     });
 
+    it('reads the spoken label instead of the screen line when given (S-723)', () => {
+        render(
+            <NowPlaying
+                label="30/11（一） · 第 1 / 3 個節目"
+                spokenLabel="30/11 星期一，第 1 / 3 個節目"
+                connecting={false}
+            />,
+        );
+
+        const shown = screen.getByText('現正播放：30/11（一） · 第 1 / 3 個節目');
+        expect(shown.closest('[aria-hidden="true"]')).not.toBeNull();
+        const spoken = screen.getByText('現正播放：30/11 星期一，第 1 / 3 個節目');
+        expect(spoken.closest('[aria-hidden]')).toBeNull();
+    });
+
     it('says it is connecting until the duration is known', () => {
         render(<NowPlaying label="21/10（三）" connecting />);
 

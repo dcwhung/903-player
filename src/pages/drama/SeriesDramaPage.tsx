@@ -39,10 +39,15 @@ const arcPickerLabel = (
 };
 
 /** 橫版唱片下面「現正播放」：短篇加埋第幾個 / 幾多集（按排位，唔係集數），下一行集名 */
-const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, arcTotal: number) => ({
-    label: t('drama.nowPlayingArc', { arc: current.arc, no: arcPosition, total: arcTotal }),
-    detail: current.title,
-});
+const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, arcTotal: number) => {
+    const params = { arc: current.arc, no: arcPosition, total: arcTotal };
+    return {
+        label: t('drama.nowPlayingArc', params),
+        // 讀屏唔讀「·」（S-723）
+        spokenLabel: t('drama.nowPlayingArc', { ...params, sep: t('common.spokenSeparator') }),
+        detail: current.title,
+    };
+};
 
 /**
  * 橫版「現正播放」有冇第二行（集名，或者聽緊時嘅成套劇下架字）：有就預留兩行高，唔係第二行會俾版面裁走

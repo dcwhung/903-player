@@ -169,45 +169,48 @@ const continueFit = (tile) =>
 
 /**
  * 左上角下架字逐步收（E2 / W-536 / W-538）：夠位「⏳ 19/12 下架」，放唔落先淨「⏳ 19/12」；
- * 冇繼續收聽嘅格（單獨左上角）同有繼續收聽嘅格（頂行，同右上角爭位）都係量度，唔係固定格闊。
- * text = 左上角顯示緊嘅下架字；預期值由 QA 喺呢啲 viewport 量過（CUI-0022）
+ * 冇繼續收聽嘅格（單獨左上角，量 corner）同有繼續收聽嘅格（頂行，同右上角爭位，量 meta）都係量度。
+ * S-725：放唔放得落視乎字型（sandbox WenQuanYi 同 CI 字型闊度唔同），所以唔寫死邊個 viewport 出邊款字；
+ * 改為按實際闊度斷言：顯示緊嗰步放得落，而且鬆一步（少收一截）就放唔落（夠位即停，唔會收多咗）
  */
+const LEAVING_TEXTS = ['19/12 下架', '19/12'];
 const CORNER_CASES = [
-    // 手機打橫、冇繼續收聽：格約 152px，「19/12 下架」放得落
+    // 手機打橫、冇繼續收聽：單獨左上角對格闊量
     {
         viewport: { width: 844, height: 390 },
         progress: {},
         name: /^E2E 下架劇場，/,
-        text: '19/12 下架',
+        measure: 'corner',
     },
-    // 闊橫版三欄格約 313px（> 280px 本來出全句）、有繼續收聽：D4 上架字改「全新短篇」長咗一個字，
-    // 收短篇數之後短版都放唔落（W-539，CI 字型量），跟 E2 淨出日期
+    // 有繼續收聽：同右上角上架字同一條頂行，由右上角嗰粒（meta）量
     {
         viewport: { width: 1600, height: 800 },
         progress: LEAVING_PROGRESS,
         name: SOON_TILE_LABEL,
-        text: '19/12',
+        measure: 'meta',
     },
-    // 有繼續收聽、頂行放唔落短版：淨日期
     {
         viewport: { width: 1300, height: 800 },
         progress: LEAVING_PROGRESS,
         name: SOON_TILE_LABEL,
-        text: '19/12',
+        measure: 'meta',
     },
     {
         viewport: { width: 844, height: 390 },
         progress: LEAVING_PROGRESS,
         name: SOON_TILE_LABEL,
-        text: '19/12',
+        measure: 'meta',
     },
 ];
 // 量多一次之前等幾耐：收字唔會 loop（第二次量同第一次一樣）
 const SETTLE_MS = 500;
 
-/** 左上角下架字顯示緊嘅字（每粒葉 span，收埋嘅唔計）、收字第幾步、有冇出格 / 頂行溢出 */
-const cornerLeaving = (tile) =>
-    tile.evaluate((button) => {
+/**
+ * 左上角下架字顯示緊嘅字（每粒葉 span，收埋嘅唔計）、收字第幾步、有冇出格 / 頂行溢出；
+ * looserFits = 鬆一步（data-tight 減 1）放唔放得落，量完即刻還原（同 useHideWhenTight 嘅 fits 一樣計法）
+ */
+const cornerLeaving = (tile, measure) =>
+    tile.evaluate((button, kind) => {
         const corner = button.querySelector('[data-corner-leaving]');
         const leaves = [...(corner?.querySelectorAll('span') ?? [])].filter(
             (el) => el.children.length === 0 && getComputedStyle(el).display !== 'none',
@@ -215,6 +218,19 @@ const cornerLeaving = (tile) =>
         const meta = button.querySelector('[data-corner]');
         const box = corner?.getBoundingClientRect();
         const card = button.getBoundingClientRect();
+        const target = kind === 'meta' ? meta : button.querySelector('[data-corner-notes]');
+        const fits = (el) =>
+            kind === 'meta'
+                ? el.scrollWidth <= el.clientWidth
+                : el.scrollWidth + 2 * el.offsetLeft <= el.parentElement.clientWidth;
+        const step = Number(target?.getAttribute('data-tight') ?? 0);
+        let looserFits = false;
+        if (target && step > 0) {
+            if (step === 1) target.removeAttribute('data-tight');
+            else target.setAttribute('data-tight', String(step - 1));
+            looserFits = fits(target);
+            target.setAttribute('data-tight', String(step));
+        }
         return {
             width: Math.round(card.width),
             tight: [
@@ -224,29 +240,33 @@ const cornerLeaving = (tile) =>
             text: leaves.map((el) => el.textContent).join(''),
             inside: box !== undefined && box.right <= card.right,
             metaFits: meta ? meta.scrollWidth <= meta.clientWidth : true,
+            fits: target ? fits(target) : false,
+            looserFits,
         };
-    });
+    }, measure);
 
-/** 每個 case：左上角出預期嘅字，只出一次日期，冇出格，再量一次唔變（唔會 loop） */
+/** 每個 case：左上角出其中一款下架字、夠位即停（S-725），冇出格，再量一次唔變（唔會 loop） */
 const checkCornerSteps = async (env) => {
     const { log } = env;
-    for (const { viewport, progress, name, text } of CORNER_CASES) {
+    for (const { viewport, progress, name, measure } of CORNER_CASES) {
         const { ctx, p } = await openPage(env, { viewport }, progress);
         await p.goto(env.base);
         await p.getByRole('button', { name: SHELF, exact: true }).click();
         const tile = p.getByRole('button', { name });
         const first = (await isShown(tile, { timeout: WAIT_MS }))
-            ? await cornerLeaving(tile)
+            ? await cornerLeaving(tile, measure)
             : null;
         await p.waitForTimeout(SETTLE_MS);
-        const again = first ? await cornerLeaving(tile) : null;
+        const again = first ? await cornerLeaving(tile, measure) : null;
         log(
             first !== null &&
-                first.text === text &&
+                LEAVING_TEXTS.includes(first.text) &&
+                first.fits &&
+                !first.looserFits &&
                 first.inside &&
                 first.metaFits &&
                 JSON.stringify(first) === JSON.stringify(again),
-            `${viewport.width}×${viewport.height} 主頁：左上角下架字「${text}」（W-538，${JSON.stringify(first)}）`,
+            `${viewport.width}×${viewport.height} 主頁：左上角下架字「${first?.text}」夠位即停（W-538 / S-725，${JSON.stringify(first)}）`,
         );
         await ctx.close();
     }
