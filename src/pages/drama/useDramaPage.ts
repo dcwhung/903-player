@@ -8,6 +8,7 @@ import {
 } from '../../catalog/dramas';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
 import { useEpisodePress } from '../../hooks/useEpisodePress';
+import { useHkToday } from '../../hooks/useHkToday';
 import { useRefreshedOn } from '../../hooks/useRefreshedOn';
 import { useStandbyStart } from '../../hooks/useStandbyStart';
 import { isFirstSeriesVisit, useStartDrama } from '../../hooks/useStartDrama';
@@ -47,7 +48,8 @@ export const useTodaysEpisodes = <T>(
     drama: DramaConfig,
     read: (id: string, today: string) => T,
 ): T => {
-    const today = hkToday();
+    // 午夜自己轉，唔使等其他 state 變先 re-render（S-704）
+    const today = useHkToday();
     return useMemo(() => read(drama.id, today), [drama, read, today]);
 };
 
