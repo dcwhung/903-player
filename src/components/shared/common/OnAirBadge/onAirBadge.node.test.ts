@@ -11,8 +11,11 @@ const css = readCss(new URL('./OnAirBadge.module.css', import.meta.url));
 const tokensCss = readCss(new URL('../../../../styles/tokens.css', import.meta.url));
 const tokens = cssDeclarations(tokensCss, ':root');
 const NO_PREFERENCE = '@media (prefers-reduced-motion: no-preference)';
-/** 舊寫死嘅條幾何：width: 3px / top|bottom: 18% / 行字 padding-left: calc(10px …)（S-731 搬咗入 token） */
-const LAMP_LITERAL = /(?:width:\s*3px|(?:top|bottom):\s*18%|padding-left:\s*calc\(10px)/;
+/**
+ * 舊寫死嘅條幾何：width: 3px / top|bottom: 18% / 行字 padding-left: calc(10px …)（S-731 搬咗入 token）。
+ * 屬性名前面唔可以接 - 或者字（S-739：max-width / min-width: 3px 唔當係條）
+ */
+const LAMP_LITERAL = /(?<![-\w])(?:width:\s*3px|(?:top|bottom):\s*18%|padding-left:\s*calc\(10px)/;
 /** 用 OnAirLamp 嘅樣式檔：條本身 + 三個用條嘅清單 */
 const LAMP_ROW_CSS: [string, URL][] = [
     ['OnAirBadge.module.css', new URL('./OnAirBadge.module.css', import.meta.url)],
@@ -62,6 +65,14 @@ describe('播放中 pill + 左邊條（ON AIR combo）', () => {
         expect(lamp['border-radius']).toBe('var(--onair-lamp-radius)');
         expect(lamp.top).toBe('var(--onair-lamp-inset)');
         expect(lamp.bottom).toBe('var(--onair-lamp-inset)');
+    });
+
+    it('should only flag the lamp properties themselves, not max-width / min-width (S-739)', () => {
+        expect('width: 3px;').toMatch(LAMP_LITERAL);
+        expect('  top: 18%;').toMatch(LAMP_LITERAL);
+        expect('max-width: 3px;').not.toMatch(LAMP_LITERAL);
+        expect('min-width: 3px;').not.toMatch(LAMP_LITERAL);
+        expect('margin-top: 18%;').not.toMatch(LAMP_LITERAL);
     });
 
     it.each(LAMP_ROW_CSS)('should keep literal lamp geometry out of %s', (_name, url) => {
