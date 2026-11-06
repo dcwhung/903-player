@@ -376,6 +376,34 @@ describe('HomePage on a wide landscape screen', () => {
             expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
         });
 
+        // 用戶報告（v1.28.2 闊橫版右邊播放卡）：暫停咗，卡入面清單揀中行仍然寫「播放中 · 0:26 / …」；
+        // 要同節目頁一樣轉做「聽到 0:26 / …」，冇「播放中」pill，左邊灰條
+        it('should show where it got to on the current row once paused, not 播放中', async () => {
+            vi.setSystemTime(new Date(CATALOG_LIVE));
+            stubWideLandscape();
+            const { audio } = await arriveHomeWith(FIRST);
+            const card = await screen.findByRole('region', { name: DRAMA_CARD });
+            act(() => {
+                audio.emitMetadata(6839);
+                audio.emitTime(26);
+            });
+            const list = listOf(card);
+            expect(within(list).getByRole('button', { current: true })).toHaveAccessibleName(
+                /播放中，0:26 \/ 1:53:59/,
+            );
+
+            await userEvent.click(within(card).getByRole('button', { name: /^暫停$/ }));
+
+            const row = within(list).getByRole('button', { current: true });
+            expect(row).not.toHaveAccessibleName(/播放中/);
+            expect(row).toHaveTextContent('聽到 0:26 / 1:53:59');
+            expect(within(list).queryByText('播放中')).not.toBeInTheDocument();
+            expect(row.querySelector('[data-on-air-lamp]')).toHaveAttribute(
+                'data-on-air-lamp',
+                'idle',
+            );
+        });
+
         it('should list every episode of a daily drama like its page', async () => {
             stubWideLandscape();
             const episodes = dailyNewestFirst(dailyEpisodesOf('c18'));
