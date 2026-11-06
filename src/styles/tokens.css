@@ -61,6 +61,8 @@
     --radius-tile: calc(14px * var(--ui-scale));
     /* 節目頁日子條同正中 highlight box 嘅圓角 */
     --radius-cell: calc(12px * var(--ui-scale));
+    /* 收藏 tab 每行（同左滑移除嘅紅底）圓角：保持原本 8px（跟 --ui-scale），紅底四角同行一致 */
+    --radius-row: calc(8px * var(--ui-scale));
 
     --touch-target: calc(44px * var(--ui-scale));
     /* WCAG 2.2 target size (minimum)：細粒掣嘅撳得到範圍 */

@@ -68,7 +68,11 @@ describe('saved / list disc polish', () => {
 
     // 左滑到盡：紅底右邊係直角（行剪咗左邊圓角，紅底自己冇圓角）；紅底同行用同一個圓角 token
     it('should round every corner of the swipe trash like the row', () => {
-        expect(cssDeclarations(css, '.row')['border-radius']).toBe('var(--radius-cell)');
-        expect(cssDeclarations(css, '.trash')['border-radius']).toBe('var(--radius-cell)');
+        expect(cssDeclarations(css, '.row')['border-radius']).toBe('var(--radius-row)');
+        expect(cssDeclarations(css, '.trash')['border-radius']).toBe('var(--radius-row)');
+        // 行圓角保持原本 8px（以前寫 var(--space-2)），唔好順手改大
+        expect(cssDeclarations(tokens, ':root')['--radius-row']).toBe(
+            'calc(8px * var(--ui-scale))',
+        );
     });
 });

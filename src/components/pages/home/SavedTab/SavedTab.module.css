@@ -203,7 +203,7 @@
 .row {
     position: relative;
     overflow: hidden;
-    border-radius: var(--radius-cell);
+    border-radius: var(--radius-row);
 }
 
 .row + .row .card {
@@ -238,7 +238,7 @@
     width: 100%;
     padding-left: calc(18px * var(--ui-scale));
     /* 同行一樣圓角：拖到盡（甚至拖過頭）紅底右邊都唔會見到直角，四個角同行一致 */
-    border-radius: var(--radius-cell);
+    border-radius: var(--radius-row);
     background: var(--saved-danger);
     color: var(--saved-text);
 }
