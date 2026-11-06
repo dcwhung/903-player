@@ -522,6 +522,7 @@ describe('DramaPage', () => {
             act(() => audio.emitMetadata(1200));
 
             expect(screen.getByText('現正播放：初戀嗱喳麵 · 第 26 / 26 集')).toBeInTheDocument();
+            expect(screen.getByText('現正播放：初戀嗱喳麵，第 26 / 26 集')).toBeInTheDocument();
         });
 
         it('says 已暫停 under the disc once paused part way', async () => {

@@ -3,11 +3,14 @@ import { PLAYBACK_LINE_KEY, type PlaybackLineState } from '../../../../utils/pla
 import { HourglassIcon } from '../../common/icons/icons';
 import { Marquee } from '../../common/Marquee/Marquee';
 import { SpokenText, type SpokenNotice } from '../../common/SpokenText/SpokenText';
+import { VisuallyHidden } from '../../common/VisuallyHidden/VisuallyHidden';
 import styles from './NowPlaying.module.css';
 
 interface NowPlayingProps {
     /** 「現正播放：」後面嘅字（例如 21/10（三）、好朋友手牽手 · 第 2 / 4 集） */
     label: string;
+    /** 讀屏版 label（日子講「星期一」、分隔用「，」，S-723）；冇就讀畫面字 */
+    spokenLabel?: string | undefined;
     /** 第二行淡色細字（例如廣播劇集名）；冇就得一行 */
     detail?: string | undefined;
     /** 未讀到時長（例如斷網）：第一行改為「連線中…」 */
@@ -52,8 +55,32 @@ const SecondLine = ({
     return detail ? <Marquee className={styles.detail} text={detail} animate={false} /> : null;
 };
 
+/** 第一行：連線中 / 「現正播放：…」；有讀屏版就畫面字收埋，另外讀讀屏版 */
+const FirstLine = ({
+    label,
+    spokenLabel,
+    connecting,
+    status,
+}: Pick<NowPlayingProps, 'label' | 'spokenLabel' | 'connecting'> & {
+    status: PlaybackLineState;
+}) => {
+    const spoken = !connecting && spokenLabel !== undefined;
+    const text = connecting ? t('episodes.connecting') : t(PLAYBACK_LINE_KEY[status], { label });
+    return (
+        <>
+            <Marquee className={styles.line} animate={false} text={text} hidden={spoken} />
+            {spoken && (
+                <VisuallyHidden>
+                    {t(PLAYBACK_LINE_KEY[status], { label: spokenLabel })}
+                </VisuallyHidden>
+            )}
+        </>
+    );
+};
+
 export const NowPlaying = ({
     label,
+    spokenLabel,
     detail,
     connecting,
     status = 'playing',
@@ -65,14 +92,11 @@ export const NowPlaying = ({
             {replaces ? (
                 <NoticeLine className={styles.line} notice={notice} />
             ) : (
-                <Marquee
-                    className={styles.line}
-                    animate={false}
-                    text={
-                        connecting
-                            ? t('episodes.connecting')
-                            : t(PLAYBACK_LINE_KEY[status], { label })
-                    }
+                <FirstLine
+                    label={label}
+                    spokenLabel={spokenLabel}
+                    connecting={connecting}
+                    status={status}
                 />
             )}
             <SecondLine detail={detail} notice={replaces ? undefined : notice} />

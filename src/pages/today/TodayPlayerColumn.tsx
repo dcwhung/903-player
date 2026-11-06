@@ -8,7 +8,7 @@ import {
 import { TodayEmpty } from '../../components/pages/today/TodayEmpty/TodayEmpty';
 import { t } from '../../i18n/t';
 import { usePlayer } from '../../player/usePlayer';
-import { formatDateLabel } from '../../utils/date';
+import { formatDateLabel, formatSpokenDate } from '../../utils/date';
 import { hasKnownDuration } from '../../utils/time';
 import { LoadState } from '../shared/LoadState';
 import page from '../shared/Page.module.css';
@@ -48,7 +48,7 @@ const TodayStack = ({
     </div>
 );
 
-/** 橫版卡疊下面「現正播放：21/10（三）· 第 3 / 5 個節目」 */
+/** 橫版卡疊下面「現正播放：21/10（三）· 第 3 / 5 個節目」（讀屏「21/10 星期三，第 3 / 5 個節目」） */
 const TodayNowPlaying = ({
     date,
     index,
@@ -62,12 +62,21 @@ const TodayNowPlaying = ({
     standby: boolean;
 }) => {
     const { duration } = usePlayer();
-    const label = t('today.nowPlayingIndex', {
-        date: formatDateLabel(date),
-        no: index + 1,
-        total,
+    const position = { no: index + 1, total };
+    const label = t('today.nowPlayingIndex', { ...position, date: formatDateLabel(date) });
+    // 讀屏：日子讀「30/11 星期一」，唔讀「·」（S-723）
+    const spokenLabel = t('today.nowPlayingIndex', {
+        ...position,
+        date: formatSpokenDate(date),
+        sep: t('common.spokenSeparator'),
     });
-    return <NowPlaying label={label} connecting={!standby && !hasKnownDuration(duration)} />;
+    return (
+        <NowPlaying
+            label={label}
+            spokenLabel={spokenLabel}
+            connecting={!standby && !hasKnownDuration(duration)}
+        />
+    );
 };
 
 interface TodayPlayerColumnProps {

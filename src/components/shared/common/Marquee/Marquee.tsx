@@ -9,13 +9,15 @@ interface MarqueeProps {
     className?: string;
     /** false：放唔落都唔捲，用 … 收尾（例如清單入面唔係播緊嗰行） */
     animate?: boolean;
+    /** true：讀屏唔讀（旁邊另有讀屏版，例如 NowPlaying 嘅 spokenLabel） */
+    hidden?: boolean;
 }
 
 /**
  * 單行文字：放得落就靜止；放唔落就由右向左慢慢捲，捲出左邊嗰陣後面一份副本由右邊接上（無縫循環）。
  * 副本 aria-hidden，讀屏只讀一次；減少動畫或者 animate={false} 就唔捲，改為 …
  */
-export const Marquee = ({ text, className = '', animate = true }: MarqueeProps) => {
+export const Marquee = ({ text, className = '', animate = true, hidden }: MarqueeProps) => {
     const { boxRef, textRef, textWidthPx, overflowPx } = useOverflow(text);
     const overflowing = overflowPx > 0;
     const scrolling = overflowing && animate;
@@ -33,6 +35,7 @@ export const Marquee = ({ text, className = '', animate = true }: MarqueeProps) 
             className={`${styles.box} ${className}`}
             data-overflow={overflowing || undefined}
             data-static={(overflowing && !animate) || undefined}
+            aria-hidden={hidden || undefined}
         >
             <span className={styles.track} style={style}>
                 {/* data-marquee-text：外面（例如 useFitText）量文字本身有幾闊 */}

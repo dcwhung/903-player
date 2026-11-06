@@ -70,6 +70,8 @@ describe('TodayPage', () => {
             const header = screen.getByRole('heading', { level: 1 }).closest('header');
             expect(header?.parentElement?.parentElement).toBe(schedule.parentElement);
             expect(screen.getByText('現正播放：19/10（一） · 第 1 / 3 個節目')).toBeInTheDocument();
+            // 讀屏版：日子讀星期、唔讀「·」（S-723）
+            expect(screen.getByText('現正播放：19/10 星期一，第 1 / 3 個節目')).toBeInTheDocument();
         });
     });
 
