@@ -20,10 +20,10 @@ describe('DramaTile availability', () => {
     beforeEach(() => stubLandscape());
 
     it('should put the amber leaving note top-left, after 新, and read it out', () => {
-        render(<DramaShelf items={[item({ newLabel: '有新短篇', leaving: LEAVING })]} />);
+        render(<DramaShelf items={[item({ newLabel: '有新上架短篇', leaving: LEAVING })]} />);
 
         const tile = screen.getByRole('button', {
-            name: '蘭茜夫人劇場，有新短篇；部分短篇 05/12 星期六 下架',
+            name: '蘭茜夫人劇場，有新上架短篇；部分短篇 05/12 星期六 下架',
         });
         const corner = tile.querySelector('[data-corner-notes]');
         expect(corner?.textContent).toContain('新05/12 下架');
@@ -32,31 +32,41 @@ describe('DramaTile availability', () => {
     // W-533 / S-700：上架字獨立一截（唔收尾），短篇數先俾位；讀屏名有長版上架日
     it('should keep the release note whole after the arc count, and read it out', () => {
         const release = {
-            text: '新短篇 後日上架',
+            text: '全新短篇 後日上架',
             tag: '後日上架',
-            label: '下個短篇 02/12 星期三 上架',
+            label: '全新短篇 02/12 星期三 上架',
         };
-        const resume = { label: '初戀無限次 · 第 2 集', ratio: 0.2, leaving: LEAVING };
+        const resume = {
+            label: '初戀無限次 · 第 2 集',
+            spokenLabel: '初戀無限次，第 2 集',
+            ratio: 0.2,
+            leaving: LEAVING,
+        };
         render(<DramaShelf items={[item({ leaving: LEAVING, release, resume })]} />);
 
         const tile = screen.getByRole('button', {
-            name: '蘭茜夫人劇場，下個短篇 02/12 星期三 上架；部分短篇 05/12 星期六 下架',
+            name: '蘭茜夫人劇場，全新短篇 02/12 星期三 上架；部分短篇 05/12 星期六 下架',
         });
         const meta = tile.querySelector('[data-corner]');
         // 分隔符（common.separator）跟短篇數一齊收埋，所以喺 meta-count 入面
         expect(meta?.querySelector('[data-role="meta-count"]')?.textContent).toBe('3 個短篇 · ');
         expect(meta?.querySelector('[data-role="meta-release"]')?.textContent).toContain(
-            '新短篇 後日上架',
+            '全新短篇 後日上架',
         );
     });
 
     it('should add the leaving note after the episode on 繼續收聽', () => {
-        const resume = { label: '戀愛二分一 · 第 3 集', ratio: 0.2, leaving: LEAVING };
+        const resume = {
+            label: '戀愛二分一 · 第 3 集',
+            spokenLabel: '戀愛二分一，第 3 集',
+            ratio: 0.2,
+            leaving: LEAVING,
+        };
         render(<DramaShelf items={[item({ resume })]} />);
 
         expect(
             screen.getByRole('button', {
-                name: '蘭茜夫人劇場，繼續收聽 戀愛二分一 · 第 3 集，部分短篇 05/12 星期六 下架',
+                name: '蘭茜夫人劇場，繼續收聽 戀愛二分一，第 3 集，部分短篇 05/12 星期六 下架',
             }),
         ).toHaveTextContent('05/12 下架');
     });
@@ -80,9 +90,9 @@ describe('DramaTile availability', () => {
     // W-533 跟進：短篇數放唔落就成段（連「·」）收埋，唔出半截
     describe('arc count beside the release note', () => {
         const release = {
-            text: '新短篇 後日上架',
+            text: '全新短篇 後日上架',
             tag: '後日上架',
-            label: '下個短篇 02/12 星期三 上架',
+            label: '全新短篇 02/12 星期三 上架',
         };
         // 有繼續收聽條嗰陣有兩個 observer（角落字 + 條），一齊通知
         let callbacks: (() => void)[] = [];
@@ -121,7 +131,7 @@ describe('DramaTile availability', () => {
             layout(180, 200);
             expect(meta()).not.toHaveAttribute('data-tight');
             expect(
-                screen.getByRole('button', { name: /下個短篇 02\/12 星期三 上架/ }),
+                screen.getByRole('button', { name: /全新短篇 02\/12 星期三 上架/ }),
             ).toBeInTheDocument();
         });
 
@@ -138,7 +148,11 @@ describe('DramaTile availability', () => {
 
         // E2 / W-538：同一條頂行（有繼續收聽）逐步收：全句 → 收短篇數 →「⏳ 19/12 下架」→「⏳ 19/12」
         it('should shrink the top row step by step and stop at the first step that fits', () => {
-            const resume = { label: '初戀無限次 · 第 2 集', ratio: 0.2 };
+            const resume = {
+                label: '初戀無限次 · 第 2 集',
+                spokenLabel: '初戀無限次，第 2 集',
+                ratio: 0.2,
+            };
             const leaving = { ...LEAVING, short: '05/12 下架' };
             render(<DramaShelf items={[item({ release, resume, leaving })]} />);
 
@@ -207,7 +221,12 @@ describe('DramaTile availability', () => {
         const line = () => document.querySelector<HTMLElement>('[data-continue-line]');
 
         it('should hide the whole leaving date when the episode name would be cut, and bring it back', () => {
-            const resume = { label: '初戀無限次 · 第 2 集', ratio: 0.2, leaving: LEAVING };
+            const resume = {
+                label: '初戀無限次 · 第 2 集',
+                spokenLabel: '初戀無限次，第 2 集',
+                ratio: 0.2,
+                leaving: LEAVING,
+            };
             render(<DramaShelf items={[item({ resume })]} />);
 
             layout(120, 80, 150);

@@ -91,14 +91,17 @@
 }
 
 /*
- * 橫版兩欄（LANDSCAPE_QUERY）：左欄清單 30%，但最少 300px × --ui-scale（放大咗嘅字仍然放得落一行狀態），
- * 其餘畀播放器；手機打橫清單要 54% 先放得落（見下面）。DOM 次序係播放器先（直版次序），用 grid-column 對調。
+ * 橫版兩欄（LANDSCAPE_QUERY）：左欄清單 --landscape-list-width（34%，最少 340px × --ui-scale，tokens.css），
+ * 其餘畀播放器。狀態一行唔再靠估欄闊：清單行嘅狀態欄自己跟實際字型保證最少闊度
+ * （EpisodeList.module.css .body min-content），欄闊只係令短篇集名欄唔使縮太細；
+ * 1300×800 播放器仍然係高度限住（gauge 唔變）。手機打橫清單要 54% 先放得落（見下面）。
+ * DOM 次序係播放器先（直版次序），用 grid-column 對調。
  * 成頁固定唔捲，左欄頁頭釘頂、清單自己捲；右欄播放器 + 現正播放一組喺欄入面置中
  */
 @media (orientation: landscape) and (min-width: 640px) {
     .fixed {
         display: grid;
-        grid-template-columns: minmax(0, max(30%, calc(300px * var(--ui-scale)))) minmax(0, 1fr);
+        grid-template-columns: minmax(0, var(--landscape-list-width)) minmax(0, 1fr);
         grid-template-rows: minmax(0, 1fr);
         column-gap: var(--space-5);
         align-items: stretch;

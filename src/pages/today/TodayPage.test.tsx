@@ -136,6 +136,16 @@ describe('TodayPage', () => {
             expect(audio.src).toBe(TODAY[0]?.url);
         });
 
+        // 2b：未開始樣都顯示節目碟面（同節目頁一樣），唔再係黑碟
+        it('shows the show cover on the disc while not started', async () => {
+            await open();
+            const title = await screen.findByRole('heading', { name: '在晴朗的一天出發' });
+
+            // 播放卡（唱片 + 節目名）入面嘅碟面，唔係後面 GhostCard 嗰啲
+            const art = title.parentElement?.querySelector('img');
+            expect(art).toHaveAttribute('src', themeFor('sunnyday').art);
+        });
+
         it('starts the first show only when play is pressed', async () => {
             const { audio } = await open();
             await screen.findByRole('heading', { name: '在晴朗的一天出發' });
@@ -183,7 +193,14 @@ describe('TodayPage', () => {
         await waitFor(() => expect(audio.src).toBe(TODAY[2]?.url));
         // 錄音由 storage 同步讀，autoplay 喺 mount 嘅 effect 已經開始，早過 PlayerProvider attach；
         // play event 同真瀏覽器一樣遲啲先發（FakeAudio 用 microtask），所以要等
-        expect(await screen.findByText('06:00 · 播放中')).toBeInTheDocument();
+        // 未讀到時長係「連線中…」（S-730），讀到先出「播放中」pill（行掣讀屏名照講播放中）
+        expect(await screen.findByRole('button', { name: /^暫停 .*，連線中…$/ })).toHaveTextContent(
+            /06:00 · 連線中…/,
+        );
+        act(() => audio.emitMetadata(3600));
+        expect(await screen.findByRole('button', { name: /^暫停 .*，播放中$/ })).toHaveTextContent(
+            /06:00播放中/,
+        );
 
         const stack = screen.getByRole('group', { name: '今日節目，左右滑動轉節目' });
         fireEvent.pointerDown(stack, { clientX: 300, clientY: 100 });

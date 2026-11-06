@@ -14,10 +14,20 @@ interface GaugeActionsProps {
     onToggle: () => void;
     /** 顯示緊嘅一集：有就喺播放掣右邊出收藏掣（P7 #7 P2，同左邊由頭播放對稱） */
     bookmark?: Track | undefined;
+    /** 未揀任何一集：播放掣同收藏掣變淡、撳唔郁（aria-disabled，Tab / 讀屏照行到） */
+    disabled?: boolean;
 }
 
+const ignore = () => undefined;
+
 /** 由頭播放 + 播放 / 暫停 + 收藏 */
-export const GaugeActions = ({ isPlaying, onRestart, onToggle, bookmark }: GaugeActionsProps) => (
+export const GaugeActions = ({
+    isPlaying,
+    onRestart,
+    onToggle,
+    bookmark,
+    disabled = false,
+}: GaugeActionsProps) => (
     <div className={styles.actions}>
         {onRestart && (
             <button
@@ -33,7 +43,8 @@ export const GaugeActions = ({ isPlaying, onRestart, onToggle, bookmark }: Gauge
             type="button"
             className={styles.toggle}
             aria-label={t(isPlaying ? 'player.pause' : 'player.play')}
-            onClick={onToggle}
+            aria-disabled={disabled ? 'true' : undefined}
+            onClick={disabled ? ignore : onToggle}
         >
             {isPlaying ? (
                 <PauseIcon size={TOGGLE_ICON_SIZE} />
@@ -46,6 +57,7 @@ export const GaugeActions = ({ isPlaying, onRestart, onToggle, bookmark }: Gauge
                 track={bookmark}
                 label={t('bookmark.toggleCurrent')}
                 className={styles.bookmark}
+                disabled={disabled}
             />
         )}
     </div>

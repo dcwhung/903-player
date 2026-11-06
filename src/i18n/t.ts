@@ -19,7 +19,12 @@ const lookup = (key: MessageKey): string =>
         .split('.')
         .reduce<unknown>((node, part) => (node as Record<string, unknown>)[part], zhHK) as string;
 
-export const t = (key: MessageKey, params: MessageParams = {}): string =>
-    lookup(key).replace(PARAM_PATTERN, (placeholder, name: string) =>
-        name in params ? String(params[name]) : placeholder,
+/** 字典入面嘅 {sep} 預設填 common.separator（S-717）；讀屏句傳 sep = common.spokenSeparator 蓋過 */
+const DEFAULT_PARAMS: MessageParams = { sep: lookup('common.separator') };
+
+export const t = (key: MessageKey, params: MessageParams = {}): string => {
+    const filled = { ...DEFAULT_PARAMS, ...params };
+    return lookup(key).replace(PARAM_PATTERN, (placeholder, name: string) =>
+        name in filled ? String(filled[name]) : placeholder,
     );
+};

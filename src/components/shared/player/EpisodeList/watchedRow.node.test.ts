@@ -28,6 +28,20 @@ describe('watched episode rows', () => {
     });
 });
 
+// ON AIR combo：揀中行標題 / 狀態用普通字色（播緊由 pill + 紅條講），底框留低；窄欄 pill 同時間可以換行
+describe('selected episode row', () => {
+    it('should keep the surface box but use the normal text colours', () => {
+        expect(cssDeclarations(css, '.current').background).toBe('var(--color-surface)');
+        expect(cssDeclarations(css, '.current .dayMonth, .current .status')).toEqual({});
+        expect(css).not.toContain('--color-status-playing');
+    });
+
+    it('should let the time wrap under the on-air pill in narrow columns', () => {
+        expect(cssDeclarations(css, '.onAir')['flex-wrap']).toBe('wrap');
+        expect(cssDeclarations(css, '.row').position).toBe('relative');
+    });
+});
+
 const tokens = readCss(new URL('../../../../styles/tokens.css', import.meta.url));
 
 describe('--color-watched', () => {
@@ -40,5 +54,23 @@ describe('--color-watched', () => {
         expect(tokens.indexOf('color-mix(in srgb, var(--color-text-muted)')).toBeGreaterThan(
             tokens.indexOf('--color-watched: var(--color-text-muted);'),
         );
+    });
+});
+
+// 用戶截圖（v1.28.2 打橫手機窄欄）：時間「13:32 / 13:46」唔准喺中間斷開；放唔落就成段落下一行，
+// 字眼（聽到 / 未開始 / pill）留第一行；分隔符跟住時間，換行時喺行頭被剪走（.timed 向左縮、overflow 剪）
+describe('status time wrapping', () => {
+    it('should keep the whole time on one line', () => {
+        expect(cssDeclarations(css, '.time')['white-space']).toBe('nowrap');
+    });
+
+    it('should drop the time onto its own line and clip its leading separator there', () => {
+        // 外層喺欄左邊剪（右邊唔剪，時間唔會被切）；入面嗰行向左縮一個分隔符闊
+        expect(cssDeclarations(css, '.timed')['clip-path']).toBe('inset(0 -100vw 0 0)');
+        const line = cssDeclarations(css, '.timedLine');
+        expect(line['flex-wrap']).toBe('wrap');
+        expect(line['margin-left']).toBe('calc(-1 * var(--status-sep))');
+        expect(cssDeclarations(css, '.lead')['margin-left']).toBe('var(--status-sep)');
+        expect(cssDeclarations(css, '.timeSep').width).toBe('var(--status-sep)');
     });
 });

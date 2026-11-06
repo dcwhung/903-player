@@ -13,6 +13,7 @@ import { saveProgress } from '../../services/progressStore';
 import type { SeriesEpisode } from '../../types/drama';
 import { focusUrlFromState } from '../../hooks/useEpisodeFocus';
 import { SWIPE_REMOVE_RATIO } from '../../components/pages/home/SavedTab/useRowSwipe';
+import { Toast } from '../../components/shared/common/Toast/Toast';
 import { HomeSaved } from './HomeSaved';
 
 const GONGZI_NEW = recording('gongzi', '2026-10-17');
@@ -36,13 +37,19 @@ const FocusProbe = () => {
 };
 
 const openSaved = (layout: 'phone' | 'land' | 'wide' = 'phone') =>
-    renderWithProviders(<HomeSaved layout={layout} right={RIGHT} />, {
-        recordings: RECORDINGS,
-        extraRoutes: [
-            { path: '/show/:showId', element: <FocusProbe /> },
-            { path: '/drama/:dramaId', element: <FocusProbe /> },
-        ],
-    });
+    renderWithProviders(
+        <>
+            <HomeSaved layout={layout} right={RIGHT} />
+            <Toast />
+        </>,
+        {
+            recordings: RECORDINGS,
+            extraRoutes: [
+                { path: '/show/:showId', element: <FocusProbe /> },
+                { path: '/drama/:dramaId', element: <FocusProbe /> },
+            ],
+        },
+    );
 
 /** 收藏先後：GONGZI_OLD（最舊）→ 芝See 第 2 集 → BADGIRL → GONGZI_NEW（最新） */
 const bookmarkSample = () => {
@@ -85,7 +92,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
         openSaved();
 
         expect(
-            screen.getByRole('button', { name: `開啟 芝See菇Bi Family · ${ARC} 第 2 集，未收聽` }),
+            screen.getByRole('button', { name: `開啟 芝See菇Bi Family，${ARC} 第 2 集，未收聽` }),
         ).toBeInTheDocument();
         expect(screen.getAllByText('17/10（六）')).not.toHaveLength(0);
     });
@@ -115,7 +122,12 @@ describe('HomeSaved (我的收藏 tab)', () => {
         const { audio } = openSaved();
 
         await userEvent.click(screen.getByRole('button', { name: '播放 公子會 03/10 星期六' }));
+        // 未讀到時長係「連線中…」（S-730），讀到先係播放中
         act(() => audio.emitPlaying());
+        expect(rowOpen(/^開啟 公子會 03\/10/)).toHaveAccessibleName(
+            '開啟 公子會 03/10 星期六，連線中…',
+        );
+        act(() => audio.emitMetadata(600));
 
         expect(audio.src).toBe(GONGZI_OLD.url);
         expect(screen.queryByTestId('page')).not.toBeInTheDocument();
@@ -183,6 +195,42 @@ describe('HomeSaved (我的收藏 tab)', () => {
 
             await waitFor(() => expect(hasBookmark(BADGIRL.url)).toBe(false));
             expect(listBookmarks()).toHaveLength(3);
+        });
+
+        // B1：左滑 / Delete 移除同撳 ★ 一樣出「已移除收藏」
+        it('should toast 已移除收藏 when a row is swiped away', async () => {
+            bookmarkSample();
+            openSaved();
+
+            swipeRow(rowOf(/^開啟 公子會 03\/10/), -ROW_WIDTH * (SWIPE_REMOVE_RATIO + 0.1));
+
+            expect(await screen.findByRole('status')).toHaveTextContent('已移除收藏');
+        });
+
+        it('should toast 已移除收藏 when a row is removed with Backspace', async () => {
+            bookmarkSample();
+            openSaved();
+
+            rowOpen(/^開啟 Bad Girl/).focus();
+            await userEvent.keyboard('{Backspace}');
+
+            expect(await screen.findByRole('status')).toHaveTextContent('已移除收藏');
+            await waitFor(() => expect(hasBookmark(BADGIRL.url)).toBe(false));
+        });
+
+        // B2a / B2b：提示唔用 title（hover 唔出 tooltip），全部行共用一個隱藏說明（aria-describedby）
+        it('should describe every row with one shared hidden remove hint, not a title', () => {
+            bookmarkSample();
+            openSaved();
+
+            const rows = screen.getAllByRole('button', { name: /^開啟 / });
+            for (const row of rows) {
+                expect(row).not.toHaveAttribute('title');
+                expect(row).toHaveAttribute('aria-keyshortcuts', 'Delete Backspace');
+                expect(row).toHaveAccessibleDescription('向左滑動或者撳刪除鍵移除收藏');
+            }
+            const ids = new Set(rows.map((row) => row.getAttribute('aria-describedby')));
+            expect(ids.size).toBe(1);
         });
     });
 
@@ -273,15 +321,16 @@ describe('HomeSaved (我的收藏 tab)', () => {
         it('should list in one column on a phone and two on the landscape layouts', () => {
             listenToThree();
             const phone = openSaved('phone');
-            expect(listOf(recentRegion()).style.columnCount).toBe('1');
+            // db27678：兩欄改用 grid（data-cols），唔再用 CSS columnCount
+            expect(listOf(recentRegion())).toHaveAttribute('data-cols', '1');
             phone.unmount();
 
             const land = openSaved('land');
-            expect(listOf(recentRegion()).style.columnCount).toBe('2');
+            expect(listOf(recentRegion())).toHaveAttribute('data-cols', '2');
             land.unmount();
 
             openSaved('wide');
-            expect(listOf(recentRegion()).style.columnCount).toBe('2');
+            expect(listOf(recentRegion())).toHaveAttribute('data-cols', '2');
         });
 
         it('should open the page without playing when a row is tapped', async () => {

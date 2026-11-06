@@ -1,7 +1,6 @@
 import { createPortal } from 'react-dom';
 import type { SwipeDirection } from '../../../../hooks/swipe';
 import { stepIndex } from '../../../../hooks/useSwipe';
-import { useViewportGap } from '../../../../hooks/useViewportGap';
 import { ThemeScope } from '../../../shared/common/ThemeScope/ThemeScope';
 import { DismissButton } from './DismissButton';
 import { dismissData, offsetStyle } from './dismissView';
@@ -27,7 +26,6 @@ const stepShow =
  * 掛喺 body 先保證係跟 viewport 定位，唔受頁面 .scope / #root 影響
  */
 export const MiniPlayer = ({ region, ...props }: MiniPlayerProps) => {
-    useViewportGap();
     const { view, handlers, bindContainer, dismiss } = useDismissGesture(
         stepShow(props.index, props.labels.length, props.onChange),
         props.onDismiss,

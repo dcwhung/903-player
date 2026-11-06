@@ -4,6 +4,7 @@ import { t } from '../../../../i18n/t';
 import type { ThirdTab } from '../../../../selectors/bookmarks';
 import { useLeaveFallback } from '../../../shared/player/PlayerHandle/useLeaveFallback';
 import { RecentPanel } from './RecentPanel';
+import { RemoveHintProvider } from './removeHint';
 import { SavedBox } from './SavedBox';
 import styles from './SavedTab.module.css';
 import type { SavedTabView } from './savedTypes';
@@ -23,13 +24,18 @@ const SavedPane = ({ view }: { view: SavedTabView }) => {
     return (
         <>
             <div ref={scrollRef} className={styles.scroll}>
-                <ul className={styles.cols} style={{ columnCount: view.columns }}>
-                    {view.boxes.map((box) => (
-                        <li key={box.key} className={styles.boxItem}>
-                            <SavedBox box={box} soloHeight={view.solo ? area.height : undefined} />
-                        </li>
-                    ))}
-                </ul>
+                <RemoveHintProvider>
+                    <ul className={styles.cols} style={{ columnCount: view.columns }}>
+                        {view.boxes.map((box) => (
+                            <li key={box.key} className={styles.boxItem}>
+                                <SavedBox
+                                    box={box}
+                                    soloHeight={view.solo ? area.height : undefined}
+                                />
+                            </li>
+                        ))}
+                    </ul>
+                </RemoveHintProvider>
             </div>
             {view.recent.length > 0 && <RecentPanel rows={view.recent} />}
         </>

@@ -165,7 +165,7 @@ const useFirstVisitOnEntry = (drama: DramaConfig, focused: boolean): boolean => 
  */
 const useViewedArc = (playingArc: string | undefined, initialArc: string | undefined) => {
     const [picked, setPicked] = useState<string | null>(initialArc ?? null);
-    return { arc: picked ?? playingArc, pickArc: setPicked };
+    return { arc: picked ?? playingArc, pickArc: setPicked, arcPicked: picked !== null };
 };
 
 /**
@@ -248,6 +248,8 @@ interface StandbyOptions {
     pickedResume: SeriesEpisode | undefined;
     /** 唱片區顯示嘅集（未載入就係撳播放會播嗰集） */
     upNext: SeriesEpisode | undefined;
+    /** 用戶揀過短篇（chip / 全集表 / 由收藏入嚟） */
+    arcPicked: boolean;
 }
 
 /**
@@ -260,7 +262,7 @@ const useStandby = (
     drama: DramaConfig,
     isLoaded: boolean,
     playState: PlaybackState,
-    { episodes, progressMap, pickedResume: picked, upNext }: StandbyOptions,
+    { episodes, progressMap, pickedResume: picked, upNext, arcPicked }: StandbyOptions,
 ) => {
     const startDrama = useStartDrama();
     const { load } = usePlayer();
@@ -270,7 +272,9 @@ const useStandby = (
     const status: PlaybackLineState = isLoaded ? playState : idle;
     const start = () => (picked ? void load(picked, { autoplay: true }) : startDrama(drama));
     const standbyTime = standbyTimeOf(isLoaded, progress);
-    return { status, start: isLoaded ? undefined : start, standbyTime };
+    // 未聽過、未載入、未揀短篇 = 冇嘢揀中（「揀一個短篇開始收聽」）：播放 / 收藏掣變淡撳唔郁（用戶截圖，v1.28.2）
+    const empty = status === 'unloaded' && !arcPicked;
+    return { status, start: isLoaded ? undefined : start, standbyTime, empty };
 };
 
 /**
@@ -313,7 +317,7 @@ const useSeriesArcs = (
     { focused, drama }: { focused?: SeriesEpisode | undefined; drama: DramaConfig },
 ) => {
     const availability = useSeriesAvailability(drama, episodes);
-    const { arc, pickArc: setArc } = useViewedArc(current?.arc, focused?.arc);
+    const { arc, pickArc: setArc, arcPicked } = useViewedArc(current?.arc, focused?.arc);
     const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc, availability);
     const pickArc = useArcPick(groups, setArc);
     // 照集數次序（聽完嘅留喺原位）；入頁 / 轉集由 EpisodeList 捲到播緊嗰集
@@ -323,7 +327,7 @@ const useSeriesArcs = (
         pickedArcResume(groups, arc, current) ?? (arc === focused?.arc ? focused : undefined);
     // 唱片區顯示嘅集：載入咗就係嗰集；未載入就係撳播放會播嗰集（揀咗短篇就係嗰個短篇嘅續聽集）
     const upNext = loaded ?? pickedResume ?? current;
-    return { arc, pickArc, groups, chips, shown, pickedResume, upNext, availability };
+    return { arc, pickArc, groups, chips, shown, pickedResume, upNext, availability, arcPicked };
 };
 
 /** chips 最尾嘅即將上架短篇、唱片下面嘅成套劇下架字 */

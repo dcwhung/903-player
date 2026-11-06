@@ -29,6 +29,11 @@ interface PlayerGaugeProps {
     transitionName?: string | undefined;
     /** 顯示緊嘅一集：播放掣右邊出收藏掣（P7 #7） */
     bookmark?: Track | undefined;
+    /**
+     * 未揀任何一集（例如短篇劇集頁第一次入「揀一個短篇開始收聽」、--:--）：播放掣同收藏掣變淡、撳唔郁，
+     * 唔會播 / 收藏預設嗰集
+     */
+    empty?: boolean;
 }
 
 /** 未開始樣時要顯示嘅續播位置 / 總長（秒） */
@@ -83,6 +88,7 @@ export const PlayerGauge = ({
     standbyTime,
     transitionName,
     bookmark,
+    empty = false,
 }: PlayerGaugeProps) => {
     const { known, shownTime, max, isPlaying, ...view } = useGaugeView(held, onStart, standbyTime);
     // 讀屏同畫面一樣：未知時長讀佔位，唔讀 0:00
@@ -119,6 +125,7 @@ export const PlayerGauge = ({
                 onRestart={view.restart}
                 onToggle={view.toggle}
                 bookmark={bookmark}
+                disabled={empty}
             />
         </div>
     );

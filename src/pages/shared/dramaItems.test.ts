@@ -41,7 +41,7 @@ describe('toSeriesItems', () => {
             ctx({ currentUrl: current, isPlaying: true, live: { currentTime: 60, duration: 600 } }),
         );
         expect(items[1]).toMatchObject({ key: current, current: true, isPlaying: true });
-        expect(items[1]?.status.text).toBe('播放中 · 1:00 / 10:00');
+        expect(items[1]?.status).toMatchObject({ text: '1:00 / 10:00', onAir: true });
     });
 });
 

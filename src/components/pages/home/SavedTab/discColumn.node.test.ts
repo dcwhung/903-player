@@ -24,7 +24,7 @@ describe('saved / recent disc column', () => {
         expect(cssDeclarations(css, '.recentOpen').gap).toBe('var(--space-3)');
         expect(cssDeclarations(css, '.section').padding).toContain(') var(--space-3) calc(');
         expect(cssDeclarations(css, '.recent')['padding-left']).toBe(
-            'calc(var(--space-3) - var(--saved-recent-border))',
+            'calc(var(--space-3) - var(--saved-recent-border) - var(--disc-small-ring))',
         );
         expect(cssDeclarations(css, '.recent').border).toBe(
             'var(--saved-recent-border) dashed var(--saved-line)',

@@ -8,7 +8,7 @@ import {
     runSection,
     waitForPlaybackState,
 } from './harness.mjs';
-import { dismissAutoSheet, SERIES_ROUTE } from './dramaPages.mjs';
+import { dismissAutoSheet, SERIES_FIRST_ARC, SERIES_ROUTE } from './dramaPages.mjs';
 
 // iPad 打橫：高 ≥ 562 先係闊橫版（src/config/layout.ts WIDE_BANNER_QUERY）
 const WIDE = { width: 1180, height: 820 };
@@ -172,6 +172,39 @@ const checkSplit = async ({ browser, base, errors, log }) => {
     await ctx.close();
 };
 
+/** 卡入面清單揀中行：pill 有冇、左邊條狀態、狀態字（行掣 aria-current） */
+const cardCurrentRow = (p) =>
+    card(p)
+        .getByRole('region', { name: '集數' })
+        .locator('button[aria-current="true"]')
+        .evaluate((row) => ({
+            pill: row.querySelectorAll('[data-on-air-badge]').length,
+            lamp: row.querySelector('[data-on-air-lamp]')?.getAttribute('data-on-air-lamp') ?? null,
+            status: row.textContent ?? '',
+        }));
+
+/**
+ * 卡入面清單播緊 / 暫停（ON AIR combo；用戶報告 v1.28.2：暫停咗卡清單仲寫「播放中 · 0:26 / …」）：
+ * 播緊 = 「播放中」pill + 紅條；撳卡播放掣暫停 = 冇 pill、灰條、「聽到 x / y」
+ */
+const checkCardPausedRow = async (p, log, label) => {
+    const playing = await cardCurrentRow(p);
+    log(
+        playing.pill === 1 && playing.lamp === 'live',
+        `${label}：播緊卡清單揀中行有「播放中」pill + 紅條（pill ${playing.pill}、條 ${playing.lamp}）`,
+    );
+    await card(p)
+        .locator('[data-player-gauge]')
+        .getByRole('button', { name: '暫停', exact: true })
+        .click();
+    await waitForPlaybackState(p, 'paused');
+    const paused = await cardCurrentRow(p);
+    log(
+        paused.pill === 0 && paused.lamp === 'idle' && /聽到 \d+:\d\d \/ /.test(paused.status),
+        `${label}：暫停後卡清單揀中行冇 pill、灰條、寫聽到邊（「${paused.status}」，條 ${paused.lamp}）`,
+    );
+};
+
 /** 播緊公子會返主頁 → ✕ 停播、卡縮入右邊把手 → 撳把手開返（暫停、唔自動播） */
 const checkCloseAndReopen = async ({ browser, base, errors, log }) => {
     const label = '闊橫版主頁播放卡';
@@ -184,6 +217,7 @@ const checkCloseAndReopen = async ({ browser, base, errors, log }) => {
     log(split && before.column !== null, `${label}：播緊${REWATCH_SHOW.name}返主頁出右邊播放卡`);
     if (!split) return ctx.close();
     await checkCardTag(p, log, label, 'rewatch');
+    await checkCardPausedRow(p, log, label);
 
     // 闊橫版冇底部 mini player：成頁得張卡角一粒關閉掣
     await p.getByRole('button', { name: CLOSE_LABEL, exact: true }).click();
@@ -314,6 +348,8 @@ const checkHandleLeaves = async (p, log, label) => {
     const shown = await isShown(p.getByRole('button', { name: PAGE_HANDLE_ANY }), {
         timeout: LAYOUT_WAIT_MS,
     });
+    // 未揀短篇時播放掣撳唔郁：先揀第一個短篇（播緊其他嘢，唔會載入），再撳播放
+    await p.getByRole('button', { name: SERIES_FIRST_ARC, exact: true }).click();
     await p.getByRole('button', { name: '播放', exact: true }).click();
     const gone = await isShown(pageHandle(p), { state: 'detached', timeout: HANDLE_GONE_MS });
     const padding = await p

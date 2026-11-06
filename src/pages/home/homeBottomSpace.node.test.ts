@@ -5,13 +5,20 @@ import { cssDeclarations, mediaQueries, readCss } from '../../../tests/cssRule';
 const css = readCss(new URL('./HomePage.module.css', import.meta.url));
 
 /*
- * 主頁底部留位（T8）：有 mini player（HomePage 喺 <main> 加 data-mini-player）先留佢個位，
- * 冇就淨係留安全區 + 一格，任何方向都一樣（以前只係手機打橫有呢個例外，直版永遠留住個空位）
+ * 主頁底部留位（T8）：有 mini player（HomePage 喺 <main> 加 data-mini-player）先留佢個位。
+ * 冇 mini player（_mockups_/home-fill-bottom A）：所有 tab 都留 mini player 平時離 viewport 底嘅距離
+ * （同收藏 tab、短提示一樣），節目格 / 書架 / 最近收聽都去到底；闊橫版（冇底部 mini player）都一樣
  */
 describe('home bottom space', () => {
-    it('should leave only the safe area and one gap when no mini player is shown', () => {
+    it('should leave only the mini player offset on every tab when no mini player is shown', () => {
         expect(cssDeclarations(css, 'main.home')['padding-bottom']).toBe(
-            'calc(env(safe-area-inset-bottom) + var(--space-3))',
+            'var(--mini-player-offset-bottom)',
+        );
+    });
+
+    it('should leave the same bottom space on the wide landscape home', () => {
+        expect(cssDeclarations(css, 'main.wide')['padding-bottom']).toBe(
+            'var(--mini-player-offset-bottom)',
         );
     });
 
@@ -35,5 +42,10 @@ describe('home bottom space', () => {
 
     it('should use the same rule in every orientation (no @media override)', () => {
         expect(mediaQueries(css)).toEqual([]);
+    });
+
+    // 收藏 tab 以前自己一條規則（v1.28.2）：而家所有 tab 共用 main.home，唔再分開
+    it('should not keep a saved-tab-only bottom rule', () => {
+        expect(css).not.toContain(':has([data-saved-mode])');
     });
 });

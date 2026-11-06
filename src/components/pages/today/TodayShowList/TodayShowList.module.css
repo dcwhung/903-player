@@ -46,6 +46,8 @@
 }
 
 .item {
+    /* 左邊條（OnAirLamp）以行定位 */
+    position: relative;
     display: flex;
     align-items: center;
     /* 寫死嘅 px 都跟 --ui-scale（橫版大畫面放大）；直版 / 手機係 × 1 */
@@ -53,13 +55,14 @@
     width: 100%;
     min-height: calc(64px * var(--ui-scale));
     /* 右邊播放 / 暫停掣離邊兩倍（--space-2），唔好貼住清單右邊 */
-    padding: 0 var(--space-2) 0 var(--space-1);
+    padding: 0 var(--space-2) 0 var(--list-row-pad-start);
     border: none;
     border-bottom: 1px solid var(--color-divider);
     background: transparent;
     text-align: left;
 }
 
+/* 揀中嗰個節目（播緊 / 暫停都係）：淺底框；播緊另外有 pill + 紅條，暫停灰條（OnAirLamp） */
 .active {
     background: var(--color-surface);
 }
@@ -108,10 +111,6 @@
     gap: var(--space-1);
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
-}
-
-.playing {
-    color: var(--color-status-playing);
 }
 
 .watched {

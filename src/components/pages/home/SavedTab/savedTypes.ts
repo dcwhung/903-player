@@ -13,8 +13,12 @@ export interface SavedRowView {
     status: string;
     /** 進度線 0–1 */
     ratio: number;
-    /** 播緊：行深少少、字變 cream、掣變 ⏸ */
+    /** 播緊：掣變 ⏸（pill / 紅條睇 onAir；冇底框，字用普通色） */
     playing: boolean;
+    /** player 載入緊呢集（播緊 / 暫停都係）：暫停就左邊灰條、照寫聽到邊 */
+    current: boolean;
+    /** 播緊而且知道時長：「播放中」pill + 紅條；連線中（S-730）寫「連線中…」、灰條 */
+    onAir: boolean;
     /** 讀屏：節目 / 劇名（+ 短篇） */
     name: string;
     /** 撳行（掣以外）：入嗰集節目頁 / 劇集頁，唔播（data-zoom-key 由佢 zoom 入頁） */

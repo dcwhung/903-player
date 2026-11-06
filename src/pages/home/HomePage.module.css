@@ -8,14 +8,15 @@
 }
 
 /*
- * 底部留位：冇 mini player 就淨係留安全區 + 一格，節目格（ShowGrid 填滿剩低高度）/ 劇集書架用盡個畫面。
+ * 底部留位：冇 mini player 就淨係留 mini player 平時離 viewport 底嘅距離（同短提示一樣，
+ * _mockups_/home-fill-bottom A）：節目格（ShowGrid 填滿剩低高度）、劇集書架、我的收藏都去到底，三個 tab 一致。
  * Page.module.css 嘅 .page 喺 bundle 排喺後面，佢個 padding shorthand 會蓋過 .home，
  * 所以用 main.home 提高 specificity，確保呢個留位真係生效。
  */
 main.home {
     /* 同節目頁一樣跟 --fixed-page-gap（700px 高或以下收窄），矮螢幕每頁多啲位放節目格 */
     gap: var(--fixed-page-gap);
-    padding-bottom: calc(env(safe-area-inset-bottom) + var(--space-3));
+    padding-bottom: var(--mini-player-offset-bottom);
 }
 
 /*
@@ -40,14 +41,14 @@ main.home[data-mini-player='single'] {
 
 /*
  * 闊橫版（HomeWide，WIDE_BANNER_QUERY）：左邊 tab + 填滿格，右邊播放卡（split）或者把手（fillWithHandle）。
- * 冇底部 mini player，底部淨係留安全區 + 一格
+ * 冇底部 mini player：底部留位同直版冇 mini player 一樣（--mini-player-offset-bottom），兩邊一致
  */
 main.wide {
     position: relative;
     flex-direction: row;
     align-items: stretch;
     gap: 0;
-    padding-bottom: calc(env(safe-area-inset-bottom) + var(--space-3));
+    padding-bottom: var(--mini-player-offset-bottom);
 }
 
 /* 左欄：tab 喺頂，下面填滿格食晒剩低嘅高度；tab 過場時跟住伸縮（收埋 / 再出返播放卡） */

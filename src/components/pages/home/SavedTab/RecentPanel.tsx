@@ -28,7 +28,7 @@ const RecentRow = ({ row }: { row: RecentRowView }) => {
                 onClick={row.onOpen}
             >
                 <span className={styles.recentDisc}>
-                    <Disc size="fill" art={row.art} />
+                    <Disc size="small" art={row.art} />
                 </span>
                 <span className={styles.recentText}>
                     <span className={styles.recentName}>{name}</span>
@@ -54,7 +54,7 @@ interface RecentPanelProps {
     rows: readonly RecentRowView[];
     /** 冇收藏版：佔滿成個 tab 區（_mockups_/qr-transfer ②），唔係固定高 / 闊 */
     fill?: boolean;
-    /** 清單分幾欄（冇收藏版：recentColumns）；有收藏版一欄 */
+    /** 清單分幾欄（冇收藏版：recentColumns，1 或 2）；有收藏版一欄 */
     columns?: number;
 }
 
@@ -69,9 +69,9 @@ export const RecentPanel = ({ rows, fill = false, columns = 1 }: RecentPanelProp
             <h2 id={headingId} className={styles.recentTitle}>
                 {t('bookmark.recent')}
             </h2>
-            {/* 捲動喺外層、ul 高度跟內容：分欄先唔會溢出去右邊（W-535） */}
+            {/* 捲動喺外層、ul 高度跟內容（W-535）；兩欄 = grid 行先排「左右左右」（G），次序跟 rows */}
             <div className={styles.recentScroll}>
-                <ul className={styles.recentList} style={{ columnCount: columns }}>
+                <ul className={styles.recentList} data-cols={columns}>
                     {rows.map((row) => (
                         <RecentRow key={row.key} row={row} />
                     ))}

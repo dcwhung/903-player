@@ -124,20 +124,23 @@ export const PROBE_STORAGE_KEY = '903player:probed:v1';
 /** 同一個網址可能有唔同編碼寫法（中文字 / %XX），比較前統一 */
 const normalizeUrl = (url) => new URL(url).href;
 
-/** 用靜音 WAV 答一個音檔 request；支援 Range（206 Partial Content），seek 先會成功 */
-export const serveWav = (route) => {
+/**
+ * 用靜音 WAV 答一個音檔 request；支援 Range（206 Partial Content），seek 先會成功。
+ * body 預設 AUDIO_SECONDS 長；要長啲（例如量「聽到 33:32 / 44:00」）就傳自己嘅 silenceWav
+ */
+export const serveWav = (route, body = wav) => {
     const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? '');
     const start = range ? Number(range[1]) : 0;
-    const end = range && range[2] ? Number(range[2]) : wav.length - 1;
+    const end = range && range[2] ? Number(range[2]) : body.length - 1;
     return route.fulfill({
         status: range ? 206 : 200,
         headers: {
             'Content-Type': 'audio/wav',
             'Accept-Ranges': 'bytes',
             'Content-Length': String(end - start + 1),
-            ...(range ? { 'Content-Range': `bytes ${start}-${end}/${wav.length}` } : {}),
+            ...(range ? { 'Content-Range': `bytes ${start}-${end}/${body.length}` } : {}),
         },
-        body: wav.subarray(start, end + 1),
+        body: body.subarray(start, end + 1),
     });
 };
 

@@ -13,6 +13,20 @@ export interface EpisodeStatus {
     /** 進度條 0–1 */
     ratio: number;
     text: string;
+    /** 讀屏版（播放掣讀屏名用）：唔讀「·」（S-717）；冇就同 text 一樣 */
+    spokenText?: string;
+    /**
+     * 播緊（有時長）：行出「播放中」紅 pill（OnAirBadge）+ 左邊紅條，text 淨係時間「0:05 / 21:56」；
+     * spokenText 照講「播放中，0:05 / 21:56」
+     */
+    onAir?: true;
+    /**
+     * 有時間嘅狀態：時間「13:32 / 13:46」成段（窄欄換行時成段落下一行，唔會喺中間斷開）；
+     * lead = 前面字眼（聽到 / 未開始），separator = 字眼同時間之間係空格定「 · 」。播緊（onAir）冇 lead
+     */
+    time?: string;
+    lead?: string;
+    separator?: 'space' | 'dot';
 }
 
 interface EpisodeStatusInput {
@@ -24,6 +38,43 @@ interface EpisodeStatusInput {
     liveState?: PlaybackState;
 }
 
+/**
+ * 揀中集（有時長）：播緊 = pill +「0:05 / 21:56」；暫停「聽到 0:05 / 21:56」；未開始「未開始 · 0:00 / 11:17」。
+ * 讀屏版用「，」（S-717），播緊照讀「播放中，0:05 / 21:56」
+ */
+const liveStatus = (
+    live: { currentTime: number; duration: number },
+    liveState: PlaybackState,
+): EpisodeStatus => {
+    const params = {
+        playing: t('common.status.playing'),
+        current: formatDuration(live.currentTime),
+        total: formatDuration(live.duration),
+    };
+    const key = PLAYBACK_STATUS_KEY[liveState];
+    const spokenText = t(key, { ...params, sep: t('common.spokenSeparator') });
+    const shown = ratio(live.currentTime, live.duration);
+    const time = t('player.progressText', params);
+    if (liveState === 'playing') {
+        // 「播放中」由 pill 出，字唔再重複
+        return { kind: 'playing', ratio: shown, text: time, spokenText, onAir: true, time };
+    }
+    const text = t(key, params);
+    return { kind: 'playing', ratio: shown, text, spokenText, ...splitTime(text, time) };
+};
+
+/** 「聽到 13:32 / 13:46」/「未開始 · 0:00 / 11:17」拆做字眼 + 分隔 + 時間（文案改咗對唔上就唔拆） */
+const splitTime = (
+    text: string,
+    time: string,
+): Pick<EpisodeStatus, 'lead' | 'separator' | 'time'> => {
+    if (!text.endsWith(time)) return {};
+    const head = text.slice(0, text.length - time.length);
+    const dot = t('common.separator');
+    if (head.endsWith(dot)) return { lead: head.slice(0, -dot.length), separator: 'dot', time };
+    return { lead: head.trimEnd(), separator: 'space', time };
+};
+
 /** 集數清單每一行嘅狀態：連線中 / 播放中 / 已收聽 / 聽到 mm:ss / 未收聽 */
 export const episodeStatus = ({
     isCurrent,
@@ -34,13 +85,7 @@ export const episodeStatus = ({
     if (isCurrent && live && !hasKnownDuration(live.duration)) {
         return { kind: 'playing', ratio: 0, text: t('episodes.connecting') };
     }
-    if (isCurrent && live) {
-        const text = t(PLAYBACK_STATUS_KEY[liveState], {
-            current: formatDuration(live.currentTime),
-            total: formatDuration(live.duration),
-        });
-        return { kind: 'playing', ratio: ratio(live.currentTime, live.duration), text };
-    }
+    if (isCurrent && live) return liveStatus(live, liveState);
     if (progress?.watched) {
         return { kind: 'watched', ratio: 1, text: t('common.status.watched') };
     }

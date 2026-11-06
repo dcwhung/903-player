@@ -387,3 +387,29 @@ describe('PlayerGauge bookmark', () => {
         expect(screen.queryByRole('button', { name: '收藏本集' })).not.toBeInTheDocument();
     });
 });
+
+// 用戶截圖（v1.28.2）：未揀任何一集（例如短篇劇集頁「揀一個短篇開始收聽」、--:--）播放掣同收藏掣都變淡、撳唔郁
+describe('PlayerGauge with nothing picked (empty)', () => {
+    it('should dim and disable play and the star, doing nothing when pressed', async () => {
+        const onStart = vi.fn();
+        renderWithProviders(<PlayerGauge onStart={onStart} bookmark={REC} empty />);
+        const play = screen.getByRole('button', { name: '播放' });
+        const star = screen.getByRole('button', { name: '收藏本集' });
+
+        expect(play).toHaveAttribute('aria-disabled', 'true');
+        expect(star).toHaveAttribute('aria-disabled', 'true');
+        await userEvent.click(play);
+        await userEvent.click(star);
+        expect(onStart).not.toHaveBeenCalled();
+        expect(star).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('should keep play and the star enabled once something is picked', () => {
+        renderWithProviders(<PlayerGauge onStart={vi.fn()} bookmark={REC} />);
+
+        expect(screen.getByRole('button', { name: '播放' })).not.toHaveAttribute('aria-disabled');
+        expect(screen.getByRole('button', { name: '收藏本集' })).not.toHaveAttribute(
+            'aria-disabled',
+        );
+    });
+});

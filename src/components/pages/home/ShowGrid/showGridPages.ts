@@ -55,7 +55,8 @@ export interface FillRows {
 
 /**
  * 直版填滿（T8）：按最矮一行（欄闊 × 16:9）計每頁幾多行（放唔晒先分頁，見 rowsPerPage），
- * 再將剩低高度平分畀每行，但最多高過 16:9 maxGrow 倍；再多嘅高度留喺最底。
+ * 再將剩低高度平分畀每行，但最多高過 16:9 maxGrow 倍；再多嘅高度由 ShowGrid CSS
+ * （.grid[data-fill] align-content: space-between）平分做行距，最尾一行貼住頁底。
  * 連一行都放唔落（每頁會收窄，見 shrunkGridWidth）就一行填滿
  */
 export const fillRows = ({ columnPx, tileRatio, maxGrow, ...input }: FillInput): FillRows => {

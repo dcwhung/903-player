@@ -13,6 +13,11 @@
     --episode-row-gap: calc(14px * var(--ui-scale));
     --episode-row-pad-end: calc(12px * var(--ui-scale));
     --episode-row-icon: calc(22px * var(--ui-scale));
+    /* ☆ 同 ▷ 之間嘅空位：預設同行間距一樣（闊橫版收窄，見下面） */
+    --episode-icon-gap: var(--episode-row-gap);
+    /* 狀態字眼同時間之間分隔符嘅闊度（「 · 」約 0.9 個字；空格約 0.3 個字，.timed[data-sep] 揀） */
+    --status-sep-dot: 0.9em;
+    --status-sep-space: 0.3em;
 }
 
 .header {
@@ -43,6 +48,8 @@
 }
 
 .row {
+    /* 左邊條（OnAirLamp）以行定位 */
+    position: relative;
     display: flex;
     align-items: center;
     /* 寫死嘅 px 都跟 --ui-scale（橫版大畫面放大）；直版 / 手機係 × 1 */
@@ -50,13 +57,14 @@
     width: 100%;
     min-height: calc(56px * var(--ui-scale));
     /* 右邊播放 / 暫停掣離邊兩倍（12px），唔好貼住清單右邊 */
-    padding: 0 var(--episode-row-pad-end) 0 calc(6px * var(--ui-scale));
+    padding: 0 var(--episode-row-pad-end) 0 var(--list-row-pad-start);
     border: none;
     border-bottom: 1px solid var(--color-divider);
     background: transparent;
     text-align: left;
 }
 
+/* 揀中嗰集（播緊 / 暫停都係）：淺底框；播緊另外有 pill + 紅條，暫停灰條（OnAirLamp） */
 .current {
     background: var(--color-surface);
 }
@@ -83,16 +91,20 @@
     }
 }
 
-/* 收藏掣：行入面留一格（播放掣左邊），星疊喺上面（_mockups_/bookmark P2：▶ 左邊） */
+/*
+ * 收藏掣：行入面留一格（播放掣左邊），星疊喺上面（_mockups_/bookmark P2：▶ 左邊）。
+ * 同 ▷ 之間用 --episode-icon-gap（行嘅 gap 由 margin 補差），星同留位一齊跟住
+ */
 .bookmarkSpace {
     flex-shrink: 0;
     width: var(--episode-bookmark-size);
+    margin-right: calc(var(--episode-icon-gap) - var(--episode-row-gap));
 }
 
 .item > .bookmark {
     position: absolute;
     top: 50%;
-    right: calc(var(--episode-row-pad-end) + var(--episode-row-icon) + var(--episode-row-gap));
+    right: calc(var(--episode-row-pad-end) + var(--episode-row-icon) + var(--episode-icon-gap));
     width: var(--episode-bookmark-size);
     height: var(--episode-bookmark-size);
     transform: translateY(-50%);
@@ -119,11 +131,6 @@
     font-weight: 600;
 }
 
-.current .dayMonth,
-.current .status {
-    color: var(--color-status-playing);
-}
-
 .weekday {
     font-size: var(--font-size-2xs);
     color: var(--color-text-muted);
@@ -139,7 +146,7 @@
 }
 
 .body {
-    /* LE1 用：欄幾闊（container query），唔跟內容撐闊（唔會擠走 ▷） */
+    /* LE1 用：欄幾闊（container query），唔跟內容撐闊（唔會擠走 ▷）；闊橫版內頁改跟內容（見下面 @media） */
     container: episode-body / inline-size;
     display: flex;
     flex-direction: column;
@@ -173,7 +180,7 @@
 
 /*
  * 已收聽：成行淡色（--color-watched：淡色字再向背景淡 25%；集名唔粗體、進度條同剔都轉淡），
- * 同未聽嘅一眼分開。唔用 opacity（行仲撳得重聽）。重聽緊嗰集（.current）照用播放中嘅強調色
+ * 同未聽嘅一眼分開。唔用 opacity（行仲撳得重聽）。重聽緊嗰集（.current）唔淡，用普通字色
  */
 .watched:not(.current) .status {
     color: var(--color-watched);
@@ -230,6 +237,58 @@
     );
 }
 
+/* 播緊：「播放中」pill + 時間；窄欄放唔落就時間換落 pill 下面（行高不變） */
+.onAir {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(3px * var(--ui-scale)) calc(6px * var(--ui-scale));
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/*
+ * 有時間嘅狀態（聽到 / 未開始 + 時間）：放唔落就時間成段落下一行，字眼留第一行（用戶截圖 v1.28.2）。
+ * 分隔符跟住時間（.timeSep，固定闊 --status-sep）。入面嗰行（.timedLine）向左縮一個分隔符闊，
+ * 外層（.timed）喺欄左邊剪：時間換咗行就由行頭開始，分隔符剛好喺被剪走嘅位，唔會吊喺第一行尾 / 第二行頭。
+ * 右邊唔剪（-100vw），欄極窄時時間唔會被切走
+ */
+.timed {
+    --status-sep: var(--status-sep-space);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    clip-path: inset(0 -100vw 0 0);
+}
+
+.timed[data-sep='dot'] {
+    --status-sep: var(--status-sep-dot);
+}
+
+.timedLine {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    margin-left: calc(-1 * var(--status-sep));
+}
+
+.lead {
+    margin-left: var(--status-sep);
+    white-space: nowrap;
+}
+
+/* 時間「13:32 / 13:46」永遠一行（pill 後面嗰段都係） */
+.time {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.timeSep {
+    display: inline-block;
+    width: var(--status-sep);
+    text-align: center;
+}
+
 /* 快將下架（LE1）：狀態字後面琥珀色「· ⏳ 05/12 下架」；欄窄放唔落先成粒換落下一行（唔會溢出蓋住 ☆） */
 .withLeaving {
     display: flex;
@@ -246,7 +305,7 @@
     white-space: nowrap;
 }
 
-/* 欄夠闊寫「05/12 下架」；闊橫版左欄嗰啲窄欄（約 7 個字闊以下）淨係「⏳ 05/12」 */
+/* 欄夠闊寫「05/12 下架」；窄欄（約 7 個字闊以下，例如主頁播放卡）淨係「⏳ 05/12」；闊橫版內頁欄跟內容，永遠寫全 */
 .leavingTag {
     display: none;
 }
@@ -278,4 +337,47 @@
 .upcoming .dayMonth,
 .upcoming .play {
     color: var(--color-text-muted);
+}
+
+/*
+ * 闊橫版（WIDE_BANNER_QUERY，wide list preview O3）：行收緊，狀態「聽到 33:32 / 44:00」一行放得落，
+ * 播緊嗰行嘅時間唔再溢出入 ☆ 位。☆ 40 → 32px × --ui-scale（仍然 ≥ 24px 觸控目標），☆ 同 ▷ 之間 4px × --ui-scale。
+ * 內頁（variant page）狀態欄最少闊度跟實際字型量（W-697：用估嘅 8.75em，CI 字型闊少少就斷咗行）：
+ * 唔做 inline-size container（container 會令 min-content 變 0），min-width: min-content，
+ * 有時間嘅狀態唔換行；唔夠位由短篇集名欄縮（最多 --episode-label-title，最少 --episode-label-title-min，
+ * 太長跑馬燈 / … 收尾）。欄最少 --landscape-list-min，集名縮到最細都仲放得落。
+ * 要寫喺檔尾：同 specificity 嘅基本規則（.body、.timedLine、.date）後寫先蓋得到。
+ * 主頁播放卡（variant card，36% 闊）：成句一行會逼走行尾 ▷，狀態可以換行（時間成段落第二行），
+ * 最少闊度 = 時間一行（min-content）；有快將下架嘅行照舊 container（LE1 窄欄短標籤），最少放得落時間
+ * （--episode-time-min）。手機打橫、直版唔郁（☆ 40px、間距照舊）
+ */
+@media (orientation: landscape) and (min-width: 640px) and (min-height: 562px) {
+    .section {
+        --episode-bookmark-size: calc(32px * var(--ui-scale));
+        --episode-icon-gap: calc(4px * var(--ui-scale));
+    }
+
+    .body {
+        container-type: normal;
+        min-width: min-content;
+    }
+
+    .timedLine {
+        flex-wrap: nowrap;
+    }
+
+    [data-labels='title'] .date {
+        flex: 0 1 var(--episode-label-title);
+        width: auto;
+        min-width: var(--episode-label-title-min);
+    }
+
+    [data-variant='card'] .body:has(.leaving) {
+        container-type: inline-size;
+        min-width: var(--episode-time-min);
+    }
+
+    [data-variant='card'] .timedLine {
+        flex-wrap: wrap;
+    }
 }

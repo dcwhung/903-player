@@ -21,9 +21,9 @@ describe('drama tile notices', () => {
     it('should name the next new arc (H2) or new batch (E1), with a short form and a long label', () => {
         const soon = [arcInfo('戀愛二分一'), arcInfo('XXX', { addedAt: '2026-11-12' })];
         expect(releaseNote(soon, TODAY)).toEqual({
-            text: '新短篇 12/11 上架',
+            text: '全新短篇 12/11 上架',
             tag: '12/11 上架',
-            label: '下個短篇 12/11 星期四 上架',
+            label: '全新短篇 12/11 星期四 上架',
         });
         const batch = [
             arcInfo('戀愛二分一', { batches: [{ first: 11, last: 20, date: '2026-11-06' }] }),
@@ -31,7 +31,7 @@ describe('drama tile notices', () => {
         expect(releaseNote(batch, TODAY)).toEqual({
             text: '全新集數 明日上架',
             tag: '明日上架',
-            label: '下一批集數 06/11 星期五 上架',
+            label: '全新集數 06/11 星期五 上架',
         });
         expect(releaseNote([arcInfo('A')], TODAY)).toBeUndefined();
     });

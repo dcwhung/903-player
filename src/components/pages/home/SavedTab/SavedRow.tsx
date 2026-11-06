@@ -2,16 +2,29 @@ import type { PointerEvent } from 'react';
 import { t } from '../../../../i18n/t';
 import { toPercent } from '../../../../utils/ratio';
 import { HourglassIcon, PauseIcon, PlayIcon, TrashIcon } from '../../../shared/common/icons/icons';
+import { OnAirBadge } from '../../../shared/common/OnAirBadge/OnAirBadge';
+import { OnAirLamp, type OnAirLampState } from '../../../shared/common/OnAirBadge/OnAirLamp';
 import { Separator } from '../../../shared/common/Separator/Separator';
+import { showToast } from '../../../shared/common/Toast/toastStore';
 import styles from './SavedTab.module.css';
+import { useRemoveHintId } from './removeHint';
 import type { SavedRowView } from './savedTypes';
 import { useRowSwipe } from './useRowSwipe';
 
 const ICON_SIZE = 22;
 const NOTICE_ICON_SIZE = 12;
 
+/** 左滑 / Delete 決定移除嗰刻：同撳 ★ 一樣出「已移除收藏」（B1，冇復原） */
+const announceRemoved = () => showToast(t('bookmark.removed'));
+
 /** ▷ 唔好開始左滑（撳掣 = 原地播） */
 const keepPointer = (event: PointerEvent<HTMLButtonElement>) => event.stopPropagation();
+
+/** 右邊狀態：已下架「已下架」；播緊「播放中」紅 pill（讀屏由行掣 aria-label 講）；其他（連線中…）照寫 */
+const stateContent = (row: SavedRowView) => {
+    if (row.removed) return t('availability.removed');
+    return row.onAir ? <OnAirBadge /> : row.status;
+};
 
 /** 日期 / 集數 + 進度字（快將下架加琥珀字 LB1；已下架寫「已下架」），下面 2px 進度線 */
 const RowText = ({ row }: { row: SavedRowView }) => (
@@ -19,7 +32,7 @@ const RowText = ({ row }: { row: SavedRowView }) => (
         <span className={styles.line}>
             <span className={styles.label}>{row.label}</span>
             <span className={styles.state}>
-                {row.removed ? t('availability.removed') : row.status}
+                {stateContent(row)}
                 {row.leaving && !row.removed && (
                     <span className={styles.leaving}>
                         <Separator className={styles.leavingSeparator} />
@@ -58,6 +71,12 @@ const PlayButton = ({ row }: { row: SavedRowView }) => {
     );
 };
 
+/** 左邊條：播緊紅（live）；載入咗但暫停 / 連線中灰（idle）；已下架 / 其他行冇 */
+const lampState = (row: SavedRowView): OnAirLampState | null => {
+    if (row.removed || !row.current) return null;
+    return row.onAir ? 'live' : 'idle';
+};
+
 /**
  * 開行掣讀屏名（讀屏版日子，畫面照顯示 row.label）：已下架講「已下架」（D3）；快將下架加日子
  */
@@ -79,20 +98,25 @@ const openLabel = ({
  * 收藏 tab 一行（_mockups_/bookmark）：日期 / 集數 + 進度字 + 2px 進度線，右邊 ▷ / ⏸（同內頁集數清單一樣冇框白色）。
  * 撳 ▷ = 原地播 / 暫停；撳行其他位置 = 入嗰集（唔播）；左滑過四成移除（useRowSwipe）
  *
- * 已下架（P8 #6）：灰色「已下架」、冇 ▷、撳唔到（aria-disabled），照可以左滑 / Delete 移除
+ * 已下架（P8 #6）：灰色「已下架」、冇 ▷、撳唔到（aria-disabled），照可以左滑 / Delete 移除。
+ * 移除提示用共用隱藏說明（aria-describedby，B2b），唔用 title
  */
 export const SavedRow = ({ row }: { row: SavedRowView }) => {
-    const { bindRow, bindCard, handlers, onKeyDown } = useRowSwipe(row.onRemove);
+    const hintId = useRemoveHintId();
+    const { bindRow, bindCard, handlers, onKeyDown } = useRowSwipe(row.onRemove, announceRemoved);
+    const lamp = lampState(row);
     return (
         <li
             ref={bindRow}
             className={styles.row}
             data-saved-row=""
             data-playing={String(row.playing)}
+            data-current={String(lamp !== null)}
             data-removed={row.removed ? '' : undefined}
             data-zoom-key={row.zoomKey}
         >
             <div ref={bindCard} className={styles.card} {...handlers}>
+                {lamp && <OnAirLamp state={lamp} />}
                 <span className={styles.trash} aria-hidden="true">
                     <TrashIcon size={ICON_SIZE} />
                 </span>
@@ -101,8 +125,8 @@ export const SavedRow = ({ row }: { row: SavedRowView }) => {
                     className={styles.open}
                     aria-label={openLabel(row)}
                     aria-disabled={row.removed ? 'true' : undefined}
-                    aria-keyshortcuts="Delete"
-                    title={t('bookmark.removeHint')}
+                    aria-keyshortcuts="Delete Backspace"
+                    aria-describedby={hintId}
                     onKeyDown={onKeyDown}
                     onClick={row.removed ? undefined : row.onOpen}
                 >

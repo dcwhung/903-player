@@ -113,7 +113,8 @@ export const TodayPlayerColumn = ({
                             cards={cards}
                             index={index}
                             title={cards[index]?.title ?? ''}
-                            art={start ? undefined : theme.art}
+                            // 未開始樣（播緊其他嘢）都顯示節目碟面，同節目頁一樣（唔再用黑碟）
+                            art={theme.art}
                             onStart={start}
                             onChange={selectIndex}
                             dots={dots}
