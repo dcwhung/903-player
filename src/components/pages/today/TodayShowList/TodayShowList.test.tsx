@@ -132,10 +132,19 @@ describe('TodayShowList', () => {
             render(<TodayShowList items={withUnavailable} onSelect={() => {}} />);
 
             const row = unavailableRow();
-            expect(row).toHaveTextContent('口水多過浪花15:10 · 未上架');
+            expect(row).toHaveTextContent(/^口水多過浪花15:10 · 未上架/);
             expect(within(row).queryByRole('button')).not.toBeInTheDocument();
             expect(screen.queryByRole('button', { name: /口水多過浪花/ })).not.toBeInTheDocument();
             expect(row.querySelector('svg')).toBeNull();
+        });
+
+        it('shows「15:10 · 未上架」but reads「15:10，未上架」without the dot (S-723)', () => {
+            render(<TodayShowList items={withUnavailable} onSelect={() => {}} />);
+
+            const row = unavailableRow();
+            expect(within(row).getByText('15:10 · 未上架')).toHaveAttribute('aria-hidden', 'true');
+            const spoken = within(row).getByText('15:10，未上架');
+            expect(spoken.closest('[aria-hidden]')).toBeNull();
         });
 
         it('says how many are unavailable next to the heading', () => {

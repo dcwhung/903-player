@@ -5,6 +5,7 @@ import { formatSpokenDate } from '../../../../utils/date';
 import { Disc } from '../../../shared/common/Disc/Disc';
 import { PauseIcon, PlayIcon } from '../../../shared/common/icons/icons';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';
+import { SpokenText, type SpokenNotice } from '../../../shared/common/SpokenText/SpokenText';
 import { BookmarkButton } from '../../../shared/player/BookmarkButton/BookmarkButton';
 import styles from './TodayShowList.module.css';
 import { RowLamp, RowStatus } from './TodayShowRowParts';
@@ -38,9 +39,18 @@ const STATUS_MESSAGE: Record<ShowStatus, MessageKey> = {
 };
 const PLAY_ICON_SIZE = 22;
 
+/** 未上架嗰行嘅「15:10 · 未上架」：讀屏版用「，」，唔讀「·」（S-723，同 S-717 一樣） */
+const unavailableStatus = (time: string): SpokenNotice => {
+    const params = { time, status: t(STATUS_MESSAGE.unavailable) };
+    return {
+        text: t('today.timeWithStatus', params),
+        label: t('today.timeWithStatus', { ...params, sep: t('common.spokenSeparator') }),
+    };
+};
+
 /**
  * 未上架：照列出節目同時間，但唔係掣（撳唔到、冇播放掣），唱片同節目名變淡。
- * 用普通 div：screen reader 直接讀可見文字（節目名、時間 · 未上架），唔會當成停用咗嘅掣
+ * 用普通 div：screen reader 直接讀節目名同讀屏版狀態（時間，未上架），唔會當成停用咗嘅掣
  */
 const UnavailableRow = ({ item }: { item: TodayShowItem }) => (
     <div className={`${styles.item} ${styles.unavailable}`}>
@@ -50,10 +60,7 @@ const UnavailableRow = ({ item }: { item: TodayShowItem }) => (
         <span className={styles.text}>
             <Marquee className={styles.name} text={item.name} />
             <span className={styles.status}>
-                {t('today.timeWithStatus', {
-                    time: item.time,
-                    status: t(STATUS_MESSAGE.unavailable),
-                })}
+                <SpokenText {...unavailableStatus(item.time)} />
             </span>
         </span>
     </div>
