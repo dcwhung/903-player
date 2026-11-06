@@ -78,6 +78,24 @@ describe('TodayShowList', () => {
         );
     });
 
+    // S-730：連線中：「10:09 · 連線中…」、冇 pill、灰條，掣照係暫停
+    it('should show 連線中… with a grey bar and no pill while connecting', () => {
+        const connecting = ITEMS.map((item) =>
+            item.status === 'playing' ? { ...item, status: 'connecting' as const } : item,
+        );
+        render(<TodayShowList items={connecting} onSelect={() => {}} />);
+
+        expect(screen.getByText('10:09 · 連線中…')).toBeInTheDocument();
+        expect(screen.queryByText('播放中')).not.toBeInTheDocument();
+        expect(document.querySelector('[data-on-air-lamp]')).toHaveAttribute(
+            'data-on-air-lamp',
+            'idle',
+        );
+        expect(
+            screen.getByRole('button', { name: /^暫停 Bad Girl大過佬，連線中…$/ }),
+        ).toBeInTheDocument();
+    });
+
     it('shows a pause button only on the playing show', () => {
         const paused = ITEMS.map((item) =>
             item.status === 'playing' ? { ...item, status: 'unwatched' as const } : item,

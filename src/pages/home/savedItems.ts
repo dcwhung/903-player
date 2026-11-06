@@ -133,6 +133,8 @@ export interface SavedRowStatus {
     playing: boolean;
     /** player 載入緊呢集（播緊 / 暫停都係）：暫停就左邊灰條 */
     current: boolean;
+    /** 播緊而且知道時長：「播放中」pill + 紅條；連線中（未知時長，S-730）同暫停一樣灰條 */
+    onAir: boolean;
 }
 
 const positionText = (position: number, duration: number): string =>
@@ -145,14 +147,19 @@ const positionText = (position: number, duration: number): string =>
 
 /** 收藏 tab 每行右邊嘅字同進度線：播放中 / 聽到 x / y / 已收聽 / 未收聽（暫停緊都係聽到 x / y，A2） */
 export const savedRowStatus = ({ loaded, isPlaying, live, progress }: RowStatusInput) => {
+    if (loaded && live && !hasKnownDuration(live.duration)) {
+        // S-730：同集數清單一樣，未知時長寫「連線中…」、唔出 pill；掣照跟 isPlaying
+        const text = t('episodes.connecting');
+        return { text, ratio: 0, playing: isPlaying, current: true, onAir: false };
+    }
     if (loaded && live) {
         const shown = ratio(live.currentTime, live.duration);
         const text = isPlaying
             ? t('common.status.playing')
             : positionText(live.currentTime, live.duration);
-        return { text, ratio: shown, playing: isPlaying, current: true };
+        return { text, ratio: shown, playing: isPlaying, current: true, onAir: isPlaying };
     }
-    const idle = { playing: false, current: false };
+    const idle = { playing: false, current: false, onAir: false };
     if (progress?.watched) return { text: t('common.status.watched'), ratio: 1, ...idle };
     if (progress && progress.position > 0) {
         const shown = ratio(progress.position, progress.duration);

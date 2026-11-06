@@ -122,7 +122,12 @@ describe('HomeSaved (我的收藏 tab)', () => {
         const { audio } = openSaved();
 
         await userEvent.click(screen.getByRole('button', { name: '播放 公子會 03/10 星期六' }));
+        // 未讀到時長係「連線中…」（S-730），讀到先係播放中
         act(() => audio.emitPlaying());
+        expect(rowOpen(/^開啟 公子會 03\/10/)).toHaveAccessibleName(
+            '開啟 公子會 03/10 星期六，連線中…',
+        );
+        act(() => audio.emitMetadata(600));
 
         expect(audio.src).toBe(GONGZI_OLD.url);
         expect(screen.queryByTestId('page')).not.toBeInTheDocument();

@@ -14,6 +14,7 @@ const row = (extra: Partial<SavedRowView> = {}): SavedRowView => ({
     ratio: 0.4,
     playing: false,
     current: false,
+    onAir: false,
     name: '蘭茜夫人劇場，戀愛二分一',
     zoomKey: 'episode:/half/3',
     onOpen: vi.fn(),

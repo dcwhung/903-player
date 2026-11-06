@@ -42,6 +42,14 @@ describe('toTodayItems', () => {
         ]);
     });
 
+    // S-730：播緊但未知時長（連線中）：同集數清單一樣唔當播緊出 pill，狀態 connecting
+    it('should mark the active show as connecting while the length is unknown', () => {
+        const items = toTodayItems(LIST, SUNNY.url, true, new Set(), true);
+
+        expect(items.map((item) => item.status)).toEqual(['connecting', 'unwatched', 'unwatched']);
+        expect(items[0]?.active).toBe(true);
+    });
+
     it('shows the active show by its watched state while paused', () => {
         const items = toTodayItems(LIST, WANNI.url, false, new Set([WANNI.url]));
 

@@ -20,10 +20,10 @@ const announceRemoved = () => showToast(t('bookmark.removed'));
 /** ▷ 唔好開始左滑（撳掣 = 原地播） */
 const keepPointer = (event: PointerEvent<HTMLButtonElement>) => event.stopPropagation();
 
-/** 右邊狀態：已下架「已下架」；播緊「播放中」紅 pill（讀屏由行掣 aria-label 講）；其他照寫 */
+/** 右邊狀態：已下架「已下架」；播緊「播放中」紅 pill（讀屏由行掣 aria-label 講）；其他（連線中…）照寫 */
 const stateContent = (row: SavedRowView) => {
     if (row.removed) return t('availability.removed');
-    return row.playing ? <OnAirBadge /> : row.status;
+    return row.onAir ? <OnAirBadge /> : row.status;
 };
 
 /** 日期 / 集數 + 進度字（快將下架加琥珀字 LB1；已下架寫「已下架」），下面 2px 進度線 */
@@ -71,10 +71,10 @@ const PlayButton = ({ row }: { row: SavedRowView }) => {
     );
 };
 
-/** 左邊條：播緊紅（live）；載入咗但暫停灰（idle）；已下架 / 其他行冇 */
+/** 左邊條：播緊紅（live）；載入咗但暫停 / 連線中灰（idle）；已下架 / 其他行冇 */
 const lampState = (row: SavedRowView): OnAirLampState | null => {
     if (row.removed || !row.current) return null;
-    return row.playing ? 'live' : 'idle';
+    return row.onAir ? 'live' : 'idle';
 };
 
 /**

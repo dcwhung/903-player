@@ -9,7 +9,8 @@ import { BookmarkButton } from '../../../shared/player/BookmarkButton/BookmarkBu
 import styles from './TodayShowList.module.css';
 import { RowLamp, RowStatus } from './TodayShowRowParts';
 
-export type ShowStatus = 'playing' | 'watched' | 'unwatched' | 'unavailable';
+/** connecting：揀中、播緊但未讀到時長（寫「連線中…」、冇 pill，S-730） */
+export type ShowStatus = 'playing' | 'connecting' | 'watched' | 'unwatched' | 'unavailable';
 
 export interface TodayShowItem {
     key: string;
@@ -30,6 +31,7 @@ interface TodayShowListProps {
 
 const STATUS_MESSAGE: Record<ShowStatus, MessageKey> = {
     playing: 'common.status.playing',
+    connecting: 'episodes.connecting',
     watched: 'common.status.watched',
     unwatched: 'common.status.unwatched',
     unavailable: 'today.statusUnavailable',
@@ -69,7 +71,7 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
     }
     const statusText = t(STATUS_MESSAGE[item.status]);
     // 播緊（status playing = 揀中 + 播放中）：掣變暫停，撳落去暫停
-    const isPlaying = item.status === 'playing';
+    const isPlaying = item.status === 'playing' || item.status === 'connecting';
     // 收藏掣唔可以放入行掣入面：行入面留位，星疊喺個位上面（同一個 li）
     return (
         <>
