@@ -9,6 +9,7 @@
 - 加一個 Cloudflare 上嘅 backend admin 管內容
 - frontend 改為 runtime 讀 publish 出嚟嘅 `catalog.json`
 - 上下架唔使再 rebuild
+- 收聽進度 / 收藏同音檔 URL 脫鉤（2026-11-06 用戶提出）：先改用 episode ID 做 key，將來 audio 搬 server / 換 bucket / 改檔名都唔會冇咗進度
 
 ## 已確認決定（grill 結果）
 
@@ -28,6 +29,7 @@
 | Audio 上載        | 繼續自己用 CF dashboard / rclone 上 R2；admin 只負責掃描                                                                                                                                                         |
 | Domain            | Admin + API 同一個 Worker（Workers static assets），用 `*.workers.dev`                                                                                                                                           |
 | Repo              | Monorepo，**唔使開新 GitHub repo**：同一個 `dcwhung/903-player` 轉 npm workspaces                                                                                                                                |
+| 進度 key          | 由音檔 URL 改為穩定 episode ID（組合 ID，browser 自己計得返）；先 migrate 晒進度同收藏先開始 backend 工作（Phase −1）                                                                                            |
 | Fallback          | Build 時 prebuild script fetch R2 上**最新** published `catalog.json` bundle 做 snapshot（即每次 build 都係最新）；runtime 再背景更新                                                                            |
 
 ## 架構
@@ -38,8 +40,58 @@ admin (React SPA) ──► Worker /api (Hono) ──► D1 (drafts, schedule, u
                               ├─ R2 binding: list audio folders, store images
                               └─ Publish: catalog.json + hashed images ─► R2 public (CDN)
 player PWA ──fetch──► catalog.json (SWR + bundled snapshot fallback)
-audio ─────────────► R2 (unchanged URLs, they are progress keys)
+audio ─────────────► R2（URL 只用嚟播放；進度 / 收藏 key = episode ID）
 ```
+
+## Phase −1：Episode ID + 進度 migration（最先做）
+
+### 問題
+
+`903player:progress:v1` 同 `903player:bookmarks:v1` 用音檔 URL 做 key（`src/services/progressStore.ts`、`src/services/bookmarkStore.ts`）。換 R2 bucket / domain、搬 server、改檔名、改 R2 folder 名，進度同收藏都會無聲無息咁冇晒。
+
+### 受影響 storage
+
+| Key                         | 而家 key              | 處理                                   |
+| --------------------------- | --------------------- | -------------------------------------- |
+| `903player:progress:v1`     | 音檔 URL              | 搬去 `progress:v2`，key = episode ID   |
+| `903player:bookmarks:v1`    | 每個收藏存 `url`      | 搬去 `bookmarks:v2`，加 `id`，用 ID 搵 |
+| `903player:probed:v1`       | 節目錄音清單（cache） | 唔使改，可以隨時重新 probe             |
+| `903player:playback-log:v1` | Debug 播放紀錄        | 唔使改                                 |
+
+### Episode ID 格式
+
+| 類型             | ID                             | 備註                                                             |
+| ---------------- | ------------------------------ | ---------------------------------------------------------------- |
+| 廣播劇（有短篇） | `drama:<dramaId>:<arcId>:<no>` | `arcId` = 新加嘅 ASCII slug，見下面                              |
+| 廣播劇（每日播） | `drama:<dramaId>:<YYYY-MM-DD>` |                                                                  |
+| 電台節目錄音     | `show:<showId>:<YYYY-MM-DD>`   | 錄音係 probe 出嚟，backend 冇記錄，所以一定要 browser 自己計得返 |
+
+- **Arc 要加 `id` 欄位**：而家 arc 嘅 `name` 同時係顯示名同 R2 sub-folder 名（中文），slug 只喺圖片 folder（例如 `arcs/half/`）出現，冇圖嘅 arc 冇 slug。用 `name` 做 ID 會令 R2 folder 改名時進度冇咗，所以 `drama.json` 每個 arc 加必填 `id`（ASCII slug，有圖嘅沿用圖片 folder 名），`schemas/drama.schema.json` + `src/catalog/dramas/lib/schema.ts` 同步改，同一劇入面唔可以重複
+- `SeriesEpisode` / `DailyEpisode` / `Recording`（`src/types/`）加 `id`；`buildEpisodes()` 同 recordings selector 負責生成
+- 放棄嘅方案：backend 派 opaque ID（ULID）。改集數編號都唔受影響，但節目錄音冇 backend 記錄，結果兩套規則並存
+
+### Migration 做法（idempotent，每次開 app 都安全重跑）
+
+1. 用完整 catalog 砌 URL → ID 對照表，**包括已下架嘅集數**（下架嘅都可能有進度）+ probe store 入面嘅節目錄音（URL 可以由 `showId` + 日子 + `fileTime` 反推）
+2. 讀 `progress:v1`：對到 ID 嘅寫入 `progress:v2`（v2 已經有嘅唔覆蓋）；對唔到嘅留喺 v1，唔刪
+3. 下次開 app 再試對唔到嘅（例如之後重新上架嘅集數）
+4. `progress:v1` 保留至少 3 個 MINOR 版本先清，方便 rollback
+5. Bookmarks 同一套做法：`bookmarks:v1` → `bookmarks:v2`
+
+### 要改嘅地方
+
+- `src/services/progressStore.ts`、`src/services/bookmarkStore.ts`：API 由 `url` 改為 `id`（`getWatchedUrls` → `getWatchedIds` 等）
+- 新增 `src/services/storageMigration.ts`：v1 → v2，喺 app 啟動（render 之前）跑
+- 約 15 個非 test 檔 call 緊 progress / bookmark API，要逐個改為用 `id`；播放仍然用 `url`
+- 每劇 `src/catalog/dramas/library/<id>/drama.test.ts`：加 pin ID（URL pin 保留到 migration 完成）
+- E2E：加一條「舊 v1 進度 → 升級後進度仍在」嘅 test
+- Version：MINOR（v1.29.0）；task type `/feature`，喺現有 repo 結構做，唔使等 monorepo
+
+### 對後面 phase 嘅影響
+
+- Phase 2 migration 驗收由「URL 一定要同而家一樣」改為「**ID** 一定要同而家一樣」；URL 之後可以自由改
+- `catalog.json` 每集帶 `id`，player 唔再自己由 URL 推
+- P9 QR 進度轉移：ID 短過 URL，QR 放得落更多記錄
 
 ## Monorepo 結構
 
@@ -83,7 +135,7 @@ packages/catalog/ 由 src/catalog/{core,dramas/lib,shows/lib} 抽出：
     - 記錄 publish history；rollback = 重新 publish 舊 snapshot
 8. **Migration script**：
     - 將現有 7 個 show + 6 個 drama 嘅 JSON + webp 匯入 D1 / R2
-    - 驗證 publish 出嚟嘅 `catalog.json` 生成嘅 episode URL **同現有完全一樣**（progress key 唔可以變；每劇現有 `drama.test.ts` pin 住 URL，可以重用做驗收）
+    - 驗證 publish 出嚟嘅 `catalog.json` 每集 **episode ID 同現有完全一樣**（Phase −1 之後進度 key = ID；每劇 `drama.test.ts` pin 住 ID，可以重用做驗收）
 
 ## Frontend player（apps/player）要做
 
@@ -110,7 +162,7 @@ packages/catalog/ 由 src/catalog/{core,dramas/lib,shows/lib} 抽出：
 7. **E2E**：
     - Fixture 改用 mock `catalog.json`（取代 `withE2EFixtures`）
     - `e2e/sampleData.mjs` 改為由 fixture 讀
-8. **Version bump**：Runtime catalog 係 MINOR（v1.29.0）
+8. **Version bump**：Runtime catalog 係 MINOR（v1.30.0；v1.29.0 係 Phase −1）
 
 ## Admin（apps/admin）要做
 
@@ -131,7 +183,8 @@ packages/catalog/ 由 src/catalog/{core,dramas/lib,shows/lib} 抽出：
 
 | Phase | 內容                                                                                                                                       | 前置 |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---- |
-| 0     | Monorepo 搬 folder + 抽 `packages/catalog`（純 refactor，行為唔變）+ 改 Vercel / CI                                                        | —    |
+| −1    | Episode ID + 進度 / 收藏 migration（`/feature`，v1.29.0）。Phase 0 之前完成                                                                | —    |
+| 0     | Monorepo 搬 folder + 抽 `packages/catalog`（純 refactor，行為唔變）+ 改 Vercel / CI                                                        | −1   |
 | 1     | Player：registry 改 context + `catalog.json` 讀取 + bundled snapshot + SW caching（用 repo 現有 JSON 生成 `catalog.json`，未需要 backend） | 0    |
 | 2     | API：D1 schema、Google login、CRUD、migration script、publish                                                                              | 0    |
 | 3     | Admin 基本：login、CRUD、R2 scan、排程、publish（`_mockups_/admin` 確認後）                                                                | 2    |
@@ -142,7 +195,8 @@ Phase 1 完成之後 player 已經同 backend 解耦：就算 backend 未完成�
 
 ## 風險
 
-- 🔴 Episode URL = localStorage progress key：migration 同 publish 都要 assert URL 一樣
+- 🔴 進度 / 收藏 migration：v1 對唔到嘅記錄唔可以刪；v1 保留幾個版本先清。之後 migration 同 publish 都 assert **ID** 一樣
+- 🟡 Arc `id` 一旦定咗就唔可以改（改咗等於進度冇咗）；admin 介面要鎖住已 publish arc 嘅 `id`
 - 🔴 Phase 0 搬 folder 會影響 Vercel Root Directory、GitHub Pages `deploy.yml`、e2e path、`tsconfig`：要喺同一個 PR 改齊，同埋要你喺 Vercel dashboard 改 Root Directory
 - 🟡 R2 public bucket 要開 CORS 俾 player origin fetch `catalog.json`
 - 🟡 Google OAuth 要你喺 Google Cloud Console 開 OAuth client（redirect URI = workers.dev domain）
@@ -151,7 +205,8 @@ Phase 1 完成之後 player 已經同 backend 解耦：就算 backend 未完成�
 ## 驗證
 
 - `packages/catalog`：現有 catalog unit test 全部搬過去，照綠
-- Migration：生成嘅 `catalog.json` 經 player 讀，每劇 `drama.test.ts` pin 住嘅 URL / 集數一樣
+- Phase −1：unit test 覆蓋 ID 生成、v1 → v2 migration（對到 / 對唔到 / 重跑 idempotent / v2 已有唔覆蓋）；e2e 驗舊進度升級後仍在
+- Migration：生成嘅 `catalog.json` 經 player 讀，每劇 `drama.test.ts` pin 住嘅 ID / 集數一樣
 - API：Vitest + `@cloudflare/vitest-pool-workers` 測 auth whitelist、scan diff、`expandSchedule`、publish validator
 - Player：`npm test` + `npm run e2e`（fixture `catalog.json`；offline 第一次開用 snapshot）
 - 手動：`wrangler dev` 本地跑 admin → 改日期 → publish → player 唔 rebuild 都見到變化
