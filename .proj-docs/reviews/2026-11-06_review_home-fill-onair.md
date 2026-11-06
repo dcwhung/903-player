@@ -92,3 +92,84 @@ next_agent: null
 branch: "fix/ui/home-fill-bottom"
 context: "A / B3 / C3 / D / F / G / ON AIR / 闊橫版卡暫停 bug 全部落實，C=0 W=1 S=5（W-696、S-729 至 S-733）；CI run 42253711967 @ 58426ce ✅ success（lint、unit、build、E2E 全綠）；W-696 開 PR 時 description 補 Design Origin（含 db27678 嘅 F / G），唔使改 code"
 ```
+
+---
+
+## Re-review 1 — `af31a04`、`5693f1b`、`1daf44c`（@ `1daf44c`）
+
+- 範圍：上次 review（`5c3f464`）之後新加嘅三個 commit：`af31a04` 時間唔喺中間斷行、`5693f1b` 連線中冇 ON AIR pill（S-730）、`1daf44c` 闊橫版清單（O3）
+- SSoT（L1）：S-730；用戶決定 O3（preview `J4fzPZRCtP5DC3pVGdmqWZ`）：清單欄 `max(34%, 340px × s)`；淨係闊橫版 ☆ 32px × s、☆ / ▷ 4px × s、狀態欄最少 8.75em、短篇集名欄可以縮；手機打橫 / 直版唔郁；主頁闊橫版卡狀態最少 6.4em
+- Design Origin：三個 commit 都有（`baseline`、`mockup: ON AIR`、`mockup: wide list preview O3`）
+- 總評：code 層面三項都做齊，unit / node test 全綠；但 **head `1daf44c` 嘅 CI E2E 紅**，失敗嗰項正正係 O3 要保證嘅「暫停行一行」，所以今輪 ❌ fail
+
+### Hard Gates（Re-review 1）
+
+| Gate         | 結果    | 證據                                                                                                                                                                                                                               |
+| ------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint         | pass    | 改動檔 `eslint` 0 error、`prettier --check` 全過                                                                                                                                                                                   |
+| Type check   | pass    | `npx tsc -b` exit 0                                                                                                                                                                                                                |
+| Unit（相關） | pass    | `npx vitest related` 8 個改動源檔：25 files / 348 tests；`wideRow` / `watchedRow` / `landscapeColumns` node test + `episodeItems`：4 files / 26 tests（冇跑 full suite / e2e）                                                     |
+| CI（同 SHA） | ❌ fail | [run 42263345650](https://github.com/dcwhung/903-player/actions/runs/42263345650) @ `1daf44c`：lint / unit / build 綠，**E2E 紅（1 項）**，見 W-697。唔係 S-725（嗰項只喺 sandbox 紅，今次 CI 冇報）；`5693f1b` run 42257609162 ✅ |
+| No Critical  | pass    | 0 個 🔴                                                                                                                                                                                                                            |
+
+### 評分（Re-review 1）
+
+| 維度     | 得分   | 滿分    | 備注                         |
+| -------- | ------ | ------- | ---------------------------- |
+| 正確性   | 20     | 25      | W-697 CI 證實暫停行唔係一行  |
+| 安全性   | 20     | 20      |                              |
+| 可維護性 | 15     | 20      | W-696 仍未處理（開 PR 時補） |
+| 測試覆蓋 | 15     | 15      |                              |
+| 性能     | 10     | 10      |                              |
+| 代碼風格 | 10     | 10      |                              |
+| **總分** | **90** | **100** |                              |
+
+**結果：❌ fail**（CI E2E 呢個 hard gate 未過；分數只供參考）
+
+### 上輪項目
+
+- S-730 ✅ 已處理：`savedRowStatus` 未知時長回「連線中…」、`onAir: false`（灰條、冇 pill），⏸ 照跟 `isPlaying`；Today 加 `ShowStatus 'connecting'`（「06:00 · 連線中…」、灰條、暫停掣），`useTodayPage` 用 `hasKnownDuration(player.duration)`。同 EpisodeRow 一致，test 有鎖
+- W-696 ⏳ 未處理：要開 PR 時喺 description 補（唔使改 code）
+
+### 🔴 / 🟡
+
+#### W-697 闊橫版 1300×800 暫停揀中行「聽到 33:32 / 44:00」喺 CI 排咗 3 行
+
+- 位置：`EpisodeList.module.css` 闊橫版 media query（`.body { min-width: var(--episode-status-min) }`）+ `.timed` / `.timedLine` 換行；e2e `checkWideRowStatus`（`e2e/dramaPages.mjs`）
+- L1：用戶決定 O3：闊橫版暫停狀態要一行（commit `1daf44c` 寫明目標同 e2e 斷言）
+- L2：CI run 42263345650 log：`FAIL 闊橫版短篇劇集頁清單行（1300×800）：暫停揀中行「聽到 33:32 / 44:00」一行（3 行）`；同一個 run，播緊嗰行 `PASS`（2 行，時間離 ☆ 62px）
+- L3：字同時間啱，係行數唔啱。可能係 CI 字型（CJK / 數字）闊過 sandbox，8.75em 唔夠；亦都可能係 e2e 數行嘅方法（`Range.getClientRects()` 會數埋 `.timeSep` inline-block、`.lead` 嘅 margin）數多咗。兩樣都要喺 CI 嘅 screenshot artifact（`e2e-screenshots`，artifact 13526787044）睇清楚先定得
+- 方案 A（推薦）：下載 CI screenshot 睇實際排版。真係斷行就加大 `--episode-status-min`，或者喺闊橫版畀 `.timed` `white-space: nowrap`，等成句真係唔換行，唔再靠估 em
+- 方案 B：如果畫面其實係一行，就改 e2e 用 `.timed` 嘅高度同 line-height 比較嚟數行，唔用 range rect；同時喺 test 註解講明點解咁做
+- 注意：本 reviewer 冇跑 e2e（Hard Rule #7）。sandbox 字型同 CI 唔同，sandbox 綠都唔算，要 CI 綠先算
+
+### 🟢 / Observation
+
+- S-734 `HomePlayerCard` `--episode-status-min: calc(var(--font-size-xs) * 6.4)`、集名欄 `min-width: calc(var(--font-size-md) * 3.6)` 嘅倍數直接寫喺組件 CSS（8.75 就入咗 token）；有註解講明，日後再用就抽 token
+
+### ✅ 做得好（Re-review 1）
+
+- `splitTime` 由翻譯字串反拆，文案一改對唔上就唔拆，退返原本整句，唔會整爛畫面
+- 分隔符跟時間行，換行時由 `clip-path` 剪走，第一行尾同第二行頭都唔會吊住「·」
+- 闊橫版改動全部限喺 media query 入面，手機打橫同直版有 node test 鎖住唔郁
+
+### Handoff receipt（Re-review 1）
+
+```handoff-receipt
+protocol: 1
+status: fail
+score: 90/100
+stage: T1
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: fail
+  coverage: n/a
+next_action: invoke_developer
+next_agent: frontend-developer
+branch: "fix/ui/home-fill-bottom"
+context: "Re-review 1 @ 1daf44c：S-730 已處理；W-697 新：CI run 42263345650 E2E 紅，1300×800 暫停行「聽到 33:32 / 44:00」3 行（O3 要一行），先睇 CI screenshot 定係排版定係 e2e 數行嘅問題；W-696 仍要開 PR 時補 Design Origin；S-734 只記錄"
+blockers:
+  - "W-697：CI E2E 闊橫版暫停狀態一行斷言失敗（run 42263345650）"
+```
