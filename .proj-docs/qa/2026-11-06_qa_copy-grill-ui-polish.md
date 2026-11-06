@@ -8,27 +8,27 @@
 
 ## Runs
 
-| Command | Result | Time |
-|---------|--------|------|
-| CI [42201282970](https://github.com/dcwhung/903-player/actions/runs/42201282970) @ `c23d30a`（changes / lint + unit + build / e2e Playwright） | success（引用，unit + 全部 e2e section 唔重跑） | — |
-| `npm run build -- --mode e2e` + `npx vite preview --port 4191` | ok | 30s |
-| Playwright Chromium（`/opt/pw-browsers/chromium`，DPR 2）手動抽查：scratchpad `qa/check.mjs`、`qa/pad.mjs` | 全部符合決定 | 3 min |
-| `npx playwright install webkit`（試一次） | ❌ `Failed to download WebKit 26.6`（download code=1）→ 見 Observation | 20s |
+| Command                                                                                                                                        | Result                                                                 | Time  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ----- |
+| CI [42201282970](https://github.com/dcwhung/903-player/actions/runs/42201282970) @ `c23d30a`（changes / lint + unit + build / e2e Playwright） | success（引用，unit + 全部 e2e section 唔重跑）                        | —     |
+| `npm run build -- --mode e2e` + `npx vite preview --port 4191`                                                                                 | ok                                                                     | 30s   |
+| Playwright Chromium（`/opt/pw-browsers/chromium`，DPR 2）手動抽查：scratchpad `qa/check.mjs`、`qa/pad.mjs`                                     | 全部符合決定                                                           | 3 min |
+| `npx playwright install webkit`（試一次）                                                                                                      | ❌ `Failed to download WebKit 26.6`（download code=1）→ 見 Observation | 20s   |
 
 ## 決定抽查
 
-| 決定 | 結果（L2） |
-|------|-----------|
-| B1 | 390×844 收藏 tab：Delete、Backspace、左滑過四成三種移除都出「已移除收藏」，畫面冇復原掣 ✅ |
-| B2 | 6 行（連 2 行已下架）全部 `aria-keyshortcuts="Delete Backspace"`、冇 `title`、`aria-describedby` → 「向左滑動或者撳刪除鍵移除收藏」（1×1 隱藏）✅ |
-| C4 | 今日 ☆：「收藏 在晴朗的一天出發 30/11 星期一」「收藏 Bad Girl大過佬 30/11 星期一」…（390、1300 一樣）✅ |
-| D4 | 劇集格讀屏「E2E 即將劇場，全新短篇 02/12 星期三 上架；部分短篇 19/12 星期六 下架」；畫面「全新短篇 後日上架」「部分短篇 19/12 下架」✅（1600×800 角落由 CI e2e 覆蓋）|
-| S-716 / 717 / 718 | 收藏 / 節目 / 劇集頁 `aria-label` 冇「·」；收藏行讀屏「E2E 即將劇場，我心不死 第 1 集，已下架」✅；字典由 `zhHKCopy.test.ts`（CI）鎖住 |
-| 碟（收藏 / 最近收聽） | 844×390、1300×800、390×844：細碟 `box-shadow 0 0 0 3px`（同清單細碟一樣闊），左邊離剪裁邊 = 3px = 外圈，冇剪走 ✅（`chromium-recent-844x390.png`）|
-| 清單行左 padding | 今日 / 節目 / 劇集頁集數行 = `10px × --ui-scale`（390：10px、1300：15px）一致 ✅ |
-| 今日播放卡 | 未開始（入頁）同播緊其他節目時，大碟都係節目碟面 `<img>`、冇 `blank` ✅（`chromium-today-playing-other-390x844.png`）|
-| Toast 位置 | `Toast/`、`MiniPlayer/` 0 改動；節目頁 / 今日頁同一位置（y=759），主頁有 mini player 時浮喺佢上面（y=695，舊有規則）✅ |
-| 收藏橫版分欄 | Chromium 1000×460、844×390、1180×820、1024×768（5 個 box）：各欄第一個 box 頂 spread = 0 ✅；WebKit 未驗 |
+| 決定                  | 結果（L2）                                                                                                                                                            |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1                    | 390×844 收藏 tab：Delete、Backspace、左滑過四成三種移除都出「已移除收藏」，畫面冇復原掣 ✅                                                                            |
+| B2                    | 6 行（連 2 行已下架）全部 `aria-keyshortcuts="Delete Backspace"`、冇 `title`、`aria-describedby` → 「向左滑動或者撳刪除鍵移除收藏」（1×1 隱藏）✅                     |
+| C4                    | 今日 ☆：「收藏 在晴朗的一天出發 30/11 星期一」「收藏 Bad Girl大過佬 30/11 星期一」…（390、1300 一樣）✅                                                               |
+| D4                    | 劇集格讀屏「E2E 即將劇場，全新短篇 02/12 星期三 上架；部分短篇 19/12 星期六 下架」；畫面「全新短篇 後日上架」「部分短篇 19/12 下架」✅（1600×800 角落由 CI e2e 覆蓋） |
+| S-716 / 717 / 718     | 收藏 / 節目 / 劇集頁 `aria-label` 冇「·」；收藏行讀屏「E2E 即將劇場，我心不死 第 1 集，已下架」✅；字典由 `zhHKCopy.test.ts`（CI）鎖住                                |
+| 碟（收藏 / 最近收聽） | 844×390、1300×800、390×844：細碟 `box-shadow 0 0 0 3px`（同清單細碟一樣闊），左邊離剪裁邊 = 3px = 外圈，冇剪走 ✅（`chromium-recent-844x390.png`）                    |
+| 清單行左 padding      | 今日 / 節目 / 劇集頁集數行 = `10px × --ui-scale`（390：10px、1300：15px）一致 ✅                                                                                      |
+| 今日播放卡            | 未開始（入頁）同播緊其他節目時，大碟都係節目碟面 `<img>`、冇 `blank` ✅（`chromium-today-playing-other-390x844.png`）                                                 |
+| Toast 位置            | `Toast/`、`MiniPlayer/` 0 改動；節目頁 / 今日頁同一位置（y=759），主頁有 mini player 時浮喺佢上面（y=695，舊有規則）✅                                                |
+| 收藏橫版分欄          | Chromium 1000×460、844×390、1180×820、1024×768（5 個 box）：各欄第一個 box 頂 spread = 0 ✅；WebKit 未驗                                                              |
 
 截圖：`/tmp/claude-0/-home-user-903-player/1d18003d-6219-52fc-9f87-d73f739428ec/scratchpad/shots-qa-polish/`（唔 commit）
 
