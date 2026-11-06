@@ -8,6 +8,11 @@ const SHELF_ORDER = ['蘭茜夫人劇場', '少爺占系列', '森美小儀系�
 const tileName = (label) => label.split('，')[0];
 // 短篇劇集（kind: series）：第一次入頁冇進度
 export const SERIES_ROUTE = '#/drama/chisee';
+/**
+ * 芝See 第一個短篇（src/catalog/dramas/library/chisee/drama.json，刻意寫死做獨立對照）：
+ * 未揀短篇時播放掣撳唔郁，要先揀佢（冇嘢播就載入、唔自動播）先撳播放
+ */
+export const SERIES_FIRST_ARC = '三十六計';
 // 星期二：平日有節目，但假錄音最後一日係 30/11，01/12 全部未上架 → 今日節目頁顯示 TodayEmpty
 const E2E_TUESDAY_NOT_UPLOADED = '2026-12-01T22:30:00+08:00';
 const TODAY_EMPTY_TITLE = '今日節目未上架';
@@ -116,8 +121,40 @@ const checkSeriesFirstVisit = async (env) => {
             restart === 0 && play === 1,
             `${label}：冇「${RESTART}」掣，得播放掣（由頭播放 ${restart}，播放 ${play}）`,
         );
+        await checkNothingPicked(p, log, label);
     }
     await ctx.close();
+};
+
+/**
+ * 未揀短篇（用戶截圖，v1.28.2）：播放掣同收藏掣變淡、aria-disabled；撳收藏唔會收藏、唔出「已加入收藏」，
+ * 撳播放唔會播
+ */
+const checkNothingPicked = async (p, log, label) => {
+    const play = p.getByRole('button', { name: '播放', exact: true });
+    const star = p.getByRole('button', { name: '收藏本集', exact: true });
+    const dim = async (b) => ({
+        disabled: await b.getAttribute('aria-disabled'),
+        opacity: Number(await b.evaluate((el) => getComputedStyle(el).opacity)),
+    });
+    const [playLook, starLook] = [await dim(play), await dim(star)];
+    log(
+        playLook.disabled === 'true' &&
+            starLook.disabled === 'true' &&
+            playLook.opacity < 1 &&
+            starLook.opacity < 1,
+        `${label}：未揀短篇，播放 / 收藏掣變淡撳唔郁（aria-disabled ${playLook.disabled} / ${starLook.disabled}，opacity ${playLook.opacity} / ${starLook.opacity}）`,
+    );
+    // aria-disabled：Playwright 當係撳唔到、會一直等，所以 force 直接撳
+    await star.click({ force: true });
+    await play.click({ force: true });
+    const toast = await p.getByText('已加入收藏').count();
+    const saved = await p.evaluate(() => localStorage.getItem('903player:bookmarks:v1'));
+    const playing = await p.evaluate(() => navigator.mediaSession.playbackState);
+    log(
+        toast === 0 && saved === null && playing !== 'playing',
+        `${label}：撳淡咗嘅收藏 / 播放乜都唔做（提示 ${toast}，收藏 ${saved}，播放 ${playing}）`,
+    );
 };
 
 /** 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟 */

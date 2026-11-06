@@ -1,6 +1,7 @@
 import {
     catalogEpisodeOf,
     dramaArtFor,
+    dramaEpisodeTheme,
     dramaEpisodesOf,
     dramaStatus,
     enabledDramas,
@@ -167,6 +168,13 @@ export const boxMeta = (kind: 'show' | 'drama', id: string): { title: string; ba
     const found = kind === 'show' ? findShow(id) : findEnabledDrama(id);
     return { title: found?.name ?? '', banner: found?.tileArt ?? '' };
 };
+
+/**
+ * 嗰集嘅節目 / 劇主題色（播放卡播放掣嗰隻強調色）：收藏 tab 播緊嗰行嘅字色，
+ * 同上面短篇名（cream）分得開（用戶截圖，v1.28.2）
+ */
+export const trackAccent = (track: Track): string =>
+    (isDramaEpisode(track) ? dramaEpisodeTheme(track) : themeFor(track.showId)).accent;
 
 /** 段左邊嘅碟：節目碟；劇集用嗰集嘅碟（短篇有自己碟就用，冇就成套劇嘅碟） */
 export const trackArt = (track: Track): string =>

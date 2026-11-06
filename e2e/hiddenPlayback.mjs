@@ -2,7 +2,7 @@
 // 所以用 init script 改寫 document.visibilityState / hidden 再發 visibilitychange：只瞞到 app 嘅 JS，
 // Chromium 唔會因此節流 timer，iOS 凍結 JS 嘅情況要靠 unit test（AudioController.test.ts）
 import { DRAMA_AUDIO_BASE, newE2EPage, serveWav, succeeds } from './harness.mjs';
-import { SERIES_ROUTE, dismissAutoSheet } from './dramaPages.mjs';
+import { SERIES_FIRST_ARC, SERIES_ROUTE, dismissAutoSheet } from './dramaPages.mjs';
 
 // 以下係手抄 src/config/constants.ts，由 src/e2eSrcConstants.test.ts 鎖住一致
 export const PLAYBACK_LOG_STORAGE_KEY = '903player:playback-log:v1';
@@ -118,7 +118,11 @@ const startSeries = async (env, label, { hangAfterFirst = false } = {}) => {
     });
     await p.goto(`${base}${SERIES_ROUTE}`);
     const ready = await dismissAutoSheet(p, log, label);
-    if (ready) await p.getByRole('button', { name: '播放', exact: true }).click();
+    // 未揀短篇時播放掣撳唔郁（aria-disabled）：先揀第一個短篇（載入、唔自動播），再撳播放
+    if (ready) {
+        await p.getByRole('button', { name: SERIES_FIRST_ARC, exact: true }).click();
+        await p.getByRole('button', { name: '播放', exact: true }).click();
+    }
     const playing = ready && (await waitAudible(p));
     log(playing, `${label}：第一集開播出聲`);
     return { ctx, p, playing };

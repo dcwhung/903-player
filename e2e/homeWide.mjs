@@ -8,7 +8,7 @@ import {
     runSection,
     waitForPlaybackState,
 } from './harness.mjs';
-import { dismissAutoSheet, SERIES_ROUTE } from './dramaPages.mjs';
+import { dismissAutoSheet, SERIES_FIRST_ARC, SERIES_ROUTE } from './dramaPages.mjs';
 
 // iPad 打橫：高 ≥ 562 先係闊橫版（src/config/layout.ts WIDE_BANNER_QUERY）
 const WIDE = { width: 1180, height: 820 };
@@ -314,6 +314,8 @@ const checkHandleLeaves = async (p, log, label) => {
     const shown = await isShown(p.getByRole('button', { name: PAGE_HANDLE_ANY }), {
         timeout: LAYOUT_WAIT_MS,
     });
+    // 未揀短篇時播放掣撳唔郁：先揀第一個短篇（播緊其他嘢，唔會載入），再撳播放
+    await p.getByRole('button', { name: SERIES_FIRST_ARC, exact: true }).click();
     await p.getByRole('button', { name: '播放', exact: true }).click();
     const gone = await isShown(pageHandle(p), { state: 'detached', timeout: HANDLE_GONE_MS });
     const padding = await p

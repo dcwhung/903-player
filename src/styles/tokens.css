@@ -298,9 +298,8 @@
     --saved-recent-star: calc(34px * var(--ui-scale));
     --saved-play-size: calc(40px * var(--ui-scale));
     --saved-progress-height: 2px;
-    /* box 底色（播緊嗰行深少少）、白字、淡字、進度線底、分隔線、左滑移除嘅紅底 */
+    /* box 底色、白字、淡字、進度線底、分隔線、左滑移除嘅紅底 */
     --saved-box-bg: #2d4560;
-    --saved-box-playing-bg: #263b54;
     --saved-text: #ffffff;
     --saved-muted: rgb(255 255 255 / 62%);
     --saved-line: rgb(255 255 255 / 22%);

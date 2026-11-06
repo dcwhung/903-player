@@ -57,6 +57,7 @@ interface SeriesPlayerColumnProps {
         | 'upNext'
         | 'start'
         | 'standbyTime'
+        | 'empty'
         | 'status'
         | 'arcPosition'
         | 'arcTotal'
@@ -85,6 +86,7 @@ const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayer
                     onStart={start}
                     standbyTime={view.standbyTime}
                     bookmark={current}
+                    empty={view.empty}
                 />
             ) : (
                 <StatusMessage message={t('episodes.noneUp')} />

@@ -117,6 +117,12 @@
     color: var(--color-on-accent);
 }
 
+/* 未揀任何一集（PlayerGauge empty）：播放掣變淡、撳唔郁 */
+.toggle[aria-disabled='true'] {
+    cursor: default;
+    opacity: var(--unavailable-opacity);
+}
+
 /* 收藏掣（P7 #7 P2）：播放掣右邊嗰格，同左邊由頭播放對稱 */
 .bookmark {
     grid-column: 3;

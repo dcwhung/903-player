@@ -1,4 +1,4 @@
-import type { PointerEvent } from 'react';
+import type { CSSProperties, PointerEvent } from 'react';
 import { t } from '../../../../i18n/t';
 import { toPercent } from '../../../../utils/ratio';
 import { HourglassIcon, PauseIcon, PlayIcon, TrashIcon } from '../../../shared/common/icons/icons';
@@ -98,6 +98,8 @@ export const SavedRow = ({ row }: { row: SavedRowView }) => {
             data-playing={String(row.playing)}
             data-removed={row.removed ? '' : undefined}
             data-zoom-key={row.zoomKey}
+            // 播緊嗰行嘅字色（CSS .row[data-playing='true'] 讀）：跟節目 / 劇主題色
+            style={row.accent ? ({ '--saved-row-accent': row.accent } as CSSProperties) : undefined}
         >
             <div ref={bindCard} className={styles.card} {...handlers}>
                 <span className={styles.trash} aria-hidden="true">

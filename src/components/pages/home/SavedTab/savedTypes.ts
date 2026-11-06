@@ -13,8 +13,10 @@ export interface SavedRowView {
     status: string;
     /** 進度線 0–1 */
     ratio: number;
-    /** 播緊：行深少少、字變 cream、掣變 ⏸ */
+    /** 播緊：日期 / 狀態字變 accent 色、掣變 ⏸（冇底框，用戶截圖 v1.28.2） */
     playing: boolean;
+    /** 嗰個節目 / 劇嘅主題色（trackAccent）：播緊嗰行嘅字色；冇就用 cream */
+    accent?: string | undefined;
     /** 讀屏：節目 / 劇名（+ 短篇） */
     name: string;
     /** 撳行（掣以外）：入嗰集節目頁 / 劇集頁，唔播（data-zoom-key 由佢 zoom 入頁） */

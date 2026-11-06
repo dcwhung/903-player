@@ -75,4 +75,17 @@ describe('saved / list disc polish', () => {
             'calc(8px * var(--ui-scale))',
         );
     });
+
+    // 用戶截圖（v1.28.2，闊橫版收藏 tab）：播緊嗰行唔再有深色底框；字色用嗰個節目 / 劇嘅主題色
+    // （SavedRow inline --saved-row-accent），同上面短篇名（cream）分得開
+    it('should drop the playing row box and colour its text with the row theme colour', () => {
+        expect(cssDeclarations(css, ".row[data-playing='true'] .card").background).toBeUndefined();
+        expect(tokens).not.toContain('--saved-box-playing-bg');
+        expect(
+            cssDeclarations(
+                css,
+                ".row[data-playing='true'] .label, .row[data-playing='true'] .state",
+            ).color,
+        ).toBe('var(--saved-row-accent, var(--color-gold))');
+    });
 });

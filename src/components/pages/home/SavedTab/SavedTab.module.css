@@ -224,10 +224,6 @@
     -webkit-user-select: none;
 }
 
-.row[data-playing='true'] .card {
-    background: var(--saved-box-playing-bg);
-}
-
 .trash {
     position: absolute;
     top: 0;
@@ -286,10 +282,13 @@
     white-space: nowrap;
 }
 
-/* 播緊嗰行：日期 + 狀態 cream */
+/*
+ * 播緊嗰行（冇底框）：日期 + 狀態用嗰個節目 / 劇嘅主題色（SavedRow inline --saved-row-accent），
+ * 同上面短篇名（cream）分得開（用戶截圖，v1.28.2）；冇就照用 cream
+ */
 .row[data-playing='true'] .label,
 .row[data-playing='true'] .state {
-    color: var(--color-gold);
+    color: var(--saved-row-accent, var(--color-gold));
 }
 
 .bar {
