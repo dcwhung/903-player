@@ -32,6 +32,7 @@ const state = (overrides: Partial<PlayerState> = {}): PlayerState => ({
     currentTime: 0,
     duration: 100,
     watchedRevision: 0,
+    progressRevision: 0,
     ...overrides,
 });
 

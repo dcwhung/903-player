@@ -445,4 +445,39 @@ describe('HomePage on a wide landscape screen', () => {
             ).not.toBeInTheDocument();
         });
     });
+
+    // S-738：卡入面「現正播放」畫面字（17/10（六）、短篇 · 第 N 集）讀屏唔讀，另外讀讀屏版（S-735）
+    describe('現正播放 for screen readers on the card', () => {
+        /** 畫面嗰行收埋（aria-hidden），讀屏版喺 aria-hidden 外面 */
+        const expectSpokenInstead = (card: HTMLElement, shown: string, spoken: string) => {
+            expect(within(card).getByText(shown).closest('[aria-hidden="true"]')).not.toBeNull();
+            expect(within(card).getByText(spoken).closest('[aria-hidden]')).toBeNull();
+        };
+
+        it('should read the show date with the weekday spelt out', async () => {
+            stubWideLandscape();
+            renderWithProviders(<HomePage />, { recordings: RECORDINGS });
+            const card = await screen.findByRole('region', { name: SHOW_CARD });
+
+            expectSpokenInstead(card, '現正播放：19/10（一）', '現正播放：19/10 星期一');
+        });
+
+        it('should read a series drama episode as 短篇，第 N 集，集名', async () => {
+            vi.setSystemTime(new Date(CATALOG_LIVE));
+            stubWideLandscape();
+            const friends = seriesEpisodesOf('chisee').filter((e) => e.arc === '好朋友手牽手');
+            const { audio } = await arriveHomeWith(friends[1]!);
+            const card = await screen.findByRole('region', { name: DRAMA_CARD });
+            act(() => {
+                audio.emitPlaying();
+                audio.emitMetadata(1200);
+            });
+
+            expectSpokenInstead(
+                card,
+                '現正播放：好朋友手牽手 · 第 2 集 · 朋友不同',
+                '現正播放：好朋友手牽手，第 2 集，朋友不同',
+            );
+        });
+    });
 });

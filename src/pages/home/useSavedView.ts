@@ -106,28 +106,33 @@ const boxView = (box: BookmarkBox, ctx: RowContext): SavedBoxView => {
 };
 
 /**
- * 進度記錄：轉集、有集數聽完、播 / 停（暫停時 AudioController 會存低進度，第一次聽嘅集先入到最近收聽）、
- * 收藏有變先重新讀
+ * 進度記錄：轉集、有集數聽完、停低存完進度（progressRevision：controller persist 之後先 +1，
+ * 第一次聽嘅集先入到最近收聽，唔靠 isPlaying 同 persist 嘅先後，S-710）、收藏有變先重新讀
  */
 const useProgressMap = (bookmarks: readonly Bookmark[]) => {
-    const player = usePlayer();
+    const { watchedRevision, progressRevision, recording } = usePlayer();
     return useRefreshedOn(getProgressMap, [
-        player.watchedRevision,
-        player.recording?.url,
-        player.isPlaying,
+        watchedRevision,
+        progressRevision,
+        recording?.url,
         bookmarks,
     ]);
 };
 
-/** 最近收聽：progressStore 最新 10 集（除走已收藏、認唔到嘅） */
+/**
+ * 最近收聽：progressStore 最新 10 集（除走已收藏、認唔到嘅）。
+ * 主頁每個播放 tick 都 render：成個進度 map 排序只跟真正輸入重計（S-709）
+ */
 const useRecentTracks = (
     bookmarks: readonly Bookmark[],
     progressMap: Readonly<Record<string, Progress>>,
 ): Track[] => {
     const { recordings } = useRecordings();
     const index = useMemo(() => playableIndex(recordings), [recordings]);
-    const bookmarked = new Set(bookmarks.map((b) => b.url));
-    return recentListens({ progressMap, bookmarked, resolve: (url) => index.get(url) });
+    return useMemo(() => {
+        const bookmarked = new Set(bookmarks.map((b) => b.url));
+        return recentListens({ progressMap, bookmarked, resolve: (url) => index.get(url) });
+    }, [bookmarks, progressMap, index]);
 };
 
 /**

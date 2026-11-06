@@ -44,15 +44,18 @@
     transform: scaleY(0.75);
 }
 
-/* 行左邊 3px 條（裝飾）：播緊紅（--onair-lamp），揀中但暫停灰（--onair-lamp-idle，靜止冇光暈） */
+/*
+ * 行左邊條（裝飾，幾何見 tokens.css --onair-lamp-*）：播緊紅（--onair-lamp），
+ * 揀中但暫停灰（--onair-lamp-idle，靜止冇光暈）
+ */
 .lamp {
     position: absolute;
-    top: 18%;
-    bottom: 18%;
+    top: var(--onair-lamp-inset);
+    bottom: var(--onair-lamp-inset);
     left: 0;
     z-index: 1;
-    width: 3px;
-    border-radius: 2px;
+    width: var(--onair-lamp-width);
+    border-radius: var(--onair-lamp-radius);
     background: var(--onair-lamp);
     pointer-events: none;
 }

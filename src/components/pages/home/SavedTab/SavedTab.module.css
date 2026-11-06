@@ -284,11 +284,11 @@
 }
 
 /*
- * 播緊 / 暫停緊嗰行（冇底框，字用普通色）：.card 左邊出 3px 條（OnAirLamp，播緊紅、暫停灰），
- * 行字向右移 10px 讓位
+ * 播緊 / 暫停緊嗰行（冇底框，字用普通色）：.card 左邊出條（OnAirLamp，播緊紅、暫停灰），
+ * 行字向右移讓位（--onair-lamp-text-shift）
  */
 .row[data-current='true'] .open {
-    padding-left: calc(10px * var(--ui-scale));
+    padding-left: var(--onair-lamp-text-shift);
 }
 
 .bar {
