@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { hasBookmark } from '../../../../services/bookmarkStore';
 import type { Recording } from '../../../../types/recording';
 import { Toast } from '../../common/Toast/Toast';
+import { showToast } from '../../common/Toast/toastStore';
 import { BookmarkButton } from './BookmarkButton';
 
 const EPISODE: Recording = {
@@ -66,5 +67,22 @@ describe('BookmarkButton', () => {
         await userEvent.click(screen.getByRole('button', { name: '收藏本集' }));
 
         expect(onRow).not.toHaveBeenCalled();
+    });
+
+    it('should do nothing and show no toast while disabled (nothing picked)', async () => {
+        render(
+            <>
+                <BookmarkButton track={EPISODE} label="收藏本集" disabled />
+                <Toast />
+            </>,
+        );
+        // 提示係全 app 共用（之前嘅 test 留低），先出一句別嘅，撳完要仲係佢
+        act(() => showToast('之前嘅提示'));
+        const button = screen.getByRole('button', { name: '收藏本集' });
+        await userEvent.click(button);
+
+        expect(button).toHaveAttribute('aria-disabled', 'true');
+        expect(hasBookmark(EPISODE.url)).toBe(false);
+        expect(screen.getByRole('status')).toHaveTextContent('之前嘅提示');
     });
 });

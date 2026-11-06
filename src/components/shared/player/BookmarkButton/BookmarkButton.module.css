@@ -12,3 +12,9 @@
     background: transparent;
     color: var(--color-accent-text);
 }
+
+/* 未揀任何一集：變淡、撳唔郁（aria-disabled，見 BookmarkButton） */
+.bookmark[aria-disabled='true'] {
+    cursor: default;
+    opacity: var(--unavailable-opacity);
+}

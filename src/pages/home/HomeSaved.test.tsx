@@ -122,7 +122,12 @@ describe('HomeSaved (我的收藏 tab)', () => {
         const { audio } = openSaved();
 
         await userEvent.click(screen.getByRole('button', { name: '播放 公子會 03/10 星期六' }));
+        // 未讀到時長係「連線中…」（S-730），讀到先係播放中
         act(() => audio.emitPlaying());
+        expect(rowOpen(/^開啟 公子會 03\/10/)).toHaveAccessibleName(
+            '開啟 公子會 03/10 星期六，連線中…',
+        );
+        act(() => audio.emitMetadata(600));
 
         expect(audio.src).toBe(GONGZI_OLD.url);
         expect(screen.queryByTestId('page')).not.toBeInTheDocument();
@@ -316,15 +321,16 @@ describe('HomeSaved (我的收藏 tab)', () => {
         it('should list in one column on a phone and two on the landscape layouts', () => {
             listenToThree();
             const phone = openSaved('phone');
-            expect(listOf(recentRegion()).style.columnCount).toBe('1');
+            // db27678：兩欄改用 grid（data-cols），唔再用 CSS columnCount
+            expect(listOf(recentRegion())).toHaveAttribute('data-cols', '1');
             phone.unmount();
 
             const land = openSaved('land');
-            expect(listOf(recentRegion()).style.columnCount).toBe('2');
+            expect(listOf(recentRegion())).toHaveAttribute('data-cols', '2');
             land.unmount();
 
             openSaved('wide');
-            expect(listOf(recentRegion()).style.columnCount).toBe('2');
+            expect(listOf(recentRegion())).toHaveAttribute('data-cols', '2');
         });
 
         it('should open the page without playing when a row is tapped', async () => {

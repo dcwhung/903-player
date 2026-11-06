@@ -46,8 +46,10 @@ describe('toEpisodeItems', () => {
                 status: {
                     kind: 'playing',
                     ratio: 760 / 7110,
-                    text: '播放中 · 12:40 / 1:58:30',
+                    text: '12:40 / 1:58:30',
                     spokenText: '播放中，12:40 / 1:58:30',
+                    onAir: true,
+                    time: '12:40 / 1:58:30',
                 },
                 track: NEWEST,
             },
@@ -75,6 +77,20 @@ describe('toEpisodeItems', () => {
         );
 
         expect(items[0]?.status.text).toBe('聽到 12:40 / 1:58:30');
+    });
+
+    // 主頁播放卡清單冇傳字眼：跟 isPlaying / 時間推返，暫停唔出「播放中」pill
+    it('should derive the playback state when the caller passes none', () => {
+        const items = toEpisodeItems(
+            [NEWEST],
+            NEWEST.url,
+            { currentTime: 760, duration: 7110 },
+            {},
+            false,
+        );
+
+        expect(items[0]?.status).toMatchObject({ text: '聽到 12:40 / 1:58:30' });
+        expect(items[0]?.status.onAir).toBeUndefined();
     });
 
     it('has no current episode when the url matches none', () => {

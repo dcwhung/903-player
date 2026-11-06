@@ -10,6 +10,7 @@ import { todayView } from '../../selectors/recordings';
 import { getWatchedUrls } from '../../services/progressStore';
 import type { Recording } from '../../types/recording';
 import { hkToday } from '../../utils/date';
+import { hasKnownDuration } from '../../utils/time';
 import { toStackCards, toTodayItems } from './todayItems';
 
 /**
@@ -61,7 +62,13 @@ const useTodayItems = (
 ) => {
     const player = usePlayer();
     const watchedUrls = useRefreshedOn(getWatchedUrls, [player.watchedRevision]);
-    return toTodayItems(entries, activeUrl, isPlayingToday && player.isPlaying, watchedUrls);
+    return toTodayItems(
+        entries,
+        activeUrl,
+        isPlayingToday && player.isPlaying,
+        watchedUrls,
+        !hasKnownDuration(player.duration),
+    );
 };
 
 /**

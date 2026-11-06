@@ -3,12 +3,14 @@ import { t, type MessageKey } from '../../../../i18n/t';
 import type { Recording } from '../../../../types/recording';
 import { formatSpokenDate } from '../../../../utils/date';
 import { Disc } from '../../../shared/common/Disc/Disc';
-import { CheckIcon, PauseIcon, PlayIcon } from '../../../shared/common/icons/icons';
+import { PauseIcon, PlayIcon } from '../../../shared/common/icons/icons';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';
 import { BookmarkButton } from '../../../shared/player/BookmarkButton/BookmarkButton';
 import styles from './TodayShowList.module.css';
+import { RowLamp, RowStatus } from './TodayShowRowParts';
 
-export type ShowStatus = 'playing' | 'watched' | 'unwatched' | 'unavailable';
+/** connecting：揀中、播緊但未讀到時長（寫「連線中…」、冇 pill，S-730） */
+export type ShowStatus = 'playing' | 'connecting' | 'watched' | 'unwatched' | 'unavailable';
 
 export interface TodayShowItem {
     key: string;
@@ -29,11 +31,11 @@ interface TodayShowListProps {
 
 const STATUS_MESSAGE: Record<ShowStatus, MessageKey> = {
     playing: 'common.status.playing',
+    connecting: 'episodes.connecting',
     watched: 'common.status.watched',
     unwatched: 'common.status.unwatched',
     unavailable: 'today.statusUnavailable',
 };
-const STATUS_ICON_SIZE = 12;
 const PLAY_ICON_SIZE = 22;
 
 /**
@@ -69,7 +71,7 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
     }
     const statusText = t(STATUS_MESSAGE[item.status]);
     // 播緊（status playing = 揀中 + 播放中）：掣變暫停，撳落去暫停
-    const isPlaying = item.status === 'playing';
+    const isPlaying = item.status === 'playing' || item.status === 'connecting';
     // 收藏掣唔可以放入行掣入面：行入面留位，星疊喺個位上面（同一個 li）
     return (
         <>
@@ -86,13 +88,11 @@ const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: stri
                 )}
                 onClick={() => onSelect(item.key)}
             >
+                <RowLamp item={item} />
                 <Disc size="small" art={item.art} />
                 <span className={styles.text}>
                     <Marquee className={styles.name} text={item.name} />
-                    <span className={`${styles.status} ${styles[item.status] ?? ''}`}>
-                        {item.status === 'watched' && <CheckIcon size={STATUS_ICON_SIZE} />}
-                        {t('today.timeWithStatus', { time: item.time, status: statusText })}
-                    </span>
+                    <RowStatus item={item} statusText={statusText} />
                 </span>
                 {item.track && <span className={styles.bookmarkSpace} aria-hidden="true" />}
                 {isPlaying ? (

@@ -102,6 +102,8 @@ describe('savedRowStatus', () => {
             text: '播放中',
             ratio: 0.1,
             playing: true,
+            current: true,
+            onAir: true,
         });
     });
 
@@ -111,6 +113,9 @@ describe('savedRowStatus', () => {
             text: '聽到 3:10 / 9:30',
             ratio: 190 / 570,
             playing: false,
+            // 暫停緊照係揀中嗰集：行左邊出灰條
+            current: true,
+            onAir: false,
         });
     });
 
@@ -121,8 +126,28 @@ describe('savedRowStatus', () => {
             text: '已收聽',
             ratio: 1,
             playing: false,
+            current: false,
+            onAir: false,
         });
-        expect(savedRowStatus(base)).toEqual({ text: '未收聽', ratio: 0, playing: false });
+        expect(savedRowStatus(base)).toEqual({
+            text: '未收聽',
+            ratio: 0,
+            playing: false,
+            current: false,
+            onAir: false,
+        });
+    });
+
+    // S-730：未知時長（連線中）同集數清單一樣寫「連線中…」、冇 pill（onAir false），掣照係 ⏸
+    it('should say 連線中… without the on-air pill while the length is unknown', () => {
+        const live = { currentTime: 0, duration: 0 };
+        expect(savedRowStatus({ ...base, loaded: true, isPlaying: true, live })).toEqual({
+            text: '連線中…',
+            ratio: 0,
+            playing: true,
+            current: true,
+            onAir: false,
+        });
     });
 
     it('should leave out the total when the length was never known', () => {

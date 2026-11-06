@@ -8,7 +8,7 @@ import type { Progress } from '../../services/progressStore';
 import type { EpisodeEntry, UnavailableEpisode } from '../../types/recording';
 import type { Track } from '../../types/track';
 import { formatDayMonth, formatWeekday } from '../../utils/date';
-import type { PlaybackState } from '../../utils/playbackState';
+import { playbackStateOf, type PlaybackState } from '../../utils/playbackState';
 
 export interface LiveTime {
     currentTime: number;
@@ -36,7 +36,7 @@ export interface RowContext {
     progressMap: Readonly<Record<string, Progress>>;
     /** 揀中嗰集播緊 */
     isPlaying: boolean;
-    /** 揀中集嘅字眼（廣播劇頁先傳；冇就係「播放中」） */
+    /** 揀中集嘅字眼（節目頁 / 廣播劇頁傳；冇就由 isPlaying + 即時時間推，暫停唔會講「播放中」） */
     liveState?: PlaybackState;
 }
 
@@ -57,7 +57,12 @@ export const toPlayableItem = (track: Track, labels: RowLabels, ctx: RowContext)
             isCurrent,
             live: isCurrent ? ctx.live : undefined,
             progress: ctx.progressMap[url],
-            liveState: ctx.liveState,
+            liveState:
+                ctx.liveState ??
+                playbackStateOf({
+                    isPlaying: ctx.isPlaying,
+                    position: ctx.live?.currentTime ?? 0,
+                }),
         }),
     };
 };

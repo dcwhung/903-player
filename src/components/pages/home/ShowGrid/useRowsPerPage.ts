@@ -4,7 +4,7 @@ import { fillRows, GRID_COLUMNS, shrunkGridWidth } from './showGridPages';
 
 /** 指示點嗰行嘅高（PageDots 每粒撳得到範圍），由 CSS token 讀 */
 const DOTS_HEIGHT_VAR = '--touch-target-min';
-/** 節目格最矮嘅比例（ShowTile 嘅 16:9）同一行最多高幾多倍（T8），由 CSS token 讀 */
+/** 節目格最矮嘅比例（ShowTile 嘅 16:9）同一行最多高幾多倍（T8 / B3），由 CSS token 讀 */
 const TILE_ASPECT_W_VAR = '--tile-aspect-w';
 const TILE_ASPECT_H_VAR = '--tile-aspect-h';
 const MAX_GROW_VAR = '--show-tile-max-grow';
@@ -26,6 +26,7 @@ const measureGrid = (viewport: HTMLElement, grid: HTMLElement) => {
     const aspectW = px(tokens.getPropertyValue(TILE_ASPECT_W_VAR));
     return {
         paddingPx: px(style.paddingTop) + px(style.paddingBottom),
+        // gap 屬性本身（CSS token）：填滿時多出嚟嘅行距係 align-content 分出嚟，唔會量到，唔會兜圈
         gapPx: px(style.rowGap),
         columnGapPx: px(style.columnGap),
         gutterPx: px(style.paddingLeft),

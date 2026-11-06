@@ -103,10 +103,10 @@
     background: var(--saved-box-bg);
 }
 
-/* B1：box 頂一條 banner（大類橫圖 cover），名疊左下，左邊暗漸變 */
+/* B1：box 頂一條 banner（大類橫圖 cover，中間裁），名疊左下，左邊暗漸變；高 = 基本高 + 半行（F） */
 .banner {
     position: relative;
-    height: var(--saved-banner-height);
+    height: var(--saved-banner-tall);
 }
 
 .banner::after {
@@ -142,13 +142,13 @@
 
 /*
  * 得一個收藏：banner 最高 = 原圖比例全幅（節目 16:9、劇 2:1），位唔夠就壓矮（cover 裁上下）到
- * 收藏區高減集數高（--saved-solo-room，SavedBox 量），最矮 = 普通 banner 高。位夠唔拉高
+ * 收藏區高減集數高（--saved-solo-room，SavedBox 量），最矮 = 普通 banner 高（連半行，F）。位夠唔拉高
  */
 .saved[data-solo='true'] .banner {
     width: 100%;
     height: auto;
-    min-height: var(--saved-banner-height);
-    max-height: max(var(--saved-banner-height), var(--saved-solo-room, 0px));
+    min-height: var(--saved-banner-tall);
+    max-height: max(var(--saved-banner-tall), var(--saved-solo-room, 0px));
     aspect-ratio: var(--tile-aspect-w) / var(--tile-aspect-h);
 }
 
@@ -217,15 +217,12 @@
     grid-template-columns: minmax(0, 1fr) auto;
     gap: calc(10px * var(--ui-scale));
     align-items: center;
-    padding: var(--space-2) 0 calc(9px * var(--ui-scale));
+    /* 底留白同 --saved-row-height（banner 半行）共用 */
+    padding: var(--space-2) 0 var(--saved-row-pad-bottom);
     background: var(--saved-box-bg);
     touch-action: pan-y;
     user-select: none;
     -webkit-user-select: none;
-}
-
-.row[data-playing='true'] .card {
-    background: var(--saved-box-playing-bg);
 }
 
 .trash {
@@ -286,10 +283,12 @@
     white-space: nowrap;
 }
 
-/* 播緊嗰行：日期 + 狀態 cream */
-.row[data-playing='true'] .label,
-.row[data-playing='true'] .state {
-    color: var(--color-gold);
+/*
+ * 播緊 / 暫停緊嗰行（冇底框，字用普通色）：.card 左邊出 3px 條（OnAirLamp，播緊紅、暫停灰），
+ * 行字向右移 10px 讓位
+ */
+.row[data-current='true'] .open {
+    padding-left: calc(10px * var(--ui-scale));
 }
 
 .bar {
@@ -360,8 +359,7 @@
 }
 
 /*
- * 捲動放喺清單外層（W-535）：ul 有固定高度時 CSS 分欄會將放唔落嘅行開新欄、向右溢出，捲唔到；
- * ul 高度跟內容，分欄自動平衡（直排：左欄由上至下再到右欄），長過 panel 就由呢層直向捲。
+ * 捲動放喺清單外層（W-535）：ul 高度跟內容，長過 panel 就由呢層直向捲。
  * 碟外圈喺行掣入面（.recentOpen 左邊留位），捲動唔會剪走佢。
  * isolation：同 .scroll 一樣，入面有定位元素都唔會蓋過捲動條
  */
@@ -374,27 +372,37 @@
 }
 
 .recentList {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: var(--saved-gap);
     margin: 0;
     padding: 0;
     list-style: none;
-    column-gap: var(--saved-gap);
 }
 
 /*
- * 名（minmax(0, 1fr)：長名用 … 收尾）| 固定闊度 ☆ 欄：每行 ☆ 上下對齊（_mockups_/qr-transfer ②）。
- * 分欄（冇收藏版橫版兩欄）時一行唔會斷開兩欄
+ * 兩欄（冇收藏版橫版，recentColumns → data-cols）：「左右左右」行先排（用戶決定 G）——最新喺左上，
+ * 1、2 同一行，3、4 下一行；單數左欄多一個。DOM / 讀屏 / Tab 次序 = 畫面次序
  */
+.recentList[data-cols='2'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* 名（minmax(0, 1fr)：長名用 … 收尾）| 固定闊度 ☆ 欄：每行 ☆ 上下對齊（_mockups_/qr-transfer ②） */
 .recentRow {
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--saved-recent-star);
     gap: calc(10px * var(--ui-scale));
     align-items: center;
-    break-inside: avoid;
 }
 
-/* 分隔線畫喺行底（最後一行唔畫）：分欄時第二欄頂唔會多一條線 */
-.recentRow:not(:last-child) {
-    border-bottom: 1px solid var(--saved-divider);
+/* 分隔線畫喺行頂、第一行唔畫；兩欄時第二格都係第一行，唔畫（每行左右各一條，唔會疊兩條） */
+.recentRow + .recentRow {
+    border-top: 1px solid var(--saved-divider);
+}
+
+.recentList[data-cols='2'] .recentRow:nth-child(2) {
+    border-top: none;
 }
 
 .recentOpen {

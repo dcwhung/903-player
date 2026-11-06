@@ -2,19 +2,19 @@ import { fillRows } from './showGridPages';
 
 /*
  * 直版填滿（T8）：iPhone 430px 闊，扣走左右留白 16px → 398px，兩欄（格距 12px）一欄 193px，
- * 最矮一行 = 193 × 9 / 16 ≈ 108.6px，最高 × 1.3 ≈ 141.1px。
+ * 最矮一行 = 193 × 9 / 16 ≈ 108.6px，最高 × 1.5（--show-tile-max-grow，B3）≈ 162.8px。
  * H 係一頁可以用嘅高：冇 mini player 約 560px，有 mini player 約 454–494px
  */
-const PHONE = { columnPx: 193, gapPx: 12, dotsPx: 24, tileRatio: 9 / 16, maxGrow: 1.3 };
+const PHONE = { columnPx: 193, gapPx: 12, dotsPx: 24, tileRatio: 9 / 16, maxGrow: 1.5 };
 const MIN_ROW_PX = 193 * (9 / 16);
 const rowsOf = (count: number) => Math.ceil(count / 2);
 
 describe('fillRows', () => {
-    it('should grow 5 tiles (3 rows) by at most 30% and leave the rest at the bottom', () => {
+    it('should grow 5 tiles (3 rows) by at most 50%, leaving the rest for the CSS row gaps', () => {
         const { rows, rowPx } = fillRows({ ...PHONE, totalRows: rowsOf(5), availablePx: 600 });
 
         expect(rows).toBe(3);
-        expect(rowPx).toBeCloseTo(MIN_ROW_PX * 1.3);
+        expect(rowPx).toBeCloseTo(MIN_ROW_PX * 1.5);
     });
 
     it('should put 8 tiles in 4 rows on one page, sharing the height out when it fits', () => {

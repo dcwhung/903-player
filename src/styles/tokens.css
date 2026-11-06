@@ -88,6 +88,14 @@
     --landscape-disc-max: 640px;
     --landscape-disc-fill: 0.88;
     /*
+     * 橫版兩欄嘅左欄清單（Page.module.css .fixed）：佔頁闊 34%，最少 340px × --ui-scale。
+     * 狀態一行（「聽到 33:32 / 44:00」）由清單行自己跟實際字型保證（EpisodeList .body min-content），
+     * 呢度只係令短篇集名欄唔使縮得太細；手機打橫另外用 54%
+     */
+    --landscape-list-share: 34%;
+    --landscape-list-min: calc(340px * var(--ui-scale));
+    --landscape-list-width: max(var(--landscape-list-share), var(--landscape-list-min));
+    /*
      * 播放器唱片格（唱片 + 下面時間 / 播放掣嗰行）嘅比例：闊 300 × 高 332（同 mockup 一致）。
      * 節目頁播放器、今日節目卡、今日全部未上架嘅灰色唱片同下面計唱片大細都用呢對，唔好再寫死
      */
@@ -149,6 +157,12 @@
     --episode-label-date: calc(58px * var(--ui-scale));
     --episode-label-tagged-date: calc(76px * var(--ui-scale));
     --episode-label-title: 40%;
+    /*
+     * 闊橫版集數清單（EpisodeList.module.css）：短篇集名欄最少約 3.6 個字；主頁播放卡有快將下架嘅行
+     * （LE1 container）狀態欄最少放得落時間「33:32 / 44:00」（約 6.3em）一行。其他行唔用估嘅 em，跟實際字型量（min-content）
+     */
+    --episode-label-title-min: calc(var(--font-size-md) * 3.6);
+    --episode-time-min: calc(var(--font-size-xs) * 6.4);
     /* 未上架嘅集數 / 節目（清單照列出但撳唔到）：日子、節目名、唱片變淡；進度條變虛線 */
     --unavailable-opacity: 0.45;
     --unavailable-dash: 6px;
@@ -165,6 +179,16 @@
     /* 「新」統一紅底白字（NewBadge） */
     --new-badge-bg: #c0362c;
     --new-badge-text: #ffffff;
+    /*
+     * 「播放中」紅 pill + 播緊嗰行左邊條（OnAirBadge，ON AIR combo）：白字對 pill 5.88:1（所有主題一樣）；
+     * 左邊條係裝飾（「播放中」已經有字）。慢慢發光 / equaliser 週期由頁面過場時間推出（1560ms）
+     */
+    --color-on-air: #c8102e;
+    --color-on-on-air: #ffffff;
+    --onair-lamp: #ff3b30;
+    --onair-glow-strong: rgb(255 59 48 / 85%);
+    --onair-glow-faint: rgb(255 59 48 / 20%);
+    --onair-pulse: calc(var(--view-transition-move) * 3);
 
     /*
      * 快將下架（P8 #6，_mockups_/coming-soon ⑧）：琥珀色 + ⏳，同即將上架嘅灰 / 虛線 / ⏱ 分開。
@@ -222,8 +246,11 @@
     /* 主頁節目格（ShowTile）16:9；頁頂橫額嘅高度用同一個比例計，兩者一樣高 */
     --tile-aspect-w: 16;
     --tile-aspect-h: 9;
-    /* 直版主頁節目格填滿高度（T8）：16:9 係最矮，每行最多高 30%（useRowsPerPage 讀） */
-    --show-tile-max-grow: 1.3;
+    /*
+     * 直版主頁節目格填滿高度（T8 / _mockups_/home-fill-bottom B3）：16:9 係最矮，每行最多高 50%
+     * （useRowsPerPage 讀）；再有剩由 ShowGrid CSS 平分做行距，最尾一行貼住頁底
+     */
+    --show-tile-max-grow: 1.5;
     /* 主頁「廣播劇」tab 嘅劇集格（一行一套） */
     --drama-tile-aspect-w: 2;
     --drama-tile-aspect-h: 1;
@@ -286,6 +313,13 @@
      */
     --saved-gap: calc(10px * var(--ui-scale));
     --saved-banner-height: calc(80px * var(--ui-scale));
+    /*
+     * 收藏一行（.card）：頂 --space-2 + 底 --saved-row-pad-bottom + ▷ 高。banner 高多半行（用戶決定 F，
+     * saved banner preview + 半行，所有版面）：直版 108.5、窄橫版 92.5、闊橫版 1366×768 133.3
+     */
+    --saved-row-pad-bottom: calc(9px * var(--ui-scale));
+    --saved-row-height: calc(var(--space-2) + var(--saved-row-pad-bottom) + var(--saved-play-size));
+    --saved-banner-tall: calc(var(--saved-banner-height) + var(--saved-row-height) / 2);
     --saved-disc: calc(52px * var(--ui-scale));
     --saved-recent-height: calc(200px * var(--ui-scale));
     --saved-recent-width: calc(250px * var(--ui-scale));
@@ -295,9 +329,8 @@
     --saved-recent-star: calc(34px * var(--ui-scale));
     --saved-play-size: calc(40px * var(--ui-scale));
     --saved-progress-height: 2px;
-    /* box 底色（播緊嗰行深少少）、白字、淡字、進度線底、分隔線、左滑移除嘅紅底 */
+    /* box 底色、白字、淡字、進度線底、分隔線、左滑移除嘅紅底 */
     --saved-box-bg: #2d4560;
-    --saved-box-playing-bg: #263b54;
     --saved-text: #ffffff;
     --saved-muted: rgb(255 255 255 / 62%);
     --saved-line: rgb(255 255 255 / 22%);
@@ -621,6 +654,16 @@
     --shadow-mini-player-lifted: 0 1px 6px rgb(0 0 0 / 60%);
     /* 今日節目卡：細細一圈軌道色描邊 + 浮起陰影，令疊喺後面嘅卡睇得出邊 */
     --shadow-card: 0 0 0 1px var(--theme-track), 0 10px 26px rgb(0 0 0 / 45%);
+    /*
+     * 揀中但暫停 / 未開始嗰行左邊灰條（OnAirLamp idle）：一隻灰喺淺色清單、深色清單同收藏框（#2d4560）
+     * 唔可以全部過 3:1，按 scheme 揀：深色 #9a9a9a（深色清單 ≥ 4.6、收藏框 3.5），淺色見下面
+     */
+    --onair-lamp-idle: #9a9a9a;
+}
+
+/* 淺色主題（廣播劇）嘅灰條：對淺色清單底 / 揀中底框 ≥ 3.66:1 */
+[data-scheme='light'] {
+    --onair-lamp-idle: #6e6e6e;
 }
 
 /*

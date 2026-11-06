@@ -123,7 +123,10 @@ describe('DramaPage', () => {
             expect(screen.getByText('25:00')).toBeVisible();
             // 直版 chips 上面都講埋短篇名；載入咗未開始講「下一集」，清單行講「未開始」
             expect(screen.getByText(`下一集：Season 4 · 第 ${s4?.no} 集`)).toBeInTheDocument();
-            expect(screen.getByText('未開始 · 0:00 / 25:00')).toBeInTheDocument();
+            // 清單行字眼同時間分開兩粒（時間成段換行）：睇成行文字
+            expect(screen.getByRole('button', { current: true })).toHaveTextContent(
+                '未開始 · 0:00 / 25:00',
+            );
             expect(audio.play).toHaveBeenCalledTimes(plays);
             expect(screen.getByRole('button', { name: '播放' })).toBeVisible();
         });
@@ -230,6 +233,36 @@ describe('DramaPage', () => {
             expect(screen.getByRole('button', { name: '播放', hidden: true })).toBeInTheDocument();
         });
 
+        // 用戶截圖（v1.28.2）：未揀短篇 = 冇嘢揀中，播放掣同收藏掣變淡、撳唔郁（唔會收藏到第一集、唔出「已加入收藏」）
+        it('dims play and the star until a 短篇 is picked, and pressing them does nothing', async () => {
+            const { audio } = openDrama('chisee');
+            await closeSheet();
+            const play = screen.getByRole('button', { name: '播放' });
+            const star = screen.getByRole('button', { name: '收藏本集' });
+
+            expect(play).toHaveAttribute('aria-disabled', 'true');
+            expect(star).toHaveAttribute('aria-disabled', 'true');
+            await userEvent.click(play);
+            await userEvent.click(star);
+            expect(audio.src).toBe('');
+            expect(audio.play).not.toHaveBeenCalled();
+            expect(star).toHaveAttribute('aria-pressed', 'false');
+        });
+
+        it('enables play once the first 短篇 chip is picked, starting its first episode', async () => {
+            const { audio } = openDrama('chisee');
+            await closeSheet();
+
+            await userEvent.click(screen.getByRole('button', { name: CHISEE[0]?.arc ?? '' }));
+            expect(screen.getByRole('button', { name: '播放' })).not.toHaveAttribute(
+                'aria-disabled',
+            );
+            await pressPlay();
+
+            await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
+            expect(audio.play).toHaveBeenCalled();
+        });
+
         it('loads the picked 短篇 paused after a row is picked', async () => {
             const { audio } = openDrama('chisee');
             const dialog = await screen.findByRole('dialog', { name: '全集' });
@@ -276,21 +309,12 @@ describe('DramaPage', () => {
             expect(rows[0]).toHaveAccessibleName(`播放 ${CHISEE[0]?.title ?? ''} 第 1 集，未收聽`);
         });
 
-        it('starts the first episode when play is pressed with nothing loaded', async () => {
-            const { audio } = openDrama('chisee');
-            await closeSheet();
-
-            await userEvent.click(screen.getByRole('button', { name: '播放' }));
-
-            await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
-            expect(audio.play).toHaveBeenCalled();
-        });
-
         it('still says 連線中… while its own episode is loading', async () => {
             openDrama('chisee');
             await closeSheet();
 
-            await userEvent.click(screen.getByRole('button', { name: '播放' }));
+            const list = screen.getByRole('region', { name: '集數' });
+            await userEvent.click(within(list).getByRole('button', { name: /^播放 .*第 1 集/ }));
 
             expect(arcLine()).toContain('連線中…');
         });
@@ -374,6 +398,8 @@ describe('DramaPage', () => {
             const { audio } = await openDramaWhileOtherPlays('chisee');
             await closeSheet();
 
+            await userEvent.click(screen.getByRole('button', { name: CHISEE[0]?.arc ?? '' }));
+            expect(audio.src).toBe(OTHER_REC.url);
             await userEvent.click(screen.getByRole('button', { name: '播放' }));
 
             await waitFor(() => expect(audio.src).toBe(CHISEE[0]?.url));
@@ -411,13 +437,14 @@ describe('DramaPage', () => {
             expect(gaugeArt()?.getAttribute('src')).toBe(dramaArtFor(season3!));
         });
 
-        it('starts the drama’s first episode when no 短篇 was picked', async () => {
+        it('leaves the other playback alone when play is pressed before any 短篇 is picked', async () => {
             const { audio } = await openDramaWhileOtherPlays('golden');
             await closeSheet();
+            const play = screen.getByRole('button', { name: '播放' });
 
-            await userEvent.click(screen.getByRole('button', { name: '播放' }));
-
-            await waitFor(() => expect(audio.src).toBe(seriesEpisodesOf('golden')[0]?.url));
+            expect(play).toHaveAttribute('aria-disabled', 'true');
+            await userEvent.click(play);
+            expect(audio.src).toBe(OTHER_REC.url);
         });
 
         it('prompts under the disc in landscape too', async () => {
@@ -507,7 +534,9 @@ describe('DramaPage', () => {
             await userEvent.click(screen.getByRole('button', { name: '暫停' }));
             expect(screen.getByText('已暫停：Ｘ時mas時小提議 · 第 2 / 4 集')).toBeInTheDocument();
             // A2：清單行唔寫「已暫停」，寫聽到邊
-            expect(screen.getByText('聽到 2:00 / 20:00')).toBeInTheDocument();
+            expect(screen.getByRole('button', { current: true })).toHaveTextContent(
+                '聽到 2:00 / 20:00',
+            );
         });
 
         it('shows the 短篇, position and episode title under the disc, header above the list', async () => {

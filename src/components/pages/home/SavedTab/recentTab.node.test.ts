@@ -37,7 +37,7 @@ describe('recent row columns', () => {
     });
 });
 
-/** B：成個 tab 區係最近收聽（佔滿、自己捲；分欄由 recentColumns，inline style） */
+/** B：成個 tab 區係最近收聽（佔滿、自己捲；欄數由 recentColumns，RecentPanel data-cols） */
 describe('recent-only tab', () => {
     it('should fill the tab area instead of the fixed panel height', () => {
         expect(cssDeclarations(css, ".recent[data-fill='true']")).toEqual({
@@ -45,12 +45,10 @@ describe('recent-only tab', () => {
             height: 'auto',
             'min-height': '0',
         });
-        expect(cssDeclarations(css, '.recentList')['column-gap']).toBe('var(--saved-gap)');
-        expect(cssDeclarations(css, '.recentRow')['break-inside']).toBe('avoid');
     });
 
-    // W-535：分欄喺固定高度入面，放唔落嘅行會開新欄向右溢出、捲唔到；捲動要喺外層，ul 高度跟內容
-    it('should scroll an outer wrapper and let the columned list grow to its content', () => {
+    // W-535：捲動要喺外層，ul 高度跟內容
+    it('should scroll an outer wrapper and let the list grow to its content', () => {
         expect(cssDeclarations(css, '.recentScroll')).toMatchObject({
             flex: '1 1 0',
             'min-height': '0',
@@ -61,13 +59,35 @@ describe('recent-only tab', () => {
         expect(list['overflow-y']).toBeUndefined();
         expect(list.flex).toBeUndefined();
         expect(list.height).toBeUndefined();
-        expect(cssDeclarations(css, '.recentRow')['break-inside']).toBe('avoid');
+    });
+});
+
+/**
+ * G（用戶決定）：兩欄時「左右左右」：最新喺左上，1、2 同一行，3、4 下一行…；單數左欄多一個。
+ * CSS grid 行先排（唔再用 CSS 分欄直排），DOM / 讀屏 / Tab 次序 = 畫面次序
+ */
+describe('recent list row-major columns', () => {
+    it('should lay rows out in a grid row by row instead of CSS columns', () => {
+        const list = cssDeclarations(css, '.recentList');
+        expect(list.display).toBe('grid');
+        expect(list['grid-template-columns']).toBe('minmax(0, 1fr)');
+        expect(list['column-gap']).toBe('var(--saved-gap)');
+        expect(list['column-count']).toBeUndefined();
+        expect(list['grid-auto-flow']).toBeUndefined();
+        expect(cssDeclarations(css, ".recentList[data-cols='2']")['grid-template-columns']).toBe(
+            'repeat(2, minmax(0, 1fr))',
+        );
+        expect(cssDeclarations(css, '.recentRow')['break-inside']).toBeUndefined();
     });
 
-    it('should draw dividers under rows, so a new column does not start with a line', () => {
-        expect(cssDeclarations(css, '.recentRow + .recentRow')).toEqual({});
-        expect(cssDeclarations(css, '.recentRow:not(:last-child)')).toEqual({
-            'border-bottom': '1px solid var(--saved-divider)',
+    // 分隔線畫喺每行頂（第一行唔畫）：兩欄時第一行兩格都冇線，下面每行左右各一條，唔會疊兩條
+    it('should draw one divider above every grid row except the first', () => {
+        expect(cssDeclarations(css, '.recentRow:not(:last-child)')).toEqual({});
+        expect(cssDeclarations(css, '.recentRow + .recentRow')).toEqual({
+            'border-top': '1px solid var(--saved-divider)',
+        });
+        expect(cssDeclarations(css, ".recentList[data-cols='2'] .recentRow:nth-child(2)")).toEqual({
+            'border-top': 'none',
         });
     });
 });

@@ -8,9 +8,15 @@ import { entryKey, isAvailable } from '../../selectors/recordings';
 import type { EpisodeEntry, Recording } from '../../types/recording';
 import { formatBroadcastTime } from '../../utils/time';
 
-const statusOf = (isActive: boolean, isPlaying: boolean, isWatched: boolean): ShowStatus => {
+const statusOf = (
+    isActive: boolean,
+    isPlaying: boolean,
+    isWatched: boolean,
+    connecting: boolean,
+): ShowStatus => {
     if (isActive && isPlaying) {
-        return 'playing';
+        // S-730：未知時長（連線中）同集數清單一樣唔出「播放中」pill
+        return connecting ? 'connecting' : 'playing';
     }
     return isWatched ? 'watched' : 'unwatched';
 };
@@ -29,13 +35,15 @@ export const toTodayItems = (
     activeUrl: string | undefined,
     isPlaying: boolean,
     watchedUrls: ReadonlySet<string>,
+    /** 播緊但未讀到時長（連線中） */
+    connecting = false,
 ): TodayShowItem[] =>
     list.map((r) => {
         if (!isAvailable(r)) {
             return { ...rowBase(r), active: false, status: 'unavailable' };
         }
         const isActive = r.url === activeUrl;
-        const status = statusOf(isActive, isPlaying, watchedUrls.has(r.url));
+        const status = statusOf(isActive, isPlaying, watchedUrls.has(r.url), connecting);
         return { ...rowBase(r), active: isActive, status, track: r };
     });
 
