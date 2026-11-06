@@ -18,6 +18,12 @@
 | S3 可引用嘅 CI        | `.github/workflows/ci.yml`（非 main push：lint、unit、build、e2e；淨係改 docs 嘅 push 由 `changes` job 跳過，跳過當 Success）；同一個 SHA 綠咗就引用個 run，唔重跑                          |
 | Cloud sandbox         | `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run e2e`（預裝 Chromium 同鎖住嘅 Playwright 唔夾時用）                                                                                      |
 
+## 淨改文件嘅 push（用戶 2026-11-06 決定）
+
+- 淨改 docs 嘅 push CI 會跳過，但 main 嘅 Deploy 會跑全 repo `npm run lint`（包括 `prettier --check .`）：2026-11-06 v1.28.1 因為 QA 報告冇 format，Deploy #145 失敗
+- Code Reviewer / QA（同任何 agent）push 報告或者其他 `.md` 之前，一定要對改咗嘅檔跑 `npx prettier --check <檔>`（唔過就 `--write`）
+- Main agent merge PR 之前，喺 branch head 跑一次 `npm run lint`
+
 ## Motion / 減少動態（用戶 2026-11-04 決定：以後同類情況唔使再問）
 
 - 新動畫一律跟 app 現有統一做法：CSS 動畫放喺 `@media (prefers-reduced-motion: no-preference)`（或者用 `reduce` 關掉），設定一改即刻生效；JS 喺動畫開始嗰刻先叫 `prefersReducedMotion()`（`src/utils/motion.ts`），唔 cache 之前 render 嘅值
