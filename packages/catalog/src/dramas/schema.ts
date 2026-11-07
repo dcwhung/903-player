@@ -19,9 +19,9 @@ import {
     readString,
     type ParseContext,
     type Raw,
-} from '../../core/reader';
-import { readTheme, type ThemeDefinition } from '../../core/themeSchema';
-import type { DramaKind } from '../../../types/drama';
+} from '../core/reader';
+import { readTheme, type ThemeDefinition } from '../core/themeSchema';
+import type { DramaKind } from '../types/drama';
 import {
     checkNotAfter,
     readEpisodeDates,
@@ -33,8 +33,8 @@ import {
 
 export type { EpisodeRange } from './availabilitySchema';
 
-export { SchemaError as DramaSchemaError } from '../../core/reader';
-export type { ParseContext } from '../../core/reader';
+export { SchemaError as DramaSchemaError } from '../core/reader';
+export type { ParseContext } from '../core/reader';
 
 /** 劇集色調：ShowTheme 減碟面圖（圖由 folder 入面嘅 webp 補上） */
 export type DramaThemeDefinition = ThemeDefinition;

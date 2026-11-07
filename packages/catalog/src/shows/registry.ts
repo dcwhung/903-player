@@ -2,11 +2,11 @@
  * 節目 registry：由 FolderSource 讀每個 folder → 驗 schema → 砌 ShowConfig（連色調同圖）。
  * 所有 lookup 都有明確 fallback（唔靠 closed union），加節目唔使改呢度。
  */
-import type { Folder, FolderSource } from '../../core/folderSource';
-import { compareOrderThenId } from '../../core/ordering';
-import { SchemaError } from '../../core/reader';
-import { NEUTRAL_THEME, type ShowTheme } from '../../../config/showThemes';
-import type { Weekday } from '../../../types/weekday';
+import type { Folder, FolderSource } from '../core/folderSource';
+import { compareOrderThenId } from '../core/ordering';
+import { SchemaError } from '../core/reader';
+import { NEUTRAL_THEME, type ShowTheme } from '../showTheme';
+import type { Weekday } from '../types/weekday';
 import { parseShowDefinition } from './schema';
 
 export interface ShowConfig {

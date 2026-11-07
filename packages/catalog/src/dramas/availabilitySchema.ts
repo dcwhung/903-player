@@ -3,12 +3,12 @@
  * episodeDates（逐集上架，「呢集起」日子）、episodeRemovedAt（集數下架，單集 "3" 或範圍 "1-5"），
  * 同三層 addedAt / removedAt 嘅先後驗證。日子係 YYYY-MM-DD，字串比較就係日子先後
  */
-import { fail, readOptionalDate, readRecord, type ParseContext, type Raw } from '../../core/reader';
-import { isCalendarDate } from '../../../utils/date';
+import { fail, readOptionalDate, readRecord, type ParseContext, type Raw } from '../core/reader';
+import { isCalendarDate } from '../date';
 
-import type { EpisodeRange } from '../../../types/drama';
+import type { EpisodeRange } from '../types/drama';
 
-export type { EpisodeRange } from '../../../types/drama';
+export type { EpisodeRange } from '../types/drama';
 
 export interface EpisodeSpan {
     first: number;

@@ -3,9 +3,9 @@
  * 上架 = addedAt 當日 HK 00:00 起；下架 = removedAt 當日 HK 00:00 起唔再提供。
  * YYYY-MM-DD 字串比較就係日子先後
  */
-import { LEAVING_SOON_DAYS } from '../config/constants';
+import { LEAVING_SOON_DAYS } from '../constants';
 import type { ArcAvailability, DramaEpisode, EpisodeRange, SeriesEpisode } from '../types/drama';
-import { daysBetween } from '../utils/date';
+import { daysBetween } from '../date';
 
 type MaybeDate = string | undefined;
 

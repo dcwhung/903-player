@@ -1,6 +1,6 @@
-import type { Folder, FolderSource } from '../../core/folderSource';
-import { SchemaError } from '../../core/reader';
-import { NEUTRAL_THEME } from '../../../config/showThemes';
+import type { Folder, FolderSource } from '../core/folderSource';
+import { SchemaError } from '../core/reader';
+import { NEUTRAL_THEME } from '../showTheme';
 import { airsWeekly, buildShowRegistry, type ShowConfig } from './registry';
 
 const THEME = {

@@ -1,5 +1,5 @@
-import { NEUTRAL_THEME } from '../../../config/showThemes';
-import type { SeriesEpisode } from '../../../types/drama';
+import { NEUTRAL_THEME } from '../showTheme';
+import type { SeriesEpisode } from '../types/drama';
 import { buildRegistry } from './registry';
 import { DramaSchemaError } from './schema';
 import type { DramaFolder, DramaSource } from './source';

@@ -2,16 +2,16 @@
  * 劇集 registry：由 DramaSource 讀每個 folder → 驗 schema → 展開集數 → 砌 theme。
  * 所有 lookup 都有明確 fallback（唔靠 closed union），加劇唔使改呢度。
  */
-import { NEUTRAL_THEME, type ShowTheme } from '../../../config/showThemes';
+import { NEUTRAL_THEME, type ShowTheme } from '../showTheme';
 import type {
     ArcAvailability,
     DramaEpisode,
     DramaKind,
     DailyEpisode,
     SeriesEpisode,
-} from '../../../types/drama';
-import { hkToday } from '../../../utils/date';
-import { compareOrderThenId } from '../../core/ordering';
+} from '../types/drama';
+import { hkToday } from '../date';
+import { compareOrderThenId } from '../core/ordering';
 import { arcAvailabilityOf, isLiveEpisode, windowStatus, type DramaStatus } from './availability';
 import { buildEpisodes } from './episodes';
 import { DramaSchemaError, parseDramaDefinition, type DramaDefinition } from './schema';

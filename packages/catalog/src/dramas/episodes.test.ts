@@ -1,4 +1,4 @@
-import { DRAMA_AUDIO_BASE } from '../../../config/constants';
+import { DRAMA_AUDIO_BASE } from '../constants';
 import { buildEpisodes } from './episodes';
 import type { DailyDefinition, DramaThemeDefinition, SeriesDefinition } from './schema';
 
