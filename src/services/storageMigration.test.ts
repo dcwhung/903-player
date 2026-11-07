@@ -226,6 +226,27 @@ describe('migrateStorage — bookmarks v1 → v2', () => {
         expect(listBookmarks().map((b) => b.id)).toEqual(['drama:lancy:half:1']);
     });
 
+    it('should retry on the next launch when the v2 write fails (W-698)', () => {
+        setV1Bookmarks([showV1]);
+        const original = Storage.prototype.setItem;
+        const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
+            this: Storage,
+            key: string,
+            value: string,
+        ) {
+            if (key === BOOKMARK_STORAGE_KEY) throw new DOMException('full', 'QuotaExceededError');
+            original.call(this, key, value);
+        });
+
+        migrateStorage();
+        spy.mockRestore();
+        expect(listBookmarks()).toEqual([]);
+        expect(localStorage.getItem(BOOKMARK_MIGRATED_STORAGE_KEY)).toBeNull();
+
+        migrateStorage();
+        expect(listBookmarks().map((b) => b.id)).toEqual(['show:badgirl:2026-10-19']);
+    });
+
     it('should migrate bookmarks added to v1 later (e.g. after a rollback)', () => {
         setV1Bookmarks([showV1]);
         migrateStorage();

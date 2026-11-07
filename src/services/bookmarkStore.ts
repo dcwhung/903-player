@@ -196,7 +196,12 @@ export const readLegacyBookmarks = (): readonly LegacyBookmark[] =>
  */
 export const mergeBookmarks = (items: readonly Bookmark[]): number => {
     const seen = new Set(listBookmarks().map((b) => b.id));
-    const added = items.filter((b) => !seen.has(b.id) && Boolean(seen.add(b.id)));
+    const added: Bookmark[] = [];
+    for (const b of items) {
+        if (seen.has(b.id)) continue;
+        seen.add(b.id);
+        added.push(b);
+    }
     if (added.length > 0) writeAll([...listBookmarks(), ...added]);
     return added.length;
 };

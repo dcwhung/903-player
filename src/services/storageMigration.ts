@@ -14,6 +14,7 @@ import type { DramaEpisode } from '../types/drama';
 import type { Recording } from '../types/recording';
 import { showEpisodeOfUrl } from './audioProbe';
 import {
+    hasBookmark,
     mergeBookmarks,
     readLegacyBookmarks,
     type Bookmark,
@@ -78,7 +79,10 @@ const migrateBookmarks = (index: () => UrlIndex): void => {
     });
     if (moved.length === 0) return;
     mergeBookmarks(moved);
-    moved.forEach((b) => done.add(b.url));
+    // v2 寫唔到（例如空間不足，writeAll 食咗錯誤）就唔記，下次開 app 再搬（W-698）
+    const saved = moved.filter((b) => hasBookmark(b.id));
+    if (saved.length === 0) return;
+    saved.forEach((b) => done.add(b.url));
     localStorage.setItem(BOOKMARK_MIGRATED_STORAGE_KEY, JSON.stringify([...done]));
 };
 
