@@ -87,6 +87,17 @@ audio ─────────────► R2（URL 只用嚟播放；進�
 - E2E：加一條「舊 v1 進度 → 升級後進度仍在」嘅 test
 - Version：MINOR（v1.29.0）；task type `/feature`，喺現有 repo 結構做，唔使等 monorepo
 
+### 實作決定（v1.29.0，2026-11-07）
+
+- **Arc slug**：有圖嘅沿用圖片 folder 名（golden `season-1`…`season-4`；jim `hachioji` `zhongxiao`；lancy `half` `first-love` `heart`；sammy-kitty `too-late` `forest` `summer` `love-1` `love-2` `xmas-2010` `fantasy`）
+- **chisee slug（用戶確認）**：三十六計 `36-stratagems`、你生日所以我生日 `shared-birthday`、初戀嗱喳麵 `first-love-noodles`、大妒忌 `jealousy`、好朋友手牽手 `hand-in-hand`、小苦妹撲水 `little-sister`、我們都在會考中成長 `hkcee`、游亁水 `dry-swim`、苦榮去做GYM `gym`、青春期 `puberty`、青春期眞神奇 `puberty-wonder`、Ｘ時mas時小提議 `xmas-proposal`
+- Slug 規則 `^[a-z0-9]+(?:-[a-z0-9]+)*$`（可以數字開頭，例如 `36-stratagems`）；`dramaFromFolder.mjs` 新短篇出 placeholder `arc-01`…（避開已用嘅）兼 TODO warning，`--existing` 保留舊 `id`
+- **v1 處理：原封不動**（唔刪、唔改）。理由：rollback 返 v1.28 時佢讀返 v1 就有晒舊資料；idempotent 靠「v2 已有嗰個 ID 唔覆蓋」
+- **收藏額外記錄** `903player:bookmarks-migrated:v1`（已搬過嘅 v1 URL list）：v1 唔刪，冇呢個記錄嘅話用戶喺新版移除咗嘅收藏下次開 app 會由 v1 復活。對唔到 ID 嘅收藏唔記，下次再試
+- **對照次序**：URL → catalog 全部集數（停用劇、已下架、未上架都計）+ probe store → 節目錄音 URL 反推（`showEpisodeOfUrl`，唔理 `fileTime`）；收藏對唔到 URL 再用收藏自己記低嘅欄位計（show / daily 直接計；series 用劇 + 短篇名 + 集數喺 catalog 搵）
+- Probe store（`probed:v1`）唔改 key：讀嗰陣由 `showId` + 日子補 `id`，舊 cache 照用
+- 任何 localStorage / JSON 錯誤都食咗，唔阻 render；進度同收藏分開 try
+
 ### 對後面 phase 嘅影響
 
 - Phase 2 migration 驗收由「URL 一定要同而家一樣」改為「**ID** 一定要同而家一樣」；URL 之後可以自由改
