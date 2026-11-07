@@ -8,7 +8,7 @@
  * - 任何 localStorage / JSON 錯誤都食咗，唔阻 app render
  */
 import { dailyEpisodeId, type DramaEpisode, showEpisodeId } from '@903-player/catalog';
-import { catalogEpisodesOf, DRAMAS } from '../catalog/dramas';
+import { allDramas, catalogEpisodesOf } from '../catalog/dramas';
 import { BOOKMARK_MIGRATED_STORAGE_KEY } from '../config/constants';
 import type { Recording } from '../types/recording';
 import { showEpisodeOfUrl } from './audioProbe';
@@ -27,7 +27,7 @@ type Episode = Pick<DramaEpisode | Recording, 'url' | 'id'>;
 
 /** 全部劇集嘅全部集數：包括停用劇、已下架、未上架（registry 嘅 catalogEpisodesOf 唔按日子篩） */
 const allCatalogEpisodes = (): readonly DramaEpisode[] =>
-    DRAMAS.flatMap((drama) => catalogEpisodesOf(drama.id));
+    allDramas().flatMap((drama) => catalogEpisodesOf(drama.id));
 
 /** URL → episode ID 對照表：catalog 集數 + probe store 搵到嘅節目錄音 */
 export const catalogUrlIndex = (

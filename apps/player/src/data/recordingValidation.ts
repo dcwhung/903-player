@@ -1,10 +1,16 @@
 import { isCalendarDate } from '@903-player/catalog';
 import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
-import { SHOWS } from '../catalog/shows';
+import { findShow } from '../catalog/shows';
 import type { Recording } from '../types/recording';
 
 const TIME_PATTERN = /^([01]\d|2[0-3])[0-5]\d$/;
-const SHOW_IDS = new Set<string>(SHOWS.map((show) => show.id));
+
+/**
+ * 節目 id 要喺 catalog 入面：每次問 registry（唔好喺 module 載入時計 Set，registry 要等 initCatalog 揀定 source）。
+ * 非字串（例如舊 storage 壞資料）一律唔收
+ */
+const isKnownShowId = (id: unknown): boolean =>
+    typeof id === 'string' && findShow(id) !== undefined;
 
 /** 只接受原站 audio host，防止 storage 被注入其他網址 */
 export const hasAllowedAudioOrigin = (url: string): boolean => {
@@ -24,7 +30,7 @@ export const isRecording = (value: unknown): value is StoredRecording => {
     return (
         typeof r === 'object' &&
         r !== null &&
-        SHOW_IDS.has(r.showId) &&
+        isKnownShowId(r.showId) &&
         typeof r.date === 'string' &&
         isCalendarDate(r.date) &&
         typeof r.time === 'string' &&

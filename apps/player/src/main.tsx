@@ -2,12 +2,19 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
+import { initCatalog } from './catalog/runtime';
+import { CATALOG_URL } from './config/catalogUrl';
 import { AudioController, createAudioElement } from './player/AudioController';
 import { attachPlaybackLog } from './player/playbackLog';
 import { UpdateManager, isHardReload, startUpdateChecks } from './pwa/updateManager';
 import { migrateStorage } from './services/storageMigration';
 import './styles/tokens.css';
 import './styles/global.css';
+
+// 今次開 app 用邊份 catalog：要喺任何嘢讀 registry 之前（migrateStorage、player、render）揀定，之後唔再換。
+// 只係 VITE_CATALOG_URL 有設定先 await（splash 期間，最多 CATALOG_FETCH_TIMEOUT_MS，失敗用內建資料）；
+// 冇設定（production 預設）呢個 if 喺 build 時已經係 false，成段剷走：冇 await、冇 fetch，啟動同 v1.29 一樣
+if (CATALOG_URL) await initCatalog({ url: CATALOG_URL });
 
 // 舊版進度 / 收藏（URL key）搬去 episode ID key：要喺任何嘢讀進度之前（player、render）做；唔會 throw
 migrateStorage();

@@ -1,5 +1,5 @@
 import { FakeAudio } from '../../tests/fakeAudio';
-import { findShow, SHOWS } from '../catalog/shows';
+import { allShows, findShow } from '../catalog/shows';
 import type { Recording } from '../types/recording';
 import {
     PROBE_KEEP_PER_SHOW,
@@ -104,7 +104,7 @@ describe('probe constants', () => {
         // 播得最密嘅節目喺回看期內最多有幾多集；保留少過呢個數，仲喺期內嘅錄音會先被清走、
         // 再被當成未搵過重新 probe，白白多咗請求，列表亦會忽然少咗嗰幾集
         const weeks = Math.ceil(PROBE_LOOKBACK_DAYS / DAYS_PER_WEEK);
-        const busiest = Math.max(...SHOWS.map((show) => show.airDays.length * weeks));
+        const busiest = Math.max(...allShows().map((show) => show.airDays.length * weeks));
 
         expect(PROBE_KEEP_PER_SHOW).toBeGreaterThanOrEqual(busiest);
     });
