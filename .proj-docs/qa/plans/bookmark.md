@@ -1,5 +1,6 @@
 # Test Plan — bookmark
 
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（`npm test -- <path>` 轉發去 `apps/player`）
 - Chain: P7 #7 成集收藏：集數清單 / 播放器 ☆★（URL key）+ 短提示 → 主頁 ★「我的收藏」tab（box / 段 / 行、▷ 原地播、撳行入頁唔播、左滑移除）+ 最近收聽 panel + 分欄
 - AC（用戶確認，Design Origin `_mockups_/bookmark/index.html`；AC-9 = `_mockups_/qr-transfer/index.html` ① ②，branch `feature/transfer/qr-sync`）:
     - AC-1 ☆/★ 喺節目 / 今日 / 劇集頁每行 ▶ 左邊，同播放器播放掣右邊（內頁、闊橫版卡）；撳完出「已加入收藏 / 已移除收藏」
@@ -19,7 +20,7 @@
     - UI: `src/components/pages/home/SavedTab/`（RecentPanel / SavedBox / SavedRow / SavedRowText / SavedPlayButton / SavedOpenButton / savedRowState + test / SavedTab / savedTypes / useRowSwipe / SavedTab.module.css / discColumn.node.test.ts / useModeSwap / recentTab.node.test.ts / removeHint.tsx / savedPolish.node.test.ts）`src/components/shared/player/BookmarkButton/`（tsx / test / css）`src/components/shared/common/Toast/`（Toast / toastStore / test / css / toastOffset.node.test.ts）`src/components/shared/player/EpisodeList/useFocusRow.ts`
     - 1-hop importers（亦屬其他鏈，照各自 plan freeze）: `src/hooks/useHomeTab.ts` `src/components/pages/home/HomeTabs/HomeTabs.tsx` `src/components/shared/player/EpisodeList/EpisodeRow.tsx` `src/components/shared/player/EpisodeList/EpisodeList.tsx` `src/components/shared/player/PlayerPanel/GaugeActions.tsx` `src/components/pages/today/TodayShowList/TodayShowList.tsx` `src/pages/home/HomePage.tsx` `src/pages/home/HomeStack.tsx` `src/pages/show/ShowPage.tsx` `src/pages/drama/useDramaPage.ts` `src/pages/home/HomeWide.tsx` `src/components/shared/player/PlayerHandle/useLeaveFallback.ts`
 - Commands:
-    - npx vitest run src/services/bookmarkStore.test.ts src/selectors/bookmarks.test.ts src/pages/home/savedItems.test.ts src/pages/home/HomeSaved.test.tsx src/pages/home/useSavedView.test.tsx src/components/pages/home/SavedTab/ src/hooks/useEpisodeFocus.test.tsx src/hooks/useHomeTab.test.ts src/components/shared/player/BookmarkButton/ src/components/shared/common/Toast/ src/components/pages/home/HomeTabs/ src/components/shared/player/EpisodeList/ src/e2eSrcConstants.test.ts
+    - npm test -- src/services/bookmarkStore.test.ts src/selectors/bookmarks.test.ts src/pages/home/savedItems.test.ts src/pages/home/HomeSaved.test.tsx src/pages/home/useSavedView.test.tsx src/components/pages/home/SavedTab/ src/hooks/useEpisodeFocus.test.tsx src/hooks/useHomeTab.test.ts src/components/shared/player/BookmarkButton/ src/components/shared/common/Toast/ src/components/pages/home/HomeTabs/ src/components/shared/player/EpisodeList/ src/e2eSrcConstants.test.ts
     - e2e: e2e/bookmark.mjs（'收藏 手機直版：…'、'收藏 闊橫版：…' 各 4 個 section：清單收藏 → ★ tab、撳行入頁唔播、▷ 原地播、左滑移除最後一集；'收藏 手機直版 / 窄橫版 / 闊橫版：…' 各 2 個：冇收藏有記錄 = 最近收聽 tab、移除最後收藏 → 最近收聽）
     - e2e 入口只有 `npm run e2e`（build + node e2e/run.mjs，跑晒所有 section）；未有單 section runner
 - PWA gate: no（唔掂 sw / manifest / build config / 更新邏輯）

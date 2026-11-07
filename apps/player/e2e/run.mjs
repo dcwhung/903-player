@@ -81,7 +81,8 @@ const assertPortFree = () =>
 const startPreview = async () => {
     await assertPortFree();
     // 直接用 node 行 vite（唔經 npx），kill 先會停到真正嘅 server
-    const viteBin = new URL('../node_modules/vite/bin/vite.js', import.meta.url).pathname;
+    // npm workspaces 將 vite hoist 去 repo 根嘅 node_modules：由 vite/package.json 位置搵 bin
+    const viteBin = new URL('bin/vite.js', import.meta.resolve('vite/package.json')).pathname;
     const server = spawn(
         process.execPath,
         [viteBin, 'preview', '--port', String(PORT), '--strictPort'],

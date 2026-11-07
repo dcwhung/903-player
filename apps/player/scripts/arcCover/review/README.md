@@ -1,4 +1,4 @@
-# 封面 review 頁（`scripts/arcCover/review/`）
+# 封面 review 頁（`apps/player/scripts/arcCover/review/`）
 
 用嚟揀廣播劇 / 短篇碟面同 tile 候選圖嘅頁面。頁面係 claude.ai Artifact
 （<https://claude.ai/artifact/4xzNxQTTy9XjCQg46TLKiT>），用 artifact `db` capability 存揀選。
@@ -23,18 +23,18 @@ WORK=$ARC_COVER_WORK
 
 # 1. 原圖：整套劇 + 有碟面嘅短篇；新短篇（drama.json 未有 disc）用 --arc 「短篇名=slug」
 #    exit 1 = R2 真係冇；exit 3 = 網絡 / TLS / proxy 出錯（會印 curl stderr，唔好當冇封面）
-$PY scripts/arcCover/review/fetch_sources.py <id> --arc "新短篇名=new-slug"
+$PY apps/player/scripts/arcCover/review/fetch_sources.py <id> --arc "新短篇名=new-slug"
 
 # 2. 出候選圖（每次一個 round；唔填 --arc = 整套劇封面）
-$PY scripts/arcCover/generate.py --input $WORK/arcCover-src/<id>/new-slug.jpg \
+$PY apps/player/scripts/arcCover/generate.py --input $WORK/arcCover-src/<id>/new-slug.jpg \
     --drama <id> --arc new-slug --out $WORK/arcCover
 
 # 3. 砌 review 頁（印出今次要 publish 嘅 publish-N.json）
-$PY scripts/arcCover/review/build.py
+$PY apps/player/scripts/arcCover/review/build.py
 
 # 4.（可選）本機檢查
-$PY scripts/arcCover/review/serve.py $WORK/review/site &
-PLAYWRIGHT_PATH=<repo>/node_modules/playwright node scripts/arcCover/review/verify.cjs http://127.0.0.1:8765
+$PY apps/player/scripts/arcCover/review/serve.py $WORK/review/site &
+PLAYWRIGHT_PATH=<repo>/node_modules/playwright node apps/player/scripts/arcCover/review/verify.cjs http://127.0.0.1:8765
 ```
 
 5. **Publish**（Claude 用 Artifact tool）：

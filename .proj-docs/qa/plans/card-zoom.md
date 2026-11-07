@@ -1,5 +1,6 @@
 # Test Plan — card-zoom
 
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（`npm test -- <path>` 轉發去 `apps/player`）
 - Chain: 主頁格仔 Z3 card zoom：節目格 / 今日格 / 劇集入頁掣 → `zoom` 入內頁；窄版返回 → `unzoom` 縮返原格；唔知來源 / 格仔唔喺畫面 → 即刻切
 - AC（用戶確認，Design Origin `_mockups_/card-zoom/index.html` Z3）:
     - AC-1 所有 layout 撳格 → `zoom`（被撳格淡出、新頁 clip-path 由格仔框展開），到正確內頁，`html[data-view-transition]` 完咗清走
@@ -14,7 +15,7 @@
     - 1-hop importers: `src/components/pages/home/ShowTile/ShowTile.tsx` `src/components/pages/home/DramaShelf/DramaTile.tsx` `src/pages/home/HomePage.tsx` `src/pages/home/useHomeDramaItems.ts` `src/pages/show/useShowPage.ts` `src/pages/show/ShowPage.test.tsx`
     - 共用（屬 ui-foundation，唔重複 freeze）: `src/utils/viewTransition.ts` `src/utils/transitionNames.ts` `src/styles/global.css` `src/styles/tokens.css`
 - Commands:
-    - npx vitest run src/utils/cardZoom.test.ts src/utils/zoomInset.test.ts src/hooks/useZoomNavigate.test.tsx src/hooks/useGoHome.test.tsx src/pages/home/HomePageZoom.test.tsx src/styles/cardZoom.node.test.ts src/pages/show/ShowPage.test.tsx src/utils/viewTransition.test.ts src/selectors/wideZoomMotion.test.ts src/pages/home/HomePageWideZoom.test.tsx
+    - npm test -- src/utils/cardZoom.test.ts src/utils/zoomInset.test.ts src/hooks/useZoomNavigate.test.tsx src/hooks/useGoHome.test.tsx src/pages/home/HomePageZoom.test.tsx src/styles/cardZoom.node.test.ts src/pages/show/ShowPage.test.tsx src/utils/viewTransition.test.ts src/selectors/wideZoomMotion.test.ts src/pages/home/HomePageWideZoom.test.tsx
     - e2e: e2e/cardZoom.mjs（'直版格仔 zoom'、'闊橫版格仔 zoom'）+ 闊橫版 4 個 section（'闊橫版同卡同節目'、'闊橫版播緊卡撳另一格'、'闊橫版撳格開播'、'闊橫版閂卡撳格'）+ run.mjs '390×844 主流程'（窄版撳格入頁 → 返回）
     - e2e 入口只有 `npm run e2e`（build + node e2e/run.mjs，跑晒所有 section）；未有單 section runner
 - PWA gate: no（唔掂 sw / manifest / build config）

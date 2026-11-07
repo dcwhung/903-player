@@ -1,48 +1,28 @@
 {
     "name": "903-player",
     "private": true,
-    "version": "1.29.0",
     "type": "module",
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
     "scripts": {
-        "dev": "vite",
-        "build": "tsc -b && vite build",
-        "preview": "vite preview",
-        "test": "vitest run",
-        "test:watch": "vitest",
-        "coverage": "vitest run --coverage",
+        "dev": "npm run dev -w apps/player --",
+        "build": "npm run build -w apps/player --",
+        "preview": "npm run preview -w apps/player --",
+        "test": "npm run test -w apps/player --",
+        "test:watch": "npm run test:watch -w apps/player --",
+        "coverage": "npm run coverage -w apps/player --",
         "lint": "eslint . && prettier --check .",
         "format": "prettier --write .",
-        "e2e": "npm run build -- --mode e2e && node e2e/run.mjs"
-    },
-    "dependencies": {
-        "react": "^19.3.1",
-        "react-dom": "^19.3.1",
-        "react-router-dom": "^7.18.4"
+        "e2e": "npm run e2e -w apps/player --"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
-        "@fontsource/poppins": "~5.3.0",
-        "@testing-library/jest-dom": "^7.0.1",
-        "@testing-library/react": "^16.3.3",
-        "@testing-library/user-event": "^14.6.8",
-        "@types/node": "^26.6.5",
-        "@types/react": "^19.3.0",
-        "@types/react-dom": "^19.3.0",
-        "@vitejs/plugin-react": "^6.1.2",
-        "@vitest/coverage-v8": "^5.0.5",
-        "ajv": "^8.20.0",
-        "ajv-formats": "^3.0.1",
         "eslint": "^10.13.0",
         "eslint-plugin-react-hooks": "^7.1.1",
         "globals": "^17.13.0",
-        "jsdom": "^29.1.1",
-        "playwright": "~1.63.0",
-        "postcss": "^8.5.31",
         "prettier": "^3.9.10",
-        "typescript": "^6.0.3",
-        "typescript-eslint": "^8.71.2",
-        "vite": "^8.3.4",
-        "vite-plugin-pwa": "^2.0.0",
-        "vitest": "^5.0.5"
+        "typescript-eslint": "^8.71.2"
     }
 }
