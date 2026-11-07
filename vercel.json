@@ -10,7 +10,7 @@
             "feature/**": false,
             "fix/**": false,
             "hotfix/**": false,
-            "refactor/**": false,
+            "refactor/**": true,
             "chore/**": false,
             "test/**": false,
             "docs/**": false,
