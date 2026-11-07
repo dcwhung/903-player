@@ -1,5 +1,5 @@
 // @vitest-environment node
-// 經 src/catalog/dramas/lib/episodes.ts 用到 import.meta.env：vite/client 型別由 tsconfig.scripts-test.json（只包 scripts/*.test.ts）提供。
+// 經 packages/catalog/src/dramas/episodes.ts 用到 import.meta.env：vite/client 型別由 tsconfig.scripts-test.json（只包 scripts/*.test.ts）提供。
 // 唔好用 /// <reference types> 或者放落 tsconfig.node.json：兩樣都會令成個 Node program 以為有 import.meta.env
 /*
  * scripts/dramaFromFolder.mjs：由本機劇集 folder 生成 drama.json 草稿。
@@ -13,10 +13,12 @@ import { tmpdir } from 'node:os';
 import { dirname, join, win32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
-import { DRAMA_AUDIO_BASE as APP_AUDIO_BASE } from '../src/config/constants';
-import { buildEpisodes } from '../src/catalog/dramas/lib/episodes';
-import { parseDramaDefinition } from '../src/catalog/dramas/lib/schema';
-import { compileSchema } from '../tests/jsonSchemas';
+import {
+    buildEpisodes,
+    DRAMA_AUDIO_BASE as APP_AUDIO_BASE,
+    parseDramaDefinition,
+} from '@903-player/catalog';
+import { compileSchema } from '@903-player/catalog/testing/json-schemas';
 import {
     DRAMA_AUDIO_BASE,
     EXIT,
@@ -43,7 +45,7 @@ const NFD_NAME = 'Café'.normalize('NFD');
 const SERIES_IDS = ['lancy', 'chisee', 'golden', 'jim', 'sammy-kitty'] as const;
 /** 已上架嘅劇（短篇 + 每日劇 c18），全部要 round-trip */
 const COMMITTED_IDS = [...SERIES_IDS, 'c18'] as const;
-/** host: app 嘅錄音喺 app 自己嘅 public/dramas/（同 src/catalog/dramas/lib/episodes.ts 一致） */
+/** host: app 嘅錄音喺 app 自己嘅 public/dramas/（同 packages/catalog/src/dramas/episodes.ts 一致） */
 const APP_AUDIO_DIR = 'dramas/';
 const VERIFY_TIMEOUT_MS = 300;
 /**
@@ -101,7 +103,7 @@ const imagesOf = (json: Json): string[] => {
     );
 };
 
-/** schemas/drama.schema.json（用戶喺 VS Code 打開草稿見到嘅規則；嚴過 runtime） */
+/** packages/catalog/schemas/drama.schema.json（用戶喺 VS Code 打開草稿見到嘅規則；嚴過 runtime） */
 const dramaSchema = compileSchema('drama');
 
 /** 草稿要過 JSON Schema，唔係嘅話列出 ajv 嘅錯誤 */

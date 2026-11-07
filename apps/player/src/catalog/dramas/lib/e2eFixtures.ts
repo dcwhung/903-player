@@ -1,10 +1,10 @@
+import type { Folder, FolderSource } from '@903-player/catalog';
 /*
  * e2e 測試劇（P8 #6 即將上架 / 快將下架）：只係 `vite build --mode e2e`（npm run e2e）先會用到，
  * production build 嘅 MODE 唔係 e2e，成段（連 e2e/fixtures 嘅 JSON）由 tree-shaking 剷走。
  * e2e context 要寫 localStorage E2E_FIXTURES_KEY 先加入（e2e/comingSoon.mjs），其他 e2e section 照舊得真 catalog。
  * 唔另外放圖：借 library 現有劇集嘅圖（同一套檔名）
  */
-import type { Folder, FolderSource } from '../../core/folderSource';
 
 /** 同 e2e/comingSoon.mjs 一樣（src/e2eSrcConstants.test.ts 鎖住） */
 export const E2E_FIXTURES_KEY = '903player:e2e:dramas';

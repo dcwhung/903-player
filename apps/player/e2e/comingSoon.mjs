@@ -24,7 +24,7 @@ const episodeUrl = (arc, no) =>
 /** 測試劇短篇 id（e2e/fixtures/dramas/<劇>/drama.json） */
 const ARC_IDS = { 戀愛二分一: 'half', 初戀無限次: 'first-love', 我心不死: 'heart' };
 
-/** 同 src/catalog/core/episodeId.ts seriesEpisodeId 一樣（進度 / 收藏 key） */
+/** 同 packages/catalog/src/core/episodeId.ts seriesEpisodeId 一樣（進度 / 收藏 key） */
 const episodeId = (dramaId, arc, no) => `drama:${dramaId}:${ARC_IDS[arc]}:${no}`;
 
 const series = (dramaId, arc, no) => ({

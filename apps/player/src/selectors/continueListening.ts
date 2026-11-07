@@ -1,7 +1,6 @@
+import { isAvailable, releasedEpisodes, type SeriesEpisode } from '@903-player/catalog';
 import type { Progress } from '../services/progressStore';
-import type { SeriesEpisode } from '../types/drama';
 import { seriesContinue } from './arcProgress';
-import { isAvailable, releasedEpisodes } from './availability';
 
 type ProgressMap = Readonly<Record<string, Progress>>;
 

@@ -1,15 +1,14 @@
+import type { DramaConfig, SeriesEpisode } from '@903-player/catalog';
 import { NowPlaying } from '../../components/shared/player/NowPlaying/NowPlaying';
 import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { PlayerGauge } from '../../components/shared/player/PlayerPanel/PlayerGauge';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import type { DramaConfig } from '../../catalog/dramas';
 import { LANDSCAPE_QUERY } from '../../config/layout';
 import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePlayer } from '../../player/usePlayer';
 import { t } from '../../i18n/t';
-import type { SeriesEpisode } from '../../types/drama';
 import { PLAYBACK_LINE_KEY, type PlaybackLineState } from '../../utils/playbackState';
 import { hasKnownDuration } from '../../utils/time';
 import { DramaHeader } from './DramaHeader';

@@ -1,5 +1,5 @@
+import { hkToday, msUntilNextHkMidnight } from '@903-player/catalog';
 import { useEffect, useState } from 'react';
-import { hkToday, msUntilNextHkMidnight } from '../utils/date';
 
 /**
  * 香港今日（YYYY-MM-DD），過咗午夜自己轉（S-704）：頁面暫停緊又冇其他 state 變都會 re-render。

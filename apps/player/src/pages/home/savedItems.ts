@@ -1,3 +1,4 @@
+import { isLeavingSoon, isRemoved } from '@903-player/catalog';
 import {
     catalogEpisodeOf,
     dramaArtFor,
@@ -8,7 +9,6 @@ import {
 } from '../../catalog/dramas';
 import { findShow, themeFor } from '../../catalog/shows';
 import { t } from '../../i18n/t';
-import { isLeavingSoon, isRemoved } from '../../selectors/availability';
 import { spokenRemoval, removalWhen } from '../../selectors/availabilityLabels';
 import type { InnerPage } from '../../selectors/pageHandle';
 import type { Bookmark } from '../../services/bookmarkStore';

@@ -1,7 +1,7 @@
 /* e2e 測試劇（e2e/fixtures/dramas）：驗得過 schema、借到圖，同 e2e/comingSoon.mjs 假設嘅狀態一致 */
+import { buildRegistry } from '@903-player/catalog';
 import { bundledSource } from './bundledSource';
 import { E2E_FIXTURES_KEY, withE2EFixtures } from './e2eFixtures';
-import { buildRegistry } from './registry';
 
 /** e2e/harness.mjs E2E_NOW 嘅香港日子 */
 const E2E_TODAY = '2026-11-30';

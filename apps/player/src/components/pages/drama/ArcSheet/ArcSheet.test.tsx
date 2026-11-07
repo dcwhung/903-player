@@ -1,8 +1,8 @@
 import { act, createEvent, fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
+import type { SeriesEpisode } from '@903-player/catalog';
 import type { ArcSummary } from '../../../../selectors/arcProgress';
-import type { SeriesEpisode } from '../../../../types/drama';
 import { ArcSheet } from './ArcSheet';
 import { SHEET_SLIDE_MS } from './sheetDrag';
 

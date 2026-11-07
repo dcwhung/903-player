@@ -31,7 +31,7 @@ export default tseslint.config(
     },
     {
         // .ts（含 hook / service）：函數 ≤ 30 行，冇檔案上限
-        files: ['apps/player/src/**/*.ts'],
+        files: ['apps/player/src/**/*.ts', 'packages/*/src/**/*.ts'],
         ignores: ['**/*.test.ts'], // 已包 *.node.test.ts
         rules: {
             'max-lines-per-function': ['error', { max: TS_FN_MAX_LINES, ...SIZE_LINES }],
@@ -39,7 +39,7 @@ export default tseslint.config(
     },
     {
         // .tsx 主要係 component：函數 ≤ 50 行，檔案 ≤ 150 行
-        files: ['apps/player/src/**/*.tsx'],
+        files: ['apps/player/src/**/*.tsx', 'packages/*/src/**/*.tsx'],
         ignores: ['**/*.test.tsx'],
         rules: {
             'max-lines-per-function': ['error', { max: TSX_FN_MAX_LINES, ...SIZE_LINES }],
@@ -51,15 +51,20 @@ export default tseslint.config(
         // 將來如果幫 .ts 加 max-lines，資料檔照樣豁免（函數上限照用）
         files: [
             'apps/player/src/i18n/zh-HK.ts',
-            'apps/player/src/catalog/dramas/lib/schema.ts',
-            'apps/player/src/catalog/dramas/lib/registry.ts',
+            'packages/catalog/src/dramas/schema.ts',
+            'packages/catalog/src/dramas/registry.ts',
         ],
         rules: { 'max-lines': 'off' },
     },
     {
-        // 雙保險：上面 src block 已 ignore test 檔，e2e / scripts 亦唔喺 src/** glob；
+        // 雙保險：上面 src block 已 ignore test 檔，e2e / scripts / package tests 亦唔喺 src/** glob；
         // 保留呢個 block 確保將來改 glob 時 test / e2e / scripts 照樣唔受尺寸限制
-        files: ['**/*.test.{ts,tsx}', 'apps/player/e2e/**', 'apps/player/scripts/**'],
+        files: [
+            '**/*.test.{ts,tsx}',
+            'apps/player/e2e/**',
+            'apps/player/scripts/**',
+            'packages/*/tests/**',
+        ],
         rules: { 'max-lines-per-function': 'off', 'max-lines': 'off' },
     },
 );

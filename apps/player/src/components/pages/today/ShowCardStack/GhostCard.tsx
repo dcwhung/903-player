@@ -1,4 +1,4 @@
-import type { ShowTheme } from '../../../../config/showThemes';
+import type { ShowTheme } from '@903-player/catalog';
 import { Disc } from '../../../shared/common/Disc/Disc';
 import { ThemeScope } from '../../../shared/common/ThemeScope/ThemeScope';
 import styles from './ShowCardStack.module.css';

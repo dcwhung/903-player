@@ -1,7 +1,7 @@
 /* 7 個 903 節目 regression：名 / 時間 / 播出日 唔可以變（錄音 URL 由 name + fileTime 砌，錯一個字就播唔到） */
-import { NEUTRAL_THEME, themeVars } from '../../../config/showThemes';
-import type { Weekday } from '../../../types/weekday';
-import { airsWeekly, findShow, SHOWS, themeFor, type ShowConfig } from '../index';
+import { airsWeekly, NEUTRAL_THEME, type ShowConfig, type Weekday } from '@903-player/catalog';
+import { themeVars } from '../../../config/showThemes';
+import { findShow, SHOWS, themeFor } from '../index';
 
 const MONDAY_TO_FRIDAY: readonly Weekday[] = [1, 2, 3, 4, 5];
 const SATURDAY: readonly Weekday[] = [6];

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { hkToday } from '@903-player/catalog';
 import type {
     RecentRowView,
     SavedBoxView,
@@ -23,7 +24,6 @@ import { removeBookmark, useBookmarks, type Bookmark } from '../../services/book
 import { getProgressMap, type Progress } from '../../services/progressStore';
 import type { Track } from '../../types/track';
 import { zoomKey } from '../../utils/cardZoom';
-import { hkToday } from '../../utils/date';
 import {
     bookmarkAvailability,
     bookmarkLabel,

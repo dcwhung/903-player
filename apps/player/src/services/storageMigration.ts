@@ -7,10 +7,9 @@
  * - 收藏另外記低已搬過嘅 v1 URL，喺 v2 移除咗嘅收藏唔會由 v1 復活
  * - 任何 localStorage / JSON 錯誤都食咗，唔阻 app render
  */
-import { dailyEpisodeId, showEpisodeId } from '../catalog/core/episodeId';
+import { dailyEpisodeId, type DramaEpisode, showEpisodeId } from '@903-player/catalog';
 import { catalogEpisodesOf, DRAMAS } from '../catalog/dramas';
 import { BOOKMARK_MIGRATED_STORAGE_KEY } from '../config/constants';
-import type { DramaEpisode } from '../types/drama';
 import type { Recording } from '../types/recording';
 import { showEpisodeOfUrl } from './audioProbe';
 import {

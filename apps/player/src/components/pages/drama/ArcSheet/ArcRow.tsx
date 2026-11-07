@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
+import type { SeriesEpisode } from '@903-player/catalog';
 import { t } from '../../../../i18n/t';
 import type { ArcSummary } from '../../../../selectors/arcProgress';
-import type { SeriesEpisode } from '../../../../types/drama';
 import { ratio, toPercent } from '../../../../utils/ratio';
 import { CheckIcon, PauseIcon, PlayIcon, RestartIcon } from '../../../shared/common/icons/icons';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';

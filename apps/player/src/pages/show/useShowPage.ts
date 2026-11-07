@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { airsWeekly, findShow, themeFor, type ShowConfig } from '../../catalog/shows';
+import { airsWeekly, hkToday, type ShowConfig } from '@903-player/catalog';
+import { findShow, themeFor } from '../../catalog/shows';
 import { useRecordings } from '../../data/useRecordings';
 import { useEpisodePress } from '../../hooks/useEpisodePress';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
@@ -16,7 +17,6 @@ import {
 } from '../../selectors/recordings';
 import { stripDays } from '../../components/shared/player/DateStrip/dateStrip';
 import { getProgressMap } from '../../services/progressStore';
-import { hkToday } from '../../utils/date';
 import type { Recording } from '../../types/recording';
 import type { ShowPageState } from '../../types/showPageState';
 import { asShowRecording } from '../../types/track';

@@ -1,10 +1,10 @@
 /* W-531 / S-703：部分集數 / 短篇下架之後，主頁廣播劇書架排位唔郁（用戶揀「下架後書架排位唔郁」） */
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { DramaEpisode } from '@903-player/catalog';
 import { renderWithProviders } from '../../../tests/renderWithProviders';
 import { catalogEpisodesOf } from '../../catalog/dramas';
 import { saveProgress } from '../../services/progressStore';
-import type { DramaEpisode } from '../../types/drama';
 import { HomePage } from './HomePage';
 
 /** 呢日香港 00:00 落架（vi.mock hoist 咗，常數要一齊 hoist） */

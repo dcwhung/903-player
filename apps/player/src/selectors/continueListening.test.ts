@@ -1,5 +1,5 @@
+import type { SeriesEpisode } from '@903-player/catalog';
 import type { Progress } from '../services/progressStore';
-import type { SeriesEpisode } from '../types/drama';
 import { liveSeriesContinue } from './continueListening';
 
 const TODAY = '2026-11-05';

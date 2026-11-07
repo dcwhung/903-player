@@ -4,8 +4,9 @@
  * 讀屏一律 formatSpokenDate（dates.spoken「05/12 星期六」）。
  * 字眼全部喺 i18n availability.*
  */
+import { daysBetween } from '@903-player/catalog';
 import { t, type MessageKey } from '../i18n/t';
-import { daysBetween, formatDateLabel, formatDayMonth, formatSpokenDate } from '../utils/date';
+import { formatDateLabel, formatDayMonth, formatSpokenDate } from '../utils/date';
 
 export type WhenLength = 'short' | 'long';
 

@@ -1,10 +1,10 @@
 import { act, renderHook } from '@testing-library/react';
+import type { DailyEpisode, SeriesEpisode } from '@903-player/catalog';
 import {
     BOOKMARK_STORAGE_KEY,
     BOOKMARK_STORE_VERSION,
     BOOKMARK_V1_STORAGE_KEY,
 } from '../config/constants';
-import type { SeriesEpisode, DailyEpisode } from '../types/drama';
 import type { Recording } from '../types/recording';
 import type { Track } from '../types/track';
 import {

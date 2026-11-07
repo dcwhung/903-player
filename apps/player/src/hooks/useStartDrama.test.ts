@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
+import type { Drama } from '@903-player/catalog';
 import { createHookWrapper } from '../../tests/renderWithProviders';
-import { dailyEpisodesOf, findDrama, seriesEpisodesOf, type Drama } from '../catalog/dramas';
+import { dailyEpisodesOf, findDrama, seriesEpisodesOf } from '../catalog/dramas';
 import { usePlayer } from '../player/usePlayer';
 import { dramaStartEpisode, isFirstSeriesVisit, useStartDrama } from './useStartDrama';
 

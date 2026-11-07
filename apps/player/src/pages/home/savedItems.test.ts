@@ -1,7 +1,7 @@
+import type { SeriesEpisode } from '@903-player/catalog';
 import { recording } from '../../../tests/renderWithProviders';
 import { seriesEpisodesOf } from '../../catalog/dramas';
 import { bookmarkOf, type Bookmark } from '../../services/bookmarkStore';
-import type { SeriesEpisode } from '../../types/drama';
 import {
     bookmarkLabel,
     bookmarkPage,

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, type NavigateOptions } from 'react-router-dom';
+import { type DramaEpisode, hkToday } from '@903-player/catalog';
 import type { MiniPlayerProps } from '../components/pages/home/MiniPlayer/MiniPlayer';
 import { dramaEpisodeTheme, findDrama } from '../catalog/dramas';
 import { findShow, themeFor } from '../catalog/shows';
@@ -17,12 +18,11 @@ import {
 import { trackItem } from '../selectors/pageHandle';
 import { showsOnDate } from '../selectors/recordings';
 import { getProgress } from '../services/progressStore';
-import type { DramaEpisode } from '../types/drama';
 import type { Recording } from '../types/recording';
 import type { ShowPageState } from '../types/showPageState';
 import { isDramaEpisode, type Track } from '../types/track';
 import { t } from '../i18n/t';
-import { formatSpokenDate, hkToday } from '../utils/date';
+import { formatSpokenDate } from '../utils/date';
 import { dismissMiniPlayer, useMiniPlayerDismissed } from './miniPlayerDismissed';
 import { useRefreshedOn } from './useRefreshedOn';
 import { ratio } from '../utils/ratio';

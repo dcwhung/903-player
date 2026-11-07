@@ -1,4 +1,4 @@
-import type { DramaId } from './drama';
+import type { DramaId } from '@903-player/catalog';
 import type { ShowId } from './recording';
 
 /**

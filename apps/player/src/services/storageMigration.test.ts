@@ -1,3 +1,4 @@
+import type { DailyEpisode, SeriesEpisode } from '@903-player/catalog';
 import { catalogEpisodesOf, dramaEpisodesOf } from '../catalog/dramas';
 import { findShow } from '../catalog/shows';
 import {
@@ -7,7 +8,6 @@ import {
     PROGRESS_STORAGE_KEY,
     PROGRESS_V1_STORAGE_KEY,
 } from '../config/constants';
-import type { DailyEpisode, SeriesEpisode } from '../types/drama';
 import { buildAudioUrl } from './audioProbe';
 import { listBookmarks, removeBookmark } from './bookmarkStore';
 import { writeProbeState } from './probeStore';

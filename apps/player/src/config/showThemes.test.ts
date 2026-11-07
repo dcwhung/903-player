@@ -1,4 +1,5 @@
-import { HOME_THEME, NEUTRAL_THEME, themeVars, type ShowTheme } from './showThemes';
+import { NEUTRAL_THEME, type ShowTheme } from '@903-player/catalog';
+import { HOME_THEME, themeVars } from './showThemes';
 
 const LIGHT: ShowTheme = {
     ...NEUTRAL_THEME,

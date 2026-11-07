@@ -1,8 +1,8 @@
+import type { DramaEpisode } from '@903-player/catalog';
 import { recording } from '../../tests/renderWithProviders';
 import { dailyEpisodesOf, dramaEpisodeTheme, seriesEpisodesOf } from '../catalog/dramas';
 import { themeFor } from '../catalog/shows';
 import type { ClosedPlayerCard } from '../hooks/homePlayerCardClosed';
-import type { DramaEpisode } from '../types/drama';
 import { pageHandle, trackItem, type InnerPage, type PageHandleInput } from './pageHandle';
 
 const TODAY = '2026-10-19';

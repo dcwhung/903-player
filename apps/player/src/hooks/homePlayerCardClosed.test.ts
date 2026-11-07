@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
+import { NEUTRAL_THEME } from '@903-player/catalog';
 import { createHookWrapper, recording } from '../../tests/renderWithProviders';
-import { NEUTRAL_THEME } from '../config/showThemes';
 import { usePlayer } from '../player/usePlayer';
 import {
     closeHomePlayerCard,

@@ -1,7 +1,8 @@
 import { memo } from 'react';
+import { weekdayOf } from '@903-player/catalog';
 import { t } from '../../../../i18n/t';
 import { WEEKDAYS } from '../../../../i18n/zh-HK';
-import { formatDayMonth, formatSpokenDate, weekdayOf } from '../../../../utils/date';
+import { formatDayMonth, formatSpokenDate } from '../../../../utils/date';
 import { DAY_INDEX_ATTR, type StripDay } from './dateStrip';
 import styles from './DateStrip.module.css';
 

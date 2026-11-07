@@ -1,9 +1,7 @@
+import { arcFreshDate, daysBetween, type SeriesEpisode } from '@903-player/catalog';
 import { NEW_ARC_DAYS } from '../config/constants';
 import type { Progress } from '../services/progressStore';
-import type { SeriesEpisode } from '../types/drama';
-import { daysBetween } from '../utils/date';
 import { ratio } from '../utils/ratio';
-import { arcFreshDate } from './availability';
 import { episodesInArc, pickSeriesStart, seriesArcs } from './dramas';
 
 type ProgressMap = Readonly<Record<string, Progress>>;

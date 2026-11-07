@@ -1,5 +1,5 @@
+import type { SeriesEpisode } from '@903-player/catalog';
 import type { Progress } from '../services/progressStore';
-import type { SeriesEpisode } from '../types/drama';
 import { arcGroups, arcSummaries, hasNewUnheardArc, isArcNew, seriesContinue } from './arcProgress';
 
 const ep = (arc: string, no: number, addedAt?: string): SeriesEpisode => ({

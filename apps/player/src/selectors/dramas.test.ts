@@ -1,6 +1,6 @@
+import type { DailyEpisode, SeriesEpisode } from '@903-player/catalog';
 import { recording } from '../../tests/renderWithProviders';
 import type { Progress } from '../services/progressStore';
-import type { DailyEpisode, SeriesEpisode } from '../types/drama';
 import {
     dailyNewestFirst,
     dramaEpisodeLabel,

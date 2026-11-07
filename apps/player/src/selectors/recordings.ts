@@ -1,7 +1,7 @@
-import { SHOWS, type ShowConfig } from '../catalog/shows';
+import { type ShowConfig, weekdayOf } from '@903-player/catalog';
+import { SHOWS } from '../catalog/shows';
 import { showDateKey } from '../services/probeStore';
 import type { EpisodeEntry, Recording, ShowId, UnavailableEpisode } from '../types/recording';
-import { weekdayOf } from '../utils/date';
 
 type Broadcast = Pick<Recording, 'date' | 'time'>;
 

@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { themeVars, type ShowTheme } from '../../../../config/showThemes';
+import type { ShowTheme } from '@903-player/catalog';
+import { themeVars } from '../../../../config/showThemes';
 import { usePageCanvas } from '../../../../hooks/usePageCanvas';
 import { useThemeColorMeta } from '../../../../hooks/useThemeColorMeta';
 import styles from './ThemeScope.module.css';

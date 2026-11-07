@@ -1,6 +1,5 @@
+import { releasedEpisodes, type SeriesEpisode } from '@903-player/catalog';
 import type { Progress } from '../services/progressStore';
-import type { SeriesEpisode } from '../types/drama';
-import { releasedEpisodes } from './availability';
 import { dramaShelfOrder, type ShelfDrama } from './dramaShelf';
 
 const EPISODES_PER_DRAMA = 2;

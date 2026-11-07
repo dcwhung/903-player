@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
+import { hkToday } from '@903-player/catalog';
 import { useRecordings } from '../data/useRecordings';
 import { usePlayer } from '../player/usePlayer';
 import { newShowIds } from '../selectors/recordings';
 import { getWatchedIds } from '../services/progressStore';
 import type { ShowId } from '../types/recording';
-import { hkToday } from '../utils/date';
 import { useRefreshedOn } from './useRefreshedOn';
 
 /** 主頁節目格嘅「New」：今日已上架而且未聽完；有集數變成聽過就重新計 */

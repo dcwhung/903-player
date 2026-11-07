@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useLocation } from 'react-router-dom';
+import type { SeriesEpisode } from '@903-player/catalog';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
 import { seriesEpisodesOf } from '../../catalog/dramas';
 import {
@@ -10,7 +11,6 @@ import {
     removeBookmark,
 } from '../../services/bookmarkStore';
 import { saveProgress } from '../../services/progressStore';
-import type { SeriesEpisode } from '../../types/drama';
 import { focusUrlFromState } from '../../hooks/useEpisodeFocus';
 import { SWIPE_REMOVE_RATIO } from '../../components/pages/home/SavedTab/useRowSwipe';
 import { Toast } from '../../components/shared/common/Toast/Toast';

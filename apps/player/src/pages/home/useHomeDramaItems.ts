@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { type DramaConfig, hkToday, releasedEpisodes } from '@903-player/catalog';
 import type { DramaShelfItem } from '../../components/pages/home/DramaShelf/DramaShelf';
 import {
     arcAvailabilityOf,
@@ -6,7 +7,6 @@ import {
     enabledDramas,
     seriesEpisodesOf,
     upcomingDramas,
-    type DramaConfig,
 } from '../../catalog/dramas';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
 import { useDramaContinue } from '../../hooks/useDramaContinue';
@@ -15,12 +15,10 @@ import { useRefreshedOn } from '../../hooks/useRefreshedOn';
 import { useStartDrama } from '../../hooks/useStartDrama';
 import { t } from '../../i18n/t';
 import { usePlayer } from '../../player/usePlayer';
-import { releasedEpisodes } from '../../selectors/availability';
 import { isEpisodeOfDrama, seriesArcs } from '../../selectors/dramas';
 import { dramaShelfOrder } from '../../selectors/dramaShelf';
 import { getProgressMap } from '../../services/progressStore';
 import { zoomKey } from '../../utils/cardZoom';
-import { hkToday } from '../../utils/date';
 import {
     leavingCorner,
     releaseNote,

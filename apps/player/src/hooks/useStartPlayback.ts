@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
+import { hkToday } from '@903-player/catalog';
 import { useRecordings } from '../data/useRecordings';
 import { usePlayer } from '../player/usePlayer';
 import { pickInitialRecording, recordingsForShow, todayRecordings } from '../selectors/recordings';
 import type { ShowId } from '../types/recording';
-import { hkToday } from '../utils/date';
 
 /**
  * 揀出要播嘅錄音並即時開始播放。

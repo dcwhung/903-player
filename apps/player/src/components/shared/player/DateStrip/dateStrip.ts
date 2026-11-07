@@ -1,6 +1,6 @@
+import { addDays, daysBetween } from '@903-player/catalog';
 import type { SwipeDirection } from '../../../../hooks/swipe';
 import type { Recording } from '../../../../types/recording';
-import { addDays, daysBetween } from '../../../../utils/date';
 
 /** 日子條一格一日：url = 嗰日嘅集數（冇節目係 null）；inRange = 喺最新 / 最舊一集之間（之外留空） */
 export interface StripDay {

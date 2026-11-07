@@ -3,7 +3,7 @@ export type ShowId = string;
 
 export interface Recording {
     showId: ShowId;
-    /** 穩定 episode ID（進度 / 收藏 key，見 catalog/core/episodeId.ts）；url 淨係用嚟播放 */
+    /** 穩定 episode ID（進度 / 收藏 key，見 @903-player/catalog 嘅 core/episodeId.ts）；url 淨係用嚟播放 */
     id: string;
     /** 香港日期，格式 YYYY-MM-DD */
     date: string;
