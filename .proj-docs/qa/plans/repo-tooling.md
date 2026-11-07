@@ -1,0 +1,18 @@
+# Test Plan — repo-tooling
+
+- Paths：repo root 檔寫 root path；app 檔寫 `apps/player/…`。指令喺 repo root 跑
+- Chain: Repo / build 外殼：npm workspaces（root `package.json` 轉發 scripts、`apps/player/package.json` 係 app manifest + 唯一 version）、lockfile、ESLint config、CI（`ci.yml`）、GitHub Pages 部署（`deploy.yml`）、e2e 入口（`e2e/run.mjs` 起 vite preview、`e2e/harness.mjs` 字型 path）
+- AC:
+    - AC-1 現有用戶零影響：production `dist` 同 `origin/main` byte-for-byte 一樣（sha256 逐檔比較）；version 唔 bump（`apps/player/package.json` 1.29.0）（`.proj-docs/plans/2026-11-06_plan_backend-admin.md`「Monorepo 結構」、Phase 0）
+    - AC-2 Root 指令照舊：`npm test`、`npm test -- <path>`、`npm run build -- --mode e2e`、`npm run e2e`、`npm run lint` 喺 repo root 跑得（CLAUDE.md QA 表）
+    - AC-3 CI / Deploy 指向 `apps/player`（artifact `apps/player/dist`）；lockfile 依賴版本唔變
+- Scope files:
+    - `package.json` `package-lock.json` `apps/player/package.json` `eslint.config.js`
+    - `.github/workflows/ci.yml` `.github/workflows/deploy.yml`
+    - `apps/player/e2e/run.mjs` `apps/player/e2e/harness.mjs` `apps/player/vite.config.ts`
+- Commands:
+    - `npm run build`，再喺 `apps/player/dist` 跑 `find . -type f | sort | xargs sha256sum`，同 `origin/main` 獨立 worktree build 嘅清單 `diff`（一次）
+    - `npm run lint`；`npm test`（CI 同 SHA 綠就引用）
+    - e2e：`npm run e2e`（CI 同 SHA 綠就引用）
+- PWA gate: no（`sw.js` / manifest / 更新邏輯冇改；dist 一樣即係 SW precache 一樣）
+- Out of scope: `vercel.json`（Phase 0a 有 TEMP preview commit，revert 後先定稿；證據 = Vercel preview status）、`.vscode/`、`apps/player/scripts/generateIcons.mjs` / `arcCover/`（開發工具，只改相對 path）、各功能鏈（各自 plan）

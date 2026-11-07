@@ -1,5 +1,6 @@
 # Test Plan — coming-soon
 
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（`npm test -- <path>` 轉發去 `apps/player`）
 - Chain: P8 #6 即將上架 / 快將下架：drama.json `addedAt` / `episodeDates` / `removedAt`（三層）→ date-aware catalog + pure selector → 主頁劇集格（H2 / E1 字尾、左上角琥珀下架字、新劇灰格排最尾）、繼續收聽 LC2、劇集頁 chips（虛線 + ⏱、LK1）、全集一覽表（S1 組、LS2）、集數清單（未上架摺埋、LE1）、收藏 tab（已下架灰行、LB1）、最近收聽 LR1、舊 URL 返主頁 + Toast、書架排位下架前後唔郁（W-531）
 - AC（Design Origin `_mockups_/coming-soon/index.html`；review `.proj-docs/reviews/2026-11-05_review_coming-soon.md`）:
     - AC-1 ① 三個位置都顯示：主頁格 H2 字尾「N 個短篇 · 新短篇 X 上架」、chips 虛線 + ⏱ 排最尾、一覽表最底「即將上架」組
@@ -18,7 +19,7 @@
     - Drama page: `src/components/pages/drama/ArcPicker/` `ArcSheet/` `src/pages/drama/`（seriesAvailability / useSeriesAvailability / useTodaysEpisodes / useDramaPage / DramaPage / SeriesDramaPage / SeriesListColumn）`src/hooks/useHkToday.ts`（+ test；S-704 香港午夜換日）`src/components/shared/player/EpisodeList/` `NowPlaying/`
     - Shared: `src/splash/afterSplash.ts` `src/i18n/zh-HK.ts`（availability._）`src/styles/tokens.css`（--leave-_ / --upcoming-*）`src/config/constants.ts`（LEAVING_SOON_DAYS）
 - Commands:
-    - npx vitest run src/catalog/dramas/ src/selectors/availability.test.ts src/selectors/availabilityLabels.test.ts src/selectors/continueListening.test.ts src/selectors/dramaShelf.test.ts src/selectors/arcProgress.test.ts src/components/pages/home/DramaShelf/ src/components/pages/home/SavedTab/ src/components/pages/drama/ src/components/shared/player/EpisodeList/ src/components/shared/player/NowPlaying/ src/pages/drama/ src/pages/home/ src/splash/ src/hooks/useHkToday.test.ts
+    - npm test -- src/catalog/dramas/ src/selectors/availability.test.ts src/selectors/availabilityLabels.test.ts src/selectors/continueListening.test.ts src/selectors/dramaShelf.test.ts src/selectors/arcProgress.test.ts src/components/pages/home/DramaShelf/ src/components/pages/home/SavedTab/ src/components/pages/drama/ src/components/shared/player/EpisodeList/ src/components/shared/player/NowPlaying/ src/pages/drama/ src/pages/home/ src/splash/ src/hooks/useHkToday.test.ts
     - e2e: e2e/comingSoon.mjs section「即將上架 / 快將下架」（入口只有 `npm run e2e`；CI 同 SHA 綠就引用）
     - 手動（Playwright，`npm run build -- --mode e2e` + vite preview，`e2e/harness.mjs` newE2EContext，fixture flag `903player:e2e:dramas`）：390×844、844×390、1300×800 各睇主頁格（有 / 冇繼續收聽）、灰格、chips、一覽表、集數清單、收藏 tab、舊 URL；W-531 時鐘 30/11 22:30 vs 01/12 00:30 比書架次序
 - PWA gate: no（唔掂 sw / manifest / 更新邏輯；e2e fixture 只喺 `--mode e2e` 編入，review 已核實 production build 冇）

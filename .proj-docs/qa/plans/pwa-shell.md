@@ -1,5 +1,6 @@
 # Test Plan — pwa-shell
 
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（`npm test -- <path>` 轉發去 `apps/player`）
 - Chain: App 外殼：入口 / router、PWA service worker 換版（updateManager）、啟動畫面、版本號
 - AC:
     - AC-1 有新版自己 reload 一次、播緊唔打斷、兩個 tab 都換（.tickets/completed/0001-0200/CUI-0017.md）
@@ -9,7 +10,7 @@
     - Core（glob）: `src/pwa/*` `src/splash/*` `src/main.tsx` `src/App.tsx` `src/App.test.tsx` `src/appVersion.d.ts` `src/config/appVersion*` `src/config/launchTheme*` `src/components/pages/home/AppVersion/*` `src/components/pages/home/ViewportDebug/*` `src/e2eSection.test.ts` `src/e2eSrcConstants.test.ts`
     - 1-hop importers: `src/config/showThemes.ts` `src/pages/home/{HomeStack.tsx,HomeWide.tsx}` `src/player/{playbackLog.test.ts,playbackLog.ts}`
 - Commands:
-    - npx vitest run src/components/pages/home/AppVersion/ src/components/pages/home/ViewportDebug/ src/config/appVersion.test.ts src/config/launchTheme.test.ts src/e2eSection.test.ts src/e2eSrcConstants.test.ts src/pwa/ src/splash/ src/App.test.tsx （12 個 test 檔）
+    - npm test -- src/components/pages/home/AppVersion/ src/components/pages/home/ViewportDebug/ src/config/appVersion.test.ts src/config/launchTheme.test.ts src/e2eSection.test.ts src/e2eSrcConstants.test.ts src/pwa/ src/splash/ src/App.test.tsx （12 個 test 檔）
     - e2e: e2e/pwaUpdate.mjs（PWA 換版 sections）
     - e2e: run.mjs '淺色主頁 + service worker'、'390×844 主流程'（splash / 版本號）
     - e2e 入口只有 `npm run e2e`（build + node e2e/run.mjs，跑晒所有 section）；未有單 section runner

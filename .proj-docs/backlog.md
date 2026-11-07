@@ -1,6 +1,6 @@
 # Backlog 登記冊（🟢 / Observation）
 
-**最後更新**：2026-11-07（Phase 0a monorepo review）
+**最後更新**：2026-11-07（Phase 0a monorepo QA）
 
 > Review / QA 報告入面嘅 🟢 同 Observation 統一喺呢度追蹤。掃 backlog 時淨係睇「Open」；「Closed」嘅唔使再理。
 > 新 finding 照寫喺各自報告，處理完或者決定唔理就喺呢度更新。
@@ -21,6 +21,9 @@
 | S-752 | root ESLint 依賴                    | `typescript-eslint` 靠 `apps/player` 嘅 `typescript` hoist                            | 加第二個 workspace 時 | reviews/2026-11-07_review_phase0a-monorepo |
 | S-753 | `.claude/CLAUDE.md`                 | 第 36 行 `src/utils/motion.ts` 冇 `apps/player/` 前綴                                 | 下次改 CLAUDE.md      | reviews/2026-11-07_review_phase0a-monorepo |
 | S-754 | backend plan                        | 風險寫改 Vercel Root Directory；實作留 repo 根，照改會 build 失敗                     | Phase 0b 前           | reviews/2026-11-07_review_phase0a-monorepo |
+| S-755 | `.claude/CLAUDE.md`                 | QA 表 chains 清單未有新鏈 `repo-tooling`                                              | 同 S-753 一齊         | qa/2026-11-07_qa_phase0a-monorepo          |
+| S-756 | `qa-ledger.sh`（plugin）            | `impact` 唔跟 rename：搬位後舊 path 當 UNCOVERED 列出（今次 721 行）                  | 下次改 plugin         | qa/2026-11-07_qa_phase0a-monorepo          |
+| S-757 | `vercel.json`                       | 未入任何鏈；TEMP `ee72715` revert 後定稿，下次 S3 納入 `repo-tooling`                 | 下次 S3               | qa/2026-11-07_qa_phase0a-monorepo          |
 
 ## Closed
 

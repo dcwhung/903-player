@@ -1,5 +1,6 @@
 # Test Plan — ui-foundation
 
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（`npm test -- <path>` 轉發去 `apps/player`）
 - Chain: 共用基礎：i18n、design tokens / global CSS、icons、ThemeScope、PageHeader、版面 / 動畫 utils、types、config 常數、test helpers
 - AC:
     - AC-1 文案只經 src/i18n/t.ts + zh-HK.ts（README §架構）
@@ -8,7 +9,7 @@
 - Scope files（freeze @ 6c8b3a6 共 75 個，1-hop importers 0 個；確實清單 = ledger 入面呢條鏈嘅行）:
     - Core（glob）: `src/styles/*` `src/i18n/*` `src/hooks/useThemeColorMeta*` `src/types/*` `src/config/constants.ts` `src/hooks/useViewportGap*` `src/hooks/viewportGap*` `src/hooks/usePageCanvas*` `src/hooks/useMediaQuery*` `src/hooks/useElementSize*` `src/hooks/useBox*` `src/components/shared/common/ThemeScope/*` `src/components/shared/common/StatusMessage/*` `src/components/shared/common/icons/*` `src/config/layout.ts` `src/config/showThemes*` `src/utils/viewTransition*` `src/utils/transitionNames*` `src/utils/motion*` `src/utils/cssLength*` `src/utils/cssTime*` `src/utils/ratio*` `src/utils/scroll*` `src/components/shared/common/PageHeader/*` `src/components/shared/common/Separator/*` `src/components/shared/common/SpokenText/*` `src/components/shared/common/VisuallyHidden/*` `tests/*`
 - Commands:
-    - npx vitest run src/components/shared/common/PageHeader/ src/components/shared/common/Separator/ src/components/shared/common/SpokenText/ src/components/shared/common/VisuallyHidden/ src/components/shared/common/StatusMessage/ src/components/shared/common/ThemeScope/ src/components/shared/common/icons/ src/config/showThemes.test.ts src/hooks/useElementSize.test.tsx src/hooks/useMediaQuery.test.ts src/hooks/useThemeColorMeta.test.tsx src/hooks/useViewportGap.test.tsx src/hooks/viewportGap.test.ts src/i18n/ src/styles/ src/utils/cssLength.test.ts src/utils/cssTime.test.ts src/utils/motion.test.ts src/utils/ratio.test.ts src/utils/scroll.test.ts src/utils/viewTransition.test.ts （30 個 test 檔）
+    - npm test -- src/components/shared/common/PageHeader/ src/components/shared/common/Separator/ src/components/shared/common/SpokenText/ src/components/shared/common/VisuallyHidden/ src/components/shared/common/StatusMessage/ src/components/shared/common/ThemeScope/ src/components/shared/common/icons/ src/config/showThemes.test.ts src/hooks/useElementSize.test.tsx src/hooks/useMediaQuery.test.ts src/hooks/useThemeColorMeta.test.tsx src/hooks/useViewportGap.test.tsx src/hooks/viewportGap.test.ts src/i18n/ src/styles/ src/utils/cssLength.test.ts src/utils/cssTime.test.ts src/utils/motion.test.ts src/utils/ratio.test.ts src/utils/scroll.test.ts src/utils/viewTransition.test.ts （30 個 test 檔）
     - e2e: run.mjs '390×844 主流程'（Poppins / theme-color）、'Shell 高度'、'節目頁 / 今日節目頁尺寸'
     - e2e 入口只有 `npm run e2e`（build + node e2e/run.mjs，跑晒所有 section）；未有單 section runner
 - PWA gate: no（唔掂 SW / manifest）
