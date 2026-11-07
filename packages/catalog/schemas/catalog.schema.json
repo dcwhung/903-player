@@ -1,0 +1,64 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "903 Player catalog（catalog.json）",
+    "description": "player 喺 runtime 讀嘅一份 catalog：全部節目同劇集（Phase 1）。runtime 驗證喺 packages/catalog/src/document/document.ts；同一類入面 id 唔准重複、generatedAt 要係存在嘅日子，呢兩樣淨係 runtime 驗。definition 內容跟 show.schema.json / drama.schema.json，由 registry build 驗。頂層多出嚟嘅 key（例如將來嘅 banner）會被忽略。",
+    "type": "object",
+    "required": ["schemaVersion", "generatedAt", "shows", "dramas"],
+    "properties": {
+        "$schema": {
+            "type": "string",
+            "description": "指去呢份 JSON Schema（editor 用，app 唔理）"
+        },
+        "schemaVersion": {
+            "const": 1,
+            "description": "文件格式版本；player 唔識嘅版本就成份唔用，fallback 內建資料"
+        },
+        "generatedAt": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$",
+            "description": "生成時間：ISO 8601，一定要有時區（例如 2026-11-07T10:00:00Z）"
+        },
+        "shows": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/definitions/entry" },
+            "description": "節目（definition = show.json）"
+        },
+        "dramas": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/definitions/entry" },
+            "description": "廣播劇（definition = drama.json）"
+        }
+    },
+    "definitions": {
+        "entry": {
+            "type": "object",
+            "required": ["id", "definition", "images"],
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*$",
+                    "description": "folder 名 = id = route param（細楷英數同連字號）。⚠️ 同 episode ID 有關，唔可以改"
+                },
+                "definition": {
+                    "type": "object",
+                    "description": "同 library 嘅 show.json / drama.json 一模一樣"
+                },
+                "images": {
+                    "type": "object",
+                    "description": "definition 用到嘅圖：檔名（相對 folder，可以有 sub-folder）→ 絕對 URL",
+                    "propertyNames": {
+                        "pattern": "^(?!.*(^|/)\\.\\.?(/|$))[^/\\\\]+(/[^/\\\\]+)*$"
+                    },
+                    "additionalProperties": {
+                        "type": "string",
+                        "pattern": "^(https://[^/?#\\s]+([/?#].*)?|/(?!/).*)$",
+                        "description": "https URL，或者同 origin 嘅絕對路徑（/ 開頭）"
+                    }
+                }
+            }
+        }
+    }
+}
