@@ -202,6 +202,10 @@ packages/catalog/ 由 src/catalog/{core,dramas/lib,shows/lib} 抽出：
 | 4     | Admin cover 編輯器 + theme 抽色 + banner                                                                                                   | 3    |
 | 5     | Player 動態 show grid（mockup 確認後）                                                                                                     | 1    |
 
+Phase 0b（抽 `packages/catalog`，2026-11-07）：`dramas/episodes.ts` 嘅 `host: 'app'` 仲用 `import.meta.env.BASE_URL`（package tsconfig 暫時加 `vite/client` types + TODO）；改做 `appAudioBase` 參數注入**押後到 Phase 2**（backend 冇 Vite，到時先改簽名）。
+
+Phase 0b 版本：抽 package 之後 Rolldown 嘅 module 次序改咗，所以 `assets/index-*.js`、`index.html`、`sw.js` 同 Phase 0a 唔係 byte 一樣（行為唔變，CSS 同圖片一樣）；用戶決定（2026-11-07）接受差異，bump PATCH v1.29.1。
+
 Phase 1 完成之後 player 已經同 backend 解耦：就算 backend 未完成，都可以手動放 `catalog.json` 上 R2 去用。
 
 ## 風險
