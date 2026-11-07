@@ -9,7 +9,7 @@ const LIST = [SUNNY, BADGIRL, WANNI];
 
 describe('toTodayItems', () => {
     it('builds one row per show with time, art and status', () => {
-        const items = toTodayItems(LIST, SUNNY.url, true, new Set([WANNI.url]));
+        const items = toTodayItems(LIST, SUNNY.url, true, new Set([WANNI.id]));
 
         expect(items).toEqual([
             {
@@ -51,7 +51,7 @@ describe('toTodayItems', () => {
     });
 
     it('shows the active show by its watched state while paused', () => {
-        const items = toTodayItems(LIST, WANNI.url, false, new Set([WANNI.url]));
+        const items = toTodayItems(LIST, WANNI.url, false, new Set([WANNI.id]));
 
         expect(items.map((item) => item.status)).toEqual(['unwatched', 'unwatched', 'watched']);
         expect(items[2]?.active).toBe(true);

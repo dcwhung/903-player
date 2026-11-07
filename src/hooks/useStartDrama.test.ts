@@ -16,8 +16,8 @@ const DAILY = dailyEpisodesOf('c18');
 
 describe('dramaStartEpisode', () => {
     it('resumes the series from saved progress', () => {
-        const url = SERIES[6]?.url ?? '';
-        const map = { [url]: { position: 60, duration: 600, watched: false, updatedAt: 1 } };
+        const id = SERIES[6]?.id ?? '';
+        const map = { [id]: { position: 60, duration: 600, watched: false, updatedAt: 1 } };
         // 三十六計 10/24 先上架（P8 #6）：用上咗架之後嘅日子
         expect(dramaStartEpisode(CHISEE, map, '2026-11-13')).toBe(SERIES[6]);
     });
@@ -30,8 +30,8 @@ describe('dramaStartEpisode', () => {
 });
 
 describe('isFirstSeriesVisit', () => {
-    const touched = (url: string) => ({
-        [url]: { position: 60, duration: 600, watched: false, updatedAt: 1 },
+    const touched = (id: string) => ({
+        [id]: { position: 60, duration: 600, watched: false, updatedAt: 1 },
     });
 
     it('is a first visit for a series drama with no progress at all', () => {
@@ -39,7 +39,7 @@ describe('isFirstSeriesVisit', () => {
     });
 
     it('is not a first visit once any of its episodes has progress', () => {
-        expect(isFirstSeriesVisit(CHISEE, touched(SERIES.at(-1)?.url ?? ''), null)).toBe(false);
+        expect(isFirstSeriesVisit(CHISEE, touched(SERIES.at(-1)?.id ?? ''), null)).toBe(false);
     });
 
     it('is not a first visit while one of its episodes is loaded, even with no progress yet', () => {
