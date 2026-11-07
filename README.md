@@ -30,7 +30,7 @@
 
 ```
 GitHub Actions（push main / 手動）
-  └─ npm run build → dist/ ─► GitHub Pages
+  └─ npm run build → apps/player/dist/ ─► GitHub Pages
 PWA（用戶部機）
   ├─ src/services/audioProbe.ts：逐個節目砌錄音網址，用 metadata-only <audio> 試
   ├─ src/services/probeStore.ts：搵到嘅錄音存 localStorage（唯一資料來源）
@@ -64,7 +64,7 @@ GitHub Actions 只負責 build 同 deploy。
   兩邊規則由 `src/catalog/core/jsonSchemas.node.test.ts` 對住同一批例子鎖住；改 `schema.ts` 記得一齊改 schema
 - 橫版主頁 grid 寫死 4 欄 × 2 行 = 7 個節目 + 今日格；加減節目要一齊改 `ShowGrid.module.css`（`src/catalog/shows/lib/shows.test.ts` 會提醒）
 
-### 由本機 folder 生成 drama.json（`scripts/dramaFromFolder.mjs`）
+### 由本機 folder 生成 drama.json（`apps/player/scripts/dramaFromFolder.mjs`）
 
 R2 嘅 r2.dev 網址冇 listing，所以由**上載去 R2 嗰份本機 folder** 生成 `drama.json` 草稿同檢查報告。
 個 script 係單一檔案、只用 Node 內置功能（**Node 18.3 或以上**，建議 20+；18.0–18.2 冇 `parseArgs`，會一開始就出 SyntaxError），**唔使 clone 呢個 repo、唔使 `npm install`**。
@@ -84,7 +84,7 @@ folder 結構（同 R2 一樣）：
 
 ```bash
 # 1. 下載（一個檔）；Windows 要打 curl.exe（見下面），或者用瀏覽器開條網址「另存新檔」
-curl -LO https://raw.githubusercontent.com/dcwhung/903-player/main/scripts/dramaFromFolder.mjs
+curl -LO https://raw.githubusercontent.com/dcwhung/903-player/main/apps/player/scripts/dramaFromFolder.mjs
 
 # 2. 新劇：生成草稿，順手 HEAD 驗晒 R2 網址，報告同時寫落 report.txt
 node dramaFromFolder.mjs "/路徑/森美小儀系列" --id sammy-kitty --verify --report report.txt
@@ -133,6 +133,10 @@ node dramaFromFolder.mjs "/路徑/森美小儀系列" --existing drama.json --ou
 
 ## 開發
 
+npm workspaces monorepo：app 喺 `apps/player/`（version 嘅唯一來源係 `apps/player/package.json`）；
+下面指令全部喺 repo 根跑（root scripts 轉發去 `apps/player`，`npm run lint` 用 root 嘅 ESLint / Prettier 設定檢查成個 repo）。
+下面提到嘅 `src/`、`e2e/`、`scripts/`、`public/`、`schemas/` 都喺 `apps/player/` 入面。
+
 ```bash
 npm install
 npm run dev        # 本地開發
@@ -140,19 +144,20 @@ npm test           # Vitest
 npm run coverage   # 覆蓋率
 npm run lint       # ESLint + Prettier
 npm run e2e        # Playwright 端對端測試（假錄音寫入 localStorage + 模擬 audio server）
-npm run build
+npm run build      # 輸出 apps/player/dist/
+npm test -- src/utils   # 只跑部分 test（path 相對 apps/player）
 ```
 
 ### 端對端測試（e2e）
 
-Playwright 鎖咗 `~1.63.0`（`package.json`），瀏覽器版本要同套件對得上。新機第一次跑之前裝一次 Chromium：
+Playwright 鎖咗 `~1.63.0`（`apps/player/package.json`），瀏覽器版本要同套件對得上。新機第一次跑之前裝一次 Chromium：
 
 ```bash
 npx playwright install chromium
 ```
 
-`npm run e2e` 會先 `npm run build`，再用 `node e2e/run.mjs` 起 preview server（預設 port 4173）跑晒所有檢查，
-截圖輸出去 `e2e/screenshots/`（唔入 git）。
+`npm run e2e` 會先 `npm run build`，再喺 `apps/player` 用 `node e2e/run.mjs` 起 preview server（預設 port 4173）跑晒所有檢查，
+截圖輸出去 `apps/player/e2e/screenshots/`（唔入 git）。
 
 - 瀏覽器已經裝咗喺其他位置（例如 CI / 雲端容器預先裝好）：設 `PLAYWRIGHT_BROWSERS_PATH` 指去嗰個資料夾，
   `npx playwright install` 同 `npm run e2e` 都會用佢，唔使再下載
@@ -175,16 +180,16 @@ npx playwright install chromium
 ### App icon
 
 `public/` 入面嘅 icon（`icon-192`、`icon-512`、`icon-maskable-512`、`apple-touch-icon` 180、`favicon` 64）
-全部由 `design/app-icon.png` 生成。改咗原圖之後執行：
+全部由 `design/app-icon.png`（repo 根）生成。改咗原圖之後執行：
 
 ```bash
-node scripts/generateIcons.mjs
+node apps/player/scripts/generateIcons.mjs
 ```
 
 用 Playwright 嘅 Chromium 縮放（唔使另外裝套件）；maskable 同 apple-touch-icon 填 `#98bdde` 底色，
 maskable 內容縮到 80%（安全區）。有 ImageMagick 就順手無損壓縮（像素唔變），冇就跳過。
 
-### 短篇碟面 / tile 候選圖（`scripts/arcCover/`）
+### 短篇碟面 / tile 候選圖（`apps/player/scripts/arcCover/`）
 
 將短篇（或者廣播劇本身）嘅封面相生成幾款候選圖畀人揀：碟面 `disc` 600×600 webp、
 長方形 `tile` webp（短篇 16:9 1216×684；唔填 `--arc` 即係廣播劇本身，書架 2:1 1216×608）。
@@ -192,11 +197,11 @@ Python 工具，唔屬於 app build，唔入 npm scripts；依賴裝喺 venv（O
 
 ```bash
 python3 -m venv /tmp/arcCover-venv
-/tmp/arcCover-venv/bin/pip install -r scripts/arcCover/requirements.lock   # 確實版本（輸出 byte 一樣）
-/tmp/arcCover-venv/bin/python scripts/arcCover/generate.py \
+/tmp/arcCover-venv/bin/pip install -r apps/player/scripts/arcCover/requirements.lock   # 確實版本（輸出 byte 一樣）
+/tmp/arcCover-venv/bin/python apps/player/scripts/arcCover/generate.py \
     --input "cover photo.png" --drama lancy --arc half --out /tmp/arcCover
-/tmp/arcCover-venv/bin/python -m pytest scripts/arcCover/tests   # 唔使網絡
-/tmp/arcCover-venv/bin/ruff check scripts/arcCover && /tmp/arcCover-venv/bin/ruff format --check scripts/arcCover
+/tmp/arcCover-venv/bin/python -m pytest apps/player/scripts/arcCover/tests   # 唔使網絡
+/tmp/arcCover-venv/bin/ruff check apps/player/scripts/arcCover && /tmp/arcCover-venv/bin/ruff format --check apps/player/scripts/arcCover
 ```
 
 - 依賴：`requirements.txt`（淨係 generator，下限避開 libwebp CVE-2023-4863）、`requirements-dev.txt`（加 pytest / jsonschema / ruff）、
@@ -220,10 +225,10 @@ python3 -m venv /tmp/arcCover-venv
 - 同一張圖、同一組參數、同一個 venv（`manifest.env` 一樣）輸出完全一樣（冇隨機；補底顆粒用固定 seed）；換 library 版本 sha256 / `duplicateOf` 可能會變
 - 人面 / 標題字偵測係 heuristic（Haar cascade + 眼睛過濾、筆劃密度 + 顏色），風格化封面會漏 / 誤報，睇 `analysis.png` 判斷；揀好之後要手動 copy 入 `src/catalog/dramas/library/<id>/`
 
-#### 新劇 / 新短篇封面 workflow（review 頁：`scripts/arcCover/review/`）
+#### 新劇 / 新短篇封面 workflow（review 頁：`apps/player/scripts/arcCover/review/`）
 
 候選圖喺 claude.ai Artifact review 頁揀（<https://claude.ai/artifact/4xzNxQTTy9XjCQg46TLKiT>），詳細見
-`scripts/arcCover/review/README.md`。生成物全部放 repo 外嘅 work 資料夾（`--work`；唔填用 `$ARC_COVER_WORK`，再冇就 `$TMPDIR/903-player-covers`），唔入 git。
+`apps/player/scripts/arcCover/review/README.md`。生成物全部放 repo 外嘅 work 資料夾（`--work`；唔填用 `$ARC_COVER_WORK`，再冇就 `$TMPDIR/903-player-covers`），唔入 git。
 
 1. **原圖**：`fetch_sources.py <id> --work $WORK`（由 R2 下載 `cover photo.png|jpg` / `cover-photo.jpg`，名轉 NFC 再 URL-encode；
    新短篇加 `--arc "短篇名=slug"`；exit 1 = R2 冇，exit 3 = 網絡 / proxy 出錯）
@@ -242,7 +247,7 @@ python3 -m venv /tmp/arcCover-venv
    未儲存 = `keep` 沿用現有圖）
 5. **入 app**：揀中嘅 webp copy 去 `src/catalog/dramas/library/<id>/`：整套劇 `tile.webp` / `disc.webp`，短篇 `arcs/<slug>/tile.webp` / `arcs/<slug>/disc.webp`
    （新短篇喺 `drama.json` 加 `disc` / `tile`）
-6. **PATCH bump** `package.json` version
+6. **PATCH bump** `apps/player/package.json` version
 
 ## 部署（只需做一次）
 
@@ -250,11 +255,13 @@ GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 *
 之後每次 push `main`（或者喺 Actions 手動執行）都會自動 build 同重新 deploy 去
 `https://<owner>.github.io/903-player/`。
 
-另外 Vercel 都由 `main` 部署（`vite.config.ts` 見到 `VERCEL` 就用根路徑 `/`）。`vercel.json` 關咗工作 branch
+另外 Vercel 都由 `main` 部署（`vite.config.ts` 見到 `VERCEL` 就用根路徑 `/`）。`vercel.json` 指定 install / build / output（`npm ci` → `npm run build -w apps/player` → `apps/player/dist`），Root Directory 留 repo 根。`vercel.json` 關咗工作 branch
 （`claude/**`、`fix/**`、`hotfix/**` 等）嘅 preview 部署：免費 plan 每日部署次數有限，一個 session push 多次
 會用晒額度，令 merge 入 `main` 嗰次被拒（「Deployment rate limited」）。新增 branch 前綴要記得加入呢個清單。
 
 ## 目錄
+
+以下 path 相對 `apps/player/`（`design/`、`_mockups_/`、`.proj-docs/` 留喺 repo 根）。
 
 | 路徑                     | 用途                                                                                                                                              |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |

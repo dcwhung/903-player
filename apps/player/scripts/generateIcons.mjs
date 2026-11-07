@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { chromiumExecutablePath } from './chromiumLaunch.mjs';
 
-const SOURCE = fileURLToPath(new URL('../design/app-icon.png', import.meta.url));
+// design/ 留喺 repo 根（設計原檔，唔係 build input）
+const SOURCE = fileURLToPath(new URL('../../../design/app-icon.png', import.meta.url));
 const OUT_DIR = fileURLToPath(new URL('../public/', import.meta.url));
 // icon 嘅柔藍底色（要同 app-icon.png 背景一致）：maskable 同 apple-touch-icon 用嚟填滿四角
 const ICON_BACKGROUND = '#98bdde';

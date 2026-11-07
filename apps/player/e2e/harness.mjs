@@ -34,7 +34,8 @@ export const GOOGLE_FONTS_CSS = 'https://fonts.googleapis.com';
 export const GOOGLE_FONTS_FILES = 'https://fonts.gstatic.com';
 /** 本機字型檔喺 gstatic 嘅假路徑前綴（真 gstatic 唔會用 /e2e/，唔會同真網址混淆） */
 const LOCAL_FONT_PREFIX = '/e2e/';
-const FONTSOURCE_POPPINS = new URL('../node_modules/@fontsource/poppins/', import.meta.url);
+// npm workspaces 將 dependency hoist 去 repo 根嘅 node_modules：用 Node resolution 搵，唔寫死相對 path
+const FONTSOURCE_POPPINS = new URL('./', import.meta.resolve('@fontsource/poppins/400.css'));
 /** 只供應拉丁字（UI 嘅英文、數字）；其他 subset（devanagari）app 用唔著 */
 const POPPINS_SUBSETS = new Set(['latin', 'latin-ext']);
 /** fontsource 每個字重嘅 CSS 入面一段 @font-face（前面有 /* poppins-<subset>-<weight>-normal *\/ 註解） */

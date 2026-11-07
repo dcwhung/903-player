@@ -1040,7 +1040,8 @@ describe('run (CLI)', () => {
     });
 
     it('should document every exit code in the README table', () => {
-        const readme = readFileSync(new URL('../README.md', SCRIPT), 'utf8');
+        // README 留喺 repo 根（apps/player 上兩層）
+        const readme = readFileSync(new URL('../../../README.md', SCRIPT), 'utf8');
         Object.values(EXIT).forEach((code) => expect(readme).toContain(`| \`${code}\`  |`));
     });
 

@@ -9,7 +9,7 @@ function loadPlaywright() {
         // agent worktree 冇自己嘅 node_modules：試主 repo（PLAYWRIGHT_PATH 可以覆蓋）
         return require(
             process.env.PLAYWRIGHT_PATH ||
-                path.resolve(__dirname, '../../../node_modules/playwright'),
+                path.resolve(__dirname, '../../../../../node_modules/playwright'),
         );
     }
 }
