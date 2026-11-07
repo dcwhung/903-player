@@ -87,19 +87,20 @@ https://…/903-player/#import=1.<base64url(deflate-raw(JSON))>
 
 ## 未決問題（實作前再問 / 再量）
 
-| #   | 問題                                                                                                                                                              |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| U1  | App 內掃 QR library：iOS Safari 冇 `BarcodeDetector`，要 JS 解碼（候選 `jsQR`、`qr-scanner`，都係 MIT）；揀邊個、`import()` lazy load、`npm audit` + license 檢查 |
-| U2  | 相機畫面 / 權限被拒 / 冇相機嘅 UI 要出 preview v5（Preview-First），包括「掃 QR」+「貼上連結」入口放邊                                                            |
-| U3  | 原樣 episode ID 嘅 QR 版本要重量（50 集 + 0 / 20 / 50 個收藏）；超過 v25 或 300 CSS px 解唔穩 → 再考慮 ID 分組字典或者減集數                                      |
-| U4  | iOS Safari（非主畫面）匯入咗嘅資料可能被 ITP 7 日清走：Q2 提示文案要唔要講明                                                                                      |
-| U5  | `bookmarks:v2` 實際 schema（Phase −1 定）：tombstone `removed[]` 同「缺開咪時間」嘅收藏點存，要同 Phase −1 對齊                                                   |
-| U6  | 備份 key 名同格式（建議 `903player:import-backup:v1`，`{ savedAt, progress, bookmarks }`）；同埋 Toast 顯示幾耐                                                   |
-| U7  | Q9 自動更新：hash 留住等新版讀，要確認 reload 之後 `#import=` 仲喺度、唔會同現有防 loop guard 撞                                                                  |
+| #   | 問題                                                                                                                                                                                                                                                 |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| U1  | App 內掃 QR library：iOS Safari 冇 `BarcodeDetector`，要 JS 解碼（候選 `jsQR`、`qr-scanner`，都係 MIT）；揀邊個、`import()` lazy load、`npm audit` + license 檢查                                                                                    |
+| U2  | **Preview v5 已出**（`_mockups_/qr-transfer/index.html` ⑥ ⑦，branch `claude/quirky-heisenberg-hljtnz`）：四種組合 A → B 流程 + 例外情況；等用戶確認，包括 U8                                                                                         |
+| U3  | **已量（v5，jsQR）**：50 集 + 0–10 個收藏 = v24、20 個 = v25，2x / 3x 螢幕 260 / 300 px 都解到；30 個 = v26（2x 要 340 px）、40–50 個 = v27（2x 去到 420 px 都唔穩）→ 等用戶揀：QR 預算定死 v25（收藏優先、集數放到滿）/ 收藏設上限 / 改 ID 分組字典 |
+| U4  | iOS Safari（非主畫面）匯入咗嘅資料可能被 ITP 7 日清走：Q2 提示文案要唔要講明                                                                                                                                                                         |
+| U5  | `bookmarks:v2` 實際 schema（Phase −1 定）：tombstone `removed[]` 同「缺開咪時間」嘅收藏點存，要同 Phase −1 對齊                                                                                                                                      |
+| U6  | 備份 key 名同格式（建議 `903player:import-backup:v1`，`{ savedAt, progress, bookmarks }`）；同埋 Toast 顯示幾耐                                                                                                                                      |
+| U7  | Q9 自動更新：hash 留住等新版讀，要確認 reload 之後 `#import=` 仲喺度、唔會同現有防 loop guard 撞                                                                                                                                                     |
+| U8  | 全新 B 機冇記錄時第三格唔出（v4），冇入口匯入：preview v5 提供 E1（第三格出 ⇅，撳彈「由另一部機匯入」卡）同 E2（第三格係「未有收聽記錄」空白頁，入面有掃描 / 貼上），等用戶揀                                                                        |
 
 ## 下一步
 
 1. Phase −1（v1.29.0）merge 之後先開工
-2. U2 → preview v5（相機掃 QR 畫面 + 入口）交用戶確認
-3. U1 / U3 實測後定 library 同容量
+2. 用戶確認 preview v5（U2）、揀 U8 入口同 U3 容量做法
+3. U1 實測後定掃描 library
 4. `/feature`：`feature/transfer/qr-sync`，MINOR

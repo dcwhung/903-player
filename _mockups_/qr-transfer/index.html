@@ -1,0 +1,4163 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>903 QR 同步</title>
+        <style>
+            /* 版面跟 _mockups_/bookmark：一欄卡，入面係按闊度縮細嘅 v1.27.0 真截圖舞台 */
+            :root {
+                --move: 520ms; /* = --view-transition-move */
+                --fade: 260ms; /* = --view-transition-fade */
+                --ease: cubic-bezier(0.2, 0.8, 0.2, 1); /* = --ease-view-transition */
+                --bg: #eef1f5;
+                --surface: #ffffff;
+                --ink: #18202b;
+                --note: #5d6775;
+                --line: #d3d9e2;
+                --accent: #3b6fb6;
+                --on-accent: #ffffff;
+                --code-bg: #f3f5f8;
+                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+                /* app 入面嘅顏色（截圖取色，唔跟頁面主題轉） */
+                --app-bg-top: #4f739b;
+                --app-bg-bottom: #41648a;
+                --app-cream: #f5d294;
+                --app-on-cream: #1c2330;
+                --app-track: #3e5c7c;
+                --app-sheet: #172a3d;
+                --app-sheet-raised: #20374f;
+                --app-ink: #ffffff;
+                --app-muted: rgb(255 255 255 / 68%);
+                --app-line: rgb(255 255 255 / 26%);
+                --app-divider: rgb(255 255 255 / 12%);
+                --app-gold: #d4ae5c;
+                --app-warn: #ffb4a8;
+                --app-toast: rgb(10 16 24 / 88%);
+                --app-scrim: rgb(6 12 20 / 58%);
+                /* 同步面板：藍 → 藍綠（同 QR 漸變同一個色系） */
+                --sync-blue: #2c6ea6;
+                --sync-teal: #1f8a7e;
+                --sync-deep: #0d2236;
+                --qr-dark-a: #0b4f7a;
+                --qr-dark-b: #0d6b62;
+                /* A 淺色卡 */
+                --card-light: #fbf6ea;
+                --card-ink: #1c2330;
+                --card-muted: #5b6472;
+                --card-line: rgb(28 35 48 / 16%);
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #10151c;
+                    --surface: #1a212b;
+                    --ink: #e8edf3;
+                    --note: #9aa5b3;
+                    --line: #2e3845;
+                    --accent: #7fa8e6;
+                    --on-accent: #0d1420;
+                    --code-bg: #121820;
+                    color-scheme: dark;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #10151c;
+                --surface: #1a212b;
+                --ink: #e8edf3;
+                --note: #9aa5b3;
+                --line: #2e3845;
+                --accent: #7fa8e6;
+                --on-accent: #0d1420;
+                --code-bg: #121820;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding-block: 24px 48px;
+                padding-left: max(16px, env(safe-area-inset-left, 0px));
+                padding-right: max(16px, env(safe-area-inset-right, 0px));
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font);
+            }
+            main {
+                display: grid;
+                gap: 20px;
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+            h1 {
+                margin: 0;
+                font-size: 22px;
+                text-wrap: balance;
+            }
+            h2 {
+                margin: 0;
+                font-size: 17px;
+            }
+            h3 {
+                margin: 8px 0 0;
+                font-size: 15px;
+            }
+            p,
+            li,
+            td,
+            th {
+                margin: 0;
+                color: var(--note);
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            :is(p, li, td, th) > :is(b, strong) {
+                color: var(--ink);
+            }
+            ul,
+            ol {
+                margin: 0;
+                padding-left: 20px;
+            }
+            code,
+            pre {
+                font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+                font-size: 12.5px;
+            }
+            pre {
+                margin: 0;
+                padding: 10px 12px;
+                border-radius: 10px;
+                background: var(--code-bg);
+                color: var(--ink);
+                white-space: pre-wrap;
+                word-break: break-all;
+                max-height: 220px;
+                overflow: auto;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            .table-wrap {
+                overflow-x: auto;
+            }
+            th,
+            td {
+                text-align: left;
+                padding: 6px 8px;
+                border-bottom: 1px solid var(--line);
+                white-space: nowrap;
+                font-variant-numeric: tabular-nums;
+            }
+            th {
+                color: var(--ink);
+                font-weight: 600;
+            }
+            .panel {
+                display: grid;
+                gap: 12px;
+                padding: 16px;
+                border-radius: 16px;
+                background: var(--surface);
+                min-width: 0;
+            }
+            .row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                align-items: center;
+            }
+            .pick,
+            .act {
+                padding: 8px 14px;
+                border: 1px solid var(--line);
+                border-radius: 999px;
+                background: var(--surface);
+                color: var(--ink);
+                font: inherit;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            .pick[aria-pressed='true'] {
+                border-color: var(--accent);
+                background: var(--accent);
+                color: var(--on-accent);
+            }
+            button:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
+            .sw {
+                display: inline-block;
+                width: 18px;
+                height: 18px;
+                vertical-align: -4px;
+            }
+            .stages {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 16px;
+                align-items: flex-start;
+            }
+            .device {
+                display: grid;
+                gap: 6px;
+                max-width: 100%;
+            }
+            .device > span {
+                font-size: 12px;
+                color: var(--note);
+            }
+            /* 假網址列（匯入示範：睇 hash 幾時清走） */
+            .urlbar {
+                padding: 6px 10px;
+                border-radius: 8px;
+                background: var(--code-bg);
+                border: 1px solid var(--line);
+                font:
+                    12px/1.4 ui-monospace,
+                    Menlo,
+                    monospace;
+                color: var(--ink);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .viewport {
+                position: relative;
+                overflow: hidden;
+                border-radius: 14px;
+                box-shadow: 0 2px 12px rgb(0 0 0 / 18%);
+                background: #000;
+                max-width: 100%;
+                flex: none;
+            }
+            .stage {
+                position: absolute;
+                top: 0;
+                left: 0;
+                transform-origin: 0 0;
+                overflow: hidden;
+                background: center / 100% 100% no-repeat;
+                font-family: var(--font);
+                color: var(--app-ink);
+            }
+            .abs {
+                position: absolute;
+            }
+            /* 蓋住截圖原本內容嘅底（跟 app 由上至下嘅藍色漸變；background-position 由 JS 對齊成個舞台） */
+            .patch {
+                position: absolute;
+                background: linear-gradient(var(--app-bg-top), var(--app-bg-bottom));
+            }
+
+            /* ---------- 主頁 tab 複製品（尺寸 = v1.27.0 量到） ---------- */
+            .tabs {
+                position: absolute;
+                display: flex;
+                gap: var(--inset);
+                padding: var(--inset);
+                border-radius: 999px;
+                background: var(--app-track);
+            }
+            .tab {
+                position: relative;
+                z-index: 1;
+                flex: 1 1 0;
+                min-width: 0;
+                display: grid;
+                place-items: center;
+                border: 0;
+                border-radius: 999px;
+                background: transparent;
+                color: var(--app-ink);
+                font: 400 var(--font-size) / 1 var(--font);
+                padding: 0;
+                overflow: hidden;
+            }
+            .tab[aria-pressed='true'] {
+                color: var(--app-on-cream);
+                font-weight: 700;
+            }
+            .tab.icon {
+                flex: 0 0 var(--icon-tab);
+            }
+            .tab.icon.gone {
+                flex-basis: 0;
+                opacity: 0;
+                margin-left: calc(-1 * var(--inset));
+            }
+            /* ★ / 最近收聽 icon 疊埋喺同一格：轉 icon = 一個縮細轉走、一個轉入嚟 */
+            .ico {
+                grid-area: 1 / 1;
+                display: grid;
+                place-items: center;
+            }
+            .ico svg {
+                width: calc(var(--font-size) * 1.6);
+                height: calc(var(--font-size) * 1.6);
+            }
+            .ico[data-on='false'] {
+                opacity: 0;
+                transform: scale(0.3) rotate(var(--turn, 90deg));
+            }
+            .ico.star {
+                --turn: -90deg;
+            }
+            .pill {
+                position: absolute;
+                top: var(--inset);
+                bottom: var(--inset);
+                border-radius: 999px;
+                background: var(--app-cream);
+            }
+
+            /* ---------- 收藏 tab 內容 ---------- */
+            .fade-layer {
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+            }
+            .fade-layer > * {
+                pointer-events: auto;
+            }
+            .fade-layer[data-on='false'] {
+                opacity: 0;
+                visibility: hidden;
+            }
+            /* 最近收聽 panel（虛線框，跟 v1.27.0 RecentPanel） */
+            .recent {
+                position: absolute;
+                display: flex;
+                flex-direction: column;
+                padding: calc(var(--rf) * 0.9) calc(var(--rf) * 0.9) 4px;
+                border: 1px dashed var(--app-line);
+                border-radius: 14px;
+            }
+            .recent-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                min-height: calc(var(--rf) * 2.2);
+            }
+            .recent-head h4 {
+                margin: 0;
+                font: 700 calc(var(--rf) * 1.07) / 1.3 var(--font);
+            }
+            .recent-list {
+                flex: 1 1 0;
+                min-height: 0;
+                overflow-y: auto;
+                margin: 0;
+                padding: 0;
+                list-style: none;
+                column-gap: calc(var(--rf) * 1.6);
+            }
+            /* 碟 | 名（minmax(0, 1fr)：長名唔會推走 ☆，用 … 收尾）| 固定闊度 ☆ 欄：每行 ☆ 垂直對齊 */
+            .recent-row {
+                display: grid;
+                grid-template-columns: var(--disc) minmax(0, 1fr) var(--star-col);
+                gap: calc(var(--rf) * 0.9);
+                align-items: center;
+                padding: 4px 0;
+                break-inside: avoid;
+                border-bottom: 1px solid var(--app-divider);
+                color: var(--app-ink);
+                text-align: left;
+                --star-col: calc(var(--rf) * 2.8);
+            }
+            .recent-text {
+                min-width: 0;
+            }
+            .recent-row b,
+            .recent-row small {
+                display: block;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .recent-row b {
+                font: 600 var(--rf) / 1.35 var(--font);
+            }
+            .recent-row small {
+                font: 400 calc(var(--rf) * 0.95) / 1.4 var(--font);
+                color: var(--app-muted);
+            }
+            .disc {
+                position: relative;
+                width: var(--disc);
+                aspect-ratio: 1;
+                border-radius: 50%;
+                background: center / cover no-repeat;
+                box-shadow: 0 0 0 3px rgb(10 14 20 / 85%);
+            }
+            .disc::after {
+                content: '';
+                position: absolute;
+                inset: 41%;
+                border-radius: 50%;
+                background: #10141a;
+            }
+            .star-btn {
+                display: grid;
+                place-items: center;
+                width: var(--star-col);
+                height: var(--star-col);
+                border: 0;
+                border-radius: 999px;
+                background: transparent;
+                color: var(--app-gold);
+                padding: 0;
+                cursor: pointer;
+            }
+            .star-btn svg {
+                width: 62%;
+                height: 62%;
+            }
+            /* 同步掣：最近收聽標題右邊，⇅ + 「同步」 */
+            .sync-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: calc(var(--rf) * 0.3);
+                height: calc(var(--rf) * 2.2);
+                padding: 0 calc(var(--rf) * 0.85) 0 calc(var(--rf) * 0.6);
+                border: 1px solid var(--app-line);
+                border-radius: 999px;
+                background: rgb(255 255 255 / 8%);
+                color: var(--app-ink);
+                font: 600 calc(var(--rf) * 0.92) / 1 var(--font);
+                cursor: pointer;
+                white-space: nowrap;
+            }
+            .sync-btn svg {
+                width: calc(var(--rf) * 1.3);
+                height: calc(var(--rf) * 1.3);
+            }
+            .sync-btn.callout {
+                box-shadow: 0 0 0 3px var(--app-cream);
+            }
+
+            /* ---------- 面板（同步 / 匯入）：浮起米白卡（用戶揀咗 A 視覺） ---------- */
+            .scrim {
+                position: absolute;
+                inset: 0;
+                z-index: 20;
+                display: grid;
+                background: rgb(6 12 20 / 66%);
+            }
+            /* 手機：卡離四邊 12px 浮起，唔貼底 */
+            .scrim[data-pos='sheet'] {
+                align-items: end;
+                padding: 12px;
+            }
+            .scrim[data-pos='center'] {
+                place-items: center;
+            }
+            .sheet {
+                position: relative;
+                display: grid;
+                gap: 12px;
+                padding: 20px 20px 22px;
+                border-radius: 26px;
+                background: var(--card-light);
+                color: var(--card-ink);
+                font-size: var(--pf);
+                line-height: 1.5;
+                box-shadow:
+                    0 24px 60px rgb(0 0 0 / 50%),
+                    0 0 0 1px rgb(255 255 255 / 40%);
+                --muted: var(--card-muted);
+            }
+            .scrim[data-pos='center'] .sheet {
+                width: var(--dialog-w);
+                max-height: calc(100% - 24px);
+                overflow: auto;
+                padding: 20px;
+            }
+            /* 標題置中：icon | 標題 | ✕ 三格（冇 icon / ✕ 都留返同闊嘅位，標題先會喺正中） */
+            .sheet-head {
+                display: grid;
+                grid-template-columns: calc(var(--pf) * 2.6) minmax(0, 1fr) calc(var(--pf) * 2.6);
+                align-items: center;
+                gap: 10px;
+            }
+            .sheet-head h4 {
+                margin: 0;
+                text-align: center;
+                font: 700 calc(var(--pf) * 1.25) / 1.3 var(--font);
+            }
+            .head-ico {
+                display: grid;
+                place-items: center;
+                flex: none;
+                width: calc(var(--pf) * 2.4);
+                height: calc(var(--pf) * 2.4);
+                border-radius: 50%;
+                background: rgb(44 110 166 / 12%);
+                color: var(--sync-blue);
+            }
+            .head-ico.bad {
+                background: rgb(178 58 48 / 12%);
+                color: #a3342b;
+            }
+            .head-ico svg {
+                width: 55%;
+                height: 55%;
+            }
+            .x-btn {
+                display: grid;
+                place-items: center;
+                flex: none;
+                width: calc(var(--pf) * 2.6);
+                height: calc(var(--pf) * 2.6);
+                border: 0;
+                border-radius: 999px;
+                background: rgb(28 35 48 / 7%);
+                color: inherit;
+                cursor: pointer;
+                padding: 0;
+            }
+            .x-btn svg {
+                width: 50%;
+                height: 50%;
+            }
+
+            /* 同步：QR 做主角（手機置中放大；橫版 QR 左邊用盡高度） */
+            .share-body {
+                display: grid;
+                gap: 14px;
+                justify-items: center;
+                text-align: center;
+            }
+            .share-body.side {
+                grid-template-columns: auto minmax(0, 1fr);
+                justify-items: stretch;
+                align-items: stretch;
+                text-align: left;
+                gap: calc(var(--pf) * 1.6);
+            }
+            .qr-card {
+                display: grid;
+                gap: 6px;
+                justify-items: center;
+                align-content: center;
+                padding: calc(var(--qr) * 0.035);
+                border-radius: 20px;
+                background: #fff;
+                box-shadow:
+                    0 0 0 1px var(--card-line),
+                    0 10px 24px rgb(28 35 48 / 14%);
+            }
+            .qr {
+                width: var(--qr);
+                height: var(--qr);
+                display: grid;
+                place-items: center;
+            }
+            .qr svg {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
+            .qr-miss {
+                color: #333;
+                font-size: 12px;
+                text-align: center;
+            }
+            /* 太大：QR 下面細膠囊（連結有齊由私隱字負責，唔重覆） */
+            .qr-note {
+                padding: 3px 12px;
+                border-radius: 999px;
+                background: #f6e2b8;
+                color: #6b4a12;
+                font: 600 calc(var(--pf) * 0.84) / 1.4 var(--font);
+            }
+            .mid .qr-note {
+                justify-self: start;
+            }
+            /* 橫版右欄：標題貼頂、掣同私隱字貼底、中間平均分佈 */
+            .share-info {
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                gap: 12px;
+                min-width: 0;
+            }
+            .mid,
+            .end {
+                display: grid;
+                gap: 8px;
+                width: 100%;
+            }
+            .count {
+                font-weight: 700;
+                font-size: calc(var(--pf) * 1.1);
+            }
+            .muted {
+                color: var(--muted);
+            }
+            .btns {
+                display: grid;
+                gap: 8px;
+                width: 100%;
+            }
+            .abtn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                min-height: calc(var(--pf) * 3);
+                padding: 6px 14px;
+                border: 1px solid var(--card-line);
+                border-radius: 999px;
+                background: transparent;
+                color: inherit;
+                font: 600 var(--pf) / 1.2 var(--font);
+                cursor: pointer;
+            }
+            .abtn.primary {
+                border-color: var(--card-ink);
+                background: var(--card-ink);
+                color: #fff;
+            }
+            .abtn.big {
+                min-height: calc(var(--pf) * 3.6);
+                font-size: calc(var(--pf) * 1.1);
+            }
+            .abtn.danger {
+                border-color: rgb(163 52 43 / 40%);
+                color: #a3342b;
+            }
+            .abtn.plain {
+                border-color: transparent;
+                color: var(--muted);
+            }
+            .abtn svg {
+                width: 1.2em;
+                height: 1.2em;
+            }
+            .sync-btn:focus-visible,
+            .star-btn:focus-visible {
+                outline: 2px solid var(--app-cream);
+                outline-offset: 2px;
+            }
+            .sheet button:focus-visible,
+            .sheet summary:focus-visible {
+                outline: 2px solid var(--sync-blue);
+                outline-offset: 2px;
+            }
+            .fine {
+                font-size: calc(var(--pf) * 0.86);
+                color: var(--muted);
+            }
+            .warn-text {
+                color: #a3342b;
+            }
+
+            /* ---------- 匯入確認（定稿：並排圖示） ---------- */
+            /* B 並排圖示 + 箭咀 */
+            .flow {
+                display: grid;
+                grid-template-columns: 1fr auto 1fr;
+                align-items: center;
+                gap: 6px;
+                text-align: center;
+            }
+            .dev {
+                display: grid;
+                justify-items: center;
+                gap: 4px;
+                min-width: 0;
+            }
+            .dev-ico {
+                display: grid;
+                place-items: center;
+                width: calc(var(--pf) * 3.6);
+                height: calc(var(--pf) * 3.6);
+                border-radius: 18px;
+                background: #fff;
+                box-shadow: 0 0 0 1px var(--card-line);
+                color: var(--sync-blue);
+            }
+            .dev-ico svg {
+                width: 56%;
+                height: 56%;
+            }
+            .dev small {
+                color: var(--muted);
+                font-size: calc(var(--pf) * 0.86);
+            }
+            .dev b {
+                color: var(--card-ink);
+                font-size: calc(var(--pf) * 0.95);
+            }
+            .flow-arrow {
+                color: var(--sync-teal);
+            }
+            .flow-arrow.bad {
+                color: #a3342b;
+            }
+            .flow-arrow svg {
+                width: calc(var(--pf) * 2.2);
+                height: calc(var(--pf) * 2.2);
+            }
+            .result {
+                padding: 8px 12px;
+                border-radius: 12px;
+                background: rgb(31 138 126 / 12%);
+                color: #0d5a52;
+                font-weight: 700;
+                text-align: center;
+            }
+            /* 掣列：取消 / 返回靠左；動作一組靠右（手機窄位都保持左右分組） */
+            .btn-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+            }
+            .btn-group {
+                display: flex;
+                gap: 8px;
+            }
+            .btn-row .abtn.plain {
+                padding-left: 4px;
+                padding-right: 4px;
+            }
+            .actions {
+                display: grid;
+                gap: 8px;
+            }
+            .abtn.danger-fill {
+                border-color: #a3342b;
+                background: #a3342b;
+                color: #fff;
+            }
+            .abtn.small {
+                flex: none;
+                min-height: calc(var(--pf) * 2.3);
+                padding: 4px 14px;
+                font-size: calc(var(--pf) * 0.88);
+            }
+            .result.danger {
+                background: rgb(163 52 43 / 10%);
+                color: #8f2c24;
+            }
+            /* （建議）Safari / 內置瀏覽器開咗：教用戶喺主畫面 app 貼上 */
+            .tip {
+                display: grid;
+                gap: 8px;
+                justify-items: start;
+                padding: 10px 12px;
+                border-radius: 12px;
+                background: rgb(44 110 166 / 10%);
+                color: #1d4a72;
+                font-size: calc(var(--pf) * 0.9);
+            }
+            /* 由另一部機匯入：貼上連結 */
+            .paste-field {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            .paste-field input {
+                flex: 1;
+                min-width: 0;
+                height: calc(var(--pf) * 2.8);
+                padding: 0 12px;
+                border: 1px solid rgb(28 35 48 / 30%);
+                border-radius: 12px;
+                background: #fff;
+                color: var(--card-ink);
+                font: inherit;
+                font-size: calc(var(--pf) * 0.9);
+            }
+            .paste-field input::placeholder {
+                color: #6b7380;
+            }
+            .sheet input:focus-visible {
+                outline: 2px solid var(--sync-blue);
+                outline-offset: 1px;
+            }
+            .center {
+                text-align: center;
+            }
+
+            .toast {
+                position: absolute;
+                z-index: 30;
+                left: 24px;
+                right: 24px;
+                margin: 0 auto;
+                max-width: 560px;
+                padding: 12px 14px;
+                border-radius: 12px;
+                background: var(--app-toast);
+                font: var(--tf, 14px) / 1.4 var(--font);
+                text-align: center;
+                pointer-events: none;
+            }
+            .toast[data-visible='false'] {
+                opacity: 0;
+                visibility: hidden;
+            }
+
+            /* ---------- v5：完整流程（⑥）---------- */
+            .flow-nav {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                align-items: center;
+            }
+            .act:disabled {
+                opacity: 0.4;
+                cursor: default;
+            }
+            .step-count {
+                font-size: 13px;
+                color: var(--note);
+            }
+            .step-list {
+                display: grid;
+                gap: 2px;
+            }
+            .step-btn {
+                display: flex;
+                gap: 8px;
+                align-items: baseline;
+                width: 100%;
+                padding: 4px 6px;
+                border: 0;
+                border-radius: 8px;
+                background: none;
+                color: var(--note);
+                font: inherit;
+                font-size: 14px;
+                line-height: 1.5;
+                text-align: left;
+                cursor: pointer;
+            }
+            .step-btn[aria-current='step'] {
+                background: var(--code-bg);
+                color: var(--ink);
+                font-weight: 600;
+            }
+            .who {
+                flex: none;
+                min-width: 2.4em;
+                padding: 0 6px;
+                border: 1px solid var(--line);
+                border-radius: 999px;
+                font-size: 12px;
+                text-align: center;
+            }
+            .device.active > .viewport {
+                box-shadow:
+                    0 0 0 3px var(--accent),
+                    0 2px 12px rgb(0 0 0 / 18%);
+            }
+            .urlbar.callout {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 2px var(--accent);
+            }
+            .tab.callout {
+                outline: 3px solid var(--app-cream);
+                outline-offset: -3px;
+            }
+            .abtn.callout {
+                box-shadow: 0 0 0 3px rgb(44 110 166 / 45%);
+            }
+            .abtn span {
+                min-width: 0;
+            }
+
+            /* 全新 B 機 E2：第三格空白頁 */
+            .empty-state {
+                position: absolute;
+                display: grid;
+                align-content: center;
+                justify-items: center;
+                gap: calc(var(--rf) * 1);
+                padding: calc(var(--rf) * 1.5);
+                border: 1px dashed var(--app-line);
+                border-radius: 14px;
+                text-align: center;
+                color: var(--app-ink);
+                font: var(--rf) / 1.5 var(--font);
+            }
+            .empty-state .big-ico {
+                display: grid;
+                place-items: center;
+                width: calc(var(--rf) * 4);
+                height: calc(var(--rf) * 4);
+                border-radius: 50%;
+                background: rgb(255 255 255 / 10%);
+            }
+            .empty-state .big-ico svg {
+                width: 50%;
+                height: 50%;
+            }
+            .empty-state h4 {
+                margin: 0;
+                font: 700 calc(var(--rf) * 1.2) / 1.3 var(--font);
+            }
+            .empty-state small {
+                max-width: 28em;
+                color: var(--app-muted);
+            }
+            .app-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                min-height: calc(var(--rf) * 2.8);
+                padding: 0 calc(var(--rf) * 1.2);
+                border: 1px solid var(--app-line);
+                border-radius: 999px;
+                background: rgb(255 255 255 / 8%);
+                color: var(--app-ink);
+                font: 600 var(--rf) / 1 var(--font);
+                cursor: pointer;
+            }
+            .app-btn.primary {
+                border-color: var(--app-cream);
+                background: var(--app-cream);
+                color: var(--app-on-cream);
+            }
+            .app-btn.callout {
+                box-shadow: 0 0 0 3px rgb(255 255 255 / 70%);
+            }
+            .app-btn svg {
+                width: 1.3em;
+                height: 1.3em;
+            }
+
+            /* 相機：手機全屏；電腦喺對話框入面 */
+            .cam {
+                position: absolute;
+                inset: 0;
+                z-index: 25;
+                display: grid;
+                grid-template-rows: auto 1fr auto;
+                background: #05080c;
+                color: #fff;
+                font: var(--pf) / 1.4 var(--font);
+            }
+            .cam-top,
+            .cam-bottom {
+                display: grid;
+                gap: 12px;
+                justify-items: center;
+                padding: calc(var(--pf) * 1.2);
+                text-align: center;
+            }
+            .cam-top {
+                padding-top: calc(var(--pf) * 3.4);
+            }
+            .cam-row {
+                display: flex;
+                gap: 10px;
+            }
+            .cam-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                min-height: calc(var(--pf) * 2.8);
+                padding: 0 18px;
+                border: 1px solid rgb(255 255 255 / 40%);
+                border-radius: 999px;
+                background: rgb(255 255 255 / 12%);
+                color: #fff;
+                font: 600 var(--pf) / 1 var(--font);
+                cursor: pointer;
+            }
+            .cam-btn svg {
+                width: 1.2em;
+                height: 1.2em;
+            }
+            .cam-feed {
+                position: relative;
+                overflow: hidden;
+                display: grid;
+                place-items: center;
+                min-height: 0;
+                background: radial-gradient(circle at 40% 30%, #3a4552, #11161d 70%);
+                cursor: pointer;
+            }
+            .cam-shot {
+                display: grid;
+                place-items: center;
+                padding: 18px;
+                border-radius: 26px;
+                background: var(--card-light);
+                box-shadow:
+                    0 0 0 9px #111,
+                    0 20px 60px rgb(0 0 0 / 60%);
+                transform: rotate(-4deg);
+            }
+            .cam-shot.laptop {
+                padding: 14px 60px;
+                border-radius: 8px;
+                transform: rotate(-2deg) skewX(-2deg);
+            }
+            .cam-shot .qr {
+                padding: 6px;
+                border-radius: 10px;
+                background: #fff;
+            }
+            .cam-frame {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: var(--frame);
+                aspect-ratio: 1;
+                transform: translate(-50%, -50%);
+            }
+            .cam-frame i {
+                position: absolute;
+                width: 22%;
+                height: 22%;
+                border: 4px solid #fff;
+            }
+            .cam-frame i:nth-child(1) {
+                left: 0;
+                top: 0;
+                border-right: 0;
+                border-bottom: 0;
+                border-top-left-radius: 14px;
+            }
+            .cam-frame i:nth-child(2) {
+                right: 0;
+                top: 0;
+                border-left: 0;
+                border-bottom: 0;
+                border-top-right-radius: 14px;
+            }
+            .cam-frame i:nth-child(3) {
+                left: 0;
+                bottom: 0;
+                border-right: 0;
+                border-top: 0;
+                border-bottom-left-radius: 14px;
+            }
+            .cam-frame i:nth-child(4) {
+                right: 0;
+                bottom: 0;
+                border-left: 0;
+                border-top: 0;
+                border-bottom-right-radius: 14px;
+            }
+            .cam-frame.ok i {
+                border-color: #4ad6a0;
+            }
+            .cam-line {
+                position: absolute;
+                left: 6%;
+                right: 6%;
+                top: 50%;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, #7fd3ff, transparent);
+            }
+            .cam-badge {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                display: grid;
+                place-items: center;
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                background: #1f9d6f;
+                color: #fff;
+                transform: translate(-50%, -50%);
+                box-shadow: 0 6px 20px rgb(0 0 0 / 40%);
+            }
+            .cam-badge svg {
+                width: 60%;
+                height: 60%;
+            }
+            .cam-status {
+                padding: 6px 14px;
+                border-radius: 999px;
+                background: rgb(255 255 255 / 14%);
+            }
+            .cam-status.bad {
+                background: #a3342b;
+                color: #fff;
+            }
+            .cam-box {
+                height: calc(var(--pf) * 18);
+                overflow: hidden;
+                border-radius: 16px;
+                display: grid;
+            }
+            .sheet .cam-status {
+                justify-self: center;
+                background: rgb(28 35 48 / 8%);
+                color: var(--card-ink);
+            }
+            .sheet .cam-status.bad {
+                background: #a3342b;
+                color: #fff;
+            }
+            /* iPhone 系統相機 */
+            .syscam-chip {
+                position: absolute;
+                left: 50%;
+                bottom: 18%;
+                transform: translateX(-50%);
+                padding: 8px 14px;
+                border: 0;
+                border-radius: 10px;
+                background: #ffd60a;
+                color: #000;
+                font: 600 14px / 1.3 var(--font);
+                white-space: nowrap;
+                cursor: pointer;
+            }
+            .syscam-chip.callout {
+                box-shadow: 0 0 0 3px #fff;
+            }
+            .shutter {
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                background: #fff;
+                box-shadow:
+                    0 0 0 4px #05080c,
+                    0 0 0 7px #fff;
+            }
+
+            /* 系統權限 */
+            .sys-alert-wrap {
+                position: absolute;
+                inset: 0;
+                z-index: 40;
+                display: grid;
+                place-items: center;
+                background: rgb(0 0 0 / 35%);
+            }
+            .sys-alert {
+                width: 270px;
+                overflow: hidden;
+                border-radius: 14px;
+                background: rgb(242 242 247 / 96%);
+                color: #000;
+                text-align: center;
+                font: 13px / 1.35 var(--font);
+            }
+            .sys-alert b {
+                display: block;
+                padding: 18px 16px 4px;
+                font-size: 17px;
+                font-weight: 600;
+            }
+            .sys-alert p {
+                padding: 0 16px 16px;
+                color: #000;
+                font-size: 13px;
+            }
+            .sys-btns {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                border-top: 1px solid rgb(60 60 67 / 29%);
+            }
+            .sys-btns button {
+                padding: 11px;
+                border: 0;
+                background: none;
+                color: #007aff;
+                font: 17px var(--font);
+                cursor: pointer;
+            }
+            .sys-btns button + button {
+                border-left: 1px solid rgb(60 60 67 / 29%);
+                font-weight: 600;
+            }
+            .sys-btns button.callout {
+                background: rgb(0 122 255 / 14%);
+            }
+            .perm-pop {
+                position: absolute;
+                z-index: 40;
+                left: 16px;
+                top: 8px;
+                display: grid;
+                gap: 14px;
+                width: 360px;
+                padding: 16px;
+                border-radius: 12px;
+                background: #fff;
+                color: #1f1f1f;
+                font: 16px / 1.4 var(--font);
+                box-shadow: 0 8px 30px rgb(0 0 0 / 35%);
+            }
+            .perm-btns {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+            .perm-btns button {
+                padding: 6px 18px;
+                border: 1px solid #c7c7c7;
+                border-radius: 999px;
+                background: #fff;
+                color: #0b57d0;
+                font: 600 15px var(--font);
+                cursor: pointer;
+            }
+            .perm-btns button.callout {
+                border-color: #0b57d0;
+                background: #0b57d0;
+                color: #fff;
+            }
+
+            /* 系統分享 */
+            .share-sheet {
+                position: absolute;
+                z-index: 40;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                display: grid;
+                gap: 12px;
+                padding: 14px 14px 30px;
+                border-radius: 14px 14px 0 0;
+                background: #f2f2f7;
+                color: #000;
+                font: 13px / 1.3 var(--font);
+                box-shadow: 0 -10px 40px rgb(0 0 0 / 40%);
+            }
+            .share-sheet.pop {
+                left: auto;
+                right: 60px;
+                bottom: auto;
+                top: 140px;
+                width: 380px;
+                padding-bottom: 14px;
+                border-radius: 14px;
+                font-size: 15px;
+            }
+            .share-head {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                padding-bottom: 10px;
+                border-bottom: 1px solid rgb(60 60 67 / 18%);
+            }
+            .share-head .app {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                background: center / cover no-repeat;
+            }
+            .share-head small {
+                color: #6b6b70;
+            }
+            .share-apps {
+                display: flex;
+                gap: 12px;
+            }
+            .share-app {
+                display: grid;
+                justify-items: center;
+                gap: 6px;
+                width: 64px;
+                padding: 0;
+                border: 0;
+                background: none;
+                color: #000;
+                font: 11px / 1.2 var(--font);
+                cursor: pointer;
+            }
+            .share-app .ic {
+                display: grid;
+                place-items: center;
+                width: 56px;
+                height: 56px;
+                border-radius: 14px;
+                color: #fff;
+            }
+            .share-app .ic svg {
+                width: 58%;
+                height: 58%;
+            }
+            .share-app.callout .ic {
+                box-shadow:
+                    0 0 0 3px #f2f2f7,
+                    0 0 0 6px #007aff;
+            }
+            .share-actions button {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+                padding: 12px 14px;
+                border: 0;
+                border-radius: 10px;
+                background: #fff;
+                color: #000;
+                font: 15px var(--font);
+                cursor: pointer;
+            }
+            .share-actions button.callout {
+                box-shadow: 0 0 0 3px #007aff;
+            }
+            .share-actions svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            /* Toast 有「復原」掣 */
+            .toast.has-action {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                text-align: left;
+                pointer-events: auto;
+            }
+            .toast-act {
+                flex: none;
+                padding: 4px 6px;
+                border: 0;
+                background: none;
+                color: var(--app-cream);
+                font: 700 var(--tf, 14px) / 1 var(--font);
+                cursor: pointer;
+            }
+            .spin {
+                justify-self: center;
+                width: calc(var(--pf) * 2.4);
+                height: calc(var(--pf) * 2.4);
+                border: 3px solid rgb(44 110 166 / 20%);
+                border-top-color: var(--sync-blue);
+                border-radius: 50%;
+            }
+
+            /* 動畫只喺冇要求減少動態先有（CLAUDE.md Motion：減少動態 = 直接切換） */
+            @media (prefers-reduced-motion: no-preference) {
+                .pill {
+                    transition:
+                        left var(--move) var(--ease),
+                        right var(--move) var(--ease);
+                }
+                .tab {
+                    transition: color var(--fade) var(--ease);
+                }
+                .tab.icon {
+                    transition:
+                        flex-basis var(--move) var(--ease),
+                        margin var(--move) var(--ease),
+                        opacity var(--move) var(--ease),
+                        color var(--fade) var(--ease);
+                }
+                .ico {
+                    transition:
+                        opacity var(--fade) var(--ease),
+                        transform var(--move) var(--ease);
+                }
+                .fade-layer {
+                    transition:
+                        opacity var(--fade) var(--ease),
+                        visibility 0s linear var(--fade);
+                }
+                .fade-layer[data-on='true'] {
+                    transition: opacity var(--fade) var(--ease) var(--fade);
+                }
+                .toast {
+                    transition:
+                        opacity var(--fade) var(--ease),
+                        visibility 0s linear var(--fade);
+                }
+                .toast[data-visible='true'] {
+                    transition: opacity var(--fade) var(--ease);
+                }
+                .scrim {
+                    animation: scrim-in var(--fade) var(--ease);
+                }
+                .scrim[data-pos='sheet'] .sheet {
+                    animation: sheet-up var(--move) var(--ease);
+                }
+                .scrim[data-pos='center'] .sheet {
+                    animation: pop-in var(--move) var(--ease);
+                }
+                .sheet .qr-card {
+                    animation: pop-in var(--move) var(--ease) 120ms both;
+                }
+                .cam-line {
+                    animation: scan-line 1.6s ease-in-out infinite alternate;
+                }
+                .spin {
+                    animation: spin 0.9s linear infinite;
+                }
+            }
+            @keyframes scan-line {
+                from {
+                    top: 8%;
+                }
+                to {
+                    top: 92%;
+                }
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            @keyframes scrim-in {
+                from {
+                    opacity: 0;
+                }
+            }
+            @keyframes sheet-up {
+                from {
+                    transform: translateY(100%);
+                }
+            }
+            @keyframes pop-in {
+                from {
+                    opacity: 0;
+                    transform: translateY(16px) scale(0.96);
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header style="display: grid; gap: 6px">
+                <h1>QR 同步進度（P9 #11）+ 冇收藏版收藏 tab（P7 改動）</h1>
+                <p>
+                    底圖係 v1.27.0（<code>feature/bookmark/episode</code>）真截圖：手機直版
+                    390×844、窄橫版 844×390、闊橫版 1300×800（當
+                    laptop）。tab、最近收聽、面板、Toast 係疊上去嘅 HTML，舞台入面嘅掣撳得。
+                </p>
+                <p>
+                    <b>v5（2026-11-07）</b>：加 ⑥ 完整 A → B 流程（手機 ↔ 電腦四種組合）同 ⑦
+                    例外情況；匯入規則跟
+                    <code>.proj-docs/plans/2026-11-07_plan_p9-import-rules.md</code>（Q1–Q11）：app
+                    內掃 QR、payload 用 episode ID、較新者成條勝、收藏 tombstone、Toast 復原。
+                </p>
+                <p>
+                    <b>用戶已決定</b>：最近收聽 icon = 歷史；同步掣 = ⇅ +「同步」；同步面板 = 米白卡
+                    + QR 做主角、標題置中；QR = M + 細 logo，最多最近 50 集 +
+                    全部收藏；分享連結有齊；匯入確認 = 並排圖示；覆蓋要再確認；連結 24
+                    小時過期；本機全新淨出「匯入」；匯入完跳去第三個 tab；淨係一粒分享 / 複製掣。
+                </p>
+            </header>
+
+            <!-- ① -->
+            <section class="panel" aria-labelledby="h-1">
+                <h2 id="h-1">① 主頁第三個 tab：三種狀態</h2>
+                <ul>
+                    <li><b>A 有收藏</b> → ★：收藏 box + 最近收聽</li>
+                    <li>
+                        <b>B 冇收藏、有收聽記錄</b> → <span class="sw" data-swatch="history"></span>
+                        歷史 icon：成個 tab 係最近收聽（見 ②）
+                    </li>
+                    <li><b>C 兩樣都冇</b> → tab 唔出</li>
+                    <li>
+                        收藏由有變冇：膠囊留喺第三格，★ 縮細轉走、歷史 icon 轉入嚟（520ms /
+                        260ms）；減少動態 = 直接換
+                    </li>
+                </ul>
+                <div class="row" data-group="state">
+                    <button type="button" class="pick" data-val="A" aria-pressed="true">
+                        A 有收藏 ★
+                    </button>
+                    <button type="button" class="pick" data-val="B" aria-pressed="false">
+                        B 冇收藏有記錄
+                    </button>
+                    <button type="button" class="pick" data-val="C" aria-pressed="false">
+                        C 都冇（tab 唔出）
+                    </button>
+                </div>
+                <div class="row">
+                    <button type="button" class="act" id="demo-clear">
+                        ▶ 示範：移除最後一個收藏（★ → 歷史）
+                    </button>
+                    <button type="button" class="act" id="demo-add">
+                        ▶ 示範：喺最近收聽撳 ☆（歷史 → ★）
+                    </button>
+                </div>
+                <div class="stages" id="stages-1"></div>
+            </section>
+
+            <!-- ② -->
+            <section class="panel" aria-labelledby="h-2">
+                <h2 id="h-2">② 冇收藏版收藏 tab = 最近收聽 + 同步掣</h2>
+                <ul>
+                    <li>最近收聽最多 10 集，佔滿 tab 區、自己捲；手機一欄，橫版兩欄</li>
+                    <li>每行：碟 | 名（左對齊，太長用 … 收尾）| 固定闊度 ☆ 欄，☆ 全部垂直對齊</li>
+                    <li>
+                        同步掣（框住嗰粒）喺最近收聽標題右邊，有收藏 / 冇收藏都係；冇收聽記錄 =
+                        冇同步掣
+                    </li>
+                </ul>
+                <div class="row" data-group="version">
+                    <button type="button" class="pick" data-val="B" aria-pressed="true">
+                        冇收藏版（B）
+                    </button>
+                    <button type="button" class="pick" data-val="A" aria-pressed="false">
+                        有收藏版（A）
+                    </button>
+                </div>
+                <div class="stages" id="stages-2"></div>
+            </section>
+
+            <!-- ③ -->
+            <section class="panel" aria-labelledby="h-3">
+                <h2 id="h-3">③「同步至另一部機」面板（定稿：米白卡 + QR 做主角）</h2>
+                <ul>
+                    <li>手機：浮起米白卡，QR 置中放大（300 px），字同掣喺下面</li>
+                    <li>
+                        窄橫版 / 闊橫版：QR
+                        喺左邊用盡卡高；右欄標題貼頂、掣同私隱字貼底，中間內容平均分佈
+                    </li>
+                    <li>
+                        QR：M + 細 logo；最多放<b>最近 50 集 + 全部收藏</b
+                        >；計數顯示用戶<b>完整</b>數字
+                    </li>
+                    <li>淨係一粒掣：支援 Web Share →「分享連結」；唔支援 →「複製連結」</li>
+                    <li>
+                        標題文字置中（icon 左、✕ 右）；橫版標題喺右欄入面置中（卡高唔夠放喺 QR
+                        上面）
+                    </li>
+                    <li>
+                        <b>v5</b>：次要掣「由另一部機匯入」→「掃描 QR
+                        code」（主）/「貼上連結」（次）→ 同一個匯入確認（最後一個舞台）；iPhone
+                        主畫面 app 用 app 自己嘅相機掃
+                    </li>
+                </ul>
+                <div class="row" data-group="size">
+                    <button type="button" class="pick" data-val="normal" aria-pressed="true">
+                        記錄少（3 收藏 + 11 集）
+                    </button>
+                    <button type="button" class="pick" data-val="big" aria-pressed="false">
+                        記錄多（3 收藏 + 300 集）
+                    </button>
+                </div>
+                <div class="row" data-group="webshare">
+                    <button type="button" class="pick" data-val="yes" aria-pressed="true">
+                        支援 Web Share →「分享連結」
+                    </button>
+                    <button type="button" class="pick" data-val="no" aria-pressed="false">
+                        唔支援 →「複製連結」
+                    </button>
+                </div>
+                <div class="stages" id="stages-3"></div>
+                <p id="share-note"></p>
+            </section>
+
+            <!-- ④ -->
+            <section class="panel" aria-labelledby="h-4">
+                <h2 id="h-4">④ B 機開連結 → 匯入確認（定稿：並排圖示）</h2>
+                <ul>
+                    <li>
+                        標題置中（同 ③ 一致）；連結 → 本機兩個 icon + 箭咀，下面即場寫「合併後」幾多
+                    </li>
+                    <li>
+                        掣列：「取消」靠左（文字掣）；「覆蓋」+「合併」一組靠右，手機窄位都係左右分組
+                    </li>
+                    <li>
+                        撳「覆蓋」先出確認：掣列原位換成紅字「覆蓋會清走本機嘅
+                        …」+「返回」/「確認覆蓋」；平時冇紅字
+                    </li>
+                    <li>
+                        <b>v5 合併</b>：每集
+                        <code>updatedAt</code>
+                        較新嗰邊成條勝（位置 +
+                        聽完一齊跟）；收藏比「加入」同「刪除」時間，較新動作勝。覆蓋：清走本機嘅，換成連結入面嘅
+                    </li>
+                    <li>v5：匯入完 Toast 有「復原」（6 秒；匯入前快照留 24 小時）</li>
+                    <li>
+                        撳完都會用 <code>history.replaceState</code> 清走
+                        <code>#import=</code>（睇假網址列）；匯入完跳去第三個 tab
+                    </li>
+                    <li>
+                        <b>喺 Safari 開咗</b>：iOS 主畫面 app 同 Safari 儲存分開，頂部提示教用戶返
+                        app 入面再掃；照匯入就入咗 Safari（Q2）
+                    </li>
+                </ul>
+                <div class="row" data-group="istatus">
+                    <button type="button" class="pick" data-val="has" aria-pressed="true">
+                        本機有記錄（合併 / 覆蓋 / 取消）
+                    </button>
+                    <button type="button" class="pick" data-val="empty" aria-pressed="false">
+                        本機全新（匯入 / 取消）
+                    </button>
+                    <button type="button" class="pick" data-val="bad" aria-pressed="false">
+                        連結唔啱用
+                    </button>
+                    <button type="button" class="pick" data-val="safari" aria-pressed="false">
+                        喺 Safari 開咗
+                    </button>
+                </div>
+                <div class="row">
+                    <button type="button" class="act" id="import-reset">↺ 再開一次連結</button>
+                </div>
+                <div class="stages" id="stages-4"></div>
+            </section>
+
+            <!-- ⑥ v5 -->
+            <section class="panel" aria-labelledby="h-6">
+                <h2 id="h-6">⑥ v5 完整流程：A 機 → B 機（四種組合）</h2>
+                <ul>
+                    <li>
+                        揀組合 +
+                        路線，再一步步睇（撳步驟、「下一步」，或者直接撳畫面入面框住嘅掣）；
+                        <b>藍框 = 呢一步要郁嘅機</b>
+                    </li>
+                    <li>
+                        <b>匯入入口（Q1 / Q2）</b>：B 機喺 app 入面「由另一部機匯入」→「掃描 QR
+                        code」（主）/「貼上連結」（次）；iPhone 主畫面 app 用自己相機掃，記錄先會入
+                        app
+                    </li>
+                    <li>
+                        <b>全新 B 機嘅入口（要你揀）</b>：v4 定咗「冇記錄 =
+                        第三格唔出」，咁全新部機冇路去匯入。 <b>E1</b>：未有記錄時第三格出
+                        ⇅，撳即彈「由另一部機匯入」卡；
+                        <b>E2</b
+                        >：第三格係一頁「未有收聽記錄」空白頁，入面直接有兩粒掣。有記錄之後第三格照
+                        v4 變 ★ / 歷史
+                    </li>
+                    <li>
+                        匯入確認跟 Q4–Q11：較新者成條勝、收藏比加入 / 刪除時間、截短 QR
+                        覆蓋要寫明、Toast「復原」
+                    </li>
+                </ul>
+                <div class="row" data-group="combo">
+                    <button type="button" class="pick" data-val="pp" aria-pressed="true">
+                        手機 → 手機
+                    </button>
+                    <button type="button" class="pick" data-val="wp" aria-pressed="false">
+                        電腦 → 手機
+                    </button>
+                    <button type="button" class="pick" data-val="pw" aria-pressed="false">
+                        手機 → 電腦
+                    </button>
+                    <button type="button" class="pick" data-val="ww" aria-pressed="false">
+                        電腦 → 電腦
+                    </button>
+                </div>
+                <div class="row" data-group="route" aria-label="路線"></div>
+                <div class="row" data-group="bstate">
+                    <button type="button" class="pick" data-val="fresh" aria-pressed="true">
+                        B 機全新
+                    </button>
+                    <button type="button" class="pick" data-val="has" aria-pressed="false">
+                        B 機已有記錄
+                    </button>
+                </div>
+                <div class="row" data-group="entry">
+                    <button type="button" class="pick" data-val="E1" aria-pressed="true">
+                        全新入口 E1：第三格 ⇅ → 彈卡
+                    </button>
+                    <button type="button" class="pick" data-val="E2" aria-pressed="false">
+                        全新入口 E2：第三格空白頁
+                    </button>
+                </div>
+                <div class="row" data-group="fsize">
+                    <button type="button" class="pick" data-val="normal" aria-pressed="true">
+                        記錄少（3 收藏 + 11 集）
+                    </button>
+                    <button type="button" class="pick" data-val="big" aria-pressed="false">
+                        記錄多（300 集，QR 截短）
+                    </button>
+                </div>
+                <div class="row" data-group="fshare">
+                    <button type="button" class="pick" data-val="yes" aria-pressed="true">
+                        電腦 A 有 Web Share
+                    </button>
+                    <button type="button" class="pick" data-val="no" aria-pressed="false">
+                        電腦 A 冇 Web Share（複製連結）
+                    </button>
+                </div>
+                <div class="flow-nav">
+                    <button type="button" class="act" id="flow-prev">← 上一步</button>
+                    <button type="button" class="act" id="flow-next">下一步 →</button>
+                    <button type="button" class="act" id="flow-restart">↺ 由頭</button>
+                    <span id="flow-count" class="step-count"></span>
+                </div>
+                <div class="stages" id="stages-6"></div>
+                <ol class="step-list" id="flow-steps"></ol>
+            </section>
+
+            <!-- ⑦ v5 -->
+            <section class="panel" aria-labelledby="h-7">
+                <h2 id="h-7">⑦ v5 例外情況</h2>
+                <ul>
+                    <li>相機權限被拒 / 電腦冇相機：退返「貼上連結」</li>
+                    <li>掃到其他 QR：唔跳走，紅字提示，繼續掃</li>
+                    <li>
+                        連結格式太新（Q9）：自動 <code>registration.update()</code>；有新版就 reload
+                        再讀（<code>#import=</code> 留住），冇先話「連結唔啱用」
+                    </li>
+                    <li>
+                        QR 截短 + 覆蓋（Q7）、匯入完「復原」（Q8）；連結壞 / 過期見 ④「連結唔啱用」
+                    </li>
+                </ul>
+                <div class="stages" id="stages-7"></div>
+            </section>
+
+            <!-- ⑤ -->
+            <section class="panel" aria-labelledby="h-5">
+                <h2 id="h-5">⑤ 實作建議（純文字）</h2>
+
+                <h3>壓縮格式（v1，v5 改用 episode ID）</h3>
+                <ol>
+                    <li>
+                        <b>原樣 episode ID（Q3）</b>：Phase −1（v1.29.0）之後進度 / 收藏 key =
+                        <code>show:&lt;showId&gt;:&lt;YYYY-MM-DD&gt;</code>、
+                        <code>drama:&lt;dramaId&gt;:&lt;arcId&gt;:&lt;no&gt;</code>、
+                        <code>drama:&lt;dramaId&gt;:&lt;YYYY-MM-DD&gt;</code>；唔使 catalog 對照，靠
+                        deflate 壓重複前綴。v4 嘅短 ref 作廢
+                    </li>
+                    <li>
+                        <code
+                            >{"v":1,"t":匯出分鐘,"p":[[id,幾耐前(分),長度(秒),位置(秒；-1 =
+                            聽完)]…],"b":[[id,幾耐前加入]…],"x":[[id,幾耐前刪除]…],"n":{"p":總集數,"trunc":QR
+                            截短咗}}</code
+                        >（<code>x</code> = 30 日內嘅收藏 tombstone）
+                    </li>
+                    <li>
+                        <code>TextEncoder</code> → <code>CompressionStream('deflate-raw')</code> →
+                        base64url；Safari 16.4+ / Chrome 103+ / Firefox 113+，冇就唔出同步掣
+                    </li>
+                    <li>
+                        連結
+                        <code>https://…/903-player/#import=1.&lt;base64url&gt;</code
+                        >：<b>版本號放喺壓縮外面</b>；舊版見到 <code>2.</code> 先檢查更新（Q9，見
+                        ⑦）
+                    </li>
+                    <li>
+                        <b>過期：<code>t</code> 超過 24 小時</b>當過期
+                    </li>
+                    <li>
+                        任何一步（base64 / 解壓 / JSON / schema）失敗都係「連結唔啱用」，唔寫
+                        storage
+                    </li>
+                </ol>
+                <p>Sample 資料（同 ③ 嘅 QR 同一條）：</p>
+                <div class="table-wrap">
+                    <table>
+                        <tbody id="sample-stats"></tbody>
+                    </table>
+                </div>
+                <pre id="sample-json"></pre>
+                <pre id="sample-url"></pre>
+
+                <h3>QR 容量（上限：最近 50 集 + 全部收藏；M + 細 logo）</h3>
+                <p>
+                    用戶定咗 QR 最多放最近 50 集（唔再用 v25 容量計），收藏全部放；多過 50
+                    集嘅只喺分享連結入面。合成資料（八成節目、兩成劇集）即場壓縮，用 M 錯誤校正：
+                </p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>QR 內容</th>
+                                <th>連結字數</th>
+                                <th>M 版本</th>
+                                <th>格數（連 quiet zone）</th>
+                                <th>對照：L 版本</th>
+                            </tr>
+                        </thead>
+                        <tbody id="qr-capacity"></tbody>
+                    </table>
+                </div>
+                <ul>
+                    <li>M 補得返 15% 損壞；細 logo 邊長 = QR 20%（約 4% 面積），有餘裕</li>
+                    <li>v4（短 ref）：50 集 + 0–20 個收藏係 v22–v23；50 個收藏 v25</li>
+                    <li>
+                        <b>v5 實測（原樣 episode ID，jsQR）</b>：50 集 + 0–10 個收藏 = v24；20 個 =
+                        v25，2x / 3x 螢幕 260 / 300 px 都解到；30 個 = v26、40–50 個 = v27，<b
+                            >2x 螢幕 300 px 解唔到</b
+                        >（v26 要 340 px；v27 去到 420 px 都唔穩）→
+                        要你揀點處理（見下面「仲要用戶揀」）
+                    </li>
+                    <li>多過 50 集：QR 下面出「QR code 只收錄最近 50 集」；分享連結有齊</li>
+                </ul>
+
+                <h3>QR 畫法</h3>
+                <ul>
+                    <li>
+                        Library 淨係攞 module matrix（<code>qrcode(0, 'M')</code> →
+                        <code>addData</code> → <code>make</code> →
+                        <code>isDark(r, c)</code>），自己用 SVG 畫：每格圓角方塊、三個 finder
+                        畫成圓角方框 + 圓角實心，填 <code>linearGradient</code>（深藍 #0b4f7a →
+                        深藍綠 #0d6b62，對白底對比 &gt; 7:1）
+                    </li>
+                    <li>
+                        掃得到嘅底線：finder 唔變形（7×7 比例照舊，只係轉角圓）；四邊留 4 格白 quiet
+                        zone；淨係深色點 + 白底，唔反色、唔用淺色漸變；logo 用白底圓角方塊包住，清走
+                        logo 範圍 + 半格嘅點
+                    </li>
+                    <li>
+                        <b>alignment pattern（5×5 小框）都要畫成實心圓角框</b
+                        >：拆做一粒粒分開嘅點，高解像度時 scanner 搵唔到（preview 實測過）
+                    </li>
+                    <li>
+                        <b>QR 最少 260 CSS px</b>：v25（117 格）細過呢個，連標準方格 QR
+                        都解唔穩；所以橫版標題放右欄，QR 用盡高度
+                    </li>
+                    <li>
+                        Preview 已經用 jsQR 喺 2x / 3x 螢幕、300 / 420 px 解返「記錄少」同「最近 50
+                        集」兩條 M + logo QR；入 app 前要真手機（iPhone 相機 / Android Google
+                        Lens）由 laptop 螢幕同手機螢幕各掃一次
+                    </li>
+                    <li>
+                        Library：<b><code>qrcode-generator</code></b
+                        >（MIT、冇 dependency、有 .d.ts、約 20 KB min、可以攞 matrix），用
+                        <code>import()</code> 撳「同步」先載入；後備
+                        <code>uqr</code>（MIT、ESM、0.x）。加完行 <code>npm audit</code> + license
+                        檢查（冇 GPL）
+                    </li>
+                    <li>Preview 用 cdnjs 固定版本 qrcode-generator 1.4.4 攞 matrix</li>
+                </ul>
+
+                <h3>點解淨係一粒「分享連結 / 複製連結」</h3>
+                <p>
+                    支援 Web Share 嘅瀏覽器（iOS / Android / Safari 桌面 / Chrome 桌面大部分）嘅分享
+                    sheet 本身已經有「複製」，再出一粒複製掣係重複。冇
+                    <code>navigator.share</code>（例如 Firefox 桌面）先出「複製連結」，撳完
+                    Toast「已複製連結」。
+                </p>
+
+                <h3>私隱</h3>
+                <ul>
+                    <li>
+                        資料只喺 <code>#</code> 後面，瀏覽器唔會送去 server；讀完即刻
+                        <code>replaceState</code> 清走
+                    </li>
+                    <li>
+                        但條連結本身 = 收聽記錄 + 收藏：傳出去等於分享；聊天 app 可能出預覽 /
+                        備份。面板寫一句「連結包含所有收聽記錄。」
+                    </li>
+                    <li>冇帳戶、冇 server、冇加密；24 小時過期限制舊連結嘅影響</li>
+                </ul>
+
+                <h3>v4 嘅匯入流程分析（v5 已改：見 ⑥）</h3>
+                <ol type="a">
+                    <li>
+                        <b>手機 → 手機</b>：A 機撳「同步」出 QR → B 機用系統相機掃 → 相機開連結 →
+                        用<b>預設瀏覽器</b>開 app → 匯入確認（④）
+                    </li>
+                    <li>
+                        <b>手機 → laptop</b>：A 機撳「分享連結」/「複製連結」→ 經 AirDrop、WhatsApp
+                        Web、電郵傳去 laptop → laptop 瀏覽器開連結 → 匯入確認
+                    </li>
+                    <li>
+                        <b>限制</b>：
+                        <ul>
+                            <li>
+                                iOS：加咗落主畫面嘅 PWA 同 Safari <b>儲存分開</b>。掃 QR 一定喺
+                                Safari 開，記錄會匯入咗 Safari，而唔係主畫面 app
+                            </li>
+                            <li>
+                                聊天 app 內置瀏覽器（WhatsApp、IG 等）都係獨立儲存，喺入面開連結 =
+                                匯入咗去內置瀏覽器
+                            </li>
+                            <li>
+                                Android Chrome / 桌面 Chrome：已安裝嘅 PWA 同瀏覽器應該共用同一個
+                                origin 嘅儲存（<b>要真機確認</b>）
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <b>建議補救</b>：
+                        <ul>
+                            <li>
+                                app 入面加「<b>由另一部機匯入</b>」入口：同步面板入面一粒次要掣 →
+                                貼上連結 → 同一個匯入確認（③ 有示範）
+                            </li>
+                            <li>
+                                iOS Safari /
+                                內置瀏覽器開到匯入連結時，匯入確認頂部出提示：「如果你用緊主畫面嘅
+                                app：請複製連結，喺 app
+                                入面撳「同步」→「由另一部機匯入」貼上。」，附「複製連結」掣（④「喺
+                                Safari 開咗」有示範）
+                            </li>
+                            <li>
+                                點樣判斷：<code>navigator.standalone</code> /
+                                <code>display-mode: standalone</code> 係 false，而且係 iOS
+                                或者內置瀏覽器 user agent 先出提示；桌面同 Android
+                                唔出（要真機確認共用儲存之後再定）
+                            </li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h3>要用戶確認嘅字眼</h3>
+                <p><b>③ 同步面板</b></p>
+                <ul>
+                    <li>
+                        說明句（preview 用）：<b>「用另一部機掃描 QR code，或分享連結。」</b>備選：
+                        <ol>
+                            <li>「掃描 QR code，或分享連結至另一部機。」</li>
+                            <li>「用另一部機嘅相機掃描 QR code，或者分享連結。」</li>
+                            <li>「掃描 QR code，或共享連結。」</li>
+                        </ol>
+                    </li>
+                    <li>
+                        記錄多過 50 集（preview 用）：細膠囊「QR code 只收錄最近 50 集」（手機貼住
+                        QR
+                        下面；橫版放右欄），私隱字照舊「連結包含所有收聽記錄。」備選：太大時合一句「QR
+                        code 只收錄最近 50 集；連結包含所有收聽記錄。」或者寫入計數行
+                    </li>
+                    <li>
+                        次要掣「由另一部機匯入」；貼上畫面：「貼上另一部機分享嘅連結。」「貼上」「返回」「繼續」；錯誤「呢條唔係同步連結。」（建議）
+                    </li>
+                    <li>
+                        其他：標題「同步至另一部機」、「分享連結」/「複製連結」、Toast「已複製連結」
+                    </li>
+                </ul>
+                <p><b>④ 匯入確認</b></p>
+                <ul>
+                    <li>標題「匯入收聽記錄？」；圖示標籤「連結」「本機」「全新」</li>
+                    <li>結果：「合併後：4 個收藏 · 13 集進度」/「匯入後：3 個收藏 · 11 集進度」</li>
+                    <li>掣：「取消」｜「覆蓋」「合併」；全新：「取消」｜「匯入」</li>
+                    <li>
+                        覆蓋確認：「覆蓋會清走本機嘅 1 個收藏 · 4 集進度。」+「返回」｜「確認覆蓋」
+                    </li>
+                    <li>
+                        錯誤：「連結唔啱用」+「連結可能唔完整、已過 24 小時，或者 app
+                        要更新。請喺原本部機再撳「同步」。」+「知道」
+                    </li>
+                    <li>
+                        Safari 提示（建議）：「如果你用緊主畫面嘅 app：請複製連結，喺 app
+                        入面撳「同步」→「由另一部機匯入」貼上。」+「複製連結」
+                    </li>
+                    <li>Toast：「已合併：…」「已匯入：…」「已覆蓋：…」</li>
+                </ul>
+
+                <h3>仲要用戶揀（v5）</h3>
+                <ol>
+                    <li>⑥ 全新 B 機嘅入口：E1（第三格 ⇅ → 彈卡）定 E2（第三格空白頁）</li>
+                    <li>
+                        QR 容量：收藏多過約 20 個去到 v26–v27，2x 螢幕掃唔穩。選項：① QR 預算定死
+                        v25（收藏優先放，集數由新到舊放到滿為止，少過 50 都得）；②
+                        收藏都設上限（例如最近 20 個）；③ 改 ID 分組字典（細啲，但多一層規則）
+                    </li>
+                    <li>
+                        ④ / ⑥ / ⑦ 新字眼（掃描 QR code、貼上連結、相機權限、需要更新 app、復原）
+                    </li>
+                    <li>
+                        App 內掃 QR library（<code>jsQR</code> / <code>qr-scanner</code>，都係
+                        MIT）、Android / 桌面 Chrome PWA 共用儲存：實作前真機確認
+                    </li>
+                </ol>
+            </section>
+        </main>
+
+        <!-- QR matrix：qrcode-generator 1.4.4（MIT，cdnjs 固定版本）；點同框由下面 SVG 自己畫 -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+        <script>
+            const IMG = {
+                phoneSaved: 'phone-saved.webp',
+                phoneHome: 'phone-home.webp',
+                landSaved: 'land-saved.webp',
+                landHome: 'land-home.webp',
+                wideSaved: 'wide-saved.webp',
+                wideHome: 'wide-home.webp',
+                appIcon: 'app-icon.webp',
+                badgirl: 'disc-badgirl.webp',
+                wanni: 'disc-wanni.webp',
+                sunnyday: 'disc-sunnyday.webp',
+                westair: 'disc-westair.webp',
+                gongzi: 'disc-gongzi.webp',
+                lalala: 'disc-lalala.webp',
+                waves: 'disc-waves.webp',
+                chisee: 'disc-chisee.webp',
+                lancyHalf: 'disc-lancy-half.webp',
+            };
+
+            /* ---------- icon ---------- */
+            const STAR =
+                'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z';
+            const ICONS = {
+                starFill: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${STAR}" fill="currentColor"/></svg>`,
+                starLine: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${STAR}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+                /* 已揀 R2：逆時針箭咀 + 時針（歷史） */
+                history: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3.8 12a8.2 8.2 0 1 0 2.4-5.8"/><path d="M3.4 3.6v4h4"/><path d="M12 7.6v4.6l3.2 2"/></svg>`,
+                /* 同步 ⇅：左邊向上、右邊向下 */
+                sync: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 19.5V4.5"/><path d="M4 8.5l4-4 4 4"/><path d="M16 4.5v15"/><path d="M12 15.5l4 4 4-4"/></svg>`,
+                webShare: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5"/><path d="m7.5 8 4.5-4.5L16.5 8"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>`,
+                copy: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>`,
+                alert: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.5h.01"/></svg>`,
+                link: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>`,
+                phone: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>`,
+                laptop: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="11" rx="1.6"/><path d="M2 19.5h20"/></svg>`,
+                arrowRight: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12h16"/><path d="m14 6.5 5.5 5.5-5.5 5.5"/></svg>`,
+                brokenArrow: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3.5 12h5"/><path d="M14.5 12h5"/><path d="m10 9.5 4 5M14 9.5l-4 5"/></svg>`,
+                close: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>`,
+                /* v5：相機掃 QR、系統分享 */
+                camera: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5a2 2 0 0 1 2-2h2l1.5-2h5l1.5 2h2a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>`,
+                qrcode: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2"/><rect x="14" y="3.5" width="6.5" height="6.5" rx="1.2"/><rect x="3.5" y="14" width="6.5" height="6.5" rx="1.2"/><path d="M14 14h2.5v2.5H14zM18 18h2.5v2.5H18zM14 20h1M20 14h.5"/></svg>`,
+                check: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>`,
+                mail: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>`,
+                chat: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12 3.5c-4.97 0-9 3.36-9 7.5 0 2.3 1.24 4.36 3.2 5.73L5.5 20.5l4.1-2.1c.78.17 1.58.25 2.4.25 4.97 0 9-3.36 9-7.5s-4.03-7.65-9-7.65z"/></svg>`,
+                airdrop: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7.4 17.6a6.5 6.5 0 1 1 9.2 0"/><path d="M9.5 15.3a3.5 3.5 0 1 1 5 0"/><path d="M12 13.5v7"/></svg>`,
+            };
+            const icon = (name) => ICONS[name];
+
+            /* ---------- v1.27.0 量到嘅位置（CSS px） ---------- */
+            const LAYOUTS = {
+                phone: {
+                    label: '手機直版 390×844',
+                    w: 390,
+                    h: 844,
+                    max: 0.82,
+                    saved: 'phoneSaved',
+                    home: 'phoneHome',
+                    tabs: { x: 16, y: 133.3, w: 358, h: 50, inset: 3, font: 13, icon: 64 },
+                    region: { x: 16, y: 203.3, w: 358, h: 536.7 },
+                    cover: { x: 0, y: 192, w: 390, h: 556 },
+                    recent: { x: 16, y: 540, w: 358, titleY: 553, titleH: 20 },
+                    cols: 1,
+                    rf: 14,
+                    disc: 56,
+                    pf: 15,
+                    qr: 300,
+                    toastBottom: 104,
+                    pos: 'sheet',
+                },
+                land: {
+                    label: '窄橫版 844×390',
+                    w: 844,
+                    h: 390,
+                    max: 0.9,
+                    saved: 'landSaved',
+                    home: 'landHome',
+                    tabs: { x: 16, y: 16, w: 812, h: 50, inset: 3, font: 13, icon: 72 },
+                    region: { x: 16, y: 78, w: 812, h: 208 },
+                    cover: { x: 0, y: 70, w: 844, h: 224 },
+                    recent: { x: 578, y: 78, w: 250, titleY: 91, titleH: 20 },
+                    cols: 2,
+                    rf: 14,
+                    disc: 46,
+                    pf: 13,
+                    /* v23 要 ≥ 300 px 先解得穩；卡高得 366，「只收錄最近 50 集」膠囊放右欄 */
+                    qr: 300,
+                    dialogW: 700,
+                    toastBottom: 100,
+                    pos: 'center',
+                },
+                wide: {
+                    label: '闊橫版 1300×800（laptop）',
+                    w: 1300,
+                    h: 800,
+                    max: 0.62,
+                    saved: 'wideSaved',
+                    home: 'wideHome',
+                    tabs: { x: 24, y: 24, w: 784, h: 75, inset: 4.5, font: 19.5, icon: 138 },
+                    region: { x: 24, y: 129, w: 784, h: 653 },
+                    cover: { x: 0, y: 112, w: 834, h: 688 },
+                    recent: { x: 24, y: 509, w: 784, titleY: 528, titleH: 29 },
+                    cols: 2,
+                    rf: 19,
+                    disc: 70,
+                    pf: 18,
+                    qr: 420,
+                    dialogW: 920,
+                    importW: 600,
+                    toastBottom: 40,
+                    /* 闊橫版：toast 喺左欄（唔蓋右邊播放卡） */
+                    toastRight: 492,
+                    pos: 'center',
+                },
+            };
+
+            /** 最近收聽 10 集（節目 + 劇集） */
+            const RECENT = [
+                ['Bad Girl大過佬', '19/10（一）', 'badgirl'],
+                ['雲妮鍾情', '19/10（一）', 'wanni'],
+                ['在晴朗的一天出發', '19/10（一）', 'sunnyday'],
+                ['蘭茜夫人劇場 · 戀愛二分一', '第 3 集', 'lancyHalf'],
+                ['西加航空', '16/10（五）', 'westair'],
+                ['公子會', '10/10（六）', 'gongzi'],
+                ['芝See菇Bi Family · 三十六計', '第 12 集', 'chisee'],
+                ['聖艾粒LaLaLa', '15/10（四）', 'lalala'],
+                ['冰多過浪花', '14/10（三）', 'waves'],
+                ['雲妮鍾情', '12/10（一）', 'wanni'],
+            ];
+
+            const TOAST_MS = 1800;
+            /** 有「復原」掣嘅 Toast 留耐啲 */
+            const UNDO_MS = 6000;
+            const DEMO_STEP_MS = 700;
+            /** 每次要用先問（設定一改即刻生效，唔 cache） */
+            const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            const el = (tag, cls, attrs = {}) => {
+                const node = document.createElement(tag);
+                if (cls) node.className = cls;
+                for (const [k, v] of Object.entries(attrs)) {
+                    // CSS 變數（--xxx）要用 setProperty，Object.assign 會靜靜雞唔生效
+                    if (k === 'style')
+                        Object.entries(v).forEach(([prop, val]) =>
+                            prop.startsWith('--')
+                                ? node.style.setProperty(prop, val)
+                                : (node.style[prop] = val),
+                        );
+                    else if (k === 'html') node.innerHTML = v;
+                    else if (k === 'text') node.textContent = v;
+                    else node.setAttribute(k, v);
+                }
+                return node;
+            };
+            const px = (n) => `${n}px`;
+            const box = ({ x, y, w, h }) => ({
+                left: px(x),
+                top: px(y),
+                width: px(w),
+                height: px(h),
+            });
+
+            /* ---------- 舞台 ---------- */
+            const makeStage = (host, layoutKey, img, caption, urlbar, maxScale) => {
+                const L = LAYOUTS[layoutKey];
+                const max = maxScale ?? L.max;
+                const device = el('div', 'device');
+                const bar = urlbar ? el('div', 'urlbar') : null;
+                const view = el('div', 'viewport');
+                const stage = el('div', 'stage', {
+                    style: { width: px(L.w), height: px(L.h), backgroundImage: `url(${IMG[img]})` },
+                });
+                stage.dataset.layout = layoutKey;
+                view.append(stage);
+                if (bar) device.append(bar);
+                device.append(view, el('span', '', { text: caption || L.label }));
+                host.append(device);
+                const fit = () => {
+                    const scale = Math.min(max, host.clientWidth / L.w);
+                    stage.style.transform = `scale(${scale})`;
+                    view.style.width = px(L.w * scale);
+                    view.style.height = px(L.h * scale);
+                    if (bar) bar.style.width = px(L.w * scale);
+                };
+                fit();
+                addEventListener('resize', fit);
+                return { stage, L, bar, device };
+            };
+
+            /** 蓋住截圖一塊（漸變對齊成個舞台） */
+            const patch = (L, rect) =>
+                el('div', 'patch', {
+                    style: {
+                        ...box(rect),
+                        backgroundSize: `${L.w}px ${L.h}px`,
+                        backgroundPosition: `${-rect.x}px ${-rect.y}px`,
+                    },
+                });
+
+            const toastOf = (stage, L) => {
+                const t = el('div', 'toast', {
+                    role: 'status',
+                    'aria-live': 'polite',
+                    'data-visible': 'false',
+                    style: {
+                        bottom: px(L.toastBottom),
+                        right: px(L.toastRight ?? 24),
+                        '--tf': px(L.pf),
+                    },
+                });
+                stage.append(t);
+                let timer = 0;
+                /** opts.action：Toast 入面一粒掣（例如「復原」）；opts.sticky：流程示範用，唔自己收 */
+                return (text, opts = {}) => {
+                    t.replaceChildren(el('span', '', { text }));
+                    t.classList.toggle('has-action', Boolean(opts.action));
+                    if (opts.action) {
+                        const act = el('button', 'toast-act', {
+                            type: 'button',
+                            text: opts.action.label,
+                        });
+                        act.addEventListener('click', opts.action.onClick);
+                        t.append(act);
+                    }
+                    t.dataset.visible = 'true';
+                    clearTimeout(timer);
+                    if (opts.sticky) return;
+                    timer = setTimeout(
+                        () => (t.dataset.visible = 'false'),
+                        opts.action ? UNDO_MS : TOAST_MS,
+                    );
+                };
+            };
+
+            /* ---------- 主頁 tab ---------- */
+            const makeTabs = (stage, L) => {
+                const T = L.tabs;
+                stage.append(patch(L, { x: T.x - 4, y: T.y - 4, w: T.w + 8, h: T.h + 8 }));
+                const tabs = el('div', 'tabs', {
+                    role: 'group',
+                    'aria-label': '主頁分類',
+                    style: {
+                        ...box(T),
+                        '--inset': px(T.inset),
+                        '--font-size': px(T.font),
+                        '--icon-tab': px(T.icon),
+                    },
+                });
+                const pill = el('span', 'pill', { 'aria-hidden': 'true' });
+                const shows = el('button', 'tab', { type: 'button', text: '節目' });
+                const dramas = el('button', 'tab', { type: 'button', text: '廣播劇' });
+                const third = el('button', 'tab icon', { type: 'button' });
+                const star = el('span', 'ico star', { html: icon('starFill') });
+                const recent = el('span', 'ico recent', { html: icon('history') });
+                // v5：本機全新（未有記錄）時第三格 = ⇅「由另一部機匯入」
+                const syncIco = el('span', 'ico sync', { html: icon('sync') });
+                third.append(star, recent, syncIco);
+                tabs.append(pill, shows, dramas, third);
+                stage.append(tabs);
+                /** mode：star / recent / sync（v5 全新部機）/ gone */
+                const set = (mode, selected) => {
+                    const gone = mode === 'gone';
+                    third.classList.toggle('gone', gone);
+                    third.toggleAttribute('inert', gone);
+                    const labels = { recent: '最近收聽', sync: '由另一部機匯入' };
+                    third.setAttribute('aria-label', labels[mode] ?? '我的收藏');
+                    star.dataset.on = String(mode !== 'recent' && mode !== 'sync');
+                    recent.dataset.on = String(mode === 'recent');
+                    syncIco.dataset.on = String(mode === 'sync');
+                    const target = gone ? shows : { shows, dramas, third }[selected];
+                    [shows, dramas, third].forEach((b) =>
+                        b.setAttribute('aria-pressed', String(b === target)),
+                    );
+                    // 膠囊位置用目標闊度計（唔使等 flex 過場完先量）
+                    const inner = T.w - 2 * T.inset;
+                    const iconW = gone ? 0 : T.icon;
+                    const textW = (inner - iconW - (gone ? 0 : T.inset) - T.inset) / 2;
+                    const lefts = {
+                        shows: 0,
+                        dramas: textW + T.inset,
+                        third: 2 * (textW + T.inset),
+                    };
+                    const widths = { shows: textW, dramas: textW, third: iconW };
+                    const key = gone ? 'shows' : selected;
+                    pill.style.left = px(T.inset + lefts[key]);
+                    pill.style.right = px(T.w - T.inset - lefts[key] - widths[key]);
+                };
+                return { set, third };
+            };
+
+            /* ---------- 最近收聽 ---------- */
+            const recentRow = (L, [name, label, art], onStar) => {
+                const li = el('li', 'recent-row', { style: { '--disc': px(L.disc) } });
+                const text = el('span', 'recent-text');
+                text.append(
+                    el('b', '', { text: name, title: name }),
+                    el('small', '', { text: label }),
+                );
+                li.append(
+                    el('span', 'disc', { style: { backgroundImage: `url(${IMG[art]})` } }),
+                    text,
+                );
+                const btn = el('button', 'star-btn', {
+                    type: 'button',
+                    'aria-label': `收藏 ${name} ${label}`,
+                    html: icon('starLine'),
+                });
+                btn.addEventListener('click', onStar);
+                li.append(btn);
+                return li;
+            };
+
+            const syncButton = (onClick, callout) => {
+                const b = el('button', `sync-btn${callout ? ' callout' : ''}`, {
+                    type: 'button',
+                    'aria-label': '同步至另一部機',
+                    html: `${icon('sync')}<span>同步</span>`,
+                });
+                b.addEventListener('click', onClick);
+                return b;
+            };
+
+            /** B：成個 tab 區 = 最近收聽清單 */
+            const recentOnly = (L, { onSync, onStar, callout }) => {
+                const layer = el('div', 'fade-layer');
+                layer.append(patch(L, L.cover));
+                const panel = el('section', 'recent', {
+                    'aria-label': '最近收聽',
+                    style: { ...box(L.region), '--rf': px(L.rf) },
+                });
+                const head = el('div', 'recent-head');
+                head.append(el('h4', '', { text: '最近收聽' }), syncButton(onSync, callout));
+                const list = el('ul', 'recent-list', { style: { columnCount: L.cols } });
+                RECENT.forEach((r) => list.append(recentRow(L, r, onStar)));
+                panel.append(head, list);
+                layer.append(panel);
+                return layer;
+            };
+
+            /** A：截圖本身已經有收藏 box + 最近收聽，淨係喺標題右邊加同步掣 */
+            const savedOverlay = (L, { onSync, callout }) => {
+                const layer = el('div', 'fade-layer');
+                const R = L.recent;
+                const holder = el('div', 'abs', {
+                    style: {
+                        right: px(L.w - R.x - R.w + L.rf * 0.9),
+                        top: px(R.titleY + R.titleH / 2),
+                        transform: 'translateY(-50%)',
+                        '--rf': px(L.rf),
+                    },
+                });
+                holder.append(syncButton(onSync, callout));
+                layer.append(holder);
+                return layer;
+            };
+
+            /* ---------- QR：library 攞 matrix，SVG 自己畫 ---------- */
+            const QUIET = 4;
+            /** 定案：M 錯誤校正 + 細 logo（邊長 = QR 20%，約 4% 面積） */
+            const QR_STYLE = { ecc: 'M', logo: 0.2 };
+            let qrSeq = 0;
+            const qrMatrix = (text, ecc) => {
+                const q = qrcode(0, ecc);
+                q.addData(text);
+                q.make();
+                return q;
+            };
+            /** alignment pattern 中心（QR 規格表；同 nayuki 演算法） */
+            const alignmentCenters = (version) => {
+                if (version === 1) return [];
+                const count = Math.floor(version / 7) + 2;
+                const step =
+                    version === 32 ? 26 : Math.ceil((version * 4 + 4) / (count * 2 - 2)) * 2;
+                const pos = [6];
+                for (let i = 0, p = version * 4 + 10; i < count - 1; i += 1, p -= step)
+                    pos.splice(1, 0, p);
+                return pos.flatMap((r) => pos.map((c) => [r, c]));
+            };
+            const qrSvg = (text, style) => {
+                const q = qrMatrix(text, style.ecc);
+                const n = q.getModuleCount();
+                const finder = (r, c) =>
+                    (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+                // logo 範圍：置中、奇數格，再清多半格
+                const logoMods = style.logo ? Math.round((n * style.logo) / 2) * 2 + 1 : 0;
+                const lo = (n - logoMods) / 2 - 0.5;
+                const hi = (n + logoMods) / 2 + 0.5;
+                const underLogo = (r, c) =>
+                    logoMods && r + 0.5 > lo && r + 0.5 < hi && c + 0.5 > lo && c + 0.5 < hi;
+                // alignment pattern（5×5）要畫成實心圓角框：拆做分開嘅點，高解像度時 scanner 認唔到
+                const aligns = alignmentCenters((n - 17) / 4).filter(
+                    ([r, c]) => !finder(r, c) && !underLogo(r, c),
+                );
+                const inAlign = (r, c) =>
+                    aligns.some(([ar, ac]) => Math.abs(r - ar) <= 2 && Math.abs(c - ac) <= 2);
+                const dot = 0.9;
+                const off = (1 - dot) / 2;
+                let dots = '';
+                for (let r = 0; r < n; r += 1)
+                    for (let c = 0; c < n; c += 1)
+                        if (q.isDark(r, c) && !finder(r, c) && !inAlign(r, c) && !underLogo(r, c))
+                            dots += `M${c + off} ${r + off + 0.26}v${dot - 0.52}a.26 .26 0 0 0 .26 .26h${dot - 0.52}a.26 .26 0 0 0 .26 -.26v${-(dot - 0.52)}a.26 .26 0 0 0 -.26 -.26h${-(dot - 0.52)}a.26 .26 0 0 0 -.26 .26z`;
+                const finderPath = (x, y) =>
+                    // 外框 7×7 圓角（evenodd 挖走中間 5×5），中間 3×3 圓角實心；比例同標準 finder 一樣
+                    `<path fill-rule="evenodd" d="M${x + 2} ${y}h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zM${x + 2.2} ${y + 1}h2.6a1.2 1.2 0 0 1 1.2 1.2v2.6a1.2 1.2 0 0 1-1.2 1.2h-2.6a1.2 1.2 0 0 1-1.2-1.2v-2.6a1.2 1.2 0 0 1 1.2-1.2z"/><rect x="${x + 2}" y="${y + 2}" width="3" height="3" rx=".9"/>`;
+                const alignPath = ([r, c]) =>
+                    // 第 (r, c) 格佔 [c, c + 1]：外框 5×5（c-2 至 c+3），挖走中間 3×3，再加中心一格
+                    `<path fill-rule="evenodd" d="M${c - 0.5} ${r - 2}h2a1.5 1.5 0 0 1 1.5 1.5v2a1.5 1.5 0 0 1-1.5 1.5h-2a1.5 1.5 0 0 1-1.5-1.5v-2a1.5 1.5 0 0 1 1.5-1.5zM${c - 0.4} ${r - 1}h1.8a.6 .6 0 0 1 .6 .6v1.8a.6 .6 0 0 1-.6 .6h-1.8a.6 .6 0 0 1-.6-.6v-1.8a.6 .6 0 0 1 .6-.6z"/><rect x="${c}" y="${r}" width="1" height="1" rx=".3"/>`;
+                qrSeq += 1;
+                const grad = `qg${qrSeq}`;
+                const size = n + QUIET * 2;
+                let logo = '';
+                if (logoMods) {
+                    const s = logoMods;
+                    const p = (n - s) / 2;
+                    logo = `<rect x="${p}" y="${p}" width="${s}" height="${s}" rx="${s * 0.24}" fill="#fff"/><image href="${IMG.appIcon}" x="${p + s * 0.08}" y="${p + s * 0.08}" width="${s * 0.84}" height="${s * 0.84}" preserveAspectRatio="xMidYMid slice" clip-path="inset(0 round ${s * 0.2}px)"/>`;
+                }
+                return {
+                    modules: n,
+                    version: (n - 17) / 4,
+                    svg: `<svg viewBox="${-QUIET} ${-QUIET} ${size} ${size}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="${-QUIET}" y="${-QUIET}" width="${size}" height="${size}" fill="#fff"/><defs><linearGradient id="${grad}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${n}" y2="${n}"><stop offset="0" stop-color="#0b4f7a"/><stop offset="1" stop-color="#0d6b62"/></linearGradient></defs><g fill="url(#${grad})"><path d="${dots}"/>${finderPath(0, 0)}${finderPath(n - 7, 0)}${finderPath(0, n - 7)}${aligns.map(alignPath).join('')}</g>${logo}</svg>`,
+                };
+            };
+
+            /* ---------- 面板 ---------- */
+            const openScrim = (stage, L, labelText, build, width) => {
+                const scrim = el('div', 'scrim', { 'data-pos': L.pos });
+                const sheet = el('div', 'sheet', {
+                    role: 'dialog',
+                    'aria-modal': 'true',
+                    'aria-label': labelText,
+                    style: {
+                        '--pf': px(L.pf),
+                        '--qr': px(L.qr),
+                        '--dialog-w': px(width ?? L.dialogW ?? 0),
+                    },
+                });
+                scrim.append(sheet);
+                const close = () => scrim.remove();
+                scrim.addEventListener('click', (e) => e.target === scrim && close());
+                sheet.addEventListener('keydown', (e) => e.key === 'Escape' && close());
+                build(sheet, close);
+                stage.append(scrim);
+                return { scrim, close };
+            };
+
+            /** icon | 標題 | ✕：冇 icon / ✕ 都放空格，標題先會喺卡正中 */
+            const sheetHead = (title, onClose, headIcon, bad) => {
+                const head = el('div', 'sheet-head');
+                head.append(
+                    headIcon
+                        ? el('span', `head-ico${bad ? ' bad' : ''}`, { html: icon(headIcon) })
+                        : el('span', '', { 'aria-hidden': 'true' }),
+                );
+                head.append(el('h4', '', { text: title }));
+                if (onClose) {
+                    const x = el('button', 'x-btn', {
+                        type: 'button',
+                        'aria-label': '關閉',
+                        html: icon('close'),
+                    });
+                    x.addEventListener('click', onClose);
+                    head.append(x);
+                } else head.append(el('span', '', { 'aria-hidden': 'true' }));
+                return head;
+            };
+
+            const copyText = async (text) => {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                } catch {
+                    return false;
+                }
+            };
+
+            /** 數字格式：先收藏、後進度 */
+            const countText = ({ marks, eps }) => `${marks} 個收藏 · ${eps} 集進度`;
+            const HELP_TEXT = '用另一部機掃描 QR code，或分享連結。';
+            const PRIVACY_TEXT = '連結包含所有收聽記錄。';
+
+            /** 「同步至另一部機」：手機 QR 置中放大；橫版 QR 左、右欄頂 / 中 / 底分佈 */
+            const buildShare = (sheet, close, L, opts) => {
+                const { data, webShare, toast, callout, onShare, onImport } = opts;
+                const side = L.pos === 'center';
+                const head = sheetHead('同步至另一部機', close, 'sync');
+                const card = el('div', 'qr-card');
+                const qr = el('div', 'qr', { role: 'img', 'aria-label': '同步 QR code' });
+                if (typeof qrcode !== 'function') {
+                    qr.append(el('div', 'qr-miss', { text: 'QR library 載入唔到（離線？）' }));
+                } else {
+                    try {
+                        const out = qrSvg(data.qrUrl, QR_STYLE);
+                        qr.innerHTML = out.svg;
+                        qr.dataset.version = String(out.version);
+                    } catch (error) {
+                        qr.append(el('div', 'qr-miss', { text: `QR 畫唔到：${error}` }));
+                    }
+                }
+                card.append(qr);
+                const mid = el('div', 'mid');
+                if (data.truncated) {
+                    // 手機：貼住 QR 下面；橫版卡高唔夠，放右欄中段最頂
+                    const note = el('div', 'qr-note', {
+                        text: `QR code 只收錄最近 ${QR_MAX_EPISODES} 集`,
+                    });
+                    (side ? mid : card).append(note);
+                }
+                mid.append(
+                    el('div', 'count', { text: countText({ marks: data.marks, eps: data.total }) }),
+                    el('div', 'muted', { text: HELP_TEXT }),
+                );
+                // 淨係一粒：有 Web Share 就分享（分享 sheet 入面已經有複製），冇就複製
+                const btn = iconButton(
+                    `primary${callout === 'share' ? ' callout' : ''}`,
+                    webShare ? 'webShare' : 'copy',
+                    webShare ? '分享連結' : '複製連結',
+                    async () => {
+                        if (onShare) {
+                            onShare();
+                            return;
+                        }
+                        if (!webShare) {
+                            await copyText(data.fullUrl);
+                            toast('已複製連結');
+                            return;
+                        }
+                        if (navigator.share) {
+                            try {
+                                await navigator.share({ title: '903 收聽記錄', url: data.fullUrl });
+                            } catch {
+                                /* 用戶取消 */
+                            }
+                        } else toast('（preview：呢個瀏覽器冇 Web Share）');
+                    },
+                );
+                const end = el('div', 'end');
+                // v5：次要掣 → 「由另一部機匯入」（掃描 QR code / 貼上連結）
+                const importBtn = iconButton(
+                    callout === 'import' ? 'callout' : '',
+                    'qrcode',
+                    '由另一部機匯入',
+                    () => {
+                        if (onImport) {
+                            onImport();
+                            return;
+                        }
+                        buildEntry(sheet, close, L, {
+                            toast,
+                            onBack: () => {
+                                sheet.replaceChildren();
+                                buildShare(sheet, close, L, opts);
+                            },
+                        });
+                    },
+                );
+                end.append(btn, importBtn, el('div', 'fine', { text: PRIVACY_TEXT }));
+                if (side) {
+                    const body = el('div', 'share-body side');
+                    const info = el('div', 'share-info');
+                    info.append(head, mid, end);
+                    body.append(card, info);
+                    sheet.append(body);
+                } else {
+                    const body = el('div', 'share-body');
+                    body.append(card, mid, end);
+                    sheet.append(head, body);
+                }
+                sheet.querySelector('button')?.focus({ preventScroll: true });
+            };
+
+            /* ---------- 匯入確認（④）：定咗 B 並排圖示 ---------- */
+            const FROM = { marks: 3, eps: 11 };
+            const HERE = { marks: 1, eps: 4 };
+            /** 兩邊有 2 集重疊（示範數字） */
+            const OVERLAP = 2;
+            const mergedOf = (src) => ({
+                marks: src.marks + HERE.marks,
+                eps: src.eps + HERE.eps - OVERLAP,
+            });
+            const BAD_TEXT =
+                '連結可能唔完整、已過 24 小時，或者 app 要更新。請喺原本部機再撳「同步」。';
+            const SAFARI_TIP =
+                '你喺 Safari 開咗連結：記錄會匯入 Safari，唔係主畫面嘅 app。想匯入 app：喺 app 入面撳「同步」→「由另一部機匯入」再掃一次。';
+            const truncNote = (total) =>
+                `呢個 QR code 只有最近 ${QR_MAX_EPISODES} 集（共 ${total} 集）；要完整請用分享連結。`;
+            const UNDONE_TEXT = '已復原匯入前嘅記錄';
+
+            /** 一般文字掣 */
+            const button = (cls, text, onClick) => {
+                const b = el('button', `abtn ${cls}`, { type: 'button', text });
+                b.addEventListener('click', onClick);
+                return b;
+            };
+            /** icon + 文字掣 */
+            const iconButton = (cls, iconName, text, onClick) => {
+                const b = el('button', `abtn ${cls}`, {
+                    type: 'button',
+                    html: `${icon(iconName)}<span>${text}</span>`,
+                });
+                b.addEventListener('click', onClick);
+                return b;
+            };
+            const device = (iconName, label, value) => {
+                const d = el('div', 'dev');
+                d.append(
+                    el('span', 'dev-ico', { html: icon(iconName) }),
+                    el('small', '', { text: label }),
+                    el('b', '', { text: value }),
+                );
+                return d;
+            };
+            /** 掣列：左邊「取消 / 返回」（plain），右邊一組（覆蓋 + 合併 / 確認覆蓋 / 匯入） */
+            const actionRow = (left, ...right) => {
+                const row = el('div', 'btn-row');
+                const group = el('div', 'btn-group');
+                group.append(...right);
+                row.append(left ?? el('span'), group);
+                return row;
+            };
+
+            /**
+             * status：has（本機有記錄）/ empty（全新）/ bad（連結唔啱用）/ safari（iOS Safari 開咗）。
+             * source：qr（掃 QR）/ link（開連結 / 貼上）；truncated：QR 只有最近 50 集。
+             * startOver：一開就係覆蓋確認（⑦ 示範）；onUndo：Toast「復原」之後做乜
+             */
+            const buildImport = (sheet, close, L, opts) => {
+                const { status, toast, onDone, onBack, onUndo } = opts;
+                const source = opts.source ?? 'link';
+                const src = opts.srcCount ?? FROM;
+                const merged = mergedOf(src);
+                const total = opts.total ?? src.eps;
+                const finish = (msg) => {
+                    close();
+                    onDone(Boolean(msg));
+                    if (!msg) return;
+                    // v5（Q8）：匯入前已快照本機記錄 → Toast 有「復原」
+                    toast(msg, {
+                        action: {
+                            label: '復原',
+                            onClick: () => {
+                                toast(UNDONE_TEXT);
+                                onUndo?.();
+                            },
+                        },
+                    });
+                };
+                const hereIcon = L.pos === 'center' ? 'laptop' : 'phone';
+                const bad = status === 'bad';
+                const empty = status === 'empty' || status === 'safari';
+                const head = bad
+                    ? sheetHead('連結唔啱用', null, 'alert', true)
+                    : sheetHead('匯入收聽記錄？', null, 'sync');
+                sheet.append(head);
+                if (status === 'safari') {
+                    const tip = el('div', 'tip');
+                    tip.append(el('span', '', { text: SAFARI_TIP }));
+                    sheet.append(tip);
+                }
+                const flow = el('div', 'flow');
+                const qr = source === 'qr';
+                flow.append(
+                    device(
+                        qr ? 'qrcode' : 'link',
+                        qr ? 'QR code' : '連結',
+                        bad ? '—' : countText(src),
+                    ),
+                    el('span', `flow-arrow${bad ? ' bad' : ''}`, {
+                        html: icon(bad ? 'brokenArrow' : 'arrowRight'),
+                    }),
+                    device(hereIcon, '本機', empty ? '全新' : countText(HERE)),
+                );
+                sheet.append(flow);
+                const cancelText = onBack ? '返回' : '取消';
+                const cancel = () => button('plain', cancelText, onBack ?? (() => finish('')));
+                const actions = el('div', 'actions');
+                if (bad) {
+                    sheet.append(el('div', 'muted', { text: opts.badText ?? BAD_TEXT }));
+                    actions.append(
+                        actionRow(
+                            null,
+                            button('primary', '知道', () => finish('')),
+                        ),
+                    );
+                    sheet.append(actions);
+                    actions.querySelector('.primary').focus({ preventScroll: true });
+                    return;
+                }
+                const mainText = empty
+                    ? `匯入後：${countText(src)}`
+                    : `合併後：${countText(merged)}`;
+                const result = el('div', 'result', { text: mainText });
+                const note = el('div', 'fine center', {
+                    text: opts.truncated ? truncNote(total) : '',
+                });
+                note.hidden = !opts.truncated;
+                sheet.append(result, note, actions);
+                const showMain = () => {
+                    result.textContent = mainText;
+                    result.classList.remove('danger');
+                    note.hidden = !opts.truncated;
+                    actions.replaceChildren(
+                        empty
+                            ? actionRow(
+                                  cancel(),
+                                  button('primary', '匯入', () =>
+                                      finish(`已匯入：${countText(src)}`),
+                                  ),
+                              )
+                            : actionRow(
+                                  cancel(),
+                                  button('danger', '覆蓋', showOverConfirm),
+                                  button('primary', '合併', () =>
+                                      finish(`已合併：${countText(merged)}`),
+                                  ),
+                              ),
+                    );
+                    actions.querySelector('.primary').focus({ preventScroll: true });
+                };
+                // 撳「覆蓋」先出確認：掣列原位換成警告 +「返回」/「確認覆蓋」；QR 截短咗要寫明（Q7）
+                const showOverConfirm = () => {
+                    result.textContent =
+                        `覆蓋會清走本機嘅 ${countText(HERE)}。` +
+                        (opts.truncated ? truncNote(total) : '');
+                    result.classList.add('danger');
+                    note.hidden = true;
+                    actions.replaceChildren(
+                        actionRow(
+                            button('plain', '返回', showMain),
+                            button('danger-fill', '確認覆蓋', () =>
+                                finish(`已覆蓋：${countText(src)}`),
+                            ),
+                        ),
+                    );
+                    actions.querySelector('.plain').focus({ preventScroll: true });
+                };
+                if (opts.startOver) showOverConfirm();
+                else showMain();
+            };
+
+            /** 「貼上連結」→ 同一個匯入確認 */
+            const buildPaste = (sheet, close, L, opts) => {
+                const { toast, onBack, onDone, prefill, callout, onNext } = opts;
+                const render = () => {
+                    sheet.replaceChildren();
+                    sheet.append(sheetHead('貼上連結', close, 'link'));
+                    sheet.append(el('div', 'muted center', { text: '貼上另一部機分享嘅連結。' }));
+                    const field = el('div', 'paste-field');
+                    const input = el('input', '', {
+                        type: 'url',
+                        'aria-label': '連結',
+                        placeholder: 'https://…/903-player/#import=…',
+                        autocomplete: 'off',
+                    });
+                    if (prefill) input.value = SHARE_DATA.normal.fullUrl;
+                    const err = el('div', 'fine warn-text', { role: 'alert' });
+                    field.append(
+                        input,
+                        button('small', '貼上', async () => {
+                            let text = '';
+                            try {
+                                text = await navigator.clipboard.readText();
+                            } catch {
+                                /* preview 唔畀讀剪貼簿：用示範連結 */
+                            }
+                            input.value = text.includes('#import=')
+                                ? text
+                                : SHARE_DATA.normal.fullUrl;
+                            err.textContent = '';
+                        }),
+                    );
+                    const next = button(`primary${callout ? ' callout' : ''}`, '繼續', () => {
+                        if (!/#import=\d+\./.test(input.value)) {
+                            err.textContent = '呢條唔係同步連結。';
+                            input.focus();
+                            return;
+                        }
+                        if (onNext) {
+                            onNext();
+                            return;
+                        }
+                        sheet.replaceChildren();
+                        buildImport(sheet, close, L, {
+                            status: 'has',
+                            toast,
+                            onDone,
+                            onBack: render,
+                        });
+                    });
+                    sheet.append(field, err, actionRow(button('plain', '返回', onBack), next));
+                    if (!prefill) input.focus({ preventScroll: true });
+                };
+                render();
+            };
+
+            /* ---------- v5：「由另一部機匯入」入口（掃描 QR code 主、貼上連結次） ---------- */
+            const ENTRY_TEXT = '用相機掃描另一部機嘅 QR code，或者貼上分享過嚟嘅連結。';
+            const NO_CAM_TEXT = '呢部機冇相機：喺另一部機撳「同步」→「分享連結」，再喺度貼上。';
+            const DENIED_TEXT = '相機權限已關閉。可以喺系統設定開返，或者用「貼上連結」。';
+
+            /**
+             * camera：false = 冇相機（淨係貼上）；denied：權限被拒；
+             * callout：scan / paste（流程示範用框住）；onScan / onPaste：流程示範用
+             */
+            const buildEntry = (sheet, close, L, opts) => {
+                const { toast, onBack, callout, onScan, onPaste } = opts;
+                const camera = opts.camera ?? true;
+                const canScan = camera && !opts.denied;
+                const render = () => {
+                    sheet.replaceChildren();
+                    sheet.append(sheetHead('由另一部機匯入', close, 'qrcode'));
+                    sheet.append(
+                        el('div', 'muted center', { text: camera ? ENTRY_TEXT : NO_CAM_TEXT }),
+                    );
+                    if (opts.denied) sheet.append(el('div', 'tip', { text: DENIED_TEXT }));
+                    const btns = el('div', 'btns');
+                    if (canScan)
+                        btns.append(
+                            iconButton(
+                                `primary big${callout === 'scan' ? ' callout' : ''}`,
+                                'camera',
+                                '掃描 QR code',
+                                onScan ??
+                                    (() => {
+                                        const stage = sheet.closest('.stage');
+                                        close();
+                                        openCamera(stage, L, {
+                                            source: 'phone',
+                                            phase: 'ok',
+                                            toast,
+                                        });
+                                    }),
+                            ),
+                        );
+                    btns.append(
+                        iconButton(
+                            `${canScan ? '' : 'primary big'}${callout === 'paste' ? ' callout' : ''}`,
+                            'link',
+                            '貼上連結',
+                            onPaste ??
+                                (() =>
+                                    buildPaste(sheet, close, L, {
+                                        toast,
+                                        onDone: () => {},
+                                        onBack: render,
+                                    })),
+                        ),
+                    );
+                    sheet.append(btns);
+                    if (onBack) sheet.append(actionRow(button('plain', '返回', onBack)));
+                };
+                render();
+            };
+
+            /* ---------- v5：相機畫面 ---------- */
+            const NOT_SYNC_URL = 'https://example.com/menu';
+            const qrCache = new Map();
+            /** 同一條字串只畫一次（相機 feed 入面嘅 QR） */
+            const qrFor = (text) => {
+                if (typeof qrcode !== 'function') return '';
+                if (!qrCache.has(text)) qrCache.set(text, qrSvg(text, QR_STYLE).svg);
+                return qrCache.get(text);
+            };
+            /**
+             * 相機見到嘅嘢：另一部機（phone / laptop）螢幕上面嘅 QR + 掃描框。
+             * phase：scan（掃緊）/ ok（讀到）/ notsync（唔係同步 QR）/ syscam（系統相機）
+             */
+            const camFeed = ({ source, phase, shot, frame, qrText }) => {
+                const feed = el('div', 'cam-feed', {
+                    style: { '--frame': px(frame) },
+                });
+                const screen = el('div', `cam-shot ${source}`);
+                screen.append(
+                    el('div', 'qr', {
+                        style: { '--qr': px(shot) },
+                        html: qrFor(phase === 'notsync' ? NOT_SYNC_URL : qrText),
+                    }),
+                );
+                const box = el('div', `cam-frame${phase === 'ok' ? ' ok' : ''}`, {
+                    'aria-hidden': 'true',
+                    html: '<i></i><i></i><i></i><i></i>',
+                });
+                if (phase === 'scan') box.append(el('span', 'cam-line'));
+                if (phase === 'ok') box.append(el('span', 'cam-badge', { html: icon('check') }));
+                feed.append(screen, phase === 'syscam' ? el('span') : box);
+                return feed;
+            };
+            const CAM_STATUS = {
+                scan: '對準另一部機嘅 QR code',
+                ok: '已讀取，開緊匯入確認…',
+                notsync: '呢個唔係 903 同步 QR code',
+            };
+            const camStatus = (phase) =>
+                el('div', `cam-status${phase === 'notsync' ? ' bad' : ''}`, {
+                    role: 'status',
+                    text: CAM_STATUS[phase],
+                });
+
+            /**
+             * 掃描畫面：手機全屏；laptop（webcam）喺中間對話框。
+             * onNext：流程示範撳畫面 = 掃到；冇就（③ 互動）掃到後出匯入確認
+             */
+            const openCamera = (stage, L, opts) => {
+                const { source, phase, toast, onNext, onPaste, onCancel } = opts;
+                const qrText = opts.qrText ?? SHARE_DATA.normal.qrUrl;
+                const done = () =>
+                    onNext
+                        ? onNext()
+                        : openScrim(stage, L, '匯入收聽記錄', (sheet, close) =>
+                              buildImport(sheet, close, L, {
+                                  status: 'has',
+                                  source: 'qr',
+                                  toast,
+                                  onDone: () => {},
+                              }),
+                          );
+                const cancelBtn = (cls) => {
+                    const b = el('button', cls, { type: 'button', text: '取消' });
+                    b.addEventListener('click', () => (onCancel ? onCancel() : layer.remove()));
+                    return b;
+                };
+                const pasteBtn = (cls) => {
+                    const b = el('button', cls, {
+                        type: 'button',
+                        html: `${icon('link')}<span>貼上連結</span>`,
+                    });
+                    b.addEventListener('click', () => onPaste?.());
+                    return b;
+                };
+                let layer;
+                if (L.pos === 'sheet') {
+                    layer = el('div', 'cam', {
+                        role: 'dialog',
+                        'aria-label': '掃描 QR code',
+                        style: { '--pf': px(L.pf) },
+                    });
+                    const top = el('div', 'cam-top');
+                    top.append(el('b', '', { text: '掃描 QR code' }));
+                    const feed = camFeed({ source, phase, shot: 190, frame: 250, qrText });
+                    feed.addEventListener('click', done);
+                    const bottom = el('div', 'cam-bottom');
+                    const row = el('div', 'cam-row');
+                    row.append(pasteBtn('cam-btn'), cancelBtn('cam-btn'));
+                    bottom.append(camStatus(phase), row);
+                    layer.append(top, feed, bottom);
+                    stage.append(layer);
+                    return;
+                }
+                layer = openScrim(
+                    stage,
+                    L,
+                    '掃描 QR code',
+                    (sheet, close) => {
+                        sheet.append(sheetHead('掃描 QR code', close, 'camera'));
+                        const camBox = el('div', 'cam-box');
+                        const feed = camFeed({ source, phase, shot: 200, frame: 260, qrText });
+                        feed.addEventListener('click', done);
+                        camBox.append(feed);
+                        sheet.append(camBox, camStatus(phase));
+                        sheet.append(actionRow(cancelBtn('abtn plain'), pasteBtn('abtn')));
+                    },
+                    L.importW,
+                ).scrim;
+            };
+            /** iPhone 系統相機 App：掃到 QR → 黃色「Safari 開啟」 */
+            const openSysCamera = (stage, L, { onOpen }) => {
+                const layer = el('div', 'cam', {
+                    role: 'img',
+                    'aria-label': 'iPhone 相機 App',
+                    style: { '--pf': px(L.pf) },
+                });
+                const feed = camFeed({
+                    source: 'phone',
+                    phase: 'syscam',
+                    shot: 190,
+                    frame: 250,
+                    qrText: SHARE_DATA.normal.qrUrl,
+                });
+                const chip = el('button', 'syscam-chip callout', {
+                    type: 'button',
+                    html: `<span>Safari 開啟「dcwhung.github.io」</span>`,
+                });
+                chip.addEventListener('click', () => onOpen?.());
+                feed.append(chip);
+                const bottom = el('div', 'cam-bottom');
+                bottom.append(el('span', 'shutter', { 'aria-hidden': 'true' }));
+                layer.append(el('div', 'cam-top', { html: '<b>相機</b>' }), feed, bottom);
+                stage.append(layer);
+            };
+
+            /* ---------- v5：系統畫面（權限、分享） ---------- */
+            /** iOS 權限對話框 / 桌面瀏覽器權限 popover */
+            const permissionPrompt = (stage, L, { onAllow }) => {
+                const allow = (text, cls) => {
+                    const b = el('button', cls, { type: 'button', text });
+                    b.addEventListener('click', () => onAllow?.());
+                    return b;
+                };
+                if (L.pos === 'sheet') {
+                    const wrap = el('div', 'sys-alert-wrap');
+                    const box = el('div', 'sys-alert', { role: 'alertdialog' });
+                    box.append(
+                        el('b', '', { text: '「903 Player」想取用相機' }),
+                        el('p', '', { text: '用嚟掃描另一部機嘅同步 QR code。' }),
+                    );
+                    const btns = el('div', 'sys-btns');
+                    btns.append(
+                        el('button', '', { type: 'button', text: '不允許' }),
+                        allow('允許', 'callout'),
+                    );
+                    box.append(btns);
+                    wrap.append(box);
+                    stage.append(wrap);
+                    return;
+                }
+                const pop = el('div', 'perm-pop', { role: 'alertdialog' });
+                pop.append(el('div', '', { html: '<b>dcwhung.github.io</b> 想使用你嘅相機' }));
+                const btns = el('div', 'perm-btns');
+                btns.append(
+                    el('button', '', { type: 'button', text: '封鎖' }),
+                    allow('允許', 'callout'),
+                );
+                pop.append(btns);
+                stage.append(pop);
+            };
+            const SHARE_TARGETS = [
+                ['airdrop', 'AirDrop', '#1a8cff'],
+                ['chat', '訊息', '#34c759'],
+                ['chat', 'WhatsApp', '#25d366'],
+                ['mail', '郵件', '#2f7cf6'],
+            ];
+            /** 系統分享 sheet（手機由底升上嚟；laptop 喺分享掣旁邊彈出） */
+            const systemShare = (stage, L, { callout, onPick }) => {
+                const sheet = el('div', `share-sheet${L.pos === 'sheet' ? '' : ' pop'}`, {
+                    role: 'dialog',
+                    'aria-label': '分享',
+                });
+                const head = el('div', 'share-head');
+                head.append(
+                    el('span', 'app', { style: { backgroundImage: `url(${IMG.appIcon})` } }),
+                    el('div', '', {
+                        html: '<b>903 收聽記錄</b><br><small>dcwhung.github.io</small>',
+                    }),
+                );
+                const apps = el('div', 'share-apps');
+                SHARE_TARGETS.forEach(([ic, label, color]) => {
+                    const b = el('button', `share-app${label === callout ? ' callout' : ''}`, {
+                        type: 'button',
+                        html: `<span class="ic" style="background:${color}">${icon(ic)}</span>${label}`,
+                    });
+                    b.addEventListener('click', () => onPick?.());
+                    apps.append(b);
+                });
+                const list = el('div', 'share-actions');
+                const copy = el('button', callout === '複製' ? 'callout' : '', {
+                    type: 'button',
+                    html: `<span>複製</span>${icon('copy')}`,
+                });
+                copy.addEventListener('click', () => onPick?.());
+                list.append(copy);
+                sheet.append(head, apps, list);
+                stage.append(sheet);
+            };
+            /** 版本太新（Q9）：先自己檢查更新；phase：checking / none */
+            const buildUpdating = (sheet, phase) => {
+                if (phase === 'none') {
+                    sheet.append(sheetHead('連結唔啱用', null, 'alert', true));
+                    sheet.append(
+                        el('div', 'muted', {
+                            text: '呢條連結要較新版本嘅 903 先開到，暫時搵唔到更新。請遲啲再開一次連結。',
+                        }),
+                    );
+                    sheet.append(
+                        actionRow(
+                            null,
+                            button('primary', '知道', () => {}),
+                        ),
+                    );
+                    return;
+                }
+                sheet.append(sheetHead('需要更新 app', null, 'sync'));
+                sheet.append(el('span', 'spin', { 'aria-hidden': 'true' }));
+                sheet.append(
+                    el('div', 'muted center', {
+                        role: 'status',
+                        text: '呢條連結由較新版本嘅 903 整出嚟。更新緊…（有新版會自動重新載入，再開返呢條連結）',
+                    }),
+                );
+            };
+
+            /* ---------- 壓縮（同 ⑤ 建議一樣） ---------- */
+            /* v5：payload 一律用 episode ID（Phase −1 格式），唔再用短 ref */
+            const DAY_MS = 86_400_000;
+            const NOW = Date.UTC(2026, 9, 19, 14, 30); // 19/10 22:30 香港
+            const SHOW_IDS = [
+                'badgirl',
+                'gongzi',
+                'wanni',
+                'sunnyday',
+                'westair',
+                'lalala',
+                'waves',
+            ];
+            const show = (id, iso) => `show:${id}:${iso}`;
+            const series = (id, arc, no) => `drama:${id}:${arc}:${no}`;
+            /** [id, 幾耐前(分鐘), 長度(秒), 位置(秒；-1 = 聽完)]，新到舊 */
+            const SAMPLE_PROGRESS = [
+                [show('badgirl', '2026-10-19'), 60, 7200, 3024],
+                [show('wanni', '2026-10-19'), 120, 7200, 1296],
+                [show('sunnyday', '2026-10-19'), 180, 7200, -1],
+                [series('lancy', 'half', 3), 240, 1512, 880],
+                [show('westair', '2026-10-16'), 300, 7200, 4752],
+                [show('gongzi', '2026-10-10'), 360, 7200, -1],
+                [series('chisee', 'thirty-six', 12), 420, 1388, -1],
+                [show('lalala', '2026-10-15'), 480, 7200, 2160],
+                [show('waves', '2026-10-14'), 540, 7200, -1],
+                [show('wanni', '2026-10-12'), 600, 7200, 5760],
+                [show('badgirl', '2026-10-15'), 660, 7200, -1],
+            ];
+            /** [id, 幾耐前加入(分鐘)] */
+            const SAMPLE_MARKS = [
+                [show('gongzi', '2026-10-17'), 0],
+                [show('badgirl', '2026-10-16'), 1],
+                [show('wanni', '2026-10-14'), 2],
+            ];
+            /** 收藏 tombstone（Q5 / Q6）：[id, 幾耐前刪除(分鐘)]，保留 30 日 */
+            const SAMPLE_TOMBS = [[series('lancy', 'half', 1), 600]];
+            const payloadOf = (progress, marks, tombs, n) => ({
+                v: 1,
+                t: Math.floor(NOW / 60000),
+                p: progress,
+                b: marks,
+                x: tombs,
+                n,
+            });
+            const isoOf = (ms) => new Date(ms).toISOString().slice(0, 10);
+            /** 合成：n 集（八成節目、兩成劇集） */
+            const DRAMA_ARCS = [
+                ['lancy', 'half'],
+                ['lancy', 'first-love'],
+                ['chisee', 'thirty-six'],
+                ['chisee', 'family'],
+            ];
+            const synthetic = (n) =>
+                Array.from({ length: n }, (_, i) => {
+                    const drama = i % 5 === 4;
+                    const [dramaId, arc] = DRAMA_ARCS[i % 4];
+                    const iso = isoOf(NOW - Math.floor(i / 3) * DAY_MS);
+                    const id = drama
+                        ? series(dramaId, arc, (i % 20) + 1)
+                        : show(SHOW_IDS[i % 7], iso);
+                    const dur = drama ? 1400 + ((i * 53) % 300) : 7200;
+                    return [
+                        id,
+                        60 * (i + 1) + ((i * 17) % 50),
+                        dur,
+                        i % 3 === 0 ? -1 : (i * 977) % dur,
+                    ];
+                });
+            const syntheticMarks = (b) => synthetic(b).map(([id], i) => [id, i * 7]);
+
+            const BASE_URL = 'https://dcwhung.github.io/903-player/#import=1.';
+            /** 用戶定嘅 QR 上限：最近 50 集 + 全部收藏（分享連結冇上限） */
+            const QR_MAX_EPISODES = 50;
+            /* byte mode 容量（version 1–40），淨係用嚟對照 L */
+            const QR_CAP_L = [
+                17, 32, 53, 78, 106, 134, 154, 192, 230, 271, 321, 367, 425, 458, 520, 586, 644,
+                718, 792, 858, 929, 1003, 1091, 1171, 1273, 1367, 1465, 1528, 1628, 1732, 1840,
+                1952, 2068, 2188, 2303, 2431, 2563, 2699, 2809, 2953,
+            ];
+            const versionL = (bytes) => {
+                const v = QR_CAP_L.findIndex((cap) => cap >= bytes) + 1;
+                return v === 0 ? '放唔落' : `v${v}`;
+            };
+            const versionM = (text) => (qrMatrix(text, 'M').getModuleCount() - 17) / 4;
+
+            const canCompress = typeof CompressionStream === 'function';
+            const b64url = (bytes) => {
+                let bin = '';
+                bytes.forEach((b) => (bin += String.fromCharCode(b)));
+                return btoa(bin).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+            };
+            const deflate = async (text) => {
+                const stream = new Blob([new TextEncoder().encode(text)])
+                    .stream()
+                    .pipeThrough(new CompressionStream('deflate-raw'));
+                return new Uint8Array(await new Response(stream).arrayBuffer());
+            };
+            const fromB64url = (s) =>
+                Uint8Array.from(atob(s.replaceAll('-', '+').replaceAll('_', '/')), (c) =>
+                    c.charCodeAt(0),
+                );
+            const inflate = async (bytes) => {
+                const stream = new Blob([bytes])
+                    .stream()
+                    .pipeThrough(new DecompressionStream('deflate-raw'));
+                return new Response(stream).text();
+            };
+            const encode = async (progress, marks, n, tombs = []) => {
+                const json = JSON.stringify(payloadOf(progress, marks, tombs, n));
+                if (!canCompress)
+                    return { json, url: `${BASE_URL}${btoa(json)}`, zBytes: json.length };
+                const z = await deflate(json);
+                return { json, url: BASE_URL + b64url(z), zBytes: z.length };
+            };
+
+            const SHARE_DATA = {};
+            /** 分享連結有齊；QR 淨係最近 50 集（progress 已經新到舊）+ 全部收藏 */
+            const shareDataFor = async (progress, marks) => {
+                const truncated = progress.length > QR_MAX_EPISODES;
+                const total = progress.length;
+                const full = await encode(
+                    progress,
+                    marks,
+                    { p: total, trunc: false },
+                    SAMPLE_TOMBS,
+                );
+                const qr = truncated
+                    ? await encode(
+                          progress.slice(0, QR_MAX_EPISODES),
+                          marks,
+                          { p: total, trunc: true },
+                          SAMPLE_TOMBS,
+                      )
+                    : full;
+                return {
+                    full,
+                    fullUrl: full.url,
+                    qrUrl: qr.url,
+                    truncated,
+                    total: progress.length,
+                    marks: marks.length,
+                };
+            };
+            const prepareData = async () => {
+                SHARE_DATA.normal = await shareDataFor(SAMPLE_PROGRESS, SAMPLE_MARKS);
+                SHARE_DATA.big = await shareDataFor(synthetic(300), SAMPLE_MARKS);
+                const normal = SHARE_DATA.normal.full;
+                const big = SHARE_DATA.big;
+                let roundTrip = '—';
+                if (canCompress) {
+                    const back = await inflate(fromB64url(normal.url.slice(BASE_URL.length)));
+                    roundTrip = back === normal.json ? '✓ 解壓後同原本一樣' : '✗ 唔一樣';
+                }
+                const rows = [
+                    [
+                        '內容',
+                        `${SAMPLE_MARKS.length} 個收藏 · ${SAMPLE_PROGRESS.length} 集進度 · ${SAMPLE_TOMBS.length} 個 tombstone`,
+                    ],
+                    ['JSON', `${normal.json.length} byte`],
+                    ['deflate-raw', `${normal.zBytes} byte`],
+                    ['連結', `${normal.url.length} 字（M v${versionM(normal.url)}）`],
+                    ['Round-trip', roundTrip],
+                    [
+                        '記錄多（300 集）',
+                        `分享連結 ${big.fullUrl.length} 字；QR（最近 50 集）${big.qrUrl.length} 字，M v${versionM(big.qrUrl)}`,
+                    ],
+                ];
+                document.getElementById('sample-stats').innerHTML = rows
+                    .map(([k, v]) => `<tr><th scope="row">${k}</th><td>${v}</td></tr>`)
+                    .join('');
+                document.getElementById('sample-json').textContent = normal.json;
+                document.getElementById('sample-url').textContent = normal.url;
+
+                const capRows = [];
+                for (const b of [0, 3, 10, 20, 50]) {
+                    const { url } = await encode(synthetic(QR_MAX_EPISODES), syntheticMarks(b), {
+                        p: QR_MAX_EPISODES,
+                        trunc: false,
+                    });
+                    const v = versionM(url);
+                    capRows.push(
+                        `<tr><td>${b} 個收藏 · 50 集進度</td><td>${url.length}</td><td>v${v}</td><td>${17 + 4 * v + 8}</td><td>${versionL(url.length)}</td></tr>`,
+                    );
+                }
+                document.getElementById('qr-capacity').innerHTML = capRows.join('');
+            };
+
+            /* ---------- 控制 ---------- */
+            const state = {
+                s1: 'A',
+                version: 'B',
+                size: 'normal',
+                webshare: 'yes',
+                istatus: 'has',
+            };
+            const groupHandlers = {};
+            document.querySelectorAll('[data-group]').forEach((group) => {
+                const key = group.dataset.group === 'state' ? 's1' : group.dataset.group;
+                group.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.pick');
+                    if (!btn) return;
+                    group
+                        .querySelectorAll('.pick')
+                        .forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+                    state[key] = btn.dataset.val;
+                    groupHandlers[key]?.();
+                });
+            });
+            const pressPick = (group, val) =>
+                document
+                    .querySelectorAll(`[data-group="${group}"] .pick`)
+                    .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.val === val)));
+            document
+                .querySelectorAll('[data-swatch]')
+                .forEach((s) => (s.innerHTML = icon(s.dataset.swatch)));
+
+            /** 撳同步掣 → 「同步至另一部機」 */
+            const openSync =
+                (stage, L, toast, size = 'normal') =>
+                () =>
+                    openScrim(stage, L, '同步至另一部機', (sheet, close) =>
+                        buildShare(sheet, close, L, {
+                            data: SHARE_DATA[size],
+                            webShare: state.webshare === 'yes',
+                            toast,
+                        }),
+                    );
+
+            /* ① 三種狀態 */
+            const homes1 = [];
+            const buildSection1 = () => {
+                const host = document.getElementById('stages-1');
+                for (const key of Object.keys(LAYOUTS)) {
+                    const L = LAYOUTS[key];
+                    const { stage } = makeStage(host, key, L.saved);
+                    const toast = toastOf(stage, L);
+                    const tabs = makeTabs(stage, L);
+                    const onSync = openSync(stage, L, toast);
+                    const layerA = savedOverlay(L, { onSync });
+                    const layerB = recentOnly(L, {
+                        onSync,
+                        onStar: () => {
+                            toast('已加入收藏');
+                            setS1('A');
+                        },
+                    });
+                    const anchor = stage.querySelector('.tabs').previousSibling;
+                    stage.insertBefore(layerA, anchor);
+                    stage.insertBefore(layerB, anchor);
+                    homes1.push({ stage, L, tabs, toast, layerA, layerB });
+                }
+                renderS1();
+            };
+            const renderS1 = () => {
+                for (const h of homes1) {
+                    const s = state.s1;
+                    h.stage.style.backgroundImage = `url(${IMG[s === 'C' ? h.L.home : h.L.saved]})`;
+                    h.layerA.dataset.on = String(s === 'A');
+                    h.layerB.dataset.on = String(s === 'B');
+                    h.tabs.set(s === 'A' ? 'star' : s === 'B' ? 'recent' : 'gone', 'third');
+                }
+            };
+            const setS1 = (s) => {
+                state.s1 = s;
+                pressPick('state', s);
+                renderS1();
+            };
+            groupHandlers.s1 = renderS1;
+            const demo = (from, to, msg) => {
+                setS1(from);
+                // 減少動態：直接切換，唔使等
+                setTimeout(
+                    () => {
+                        homes1.forEach((h) => h.toast(msg));
+                        setS1(to);
+                    },
+                    reduced() ? 0 : DEMO_STEP_MS,
+                );
+            };
+            document
+                .getElementById('demo-clear')
+                .addEventListener('click', () => demo('A', 'B', '已移除收藏'));
+            document
+                .getElementById('demo-add')
+                .addEventListener('click', () => demo('B', 'A', '已加入收藏'));
+
+            /* ② 冇收藏版 + 同步掣 */
+            const homes2 = [];
+            const buildSection2 = () => {
+                const host = document.getElementById('stages-2');
+                for (const key of Object.keys(LAYOUTS)) {
+                    const L = LAYOUTS[key];
+                    const { stage } = makeStage(host, key, L.saved);
+                    const toast = toastOf(stage, L);
+                    const tabs = makeTabs(stage, L);
+                    const onSync = openSync(stage, L, toast);
+                    const layerA = savedOverlay(L, { onSync, callout: true });
+                    const layerB = recentOnly(L, {
+                        onSync,
+                        onStar: () => toast('已加入收藏'),
+                        callout: true,
+                    });
+                    const anchor = stage.querySelector('.tabs').previousSibling;
+                    stage.insertBefore(layerA, anchor);
+                    stage.insertBefore(layerB, anchor);
+                    homes2.push({ tabs, layerA, layerB });
+                }
+                renderS2();
+            };
+            const renderS2 = () => {
+                for (const h of homes2) {
+                    h.layerA.dataset.on = String(state.version === 'A');
+                    h.layerB.dataset.on = String(state.version === 'B');
+                    h.tabs.set(state.version === 'A' ? 'star' : 'recent', 'third');
+                }
+            };
+            groupHandlers.version = renderS2;
+
+            /* ③ 同步面板（一直開住；撳 ✕ 關咗會再開） */
+            let section3Gen = 0;
+            const buildSection3 = () => {
+                section3Gen += 1;
+                const gen = section3Gen;
+                const host = document.getElementById('stages-3');
+                host.textContent = '';
+                for (const key of Object.keys(LAYOUTS)) {
+                    const L = LAYOUTS[key];
+                    const { stage } = makeStage(host, key, L.saved);
+                    const toast = toastOf(stage, L);
+                    makeTabs(stage, L).set('star', 'third');
+                    const open = () => {
+                        if (gen !== section3Gen) return;
+                        const { scrim } = openSync(stage, L, toast, state.size)();
+                        new MutationObserver((_, obs) => {
+                            if (!scrim.isConnected) {
+                                obs.disconnect();
+                                setTimeout(open, reduced() ? 0 : 600);
+                            }
+                        }).observe(stage, { childList: true });
+                    };
+                    open();
+                }
+                // v5：由另一部機匯入 → 掃描 QR code（主）/ 貼上連結（次）
+                const L = LAYOUTS.phone;
+                const { stage } = makeStage(
+                    host,
+                    'phone',
+                    L.saved,
+                    'v5 手機：「由另一部機匯入」→ 掃描 QR code / 貼上連結',
+                );
+                const toast = toastOf(stage, L);
+                makeTabs(stage, L).set('star', 'third');
+                openScrim(stage, L, '由另一部機匯入', (sheet, close) =>
+                    buildEntry(sheet, close, L, {
+                        toast,
+                        onBack: () => {
+                            sheet.replaceChildren();
+                            buildShare(sheet, close, L, {
+                                data: SHARE_DATA[state.size],
+                                webShare: state.webshare === 'yes',
+                                toast,
+                            });
+                        },
+                    }),
+                );
+                const d = SHARE_DATA[state.size];
+                document.getElementById('share-note').textContent = d.truncated
+                    ? `QR：最近 ${QR_MAX_EPISODES} 集 + ${d.marks} 個收藏，${d.qrUrl.length} 字，M v${versionM(d.qrUrl)}；分享連結 ${d.fullUrl.length} 字（${d.total} 集）。`
+                    : `QR：${d.total} 集 + ${d.marks} 個收藏，${d.qrUrl.length} 字，M v${versionM(d.qrUrl)}。`;
+            };
+            groupHandlers.size = buildSection3;
+            groupHandlers.webshare = buildSection3;
+
+            /* ④ 匯入確認 */
+            const buildSection4 = () => {
+                const host = document.getElementById('stages-4');
+                host.textContent = '';
+                for (const key of ['phone', 'wide']) {
+                    const L = LAYOUTS[key];
+                    const safari = state.istatus === 'safari';
+                    const caption =
+                        key === 'phone'
+                            ? safari
+                                ? 'B 機：iPhone（相機掃 QR → 喺 Safari 開咗，唔係主畫面 app）'
+                                : 'B 機：手機（相機掃 QR 開咗 app）'
+                            : safari
+                              ? 'B 機：laptop（Safari 開咗；桌面一樣示範提示）'
+                              : 'B 機：laptop（開咗分享過嚟嘅連結）';
+                    const { stage, bar } = makeStage(host, key, L.home, caption, true);
+                    const toast = toastOf(stage, L);
+                    const tabs = makeTabs(stage, L);
+                    tabs.set('gone', 'shows');
+                    const short = 'dcwhung.github.io/903-player/';
+                    const hash = SHARE_DATA.normal.fullUrl.split('#import=')[1] || '';
+                    const bad = state.istatus === 'bad';
+                    bar.textContent = bad
+                        ? `${short}#import=${hash.slice(0, 24)}…（唔完整）`
+                        : `${short}#import=${hash.slice(0, 60)}…`;
+                    openScrim(
+                        stage,
+                        L,
+                        bad ? '連結唔啱用' : '匯入收聽記錄',
+                        (sheet, close) =>
+                            buildImport(sheet, close, L, {
+                                status: state.istatus,
+                                toast,
+                                onDone: (imported) => {
+                                    bar.textContent = short;
+                                    // 匯入咗：有收藏 → ★ tab 出現兼揀中
+                                    if (imported) tabs.set('star', 'third');
+                                },
+                                // 復原：返去匯入前（示範用全新）
+                                onUndo: () => tabs.set('gone', 'shows'),
+                            }),
+                        L.importW,
+                    );
+                }
+            };
+            groupHandlers.istatus = buildSection4;
+            document.getElementById('import-reset').addEventListener('click', buildSection4);
+
+            /* ---------- ⑥ v5 完整流程：A 機 → B 機 ---------- */
+            const SITE = 'dcwhung.github.io/903-player/';
+            /** 兩部機並排，縮細啲 */
+            const FLOW_MAX = { phone: 0.6, wide: 0.5 };
+            const KIND_LABEL = { phone: '手機', wide: '電腦' };
+            Object.assign(state, {
+                combo: 'pp',
+                route: 'inapp',
+                bstate: 'fresh',
+                entry: 'E1',
+                fsize: 'normal',
+                fshare: 'yes',
+            });
+            let flowStep = 0;
+
+            const big = () => state.fsize === 'big';
+            const fresh = () => state.bstate === 'fresh';
+            const shareData = () => SHARE_DATA[state.fsize];
+            /** 電腦 A 先睇 Web Share 開關；手機一律有 Web Share */
+            const webShareOf = (d) => d.key === 'phone' || state.fshare === 'yes';
+            const linkText = () => `${SITE}#import=${shareData().fullUrl.split('#import=')[1]}`;
+
+            /** 喺 tab patch 之下面加一層（同 ① ② 一樣） */
+            const under = (stage, layer) => {
+                layer.dataset.on = 'true';
+                stage.insertBefore(layer, stage.querySelector('.tabs').previousSibling);
+            };
+            const bg = (d, key) => (d.stage.style.backgroundImage = `url(${IMG[d.L[key]]})`);
+
+            /* A 機場景 */
+            const aRecords = (d, callout) => {
+                bg(d, 'saved');
+                makeTabs(d.stage, d.L).set('star', 'third');
+                under(d.stage, savedOverlay(d.L, { onSync: d.next, callout }));
+            };
+            const aPanel = (d, extra = {}) => {
+                aRecords(d, false);
+                openScrim(d.stage, d.L, '同步至另一部機', (sheet) =>
+                    buildShare(sheet, () => {}, d.L, {
+                        data: shareData(),
+                        webShare: webShareOf(d),
+                        toast: d.toast,
+                        onShare: d.next,
+                        onImport: () => {},
+                        ...extra,
+                    }),
+                );
+            };
+            const aShareSheet = (d, callout) => {
+                aPanel(d);
+                systemShare(d.stage, d.L, { callout, onPick: d.next });
+            };
+            const aCopied = (d) => {
+                aPanel(d);
+                d.toast('已複製連結', { sticky: true });
+            };
+
+            /* B 機場景 */
+            /** 開始嘅樣：全新（第三格 ⇅ / 空白頁）或者已有記錄（★ tab） */
+            const bBase = (d, callout = false) => {
+                if (fresh()) {
+                    bg(d, 'home');
+                    const tabs = makeTabs(d.stage, d.L);
+                    tabs.set('sync', 'shows');
+                    tabs.third.classList.toggle('callout', callout);
+                    tabs.third.addEventListener('click', d.next);
+                    return;
+                }
+                aRecords(d, callout);
+            };
+            /** E2：第三格 = 空白頁，入面直接有掃描 / 貼上 */
+            const bEmptyTab = (d, callout) => {
+                bg(d, 'home');
+                makeTabs(d.stage, d.L).set('sync', 'third');
+                const layer = el('div', 'fade-layer');
+                layer.append(patch(d.L, d.L.cover));
+                const panel = el('section', 'empty-state', {
+                    style: { ...box(d.L.region), '--rf': px(d.L.rf) },
+                });
+                const appBtn = (cls, ic, text) => {
+                    const b = el('button', `app-btn ${cls}`, {
+                        type: 'button',
+                        html: `${icon(ic)}<span>${text}</span>`,
+                    });
+                    b.addEventListener('click', d.next);
+                    return b;
+                };
+                panel.append(
+                    el('span', 'big-ico', { html: icon('sync') }),
+                    el('h4', '', { text: '未有收聽記錄' }),
+                    el('small', '', {
+                        text: '喺另一部機撳「同步」，再喺度掃描 QR code 或者貼上連結。',
+                    }),
+                    appBtn(
+                        `primary${callout === 'scan' ? ' callout' : ''}`,
+                        'camera',
+                        '掃描 QR code',
+                    ),
+                    appBtn(callout === 'paste' ? 'callout' : '', 'link', '貼上連結'),
+                );
+                layer.append(panel);
+                under(d.stage, layer);
+            };
+            const e2 = () => fresh() && state.entry === 'E2';
+            /** 入口：E2 = 空白頁；其他 = 底 + 「由另一部機匯入」卡 */
+            const bEntry = (d, callout, extra = {}) => {
+                if (e2()) {
+                    bEmptyTab(d, callout);
+                    return;
+                }
+                bBase(d);
+                openScrim(
+                    d.stage,
+                    d.L,
+                    '由另一部機匯入',
+                    (sheet) =>
+                        buildEntry(sheet, () => {}, d.L, {
+                            toast: d.toast,
+                            callout,
+                            onScan: d.next,
+                            onPaste: d.next,
+                            ...extra,
+                        }),
+                    d.L.importW,
+                );
+            };
+            const bOwnPanel = (d) => {
+                aRecords(d, false);
+                openScrim(d.stage, d.L, '同步至另一部機', (sheet) =>
+                    buildShare(sheet, () => {}, d.L, {
+                        data: SHARE_DATA.normal,
+                        webShare: true,
+                        toast: d.toast,
+                        callout: 'import',
+                        onShare: () => {},
+                        onImport: d.next,
+                    }),
+                );
+            };
+            const bPermission = (d) => {
+                bEntry(d, null);
+                permissionPrompt(d.stage, d.L, { onAllow: d.next });
+            };
+            const bCamera = (d, phase, source) => {
+                bBase(d);
+                openCamera(d.stage, d.L, {
+                    source,
+                    phase,
+                    toast: d.toast,
+                    qrText: shareData().qrUrl,
+                    onNext: d.next,
+                });
+            };
+            const srcCountOf = (source) => {
+                const data = shareData();
+                const qrCut = source === 'qr' && data.truncated;
+                return { marks: data.marks, eps: qrCut ? QR_MAX_EPISODES : data.total };
+            };
+            /** 匯入確認；url：B 係瀏覽器開咗連結（網址列有 #import=） */
+            const bConfirm = (d, source, { url = false, safari = false } = {}) => {
+                if (url) {
+                    d.bar.hidden = false;
+                    d.bar.textContent = linkText();
+                    d.bar.classList.add('callout');
+                }
+                if (safari) {
+                    bg(d, 'home');
+                    makeTabs(d.stage, d.L).set('gone', 'shows');
+                } else bBase(d);
+                openScrim(
+                    d.stage,
+                    d.L,
+                    '匯入收聽記錄',
+                    (sheet, close) =>
+                        buildImport(sheet, close, d.L, {
+                            status: safari ? 'safari' : fresh() ? 'empty' : 'has',
+                            source,
+                            srcCount: srcCountOf(source),
+                            total: shareData().total,
+                            truncated: source === 'qr' && shareData().truncated,
+                            toast: d.toast,
+                            onDone: (imported) => imported && d.next(),
+                        }),
+                    d.L.importW,
+                );
+            };
+            const bPaste = (d) => {
+                bEntry(d, null);
+                d.stage.querySelector('.scrim')?.remove();
+                openScrim(
+                    d.stage,
+                    d.L,
+                    '貼上連結',
+                    (sheet, close) =>
+                        buildPaste(sheet, close, d.L, {
+                            toast: d.toast,
+                            prefill: true,
+                            callout: true,
+                            onBack: () => {},
+                            onDone: () => {},
+                            onNext: d.next,
+                        }),
+                    d.L.importW,
+                );
+            };
+            const bDone = (d, source, { url = false } = {}) => {
+                if (url) {
+                    d.bar.hidden = false;
+                    d.bar.textContent = SITE;
+                }
+                aRecords(d, false);
+                const src = srcCountOf(source);
+                const msg = fresh()
+                    ? `已匯入：${countText(src)}`
+                    : `已合併：${countText(mergedOf(src))}`;
+                d.toast(msg, {
+                    sticky: true,
+                    action: { label: '復原', onClick: () => d.toast(UNDONE_TEXT) },
+                });
+            };
+            const bSysCam = (d) => {
+                bBase(d);
+                openSysCamera(d.stage, d.L, { onOpen: d.next });
+            };
+
+            /* 步驟 */
+            const step = (who, text, a, b) => ({ who, text, a, b });
+            const aPre = (aKind) => [
+                step(
+                    'A',
+                    `A 機（${KIND_LABEL[aKind]}）：收藏 tab 最近收聽右邊撳「同步」`,
+                    (d) => aRecords(d, true),
+                    (d) => bBase(d),
+                ),
+                step(
+                    'A',
+                    `A 機出「同步至另一部機」：QR 做主角（最近 ${QR_MAX_EPISODES} 集 + 全部收藏）；記錄多過 ${QR_MAX_EPISODES} 集 QR 下面有膠囊提示`,
+                    aPanel,
+                    (d) => bBase(d),
+                ),
+            ];
+            /** B 機由主頁去到「掃描 / 貼上」 */
+            const entrySteps = (want, bKind) => {
+                const verb = want === 'scan' ? '掃描 QR code' : '貼上連結';
+                if (!fresh())
+                    return [
+                        step('B', 'B 機（已有記錄）：收藏 tab 撳「同步」', aPanel, (d) =>
+                            bBase(d, true),
+                        ),
+                        step(
+                            'B',
+                            'B 機自己嘅同步面板 → 次要掣「由另一部機匯入」',
+                            aPanel,
+                            bOwnPanel,
+                        ),
+                        step('B', `「由另一部機匯入」→ 撳「${verb}」`, aPanel, (d) =>
+                            bEntry(d, want),
+                        ),
+                    ];
+                if (state.entry === 'E2')
+                    return [
+                        step(
+                            'B',
+                            `B 機（全新，${KIND_LABEL[bKind]}）：未有記錄都出第三格 ⇅，撳佢`,
+                            aPanel,
+                            (d) => bBase(d, true),
+                        ),
+                        step(
+                            'B',
+                            `第三格 = 空白頁「未有收聽記錄」，直接有「掃描 QR code」/「貼上連結」→ 撳「${verb}」`,
+                            aPanel,
+                            (d) => bEntry(d, want),
+                        ),
+                    ];
+                return [
+                    step(
+                        'B',
+                        `B 機（全新，${KIND_LABEL[bKind]}）：第三格出 ⇅（淨係未有記錄先出），撳佢`,
+                        aPanel,
+                        (d) => bBase(d, true),
+                    ),
+                    step('B', `彈出「由另一部機匯入」卡 → 撳「${verb}」`, aPanel, (d) =>
+                        bEntry(d, want),
+                    ),
+                ];
+            };
+            const confirmText = (source) => {
+                const base = fresh()
+                    ? '本機全新：「取消」｜「匯入」'
+                    : '本機有記錄：「取消」｜「覆蓋」「合併」；合併 = 每集 updatedAt 較新者成條勝、收藏比加入 / 刪除時間';
+                const cut =
+                    source === 'qr' && shareData().truncated
+                        ? `；QR 只有最近 ${QR_MAX_EPISODES} 集 → 結果下面寫明，覆蓋確認都寫明`
+                        : '';
+                return `B 機：匯入確認（${base}${cut}）`;
+            };
+            const DONE_TEXT =
+                'B 機：跳去第三個 tab（★）；Toast「已匯入 · 復原」6 秒（撳「復原」= 用匯入前快照寫返，快照留 24 小時）';
+            const scanSteps = (bKind, aKind) => [
+                ...entrySteps('scan', bKind),
+                step(
+                    'B',
+                    bKind === 'phone'
+                        ? '第一次用相機：系統問權限 → 「允許」（之後唔會再問）'
+                        : '第一次用 webcam：瀏覽器問權限 → 「允許」',
+                    aPanel,
+                    bPermission,
+                ),
+                step(
+                    'AB',
+                    bKind === 'phone'
+                        ? `B 機全屏相機對準 A 機（${KIND_LABEL[aKind]}）螢幕嘅 QR（撳相機畫面 = 掃到）`
+                        : `B 機 webcam 對話框；將 A 機（${KIND_LABEL[aKind]}）螢幕對住 webcam（撳畫面 = 掃到）`,
+                    aPanel,
+                    (d) => bCamera(d, 'scan', aKind === 'phone' ? 'phone' : 'laptop'),
+                ),
+                step('B', '讀到：框轉綠 + ✓，自動出匯入確認（唔使撳）', aPanel, (d) =>
+                    bCamera(d, 'ok', aKind === 'phone' ? 'phone' : 'laptop'),
+                ),
+                step('B', confirmText('qr'), aPanel, (d) => bConfirm(d, 'qr')),
+                step('B', DONE_TEXT, aPanel, (d) => bDone(d, 'qr')),
+            ];
+            const sysCamSteps = (aKind) => [
+                ...aPre(aKind),
+                step(
+                    'B',
+                    'B 機（iPhone）冇開 app，直接用系統相機 App 掃 → 出黃色「Safari 開啟」',
+                    aPanel,
+                    bSysCam,
+                ),
+                step(
+                    'B',
+                    '喺 Safari 開咗（唔係主畫面 app）：匯入確認頂部藍色提示，教用戶返 app 入面再掃；照撳「匯入」= 記錄入咗 Safari（Android Chrome 要真機確認係咪共用）',
+                    aPanel,
+                    (d) => bConfirm(d, 'link', { url: true, safari: true }),
+                ),
+                step(
+                    'B',
+                    '記錄喺 Safari 嗰邊；主畫面 app 仍然冇（Safari 7 日冇用仲可能被清走）',
+                    aPanel,
+                    (d) => bDone(d, 'link', { url: true }),
+                ),
+            ];
+            /** 傳連結：A 分享 / 複製 */
+            const sendSteps = (aKind) => {
+                const out = [
+                    step(
+                        'A',
+                        `A 機（${KIND_LABEL[aKind]}）：收藏 tab 撳「同步」`,
+                        (d) => aRecords(d, true),
+                        (d) => bBase(d),
+                    ),
+                ];
+                const shareable = aKind === 'phone' || state.fshare === 'yes';
+                out.push(
+                    step(
+                        'A',
+                        shareable ? 'A 機撳「分享連結」' : 'A 機（冇 Web Share）撳「複製連結」',
+                        (d) => aPanel(d, { callout: 'share' }),
+                        (d) => bBase(d),
+                    ),
+                );
+                if (shareable)
+                    out.push(
+                        step(
+                            'A',
+                            aKind === 'phone'
+                                ? '系統分享：AirDrop 去電腦最快；或者 WhatsApp / 郵件傳俾自己'
+                                : '系統分享（macOS / Windows）：郵件、訊息、AirDrop…',
+                            (d) => aShareSheet(d, aKind === 'phone' ? 'AirDrop' : '郵件'),
+                            (d) => bBase(d),
+                        ),
+                    );
+                else
+                    out.push(
+                        step(
+                            'A',
+                            'Toast「已複製連結」→ 自己貼去電郵 / 聊天 app 傳出去',
+                            aCopied,
+                            (d) => bBase(d),
+                        ),
+                    );
+                return out;
+            };
+            const linkOpenSteps = (bKind) => [
+                step(
+                    'B',
+                    bKind === 'wide'
+                        ? 'B 機（電腦）喺瀏覽器開連結（AirDrop 自動開 / 喺 WhatsApp Web、郵件撳）→ 直接出匯入確認'
+                        : 'B 機（手機）撳連結 → 預設瀏覽器開 app → 匯入確認',
+                    aPanel,
+                    (d) => bConfirm(d, 'link', { url: true }),
+                ),
+                step('B', `${DONE_TEXT}；網址列嘅 #import= 即刻清走`, aPanel, (d) =>
+                    bDone(d, 'link', { url: true }),
+                ),
+            ];
+            const pasteSteps = (bKind) => [
+                ...entrySteps('paste', bKind),
+                step('B', '貼上連結 → 撳「繼續」', aPanel, bPaste),
+                step('B', confirmText('link'), aPanel, (d) => bConfirm(d, 'link')),
+                step('B', DONE_TEXT, aPanel, (d) => bDone(d, 'link')),
+            ];
+
+            const COMBOS = {
+                pp: {
+                    a: 'phone',
+                    b: 'phone',
+                    routes: {
+                        inapp: [
+                            'B 用 app 內掃描（建議）',
+                            () => [...aPre('phone'), ...scanSteps('phone', 'phone')],
+                        ],
+                        syscam: [
+                            'B 用系統相機（iPhone 會入咗 Safari）',
+                            () => sysCamSteps('phone'),
+                        ],
+                        link: [
+                            'A 分享連結 → B 開',
+                            () => [...sendSteps('phone'), ...linkOpenSteps('phone')],
+                        ],
+                    },
+                },
+                wp: {
+                    a: 'wide',
+                    b: 'phone',
+                    routes: {
+                        inapp: [
+                            'B 用 app 內掃描（建議）',
+                            () => [...aPre('wide'), ...scanSteps('phone', 'wide')],
+                        ],
+                        syscam: ['B 用系統相機（iPhone 會入咗 Safari）', () => sysCamSteps('wide')],
+                    },
+                },
+                pw: {
+                    a: 'phone',
+                    b: 'wide',
+                    routes: {
+                        link: [
+                            'A 分享連結 → 電腦開（建議）',
+                            () => [...sendSteps('phone'), ...linkOpenSteps('wide')],
+                        ],
+                        paste: [
+                            '電腦 app 入面貼上連結',
+                            () => [...sendSteps('phone'), ...pasteSteps('wide')],
+                        ],
+                        webcam: [
+                            '電腦 webcam 掃手機 QR',
+                            () => [...aPre('phone'), ...scanSteps('wide', 'phone')],
+                        ],
+                    },
+                },
+                ww: {
+                    a: 'wide',
+                    b: 'wide',
+                    routes: {
+                        link: [
+                            '分享 / 複製連結 → 另一部電腦開（建議）',
+                            () => [...sendSteps('wide'), ...linkOpenSteps('wide')],
+                        ],
+                        paste: [
+                            '另一部電腦 app 入面貼上連結',
+                            () => [...sendSteps('wide'), ...pasteSteps('wide')],
+                        ],
+                        webcam: [
+                            'webcam 掃另一部電腦螢幕嘅 QR',
+                            () => [...aPre('wide'), ...scanSteps('wide', 'wide')],
+                        ],
+                    },
+                },
+            };
+
+            const flowDevs = {};
+            const flowSteps = () => COMBOS[state.combo].routes[state.route][1]();
+
+            const buildRoutePicks = () => {
+                const group = document.querySelector('[data-group="route"]');
+                const routes = COMBOS[state.combo].routes;
+                if (!routes[state.route]) state.route = Object.keys(routes)[0];
+                group.replaceChildren(
+                    ...Object.entries(routes).map(([key, [label]]) =>
+                        el('button', 'pick', {
+                            type: 'button',
+                            'data-val': key,
+                            'aria-pressed': String(key === state.route),
+                            text: label,
+                        }),
+                    ),
+                );
+            };
+            const buildFlowDevices = () => {
+                const host = document.getElementById('stages-6');
+                host.textContent = '';
+                const combo = COMBOS[state.combo];
+                for (const [side, key] of [
+                    ['A', combo.a],
+                    ['B', combo.b],
+                ]) {
+                    const L = LAYOUTS[key];
+                    const caption = `${side} 機（${side === 'A' ? '傳出' : '接收'}）：${KIND_LABEL[key]}`;
+                    const made = makeStage(host, key, L.home, caption, true, FLOW_MAX[key]);
+                    flowDevs[side] = { ...made, key };
+                }
+            };
+            const renderFlow = () => {
+                const steps = flowSteps();
+                flowStep = Math.min(flowStep, steps.length - 1);
+                const cur = steps[flowStep];
+                const go = (i) => () => {
+                    flowStep = Math.max(0, Math.min(i, steps.length - 1));
+                    renderFlow();
+                };
+                for (const side of ['A', 'B']) {
+                    const d = flowDevs[side];
+                    d.stage.replaceChildren();
+                    d.bar.hidden = d.key === 'phone';
+                    d.bar.textContent = SITE;
+                    d.bar.classList.remove('callout');
+                    d.toast = toastOf(d.stage, d.L);
+                    d.next = go(flowStep + 1);
+                    d.device.classList.toggle('active', cur.who.includes(side));
+                    (side === 'A' ? cur.a : cur.b)?.(d);
+                }
+                const list = document.getElementById('flow-steps');
+                list.replaceChildren(
+                    ...steps.map((s, i) => {
+                        const li = el('li');
+                        const b = el('button', 'step-btn', { type: 'button' });
+                        b.append(
+                            el('span', `who who-${s.who}`, { text: s.who }),
+                            el('span', '', { text: s.text }),
+                        );
+                        if (i === flowStep) b.setAttribute('aria-current', 'step');
+                        b.addEventListener('click', go(i));
+                        li.append(b);
+                        return li;
+                    }),
+                );
+                document.getElementById('flow-count').textContent =
+                    `第 ${flowStep + 1} / ${steps.length} 步`;
+                document.getElementById('flow-prev').disabled = flowStep === 0;
+                document.getElementById('flow-next').disabled = flowStep === steps.length - 1;
+            };
+            const restartFlow = () => {
+                flowStep = 0;
+                renderFlow();
+            };
+            const buildSection6 = () => {
+                buildRoutePicks();
+                buildFlowDevices();
+                renderFlow();
+                document.getElementById('flow-prev').addEventListener('click', () => {
+                    flowStep -= 1;
+                    renderFlow();
+                });
+                document.getElementById('flow-next').addEventListener('click', () => {
+                    flowStep += 1;
+                    renderFlow();
+                });
+                document.getElementById('flow-restart').addEventListener('click', restartFlow);
+            };
+            groupHandlers.combo = () => {
+                buildRoutePicks();
+                buildFlowDevices();
+                restartFlow();
+            };
+            groupHandlers.route = restartFlow;
+            groupHandlers.bstate = restartFlow;
+            groupHandlers.entry = restartFlow;
+            groupHandlers.fsize = restartFlow;
+            groupHandlers.fshare = restartFlow;
+
+            /* ---------- ⑦ 例外情況 ---------- */
+            const buildSection7 = () => {
+                const host = document.getElementById('stages-7');
+                host.textContent = '';
+                const cases = [
+                    [
+                        'phone',
+                        '相機權限被拒：唔再出掃描掣，教開返 + 貼上',
+                        (d) => {
+                            bg(d, 'home');
+                            makeTabs(d.stage, d.L).set('sync', 'shows');
+                            openScrim(d.stage, d.L, '由另一部機匯入', (sheet, close) =>
+                                buildEntry(sheet, close, d.L, { toast: d.toast, denied: true }),
+                            );
+                        },
+                    ],
+                    [
+                        'wide',
+                        '電腦冇相機：淨係貼上連結',
+                        (d) => {
+                            bg(d, 'home');
+                            makeTabs(d.stage, d.L).set('sync', 'shows');
+                            openScrim(
+                                d.stage,
+                                d.L,
+                                '由另一部機匯入',
+                                (sheet, close) =>
+                                    buildEntry(sheet, close, d.L, {
+                                        toast: d.toast,
+                                        camera: false,
+                                    }),
+                                d.L.importW,
+                            );
+                        },
+                    ],
+                    [
+                        'phone',
+                        '掃到唔係同步嘅 QR：紅字提示，繼續掃',
+                        (d) => {
+                            bg(d, 'home');
+                            makeTabs(d.stage, d.L).set('sync', 'shows');
+                            openCamera(d.stage, d.L, {
+                                source: 'phone',
+                                phase: 'notsync',
+                                toast: d.toast,
+                                onNext: () => {},
+                            });
+                        },
+                    ],
+                    [
+                        'phone',
+                        '連結格式太新（Q9）：自動檢查更新',
+                        (d) => {
+                            bg(d, 'home');
+                            makeTabs(d.stage, d.L).set('sync', 'shows');
+                            openScrim(d.stage, d.L, '需要更新 app', (sheet) =>
+                                buildUpdating(sheet, 'checking'),
+                            );
+                        },
+                    ],
+                    [
+                        'phone',
+                        '…搵唔到新版：先話連結唔啱用',
+                        (d) => {
+                            bg(d, 'home');
+                            makeTabs(d.stage, d.L).set('sync', 'shows');
+                            openScrim(d.stage, d.L, '連結唔啱用', (sheet) =>
+                                buildUpdating(sheet, 'none'),
+                            );
+                        },
+                    ],
+                    [
+                        'phone',
+                        `QR 截短（300 集）+ 覆蓋確認（Q7）`,
+                        (d) => {
+                            aRecords(d, false);
+                            openScrim(d.stage, d.L, '匯入收聽記錄', (sheet, close) =>
+                                buildImport(sheet, close, d.L, {
+                                    status: 'has',
+                                    source: 'qr',
+                                    srcCount: { marks: SHARE_DATA.big.marks, eps: QR_MAX_EPISODES },
+                                    total: SHARE_DATA.big.total,
+                                    truncated: true,
+                                    startOver: true,
+                                    toast: d.toast,
+                                    onDone: () => {},
+                                }),
+                            );
+                        },
+                    ],
+                    [
+                        'phone',
+                        '匯入完 Toast「復原」（Q8，撳得）',
+                        (d) => {
+                            aRecords(d, false);
+                            d.toast(`已合併：${countText(mergedOf(FROM))}`, {
+                                sticky: true,
+                                action: {
+                                    label: '復原',
+                                    onClick: () => d.toast(UNDONE_TEXT, { sticky: true }),
+                                },
+                            });
+                        },
+                    ],
+                ];
+                for (const [key, caption, render] of cases) {
+                    const L = LAYOUTS[key];
+                    const made = makeStage(host, key, L.home, caption, false, FLOW_MAX[key]);
+                    const d = { ...made, key, toast: toastOf(made.stage, L) };
+                    render(d);
+                }
+            };
+
+            prepareData().then(() => {
+                buildSection1();
+                buildSection2();
+                buildSection3();
+                buildSection4();
+                buildSection6();
+                buildSection7();
+            });
+        </script>
+    </body>
+</html>
