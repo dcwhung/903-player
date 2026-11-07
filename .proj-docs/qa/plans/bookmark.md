@@ -1,6 +1,6 @@
 # Test Plan — bookmark
 
-- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（`npm test -- <path>` 轉發去 `apps/player`）
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）
 - Chain: P7 #7 成集收藏：集數清單 / 播放器 ☆★（URL key）+ 短提示 → 主頁 ★「我的收藏」tab（box / 段 / 行、▷ 原地播、撳行入頁唔播、左滑移除）+ 最近收聽 panel + 分欄
 - AC（用戶確認，Design Origin `_mockups_/bookmark/index.html`；AC-9 = `_mockups_/qr-transfer/index.html` ① ②，branch `feature/transfer/qr-sync`）:
     - AC-1 ☆/★ 喺節目 / 今日 / 劇集頁每行 ▶ 左邊，同播放器播放掣右邊（內頁、闊橫版卡）；撳完出「已加入收藏 / 已移除收藏」

@@ -1,6 +1,6 @@
 # Test Plan — pwa-shell
 
-- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（`npm test -- <path>` 轉發去 `apps/player`）
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）
 - Chain: App 外殼：入口 / router、PWA service worker 換版（updateManager）、啟動畫面、版本號
 - AC:
     - AC-1 有新版自己 reload 一次、播緊唔打斷、兩個 tab 都換（.tickets/completed/0001-0200/CUI-0017.md）

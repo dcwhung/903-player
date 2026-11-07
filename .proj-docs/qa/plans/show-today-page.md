@@ -1,6 +1,6 @@
 # Test Plan — show-today-page
 
-- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（`npm test -- <path>` 轉發去 `apps/player`）
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）
 - Chain: 節目頁 / 今日節目頁：PlayerPanel（碟 + 弧形 slider）、DateStrip、EpisodeList、NowPlaying、TodayShowList
 - AC:
     - AC-1 弧形 slider 拖 / 鍵盤 seek、由頭播放、轉集（e2e 390×844 主流程）

@@ -1,6 +1,6 @@
 # Test Plan — coming-soon
 
-- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（`npm test -- <path>` 轉發去 `apps/player`）
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）。2026-11-07 Phase 0b 起 `@903-player/catalog` 檔寫全 path `packages/catalog/…`
 - Chain: P8 #6 即將上架 / 快將下架：drama.json `addedAt` / `episodeDates` / `removedAt`（三層）→ date-aware catalog + pure selector → 主頁劇集格（H2 / E1 字尾、左上角琥珀下架字、新劇灰格排最尾）、繼續收聽 LC2、劇集頁 chips（虛線 + ⏱、LK1）、全集一覽表（S1 組、LS2）、集數清單（未上架摺埋、LE1）、收藏 tab（已下架灰行、LB1）、最近收聽 LR1、舊 URL 返主頁 + Toast、書架排位下架前後唔郁（W-531）
 - AC（Design Origin `_mockups_/coming-soon/index.html`；review `.proj-docs/reviews/2026-11-05_review_coming-soon.md`）:
     - AC-1 ① 三個位置都顯示：主頁格 H2 字尾「N 個短篇 · 新短篇 X 上架」、chips 虛線 + ⏱ 排最尾、一覽表最底「即將上架」組
@@ -13,13 +13,13 @@
     - 用戶已接受：窄欄短版下架字；聽晒已上架仲有下一批唔入「已聽完」組。用戶決定（re-test 2）：直版成套劇快將下架喺「全集」chip 出「⏳ X」，「繼續收聽」行唔加字；主頁格位唔夠時「N 個短篇 ·」成段收埋、上架字優先（W-533 (b)+(c)）。用戶決定（re-test 3）：主頁格左上角同「繼續收聽」條同日下架只喺左上角（較高一層）出，唔同日兩度都出；「繼續收聽」條位唔夠就成段收埋下架字、集名優先（讀屏照講）
     - AC-8 文案（文案決定 SSoT：用戶 2026-11-05 copy decisions（總表 copy-sheet-p7-p8 #1–#87））：D2 成套劇主語「本廣播劇系列」（唱片下面 / chips 上面 / 一覽表表頭 / 讀屏 / Toast「本廣播劇系列已下架」；主頁格左上角淨日期 + 下架）；D3 / F6 刪「未可以收聽」（靠 aria-disabled）；D5「已收聽到第 {no} 集（最新）」；E1 讀屏一律「06/11 星期五」唔講明日 / 後日；E2 下架短版夠位「⏳ 05/12 下架」、唔夠位先淨「⏳ 05/12」；F1 成套劇下架每個版面讀一次；F2 一覽表行讀屏逐段砌；F3 主頁格讀屏「有新短篇；下個短篇 …上架；部分短篇 …下架」；F4 即將上架行加集數；F5 `availability.tileWithNote`；G1 空格規則；G2 `common.separator`；G3 範圍用「至」
 - Scope files:
-    - Catalog: `src/catalog/dramas/lib/`（availability / availabilitySchema / schema / registry / episodes / e2eFixtures + tests）`schemas/drama.schema.json` `e2e/fixtures/dramas/`
-    - Selectors: `src/selectors/availability.ts` `availabilityLabels.ts` `continueListening.ts` `dramaShelf.ts` `arcProgress.ts`（+ tests）
+    - Catalog: `packages/catalog/src/dramas/`（availability / availabilitySchema / schema / registry / episodes / filename / source + tests）`src/catalog/dramas/lib/`（e2eFixtures / bundledSource + tests）`packages/catalog/schemas/drama.schema.json` `e2e/fixtures/dramas/`
+    - Selectors: `packages/catalog/src/selectors/availability.ts`（+ test）`src/selectors/availabilityLabels.ts` `continueListening.ts` `dramaShelf.ts` `arcProgress.ts`（+ tests）
     - Home: `src/components/pages/home/DramaShelf/`（DramaTile / DramaTileParts / dramaTileTypes / useHideWhenTight / UpcomingTile / dramaShelfCss.node.test / DramaShelf.module.css + tests）`src/pages/home/dramaTileNotices.ts` `useHomeDramaItems.ts` `savedItems.ts` `useSavedView.ts` `src/components/pages/home/SavedTab/`
     - Drama page: `src/components/pages/drama/ArcPicker/` `ArcSheet/` `src/pages/drama/`（seriesAvailability / useSeriesAvailability / useTodaysEpisodes / useDramaPage / DramaPage / SeriesDramaPage / SeriesListColumn）`src/hooks/useHkToday.ts`（+ test；S-704 香港午夜換日）`src/components/shared/player/EpisodeList/` `NowPlaying/`
-    - Shared: `src/splash/afterSplash.ts` `src/i18n/zh-HK.ts`（availability._）`src/styles/tokens.css`（--leave-_ / --upcoming-*）`src/config/constants.ts`（LEAVING_SOON_DAYS）
+    - Shared: `src/splash/afterSplash.ts` `src/i18n/zh-HK.ts`（availability._）`src/styles/tokens.css`（--leave-_ / --upcoming-*）`packages/catalog/src/constants.ts`（LEAVING_SOON_DAYS）
 - Commands:
-    - npm test -- src/catalog/dramas/ src/selectors/availability.test.ts src/selectors/availabilityLabels.test.ts src/selectors/continueListening.test.ts src/selectors/dramaShelf.test.ts src/selectors/arcProgress.test.ts src/components/pages/home/DramaShelf/ src/components/pages/home/SavedTab/ src/components/pages/drama/ src/components/shared/player/EpisodeList/ src/components/shared/player/NowPlaying/ src/pages/drama/ src/pages/home/ src/splash/ src/hooks/useHkToday.test.ts
+    - npm test -- src/catalog/dramas/ packages/catalog/src/dramas/ packages/catalog/src/selectors/availability.test.ts src/selectors/availabilityLabels.test.ts src/selectors/continueListening.test.ts src/selectors/dramaShelf.test.ts src/selectors/arcProgress.test.ts src/components/pages/home/DramaShelf/ src/components/pages/home/SavedTab/ src/components/pages/drama/ src/components/shared/player/EpisodeList/ src/components/shared/player/NowPlaying/ src/pages/drama/ src/pages/home/ src/splash/ src/hooks/useHkToday.test.ts
     - e2e: e2e/comingSoon.mjs section「即將上架 / 快將下架」（入口只有 `npm run e2e`；CI 同 SHA 綠就引用）
     - 手動（Playwright，`npm run build -- --mode e2e` + vite preview，`e2e/harness.mjs` newE2EContext，fixture flag `903player:e2e:dramas`）：390×844、844×390、1300×800 各睇主頁格（有 / 冇繼續收聽）、灰格、chips、一覽表、集數清單、收藏 tab、舊 URL；W-531 時鐘 30/11 22:30 vs 01/12 00:30 比書架次序
 - PWA gate: no（唔掂 sw / manifest / 更新邏輯；e2e fixture 只喺 `--mode e2e` 編入，review 已核實 production build 冇）
