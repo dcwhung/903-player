@@ -4,7 +4,7 @@ import { toEpisodeItems, toPlayableItem } from './episodeItems';
 const NEWEST = recording('gongzi', '2026-10-17');
 const OLDER = recording('gongzi', '2026-10-10');
 const PROGRESS = {
-    [OLDER.url]: { position: 600, duration: 2400, watched: false, updatedAt: 0 },
+    [OLDER.id]: { position: 600, duration: 2400, watched: false, updatedAt: 0 },
 };
 
 describe('toEpisodeItems', () => {

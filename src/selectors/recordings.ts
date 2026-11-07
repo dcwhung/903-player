@@ -113,10 +113,10 @@ export const entriesOnDate = (
 export const newShowIds = (
     recordings: Recording[],
     today: string,
-    watchedUrls: ReadonlySet<string>,
+    watchedIds: ReadonlySet<string>,
 ): Set<ShowId> =>
     new Set(
-        recordings.filter((r) => r.date === today && !watchedUrls.has(r.url)).map((r) => r.showId),
+        recordings.filter((r) => r.date === today && !watchedIds.has(r.id)).map((r) => r.showId),
     );
 
 /** 嗰日成日嘅節目表：有錄音嘅播得；其他有排播嘅（未開始、未 probe、404）全部當未上架 */

@@ -80,7 +80,7 @@ describe('registry availability', () => {
 
     it('should still find removed episodes in the catalog for the saved tab', () => {
         const [removed] = registry.seriesEpisodesOf('gone', '2026-10-01');
-        expect(removed && registry.catalogEpisodeOf('gone', removed.url)).toEqual(removed);
+        expect(removed && registry.catalogEpisodeOf('gone', removed.id)).toEqual(removed);
     });
 
     it('should describe each arc for the coming-soon UI', () => {

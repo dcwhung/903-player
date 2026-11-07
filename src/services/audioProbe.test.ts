@@ -9,6 +9,7 @@ import {
     PROBE_TIMEOUT_MS,
     buildAudioUrl,
     probeAudio,
+    showEpisodeOfUrl,
     probeRecentRecordings,
     readStoredRecordings,
     readUnavailableEpisodes,
@@ -64,6 +65,37 @@ describe('buildAudioUrl', () => {
         ['lalala', '2026-10-20'],
     ] as const)('matches the real %s url', (showId, date) => {
         expect(buildAudioUrl(findShow(showId)!, date)).toBe(REAL_URLS[showId]);
+    });
+});
+
+describe('showEpisodeOfUrl', () => {
+    it.each([
+        ['badgirl', '2026-10-19'],
+        ['gongzi', '2026-10-17'],
+        ['sunnyday', '2026-10-19'],
+        ['westair', '2026-10-17'],
+        ['wanni', '2026-10-19'],
+        ['waves', '2026-10-20'],
+        ['lalala', '2026-10-20'],
+    ] as const)('reads %s and its date back out of the real url', (showId, date) => {
+        expect(showEpisodeOfUrl(REAL_URLS[showId])).toEqual({ showId, date });
+    });
+
+    it('still reads the date when the show file time has since changed', () => {
+        const url = REAL_URLS.badgirl.replace('_1009_', '_1100_');
+        expect(showEpisodeOfUrl(url)).toEqual({ showId: 'badgirl', date: '2026-10-19' });
+    });
+
+    it.each([
+        ['another host', REAL_URLS.badgirl.replace('audio.hkfm903.live', 'evil.example')],
+        ['an unknown show folder', 'https://audio.hkfm903.live/Nope/20261019_1009_Nope.aac'],
+        ['a file name for another show', REAL_URLS.badgirl.replace('Bad_Girl', 'Good_Girl')],
+        ['an impossible date', REAL_URLS.badgirl.replace('20261019', '20261332')],
+        ['a non-aac file', REAL_URLS.badgirl.replace('.aac', '.m4a')],
+        ['a drama url', 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/a/b.m4a'],
+        ['not a url', 'not a url'],
+    ])('returns undefined for %s', (_label, url) => {
+        expect(showEpisodeOfUrl(url)).toBeUndefined();
     });
 });
 
@@ -185,6 +217,7 @@ describe('probeRecentRecordings', () => {
     it('neither probes nor records misses while offline, but still returns cached finds', async () => {
         const remembered: Recording = {
             showId: 'badgirl',
+            id: 'show:badgirl:2026-10-19',
             date: '2026-10-19',
             time: '1009',
             url: REAL_URLS.badgirl,
@@ -244,7 +277,13 @@ describe('probeRecentRecordings', () => {
 
         expect(probe).toHaveBeenCalledTimes(WINDOW_SLOTS);
         expect(result).toEqual<Recording[]>([
-            { showId: 'badgirl', date: '2026-10-19', time: '1009', url: REAL_URLS.badgirl },
+            {
+                showId: 'badgirl',
+                id: 'show:badgirl:2026-10-19',
+                date: '2026-10-19',
+                time: '1009',
+                url: REAL_URLS.badgirl,
+            },
         ]);
     });
 
@@ -289,6 +328,7 @@ describe('probeRecentRecordings', () => {
         const probe = found([]);
         const stored: Recording = {
             showId: 'badgirl',
+            id: 'show:badgirl:2026-10-19',
             date: '2026-10-19',
             time: '1009',
             url: REAL_URLS.badgirl,
@@ -321,7 +361,13 @@ describe('probeRecentRecordings', () => {
             const date = new Date(Date.UTC(2026, 0, 1) + index * MS_PER_DAY)
                 .toISOString()
                 .slice(0, 10);
-            return { showId, date, time, url: `${urlFor(showId, date)}?t=${time}` };
+            return {
+                showId,
+                id: `show:${showId}:${date}`,
+                date,
+                time,
+                url: `${urlFor(showId, date)}?t=${time}`,
+            };
         };
         const many = (showId: Recording['showId'], count: number): Recording[] =>
             Array.from({ length: count }, (_, index) => oldRecording(showId, index));
@@ -603,6 +649,7 @@ describe('probeRecentRecordings', () => {
             await vi.waitFor(() => expect(onFound).toHaveBeenCalledTimes(1));
             expect(onFound).toHaveBeenCalledWith<[Recording]>({
                 showId: 'badgirl',
+                id: 'show:badgirl:2026-10-20',
                 date: '2026-10-20',
                 time: '1009',
                 url: firstUrl,
@@ -649,6 +696,7 @@ describe('readStoredRecordings', () => {
 
     const remembered: Recording = {
         showId: 'badgirl',
+        id: 'show:badgirl:2026-10-19',
         date: '2026-10-19',
         time: '1009',
         url: REAL_URLS.badgirl,
@@ -661,11 +709,17 @@ describe('readStoredRecordings', () => {
     });
 
     it(`returns at most ${PROBE_KEEP_PER_SHOW} recordings per show`, () => {
-        const stored = Array.from({ length: PROBE_KEEP_PER_SHOW + 1 }, (_, index) => ({
-            ...remembered,
-            date: new Date(Date.UTC(2026, 0, 1) + index * MS_PER_DAY).toISOString().slice(0, 10),
-            url: `${REAL_URLS.badgirl}?n=${index}`,
-        }));
+        const stored = Array.from({ length: PROBE_KEEP_PER_SHOW + 1 }, (_, index) => {
+            const date = new Date(Date.UTC(2026, 0, 1) + index * MS_PER_DAY)
+                .toISOString()
+                .slice(0, 10);
+            return {
+                ...remembered,
+                date,
+                id: `show:badgirl:${date}`,
+                url: `${REAL_URLS.badgirl}?n=${index}`,
+            };
+        });
         writeProbeState({ found: stored, misses: {} });
 
         expect(readStoredRecordings()).toEqual(stored.slice(1));
@@ -703,6 +757,7 @@ describe('readUnavailableEpisodes', () => {
     it('skips a miss whose recording has since been found', () => {
         const recording: Recording = {
             showId: 'wanni',
+            id: 'show:wanni:2026-10-19',
             date: '2026-10-19',
             time: '0708',
             url: REAL_URLS.wanni,

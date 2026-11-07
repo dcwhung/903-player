@@ -55,12 +55,12 @@ describe('toDailyItems', () => {
     });
 
     it('shows saved progress for episodes that are not current', () => {
-        const url = C18[0]?.url ?? '';
+        const id = C18[0]?.id ?? '';
         const items = toDailyItems(
             C18,
             ctx({
                 progressMap: {
-                    [url]: { position: 990, duration: 1000, watched: true, updatedAt: 1 },
+                    [id]: { position: 990, duration: 1000, watched: true, updatedAt: 1 },
                 },
             }),
         );

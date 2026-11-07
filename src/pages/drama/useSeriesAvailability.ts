@@ -17,9 +17,9 @@ import {
     upcomingRowsOf,
 } from './seriesAvailability';
 
-/** 短篇碟面（冇就劇集碟面）：即將上架嘅短篇未有集數，用短篇名搵 */
+/** 短篇碟面（冇就劇集碟面）：即將上架嘅短篇未有集數，用短篇名搵（假集數，id / url 唔會用到） */
 const arcCover = (dramaId: string, arc: string): string =>
-    dramaArtFor({ kind: 'series', dramaId, url: '', arc, no: 0 });
+    dramaArtFor({ kind: 'series', dramaId, id: '', url: '', arc, no: 0 });
 
 /** 短篇已上架最後一集（「聽到第 N 集」用） */
 const lastNoOf = (episodes: readonly SeriesEpisode[], arc: string): number =>

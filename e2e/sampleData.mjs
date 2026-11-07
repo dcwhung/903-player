@@ -20,6 +20,8 @@ const buildSampleRecordings = () => {
             const file = `${iso.replaceAll('-', '')}_${time}_${name}.aac`;
             recordings.push({
                 showId: id,
+                // 同 src/catalog/core/episodeId.ts showEpisodeId 一樣（進度 / 收藏 key）
+                id: `show:${id}:${iso}`,
                 date: iso,
                 time,
                 url: `https://audio.hkfm903.live/${encodeURIComponent(name)}/${encodeURIComponent(file)}`,

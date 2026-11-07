@@ -25,7 +25,13 @@ describe('readProbeState', () => {
 
     it('returns a fresh empty state each time so callers can mutate it safely', () => {
         const first = readProbeState();
-        first.found.push({ showId: 'badgirl', date: '2026-10-19', time: '1009', url: 'x' });
+        first.found.push({
+            showId: 'badgirl',
+            id: 'show:badgirl:2026-10-19',
+            date: '2026-10-19',
+            time: '1009',
+            url: 'x',
+        });
         first.misses['badgirl:2026-10-19'] = 1;
 
         expect(readProbeState()).toEqual({ found: [], misses: {} });
@@ -36,5 +42,23 @@ describe('readProbeState', () => {
         readProbeState().misses['a:b'] = 1;
 
         expect(readProbeState()).toEqual({ found: [], misses: {} });
+    });
+
+    it('fills in the episode id for recordings cached before episode ids existed', () => {
+        const url =
+            'https://audio.hkfm903.live/Bad%20Girl%E5%A4%A7%E9%81%8E%E4%BD%AC/20261019_1009_Bad_Girl%E5%A4%A7%E9%81%8E%E4%BD%AC.aac';
+        const legacy = { showId: 'badgirl', date: '2026-10-19', time: '1009', url };
+        localStorage.setItem(PROBE_STORAGE_KEY, JSON.stringify({ found: [legacy], misses: {} }));
+
+        expect(readProbeState().found).toEqual([{ ...legacy, id: 'show:badgirl:2026-10-19' }]);
+    });
+
+    it('recomputes a stored id from the show and date instead of trusting it', () => {
+        const url =
+            'https://audio.hkfm903.live/Bad%20Girl%E5%A4%A7%E9%81%8E%E4%BD%AC/20261019_1009_Bad_Girl%E5%A4%A7%E9%81%8E%E4%BD%AC.aac';
+        const stored = { showId: 'badgirl', date: '2026-10-19', time: '1009', url, id: 'x' };
+        localStorage.setItem(PROBE_STORAGE_KEY, JSON.stringify({ found: [stored], misses: {} }));
+
+        expect(readProbeState().found[0]?.id).toBe('show:badgirl:2026-10-19');
     });
 });

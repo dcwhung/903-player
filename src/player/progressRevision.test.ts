@@ -8,6 +8,7 @@ const RECORDING: Recording = {
     showId: 'gongzi',
     date: '2026-10-17',
     time: '2308',
+    id: 'id:https://audio.hkfm903.live/gongzi/20261017.aac',
     url: 'https://audio.hkfm903.live/gongzi/20261017.aac',
 };
 const DURATION = 3600;
@@ -30,12 +31,12 @@ const playing = async () => {
     audio.emitTime(HEARD_AT);
     audio.emitTime(STOPPED_AT);
     // 前提：storage 仲係舊位置，revision 早過 persist 郁就會讀到 HEARD_AT
-    expect(getProgress(RECORDING.url)?.position).toBe(HEARD_AT);
+    expect(getProgress(RECORDING.id)?.position).toBe(HEARD_AT);
     const seen: { revision: number; saved: number | undefined }[] = [];
     controller.subscribe(() =>
         seen.push({
             revision: controller.getSnapshot().progressRevision,
-            saved: getProgress(RECORDING.url)?.position,
+            saved: getProgress(RECORDING.id)?.position,
         }),
     );
     return { audio, controller, detach, seen };

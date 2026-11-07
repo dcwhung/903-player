@@ -14,6 +14,7 @@ const RECORDING: Recording = {
     showId: 'gongzi',
     date: '2026-10-17',
     time: '2308',
+    id: 'id:https://audio.hkfm903.live/gongzi/20261017.aac',
     url: 'https://audio.hkfm903.live/gongzi/20261017.aac',
 };
 const DURATION = 1000;
@@ -67,7 +68,7 @@ describe('usePlayer', () => {
     });
 
     it('resumes from the saved position once metadata is known', async () => {
-        saveProgress(RECORDING.url, 300, DURATION);
+        saveProgress(RECORDING.id, 300, DURATION);
         const { audio, result } = setup();
 
         await act(async () => result.current.load(RECORDING));
@@ -78,7 +79,7 @@ describe('usePlayer', () => {
     });
 
     it('restarts from zero and plays', async () => {
-        saveProgress(RECORDING.url, 300, DURATION);
+        saveProgress(RECORDING.id, 300, DURATION);
         const { audio, result } = setup();
         await act(async () => result.current.load(RECORDING));
         act(() => audio.emitMetadata(DURATION));
@@ -136,10 +137,10 @@ describe('usePlayer', () => {
 
         act(() => audio.emitTime(500));
         expect(result.current.currentTime).toBe(500);
-        expect(isWatched(RECORDING.url)).toBe(false);
+        expect(isWatched(RECORDING.id)).toBe(false);
 
         act(() => audio.emitTime(951));
-        expect(isWatched(RECORDING.url)).toBe(true);
+        expect(isWatched(RECORDING.id)).toBe(true);
     });
 
     it('saves progress when paused and when the page is hidden', async () => {
@@ -149,13 +150,13 @@ describe('usePlayer', () => {
         act(() => audio.emitTime(123));
 
         await act(async () => result.current.toggle());
-        expect(getProgress(RECORDING.url)?.position).toBe(123);
+        expect(getProgress(RECORDING.id)?.position).toBe(123);
 
         act(() => audio.emitTime(200));
         act(() => {
             window.dispatchEvent(new Event('pagehide'));
         });
-        expect(getProgress(RECORDING.url)?.position).toBe(200);
+        expect(getProgress(RECORDING.id)?.position).toBe(200);
     });
 
     it('stops at the end without autoplaying anything else', async () => {
@@ -166,7 +167,7 @@ describe('usePlayer', () => {
         act(() => audio.end());
 
         expect(result.current.isPlaying).toBe(false);
-        expect(isWatched(RECORDING.url)).toBe(true);
+        expect(isWatched(RECORDING.id)).toBe(true);
     });
 
     it('stop() pauses and saves', async () => {
@@ -178,7 +179,7 @@ describe('usePlayer', () => {
         act(() => result.current.stop());
 
         expect(audio.pause).toHaveBeenCalled();
-        expect(getProgress(RECORDING.url)?.position).toBe(42);
+        expect(getProgress(RECORDING.id)?.position).toBe(42);
     });
 
     it('stays paused when the browser blocks autoplay', async () => {
@@ -203,18 +204,23 @@ describe('usePlayer', () => {
     });
 
     it('keeps the saved position when switching away before metadata loads', async () => {
-        const other: Recording = { ...RECORDING, date: '2026-10-10', url: `${RECORDING.url}?b` };
-        saveProgress(RECORDING.url, 1800, 6000);
+        const other: Recording = {
+            ...RECORDING,
+            date: '2026-10-10',
+            id: `id:${RECORDING.url}?b`,
+            url: `${RECORDING.url}?b`,
+        };
+        saveProgress(RECORDING.id, 1800, 6000);
         const { result } = setup();
 
         await act(async () => result.current.load(RECORDING));
         await act(async () => result.current.load(other));
 
-        expect(getProgress(RECORDING.url)?.position).toBe(1800);
+        expect(getProgress(RECORDING.id)?.position).toBe(1800);
     });
 
     it('keeps the saved position when stopped or hidden before metadata loads', async () => {
-        saveProgress(RECORDING.url, 1800, 6000);
+        saveProgress(RECORDING.id, 1800, 6000);
         const { result } = setup();
 
         await act(async () => result.current.load(RECORDING));
@@ -223,11 +229,11 @@ describe('usePlayer', () => {
             window.dispatchEvent(new Event('pagehide'));
         });
 
-        expect(getProgress(RECORDING.url)?.position).toBe(1800);
+        expect(getProgress(RECORDING.id)?.position).toBe(1800);
     });
 
     it('skips from the resume position when metadata has not loaded yet', async () => {
-        saveProgress(RECORDING.url, 1800, 6000);
+        saveProgress(RECORDING.id, 1800, 6000);
         const { audio, result } = setup();
         await act(async () => result.current.load(RECORDING));
 
@@ -236,12 +242,17 @@ describe('usePlayer', () => {
 
         expect(audio.currentTime).toBe(1830);
         expect(result.current.currentTime).toBe(1830);
-        expect(getProgress(RECORDING.url)?.position).toBe(1800);
+        expect(getProgress(RECORDING.id)?.position).toBe(1800);
     });
 
     it('skips from the resume position after switching episodes before metadata loads', async () => {
-        const other: Recording = { ...RECORDING, date: '2026-10-15', url: `${RECORDING.url}?b` };
-        saveProgress(other.url, 100, 6000);
+        const other: Recording = {
+            ...RECORDING,
+            date: '2026-10-15',
+            id: `id:${RECORDING.url}?b`,
+            url: `${RECORDING.url}?b`,
+        };
+        saveProgress(other.id, 100, 6000);
         const { audio, result } = setup();
         await act(async () => result.current.load(RECORDING, { autoplay: true }));
         act(() => audio.emitMetadata(DURATION));
@@ -253,7 +264,7 @@ describe('usePlayer', () => {
         act(() => audio.emitMetadata(6000));
 
         expect(audio.currentTime).toBe(130);
-        expect(getProgress(other.url)?.position).toBe(100);
+        expect(getProgress(other.id)?.position).toBe(100);
     });
 
     it('keeps tracking time when the browser reports an infinite duration', async () => {
@@ -265,7 +276,7 @@ describe('usePlayer', () => {
         act(() => result.current.stop());
 
         expect(result.current.currentTime).toBe(60);
-        expect(getProgress(RECORDING.url)?.position).toBe(60);
+        expect(getProgress(RECORDING.id)?.position).toBe(60);
     });
 
     it('does not restart a watched episode that is still playing', async () => {
@@ -292,7 +303,7 @@ describe('usePlayer', () => {
 
     describe('replaying a watched episode', () => {
         const replayWatched = async (options = { autoplay: true }) => {
-            saveProgress(RECORDING.url, DURATION, DURATION);
+            saveProgress(RECORDING.id, DURATION, DURATION);
             const { audio, result } = setup();
             await act(async () => result.current.load(RECORDING, options));
             act(() => audio.emitMetadata(DURATION));
@@ -313,7 +324,7 @@ describe('usePlayer', () => {
             playThrough(audio, 0, 5);
             act(() => result.current.pause());
 
-            expect(isWatched(RECORDING.url)).toBe(true);
+            expect(isWatched(RECORDING.id)).toBe(true);
             expect(result.current.watchedRevision).toBe(revision);
         });
 
@@ -323,8 +334,8 @@ describe('usePlayer', () => {
 
             playThrough(audio, 0, 10.25);
 
-            expect(isWatched(RECORDING.url)).toBe(false);
-            expect(getProgress(RECORDING.url)?.position).toBeGreaterThanOrEqual(10);
+            expect(isWatched(RECORDING.id)).toBe(false);
+            expect(getProgress(RECORDING.id)?.position).toBeGreaterThanOrEqual(10);
             expect(result.current.watchedRevision).toBe(revision + 1);
         });
 
@@ -335,7 +346,7 @@ describe('usePlayer', () => {
 
             act(() => audio.emitTime(951));
 
-            expect(isWatched(RECORDING.url)).toBe(true);
+            expect(isWatched(RECORDING.id)).toBe(true);
             expect(result.current.watchedRevision).toBe(revision + 1);
         });
 
@@ -346,7 +357,7 @@ describe('usePlayer', () => {
             act(() => result.current.seek(300));
             playThrough(audio, 300, 305);
 
-            expect(isWatched(RECORDING.url)).toBe(true);
+            expect(isWatched(RECORDING.id)).toBe(true);
         });
 
         it('does not count time while paused', async () => {
@@ -354,7 +365,7 @@ describe('usePlayer', () => {
 
             playThrough(audio, 0, 20);
 
-            expect(isWatched(RECORDING.url)).toBe(true);
+            expect(isWatched(RECORDING.id)).toBe(true);
         });
 
         it('adds up playback across a pause', async () => {
@@ -365,7 +376,7 @@ describe('usePlayer', () => {
             await act(async () => result.current.play());
             playThrough(audio, 5.25, 10.25);
 
-            expect(isWatched(RECORDING.url)).toBe(false);
+            expect(isWatched(RECORDING.id)).toBe(false);
         });
 
         it('clears watched after restart() on a watched episode is played for 10 seconds', async () => {
@@ -373,12 +384,12 @@ describe('usePlayer', () => {
             await act(async () => result.current.load(RECORDING, { autoplay: true }));
             act(() => audio.emitMetadata(DURATION));
             act(() => audio.emitTime(960));
-            expect(isWatched(RECORDING.url)).toBe(true);
+            expect(isWatched(RECORDING.id)).toBe(true);
 
             await act(async () => result.current.restart());
             playThrough(audio, 0, 10.25);
 
-            expect(isWatched(RECORDING.url)).toBe(false);
+            expect(isWatched(RECORDING.id)).toBe(false);
         });
 
         it('clears watched when an episode parked at the end is replayed for 10 seconds', async () => {
@@ -390,7 +401,7 @@ describe('usePlayer', () => {
             await act(async () => result.current.load(RECORDING, { autoplay: true }));
             playThrough(audio, 0, 10.25);
 
-            expect(isWatched(RECORDING.url)).toBe(false);
+            expect(isWatched(RECORDING.id)).toBe(false);
         });
 
         it('does not clear watched while finishing the first listen', async () => {
@@ -400,7 +411,7 @@ describe('usePlayer', () => {
 
             playThrough(audio, 950, 975);
 
-            expect(isWatched(RECORDING.url)).toBe(true);
+            expect(isWatched(RECORDING.id)).toBe(true);
         });
     });
 

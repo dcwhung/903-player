@@ -30,7 +30,7 @@ const lastTouched = (
     let latest = -1;
     let latestAt = -Infinity;
     episodes.forEach((e, i) => {
-        const updatedAt = progressMap[e.url]?.updatedAt;
+        const updatedAt = progressMap[e.id]?.updatedAt;
         if (updatedAt !== undefined && updatedAt > latestAt) [latest, latestAt] = [i, updatedAt];
     });
     return latest;
@@ -40,7 +40,7 @@ const lastTouched = (
 export const hasNoProgress = (
     episodes: readonly DramaEpisode[],
     progressMap: Readonly<Record<string, Progress>>,
-): boolean => episodes.every((e) => progressMap[e.url] === undefined);
+): boolean => episodes.every((e) => progressMap[e.id] === undefined);
 
 /**
  * 短篇劇集入頁播邊集（episodes 係由第一個短篇第 1 集排到最後）：
@@ -52,7 +52,7 @@ export const pickSeriesStart = (
 ): SeriesEpisode | undefined => {
     const index = lastTouched(episodes, progressMap);
     if (index < 0) return episodes[0];
-    const finished = progressMap[episodes[index]?.url ?? '']?.watched ?? false;
+    const finished = progressMap[episodes[index]?.id ?? '']?.watched ?? false;
     return episodes[finished ? Math.min(index + 1, episodes.length - 1) : index];
 };
 
@@ -70,8 +70,8 @@ export const pickDailyStart = (
 export const dramaHasNew = (
     episodes: readonly DramaEpisode[],
     today: string,
-    watchedUrls: ReadonlySet<string>,
-): boolean => episodes.some((e) => isDaily(e) && e.date === today && !watchedUrls.has(e.url));
+    watchedIds: ReadonlySet<string>,
+): boolean => episodes.some((e) => isDaily(e) && e.date === today && !watchedIds.has(e.id));
 
 /**
  * mini player / 鎖屏嘅副標題：短篇劇集「短篇 · 第 N 集 · 標題」；每日劇集用日子（重播加「重溫」）。

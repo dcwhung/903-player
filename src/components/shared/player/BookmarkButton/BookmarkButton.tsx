@@ -30,7 +30,7 @@ export const BookmarkButton = ({
     className = '',
     disabled = false,
 }: BookmarkButtonProps) => {
-    const saved = useIsBookmarked(track.url);
+    const saved = useIsBookmarked(track.id);
     const onClick = (event: MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
         if (disabled) return;

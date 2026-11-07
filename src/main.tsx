@@ -5,8 +5,12 @@ import { App } from './App';
 import { AudioController, createAudioElement } from './player/AudioController';
 import { attachPlaybackLog } from './player/playbackLog';
 import { UpdateManager, isHardReload, startUpdateChecks } from './pwa/updateManager';
+import { migrateStorage } from './services/storageMigration';
 import './styles/tokens.css';
 import './styles/global.css';
+
+// 舊版進度 / 收藏（URL key）搬去 episode ID key：要喺任何嘢讀進度之前（player、render）做；唔會 throw
+migrateStorage();
 
 // 喺 React 外面建立，令 PWA 更新可以直接讀播放狀態（唔使經 React）
 const audio = createAudioElement();

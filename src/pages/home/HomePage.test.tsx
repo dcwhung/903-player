@@ -116,7 +116,7 @@ describe('HomePage', () => {
     });
 
     it('marks shows with an unwatched episode today as 新', () => {
-        saveProgress(RECORDINGS[3]?.url ?? '', 990, 1000);
+        saveProgress(RECORDINGS[3]?.id ?? '', 990, 1000);
         renderWithProviders(<HomePage />, { recordings: RECORDINGS });
 
         const nav = within(screen.getByRole('navigation'));
@@ -553,11 +553,11 @@ describe('HomePage', () => {
         });
 
         it('puts the dramas being listened to first, finished ones last', async () => {
-            seriesEpisodesOf('jim').forEach((e) => saveProgress(e.url, 990, 1000));
+            seriesEpisodesOf('jim').forEach((e) => saveProgress(e.id, 990, 1000));
             vi.setSystemTime(new Date('2026-11-16T08:05:00Z'));
-            saveProgress(seriesEpisodesOf('golden')[0]?.url ?? '', 250, 1000);
+            saveProgress(seriesEpisodesOf('golden')[0]?.id ?? '', 250, 1000);
             vi.setSystemTime(new Date('2026-11-16T08:10:00Z')); // 最近聽緊嘅係森美小儀
-            saveProgress(seriesEpisodesOf('sammy-kitty')[0]?.url ?? '', 250, 1000);
+            saveProgress(seriesEpisodesOf('sammy-kitty')[0]?.id ?? '', 250, 1000);
             renderWithProviders(<HomePage />);
 
             const nav = await openDramas();
@@ -596,7 +596,7 @@ describe('HomePage', () => {
 
         it('offers 繼續收聽 with the episode to continue and how far it got', async () => {
             const friends = seriesEpisodesOf('chisee').filter((e) => e.arc === '好朋友手牽手');
-            saveProgress(friends[1]?.url ?? '', 250, 1000);
+            saveProgress(friends[1]?.id ?? '', 250, 1000);
             renderWithProviders(<HomePage />);
             const nav = await openDramas();
 
@@ -611,7 +611,7 @@ describe('HomePage', () => {
 
         it('leaves the tile plain while the drama plays, as the mini player already shows it', async () => {
             const friends = seriesEpisodesOf('chisee').filter((e) => e.arc === '好朋友手牽手');
-            saveProgress(friends[1]?.url ?? '', 250, 1000);
+            saveProgress(friends[1]?.id ?? '', 250, 1000);
             await arriveHomeWith(friends[1]!);
             await userEvent.click(screen.getByRole('button', { name: '廣播劇' }));
 
@@ -649,7 +649,7 @@ describe('HomePage', () => {
         const CONTINUE_FRIENDS = '芝See菇Bi Family，繼續收聽 好朋友手牽手，第 2 集，朋友不同';
         const listenedToFriends = () => {
             const friends = seriesEpisodesOf('chisee').filter((e) => e.arc === '好朋友手牽手');
-            saveProgress(friends[1]?.url ?? '', 250, 1000);
+            saveProgress(friends[1]?.id ?? '', 250, 1000);
             return friends[1]!;
         };
 
@@ -769,7 +769,7 @@ describe('HomePage', () => {
 
         // _mockups_/qr-transfer ①：冇收藏但有收聽記錄 → 第三格照出，叫「最近收聽」
         it('should offer 最近收聽 as the third tab with history but no bookmarks', async () => {
-            saveProgress((RECORDINGS[2] as Recording).url, 60, 600);
+            saveProgress((RECORDINGS[2] as Recording).id, 60, 600);
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
 
             expect(savedTab()).not.toBeInTheDocument();
@@ -784,7 +784,7 @@ describe('HomePage', () => {
         it('should stay on the third tab, now 最近收聽, when the last bookmark is removed', async () => {
             const target = RECORDINGS[1] as Recording;
             addBookmark(target, 1);
-            saveProgress((RECORDINGS[2] as Recording).url, 60, 600);
+            saveProgress((RECORDINGS[2] as Recording).id, 60, 600);
             renderWithProviders(<HomePage />, { recordings: RECORDINGS });
             await userEvent.click(savedTab() as HTMLElement);
 

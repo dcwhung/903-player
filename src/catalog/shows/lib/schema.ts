@@ -1,6 +1,7 @@
 /*
  * show.json 嘅型別同驗證（一個 folder = 一個 903 節目）。
- * name 同 fileTime 用嚟砌錄音 URL（audioProbe.buildAudioUrl），URL 係已儲進度嘅 key，唔可以亂改。
+ * name 同 fileTime 用嚟砌錄音 URL（audioProbe.buildAudioUrl），要同原站一模一樣先播得到，唔可以亂改；
+ * 進度 / 收藏 key 係 episode ID（show:<folder id>:<日子>），folder id 都唔可以改。
  */
 import {
     checkId,

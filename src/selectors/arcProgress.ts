@@ -45,12 +45,12 @@ const summarise = (
 ): ArcSummary | undefined => {
     const [first] = episodes;
     if (!first) return undefined;
-    const watched = episodes.filter((e) => progressMap[e.url]?.watched).length;
-    const touched = episodes.some((e) => progressMap[e.url] !== undefined);
+    const watched = episodes.filter((e) => progressMap[e.id]?.watched).length;
+    const touched = episodes.some((e) => progressMap[e.id] !== undefined);
     const state = arcState(watched, episodes.length, touched);
-    const unfinished = episodes.find((e) => !progressMap[e.url]?.watched);
+    const unfinished = episodes.find((e) => !progressMap[e.id]?.watched);
     const resume = state === 'done' ? first : (unfinished ?? first);
-    const resumeAt = state === 'done' ? 0 : (progressMap[resume.url]?.position ?? 0);
+    const resumeAt = state === 'done' ? 0 : (progressMap[resume.id]?.position ?? 0);
     // 新一批集數上架都算「新」：用已上架集數最遲嗰批計
     const isNew = isArcNew(arcFreshDate(episodes), today);
     return { arc: first.arc, total: episodes.length, watched, state, isNew, resume, resumeAt };
@@ -111,7 +111,7 @@ export const hasNewUnheardArc = (
         const inArc = episodesInArc(episodes, arc);
         return (
             isArcNew(arcFreshDate(inArc), today) &&
-            latestBatch(inArc).every((e) => progressMap[e.url] === undefined)
+            latestBatch(inArc).every((e) => progressMap[e.id] === undefined)
         );
     });
 
@@ -120,10 +120,10 @@ export const seriesContinue = (
     episodes: readonly SeriesEpisode[],
     progressMap: ProgressMap,
 ): { episode: SeriesEpisode; ratio: number } | undefined => {
-    if (!episodes.some((e) => progressMap[e.url] !== undefined)) return undefined;
+    if (!episodes.some((e) => progressMap[e.id] !== undefined)) return undefined;
     const episode = pickSeriesStart(episodes, progressMap);
     if (!episode) return undefined;
-    const progress = progressMap[episode.url];
+    const progress = progressMap[episode.id];
     const shown = progress && !progress.watched ? ratio(progress.position, progress.duration) : 0;
     return { episode, ratio: shown };
 };

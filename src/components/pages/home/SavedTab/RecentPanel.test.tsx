@@ -9,7 +9,14 @@ const recentRow = (no: number): RecentRowView => ({
     label: `第 ${no} 集`,
     spokenLabel: `第 ${no} 集`,
     art: '/disc.webp',
-    track: { kind: 'series', dramaId: 'lancy', url: `/gongzi/${no}`, arc: '戀愛二分一', no },
+    track: {
+        kind: 'series',
+        dramaId: 'lancy',
+        id: `id:/gongzi/${no}`,
+        url: `/gongzi/${no}`,
+        arc: '戀愛二分一',
+        no,
+    },
     onOpen: vi.fn(),
 });
 

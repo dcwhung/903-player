@@ -386,18 +386,12 @@ const checkInnerPageHandle = async ({ browser, base, errors, log }) => {
 
 // 播放卡動畫（P4 #3b，_mockups_/player-card-motion）：開卡 O1、換節目 S3 都係 View Transition
 // （src/utils/viewTransition.ts 嘅 kind，html[data-view-transition]）
-const PROGRESS_KEY = '903player:progress:v1';
-// 兩套短篇劇集第一集（src/catalog/dramas/library/*/drama.json 推出嚟）；刻意寫死做獨立對照
-const DRAMA_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
+const PROGRESS_KEY = '903player:progress:v2';
+// 兩套短篇劇集第一集嘅 episode ID（drama:<劇>:<短篇 id>:<集數>，src/catalog/dramas/library/*/drama.json 推出嚟）；
+// 刻意寫死做獨立對照
 const MOTION_DRAMAS = [
-    {
-        name: '芝See菇Bi Family',
-        url: `${DRAMA_BASE}/%E8%8A%9DSee%E8%8F%87Bi%20Family/%E4%B8%89%E5%8D%81%E5%85%AD%E8%A8%88/01%20-%20%E4%B8%89%E5%8D%81%E5%85%AD%E8%A8%88%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86%20-%20%E7%9E%9E%E5%A4%A9%E9%81%8E%E6%B5%B7%20_%20%E9%9A%A0%E5%BD%A2%E5%A2%A8%E6%B0%B4%E7%AD%86.m4a`,
-    },
-    {
-        name: '少爺占系列',
-        url: `${DRAMA_BASE}/%E5%B0%91%E7%88%BA%E5%8D%A0%E7%B3%BB%E5%88%97/%E5%85%AB%E7%8E%8B%E5%AD%90/01%20-%20%E5%85%AB%E7%8E%8B%E5%AD%90%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a`,
-    },
+    { name: '芝See菇Bi Family', id: 'drama:chisee:36-stratagems:1' },
+    { name: '少爺占系列', id: 'drama:jim:hachioji:1' },
 ];
 // 聽咗一截（未聽完）：書架先有「繼續收聽」
 const PARTIAL_PROGRESS = { position: 60, duration: 600, watched: false };
@@ -409,10 +403,8 @@ const MOTION_SETTLE_MS = 1500;
  * 喺瀏覽器入面行（addInitScript）：寫入兩套劇嘅進度；記低每個 View Transition 嘅 kind，
  * 同佢有冇真係行到（ready）定係畀瀏覽器跳過（例如撞名，S-633）
  */
-const installMotionProbe = ({ key, urls, progress }) => {
-    const map = Object.fromEntries(
-        urls.map((url) => [url, { ...progress, updatedAt: Date.now() }]),
-    );
+const installMotionProbe = ({ key, ids, progress }) => {
+    const map = Object.fromEntries(ids.map((id) => [id, { ...progress, updatedAt: Date.now() }]));
     localStorage.setItem(key, JSON.stringify(map));
     window.__e2eTransitions = [];
     const start = document.startViewTransition?.bind(document);
@@ -470,10 +462,10 @@ const checkResumeFromHandle = async (p, log, label, name) => {
 const checkCardMotion = async ({ browser, base, errors, log }) => {
     const label = '闊橫版主頁播放卡動畫';
     const { ctx, p } = await newE2EPage(browser, errors, { viewport: WIDE }, { now: E2E_SUNDAY });
-    const urls = MOTION_DRAMAS.map((d) => d.url);
+    const ids = MOTION_DRAMAS.map((d) => d.id);
     await ctx.addInitScript(installMotionProbe, {
         key: PROGRESS_KEY,
-        urls,
+        ids,
         progress: PARTIAL_PROGRESS,
     });
     await openWideHome(p, base);

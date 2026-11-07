@@ -67,11 +67,11 @@ interface RowContext {
 /** 一行：狀態跟 player（播緊呢集用即時時間）或者存低嘅進度；▷ 開播喺 click 入面直接做（iOS 自動播） */
 const rowView = (b: Bookmark, name: string, ctx: RowContext): SavedRowView => {
     const { player } = ctx;
-    const loaded = player.recording?.url === b.url;
+    const loaded = player.recording?.id === b.id;
     const live = loaded
         ? { currentTime: player.currentTime, duration: player.duration }
         : undefined;
-    const progress = ctx.progressMap[b.url];
+    const progress = ctx.progressMap[b.id];
     const status = savedRowStatus({ loaded, isPlaying: player.isPlaying, live, progress });
     const track = bookmarkTrack(b, ctx.recordings);
     return {
@@ -84,7 +84,7 @@ const rowView = (b: Bookmark, name: string, ctx: RowContext): SavedRowView => {
         zoomKey: zoomKey.episode(b.url),
         onOpen: () => ctx.openEpisode(b.url, bookmarkPage(b)),
         onPlay: () => void (loaded ? player.toggle() : player.load(track, { autoplay: true })),
-        onRemove: () => removeBookmark(b.url),
+        onRemove: () => removeBookmark(b.id),
         ...bookmarkAvailability(b, ctx.today),
     };
 };
@@ -130,8 +130,8 @@ const useRecentTracks = (
     const { recordings } = useRecordings();
     const index = useMemo(() => playableIndex(recordings), [recordings]);
     return useMemo(() => {
-        const bookmarked = new Set(bookmarks.map((b) => b.url));
-        return recentListens({ progressMap, bookmarked, resolve: (url) => index.get(url) });
+        const bookmarked = new Set(bookmarks.map((b) => b.id));
+        return recentListens({ progressMap, bookmarked, resolve: (id) => index.get(id) });
     }, [bookmarks, progressMap, index]);
 };
 

@@ -173,7 +173,7 @@ const uPlus = (ch) =>
 /**
  * 全形英數（０–９、Ａ–Ｚ、ａ–ｚ）：同半形睇落一樣但 byte 唔同，先係陷阱。
  * 中文全形標點（？！，：（））係正常寫法，R2 key 就係咁，唔報；亦唔可以叫用戶改半形：
- * Windows 檔名唔准「?」，改名要重新上載，網址一變已儲進度（localStorage key）就冇。
+ * Windows 檔名唔准「?」，改名要重新上載，網址一變 app 就播唔到（進度 key 係 episode ID，唔受影響）。
  */
 const FULL_WIDTH_ALPHANUMERIC = /[\uff10-\uff19\uff21-\uff3a\uff41-\uff5a]/u;
 

@@ -1,6 +1,12 @@
-/* 森美小儀系列 regression：集數 / URL 必須同 R2 檔名一樣（URL 係已儲進度嘅 key），每個短篇有自己碟面 */
+/* 森美小儀系列 regression：集數 / URL 必須同 R2 檔名一樣（episode ID 係進度 / 收藏 key，見文件尾），每個短篇有自己碟面 */
 import { DRAMA_AUDIO_BASE } from '../../../../config/constants';
-import { dramaArtFor, dramaEpisodeTheme, findDrama, seriesEpisodesOf } from '../../index';
+import {
+    catalogEpisodesOf,
+    dramaArtFor,
+    dramaEpisodeTheme,
+    findDrama,
+    seriesEpisodesOf,
+} from '../../index';
 
 const R2_SAMMY = `${DRAMA_AUDIO_BASE}/森美小儀系列`;
 /** R2 folder 名 → 集數 */
@@ -176,5 +182,32 @@ describe('森美小儀系列', () => {
             expect(theme.art).toBe(dramaArtFor(forest));
             expect(theme.bg).toBe(findDrama('sammy-kitty')?.theme.bg);
         });
+    });
+});
+
+/* episode ID = 已儲進度 / 收藏嘅 key（v1.29 起）：一經發佈唔可以變；URL pin 保留到 v1 migration 完成 */
+describe('sammy-kitty episode ids', () => {
+    const ids = catalogEpisodesOf('sammy-kitty').map((e) => e.id);
+
+    it('pins the first and last episode id', () => {
+        expect(ids[0]).toBe('drama:sammy-kitty:too-late:1');
+        expect(ids.at(-1)).toBe('drama:sammy-kitty:fantasy:15');
+    });
+
+    it('gives every episode its own id', () => {
+        expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it('pins the id of every arc (drama.json arc id; 改咗已儲進度會冇晒)', () => {
+        const arcIds = [...new Set(ids.map((id) => id.split(':')[2]))];
+        expect(arcIds).toEqual([
+            'too-late',
+            'forest',
+            'summer',
+            'love-1',
+            'love-2',
+            'xmas-2010',
+            'fantasy',
+        ]);
     });
 });

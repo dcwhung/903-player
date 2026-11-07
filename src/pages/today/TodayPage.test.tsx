@@ -181,7 +181,7 @@ describe('TodayPage', () => {
     });
 
     it('shows watched status and plays the tapped show', async () => {
-        saveProgress(TODAY[0]?.url ?? '', 990, 1000);
+        saveProgress(TODAY[0]?.id ?? '', 990, 1000);
         const { audio } = renderWithProviders(<TodayPage />, { ...ROUTE, recordings: RECORDINGS });
 
         const wanni = await screen.findByRole('button', { name: /播放 雲妮鍾情，已收聽/ });

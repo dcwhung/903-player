@@ -18,6 +18,7 @@ const RECORDING: Recording = {
     showId: 'gongzi',
     date: '2026-10-17',
     time: '2308',
+    id: 'id:https://audio.hkfm903.live/gongzi/20261017.aac',
     url: 'https://audio.hkfm903.live/gongzi/20261017.aac',
 };
 const DURATION = 958.7;
@@ -215,7 +216,10 @@ describe('AudioController auto-resume after a system pause (AirPods reconnecting
             audio.paused = true; // load algorithm 清走咗排隊嘅 pause event
         });
         controller.pause();
-        await controller.load({ ...RECORDING, url: `${RECORDING.url}?next` }, { autoplay: true });
+        await controller.load(
+            { ...RECORDING, id: `id:${RECORDING.url}?next`, url: `${RECORDING.url}?next` },
+            { autoplay: true },
+        );
         audio.emitMetadata(DURATION);
         audio.pause.mockRestore();
         await controller.resume();

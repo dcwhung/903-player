@@ -6,7 +6,7 @@ import { SERIES_FIRST_ARC, SERIES_ROUTE, dismissAutoSheet } from './dramaPages.m
 
 // 以下係手抄 src/config/constants.ts，由 src/e2eSrcConstants.test.ts 鎖住一致
 export const PLAYBACK_LOG_STORAGE_KEY = '903player:playback-log:v1';
-export const PROGRESS_STORAGE_KEY = '903player:progress:v1';
+export const PROGRESS_STORAGE_KEY = '903player:progress:v2';
 /** 背景卡住咁耐先報卡住（鎖屏掣變 Play） */
 export const STALL_HIDDEN_MARK_MS = 12000;
 /** 離尾咁多秒就換下一集 */
@@ -80,11 +80,15 @@ const retryLines = (p) =>
         PLAYBACK_LOG_STORAGE_KEY,
     );
 
-const savedPosition = (p, url) =>
-    p.evaluate(({ key, src }) => JSON.parse(localStorage.getItem(key) ?? '{}')[src]?.position, {
-        key: PROGRESS_STORAGE_KEY,
-        src: url,
-    });
+/** 最近存低嗰集嘅位置（進度 key 係 episode ID，唔係 audio src；呢個 context 淨係播緊一集） */
+const savedPosition = (p) =>
+    p.evaluate(
+        (key) =>
+            Object.values(JSON.parse(localStorage.getItem(key) ?? '{}')).sort(
+                (a, b) => b.updatedAt - a.updatedAt,
+            )[0]?.position,
+        PROGRESS_STORAGE_KEY,
+    );
 
 /** 等 app 換咗去另一集（src 唔係 fromSrc） */
 const waitSwitched = (p, fromSrc) =>
@@ -132,7 +136,7 @@ const startSeries = async (env, label, { hangAfterFirst = false } = {}) => {
 const checkSavesOnHide = async (p, label) => {
     const before = await audioState(p);
     await setHidden(p, true);
-    const saved = await savedPosition(p, before.src);
+    const saved = await savedPosition(p);
     return {
         ok:
             saved !== undefined &&

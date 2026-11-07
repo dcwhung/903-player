@@ -4,7 +4,7 @@
 /*
  * scripts/dramaFromFolder.mjs：由本機劇集 folder 生成 drama.json 草稿。
  * 最重要嘅保證：輸出經 app 真正嘅 validator（parseDramaDefinition）+ buildEpisodes 之後，
- * 每條錄音網址都對得返 folder 入面真實存在嘅檔（URL 係已儲進度嘅 key，一個 byte 都唔可以差）。
+ * 每條錄音網址都對得返 folder 入面真實存在嘅檔（一個 byte 都唔可以差，否則播唔到）。
  */
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';

@@ -7,6 +7,7 @@ const TODAY = '2026-11-05';
 const ep = (no: number, extra: Partial<SeriesEpisode> = {}): SeriesEpisode => ({
     kind: 'series',
     dramaId: 'lancy',
+    id: `id:/half/${no}`,
     url: `/half/${no}`,
     arc: '戀愛二分一',
     no,
@@ -18,7 +19,7 @@ const partway: Progress = { position: 250, duration: 1000, watched: false, updat
 describe('liveSeriesContinue', () => {
     it('should continue the episode heard last when it is still on the shelf', () => {
         const catalog = [ep(1), ep(2), ep(3)];
-        expect(liveSeriesContinue(catalog, { [ep(2).url]: partway }, TODAY)).toEqual({
+        expect(liveSeriesContinue(catalog, { [ep(2).id]: partway }, TODAY)).toEqual({
             episode: catalog[1],
             ratio: 0.25,
         });
@@ -27,7 +28,7 @@ describe('liveSeriesContinue', () => {
     it('should skip to the next episode still on the shelf when that one was removed', () => {
         const gone = { removedAt: '2026-11-01' };
         const catalog = [ep(1, gone), ep(2, gone), ep(3)];
-        expect(liveSeriesContinue(catalog, { [ep(2).url]: partway }, TODAY)).toEqual({
+        expect(liveSeriesContinue(catalog, { [ep(2).id]: partway }, TODAY)).toEqual({
             episode: catalog[2],
             ratio: 0,
         });
@@ -39,6 +40,6 @@ describe('liveSeriesContinue', () => {
             ep(2, { removedAt: '2026-11-01' }),
             ep(3, { addedAt: '2026-11-19' }),
         ];
-        expect(liveSeriesContinue(catalog, { [ep(2).url]: partway }, TODAY)).toBeUndefined();
+        expect(liveSeriesContinue(catalog, { [ep(2).id]: partway }, TODAY)).toBeUndefined();
     });
 });

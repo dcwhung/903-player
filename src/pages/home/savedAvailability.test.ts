@@ -9,6 +9,7 @@ const EPISODES: Record<string, SeriesEpisode> = {
     '/gone': {
         kind: 'series',
         dramaId: 'lancy',
+        id: 'id:/gone',
         url: '/gone',
         arc: 'A',
         no: 1,
@@ -17,12 +18,13 @@ const EPISODES: Record<string, SeriesEpisode> = {
     '/soon': {
         kind: 'series',
         dramaId: 'lancy',
+        id: 'id:/soon',
         url: '/soon',
         arc: 'A',
         no: 2,
         removedAt: '2026-12-05',
     },
-    '/ok': { kind: 'series', dramaId: 'lancy', url: '/ok', arc: 'A', no: 3 },
+    '/ok': { kind: 'series', dramaId: 'lancy', id: 'id:/ok', url: '/ok', arc: 'A', no: 3 },
 };
 
 vi.mock('../../catalog/dramas', async (importOriginal) => {
@@ -30,14 +32,17 @@ vi.mock('../../catalog/dramas', async (importOriginal) => {
     return {
         ...actual,
         dramaStatus: (id: string) => (id === 'gone-drama' ? 'removed' : 'live'),
-        catalogEpisodeOf: (_id: string, url: string) => EPISODES[url],
+        catalogEpisodeOf: (_id: string, episodeId: string) =>
+            Object.values(EPISODES).find((e) => e.id === episodeId),
     };
 });
 
+/** 收藏記低嘅網址可以已經過時（例如搬咗 bucket）：一律用 episode ID 對 catalog */
 const series = (dramaId: string, url: string): Bookmark => ({
     kind: 'series',
     dramaId,
-    url,
+    id: `id:${url}`,
+    url: `https://old.example${url}`,
     arc: 'A',
     no: 1,
     addedAt: 1,

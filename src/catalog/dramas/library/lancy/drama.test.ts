@@ -1,6 +1,12 @@
-/* 蘭茜夫人劇場 regression：集數 / URL 必須同 R2 檔名一樣（URL 係已儲進度嘅 key），每個短篇有自己碟面 */
+/* 蘭茜夫人劇場 regression：集數 / URL 必須同 R2 檔名一樣（episode ID 係進度 / 收藏 key，見文件尾），每個短篇有自己碟面 */
 import { DRAMA_AUDIO_BASE } from '../../../../config/constants';
-import { dramaArtFor, dramaEpisodeTheme, findDrama, seriesEpisodesOf } from '../../index';
+import {
+    catalogEpisodesOf,
+    dramaArtFor,
+    dramaEpisodeTheme,
+    findDrama,
+    seriesEpisodesOf,
+} from '../../index';
 
 const R2_LANCY = `${DRAMA_AUDIO_BASE}/蘭茜夫人劇場`;
 const ARCS: ReadonlyArray<readonly [string, number]> = [
@@ -62,5 +68,24 @@ describe('蘭茜夫人劇場', () => {
             expect(theme.art).toBe(dramaArtFor(first));
             expect(theme.bg).toBe(findDrama('lancy')?.theme.bg);
         });
+    });
+});
+
+/* episode ID = 已儲進度 / 收藏嘅 key（v1.29 起）：一經發佈唔可以變；URL pin 保留到 v1 migration 完成 */
+describe('lancy episode ids', () => {
+    const ids = catalogEpisodesOf('lancy').map((e) => e.id);
+
+    it('pins the first and last episode id', () => {
+        expect(ids[0]).toBe('drama:lancy:half:1');
+        expect(ids.at(-1)).toBe('drama:lancy:heart:37');
+    });
+
+    it('gives every episode its own id', () => {
+        expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it('pins the id of every arc (drama.json arc id; 改咗已儲進度會冇晒)', () => {
+        const arcIds = [...new Set(ids.map((id) => id.split(':')[2]))];
+        expect(arcIds).toEqual(['half', 'first-love', 'heart']);
     });
 });

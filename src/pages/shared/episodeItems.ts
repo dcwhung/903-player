@@ -56,7 +56,7 @@ export const toPlayableItem = (track: Track, labels: RowLabels, ctx: RowContext)
         status: episodeStatus({
             isCurrent,
             live: isCurrent ? ctx.live : undefined,
-            progress: ctx.progressMap[url],
+            progress: ctx.progressMap[track.id],
             liveState:
                 ctx.liveState ??
                 playbackStateOf({

@@ -16,7 +16,13 @@ describe('nextTrack', () => {
     });
 
     it('never auto-advances a show recording or a daily drama', () => {
-        const show: Recording = { showId: 'gongzi', date: '2026-10-17', time: '2308', url: 'u' };
+        const show: Recording = {
+            showId: 'gongzi',
+            date: '2026-10-17',
+            time: '2308',
+            id: 'id:u',
+            url: 'u',
+        };
         expect(nextTrack(show)).toBeUndefined();
         expect(nextTrack(dailyEpisodesOf('c18')[0]!)).toBeUndefined();
     });

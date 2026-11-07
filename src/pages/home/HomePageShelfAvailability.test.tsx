@@ -73,9 +73,9 @@ describe('HomePage drama shelf when episodes go off air', () => {
     afterEach(() => vi.useRealTimers());
 
     it('should keep a drama listened to most recently first after the episode in progress goes off air', async () => {
-        saveProgress(episodesIn('golden', 'Season 1')[0]?.url ?? '', 250, 1000);
+        saveProgress(episodesIn('golden', 'Season 1')[0]?.id ?? '', 250, 1000);
         vi.setSystemTime(new Date('2026-11-30T08:05:00Z')); // 最近聽緊嘅係芝See第 1 集（下架嗰集）
-        saveProgress(episodesIn('chisee', '好朋友手牽手')[0]?.url ?? '', 250, 1000);
+        saveProgress(episodesIn('chisee', '好朋友手牽手')[0]?.id ?? '', 250, 1000);
 
         const before = await shelfOrderOn(DAY_BEFORE);
         const after = await shelfOrderOn(REMOVAL_DAY);
@@ -88,7 +88,7 @@ describe('HomePage drama shelf when episodes go off air', () => {
         const unheard = episodesIn('jim', '忠孝公路').at(-1)?.url;
         catalogEpisodesOf('jim')
             .filter((e) => e.url !== unheard)
-            .forEach((e) => saveProgress(e.url, 990, 1000));
+            .forEach((e) => saveProgress(e.id, 990, 1000));
 
         const before = await shelfOrderOn(DAY_BEFORE);
         const after = await shelfOrderOn(REMOVAL_DAY);

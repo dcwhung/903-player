@@ -68,18 +68,18 @@ export const RECENT_MAX = 10;
 
 interface RecentInput<T> {
     progressMap: Readonly<Record<string, Progress>>;
-    /** 已經收藏咗嘅 URL（唔再出） */
+    /** 已經收藏咗嘅 episode ID（唔再出） */
     bookmarked: ReadonlySet<string>;
-    /** URL → 顯示資料；認唔到（節目 / 劇冇咗、錄音清單冇）就 undefined，唔出 */
-    resolve: (url: string) => T | undefined;
+    /** episode ID → 顯示資料；認唔到（節目 / 劇冇咗、錄音清單冇）就 undefined，唔出 */
+    resolve: (id: string) => T | undefined;
 }
 
 /** 「最近收聽」：由進度記錄（updatedAt）揀最新嘅，除走已收藏同認唔到嘅；唔另外儲 */
 export const recentListens = <T>({ progressMap, bookmarked, resolve }: RecentInput<T>): T[] =>
     Object.entries(progressMap)
-        .filter(([url]) => !bookmarked.has(url))
+        .filter(([id]) => !bookmarked.has(id))
         .sort(([, a], [, b]) => (b.updatedAt || 0) - (a.updatedAt || 0))
-        .map(([url]) => resolve(url))
+        .map(([id]) => resolve(id))
         .filter((item): item is T => item !== undefined)
         .slice(0, RECENT_MAX);
 

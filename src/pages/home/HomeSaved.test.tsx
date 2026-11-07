@@ -99,7 +99,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
 
     it('should show saved progress on each row', () => {
         bookmarkSample();
-        saveProgress(GONGZI_OLD.url, 190, 570);
+        saveProgress(GONGZI_OLD.id, 190, 570);
         openSaved();
 
         expect(rowOpen(/^開啟 公子會 03\/10/)).toHaveAccessibleName(
@@ -163,7 +163,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
             );
 
             expect(card.style.transform).toBe('');
-            expect(hasBookmark(GONGZI_OLD.url)).toBe(true);
+            expect(hasBookmark(GONGZI_OLD.id)).toBe(true);
         });
 
         it('should remove the episode past 40% and not open its page', async () => {
@@ -172,7 +172,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
 
             swipeRow(rowOf(/^開啟 公子會 03\/10/), -ROW_WIDTH * (SWIPE_REMOVE_RATIO + 0.1));
 
-            await waitFor(() => expect(hasBookmark(GONGZI_OLD.url)).toBe(false));
+            await waitFor(() => expect(hasBookmark(GONGZI_OLD.id)).toBe(false));
             expect(screen.queryByRole('button', { name: /^開啟 公子會 03\/10/ })).toBeNull();
             expect(screen.queryByTestId('page')).not.toBeInTheDocument();
         });
@@ -193,7 +193,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
             rowOpen(/^開啟 Bad Girl/).focus();
             await userEvent.keyboard('{Delete}');
 
-            await waitFor(() => expect(hasBookmark(BADGIRL.url)).toBe(false));
+            await waitFor(() => expect(hasBookmark(BADGIRL.id)).toBe(false));
             expect(listBookmarks()).toHaveLength(3);
         });
 
@@ -215,7 +215,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
             await userEvent.keyboard('{Backspace}');
 
             expect(await screen.findByRole('status')).toHaveTextContent('已移除收藏');
-            await waitFor(() => expect(hasBookmark(BADGIRL.url)).toBe(false));
+            await waitFor(() => expect(hasBookmark(BADGIRL.id)).toBe(false));
         });
 
         // B2a / B2b：提示唔用 title（hover 唔出 tooltip），全部行共用一個隱藏說明（aria-describedby）
@@ -237,10 +237,10 @@ describe('HomeSaved (我的收藏 tab)', () => {
     describe('最近收聽', () => {
         it('should list the latest listens that are not bookmarked, newest first', () => {
             addBookmark(GONGZI_NEW, 1);
-            saveProgress(BADGIRL.url, 60, 600);
+            saveProgress(BADGIRL.id, 60, 600);
             vi.setSystemTime(new Date('2026-10-19T14:31:00Z'));
-            saveProgress(SUNNY.url, 60, 600);
-            saveProgress(GONGZI_NEW.url, 60, 600);
+            saveProgress(SUNNY.id, 60, 600);
+            saveProgress(GONGZI_NEW.id, 60, 600);
             saveProgress('https://example.com/unknown.aac', 60, 600);
             openSaved();
 
@@ -261,20 +261,20 @@ describe('HomeSaved (我的收藏 tab)', () => {
 
         it('should bookmark from ☆ and move the episode into the boxes', async () => {
             addBookmark(GONGZI_NEW, 1);
-            saveProgress(BADGIRL.url, 60, 600);
+            saveProgress(BADGIRL.id, 60, 600);
             openSaved();
 
             await userEvent.click(
                 screen.getByRole('button', { name: '收藏 Bad Girl大過佬 15/10 星期四' }),
             );
 
-            expect(hasBookmark(BADGIRL.url)).toBe(true);
+            expect(hasBookmark(BADGIRL.id)).toBe(true);
             expect(boxTitles()).toEqual(['Bad Girl大過佬', '公子會']);
         });
 
         it('should open the page without playing when a recent row is tapped', async () => {
             addBookmark(GONGZI_NEW, 1);
-            saveProgress(SUNNY.url, 60, 600);
+            saveProgress(SUNNY.id, 60, 600);
             const { audio } = openSaved();
 
             await userEvent.click(screen.getByRole('button', { name: /^開啟 在晴朗的一天出發/ }));
@@ -287,11 +287,11 @@ describe('HomeSaved (我的收藏 tab)', () => {
     // _mockups_/qr-transfer ① B / ②：冇收藏、有收聽記錄 = 成個 tab 區係最近收聽
     describe('最近收聽 only (no bookmarks)', () => {
         const listenToThree = () => {
-            saveProgress(BADGIRL.url, 60, 600);
+            saveProgress(BADGIRL.id, 60, 600);
             vi.setSystemTime(new Date('2026-10-19T14:31:00Z'));
-            saveProgress(SUNNY.url, 60, 600);
+            saveProgress(SUNNY.id, 60, 600);
             vi.setSystemTime(new Date('2026-10-19T14:32:00Z'));
-            saveProgress(GONGZI_OLD.url, 60, 600);
+            saveProgress(GONGZI_OLD.id, 60, 600);
         };
         const recentRegion = () => screen.getByRole('region', { name: '最近收聽' });
         const listOf = (region: HTMLElement) => region.querySelector('ul') as HTMLElement;
@@ -351,7 +351,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
                 screen.getByRole('button', { name: '收藏 Bad Girl大過佬 15/10 星期四' }),
             );
 
-            expect(hasBookmark(BADGIRL.url)).toBe(true);
+            expect(hasBookmark(BADGIRL.id)).toBe(true);
             await waitFor(() => expect(boxTitles()).toEqual(['Bad Girl大過佬', '最近收聽']));
             expect(screen.getByRole('region', { name: '我的收藏' })).toBeInTheDocument();
         });
@@ -376,7 +376,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
                 entering: pane.hasAttribute('data-entering'),
             }));
         // 直接改 store（左滑 / Delete 嘅滑走時間都係讀同一個 token，見 useRowSwipe；呢度淨係睇內容點換）
-        const removeLast = () => act(() => removeBookmark(GONGZI_NEW.url));
+        const removeLast = () => act(() => removeBookmark(GONGZI_NEW.id));
 
         // 淡出時長 token（後備 timer 讀佢）：設長啲，斷言期間唔會自己拆走
         const FADE_VAR = '--view-transition-fade';
@@ -390,7 +390,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
             stubMotion(false);
             document.documentElement.style.setProperty(FADE_VAR, '50ms');
             addBookmark(GONGZI_NEW, 1);
-            saveProgress(BADGIRL.url, 60, 600);
+            saveProgress(BADGIRL.id, 60, 600);
             const { container } = openSaved();
 
             removeLast();
@@ -402,7 +402,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
         it('should fade the saved boxes out and the recent list in when the last bookmark goes', async () => {
             stubMotion(false);
             addBookmark(GONGZI_NEW, 1);
-            saveProgress(BADGIRL.url, 60, 600);
+            saveProgress(BADGIRL.id, 60, 600);
             const { container } = openSaved();
             expect(panes(container)).toEqual([{ mode: 'saved', leaving: false, entering: false }]);
 
@@ -422,7 +422,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
         it('should not leave the old pane stuck when its fade is cancelled', async () => {
             stubMotion(false);
             addBookmark(GONGZI_NEW, 1);
-            saveProgress(BADGIRL.url, 60, 600);
+            saveProgress(BADGIRL.id, 60, 600);
             const { container } = openSaved();
 
             removeLast();
@@ -435,7 +435,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
         it('should ignore animations of elements inside the leaving pane', async () => {
             stubMotion(false);
             addBookmark(GONGZI_NEW, 1);
-            saveProgress(BADGIRL.url, 60, 600);
+            saveProgress(BADGIRL.id, 60, 600);
             const { container } = openSaved();
 
             removeLast();
@@ -448,7 +448,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
         it('should swap straight away with reduced motion', async () => {
             stubMotion(true);
             addBookmark(GONGZI_NEW, 1);
-            saveProgress(BADGIRL.url, 60, 600);
+            saveProgress(BADGIRL.id, 60, 600);
             const { container } = openSaved();
 
             removeLast();

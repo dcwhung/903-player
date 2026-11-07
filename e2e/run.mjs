@@ -1384,9 +1384,9 @@ try {
         await page.keyboard.press('ArrowRight');
         await page.getByRole('button', { name: '暫停', exact: true }).click();
         const saved = await page.evaluate(() =>
-            JSON.parse(localStorage.getItem('903player:progress:v1')),
+            JSON.parse(localStorage.getItem('903player:progress:v2')),
         );
-        const entry = Object.entries(saved).find(([u]) => u.includes('20261121'));
+        const entry = Object.entries(saved).find(([id]) => id.endsWith(':2026-11-21'));
         log(entry && entry[1].position >= 29, `暫停時存低進度：${entry?.[1].position.toFixed(1)}s`);
 
         await page.getByRole('button', { name: '返回主頁' }).click();
@@ -1410,8 +1410,8 @@ try {
         const watched17 = () =>
             page.evaluate(
                 () =>
-                    Object.entries(JSON.parse(localStorage.getItem('903player:progress:v1'))).find(
-                        ([u]) => u.includes('20261128'),
+                    Object.entries(JSON.parse(localStorage.getItem('903player:progress:v2'))).find(
+                        ([id]) => id.endsWith(':2026-11-28'),
                     )[1].watched,
             );
         log(await watched17(), '重播頭幾秒仍然保留已收聽');

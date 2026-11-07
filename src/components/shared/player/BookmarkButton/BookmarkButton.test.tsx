@@ -10,6 +10,7 @@ const EPISODE: Recording = {
     showId: 'gongzi',
     date: '2026-10-17',
     time: '2300',
+    id: 'id:https://audio.hkfm903.live/gongzi-17.mp3',
     url: 'https://audio.hkfm903.live/gongzi-17.mp3',
 };
 
@@ -31,7 +32,7 @@ describe('BookmarkButton', () => {
         );
         await userEvent.click(screen.getByRole('button', { name: '收藏本集' }));
 
-        expect(hasBookmark(EPISODE.url)).toBe(true);
+        expect(hasBookmark(EPISODE.id)).toBe(true);
         expect(screen.getByRole('button', { name: '收藏本集' })).toHaveAttribute(
             'aria-pressed',
             'true',
@@ -53,7 +54,7 @@ describe('BookmarkButton', () => {
         await userEvent.click(screen.getByRole('button', { name: '收藏本集' }));
         await userEvent.click(screen.getByRole('button', { name: '收藏本集' }));
 
-        expect(hasBookmark(EPISODE.url)).toBe(false);
+        expect(hasBookmark(EPISODE.id)).toBe(false);
         expect(screen.getByRole('status')).toHaveTextContent('已移除收藏');
     });
 
@@ -82,7 +83,7 @@ describe('BookmarkButton', () => {
         await userEvent.click(button);
 
         expect(button).toHaveAttribute('aria-disabled', 'true');
-        expect(hasBookmark(EPISODE.url)).toBe(false);
+        expect(hasBookmark(EPISODE.id)).toBe(false);
         expect(screen.getByRole('status')).toHaveTextContent('之前嘅提示');
     });
 });

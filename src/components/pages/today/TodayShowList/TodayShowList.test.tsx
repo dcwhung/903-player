@@ -36,7 +36,7 @@ describe('TodayShowList', () => {
         await userEvent.click(star);
 
         expect(star).toHaveAttribute('aria-pressed', 'true');
-        expect(hasBookmark(track.url)).toBe(true);
+        expect(hasBookmark(track.id)).toBe(true);
         expect(onSelect).not.toHaveBeenCalled();
         expect(screen.getAllByRole('button', { name: /^收藏/ })).toHaveLength(1);
     });

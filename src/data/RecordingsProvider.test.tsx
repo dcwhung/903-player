@@ -6,6 +6,7 @@ import { useRecordings } from './useRecordings';
 
 const STORED: Recording = {
     showId: 'gongzi',
+    id: 'show:gongzi:2026-10-17',
     date: '2026-10-17',
     time: '2308',
     url: 'https://audio.hkfm903.live/a.aac',
@@ -13,6 +14,7 @@ const STORED: Recording = {
 
 const PROBED: Recording = {
     showId: 'badgirl',
+    id: 'show:badgirl:2026-10-19',
     date: '2026-10-19',
     time: '1009',
     url: 'https://audio.hkfm903.live/b.aac',

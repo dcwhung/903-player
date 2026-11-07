@@ -1,5 +1,6 @@
-/* 18 樓 C 座 regression：⚠️ 仲係假資料、停用中；URL 係 app 自己 host 嘅佔位 */
+/* 18 樓 C 座 regression：⚠️ 仲係假資料、停用中；URL 係 app 自己 host 嘅佔位；episode ID 見文件尾 */
 import {
+    catalogEpisodesOf,
     dailyEpisodesOf,
     dramaArtFor,
     findDrama,
@@ -46,5 +47,19 @@ describe('18 樓 C 座', () => {
     it('uses the drama disc for every episode and a serif title font', () => {
         expect(new Set(episodes.map(dramaArtFor))).toEqual(new Set([findDrama('c18')?.theme.art]));
         expect(findDrama('c18')?.theme.titleFont).toContain('Noto Serif TC');
+    });
+});
+
+/* episode ID = 已儲進度 / 收藏嘅 key（v1.29 起）：一經發佈唔可以變；URL pin 保留到 v1 migration 完成 */
+describe('c18 episode ids', () => {
+    const ids = catalogEpisodesOf('c18').map((e) => e.id);
+
+    it('pins the first and last episode id', () => {
+        expect(ids[0]).toBe('drama:c18:2026-10-23');
+        expect(ids.at(-1)).toBe('drama:c18:2025-08-11');
+    });
+
+    it('gives every episode its own id', () => {
+        expect(new Set(ids).size).toBe(ids.length);
     });
 });

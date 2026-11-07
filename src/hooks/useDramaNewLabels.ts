@@ -16,8 +16,8 @@ import { useRefreshedOn } from './useRefreshedOn';
 
 type ProgressMap = Readonly<Record<string, Progress>>;
 
-const watchedUrlsOf = (progressMap: ProgressMap): ReadonlySet<string> =>
-    new Set(Object.keys(progressMap).filter((url) => progressMap[url]?.watched));
+const watchedIdsOf = (progressMap: ProgressMap): ReadonlySet<string> =>
+    new Set(Object.keys(progressMap).filter((id) => progressMap[id]?.watched));
 
 /** 短篇劇集有新短篇未聽過：成套劇一齊上架（全部短篇都新）→「新上架」，否則「有新短篇」 */
 const seriesNewLabel = (drama: DramaConfig, progressMap: ProgressMap, today: string) => {
@@ -30,7 +30,7 @@ const seriesNewLabel = (drama: DramaConfig, progressMap: ProgressMap, today: str
 /** 短篇劇集見 seriesNewLabel；每日劇集：今日一集未聽完 →「今日有新一集」 */
 const newLabelOf = (drama: DramaConfig, progressMap: ProgressMap, today: string) => {
     if (drama.kind === 'series') return seriesNewLabel(drama, progressMap, today);
-    return dramaHasNew(dramaEpisodesOf(drama.id), today, watchedUrlsOf(progressMap))
+    return dramaHasNew(dramaEpisodesOf(drama.id), today, watchedIdsOf(progressMap))
         ? t('drama.newEpisode')
         : undefined;
 };

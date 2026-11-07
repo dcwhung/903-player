@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { showEpisodeId } from '../src/catalog/core/episodeId';
 import { RecordingsProvider, type RecordingsProber } from '../src/data/RecordingsProvider';
 import { nextTrack } from '../src/player/nextTrack';
 import { PlayerProvider } from '../src/player/PlayerProvider';
@@ -78,6 +79,7 @@ export const createHookWrapper = (
 
 export const recording = (showId: Recording['showId'], date: string, time = '2308'): Recording => ({
     showId,
+    id: showEpisodeId(showId, date),
     date,
     time,
     url: `https://audio.hkfm903.live/${showId}/${date.replaceAll('-', '')}_${time}.aac`,

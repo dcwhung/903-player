@@ -82,12 +82,26 @@ export const PLAYBACK_LOG_MAX_ENTRIES = 400;
 export const PLAYBACK_LOG_TICK_MS = 5000;
 /** 聽過嘅錄音由頭重播，真正播咗咁多秒先清走「已收聽」（防自動播放 / 誤撳） */
 export const REPLAY_RESET_SECONDS = 10;
-export const PROGRESS_STORAGE_KEY = '903player:progress:v1';
+/** 收聽進度：key = episode ID（catalog/core/episodeId.ts），v1.29 起 */
+export const PROGRESS_STORAGE_KEY = '903player:progress:v2';
+/**
+ * 舊版進度（key = 音檔 URL）：storageMigration 每次開 app 搬去 v2，本身唔改唔刪，
+ * 方便 rollback；最少保留到 v1.32 先清
+ */
+export const PROGRESS_V1_STORAGE_KEY = '903player:progress:v1';
 /** 主頁上次揀咗「節目」定「廣播劇」tab */
 export const HOME_TAB_STORAGE_KEY = '903player:home-tab:v1';
-/** 收藏咗嘅集數（P7 #7）：key 尾嘅 v1 同入面嘅 version 一齊改，舊資料就當冇 */
-export const BOOKMARK_STORAGE_KEY = '903player:bookmarks:v1';
-export const BOOKMARK_STORE_VERSION = 1;
+/** 收藏咗嘅集數（P7 #7）：key 尾嘅版本同入面嘅 version 一齊改；v2 每條帶 episode ID */
+export const BOOKMARK_STORAGE_KEY = '903player:bookmarks:v2';
+export const BOOKMARK_STORE_VERSION = 2;
+/** 舊版收藏（用 URL 搵）：同 PROGRESS_V1_STORAGE_KEY 一樣只讀、唔改唔刪 */
+export const BOOKMARK_V1_STORAGE_KEY = '903player:bookmarks:v1';
+export const BOOKMARK_V1_STORE_VERSION = 1;
+/**
+ * 已經由 v1 搬過去 v2 嘅收藏（v1 URL list）：v1 原封不動，冇呢個記錄嘅話
+ * 喺 v2 移除咗嘅收藏下次開 app 會由 v1 搬返嚟
+ */
+export const BOOKMARK_MIGRATED_STORAGE_KEY = '903player:bookmarks-migrated:v1';
 
 export const MS_PER_SECOND = 1000;
 /** 報畀鎖屏嘅播放速度（app 冇變速） */

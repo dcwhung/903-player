@@ -69,8 +69,8 @@ export interface DramaRegistry {
     dailyEpisodesOf(id: string, today?: string): DailyEpisode[];
     /** catalog 入面全部集數（唔理上架 / 下架）：續聽嗰集下架咗就跳去下一集用 */
     catalogEpisodesOf(id: string): readonly DramaEpisode[];
-    /** catalog 入面嘅一集（唔理上架 / 下架）：收藏 tab 出「已下架」行用 */
-    catalogEpisodeOf(id: string, url: string): DramaEpisode | undefined;
+    /** catalog 入面嘅一集（用 episode ID 搵，唔理上架 / 下架）：收藏 tab 出「已下架」行用 */
+    catalogEpisodeOf(id: string, episodeId: string): DramaEpisode | undefined;
     /** 每個短篇嘅上架 / 下架資料（即將上架、快將下架 UI 用） */
     arcAvailabilityOf(id: string): readonly ArcAvailability[];
     /** 唔識 / 冇 id → NEUTRAL_THEME */
@@ -226,7 +226,8 @@ export const buildRegistry = (source: DramaSource): DramaRegistry => {
         dailyEpisodesOf: (id, today) =>
             live.episodesOf(id, today).filter((e): e is DailyEpisode => e.kind === 'daily'),
         catalogEpisodesOf: (id) => entries.get(id)?.episodes ?? [],
-        catalogEpisodeOf: (id, url) => entries.get(id)?.episodes.find((e) => e.url === url),
+        catalogEpisodeOf: (id, episodeId) =>
+            entries.get(id)?.episodes.find((e) => e.id === episodeId),
         arcAvailabilityOf: (id) => entries.get(id)?.arcs ?? [],
         ...artLookups(entries),
     };
