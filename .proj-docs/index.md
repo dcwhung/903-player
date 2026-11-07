@@ -1,6 +1,6 @@
 # 903-player 項目文件索引
 
-**最後更新**：2026-11-06
+**最後更新**：2026-11-07
 
 ## Backlog
 
@@ -112,6 +112,7 @@
 | 2026-11-04 | [qa/2026-11-04_qa_p3-4-inner-page-handle.md](qa/2026-11-04_qa_p3-4-inner-page-handle.md)（P3 #4 闊橫版內頁把手 S1 pass @ `2aa8eb2`（v1.23.1）：CI 41889317426 unit 2150 / e2e 628 success（含「闊橫版內頁把手」）；Playwright 1300×800 spot-check 14 / 14（W-525 星期日今日頁冇把手、今日頁播放中 / 已暫停、✕ 後內頁已暫停、reduced-motion、直版 / 矮橫版）；7 條鏈 freeze S1、home plan 加 AC-4；冇 ticket）                                           |
 | 2026-11-04 | [qa/2026-11-04_qa_p4-3b-player-card-motion.md](qa/2026-11-04_qa_p4-3b-player-card-motion.md)（P4 #3b 闊橫版播放卡動畫 S1 pass @ `164e9e5`（v1.24.1）：CI 41901458217 unit 2184 / e2e 630 success（含「闊橫版主頁播放卡動畫」）；Playwright 1300×800 spot-check 14 / 14（書架 / 把手 open、switch、點 / 掃 / 換集唔反轉、expand / back 不變、reduced-motion、844×390 + 390×844 stack）；W-526 verified；7 條鏈 freeze S1、home plan 加 AC-5；冇 ticket） |
 | 2026-11-04 | [qa/2026-11-04_qa_ui-batch_batch.md](qa/2026-11-04_qa_ui-batch_batch.md)（2026-11-04 UI batch S1 pass @ `6c8b3a6`（v1.25.0，HEAD `d940b14`）：CI 41908755383 lint / unit 2222 / build success（CI e2e cancelled）→ 本機 e2e 631 / 0；Playwright spot-check 30 / 31（✕ 後繼續收聽把手淡走、S-664..S-668、彈性 tabs 三個尺寸 + reduced-motion、stack mini player）；design previews 0 個圖失敗；8 條鏈 freeze S1、home plan 加 AC-6 / AC-7；冇 ticket）   |
+| 2026-11-07 | [qa/2026-11-07_qa_episode-id-storage.md](qa/2026-11-07_qa_episode-id-storage.md)（v1.29.0 Phase −1 S1 ❌ fail @ `b527d56`：CI 42322295592 unit 4 fail（`todayItems.test.ts`、`useStartDrama.test.ts` 仲用 URL key）→ CUI-0023（W-699）；本地 e2e 765 / 0（升級 10 / 10）；W-698 核實；S-749）                                                                                                                                                           |
 
 ## Deploys
 
