@@ -28,6 +28,7 @@
     },
     "arcs": [
         {
+            "id": "half",
             "name": "戀愛二分一",
             "disc": "arcs/half/disc.webp",
             "episodes": 30,
@@ -37,12 +38,14 @@
             }
         },
         {
+            "id": "first-love",
             "name": "初戀無限次",
             "disc": "arcs/first-love/disc.webp",
             "episodes": 5,
             "removedAt": "2026-12-19"
         },
         {
+            "id": "heart",
             "name": "我心不死",
             "disc": "arcs/heart/disc.webp",
             "episodes": 6,
@@ -52,11 +55,13 @@
             }
         },
         {
+            "id": "xxx",
             "name": "XXX",
             "addedAt": "2026-12-02",
             "episodes": 20
         },
         {
+            "id": "yyy",
             "name": "YYY",
             "addedAt": "2026-12-14"
         }

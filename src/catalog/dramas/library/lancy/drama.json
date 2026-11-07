@@ -29,18 +29,21 @@
     },
     "arcs": [
         {
+            "id": "half",
             "name": "戀愛二分一",
             "disc": "arcs/half/disc.webp",
             "tile": "arcs/half/tile.webp",
             "episodes": 30
         },
         {
+            "id": "first-love",
             "name": "初戀無限次",
             "disc": "arcs/first-love/disc.webp",
             "tile": "arcs/first-love/tile.webp",
             "episodes": 33
         },
         {
+            "id": "heart",
             "name": "我心不死",
             "disc": "arcs/heart/disc.webp",
             "tile": "arcs/heart/tile.webp",

@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "903 Player 廣播劇（drama.json）",
-    "description": "一個 folder = 一套廣播劇（src/catalog/dramas/library/<id>/drama.json）。runtime 驗證喺 src/catalog/dramas/lib/schema.ts；以下幾樣 JSON Schema 表達唔到，淨係 runtime 驗：圖檔要真係喺 folder 入面、folder 名要係細楷英數同連字號、arc name 唔可以重複、每日劇 date 唔可以重複、titles / files / episodeDates / episodeRemovedAt 嘅集數要喺 firstNo 至最後一集之內、上架 / 下架日嘅先後（下架遲過上架；arc 下架唔可以遲過劇集、集數下架唔可以遲過 arc；episodeDates 跟集數遞增、遲過 arc addedAt）、episodeRemovedAt 範圍唔可以重疊。",
+    "description": "一個 folder = 一套廣播劇（src/catalog/dramas/library/<id>/drama.json）。runtime 驗證喺 src/catalog/dramas/lib/schema.ts；以下幾樣 JSON Schema 表達唔到，淨係 runtime 驗：圖檔要真係喺 folder 入面、folder 名要係細楷英數同連字號、arc name / id 唔可以重複、每日劇 date 唔可以重複、titles / files / episodeDates / episodeRemovedAt 嘅集數要喺 firstNo 至最後一集之內、上架 / 下架日嘅先後（下架遲過上架；arc 下架唔可以遲過劇集、集數下架唔可以遲過 arc；episodeDates 跟集數遞增、遲過 arc addedAt）、episodeRemovedAt 範圍唔可以重疊。",
     "type": "object",
     "required": ["name", "kind", "enabled", "tile", "disc", "audio", "theme"],
     "additionalProperties": false,
@@ -43,7 +43,7 @@
         },
         "audio": {
             "type": "object",
-            "description": "錄音位置。⚠️ 錄音網址係已儲進度嘅 key，host / folder / file 唔可以亂改",
+            "description": "錄音位置（只用嚟播放；進度 / 收藏 key 係 episode ID，唔係網址）",
             "required": ["host", "folder", "file"],
             "additionalProperties": false,
             "properties": {
@@ -76,7 +76,7 @@
             "type": "array",
             "minItems": 1,
             "items": { "$ref": "#/definitions/arc" },
-            "description": "（series 必填）短篇 / 季 list，照播放次序；name 唔可以重複"
+            "description": "（series 必填）短篇 / 季 list，照播放次序；name 同 id 都唔可以重複"
         },
         "episodes": {
             "type": "array",
@@ -149,7 +149,7 @@
         },
         "arc": {
             "type": "object",
-            "required": ["name"],
+            "required": ["id", "name"],
             "additionalProperties": false,
             "if": { "not": { "required": ["episodes"] } },
             "then": {
@@ -164,10 +164,15 @@
                 }
             },
             "properties": {
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "短篇 ID：細楷英文 / 數字 slug（例如 season-1），用嚟砌 episode ID（進度 / 收藏 key：drama:<劇 id>:<短篇 id>:<集數>）。有圖嘅短篇沿用圖片 folder 名（arcs/<slug>/）；同一劇唔可以重複；⚠️ 發佈咗就唔可以改，否則已儲進度冇晒"
+                },
                 "name": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "短篇名（= R2 folder 名，亦係 template 嘅 {arc}）；唔可以重複"
+                    "description": "短篇名（= R2 folder 名，亦係 template 嘅 {arc}）；唔可以重複。改名唔影響進度（進度用 id）"
                 },
                 "episodes": {
                     "description": "集數（正整數），或者集名 list（冇集名寫 null）。未上架嘅短篇未知集數可以唔寫，但一定要有 addedAt（runtime 亦接受用劇集層 addedAt）；到期仍未補就繼續當未上架",

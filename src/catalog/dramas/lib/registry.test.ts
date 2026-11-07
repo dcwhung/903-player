@@ -43,8 +43,8 @@ const series = (name: string, patch: Record<string, unknown> = {}) => ({
     audio: { host: 'r2', folder: name, file: '{no2}.m4a' },
     theme: THEME,
     arcs: [
-        { name: 'A', episodes: 1 },
-        { name: 'B', episodes: 1, disc: 's2.webp', tile: 's2-tile.webp' },
+        { id: 'a', name: 'A', episodes: 1 },
+        { id: 'b', name: 'B', episodes: 1, disc: 's2.webp', tile: 's2-tile.webp' },
     ],
     ...patch,
 });
@@ -108,9 +108,9 @@ describe('buildRegistry', () => {
                     'gamma',
                     series('Gamma', {
                         arcs: [
-                            { name: 'A', episodes: 1, addedAt: '2026-10-24' },
-                            { name: 'B', episodes: 1, addedAt: '2026-10-25' },
-                            { name: 'C', episodes: 1 },
+                            { id: 'a', name: 'A', episodes: 1, addedAt: '2026-10-24' },
+                            { id: 'b', name: 'B', episodes: 1, addedAt: '2026-10-25' },
+                            { id: 'c', name: 'C', episodes: 1 },
                         ],
                     }),
                 ),

@@ -28,6 +28,7 @@
     },
     "arcs": [
         {
+            "id": "36-stratagems",
             "name": "三十六計",
             "addedAt": "2026-10-24",
             "episodes": [
@@ -70,10 +71,12 @@
             ]
         },
         {
+            "id": "shared-birthday",
             "name": "你生日所以我生日",
             "episodes": 3
         },
         {
+            "id": "first-love-noodles",
             "name": "初戀嗱喳麵",
             "addedAt": "2026-10-25",
             "firstNo": 0,
@@ -88,38 +91,47 @@
             }
         },
         {
+            "id": "jealousy",
             "name": "大妒忌",
             "episodes": 3
         },
         {
+            "id": "hand-in-hand",
             "name": "好朋友手牽手",
             "episodes": ["好傾朋友", "朋友不同", "朋友性別", "朋友第一"]
         },
         {
+            "id": "little-sister",
             "name": "小苦妹撲水",
             "episodes": 4
         },
         {
+            "id": "hkcee",
             "name": "我們都在會考中成長",
             "episodes": ["能源的故事", "舊底的故事"]
         },
         {
+            "id": "dry-swim",
             "name": "游亁水",
             "episodes": 4
         },
         {
+            "id": "gym",
             "name": "苦榮去做GYM",
             "episodes": 4
         },
         {
+            "id": "puberty",
             "name": "青春期",
             "episodes": 4
         },
         {
+            "id": "puberty-wonder",
             "name": "青春期眞神奇",
             "episodes": ["男女先後", "多少問題", "時間長短"]
         },
         {
+            "id": "xmas-proposal",
             "name": "Ｘ時mas時小提議",
             "episodes": ["不如休養下", "哥哥你洽我", "著襪索腳汗", "認認真真搵返個人"]
         }

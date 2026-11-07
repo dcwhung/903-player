@@ -49,6 +49,11 @@ export interface AudioDefinition {
 }
 
 export interface ArcDefinition {
+    /**
+     * 穩定 ASCII slug（drama.json 必填，同一劇唔可以重複）：episode ID（進度 / 收藏 key）用，
+     * 所以 name（= R2 folder 名）改都唔會冇咗進度；有圖嘅短篇沿用圖片 folder 名（arcs/<slug>/）
+     */
+    id: string;
     name: string;
     /** 短篇自己嘅碟面圖（folder 內檔名）；冇就用劇集碟面 */
     disc?: string;
@@ -106,6 +111,8 @@ export interface DailyDefinition extends DramaDefinitionBase {
 export type DramaDefinition = SeriesDefinition | DailyDefinition;
 
 const TOKEN_PATTERN = /\{(\w+)\}/g;
+/** arc id：細楷英文 / 數字，用單個 - 分隔（schemas/drama.schema.json 同一條） */
+export const ARC_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const DRAMA_KINDS = ['series', 'daily'] as const satisfies readonly DramaKind[];
 const ARC_UNITS = ['season'] as const;
@@ -235,16 +242,33 @@ const readArcWindow = (ctx: ParseContext, raw: Raw, path: string, drama: DateWin
     };
 };
 
+/** 同一劇已經見過嘅 arc name / id（兩樣都唔可以重複） */
+interface SeenArcs {
+    names: Set<string>;
+    ids: Set<string>;
+}
+
+/** arc 嘅 name（顯示 + R2 folder）同 id（episode ID 用嘅 slug） */
+const readArcIdentity = (ctx: ParseContext, raw: Raw, path: string, seen: SeenArcs) => {
+    const name = readString(ctx, raw, 'name', `${path}.name`);
+    if (seen.names.has(name)) fail(ctx, `${path}.name: duplicate arc ${name}`);
+    seen.names.add(name);
+    const id = readString(ctx, raw, 'id', `${path}.id`);
+    if (!ARC_ID_PATTERN.test(id))
+        fail(ctx, `${path}.id must be a lowercase ASCII slug like season-1 (got ${id})`);
+    if (seen.ids.has(id)) fail(ctx, `${path}.id: duplicate arc id ${id}`);
+    seen.ids.add(id);
+    return { id, name };
+};
+
 const readArc = (
     ctx: ParseContext,
     value: unknown,
     path: string,
-    { seen, drama }: { seen: Set<string>; drama: DateWindow },
+    { seen, drama }: { seen: SeenArcs; drama: DateWindow },
 ): ArcDefinition => {
     const raw = readRecord(ctx, value, path);
-    const name = readString(ctx, raw, 'name', `${path}.name`);
-    if (seen.has(name)) fail(ctx, `${path}.name: duplicate arc ${name}`);
-    seen.add(name);
+    const identity = readArcIdentity(ctx, raw, path, seen);
     const firstNo = readFirstNo(ctx, raw, `${path}.firstNo`);
     const window = readArcWindow(ctx, raw, path, drama);
     const { range, ...episodes } = readArcEpisodes(ctx, raw, path, { firstNo, ...window });
@@ -252,7 +276,7 @@ const readArc = (
     const episodeDates = readEpisodeDates(ctx, raw, datesCtx);
     const removalCtx = { ...datesCtx, path: `${path}.episodeRemovedAt`, episodeDates };
     return {
-        name,
+        ...identity,
         disc: readOptionalImage(ctx, raw, 'disc', `${path}.disc`),
         tile: readOptionalImage(ctx, raw, 'tile', `${path}.tile`),
         ...window.own,
@@ -267,7 +291,7 @@ const readArc = (
 };
 
 const readArcs = (ctx: ParseContext, raw: Raw, drama: DateWindow): readonly ArcDefinition[] => {
-    const seen = new Set<string>();
+    const seen: SeenArcs = { names: new Set(), ids: new Set() };
     return readNonEmptyArray(ctx, raw, 'arcs').map((arc, i) =>
         readArc(ctx, arc, `arcs[${i}]`, { seen, drama }),
     );
