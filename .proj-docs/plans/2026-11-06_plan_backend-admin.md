@@ -107,7 +107,7 @@ audio ─────────────► R2（URL 只用嚟播放；進�
 ## Monorepo 結構
 
 ```
-apps/player/      現有 PWA（由 root 搬入；Vercel Root Directory + deploy.yml path 要改）
+apps/player/      現有 PWA（由 root 搬入；Vercel 用 root `vercel.json` 指定 build，dashboard Root Directory 唔使改；deploy.yml path 要改）
 apps/admin/       React + Vite admin SPA
 apps/api/         Hono Worker（wrangler.toml：D1、R2 binding、static assets = admin dist）
 packages/catalog/ 由 src/catalog/{core,dramas/lib,shows/lib} 抽出：
@@ -208,7 +208,7 @@ Phase 1 完成之後 player 已經同 backend 解耦：就算 backend 未完成�
 
 - 🔴 進度 / 收藏 migration：v1 對唔到嘅記錄唔可以刪；v1 保留幾個版本先清。之後 migration 同 publish 都 assert **ID** 一樣
 - 🟡 Arc `id` 一旦定咗就唔可以改（改咗等於進度冇咗）；admin 介面要鎖住已 publish arc 嘅 `id`
-- 🔴 Phase 0 搬 folder 會影響 Vercel Root Directory、GitHub Pages `deploy.yml`、e2e path、`tsconfig`：要喺同一個 PR 改齊，同埋要你喺 Vercel dashboard 改 Root Directory
+- 🔴 Phase 0 搬 folder 會影響 Vercel Root Directory、GitHub Pages `deploy.yml`、e2e path、`tsconfig`：要喺同一個 PR 改齊。Vercel 用 root `vercel.json`（`installCommand` / `buildCommand: npm run build -w apps/player` / `outputDirectory: apps/player/dist`），**唔好改 dashboard Root Directory**（改咗反而 build 失敗）；Phase 0a 實作（2026-11-07）
 - 🟡 R2 public bucket 要開 CORS 俾 player origin fetch `catalog.json`
 - 🟡 Google OAuth 要你喺 Google Cloud Console 開 OAuth client（redirect URI = workers.dev domain）
 - 🟡 Admin 改咗但未 publish 嘅 draft 狀態要清楚顯示
