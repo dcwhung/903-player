@@ -13,6 +13,7 @@ import { runComingSoonChecks } from './comingSoon.mjs';
 import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runHomeWideChecks } from './homeWide.mjs';
 import { runPwaUpdateChecks } from './pwaUpdate.mjs';
+import { runRemoteCatalogChecks } from './remoteCatalog.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
 import {
     AUDIO_HOST,
@@ -1662,6 +1663,9 @@ try {
 
     // v1.29 升級（Phase −1）：舊版 URL key 嘅進度 / 收藏開 app 之後搬去 episode ID key，收藏 tab 照出
     await runStorageMigrationChecks({ browser, base: BASE, errors, log });
+
+    // runtime catalog.json（Backend Phase 1）：正常 / 壞資料 / 慢 / 離線 SW cache / v1 進度升級
+    await runRemoteCatalogChecks({ browser, base: BASE, errors, log });
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
     await section('廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));

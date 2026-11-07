@@ -43,7 +43,7 @@ const v1Bookmark = (r, addedAt) => ({
 const V1_BOOKMARKS = { version: 1, items: [v1Bookmark(WATCHED, 1), v1Bookmark(PARTIAL, 2)] };
 
 /** 第一次載入先寫（reload 唔好覆蓋 app 自己寫嘅嘢） */
-const seedV1 = (ctx) =>
+export const seedV1 = (ctx) =>
     ctx.addInitScript(
         (entries) =>
             entries.forEach(([key, value]) => {
@@ -77,7 +77,7 @@ const checkSavedTab = async (p, label, log) => {
 };
 
 /** v2 用 episode ID 做 key；v1 一個 byte 都冇改（rollback 用） */
-const checkStorage = async (p, label, log) => {
+export const checkStorage = async (p, label, log) => {
     const [progressV1, bookmarksV1, progressV2, bookmarksV2] = await readStorage(p);
     const ids = Object.keys(JSON.parse(progressV2 ?? '{}')).sort();
     log(
