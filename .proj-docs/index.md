@@ -67,6 +67,7 @@
 | 2026-11-04 | [reviews/2026-11-04_review_cui-0017-pwa-update-e2e_batch.md](reviews/2026-11-04_review_cui-0017-pwa-update-e2e_batch.md)（batch 94 warn：A 99 pass / B 88 warn，W-519–W-520、S-648–S-650；Round 2 batch pass：A 99 / B 100，S-648 defer；v1.21.6 CUI-0017 兩個 tab 搶輸 skip-waiting 都 reload + v1.21.7 PWA 換版 e2e）         |
 | 2026-11-04 | [reviews/2026-11-04_review_s-648-hard-reload.md](reviews/2026-11-04_review_s-648-hard-reload.md)（97 pass，S-651–S-653；v1.21.8 S-648 Shift-reload 嘅 tab 搶輸 skip-waiting 都 reload）                                                                                                                                         |
 | 2026-11-07 | [reviews/2026-11-07_review_v1.29.0.md](reviews/2026-11-07_review_v1.29.0.md)（95 pass，W-698、S-742–S-748；episode ID + 進度 / 收藏 v2 migration）                                                                                                                                                                              |
+| 2026-11-07 | [reviews/2026-11-07_review_phase0a-monorepo.md](reviews/2026-11-07_review_phase0a-monorepo.md)（90 pass，W-700–W-701、S-750–S-754；monorepo npm workspaces，純 refactor）                                                                                                                                                       |
 
 ## QA
 

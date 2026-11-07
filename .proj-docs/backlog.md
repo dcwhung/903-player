@@ -1,21 +1,26 @@
 # Backlog 登記冊（🟢 / Observation）
 
-**最後更新**：2026-11-07（v1.29.0 review + QA）
+**最後更新**：2026-11-07（Phase 0a monorepo review）
 
 > Review / QA 報告入面嘅 🟢 同 Observation 統一喺呢度追蹤。掃 backlog 時淨係睇「Open」；「Closed」嘅唔使再理。
 > 新 finding 照寫喺各自報告，處理完或者決定唔理就喺呢度更新。
 
 ## Open
 
-| ID    | 範圍                                | 內容                                                                                  | 處理時機          | 來源                                |
-| ----- | ----------------------------------- | ------------------------------------------------------------------------------------- | ----------------- | ----------------------------------- |
-| S-742 | git                                 | `90f312e` 單獨 checkout `tsc` 錯；type 改動同 caller 放同一 commit                    | 以後 commit       | reviews/2026-11-07_review_v1.29.0   |
-| S-743 | `useSavedView.ts`                   | 收藏 tab `key` / `zoomKey` / `focusUrl` 仍用 `url`                                    | Phase 2 換 URL 前 | reviews/2026-11-07_review_v1.29.0   |
-| S-744 | `storageMigration.ts`               | 節目改名前嘅 v1 進度反推唔到，留喺 v1（唔係 regression）                              | 記錄              | reviews/2026-11-07_review_v1.29.0   |
-| S-745 | `storageMigration.ts`               | rollback 再升級：v2 已有嗰集唔用 v1 較新進度；可考慮比 `updatedAt`                    | 有用戶報先做      | reviews/2026-11-07_review_v1.29.0   |
-| S-746 | `storageMigration.ts`               | rollback 期間收藏返「v1.29 移除過」嘅集，再升級唔會搬                                 | 記錄              | reviews/2026-11-07_review_v1.29.0   |
-| S-747 | `dramaFromFolder.mjs` / schema test | placeholder `arc-NN` 只 warn；test 拒絕 library `drama.json` 出現 `^arc-\d+$`         | 下次加劇前        | reviews/2026-11-07_review_v1.29.0   |
-| S-749 | review / QA 流程                    | Review 報 pass 但全 unit suite 紅：只跑改咗嘅 test 檔，漏咗冇改但用舊 API 語意嘅 test | 下次 API 語意改動 | qa/2026-11-07_qa_episode-id-storage |
+| ID    | 範圍                                | 內容                                                                                  | 處理時機              | 來源                                       |
+| ----- | ----------------------------------- | ------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------ |
+| S-742 | git                                 | `90f312e` 單獨 checkout `tsc` 錯；type 改動同 caller 放同一 commit                    | 以後 commit           | reviews/2026-11-07_review_v1.29.0          |
+| S-743 | `useSavedView.ts`                   | 收藏 tab `key` / `zoomKey` / `focusUrl` 仍用 `url`                                    | Phase 2 換 URL 前     | reviews/2026-11-07_review_v1.29.0          |
+| S-744 | `storageMigration.ts`               | 節目改名前嘅 v1 進度反推唔到，留喺 v1（唔係 regression）                              | 記錄                  | reviews/2026-11-07_review_v1.29.0          |
+| S-745 | `storageMigration.ts`               | rollback 再升級：v2 已有嗰集唔用 v1 較新進度；可考慮比 `updatedAt`                    | 有用戶報先做          | reviews/2026-11-07_review_v1.29.0          |
+| S-746 | `storageMigration.ts`               | rollback 期間收藏返「v1.29 移除過」嘅集，再升級唔會搬                                 | 記錄                  | reviews/2026-11-07_review_v1.29.0          |
+| S-747 | `dramaFromFolder.mjs` / schema test | placeholder `arc-NN` 只 warn；test 拒絕 library `drama.json` 出現 `^arc-\d+$`         | 下次加劇前            | reviews/2026-11-07_review_v1.29.0          |
+| S-749 | review / QA 流程                    | Review 報 pass 但全 unit suite 紅：只跑改咗嘅 test 檔，漏咗冇改但用舊 API 語意嘅 test | 下次 API 語意改動     | qa/2026-11-07_qa_episode-id-storage        |
+| S-750 | arcCover Python                     | `REPO_ROOT` 實際係 `apps/player`（結果啱），可改名 `APP_ROOT`                         | 下次改 arcCover       | reviews/2026-11-07_review_phase0a-monorepo |
+| S-751 | README raw 網址                     | 舊 `main/scripts/dramaFromFolder.mjs` merge 後 404；通知上載劇集嘅人                  | merge 後              | reviews/2026-11-07_review_phase0a-monorepo |
+| S-752 | root ESLint 依賴                    | `typescript-eslint` 靠 `apps/player` 嘅 `typescript` hoist                            | 加第二個 workspace 時 | reviews/2026-11-07_review_phase0a-monorepo |
+| S-753 | `.claude/CLAUDE.md`                 | 第 36 行 `src/utils/motion.ts` 冇 `apps/player/` 前綴                                 | 下次改 CLAUDE.md      | reviews/2026-11-07_review_phase0a-monorepo |
+| S-754 | backend plan                        | 風險寫改 Vercel Root Directory；實作留 repo 根，照改會 build 失敗                     | Phase 0b 前           | reviews/2026-11-07_review_phase0a-monorepo |
 
 ## Closed
 
