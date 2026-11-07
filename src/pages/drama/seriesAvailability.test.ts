@@ -23,6 +23,7 @@ const arcInfo = (arc: string, extra: Partial<ArcAvailability> = {}): ArcAvailabi
 const ep = (no: number): SeriesEpisode => ({
     kind: 'series',
     dramaId: 'lancy',
+    id: `id:/half/${no}`,
     url: `/half/${no}`,
     arc: '戀愛二分一',
     no,

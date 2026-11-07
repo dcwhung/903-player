@@ -18,13 +18,14 @@ const RECORDING: Recording = {
     showId: 'gongzi',
     date: '2026-10-17',
     time: '2308',
+    id: 'id:https://audio.hkfm903.live/gongzi/qa.aac',
     url: 'https://audio.hkfm903.live/gongzi/qa.aac',
 };
 const DURATION = 600;
 const RESUME_AT = 120;
 
 const stalledStart = async () => {
-    saveProgress(RECORDING.url, RESUME_AT, DURATION);
+    saveProgress(RECORDING.id, RESUME_AT, DURATION);
     const audio = new FakeAudio();
     const controller = new AudioController(audio.asAudio());
     const detach = controller.attach();
@@ -111,7 +112,7 @@ describe('QA S-551 edge cases', () => {
             window.dispatchEvent(new Event('pagehide'));
         }
         expect(audio.load).toHaveBeenCalledTimes(STALL_MAX_RETRIES);
-        expect(getResumePosition(RECORDING.url)).toBe(RESUME_AT);
+        expect(getResumePosition(RECORDING.id)).toBe(RESUME_AT);
         expect(controller.getSnapshot().currentTime).toBe(RESUME_AT);
         detach();
     });

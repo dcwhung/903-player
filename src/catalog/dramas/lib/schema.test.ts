@@ -34,13 +34,21 @@ const SERIES = {
     theme: THEME,
     arcs: [
         {
+            id: 'season-1',
             name: 'Season 1',
             disc: 'arcs/season-1/disc.webp',
             tile: 'arcs/season-1/tile.webp',
             episodes: 2,
         },
-        { name: 'Season 2', episodes: ['前傳', null, '後傳'], firstNo: 0, addedAt: '2026-10-25' },
         {
+            id: 'season-2',
+            name: 'Season 2',
+            episodes: ['前傳', null, '後傳'],
+            firstNo: 0,
+            addedAt: '2026-10-25',
+        },
+        {
+            id: 'season-3',
             name: 'Season 3',
             episodes: 3,
             titles: { '3': '最終結局' },
@@ -93,6 +101,7 @@ describe('parseDramaDefinition', () => {
         expect(def.audio).toEqual(SERIES.audio);
         expect(def.theme).toEqual(THEME);
         expect(def.arcs.map((a) => a.name)).toEqual(['Season 1', 'Season 2', 'Season 3']);
+        expect(def.arcs.map((a) => a.id)).toEqual(['season-1', 'season-2', 'season-3']);
 
         const [s1, s2, s3] = def.arcs;
         expect(s1).toMatchObject({
@@ -164,17 +173,19 @@ describe('parseDramaDefinition', () => {
         ],
         [
             'an arc disc not in the folder',
-            seriesWith({ arcs: [{ name: 'S', disc: 'x.webp', episodes: 1 }] }),
+            seriesWith({ arcs: [{ id: 's', name: 'S', disc: 'x.webp', episodes: 1 }] }),
             /arcs\[0\]\.disc: no file x\.webp/,
         ],
         [
             'an arc tile not in the folder',
-            seriesWith({ arcs: [{ name: 'S', tile: 'x.webp', episodes: 1 }] }),
+            seriesWith({ arcs: [{ id: 's', name: 'S', tile: 'x.webp', episodes: 1 }] }),
             /arcs\[0\]\.tile: no file x\.webp/,
         ],
         [
             'an arc disc outside the drama folder',
-            seriesWith({ arcs: [{ name: 'S', disc: '../golden/disc.webp', episodes: 1 }] }),
+            seriesWith({
+                arcs: [{ id: 's', name: 'S', disc: '../golden/disc.webp', episodes: 1 }],
+            }),
             /arcs\[0\]\.disc: no file \.\.\/golden\/disc\.webp/,
         ],
         [
@@ -194,43 +205,70 @@ describe('parseDramaDefinition', () => {
         ],
         ['an empty arcs list', seriesWith({ arcs: [] }), /arcs must not be empty/],
         [
+            'an arc without an id',
+            seriesWith({ arcs: [{ name: 'S', episodes: 1 }] }),
+            /arcs\[0\]\.id/,
+        ],
+        [
+            'an arc id that is not an ASCII slug',
+            seriesWith({ arcs: [{ id: '三十六計', name: 'S', episodes: 1 }] }),
+            /arcs\[0\]\.id must be a lowercase ASCII slug/,
+        ],
+        [
+            'an arc id with a trailing hyphen',
+            seriesWith({ arcs: [{ id: 'season-', name: 'S', episodes: 1 }] }),
+            /arcs\[0\]\.id must be a lowercase ASCII slug/,
+        ],
+        [
+            'a duplicate arc id',
+            seriesWith({
+                arcs: [
+                    { id: 's', name: 'S', episodes: 1 },
+                    { id: 's', name: 'T', episodes: 1 },
+                ],
+            }),
+            /arcs\[1\]\.id: duplicate arc id s/,
+        ],
+        [
             'a duplicate arc name',
             seriesWith({
                 arcs: [
-                    { name: 'S', episodes: 1 },
-                    { name: 'S', episodes: 1 },
+                    { id: 's', name: 'S', episodes: 1 },
+                    { id: 't', name: 'S', episodes: 1 },
                 ],
             }),
             /arcs\[1\]\.name: duplicate arc S/,
         ],
         [
             'a zero episode count',
-            seriesWith({ arcs: [{ name: 'S', episodes: 0 }] }),
+            seriesWith({ arcs: [{ id: 's', name: 'S', episodes: 0 }] }),
             /arcs\[0\]\.episodes must be a positive integer or a list of titles/,
         ],
         [
             'a non-string title in the list',
-            seriesWith({ arcs: [{ name: 'S', episodes: [1] }] }),
+            seriesWith({ arcs: [{ id: 's', name: 'S', episodes: [1] }] }),
             /arcs\[0\]\.episodes\[0\] must be a string or null/,
         ],
         [
             'a negative firstNo',
-            seriesWith({ arcs: [{ name: 'S', episodes: 1, firstNo: -1 }] }),
+            seriesWith({ arcs: [{ id: 's', name: 'S', episodes: 1, firstNo: -1 }] }),
             /arcs\[0\]\.firstNo must be a non-negative integer/,
         ],
         [
             'a title outside the arc',
-            seriesWith({ arcs: [{ name: 'S', episodes: 2, titles: { '3': 'x' } }] }),
+            seriesWith({ arcs: [{ id: 's', name: 'S', episodes: 2, titles: { '3': 'x' } }] }),
             /arcs\[0\]\.titles\["3"\] is outside 1–2/,
         ],
         [
             'a file override outside the arc',
-            seriesWith({ arcs: [{ name: 'S', episodes: 2, firstNo: 0, files: { '2': 'x' } }] }),
+            seriesWith({
+                arcs: [{ id: 's', name: 'S', episodes: 2, firstNo: 0, files: { '2': 'x' } }],
+            }),
             /arcs\[0\]\.files\["2"\] is outside 0–1/,
         ],
         [
             'a non-integer title key',
-            seriesWith({ arcs: [{ name: 'S', episodes: 2, titles: { one: 'x' } }] }),
+            seriesWith({ arcs: [{ id: 's', name: 'S', episodes: 2, titles: { one: 'x' } }] }),
             /arcs\[0\]\.titles\["one"\] must be an episode number/,
         ],
         [

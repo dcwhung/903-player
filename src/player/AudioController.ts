@@ -305,8 +305,8 @@ export class AudioController {
         // 用戶自己揀咗另一集：唔好再重試自動接住播嗰集
         this.stopWatchingStall();
         this.persist();
-        this.watched = isWatched(recording.url);
-        this.pendingStart = getResumePosition(recording.url);
+        this.watched = isWatched(recording.id);
+        this.pendingStart = getResumePosition(recording.id);
         this.moveTo(this.pendingStart);
         // 聽過嘅集 getResumePosition 係 0，即係由頭重播
         this.replay.arm(this.watched);
@@ -350,7 +350,7 @@ export class AudioController {
         if (!recording) {
             return;
         }
-        resetWatched(recording.url, this.audio.currentTime, this.audio.duration);
+        resetWatched(recording.id, this.audio.currentTime, this.audio.duration);
         this.lastSavedAt = Date.now();
         this.watched = false;
         this.update({ watchedRevision: this.state.watchedRevision + 1 });
@@ -363,7 +363,7 @@ export class AudioController {
         if (!recording || !this.hasMetadata()) {
             return;
         }
-        const progress = saveProgress(recording.url, this.audio.currentTime, this.audio.duration);
+        const progress = saveProgress(recording.id, this.audio.currentTime, this.audio.duration);
         if (progress.watched && !this.watched) {
             this.watched = true;
             this.update({ watchedRevision: this.state.watchedRevision + 1 });

@@ -5,6 +5,7 @@ import { arcGroups, arcSummaries, hasNewUnheardArc, isArcNew, seriesContinue } f
 const ep = (arc: string, no: number, addedAt?: string): SeriesEpisode => ({
     kind: 'series',
     dramaId: 'chisee',
+    id: `drama:chisee:${arc}:${no}`,
     url: `/${arc}-${no}.m4a`,
     arc,
     no,
@@ -27,7 +28,8 @@ const partway = (position: number, updatedAt = 1): Progress => ({
 
 // 甲 2 集、乙 2 集、丙 1 集
 const EPISODES = [ep('甲', 1), ep('甲', 2), ep('乙', 1), ep('乙', 2), ep('丙', 1)];
-const url = (i: number) => EPISODES[i]?.url ?? '';
+/** 進度 key（episode ID） */
+const idOf = (i: number) => EPISODES[i]?.id ?? '';
 
 describe('arcSummaries', () => {
     it('summarises each 短篇 in catalogue order when nothing has been played', () => {
@@ -65,7 +67,7 @@ describe('arcSummaries', () => {
     it('resumes the first unfinished episode, keeping its position', () => {
         const [, second] = arcSummaries(
             EPISODES,
-            { [url(2)]: done(), [url(3)]: partway(400) },
+            { [idOf(2)]: done(), [idOf(3)]: partway(400) },
             TODAY,
         );
         expect(second).toMatchObject({
@@ -78,11 +80,11 @@ describe('arcSummaries', () => {
     });
 
     it('counts a 短篇 as started once an episode has any progress', () => {
-        expect(arcSummaries(EPISODES, { [url(0)]: partway(30) }, TODAY)[0]?.state).toBe('started');
+        expect(arcSummaries(EPISODES, { [idOf(0)]: partway(30) }, TODAY)[0]?.state).toBe('started');
     });
 
     it('replays a finished 短篇 from episode 1', () => {
-        const [first] = arcSummaries(EPISODES, { [url(0)]: done(), [url(1)]: done() }, TODAY);
+        const [first] = arcSummaries(EPISODES, { [idOf(0)]: done(), [idOf(1)]: done() }, TODAY);
         expect(first).toMatchObject({
             state: 'done',
             watched: 2,
@@ -110,7 +112,7 @@ describe('isArcNew', () => {
 describe('arcGroups', () => {
     const summaries = arcSummaries(
         [ep('甲', 1), ep('乙', 1), ep('丙', 1, '2026-10-20'), ep('丁', 1), ep('戊', 1)],
-        { '/甲-1.m4a': done(), '/丁-1.m4a': partway(10) },
+        { 'drama:chisee:甲:1': done(), 'drama:chisee:丁:1': partway(10) },
         TODAY,
     );
 
@@ -149,7 +151,7 @@ describe('hasNewUnheardArc', () => {
     });
 
     it('turns false once any episode of the new 短篇 has progress, or after 14 days', () => {
-        expect(hasNewUnheardArc(episodes, { '/乙-2.m4a': partway(5) }, TODAY)).toBe(false);
+        expect(hasNewUnheardArc(episodes, { 'drama:chisee:乙:2': partway(5) }, TODAY)).toBe(false);
         expect(hasNewUnheardArc(episodes, {}, '2026-11-03')).toBe(false);
     });
 });
@@ -161,14 +163,14 @@ describe('seriesContinue', () => {
 
     it('continues the last episode touched, with how far it got', () => {
         const result = seriesContinue(EPISODES, {
-            [url(0)]: done(1),
-            [url(3)]: partway(250, 9),
+            [idOf(0)]: done(1),
+            [idOf(3)]: partway(250, 9),
         });
         expect(result).toEqual({ episode: EPISODES[3], ratio: 0.25 });
     });
 
     it('points at the next episode, from its start, after finishing one', () => {
-        expect(seriesContinue(EPISODES, { [url(1)]: done() })).toEqual({
+        expect(seriesContinue(EPISODES, { [idOf(1)]: done() })).toEqual({
             episode: EPISODES[2],
             ratio: 0,
         });
@@ -181,7 +183,7 @@ describe('new batches of episodes (P8 #6)', () => {
         ep('戀愛二分一', 2, '2026-10-01'),
         ep('戀愛二分一', 3, '2026-10-20'),
     ];
-    const urlOf = (i: number) => BATCHED[i]?.url ?? '';
+    const idOfBatched = (i: number) => BATCHED[i]?.id ?? '';
 
     it('should mark an arc new for 14 days after its latest released batch', () => {
         expect(arcSummaries(BATCHED, {}, TODAY)[0]?.isNew).toBe(true);
@@ -189,7 +191,7 @@ describe('new batches of episodes (P8 #6)', () => {
     });
 
     it('should keep a caught-up arc with more batches to come out of 已聽完', () => {
-        const heard = Object.fromEntries(BATCHED.map((e) => [e.url, done()]));
+        const heard = Object.fromEntries(BATCHED.map((e) => [e.id, done()]));
         const summaries = arcSummaries(BATCHED, heard, '2026-11-03');
         expect(arcGroups(summaries, undefined)[0]?.group).toBe('done');
         expect(arcGroups(summaries, undefined, new Set(['戀愛二分一']))[0]?.group).toBe(
@@ -198,7 +200,7 @@ describe('new batches of episodes (P8 #6)', () => {
     });
 
     it('should show the home 新 when the new batch is untouched, even if older ones were heard', () => {
-        expect(hasNewUnheardArc(BATCHED, { [urlOf(0)]: done() }, TODAY)).toBe(true);
-        expect(hasNewUnheardArc(BATCHED, { [urlOf(2)]: partway(10) }, TODAY)).toBe(false);
+        expect(hasNewUnheardArc(BATCHED, { [idOfBatched(0)]: done() }, TODAY)).toBe(true);
+        expect(hasNewUnheardArc(BATCHED, { [idOfBatched(2)]: partway(10) }, TODAY)).toBe(false);
     });
 });

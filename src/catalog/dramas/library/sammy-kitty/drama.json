@@ -29,12 +29,14 @@
     },
     "arcs": [
         {
+            "id": "too-late",
             "name": "來不及聽你說愛我",
             "disc": "arcs/too-late/disc.webp",
             "tile": "arcs/too-late/tile.webp",
             "episodes": 10
         },
         {
+            "id": "forest",
             "name": "公子森林",
             "disc": "arcs/forest/disc.webp",
             "tile": "arcs/forest/tile.webp",
@@ -82,12 +84,14 @@
             ]
         },
         {
+            "id": "summer",
             "name": "十九樓半的夏天",
             "disc": "arcs/summer/disc.webp",
             "tile": "arcs/summer/tile.webp",
             "episodes": 10
         },
         {
+            "id": "love-1",
             "name": "森之愛情I - 森之聖誕",
             "disc": "arcs/love-1/disc.webp",
             "tile": "arcs/love-1/tile.webp",
@@ -105,12 +109,14 @@
             ]
         },
         {
+            "id": "love-2",
             "name": "森之愛情II - 電燈膽",
             "disc": "arcs/love-2/disc.webp",
             "tile": "arcs/love-2/tile.webp",
             "episodes": 9
         },
         {
+            "id": "xmas-2010",
             "name": "森之聖誕2010",
             "disc": "arcs/xmas-2010/disc.webp",
             "tile": "arcs/xmas-2010/tile.webp",
@@ -133,6 +139,7 @@
             ]
         },
         {
+            "id": "fantasy",
             "name": "森美幻想劇",
             "disc": "arcs/fantasy/disc.webp",
             "tile": "arcs/fantasy/tile.webp",

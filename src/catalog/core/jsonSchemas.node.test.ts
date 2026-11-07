@@ -74,6 +74,7 @@ const SERIES: Json = {
     theme: FULL_THEME,
     arcs: [
         {
+            id: 'season-1',
             name: 'Season 1',
             disc: 'arcs/arc/disc.webp',
             tile: 'arcs/arc/tile.webp',
@@ -83,7 +84,7 @@ const SERIES: Json = {
             titles: { '1': '中篇' },
             files: { '2': 'odd name.m4a' },
         },
-        { name: 'Season 2', episodes: 3 },
+        { id: 'season-2', name: 'Season 2', episodes: 3 },
     ],
 };
 
@@ -152,6 +153,13 @@ const DRAMA_INVALID: Case[] = [
     ['series 冇 arcs', SERIES, 'arcs', undefined],
     ['arcs 空 list', SERIES, 'arcs', []],
     ['arc 冇 name', SERIES, 'arcs.1.name', undefined],
+    ['arc 冇 id', SERIES, 'arcs.1.id', undefined],
+    ['arc id 空字串', SERIES, 'arcs.1.id', ''],
+    ['arc id 有中文', SERIES, 'arcs.1.id', '三十六計'],
+    ['arc id 有大楷', SERIES, 'arcs.1.id', 'Season-2'],
+    ['arc id 有空格', SERIES, 'arcs.1.id', 'season 2'],
+    ['arc id 連續 -', SERIES, 'arcs.1.id', 'season--2'],
+    ['arc id 開頭 -', SERIES, 'arcs.1.id', '-season'],
     ['arc episodes 係 0', SERIES, 'arcs.1.episodes', 0],
     ['arc episodes 有小數', SERIES, 'arcs.1.episodes', 2.5],
     ['arc episodes 空 list', SERIES, 'arcs.1.episodes', []],
@@ -178,7 +186,7 @@ const DRAMA_INVALID: Case[] = [
         '未知集數但寫咗 titles',
         SERIES,
         'arcs.1',
-        { name: 'S', addedAt: '2026-11-12', titles: { '1': 'x' } },
+        { id: 's', name: 'S', addedAt: '2026-11-12', titles: { '1': 'x' } },
     ],
 ];
 
@@ -201,7 +209,13 @@ const DRAMA_VALID: Case[] = [
     ['daily 有劇集層 addedAt（整套即將上架）', DAILY, 'addedAt', '2026-12-01'],
     ['daily 有 removedAt', DAILY, 'removedAt', '2027-01-01'],
     ['series 有 removedAt', SERIES, 'removedAt', '2027-01-01'],
-    ['未知集數嘅即將上架短篇', SERIES, 'arcs.1', { name: 'Season 2', addedAt: '2026-11-12' }],
+    [
+        '未知集數嘅即將上架短篇',
+        SERIES,
+        'arcs.1',
+        { id: 'season-2', name: 'Season 2', addedAt: '2026-11-12' },
+    ],
+    ['arc id 數字開頭', SERIES, 'arcs.1.id', '36-stratagems'],
     ['逐集上架', SERIES, 'arcs.1.episodeDates', { '2': '2026-11-19' }],
     [
         '集數下架（單集 + 範圍）',
@@ -361,6 +375,7 @@ describe('catalog JSON schemas', () => {
             ['圖檔唔喺 folder', SERIES, 'tile', 'missing.webp'],
             ['arc 圖檔唔喺 folder', SERIES, 'arcs.0.disc', 'missing.webp'],
             ['arc name 重複', SERIES, 'arcs.1.name', 'Season 1'],
+            ['arc id 重複', SERIES, 'arcs.1.id', 'season-1'],
             ['titles 集數超出範圍', SERIES, 'arcs.1.titles', { '9': '集名' }],
             ['files 集數超出範圍', SERIES, 'arcs.1.files', { '0': 'a.m4a' }],
             ['daily date 重複', DAILY, 'episodes.1.date', '2026-10-23'],

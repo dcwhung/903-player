@@ -311,8 +311,8 @@ describe('ShowPage', () => {
     });
 
     it('lists this show’s episodes newest first with their progress', async () => {
-        saveProgress(RECORDINGS[1]?.url ?? '', 990, 1000);
-        saveProgress(RECORDINGS[2]?.url ?? '', 600, 2400);
+        saveProgress(RECORDINGS[1]?.id ?? '', 990, 1000);
+        saveProgress(RECORDINGS[2]?.id ?? '', 600, 2400);
         renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
 
         const rows = await screen.findAllByRole('button', { name: /^(?:播放|暫停) \d/ });
@@ -393,7 +393,7 @@ describe('ShowPage', () => {
     });
 
     it('plays the next older episode on a left swipe under the player', async () => {
-        saveProgress(RECORDINGS[2]?.url ?? '', 600, 2400);
+        saveProgress(RECORDINGS[2]?.id ?? '', 600, 2400);
         const { audio } = renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
         await waitFor(() => expect(audio.src).toBe(RECORDINGS[0]?.url));
 

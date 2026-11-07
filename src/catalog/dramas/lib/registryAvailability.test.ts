@@ -26,7 +26,7 @@ const folder = (id: string, patch: Record<string, unknown>): DramaFolder => ({
         disc: 'disc.webp',
         audio: { host: 'r2', folder: id, file: '{arc}/{no}.m4a' },
         theme: THEME,
-        arcs: [{ name: 'A', episodes: 2 }],
+        arcs: [{ id: 'a', name: 'A', episodes: 2 }],
         ...patch,
     },
     images: { 'tile.webp': '/tile.webp', 'disc.webp': '/disc.webp' },
@@ -38,10 +38,16 @@ const registry = buildRegistry({
     folders: () => [
         folder('live', {
             arcs: [
-                { name: '戀愛二分一', episodes: 4, episodeDates: { '3': '2026-11-19' } },
-                { name: 'XXX', addedAt: '2026-11-12' },
-                { name: '舊', episodes: 2, removedAt: '2026-11-01' },
                 {
+                    id: 'half',
+                    name: '戀愛二分一',
+                    episodes: 4,
+                    episodeDates: { '3': '2026-11-19' },
+                },
+                { id: 'xxx', name: 'XXX', addedAt: '2026-11-12' },
+                { id: 'old', name: '舊', episodes: 2, removedAt: '2026-11-01' },
+                {
+                    id: 'partial',
                     name: '部分',
                     episodes: 3,
                     episodeRemovedAt: { '1': '2026-11-02' },
@@ -74,7 +80,7 @@ describe('registry availability', () => {
 
     it('should still find removed episodes in the catalog for the saved tab', () => {
         const [removed] = registry.seriesEpisodesOf('gone', '2026-10-01');
-        expect(removed && registry.catalogEpisodeOf('gone', removed.url)).toEqual(removed);
+        expect(removed && registry.catalogEpisodeOf('gone', removed.id)).toEqual(removed);
     });
 
     it('should describe each arc for the coming-soon UI', () => {

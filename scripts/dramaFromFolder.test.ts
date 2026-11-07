@@ -4,7 +4,7 @@
 /*
  * scripts/dramaFromFolder.mjs：由本機劇集 folder 生成 drama.json 草稿。
  * 最重要嘅保證：輸出經 app 真正嘅 validator（parseDramaDefinition）+ buildEpisodes 之後，
- * 每條錄音網址都對得返 folder 入面真實存在嘅檔（URL 係已儲進度嘅 key，一個 byte 都唔可以差）。
+ * 每條錄音網址都對得返 folder 入面真實存在嘅檔（一個 byte 都唔可以差，否則播唔到）。
  */
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
@@ -284,10 +284,17 @@ describe('generateDraft — new series drama', () => {
             },
         });
         expect(json.arcs).toEqual([
-            { name: '丙篇', episodes: ['集名1', '集名2'] },
-            { name: '乙篇', episodes: 3 },
-            { name: '甲篇', firstNo: 0, episodes: 3, titles: { 0: '前傳' } },
+            { id: 'arc-01', name: '丙篇', episodes: ['集名1', '集名2'] },
+            { id: 'arc-02', name: '乙篇', episodes: 3 },
+            { id: 'arc-03', name: '甲篇', firstNo: 0, episodes: 3, titles: { 0: '前傳' } },
         ]);
+    });
+
+    it('should give every new arc a placeholder id with a TODO warning to rename it', () => {
+        touch([`${DRAMA}/${episodeFile('甲', 1)}`]);
+        const result = build();
+        expect((jsonOf(result).arcs as Json[])[0]?.id).toBe('arc-01');
+        expect(messagesOf(result.issues, 'warn')).toContain('甲：TODO：id「arc-01」係 placeholder');
     });
 
     it('should produce JSON the app accepts, with every URL pointing at a real file', () => {
@@ -324,7 +331,12 @@ describe('generateDraft — new series drama', () => {
     it('should warn (not block) when an arc does not start at episode 0 or 1', () => {
         touch(range(2, 3).map((n) => `${DRAMA}/${episodeFile('甲', n)}`));
         const result = build();
-        expect((jsonOf(result).arcs as Json[])[0]).toEqual({ name: '甲', firstNo: 2, episodes: 2 });
+        expect((jsonOf(result).arcs as Json[])[0]).toEqual({
+            id: 'arc-01',
+            name: '甲',
+            firstNo: 2,
+            episodes: 2,
+        });
         expect(messagesOf(result.issues, 'warn')).toContain('甲：由第 2 集開始');
     });
 
@@ -350,6 +362,7 @@ describe('generateDraft — new series drama', () => {
         const { issues } = result;
         const json = jsonOf(result);
         expect((json.arcs as Json[])[0]).toEqual({
+            id: 'arc-01',
             name: '森之愛情II',
             episodes: 2,
             files: {
@@ -390,7 +403,7 @@ describe('generateDraft — new series drama', () => {
         expect((json.audio as Json).file).toBe(
             '{no2} - {folder}{arc} - 第{noZh}集[ - {title}].m4a',
         );
-        expect((json.arcs as Json[])[0]).toEqual({ name: 'Season 1', episodes: 2 });
+        expect((json.arcs as Json[])[0]).toEqual({ id: 'arc-01', name: 'Season 1', episodes: 2 });
     });
 
     it('should block when the folder has no arcs and no audio', () => {
@@ -472,8 +485,9 @@ describe('generateDraft — merging with --existing', () => {
             { ...(oldArcs as Json[])[0], episodes: 31 },
             (oldArcs as Json[])[1],
             (oldArcs as Json[])[2],
-            { name: '新短篇', addedAt: TODAY, episodes: 2 },
+            { id: 'arc-01', name: '新短篇', addedAt: TODAY, episodes: 2 },
         ]);
+        expect(messagesOf(issues, 'warn')).toContain('新短篇：TODO：id「arc-01」係 placeholder');
         expect(messagesOf(issues, 'warn')).toContain('我心不死：本機 folder 冇呢個短篇');
         expect(messagesOf(issues, 'info')).toContain('戀愛二分一：集數由 30 變 31');
         expect(messagesOf(issues, 'info')).toContain('新短篇：新短篇');
@@ -533,6 +547,7 @@ describe('generateDraft — reporting arc changes with --existing', () => {
         touch(range(1, 2).map((n) => `${DRAMA}/${episodeFile('甲', n)}`));
         const { result, arc } = mergeWith((a) => ({ ...a, titles: { 1: '人手補嘅集名' } }));
         expect(arc).toEqual({
+            id: 'arc-01',
             name: '甲',
             episodes: 2,
             titles: { 1: '人手補嘅集名' },
@@ -549,7 +564,7 @@ describe('generateDraft — reporting arc changes with --existing', () => {
             `${DRAMA}/${episodeFile('甲', 2, 'B')}`,
         ]);
         const { result, arc } = mergeWith((a) => ({ ...a, episodes: ['舊名', 'B'] }));
-        expect(arc).toEqual({ name: '甲', episodes: ['新名', 'B'] });
+        expect(arc).toEqual({ id: 'arc-01', name: '甲', episodes: ['新名', 'B'] });
         expect(messagesOf(result.issues, 'info')).toContain('甲：集名有變（第 1 集）');
     });
 
@@ -559,7 +574,7 @@ describe('generateDraft — reporting arc changes with --existing', () => {
             ...a,
             files: { 2: 'x.m4a' },
         }));
-        expect(arc).toEqual({ name: '甲', firstNo: 0, episodes: 2 });
+        expect(arc).toEqual({ id: 'arc-01', name: '甲', firstNo: 0, episodes: 2 });
         const info = messagesOf(result.issues, 'info');
         expect(info).toContain('甲：由第 1 集開始變第 0 集開始');
         expect(info).toContain('甲：files 有變（第 2 集）');

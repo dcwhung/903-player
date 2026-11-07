@@ -1,9 +1,11 @@
 /*
- * 由驗證好嘅 DramaDefinition 展開成每一集（DramaEpisode），包括砌好錄音 URL。
- * URL 砌法唔可以變：已儲進度（localStorage）用 URL 做 key。
+ * 由驗證好嘅 DramaDefinition 展開成每一集（DramaEpisode），包括砌好錄音 URL 同 episode ID。
+ * 已儲進度 / 收藏（localStorage v2）用 episode ID 做 key，URL 淨係播放用；
+ * v1 舊資料用 URL 做 key，storageMigration 靠呢度砌出嚟嘅 URL 對返 ID。
  */
 import { DRAMA_AUDIO_BASE } from '../../../config/constants';
 import type { DailyEpisode, DramaEpisode, DramaId, SeriesEpisode } from '../../../types/drama';
+import { dailyEpisodeId, seriesEpisodeId } from '../../core/episodeId';
 import { batchDateOf } from './availabilitySchema';
 import { displayTitle, encodePath, renderFileName, toChineseNumeral } from './filename';
 import type {
@@ -62,6 +64,7 @@ const seriesEpisode = (
     return {
         kind: 'series',
         dramaId,
+        id: seriesEpisodeId(dramaId, arc.id, no),
         url: audioUrl(def.audio, [arc.name, file]),
         arc: arc.name,
         no,
@@ -89,6 +92,7 @@ const dailyEpisodes = (dramaId: DramaId, def: DailyDefinition): DailyEpisode[] =
     def.episodes.map(({ date, rerun, file }) => ({
         kind: 'daily',
         dramaId,
+        id: dailyEpisodeId(dramaId, date),
         url: audioUrl(def.audio, [
             file ?? renderFileName(def.audio.file, dailyTokens(def.audio, date)),
         ]),

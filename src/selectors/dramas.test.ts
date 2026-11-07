@@ -18,6 +18,7 @@ import {
 const series = (arc: string, no: number, title = `第${no}集`): SeriesEpisode => ({
     kind: 'series',
     dramaId: 'chisee',
+    id: `id:/dramas/chisee/${arc}-${no}.m4a`,
     url: `/dramas/chisee/${arc}-${no}.m4a`,
     arc,
     no,
@@ -27,6 +28,7 @@ const series = (arc: string, no: number, title = `第${no}集`): SeriesEpisode =
 const daily = (date: string, rerun = false): DailyEpisode => ({
     kind: 'daily',
     dramaId: 'c18',
+    id: `id:/dramas/c18/${date}.m4a`,
     url: `/dramas/c18/${date}.m4a`,
     date,
     rerun,
@@ -61,12 +63,12 @@ describe('hasNoProgress', () => {
 
     it('ignores progress saved for other dramas', () => {
         const other = series('丙', 1);
-        expect(hasNoProgress(SERIES, { [other.url]: progress(1) })).toBe(true);
+        expect(hasNoProgress(SERIES, { [other.id]: progress(1) })).toBe(true);
     });
 
     it('is false once any episode has progress, watched or not', () => {
-        expect(hasNoProgress(SERIES, { [SERIES[2]?.url ?? '']: progress(1) })).toBe(false);
-        expect(hasNoProgress(SERIES, { [SERIES[0]?.url ?? '']: progress(1, true) })).toBe(false);
+        expect(hasNoProgress(SERIES, { [SERIES[2]?.id ?? '']: progress(1) })).toBe(false);
+        expect(hasNoProgress(SERIES, { [SERIES[0]?.id ?? '']: progress(1, true) })).toBe(false);
     });
 });
 
@@ -79,19 +81,19 @@ describe('pickSeriesStart', () => {
 
     it('resumes the episode touched most recently when it is unfinished', () => {
         const map = {
-            [ordered[0]?.url ?? '']: progress(1),
-            [ordered[2]?.url ?? '']: progress(5),
+            [ordered[0]?.id ?? '']: progress(1),
+            [ordered[2]?.id ?? '']: progress(5),
         };
         expect(pickSeriesStart(ordered, map)).toBe(ordered[2]);
     });
 
     it('moves on to the next episode when the latest one was finished', () => {
-        const map = { [ordered[0]?.url ?? '']: progress(9, true) };
+        const map = { [ordered[0]?.id ?? '']: progress(9, true) };
         expect(pickSeriesStart(ordered, map)).toBe(ordered[1]);
     });
 
     it('stays on the last episode when the whole series is finished', () => {
-        const map = { [ordered[2]?.url ?? '']: progress(9, true) };
+        const map = { [ordered[2]?.id ?? '']: progress(9, true) };
         expect(pickSeriesStart(ordered, map)).toBe(ordered[2]);
     });
 
@@ -132,7 +134,7 @@ describe('dramaHasNew', () => {
     });
 
     it('is not new once today’s episode is watched, or when nothing aired today', () => {
-        expect(dramaHasNew(list, '2026-10-23', new Set([list[0]?.url ?? '']))).toBe(false);
+        expect(dramaHasNew(list, '2026-10-23', new Set([list[0]?.id ?? '']))).toBe(false);
         expect(dramaHasNew(list, '2026-10-24', new Set())).toBe(false);
     });
 

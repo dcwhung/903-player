@@ -8,6 +8,8 @@ export type DramaKind = 'series' | 'daily';
 export interface SeriesEpisode {
     kind: 'series';
     dramaId: DramaId;
+    /** 穩定 episode ID（進度 / 收藏 key，見 catalog/core/episodeId.ts）；url 淨係用嚟播放 */
+    id: string;
     url: string;
     /** 短篇名（例如「X時mas時小提議」） */
     arc: string;
@@ -28,6 +30,8 @@ export interface SeriesEpisode {
 export interface DailyEpisode {
     kind: 'daily';
     dramaId: DramaId;
+    /** 穩定 episode ID（進度 / 收藏 key，見 catalog/core/episodeId.ts）；url 淨係用嚟播放 */
+    id: string;
     url: string;
     /** 播出日子，格式 YYYY-MM-DD */
     date: string;

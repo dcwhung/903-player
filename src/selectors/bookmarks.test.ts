@@ -11,6 +11,7 @@ import {
 
 const show = (showId: string, date: string, addedAt: number): Bookmark => ({
     kind: 'show',
+    id: `id:${showId}-${date}`,
     url: `${showId}-${date}`,
     showId,
     date,
@@ -19,6 +20,7 @@ const show = (showId: string, date: string, addedAt: number): Bookmark => ({
 });
 const series = (dramaId: string, arc: string, no: number, addedAt: number): Bookmark => ({
     kind: 'series',
+    id: `id:${dramaId}-${arc}-${no}`,
     url: `${dramaId}-${arc}-${no}`,
     dramaId,
     arc,
@@ -27,6 +29,7 @@ const series = (dramaId: string, arc: string, no: number, addedAt: number): Book
 });
 const daily = (dramaId: string, date: string, addedAt: number): Bookmark => ({
     kind: 'daily',
+    id: `id:${dramaId}-${date}`,
     url: `${dramaId}-${date}`,
     dramaId,
     date,

@@ -75,12 +75,12 @@ const useTodaySelection = () => {
 };
 
 /** 載入咗就用 player 即時時間，否則用 localStorage 存低嘅進度 */
-const useShownTime = (url: string | undefined, isLoaded: boolean) => {
+const useShownTime = (id: string | undefined, isLoaded: boolean) => {
     const player = usePlayer();
     // 未載入先要讀 localStorage；轉節目或者有集數變成聽過先再讀
     const saved = useRefreshedOn(
-        () => (url && !isLoaded ? getProgress(url) : undefined),
-        [url, isLoaded, player.watchedRevision],
+        () => (id && !isLoaded ? getProgress(id) : undefined),
+        [id, isLoaded, player.watchedRevision],
     );
     return isLoaded
         ? { position: player.currentTime, duration: player.duration }
@@ -214,7 +214,7 @@ const useMiniPlayerContent = (): MiniPlayerContent | null => {
     const player = usePlayer();
     const navigate = useNavigate();
     const selection = useTodaySelection();
-    const time = useShownTime(selection.current?.url, selection.isLoaded);
+    const time = useShownTime(selection.current?.id, selection.isLoaded);
     if (player.recording && isDramaEpisode(player.recording)) {
         return dramaMiniPlayer(player.recording, player, navigate);
     }

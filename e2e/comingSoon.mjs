@@ -21,8 +21,15 @@ const SAVED_TAB = '我的收藏';
 const episodeUrl = (arc, no) =>
     `${DRAMA_AUDIO_BASE}/e2e/${encodeURIComponent(arc)}/${String(no).padStart(2, '0')}.m4a`;
 
+/** 測試劇短篇 id（e2e/fixtures/dramas/<劇>/drama.json） */
+const ARC_IDS = { 戀愛二分一: 'half', 初戀無限次: 'first-love', 我心不死: 'heart' };
+
+/** 同 src/catalog/core/episodeId.ts seriesEpisodeId 一樣（進度 / 收藏 key） */
+const episodeId = (dramaId, arc, no) => `drama:${dramaId}:${ARC_IDS[arc]}:${no}`;
+
 const series = (dramaId, arc, no) => ({
     kind: 'series',
+    id: episodeId(dramaId, arc, no),
     url: episodeUrl(arc, no),
     dramaId,
     arc,
@@ -37,15 +44,27 @@ const BOOKMARKS = [
     series('e2e-soon', '我心不死', 3),
 ];
 /** 聽過初戀無限次第 2 集（短篇 19/12 下架）：主頁繼續收聽 LC2、最近收聽 LR1 */
-const HEARD = episodeUrl('初戀無限次', 2);
+const HEARD = episodeId('e2e-soon', '初戀無限次', 2);
 
 /**
  * 另外聽過嘅集（覆蓋預設）：我心不死第 3 集（01/12 下架，同左上角 19/12 唔同日 → 繼續收聽條照出）、
  * 下架劇場第 1 集（同成套劇同日 19/12 → 繼續收聽條唔再出）
  */
 const LEAVING_PROGRESS = {
-    [episodeUrl('我心不死', 3)]: { position: 60, duration: 600, watched: false, updatedAt: 3 },
-    [episodeUrl('戀愛二分一', 1)]: { position: 60, duration: 600, watched: false, updatedAt: 2 },
+    [episodeId('e2e-soon', '我心不死', 3)]: {
+        position: 60,
+        duration: 600,
+        watched: false,
+        updatedAt: 3,
+    },
+    // v1.29 之前進度用 URL 做 key，幾套測試劇共用 e2e folder → 戀愛二分一第 1 集三套劇一齊當聽過；
+    // 改 episode ID 之後照舊三套都寫，保持同之前一樣嘅情境
+    ...Object.fromEntries(
+        ['e2e-leaving', 'e2e-soon', 'e2e-gone'].map((dramaId) => [
+            episodeId(dramaId, '戀愛二分一', 1),
+            { position: 60, duration: 600, watched: false, updatedAt: 2 },
+        ]),
+    ),
 };
 
 const seedStorage = (ctx, extraProgress = {}) =>

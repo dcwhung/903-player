@@ -33,7 +33,7 @@ const shelfKey = (
     episodes: readonly DramaEpisode[],
     progressMap: Readonly<Record<string, Progress>>,
 ): ShelfKey => {
-    const touched = episodes.flatMap((e) => progressMap[e.url] ?? []);
+    const touched = episodes.flatMap((e) => progressMap[e.id] ?? []);
     // 用已上架集數最遲嗰批（未上架嘅短篇唔會令套劇排前；新一批集數上架就排前）
     const released = latestDate(episodes.map((e) => (e.kind === 'series' ? e.addedAt : undefined)));
     const addedAt = released ?? drama.addedAt ?? OLDEST_ADDED_AT;

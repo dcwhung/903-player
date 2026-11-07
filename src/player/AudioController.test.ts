@@ -22,6 +22,7 @@ const RECORDING: Recording = {
     showId: 'gongzi',
     date: '2026-10-17',
     time: '2308',
+    id: 'id:https://audio.hkfm903.live/gongzi/20261017.aac',
     url: 'https://audio.hkfm903.live/gongzi/20261017.aac',
 };
 
@@ -304,7 +305,7 @@ describe('AudioController.isAudible', () => {
 
     it('should not count the resume jump on metadata as sound', async () => {
         const RESUME_AT = 521.4;
-        saveProgress(RECORDING.url, RESUME_AT, 1000);
+        saveProgress(RECORDING.id, RESUME_AT, 1000);
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         const detach = attachController(controller);
@@ -383,6 +384,7 @@ describe('AudioController auto-advance', () => {
     const NEXT: Recording = {
         ...RECORDING,
         date: '2026-10-24',
+        id: 'id:https://audio.hkfm903.live/next.aac',
         url: 'https://audio.hkfm903.live/next.aac',
     };
 
@@ -412,8 +414,8 @@ describe('AudioController auto-advance', () => {
     it('marks the finished track as watched before moving on', async () => {
         const { detach } = await playToEnd(() => NEXT);
 
-        expect(JSON.parse(localStorage.getItem('903player:progress:v1') ?? '{}')).toMatchObject({
-            [RECORDING.url]: { watched: true },
+        expect(JSON.parse(localStorage.getItem('903player:progress:v2') ?? '{}')).toMatchObject({
+            [RECORDING.id]: { watched: true },
         });
         detach();
     });
@@ -453,6 +455,7 @@ describe('AudioController stalled auto-advance', () => {
     const NEXT: Recording = {
         ...RECORDING,
         date: '2026-10-24',
+        id: 'id:https://audio.hkfm903.live/next.aac',
         url: 'https://audio.hkfm903.live/next.aac',
     };
 
@@ -535,6 +538,7 @@ describe('AudioController early auto-advance', () => {
     const NEXT: Recording = {
         ...RECORDING,
         date: '2026-10-24',
+        id: 'id:https://audio.hkfm903.live/next.aac',
         url: 'https://audio.hkfm903.live/next.aac',
     };
     const DURATION = 1200;
@@ -560,8 +564,8 @@ describe('AudioController early auto-advance', () => {
         expect(audio.play).toHaveBeenCalledTimes(1);
         expect(controller.getSnapshot().recording).toBe(NEXT);
         expect(controller.getSnapshot().isPlaying).toBe(true);
-        expect(JSON.parse(localStorage.getItem('903player:progress:v1') ?? '{}')).toMatchObject({
-            [RECORDING.url]: { watched: true },
+        expect(JSON.parse(localStorage.getItem('903player:progress:v2') ?? '{}')).toMatchObject({
+            [RECORDING.id]: { watched: true },
         });
         detach();
     });
@@ -601,6 +605,7 @@ describe('AudioController next track loading', () => {
     const NEXT: Recording = {
         ...RECORDING,
         date: '2026-10-24',
+        id: 'id:https://audio.hkfm903.live/next.aac',
         url: 'https://audio.hkfm903.live/next.aac',
     };
 
@@ -626,9 +631,14 @@ describe('AudioController stall watchdog details', () => {
     const NEXT: Recording = {
         ...RECORDING,
         date: '2026-10-24',
+        id: 'id:https://audio.hkfm903.live/next.aac',
         url: 'https://audio.hkfm903.live/next.aac',
     };
-    const OTHER: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/other.aac' };
+    const OTHER: Recording = {
+        ...RECORDING,
+        id: 'id:https://audio.hkfm903.live/other.aac',
+        url: 'https://audio.hkfm903.live/other.aac',
+    };
     const DURATION = 1200;
     const RESUME_AT = 300;
     const GIVE_UP_MS = STALL_RETRY_MS * (STALL_MAX_RETRIES + 2);
@@ -675,7 +685,7 @@ describe('AudioController stall watchdog details', () => {
     });
 
     it('resumes the stalled track where it was after reloading it', async () => {
-        saveProgress(NEXT.url, RESUME_AT, DURATION);
+        saveProgress(NEXT.id, RESUME_AT, DURATION);
         const { audio, detach } = await advance();
         audio.emitMetadata(DURATION);
         expect(audio.currentTime).toBe(RESUME_AT);
@@ -784,6 +794,7 @@ describe('AudioController replay timing details', () => {
     const NEXT: Recording = {
         ...RECORDING,
         date: '2026-10-24',
+        id: 'id:https://audio.hkfm903.live/next.aac',
         url: 'https://audio.hkfm903.live/next.aac',
     };
     const DURATION = 1000;
@@ -797,7 +808,7 @@ describe('AudioController replay timing details', () => {
     };
 
     const replayWatched = async () => {
-        saveProgress(RECORDING.url, DURATION, DURATION);
+        saveProgress(RECORDING.id, DURATION, DURATION);
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         const detach = attachController(controller);
@@ -811,7 +822,7 @@ describe('AudioController replay timing details', () => {
 
         playThrough(audio, 0, REPLAY_RESET_SECONDS - TICK_SECONDS);
 
-        expect(isWatched(RECORDING.url)).toBe(true);
+        expect(isWatched(RECORDING.id)).toBe(true);
         detach();
     });
 
@@ -820,7 +831,7 @@ describe('AudioController replay timing details', () => {
 
         playThrough(audio, 0, REPLAY_RESET_SECONDS);
 
-        expect(isWatched(RECORDING.url)).toBe(false);
+        expect(isWatched(RECORDING.id)).toBe(false);
         detach();
     });
 
@@ -851,7 +862,7 @@ describe('AudioController replay timing details', () => {
     it('starts replay timing from the new track, not where the old one stopped', async () => {
         const WATCHED: Recording = { ...NEXT, url: 'https://audio.hkfm903.live/watched.aac' };
         const OLD_POSITION = 2;
-        saveProgress(WATCHED.url, DURATION, DURATION);
+        saveProgress(WATCHED.id, DURATION, DURATION);
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         const detach = attachController(controller);
@@ -863,12 +874,12 @@ describe('AudioController replay timing details', () => {
         audio.emitMetadata(DURATION);
         playThrough(audio, TICK_SECONDS, REPLAY_RESET_SECONDS);
 
-        expect(isWatched(WATCHED.url)).toBe(false);
+        expect(isWatched(WATCHED.id)).toBe(false);
         detach();
     });
 
     it('counts replay time on a watched track reached by auto-advance', async () => {
-        saveProgress(NEXT.url, DURATION, DURATION);
+        saveProgress(NEXT.id, DURATION, DURATION);
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack(() => NEXT);
@@ -882,7 +893,7 @@ describe('AudioController replay timing details', () => {
         playThrough(audio, 0, REPLAY_RESET_SECONDS);
 
         expect(controller.getSnapshot().recording).toBe(NEXT);
-        expect(isWatched(NEXT.url)).toBe(false);
+        expect(isWatched(NEXT.id)).toBe(false);
         detach();
     });
 
@@ -901,7 +912,7 @@ describe('AudioController replay timing details', () => {
 
         playThrough(audio, RESUME_AT + TICK_SECONDS, RESUME_AT + 1);
 
-        expect(isWatched(RECORDING.url)).toBe(true);
+        expect(isWatched(RECORDING.id)).toBe(true);
         detach();
     });
 });
@@ -926,7 +937,7 @@ describe('AudioController S-551 lock-screen stall', () => {
 
     /** 情境 2：聽緊（位置真係行）→ 拔 AirPods 系統暫停 */
     const pausedBySystem = async () => {
-        saveProgress(RECORDING.url, RESUME_AT, DURATION);
+        saveProgress(RECORDING.id, RESUME_AT, DURATION);
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         const detach = attachController(controller);
@@ -1232,12 +1243,16 @@ describe('AudioController S-551 lock-screen stall', () => {
 
         expect(controller.getSnapshot().currentTime).toBe(heardAt);
         expect(controller.getSnapshot().isAudible).toBe(false);
-        expect(getResumePosition(RECORDING.url)).toBe(heardAt);
+        expect(getResumePosition(RECORDING.id)).toBe(heardAt);
         detach();
     });
 
     it('retries a stalled auto-advance after the shorter first timeout in the foreground', async () => {
-        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const NEXT: Recording = {
+            ...RECORDING,
+            id: 'id:https://audio.hkfm903.live/next.aac',
+            url: 'https://audio.hkfm903.live/next.aac',
+        };
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
@@ -1257,7 +1272,11 @@ describe('AudioController S-551 lock-screen stall', () => {
 
     // W-500：新一集 metadata 到咗但數據冇嚟（readyState 0→1）都要喺首個 deadline 重試
     it('retries a stalled auto-advance at the first timeout when only metadata arrived', async () => {
-        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const NEXT: Recording = {
+            ...RECORDING,
+            id: 'id:https://audio.hkfm903.live/next.aac',
+            url: 'https://audio.hkfm903.live/next.aac',
+        };
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
@@ -1278,7 +1297,11 @@ describe('AudioController S-551 lock-screen stall', () => {
 
     // W-505：header 到咗加一個 progress 之後就冇嘢嚟，都要喺首個 deadline 重試（唔好推到 8 秒）
     it('retries at the first timeout when a progress event follows metadata and then nothing arrives', async () => {
-        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const NEXT: Recording = {
+            ...RECORDING,
+            id: 'id:https://audio.hkfm903.live/next.aac',
+            url: 'https://audio.hkfm903.live/next.aac',
+        };
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
@@ -1299,7 +1322,11 @@ describe('AudioController S-551 lock-screen stall', () => {
     });
 
     it('keeps waiting at the first timeout when playable data has started to arrive', async () => {
-        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const NEXT: Recording = {
+            ...RECORDING,
+            id: 'id:https://audio.hkfm903.live/next.aac',
+            url: 'https://audio.hkfm903.live/next.aac',
+        };
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         controller.setNextTrack((track) => (track.url === RECORDING.url ? NEXT : undefined));
@@ -1321,7 +1348,11 @@ describe('AudioController S-551 lock-screen stall', () => {
 
     // 情境 1 前景版：timer 啱啱重試完，65 ms 後 visibility 唔會再重試多次
     it('spends one retry when a late timer and a screen wake-up land together', async () => {
-        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const NEXT: Recording = {
+            ...RECORDING,
+            id: 'id:https://audio.hkfm903.live/next.aac',
+            url: 'https://audio.hkfm903.live/next.aac',
+        };
         const WAKE_AFTER_TIMER_MS = 65;
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
@@ -1345,7 +1376,11 @@ describe('AudioController S-551 lock-screen stall', () => {
 
     // 情境 1 鎖屏版（v1.20.8）：鎖屏時 timer 行過都唔 reload，亮屏先重試一次
     it('spends only the wake-up retry when timers ran while locked', async () => {
-        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
+        const NEXT: Recording = {
+            ...RECORDING,
+            id: 'id:https://audio.hkfm903.live/next.aac',
+            url: 'https://audio.hkfm903.live/next.aac',
+        };
         const WAKE_AFTER_TIMER_MS = 65;
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
@@ -1371,8 +1406,16 @@ describe('AudioController S-551 lock-screen stall', () => {
 
     /** C-010：只有 watchdog 首個 deadline 過咗而未出聲先算卡住（鎖屏先顯示 Play） */
     describe('isStalled', () => {
-        const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.aac' };
-        const OTHER: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/other.aac' };
+        const NEXT: Recording = {
+            ...RECORDING,
+            id: 'id:https://audio.hkfm903.live/next.aac',
+            url: 'https://audio.hkfm903.live/next.aac',
+        };
+        const OTHER: Recording = {
+            ...RECORDING,
+            id: 'id:https://audio.hkfm903.live/other.aac',
+            url: 'https://audio.hkfm903.live/other.aac',
+        };
 
         const stalledStart = async () => {
             const audio = new FakeAudio();
@@ -1516,7 +1559,11 @@ describe('AudioController S-551 lock-screen stall', () => {
  * 鎖屏 Play / 亮屏先 reload
  */
 describe('AudioController locked auto-advance (v1.20.8)', () => {
-    const NEXT: Recording = { ...RECORDING, url: 'https://audio.hkfm903.live/next.m4a' };
+    const NEXT: Recording = {
+        ...RECORDING,
+        id: 'id:https://audio.hkfm903.live/next.m4a',
+        url: 'https://audio.hkfm903.live/next.m4a',
+    };
     const DURATION = 845.6;
     const NEXT_DURATION = 898.4;
     /** log：advance → loadedmetadata 0.9 s，再 0.2 s 一個 progress */
@@ -1956,7 +2003,7 @@ describe('AudioController CUI-0011 slow header', () => {
 
     /** 開播：play event 到咗，watchdog 開始睇住，乜數據都未到 */
     const slowStart = async () => {
-        saveProgress(RECORDING.url, RESUME_AT, DURATION);
+        saveProgress(RECORDING.id, RESUME_AT, DURATION);
         const audio = new FakeAudio();
         const controller = new AudioController(audio.asAudio());
         const detach = attachController(controller);

@@ -269,7 +269,7 @@ const useStandby = (
     const startDrama = useStartDrama();
     const { load } = usePlayer();
     const listened = !hasNoProgress(episodes, progressMap);
-    const progress = upNext && progressMap[upNext.url];
+    const progress = upNext && progressMap[upNext.id];
     const idle: PlaybackLineState = listened ? 'resume' : 'unloaded';
     const status: PlaybackLineState = isLoaded ? playState : idle;
     const start = () => (picked ? void load(picked, { autoplay: true }) : startDrama(drama));

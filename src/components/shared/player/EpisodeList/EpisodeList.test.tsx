@@ -271,6 +271,7 @@ describe('EpisodeList', () => {
             showId: 'gongzi',
             date: '2026-10-15',
             time: '2300',
+            id: 'id:c',
             url: 'c',
         };
         const withTrack = ITEMS.map((item) =>
@@ -295,7 +296,7 @@ describe('EpisodeList', () => {
 
             await userEvent.click(screen.getByRole('button', { name: '收藏 15/10 星期四' }));
 
-            expect(hasBookmark('c')).toBe(true);
+            expect(hasBookmark('id:c')).toBe(true);
             expect(onSelect).not.toHaveBeenCalled();
         });
     });

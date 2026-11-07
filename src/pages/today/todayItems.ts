@@ -34,7 +34,7 @@ export const toTodayItems = (
     list: EpisodeEntry[],
     activeUrl: string | undefined,
     isPlaying: boolean,
-    watchedUrls: ReadonlySet<string>,
+    watchedIds: ReadonlySet<string>,
     /** 播緊但未讀到時長（連線中） */
     connecting = false,
 ): TodayShowItem[] =>
@@ -43,7 +43,7 @@ export const toTodayItems = (
             return { ...rowBase(r), active: false, status: 'unavailable' };
         }
         const isActive = r.url === activeUrl;
-        const status = statusOf(isActive, isPlaying, watchedUrls.has(r.url), connecting);
+        const status = statusOf(isActive, isPlaying, watchedIds.has(r.id), connecting);
         return { ...rowBase(r), active: isActive, status, track: r };
     });
 

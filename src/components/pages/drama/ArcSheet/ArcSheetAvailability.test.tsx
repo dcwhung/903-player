@@ -9,6 +9,7 @@ import type { ArcRowNotes } from './arcSheetTypes';
 const ep = (arc: string, no: number): SeriesEpisode => ({
     kind: 'series',
     dramaId: 'lancy',
+    id: `id:/${arc}-${no}`,
     url: `/${arc}-${no}`,
     arc,
     no,

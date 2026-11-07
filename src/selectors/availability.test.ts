@@ -30,6 +30,7 @@ const arcInfo = (arc: string, extra: Partial<ArcAvailability> = {}): ArcAvailabi
 const ep = (arc: string, no: number, extra: Partial<SeriesEpisode> = {}): SeriesEpisode => ({
     kind: 'series',
     dramaId: 'lancy',
+    id: `id:/${arc}/${no}`,
     url: `/${arc}/${no}`,
     arc,
     no,

@@ -94,7 +94,7 @@ describe('useSavedView / useThirdTab', () => {
 
     describe('memoised recent list (S-709)', () => {
         it('should not recompute recent listens when only the playback position ticks', () => {
-            saveProgress(OTHER.url, HEARD_AT, DURATION);
+            saveProgress(OTHER.id, HEARD_AT, DURATION);
             const { rerender } = mount(true);
             rerender({ recording: HEARD, isPlaying: true, duration: DURATION });
             const before = recentCalls();
@@ -106,7 +106,7 @@ describe('useSavedView / useThirdTab', () => {
         });
 
         it('should recompute recent listens when bookmarks change', () => {
-            saveProgress(OTHER.url, HEARD_AT, DURATION);
+            saveProgress(OTHER.id, HEARD_AT, DURATION);
             mount();
             expect(screen.getByTestId('third')).toHaveTextContent('recent');
             const before = recentCalls();
@@ -121,7 +121,7 @@ describe('useSavedView / useThirdTab', () => {
             const { rerender } = mount();
             const before = recentCalls();
 
-            saveProgress(OTHER.url, HEARD_AT, DURATION);
+            saveProgress(OTHER.id, HEARD_AT, DURATION);
             rerender({ progressRevision: 1 });
 
             expect(recentCalls()).toBeGreaterThan(before);
@@ -136,7 +136,7 @@ describe('useSavedView / useThirdTab', () => {
             expect(screen.getByTestId('third')).toHaveTextContent('none');
 
             // controller 存咗進度先 bump：isPlaying 由頭到尾都係 false
-            saveProgress(HEARD.url, HEARD_AT, DURATION);
+            saveProgress(HEARD.id, HEARD_AT, DURATION);
             rerender({ recording: HEARD, progressRevision: 1 });
 
             expect(screen.getByTestId('third')).toHaveTextContent('recent');
@@ -147,7 +147,7 @@ describe('useSavedView / useThirdTab', () => {
             rerender({ recording: HEARD, isPlaying: true });
 
             // revision 未郁：就算 storage 有咗，都唔靠 isPlaying 嘅 edge 讀（呢個 edge 同 persist 有次序依賴）
-            saveProgress(HEARD.url, HEARD_AT, DURATION);
+            saveProgress(HEARD.id, HEARD_AT, DURATION);
             rerender({ recording: HEARD, isPlaying: false });
 
             expect(screen.getByTestId('third')).toHaveTextContent('none');

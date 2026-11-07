@@ -16,10 +16,11 @@ const THEME: DramaThemeDefinition = {
 };
 
 const arc = (
-    name: string,
+    [id, name]: [id: string, name: string],
     count: number,
     extra: Partial<SeriesDefinition['arcs'][number]> = {},
 ): SeriesDefinition['arcs'][number] => ({
+    id,
     name,
     firstNo: 1,
     count,
@@ -43,9 +44,13 @@ const SERIES: SeriesDefinition = {
     },
     theme: THEME,
     arcs: [
-        arc('Ｘ時mas時小提議', 2, { titles: new Map([[2, '哥哥 _ 你洽我']]) }),
-        arc('初戀嗱喳麵', 2, { firstNo: 0, titles: new Map([[0, '前傳']]), addedAt: '2026-10-25' }),
-        arc('亂碼', 2, { files: new Map([[2, 'weird upload.m4a']]) }),
+        arc(['xmas-proposal', 'Ｘ時mas時小提議'], 2, { titles: new Map([[2, '哥哥 _ 你洽我']]) }),
+        arc(['first-love-noodles', '初戀嗱喳麵'], 2, {
+            firstNo: 0,
+            titles: new Map([[0, '前傳']]),
+            addedAt: '2026-10-25',
+        }),
+        arc(['garbled', '亂碼'], 2, { files: new Map([[2, 'weird upload.m4a']]) }),
     ],
 };
 
@@ -79,6 +84,24 @@ describe('buildEpisodes (series)', () => {
             '亂碍#1'.replace('碍', '碼'),
             '亂碼#2',
         ]);
+    });
+
+    it('gives every episode a stable id from the drama id, arc id and episode number', () => {
+        expect(episodes.map((e) => e.id)).toEqual([
+            'drama:chisee:xmas-proposal:1',
+            'drama:chisee:xmas-proposal:2',
+            'drama:chisee:first-love-noodles:0',
+            'drama:chisee:first-love-noodles:1',
+            'drama:chisee:garbled:1',
+            'drama:chisee:garbled:2',
+        ]);
+    });
+
+    it('keeps the id when the arc name (R2 folder) changes', () => {
+        const renamed = { ...SERIES, arcs: SERIES.arcs.map((a) => ({ ...a, name: `${a.name}2` })) };
+        expect(buildEpisodes('chisee', renamed).map((e) => e.id)).toEqual(
+            episodes.map((e) => e.id),
+        );
     });
 
     it('builds the R2 url from the template, encoding every segment', () => {
@@ -127,7 +150,7 @@ describe('buildEpisodes (series)', () => {
                 folder: '黃金少年',
                 file: '{no2} - {folder}{arc} - 第{noZh}集.m4a',
             },
-            arcs: [arc('Season 1', 1)],
+            arcs: [arc(['season-1', 'Season 1'], 1)],
         };
         expect(decodeURIComponent(buildEpisodes('golden', def)[0]?.url ?? '')).toBe(
             `${DRAMA_AUDIO_BASE}/黃金少年/Season 1/01 - 黃金少年Season 1 - 第一集.m4a`,
@@ -142,6 +165,7 @@ describe('buildEpisodes (daily)', () => {
         expect(episodes[0]).toEqual({
             kind: 'daily',
             dramaId: 'c18',
+            id: 'drama:c18:2026-10-23',
             url: `${import.meta.env.BASE_URL}dramas/c18/20261023.m4a`,
             date: '2026-10-23',
             rerun: false,
@@ -160,8 +184,8 @@ describe('buildEpisodes availability', () => {
 
     it('should give each episode its batch date: latest of drama, arc and episodeDates', () => {
         const episodes = lancy({ addedAt: '2026-10-27' }, [
-            arc('戀愛二分一', 4, { episodeDates: new Map([[3, '2026-11-19']]) }),
-            arc('XXX', 1, { addedAt: '2026-11-12' }),
+            arc(['half', '戀愛二分一'], 4, { episodeDates: new Map([[3, '2026-11-19']]) }),
+            arc(['xxx', 'XXX'], 1, { addedAt: '2026-11-12' }),
         ]);
         expect(episodes.map((e) => e.kind === 'series' && e.addedAt)).toEqual([
             '2026-10-27',
@@ -174,11 +198,11 @@ describe('buildEpisodes availability', () => {
 
     it('should give each episode the earliest removedAt of drama, arc and episode ranges', () => {
         const episodes = lancy({ removedAt: '2026-12-05' }, [
-            arc('戀愛二分一', 3, {
+            arc(['half', '戀愛二分一'], 3, {
                 removedAt: '2026-12-04',
                 episodeRemovedAt: [{ first: 2, last: 2, date: '2026-12-01' }],
             }),
-            arc('初戀無限次', 1),
+            arc(['first-love', '初戀無限次'], 1),
         ]);
         expect(episodes.map((e) => e.kind === 'series' && e.removedAt)).toEqual([
             '2026-12-04',
@@ -189,7 +213,9 @@ describe('buildEpisodes availability', () => {
     });
 
     it('should build no episodes for an upcoming arc whose count is not known yet', () => {
-        const episodes = lancy({}, [arc('XXX', 1, { count: undefined, addedAt: '2026-11-12' })]);
+        const episodes = lancy({}, [
+            arc(['xxx', 'XXX'], 1, { count: undefined, addedAt: '2026-11-12' }),
+        ]);
         expect(episodes).toEqual([]);
     });
 });

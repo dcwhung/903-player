@@ -57,12 +57,12 @@ describe('parseDramaDefinition availability fields', () => {
     });
 
     it('should leave count undefined when an upcoming arc has no episodes yet', () => {
-        const def = parseSeries(series({}, [{ name: 'XXX', addedAt: '2026-11-12' }]));
+        const def = parseSeries(series({}, [{ id: 'xxx', name: 'XXX', addedAt: '2026-11-12' }]));
         expect(def.arcs[0]?.count).toBeUndefined();
     });
 
     it('should accept a missing episodes list when only the drama has addedAt', () => {
-        const def = parseSeries(series({ addedAt: '2026-12-01' }, [{ name: 'XXX' }]));
+        const def = parseSeries(series({ addedAt: '2026-12-01' }, [{ id: 'xxx', name: 'XXX' }]));
         expect(def.arcs[0]?.count).toBeUndefined();
     });
 
@@ -70,6 +70,7 @@ describe('parseDramaDefinition availability fields', () => {
         const def = parseSeries(
             series({}, [
                 {
+                    id: 'half',
                     name: '戀愛二分一',
                     episodes: 30,
                     episodeDates: { '11': '2026-11-19', '21': '2026-11-26' },
@@ -86,6 +87,7 @@ describe('parseDramaDefinition availability fields', () => {
         const def = parseSeries(
             series({ removedAt: '2026-12-05' }, [
                 {
+                    id: 'half',
                     name: '戀愛二分一',
                     episodes: 30,
                     removedAt: '2026-12-04',
@@ -104,23 +106,26 @@ describe('parseDramaDefinition availability fields', () => {
     it.each([
         [
             'an arc without episodes or any addedAt',
-            series({}, [{ name: 'XXX' }]),
+            series({}, [{ id: 'xxx', name: 'XXX' }]),
             /arcs\[0\]\.episodes must be a positive integer or a list of titles \(or leave it out with an addedAt\)/,
         ],
         [
             'an episodeDates key outside the arc',
-            series({}, [{ name: 'S', episodes: 10, episodeDates: { '11': '2026-11-19' } }]),
+            series({}, [
+                { id: 's', name: 'S', episodes: 10, episodeDates: { '11': '2026-11-19' } },
+            ]),
             /arcs\[0\]\.episodeDates\["11"\] is outside 1–10/,
         ],
         [
             'an episodeDates key on the first episode',
-            series({}, [{ name: 'S', episodes: 10, episodeDates: { '1': '2026-11-19' } }]),
+            series({}, [{ id: 's', name: 'S', episodes: 10, episodeDates: { '1': '2026-11-19' } }]),
             /arcs\[0\]\.episodeDates\["1"\] must be after the first episode/,
         ],
         [
             'episodeDates that go backwards',
             series({}, [
                 {
+                    id: 's',
                     name: 'S',
                     episodes: 30,
                     episodeDates: { '11': '2026-11-26', '21': '2026-11-19' },
@@ -132,6 +137,7 @@ describe('parseDramaDefinition availability fields', () => {
             'an episodeDates date not after the arc addedAt',
             series({}, [
                 {
+                    id: 's',
                     name: 'S',
                     addedAt: '2026-11-19',
                     episodes: 30,
@@ -143,21 +149,21 @@ describe('parseDramaDefinition availability fields', () => {
         [
             'a drama removedAt not after its addedAt',
             series({ addedAt: '2026-12-01', removedAt: '2026-12-01' }, [
-                { name: 'S', episodes: 1 },
+                { id: 's', name: 'S', episodes: 1 },
             ]),
             /removedAt must be later than addedAt 2026-12-01/,
         ],
         [
             'an arc removedAt later than the drama removedAt',
             series({ removedAt: '2026-12-05' }, [
-                { name: 'S', episodes: 1, removedAt: '2026-12-06' },
+                { id: 's', name: 'S', episodes: 1, removedAt: '2026-12-06' },
             ]),
             /arcs\[0\]\.removedAt must not be later than the drama removedAt 2026-12-05/,
         ],
         [
             'an arc removedAt not after the arc addedAt',
             series({}, [
-                { name: 'S', episodes: 1, addedAt: '2026-12-01', removedAt: '2026-11-30' },
+                { id: 's', name: 'S', episodes: 1, addedAt: '2026-12-01', removedAt: '2026-11-30' },
             ]),
             /arcs\[0\]\.removedAt must be later than addedAt 2026-12-01/,
         ],
@@ -165,6 +171,7 @@ describe('parseDramaDefinition availability fields', () => {
             'an episode removedAt later than the arc removedAt',
             series({}, [
                 {
+                    id: 's',
                     name: 'S',
                     episodes: 5,
                     removedAt: '2026-12-05',
@@ -177,6 +184,7 @@ describe('parseDramaDefinition availability fields', () => {
             'an episode removedAt not after that batch date',
             series({}, [
                 {
+                    id: 's',
                     name: 'S',
                     episodes: 30,
                     episodeDates: { '11': '2026-11-19' },
@@ -189,6 +197,7 @@ describe('parseDramaDefinition availability fields', () => {
             'overlapping episode removal ranges',
             series({}, [
                 {
+                    id: 's',
                     name: 'S',
                     episodes: 30,
                     episodeRemovedAt: { '1-5': '2026-12-05', '5': '2026-12-06' },
@@ -198,24 +207,33 @@ describe('parseDramaDefinition availability fields', () => {
         ],
         [
             'a reversed removal range',
-            series({}, [{ name: 'S', episodes: 30, episodeRemovedAt: { '5-1': '2026-12-05' } }]),
+            series({}, [
+                { id: 's', name: 'S', episodes: 30, episodeRemovedAt: { '5-1': '2026-12-05' } },
+            ]),
             /arcs\[0\]\.episodeRemovedAt\["5-1"\] must be an episode number or a range like "1-5"/,
         ],
         [
             'a removal range outside the arc',
-            series({}, [{ name: 'S', episodes: 5, episodeRemovedAt: { '4-6': '2026-12-05' } }]),
+            series({}, [
+                { id: 's', name: 'S', episodes: 5, episodeRemovedAt: { '4-6': '2026-12-05' } },
+            ]),
             /arcs\[0\]\.episodeRemovedAt\["4-6"\] is outside 1–5/,
         ],
         [
             'episodeRemovedAt on an arc without episodes',
             series({}, [
-                { name: 'S', addedAt: '2026-11-12', episodeRemovedAt: { '1': '2026-12-05' } },
+                {
+                    id: 's',
+                    name: 'S',
+                    addedAt: '2026-11-12',
+                    episodeRemovedAt: { '1': '2026-12-05' },
+                },
             ]),
             /arcs\[0\]\.episodeRemovedAt needs episodes/,
         ],
         [
             'a bad removedAt date',
-            series({ removedAt: '2026-02-30' }, [{ name: 'S', episodes: 1 }]),
+            series({ removedAt: '2026-02-30' }, [{ id: 's', name: 'S', episodes: 1 }]),
             /removedAt must be a YYYY-MM-DD date/,
         ],
     ])('should reject %s', (_label, raw, message) => {

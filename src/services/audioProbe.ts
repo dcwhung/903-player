@@ -1,7 +1,8 @@
 import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
+import { showEpisodeId } from '../catalog/core/episodeId';
 import { findShow, SHOWS, type ShowConfig } from '../catalog/shows';
-import type { Recording, UnavailableEpisode } from '../types/recording';
-import { daysBetween, hkTimeHHMM, hkToday, weekdayOf } from '../utils/date';
+import type { Recording, ShowId, UnavailableEpisode } from '../types/recording';
+import { daysBetween, hkTimeHHMM, hkToday, isCalendarDate, weekdayOf } from '../utils/date';
 import {
     dateFromShowDateKey,
     readProbeState,
@@ -70,6 +71,38 @@ const fileShowName = (name: string): string => name.replace(/ /g, '_');
 export const buildAudioUrl = (show: ShowConfig, date: string): string => {
     const fileName = `${date.replace(/-/g, '')}_${show.fileTime}_${fileShowName(show.name)}`;
     return `${ALLOWED_AUDIO_ORIGIN}/${encodeURIComponent(show.name)}/${encodeURIComponent(fileName)}${AUDIO_EXTENSION}`;
+};
+
+/** 檔名 <YYYYMMDD>_<HHMM>_<節目名>：唔理 HHMM（節目改開咪時間都認得返舊錄音） */
+const FILE_NAME_PATTERN = /^(\d{4})(\d{2})(\d{2})_\d{4}_(.+)$/;
+
+/** URL path 兩段（節目 folder、檔名），decode 咗；唔係原站 .aac 就 undefined */
+const audioPathOf = (url: string): [folder: string, file: string] | undefined => {
+    try {
+        const { origin, pathname } = new URL(url);
+        const parts = pathname.split('/').slice(1).map(decodeURIComponent);
+        const [folder, file] = parts;
+        if (origin !== ALLOWED_AUDIO_ORIGIN || parts.length !== 2 || !folder || !file)
+            return undefined;
+        return file.endsWith(AUDIO_EXTENSION)
+            ? [folder, file.slice(0, -AUDIO_EXTENSION.length)]
+            : undefined;
+    } catch {
+        return undefined;
+    }
+};
+
+/**
+ * buildAudioUrl 倒轉：由節目錄音 URL 認返邊個節目、邊日（v1 進度 / 收藏 migration 用）。
+ * 認唔到（其他 host、唔識嘅節目、檔名唔夾）就 undefined
+ */
+export const showEpisodeOfUrl = (url: string): { showId: ShowId; date: string } | undefined => {
+    const path = audioPathOf(url);
+    const show = path && SHOWS.find((s) => s.name === path[0]);
+    const match = path && FILE_NAME_PATTERN.exec(path[1]);
+    if (!show || !match || match[4] !== fileShowName(show.name)) return undefined;
+    const date = `${match[1]}-${match[2]}-${match[3]}`;
+    return isCalendarDate(date) ? { showId: show.id, date } : undefined;
 };
 
 /**
@@ -161,7 +194,13 @@ interface ProbeSlot {
 
 const toSlot = (show: ShowConfig, date: string): ProbeSlot => ({
     key: showDateKey(show.id, date),
-    recording: { showId: show.id, date, time: show.fileTime, url: buildAudioUrl(show, date) },
+    recording: {
+        showId: show.id,
+        id: showEpisodeId(show.id, date),
+        date,
+        time: show.fileTime,
+        url: buildAudioUrl(show, date),
+    },
 });
 
 /** 播出日過咗兩日先搵唔到，多數真係冇，一日先再試；今日 / 尋日可能只係未上架，密啲試 */

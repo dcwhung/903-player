@@ -74,6 +74,7 @@ describe('SavedTab availability', () => {
         const track = {
             kind: 'series',
             dramaId: 'lancy',
+            id: 'id:/half/3',
             url: '/half/3',
             arc: '戀愛二分一',
             no: 3,
@@ -103,6 +104,7 @@ describe('SavedTab availability', () => {
         const track = {
             kind: 'series',
             dramaId: 'lancy',
+            id: 'id:/half/3',
             url: '/half/3',
             arc: '戀愛二分一',
             no: 3,

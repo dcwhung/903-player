@@ -15,6 +15,7 @@ const episodesOf = (id: string): SeriesEpisode[] =>
     Array.from({ length: EPISODES_PER_DRAMA }, (_, i) => ({
         kind: 'series',
         dramaId: id,
+        id: `drama:${id}:a:${i + 1}`,
         url: `/dramas/${id}/${i + 1}.m4a`,
         arc: 'A',
         no: i + 1,
@@ -27,8 +28,8 @@ const progress = (updatedAt: number, watched = false): Progress => ({
     updatedAt,
 });
 
-/** 某套劇第 n 集嘅進度 */
-const at = (id: string, no: number, p: Progress) => ({ [`/dramas/${id}/${no}.m4a`]: p });
+/** 某套劇第 n 集嘅進度（key = episode ID） */
+const at = (id: string, no: number, p: Progress) => ({ [`drama:${id}:a:${no}`]: p });
 
 /** 全部集數聽完 */
 const finished = (id: string, updatedAt: number) => ({
@@ -177,7 +178,10 @@ describe('dramaShelfOrder with removed episodes (W-531)', () => {
 
     it('should leave out episodes not released yet', () => {
         const [first] = episodesOf('A');
-        const later = [...episodesOf('A'), { ...first!, no: 3, url: '/x', addedAt: '2026-12-05' }];
+        const later = [
+            ...episodesOf('A'),
+            { ...first!, no: 3, id: 'x', url: '/x', addedAt: '2026-12-05' },
+        ];
         expect(releasedEpisodes(later, '2026-12-01')).toHaveLength(EPISODES_PER_DRAMA);
     });
 });

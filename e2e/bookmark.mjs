@@ -8,8 +8,8 @@ import { PROGRESS_STORAGE_KEY } from './hiddenPlayback.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 
 /** 同 src/config/constants.ts BOOKMARK_STORAGE_KEY / VERSION 一樣（src/e2eSrcConstants.test.ts 鎖住） */
-export const BOOKMARK_STORAGE_KEY = '903player:bookmarks:v1';
-export const BOOKMARK_STORE_VERSION = 1;
+export const BOOKMARK_STORAGE_KEY = '903player:bookmarks:v2';
+export const BOOKMARK_STORE_VERSION = 2;
 /** 同 src/components/pages/home/SavedTab/useRowSwipe.ts SWIPE_REMOVE_RATIO 一樣（同上鎖住） */
 export const SWIPE_REMOVE_RATIO = 0.4;
 
@@ -38,6 +38,7 @@ const SWIPE_STEPS = 12;
 const seedBookmark = async (ctx) => {
     const item = {
         kind: 'show',
+        id: GONGZI.id,
         url: GONGZI.url,
         showId: GONGZI.showId,
         date: GONGZI.date,
@@ -163,7 +164,7 @@ const LAND = { width: 844, height: 390 };
 const seedProgress = async (ctx, recordings) => {
     const map = Object.fromEntries(
         recordings.map((r, i) => [
-            r.url,
+            r.id,
             { position: 60, duration: 600, watched: false, updatedAt: 1000 + i },
         ]),
     );

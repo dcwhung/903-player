@@ -29,12 +29,14 @@
     },
     "arcs": [
         {
+            "id": "hachioji",
             "name": "八王子",
             "disc": "arcs/hachioji/disc.webp",
             "tile": "arcs/hachioji/tile.webp",
             "episodes": 21
         },
         {
+            "id": "zhongxiao",
             "name": "忠孝公路",
             "disc": "arcs/zhongxiao/disc.webp",
             "tile": "arcs/zhongxiao/tile.webp",

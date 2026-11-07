@@ -64,13 +64,15 @@ export const useHomeCardGauge = (mini: MiniPlayerProps): HomeCardGauge => {
     const { recordings } = useRecordings();
     const url = mini.keys[mini.index];
     const isLoaded = url !== undefined && player.recording?.url === url;
+    const track = shownTrack(url, player.recording, recordings);
+    // 進度用 episode ID 搵（keys 係網址，淨係認邊集）
+    const id = track?.id;
     const saved = useRefreshedOn(
-        () => (url && !isLoaded ? getProgress(url) : undefined),
-        [url, isLoaded, player.watchedRevision],
+        () => (id && !isLoaded ? getProgress(id) : undefined),
+        [id, isLoaded, player.watchedRevision],
     );
     const standbyTime = standbyOf(saved);
     const { isPlaying, currentTime: position } = player;
-    const track = shownTrack(url, player.recording, recordings);
     return {
         onStart: isLoaded ? undefined : mini.onToggle,
         standbyTime,

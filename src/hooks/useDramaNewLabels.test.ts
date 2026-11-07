@@ -50,8 +50,8 @@ describe('useDramaNewLabels', () => {
 
     it('drops 新 once the new 短篇 has been touched, or today’s episode listened to', () => {
         const xmas = seriesEpisodesOf('chisee').find((e) => e.arc === 'Ｘ時mas時小提議');
-        saveProgress(xmas?.url ?? '', 30, 160);
-        saveProgress(dailyEpisodesOf('c18')[0]?.url ?? '', 990, 1000);
+        saveProgress(xmas?.id ?? '', 30, 160);
+        saveProgress(dailyEpisodesOf('c18')[0]?.id ?? '', 990, 1000);
         expect(labels().size).toBe(0);
     });
 

@@ -74,8 +74,8 @@ describe('HomePage wide player card motion', () => {
         vi.useFakeTimers({ toFake: ['Date'] });
         // 香港 16/11（一）16:00：真 catalog 嘅劇集 10/24–10/27 先上架（P8 #6），之前嘅日子佢哋仲係「即將上架」
         vi.setSystemTime(new Date('2026-11-16T08:00:00Z'));
-        saveProgress(seriesEpisodesOf('chisee')[0]?.url ?? '', 250, 1000);
-        saveProgress(seriesEpisodesOf('jim')[0]?.url ?? '', 250, 1000);
+        saveProgress(seriesEpisodesOf('chisee')[0]?.id ?? '', 250, 1000);
+        saveProgress(seriesEpisodesOf('jim')[0]?.id ?? '', 250, 1000);
         vt = stubViewTransitions();
     });
     afterEach(() => {

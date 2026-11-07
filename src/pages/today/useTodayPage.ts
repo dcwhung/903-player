@@ -7,7 +7,7 @@ import { useStandbyStart } from '../../hooks/useStandbyStart';
 import { useStartPlayback } from '../../hooks/useStartPlayback';
 import { usePlayer } from '../../player/usePlayer';
 import { todayView } from '../../selectors/recordings';
-import { getWatchedUrls } from '../../services/progressStore';
+import { getWatchedIds } from '../../services/progressStore';
 import type { Recording } from '../../types/recording';
 import { hkToday } from '../../utils/date';
 import { hasKnownDuration } from '../../utils/time';
@@ -61,12 +61,12 @@ const useTodayItems = (
     isPlayingToday: boolean,
 ) => {
     const player = usePlayer();
-    const watchedUrls = useRefreshedOn(getWatchedUrls, [player.watchedRevision]);
+    const watchedIds = useRefreshedOn(getWatchedIds, [player.watchedRevision]);
     return toTodayItems(
         entries,
         activeUrl,
         isPlayingToday && player.isPlaying,
-        watchedUrls,
+        watchedIds,
         !hasKnownDuration(player.duration),
     );
 };

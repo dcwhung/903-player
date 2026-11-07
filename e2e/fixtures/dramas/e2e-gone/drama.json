@@ -29,6 +29,7 @@
     "removedAt": "2026-11-24",
     "arcs": [
         {
+            "id": "half",
             "name": "戀愛二分一",
             "disc": "arcs/half/disc.webp",
             "episodes": 3

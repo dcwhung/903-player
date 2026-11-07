@@ -30,24 +30,28 @@
     },
     "arcs": [
         {
+            "id": "season-1",
             "name": "Season 1",
             "disc": "arcs/season-1/disc.webp",
             "tile": "arcs/season-1/tile.webp",
             "episodes": 35
         },
         {
+            "id": "season-2",
             "name": "Season 2",
             "disc": "arcs/season-2/disc.webp",
             "tile": "arcs/season-2/tile.webp",
             "episodes": 30
         },
         {
+            "id": "season-3",
             "name": "Season 3",
             "disc": "arcs/season-3/disc.webp",
             "tile": "arcs/season-3/tile.webp",
             "episodes": 30
         },
         {
+            "id": "season-4",
             "name": "Season 4",
             "disc": "arcs/season-4/disc.webp",
             "tile": "arcs/season-4/tile.webp",

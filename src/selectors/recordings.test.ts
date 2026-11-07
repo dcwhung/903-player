@@ -18,6 +18,7 @@ import {
 
 const rec = (showId: ShowId, date: string, time = '2308'): Recording => ({
     showId,
+    id: `show:${showId}:${date}`,
     date,
     time,
     url: `https://audio.hkfm903.live/${showId}/${date}_${time}.aac`,
@@ -258,7 +259,7 @@ describe('entryKey', () => {
 
 describe('newShowIds', () => {
     it('lists shows with a recording today that is not watched yet', () => {
-        const watched = new Set([rec('wanni', '2026-10-16', '1300').url]);
+        const watched = new Set([rec('wanni', '2026-10-16', '1300').id]);
 
         expect(newShowIds(all, '2026-10-16', watched)).toEqual(new Set(['badgirl', 'sunnyday']));
     });

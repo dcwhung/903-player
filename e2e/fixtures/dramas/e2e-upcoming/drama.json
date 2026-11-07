@@ -29,6 +29,7 @@
     },
     "arcs": [
         {
+            "id": "season-1",
             "name": "第一季",
             "episodes": 10
         }

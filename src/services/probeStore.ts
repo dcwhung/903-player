@@ -1,4 +1,5 @@
-import { isRecording } from '../data/recordingValidation';
+import { showEpisodeId } from '../catalog/core/episodeId';
+import { isRecording, type StoredRecording } from '../data/recordingValidation';
 import type { Recording } from '../types/recording';
 
 export const PROBE_STORAGE_KEY = '903player:probed:v1';
@@ -32,6 +33,15 @@ const readMisses = (value: unknown): Record<string, number> =>
         ? Object.fromEntries(Object.entries(value).filter(([, time]) => typeof time === 'number'))
         : {};
 
+/** episode ID 一律由 showId + date 計：舊 cache（v1.29 之前）冇 id 都照用得，唔使重新 probe */
+const withEpisodeId = (r: StoredRecording): Recording => ({
+    ...r,
+    id: showEpisodeId(r.showId, r.date),
+});
+
+const readFound = (value: unknown): Recording[] =>
+    Array.isArray(value) ? value.filter(isRecording).map(withEpisodeId) : [];
+
 export const readProbeState = (): ProbeState => {
     try {
         const parsed = JSON.parse(localStorage.getItem(PROBE_STORAGE_KEY) ?? 'null') as {
@@ -42,7 +52,7 @@ export const readProbeState = (): ProbeState => {
             return emptyState();
         }
         return {
-            found: Array.isArray(parsed.found) ? parsed.found.filter(isRecording) : [],
+            found: readFound(parsed.found),
             misses: readMisses(parsed.misses),
         };
     } catch {

@@ -11,6 +11,7 @@ const RESUME_AT_SECONDS = 65;
 const episode = (arc: string, no: number): SeriesEpisode => ({
     kind: 'series',
     dramaId: 'chisee',
+    id: `id:https://example.com/${arc}/${no}.mp3`,
     url: `https://example.com/${arc}/${no}.mp3`,
     arc,
     no,

@@ -1,14 +1,22 @@
 import { useSyncExternalStore } from 'react';
-import { BOOKMARK_STORAGE_KEY, BOOKMARK_STORE_VERSION } from '../config/constants';
+import {
+    BOOKMARK_STORAGE_KEY,
+    BOOKMARK_STORE_VERSION,
+    BOOKMARK_V1_STORAGE_KEY,
+    BOOKMARK_V1_STORE_VERSION,
+} from '../config/constants';
 import type { DramaId } from '../types/drama';
 import type { ShowId } from '../types/recording';
 import { isDramaEpisode, type Track } from '../types/track';
 
 /**
- * 收藏單位係一集（P7 #7）：key = 音檔 URL。每集記低顯示要嘅資料（節目 / 劇、短篇、日子 / 集數），
+ * 收藏單位係一集（P7 #7）：用 episode ID 搵（v2）；url 淨係留低播放用（錄音清單冇咗嗰集都播得）。
+ * 每集記低顯示要嘅資料（節目 / 劇、短篇、日子 / 集數），
  * 錄音清單冇咗嗰集（例如過咗 probe 範圍）收藏 tab 照顯示得到
  */
 interface BookmarkBase {
+    /** episode ID（catalog/core/episodeId.ts）：查找 / 移除一律用佢 */
+    id: string;
     url: string;
     /** 收藏嘅時間（Date.now()）：收藏 tab 嘅次序跟最新收藏 */
     addedAt: number;
@@ -40,19 +48,23 @@ export interface DailyBookmark extends BookmarkBase {
 
 export type Bookmark = ShowBookmark | SeriesBookmark | DailyBookmark;
 
+/** v1 舊收藏：冇 id（storageMigration 補） */
+export type LegacyBookmark =
+    Omit<ShowBookmark, 'id'> | Omit<SeriesBookmark, 'id'> | Omit<DailyBookmark, 'id'>;
+
 /** 一集（player 播得嘅 Track）→ 收藏資料 */
 export const bookmarkOf = (track: Track, addedAt: number): Bookmark => {
-    const { url } = track;
+    const { id, url } = track;
     if (!isDramaEpisode(track)) {
         const { showId, date, time } = track;
-        return { kind: 'show', url, showId, date, time, addedAt };
+        return { kind: 'show', id, url, showId, date, time, addedAt };
     }
     if (track.kind === 'daily') {
         const { dramaId, date, rerun } = track;
-        return { kind: 'daily', url, dramaId, date, rerun, addedAt };
+        return { kind: 'daily', id, url, dramaId, date, rerun, addedAt };
     }
     const { dramaId, arc, no, title } = track;
-    return { kind: 'series', url, dramaId, arc, no, ...(title ? { title } : {}), addedAt };
+    return { kind: 'series', id, url, dramaId, arc, no, ...(title ? { title } : {}), addedAt };
 };
 
 type Fields = Record<string, unknown>;
@@ -70,29 +82,41 @@ const VALID_KIND: Record<Bookmark['kind'], (b: Fields) => boolean> = {
     daily: (b) => isText(b.dramaId) && isText(b.date) && typeof b.rerun === 'boolean',
 };
 
-const isBookmark = (value: unknown): value is Bookmark => {
+/** v1 / v2 共用嘅欄位（v1 冇 id） */
+const isLegacyBookmark = (value: unknown): value is LegacyBookmark => {
     if (typeof value !== 'object' || value === null) return false;
     const b = value as Fields;
     const valid = VALID_KIND[b.kind as Bookmark['kind']];
     return isText(b.url) && typeof b.addedAt === 'number' && valid !== undefined && valid(b);
 };
 
+const isBookmark = (value: unknown): value is Bookmark =>
+    isLegacyBookmark(value) && isText((value as Fields).id);
+
 const EMPTY: readonly Bookmark[] = [];
 
-const parse = (raw: string | null): readonly Bookmark[] => {
-    if (raw === null) return EMPTY;
+/** { version, items } 入面合格嘅項目；version 唔啱、壞 JSON 就空 */
+const parseItems = <T>(
+    raw: string | null,
+    version: number,
+    isItem: (value: unknown) => value is T,
+): readonly T[] | undefined => {
+    if (raw === null) return undefined;
     try {
         const data = JSON.parse(raw) as { version?: unknown; items?: unknown } | null;
-        if (data?.version !== BOOKMARK_STORE_VERSION || !Array.isArray(data.items)) return EMPTY;
-        return data.items.filter(isBookmark);
+        if (data?.version !== version || !Array.isArray(data.items)) return undefined;
+        return data.items.filter(isItem);
     } catch {
-        return EMPTY;
+        return undefined;
     }
 };
 
-const readRaw = (): string | null => {
+const parse = (raw: string | null): readonly Bookmark[] =>
+    parseItems(raw, BOOKMARK_STORE_VERSION, isBookmark) ?? EMPTY;
+
+const readRaw = (key: string = BOOKMARK_STORAGE_KEY): string | null => {
     try {
-        return localStorage.getItem(BOOKMARK_STORAGE_KEY);
+        return localStorage.getItem(key);
     } catch {
         return null;
     }
@@ -107,7 +131,7 @@ export const listBookmarks = (): readonly Bookmark[] => {
     return cache.items;
 };
 
-export const hasBookmark = (url: string): boolean => listBookmarks().some((b) => b.url === url);
+export const hasBookmark = (id: string): boolean => listBookmarks().some((b) => b.id === id);
 
 const listeners = new Set<() => void>();
 
@@ -125,20 +149,20 @@ const writeAll = (items: readonly Bookmark[]): void => {
 
 /** 已經收藏咗就唔再加（保留第一次收藏嘅時間） */
 export const addBookmark = (track: Track, now: number = Date.now()): void => {
-    if (hasBookmark(track.url)) return;
+    if (hasBookmark(track.id)) return;
     writeAll([...listBookmarks(), bookmarkOf(track, now)]);
 };
 
-export const removeBookmark = (url: string): void => {
+export const removeBookmark = (id: string): void => {
     const items = listBookmarks();
-    if (!items.some((b) => b.url === url)) return;
-    writeAll(items.filter((b) => b.url !== url));
+    if (!items.some((b) => b.id === id)) return;
+    writeAll(items.filter((b) => b.id !== id));
 };
 
 /** 收藏 ⇄ 移除；回傳之後係咪收藏緊 */
 export const toggleBookmark = (track: Track, now: number = Date.now()): boolean => {
-    if (hasBookmark(track.url)) {
-        removeBookmark(track.url);
+    if (hasBookmark(track.id)) {
+        removeBookmark(track.id);
         return false;
     }
     addBookmark(track, now);
@@ -158,7 +182,26 @@ export const subscribeBookmarks = (listener: () => void): (() => void) => {
 export const useBookmarks = (): readonly Bookmark[] =>
     useSyncExternalStore(subscribeBookmarks, listBookmarks, listBookmarks);
 
-export const useIsBookmarked = (url: string): boolean => {
-    const read = () => hasBookmark(url);
+export const useIsBookmarked = (id: string): boolean => {
+    const read = () => hasBookmark(id);
     return useSyncExternalStore(subscribeBookmarks, read, read);
+};
+
+/** v1 舊收藏（只讀，migration 用）；冇 / 壞咗 / 版本唔啱就空 */
+export const readLegacyBookmarks = (): readonly LegacyBookmark[] =>
+    parseItems(readRaw(BOOKMARK_V1_STORAGE_KEY), BOOKMARK_V1_STORE_VERSION, isLegacyBookmark) ?? [];
+
+/**
+ * migration 用：v2 未有嘅 ID 加喺尾（已有嘅唔覆蓋）；回傳加咗幾多條。冇嘢要加就唔寫、唔通知
+ */
+export const mergeBookmarks = (items: readonly Bookmark[]): number => {
+    const seen = new Set(listBookmarks().map((b) => b.id));
+    const added: Bookmark[] = [];
+    for (const b of items) {
+        if (seen.has(b.id)) continue;
+        seen.add(b.id);
+        added.push(b);
+    }
+    if (added.length > 0) writeAll([...listBookmarks(), ...added]);
+    return added.length;
 };

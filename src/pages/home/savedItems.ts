@@ -44,25 +44,29 @@ export const bookmarkAvailability = (
 ): { removed: boolean; leaving?: LeavingNote } => {
     if (b.kind === 'show') return { removed: false };
     if (dramaStatus(b.dramaId, today) === 'removed') return { removed: true };
-    const removedAt = catalogEpisodeOf(b.dramaId, b.url)?.removedAt;
+    const removedAt = catalogEpisodeOf(b.dramaId, b.id)?.removedAt;
     if (isRemoved(removedAt, today)) return { removed: true };
     const leaving = leavingNote(removedAt, today);
     return leaving ? { removed: false, leaving } : { removed: false };
 };
 
-/** 收藏咗嘅一集 → player 播得嘅 Track：清單 / 劇集 catalog 有同一個網址就用返佢，冇就由收藏資料砌返 */
+/**
+ * 收藏咗嘅一集 → player 播得嘅 Track：清單 / 劇集 catalog 有同一集（同一個 episode ID）就用返佢
+ * （網址跟最新），冇就由收藏資料砌返
+ */
 export const bookmarkTrack = (b: Bookmark, recordings: readonly Recording[]): Track => {
     if (b.kind === 'show') {
-        const { showId, date, time, url } = b;
-        return recordings.find((r) => r.url === url) ?? { showId, date, time, url };
+        const { id, showId, date, time, url } = b;
+        return recordings.find((r) => r.id === id) ?? { id, showId, date, time, url };
     }
-    const known = dramaEpisodesOf(b.dramaId).find((e) => e.url === b.url);
+    const known = dramaEpisodesOf(b.dramaId).find((e) => e.id === b.id);
     if (known) return known;
-    const { dramaId, url } = b;
+    const { id, dramaId, url } = b;
     return b.kind === 'daily'
-        ? { kind: 'daily', dramaId, url, date: b.date, rerun: b.rerun }
+        ? { kind: 'daily', id, dramaId, url, date: b.date, rerun: b.rerun }
         : {
               kind: 'series',
+              id,
               dramaId,
               url,
               arc: b.arc,
@@ -210,9 +214,9 @@ export const recentText = (track: Track): RecentText => {
     };
 };
 
-/** 最近收聽認得嘅集：錄音清單 + 開咗嘅劇嘅全部集數（網址 → 集） */
+/** 最近收聽認得嘅集：錄音清單 + 開咗嘅劇嘅全部集數（episode ID → 集） */
 export const playableIndex = (recordings: readonly Recording[]): ReadonlyMap<string, Track> =>
     new Map<string, Track>([
-        ...recordings.map((r) => [r.url, r] as const),
-        ...enabledDramas().flatMap((d) => dramaEpisodesOf(d.id).map((e) => [e.url, e] as const)),
+        ...recordings.map((r) => [r.id, r] as const),
+        ...enabledDramas().flatMap((d) => dramaEpisodesOf(d.id).map((e) => [e.id, e] as const)),
     ]);

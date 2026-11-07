@@ -27,6 +27,7 @@ import {
 } from './harness.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { runMiniPlayerRuleChecks } from './miniPlayerRules.mjs';
+import { runStorageMigrationChecks } from './storageMigration.mjs';
 import { runTouchChecks } from './touch.mjs';
 
 const DEFAULT_PORT = 4173;
@@ -1384,9 +1385,9 @@ try {
         await page.keyboard.press('ArrowRight');
         await page.getByRole('button', { name: '暫停', exact: true }).click();
         const saved = await page.evaluate(() =>
-            JSON.parse(localStorage.getItem('903player:progress:v1')),
+            JSON.parse(localStorage.getItem('903player:progress:v2')),
         );
-        const entry = Object.entries(saved).find(([u]) => u.includes('20261121'));
+        const entry = Object.entries(saved).find(([id]) => id.endsWith(':2026-11-21'));
         log(entry && entry[1].position >= 29, `暫停時存低進度：${entry?.[1].position.toFixed(1)}s`);
 
         await page.getByRole('button', { name: '返回主頁' }).click();
@@ -1410,8 +1411,8 @@ try {
         const watched17 = () =>
             page.evaluate(
                 () =>
-                    Object.entries(JSON.parse(localStorage.getItem('903player:progress:v1'))).find(
-                        ([u]) => u.includes('20261128'),
+                    Object.entries(JSON.parse(localStorage.getItem('903player:progress:v2'))).find(
+                        ([id]) => id.endsWith(':2026-11-28'),
                     )[1].watched,
             );
         log(await watched17(), '重播頭幾秒仍然保留已收聽');
@@ -1657,6 +1658,9 @@ try {
 
     // 成集收藏（P7 #7）：清單 ☆ → ★ tab、撳行入頁唔播、▷ 原地播、左滑移除最後一集（手機 + 闊橫版）
     await runBookmarkChecks({ browser, base: BASE, errors, log });
+
+    // v1.29 升級（Phase −1）：舊版 URL key 嘅進度 / 收藏開 app 之後搬去 episode ID key，收藏 tab 照出
+    await runStorageMigrationChecks({ browser, base: BASE, errors, log });
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
     await section('廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));

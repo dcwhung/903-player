@@ -1,6 +1,12 @@
-/* 黃金少年 regression：集數 / URL 必須同 R2 檔名一樣（URL 係已儲進度嘅 key），每季有自己碟面 */
+/* 黃金少年 regression：集數 / URL 必須同 R2 檔名一樣（episode ID 係進度 / 收藏 key，見文件尾），每季有自己碟面 */
 import { DRAMA_AUDIO_BASE } from '../../../../config/constants';
-import { dramaArtFor, dramaEpisodeTheme, findDrama, seriesEpisodesOf } from '../../index';
+import {
+    catalogEpisodesOf,
+    dramaArtFor,
+    dramaEpisodeTheme,
+    findDrama,
+    seriesEpisodesOf,
+} from '../../index';
 
 const R2_GOLDEN = `${DRAMA_AUDIO_BASE}/黃金少年`;
 const SEASONS = [1, 2, 3, 4];
@@ -71,5 +77,24 @@ describe('黃金少年', () => {
             expect(art).toBe(findDrama('golden')?.theme.art);
             expect(art).not.toBe(dramaArtFor(s2));
         });
+    });
+});
+
+/* episode ID = 已儲進度 / 收藏嘅 key（v1.29 起）：一經發佈唔可以變；URL pin 保留到 v1 migration 完成 */
+describe('golden episode ids', () => {
+    const ids = catalogEpisodesOf('golden').map((e) => e.id);
+
+    it('pins the first and last episode id', () => {
+        expect(ids[0]).toBe('drama:golden:season-1:1');
+        expect(ids.at(-1)).toBe('drama:golden:season-4:31');
+    });
+
+    it('gives every episode its own id', () => {
+        expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it('pins the id of every arc (drama.json arc id; 改咗已儲進度會冇晒)', () => {
+        const arcIds = [...new Set(ids.map((id) => id.split(':')[2]))];
+        expect(arcIds).toEqual(['season-1', 'season-2', 'season-3', 'season-4']);
     });
 });

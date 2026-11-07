@@ -9,6 +9,7 @@ import { SHEET_SLIDE_MS } from './sheetDrag';
 const ep = (arc: string, no: number, title?: string): SeriesEpisode => ({
     kind: 'series',
     dramaId: 'chisee',
+    id: `id:/${arc}-${no}.m4a`,
     url: `/${arc}-${no}.m4a`,
     arc,
     no,

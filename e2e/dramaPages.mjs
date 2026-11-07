@@ -157,7 +157,7 @@ const checkNothingPicked = async (p, log, label) => {
     await star.click({ force: true });
     await play.click({ force: true });
     const toast = await p.getByText('已加入收藏').count();
-    const saved = await p.evaluate(() => localStorage.getItem('903player:bookmarks:v1'));
+    const saved = await p.evaluate(() => localStorage.getItem('903player:bookmarks:v2'));
     const playing = await p.evaluate(() => navigator.mediaSession.playbackState);
     log(
         toast === 0 && saved === null && playing !== 'playing',

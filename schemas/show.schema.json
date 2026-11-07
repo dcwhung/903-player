@@ -13,7 +13,7 @@
         "name": {
             "type": "string",
             "minLength": 1,
-            "description": "原站 `?show=` 參數，亦係顯示名稱。⚠️ 用嚟砌錄音網址（= 已儲進度嘅 key），唔可以亂改"
+            "description": "原站 `?show=` 參數，亦係顯示名稱。⚠️ 用嚟砌錄音網址（要同原站一模一樣先播得到），唔可以亂改"
         },
         "fileTime": {
             "type": "string",

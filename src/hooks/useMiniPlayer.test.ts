@@ -132,7 +132,7 @@ describe('useMiniPlayer', () => {
     });
 
     it('shows saved progress of a show that is not loaded, reading it once', async () => {
-        saveProgress(BADGIRL.url, 600, 2400);
+        saveProgress(BADGIRL.id, 600, 2400);
         const { result, rerender } = setup();
         await ready(result);
         const getItem = vi.spyOn(Storage.prototype, 'getItem');

@@ -1,4 +1,4 @@
-/* 7 個 903 節目 regression：名 / 時間 / 播出日 唔可以變（錄音 URL 由 name + fileTime 砌，係已儲進度嘅 key） */
+/* 7 個 903 節目 regression：名 / 時間 / 播出日 唔可以變（錄音 URL 由 name + fileTime 砌，錯一個字就播唔到） */
 import { NEUTRAL_THEME, themeVars } from '../../../config/showThemes';
 import type { Weekday } from '../../../types/weekday';
 import { airsWeekly, findShow, SHOWS, themeFor, type ShowConfig } from '../index';

@@ -15,9 +15,12 @@ export const hasAllowedAudioOrigin = (url: string): boolean => {
     }
 };
 
-/** 驗證外部資料（localStorage 讀返嘅 JSON）係咪合法錄音 */
-export const isRecording = (value: unknown): value is Recording => {
-    const r = value as Recording;
+/** localStorage 存低嘅錄音：v1.29 之前冇 id（讀嗰陣由 showId + date 補，見 probeStore） */
+export type StoredRecording = Omit<Recording, 'id'>;
+
+/** 驗證外部資料（localStorage 讀返嘅 JSON）係咪合法錄音（唔睇 id：一律由 showId + date 重新計） */
+export const isRecording = (value: unknown): value is StoredRecording => {
+    const r = value as StoredRecording;
     return (
         typeof r === 'object' &&
         r !== null &&

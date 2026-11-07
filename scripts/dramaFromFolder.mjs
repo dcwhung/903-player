@@ -94,8 +94,11 @@ const PLACEHOLDER_THEME = Object.freeze({
     shadowDark: '#0a0a0a',
     shadowLight: '#242424',
 });
-/** --existing 時，短篇入面人手寫嘅欄位照留 */
+/** --existing 時，短篇入面人手寫嘅欄位照留（id 另外處理，固定放第一個） */
 const HAND_WRITTEN_ARC_KEYS = ['disc', 'tile', 'addedAt'];
+/** 新短篇嘅 placeholder id：arc-01、arc-02…（要人手改做有意思嘅 slug） */
+const PLACEHOLDER_ARC_PREFIX = 'arc-';
+const PLACEHOLDER_ARC_WIDTH = 2;
 
 /* ───────────── 檔名工具（同 src/catalog/dramas/lib/filename.ts 一樣） ───────────── */
 
@@ -170,7 +173,7 @@ const uPlus = (ch) =>
 /**
  * 全形英數（０–９、Ａ–Ｚ、ａ–ｚ）：同半形睇落一樣但 byte 唔同，先係陷阱。
  * 中文全形標點（？！，：（））係正常寫法，R2 key 就係咁，唔報；亦唔可以叫用戶改半形：
- * Windows 檔名唔准「?」，改名要重新上載，網址一變已儲進度（localStorage key）就冇。
+ * Windows 檔名唔准「?」，改名要重新上載，網址一變 app 就播唔到（進度 key 係 episode ID，唔受影響）。
  */
 const FULL_WIDTH_ALPHANUMERIC = /[\uff10-\uff19\uff21-\uff3a\uff41-\uff5a]/u;
 
@@ -573,10 +576,11 @@ const arcChangeIssues = (old, merged) => {
     return changes.map((message) => issue('info', where, message));
 };
 
-/** 舊短篇：人手欄位（同人手補嘅集名）照留，集數部份用 folder 嘅 */
+/** 舊短篇：人手欄位（id、人手補嘅集名）照留，集數部份用 folder 嘅 */
 const mergeArc = (old, fresh, ctx, issues) => {
     const { name, ...episodePart } = keepHandTitles(old, fresh, ctx, issues);
-    const merged = { name: old.name, ...pickHandWritten(old), ...episodePart };
+    const id = old.id === undefined ? {} : { id: old.id };
+    const merged = { ...id, name: old.name, ...pickHandWritten(old), ...episodePart };
     issues.push(...arcChangeIssues(old, merged));
     return merged;
 };
@@ -671,20 +675,44 @@ const checkExisting = (scan, existing, issues) => {
         );
 };
 
+const placeholderArcId = (n) =>
+    `${PLACEHOLDER_ARC_PREFIX}${String(n).padStart(PLACEHOLDER_ARC_WIDTH, '0')}`;
+
+/**
+ * 冇 id 嘅短篇（新短篇）派 placeholder id（避開已經用咗嘅），逐個出 TODO 提示人手改：
+ * id 係 episode ID（進度 / 收藏 key）嘅一部份，發佈之後唔可以再改
+ */
+const withArcIds = (arcs, issues) => {
+    const used = new Set(arcs.flatMap((arc) => (arc.id === undefined ? [] : [arc.id])));
+    let n = 0;
+    const nextFree = () => {
+        do n += 1;
+        while (used.has(placeholderArcId(n)));
+        return placeholderArcId(n);
+    };
+    return arcs.map((arc) => {
+        if (arc.id !== undefined) return arc;
+        const id = nextFree();
+        const message = `TODO：id「${id}」係 placeholder，請改做英文 slug（有圖就用 arcs/<slug>/ folder 名）；發佈之後唔可以再改`;
+        issues.push(issue('warn', arc.name, message));
+        return { id, ...arc };
+    });
+};
+
 const seriesJson = (scan, existing, today) => {
     const analysis = analyseSeries(scan, existing?.audio?.file);
     if (!existing) {
         const json = {
             ...newDramaBase(scan, 'series', analysis.template),
             addedAt: today,
-            arcs: analysis.arcs,
+            arcs: withArcIds(analysis.arcs, analysis.issues),
         };
         return { ...analysis, json };
     }
     checkExisting(scan, existing, analysis.issues);
     const ctx = { audio: { file: analysis.template, folder: scan.name }, today };
-    const arcs = mergeArcs(existing.arcs ?? [], analysis.arcs, ctx, analysis.issues);
-    return { ...analysis, json: { ...existing, arcs } };
+    const merged = mergeArcs(existing.arcs ?? [], analysis.arcs, ctx, analysis.issues);
+    return { ...analysis, json: { ...existing, arcs: withArcIds(merged, analysis.issues) } };
 };
 
 const dailyJson = (scan, existing) => {
