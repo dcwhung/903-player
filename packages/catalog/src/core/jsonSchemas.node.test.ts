@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import type { ValidateFunction } from 'ajv';
 import { DAILY_TOKENS, parseDramaDefinition, SERIES_TOKENS } from '../dramas/schema';
 import { parseShowDefinition } from '../shows/schema';
+import { FONT_FAMILY_PATTERN_SOURCE, HEADER_RULE_PATTERN_SOURCE } from './themeSchema';
 import { compileSchema } from '../../tests/jsonSchemas';
 
 /*
@@ -147,6 +148,18 @@ const DRAMA_INVALID: Case[] = [
     ['theme.statusBar 唔係 hex', SERIES, 'theme.statusBar', 'rgb(0, 0, 0)'],
     ['theme.scheme 唔識', SERIES, 'theme.scheme', 'dark'],
     ['theme.titleFont 空字串', SERIES, 'theme.titleFont', ''],
+    [
+        'theme.headerRule 有 url()（W-702）',
+        SERIES,
+        'theme.headerRule',
+        'url(http://t.invalid/p.gif)',
+    ],
+    ['theme.headerRule 有 image-set()', SERIES, 'theme.headerRule', 'image-set(p.png 1x)'],
+    ['theme.headerRule 有 CSS escape', SERIES, 'theme.headerRule', 'u\\72 l(p.gif)'],
+    ['theme.headerRule 有引號', SERIES, 'theme.headerRule', 'linear-gradient("#000", #fff)'],
+    ['theme.headerRule 有 //', SERIES, 'theme.headerRule', 'none //x'],
+    ['theme.titleFont 有 url()', SERIES, 'theme.titleFont', 'url(http://t.invalid/f.woff2)'],
+    ['theme.titleFont 有 ;', SERIES, 'theme.titleFont', 'serif; color: red'],
     ['addedAt 唔存在嘅日子', SERIES, 'addedAt', '2026-02-30'],
     ['addedAt 用斜線', SERIES, 'addedAt', '2026/10/24'],
     ['addedAt 年份 < 0100（Date.UTC 會當 19xx）', SERIES, 'addedAt', '0099-01-01'],
@@ -244,6 +257,7 @@ const SHOW_INVALID: Case[] = [
     ['order 係字串', SHOW, 'order', '1'],
     ['冇 tile', SHOW, 'tile', undefined],
     ['theme 色錯', SHOW, 'theme.text', '#12345g'],
+    ['theme.headerRule 有 url()', SHOW, 'theme.headerRule', 'url(/p.gif)'],
 ];
 
 const SHOW_VALID: Case[] = [
@@ -320,6 +334,19 @@ describe('catalog JSON schemas', () => {
 
         it.each([...DAILY_TOKENS])('daily: should accept {%s}', (token) => {
             expect(dramaSchema(withChange(DAILY, 'audio.file', `{${token}}.m4a`))).toBe(true);
+        });
+    });
+
+    // W-702：headerRule / titleFont 白名單 runtime（themeSchema.ts）同 schema 用同一條 pattern
+    it.each([
+        ['headerRule', HEADER_RULE_PATTERN_SOURCE],
+        ['titleFont', FONT_FAMILY_PATTERN_SOURCE],
+    ])('should use the runtime pattern for theme.%s in both schemas', (key, source) => {
+        ['drama', 'show'].forEach((name) => {
+            const definitions = readJson(new URL(`schemas/${name}.schema.json`, ROOT))
+                .definitions as Record<string, Json>;
+            const theme = definitions.theme as { properties: Record<string, Json> };
+            expect(theme.properties[key]?.pattern).toBe(source);
         });
     });
 

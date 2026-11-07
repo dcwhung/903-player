@@ -303,12 +303,14 @@
                     "description": "（optional）強調色做文字（播緊嗰集、現正播放標籤）；淺色底 accent 唔夠對比先另外設，冇就用 accent"
                 },
                 "titleFont": {
-                    "$ref": "#/definitions/nonEmptyString",
-                    "description": "（optional）頁頭標題字體（CSS font-family）；冇就跟 app 字體"
+                    "type": "string",
+                    "pattern": "^[\\p{L}\\p{N}\\s'\",-]+$",
+                    "description": "（optional）頁頭標題字體（CSS font-family）：淨係字體名、引號、逗號、連字號；冇就跟 app 字體"
                 },
                 "headerRule": {
-                    "$ref": "#/definitions/nonEmptyString",
-                    "description": "（optional）頁頭底部裝飾線（CSS background）；冇就冇"
+                    "type": "string",
+                    "pattern": "^(?!.*//)(?:(?:repeating-linear-gradient|linear-gradient|radial-gradient|calc)\\(|[a-z]+(?:-[a-z]+)*(?![a-z(-])|#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z])|-?(?:[0-9]+\\.?[0-9]*|\\.[0-9]+)(?:%|px|em|rem|deg|turn|vw|vh|ch)?(?![0-9a-zA-Z(])|[(),/+*\\s-])+$",
+                    "description": "（optional）頁頭底部裝飾線（CSS background）：淨係 linear / repeating-linear / radial-gradient、calc、hex 色、數字單位同關鍵字，唔准 url()、引號、escape（W-702，runtime 同一條 pattern）；冇就冇"
                 },
                 "scheme": {
                     "enum": ["light"],
