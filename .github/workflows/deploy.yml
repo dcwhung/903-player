@@ -38,7 +38,7 @@ jobs:
 
             - uses: actions/upload-pages-artifact@v5
               with:
-                  path: dist
+                  path: apps/player/dist
 
     deploy:
         needs: build

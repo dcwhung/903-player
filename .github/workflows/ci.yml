@@ -82,11 +82,11 @@ jobs:
 
             - run: npm ci
 
-            # npx 用 node_modules 鎖住嘅 Playwright，所以裝到嘅 Chromium revision 一定夾
+            # npx 用 node_modules 鎖住嘅 Playwright（workspaces hoist 喺 repo 根），所以裝到嘅 Chromium revision 一定夾
             - name: Install Playwright Chromium
               run: npx playwright install --with-deps chromium
 
-            # 同本機一樣：npm run e2e = build + node e2e/run.mjs（自己起 vite preview，port 4173）
+            # 同本機一樣：npm run e2e（root 轉發去 apps/player）= build + node e2e/run.mjs（自己起 vite preview，port 4173）
             - run: npm run e2e
 
             - name: Upload e2e screenshots
@@ -94,6 +94,6 @@ jobs:
               uses: actions/upload-artifact@v5
               with:
                   name: e2e-screenshots
-                  path: e2e/screenshots/
+                  path: apps/player/e2e/screenshots/
                   if-no-files-found: ignore
                   retention-days: 7
