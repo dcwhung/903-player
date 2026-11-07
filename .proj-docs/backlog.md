@@ -1,14 +1,22 @@
 # Backlog 登記冊（🟢 / Observation）
 
-**最後更新**：2026-11-06（v1.28.6）
+**最後更新**：2026-11-07（v1.29.0 review）
 
 > Review / QA 報告入面嘅 🟢 同 Observation 統一喺呢度追蹤。掃 backlog 時淨係睇「Open」；「Closed」嘅唔使再理。
 > 新 finding 照寫喺各自報告，處理完或者決定唔理就喺呢度更新。
 
 ## Open
 
-| ID  | 範圍 | 內容 | 處理時機 | 來源 |
-| --- | ---- | ---- | -------- | ---- |
+| ID    | 範圍                                | 內容                                                                                                  | 處理時機           | 來源                              |
+| ----- | ----------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------ | --------------------------------- |
+| W-698 | `storageMigration.ts`               | 收藏 v2 寫入失敗都記低 `bookmarks-migrated`，之後唔再搬（方案：merge 後用 `hasBookmark` 確認先 mark） | v1.29.0 release 前 | reviews/2026-11-07_review_v1.29.0 |
+| S-742 | git                                 | `90f312e` 單獨 checkout `tsc` 錯；type 改動同 caller 放同一 commit                                    | 以後 commit        | reviews/2026-11-07_review_v1.29.0 |
+| S-743 | `useSavedView.ts`                   | 收藏 tab `key` / `zoomKey` / `focusUrl` 仍用 `url`                                                    | Phase 2 換 URL 前  | reviews/2026-11-07_review_v1.29.0 |
+| S-744 | `storageMigration.ts`               | 節目改名前嘅 v1 進度反推唔到，留喺 v1（唔係 regression）                                              | 記錄               | reviews/2026-11-07_review_v1.29.0 |
+| S-745 | `storageMigration.ts`               | rollback 再升級：v2 已有嗰集唔用 v1 較新進度；可考慮比 `updatedAt`                                    | 有用戶報先做       | reviews/2026-11-07_review_v1.29.0 |
+| S-746 | `storageMigration.ts`               | rollback 期間收藏返「v1.29 移除過」嘅集，再升級唔會搬                                                 | 記錄               | reviews/2026-11-07_review_v1.29.0 |
+| S-747 | `dramaFromFolder.mjs` / schema test | placeholder `arc-NN` 只 warn；test 拒絕 library `drama.json` 出現 `^arc-\d+$`                         | 下次加劇前         | reviews/2026-11-07_review_v1.29.0 |
+| S-748 | `bookmarkStore.ts`                  | `mergeBookmarks` filter 帶 side effect（`seen.add`），可改 for-of                                     | 順手               | reviews/2026-11-07_review_v1.29.0 |
 
 ## Closed
 
