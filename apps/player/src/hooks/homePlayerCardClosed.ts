@@ -1,4 +1,4 @@
-import type { ShowTheme } from '../config/showThemes';
+import type { ShowTheme } from '@903-player/catalog';
 import type { PlayerItem } from '../types/playerItem';
 import { createValueStore } from './flagStore';
 import { useOnPlayStart } from './useOnPlayStart';

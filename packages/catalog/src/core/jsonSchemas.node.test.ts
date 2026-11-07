@@ -1,17 +1,17 @@
 // @vitest-environment node
-// 要用 node:fs 讀 schemas/ 同資料 folder：*.node.test.ts 行 tsconfig.node.json（有 Node 型別）
-import { readdirSync, readFileSync } from 'node:fs';
+// 要用 node:fs 讀 schemas/：*.node.test.ts 行 tsconfig.node.json（有 Node 型別）
+// 現有資料檔（player 嘅 library/）合唔合 schema 由 apps/player/src/catalog/libraryJsonSchemas.node.test.ts 驗
+import { readFileSync } from 'node:fs';
 import type { ValidateFunction } from 'ajv';
-import { DAILY_TOKENS, parseDramaDefinition, SERIES_TOKENS } from '../dramas/lib/schema';
-import { parseShowDefinition } from '../shows/lib/schema';
-import { compileSchema } from '../../../tests/jsonSchemas';
+import { DAILY_TOKENS, parseDramaDefinition, SERIES_TOKENS } from '../dramas/schema';
+import { parseShowDefinition } from '../shows/schema';
+import { compileSchema } from '../../tests/jsonSchemas';
 
 /*
  * schemas/*.schema.json（editor 自動完成 + 即時驗證用）同 runtime validator（dramas/shows schema.ts）
  * 要講同一套規則：同一批例子，兩邊一齊收或者一齊拒；刻意唔同嘅位寫晒喺 DIVERGENCES 表。
  */
-const ROOT = new URL('../../../', import.meta.url);
-const SRC = new URL('src/', ROOT);
+const ROOT = new URL('../../', import.meta.url);
 
 type Json = Record<string, unknown>;
 type Parser = (value: unknown, ctx: { id: string; source: string; files: Set<string> }) => unknown;
@@ -205,7 +205,12 @@ const DRAMA_VALID: Case[] = [
     ['arc episodes 全部 null', SERIES, 'arcs.1.episodes', [null, null]],
     ['titles 係空 object', SERIES, 'arcs.0.titles', {}],
     ['daily episode rerun false', DAILY, 'episodes.0.rerun', false],
-    ['加 $schema 指返 schema', SERIES, '$schema', '../../../../../schemas/drama.schema.json'],
+    [
+        '加 $schema 指返 schema',
+        SERIES,
+        '$schema',
+        '../../../../../../../packages/catalog/schemas/drama.schema.json',
+    ],
     ['daily 有劇集層 addedAt（整套即將上架）', DAILY, 'addedAt', '2026-12-01'],
     ['daily 有 removedAt', DAILY, 'removedAt', '2027-01-01'],
     ['series 有 removedAt', SERIES, 'removedAt', '2027-01-01'],
@@ -250,26 +255,6 @@ const SHOW_VALID: Case[] = [
 ];
 
 describe('catalog JSON schemas', () => {
-    describe('現有資料檔全部合格', () => {
-        const folders = (kind: string) =>
-            readdirSync(new URL(`catalog/${kind}/library/`, SRC), { withFileTypes: true })
-                .filter((entry) => entry.isDirectory())
-                .map((entry) => entry.name);
-
-        it.each(folders('dramas'))(
-            'should accept src/catalog/dramas/library/%s/drama.json',
-            (id) => {
-                const data = readJson(new URL(`catalog/dramas/library/${id}/drama.json`, SRC));
-                expect(dramaSchema(data), JSON.stringify(dramaSchema.errors)).toBe(true);
-            },
-        );
-
-        it.each(folders('shows'))('should accept src/catalog/shows/library/%s/show.json', (id) => {
-            const data = readJson(new URL(`catalog/shows/library/${id}/show.json`, SRC));
-            expect(showSchema(data), JSON.stringify(showSchema.errors)).toBe(true);
-        });
-    });
-
     const both = (schema: ValidateFunction, parse: Parser, value: Json) => ({
         schema: schema(value),
         runtime: runtimeAccepts(parse, value),

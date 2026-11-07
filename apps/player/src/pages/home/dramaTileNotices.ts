@@ -3,14 +3,15 @@
  * 右下角字尾（H2「· 新短篇 12/11 上架」、E1「· 全新集數 19/11 上架」）、
  * 左上角琥珀「⏳ 05/12 下架」、書架最尾新劇灰格「⏱ 即將上架 · 01/12」
  */
-import { t, type MessageKey } from '../../i18n/t';
 import {
-    dramaLeaving,
-    nextRelease,
+    type ArcAvailability,
     type DateWindow,
-    sameRemovalDay,
+    dramaLeaving,
     type LeavingScope,
-} from '../../selectors/availability';
+    nextRelease,
+    sameRemovalDay,
+} from '@903-player/catalog';
+import { t, type MessageKey } from '../../i18n/t';
 import {
     dayWhen,
     joinWithSeparator,
@@ -20,7 +21,6 @@ import {
     spokenRemoval,
 } from '../../selectors/availabilityLabels';
 import type { DramaShelfItem } from '../../components/pages/home/DramaShelf/dramaTileTypes';
-import type { ArcAvailability } from '../../types/drama';
 
 const LEAVING_KEYS = {
     drama: 'availability.leavingDrama',

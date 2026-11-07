@@ -46,7 +46,7 @@ GitHub Actions 只負責 build 同 deploy。
 
 ## 資料檔（節目 / 廣播劇）
 
-節目同廣播劇都唔寫喺 TypeScript，而係**一個 folder 一套**，build time 由 `import.meta.glob` 自動發現（`src/catalog/core/` 係共用嘅 JSON reader / theme schema / folder source）。
+節目同廣播劇都唔寫喺 TypeScript，而係**一個 folder 一套**，build time 由 `import.meta.glob` 自動發現（純邏輯：JSON reader、theme schema、folder source、schema validator、registry，喺 repo 根嘅 `packages/catalog/`，package 名 `@903-player/catalog`）。
 加一套 = 新開 folder，放 JSON + 圖，**唔使改 code**；JSON 唔合格 `npm test` 會指出邊個檔邊個欄位（`src/*/catalog.test.ts` / schema validator）。
 
 | 路徑                                                                     | 內容                                                                                                                                                                                                                                                          |
@@ -59,9 +59,9 @@ GitHub Actions 只負責 build 同 deploy。
 - 上架 / 下架（P8 #6，`_mockups_/coming-soon`）：日子一律係香港時間當日 00:00 起。`addedAt` 係將來日子 = 即將上架（劇集層 = 整套新劇喺主頁書架最尾出灰格、撳唔到；短篇層 = chips / 全集一覽表最尾「即將上架」；`episodeDates` = 集數清單摺埋「第 11–20 集 · 19/11（四）上架」），上架當日自動變正常 + 14 日「新」；未上架短篇可以唔寫 `episodes`（一定要有 `addedAt`）。`removedAt` / `episodeRemovedAt` 前 30 日出琥珀色「⏳ 快將下架」，當日起清單、chips、書架、最近收聽、繼續收聽全部收埋，收藏 tab 保留灰色「已下架」行（進度唔刪，刪咗 `removedAt` 就返晒出嚟）；一集嘅有效下架日 = 劇集 / 短篇 / 集數三層最早嗰個
 - 檔名 template token：`{no}` `{no2}` `{noZh}`（中文數字）`{arc}` `{folder}` `{title}`；`[ … ]` 入面 token 空值就整段略去，例如 `{no2} - {arc} - 第{noZh}集[ - {title}].m4a`。每日劇用 `{date}` / `{yyyymmdd}`
 - ⚠️ `name` / `fileTime` / `audio` / 檔名唔可以亂改：錄音網址係已儲進度（localStorage）嘅 key
-- Editor 自動完成 + 即時驗證：`schemas/drama.schema.json`、`schemas/show.schema.json`（JSON Schema draft-07，hover 有廣東話說明，色有色盤）。VS Code 靠 `.vscode/settings.json` 嘅 `json.schemas` 自動套用，資料檔唔使加 `$schema`；其他 editor 可以喺檔頭加 `"$schema": "../../../../../schemas/drama.schema.json"`（runtime 唔理呢個 key）。
+- Editor 自動完成 + 即時驗證：`packages/catalog/schemas/drama.schema.json`、`packages/catalog/schemas/show.schema.json`（JSON Schema draft-07，hover 有廣東話說明，色有色盤）。VS Code 靠 `.vscode/settings.json` 嘅 `json.schemas` 自動套用，資料檔唔使加 `$schema`；其他 editor 可以喺檔頭加 `"$schema": "../../../../../../../packages/catalog/schemas/drama.schema.json"`（runtime 唔理呢個 key）。
   Schema 刻意嚴過 runtime：多出嚟 / 打錯嘅 key 會出紅線（runtime 只係唔理）。以下淨係 runtime（`npm test`）驗：圖檔真係喺 folder、folder 名格式、arc name / 每日 date 唔重複、`titles` / `files` / `episodeDates` / `episodeRemovedAt` 集數喺範圍之內、上架 / 下架日先後（下架遲過上架；短篇唔遲過劇集、集數唔遲過短篇；`episodeDates` 遞增）、`episodeRemovedAt` 範圍唔重疊。
-  兩邊規則由 `src/catalog/core/jsonSchemas.node.test.ts` 對住同一批例子鎖住；改 `schema.ts` 記得一齊改 schema
+  兩邊規則由 `packages/catalog/src/core/jsonSchemas.node.test.ts` 對住同一批例子鎖住（現有資料檔合唔合 schema 由 `apps/player/src/catalog/libraryJsonSchemas.node.test.ts` 驗）；改 `schema.ts` 記得一齊改 schema
 - 橫版主頁 grid 寫死 4 欄 × 2 行 = 7 個節目 + 今日格；加減節目要一齊改 `ShowGrid.module.css`（`src/catalog/shows/lib/shows.test.ts` 會提醒）
 
 ### 由本機 folder 生成 drama.json（`apps/player/scripts/dramaFromFolder.mjs`）
@@ -134,8 +134,10 @@ node dramaFromFolder.mjs "/路徑/森美小儀系列" --existing drama.json --ou
 ## 開發
 
 npm workspaces monorepo：app 喺 `apps/player/`（version 嘅唯一來源係 `apps/player/package.json`）；
-下面指令全部喺 repo 根跑（root scripts 轉發去 `apps/player`，`npm run lint` 用 root 嘅 ESLint / Prettier 設定檢查成個 repo）。
-下面提到嘅 `src/`、`e2e/`、`scripts/`、`public/`、`schemas/` 都喺 `apps/player/` 入面。
+劇集 / 節目資料嘅純邏輯喺 `packages/catalog/`（`@903-player/catalog`，直接 export TS source，冇 build step；JSON Schema 喺 `packages/catalog/schemas/`）。
+下面指令全部喺 repo 根跑（root scripts 轉發去 `apps/player`；`npm test` 用 root `vitest.config.ts` 嘅 projects 一次過跑 player + catalog；
+`npm run lint` 用 root 嘅 ESLint / Prettier 設定檢查成個 repo；`npx tsc -b` 用 root `tsconfig.json` 覆蓋兩個 workspace）。
+下面提到嘅 `src/`、`e2e/`、`scripts/`、`public/` 都喺 `apps/player/` 入面。
 
 ```bash
 npm install
@@ -145,7 +147,8 @@ npm run coverage   # 覆蓋率
 npm run lint       # ESLint + Prettier
 npm run e2e        # Playwright 端對端測試（假錄音寫入 localStorage + 模擬 audio server）
 npm run build      # 輸出 apps/player/dist/
-npm test -- src/utils   # 只跑部分 test（path 相對 apps/player）
+npm test -- src/utils   # 只跑部分 test（path 子字串，player 同 catalog 都會 match；要準就寫 apps/player/src/utils）
+npm test -- --project @903-player/catalog   # 只跑一個 workspace
 ```
 
 ### 端對端測試（e2e）
@@ -263,17 +266,16 @@ GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 *
 
 以下 path 相對 `apps/player/`（`design/`、`_mockups_/`、`.proj-docs/` 留喺 repo 根）。
 
-| 路徑                     | 用途                                                                                                                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/config/`            | 常數、theme primitive（`showThemes.ts`）、版面 breakpoint                                                                                         |
-| `src/catalog/core/`      | 資料檔共用層：JSON reader、theme schema、folder source                                                                                            |
-| `src/catalog/shows/`     | 節目：`lib/`（schema / registry：`SHOWS` / `findShow` / `themeFor`）+ `library/<id>/`（`show.json` + `tile.webp` + `disc.webp`）                  |
-| `src/catalog/dramas/`    | 廣播劇：`lib/`（schema / 檔名 template / 集數 builder / registry）+ `library/<id>/`（`drama.json`、`drama.test.ts`、圖；短篇圖喺 `arcs/<slug>/`） |
-| `src/services/`          | `audioProbe.ts`（喺部機度 probe 錄音）、`probeStore.ts`（localStorage 錄音清單）                                                                  |
-| `src/i18n/`              | 語言包（zh-HK 書面語）                                                                                                                            |
-| `src/player/`            | `AudioController`（唯一 audio element）、Media Session                                                                                            |
-| `src/components/shared/` | 跨 page 共用 component：`common/`（Disc、Marquee、PageHeader…）、`player/`（PlayerPanel、NowPlaying、EpisodeList、DateStrip）                     |
-| `src/components/pages/`  | 只俾單一 page 用嘅 component：`home/`、`today/`、`drama/`（每個 folder 有 `.tsx`、`.module.css`、`.test.tsx`）                                    |
-| `src/pages/`             | `home/`、`today/`、`show/`、`drama/` 頁面同 page hook；`shared/` 放多頁共用（`Page.module.css`、`LoadState`、item builder）                       |
-| `src/styles/tokens.css`  | Design tokens（來源：mockup）                                                                                                                     |
-| `schemas/`               | `drama.json` / `show.json` 嘅 JSON Schema（editor 自動完成 + 驗證，`.vscode/settings.json` 套用）                                                 |
+| 路徑                      | 用途                                                                                                                                                                                                                                                                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/config/`             | 常數、theme primitive（`showThemes.ts`）、版面 breakpoint                                                                                                                                                                                                                                                                         |
+| `src/catalog/shows/`      | 節目：`index.ts`（`SHOWS` / `findShow` / `themeFor`）、`lib/`（build time folder source）+ `library/<id>/`（`show.json` + `tile.webp` + `disc.webp`）                                                                                                                                                                             |
+| `src/catalog/dramas/`     | 廣播劇：`index.ts`（registry 實例）、`lib/`（build time folder source、e2e fixtures）+ `library/<id>/`（`drama.json`、`drama.test.ts`、圖；短篇圖喺 `arcs/<slug>/`）                                                                                                                                                              |
+| `src/services/`           | `audioProbe.ts`（喺部機度 probe 錄音）、`probeStore.ts`（localStorage 錄音清單）                                                                                                                                                                                                                                                  |
+| `src/i18n/`               | 語言包（zh-HK 書面語）                                                                                                                                                                                                                                                                                                            |
+| `src/player/`             | `AudioController`（唯一 audio element）、Media Session                                                                                                                                                                                                                                                                            |
+| `src/components/shared/`  | 跨 page 共用 component：`common/`（Disc、Marquee、PageHeader…）、`player/`（PlayerPanel、NowPlaying、EpisodeList、DateStrip）                                                                                                                                                                                                     |
+| `src/components/pages/`   | 只俾單一 page 用嘅 component：`home/`、`today/`、`drama/`（每個 folder 有 `.tsx`、`.module.css`、`.test.tsx`）                                                                                                                                                                                                                    |
+| `src/pages/`              | `home/`、`today/`、`show/`、`drama/` 頁面同 page hook；`shared/` 放多頁共用（`Page.module.css`、`LoadState`、item builder）                                                                                                                                                                                                       |
+| `src/styles/tokens.css`   | Design tokens（來源：mockup）                                                                                                                                                                                                                                                                                                     |
+| `../../packages/catalog/` | `@903-player/catalog`（repo 根）：`src/core/`（JSON reader、theme schema、folder source、episode ID）、`src/dramas/`（schema / 檔名 template / 集數 builder / registry）、`src/shows/`（schema / registry）、上架 / 下架 selector、HK 日子；`schemas/`（`drama.json` / `show.json` 嘅 JSON Schema，`.vscode/settings.json` 套用） |

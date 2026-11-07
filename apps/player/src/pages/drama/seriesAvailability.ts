@@ -3,6 +3,17 @@
  * chips（即將上架排最尾、LK1 琥珀小標）、全集一覽表（S1 / A2 / LS2）、集數清單（摺埋批次、LE1）、
  * 成套劇快將下架嗰行。判斷喺 selectors/availability，字眼喺 i18n availability.*
  */
+import {
+    type ArcAvailability,
+    arcLeaving,
+    type DateWindow,
+    type EpisodeRange,
+    isLeavingSoon,
+    pendingBatches,
+    sameRemovalDay,
+    type UpcomingArc,
+    upcomingArcs,
+} from '@903-player/catalog';
 import type { ArcChip, UpcomingChip } from '../../components/pages/drama/ArcPicker/ArcPicker';
 import type {
     ArcRowNotes,
@@ -12,15 +23,6 @@ import type { EpisodeItem } from '../../components/shared/player/EpisodeList/Epi
 import { t } from '../../i18n/t';
 import type { ArcSummary } from '../../selectors/arcProgress';
 import {
-    arcLeaving,
-    isLeavingSoon,
-    pendingBatches,
-    sameRemovalDay,
-    upcomingArcs,
-    type DateWindow,
-    type UpcomingArc,
-} from '../../selectors/availability';
-import {
     dayWhen,
     joinWithSeparator,
     releaseWhen,
@@ -28,7 +30,6 @@ import {
     spokenRelease,
     spokenRemoval,
 } from '../../selectors/availabilityLabels';
-import type { ArcAvailability, EpisodeRange } from '../../types/drama';
 
 const unavailableLabel = (name: string, date: string): string =>
     t('availability.unavailableLabel', { name, when: spokenRelease(date) });

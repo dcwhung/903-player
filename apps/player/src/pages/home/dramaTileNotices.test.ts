@@ -1,4 +1,4 @@
-import type { ArcAvailability } from '../../types/drama';
+import type { ArcAvailability } from '@903-player/catalog';
 import {
     leavingCorner,
     releaseNote,

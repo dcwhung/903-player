@@ -13,11 +13,11 @@ import {
     readString,
     type ParseContext,
     type Raw,
-} from '../../core/reader';
-import { readTheme, type ThemeDefinition } from '../../core/themeSchema';
-import type { Weekday } from '../../../types/weekday';
+} from '../core/reader';
+import { readTheme, type ThemeDefinition } from '../core/themeSchema';
+import type { Weekday } from '../types/weekday';
 
-export { SchemaError as ShowSchemaError } from '../../core/reader';
+export { SchemaError as ShowSchemaError } from '../core/reader';
 
 export interface ShowDefinition {
     /** 原站 `?show=` 參數，亦係顯示名稱 */

@@ -2,8 +2,8 @@
  * registry 用嘅上架 / 下架工具（P8 #6）：由 drama.json 砌每個短篇嘅 ArcAvailability，
  * 同按今日判斷一集 / 一套劇出唔出。判斷規則喺 selectors/availability（pure）
  */
-import { isArcUpcoming, isAvailable, isRemoved } from '../../../selectors/availability';
-import type { ArcAvailability, DramaEpisode, EpisodeRange } from '../../../types/drama';
+import { isArcUpcoming, isAvailable, isRemoved } from '../selectors/availability';
+import type { ArcAvailability, DramaEpisode, EpisodeRange } from '../types/drama';
 import type { ArcDefinition, DramaDefinition } from './schema';
 
 /** 一套劇今日喺邊：missing = 唔識 / 停用；upcoming = 未上架；removed = 已下架；live = 有得聽 */

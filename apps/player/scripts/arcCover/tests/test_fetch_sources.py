@@ -62,7 +62,9 @@ class UrlAndSlugTest(unittest.TestCase):
         self.assertTrue(url.endswith("/%E8%8A%9DSee%E8%8F%87Bi%20Family/cover%20photo.png"), url)
 
     def test_r2_base_should_match_app_constant(self) -> None:
-        constants = (REPO_ROOT / "src" / "config" / "constants.ts").read_text(encoding="utf-8")
+        # DRAMA_AUDIO_BASE 喺 @903-player/catalog（REPO_ROOT = apps/player，parents[1] = repo 根）
+        constants_ts = REPO_ROOT.parents[1] / "packages" / "catalog" / "src" / "constants.ts"
+        constants = constants_ts.read_text(encoding="utf-8")
         match = re.search(r"DRAMA_AUDIO_BASE = '([^']+)'", constants)
         self.assertIsNotNone(match)
         self.assertEqual(match.group(1), R2_BASE)

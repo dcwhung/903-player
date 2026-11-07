@@ -1,6 +1,6 @@
+import type { DailyEpisode, DramaEpisode, SeriesEpisode } from '@903-player/catalog';
 import { t } from '../i18n/t';
 import type { Progress } from '../services/progressStore';
-import type { DailyEpisode, DramaEpisode, SeriesEpisode } from '../types/drama';
 import { isDramaEpisode, type Track } from '../types/track';
 import { formatDateLabel, formatSpokenDate } from '../utils/date';
 

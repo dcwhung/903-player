@@ -1,6 +1,6 @@
 /* 收藏 tab / 最近收聽嘅上架 / 下架判斷（P8 #6）：用 mock catalog（真 drama.json 冇下架日） */
+import type { SeriesEpisode } from '@903-player/catalog';
 import type { Bookmark } from '../../services/bookmarkStore';
-import type { SeriesEpisode } from '../../types/drama';
 import { bookmarkAvailability, trackLeaving } from './savedItems';
 
 const TODAY = '2026-11-05';

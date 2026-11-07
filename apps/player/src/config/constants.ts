@@ -1,5 +1,3 @@
-export const HK_TIMEZONE = 'Asia/Hong_Kong';
-
 /** 播放位置 ≥ 總長度嘅 95% 就當聽過 */
 export const WATCHED_RATIO = 0.95;
 export const PROGRESS_SAVE_INTERVAL_MS = 5000;
@@ -82,7 +80,7 @@ export const PLAYBACK_LOG_MAX_ENTRIES = 400;
 export const PLAYBACK_LOG_TICK_MS = 5000;
 /** 聽過嘅錄音由頭重播，真正播咗咁多秒先清走「已收聽」（防自動播放 / 誤撳） */
 export const REPLAY_RESET_SECONDS = 10;
-/** 收聽進度：key = episode ID（catalog/core/episodeId.ts），v1.29 起 */
+/** 收聽進度：key = episode ID（@903-player/catalog 嘅 core/episodeId.ts），v1.29 起 */
 export const PROGRESS_STORAGE_KEY = '903player:progress:v2';
 /**
  * 舊版進度（key = 音檔 URL）：storageMigration 每次開 app 搬去 v2，本身唔改唔刪，
@@ -123,14 +121,8 @@ export const ARC_SWEEP_DEGREES = 270;
 /** 錄音檔只可以嚟自原站 audio host */
 export const ALLOWED_AUDIO_ORIGIN = 'https://audio.hkfm903.live';
 
-/** 廣播劇錄音（Cloudflare R2 public bucket「radio-drama」）：<劇集 folder>/<短篇 folder>/<檔名> */
 /** 新上架短篇由上架日起計幾多日內有「新」 */
 export const NEW_ARC_DAYS = 14;
-/** 下架前幾多日開始提示「快將下架」（_mockups_/coming-soon ⑧） */
-export const LEAVING_SOON_DAYS = 30;
-
-export const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
-
 /**
  * 捽碟加速：慢慢捽轉一圈 = 60 秒（微調），捽得快每圈最多 = 10 分鐘（粗調）；
  * 手指轉速（度 / 毫秒）喺 SLOW 至 FAST 之間線性加速

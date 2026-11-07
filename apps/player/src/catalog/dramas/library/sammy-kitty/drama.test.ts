@@ -1,5 +1,5 @@
 /* 森美小儀系列 regression：集數 / URL 必須同 R2 檔名一樣（episode ID 係進度 / 收藏 key，見文件尾），每個短篇有自己碟面 */
-import { DRAMA_AUDIO_BASE } from '../../../../config/constants';
+import { DRAMA_AUDIO_BASE } from '@903-player/catalog';
 import {
     catalogEpisodesOf,
     dramaArtFor,

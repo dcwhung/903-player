@@ -1,5 +1,5 @@
+import type { ArcAvailability, SeriesEpisode } from '@903-player/catalog';
 import type { ArcSummary } from '../../selectors/arcProgress';
-import type { ArcAvailability, SeriesEpisode } from '../../types/drama';
 import {
     arcNotesOf,
     batchItemsOf,

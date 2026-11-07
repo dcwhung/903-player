@@ -1,7 +1,5 @@
-import type { DramaConfig } from '../catalog/dramas';
+import { type DramaConfig, type DramaEpisode, latestDate } from '@903-player/catalog';
 import type { Progress } from '../services/progressStore';
-import type { DramaEpisode } from '../types/drama';
-import { latestDate } from './availability';
 
 /**
  * 劇名排序用香港中文 collation：ICU 預設按筆劃

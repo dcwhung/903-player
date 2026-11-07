@@ -1,7 +1,7 @@
 import { PROGRESS_STORAGE_KEY, PROGRESS_V1_STORAGE_KEY, WATCHED_RATIO } from '../config/constants';
 
 /*
- * 收聽進度：key = episode ID（drama:… / show:…，見 catalog/core/episodeId.ts），唔係音檔 URL，
+ * 收聽進度：key = episode ID（drama:… / show:…，見 @903-player/catalog 嘅 core/episodeId.ts），唔係音檔 URL，
  * 換 bucket / 改檔名都唔會冇咗。v1（URL key）由 storageMigration 搬過嚟
  */
 

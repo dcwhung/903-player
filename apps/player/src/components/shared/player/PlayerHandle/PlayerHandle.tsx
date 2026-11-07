@@ -1,5 +1,5 @@
 import { useRef, type AnimationEvent } from 'react';
-import type { ShowTheme } from '../../../../config/showThemes';
+import type { ShowTheme } from '@903-player/catalog';
 import { t } from '../../../../i18n/t';
 import type { HandleStatus } from '../../../../selectors/pageHandle';
 import { BackIcon } from '../../common/icons/icons';

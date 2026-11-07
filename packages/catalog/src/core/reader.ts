@@ -3,7 +3,7 @@
  * JSON import 會將所有 literal 闊化成 string，所以逐個欄位驗，驗完先有準確型別。
  * 每個錯誤都寫明邊個檔（ctx.source）、邊個欄位（path），方便加資料嘅人即刻改。
  */
-import { isCalendarDate } from '../../utils/date';
+import { isCalendarDate } from '../date';
 
 export class SchemaError extends Error {
     override readonly name = 'SchemaError';

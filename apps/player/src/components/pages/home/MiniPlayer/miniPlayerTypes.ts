@@ -1,4 +1,4 @@
-import type { ShowTheme } from '../../../../config/showThemes';
+import type { ShowTheme } from '@903-player/catalog';
 import type { MiniPlayerTag } from '../../../../selectors/miniPlayer';
 import type { PlayerItem } from '../../../../types/playerItem';
 

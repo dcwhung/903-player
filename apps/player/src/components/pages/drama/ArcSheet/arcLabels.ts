@@ -1,6 +1,6 @@
+import type { SeriesEpisode } from '@903-player/catalog';
 import { t } from '../../../../i18n/t';
 import type { ArcGroup, ArcSummary } from '../../../../selectors/arcProgress';
-import type { SeriesEpisode } from '../../../../types/drama';
 import { formatDuration } from '../../../../utils/time';
 import type { ArcRowNotes } from './arcSheetTypes';
 

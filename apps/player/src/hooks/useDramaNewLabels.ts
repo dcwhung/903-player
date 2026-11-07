@@ -1,17 +1,11 @@
 import { useMemo } from 'react';
-import {
-    dramaEpisodesOf,
-    enabledDramas,
-    seriesEpisodesOf,
-    type DramaConfig,
-} from '../catalog/dramas';
+import { type DramaConfig, type DramaId, hkToday } from '@903-player/catalog';
+import { dramaEpisodesOf, enabledDramas, seriesEpisodesOf } from '../catalog/dramas';
 import { t } from '../i18n/t';
 import { usePlayer } from '../player/usePlayer';
 import { hasNewUnheardArc, isArcNew } from '../selectors/arcProgress';
 import { dramaHasNew } from '../selectors/dramas';
 import { getProgressMap, type Progress } from '../services/progressStore';
-import type { DramaId } from '../types/drama';
-import { hkToday } from '../utils/date';
 import { useRefreshedOn } from './useRefreshedOn';
 
 type ProgressMap = Readonly<Record<string, Progress>>;

@@ -1,3 +1,4 @@
+import type { DramaEpisode } from '@903-player/catalog';
 import type {
     EpisodeItem,
     EpisodeLabels,
@@ -11,7 +12,6 @@ import { usePlayer } from '../../player/usePlayer';
 import { dailyNewestFirst, episodesInArc } from '../../selectors/dramas';
 import { entriesNewestFirst, recordingsForShow } from '../../selectors/recordings';
 import { getProgressMap } from '../../services/progressStore';
-import type { DramaEpisode } from '../../types/drama';
 import type { Recording, UnavailableEpisode } from '../../types/recording';
 import { isDramaEpisode, type Track } from '../../types/track';
 import { toDailyItems, toSeriesItems } from '../shared/dramaItems';

@@ -1,4 +1,4 @@
-import type { DramaEpisode } from './drama';
+import type { DramaEpisode } from '@903-player/catalog';
 import type { Recording } from './recording';
 
 /** player 播得嘅嘢：903 節目錄音或者廣播劇一集（player 只用 url，其他資料畀畫面顯示） */

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { stripDays } from '../../components/shared/player/DateStrip/dateStrip';
 import {
-    dailyEpisodesOf,
-    dramaEpisodeTheme,
-    seriesEpisodesOf,
     type DramaConfig,
-} from '../../catalog/dramas';
+    type DramaEpisode,
+    hkToday,
+    type SeriesEpisode,
+} from '@903-player/catalog';
+import { stripDays } from '../../components/shared/player/DateStrip/dateStrip';
+import { dailyEpisodesOf, dramaEpisodeTheme, seriesEpisodesOf } from '../../catalog/dramas';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
 import { useEpisodePress } from '../../hooks/useEpisodePress';
 import { useHkToday } from '../../hooks/useHkToday';
@@ -23,9 +24,7 @@ import {
 } from '../../selectors/dramas';
 import { arcGroups, arcSummaries, type ArcSummary } from '../../selectors/arcProgress';
 import { getProgressMap, type Progress } from '../../services/progressStore';
-import type { DramaEpisode, SeriesEpisode } from '../../types/drama';
 import type { Track } from '../../types/track';
-import { hkToday } from '../../utils/date';
 import {
     playbackStateOf,
     type PlaybackLineState,

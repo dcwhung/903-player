@@ -1,3 +1,4 @@
+import { hkToday } from '@903-player/catalog';
 import { ShowTile } from '../../components/pages/home/ShowTile/ShowTile';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import { SHORT_LANDSCAPE_QUERY, WIDE_BANNER_QUERY } from '../../config/layout';
@@ -19,7 +20,6 @@ import { homeSideOf } from '../../selectors/wideZoomMotion';
 import type { ShowId } from '../../types/recording';
 import { asShowRecording } from '../../types/track';
 import { zoomKey } from '../../utils/cardZoom';
-import { hkToday } from '../../utils/date';
 import { t } from '../../i18n/t';
 import styles from './HomePage.module.css';
 import { homeLayoutMode } from './homeLayoutMode';

@@ -68,6 +68,7 @@
 | 2026-11-04 | [reviews/2026-11-04_review_s-648-hard-reload.md](reviews/2026-11-04_review_s-648-hard-reload.md)（97 pass，S-651–S-653；v1.21.8 S-648 Shift-reload 嘅 tab 搶輸 skip-waiting 都 reload）                                                                                                                                         |
 | 2026-11-07 | [reviews/2026-11-07_review_v1.29.0.md](reviews/2026-11-07_review_v1.29.0.md)（95 pass，W-698、S-742–S-748；episode ID + 進度 / 收藏 v2 migration）                                                                                                                                                                              |
 | 2026-11-07 | [reviews/2026-11-07_review_phase0a-monorepo.md](reviews/2026-11-07_review_phase0a-monorepo.md)（90 pass，W-700–W-701、S-750–S-754；monorepo npm workspaces，純 refactor）                                                                                                                                                       |
+| 2026-11-07 | [reviews/2026-11-07_review_phase0b-catalog.md](reviews/2026-11-07_review_phase0b-catalog.md)（100 pass，S-758–S-761；抽 `packages/catalog`（`@903-player/catalog`），v1.29.1）                                                                                                                                                  |
 
 ## QA
 
@@ -116,6 +117,7 @@
 | 2026-11-07 | [qa/2026-11-07_qa_episode-id-storage.md](qa/2026-11-07_qa_episode-id-storage.md)（v1.29.0 Phase −1 S1 ❌ fail @ `b527d56`：CI 42322295592 unit 4 fail（`todayItems.test.ts`、`useStartDrama.test.ts` 仲用 URL key）→ CUI-0023（W-699）；本地 e2e 765 / 0（升級 10 / 10）；W-698 核實；S-749）                                                                                                                                                           |
 | 2026-11-07 | [qa/2026-11-07_qa_episode-id-storage-recheck.md](qa/2026-11-07_qa_episode-id-storage-recheck.md)（v1.29.0 Phase −1 S1 ✅ pass @ `f7e55aa`：CI 42323853076 unit 2780 / 2780、e2e 765 / 0（升級 10 / 10）；CUI-0023 completed；8 個 UNCOVERED 檔入 player-core / drama / catalog-data；11 條鏈 S1 freeze）                                                                                                                                                |
 | 2026-11-07 | [qa/2026-11-07_qa_phase0a-monorepo.md](qa/2026-11-07_qa_phase0a-monorepo.md)（Phase 0a monorepo `apps/player` S1 ✅ pass @ `ee72715`：CI 42353667556 unit 2780 / 2780、e2e 765 / 0；dist 77 檔 sha256 同 `origin/main` 一樣；W-701 ledger 1171 行 path 遷移 + 11 份 plan 改 `npm test --`；新鏈 `repo-tooling`；12 條鏈 S1 freeze；S-755..S-757）                                                                                                       |
+| 2026-11-07 | [qa/2026-11-07_qa_phase0b-catalog.md](qa/2026-11-07_qa_phase0b-catalog.md)（Phase 0b `packages/catalog` S1 ✅ pass @ `3bc9c53`：CI 42363202581 unit 242 files / 2780、e2e 765 / 0（PWA 換版 7/7）；diff 證實 storage key / episode ID / 上下架邏輯冇改；ledger 51 行 rename path 遷移、20 個新檔入鏈；12 條鏈 S1 freeze；S-762）                                                                                                                        |
 
 ## Deploys
 

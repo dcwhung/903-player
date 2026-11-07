@@ -1,7 +1,7 @@
+import { isCalendarDate } from '@903-player/catalog';
 import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
 import { SHOWS } from '../catalog/shows';
 import type { Recording } from '../types/recording';
-import { isCalendarDate } from '../utils/date';
 
 const TIME_PATTERN = /^([01]\d|2[0-3])[0-5]\d$/;
 const SHOW_IDS = new Set<string>(SHOWS.map((show) => show.id));

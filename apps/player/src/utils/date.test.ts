@@ -1,29 +1,10 @@
 import {
-    addDays,
-    daysBetween,
     formatDateLabel,
     formatDayMonth,
     formatSpokenDate,
     formatWeekday,
     hkTimeHHMM,
-    hkToday,
-    msUntilNextHkMidnight,
-    weekdayOf,
-    isCalendarDate,
 } from './date';
-import type { Weekday } from '../types/weekday';
-
-describe('hkToday', () => {
-    it('uses Hong Kong date even when UTC is still the previous day', () => {
-        // UTC 18/10 20:00 = 香港 19/10 04:00
-        expect(hkToday(new Date('2026-10-18T20:00:00Z'))).toBe('2026-10-19');
-    });
-
-    it('stays on the same day before Hong Kong midnight', () => {
-        // UTC 19/10 15:59 = 香港 19/10 23:59
-        expect(hkToday(new Date('2026-10-19T15:59:00Z'))).toBe('2026-10-19');
-    });
-});
 
 describe('hkTimeHHMM', () => {
     it('formats Hong Kong time as HHMM like recording file names', () => {
@@ -61,51 +42,5 @@ describe('formatSpokenDate', () => {
     it('reads day/month then the full weekday, separated by a space', () => {
         expect(formatSpokenDate('2026-10-17')).toBe('17/10 星期六');
         expect(formatSpokenDate('2026-11-06')).toBe('06/11 星期五');
-    });
-});
-
-describe('weekdayOf', () => {
-    it('returns 0 for Sunday through 6 for Saturday', () => {
-        expect(weekdayOf('2026-10-18')).toBe(0);
-        expect(weekdayOf('2026-10-19')).toBe(1);
-        expect(weekdayOf('2026-10-17')).toBe(6);
-    });
-
-    it('is typed as a Weekday so airDays comparisons stay checked', () => {
-        expectTypeOf(weekdayOf('2026-10-19')).toEqualTypeOf<Weekday>();
-    });
-});
-
-describe('daysBetween', () => {
-    it('counts calendar days between two ISO dates', () => {
-        expect(daysBetween('2026-10-19', '2026-10-19')).toBe(0);
-        expect(daysBetween('2026-10-19', '2026-10-21')).toBe(2);
-        expect(daysBetween('2026-10-30', '2026-11-02')).toBe(3);
-    });
-});
-
-describe('addDays', () => {
-    it('moves an ISO date by whole calendar days across months and years', () => {
-        expect(addDays('2026-10-19', 0)).toBe('2026-10-19');
-        expect(addDays('2026-10-30', 3)).toBe('2026-11-02');
-        expect(addDays('2026-01-01', -1)).toBe('2025-12-31');
-    });
-});
-
-describe('isCalendarDate', () => {
-    it('accepts a real YYYY-MM-DD and rejects impossible or malformed dates', () => {
-        expect(isCalendarDate('2026-10-23')).toBe(true);
-        expect(isCalendarDate('2024-02-29')).toBe(true);
-        expect(isCalendarDate('2026-02-29')).toBe(false);
-        expect(isCalendarDate('2026-13-01')).toBe(false);
-        expect(isCalendarDate('20261023')).toBe(false);
-    });
-});
-
-describe('msUntilNextHkMidnight', () => {
-    it('counts to the next Hong Kong midnight, whatever the device time zone (S-704)', () => {
-        expect(msUntilNextHkMidnight(new Date('2026-11-30T15:59:00Z'))).toBe(60_000);
-        expect(msUntilNextHkMidnight(new Date('2026-11-30T16:00:00Z'))).toBe(24 * 60 * 60 * 1000);
-        expect(msUntilNextHkMidnight(new Date('2026-12-31T15:59:59Z'))).toBe(1_000);
     });
 });

@@ -1,5 +1,5 @@
+import type { SeriesEpisode } from '@903-player/catalog';
 import type { ArcState, ArcSummary } from '../../../../selectors/arcProgress';
-import type { SeriesEpisode } from '../../../../types/drama';
 import { GROUP_TITLES, playLabel, rowLabel, visibleStatus } from './arcLabels';
 
 const ARC = '小提議';

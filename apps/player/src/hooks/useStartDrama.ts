@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
 import {
-    catalogEpisodesOf,
-    dailyEpisodesOf,
-    seriesEpisodesOf,
     type DramaConfig,
-} from '../catalog/dramas';
+    type DramaEpisode,
+    hkToday,
+    type SeriesEpisode,
+} from '@903-player/catalog';
+import { catalogEpisodesOf, dailyEpisodesOf, seriesEpisodesOf } from '../catalog/dramas';
 import { usePlayer } from '../player/usePlayer';
 import {
     dailyNewestFirst,
@@ -15,9 +16,7 @@ import {
 } from '../selectors/dramas';
 import { liveSeriesContinue } from '../selectors/continueListening';
 import { getProgressMap, type Progress } from '../services/progressStore';
-import type { DramaEpisode, SeriesEpisode } from '../types/drama';
 import type { Track } from '../types/track';
-import { hkToday } from '../utils/date';
 
 /** 某套短篇劇 catalog 全部集數（包括已下架，續聽跳集用） */
 export const catalogSeriesOf = (id: string): SeriesEpisode[] =>

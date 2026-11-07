@@ -1,8 +1,7 @@
+import type { DramaId, ShowTheme } from '@903-player/catalog';
 import { dramaEpisodeTheme, findDrama } from '../catalog/dramas';
 import { findShow, themeFor } from '../catalog/shows';
-import type { ShowTheme } from '../config/showThemes';
 import type { ClosedPlayerCard } from '../hooks/homePlayerCardClosed';
-import type { DramaId } from '../types/drama';
 import type { PlayerItem } from '../types/playerItem';
 import type { ShowId } from '../types/recording';
 import { isDramaEpisode, type Track } from '../types/track';

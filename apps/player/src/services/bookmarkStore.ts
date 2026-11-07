@@ -1,11 +1,11 @@
 import { useSyncExternalStore } from 'react';
+import type { DramaId } from '@903-player/catalog';
 import {
     BOOKMARK_STORAGE_KEY,
     BOOKMARK_STORE_VERSION,
     BOOKMARK_V1_STORAGE_KEY,
     BOOKMARK_V1_STORE_VERSION,
 } from '../config/constants';
-import type { DramaId } from '../types/drama';
 import type { ShowId } from '../types/recording';
 import { isDramaEpisode, type Track } from '../types/track';
 
@@ -15,7 +15,7 @@ import { isDramaEpisode, type Track } from '../types/track';
  * 錄音清單冇咗嗰集（例如過咗 probe 範圍）收藏 tab 照顯示得到
  */
 interface BookmarkBase {
-    /** episode ID（catalog/core/episodeId.ts）：查找 / 移除一律用佢 */
+    /** episode ID（@903-player/catalog 嘅 core/episodeId.ts）：查找 / 移除一律用佢 */
     id: string;
     url: string;
     /** 收藏嘅時間（Date.now()）：收藏 tab 嘅次序跟最新收藏 */

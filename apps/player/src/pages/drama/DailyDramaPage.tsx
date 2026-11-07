@@ -1,10 +1,10 @@
+import type { DramaConfig } from '@903-player/catalog';
 import { EpisodeList } from '../../components/shared/player/EpisodeList/EpisodeList';
 import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { NowPlaying } from '../../components/shared/player/NowPlaying/NowPlaying';
 import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPanel';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import type { DramaConfig } from '../../catalog/dramas';
 import { LANDSCAPE_QUERY } from '../../config/layout';
 import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useMediaQuery } from '../../hooks/useMediaQuery';

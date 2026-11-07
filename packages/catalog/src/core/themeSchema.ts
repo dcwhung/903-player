@@ -1,5 +1,5 @@
 /* JSON 入面嘅色調（ShowTheme 減圖；圖由 folder 入面嘅檔補上） */
-import type { ShowTheme } from '../../config/showThemes';
+import type { ShowTheme } from '../showTheme';
 import {
     readHex,
     readOptionalEnum,

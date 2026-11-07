@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { hkToday } from '@903-player/catalog';
 import { themeFor } from '../../catalog/shows';
 import { useRecordings } from '../../data/useRecordings';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
@@ -9,7 +10,6 @@ import { usePlayer } from '../../player/usePlayer';
 import { todayView } from '../../selectors/recordings';
 import { getWatchedIds } from '../../services/progressStore';
 import type { Recording } from '../../types/recording';
-import { hkToday } from '../../utils/date';
 import { hasKnownDuration } from '../../utils/time';
 import { toStackCards, toTodayItems } from './todayItems';
 

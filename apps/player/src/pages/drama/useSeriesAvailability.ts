@@ -1,12 +1,16 @@
 import { useMemo } from 'react';
+import {
+    type ArcAvailability,
+    type DramaConfig,
+    hkToday,
+    pendingBatches,
+    type SeriesEpisode,
+} from '@903-player/catalog';
 import type { ArcChip } from '../../components/pages/drama/ArcPicker/ArcPicker';
 import type { EpisodeItem } from '../../components/shared/player/EpisodeList/EpisodeList';
-import { arcAvailabilityOf, dramaArtFor, type DramaConfig } from '../../catalog/dramas';
+import { arcAvailabilityOf, dramaArtFor } from '../../catalog/dramas';
 import type { ArcSummary } from '../../selectors/arcProgress';
-import { pendingBatches } from '../../selectors/availability';
 import { episodesInArc } from '../../selectors/dramas';
-import type { ArcAvailability, SeriesEpisode } from '../../types/drama';
-import { hkToday } from '../../utils/date';
 import {
     arcNotesOf,
     batchItemsOf,

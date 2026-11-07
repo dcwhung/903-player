@@ -1,0 +1,22 @@
+{
+    "name": "@903-player/catalog",
+    "private": true,
+    "type": "module",
+    "exports": {
+        ".": "./src/index.ts",
+        "./testing/json-schemas": "./tests/jsonSchemas.ts",
+        "./schemas/*": "./schemas/*"
+    },
+    "scripts": {
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "devDependencies": {
+        "@types/node": "^26.6.5",
+        "ajv": "^8.20.0",
+        "ajv-formats": "^3.0.1",
+        "typescript": "^6.0.3",
+        "vite": "^8.3.4",
+        "vitest": "^5.0.5"
+    }
+}

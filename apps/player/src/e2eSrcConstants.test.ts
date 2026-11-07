@@ -3,6 +3,7 @@
 // （例如 probeStore.ts），亦唔會將 src 模組拖入 tsconfig.node.json（S-545）。
 // e2e/*.mjs 係純 node 模組（冇型別），喺 node 環境 import 佢哋嘅 export，同 src 常數逐個比較。
 // e2e import 唔到 TS，只可以手抄；呢個測試保證改 src 時 e2e 唔會靜靜雞脫節（S-528）
+import { DRAMA_AUDIO_BASE } from '@903-player/catalog';
 import { DRAG_INTENT_PX } from './hooks/swipe';
 import {
     SHEET_DISMISS_RATIO,
@@ -15,7 +16,6 @@ import {
     ALLOWED_AUDIO_ORIGIN,
     BOOKMARK_STORAGE_KEY,
     BOOKMARK_STORE_VERSION,
-    DRAMA_AUDIO_BASE,
     EARLY_ADVANCE_SECONDS,
     PLAYBACK_LOG_STORAGE_KEY,
     PROGRESS_STORAGE_KEY,

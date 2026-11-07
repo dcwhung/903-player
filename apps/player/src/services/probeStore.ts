@@ -1,4 +1,4 @@
-import { showEpisodeId } from '../catalog/core/episodeId';
+import { showEpisodeId } from '@903-player/catalog';
 import { isRecording, type StoredRecording } from '../data/recordingValidation';
 import type { Recording } from '../types/recording';
 

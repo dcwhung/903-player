@@ -1,8 +1,8 @@
 /* 全集一覽表：S1「即將上架」組、A2 逐集上架、LS2 快將下架、成套劇下架字（P8 #6） */
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { SeriesEpisode } from '@903-player/catalog';
 import type { ArcSummary } from '../../../../selectors/arcProgress';
-import type { SeriesEpisode } from '../../../../types/drama';
 import { ArcSheet } from './ArcSheet';
 import type { ArcRowNotes } from './arcSheetTypes';
 

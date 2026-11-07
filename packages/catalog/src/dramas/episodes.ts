@@ -3,9 +3,9 @@
  * 已儲進度 / 收藏（localStorage v2）用 episode ID 做 key，URL 淨係播放用；
  * v1 舊資料用 URL 做 key，storageMigration 靠呢度砌出嚟嘅 URL 對返 ID。
  */
-import { DRAMA_AUDIO_BASE } from '../../../config/constants';
-import type { DailyEpisode, DramaEpisode, DramaId, SeriesEpisode } from '../../../types/drama';
-import { dailyEpisodeId, seriesEpisodeId } from '../../core/episodeId';
+import { DRAMA_AUDIO_BASE } from '../constants';
+import type { DailyEpisode, DramaEpisode, DramaId, SeriesEpisode } from '../types/drama';
+import { dailyEpisodeId, seriesEpisodeId } from '../core/episodeId';
 import { batchDateOf } from './availabilitySchema';
 import { displayTitle, encodePath, renderFileName, toChineseNumeral } from './filename';
 import type {

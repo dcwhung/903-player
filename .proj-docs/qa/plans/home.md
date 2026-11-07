@@ -1,6 +1,6 @@
 # Test Plan — home
 
-- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（`npm test -- <path>` 轉發去 `apps/player`）
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）
 - Chain: 主頁：直版節目格 / 分頁、疊卡、闊橫版 fill / split 格 + 右邊播放卡 + 把手、tabs、橫額
 - AC:
     - AC-1 橫額高 = 節目格高（.tickets/completed/0001-0200/CUI-0001.md）

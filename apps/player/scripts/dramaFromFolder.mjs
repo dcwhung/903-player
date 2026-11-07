@@ -8,7 +8,7 @@
  *
  * 單一檔案、只用 Node 內置 module（Node 18.3 或以上，建議 20+；parseArgs 18.3 先有），
  * 下載落嚟就行得，唔使 npm install。
- * 規則同 app 一致（src/catalog/dramas/lib/schema.ts、filename.ts、episodes.ts）；app 規則一改，呢度要跟住改，
+ * 規則同 app 一致（packages/catalog/src/dramas/schema.ts、filename.ts、episodes.ts）；app 規則一改，呢度要跟住改，
  * scripts/dramaFromFolder.test.ts 會將輸出餵畀 app 真正嘅 validator 驗。
  */
 import {
@@ -25,7 +25,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
-/** 同 src/config/constants.ts 嘅 DRAMA_AUDIO_BASE 一樣（test 會核對） */
+/** 同 packages/catalog/src/constants.ts 嘅 DRAMA_AUDIO_BASE 一樣（test 會核對） */
 export const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
 
 /** 短篇劇檔名 template：第一個係常見寫法；第二個係檔名入面短篇名前面加埋劇名（黃金少年） */
@@ -100,7 +100,7 @@ const HAND_WRITTEN_ARC_KEYS = ['disc', 'tile', 'addedAt'];
 const PLACEHOLDER_ARC_PREFIX = 'arc-';
 const PLACEHOLDER_ARC_WIDTH = 2;
 
-/* ───────────── 檔名工具（同 src/catalog/dramas/lib/filename.ts 一樣） ───────────── */
+/* ───────────── 檔名工具（同 packages/catalog/src/dramas/filename.ts 一樣） ───────────── */
 
 const CHINESE_DIGITS = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
 const CHINESE_ZERO = '零';

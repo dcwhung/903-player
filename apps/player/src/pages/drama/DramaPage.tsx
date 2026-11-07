@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
+import { NEUTRAL_THEME } from '@903-player/catalog';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import { showToast } from '../../components/shared/common/Toast/toastStore';
-import { NEUTRAL_THEME } from '../../config/showThemes';
 import { dramaStatus, findEnabledDrama } from '../../catalog/dramas';
 import { afterSplash } from '../../splash/afterSplash';
 import { t } from '../../i18n/t';

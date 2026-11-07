@@ -1,8 +1,8 @@
 // @vitest-environment node
 // 放喺 scripts/：要用 node:fs 讀 CSS（見 launchThemeTokens.test.ts）
+import { NEUTRAL_THEME } from '@903-player/catalog';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { NEUTRAL_THEME } from '../src/config/showThemes';
 
 const readToken = (css: string, name: string) =>
     new RegExp(`--${name}:\\s*(#[0-9a-f]{3,8})\\s*;`, 'i').exec(css)?.[1];
