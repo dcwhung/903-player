@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { loadEnv, type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { catalogRuntimeCaching } from './scripts/catalogCaching.ts';
 import { buildSocialTags, resolveSiteUrl } from './scripts/socialMeta.ts';
 import { LAUNCH_THEME_COLOR } from './src/config/launchTheme.ts';
 
@@ -34,7 +35,7 @@ const injectSocialTags = (): Plugin => ({
 
 /*
  * runtime catalog.json（Backend Phase 1）：build 環境變數 VITE_CATALOG_URL（亦讀 .env.<mode>）。
- * 冇設定 = 功能關住（production 預設）：__CATALOG_URL__ 係空字串，main.tsx 嗰段 initCatalog 成段剷走。
+ * 冇設定 = 功能關住（production 預設）：__CATALOG_URL__ 係空字串，main.tsx 嗰段 initCatalog 成段剷走，SW 唔加 route。
  * e2e build 預設開：同 origin 路徑，由 e2e harness route（預設 404 → fallback 內建資料，見 e2e/remoteCatalog.mjs）
  */
 const E2E_MODE = 'e2e';
@@ -90,6 +91,8 @@ export default defineConfig(({ mode }) => {
                     // clientsClaim 只影響第一次安裝（冇舊 SW 時即刻接管頁面），同 autoUpdate 時一樣
                     skipWaiting: false,
                     clientsClaim: true,
+                    // 冇 catalog URL 就係 undefined（同 v1.29 一樣唔設定）
+                    runtimeCaching: catalogUrl ? catalogRuntimeCaching(catalogUrl) : undefined,
                 },
             }),
         ],
