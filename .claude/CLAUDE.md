@@ -24,6 +24,13 @@
 - Code Reviewer / QA（同任何 agent）push 報告或者其他 `.md` 之前，一定要對改咗嘅檔跑 `npx prettier --check <檔>`（唔過就 `--write`）
 - Main agent merge PR 之前，喺 branch head 跑一次 `npm run lint`
 
+## Code 同 docs 嘅 push 次序（用戶 2026-11-07 決定）
+
+- `ci.yml` 有 `concurrency: cancel-in-progress`：code commit push 咗之後，CI 未跑完就再 push 淨改 docs 嘅 commit，會取消 code commit 嘅 e2e；而淨 docs 嗰次 run 又跳過 e2e，結果冇一個 run 跑過 code 嘅 e2e（2026-11-06 v1.28.4 中過，要 rerun 補）
+- Code 同 docs 一齊 push；或者 docs 只喺本地 commit，等 code commit 嘅 CI（包括 e2e）跑完先 push
+- Code Reviewer / QA 喺 code CI 跑緊時：報告只 commit、唔 push，由 main agent 喺 CI 完成後一次過 push；QA 引用 code commit 嗰個 run 做證據
+- Main agent push docs 之前先睇最新 CI run：`in_progress` 就等，唔好 push
+
 ## Motion / 減少動態（用戶 2026-11-04 決定：以後同類情況唔使再問）
 
 - 新動畫一律跟 app 現有統一做法：CSS 動畫放喺 `@media (prefers-reduced-motion: no-preference)`（或者用 `reduce` 關掉），設定一改即刻生效；JS 喺動畫開始嗰刻先叫 `prefersReducedMotion()`（`src/utils/motion.ts`），唔 cache 之前 render 嘅值
