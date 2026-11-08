@@ -1,15 +1,15 @@
 /* 7 個 903 節目 regression：名 / 時間 / 播出日 唔可以變（錄音 URL 由 name + fileTime 砌，錯一個字就播唔到） */
 import { airsWeekly, NEUTRAL_THEME, type ShowConfig, type Weekday } from '@903-player/catalog';
 import { themeVars } from '../../../config/showThemes';
-import { findShow, SHOWS, themeFor } from '../index';
+import { allShows, findShow, themeFor } from '../index';
 
 const MONDAY_TO_FRIDAY: readonly Weekday[] = [1, 2, 3, 4, 5];
 const SATURDAY: readonly Weekday[] = [6];
 
-describe('SHOWS', () => {
+describe('allShows', () => {
     it('lists the seven shows in home-page order with their file times and air days', () => {
         expect(
-            SHOWS.map(({ id, name, fileTime, airDays }) => ({ id, name, fileTime, airDays })),
+            allShows().map(({ id, name, fileTime, airDays }) => ({ id, name, fileTime, airDays })),
         ).toEqual([
             { id: 'badgirl', name: 'Bad Girl大過佬', fileTime: '1009', airDays: MONDAY_TO_FRIDAY },
             { id: 'gongzi', name: '公子會', fileTime: '2308', airDays: SATURDAY },
@@ -30,24 +30,24 @@ describe('SHOWS', () => {
         // ShowGrid.module.css 橫版寫死 4 欄 × 2 行（手機打橫連橫額 5 欄 × 2 行），唔分頁；
         // 加減節目要一齊改嗰度嘅欄數，否則第三行會畀剪走
         const LANDSCAPE_GRID_TILES = 8;
-        expect(SHOWS.length + 1).toBe(LANDSCAPE_GRID_TILES);
+        expect(allShows().length + 1).toBe(LANDSCAPE_GRID_TILES);
     });
 
     it('gives every show artwork and a dark theme with hex colours', () => {
-        SHOWS.forEach((show) => {
+        allShows().forEach((show) => {
             expect(show.theme.art).toBeTruthy();
             expect(show.theme.accent).toMatch(/^#[0-9a-f]{6}$/i);
             expect(show.theme.scheme).toBeUndefined();
         });
-        expect(new Set(SHOWS.map((s) => s.theme.art)).size).toBe(SHOWS.length);
+        expect(new Set(allShows().map((s) => s.theme.art)).size).toBe(allShows().length);
     });
 
     it('keeps a separate home tile from the disc for every show', () => {
-        SHOWS.forEach((show) => {
+        allShows().forEach((show) => {
             expect(show.tileArt).toBeTruthy();
             expect(show.tileArt).not.toBe(show.theme.art);
         });
-        expect(new Set(SHOWS.map((s) => s.tileArt)).size).toBe(SHOWS.length);
+        expect(new Set(allShows().map((s) => s.tileArt)).size).toBe(allShows().length);
     });
 });
 

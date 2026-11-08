@@ -7,7 +7,7 @@ import addFormats from 'ajv-formats';
 const ROOT = new URL('../', import.meta.url);
 
 /** schemas/ 入面有嘅 JSON Schema */
-export type SchemaName = 'drama' | 'show';
+export type SchemaName = 'drama' | 'show' | 'catalog';
 
 /**
  * 用 ajv 編譯 schemas/<name>.schema.json。schema drift test 同 dramaFromFolder CLI test 共用，

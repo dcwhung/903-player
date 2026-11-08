@@ -7,7 +7,7 @@ import {
     weekdayOf,
 } from '@903-player/catalog';
 import { ALLOWED_AUDIO_ORIGIN } from '../config/constants';
-import { findShow, SHOWS } from '../catalog/shows';
+import { allShows, findShow } from '../catalog/shows';
 import type { Recording, ShowId, UnavailableEpisode } from '../types/recording';
 import { hkTimeHHMM } from '../utils/date';
 import {
@@ -105,7 +105,7 @@ const audioPathOf = (url: string): [folder: string, file: string] | undefined =>
  */
 export const showEpisodeOfUrl = (url: string): { showId: ShowId; date: string } | undefined => {
     const path = audioPathOf(url);
-    const show = path && SHOWS.find((s) => s.name === path[0]);
+    const show = path && allShows().find((s) => s.name === path[0]);
     const match = path && FILE_NAME_PATTERN.exec(path[1]);
     if (!show || !match || match[4] !== fileShowName(show.name)) return undefined;
     const date = `${match[1]}-${match[2]}-${match[3]}`;
@@ -231,9 +231,9 @@ const pendingSlots = ({ found, misses }: ProbeState, now: Date): ProbeSlot[] => 
     const covered = new Set(found.map((r) => showDateKey(r.showId, r.date)));
     return recentDates(now)
         .flatMap((date) =>
-            SHOWS.filter((show) => airsOn(show, date) && hasStarted(show, date, now)).map((show) =>
-                toSlot(show, date),
-            ),
+            allShows()
+                .filter((show) => airsOn(show, date) && hasStarted(show, date, now))
+                .map((show) => toSlot(show, date)),
         )
         .filter(
             (slot) =>

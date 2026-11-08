@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
-import type { Plugin } from 'vite';
+import { loadEnv, type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { catalogRuntimeCaching } from './scripts/catalogCaching.ts';
 import { buildSocialTags, resolveSiteUrl } from './scripts/socialMeta.ts';
 import { LAUNCH_THEME_COLOR } from './src/config/launchTheme.ts';
 
@@ -32,63 +33,83 @@ const injectSocialTags = (): Plugin => ({
     },
 });
 
-export default defineConfig({
-    base: BASE_PATH,
-    // Vitest 共用呢份 config，所以測試都睇到同一個 define
-    define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
-    plugins: [
-        react(),
-        injectAppVersion(),
-        injectSocialTags(),
-        VitePWA({
-            // prompt：新 SW 裝好後喺 waiting 等，由 src/pwa/updateManager 揀播放停咗先換，
-            // 避免 autoUpdate 喺收聽途中自動 reload
-            registerType: 'prompt',
-            includeAssets: ['favicon.png', 'apple-touch-icon.png'],
-            manifest: {
-                name: '903 Player',
-                short_name: '903 Player',
-                lang: 'zh-HK',
-                start_url: BASE_PATH,
-                scope: BASE_PATH,
-                display: 'standalone',
-                // 啟動畫面 / 狀態列：app 喺主頁啟動，用 HOME_THEME.bg（入咗 app 之後由 ThemeScope 跟頁轉）
-                background_color: LAUNCH_THEME_COLOR,
-                theme_color: LAUNCH_THEME_COLOR,
-                icons: [
-                    { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
-                    { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
-                    {
-                        src: 'icon-maskable-512.png',
-                        sizes: '512x512',
-                        type: 'image/png',
-                        purpose: 'maskable',
-                    },
-                ],
-            },
-            workbox: {
-                // webp：主頁橫額（src/assets/banner.webp），離線都要見到
-                globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp}'],
-                // 唔好自動 skipWaiting：靠 updateSW(true) 發 SKIP_WAITING message 先啟用新 SW。
-                // clientsClaim 只影響第一次安裝（冇舊 SW 時即刻接管頁面），同 autoUpdate 時一樣
-                skipWaiting: false,
-                clientsClaim: true,
-            },
-        }),
-    ],
-    test: {
-        globals: true,
-        environment: 'jsdom',
-        // src/catalog/dramas/lib/bundledSource.ts 用 import.meta.glob 掃劇集 folder；fs cache 按檔案內容 hash，
-        // 加新 folder 唔會令 bundledSource.ts 變，會用到 stale 嘅 glob 結果 → 關掉
-        fsModuleCache: false,
-        setupFiles: ['./tests/animationEvent.ts', './tests/setup.ts'],
-        css: { modules: { classNameStrategy: 'non-scoped' } },
-        include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
-        coverage: {
-            provider: 'v8',
-            include: ['src/**/*.{ts,tsx}', 'scripts/**/*.ts'],
-            exclude: ['src/main.tsx', '**/*.test.{ts,tsx}'],
+/*
+ * runtime catalog.json（Backend Phase 1）：build 環境變數 VITE_CATALOG_URL（亦讀 .env.<mode>）。
+ * 冇設定 = 功能關住（production 預設）：__CATALOG_URL__ 係空字串，main.tsx 嗰段 initCatalog 成段剷走，SW 唔加 route。
+ * e2e build 預設開：同 origin 路徑，由 e2e harness route（預設 404 → fallback 內建資料，見 e2e/remoteCatalog.mjs）
+ */
+const E2E_MODE = 'e2e';
+const E2E_CATALOG_URL = `${BASE_PATH}e2e-catalog/catalog.json`;
+const CONFIG_DIR = new URL('./', import.meta.url).pathname;
+const catalogUrlFor = (mode: string): string =>
+    loadEnv(mode, CONFIG_DIR, 'VITE_').VITE_CATALOG_URL ||
+    (mode === E2E_MODE ? E2E_CATALOG_URL : '');
+
+export default defineConfig(({ mode }) => {
+    const catalogUrl = catalogUrlFor(mode);
+    return {
+        base: BASE_PATH,
+        // Vitest 共用呢份 config，所以測試都睇到同一個 define
+        define: {
+            __APP_VERSION__: JSON.stringify(APP_VERSION),
+            __CATALOG_URL__: JSON.stringify(catalogUrl),
         },
-    },
+        plugins: [
+            react(),
+            injectAppVersion(),
+            injectSocialTags(),
+            VitePWA({
+                // prompt：新 SW 裝好後喺 waiting 等，由 src/pwa/updateManager 揀播放停咗先換，
+                // 避免 autoUpdate 喺收聽途中自動 reload
+                registerType: 'prompt',
+                includeAssets: ['favicon.png', 'apple-touch-icon.png'],
+                manifest: {
+                    name: '903 Player',
+                    short_name: '903 Player',
+                    lang: 'zh-HK',
+                    start_url: BASE_PATH,
+                    scope: BASE_PATH,
+                    display: 'standalone',
+                    // 啟動畫面 / 狀態列：app 喺主頁啟動，用 HOME_THEME.bg（入咗 app 之後由 ThemeScope 跟頁轉）
+                    background_color: LAUNCH_THEME_COLOR,
+                    theme_color: LAUNCH_THEME_COLOR,
+                    icons: [
+                        { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+                        { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+                        {
+                            src: 'icon-maskable-512.png',
+                            sizes: '512x512',
+                            type: 'image/png',
+                            purpose: 'maskable',
+                        },
+                    ],
+                },
+                workbox: {
+                    // webp：主頁橫額（src/assets/banner.webp），離線都要見到
+                    globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp}'],
+                    // 唔好自動 skipWaiting：靠 updateSW(true) 發 SKIP_WAITING message 先啟用新 SW。
+                    // clientsClaim 只影響第一次安裝（冇舊 SW 時即刻接管頁面），同 autoUpdate 時一樣
+                    skipWaiting: false,
+                    clientsClaim: true,
+                    // 冇 catalog URL 就係 undefined（同 v1.29 一樣唔設定）
+                    runtimeCaching: catalogUrl ? catalogRuntimeCaching(catalogUrl) : undefined,
+                },
+            }),
+        ],
+        test: {
+            globals: true,
+            environment: 'jsdom',
+            // src/catalog/dramas/lib/bundledSource.ts 用 import.meta.glob 掃劇集 folder；fs cache 按檔案內容 hash，
+            // 加新 folder 唔會令 bundledSource.ts 變，會用到 stale 嘅 glob 結果 → 關掉
+            fsModuleCache: false,
+            setupFiles: ['./tests/animationEvent.ts', './tests/setup.ts'],
+            css: { modules: { classNameStrategy: 'non-scoped' } },
+            include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
+            coverage: {
+                provider: 'v8',
+                include: ['src/**/*.{ts,tsx}', 'scripts/**/*.ts'],
+                exclude: ['src/main.tsx', '**/*.test.{ts,tsx}'],
+            },
+        },
+    };
 });

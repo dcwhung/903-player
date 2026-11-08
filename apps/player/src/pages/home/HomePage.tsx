@@ -2,7 +2,7 @@ import { hkToday } from '@903-player/catalog';
 import { ShowTile } from '../../components/pages/home/ShowTile/ShowTile';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import { SHORT_LANDSCAPE_QUERY, WIDE_BANNER_QUERY } from '../../config/layout';
-import { SHOWS } from '../../catalog/shows';
+import { allShows } from '../../catalog/shows';
 import { HOME_THEME } from '../../config/showThemes';
 import { useRecordings } from '../../data/useRecordings';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
@@ -81,7 +81,7 @@ const useHomeTiles = (right: HomeRight) => {
     const newShowIds = useNewShowIds();
     const today = useTodayTile(open);
     return [
-        ...SHOWS.map((show) => (
+        ...allShows().map((show) => (
             <ShowTile
                 key={show.id}
                 label={show.name}

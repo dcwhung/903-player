@@ -8,10 +8,11 @@
 
 ## Plans
 
-| 日期       | 文件                                                                                             | 摘要                                                                                                                                               |
-| ---------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-11-04 | [plans/2026-11-04_plan_requirements-priority.md](plans/2026-11-04_plan_requirements-priority.md) | 2026-11 新需求 + bug fix grill 結論同 priority 表（P0 bug → P10 新裝置）                                                                           |
-| 2026-11-06 | [plans/2026-11-06_plan_backend-admin.md](plans/2026-11-06_plan_backend-admin.md)                 | Backend admin（CF Workers + Hono + D1 + R2）+ runtime catalog.json + monorepo；Phase −1 先將進度 / 收藏 key 由 URL 改為 episode ID，然後 Phase 0–5 |
+| 日期       | 文件                                                                                               | 摘要                                                                                                                                               |
+| ---------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-04 | [plans/2026-11-04_plan_requirements-priority.md](plans/2026-11-04_plan_requirements-priority.md)   | 2026-11 新需求 + bug fix grill 結論同 priority 表（P0 bug → P10 新裝置）                                                                           |
+| 2026-11-06 | [plans/2026-11-06_plan_backend-admin.md](plans/2026-11-06_plan_backend-admin.md)                   | Backend admin（CF Workers + Hono + D1 + R2）+ runtime catalog.json + monorepo；Phase −1 先將進度 / 收藏 key 由 URL 改為 episode ID，然後 Phase 0–5 |
+| 2026-11-07 | [plans/2026-11-07_plan_phase1-runtime-catalog.md](plans/2026-11-07_plan_phase1-runtime-catalog.md) | Backend Phase 1：player 喺 splash 期間讀 runtime `catalog.json`（最多 1.5s，失敗 fallback），`VITE_CATALOG_URL` 未設定就關住；v1.30.0              |
 
 ## Audits
 
@@ -69,6 +70,7 @@
 | 2026-11-07 | [reviews/2026-11-07_review_v1.29.0.md](reviews/2026-11-07_review_v1.29.0.md)（95 pass，W-698、S-742–S-748；episode ID + 進度 / 收藏 v2 migration）                                                                                                                                                                              |
 | 2026-11-07 | [reviews/2026-11-07_review_phase0a-monorepo.md](reviews/2026-11-07_review_phase0a-monorepo.md)（90 pass，W-700–W-701、S-750–S-754；monorepo npm workspaces，純 refactor）                                                                                                                                                       |
 | 2026-11-07 | [reviews/2026-11-07_review_phase0b-catalog.md](reviews/2026-11-07_review_phase0b-catalog.md)（100 pass，S-758–S-761；抽 `packages/catalog`（`@903-player/catalog`），v1.29.1）                                                                                                                                                  |
+| 2026-11-07 | [reviews/2026-11-07_review_phase1-runtime-catalog.md](reviews/2026-11-07_review_phase1-runtime-catalog.md)（95 pass，W-702、S-763–S-765；runtime `catalog.json`，v1.30.0，production 關住）                                                                                                                                     |
 
 ## QA
 
@@ -118,6 +120,7 @@
 | 2026-11-07 | [qa/2026-11-07_qa_episode-id-storage-recheck.md](qa/2026-11-07_qa_episode-id-storage-recheck.md)（v1.29.0 Phase −1 S1 ✅ pass @ `f7e55aa`：CI 42323853076 unit 2780 / 2780、e2e 765 / 0（升級 10 / 10）；CUI-0023 completed；8 個 UNCOVERED 檔入 player-core / drama / catalog-data；11 條鏈 S1 freeze）                                                                                                                                                |
 | 2026-11-07 | [qa/2026-11-07_qa_phase0a-monorepo.md](qa/2026-11-07_qa_phase0a-monorepo.md)（Phase 0a monorepo `apps/player` S1 ✅ pass @ `ee72715`：CI 42353667556 unit 2780 / 2780、e2e 765 / 0；dist 77 檔 sha256 同 `origin/main` 一樣；W-701 ledger 1171 行 path 遷移 + 11 份 plan 改 `npm test --`；新鏈 `repo-tooling`；12 條鏈 S1 freeze；S-755..S-757）                                                                                                       |
 | 2026-11-07 | [qa/2026-11-07_qa_phase0b-catalog.md](qa/2026-11-07_qa_phase0b-catalog.md)（Phase 0b `packages/catalog` S1 ✅ pass @ `3bc9c53`：CI 42363202581 unit 242 files / 2780、e2e 765 / 0（PWA 換版 7/7）；diff 證實 storage key / episode ID / 上下架邏輯冇改；ledger 51 行 rename path 遷移、20 個新檔入鏈；12 條鏈 S1 freeze；S-762）                                                                                                                        |
+| 2026-11-07 | [qa/2026-11-07_qa_phase1-runtime-catalog.md](qa/2026-11-07_qa_phase1-runtime-catalog.md)（Backend Phase 1 runtime `catalog.json`（v1.30.0）S1 ✅ pass @ `a954048`：CI 42427493165 unit 249 files / 2953、e2e 777 / 0（Remote catalog 12/12、PWA 換版 7/7、v1→v2 10/10）；flag off dist grep 乾淨 + production smoke 0 個 catalog request；W-702 核實；17 個新檔入 catalog-data / repo-tooling；11 條鏈 S1 freeze；S-766）                               |
 
 ## Deploys
 

@@ -31,6 +31,17 @@ export { compareOrderThenId, type Ordered } from './core/ordering';
 export { SchemaError, type ParseContext } from './core/reader';
 
 export {
+    CATALOG_SCHEMA_VERSION,
+    CatalogDocumentError,
+    documentSource,
+    isCatalogImageUrl,
+    parseCatalogDocument,
+    type CatalogDocument,
+    type CatalogEntry,
+    type CatalogKind,
+} from './document/document';
+
+export {
     arcFreshDate,
     arcLeaving,
     dramaLeaving,

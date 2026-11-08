@@ -101,6 +101,16 @@ const MOCKED_ORIGINS = new Set([
     GOOGLE_FONTS_CSS,
     GOOGLE_FONTS_FILES,
 ]);
+/** runtime catalog.json 同佢嘅圖（vite.config.ts E2E_CATALOG_URL 嘅 folder，同 origin） */
+export const E2E_CATALOG_GLOB = '**/e2e-catalog/**';
+/**
+ * 預設 catalog.json 答 404（app fallback 內建資料）。SW 自己發嘅 request（NetworkFirst）交返本機 server：
+ * Playwright fulfill SW request 會令 Chromium 重複裝同一版 SW（PWA 換版 e2e 多 reload 一次），真機冇呢個情況；
+ * 本機 server 冇呢個檔，一樣係 fallback
+ */
+const catalogNotFound = (route) =>
+    route.request().serviceWorker() ? route.fallback() : route.fulfill({ status: 404, body: '' });
+
 /** 本機 preview server（run.mjs 嘅 BASE） */
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
 /** 出咗外網（唔係本機、唔係刻意 mock 嘅 host）嘅 request URL；所有 context 共用 */
@@ -213,6 +223,9 @@ export const newE2EContext = async (
     await ctx.clock.install({ time: new Date(now) });
     await ctx.route(`${AUDIO_HOST}/**`, audioResponder(extraAudioUrls));
     await ctx.route(`${DRAMA_AUDIO_BASE}/**`, (route) => route.fulfill({ status: 404, body: '' }));
+    // e2e build 開咗 runtime catalog（VITE_CATALOG_URL 預設 <base>e2e-catalog/catalog.json）：預設 404 → app 用內建資料，
+    // 其他 section 行為同 flag off 一樣；e2e/remoteCatalog.mjs 後註冊自己嘅 route 蓋過
+    await ctx.route(E2E_CATALOG_GLOB, catalogNotFound);
     await ctx.addInitScript(seedProbeStore, { key: PROBE_STORAGE_KEY, found: SAMPLE_RECORDINGS });
     ctx.on('page', waitForSplashOnLoad);
     return ctx;

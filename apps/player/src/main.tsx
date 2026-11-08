@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
+import { initCatalog } from './catalog/runtime';
+import { CATALOG_URL } from './config/catalogUrl';
 import { AudioController, createAudioElement } from './player/AudioController';
 import { attachPlaybackLog } from './player/playbackLog';
 import { UpdateManager, isHardReload, startUpdateChecks } from './pwa/updateManager';
@@ -9,8 +11,9 @@ import { migrateStorage } from './services/storageMigration';
 import './styles/tokens.css';
 import './styles/global.css';
 
-// 舊版進度 / 收藏（URL key）搬去 episode ID key：要喺任何嘢讀進度之前（player、render）做；唔會 throw
-migrateStorage();
+// 下面 player / PWA 更新嘅設定一定要喺 module 一開始同步做（唔可以排喺 initCatalog 嘅 await 後面）：
+// controlledAtLoad、isHardReload、controllerchange listener 要趕喺 SW 狀態變之前（S-648），
+// 佢哋都唔讀 catalog / 進度（AudioController 要 load 一集先讀進度，嗰陣已經 render 咗）
 
 // 喺 React 外面建立，令 PWA 更新可以直接讀播放狀態（唔使經 React）
 const audio = createAudioElement();
@@ -80,6 +83,14 @@ void isHardReload(navigator.serviceWorker)
 
 // library 漏咗嘅換版自己聽補返：第一次開 app（controlling isUpdate 係 false）、另一個 tab 搶先 skipWaiting（CUI-0017）
 navigator.serviceWorker?.addEventListener('controllerchange', updateManager.handleControllerChange);
+
+// 今次開 app 用邊份 catalog：要喺任何嘢讀 registry 之前（migrateStorage、render）揀定，之後唔再換。
+// 只係 VITE_CATALOG_URL 有設定先 await（splash 期間，最多 CATALOG_FETCH_TIMEOUT_MS，失敗用內建資料）；
+// 冇設定（production 預設）呢個 if 喺 build 時已經係 false，成段剷走：冇 await、冇 fetch
+if (CATALOG_URL) await initCatalog({ url: CATALOG_URL });
+
+// 舊版進度 / 收藏（URL key）搬去 episode ID key：要喺任何嘢讀進度之前（player load、render）做；唔會 throw
+migrateStorage();
 
 createRoot(document.getElementById('root') as HTMLElement).render(
     <StrictMode>

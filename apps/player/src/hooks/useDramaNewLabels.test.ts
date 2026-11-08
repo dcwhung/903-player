@@ -23,7 +23,7 @@ vi.mock('../catalog/dramas', async (importOriginal) => {
                   .map(({ addedAt: _realAddedAt, ...e }) =>
                       e.arc === 'Ｘ時mas時小提議' ? { ...e, addedAt: '2026-10-20' } : e,
                   );
-    return { ...actual, enabledDramas: () => actual.DRAMAS, seriesEpisodesOf: withNewArc };
+    return { ...actual, enabledDramas: () => actual.allDramas(), seriesEpisodesOf: withNewArc };
 });
 
 const labels = () => {

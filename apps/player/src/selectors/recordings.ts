@@ -1,5 +1,5 @@
 import { type ShowConfig, weekdayOf } from '@903-player/catalog';
-import { SHOWS } from '../catalog/shows';
+import { allShows } from '../catalog/shows';
 import { showDateKey } from '../services/probeStore';
 import type { EpisodeEntry, Recording, ShowId, UnavailableEpisode } from '../types/recording';
 
@@ -31,7 +31,7 @@ export const pickInitialRecording = (
 
 /** 嗰日（香港星期幾）有排節目播嘅節目 */
 const showsAiringOn = (date: string): ShowConfig[] =>
-    SHOWS.filter((show) => show.airDays.includes(weekdayOf(date)));
+    allShows().filter((show) => show.airDays.includes(weekdayOf(date)));
 
 const hasShowsOn = (date: string): boolean => showsAiringOn(date).length > 0;
 
