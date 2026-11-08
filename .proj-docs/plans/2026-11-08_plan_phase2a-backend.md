@@ -120,21 +120,38 @@ Import 完之後 **D1 = SSoT**；repo `library/` 只係內建 fallback。Admin�
 
 **實作開始前（1–6）；merge 後（7–9）**
 
-| #   | 平台         | 要做                                                                                                                                                                                                                                                                                                                            | 交返俾我                       |
-| --- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| 1   | Cloudflare   | Workers & Pages：確認 account 嘅 `*.workers.dev` subdomain（未開就開）                                                                                                                                                                                                                                                          | subdomain 名                   |
-| 2   | Cloudflare   | D1 → Create database `903-player`（location 揀 APAC 附近）                                                                                                                                                                                                                                                                      | `database_id`                  |
-| 3   | Cloudflare   | R2 → Create bucket `903-player-catalog`，**唔開 public access**（Worker 代出）；另外話我知現有音檔 bucket 名（2b 掃描用）                                                                                                                                                                                                       | 兩個 bucket 名                 |
-| 4   | Cloudflare   | My Profile → API Tokens → Custom token：Account › Workers Scripts:Edit、D1:Edit、Workers R2 Storage:Edit（只限你個 account）                                                                                                                                                                                                    | 唔使交；放 GitHub secret（#6） |
-| 5   | Google Cloud | 開 project → OAuth consent screen：External、**Testing** 模式、test user 加 `donald.cw.hung@gmail.com`、scope `openid` `email` → Credentials → OAuth client ID（Web application）：Authorized redirect URI `https://903-player-api.<subdomain>.workers.dev/auth/google/callback` + `http://localhost:8787/auth/google/callback` | Client ID（唔係 secret）       |
-| 6   | GitHub       | Repo Settings → Secrets and variables → Actions：secret `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`                                                                                                                                                                                                                         | 話我知加咗                     |
-| 7   | Cloudflare   | 第一次 deploy 之後：Worker `903-player-api` → Settings → Variables and Secrets 加 secret `GOOGLE_CLIENT_SECRET`、`SESSION_SECRET`（`openssl rand -base64 32`）                                                                                                                                                                  | 話我知加咗                     |
-| 8   | Vercel       | Publish 驗證完：Settings → Environment Variables，先 Preview、後 Production 加 `VITE_CATALOG_URL=https://903-player-api.<subdomain>.workers.dev/catalog/v1/catalog.json` → Redeploy                                                                                                                                             | —                              |
-| 9   | GitHub       | Repo variable（唔係 secret）`VITE_CATALOG_URL` 同一個值 → 下次 Pages deploy 生效                                                                                                                                                                                                                                                | —                              |
+| #   | 平台         | 要做                                                                                                                                                                                                                                                                                                                        | 交返俾我                       |
+| --- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| 1   | Cloudflare   | Workers & Pages：確認 account 嘅 `*.workers.dev` subdomain（未開就開）                                                                                                                                                                                                                                                      | subdomain 名                   |
+| 2   | Cloudflare   | D1 → Create database `903-player`（location：Western Europe，主要用戶喺西歐）                                                                                                                                                                                                                                               | `database_id`                  |
+| 3   | Cloudflare   | R2 → Create bucket `903-player-catalog`，**唔開 public access**（Worker 代出）；另外話我知現有音檔 bucket 名（2b 掃描用）                                                                                                                                                                                                   | 兩個 bucket 名                 |
+| 4   | Cloudflare   | My Profile → API Tokens → Custom token：Account › Workers Scripts:Edit、D1:Edit、Workers R2 Storage:Edit（只限你個 account）                                                                                                                                                                                                | 唔使交；放 GitHub secret（#6） |
+| 5   | Google Cloud | 開 project → OAuth consent screen：External、**Testing** 模式、test user 加 `donald.cw.hung@gmail.com`、scope `openid` `email` → Credentials → OAuth client ID（Web application）：Authorized redirect URI `https://903-player-api.dcwhung.workers.dev/auth/google/callback` + `http://localhost:8787/auth/google/callback` | Client ID（唔係 secret）       |
+| 6   | GitHub       | Repo Settings → Secrets and variables → Actions：secret `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`                                                                                                                                                                                                                     | 話我知加咗                     |
+| 7   | Cloudflare   | 第一次 deploy 之後：Worker `903-player-api` → Settings → Variables and Secrets 加 secret `GOOGLE_CLIENT_SECRET`、`SESSION_SECRET`（`openssl rand -base64 32`）                                                                                                                                                              | 話我知加咗                     |
+| 8   | Vercel       | Publish 驗證完：Settings → Environment Variables，先 Preview、後 Production 加 `VITE_CATALOG_URL=https://903-player-api.dcwhung.workers.dev/catalog/v1/catalog.json` → Redeploy                                                                                                                                             | —                              |
+| 9   | GitHub       | Repo variable（唔係 secret）`VITE_CATALOG_URL` 同一個值 → 下次 Pages deploy 生效                                                                                                                                                                                                                                            | —                              |
 
 Secret 一律唔好貼落 chat；`GOOGLE_CLIENT_ID`、`ADMIN_EMAILS`、`PLAYER_ORIGINS` 非 secret，放 `wrangler.toml` `[vars]`。（✅ 用戶 2026-11-08 已確認 Vercel Production 而家冇 `VITE_CATALOG_URL`，上個 session 嘅手動確認完成。）
 
 ---
+
+## 設定結果（用戶 2026-11-08 完成 1–6）
+
+| #   | 值（全部唔係 secret）                                                                                                                       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `dcwhung.workers.dev` → API `https://903-player-api.dcwhung.workers.dev`                                                                    |
+| 2   | D1 `903-player`：`03511373-0025-44c4-90c4-2e1480d75e76`（WEUR）                                                                             |
+| 3   | R2 `903-player-catalog`（WEUR，Public Development URL / Custom Domain 都冇開）；音檔 bucket `radio-drama`（WEUR）                           |
+| 4   | Account API token `903-player-github-deploy`：Workers Scripts / D1 / Workers R2 Storage Write，1 年到期                                     |
+| 5   | Google OAuth：External + Testing，test user 得用戶 Gmail；client `678038303553-e1sa3dlsj2mlrf09hvijukbbhksjth4h.apps.googleusercontent.com` |
+| 6   | GitHub secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`                                                                             |
+
+追加決定：
+
+- **全部 WEUR**：主要用戶同 admin 都喺西歐；Worker 照加 edge cache（Cache API）做多層保險
+- **音檔 bucket 改名 `903-radio-drama`**：R2 改唔到名 → 開新 bucket + `rclone copy`（server-side）+ 換 `DRAMA_AUDIO_BASE`（3 處）+ 舊 bucket 留幾個星期；獨立 PATCH PR，**排喺 2b 之前**。進度 / 收藏用 episode ID，唔受影響
+- **到期提醒**：Cloudflare token 1 年到期（換新 GitHub secret）；Google OAuth client 6 個月冇用會被刪（30 日內可 restore）
 
 ## 風險
 
