@@ -13,7 +13,7 @@ import type {
 import { hkToday } from '../date';
 import { compareOrderThenId } from '../core/ordering';
 import { arcAvailabilityOf, isLiveEpisode, windowStatus, type DramaStatus } from './availability';
-import { buildEpisodes } from './episodes';
+import { buildEpisodes, type EpisodeBuildOptions } from './episodes';
 import { DramaSchemaError, parseDramaDefinition, type DramaDefinition } from './schema';
 import type { DramaFolder, DramaSource } from './source';
 
@@ -134,7 +134,10 @@ const arcImagesOf = (
             : [],
     );
 
-const toEntry = (folder: DramaFolder): { entry: DramaEntry; order: number | undefined } => {
+const toEntry = (
+    folder: DramaFolder,
+    options: EpisodeBuildOptions,
+): { entry: DramaEntry; order: number | undefined } => {
     const def = parseDramaDefinition(folder.definition, {
         id: folder.id,
         source: folder.source,
@@ -143,7 +146,7 @@ const toEntry = (folder: DramaFolder): { entry: DramaEntry; order: number | unde
     return {
         entry: {
             drama: toDrama(folder, def),
-            episodes: buildEpisodes(folder.id, def),
+            episodes: buildEpisodes(folder.id, def, options),
             arcArt: arcImagesOf(folder, def, 'disc'),
             arcTiles: arcImagesOf(folder, def, 'tile'),
             arcs: arcAvailabilityOf(def),
@@ -152,11 +155,14 @@ const toEntry = (folder: DramaFolder): { entry: DramaEntry; order: number | unde
     };
 };
 
-const indexEntries = (source: DramaSource): Map<string, DramaEntry> => {
+const indexEntries = (
+    source: DramaSource,
+    options: EpisodeBuildOptions,
+): Map<string, DramaEntry> => {
     const entries = new Map<string, DramaEntry>();
     source
         .folders()
-        .map(toEntry)
+        .map((folder) => toEntry(folder, options))
         .sort((a, b) =>
             compareOrderThenId({ ...a, id: a.entry.drama.id }, { ...b, id: b.entry.drama.id }),
         )
@@ -208,8 +214,9 @@ const artLookups = (entries: ReadonlyMap<string, DramaEntry>) => {
     };
 };
 
-export const buildRegistry = (source: DramaSource): DramaRegistry => {
-    const entries = indexEntries(source);
+/** options.appAudioBase：host: app 嘅錄音 base（見 EpisodeBuildOptions） */
+export const buildRegistry = (source: DramaSource, options: EpisodeBuildOptions): DramaRegistry => {
+    const entries = indexEntries(source, options);
     const dramas = [...entries.values()].map((e) => e.drama);
     const enabled = dramas.filter((d) => d.enabled);
     const live = liveLookups(entries, enabled);

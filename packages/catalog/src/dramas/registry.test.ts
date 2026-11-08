@@ -62,9 +62,11 @@ const daily = (name: string, patch: Record<string, unknown> = {}) => ({
 });
 
 const sourceOf = (...folders: DramaFolder[]): DramaSource => ({ folders: () => folders });
+const APP_AUDIO_BASE = '/app/dramas/';
+const build = (source: DramaSource) => buildRegistry(source, { appAudioBase: APP_AUDIO_BASE });
 
 describe('buildRegistry', () => {
-    const registry = buildRegistry(
+    const registry = build(
         sourceOf(
             folder('zeta', series('Zeta')),
             folder(
@@ -102,7 +104,7 @@ describe('buildRegistry', () => {
 
     // S-482：好似芝See 咁只有短篇有 addedAt，排序用最新嗰個短篇，唔再當最舊
     it('falls back to the newest arc addedAt when drama.json has no top-level one', () => {
-        const arcsOnly = buildRegistry(
+        const arcsOnly = build(
             sourceOf(
                 folder(
                     'gamma',
@@ -169,21 +171,23 @@ describe('buildRegistry', () => {
     });
 
     it('rejects two folders with the same id', () => {
-        expect(() =>
-            buildRegistry(sourceOf(folder('x', series('X')), folder('x', series('X2')))),
-        ).toThrow(DramaSchemaError);
+        expect(() => build(sourceOf(folder('x', series('X')), folder('x', series('X2'))))).toThrow(
+            DramaSchemaError,
+        );
     });
 
     it('reports a broken drama.json with its path', () => {
-        expect(() =>
-            buildRegistry(sourceOf(folder('bad', series('Bad', { tile: 'nope.webp' })))),
-        ).toThrow(
+        expect(() => build(sourceOf(folder('bad', series('Bad', { tile: 'nope.webp' }))))).toThrow(
             'src/catalog/dramas/library/bad/drama.json: tile: no file nope.webp in the folder',
         );
     });
 
+    it('passes appAudioBase through to app-hosted episode URLs', () => {
+        expect(registry.catalogEpisodesOf('off')[0]?.url).toBe(`${APP_AUDIO_BASE}d/20261023.m4a`);
+    });
+
     it('is empty for an empty source', () => {
-        const empty = buildRegistry(sourceOf());
+        const empty = build(sourceOf());
         expect(empty.dramas).toEqual([]);
         expect(empty.enabledDramas()).toEqual([]);
     });

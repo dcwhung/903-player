@@ -17,15 +17,25 @@ import type {
 } from './schema';
 
 const FILE_NO_WIDTH = 2;
-/** host: app 嘅錄音放喺 app 自己 public/dramas/<folder>/ */
-const APP_AUDIO_DIR = 'dramas/';
 
-const audioBase = (audio: AudioDefinition): string =>
-    audio.host === 'r2' ? `${DRAMA_AUDIO_BASE}/` : `${import.meta.env.BASE_URL}${APP_AUDIO_DIR}`;
+/**
+ * 用家（player / backend）注入嘅設定：package 唔讀 import.meta.env，唔依賴 Vite。
+ * appAudioBase = host: app 嘅錄音 base（要以 / 結尾），player 傳 `${BASE_URL}dramas/`；
+ * backend 驗 catalog 時傳固定值（只驗結構，唔用 URL）。只影響 host: app 嘅 URL，episode ID 唔受影響
+ */
+export interface EpisodeBuildOptions {
+    appAudioBase: string;
+}
+
+const audioBase = (audio: AudioDefinition, options: EpisodeBuildOptions): string =>
+    audio.host === 'r2' ? `${DRAMA_AUDIO_BASE}/` : options.appAudioBase;
 
 /** <base><folder>/<segments…>，每段 encode */
-const audioUrl = (audio: AudioDefinition, segments: readonly string[]): string =>
-    `${audioBase(audio)}${encodePath([audio.folder, ...segments])}`;
+const audioUrl = (
+    audio: AudioDefinition,
+    segments: readonly string[],
+    options: EpisodeBuildOptions,
+): string => `${audioBase(audio, options)}${encodePath([audio.folder, ...segments])}`;
 
 const seriesTokens = (audio: AudioDefinition, arc: ArcDefinition, no: number, title: string) => ({
     no: String(no),
@@ -54,6 +64,7 @@ const seriesEpisode = (
     def: SeriesDefinition,
     arc: ArcDefinition,
     no: number,
+    options: EpisodeBuildOptions,
 ): SeriesEpisode => {
     const title = arc.titles.get(no);
     const file =
@@ -65,7 +76,7 @@ const seriesEpisode = (
         kind: 'series',
         dramaId,
         id: seriesEpisodeId(dramaId, arc.id, no),
-        url: audioUrl(def.audio, [arc.name, file]),
+        url: audioUrl(def.audio, [arc.name, file], options),
         arc: arc.name,
         no,
         ...(title ? { title: displayTitle(title) } : {}),
@@ -74,11 +85,15 @@ const seriesEpisode = (
     };
 };
 
-const seriesEpisodes = (dramaId: DramaId, def: SeriesDefinition): SeriesEpisode[] =>
+const seriesEpisodes = (
+    dramaId: DramaId,
+    def: SeriesDefinition,
+    options: EpisodeBuildOptions,
+): SeriesEpisode[] =>
     def.arcs.flatMap((arc) =>
         // 未知集數（未上架、drama.json 未寫 episodes）就一集都唔砌
         Array.from({ length: arc.count ?? 0 }, (_, i) =>
-            seriesEpisode(dramaId, def, arc, arc.firstNo + i),
+            seriesEpisode(dramaId, def, arc, arc.firstNo + i, options),
         ),
     );
 
@@ -88,19 +103,31 @@ const dailyTokens = (audio: AudioDefinition, date: string) => ({
     folder: audio.folder,
 });
 
-const dailyEpisodes = (dramaId: DramaId, def: DailyDefinition): DailyEpisode[] =>
+const dailyEpisodes = (
+    dramaId: DramaId,
+    def: DailyDefinition,
+    options: EpisodeBuildOptions,
+): DailyEpisode[] =>
     def.episodes.map(({ date, rerun, file }) => ({
         kind: 'daily',
         dramaId,
         id: dailyEpisodeId(dramaId, date),
-        url: audioUrl(def.audio, [
-            file ?? renderFileName(def.audio.file, dailyTokens(def.audio, date)),
-        ]),
+        url: audioUrl(
+            def.audio,
+            [file ?? renderFileName(def.audio.file, dailyTokens(def.audio, date))],
+            options,
+        ),
         date,
         rerun,
         ...(def.removedAt ? { removedAt: def.removedAt } : {}),
     }));
 
 /** 一套劇全部集數（短篇劇按短篇 → 集數排；每日劇照 JSON 次序） */
-export const buildEpisodes = (dramaId: DramaId, def: DramaDefinition): DramaEpisode[] =>
-    def.kind === 'series' ? seriesEpisodes(dramaId, def) : dailyEpisodes(dramaId, def);
+export const buildEpisodes = (
+    dramaId: DramaId,
+    def: DramaDefinition,
+    options: EpisodeBuildOptions,
+): DramaEpisode[] =>
+    def.kind === 'series'
+        ? seriesEpisodes(dramaId, def, options)
+        : dailyEpisodes(dramaId, def, options);

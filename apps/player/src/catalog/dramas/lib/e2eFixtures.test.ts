@@ -2,6 +2,7 @@
 import { buildRegistry } from '@903-player/catalog';
 import { bundledSource } from './bundledSource';
 import { E2E_FIXTURES_KEY, withE2EFixtures } from './e2eFixtures';
+import { PLAYER_EPISODE_OPTIONS } from './episodeOptions';
 
 /** e2e/harness.mjs E2E_NOW 嘅香港日子 */
 const E2E_TODAY = '2026-11-30';
@@ -19,7 +20,7 @@ describe('e2e drama fixtures', () => {
 
     it('should add valid fixtures with borrowed images once the flag is set', () => {
         localStorage.setItem(E2E_FIXTURES_KEY, '1');
-        const registry = buildRegistry(withE2EFixtures(bundledSource));
+        const registry = buildRegistry(withE2EFixtures(bundledSource), PLAYER_EPISODE_OPTIONS);
 
         expect(FIXTURES.map((id) => registry.dramaStatus(id, E2E_TODAY))).toEqual([
             'removed',

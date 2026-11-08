@@ -16,6 +16,7 @@ import {
 } from '@903-player/catalog';
 import { CATALOG_FETCH_TIMEOUT_MS } from '../config/catalogFetch';
 import { bundledSource as bundledDramas } from './dramas/lib/bundledSource';
+import { PLAYER_EPISODE_OPTIONS } from './dramas/lib/episodeOptions';
 import { bundledSource as bundledShows } from './shows/lib/bundledSource';
 
 export type CatalogOrigin = 'bundled' | 'remote';
@@ -44,7 +45,10 @@ let initStarted = false;
 
 export const activeDramaRegistry = (): DramaRegistry => {
     registryRead = true;
-    return remote?.dramas ?? (bundledDramaRegistry ??= buildRegistry(bundledDramas));
+    return (
+        remote?.dramas ??
+        (bundledDramaRegistry ??= buildRegistry(bundledDramas, PLAYER_EPISODE_OPTIONS))
+    );
 };
 
 export const activeShowRegistry = (): ShowRegistry => {
@@ -77,7 +81,7 @@ const fetchJson = async (url: string, fetchImpl: typeof fetch, signal: AbortSign
 const buildRemote = (value: unknown): Registries => {
     const doc = parseCatalogDocument(value);
     return {
-        dramas: buildRegistry(documentSource(doc, 'dramas')),
+        dramas: buildRegistry(documentSource(doc, 'dramas'), PLAYER_EPISODE_OPTIONS),
         shows: buildShowRegistry(documentSource(doc, 'shows')),
     };
 };

@@ -1,5 +1,5 @@
 // @vitest-environment node
-// 經 packages/catalog/src/dramas/episodes.ts 用到 import.meta.env：vite/client 型別由 tsconfig.scripts-test.json（只包 scripts/*.test.ts）提供。
+// 用 import.meta.env.BASE_URL 砌 host: app 嘅錄音 base（appAudioBase）：vite/client 型別由 tsconfig.scripts-test.json（只包 scripts/*.test.ts）提供。
 // 唔好用 /// <reference types> 或者放落 tsconfig.node.json：兩樣都會令成個 Node program 以為有 import.meta.env
 /*
  * scripts/dramaFromFolder.mjs：由本機劇集 folder 生成 drama.json 草稿。
@@ -45,8 +45,10 @@ const NFD_NAME = 'Café'.normalize('NFD');
 const SERIES_IDS = ['lancy', 'chisee', 'golden', 'jim', 'sammy-kitty'] as const;
 /** 已上架嘅劇（短篇 + 每日劇 c18），全部要 round-trip */
 const COMMITTED_IDS = [...SERIES_IDS, 'c18'] as const;
-/** host: app 嘅錄音喺 app 自己嘅 public/dramas/（同 packages/catalog/src/dramas/episodes.ts 一致） */
+/** host: app 嘅錄音喺 app 自己嘅 public/dramas/（同 src/catalog/dramas/lib/episodeOptions.ts 一致） */
 const APP_AUDIO_DIR = 'dramas/';
+/** 同 src/catalog/dramas/lib/episodeOptions.ts 一樣（PLAYER_EPISODE_OPTIONS） */
+const APP_AUDIO_URL_BASE = `${import.meta.env.BASE_URL}${APP_AUDIO_DIR}`;
 const VERIFY_TIMEOUT_MS = 300;
 /**
  * 用 TypeScript API 建成個 tsconfig.node.json program：單獨跑 ~1.4 s，coverage 全 suite 平行時去到 7.5 s，
@@ -118,7 +120,7 @@ const appEpisodes = (id: string, json: unknown) => {
     expectSchemaValid(json);
     const files = new Set(imagesOf(json as Json));
     const def = parseDramaDefinition(json, { id, source: `${id}.drama.json`, files });
-    return buildEpisodes(id, def);
+    return buildEpisodes(id, def, { appAudioBase: APP_AUDIO_URL_BASE });
 };
 
 /** 錄音網址去咗 base 之後 → root 底下嘅相對路徑（每段 decode）；唔係由 base 開頭即係 host 揀錯 */
@@ -132,9 +134,7 @@ const pathOfUrl = (url: string): string => decodedPath(url, `${APP_AUDIO_BASE}/`
 
 /** 跟 audio.host 揀 base：r2 用 R2 網址，app（例如 c18）用 app 自己嘅 dramas/ */
 const audioPathOf = (json: Json, url: string): string =>
-    (json.audio as Json).host === 'r2'
-        ? pathOfUrl(url)
-        : decodedPath(url, `${import.meta.env.BASE_URL}${APP_AUDIO_DIR}`);
+    (json.audio as Json).host === 'r2' ? pathOfUrl(url) : decodedPath(url, APP_AUDIO_URL_BASE);
 
 /** tsconfig.node.json 成個 program（加埋 extraFile）入面 extraFile 嘅 type error */
 const nodeProgramErrors = (extraFile: string): readonly ts.Diagnostic[] => {
@@ -1062,7 +1062,7 @@ describe('script packaging', () => {
     it(
         'should not give Node-run scripts vite/client types (import.meta.env)',
         () => {
-            // 呢個 test 經 episodes.ts 用到 import.meta.env，所以 scripts/*.test.ts 自己一個 project
+            // 呢個 test 用到 import.meta.env（APP_AUDIO_URL_BASE），所以 scripts/*.test.ts 自己一個 project
             // （tsconfig.scripts-test.json）先有 vite/client；tsconfig.node.json 底下純 Node 檔用 import.meta.env 要報錯
             const probe = join(root, 'probe.ts');
             writeFileSync(probe, 'export const base: string = import.meta.env.BASE_URL;\n');
