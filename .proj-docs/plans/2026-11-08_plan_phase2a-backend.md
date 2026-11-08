@@ -153,6 +153,11 @@ Secret 一律唔好貼落 chat；`GOOGLE_CLIENT_ID`、`ADMIN_EMAILS`、`PLAYER_O
 - **音檔 bucket 改名 `903-radio-drama`**：R2 改唔到名 → 開新 bucket + `rclone copy`（server-side）+ 換 `DRAMA_AUDIO_BASE`（3 處）+ 舊 bucket 留幾個星期；獨立 PATCH PR，**排喺 2b 之前**。進度 / 收藏用 episode ID，唔受影響
 - **到期提醒**：Cloudflare token 1 年到期（換新 GitHub secret）；Google OAuth client 6 個月冇用會被刪（30 日內可 restore）
 
+## Ops 頁（用戶 2026-11-08 確認 mockup）
+
+- Design Origin：`mockup: _mockups_/admin-ops/index.html`（6 個狀態：未 login、冇權限、主畫面、Publish 成功、ID 守衛拒絕、還原確認）
+- 做法 **A**：2a 用最簡工具樣式；Phase 3 admin 嘅 Publish 頁沿用同一套 API 同狀態流程，外觀跟 `_mockups_/admin/` 重畫，到時刪走 ops 頁
+
 ## 風險
 
 - 🔴 **Episode ID 變咗 = 用戶進度冇咗**：一致性 test + publish ID 守衛 + 開 flag 前 curl 比較，三重把關
