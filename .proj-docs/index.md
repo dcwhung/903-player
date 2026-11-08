@@ -8,11 +8,12 @@
 
 ## Plans
 
-| 日期       | 文件                                                                                               | 摘要                                                                                                                                               |
-| ---------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-11-04 | [plans/2026-11-04_plan_requirements-priority.md](plans/2026-11-04_plan_requirements-priority.md)   | 2026-11 新需求 + bug fix grill 結論同 priority 表（P0 bug → P10 新裝置）                                                                           |
-| 2026-11-06 | [plans/2026-11-06_plan_backend-admin.md](plans/2026-11-06_plan_backend-admin.md)                   | Backend admin（CF Workers + Hono + D1 + R2）+ runtime catalog.json + monorepo；Phase −1 先將進度 / 收藏 key 由 URL 改為 episode ID，然後 Phase 0–5 |
-| 2026-11-07 | [plans/2026-11-07_plan_phase1-runtime-catalog.md](plans/2026-11-07_plan_phase1-runtime-catalog.md) | Backend Phase 1：player 喺 splash 期間讀 runtime `catalog.json`（最多 1.5s，失敗 fallback），`VITE_CATALOG_URL` 未設定就關住；v1.30.0              |
+| 日期       | 文件                                                                                               | 摘要                                                                                                                                                                               |
+| ---------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-04 | [plans/2026-11-04_plan_requirements-priority.md](plans/2026-11-04_plan_requirements-priority.md)   | 2026-11 新需求 + bug fix grill 結論同 priority 表（P0 bug → P10 新裝置）                                                                                                           |
+| 2026-11-06 | [plans/2026-11-06_plan_backend-admin.md](plans/2026-11-06_plan_backend-admin.md)                   | Backend admin（CF Workers + Hono + D1 + R2）+ runtime catalog.json + monorepo；Phase −1 先將進度 / 收藏 key 由 URL 改為 episode ID，然後 Phase 0–5                                 |
+| 2026-11-07 | [plans/2026-11-07_plan_phase1-runtime-catalog.md](plans/2026-11-07_plan_phase1-runtime-catalog.md) | Backend Phase 1：player 喺 splash 期間讀 runtime `catalog.json`（最多 1.5s，失敗 fallback），`VITE_CATALOG_URL` 未設定就關住；v1.30.0                                              |
+| 2026-11-08 | [plans/2026-11-08_plan_phase2a-backend.md](plans/2026-11-08_plan_phase2a-backend.md)               | Backend Phase 2a：Hono Worker + D1（document 式）+ Google login + migration + publish（Worker 代出 catalog.json）+ 開 flag；附用戶 dashboard 設定清單；2b 留 CRUD / R2 掃描 / 排程 |
 
 ## Audits
 
