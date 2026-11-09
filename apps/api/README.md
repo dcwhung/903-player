@@ -51,6 +51,16 @@ npx tsc -b apps/api             # type check
 3. 問 D1 `assets` 已經有邊啲圖，淨係上載未有嘅（`wrangler r2 object put`）
 4. 圖上載完先跑 SQL
 
+**Production（主要做法，唔使 local clone）**：GitHub → **Actions** → **Import catalog** → **Run workflow**（`.github/workflows/import-catalog.yml`）
+
+1. Branch 揀 `main`（其他 branch 會即刻 fail），**dry run** 保持剔住 → Run：淨係讀 D1、印出要跑嘅 wrangler 指令，唔上載、唔寫 D1
+2. 睇 run 嘅 Summary（幾多 entries、幾多張圖要上載、幾多個 wrangler step）冇問題 → 再 Run 一次，**剔走 dry run** = 真 import
+3. Import 完去 ops 頁撳 **Publish**，player 先會讀到
+
+用同 `deploy-api.yml` 一樣嘅 GitHub secret `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`（D1 + Workers R2 Storage：Edit 已經夠），只交畀 import 嗰一步；兩次 import 唔會同時跑（排隊）。
+
+**Local CLI（另一個做法）**：
+
 ```sh
 cd apps/api
 npm run import -- --local                # 本機
@@ -58,7 +68,7 @@ npm run import -- --remote --dry-run     # production：淨係印指令（會讀
 npm run import -- --remote               # production（要 `npx wrangler login` 或者 CLOUDFLARE_API_TOKEN）
 ```
 
-Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `library/` 只係 player 內建 fallback；Phase 3 admin 未有之前要改內容 → 改 repo JSON → 重跑 import → Publish。
+Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `library/` 只係 player 內建 fallback；Phase 3 admin 未有之前要改內容 → 改 repo JSON → merge 入 `main` → 重跑 import（Import catalog workflow）→ Publish。
 
 ## 第一次 deploy（merge 之後）
 
@@ -70,7 +80,7 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
     （或者 `cd apps/api && npx wrangler secret put GOOGLE_CLIENT_SECRET`）。Secret 唔好貼落 chat / repo。
 
 3. 開 `https://903-player-api.dcwhung.workers.dev/` → 用 Google 登入（只有 `ADMIN_EMAILS` 入面嘅 email 得）
-4. `npm run import -- --remote`（上面）→ ops 頁撳 **Publish**（第一次冇上次 publish，ID 守衛自動過）
+4. GitHub → Actions → **Import catalog** → Run workflow（先 dry run，冇問題再剔走 dry run 跑；見上面「Import」，local 可以用 `npm run import -- --remote`）→ ops 頁撳 **Publish**（第一次冇上次 publish，ID 守衛自動過）
 
 `SESSION_SECRET` 只係簽 OAuth state cookie（10 分鐘）；換咗佢唔會踢走已 login 嘅 session（session token 喺 D1）。
 
