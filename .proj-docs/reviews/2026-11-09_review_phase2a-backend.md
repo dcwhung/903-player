@@ -184,3 +184,35 @@ next_agent: developer
 branch: "claude/sleepy-curie-uuur1k"
 context: "80ca26f import-catalog.yml: C-012 no pipefail on `| tee` (default step shell is bash -e) → failed import shows green + 'Publish' summary; fix with job defaults.run.shell: bash + correct L44 comment, commit `fix: C-012 | …`, then re-review. Wrangler confirm claim verified. S-781/S-782 to backlog. Report committed, not pushed (CI 42706494486 in progress)."
 ```
+
+## Re-review 76fd072 (C-012)
+
+- 範圍：只驗 `76fd072`（`import-catalog.yml` job `defaults.run.shell: bash` + 註解、`apps/api/README.md` 步驟 0）
+- Hard gates：`npm run lint` pass（eslint + prettier 全 repo）；type / tests / coverage n/a（冇 `.ts` / `.mjs` 改動）；No Critical pass
+- C-012 ✅ resolved：job defaults 令全部 `run:` step 用 `bash --noprofile --norc -eo pipefail {0}`（`uses:` step 唔受影響）。L2：同一段 `f | tee import.log`（f exit 7）喺 `-eo pipefail` → step exit 7、後面唔跑；`-e` → exit 0（重現原 bug）。Import 失敗 → Summary（`success()`）唔跑，唔會再出「Publish」
+- Summary 喺 pipefail 下冇 regression：抽 yml 原文用 `-eo pipefail` 跑，dry / 真跑 / 空 log 三種都 exit 0；兩個 `grep` 都有 `|| echo` / `|| true` 兜底，step 入面冇 pipe
+- `Require main` guard：`if:` 條件同 shell 無關；body 喺 `-eo pipefail` 照印 `::error::` 再 exit 1，後面 step 全 skip
+- 註解：L26-27 同 L49 而家同 GitHub 文件一致（冇寫 `shell:` = `bash -e`）；README 冇講失敗會綠
+- S-782 ✅：README 步驟 0 等 Deploy API 綠先 import，backlog 搬去 Closed
+- Version bump 例外成立：修同 session 上一個指令 `80ca26f`（已 bump `apps/api` 0.1.1）引入嘅 bug，commit message 有寫明
+
+結果：✅ pass，冇新 C / W，100/100
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: n/a
+  tests: n/a
+  coverage: n/a
+  no_critical: pass
+  security_scan: n/a
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "claude/sleepy-curie-uuur1k"
+context: "Re-review 76fd072 pass: C-012 resolved (job defaults shell: bash → -eo pipefail; Summary + Require main verified under pipefail), S-782 closed via README step 0. Report committed, not pushed (code CI running) — main agent pushes after CI green."
+```

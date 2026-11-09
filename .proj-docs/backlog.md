@@ -44,11 +44,12 @@
 | S-779 | `apps/player/e2e/harness.mjs`             | `CATALOG_IMAGE_HOST` 入咗 `MOCKED_ORIGINS` 但 `newE2EContext` 冇預設 404 route；第二個 section 請求呢個 host 唔會 abort，會直接 DNS fail                                                  | 下次改 harness        | reviews/2026-11-09_review_phase2a-backend        |
 | S-780 | `apps/api/src/catalog/publish.ts`         | 冇改動再 publish 都開新 publish 行、hash 唔同（`generatedAt` 每次新）                                                                                                                     | Phase 3 publish diff  | qa/2026-11-09_qa_phase2a-backend                 |
 | S-781 | `.github/workflows/import-catalog.yml`    | `workflow_dispatch` 用所揀 ref 嗰份 yml，main guard 只防手滑；真邊界用 GitHub Environment（branch 限 `main`）+ environment secret，`deploy-api.yml` 一齊轉                                | 下次改 workflow       | reviews/2026-11-09_review_phase2a-backend        |
-| S-782 | `.github/workflows/import-catalog.yml`    | 同 `deploy-api` 分開 concurrency group：新 migration merge 後即刻 import 可能早過 migration apply；README 加「等 Deploy API 綠先 import」                                                 | 下次改 README         | reviews/2026-11-09_review_phase2a-backend        |
 
 ## Closed
 
-| ID                                       | 結果                                                                                                                                                                                                                                                                      | 日期       |
+| ID | 結果 | 日期 |
+
+| S-782                                    | `76fd072`：`apps/api/README.md` Production import 加步驟 0「等 Deploy API 喺 `main` 最新 run 綠咗先 import」；concurrency group 照分開（文件層面處理）                                                                                                                    | 2026-11-09 |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | S-763、S-764                             | Phase 2a（player v1.31.0）改好：Worker layout `catalog/v1/catalog.json` + `catalog/v1/img/<hash>.<ext>` 同一個 folder，SW 圖 route 自然 match（`catalogCaching.test.ts` 鎖住）；catalog `<img>` 加 `crossorigin`、Worker 有 CORS，`cacheableResponse.statuses` 改 `[200]` | 2026-11-09 |
 | W-702                                    | headerRule / titleFont 改白名單（`themeSchema.ts` + drama / show JSON Schema 同一條 pattern），fix commit 見 git log `fix(catalog): whitelist theme headerRule and titleFont values (W-702)`                                                                              | 2026-11-07 |
