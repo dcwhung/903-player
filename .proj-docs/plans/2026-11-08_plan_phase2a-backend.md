@@ -103,7 +103,7 @@ apps/api/
 
 1. Worker deploy 成功 → 用戶 login ops 頁 → 跑 import → 撳 Publish
 2. 驗：`curl` published `catalog.json` 經 `buildCatalogDocument` 比較（同內建一樣，除 image URL / generatedAt）；CORS header 啱
-3. 先開 **Vercel Preview** env 試 → 再開 Production + GitHub Pages variable → redeploy
+3. ~~先開 Vercel Preview~~（用戶 2026-11-09 決定跳過：Preview origin 唔喺 CORS 白名單）→ 直接開 Production + GitHub Pages variable → redeploy；有問題刪 env var + Redeploy 退返
 4. iOS Safari 真機：開 app、offline 再開、進度 / 收藏仍在
 
 ### 唔做（2b）
@@ -129,7 +129,7 @@ Import 完之後 **D1 = SSoT**；repo `library/` 只係內建 fallback。Admin�
 | 5   | Google Cloud | 開 project → OAuth consent screen：External、**Testing** 模式、test user 加 `donald.cw.hung@gmail.com`、scope `openid` `email` → Credentials → OAuth client ID（Web application）：Authorized redirect URI `https://903-player-api.dcwhung.workers.dev/auth/google/callback` + `http://localhost:8787/auth/google/callback` | Client ID（唔係 secret）       |
 | 6   | GitHub       | Repo Settings → Secrets and variables → Actions：secret `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`                                                                                                                                                                                                                     | 話我知加咗                     |
 | 7   | Cloudflare   | 第一次 deploy 之後：Worker `903-player-api` → Settings → Variables and Secrets 加 secret `GOOGLE_CLIENT_SECRET`、`SESSION_SECRET`（`openssl rand -base64 32`）                                                                                                                                                              | 話我知加咗                     |
-| 8   | Vercel       | Publish 驗證完：Settings → Environment Variables，先 Preview、後 Production 加 `VITE_CATALOG_URL=https://903-player-api.dcwhung.workers.dev/catalog/v1/catalog.json` → Redeploy                                                                                                                                             | —                              |
+| 8   | Vercel       | Publish 驗證完：Settings → Environment Variables，Production 加（跳過 Preview） `VITE_CATALOG_URL=https://903-player-api.dcwhung.workers.dev/catalog/v1/catalog.json` → Redeploy                                                                                                                                            | —                              |
 | 9   | GitHub       | Repo variable（唔係 secret）`VITE_CATALOG_URL` 同一個值 → 下次 Pages deploy 生效                                                                                                                                                                                                                                            | —                              |
 
 Secret 一律唔好貼落 chat；`GOOGLE_CLIENT_ID`、`ADMIN_EMAILS`、`PLAYER_ORIGINS` 非 secret，放 `wrangler.toml` `[vars]`。（✅ 用戶 2026-11-08 已確認 Vercel Production 而家冇 `VITE_CATALOG_URL`，上個 session 嘅手動確認完成。）
@@ -163,7 +163,7 @@ Secret 一律唔好貼落 chat；`GOOGLE_CLIENT_ID`、`ADMIN_EMAILS`、`PLAYER_O
 - 🔴 **Episode ID 變咗 = 用戶進度冇咗**：一致性 test + publish ID 守衛 + 開 flag 前 curl 比較，三重把關
 - 🔴 **appAudioBase 改簽名**影響 player 全部集數 URL：一致性 test + 現有每劇 `drama.test.ts` URL pin 鎖住
 - 🟡 Worker 喺 player 啟動 critical path：Worker 死 / 慢 → 1.5s 後 fallback SW cache / 內建（Phase 1 已驗）
-- 🟡 `crossorigin` 加咗而 CORS header 唔啱 → 圖出唔到：e2e 用 Playwright route 模擬 CORS header；開 flag 前 Preview env 真機睇
+- 🟡 `crossorigin` 加咗而 CORS header 唔啱 → 圖出唔到：e2e 用 Playwright route 模擬 CORS header；開 Production flag 後即刻真機睇，有問題即刪 env var 退返
 - 🟡 Google Testing 模式：只 test user 登入得，符合 whitelist；唔使 Google 審核
 - 🟢 Free plan：100k request / 日、D1 / R2 免費額度遠超所需
 

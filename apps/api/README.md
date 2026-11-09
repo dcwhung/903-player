@@ -87,8 +87,7 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
     - 內容：同 `node apps/player/scripts/buildCatalogJson.mjs --image-base x/` 比，`shows` / `dramas` 嘅 id、definition、圖檔名全部一樣（圖 URL、`generatedAt` 除外）
     - 隨便攞一張圖 `curl -sI`：`200`、`image/webp`、`max-age=31536000, immutable`
 
-2. **Vercel Preview** 先試：Settings → Environment Variables → Preview 加 `VITE_CATALOG_URL=https://903-player-api.dcwhung.workers.dev/catalog/v1/catalog.json` → redeploy。
-   ⚠️ Preview 網址唔喺 `PLAYER_ORIGINS`：`catalog.json` 嘅 fetch 同 `<img crossorigin>` 會因 CORS 失敗（player 會 fallback 內建資料、圖出唔到）。試 Preview 前要將嗰個 Preview origin 暫時加入 `wrangler.toml` `PLAYER_ORIGINS`（或者 dashboard var），試完拎走
+2. **唔試 Vercel Preview**（用戶 2026-11-09 決定）：Preview 網址唔喺 `PLAYER_ORIGINS`，會被 CORS 擋。Publish 內容已證實同內建一樣，直接開 Production（下一步），開完即刻真機驗；有問題就刪 env var + Redeploy 退返
 3. Production：Vercel Production env 加同一個值 → Redeploy
 4. GitHub Pages：Repo Settings → Secrets and variables → Actions → **Variables**（唔係 secret）加 `VITE_CATALOG_URL` 同一個值 → 下次 Pages deploy 生效
 5. iOS Safari 真機：開 app、斷網再開、進度 / 收藏仍在
