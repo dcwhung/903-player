@@ -5,7 +5,7 @@
  *   node scripts/buildCatalogJson.mjs --image-base <URL> [--out <檔案>] [--generated-at <ISO 時間>]
  *
  * 圖 URL = <image-base><shows|dramas>/<id>/<檔名>（逐段 encode）；圖檔要另外照呢個 layout 上載。
- * Phase 1：e2e fixture（e2e/remoteCatalog.mjs）；Phase 2：backend migration 嘅起點。
+ * Phase 1：e2e fixture（e2e/remoteCatalog.mjs）；Phase 2a：scanLibrary 畀 apps/api/scripts/importLibrary.mjs 匯入 D1 / R2。
  * 掃圖規則同 bundledSource.ts 嘅 import.meta.glob 一樣（劇集：folder 入面任何深度嘅 .webp；節目：folder 頂層 .jpg / .webp），
  * src/catalog/catalogJson.test.ts 驗生成結果 build 出嚟嘅 registry 同內建一模一樣。只用 Node 內置 module。
  */
@@ -44,18 +44,42 @@ const imageFiles = (folder, { image, nested }) =>
 const imageUrl = (imageBase, kind, id, file) =>
     `${imageBase}${[kind, id, ...file.split('/')].map(encodeURIComponent).join('/')}`;
 
-const entryOf = (libraryDir, spec, imageBase) => (id) => {
+/** 一個 folder：definition（parse 咗嘅 JSON）+ 圖（相對檔名 + 絕對路徑） */
+const scanFolder = (libraryDir, spec) => (id) => {
     const folder = join(libraryDir, id);
     const definition = JSON.parse(readFileSync(join(folder, spec.definition), 'utf8'));
-    const files = imageFiles(folder, spec);
-    const images = Object.fromEntries(
-        files.map((file) => [file, imageUrl(imageBase, spec.kind, id, file)]),
-    );
+    const images = imageFiles(folder, spec).map((file) => ({
+        file,
+        path: join(folder, ...file.split('/')),
+    }));
     return { id, definition, images };
 };
 
+/**
+ * 掃 src/catalog/{shows,dramas}/library/：每個 folder 嘅 definition + 圖。catalog.json（下面）同
+ * apps/api/scripts/importLibrary.mjs（Backend Phase 2a 匯入 D1 / R2）共用，規則唔好喺第二度重寫
+ */
+export function scanLibrary({ catalogDir = defaultCatalogDir() } = {}) {
+    const listOf = (spec) => {
+        const libraryDir = join(catalogDir, spec.kind, 'library');
+        return subFolders(libraryDir).map(scanFolder(libraryDir, spec));
+    };
+    const [shows, dramas] = KINDS.map(listOf);
+    return { shows, dramas };
+}
+
 /** image base 一定要以 / 結尾，先可以直接接 <kind>/<id>/<檔名> */
 const withTrailingSlash = (base) => (base.endsWith('/') ? base : `${base}/`);
+
+const toCatalogEntry =
+    (kind, base) =>
+    ({ id, definition, images }) => ({
+        id,
+        definition,
+        images: Object.fromEntries(
+            images.map(({ file }) => [file, imageUrl(base, kind, id, file)]),
+        ),
+    });
 
 /**
  * 生成 catalog.json 內容（未序列化）。catalogDir 預設 src/catalog/；
@@ -68,12 +92,13 @@ export function buildCatalogDocument({
 }) {
     if (!imageBase) throw new Error('imageBase is required');
     const base = withTrailingSlash(imageBase);
-    const listOf = (spec) => {
-        const libraryDir = join(catalogDir, spec.kind, 'library');
-        return subFolders(libraryDir).map(entryOf(libraryDir, spec, base));
+    const library = scanLibrary({ catalogDir });
+    return {
+        schemaVersion: CATALOG_SCHEMA_VERSION,
+        generatedAt,
+        shows: library.shows.map(toCatalogEntry('shows', base)),
+        dramas: library.dramas.map(toCatalogEntry('dramas', base)),
     };
-    const [shows, dramas] = KINDS.map(listOf);
-    return { schemaVersion: CATALOG_SCHEMA_VERSION, generatedAt, shows, dramas };
 }
 
 /** CLI：成功 0；參數錯 2 */
