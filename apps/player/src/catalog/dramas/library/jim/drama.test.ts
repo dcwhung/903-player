@@ -16,7 +16,7 @@ const ARCS: ReadonlyArray<readonly [string, number]> = [
 const ADDED_AT = '2026-10-26';
 /** 用戶畀嘅 sample link，一個 byte 都唔可以差 */
 const SAMPLE_URL =
-    'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/%E5%B0%91%E7%88%BA%E5%8D%A0%E7%B3%BB%E5%88%97/%E5%85%AB%E7%8E%8B%E5%AD%90/01%20-%20%E5%85%AB%E7%8E%8B%E5%AD%90%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a';
+    'https://pub-1f26dbd9526e41b89de51bd33054d825.r2.dev/%E5%B0%91%E7%88%BA%E5%8D%A0%E7%B3%BB%E5%88%97/%E5%85%AB%E7%8E%8B%E5%AD%90/01%20-%20%E5%85%AB%E7%8E%8B%E5%AD%90%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a';
 
 describe('少爺占系列', () => {
     const jim = seriesEpisodesOf('jim');

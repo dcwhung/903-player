@@ -30,7 +30,7 @@ const firstLancy = (): SeriesEpisode => seriesOf('lancy')[0] as SeriesEpisode;
 const lastChisee = (): SeriesEpisode => seriesOf('chisee').at(-1) as SeriesEpisode;
 const firstC18 = (): DailyEpisode => catalogEpisodesOf('c18')[0] as DailyEpisode;
 const BADGIRL_URL = buildAudioUrl(findShow('badgirl')!, '2026-10-19');
-const UNKNOWN_URL = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/gone/old.m4a';
+const UNKNOWN_URL = 'https://pub-1f26dbd9526e41b89de51bd33054d825.r2.dev/gone/old.m4a';
 
 const setV1Progress = (map: Record<string, unknown>): void =>
     localStorage.setItem(PROGRESS_V1_STORAGE_KEY, JSON.stringify(map));
