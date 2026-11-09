@@ -41,6 +41,7 @@
 | S-776 | PR                                        | Observation：PR description 要附「新增依賴說明」（hono / wrangler / miniflare / vitest-plugin / workers-types）                                                                           | 開 PR 時              | reviews/2026-11-09_review_phase2a-backend        |
 | S-777 | git 歷史（Phase 2a）                      | Observation：`505c993`–`83d87b5` lockfile 冇 peer deps，`npm ci` 唔得；bisect 用 `--first-parent`                                                                                         | —                     | reviews/2026-11-09_review_phase2a-backend        |
 | S-778 | `apps/api/README.md`                      | L91「或者 dashboard var」：`wrangler deploy` 會用 `wrangler.toml` `[vars]` 蓋走 dashboard 改動                                                                                            | 下次改 README         | reviews/2026-11-09_review_phase2a-backend        |
+| S-779 | `apps/player/e2e/harness.mjs`             | `CATALOG_IMAGE_HOST` 入咗 `MOCKED_ORIGINS` 但 `newE2EContext` 冇預設 404 route；第二個 section 請求呢個 host 唔會 abort，會直接 DNS fail                                                  | 下次改 harness        | reviews/2026-11-09_review_phase2a-backend        |
 | S-780 | `apps/api/src/catalog/publish.ts`         | 冇改動再 publish 都開新 publish 行、hash 唔同（`generatedAt` 每次新）                                                                                                                     | Phase 3 publish diff  | qa/2026-11-09_qa_phase2a-backend                 |
 
 ## Closed
