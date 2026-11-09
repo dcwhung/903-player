@@ -32,6 +32,8 @@ export const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2
  */
 export const GOOGLE_FONTS_CSS = 'https://fonts.googleapis.com';
 export const GOOGLE_FONTS_FILES = 'https://fonts.gstatic.com';
+/** 跨 origin catalog 圖嘅假 host（似 apps/api Worker；.test TLD 唔會解析到真網址），由 remoteCatalog.mjs 自己 route */
+export const CATALOG_IMAGE_HOST = 'https://catalog-images.e2e.test';
 /** 本機字型檔喺 gstatic 嘅假路徑前綴（真 gstatic 唔會用 /e2e/，唔會同真網址混淆） */
 const LOCAL_FONT_PREFIX = '/e2e/';
 // npm workspaces 將 dependency hoist 去 repo 根嘅 node_modules：用 Node resolution 搵，唔寫死相對 path
@@ -92,7 +94,7 @@ const fontFilesResponder = (route) => {
 };
 
 /**
- * e2e 唔出外網：刻意 mock 咗嘅外部 origin（newE2EContext 入面 route 住）。
+ * e2e 唔出外網：刻意 mock 咗嘅外部 origin（newE2EContext 入面 route 住；CATALOG_IMAGE_HOST 由用到嘅 section 自己 route）。
  * 其他外部 request 一律 abort，同時記低入 externalRequests，run.mjs 最尾斷言要係空
  */
 const MOCKED_ORIGINS = new Set([
@@ -100,6 +102,7 @@ const MOCKED_ORIGINS = new Set([
     DRAMA_AUDIO_BASE,
     GOOGLE_FONTS_CSS,
     GOOGLE_FONTS_FILES,
+    CATALOG_IMAGE_HOST,
 ]);
 /** runtime catalog.json 同佢嘅圖（vite.config.ts E2E_CATALOG_URL 嘅 folder，同 origin） */
 export const E2E_CATALOG_GLOB = '**/e2e-catalog/**';

@@ -7,7 +7,13 @@
 // 所有 route 都好似 apps/api Worker 咁答 Access-Control-Allow-Origin + Vary: Origin
 import { readFileSync } from 'node:fs';
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
-import { E2E_CATALOG_GLOB, isShown, newE2EPage, runSection } from './harness.mjs';
+import {
+    CATALOG_IMAGE_HOST,
+    E2E_CATALOG_GLOB,
+    isShown,
+    newE2EPage,
+    runSection,
+} from './harness.mjs';
 import { checkStorage, seedV1 } from './storageMigration.mjs';
 
 const CATALOG_DIR = new URL('../src/catalog/', import.meta.url);
@@ -23,8 +29,8 @@ const SLOW_RESPONSE_MS = CATALOG_FETCH_TIMEOUT_MS + 1000;
 const SPLASH_BUDGET_MS = 5000;
 
 /** 跨 origin 圖 host（似 apps/api Worker）；path 同本機 e2e-catalog/ 一樣，imageFile 照用 */
-const CROSS_ORIGIN_IMAGE_BASE = `https://catalog-images.e2e.test/${CATALOG_FOLDER}`;
-const CROSS_ORIGIN_GLOB = 'https://catalog-images.e2e.test/**';
+const CROSS_ORIGIN_IMAGE_BASE = `${CATALOG_IMAGE_HOST}/${CATALOG_FOLDER}`;
+const CROSS_ORIGIN_GLOB = `${CATALOG_IMAGE_HOST}/**`;
 
 /** 只有 catalog.json 先有嘅測試劇：借蘭茜夫人劇場嘅 definition 同圖 */
 const REMOTE_ID = 'e2e-remote';
