@@ -43,6 +43,8 @@
 | S-778 | `apps/api/README.md`                      | L91「或者 dashboard var」：`wrangler deploy` 會用 `wrangler.toml` `[vars]` 蓋走 dashboard 改動                                                                                            | 下次改 README         | reviews/2026-11-09_review_phase2a-backend        |
 | S-779 | `apps/player/e2e/harness.mjs`             | `CATALOG_IMAGE_HOST` 入咗 `MOCKED_ORIGINS` 但 `newE2EContext` 冇預設 404 route；第二個 section 請求呢個 host 唔會 abort，會直接 DNS fail                                                  | 下次改 harness        | reviews/2026-11-09_review_phase2a-backend        |
 | S-780 | `apps/api/src/catalog/publish.ts`         | 冇改動再 publish 都開新 publish 行、hash 唔同（`generatedAt` 每次新）                                                                                                                     | Phase 3 publish diff  | qa/2026-11-09_qa_phase2a-backend                 |
+| S-781 | `.github/workflows/import-catalog.yml`    | `workflow_dispatch` 用所揀 ref 嗰份 yml，main guard 只防手滑；真邊界用 GitHub Environment（branch 限 `main`）+ environment secret，`deploy-api.yml` 一齊轉                                | 下次改 workflow       | reviews/2026-11-09_review_phase2a-backend        |
+| S-782 | `.github/workflows/import-catalog.yml`    | 同 `deploy-api` 分開 concurrency group：新 migration merge 後即刻 import 可能早過 migration apply；README 加「等 Deploy API 綠先 import」                                                 | 下次改 README         | reviews/2026-11-09_review_phase2a-backend        |
 
 ## Closed
 
