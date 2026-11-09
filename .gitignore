@@ -33,3 +33,7 @@ apps/player/scripts/arcCover/review/**/*.webp
 
 # agent worktrees (Claude Code isolation)
 .claude/worktrees/
+# apps/api（Cloudflare Worker）：本機 secret、wrangler / miniflare state、import 生成物
+.dev.vars
+.wrangler/
+apps/api/.import/

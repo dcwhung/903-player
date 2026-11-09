@@ -1,0 +1,7 @@
+# 抄做 .dev.vars（已 gitignore）畀 `wrangler dev` 用；production 用 `wrangler secret put`
+GOOGLE_CLIENT_SECRET=paste-from-google-cloud-console
+# openssl rand -base64 32
+SESSION_SECRET=paste-a-random-32-byte-secret
+# 本機要用 https（catalog.json 嘅圖 URL 一定要 https）：wrangler dev --local-protocol https
+WORKER_ORIGIN=https://localhost:8787
+PLAYER_ORIGINS=http://localhost:5173,https://903-player.vercel.app,https://dcwhung.github.io

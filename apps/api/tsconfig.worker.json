@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.worker.tsbuildinfo",
+        "target": "ES2022",
+        "lib": ["ES2023"],
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedIndexedAccess": true,
+        "verbatimModuleSyntax": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "noEmit": true,
+        // Workers runtime（唔係 DOM / Node）；test 經 @cloudflare/vitest-plugin 喺 workerd 入面跑
+        "types": ["@cloudflare/workers-types", "@cloudflare/vitest-plugin/types", "vitest/globals"]
+    },
+    "include": ["src", "test"]
+}
