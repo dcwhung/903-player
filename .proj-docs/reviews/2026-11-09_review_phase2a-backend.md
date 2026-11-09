@@ -119,3 +119,100 @@ next_agent: quality-assurance
 branch: "claude/sleepy-curie-uuur1k"
 context: "Re-review 241de18 pass; S-779 observation to backlog; QA S1 after CI 42579655596 green (cite that run)"
 ```
+
+## Review 80ca26f import-catalog workflow
+
+- 範圍：只驗 `80ca26f`（新 `.github/workflows/import-catalog.yml` + `apps/api/README.md` / Phase 2a plan + `apps/api` 0.1.0 → 0.1.1）；Tier T2（CI-only，冇 runtime code）
+- Hard gates：`npm run lint` pass（eslint + prettier 全 repo）；type / tests / coverage n/a（冇 `.ts` / `.mjs` 改動）；No Critical **fail**（C-012）
+- 評分：正確性 10/25（C-012 −15）、安全性 20/20、可維護性 20/20、測試 15/15、性能 10/10、風格 10/10 = **85/100**
+
+### 🔴 C-012 `import-catalog.yml:44-53` Import 失敗都會綠（冇 pipefail）
+
+- L1：commit message 同 yml L44 註解承諾「script 失敗照樣 fail」；`importLibrary.mjs` 定義 exit 1（wrangler 失敗）/ 2（參數錯）就係要畀 CI 判斷。GitHub 文件（workflow-syntax `shell`）：「By default … `set -e` for both `sh` and `bash`. When `shell: bash` is specified, `-o pipefail` is also applied」—— 冇寫 `shell:` 嘅 step 係 `bash -e {0}`，**冇** pipefail；L44「GitHub 預設 bash 有 pipefail」係錯
+- L2：`bash -e -c 'node -e "process.exit(1)" | tee /dev/null; echo …'` → 繼續跑、exit 0；`bash --noprofile --norc -eo pipefail -c …` → exit 1。即係 `npm run import … | tee` 嘅 status = `tee` 嘅 0
+- L3 影響：圖上載或者 `d1 execute --file` 失敗 → Import step 綠 → Summary step（預設 `success()`）照跑，仲寫「Next: open the ops page and **Publish**」，用戶會以為 import 咗。SQL 喺最後先跑，所以唔會寫爛 D1，但 production 寫入失敗被收埋
+- 方案 A（推薦）：job 加 `defaults: run: shell: bash`（兩個 step 都用 GitHub 官方 `-eo pipefail`），改返 L44 註解
+- 方案 B：Import `run:` 第一行 `set -o pipefail`；改動最細，但 Summary step 同其他新 step 唔會自動得到，易漏
+- 修訂：
+
+```yaml
+jobs:
+    import:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                shell: bash # 明確寫 bash 先有 -o pipefail；唔寫係 bash -e，`| tee` 會食咗 import 嘅 exit code
+        steps:
+            # …
+            # stdout 同時寫入 import.log 畀下一步做 summary；shell: bash = -eo pipefail，script 失敗 step 照樣 fail
+            - name: Import
+```
+
+### 核實咗、冇問題
+
+- Wrangler 4.158.0 non-interactive：`confirm2()`（`wrangler-dist/cli.js:140827`）`isNonInteractiveOrCI()`（`!isInteractive() || ci-info isCI`）→ 回 `fallbackValue`（預設 true）；`d1 execute --file` 嘅「database will be unavailable … Ok to proceed?」（L239749）用預設 → 自動 yes。stdin `ignore` + Actions `CI=true` 兩樣都觸發，developer 講法成立
+- Script injection：唯一 input 係 `type: boolean`，同 `github.ref` 一樣經 `env:` 入 shell，冇 `${{ }}` 直接入 `run:`；`DRY_RUN` 喺 env 係字串 `'true'` / `'false'`，`= 'true'` 比較啱；`inputs.dry_run` 喺 workflow_dispatch 有值，冇 null 情況
+- Trigger / 權限：淨係 `workflow_dispatch`（冇 `pull_request` / `pull_request_target`，fork 觸發唔到）；`permissions: contents: read`；secrets 只喺 Import step（`npm ci` lifecycle 攞唔到）—— 比 `deploy-api.yml` 好，已跟 S-769 方向
+- Ref guard：`refs/heads/main` 以外（其他 branch、tag）第一步 `exit 1`，後面 step 全 skip；guard 係防手滑，唔係安全邊界（見 S-781）
+- Summary：`grep -c` 冇 match 印 `0` 再 `|| true` → `0`；counts 冇 match → `counts not found`；wrangler stdout 由 script 用 pipe 收起、stderr 唔入 `tee`，所以 log 淨係 script 自己嘅行，`^wrangler ` 數得準；npm 嘅 `> …` header 唔會撞 pattern
+- Concurrency：`import-catalog` group、`cancel-in-progress: false`，同 `deploy-api` 一致
+- Version：`apps/api` PATCH 0.1.1 + lockfile 同步，同 `9d4068a` / `aeeca19`（CI-only 改動 bump 擁有者 app PATCH）一致；merge 入 main 會觸發 `deploy-api`（`apps/api/**` + lockfile），重 deploy 同一份 Worker，冇害
+- Docs：README 步驟（揀 main、先 dry run、睇 Summary、再真跑、Publish）同 yml 行為一致；token 權限描述同 `deploy-api.yml` 註解一致；plan SSoT 段加「merge 入 `main`」啱。C-012 修好之後要確認 README「其他 branch 會即刻 fail」以外冇講失敗會綠
+
+### 🟢 / Observation
+
+- S-781 `import-catalog.yml:8` `workflow_dispatch` 用所揀 ref 嗰份 yml；有 write 權嘅人推個刪咗 guard 嘅 branch 就可以用 repo secret 跑。真正邊界要 GitHub Environment（`production`，deployment branch 限 `main`）+ environment secret，`deploy-api.yml` 一齊轉
+- S-782 `import-catalog.yml:19-21` 同 `deploy-api` 分開 concurrency group：merge 一個新 D1 migration 之後即刻 import，可能喺 `deploy-api` apply migration 之前跑；README 可加一句「等 Deploy API 綠咗先 import」
+
+結果：❌ fail（C-012），85/100
+
+```handoff-receipt
+protocol: 1
+status: fail
+score: 85/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: n/a
+  tests: n/a
+  coverage: n/a
+  no_critical: "fail (C-012)"
+  security_scan: n/a
+next_action: invoke_developer
+next_agent: developer
+branch: "claude/sleepy-curie-uuur1k"
+context: "80ca26f import-catalog.yml: C-012 no pipefail on `| tee` (default step shell is bash -e) → failed import shows green + 'Publish' summary; fix with job defaults.run.shell: bash + correct L44 comment, commit `fix: C-012 | …`, then re-review. Wrangler confirm claim verified. S-781/S-782 to backlog. Report committed, not pushed (CI 42706494486 in progress)."
+```
+
+## Re-review 76fd072 (C-012)
+
+- 範圍：只驗 `76fd072`（`import-catalog.yml` job `defaults.run.shell: bash` + 註解、`apps/api/README.md` 步驟 0）
+- Hard gates：`npm run lint` pass（eslint + prettier 全 repo）；type / tests / coverage n/a（冇 `.ts` / `.mjs` 改動）；No Critical pass
+- C-012 ✅ resolved：job defaults 令全部 `run:` step 用 `bash --noprofile --norc -eo pipefail {0}`（`uses:` step 唔受影響）。L2：同一段 `f | tee import.log`（f exit 7）喺 `-eo pipefail` → step exit 7、後面唔跑；`-e` → exit 0（重現原 bug）。Import 失敗 → Summary（`success()`）唔跑，唔會再出「Publish」
+- Summary 喺 pipefail 下冇 regression：抽 yml 原文用 `-eo pipefail` 跑，dry / 真跑 / 空 log 三種都 exit 0；兩個 `grep` 都有 `|| echo` / `|| true` 兜底，step 入面冇 pipe
+- `Require main` guard：`if:` 條件同 shell 無關；body 喺 `-eo pipefail` 照印 `::error::` 再 exit 1，後面 step 全 skip
+- 註解：L26-27 同 L49 而家同 GitHub 文件一致（冇寫 `shell:` = `bash -e`）；README 冇講失敗會綠
+- S-782 ✅：README 步驟 0 等 Deploy API 綠先 import，backlog 搬去 Closed
+- Version bump 例外成立：修同 session 上一個指令 `80ca26f`（已 bump `apps/api` 0.1.1）引入嘅 bug，commit message 有寫明
+
+結果：✅ pass，冇新 C / W，100/100
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: n/a
+  tests: n/a
+  coverage: n/a
+  no_critical: pass
+  security_scan: n/a
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "claude/sleepy-curie-uuur1k"
+context: "Re-review 76fd072 pass: C-012 resolved (job defaults shell: bash → -eo pipefail; Summary + Require main verified under pipefail), S-782 closed via README step 0. Report committed, not pushed (code CI running) — main agent pushes after CI green."
+```

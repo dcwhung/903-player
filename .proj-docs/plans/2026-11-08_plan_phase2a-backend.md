@@ -112,7 +112,7 @@ CRUD API、R2 audio 掃描（`dramaFromFolder` 核心抽入 package）、`schedu
 
 ### 2a 期間內容 SSoT
 
-Import 完之後 **D1 = SSoT**；repo `library/` 只係內建 fallback。Admin（Phase 3）未有之前要改內容 → 改 repo JSON 再重跑 import + publish（idempotent）。
+Import 完之後 **D1 = SSoT**；repo `library/` 只係內建 fallback。Admin（Phase 3）未有之前要改內容 → 改 repo JSON（merge 入 `main`）再重跑 import + publish（idempotent）。Import 用 GitHub Actions 手動 workflow **Import catalog**（`.github/workflows/import-catalog.yml`，只限 `main`，預設 dry run；用戶 2026-11-09 揀，因為冇 local clone），local `npm run import -w apps/api -- --remote` 係後備。
 
 ---
 

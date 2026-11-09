@@ -1,0 +1,82 @@
+name: Import catalog
+
+# 手動跑 apps/api/scripts/importLibrary.mjs --remote：repo library → production D1 + R2（idempotent，可以重跑）。
+# 用戶冇 local clone 都可以 import：Actions → Import catalog → Run workflow（先 dry run，睇清楚再剔走 dry run 跑真嘅）。
+# 只准喺 main 跑；import 完要去 ops 頁撳 Publish，player 先會讀到（見 apps/api/README.md）。
+# Secrets 只畀 import 嗰一步（npm ci 嘅 lifecycle script 攞唔到 token）。
+on:
+    workflow_dispatch:
+        inputs:
+            dry_run:
+                description: 'Dry run: only read D1 and print the wrangler commands (no R2 uploads, no D1 writes)'
+                type: boolean
+                default: true
+
+permissions:
+    contents: read
+
+# 兩次 import 唔可以同時跑；排隊等，唔取消跑緊嗰次（半路停會得一半圖上載咗，雖然重跑會補返）
+concurrency:
+    group: import-catalog
+    cancel-in-progress: false
+
+jobs:
+    import:
+        runs-on: ubuntu-latest
+        # 明確寫 shell: bash 先有 pipefail（bash --noprofile --norc -eo pipefail {0}）；
+        # 冇寫 shell: 嘅 run step 預設係 bash -e {0}，冇 pipefail，Import 嘅 `| tee` 會食咗 script 嘅 exit code
+        defaults:
+            run:
+                shell: bash
+        steps:
+            - name: Require main
+              if: github.ref != 'refs/heads/main'
+              env:
+                  REF: ${{ github.ref }}
+              run: |
+                  echo "::error::Import catalog only runs on main (got $REF). Pick 'main' in the 'Use workflow from' menu."
+                  exit 1
+
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - run: npm ci
+
+            # stdout 同時寫入 import.log 畀下一步做 summary；job defaults 嘅 shell: bash 有 pipefail，script 失敗成個 step fail（Summary 唔會跑）
+            - name: Import
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  DRY_RUN: ${{ inputs.dry_run }}
+              run: |
+                  args=(--remote)
+                  if [ "$DRY_RUN" = 'true' ]; then args+=(--dry-run); fi
+                  npm run import -w apps/api -- "${args[@]}" | tee "$RUNNER_TEMP/import.log"
+
+            # script 第一行：「N entries, M images (K to upload)」；之後每行「wrangler …」= 一個 step
+            - name: Summary
+              env:
+                  DRY_RUN: ${{ inputs.dry_run }}
+              run: |
+                  log="$RUNNER_TEMP/import.log"
+                  counts="$(grep -E '^[0-9]+ entries, ' "$log" || echo 'counts not found')"
+                  commands="$(grep -c '^wrangler ' "$log" || true)"
+                  title='Import catalog'
+                  if [ "$DRY_RUN" = 'true' ]; then title='Import catalog (dry run)'; fi
+                  {
+                      echo "### $title"
+                      echo
+                      echo "- $counts"
+                      echo "- wrangler steps (image uploads + SQL): $commands"
+                      if [ "$DRY_RUN" = 'true' ]; then
+                          echo
+                          echo 'Nothing was written. Run again with **dry run** unticked to import, then Publish on the ops page.'
+                      else
+                          echo
+                          echo 'Next: open the ops page and **Publish**.'
+                      fi
+                  } >> "$GITHUB_STEP_SUMMARY"
