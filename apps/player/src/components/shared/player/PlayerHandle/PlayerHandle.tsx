@@ -6,6 +6,7 @@ import { BackIcon } from '../../common/icons/icons';
 import { ThemeScope } from '../../common/ThemeScope/ThemeScope';
 import styles from './PlayerHandle.module.css';
 import { useLeaveFallback } from './useLeaveFallback';
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 
 const HANDLE_ICON_SIZE = 14;
 
@@ -60,7 +61,14 @@ export const PlayerHandle = ({ theme, status, leaving = false, ...props }: Playe
                 <span className={styles.handleStatus} data-status={status} aria-hidden="true">
                     {t(STATUS_TEXT[status])}
                 </span>
-                {theme.art && <img className={styles.handleDisc} src={theme.art} alt="" />}
+                {theme.art && (
+                    <img
+                        className={styles.handleDisc}
+                        src={theme.art}
+                        alt=""
+                        crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
+                    />
+                )}
                 <span className={styles.handleName}>{props.name}</span>
                 <BackIcon size={HANDLE_ICON_SIZE} />
             </button>

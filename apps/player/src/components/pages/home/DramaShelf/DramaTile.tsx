@@ -4,6 +4,7 @@ import { ContinueButton, CornerNotes, MetaText, tileLabel } from './DramaTilePar
 import { UpcomingTile } from './UpcomingTile';
 import type { DramaShelfItem, DramaTileProps, TileFocus, TileProps } from './dramaTileTypes';
 import { fitsWithoutOverflow, useHideWhenTight } from './useHideWhenTight';
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 
 export type { DramaShelfItem, TileNotice, TileProps } from './dramaTileTypes';
 
@@ -70,7 +71,13 @@ const OpenTile = ({ item, focus }: DramaTileProps) => (
             {...focus?.open}
         >
             {/* 唔畀拖圖片：滑鼠撳住捽書架會變咗 HTML5 拖放（CUI-0004） */}
-            <img className={styles.art} src={item.art} alt="" draggable={false} />
+            <img
+                className={styles.art}
+                src={item.art}
+                alt=""
+                draggable={false}
+                crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
+            />
             <TileCorners item={item} />
         </button>
         {item.resume && (

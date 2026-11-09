@@ -5,6 +5,7 @@ import { Marquee } from '../../../shared/common/Marquee/Marquee';
 import { UPCOMING_GROUP_TITLE } from './arcLabels';
 import styles from './ArcSheet.module.css';
 import type { UpcomingArcRowView } from './arcSheetTypes';
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 
 const CLOCK_ICON_SIZE = 18;
 
@@ -26,6 +27,7 @@ const UpcomingArcRow = ({ row }: { row: UpcomingArcRowView }) => (
                     className={styles.cover}
                     src={row.cover}
                     alt=""
+                    crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
                     loading="lazy"
                     decoding="async"
                 />

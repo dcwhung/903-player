@@ -10,6 +10,8 @@ describe('ShowTile', () => {
         const button = screen.getByRole('button', { name: '公子會' });
         expect(button).not.toHaveTextContent('公子會');
         expect(button.querySelector('img')).toHaveAttribute('src', '/art/gongzi.jpg');
+        // S-764：catalog 圖用 CORS 模式載入
+        expect(button.querySelector('img')).toHaveAttribute('crossorigin', 'anonymous');
         await userEvent.click(button);
         expect(onClick).toHaveBeenCalledTimes(1);
     });

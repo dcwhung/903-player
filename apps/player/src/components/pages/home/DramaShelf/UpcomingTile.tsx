@@ -2,6 +2,7 @@
 import { ClockIcon } from '../../../shared/common/icons/icons';
 import styles from './DramaShelf.module.css';
 import type { DramaTileProps, TileNotice } from './dramaTileTypes';
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 
 const UPCOMING_ICON_SIZE = 14;
 
@@ -24,7 +25,13 @@ export const UpcomingTile = ({
             aria-disabled="true"
             aria-label={item.upcoming.label}
         >
-            <img className={styles.art} src={item.art} alt="" draggable={false} />
+            <img
+                className={styles.art}
+                src={item.art}
+                alt=""
+                draggable={false}
+                crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
+            />
             <span className={styles.upcomingBar} aria-hidden="true">
                 <ClockIcon size={UPCOMING_ICON_SIZE} />
                 {item.upcoming.text}

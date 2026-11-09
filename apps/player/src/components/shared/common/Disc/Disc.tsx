@@ -1,5 +1,6 @@
 import type { DOMAttributes, Ref } from 'react';
 import styles from './Disc.module.css';
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 
 interface DiscProps {
     /** small 嘅大細可以由外層 --disc-small-size 改（例如收藏 tab） */
@@ -43,7 +44,15 @@ export const Disc = ({
             ref={faceRef}
             className={`${styles.face} ${spinning ? styles.spinning : ''} ${upright ? styles.upright : ''}`}
         >
-            {art && <img ref={artRef} className={styles.art} src={art} alt="" />}
+            {art && (
+                <img
+                    ref={artRef}
+                    className={styles.art}
+                    src={art}
+                    alt=""
+                    crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
+                />
+            )}
         </span>
         {size === 'large' && (
             <>

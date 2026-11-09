@@ -1,7 +1,8 @@
 /*
  * runtime catalog.json（Backend Phase 1）嘅 SW runtimeCaching：vite.config.ts 用，build 時喺 Node 跑。
  * - catalog.json：NetworkFirst，網絡 CATALOG_SW_NETWORK_TIMEOUT_SECONDS 內冇答（或者離線）就交上次 cache
- * - 同一個 folder（同 host）入面嘅圖：CacheFirst（檔名有 hash，內容唔會變），有數量同日數上限
+ * - 同一個 folder（同 host）入面嘅圖：CacheFirst（檔名有 hash，內容唔會變），有數量同日數上限；
+ *   Worker layout catalog/v1/catalog.json + catalog/v1/img/<hash>.<ext> 喺同一個 folder 底下，自然 match（S-763）
  * VITE_CATALOG_URL 冇設定 = 一條 route 都唔加，sw.js 同 v1.29 一樣。
  * workbox RegExpRoute：同 origin 嘅 request pattern 喺任何位置 match 都得；跨 origin 一定要由第一個字 match，
  * 所以絕對 URL 用 ^ 錨定，同 origin 路徑（/ 開頭）唔錨定，自然唔會 match 到第二個 host
@@ -14,8 +15,11 @@ const IMAGE_CACHE = 'catalog-images';
 const IMAGE_MAX_ENTRIES = 300;
 const SECONDS_PER_DAY = 86_400;
 const IMAGE_MAX_AGE_DAYS = 60;
-/** 0 = 跨 origin 嘅 <img>（no-cors，opaque response） */
-const CACHEABLE_STATUSES = [0, 200];
+/**
+ * 只 cache 200（S-764）：catalog <img> 一律 crossOrigin（config/catalogImage.ts），Worker 有 CORS，
+ * 所以唔會再有 opaque（0）；opaque 錯誤 response 會 cache 60 日兼佔大量 quota
+ */
+const CACHEABLE_STATUSES = [200];
 const IMAGE_EXTENSIONS = '(?:webp|png|jpe?g|avif)';
 const OPTIONAL_QUERY = '(?:\\?.*)?$';
 
