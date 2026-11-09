@@ -45,7 +45,6 @@
 | S-780 | `apps/api/src/catalog/publish.ts`                     | 冇改動再 publish 都開新 publish 行、hash 唔同（`generatedAt` 每次新）                                                                                                                     | Phase 3 publish diff  | qa/2026-11-09_qa_phase2a-backend                 |
 | S-781 | `.github/workflows/import-catalog.yml`                | `workflow_dispatch` 用所揀 ref 嗰份 yml，main guard 只防手滑；真邊界用 GitHub Environment（branch 限 `main`）+ environment secret，`deploy-api.yml` 一齊轉                                | 下次改 workflow       | reviews/2026-11-09_review_phase2a-backend        |
 | S-783 | `.proj-docs/plans/2026-11-08_plan_phase2a-backend.md` | 音檔 bucket 仲寫 `radio-drama`、`rclone copy`、「3 處」；實際 Super Slurper、4 處，plan 標完成並更正                                                                                      | 下次改 plan           | reviews/2026-11-09_review_r2-bucket-rename       |
-| S-784 | R2 `903-radio-drama`                                  | Slurper 4 個 skipped object 未查明；如係封面，刪舊 bucket `radio-drama` 前確認新 bucket 有齊                                                                                              | 刪舊 bucket 前        | reviews/2026-11-09_review_r2-bucket-rename       |
 
 ## Closed
 
@@ -53,6 +52,7 @@
 
 | S-782                                    | `76fd072`：`apps/api/README.md` Production import 加步驟 0「等 Deploy API 喺 `main` 最新 run 綠咗先 import」；concurrency group 照分開（文件層面處理）                                                                                                                    | 2026-11-09 |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| S-784                                    | QA 2026-11-09（`eb781cd`）：舊 bucket 33 個劇 / 短篇 folder 搵到嘅 21 張封面喺新 host 全部 200；470 個上架集數 URL 新 host 全部 200、Content-Length 同舊 host 一樣 → 4 個 skipped object 唔係 app 用到嘅集數或封面，刪舊 bucket 唔使再等                                  | 2026-11-09 |
 | S-763、S-764                             | Phase 2a（player v1.31.0）改好：Worker layout `catalog/v1/catalog.json` + `catalog/v1/img/<hash>.<ext>` 同一個 folder，SW 圖 route 自然 match（`catalogCaching.test.ts` 鎖住）；catalog `<img>` 加 `crossorigin`、Worker 有 CORS，`cacheableResponse.statuses` 改 `[200]` | 2026-11-09 |
 | W-702                                    | headerRule / titleFont 改白名單（`themeSchema.ts` + drama / show JSON Schema 同一條 pattern），fix commit 見 git log `fix(catalog): whitelist theme headerRule and titleFont values (W-702)`                                                                              | 2026-11-07 |
 | S-753、S-755                             | `4a0f1cf`（Phase 0b）改好：CLAUDE.md motion path 加 `apps/player/`、chains 加 `repo-tooling`                                                                                                                                                                              | 2026-11-07 |
