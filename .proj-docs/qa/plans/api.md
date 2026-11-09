@@ -1,0 +1,25 @@
+# Test Plan — api
+
+- Paths：全部相對 repo root；指令喺 repo root 跑（root `vitest.config.ts` projects 包括 `@903-player/api`（workerd / miniflare）同 `@903-player/api-scripts`（Node））
+- Chain: Backend Worker `apps/api`（Hono + D1 + R2）：Google login（OAuth + PKCE + whitelist）→ session → `/api/*`（CSRF）→ import library 入 D1 / R2 → publish（validate + episode ID 守衛 + force + rollback）→ 公開出 `catalog/v1/catalog.json` 同圖 → ops 頁
+- AC（`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md` §3–§6；ops 頁 Design Origin `_mockups_/admin-ops/index.html`）:
+    - AC-1 Login：`/auth/google/start` 302 去 Google（scope `openid email`、PKCE S256、state），`__Host-oauth` HMAC 簽名 10 分鐘；callback 驗 state、`email_verified`、`ADMIN_EMAILS`；whitelist 外 403 頁、唔開 session
+    - AC-2 Session：`__Host-session`（HttpOnly; Secure; SameSite=Lax; Path=/）30 日、D1 只存 SHA-256；過期 = 未 login；`POST /auth/logout`；`GET /api/me`
+    - AC-3 `/api/*`（除 `/api/health`）冇 session 401；POST 嘅 `Origin` ≠ `WORKER_ORIGIN` 403
+    - AC-4 `importLibrary.mjs`：重用 `scanLibrary()`；`import.sql` `ON CONFLICT DO UPDATE` 重跑 D1 唔變；R2 已有嘅圖唔再上載
+    - AC-5 Publish：`parseCatalogDocument` + `buildRegistry` 驗證；上次有、今次冇嘅 episode ID → 409 列明，`?force=1` 先寫；rollback 重寫舊 snapshot 照行守衛；history
+    - AC-6 Serve：`catalog.json` `Cache-Control: public, max-age=60` + `ETag`（304）；圖 `max-age=31536000, immutable`；CORS 只回 `PLAYER_ORIGINS` match 到嘅 origin + `Vary: Origin`；冇 publish / 冇圖 404
+    - AC-7 Publish 內容同內建 library 一樣（definition 逐個 deep-equal、圖 hash = 檔案內容；除 image URL / generatedAt）
+    - AC-8 Ops 頁 6 個狀態：未 login、冇權限（403 頁）、主畫面（現狀 + Publish + history）、Publish 成功、ID 守衛拒絕（剔咗先撳得強制 Publish）、還原確認；server 資料一律 `textContent`、冇動畫
+- Scope files:
+    - `apps/api/{package.json,wrangler.toml,.dev.vars.example,tsconfig.json,tsconfig.node.json,tsconfig.worker.json,vitest.config.ts,vitest.scripts.config.ts}` `apps/api/migrations/0001_init.sql`
+    - `apps/api/src/`（`index.ts` `app.ts` `env.ts` `config.ts` `api/routes.ts` `auth/*` `catalog/*` `lib/*`）`apps/api/public/{index.html,ops.css,ops.js}`
+    - `apps/api/scripts/{importLibrary.mjs,importLibrary.d.mts,importLibrary.test.ts,opsPage.test.ts}` `apps/api/test/*`
+    - `_mockups_/admin-ops/index.html` `.github/workflows/deploy-api.yml`
+    - 1-hop：`apps/player/scripts/buildCatalogJson.{mjs,d.mts}`（`scanLibrary`，亦屬 catalog-data）
+- Commands:
+    - `npm test -- apps/api`（2 個 project；coverage：喺 `apps/api` 加 `--coverage.enabled --coverage.provider=v8`）
+    - 本機 smoke（冇 Cloudflare 帳戶都得）：`apps/api` 臨時 `.dev.vars`（假 secret）→ `wrangler d1 migrations apply 903-player --local` → `node scripts/importLibrary.mjs --local` ×2 → `wrangler dev --local-protocol https` → D1 插測試 session → curl AC-3 / AC-5 / AC-6 → 比較 published `catalog.json` 同 `buildCatalogDocument`（AC-7）→ Playwright 行 ops 頁（AC-8；冇權限頁由 unit 證，要真 Google callback）；完咗刪 `.dev.vars`、還原 `.wrangler/`
+    - CI：`ci.yml` `npx tsc -b` + `npm test`（同 SHA 綠就引用）
+- PWA gate: no（Worker 唔掂 player `sw.js` / manifest；player 嘅 S-764 屬 catalog-data / repo-tooling）
+- Out of scope: 真 Google OAuth / Cloudflare remote（merge 後 DevOps + 用戶清單 7–9）；2b（CRUD、R2 audio 掃描、排程、圖片上載）；player 讀 catalog（catalog-data 鏈）

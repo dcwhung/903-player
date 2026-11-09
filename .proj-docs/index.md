@@ -1,6 +1,6 @@
 # 903-player 項目文件索引
 
-**最後更新**：2026-11-07
+**最後更新**：2026-11-09
 
 ## Backlog
 
@@ -123,6 +123,7 @@
 | 2026-11-07 | [qa/2026-11-07_qa_phase0a-monorepo.md](qa/2026-11-07_qa_phase0a-monorepo.md)（Phase 0a monorepo `apps/player` S1 ✅ pass @ `ee72715`：CI 42353667556 unit 2780 / 2780、e2e 765 / 0；dist 77 檔 sha256 同 `origin/main` 一樣；W-701 ledger 1171 行 path 遷移 + 11 份 plan 改 `npm test --`；新鏈 `repo-tooling`；12 條鏈 S1 freeze；S-755..S-757）                                                                                                       |
 | 2026-11-07 | [qa/2026-11-07_qa_phase0b-catalog.md](qa/2026-11-07_qa_phase0b-catalog.md)（Phase 0b `packages/catalog` S1 ✅ pass @ `3bc9c53`：CI 42363202581 unit 242 files / 2780、e2e 765 / 0（PWA 換版 7/7）；diff 證實 storage key / episode ID / 上下架邏輯冇改；ledger 51 行 rename path 遷移、20 個新檔入鏈；12 條鏈 S1 freeze；S-762）                                                                                                                        |
 | 2026-11-07 | [qa/2026-11-07_qa_phase1-runtime-catalog.md](qa/2026-11-07_qa_phase1-runtime-catalog.md)（Backend Phase 1 runtime `catalog.json`（v1.30.0）S1 ✅ pass @ `a954048`：CI 42427493165 unit 249 files / 2953、e2e 777 / 0（Remote catalog 12/12、PWA 換版 7/7、v1→v2 10/10）；flag off dist grep 乾淨 + production smoke 0 個 catalog request；W-702 核實；17 個新檔入 catalog-data / repo-tooling；11 條鏈 S1 freeze；S-766）                               |
+| 2026-11-09 | [qa/2026-11-09_qa_phase2a-backend.md](qa/2026-11-09_qa_phase2a-backend.md)（Backend Phase 2a S1 ✅ pass @ `5190aa5`：CI 42579655596 unit 257 files / 3027、e2e 779 / 0；本機 `wrangler dev` smoke：import 冪等、CSRF / session、ID 守衛 409 + force + rollback、CORS / Cache-Control / ETag 304、published 內容同內建一樣、ops 頁狀態；新鏈 `api`；10 條鏈 S1 freeze；S-780）                                                                           |
 
 ## Deploys
 
