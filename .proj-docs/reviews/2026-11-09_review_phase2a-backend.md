@@ -90,3 +90,32 @@ next_agent: quality-assurance
 branch: "claude/sleepy-curie-uuur1k"
 context: "Phase 2a review pass 100, no C/W; S-767..S-778 to backlog; QA S1 new chain api after CI 42542305909 green; PR needs Design Origin lines + dependency note"
 ```
+
+## Re-review 241de18
+
+- 範圍：只驗 `241de18`（修 CI 42542305909 嘅「冇 request 出外網」FAIL：`https://catalog-images.e2e.test`）；`5190aa5` 淨 docs 對過內容
+- Hard gates：`npm run lint` pass（eslint + prettier 全 repo）；type n/a（`.mjs`）；e2e 唔由 reviewer 跑，引 developer 本機 log 779 PASS / 0 FAIL，包括「冇 request 出外網」PASS；CI 42579655596 跑緊（`changes` 用 push 前後 diff，包到 `241de18` 嘅 `.mjs`，e2e 會跑）
+- 外網檢查冇變弱：`isExternal` 邏輯冇改，只加一個 `.test`（RFC 6761 保留 TLD，唔會解析到真網址）origin 入 `MOCKED_ORIGINS`；其他外部 host 照 abort + 記錄
+- Single source：host 只喺 `harness.mjs:36` `CATALOG_IMAGE_HOST` 定義一次；`remoteCatalog.mjs` 嘅 base / glob 由佢 derive，repo 冇其他 hardcode
+- Version bump 例外：`e5d8416`（同 session、已 bump 1.31.0）引入；改動只係 e2e harness，唔入 bundle，例外成立
+- `5190aa5`：README / plan 跳過 Vercel Preview 同用戶決定一致，rollback 步驟寫清楚，同時解決咗 S-778 提到嘅 Preview 白名單問題；prettier pass
+- S-779 Observation：`CATALOG_IMAGE_HOST` 入咗 `MOCKED_ORIGINS` 但 `newE2EContext` 冇預設 route（同 `DRAMA_AUDIO_BASE` 唔同），其他 section 如果請求佢會繞過 abort 直接 DNS fail；可以加預設 404 route，令「mock」名副其實
+
+結果：✅ pass，冇新 C / W
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T3
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: n/a
+  tests: "pass (developer local e2e 779/0; CI 42579655596 pending)"
+  coverage: n/a
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "claude/sleepy-curie-uuur1k"
+context: "Re-review 241de18 pass; S-779 observation to backlog; QA S1 after CI 42579655596 green (cite that run)"
+```
