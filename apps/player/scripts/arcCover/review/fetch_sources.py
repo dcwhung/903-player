@@ -24,7 +24,7 @@ from urllib.parse import quote
 from build import DEFAULT_WORK, REPO_ROOT, arc_slug_of, check_slug
 
 # 同 packages/catalog/src/constants.ts DRAMA_AUDIO_BASE 一樣（test_fetch_sources 鎖住）
-R2_BASE = "https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev"
+R2_BASE = "https://pub-1f26dbd9526e41b89de51bd33054d825.r2.dev"
 COVER_NAMES = ("cover photo.png", "cover photo.jpg", "cover-photo.jpg")
 DRAMA_FILE_STEM = "drama"
 CURL_TIMEOUT_S = "60"

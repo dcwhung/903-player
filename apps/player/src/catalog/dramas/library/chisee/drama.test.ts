@@ -64,7 +64,7 @@ describe('芝See菇Bi Family', () => {
     it('builds the exact encoded R2 url of the 游亁水 sample', () => {
         const first = episodes.find((e) => e.arc === '游亁水');
         expect(first?.url).toBe(
-            'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/%E8%8A%9DSee%E8%8F%87Bi%20Family/%E6%B8%B8%E4%BA%81%E6%B0%B4/01%20-%20%E6%B8%B8%E4%BA%81%E6%B0%B4%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a',
+            'https://pub-1f26dbd9526e41b89de51bd33054d825.r2.dev/%E8%8A%9DSee%E8%8F%87Bi%20Family/%E6%B8%B8%E4%BA%81%E6%B0%B4/01%20-%20%E6%B8%B8%E4%BA%81%E6%B0%B4%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a',
         );
     });
 

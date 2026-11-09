@@ -22,7 +22,7 @@ export const AUDIO_HOST = 'https://audio.hkfm903.live';
  * 廣播劇音檔（R2）：同 packages/catalog/src/constants.ts DRAMA_AUDIO_BASE 一樣（src/e2eSrcConstants.test.ts 鎖住）。
  * e2e 唔出外網，所有 context 一律答 404，唔使每個劇集測試自己 route
  */
-export const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
+export const DRAMA_AUDIO_BASE = 'https://pub-1f26dbd9526e41b89de51bd33054d825.r2.dev';
 /**
  * Google Fonts（index.html 嘅 preload stylesheet + 字型檔）：e2e 唔出外網，由本機答。
  * Poppins 用 @fontsource/poppins（devDependency，OFL-1.1）嘅 latin / latin-ext woff2：頁頭標題、日子條、

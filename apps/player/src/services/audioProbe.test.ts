@@ -92,7 +92,7 @@ describe('showEpisodeOfUrl', () => {
         ['a file name for another show', REAL_URLS.badgirl.replace('Bad_Girl', 'Good_Girl')],
         ['an impossible date', REAL_URLS.badgirl.replace('20261019', '20261332')],
         ['a non-aac file', REAL_URLS.badgirl.replace('.aac', '.m4a')],
-        ['a drama url', 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/a/b.m4a'],
+        ['a drama url', 'https://pub-1f26dbd9526e41b89de51bd33054d825.r2.dev/a/b.m4a'],
         ['not a url', 'not a url'],
     ])('returns undefined for %s', (_label, url) => {
         expect(showEpisodeOfUrl(url)).toBeUndefined();

@@ -17,7 +17,7 @@ const ARCS: ReadonlyArray<readonly [string, number]> = [
 const ADDED_AT = '2026-10-27';
 /** 用戶畀嘅 sample link，一個 byte 都唔可以差 */
 const SAMPLE_URL =
-    'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev/%E8%98%AD%E8%8C%9C%E5%A4%AB%E4%BA%BA%E5%8A%87%E5%A0%B4/%E5%88%9D%E6%88%80%E7%84%A1%E9%99%90%E6%AC%A1/01%20-%20%E5%88%9D%E6%88%80%E7%84%A1%E9%99%90%E6%AC%A1%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a';
+    'https://pub-1f26dbd9526e41b89de51bd33054d825.r2.dev/%E8%98%AD%E8%8C%9C%E5%A4%AB%E4%BA%BA%E5%8A%87%E5%A0%B4/%E5%88%9D%E6%88%80%E7%84%A1%E9%99%90%E6%AC%A1/01%20-%20%E5%88%9D%E6%88%80%E7%84%A1%E9%99%90%E6%AC%A1%20-%20%E7%AC%AC%E4%B8%80%E9%9B%86.m4a';
 
 describe('蘭茜夫人劇場', () => {
     const lancy = seriesEpisodesOf('lancy');

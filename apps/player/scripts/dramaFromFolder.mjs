@@ -26,7 +26,7 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
 /** 同 packages/catalog/src/constants.ts 嘅 DRAMA_AUDIO_BASE 一樣（test 會核對） */
-export const DRAMA_AUDIO_BASE = 'https://pub-e141dd7a994b40a3b789970739470b2d.r2.dev';
+export const DRAMA_AUDIO_BASE = 'https://pub-1f26dbd9526e41b89de51bd33054d825.r2.dev';
 
 /** 短篇劇檔名 template：第一個係常見寫法；第二個係檔名入面短篇名前面加埋劇名（黃金少年） */
 export const SERIES_TEMPLATES = [
