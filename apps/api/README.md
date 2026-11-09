@@ -53,6 +53,7 @@ npx tsc -b apps/api             # type check
 
 **Production（主要做法，唔使 local clone）**：GitHub → **Actions** → **Import catalog** → **Run workflow**（`.github/workflows/import-catalog.yml`）
 
+0. 先等 Actions → **Deploy API** 喺 `main` 最新嗰次 run 綠咗先 import（migrations 要 apply 咗先，否則 SQL 寫入新欄 / 新表會 fail）
 1. Branch 揀 `main`（其他 branch 會即刻 fail），**dry run** 保持剔住 → Run：淨係讀 D1、印出要跑嘅 wrangler 指令，唔上載、唔寫 D1
 2. 睇 run 嘅 Summary（幾多 entries、幾多張圖要上載、幾多個 wrangler step）冇問題 → 再 Run 一次，**剔走 dry run** = 真 import
 3. Import 完去 ops 頁撳 **Publish**，player 先會讀到

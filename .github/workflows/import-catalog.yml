@@ -23,6 +23,11 @@ concurrency:
 jobs:
     import:
         runs-on: ubuntu-latest
+        # 明確寫 shell: bash 先有 pipefail（bash --noprofile --norc -eo pipefail {0}）；
+        # 冇寫 shell: 嘅 run step 預設係 bash -e {0}，冇 pipefail，Import 嘅 `| tee` 會食咗 script 嘅 exit code
+        defaults:
+            run:
+                shell: bash
         steps:
             - name: Require main
               if: github.ref != 'refs/heads/main'
@@ -41,7 +46,7 @@ jobs:
 
             - run: npm ci
 
-            # stdout 同時寫入 import.log 畀下一步做 summary；GitHub 預設 bash 有 pipefail，script 失敗照樣 fail
+            # stdout 同時寫入 import.log 畀下一步做 summary；job defaults 嘅 shell: bash 有 pipefail，script 失敗成個 step fail（Summary 唔會跑）
             - name: Import
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
