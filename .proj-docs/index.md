@@ -72,6 +72,7 @@
 | 2026-11-07 | [reviews/2026-11-07_review_phase0a-monorepo.md](reviews/2026-11-07_review_phase0a-monorepo.md)（90 pass，W-700–W-701、S-750–S-754；monorepo npm workspaces，純 refactor）                                                                                                                                                       |
 | 2026-11-07 | [reviews/2026-11-07_review_phase0b-catalog.md](reviews/2026-11-07_review_phase0b-catalog.md)（100 pass，S-758–S-761；抽 `packages/catalog`（`@903-player/catalog`），v1.29.1）                                                                                                                                                  |
 | 2026-11-07 | [reviews/2026-11-07_review_phase1-runtime-catalog.md](reviews/2026-11-07_review_phase1-runtime-catalog.md)（95 pass，W-702、S-763–S-765；runtime `catalog.json`，v1.30.0，production 關住）                                                                                                                                     |
+| 2026-11-09 | [reviews/2026-11-09_review_phase2a-backend.md](reviews/2026-11-09_review_phase2a-backend.md)（100 pass，S-767–S-778；Worker API + D1 + Google login + publish，player v1.31.0、api v0.1.0）                                                                                                                                     |
 
 ## QA
 
