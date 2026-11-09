@@ -12,8 +12,8 @@ const SIZE_LINES = { skipBlankLines: false, skipComments: false };
 
 export default tseslint.config(
     // .claude/**：agent worktree（.claude/worktrees/）各有 tsconfig，會令 typescript-eslint 搵到多個 tsconfig root
-    // **/dist、**/coverage：workspace（apps/*）各自嘅 build / coverage 輸出
-    { ignores: ['**/dist', '**/coverage', '.claude/**'] },
+    // **/dist、**/coverage：workspace（apps/*）各自嘅 build / coverage 輸出；**/.wrangler：wrangler / miniflare 本機 state
+    { ignores: ['**/dist', '**/coverage', '**/.wrangler', '.claude/**'] },
     {
         files: ['**/*.{ts,tsx}'],
         extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -31,7 +31,7 @@ export default tseslint.config(
     },
     {
         // .ts（含 hook / service）：函數 ≤ 30 行，冇檔案上限
-        files: ['apps/player/src/**/*.ts', 'packages/*/src/**/*.ts'],
+        files: ['apps/player/src/**/*.ts', 'apps/api/src/**/*.ts', 'packages/*/src/**/*.ts'],
         ignores: ['**/*.test.ts'], // 已包 *.node.test.ts
         rules: {
             'max-lines-per-function': ['error', { max: TS_FN_MAX_LINES, ...SIZE_LINES }],

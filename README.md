@@ -135,8 +135,9 @@ node dramaFromFolder.mjs "/路徑/森美小儀系列" --existing drama.json --ou
 
 npm workspaces monorepo：app 喺 `apps/player/`（version 嘅唯一來源係 `apps/player/package.json`）；
 劇集 / 節目資料嘅純邏輯喺 `packages/catalog/`（`@903-player/catalog`，直接 export TS source，冇 build step；JSON Schema 喺 `packages/catalog/schemas/`）。
-下面指令全部喺 repo 根跑（root scripts 轉發去 `apps/player`；`npm test` 用 root `vitest.config.ts` 嘅 projects 一次過跑 player + catalog；
-`npm run lint` 用 root 嘅 ESLint / Prettier 設定檢查成個 repo；`npx tsc -b` 用 root `tsconfig.json` 覆蓋兩個 workspace）。
+Catalog backend（Cloudflare Worker + D1 + R2、ops 頁）喺 `apps/api/`（version 喺 `apps/api/package.json`；runbook 見 `apps/api/README.md`）。
+下面指令全部喺 repo 根跑（root scripts 轉發去 `apps/player`；`npm test` 用 root `vitest.config.ts` 嘅 projects 一次過跑 player + catalog + api；
+`npm run lint` 用 root 嘅 ESLint / Prettier 設定檢查成個 repo；`npx tsc -b` 用 root `tsconfig.json` 覆蓋全部 workspace）。
 下面提到嘅 `src/`、`e2e/`、`scripts/`、`public/` 都喺 `apps/player/` 入面。
 
 ```bash

@@ -9,6 +9,7 @@ import { NewBadge } from '../../../shared/common/NewBadge/NewBadge';
 import { playLabel, rowLabel, visibleStatus } from './arcLabels';
 import styles from './ArcSheet.module.css';
 import type { ArcRowNotes } from './arcSheetTypes';
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 
 /** 一行要嘅 props；ArcSheetProps 由呢度組合，避免 ArcRow ↔ ArcSheet 型別循環 */
 export interface ArcRowProps {
@@ -65,7 +66,14 @@ const ArcCover = ({
             style={{ '--arc-ring-fill': `${toPercent(ratio(s.watched, total))}%` } as CSSProperties}
             aria-hidden="true"
         >
-            <img className={styles.cover} src={cover} alt="" loading="lazy" decoding="async" />
+            <img
+                className={styles.cover}
+                src={cover}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
+            />
             {isDone ? (
                 <span className={styles.doneBadge} data-role="done">
                     <CheckIcon size={CHECK_ICON_SIZE} />

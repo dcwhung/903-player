@@ -34,31 +34,37 @@ const folder = (id: string, patch: Record<string, unknown>): DramaFolder => ({
 
 const TODAY = '2026-11-05';
 
-const registry = buildRegistry({
-    folders: () => [
-        folder('live', {
-            arcs: [
-                {
-                    id: 'half',
-                    name: '戀愛二分一',
-                    episodes: 4,
-                    episodeDates: { '3': '2026-11-19' },
-                },
-                { id: 'xxx', name: 'XXX', addedAt: '2026-11-12' },
-                { id: 'old', name: '舊', episodes: 2, removedAt: '2026-11-01' },
-                {
-                    id: 'partial',
-                    name: '部分',
-                    episodes: 3,
-                    episodeRemovedAt: { '1': '2026-11-02' },
-                    removedAt: '2026-12-05',
-                },
-            ],
-        }),
-        folder('soon', { addedAt: '2026-12-01' }),
-        folder('gone', { removedAt: '2026-11-01' }),
-    ],
-});
+/** 呢度淨係睇上架 / 下架，錄音 base 唔重要 */
+const OPTIONS = { appAudioBase: '/dramas/' };
+
+const registry = buildRegistry(
+    {
+        folders: () => [
+            folder('live', {
+                arcs: [
+                    {
+                        id: 'half',
+                        name: '戀愛二分一',
+                        episodes: 4,
+                        episodeDates: { '3': '2026-11-19' },
+                    },
+                    { id: 'xxx', name: 'XXX', addedAt: '2026-11-12' },
+                    { id: 'old', name: '舊', episodes: 2, removedAt: '2026-11-01' },
+                    {
+                        id: 'partial',
+                        name: '部分',
+                        episodes: 3,
+                        episodeRemovedAt: { '1': '2026-11-02' },
+                        removedAt: '2026-12-05',
+                    },
+                ],
+            }),
+            folder('soon', { addedAt: '2026-12-01' }),
+            folder('gone', { removedAt: '2026-11-01' }),
+        ],
+    },
+    OPTIONS,
+);
 
 describe('registry availability', () => {
     it('should give only released, not removed episodes for today', () => {

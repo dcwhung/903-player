@@ -2,6 +2,7 @@ import todayArt from '../../../../assets/today-tile.webp';
 import { t } from '../../../../i18n/t';
 import { NewBadge } from '../../../shared/common/NewBadge/NewBadge';
 import styles from './ShowTile.module.css';
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 
 interface ShowTileProps {
     label: string;
@@ -34,7 +35,12 @@ export const ShowTile = ({
             data-zoom-key={zoomKey}
             onClick={onClick}
         >
-            <img className={styles.art} src={todayArt} alt="" />
+            <img
+                className={styles.art}
+                src={todayArt}
+                alt=""
+                crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
+            />
             <span className={styles.todayLabel}>{label}</span>
         </button>
     ) : (
@@ -45,7 +51,14 @@ export const ShowTile = ({
             data-zoom-key={zoomKey}
             onClick={onClick}
         >
-            {art && <img className={styles.art} src={art} alt="" />}
+            {art && (
+                <img
+                    className={styles.art}
+                    src={art}
+                    alt=""
+                    crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
+                />
+            )}
             {isNew && <NewBadge className={styles.newBadge} />}
         </button>
     );

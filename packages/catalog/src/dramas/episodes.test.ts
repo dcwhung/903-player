@@ -69,9 +69,11 @@ const DAILY: DailyDefinition = {
 };
 
 const R2 = `${DRAMA_AUDIO_BASE}/芝See菇Bi Family`;
+/** host: app 嘅錄音 base 由用家注入（player 係 BASE_URL/dramas/）；package 唔再讀 import.meta.env */
+const OPTIONS = { appAudioBase: '/player-base/dramas/' };
 
 describe('buildEpisodes (series)', () => {
-    const episodes = buildEpisodes('chisee', SERIES);
+    const episodes = buildEpisodes('chisee', SERIES, OPTIONS);
 
     it('expands every arc into numbered episodes with the series literal kind', () => {
         expect(episodes).toHaveLength(6);
@@ -99,7 +101,7 @@ describe('buildEpisodes (series)', () => {
 
     it('keeps the id when the arc name (R2 folder) changes', () => {
         const renamed = { ...SERIES, arcs: SERIES.arcs.map((a) => ({ ...a, name: `${a.name}2` })) };
-        expect(buildEpisodes('chisee', renamed).map((e) => e.id)).toEqual(
+        expect(buildEpisodes('chisee', renamed, OPTIONS).map((e) => e.id)).toEqual(
             episodes.map((e) => e.id),
         );
     });
@@ -131,7 +133,7 @@ describe('buildEpisodes (series)', () => {
     });
 
     it('uses the drama-level addedAt when the arc has none', () => {
-        const [first] = buildEpisodes('chisee', { ...SERIES, addedAt: '2026-01-01' });
+        const [first] = buildEpisodes('chisee', { ...SERIES, addedAt: '2026-01-01' }, OPTIONS);
         expect(first?.kind === 'series' && first.addedAt).toBe('2026-01-01');
     });
 
@@ -152,21 +154,21 @@ describe('buildEpisodes (series)', () => {
             },
             arcs: [arc(['season-1', 'Season 1'], 1)],
         };
-        expect(decodeURIComponent(buildEpisodes('golden', def)[0]?.url ?? '')).toBe(
+        expect(decodeURIComponent(buildEpisodes('golden', def, OPTIONS)[0]?.url ?? '')).toBe(
             `${DRAMA_AUDIO_BASE}/黃金少年/Season 1/01 - 黃金少年Season 1 - 第一集.m4a`,
         );
     });
 });
 
 describe('buildEpisodes (daily)', () => {
-    const episodes = buildEpisodes('c18', DAILY);
+    const episodes = buildEpisodes('c18', DAILY, OPTIONS);
 
-    it('hosts app audio under BASE_URL/dramas/<folder>/ with the daily literal kind', () => {
+    it('hosts app audio under the injected appAudioBase with the daily literal kind', () => {
         expect(episodes[0]).toEqual({
             kind: 'daily',
             dramaId: 'c18',
             id: 'drama:c18:2026-10-23',
-            url: `${import.meta.env.BASE_URL}dramas/c18/20261023.m4a`,
+            url: '/player-base/dramas/c18/20261023.m4a',
             date: '2026-10-23',
             rerun: false,
         });
@@ -174,13 +176,25 @@ describe('buildEpisodes (daily)', () => {
 
     it('keeps rerun and honours a per-episode file override', () => {
         expect(episodes[1]).toMatchObject({ rerun: true, date: '2025-08-13' });
-        expect(episodes[1]?.url).toBe(`${import.meta.env.BASE_URL}dramas/c18/legacy.m4a`);
+        expect(episodes[1]?.url).toBe('/player-base/dramas/c18/legacy.m4a');
+    });
+});
+
+describe('buildEpisodes appAudioBase', () => {
+    it('should only change app-hosted URLs, never episode IDs or R2 URLs', () => {
+        const other = { appAudioBase: 'https://elsewhere.example/' };
+        const app = buildEpisodes('c18', DAILY, other);
+        expect(app[0]?.url).toBe('https://elsewhere.example/c18/20261023.m4a');
+        expect(app.map((e) => e.id)).toEqual(buildEpisodes('c18', DAILY, OPTIONS).map((e) => e.id));
+        expect(buildEpisodes('chisee', SERIES, other)).toEqual(
+            buildEpisodes('chisee', SERIES, OPTIONS),
+        );
     });
 });
 
 describe('buildEpisodes availability', () => {
     const lancy = (extra: Partial<SeriesDefinition>, arcs: SeriesDefinition['arcs']) =>
-        buildEpisodes('lancy', { ...SERIES, ...extra, arcs });
+        buildEpisodes('lancy', { ...SERIES, ...extra, arcs }, OPTIONS);
 
     it('should give each episode its batch date: latest of drama, arc and episodeDates', () => {
         const episodes = lancy({ addedAt: '2026-10-27' }, [

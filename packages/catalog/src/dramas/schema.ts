@@ -40,7 +40,7 @@ export type { ParseContext } from '../core/reader';
 export type DramaThemeDefinition = ThemeDefinition;
 
 export interface AudioDefinition {
-    /** r2：DRAMA_AUDIO_BASE；app：app 自己 host（BASE_URL/dramas/） */
+    /** r2：DRAMA_AUDIO_BASE；app：app 自己 host（用家注入嘅 appAudioBase，player 係 BASE_URL/dramas/） */
     host: 'r2' | 'app';
     /** host 上面嘅劇集 folder */
     folder: string;

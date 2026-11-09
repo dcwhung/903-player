@@ -12,7 +12,7 @@
         "verbatimModuleSyntax": true,
         "skipLibCheck": true,
         "noEmit": true,
-        "types": ["node", "vite/client", "vitest/globals"]
+        "types": ["node", "vitest/globals"]
     },
     "include": ["vitest.config.ts", "tests", "src/**/*.node.test.ts"]
 }

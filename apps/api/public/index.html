@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="robots" content="noindex" />
+        <title>903 Player Ops</title>
+        <link rel="stylesheet" href="/ops.css" />
+        <script src="/ops.js" defer></script>
+    </head>
+    <body>
+        <!-- Design Origin：_mockups_/admin-ops/index.html（① 未 login、③ 主畫面、④ 成功、⑤ ID 守衛、⑥ 還原確認；② 403 由 Worker 出） -->
+        <main class="page">
+            <!-- ① 未 login -->
+            <div class="card center" id="login" hidden>
+                <h2>903 Player Ops</h2>
+                <p class="lead">只限管理員</p>
+                <a class="btn primary" href="/auth/google/start">用 Google 登入</a>
+                <span class="version" data-version></span>
+            </div>
+
+            <!-- ③ 已 login -->
+            <div class="stack" id="main" hidden>
+                <header class="bar">
+                    <h1>903 Player Ops</h1>
+                    <div class="who">
+                        <span id="email"></span>
+                        <button class="small" type="button" id="logout">登出</button>
+                    </div>
+                </header>
+
+                <div class="card">
+                    <h2>而家 publish 緊</h2>
+                    <p class="lead" id="current-empty" hidden>未 publish 過。</p>
+                    <dl class="facts" id="current">
+                        <dt>時間</dt>
+                        <dd id="current-time"></dd>
+                        <dt>內容</dt>
+                        <dd id="current-content"></dd>
+                        <dt>Hash</dt>
+                        <dd><code id="current-hash"></code></dd>
+                        <dt>網址</dt>
+                        <dd><code id="current-url"></code></dd>
+                    </dl>
+                </div>
+
+                <div class="card" id="publish-card">
+                    <h2>Publish</h2>
+                    <p class="lead" id="publish-intro">
+                        用 D1 而家嘅資料生成 catalog.json。Player 下次開 app 就會讀到（最多 60 秒
+                        cache）。
+                    </p>
+                    <!-- ④ 成功 -->
+                    <div class="notice ok" id="publish-ok" hidden></div>
+                    <!-- 驗證失敗（422）/ 網絡錯 -->
+                    <div class="notice warn" id="publish-error" hidden></div>
+                    <!-- ⑤ ID 守衛拒絕 -->
+                    <div id="guard" hidden>
+                        <div class="notice warn">
+                            <strong id="guard-title"></strong>
+                            聽緊呢幾集嘅用戶會冇咗進度同收藏。
+                            <ul id="guard-ids"></ul>
+                        </div>
+                        <label class="check"
+                            ><input type="checkbox" id="guard-confirm" /> 我知道呢幾集會唔見，照樣
+                            publish</label
+                        >
+                        <div class="actions">
+                            <button class="danger" type="button" id="guard-force" disabled>
+                                強制 Publish
+                            </button>
+                            <button type="button" id="guard-cancel">取消</button>
+                        </div>
+                    </div>
+                    <div class="actions" id="publish-actions">
+                        <button class="primary" type="button" id="publish">Publish</button>
+                    </div>
+                </div>
+
+                <!-- ⑥ 還原確認 -->
+                <div class="card" id="rollback" hidden>
+                    <h2 id="rollback-title"></h2>
+                    <p class="plain" id="rollback-text"></p>
+                    <div class="actions">
+                        <button class="primary" type="button" id="rollback-confirm">還原</button>
+                        <button type="button" id="rollback-cancel">取消</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Publish 記錄</h2>
+                    <p class="lead" id="history-empty" hidden>未有記錄。</p>
+                    <div class="table-wrap" id="history-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>時間</th>
+                                    <th>集數</th>
+                                    <th>Hash</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="history"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <span class="version" data-version></span>
+            </div>
+        </main>
+    </body>
+</html>

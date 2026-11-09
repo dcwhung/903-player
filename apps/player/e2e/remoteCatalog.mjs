@@ -2,10 +2,18 @@
 // harness 預設答 404（其他 section 用內建資料）；呢度後註冊 route 蓋過，答 scripts/buildCatalogJson.mjs 生成嘅 catalog
 // （內建全部節目 / 劇集 + 一套只有 catalog 先有嘅測試劇），圖由 src/catalog/*/library/ 直接讀。
 // 1 正常 → 主頁即見測試劇；2 壞 JSON / 唔識 schemaVersion → 用內建；3 慢過 1.5s → 用內建、splash 照收；
-// 4 第二次開 app 斷網 → SW cache 嘅 catalog；5 舊版（v1）進度用 remote catalog 照搬
+// 4 第二次開 app 斷網 → SW cache 嘅 catalog；5 舊版（v1）進度用 remote catalog 照搬；
+// 6 跨 origin 圖（似 Worker：有 CORS header）：<img crossorigin> 照出到（S-764）。
+// 所有 route 都好似 apps/api Worker 咁答 Access-Control-Allow-Origin + Vary: Origin
 import { readFileSync } from 'node:fs';
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
-import { E2E_CATALOG_GLOB, isShown, newE2EPage, runSection } from './harness.mjs';
+import {
+    CATALOG_IMAGE_HOST,
+    E2E_CATALOG_GLOB,
+    isShown,
+    newE2EPage,
+    runSection,
+} from './harness.mjs';
 import { checkStorage, seedV1 } from './storageMigration.mjs';
 
 const CATALOG_DIR = new URL('../src/catalog/', import.meta.url);
@@ -19,6 +27,10 @@ const CATALOG_FETCH_TIMEOUT_MS = 1500;
 const SLOW_RESPONSE_MS = CATALOG_FETCH_TIMEOUT_MS + 1000;
 /** 同 run.mjs checkSplashRemoved 一樣：開頁到啟動畫面移走最多 5 秒 */
 const SPLASH_BUDGET_MS = 5000;
+
+/** 跨 origin 圖 host（似 apps/api Worker）；path 同本機 e2e-catalog/ 一樣，imageFile 照用 */
+const CROSS_ORIGIN_IMAGE_BASE = `${CATALOG_IMAGE_HOST}/${CATALOG_FOLDER}`;
+const CROSS_ORIGIN_GLOB = `${CATALOG_IMAGE_HOST}/**`;
 
 /** 只有 catalog.json 先有嘅測試劇：借蘭茜夫人劇場嘅 definition 同圖 */
 const REMOTE_ID = 'e2e-remote';
@@ -44,29 +56,39 @@ const imageFile = (pathname) => {
     return new URL(`${kind}/library/${file.join('/')}`, CATALOG_DIR);
 };
 
-const serveImage = (route) => {
+/** 同 apps/api src/catalog/serve.ts：CORS 只回 player origin，一律 Vary: Origin */
+const corsHeaders = (allowOrigin) => ({
+    'access-control-allow-origin': allowOrigin,
+    vary: 'Origin',
+});
+
+const serveImage = (route, allowOrigin) => {
     try {
         const body = readFileSync(imageFile(new URL(route.request().url()).pathname));
-        return route.fulfill({ status: 200, contentType: 'image/webp', body });
+        const headers = corsHeaders(allowOrigin);
+        return route.fulfill({ status: 200, contentType: 'image/webp', headers, body });
     } catch {
         return route.fulfill({ status: 404, body: '' });
     }
 };
 
-/** catalogBody：catalog.json 答乜（string）；delayMs：遲幾耐先答 */
+/** catalogBody：catalog.json 答乜（string）；delayMs：遲幾耐先答；allowOrigin：page 嘅 origin */
 const catalogRoute =
-    ({ catalogBody, delayMs = 0 }) =>
+    ({ catalogBody, delayMs = 0, allowOrigin }) =>
     async (route) => {
-        if (!route.request().url().includes('catalog.json')) return serveImage(route);
+        if (!route.request().url().includes('catalog.json')) return serveImage(route, allowOrigin);
         if (delayMs) await new Promise((resolve) => setTimeout(resolve, delayMs));
+        const headers = corsHeaders(allowOrigin);
         return route
-            .fulfill({ status: 200, contentType: 'application/json', body: catalogBody })
+            .fulfill({ status: 200, contentType: 'application/json', headers, body: catalogBody })
             .catch(() => undefined); // page 已經放棄（timeout）就唔使答
     };
 
 const openWithCatalog = async (env, routeOptions) => {
     const { ctx, p } = await newE2EPage(env.browser, env.errors);
-    await ctx.route(E2E_CATALOG_GLOB, catalogRoute(routeOptions));
+    const allowOrigin = new URL(env.base).origin;
+    await ctx.route(E2E_CATALOG_GLOB, catalogRoute({ ...routeOptions, allowOrigin }));
+    await ctx.route(CROSS_ORIGIN_GLOB, (route) => serveImage(route, allowOrigin));
     return { ctx, p };
 };
 
@@ -91,20 +113,61 @@ const shelfState = async (p) => {
     return { golden, remote };
 };
 
+/** 測試劇格嘅圖：src、有冇載入到、crossorigin attribute（S-764） */
+const remoteArt = (p) =>
+    remoteTile(p)
+        .locator('img')
+        .first()
+        .evaluate((img) => ({
+            src: img.getAttribute('src') ?? '',
+            width: img.naturalWidth,
+            crossOrigin: img.getAttribute('crossorigin'),
+        }))
+        .catch(() => ({ src: '', width: 0, crossOrigin: null }));
+
 const checkValidCatalog = async (env, json) => {
     const { log } = env;
     const { p } = await openWithCatalog(env, { catalogBody: json });
     await p.goto(env.base);
     const { golden, remote } = await shelfState(p);
     log(golden && remote, `Remote catalog：主頁書架即刻見到「${REMOTE_NAME}」，內建劇照出`);
-    const art = await remoteTile(p)
-        .locator('img')
-        .first()
-        .evaluate((img) => ({ src: img.getAttribute('src') ?? '', width: img.naturalWidth }))
-        .catch(() => ({ src: '', width: 0 }));
+    const art = await remoteArt(p);
     log(
         art.src.includes(`/${CATALOG_FOLDER}dramas/`) && art.width > 0,
         `Remote catalog：測試劇嘅圖由 catalog manifest 嘅 URL 載入（${art.src}）`,
+    );
+    log(
+        art.crossOrigin === 'anonymous',
+        'Remote catalog：catalog 圖用 CORS 模式載入（crossorigin）',
+    );
+};
+
+/** 測試劇嘅圖搬去跨 origin host（似 Worker 出圖），其他照舊 */
+const crossOriginDocument = (base, json) => {
+    const doc = JSON.parse(json);
+    const local = new URL(CATALOG_FOLDER, base).pathname;
+    const moved = (url) => url.replace(local, CROSS_ORIGIN_IMAGE_BASE);
+    const dramas = doc.dramas.map((d) =>
+        d.id === REMOTE_ID
+            ? {
+                  ...d,
+                  images: Object.fromEntries(
+                      Object.entries(d.images).map(([f, u]) => [f, moved(u)]),
+                  ),
+              }
+            : d,
+    );
+    return JSON.stringify({ ...doc, dramas });
+};
+
+const checkCrossOriginImages = async (env, json) => {
+    const { p } = await openWithCatalog(env, { catalogBody: crossOriginDocument(env.base, json) });
+    await p.goto(env.base);
+    const { remote } = await shelfState(p);
+    const art = await remoteArt(p);
+    env.log(
+        remote && art.src.startsWith(CROSS_ORIGIN_IMAGE_BASE) && art.width > 0,
+        `Remote catalog：跨 origin 圖有 CORS header，<img crossorigin> 照出到（${art.src}）`,
     );
 };
 
@@ -181,4 +244,5 @@ export const runRemoteCatalogChecks = async (env) => {
     await section('Remote catalog：慢', () => checkSlowCatalog(env, json));
     await section('Remote catalog：離線 SW cache', () => checkOfflineCache(env, json));
     await section('Remote catalog：v1 進度升級', () => checkMigration(env, json));
+    await section('Remote catalog：跨 origin 圖（CORS）', () => checkCrossOriginImages(env, json));
 };

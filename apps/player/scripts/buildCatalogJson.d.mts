@@ -16,6 +16,26 @@ export interface GeneratedCatalog {
     dramas: GeneratedCatalogEntry[];
 }
 
+export interface ScannedImage {
+    /** folder 入面嘅相對檔名（/ 分隔），即係 definition 引用嘅名 */
+    file: string;
+    /** 本機絕對路徑 */
+    path: string;
+}
+
+export interface ScannedEntry {
+    id: string;
+    definition: Record<string, unknown>;
+    images: ScannedImage[];
+}
+
+export interface ScannedLibrary {
+    shows: ScannedEntry[];
+    dramas: ScannedEntry[];
+}
+
+export function scanLibrary(options?: { catalogDir?: string }): ScannedLibrary;
+
 export function buildCatalogDocument(options: {
     imageBase: string;
     catalogDir?: string;

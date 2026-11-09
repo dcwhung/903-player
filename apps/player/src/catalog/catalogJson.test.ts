@@ -18,6 +18,7 @@ import {
 } from '@903-player/catalog';
 import { buildCatalogDocument } from '../../scripts/buildCatalogJson.mjs';
 import { bundledSource as bundledDramas } from './dramas/lib/bundledSource';
+import { PLAYER_EPISODE_OPTIONS } from './dramas/lib/episodeOptions';
 import { bundledSource as bundledShows } from './shows/lib/bundledSource';
 
 const CATALOG_DIR = new URL('./', import.meta.url).pathname;
@@ -103,10 +104,13 @@ describe('catalog.json generated from library/', () => {
     ]);
     const normalize = normalizer(keys);
     const bundled = {
-        dramas: buildRegistry(bundledDramas),
+        dramas: buildRegistry(bundledDramas, PLAYER_EPISODE_OPTIONS),
         shows: buildShowRegistry(bundledShows),
     };
-    const remote = { dramas: buildRegistry(remoteDramas), shows: buildShowRegistry(remoteShows) };
+    const remote = {
+        dramas: buildRegistry(remoteDramas, PLAYER_EPISODE_OPTIONS),
+        shows: buildShowRegistry(remoteShows),
+    };
 
     it('should list every library folder with the same images', () => {
         const ids = (source: FolderSource) =>

@@ -42,6 +42,9 @@ const DRAMA_DEFINITION: Json = {
     arcs: [{ id: 'season-1', name: 'Season 1', addedAt: '2026-10-24', episodes: 2 }],
 };
 
+/** document 測試唔理錄音 URL */
+const OPTIONS = { appAudioBase: '/dramas/' };
+
 const IMAGES = {
     'tile.webp': 'https://cdn.example.com/catalog/tile.webp',
     'disc.webp': '/903-player/catalog/disc.webp',
@@ -171,7 +174,7 @@ describe('documentSource', () => {
 
     it('should build registries that use the absolute image URLs', () => {
         const doc = parseCatalogDocument(validDocument());
-        const dramas = buildRegistry(documentSource(doc, 'dramas'));
+        const dramas = buildRegistry(documentSource(doc, 'dramas'), OPTIONS);
         const shows = buildShowRegistry(documentSource(doc, 'shows'));
         expect(dramas.findDrama('golden')?.tileArt).toBe(IMAGES['tile.webp']);
         expect(shows.findShow('badgirl')?.theme.art).toBe(IMAGES['disc.webp']);
@@ -179,6 +182,6 @@ describe('documentSource', () => {
 
     it('should make the registry build fail when a definition names an image not in the manifest', () => {
         const doc = parseCatalogDocument(withChange('dramas.0.images', { 'tile.webp': '/t.webp' }));
-        expect(() => buildRegistry(documentSource(doc, 'dramas'))).toThrow(/disc\.webp/);
+        expect(() => buildRegistry(documentSource(doc, 'dramas'), OPTIONS)).toThrow(/disc\.webp/);
     });
 });

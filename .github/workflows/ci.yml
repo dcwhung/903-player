@@ -1,6 +1,6 @@
 name: CI
 
-# main 以外嘅 push：lint + unit + build，之後 e2e。main 嘅部署照舊由 deploy.yml 負責。
+# main 以外嘅 push：lint + type check + unit + build，之後 e2e。main 嘅部署照舊由 deploy.yml（player）同 deploy-api.yml（Worker）負責。
 # 只用 push trigger：check run 掛喺 commit 上面，PR 頁照樣見到；同時用 pull_request 會令同一個 SHA 跑兩次。
 # 今次 push 淨係改 docs → check / e2e 兩個 job 被 `if` 跳過。GitHub 當跳過嘅 job 係 Success，
 # 所以 branch protection 嘅 required check 唔會卡住（workflow 層 paths-ignore 會令佢永遠 pending）。
@@ -64,6 +64,10 @@ jobs:
 
             - run: npm run lint
 
+            # 全部 workspace（player、catalog、api）嘅 type check；build 只會 check player
+            - run: npx tsc -b
+
+            # 包括 apps/api（Worker test 喺 miniflare / workerd 跑，唔使 Cloudflare 帳戶）
             - run: npm test
 
             - run: npm run build

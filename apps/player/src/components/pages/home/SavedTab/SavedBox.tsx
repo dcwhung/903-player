@@ -4,6 +4,7 @@ import { Disc } from '../../../shared/common/Disc/Disc';
 import { SavedRow } from './SavedRow';
 import styles from './SavedTab.module.css';
 import type { SavedBoxView, SavedSectionView } from './savedTypes';
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 
 /** box 入面一段：左邊碟，右邊（短篇名 +）各集 */
 const SavedSection = ({ section }: { section: SavedSectionView }) => (
@@ -46,7 +47,12 @@ export const SavedBox = ({ box, soloHeight }: SavedBoxProps) => {
             style={style as CSSProperties | undefined}
         >
             <div className={styles.banner}>
-                <img className={styles.bannerArt} src={box.banner} alt="" />
+                <img
+                    className={styles.bannerArt}
+                    src={box.banner}
+                    alt=""
+                    crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
+                />
                 <h2 className={styles.bannerTitle}>{box.title}</h2>
             </div>
             <div ref={sectionsRef}>

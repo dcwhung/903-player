@@ -1,7 +1,7 @@
 /*
  * @903-player/catalog public API：劇集 / 節目資料嘅純邏輯（schema 驗證、registry、上架 / 下架、episode ID）。
- * 唔掂 DOM、唔用 Vite 嘅 import.meta.glob；資料點樣攞（FolderSource）由用家（player / 將來 backend）提供。
- * 例外：dramas/episodes.ts 仲用 import.meta.env.BASE_URL（host: 'app'），Phase 2 改做參數注入
+ * 唔掂 DOM、唔用 Vite（import.meta.glob / import.meta.env）；資料點樣攞（FolderSource）同 host: app 錄音 base
+ *（appAudioBase）由用家（player / backend）提供。
  */
 export { DRAMA_AUDIO_BASE, HK_TIMEZONE, LEAVING_SOON_DAYS } from './constants';
 export {
@@ -64,7 +64,7 @@ export {
     type UpcomingArc,
 } from './selectors/availability';
 
-export { buildEpisodes } from './dramas/episodes';
+export { buildEpisodes, type EpisodeBuildOptions } from './dramas/episodes';
 export {
     buildRegistry,
     type Drama,

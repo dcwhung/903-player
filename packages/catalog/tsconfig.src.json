@@ -14,9 +14,7 @@
         "resolveJsonModule": true,
         "skipLibCheck": true,
         "noEmit": true,
-        // TODO(Phase 2): vite/client 只係畀 dramas/episodes.ts 嘅 import.meta.env.BASE_URL（host: 'app'）用；
-        // Phase 2 改做 appAudioBase 參數注入之後拎走，package 就唔再依賴 Vite
-        "types": ["vite/client", "vitest/globals"]
+        "types": ["vitest/globals"]
     },
     "include": ["src"],
     "exclude": ["src/**/*.node.test.ts"]

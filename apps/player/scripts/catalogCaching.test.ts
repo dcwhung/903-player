@@ -54,10 +54,23 @@ describe('catalogRuntimeCaching', () => {
         expect(handlerFor('/903-player/e2e-catalog/catalog.json', href)).toBe(handler);
     });
 
-    it('should cap the image cache and keep opaque cross-origin images', () => {
+    // S-763：Backend Phase 2a Worker layout（apps/api）：圖喺 catalog.json 隔籬嘅 img/ 底下
+    it('should cache the Worker images next to catalog.json', () => {
+        const worker = 'https://903-player-api.example.workers.dev/catalog/v1/';
+        expect(handlerFor(`${worker}catalog.json`, `${worker}img/0123456789abcdef.webp`)).toBe(
+            'CacheFirst',
+        );
+        expect(handlerFor(`${worker}catalog.json`, `${worker}img/0123456789abcdef.jpg`)).toBe(
+            'CacheFirst',
+        );
+        expect(handlerFor(`${worker}catalog.json`, `${worker}catalog.json`)).toBe('NetworkFirst');
+    });
+
+    // S-764：<img crossorigin>（Worker 有 CORS）→ 唔再 cache opaque（0），錯誤 response 唔會留 60 日
+    it('should cap the image cache and keep only real 200 responses', () => {
         const images = catalogRuntimeCaching('https://cdn.example.com/catalog.json')[1];
         expect(images?.options.expiration?.maxEntries).toBeGreaterThan(0);
         expect(images?.options.expiration?.maxAgeSeconds).toBeGreaterThan(0);
-        expect(images?.options.cacheableResponse?.statuses).toEqual([0, 200]);
+        expect(images?.options.cacheableResponse?.statuses).toEqual([200]);
     });
 });

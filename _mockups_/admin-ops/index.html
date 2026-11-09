@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>903 Player Ops</title>
+        <style>
+            /*
+             * Phase 2a ops 頁 preview（apps/api/public/index.html）：Phase 3 admin 未有之前，淨係做 login / 現狀 / Publish / history。
+             * 純工具頁：唔係 PWA、唔用 player theme；一欄、跟系統深淺色。下面逐個狀態畫一張卡。
+             */
+            :root {
+                --bg: #f4f5f7;
+                --surface: #ffffff;
+                --ink: #18202b;
+                --muted: #5d6775;
+                --line: #d3d9e2;
+                --accent: #2f5fa7;
+                --on-accent: #ffffff;
+                --ok: #2f7d4f;
+                --warn-bg: #fff4e0;
+                --warn-ink: #7a4500;
+                --danger: #b3261e;
+                --on-danger: #ffffff;
+                --radius: 10px;
+                --gap: 16px;
+                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', 'Segoe UI', sans-serif;
+                --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+                color-scheme: light dark;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: #12161c;
+                    --surface: #1c222b;
+                    --ink: #e6e9ee;
+                    --muted: #9aa4b2;
+                    --line: #2e3742;
+                    --accent: #7aa7e8;
+                    --on-accent: #0d1a2b;
+                    --ok: #6fc28f;
+                    --warn-bg: #3a2a10;
+                    --warn-ink: #f2c27a;
+                    --danger: #f28b82;
+                    --on-danger: #2b0d0b;
+                }
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--ink);
+                font: 15px/1.5 var(--font);
+            }
+            .page {
+                max-width: 760px;
+                margin: 0 auto;
+                padding: 24px 16px 48px;
+                display: grid;
+                gap: 32px;
+            }
+            .state-label {
+                margin: 0 0 8px;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .frame {
+                border: 1px dashed var(--line);
+                border-radius: var(--radius);
+                padding: var(--gap);
+                display: grid;
+                gap: var(--gap);
+            }
+            header.bar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            header.bar h1 {
+                margin: 0;
+                font-size: 18px;
+            }
+            .who {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .version {
+                font: 12px var(--mono);
+                color: var(--muted);
+            }
+            .card {
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: var(--radius);
+                padding: var(--gap);
+                display: grid;
+                gap: 12px;
+            }
+            .card h2 {
+                margin: 0;
+                font-size: 15px;
+            }
+            dl.facts {
+                margin: 0;
+                display: grid;
+                grid-template-columns: max-content 1fr;
+                gap: 4px 16px;
+            }
+            dl.facts dt {
+                color: var(--muted);
+            }
+            dl.facts dd {
+                margin: 0;
+                overflow-wrap: anywhere;
+            }
+            code {
+                font: 13px var(--mono);
+            }
+            .actions {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            button,
+            .btn {
+                font: inherit;
+                border-radius: 8px;
+                padding: 8px 14px;
+                border: 1px solid var(--line);
+                background: var(--surface);
+                color: var(--ink);
+                cursor: pointer;
+                text-decoration: none;
+            }
+            button.primary,
+            .btn.primary {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: var(--on-accent);
+            }
+            button.danger {
+                background: var(--danger);
+                border-color: var(--danger);
+                color: var(--on-danger);
+            }
+            button.small {
+                padding: 4px 10px;
+                font-size: 13px;
+            }
+            .center {
+                text-align: center;
+                justify-items: center;
+                padding: 40px 16px;
+            }
+            .notice {
+                border-radius: 8px;
+                padding: 12px;
+            }
+            .notice.ok {
+                border: 1px solid var(--ok);
+                color: var(--ok);
+            }
+            .notice.warn {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .notice ul {
+                margin: 8px 0 0;
+                padding-left: 20px;
+                font: 13px var(--mono);
+            }
+            .table-wrap {
+                overflow-x: auto;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 14px;
+            }
+            th,
+            td {
+                text-align: left;
+                padding: 8px 6px;
+                border-bottom: 1px solid var(--line);
+                white-space: nowrap;
+            }
+            th {
+                color: var(--muted);
+                font-weight: 500;
+            }
+            .tag {
+                font-size: 12px;
+                border: 1px solid var(--ok);
+                color: var(--ok);
+                border-radius: 999px;
+                padding: 0 8px;
+            }
+            button:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+            }
+            /* 窄 mon：收起 Hash 欄，等「還原」掣唔使橫 scroll 都見到 */
+            @media (max-width: 480px) {
+                th:nth-child(4),
+                td:nth-child(4) {
+                    display: none;
+                }
+            }
+            label.check {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+        </style>
+    </head>
+    <body>
+        <main class="page">
+            <!-- ① 未 login -->
+            <section>
+                <p class="state-label">① 未 login（GET / 冇 session）</p>
+                <div class="frame">
+                    <div class="card center">
+                        <h2>903 Player Ops</h2>
+                        <p style="margin: 0; color: var(--muted)">只限管理員</p>
+                        <a class="btn primary" href="#">用 Google 登入</a>
+                        <span class="version">api v0.1.0</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ② whitelist 外 -->
+            <section>
+                <p class="state-label">
+                    ② Google login 成功但 email 唔喺 ADMIN_EMAILS（403，冇開 session）
+                </p>
+                <div class="frame">
+                    <div class="card center">
+                        <h2>冇權限</h2>
+                        <p style="margin: 0; color: var(--muted)">
+                            <code>someone@gmail.com</code> 唔係管理員。
+                        </p>
+                        <a class="btn" href="#">用其他 Google 帳戶登入</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ③ 已 login：主畫面 -->
+            <section>
+                <p class="state-label">③ 已 login：現狀 + Publish + history</p>
+                <div class="frame">
+                    <header class="bar">
+                        <h1>903 Player Ops</h1>
+                        <div class="who">
+                            <span>donald.cw.hung@gmail.com</span>
+                            <button class="small">登出</button>
+                        </div>
+                    </header>
+
+                    <div class="card">
+                        <h2>而家 publish 緊</h2>
+                        <dl class="facts">
+                            <dt>時間</dt>
+                            <dd>2026-11-09 20:14（英國時間）</dd>
+                            <dt>內容</dt>
+                            <dd>7 個節目、6 套劇、412 集</dd>
+                            <dt>Hash</dt>
+                            <dd><code>3f9a1c07e2b4</code></dd>
+                            <dt>網址</dt>
+                            <dd>
+                                <code
+                                    >https://903-player-api.dcwhung.workers.dev/catalog/v1/catalog.json</code
+                                >
+                            </dd>
+                        </dl>
+                    </div>
+
+                    <div class="card">
+                        <h2>Publish</h2>
+                        <p style="margin: 0; color: var(--muted)">
+                            用 D1 而家嘅資料生成 catalog.json。Player 下次開 app 就會讀到（最多 60
+                            秒 cache）。
+                        </p>
+                        <div class="actions">
+                            <button class="primary">Publish</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>Publish 記錄</h2>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>時間</th>
+                                        <th>集數</th>
+                                        <th>Hash</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>2026-11-09 20:14</td>
+                                        <td>412</td>
+                                        <td><code>3f9a1c07e2b4</code></td>
+                                        <td><span class="tag">而家用緊</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>2026-11-09 18:02</td>
+                                        <td>410</td>
+                                        <td><code>b71d02aa9c11</code></td>
+                                        <td><button class="small">還原</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>2026-11-09 17:40</td>
+                                        <td>410</td>
+                                        <td><code>08c4e5f19d73</code></td>
+                                        <td><button class="small">還原</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ④ Publish 成功 -->
+            <section>
+                <p class="state-label">④ 撳 Publish 成功（喺 Publish 卡入面顯示）</p>
+                <div class="frame">
+                    <div class="card">
+                        <h2>Publish</h2>
+                        <div class="notice ok">
+                            ✓ 已 publish #4：7 個節目、6 套劇、412 集（<code>9e02b6d4a1f8</code>）
+                        </div>
+                        <div class="actions">
+                            <button class="primary">Publish</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑤ ID 守衛拒絕 -->
+            <section>
+                <p class="state-label">
+                    ⑤ ID 守衛：上次 publish 有、今次冇嘅 episode ID → 拒絕；要剔確認先可以強制
+                    publish
+                </p>
+                <div class="frame">
+                    <div class="card">
+                        <h2>Publish</h2>
+                        <div class="notice warn">
+                            <strong>已拒絕：有 3 集喺上次 publish 有、今次唔見咗。</strong>
+                            聽緊呢幾集嘅用戶會冇咗進度同收藏。
+                            <ul>
+                                <li>drama:lancy:half:11</li>
+                                <li>drama:lancy:half:12</li>
+                                <li>drama:lancy:half:13</li>
+                            </ul>
+                        </div>
+                        <label class="check"
+                            ><input type="checkbox" /> 我知道呢幾集會唔見，照樣 publish</label
+                        >
+                        <div class="actions">
+                            <button class="danger" disabled>強制 Publish</button>
+                            <button>取消</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑥ 還原確認 -->
+            <section>
+                <p class="state-label">
+                    ⑥ 撳「還原」：確認對話框（還原 = 重新 publish 舊 snapshot，一樣行 ID 守衛）
+                </p>
+                <div class="frame">
+                    <div class="card">
+                        <h2>還原去 #2？</h2>
+                        <p style="margin: 0">
+                            會用 2026-11-09 18:02 嘅版本（410 集）取代而家嘅 #3，並記錄做新嘅 #4。D1
+                            入面嘅資料唔會改。
+                        </p>
+                        <div class="actions">
+                            <button class="primary">還原</button>
+                            <button>取消</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </body>
+</html>

@@ -11,6 +11,12 @@ describe('Disc', () => {
         expect(disc.querySelector('img')).toHaveAttribute('src', '/art/gongzi.jpg');
     });
 
+    // S-764：catalog 圖由 Worker（跨 origin、有 CORS）出，CORS 模式先唔會係 opaque response
+    it('should load the artwork in CORS mode', () => {
+        const { container } = render(<Disc size="small" art="/art/gongzi.jpg" />);
+        expect(container.querySelector('img')).toHaveAttribute('crossorigin', 'anonymous');
+    });
+
     it('should spin a small disc face when spinning', () => {
         const { container } = render(<Disc size="small" spinning />);
 

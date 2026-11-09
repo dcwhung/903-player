@@ -1,0 +1,28 @@
+# 903-player-api：catalog backend（Backend Phase 2a）。Runbook 見 README.md
+name = "903-player-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+
+# ops 頁（public/）由 static assets 直接出；/api、/auth、/catalog 冇對應檔案就落 Worker
+[assets]
+directory = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "903-player"
+database_id = "03511373-0025-44c4-90c4-2e1480d75e76"
+migrations_dir = "migrations"
+
+# private bucket（冇 public URL）：catalog.json + 圖都經 Worker 代出
+[[r2_buckets]]
+binding = "CATALOG"
+bucket_name = "903-player-catalog"
+
+# 非 secret 設定；GOOGLE_CLIENT_SECRET、SESSION_SECRET 用 `wrangler secret put`（本機：.dev.vars）
+[vars]
+GOOGLE_CLIENT_ID = "678038303553-e1sa3dlsj2mlrf09hvijukbbhksjth4h.apps.googleusercontent.com"
+# 逗號分隔
+ADMIN_EMAILS = "donald.cw.hung@gmail.com"
+# 逗號分隔：Vercel production + GitHub Pages（CORS 只回呢度 match 到嘅 origin）
+PLAYER_ORIGINS = "https://903-player.vercel.app,https://dcwhung.github.io"
+WORKER_ORIGIN = "https://903-player-api.dcwhung.workers.dev"
