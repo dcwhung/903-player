@@ -1,0 +1,216 @@
+/*
+ * Phase 2a ops 頁（Design Origin：_mockups_/admin-ops/index.html）：Phase 3 admin 未有之前，淨係做 login / 現狀 / Publish / history。
+ * 純工具頁：唔係 PWA、唔用 player theme；一欄、跟系統深淺色。冇動畫（狀態直接切換）。
+ * 403 頁（src/auth/deniedPage.ts）都用呢個檔
+ */
+:root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #18202b;
+    --muted: #5d6775;
+    --line: #d3d9e2;
+    --accent: #2f5fa7;
+    --on-accent: #ffffff;
+    --ok: #2f7d4f;
+    --warn-bg: #fff4e0;
+    --warn-ink: #7a4500;
+    --danger: #b3261e;
+    --on-danger: #ffffff;
+    --radius: 10px;
+    --gap: 16px;
+    --font: -apple-system, 'PingFang HK', 'Noto Sans TC', 'Segoe UI', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+    color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #12161c;
+        --surface: #1c222b;
+        --ink: #e6e9ee;
+        --muted: #9aa4b2;
+        --line: #2e3742;
+        --accent: #7aa7e8;
+        --on-accent: #0d1a2b;
+        --ok: #6fc28f;
+        --warn-bg: #3a2a10;
+        --warn-ink: #f2c27a;
+        --danger: #f28b82;
+        --on-danger: #2b0d0b;
+    }
+}
+* {
+    box-sizing: border-box;
+}
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 var(--font);
+}
+.page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+    display: grid;
+    gap: var(--gap);
+}
+.stack {
+    display: grid;
+    gap: var(--gap);
+}
+[hidden] {
+    display: none !important;
+}
+/* mockup 入面 inline 嘅「灰色一段字」 */
+.lead {
+    margin: 0;
+    color: var(--muted);
+}
+p.plain {
+    margin: 0;
+}
+header.bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+header.bar h1 {
+    margin: 0;
+    font-size: 18px;
+}
+.who {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+}
+.version {
+    font: 12px var(--mono);
+    color: var(--muted);
+}
+.card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: var(--gap);
+    display: grid;
+    gap: 12px;
+}
+.card h2 {
+    margin: 0;
+    font-size: 15px;
+}
+dl.facts {
+    margin: 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 16px;
+}
+dl.facts dt {
+    color: var(--muted);
+}
+dl.facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+code {
+    font: 13px var(--mono);
+}
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+button,
+.btn {
+    font: inherit;
+    border-radius: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+    text-decoration: none;
+}
+button.primary,
+.btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+}
+button.danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: var(--on-danger);
+}
+button.small {
+    padding: 4px 10px;
+    font-size: 13px;
+}
+.center {
+    text-align: center;
+    justify-items: center;
+    padding: 40px 16px;
+}
+.notice {
+    border-radius: 8px;
+    padding: 12px;
+}
+.notice.ok {
+    border: 1px solid var(--ok);
+    color: var(--ok);
+}
+.notice.warn {
+    background: var(--warn-bg);
+    color: var(--warn-ink);
+}
+.notice ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+    font: 13px var(--mono);
+}
+.table-wrap {
+    overflow-x: auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+th,
+td {
+    text-align: left;
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+th {
+    color: var(--muted);
+    font-weight: 500;
+}
+.tag {
+    font-size: 12px;
+    border: 1px solid var(--ok);
+    color: var(--ok);
+    border-radius: 999px;
+    padding: 0 8px;
+}
+button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+/* 窄 mon：收起 Hash 欄，等「還原」掣唔使橫 scroll 都見到 */
+@media (max-width: 480px) {
+    th:nth-child(4),
+    td:nth-child(4) {
+        display: none;
+    }
+}
+label.check {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
