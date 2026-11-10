@@ -1,6 +1,7 @@
 // @vitest-environment node
 // 要用 node:fs 讀 CSS 原文：*.node.test.ts 行 tsconfig.node.json（有 Node 型別），唔會漏入 app 程式
 import { cssDeclarations, readCss } from '../../../../../tests/cssRule';
+import { WIDE_BANNER_QUERY } from '../../../../config/layout';
 
 const tokensCss = readCss(new URL('../../../../styles/tokens.css', import.meta.url));
 const cardCss = readCss(new URL('./PlayerHandle.module.css', import.meta.url));
@@ -65,11 +66,13 @@ describe('內頁把手（P3 #4）', () => {
         expect(reduced.animation).toBe('none');
     });
 
-    it('should reserve the handle’s room on the right of an inner page only while it shows', () => {
-        const reserve = cssDeclarations(pageCss, '.fixed:has([data-page-handle])');
+    it('should always reserve the handle’s room on a wide inner page, so the disc never resizes', () => {
+        // 把手出 / 走都唔郁版面：預留位一直喺度（闊橫版先有把手），右欄同唱片大細唔會跟住跳
+        const reserve = cssDeclarations(pageCss, '.fixed', WIDE_BANNER_QUERY);
         expect(reserve['padding-right']).toBe(
             'calc(env(safe-area-inset-right) + var(--home-handle-reserve))',
         );
+        expect(cssDeclarations(pageCss, '.fixed:has([data-page-handle])')).toEqual({});
     });
 
     it('should still let the player column fill the row when an inner page has no list', () => {

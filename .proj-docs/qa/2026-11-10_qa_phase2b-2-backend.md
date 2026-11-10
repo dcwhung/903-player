@@ -29,7 +29,7 @@
 
 ## Hard Gates
 
-all pass（Tests：CI 全 unit + 全 e2e 綠 + 本地目標 unit；Coverage：snapshot / localize ≥ 80%，Worker 上載路徑由 9 個 test case + 本機 curl 覆蓋；PWA：precache 內容改變已核實、換版 e2e 綠；Security：415 / 413 / 422 / 401 / 403 本機核實；Performance：冇新 hot path（S-789 / S-790 已喺 backlog））
+all pass（Tests：CI 全 unit + 全 e2e 綠 + 本地目標 unit；Coverage：snapshot / localize ≥ 80%，Worker 上載路徑由 9 個 test case + 本機 curl 覆蓋；PWA：precache 內容改變已核實、換版 e2e 綠；Security：415 / 413 / 422 / 401 / 403 本機核實；Performance：冇新 hot path（S-792 / S-793 已喺 backlog））
 
 ## Findings
 
@@ -38,7 +38,7 @@ all pass（Tests：CI 全 unit + 全 e2e 綠 + 本地目標 unit；Coverage：sn
 ### 🟢 / Observation
 
 - Observation：schedule 嘅 `arcId` 唔合規（例如 `BAD!`）回 404 `no such arc`，唔係 400；S-787 / plan 只講 drama id，唔違反 L1，唔開 backlog
-- 有 snapshot 時 precache 由 81 → 82：舊 library tile 同新 snapshot tile 兩份都入 = S-789（已喺 backlog）
+- 有 snapshot 時 precache 由 81 → 82：舊 library tile 同新 snapshot tile 兩份都入 = S-792（已喺 backlog）
 
 ## 建議補測
 

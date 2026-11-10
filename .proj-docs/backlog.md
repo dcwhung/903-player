@@ -1,6 +1,6 @@
 # Backlog 登記冊（🟢 / Observation）
 
-**最後更新**：2026-11-10（S-789–S-794 開，Phase 2b-2 review；S-786、S-787 關，Phase 2b-2；之前 S-767、S-768、S-770、S-772、S-773、S-780 關；S-785–S-788 開，Phase 2b-1 review）
+**最後更新**：2026-11-10（Phase 2b-2：S-786、S-787 關；S-792–S-797 開。原本編做 S-789–S-794，同 main PR #198 撞號，merge 時改號）
 
 > Review / QA 報告入面嘅 🟢 同 Observation 統一喺呢度追蹤。掃 backlog 時淨係睇「Open」；「Closed」嘅唔使再理。
 > 新 finding 照寫喺各自報告，處理完或者決定唔理就喺呢度更新。
@@ -40,12 +40,12 @@
 | S-781 | `.github/workflows/import-catalog.yml`           | `workflow_dispatch` 用所揀 ref 嗰份 yml，main guard 只防手滑；真邊界用 GitHub Environment（branch 限 `main`）+ environment secret，`deploy-api.yml` 一齊轉                                | 下次改 workflow                | reviews/2026-11-09_review_phase2a-backend        |
 | S-785 | `packages/catalog/src/scan`                      | `findSuspicious` / `merge.ts` 訊息講「--verify」「本機 folder」，API scan issues 照出；Phase 3 admin 前改中性字眼或加 `source` 參數                                                       | Phase 3 admin 前               | reviews/2026-11-10_review_phase2b-1-backend      |
 | S-788 | `apps/api/src/content/entries.ts`                | `PUT` warnings / `DELETE` 每次讀成份 publish `document`；加淨讀 `episode_ids` 嘅 query                                                                                                    | 有性能問題先做                 | reviews/2026-11-10_review_phase2b-1-backend      |
-| S-789 | `apps/player/src/catalog/*/lib/bundledSource.ts` | Library glob eager：有 snapshot 時 library JSON + 圖照入 bundle / precache（相同內容 Rollup 去重，admin 換圖後兩份都 precache）；改由 plugin 提供 virtual module，build 時二揀一          | D1 同 library 分歧大過 1 MB 前 | reviews/2026-11-10_review_phase2b-2-backend      |
-| S-790 | `apps/player/scripts/catalogSnapshot.ts`         | `runPool` 一張圖失敗後其他 worker 繼續下載；`rm(tmp)` 同未完 `writeFile` 競爭可能留低 `data.tmp/`（下次 build 會清）；加 abort flag                                                       | 下次改 snapshot                | reviews/2026-11-10_review_phase2b-2-backend      |
-| S-791 | `apps/api/src/assets/webp.ts`                    | `fourcc(bytes, 8)`、`uint32(bytes, 4)`、`FIRST_CHUNK + 4`、fourcc 長度 `4` 未命名                                                                                                         | 下次改 webp.ts                 | reviews/2026-11-10_review_phase2b-2-backend      |
-| S-792 | `apps/api/src/assets/webp.ts`                    | 只驗 header：淨 VP8X 冇圖像 chunk、或 VP8 非 keyframe 都會通過；admin 上載前用 `createImageBitmap` decode 一次                                                                            | Phase 3 admin                  | reviews/2026-11-10_review_phase2b-2-backend      |
-| S-793 | `apps/player/src/catalog/snapshot/source.ts`     | `vite` dev 會用本機上次 production build 留低嘅 `data/`，改 library 喺 dev 睇唔到；考慮 dev 都清或加入 `LIBRARY_ONLY_MODES`                                                               | 有人撞到先做                   | reviews/2026-11-10_review_phase2b-2-backend      |
-| S-794 | `apps/api/src/catalog/routes.ts`                 | rollback 可以還原去 `failed` 行（從未上過 R2）；無害但語義怪，ops 頁隱藏或 API 回 409                                                                                                     | Phase 3 admin                  | reviews/2026-11-10_review_phase2b-2-backend      |
+| S-792 | `apps/player/src/catalog/*/lib/bundledSource.ts` | Library glob eager：有 snapshot 時 library JSON + 圖照入 bundle / precache（相同內容 Rollup 去重，admin 換圖後兩份都 precache）；改由 plugin 提供 virtual module，build 時二揀一          | D1 同 library 分歧大過 1 MB 前 | reviews/2026-11-10_review_phase2b-2-backend      |
+| S-793 | `apps/player/scripts/catalogSnapshot.ts`         | `runPool` 一張圖失敗後其他 worker 繼續下載；`rm(tmp)` 同未完 `writeFile` 競爭可能留低 `data.tmp/`（下次 build 會清）；加 abort flag                                                       | 下次改 snapshot                | reviews/2026-11-10_review_phase2b-2-backend      |
+| S-794 | `apps/api/src/assets/webp.ts`                    | `fourcc(bytes, 8)`、`uint32(bytes, 4)`、`FIRST_CHUNK + 4`、fourcc 長度 `4` 未命名                                                                                                         | 下次改 webp.ts                 | reviews/2026-11-10_review_phase2b-2-backend      |
+| S-795 | `apps/api/src/assets/webp.ts`                    | 只驗 header：淨 VP8X 冇圖像 chunk、或 VP8 非 keyframe 都會通過；admin 上載前用 `createImageBitmap` decode 一次                                                                            | Phase 3 admin                  | reviews/2026-11-10_review_phase2b-2-backend      |
+| S-796 | `apps/player/src/catalog/snapshot/source.ts`     | `vite` dev 會用本機上次 production build 留低嘅 `data/`，改 library 喺 dev 睇唔到；考慮 dev 都清或加入 `LIBRARY_ONLY_MODES`                                                               | 有人撞到先做                   | reviews/2026-11-10_review_phase2b-2-backend      |
+| S-797 | `apps/api/src/catalog/routes.ts`                 | rollback 可以還原去 `failed` 行（從未上過 R2）；無害但語義怪，ops 頁隱藏或 API 回 409                                                                                                     | Phase 3 admin                  | reviews/2026-11-10_review_phase2b-2-backend      |
 
 ## Closed
 

@@ -22,9 +22,9 @@ all pass
 | -------- | ------- | ------- | --------------------------------------------------------- |
 | 正確性   | 25      | 25      | S-786 雙重失敗、S-787、snapshot fallback 全部有 test      |
 | 安全性   | 20      | 20      | 守門、body limit 先於讀 body、parser 有界、hash integrity |
-| 可維護性 | 20      | 20      | 函數短、常數有名（S-791 只係零星 offset）                 |
+| 可維護性 | 20      | 20      | 函數短、常數有名（S-794 只係零星 offset）                 |
 | 測試覆蓋 | 15      | 15      | plan「驗證」列嘅 unit case 全部有                         |
-| 性能     | 10      | 10      | S-789、S-790（唔扣分）                                    |
+| 性能     | 10      | 10      | S-792、S-793（唔扣分）                                    |
 | 代碼風格 | 10      | 10      | lint / prettier 過                                        |
 | **總分** | **100** | **100** |                                                           |
 
@@ -37,12 +37,12 @@ all pass
 | 1   | snapshot 寫去 `snapshot/data/`（+ `data.tmp/`），gitignore 呢兩個          | 接受。plan 要 ignore 成個 `snapshot/`，但 tracked 嘅 `source.ts` 一定要喺 glob 隔籬；兩個 folder 同層，`rename` 喺同一個 filesystem，atomic 成立                                                     |
 | 2   | `runnerImport` 喺 buildStart 載 `@903-player/catalog`；test 注入           | 接受。config load 唔使 import workspace TS；plugin 失敗都喺 `snapshotOnce` 嘅 try 入面（載唔到 package 都係 warn + library）                                                                         |
 | 3   | `episodeOptionsFor(BASE_PATH)`                                             | 接受。test 鎖住 `episodeOptionsFor(BASE_URL)` 等於 `PLAYER_EPISODE_OPTIONS`；`vite.config` 嘅 `base` 同傳入值都係 `BASE_PATH`，build 驗證同 runtime 一致                                             |
-| 4   | 每次 `command==='build'` 都清舊 snapshot；三個條件齊先 fetch；dev 唔郁     | 接受，比 plan 更穩（e2e / 冇 URL build 都唔會用殘留）。dev server 會讀本機殘留 → S-793（Observation）                                                                                                |
+| 4   | 每次 `command==='build'` 都清舊 snapshot；三個條件齊先 fetch；dev 唔郁     | 接受，比 plan 更穩（e2e / 冇 URL build 都唔會用殘留）。dev server 會讀本機殘留 → S-796（Observation）                                                                                                |
 | 5   | `LIBRARY_ONLY_MODES`（test / e2e）；snapshot 壞 → warn + library           | 接受。`source.test.ts` 鎖住 unit test 入面 `snapshotDocument === undefined`，所以 `catalogJson` / 每劇 test 繼續測 library；e2e 有兩重保險（build 清 data + mode 判斷）                              |
 | 6   | Plugin test 用真 temp dir + mock fetch                                     | 接受。rename / rm / leftover 都係真 fs 行為先測得到                                                                                                                                                  |
 | 7   | `GET /api/publishes` 加 `status`；`current` = 最新 ok；雙重失敗 rethrow R2 | 接受。`discardPublish` 嘅 `.catch` 只吞 mark 嘅錯，原本 R2 error 照 throw；test 驗 failed 行唔計 unchanged、ID 守衛同 `current`                                                                      |
 | 8   | 圖 glob 用 `?no-inline`                                                    | 接受。`parseCatalogDocument` 要圖 URL，`?url` 會將 < 4 KB 圖變 data URI 令成份 snapshot 驗唔過；developer 報 742-byte 圖已入 `dist/assets` + precache                                                |
-| Obs | Library glob eager，用 snapshot 時 library 圖照入 bundle / precache        | 同意，記 S-789。D1 圖現時同 library 一樣（`importLibrary.mjs` 同 hash），Rollup 對相同內容去重；admin 換圖之後兩份都會 precache，加上 library JSON 照 inline，影響隨 D1 同 repo 分歧而增加，暫時唔大 |
+| Obs | Library glob eager，用 snapshot 時 library 圖照入 bundle / precache        | 同意，記 S-792。D1 圖現時同 library 一樣（`importLibrary.mjs` 同 hash），Rollup 對相同內容去重；admin 換圖之後兩份都會 precache，加上 library JSON 照 inline，影響隨 D1 同 repo 分歧而增加，暫時唔大 |
 
 ## 其他重點核對
 
@@ -55,12 +55,12 @@ all pass
 
 ## 🟢 / Observation（入 backlog）
 
-- S-789 `apps/player/src/catalog/{dramas,shows}/lib/bundledSource.ts`：library glob eager，有 snapshot 時 library JSON + 圖照入 bundle / precache；可改由 plugin 提供 virtual module，build 時二揀一
-- S-790 `apps/player/scripts/catalogSnapshot.ts` `runPool`：一張圖失敗後其他 worker 繼續下載餘下嘅圖（每張最多 15 s）；`rm(tmp)` 同未完嘅 `writeFile` 競爭，可能留低 `data.tmp/`（下次 build 會清，唔影響結果）；加 abort flag
-- S-791 `apps/api/src/assets/webp.ts`：`fourcc(bytes, 8)`、`uint32(bytes, 4)`、`FIRST_CHUNK + 4`、fourcc 長度 `4` 未命名，其他 offset 都有常數
-- S-792 `apps/api/src/assets/webp.ts`：只驗 header（plan 範圍）；淨係得 VP8X chunk、冇 VP8 / VP8L 圖像資料，或者 VP8 非 keyframe，都會通過；Phase 3 admin 上載前可用 `createImageBitmap` decode 一次
-- S-793 `apps/player/src/catalog/snapshot/source.ts`：`vite` dev（mode `development`）會用本機上次 production build 留低嘅 `data/`，改 library 喺 dev 睇唔到；README「唔會用本機殘留」只講 build
-- S-794 `apps/api/src/catalog/routes.ts` rollback：可以還原去 `failed` 行（嗰份從未上過 R2）；結果無害（照行 validator + ID 守衛），ops 頁 Phase 3 可隱藏或 API 回 409
+- S-792 `apps/player/src/catalog/{dramas,shows}/lib/bundledSource.ts`：library glob eager，有 snapshot 時 library JSON + 圖照入 bundle / precache；可改由 plugin 提供 virtual module，build 時二揀一
+- S-793 `apps/player/scripts/catalogSnapshot.ts` `runPool`：一張圖失敗後其他 worker 繼續下載餘下嘅圖（每張最多 15 s）；`rm(tmp)` 同未完嘅 `writeFile` 競爭，可能留低 `data.tmp/`（下次 build 會清，唔影響結果）；加 abort flag
+- S-794 `apps/api/src/assets/webp.ts`：`fourcc(bytes, 8)`、`uint32(bytes, 4)`、`FIRST_CHUNK + 4`、fourcc 長度 `4` 未命名，其他 offset 都有常數
+- S-795 `apps/api/src/assets/webp.ts`：只驗 header（plan 範圍）；淨係得 VP8X chunk、冇 VP8 / VP8L 圖像資料，或者 VP8 非 keyframe，都會通過；Phase 3 admin 上載前可用 `createImageBitmap` decode 一次
+- S-796 `apps/player/src/catalog/snapshot/source.ts`：`vite` dev（mode `development`）會用本機上次 production build 留低嘅 `data/`，改 library 喺 dev 睇唔到；README「唔會用本機殘留」只講 build
+- S-797 `apps/api/src/catalog/routes.ts` rollback：可以還原去 `failed` 行（嗰份從未上過 R2）；結果無害（照行 validator + ID 守衛），ops 頁 Phase 3 可隱藏或 API 回 409
 
 ## ✅ 做得好嘅地方
 
@@ -86,5 +86,5 @@ hard_gates:
 next_action: invoke_qa
 next_agent: quality-assurance
 branch: "claude/funny-pasteur-29wbrn"
-context: "Phase 2b-2 pass 100: 0 Critical / 0 Warning; deviations 1-8 + eager-glob observation accepted; S-789..S-794 to backlog. QA S1 chains api, catalog-data, pwa-shell, repo-tooling after CI on 0fae3e7 green. TDD: tests in same commits as code, ask developer for red-first note in PR. Report committed locally, not pushed (code CI on 0fae3e7 running)."
+context: "Phase 2b-2 pass 100: 0 Critical / 0 Warning; deviations 1-8 + eager-glob observation accepted; S-792..S-797 to backlog. QA S1 chains api, catalog-data, pwa-shell, repo-tooling after CI on 0fae3e7 green. TDD: tests in same commits as code, ask developer for red-first note in PR. Report committed locally, not pushed (code CI on 0fae3e7 running)."
 ```

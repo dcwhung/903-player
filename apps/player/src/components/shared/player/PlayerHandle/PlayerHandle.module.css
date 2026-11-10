@@ -67,7 +67,7 @@
     writing-mode: vertical-rl;
 }
 
-/* 內頁把手：播緊嘅變咗係呢頁自己嘅嘢 → 先淡出，animationend 先拆走（InnerPageHandle），預留位跟住收 */
+/* 內頁把手：播緊嘅變咗係呢頁自己嘅嘢 → 先淡出，animationend 先拆走（InnerPageHandle）；預留位照留，版面唔郁 */
 .handle[data-leaving] {
     animation: handle-fade-out var(--duration-page-handle-fade) var(--ease-view-transition) both;
 }
