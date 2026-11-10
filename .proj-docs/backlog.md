@@ -1,6 +1,6 @@
 # Backlog 登記冊（🟢 / Observation）
 
-**最後更新**：2026-11-10（Phase 2b-2：S-786、S-787 關；S-792–S-797 開。原本編做 S-789–S-794，同 main PR #198 撞號，merge 時改號）
+**最後更新**：2026-11-10（Phase 3a：S-798–S-802 開；Phase 2b-2：S-786、S-787 關，S-792–S-797 開）
 
 > Review / QA 報告入面嘅 🟢 同 Observation 統一喺呢度追蹤。掃 backlog 時淨係睇「Open」；「Closed」嘅唔使再理。
 > 新 finding 照寫喺各自報告，處理完或者決定唔理就喺呢度更新。
@@ -46,6 +46,11 @@
 | S-795 | `apps/api/src/assets/webp.ts`                    | 只驗 header：淨 VP8X 冇圖像 chunk、或 VP8 非 keyframe 都會通過；admin 上載前用 `createImageBitmap` decode 一次                                                                            | Phase 3 admin                  | reviews/2026-11-10_review_phase2b-2-backend      |
 | S-796 | `apps/player/src/catalog/snapshot/source.ts`     | `vite` dev 會用本機上次 production build 留低嘅 `data/`，改 library 喺 dev 睇唔到；考慮 dev 都清或加入 `LIBRARY_ONLY_MODES`                                                               | 有人撞到先做                   | reviews/2026-11-10_review_phase2b-2-backend      |
 | S-797 | `apps/api/src/catalog/routes.ts`                 | rollback 可以還原去 `failed` 行（從未上過 R2）；無害但語義怪，ops 頁隱藏或 API 回 409                                                                                                     | Phase 3 admin                  | reviews/2026-11-10_review_phase2b-2-backend      |
+| S-798 | `apps/api/src/catalog/routes.ts`                 | `GET /api/publishes` 每次讀晒全部 publish document 計 `changes`；publish 多咗會慢，要分頁或者 publish 時存 summary                                                                        | publish 超過 ~50 次 / 慢先做   | reviews/2026-11-10_review_phase3a-admin-api      |
+| S-799 | `apps/api/src/admin/order.ts`                    | `updated_at` 冇同現行值取 `MAX`；`json_set` 只喺 miniflare 驗過                                                                                                                           | deploy 後 QA 喺真 D1 跑一次    | reviews/2026-11-10_review_phase3a-admin-api      |
+| S-800 | `apps/api/src/admin/scan.ts`                     | 只要有一套劇資料夾唔見，就擋住所有新資料夾自動建劇（應該只擋可能係改名嘅嗰個）                                                                                                            | Phase 3b 用落先睇              | reviews/2026-11-10_review_phase3a-admin-api      |
+| S-801 | `apps/api/src/admin/folders.ts`                  | 配對返同一個資料夾回 422，應該當冇改動                                                                                                                                                    | Phase 3b                       | reviews/2026-11-10_review_phase3a-admin-api      |
+| S-802 | `apps/api/src/admin/findings.ts`                 | 同一 ms 兩個 scan 會寫重複 finding（`toRows` 會合返一行，無害）                                                                                                                           | 有人撞到先做                   | reviews/2026-11-10_review_phase3a-admin-api      |
 
 ## Closed
 
