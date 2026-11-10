@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { prefersReducedMotion } from '../utils/motion';
 
 export interface FadeOutOptions {
-    /** false = 唔淡出，即刻冇（例如轉出闊橫版：把手連預留位要即刻收，S-665）；預設 true */
+    /** false = 唔淡出，即刻冇（例如轉出闊橫版：把手要即刻收，預留位跟闊橫版 media query 一齊冇，S-665）；預設 true */
     fade?: boolean;
 }
 
