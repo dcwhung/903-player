@@ -1539,6 +1539,62 @@
                     grid-row: 2;
                 }
             }
+
+            /* ---------- v11 ---------- */
+            .time-range {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .time-range select {
+                width: 110px;
+                font-variant-numeric: tabular-nums;
+            }
+            dl.kv {
+                margin: 0;
+                display: grid;
+                grid-template-columns: max-content 1fr;
+                gap: 2px 0;
+            }
+            dl.kv dt::after {
+                content: '：';
+            }
+            dl.kv dd {
+                margin: 0;
+            }
+            .row3 {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, max-content));
+                gap: 14px 28px;
+                align-items: start;
+            }
+            @media (max-width: 560px) {
+                .row3 {
+                    grid-template-columns: 1fr;
+                }
+            }
+            fieldset.scan-box {
+                margin: 0;
+                padding: 10px 14px 14px;
+                border: 1.5px dashed var(--line);
+                border-radius: 10px;
+                display: grid;
+                gap: 12px;
+            }
+            fieldset.scan-box legend {
+                padding: 0 6px;
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--muted);
+            }
+            .link-btn {
+                border: 0;
+                padding: 0 0 0 6px;
+                background: none;
+                color: var(--accent);
+                font-size: 12px;
+                font-weight: 600;
+            }
         </style>
     </head>
     <body>
@@ -2363,10 +2419,11 @@
             <!-- ③ Show edit -->
             <section id="s3">
                 <p class="state-label">
-                    ⑦ 節目編輯（PUT
-                    /api/entries/shows/:id）：名稱喺標題雙擊改；唔顯示錄音檔時間；次序喺列表拖。基本資料同資訊（P9.5）合做一格；圖片喺右邊，撳縮圖（右下
-                    ✎ / ＋ 圓點）直接上載 / 更換：播出時間只入開始 /
-                    完結時間，「播放時間」一行由播出日 + 時間自動組合（預覽），唔使重複輸入星期
+                    ⑦ 節目編輯：一格包晒（ID → 簡介 → 播出日 → 播放時間 →
+                    主持），圖片喺右邊。播放時間兩個 dropdown 平排，每 15 分鐘一格；完結時間
+                    dropdown 只列開始時間後 15 分鐘至 3 小時（改開始時間會自動收窄 / 調整）。預覽用
+                    label / value
+                    兩欄，「：」後文字對齊。「沒有未儲存的變更」唔再顯示，有改動先出提示
                 </p>
                 <div class="frame">
                     <div class="shell">
@@ -2408,19 +2465,23 @@
                                 </aside>
                                 <div class="form">
                                     <label class="field"
-                                        ><span>ID</span
-                                        ><input type="text" class="mono" value="waves" readonly
-                                    /></label>
-                                    <div class="field wide">
-                                        <span
-                                            >播出日
+                                        ><span
+                                            >ID
                                             <span
                                                 class="tip"
                                                 title="只可於新增時設定，用作識別收聽進度"
-                                                aria-label="只可於新增時設定，用作識別收聽進度"
                                                 >ⓘ</span
                                             ></span
+                                        ><input type="text" class="mono" value="waves" readonly
+                                    /></label>
+                                    <label class="field wide"
+                                        ><span>簡介</span
+                                        ><textarea rows="3">
+由鄭裕玲、余迪偉、傑朱、余德丞主持，得一個女人話事</textarea
                                         >
+                                    </label>
+                                    <div class="field wide">
+                                        <span>播出日</span>
                                         <div class="days">
                                             <label>日</label><label class="on">一</label
                                             ><label class="on">二</label><label class="on">三</label
@@ -2428,21 +2489,131 @@
                                             ><label>六</label>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="form">
-                                    <label class="field wide"
-                                        ><span>簡介</span
-                                        ><textarea rows="3">
-由鄭裕玲、余迪偉、傑朱、余德丞主持，得一個女人話事</textarea
+                                    <div class="field wide">
+                                        <span
+                                            >播放時間
+                                            <span
+                                                class="tip"
+                                                title="每 15 分鐘一格；完結時間只可選開始時間後 3 小時內"
+                                                >ⓘ</span
+                                            ></span
                                         >
-                                    </label>
-                                    <label class="field"
-                                        ><span>開始時間</span><input type="time" value="15:00"
-                                    /></label>
-                                    <label class="field"
-                                        ><span>完結時間</span><input type="time" value="16:30"
-                                    /></label>
+                                        <div class="time-range">
+                                            <select aria-label="開始時間">
+                                                <option>00:00</option>
+                                                <option>00:15</option>
+                                                <option>00:30</option>
+                                                <option>00:45</option>
+                                                <option>01:00</option>
+                                                <option>01:15</option>
+                                                <option>01:30</option>
+                                                <option>01:45</option>
+                                                <option>02:00</option>
+                                                <option>02:15</option>
+                                                <option>02:30</option>
+                                                <option>02:45</option>
+                                                <option>03:00</option>
+                                                <option>03:15</option>
+                                                <option>03:30</option>
+                                                <option>03:45</option>
+                                                <option>04:00</option>
+                                                <option>04:15</option>
+                                                <option>04:30</option>
+                                                <option>04:45</option>
+                                                <option>05:00</option>
+                                                <option>05:15</option>
+                                                <option>05:30</option>
+                                                <option>05:45</option>
+                                                <option>06:00</option>
+                                                <option>06:15</option>
+                                                <option>06:30</option>
+                                                <option>06:45</option>
+                                                <option>07:00</option>
+                                                <option>07:15</option>
+                                                <option>07:30</option>
+                                                <option>07:45</option>
+                                                <option>08:00</option>
+                                                <option>08:15</option>
+                                                <option>08:30</option>
+                                                <option>08:45</option>
+                                                <option>09:00</option>
+                                                <option>09:15</option>
+                                                <option>09:30</option>
+                                                <option>09:45</option>
+                                                <option>10:00</option>
+                                                <option>10:15</option>
+                                                <option>10:30</option>
+                                                <option>10:45</option>
+                                                <option>11:00</option>
+                                                <option>11:15</option>
+                                                <option>11:30</option>
+                                                <option>11:45</option>
+                                                <option>12:00</option>
+                                                <option>12:15</option>
+                                                <option>12:30</option>
+                                                <option>12:45</option>
+                                                <option>13:00</option>
+                                                <option>13:15</option>
+                                                <option>13:30</option>
+                                                <option>13:45</option>
+                                                <option>14:00</option>
+                                                <option>14:15</option>
+                                                <option>14:30</option>
+                                                <option>14:45</option>
+                                                <option selected>15:00</option>
+                                                <option>15:15</option>
+                                                <option>15:30</option>
+                                                <option>15:45</option>
+                                                <option>16:00</option>
+                                                <option>16:15</option>
+                                                <option>16:30</option>
+                                                <option>16:45</option>
+                                                <option>17:00</option>
+                                                <option>17:15</option>
+                                                <option>17:30</option>
+                                                <option>17:45</option>
+                                                <option>18:00</option>
+                                                <option>18:15</option>
+                                                <option>18:30</option>
+                                                <option>18:45</option>
+                                                <option>19:00</option>
+                                                <option>19:15</option>
+                                                <option>19:30</option>
+                                                <option>19:45</option>
+                                                <option>20:00</option>
+                                                <option>20:15</option>
+                                                <option>20:30</option>
+                                                <option>20:45</option>
+                                                <option>21:00</option>
+                                                <option>21:15</option>
+                                                <option>21:30</option>
+                                                <option>21:45</option>
+                                                <option>22:00</option>
+                                                <option>22:15</option>
+                                                <option>22:30</option>
+                                                <option>22:45</option>
+                                                <option>23:00</option>
+                                                <option>23:15</option>
+                                                <option>23:30</option>
+                                                <option>23:45</option>
+                                            </select>
+                                            <span class="muted">至</span>
+                                            <select aria-label="完結時間">
+                                                <option>15:15</option>
+                                                <option>15:30</option>
+                                                <option>15:45</option>
+                                                <option>16:00</option>
+                                                <option>16:15</option>
+                                                <option selected>16:30</option>
+                                                <option>16:45</option>
+                                                <option>17:00</option>
+                                                <option>17:15</option>
+                                                <option>17:30</option>
+                                                <option>17:45</option>
+                                                <option>18:00</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                     <div class="field wide">
                                         <span>主持</span>
                                         <div class="chips">
@@ -2460,12 +2631,17 @@
                                 <div class="preview">
                                     <p class="state-label" style="margin: 0">預覽</p>
                                     <p><b>口水多過浪花</b></p>
-                                    <p>簡介：由鄭裕玲、余迪偉、傑朱、余德丞主持，得一個女人話事</p>
-                                    <p>播放時間：星期一至五 15:00 - 16:30</p>
-                                    <p>主持：鄭裕玲、余迪偉、傑朱、余德丞</p>
+                                    <dl class="kv">
+                                        <dt>簡介</dt>
+                                        <dd>由鄭裕玲、余迪偉、傑朱、余德丞主持，得一個女人話事</dd>
+                                        <dt>播放時間</dt>
+                                        <dd>星期一至五 15:00 - 16:30</dd>
+                                        <dt>主持</dt>
+                                        <dd>鄭裕玲、余迪偉、傑朱、余德丞</dd>
+                                    </dl>
                                 </div>
                                 <div class="savebar">
-                                    <span class="muted small">沒有未儲存的變更</span>
+                                    <span></span>
                                     <div class="actions">
                                         <button class="primary" disabled>儲存</button>
                                     </div>
@@ -2483,8 +2659,9 @@
                     bar（講明呢項仲欠乜），儲存掣只有一個：由待辦入嚟叫「儲存並返回待辦」（儲存後返去待辦，嗰格變
                     ✓）；由列表入嚟（小改動）就叫「儲存」、冇 flow bar。提示文字全部收入 ⓘ tooltip /
                     placeholder。類型 = 左右 switch；狀態掣 = 上架（綠）/ 下架（紅），同列表 pill
-                    一樣字眼同顏色；下架後排去列表最底。R2
-                    資料夾同檔名模板由掃描得出，唔使打，只可以「重新掃描」。簡介放呢度；廣播劇唔要聲演（聲演喺短篇）。冇咗「資訊」同「R2
+                    一樣字眼同顏色；下架後排去列表最底。次序：ID → 簡介 → 類型 / 上架日期 /
+                    狀態（同一行）。R2 資料夾同檔名模板由掃描得出，放喺虛線框「由 R2
+                    掃描」入面，只可以「重新掃描」。廣播劇唔要聲演（聲演喺短篇）。冇咗「資訊」同「R2
                     掃描」tab
                 </p>
                 <div class="frame">
@@ -2535,58 +2712,61 @@
                                     ><span class="cap">橫額</span>
                                 </aside>
                                 <div class="form">
-                                    <label class="field">
-                                        <span
+                                    <label class="field"
+                                        ><span
                                             >ID
                                             <span
                                                 class="tip"
                                                 title="已發佈，不可更改（更改會令收聽進度遺失）"
-                                                aria-label="已發佈，不可更改（更改會令收聽進度遺失）"
                                                 >ⓘ</span
                                             ></span
-                                        >
-                                        <input type="text" class="mono" value="lancy" readonly />
-                                    </label>
-                                    <div class="field">
-                                        <span>類型</span>
-                                        <div class="switch" role="group" aria-label="類型">
-                                            <button aria-pressed="true">短篇集</button>
-                                            <button aria-pressed="false">每日播</button>
-                                        </div>
-                                    </div>
-                                    <div class="field">
-                                        <span>狀態</span>
-                                        <button class="toggle on" aria-pressed="true">上架</button>
-                                    </div>
-                                    <label class="field">
-                                        <span>上架日期</span>
-                                        <input type="date" value="2026-10-27" />
-                                    </label>
-                                    <label class="field wide">
-                                        <span>簡介</span>
-                                        <textarea rows="3" placeholder="（選填）"></textarea>
+                                        ><input type="text" class="mono" value="lancy" readonly
+                                    /></label>
+                                    <label class="field wide"
+                                        ><span>簡介</span
+                                        ><textarea rows="3" placeholder="（選填）"></textarea>
                                     </label>
                                     <div class="field wide">
-                                        <span>R2 資料夾</span>
-                                        <div class="readonly-box">
-                                            <code>蘭茜夫人劇場/</code>
-                                            <button>重新掃描</button>
+                                        <div class="row3">
+                                            <div class="field">
+                                                <span>類型</span>
+                                                <div class="switch" role="group" aria-label="類型">
+                                                    <button aria-pressed="true">短篇集</button
+                                                    ><button aria-pressed="false">每日播</button>
+                                                </div>
+                                            </div>
+                                            <label class="field"
+                                                ><span>上架日期</span
+                                                ><input type="date" value="2026-10-27"
+                                            /></label>
+                                            <div class="field">
+                                                <span>狀態</span
+                                                ><button class="toggle on" aria-pressed="true">
+                                                    上架
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="field wide">
-                                        <span
-                                            >檔名模板
-                                            <span
-                                                class="tip"
-                                                title="由掃描自動判斷"
-                                                aria-label="由掃描自動判斷"
-                                                >ⓘ</span
-                                            ></span
-                                        >
-                                        <div class="readonly-box">
-                                            <code>{no2} - {arc} - 第{noZh}集[ - {title}].m4a</code>
+                                    <fieldset class="field wide scan-box">
+                                        <legend>
+                                            由 R2 掃描 <button class="link-btn">重新掃描</button>
+                                        </legend>
+                                        <div class="field">
+                                            <span>資料夾</span>
+                                            <div class="readonly-box">
+                                                <code>蘭茜夫人劇場/</code>
+                                            </div>
                                         </div>
-                                    </div>
+                                        <div class="field">
+                                            <span>檔名模板</span>
+                                            <div class="readonly-box">
+                                                <code
+                                                    >{no2} - {arc} - 第{noZh}集[ -
+                                                    {title}].m4a</code
+                                                >
+                                            </div>
+                                        </div>
+                                    </fieldset>
                                 </div>
                                 <div class="savebar">
                                     <span class="small" style="color: var(--warn-ink)"
