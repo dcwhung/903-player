@@ -10,7 +10,8 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "coverage": "vitest run --coverage",
-        "e2e": "npm run build -- --mode e2e && node e2e/run.mjs"
+        "e2e": "npm run build -- --mode e2e && node e2e/run.mjs",
+        "drama-from-folder": "tsx scripts/dramaFromFolder.ts"
     },
     "dependencies": {
         "@903-player/catalog": "*",

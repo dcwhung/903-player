@@ -64,10 +64,14 @@ GitHub Actions 只負責 build 同 deploy。
   兩邊規則由 `packages/catalog/src/core/jsonSchemas.node.test.ts` 對住同一批例子鎖住（現有資料檔合唔合 schema 由 `apps/player/src/catalog/libraryJsonSchemas.node.test.ts` 驗）；改 `schema.ts` 記得一齊改 schema
 - 橫版主頁 grid 寫死 4 欄 × 2 行 = 7 個節目 + 今日格；加減節目要一齊改 `ShowGrid.module.css`（`src/catalog/shows/lib/shows.test.ts` 會提醒）
 
-### 由本機 folder 生成 drama.json（`apps/player/scripts/dramaFromFolder.mjs`）
+### 由本機 folder 生成 drama.json（`apps/player/scripts/dramaFromFolder.ts`）
 
-R2 嘅 r2.dev 網址冇 listing，所以由**上載去 R2 嗰份本機 folder** 生成 `drama.json` 草稿同檢查報告。
-個 script 係單一檔案、只用 Node 內置功能（**Node 18.3 或以上**，建議 20+；18.0–18.2 冇 `parseArgs`，會一開始就出 SyntaxError），**唔使 clone 呢個 repo、唔使 `npm install`**。
+> 主要入口已經改為 admin / API 掃描：`POST /api/dramas/:id/scan` 直接 list R2 bucket `903-radio-drama`（見 `apps/api/README.md`）。
+> 本機 CLI 留俾未上載 / 想離線檢查 folder 嘅情況用。
+
+R2 嘅 r2.dev 網址冇 listing，所以 CLI 由**上載去 R2 嗰份本機 folder** 生成 `drama.json` 草稿同檢查報告。
+掃描 / 草稿規則喺 `packages/catalog/src/scan/`（同 Worker 共用），CLI 只負責讀 folder、寫檔、`--verify` 同報告；
+要喺 repo 跑（`npm install` 之後，用 `tsx` 行 TypeScript，唔使 build）。
 
 folder 結構（同 R2 一樣）：
 
@@ -83,14 +87,13 @@ folder 結構（同 R2 一樣）：
 每日劇就直接喺 `<劇名>/` 放 `YYYYMMDD.m4a`。
 
 ```bash
-# 1. 下載（一個檔）；Windows 要打 curl.exe（見下面），或者用瀏覽器開條網址「另存新檔」
-curl -LO https://raw.githubusercontent.com/dcwhung/903-player/main/apps/player/scripts/dramaFromFolder.mjs
+# 喺 repo 根（或者 repo 入面任何 folder）跑；相對路徑同預設輸出檔都跟你而家嘅 folder
 
-# 2. 新劇：生成草稿，順手 HEAD 驗晒 R2 網址，報告同時寫落 report.txt
-node dramaFromFolder.mjs "/路徑/森美小儀系列" --id sammy-kitty --verify --report report.txt
+# 1. 新劇：生成草稿，順手 HEAD 驗晒 R2 網址，報告同時寫落 report.txt
+npm run drama-from-folder -w apps/player -- "/路徑/森美小儀系列" --id sammy-kitty --verify --report report.txt
 
-# 3. 已上架嘅劇加集 / 加短篇：畀埋現有 drama.json，人手欄位（名、色調、次序、圖…）照留
-node dramaFromFolder.mjs "/路徑/森美小儀系列" --existing drama.json --out sammy-kitty.drama.json
+# 2. 已上架嘅劇加集 / 加短篇：畀埋現有 drama.json，人手欄位（名、色調、次序、圖…）照留
+npm run drama-from-folder -w apps/player -- "/路徑/森美小儀系列" --existing drama.json --out sammy-kitty.drama.json
 ```
 
 | 選項              | 作用                                                                                                                                                                                                    |
@@ -121,15 +124,14 @@ node dramaFromFolder.mjs "/路徑/森美小儀系列" --existing drama.json --ou
 - 短篇次序跟 R2 listing（UTF-8 字典序）；新劇嘅 `theme` 係中性色、`enabled: false`，上架前要改
 - **要傳返嚟**：生成嘅 `*.drama.json`、成份報告（`report.txt`）、劇集同每個短篇嘅封面圖
 - Windows（PowerShell / cmd）：
-    - 下載用 `curl.exe -LO …`：Windows PowerShell 5.1 入面 `curl` 係 `Invoke-WebRequest` 嘅別名，`-LO` 會出錯；
-      或者直接用瀏覽器開 raw 網址「另存新檔」
     - 報告用 `--report report.txt`，**唔好**用 `| tee report.txt` 或者 `> report.txt`：PowerShell 會用 console code page
       （香港 Windows 預設 Big5）或者 UTF-16 轉碼，中文會變亂碼。`--report` 寫 UTF-8 冇 BOM，Windows 10（1903）或以上嘅
       記事本識讀；舊版記事本見到亂碼就用 VS Code 或者瀏覽器開
     - 路徑用雙引號包住嗰陣，**尾唔好加 `\`**：`"D:\劇\黃金少年\"` 入面嘅 `\"` 會當咗係字面嘅 `"`，連後面嘅參數都黐埋落去。
       寫 `"D:\劇\黃金少年"`（script 見到路徑有 `"` 會講點改；冇引號嘅尾 `\` / `/` 會自動食走）
-- 規則同 app 一致：`scripts/dramaFromFolder.test.ts` 將輸出餵畀 app 嘅 `parseDramaDefinition` + `buildEpisodes` 驗，
-  亦會由現有每套劇嘅網址砌返 folder 樹，再生成要同 commit 咗嘅 `drama.json` 一樣；改 `src/catalog/dramas/library/` 規則時要一齊改 script
+- 規則同 app 一致：`packages/catalog/src/scan/*.test.ts` 同 `apps/player/scripts/dramaFromFolder.test.ts` 將輸出餵畀 app 嘅
+  `parseDramaDefinition` + `buildEpisodes` 驗，亦會由現有每套劇嘅網址砌返 folder 樹，再生成要同 commit 咗嘅 `drama.json` 一樣；
+  改 `packages/catalog/src/dramas/` 規則時要一齊改 `src/scan/`
 
 ## 開發
 
