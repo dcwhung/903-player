@@ -1933,7 +1933,7 @@
             table.batches tr.past td {
                 color: var(--muted);
             }
-            /* 發佈記錄 */
+            /* 上下架記錄 */
             .hist-head,
             .hist-row {
                 grid-template-columns: 150px minmax(0, 1fr) 96px;
@@ -1978,6 +1978,37 @@
                 flex-direction: column;
                 padding-right: 4px;
             }
+
+            /* ---------- v16：App banner + admin 版本 pill ---------- */
+            .brand-banner {
+                position: relative;
+                display: block;
+                margin-bottom: 12px;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+            .brand-banner img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+            .brand-banner.big {
+                max-width: 300px;
+                margin: 0 auto;
+            }
+            /* 同 player 嘅版本 pill 一樣位置同形狀，用橙色分返 admin */
+            .ver-pill {
+                position: absolute;
+                right: 6px;
+                bottom: 6px;
+                padding: 0 8px;
+                border-radius: 999px;
+                background: #e8590c;
+                color: #ffffff;
+                font-size: 11px;
+                font-weight: 600;
+                line-height: 1.7;
+            }
         </style>
     </head>
     <body>
@@ -2006,10 +2037,34 @@
                     <a href="#s5">⑨ 短篇</a>
                     <a href="#s7">⑩ 排程 A</a><a href="#s7b">⑩b 排程 B</a
                     ><a href="#s7c">⑩c 排程 C</a>
-                    <a href="#s8">⑪ 發佈記錄</a>
+                    <a href="#s8">⑪ 上下架記錄</a>
                     <a href="#s9">⑫ 錯誤狀態</a>
                     <a href="#s10">⑬ 直向手機</a>
                 </nav>
+            </section>
+
+            <!-- ① Login -->
+            <section id="s1">
+                <p class="state-label">
+                    ① 未 login（任何 admin 路徑冇 session → 呢頁；唔喺 whitelist 沿用 ops
+                    頁「冇權限」頁）
+                </p>
+                <div class="frame">
+                    <div class="login">
+                        <div class="card">
+                            <div class="brand-banner big">
+                                <img src="banner.webp" alt="903 叱咤 Player" /><span
+                                    class="ver-pill"
+                                    >Admin v0.4.0</span
+                                >
+                            </div>
+                            <p class="sub">僅限獲授權的 Google 帳戶登入</p>
+                            <button class="google">
+                                <span class="g-mark" aria-hidden="true"></span>使用 Google 登入
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- ② 入 admin：自動掃描 -->
@@ -2045,14 +2100,17 @@
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span
+                            <a class="brand-banner" href="#uB"
+                                ><img src="banner.webp" alt="903 叱咤 Player" /><span
+                                    class="ver-pill"
+                                    >Admin v0.4.0</span
+                                ></a
                             ><a href="#uB" aria-current="page"
                                 >更新內容 <span class="pill count">3</span></a
                             ><span class="group">內容</span><a href="#s2c">節目</a
                             ><a href="#s2">廣播劇</a><span class="group">記錄</span
-                            ><a href="#s8">發佈記錄</a><span class="spacer"></span
-                            ><span class="who">admin@…</span><a href="#s1">登出</a
-                            ><span class="version">api 0.4.0</span>
+                            ><a href="#s8">上下架記錄</a><span class="spacer"></span
+                            ><span class="who">admin@…</span><a href="#s1">登出</a>
                         </nav>
                         <div class="main">
                             <div class="title-row"><h2>更新內容</h2></div>
@@ -2143,14 +2201,17 @@
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span
+                            <a class="brand-banner" href="#uB"
+                                ><img src="banner.webp" alt="903 叱咤 Player" /><span
+                                    class="ver-pill"
+                                    >Admin v0.4.0</span
+                                ></a
                             ><a href="#uB" aria-current="page"
                                 >更新內容 <span class="pill count">3</span></a
                             ><span class="group">內容</span><a href="#s2c">節目</a
                             ><a href="#s2">廣播劇</a><span class="group">記錄</span
-                            ><a href="#s8">發佈記錄</a><span class="spacer"></span
-                            ><span class="who">admin@…</span><a href="#s1">登出</a
-                            ><span class="version">api 0.4.0</span>
+                            ><a href="#s8">上下架記錄</a><span class="spacer"></span
+                            ><span class="who">admin@…</span><a href="#s1">登出</a>
                         </nav>
                         <div class="main">
                             <div class="title-row"><h2>更新內容</h2></div>
@@ -2240,13 +2301,17 @@
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span
+                            <a class="brand-banner" href="#uB"
+                                ><img src="banner.webp" alt="903 叱咤 Player" /><span
+                                    class="ver-pill"
+                                    >Admin v0.4.0</span
+                                ></a
                             ><a href="#uB">更新內容 <span class="pill count">3</span></a
                             ><span class="group">內容</span><a href="#s2c">節目</a
                             ><a href="#s2" aria-current="page">廣播劇</a
-                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="group">記錄</span><a href="#s8">上下架記錄</a
                             ><span class="spacer"></span><span class="who">admin@…</span
-                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
+                            ><a href="#s1">登出</a>
                         </nav>
                         <div class="main">
                             <div class="title-row">
@@ -2662,13 +2727,17 @@
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span
+                            <a class="brand-banner" href="#uB"
+                                ><img src="banner.webp" alt="903 叱咤 Player" /><span
+                                    class="ver-pill"
+                                    >Admin v0.4.0</span
+                                ></a
                             ><a href="#uB">更新內容 <span class="pill count">3</span></a
                             ><span class="group">內容</span
                             ><a href="#s2c" aria-current="page">節目</a><a href="#s2">廣播劇</a
-                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="group">記錄</span><a href="#s8">上下架記錄</a
                             ><span class="spacer"></span><span class="who">admin@…</span
-                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
+                            ><a href="#s1">登出</a>
                         </nav>
                         <div class="main">
                             <div class="title-row">
@@ -2832,13 +2901,17 @@
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span
+                            <a class="brand-banner" href="#uB"
+                                ><img src="banner.webp" alt="903 叱咤 Player" /><span
+                                    class="ver-pill"
+                                    >Admin v0.4.0</span
+                                ></a
                             ><a href="#uB">更新內容 <span class="pill count">3</span></a
                             ><span class="group">內容</span
                             ><a href="#s2c" aria-current="page">節目</a><a href="#s2">廣播劇</a
-                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="group">記錄</span><a href="#s8">上下架記錄</a
                             ><span class="spacer"></span><span class="who">admin@…</span
-                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
+                            ><a href="#s1">登出</a>
                         </nav>
                         <div class="main">
                             <div class="crumbs"><a href="#s2c">節目</a> › 口水多過浪花</div>
@@ -2994,13 +3067,17 @@
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span
+                            <a class="brand-banner" href="#uB"
+                                ><img src="banner.webp" alt="903 叱咤 Player" /><span
+                                    class="ver-pill"
+                                    >Admin v0.4.0</span
+                                ></a
                             ><a href="#uB">更新內容 <span class="pill count">3</span></a
                             ><span class="group">內容</span><a href="#s2c">節目</a
                             ><a href="#s2" aria-current="page">廣播劇</a
-                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="group">記錄</span><a href="#s8">上下架記錄</a
                             ><span class="spacer"></span><span class="who">admin@…</span
-                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
+                            ><a href="#s1">登出</a>
                         </nav>
                         <div class="main">
                             <div class="flow-bar">
@@ -3158,13 +3235,17 @@
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span
+                            <a class="brand-banner" href="#uB"
+                                ><img src="banner.webp" alt="903 叱咤 Player" /><span
+                                    class="ver-pill"
+                                    >Admin v0.4.0</span
+                                ></a
                             ><a href="#uB">更新內容 <span class="pill count">3</span></a
                             ><span class="group">內容</span><a href="#s2c">節目</a
                             ><a href="#s2" aria-current="page">廣播劇</a
-                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="group">記錄</span><a href="#s8">上下架記錄</a
                             ><span class="spacer"></span><span class="who">admin@…</span
-                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
+                            ><a href="#s1">登出</a>
                         </nav>
                         <div class="main">
                             <div class="title-row">
@@ -3294,20 +3375,19 @@
                                                         class="ep-titles"
                                                         rows="8"
                                                         spellcheck="false"
-                                                        placeholder="每行一集：集數 + 空格 + 標題，例如「30 大結局」"
+                                                        placeholder="每行一集：第 X 集 ｜ 標題"
                                                     >
-1
-2
-3 初次見面
-4
-5
+第 1 集 ｜ 
+第 2 集 ｜ 
+第 3 集 ｜ 初次見面
+第 4 集 ｜ 
 …
-29
-30 大結局</textarea
+第 29 集 ｜ 
+第 30 集 ｜ 大結局</textarea
                                                     >
                                                     <span class="small muted"
-                                                        >格式：每行一集，「集數
-                                                        標題」；沒有標題只寫集數</span
+                                                        >格式：每行一集「第 X 集 ｜
+                                                        標題」；沒有標題可留空</span
                                                     >
                                                 </details>
                                             </fieldset>
@@ -3372,13 +3452,17 @@
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span
+                            <a class="brand-banner" href="#uB"
+                                ><img src="banner.webp" alt="903 叱咤 Player" /><span
+                                    class="ver-pill"
+                                    >Admin v0.4.0</span
+                                ></a
                             ><a href="#uB">更新內容 <span class="pill count">3</span></a
                             ><span class="group">內容</span><a href="#s2c">節目</a
                             ><a href="#s2" aria-current="page">廣播劇</a
-                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="group">記錄</span><a href="#s8">上下架記錄</a
                             ><span class="spacer"></span><span class="who">admin@…</span
-                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
+                            ><a href="#s1">登出</a>
                         </nav>
                         <div class="main">
                             <div class="title-row">
@@ -3546,24 +3630,28 @@
 
             <section id="s8">
                 <p class="state-label">
-                    ⑪ 發佈記錄：版本資訊置頂；變更一項一行，tag / 縮圖 / 名 /
+                    ⑪ 上下架記錄：版本資訊置頂；變更一項一行，tag / 縮圖 / 名 /
                     狀態四欄對齊，狀態用返內容列表嘅 pill（排程中 · 日期、已下架、＋N
                     集…）；狀態欄靠左對齊，「還原」同 pill 一樣高
                 </p>
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span
+                            <a class="brand-banner" href="#uB"
+                                ><img src="banner.webp" alt="903 叱咤 Player" /><span
+                                    class="ver-pill"
+                                    >Admin v0.4.0</span
+                                ></a
                             ><a href="#uB">更新內容 <span class="pill count">3</span></a
                             ><span class="group">內容</span><a href="#s2c">節目</a
                             ><a href="#s2">廣播劇</a><span class="group">記錄</span
-                            ><a href="#s8" aria-current="page">發佈記錄</a
+                            ><a href="#s8" aria-current="page">上下架記錄</a
                             ><span class="spacer"></span><span class="who">admin@…</span
-                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
+                            ><a href="#s1">登出</a>
                         </nav>
                         <div class="main">
                             <div class="title-row">
-                                <h2>發佈記錄</h2>
+                                <h2>上下架記錄</h2>
                                 <span class="muted small">共 5 次</span>
                             </div>
                             <div class="card flush">
