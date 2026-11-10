@@ -1,4 +1,4 @@
-import type { DramaConfig, SeriesEpisode } from '@903-player/catalog';
+import { arcLabelOf, type DramaConfig, type SeriesEpisode } from '@903-player/catalog';
 import { NowPlaying } from '../../components/shared/player/NowPlaying/NowPlaying';
 import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { PlayerGauge } from '../../components/shared/player/PlayerPanel/PlayerGauge';
@@ -34,13 +34,13 @@ const arcPickerLabel = (
     const episode = current.title
         ? t('drama.nowPlayingShort', { no: current.no, title: current.title, sep })
         : episodeNo;
-    const label = t('drama.nowPlayingArcShort', { arc: current.arc, episode, sep });
+    const label = t('drama.nowPlayingArcShort', { arc: arcLabelOf(current), episode, sep });
     return t(PLAYBACK_LINE_KEY[state], { label });
 };
 
 /** 橫版唱片下面「現正播放」：短篇加埋第幾個 / 幾多集（按排位，唔係集數），下一行集名 */
 const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, arcTotal: number) => {
-    const params = { arc: current.arc, no: arcPosition, total: arcTotal };
+    const params = { arc: arcLabelOf(current), no: arcPosition, total: arcTotal };
     return {
         label: t('drama.nowPlayingArc', params),
         // 讀屏唔讀「·」（S-723）

@@ -1,4 +1,5 @@
 /* 短篇 chips 嘅即將上架 chip 同成套劇快將下架標籤（P8 #6，_mockups_/coming-soon ① ⑧） */
+import { arcLabelOf } from '@903-player/catalog';
 import { LANDSCAPE_QUERY } from '../../../../config/layout';
 import { useMediaQuery } from '../../../../hooks/useMediaQuery';
 import { t } from '../../../../i18n/t';
@@ -12,6 +13,8 @@ const LIST_ICON_SIZE = 14;
 /** 即將上架嘅短篇：排最尾、虛線框淡底 +「⏱ 12/11 上架」，撳唔到 */
 export interface UpcomingChip {
     arc: string;
+    /** 顯示名（displayName）；冇就顯示 arc */
+    arcLabel?: string | undefined;
     /** 「12/11 上架」/「明日上架」 */
     text: string;
     /** 讀屏：「XXX，12/11 星期四 上架」 */
@@ -78,7 +81,7 @@ export const SoonChip = ({ chip }: { chip: UpcomingChip }) => (
         aria-disabled="true"
         aria-label={chip.label}
     >
-        <span>{chip.arc}</span>
+        <span>{arcLabelOf(chip)}</span>
         <ClockIcon size={NOTICE_ICON_SIZE} />
         <span>{chip.text}</span>
     </button>

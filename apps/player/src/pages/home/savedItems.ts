@@ -1,4 +1,4 @@
-import { isLeavingSoon, isRemoved } from '@903-player/catalog';
+import { arcLabelOf, isLeavingSoon, isRemoved } from '@903-player/catalog';
 import {
     catalogEpisodeOf,
     dramaArtFor,
@@ -205,7 +205,8 @@ export const recentText = (track: Track): RecentText => {
     if (!isDramaEpisode(track)) return dated(findShow(track.showId)?.name ?? '', track.date);
     const name = findEnabledDrama(track.dramaId)?.name ?? '';
     if (track.kind !== 'series') return dated(name, track.date);
-    const { arc, no } = track;
+    const { no } = track;
+    const arc = arcLabelOf(track);
     return {
         name,
         label: t('drama.seriesLabelUntitled', { arc, no }),

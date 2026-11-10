@@ -156,4 +156,20 @@ describe('ArcPicker', () => {
         expect(fresh).toHaveAccessibleDescription('新上架');
         expect(screen.getByRole('button', { name: 'X時mas時小提議' })).not.toHaveTextContent('新');
     });
+
+    it('should show the displayName on a chip but pick by the arc name', async () => {
+        const onPick = vi.fn();
+        render(
+            <ArcPicker
+                arcs={[{ arc: 'R2 名', arcLabel: '顯示名', isNew: false }]}
+                selected={undefined}
+                playing={undefined}
+                label=""
+                onPick={onPick}
+                onOpenAll={() => {}}
+            />,
+        );
+        await userEvent.click(screen.getByRole('button', { name: '顯示名' }));
+        expect(onPick).toHaveBeenCalledWith('R2 名');
+    });
 });

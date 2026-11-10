@@ -15,6 +15,8 @@ export interface ArcRowNotes {
 /** 「即將上架」組一行（S1）：撳唔到、右邊冇播放掣 */
 export interface UpcomingArcRowView {
     arc: string;
+    /** 顯示名（displayName）；冇就顯示 arc */
+    arcLabel?: string | undefined;
     cover: string;
     /** 碟面底膠囊：上架日短版（「12/11」/「明日」） */
     pill: string;

@@ -187,7 +187,9 @@ const useArcOrder = (
     );
     const chips = groups
         .flatMap((g) => g.items)
-        .map(({ arc, isNew }) => withChipLeaving({ arc, isNew }));
+        .map(({ arc, isNew, resume }) =>
+            withChipLeaving({ arc, isNew, arcLabel: resume.arcLabel }),
+        );
     return { groups, chips };
 };
 

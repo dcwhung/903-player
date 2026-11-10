@@ -1,3 +1,4 @@
+import { arcLabelOf } from '@903-player/catalog';
 import { useEffect, useId, useRef } from 'react';
 import { t } from '../../../../i18n/t';
 import { scrollBehavior } from '../../../../utils/motion';
@@ -17,7 +18,10 @@ import {
 export type { ArcPickerNotice, UpcomingChip } from './ArcPickerNotices';
 
 export interface ArcChip {
+    /** 短篇名（= key、onPick 傳返嘅值） */
     arc: string;
+    /** 顯示名（displayName）；冇就顯示 arc */
+    arcLabel?: string | undefined;
     /** 上架 14 日內：chip 出「新」 */
     isNew: boolean;
     /** 短篇快將下架（LK1）：名後面琥珀小標「⏳ 05/12」（tag），讀屏講長版日子（label） */
@@ -47,8 +51,8 @@ interface ArcPickerProps {
 /** chip 讀屏名：短篇名（+ 快將下架日子） */
 const chipLabel = (chip: ArcChip): string =>
     chip.leaving
-        ? t('availability.arcLeavingLabel', { arc: chip.arc, when: chip.leaving.label })
-        : chip.arc;
+        ? t('availability.arcLeavingLabel', { arc: arcLabelOf(chip), when: chip.leaving.label })
+        : arcLabelOf(chip);
 
 /** 一粒短篇 chip：揀中實心；播緊（睇緊其他短篇時）右上角一粒點；新上架加「新」 */
 const Chip = ({
@@ -74,7 +78,7 @@ const Chip = ({
             aria-describedby={describedBy || undefined}
             onClick={() => onPick(chip.arc)}
         >
-            {chip.arc}
+            {arcLabelOf(chip)}
             {chip.isNew && <NewBadge size="sm" className={styles.fresh} />}
             {chip.leaving && (
                 <span className={styles.leavingTag} aria-hidden="true">

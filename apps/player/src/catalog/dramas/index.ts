@@ -6,7 +6,7 @@
  * registry 第一次用先 build（唔係 import 時）：main.tsx 要先 initCatalog 揀定今次用邊份 catalog。
  * 所以呢度唔可以有 module-level 嘅值（以前嘅 DRAMAS 常數改咗做 allDramas()），亦唔好喺 import 時叫下面任何 function
  */
-import type { Drama, DramaRegistry } from '@903-player/catalog';
+import { arcLabelOf, type Drama, type DramaRegistry } from '@903-player/catalog';
 import { activeDramaRegistry } from '../runtime';
 
 type Registry = DramaRegistry;
@@ -44,3 +44,12 @@ export const dramaEpisodeTheme: Registry['dramaEpisodeTheme'] = (episode) =>
     activeDramaRegistry().dramaEpisodeTheme(episode);
 export const arcTileFor: Registry['arcTileFor'] = (dramaId, arc) =>
     activeDramaRegistry().arcTileFor(dramaId, arc);
+
+/**
+ * 短篇顯示名（displayName，冇就短篇名）：收藏只存短篇名，用 catalog 嘅集數搵返；
+ * 搵唔到（短篇下架 / 冇咗）就顯示原名
+ */
+export const arcLabelFor = (dramaId: string, arc: string): string => {
+    const episode = catalogEpisodesOf(dramaId).find((e) => e.kind === 'series' && e.arc === arc);
+    return episode?.kind === 'series' ? arcLabelOf(episode) : arc;
+};
