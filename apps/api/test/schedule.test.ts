@@ -114,6 +114,33 @@ describe('schedule write atomicity', () => {
     });
 });
 
+describe('schedule write race (W-703)', () => {
+    it('should not store the loser rule when two writers use the same If-Match in the same millisecond', async () => {
+        const old = await env.DB.prepare(
+            "SELECT updated_at FROM entries WHERE kind = 'dramas' AND id = 'golden'",
+        ).first<string>('updated_at');
+        const updatedAt = '2026-11-10T00:00:00.000Z';
+        const write = (rule: string) => {
+            const row = { kind: 'dramas' as const, id: 'golden', definition: rule, images: '{}' };
+            return env.DB.batch([
+                updateEntryStatement(env.DB, row, { expected: old ?? '', updatedAt }),
+                upsertScheduleStatement(env.DB, {
+                    dramaId: 'golden',
+                    arcId: 'season-1',
+                    rule,
+                    updatedAt,
+                }),
+            ]);
+        };
+        const [winner] = await write('{"winner":true}');
+        const [loser] = await write('{"loser":true}');
+        expect(winner?.meta.changes).toBe(1);
+        expect(loser?.meta.changes).toBe(0);
+        const rule = await env.DB.prepare('SELECT rule FROM schedules').first<string>('rule');
+        expect(rule).toBe('{"winner":true}');
+    });
+});
+
 describe('GET / preview / DELETE schedule', () => {
     it('should answer 404 before a rule is saved, then return the rule and its expansion', async () => {
         expect((await adminGet(PATH)).status).toBe(404);

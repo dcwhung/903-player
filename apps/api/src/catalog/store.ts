@@ -192,8 +192,8 @@ export const getSchedule = (
         .first<ScheduleRow>();
 
 /**
- * 寫排程：同 updateEntryStatement 放同一個 batch（atomic），而且只喺 entry 真係更新咗
- *（updated_at = 新值）先寫，樂觀鎖失敗就兩樣都唔寫
+ * 寫排程：一定緊接 updateEntryStatement 放同一個 batch（atomic）。changes() = 1 即係上一句 UPDATE
+ * 真係寫咗（樂觀鎖贏咗）先寫規則：兩個 writer 同一 ms 計出同一個 updated_at 時，輸咗嗰個唔會冚走規則（W-703）
  */
 export const upsertScheduleStatement = (
     db: D1Database,
@@ -207,7 +207,7 @@ export const upsertScheduleStatement = (
     db
         .prepare(
             `INSERT INTO schedules (drama_id, arc_id, rule, updated_at)
-             SELECT ?, ?, ?, ? WHERE EXISTS
+             SELECT ?, ?, ?, ? WHERE changes() = 1 AND EXISTS
                (SELECT 1 FROM entries WHERE kind = 'dramas' AND id = ? AND updated_at = ?)
              ON CONFLICT (drama_id, arc_id) DO UPDATE SET rule = excluded.rule,
                updated_at = excluded.updated_at`,
