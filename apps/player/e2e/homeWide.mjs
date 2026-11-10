@@ -343,11 +343,22 @@ const checkHandleGoesHome = async (p, log, label) => {
     );
 };
 
-/** 喺劇集頁開始播呢套劇：把手淡出拆走，預留位收返 */
+/** 播放器格（弧形 + 唱片）嘅闊同中心 x：把手出 / 走前後對比用 */
+const measureGauge = (p) =>
+    p
+        .locator('main [data-player-gauge]')
+        .first()
+        .evaluate((el) => {
+            const box = el.getBoundingClientRect();
+            return { width: box.width, centerX: box.left + box.width / 2 };
+        });
+
+/** 喺劇集頁開始播呢套劇：把手淡出拆走，預留位照留，唱片唔變大細、唔移位 */
 const checkHandleLeaves = async (p, log, label) => {
     const shown = await isShown(p.getByRole('button', { name: PAGE_HANDLE_ANY }), {
         timeout: LAYOUT_WAIT_MS,
     });
+    const before = await measureGauge(p);
     // 未揀短篇時播放掣撳唔郁：先揀第一個短篇（播緊其他嘢，唔會載入），再撳播放
     await p.getByRole('button', { name: SERIES_FIRST_ARC, exact: true }).click();
     await p.getByRole('button', { name: '播放', exact: true }).click();
@@ -356,9 +367,14 @@ const checkHandleLeaves = async (p, log, label) => {
         .locator('main')
         .first()
         .evaluate((el) => parseFloat(getComputedStyle(el).paddingRight));
+    const after = await measureGauge(p);
     log(
-        shown && gone && padding === 0,
-        `${label}：喺劇集頁開始播，把手消失、預留位收返（出過 ${shown}，消失 ${gone}，右邊 ${padding}px）`,
+        shown && gone && padding > 0,
+        `${label}：喺劇集頁開始播，把手消失、預留位照留（出過 ${shown}，消失 ${gone}，右邊 ${padding}px）`,
+    );
+    log(
+        before.width === after.width && before.centerX === after.centerX,
+        `${label}：把手拆走前後唱片唔變大細、唔移位（闊 ${before.width} → ${after.width}，中心 ${before.centerX} → ${after.centerX}）`,
     );
 };
 

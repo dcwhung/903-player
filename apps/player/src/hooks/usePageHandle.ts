@@ -9,7 +9,7 @@ export interface PageHandleState {
     view: PageHandleView | null;
     /**
      * 係咪闊橫版：把手因為呢頁自己嘅嘢開始播而冇咗先淡出；
-     * 轉出闊橫版（轉直 / 收窄）就即刻拆走，連預留位一齊收（S-665）
+     * 轉出闊橫版（轉直 / 收窄）就即刻拆走（預留位跟闊橫版 media query 一齊收，S-665）
      */
     wide: boolean;
 }
