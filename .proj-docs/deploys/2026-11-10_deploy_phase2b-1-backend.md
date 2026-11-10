@@ -58,6 +58,8 @@
 3. 開 `https://903-player.vercel.app/` 同 `https://dcwhung.github.io/903-player/`，確認顯示 `v1.31.2`
 4. （可選）ops 頁按 Publish，內容冇改應該回報 `unchanged`（S-780）
 
+**結果（用戶 2026-11-10 確認）**：1 ✅ health 回 0.2.0；2 ✅ ops 頁 Google login 正常；3 ✅ 顯示 v1.31.2。4 未做（可選）。
+
 ## 回滾方案
 
 **Worker**
