@@ -14,10 +14,11 @@
     - AC-9 Import catalog workflow（`.github/workflows/import-catalog.yml`，用戶 2026-11-09 要求冇 local clone 都 import 到）：只得 `workflow_dispatch`、`dry_run` 預設 true；非 `main` 即 fail；`concurrency` 排隊唔取消；Cloudflare secrets 只喺 Import step；import 失敗 step 非 0（pipefail）、Summary 唔跑；Summary 印 counts + wrangler step 數
     - AC-10 2b-1 Content API（`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md` §4）：`GET/PUT/DELETE /api/entries[/:kind/:id]` — `If-Match` / `If-None-Match: *` 唔對 412、validator 唔過 422（欄位錯誤；圖 hash 要喺 assets 兼合 `IMAGE_FILE_PATTERN`，S-772）、`warnings` 列會消失嘅 episode ID、publish 過嘅 DELETE 409；body ≤ 256 KB；`POST /api/dramas/:id/scan`（`AUDIO` R2 list → `generateDraft`，回 `{ draft, issues, diff }`，唔寫 D1）
     - AC-11 Schedule（§2–§3）：`expandSchedule`（dates / periodic 每 N 日 / 星期幾、`removeAfterDays`、跨月 / 年 / 2-29、`count` 未知拒絕；結果過 `availabilitySchema`）；`GET` / `preview` / `PUT`（`If-Match`，D1 `batch()` atomic 寫 `schedules` + `entries`）/ `DELETE`（只刪規則）；migration `0002_schedules.sql`
+    - AC-13 2b-2（plan §2b-2 A）：`PUT /api/assets`（same-origin + session）— 非 `image/webp` 415、> 1 MB 413、壞 WebP 422、尺寸唔喺白名單（600×600、1216×684）422、新圖 201 `{ name: <sha256 前 16 hex>.webp, width, height, bytes }`（R2 先、D1 後）、已有 200 `existed`；migration `0003_publish_status.sql`（舊行預設 `ok`）+ S-786（`failed` 行唔計 unchanged / ID 守衛 / `current`）；S-787（scan / schedule drama id 唔合規 400）
     - AC-12 Backlog（§5）：S-767 先 insert 後寫 R2、失敗回滾；S-768 session whitelist 外 401 + 刪 session；S-770 Google 網絡 / id_token 錯 502；S-780 內容冇變回 `unchanged`（`?force=1` 照寫，ops 頁一句文字）；S-773
 - Scope files:
     - `apps/api/{package.json,wrangler.toml,.dev.vars.example,tsconfig.json,tsconfig.node.json,tsconfig.worker.json,vitest.config.ts,vitest.scripts.config.ts}` `apps/api/migrations/0001_init.sql`
-    - `apps/api/src/`（`index.ts` `app.ts` `env.ts` `config.ts` `api/routes.ts` `auth/*` `catalog/*` `content/*` `lib/*`）`apps/api/migrations/0002_schedules.sql` `apps/api/public/{index.html,ops.css,ops.js}`
+    - `apps/api/src/`（`index.ts` `app.ts` `env.ts` `config.ts` `api/routes.ts` `auth/*` `catalog/*` `content/*` `lib/*`）`apps/api/migrations/{0002_schedules,0003_publish_status}.sql` `apps/api/src/assets/{routes,webp}.ts` `apps/api/public/{index.html,ops.css,ops.js}`
     - 2b-1 schedule core：`packages/catalog/src/schedule/*`（scan core `packages/catalog/src/scan/*` 屬 drama 鏈）
     - `apps/api/scripts/{importLibrary.mjs,importLibrary.d.mts,importLibrary.test.ts,opsPage.test.ts}` `apps/api/test/*`
     - `_mockups_/admin-ops/index.html` `.github/workflows/deploy-api.yml` `.github/workflows/import-catalog.yml`
@@ -25,7 +26,8 @@
 - Commands:
     - `npm test -- apps/api packages/catalog/src/schedule`（`apps/api` 2 個 project；coverage：喺 `apps/api` 加 `--coverage.enabled --coverage.provider=v8`）
     - 本機 smoke（冇 Cloudflare 帳戶都得）：`apps/api` 臨時 `.dev.vars`（假 secret）→ `wrangler d1 migrations apply 903-player --local` → `node scripts/importLibrary.mjs --local` ×2 → `wrangler dev --local-protocol https` → D1 插測試 session → curl AC-3 / AC-5 / AC-6 → 比較 published `catalog.json` 同 `buildCatalogDocument`（AC-7）→ Playwright 行 ops 頁（AC-8；冇權限頁由 unit 證，要真 Google callback）；完咗刪 `.dev.vars`、還原 `.wrangler/`
+    - AC-13 本機 smoke：`wrangler.toml` 抄去 scratchpad、`migrations_dir` 指去只有 0001 + 0002 嘅 folder → apply + 插舊 `publishes` 行 → 用真 config apply 0003（舊行 `ok`、CHECK 擋其他值）；Pillow 砌 VP8 / VP8L / VP8X 圖 + 1 MB+ / 假 chunk / 1216×608 → `curl -X PUT --data-binary` 每個 status；插 `failed` 行再 publish
     - AC-9（merge 前跑唔到真 workflow）：YAML parse；抽每個 `run:` 用 `bash --noprofile --norc -eo pipefail` + stub `npm` / env 行：非 main guard、dry / real 指令、import fail、空 log summary；`CI=true npm run import -w apps/api -- --local --dry-run </dev/null` exit 0 冇 prompt。真 run（dry → real）= merge 後 S2 / UAT
     - CI：`ci.yml` `npx tsc -b` + `npm test`（同 SHA 綠就引用）
 - PWA gate: no（Worker 唔掂 player `sw.js` / manifest；player 嘅 S-764 屬 catalog-data / repo-tooling）
-- Out of scope: 真 Google OAuth / Cloudflare remote（merge 後 DevOps + 用戶清單 7–9；2b-1 deploy 後 scan golden / `unchanged` 手動）；2b-2（圖片上載、prebuild snapshot）；player 讀 catalog（catalog-data 鏈）
+- Out of scope: 真 Google OAuth / Cloudflare remote（merge 後 DevOps + 用戶清單 7–9；2b-1 deploy 後 scan golden / `unchanged` 手動）；player prebuild snapshot（catalog-data 鏈）；player 讀 catalog（catalog-data 鏈）

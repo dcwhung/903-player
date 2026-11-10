@@ -16,5 +16,5 @@
     - （Phase 0a；冇 bump version 嗰陣先用）`npm run build`，再喺 `apps/player/dist` 跑 `find . -type f | sort | xargs sha256sum`，同 `origin/main` 獨立 worktree build 嘅清單 `diff`（一次）
     - `npm run lint`；`npm test`（CI 同 SHA 綠就引用）
     - e2e：`npm run e2e`（CI 同 SHA 綠就引用）
-- PWA gate: no（`sw.js` / manifest / 更新邏輯冇改；dist 一樣即係 SW precache 一樣。Phase 1 起 `VITE_CATALOG_URL` 有設先加 catalog runtimeCaching route，production 冇設 → `sw.js` 冇 route；PWA 換版由 e2e section 證）
+- PWA gate: no（`sw.js` / manifest / 更新邏輯冇改；dist 一樣即係 SW precache 一樣。Phase 1 起 `VITE_CATALOG_URL` 有設先加 catalog runtimeCaching route，production 冇設 → `sw.js` 冇 route；PWA 換版由 e2e section 證。2b-2 `vite.config.ts` 加 `catalogSnapshot()` plugin：只改 precache 內容（snapshot 圖），SW 策略唔變；驗證屬 catalog-data AC-5，PWA 換版由 CI e2e 證）
 - Out of scope: `.vscode/settings.json`（editor JSON schema path）、`vercel.json`（Phase 0a 有 TEMP preview commit，revert 後先定稿；證據 = Vercel preview status）、`.vscode/`、`apps/player/scripts/generateIcons.mjs` / `arcCover/`（開發工具，只改相對 path）、各功能鏈（各自 plan）
