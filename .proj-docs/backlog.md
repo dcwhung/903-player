@@ -1,6 +1,6 @@
 # Backlog 登記冊（🟢 / Observation）
 
-**最後更新**：2026-11-10（S-767、S-768、S-770、S-772、S-773、S-780 關，Phase 2b-1）
+**最後更新**：2026-11-10（S-767、S-768、S-770、S-772、S-773、S-780 關；S-785–S-788 開，Phase 2b-1 review）
 
 > Review / QA 報告入面嘅 🟢 同 Observation 統一喺呢度追蹤。掃 backlog 時淨係睇「Open」；「Closed」嘅唔使再理。
 > 新 finding 照寫喺各自報告，處理完或者決定唔理就喺呢度更新。
@@ -38,6 +38,10 @@
 | S-778 | `apps/api/README.md`                      | L91「或者 dashboard var」：`wrangler deploy` 會用 `wrangler.toml` `[vars]` 蓋走 dashboard 改動                                                                                            | 下次改 README         | reviews/2026-11-09_review_phase2a-backend        |
 | S-779 | `apps/player/e2e/harness.mjs`             | `CATALOG_IMAGE_HOST` 入咗 `MOCKED_ORIGINS` 但 `newE2EContext` 冇預設 404 route；第二個 section 請求呢個 host 唔會 abort，會直接 DNS fail                                                  | 下次改 harness        | reviews/2026-11-09_review_phase2a-backend        |
 | S-781 | `.github/workflows/import-catalog.yml`    | `workflow_dispatch` 用所揀 ref 嗰份 yml，main guard 只防手滑；真邊界用 GitHub Environment（branch 限 `main`）+ environment secret，`deploy-api.yml` 一齊轉                                | 下次改 workflow       | reviews/2026-11-09_review_phase2a-backend        |
+| S-785 | `packages/catalog/src/scan`               | `findSuspicious` / `merge.ts` 訊息講「--verify」「本機 folder」，API scan issues 照出；Phase 3 admin 前改中性字眼或加 `source` 參數                                                       | Phase 3 admin 前      | reviews/2026-11-10_review_phase2b-1-backend      |
+| S-786 | `apps/api/src/catalog/publish.ts`         | S-767 失敗路徑：R2 put 失敗後 `deletePublish` 再失敗 → 留低冇寫 R2 嘅行，同內容再 publish 被判 `unchanged`；`unchanged` 可加對 R2 `customMetadata.hash`                                   | 下次改 publish        | reviews/2026-11-10_review_phase2b-1-backend      |
+| S-787 | `apps/api/src/content/{schedule,scan}.ts` | id 唔合規回 404，`/entries` 回 400；統一用 `badTarget`                                                                                                                                    | 下次改 content API    | reviews/2026-11-10_review_phase2b-1-backend      |
+| S-788 | `apps/api/src/content/entries.ts`         | `PUT` warnings / `DELETE` 每次讀成份 publish `document`；加淨讀 `episode_ids` 嘅 query                                                                                                    | 有性能問題先做        | reviews/2026-11-10_review_phase2b-1-backend      |
 
 ## Closed
 
