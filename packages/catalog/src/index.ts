@@ -114,3 +114,14 @@ export {
     type IssueLevel,
     type ParsedEpisodeFile,
 } from './scan';
+
+export {
+    expandSchedule,
+    parseScheduleRule,
+    ScheduleError,
+    type DatesRule,
+    type ExpandedSchedule,
+    type PeriodicRule,
+    type ScheduleArc,
+    type ScheduleRule,
+} from './schedule';
