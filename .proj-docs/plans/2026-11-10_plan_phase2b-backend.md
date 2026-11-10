@@ -27,7 +27,7 @@ Phase 2b 要補齊 API，等 Phase 3 admin 可以直接改 D1：
 
 ---
 
-## 2b-1（今次做；api 0.1.1 → 0.2.0 MINOR，player 1.31.1 → 1.31.2 PATCH，因為 CLI 改咗）
+## 2b-1（✅ PR #197 → `3a0ec84`；api 0.1.1 → 0.2.0 MINOR，player 1.31.1 → 1.31.2 PATCH，因為 CLI 改咗）
 
 ### 1. `packages/catalog`：抽 R2 掃描核心（`src/scan/`）
 
@@ -127,33 +127,144 @@ S-769 / S-781（workflow）留返下次改 workflow 先做。
 
 ---
 
-## 2b-2（之後另開 plan mode 細化；先記低方向）
+## 2b-2（2026-11-10 plan mode 細化，用戶批准）
 
-### 圖片上載
+### Context
 
-- `PUT /api/assets`：只收 `image/webp`。
-    - 驗 magic bytes（`RIFF....WEBP` + VP8 / VP8L / VP8X header）
-    - 由 header 讀尺寸，要對到用途（disc 正方、tile 1216×684、banner 窄 / 闊）
-    - 限大小
-- 檔名 = sha256 前 16 hex，寫入 `catalog/v1/img/<hash>.webp`，再登記 `assets`；同一張圖重複上載就直接回現有 hash。
+2b-1（PR #197，api 0.2.0）已經做好 CRUD、R2 掃描同排程，仲差兩樣：
 
-### Prebuild snapshot
+1. **圖片上載**：Phase 3 / 4 admin 要將 disc / tile 上載去 R2，攞返 hash 名，再寫入 entry 嘅 `images`。
+2. **Prebuild snapshot**：而家 player 內建資料（離線第一次開 app、或者 catalog fetch 唔到時用）係 repo library；D1 已經係 SSoT，所以 library 會愈嚟愈舊。改為 build 時攞最新 publish（連圖）做內建資料。
 
-- Player 加 `scripts/fetchCatalogSnapshot.mjs`，build 前跑：
-    - fetch `VITE_CATALOG_URL` 嘅 `catalog.json` + 全部圖，寫入 gitignored 嘅 `src/catalog/snapshot/`
-    - 圖 URL 改寫做本地 hashed asset，跟 bundle precache
-    - `bundledSource` 有 snapshot 就用 snapshot，冇就用 repo library
-    - fetch 失敗 → warn + 用 library，build 唔 fail
+用戶決定：
 
-### 圖有更新點處理（用戶問）
+| 項目               | 決定                                                                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Snapshot           | Build 時 fetch 最新 `catalog.json` 連全部圖入 bundle（precache）；fetch 唔到就用 repo library（2026-11-10）                                                  |
+| Publish 後 rebuild | **唔自動**：snapshot 跟下次 deploy 更新；想即時就手動跑 Deploy workflow（2026-11-10）                                                                        |
+| 上載尺寸           | **白名單：disc 600×600、tile 1216×684**（節目同劇集統一 16:9）；卡顯示比例唔改（劇集 2:1 繼續 cover 裁）；R2 現有 6 張 1216×608 劇集 tile 照用（2026-11-10） |
+| Banner             | 唔入 catalog.json，留 Phase 4                                                                                                                                |
 
-| 情況                                         | 會點                                                                                                         |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Admin 換圖                                   | 新圖 = 新 hash = 新檔名，舊檔唔會被覆蓋，所以 `immutable` cache 永遠安全                                     |
-| Publish 之後，用戶 online                    | 最多 60 秒內 runtime `catalog.json` 指去新 hash URL → SW CacheFirst 第一次顯示就下載新圖（Phase 1 已有機制） |
-| Publish 之後未 deploy，用戶第一次 offline 開 | 用 build 時嘅 snapshot，即係舊圖（同舊內容一致，唔會爛圖）；之後一 online 就換新                             |
-| 下次 deploy                                  | Snapshot 自動攞最新 publish（每次 build 都 fetch），新圖入 precache；舊 precache 喺新 SW activate 時清走     |
-| 想 snapshot 即時跟 publish（選配）           | Publish 成功後觸發 GitHub Pages / Vercel deploy hook 自動 rebuild，2b-2 plan 再決定要唔要                    |
+版本：api 0.2.0 → **0.3.0**；player 1.31.2 → **1.32.0**（MINOR：內建資料來源改變）。
+
+---
+
+### A. 圖片上載 API（`apps/api`）
+
+#### `PUT /api/assets`
+
+經現有 `requireSameOrigin` + `requireSession`。
+
+- **Request**：body = 原始 bytes，`Content-Type: image/webp`；其他 type → 415。
+- **大小上限**：`ASSET_MAX_BYTES`（1 MB），超過 → 413。現有最大嘅圖遠細過呢個數。
+- **驗證**（新增 `apps/api/src/assets/webp.ts`，pure function）：
+    - Magic bytes：`RIFF` + `WEBP`，chunk 係 `VP8 ` / `VP8L` / `VP8X`
+    - 由 header 讀闊高
+    - 唔合規 → 422
+- **尺寸白名單**：`ASSET_DIMENSIONS = [{600,600}, {1216,684}]`（named constants，喺 `config.ts`）；唔喺白名單 → 422，error 列明允許嘅尺寸。
+- **命名**：sha256 前 16 hex → `<hash>.webp`，同 `importLibrary.mjs` / `IMAGE_FILE_PATTERN` 一致。
+- **寫入次序**：
+    1. `assets` 已經有呢個 hash → 200 `{ name, existed: true }`（idempotent）
+    2. 未有 → 先 R2 `put catalog/v1/img/<name>`（`contentType: image/webp`），再 insert `assets` → 201 `{ name, width, height, bytes }`
+    - 先寫 R2 後 insert：R2 有、D1 冇嘅孤兒檔無害；反過嚟（D1 有、R2 冇）就會令 publish 出爛圖。
+- Admin 流程：上載 → 攞 `name` → `PUT /api/entries/:kind/:id` 將 `images` 指去 `name`（2b-1 已經驗 hash 喺 `assets` 同檔名 pattern）。
+
+#### 順手修 backlog
+
+| ID    | 修法                                                                                                                                                                         |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-786 | Publish 嘅 S-767 失敗路徑：`deletePublish` 都失敗 → 嗰行標 `failed`（migration `0003` 加 `status` 欄，預設 `ok`）；`unchanged` 比較同 ID 守衛只用 `status = 'ok'` 嘅最新一行 |
+| S-787 | `scan` / `schedule` 嘅 invalid id 由 404 改 400，同 `/entries` 一致                                                                                                          |
+
+S-788（每次讀成份 publish document）效能影響細，留 backlog。
+
+---
+
+### B. Player prebuild snapshot（`apps/player`）
+
+#### 1. Vite plugin `catalogSnapshot()`（新增 `apps/player/scripts/catalogSnapshot.ts`）
+
+用 plugin 嘅 `buildStart`，唔用 npm `prebuild`：plugin 知道 `mode` 同 catalog URL，CI 嘅 e2e build 唔會誤 fetch。
+
+- **觸發條件**（三樣都要成立先 fetch）：
+    - `command === 'build'`
+    - `mode !== 'e2e'`
+    - 有 catalog URL（即係 Pages / Vercel production；CI 冇設定）
+- **步驟**：
+    1. 刪舊 `src/catalog/snapshot/`（避免本機舊 snapshot 殘留）
+    2. fetch `catalog.json`（timeout `SNAPSHOT_FETCH_TIMEOUT_MS`）→ 用 `packages/catalog` 嘅 `parseCatalogDocument` + `buildRegistry` / `buildShowRegistry` 驗（同 player runtime 同一套 validator）
+    3. 逐張圖 fetch（並發上限 `SNAPSHOT_IMAGE_CONCURRENCY`）→ 驗 sha256 前 16 hex 等於檔名（integrity）→ 寫 `snapshot/img/<name>`
+    4. `images` 嘅值改寫做檔名，寫 `snapshot/catalog.json`；先寫暫存 folder，全部成功先 rename（atomic）
+    5. 任何一步失敗 → `console.warn` 兼清走暫存，build 繼續用 repo library（唔 fail build）
+- `.gitignore` 加 `apps/player/src/catalog/snapshot/`。
+- Build log 印出 snapshot 嘅 hash、`generatedAt`、圖數，方便追查。
+
+#### 2. 內建來源揀 snapshot 定 library
+
+- 新增 `src/catalog/snapshot/source.ts`：
+    - `import.meta.glob('./catalog.json')` + `import.meta.glob('./img/*.{webp,jpg}', { query: '?url' })`
+    - folder 唔存在時 glob 回 `{}`
+- `packages/catalog` 新增 pure function `localizeDocument(doc, urlByFile)`：將 snapshot document 嘅圖檔名換做 Vite asset URL，再交 `documentSource`。
+- `dramas/lib/bundledSource.ts`、`shows/lib/bundledSource.ts`：
+    - 有 snapshot → `documentSource(snapshot, kind)`
+    - 冇 snapshot → 現有 library
+    - e2e mode 照舊行 `withE2EFixtures(library)`
+- 圖由 Vite hash 入 `dist/assets/`，現有 `globPatterns` 已經包 webp，所以自動 precache。
+- `catalogJson.test.ts` 同每劇 `drama.test.ts` 繼續測 library（CI 冇 snapshot）；新增 test 用細 fixture snapshot 測切換同 `localizeDocument`。
+
+#### 3. 圖有更新點處理（已確認）
+
+| 情況                                         | 會點                                                                              |
+| -------------------------------------------- | --------------------------------------------------------------------------------- |
+| Admin 換圖                                   | 新圖 = 新 hash = 新檔名，舊檔唔會被覆蓋，`immutable` cache 永遠安全               |
+| Publish 之後，用戶 online                    | 最多 60 秒內 runtime `catalog.json` 指去新圖 → SW CacheFirst 第一次顯示就下載     |
+| Publish 之後未 deploy，用戶第一次 offline 開 | 用 build 時 snapshot（舊內容 + 舊圖，一致，唔會爛圖）；之後一 online 就換新       |
+| 下次 deploy                                  | Snapshot 自動攞最新 publish，新圖入 precache，舊 precache 喺新 SW activate 時清走 |
+
+---
+
+### 關鍵檔案
+
+- **新增**：
+    - `apps/api/src/assets/{routes,webp}.ts` + tests
+    - `apps/api/migrations/0003_publish_status.sql`
+    - `apps/player/scripts/catalogSnapshot.ts` + test
+    - `apps/player/src/catalog/snapshot/source.ts`
+    - `packages/catalog/src/document/localize.ts` + test
+- **修改**：
+    - `apps/api/src/{config.ts,api/routes.ts,catalog/{publish,store}.ts,content/*}`（S-786 / S-787）
+    - `apps/player/vite.config.ts`（加 plugin）
+    - `apps/player/src/catalog/{dramas,shows}/lib/bundledSource.ts`
+    - `.gitignore`
+    - `apps/api/README.md`、`README.md`
+- **重用**：
+    - `packages/catalog`：`parseCatalogDocument`、`documentSource`、`buildRegistry`、`buildShowRegistry`
+    - `apps/api`：`sha256Hex`（`lib/crypto.ts`）、`IMAGE_FILE_PATTERN`、`CATALOG_IMAGE_KEY_PREFIX`、`assets` store
+    - `apps/player`：`catalogCaching.ts` 現有 runtime cache 規則（唔使改）
+
+### 流程
+
+- Branch `claude/funny-pasteur-29wbrn`（已經基於 main `3a0ec84` + docs）。
+- `/feature` 流程：Backend Developer（API + player plugin 都係非 UI，冇 `.tsx` / `.css` 改動）→ Code Review → QA S1（`api`、`catalog-data`、`pwa-shell`、`repo-tooling`）→ CI 綠 → merge → DevOps。
+- 批准之後先更新 `.proj-docs/plans/2026-11-10_plan_phase2b-backend.md` 嘅 2b-2 段（記錄上面嘅決定），同埋主計劃 phase 表。
+- 用戶 dashboard：唔使設定。
+
+### 驗證
+
+- **Unit**（只跑相關）：
+    - webp header parse：VP8 / VP8L / VP8X、截短、假 magic
+    - 上載：415 / 413 / 422 尺寸 / 201 / 200 existed、R2 失敗唔 insert
+    - S-786 failed 行唔計入比較；S-787 返 400
+    - Snapshot plugin（mock fetch）：成功、catalog 壞、圖 hash 唔對、timeout → fallback、e2e mode / 冇 URL 唔 fetch
+    - `localizeDocument`；`bundledSource` 揀 snapshot 定 library
+- **本機**：
+    - `wrangler dev` + `curl -T disc.webp` 上載
+    - `VITE_CATALOG_URL=<本機 Worker> npm run build -w apps/player` → `dist` 有 snapshot 圖、`sw.js` precache 有齊
+    - 斷網再 build → warn + library
+- `npm run lint`、`npx tsc -b`；e2e 同 full suite 交 CI（e2e build 唔郁 snapshot，行為唔變）。
+- **Deploy 後**：
+    - Deploy log 見到 snapshot hash 同已 publish 嘅 hash 一樣
+    - 用戶飛行模式第一次開 app（新裝 / 清 cache）見到封面
 
 ---
 
@@ -171,18 +282,18 @@ S-769 / S-781（workflow）留返下次改 workflow 先做。
     - `packages/catalog`：`parseDramaDefinition`、`buildEpisodes`、`availabilitySchema`、`date.ts`、`checkId`
     - `apps/api`：`validateDocument`、`latestEpisodeIds`、`missingEpisodeIds`、test helpers（`apps/api/test/helpers.ts`、`fixtures.ts`）
 
-## Branch / 流程
+## Branch / 流程（2b-1）
 
 - 用 session 指定 branch `claude/funny-pasteur-29wbrn`。PR #196 已經 merge，所以先由最新 `origin/main` 重開。
 - `/feature`（backend）流程：Backend Developer TDD → Code Review → QA S1 → CI 綠 → merge → DevOps（Deploy API + D1 migration）。
     - QA 鏈：`api` + `catalog-data`；`repo-tooling` 視乎 CLI 改動。
 - 批准之後先寫 `.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`，同時更新主計劃 phase 表（2b → 2b-1 / 2b-2），並順手修 S-783（2a plan bucket 寫法）。
 
-## 用戶 dashboard 設定
+## 用戶 dashboard 設定（2b-1）
 
 2b-1 唔使任何設定。`AUDIO` binding 用現有 deploy token，佢已經有 R2 Storage Write，覆蓋所有 bucket。
 
-## 驗證
+## 驗證（2b-1）
 
 - Unit（只跑相關）：
     - `npm test -- packages/catalog/src/scan packages/catalog/src/schedule apps/api apps/player/scripts/dramaFromFolder`
