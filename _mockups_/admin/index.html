@@ -1,0 +1,1578 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>903 Player Admin</title>
+        <style>
+            /*
+             * Phase 3 admin preview（apps/admin，React SPA，由 Worker static assets 出）。
+             * 純工具頁：唔係 PWA、唔用 player theme；沿用 _mockups_/admin-ops 嘅 token，跟系統深淺色。
+             * 闊屏 = 左邊 nav + 內容；窄屏（< 720px）nav 變頂部 tab。下面逐個畫面 / 狀態畫一個 frame。
+             * Phase 3 唔包：cover 編輯器、theme 抽色、banner（Phase 4）：圖片欄淨係顯示而家用緊嘅圖。
+             */
+            :root {
+                --bg: #f4f5f7;
+                --surface: #ffffff;
+                --surface-2: #eef1f5;
+                --ink: #18202b;
+                --muted: #5d6775;
+                --line: #d3d9e2;
+                --accent: #2f5fa7;
+                --accent-soft: #e3ecf8;
+                --on-accent: #ffffff;
+                --ok: #2f7d4f;
+                --ok-bg: #e4f3ea;
+                --warn-bg: #fff4e0;
+                --warn-ink: #7a4500;
+                --danger: #b3261e;
+                --danger-bg: #fdecea;
+                --on-danger: #ffffff;
+                --radius: 10px;
+                --gap: 16px;
+                --nav-width: 200px;
+                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', 'Segoe UI', sans-serif;
+                --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+                color-scheme: light dark;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: #12161c;
+                    --surface: #1c222b;
+                    --surface-2: #232b36;
+                    --ink: #e6e9ee;
+                    --muted: #9aa4b2;
+                    --line: #2e3742;
+                    --accent: #7aa7e8;
+                    --accent-soft: #1f2e45;
+                    --on-accent: #0d1a2b;
+                    --ok: #6fc28f;
+                    --ok-bg: #16301f;
+                    --warn-bg: #3a2a10;
+                    --warn-ink: #f2c27a;
+                    --danger: #f28b82;
+                    --danger-bg: #3a1614;
+                    --on-danger: #2b0d0b;
+                }
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--ink);
+                font: 15px/1.5 var(--font);
+            }
+            .page {
+                max-width: 1120px;
+                margin: 0 auto;
+                padding: 24px 16px 64px;
+                display: grid;
+                gap: 40px;
+            }
+            .intro h1 {
+                margin: 0 0 4px;
+                font-size: 20px;
+            }
+            .intro p {
+                margin: 0;
+                color: var(--muted);
+            }
+            .jump {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px 12px;
+                margin-top: 12px;
+                font-size: 13px;
+            }
+            .jump a {
+                color: var(--accent);
+            }
+            .state-label {
+                margin: 0 0 8px;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .frame {
+                border: 1px dashed var(--line);
+                border-radius: var(--radius);
+                overflow: hidden;
+            }
+            .frame.narrow {
+                max-width: 400px;
+            }
+
+            /* ---------- App shell ---------- */
+            .shell {
+                display: grid;
+                grid-template-columns: var(--nav-width) 1fr;
+                min-height: 420px;
+            }
+            .nav {
+                background: var(--surface);
+                border-right: 1px solid var(--line);
+                padding: var(--gap);
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .nav .brand {
+                font-weight: 600;
+                margin-bottom: 12px;
+            }
+            .nav a {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 10px;
+                border-radius: 8px;
+                color: var(--ink);
+                text-decoration: none;
+            }
+            .nav a[aria-current='page'] {
+                background: var(--accent-soft);
+                color: var(--accent);
+                font-weight: 600;
+            }
+            .nav .spacer {
+                flex: 1;
+            }
+            .nav .who {
+                font-size: 12px;
+                color: var(--muted);
+                overflow-wrap: anywhere;
+            }
+            .nav .version {
+                font: 11px var(--mono);
+                color: var(--muted);
+            }
+            .main {
+                padding: 20px;
+                display: grid;
+                gap: var(--gap);
+                align-content: start;
+                min-width: 0;
+            }
+            .crumbs {
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .crumbs a {
+                color: var(--accent);
+                text-decoration: none;
+            }
+            .title-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            .title-row h2 {
+                margin: 0;
+                font-size: 20px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            /* 窄屏：nav 變頂部橫向 tab */
+            @media (max-width: 720px) {
+                .shell {
+                    grid-template-columns: 1fr;
+                }
+                .nav {
+                    flex-direction: row;
+                    align-items: center;
+                    border-right: 0;
+                    border-bottom: 1px solid var(--line);
+                    overflow-x: auto;
+                }
+                .nav .brand {
+                    margin: 0 8px 0 0;
+                    white-space: nowrap;
+                }
+                .nav .spacer,
+                .nav .who,
+                .nav .version {
+                    display: none;
+                }
+                .main {
+                    padding: var(--gap);
+                }
+            }
+
+            /* ---------- Common ---------- */
+            .card {
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: var(--radius);
+                padding: var(--gap);
+                display: grid;
+                gap: 12px;
+                min-width: 0;
+            }
+            .card h3 {
+                margin: 0;
+                font-size: 15px;
+            }
+            .card .sub {
+                margin: 0;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .actions {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            button,
+            .btn {
+                font: inherit;
+                border-radius: 8px;
+                padding: 7px 14px;
+                border: 1px solid var(--line);
+                background: var(--surface);
+                color: var(--ink);
+                cursor: pointer;
+                text-decoration: none;
+                white-space: nowrap;
+            }
+            button.primary {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: var(--on-accent);
+            }
+            button.danger {
+                background: var(--danger);
+                border-color: var(--danger);
+                color: var(--on-danger);
+            }
+            button.ghost-danger {
+                color: var(--danger);
+            }
+            button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            .badge {
+                display: inline-block;
+                padding: 1px 8px;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 500;
+                background: var(--surface-2);
+                color: var(--muted);
+                white-space: nowrap;
+            }
+            .badge.draft {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .badge.ok {
+                background: var(--ok-bg);
+                color: var(--ok);
+            }
+            .badge.off {
+                background: var(--surface-2);
+                color: var(--muted);
+            }
+            .badge.bad {
+                background: var(--danger-bg);
+                color: var(--danger);
+            }
+            .note {
+                margin: 0;
+                padding: 10px 12px;
+                border-radius: 8px;
+                font-size: 14px;
+            }
+            .note.warn {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .note.ok {
+                background: var(--ok-bg);
+                color: var(--ok);
+            }
+            .note.bad {
+                background: var(--danger-bg);
+                color: var(--danger);
+            }
+            .note.info {
+                background: var(--accent-soft);
+                color: var(--ink);
+            }
+            .note ul {
+                margin: 6px 0 0;
+                padding-left: 20px;
+            }
+            code {
+                font: 13px var(--mono);
+            }
+            .muted {
+                color: var(--muted);
+            }
+            .thumb {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #d45f32, #8fbcb2);
+                flex: none;
+            }
+            .thumb.tile {
+                width: 71px;
+                height: 40px;
+                border-radius: 6px;
+            }
+            .thumb.dark {
+                background: linear-gradient(135deg, #28282b, #f26b5f);
+            }
+            .thumb.gold {
+                background: linear-gradient(135deg, #c99a2e, #3c2a12);
+            }
+            .thumb.blue {
+                background: linear-gradient(135deg, #2d4f8f, #9cc3e8);
+            }
+
+            /* ---------- Login ---------- */
+            .login {
+                min-height: 360px;
+                display: grid;
+                place-items: center;
+                padding: 32px var(--gap);
+                background: var(--bg);
+            }
+            .login .card {
+                width: 100%;
+                max-width: 340px;
+                text-align: center;
+                gap: 16px;
+            }
+            .login h2 {
+                margin: 0;
+                font-size: 18px;
+            }
+            .google {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                width: 100%;
+                padding: 10px 14px;
+            }
+            .g-mark {
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: conic-gradient(#4285f4 0 25%, #34a853 0 50%, #fbbc05 0 75%, #ea4335 0);
+            }
+
+            /* ---------- Tables / lists ---------- */
+            .table-wrap {
+                overflow-x: auto;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 14px;
+            }
+            th,
+            td {
+                text-align: left;
+                padding: 8px 10px;
+                border-bottom: 1px solid var(--line);
+                vertical-align: middle;
+            }
+            th {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--muted);
+                white-space: nowrap;
+            }
+            tr:last-child td {
+                border-bottom: 0;
+            }
+            td.num {
+                font-variant-numeric: tabular-nums;
+                text-align: right;
+            }
+            .name-cell {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                min-width: 180px;
+            }
+            .name-cell a {
+                color: var(--ink);
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .name-cell small {
+                display: block;
+                font: 12px var(--mono);
+                color: var(--muted);
+            }
+            .seg {
+                display: inline-flex;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .seg button {
+                border: 0;
+                border-radius: 0;
+                padding: 6px 14px;
+            }
+            .seg button[aria-pressed='true'] {
+                background: var(--accent-soft);
+                color: var(--accent);
+                font-weight: 600;
+            }
+
+            /* ---------- Tabs ---------- */
+            .tabs {
+                display: flex;
+                gap: 4px;
+                border-bottom: 1px solid var(--line);
+                overflow-x: auto;
+            }
+            .tabs a {
+                padding: 8px 12px;
+                color: var(--muted);
+                text-decoration: none;
+                border-bottom: 2px solid transparent;
+                white-space: nowrap;
+            }
+            .tabs a[aria-current='page'] {
+                color: var(--accent);
+                border-color: var(--accent);
+                font-weight: 600;
+            }
+
+            /* ---------- Forms ---------- */
+            .form {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: 14px var(--gap);
+            }
+            .field {
+                display: grid;
+                gap: 4px;
+                align-content: start;
+                min-width: 0;
+            }
+            .field.wide {
+                grid-column: 1 / -1;
+            }
+            .field > span {
+                font-size: 13px;
+                font-weight: 600;
+            }
+            .field .hint {
+                font-size: 12px;
+                color: var(--muted);
+            }
+            .field .err {
+                font-size: 12px;
+                color: var(--danger);
+            }
+            input[type='text'],
+            input[type='date'],
+            input[type='number'],
+            select {
+                font: inherit;
+                width: 100%;
+                padding: 7px 10px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--surface);
+                color: var(--ink);
+            }
+            input.mono {
+                font-family: var(--mono);
+                font-size: 13px;
+            }
+            input[aria-invalid='true'] {
+                border-color: var(--danger);
+            }
+            input:read-only {
+                background: var(--surface-2);
+                color: var(--muted);
+            }
+            .check {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .days {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+            .days label {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 32px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                font-size: 13px;
+            }
+            .days label.on {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: var(--on-accent);
+            }
+            .images {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                flex-wrap: wrap;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .savebar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+                padding-top: 4px;
+                border-top: 1px solid var(--line);
+            }
+
+            /* ---------- Scan diff ---------- */
+            .diff {
+                display: grid;
+                gap: 6px;
+                font: 13px var(--mono);
+            }
+            .diff div {
+                padding: 6px 10px;
+                border-radius: 6px;
+                overflow-wrap: anywhere;
+            }
+            .diff .add {
+                background: var(--ok-bg);
+                color: var(--ok);
+            }
+            .diff .chg {
+                background: var(--accent-soft);
+                color: var(--ink);
+            }
+            .diff .del {
+                background: var(--danger-bg);
+                color: var(--danger);
+            }
+
+            /* ---------- Calendar ---------- */
+            .cal {
+                display: grid;
+                grid-template-columns: repeat(7, minmax(0, 1fr));
+                gap: 4px;
+                font-size: 12px;
+            }
+            .cal .dow {
+                text-align: center;
+                color: var(--muted);
+                font-weight: 600;
+                padding-bottom: 2px;
+            }
+            .cal .day {
+                min-height: 54px;
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                padding: 4px;
+                display: grid;
+                align-content: space-between;
+                background: var(--surface);
+            }
+            .cal .day.blank {
+                border-style: dashed;
+                background: transparent;
+            }
+            .cal .day.today {
+                outline: 2px solid var(--accent);
+                outline-offset: -2px;
+            }
+            .cal .rel {
+                background: var(--accent);
+                color: var(--on-accent);
+                border-radius: 4px;
+                padding: 1px 4px;
+                font-weight: 600;
+                text-align: center;
+            }
+            .cal .gone {
+                background: var(--danger-bg);
+                color: var(--danger);
+                border-radius: 4px;
+                padding: 1px 4px;
+                text-align: center;
+            }
+            .legend {
+                display: flex;
+                gap: 16px;
+                flex-wrap: wrap;
+                font-size: 12px;
+                color: var(--muted);
+            }
+            .two-col {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+                gap: var(--gap);
+            }
+            @media (max-width: 860px) {
+                .two-col {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            /* ---------- Dialog ---------- */
+            .scrim {
+                padding: 32px var(--gap);
+                background: rgb(0 0 0 / 0.35);
+                display: grid;
+                place-items: center;
+            }
+            .scrim .card {
+                max-width: 440px;
+                width: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <main class="page">
+            <section class="intro">
+                <h1>903 Player Admin：Phase 3 mockup</h1>
+                <p>
+                    靜態 preview，冇真功能。範圍：login、內容列表、節目 / 廣播劇編輯、R2
+                    掃描覆核、短篇排程 + 日曆、Publish（取代 ops 頁）。Cover / theme / banner 編輯係
+                    Phase 4。
+                </p>
+                <nav class="jump" aria-label="跳去畫面">
+                    <a href="#s1">① Login</a>
+                    <a href="#s2">② 內容列表</a>
+                    <a href="#s3">③ 節目編輯</a>
+                    <a href="#s4">④ 廣播劇：基本資料</a>
+                    <a href="#s5">⑤ 短篇</a>
+                    <a href="#s6">⑥ R2 掃描</a>
+                    <a href="#s7">⑦ 排程</a>
+                    <a href="#s8">⑧ Publish</a>
+                    <a href="#s9">⑨ 錯誤狀態</a>
+                    <a href="#s10">⑩ 窄屏</a>
+                </nav>
+            </section>
+
+            <!-- ① Login -->
+            <section id="s1">
+                <p class="state-label">
+                    ① 未 login（任何 admin 路徑冇 session → 呢頁；唔喺 whitelist 沿用 ops
+                    頁「冇權限」）
+                </p>
+                <div class="frame">
+                    <div class="login">
+                        <div class="card">
+                            <h2>903 Player Admin</h2>
+                            <p class="sub">淨係 whitelist 入面嘅 Google 帳戶可以入</p>
+                            <button class="google">
+                                <span class="g-mark" aria-hidden="true"></span>用 Google 登入
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ② List -->
+            <section id="s2">
+                <p class="state-label">
+                    ② 內容列表（GET /api/entries + 最新 publish）：「未 publish」= updatedAt
+                    遲過最新 publish；撳名去編輯
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span>
+                            <a href="#s2" aria-current="page">內容</a>
+                            <a href="#s8">Publish <span class="badge draft">3</span></a>
+                            <span class="spacer"></span>
+                            <span class="who">admin@…</span>
+                            <a href="#s1">登出</a>
+                            <span class="version">api 0.4.0</span>
+                        </nav>
+                        <div class="main">
+                            <div class="title-row">
+                                <h2>內容</h2>
+                                <div class="actions">
+                                    <div class="seg" role="group" aria-label="類別">
+                                        <button aria-pressed="false">全部</button>
+                                        <button aria-pressed="false">節目</button>
+                                        <button aria-pressed="true">廣播劇</button>
+                                    </div>
+                                    <button class="primary">＋ 新增廣播劇</button>
+                                </div>
+                            </div>
+                            <p class="note warn">
+                                3 項改動未 publish：player 要等你 Publish 先見到。<a href="#s8"
+                                    >去 Publish</a
+                                >
+                            </p>
+                            <div class="card table-wrap" style="padding: 0">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>名稱</th>
+                                            <th>類型</th>
+                                            <th>狀態</th>
+                                            <th class="num">短篇 / 集</th>
+                                            <th>上架</th>
+                                            <th>最後修改</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <div class="name-cell">
+                                                    <span class="thumb"></span>
+                                                    <span
+                                                        ><a href="#s4">蘭茜夫人劇場</a
+                                                        ><small>lancy</small></span
+                                                    >
+                                                </div>
+                                            </td>
+                                            <td>短篇集</td>
+                                            <td>
+                                                <span class="badge ok">上架</span>
+                                                <span class="badge draft">未 publish</span>
+                                            </td>
+                                            <td class="num">3 / 100</td>
+                                            <td>2026-10-27</td>
+                                            <td>今日 09:12</td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="name-cell">
+                                                    <span class="thumb gold"></span>
+                                                    <span
+                                                        ><a href="#s4">黃金少年</a
+                                                        ><small>golden</small></span
+                                                    >
+                                                </div>
+                                            </td>
+                                            <td>短篇集</td>
+                                            <td><span class="badge ok">上架</span></td>
+                                            <td class="num">4 / 126</td>
+                                            <td>2026-10-24</td>
+                                            <td>11-08</td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="name-cell">
+                                                    <span class="thumb blue"></span>
+                                                    <span
+                                                        ><a href="#s4">18 樓 C 座</a
+                                                        ><small>c18</small></span
+                                                    >
+                                                </div>
+                                            </td>
+                                            <td>每日播</td>
+                                            <td>
+                                                <span class="badge off">停用</span>
+                                                <span class="badge draft">未 publish</span>
+                                            </td>
+                                            <td class="num">— / 60</td>
+                                            <td>—</td>
+                                            <td>今日 08:40</td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="name-cell">
+                                                    <span class="thumb dark"></span>
+                                                    <span
+                                                        ><a href="#s4">新劇（未上架）</a
+                                                        ><small>new-drama</small></span
+                                                    >
+                                                </div>
+                                            </td>
+                                            <td>短篇集</td>
+                                            <td>
+                                                <span class="badge">未發佈過</span>
+                                                <span class="badge draft">未 publish</span>
+                                            </td>
+                                            <td class="num">0 / 0</td>
+                                            <td>2026-11-20</td>
+                                            <td>今日 09:30</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="sub muted" style="margin: 0; font-size: 13px">
+                                次序 =
+                                <code>order</code
+                                >，喺編輯頁改。節目同廣播劇分開列；「全部」兩組上下排。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ③ Show edit -->
+            <section id="s3">
+                <p class="state-label">
+                    ③ 節目編輯（PUT /api/entries/shows/:id，帶 If-Match）：欄位跟 show.json；theme /
+                    圖片 Phase 4
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span>
+                            <a href="#s2" aria-current="page">內容</a>
+                            <a href="#s8">Publish <span class="badge draft">3</span></a>
+                            <span class="spacer"></span>
+                            <span class="who">admin@…</span>
+                        </nav>
+                        <div class="main">
+                            <div class="crumbs"><a href="#s2">內容</a> › 節目</div>
+                            <div class="title-row">
+                                <h2>雲妮鍾情 <span class="badge ok">已 publish</span></h2>
+                            </div>
+                            <div class="card">
+                                <div class="form">
+                                    <label class="field">
+                                        <span>名稱</span>
+                                        <input type="text" value="雲妮鍾情" />
+                                    </label>
+                                    <label class="field">
+                                        <span>ID</span>
+                                        <input type="text" class="mono" value="wanni" readonly />
+                                        <span class="hint">新增時先可以改；錄音進度 key 用佢</span>
+                                    </label>
+                                    <label class="field">
+                                        <span>錄音檔時間（fileTime）</span>
+                                        <input type="text" class="mono" value="0708" />
+                                        <span class="hint">HHMM，對應 R2 錄音檔名</span>
+                                    </label>
+                                    <label class="field">
+                                        <span>排序（order）</span>
+                                        <input type="number" value="3" />
+                                    </label>
+                                    <div class="field wide">
+                                        <span>播出日</span>
+                                        <div class="days">
+                                            <label>日</label>
+                                            <label class="on">一</label>
+                                            <label class="on">二</label>
+                                            <label class="on">三</label>
+                                            <label class="on">四</label>
+                                            <label class="on">五</label>
+                                            <label>六</label>
+                                        </div>
+                                    </div>
+                                    <div class="field wide">
+                                        <span>圖片</span>
+                                        <div class="images">
+                                            <span class="thumb dark"></span> disc
+                                            <span class="thumb tile dark"></span> tile
+                                            <span>（Phase 4 先可以換）</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="savebar">
+                                    <span class="muted" style="font-size: 13px">冇未儲存改動</span>
+                                    <div class="actions">
+                                        <button class="ghost-danger">刪除</button>
+                                        <button class="primary" disabled>儲存</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ④ Drama basic -->
+            <section id="s4">
+                <p class="state-label">
+                    ④ 廣播劇編輯：基本資料 tab（GET / PUT /api/entries/dramas/:id）；改咗未儲存時
+                    savebar 顯示
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span>
+                            <a href="#s2" aria-current="page">內容</a>
+                            <a href="#s8">Publish <span class="badge draft">3</span></a>
+                            <span class="spacer"></span>
+                            <span class="who">admin@…</span>
+                        </nav>
+                        <div class="main">
+                            <div class="crumbs"><a href="#s2">內容</a> › 廣播劇</div>
+                            <div class="title-row">
+                                <h2>
+                                    蘭茜夫人劇場 <span class="badge ok">上架</span>
+                                    <span class="badge draft">未 publish</span>
+                                </h2>
+                            </div>
+                            <nav class="tabs" aria-label="廣播劇分頁">
+                                <a href="#s4" aria-current="page">基本資料</a>
+                                <a href="#s5">短篇（3）</a>
+                                <a href="#s6">R2 掃描</a>
+                                <a href="#s7">排程</a>
+                            </nav>
+                            <div class="card">
+                                <div class="form">
+                                    <label class="field">
+                                        <span>名稱</span>
+                                        <input type="text" value="蘭茜夫人劇場" />
+                                    </label>
+                                    <label class="field">
+                                        <span>ID</span>
+                                        <input type="text" class="mono" value="lancy" readonly />
+                                        <span class="hint">已 publish，鎖住（改咗進度會冇）</span>
+                                    </label>
+                                    <label class="field">
+                                        <span>類型</span>
+                                        <select>
+                                            <option selected>短篇集（series）</option>
+                                            <option>每日播（daily）</option>
+                                        </select>
+                                    </label>
+                                    <label class="field">
+                                        <span>上架日（addedAt）</span>
+                                        <input type="date" value="2026-10-27" />
+                                    </label>
+                                    <label class="field">
+                                        <span>排序（order）</span>
+                                        <input type="number" value="6" />
+                                    </label>
+                                    <div class="field">
+                                        <span>狀態</span>
+                                        <label class="check"
+                                            ><input type="checkbox" checked />
+                                            啟用（enabled）</label
+                                        >
+                                    </div>
+                                    <label class="field">
+                                        <span>R2 folder</span>
+                                        <input type="text" value="蘭茜夫人劇場" />
+                                        <span class="hint">audio.host = r2；R2 掃描用</span>
+                                    </label>
+                                    <label class="field wide">
+                                        <span>檔名模板（audio.file）</span>
+                                        <input
+                                            type="text"
+                                            class="mono"
+                                            value="{no2} - {arc} - 第{noZh}集[ - {title}].m4a"
+                                        />
+                                        <span class="hint"
+                                            >{no2} 兩位集數、{arc} 短篇名、{noZh} 中文集數、[ … ]
+                                            可有可冇</span
+                                        >
+                                    </label>
+                                    <div class="field wide">
+                                        <span>圖片</span>
+                                        <div class="images">
+                                            <span class="thumb"></span> disc
+                                            <span class="thumb tile"></span> tile
+                                            <span>（Phase 4 先可以換）</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="savebar">
+                                    <span style="font-size: 13px; color: var(--warn-ink)"
+                                        >● 有未儲存改動（上架日）</span
+                                    >
+                                    <div class="actions">
+                                        <button>還原</button>
+                                        <button class="primary">儲存</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑤ Arcs -->
+            <section id="s5">
+                <p class="state-label">
+                    ⑤ 短篇 tab：已 publish 嘅短篇 ID 鎖住；集數由 R2 掃描更新（都可以手改）；拖 ≡
+                    改次序
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span>
+                            <a href="#s2" aria-current="page">內容</a>
+                            <a href="#s8">Publish</a>
+                        </nav>
+                        <div class="main">
+                            <div class="title-row"><h2>蘭茜夫人劇場</h2></div>
+                            <nav class="tabs" aria-label="廣播劇分頁">
+                                <a href="#s4">基本資料</a>
+                                <a href="#s5" aria-current="page">短篇（3）</a>
+                                <a href="#s6">R2 掃描</a>
+                                <a href="#s7">排程</a>
+                            </nav>
+                            <div class="card table-wrap" style="padding: 0">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>短篇名（= R2 sub-folder）</th>
+                                            <th>ID</th>
+                                            <th class="num">集數</th>
+                                            <th>排程</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="muted">≡</td>
+                                            <td>戀愛二分一</td>
+                                            <td><code>half</code> 🔒</td>
+                                            <td class="num">30</td>
+                                            <td class="muted">冇（跟 addedAt 一次過上）</td>
+                                            <td><a class="btn" href="#s7">排程</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="muted">≡</td>
+                                            <td>初戀無限次</td>
+                                            <td><code>first-love</code> 🔒</td>
+                                            <td class="num">33</td>
+                                            <td>指定日期 · 2 批</td>
+                                            <td><a class="btn" href="#s7">排程</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="muted">≡</td>
+                                            <td>我心不死</td>
+                                            <td>
+                                                <input
+                                                    type="text"
+                                                    class="mono"
+                                                    value="heart"
+                                                    style="width: 120px"
+                                                />
+                                            </td>
+                                            <td class="num">37</td>
+                                            <td>每週一三五 · 每次 5 集</td>
+                                            <td><a class="btn" href="#s7">排程</a></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="note info">
+                                「我心不死」未 publish 過，ID 仲可以改；publish
+                                之後鎖住。新短篇通常由 R2 掃描加入（ID 預設
+                                <code>arc-01</code>，要改做英文 slug）。
+                            </p>
+                            <div class="savebar">
+                                <span class="muted" style="font-size: 13px">冇未儲存改動</span>
+                                <div class="actions">
+                                    <button class="primary" disabled>儲存</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑥ Scan -->
+            <section id="s6">
+                <p class="state-label">
+                    ⑥ R2 掃描 tab（POST /api/dramas/:id/scan，唔寫 D1）：睇 diff → 「套用」= 用
+                    draft PUT 返 entry
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span>
+                            <a href="#s2" aria-current="page">內容</a>
+                            <a href="#s8">Publish</a>
+                        </nav>
+                        <div class="main">
+                            <div class="title-row"><h2>蘭茜夫人劇場</h2></div>
+                            <nav class="tabs" aria-label="廣播劇分頁">
+                                <a href="#s4">基本資料</a>
+                                <a href="#s5">短篇（3）</a>
+                                <a href="#s6" aria-current="page">R2 掃描</a>
+                                <a href="#s7">排程</a>
+                            </nav>
+                            <div class="card">
+                                <div class="title-row">
+                                    <div>
+                                        <h3>掃描 <code>蘭茜夫人劇場/</code></h3>
+                                        <p class="sub">09:41 掃描 · 101 個檔</p>
+                                    </div>
+                                    <button>重新掃描</button>
+                                </div>
+                                <div class="diff" aria-label="同而家資料嘅分別">
+                                    <div class="add">
+                                        + arcs[3] 新短篇「天使之戀」· 12 集 · id = arc-01（要改）
+                                    </div>
+                                    <div class="chg">~ arcs[2].episodes：35 → 37（我心不死）</div>
+                                    <div class="chg">~ arcs[2].titles[36]：「」 → 「大結局」</div>
+                                </div>
+                                <p class="note warn">
+                                    1 個檔對唔到模板，唔會加入：
+                                    <br /><code>我心不死/我心不死 - 預告.m4a</code>
+                                </p>
+                                <div class="savebar">
+                                    <span class="muted" style="font-size: 13px"
+                                        >套用之後喺「短篇」tab 改新短篇 ID 先儲存得</span
+                                    >
+                                    <div class="actions">
+                                        <button>取消</button>
+                                        <button class="primary">套用 3 項改動</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <h3>冇改動時</h3>
+                                <p class="note ok" style="margin: 0">
+                                    R2 同而家資料一樣，冇嘢要更新。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑦ Schedule -->
+            <section id="s7">
+                <p class="state-label">
+                    ⑦ 排程 tab（GET / PUT / DELETE …/arcs/:arcId/schedule；改規則即刻 POST …/preview
+                    更新日曆）
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span>
+                            <a href="#s2" aria-current="page">內容</a>
+                            <a href="#s8">Publish</a>
+                        </nav>
+                        <div class="main">
+                            <div class="title-row"><h2>蘭茜夫人劇場</h2></div>
+                            <nav class="tabs" aria-label="廣播劇分頁">
+                                <a href="#s4">基本資料</a>
+                                <a href="#s5">短篇（3）</a>
+                                <a href="#s6">R2 掃描</a>
+                                <a href="#s7" aria-current="page">排程</a>
+                            </nav>
+                            <div class="actions">
+                                <label class="field" style="min-width: 220px">
+                                    <span>短篇</span>
+                                    <select>
+                                        <option>戀愛二分一（冇排程）</option>
+                                        <option>初戀無限次（指定日期）</option>
+                                        <option selected>我心不死（週期）</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="two-col">
+                                <div class="card">
+                                    <h3>規則</h3>
+                                    <div class="seg" role="group" aria-label="規則類型">
+                                        <button aria-pressed="false">冇排程</button>
+                                        <button aria-pressed="false">指定日期</button>
+                                        <button aria-pressed="true">週期</button>
+                                    </div>
+                                    <div class="form">
+                                        <label class="field">
+                                            <span>由</span>
+                                            <input type="date" value="2026-11-16" />
+                                        </label>
+                                        <label class="field">
+                                            <span>每次上幾多集</span>
+                                            <input type="number" value="5" />
+                                        </label>
+                                        <div class="field wide">
+                                            <span>頻率</span>
+                                            <div class="seg" role="group" aria-label="頻率">
+                                                <button aria-pressed="false">每 N 日</button>
+                                                <button aria-pressed="true">逢星期幾</button>
+                                            </div>
+                                            <div class="days" style="margin-top: 6px">
+                                                <label>日</label>
+                                                <label class="on">一</label>
+                                                <label>二</label>
+                                                <label class="on">三</label>
+                                                <label>四</label>
+                                                <label class="on">五</label>
+                                                <label>六</label>
+                                            </div>
+                                        </div>
+                                        <label class="field wide">
+                                            <span>上架後幾多日下架（留空 = 唔下架）</span>
+                                            <input type="number" placeholder="例如 14" />
+                                        </label>
+                                    </div>
+                                    <details>
+                                        <summary class="muted" style="font-size: 13px">
+                                            「指定日期」會變成咩樣
+                                        </summary>
+                                        <div class="table-wrap" style="margin-top: 8px">
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th>由第幾集</th>
+                                                        <th>上架日</th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>
+                                                            <input
+                                                                type="number"
+                                                                value="1"
+                                                                style="width: 70px"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input type="date" value="2026-11-16" />
+                                                        </td>
+                                                        <td>
+                                                            <button class="ghost-danger">✕</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <input
+                                                                type="number"
+                                                                value="20"
+                                                                style="width: 70px"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input type="date" value="2026-11-30" />
+                                                        </td>
+                                                        <td>
+                                                            <button class="ghost-danger">✕</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <button style="margin-top: 8px">＋ 加一批</button>
+                                    </details>
+                                    <div class="savebar">
+                                        <span class="muted" style="font-size: 13px"
+                                            >儲存 = 展開每集日期寫入劇集資料</span
+                                        >
+                                        <div class="actions">
+                                            <button class="ghost-danger">刪除排程</button>
+                                            <button class="primary">儲存</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="title-row">
+                                        <h3>2026 年 11 月</h3>
+                                        <div class="actions">
+                                            <button>‹</button><button>›</button>
+                                        </div>
+                                    </div>
+                                    <div class="cal" aria-label="排程日曆 preview">
+                                        <span class="dow">日</span><span class="dow">一</span
+                                        ><span class="dow">二</span><span class="dow">三</span
+                                        ><span class="dow">四</span><span class="dow">五</span
+                                        ><span class="dow">六</span>
+                                        <div class="day">1</div>
+                                        <div class="day">2</div>
+                                        <div class="day">3</div>
+                                        <div class="day">4</div>
+                                        <div class="day">5</div>
+                                        <div class="day">6</div>
+                                        <div class="day">7</div>
+                                        <div class="day">8</div>
+                                        <div class="day">9</div>
+                                        <div class="day today">10</div>
+                                        <div class="day">11</div>
+                                        <div class="day">12</div>
+                                        <div class="day">13</div>
+                                        <div class="day">14</div>
+                                        <div class="day">15</div>
+                                        <div class="day">16<span class="rel">1–5</span></div>
+                                        <div class="day">17</div>
+                                        <div class="day">18<span class="rel">6–10</span></div>
+                                        <div class="day">19</div>
+                                        <div class="day">20<span class="rel">11–15</span></div>
+                                        <div class="day">21</div>
+                                        <div class="day">22</div>
+                                        <div class="day">23<span class="rel">16–20</span></div>
+                                        <div class="day">24</div>
+                                        <div class="day">25<span class="rel">21–25</span></div>
+                                        <div class="day">26</div>
+                                        <div class="day">27<span class="rel">26–30</span></div>
+                                        <div class="day">28</div>
+                                        <div class="day">29</div>
+                                        <div class="day">30<span class="rel">31–35</span></div>
+                                        <div class="day blank"></div>
+                                        <div class="day blank"></div>
+                                        <div class="day blank"></div>
+                                        <div class="day blank"></div>
+                                        <div class="day blank"></div>
+                                    </div>
+                                    <div class="legend">
+                                        <span
+                                            ><span
+                                                class="badge"
+                                                style="
+                                                    background: var(--accent);
+                                                    color: var(--on-accent);
+                                                "
+                                                >1–5</span
+                                            >
+                                            上架集數</span
+                                        >
+                                        <span><span class="badge bad">✕ 1–5</span> 下架</span>
+                                        <span>框 = 今日</span>
+                                    </div>
+                                    <p class="sub">共 37 集 · 最後一批 12 月 2 日（第 36–37 集）</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑧ Publish -->
+            <section id="s8">
+                <p class="state-label">
+                    ⑧ Publish（取代 ops 頁）：同最新 publish 嘅 diff → Publish；下面 history +
+                    還原（沿用 ops 頁行為）
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span>
+                            <a href="#s2">內容</a>
+                            <a href="#s8" aria-current="page"
+                                >Publish <span class="badge draft">3</span></a
+                            >
+                            <span class="spacer"></span>
+                            <span class="who">admin@…</span>
+                        </nav>
+                        <div class="main">
+                            <div class="title-row"><h2>Publish</h2></div>
+                            <div class="card">
+                                <h3>未 publish 嘅改動（同 #4 比）</h3>
+                                <div class="table-wrap">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>項目</th>
+                                                <th>改動</th>
+                                                <th>修改時間</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><a href="#s4">蘭茜夫人劇場</a></td>
+                                                <td>上架日；我心不死 37 集 + 排程</td>
+                                                <td>今日 09:12</td>
+                                            </tr>
+                                            <tr>
+                                                <td><a href="#s4">18 樓 C 座</a></td>
+                                                <td>停用</td>
+                                                <td>今日 08:40</td>
+                                            </tr>
+                                            <tr>
+                                                <td><a href="#s4">新劇（未上架）</a></td>
+                                                <td>新增</td>
+                                                <td>今日 09:30</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p class="note ok">驗證通過 · 7 個節目 · 7 套廣播劇 · 507 集</p>
+                                <div class="actions">
+                                    <button class="primary">Publish</button>
+                                    <span class="muted" style="font-size: 13px"
+                                        >player 約 60 秒內攞到新 catalog.json</span
+                                    >
+                                </div>
+                            </div>
+                            <div class="card table-wrap">
+                                <h3>Publish 記錄</h3>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>時間</th>
+                                            <th>內容</th>
+                                            <th>Hash</th>
+                                            <th>狀態</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>4</td>
+                                            <td>11-10 09:05</td>
+                                            <td>7 節目 · 6 劇 · 470 集</td>
+                                            <td><code>a3add2a5…</code></td>
+                                            <td><span class="badge ok">而家用緊</span></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>3</td>
+                                            <td>11-09 22:40</td>
+                                            <td>7 節目 · 6 劇 · 470 集</td>
+                                            <td><code>91c0e4b2…</code></td>
+                                            <td><span class="badge bad">失敗</span></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2</td>
+                                            <td>11-08 18:02</td>
+                                            <td>7 節目 · 6 劇 · 470 集</td>
+                                            <td><code>5e7f10aa…</code></td>
+                                            <td></td>
+                                            <td><button>還原</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑨ Errors -->
+            <section id="s9">
+                <p class="state-label">⑨ 錯誤狀態（API 已經有嘅回應；UI 點顯示）</p>
+                <div style="display: grid; gap: var(--gap)">
+                    <div class="frame" style="padding: var(--gap); display: grid; gap: 12px">
+                        <p class="state-label" style="margin: 0">
+                            422 驗證唔過（儲存時）：錯誤貼住欄位 + 頂部總結
+                        </p>
+                        <p class="note bad">儲存唔到：1 個欄位有問題</p>
+                        <label class="field" style="max-width: 360px">
+                            <span>短篇 ID</span>
+                            <input type="text" class="mono" value="Heart Arc" aria-invalid="true" />
+                            <span class="err">只可以用細楷英文、數字同 -（例如 heart-arc）</span>
+                        </label>
+                    </div>
+                    <div class="frame" style="padding: var(--gap); display: grid; gap: 12px">
+                        <p class="state-label" style="margin: 0">
+                            412 版本衝突（另一個 tab / 裝置改咗）
+                        </p>
+                        <p class="note warn">
+                            呢套劇喺你打開之後俾人改過（今日 09:20）。你嘅改動未儲存。
+                        </p>
+                        <div class="actions">
+                            <button>重新載入（放棄我嘅改動）</button>
+                            <button>複製我嘅改動做 JSON</button>
+                        </div>
+                    </div>
+                    <div class="frame" style="padding: var(--gap); display: grid; gap: 12px">
+                        <p class="state-label" style="margin: 0">
+                            儲存 warning（200 但附 warnings）：會令已 publish 嘅集數消失
+                        </p>
+                        <p class="note warn">
+                            已儲存。注意：下次 Publish 會被擋，因為以下集數喺最新 publish
+                            有、而家冇：
+                            <br /><code>drama:lancy:heart:36</code>、<code
+                                >drama:lancy:heart:37</code
+                            >
+                        </p>
+                    </div>
+                    <div class="frame" style="padding: var(--gap); display: grid; gap: 12px">
+                        <p class="state-label" style="margin: 0">
+                            409 Publish 被擋（episode ID 會消失）
+                        </p>
+                        <div class="note bad">
+                            Publish 唔到：2 集喺最新 publish 有、今次會消失（聽眾進度會冇咗）
+                            <ul>
+                                <li><code>drama:lancy:heart:36</code></li>
+                                <li><code>drama:lancy:heart:37</code></li>
+                            </ul>
+                        </div>
+                        <p class="sub muted" style="margin: 0; font-size: 13px">
+                            處理：喺劇集頁加返集數。想落架用「停用」或者排程下架，唔好刪集數。
+                        </p>
+                    </div>
+                    <div class="scrim frame">
+                        <div class="card">
+                            <h3>刪除「新劇（未上架）」？</h3>
+                            <p class="sub">
+                                未 publish 過，刪除唔會影響 player。已 publish
+                                過嘅劇唔俾刪，只可以停用。
+                            </p>
+                            <div class="actions" style="justify-content: flex-end">
+                                <button>取消</button>
+                                <button class="danger">刪除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑩ Narrow -->
+            <section id="s10">
+                <p class="state-label">⑩ 窄屏（手機）：nav 變頂部；表格橫向捲；表單一欄</p>
+                <div class="frame narrow">
+                    <div class="shell" style="grid-template-columns: 1fr">
+                        <nav
+                            class="nav"
+                            aria-label="主選單"
+                            style="
+                                flex-direction: row;
+                                align-items: center;
+                                border-right: 0;
+                                border-bottom: 1px solid var(--line);
+                            "
+                        >
+                            <span class="brand" style="margin: 0 8px 0 0">903 Admin</span>
+                            <a href="#s2" aria-current="page">內容</a>
+                            <a href="#s8">Publish <span class="badge draft">3</span></a>
+                        </nav>
+                        <div class="main" style="padding: var(--gap)">
+                            <div class="title-row">
+                                <h2>內容</h2>
+                                <button class="primary">＋</button>
+                            </div>
+                            <p class="note warn">3 項改動未 publish</p>
+                            <div class="card" style="gap: 0; padding: 0">
+                                <a
+                                    class="name-cell"
+                                    href="#s4"
+                                    style="
+                                        padding: 12px;
+                                        border-bottom: 1px solid var(--line);
+                                        text-decoration: none;
+                                        color: var(--ink);
+                                    "
+                                >
+                                    <span class="thumb"></span>
+                                    <span style="flex: 1"
+                                        >蘭茜夫人劇場<small>lancy · 3 短篇 · 100 集</small></span
+                                    >
+                                    <span class="badge draft">未 publish</span>
+                                </a>
+                                <a
+                                    class="name-cell"
+                                    href="#s4"
+                                    style="padding: 12px; text-decoration: none; color: var(--ink)"
+                                >
+                                    <span class="thumb gold"></span>
+                                    <span style="flex: 1"
+                                        >黃金少年<small>golden · 4 短篇 · 126 集</small></span
+                                    >
+                                    <span class="badge ok">上架</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </body>
+</html>
