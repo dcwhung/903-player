@@ -394,18 +394,6 @@
             .thumb.grey {
                 background: linear-gradient(135deg, #8a94a3, #d3d9e2);
             }
-            /* 未發佈 indicator：縮圖右上角橙點 */
-            .thumb.dirty::after {
-                content: '';
-                position: absolute;
-                top: -2px;
-                right: -2px;
-                width: 11px;
-                height: 11px;
-                border-radius: 50%;
-                background: var(--warn);
-                border: 2px solid var(--surface);
-            }
 
             /* ---------- Login ---------- */
             .login {
@@ -781,7 +769,7 @@
             .drama-head,
             .drama-row {
                 display: grid;
-                grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr) 190px;
+                grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr) 56px 190px;
                 gap: 10px;
                 align-items: start;
                 padding: 10px 14px 10px 6px;
@@ -804,9 +792,9 @@
             }
             /* 短篇 + 狀態：每個短篇一行，橫跨兩欄，內部欄寬同表頭對齊 */
             .arcs {
-                grid-column: 3 / 5;
+                grid-column: 3 / 6;
                 display: grid;
-                grid-template-columns: minmax(0, 1fr) 190px;
+                grid-template-columns: minmax(0, 1fr) 56px 190px;
                 gap: 6px 10px;
                 align-items: center;
                 font-size: 14px;
@@ -820,6 +808,14 @@
             .arcs .arc small {
                 color: var(--muted);
                 font-size: 12px;
+            }
+            /* 集數獨立一欄、靠右、等寬數字，逐行對齊 */
+            .eps {
+                text-align: right;
+                font-size: 13px;
+                color: var(--muted);
+                font-variant-numeric: tabular-nums;
+                white-space: nowrap;
             }
             .arcs .more {
                 color: var(--accent);
@@ -894,7 +890,7 @@
                 }
                 .arcs {
                     grid-column: 2;
-                    grid-template-columns: minmax(0, 1fr) auto;
+                    grid-template-columns: minmax(0, 1fr) auto auto;
                 }
             }
         </style>
@@ -948,8 +944,10 @@
                 <p class="state-label">
                     ② 廣播劇列表：三欄（名稱、短篇、狀態）；狀態 =
                     每個短篇嘅狀態，同短篇逐行對齊。劇集層面嘅 pill（未發佈 /
-                    從未發佈）跟喺名後面，縮圖橙點 = 有未發佈改動。短篇多過 4
-                    個就收埋已上架嗰啲（撳「顯示全部」展開）。停用嘅劇永遠排最底、唔可以拖；重新啟用就返去啟用區最尾
+                    從未發佈）跟喺名後面。短篇多過 4
+                    個就收埋已上架嗰啲：撳「展開」喺原位彈開晒所有短篇同各自狀態（芝See菇Bi Family
+                    畫咗展開咗、森美小儀未展開），唔使入編輯頁、唔使再 call
+                    API；撳「收起」收返。停用嘅劇永遠排最底、唔可以拖；重新啟用就返去啟用區最尾
                 </p>
                 <div class="frame">
                     <div class="shell">
@@ -981,6 +979,7 @@
                                     <span></span>
                                     <span>名稱</span>
                                     <span>短篇</span>
+                                    <span class="eps">集數</span>
                                     <span>狀態</span>
                                 </div>
                                 <div class="drama-row">
@@ -993,20 +992,77 @@
                                         >
                                     </div>
                                     <div class="arcs">
-                                        <span class="arc">三十六計 <small>36 集</small></span>
-                                        <span
+                                        <span class="arc">三十六計</span
+                                        ><span class="eps">36 集</span
+                                        ><span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
                                             ></span
-                                        >
-                                        <span class="arc">初戀嗱喳麵 <small>26 集</small></span>
-                                        <span
+                                        ><span class="arc">你生日所以我生日</span
+                                        ><span class="eps">3 集</span
+                                        ><span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
                                             ></span
-                                        >
-                                        <span class="more">顯示全部 12 個短篇 ▾</span>
-                                        <span class="muted small">其餘 10 個已上架</span>
+                                        ><span class="arc">初戀嗱喳麵</span
+                                        ><span class="eps">26 集</span
+                                        ><span
+                                            ><span class="pill ok"
+                                                ><span class="dot"></span>已上架</span
+                                            ></span
+                                        ><span class="arc">大妒忌</span><span class="eps">3 集</span
+                                        ><span
+                                            ><span class="pill ok"
+                                                ><span class="dot"></span>已上架</span
+                                            ></span
+                                        ><span class="arc">好朋友手牽手</span
+                                        ><span class="eps">4 集</span
+                                        ><span
+                                            ><span class="pill ok"
+                                                ><span class="dot"></span>已上架</span
+                                            ></span
+                                        ><span class="arc">小苦妹撲水</span
+                                        ><span class="eps">4 集</span
+                                        ><span
+                                            ><span class="pill ok"
+                                                ><span class="dot"></span>已上架</span
+                                            ></span
+                                        ><span class="arc">我們都在會考中成長</span
+                                        ><span class="eps">2 集</span
+                                        ><span
+                                            ><span class="pill ok"
+                                                ><span class="dot"></span>已上架</span
+                                            ></span
+                                        ><span class="arc">游亁水</span><span class="eps">4 集</span
+                                        ><span
+                                            ><span class="pill ok"
+                                                ><span class="dot"></span>已上架</span
+                                            ></span
+                                        ><span class="arc">苦榮去做GYM</span
+                                        ><span class="eps">4 集</span
+                                        ><span
+                                            ><span class="pill ok"
+                                                ><span class="dot"></span>已上架</span
+                                            ></span
+                                        ><span class="arc">青春期</span><span class="eps">4 集</span
+                                        ><span
+                                            ><span class="pill ok"
+                                                ><span class="dot"></span>已上架</span
+                                            ></span
+                                        ><span class="arc">青春期眞神奇</span
+                                        ><span class="eps">3 集</span
+                                        ><span
+                                            ><span class="pill ok"
+                                                ><span class="dot"></span>已上架</span
+                                            ></span
+                                        ><span class="arc">Ｘ時mas時小提議</span
+                                        ><span class="eps">4 集</span
+                                        ><span
+                                            ><span class="pill ok"
+                                                ><span class="dot"></span>已上架</span
+                                            ></span
+                                        ><span class="more">收起 ▴</span><span class="eps"></span
+                                        ><span></span>
                                     </div>
                                 </div>
                                 <div class="drama-row">
@@ -1019,25 +1075,29 @@
                                         >
                                     </div>
                                     <div class="arcs">
-                                        <span class="arc">Season 1 <small>35 集</small></span>
+                                        <span class="arc">Season 1</span
+                                        ><span class="eps">35 集</span>
                                         <span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
                                             ></span
                                         >
-                                        <span class="arc">Season 2 <small>30 集</small></span>
+                                        <span class="arc">Season 2</span
+                                        ><span class="eps">30 集</span>
                                         <span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
                                             ></span
                                         >
-                                        <span class="arc">Season 3 <small>30 集</small></span>
+                                        <span class="arc">Season 3</span
+                                        ><span class="eps">30 集</span>
                                         <span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
                                             ></span
                                         >
-                                        <span class="arc">Season 4 <small>31 集</small></span>
+                                        <span class="arc">Season 4</span
+                                        ><span class="eps">31 集</span>
                                         <span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
@@ -1055,21 +1115,22 @@
                                         >
                                     </div>
                                     <div class="arcs">
-                                        <span class="arc"
-                                            >來不及聽你說愛我 <small>10 集</small></span
-                                        >
+                                        <span class="arc">來不及聽你說愛我</span
+                                        ><span class="eps">10 集</span>
                                         <span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
                                             ></span
                                         >
-                                        <span class="arc">公子森林 <small>40 集</small></span>
+                                        <span class="arc">公子森林</span
+                                        ><span class="eps">40 集</span>
                                         <span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
                                             ></span
                                         >
-                                        <span class="more">顯示全部 7 個短篇 ▾</span>
+                                        <span class="more">展開全部 7 個短篇 ▾</span
+                                        ><span class="eps"></span>
                                         <span class="muted small">其餘 5 個已上架</span>
                                     </div>
                                 </div>
@@ -1083,13 +1144,15 @@
                                         >
                                     </div>
                                     <div class="arcs">
-                                        <span class="arc">八王子 <small>21 集</small></span>
+                                        <span class="arc">八王子</span
+                                        ><span class="eps">21 集</span>
                                         <span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
                                             ></span
                                         >
-                                        <span class="arc">忠孝公路 <small>17 集</small></span>
+                                        <span class="arc">忠孝公路</span
+                                        ><span class="eps">17 集</span>
                                         <span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
@@ -1100,7 +1163,7 @@
                                 <div class="drama-row">
                                     <span class="handle" title="拖曳以調整次序">⠿</span>
                                     <div class="name-cell">
-                                        <span class="thumb dirty"></span>
+                                        <span class="thumb"></span>
                                         <span class="text"
                                             ><a href="#s4">蘭茜夫人劇場</a
                                             ><span class="inline-pills"
@@ -1109,19 +1172,22 @@
                                         >
                                     </div>
                                     <div class="arcs">
-                                        <span class="arc">戀愛二分一 <small>30 集</small></span>
+                                        <span class="arc">戀愛二分一</span
+                                        ><span class="eps">30 集</span>
                                         <span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
                                             ></span
                                         >
-                                        <span class="arc">初戀無限次 <small>33 集</small></span>
+                                        <span class="arc">初戀無限次</span
+                                        ><span class="eps">33 集</span>
                                         <span
                                             ><span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
                                             ></span
                                         >
-                                        <span class="arc">我心不死 <small>37 集</small></span>
+                                        <span class="arc">我心不死</span
+                                        ><span class="eps">37 集</span>
                                         <span
                                             ><span class="pill info"
                                                 ><span class="dot"></span>排程中 · 11 月 16
@@ -1133,7 +1199,7 @@
                                 <div class="drama-row">
                                     <span class="handle" title="拖曳以調整次序">⠿</span>
                                     <div class="name-cell">
-                                        <span class="thumb grey dirty"></span>
+                                        <span class="thumb grey"></span>
                                         <span class="text"
                                             ><a href="#s4">新劇</a
                                             ><span class="inline-pills"
@@ -1144,7 +1210,8 @@
                                         >
                                     </div>
                                     <div class="arcs">
-                                        <span class="arc muted">未有短篇</span>
+                                        <span class="arc muted">未有短篇</span
+                                        ><span class="eps"></span>
                                         <span
                                             ><a
                                                 class="small"
@@ -1161,7 +1228,7 @@
                                 <div class="drama-row disabled">
                                     <span class="handle locked" aria-hidden="true">⠿</span>
                                     <div class="name-cell">
-                                        <span class="thumb blue dirty"></span>
+                                        <span class="thumb blue"></span>
                                         <span class="text"
                                             ><a href="#s4">18 樓 C 座</a
                                             ><span class="inline-pills"
@@ -1170,7 +1237,8 @@
                                         >
                                     </div>
                                     <div class="arcs">
-                                        <span class="arc muted">每日播（沒有短篇）</span>
+                                        <span class="arc muted">每日播（沒有短篇）</span
+                                        ><span class="eps">60 集</span>
                                         <span
                                             ><span class="pill"
                                                 ><span class="dot"></span>已停用</span
@@ -1233,7 +1301,7 @@
                                 <li class="row dragging">
                                     <span class="handle">⠿</span>
                                     <div class="name-cell">
-                                        <span class="thumb dirty"></span>
+                                        <span class="thumb"></span>
                                         <span class="text"
                                             ><span class="name">蘭茜夫人劇場</span
                                             ><span class="meta">短篇集 · 100 集</span></span
@@ -2249,7 +2317,7 @@
                                     <span class="handle">⠿</span>
                                     <div style="display: grid; gap: 8px; min-width: 0">
                                         <div class="name-cell">
-                                            <span class="thumb dirty"></span>
+                                            <span class="thumb"></span>
                                             <span class="text"
                                                 ><a href="#s4">蘭茜夫人劇場</a
                                                 ><span class="inline-pills"
@@ -2261,22 +2329,25 @@
                                             class="arcs"
                                             style="
                                                 grid-column: auto;
-                                                grid-template-columns: minmax(0, 1fr) auto;
+                                                grid-template-columns: minmax(0, 1fr) auto auto;
                                             "
                                         >
-                                            <span class="arc">戀愛二分一</span>
+                                            <span class="arc">戀愛二分一</span
+                                            ><span class="eps">30 集</span>
                                             <span
                                                 ><span class="pill ok"
                                                     ><span class="dot"></span>已上架</span
                                                 ></span
                                             >
-                                            <span class="arc">初戀無限次</span>
+                                            <span class="arc">初戀無限次</span
+                                            ><span class="eps">33 集</span>
                                             <span
                                                 ><span class="pill ok"
                                                     ><span class="dot"></span>已上架</span
                                                 ></span
                                             >
-                                            <span class="arc">我心不死</span>
+                                            <span class="arc">我心不死</span
+                                            ><span class="eps">37 集</span>
                                             <span
                                                 ><span class="pill info"
                                                     ><span class="dot"></span>排程中</span
@@ -2302,16 +2373,18 @@
                                             class="arcs"
                                             style="
                                                 grid-column: auto;
-                                                grid-template-columns: minmax(0, 1fr) auto;
+                                                grid-template-columns: minmax(0, 1fr) auto auto;
                                             "
                                         >
-                                            <span class="arc">八王子</span>
+                                            <span class="arc">八王子</span
+                                            ><span class="eps">21 集</span>
                                             <span
                                                 ><span class="pill ok"
                                                     ><span class="dot"></span>已上架</span
                                                 ></span
                                             >
-                                            <span class="arc">忠孝公路</span>
+                                            <span class="arc">忠孝公路</span
+                                            ><span class="eps">17 集</span>
                                             <span
                                                 ><span class="pill ok"
                                                     ><span class="dot"></span>已上架</span
