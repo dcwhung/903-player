@@ -1,6 +1,8 @@
 import { foldersFromGlobs, type FolderSource } from '@903-player/catalog';
+import { preferSnapshot, snapshotDocument } from '../../snapshot/source';
 /*
- * Build time 嘅節目來源：Vite import.meta.glob 掃 src/catalog/shows/library/<id>/，
+ * Build time 嘅節目來源：production build 有 prebuild snapshot（snapshot/source.ts）就用 snapshot，
+ * 冇就用 repo library —— Vite import.meta.glob 掃 src/catalog/shows/library/<id>/，
  * show.json inline 入 bundle，圖經 Vite hash（PWA precache 照舊）。
  * 新開一個 folder 就會自動被發現，唔使改 code。glob pattern 一定要係 literal，所以寫喺呢度。
  */
@@ -15,8 +17,6 @@ const images = import.meta.glob<string>('../library/*/*.{jpg,webp}', {
     query: '?url',
 });
 
-export const bundledSource: FolderSource = foldersFromGlobs(
-    definitions,
-    images,
-    'src/catalog/shows/library',
-);
+const library: FolderSource = foldersFromGlobs(definitions, images, 'src/catalog/shows/library');
+
+export const bundledSource: FolderSource = preferSnapshot(snapshotDocument, 'shows', library);

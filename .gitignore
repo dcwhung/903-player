@@ -37,3 +37,6 @@ apps/player/scripts/arcCover/review/**/*.webp
 .dev.vars
 .wrangler/
 apps/api/.import/
+# player prebuild snapshot（apps/player/scripts/catalogSnapshot.ts）：每次 production build 由最新 publish 生成
+apps/player/src/catalog/snapshot/data/
+apps/player/src/catalog/snapshot/data.tmp/
