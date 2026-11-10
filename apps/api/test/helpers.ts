@@ -44,7 +44,7 @@ export const cookiePair = (response: Response, name: string): string | undefined
         .map((line) => line.split(';')[0] ?? '')
         .find((pair) => pair.startsWith(`${name}=`));
 
-/** 已 login + same-origin 嘅任何 method（body 係 object 就 JSON） */
+/** 已 login + same-origin 嘅任何 method（body 係 object 就 JSON；string / bytes 原封不動） */
 export const adminRequest = async (
     method: string,
     path: string,
@@ -60,5 +60,10 @@ export const adminRequest = async (
         },
         ...(body === undefined
             ? {}
-            : { body: typeof body === 'string' ? body : JSON.stringify(body) }),
+            : {
+                  body:
+                      typeof body === 'string' || body instanceof Uint8Array
+                          ? body
+                          : JSON.stringify(body),
+              }),
     });

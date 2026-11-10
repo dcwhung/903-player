@@ -44,6 +44,27 @@ export const listEntries = async (db: D1Database): Promise<EntryRow[]> =>
             .all<EntryRow>()
     ).results;
 
+export interface NewAsset {
+    hash: string;
+    contentType: string;
+    bytes: number;
+    createdAt: string;
+}
+
+export const hasAsset = async (db: D1Database, hash: string): Promise<boolean> =>
+    (await db.prepare('SELECT 1 AS found FROM assets WHERE hash = ?').bind(hash).first()) !== null;
+
+/** 同一張圖兩個人同時上載：第二個 insert 乜都唔做（R2 object 內容一樣） */
+export const insertAsset = async (db: D1Database, asset: NewAsset): Promise<void> => {
+    await db
+        .prepare(
+            `INSERT INTO assets (hash, content_type, bytes, created_at) VALUES (?, ?, ?, ?)
+             ON CONFLICT (hash) DO NOTHING`,
+        )
+        .bind(asset.hash, asset.contentType, asset.bytes, asset.createdAt)
+        .run();
+};
+
 export const listAssetHashes = async (db: D1Database): Promise<Set<string>> =>
     new Set(
         (await db.prepare('SELECT hash FROM assets').all<{ hash: string }>()).results.map(
