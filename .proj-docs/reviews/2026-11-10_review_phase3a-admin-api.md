@@ -106,3 +106,47 @@ next_agent: developer
 branch: "claude/charming-heisenberg-8z30x3"
 context: "Phase 3a fail 80: C-013 (todos newArc row matched by placeholder arc_id, disappears after arc id rename; blocking drops to 0 while arc still unscheduled; finding never resolved) and W-707 (includeDisabledArcs + wasEverPublished lock never-listed placeholder arc/drama IDs into the ID guard -> 409 after rename). Fix commits: 'fix: C-013 | ...', 'fix: W-707 | ...'. Deviations 1-3,5-9 accepted, 4 accepted in direction (see W-707). S-798..S-802 to backlog. Re-review only C-013 / W-707 diffs. Report committed locally, not pushed (code CI running)."
 ```
+
+## Re-review — 2026-11-10（`6b1695d` C-013、`6e67400` W-707）
+
+只驗 C-013 / W-707 嘅修正同佢哋嘅 diff，唔再搵新嘅 🟢。
+
+- Hard gates：`npx tsc -b`、`npx eslint apps/api/src apps/api/test` exit 0；`npx vitest related --run`（`todos.ts`、`publish.ts`、`rename.ts`、`changes.ts`）11 檔 146 pass；改動函數全部 ≤ 30 行（抽 `putCatalogJson` 之後 `writePublish` 合規）
+- **C-013 ✅ 已修**：`arcOfFinding` 用 `detail.arc`（R2 子資料夾名）搵短篇，舊 finding 冇 `detail.arc` 先 fallback 用 `arc_id`；行嘅 `arcId` / 跳轉由現況 arc 攞，合併 key 用新 `arcId`。發佈後 resolve 都行同一個 `toRows`。舊 test 嘅手寫 `UPDATE scan_findings` 已經刪咗；新 test 覆蓋：改 ID 之後行仲喺度、`blocking: 1`、排期仲係 `must`，publish 唔會 resolve；排期 + publish 之後 resolve 晒（`open = 0`），即係原本 L2 重現嘅情況
+- **W-707 ✅ 已修**：守衛改成唔對稱。`episode_ids` 只存 `lockedEpisodeIds` = 今次上架（`listedIdsOf`：劇 enabled、唔包下架短篇）∪ 上次鎖咗而仲喺 document 嘅；比較照用全部 ID（連下架）。`wasEverPublished` 只睇 `episode_ids`；`episodeCount` 跟上架集數。4 個新 test：淨係下架狀態發佈過嘅 `drama-01` 可以 rename、placeholder 短篇改 ID 唔使 force、上過架嘅短篇落架之後改 ID 仍然 409、刪上架短篇仍然 409
+- **Carry-forward lock（developer 決定）：接受**。上過架嘅短篇用戶可能有進度 / 收藏，落咗架都要保護 ID，同 S-767 守衛原意一致；只要佢仲喺 document 就鎖，真係刪走要 `force`，同之前刪 entry 嘅做法一樣
+- **Production 舊 publish 行有下架劇（例如 `c18`）嘅 ID：無害**。比較用全部 ID，下架劇嘅 ID 仍然喺新 document，唔會 409；carry-forward 只會繼續鎖住呢啲真 ID（唔係 placeholder），佢哋本來就唔應該改；`wasEverPublished('c18')` = true 亦係正確結果
+- `putCatalogJson` 抽出嚟係純搬位，`discardPublish` + rethrow 行為冇變（S-767 / S-786 test 照綠）；api README 守衛說明同 code 一致
+
+### 最終評分
+
+| 維度     | 得分    | 滿分    |
+| -------- | ------- | ------- |
+| 正確性   | 25      | 25      |
+| 安全性   | 20      | 20      |
+| 可維護性 | 20      | 20      |
+| 測試覆蓋 | 15      | 15      |
+| 性能     | 10      | 10      |
+| 代碼風格 | 10      | 10      |
+| **總分** | **100** | **100** |
+
+**結果：✅ pass**（C-013、W-707 已修；S-798–S-802 入 backlog）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T3
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: "pass (re-review related: 11 files / 146)"
+  coverage: "C-013 / W-707 paths covered by 6 new Worker tests"
+  no_critical: pass
+  security_scan: "n/a (no new dependencies)"
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "claude/charming-heisenberg-8z30x3"
+context: "Phase 3a re-review pass 100: C-013 fixed (6b1695d, todos match by detail.arc), W-707 fixed (6e67400, asymmetric locked episode_ids). Carry-forward lock accepted; existing prod rows with disabled-drama IDs (c18) harmless. S-798..S-802 to backlog. QA S1 chains api, catalog-data, drama, home after CI on 6e67400 green. Report committed locally, not pushed (CI running)."
+```
