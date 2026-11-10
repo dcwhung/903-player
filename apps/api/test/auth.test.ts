@@ -155,6 +155,24 @@ describe('GET /auth/google/callback', () => {
         expect(response.status).toBe(502);
     });
 
+    it('should answer 502 (not 500) when the token endpoint is unreachable (S-770)', async () => {
+        const { location, cookie } = await start();
+        vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('network down'));
+        const response = await callback(location.searchParams.get('state') ?? '', cookie);
+        expect(response.status).toBe(502);
+        expect(cookiePair(response, '__Host-session')).toBeUndefined();
+    });
+
+    it.each([
+        ['not base64', 'header.!!!.sig'],
+        ['not JSON', `header.${btoa('not json')}.sig`],
+    ])('should answer 502 when the id_token payload is %s (S-770)', async (_, token) => {
+        const { location, cookie } = await start();
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ id_token: token }));
+        const response = await callback(location.searchParams.get('state') ?? '', cookie);
+        expect(response.status).toBe(502);
+    });
+
     it('should fail closed when Google rejects the code', async () => {
         const { location, cookie } = await start();
         mockGoogle({}, 400);
@@ -188,6 +206,13 @@ describe('session guard', () => {
     it('should treat an expired session as logged out', async () => {
         const cookie = await loginCookie(ADMIN, Date.now() - SESSION_TTL_MS - 1);
         expect((await call('/api/me', { headers: { cookie } })).status).toBe(401);
+    });
+
+    it('should refuse and delete a session whose email left ADMIN_EMAILS (S-768)', async () => {
+        const cookie = await loginCookie('former-admin@gmail.com');
+        expect((await call('/api/me', { headers: { cookie } })).status).toBe(401);
+        const count = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions').first('n');
+        expect(count).toBe(0);
     });
 
     it('should reject a session token that was never issued', async () => {

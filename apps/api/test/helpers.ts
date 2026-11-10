@@ -43,3 +43,22 @@ export const cookiePair = (response: Response, name: string): string | undefined
         .getSetCookie()
         .map((line) => line.split(';')[0] ?? '')
         .find((pair) => pair.startsWith(`${name}=`));
+
+/** 已 login + same-origin 嘅任何 method（body 係 object 就 JSON） */
+export const adminRequest = async (
+    method: string,
+    path: string,
+    { body, headers = {} }: { body?: unknown; headers?: Record<string, string> } = {},
+): Promise<Response> =>
+    call(path, {
+        method,
+        headers: {
+            cookie: await loginCookie(),
+            origin: ORIGIN,
+            ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+            ...headers,
+        },
+        ...(body === undefined
+            ? {}
+            : { body: typeof body === 'string' ? body : JSON.stringify(body) }),
+    });

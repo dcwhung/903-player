@@ -129,12 +129,18 @@ const showGuard = (path, missing) => {
     $('guard').hidden = false;
 };
 
+/** 成功；內容同而家嗰份一樣（S-780）就唔開新 publish，只講一句 */
+const okText = ({ publish, unchanged }) =>
+    unchanged
+        ? `✓ 內容冇變，冇開新 publish（而家用緊 #${publish.id}）`
+        : `✓ 已 publish #${publish.id}：${contentText(publish)}（${shortHash(publish.hash)}）`;
+
 const showResult = ({ status, body }, path) => {
     if (status === HTTP_CONFLICT) return showGuard(path, body?.missing ?? []);
     const ok = Boolean(body?.publish);
     const target = $(ok ? 'publish-ok' : 'publish-error');
     target.textContent = ok
-        ? `✓ 已 publish #${body.publish.id}：${contentText(body.publish)}（${shortHash(body.publish.hash)}）`
+        ? okText(body)
         : `Publish 失敗（HTTP ${status}）：${body?.error ?? '請再試'}`;
     target.hidden = false;
 };

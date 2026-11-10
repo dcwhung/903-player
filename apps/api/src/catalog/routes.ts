@@ -32,13 +32,15 @@ const summary = (row: PublishRow, current: boolean) => ({
     current,
 });
 
-const respond = (c: Context<AppEnv>, outcome: PublishOutcome) =>
-    outcome.kind === 'rejected'
-        ? c.json(
-              { error: 'episode IDs would disappear', missing: outcome.missing },
-              HTTP_STATUS.conflict,
-          )
-        : c.json({ publish: summary(outcome.publish, true) });
+const respond = (c: Context<AppEnv>, outcome: PublishOutcome) => {
+    if (outcome.kind === 'rejected')
+        return c.json(
+            { error: 'episode IDs would disappear', missing: outcome.missing },
+            HTTP_STATUS.conflict,
+        );
+    const unchanged = outcome.kind === 'unchanged' ? { unchanged: true } : {};
+    return c.json({ ...unchanged, publish: summary(outcome.publish, true) });
+};
 
 /** 驗證 / commit；validator 拒絕 → 422 連原因 */
 const publishValue = async (

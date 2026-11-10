@@ -11,10 +11,22 @@ import {
     type CatalogDocument,
     type CatalogEntry,
 } from '@903-player/catalog';
-import { CATALOG_IMAGE_PATH, CATALOG_JSON_KEY, VALIDATION_APP_AUDIO_BASE } from '../config';
+import {
+    CATALOG_IMAGE_PATH,
+    CATALOG_JSON_KEY,
+    IMAGE_FILE_PATTERN,
+    VALIDATION_APP_AUDIO_BASE,
+} from '../config';
 import { sha256Hex } from '../lib/crypto';
 import { purgeCatalogCache } from './serve';
-import { insertPublish, latestEpisodeIds, type EntryRow, type PublishRow } from './store';
+import {
+    deletePublish,
+    insertPublish,
+    latestPublish,
+    type EntryRow,
+    type LatestPublish,
+    type PublishRow,
+} from './store';
 
 /** 驗證失敗（definition / 圖）：422，乜都唔寫 */
 export class PublishValidationError extends Error {
@@ -29,7 +41,10 @@ export interface ValidatedDocument {
 }
 
 export type PublishOutcome =
-    { kind: 'published'; publish: PublishRow } | { kind: 'rejected'; missing: string[] };
+    | { kind: 'published'; publish: PublishRow }
+    /** 除 generatedAt 外同最新一次一樣：唔開新行、唔寫 R2（S-780） */
+    | { kind: 'unchanged'; publish: PublishRow }
+    | { kind: 'rejected'; missing: string[] };
 
 const parseJson = (text: string, what: string): Record<string, unknown> => {
     try {
@@ -39,19 +54,31 @@ const parseJson = (text: string, what: string): Record<string, unknown> => {
     }
 };
 
-const imageUrls = (row: EntryRow, origin: string, assets: ReadonlySet<string>) => {
-    const files = parseJson(row.images, `${row.kind}/${row.id} images`);
-    return Object.fromEntries(
-        Object.entries(files).map(([file, name]) => {
-            const hash = String(name).split('.')[0] ?? '';
-            if (!assets.has(hash)) {
+/**
+ * 圖 manifest（檔名 → R2 圖檔名）→ 檔名 → Worker 圖 URL。圖檔名要合 <hash>.<ext>（S-772），
+ * 而且 hash 已經上載（喺 assets）
+ */
+export const resolveImages = (
+    files: Readonly<Record<string, unknown>>,
+    where: string,
+    { origin, assets }: { origin: string; assets: ReadonlySet<string> },
+): Record<string, string> =>
+    Object.fromEntries(
+        Object.entries(files).map(([file, value]) => {
+            const name = String(value);
+            if (!IMAGE_FILE_PATTERN.test(name))
                 throw new PublishValidationError(
-                    `${row.kind}/${row.id}: image ${file} → ${String(name)} not uploaded`,
+                    `${where}: image ${file} → ${name} is not <hash>.<ext>`,
                 );
-            }
-            return [file, `${origin}${CATALOG_IMAGE_PATH}${String(name)}`];
+            if (!assets.has(name.split('.')[0] ?? ''))
+                throw new PublishValidationError(`${where}: image ${file} → ${name} not uploaded`);
+            return [file, `${origin}${CATALOG_IMAGE_PATH}${name}`];
         }),
     );
+
+const imageUrls = (row: EntryRow, origin: string, assets: ReadonlySet<string>) => {
+    const where = `${row.kind}/${row.id}`;
+    return resolveImages(parseJson(row.images, `${where} images`), where, { origin, assets });
 };
 
 /** D1 rows → catalog.json 內容（未驗證） */
@@ -106,24 +133,22 @@ export const missingEpisodeIds = (
     return previous.filter((id) => !current.has(id));
 };
 
-/** 驗過嘅 document 寫 R2 + 記 publishes；ID 守衛唔過（又冇 force）就乜都唔寫 */
-export const commitPublish = async (
-    env: { DB: D1Database; CATALOG: R2Bucket; WORKER_ORIGIN: string },
+/** 除 generatedAt 外完全一樣（document 都係由同一個 builder JSON.stringify，key 次序穩定） */
+const sameContent = (previous: string, next: string): boolean => {
+    const strip = (json: string) =>
+        JSON.stringify({ ...(JSON.parse(json) as Record<string, unknown>), generatedAt: null });
+    return strip(previous) === strip(next);
+};
+
+type PublishEnv = { DB: D1Database; CATALOG: R2Bucket; WORKER_ORIGIN: string };
+
+/** 先記 publishes 後寫 R2：R2 寫失敗就刪返嗰行，ID 守衛唔會漏咗今次嘅 ID（S-767） */
+const writePublish = async (
+    env: PublishEnv,
     { doc, json, episodeIds }: ValidatedDocument,
-    {
-        createdBy,
-        force,
-        rollbackOf,
-    }: { createdBy: string; force: boolean; rollbackOf: number | null },
-): Promise<PublishOutcome> => {
-    const missing = missingEpisodeIds(await latestEpisodeIds(env.DB), episodeIds);
-    if (missing.length > 0 && !force) return { kind: 'rejected', missing };
+    { createdBy, rollbackOf }: { createdBy: string; rollbackOf: number | null },
+): Promise<PublishRow> => {
     const hash = await sha256Hex(json);
-    await env.CATALOG.put(CATALOG_JSON_KEY, json, {
-        httpMetadata: { contentType: 'application/json; charset=utf-8' },
-        customMetadata: { hash },
-    });
-    await purgeCatalogCache(env.WORKER_ORIGIN);
     const publish = await insertPublish(env.DB, {
         createdAt: new Date().toISOString(),
         createdBy,
@@ -135,5 +160,47 @@ export const commitPublish = async (
         episodeCount: episodeIds.length,
         rollbackOf,
     });
+    try {
+        await env.CATALOG.put(CATALOG_JSON_KEY, json, {
+            httpMetadata: { contentType: 'application/json; charset=utf-8' },
+            customMetadata: { hash },
+        });
+    } catch (error) {
+        await deletePublish(env.DB, publish.id);
+        throw error;
+    }
+    return publish;
+};
+
+const guard = (
+    latest: LatestPublish | null,
+    { json, episodeIds }: ValidatedDocument,
+    force: boolean,
+): PublishOutcome | undefined => {
+    if (force || !latest) return undefined;
+    const missing = missingEpisodeIds(latest.episodeIds, episodeIds);
+    if (missing.length > 0) return { kind: 'rejected', missing };
+    return sameContent(latest.document, json)
+        ? { kind: 'unchanged', publish: latest.row }
+        : undefined;
+};
+
+/**
+ * 驗過嘅 document 寫 R2 + 記 publishes。冇 force 時：ID 守衛唔過就乜都唔寫；
+ * 內容同最新一次一樣就回 unchanged（唔開新行、唔寫 R2）
+ */
+export const commitPublish = async (
+    env: PublishEnv,
+    validated: ValidatedDocument,
+    {
+        createdBy,
+        force,
+        rollbackOf,
+    }: { createdBy: string; force: boolean; rollbackOf: number | null },
+): Promise<PublishOutcome> => {
+    const skipped = guard(await latestPublish(env.DB), validated, force);
+    if (skipped) return skipped;
+    const publish = await writePublish(env, validated, { createdBy, rollbackOf });
+    await purgeCatalogCache(env.WORKER_ORIGIN);
     return { kind: 'published', publish };
 };

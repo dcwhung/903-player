@@ -18,6 +18,11 @@ migrations_dir = "migrations"
 binding = "CATALOG"
 bucket_name = "903-player-catalog"
 
+# 廣播劇音檔 bucket（public r2.dev 出音檔）：Worker 只會 list / head（POST /api/dramas/:id/scan），唔寫
+[[r2_buckets]]
+binding = "AUDIO"
+bucket_name = "903-radio-drama"
+
 # 非 secret 設定；GOOGLE_CLIENT_SECRET、SESSION_SECRET 用 `wrangler secret put`（本機：.dev.vars）
 [vars]
 GOOGLE_CLIENT_ID = "678038303553-e1sa3dlsj2mlrf09hvijukbbhksjth4h.apps.googleusercontent.com"

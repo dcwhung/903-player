@@ -1,10 +1,10 @@
 // 每個 test 檔開始前將 migrations/ 套落 miniflare D1（同 production `wrangler d1 migrations apply` 一樣嘅 SQL）；
-// storage 只係逐個檔隔離，所以每個 test 前再清晒 D1 table、R2 同 catalog.json 嘅 edge cache
+// storage 只係逐個檔隔離，所以每個 test 前再清晒 D1 table、兩個 R2 bucket 同 catalog.json 嘅 edge cache
 import { applyD1Migrations, env } from 'cloudflare:test';
 import { beforeEach } from 'vitest';
 import { purgeCatalogCache } from '../src/catalog/serve';
 
-const TABLES = ['sessions', 'publishes', 'entries', 'assets'];
+const TABLES = ['sessions', 'publishes', 'entries', 'assets', 'schedules'];
 
 await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
 
@@ -21,5 +21,6 @@ beforeEach(async () => {
     ];
     await env.DB.batch(statements.map((sql) => env.DB.prepare(sql)));
     await clearBucket(env.CATALOG);
+    await clearBucket(env.AUDIO);
     await purgeCatalogCache(env.WORKER_ORIGIN);
 });

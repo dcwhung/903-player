@@ -28,7 +28,7 @@ export type { Weekday } from './types/weekday';
 export { dailyEpisodeId, EPISODE_ID_KIND, seriesEpisodeId, showEpisodeId } from './core/episodeId';
 export { foldersFromGlobs, type Folder, type FolderSource } from './core/folderSource';
 export { compareOrderThenId, type Ordered } from './core/ordering';
-export { SchemaError, type ParseContext } from './core/reader';
+export { ID_PATTERN, SchemaError, type ParseContext } from './core/reader';
 
 export {
     CATALOG_SCHEMA_VERSION,
@@ -65,6 +65,7 @@ export {
 } from './selectors/availability';
 
 export { buildEpisodes, type EpisodeBuildOptions } from './dramas/episodes';
+export { toChineseNumeral } from './dramas/filename';
 export {
     buildRegistry,
     type Drama,
@@ -88,3 +89,39 @@ export {
     type ShowRegistry,
 } from './shows/registry';
 export { parseShowDefinition, ShowSchemaError, type ShowDefinition } from './shows/schema';
+
+export {
+    byteOrder,
+    coverUrls,
+    DAILY_TEMPLATE,
+    episodeUrls,
+    findSuspicious,
+    generateDraft,
+    parseEpisodeFileName,
+    parseEpisodeNumeral,
+    scanListing,
+    SERIES_TEMPLATES,
+    type ArcScan,
+    type ArcSummary,
+    type DraftArc,
+    type DraftJson,
+    type DraftKind,
+    type DraftOptions,
+    type DraftResult,
+    type DramaScan,
+    type FolderListing,
+    type Issue,
+    type IssueLevel,
+    type ParsedEpisodeFile,
+} from './scan';
+
+export {
+    expandSchedule,
+    parseScheduleRule,
+    ScheduleError,
+    type DatesRule,
+    type ExpandedSchedule,
+    type PeriodicRule,
+    type ScheduleArc,
+    type ScheduleRule,
+} from './schedule';
