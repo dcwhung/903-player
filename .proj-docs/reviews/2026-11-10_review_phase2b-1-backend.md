@@ -126,3 +126,34 @@ next_agent: developer
 branch: "claude/funny-pasteur-29wbrn"
 context: "Phase 2b-1 warn 85: W-703 schedule upsert not atomic on same-ms concurrent PUT (add changes()=1), W-704 huge every.days/removeAfterDays -> RangeError 500 (cap days), W-705 scan merge drops arc removedAt/episodeDates/episodeRemovedAt silently (keep keys). One commit per item `fix: W-70x | …`, then re-review. Deviations 1-11 accepted (8 -> W-703, 10 -> S-785). S-785..S-788 to backlog. Report committed locally, not pushed (code CI on c1f0baa running)."
 ```
+
+## Re-review ccf8e16（W-703 / W-704 / W-705）
+
+- 範圍：只驗 `4e18ce8`、`99ab950`、`ccf8e16`（`git diff e15ca86 ccf8e16`，6 個檔）
+- Hard gates：eslint（改咗嘅檔）exit 0；`npx tsc -b` exit 0；`npm test -- packages/catalog/src/scan packages/catalog/src/schedule apps/api/test/schedule apps/player/scripts/dramaFromFolder` → 7 檔 144 pass；No Critical pass
+- W-703 ✅：upsert 加 `WHERE changes() = 1 AND EXISTS (…)`，batch 入面緊接 UPDATE。新 race test 用同一個 `updatedAt` 跑兩次 batch → 淨 winner 嘅 rule。L2：將 `changes() = 1` 臨時拎走，呢個 test 即刻紅，還原後綠（red → green 成立）
+- W-704 ✅：`MAX_SCHEDULE_DAYS = 3660`（具名常數）+ `checkDays`，`every.days` / `removeAfterDays` 共用；package 同 API 層都有 422 test，上限本身有 accept test。L2 再試極端組合（`days` 3660 × 1000 集、`start` 9999-12-01 加 3660 日）：全部係 `ScheduleError`（validator 拒絕超出 YYYY-MM-DD），冇 `RangeError`
+- W-705 ✅：`HAND_WRITTEN_ARC_KEYS` 加 `removedAt` / `episodeDates` / `episodeRemovedAt`；test 驗欄位照留、冇多餘 info issue，結果再過 `parseDramaDefinition` + `buildEpisodes`。Library 6 套劇短篇層冇呢啲 key，parity 唔受影響（developer 報 48/48）
+- Version bump 例外成立：三個 commit body 都寫明修同 session 上一個指令（`aae0f8c` / `0418dc4` / `66f4808`）
+- 評分：正確性 25/25，其他維度不變 → **100/100**
+
+結果：✅ pass，冇新 C / W
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T3
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: "pass (7 files / 144, related only)"
+  coverage: "n/a (fix-only; new tests cover each fix)"
+  no_critical: pass
+  security_scan: n/a
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "claude/funny-pasteur-29wbrn"
+context: "Re-review ccf8e16 pass 100: W-703 (changes()=1, race test red without fix), W-704 (MAX_SCHEDULE_DAYS 3660 -> 422), W-705 (arc date keys kept) all resolved. S-785..S-788 remain in backlog. QA S1 chains api + catalog-data (+ repo-tooling for CLI) after CI on ccf8e16 green. Report committed locally, not pushed."
+```
