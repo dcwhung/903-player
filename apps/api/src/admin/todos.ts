@@ -132,6 +132,26 @@ const nameOf = (definition: Json, arc: Json | undefined): string => {
     return `${drama} · ${label}`;
 };
 
+/**
+ * finding 指嘅短篇：用 detail.arc（短篇 name = R2 子資料夾，永遠唔改）對，arc_id 係 placeholder，
+ * admin 改咗 ID 就對唔到（C-013）；舊 / 冇 detail.arc 嘅 finding 先 fallback 用 arc_id
+ */
+const arcOfFinding = (finding: FindingRow, definition: Json): Json | undefined => {
+    const detail = JSON.parse(finding.detail) as Json;
+    const arcs = arcsOf(definition);
+    if (typeof detail.arc === 'string') return arcs.find((a) => a.name === detail.arc);
+    return arcs.find((a) => a.id === finding.arc_id);
+};
+
+const rowOf = (finding: FindingRow, ctx: TodoContext): TodoRow | undefined => {
+    const arc = arcOfFinding(finding, ctx.definition);
+    const arcId = typeof arc?.id === 'string' ? arc.id : finding.arc_id;
+    const cells = cellsOf(finding.kind, ctx, arc, arcId);
+    if (!cells) return undefined;
+    const row = { kind: finding.kind, findingIds: [finding.id], dramaId: finding.drama_id };
+    return { ...row, arcId, name: nameOf(ctx.definition, arc), cells };
+};
+
 /** 同一套劇 + 短篇 + kind 嘅 findings 合做一行；劇 / 短篇已經冇咗嘅行唔出 */
 const toRows = (
     findings: readonly FindingRow[],
@@ -139,22 +159,13 @@ const toRows = (
 ): TodoRow[] => {
     const rows = new Map<string, TodoRow>();
     findings.forEach((finding) => {
-        const key = `${finding.kind}:${finding.drama_id}:${finding.arc_id ?? ''}`;
-        const existing = rows.get(key);
-        if (existing) return void existing.findingIds.push(finding.id);
         const ctx = contexts.get(finding.drama_id);
-        if (!ctx) return;
-        const arc = arcsOf(ctx.definition).find((a) => a.id === finding.arc_id);
-        const cells = cellsOf(finding.kind, ctx, arc, finding.arc_id);
-        if (!cells) return;
-        rows.set(key, {
-            kind: finding.kind,
-            findingIds: [finding.id],
-            dramaId: finding.drama_id,
-            arcId: finding.arc_id,
-            name: nameOf(ctx.definition, arc),
-            cells,
-        });
+        const row = ctx && rowOf(finding, ctx);
+        if (!row) return;
+        const key = `${row.kind}:${row.dramaId}:${row.arcId ?? ''}`;
+        const existing = rows.get(key);
+        if (existing) existing.findingIds.push(finding.id);
+        else rows.set(key, row);
     });
     return [...rows.values()];
 };

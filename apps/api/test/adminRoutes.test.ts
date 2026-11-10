@@ -86,7 +86,6 @@ describe('GET /api/todos', () => {
             arc.id === 'arc-01' ? { ...arc, id: 'season-2', enabled: true, summary: '簡介' } : arc,
         );
         await putEntry('dramas', 'golden', { ...fixed, arcs });
-        await env.DB.prepare("UPDATE scan_findings SET arc_id = 'season-2'").run();
         const body = await json(await adminGet('/api/todos'));
         expect(body.blocking).toBe(0);
         expect((body.rows as Json[])[0]?.cells).toMatchObject({
@@ -94,6 +93,49 @@ describe('GET /api/todos', () => {
             schedule: { state: 'done' },
             summary: { state: 'done' },
         });
+    });
+
+    it('should keep a new arc row after its placeholder id is renamed (C-013)', async () => {
+        await upload([episodeKey(FOLDER, 'Season 2', 1)]);
+        await adminPost('/api/scan');
+        const scanned = await definitionOf('dramas', 'golden');
+        const renamed = (scanned?.arcs as Json[]).map((arc) =>
+            arc.id === 'arc-01' ? { ...arc, id: 'season-2' } : arc,
+        );
+        await putEntry('dramas', 'golden', { ...scanned, arcs: renamed });
+        const body = await json(await adminGet('/api/todos'));
+        expect(body.blocking).toBe(1);
+        expect(body.rows).toEqual([
+            expect.objectContaining({
+                kind: 'newArc',
+                arcId: 'season-2',
+                cells: expect.objectContaining({
+                    id: { state: 'done', target: '/dramas/golden/arcs#season-2' },
+                    schedule: { state: 'must', target: '/dramas/golden/schedule#season-2' },
+                }),
+            }),
+        ]);
+        // 仲有必須：publish 唔可以 resolve 佢
+        expect((await adminPost('/api/publish')).status).toBe(200);
+        expect(((await json(await adminGet('/api/todos'))).rows as Json[]).length).toBe(1);
+    });
+
+    it('should resolve a renamed new arc once it is scheduled and published (C-013)', async () => {
+        await adminPost('/api/publish');
+        await upload([episodeKey(FOLDER, 'Season 2', 1)]);
+        await adminPost('/api/scan');
+        const scanned = await definitionOf('dramas', 'golden');
+        const ready = (scanned?.arcs as Json[]).map((arc) =>
+            arc.id === 'arc-01' ? { ...arc, id: 'season-2', enabled: true } : arc,
+        );
+        await putEntry('dramas', 'golden', { ...scanned, arcs: ready });
+        expect((await json(await adminGet('/api/todos'))).blocking).toBe(0);
+        expect((await adminPost('/api/publish')).status).toBe(200);
+        expect((await json(await adminGet('/api/todos'))).rows).toEqual([]);
+        const open = await env.DB.prepare(
+            'SELECT COUNT(*) AS n FROM scan_findings WHERE resolved_publish_id IS NULL',
+        ).first('n');
+        expect(open).toBe(0);
     });
 
     it('should show a missing folder as a must and drop rows of deleted dramas', async () => {
