@@ -25,6 +25,11 @@ const HAND_WRITTEN_ARC_KEYS = [
     'removedAt',
     'episodeDates',
     'episodeRemovedAt',
+    // Phase 3 admin 欄位：唔加就 rescan 會剷走
+    'enabled',
+    'displayName',
+    'summary',
+    'cast',
 ];
 /** 新短篇嘅 placeholder id：arc-01、arc-02…（要人手改做有意思嘅 slug） */
 const PLACEHOLDER_ARC_PREFIX = 'arc-';

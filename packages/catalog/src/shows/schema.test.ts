@@ -70,4 +70,61 @@ describe('parseShowDefinition', () => {
     it('rejects a folder name that cannot be a route id', () => {
         expect(() => parseShowDefinition(SHOW, ctx('Bad Girl'))).toThrow(/folder name must match/);
     });
+
+    describe('Phase 3 optional fields', () => {
+        const FULL = {
+            ...SHOW,
+            enabled: false,
+            summary: '由鄭裕玲主持',
+            hosts: ['鄭裕玲', '余迪偉'],
+            airTime: { start: '15:00', end: '16:30' },
+        };
+
+        it('should read enabled, summary, hosts and airTime', () => {
+            expect(parseShowDefinition(FULL, ctx())).toEqual(FULL);
+        });
+
+        it('should leave the new fields out when absent', () => {
+            const def = parseShowDefinition(SHOW, ctx());
+            expect(Object.keys(def)).not.toEqual(
+                expect.arrayContaining(['enabled', 'summary', 'hosts', 'airTime']),
+            );
+        });
+
+        it.each([
+            ['a non-boolean enabled', { enabled: 'no' }, /enabled must be a boolean/],
+            ['an empty summary', { summary: '' }, /summary must be a non-empty string/],
+            ['a summary over 500 characters', { summary: '字'.repeat(501) }, /at most 500/],
+            ['hosts not a list', { hosts: '鄭裕玲' }, /hosts must be a list/],
+            ['an empty host', { hosts: [''] }, /hosts\[0\] must be 1–40 characters/],
+            ['a host over 40 characters', { hosts: ['名'.repeat(41)] }, /hosts\[0\]/],
+            [
+                'more than 12 hosts',
+                { hosts: Array.from({ length: 13 }, (_, i) => `h${i}`) },
+                /at most 12/,
+            ],
+            ['a duplicated host', { hosts: ['甲', '甲'] }, /hosts\[1\]: duplicate/],
+            [
+                'airTime crossing midnight',
+                { airTime: { start: '23:00', end: '00:30' } },
+                /airTime\.end must be after start/,
+            ],
+            [
+                'airTime over 3 hours',
+                { airTime: { start: '10:00', end: '13:15' } },
+                /within 3 hours/,
+            ],
+        ])('should reject %s', (_label, patch, message) => {
+            expect(() => parseShowDefinition({ ...SHOW, ...patch }, ctx())).toThrow(message);
+        });
+
+        it('should accept exactly 500 characters and 12 hosts of 40 characters', () => {
+            const raw = {
+                ...SHOW,
+                summary: '字'.repeat(500),
+                hosts: Array.from({ length: 12 }, (_, i) => `${i}`.padEnd(40, '名')),
+            };
+            expect(() => parseShowDefinition(raw, ctx())).not.toThrow();
+        });
+    });
 });

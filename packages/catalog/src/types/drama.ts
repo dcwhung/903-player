@@ -11,8 +11,10 @@ export interface SeriesEpisode {
     /** 穩定 episode ID（進度 / 收藏 key，見 catalog/core/episodeId.ts）；url 淨係用嚟播放 */
     id: string;
     url: string;
-    /** 短篇名（例如「X時mas時小提議」） */
+    /** 短篇名（例如「X時mas時小提議」）= R2 子資料夾名：key / 篩選用 */
     arc: string;
+    /** 顯示名（arc.displayName）：冇就顯示 arc；UI 用 arcLabelOf() 攞 */
+    arcLabel?: string;
     /** 短篇入面第幾集，由 1 開始 */
     no: number;
     /** 集名；檔名冇集名嘅集數冇 */
@@ -52,7 +54,10 @@ export interface EpisodeRange {
 
 /** 一個短篇嘅上架 / 下架資料（catalog 層，未按今日篩；UI 用 selectors/availability 計） */
 export interface ArcAvailability {
+    /** 短篇名（= R2 子資料夾名）：key 用 */
     arc: string;
+    /** 顯示名（arc.displayName）：冇就顯示 arc；UI 用 arcLabelOf() 攞 */
+    arcLabel?: string;
     firstNo: number;
     /** 集數；未上架短篇可以未知 */
     count?: number;

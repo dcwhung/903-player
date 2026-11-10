@@ -65,6 +65,7 @@ export {
     type UpcomingArc,
 } from './selectors/availability';
 
+export { arcLabelOf, isArcEnabled } from './dramas/arcLabel';
 export { buildEpisodes, type EpisodeBuildOptions } from './dramas/episodes';
 export { toChineseNumeral } from './dramas/filename';
 export {
@@ -90,6 +91,7 @@ export {
     type ShowRegistry,
 } from './shows/registry';
 export { parseShowDefinition, ShowSchemaError, type ShowDefinition } from './shows/schema';
+export { NAME_LIST_MAX_ITEMS, NAME_MAX_LENGTH, SUMMARY_MAX_LENGTH } from './core/textFields';
 
 export {
     byteOrder,
@@ -126,3 +128,5 @@ export {
     type ScheduleArc,
     type ScheduleRule,
 } from './schedule';
+
+export * from './admin';

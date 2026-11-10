@@ -24,7 +24,7 @@ export interface ShowConfig {
 }
 
 export interface ShowRegistry {
-    /** 全部節目，按主頁次序 */
+    /** 全部上架節目（enabled: false 嘅唔計），按主頁次序 */
     shows: readonly ShowConfig[];
     findShow(id: string): ShowConfig | undefined;
     /** 唔識 / 冇 id → NEUTRAL_THEME */
@@ -43,7 +43,9 @@ const requireImage = (folder: Folder, file: string): string => {
     return url;
 };
 
-const toShow = (folder: Folder): { show: ShowConfig; order: number | undefined } => {
+const toShow = (
+    folder: Folder,
+): { show: ShowConfig; order: number | undefined; enabled: boolean } => {
     const def = parseShowDefinition(folder.definition, {
         id: folder.id,
         source: folder.source,
@@ -59,18 +61,22 @@ const toShow = (folder: Folder): { show: ShowConfig; order: number | undefined }
             tileArt: requireImage(folder, def.tile),
         },
         order: def.order,
+        enabled: def.enabled !== false,
     };
 };
 
 const indexShows = (source: FolderSource): Map<string, ShowConfig> => {
     const shows = new Map<string, ShowConfig>();
+    const seen = new Set<string>();
     source
         .folders()
         .map(toShow)
         .sort((a, b) => compareOrderThenId({ ...a, id: a.show.id }, { ...b, id: b.show.id }))
-        .forEach(({ show }) => {
-            if (shows.has(show.id)) throw new SchemaError(`duplicate show id ${show.id}`);
-            shows.set(show.id, show);
+        .forEach(({ show, enabled }) => {
+            if (seen.has(show.id)) throw new SchemaError(`duplicate show id ${show.id}`);
+            seen.add(show.id);
+            // 下架（enabled: false）照驗，但當唔存在：主頁、今日節目、probe、收藏都唔出
+            if (enabled) shows.set(show.id, show);
         });
     return shows;
 };

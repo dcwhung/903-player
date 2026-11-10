@@ -64,6 +64,10 @@
             }
         },
         "theme": { "$ref": "#/definitions/theme" },
+        "summary": {
+            "$ref": "#/definitions/summary",
+            "description": "（optional）劇集簡介，1–500 字"
+        },
         "addedAt": {
             "$ref": "#/definitions/date",
             "description": "（optional）全劇上架日 YYYY-MM-DD（香港時間當日 00:00 起）：將來日子 = 整套即將上架（主頁書架最尾灰格、劇集頁打唔開）；短篇劇亦係短篇預設上架日（arc 自己有就用 arc 嘅）。14 日內出「新」"
@@ -224,6 +228,24 @@
                     "type": "string",
                     "minLength": 1,
                     "description": "（optional）短篇長方形圖：folder 內相對 path，慣例 arcs/<slug>/tile.webp（16:9，1216×684）；暫時未用，留底防將來要"
+                },
+                "enabled": {
+                    "type": "boolean",
+                    "description": "（optional）false = 下架：player 唔顯示呢個短篇；唔寫 = 上架。admin 掃描到嘅新短篇預設 false（排咗期先上架）"
+                },
+                "displayName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40,
+                    "description": "（optional）player 顯示嘅短篇名（1–40 字）；唔寫就用 name。name 繼續係 R2 子資料夾名，唔好改"
+                },
+                "summary": {
+                    "$ref": "#/definitions/summary",
+                    "description": "（optional）短篇簡介，1–500 字"
+                },
+                "cast": {
+                    "$ref": "#/definitions/names",
+                    "description": "（optional）聲演：最多 12 個，每個 1–40 字"
                 }
             }
         },
@@ -255,6 +277,19 @@
             "description": "#rrggbb 色（六位 hex，大細楷都得）"
         },
         "nonEmptyString": { "type": "string", "minLength": 1 },
+        "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "簡介：1–500 字（P9.5 預備，player 暫時唔顯示）"
+        },
+        "names": {
+            "type": "array",
+            "maxItems": 12,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1, "maxLength": 40 },
+            "description": "名單：最多 12 個，每個 1–40 字，唔可以重複（P9.5 預備，player 暫時唔顯示）"
+        },
         "theme": {
             "type": "object",
             "description": "色調：10 隻必填色（#rrggbb）+ optional 嘅 statusBar / accentText / titleFont / headerRule / scheme",

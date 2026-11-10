@@ -4,6 +4,7 @@
  */
 import { isArcUpcoming, isAvailable, isRemoved } from '../selectors/availability';
 import type { ArcAvailability, DramaEpisode, EpisodeRange } from '../types/drama';
+import { arcLabelField, isArcEnabled } from './arcLabel';
 import type { ArcDefinition, DramaDefinition } from './schema';
 
 /** 一套劇今日喺邊：missing = 唔識 / 停用；upcoming = 未上架；removed = 已下架；live = 有得聽 */
@@ -30,6 +31,7 @@ const toArcAvailability = (def: DramaDefinition, arc: ArcDefinition): ArcAvailab
     const addedAt = arc.addedAt ?? def.addedAt;
     return {
         arc: arc.name,
+        ...arcLabelField(arc),
         firstNo: arc.firstNo,
         ...(arc.count === undefined ? {} : { count: arc.count }),
         ...(addedAt ? { addedAt } : {}),
@@ -39,9 +41,11 @@ const toArcAvailability = (def: DramaDefinition, arc: ArcDefinition): ArcAvailab
     };
 };
 
-/** 每個短篇嘅上架 / 下架資料（catalog 次序）；每日劇冇短篇 */
+/** 每個上架短篇嘅上架 / 下架資料（catalog 次序；下架短篇唔出）；每日劇冇短篇 */
 export const arcAvailabilityOf = (def: DramaDefinition): readonly ArcAvailability[] =>
-    def.kind === 'series' ? def.arcs.map((arc) => toArcAvailability(def, arc)) : [];
+    def.kind === 'series'
+        ? def.arcs.filter(isArcEnabled).map((arc) => toArcAvailability(def, arc))
+        : [];
 
 /** 一套劇今日嘅狀態（enabled 已經過咗先問） */
 export const windowStatus = (window: DramaWindow, today: string): DramaStatus => {
