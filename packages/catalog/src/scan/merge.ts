@@ -14,8 +14,18 @@ import {
 } from './shared';
 import type { DraftArc, Issue } from './types';
 
-/** 短篇入面人手寫嘅欄位照留（id 另外處理，固定放第一個） */
-const HAND_WRITTEN_ARC_KEYS = ['disc', 'tile', 'addedAt'];
+/**
+ * 短篇入面人手 / 排程寫嘅欄位照留（id 另外處理，固定放第一個）。上下架日子唔可以因為重新掃描而靜靜雞冇咗（W-705）；
+ * 集數變咗而 key 超出範圍嘅交俾 PUT validator 422
+ */
+const HAND_WRITTEN_ARC_KEYS = [
+    'disc',
+    'tile',
+    'addedAt',
+    'removedAt',
+    'episodeDates',
+    'episodeRemovedAt',
+];
 /** 新短篇嘅 placeholder id：arc-01、arc-02…（要人手改做有意思嘅 slug） */
 const PLACEHOLDER_ARC_PREFIX = 'arc-';
 const PLACEHOLDER_ARC_WIDTH = 2;

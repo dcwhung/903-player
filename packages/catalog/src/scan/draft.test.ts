@@ -225,6 +225,20 @@ describe('generateDraft — merging with an existing definition', () => {
         expect(messagesOf(result.issues, 'info')).toContain('新：新短篇');
     });
 
+    it('should keep arc removedAt / episodeDates / episodeRemovedAt from the existing definition (W-705)', () => {
+        const paths = range(1, 3).map((n) => episodeFile('甲', n));
+        const dates = {
+            addedAt: '2026-11-01',
+            removedAt: '2027-03-01',
+            episodeDates: { 3: '2026-11-08' },
+            episodeRemovedAt: { '1-2': '2027-01-01' },
+        };
+        const { result, arc } = mergeWith(paths, (a) => ({ ...a, ...dates }));
+        expect(arc).toEqual({ id: 'arc-01', name: '甲', ...dates, episodes: 3 });
+        expect(messagesOf(result.issues, 'info')).toBe('');
+        appEpisodes('test', jsonOf(result));
+    });
+
     it('should keep a hand-written title the filenames cannot express, with files for the URL', () => {
         const paths = range(1, 2).map((n) => episodeFile('甲', n));
         const { result, arc } = mergeWith(paths, (a) => ({ ...a, titles: { 1: '人手補嘅集名' } }));
