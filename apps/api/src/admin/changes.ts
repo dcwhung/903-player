@@ -72,10 +72,10 @@ const validationOf = (
 ): Validation => {
     try {
         const generatedAt = new Date().toISOString();
-        const { episodeIds } = validateDocument(
+        const { listedEpisodeIds } = validateDocument(
             documentFromEntries(rows, { ...context, generatedAt }),
         );
-        return { ok: true, episodeCount: episodeIds.length };
+        return { ok: true, episodeCount: listedEpisodeIds.length };
     } catch (error) {
         if (!(error instanceof PublishValidationError)) throw error;
         return { ok: false, error: error.message };

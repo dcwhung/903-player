@@ -195,5 +195,5 @@ curl -k -X PUT https://localhost:8787/api/assets -H 'Origin: https://localhost:8
 
 - **Draft**（`entries.draft = 1`）：掃描自動建、未齊必須資料嘅劇。`PUT` 先試完整驗證，唔過就用寬鬆驗證（definition 用到但未上載嘅圖當有；其他規則照驗）；一次 `PUT` 通過完整驗證就自動清 `draft`。Publish / `GET /api/changes` 唔包 draft；`DELETE` 照准（從未發佈）
 - **Findings**：普通 publish 成功之後，待辦行冇「必須」格嘅 finding 標 `resolved_publish_id`（仲有必須嘅留低）；「資料夾唔見」喺配對資料夾時刪走
-- **下架短篇**（`enabled: false`）：player 唔顯示；Worker 驗證 / ID 守衛照計佢嘅 episode ID（落架唔當 ID 消失）
+- **下架短篇**（`enabled: false`）：player 唔顯示。ID 守衛唔對稱：`publishes.episode_ids` 只鎖上過架嘅 episode ID（今次上架 + 以前鎖咗而仲喺 document 嘅）；比較時新 document 連下架劇 / 短篇都計，所以落架唔會 409，但從未上架嘅 placeholder（`arc-01`、`drama-01`）改 ID 唔使 force；rename「從未發佈」亦只睇鎖咗嘅 ID（W-707）
 - 每次掃描成本：1 個頂層 list + 每套劇（根 + 每個短篇）各 1 個 list

@@ -97,6 +97,46 @@ describe('POST /api/publish', () => {
         expect(await response.json()).not.toHaveProperty('unchanged');
     });
 
+    it('should only lock episode IDs that were listed when published (W-707)', async () => {
+        const withArcs = (arcs: Record<string, unknown>[]) => ({ ...drama(3), arcs });
+        const listed = (drama(3).arcs as Record<string, unknown>[])[0] ?? {};
+        const placeholder = { id: 'arc-01', name: 'Season 2', episodes: 2, enabled: false };
+        await putEntry('dramas', 'golden', withArcs([listed, placeholder]));
+        expect((await adminPost('/api/publish')).status).toBe(200);
+        const stored = await env.DB.prepare('SELECT episode_ids FROM publishes').first<string>(
+            'episode_ids',
+        );
+        expect(JSON.parse(stored ?? '[]')).not.toContain('drama:golden:arc-01:1');
+        // admin 將 placeholder 改做正式 ID：從未上架，唔當消失
+        await putEntry('dramas', 'golden', withArcs([listed, { ...placeholder, id: 'season-2' }]));
+        expect((await adminPost('/api/publish')).status).toBe(200);
+    });
+
+    it('should keep locking a listed arc after it is unlisted (W-707)', async () => {
+        await adminPost('/api/publish');
+        const arc = (drama(3).arcs as Record<string, unknown>[])[0] ?? {};
+        await putEntry('dramas', 'golden', { ...drama(3), arcs: [{ ...arc, enabled: false }] });
+        expect((await adminPost('/api/publish')).status).toBe(200);
+        const renamed = { ...arc, id: 'season-x', enabled: false };
+        await putEntry('dramas', 'golden', { ...drama(3), arcs: [renamed] });
+        expect((await adminPost('/api/publish')).status).toBe(409);
+    });
+
+    it('should still refuse removing a listed arc (W-707)', async () => {
+        await putEntry('dramas', 'golden', {
+            ...drama(3),
+            arcs: [
+                ...(drama(3).arcs as Record<string, unknown>[]),
+                { id: 'season-2', name: 'Season 2', episodes: 1 },
+            ],
+        });
+        await adminPost('/api/publish');
+        await putEntry('dramas', 'golden', drama(3));
+        const response = await adminPost('/api/publish');
+        expect(response.status).toBe(409);
+        expect(await response.json()).toMatchObject({ missing: ['drama:golden:season-2:1'] });
+    });
+
     it('should publish anyway with force=1', async () => {
         await adminPost('/api/publish');
         await putEntry('dramas', 'golden', drama(1));

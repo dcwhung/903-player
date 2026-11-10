@@ -20,15 +20,18 @@ import { renameFindingsStatement } from './findings';
 
 export const renameRoutes = new Hono<AppEnv>();
 
-/** 任何一次 ok publish 用過呢個劇集 ID（有佢嘅 episode ID，或者 document 有呢個 entry） */
+/**
+ * 任何一次 ok publish 鎖住咗呢套劇嘅 episode ID（即係上過架，W-707）；
+ * 淨係下架狀態發佈過（例如掃描出嚟嘅 drama-01）唔算
+ */
 export const wasEverPublished = async (db: D1Database, id: string): Promise<boolean> => {
     // ID 只有細楷英數同 -，LIKE 唔會撞 % / _ 通配
     const row = await db
         .prepare(
             `SELECT 1 AS found FROM publishes WHERE status = 'ok'
-             AND (episode_ids LIKE ? OR document LIKE ?) LIMIT 1`,
+             AND episode_ids LIKE ? LIMIT 1`,
         )
-        .bind(`%"drama:${id}:%`, `%{"id":"${id}","definition"%`)
+        .bind(`%"drama:${id}:%`)
         .first();
     return row !== null;
 };

@@ -38,7 +38,10 @@ export interface ValidatedDocument {
     doc: CatalogDocument;
     /** 寫入 R2 嘅 JSON（由原本 value stringify；還原時同舊 snapshot 一個 byte 都唔差） */
     json: string;
+    /** 全部 episode ID（連下架劇 / 短篇）：同上次比（ID 守衛），落架唔當消失 */
     episodeIds: string[];
+    /** player 睇到嘅 episode ID（劇 enabled、短篇冇下架）：上過架先鎖入守衛（W-707） */
+    listedEpisodeIds: string[];
 }
 
 export type PublishOutcome =
@@ -107,6 +110,32 @@ export const documentFromEntries = (
     };
 };
 
+/** 同 player 一樣（唔包下架短篇）砌 registry，淨係計上架劇嘅集數 */
+const listedIdsOf = (doc: CatalogDocument): string[] => {
+    const player = buildRegistry(documentSource(doc, 'dramas'), {
+        appAudioBase: VALIDATION_BUILD_OPTIONS.appAudioBase,
+    });
+    return player.dramas
+        .filter((d) => d.enabled)
+        .flatMap((d) => player.catalogEpisodesOf(d.id).map((e) => e.id));
+};
+
+/**
+ * 寫入 publishes.episode_ids 嘅「鎖住」ID：今次上架緊嘅 + 以前鎖咗而今次仲喺 document（落咗架都照鎖）。
+ * 從未上過架嘅（例如掃描出嚟、未排期嘅 placeholder arc-01 / drama-01）唔鎖，改 ID 唔使 force（W-707）
+ */
+export const lockedEpisodeIds = (
+    latest: LatestPublish | null,
+    { episodeIds, listedEpisodeIds }: ValidatedDocument,
+): string[] => {
+    const present = new Set(episodeIds);
+    const locked = new Set([
+        ...listedEpisodeIds,
+        ...(latest?.episodeIds ?? []).filter((id) => present.has(id)),
+    ]);
+    return episodeIds.filter((id) => locked.has(id));
+};
+
 /** 同 player 一樣：parse + 兩個 registry 都 build 到先算合格；順手計晒 episode ID */
 export const validateDocument = (value: unknown): ValidatedDocument => {
     try {
@@ -116,7 +145,7 @@ export const validateDocument = (value: unknown): ValidatedDocument => {
         const episodeIds = dramas.dramas.flatMap((d) =>
             dramas.catalogEpisodesOf(d.id).map((e) => e.id),
         );
-        return { doc, json: JSON.stringify(value), episodeIds };
+        return { doc, json: JSON.stringify(value), episodeIds, listedEpisodeIds: listedIdsOf(doc) };
     } catch (error) {
         if (error instanceof PublishValidationError) throw error;
         throw new PublishValidationError(error instanceof Error ? error.message : String(error));
@@ -159,11 +188,32 @@ const discardPublish = async (db: D1Database, id: number, reason: string): Promi
 const messageOf = (error: unknown): string =>
     error instanceof Error ? error.message : String(error);
 
+/** 寫 R2 catalog.json；失敗就收拾返啱啱記嗰行再 throw */
+const putCatalogJson = async (
+    env: PublishEnv,
+    publishId: number,
+    { json, hash }: { json: string; hash: string },
+): Promise<void> => {
+    try {
+        await env.CATALOG.put(CATALOG_JSON_KEY, json, {
+            httpMetadata: { contentType: 'application/json; charset=utf-8' },
+            customMetadata: { hash },
+        });
+    } catch (error) {
+        await discardPublish(env.DB, publishId, messageOf(error));
+        throw error;
+    }
+};
+
 /** 先記 publishes 後寫 R2：R2 寫失敗就收拾返嗰行，ID 守衛唔會漏咗今次嘅 ID（S-767） */
 const writePublish = async (
     env: PublishEnv,
-    { doc, json, episodeIds }: ValidatedDocument,
-    { createdBy, rollbackOf }: { createdBy: string; rollbackOf: number | null },
+    { doc, json, listedEpisodeIds }: ValidatedDocument,
+    {
+        createdBy,
+        rollbackOf,
+        locked,
+    }: { createdBy: string; rollbackOf: number | null; locked: string[] },
 ): Promise<PublishRow> => {
     const hash = await sha256Hex(json);
     const publish = await insertPublish(env.DB, {
@@ -171,21 +221,13 @@ const writePublish = async (
         createdBy,
         hash,
         document: json,
-        episodeIds,
+        episodeIds: locked,
         showCount: doc.shows.length,
         dramaCount: doc.dramas.length,
-        episodeCount: episodeIds.length,
+        episodeCount: listedEpisodeIds.length,
         rollbackOf,
     });
-    try {
-        await env.CATALOG.put(CATALOG_JSON_KEY, json, {
-            httpMetadata: { contentType: 'application/json; charset=utf-8' },
-            customMetadata: { hash },
-        });
-    } catch (error) {
-        await discardPublish(env.DB, publish.id, messageOf(error));
-        throw error;
-    }
+    await putCatalogJson(env, publish.id, { json, hash });
     return publish;
 };
 
@@ -215,9 +257,11 @@ export const commitPublish = async (
         rollbackOf,
     }: { createdBy: string; force: boolean; rollbackOf: number | null },
 ): Promise<PublishOutcome> => {
-    const skipped = guard(await latestPublish(env.DB), validated, force);
+    const latest = await latestPublish(env.DB);
+    const skipped = guard(latest, validated, force);
     if (skipped) return skipped;
-    const publish = await writePublish(env, validated, { createdBy, rollbackOf });
+    const locked = lockedEpisodeIds(latest, validated);
+    const publish = await writePublish(env, validated, { createdBy, rollbackOf, locked });
     await purgeCatalogCache(env.WORKER_ORIGIN);
     return { kind: 'published', publish };
 };

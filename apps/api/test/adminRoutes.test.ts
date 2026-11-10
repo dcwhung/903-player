@@ -194,6 +194,13 @@ describe('POST /api/entries/dramas/:id/rename', () => {
         expect(await ids('scan_findings')).toEqual(['new-drama']);
     });
 
+    it('should rename a drama published only while unlisted (W-707)', async () => {
+        await putEntry('dramas', 'drama-01', { ...scannable(3), enabled: false });
+        expect((await adminPost('/api/publish')).status).toBe(200);
+        expect((await rename('drama-01', 'new-drama')).status).toBe(200);
+        expect((await adminPost('/api/publish')).status).toBe(200);
+    });
+
     it('should refuse with 409 once the drama has been published', async () => {
         await adminPost('/api/publish');
         expect((await rename('golden', 'golden-boy')).status).toBe(409);
