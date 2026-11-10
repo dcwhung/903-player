@@ -1656,6 +1656,223 @@
                 font-size: 18px;
                 font-weight: 600;
             }
+
+            /* ---------- v13 ---------- */
+            fieldset.scan-box {
+                position: relative;
+            }
+            .rescan {
+                position: absolute;
+                top: 4px;
+                right: 12px;
+                padding: 4px 12px;
+                font-size: 13px;
+            }
+            .arc-tabs {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .arc-tabs button {
+                display: grid;
+                justify-items: start;
+                gap: 0;
+                padding: 6px 14px;
+                text-align: left;
+            }
+            .arc-tabs button small {
+                font-size: 11px;
+                color: var(--muted);
+            }
+            .arc-tabs button[aria-selected='true'] {
+                border-color: var(--accent);
+                background: var(--accent-soft);
+                font-weight: 600;
+            }
+            .presets {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            .presets button {
+                padding: 4px 12px;
+                border-radius: 999px;
+                font-size: 13px;
+            }
+            .presets button[aria-pressed='true'] {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: var(--on-accent);
+            }
+            .sentence {
+                margin: 0;
+                font-size: 17px;
+                line-height: 2.4;
+            }
+            .inline-ctl {
+                padding: 3px 10px;
+                border: 0;
+                border-bottom: 2px solid var(--accent);
+                border-radius: 4px 4px 0 0;
+                background: var(--accent-soft);
+                color: var(--ink);
+                font-weight: 600;
+            }
+            .days.inline {
+                display: inline-flex;
+                vertical-align: middle;
+                gap: 3px;
+            }
+            .days.inline label {
+                width: 28px;
+                height: 28px;
+            }
+            .batch-list {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: grid;
+            }
+            .batch-list li {
+                display: grid;
+                grid-template-columns: 80px 1fr;
+                padding: 6px 0;
+                border-bottom: 1px solid var(--line);
+                font-size: 14px;
+            }
+            .batch-list li:last-child {
+                border-bottom: 0;
+            }
+            .batch-list .when {
+                color: var(--muted);
+                font-variant-numeric: tabular-nums;
+            }
+            .cal.big .day {
+                min-height: 64px;
+                cursor: pointer;
+            }
+            .cal.big .day.picked {
+                border-color: var(--accent);
+                background: var(--accent-soft);
+            }
+            .cal.big .day.past {
+                opacity: 0.4;
+                cursor: default;
+            }
+            .strip {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px 3px;
+                padding-bottom: 4px;
+            }
+            .seg-batch {
+                display: grid;
+                gap: 4px;
+                justify-items: center;
+            }
+            .eps-cells {
+                display: flex;
+                gap: 2px;
+                padding: 3px;
+                border-radius: 6px;
+            }
+            .eps-cells span {
+                width: 18px;
+                height: 26px;
+                display: grid;
+                place-items: center;
+                font-size: 10px;
+                border-radius: 3px;
+                font-variant-numeric: tabular-nums;
+            }
+            .seg-batch.b1 .eps-cells span {
+                background: var(--accent);
+                color: var(--on-accent);
+            }
+            .seg-batch.b2 .eps-cells span {
+                background: var(--accent-soft);
+                color: var(--ink);
+            }
+            .seg-batch + .seg-batch {
+                border-left: 2px dashed var(--muted);
+                padding-left: 3px;
+                cursor: col-resize;
+            }
+            .seg-date {
+                font-size: 11px;
+                color: var(--muted);
+                white-space: nowrap;
+            }
+            .hist-head,
+            .hist-row {
+                display: grid;
+                grid-template-columns: 150px minmax(0, 1fr) 110px;
+                gap: 12px;
+                align-items: center;
+                padding: 10px 14px;
+            }
+            .hist-head {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--muted);
+                border-bottom: 1px solid var(--line);
+            }
+            .hist-row {
+                border-bottom: 1px solid var(--line);
+            }
+            .hist-row:last-child {
+                border-bottom: 0;
+            }
+            .hist-row.current {
+                box-shadow: inset 3px 0 0 var(--ok);
+            }
+            .hist-row.failed {
+                box-shadow: inset 3px 0 0 var(--danger);
+            }
+            .hist-row .ver {
+                display: grid;
+            }
+            .hist-row .changes {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px 14px;
+                align-items: center;
+            }
+            .hist-row .changes .meta {
+                flex-basis: 100%;
+            }
+            .chg {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 14px;
+            }
+            .hist-row .pills {
+                justify-content: flex-end;
+            }
+            .rotate-note {
+                min-height: 420px;
+                display: grid;
+                place-content: center;
+                justify-items: center;
+                gap: 8px;
+                padding: 32px 24px;
+                text-align: center;
+                background: var(--bg);
+            }
+            .rotate-note h2 {
+                margin: 0;
+                font-size: 18px;
+            }
+            .rotate-note p {
+                margin: 0;
+                max-width: 260px;
+            }
+            .rotate-icon {
+                font-size: 44px;
+                color: var(--accent);
+            }
         </style>
     </head>
     <body>
@@ -1682,10 +1899,11 @@
                     <a href="#s4">⑧ 廣播劇：基本資料</a>
                     <a href="#s4c">⑧b 資料夾對唔到</a>
                     <a href="#s5">⑨ 短篇</a>
-                    <a href="#s7">⑩ 排程</a>
+                    <a href="#s7">⑩ 排程 A</a><a href="#s7b">⑩b 排程 B</a
+                    ><a href="#s7c">⑩c 排程 C</a>
                     <a href="#s8">⑪ 發佈記錄</a>
                     <a href="#s9">⑫ 錯誤狀態</a>
-                    <a href="#s10">⑬ 窄屏</a>
+                    <a href="#s10">⑬ 直向手機</a>
                 </nav>
             </section>
 
@@ -1716,8 +1934,8 @@
                 <p class="state-label">
                     ③ 待辦（揀咗方案 B「矩陣」）：行 = 新內容，欄 =
                     工作（資料夾、ID、圖片、排期、簡介）。格仔：紅色「設定」掣 = 必須、灰「＋」=
-                    選填、✓ = 已做、– = 唔適用。最似
-                    checklist，一眼睇到邊格未做；手機（窄屏）每行變一張卡，入面列返未做嘅工作
+                    選填、✓ = 已做、– = 唔適用。最似 checklist，一眼睇到邊格未做；直向手機唔支援（見
+                    ⑬）
                 </p>
                 <div class="frame">
                     <div class="shell">
@@ -2718,9 +2936,8 @@
                                         </div>
                                     </div>
                                     <fieldset class="field wide scan-box">
-                                        <legend>
-                                            由 R2 掃描 <button class="link-btn">重新掃描</button>
-                                        </legend>
+                                        <legend>由 R2 掃描</legend>
+                                        <button class="rescan">⟳ 重新掃描</button>
                                         <div class="field">
                                             <span>資料夾</span>
                                             <div class="readonly-box">
@@ -2828,10 +3045,13 @@
                                     <li class="row open">
                                         <span class="handle" title="拖曳以調整次序">⠿</span>
                                         <span class="text"
-                                            ><span class="name">戀愛1/2 ▾</span
-                                            ><span class="meta"
-                                                ><code>half</code> 🔒 · 30 集 ·
-                                                資料夾「戀愛二分一」</span
+                                            ><span class="name"
+                                                ><span
+                                                    class="editable"
+                                                    title="雙擊編輯名稱（播放器顯示的名稱）"
+                                                    >戀愛1/2</span
+                                                >
+                                                ▾</span
                                             ></span
                                         >
                                         <div class="pills">
@@ -2858,15 +3078,7 @@
                                                 <span class="slot-btn">＋</span></button
                                             ><span class="cap">橫額</span>
                                         </aside>
-                                        <div class="arc-title">
-                                            <span
-                                                class="editable"
-                                                title="雙擊編輯名稱（播放器顯示的名稱）"
-                                                >戀愛1/2</span
-                                            ><span class="pill ok"
-                                                ><span class="dot"></span>已上架</span
-                                            >
-                                        </div>
+
                                         <div class="form">
                                             <label class="field"
                                                 ><span
@@ -2900,10 +3112,8 @@
                                                 </div>
                                             </div>
                                             <fieldset class="field wide scan-box">
-                                                <legend>
-                                                    由 R2 掃描
-                                                    <button class="link-btn">重新掃描</button>
-                                                </legend>
+                                                <legend>由 R2 掃描</legend>
+                                                <button class="rescan">⟳ 重新掃描</button>
                                                 <div class="row3">
                                                     <div class="field">
                                                         <span>子資料夾</span>
@@ -2962,7 +3172,7 @@
                                         <span class="text"
                                             ><span class="name">初戀無限次 ▸</span
                                             ><span class="meta"
-                                                ><code>first-love</code> 🔒 · 33 集</span
+                                                ><code>first-love</code> · 33 集</span
                                             ></span
                                         >
                                         <div class="pills">
@@ -3004,11 +3214,12 @@
                 </div>
             </section>
 
-            <!-- ⑦ Schedule -->
             <section id="s7">
                 <p class="state-label">
-                    ⑩ 排程 tab（GET / PUT / DELETE …/arcs/:arcId/schedule；改規則即刻 POST …/preview
-                    更新日曆）
+                    ⑩ 排程 · 方案 A「一句話規則」：頂部預設 chip
+                    一撳套用；規則寫成一句句子，入面每個值都係可以撳嘅控制（日期 / 星期 / 集數 /
+                    下架）；右邊直接列出每批幾時上第幾集。短篇用 tab 揀（唔再 dropdown），tab
+                    下面細字顯示每個短篇而家嘅排程
                 </p>
                 <div class="frame">
                     <div class="shell">
@@ -3035,184 +3246,82 @@
                                 <a href="#s4">基本資料</a><a href="#s5">短篇（3）</a
                                 ><a href="#s7" aria-current="page">排程</a>
                             </nav>
-                            <label class="field" style="max-width: 280px">
-                                <span>短篇</span>
-                                <select>
-                                    <option>戀愛二分一（無排程）</option>
-                                    <option>初戀無限次（指定日期）</option>
-                                    <option selected>我心不死（定期）</option>
-                                </select>
-                            </label>
+                            <div class="arc-tabs" role="tablist" aria-label="短篇">
+                                <button role="tab" aria-selected="false">
+                                    戀愛1/2<small>無排程</small>
+                                </button>
+                                <button role="tab" aria-selected="false">
+                                    初戀無限次<small>指定日期 · 2 批</small>
+                                </button>
+                                <button role="tab" aria-selected="true">
+                                    <span class="pill new">新</span> 我心不死<small>定期</small>
+                                </button>
+                            </div>
                             <div class="two-col">
                                 <div class="card">
-                                    <h3>規則</h3>
-                                    <div class="seg" role="group" aria-label="規則類型">
-                                        <button aria-pressed="false">無排程</button>
-                                        <button aria-pressed="false">指定日期</button>
-                                        <button aria-pressed="true">定期</button>
+                                    <div class="presets">
+                                        <span class="muted small">快速套用</span
+                                        ><button>一次過全部上架</button><button>每日 1 集</button
+                                        ><button aria-pressed="true">逢一三五 · 每次 5 集</button
+                                        ><button>每週 1 次</button>
                                     </div>
-                                    <div class="form">
-                                        <label class="field">
-                                            <span>開始日期</span>
-                                            <input type="date" value="2026-11-16" />
-                                        </label>
-                                        <label class="field">
-                                            <span>每次上架集數</span>
-                                            <input type="number" value="5" />
-                                        </label>
-                                        <div class="field wide">
-                                            <span>頻率</span>
-                                            <div class="seg" role="group" aria-label="頻率">
-                                                <button aria-pressed="false">每隔 N 日</button>
-                                                <button aria-pressed="true">每週指定日子</button>
-                                            </div>
-                                            <div class="days" style="margin-top: 6px">
-                                                <label>日</label>
-                                                <label class="on">一</label>
-                                                <label>二</label>
-                                                <label class="on">三</label>
-                                                <label>四</label>
-                                                <label class="on">五</label>
-                                                <label>六</label>
-                                            </div>
-                                        </div>
-                                        <label class="field wide">
-                                            <span>上架後自動下架日數</span>
-                                            <input type="number" placeholder="留空表示不會下架" />
-                                        </label>
-                                    </div>
-                                    <details>
-                                        <summary class="muted small">「指定日期」模式</summary>
-                                        <div class="table-wrap" style="margin-top: 8px">
-                                            <table>
-                                                <thead>
-                                                    <tr>
-                                                        <th>起始集數</th>
-                                                        <th>上架日期</th>
-                                                        <th></th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        <td>
-                                                            <input
-                                                                type="number"
-                                                                value="1"
-                                                                style="width: 70px"
-                                                            />
-                                                        </td>
-                                                        <td>
-                                                            <input type="date" value="2026-11-16" />
-                                                        </td>
-                                                        <td>
-                                                            <button
-                                                                class="ghost-danger"
-                                                                aria-label="移除"
-                                                            >
-                                                                ✕
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>
-                                                            <input
-                                                                type="number"
-                                                                value="20"
-                                                                style="width: 70px"
-                                                            />
-                                                        </td>
-                                                        <td>
-                                                            <input type="date" value="2026-11-30" />
-                                                        </td>
-                                                        <td>
-                                                            <button
-                                                                class="ghost-danger"
-                                                                aria-label="移除"
-                                                            >
-                                                                ✕
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <button style="margin-top: 8px">＋ 新增一批</button>
-                                    </details>
+                                    <p class="sentence">
+                                        由 <button class="inline-ctl">11/16（一）</button> 起，逢
+                                        <span class="days inline"
+                                            ><label>日</label><label class="on">一</label
+                                            ><label>二</label><label class="on">三</label
+                                            ><label>四</label><label class="on">五</label
+                                            ><label>六</label></span
+                                        >
+                                        ，每次上 <button class="inline-ctl">5 集</button>，<button
+                                            class="inline-ctl"
+                                        >
+                                            不會下架 ▾
+                                        </button>
+                                    </p>
                                     <div class="savebar">
-                                        <span class="muted small">儲存後會為每集計算上架日期</span>
-                                        <div class="actions">
-                                            <button class="ghost-danger">刪除排程</button>
-                                            <button class="primary">儲存並返回待辦</button>
-                                        </div>
+                                        <button class="ghost-danger">刪除排程</button
+                                        ><button class="primary">儲存並返回待辦</button>
                                     </div>
                                 </div>
                                 <div class="card">
                                     <div class="title-row">
-                                        <h3>2026 年 11 月</h3>
-                                        <div class="actions">
-                                            <button aria-label="上個月">‹</button
-                                            ><button aria-label="下個月">›</button>
-                                        </div>
+                                        <h3>上架批次</h3>
+                                        <span class="muted small">8 批 · 11/16 – 12/2</span>
                                     </div>
-                                    <div class="cal" aria-label="排程日曆預覽">
-                                        <span class="dow">日</span><span class="dow">一</span
-                                        ><span class="dow">二</span><span class="dow">三</span
-                                        ><span class="dow">四</span><span class="dow">五</span
-                                        ><span class="dow">六</span>
-                                        <div class="day">1</div>
-                                        <div class="day">2</div>
-                                        <div class="day">3</div>
-                                        <div class="day">4</div>
-                                        <div class="day">5</div>
-                                        <div class="day">6</div>
-                                        <div class="day">7</div>
-                                        <div class="day">8</div>
-                                        <div class="day">9</div>
-                                        <div class="day today">10</div>
-                                        <div class="day">11</div>
-                                        <div class="day">12</div>
-                                        <div class="day">13</div>
-                                        <div class="day">14</div>
-                                        <div class="day">15</div>
-                                        <div class="day">16<span class="rel">1–5</span></div>
-                                        <div class="day">17</div>
-                                        <div class="day">18<span class="rel">6–10</span></div>
-                                        <div class="day">19</div>
-                                        <div class="day">20<span class="rel">11–15</span></div>
-                                        <div class="day">21</div>
-                                        <div class="day">22</div>
-                                        <div class="day">23<span class="rel">16–20</span></div>
-                                        <div class="day">24</div>
-                                        <div class="day">25<span class="rel">21–25</span></div>
-                                        <div class="day">26</div>
-                                        <div class="day">27<span class="rel">26–30</span></div>
-                                        <div class="day">28</div>
-                                        <div class="day">29</div>
-                                        <div class="day">30<span class="rel">31–35</span></div>
-                                        <div class="day blank"></div>
-                                        <div class="day blank"></div>
-                                        <div class="day blank"></div>
-                                        <div class="day blank"></div>
-                                        <div class="day blank"></div>
-                                    </div>
-                                    <div class="legend">
-                                        <span
-                                            ><span
-                                                class="pill"
-                                                style="
-                                                    background: var(--accent);
-                                                    color: var(--on-accent);
-                                                "
-                                                >1–5</span
-                                            >
-                                            上架集數</span
-                                        >
-                                        <span><span class="pill bad">✕ 1–5</span> 下架集數</span>
-                                        <span>外框：今天</span>
-                                    </div>
-                                    <p class="sub">
-                                        共 37 集 · 最後一批於 12 月 2 日上架（第 36–37 集）
-                                    </p>
+                                    <ol class="batch-list">
+                                        <li>
+                                            <span class="when">11/16 一</span><span>第 1–5 集</span>
+                                        </li>
+                                        <li>
+                                            <span class="when">11/18 三</span
+                                            ><span>第 6–10 集</span>
+                                        </li>
+                                        <li>
+                                            <span class="when">11/20 五</span
+                                            ><span>第 11–15 集</span>
+                                        </li>
+                                        <li>
+                                            <span class="when">11/23 一</span
+                                            ><span>第 16–20 集</span>
+                                        </li>
+                                        <li>
+                                            <span class="when">11/25 三</span
+                                            ><span>第 21–25 集</span>
+                                        </li>
+                                        <li>
+                                            <span class="when">11/27 五</span
+                                            ><span>第 26–30 集</span>
+                                        </li>
+                                        <li>
+                                            <span class="when">11/30 一</span
+                                            ><span>第 31–35 集</span>
+                                        </li>
+                                        <li>
+                                            <span class="when">12/2 三</span
+                                            ><span>第 36–37 集</span>
+                                        </li>
+                                    </ol>
                                 </div>
                             </div>
                         </div>
@@ -3220,69 +3329,345 @@
                 </div>
             </section>
 
-            <!-- ⑫ Publish history -->
-            <section id="s8">
+            <section id="s7b">
                 <p class="state-label">
-                    ⑪ 發佈記錄：發佈動作搬咗去「更新內容」步驟 3；呢度淨係睇記錄同還原（沿用 ops
-                    頁行為）
+                    ⑩b 排程 · 方案 B「日曆點選」：成個畫面係大日曆，撳日子就加 /
+                    移除上架日，集數按次序自動分配（每次上幾多集喺頂部設定）；過咗嘅日子變淡唔撳得。最直觀，適合唔規則嘅上架日
                 </p>
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
                             <span class="brand">903 Admin</span
-                            ><a href="#uB" aria-current="page"
-                                >更新內容 <span class="pill count">3</span></a
+                            ><a href="#uB">更新內容 <span class="pill count">3</span></a
                             ><span class="group">內容</span><a href="#s2c">節目</a
-                            ><a href="#s2">廣播劇</a><span class="group">記錄</span
-                            ><a href="#s8">發佈記錄</a><span class="spacer"></span
-                            ><span class="who">admin@…</span><a href="#s1">登出</a
-                            ><span class="version">api 0.4.0</span>
+                            ><a href="#s2" aria-current="page">廣播劇</a
+                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="spacer"></span><span class="who">admin@…</span
+                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
                         </nav>
                         <div class="main">
-                            <div class="title-row"><h2>發佈記錄</h2></div>
-                            <div class="card table-wrap">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>#</th>
-                                            <th>時間</th>
-                                            <th>內容</th>
-                                            <th>狀態</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>4</td>
-                                            <td>11 月 10 日 09:05</td>
-                                            <td>7 節目 · 6 劇 · 470 集</td>
-                                            <td>
-                                                <span class="pill ok"
-                                                    ><span class="dot"></span>使用中</span
-                                                >
-                                            </td>
-                                            <td></td>
-                                        </tr>
-                                        <tr>
-                                            <td>3</td>
-                                            <td>11 月 9 日 22:40</td>
-                                            <td>7 節目 · 6 劇 · 470 集</td>
-                                            <td>
-                                                <span class="pill bad"
-                                                    ><span class="dot"></span>失敗</span
-                                                >
-                                            </td>
-                                            <td></td>
-                                        </tr>
-                                        <tr>
-                                            <td>2</td>
-                                            <td>11 月 8 日 18:02</td>
-                                            <td>7 節目 · 6 劇 · 470 集</td>
-                                            <td></td>
-                                            <td><button>還原至此版本</button></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="flow-bar">
+                                <span><b>處理待辦</b> · 蘭茜夫人劇場 › 我心不死 · 📅 排期</span
+                                ><a href="#uB">← 返回待辦</a>
+                            </div>
+                            <div class="title-row">
+                                <h2>
+                                    <span class="editable" title="雙擊編輯名稱">蘭茜夫人劇場</span>
+                                </h2>
+                            </div>
+                            <nav class="tabs" aria-label="廣播劇分頁">
+                                <a href="#s4">基本資料</a><a href="#s5">短篇（3）</a
+                                ><a href="#s7" aria-current="page">排程</a>
+                            </nav>
+                            <div class="arc-tabs" role="tablist" aria-label="短篇">
+                                <button role="tab" aria-selected="false">
+                                    戀愛1/2<small>無排程</small>
+                                </button>
+                                <button role="tab" aria-selected="false">
+                                    初戀無限次<small>指定日期 · 2 批</small>
+                                </button>
+                                <button role="tab" aria-selected="true">
+                                    <span class="pill new">新</span> 我心不死<small>定期</small>
+                                </button>
+                            </div>
+                            <div class="card">
+                                <div class="title-row">
+                                    <div class="actions">
+                                        <button aria-label="上個月">‹</button>
+                                        <h3>2026 年 11 月</h3>
+                                        <button aria-label="下個月">›</button>
+                                    </div>
+                                    <div class="actions">
+                                        <span class="muted small">每次上</span
+                                        ><button class="inline-ctl">5 集</button
+                                        ><button class="inline-ctl">不會下架 ▾</button
+                                        ><button>套用逢一三五</button
+                                        ><button class="ghost-danger">清除</button>
+                                    </div>
+                                </div>
+                                <div class="cal big" aria-label="撳日子加入 / 移除上架日">
+                                    <span class="dow">日</span><span class="dow">一</span
+                                    ><span class="dow">二</span><span class="dow">三</span
+                                    ><span class="dow">四</span><span class="dow">五</span
+                                    ><span class="dow">六</span>
+                                    <div class="day past">1</div>
+                                    <div class="day past">2</div>
+                                    <div class="day past">3</div>
+                                    <div class="day past">4</div>
+                                    <div class="day past">5</div>
+                                    <div class="day past">6</div>
+                                    <div class="day past">7</div>
+                                    <div class="day past">8</div>
+                                    <div class="day past">9</div>
+                                    <div class="day today">10</div>
+                                    <div class="day">11</div>
+                                    <div class="day">12</div>
+                                    <div class="day">13</div>
+                                    <div class="day">14</div>
+                                    <div class="day">15</div>
+                                    <div class="day picked">16<span class="rel">1–5</span></div>
+                                    <div class="day">17</div>
+                                    <div class="day picked">18<span class="rel">6–10</span></div>
+                                    <div class="day">19</div>
+                                    <div class="day picked">20<span class="rel">11–15</span></div>
+                                    <div class="day">21</div>
+                                    <div class="day">22</div>
+                                    <div class="day picked">23<span class="rel">16–20</span></div>
+                                    <div class="day">24</div>
+                                    <div class="day picked">25<span class="rel">21–25</span></div>
+                                    <div class="day">26</div>
+                                    <div class="day picked">27<span class="rel">26–30</span></div>
+                                    <div class="day">28</div>
+                                    <div class="day">29</div>
+                                    <div class="day picked">30<span class="rel">31–35</span></div>
+                                    <div class="day blank"></div>
+                                    <div class="day blank"></div>
+                                    <div class="day blank"></div>
+                                    <div class="day blank"></div>
+                                    <div class="day blank"></div>
+                                </div>
+                                <div class="legend">
+                                    <span>撳日子 = 加入 / 移除上架日，集數按次序自動分配</span
+                                    ><span>12 月：12/2 第 36–37 集</span>
+                                </div>
+                                <div class="savebar">
+                                    <button class="ghost-danger">刪除排程</button
+                                    ><button class="primary">儲存並返回待辦</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="s7c">
+                <p class="state-label">
+                    ⑩c 排程 · 方案 C「集數條」：37 集排成一條，每段同色 =
+                    同一日上架，段下面寫日期；拖分隔線改每批集數、撳日期改日子；預設 chip
+                    同三個基本設定喺上下。一眼睇晒「邊集幾時上」
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span
+                            ><a href="#uB">更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span><a href="#s2c">節目</a
+                            ><a href="#s2" aria-current="page">廣播劇</a
+                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="spacer"></span><span class="who">admin@…</span
+                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
+                        </nav>
+                        <div class="main">
+                            <div class="flow-bar">
+                                <span><b>處理待辦</b> · 蘭茜夫人劇場 › 我心不死 · 📅 排期</span
+                                ><a href="#uB">← 返回待辦</a>
+                            </div>
+                            <div class="title-row">
+                                <h2>
+                                    <span class="editable" title="雙擊編輯名稱">蘭茜夫人劇場</span>
+                                </h2>
+                            </div>
+                            <nav class="tabs" aria-label="廣播劇分頁">
+                                <a href="#s4">基本資料</a><a href="#s5">短篇（3）</a
+                                ><a href="#s7" aria-current="page">排程</a>
+                            </nav>
+                            <div class="arc-tabs" role="tablist" aria-label="短篇">
+                                <button role="tab" aria-selected="false">
+                                    戀愛1/2<small>無排程</small>
+                                </button>
+                                <button role="tab" aria-selected="false">
+                                    初戀無限次<small>指定日期 · 2 批</small>
+                                </button>
+                                <button role="tab" aria-selected="true">
+                                    <span class="pill new">新</span> 我心不死<small>定期</small>
+                                </button>
+                            </div>
+                            <div class="card">
+                                <div class="presets">
+                                    <span class="muted small">快速套用</span
+                                    ><button>一次過全部上架</button><button>每日 1 集</button
+                                    ><button aria-pressed="true">逢一三五 · 每次 5 集</button
+                                    ><button>每週 1 次</button>
+                                </div>
+                                <div class="strip" aria-label="37 集按上架批次分段">
+                                    <div class="seg-batch b1">
+                                        <div class="eps-cells">
+                                            <span>1</span><span>2</span><span>3</span><span>4</span
+                                            ><span>5</span>
+                                        </div>
+                                        <span class="seg-date">11/16 一</span>
+                                    </div>
+                                    <div class="seg-batch b2">
+                                        <div class="eps-cells">
+                                            <span>6</span><span>7</span><span>8</span><span>9</span
+                                            ><span>10</span>
+                                        </div>
+                                        <span class="seg-date">11/18 三</span>
+                                    </div>
+                                    <div class="seg-batch b1">
+                                        <div class="eps-cells">
+                                            <span>11</span><span>12</span><span>13</span
+                                            ><span>14</span><span>15</span>
+                                        </div>
+                                        <span class="seg-date">11/20 五</span>
+                                    </div>
+                                    <div class="seg-batch b2">
+                                        <div class="eps-cells">
+                                            <span>16</span><span>17</span><span>18</span
+                                            ><span>19</span><span>20</span>
+                                        </div>
+                                        <span class="seg-date">11/23 一</span>
+                                    </div>
+                                    <div class="seg-batch b1">
+                                        <div class="eps-cells">
+                                            <span>21</span><span>22</span><span>23</span
+                                            ><span>24</span><span>25</span>
+                                        </div>
+                                        <span class="seg-date">11/25 三</span>
+                                    </div>
+                                    <div class="seg-batch b2">
+                                        <div class="eps-cells">
+                                            <span>26</span><span>27</span><span>28</span
+                                            ><span>29</span><span>30</span>
+                                        </div>
+                                        <span class="seg-date">11/27 五</span>
+                                    </div>
+                                    <div class="seg-batch b1">
+                                        <div class="eps-cells">
+                                            <span>31</span><span>32</span><span>33</span
+                                            ><span>34</span><span>35</span>
+                                        </div>
+                                        <span class="seg-date">11/30 一</span>
+                                    </div>
+                                    <div class="seg-batch b2">
+                                        <div class="eps-cells"><span>36</span><span>37</span></div>
+                                        <span class="seg-date">12/2 三</span>
+                                    </div>
+                                </div>
+                                <div class="legend">
+                                    <span
+                                        >每格 = 1 集；同色一段 =
+                                        同一日上架。拖段與段之間嘅分隔線可以改每批集數，撳日期可以改日子</span
+                                    >
+                                </div>
+                                <div class="row3">
+                                    <div class="field">
+                                        <span>開始日期</span
+                                        ><button class="inline-ctl">11/16（一）</button>
+                                    </div>
+                                    <div class="field">
+                                        <span>每次上架</span
+                                        ><button class="inline-ctl">5 集</button>
+                                    </div>
+                                    <div class="field">
+                                        <span>自動下架</span
+                                        ><button class="inline-ctl">不會下架 ▾</button>
+                                    </div>
+                                </div>
+                                <div class="savebar">
+                                    <button class="ghost-danger">刪除排程</button
+                                    ><button class="primary">儲存並返回待辦</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="s8">
+                <p class="state-label">
+                    ⑪ 發佈記錄（似內容列表）：每次發佈一行，左邊編號 + 時間 + 邊個發佈，中間用類型
+                    tag + 縮圖列出嗰次改咗乜（同確認發佈時間線同一套），右邊狀態 pill +
+                    還原；撳行展開睇完整變更。失敗嗰次顯示原因
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span
+                            ><a href="#uB">更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span><a href="#s2c">節目</a
+                            ><a href="#s2">廣播劇</a><span class="group">記錄</span
+                            ><a href="#s8" aria-current="page">發佈記錄</a
+                            ><span class="spacer"></span><span class="who">admin@…</span
+                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
+                        </nav>
+                        <div class="main">
+                            <div class="title-row">
+                                <h2>發佈記錄</h2>
+                                <span class="muted small">共 5 次</span>
+                            </div>
+                            <div class="card flush">
+                                <div class="hist-head">
+                                    <span>版本</span><span>變更</span><span>狀態</span>
+                                </div>
+                                <div class="hist-row current">
+                                    <span class="ver"
+                                        ><b>#5</b><span class="meta">今天 10:02 · admin</span></span
+                                    >
+                                    <span class="changes"
+                                        ><span class="chg"
+                                            ><span class="kind">新劇</span
+                                            ><span class="thumb grey sm"></span>天使之戀系列</span
+                                        ><span class="chg"
+                                            ><span class="kind">新短篇</span
+                                            ><span class="thumb sm"></span>我心不死
+                                            <span class="muted">37 集</span></span
+                                        ><span class="chg"
+                                            ><span class="kind">新集數</span
+                                            ><span class="thumb pink sm"></span>公子森林
+                                            <span class="muted">+2</span></span
+                                        ><span class="meta">7 節目 · 8 劇 · 535 集</span></span
+                                    >
+                                    <span class="pills"
+                                        ><span class="pill ok"
+                                            ><span class="dot"></span>使用中</span
+                                        ></span
+                                    >
+                                </div>
+                                <div class="hist-row">
+                                    <span class="ver"
+                                        ><b>#4</b
+                                        ><span class="meta">11/10 09:05 · admin</span></span
+                                    >
+                                    <span class="changes"
+                                        ><span class="chg"
+                                            ><span class="kind">修改</span
+                                            ><span class="thumb gold sm"></span>黃金少年
+                                            <span class="muted">排程下架 Season 1</span></span
+                                        ><span class="meta">7 節目 · 6 劇 · 470 集</span></span
+                                    >
+                                    <span class="pills"><button>還原</button></span>
+                                </div>
+                                <div class="hist-row failed">
+                                    <span class="ver"
+                                        ><b>#3</b><span class="meta">11/9 22:40 · admin</span></span
+                                    >
+                                    <span class="changes"
+                                        ><span class="chg"
+                                            ><span class="kind">修改</span
+                                            ><span class="thumb blue sm"></span>18 樓 C 座
+                                            <span class="muted">下架</span></span
+                                        ><span class="meta" style="color: var(--danger)"
+                                            >失敗：寫入 R2 逾時，播放器仍用 #2</span
+                                        ></span
+                                    >
+                                    <span class="pills"
+                                        ><span class="pill bad"
+                                            ><span class="dot"></span>失敗</span
+                                        ></span
+                                    >
+                                </div>
+                                <div class="hist-row">
+                                    <span class="ver"
+                                        ><b>#2</b><span class="meta">11/8 18:02 · admin</span></span
+                                    >
+                                    <span class="changes"
+                                        ><span class="chg"
+                                            ><span class="kind">還原</span>還原至 #1</span
+                                        ><span class="meta">7 節目 · 6 劇 · 470 集</span></span
+                                    >
+                                    <span class="pills"><button>還原</button></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3368,122 +3753,19 @@
                 </div>
             </section>
 
-            <!-- ⑩ Narrow -->
             <section id="s10">
                 <p class="state-label">
-                    ⑬ 窄屏（手機）：表頭收埋；短篇 + 狀態落喺名稱下面；⠿ 長按先拎起，唔會同捲動撞
+                    ⑬ 窄屏（直向手機，闊度 &lt;
+                    720px）：唔做手機版，成頁只顯示提示，叫用橫向或者電腦。橫向手機（夠
+                    720px）就照用正常版面
                 </p>
                 <div class="frame narrow">
-                    <div class="shell" style="grid-template-columns: 1fr">
-                        <nav
-                            class="nav"
-                            aria-label="主選單"
-                            style="
-                                flex-direction: row;
-                                align-items: center;
-                                border-right: 0;
-                                border-bottom: 1px solid var(--line);
-                            "
-                        >
-                            <span class="brand">903 Admin</span
-                            ><a href="#uB">更新內容 <span class="pill count">3</span></a
-                            ><span class="group">內容</span><a href="#s2c">節目</a
-                            ><a href="#s2" aria-current="page">廣播劇</a
-                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a>
-                        </nav>
-                        <div class="main" style="padding: var(--gap)">
-                            <div class="title-row">
-                                <h2>廣播劇</h2>
-                                <button class="primary icon-btn" aria-label="新增廣播劇">＋</button>
-                            </div>
-                            <p class="note warn">有 3 項變更尚未發佈。<a href="#u3">前往發佈</a></p>
-                            <div class="card flush">
-                                <div
-                                    class="drama-row"
-                                    style="grid-template-columns: 28px minmax(0, 1fr)"
-                                >
-                                    <span class="handle">⠿</span>
-                                    <div style="display: grid; gap: 8px; min-width: 0">
-                                        <div class="name-cell">
-                                            <span class="thumb st-live"></span>
-                                            <span class="text"
-                                                ><a href="#s4">蘭茜夫人劇場</a
-                                                ><span class="inline-pills"
-                                                    ><span class="pill draft">待發佈</span></span
-                                                ><span class="meta">短篇集 · 100 集</span></span
-                                            >
-                                        </div>
-                                        <div
-                                            class="arcs"
-                                            style="
-                                                grid-column: auto;
-                                                grid-template-columns: minmax(0, 1fr) auto auto;
-                                            "
-                                        >
-                                            <span class="arc">戀愛二分一</span
-                                            ><span class="eps">30 集</span>
-                                            <span
-                                                ><span class="pill ok"
-                                                    ><span class="dot"></span>已上架</span
-                                                ></span
-                                            >
-                                            <span class="arc">初戀無限次</span
-                                            ><span class="eps">33 集</span>
-                                            <span
-                                                ><span class="pill ok"
-                                                    ><span class="dot"></span>已上架</span
-                                                ></span
-                                            >
-                                            <span class="arc"
-                                                ><span class="pill new">新</span> 我心不死</span
-                                            ><span class="eps">37 集</span>
-                                            <span
-                                                ><span class="pill info"
-                                                    ><span class="dot"></span>排程中</span
-                                                ></span
-                                            >
-                                        </div>
-                                    </div>
-                                </div>
-                                <div
-                                    class="drama-row"
-                                    style="grid-template-columns: 28px minmax(0, 1fr)"
-                                >
-                                    <span class="handle">⠿</span>
-                                    <div style="display: grid; gap: 8px; min-width: 0">
-                                        <div class="name-cell">
-                                            <span class="thumb dark st-live"></span>
-                                            <span class="text"
-                                                ><a href="#s4">少爺占系列</a
-                                                ><span class="meta">短篇集 · 38 集</span></span
-                                            >
-                                        </div>
-                                        <div
-                                            class="arcs"
-                                            style="
-                                                grid-column: auto;
-                                                grid-template-columns: minmax(0, 1fr) auto auto;
-                                            "
-                                        >
-                                            <span class="arc">八王子</span
-                                            ><span class="eps">21 集</span>
-                                            <span
-                                                ><span class="pill ok"
-                                                    ><span class="dot"></span>已上架</span
-                                                ></span
-                                            >
-                                            <span class="arc">忠孝公路</span
-                                            ><span class="eps">17 集</span>
-                                            <span
-                                                ><span class="pill ok"
-                                                    ><span class="dot"></span>已上架</span
-                                                ></span
-                                            >
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="rotate-note">
+                        <div class="rotate-icon" aria-hidden="true">⟳</div>
+                        <h2>請轉為橫向或使用電腦</h2>
+                        <p class="muted">
+                            903 Player Admin 需要較闊的畫面。將手機轉為橫向，或於電腦開啟此頁。
+                        </p>
                     </div>
                 </div>
             </section>
