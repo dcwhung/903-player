@@ -13,6 +13,7 @@ import type {
 import { hkToday } from '../date';
 import { compareOrderThenId } from '../core/ordering';
 import { arcAvailabilityOf, isLiveEpisode, windowStatus, type DramaStatus } from './availability';
+import { isArcEnabled } from './arcLabel';
 import { buildEpisodes, type EpisodeBuildOptions } from './episodes';
 import { DramaSchemaError, parseDramaDefinition, type DramaDefinition } from './schema';
 import type { DramaFolder, DramaSource } from './source';
@@ -101,7 +102,7 @@ const requireImage = (folder: DramaFolder, file: string): string => {
 /** 短篇劇嘅上架日：頂層先，冇就最新短篇（YYYY-MM-DD 用字串比較就得）；每日劇冇 */
 const addedAtOf = (def: DramaDefinition): string | undefined => {
     if (def.kind !== 'series') return undefined;
-    const arcDates = def.arcs.flatMap((arc) => arc.addedAt ?? []);
+    const arcDates = def.arcs.filter(isArcEnabled).flatMap((arc) => arc.addedAt ?? []);
     return def.addedAt ?? arcDates.sort().at(-1);
 };
 

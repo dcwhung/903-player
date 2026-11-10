@@ -192,17 +192,17 @@ packages/catalog/ 由 src/catalog/{core,dramas/lib,shows/lib} 抽出：
 
 ## 分 phase（每 phase 獨立 PR）
 
-| Phase   | 內容                                                                                                                                              | 前置 |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
-| −1      | Episode ID + 進度 / 收藏 migration（`/feature`，v1.29.0）。Phase 0 之前完成                                                                       | —    |
-| 0       | Monorepo 搬 folder + 抽 `packages/catalog`（純 refactor，行為唔變）+ 改 Vercel / CI                                                               | −1   |
-| 1 ✅    | Player：registry 改 context + `catalog.json` 讀取 + bundled snapshot + SW caching（用 repo 現有 JSON 生成 `catalog.json`，未需要 backend）        | 0    |
-| 2a ✅   | API：Worker + D1（document 式）+ Google login + migration + publish（Worker 代出 catalog.json）+ 開 flag；見 `2026-11-08_plan_phase2a-backend.md` | 1    |
-| 2b-1 ✅ | API：CRUD + R2 掃描 + 排程展開（儲存時展開）+ backlog 修正；見 `2026-11-10_plan_phase2b-backend.md`                                               | 2a   |
-| 2b-2    | API 圖片上載（disc 600×600 / tile 1216×684 白名單）+ player prebuild snapshot（連圖下載入 dist，唔自動 rebuild）                                  | 2b-1 |
-| 3       | Admin 基本：login、CRUD、R2 scan、排程、publish（`_mockups_/admin` 確認後）                                                                       | 2b-2 |
-| 4       | Admin cover 編輯器 + theme 抽色 + banner                                                                                                          | 3    |
-| 5       | Player 動態 show grid（mockup 確認後）                                                                                                            | 1    |
+| Phase   | 內容                                                                                                                                                                                                  | 前置 |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| −1      | Episode ID + 進度 / 收藏 migration（`/feature`，v1.29.0）。Phase 0 之前完成                                                                                                                           | —    |
+| 0       | Monorepo 搬 folder + 抽 `packages/catalog`（純 refactor，行為唔變）+ 改 Vercel / CI                                                                                                                   | −1   |
+| 1 ✅    | Player：registry 改 context + `catalog.json` 讀取 + bundled snapshot + SW caching（用 repo 現有 JSON 生成 `catalog.json`，未需要 backend）                                                            | 0    |
+| 2a ✅   | API：Worker + D1（document 式）+ Google login + migration + publish（Worker 代出 catalog.json）+ 開 flag；見 `2026-11-08_plan_phase2a-backend.md`                                                     | 1    |
+| 2b-1 ✅ | API：CRUD + R2 掃描 + 排程展開（儲存時展開）+ backlog 修正；見 `2026-11-10_plan_phase2b-backend.md`                                                                                                   | 2a   |
+| 2b-2    | API 圖片上載（disc 600×600 / tile 1216×684 白名單）+ player prebuild snapshot（連圖下載入 dist，唔自動 rebuild）                                                                                      | 2b-1 |
+| 3       | Admin（mockup 已確認）：3a 新欄位（show / arc `enabled`、arc `displayName`、P9.5 資訊）+ 掃描 / 待辦 / 排序 / 變更摘要 API；3b `apps/admin` SPA（含 WebP 上載）；見 `2026-11-10_plan_phase3-admin.md` | 2b-2 |
+| 4       | Admin cover 編輯器 + theme 抽色 + banner                                                                                                                                                              | 3    |
+| 5       | Player 動態 show grid（mockup 確認後）                                                                                                                                                                | 1    |
 
 Phase 0b（抽 `packages/catalog`，2026-11-07）：`dramas/episodes.ts` 嘅 `host: 'app'` 仲用 `import.meta.env.BASE_URL`（package tsconfig 暫時加 `vite/client` types + TODO）；改做 `appAudioBase` 參數注入**押後到 Phase 2**（backend 冇 Vite，到時先改簽名）。
 

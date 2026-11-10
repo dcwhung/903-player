@@ -5,6 +5,7 @@
  */
 import {
     type ArcAvailability,
+    arcLabelOf,
     arcLeaving,
     type DateWindow,
     type EpisodeRange,
@@ -36,10 +37,11 @@ const unavailableLabel = (name: string, date: string): string =>
 
 /** 即將上架 chips（排最尾）：「12/11 上架」/「明日上架」 */
 export const upcomingChipsOf = (arcs: readonly ArcAvailability[], today: string): UpcomingChip[] =>
-    upcomingArcs(arcs, today).map(({ arc, addedAt }) => ({
-        arc,
-        text: releaseWhen(addedAt, today, 'short'),
-        label: unavailableLabel(arc, addedAt),
+    upcomingArcs(arcs, today).map((upcoming) => ({
+        arc: upcoming.arc,
+        ...labelField(upcoming),
+        text: releaseWhen(upcoming.addedAt, today, 'short'),
+        label: unavailableLabel(arcLabelOf(upcoming), upcoming.addedAt),
     }));
 
 const upcomingStatus = ({ addedAt, count }: UpcomingArc, today: string): string => {
@@ -50,10 +52,17 @@ const upcomingStatus = ({ addedAt, count }: UpcomingArc, today: string): string 
 };
 
 /** 即將上架行讀屏（F4）：「XXX，02/12 星期三 上架，20 集」；集數未知就唔講 */
-const upcomingLabel = ({ arc, addedAt, count }: UpcomingArc): string =>
-    count === undefined
-        ? unavailableLabel(arc, addedAt)
-        : t('availability.upcomingArcLabel', { name: arc, when: spokenRelease(addedAt), count });
+const upcomingLabel = (upcoming: UpcomingArc): string => {
+    const { addedAt, count } = upcoming;
+    const name = arcLabelOf(upcoming);
+    return count === undefined
+        ? unavailableLabel(name, addedAt)
+        : t('availability.upcomingArcLabel', { name, when: spokenRelease(addedAt), count });
+};
+
+/** 顯示名有先帶（同 catalog 一樣：冇 displayName 就冇 arcLabel key） */
+const labelField = ({ arcLabel }: { arcLabel?: string }) =>
+    arcLabel === undefined ? {} : { arcLabel };
 
 /** 全集一覽表「即將上架」組（S1）；cover = 短篇碟面（冇就劇集碟面） */
 export const upcomingRowsOf = (
@@ -63,6 +72,7 @@ export const upcomingRowsOf = (
 ): UpcomingArcRowView[] =>
     upcomingArcs(arcs, today).map((upcoming) => ({
         arc: upcoming.arc,
+        ...labelField(upcoming),
         cover: coverOf(upcoming.arc),
         pill: dayWhen(upcoming.addedAt, today),
         status: upcomingStatus(upcoming, today),

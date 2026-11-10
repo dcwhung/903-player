@@ -1,4 +1,5 @@
 /* registry 按今日（hkToday）篩集數：未上架 / 已下架嘅唔出（P8 #6） */
+import type { EpisodeBuildOptions } from './episodes';
 import { buildRegistry } from './registry';
 import type { DramaFolder } from './source';
 
@@ -98,5 +99,50 @@ describe('registry availability', () => {
         expect(arcs[3]?.removals).toEqual([{ first: 1, last: 1, date: '2026-11-02' }]);
         expect(registry.findDrama('soon')).toMatchObject({ launchedAt: '2026-12-01' });
         expect(registry.findDrama('gone')).toMatchObject({ removedAt: '2026-11-01' });
+    });
+});
+
+describe('registry: Phase 3 arc enabled / displayName', () => {
+    const phase3 = (options: EpisodeBuildOptions = OPTIONS) =>
+        buildRegistry(
+            {
+                folders: () => [
+                    folder('p3', {
+                        arcs: [
+                            { id: 'shown', name: 'R2 名', displayName: '顯示名', episodes: 2 },
+                            { id: 'hidden', name: '下架', episodes: 2, enabled: false },
+                            { id: 'plain', name: '普通', episodes: 1, enabled: true },
+                        ],
+                    }),
+                ],
+            },
+            options,
+        );
+
+    it('should skip disabled arcs in episodes and arc availability', () => {
+        const registry = phase3();
+        expect(registry.catalogEpisodesOf('p3').map((e) => e.id)).toEqual([
+            'drama:p3:shown:1',
+            'drama:p3:shown:2',
+            'drama:p3:plain:1',
+        ]);
+        expect(registry.arcAvailabilityOf('p3').map((a) => a.arc)).toEqual(['R2 名', '普通']);
+    });
+
+    it('should carry arcLabel only for arcs with a displayName, keeping arc = name for keys', () => {
+        const registry = phase3();
+        const [first] = registry.seriesEpisodesOf('p3', TODAY);
+        expect(first).toMatchObject({ arc: 'R2 名', arcLabel: '顯示名' });
+        expect(first?.url).toContain(encodeURIComponent('R2 名'));
+        const [shown, plain] = registry.arcAvailabilityOf('p3');
+        expect(shown).toMatchObject({ arc: 'R2 名', arcLabel: '顯示名' });
+        expect(plain && 'arcLabel' in plain).toBe(false);
+    });
+
+    it('should keep disabled arcs when includeDisabledArcs is set (ID guard)', () => {
+        const ids = phase3({ ...OPTIONS, includeDisabledArcs: true })
+            .catalogEpisodesOf('p3')
+            .map((e) => e.id);
+        expect(ids).toContain('drama:p3:hidden:1');
     });
 });

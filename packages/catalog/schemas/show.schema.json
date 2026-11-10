@@ -46,7 +46,29 @@
             "minLength": 1,
             "description": "碟面圖：folder 內檔名（正方形，600×600 webp）"
         },
-        "theme": { "$ref": "#/definitions/theme" }
+        "theme": { "$ref": "#/definitions/theme" },
+        "enabled": {
+            "type": "boolean",
+            "description": "（optional）false = 下架：player 唔顯示、唔 probe；唔寫 = 上架"
+        },
+        "summary": {
+            "$ref": "#/definitions/summary",
+            "description": "（optional）節目簡介，1–500 字"
+        },
+        "hosts": {
+            "$ref": "#/definitions/names",
+            "description": "（optional）主持：最多 12 個，每個 1–40 字"
+        },
+        "airTime": {
+            "type": "object",
+            "required": ["start", "end"],
+            "additionalProperties": false,
+            "properties": {
+                "start": { "type": "string", "pattern": "^([01][0-9]|2[0-3]):(00|15|30|45)$" },
+                "end": { "type": "string", "pattern": "^([01][0-9]|2[0-3]):(00|15|30|45)$" }
+            },
+            "description": "（optional）播放時間：HH:MM，15 分鐘一格（00:00–23:45）；end 要遲過 start、最多 start 後 3 小時、唔可以過午夜（後兩樣淨係 runtime 驗）"
+        }
     },
     "definitions": {
         "hexColour": {
@@ -56,6 +78,19 @@
             "description": "#rrggbb 色（六位 hex，大細楷都得）"
         },
         "nonEmptyString": { "type": "string", "minLength": 1 },
+        "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "簡介：1–500 字（P9.5 預備，player 暫時唔顯示）"
+        },
+        "names": {
+            "type": "array",
+            "maxItems": 12,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1, "maxLength": 40 },
+            "description": "名單：最多 12 個，每個 1–40 字，唔可以重複（P9.5 預備，player 暫時唔顯示）"
+        },
         "theme": {
             "type": "object",
             "description": "色調：10 隻必填色（#rrggbb）+ optional 嘅 statusBar / accentText / titleFont / headerRule / scheme",

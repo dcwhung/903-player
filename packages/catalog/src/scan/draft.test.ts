@@ -239,6 +239,19 @@ describe('generateDraft — merging with an existing definition', () => {
         appEpisodes('test', jsonOf(result));
     });
 
+    it('should keep the Phase 3 arc fields enabled / displayName / summary / cast on rescan', () => {
+        const paths = range(1, 2).map((n) => episodeFile('甲', n));
+        const admin = {
+            enabled: false,
+            displayName: '第一季',
+            summary: '簡介',
+            cast: ['甲', '乙'],
+        };
+        const { result, arc } = mergeWith(paths, (a) => ({ ...a, ...admin }));
+        expect(arc).toEqual({ id: 'arc-01', name: '甲', ...admin, episodes: 2 });
+        expect(messagesOf(result.issues, 'info')).toBe('');
+    });
+
     it('should keep a hand-written title the filenames cannot express, with files for the URL', () => {
         const paths = range(1, 2).map((n) => episodeFile('甲', n));
         const { result, arc } = mergeWith(paths, (a) => ({ ...a, titles: { 1: '人手補嘅集名' } }));

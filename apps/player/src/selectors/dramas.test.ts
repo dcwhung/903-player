@@ -144,6 +144,12 @@ describe('dramaHasNew', () => {
 });
 
 describe('dramaEpisodeLabel', () => {
+    it('should use the arc displayName (arcLabel) when present', () => {
+        expect(dramaEpisodeLabel({ ...series('R2 名', 1, '集名'), arcLabel: '顯示名' })).toBe(
+            '顯示名 · 第 1 集 · 集名',
+        );
+    });
+
     it('names a series episode by arc, number and title', () => {
         expect(dramaEpisodeLabel(series('Ｘ時mas時小提議', 2, '哥哥你洽我'))).toBe(
             'Ｘ時mas時小提議 · 第 2 集 · 哥哥你洽我',

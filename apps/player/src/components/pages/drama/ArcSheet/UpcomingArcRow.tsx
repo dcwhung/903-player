@@ -1,3 +1,4 @@
+import { arcLabelOf } from '@903-player/catalog';
 import { useId } from 'react';
 import { t } from '../../../../i18n/t';
 import { ClockIcon } from '../../../shared/common/icons/icons';
@@ -35,7 +36,7 @@ const UpcomingArcRow = ({ row }: { row: UpcomingArcRowView }) => (
             </span>
             <span className={styles.text} aria-hidden="true">
                 <span className={styles.name}>
-                    <Marquee className={styles.nameText} text={row.arc} />
+                    <Marquee className={styles.nameText} text={arcLabelOf(row)} />
                 </span>
                 <span className={styles.status}>{row.status}</span>
             </span>

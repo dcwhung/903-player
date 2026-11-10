@@ -105,6 +105,11 @@ describe('playLabel', () => {
     it('should offer to resume when the arc is started', () => {
         expect(playLabel(summary('started'), false, false)).toBe(`續聽 ${ARC} 第 2 集`);
     });
+
+    it('should name the arc by its displayName (Phase 3 arcLabel)', () => {
+        const resume = { ...episode(ARC, 1), arcLabel: '顯示名' };
+        expect(playLabel(summary('new', { resume }), false, false)).toBe('播放 顯示名 第 1 集');
+    });
 });
 
 describe('GROUP_TITLES', () => {

@@ -1,4 +1,9 @@
-import type { DailyEpisode, DramaEpisode, SeriesEpisode } from '@903-player/catalog';
+import {
+    arcLabelOf,
+    type DailyEpisode,
+    type DramaEpisode,
+    type SeriesEpisode,
+} from '@903-player/catalog';
 import { t } from '../i18n/t';
 import type { Progress } from '../services/progressStore';
 import { isDramaEpisode, type Track } from '../types/track';
@@ -82,7 +87,9 @@ export const dramaEpisodeLabel = (
     sep: string = t('common.separator'),
 ): string => {
     if (!isDaily(episode)) {
-        const { arc, no, title } = episode;
+        const { no, title } = episode;
+        // 顯示名（displayName）；key / 篩選照用 episode.arc
+        const arc = arcLabelOf(episode);
         return title
             ? t('drama.seriesLabel', { arc, no, title, sep })
             : t('drama.seriesLabelUntitled', { arc, no, sep });

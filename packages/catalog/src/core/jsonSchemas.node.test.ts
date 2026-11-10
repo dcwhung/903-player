@@ -7,6 +7,7 @@ import { DAILY_TOKENS, parseDramaDefinition, SERIES_TOKENS } from '../dramas/sch
 import { parseShowDefinition } from '../shows/schema';
 import { FONT_FAMILY_PATTERN_SOURCE, HEADER_RULE_PATTERN_SOURCE } from './themeSchema';
 import { compileSchema } from '../../tests/jsonSchemas';
+import { AIR_TIME_PATTERN_SOURCE } from '../admin/airTime';
 
 /*
  * schemas/*.schema.json（editor 自動完成 + 即時驗證用）同 runtime validator（dramas/shows schema.ts）
@@ -65,6 +66,7 @@ const SERIES: Json = {
     order: 3,
     arcUnit: 'season',
     addedAt: '2026-10-24',
+    summary: '黃金少年嘅故事',
     tile: 'tile.webp',
     disc: 'disc.webp',
     audio: {
@@ -84,6 +86,10 @@ const SERIES: Json = {
             episodes: ['前傳', null, ''],
             titles: { '1': '中篇' },
             files: { '2': 'odd name.m4a' },
+            enabled: false,
+            displayName: '第一季',
+            summary: '短篇簡介',
+            cast: ['甲', '乙'],
         },
         { id: 'season-2', name: 'Season 2', episodes: 3 },
     ],
@@ -108,6 +114,10 @@ const SHOW: Json = {
     tile: 'tile.webp',
     disc: 'disc.webp',
     theme: FULL_THEME,
+    enabled: true,
+    summary: '得一個女人話事',
+    hosts: ['鄭裕玲', '余迪偉'],
+    airTime: { start: '15:00', end: '16:30' },
 };
 
 /** 基本例子 + 一個改動（path 用 . 分隔，array index 都得；value undefined = 刪走個 key） */
@@ -195,6 +205,15 @@ const DRAMA_INVALID: Case[] = [
     ['episodeDates 日子格式錯', SERIES, 'arcs.0.episodeDates', { '2': '1/12' }],
     ['episodeRemovedAt key 唔係範圍', SERIES, 'arcs.0.episodeRemovedAt', { '1~2': '2026-12-05' }],
     ['episodeRemovedAt 日子格式錯', SERIES, 'arcs.0.episodeRemovedAt', { '1': 'soon' }],
+    ['summary 空字串', SERIES, 'summary', ''],
+    ['summary 超過 500 字', SERIES, 'summary', '字'.repeat(501)],
+    ['arc enabled 唔係 boolean', SERIES, 'arcs.0.enabled', 'no'],
+    ['arc displayName 空字串', SERIES, 'arcs.0.displayName', ''],
+    ['arc displayName 超過 40 字', SERIES, 'arcs.0.displayName', '名'.repeat(41)],
+    ['arc cast 唔係 list', SERIES, 'arcs.0.cast', '甲'],
+    ['arc cast 有空名', SERIES, 'arcs.0.cast', ['']],
+    ['arc cast 重複', SERIES, 'arcs.0.cast', ['甲', '甲']],
+    ['arc cast 超過 12 個', SERIES, 'arcs.0.cast', Array.from({ length: 13 }, (_, i) => `c${i}`)],
     [
         '未知集數但寫咗 titles',
         SERIES,
@@ -258,6 +277,14 @@ const SHOW_INVALID: Case[] = [
     ['冇 tile', SHOW, 'tile', undefined],
     ['theme 色錯', SHOW, 'theme.text', '#12345g'],
     ['theme.headerRule 有 url()', SHOW, 'theme.headerRule', 'url(/p.gif)'],
+    ['enabled 唔係 boolean', SHOW, 'enabled', 'yes'],
+    ['summary 超過 500 字', SHOW, 'summary', '字'.repeat(501)],
+    ['hosts 有超過 40 字嘅名', SHOW, 'hosts', ['名'.repeat(41)]],
+    ['hosts 重複', SHOW, 'hosts', ['甲', '甲']],
+    ['airTime 分鐘唔係 15 分鐘一格', SHOW, 'airTime.start', '15:10'],
+    ['airTime 用 24:00', SHOW, 'airTime.end', '24:00'],
+    ['airTime 冇 end', SHOW, 'airTime.end', undefined],
+    ['airTime 多出嚟嘅 key', SHOW, 'airTime.note', 'x'],
 ];
 
 const SHOW_VALID: Case[] = [
@@ -266,6 +293,10 @@ const SHOW_VALID: Case[] = [
     ['fileTime 0000', SHOW, 'fileTime', '0000'],
     ['fileTime 2359', SHOW, 'fileTime', '2359'],
     ['airDays 星期日同星期六', SHOW, 'airDays', [6, 0]],
+    ['summary 啱啱 500 字', SHOW, 'summary', '字'.repeat(500)],
+    ['airTime 00:00 開始', SHOW, 'airTime', { start: '00:00', end: '01:00' }],
+    ['airTime 23:45 完結', SHOW, 'airTime', { start: '21:00', end: '23:45' }],
+    ['airTime 啱啱 3 小時', SHOW, 'airTime', { start: '10:00', end: '13:00' }],
 ];
 
 describe('catalog JSON schemas', () => {
@@ -350,8 +381,20 @@ describe('catalog JSON schemas', () => {
         });
     });
 
+    it('should use the runtime airTime pattern in the show schema', () => {
+        const properties = readJson(new URL('schemas/show.schema.json', ROOT)).properties as Record<
+            string,
+            { properties: Record<string, Json> }
+        >;
+        const airTime = properties.airTime?.properties ?? {};
+        expect([airTime.start?.pattern, airTime.end?.pattern]).toEqual([
+            AIR_TIME_PATTERN_SOURCE,
+            AIR_TIME_PATTERN_SOURCE,
+        ]);
+    });
+
     // 兩份 schema 各自抄一份 theme（唔用跨檔 $ref，editor 解析最穩陣），呢度鎖住唔好走樣
-    it.each(['theme', 'hexColour', 'nonEmptyString'])(
+    it.each(['theme', 'hexColour', 'nonEmptyString', 'summary', 'names'])(
         'should keep definitions.%s identical in both schemas',
         (key) => {
             const definitionOf = (name: string) =>
@@ -374,6 +417,7 @@ describe('catalog JSON schemas', () => {
             ['series 寫咗 daily 先用嘅 episodes', SERIES, 'episodes', DAILY.episodes],
             ['titles key 有前置 0', SERIES, 'arcs.0.titles', { '01': '中篇' }],
             ['show 多出嚟嘅 key', SHOW, 'airday', [1]],
+            ['arc 多出嚟嘅 key（例如打錯 displayname）', SERIES, 'arcs.0.displayname', 'x'],
         ];
 
         it.each(SCHEMA_ONLY)('schema only: should reject %s', (_label, base, path, value) => {
@@ -406,6 +450,25 @@ describe('catalog JSON schemas', () => {
             const verdict = both(dramaSchema, parseDramaDefinition, withChange(base, path, value));
             expect(verdict).toEqual({ schema: true, runtime: false });
         });
+
+        // 完結 vs 開始要跨欄位比較，JSON Schema 表達唔到
+        const SHOW_RUNTIME_ONLY: Case[] = [
+            ['airTime 過午夜', SHOW, 'airTime', { start: '23:00', end: '00:30' }],
+            ['airTime 完結 = 開始', SHOW, 'airTime', { start: '15:00', end: '15:00' }],
+            ['airTime 超過 3 小時', SHOW, 'airTime', { start: '10:00', end: '13:15' }],
+        ];
+
+        it.each(SHOW_RUNTIME_ONLY)(
+            'runtime only: should reject show %s',
+            (_l, base, path, value) => {
+                const verdict = both(
+                    showSchema,
+                    parseShowDefinition,
+                    withChange(base, path, value),
+                );
+                expect(verdict).toEqual({ schema: true, runtime: false });
+            },
+        );
 
         it('runtime only: should reject a folder id that is not kebab-case', () => {
             const ctx = { ...ctxOf(), id: 'Bad_Id' };

@@ -55,6 +55,15 @@ describe('series drama availability builders', () => {
         ]);
     });
 
+    it('should show and read the displayName of an upcoming arc, keeping arc as the key', () => {
+        const arcs = [
+            { ...arcInfo('XXX', { addedAt: '2026-11-12', count: 20 }), arcLabel: '新名' },
+        ];
+        expect(upcomingChipsOf(arcs, TODAY)).toEqual([
+            { arc: 'XXX', arcLabel: '新名', text: '12/11 上架', label: '新名，12/11 星期四 上架' },
+        ]);
+    });
+
     it('should tag a chip only when the arc itself leaves soon (LK1)', () => {
         expect(chipLeavingOf(arcInfo('A', { removedAt: '2026-12-05' }), TODAY)).toEqual({
             tag: '05/12 下架',

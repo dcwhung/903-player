@@ -86,3 +86,21 @@ describe('airsWeekly', () => {
         expect(airsWeekly(findShow('daily') as ShowConfig)).toBe(false);
     });
 });
+
+describe('buildShowRegistry: enabled（Phase 3）', () => {
+    const registry = buildShowRegistry(
+        sourceOf(folder('on'), folder('off', { enabled: false }), folder('yes', { enabled: true })),
+    );
+
+    it('should leave disabled shows out of the list and lookups', () => {
+        expect(registry.shows.map((s) => s.id)).toEqual(['on', 'yes']);
+        expect(registry.findShow('off')).toBeUndefined();
+        expect(registry.themeFor('off')).toBe(NEUTRAL_THEME);
+    });
+
+    it('should still validate a disabled show', () => {
+        expect(() =>
+            buildShowRegistry(sourceOf(folder('off', { enabled: false, fileTime: 'x' }))),
+        ).toThrow(SchemaError);
+    });
+});

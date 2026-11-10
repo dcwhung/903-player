@@ -1,4 +1,4 @@
-import type { SeriesEpisode } from '@903-player/catalog';
+import { arcLabelOf, type SeriesEpisode } from '@903-player/catalog';
 import { t } from '../../../../i18n/t';
 import type { ArcGroup, ArcSummary } from '../../../../selectors/arcProgress';
 import { formatDuration } from '../../../../utils/time';
@@ -95,10 +95,15 @@ export const rowLabel = (
               s.isNew && t('drama.arcNewLabel'),
           ]);
 
+/** 一覽表行顯示嘅短篇名：displayName（由嗰個短篇嘅集攞），冇就 arc；比較 / key 照用 s.arc */
+export const summaryLabel = (s: ArcSummary): string =>
+    s.resume.arc === s.arc ? arcLabelOf(s.resume) : s.arc;
+
 /** 右邊播放掣嘅讀屏名 */
 export const playLabel = (s: ArcSummary, isCurrent: boolean, isPlaying: boolean): string => {
-    if (isCurrent) return t(isPlaying ? 'drama.arcPause' : 'drama.arcPlay', { arc: s.arc });
-    if (s.state === 'new') return t('drama.arcPlayNew', { arc: s.arc });
-    if (s.state === 'done') return t('drama.arcPlayAgain', { arc: s.arc });
-    return t('drama.arcPlayResume', { arc: s.arc, no: s.resume.no });
+    const arc = summaryLabel(s);
+    if (isCurrent) return t(isPlaying ? 'drama.arcPause' : 'drama.arcPlay', { arc });
+    if (s.state === 'new') return t('drama.arcPlayNew', { arc });
+    if (s.state === 'done') return t('drama.arcPlayAgain', { arc });
+    return t('drama.arcPlayResume', { arc, no: s.resume.no });
 };

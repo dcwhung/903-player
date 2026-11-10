@@ -6,6 +6,7 @@
 import { DRAMA_AUDIO_BASE } from '../constants';
 import type { DailyEpisode, DramaEpisode, DramaId, SeriesEpisode } from '../types/drama';
 import { dailyEpisodeId, seriesEpisodeId } from '../core/episodeId';
+import { arcLabelField, isArcEnabled } from './arcLabel';
 import { batchDateOf } from './availabilitySchema';
 import { displayTitle, encodePath, renderFileName, toChineseNumeral } from './filename';
 import type {
@@ -25,7 +26,18 @@ const FILE_NO_WIDTH = 2;
  */
 export interface EpisodeBuildOptions {
     appAudioBase: string;
+    /**
+     * 下架（enabled: false）嘅短篇都砌埋：backend 嘅 publish ID 守衛用（落架唔係刪，ID 唔當消失）；
+     * player 唔設，下架短篇唔出
+     */
+    includeDisabledArcs?: boolean;
 }
+
+/** 呢個短篇要唔要砌集數 */
+export const arcIncluded = (
+    arc: { enabled?: boolean },
+    options?: { includeDisabledArcs?: boolean },
+) => options?.includeDisabledArcs === true || isArcEnabled(arc);
 
 const audioBase = (audio: AudioDefinition, options: EpisodeBuildOptions): string =>
     audio.host === 'r2' ? `${DRAMA_AUDIO_BASE}/` : options.appAudioBase;
@@ -78,6 +90,7 @@ const seriesEpisode = (
         id: seriesEpisodeId(dramaId, arc.id, no),
         url: audioUrl(def.audio, [arc.name, file], options),
         arc: arc.name,
+        ...arcLabelField(arc),
         no,
         ...(title ? { title: displayTitle(title) } : {}),
         ...(addedAt ? { addedAt } : {}),
@@ -90,12 +103,14 @@ const seriesEpisodes = (
     def: SeriesDefinition,
     options: EpisodeBuildOptions,
 ): SeriesEpisode[] =>
-    def.arcs.flatMap((arc) =>
-        // 未知集數（未上架、drama.json 未寫 episodes）就一集都唔砌
-        Array.from({ length: arc.count ?? 0 }, (_, i) =>
-            seriesEpisode(dramaId, def, arc, arc.firstNo + i, options),
-        ),
-    );
+    def.arcs
+        .filter((arc) => arcIncluded(arc, options))
+        .flatMap((arc) =>
+            // 未知集數（未上架、drama.json 未寫 episodes）就一集都唔砌
+            Array.from({ length: arc.count ?? 0 }, (_, i) =>
+                seriesEpisode(dramaId, def, arc, arc.firstNo + i, options),
+            ),
+        );
 
 const dailyTokens = (audio: AudioDefinition, date: string) => ({
     date,

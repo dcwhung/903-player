@@ -1,7 +1,7 @@
-# 903-player-api（Backend Phase 2a / 2b）
+# 903-player-api（Backend Phase 2a / 2b / 3a）
 
 Cloudflare Worker：管理 catalog 內容（D1）、publish `catalog.json`（R2）、代出 `catalog.json` 同圖畀 player。
-Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）。
+Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a）。
 
 | 路徑                               | 用途                                                                   | 權限                          |
 | ---------------------------------- | ---------------------------------------------------------------------- | ----------------------------- |
@@ -11,9 +11,10 @@ Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans
 | `GET /api/health`                  | `{ ok, version }`                                                      | 公開                          |
 | `GET /api/me`                      | 而家 login 咗邊個                                                      | session                       |
 | `POST /api/publish[?force=1]`      | D1 → `catalog.json` → R2；ID 守衛（上次有、今次冇嘅 episode ID → 409） | session + same-origin         |
-| `GET /api/publishes`               | Publish 記錄（新到舊）                                                 | session                       |
+| `GET /api/publishes`               | Publish 記錄（新到舊）+ `changes`（同上一次 ok publish 比）+ `error`   | session                       |
 | `POST /api/publishes/:id/rollback` | 重新 publish 舊 snapshot（記做新一行，一樣行 ID 守衛）                 | session + same-origin         |
 | 內容 API（2b-1，見下面）           | entries CRUD、R2 掃描、短篇排程（Phase 3 admin 用）                    | session（改嘢 + same-origin） |
+| Admin API（3a，見下面）            | 自動掃描、待辦、改 ID、資料夾配對、排序、變更摘要                      | session（改嘢 + same-origin） |
 | `PUT /api/assets`（2b-2，見下面）  | 上載 disc / tile（WebP）→ R2 + `assets`，回圖檔名                      | session + same-origin         |
 | `GET /catalog/v1/catalog.json`     | Player 讀嘅 catalog（`max-age=60` + ETag）                             | 公開，CORS 限 player          |
 | `GET /catalog/v1/img/<hash>.<ext>` | Catalog 圖（content hash，`immutable`）                                | 公開，CORS 限 player          |
@@ -123,8 +124,8 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 
 | Method + path                                       | 做咩                                                                                                                                                                                                                                                                                                                                                                                                         |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET /api/entries`                                  | `{ entries: [{ kind, id, name, enabled, updatedAt }] }`（節目冇 `enabled`，一律 `true`）                                                                                                                                                                                                                                                                                                                     |
-| `GET /api/entries/:kind/:id`                        | `{ definition, images, updatedAt }`，`ETag: "<updatedAt>"`                                                                                                                                                                                                                                                                                                                                                   |
+| `GET /api/entries`                                  | `{ entries: [{ kind, id, name, enabled, draft, updatedAt }] }`（節目冇寫 `enabled` = `true`；`draft` 見下面「Admin API」）                                                                                                                                                                                                                                                                                   |
+| `GET /api/entries/:kind/:id`                        | `{ definition, images, draft, updatedAt }`，`ETag: "<updatedAt>"`                                                                                                                                                                                                                                                                                                                                            |
 | `PUT /api/entries/:kind/:id`                        | body `{ definition, images }`。更新要 `If-Match: <ETag>`、新增要 `If-None-Match: *`，唔啱 → 412。同 publish 同一套 validator 驗單一 entry（圖要合 `<hash>.<ext>` 兼已上載）→ 唔過 422 `{ error, details }`。成功 200（新增 201）`{ updatedAt, warnings: { missingEpisodeIds } }` + 新 `ETag`；`missingEpisodeIds` = 最新 publish 有、新 definition 冇嘅呢套劇 episode ID（只係提示，publish 時 ID 守衛照擋） |
 | `DELETE /api/entries/:kind/:id`                     | 只限最新 publish 冇用緊嘅 entry（劇集：冇佢嘅 episode ID；節目：document 冇佢），否則 409（改 `enabled: false`）。可帶 `If-Match`。成功 204，劇集嘅排程一齊刪                                                                                                                                                                                                                                                |
 | `POST /api/dramas/:id/scan`                         | List R2 `AUDIO` 嘅 `<audio.folder>/`（兩層，跟 cursor）→ `generateDraft`（`existing` = D1 definition，同 `npm run drama-from-folder` 一套規則）。回 `{ draft, issues, diff }`（`draft` 有 `[錯誤]` 時係 `null`；`diff` = `[{ path, before?, after? }]`），**唔寫 D1**，覆核後再 `PUT`。`audio.host` 唔係 `r2` → 422                                                                                          |
@@ -177,3 +178,22 @@ curl -k -X PUT https://localhost:8787/api/assets -H 'Origin: https://localhost:8
 | Cloudflare API token `903-player-github-deploy` | 開 token 起 **1 年**（2026-11-08 開）                    | Cloudflare → My Profile → API Tokens 開新 token（同樣權限）→ 換 GitHub secret `CLOUDFLARE_API_TOKEN` |
 | Google OAuth client                             | **6 個月冇用**會被 Google 刪（刪咗 30 日內可以 restore） | 最少半年 login 一次 ops 頁；被刪就喺 Google Cloud Console → Credentials restore                      |
 | Google consent screen Testing 模式              | —                                                        | 只有 test user 登入得（同 whitelist 一致）；加 admin 要同時加 test user 同 `ADMIN_EMAILS`            |
+
+## Admin API（Phase 3a）
+
+全部喺 `/api` 底下，同內容 API 一樣要 login（改嘢要 same-origin），body 上限 256 KB。Migration `0004_admin.sql`：`entries.draft`、`scan_findings` 表、`publishes.error`（deploy 時 `deploy-api.yml` 自動 apply）。
+
+| Method + path                         | 做咩                                                                                                                                                                                                                                                                                          |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/scan`                      | 入 admin 自動掃描：列 `AUDIO` 頂層資料夾 → 每套 `audio.host = r2` 嘅劇 `listingFromR2` + `generateDraft`；有 diff 先寫 D1（新短篇 `enabled: false`）+ 記 finding；新資料夾 → 建 draft 劇（ID `drama-NN`）；有劇資料夾唔見 → 唔自動建，記「資料夾唔見」。回 `{ scannedAt, findings, skipped }` |
+| `GET /api/todos`                      | 未解決 findings → 待辦矩陣 `{ rows: [{ kind, findingIds, dramaId, arcId, name, cells }], blocking }`；`cells` = `folder` / `id` / `images` / `schedule` / `summary`，每格 `{ state: done / must / optional / na, target }`                                                                    |
+| `POST /api/entries/dramas/:id/rename` | `{ newId }`：只限從未發佈（任何 ok publish 都冇用過呢個 ID，否則 409）；entries + schedules + findings 一個 batch 改；可帶 `If-Match`                                                                                                                                                         |
+| `POST /api/dramas/:id/folder`         | `{ folder }`：配對 R2 頂層資料夾（R2 冇 → 422、其他劇用緊 → 409）→ 即刻重新掃描嗰套劇，同一個 batch 寫 + 刪「資料夾唔見」finding                                                                                                                                                              |
+| `GET /api/folders/unmapped`           | `{ folders }`：冇劇用緊嘅頂層資料夾                                                                                                                                                                                                                                                           |
+| `PUT /api/order/:kind`                | `{ ids }`：上架嗰段嘅全部 entry（新次序；唔啱 → 422）→ 一個 batch 寫 `order` 1、2、3…；下架 / draft 唔郁；回 `{ ids, changed }`                                                                                                                                                               |
+| `GET /api/changes`                    | D1（唔包 draft）vs 最新 ok publish：`{ base, changes: { items, timeline }, validation }`（`summarizeChanges`；`validation` = `{ ok: true, episodeCount }` 或 `{ ok: false, error }`）                                                                                                         |
+
+- **Draft**（`entries.draft = 1`）：掃描自動建、未齊必須資料嘅劇。`PUT` 先試完整驗證，唔過就用寬鬆驗證（definition 用到但未上載嘅圖當有；其他規則照驗）；一次 `PUT` 通過完整驗證就自動清 `draft`。Publish / `GET /api/changes` 唔包 draft；`DELETE` 照准（從未發佈）
+- **Findings**：普通 publish 成功之後，待辦行冇「必須」格嘅 finding 標 `resolved_publish_id`（仲有必須嘅留低）；「資料夾唔見」喺配對資料夾時刪走
+- **下架短篇**（`enabled: false`）：player 唔顯示。ID 守衛唔對稱：`publishes.episode_ids` 只鎖上過架嘅 episode ID（今次上架 + 以前鎖咗而仲喺 document 嘅）；比較時新 document 連下架劇 / 短篇都計，所以落架唔會 409，但從未上架嘅 placeholder（`arc-01`、`drama-01`）改 ID 唔使 force；rename「從未發佈」亦只睇鎖咗嘅 ID（W-707）
+- 每次掃描成本：1 個頂層 list + 每套劇（根 + 每個短篇）各 1 個 list

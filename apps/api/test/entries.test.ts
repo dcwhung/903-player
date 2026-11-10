@@ -35,6 +35,7 @@ describe('GET /api/entries', () => {
                     id: 'golden',
                     name: '黃金少年',
                     enabled: true,
+                    draft: false,
                     updatedAt: '2026-11-08T00:00:00Z',
                 },
                 {
@@ -42,6 +43,7 @@ describe('GET /api/entries', () => {
                     id: 'badgirl',
                     name: 'Bad Girl大過佬',
                     enabled: true,
+                    draft: false,
                     updatedAt: '2026-11-08T00:00:00Z',
                 },
             ],
@@ -60,6 +62,7 @@ describe('GET /api/entries/:kind/:id', () => {
         expect(await response.json()).toEqual({
             definition: drama(3),
             images: IMAGES,
+            draft: false,
             updatedAt: '2026-11-08T00:00:00Z',
         });
     });

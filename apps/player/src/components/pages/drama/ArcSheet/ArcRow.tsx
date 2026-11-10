@@ -6,7 +6,7 @@ import { ratio, toPercent } from '../../../../utils/ratio';
 import { CheckIcon, PauseIcon, PlayIcon, RestartIcon } from '../../../shared/common/icons/icons';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';
 import { NewBadge } from '../../../shared/common/NewBadge/NewBadge';
-import { playLabel, rowLabel, visibleStatus } from './arcLabels';
+import { playLabel, rowLabel, summaryLabel, visibleStatus } from './arcLabels';
 import styles from './ArcSheet.module.css';
 import type { ArcRowNotes } from './arcSheetTypes';
 import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
@@ -107,13 +107,16 @@ export const ArcRow = ({
                 className={styles.pick}
                 data-role="pick"
                 aria-current={isCurrent ? 'true' : undefined}
-                aria-label={t('drama.arcRow', { arc: s.arc, status: rowLabel(s, current, notes) })}
+                aria-label={t('drama.arcRow', {
+                    arc: summaryLabel(s),
+                    status: rowLabel(s, current, notes),
+                })}
                 onClick={() => onPick(s.arc)}
             >
                 <ArcCover summary={s} cover={coverOf(s)} total={notes?.total} />
                 <span className={styles.text} aria-hidden="true">
                     <span className={styles.name}>
-                        <Marquee className={styles.nameText} text={s.arc} />
+                        <Marquee className={styles.nameText} text={summaryLabel(s)} />
                         {s.isNew && <NewBadge size="sm" className={styles.fresh} />}
                         {notes?.badge && <span className={styles.leavingBadge}>{notes.badge}</span>}
                     </span>

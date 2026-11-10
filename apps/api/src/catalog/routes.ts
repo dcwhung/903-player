@@ -1,5 +1,7 @@
 /* /api/publish、/api/publishes、/api/publishes/:id/rollback（已經過 session + same-origin 守門） */
 import { Hono, type Context } from 'hono';
+import { publishChanges } from '../admin/changes';
+import { resolveDoneFindings } from '../admin/todos';
 import type { AppEnv } from '../app';
 import { HTTP_STATUS } from '../config';
 import {
@@ -14,6 +16,7 @@ import {
     listEntries,
     listPublishes,
     publishDocument,
+    publishDocuments,
     type PublishRow,
 } from './store';
 
@@ -30,6 +33,7 @@ const summary = (row: PublishRow, current: boolean) => ({
     episodeCount: row.episode_count,
     rollbackOf: row.rollback_of,
     status: row.status,
+    error: row.error,
     current,
 });
 
@@ -56,7 +60,14 @@ const publishValue = async (
             force: c.req.query('force') === '1',
             rollbackOf,
         };
-        return respond(c, await commitPublish(c.env, validated, options));
+        const outcome = await commitPublish(c.env, validated, options);
+        // 普通 publish 成功：搞掂咗嘅掃描 finding 標 resolved（還原唔算）
+        if (outcome.kind === 'published' && rollbackOf === null)
+            // 已經上咗線：標唔到只係待辦行留低，唔好令 publish 回 500
+            await resolveDoneFindings(c.env.DB, outcome.publish.id).catch((error: unknown) =>
+                console.error(`publish ${outcome.publish.id}: could not resolve findings`, error),
+            );
+        return respond(c, outcome);
     } catch (error) {
         if (!(error instanceof PublishValidationError)) throw error;
         return c.json({ error: error.message }, HTTP_STATUS.unprocessable);
@@ -79,10 +90,20 @@ publishRoutes.post('/publish', (c) =>
 );
 
 publishRoutes.get('/publishes', async (c) => {
-    const rows = await listPublishes(c.env.DB);
+    const [rows, documents] = await Promise.all([
+        listPublishes(c.env.DB),
+        publishDocuments(c.env.DB),
+    ]);
     // 而家 publish 緊 = 最新一行 ok（failed 行冇寫到 R2，S-786）
     const currentId = rows.find((row) => row.status === 'ok')?.id;
-    return c.json({ publishes: rows.map((row) => summary(row, row.id === currentId)) });
+    // 每行同之前最近一次 ok publish 比（上下架記錄，Phase 3a）
+    const changes = publishChanges(rows, documents);
+    return c.json({
+        publishes: rows.map((row) => ({
+            ...summary(row, row.id === currentId),
+            changes: changes.get(row.id),
+        })),
+    });
 });
 
 /** 還原 = 重新 publish 舊 snapshot（記做新一行，D1 entries 唔郁），一樣行 ID 守衛 */

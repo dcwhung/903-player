@@ -6,7 +6,7 @@ import type {
     SavedRowView,
     SavedTabView,
 } from '../../components/pages/home/SavedTab/savedTypes';
-import { dramaStatus } from '../../catalog/dramas';
+import { arcLabelFor, dramaStatus } from '../../catalog/dramas';
 import { useRecordings } from '../../data/useRecordings';
 import { useRefreshedOn } from '../../hooks/useRefreshedOn';
 import { usePlayer } from '../../player/usePlayer';
@@ -96,9 +96,11 @@ const boxView = (box: BookmarkBox, ctx: RowContext): SavedBoxView => {
         const first = section.items[0];
         const art = first ? trackArt(bookmarkTrack(first, ctx.recordings)) : '';
         // name 淨係用喺行嘅讀屏名：短篇劇名用讀屏版（S-716）
-        const name = section.arc ? seriesSpokenName(title, section.arc) : title;
+        // 短篇名顯示 displayName（收藏 key 照用 section.arc）
+        const heading = section.arc && arcLabelFor(box.id, section.arc);
+        const name = heading ? seriesSpokenName(title, heading) : title;
         const rows = section.items.map((b) => rowView(b, name, ctx));
-        return { key: section.key, art, rows, ...(section.arc && { heading: section.arc }) };
+        return { key: section.key, art, rows, ...(heading && { heading }) };
     });
     // 成套劇已下架：banner 變灰（每日劇 / 短篇劇都係）
     const removed = box.kind === 'drama' && dramaStatus(box.id, ctx.today) === 'removed';

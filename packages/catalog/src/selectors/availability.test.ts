@@ -88,6 +88,15 @@ describe('upcoming arcs and batches', () => {
         warn.mockRestore();
     });
 
+    it('should carry the arc display label of an upcoming arc', () => {
+        const arcs = [
+            { ...arcInfo('R2 名', { addedAt: '2026-11-12', count: 2 }), arcLabel: '顯示名' },
+        ];
+        expect(upcomingArcs(arcs, TODAY)).toEqual([
+            { arc: 'R2 名', arcLabel: '顯示名', addedAt: '2026-11-12', count: 2 },
+        ]);
+    });
+
     it('should warn once per arc and release date, not once per arc name (S-701)', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
         const missing = (addedAt: string) => arcInfo('同名短篇', { addedAt, count: undefined });

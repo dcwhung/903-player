@@ -53,6 +53,15 @@ export const ASSET_HASH_HEX_LENGTH = 16;
  */
 export const VALIDATION_APP_AUDIO_BASE = 'https://app-audio.invalid/dramas/';
 
+/**
+ * Worker 驗證 / 計 episode ID 用嘅 build options：下架短篇（enabled: false）嘅集數都計埋，
+ * 落架唔當 ID 消失（ID 守衛、PUT warnings 唔會因為落架而擋）；player 唔設，下架短篇唔出
+ */
+export const VALIDATION_BUILD_OPTIONS = {
+    appAudioBase: VALIDATION_APP_AUDIO_BASE,
+    includeDisabledArcs: true,
+} as const;
+
 export const HTTP_STATUS = {
     ok: 200,
     created: 201,

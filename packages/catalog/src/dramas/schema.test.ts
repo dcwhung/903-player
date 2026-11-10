@@ -296,4 +296,63 @@ describe('parseDramaDefinition', () => {
             'src/catalog/dramas/library/Golden Boy/drama.json: folder name must match /^[a-z][a-z0-9-]*$/',
         );
     });
+
+    describe('Phase 3 optional fields', () => {
+        const ARC = SERIES.arcs[0];
+        const withArc = (patch: Record<string, unknown>) =>
+            seriesWith({ arcs: [{ ...ARC, ...patch }, ...SERIES.arcs.slice(1)] });
+
+        it('should read drama summary and arc enabled / displayName / summary / cast', () => {
+            const def = parse({
+                ...withArc({
+                    enabled: false,
+                    displayName: '第一季',
+                    summary: '短篇簡介',
+                    cast: ['甲', '乙'],
+                }),
+                summary: '劇集簡介',
+            });
+            if (def.kind !== 'series') throw new Error('series expected');
+            expect(def.summary).toBe('劇集簡介');
+            expect(def.arcs[0]).toMatchObject({
+                enabled: false,
+                displayName: '第一季',
+                summary: '短篇簡介',
+                cast: ['甲', '乙'],
+            });
+            expect(def.arcs[1]?.enabled).toBeUndefined();
+            expect(def.arcs[1]?.displayName).toBeUndefined();
+        });
+
+        it.each([
+            [
+                'a drama summary over 500 characters',
+                seriesWith({ summary: '字'.repeat(501) }),
+                /summary must be at most 500/,
+            ],
+            [
+                'a non-boolean arc enabled',
+                withArc({ enabled: 1 }),
+                /arcs\[0\]\.enabled must be a boolean/,
+            ],
+            [
+                'an empty displayName',
+                withArc({ displayName: '' }),
+                /arcs\[0\]\.displayName must be a non-empty string/,
+            ],
+            [
+                'a displayName over 40 characters',
+                withArc({ displayName: '名'.repeat(41) }),
+                /arcs\[0\]\.displayName must be at most 40/,
+            ],
+            ['an empty cast name', withArc({ cast: [''] }), /arcs\[0\]\.cast\[0\]/],
+            [
+                'an arc summary over 500 characters',
+                withArc({ summary: '字'.repeat(501) }),
+                /arcs\[0\]\.summary/,
+            ],
+        ])('should reject %s', (_label, raw, message) => {
+            expect(() => parse(raw)).toThrow(message);
+        });
+    });
 });

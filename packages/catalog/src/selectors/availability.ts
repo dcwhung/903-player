@@ -53,6 +53,8 @@ export const isAvailable = (window: DateWindow, today: string): boolean =>
 /** 即將上架嘅短篇（全集一覽表「即將上架」組、chips 最尾）：集數未知就冇 count */
 export interface UpcomingArc {
     arc: string;
+    /** 顯示名（短篇 displayName）：冇就顯示 arc */
+    arcLabel?: string;
     addedAt: string;
     count?: number;
 }
@@ -75,7 +77,8 @@ const toUpcoming = (arc: ArcAvailability, today: string): UpcomingArc[] => {
     if (addedAt === undefined) return [];
     if (count === undefined && !isArcUpcoming(addedAt, today)) warnMissingEpisodes(arc);
     if (count !== undefined && !isArcUpcoming(addedAt, today)) return [];
-    return [{ arc: arc.arc, addedAt, ...(count === undefined ? {} : { count }) }];
+    const label = arc.arcLabel === undefined ? {} : { arcLabel: arc.arcLabel };
+    return [{ arc: arc.arc, ...label, addedAt, ...(count === undefined ? {} : { count }) }];
 };
 
 /** 未上架嘅短篇（catalog 次序） */

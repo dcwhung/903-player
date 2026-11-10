@@ -20,6 +20,13 @@ import {
     type ParseContext,
     type Raw,
 } from '../core/reader';
+import {
+    present,
+    readOptionalBoolean,
+    readOptionalDisplayName,
+    readOptionalNames,
+    readOptionalSummary,
+} from '../core/textFields';
 import { readTheme, type ThemeDefinition } from '../core/themeSchema';
 import type { DramaKind } from '../types/drama';
 import {
@@ -74,6 +81,14 @@ export interface ArcDefinition {
     titles: ReadonlyMap<number, string>;
     /** 集數 → 完整檔名（不規則檔名用） */
     files: ReadonlyMap<number, string>;
+    /** false = 下架：player 唔顯示呢個短篇（集數唔砌）；冇 = true */
+    enabled?: boolean;
+    /** player 顯示名稱（冇就用 name）；name 繼續係 R2 子資料夾 + key */
+    displayName?: string;
+    /** 短篇簡介（≤ 500 字；P9.5 預備） */
+    summary?: string;
+    /** 聲演（≤ 12 個；P9.5 預備） */
+    cast?: readonly string[];
 }
 
 export interface DailyEpisodeDefinition {
@@ -96,6 +111,8 @@ interface DramaDefinitionBase {
     addedAt?: string | undefined;
     /** 全劇下架日：當日起成套劇唔再提供 */
     removedAt?: string | undefined;
+    /** 劇集簡介（≤ 500 字；P9.5 預備） */
+    summary?: string;
 }
 
 export interface SeriesDefinition extends DramaDefinitionBase {
@@ -261,6 +278,14 @@ const readArcIdentity = (ctx: ParseContext, raw: Raw, path: string, seen: SeenAr
     return { id, name };
 };
 
+/** Phase 3 短篇 optional 欄位：冇寫就唔出 key */
+const readArcExtras = (ctx: ParseContext, raw: Raw, path: string) => ({
+    ...present('enabled', readOptionalBoolean(ctx, raw, 'enabled', `${path}.enabled`)),
+    ...present('displayName', readOptionalDisplayName(ctx, raw, `${path}.displayName`)),
+    ...present('summary', readOptionalSummary(ctx, raw, `${path}.summary`)),
+    ...present('cast', readOptionalNames(ctx, raw, 'cast', `${path}.cast`)),
+});
+
 const readArc = (
     ctx: ParseContext,
     value: unknown,
@@ -287,6 +312,7 @@ const readArc = (
             ...removalCtx,
             removedAt: window.removedAt,
         }),
+        ...readArcExtras(ctx, raw, path),
     };
 };
 
@@ -333,6 +359,7 @@ const readBase = (ctx: ParseContext, raw: Raw, kind: DramaKind): DramaDefinition
     audio: readAudio(ctx, raw, kind),
     theme: readTheme(ctx, raw),
     ...readWindow(ctx, raw, ''),
+    ...present('summary', readOptionalSummary(ctx, raw, 'summary')),
 });
 
 /** 驗證一個 drama.json（JSON import 返嚟嘅 unknown），唔合格就 throw DramaSchemaError */
