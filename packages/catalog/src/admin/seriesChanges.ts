@@ -74,6 +74,24 @@ const arcEpisodeItems = (
     }));
 };
 
+/** 兩次都上架嘅短篇少咗嘅集數（R2 刪咗 / 還原舊版）：即時落架 */
+const removedEpisodeItems = (
+    arc: RawJson,
+    prevArc: RawJson | undefined,
+    ctx: SeriesContext,
+): ChangeItem[] => {
+    if (!prevArc) return [];
+    const now = new Set(episodeNosOf(arc));
+    const gone = episodeNosOf(prevArc).filter((no) => !now.has(no));
+    return runsOf(gone, () => 'now').map(({ first, last }) => ({
+        kind: 'unlist',
+        when: 'now',
+        entry: ctx.ref,
+        arc: arcRefOf(arc),
+        detail: { episodes: { first, last }, reason: 'deleted' },
+    }));
+};
+
 /** 短篇下架日新設 / 改咗 → 嗰日落架 */
 const arcRemovalItems = (
     arc: RawJson,
@@ -125,6 +143,7 @@ export const seriesArcChanges = (
             const prevArc = prevArcs.get(arcIdOf(arc));
             return [
                 ...arcEpisodeItems(next, arc, prevArc, ctx),
+                ...removedEpisodeItems(arc, prevArc, ctx),
                 ...arcRemovalItems(arc, prevArc, ctx),
             ];
         }),

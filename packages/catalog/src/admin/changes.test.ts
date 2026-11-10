@@ -115,6 +115,17 @@ describe('summarizeChanges', () => {
         ]);
     });
 
+    it('should report episodes that disappeared from a listed arc as unlisted now', () => {
+        const items = summarizeChanges(
+            doc([], [series('g', [{ ...ARC1, episodes: 5 }])]),
+            doc([], [series('g', [ARC1])]),
+            TODAY,
+        ).items;
+        expect(items.map((i) => [i.kind, i.when, i.detail])).toEqual([
+            ['unlist', 'now', { episodes: { first: 4, last: 5 }, reason: 'deleted' }],
+        ]);
+    });
+
     it('should report unlisting a show, a drama, an arc and a deleted entry', () => {
         const prev = doc(
             [show('a'), show('b')],
