@@ -29,6 +29,7 @@ const summary = (row: PublishRow, current: boolean) => ({
     dramaCount: row.drama_count,
     episodeCount: row.episode_count,
     rollbackOf: row.rollback_of,
+    status: row.status,
     current,
 });
 
@@ -79,7 +80,9 @@ publishRoutes.post('/publish', (c) =>
 
 publishRoutes.get('/publishes', async (c) => {
     const rows = await listPublishes(c.env.DB);
-    return c.json({ publishes: rows.map((row, index) => summary(row, index === 0)) });
+    // 而家 publish 緊 = 最新一行 ok（failed 行冇寫到 R2，S-786）
+    const currentId = rows.find((row) => row.status === 'ok')?.id;
+    return c.json({ publishes: rows.map((row) => summary(row, row.id === currentId)) });
 });
 
 /** 還原 = 重新 publish 舊 snapshot（記做新一行，D1 entries 唔郁），一樣行 ID 守衛 */
