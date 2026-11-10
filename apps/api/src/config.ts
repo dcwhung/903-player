@@ -1,6 +1,7 @@
 /* apps/api 嘅 named constants：cookie、TTL、cache 秒數、R2 key layout、Google endpoint */
 
-const SECOND_MS = 1000;
+/** 唯一一份（S-773） */
+export const SECOND_MS = 1000;
 const MINUTE_SECONDS = 60;
 const DAY_SECONDS = 24 * 60 * MINUTE_SECONDS;
 const SESSION_DAYS = 30;

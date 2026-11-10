@@ -59,6 +59,30 @@ export const latestEpisodeIds = async (db: D1Database): Promise<string[]> => {
     return ids ? (JSON.parse(ids) as string[]) : [];
 };
 
+export interface LatestPublish {
+    row: PublishRow;
+    episodeIds: string[];
+    /** catalog.json 全文 */
+    document: string;
+}
+
+/** 而家 publish 緊嗰份（最大 id）；未 publish 過 → null */
+export const latestPublish = async (db: D1Database): Promise<LatestPublish | null> => {
+    const row = await db
+        .prepare(
+            `SELECT ${SUMMARY_COLUMNS}, episode_ids, document FROM publishes ORDER BY id DESC LIMIT 1`,
+        )
+        .first<PublishRow & { episode_ids: string; document: string }>();
+    if (!row) return null;
+    const { episode_ids: ids, document, ...summary } = row;
+    return { row: summary, episodeIds: JSON.parse(ids) as string[], document };
+};
+
+/** R2 寫失敗時收返啱啱 insert 嗰行（S-767） */
+export const deletePublish = async (db: D1Database, id: number): Promise<void> => {
+    await db.prepare('DELETE FROM publishes WHERE id = ?').bind(id).run();
+};
+
 export const insertPublish = async (db: D1Database, row: NewPublish): Promise<PublishRow> => {
     const inserted = await db
         .prepare(

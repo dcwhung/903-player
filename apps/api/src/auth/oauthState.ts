@@ -2,7 +2,12 @@
  * OAuth state + PKCE verifier：/auth/google/start 放入 HMAC 簽名 cookie（SESSION_SECRET），
  * callback 驗簽名、時限、同 query 嘅 state 一致先換 token。Worker 唔使記任何 server state
  */
-import { OAUTH_STATE_BYTES, OAUTH_STATE_TTL_SECONDS, PKCE_VERIFIER_BYTES } from '../config';
+import {
+    OAUTH_STATE_BYTES,
+    OAUTH_STATE_TTL_SECONDS,
+    PKCE_VERIFIER_BYTES,
+    SECOND_MS,
+} from '../config';
 import {
     base64UrlDecode,
     base64UrlEncode,
@@ -10,8 +15,6 @@ import {
     hmacVerify,
     randomBase64Url,
 } from '../lib/crypto';
-
-const SECOND_MS = 1000;
 
 export interface OAuthState {
     state: string;
