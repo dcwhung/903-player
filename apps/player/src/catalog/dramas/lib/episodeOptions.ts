@@ -3,9 +3,8 @@
  * host: app 嘅錄音放喺 app 自己 public/dramas/<folder>/，跟 Vite BASE_URL（Vercel `/`、GitHub Pages `/903-player/`）
  */
 import type { EpisodeBuildOptions } from '@903-player/catalog';
+import { episodeOptionsFor } from './episodeOptionsFor';
 
-const APP_AUDIO_DIR = 'dramas/';
-
-export const PLAYER_EPISODE_OPTIONS: EpisodeBuildOptions = {
-    appAudioBase: `${import.meta.env.BASE_URL}${APP_AUDIO_DIR}`,
-};
+export const PLAYER_EPISODE_OPTIONS: EpisodeBuildOptions = episodeOptionsFor(
+    import.meta.env.BASE_URL,
+);
