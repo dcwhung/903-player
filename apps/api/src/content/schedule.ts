@@ -115,9 +115,10 @@ const prepare = async (c: Context<AppEnv>, loaded: LoadedArc) => {
     }
     const definition = scheduledDefinition(loaded, result.expanded);
     const images = JSON.parse(loaded.row.images) as Json;
-    const warnings = await checkedEntry(c, { kind: 'dramas', id: loaded.id, definition, images });
-    if (warnings instanceof Response) return warnings;
-    return { ...result, definition, images, warnings };
+    const entry = { kind: 'dramas' as const, id: loaded.id, definition, images };
+    const checked = await checkedEntry(c, entry, loaded.row.draft === 1);
+    if (checked instanceof Response) return checked;
+    return { ...result, definition, images, ...checked };
 };
 
 scheduleRoutes.get(SCHEDULE_PATH, async (c) => {
@@ -150,11 +151,15 @@ scheduleRoutes.put(SCHEDULE_PATH, async (c) => {
     if (!ifMatches(c.req.header('if-match'), loaded.row.updated_at)) return preconditionFailed(c);
     const prepared = await prepare(c, loaded);
     if (prepared instanceof Response) return prepared;
-    const { rule, expanded, definition, images, warnings } = prepared;
+    const { rule, expanded, definition, images, warnings, draft } = prepared;
     const updatedAt = nextUpdatedAt(loaded.row.updated_at);
     const row = rowOf({ kind: 'dramas', id: loaded.id, definition, images });
     const [entry] = await c.env.DB.batch([
-        updateEntryStatement(c.env.DB, row, { expected: loaded.row.updated_at, updatedAt }),
+        updateEntryStatement(c.env.DB, row, {
+            expected: loaded.row.updated_at,
+            updatedAt,
+            draft,
+        }),
         upsertScheduleStatement(c.env.DB, {
             dramaId: loaded.id,
             arcId: loaded.arcId,

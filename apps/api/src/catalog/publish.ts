@@ -15,7 +15,7 @@ import {
     CATALOG_IMAGE_PATH,
     CATALOG_JSON_KEY,
     IMAGE_FILE_PATTERN,
-    VALIDATION_APP_AUDIO_BASE,
+    VALIDATION_BUILD_OPTIONS,
 } from '../config';
 import { sha256Hex } from '../lib/crypto';
 import { purgeCatalogCache } from './serve';
@@ -111,9 +111,7 @@ export const documentFromEntries = (
 export const validateDocument = (value: unknown): ValidatedDocument => {
     try {
         const doc = parseCatalogDocument(value);
-        const dramas = buildRegistry(documentSource(doc, 'dramas'), {
-            appAudioBase: VALIDATION_APP_AUDIO_BASE,
-        });
+        const dramas = buildRegistry(documentSource(doc, 'dramas'), VALIDATION_BUILD_OPTIONS);
         buildShowRegistry(documentSource(doc, 'shows'));
         const episodeIds = dramas.dramas.flatMap((d) =>
             dramas.catalogEpisodesOf(d.id).map((e) => e.id),
@@ -147,16 +145,19 @@ type PublishEnv = { DB: D1Database; CATALOG: R2Bucket; WORKER_ORIGIN: string };
  * R2 寫失敗後收拾嗰行：刪走（S-767）；連刪都失敗就標 failed（S-786），
  * 唔係就會被當做最新一次，同內容再 publish 會判 unchanged，R2 永遠唔更新
  */
-const discardPublish = async (db: D1Database, id: number): Promise<void> => {
+const discardPublish = async (db: D1Database, id: number, reason: string): Promise<void> => {
     try {
         await deletePublish(db, id);
     } catch {
         // 標都標唔到：照 throw 返原本 R2 錯誤，呢度只留 log 俾 Workers Logs 追查
-        await markPublishFailed(db, id).catch((error: unknown) =>
+        await markPublishFailed(db, id, reason).catch((error: unknown) =>
             console.error(`publish ${id}: could not drop or mark failed`, error),
         );
     }
 };
+
+const messageOf = (error: unknown): string =>
+    error instanceof Error ? error.message : String(error);
 
 /** 先記 publishes 後寫 R2：R2 寫失敗就收拾返嗰行，ID 守衛唔會漏咗今次嘅 ID（S-767） */
 const writePublish = async (
@@ -182,7 +183,7 @@ const writePublish = async (
             customMetadata: { hash },
         });
     } catch (error) {
-        await discardPublish(env.DB, publish.id);
+        await discardPublish(env.DB, publish.id, messageOf(error));
         throw error;
     }
     return publish;

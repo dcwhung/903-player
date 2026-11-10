@@ -21,6 +21,8 @@ export interface PublishRow {
     rollback_of: number | null;
     /** 'failed'：R2 寫唔到而且刪唔返嗰行（S-786）；唔計入 latestPublish */
     status: PublishStatus;
+    /** failed 嘅原因（migration 0004；ok 行係 null） */
+    error: string | null;
 }
 
 export type PublishStatus = 'ok' | 'failed';
@@ -38,13 +40,18 @@ export interface NewPublish {
 }
 
 const SUMMARY_COLUMNS =
-    'id, created_at, created_by, hash, show_count, drama_count, episode_count, rollback_of, status';
+    'id, created_at, created_by, hash, show_count, drama_count, episode_count, rollback_of, status, error';
 
-/** 按 id 排：同 buildCatalogJson.mjs（folder 名排序）一致，方便開 flag 前比較 */
+/**
+ * Publish 用嘅 entries：按 id 排（同 buildCatalogJson.mjs folder 名排序一致，方便開 flag 前比較）；
+ * draft（掃描自動建、未齊資料）唔包
+ */
 export const listEntries = async (db: D1Database): Promise<EntryRow[]> =>
     (
         await db
-            .prepare('SELECT kind, id, definition, images FROM entries ORDER BY kind, id')
+            .prepare(
+                'SELECT kind, id, definition, images FROM entries WHERE draft = 0 ORDER BY kind, id',
+            )
             .all<EntryRow>()
     ).results;
 
@@ -101,9 +108,16 @@ export const deletePublish = async (db: D1Database, id: number): Promise<void> =
     await db.prepare('DELETE FROM publishes WHERE id = ?').bind(id).run();
 };
 
-/** 刪都刪唔到時退一步：標 failed，之後唔計入 latestPublish（S-786） */
-export const markPublishFailed = async (db: D1Database, id: number): Promise<void> => {
-    await db.prepare("UPDATE publishes SET status = 'failed' WHERE id = ?").bind(id).run();
+/** 刪都刪唔到時退一步：標 failed（連原因），之後唔計入 latestPublish（S-786） */
+export const markPublishFailed = async (
+    db: D1Database,
+    id: number,
+    error: string,
+): Promise<void> => {
+    await db
+        .prepare("UPDATE publishes SET status = 'failed', error = ? WHERE id = ?")
+        .bind(error, id)
+        .run();
 };
 
 export const insertPublish = async (db: D1Database, row: NewPublish): Promise<PublishRow> => {
@@ -137,6 +151,16 @@ export const listPublishes = async (db: D1Database): Promise<PublishRow[]> =>
             .all<PublishRow>()
     ).results;
 
+/** 全部 publish 嘅 catalog.json（id → 全文；上下架記錄計 changes 用） */
+export const publishDocuments = async (db: D1Database): Promise<Map<number, string>> =>
+    new Map(
+        (
+            await db
+                .prepare('SELECT id, document FROM publishes')
+                .all<{ id: number; document: string }>()
+        ).results.map((row) => [row.id, row.document]),
+    );
+
 export const publishDocument = (db: D1Database, id: number): Promise<string | null> =>
     db.prepare('SELECT document FROM publishes WHERE id = ?').bind(id).first<string>('document');
 
@@ -145,46 +169,59 @@ export const publishDocument = (db: D1Database, id: number): Promise<string | nu
 export interface StoredEntry extends EntryRow {
     /** ISO 時間：亦係 ETag（樂觀鎖） */
     updated_at: string;
+    /** 1 = 掃描自動建、未齊資料（publish 唔包，PUT 寬鬆驗證） */
+    draft: number;
 }
 
+const STORED_COLUMNS = 'kind, id, definition, images, updated_at, draft';
+
 export const listStoredEntries = async (db: D1Database): Promise<StoredEntry[]> =>
-    (
-        await db
-            .prepare(
-                'SELECT kind, id, definition, images, updated_at FROM entries ORDER BY kind, id',
-            )
-            .all<StoredEntry>()
-    ).results;
+    (await db.prepare(`SELECT ${STORED_COLUMNS} FROM entries ORDER BY kind, id`).all<StoredEntry>())
+        .results;
 
 export const getEntry = (db: D1Database, kind: string, id: string): Promise<StoredEntry | null> =>
     db
-        .prepare(
-            'SELECT kind, id, definition, images, updated_at FROM entries WHERE kind = ? AND id = ?',
-        )
+        .prepare(`SELECT ${STORED_COLUMNS} FROM entries WHERE kind = ? AND id = ?`)
         .bind(kind, id)
         .first<StoredEntry>();
 
-/** 新增：已經有就乜都唔做（changes = 0 → 412） */
-export const insertEntryStatement = (db: D1Database, row: EntryRow, updatedAt: string) =>
-    db
-        .prepare(
-            `INSERT INTO entries (kind, id, definition, images, updated_at) VALUES (?, ?, ?, ?, ?)
-             ON CONFLICT (kind, id) DO NOTHING`,
-        )
-        .bind(row.kind, row.id, row.definition, row.images, updatedAt);
-
-/** 樂觀鎖更新：updated_at 仲係 expected 先寫（changes = 0 → 412） */
-export const updateEntryStatement = (
+/** 新增：已經有就乜都唔做（changes = 0 → 412）；draft 只係掃描自動建新劇先用 */
+export const insertEntryStatement = (
     db: D1Database,
     row: EntryRow,
-    { expected, updatedAt }: { expected: string; updatedAt: string },
+    updatedAt: string,
+    draft = false,
 ) =>
     db
         .prepare(
-            `UPDATE entries SET definition = ?, images = ?, updated_at = ?
+            `INSERT INTO entries (kind, id, definition, images, updated_at, draft)
+             VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (kind, id) DO NOTHING`,
+        )
+        .bind(row.kind, row.id, row.definition, row.images, updatedAt, draft ? 1 : 0);
+
+/**
+ * 樂觀鎖更新：updated_at 仲係 expected 先寫（changes = 0 → 412）。
+ * draft 冇傳 = 唔郁（排程 / 掃描）；PUT 傳 false 清 draft
+ */
+export const updateEntryStatement = (
+    db: D1Database,
+    row: EntryRow,
+    { expected, updatedAt, draft }: { expected: string; updatedAt: string; draft?: boolean },
+) =>
+    db
+        .prepare(
+            `UPDATE entries SET definition = ?, images = ?, updated_at = ?, draft = COALESCE(?, draft)
              WHERE kind = ? AND id = ? AND updated_at = ?`,
         )
-        .bind(row.definition, row.images, updatedAt, row.kind, row.id, expected);
+        .bind(
+            row.definition,
+            row.images,
+            updatedAt,
+            draft === undefined ? null : Number(draft),
+            row.kind,
+            row.id,
+            expected,
+        );
 
 /** 刪 entry（expected = null 即係唔驗 If-Match）；劇集嘅排程一齊刪（同一個 batch） */
 export const deleteEntry = async (

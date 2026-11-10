@@ -15,6 +15,7 @@ interface PublishSummary {
     episodeCount: number;
     rollbackOf: number | null;
     status: 'ok' | 'failed';
+    error: string | null;
     current: boolean;
 }
 
@@ -84,6 +85,16 @@ describe('POST /api/publish', () => {
         });
         expect((await publishedDocument()).dramas[0]?.definition).toEqual(drama(3));
         expect(await history()).toHaveLength(1);
+    });
+
+    it('should not treat unlisting an arc (enabled: false) as disappearing IDs', async () => {
+        await adminPost('/api/publish');
+        const unlisted = drama(3);
+        unlisted.arcs = [{ ...(unlisted.arcs as Record<string, unknown>[])[0], enabled: false }];
+        await putEntry('dramas', 'golden', unlisted);
+        const response = await adminPost('/api/publish');
+        expect(response.status).toBe(200);
+        expect(await response.json()).not.toHaveProperty('unchanged');
     });
 
     it('should publish anyway with force=1', async () => {
@@ -206,6 +217,9 @@ describe('commitPublish (S-767)', () => {
             'R2 down',
         );
         expect(await statuses()).toEqual([{ id: 1, status: 'failed' }]);
+        // 失敗原因記低（migration 0004），上下架記錄顯示
+        const [failed] = await history();
+        expect(failed).toMatchObject({ id: 1, status: 'failed', error: 'R2 down' });
         // 同一份內容再 publish：唔可以當 unchanged（R2 根本未寫過）
         const response = await adminPost('/api/publish');
         expect(await response.json()).not.toHaveProperty('unchanged');

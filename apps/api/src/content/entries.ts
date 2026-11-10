@@ -38,8 +38,9 @@ const summaryOf = (row: StoredEntry) => {
         kind: row.kind,
         id: row.id,
         name: definition.name,
-        // 節目冇 enabled 欄位（一律上架）
+        // 節目 enabled 冇寫 = 上架
         enabled: definition.enabled ?? true,
+        draft: row.draft === 1,
         updatedAt: row.updated_at,
     };
 };
@@ -57,7 +58,7 @@ entryRoutes.get('/entries/:kind/:id', async (c) => {
         definition: JSON.parse(row.definition) as Json,
         images: JSON.parse(row.images) as Json,
     };
-    return c.json({ ...body, updatedAt: row.updated_at }, HTTP_STATUS.ok, {
+    return c.json({ ...body, draft: row.draft === 1, updatedAt: row.updated_at }, HTTP_STATUS.ok, {
         etag: etagOf(row.updated_at),
     });
 });
@@ -77,18 +78,33 @@ export const disappearingIds = async (
     );
 };
 
-/** 驗證 + 計 warning；唔合格 → 422 response */
-export const checkedEntry = async (c: Context<AppEnv>, entry: EntryInput) => {
+const validationFailed = (c: Context<AppEnv>, error: unknown) => {
+    if (!(error instanceof EntryValidationError)) throw error;
+    return errorResponse(c, HTTP_STATUS.unprocessable, 'validation failed', {
+        details: error.message,
+    });
+};
+
+/**
+ * 驗證（draft 先試完整驗證，唔過再用寬鬆驗證）+ 計 warning；唔合格 → 422 response。
+ * 回傳嘅 draft = 存入去之後仲係唔係 draft（完整驗證過咗就自動清）
+ */
+export const checkedEntry = async (c: Context<AppEnv>, entry: EntryInput, wasDraft = false) => {
+    const context = { origin: c.env.WORKER_ORIGIN, assets: await listAssetHashes(c.env.DB) };
+    let ids: string[];
+    let draft = false;
     try {
-        const assets = await listAssetHashes(c.env.DB);
-        const ids = validateEntry(entry, { origin: c.env.WORKER_ORIGIN, assets });
-        return { missingEpisodeIds: await disappearingIds(c.env.DB, entry, ids) };
+        ids = validateEntry(entry, context);
     } catch (error) {
-        if (!(error instanceof EntryValidationError)) throw error;
-        return errorResponse(c, HTTP_STATUS.unprocessable, 'validation failed', {
-            details: error.message,
-        });
+        if (!wasDraft) return validationFailed(c, error);
+        try {
+            ids = validateEntry(entry, context, { relaxed: true });
+            draft = true;
+        } catch (relaxedError) {
+            return validationFailed(c, relaxedError);
+        }
     }
+    return { warnings: { missingEpisodeIds: await disappearingIds(c.env.DB, entry, ids) }, draft };
 };
 
 export const rowOf = (entry: EntryInput): EntryRow => ({
@@ -111,11 +127,16 @@ const inputOf = async (c: Context<AppEnv>, target: { kind: EntryInput['kind']; i
     return { ...target, definition: body.definition, images: body.images };
 };
 
-const save = async (c: Context<AppEnv>, entry: EntryInput, existing: StoredEntry | null) => {
+const save = async (
+    c: Context<AppEnv>,
+    entry: EntryInput,
+    { existing, draft }: { existing: StoredEntry | null; draft: boolean },
+) => {
     const updatedAt = nextUpdatedAt(existing?.updated_at);
+    const row = rowOf(entry);
     const statement = existing
-        ? updateEntryStatement(c.env.DB, rowOf(entry), { expected: existing.updated_at, updatedAt })
-        : insertEntryStatement(c.env.DB, rowOf(entry), updatedAt);
+        ? updateEntryStatement(c.env.DB, row, { expected: existing.updated_at, updatedAt, draft })
+        : insertEntryStatement(c.env.DB, row, updatedAt);
     const result = await statement.run();
     return result.meta.changes > 0 ? updatedAt : undefined;
 };
@@ -129,12 +150,17 @@ entryRoutes.put('/entries/:kind/:id', async (c) => {
     const existing = await getEntry(c.env.DB, target.kind, target.id);
     const mode = writeMode(c, existing);
     if (!mode) return preconditionFailed(c);
-    const warnings = await checkedEntry(c, entry);
-    if (warnings instanceof Response) return warnings;
-    const updatedAt = await save(c, entry, mode === 'update' ? existing : null);
+    // 新增一律完整驗證（draft 只係掃描自動建）
+    const checked = await checkedEntry(c, entry, mode === 'update' && existing?.draft === 1);
+    if (checked instanceof Response) return checked;
+    const { warnings, draft } = checked;
+    const updatedAt = await save(c, entry, {
+        existing: mode === 'update' ? existing : null,
+        draft,
+    });
     if (!updatedAt) return preconditionFailed(c);
     const status = mode === 'create' ? HTTP_STATUS.created : HTTP_STATUS.ok;
-    return c.json({ updatedAt, warnings }, status, { etag: etagOf(updatedAt) });
+    return c.json({ updatedAt, draft, warnings }, status, { etag: etagOf(updatedAt) });
 });
 
 /** 最新 publish 有冇用緊：劇集睇 episode ID，節目睇 document 有冇佢 */

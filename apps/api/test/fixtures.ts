@@ -60,3 +60,7 @@ export const seed = async (episodes = 3) => {
     await putEntry('shows', 'badgirl', SHOW);
     await putEntry('dramas', 'golden', drama(episodes));
 };
+
+/** 標 draft（掃描自動建、未齊資料嘅劇） */
+export const markDraft = (kind: string, id: string) =>
+    env.DB.prepare('UPDATE entries SET draft = 1 WHERE kind = ? AND id = ?').bind(kind, id).run();
