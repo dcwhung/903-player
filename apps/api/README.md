@@ -1,22 +1,23 @@
-# 903-player-api（Backend Phase 2a）
+# 903-player-api（Backend Phase 2a / 2b-1）
 
 Cloudflare Worker：管理 catalog 內容（D1）、publish `catalog.json`（R2）、代出 `catalog.json` 同圖畀 player。
-Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`。
+Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1）。
 
-| 路徑                               | 用途                                                                   | 權限                  |
-| ---------------------------------- | ---------------------------------------------------------------------- | --------------------- |
-| `/`（`public/`）                   | Ops 頁：login、而家 publish 緊乜、Publish、記錄 / 還原                 | 公開（資料要 login）  |
-| `/auth/google/start`、`/callback`  | Google login（Authorization Code + PKCE）                              | 公開                  |
-| `POST /auth/logout`                | 登出                                                                   | same-origin           |
-| `GET /api/health`                  | `{ ok, version }`                                                      | 公開                  |
-| `GET /api/me`                      | 而家 login 咗邊個                                                      | session               |
-| `POST /api/publish[?force=1]`      | D1 → `catalog.json` → R2；ID 守衛（上次有、今次冇嘅 episode ID → 409） | session + same-origin |
-| `GET /api/publishes`               | Publish 記錄（新到舊）                                                 | session               |
-| `POST /api/publishes/:id/rollback` | 重新 publish 舊 snapshot（記做新一行，一樣行 ID 守衛）                 | session + same-origin |
-| `GET /catalog/v1/catalog.json`     | Player 讀嘅 catalog（`max-age=60` + ETag）                             | 公開，CORS 限 player  |
-| `GET /catalog/v1/img/<hash>.<ext>` | Catalog 圖（content hash，`immutable`）                                | 公開，CORS 限 player  |
+| 路徑                               | 用途                                                                   | 權限                          |
+| ---------------------------------- | ---------------------------------------------------------------------- | ----------------------------- |
+| `/`（`public/`）                   | Ops 頁：login、而家 publish 緊乜、Publish、記錄 / 還原                 | 公開（資料要 login）          |
+| `/auth/google/start`、`/callback`  | Google login（Authorization Code + PKCE）                              | 公開                          |
+| `POST /auth/logout`                | 登出                                                                   | same-origin                   |
+| `GET /api/health`                  | `{ ok, version }`                                                      | 公開                          |
+| `GET /api/me`                      | 而家 login 咗邊個                                                      | session                       |
+| `POST /api/publish[?force=1]`      | D1 → `catalog.json` → R2；ID 守衛（上次有、今次冇嘅 episode ID → 409） | session + same-origin         |
+| `GET /api/publishes`               | Publish 記錄（新到舊）                                                 | session                       |
+| `POST /api/publishes/:id/rollback` | 重新 publish 舊 snapshot（記做新一行，一樣行 ID 守衛）                 | session + same-origin         |
+| 內容 API（2b-1，見下面）           | entries CRUD、R2 掃描、短篇排程（Phase 3 admin 用）                    | session（改嘢 + same-origin） |
+| `GET /catalog/v1/catalog.json`     | Player 讀嘅 catalog（`max-age=60` + ETag）                             | 公開，CORS 限 player          |
+| `GET /catalog/v1/img/<hash>.<ext>` | Catalog 圖（content hash，`immutable`）                                | 公開，CORS 限 player          |
 
-設定喺 `wrangler.toml`（D1 `DB`、R2 `CATALOG`、`[vars]`）；secret（`GOOGLE_CLIENT_SECRET`、`SESSION_SECRET`）唔入 repo。
+設定喺 `wrangler.toml`（D1 `DB`、R2 `CATALOG`、R2 `AUDIO`（`903-radio-drama`，只 list）、`[vars]`）；secret（`GOOGLE_CLIENT_SECRET`、`SESSION_SECRET`）唔入 repo。
 
 ## 本機開發
 
@@ -110,6 +111,37 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 - Publish 用 D1 而家嘅 entries；player 最多 60 秒內讀到（Worker edge cache 喺 publish 時即刻清）
 - **ID 守衛**：上次 publish 有、今次冇嘅 episode ID → 拒絕（409 + 列出 ID）。聽緊嗰啲集嘅用戶會冇咗進度 / 收藏，確定先剔「照樣 publish」（`?force=1`）
 - 還原 = 重新寫舊 snapshot（新一行 publish，`rollback_of` 記住來源）；D1 entries 唔郁
+- 內容（除 `generatedAt` 外）同最新一次一樣 → `{ unchanged: true, publish }`，唔開新行、唔寫 R2（ops 頁顯示「內容冇變」）；`?force=1` 照寫
+- 次序：先記 `publishes` 一行，再寫 R2；R2 寫失敗就刪返嗰行（ID 守衛唔會漏咗已上線嘅 ID）
+- 圖 manifest 嘅圖檔名要合 `<sha256 前 16 hex>.<webp|jpg>` 兼已經喺 `assets`
+
+## 內容 API（Backend Phase 2b-1）
+
+全部喺 `/api` 底下（要 login；`PUT` / `POST` / `DELETE` 要 same-origin），request body 上限 256 KB（超過 413）。
+`kind` = `shows` / `dramas`，`id` 同 folder 名規則一樣（細楷英數同連字號），唔啱 → 400。
+
+| Method + path                                       | 做咩                                                                                                                                                                                                                                                                                                                                                                                                         |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /api/entries`                                  | `{ entries: [{ kind, id, name, enabled, updatedAt }] }`（節目冇 `enabled`，一律 `true`）                                                                                                                                                                                                                                                                                                                     |
+| `GET /api/entries/:kind/:id`                        | `{ definition, images, updatedAt }`，`ETag: "<updatedAt>"`                                                                                                                                                                                                                                                                                                                                                   |
+| `PUT /api/entries/:kind/:id`                        | body `{ definition, images }`。更新要 `If-Match: <ETag>`、新增要 `If-None-Match: *`，唔啱 → 412。同 publish 同一套 validator 驗單一 entry（圖要合 `<hash>.<ext>` 兼已上載）→ 唔過 422 `{ error, details }`。成功 200（新增 201）`{ updatedAt, warnings: { missingEpisodeIds } }` + 新 `ETag`；`missingEpisodeIds` = 最新 publish 有、新 definition 冇嘅呢套劇 episode ID（只係提示，publish 時 ID 守衛照擋） |
+| `DELETE /api/entries/:kind/:id`                     | 只限最新 publish 冇用緊嘅 entry（劇集：冇佢嘅 episode ID；節目：document 冇佢），否則 409（改 `enabled: false`）。可帶 `If-Match`。成功 204，劇集嘅排程一齊刪                                                                                                                                                                                                                                                |
+| `POST /api/dramas/:id/scan`                         | List R2 `AUDIO` 嘅 `<audio.folder>/`（兩層，跟 cursor）→ `generateDraft`（`existing` = D1 definition，同 `npm run drama-from-folder` 一套規則）。回 `{ draft, issues, diff }`（`draft` 有 `[錯誤]` 時係 `null`；`diff` = `[{ path, before?, after? }]`），**唔寫 D1**，覆核後再 `PUT`。`audio.host` 唔係 `r2` → 422                                                                                          |
+| `GET /api/dramas/:id/arcs/:arcId/schedule`          | `{ rule, expanded, updatedAt }`；未有規則 → 404                                                                                                                                                                                                                                                                                                                                                              |
+| `POST /api/dramas/:id/arcs/:arcId/schedule/preview` | body `{ rule }` → 展開 + 驗證成個 definition，唔寫：`{ expanded, warnings }`                                                                                                                                                                                                                                                                                                                                 |
+| `PUT /api/dramas/:id/arcs/:arcId/schedule`          | body `{ rule }` + `If-Match`（劇集 entry 嘅 ETag）。展開寫入 arc 嘅 `addedAt` / `episodeDates` / `episodeRemovedAt`（冇嘅欄位刪走）→ 驗證 → D1 一個 batch 寫 `entries` + `schedules`（樂觀鎖失敗兩樣都唔寫，412）                                                                                                                                                                                            |
+| `DELETE /api/dramas/:id/arcs/:arcId/schedule`       | 只刪規則（204），definition 入面嘅日子照留                                                                                                                                                                                                                                                                                                                                                                   |
+
+排程規則（`packages/catalog/src/schedule/`，只適用於短篇；集數未知嘅短篇唔可以排）：
+
+```jsonc
+{ "kind": "dates", "batches": [{ "from": 1, "date": "2026-11-01" }, { "from": 11, "date": "2026-11-19" }] }
+{ "kind": "periodic", "start": "2026-11-01", "perRelease": 2, "every": { "days": 7 } }        // 每 7 日上 2 集
+{ "kind": "periodic", "start": "2026-11-02", "perRelease": 1, "every": { "weekdays": [1, 3, 5] } } // 0 = 星期日
+// 加 "removeAfterDays": 30 = 每批上架後 30 日下架（每批各自計）
+```
+
+`periodic` 嘅第一批 = `start` 當日或之後第一個合規嘅星期幾；最尾一批集數可以少過 `perRelease`。
 
 ## 到期提醒
 
