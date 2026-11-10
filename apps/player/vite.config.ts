@@ -4,7 +4,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { loadEnv, type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { catalogRuntimeCaching } from './scripts/catalogCaching.ts';
+import { catalogSnapshot } from './scripts/catalogSnapshot.ts';
 import { buildSocialTags, resolveSiteUrl } from './scripts/socialMeta.ts';
+import { episodeOptionsFor } from './src/catalog/dramas/lib/episodeOptionsFor.ts';
 import { LAUNCH_THEME_COLOR } from './src/config/launchTheme.ts';
 
 // GitHub Pages serve 喺 /903-player/；Vercel build 時會注入 VERCEL=1，serve 喺 root
@@ -45,6 +47,12 @@ const catalogUrlFor = (mode: string): string =>
     loadEnv(mode, CONFIG_DIR, 'VITE_').VITE_CATALOG_URL ||
     (mode === E2E_MODE ? E2E_CATALOG_URL : '');
 
+/*
+ * Prebuild snapshot（Backend Phase 2b-2）：production build 有 catalog URL 就喺 buildStart 攞最新 publish
+ *（連圖）寫去呢度，src/catalog/snapshot/source.ts 包入 bundle；失敗 / e2e / 冇 URL → repo library
+ */
+const SNAPSHOT_DIR = new URL('./src/catalog/snapshot/data', import.meta.url).pathname;
+
 export default defineConfig(({ mode }) => {
     const catalogUrl = catalogUrlFor(mode);
     return {
@@ -58,6 +66,11 @@ export default defineConfig(({ mode }) => {
             react(),
             injectAppVersion(),
             injectSocialTags(),
+            catalogSnapshot({
+                url: catalogUrl,
+                dir: SNAPSHOT_DIR,
+                episodeOptions: episodeOptionsFor(BASE_PATH),
+            }),
             VitePWA({
                 // prompt：新 SW 裝好後喺 waiting 等，由 src/pwa/updateManager 揀播放停咗先換，
                 // 避免 autoUpdate 喺收聽途中自動 reload

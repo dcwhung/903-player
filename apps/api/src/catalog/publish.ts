@@ -23,6 +23,7 @@ import {
     deletePublish,
     insertPublish,
     latestPublish,
+    markPublishFailed,
     type EntryRow,
     type LatestPublish,
     type PublishRow,
@@ -142,7 +143,22 @@ const sameContent = (previous: string, next: string): boolean => {
 
 type PublishEnv = { DB: D1Database; CATALOG: R2Bucket; WORKER_ORIGIN: string };
 
-/** 先記 publishes 後寫 R2：R2 寫失敗就刪返嗰行，ID 守衛唔會漏咗今次嘅 ID（S-767） */
+/**
+ * R2 寫失敗後收拾嗰行：刪走（S-767）；連刪都失敗就標 failed（S-786），
+ * 唔係就會被當做最新一次，同內容再 publish 會判 unchanged，R2 永遠唔更新
+ */
+const discardPublish = async (db: D1Database, id: number): Promise<void> => {
+    try {
+        await deletePublish(db, id);
+    } catch {
+        // 標都標唔到：照 throw 返原本 R2 錯誤，呢度只留 log 俾 Workers Logs 追查
+        await markPublishFailed(db, id).catch((error: unknown) =>
+            console.error(`publish ${id}: could not drop or mark failed`, error),
+        );
+    }
+};
+
+/** 先記 publishes 後寫 R2：R2 寫失敗就收拾返嗰行，ID 守衛唔會漏咗今次嘅 ID（S-767） */
 const writePublish = async (
     env: PublishEnv,
     { doc, json, episodeIds }: ValidatedDocument,
@@ -166,7 +182,7 @@ const writePublish = async (
             customMetadata: { hash },
         });
     } catch (error) {
-        await deletePublish(env.DB, publish.id);
+        await discardPublish(env.DB, publish.id);
         throw error;
     }
     return publish;

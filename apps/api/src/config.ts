@@ -44,6 +44,8 @@ export const CATALOG_JSON_MAX_AGE_SECONDS = MINUTE_SECONDS;
 export const IMAGE_MAX_AGE_SECONDS = YEAR_DAYS * DAY_SECONDS;
 /** 圖檔名：<sha256 前 16 hex>.<ext>（同 scripts/importLibrary.mjs 一致） */
 export const IMAGE_FILE_PATTERN = /^[0-9a-f]{16}\.(webp|jpg)$/;
+/** 圖檔名嘅 hash 長度（sha256 hex 前 16 個字，同 IMAGE_FILE_PATTERN 一致） */
+export const ASSET_HASH_HEX_LENGTH = 16;
 
 /**
  * Publish 驗證用嘅 host: app 錄音 base：worker 只驗結構同計 episode ID（ID 唔包 URL），
@@ -64,9 +66,31 @@ export const HTTP_STATUS = {
     conflict: 409,
     preconditionFailed: 412,
     payloadTooLarge: 413,
+    unsupportedMediaType: 415,
     unprocessable: 422,
     badGateway: 502,
 } as const;
 
 /** 內容 API（PUT / POST）request body 上限 */
 export const CONTENT_BODY_LIMIT_BYTES = 256 * 1024;
+
+/* ───────────── 圖片上載（PUT /api/assets，Phase 2b-2） ───────────── */
+
+/** 只收 WebP（admin 喺 browser 轉好先上載） */
+export const ASSET_CONTENT_TYPE = 'image/webp';
+export const ASSET_EXTENSION = 'webp';
+const KIB = 1024;
+/** 1 MB：現有最大嘅圖遠細過呢個數 */
+export const ASSET_MAX_BYTES = KIB * KIB;
+
+/** disc：正方形 */
+const DISC_SIZE_PX = 600;
+/** tile：16:9（節目同劇集統一；劇集卡照舊 2:1 cover 裁） */
+const TILE_WIDTH_PX = 1216;
+const TILE_HEIGHT_PX = 684;
+
+/** 尺寸白名單（用戶 2026-11-10 決定） */
+export const ASSET_DIMENSIONS: readonly { width: number; height: number }[] = [
+    { width: DISC_SIZE_PX, height: DISC_SIZE_PX },
+    { width: TILE_WIDTH_PX, height: TILE_HEIGHT_PX },
+];

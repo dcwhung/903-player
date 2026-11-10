@@ -1,7 +1,7 @@
-# 903-player-api（Backend Phase 2a / 2b-1）
+# 903-player-api（Backend Phase 2a / 2b）
 
 Cloudflare Worker：管理 catalog 內容（D1）、publish `catalog.json`（R2）、代出 `catalog.json` 同圖畀 player。
-Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1）。
+Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）。
 
 | 路徑                               | 用途                                                                   | 權限                          |
 | ---------------------------------- | ---------------------------------------------------------------------- | ----------------------------- |
@@ -14,6 +14,7 @@ Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans
 | `GET /api/publishes`               | Publish 記錄（新到舊）                                                 | session                       |
 | `POST /api/publishes/:id/rollback` | 重新 publish 舊 snapshot（記做新一行，一樣行 ID 守衛）                 | session + same-origin         |
 | 內容 API（2b-1，見下面）           | entries CRUD、R2 掃描、短篇排程（Phase 3 admin 用）                    | session（改嘢 + same-origin） |
+| `PUT /api/assets`（2b-2，見下面）  | 上載 disc / tile（WebP）→ R2 + `assets`，回圖檔名                      | session + same-origin         |
 | `GET /catalog/v1/catalog.json`     | Player 讀嘅 catalog（`max-age=60` + ETag）                             | 公開，CORS 限 player          |
 | `GET /catalog/v1/img/<hash>.<ext>` | Catalog 圖（content hash，`immutable`）                                | 公開，CORS 限 player          |
 
@@ -112,13 +113,13 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 - **ID 守衛**：上次 publish 有、今次冇嘅 episode ID → 拒絕（409 + 列出 ID）。聽緊嗰啲集嘅用戶會冇咗進度 / 收藏，確定先剔「照樣 publish」（`?force=1`）
 - 還原 = 重新寫舊 snapshot（新一行 publish，`rollback_of` 記住來源）；D1 entries 唔郁
 - 內容（除 `generatedAt` 外）同最新一次一樣 → `{ unchanged: true, publish }`，唔開新行、唔寫 R2（ops 頁顯示「內容冇變」）；`?force=1` 照寫
-- 次序：先記 `publishes` 一行，再寫 R2；R2 寫失敗就刪返嗰行（ID 守衛唔會漏咗已上線嘅 ID）
+- 次序：先記 `publishes` 一行，再寫 R2；R2 寫失敗就刪返嗰行（ID 守衛唔會漏咗已上線嘅 ID）；連刪都失敗就標 `status = 'failed'`（migration `0003`）。「而家 publish 緊」、ID 守衛、「內容冇變」比較都只睇最新一行 `status = 'ok'`，記錄照列出 failed 行（`status` 欄）
 - 圖 manifest 嘅圖檔名要合 `<sha256 前 16 hex>.<webp|jpg>` 兼已經喺 `assets`
 
 ## 內容 API（Backend Phase 2b-1）
 
 全部喺 `/api` 底下（要 login；`PUT` / `POST` / `DELETE` 要 same-origin），request body 上限 256 KB（超過 413）。
-`kind` = `shows` / `dramas`，`id` 同 folder 名規則一樣（細楷英數同連字號），唔啱 → 400。
+`kind` = `shows` / `dramas`，`id` 同 folder 名規則一樣（細楷英數同連字號），唔啱 → 400（`scan` / `schedule` 一樣）。
 
 | Method + path                                       | 做咩                                                                                                                                                                                                                                                                                                                                                                                                         |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -142,6 +143,32 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 ```
 
 `periodic` 嘅第一批 = `start` 當日或之後第一個合規嘅星期幾；最尾一批集數可以少過 `perRelease`。
+
+## 圖片上載（Backend Phase 2b-2）
+
+`PUT /api/assets`（要 login + same-origin）：body = WebP 原始 bytes。
+
+| 檢查                                                       | 唔過                          |
+| ---------------------------------------------------------- | ----------------------------- |
+| `Content-Type: image/webp`                                 | 415                           |
+| 大小 ≤ `ASSET_MAX_BYTES`（1 MB）                           | 413                           |
+| RIFF / WEBP header（`VP8 ` / `VP8L` / `VP8X`）讀到闊高     | 422                           |
+| 尺寸白名單 `ASSET_DIMENSIONS`：disc 600×600、tile 1216×684 | 422（`allowed` 列出允許尺寸） |
+
+- 檔名 = sha256 前 16 hex + `.webp`（同 `importLibrary.mjs` / `IMAGE_FILE_PATTERN` 一致）
+- 已經有呢個 hash → 200 `{ name, existed: true }`（idempotent，乜都唔寫）
+- 未有 → 先寫 R2 `catalog/v1/img/<name>`，再 insert `assets` → 201 `{ name, width, height, bytes }`。R2 寫失敗就唔 insert（R2 有、D1 冇嘅孤兒檔無害；反過嚟 publish 會出爛圖）
+- Admin 流程：上載 → 攞 `name` → `PUT /api/entries/:kind/:id` 將 `images` 指去 `name`
+- 現有 R2 嘅 1216×608 劇集 tile 照用（只係新上載要合白名單）
+
+本機試：
+
+```sh
+npm run dev -w apps/api   # 另一個 terminal
+# ops 頁 login 後喺 DevTools 抄 __Host-session cookie
+curl -k -X PUT https://localhost:8787/api/assets -H 'Origin: https://localhost:8787' \
+  -H 'Content-Type: image/webp' -H 'Cookie: __Host-session=<token>' --data-binary @disc.webp
+```
 
 ## 到期提醒
 

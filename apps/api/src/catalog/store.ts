@@ -19,7 +19,11 @@ export interface PublishRow {
     drama_count: number;
     episode_count: number;
     rollback_of: number | null;
+    /** 'failed'：R2 寫唔到而且刪唔返嗰行（S-786）；唔計入 latestPublish */
+    status: PublishStatus;
 }
+
+export type PublishStatus = 'ok' | 'failed';
 
 export interface NewPublish {
     createdAt: string;
@@ -34,7 +38,7 @@ export interface NewPublish {
 }
 
 const SUMMARY_COLUMNS =
-    'id, created_at, created_by, hash, show_count, drama_count, episode_count, rollback_of';
+    'id, created_at, created_by, hash, show_count, drama_count, episode_count, rollback_of, status';
 
 /** 按 id 排：同 buildCatalogJson.mjs（folder 名排序）一致，方便開 flag 前比較 */
 export const listEntries = async (db: D1Database): Promise<EntryRow[]> =>
@@ -43,6 +47,27 @@ export const listEntries = async (db: D1Database): Promise<EntryRow[]> =>
             .prepare('SELECT kind, id, definition, images FROM entries ORDER BY kind, id')
             .all<EntryRow>()
     ).results;
+
+export interface NewAsset {
+    hash: string;
+    contentType: string;
+    bytes: number;
+    createdAt: string;
+}
+
+export const hasAsset = async (db: D1Database, hash: string): Promise<boolean> =>
+    (await db.prepare('SELECT 1 AS found FROM assets WHERE hash = ?').bind(hash).first()) !== null;
+
+/** 同一張圖兩個人同時上載：第二個 insert 乜都唔做（R2 object 內容一樣） */
+export const insertAsset = async (db: D1Database, asset: NewAsset): Promise<void> => {
+    await db
+        .prepare(
+            `INSERT INTO assets (hash, content_type, bytes, created_at) VALUES (?, ?, ?, ?)
+             ON CONFLICT (hash) DO NOTHING`,
+        )
+        .bind(asset.hash, asset.contentType, asset.bytes, asset.createdAt)
+        .run();
+};
 
 export const listAssetHashes = async (db: D1Database): Promise<Set<string>> =>
     new Set(
@@ -58,11 +83,12 @@ export interface LatestPublish {
     document: string;
 }
 
-/** 而家 publish 緊嗰份（最大 id）；未 publish 過 → null */
+/** 而家 publish 緊嗰份（status = 'ok' 嘅最大 id）；未 publish 過 → null */
 export const latestPublish = async (db: D1Database): Promise<LatestPublish | null> => {
     const row = await db
         .prepare(
-            `SELECT ${SUMMARY_COLUMNS}, episode_ids, document FROM publishes ORDER BY id DESC LIMIT 1`,
+            `SELECT ${SUMMARY_COLUMNS}, episode_ids, document FROM publishes
+             WHERE status = 'ok' ORDER BY id DESC LIMIT 1`,
         )
         .first<PublishRow & { episode_ids: string; document: string }>();
     if (!row) return null;
@@ -73,6 +99,11 @@ export const latestPublish = async (db: D1Database): Promise<LatestPublish | nul
 /** R2 寫失敗時收返啱啱 insert 嗰行（S-767） */
 export const deletePublish = async (db: D1Database, id: number): Promise<void> => {
     await db.prepare('DELETE FROM publishes WHERE id = ?').bind(id).run();
+};
+
+/** 刪都刪唔到時退一步：標 failed，之後唔計入 latestPublish（S-786） */
+export const markPublishFailed = async (db: D1Database, id: number): Promise<void> => {
+    await db.prepare("UPDATE publishes SET status = 'failed' WHERE id = ?").bind(id).run();
 };
 
 export const insertPublish = async (db: D1Database, row: NewPublish): Promise<PublishRow> => {

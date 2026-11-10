@@ -147,6 +147,19 @@ describe('schedule write race (W-703)', () => {
     });
 });
 
+describe('invalid drama id (S-787)', () => {
+    it('should answer 400 like /entries for every schedule method', async () => {
+        const path = '/api/dramas/Bad_Id/arcs/season-1/schedule';
+        const responses = await Promise.all([
+            adminGet(path),
+            adminRequest('POST', `${path}/preview`, { body: { rule: {} } }),
+            adminRequest('PUT', path, { body: { rule: {} }, headers: { 'if-match': '"x"' } }),
+            adminRequest('DELETE', path),
+        ]);
+        expect(responses.map((r) => r.status)).toEqual([400, 400, 400, 400]);
+    });
+});
+
 describe('GET / preview / DELETE schedule', () => {
     it('should answer 404 before a rule is saved, then return the rule and its expansion', async () => {
         expect((await adminGet(PATH)).status).toBe(404);

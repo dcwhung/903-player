@@ -14,6 +14,7 @@ interface PublishSummary {
     dramaCount: number;
     episodeCount: number;
     rollbackOf: number | null;
+    status: 'ok' | 'failed';
     current: boolean;
 }
 
@@ -175,6 +176,61 @@ describe('commitPublish (S-767)', () => {
         await expect(commitPublish(failing, await validated(), options)).rejects.toThrow('R2 down');
         expect(await history()).toHaveLength(0);
         expect(await env.CATALOG.head('catalog/v1/catalog.json')).toBeNull();
+    });
+
+    /** R2 寫唔到、之後 DELETE publishes 都失敗（D1 一時唔得）嘅 env */
+    const doubleFailure = () => {
+        const db = new Proxy(env.DB, {
+            get: (target, key) =>
+                key === 'prepare'
+                    ? (sql: string) => {
+                          if (sql.startsWith('DELETE FROM publishes')) throw new Error('D1 down');
+                          return target.prepare(sql);
+                      }
+                    : (Reflect.get(target, key) as unknown),
+        });
+        const catalog = {
+            put: async () => {
+                throw new Error('R2 down');
+            },
+        } as unknown as R2Bucket;
+        return { ...env, DB: db, CATALOG: catalog };
+    };
+
+    const statuses = async () =>
+        (await env.DB.prepare('SELECT id, status FROM publishes ORDER BY id').all()).results;
+
+    it('should mark the row failed when dropping it fails too, and ignore it afterwards (S-786)', async () => {
+        const options = { createdBy: 'x', force: false, rollbackOf: null };
+        await expect(commitPublish(doubleFailure(), await validated(), options)).rejects.toThrow(
+            'R2 down',
+        );
+        expect(await statuses()).toEqual([{ id: 1, status: 'failed' }]);
+        // 同一份內容再 publish：唔可以當 unchanged（R2 根本未寫過）
+        const response = await adminPost('/api/publish');
+        expect(await response.json()).not.toHaveProperty('unchanged');
+        expect(await statuses()).toEqual([
+            { id: 1, status: 'failed' },
+            { id: 2, status: 'ok' },
+        ]);
+        expect(await env.CATALOG.head('catalog/v1/catalog.json')).not.toBeNull();
+    });
+
+    it('should leave a failed row out of the ID guard and the current marker (S-786)', async () => {
+        await adminPost('/api/publish');
+        await putEntry('dramas', 'golden', drama(4));
+        const options = { createdBy: 'x', force: false, rollbackOf: null };
+        await expect(commitPublish(doubleFailure(), await validated(), options)).rejects.toThrow();
+        // 3 集版本：同 failed 嗰行（4 集）比會少一集，但最新 ok 嗰行（3 集）冇少 → 唔擋
+        await putEntry('dramas', 'golden', drama(3));
+        const response = await adminPost('/api/publish');
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ unchanged: true, publish: { id: 1 } });
+        const list = await history();
+        expect(list.map((p) => [p.id, p.status, p.current])).toEqual([
+            [2, 'failed', false],
+            [1, 'ok', true],
+        ]);
     });
 });
 

@@ -82,6 +82,12 @@ describe('POST /api/dramas/:id/scan', () => {
         expect((await scan()).status).toBe(422);
     });
 
+    it('should answer 400 for an invalid drama id, like /entries (S-787)', async () => {
+        const { status, body } = await scan('Bad_Id');
+        expect(status).toBe(400);
+        expect(body.error).toContain('id must match');
+    });
+
     it('should need the same origin', async () => {
         const response = await call('/api/dramas/golden/scan', {
             method: 'POST',

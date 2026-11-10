@@ -64,6 +64,23 @@ GitHub Actions 只負責 build 同 deploy。
   兩邊規則由 `packages/catalog/src/core/jsonSchemas.node.test.ts` 對住同一批例子鎖住（現有資料檔合唔合 schema 由 `apps/player/src/catalog/libraryJsonSchemas.node.test.ts` 驗）；改 `schema.ts` 記得一齊改 schema
 - 橫版主頁 grid 寫死 4 欄 × 2 行 = 7 個節目 + 今日格；加減節目要一齊改 `ShowGrid.module.css`（`src/catalog/shows/lib/shows.test.ts` 會提醒）
 
+### 內建資料：prebuild snapshot（Backend Phase 2b-2）
+
+D1（`apps/api`）已經係內容 SSoT，repo `library/` 只係 fallback。Production build 時（`VITE_CATALOG_URL` 有設定）Vite plugin `scripts/catalogSnapshot.ts` 喺 `buildStart`：
+
+1. 清走舊 `src/catalog/snapshot/data/`（gitignored；每次 build 都清，唔會用本機殘留）
+2. Fetch 最新 publish 嘅 `catalog.json`（timeout `SNAPSHOT_FETCH_TIMEOUT_MS`）→ 用 player runtime 同一套 validator 驗（`parseCatalogDocument` + 兩個 registry）
+3. 下載全部圖（同時最多 `SNAPSHOT_IMAGE_CONCURRENCY` 張），sha256 前 16 hex 一定要等於檔名
+4. `images` 改寫做檔名 → 先寫 `data.tmp/`，全部成功先 rename 做 `data/`
+5. Build log 印 `[catalog-snapshot] hash … · generatedAt … · N images`（hash = publish hash，可以同 ops 頁對）
+
+`src/catalog/snapshot/source.ts` 用 `import.meta.glob` 包入 bundle（圖經 Vite hash 入 `dist/assets/`，PWA 自動 precache），`dramas` / `shows` 嘅 `bundledSource` 有 snapshot 就用 snapshot，冇就用 `library/`。
+
+- 任何一步失敗（fetch 唔到、驗唔過、圖 hash 唔啱）→ `console.warn` + 清走暫存，build 照行，用 `library/`
+- 唔會 fetch：`vite` dev server、`--mode e2e`（e2e 照用 `library/` + 測試劇）、冇 `VITE_CATALOG_URL`（CI）
+- Unit test 永遠用 `library/`（本機 build 過留低嘅 snapshot 唔影響）
+- Publish 之後唔會自動 rebuild：snapshot 跟下次 deploy 更新；想即時更新就手動跑 Deploy workflow
+
 ### 由本機 folder 生成 drama.json（`apps/player/scripts/dramaFromFolder.ts`）
 
 > 主要入口已經改為 admin / API 掃描：`POST /api/dramas/:id/scan` 直接 list R2 bucket `903-radio-drama`（見 `apps/api/README.md`）。
@@ -274,6 +291,7 @@ GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 *
 | `src/config/`             | 常數、theme primitive（`showThemes.ts`）、版面 breakpoint                                                                                                                                                                                                                                                                         |
 | `src/catalog/shows/`      | 節目：`index.ts`（`SHOWS` / `findShow` / `themeFor`）、`lib/`（build time folder source）+ `library/<id>/`（`show.json` + `tile.webp` + `disc.webp`）                                                                                                                                                                             |
 | `src/catalog/dramas/`     | 廣播劇：`index.ts`（registry 實例）、`lib/`（build time folder source、e2e fixtures）+ `library/<id>/`（`drama.json`、`drama.test.ts`、圖；短篇圖喺 `arcs/<slug>/`）                                                                                                                                                              |
+| `src/catalog/snapshot/`   | Prebuild snapshot：`source.ts`（有 `data/` 就包入 bundle）；`data/` 由 `scripts/catalogSnapshot.ts` build 時生成（gitignored）                                                                                                                                                                                                    |
 | `src/services/`           | `audioProbe.ts`（喺部機度 probe 錄音）、`probeStore.ts`（localStorage 錄音清單）                                                                                                                                                                                                                                                  |
 | `src/i18n/`               | 語言包（zh-HK 書面語）                                                                                                                                                                                                                                                                                                            |
 | `src/player/`             | `AudioController`（唯一 audio element）、Media Session                                                                                                                                                                                                                                                                            |
