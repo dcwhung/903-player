@@ -28,7 +28,7 @@ export type { Weekday } from './types/weekday';
 export { dailyEpisodeId, EPISODE_ID_KIND, seriesEpisodeId, showEpisodeId } from './core/episodeId';
 export { foldersFromGlobs, type Folder, type FolderSource } from './core/folderSource';
 export { compareOrderThenId, type Ordered } from './core/ordering';
-export { SchemaError, type ParseContext } from './core/reader';
+export { ID_PATTERN, SchemaError, type ParseContext } from './core/reader';
 
 export {
     CATALOG_SCHEMA_VERSION,

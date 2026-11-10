@@ -53,6 +53,7 @@ export const VALIDATION_APP_AUDIO_BASE = 'https://app-audio.invalid/dramas/';
 
 export const HTTP_STATUS = {
     ok: 200,
+    created: 201,
     noContent: 204,
     found: 302,
     notModified: 304,
@@ -61,6 +62,11 @@ export const HTTP_STATUS = {
     forbidden: 403,
     notFound: 404,
     conflict: 409,
+    preconditionFailed: 412,
+    payloadTooLarge: 413,
     unprocessable: 422,
     badGateway: 502,
 } as const;
+
+/** 內容 API（PUT / POST）request body 上限 */
+export const CONTENT_BODY_LIMIT_BYTES = 256 * 1024;
