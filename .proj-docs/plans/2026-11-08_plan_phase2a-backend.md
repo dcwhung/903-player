@@ -138,19 +138,19 @@ Secret 一律唔好貼落 chat；`GOOGLE_CLIENT_ID`、`ADMIN_EMAILS`、`PLAYER_O
 
 ## 設定結果（用戶 2026-11-08 完成 1–6）
 
-| #   | 值（全部唔係 secret）                                                                                                                       |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `dcwhung.workers.dev` → API `https://903-player-api.dcwhung.workers.dev`                                                                    |
-| 2   | D1 `903-player`：`03511373-0025-44c4-90c4-2e1480d75e76`（WEUR）                                                                             |
-| 3   | R2 `903-player-catalog`（WEUR，Public Development URL / Custom Domain 都冇開）；音檔 bucket `radio-drama`（WEUR）                           |
-| 4   | Account API token `903-player-github-deploy`：Workers Scripts / D1 / Workers R2 Storage Write，1 年到期                                     |
-| 5   | Google OAuth：External + Testing，test user 得用戶 Gmail；client `678038303553-e1sa3dlsj2mlrf09hvijukbbhksjth4h.apps.googleusercontent.com` |
-| 6   | GitHub secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`                                                                             |
+| #   | 值（全部唔係 secret）                                                                                                                                        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | `dcwhung.workers.dev` → API `https://903-player-api.dcwhung.workers.dev`                                                                                     |
+| 2   | D1 `903-player`：`03511373-0025-44c4-90c4-2e1480d75e76`（WEUR）                                                                                              |
+| 3   | R2 `903-player-catalog`（WEUR，Public Development URL / Custom Domain 都冇開）；音檔 bucket `radio-drama`（WEUR）→ 2026-11-09 改名 `903-radio-drama`（見下） |
+| 4   | Account API token `903-player-github-deploy`：Workers Scripts / D1 / Workers R2 Storage Write，1 年到期                                                      |
+| 5   | Google OAuth：External + Testing，test user 得用戶 Gmail；client `678038303553-e1sa3dlsj2mlrf09hvijukbbhksjth4h.apps.googleusercontent.com`                  |
+| 6   | GitHub secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`                                                                                              |
 
 追加決定：
 
 - **全部 WEUR**：主要用戶同 admin 都喺西歐；Worker 照加 edge cache（Cache API）做多層保險
-- **音檔 bucket 改名 `903-radio-drama`**：R2 改唔到名 → 開新 bucket + `rclone copy`（server-side）+ 換 `DRAMA_AUDIO_BASE`（3 處）+ 舊 bucket 留幾個星期；獨立 PATCH PR，**排喺 2b 之前**。進度 / 收藏用 episode ID，唔受影響
+- **音檔 bucket 改名 `903-radio-drama`** ✅（PR #196，v1.31.1，2026-11-09）：R2 改唔到名 → 開新 bucket + Cloudflare Super Slurper（R2 Data Migration）copy + 換 `DRAMA_AUDIO_BASE`（4 處：catalog、`dramaFromFolder`、e2e harness、`fetch_sources.py`）+ 舊 bucket 留幾個星期。進度 / 收藏用 episode ID，唔受影響
 - **到期提醒**：Cloudflare token 1 年到期（換新 GitHub secret）；Google OAuth client 6 個月冇用會被刪（30 日內可 restore）
 
 ## Ops 頁（用戶 2026-11-08 確認 mockup）

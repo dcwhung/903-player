@@ -2,6 +2,8 @@ import { env } from 'cloudflare:test';
 import { parseCatalogDocument, type CatalogDocument } from '@903-player/catalog';
 import { ORIGIN, adminGet, adminPost, call, loginCookie } from './helpers';
 import { DISC, TILE, drama, putEntry, seed } from './fixtures';
+import { commitPublish, documentFromEntries, validateDocument } from '../src/catalog/publish';
+import { listAssetHashes, listEntries } from '../src/catalog/store';
 
 interface PublishSummary {
     id: number;
@@ -107,12 +109,72 @@ describe('POST /api/publish', () => {
         expect(await response.text()).toContain('1111111111111111.webp');
     });
 
+    it('should reject an image name outside the hashed file pattern (S-772)', async () => {
+        await putEntry('dramas', 'golden', drama(3), {
+            'tile.webp': TILE,
+            'disc.webp': `${DISC.split('.')[0]}.png`,
+        });
+        const response = await adminPost('/api/publish');
+        expect(response.status).toBe(422);
+        expect(await response.text()).toContain('.png');
+    });
+
+    it('should answer unchanged without a new row or R2 write when nothing changed (S-780)', async () => {
+        await adminPost('/api/publish');
+        const before = await env.CATALOG.head('catalog/v1/catalog.json');
+        const response = await adminPost('/api/publish');
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ unchanged: true, publish: { id: 1 } });
+        expect(await history()).toHaveLength(1);
+        const after = await env.CATALOG.head('catalog/v1/catalog.json');
+        expect(after?.uploaded).toEqual(before?.uploaded);
+    });
+
+    it('should publish unchanged content anyway with force=1 (S-780)', async () => {
+        await adminPost('/api/publish');
+        const response = await adminPost('/api/publish?force=1');
+        expect(await response.json()).toMatchObject({ publish: { id: 2 } });
+        expect(await history()).toHaveLength(2);
+    });
+
     it('should need a session', async () => {
         const response = await call('/api/publish', {
             method: 'POST',
             headers: { origin: ORIGIN },
         });
         expect(response.status).toBe(401);
+    });
+});
+
+describe('commitPublish (S-767)', () => {
+    beforeEach(() => seed(3));
+
+    const validated = async () =>
+        validateDocument(
+            documentFromEntries(await listEntries(env.DB), {
+                origin: ORIGIN,
+                assets: await listAssetHashes(env.DB),
+                generatedAt: '2026-11-10T00:00:00.000Z',
+            }),
+        );
+
+    it('should record the publish before writing R2 and drop it when the R2 write fails', async () => {
+        const failing = {
+            ...env,
+            CATALOG: {
+                put: async () => {
+                    const rows = await env.DB.prepare('SELECT COUNT(*) AS n FROM publishes').first(
+                        'n',
+                    );
+                    expect(rows).toBe(1);
+                    throw new Error('R2 down');
+                },
+            } as unknown as R2Bucket,
+        };
+        const options = { createdBy: 'x', force: false, rollbackOf: null };
+        await expect(commitPublish(failing, await validated(), options)).rejects.toThrow('R2 down');
+        expect(await history()).toHaveLength(0);
+        expect(await env.CATALOG.head('catalog/v1/catalog.json')).toBeNull();
     });
 });
 

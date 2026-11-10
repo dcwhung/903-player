@@ -4,6 +4,7 @@ import pkg from '../../package.json';
 import type { AppEnv } from '../app';
 import { requireSameOrigin, requireSession } from '../auth/middleware';
 import { publishRoutes } from '../catalog/routes';
+import { contentRoutes } from '../content/routes';
 
 export const apiRoutes = new Hono<AppEnv>();
 
@@ -14,3 +15,4 @@ apiRoutes.use('*', requireSameOrigin, requireSession);
 apiRoutes.get('/me', (c) => c.json({ email: c.get('email') }));
 
 apiRoutes.route('/', publishRoutes);
+apiRoutes.route('/', contentRoutes);

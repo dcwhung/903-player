@@ -25,38 +25,38 @@ all pass
 | 可維護性 | 20     | 20      | media query 有 test 對 `WIDE_BANNER_QUERY` 鎖住        |
 | 測試覆蓋 | 15     | 15      | unit 鎖規則 + 舊 `:has` 規則已刪；e2e 量把手走前後唱片 |
 | 性能     | 10     | 10      | 少咗一個 `:has()` 選擇器                               |
-| 代碼風格 | 5      | 10      | W-703 冇 bump version                                  |
+| 代碼風格 | 5      | 10      | W-706 冇 bump version                                  |
 | **總分** | **95** | **100** |                                                        |
 
-**結果：✅ pass**（W-703 要喺 merge 前補）
+**結果：✅ pass**（W-706 要喺 merge 前補）
 
 ## 逐項核對
 
 - **Media query 同 `WIDE_BANNER_QUERY` 同步**：有 guard。test 用 `cssDeclarations(pageCss, '.fixed', WIDE_BANNER_QUERY)`，`tests/cssRule.ts` `contextOf` 要 `@media` prelude 完全一樣先攞到宣告；CSS 或 `layout.ts` 任何一邊改咗，`padding-right` 會變 `undefined`，test fail
 - **次序 / specificity**：新規則喺頂層 `.fixed`（`padding-right: env(...)`）同 LANDSCAPE `.page` 規則之後，同 specificity 後寫贏
 - **SHORT_LANDSCAPE**：`min-height: 562px` 對 `max-height: 561px` 互斥；手機打橫冇把手（`usePageHandle` 用 `WIDE_BANNER_QUERY`），亦冇預留位，同之前一樣
-- **`.playerColumn:not(:has(~ .listColumn))` 全行**：照樣 `grid-column: 1 / -1`；只係內容盒右邊少咗預留位，訊息中心向左偏約 15px × `--ui-scale`（見 S-786）
+- **`.playerColumn:not(:has(~ .listColumn))` 全行**：照樣 `grid-column: 1 / -1`；只係內容盒右邊少咗預留位，訊息中心向左偏約 15px × `--ui-scale`（見 S-790）
 - **HomePage `fillWithHandle`**：用 `main.wide[data-layout='fillWithHandle']`，唔經 `.fixed`，冇依賴舊 `:has`
 - **View transition / card-zoom**：`global.css` 嘅 back / zoom-handle 規則用自己嘅 `:has([data-page-handle]:not([data-leaving]))`，冇依賴 `Page.module.css` 舊規則；預留位常駐唔影響配對名
 - **DramaPage.tsx（搵唔到劇集）**：都用 `.fixed`，闊橫版而家同樣有預留位，同其他內頁一致，冇問題
-- **舊註解**：`InnerPageHandle.tsx`、`PlayerHandle.module.css`、`tokens.css`、`useFadeOut.ts`、`usePageHandle.ts` 已更新；`src` / `e2e` 冇其他講「預留位收返」嘅註解。只剩 mockup 文案（S-785）
+- **舊註解**：`InnerPageHandle.tsx`、`PlayerHandle.module.css`、`tokens.css`、`useFadeOut.ts`、`usePageHandle.ts` 已更新；`src` / `e2e` 冇其他講「預留位收返」嘅註解。只剩 mockup 文案（S-789）
 - **e2e `checkHandleLeaves`**：`padding > 0` + gauge 闊 / 中心前後相等；`measurePageHandle` 嘅 `contentRight` 檢查唔受影響
 
 ## 🔴 / 🟡
 
-### W-703 冇 bump version（`apps/player/package.json` 仍然 `1.31.1`）
+### W-706 冇 bump version（`apps/player/package.json` 仍然 `1.31.1`）
 
 - L1：`sw-git-flow` §Version Bump —「所有改動預設都要 bump」，唯一例外係修正同一 session 對上一個指令整出嚟嘅 bug，而且要喺 commit body 寫 `No version bump: …`
 - L2：`git diff origin/main...HEAD --stat` 冇 `package.json`；commit body 冇 no-bump 說明。呢個 bug 係 P3 #4（2026-11-04，`2026-11-04_review_p3-4-inner-page-handle.md`）留低，唔係同一 session。repo 慣例（`eb781cd`、`80ca26f`）code commit 同一個 commit bump
 - L3：PWA 版本號 / update 偵測靠 `version`；唔 bump 嘅話 S3 `impact` base 同用戶睇到嘅版本號都分唔出呢個 fix
-- 方案 A（推薦）：PATCH bump `1.31.1 → 1.31.2`（`apps/player/package.json` + `package-lock.json`），獨立 commit `fix: W-703 | bump player to 1.31.2`
+- 方案 A（推薦）：PATCH bump `1.31.1 → 1.31.3`（`apps/player/package.json` + `package-lock.json`），獨立 commit `fix: W-706 | bump player to 1.31.3`
 - 方案 B：同下一個改動一齊 bump —— 唔建議，違反「每個改動自己 bump」，而且 PR merge 後 main 上面會有一段冇版本號對應嘅 code
 
 ## 🟢 / Observation（入 backlog，唔 block）
 
-- S-785 `_mockups_/inner-page-handle/index.html:182,197` 仍寫「冇預留位」、「預留位一齊收返」；用戶已改揀方案 A，建議更新文案（Design Origin 引用時唔會誤導）
-- S-786 闊橫版載入中 / 搵唔到節目（`.playerColumn` 用晒成行）冇把手時，訊息中心向左偏約 15px × `--ui-scale`；屬方案 A 已接受嘅 trade-off 延伸，記錄就得
-- S-787 開 PR 時 description 第一行要有 `Design Origin:`（CSS 改動）；建議 `baseline`（user-approved option A），註明唯一視覺差異係右邊常駐預留位
+- S-789 `_mockups_/inner-page-handle/index.html:182,197` 仍寫「冇預留位」、「預留位一齊收返」；用戶已改揀方案 A，建議更新文案（Design Origin 引用時唔會誤導）
+- S-790 闊橫版載入中 / 搵唔到節目（`.playerColumn` 用晒成行）冇把手時，訊息中心向左偏約 15px × `--ui-scale`；屬方案 A 已接受嘅 trade-off 延伸，記錄就得
+- S-791 開 PR 時 description 第一行要有 `Design Origin:`（CSS 改動）；建議 `baseline`（user-approved option A），註明唯一視覺差異係右邊常駐預留位
 
 ## ✅ 做得好嘅地方
 
@@ -79,5 +79,10 @@ hard_gates:
 next_action: invoke_qa
 next_agent: quality-assurance
 branch: "claude/busy-carson-6u0wlx"
-context: "420347f pass 95: reserve always applied under WIDE_BANNER_QUERY (test guards query sync), no dependency from fillWithHandle / view-transition / card-zoom on old :has rule, SHORT_LANDSCAPE unaffected. W-703: no version bump — PATCH 1.31.1 -> 1.31.2 before merge. Observations S-785 (mockup wording), S-786 (full-row message ~15px off-center), S-787 (PR needs Design Origin line). Report committed, not pushed (code CI may be running) — main agent pushes after CI green."
+context: "420347f pass 95: reserve always applied under WIDE_BANNER_QUERY (test guards query sync), no dependency from fillWithHandle / view-transition / card-zoom on old :has rule, SHORT_LANDSCAPE unaffected. W-706: no version bump — PATCH 1.31.1 -> 1.31.3 before merge. Observations S-789 (mockup wording), S-790 (full-row message ~15px off-center), S-791 (PR needs Design Origin line). Report committed, not pushed (code CI may be running) — main agent pushes after CI green."
 ```
+
+## 重編備註（merge `origin/main` 時）
+
+- main 嘅 PR #197（Phase 2b-1 backend）已經用咗 W-703、S-785–S-788，同埋將 player bump 咗去 1.31.2；呢份報告嘅 ID 同版本已重編：W-703 → W-706、S-785 → S-789、S-786 → S-790、S-787 → S-791；player 1.31.2 → 1.31.3
+- 已 push 嘅 commit message（`cd9852b` 寫「W-703 | bump player to 1.31.2」、`70b5b96` 寫「S-785」）保留舊編號，以呢度為準

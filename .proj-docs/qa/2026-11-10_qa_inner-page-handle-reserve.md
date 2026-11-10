@@ -1,7 +1,7 @@
 # QA — 闊橫版內頁把手預留位常駐（唱片唔再變大細）— 2026-11-10 — S1
 
-- Tier: T1（CSS + e2e / unit 鎖；player 1.31.1 → 1.31.2 PATCH）| Code commit: `cd9852b`（code = `420347f` + version bump；`248eedf` / `70b5b96` 淨 docs / mockup）| Verdict: ✅ pass
-- L1：用戶 bug（闊橫版內頁揀集時把手消失、預留位收埋、唱片變大右移）；用戶揀方案 A（唱片唔跟把手；接受右邊常駐空位、S-786 全行訊息偏左）；review `.proj-docs/reviews/2026-11-10_review_inner-page-handle-reserve.md`（pass 95）
+- Tier: T1（CSS + e2e / unit 鎖；player 1.31.1 → 1.31.3 PATCH）| Code commit: `cd9852b`（code = `420347f` + version bump；`248eedf` / `70b5b96` 淨 docs / mockup）| Verdict: ✅ pass
+- L1：用戶 bug（闊橫版內頁揀集時把手消失、預留位收埋、唱片變大右移）；用戶揀方案 A（唱片唔跟把手；接受右邊常駐空位、S-790 全行訊息偏左）；review `.proj-docs/reviews/2026-11-10_review_inner-page-handle-reserve.md`（pass 95）
 - Ledger（`impact --since b94a14d` = `git merge-base HEAD origin/main`）：SKIP 8 / REVERIFY 5（home、show-today-page、coming-soon、ui-foundation、repo-tooling）/ UNCOVERED 1（`_mockups_/inner-page-handle/index.html`）/ IGNORED 1
 - UNCOVERED 分配：`_mockups_/inner-page-handle/index.html` → `home`（內頁把手 Design Origin，同 AC-2 闊橫版把手同一條鏈）
 - REVERIFY 原因：home（`InnerPageHandle.tsx` / `PlayerHandle.module.css` / `playerHandle.node.test.ts` / `useFadeOut.ts` / `usePageHandle.ts`，後四個淨註解）；show-today-page（`Page.module.css`）；coming-soon / ui-foundation（`tokens.css` 註解、`homeWide.mjs`、version）；repo-tooling（`package.json` / `package-lock.json` version）
@@ -31,8 +31,8 @@ all pass（Tests：CI unit + e2e 綠；Coverage：改動係 CSS 規則，由 `pl
 
 ### 🟢 / Observation
 
-- 右邊常駐空位（闊橫版內頁冇把手時都留 45px）、S-786 全行訊息偏左：用戶已接受（方案 A）— 唔係 finding
-- W-703 已喺 `cd9852b` 處理；S-785 mockup 已改（`70b5b96`）；S-786 / S-787 跟 review backlog
+- 右邊常駐空位（闊橫版內頁冇把手時都留 45px）、S-790 全行訊息偏左：用戶已接受（方案 A）— 唔係 finding
+- W-706 已喺 `cd9852b` 處理；S-789 mockup 已改（`70b5b96`）；S-790 / S-791 跟 review backlog
 
 ## 建議補測
 
@@ -46,3 +46,8 @@ commit: cd9852b
 next_action: main_agent_push_then_merge
 context: "S1 pass @cd9852b; CI 42771085935 all green (unit 3027, e2e 780/0 incl. new reserve-stays + disc 607→607 / 897.5→897.5 checks, PWA update green); 5 chains S1 re-frozen; mockup assigned to home. Report + ledger committed locally, not pushed"
 ```
+
+## 重編備註（merge `origin/main` 時）
+
+- main 嘅 PR #197（Phase 2b-1 backend）已經用咗 W-703、S-785–S-788，同埋將 player bump 咗去 1.31.2；呢份報告嘅 ID 同版本已重編：W-703 → W-706、S-785 → S-789、S-786 → S-790、S-787 → S-791；player 1.31.2 → 1.31.3
+- 已 push 嘅 commit message（`cd9852b` 寫「W-703 | bump player to 1.31.2」、`70b5b96` 寫「S-785」）保留舊編號，以呢度為準

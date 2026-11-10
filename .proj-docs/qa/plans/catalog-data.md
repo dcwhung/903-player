@@ -19,4 +19,4 @@
     - Flag off：`npm run build`（production）後 `dist` grep 唔到 `e2e-catalog|catalog-json|catalog-images`，`sw.js` 冇 NetworkFirst / CacheFirst
     - e2e 入口只有 `npm run e2e`（build + node e2e/run.mjs，跑晒所有 section）；未有單 section runner
 - PWA gate: no
-- Out of scope: scripts/dramaFromFolder.mjs（CLI，屬 drama 鏈）；`src/services/storageMigration*`、`packages/catalog/src/core/episodeId*`（屬 player-core）
+- Out of scope: scripts/dramaFromFolder.ts + `packages/catalog/src/scan/*`（CLI / 掃描核心，屬 drama 鏈）；`packages/catalog/src/schedule/*`（屬 api 鏈）；`src/services/storageMigration*`、`packages/catalog/src/core/episodeId*`（屬 player-core）

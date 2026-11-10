@@ -42,11 +42,27 @@ export const authorizationUrl = async (
     return url.href;
 };
 
-const requestTokens = async (env: Env, code: string, verifier: string): Promise<unknown> => {
-    const response = await fetch(GOOGLE_TOKEN_URL, {
-        method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
+/** 網絡錯 / 回應唔係 JSON 都當 Google login 失敗（502），唔好變 500（S-770） */
+const fetchTokenEndpoint = async (body: URLSearchParams): Promise<unknown> => {
+    let response: Response;
+    try {
+        response = await fetch(GOOGLE_TOKEN_URL, {
+            method: 'POST',
+            headers: { 'content-type': 'application/x-www-form-urlencoded' },
+            body,
+        });
+    } catch (error) {
+        throw new GoogleAuthError(`token endpoint unreachable: ${String(error)}`);
+    }
+    if (!response.ok) throw new GoogleAuthError(`token endpoint HTTP ${response.status}`);
+    return response.json().catch(() => {
+        throw new GoogleAuthError('token endpoint returned invalid JSON');
+    });
+};
+
+const requestTokens = (env: Env, code: string, verifier: string): Promise<unknown> =>
+    fetchTokenEndpoint(
+        new URLSearchParams({
             code,
             code_verifier: verifier,
             client_id: env.GOOGLE_CLIENT_ID,
@@ -54,18 +70,17 @@ const requestTokens = async (env: Env, code: string, verifier: string): Promise<
             redirect_uri: redirectUri(env),
             grant_type: 'authorization_code',
         }),
-    });
-    if (!response.ok) throw new GoogleAuthError(`token endpoint HTTP ${response.status}`);
-    return response.json();
-};
+    );
 
 const decodeClaims = (idToken: unknown): Record<string, unknown> => {
     const payload = typeof idToken === 'string' ? idToken.split('.')[1] : undefined;
     if (!payload) throw new GoogleAuthError('no id_token');
-    return JSON.parse(new TextDecoder().decode(base64UrlDecode(payload))) as Record<
-        string,
-        unknown
-    >;
+    try {
+        const json = new TextDecoder().decode(base64UrlDecode(payload));
+        return JSON.parse(json) as Record<string, unknown>;
+    } catch {
+        throw new GoogleAuthError('id_token payload is not base64url JSON');
+    }
 };
 
 /** code + verifier → email；token endpoint 錯 / id_token 唔係俾我哋 → GoogleAuthError */
