@@ -1963,6 +1963,21 @@
                 font-size: 12px;
                 border-radius: 999px;
             }
+
+            /* ---------- v15 ---------- */
+            textarea.ep-titles {
+                margin-top: 8px;
+                font-family: var(--mono);
+                font-size: 13px;
+                line-height: 1.7;
+            }
+            .strip.future {
+                margin-top: 4px;
+            }
+            .strip.future .today-mark {
+                flex-direction: column;
+                padding-right: 4px;
+            }
         </style>
     </head>
     <body>
@@ -3136,7 +3151,9 @@
                     tab：撳一行原位展開，展開咗嗰行同編輯區同一個底色（冇藍框）。名稱直接係輸入框（唔使雙擊）=
                     播放器顯示名稱；ID 旁邊有短篇自己嘅上架 /
                     下架掣（新欄位：落架單一短篇唔使落成套劇）；簡介 → 聲演；R2
-                    嘢放虛線框，「重新掃描」喺框線右邊同標題平排；圖片喺右邊。拖 ⠿ 改次序
+                    嘢放虛線框，「重新掃描」喺框線右邊同標題平排；圖片喺右邊。拖 ⠿
+                    改次序。各集標題用一個 textarea，每行一集「集數
+                    標題」（冇標題就淨係集數），照住格式改就得
                 </p>
                 <div class="frame">
                     <div class="shell">
@@ -3269,41 +3286,29 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <details>
+                                                <details open>
                                                     <summary class="small">
-                                                        各集標題（30 集，由檔名讀取，可修改）
+                                                        各集標題（30 集，由檔名讀取）
                                                     </summary>
-                                                    <div class="table-wrap" style="margin-top: 8px">
-                                                        <table>
-                                                            <tbody>
-                                                                <tr>
-                                                                    <td class="muted">第 1 集</td>
-                                                                    <td>
-                                                                        <input
-                                                                            type="text"
-                                                                            value=""
-                                                                            placeholder="（無標題）"
-                                                                        />
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td class="muted">第 2 集</td>
-                                                                    <td>
-                                                                        <input
-                                                                            type="text"
-                                                                            value=""
-                                                                            placeholder="（無標題）"
-                                                                        />
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td class="muted" colspan="2">
-                                                                        …
-                                                                    </td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
+                                                    <textarea
+                                                        class="ep-titles"
+                                                        rows="8"
+                                                        spellcheck="false"
+                                                        placeholder="每行一集：集數 + 空格 + 標題，例如「30 大結局」"
+                                                    >
+1
+2
+3 初次見面
+4
+5
+…
+29
+30 大結局</textarea
+                                                    >
+                                                    <span class="small muted"
+                                                        >格式：每行一集，「集數
+                                                        標題」；沒有標題只寫集數</span
+                                                    >
                                                 </details>
                                             </fieldset>
                                         </div>
@@ -3433,6 +3438,8 @@
                                         </div>
                                         <span class="seg-date">✓ 11/3 一</span>
                                     </div>
+                                </div>
+                                <div class="strip future" aria-label="今天之後的批次">
                                     <div class="today-mark">今天</div>
                                     <div class="seg-batch b1">
                                         <div class="eps-cells">
@@ -3458,10 +3465,10 @@
                                 <div class="legend">
                                     <span>灰格 ✓ = 已上架（不受新規則影響）</span
                                     ><span>藍線 = 今天</span
-                                    ><span>拖段與段之間嘅分隔線改每批集數，撳日期改日子</span>
+                                    ><span>拖曳分隔線可調整每批集數，點擊日期可更改日子</span>
                                 </div>
                                 <div class="note warn" style="display: grid; gap: 8px">
-                                    <span>新規則同之前嘅排法唔同，以下係完整上架批次：</span>
+                                    <b>上架批次</b>
                                     <div class="table-wrap">
                                         <table class="batches">
                                             <thead>
