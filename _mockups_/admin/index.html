@@ -984,31 +984,228 @@
                     grid-template-columns: minmax(0, 1fr) auto auto;
                 }
             }
+
+            /* ---------- v7：stepper（更新內容流程） ---------- */
+            .stepper {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            .stepper li {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--muted);
+                font-size: 14px;
+            }
+            .stepper li + li::before {
+                content: '';
+                width: 32px;
+                height: 2px;
+                background: var(--line);
+                margin-right: 4px;
+            }
+            .stepper .num {
+                display: grid;
+                place-items: center;
+                width: 26px;
+                height: 26px;
+                border-radius: 50%;
+                border: 2px solid var(--line);
+                font-size: 13px;
+                font-weight: 600;
+            }
+            .stepper li.done {
+                color: var(--ok);
+            }
+            .stepper li.done .num {
+                background: var(--ok);
+                border-color: var(--ok);
+                color: var(--surface);
+            }
+            .stepper li.current {
+                color: var(--ink);
+                font-weight: 600;
+            }
+            .stepper li.current .num {
+                border-color: var(--accent);
+                color: var(--accent);
+            }
+            .flow-bar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+                padding: 8px 12px;
+                border-radius: 8px;
+                background: var(--accent-soft);
+                font-size: 13px;
+            }
+            .flow-bar a {
+                color: var(--accent);
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .result-group {
+                display: grid;
+                gap: 8px;
+            }
+            .result-group h4 {
+                margin: 0;
+                font-size: 13px;
+                color: var(--muted);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .result {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+                padding: 10px 12px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--surface);
+            }
+            .result .what {
+                min-width: 0;
+            }
+            .result .what b {
+                font-weight: 600;
+            }
+            .result.attn {
+                border-color: var(--warn);
+                background: var(--warn-bg);
+            }
+            .result.done {
+                opacity: 0.7;
+            }
+            .icon-btn {
+                display: inline-grid;
+                place-items: center;
+                width: 36px;
+                height: 36px;
+                padding: 0;
+                font-size: 20px;
+                line-height: 1;
+                border-radius: 50%;
+            }
+
+            /* ---------- v7：左右 switch（類型） ---------- */
+            .switch {
+                display: inline-flex;
+                padding: 3px;
+                border-radius: 999px;
+                background: var(--surface-2);
+                border: 1px solid var(--line);
+                width: fit-content;
+            }
+            .switch button {
+                border: 0;
+                border-radius: 999px;
+                padding: 5px 16px;
+                background: transparent;
+                color: var(--muted);
+            }
+            .switch button[aria-pressed='true'] {
+                background: var(--surface);
+                color: var(--ink);
+                font-weight: 600;
+                box-shadow: 0 1px 3px rgb(0 0 0 / 0.15);
+            }
+
+            /* ---------- v7：ON / OFF（啟用） ---------- */
+            .toggle {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                width: fit-content;
+                padding: 3px 12px 3px 3px;
+                border-radius: 999px;
+                border: 0;
+                font-weight: 700;
+                font-size: 13px;
+                color: #ffffff;
+            }
+            .toggle::before {
+                content: '';
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: #ffffff;
+            }
+            .toggle.on {
+                background: var(--ok);
+                flex-direction: row-reverse;
+                padding: 3px 3px 3px 12px;
+            }
+            .toggle.off {
+                background: var(--danger);
+            }
+            .readonly-box {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .readonly-box code,
+            .readonly-box .val {
+                flex: 1;
+                min-width: 0;
+                padding: 7px 10px;
+                border-radius: 8px;
+                background: var(--surface-2);
+                color: var(--ink);
+                overflow-wrap: anywhere;
+            }
+            .arc-editor {
+                grid-column: 1 / -1;
+                margin: 0 14px 8px 34px;
+                padding: 14px;
+                border: 1px solid var(--accent);
+                border-radius: 8px;
+                background: var(--surface);
+                display: grid;
+                gap: 12px;
+            }
+            .row.open {
+                background: var(--accent-soft);
+            }
         </style>
     </head>
     <body>
         <main class="page">
             <section class="intro">
-                <h1>903 Player Admin：Phase 3 mockup（v3）</h1>
+                <h1>903 Player Admin：Phase 3 mockup（v7）</h1>
                 <p>
-                    靜態 preview，冇真功能。介面文字用書面語；灰色細字係開發註解。範圍：login、節目
-                    / 廣播劇列表（拖曳排序）、編輯、R2 掃描覆核、短篇排程 + 日曆、發佈（取代 ops
-                    頁）。Cover / theme / banner 編輯係 Phase 4。
+                    靜態
+                    preview，冇真功能。介面文字用書面語；灰色細字係開發註解。主要操作係「更新內容」三步：①
+                    掃描 R2（新嘢自動建立）→ ② 編輯新內容 → ③ 排程及發佈；小改動先直接入節目 /
+                    廣播劇編輯，再去步驟 3 發佈。Cover / theme / banner 編輯係 Phase 4。
                 </p>
                 <nav class="jump" aria-label="跳去畫面">
                     <a href="#s1">① Login</a>
-                    <a href="#s2">② 廣播劇列表</a>
-                    <a href="#s2b">②b 拖曳中</a>
-                    <a href="#s2c">②c 節目列表</a>
-                    <a href="#s3">③ 節目編輯</a>
-                    <a href="#s4">④ 廣播劇：基本資料</a>
-                    <a href="#s4b">④b 資訊（P9.5）</a>
-                    <a href="#s5">⑤ 短篇</a>
-                    <a href="#s6">⑥ R2 掃描</a>
-                    <a href="#s7">⑦ 排程</a>
-                    <a href="#s8">⑧ 發佈</a>
-                    <a href="#s9">⑨ 錯誤狀態</a>
-                    <a href="#s10">⑩ 窄屏</a>
+                    <a href="#u1">② 步驟 1 掃描</a>
+                    <a href="#u2">③ 步驟 2 編輯</a>
+                    <a href="#u3">④ 步驟 3 排程及發佈</a>
+                    <a href="#s2">⑤ 廣播劇列表</a>
+                    <a href="#s2b">⑤b 拖曳中</a>
+                    <a href="#s2c">⑥ 節目列表</a>
+                    <a href="#s3">⑦ 節目編輯</a>
+                    <a href="#s4">⑧ 廣播劇：基本資料</a>
+                    <a href="#s4c">⑧b 資料夾對唔到</a>
+                    <a href="#s5">⑨ 短篇</a>
+                    <a href="#s7">⑩ 排程</a>
+                    <a href="#s8">⑪ 發佈記錄</a>
+                    <a href="#s9">⑫ 錯誤狀態</a>
+                    <a href="#s10">⑬ 窄屏</a>
                 </nav>
             </section>
 
@@ -1031,10 +1228,348 @@
                 </div>
             </section>
 
+            <section id="u1">
+                <p class="state-label">
+                    ② 更新內容 · 步驟 1 掃描 R2：撳「掃描 R2」list 成個 AUDIO
+                    bucket。新資料夾即刻自動建立廣播劇（草稿、未發佈）、新短篇 / 新集數自動加入（寫
+                    D1，唔使逐項撳套用）。例外：有劇嘅資料夾唔見咗（多數係改名），新資料夾就唔自動建立，放入「需要處理」等
+                    admin 揀，避免改名變咗重複劇。nav「更新內容」個數 = 未完成步驟嘅項目
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span
+                            ><a href="#u1" aria-current="page"
+                                >更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span><a href="#s2c">節目</a
+                            ><a href="#s2">廣播劇</a><span class="group">記錄</span
+                            ><a href="#s8">發佈記錄</a><span class="spacer"></span
+                            ><span class="who">admin@…</span><a href="#s1">登出</a
+                            ><span class="version">api 0.4.0</span>
+                        </nav>
+                        <div class="main">
+                            <div class="title-row"><h2>更新內容</h2></div>
+                            <ol class="stepper">
+                                <li class="current"><span class="num">1</span>掃描 R2</li>
+                                <li><span class="num">2</span>編輯新內容</li>
+                                <li><span class="num">3</span>排程及發佈</li>
+                            </ol>
+                            <div class="card">
+                                <div class="title-row">
+                                    <div>
+                                        <h3>掃描結果</h3>
+                                        <p class="sub">
+                                            今天 09:41 完成 · 13 個資料夾 · 617 個檔案
+                                        </p>
+                                    </div>
+                                    <button>重新掃描</button>
+                                </div>
+                                <div class="result-group">
+                                    <h4>需要處理 <span class="pill count">1</span></h4>
+                                    <div class="result attn">
+                                        <span class="what"
+                                            >找不到「少爺占系列」的資料夾
+                                            <code>少爺占/</code>，是否已改名？</span
+                                        >
+                                        <div class="actions">
+                                            <select style="width: auto">
+                                                <option>選擇未配對的資料夾…</option>
+                                                <option>少爺占系列/</option>
+                                            </select>
+                                            <button>建立為新廣播劇</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="result-group">
+                                    <h4>已自動建立 · 新廣播劇</h4>
+                                    <div class="result">
+                                        <span class="what"
+                                            ><b>天使之戀系列</b>
+                                            <span class="muted small"
+                                                >· 2 個短篇 · 24 集 · 資料夾
+                                                <code>天使之戀系列/</code></span
+                                            ></span
+                                        >
+                                        <span class="pill">從未發佈</span>
+                                    </div>
+                                </div>
+                                <div class="result-group">
+                                    <h4>已自動加入 · 新短篇</h4>
+                                    <div class="result">
+                                        <span class="what"
+                                            ><b>蘭茜夫人劇場</b> ›
+                                            <span class="pill new">新</span> 我心不死
+                                            <span class="muted small">· 37 集</span></span
+                                        >
+                                        <span class="pill draft">待發佈</span>
+                                    </div>
+                                </div>
+                                <div class="result-group">
+                                    <h4>已自動加入 · 新集數</h4>
+                                    <div class="result">
+                                        <span class="what"
+                                            ><b>森美小儀系列</b> › 公子森林
+                                            <span class="muted small">· 新增第 39–40 集</span></span
+                                        >
+                                        <span class="pill draft">待發佈</span>
+                                    </div>
+                                </div>
+                                <p class="note warn">
+                                    1 個檔案不符合檔名模板，已略過：<code
+                                        >蘭茜夫人劇場/我心不死/我心不死 - 預告.m4a</code
+                                    >
+                                </p>
+                                <div class="savebar">
+                                    <span class="muted small">尚有 1 項需要處理（可稍後處理）</span>
+                                    <div class="actions">
+                                        <button class="primary">下一步：編輯新內容 →</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="u2">
+                <p class="state-label">
+                    ③ 步驟 2 編輯新內容：步驟 1 加咗 / 建立咗嘅項目逐個列出；紅色 pill =
+                    必須做（例如自動生成嘅 ID 要改），灰色 =
+                    選填。撳「編輯」入返平時嘅編輯頁，頂部有藍色 flow bar 可以返嚟（見
+                    ⑧）。必須項目全部完成先可以去步驟 3
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span
+                            ><a href="#u1" aria-current="page"
+                                >更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span><a href="#s2c">節目</a
+                            ><a href="#s2">廣播劇</a><span class="group">記錄</span
+                            ><a href="#s8">發佈記錄</a><span class="spacer"></span
+                            ><span class="who">admin@…</span><a href="#s1">登出</a
+                            ><span class="version">api 0.4.0</span>
+                        </nav>
+                        <div class="main">
+                            <div class="title-row"><h2>更新內容</h2></div>
+                            <ol class="stepper">
+                                <li class="done"><span class="num">✓</span>掃描 R2</li>
+                                <li class="current"><span class="num">2</span>編輯新內容</li>
+                                <li><span class="num">3</span>排程及發佈</li>
+                            </ol>
+                            <div class="card">
+                                <h3>待編輯（3）</h3>
+                                <div class="result">
+                                    <span class="what"
+                                        ><b>天使之戀系列</b>
+                                        <span class="muted small">新廣播劇</span><br /><span
+                                            class="pills"
+                                            ><span class="pill bad">須設定 ID（現為 drama-01）</span
+                                            ><span class="pill bad">須設定短篇 ID × 2</span
+                                            ><span class="pill">簡介（選填）</span></span
+                                        ></span
+                                    >
+                                    <a class="btn" href="#s4">編輯 →</a>
+                                </div>
+                                <div class="result">
+                                    <span class="what"
+                                        ><b>蘭茜夫人劇場</b> ›
+                                        <span class="pill new">新</span> 我心不死<br /><span
+                                            class="pills"
+                                            ><span class="pill bad"
+                                                >須設定短篇 ID（現為 arc-01）</span
+                                            ><span class="pill"
+                                                >顯示名稱、簡介、聲演（選填）</span
+                                            ></span
+                                        ></span
+                                    >
+                                    <a class="btn" href="#s5">編輯 →</a>
+                                </div>
+                                <div class="result done">
+                                    <span class="what"
+                                        ><b>森美小儀系列</b> › 公子森林
+                                        <span class="muted small">新增第 39–40 集</span><br /><span
+                                            class="pills"
+                                            ><span class="pill ok"
+                                                >✓ 無需處理（集數標題已由檔名讀取）</span
+                                            ></span
+                                        ></span
+                                    >
+                                    <a class="btn" href="#s5">檢查</a>
+                                </div>
+                                <div class="savebar">
+                                    <span class="muted small">尚有 3 項必須處理</span>
+                                    <div class="actions">
+                                        <button>← 上一步</button>
+                                        <button class="primary" disabled>
+                                            下一步：排程及發佈 →
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="u3">
+                <p class="state-label">
+                    ④ 步驟 3 排程及發佈：每項新內容揀點上架（一次過 /
+                    排程，排程細節喺排程頁改）；右邊係未來幾星期上架預覽；最後睇變更摘要 + 驗證 →
+                    發佈。平時改小嘢（直接入某項編輯）之後，都係嚟呢度發佈（頂部「前往發佈」直接跳步驟
+                    3）
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <span class="brand">903 Admin</span
+                            ><a href="#u1" aria-current="page"
+                                >更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span><a href="#s2c">節目</a
+                            ><a href="#s2">廣播劇</a><span class="group">記錄</span
+                            ><a href="#s8">發佈記錄</a><span class="spacer"></span
+                            ><span class="who">admin@…</span><a href="#s1">登出</a
+                            ><span class="version">api 0.4.0</span>
+                        </nav>
+                        <div class="main">
+                            <div class="title-row"><h2>更新內容</h2></div>
+                            <ol class="stepper">
+                                <li class="done"><span class="num">✓</span>掃描 R2</li>
+                                <li class="done"><span class="num">✓</span>編輯新內容</li>
+                                <li class="current"><span class="num">3</span>排程及發佈</li>
+                            </ol>
+                            <div class="two-col">
+                                <div class="card">
+                                    <h3>上架安排</h3>
+                                    <div class="result">
+                                        <span class="what"
+                                            ><b>天使之戀系列</b><br /><span class="muted small"
+                                                >一次過上架 · 11 月 20 日</span
+                                            ></span
+                                        >
+                                        <a class="btn" href="#s7">修改</a>
+                                    </div>
+                                    <div class="result">
+                                        <span class="what"
+                                            ><b>蘭茜夫人劇場</b> › 我心不死<br /><span
+                                                class="muted small"
+                                                >排程 · 每週一、三、五 · 每次 5 集 · 11 月 16
+                                                日起</span
+                                            ></span
+                                        >
+                                        <a class="btn" href="#s7">修改</a>
+                                    </div>
+                                    <div class="result">
+                                        <span class="what"
+                                            ><b>森美小儀系列</b> › 公子森林 +2 集<br /><span
+                                                class="muted small"
+                                                >跟隨短篇 · 發佈後即時上架</span
+                                            ></span
+                                        >
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <h3>未來上架預覽</h3>
+                                    <div class="table-wrap">
+                                        <table>
+                                            <tbody>
+                                                <tr>
+                                                    <td>發佈後</td>
+                                                    <td>公子森林 第 39–40 集</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>11 月 16 日（一）</td>
+                                                    <td>我心不死 第 1–5 集</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>11 月 18 日（三）</td>
+                                                    <td>我心不死 第 6–10 集</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>11 月 20 日（五）</td>
+                                                    <td>
+                                                        我心不死 第 11–15 集；天使之戀系列（24 集）
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="muted" colspan="2">
+                                                        … 至 12 月 2 日
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <h3>變更摘要（與 #4 比較）</h3>
+                                <div class="card flush">
+                                    <ol class="list">
+                                        <li
+                                            class="row"
+                                            style="
+                                                grid-template-columns: minmax(0, 1fr) auto;
+                                                padding-left: 14px;
+                                            "
+                                        >
+                                            <span class="text"
+                                                ><b>天使之戀系列</b
+                                                ><span class="meta"
+                                                    >新增廣播劇 · 2 個短篇 · 24 集</span
+                                                ></span
+                                            >
+                                            <span class="pill ok">新增</span>
+                                        </li>
+                                        <li
+                                            class="row"
+                                            style="
+                                                grid-template-columns: minmax(0, 1fr) auto;
+                                                padding-left: 14px;
+                                            "
+                                        >
+                                            <span class="text"
+                                                ><b>蘭茜夫人劇場</b
+                                                ><span class="meta"
+                                                    >新增短篇「我心不死」（37 集）及排程；簡介</span
+                                                ></span
+                                            >
+                                            <span class="pill info">修改</span>
+                                        </li>
+                                        <li
+                                            class="row"
+                                            style="
+                                                grid-template-columns: minmax(0, 1fr) auto;
+                                                padding-left: 14px;
+                                            "
+                                        >
+                                            <span class="text"
+                                                ><b>森美小儀系列</b
+                                                ><span class="meta"
+                                                    >「公子森林」新增第 39–40 集</span
+                                                ></span
+                                            >
+                                            <span class="pill info">修改</span>
+                                        </li>
+                                    </ol>
+                                </div>
+                                <p class="note ok">驗證通過 · 7 個節目 · 8 套廣播劇 · 535 集</p>
+                                <div class="savebar">
+                                    <span class="muted small">播放器約 60 秒內取得新版本</span>
+                                    <div class="actions">
+                                        <button>← 上一步</button>
+                                        <button class="primary">發佈</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- ② Drama list -->
             <section id="s2">
                 <p class="state-label">
-                    ② 廣播劇列表：三欄（名稱、短篇、狀態）；狀態 =
+                    ⑤ 廣播劇列表：三欄（名稱、短篇、狀態）；狀態 =
                     每個短篇嘅狀態，同短篇逐行對齊。縮圖右上角圓點 = 主項狀態（綠 上架中 / 藍
                     上架日期未到 / 灰 已停用），節目列表一樣有。名後面「待發佈」=
                     呢套劇有已儲存、未發佈嘅改動（任何欄位，唔一定係短篇）；從未發佈嘅短篇喺名後加「新」。短篇多過
@@ -1045,25 +1580,27 @@
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span>
-                            <span class="group">內容</span>
-                            <a href="#s2c">節目</a>
-                            <a href="#s2" aria-current="page"
-                                >廣播劇 <span class="pill count">3</span></a
-                            >
-                            <a href="#s8">發佈 <span class="pill count">3</span></a>
-                            <span class="spacer"></span>
-                            <span class="who">admin@…</span>
-                            <a href="#s1">登出</a>
-                            <span class="version">api 0.4.0</span>
+                            <span class="brand">903 Admin</span
+                            ><a href="#u1">更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span><a href="#s2c">節目</a
+                            ><a href="#s2" aria-current="page">廣播劇</a
+                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="spacer"></span><span class="who">admin@…</span
+                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
                         </nav>
                         <div class="main">
                             <div class="title-row">
                                 <h2>廣播劇</h2>
-                                <button class="primary">＋ 新增廣播劇</button>
+                                <button
+                                    class="primary icon-btn"
+                                    aria-label="新增廣播劇"
+                                    title="新增廣播劇"
+                                >
+                                    ＋
+                                </button>
                             </div>
                             <p class="note warn">
-                                有 3 項變更尚未發佈，發佈後播放器才會更新。<a href="#s8"
+                                有 3 項變更尚未發佈，發佈後播放器才會更新。<a href="#u3"
                                     >前往發佈</a
                                 >
                             </p>
@@ -1309,9 +1846,9 @@
                                         <span
                                             ><a
                                                 class="small"
-                                                href="#s6"
+                                                href="#s4"
                                                 style="color: var(--accent)"
-                                                >從 R2 掃描</a
+                                                >重新掃描</a
                                             ></span
                                         >
                                     </div>
@@ -1382,7 +1919,7 @@
             <!-- ②b Dragging -->
             <section id="s2b">
                 <p class="state-label">
-                    ②b 拖曳中：揸住 ⠿ 拉起嗰行（浮起 + 陰影），原位變淡，藍線 =
+                    ⑤b 拖曳中：揸住 ⠿ 拉起嗰行（浮起 + 陰影），原位變淡，藍線 =
                     放手後位置；只可以喺啟用區入面拖（藍線唔會落到「已停用」下面）。鍵盤：focus ⠿ 撳
                     Space 拎起、↑↓ 移、Space 放低、Esc
                     取消。放手後即刻儲存，toast「已更新次序」。減少動態時唔做浮起動畫
@@ -1459,24 +1996,30 @@
             <!-- ②c Show list -->
             <section id="s2c">
                 <p class="state-label">
-                    ②c 節目列表：節目冇短篇，維持兩欄（名稱、狀態）；meta
+                    ⑥c 節目列表：節目冇短篇，維持兩欄（名稱、狀態）；meta
                     行顯示播出日（唔顯示錄音檔時間）
                 </p>
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span>
-                            <span class="group">內容</span>
-                            <a href="#s2c" aria-current="page">節目</a>
-                            <a href="#s2">廣播劇 <span class="pill count">3</span></a>
-                            <a href="#s8">發佈 <span class="pill count">3</span></a>
-                            <span class="spacer"></span>
-                            <span class="who">admin@…</span>
+                            <span class="brand">903 Admin</span
+                            ><a href="#u1">更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span
+                            ><a href="#s2c" aria-current="page">節目</a><a href="#s2">廣播劇</a
+                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="spacer"></span><span class="who">admin@…</span
+                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
                         </nav>
                         <div class="main">
                             <div class="title-row">
                                 <h2>節目</h2>
-                                <button class="primary">＋ 新增節目</button>
+                                <button
+                                    class="primary icon-btn"
+                                    aria-label="新增節目"
+                                    title="新增節目"
+                                >
+                                    ＋
+                                </button>
                             </div>
                             <div class="card flush">
                                 <div class="list-head">
@@ -1600,17 +2143,20 @@
             <!-- ③ Show edit -->
             <section id="s3">
                 <p class="state-label">
-                    ③ 節目編輯（PUT
+                    ⑦ 節目編輯（PUT
                     /api/entries/shows/:id）：名稱喺標題雙擊改；唔顯示錄音檔時間；次序喺列表拖。資訊（P9.5）直接放喺同一頁：播出時間只入開始
                     / 完結時間，「播放時間」一行由播出日 + 時間自動組合（預覽），唔使重複輸入星期
                 </p>
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span><span class="group">內容</span
-                            ><a href="#s2c" aria-current="page">節目</a
-                            ><a href="#s2">廣播劇 <span class="pill count">3</span></a
-                            ><a href="#s8">發佈 <span class="pill count">3</span></a>
+                            <span class="brand">903 Admin</span
+                            ><a href="#u1">更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span
+                            ><a href="#s2c" aria-current="page">節目</a><a href="#s2">廣播劇</a
+                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="spacer"></span><span class="who">admin@…</span
+                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
                         </nav>
                         <div class="main">
                             <div class="crumbs"><a href="#s2c">節目</a> › 口水多過浪花</div>
@@ -1700,44 +2246,40 @@
                 </div>
             </section>
 
-            <!-- ④ Drama basic -->
+            <!-- ⑨ Drama basic -->
             <section id="s4">
                 <p class="state-label">
-                    ④ 廣播劇編輯：基本資料
-                    tab，畫緊「雙擊名稱之後」嘅狀態：標題變輸入框（自動全選），Enter / ✓ 確認、Esc /
-                    ✕
-                    取消；確認後算未儲存變更，同其他欄位一齊撳「儲存」先寫入。停用（剔走「啟用」）後呢套劇會搬去列表最底
+                    ⑧ 廣播劇編輯 · 基本資料：由步驟 2 入嚟會有藍色 flow bar。類型 = 左右
+                    switch；啟用 = ON（綠）/ OFF（紅）掣，OFF 後排去列表最底。R2
+                    資料夾同檔名模板由掃描得出，唔使打，只可以「重新掃描」。簡介放呢度；廣播劇唔要聲演（聲演喺短篇）。冇咗「資訊」同「R2
+                    掃描」tab
                 </p>
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span>
-                            <span class="group">內容</span>
-                            <a href="#s2c">節目</a>
-                            <a href="#s2" aria-current="page"
-                                >廣播劇 <span class="pill count">3</span></a
-                            >
-                            <a href="#s8">發佈 <span class="pill count">3</span></a>
+                            <span class="brand">903 Admin</span
+                            ><a href="#u1">更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span><a href="#s2c">節目</a
+                            ><a href="#s2" aria-current="page">廣播劇</a
+                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="spacer"></span><span class="who">admin@…</span
+                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
                         </nav>
                         <div class="main">
+                            <div class="flow-bar">
+                                <span>更新內容 · 步驟 2：編輯新內容（1 / 3）</span>
+                                <a href="#u2">← 返回清單</a>
+                            </div>
                             <div class="crumbs"><a href="#s2">廣播劇</a> › 蘭茜夫人劇場</div>
                             <div class="title-row">
-                                <div class="title-edit">
-                                    <input
-                                        type="text"
-                                        value="蘭茜夫人劇場"
-                                        aria-label="廣播劇名稱"
-                                    />
-                                    <button aria-label="確認">✓</button>
-                                    <button aria-label="取消">✕</button>
-                                </div>
+                                <h2>
+                                    <span class="editable" title="雙擊編輯名稱">蘭茜夫人劇場</span>
+                                    <span class="pill draft">待發佈</span>
+                                </h2>
                             </div>
                             <nav class="tabs" aria-label="廣播劇分頁">
-                                <a href="#s4" aria-current="page">基本資料</a>
-                                <a href="#s4b">資訊</a>
-                                <a href="#s5">短篇（3）</a>
-                                <a href="#s6">R2 掃描</a>
-                                <a href="#s7">排程</a>
+                                <a href="#s4" aria-current="page">基本資料</a
+                                ><a href="#s5">短篇（3）</a><a href="#s7">排程</a>
                             </nav>
                             <div class="card">
                                 <div class="form">
@@ -1748,42 +2290,40 @@
                                             >已發佈，不可更改（更改會令收聽進度遺失）</span
                                         >
                                     </label>
-                                    <label class="field">
+                                    <div class="field">
                                         <span>類型</span>
-                                        <select>
-                                            <option selected>短篇集</option>
-                                            <option>每日播</option>
-                                        </select>
-                                    </label>
+                                        <div class="switch" role="group" aria-label="類型">
+                                            <button aria-pressed="true">短篇集</button>
+                                            <button aria-pressed="false">每日播</button>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <span>狀態</span>
+                                        <button class="toggle on" aria-pressed="true">ON</button>
+                                        <span class="hint">播放器顯示中</span>
+                                    </div>
                                     <label class="field">
                                         <span>上架日期</span>
                                         <input type="date" value="2026-10-27" />
                                     </label>
-                                    <div class="field">
-                                        <span>狀態</span>
-                                        <label class="check"
-                                            ><input type="checkbox" checked />
-                                            啟用（於播放器顯示）</label
-                                        >
-                                        <span class="hint">停用後會排在列表最底</span>
-                                    </div>
-                                    <label class="field">
-                                        <span>R2 資料夾</span>
-                                        <input type="text" value="蘭茜夫人劇場" />
-                                        <span class="hint">R2 掃描會讀取此資料夾</span>
-                                    </label>
                                     <label class="field wide">
-                                        <span>檔名模板</span>
-                                        <input
-                                            type="text"
-                                            class="mono"
-                                            value="{no2} - {arc} - 第{noZh}集[ - {title}].m4a"
-                                        />
-                                        <span class="hint"
-                                            >{no2}：兩位數集數；{arc}：短篇名稱；{noZh}：中文集數；[
-                                            … ]：可選部分</span
-                                        >
+                                        <span>簡介</span>
+                                        <textarea rows="3" placeholder="（選填）"></textarea>
                                     </label>
+                                    <div class="field wide">
+                                        <span>R2 資料夾</span>
+                                        <div class="readonly-box">
+                                            <code>蘭茜夫人劇場/</code>
+                                            <button>重新掃描</button>
+                                        </div>
+                                    </div>
+                                    <div class="field wide">
+                                        <span>檔名模板</span>
+                                        <div class="readonly-box">
+                                            <code>{no2} - {arc} - 第{noZh}集[ - {title}].m4a</code>
+                                        </div>
+                                        <span class="hint">由掃描自動判斷</span>
+                                    </div>
                                     <div class="field wide">
                                         <span>圖片</span>
                                         <div class="images">
@@ -1794,12 +2334,9 @@
                                     </div>
                                 </div>
                                 <div class="savebar">
-                                    <span class="small" style="color: var(--warn-ink)"
-                                        >● 有未儲存的變更（上架日期）</span
-                                    >
+                                    <span class="muted small">沒有未儲存的變更</span>
                                     <div class="actions">
-                                        <button>復原</button>
-                                        <button class="primary">儲存</button>
+                                        <button class="primary" disabled>儲存</button>
                                     </div>
                                 </div>
                             </div>
@@ -1808,121 +2345,60 @@
                 </div>
             </section>
 
-            <!-- ④b Info -->
-            <section id="s4b">
+            <section id="s4c">
                 <p class="state-label">
-                    ④b 資訊 tab（P9.5 預備）：上面係成套劇嘅資訊，下面揀短篇改短篇資訊（同排程 tab
-                    一樣揀短篇）。Phase 3 做到 D1 存、admin 改、catalog.json 帶出（全部
-                    optional）；player 點顯示等 P9.5。廣播劇用「聲演」，節目用「主持」
+                    ⑧b 資料夾對唔到（R2 改咗名）：R2 資料夾欄變警告 + dropdown，揀返一個未配對嘅 R2
+                    資料夾；狀態 OFF 嘅樣都喺度
                 </p>
-                <div class="frame">
-                    <div class="shell">
-                        <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span><span class="group">內容</span
-                            ><a href="#s2c">節目</a
-                            ><a href="#s2" aria-current="page"
-                                >廣播劇 <span class="pill count">3</span></a
-                            ><a href="#s8">發佈 <span class="pill count">3</span></a>
-                        </nav>
-                        <div class="main">
-                            <div class="crumbs"><a href="#s2">廣播劇</a> › 蘭茜夫人劇場</div>
-                            <div class="title-row">
-                                <h2>
-                                    <span class="editable" title="雙擊編輯名稱">蘭茜夫人劇場</span>
-                                </h2>
+                <div class="frame pad">
+                    <div class="form">
+                        <div class="field">
+                            <span>狀態</span>
+                            <button class="toggle off" aria-pressed="false">OFF</button>
+                            <span class="hint">播放器不顯示，列表排最底</span>
+                        </div>
+                        <div class="field">
+                            <span>類型</span>
+                            <div class="switch" role="group" aria-label="類型">
+                                <button aria-pressed="false">短篇集</button>
+                                <button aria-pressed="true">每日播</button>
                             </div>
-                            <nav class="tabs" aria-label="廣播劇分頁">
-                                <a href="#s4">基本資料</a><a href="#s4b" aria-current="page">資訊</a
-                                ><a href="#s5">短篇（3）</a><a href="#s6">R2 掃描</a
-                                ><a href="#s7">排程</a>
-                            </nav>
-                            <p class="note info">
-                                以下資料暫不會在播放器顯示，日後推出節目資訊頁時使用。
+                        </div>
+                        <div class="field wide">
+                            <span>R2 資料夾</span>
+                            <p class="note warn" style="margin: 0">
+                                在 R2 找不到 <code>少爺占/</code>，請選擇對應的資料夾：
                             </p>
-                            <div class="card">
-                                <h3>廣播劇資訊</h3>
-                                <div class="form">
-                                    <label class="field wide"
-                                        ><span>簡介</span
-                                        ><textarea rows="2" placeholder="（選填）"></textarea>
-                                    </label>
-                                    <div class="field wide">
-                                        <span>聲演</span>
-                                        <div class="chips">
-                                            <input
-                                                type="text"
-                                                placeholder="（選填）輸入名稱後按 Enter"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card">
-                                <div class="title-row">
-                                    <h3>短篇資訊</h3>
-                                    <select style="width: auto">
-                                        <option selected>戀愛二分一</option>
-                                        <option>初戀無限次</option>
-                                        <option>我心不死</option>
-                                    </select>
-                                </div>
-                                <div class="form">
-                                    <label class="field wide"
-                                        ><span>簡介</span
-                                        ><textarea rows="4">
-郭富城聲演嘅男主角夏崇哲，同彭羚聲演嘅女主角孔尚雪一見鍾情，但阿哲身邊已經多年嚟一直支持、默默付出嘅女朋友Cindy，呢段愛情係愛定係責任？</textarea
-                                        >
-                                    </label>
-                                    <div class="field wide">
-                                        <span>聲演</span>
-                                        <div class="chips">
-                                            <span class="chip">郭富城 ✕</span
-                                            ><span class="chip">彭羚 ✕</span
-                                            ><span class="chip">李蕙敏 ✕</span
-                                            ><span class="chip">黃偉文 ✕</span
-                                            ><input type="text" placeholder="輸入名稱後按 Enter" />
-                                        </div>
-                                        <span class="hint">拖曳名稱可調整次序</span>
-                                    </div>
-                                </div>
-                                <div class="preview">
-                                    <p class="state-label" style="margin: 0">預覽</p>
-                                    <p><b>戀愛1/2</b></p>
-                                    <p>
-                                        簡介：郭富城聲演嘅男主角夏崇哲，同彭羚聲演嘅女主角孔尚雪一見鍾情，但阿哲身邊已經多年嚟一直支持、默默付出嘅女朋友Cindy，呢段愛情係愛定係責任？
-                                    </p>
-                                    <p>聲演：郭富城、彭羚、李蕙敏、黃偉文</p>
-                                </div>
-                            </div>
-                            <div class="savebar">
-                                <span class="muted small">沒有未儲存的變更</span>
-                                <div class="actions">
-                                    <button class="primary" disabled>儲存</button>
-                                </div>
+                            <div class="readonly-box">
+                                <select style="flex: 1">
+                                    <option>選擇未配對的資料夾…</option>
+                                    <option>少爺占系列/（2 個子資料夾 · 38 個檔案）</option>
+                                    <option>天使之戀系列/（2 個子資料夾 · 24 個檔案）</option>
+                                </select>
+                                <button>重新掃描</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- ⑤ Arcs -->
+            <!-- ⑩ Arcs -->
             <section id="s5">
                 <p class="state-label">
-                    ⑤ 短篇 tab：拖 ⠿
-                    改次序；短篇名稱同樣雙擊改（下面「我心不死」畫緊編輯中）。注意短篇名稱 = R2
-                    子資料夾名，改咗之後 R2 掃描會對唔到，所以改名時提示。撳「›」入短篇詳情改 ID /
-                    各集標題。已發佈短篇 ID 鎖住
+                    ⑨ 短篇 tab（短篇資訊同編輯合埋）：撳一行就喺原位展開編輯區。短篇名 = R2
+                    子資料夾名（掃描得出，唔改）；想播放器顯示另一個名（例如「戀愛1/2」）就填「顯示名稱」。ID、簡介、聲演、各集標題都喺呢度。拖
+                    ⠿ 改次序
                 </p>
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span>
-                            <span class="group">內容</span>
-                            <a href="#s2c">節目</a>
-                            <a href="#s2" aria-current="page"
-                                >廣播劇 <span class="pill count">3</span></a
-                            >
-                            <a href="#s8">發佈 <span class="pill count">3</span></a>
+                            <span class="brand">903 Admin</span
+                            ><a href="#u1">更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span><a href="#s2c">節目</a
+                            ><a href="#s2" aria-current="page">廣播劇</a
+                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="spacer"></span><span class="who">admin@…</span
+                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
                         </nav>
                         <div class="main">
                             <div class="title-row">
@@ -1931,87 +2407,147 @@
                                 </h2>
                             </div>
                             <nav class="tabs" aria-label="廣播劇分頁">
-                                <a href="#s4">基本資料</a>
-                                <a href="#s4b">資訊</a>
-                                <a href="#s5" aria-current="page">短篇（3）</a>
-                                <a href="#s6">R2 掃描</a>
-                                <a href="#s7">排程</a>
+                                <a href="#s4">基本資料</a
+                                ><a href="#s5" aria-current="page">短篇（3）</a
+                                ><a href="#s7">排程</a>
                             </nav>
                             <div class="card flush">
                                 <div class="list-head">
                                     <span></span>
-                                    <span>名稱</span>
+                                    <span>短篇</span>
                                     <span>狀態</span>
                                 </div>
                                 <ol class="list">
-                                    <li class="row">
+                                    <li class="row open">
                                         <span class="handle" title="拖曳以調整次序">⠿</span>
-                                        <div class="name-cell">
-                                            <span class="text"
-                                                ><span class="name editable" title="雙擊編輯名稱"
-                                                    >戀愛二分一</span
-                                                ><span class="meta"
-                                                    ><code>half</code> 🔒 · 30 集</span
-                                                ></span
-                                            >
-                                        </div>
+                                        <span class="text"
+                                            ><span class="name">戀愛二分一 ▾</span
+                                            ><span class="meta"
+                                                >顯示為「戀愛1/2」· <code>half</code> 🔒 · 30
+                                                集</span
+                                            ></span
+                                        >
                                         <div class="pills">
                                             <span class="pill ok"
                                                 ><span class="dot"></span>已上架</span
                                             >
                                         </div>
                                     </li>
-                                    <li class="row">
-                                        <span class="handle" title="拖曳以調整次序">⠿</span>
-                                        <div class="name-cell">
-                                            <span class="text"
-                                                ><span class="name editable" title="雙擊編輯名稱"
-                                                    >初戀無限次</span
-                                                ><span class="meta"
-                                                    ><code>first-love</code> 🔒 · 33 集 · 指定日期 2
-                                                    批</span
-                                                ></span
-                                            >
-                                        </div>
-                                        <div class="pills">
-                                            <span class="pill ok"
-                                                ><span class="dot"></span>已上架</span
-                                            >
-                                        </div>
-                                    </li>
-                                    <li class="row">
-                                        <span class="handle" title="拖曳以調整次序">⠿</span>
-                                        <div class="name-cell">
-                                            <span class="text" style="width: 100%"
-                                                ><input
-                                                    class="inline"
+                                    <li class="arc-editor">
+                                        <div class="form">
+                                            <div class="field">
+                                                <span>R2 子資料夾</span>
+                                                <div class="readonly-box">
+                                                    <code>戀愛二分一/</code>
+                                                </div>
+                                            </div>
+                                            <label class="field">
+                                                <span>顯示名稱</span>
+                                                <input type="text" value="戀愛1/2" />
+                                                <span class="hint">留空即使用資料夾名稱</span>
+                                            </label>
+                                            <label class="field">
+                                                <span>ID</span>
+                                                <input
                                                     type="text"
-                                                    value="我心不死"
-                                                    aria-label="短篇名稱"
-                                                /><span class="meta" style="color: var(--warn-ink)"
-                                                    >短篇名稱須與 R2 子資料夾名稱一致，否則 R2
-                                                    掃描會找不到檔案</span
-                                                ></span
+                                                    class="mono"
+                                                    value="half"
+                                                    readonly
+                                                />
+                                                <span class="hint">已發佈，不可更改</span>
+                                            </label>
+                                            <label class="field wide">
+                                                <span>簡介</span>
+                                                <textarea rows="3">
+郭富城聲演嘅男主角夏崇哲，同彭羚聲演嘅女主角孔尚雪一見鍾情，但阿哲身邊已經多年嚟一直支持、默默付出嘅女朋友Cindy，呢段愛情係愛定係責任？</textarea
+                                                >
+                                            </label>
+                                            <div class="field wide">
+                                                <span>聲演</span>
+                                                <div class="chips">
+                                                    <span class="chip">郭富城 ✕</span
+                                                    ><span class="chip">彭羚 ✕</span
+                                                    ><span class="chip">李蕙敏 ✕</span
+                                                    ><span class="chip">黃偉文 ✕</span
+                                                    ><input
+                                                        type="text"
+                                                        placeholder="輸入名稱後按 Enter"
+                                                    />
+                                                </div>
+                                                <span class="hint">拖曳名稱可調整次序</span>
+                                            </div>
+                                        </div>
+                                        <details>
+                                            <summary class="small">
+                                                各集標題（30 集，由檔名讀取，可修改）
+                                            </summary>
+                                            <div class="table-wrap" style="margin-top: 8px">
+                                                <table>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td class="muted">第 1 集</td>
+                                                            <td>
+                                                                <input
+                                                                    type="text"
+                                                                    value=""
+                                                                    placeholder="（無標題）"
+                                                                />
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="muted">第 2 集</td>
+                                                            <td>
+                                                                <input
+                                                                    type="text"
+                                                                    value=""
+                                                                    placeholder="（無標題）"
+                                                                />
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="muted" colspan="2">…</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </details>
+                                    </li>
+                                    <li class="row">
+                                        <span class="handle" title="拖曳以調整次序">⠿</span>
+                                        <span class="text"
+                                            ><span class="name">初戀無限次 ▸</span
+                                            ><span class="meta"
+                                                ><code>first-love</code> 🔒 · 33 集</span
+                                            ></span
+                                        >
+                                        <div class="pills">
+                                            <span class="pill ok"
+                                                ><span class="dot"></span>已上架</span
                                             >
                                         </div>
+                                    </li>
+                                    <li class="row">
+                                        <span class="handle" title="拖曳以調整次序">⠿</span>
+                                        <span class="text"
+                                            ><span class="name"
+                                                ><span class="pill new">新</span> 我心不死 ▸</span
+                                            ><span class="meta"
+                                                ><code>arc-01</code> · 37 集</span
+                                            ></span
+                                        >
                                         <div class="pills">
+                                            <span class="pill bad">須設定 ID</span>
                                             <span class="pill info"
                                                 ><span class="dot"></span>排程中 · 11 月 16
                                                 日起</span
                                             >
-                                            <span class="pill">從未發佈</span>
                                         </div>
                                     </li>
                                 </ol>
                             </div>
-                            <p class="note info">
-                                「我心不死」尚未發佈，ID 仍可修改；發佈後即鎖定。新短篇一般經 R2
-                                掃描加入（預設 ID 為
-                                <code>arc-01</code>，須改為英文 slug）。
-                            </p>
                             <div class="savebar">
                                 <span class="small" style="color: var(--warn-ink)"
-                                    >● 有未儲存的變更（短篇名稱）</span
+                                    >● 有未儲存的變更（顯示名稱）</span
                                 >
                                 <div class="actions">
                                     <button>復原</button>
@@ -2023,93 +2559,22 @@
                 </div>
             </section>
 
-            <!-- ⑥ Scan -->
-            <section id="s6">
-                <p class="state-label">
-                    ⑥ R2 掃描 tab（POST /api/dramas/:id/scan，唔寫 D1）：睇 diff →「套用」= 用 draft
-                    PUT 返 entry
-                </p>
-                <div class="frame">
-                    <div class="shell">
-                        <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span>
-                            <span class="group">內容</span>
-                            <a href="#s2c">節目</a>
-                            <a href="#s2" aria-current="page"
-                                >廣播劇 <span class="pill count">3</span></a
-                            >
-                            <a href="#s8">發佈 <span class="pill count">3</span></a>
-                        </nav>
-                        <div class="main">
-                            <div class="title-row">
-                                <h2>
-                                    <span class="editable" title="雙擊編輯名稱">蘭茜夫人劇場</span>
-                                </h2>
-                            </div>
-                            <nav class="tabs" aria-label="廣播劇分頁">
-                                <a href="#s4">基本資料</a>
-                                <a href="#s4b">資訊</a>
-                                <a href="#s5">短篇（3）</a>
-                                <a href="#s6" aria-current="page">R2 掃描</a>
-                                <a href="#s7">排程</a>
-                            </nav>
-                            <div class="card">
-                                <div class="title-row">
-                                    <div>
-                                        <h3>掃描 <code>蘭茜夫人劇場/</code></h3>
-                                        <p class="sub">09:41 完成 · 共 113 個檔案</p>
-                                    </div>
-                                    <button>重新掃描</button>
-                                </div>
-                                <div class="diff" aria-label="與現有資料的差異">
-                                    <div class="add">
-                                        ＋ 新增短篇「天使之戀」· 12 集 · ID 為
-                                        <code>arc-01</code>（須修改）
-                                    </div>
-                                    <div class="chg">～「我心不死」集數：35 → 37</div>
-                                    <div class="chg">
-                                        ～「我心不死」第 37 集標題：（空白）→「大結局」
-                                    </div>
-                                </div>
-                                <p class="note warn">
-                                    1 個檔案不符合檔名模板，不會加入：
-                                    <br /><code>我心不死/我心不死 - 預告.m4a</code>
-                                </p>
-                                <div class="savebar">
-                                    <span class="muted small"
-                                        >套用後請到「短篇」分頁修改新短篇的 ID，方可儲存</span
-                                    >
-                                    <div class="actions">
-                                        <button>取消</button>
-                                        <button class="primary">套用 3 項變更</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card">
-                                <p class="state-label" style="margin: 0">冇改動時</p>
-                                <p class="note ok">R2 內容與現有資料一致，無需更新。</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             <!-- ⑦ Schedule -->
             <section id="s7">
                 <p class="state-label">
-                    ⑦ 排程 tab（GET / PUT / DELETE …/arcs/:arcId/schedule；改規則即刻 POST …/preview
+                    ⑩ 排程 tab（GET / PUT / DELETE …/arcs/:arcId/schedule；改規則即刻 POST …/preview
                     更新日曆）
                 </p>
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span>
-                            <span class="group">內容</span>
-                            <a href="#s2c">節目</a>
-                            <a href="#s2" aria-current="page"
-                                >廣播劇 <span class="pill count">3</span></a
-                            >
-                            <a href="#s8">發佈 <span class="pill count">3</span></a>
+                            <span class="brand">903 Admin</span
+                            ><a href="#u1">更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span><a href="#s2c">節目</a
+                            ><a href="#s2" aria-current="page">廣播劇</a
+                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a
+                            ><span class="spacer"></span><span class="who">admin@…</span
+                            ><a href="#s1">登出</a><span class="version">api 0.4.0</span>
                         </nav>
                         <div class="main">
                             <div class="title-row">
@@ -2118,11 +2583,8 @@
                                 </h2>
                             </div>
                             <nav class="tabs" aria-label="廣播劇分頁">
-                                <a href="#s4">基本資料</a>
-                                <a href="#s4b">資訊</a>
-                                <a href="#s5">短篇（3）</a>
-                                <a href="#s6">R2 掃描</a>
-                                <a href="#s7" aria-current="page">排程</a>
+                                <a href="#s4">基本資料</a><a href="#s5">短篇（3）</a
+                                ><a href="#s7" aria-current="page">排程</a>
                             </nav>
                             <label class="field" style="max-width: 280px">
                                 <span>短篇</span>
@@ -2309,94 +2771,27 @@
                 </div>
             </section>
 
-            <!-- ⑧ Publish -->
+            <!-- ⑫ Publish history -->
             <section id="s8">
                 <p class="state-label">
-                    ⑧ 發佈（取代 ops 頁）：未發佈改動清單（server 同最新發佈比較，出簡短描述）→ 驗證
-                    → 發佈；下面 history + 還原
+                    ⑪ 發佈記錄：發佈動作搬咗去「更新內容」步驟 3；呢度淨係睇記錄同還原（沿用 ops
+                    頁行為）
                 </p>
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span>
-                            <span class="group">內容</span>
-                            <a href="#s2c">節目</a>
-                            <a href="#s2">廣播劇 <span class="pill count">3</span></a>
-                            <a href="#s8" aria-current="page"
-                                >發佈 <span class="pill count">3</span></a
-                            >
-                            <span class="spacer"></span>
-                            <span class="who">admin@…</span>
+                            <span class="brand">903 Admin</span
+                            ><a href="#u1" aria-current="page"
+                                >更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span><a href="#s2c">節目</a
+                            ><a href="#s2">廣播劇</a><span class="group">記錄</span
+                            ><a href="#s8">發佈記錄</a><span class="spacer"></span
+                            ><span class="who">admin@…</span><a href="#s1">登出</a
+                            ><span class="version">api 0.4.0</span>
                         </nav>
                         <div class="main">
-                            <div class="title-row"><h2>發佈</h2></div>
-                            <div class="card">
-                                <h3>未發佈的變更（與 #4 比較）</h3>
-                                <div class="card flush">
-                                    <ol class="list">
-                                        <li
-                                            class="row"
-                                            style="
-                                                grid-template-columns: minmax(0, 1fr) auto;
-                                                padding-left: 14px;
-                                            "
-                                        >
-                                            <div class="name-cell">
-                                                <span class="thumb"></span>
-                                                <span class="text"
-                                                    ><a href="#s4">蘭茜夫人劇場</a
-                                                    ><span class="meta"
-                                                        >上架日期；新增短篇「我心不死」（37
-                                                        集）及排程 · 今天 09:12</span
-                                                    ></span
-                                                >
-                                            </div>
-                                            <span class="pill info">修改</span>
-                                        </li>
-                                        <li
-                                            class="row"
-                                            style="
-                                                grid-template-columns: minmax(0, 1fr) auto;
-                                                padding-left: 14px;
-                                            "
-                                        >
-                                            <div class="name-cell">
-                                                <span class="thumb blue"></span>
-                                                <span class="text"
-                                                    ><a href="#s4">18 樓 C 座</a
-                                                    ><span class="meta"
-                                                        >停用 · 今天 08:40</span
-                                                    ></span
-                                                >
-                                            </div>
-                                            <span class="pill info">修改</span>
-                                        </li>
-                                        <li
-                                            class="row"
-                                            style="
-                                                grid-template-columns: minmax(0, 1fr) auto;
-                                                padding-left: 14px;
-                                            "
-                                        >
-                                            <div class="name-cell">
-                                                <span class="thumb grey"></span>
-                                                <span class="text"
-                                                    ><a href="#s4">新劇</a
-                                                    ><span class="meta">今天 09:30</span></span
-                                                >
-                                            </div>
-                                            <span class="pill ok">新增</span>
-                                        </li>
-                                    </ol>
-                                </div>
-                                <p class="note ok">驗證通過 · 7 個節目 · 7 套廣播劇 · 472 集</p>
-                                <div class="actions">
-                                    <button class="primary">發佈</button>
-                                    <span class="muted small">播放器約 60 秒內取得新版本</span>
-                                </div>
-                            </div>
+                            <div class="title-row"><h2>發佈記錄</h2></div>
                             <div class="card table-wrap">
-                                <h3>發佈記錄</h3>
                                 <table>
                                     <thead>
                                         <tr>
@@ -2447,7 +2842,7 @@
 
             <!-- ⑨ Errors -->
             <section id="s9">
-                <p class="state-label">⑨ 錯誤狀態（API 已經有嘅回應；UI 點顯示）</p>
+                <p class="state-label">⑫ 錯誤狀態（API 已經有嘅回應；UI 點顯示）</p>
                 <div style="display: grid; gap: var(--gap)">
                     <div class="frame pad">
                         <p class="state-label" style="margin: 0">
@@ -2527,7 +2922,7 @@
             <!-- ⑩ Narrow -->
             <section id="s10">
                 <p class="state-label">
-                    ⑩ 窄屏（手機）：表頭收埋；短篇 + 狀態落喺名稱下面；⠿ 長按先拎起，唔會同捲動撞
+                    ⑬ 窄屏（手機）：表頭收埋；短篇 + 狀態落喺名稱下面；⠿ 長按先拎起，唔會同捲動撞
                 </p>
                 <div class="frame narrow">
                     <div class="shell" style="grid-template-columns: 1fr">
@@ -2541,19 +2936,18 @@
                                 border-bottom: 1px solid var(--line);
                             "
                         >
-                            <span class="brand" style="margin: 0 8px 0 0">903 Admin</span>
-                            <a href="#s2c">節目</a>
-                            <a href="#s2" aria-current="page"
-                                >廣播劇 <span class="pill count">3</span></a
-                            >
-                            <a href="#s8">發佈 <span class="pill count">3</span></a>
+                            <span class="brand">903 Admin</span
+                            ><a href="#u1">更新內容 <span class="pill count">3</span></a
+                            ><span class="group">內容</span><a href="#s2c">節目</a
+                            ><a href="#s2" aria-current="page">廣播劇</a
+                            ><span class="group">記錄</span><a href="#s8">發佈記錄</a>
                         </nav>
                         <div class="main" style="padding: var(--gap)">
                             <div class="title-row">
                                 <h2>廣播劇</h2>
-                                <button class="primary" aria-label="新增廣播劇">＋</button>
+                                <button class="primary icon-btn" aria-label="新增廣播劇">＋</button>
                             </div>
-                            <p class="note warn">有 3 項變更尚未發佈。<a href="#s8">前往發佈</a></p>
+                            <p class="note warn">有 3 項變更尚未發佈。<a href="#u3">前往發佈</a></p>
                             <div class="card flush">
                                 <div
                                     class="drama-row"
