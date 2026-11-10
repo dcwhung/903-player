@@ -24,6 +24,7 @@ import {
 import { checkedEntry, rowOf } from './entries';
 import { etagOf, ifMatches, nextUpdatedAt } from './etag';
 import {
+    badTarget,
     errorResponse,
     isRecord,
     preconditionFailed,
@@ -52,8 +53,10 @@ const notFound = (c: Context<AppEnv>, what: string) =>
 /** 讀劇集 + 搵 arc；唔得就回 404 / 422 response */
 const loadArc = async (c: Context<AppEnv>): Promise<LoadedArc | Response> => {
     const target = targetOf(c);
-    const row = target && (await getEntry(c.env.DB, 'dramas', target.id));
-    if (!target || !row) return notFound(c, 'drama');
+    // id 唔合規 400、合規但冇呢套劇 404（同 /entries 一致，S-787）
+    if (!target) return badTarget(c);
+    const row = await getEntry(c.env.DB, 'dramas', target.id);
+    if (!row) return notFound(c, 'drama');
     const definition = JSON.parse(row.definition) as Json;
     if (definition.kind !== 'series')
         return errorResponse(c, HTTP_STATUS.unprocessable, 'schedules only apply to series arcs');
@@ -167,7 +170,8 @@ scheduleRoutes.put(SCHEDULE_PATH, async (c) => {
 
 scheduleRoutes.delete(SCHEDULE_PATH, async (c) => {
     const target = targetOf(c);
+    if (!target) return badTarget(c);
     const arcId = c.req.param('arcId') ?? '';
-    const deleted = target !== undefined && (await deleteSchedule(c.env.DB, target.id, arcId));
+    const deleted = await deleteSchedule(c.env.DB, target.id, arcId);
     return deleted ? c.body(null, HTTP_STATUS.noContent) : notFound(c, 'schedule');
 });

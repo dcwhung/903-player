@@ -8,7 +8,7 @@ import type { AppEnv } from '../app';
 import { HTTP_STATUS } from '../config';
 import { getEntry } from '../catalog/store';
 import { jsonDiff } from './diff';
-import { errorResponse, isRecord, targetOf, type Json } from './http';
+import { badTarget, errorResponse, isRecord, targetOf, type Json } from './http';
 import { listingFromR2 } from './r2Listing';
 
 export const scanRoutes = new Hono<AppEnv>();
@@ -23,8 +23,10 @@ const r2FolderOf = (definition: Json): string | undefined => {
 
 scanRoutes.post('/dramas/:id/scan', async (c) => {
     const target = targetOf(c);
-    const row = target && (await getEntry(c.env.DB, 'dramas', target.id));
-    if (!target || !row) return errorResponse(c, HTTP_STATUS.notFound, 'no such drama');
+    // id 唔合規 400、合規但冇呢套劇 404（同 /entries 一致，S-787）
+    if (!target) return badTarget(c);
+    const row = await getEntry(c.env.DB, 'dramas', target.id);
+    if (!row) return errorResponse(c, HTTP_STATUS.notFound, 'no such drama');
     const definition = JSON.parse(row.definition) as Json;
     const folder = r2FolderOf(definition);
     if (folder === undefined)
