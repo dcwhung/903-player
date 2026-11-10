@@ -306,6 +306,13 @@
                 background: var(--danger-bg);
                 color: var(--danger);
             }
+            /* 部分下架：一半紅一半灰 */
+            .pill.part {
+                background: var(--danger-bg);
+                color: var(--danger);
+                box-shadow: inset 0 0 0 1px var(--danger);
+                background: transparent;
+            }
             .pill.count {
                 background: var(--warn-bg);
                 color: var(--warn-ink);
@@ -702,6 +709,26 @@
                 padding: 4px;
                 font: inherit;
                 background: transparent;
+                color: var(--ink);
+            }
+            .preview {
+                padding: 12px 14px;
+                border-radius: 8px;
+                background: var(--surface-2);
+                font-size: 14px;
+                display: grid;
+                gap: 2px;
+            }
+            .preview p {
+                margin: 0;
+            }
+            input[type='time'] {
+                font: inherit;
+                width: 100%;
+                padding: 7px 10px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--surface);
                 color: var(--ink);
             }
             .check {
@@ -1144,15 +1171,15 @@
                                         <span class="arc">Season 1</span
                                         ><span class="eps">35 集</span>
                                         <span
-                                            ><span class="pill ok"
-                                                ><span class="dot"></span>已上架</span
+                                            ><span class="pill bad"
+                                                ><span class="dot"></span>已下架 · 11 月 3 日</span
                                             ></span
                                         >
                                         <span class="arc">Season 2</span
                                         ><span class="eps">30 集</span>
                                         <span
-                                            ><span class="pill ok"
-                                                ><span class="dot"></span>已上架</span
+                                            ><span class="pill part"
+                                                ><span class="dot"></span>部分下架 · 餘 12 集</span
                                             ></span
                                         >
                                         <span class="arc">Season 3</span
@@ -1253,7 +1280,7 @@
                                             ></span
                                         >
                                         <span class="arc"
-                                            >我心不死 <span class="pill new">新</span></span
+                                            ><span class="pill new">新</span> 我心不死</span
                                         ><span class="eps">37 集</span>
                                         <span
                                             ><span class="pill info"
@@ -1331,7 +1358,13 @@
                                 >
                                 <span
                                     ><span class="pill bad"><span class="dot"></span>已下架</span>
-                                    排程下架日期已過</span
+                                    全部集數已下架</span
+                                >
+                                <span
+                                    ><span class="pill part"
+                                        ><span class="dot"></span>部分下架</span
+                                    >
+                                    部分集數已按排程下架</span
                                 >
                                 <span
                                     ><span class="pill draft">待發佈</span>
@@ -1568,68 +1601,92 @@
             <section id="s3">
                 <p class="state-label">
                     ③ 節目編輯（PUT
-                    /api/entries/shows/:id）：名稱唔再係表單欄，喺標題雙擊直接改（hover
-                    有底線提示，title =「雙擊編輯名稱」）；唔顯示錄音檔時間；次序喺列表拖
+                    /api/entries/shows/:id）：名稱喺標題雙擊改；唔顯示錄音檔時間；次序喺列表拖。資訊（P9.5）直接放喺同一頁：播出時間只入開始
+                    / 完結時間，「播放時間」一行由播出日 + 時間自動組合（預覽），唔使重複輸入星期
                 </p>
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span>
-                            <span class="group">內容</span>
-                            <a href="#s2c" aria-current="page">節目</a>
-                            <a href="#s2">廣播劇 <span class="pill count">3</span></a>
-                            <a href="#s8">發佈 <span class="pill count">3</span></a>
+                            <span class="brand">903 Admin</span><span class="group">內容</span
+                            ><a href="#s2c" aria-current="page">節目</a
+                            ><a href="#s2">廣播劇 <span class="pill count">3</span></a
+                            ><a href="#s8">發佈 <span class="pill count">3</span></a>
                         </nav>
                         <div class="main">
-                            <div class="crumbs"><a href="#s2c">節目</a> › 雲妮鍾情</div>
+                            <div class="crumbs"><a href="#s2c">節目</a> › 口水多過浪花</div>
                             <div class="title-row">
                                 <h2>
-                                    <span class="editable" title="雙擊編輯名稱">雲妮鍾情</span>
+                                    <span class="editable" title="雙擊編輯名稱">口水多過浪花</span>
                                     <span class="pill ok"><span class="dot"></span>上架中</span>
                                 </h2>
                             </div>
                             <div class="card">
+                                <h3>基本資料</h3>
                                 <div class="form">
-                                    <label class="field">
-                                        <span>ID</span>
-                                        <input type="text" class="mono" value="wanni" readonly />
-                                        <span class="hint">只可於新增時設定，用作識別收聽進度</span>
-                                    </label>
+                                    <label class="field"
+                                        ><span>ID</span
+                                        ><input
+                                            type="text"
+                                            class="mono"
+                                            value="waves"
+                                            readonly
+                                        /><span class="hint"
+                                            >只可於新增時設定，用作識別收聽進度</span
+                                        ></label
+                                    >
                                     <div class="field wide">
                                         <span>播出日</span>
                                         <div class="days">
-                                            <label>日</label>
-                                            <label class="on">一</label>
-                                            <label class="on">二</label>
-                                            <label class="on">三</label>
-                                            <label class="on">四</label>
-                                            <label class="on">五</label>
-                                            <label>六</label>
-                                        </div>
-                                    </div>
-                                    <label class="field wide">
-                                        <span>簡介</span>
-                                        <textarea rows="3">
-逢星期一至五早上播出的清談節目……</textarea
-                                        >
-                                        <span class="hint">暫不會在播放器顯示</span>
-                                    </label>
-                                    <div class="field wide">
-                                        <span>主持</span>
-                                        <div class="chips">
-                                            <span class="chip">主持甲 ✕</span
-                                            ><span class="chip">主持乙 ✕</span
-                                            ><input type="text" placeholder="輸入名稱後按 Enter" />
+                                            <label>日</label><label class="on">一</label
+                                            ><label class="on">二</label><label class="on">三</label
+                                            ><label class="on">四</label><label class="on">五</label
+                                            ><label>六</label>
                                         </div>
                                     </div>
                                     <div class="field wide">
                                         <span>圖片</span>
                                         <div class="images">
-                                            <span class="thumb dark"></span> 唱片
-                                            <span class="thumb tile dark"></span> 橫額
+                                            <span class="thumb grey"></span> 唱片
+                                            <span class="thumb tile grey"></span> 橫額
                                             <span>（暫不可更換）</span>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <h3>節目資訊</h3>
+                                <p class="sub">暫不會在播放器顯示，日後推出節目資訊頁時使用</p>
+                                <div class="form">
+                                    <label class="field wide"
+                                        ><span>簡介</span
+                                        ><textarea rows="3">
+由鄭裕玲、余迪偉、傑朱、余德丞主持，得一個女人話事</textarea
+                                        >
+                                    </label>
+                                    <label class="field"
+                                        ><span>開始時間</span><input type="time" value="15:00"
+                                    /></label>
+                                    <label class="field"
+                                        ><span>完結時間</span><input type="time" value="16:30"
+                                    /></label>
+                                    <div class="field wide">
+                                        <span>主持</span>
+                                        <div class="chips">
+                                            <span class="chip">鄭裕玲 ✕</span
+                                            ><span class="chip">余迪偉 ✕</span
+                                            ><span class="chip">傑朱 ✕</span
+                                            ><span class="chip">余德丞 ✕</span
+                                            ><input type="text" placeholder="輸入名稱後按 Enter" />
+                                        </div>
+                                        <span class="hint">拖曳名稱可調整次序</span>
+                                    </div>
+                                </div>
+                                <div class="preview">
+                                    <p class="state-label" style="margin: 0">預覽</p>
+                                    <p><b>口水多過浪花</b></p>
+                                    <p>簡介：由鄭裕玲、余迪偉、傑朱、余德丞主持，得一個女人話事</p>
+                                    <p>播放時間：星期一至五 15:00 - 16:30</p>
+                                    <p>主持：鄭裕玲、余迪偉、傑朱、余德丞</p>
                                 </div>
                                 <div class="savebar">
                                     <span class="muted small">沒有未儲存的變更</span>
@@ -1754,20 +1811,18 @@
             <!-- ④b Info -->
             <section id="s4b">
                 <p class="state-label">
-                    ④b 資訊 tab（為 P9.5 預備 backend）：Phase 3 先做到 D1 存、admin
-                    改、catalog.json 帶出（全部 optional）；player 點顯示等 P9.5 preview +
-                    grill。短篇都有同一組欄位（喺短篇詳情改）。欄位名同結構喺 plan 入面定
+                    ④b 資訊 tab（P9.5 預備）：上面係成套劇嘅資訊，下面揀短篇改短篇資訊（同排程 tab
+                    一樣揀短篇）。Phase 3 做到 D1 存、admin 改、catalog.json 帶出（全部
+                    optional）；player 點顯示等 P9.5。廣播劇用「聲演」，節目用「主持」
                 </p>
                 <div class="frame">
                     <div class="shell">
                         <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span>
-                            <span class="group">內容</span>
-                            <a href="#s2c">節目</a>
-                            <a href="#s2" aria-current="page"
+                            <span class="brand">903 Admin</span><span class="group">內容</span
+                            ><a href="#s2c">節目</a
+                            ><a href="#s2" aria-current="page"
                                 >廣播劇 <span class="pill count">3</span></a
-                            >
-                            <a href="#s8">發佈 <span class="pill count">3</span></a>
+                            ><a href="#s8">發佈 <span class="pill count">3</span></a>
                         </nav>
                         <div class="main">
                             <div class="crumbs"><a href="#s2">廣播劇</a> › 蘭茜夫人劇場</div>
@@ -1777,49 +1832,72 @@
                                 </h2>
                             </div>
                             <nav class="tabs" aria-label="廣播劇分頁">
-                                <a href="#s4">基本資料</a>
-                                <a href="#s4b" aria-current="page">資訊</a>
-                                <a href="#s5">短篇（3）</a>
-                                <a href="#s6">R2 掃描</a>
-                                <a href="#s7">排程</a>
+                                <a href="#s4">基本資料</a><a href="#s4b" aria-current="page">資訊</a
+                                ><a href="#s5">短篇（3）</a><a href="#s6">R2 掃描</a
+                                ><a href="#s7">排程</a>
                             </nav>
                             <p class="note info">
                                 以下資料暫不會在播放器顯示，日後推出節目資訊頁時使用。
                             </p>
                             <div class="card">
+                                <h3>廣播劇資訊</h3>
                                 <div class="form">
-                                    <label class="field wide">
-                                        <span>簡介</span>
-                                        <textarea rows="4">
-叱咤903 深宵廣播劇，由蘭茜主講多個愛情短篇……</textarea
+                                    <label class="field wide"
+                                        ><span>簡介</span
+                                        ><textarea rows="2" placeholder="（選填）"></textarea>
+                                    </label>
+                                    <div class="field wide">
+                                        <span>聲演</span>
+                                        <div class="chips">
+                                            <input
+                                                type="text"
+                                                placeholder="（選填）輸入名稱後按 Enter"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="title-row">
+                                    <h3>短篇資訊</h3>
+                                    <select style="width: auto">
+                                        <option selected>戀愛二分一</option>
+                                        <option>初戀無限次</option>
+                                        <option>我心不死</option>
+                                    </select>
+                                </div>
+                                <div class="form">
+                                    <label class="field wide"
+                                        ><span>簡介</span
+                                        ><textarea rows="4">
+郭富城聲演嘅男主角夏崇哲，同彭羚聲演嘅女主角孔尚雪一見鍾情，但阿哲身邊已經多年嚟一直支持、默默付出嘅女朋友Cindy，呢段愛情係愛定係責任？</textarea
                                         >
                                     </label>
                                     <div class="field wide">
-                                        <span>演員</span>
+                                        <span>聲演</span>
                                         <div class="chips">
-                                            <span class="chip">蘭茜 ✕</span
-                                            ><span class="chip">演員乙 ✕</span
+                                            <span class="chip">郭富城 ✕</span
+                                            ><span class="chip">彭羚 ✕</span
+                                            ><span class="chip">李蕙敏 ✕</span
+                                            ><span class="chip">黃偉文 ✕</span
                                             ><input type="text" placeholder="輸入名稱後按 Enter" />
                                         </div>
+                                        <span class="hint">拖曳名稱可調整次序</span>
                                     </div>
-                                    <label class="field">
-                                        <span>電台 / 頻道</span>
-                                        <input type="text" value="叱咤903" />
-                                    </label>
-                                    <label class="field">
-                                        <span>原播出年份</span>
-                                        <input type="text" value="2005–2007" />
-                                    </label>
-                                    <label class="field wide">
-                                        <span>原播出時段</span>
-                                        <input type="text" placeholder="例如：逢星期一至五 深夜" />
-                                    </label>
                                 </div>
-                                <div class="savebar">
-                                    <span class="muted small">沒有未儲存的變更</span>
-                                    <div class="actions">
-                                        <button class="primary" disabled>儲存</button>
-                                    </div>
+                                <div class="preview">
+                                    <p class="state-label" style="margin: 0">預覽</p>
+                                    <p><b>戀愛1/2</b></p>
+                                    <p>
+                                        簡介：郭富城聲演嘅男主角夏崇哲，同彭羚聲演嘅女主角孔尚雪一見鍾情，但阿哲身邊已經多年嚟一直支持、默默付出嘅女朋友Cindy，呢段愛情係愛定係責任？
+                                    </p>
+                                    <p>聲演：郭富城、彭羚、李蕙敏、黃偉文</p>
+                                </div>
+                            </div>
+                            <div class="savebar">
+                                <span class="muted small">沒有未儲存的變更</span>
+                                <div class="actions">
+                                    <button class="primary" disabled>儲存</button>
                                 </div>
                             </div>
                         </div>
@@ -2514,7 +2592,7 @@
                                                 ></span
                                             >
                                             <span class="arc"
-                                                >我心不死 <span class="pill new">新</span></span
+                                                ><span class="pill new">新</span> 我心不死</span
                                             ><span class="eps">37 集</span>
                                             <span
                                                 ><span class="pill info"
