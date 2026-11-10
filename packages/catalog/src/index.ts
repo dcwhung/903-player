@@ -40,6 +40,7 @@ export {
     type CatalogEntry,
     type CatalogKind,
 } from './document/document';
+export { localizeDocument } from './document/localize';
 
 export {
     arcFreshDate,
