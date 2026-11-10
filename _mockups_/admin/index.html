@@ -1386,8 +1386,8 @@
             .timeline li {
                 display: grid;
                 grid-template-columns: 76px 1fr;
-                gap: 14px;
-                align-items: center;
+                gap: 8px 14px;
+                align-items: start;
                 padding: 8px 0 8px 18px;
                 position: relative;
                 border-left: 2px solid var(--line);
@@ -1396,6 +1396,7 @@
             .timeline li::before {
                 content: '';
                 position: absolute;
+                top: 13px;
                 left: -7px;
                 width: 12px;
                 height: 12px;
@@ -1421,6 +1422,10 @@
                 gap: 6px;
                 flex-wrap: wrap;
             }
+            .timeline .what .kind {
+                min-width: 52px;
+                text-align: center;
+            }
             .timeline .what .thumb + * {
                 margin-right: 4px;
             }
@@ -1444,6 +1449,96 @@
                 font-size: 16px;
                 font-weight: 600;
             }
+
+            /* ---------- v10：圖片 slot（撳縮圖上載 / 更換） ---------- */
+            .with-media {
+                grid-template-columns: minmax(0, 1fr) 180px;
+                column-gap: 24px;
+            }
+            .with-media > * {
+                grid-column: 1;
+            }
+            .with-media > .media {
+                grid-column: 2;
+                grid-row: 1 / span 3;
+                display: grid;
+                gap: 6px;
+                justify-items: center;
+                align-content: start;
+            }
+            .with-media > .savebar,
+            .with-media > details {
+                grid-column: 1 / -1;
+            }
+            .img-slot {
+                position: relative;
+                width: 96px;
+                height: 96px;
+                padding: 0;
+                border: 0;
+                border-radius: 50%;
+                background: none;
+                cursor: pointer;
+            }
+            .img-slot .thumb {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
+            .img-slot.tile {
+                width: 170px;
+                height: 96px;
+                border-radius: 8px;
+            }
+            .img-slot.empty {
+                border: 2px dashed var(--line);
+                background: var(--surface-2);
+            }
+            .slot-btn {
+                position: absolute;
+                right: 0;
+                bottom: 0;
+                width: 28px;
+                height: 28px;
+                display: grid;
+                place-items: center;
+                border-radius: 50%;
+                border: 2px solid var(--surface);
+                background: var(--accent);
+                color: var(--on-accent);
+                font-size: 14px;
+                font-weight: 700;
+            }
+            .img-slot.tile .slot-btn {
+                right: -8px;
+                bottom: -8px;
+            }
+            .img-slot.empty .slot-btn {
+                right: auto;
+                bottom: auto;
+                position: static;
+                margin: auto;
+            }
+            .media .cap {
+                font-size: 12px;
+                color: var(--muted);
+                margin-bottom: 10px;
+            }
+            @media (max-width: 860px) {
+                .with-media {
+                    grid-template-columns: 1fr;
+                }
+                .with-media > .media {
+                    grid-column: 1;
+                    grid-row: auto;
+                    grid-template-columns: auto auto;
+                    justify-content: start;
+                    column-gap: 16px;
+                }
+                .with-media > .media .cap {
+                    grid-row: 2;
+                }
+            }
         </style>
     </head>
     <body>
@@ -1454,7 +1549,7 @@
                     靜態
                     preview，冇真功能。介面文字用書面語；灰色細字係開發註解。主要操作係「更新內容」：入
                     admin 自動掃描 R2 → 處理待辦（設定 ID、加圖、排期…）→ 確認發佈。待辦用矩陣（方案
-                    B）。確認發佈有兩個方案（A 時間線 / B 摘要）俾你揀。小改動直接入節目 /
+                    B）。確認發佈用時間線（方案 A）。小改動直接入節目 /
                     廣播劇改，再去「確認發佈」。圖片 Phase 3 先做上載現成 WebP，裁切編輯器係 Phase
                     4。
                 </p>
@@ -1601,10 +1696,9 @@
 
             <section id="u3">
                 <p class="state-label">
-                    ④ 確認發佈 · 方案
-                    A「時間線」：唔再分「摘要」同「預覽」兩張卡，合做一條上架時間線（幾時 → 邊個 →
-                    第幾集），新劇有「新」tag；變更數量縮做頂部三粒 pill；驗證結果變一粒 ✓
-                    pill（hover 睇數字）。一個大「發佈」掣
+                    ④ 確認發佈（揀咗時間線）：一條上架時間線（幾時 → 類型 tag「新劇 / 新短篇 /
+                    新集數」→ 縮圖 + 名 → 第幾集），即刻上嘅叫「即時上線」；變更數量做頂部三粒
+                    pill；驗證結果一粒 ✓ pill（hover 睇數字）；一個大「發佈」掣
                 </p>
                 <div class="frame">
                     <div class="shell">
@@ -1638,8 +1732,9 @@
                             <div class="card">
                                 <ol class="timeline">
                                     <li class="now">
-                                        <span class="when">發佈後</span
+                                        <span class="when">即時上線</span
                                         ><span class="what"
+                                            ><span class="kind">新集數</span
                                             ><span class="thumb pink sm"></span>公子森林
                                             <span class="muted">39–40</span></span
                                         >
@@ -1647,6 +1742,7 @@
                                     <li>
                                         <span class="when">11/16 一</span
                                         ><span class="what"
+                                            ><span class="kind">新短篇</span
                                             ><span class="thumb sm"></span>我心不死
                                             <span class="muted">1–5</span></span
                                         >
@@ -1654,6 +1750,7 @@
                                     <li>
                                         <span class="when">11/18 三</span
                                         ><span class="what"
+                                            ><span class="kind">新短篇</span
                                             ><span class="thumb sm"></span>我心不死
                                             <span class="muted">6–10</span></span
                                         >
@@ -1661,10 +1758,14 @@
                                     <li>
                                         <span class="when">11/20 五</span
                                         ><span class="what"
+                                            ><span class="kind">新短篇</span
                                             ><span class="thumb sm"></span>我心不死
-                                            <span class="muted">11–15</span
+                                            <span class="muted">11–15</span></span
+                                        ><span></span
+                                        ><span class="what"
+                                            ><span class="kind">新劇</span
                                             ><span class="thumb grey sm"></span>天使之戀系列
-                                            <span class="pill new">新</span></span
+                                            <span class="muted">全 24 集</span></span
                                         >
                                     </li>
                                     <li class="more">
@@ -1679,75 +1780,6 @@
                                 <a class="small" href="#uB" style="color: var(--accent)"
                                     >← 返回待辦</a
                                 ><button class="primary big">發佈</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="u3b">
-                <p class="state-label">
-                    ④b 確認發佈 · 方案 B「摘要」：頂部四個數字（新劇 / 新短篇 / 新集數 /
-                    下次上架），下面一項一行：類型 · 名 · 集數 · 幾時上架（📅 日期 / ⚡
-                    即時）；日曆收埋入「上架日曆」。驗證 ✓ 同發佈掣喺底
-                </p>
-                <div class="frame">
-                    <div class="shell">
-                        <nav class="nav" aria-label="主選單">
-                            <span class="brand">903 Admin</span
-                            ><a href="#uB" aria-current="page"
-                                >更新內容 <span class="pill count">3</span></a
-                            ><span class="group">內容</span><a href="#s2c">節目</a
-                            ><a href="#s2">廣播劇</a><span class="group">記錄</span
-                            ><a href="#s8">發佈記錄</a><span class="spacer"></span
-                            ><span class="who">admin@…</span><a href="#s1">登出</a
-                            ><span class="version">api 0.4.0</span>
-                        </nav>
-                        <div class="main">
-                            <div class="title-row"><h2>更新內容</h2></div>
-                            <ol class="stepper">
-                                <li class="done"><span class="num">✓</span>掃描 R2（自動）</li>
-                                <li class="done"><span class="num">✓</span>處理待辦</li>
-                                <li class="current"><span class="num">3</span>確認發佈</li>
-                            </ol>
-                            <div class="stats">
-                                <div class="stat"><b>1</b><span>新廣播劇</span></div>
-                                <div class="stat"><b>1</b><span>新短篇</span></div>
-                                <div class="stat"><b>2</b><span>新集數</span></div>
-                                <div class="stat"><b>11/16</b><span>下次上架</span></div>
-                            </div>
-                            <div class="card flush">
-                                <div class="pub-row">
-                                    <span class="kind">新劇</span><b>天使之戀系列</b
-                                    ><span class="muted small">24 集</span
-                                    ><span class="when">📅 11/20</span>
-                                </div>
-                                <div class="pub-row">
-                                    <span class="kind">新短篇</span><b>我心不死</b
-                                    ><span class="muted small">蘭茜 · 37 集</span
-                                    ><span class="when">📅 11/16 起 · 一三五 ×5</span>
-                                </div>
-                                <div class="pub-row">
-                                    <span class="kind">新集數</span><b>公子森林</b
-                                    ><span class="muted small">森美 · 39–40</span
-                                    ><span class="when">⚡ 即時</span>
-                                </div>
-                            </div>
-                            <details class="small">
-                                <summary class="muted">上架日曆</summary>
-                                <p class="muted" style="margin: 6px 0 0">
-                                    （展開顯示月曆，同排程頁同一個元件）
-                                </p>
-                            </details>
-                            <div class="savebar">
-                                <span class="pill ok" title="7 個節目 · 8 套廣播劇 · 535 集"
-                                    >✓ 驗證通過</span
-                                >
-                                <div class="actions">
-                                    <a class="small" href="#uB" style="color: var(--accent)"
-                                        >← 返回待辦</a
-                                    ><button class="primary big">發佈</button>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -2332,8 +2364,9 @@
             <section id="s3">
                 <p class="state-label">
                     ⑦ 節目編輯（PUT
-                    /api/entries/shows/:id）：名稱喺標題雙擊改；唔顯示錄音檔時間；次序喺列表拖。資訊（P9.5）直接放喺同一頁：播出時間只入開始
-                    / 完結時間，「播放時間」一行由播出日 + 時間自動組合（預覽），唔使重複輸入星期
+                    /api/entries/shows/:id）：名稱喺標題雙擊改；唔顯示錄音檔時間；次序喺列表拖。基本資料同資訊（P9.5）合做一格；圖片喺右邊，撳縮圖（右下
+                    ✎ / ＋ 圓點）直接上載 / 更換：播出時間只入開始 /
+                    完結時間，「播放時間」一行由播出日 + 時間自動組合（預覽），唔使重複輸入星期
                 </p>
                 <div class="frame">
                     <div class="shell">
@@ -2354,8 +2387,25 @@
                                     <span class="pill ok"><span class="dot"></span>上架中</span>
                                 </h2>
                             </div>
-                            <div class="card">
-                                <h3>基本資料</h3>
+                            <div class="card with-media">
+                                <aside class="media">
+                                    <button
+                                        class="img-slot"
+                                        title="更換唱片：唱片 · WebP 600×600（裁切編輯器 Phase 4）"
+                                        aria-label="更換唱片"
+                                    >
+                                        <span class="thumb grey"></span
+                                        ><span class="slot-btn">✎</span></button
+                                    ><span class="cap">唱片</span
+                                    ><button
+                                        class="img-slot tile"
+                                        title="更換橫額：橫額 · WebP 1216×684（裁切編輯器 Phase 4）"
+                                        aria-label="更換橫額"
+                                    >
+                                        <span class="thumb tile grey"></span
+                                        ><span class="slot-btn">✎</span></button
+                                    ><span class="cap">橫額</span>
+                                </aside>
                                 <div class="form">
                                     <label class="field"
                                         ><span>ID</span
@@ -2378,33 +2428,8 @@
                                             ><label>六</label>
                                         </div>
                                     </div>
-                                    <div class="field wide">
-                                        <span
-                                            >圖片
-                                            <span
-                                                class="tip"
-                                                title="WebP · 唱片 600×600 · 橫額 1216×684（裁切編輯器 Phase 4）"
-                                                aria-label="WebP · 唱片 600×600 · 橫額 1216×684（裁切編輯器 Phase 4）"
-                                                >ⓘ</span
-                                            ></span
-                                        >
-                                        <div class="images">
-                                            <span class="thumb grey"></span> 唱片
-                                            <span class="thumb tile grey"></span> 橫額
-                                            <button>上載唱片</button><button>上載橫額</button>
-                                        </div>
-                                    </div>
                                 </div>
-                            </div>
-                            <div class="card">
-                                <h3>
-                                    節目資訊
-                                    <span
-                                        class="tip"
-                                        title="暫不會在播放器顯示，日後推出節目資訊頁時使用"
-                                        >ⓘ</span
-                                    >
-                                </h3>
+
                                 <div class="form">
                                     <label class="field wide"
                                         ><span>簡介</span
@@ -2490,7 +2515,25 @@
                                 <a href="#s4" aria-current="page">基本資料</a
                                 ><a href="#s5">短篇（3）</a><a href="#s7">排程</a>
                             </nav>
-                            <div class="card">
+                            <div class="card with-media">
+                                <aside class="media">
+                                    <button
+                                        class="img-slot"
+                                        title="更換唱片：唱片 · WebP 600×600（裁切編輯器 Phase 4）"
+                                        aria-label="更換唱片"
+                                    >
+                                        <span class="thumb"></span
+                                        ><span class="slot-btn">✎</span></button
+                                    ><span class="cap">唱片</span
+                                    ><button
+                                        class="img-slot tile"
+                                        title="更換橫額：橫額 · WebP 1216×684（裁切編輯器 Phase 4）"
+                                        aria-label="更換橫額"
+                                    >
+                                        <span class="thumb tile"></span
+                                        ><span class="slot-btn">✎</span></button
+                                    ><span class="cap">橫額</span>
+                                </aside>
                                 <div class="form">
                                     <label class="field">
                                         <span
@@ -2542,22 +2585,6 @@
                                         >
                                         <div class="readonly-box">
                                             <code>{no2} - {arc} - 第{noZh}集[ - {title}].m4a</code>
-                                        </div>
-                                    </div>
-                                    <div class="field wide">
-                                        <span
-                                            >圖片
-                                            <span
-                                                class="tip"
-                                                title="WebP · 唱片 600×600 · 橫額 1216×684（裁切編輯器 Phase 4）"
-                                                aria-label="WebP · 唱片 600×600 · 橫額 1216×684（裁切編輯器 Phase 4）"
-                                                >ⓘ</span
-                                            ></span
-                                        >
-                                        <div class="images">
-                                            <span class="thumb"></span> 唱片
-                                            <span class="thumb tile"></span> 橫額
-                                            <button>上載唱片</button><button>上載橫額</button>
                                         </div>
                                     </div>
                                 </div>
@@ -2662,7 +2689,24 @@
                                             >
                                         </div>
                                     </li>
-                                    <li class="arc-editor">
+                                    <li class="arc-editor with-media">
+                                        <aside class="media">
+                                            <button
+                                                class="img-slot"
+                                                title="更換唱片：唱片 · WebP 600×600（裁切編輯器 Phase 4）"
+                                                aria-label="更換唱片"
+                                            >
+                                                <span class="thumb"></span
+                                                ><span class="slot-btn">✎</span></button
+                                            ><span class="cap">唱片</span
+                                            ><button
+                                                class="img-slot tile empty"
+                                                title="上載橫額：橫額 · WebP 1216×684（裁切編輯器 Phase 4）"
+                                                aria-label="上載橫額"
+                                            >
+                                                <span class="slot-btn">＋</span></button
+                                            ><span class="cap">橫額</span>
+                                        </aside>
                                         <div class="form">
                                             <div class="field">
                                                 <span>R2 子資料夾</span>
