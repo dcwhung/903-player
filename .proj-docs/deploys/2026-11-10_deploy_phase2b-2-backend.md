@@ -62,6 +62,8 @@ GitHub runner 連到 Worker 同 catalog 圖片 host，所以 Pages build 用嘅�
 5. Vercel dashboard 嗰次 deployment 嘅 build log，搵 `[catalog-snapshot] hash …`，hash 應該同上面一樣
 6. （可選）新裝 PWA 後開飛航模式第一次開 app，封面圖照樣顯示
 
+**結果（用戶 2026-11-10 確認）**：1 ✅ health 0.3.0；2 ✅ 兩個網址 v1.32.0；3 ✅ ops 頁 publish 列表有 status 欄同 current 標記；4 ✅ `a3add2a53873…` = Publish #1 hash（session log 2026-11-09_22-56，之後冇再 publish）；5 ✅ Vercel build log `[catalog-snapshot] hash a3add2a53873c2a8…b682e96d · generatedAt 2026-11-09T22:29:48.328Z · 58 images`。6 未做（可選）。
+
 ## 回滾方案
 
 **Worker**
