@@ -75,6 +75,12 @@ describe('PUT /api/dramas/:id/arcs/:arcId/schedule', () => {
         expect(await scheduleCount()).toBe(0);
     });
 
+    it('should answer 422 (not 500) for a huge every.days or removeAfterDays (W-704)', async () => {
+        expect((await putSchedule({ ...WEEKLY, every: { days: 1e8 } })).status).toBe(422);
+        expect((await putSchedule({ ...WEEKLY, removeAfterDays: 1e9 })).status).toBe(422);
+        expect(await scheduleCount()).toBe(0);
+    });
+
     it('should answer 404 for an unknown drama or arc and 422 for a daily drama', async () => {
         const unknownArc = await adminRequest('PUT', '/api/dramas/golden/arcs/nope/schedule', {
             body: { rule: WEEKLY },

@@ -177,6 +177,21 @@ describe('expandSchedule — rejected input', () => {
     });
 });
 
+describe('expandSchedule — day limits (W-704)', () => {
+    it.each([
+        ['every.days', { ...weekly('2026-11-01', 1), every: { days: 100_000_000 } }],
+        ['removeAfterDays', { ...weekly('2026-11-01', 1), removeAfterDays: 1e9 }],
+        ['every.days just over the limit', { ...weekly('2026-11-01', 1), every: { days: 3661 } }],
+    ])('should reject a huge %s with ScheduleError, not RangeError', (_, rule) => {
+        expect(() => expand(rule as ScheduleRule, 3)).toThrow(ScheduleError);
+    });
+
+    it('should accept the limit itself', () => {
+        const expanded = expand({ ...weekly('2026-11-01', 1), removeAfterDays: 3660 }, 1);
+        expect(expanded.episodeRemovedAt).toEqual({ 1: '2036-11-08' });
+    });
+});
+
 describe('parseScheduleRule', () => {
     it('should accept a well-formed rule and return it unchanged', () => {
         const rule = { ...weekly('2026-11-01', 2), removeAfterDays: 30 };

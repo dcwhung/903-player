@@ -33,6 +33,8 @@ interface Batch {
 const LAST_WEEKDAY = 6;
 /** 防呆：一個短篇最多排幾多集（現有最長 50 幾集） */
 const MAX_EPISODES = 1000;
+/** 每 N 日 / N 日後下架嘅上限（約 10 年）：再大 addDays 會出界（RangeError → 500，W-704） */
+const MAX_SCHEDULE_DAYS = 3660;
 
 const fail = (message: string): never => {
     throw new ScheduleError(message);
@@ -40,6 +42,11 @@ const fail = (message: string): never => {
 
 const checkPositiveInteger = (value: number, path: string): void => {
     if (!Number.isInteger(value) || value < 1) fail(`${path} must be a positive integer`);
+};
+
+const checkDays = (value: number, path: string): void => {
+    checkPositiveInteger(value, path);
+    if (value > MAX_SCHEDULE_DAYS) fail(`${path} must be at most ${MAX_SCHEDULE_DAYS}`);
 };
 
 const checkDate = (value: string, path: string): void => {
@@ -84,7 +91,7 @@ const weekdayDates = (start: string, weekdays: readonly number[], n: number): st
 const releaseDates = (rule: PeriodicRule, n: number): string[] => {
     if ('weekdays' in rule.every) return weekdayDates(rule.start, rule.every.weekdays, n);
     const { days } = rule.every;
-    checkPositiveInteger(days, 'every.days');
+    checkDays(days, 'every.days');
     return Array.from({ length: n }, (_, i) => addDays(rule.start, i * days));
 };
 
@@ -101,7 +108,7 @@ const rangeKey = ({ first, last }: Batch): string =>
 
 const removals = (batches: readonly Batch[], days: number | undefined): Record<string, string> => {
     if (days === undefined) return {};
-    checkPositiveInteger(days, 'removeAfterDays');
+    checkDays(days, 'removeAfterDays');
     return Object.fromEntries(batches.map((b) => [rangeKey(b), addDays(b.date, days)]));
 };
 
