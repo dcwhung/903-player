@@ -1,8 +1,8 @@
 /*
  * 排程 tab 嘅兩條掣列（_mockups_/admin-schedule-unlist ⑧ ⑨）：
- * 頂「編輯 / 預覽」segmented；底「↶ 復原」（最左，同儲存掣分開）+ 刪除排程 + 儲存
+ * 頂「編輯 / 預覽」segmented；底「↶ 復原」（最左，同儲存掣分開）+ 刪除 + 儲存；掣全部有 outline icon
  */
-import { Eye, Pencil, Save, Undo2, type LucideIcon } from 'lucide-react';
+import { Eye, Pencil, Save, Trash2, Undo2, type LucideIcon } from 'lucide-react';
 import { t } from '../../i18n/t';
 
 export type ScheduleView = 'edit' | 'preview';
@@ -66,6 +66,7 @@ export function ScheduleSaveBar(props: ScheduleSaveBarProps) {
                         disabled={props.saving}
                         onClick={props.onDelete}
                     >
+                        <Trash2 aria-hidden="true" />
                         {t('schedule.deleteSchedule')}
                     </button>
                 )}

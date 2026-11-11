@@ -1,7 +1,7 @@
 /*
  * 編輯模式左右兩個 panel（_mockups_/admin-schedule-unlist ⑧）：
  * 左「上架」（綠）= 只排未上架嘅集數：快速套用 + 句子 + 時間軸；全部已上架就淨係「✓ 已全部上架」。
- * 右「下架」（紅）= 已上架 + 已排程上架嘅集數：4 個下架方式 + 句子 + 時間軸
+ * 右「下架」（紅）= 已上架 + 已排程上架嘅集數：4 個下架方式（快速套用 chip）+ 句子 + 時間軸
  */
 import { addDays, type SchedulePlan } from '@903-player/catalog';
 import { useId } from 'react';
@@ -89,7 +89,11 @@ export function UnlistPanel({ ctx, form, plan, onChange }: PanelProps) {
                 </Pill>
             </h3>
             <p className="scope">{unlistScopeText(ctx)}</p>
-            <div className="seg" role="group" aria-label={t('schedule.unlistModes')}>
+            {/* 同上架 panel 嘅快速套用一樣：一粒粒 chip，揀咗實色（mockup ⑧ 用戶修正） */}
+            <div className="presets" role="group" aria-label={t('schedule.unlistModes')}>
+                <span className="muted small" aria-hidden="true">
+                    {t('schedule.presets')}
+                </span>
                 {UNLIST_MODES.map((mode) => (
                     <button
                         key={mode}

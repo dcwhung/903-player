@@ -1404,12 +1404,6 @@ textarea.autosize {
     height: 16px;
 }
 
-/* panel 半闊：下架方式 4 粒掣盡量排一行 */
-.panel .seg button {
-    padding: 5px 10px;
-    font-size: 13px;
-}
-
 /*
  * 上架 / 下架 toggle：狀態色唔跟一般 button:hover（淺灰會食咗白字白點）；
  * focus-visible outline 照用全域樣式
