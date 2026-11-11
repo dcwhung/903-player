@@ -1063,6 +1063,8 @@ textarea.autosize {
     align-items: center;
     gap: 8px;
     min-width: 0;
+    /* 黑碟嘅碟邊（box-shadow）喺 overflow: hidden 入面唔好被裁 */
+    padding: 2px;
 }
 
 .title-row h1 .thumb {
