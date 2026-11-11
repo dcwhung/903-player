@@ -28,7 +28,7 @@
 
 **結果：✅ pass**（W-711 建議 merge 前修）
 
-## 🟡 W-711 改劇 ID 時自動短篇 ID 改名會撞同劇已有嘅 ID
+## 🟡 W-711 改劇 ID 時自動短篇 ID 改名會撞同劇已有嘅 ID（✅ resolved `d6136d3`）
 
 - 位置：`apps/api/src/admin/rename.ts` `withRenamedArcIds` / `renameStatements`（`ARC_ID_SQL`）
 - L1：`packages/catalog/src/dramas/schema.ts:276` 同一劇 arc id 唔可以重複；episode ID `drama:<id>:<arcId>:<no>` 要唯一
@@ -114,4 +114,44 @@ next_action: invoke_qa
 next_agent: quality-assurance
 branch: "claude/charming-heisenberg-8z30x3"
 context: "Phase 3c pass 95, no blocking items. W-711 (rename.ts: renaming drama moves <old>-NN arcs to <new>-NN and can duplicate an existing <new>-NN arc -> 200 with duplicate arc ids, or 500 when both have schedules; reproduced in workerd) non-blocking per score rule but recommended to fix before QA S1 / merge: 409 + tests, commit 'fix: W-711 | ...', re-review only that diff. QA S1 chains admin, api, catalog-data after CI on head. Deviations 1-5 accepted (2 needs W-711). S-812..S-819 to backlog; S-818 = add new-dependency section to the PR. Report committed locally, not pushed."
+```
+
+## Re-review — 2026-11-11（`d6136d3` W-711）
+
+只驗 W-711 嘅修正同佢嘅 diff，唔再搵新嘅 🟢。
+
+- Hard gates：`npx tsc -b`、`npx eslint`（5 個改咗嘅檔）exit 0；`npx vitest run apps/api/test/adminRoutes.test.ts apps/admin/src/api/errorMessage.test.ts` 2 檔 31 pass；CI run `43034842298`（`d6136d3`）跑緊，由 QA 引用
+- **W-711 ✅ resolved**：`renamable()` 喺任何 D1 寫入之前用 `duplicateArcIdAfterRename`（同 `withRenamedArcIds` 同一套改名邏輯）計改名後嘅短篇 ID，有重複就回 409 `{ error, arcId }`。`adminRoutes.test.ts` 加咗兩個 case：上次 review 重現嘅 200 + 重複 ID 而家回 409，D1 冇改；兩個短篇都有排程嘅 500 而家都係 409，`schedules` 冇改。Admin `errorMessage` 見到 409 + `arcId` 出 `t('editor.arcIdDuplicate')`（有 unit test），文字經 i18n
+
+### 最終評分
+
+| 維度     | 得分    | 滿分    |
+| -------- | ------- | ------- |
+| 正確性   | 25      | 25      |
+| 安全性   | 20      | 20      |
+| 可維護性 | 20      | 20      |
+| 測試覆蓋 | 15      | 15      |
+| 性能     | 10      | 10      |
+| 代碼風格 | 10      | 10      |
+| **總分** | **100** | **100** |
+
+**結果：✅ pass**（W-711 已修；S-812–S-819 入 backlog）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T3
+ledger: n/a
+hard_gates:
+  lint: "pass (eslint on changed files; full lint via CI 43034842298 on d6136d3, in progress)"
+  type_check: "pass (npx tsc -b local)"
+  tests: "pass (re-review related: 2 files / 31)"
+  coverage: "W-711 paths covered: adminRoutes.test (409 no-schedule / with-schedules, D1 unchanged), errorMessage.test (zh message)"
+  no_critical: pass
+  security_scan: "n/a (no new dependencies in fix commit)"
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "claude/charming-heisenberg-8z30x3"
+context: "Phase 3c re-review pass 100: W-711 fixed in d6136d3 (rename refuses duplicate arc id with 409 + arcId before any D1 write; admin shows zh message). S-812..S-819 to backlog (S-818: new-dependency section in PR). QA S1 chains admin, api, catalog-data citing CI 43034842298 once green. Report committed locally, not pushed."
 ```
