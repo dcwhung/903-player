@@ -73,6 +73,19 @@ describe('POST /api/dramas/:id/scan', () => {
         expect(body.diff).toEqual([]);
     });
 
+    it('should word issues for an R2 scan, not the CLI (S-785)', async () => {
+        const definition = scannable(3);
+        const gone = { id: 'gone', name: 'Season 0', episodes: 1 };
+        await putEntry('dramas', 'golden', {
+            ...definition,
+            arcs: [...(definition.arcs as unknown[]), gone],
+        });
+        const { body } = await scan();
+        const text = JSON.stringify(body.issues);
+        expect(text).toContain('R2 資料夾冇呢個短篇');
+        expect(text).not.toMatch(/--verify|--existing|--id|本機/);
+    });
+
     it('should answer 404 for an unknown drama and 422 for audio not hosted on R2', async () => {
         expect((await scan('nope')).status).toBe(404);
         await putEntry('dramas', 'golden', {
