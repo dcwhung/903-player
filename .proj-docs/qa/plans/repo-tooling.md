@@ -1,11 +1,12 @@
 # Test Plan — repo-tooling
 
 - Paths：repo root 檔寫 root path；app 檔寫 `apps/player/…`。指令喺 repo root 跑
-- Chain: Repo / build 外殼：npm workspaces（root `package.json` scripts（`npm test` = root `vitest run` projects）、`packages/catalog` workspace manifest / tsconfig / vitest config、`apps/player/package.json` 係 app manifest + 唯一 version）、lockfile、ESLint config、CI（`ci.yml`）、GitHub Pages 部署（`deploy.yml`）、e2e 入口（`e2e/run.mjs` 起 vite preview、`e2e/harness.mjs` 字型 path）
+- Chain: Repo / build 外殼：npm workspaces（root `package.json` scripts（`npm test` = root `vitest run` projects）、`packages/catalog` workspace manifest / tsconfig / vitest config、`apps/player/package.json` 係 app manifest + 唯一 version）、lockfile、ESLint config、CI（`ci.yml`）、GitHub Pages 部署（`deploy.yml`）、e2e 入口（`e2e/run.mjs` 起 vite preview、`e2e/harness.mjs` 字型 path）；Phase 3b 起加 `apps/admin` workspace（root `build:admin` / `e2e:admin` / `dev:admin`、projects / references / ESLint 規則）
 - AC:
     - AC-1 現有用戶零影響：production `dist` 同 `origin/main` byte-for-byte 一樣（sha256 逐檔比較）；version 唔 bump（`apps/player/package.json` 1.29.0）（`.proj-docs/plans/2026-11-06_plan_backend-admin.md`「Monorepo 結構」、Phase 0）。Phase 0b 例外：module 次序令 bundle 唔同 → 用戶決定 bump 1.29.1（plan Phase 0b 補註）；改由 storage key / URL / episode ID / 上下架邏輯 diff 不變 + CI 全 unit / e2e（包括 PWA 換版 section）做證據
     - AC-2 Root 指令照舊：`npm test`、`npm test -- <path>`、`npm run build -- --mode e2e`、`npm run e2e`、`npm run lint` 喺 repo root 跑得（CLAUDE.md QA 表）
     - AC-3 CI / Deploy 指向 `apps/player`（artifact `apps/player/dist`）；lockfile 依賴版本唔變
+    - AC-4 Phase 3b（plan §3b.3）：`ci.yml` check job 加 `build:admin`、e2e job 加 `e2e:admin` + admin screenshot artifact；root `vitest.config.ts` projects 加 `apps/admin`、`tsconfig.json` reference、`eslint.config.js` admin 用同一套 size 規則；lockfile 只加 admin 依賴（`@dnd-kit/*`、`lucide-react`），現有套件版本唔變
 - Scope files:
     - `package.json` `package-lock.json` `apps/player/package.json` `eslint.config.js`
     - `tsconfig.json` `vitest.config.ts` `apps/player/tsconfig.app.json` `apps/player/tsconfig.node.json`

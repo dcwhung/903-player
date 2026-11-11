@@ -1,7 +1,7 @@
 # Test Plan — api
 
 - Paths：全部相對 repo root；指令喺 repo root 跑（root `vitest.config.ts` projects 包括 `@903-player/api`（workerd / miniflare）同 `@903-player/api-scripts`（Node））
-- Chain: Backend Worker `apps/api`（Hono + D1 + R2）：Google login（OAuth + PKCE + whitelist）→ session → `/api/*`（CSRF）→ import library 入 D1 / R2 → publish（validate + episode ID 守衛 + force + rollback）→ 公開出 `catalog/v1/catalog.json` 同圖 → ops 頁
+- Chain: Backend Worker `apps/api`（Hono + D1 + R2）：Google login（OAuth + PKCE + whitelist）→ session → `/api/*`（CSRF）→ import library 入 D1 / R2 → publish（validate + episode ID 守衛 + force + rollback）→ 公開出 `catalog/v1/catalog.json` 同圖 → static assets 出 admin SPA（3b 起；之前係 ops 頁）
 - AC（`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md` §3–§6；ops 頁 Design Origin `_mockups_/admin-ops/index.html`）:
     - AC-1 Login：`/auth/google/start` 302 去 Google（scope `openid email`、PKCE S256、state），`__Host-oauth` HMAC 簽名 10 分鐘；callback 驗 state、`email_verified`、`ADMIN_EMAILS`；whitelist 外 403 頁、唔開 session
     - AC-2 Session：`__Host-session`（HttpOnly; Secure; SameSite=Lax; Path=/）30 日、D1 只存 SHA-256；過期 = 未 login；`POST /auth/logout`；`GET /api/me`
@@ -10,18 +10,19 @@
     - AC-5 Publish：`parseCatalogDocument` + `buildRegistry` 驗證；上次有、今次冇嘅 episode ID → 409 列明，`?force=1` 先寫；rollback 重寫舊 snapshot 照行守衛；history
     - AC-6 Serve：`catalog.json` `Cache-Control: public, max-age=60` + `ETag`（304）；圖 `max-age=31536000, immutable`；CORS 只回 `PLAYER_ORIGINS` match 到嘅 origin + `Vary: Origin`；冇 publish / 冇圖 404
     - AC-7 Publish 內容同內建 library 一樣（definition 逐個 deep-equal、圖 hash = 檔案內容；除 image URL / generatedAt）
-    - AC-8 Ops 頁 6 個狀態：未 login、冇權限（403 頁）、主畫面（現狀 + Publish + history）、Publish 成功、ID 守衛拒絕（剔咗先撳得強制 Publish）、還原確認；server 資料一律 `textContent`、冇動畫
+    - AC-8（3b 退役，`apps/api/public/` + `opsPage.test.ts` 已刪；功能搬去 admin 鏈）Ops 頁 6 個狀態：未 login、冇權限（403 頁）、主畫面（現狀 + Publish + history）、Publish 成功、ID 守衛拒絕（剔咗先撳得強制 Publish）、還原確認；server 資料一律 `textContent`、冇動畫
     - AC-9 Import catalog workflow（`.github/workflows/import-catalog.yml`，用戶 2026-11-09 要求冇 local clone 都 import 到）：只得 `workflow_dispatch`、`dry_run` 預設 true；非 `main` 即 fail；`concurrency` 排隊唔取消；Cloudflare secrets 只喺 Import step；import 失敗 step 非 0（pipefail）、Summary 唔跑；Summary 印 counts + wrangler step 數
     - AC-10 2b-1 Content API（`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md` §4）：`GET/PUT/DELETE /api/entries[/:kind/:id]` — `If-Match` / `If-None-Match: *` 唔對 412、validator 唔過 422（欄位錯誤；圖 hash 要喺 assets 兼合 `IMAGE_FILE_PATTERN`，S-772）、`warnings` 列會消失嘅 episode ID、publish 過嘅 DELETE 409；body ≤ 256 KB；`POST /api/dramas/:id/scan`（`AUDIO` R2 list → `generateDraft`，回 `{ draft, issues, diff }`，唔寫 D1）
     - AC-11 Schedule（§2–§3）：`expandSchedule`（dates / periodic 每 N 日 / 星期幾、`removeAfterDays`、跨月 / 年 / 2-29、`count` 未知拒絕；結果過 `availabilitySchema`）；`GET` / `preview` / `PUT`（`If-Match`，D1 `batch()` atomic 寫 `schedules` + `entries`）/ `DELETE`（只刪規則）；migration `0002_schedules.sql`
     - AC-13 2b-2（plan §2b-2 A）：`PUT /api/assets`（same-origin + session）— 非 `image/webp` 415、> 1 MB 413、壞 WebP 422、尺寸唔喺白名單（600×600、1216×684）422、新圖 201 `{ name: <sha256 前 16 hex>.webp, width, height, bytes }`（R2 先、D1 後）、已有 200 `existed`；migration `0003_publish_status.sql`（舊行預設 `ok`）+ S-786（`failed` 行唔計 unchanged / ID 守衛 / `current`）；S-787（scan / schedule drama id 唔合規 400）
     - AC-14 3a（`.proj-docs/plans/2026-11-10_plan_phase3-admin.md` §3a.3–4）：migration `0004_admin.sql`（`entries.draft` 預設 0 + CHECK、`scan_findings`、`publishes.error`）；draft 寬鬆驗證 / 自動清 / publish 唔包 / DELETE 准；`POST /api/scan`（新資料夾 → draft 劇、新短篇 `enabled: false`、有劇資料夾唔見唔自動建、重跑冪等）；`GET /api/todos`（改短篇 ID 後行仲喺度，C-013）；rename 只限從未上架（ID 守衛唔對稱：只鎖上架過嘅 episode ID，W-707）；folders；`PUT /api/order/:kind`；`GET /api/changes`；`/api/publishes` `changes` / `error`
+    - AC-15 3b（plan §3b.2）：`wrangler.toml` `[assets] directory = "../admin/dist"`、`not_found_handling = "single-page-application"`、`run_worker_first = ["/api/*", "/auth/*", "/catalog/*"]`（深連結回 `index.html`；`/api` `/auth` `/catalog` 冇對應路由由 Worker 回 401 / 404，唔會變 SPA）；`deniedPage` inline style（冇 `/ops.css`）；`/api/health` version `0.5.0`；`deploy-api.yml` paths 加 `apps/admin/**`、deploy 前 build admin；`vitest.config.ts` 冇 build 都開空 `../admin/dist`
     - AC-12 Backlog（§5）：S-767 先 insert 後寫 R2、失敗回滾；S-768 session whitelist 外 401 + 刪 session；S-770 Google 網絡 / id_token 錯 502；S-780 內容冇變回 `unchanged`（`?force=1` 照寫，ops 頁一句文字）；S-773
 - Scope files:
     - `apps/api/{package.json,wrangler.toml,.dev.vars.example,tsconfig.json,tsconfig.node.json,tsconfig.worker.json,vitest.config.ts,vitest.scripts.config.ts}` `apps/api/migrations/0001_init.sql`
-    - `apps/api/src/`（`index.ts` `app.ts` `env.ts` `config.ts` `api/routes.ts` `auth/*` `catalog/*` `content/*` `lib/*`）`apps/api/migrations/{0002_schedules,0003_publish_status}.sql` `apps/api/src/assets/{routes,webp}.ts` 3a：`apps/api/src/admin/*` `apps/api/migrations/0004_admin.sql` `packages/catalog/src/admin/*` `apps/api/public/{index.html,ops.css,ops.js}`
+    - `apps/api/src/`（`index.ts` `app.ts` `env.ts` `config.ts` `api/routes.ts` `auth/*` `catalog/*` `content/*` `lib/*`）`apps/api/migrations/{0002_schedules,0003_publish_status}.sql` `apps/api/src/assets/{routes,webp}.ts` 3a：`apps/api/src/admin/*` `apps/api/migrations/0004_admin.sql` `packages/catalog/src/admin/*`（3b 刪 `apps/api/public/*`）
     - 2b-1 schedule core：`packages/catalog/src/schedule/*`（scan core `packages/catalog/src/scan/*` 屬 drama 鏈）
-    - `apps/api/scripts/{importLibrary.mjs,importLibrary.d.mts,importLibrary.test.ts,opsPage.test.ts}` `apps/api/test/*`
+    - `apps/api/scripts/{importLibrary.mjs,importLibrary.d.mts,importLibrary.test.ts}`（3b 刪 `opsPage.test.ts`） `apps/api/test/*`
     - `_mockups_/admin-ops/index.html` `_mockups_/admin/{index.html,banner.webp}`（3b Design Origin，3a 唔驗，只凍結） `.github/workflows/deploy-api.yml` `.github/workflows/import-catalog.yml`
     - 1-hop：`apps/player/scripts/buildCatalogJson.{mjs,d.mts}`（`scanLibrary`，亦屬 catalog-data）
 - Commands:
@@ -30,6 +31,7 @@
     - AC-13 本機 smoke：`wrangler.toml` 抄去 scratchpad、`migrations_dir` 指去只有 0001 + 0002 嘅 folder → apply + 插舊 `publishes` 行 → 用真 config apply 0003（舊行 `ok`、CHECK 擋其他值）；Pillow 砌 VP8 / VP8L / VP8X 圖 + 1 MB+ / 假 chunk / 1216×608 → `curl -X PUT --data-binary` 每個 status；插 `failed` 行再 publish
     - AC-9（merge 前跑唔到真 workflow）：YAML parse；抽每個 `run:` 用 `bash --noprofile --norc -eo pipefail` + stub `npm` / env 行：非 main guard、dry / real 指令、import fail、空 log summary；`CI=true npm run import -w apps/api -- --local --dry-run </dev/null` exit 0 冇 prompt。真 run（dry → real）= merge 後 S2 / UAT
     - AC-14 migration 本機：scratchpad config（0001–0003）apply + 插舊 `entries` / `publishes`（含 `failed`）→ apply 0004（舊行 `draft 0`、`error NULL`；CHECK 擋 `draft 2` / 未知 `kind`）；Worker 路由由 workerd vitest 證；真 D1 `PUT /api/order`（S-799）= deploy 後
+    - AC-15 本機：`npm run build:admin` → 臨時 `.dev.vars` → `wrangler dev --persist-to <scratchpad>` → curl `/`、`/shows`、`/dramas/x/schedule`、`/api/health`、`/api/me`、`/auth/google/start`、`/catalog/v1/*`、`/assets/*`；完咗刪 `.dev.vars`
     - CI：`ci.yml` `npx tsc -b` + `npm test`（同 SHA 綠就引用）
 - PWA gate: no（Worker 唔掂 player `sw.js` / manifest；player 嘅 S-764 屬 catalog-data / repo-tooling）
 - Out of scope: 真 Google OAuth / Cloudflare remote（merge 後 DevOps + 用戶清單 7–9；2b-1 deploy 後 scan golden / `unchanged` 手動）；player prebuild snapshot（catalog-data 鏈）；player 讀 catalog（catalog-data 鏈）
