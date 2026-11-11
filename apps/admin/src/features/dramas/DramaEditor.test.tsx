@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { mockApi, renderAt } from '../../../tests/renderApp';
+import { fakeData, mockApi, renderAt, resource } from '../../../tests/renderApp';
 import { DramaEditorPage } from './DramaEditor';
 
 const DRAMA = {
@@ -58,9 +58,7 @@ describe('DramaEditor', () => {
     it('should expand the arc from the hash with an inline name input and titles', async () => {
         api();
         renderAt('/dramas/lancy/arcs#half', '/dramas/:id/arcs', <DramaEditorPage tab="arcs" />);
-        expect(await screen.findByRole('textbox', { name: '短篇名稱（播放器顯示）' })).toHaveValue(
-            '戀愛二分一',
-        );
+        expect(await screen.findByRole('textbox', { name: /^名稱/ })).toHaveValue('戀愛二分一');
         expect(screen.getByRole('textbox', { name: '各集標題' })).toHaveValue(
             '第 1 集 ｜ \n第 2 集 ｜ \n第 3 集 ｜ 初次見面',
         );
@@ -104,5 +102,69 @@ describe('DramaEditor', () => {
                 ),
             ).toBe(true),
         );
+    });
+
+    it('should open and close an arc by clicking anywhere on its row', async () => {
+        api();
+        renderAt('/dramas/lancy/arcs', '/dramas/:id/arcs', <DramaEditorPage tab="arcs" />);
+        await userEvent.click(await screen.findByText('3 集', { exact: false }));
+        expect(screen.getByRole('textbox', { name: /^名稱/ })).toHaveValue('戀愛二分一');
+        await userEvent.click(screen.getByRole('button', { name: '展開「戀愛二分一」' }));
+        expect(screen.queryByRole('textbox', { name: /^名稱/ })).not.toBeInTheDocument();
+    });
+
+    it('should show Banner before 碟面 and 未排期 beside the 狀態 label', async () => {
+        api();
+        renderAt('/dramas/lancy/arcs#arc-01', '/dramas/:id/arcs', <DramaEditorPage tab="arcs" />);
+        const slots = await screen.findAllByRole('button', { name: /^上載(Banner|碟面)$/ });
+        expect(slots.map((slot) => slot.getAttribute('aria-label'))).toEqual([
+            '上載Banner',
+            '上載碟面',
+        ]);
+        const status = screen.getByRole('switch', { name: '狀態' });
+        expect(status.closest('.field')?.querySelector('.label-line')).toHaveTextContent(
+            '狀態未排期',
+        );
+        expect(screen.getByRole('textbox', { name: '簡介' })).toHaveAttribute(
+            'placeholder',
+            '選填',
+        );
+    });
+
+    it('should mark an unconfirmed arc ID red and confirm it on save without changes', async () => {
+        const fetchMock = api({
+            'POST /api/todos/confirm-id': () => ({ body: { confirmed: 1 } }),
+        });
+        const row = {
+            kind: 'newArc' as const,
+            findingIds: [1],
+            dramaId: 'lancy',
+            arcId: 'arc-01',
+            name: '蘭茜夫人劇場 · 我心不死',
+            cells: {
+                folder: { state: 'na' as const },
+                id: { state: 'must' as const, target: '/dramas/lancy/arcs#arc-01' },
+                images: { state: 'optional' as const, target: '/dramas/lancy/arcs#arc-01' },
+                schedule: { state: 'must' as const, target: '/dramas/lancy/schedule#arc-01' },
+                summary: { state: 'optional' as const, target: '/dramas/lancy/arcs#arc-01' },
+            },
+        };
+        const data = fakeData({ todos: resource({ rows: [row], blocking: 1 }) });
+        renderAt(
+            '/dramas/lancy/arcs#arc-01',
+            '/dramas/:id/arcs',
+            <DramaEditorPage tab="arcs" />,
+            data,
+        );
+        const id = await screen.findByRole('textbox', { name: /短篇 ID/ });
+        expect(id.closest('.field')).toHaveClass('unconfirmed');
+        expect(screen.queryByText('須設定 ID')).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', { name: '儲存' }));
+        await waitFor(() => expect(data.refresh).toHaveBeenCalled());
+        const calls = fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST');
+        expect(calls.map(([url, init]) => [url, JSON.parse(String(init?.body))])).toEqual([
+            ['/api/todos/confirm-id', { dramaId: 'lancy', arcId: 'arc-01' }],
+        ]);
+        expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
     });
 });

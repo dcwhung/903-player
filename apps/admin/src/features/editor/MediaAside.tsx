@@ -1,4 +1,4 @@
-/* 編輯卡右邊圖片欄：唱片 + 橫額（mockup .with-media > .media） */
+/* 編輯卡右邊圖片欄：Banner 排先、碟面排後（mockup admin-style ⑤ .media，340×192 / 192px） */
 import type { ImageMap, RawDefinition } from '../../api/types';
 import { imageOf } from '../../model/raw';
 import { ImageSlot } from '../../ui/ImageSlot';
@@ -15,7 +15,7 @@ interface MediaAsideProps {
 export function MediaAside({ target, images, onUploaded, id }: MediaAsideProps) {
     return (
         <aside className="media" id={id}>
-            {(['disc', 'tile'] as const).map((slot) => (
+            {(['tile', 'disc'] as const).map((slot) => (
                 <ImageSlot
                     key={slot}
                     slot={slot}

@@ -14,9 +14,19 @@ interface SaveBarProps {
     onRevert?: () => void;
     /** 左邊額外掣（例如刪除） */
     start?: ReactNode;
+    /** 有自動派嘅 ID 等確認：冇改動都可以撳「儲存」（3c confirm-id） */
+    pendingConfirm?: boolean;
 }
 
-export function SaveBar({ dirtyFields, fromTodos, saving, onSave, onRevert, start }: SaveBarProps) {
+export function SaveBar({
+    dirtyFields,
+    fromTodos,
+    saving,
+    onSave,
+    onRevert,
+    start,
+    pendingConfirm = false,
+}: SaveBarProps) {
     const dirty = dirtyFields.length > 0;
     const label = fromTodos ? t('editor.saveAndBack') : t('editor.save');
     return (
@@ -26,6 +36,11 @@ export function SaveBar({ dirtyFields, fromTodos, saving, onSave, onRevert, star
                 {dirty && (
                     <span className="small dirty" role="status">
                         {t('editor.dirty', { fields: dirtyFields.join('、') })}
+                    </span>
+                )}
+                {!dirty && pendingConfirm && (
+                    <span className="small dirty" role="status">
+                        {t('editor.idUnconfirmed')}
                     </span>
                 )}
             </div>
@@ -40,7 +55,7 @@ export function SaveBar({ dirtyFields, fromTodos, saving, onSave, onRevert, star
                     type="button"
                     className="primary"
                     onClick={onSave}
-                    disabled={!dirty || saving}
+                    disabled={(!dirty && !pendingConfirm) || saving}
                 >
                     <Save aria-hidden="true" />
                     {saving ? t('editor.saving') : label}

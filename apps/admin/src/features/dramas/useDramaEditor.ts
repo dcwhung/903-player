@@ -1,7 +1,11 @@
-/* 廣播劇編輯頁（三個 tab 共用）：載入、儲存（未發佈可改 ID）、改名、上載圖、重新掃描、欄位錯誤 */
+/*
+ * 廣播劇編輯頁（三個 tab 共用）：載入、儲存（未發佈可改 ID；確認自動派嘅 ID）、改名、上載圖、重新掃描、欄位錯誤
+ */
 import { useState } from 'react';
+import { errorMessage } from '../../api/errorMessage';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAdminData } from '../../data/AdminData';
+import { useToast } from '../../ui/Toast';
 import { changeFlagsOf } from '../../model/listModel';
 import { idProblem } from '../editor/IdField';
 import { useEditorOrigin } from '../editor/useEditorOrigin';
@@ -10,6 +14,7 @@ import { useImageSave } from '../editor/useImageSave';
 import { useRenameEntry } from '../editor/useRenameEntry';
 import { PLACEHOLDER_ID } from './dramaModel';
 import { useRescan } from './useRescan';
+import { confirmAll, useUnconfirmedIds, type IdConfirm } from './idConfirm';
 
 /** 改 ID 之後：同一個 tab / query 換新 ID */
 const renamedPath = (pathname: string, search: string, from: string, to: string) =>
@@ -31,6 +36,14 @@ const useDramaFlags = (id: string, editor: EntryEditor) => {
     };
 };
 
+/** 冇改動又冇改 ID：唔使 PUT（淨係確認 ID） */
+const persistDraft = (editor: EntryEditor, renameTo: string | undefined) => {
+    if (!editor.draft) return Promise.resolve(null);
+    if (editor.dirtyKeys.length === 0 && !renameTo && editor.entry)
+        return Promise.resolve(editor.entry);
+    return editor.run(editor.draft, renameTo);
+};
+
 /** 欄位錯誤（各集標題、ID）：有錯唔准儲存 */
 const useFieldErrors = (newId: string) => {
     const [fieldErrors, setFieldErrors] = useState<Record<string, number>>({});
@@ -47,10 +60,12 @@ export const useDramaEditor = (id: string) => {
     const navigate = useNavigate();
     const [newId, setNewId] = useState(id);
     const errors = useFieldErrors(newId);
-    const save = async () => {
+    const toast = useToast();
+    const save = async (confirm: IdConfirm = {}) => {
         if (!editor.draft || errors.errorCount > 0) return;
-        const saved = await editor.run(editor.draft, newId !== id ? newId : undefined);
+        const saved = await persistDraft(editor, newId !== id ? newId : undefined);
         if (!saved) return;
+        await confirmAll(saved.id, confirm).catch((error: unknown) => toast(errorMessage(error)));
         if (saved.id !== id && !origin.fromTodos)
             navigate(renamedPath(pathname, search, id, saved.id), { replace: true });
         await origin.afterSave();
@@ -59,6 +74,7 @@ export const useDramaEditor = (id: string) => {
     return {
         ...parts,
         ...useDramaFlags(id, editor),
+        ...useUnconfirmedIds(id),
         saveImage: useImageSave(editor),
         rename: useRenameEntry(editor, origin.afterSave),
         rescan: useRescan(id, editor),

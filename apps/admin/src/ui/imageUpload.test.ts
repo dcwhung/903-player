@@ -27,7 +27,7 @@ describe('checkImageFile', () => {
         );
         await expect(checkImageFile(webp(), 'disc')).resolves.toBeUndefined();
         await expect(checkImageFile(webp(), 'tile')).resolves.toBe(
-            '橫額尺寸須為 1216×684（現為 600×600）',
+            'Banner尺寸須為 1216×684（現為 600×600）',
         );
     });
 });

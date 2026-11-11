@@ -52,7 +52,14 @@ export function BasicTab({ state }: { state: DramaEditorState }) {
     const { editor, neverPublished } = state;
     const { draft, entry } = editor;
     if (!draft) return null;
-    const tip = neverPublished ? t('editor.idNewTip') : t('editor.idLockedTip');
+    const unconfirmed = state.dramaIdUnconfirmed && neverPublished;
+    const tip = unconfirmed
+        ? t('editor.idDramaAutoTip')
+        : neverPublished
+          ? t('editor.idNewTip')
+          : t('editor.idLockedTip');
+    // 冇改 ID 就儲存 = 確認掃描派嘅 drama-NN（改咗名 server 當已確認）
+    const confirmDrama = unconfirmed && state.newId === state.id;
     return (
         <div className="card with-media">
             <MediaAside
@@ -66,6 +73,7 @@ export function BasicTab({ state }: { state: DramaEditorState }) {
                     value={state.newId}
                     editable={neverPublished}
                     tip={tip}
+                    unconfirmed={confirmDrama}
                     onChange={state.setNewId}
                 />
                 <SummaryField target={draft.definition} onChange={editor.setDefinition} />
@@ -83,7 +91,8 @@ export function BasicTab({ state }: { state: DramaEditorState }) {
                 ])}
                 fromTodos={state.origin.fromTodos}
                 saving={editor.status.saving}
-                onSave={() => void state.save()}
+                pendingConfirm={confirmDrama}
+                onSave={() => void state.save({ drama: confirmDrama })}
                 start={entry && <DeleteEntry entry={entry} neverPublished={neverPublished} />}
             />
         </div>

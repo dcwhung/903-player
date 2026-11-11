@@ -66,6 +66,13 @@ export const renameDrama = (id: string, newId: string, etag: string | null) =>
         ifMatch: etag,
     });
 
+/** 確認掃描自動派嘅 ID（就算冇改）：待辦 ID 格變 ✓（3c） */
+export const confirmId = (dramaId: string, arcId?: string) =>
+    request<{ confirmed: number }>('/api/todos/confirm-id', {
+        method: 'POST',
+        body: arcId === undefined ? { dramaId } : { dramaId, arcId },
+    });
+
 export const pairFolder = (id: string, folder: string, etag: string | null) =>
     request(`/api/dramas/${encodeURIComponent(id)}/folder`, {
         method: 'POST',
