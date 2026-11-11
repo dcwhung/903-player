@@ -126,6 +126,38 @@ describe('POST /api/scan', () => {
         expect((await scan()).body.findings).toEqual([]);
     });
 
+    it('should still create a drama for a new folder unrelated to the missing one (S-800)', async () => {
+        await env.AUDIO.delete([1, 2, 3].map((no) => episodeKey(FOLDER, 'Season 1', no)));
+        // 改名候選（同一個短篇名）擋住；另一套完全唔同嘅劇照建
+        await upload([episodeKey('黃金少年 (新)', 'Season 1', 1), episodeKey('新劇', '第一部', 1)]);
+        const { body } = await scan();
+        const created = await entry('drama-01');
+        expect(JSON.parse(created?.definition ?? '{}')).toMatchObject({
+            name: '新劇',
+            audio: { folder: '新劇' },
+        });
+        expect(await entry('drama-02')).toBeNull();
+        expect((body.findings as Json[]).map((f) => [f.kind, f.dramaId])).toEqual([
+            ['missingFolder', 'golden'],
+            ['newDrama', 'drama-01'],
+        ]);
+    });
+
+    it('should hold back a daily folder sharing dates with a missing daily drama (S-800)', async () => {
+        await putEntry('dramas', 'daily', {
+            ...drama(1),
+            kind: 'daily',
+            audio: { host: 'r2', folder: '每日劇', file: '{yyyymmdd}.m4a' },
+            arcs: undefined,
+            episodes: [{ date: '2026-10-21' }, { date: '2026-10-20' }],
+        });
+        await upload(['每日劇 v2/20261021.m4a', '另一日播/20261101.m4a']);
+        await scan();
+        const created = await entry('drama-01');
+        expect(JSON.parse(created?.definition ?? '{}')).toMatchObject({ name: '另一日播' });
+        expect(await entry('drama-02')).toBeNull();
+    });
+
     it('should skip a drama whose folder has errors, writing nothing for it', async () => {
         await upload([
             episodeKey(FOLDER, 'Season 1', 4).replace('/04', '/05').replace('第四集', '第五集'),
