@@ -27,9 +27,9 @@
 | 代碼風格 | 10     | 10      | lint / prettier 過                   |
 | **總分** | **95** | **100** |                                      |
 
-**結果：✅ pass**（W-713 merge 前要修，改一個檔）
+**結果：✅ pass**（W-713 已喺 `dae659f` 修好，見 Re-review）
 
-## 🟡 W-713 S-774 只蓋到 Worker 路徑：admin SPA 仍然可以被 frame
+## 🟡 W-713 S-774 只蓋到 Worker 路徑：admin SPA 仍然可以被 frame（✅ resolved `dae659f`）
 
 - 位置：`apps/api/src/index.ts:27-28`（`denyFraming` 只掛 `/auth/*`、`/api/*`）；`apps/admin/public/`（只有 `banner.webp`，冇 `_headers`）
 - L1：backlog S-774「ops 頁冇 CSP / `frame-ancestors`（`public/_headers`）」。當時嘅 ops 頁 `apps/api/public` 已經冇咗，由 admin SPA（`wrangler.toml [assets] directory = "../admin/dist"`）取代，即係 S-774 講嘅就係 admin SPA，修正方法都已經寫明係 `_headers`
@@ -48,7 +48,7 @@
 ## 🟢 / Observation
 
 - S-825 `apps/api/src/auth/next.ts` `isAuthPath`：唔處理 dot-segment，所以 `safeNext('/x/../auth/google/start')` 會照收。瀏覽器 normalise 之後，login 完會再行一次 OAuth start（或者 callback 出 400）。只係攻擊者自己砌嘅 URL 先會中，唔會離開本站，唔算 open redirect；可以喺 `safeNext` 用 `new URL(next, 'https://x').pathname` normalise 之後再判斷
-- S-826 `.github/workflows/deploy-api.yml`：`Check admin build` 喺 `Apply D1 migrations` 之後。如果 build exit 0 但冇出 `index.html`，D1 已經 migrate 咗先停，即係注釋話要避免嘅「半套 deploy」；將檢查搬去 build 之後、migration 之前
+- S-826 `.github/workflows/deploy-api.yml`：`Check admin build` 喺 `Apply D1 migrations` 之後。如果 build exit 0 但冇出 `index.html`，D1 已經 migrate 咗先停，即係注釋話要避免嘅「半套 deploy」；將檢查搬去 build 之後、migration 之前（✅ `61c682a` 已修）
 - S-827 `apps/api/src/admin/order.ts`：如果之前已經寫咗 `order: 2.0`（REAL binding），`json_extract(...) IS NOT CAST(2 AS INTEGER)` 會當兩個數相等，所以唔會改寫成 `2`。因為 `JSON.parse` 讀出嚟都係 `2`，所以冇實際影響；backlog S-799 原文講嘅「deploy 後 QA 喺真 D1 跑一次」要保留，順便查下 production 有冇 `.0`
 
 ## 開發者講明嘅偏差：判斷
@@ -79,16 +79,27 @@
 - `next` 簽入 state cookie，Worker 唔使記任何 server state，callback 仲會再驗一次
 - CSS 原文 test（hex、motion 時間）可以防同類問題再出現
 
+## Re-review（`25bcef0..323e0e7`）
+
+- 範圍：只睇 `a95e40e`、`dae659f`（W-713）、`61c682a`（S-826）、`323e0e7`（backlog）
+- W-713 ✅ resolved：
+    - `apps/admin/public/_headers` 對 `/*` 加 `X-Frame-Options: DENY` 同 `Content-Security-Policy: frame-ancestors 'none'`。冇加 `script-src`，所以唔會擋 inline theme script。`#` 注釋係 `_headers` 支援嘅格式
+    - `securityHeaders.node.test.ts`：紅燈 commit `a95e40e` 只加咗 test，嗰陣冇 `_headers`，`existsSync` 會 fail；而家 1 / 1 pass
+    - 未驗：production 嘅 header 要 deploy 之後用 `curl -sI <WORKER_ORIGIN>/dramas` 確認（包括 SPA fallback），交 QA / deploy 記錄
+- S-826 ✅：而家次序係 build → check → migrate → deploy
+- Backlog ✅：關咗 19 項加 S-826；S-825、S-827 新開；S-799（真 D1 QA）、S-814（race）、S-823（guard）照留 open，描述同 0.6.2 嘅實際狀態一致
+- Gates：新 test 檔過 eslint、`tsc -b` exit 0；`prettier --check` 改咗嘅檔（連 `backlog.md`）都過
+
 ## Handoff receipt
 
 ```
 HANDOFF_RECEIPT
 agent: code-reviewer
 status: pass
-score: 95
+score: 100（re-review；W-713 resolved）
 hard_gates: { lint: pass, type: pass, tests: pass, coverage: pass, no_critical: pass, security_scan: n/a }
-blocking: none（hard gate）；W-713 merge 前要修
-findings: W-713；S-825 S-826 S-827（backlog）
-next_action: developer 修 W-713（apps/admin/public/_headers + node test，commit `fix: W-713 | …`）→ re-review W-713 → QA
-context: CI run 43083826283（3f06a1b）跑緊；報告只 commit，未 push。backlog 要保留 S-814 race 嗰半、S-799 真 D1 QA、S-823 guard
+blocking: none
+findings: W-713 resolved（dae659f）；S-826 resolved（61c682a）；S-825 S-827 open（backlog）
+next_action: QA
+context: re-review 25bcef0..323e0e7；報告只 commit，未 push（等 code CI 跑完先由 main agent push）。deploy 後要 curl 驗 _headers；S-799 真 D1 QA、S-814 race、S-823 guard 留 open
 ```
