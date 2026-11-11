@@ -395,14 +395,14 @@
                     <div>
                         <div class="label">下架</div>
                         <div class="seg" role="group" aria-label="下架方式">
-                            <button aria-pressed="false">唔下架</button>
+                            <button aria-pressed="false">不下架</button>
                             <button aria-pressed="true">指定日全部下架</button>
                             <button aria-pressed="false">每集上架 N 日後下架</button>
-                            <button aria-pressed="false">逢星期 X 落 N 集</button>
+                            <button aria-pressed="false">逢星期 X 下架 N 集</button>
                         </div>
                     </div>
                     <div class="sentence">
-                        喺 <input class="field" value="31/12/2026" /> 全部下架
+                        於 <input class="field" value="31/12/2026" /> 全部下架
                     </div>
                     <div class="strip">
                         <div class="group">
@@ -419,7 +419,7 @@
                     </div>
                     <div class="legend">
                         <span><i style="background: var(--surface-2)"></i>已上架</span>
-                        <span><i style="background: var(--danger-bg)"></i>排咗下架</span>
+                        <span><i style="background: var(--danger-bg)"></i>已排下架</span>
                     </div>
                     <div class="savebar">
                         <button class="btn">↶ 復原</button>
@@ -436,10 +436,10 @@
                 </p>
                 <div class="card">
                     <div class="seg" role="group" aria-label="下架方式">
-                        <button aria-pressed="false">唔下架</button>
+                        <button aria-pressed="false">不下架</button>
                         <button aria-pressed="false">指定日全部下架</button>
                         <button aria-pressed="true">每集上架 N 日後下架</button>
-                        <button aria-pressed="false">逢星期 X 落 N 集</button>
+                        <button aria-pressed="false">逢星期 X 下架 N 集</button>
                     </div>
                     <div class="sentence">
                         每集上架 <input class="field num" value="90" /> 日後下架
@@ -472,13 +472,13 @@
                             </tbody>
                         </table>
                         <p class="hint">
-                            全部集數係同一日（27/10）上架，所以會同一日下架；分批上架嘅短篇會分開幾行
+                            全部集數於同一日（27/10）上架，因此會於同一日下架；分批上架的短篇會分開多行顯示
                         </p>
                     </div>
                 </div>
             </section>
 
-            <!-- ③ 全部上架：由某日起逢星期 X 落 N 集 -->
+            <!-- ③ 全部上架：由某日起逢星期 X 下架 N 集 -->
             <section>
                 <p class="state-label">
                     ③ 同 ①，揀「逢星期 X 落 N 集」：同上架句子對稱，由第 1
@@ -486,10 +486,10 @@
                 </p>
                 <div class="card">
                     <div class="seg" role="group" aria-label="下架方式">
-                        <button aria-pressed="false">唔下架</button>
+                        <button aria-pressed="false">不下架</button>
                         <button aria-pressed="false">指定日全部下架</button>
                         <button aria-pressed="false">每集上架 N 日後下架</button>
-                        <button aria-pressed="true">逢星期 X 落 N 集</button>
+                        <button aria-pressed="true">逢星期 X 下架 N 集</button>
                     </div>
                     <div class="sentence">
                         由 <input class="field" value="1/12/2026" /> 起，逢
@@ -497,7 +497,7 @@
                             ><span>日</span><span class="on">一</span><span>二</span
                             ><span class="on">三</span><span>四</span><span class="on">五</span
                             ><span>六</span></span
-                        >，每次落 <input class="field num" value="10" /> 集
+                        >，每次下架 <input class="field num" value="10" /> 集
                     </div>
                     <div class="strip">
                         <div class="group">
@@ -576,10 +576,10 @@
                     <hr class="divider" />
                     <div class="label">下架</div>
                     <div class="seg" role="group" aria-label="下架方式">
-                        <button aria-pressed="true">唔下架</button>
+                        <button aria-pressed="true">不下架</button>
                         <button aria-pressed="false">指定日全部下架</button>
                         <button aria-pressed="false">每集上架 N 日後下架</button>
-                        <button aria-pressed="false">逢星期 X 落 N 集</button>
+                        <button aria-pressed="false">逢星期 X 下架 N 集</button>
                     </div>
                     <div class="strip">
                         <div class="group">
@@ -605,7 +605,8 @@
                         </div>
                     </div>
                     <p class="hint">
-                        「逢星期 X 落 N 集」嘅開始日要喺最後一批上架之後；早過就出錯誤提示，唔准儲存
+                        「逢星期 X 下架 N
+                        集」的開始日須在最後一批上架之後，否則會顯示錯誤，並不能儲存
                     </p>
                 </div>
             </section>
@@ -639,7 +640,7 @@
                             ><i style="background: var(--danger-bg); opacity: 0.55"></i
                             >已下架（不受新規則影響）</span
                         >
-                        <span><i style="background: var(--danger-bg)"></i>排咗下架</span>
+                        <span><i style="background: var(--danger-bg)"></i>已排下架</span>
                     </div>
                 </div>
             </section>
@@ -685,7 +686,7 @@
                             </tbody>
                         </table>
                         <p class="hint">
-                            第 3 行示範「指定日全部下架」時嘅寫法（同一時間只會出一種）
+                            第 3 行示範「指定日全部下架」的寫法（同一時間只會顯示其中一種）
                         </p>
                     </div>
                 </div>
@@ -709,22 +710,21 @@
                     <hr class="divider" />
                     <div class="label">下架</div>
                     <div class="seg" role="group" aria-label="下架方式">
-                        <button aria-pressed="false">唔下架</button>
+                        <button aria-pressed="false">不下架</button>
                         <button aria-pressed="false">指定日全部下架</button>
                         <button aria-pressed="false">每集上架 N 日後下架</button>
-                        <button aria-pressed="true">逢星期 X 落 N 集</button>
+                        <button aria-pressed="true">逢星期 X 下架 N 集</button>
                     </div>
                     <div class="sentence">
                         由 <input class="field" value="14/12/2026" /> 起，逢
                         <span class="wd"
                             ><span>日</span><span class="on">一</span><span>二</span><span>三</span
                             ><span>四</span><span>五</span><span>六</span></span
-                        >，每次落 <input class="field num" value="6" /> 集
+                        >，每次下架 <input class="field num" value="6" /> 集
                     </div>
                     <hr class="divider" />
                     <div class="label">
-                        方案
-                        A：按集數切段（每段同一日上、同一日落）。批次大細唔同就會切到好碎：呢個例子
+                        方案 A：按集數切段（每段同日上架、同日下架）。批次大小不同時會切得很碎：此例
                         30 集切成 10 段
                     </div>
                     <div class="strip">
@@ -733,62 +733,72 @@
                                 <span class="ep on">1</span><span class="ep on">…</span
                                 ><span class="ep on">5</span>
                             </div>
-                            <span class="when">上 16/11</span><span class="when red">落 14/12</span>
+                            <span class="when">上架 16/11</span
+                            ><span class="when red">下架 14/12</span>
                         </div>
                         <div class="group">
                             <div class="eps"><span class="ep on">6</span></div>
-                            <span class="when">上 23/11</span><span class="when red">落 14/12</span>
+                            <span class="when">上架 23/11</span
+                            ><span class="when red">下架 14/12</span>
                         </div>
                         <div class="group">
                             <div class="eps">
                                 <span class="ep on">7</span><span class="ep on">…</span
                                 ><span class="ep on">10</span>
                             </div>
-                            <span class="when">上 23/11</span><span class="when red">落 21/12</span>
+                            <span class="when">上架 23/11</span
+                            ><span class="when red">下架 21/12</span>
                         </div>
                         <div class="group">
                             <div class="eps">
                                 <span class="ep on">11</span><span class="ep on">12</span>
                             </div>
-                            <span class="when">上 30/11</span><span class="when red">落 21/12</span>
+                            <span class="when">上架 30/11</span
+                            ><span class="when red">下架 21/12</span>
                         </div>
                         <div class="group">
                             <div class="eps">
                                 <span class="ep on">13</span><span class="ep on">…</span
                                 ><span class="ep on">15</span>
                             </div>
-                            <span class="when">上 30/11</span><span class="when red">落 28/12</span>
+                            <span class="when">上架 30/11</span
+                            ><span class="when red">下架 28/12</span>
                         </div>
                         <div class="group">
                             <div class="eps">
                                 <span class="ep on">16</span><span class="ep on">…</span
                                 ><span class="ep on">18</span>
                             </div>
-                            <span class="when">上 7/12</span><span class="when red">落 28/12</span>
+                            <span class="when">上架 7/12</span
+                            ><span class="when red">下架 28/12</span>
                         </div>
                         <div class="group">
                             <div class="eps">
                                 <span class="ep on">19</span><span class="ep on">20</span>
                             </div>
-                            <span class="when">上 7/12</span><span class="when red">落 4/1</span>
+                            <span class="when">上架 7/12</span
+                            ><span class="when red">下架 4/1</span>
                         </div>
                         <div class="group">
                             <div class="eps">
                                 <span class="ep on">21</span><span class="ep on">…</span
                                 ><span class="ep on">24</span>
                             </div>
-                            <span class="when">上 14/12</span><span class="when red">落 4/1</span>
+                            <span class="when">上架 14/12</span
+                            ><span class="when red">下架 4/1</span>
                         </div>
                         <div class="group">
                             <div class="eps"><span class="ep on">25</span></div>
-                            <span class="when">上 14/12</span><span class="when red">落 11/1</span>
+                            <span class="when">上架 14/12</span
+                            ><span class="when red">下架 11/1</span>
                         </div>
                         <div class="group">
                             <div class="eps">
                                 <span class="ep on">26</span><span class="ep on">…</span
                                 ><span class="ep on">30</span>
                             </div>
-                            <span class="when">上 21/12</span><span class="when red">落 11/1</span>
+                            <span class="when">上架 21/12</span
+                            ><span class="when red">下架 11/1</span>
                         </div>
                     </div>
                     <div class="batches">
@@ -877,8 +887,8 @@
                             </tbody>
                         </table>
                         <p class="hint">
-                            好處：每集上幾耐一眼睇到。壞處：上落批次唔夾就好碎，同 admin 設嘅「每次
-                            5 集 / 每次 6 集」對唔返
+                            好處：每集上架多久一目了然。壞處：上下架批次不一致時會被切得很碎，與設定的「每次
+                            5 集 / 每次 6 集」不對應
                         </p>
                     </div>
                     <hr class="divider" />
@@ -894,7 +904,7 @@
                                 <span class="ep on">1</span><span class="ep on">…</span
                                 ><span class="ep on">5</span>
                             </div>
-                            <span class="when">上 第 1–5 集</span>
+                            <span class="when">上架 第 1–5 集</span>
                         </div>
                         <div class="group">
                             <span class="when" style="font-weight: 600; color: var(--ink)"
@@ -904,7 +914,7 @@
                                 <span class="ep on">6</span><span class="ep on">…</span
                                 ><span class="ep on">10</span>
                             </div>
-                            <span class="when">上 第 6–10 集</span>
+                            <span class="when">上架 第 6–10 集</span>
                         </div>
                         <div class="group">
                             <span class="when" style="font-weight: 600; color: var(--ink)"
@@ -914,7 +924,7 @@
                                 <span class="ep on">11</span><span class="ep on">…</span
                                 ><span class="ep on">15</span>
                             </div>
-                            <span class="when">上 第 11–15 集</span>
+                            <span class="when">上架 第 11–15 集</span>
                         </div>
                         <div class="group">
                             <span class="when" style="font-weight: 600; color: var(--ink)"
@@ -924,7 +934,7 @@
                                 <span class="ep on">16</span><span class="ep on">…</span
                                 ><span class="ep on">20</span>
                             </div>
-                            <span class="when">上 第 16–20 集</span>
+                            <span class="when">上架 第 16–20 集</span>
                         </div>
                         <div class="group">
                             <span class="when" style="font-weight: 600; color: var(--ink)"
@@ -934,12 +944,12 @@
                                 <span class="ep on">21</span><span class="ep on">…</span
                                 ><span class="ep on">25</span>
                             </div>
-                            <span class="when">上 第 21–25 集</span>
+                            <span class="when">上架 第 21–25 集</span>
                             <div class="eps">
                                 <span class="ep off">1</span><span class="ep off">…</span
                                 ><span class="ep off">6</span>
                             </div>
-                            <span class="when red">落 第 1–6 集</span>
+                            <span class="when red">下架 第 1–6 集</span>
                         </div>
                         <div class="group">
                             <span class="when" style="font-weight: 600; color: var(--ink)"
@@ -949,12 +959,12 @@
                                 <span class="ep on">26</span><span class="ep on">…</span
                                 ><span class="ep on">30</span>
                             </div>
-                            <span class="when">上 第 26–30 集</span>
+                            <span class="when">上架 第 26–30 集</span>
                             <div class="eps">
                                 <span class="ep off">7</span><span class="ep off">…</span
                                 ><span class="ep off">12</span>
                             </div>
-                            <span class="when red">落 第 7–12 集</span>
+                            <span class="when red">下架 第 7–12 集</span>
                         </div>
                         <div class="group">
                             <span class="when" style="font-weight: 600; color: var(--ink)"
@@ -964,7 +974,7 @@
                                 <span class="ep off">13</span><span class="ep off">…</span
                                 ><span class="ep off">18</span>
                             </div>
-                            <span class="when red">落 第 13–18 集</span>
+                            <span class="when red">下架 第 13–18 集</span>
                         </div>
                         <div class="group">
                             <span class="when" style="font-weight: 600; color: var(--ink)"
@@ -974,7 +984,7 @@
                                 <span class="ep off">19</span><span class="ep off">…</span
                                 ><span class="ep off">24</span>
                             </div>
-                            <span class="when red">落 第 19–24 集</span>
+                            <span class="when red">下架 第 19–24 集</span>
                         </div>
                         <div class="group">
                             <span class="when" style="font-weight: 600; color: var(--ink)"
@@ -984,7 +994,7 @@
                                 <span class="ep off">25</span><span class="ep off">…</span
                                 ><span class="ep off">30</span>
                             </div>
-                            <span class="when red">落 第 25–30 集</span>
+                            <span class="when red">下架 第 25–30 集</span>
                         </div>
                     </div>
                     <div class="batches">
@@ -1046,12 +1056,12 @@
                             </tbody>
                         </table>
                         <p class="hint">
-                            好處：同 admin 設嘅規則一一對應（每次上 5 集、每次落 6
-                            集），批次唔夾都唔會碎；同日上落一行睇晒。壞處：要對住睇先知某一集上咗幾耐
+                            好處：與設定的規則一一對應（每次上架 5 集、每次下架 6
+                            集），批次不一致也不會切碎；同日上下架一行即可看清。壞處：須對照日期才知道某一集上架多久
                         </p>
                     </div>
                     <p class="hint">
-                        兩個方案都會驗證：任何一集嘅下架日唔可以早過或者等於佢嘅上架日；有衝突就標紅、唔准儲存
+                        兩個方案均會驗證：任何一集的下架日不可早於或等於其上架日；如有衝突會以紅色標示，並不能儲存
                     </p>
                     <div class="savebar">
                         <button class="btn">↶ 復原</button><button class="btn primary">儲存</button>
@@ -1132,10 +1142,10 @@
                             <h3>下架</h3>
                             <div class="scope">可下架：第 1–15 集（已上架）</div>
                             <div class="seg" role="group" aria-label="下架方式">
-                                <button aria-pressed="false">唔下架</button>
+                                <button aria-pressed="false">不下架</button>
                                 <button aria-pressed="false">指定日全部</button>
                                 <button aria-pressed="false">上架 N 日後</button>
-                                <button aria-pressed="true">逢星期 X 落 N 集</button>
+                                <button aria-pressed="true">逢星期 X 下架 N 集</button>
                             </div>
                             <div class="sentence">
                                 由 <input class="field" value="14/12/2026" /> 起，逢
@@ -1143,7 +1153,7 @@
                                     ><span>日</span><span class="on">一</span><span>二</span
                                     ><span>三</span><span>四</span><span>五</span
                                     ><span>六</span></span
-                                >，每次落 <input class="field num" value="6" /> 集
+                                >，每次下架 <input class="field num" value="6" /> 集
                             </div>
                             <div class="strip">
                                 <div class="group">
@@ -1199,7 +1209,7 @@
                                 <span class="ep on">16</span><span class="ep on">…</span
                                 ><span class="ep on">20</span>
                             </div>
-                            <span class="when">上 第 16–20 集</span>
+                            <span class="when">上架 第 16–20 集</span>
                         </div>
                         <div class="group">
                             <span class="when" style="font-weight: 600; color: var(--ink)"
@@ -1209,12 +1219,12 @@
                                 <span class="ep on">21</span><span class="ep on">…</span
                                 ><span class="ep on">25</span>
                             </div>
-                            <span class="when">上 第 21–25 集</span>
+                            <span class="when">上架 第 21–25 集</span>
                             <div class="eps">
                                 <span class="ep off">1</span><span class="ep off">…</span
                                 ><span class="ep off">6</span>
                             </div>
-                            <span class="when red">落 第 1–6 集</span>
+                            <span class="when red">下架 第 1–6 集</span>
                         </div>
                         <div class="group">
                             <span class="when" style="font-weight: 600; color: var(--ink)"
@@ -1224,12 +1234,12 @@
                                 <span class="ep on">26</span><span class="ep on">…</span
                                 ><span class="ep on">30</span>
                             </div>
-                            <span class="when">上 第 26–30 集</span>
+                            <span class="when">上架 第 26–30 集</span>
                             <div class="eps">
                                 <span class="ep off">7</span><span class="ep off">…</span
                                 ><span class="ep off">12</span>
                             </div>
-                            <span class="when red">落 第 7–12 集</span>
+                            <span class="when red">下架 第 7–12 集</span>
                         </div>
                         <div class="group">
                             <span class="when" style="font-weight: 600; color: var(--ink)"
@@ -1239,7 +1249,7 @@
                                 <span class="ep off">13</span><span class="ep off">…</span
                                 ><span class="ep off">15</span>
                             </div>
-                            <span class="when red">落 第 13–15 集</span>
+                            <span class="when red">下架 第 13–15 集</span>
                         </div>
                     </div>
                     <div class="batches">
