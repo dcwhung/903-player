@@ -1,11 +1,11 @@
-# 903-player-api（Backend Phase 2a / 2b / 3a）
+# 903-player-api（Backend Phase 2a / 2b / 3a / 3b）
 
 Cloudflare Worker：管理 catalog 內容（D1）、publish `catalog.json`（R2）、代出 `catalog.json` 同圖畀 player。
-Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a）。
+Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a、3b）。
 
 | 路徑                               | 用途                                                                   | 權限                          |
 | ---------------------------------- | ---------------------------------------------------------------------- | ----------------------------- |
-| `/`（`public/`）                   | Ops 頁：login、而家 publish 緊乜、Publish、記錄 / 還原                 | 公開（資料要 login）          |
+| `/`、`/shows`…（`../admin/dist`）  | Admin SPA（`apps/admin`）：掃描、待辦、編輯、確認發佈、上下架記錄      | 公開（資料要 login）          |
 | `/auth/google/start`、`/callback`  | Google login（Authorization Code + PKCE）                              | 公開                          |
 | `POST /auth/logout`                | 登出                                                                   | same-origin                   |
 | `GET /api/health`                  | `{ ok, version }`                                                      | 公開                          |
@@ -38,6 +38,17 @@ npm run dev                    # wrangler dev --local-protocol https → https:/
 - 本機 Google login 要 Google Cloud OAuth client 有 redirect URI `https://localhost:8787/auth/google/callback`（setup 時加咗嘅係 `http://…`，要另外加 https 版）
 - Player 對住本機 Worker：`VITE_CATALOG_URL=https://localhost:8787/catalog/v1/catalog.json npm run dev`（`.dev.vars` 嘅 `PLAYER_ORIGINS` 已包 `http://localhost:5173`）
 
+### Admin SPA（Phase 3b）
+
+`apps/admin`（React SPA）由同一個 Worker 嘅 static assets 出（`wrangler.toml` `[assets] directory = "../admin/dist"`，`not_found_handling = "single-page-application"`，`run_worker_first = ["/api/*", "/auth/*", "/catalog/*"]`）：
+
+- 搵唔到檔案嘅路徑（`/dramas/lancy/schedule` 等）回 `index.html`，由 SPA router 處理；`/auth/google/callback` 成功照舊 redirect `/`
+- 版本 pill 顯示呢個 package（`apps/api/package.json`）嘅 version：同一個 Worker deploy，一個版本號
+- **Deploy 前一定要 build admin**：`npm run build:admin`（repo 根）；`deploy-api.yml` 喺 `wrangler deploy` 之前自動 build，`apps/admin/**` 有改都會觸發 deploy
+- Worker test（`vitest.config.ts`）會開個空 `apps/admin/dist`：wrangler 要個資料夾存在，test 唔使真 SPA
+- 本機：`npm run build:admin && npm run dev -w apps/api` → https://localhost:8787 直接用 admin；或者 `npm run dev:admin`（Vite，http://localhost:5173，proxy `/api` `/auth` `/catalog` 去 wrangler dev，改寫 Origin 過 same-origin 守門），先喺 https://localhost:8787 login（cookie 唔分 port）
+- 舊 ops 頁（`public/`）已經退役：發佈、記錄、還原全部喺 admin；唔喺 whitelist 嘅「冇權限」頁樣式改為 inline
+
 Test（Worker code 喺 workerd 跑，`@cloudflare/vitest-plugin`；scripts 喺 Node）：
 
 ```sh
@@ -59,7 +70,7 @@ npx tsc -b apps/api             # type check
 0. 先等 Actions → **Deploy API** 喺 `main` 最新嗰次 run 綠咗先 import（migrations 要 apply 咗先，否則 SQL 寫入新欄 / 新表會 fail）
 1. Branch 揀 `main`（其他 branch 會即刻 fail），**dry run** 保持剔住 → Run：淨係讀 D1、印出要跑嘅 wrangler 指令，唔上載、唔寫 D1
 2. 睇 run 嘅 Summary（幾多 entries、幾多張圖要上載、幾多個 wrangler step）冇問題 → 再 Run 一次，**剔走 dry run** = 真 import
-3. Import 完去 ops 頁撳 **Publish**，player 先會讀到
+3. Import 完去 admin「更新內容 → 確認發佈」撳 **發佈**，player 先會讀到
 
 用同 `deploy-api.yml` 一樣嘅 GitHub secret `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`（D1 + Workers R2 Storage：Edit 已經夠），只交畀 import 嗰一步；兩次 import 唔會同時跑（排隊）。
 
@@ -72,7 +83,7 @@ npm run import -- --remote --dry-run     # production：淨係印指令（會讀
 npm run import -- --remote               # production（要 `npx wrangler login` 或者 CLOUDFLARE_API_TOKEN）
 ```
 
-Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `library/` 只係 player 內建 fallback；Phase 3 admin 未有之前要改內容 → 改 repo JSON → merge 入 `main` → 重跑 import（Import catalog workflow）→ Publish。
+Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `library/` 只係 player 內建 fallback；日常改內容用 admin（`apps/admin`）；repo JSON → import 只係初始化 / 災難復原用。
 
 ## 第一次 deploy（merge 之後）
 
@@ -84,7 +95,7 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
     （或者 `cd apps/api && npx wrangler secret put GOOGLE_CLIENT_SECRET`）。Secret 唔好貼落 chat / repo。
 
 3. 開 `https://903-player-api.dcwhung.workers.dev/` → 用 Google 登入（只有 `ADMIN_EMAILS` 入面嘅 email 得）
-4. GitHub → Actions → **Import catalog** → Run workflow（先 dry run，冇問題再剔走 dry run 跑；見上面「Import」，local 可以用 `npm run import -- --remote`）→ ops 頁撳 **Publish**（第一次冇上次 publish，ID 守衛自動過）
+4. GitHub → Actions → **Import catalog** → Run workflow（先 dry run，冇問題再剔走 dry run 跑；見上面「Import」，local 可以用 `npm run import -- --remote`）→ admin 撳 **發佈**（第一次冇上次 publish，ID 守衛自動過）
 
 `SESSION_SECRET` 只係簽 OAuth state cookie（10 分鐘）；換咗佢唔會踢走已 login 嘅 session（session token 喺 D1）。
 
@@ -113,7 +124,7 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 - Publish 用 D1 而家嘅 entries；player 最多 60 秒內讀到（Worker edge cache 喺 publish 時即刻清）
 - **ID 守衛**：上次 publish 有、今次冇嘅 episode ID → 拒絕（409 + 列出 ID）。聽緊嗰啲集嘅用戶會冇咗進度 / 收藏，確定先剔「照樣 publish」（`?force=1`）
 - 還原 = 重新寫舊 snapshot（新一行 publish，`rollback_of` 記住來源）；D1 entries 唔郁
-- 內容（除 `generatedAt` 外）同最新一次一樣 → `{ unchanged: true, publish }`，唔開新行、唔寫 R2（ops 頁顯示「內容冇變」）；`?force=1` 照寫
+- 內容（除 `generatedAt` 外）同最新一次一樣 → `{ unchanged: true, publish }`，唔開新行、唔寫 R2（admin 顯示「內容與目前版本相同」）；`?force=1` 照寫
 - 次序：先記 `publishes` 一行，再寫 R2；R2 寫失敗就刪返嗰行（ID 守衛唔會漏咗已上線嘅 ID）；連刪都失敗就標 `status = 'failed'`（migration `0003`）。「而家 publish 緊」、ID 守衛、「內容冇變」比較都只睇最新一行 `status = 'ok'`，記錄照列出 failed 行（`status` 欄）
 - 圖 manifest 嘅圖檔名要合 `<sha256 前 16 hex>.<webp|jpg>` 兼已經喺 `assets`
 
@@ -166,7 +177,7 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 
 ```sh
 npm run dev -w apps/api   # 另一個 terminal
-# ops 頁 login 後喺 DevTools 抄 __Host-session cookie
+# admin login 後喺 DevTools 抄 __Host-session cookie
 curl -k -X PUT https://localhost:8787/api/assets -H 'Origin: https://localhost:8787' \
   -H 'Content-Type: image/webp' -H 'Cookie: __Host-session=<token>' --data-binary @disc.webp
 ```
@@ -176,7 +187,7 @@ curl -k -X PUT https://localhost:8787/api/assets -H 'Origin: https://localhost:8
 | 項目                                            | 到期                                                     | 要做                                                                                                 |
 | ----------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Cloudflare API token `903-player-github-deploy` | 開 token 起 **1 年**（2026-11-08 開）                    | Cloudflare → My Profile → API Tokens 開新 token（同樣權限）→ 換 GitHub secret `CLOUDFLARE_API_TOKEN` |
-| Google OAuth client                             | **6 個月冇用**會被 Google 刪（刪咗 30 日內可以 restore） | 最少半年 login 一次 ops 頁；被刪就喺 Google Cloud Console → Credentials restore                      |
+| Google OAuth client                             | **6 個月冇用**會被 Google 刪（刪咗 30 日內可以 restore） | 最少半年 login 一次 admin；被刪就喺 Google Cloud Console → Credentials restore                       |
 | Google consent screen Testing 模式              | —                                                        | 只有 test user 登入得（同 whitelist 一致）；加 admin 要同時加 test user 同 `ADMIN_EMAILS`            |
 
 ## Admin API（Phase 3a）

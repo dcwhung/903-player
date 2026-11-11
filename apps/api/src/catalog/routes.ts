@@ -22,7 +22,7 @@ import {
 
 const POSITIVE_INT = /^[1-9]\d*$/;
 
-/** ops 頁用嘅 camelCase；current = 最新嗰個（R2 而家嘅 catalog.json） */
+/** admin 用嘅 camelCase；current = 最新嗰個（R2 而家嘅 catalog.json） */
 const summary = (row: PublishRow, current: boolean) => ({
     id: row.id,
     createdAt: row.created_at,

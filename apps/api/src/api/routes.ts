@@ -1,4 +1,4 @@
-/* /api/*：ops 頁 API。註冊次序 = 守門次序：health 公開 → same-origin → session */
+/* /api/*：admin API。註冊次序 = 守門次序：health 公開 → same-origin → session */
 import { Hono } from 'hono';
 import pkg from '../../package.json';
 import type { AppEnv } from '../app';

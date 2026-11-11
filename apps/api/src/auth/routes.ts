@@ -46,7 +46,7 @@ const finishLogin = async (c: Context<AppEnv>, code: string, verifier: string) =
 };
 
 authRoutes.get('/google/callback', async (c) => {
-    // 用戶喺 Google 撳取消（error=access_denied）：返 ops 頁
+    // 用戶喺 Google 撳取消（error=access_denied）：返 admin 首頁
     if (c.req.query('error')) return c.redirect('/', HTTP_STATUS.found);
     const cookie = getCookie(c, OAUTH_COOKIE);
     deleteCookie(c, OAUTH_COOKIE, HOST_COOKIE);

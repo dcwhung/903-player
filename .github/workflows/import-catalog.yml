@@ -2,7 +2,7 @@ name: Import catalog
 
 # 手動跑 apps/api/scripts/importLibrary.mjs --remote：repo library → production D1 + R2（idempotent，可以重跑）。
 # 用戶冇 local clone 都可以 import：Actions → Import catalog → Run workflow（先 dry run，睇清楚再剔走 dry run 跑真嘅）。
-# 只准喺 main 跑；import 完要去 ops 頁撳 Publish，player 先會讀到（見 apps/api/README.md）。
+# 只准喺 main 跑；import 完要去 admin 撳「發佈」，player 先會讀到（見 apps/api/README.md）。
 # Secrets 只畀 import 嗰一步（npm ci 嘅 lifecycle script 攞唔到 token）。
 on:
     workflow_dispatch:

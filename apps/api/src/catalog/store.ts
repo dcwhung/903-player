@@ -143,7 +143,7 @@ export const insertPublish = async (db: D1Database, row: NewPublish): Promise<Pu
     return inserted;
 };
 
-/** 新到舊（唔包 document，ops 頁 history 用） */
+/** 新到舊（唔包 document，admin 上下架記錄用） */
 export const listPublishes = async (db: D1Database): Promise<PublishRow[]> =>
     (
         await db
