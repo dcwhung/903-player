@@ -1,5 +1,14 @@
 import { parseWebp, WebpError } from '../src/assets/webp';
-import { webpVp8, webpVp8l, webpVp8x } from './webp';
+import {
+    chunk,
+    riffOf,
+    vp8lPayload,
+    vp8Payload,
+    vp8xPayload,
+    webpVp8,
+    webpVp8l,
+    webpVp8x,
+} from './webp';
 
 const ascii = (text: string) => new TextEncoder().encode(text);
 
@@ -48,5 +57,40 @@ describe('parseWebp', () => {
         const lossless = webpVp8l(600, 600);
         lossless[20] = 0;
         expect(() => parseWebp(lossless)).toThrow(/signature/);
+    });
+
+    // S-795：header 啱但冇圖像 / 唔係 keyframe 嘅檔都要擋（admin 會 decode，server 做輕量檢查）
+    const header = chunk('VP8X', vp8xPayload(600, 600));
+    const ALPHA = chunk('ALPH', [0, 0]);
+
+    it('should reject a VP8X file without an image chunk (S-795)', () => {
+        expect(() => parseWebp(riffOf([header]))).toThrow(/image/);
+        expect(() => parseWebp(riffOf([header, chunk('EXIF', [0, 0])]))).toThrow(/image/);
+        // ALPH 只係 VP8 嘅 alpha，單獨唔算圖
+        expect(() => parseWebp(riffOf([header, ALPHA]))).toThrow(/image/);
+    });
+
+    it('should accept VP8X with ALPH + VP8, VP8L, or metadata around the image (S-795)', () => {
+        const size = { width: 600, height: 600 };
+        const lossy = chunk('VP8 ', vp8Payload(600, 600));
+        expect(parseWebp(riffOf([header, ALPHA, lossy]))).toEqual(size);
+        expect(parseWebp(riffOf([header, chunk('VP8L', vp8lPayload(600, 600))]))).toEqual(size);
+        expect(parseWebp(riffOf([header, chunk('ICCP', [1, 2, 3]), lossy]))).toEqual(size);
+    });
+
+    it('should reject a VP8 frame that is not a keyframe (S-795)', () => {
+        const interframe = chunk('VP8 ', vp8Payload(600, 600, 0x31));
+        expect(() => parseWebp(riffOf([interframe]))).toThrow(/keyframe/);
+        expect(() => parseWebp(riffOf([header, interframe]))).toThrow(/keyframe/);
+    });
+
+    it('should reject a broken image chunk inside VP8X (S-795)', () => {
+        const broken = chunk('VP8L', vp8lPayload(600, 600));
+        broken[8] = 0;
+        expect(() => parseWebp(riffOf([header, broken]))).toThrow(/signature/);
+        // 圖像 chunk 宣告嘅長度超出 RIFF
+        const long = chunk('VP8 ', vp8Payload(600, 600));
+        long[4] = 0xff;
+        expect(() => parseWebp(riffOf([header, long]))).toThrow(WebpError);
     });
 });
