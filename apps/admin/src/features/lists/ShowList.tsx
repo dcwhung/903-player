@@ -1,8 +1,9 @@
 /*
  * 節目列表：Design Origin: mockup: _mockups_/admin/index.html#s2c
- * 兩欄（名稱、狀態）；meta = 播出日；拖 ⠿ 排序（放手即存）；已下架固定排最底、唔可以拖
+ * 兩欄（名稱、狀態）；meta = 播出日 +（播放時間）；成行撳入編輯頁（3c）；拖 ⠿ 排序（放手即存）；
+ * 已下架固定排最底、唔可以拖；底下圖例
  */
-import { formatAirDays, type Weekday } from '@903-player/catalog';
+import { formatAirTime } from '@903-player/catalog';
 import { useNavigate } from 'react-router-dom';
 import type { LoadedEntry } from '../../api/types';
 import { useAdminData } from '../../data/AdminData';
@@ -10,16 +11,18 @@ import { t } from '../../i18n/t';
 import { changeFlagsOf, groupEntries, type ChangeFlags } from '../../model/listModel';
 import { Pill } from '../../ui/Pill';
 import type { SortableRender } from '../../ui/SortableList';
+import { airDaysOf as airDaysIn, airTimeOf } from '../shows/showModel';
 import { EntryName } from './EntryName';
+import { ListLegend } from './ListLegend';
+import { rowClickTo } from './rowClick';
 import { ListTitle } from './ListTitle';
 import { LockedHandle } from './LockedHandle';
 import { UnpublishedNote } from './UnpublishedNote';
 import { SortableEntries } from './SortableEntries';
 
-const airDaysOf = (entry: LoadedEntry) =>
-    formatAirDays(
-        (Array.isArray(entry.definition.airDays) ? entry.definition.airDays : []) as Weekday[],
-    );
+/** 「星期一至五（15:00 - 16:30）」；冇播放時間就淨係星期幾 */
+const airMetaOf = (entry: LoadedEntry) =>
+    formatAirTime(airDaysIn(entry.definition), airTimeOf(entry.definition));
 
 function ShowRow({
     entry,
@@ -31,14 +34,16 @@ function ShowRow({
     sortable?: SortableRender;
 }) {
     const off = entry.definition.enabled === false;
+    const navigate = useNavigate();
     return (
         <li
             ref={sortable?.setNodeRef}
             style={sortable?.style}
-            className={`row${sortable?.isDragging ? ' is-dragging' : ''}`}
+            className={`row clickable${sortable?.isDragging ? ' is-dragging' : ''}`}
+            onClick={rowClickTo(() => navigate(`/shows/${entry.id}`))}
         >
             {sortable ? sortable.handle : <LockedHandle />}
-            <EntryName entry={entry} flags={flags} meta={airDaysOf(entry)} />
+            <EntryName entry={entry} flags={flags} meta={airMetaOf(entry)} />
             <div className="pills">
                 <Pill tone={off ? 'bad' : 'ok'} dot>
                     {off ? t('status.off') : t('status.showLive')}
@@ -88,6 +93,7 @@ export function ShowList() {
                     </>
                 )}
             </div>
+            <ListLegend dots={['live', 'off']} />
         </>
     );
 }

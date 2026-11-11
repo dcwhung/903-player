@@ -1,6 +1,6 @@
-/* 廣播劇列表表頭 + 圖例（mockup ⑤ .drama-head / .legend） */
+/* 廣播劇列表表頭 + 圖例（mockup ⑤ .drama-head / .legend；3c 圖例改真顏色點） */
 import { t } from '../../i18n/t';
-import { Pill } from '../../ui/Pill';
+import { ListLegend } from './ListLegend';
 
 export function DramaListHead() {
     return (
@@ -15,16 +15,5 @@ export function DramaListHead() {
 }
 
 export function DramaLegend() {
-    return (
-        <div className="legend">
-            <span>
-                <Pill tone="draft">{t('status.pending')}</Pill>
-            </span>
-            <span>
-                <Pill tone="new">{t('status.newArc')}</Pill>
-            </span>
-            <span>{t('list.legendDot')}</span>
-            <span>{t('list.legendDrag')}</span>
-        </div>
-    );
+    return <ListLegend dots={['live', 'soon', 'off']} newArcs />;
 }
