@@ -370,6 +370,7 @@ export const zhHK = {
         rollbackTo: '還原至 #{id}',
         confirmTitle: '還原至 #{id}？',
         confirmBody: '還原至 #{id}：當時上架的內容會恢復上架，之後新增的會設為下架。',
+        confirmNote: '只會還原上架狀態；名稱、簡介、圖片、集數及排程會維持目前版本。',
         empty: '尚未有發佈記錄。',
         noChanges: '沒有內容變更',
     },

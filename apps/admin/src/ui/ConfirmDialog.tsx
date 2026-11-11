@@ -9,6 +9,8 @@ import { useDialogFocus } from './useDialogFocus';
 interface ConfirmDialogProps {
     title: string;
     body: string;
+    /** 補充提示（例如還原嘅限制），以 warn 樣式顯示喺 body 下面 */
+    note?: string;
     confirmLabel: string;
     danger?: boolean;
     onConfirm: () => void;
@@ -18,6 +20,7 @@ interface ConfirmDialogProps {
 export function ConfirmDialog({
     title,
     body,
+    note,
     confirmLabel,
     danger = false,
     onConfirm,
@@ -30,6 +33,7 @@ export function ConfirmDialog({
             <div className="card" role="dialog" aria-modal="true" aria-labelledby={titleId}>
                 <h3 id={titleId}>{title}</h3>
                 <p className="sub">{body}</p>
+                {note && <p className="note warn">{note}</p>}
                 <div className="actions end">
                     <button type="button" ref={cancelRef} onClick={onCancel}>
                         {t('editor.cancel')}

@@ -29,6 +29,9 @@ describe('HistoryPage rollback', () => {
         expect(screen.getByRole('dialog')).toHaveTextContent(
             '還原至 #1：當時上架的內容會恢復上架，之後新增的會設為下架。',
         );
+        expect(screen.getByRole('dialog')).toHaveTextContent(
+            '只會還原上架狀態；名稱、簡介、圖片、集數及排程會維持目前版本。',
+        );
         await userEvent.click(screen.getByRole('button', { name: '還原' }));
         await waitFor(() => expect(data.refresh).toHaveBeenCalled());
         expect(api.mock.calls.some(([url]) => url === '/api/publishes/1/rollback')).toBe(true);

@@ -104,6 +104,10 @@ const todoFlowCheck = (browser) =>
         await page.getByText('使用中').waitFor();
         await page.getByText('#3', { exact: true }).waitFor();
         await shoot(page, 'history');
+        await page.getByRole('button', { name: '還原至 #2' }).click();
+        await page.getByText('只會還原上架狀態').waitFor();
+        await shoot(page, 'rollback-confirm');
+        await page.getByRole('button', { name: '取消' }).click();
         const confirm = JSON.stringify(state.confirms);
         if (confirm !== '[{"dramaId":"lancy","arcId":"lancy-02"}]')
             throw new Error(`confirm-id calls: ${confirm}`);

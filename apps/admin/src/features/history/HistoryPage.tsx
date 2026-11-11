@@ -80,6 +80,7 @@ export function HistoryPage() {
                 <ConfirmDialog
                     title={t('history.confirmTitle', { id: confirming })}
                     body={t('history.confirmBody', { id: confirming })}
+                    note={t('history.confirmNote')}
                     confirmLabel={t('history.rollback')}
                     onConfirm={() => void onConfirm(confirming)}
                     onCancel={() => setConfirming(null)}
