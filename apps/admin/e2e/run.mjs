@@ -273,15 +273,121 @@ const showListCheck = (browser) =>
         await page.close();
     });
 
-const scheduleCheck = (browser) =>
-    check('schedule tab previews future batches after 今天', async () => {
+const SCHEDULE_PARTLY = `${BASE}/dramas/golden/schedule#s2`;
+const SCHEDULE_ALL_LISTED = `${BASE}/dramas/golden/schedule#s1`;
+
+/** 兩個 panel 嘅左上角：並排 = 同一行、上下排 = 同一列 */
+const panelBoxes = async (page) =>
+    Promise.all(
+        ['上架', '下架'].map(async (name) =>
+            page
+                .locator('section.panel', { has: page.getByRole('heading', { name }) })
+                .boundingBox(),
+        ),
+    );
+
+const scheduleEditCheck = (browser) =>
+    check(
+        'schedule 編輯 (mockup ⑧): 上架 / 下架 panels side by side, stacked under 900px',
+        async () => {
+            const page = await newPage(browser, loggedIn());
+            await page.goto(SCHEDULE_PARTLY);
+            await page.getByText('可上架：第 16–30 集（共 15 集）').waitFor();
+            await page
+                .getByText('可下架：第 1–15 集（已上架）· 第 16–30 集（已排程上架）')
+                .waitFor();
+            if (
+                (await page
+                    .getByRole('button', { name: '編輯', exact: true })
+                    .getAttribute('aria-pressed')) !== 'true'
+            )
+                throw new Error('編輯 not selected');
+            await page.getByRole('button', { name: '每週 1 次' }).click();
+            await page.getByRole('spinbutton', { name: '每次上架集數' }).fill('5');
+            await page.getByRole('button', { name: '逢星期 X 下架 N 集' }).click();
+            await page.getByRole('spinbutton', { name: '每次下架集數' }).fill('6');
+            await page.getByText('✓ 已上架').waitFor();
+            const listed = page
+                .getByRole('group', { name: '上架時間軸' })
+                .locator('.seg-batch.listed');
+            if ((await listed.count()) !== 1) throw new Error('listed episodes not one grey group');
+            const offCells = page
+                .getByRole('group', { name: '下架時間軸' })
+                .locator('.seg-batch.off');
+            if ((await offCells.count()) === 0) throw new Error('no unlist batches');
+            if ((await page.getByRole('alert').count()) > 0)
+                throw new Error('error shown before 儲存');
+            const [up, down] = await panelBoxes(page);
+            if (!up || !down || Math.abs(up.y - down.y) > 1 || down.x <= up.x)
+                throw new Error('panels not side by side');
+            await shoot(page, 'schedule-edit', { fullPage: true });
+            await page.setViewportSize({ width: 860, height: 860 });
+            const [upNarrow, downNarrow] = await panelBoxes(page);
+            if (!upNarrow || !downNarrow || downNarrow.y <= upNarrow.y)
+                throw new Error('panels not stacked under 900px');
+            await page.close();
+        },
+    );
+
+const schedulePreviewCheck = (browser) =>
+    check('schedule 預覽 (mockup ⑨): merged timeline, 上下架批次 table, cell tooltip', async () => {
         const page = await newPage(browser, loggedIn());
-        await page.goto(`${BASE}/dramas/lancy/schedule#lancy-02`);
-        await page.getByRole('button', { name: '逢一三五 · 每次 5 集' }).click();
-        const future = page.getByRole('group', { name: '今天之後的批次' });
-        await future.locator('.seg-batch').first().waitFor();
-        if (await page.getByText(/無法預覽/).isVisible()) throw new Error('preview failed');
-        await shoot(page, 'schedule', { fullPage: true });
+        await page.goto(SCHEDULE_PARTLY);
+        await page.getByRole('button', { name: '每週 1 次' }).click();
+        await page.getByRole('spinbutton', { name: '每次上架集數' }).fill('5');
+        await page.getByRole('button', { name: '逢星期 X 下架 N 集' }).click();
+        await page.getByRole('spinbutton', { name: '每次下架集數' }).fill('6');
+        await page.getByRole('button', { name: '預覽' }).click();
+        if (await page.getByRole('heading', { name: '上架' }).isVisible())
+            throw new Error('edit panels still shown in 預覽');
+        const heads = await page.locator('table.batches th').allTextContents();
+        if (heads.join() !== '日期,上架,下架') throw new Error(`table columns ${heads}`);
+        await page.locator('table.batches .pill.info').first().waitFor();
+        await page.locator('table.batches .pill.bad').first().waitFor();
+        const cell = page.getByRole('img', { name: /^第 16 集：.+ 上架，.+ 下架，共 \d+ 日$/ });
+        await cell.first().hover();
+        const tip = page.locator('.tip-pop');
+        await tip.waitFor();
+        if (!/^第 16 集：\d+\/\d+ 上架，\d+\/\d+ 下架，共 \d+ 日$/.test(await tip.textContent()))
+            throw new Error(`tooltip: ${await tip.textContent()}`);
+        await shoot(page, 'schedule-preview', { fullPage: true });
+        await page.close();
+    });
+
+const scheduleAllListedCheck = (browser) =>
+    check('schedule: every episode listed → only 下架 can be set', async () => {
+        const page = await newPage(browser, loggedIn());
+        await page.goto(SCHEDULE_ALL_LISTED);
+        await page.getByText('✓ 已全部上架（1/10 四 · 第 1–35 集）').waitFor();
+        if (await page.getByRole('group', { name: '快速套用' }).isVisible())
+            throw new Error('presets shown for an arc already listed');
+        if ((await page.getByText(/每次上架/).count()) > 0)
+            throw new Error('listing sentence shown');
+        await page.getByRole('button', { name: '指定日全部' }).click();
+        await page.getByText('全部下架').waitFor();
+        await page.getByRole('group', { name: '下架時間軸' }).waitFor();
+        await shoot(page, 'schedule-all-listed', { fullPage: true });
+        await page.close();
+    });
+
+const scheduleConflictCheck = (browser) =>
+    check('schedule: an unlist date not after listing pops an error only on 儲存', async () => {
+        const page = await newPage(browser, loggedIn());
+        await page.goto(SCHEDULE_ALL_LISTED);
+        await page.getByRole('button', { name: '指定日全部' }).click();
+        await page.getByLabel('下架日期').fill('2026-09-01');
+        await page.getByText('全部下架').waitFor();
+        if ((await page.getByRole('alert').count()) > 0) throw new Error('error shown before 儲存');
+        await page.getByRole('button', { name: '儲存' }).click();
+        const alert = page.getByRole('alert');
+        await alert.waitFor();
+        const text = await alert.textContent();
+        if (
+            text !==
+            '無法儲存：第 1 集的下架日期（1/9 二）必須遲於其上架日期（1/10 四），請修改下架設定。'
+        )
+            throw new Error(`alert: ${text}`);
+        await shoot(page, 'schedule-conflict', { fullPage: true });
         await page.close();
     });
 
@@ -782,7 +888,7 @@ const unreleasedScheduleCheck = (browser) =>
             if ((await tab.getAttribute('aria-selected')) !== 'true')
                 throw new Error('arc not selected');
             await page.locator('.strip-unreleased').waitFor();
-            if ((await page.locator('.seg-batch.past').count()) > 0)
+            if ((await page.locator('.seg-batch.listed').count()) > 0)
                 throw new Error('disabled unscheduled arc shows released batches');
             for (const scheme of ['light', 'dark']) {
                 await page.emulateMedia({ colorScheme: scheme });
@@ -995,7 +1101,10 @@ try {
         reorderCheck,
         newDramaDialogCheck,
         showListCheck,
-        scheduleCheck,
+        scheduleEditCheck,
+        schedulePreviewCheck,
+        scheduleAllListedCheck,
+        scheduleConflictCheck,
         presetChipCheck,
         realImagesCheck,
         missingFolderCheck,

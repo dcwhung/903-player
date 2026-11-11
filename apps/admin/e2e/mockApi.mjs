@@ -40,6 +40,8 @@ const json = (route, body, { status = 200, etag } = {}) =>
 
 const HK_OFFSET_MS = 8 * 60 * 60 * 1000;
 const hkToday = () => new Date(Date.now() + HK_OFFSET_MS).toISOString().slice(0, 10);
+const daysFromToday = (days) =>
+    new Date(Date.now() + HK_OFFSET_MS + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 const show = (id, name, order, extra = {}) => ({
     kind: 'shows',
@@ -96,7 +98,22 @@ const golden = () => ({
         enabled: true,
         order: 2,
         addedAt: '2026-10-01',
-        arcs: [{ id: 's1', name: 'Season 1', episodes: 35 }],
+        arcs: [
+            // 全部已上架（跟劇集 1/10）：排程 tab 只可以設下架
+            { id: 's1', name: 'Season 1', episodes: 35 },
+            // 第 1–15 集已上架（3 批），第 16 集起 6 日後先上架（mockup ⑧）
+            {
+                id: 's2',
+                name: 'Season 2',
+                episodes: 30,
+                addedAt: daysFromToday(-21),
+                episodeDates: {
+                    6: daysFromToday(-14),
+                    11: daysFromToday(-7),
+                    16: daysFromToday(6),
+                },
+            },
+        ],
     },
     images: {},
     draft: false,
