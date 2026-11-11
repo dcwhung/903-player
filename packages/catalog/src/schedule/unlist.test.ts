@@ -179,18 +179,18 @@ describe('expandSchedule — episodes already unlisted (mockup ⑤)', () => {
 
 describe('expandSchedule — unlist date not after the listing date', () => {
     it('should reject an episode unlisted on or before its own listing day', () => {
-        // 第 6 集 23/11 上架；逢一每次下架 6 集由 16/11 起 → 第 6 集 16/11 下架（早過上架）
+        // 第 1–5 集 16/11、第 6 集 23/11 上架；由 17/11 起逢一每次下架 6 集 → 第 1–6 集 23/11 下架（第 6 集當日上架當日落）
         const rule: ScheduleRule = {
             ...MONDAYS,
             unlist: {
                 kind: 'periodic',
-                start: '2026-11-16',
+                start: '2026-11-17',
                 perRelease: 6,
                 every: { weekdays: [1] },
             },
         };
         expect(() => expandSchedule(rule, SPAN(30))).toThrow(
-            'episode 6 unlist date 2026-11-16 must be later than its listing date 2026-11-23',
+            'episode 6 unlist date 2026-11-23 must be later than its listing date 2026-11-23',
         );
     });
 
