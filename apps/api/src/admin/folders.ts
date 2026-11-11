@@ -2,7 +2,8 @@
  * R2 資料夾配對（admin「需要處理」/ 編輯頁 dropdown）：
  * - GET /api/folders/unmapped：AUDIO 頂層冇劇用緊嘅資料夾
  * - POST /api/dramas/:id/folder { folder }：劇集改用呢個資料夾 → 即刻重新掃描嗰套劇，同一個 batch 寫入；
- *   「資料夾唔見」finding 刪走
+ *   「資料夾唔見」finding 刪走。配對返同一個資料夾又冇新嘢（冇 diff）= 冇改動：200 + unchanged，
+ *   entry 唔郁（updated_at / ETag 照舊），只刪 finding（S-801）
  */
 import { hkToday } from '@903-player/catalog';
 import { Hono, type Context } from 'hono';
@@ -73,6 +74,18 @@ const pairable = async (c: Context<AppEnv>, id: string) => {
     return { entry, stored, audio: stored.audio };
 };
 
+/** 冇 diff：entry 唔寫，淨刪「資料夾唔見」finding（entry 冇被人改過先刪） */
+const keepUnchanged = async (c: Context<AppEnv>, entry: StoredEntry) => {
+    await deleteMissingFolderStatement(c.env.DB, entry.id, entry.updated_at).run();
+    const body = {
+        unchanged: true,
+        definition: JSON.parse(entry.definition) as Json,
+        updatedAt: entry.updated_at,
+        findings: [],
+    };
+    return c.json(body, HTTP_STATUS.ok, { etag: etagOf(entry.updated_at) });
+};
+
 /** 換資料夾 + 重新掃描，一個 batch 寫（連刪「資料夾唔見」finding） */
 const commitPairing = async (
     c: Context<AppEnv>,
@@ -83,10 +96,11 @@ const commitPairing = async (
     const definition = { ...stored, audio: { ...audio, folder } };
     const options = { folder, today: hkToday(now), now: now.toISOString(), definition };
     const plan = await planRescan(c.env, entry, options);
-    if (plan.errors.length > 0 || !plan.updatedAt)
+    if (plan.errors.length > 0)
         return errorResponse(c, HTTP_STATUS.unprocessable, 'folder scan failed', {
             issues: plan.errors,
         });
+    if (!plan.updatedAt) return keepUnchanged(c, entry);
     const clear = deleteMissingFolderStatement(c.env.DB, entry.id, plan.updatedAt);
     const results = await c.env.DB.batch([...plan.statements, clear]);
     if ((results[0]?.meta.changes ?? 0) === 0) return preconditionFailed(c);

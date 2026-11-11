@@ -14,6 +14,7 @@ import {
     type AudioNaming,
 } from './shared';
 import type { DraftArc, Issue } from './types';
+import type { ScanWording } from './wording';
 
 /**
  * 短篇入面人手 / 排程寫嘅欄位照留（id 另外處理，固定放第一個）。上下架日子唔可以因為重新掃描而靜靜雞冇咗（W-705）；
@@ -38,6 +39,7 @@ const PLACEHOLDER_ARC_WIDTH = 2;
 
 export interface MergeContext extends AudioNaming {
     today: string;
+    wording: ScanWording;
 }
 
 export interface DailyEpisodeJson {
@@ -140,9 +142,6 @@ const mergeArc = (old: DraftArc, fresh: DraftArc, ctx: MergeContext, issues: Iss
     return merged;
 };
 
-const missingArcIssue = (name: string): Issue =>
-    issue('warn', name, '本機 folder 冇呢個短篇；已保留原設定，如果真係落咗架請手動刪');
-
 /** 舊短篇照原次序，folder 冇嘅保留兼提示；新短篇加喺尾，addedAt = 今日 */
 export const mergeArcs = (
     oldArcs: readonly DraftArc[],
@@ -154,7 +153,7 @@ export const mergeArcs = (
     const kept = oldArcs.map((old) => {
         const match = fresh.get(old.name);
         if (!match) {
-            issues.push(missingArcIssue(old.name));
+            issues.push(issue('warn', old.name, ctx.wording.missingArc));
             return old;
         }
         fresh.delete(old.name);
@@ -172,10 +171,11 @@ export const mergeDaily = (
     oldEpisodes: readonly DailyEpisodeJson[],
     dates: readonly string[],
     issues: Issue[],
+    wording: ScanWording,
 ): DailyEpisodeJson[] => {
     const old = new Map(oldEpisodes.map((e) => [e.date, e]));
     const missing = oldEpisodes.filter((e) => !dates.includes(e.date));
-    missing.forEach((e) => issues.push(issue('warn', e.date, '本機 folder 冇呢日；已保留')));
+    missing.forEach((e) => issues.push(issue('warn', e.date, wording.missingDay)));
     const merged = [...dates.map((date) => old.get(date) ?? { date }), ...missing];
     return merged.sort((a, b) => b.date.localeCompare(a.date));
 };

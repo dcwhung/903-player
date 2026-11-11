@@ -3,6 +3,7 @@ import { renderFileName } from '../dramas/filename';
 import { findSuspicious, parseEpisodeFileName, type ParsedEpisodeFile } from './names';
 import { issue, rangeOf, SERIES_TEMPLATES, seriesTokens } from './shared';
 import type { ArcScan, ArcSummary, DraftArc, DramaScan, Issue } from './types';
+import type { ScanWording } from './wording';
 
 /** 短篇正常由第 0 集（前傳）或者第 1 集開始 */
 const USUAL_FIRST_NOS = new Set([0, 1]);
@@ -21,8 +22,10 @@ export interface SeriesAnalysis {
     summaries: ArcSummary[];
 }
 
-export const nameIssues = (where: string, rawName: string): Issue[] =>
-    findSuspicious(rawName).map((message) => issue('warn', where, `「${rawName}」${message}`));
+export const nameIssues = (where: string, rawName: string, wording: ScanWording): Issue[] =>
+    findSuspicious(rawName, wording).map((message) =>
+        issue('warn', where, `「${rawName}」${message}`),
+    );
 
 /** 檔名 → 集；讀唔到 / 集數對唔上嘅記低錯誤 */
 const parseArcFiles = (arc: ArcScan, issues: Issue[]): ParsedEpisodeFile[] =>
@@ -42,10 +45,10 @@ const parseArcFiles = (arc: ArcScan, issues: Issue[]): ParsedEpisodeFile[] =>
     });
 
 /** 一個名有幾多種可疑之處就報幾多次（同一種只報第一個例子），唔好洗版 */
-const fileNameIssues = (arc: ArcScan): Issue[] => {
+const fileNameIssues = (arc: ArcScan, wording: ScanWording): Issue[] => {
     const seen = new Map<string, Issue>();
     arc.audio.forEach((file) =>
-        findSuspicious(file).forEach((message) => {
+        findSuspicious(file, wording).forEach((message) => {
             const kind = message.replace(/「.*?」|\(U\+[0-9A-F]+\)/g, '');
             if (!seen.has(kind))
                 seen.set(kind, issue('warn', arc.name, `檔名「${file}」${message}`));
@@ -75,10 +78,10 @@ const numberingIssues = (arc: ArcScan, episodes: readonly ParsedEpisodeFile[]): 
 };
 
 /** 讀短篇：解析檔名 + 所有檢查（未揀 template） */
-const readSeriesArc = (arc: ArcScan): ReadArc => {
-    const issues = nameIssues(arc.name, arc.rawName);
+const readSeriesArc = (arc: ArcScan, wording: ScanWording): ReadArc => {
+    const issues = nameIssues(arc.name, arc.rawName, wording);
     const episodes = parseArcFiles(arc, issues);
-    issues.push(...fileNameIssues(arc), ...numberingIssues(arc, episodes));
+    issues.push(...fileNameIssues(arc, wording), ...numberingIssues(arc, episodes));
     episodes.sort((a, b) => a.no - b.no);
     return { arc, episodes, issues };
 };
@@ -165,8 +168,12 @@ const summaryOf = ({ arc, episodes }: ReadArc): ArcSummary => ({
 });
 
 /** 讀晒每個短篇 → 揀 template（existing 有就用佢嘅）→ 砌 arcs */
-export const analyseSeries = (scan: DramaScan, template: string | undefined): SeriesAnalysis => {
-    const read = scan.arcs.map(readSeriesArc);
+export const analyseSeries = (
+    scan: DramaScan,
+    template: string | undefined,
+    wording: ScanWording,
+): SeriesAnalysis => {
+    const read = scan.arcs.map((arc) => readSeriesArc(arc, wording));
     const chosen = template ?? chooseTemplate(scan.name, read);
     const issues = read.flatMap((r) => [...r.issues, ...labelIssues(chosen, scan.name, r)]);
     const arcs = read.map(({ arc, episodes }) => {

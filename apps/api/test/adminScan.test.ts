@@ -1,6 +1,7 @@
 /* POST /api/scan（Phase 3a）：入 admin 自動掃 R2，有變先寫 D1 + finding */
 import { env } from 'cloudflare:test';
 import { hkToday } from '@903-player/catalog';
+import { insertFindingStatement } from '../src/admin/findings';
 import { adminRequest, call, loginCookie } from './helpers';
 import { drama, putEntry, seed } from './fixtures';
 
@@ -126,6 +127,38 @@ describe('POST /api/scan', () => {
         expect((await scan()).body.findings).toEqual([]);
     });
 
+    it('should still create a drama for a new folder unrelated to the missing one (S-800)', async () => {
+        await env.AUDIO.delete([1, 2, 3].map((no) => episodeKey(FOLDER, 'Season 1', no)));
+        // 改名候選（同一個短篇名）擋住；另一套完全唔同嘅劇照建
+        await upload([episodeKey('黃金少年 (新)', 'Season 1', 1), episodeKey('新劇', '第一部', 1)]);
+        const { body } = await scan();
+        const created = await entry('drama-01');
+        expect(JSON.parse(created?.definition ?? '{}')).toMatchObject({
+            name: '新劇',
+            audio: { folder: '新劇' },
+        });
+        expect(await entry('drama-02')).toBeNull();
+        expect((body.findings as Json[]).map((f) => [f.kind, f.dramaId])).toEqual([
+            ['missingFolder', 'golden'],
+            ['newDrama', 'drama-01'],
+        ]);
+    });
+
+    it('should hold back a daily folder sharing dates with a missing daily drama (S-800)', async () => {
+        await putEntry('dramas', 'daily', {
+            ...drama(1),
+            kind: 'daily',
+            audio: { host: 'r2', folder: '每日劇', file: '{yyyymmdd}.m4a' },
+            arcs: undefined,
+            episodes: [{ date: '2026-10-21' }, { date: '2026-10-20' }],
+        });
+        await upload(['每日劇 v2/20261021.m4a', '另一日播/20261101.m4a']);
+        await scan();
+        const created = await entry('drama-01');
+        expect(JSON.parse(created?.definition ?? '{}')).toMatchObject({ name: '另一日播' });
+        expect(await entry('drama-02')).toBeNull();
+    });
+
     it('should skip a drama whose folder has errors, writing nothing for it', async () => {
         await upload([
             episodeKey(FOLDER, 'Season 1', 4).replace('/04', '/05').replace('第四集', '第五集'),
@@ -144,5 +177,49 @@ describe('POST /api/scan', () => {
             headers: { cookie: await loginCookie() },
         });
         expect(response.status).toBe(403);
+    });
+});
+
+/*
+ * S-802：兩個 scan 喺同一 ms 計到同一個 guard（updated_at），輸咗嗰個嘅 finding 都過到 guard。
+ * D1 batch 係逐個 transaction 執行，第二個 insert 睇到第一個寫咗嘅 open finding 就唔再寫
+ */
+describe('insertFindingStatement (S-802)', () => {
+    const now = '2026-11-11T00:00:00.000Z';
+    const guarded = (detail: Json) =>
+        insertFindingStatement(
+            env.DB,
+            { kind: 'newEpisodes', dramaId: 'golden', arcId: 'season-1', detail },
+            { createdAt: now, guard: '2026-11-08T00:00:00Z' },
+        );
+
+    it('should not write the same open finding twice when two scans race', async () => {
+        const first = await guarded({ episodes: { first: 4, last: 4 } }).run();
+        const second = await guarded({ episodes: { first: 4, last: 4 } }).run();
+        expect(first.results).toHaveLength(1);
+        expect(second.results).toEqual([]);
+        expect(await findingRows()).toHaveLength(1);
+    });
+
+    it('should still write a different finding, or the same one once the old is resolved', async () => {
+        expect((await adminRequest('POST', '/api/publish')).status).toBe(200);
+        await guarded({ episodes: { first: 4, last: 4 } }).run();
+        await guarded({ episodes: { first: 5, last: 5 } }).run();
+        expect(await findingRows()).toHaveLength(2);
+        await env.DB.prepare('UPDATE scan_findings SET resolved_publish_id = 1').run();
+        await guarded({ episodes: { first: 4, last: 4 } }).run();
+        expect(await findingRows()).toHaveLength(3);
+    });
+
+    it('should not flag the same missing folder twice', async () => {
+        const missing = () =>
+            insertFindingStatement(
+                env.DB,
+                { kind: 'missingFolder', dramaId: 'golden', detail: { folder: FOLDER } },
+                { createdAt: now },
+            ).run();
+        await missing();
+        await missing();
+        expect(await findingRows()).toHaveLength(1);
     });
 });

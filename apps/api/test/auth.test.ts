@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:test';
 import { afterEach, vi } from 'vitest';
 import { SESSION_TTL_MS } from '../src/config';
+import apiPackage from '../package.json';
 import { ADMIN, ORIGIN, call, cookiePair, googleClaims, idToken, loginCookie } from './helpers';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -133,7 +134,7 @@ describe('GET /auth/google/callback', () => {
         expect(page).toContain('沒有權限');
         expect(page).toContain('並非管理員。');
         expect(page).toContain('src="/banner.webp"');
-        expect(page).toContain('Admin v0.6.1');
+        expect(page).toContain(`Admin v${apiPackage.version}`);
         expect(page).not.toMatch(/<link[^>]+\.css/);
         // admin 揀咗嘅淺 / 深色（同一個 localStorage key）
         expect(page).toContain("localStorage.getItem('admin.theme')");
@@ -198,9 +199,79 @@ describe('GET /auth/google/callback', () => {
     });
 });
 
+/** S-809：login 之後返深連結；next 放喺 HMAC 簽名嘅 state cookie，callback 先再用 */
+describe('login deep link (S-809)', () => {
+    const loginWith = async (next: string) => {
+        const { location, cookie } = await start(`?next=${encodeURIComponent(next)}`);
+        mockGoogle(googleClaims(ADMIN));
+        const response = await callback(location.searchParams.get('state') ?? '', cookie);
+        expect(response.status).toBe(302);
+        return response.headers.get('location');
+    };
+
+    it('should go back to a same-site path with its query and hash', async () => {
+        expect(await loginWith('/dramas/golden?tab=schedule#arc-1')).toBe(
+            '/dramas/golden?tab=schedule#arc-1',
+        );
+    });
+
+    it('should fall back to / for anything that could leave the site or loop into /auth', async () => {
+        const unsafe = [
+            '//evil.com',
+            '/\\evil',
+            '/\\/evil.com',
+            'https://evil.com/x',
+            'evil.com',
+            '/auth/me',
+            '/auth',
+            '/ok\nLocation: x',
+            '/tab\there',
+            '',
+        ];
+        for (const next of unsafe) expect(await loginWith(next), next).toBe('/');
+    });
+
+    it('should keep next out of reach of tampering (signed with the state)', async () => {
+        const { location, cookie } = await start('?next=%2Fshows');
+        const [payload = '', signature = ''] = (cookie.split('=')[1] ?? '').split('.');
+        const value = JSON.parse(atob(payload.replaceAll('-', '+').replaceAll('_', '/'))) as Record<
+            string,
+            unknown
+        >;
+        expect(value.next).toBe('/shows');
+        const forged = btoa(JSON.stringify({ ...value, next: '//evil.com' }))
+            .replaceAll('+', '-')
+            .replaceAll('/', '_')
+            .replace(/=+$/, '');
+        mockGoogle(googleClaims(ADMIN));
+        const response = await callback(
+            location.searchParams.get('state') ?? '',
+            `__Host-oauth=${forged}.${signature}`,
+        );
+        expect(response.status).toBe(400);
+    });
+
+    it('should still send a cancelled login home', async () => {
+        await start('?next=%2Fshows');
+        const response = await call('/auth/google/callback?error=access_denied');
+        expect(response.headers.get('location')).toBe('/');
+    });
+});
+
 describe('session guard', () => {
     it('should keep /api/health public', async () => {
         expect((await call('/api/health')).status).toBe(200);
+    });
+
+    // S-774：Worker 出嘅頁 / API 唔准被 frame；淨係 frame-ancestors，唔會擋 inline theme script（S-815）
+    it('should refuse framing on /auth and /api responses without restricting scripts', async () => {
+        const { location, cookie } = await start();
+        mockGoogle(googleClaims('someone@gmail.com'));
+        const denied = await callback(location.searchParams.get('state') ?? '', cookie);
+        for (const response of [denied, await call('/api/health'), await call('/api/me')]) {
+            expect(response.headers.get('x-frame-options')).toBe('DENY');
+            expect(response.headers.get('content-security-policy')).toBe("frame-ancestors 'none'");
+        }
     });
 
     it('should answer 401 on /api/* without a session', async () => {

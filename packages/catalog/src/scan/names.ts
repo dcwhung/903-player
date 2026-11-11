@@ -3,6 +3,7 @@
  * 同 dramas/filename.ts 嘅 template 規則一致
  */
 import { toChineseNumeral } from '../dramas/filename';
+import { wordingOf, type ScanWording } from './wording';
 
 const MAX_CHINESE_NUMERAL = 99;
 const HEX_WIDTH = 4;
@@ -76,15 +77,12 @@ const CHARACTER_TRAPS: readonly [RegExp, (ch: string) => string][] = [
 ];
 
 /** 一個名有咩可疑之處（冇就空 array） */
-export const findSuspicious = (name: string): string[] => {
+export const findSuspicious = (name: string, wording: ScanWording = wordingOf()): string[] => {
     const found = CHARACTER_TRAPS.flatMap(([pattern, describe]) => {
         const match = pattern.exec(name);
         return match ? [describe(match[0])] : [];
     });
-    if (name !== name.normalize('NFC'))
-        found.push(
-            'Unicode 係 NFD 分解形式（macOS 常見）；drama.json 會用 NFC，上載後請用 --verify 確認',
-        );
+    if (name !== name.normalize('NFC')) found.push(wording.nfd);
     if (/^\s|\s$/u.test(name)) found.push('頭尾有空格');
     if (/ {2,}/.test(name)) found.push('有連續空格');
     return found;
