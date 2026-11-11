@@ -87,8 +87,17 @@ const validationFailed = (c: Context<AppEnv>, error: unknown) => {
 };
 
 /**
- * 驗證（draft 先試完整驗證，唔過再用寬鬆驗證）+ 計 warning；唔合格 → 422 response。
- * 回傳嘅 draft = 存入去之後仲係唔係 draft（完整驗證過咗就自動清）
+ * 可唔可以寬鬆驗證：掃描建嘅 draft 劇（上架都得：排程可以同時轉上架，圖喺待辦跟）；
+ * 或者下架嘅 entry（admin 新建節目 / 劇，圖未齊）。上架嘅節目一定要完整驗證（圖要齊）
+ */
+const mayRelax = (entry: EntryInput, wasDraft: boolean) =>
+    (wasDraft && entry.kind === 'dramas') || entry.definition.enabled === false;
+
+/**
+ * 驗證（draft 或者下架嘅 entry 先試完整驗證，唔過再用寬鬆驗證）+ 計 warning；唔合格 → 422 response。
+ * 回傳嘅 draft = 存入去之後仲係唔係 draft（完整驗證過咗就自動清）。
+ * 下架（enabled: false）都可以寬鬆：admin 新建節目 / 劇未上載圖（或者淨係上載咗一張）都要存到；
+ * 圖未齊嘅變 draft，publish 唔包；上架就一定要完整驗證（圖要齊）
  */
 export const checkedEntry = async (c: Context<AppEnv>, entry: EntryInput, wasDraft = false) => {
     const context = { origin: c.env.WORKER_ORIGIN, assets: await listAssetHashes(c.env.DB) };
@@ -97,7 +106,7 @@ export const checkedEntry = async (c: Context<AppEnv>, entry: EntryInput, wasDra
     try {
         ids = validateEntry(entry, context);
     } catch (error) {
-        if (!wasDraft) return validationFailed(c, error);
+        if (!mayRelax(entry, wasDraft)) return validationFailed(c, error);
         try {
             ids = validateEntry(entry, context, { relaxed: true });
             draft = true;
@@ -175,7 +184,7 @@ const save = async (
     const row = rowOf(entry);
     const statement = existing
         ? updateEntryStatement(c.env.DB, row, { expected: existing.updated_at, updatedAt, draft })
-        : insertEntryStatement(c.env.DB, row, updatedAt);
+        : insertEntryStatement(c.env.DB, row, updatedAt, draft);
     const result = await statement.run();
     return result.meta.changes > 0 ? updatedAt : undefined;
 };
@@ -194,7 +203,7 @@ entryRoutes.put('/entries/:kind/:id', async (c) => {
             ? await droppedScheduledArc(c.env.DB, existing, entry.definition)
             : undefined;
     if (scheduledArc !== undefined) return arcScheduled(c, scheduledArc);
-    // 新增一律完整驗證（draft 只係掃描自動建）
+    // 新增：上架嘅完整驗證；下架嘅圖未齊照存做 draft（admin 新建節目 / 劇）
     const checked = await checkedEntry(c, entry, mode === 'update' && existing?.draft === 1);
     if (checked instanceof Response) return checked;
     const { warnings, draft } = checked;
