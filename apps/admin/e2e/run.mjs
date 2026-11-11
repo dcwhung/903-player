@@ -432,7 +432,15 @@ const savebarCheck = (browser) =>
         const whole = await boxOf(bar);
         if (revert.x - whole.x > 4) throw new Error('復原 is not at the far left');
         if (note.x < whole.x + whole.width / 2) throw new Error('dirty note is not on the right');
-        await shoot(page, 'arc-savebar', { clip: whole });
+        const pad = 12;
+        await shoot(page, 'arc-savebar', {
+            clip: {
+                x: whole.x - pad,
+                y: whole.y - pad,
+                width: whole.width + pad * 2,
+                height: whole.height + pad * 2,
+            },
+        });
         await page.close();
     });
 

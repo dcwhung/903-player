@@ -891,9 +891,10 @@ textarea.autosize {
 }
 
 .crop .out.disc {
-    height: 100%;
+    /* 4:3 格入面（扣 padding）放得落嘅最大圓 */
+    width: 64%;
+    height: auto;
     aspect-ratio: 1;
-    width: auto;
     border-radius: 50%;
 }
 
