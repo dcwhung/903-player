@@ -319,6 +319,54 @@
                 font-weight: 600;
                 color: var(--muted);
             }
+
+            /* ⑧ 左右 panel */
+            .split {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+            @media (max-width: 900px) {
+                .split {
+                    grid-template-columns: 1fr;
+                }
+            }
+            .panel {
+                border: 1px solid var(--line);
+                border-radius: 16px;
+                padding: 14px 16px;
+                display: grid;
+                gap: 12px;
+                align-content: start;
+            }
+            .panel.up {
+                border-top: 4px solid var(--primary);
+            }
+            .panel.down {
+                border-top: 4px solid var(--danger);
+            }
+            .panel h3 {
+                margin: 0;
+                font-size: 16px;
+            }
+            .scope {
+                font-size: 13px;
+                padding: 6px 10px;
+                border-radius: 10px;
+                background: var(--surface-2);
+            }
+            .panel .sentence {
+                font-size: 15px;
+            }
+            .viewbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .btn.sm {
+                padding: 5px 12px;
+                font-size: 13px;
+            }
         </style>
     </head>
     <body>
@@ -1007,6 +1055,226 @@
                     </p>
                     <div class="savebar">
                         <button class="btn">↶ 復原</button><button class="btn primary">儲存</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑧ 定稿方向：方案 B，上架 / 下架左右 panel -->
+            <section>
+                <p class="state-label">
+                    ⑧ 方案 B 定稿方向（今日 = 1/12）：上架、下架分左右兩個
+                    panel，各自有句子同時間軸。上架只處理未上架嘅集數；下架只處理已上架嘅集數；兩邊頂部寫明可處理嘅集數。右上角「合併檢視」一撳就睇返
+                    ⑨ 嘅合併時間軸
+                </p>
+                <div class="card">
+                    <div class="chips">
+                        <span class="arc-chip">戀愛二分一<small>無排程</small></span>
+                        <span class="arc-chip on">我心不死<small>排程中</small></span>
+                    </div>
+                    <div class="viewbar">
+                        <span class="hint">第 1–15 集已上架 · 第 16–30 集未上架</span>
+                        <div class="seg" role="group" aria-label="檢視">
+                            <button aria-pressed="true">分開檢視</button>
+                            <button aria-pressed="false">合併檢視</button>
+                        </div>
+                    </div>
+                    <div class="split">
+                        <div class="panel up">
+                            <h3>上架</h3>
+                            <div class="scope">可上架：第 16–30 集（15 集未上架）</div>
+                            <div class="chips">
+                                <span class="arc-chip" style="padding: 4px 10px"
+                                    >一次過全部上架</span
+                                >
+                                <span class="arc-chip" style="padding: 4px 10px">每日 1 集</span>
+                                <span class="arc-chip" style="padding: 4px 10px">每週 1 次</span>
+                            </div>
+                            <div class="sentence">
+                                由 <input class="field" value="7/12/2026" /> 起，逢
+                                <span class="wd"
+                                    ><span>日</span><span class="on">一</span><span>二</span
+                                    ><span>三</span><span>四</span><span>五</span
+                                    ><span>六</span></span
+                                >，每次上 <input class="field num" value="5" /> 集
+                            </div>
+                            <div class="strip">
+                                <div class="group">
+                                    <div class="eps">
+                                        <span class="ep">1</span><span class="ep">…</span
+                                        ><span class="ep">15</span>
+                                    </div>
+                                    <span class="when">✓ 已上架</span>
+                                </div>
+                                <div class="group">
+                                    <div class="eps">
+                                        <span class="ep on">16</span><span class="ep on">…</span
+                                        ><span class="ep on">20</span>
+                                    </div>
+                                    <span class="when">7/12 一</span>
+                                </div>
+                                <div class="group">
+                                    <div class="eps">
+                                        <span class="ep on">21</span><span class="ep on">…</span
+                                        ><span class="ep on">25</span>
+                                    </div>
+                                    <span class="when">14/12 一</span>
+                                </div>
+                                <div class="group">
+                                    <div class="eps">
+                                        <span class="ep on">26</span><span class="ep on">…</span
+                                        ><span class="ep on">30</span>
+                                    </div>
+                                    <span class="when">21/12 一</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel down">
+                            <h3>下架</h3>
+                            <div class="scope">可下架：第 1–15 集（已上架）</div>
+                            <div class="seg" role="group" aria-label="下架方式">
+                                <button aria-pressed="false">唔下架</button>
+                                <button aria-pressed="false">指定日全部</button>
+                                <button aria-pressed="false">上架 N 日後</button>
+                                <button aria-pressed="true">逢星期 X 落 N 集</button>
+                            </div>
+                            <div class="sentence">
+                                由 <input class="field" value="14/12/2026" /> 起，逢
+                                <span class="wd"
+                                    ><span>日</span><span class="on">一</span><span>二</span
+                                    ><span>三</span><span>四</span><span>五</span
+                                    ><span>六</span></span
+                                >，每次落 <input class="field num" value="6" /> 集
+                            </div>
+                            <div class="strip">
+                                <div class="group">
+                                    <div class="eps">
+                                        <span class="ep off">1</span><span class="ep off">…</span
+                                        ><span class="ep off">6</span>
+                                    </div>
+                                    <span class="when red">14/12 一</span>
+                                </div>
+                                <div class="group">
+                                    <div class="eps">
+                                        <span class="ep off">7</span><span class="ep off">…</span
+                                        ><span class="ep off">12</span>
+                                    </div>
+                                    <span class="when red">21/12 一</span>
+                                </div>
+                                <div class="group">
+                                    <div class="eps">
+                                        <span class="ep off">13</span><span class="ep off">…</span
+                                        ><span class="ep off">15</span>
+                                    </div>
+                                    <span class="when red">28/12 一</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="savebar">
+                        <button class="btn">↶ 復原</button><button class="btn primary">儲存</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑨ 合併檢視 -->
+            <section>
+                <p class="state-label">
+                    ⑨ 撳「合併檢視」：兩個 panel 換成一條合併時間軸（每日一格：藍 = 上、紅 =
+                    落）+「上下架批次」表；設定要撳返「分開檢視」先改
+                </p>
+                <div class="card">
+                    <div class="viewbar">
+                        <span class="hint">第 1–15 集已上架 · 第 16–30 集未上架</span>
+                        <div class="seg" role="group" aria-label="檢視">
+                            <button aria-pressed="false">分開檢視</button>
+                            <button aria-pressed="true">合併檢視</button>
+                        </div>
+                    </div>
+                    <div class="strip">
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >7/12</span
+                            >
+                            <div class="eps">
+                                <span class="ep on">16</span><span class="ep on">…</span
+                                ><span class="ep on">20</span>
+                            </div>
+                            <span class="when">上 第 16–20 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >14/12</span
+                            >
+                            <div class="eps">
+                                <span class="ep on">21</span><span class="ep on">…</span
+                                ><span class="ep on">25</span>
+                            </div>
+                            <span class="when">上 第 21–25 集</span>
+                            <div class="eps">
+                                <span class="ep off">1</span><span class="ep off">…</span
+                                ><span class="ep off">6</span>
+                            </div>
+                            <span class="when red">落 第 1–6 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >21/12</span
+                            >
+                            <div class="eps">
+                                <span class="ep on">26</span><span class="ep on">…</span
+                                ><span class="ep on">30</span>
+                            </div>
+                            <span class="when">上 第 26–30 集</span>
+                            <div class="eps">
+                                <span class="ep off">7</span><span class="ep off">…</span
+                                ><span class="ep off">12</span>
+                            </div>
+                            <span class="when red">落 第 7–12 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >28/12</span
+                            >
+                            <div class="eps">
+                                <span class="ep off">13</span><span class="ep off">…</span
+                                ><span class="ep off">15</span>
+                            </div>
+                            <span class="when red">落 第 13–15 集</span>
+                        </div>
+                    </div>
+                    <div class="batches">
+                        <h4>上下架批次</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>上架</th>
+                                    <th>下架</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>7/12 一</td>
+                                    <td><span class="pill plan">第 16–20 集</span></td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td>14/12 一</td>
+                                    <td><span class="pill plan">第 21–25 集</span></td>
+                                    <td><span class="pill bad">第 1–6 集</span></td>
+                                </tr>
+                                <tr>
+                                    <td>21/12 一</td>
+                                    <td><span class="pill plan">第 26–30 集</span></td>
+                                    <td><span class="pill bad">第 7–12 集</span></td>
+                                </tr>
+                                <tr>
+                                    <td>28/12 一</td>
+                                    <td>—</td>
+                                    <td><span class="pill bad">第 13–15 集</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
