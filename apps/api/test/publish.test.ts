@@ -393,6 +393,88 @@ describe('GET /api/publishes + rollback (restore status into D1)', () => {
         expect(await pendingChanges()).toEqual([]);
     });
 
+    it('should refuse with 409 to restore a publish that never reached R2 (S-797)', async () => {
+        await env.DB.prepare(
+            "UPDATE publishes SET status = 'failed', error = 'R2 down' WHERE id = 1",
+        ).run();
+        const response = await adminPost('/api/publishes/1/rollback');
+        expect(response.status).toBe(409);
+        expect(await response.json()).toMatchObject({ error: 'publish 1 is not ok (failed)' });
+        expect((await history()).map((p) => p.id)).toEqual([2, 1]);
+    });
+
+    /** 第一個 batch（apply）之前，另一個 admin 改咗 entry：樂觀鎖輸 */
+    const editedBeforeApply = (kind: string, id: string) => {
+        let edited = false;
+        const db = new Proxy(env.DB, {
+            get: (target, key) => {
+                if (key !== 'batch') {
+                    const value = Reflect.get(target, key) as unknown;
+                    return typeof value === 'function' ? value.bind(target) : value;
+                }
+                return async (statements: D1PreparedStatement[]) => {
+                    if (!edited) {
+                        edited = true;
+                        await target
+                            .prepare(
+                                "UPDATE entries SET updated_at = '2099-01-01T00:00:00.000Z' WHERE kind = ? AND id = ?",
+                            )
+                            .bind(kind, id)
+                            .run();
+                    }
+                    return target.batch(statements);
+                };
+            },
+        });
+        return { ...env, DB: db };
+    };
+
+    it('should answer 412, put back the rows it wrote and publish nothing on a conflict (S-813)', async () => {
+        await putEntry('dramas', 'golden', { ...drama(4), enabled: false });
+        await putEntry('shows', 'badgirl', { ...SHOW, enabled: false });
+        await adminPost('/api/publish');
+        const raced = editedBeforeApply('shows', 'badgirl');
+        const { default: worker } = await import('../src/index');
+        const response = await worker.fetch(
+            new Request(new URL('/api/publishes/1/rollback', ORIGIN), {
+                method: 'POST',
+                headers: { cookie: await loginCookie(), origin: ORIGIN },
+            }),
+            raced,
+        );
+        expect(response.status).toBe(412);
+        // golden 寫咗之後寫返舊值；badgirl 係第二個 admin 嘅（冇被蓋）
+        expect((await stored('dramas', 'golden'))?.enabled).toBe(false);
+        expect((await stored('shows', 'badgirl'))?.enabled).toBe(false);
+        const badgirl = await env.DB.prepare(
+            "SELECT updated_at FROM entries WHERE kind = 'shows' AND id = 'badgirl'",
+        ).first<string>('updated_at');
+        expect(badgirl).toBe('2099-01-01T00:00:00.000Z');
+        expect((await history()).map((p) => p.id)).toEqual([3, 2, 1]);
+        expect(await pendingChanges()).toEqual([]);
+    });
+
+    it('should keep the restore when only the cache purge fails (S-814)', async () => {
+        await putEntry('dramas', 'golden', { ...drama(4), enabled: false });
+        await adminPost('/api/publish');
+        const purge = vi.spyOn(caches.default, 'delete').mockRejectedValue(new Error('cache down'));
+        const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        try {
+            const response = await adminPost('/api/publishes/1/rollback');
+            expect(response.status).toBe(200);
+            expect(await response.json()).toMatchObject({ publish: { id: 4, rollbackOf: 1 } });
+            // R2 已經寫咗還原版：D1 唔可以 revert，兩邊要夾
+            expect((await stored('dramas', 'golden'))?.enabled).toBe(true);
+            const golden = (await publishedDocument()).dramas.find((d) => d.id === 'golden');
+            expect(golden?.definition).toMatchObject({ enabled: true });
+            expect(await pendingChanges()).toEqual([]);
+            expect(log).toHaveBeenCalled();
+        } finally {
+            purge.mockRestore();
+            log.mockRestore();
+        }
+    });
+
     it('should answer 404 for an unknown publish', async () => {
         expect((await adminPost('/api/publishes/99/rollback')).status).toBe(404);
         expect((await adminPost('/api/publishes/abc/rollback')).status).toBe(404);
