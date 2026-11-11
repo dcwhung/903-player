@@ -48,12 +48,22 @@ const resultMeta = (image: PendingImage) =>
         kb: Math.max(1, Math.round(image.blob.size / BYTES_PER_KB)),
     });
 
-/** 一格：有邊框嘅圖 + 下面標題同說明 */
-function Pane({ title, lines, children }: { title: string; lines: string[]; children: ReactNode }) {
+/** 一格：有邊框嘅圖 + 下面標題同說明；bare = 唔要長方形框（碟面圓形自己有圓框） */
+function Pane({
+    title,
+    lines,
+    bare = false,
+    children,
+}: {
+    title: string;
+    lines: string[];
+    bare?: boolean;
+    children: ReactNode;
+}) {
     const titleId = useId();
     return (
         <figure className="pane" aria-labelledby={titleId}>
-            <div className="frame">{children}</div>
+            <div className={bare ? 'frame bare' : 'frame'}>{children}</div>
             <figcaption>
                 <strong id={titleId}>{title}</strong>
                 {lines.map((line) => (
@@ -78,6 +88,7 @@ function CropPreview({ slot, image }: { slot: ImageSlotKind; image: PendingImage
             </Pane>
             <Pane
                 title={t('images.previewResult')}
+                bare={slot === 'disc'}
                 lines={[
                     resultMeta(image),
                     t(image.crop ? 'images.previewCropped' : 'images.previewExact'),

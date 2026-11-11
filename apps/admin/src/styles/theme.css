@@ -890,12 +890,19 @@ textarea.autosize {
     object-fit: cover;
 }
 
+/* 碟面裁切後係圓形：唔要長方形框同底色，淨係圓框 */
+.crop .frame.bare {
+    border-color: transparent;
+    background: transparent;
+}
+
 .crop .out.disc {
     /* 4:3 格入面（扣 padding）放得落嘅最大圓 */
     width: 64%;
     height: auto;
     aspect-ratio: 1;
     border-radius: 50%;
+    border: 2px solid var(--media-border);
 }
 
 .crop .out.tile {
