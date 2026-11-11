@@ -77,4 +77,9 @@ export interface DraftOptions {
     existing?: unknown;
     /** 香港日期 YYYY-MM-DD（新短篇 / 新劇嘅 addedAt） */
     today: string;
+    /** listing 由邊度嚟：決定訊息字眼（S-785）；預設 folder（CLI） */
+    source?: ScanSource | undefined;
 }
+
+/** folder = CLI 掃本機 folder；r2 = API 掃 R2 資料夾 */
+export type ScanSource = 'folder' | 'r2';
