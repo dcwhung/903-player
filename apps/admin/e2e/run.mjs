@@ -426,6 +426,7 @@ const savebarCheck = (browser) =>
         await page.goto(`${BASE}/dramas/lancy/arcs#half`);
         await page.getByRole('textbox', { name: '簡介' }).first().fill('新簡介');
         const bar = page.locator('.savebar').filter({ hasText: '有未儲存的變更' });
+        await bar.scrollIntoViewIfNeeded();
         const revert = await boxOf(bar.getByRole('button', { name: '復原' }));
         const note = await boxOf(bar.getByText(/有未儲存的變更/));
         const whole = await boxOf(bar);
@@ -473,6 +474,26 @@ const newShowCheck = (browser) =>
             await page.getByText(/有未儲存的變更/).waitFor({ state: 'detached' });
             if (page.url() !== `${BASE}/shows/night`)
                 throw new Error('existing show left the editor');
+            await page.close();
+        },
+    );
+
+const arcLinkCheck = (browser) =>
+    check(
+        'drama list: arc name opens the arc in the arcs tab, row still opens the drama',
+        async () => {
+            const page = await newPage(browser, loggedIn());
+            await page.goto(`${BASE}/dramas`);
+            const arc = page.getByRole('link', { name: '我心不死' });
+            await arc.hover();
+            const line = await arc.evaluate((el) => getComputedStyle(el).textDecorationLine);
+            if (line !== 'underline') throw new Error(`arc link hover decoration: ${line}`);
+            await shoot(page, 'dramas-arc-hover');
+            await arc.click();
+            await page.waitForURL(`${BASE}/dramas/lancy/arcs#lancy-02`);
+            await page.goto(`${BASE}/dramas`);
+            await page.getByText('蘭茜夫人劇場').first().click();
+            await page.waitForURL(`${BASE}/dramas/lancy`);
             await page.close();
         },
     );
@@ -558,6 +579,7 @@ try {
         savebarCheck,
         todoRowCheck,
         newShowCheck,
+        arcLinkCheck,
         navCheck,
         reducedMotionCheck,
         autoNavCheck,
