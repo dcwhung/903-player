@@ -7,6 +7,9 @@ const json = (route, body, { status = 200, etag } = {}) =>
         body: JSON.stringify(body),
     });
 
+const HK_OFFSET_MS = 8 * 60 * 60 * 1000;
+const hkToday = () => new Date(Date.now() + HK_OFFSET_MS).toISOString().slice(0, 10);
+
 const show = (id, name, order, extra = {}) => ({
     kind: 'shows',
     id,
@@ -38,6 +41,14 @@ const lancy = () => ({
         arcs: [
             { id: 'half', name: '戀愛二分一', episodes: 30 },
             { id: 'lancy-02', name: '我心不死', episodes: 37, addedAt: '2026-11-01' },
+            // 掃描建嘅新短篇：addedAt = 掃描當日、下架、冇排程（排程 tab 要出「未上架」，唔係灰 ✓）
+            {
+                id: 'love-after',
+                name: '戀愛後二分一',
+                episodes: 20,
+                addedAt: hkToday(),
+                enabled: false,
+            },
         ],
     },
     images: {},
@@ -142,8 +153,23 @@ const publishRow = (id) => ({
     changes: changesOf({ publishes: [] }),
 });
 
+/** If-None-Match: * = 新增（admin 新節目）；同 apps/api 一樣回 201 */
+const createRoute = (state, route, request, [kind, id]) => {
+    const body = request.postDataJSON();
+    const updatedAt = `${id}-v1`;
+    state.entries.push({ kind, id, ...body, draft: true, updatedAt });
+    state.puts.push({ kind, id, body });
+    return json(
+        route,
+        { updatedAt, draft: true, warnings: { missingEpisodeIds: [] } },
+        { status: 201, etag: `"${updatedAt}"` },
+    );
+};
+
 const entryRoute = (state, route, request, [kind, id]) => {
     const entry = state.entries.find((e) => e.kind === kind && e.id === id);
+    if (!entry && request.method() === 'PUT' && request.headers()['if-none-match'] === '*')
+        return createRoute(state, route, request, [kind, id]);
     if (!entry) return json(route, { error: 'no such entry' }, { status: 404 });
     if (request.method() === 'GET')
         return json(

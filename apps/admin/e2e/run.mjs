@@ -265,13 +265,21 @@ const imageCheck = (browser) =>
             await page.getByText('例：01 - 戀愛二分一.m4a').waitFor();
             await page.locator('.pill.solid', { hasText: '短篇集' }).waitFor();
             await shoot(page, 'drama-basic');
+            await shoot(page, 'image-slots', { clip: await boxOf(page.locator('.media')) });
             const chooser = page.waitForEvent('filechooser');
             await page.getByRole('button', { name: '上載碟面' }).click();
             await (
                 await chooser
             ).setFiles({ name: 'photo.png', mimeType: 'image/png', buffer: PNG_1PX });
             const dialog = page.getByRole('dialog', { name: '上載碟面' });
-            await dialog.getByText('photo.png · 1×1 → 600×600 WebP（置中裁切）').waitFor();
+            // 原圖 | 裁切後兩格並排，說明喺各自圖下面
+            const source = dialog.getByRole('figure', { name: '原圖' });
+            const result = dialog.getByRole('figure', { name: '裁切後' });
+            await source.getByText('1×1 · PNG').waitFor();
+            await result.getByText(/^600×600 · WebP · 約 \d+ KB$/).waitFor();
+            const [left, right] = [await boxOf(source), await boxOf(result)];
+            if (Math.abs(left.y - right.y) > 2 || right.x <= left.x + left.width - 1)
+                throw new Error('原圖 / 裁切後 are not side by side');
             await shoot(page, 'image-preview');
             await dialog.getByRole('button', { name: '上載' }).click();
             await dialog.waitFor({ state: 'detached' });
@@ -286,10 +294,10 @@ const imageCheck = (browser) =>
         },
     );
 
-const boxOf = async (locator) => {
+const boxOf = async (locator, x = undefined, height = undefined) => {
     const box = await locator.boundingBox();
     if (!box) throw new Error('element not visible');
-    return box;
+    return height === undefined ? box : { ...box, height };
 };
 
 const navCheck = (browser) =>
@@ -338,7 +346,133 @@ const navCheck = (browser) =>
                 return bubble?.parentElement === document.body && getComputedStyle(bubble).zIndex;
             });
             if (onTop !== '40') throw new Error('tooltip is not on top of nav / panel');
+            const logo = page.locator('.logo-mini img');
+            if ((await logo.getAttribute('src')) !== '/icon-192.png')
+                throw new Error('collapsed nav does not show the app icon');
+            if (!(await logo.evaluate((img) => img.complete && img.naturalWidth > 0)))
+                throw new Error('app icon failed to load');
             await shoot(page, 'nav-mini');
+            await shoot(page, 'nav-mini-logo', { clip: await boxOf(page.locator('.nav'), 0, 140) });
+            await page.close();
+        },
+    );
+
+const UNRELEASED_ARC = 'love-after';
+const PRIMARY = 'rgb(30, 123, 192)';
+const ON_PRIMARY = 'rgb(255, 255, 255)';
+
+const unreleasedScheduleCheck = (browser) =>
+    check(
+        'schedule tab: disabled arc without a schedule is 未上架 (no grey ✓), chip solid primary',
+        async () => {
+            const page = await newPage(browser, loggedIn());
+            await page.goto(`${BASE}/dramas/lancy/schedule#${UNRELEASED_ARC}`);
+            const tab = page.getByRole('tab', { name: /戀愛後二分一/ });
+            await tab.waitFor();
+            if ((await tab.getAttribute('aria-selected')) !== 'true')
+                throw new Error('arc not selected');
+            await page.locator('.strip-unreleased').waitFor();
+            if ((await page.locator('.seg-batch.past').count()) > 0)
+                throw new Error('disabled unscheduled arc shows released batches');
+            for (const scheme of ['light', 'dark']) {
+                await page.emulateMedia({ colorScheme: scheme });
+                await tab.hover();
+                const colours = await tab.evaluate((el) => {
+                    const style = getComputedStyle(el);
+                    return [style.backgroundColor, style.color];
+                });
+                if (colours.join() !== `${PRIMARY},${ON_PRIMARY}`)
+                    throw new Error(`${scheme}: selected chip is ${colours}`);
+            }
+            await page.mouse.move(0, 0);
+            await shoot(page, 'schedule-unreleased', { fullPage: true });
+            await page.close();
+        },
+    );
+
+const TOGGLE_ON = 'rgb(31, 122, 77)';
+const TOGGLE_OFF = 'rgb(194, 51, 58)';
+
+const toggleHoverCheck = (browser) =>
+    check('status toggle keeps green / red on hover (light + dark)', async () => {
+        const page = await newPage(browser, loggedIn());
+        for (const [path, colour] of [
+            ['/shows/night', TOGGLE_ON],
+            ['/shows/new', TOGGLE_OFF],
+        ]) {
+            await page.goto(`${BASE}${path}`);
+            const toggle = page.getByRole('switch', { name: '狀態' });
+            for (const scheme of ['light', 'dark']) {
+                await page.emulateMedia({ colorScheme: scheme });
+                await toggle.hover();
+                const bg = await toggle.evaluate((el) => getComputedStyle(el).backgroundColor);
+                if (bg !== colour) throw new Error(`${path} ${scheme}: hover background ${bg}`);
+            }
+            const box = await boxOf(toggle);
+            const clip = {
+                x: box.x - 16,
+                y: box.y - 40,
+                width: box.width + 32,
+                height: box.height + 56,
+            };
+            await shoot(page, `toggle-hover-${colour === TOGGLE_ON ? 'on' : 'off'}`, { clip });
+        }
+        await page.close();
+    });
+
+const savebarCheck = (browser) =>
+    check('arc editor savebar: 復原 at the far left, dirty note + save on the right', async () => {
+        const page = await newPage(browser, loggedIn());
+        await page.goto(`${BASE}/dramas/lancy/arcs#half`);
+        await page.getByRole('textbox', { name: '簡介' }).first().fill('新簡介');
+        const bar = page.locator('.savebar').filter({ hasText: '有未儲存的變更' });
+        const revert = await boxOf(bar.getByRole('button', { name: '復原' }));
+        const note = await boxOf(bar.getByText(/有未儲存的變更/));
+        const whole = await boxOf(bar);
+        if (revert.x - whole.x > 4) throw new Error('復原 is not at the far left');
+        if (note.x < whole.x + whole.width / 2) throw new Error('dirty note is not on the right');
+        await shoot(page, 'arc-savebar', { clip: whole });
+        await page.close();
+    });
+
+const todoRowCheck = (browser) =>
+    check('todo matrix: folder ✓ on new arc, whole row opens the arc (flow bar kept)', async () => {
+        const page = await newPage(browser, loggedIn());
+        await page.goto(BASE);
+        await page.getByLabel('我心不死：資料夾 已完成').waitFor();
+        const row = page.getByRole('row', { name: /我心不死/ });
+        await row.hover();
+        await shoot(page, 'update-row-hover');
+        await row.locator('td.ok').first().click();
+        await page.waitForURL(
+            /\/dramas\/lancy\/arcs\?from=todos&todo=newArc%3Alancy%3Alancy-02#lancy-02$/,
+        );
+        await page.getByRole('region', { name: '處理待辦' }).waitFor();
+        await page.getByRole('button', { name: '儲存並返回待辦' }).waitFor();
+        await page.close();
+    });
+
+const newShowCheck = (browser) =>
+    check(
+        'new show: save without images, back to /shows with the new row; existing show stays',
+        async () => {
+            const state = loggedIn();
+            const page = await newPage(browser, state);
+            await page.goto(`${BASE}/shows`);
+            await page.getByRole('button', { name: '新增節目' }).click();
+            await page.waitForURL(`${BASE}/shows/new`);
+            await page.getByRole('textbox', { name: /ID/ }).fill('abc');
+            await page.getByRole('textbox', { name: '名稱' }).fill('新節目測試');
+            await page.getByRole('button', { name: '儲存' }).click();
+            await page.waitForURL(`${BASE}/shows`);
+            await page.getByText('已新增「abc」').waitFor();
+            await page.getByText('新節目測試').waitFor();
+            await page.goto(`${BASE}/shows/night`);
+            await page.getByRole('textbox', { name: '簡介' }).fill('x');
+            await page.getByRole('button', { name: '儲存' }).click();
+            await page.getByText(/有未儲存的變更/).waitFor({ state: 'detached' });
+            if (page.url() !== `${BASE}/shows/night`)
+                throw new Error('existing show left the editor');
             await page.close();
         },
     );
@@ -419,6 +553,11 @@ try {
         showEditorCheck,
         narrowRollerCheck,
         imageCheck,
+        unreleasedScheduleCheck,
+        toggleHoverCheck,
+        savebarCheck,
+        todoRowCheck,
+        newShowCheck,
         navCheck,
         reducedMotionCheck,
         autoNavCheck,
