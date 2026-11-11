@@ -25,6 +25,8 @@ interface PanelProps {
     ctx: ScheduleContext;
     form: ScheduleForm;
     plan: SchedulePlan | null;
+    /** 下架又冇排程：未上過架（唔出灰 ✓，講明「未上架」） */
+    unreleased?: boolean;
     onChange: (form: ScheduleForm) => void;
 }
 
@@ -39,7 +41,7 @@ const UNLIST_LABEL: Record<UnlistMode, MessageKey> = {
 const presetStart = (listing: ListingForm, ctx: ScheduleContext) =>
     listing.mode === 'all' || listing.mode === 'periodic' ? listing.start : addDays(ctx.today, 1);
 
-export function ListingPanel({ ctx, form, plan, onChange }: PanelProps) {
+export function ListingPanel({ ctx, form, plan, unreleased = false, onChange }: PanelProps) {
     const titleId = useId();
     const lastListed = ctx.listed.at(-1)?.date;
     const setListing = (listing: ListingForm) => onChange({ ...form, listing });
@@ -55,6 +57,11 @@ export function ListingPanel({ ctx, form, plan, onChange }: PanelProps) {
             ) : (
                 <>
                     <p className="scope">{listingScopeText(ctx)}</p>
+                    {unreleased && (
+                        <p className="strip-unreleased" role="status">
+                            {t('schedule.unreleased')}
+                        </p>
+                    )}
                     <SchedulePresets
                         listing={form.listing}
                         start={presetStart(form.listing, ctx)}

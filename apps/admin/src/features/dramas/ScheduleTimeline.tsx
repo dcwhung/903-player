@@ -23,7 +23,9 @@ function Group({ span, tone, label }: { span: EpisodeSpan; tone: Tone; label: st
         <div className={`seg-batch ${tone}`}>
             <div className="eps-cells" aria-hidden="true">
                 {cellsOf(span).map((no, i) => (
-                    <span key={no ?? `gap${i}`}>{no ?? '…'}</span>
+                    <span key={no ?? `gap${i}`} className={no === null ? 'gap' : undefined}>
+                        {no ?? '…'}
+                    </span>
                 ))}
             </div>
             <span className="seg-date">

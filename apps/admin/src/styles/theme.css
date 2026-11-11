@@ -1371,6 +1371,22 @@ textarea.autosize {
     cursor: default;
 }
 
+/* 「頭 … 尾」中間嘅省略號：唔係一集，唔填色、唔畫刪除線 */
+.eps-cells span.gap,
+.seg-batch .eps-cells span.gap {
+    width: auto;
+    background: none;
+    color: var(--muted);
+    text-decoration: none;
+    font-weight: 400;
+}
+
+/* panel 半闊：下架方式 4 粒掣盡量排一行 */
+.panel .seg button {
+    padding: 5px 10px;
+    font-size: 13px;
+}
+
 /*
  * 上架 / 下架 toggle：狀態色唔跟一般 button:hover（淺灰會食咗白字白點）；
  * focus-visible outline 照用全域樣式

@@ -24,7 +24,7 @@ function TipCells({
                 const episode = no === null ? undefined : episodes.get(no);
                 if (!episode)
                     return (
-                        <span key={`gap${i}`} aria-hidden="true">
+                        <span key={`gap${i}`} className="gap" aria-hidden="true">
                             …
                         </span>
                     );

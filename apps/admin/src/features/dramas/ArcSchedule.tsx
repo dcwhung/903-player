@@ -14,7 +14,7 @@ import { ScheduleSaveBar, ViewSwitch, type ScheduleView } from './ScheduleBars';
 import type { ScheduleForm } from './scheduleModel';
 import { ListingPanel, UnlistPanel } from './SchedulePanels';
 import { PreviewTimeline } from './PreviewTimeline';
-import { scheduleContextOf } from './stripModel';
+import { isUnreleased, scheduleContextOf } from './stripModel';
 import { previewDays, progressText } from './timelineModel';
 import type { DramaEditorState } from './useDramaEditor';
 import { planOf, saveProblemOf, useScheduleForm } from './useScheduleForm';
@@ -71,7 +71,8 @@ export function ArcSchedule({ state, arc, arcId, saved, actions }: ArcSchedulePr
         if (problem) actions.reject(problem);
         else void actions.save(arcId, rule);
     };
-    const panels = { ctx, form, plan, onChange: change };
+    const unreleased = isUnreleased(arc, saved !== null);
+    const panels = { ctx, form, plan, unreleased, onChange: change };
     return (
         <div className="card" id="schedule-panel" role="tabpanel" aria-labelledby={`tab-${arcId}`}>
             <div className="viewbar">
