@@ -19,7 +19,7 @@ export const zhHK = {
     },
     nav: {
         label: '主選單',
-        update: '更新內容',
+        update: '更新',
         todoCount: '{count} 項待辦',
         content: '內容',
         shows: '節目',
@@ -27,8 +27,6 @@ export const zhHK = {
         records: '記錄',
         history: '上下架記錄',
         logout: '登出',
-        collapse: '收合',
-        expand: '展開',
         collapseLabel: '收合選單',
         expandLabel: '展開選單',
     },
@@ -50,7 +48,7 @@ export const zhHK = {
         failed: '掃描 R2 失敗：{error}',
     },
     update: {
-        title: '更新內容',
+        title: '更新',
         stepScan: '掃描 R2（自動）',
         stepTodos: '處理待辦',
         stepPublish: '確認發佈',
@@ -168,7 +166,7 @@ export const zhHK = {
         legendNew: '從未發佈的短篇',
         legendDrag: '拖曳調整播放器顯示次序',
         newDramaHelp:
-            '新廣播劇由 R2 掃描自動建立：將資料夾上載至 R2 後按「重新掃描」，新劇會出現在「更新內容」待辦。',
+            '新廣播劇由 R2 掃描自動建立：將資料夾上載至 R2 後按「重新掃描」，新劇會出現在「更新」待辦。',
         close: '關閉',
     },
     dnd: {

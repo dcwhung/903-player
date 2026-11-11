@@ -1,5 +1,5 @@
 /*
- * 更新內容 · 確認發佈：Design Origin: mockup: _mockups_/admin/index.html#u3（結構）+
+ * 更新 · 確認發佈：Design Origin: mockup: _mockups_/admin/index.html#u3（結構）+
  * mockup: _mockups_/admin-style/index.html#a（漸變統計卡）。
  * 統計卡 + 數量 pill + 驗證 ✓ pill（hover 睇數字）+ 時間線 + 大「發佈」掣；409 → 擋住清單（#s9）
  */

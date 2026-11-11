@@ -68,8 +68,7 @@ body {
     opacity: 0.75;
 }
 
-.nav a,
-.nav-btn {
+.nav a {
     position: relative;
     display: flex;
     align-items: center;
@@ -88,13 +87,12 @@ body {
 }
 
 .nav a .lucide,
-.nav-btn .lucide {
+.icon-ghost .lucide {
     width: 18px;
     height: 18px;
 }
 
-.nav a:hover,
-.nav-btn:hover {
+.nav a:hover {
     background: rgb(255 255 255 / 0.14);
 }
 
@@ -133,19 +131,46 @@ body {
     opacity: 0.85;
 }
 
-/* 淺 / 深色切換：展開 = 三粒 icon segmented；收細 = 一粒輪住轉 */
-.theme-switch {
+/* ---------- nav 底（⑨ nav v4）：主題 + 收合同一行；分隔線；email + 登出 ---------- */
+.icon-ghost {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--on-nav);
+    box-shadow: none;
+}
+
+.nav .icon-ghost:hover:not(:disabled) {
+    background: rgb(255 255 255 / 0.16);
+}
+
+.nav-tools {
     display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+/* 淺 / 深色切換：展開 = 三粒 icon segmented；收細 = 一粒輪住轉（.theme-cycle） */
+.theme-switch {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 4px;
-    margin: 4px 0 0;
     padding: 4px;
     border-radius: 12px;
     background: rgb(255 255 255 / 0.12);
 }
 
 .theme-switch button {
-    flex: 1;
-    padding: 6px 0;
+    height: 30px;
+    padding: 0;
     border-radius: 9px;
     background: none;
     color: var(--on-nav);
@@ -162,9 +187,46 @@ body {
     color: var(--primary);
 }
 
-.nav-collapse {
-    margin-top: 4px;
+.nav .theme-cycle {
     background: rgb(255 255 255 / 0.12);
+}
+
+.foot-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 0 0 12px;
+    border-top: 1px solid rgb(255 255 255 / 0.2);
+}
+
+.foot-row .who {
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* FLIP 播緊：掣仲喺 nav 範圍外，唔好裁走（flip.ts 播完 / 超時就收） */
+.nav.flipping {
+    position: relative;
+    z-index: 2;
+    overflow: visible;
+}
+
+/* 滑過內容 panel 時都睇到（透明掣喺白底上面會唔見） */
+.nav.flipping [data-flip] {
+    background: var(--nav-bg);
+}
+
+.shell.mini .nav-tools {
+    flex-direction: column;
+}
+
+.shell.mini .foot-row {
+    justify-content: center;
+    padding: 6px 0 0;
 }
 
 .dot-count {
@@ -182,8 +244,7 @@ body {
     padding: 18px 12px;
 }
 
-.shell.mini .nav a,
-.shell.mini .nav-btn {
+.shell.mini .nav a {
     justify-content: center;
     padding: 12px 0;
 }

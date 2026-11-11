@@ -1,15 +1,17 @@
 /*
- * 側邊 nav：Design Origin: mockup: _mockups_/admin-style/index.html#a / #b（實色天藍 + 白字，可收細）
- * 結構：mockup: _mockups_/admin/index.html#uB（更新內容（待辦數）/ 內容：節目、廣播劇 / 記錄：上下架記錄 / who + 登出）
- * 收細（76px）：banner → 圓形「903」logo、只剩 icon + tooltip、待辦數 → 小橙點
+ * 側邊 nav：Design Origin: mockup: _mockups_/admin-style/index.html#i（⑨ / ⑨b nav v4，實色天藍 + 白字，可收細）
+ * 內容：更新（待辦數）、節目、廣播劇 / 記錄：上下架記錄 / 底：主題 + 收合、email + 登出（NavFooter）
+ * 收細（76px）：banner → 圓形「903」logo、只剩 icon + tooltip、待辦數 → 小橙點。
+ * 手動收合 / 展開：主題掣同收合掣由舊位置滑去新位置（FLIP，flip.ts）；視窗窄咗自動收合唔播
  */
 import { Disc, History, Inbox, Radio, type LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAdminData } from '../data/AdminData';
 import { t } from '../i18n/t';
 import { Tooltip } from '../ui/Tooltip';
 import { Brand } from './Brand';
+import { useFlip } from './flip';
 import { NavFooter } from './NavFooter';
 
 const UPDATE_PATHS = ['/', '/publish'];
@@ -83,16 +85,23 @@ function TodoBadge({ count, mini }: { count: number; mini: boolean }) {
 }
 
 export function Nav(props: NavProps) {
-    const { mini } = props;
+    const { mini, onToggle } = props;
     const { pathname } = useLocation();
+    const navRef = useRef<HTMLElement>(null);
+    const capture = useFlip(navRef, mini);
     const blocking = useAdminData().todos.data?.blocking ?? 0;
     const todoLabel =
         blocking > 0
             ? `${t('nav.update')}（${t('nav.todoCount', { count: blocking })}）`
             : undefined;
+    const toggle = () => {
+        capture();
+        onToggle();
+    };
     return (
-        <nav className="nav" aria-label={t('nav.label')}>
+        <nav ref={navRef} className="nav" aria-label={t('nav.label')}>
             <BrandLink mini={mini} />
+            <span className="group">{t('nav.content')}</span>
             <Item
                 to="/"
                 label={t('nav.update')}
@@ -102,12 +111,11 @@ export function Nav(props: NavProps) {
                 ariaLabel={todoLabel}
                 extra={<TodoBadge count={blocking} mini={mini} />}
             />
-            <span className="group">{t('nav.content')}</span>
             <Item to="/shows" label={t('nav.shows')} icon={Radio} mini={mini} />
             <Item to="/dramas" label={t('nav.dramas')} icon={Disc} mini={mini} />
             <span className="group">{t('nav.records')}</span>
             <Item to="/history" label={t('nav.history')} icon={History} mini={mini} />
-            <NavFooter {...props} />
+            <NavFooter {...props} onToggle={toggle} />
         </nav>
     );
 }

@@ -26,7 +26,8 @@ function CycleButton({ pref, onChoose }: { pref: ThemePref; onChoose: (p: ThemeP
         <Tooltip text={label} side="right">
             <button
                 type="button"
-                className="nav-btn theme-cycle"
+                className="icon-ghost theme-cycle"
+                data-flip="theme"
                 aria-label={label}
                 onClick={() => onChoose(nextTheme(pref))}
             >
@@ -40,7 +41,7 @@ export function ThemeSwitch({ mini }: { mini: boolean }) {
     const { pref, choose } = useThemePref();
     if (mini) return <CycleButton pref={pref} onChoose={choose} />;
     return (
-        <div className="theme-switch" role="group" aria-label={t('theme.label')}>
+        <div className="theme-switch" data-flip="theme" role="group" aria-label={t('theme.label')}>
             {OPTIONS.map(({ pref: value, icon: Icon, label }) => (
                 <Tooltip key={value} text={t(label)}>
                     <button

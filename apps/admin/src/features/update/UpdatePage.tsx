@@ -1,5 +1,5 @@
 /*
- * 更新內容 · 處理待辦：Design Origin: mockup: _mockups_/admin/index.html#uB（結構）+
+ * 更新 · 處理待辦：Design Origin: mockup: _mockups_/admin/index.html#uB（結構）+
  * mockup: _mockups_/admin-style/index.html#a（漸變統計卡、按鈕 icon）。
  * 必須格全部做完先可以「下一步：確認發佈」
  */

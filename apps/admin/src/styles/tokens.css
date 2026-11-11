@@ -70,6 +70,8 @@
     /* 動畫（≤ 300ms；全部包 prefers-reduced-motion） */
     --motion-fast: 150ms;
     --motion-base: 200ms;
+    /* nav 收合 / 展開時掣滑去新位置（FLIP） */
+    --motion-move: 220ms;
     --motion-ease: cubic-bezier(0.2, 0, 0, 1);
     color-scheme: light dark;
 }
