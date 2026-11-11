@@ -167,4 +167,27 @@ describe('DramaEditor', () => {
         ]);
         expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
     });
+
+    it('should show discs: saved disc (or the black disc) in the title, arc discs in rows and tabs', async () => {
+        api();
+        const { unmount } = renderAt(
+            '/dramas/lancy/arcs',
+            '/dramas/:id/arcs',
+            <DramaEditorPage tab="arcs" />,
+        );
+        const title = await screen.findByRole('heading', { level: 1 });
+        expect(title.querySelector('.thumb.blank')).not.toBeNull();
+        const rows = screen.getAllByRole('button', { name: /^展開「/ });
+        rows.forEach((toggle) =>
+            expect(toggle.closest('li')?.querySelector('.thumb.xs')).not.toBeNull(),
+        );
+        unmount();
+        renderAt(
+            '/dramas/lancy/schedule',
+            '/dramas/:id/schedule',
+            <DramaEditorPage tab="schedule" />,
+        );
+        const tab = await screen.findByRole('tab', { name: /我心不死/ });
+        expect(tab.querySelector('.thumb.xs')).not.toBeNull();
+    });
 });

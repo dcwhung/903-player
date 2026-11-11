@@ -1037,3 +1037,35 @@ textarea.autosize {
 .danger-note {
     color: var(--danger);
 }
+
+/* ---------- 碟面縮圖：冇圖 = player 預設黑碟；xs = 短篇行 / chip ---------- */
+.thumb.blank {
+    background: var(--disc-blank);
+    box-shadow: 0 0 0 2px var(--disc-blank-rim);
+}
+
+.thumb.blank::before {
+    content: '';
+    position: absolute;
+    inset: 38%;
+    border-radius: 50%;
+    background: var(--disc-blank-rim);
+}
+
+.thumb.xs {
+    width: 22px;
+    height: 22px;
+    vertical-align: middle;
+}
+
+.arc-with-disc {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.title-row h1 .thumb {
+    width: 40px;
+    height: 40px;
+}

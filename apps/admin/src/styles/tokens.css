@@ -40,6 +40,9 @@
     --brand-admin: #c2410c;
     --on-brand: #ffffff;
     --todo-dot: #ffb020;
+    /* 冇碟面：player 預設黑碟（apps/player tokens.css --color-disc-blank / -rim 同值，深淺色一樣） */
+    --disc-blank: #0a0a0a;
+    --disc-blank-rim: #1e1e1e;
     /* Tooltip 泡泡（深淺色都係深底白字） */
     --tip-bg: #16212e;
     --on-tip: #ffffff;
