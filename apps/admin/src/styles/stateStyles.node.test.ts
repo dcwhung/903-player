@@ -45,3 +45,34 @@ describe('state colours survive hover', () => {
         );
     });
 });
+
+/*
+ * chip 類掣（快速套用、類型 switch、排程短篇 tab）：
+ * - 揀咗（aria-pressed）用實色 --primary 底 + --on-primary 白字，hover 都唔變（之前 hover 蓋咗底色 → 白字淺底睇唔到）
+ * - disabled 唔用 opacity（0.45 透明令對比跌穿 3:1），改用 --muted 字 + --surface-2 淺底
+ */
+describe('chip buttons', () => {
+    it.each(['.presets', '.switch'])(
+        'should paint the pressed %s chip solid primary, hover included',
+        (group) => {
+            for (const selector of [
+                `${group} button[aria-pressed='true']`,
+                `${group} button[aria-pressed='true']:hover:not(:disabled)`,
+            ]) {
+                const body = bodyOf(selector);
+                expect(body).toMatch(/background:\s*var\(--primary\)/);
+                expect(body).toMatch(/color:\s*var\(--on-primary\)/);
+            }
+        },
+    );
+
+    it.each(['.presets', '.switch', '.arc-tabs'])(
+        'should give disabled %s chips muted text on a light surface, fully opaque',
+        (group) => {
+            const body = bodyOf(`${group} button:disabled`);
+            expect(body).toMatch(/opacity:\s*1/);
+            expect(body).toMatch(/color:\s*var\(--muted\)/);
+            expect(body).toMatch(/background:\s*var\(--surface-2\)/);
+        },
+    );
+});

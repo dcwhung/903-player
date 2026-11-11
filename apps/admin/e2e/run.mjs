@@ -53,7 +53,56 @@ const shoot = async (page, name, options = {}) => {
     await page.emulateMedia({ colorScheme: 'light' });
 };
 
-const loggedIn = () => ({ ...createState(), loggedIn: true });
+const loggedIn = (options) => ({ ...createState(options), loggedIn: true });
+
+/*
+ * 字色對底色嘅對比度（WCAG）：底色由自己向上搵第一個唔透明嘅 background；
+ * 自己 / 祖先有 opacity 就將字同底一齊混落再上一層嘅底（= 畫面上真正見到嘅顏色）
+ */
+const contrastOf = (locator) =>
+    locator.evaluate((el) => {
+        const parse = (value) => {
+            const [r, g, b, a = 1] = value.match(/[\d.]+/g).map(Number);
+            return { r, g, b, a };
+        };
+        const over = (top, under, alpha = top.a) => ({
+            r: top.r * alpha + under.r * (1 - alpha),
+            g: top.g * alpha + under.g * (1 - alpha),
+            b: top.b * alpha + under.b * (1 - alpha),
+            a: 1,
+        });
+        const bgOf = (start) => {
+            for (let node = start; node; node = node.parentElement) {
+                const bg = parse(getComputedStyle(node).backgroundColor);
+                if (bg.a > 0) return bg.a === 1 ? bg : over(bg, bgOf(node.parentElement));
+            }
+            return { r: 255, g: 255, b: 255, a: 1 };
+        };
+        let opacity = 1;
+        for (let node = el; node; node = node.parentElement)
+            opacity *= Number(getComputedStyle(node).opacity);
+        const bg = bgOf(el);
+        const under = bgOf(el.parentElement?.parentElement ?? null);
+        const fg = over(parse(getComputedStyle(el).color), bg);
+        const [shownFg, shownBg] = [over(fg, under, opacity), over(bg, under, opacity)];
+        const lum = ({ r, g, b }) => {
+            const lin = (c) => ((c /= 255) <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+            return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+        };
+        const [hi, lo] = [lum(shownFg), lum(shownBg)].sort((x, y) => y - x);
+        return (hi + 0.05) / (lo + 0.05);
+    });
+
+/** 淺色 + 深色各量一次對比度，任何一個低過 min 就 throw */
+const assertContrast = async (page, locator, min, what) => {
+    for (const scheme of ['light', 'dark']) {
+        await page.emulateMedia({ colorScheme: scheme });
+        const ratio = await contrastOf(locator);
+        if (ratio < min)
+            throw new Error(`${what} (${scheme}): contrast ${ratio.toFixed(2)} < ${min}`);
+    }
+    await page.emulateMedia({ colorScheme: 'light' });
+};
 
 const check = async (name, fn) => {
     try {
@@ -184,6 +233,106 @@ const scheduleCheck = (browser) =>
         await future.locator('.seg-batch').first().waitFor();
         if (await page.getByText(/無法預覽/).isVisible()) throw new Error('preview failed');
         await shoot(page, 'schedule', { fullPage: true });
+        await page.close();
+    });
+
+/*
+ * 快速套用 chip：撳完滑鼠仲喺粒 chip 上面（揀咗 + hover），之前 hover 蓋咗實色底 → 字睇唔到。
+ * 揀咗：實色底白字 ≥ 4.5:1；disabled（快速套用 / 排程短篇 tab）：--muted 字淺底 ≥ 3:1，淺深色都量
+ */
+const presetChipCheck = (browser) =>
+    check('schedule chips: pressed (hovered) and disabled chips stay readable', async () => {
+        const page = await newPage(browser, loggedIn());
+        await page.goto(`${BASE}/dramas/lancy/schedule#lancy-02`);
+        const mwf = page.getByRole('button', { name: '逢一三五 · 每次 5 集' });
+        await mwf.click();
+        if ((await mwf.getAttribute('aria-pressed')) !== 'true')
+            throw new Error('preset not pressed');
+        await mwf.hover();
+        await assertContrast(page, mwf, 4.5, 'pressed + hovered preset');
+        for (const scheme of ['light', 'dark']) {
+            await page.emulateMedia({ colorScheme: scheme });
+            const colours = await mwf.evaluate((el) => {
+                const style = getComputedStyle(el);
+                return [style.backgroundColor, style.color];
+            });
+            if (colours.join() !== `${PRIMARY},${ON_PRIMARY}`)
+                throw new Error(`${scheme}: pressed preset is ${colours}`);
+        }
+        const presets = page.getByRole('group', { name: '快速套用' });
+        await shoot(page, 'preset-chips', { clip: await boxOf(presets) });
+        await mwf.evaluate((el) => {
+            el.disabled = true;
+        });
+        await page.mouse.move(0, 0);
+        await assertContrast(page, mwf, 3, 'disabled pressed preset');
+        const daily = page.getByRole('button', { name: '每日 1 集' });
+        await daily.evaluate((el) => {
+            el.disabled = true;
+        });
+        await assertContrast(page, daily, 3, 'disabled preset');
+        await shoot(page, 'preset-chips-disabled', { clip: await boxOf(presets) });
+        const tab = page.getByRole('tab', { name: /戀愛二分一/ });
+        await tab.evaluate((el) => {
+            el.disabled = true;
+        });
+        await assertContrast(page, tab, 3, 'disabled arc tab');
+        await page.close();
+    });
+
+/*
+ * 真圖（e2e/fixtures，player 嘅 cover）：「口水多過浪花」同「蘭茜夫人劇場」有 Banner / 碟面，
+ * 截編輯頁圖片區、標題碟面、兩個列表、排程短篇 chip 嘅淺色同深色，睇框線同真圖夾唔夾
+ */
+const IMAGE_URL = /\/catalog\/v1\/img\//;
+
+const assertImagesLoaded = async (page, locator, what) => {
+    const urls = await locator.evaluateAll((els) =>
+        els.map((el) => getComputedStyle(el).backgroundImage.match(/url\("?(.+?)"?\)/)?.[1] ?? ''),
+    );
+    const real = urls.filter((url) => IMAGE_URL.test(url));
+    if (real.length === 0) throw new Error(`${what}: no real image (${urls})`);
+    for (const url of real) {
+        const ok = await page.evaluate(async (src) => {
+            const img = new Image();
+            img.src = src;
+            await img.decode();
+            return img.naturalWidth > 0;
+        }, url);
+        if (!ok) throw new Error(`${what}: ${url} did not decode`);
+    }
+};
+
+const realImagesCheck = (browser) =>
+    check('real covers: editor slots, title disc, lists and schedule chips', async () => {
+        const page = await newPage(browser, loggedIn({ realImages: true }));
+        for (const [path, name] of [
+            ['/dramas/lancy', 'drama'],
+            ['/shows/waves', 'show'],
+        ]) {
+            await page.goto(`${BASE}${path}`);
+            const media = page.locator('.media').first();
+            await media.locator('.img-slot:not(.empty)').nth(1).waitFor();
+            await assertImagesLoaded(page, media.locator('.thumb'), `${name} image slots`);
+            await shoot(page, `image-slots-real-${name}`, { clip: await boxOf(media) });
+            const title = page.locator('.title-row').first();
+            await assertImagesLoaded(page, title.locator('.thumb'), `${name} title disc`);
+            await shoot(page, `title-disc-real-${name}`, { clip: await boxOf(title) });
+        }
+        for (const [path, name] of [
+            ['/shows', 'shows'],
+            ['/dramas', 'dramas'],
+        ]) {
+            await page.goto(`${BASE}${path}`);
+            await page.locator('.list .thumb').first().waitFor();
+            await assertImagesLoaded(page, page.locator('.list .thumb'), `${name} list`);
+            await shoot(page, `${name}-real`);
+        }
+        await page.goto(`${BASE}/dramas/lancy/schedule#half`);
+        const tabs = page.getByRole('tablist', { name: /短篇/ });
+        await tabs.waitFor();
+        await assertImagesLoaded(page, tabs.locator('.thumb'), 'schedule arc chips');
+        await shoot(page, 'schedule-chips-real', { clip: await boxOf(tabs) });
         await page.close();
     });
 
@@ -351,6 +500,24 @@ const navCheck = (browser) =>
                 throw new Error('collapsed nav does not show the app icon');
             if (!(await logo.evaluate((img) => img.complete && img.naturalWidth > 0)))
                 throw new Error('app icon failed to load');
+            // icon 1:1 唔變形，外面圓形框
+            const shape = await logo.evaluate((img) => {
+                const frame = getComputedStyle(img.parentElement);
+                const box = img.getBoundingClientRect();
+                const outer = img.parentElement.getBoundingClientRect();
+                return {
+                    width: getComputedStyle(img).width,
+                    height: getComputedStyle(img).height,
+                    fit: getComputedStyle(img).objectFit,
+                    radius: frame.borderRadius,
+                    frame: [outer.width, outer.height],
+                    inside: box.left >= outer.left && box.right <= outer.right,
+                };
+            });
+            if (shape.width !== shape.height || shape.fit !== 'contain')
+                throw new Error(`app icon is distorted: ${JSON.stringify(shape)}`);
+            if (shape.radius !== '50%' || shape.frame[0] !== shape.frame[1] || !shape.inside)
+                throw new Error(`app icon frame is not a circle: ${JSON.stringify(shape)}`);
             await shoot(page, 'nav-mini');
             await shoot(page, 'nav-mini-logo', { clip: await boxOf(page.locator('.nav'), 0, 140) });
             await page.close();
@@ -579,6 +746,8 @@ try {
         newDramaDialogCheck,
         showListCheck,
         scheduleCheck,
+        presetChipCheck,
+        realImagesCheck,
         showEditorCheck,
         narrowRollerCheck,
         imageCheck,

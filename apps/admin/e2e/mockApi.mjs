@@ -1,4 +1,35 @@
 // Admin e2e 嘅假 API（page.route）：in-memory 狀態，夠行 login → 掃描 → 待辦 → 設 ID → 發佈 → 記錄、拖曳排序
+import { readdirSync } from 'node:fs';
+
+/*
+ * 真圖（createState({ realImages: true })）：player catalog 嘅 cover 複製咗去 e2e/fixtures/（只係 e2e 用，唔入 admin bundle）
+ * 「口水多過浪花」+「蘭茜夫人劇場」（連短篇「戀愛二分一」）有 Banner / 碟面；其他照舊冇圖（黑碟）
+ */
+const FIXTURES = new URL('./fixtures/', import.meta.url).pathname;
+const FIXTURE_NAMES = new Set(readdirSync(FIXTURES));
+const IMAGE_PATH = /^\/catalog\/v1\/img\/([^/]+)$/;
+const REAL_IMAGES = {
+    waves: { 'tile.webp': 'waves-tile.webp', 'disc.webp': 'waves-disc.webp' },
+    lancy: {
+        'tile.webp': 'lancy-tile.webp',
+        'disc.webp': 'lancy-disc.webp',
+        'arcs/half/tile.webp': 'lancy-half-tile.webp',
+        'arcs/half/disc.webp': 'lancy-half-disc.webp',
+    },
+};
+
+const withRealImages = (entry) => {
+    const images = REAL_IMAGES[entry.id];
+    if (!images) return entry;
+    const definition = { ...entry.definition, tile: 'tile.webp', disc: 'disc.webp' };
+    if (definition.arcs)
+        definition.arcs = definition.arcs.map((arc) =>
+            arc.id === 'half'
+                ? { ...arc, tile: 'arcs/half/tile.webp', disc: 'arcs/half/disc.webp' }
+                : arc,
+        );
+    return { ...entry, definition, images };
+};
 const json = (route, body, { status = 200, etag } = {}) =>
     route.fulfill({
         status,
@@ -72,14 +103,14 @@ const golden = () => ({
     updatedAt: 'golden-v1',
 });
 
-export const createState = () => ({
+export const createState = ({ realImages = false } = {}) => ({
     loggedIn: false,
     entries: [
         show('waves', '口水多過浪花', 1, { airTime: { start: '15:00', end: '16:30' } }),
         show('night', '深夜節目', 2),
         lancy(),
         golden(),
-    ],
+    ].map((entry) => (realImages ? withRealImages(entry) : entry)),
     publishes: [],
     /** 之前嘅記錄（#2 成功、#1 失敗）：上下架記錄出到「還原」同「失敗」 */
     history: [
@@ -273,6 +304,14 @@ const handlers = {
 };
 
 export const installMockApi = async (page, state) => {
+    // 圖片（R2 /catalog/v1/img/<name>）：fixtures 有就出真圖，冇就 404（= 未上載）
+    await page.route(/\/catalog\/v1\/img\//, (route, request) => {
+        const name = decodeURIComponent(
+            new URL(request.url()).pathname.match(IMAGE_PATH)?.[1] ?? '',
+        );
+        if (!FIXTURE_NAMES.has(name)) return route.fulfill({ status: 404 });
+        return route.fulfill({ path: `${FIXTURES}${name}`, contentType: 'image/webp' });
+    });
     await page.route(/\/(api|auth)\//, (route, request) => {
         const url = new URL(request.url());
         const key = `${request.method()} ${url.pathname}`;
