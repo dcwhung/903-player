@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:test';
 import { afterEach, vi } from 'vitest';
 import { SESSION_TTL_MS } from '../src/config';
+import apiPackage from '../package.json';
 import { ADMIN, ORIGIN, call, cookiePair, googleClaims, idToken, loginCookie } from './helpers';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -133,7 +134,7 @@ describe('GET /auth/google/callback', () => {
         expect(page).toContain('沒有權限');
         expect(page).toContain('並非管理員。');
         expect(page).toContain('src="/banner.webp"');
-        expect(page).toContain('Admin v0.6.1');
+        expect(page).toContain(`Admin v${apiPackage.version}`);
         expect(page).not.toMatch(/<link[^>]+\.css/);
         // admin 揀咗嘅淺 / 深色（同一個 localStorage key）
         expect(page).toContain("localStorage.getItem('admin.theme')");
