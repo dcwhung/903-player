@@ -10,6 +10,7 @@ import { useResource } from '../../data/useResource';
 import { t } from '../../i18n/t';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { HistoryRow } from './HistoryRow';
+import { errorMessage } from '../../api/errorMessage';
 
 /** 每行失敗時播放器仍用緊嘅版本 = 佢之前最近一次 ok */
 const servingBefore = (rows: readonly PublishSummary[], index: number) =>
@@ -55,9 +56,7 @@ export function HistoryPage() {
         try {
             await rollback(id);
         } catch (rollbackError) {
-            setError(
-                rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
-            );
+            setError(errorMessage(rollbackError));
         }
         await Promise.all([publishes.reload(), refresh()]);
     };

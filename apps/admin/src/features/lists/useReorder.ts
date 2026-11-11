@@ -5,6 +5,7 @@ import type { EntryKind } from '../../api/types';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
 import { useToast } from '../../ui/Toast';
+import { errorMessage } from '../../api/errorMessage';
 
 export const useReorder = (kind: EntryKind) => {
     const { refresh } = useAdminData();
@@ -19,7 +20,7 @@ export const useReorder = (kind: EntryKind) => {
             toast(t('list.reordered'));
             await refresh();
         } catch (orderError) {
-            setError(orderError instanceof Error ? orderError.message : String(orderError));
+            setError(errorMessage(orderError));
         } finally {
             setPendingIds(null);
         }

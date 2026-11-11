@@ -12,6 +12,18 @@ interface EditorNoticesProps {
     onReload: () => void;
 }
 
+/** session 過期：新分頁重新登入（呢頁未儲存嘅改動保留），返嚟再撳儲存 */
+function SessionExpired() {
+    return (
+        <p className="note warn" role="alert">
+            {t('editor.sessionExpired')}{' '}
+            <a href="/auth/google/start" target="_blank" rel="noopener">
+                {t('editor.relogin')}
+            </a>
+        </p>
+    );
+}
+
 export function EditorNotices({ status, fieldErrors, onReload }: EditorNoticesProps) {
     const { problem, warnings } = status;
     return (
@@ -33,6 +45,7 @@ export function EditorNotices({ status, fieldErrors, onReload }: EditorNoticesPr
                     </div>
                 </div>
             )}
+            {problem?.type === 'unauthorized' && <SessionExpired />}
             {problem?.type === 'invalid' && (
                 <p className="note bad" role="alert">
                     {t('editor.invalidDetail', { detail: problem.detail })}

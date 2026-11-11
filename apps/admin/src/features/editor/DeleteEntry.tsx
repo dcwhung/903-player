@@ -8,6 +8,7 @@ import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
 import { nameOf } from '../../model/raw';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
+import { errorMessage } from '../../api/errorMessage';
 
 export function DeleteEntry({
     entry,
@@ -29,7 +30,7 @@ export function DeleteEntry({
             await refresh();
             navigate(`/${entry.kind}`);
         } catch (deleteError) {
-            setError(deleteError instanceof Error ? deleteError.message : String(deleteError));
+            setError(errorMessage(deleteError));
         }
     };
     return (

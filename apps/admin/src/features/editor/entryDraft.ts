@@ -1,5 +1,6 @@
 /* 編輯頁草稿：同已儲存版本比較（邊啲欄位改咗）、儲存結果、錯誤分類 */
-import { ValidationError, VersionConflictError } from '../../api/client';
+import { UnauthorizedError, ValidationError, VersionConflictError } from '../../api/client';
+import { errorMessage } from '../../api/errorMessage';
 import type { ImageMap, LoadedEntry, RawDefinition, SaveResult } from '../../api/types';
 import { t } from '../../i18n/t';
 import { zhHK } from '../../i18n/zh-HK';
@@ -11,6 +12,8 @@ export interface Draft {
 
 export type Problem =
     | { type: 'conflict'; at: string }
+    /** 401：session 過期，草稿保留，開新分頁重新登入 */
+    | { type: 'unauthorized' }
     | { type: 'invalid'; detail: string }
     | { type: 'failed'; message: string };
 
@@ -43,8 +46,9 @@ export const savedEntry = (entry: LoadedEntry, draft: Draft, result: SaveResult)
 
 export const problemOf = (error: unknown, now: Date = new Date()): Problem => {
     if (error instanceof VersionConflictError) return { type: 'conflict', at: now.toISOString() };
+    if (error instanceof UnauthorizedError) return { type: 'unauthorized' };
     if (error instanceof ValidationError) return { type: 'invalid', detail: error.details };
-    return { type: 'failed', message: error instanceof Error ? error.message : String(error) };
+    return { type: 'failed', message: errorMessage(error) };
 };
 
 /**

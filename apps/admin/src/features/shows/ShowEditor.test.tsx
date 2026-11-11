@@ -59,6 +59,26 @@ describe('ShowEditor', () => {
         expect(screen.getByRole('button', { name: '重新載入' })).toBeInTheDocument();
     });
 
+    it('should keep the draft and offer 重新登入 when the session expired', async () => {
+        mockApi({
+            'GET /api/entries/shows/waves': load,
+            'PUT /api/entries/shows/waves': () => ({
+                status: 401,
+                body: { error: 'not logged in' },
+            }),
+        });
+        renderAt('/shows/waves', '/shows/:id', <ShowEditorPage />);
+        const summary = await screen.findByRole('textbox', { name: '簡介' });
+        await userEvent.type(summary, '未儲存');
+        await userEvent.click(screen.getByRole('button', { name: '儲存' }));
+        expect(await screen.findByText(/登入已逾時/)).toBeInTheDocument();
+        expect(screen.queryByText('not logged in')).not.toBeInTheDocument();
+        const relogin = screen.getByRole('link', { name: /重新登入/ });
+        expect(relogin).toHaveAttribute('href', '/auth/google/start');
+        expect(relogin).toHaveAttribute('target', '_blank');
+        expect(summary).toHaveValue('未儲存');
+    });
+
     it('should show the flow bar and 儲存並返回待辦 when opened from the todos, then go back', async () => {
         mockApi({
             'GET /api/entries/shows/waves': load,

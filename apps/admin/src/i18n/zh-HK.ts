@@ -182,6 +182,8 @@ export const zhHK = {
         invalidDetail: '無法儲存：{detail}',
         conflict: '此劇集已在其他視窗或裝置修改（{time}），請重新載入後再修改。',
         reload: '重新載入',
+        sessionExpired: '登入已逾時，請重新登入後再試（未儲存的變更會保留）。',
+        relogin: '重新登入（新分頁）',
         warnMissing: '已儲存。注意：以下集數存在於最新發佈版本，但現已移除，下次發佈將會被阻止：',
         delete: '刪除',
         deleteTitle: '刪除「{name}」？',

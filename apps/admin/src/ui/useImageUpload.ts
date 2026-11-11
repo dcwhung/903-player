@@ -2,6 +2,7 @@
 import { useState, type ChangeEvent } from 'react';
 import { uploadAsset } from '../api/endpoints';
 import { checkImageFile, type ImageSlotKind } from './imageUpload';
+import { errorMessage } from '../api/errorMessage';
 
 export const useImageUpload = (
     slot: ImageSlotKind,
@@ -20,7 +21,7 @@ export const useImageUpload = (
         try {
             await onUploaded((await uploadAsset(file)).name);
         } catch (uploadError) {
-            setError(uploadError instanceof Error ? uploadError.message : String(uploadError));
+            setError(errorMessage(uploadError));
         } finally {
             setBusy(false);
         }

@@ -6,6 +6,7 @@ import { publish } from '../../api/endpoints';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
 import { useToast } from '../../ui/Toast';
+import { errorMessage } from '../../api/errorMessage';
 
 export type PublishState =
     | { status: 'idle' | 'publishing' }
@@ -29,7 +30,7 @@ export const usePublish = () => {
         } catch (error) {
             if (error instanceof PublishBlockedError)
                 return setState({ status: 'blocked', missing: error.missing });
-            const message = error instanceof Error ? error.message : String(error);
+            const message = errorMessage(error);
             setState({ status: 'failed', message: t('publish.failed', { error: message }) });
         }
     };

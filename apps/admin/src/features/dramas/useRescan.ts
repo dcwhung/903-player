@@ -4,6 +4,7 @@ import { rescanDrama } from '../../api/endpoints';
 import { t } from '../../i18n/t';
 import { mergeRescan } from '../editor/entryDraft';
 import type { EntryEditor } from '../editor/useEntryEditor';
+import { errorMessage } from '../../api/errorMessage';
 
 export const useRescan = (id: string, editor: EntryEditor) => {
     const [state, setState] = useState<{ busy: boolean; message?: string }>({ busy: false });
@@ -20,7 +21,7 @@ export const useRescan = (id: string, editor: EntryEditor) => {
         } catch (error) {
             setState({
                 busy: false,
-                message: error instanceof Error ? error.message : String(error),
+                message: errorMessage(error),
             });
         }
     };

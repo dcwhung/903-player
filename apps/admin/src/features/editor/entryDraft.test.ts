@@ -1,4 +1,4 @@
-import { ValidationError, VersionConflictError } from '../../api/client';
+import { UnauthorizedError, ValidationError, VersionConflictError } from '../../api/client';
 import { changedKeys, dirtyLabels, mergeRescan, problemOf } from './entryDraft';
 
 describe('entryDraft', () => {
@@ -24,6 +24,9 @@ describe('entryDraft', () => {
             detail: 'arcs[0].id bad',
         });
         expect(problemOf(new Error('boom'))).toEqual({ type: 'failed', message: 'boom' });
+        expect(problemOf(new UnauthorizedError(401, 'not logged in'))).toEqual({
+            type: 'unauthorized',
+        });
     });
 
     it('should keep local edits over a rescan result', () => {

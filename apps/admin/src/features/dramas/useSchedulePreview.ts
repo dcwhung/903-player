@@ -2,6 +2,7 @@
 import type { ExpandedSchedule, ScheduleRule } from '@903-player/catalog';
 import { useEffect, useState } from 'react';
 import { previewSchedule } from '../../api/endpoints';
+import { errorMessage } from '../../api/errorMessage';
 
 const PREVIEW_DELAY_MS = 300;
 
@@ -23,7 +24,7 @@ export const useSchedulePreview = (dramaId: string, arcId: string, rule: Schedul
                     alive &&
                     setPreview({
                         expanded: null,
-                        error: error instanceof Error ? error.message : String(error),
+                        error: errorMessage(error),
                     }),
             );
         }, PREVIEW_DELAY_MS);

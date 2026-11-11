@@ -4,6 +4,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { scanAll } from '../api/endpoints';
+import { errorMessage } from '../api/errorMessage';
 
 const RESCAN_AFTER_MS = 5 * 60 * 1000;
 
@@ -16,7 +17,7 @@ const runScan = async (): Promise<ScanState> => {
     try {
         return { status: 'done', scannedAt: (await scanAll()).scannedAt };
     } catch (error) {
-        return { status: 'error', error: error instanceof Error ? error.message : String(error) };
+        return { status: 'error', error: errorMessage(error) };
     }
 };
 

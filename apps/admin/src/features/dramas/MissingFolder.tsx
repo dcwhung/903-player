@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { pairFolder, unmappedFolders } from '../../api/endpoints';
 import { useResource } from '../../data/useResource';
 import { t } from '../../i18n/t';
+import { errorMessage } from '../../api/errorMessage';
 
 interface MissingFolderProps {
     dramaId: string;
@@ -26,7 +27,7 @@ export function MissingFolder({ dramaId, folder, etag, onPaired }: MissingFolder
             await pairFolder(dramaId, picked, etag);
             await onPaired();
         } catch (pairError) {
-            setError(pairError instanceof Error ? pairError.message : String(pairError));
+            setError(errorMessage(pairError));
         } finally {
             setBusy(false);
         }
