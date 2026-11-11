@@ -2,13 +2,17 @@
 
 - 日期：2026-11-12
 - 審閱者：Code Reviewer（subagent）
-- 目標：branch `claude/charming-heisenberg-8z30x3`，`a2b2c0a..4d83f96`（docs / mockup commit、`b974b80`、`5c2b9db` 唔審 code）
+- 目標：branch `claude/charming-heisenberg-8z30x3`，`a2b2c0a..3fef4de`（另加 `ace1ff5` / `3fef4de`：碟面裁切預覽改用圓框；docs / mockup commit、`b974b80`、`5c2b9db` 唔審 code）
 - Tier：T2（admin UI + api 驗證邏輯）
 - 總評：13 項同 `8033117` regression fix 全部對到 SSoT，測試齊。但 9(b) 嘅 `mayRelax` 放寬咗太多：**已發佈**嘅 entry 轉下架、圖唔齊，都會被存做 draft，publish 唔包佢（W-714，blocking）
 
 ## Hard Gates
 
-all pass：`npm run lint`（eslint + prettier）、`tsc -b`（admin / api）、相關 unit（admin `vitest related` 165 + node style test 7；api workerd `disabledEntries` / `adminRoutes` / `drafts` / `entries` / `schedule` 87）。Coverage 冇量度，新分支都有對應 test，填 n/a。冇新依賴，Security 填 n/a。Review 期間 head `4d83f96` 嘅 CI run 43112989807 仲係 `in_progress`
+all pass：`npm run lint`（eslint + prettier）、`tsc -b`（admin / api）、相關 unit（admin `vitest related` 165 + node style test 7；api workerd `disabledEntries` / `adminRoutes` / `drafts` / `entries` / `schedule` 87）。Coverage 冇量度，新分支都有對應 test，填 n/a。冇新依賴，Security 填 n/a。Review 期間 head `4d83f96` 嘅 CI run 43112989807 仲係 `in_progress`。追加嘅 `ace1ff5` / `3fef4de`：`ImagePreviewDialog.test.tsx` + `mediaSlot` + `ImageSlot` 9 個 test 過；`tsc -b`、eslint、prettier 都過
+
+## 追加：碟面裁切預覽圓框（`ace1ff5` 紅燈 → `3fef4de`）
+
+冇 finding。紅燈 test 先 commit，之後先 commit 實作。碟面（`slot === 'disc'`）嘅「裁切後」格用 `.frame.bare`，透明邊框同底色；`.out.disc` 加 `2px solid var(--media-border)`，同 `.img-slot` 等現有規則一樣用 token；Banner 冇變。`bare` 用 `border-color: transparent`，冇改 border 寬度，所以兩格大小一致，並排對齊唔受影響
 
 ## 評分結果
 
@@ -67,7 +71,7 @@ const mayRelax = async (db: D1Database, entry: EntryInput, wasDraft: boolean) =>
 ```
 HANDOFF_RECEIPT
 agent: code-reviewer
-scope: admin-feedback-0.6.3 (a2b2c0a..4d83f96)
+scope: admin-feedback-0.6.3 (a2b2c0a..3fef4de)
 status: warn
 score: 95
 hard_gates: { lint: pass, type: pass, tests: pass, coverage: n/a, no_critical: pass, security: n/a }
