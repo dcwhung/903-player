@@ -38,7 +38,7 @@ body {
     border-radius: 14px;
 }
 
-.logo-mini {
+.nav .logo-mini {
     display: grid;
     place-items: center;
     width: 48px;
@@ -49,14 +49,20 @@ body {
     color: var(--primary);
     font-weight: 700;
     font-size: 15px;
+    justify-content: center;
+    padding: 0;
     text-decoration: none;
     box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
-    .logo-mini {
+    .nav .logo-mini {
         background: #ffffff;
     }
+}
+
+.nav .logo-mini:hover {
+    background: #ffffff;
 }
 
 .nav .group {

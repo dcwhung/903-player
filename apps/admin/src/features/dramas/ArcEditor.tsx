@@ -107,7 +107,7 @@ function ArcHead({
             <div className="row3">
                 <ArcIdField
                     arcId={arcId}
-                    editable={state.isNewArc(arcId)}
+                    editable={state.isNewArc(arcId) || state.isArcIdUnconfirmed(arcId)}
                     unconfirmed={state.isArcIdUnconfirmed(arcId)}
                     onCommit={(id) => {
                         set((a) => ({ ...a, id }));

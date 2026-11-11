@@ -7,10 +7,11 @@ const json = (route, body, { status = 200, etag } = {}) =>
         body: JSON.stringify(body),
     });
 
-const show = (id, name, order) => ({
+const show = (id, name, order, extra = {}) => ({
     kind: 'shows',
     id,
     definition: {
+        ...extra,
         name,
         fileTime: '1500',
         airDays: [1, 2, 3, 4, 5],
@@ -36,7 +37,7 @@ const lancy = () => ({
         audio: { host: 'r2', folder: '蘭茜夫人劇場', file: '{no2} - {arc}.m4a' },
         arcs: [
             { id: 'half', name: '戀愛二分一', episodes: 30 },
-            { id: 'arc-01', name: '我心不死', episodes: 37, addedAt: '2026-11-01' },
+            { id: 'lancy-02', name: '我心不死', episodes: 37, addedAt: '2026-11-01' },
         ],
     },
     images: {},
@@ -64,17 +65,26 @@ const NA = { state: 'na' };
 
 export const createState = () => ({
     loggedIn: false,
-    entries: [show('waves', '口水多過浪花', 1), lancy(), golden()],
+    entries: [
+        show('waves', '口水多過浪花', 1, { airTime: { start: '15:00', end: '16:30' } }),
+        show('night', '深夜節目', 2),
+        lancy(),
+        golden(),
+    ],
     publishes: [],
     orders: [],
     puts: [],
+    confirms: [],
+    assets: [],
 });
 
-/** 新短篇 arc-01：ID 未改就係必須 */
+/** 新短篇：掃描自動編號 lancy-02；未確認（confirm-id）又未改名就係必須（同 apps/api todos） */
+const AUTO_ARC_ID = 'lancy-02';
 const todosOf = (state) => {
     const drama = state.entries.find((e) => e.id === 'lancy');
     const arc = drama.definition.arcs[1];
-    const placeholder = /^arc-\d+$/.test(arc.id);
+    const confirmed = state.confirms.some((c) => c.arcId === arc.id);
+    const placeholder = arc.id === AUTO_ARC_ID && !confirmed;
     if (state.publishes.length > 0) return { rows: [], blocking: 0 };
     const target = `/dramas/lancy/arcs#${arc.id}`;
     const row = {
@@ -96,11 +106,12 @@ const todosOf = (state) => {
 
 const changesOf = (state) => {
     if (state.publishes.length > 0) return { items: [], timeline: [] };
+    const arcId = state.entries?.find((e) => e.id === 'lancy').definition.arcs[1].id ?? AUTO_ARC_ID;
     const item = {
         kind: 'newArc',
         when: 'now',
         entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
-        arc: { id: 'heart', name: '我心不死', label: '我心不死' },
+        arc: { id: arcId, name: '我心不死', label: '我心不死' },
         detail: { episodes: { first: 1, last: 37 } },
     };
     return { items: [item], timeline: [{ when: 'now', items: [item] }] };
@@ -214,6 +225,14 @@ const handlers = {
         return json(route, { publish: row });
     },
     'GET /api/publishes': (state, route) => json(route, { publishes: state.publishes }),
+    'POST /api/todos/confirm-id': (state, route, request) => {
+        state.confirms.push(request.postDataJSON());
+        return json(route, { confirmed: 1 });
+    },
+    'PUT /api/assets': (state, route, request) => {
+        state.assets.push(request.postDataBuffer());
+        return json(route, { name: `img${state.assets.length}.webp` });
+    },
 };
 
 export const installMockApi = async (page, state) => {
@@ -237,7 +256,7 @@ export const installMockApi = async (page, state) => {
             return json(route, { error: 'no such schedule' }, { status: 404 });
         const handler = handlers[key];
         return handler
-            ? handler(state, route)
+            ? handler(state, route, request)
             : json(route, { error: `no mock for ${key}` }, { status: 404 });
     });
 };

@@ -16,4 +16,11 @@ describe('IdField', () => {
         expect(screen.getByRole('textbox')).toHaveAttribute('readonly');
         expect(screen.getByRole('img', { name: '已發佈，不可更改' })).toBeInTheDocument();
     });
+
+    it('should mark an unconfirmed auto ID red (field + label) without an error text', () => {
+        render(<IdField value="drama-01" editable unconfirmed tip="x" onChange={() => {}} />);
+        const input = screen.getByRole('textbox', { name: /ID/ });
+        expect(input.closest('label')).toHaveClass('field', 'unconfirmed');
+        expect(input).not.toHaveAttribute('aria-invalid');
+    });
 });
