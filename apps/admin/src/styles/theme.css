@@ -1224,3 +1224,15 @@ table.matrix .row-link {
 table.matrix .row-link:hover {
     text-decoration: underline;
 }
+
+/* 廣播劇列表：短篇名（連碟面）可以撳去短篇 tab */
+.arcs .arc-link {
+    color: inherit;
+    text-decoration: none;
+    border-radius: 6px;
+}
+
+.arcs .arc-link:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}

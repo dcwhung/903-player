@@ -13,6 +13,8 @@ export interface ArcLine {
     isNew: boolean;
     /** 短篇碟面（arcDiscOf：短篇 → 劇集 → 冇 = 黑碟） */
     disc?: string | undefined;
+    /** 短篇編輯位置（arcEditorPath）；冇 id 就冇 */
+    href?: string | undefined;
 }
 
 export const collapseArcs = (lines: readonly ArcLine[]): { shown: ArcLine[]; hidden: number } => {
