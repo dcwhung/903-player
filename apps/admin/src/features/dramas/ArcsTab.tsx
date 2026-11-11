@@ -3,6 +3,7 @@
  * 拖 ⠿ 改次序（草稿，同其他改動一齊儲存）；撳一行原位展開編輯
  */
 import { Fragment, useState } from 'react';
+import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
 import { arcLabel, arcsOf } from '../../model/raw';
 import { SaveBar } from '../../ui/SaveBar';
@@ -13,21 +14,27 @@ import { ArcRow } from './ArcRow';
 import { arcIdOf, reorderArcs } from './dramaModel';
 import type { DramaEditorState } from './useDramaEditor';
 
+const arcItemsOf = (definition: RawDefinition) =>
+    arcsOf(definition).map((arc, i) => ({ arc, id: arcIdOf(arc, i) }));
+
+function ArcsHead() {
+    return (
+        <div className="list-head" aria-hidden="true">
+            <span />
+            <span>{t('list.colArcs')}</span>
+            <span>{t('list.colStatus')}</span>
+        </div>
+    );
+}
+
 export function ArcsTab({ state, openArc }: { state: DramaEditorState; openArc: string }) {
     const { editor } = state;
     const [open, setOpen] = useState<string | null>(openArc || null);
-    const arcs = arcsOf(editor.draft?.definition ?? {}).map((arc, i) => ({
-        arc,
-        id: arcIdOf(arc, i),
-    }));
+    const arcs = arcItemsOf(editor.draft?.definition ?? {});
     return (
         <>
             <div className="card flush">
-                <div className="list-head" aria-hidden="true">
-                    <span />
-                    <span>{t('list.colArcs')}</span>
-                    <span>{t('list.colStatus')}</span>
-                </div>
+                <ArcsHead />
                 {arcs.length === 0 && <p className="muted pad">{t('drama.noArcs')}</p>}
                 <ol className="list" aria-label={t('drama.arcsLabel')}>
                     <SortableList
@@ -46,7 +53,12 @@ export function ArcsTab({ state, openArc }: { state: DramaEditorState; openArc: 
                                     sortable={sortable}
                                 />
                                 {open === item.id && (
-                                    <ArcEditor state={state} arc={item.arc} arcId={item.id} />
+                                    <ArcEditor
+                                        state={state}
+                                        arc={item.arc}
+                                        arcId={item.id}
+                                        onIdChange={setOpen}
+                                    />
                                 )}
                             </Fragment>
                         )}

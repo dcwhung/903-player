@@ -21,10 +21,13 @@ export function ArcEditor({
     state,
     arc,
     arcId,
+    onIdChange,
 }: {
     state: DramaEditorState;
     arc: RawDefinition;
     arcId: string;
+    /** 改咗 ID：展開狀態跟住新 ID */
+    onIdChange: (id: string) => void;
 }) {
     const { editor, setFieldError } = state;
     const set = (update: (arc: RawDefinition) => RawDefinition) =>
@@ -41,7 +44,7 @@ export function ArcEditor({
                 onUploaded={(slot, name) => state.saveImage(slot, name, arcId)}
             />
             <div className="form">
-                <ArcHead state={state} arc={arc} arcId={arcId} set={set} />
+                <ArcHead state={state} arc={arc} arcId={arcId} set={set} onIdChange={onIdChange} />
                 <SummaryField target={arc} onChange={set} />
                 <div className="field wide">
                     <span>{t('drama.cast')}</span>
@@ -64,11 +67,13 @@ function ArcHead({
     arc,
     arcId,
     set,
+    onIdChange,
 }: {
     state: DramaEditorState;
     arc: RawDefinition;
     arcId: string;
     set: SetArc;
+    onIdChange: (id: string) => void;
 }) {
     const statusId = useId();
     return (
@@ -77,7 +82,10 @@ function ArcHead({
                 <ArcIdField
                     arcId={arcId}
                     editable={state.isNewArc(arcId)}
-                    onCommit={(id) => set((a) => ({ ...a, id }))}
+                    onCommit={(id) => {
+                        set((a) => ({ ...a, id }));
+                        onIdChange(id);
+                    }}
                 />
                 <div className="field">
                     <span id={statusId}>{t('editor.status')}</span>
