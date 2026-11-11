@@ -1,0 +1,50 @@
+import type { ChangeItem } from '@903-player/catalog';
+import { historyName, itemStatusOf } from './historyModel';
+
+const entry = { kind: 'dramas', id: 'golden', name: '黃金少年' } as const;
+const arc = { id: 's1', name: 'Season 1', label: 'Season 1' };
+
+describe('historyModel', () => {
+    it('should describe each change with the list pill wording', () => {
+        const items: ChangeItem[] = [
+            {
+                kind: 'newEpisodes',
+                when: 'now',
+                entry,
+                detail: { episodes: { first: 39, last: 40 } },
+            },
+            { kind: 'newDrama', when: '2026-11-20', entry, detail: {} },
+            {
+                kind: 'newArc',
+                when: '2026-11-16',
+                entry,
+                arc,
+                detail: { dates: ['2026-11-16', '2026-11-18'] },
+            },
+            { kind: 'unlist', when: '2026-11-03', entry, arc, detail: { reason: 'removedAt' } },
+            { kind: 'unlist', when: 'now', entry, detail: { reason: 'disabled' } },
+        ];
+        expect(items.map((item) => itemStatusOf(item)?.text)).toEqual([
+            '＋2 集 · 已上架',
+            '11 月 20 日上架',
+            '排程中 · 11 月 16 日起',
+            '已下架 · 11 月 3 日',
+            '已下架',
+        ]);
+    });
+
+    it('should label edits by field and name arcs with their drama', () => {
+        const edit: ChangeItem = {
+            kind: 'edit',
+            when: 'now',
+            entry,
+            arc,
+            detail: { fields: ['summary', 'zzz'] },
+        };
+        expect(itemStatusOf(edit)?.text).toBe('簡介、zzz');
+        expect(historyName(edit)).toBe('黃金少年 › Season 1');
+        expect(historyName({ kind: 'rollback', when: 'now', detail: { publishId: 1 } })).toBe(
+            '還原至 #1',
+        );
+    });
+});
