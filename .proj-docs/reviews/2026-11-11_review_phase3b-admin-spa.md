@@ -144,3 +144,46 @@ next_agent: developer
 branch: "claude/charming-heisenberg-8z30x3"
 context: "Phase 3b warn 85: W-708 (apps/api still 0.4.0 -> bump 0.5.0), W-709 (MissingFolder select pairs on ArrowDown, reproduced in Chromium; add explicit 配對 button/confirm + test), W-710 (401 mid-session shows raw 'not logged in', no re-login path; add unauthorized problem type). Deviations 1-6 accepted, 7 must fix (W-709). S-803..S-811 to backlog. Fix commits 'fix: W-70x | ...'; re-review only those diffs. Report committed locally, not pushed (code CI running on 3283bb5)."
 ```
+
+## Re-review — 2026-11-11（`b906677` W-708、`8ae7a2a` W-709、`7314cc8` W-710、`620ed23` 視覺）
+
+只驗 W-708 / W-709 / W-710 嘅修正同佢哋嘅 diff，唔再搵新嘅 🟢。
+
+- Hard gates：`npx tsc -b`、`npx eslint apps/admin apps/api/src`、`npx prettier --check apps/admin apps/api/package.json` exit 0；`npx vitest related --run`（`MissingFolder.tsx`、`errorMessage.ts`、`entryDraft.ts`、`EditorNotices.tsx`、`Brand.tsx`）6 檔 16 pass。Admin e2e 由 CI / QA 跑（developer 報 6/6）
+- **W-708 ✅ 已修**：`apps/api` 0.4.0 → 0.5.0，`package-lock.json` 同步；`Brand.test.tsx` 驗 pill 顯示 `Admin v${version}`
+- **W-709 ✅ 已修**：`<select>` 改 controlled，`onChange` 只 `setPicked`；新「配對」掣（未揀 / busy 時 disabled）先 call `pairFolder`。`MissingFolder.test.tsx` 覆蓋：淨係 change（等於 ↓ 鍵）唔會 POST；撳「配對」先 POST `{ folder }` + `onPaired`
+- **W-710 ✅ 已修**：`problemOf` 加 `unauthorized`，`EditorNotices` 出 `t('editor.sessionExpired')` +「重新登入（新分頁）」（`/auth/google/start`，`target="_blank" rel="noopener"`），本頁 draft 唔郁；cookie 係 host-wide，新分頁登入完返嚟再撳儲存就得。`errorMessage()` 共用到上載、排序、發佈、還原、重新掃描、預覽、刪除、配對、自動掃描，401 唔會再出英文 `not logged in`。`ShowEditor.test.tsx` 加 401 case
+- `620ed23`（唔係 review item）：`.inline-ctl` / `.title-row h1` 全部用現有 token（`--accent`、`--accent-soft`、`--ink`），class 已經喺 `ScheduleSentence.tsx` / `EditorHeader.tsx` 用緊；e2e mock 加 schedule preview，冇改產品邏輯
+
+### 最終評分
+
+| 維度     | 得分    | 滿分    |
+| -------- | ------- | ------- |
+| 正確性   | 25      | 25      |
+| 安全性   | 20      | 20      |
+| 可維護性 | 20      | 20      |
+| 測試覆蓋 | 15      | 15      |
+| 性能     | 10      | 10      |
+| 代碼風格 | 10      | 10      |
+| **總分** | **100** | **100** |
+
+**結果：✅ pass**（W-708、W-709、W-710 已修；S-803–S-811 入 backlog）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T3
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: "pass (re-review related: 6 files / 16; admin e2e via CI/QA)"
+  coverage: "W-709 / W-710 / W-708 paths covered by MissingFolder.test, errorMessage.test, entryDraft.test, ShowEditor.test, Brand.test"
+  no_critical: pass
+  security_scan: "n/a (no new dependencies in fix commits)"
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "claude/charming-heisenberg-8z30x3"
+context: "Phase 3b re-review pass 100: W-708 (b906677 api 0.5.0), W-709 (8ae7a2a explicit 配對 button, select only stores choice), W-710 (7314cc8 unauthorized problem + t() notice + new-tab re-login, shared errorMessage) fixed; 620ed23 visual-only, tokens OK. S-803..S-811 to backlog (S-807: add QA chain admin). QA S1 chains admin + api after CI on 620ed23 green. Report committed locally, not pushed."
+```
