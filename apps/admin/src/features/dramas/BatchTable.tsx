@@ -1,4 +1,4 @@
-/* 上架批次表（舊批次同新規則排法唔同先出）：日期 / 集數 / 狀態 / 排法（mockup ⑩ table.batches） */
+/* 上下架批次表（舊批次同新規則排法唔同先出）：日期 / 集數 / 狀態 / 排法（mockup ⑩ table.batches） */
 import type { EpisodeRange, ScheduleRule } from '@903-player/catalog';
 import { t } from '../../i18n/t';
 import { shortDate } from '../../model/dates';
