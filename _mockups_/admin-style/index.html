@@ -916,6 +916,85 @@
                 box-shadow: var(--shadow);
                 border: 1px solid var(--line);
             }
+
+            /* ---------- ⑨ nav v4：收合掣置頂、登出同 email 一行置底 ---------- */
+            .nav-top {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                margin: -6px 0 10px;
+            }
+            .shell.mini .nav-top {
+                justify-content: center;
+            }
+            .icon-ghost {
+                display: inline-grid;
+                place-items: center;
+                width: 36px;
+                height: 36px;
+                padding: 0;
+                border: 0;
+                border-radius: 10px;
+                background: transparent;
+                color: #fff;
+                cursor: pointer;
+            }
+            .icon-ghost:hover {
+                background: rgb(255 255 255 / 0.16);
+            }
+            .theme-seg {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 4px;
+                padding: 4px;
+                border-radius: 12px;
+                background: rgb(255 255 255 / 0.12);
+                margin-bottom: 8px;
+            }
+            .theme-seg button {
+                display: grid;
+                place-items: center;
+                height: 30px;
+                border: 0;
+                border-radius: 9px;
+                background: transparent;
+                color: #fff;
+                cursor: pointer;
+            }
+            .theme-seg button[aria-pressed='true'] {
+                background: #fff;
+                color: var(--sky-strong);
+            }
+            .foot-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                padding: 6px 4px 0 12px;
+                border-top: 1px solid rgb(255 255 255 / 0.2);
+            }
+            .foot-row .who {
+                padding: 0;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .shell.mini .foot-row {
+                justify-content: center;
+                padding: 6px 0 0;
+            }
+            .shell.mini .theme-seg {
+                display: none;
+            }
+            .theme-one {
+                display: none;
+            }
+            .shell.mini .theme-one {
+                display: inline-grid;
+                margin: 0 auto 8px;
+                background: rgb(255 255 255 / 0.12);
+            }
         </style>
     </head>
     <body>
@@ -1004,6 +1083,19 @@
                 </symbol>
                 <symbol id="i-login" viewBox="0 0 24 24">
                     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />
+                </symbol>
+                <symbol id="i-monitor" viewBox="0 0 24 24">
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <path d="M8 21h8M12 17v4" />
+                </symbol>
+                <symbol id="i-sun" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="4" />
+                    <path
+                        d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+                    />
+                </symbol>
+                <symbol id="i-moon" viewBox="0 0 24 24">
+                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
                 </symbol>
             </defs>
         </svg>
@@ -1552,6 +1644,143 @@
                                         <svg class="i"><use href="#i-save" /></svg>儲存
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑨ -->
+            <section id="i">
+                <p class="state-label">
+                    ⑨ nav v4（取代 ① / ② 嘅底部）：收合掣做 icon 放頂部左上（參考 iPad
+                    Files）；底部由上至下 = 主題切換 → 分隔線 → email ＋ 登出
+                    icon（同一行置右，放最底）。登出 / 收合唔出字，hover 出 tooltip
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <div class="nav-top">
+                                <button class="icon-ghost" aria-label="收合選單" title="收合選單">
+                                    <svg class="i"><use href="#i-panel" /></svg>
+                                </button>
+                            </div>
+                            <div class="brand">
+                                <img src="banner.webp" alt="903 叱咤 Player" /><span class="ver"
+                                    >Admin v0.6.0</span
+                                >
+                            </div>
+                            <a href="#i" aria-current="page" aria-label="更新內容"
+                                ><svg class="i"><use href="#i-inbox" /></svg
+                                ><span class="label">更新內容</span><span class="count">3</span></a
+                            >
+                            <span class="group">內容</span>
+                            <a href="#i" aria-label="節目"
+                                ><svg class="i"><use href="#i-radio" /></svg
+                                ><span class="label">節目</span></a
+                            >
+                            <a href="#i" aria-label="廣播劇"
+                                ><svg class="i"><use href="#i-disc" /></svg
+                                ><span class="label">廣播劇</span></a
+                            >
+                            <span class="group">記錄</span>
+                            <a href="#i" aria-label="上下架記錄"
+                                ><svg class="i"><use href="#i-history" /></svg
+                                ><span class="label">上下架記錄</span></a
+                            >
+                            <span class="spacer"></span>
+                            <div class="theme-seg" role="group" aria-label="主題">
+                                <button aria-pressed="true" aria-label="跟系統" title="跟系統">
+                                    <svg class="i"><use href="#i-monitor" /></svg>
+                                </button>
+                                <button aria-pressed="false" aria-label="淺色" title="淺色">
+                                    <svg class="i"><use href="#i-sun" /></svg>
+                                </button>
+                                <button aria-pressed="false" aria-label="深色" title="深色">
+                                    <svg class="i"><use href="#i-moon" /></svg>
+                                </button>
+                            </div>
+                            <button
+                                class="icon-ghost theme-one"
+                                aria-label="主題：跟系統（撳一下轉淺色）"
+                                title="主題：跟系統"
+                            >
+                                <svg class="i"><use href="#i-monitor" /></svg>
+                            </button>
+                            <div class="foot-row">
+                                <span class="who" title="admin@example.com">admin@example.com</span>
+                                <button class="icon-ghost" aria-label="登出" title="登出">
+                                    <svg class="i"><use href="#i-logout" /></svg>
+                                </button>
+                            </div>
+                        </nav>
+                        <div class="panel">
+                            <div class="scan">✓ 已掃描 R2（09:41）· 發現 3 項新內容</div>
+                            <h2>更新內容</h2>
+                            <div class="card">
+                                <p class="meta" style="margin: 0">（內容區不變）</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="state-label">
+                    ⑨b 收合版：頂部展開掣、logo、icon；主題變一粒掣（撳一下輪住轉）；最底淨係登出
+                    icon
+                </p>
+                <div class="frame">
+                    <div class="shell mini">
+                        <nav class="nav" aria-label="主選單">
+                            <div class="nav-top">
+                                <button class="icon-ghost" aria-label="展開選單" title="展開選單">
+                                    <svg class="i" style="transform: scaleX(-1)">
+                                        <use href="#i-panel" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="logo-mini" aria-label="903 Player Admin v0.6.0">903</div>
+                            <a href="#i" aria-current="page" aria-label="更新內容"
+                                ><svg class="i"><use href="#i-inbox" /></svg
+                                ><span class="dot-count"></span
+                            ></a>
+                            <a href="#i" aria-label="節目"
+                                ><svg class="i"><use href="#i-radio" /></svg
+                            ></a>
+                            <a href="#i" aria-label="廣播劇"
+                                ><svg class="i"><use href="#i-disc" /></svg
+                            ></a>
+                            <a href="#i" aria-label="上下架記錄"
+                                ><svg class="i"><use href="#i-history" /></svg
+                            ></a>
+                            <span class="spacer"></span>
+                            <div class="theme-seg" role="group" aria-label="主題">
+                                <button aria-pressed="true" aria-label="跟系統" title="跟系統">
+                                    <svg class="i"><use href="#i-monitor" /></svg>
+                                </button>
+                                <button aria-pressed="false" aria-label="淺色" title="淺色">
+                                    <svg class="i"><use href="#i-sun" /></svg>
+                                </button>
+                                <button aria-pressed="false" aria-label="深色" title="深色">
+                                    <svg class="i"><use href="#i-moon" /></svg>
+                                </button>
+                            </div>
+                            <button
+                                class="icon-ghost theme-one"
+                                aria-label="主題：跟系統（撳一下轉淺色）"
+                                title="主題：跟系統"
+                            >
+                                <svg class="i"><use href="#i-monitor" /></svg>
+                            </button>
+                            <div class="foot-row">
+                                <button class="icon-ghost" aria-label="登出" title="登出">
+                                    <svg class="i"><use href="#i-logout" /></svg>
+                                </button>
+                            </div>
+                        </nav>
+                        <div class="panel">
+                            <div class="scan">✓ 已掃描 R2（09:41）· 發現 3 項新內容</div>
+                            <h2>更新內容</h2>
+                            <div class="card">
+                                <p class="meta" style="margin: 0">（內容區不變）</p>
                             </div>
                         </div>
                     </div>
