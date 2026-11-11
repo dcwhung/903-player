@@ -126,10 +126,11 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 - **還原 #N**（3c）=「還原上架狀態，之後新增嘅變下架」：用 snapshot #N 改 D1，再行正常 publish（新一行，`rollback_of = N`），所以之後 `GET /api/changes` 冇差異、admin 唔會出「待發佈」
     - 只改 `enabled`（節目、劇、短篇三層）：snapshot 有 → 跟 snapshot（冇呢個 key = 預設，刪走）；snapshot 冇（之後先加）→ `enabled: false`，唔刪，集數 ID 仲喺 document，ID 守衛過、收藏唔斷；draft 唔郁
     - **唔還原**內容欄位（名、簡介、圖、集數、排程日期 / schedules）：還原集數會令鎖咗嘅 ID 消失，排程日期由 schedules 表計出，淨改 definition 會唔夾。即係上架項目同 #N 一樣，但文字 / 圖 / 之後加嘅集數係最新版本
+    - #N 係 `status = 'failed'`（從未上過 R2）→ 409，乜都唔寫（S-797）
     - 次序：先喺記憶體砌 document → 驗證（422）+ ID 守衛（409）→ 唔過就乜都唔寫；過咗先一個 D1 batch 寫（樂觀鎖，`updated_at` / ETag bump；中途有人改 → 寫返舊值 + 412）→ publish；publish throw（例如 R2 寫唔到）或者被拒 → 另一個 batch 寫返舊 definition（`updated_at` 再 bump）
     - 冇嘢要改又同最新一次一樣 → `{ unchanged: true }`（唔開新行）
 - 內容（除 `generatedAt` 外）同最新一次一樣 → `{ unchanged: true, publish }`，唔開新行、唔寫 R2（admin 顯示「內容與目前版本相同」）；`?force=1` 照寫
-- 次序：先記 `publishes` 一行，再寫 R2；R2 寫失敗就刪返嗰行（ID 守衛唔會漏咗已上線嘅 ID）；連刪都失敗就標 `status = 'failed'`（migration `0003`）。「而家 publish 緊」、ID 守衛、「內容冇變」比較都只睇最新一行 `status = 'ok'`，記錄照列出 failed 行（`status` 欄）
+- 次序：先記 `publishes` 一行，再寫 R2；R2 寫失敗就刪返嗰行（ID 守衛唔會漏咗已上線嘅 ID）；R2 寫咗之後 purge edge cache 失敗只 log、唔當 publish 失敗（S-814：唔係還原會 revert D1，同已上線 catalog 唔夾）；連刪都失敗就標 `status = 'failed'`（migration `0003`）。「而家 publish 緊」、ID 守衛、「內容冇變」比較都只睇最新一行 `status = 'ok'`，記錄照列出 failed 行（`status` 欄）
 - 圖 manifest 嘅圖檔名要合 `<sha256 前 16 hex>.<webp|jpg>` 兼已經喺 `assets`
 
 ## 內容 API（Backend Phase 2b-1）

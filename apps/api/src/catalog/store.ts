@@ -161,8 +161,15 @@ export const publishDocuments = async (db: D1Database): Promise<Map<number, stri
         ).results.map((row) => [row.id, row.document]),
     );
 
-export const publishDocument = (db: D1Database, id: number): Promise<string | null> =>
-    db.prepare('SELECT document FROM publishes WHERE id = ?').bind(id).first<string>('document');
+/** 還原用：snapshot + status（failed 嗰份從未上過 R2，唔准還原，S-797） */
+export const publishSnapshot = (
+    db: D1Database,
+    id: number,
+): Promise<{ document: string; status: PublishStatus } | null> =>
+    db
+        .prepare('SELECT document, status FROM publishes WHERE id = ?')
+        .bind(id)
+        .first<{ document: string; status: PublishStatus }>();
 
 /* ───────────── 內容 API（Phase 2b-1）：單一 entry + 排程 ───────────── */
 
