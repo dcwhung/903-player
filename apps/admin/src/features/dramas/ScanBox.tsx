@@ -42,10 +42,13 @@ export function ReadonlyValue({
     label,
     value,
     code = false,
+    hint,
 }: {
     label: string;
     value: string;
     code?: boolean;
+    /** 欄下面一行 muted 細字（例如檔名例子） */
+    hint?: string | undefined;
 }) {
     return (
         <div className="field">
@@ -53,6 +56,7 @@ export function ReadonlyValue({
             <div className="readonly-box">
                 {code ? <code>{value}</code> : <span className="val">{value}</span>}
             </div>
+            {hint && <span className="muted small field-hint">{hint}</span>}
         </div>
     );
 }

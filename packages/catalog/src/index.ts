@@ -98,6 +98,7 @@ export {
     coverUrls,
     DAILY_TEMPLATE,
     episodeUrls,
+    exampleFileName,
     findSuspicious,
     generateDraft,
     parseEpisodeFileName,

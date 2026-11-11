@@ -8,6 +8,7 @@ export {
     parseEpisodeNumeral,
     type ParsedEpisodeFile,
 } from './names';
+export { exampleFileName } from './example';
 export { DAILY_TEMPLATE, SERIES_TEMPLATES } from './shared';
 export { coverUrls, episodeUrls } from './urls';
 export type {

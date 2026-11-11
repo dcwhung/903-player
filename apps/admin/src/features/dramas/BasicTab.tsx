@@ -2,6 +2,8 @@
  * 廣播劇 · 基本資料：Design Origin: mockup: _mockups_/admin/index.html#s4（+ #s4c 資料夾對唔到）
  * ID ⓘ → 簡介 → 類型 / 上架日期 / 狀態 → 虛線框「由 R2 掃描」；圖片喺右邊
  */
+import { exampleFileName } from '@903-player/catalog';
+import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
 import { DeleteEntry } from '../editor/DeleteEntry';
 import { dirtyLabels } from '../editor/entryDraft';
@@ -14,6 +16,12 @@ import { r2FolderOf, r2TemplateOf } from './dramaModel';
 import { MissingFolder } from './MissingFolder';
 import { ReadonlyValue, ScanBox } from './ScanBox';
 import type { DramaEditorState } from './useDramaEditor';
+
+/** 「例：我心不死 - 第 01 集.m4a」：模板 + 第一集（模板一變即刻跟住變） */
+const exampleOf = (definition: RawDefinition): string | undefined => {
+    const name = exampleFileName(definition);
+    return name === undefined ? undefined : t('drama.fileExample', { name });
+};
 
 function R2Fields({ state }: { state: DramaEditorState }) {
     const { editor, rescan } = state;
@@ -43,6 +51,7 @@ function R2Fields({ state }: { state: DramaEditorState }) {
                 label={t('drama.fileTemplate')}
                 value={r2TemplateOf(definition) ?? ''}
                 code
+                hint={exampleOf(definition)}
             />
         </ScanBox>
     );

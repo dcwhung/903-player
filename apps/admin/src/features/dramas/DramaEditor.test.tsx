@@ -56,6 +56,8 @@ describe('DramaEditor', () => {
             '蘭茜夫人劇場/',
         );
         expect(screen.getByRole('textbox', { name: /^ID/ })).toHaveAttribute('readonly');
+        // 檔名模板下面：用模板 + 第一集砌嘅例子
+        expect(screen.getByText('例：01 - 戀愛二分一.m4a')).toHaveClass('muted');
     });
 
     it('should expand the arc from the hash with an inline name input and titles', async () => {

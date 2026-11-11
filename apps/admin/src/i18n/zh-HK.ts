@@ -295,6 +295,7 @@ export const zhHK = {
         rescanned: '已重新掃描，按「儲存」套用',
         folder: '資料夾',
         fileTemplate: '檔名模板',
+        fileExample: '例：{name}',
         missingFolder: '在 R2 找不到 {folder}，請選擇對應的資料夾：',
         pickFolder: '選擇未配對的資料夾…',
         pair: '配對',
