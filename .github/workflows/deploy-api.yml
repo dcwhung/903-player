@@ -51,12 +51,12 @@ jobs:
               run: npm run build -w apps/admin
               working-directory: .
 
-            - name: Apply D1 migrations
-              run: npx wrangler d1 migrations apply 903-player --remote
-
             # api test 會開個空 apps/admin/dist（vitest.config.ts），冇 index.html 就會 deploy 一個空 SPA
             - name: Check admin build
               run: test -f ../admin/dist/index.html || { echo "::error::apps/admin/dist/index.html missing"; exit 1; }
+
+            - name: Apply D1 migrations
+              run: npx wrangler d1 migrations apply 903-player --remote
 
             - name: Deploy Worker
               run: npx wrangler deploy
