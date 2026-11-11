@@ -1,6 +1,6 @@
 # Backlog 登記冊（🟢 / Observation）
 
-**最後更新**：2026-11-12（Phase 3 backlog 清理：19 項 + S-826 關、S-825 / S-827 開；Phase 3c prod fixes：S-821–S-824 開、S-820 關；Phase 3c deploy：S-820 開；Phase 3c：S-812–S-817、S-819 開，S-818 喺 PR 處理；Phase 3b：S-803–S-811 開、S-807 關；Phase 3a：S-798–S-802 開；Phase 2b-2：S-786、S-787 關，S-792–S-797 開）
+**最後更新**：2026-11-12（admin 0.6.3：S-828–S-830 開，S-831 即場修；Phase 3 backlog 清理：19 項 + S-826 關、S-825 / S-827 開；Phase 3c prod fixes：S-821–S-824 開、S-820 關；Phase 3c deploy：S-820 開；Phase 3c：S-812–S-817、S-819 開，S-818 喺 PR 處理；Phase 3b：S-803–S-811 開、S-807 關；Phase 3a：S-798–S-802 開；Phase 2b-2：S-786、S-787 關，S-792–S-797 開）
 
 > Review / QA 報告入面嘅 🟢 同 Observation 統一喺呢度追蹤。掃 backlog 時淨係睇「Open」；「Closed」嘅唔使再理。
 > 新 finding 照寫喺各自報告，處理完或者決定唔理就喺呢度更新。
@@ -53,6 +53,9 @@
 | S-823 | `apps/admin/src/ui/TimeRoller`                   | 重現唔到（1280–720px）；0.6.2 加咗 e2e guard（1024 / 720px）                                                                                                                              | 有人撞到先做                   | reviews/2026-11-12_review_phase3c-prod-fixes     |
 | S-825 | `apps/api/src/auth/next.ts` `safeNext`           | 冇處理 dot-segment（`/x/../auth/google/start` 會過），後果只係多行一次 OAuth，唔係 open redirect                                                                                          | 下次改 auth                    | reviews/2026-11-12_review_phase3-backlog         |
 | S-827 | `apps/api/src/admin/order.ts`                    | production 如果已經有 `order: 2.0`，`IS NOT CAST(...)` 當相等唔改寫；`JSON.parse` 讀出都係 2，冇實際影響                                                                                  | 有人撞到先做                   | reviews/2026-11-12_review_phase3-backlog         |
+| S-828 | admin `rowTarget` / `arcEditorPath`              | URL path 冇 encode；而家 ID pattern 限制咗字元，冇實際問題                                                                                                                                | 下次改 ID 規則                 | reviews/2026-11-12_review_admin-feedback-0.6.3   |
+| S-829 | `apps/admin/e2e/run.mjs` `boxOf`                 | 冇用到嘅參數 `x`                                                                                                                                                                          | 下次改 e2e                     | reviews/2026-11-12_review_admin-feedback-0.6.3   |
+| S-830 | admin `shortDate`                                | 排程日子跨年冇年份，只靠星期幾分辨                                                                                                                                                        | 有人撞到先做                   | reviews/2026-11-12_review_admin-feedback-0.6.3   |
 
 ## Closed
 
