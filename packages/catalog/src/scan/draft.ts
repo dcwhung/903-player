@@ -9,6 +9,7 @@ import { scanListing } from './listing';
 import { mergeArcs, mergeDaily, withArcIds, type DailyEpisodeJson } from './merge';
 import { analyseSeries, nameIssues } from './series';
 import { DAILY_TEMPLATE, issue } from './shared';
+import { wordingOf, type ScanWording } from './wording';
 import type {
     DraftArc,
     DraftJson,
@@ -50,6 +51,12 @@ const TOP_LEVEL_ORDER = [
     'episodes',
 ];
 
+interface BuildOptions {
+    today: string;
+    id: string | undefined;
+    wording: ScanWording;
+}
+
 type Built = Omit<DraftResult, 'scan' | 'kind' | 'today' | 'json'> & { json: DraftJson };
 
 const newDramaBase = (scan: DramaScan, kind: DraftKind, template: string): DraftJson => ({
@@ -70,9 +77,9 @@ const templateOf = (existing: DraftJson | undefined): string | undefined => {
 const seriesJson = (
     scan: DramaScan,
     existing: DraftJson | undefined,
-    { today, id }: { today: string; id: string | undefined },
+    { today, id, wording }: BuildOptions,
 ): Built => {
-    const analysis = analyseSeries(scan, templateOf(existing));
+    const analysis = analyseSeries(scan, templateOf(existing), wording);
     if (!existing) {
         const json = {
             ...newDramaBase(scan, 'series', analysis.template),
@@ -81,28 +88,36 @@ const seriesJson = (
         };
         return { ...analysis, json };
     }
-    analysis.issues.push(...existingFolderIssues(scan, existing));
-    const ctx = { audio: { file: analysis.template, folder: scan.name }, today };
+    analysis.issues.push(...existingFolderIssues(scan, existing, wording));
+    const ctx = { audio: { file: analysis.template, folder: scan.name }, today, wording };
     const oldArcs = (existing.arcs as DraftArc[] | undefined) ?? [];
     const merged = mergeArcs(oldArcs, analysis.arcs, ctx, analysis.issues);
     return { ...analysis, json: { ...existing, arcs: withArcIds(merged, analysis.issues, id) } };
 };
 
-const dailyJson = (scan: DramaScan, existing: DraftJson | undefined): Built => {
+const dailyJson = (
+    scan: DramaScan,
+    existing: DraftJson | undefined,
+    wording: ScanWording,
+): Built => {
     const analysis = analyseDaily(scan);
     if (!existing) {
         const episodes = analysis.dates.map((date) => ({ date }));
         return { ...analysis, json: { ...newDramaBase(scan, 'daily', DAILY_TEMPLATE), episodes } };
     }
-    analysis.issues.push(...existingFolderIssues(scan, existing));
+    analysis.issues.push(...existingFolderIssues(scan, existing, wording));
     const oldEpisodes = (existing.episodes as DailyEpisodeJson[] | undefined) ?? [];
-    const episodes = mergeDaily(oldEpisodes, analysis.dates, analysis.issues);
+    const episodes = mergeDaily(oldEpisodes, analysis.dates, analysis.issues, wording);
     return { ...analysis, json: { ...existing, episodes } };
 };
 
 /** 劇集層嘅檢查：folder 名、亂放嘅錄音、id */
-const dramaIssues = (scan: DramaScan, id: string | undefined, kind: DraftKind): Issue[] => {
-    const issues = nameIssues(scan.name, scan.rawName);
+const dramaIssues = (
+    scan: DramaScan,
+    { id, wording }: { id: string | undefined; wording: ScanWording },
+    kind: DraftKind,
+): Issue[] => {
+    const issues = nameIssues(scan.name, scan.rawName, wording);
     if (kind === 'series')
         scan.audio.forEach((file) =>
             issues.push(
@@ -112,7 +127,9 @@ const dramaIssues = (scan: DramaScan, id: string | undefined, kind: DraftKind): 
     if (kind === 'none')
         issues.push(issue('error', scan.name, '搵唔到短篇 folder，亦冇每日劇錄音'));
     if (id !== undefined && !ID_PATTERN.test(id))
-        issues.push(issue('warn', scan.name, `--id「${id}」唔合 app 規則（細楷英數同連字號）`));
+        issues.push(
+            issue('warn', scan.name, `${wording.id}「${id}」唔合 app 規則（細楷英數同連字號）`),
+        );
     return issues;
 };
 
@@ -131,26 +148,29 @@ const buildJson = (
     scan: DramaScan,
     kind: 'series' | 'daily',
     existing: unknown,
-    options: { today: string; id: string | undefined },
+    options: BuildOptions,
 ) => {
     const old = existing as DraftJson | undefined;
-    return kind === 'series' ? seriesJson(scan, old, options) : dailyJson(scan, old);
+    return kind === 'series'
+        ? seriesJson(scan, old, options)
+        : dailyJson(scan, old, options.wording);
 };
 
 /** listing → drama.json 草稿 + 問題清單；existing 有就合併（人手欄位照留） */
 export const generateDraft = (listing: FolderListing, options: DraftOptions): DraftResult => {
     const { id, existing, today } = options;
+    const wording = wordingOf(options.source);
     const scan = scanListing(listing);
     const kind = kindOf(scan);
-    const base = { scan, kind, today, issues: dramaIssues(scan, id, kind) };
+    const base = { scan, kind, today, issues: dramaIssues(scan, { id, wording }, kind) };
     if (kind === 'none') return { ...base, json: null, summaries: [] } as DraftResult;
     // 壞 / 唔夾嘅 existing 要喺用之前停，唔好砌到一半 throw
-    const problem = existing === undefined ? undefined : existingProblem(existing, kind);
+    const problem = existing === undefined ? undefined : existingProblem(existing, kind, wording);
     if (problem !== undefined) {
         const issues = [...base.issues, issue('error', scan.name, problem)];
         return { ...base, issues, json: null, summaries: [] } as DraftResult;
     }
-    const built = buildJson(scan, kind, existing, { today, id });
+    const built = buildJson(scan, kind, existing, { today, id, wording });
     const issues = [...base.issues, ...built.issues];
     const blocked = issues.some((i) => i.level === 'error');
     const json = blocked ? null : orderKeys(built.json);

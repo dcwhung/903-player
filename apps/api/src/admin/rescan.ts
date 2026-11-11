@@ -140,7 +140,12 @@ export const planRescan = async (
     },
 ): Promise<RescanPlan> => {
     const listing = await listingFromR2(env.AUDIO, folder);
-    const result = generateDraft(listing, { id: entry.id, existing: definition, today });
+    const result = generateDraft(listing, {
+        id: entry.id,
+        existing: definition,
+        today,
+        source: 'r2',
+    });
     const errors = result.issues.filter((i) => i.level === 'error');
     const before = JSON.parse(entry.definition) as Json;
     const empty = { statements: [], findingIndexes: [], errors, definition };

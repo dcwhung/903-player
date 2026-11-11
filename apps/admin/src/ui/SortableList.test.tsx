@@ -84,4 +84,24 @@ describe('SortableList keyboard', () => {
         await press(handle, 'Escape');
         expect(onReorder).not.toHaveBeenCalled();
     });
+
+    it('should time the shift with the --motion-base / --motion-ease tokens (S-806)', async () => {
+        stubLayout();
+        const root = document.documentElement.style;
+        root.setProperty('--motion-base', '123ms');
+        root.setProperty('--motion-ease', 'linear');
+        try {
+            renderList(() => {});
+            const handle = screen.getByRole('button', { name: '拖曳以調整「甲」的次序' });
+            handle.focus();
+            await press(handle, 'Space');
+            await press(handle, 'ArrowDown');
+            const shifted = screen.getByText('乙').closest('li');
+            expect(shifted?.style.transition).toContain('123ms linear');
+            await press(handle, 'Escape');
+        } finally {
+            root.removeProperty('--motion-base');
+            root.removeProperty('--motion-ease');
+        }
+    });
 });

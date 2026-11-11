@@ -116,6 +116,7 @@ export {
     type FolderListing,
     type Issue,
     type IssueLevel,
+    type ScanSource,
     type ParsedEpisodeFile,
 } from './scan';
 

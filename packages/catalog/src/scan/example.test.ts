@@ -39,4 +39,45 @@ describe('exampleFileName', () => {
         ).toBeUndefined();
         expect(exampleFileName({})).toBeUndefined();
     });
+
+    // S-821：例子係「模板砌出嚟嘅樣」，兩種劇都唔用逐集 file override
+    it('should ignore the files override of a series arc (S-821)', () => {
+        const json = {
+            kind: 'series',
+            audio: audio('{arc} - 第 {no2} 集.m4a'),
+            arcs: [{ id: 'a', name: '甲', episodes: 2, files: { 1: 'odd name.m4a' } }],
+        };
+        expect(exampleFileName(json)).toBe('甲 - 第 01 集.m4a');
+    });
+
+    it('should ignore the file override of a daily episode (S-821)', () => {
+        const json = {
+            kind: 'daily',
+            audio: audio('{yyyymmdd}.m4a'),
+            episodes: [{ date: '2025-08-13', rerun: true, file: 'old.m4a' }],
+        };
+        expect(exampleFileName(json)).toBe('20250813.m4a');
+    });
+
+    it('should give nothing for a daily drama without episodes (S-822)', () => {
+        expect(exampleFileName({ kind: 'daily', audio: audio('{yyyymmdd}.m4a') })).toBeUndefined();
+        expect(
+            exampleFileName({ kind: 'daily', audio: audio('{yyyymmdd}.m4a'), episodes: [] }),
+        ).toBeUndefined();
+    });
+
+    it('should treat a drama without kind as a series (S-822)', () => {
+        const json = { audio: audio('{arc} {no2}.m4a'), arcs: [{ name: '甲', episodes: 1 }] };
+        expect(exampleFileName(json)).toBe('甲 01.m4a');
+    });
+
+    it('should give nothing for an unclosed token or group (S-822)', () => {
+        const arcs = [{ name: '甲', episodes: 1 }];
+        for (const file of ['{no2 [ - {title}.m4a', '{arc} - {no2.m4a', '{no2}[ - {title}.m4a'])
+            expect(exampleFileName({ kind: 'series', audio: audio(file), arcs })).toBeUndefined();
+        const episodes = [{ date: '2026-11-01' }];
+        expect(
+            exampleFileName({ kind: 'daily', audio: audio('{yyyymmdd.m4a'), episodes }),
+        ).toBeUndefined();
+    });
 });

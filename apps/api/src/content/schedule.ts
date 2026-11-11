@@ -1,7 +1,9 @@
 /*
  * /api/dramas/:id/arcs/:arcId/schedule：短篇排程（儲存時展開）。
  * PUT：規則 → expandSchedule → 寫入 definition 嗰個 arc（addedAt / episodeDates / episodeRemovedAt）→ 驗證 →
- * D1 batch 一次過寫 entries + schedules（atomic，樂觀鎖失敗兩樣都唔寫）。DELETE 只刪規則，日子照留
+ * D1 batch 一次過寫 entries + schedules（atomic，樂觀鎖失敗兩樣都唔寫）。DELETE 只刪規則，日子照留。
+ * body 可以帶 `enable: true`（S-803）：同一次寫入將下架（enabled: false）嘅短篇轉上架，
+ * 唔使排完期再另外 PUT /entries；冇帶 / false = 唔郁 enabled（舊 client 照用）
  */
 import {
     expandSchedule,
@@ -95,15 +97,27 @@ const applyToArc = (arc: Json, expanded: ExpandedSchedule): Json => {
     return next;
 };
 
-const scheduledDefinition = (loaded: LoadedArc, expanded: ExpandedSchedule): Json => ({
+/** enable: true 而短篇係下架 → 轉上架（同 admin 一樣寫 enabled: true）；其他唔郁 */
+const withEnabled = (arc: Json, enable: boolean): Json =>
+    enable && arc.enabled === false ? { ...arc, enabled: true } : arc;
+
+const scheduledDefinition = (
+    loaded: LoadedArc,
+    expanded: ExpandedSchedule,
+    enable: boolean,
+): Json => ({
     ...loaded.definition,
-    arcs: loaded.arcs.map((arc, i) => (i === loaded.index ? applyToArc(arc, expanded) : arc)),
+    arcs: loaded.arcs.map((arc, i) =>
+        i === loaded.index ? withEnabled(applyToArc(arc, expanded), enable) : arc,
+    ),
 });
 
-/** body { rule } → 展開 + 驗證成個 definition；唔得就回 400 / 422 response */
+/** body { rule, enable? } → 展開 + 驗證成個 definition；唔得就回 400 / 422 response */
 const prepare = async (c: Context<AppEnv>, loaded: LoadedArc) => {
     const body = await readJsonObject(c);
     if (!body) return errorResponse(c, HTTP_STATUS.badRequest, 'body must be { rule }');
+    if (body.enable !== undefined && typeof body.enable !== 'boolean')
+        return errorResponse(c, HTTP_STATUS.badRequest, 'enable must be a boolean');
     let result: { rule: ScheduleRule; expanded: ExpandedSchedule };
     try {
         result = expand(body.rule, loaded);
@@ -113,7 +127,7 @@ const prepare = async (c: Context<AppEnv>, loaded: LoadedArc) => {
             details: error.message,
         });
     }
-    const definition = scheduledDefinition(loaded, result.expanded);
+    const definition = scheduledDefinition(loaded, result.expanded, body.enable === true);
     const images = JSON.parse(loaded.row.images) as Json;
     const entry = { kind: 'dramas' as const, id: loaded.id, definition, images };
     const checked = await checkedEntry(c, entry, loaded.row.draft === 1);

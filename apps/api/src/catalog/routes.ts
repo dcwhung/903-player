@@ -11,7 +11,7 @@ import {
     validateDocument,
     type PublishOutcome,
 } from './publish';
-import { RollbackConflictError, rollbackToPublish } from './rollback';
+import { RollbackConflictError, RollbackNotRestorableError, rollbackToPublish } from './rollback';
 import {
     listAssetHashes,
     listEntries,
@@ -101,7 +101,8 @@ publishRoutes.get('/publishes', async (c) => {
 
 /**
  * 還原 #N：snapshot #N 嘅上架狀態寫返 D1（之後新增嘅下架），再經正常 publish 發佈（rollbackOf = N），
- * 見 rollback.ts；驗證 / ID 守衛唔過乜都唔寫（422 / 409），途中有人改 entry → 412
+ * 見 rollback.ts；驗證 / ID 守衛唔過乜都唔寫（422 / 409），#N 係 failed（從未上過 R2）→ 409（S-797），
+ * 途中有人改 entry → 412
  */
 publishRoutes.post('/publishes/:id/rollback', async (c) => {
     const id = c.req.param('id');
@@ -116,6 +117,8 @@ publishRoutes.post('/publishes/:id/rollback', async (c) => {
     } catch (error) {
         if (error instanceof PublishValidationError)
             return c.json({ error: error.message }, HTTP_STATUS.unprocessable);
+        if (error instanceof RollbackNotRestorableError)
+            return c.json({ error: error.message }, HTTP_STATUS.conflict);
         if (error instanceof RollbackConflictError)
             return c.json({ error: error.message }, HTTP_STATUS.preconditionFailed);
         throw error;

@@ -33,7 +33,10 @@ export type FindingView = ReturnType<typeof findingView>;
 
 /**
  * 寫 finding：同一個 batch 入面緊接 entry 寫入之後；guard = entry 寫入後應有嘅 updated_at，
- * 寫唔到（樂觀鎖輸咗）就唔記 finding
+ * 寫唔到（樂觀鎖輸咗）就唔記 finding。
+ * 已經有一模一樣（kind、劇、短篇、detail）嘅 open finding 就唔再寫（S-802）：兩個 scan 喺同一 ms
+ * 計到同一個 guard 時，輸咗嗰個都過到 guard。D1 batch 逐個 transaction 行，後嚟嗰個一定睇到前一個。
+ * 唔用 unique index：production 可能已經有重複行，加 index 嘅 migration 會失敗
  */
 export const insertFindingStatement = (
     db: D1Database,
@@ -43,8 +46,12 @@ export const insertFindingStatement = (
     db
         .prepare(
             `INSERT INTO scan_findings (kind, drama_id, arc_id, detail, created_at)
-             SELECT ?, ?, ?, ?, ? WHERE ? IS NULL OR EXISTS
-               (SELECT 1 FROM entries WHERE kind = 'dramas' AND id = ? AND updated_at = ?)
+             SELECT ?1, ?2, ?3, ?4, ?5
+             WHERE (?6 IS NULL OR EXISTS
+                 (SELECT 1 FROM entries WHERE kind = 'dramas' AND id = ?2 AND updated_at = ?6))
+               AND NOT EXISTS
+                 (SELECT 1 FROM scan_findings WHERE kind = ?1 AND drama_id = ?2 AND arc_id IS ?3
+                    AND detail = ?4 AND resolved_publish_id IS NULL)
              RETURNING *`,
         )
         .bind(
@@ -53,8 +60,6 @@ export const insertFindingStatement = (
             finding.arcId ?? null,
             JSON.stringify(finding.detail),
             createdAt,
-            guard ?? null,
-            finding.dramaId,
             guard ?? null,
         );
 

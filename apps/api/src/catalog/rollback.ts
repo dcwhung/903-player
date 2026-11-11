@@ -21,12 +21,17 @@ import {
     latestPublish,
     listAssetHashes,
     listStoredEntries,
-    publishDocument,
+    publishSnapshot,
     updateEntryStatement,
     type StoredEntry,
 } from './store';
 
 type RollbackEnv = { DB: D1Database; CATALOG: R2Bucket; WORKER_ORIGIN: string };
+
+/** 目標 publish 唔係 ok（failed = 從未上過 R2）：乜都唔寫，回 409（S-797） */
+export class RollbackNotRestorableError extends Error {
+    override readonly name = 'RollbackNotRestorableError';
+}
 
 /** 還原途中有人改咗 entry（樂觀鎖輸咗）：已經寫返舊值，回 412 */
 export class RollbackConflictError extends Error {
@@ -170,18 +175,22 @@ const preflight = async (env: RollbackEnv, rows: ReturnType<typeof rowsAfter>, f
 };
 
 /**
- * 還原 #id：null = 冇呢次 publish。驗證唔過 throw PublishValidationError（422）；
- * ID 守衛唔過回 rejected（409）；兩樣都喺寫 D1 之前
+ * 還原 #id：null = 冇呢次 publish。#id 唔係 ok throw RollbackNotRestorableError（409）；
+ * 驗證唔過 throw PublishValidationError（422）；ID 守衛唔過回 rejected（409）；全部都喺寫 D1 之前。
+ * R2 寫咗之後 purge cache 失敗唔會 throw（commitPublish 只 log，S-814），所以 revert 只會喺
+ * R2 未寫 / 被拒時發生，D1 同已上線 catalog 唔會唔夾
  */
 export const rollbackToPublish = async (
     env: RollbackEnv,
     id: number,
     { createdBy, force }: { createdBy: string; force: boolean },
 ): Promise<PublishOutcome | null> => {
-    const snapshot = await publishDocument(env.DB, id);
+    const snapshot = await publishSnapshot(env.DB, id);
     if (!snapshot) return null;
+    if (snapshot.status !== 'ok')
+        throw new RollbackNotRestorableError(`publish ${id} is not ok (${snapshot.status})`);
     const entries = await listStoredEntries(env.DB);
-    const changes = planChanges(entries, snapshotDefinitions(snapshot));
+    const changes = planChanges(entries, snapshotDefinitions(snapshot.document));
     const { validated, missing } = await preflight(env, rowsAfter(entries, changes), force);
     if (missing.length > 0) return { kind: 'rejected', missing };
     const applied = await apply(env.DB, changes);

@@ -73,6 +73,11 @@ const loginCheck = (browser) =>
         if ((await google.getAttribute('href')) !== '/auth/google/start')
             throw new Error('bad href');
         await shoot(page, 'login');
+        // S-809：深連結 login 完要返返嚟 → ?next=（只係同源相對路徑）
+        await page.goto(`${BASE}/dramas/lancy/schedule#lancy-02`);
+        const deep = await google.getAttribute('href');
+        if (deep !== '/auth/google/start?next=%2Fdramas%2Flancy%2Fschedule%23lancy-02')
+            throw new Error(`deep link not passed to login: ${deep}`);
         await page.close();
     });
 
@@ -135,6 +140,29 @@ const reorderCheck = (browser) =>
         await page.close();
     });
 
+const newDramaDialogCheck = (browser) =>
+    check('＋ dialog: Tab stays inside, Esc closes and focus returns to ＋ (S-811)', async () => {
+        const page = await newPage(browser, loggedIn());
+        await page.goto(`${BASE}/dramas`);
+        const add = page.getByRole('button', { name: '新增廣播劇' });
+        await add.click();
+        const dialog = page.getByRole('dialog', { name: '新增廣播劇' });
+        await dialog.waitFor();
+        await shoot(page, 'new-drama-dialog');
+        const focused = () => page.evaluate(() => document.activeElement?.textContent?.trim());
+        const seen = [];
+        for (let i = 0; i < 3; i += 1) {
+            seen.push(await focused());
+            await page.keyboard.press('Tab');
+        }
+        if (seen.join(',') !== '關閉,重新掃描,關閉') throw new Error(`Tab order ${seen}`);
+        await page.keyboard.press('Escape');
+        await dialog.waitFor({ state: 'detached' });
+        if (!(await add.evaluate((el) => el === document.activeElement)))
+            throw new Error('focus did not return to ＋');
+        await page.close();
+    });
+
 const showListCheck = (browser) =>
     check('show list: air time meta, legend, whole row opens the editor', async () => {
         const page = await newPage(browser, loggedIn());
@@ -189,6 +217,29 @@ const showEditorCheck = (browser) =>
             await page.close();
         },
     );
+
+/** S-823：窄畫面（nav 自動收合 / 最窄橫向）完結 roller 唔可以超出 panel 右邊 */
+const NARROW_WIDTHS = [1024, 720];
+
+const narrowRollerCheck = (browser) =>
+    check('show editor: end roller stays inside the panel on narrow screens', async () => {
+        for (const width of NARROW_WIDTHS) {
+            const page = await newPage(browser, loggedIn(), { width, height: 768 });
+            await page.goto(`${BASE}/shows/night`);
+            await page.getByRole('checkbox', { name: '設定播放時間' }).check();
+            await page.getByRole('button', { name: /完結時間/ }).click();
+            const pop = page.getByRole('dialog', { name: '完結時間' });
+            await pop.scrollIntoViewIfNeeded();
+            const box = await boxOf(pop);
+            const card = await boxOf(page.locator('.card', { has: pop }));
+            if (box.x + box.width > card.x + card.width || box.x + box.width > width)
+                throw new Error(
+                    `${width}px: roller ${JSON.stringify(box)} past ${JSON.stringify(card)}`,
+                );
+            await shoot(page, `show-editor-end-roller-${width}`);
+            await page.close();
+        }
+    });
 
 /** 1×1 PNG（Safari 路徑：canvas 出 PNG → wasm encoder） */
 const PNG_1PX = Buffer.from(
@@ -362,9 +413,11 @@ try {
         loginCheck,
         todoFlowCheck,
         reorderCheck,
+        newDramaDialogCheck,
         showListCheck,
         scheduleCheck,
         showEditorCheck,
+        narrowRollerCheck,
         imageCheck,
         navCheck,
         reducedMotionCheck,

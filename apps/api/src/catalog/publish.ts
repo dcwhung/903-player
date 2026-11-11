@@ -245,6 +245,18 @@ const guard = (
 };
 
 /**
+ * R2 已經寫咗先 purge：失敗只 log、唔 throw（S-814）。throw 會令還原 revert D1，
+ * 但 R2 已經係新版，D1 同已上線 catalog 就唔夾；edge cache 最多過咗 max-age 自己更新
+ */
+const purgeAfterWrite = async (origin: string, publishId: number): Promise<void> => {
+    try {
+        await purgeCatalogCache(origin);
+    } catch (error) {
+        console.error(`publish ${publishId}: could not purge the catalog cache`, error);
+    }
+};
+
+/**
  * 驗過嘅 document 寫 R2 + 記 publishes。冇 force 時：ID 守衛唔過就乜都唔寫；
  * 內容同最新一次一樣就回 unchanged（唔開新行、唔寫 R2）
  */
@@ -262,6 +274,6 @@ export const commitPublish = async (
     if (skipped) return skipped;
     const locked = lockedEpisodeIds(latest, validated);
     const publish = await writePublish(env, validated, { createdBy, rollbackOf, locked });
-    await purgeCatalogCache(env.WORKER_ORIGIN);
+    await purgeAfterWrite(env.WORKER_ORIGIN, publish.id);
     return { kind: 'published', publish };
 };

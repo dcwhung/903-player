@@ -161,8 +161,15 @@ export const publishDocuments = async (db: D1Database): Promise<Map<number, stri
         ).results.map((row) => [row.id, row.document]),
     );
 
-export const publishDocument = (db: D1Database, id: number): Promise<string | null> =>
-    db.prepare('SELECT document FROM publishes WHERE id = ?').bind(id).first<string>('document');
+/** 還原用：snapshot + status（failed 嗰份從未上過 R2，唔准還原，S-797） */
+export const publishSnapshot = (
+    db: D1Database,
+    id: number,
+): Promise<{ document: string; status: PublishStatus } | null> =>
+    db
+        .prepare('SELECT document, status FROM publishes WHERE id = ?')
+        .bind(id)
+        .first<{ document: string; status: PublishStatus }>();
 
 /* ───────────── 內容 API（Phase 2b-1）：單一 entry + 排程 ───────────── */
 
@@ -248,6 +255,17 @@ export interface ScheduleRow {
     rule: string;
     updated_at: string;
 }
+
+/** 一套劇有排程嘅短篇 ID（S-804：改短篇 ID 前檢查） */
+export const listScheduledArcIds = async (db: D1Database, dramaId: string): Promise<Set<string>> =>
+    new Set(
+        (
+            await db
+                .prepare('SELECT arc_id FROM schedules WHERE drama_id = ?')
+                .bind(dramaId)
+                .all<{ arc_id: string }>()
+        ).results.map((row) => row.arc_id),
+    );
 
 export const getSchedule = (
     db: D1Database,

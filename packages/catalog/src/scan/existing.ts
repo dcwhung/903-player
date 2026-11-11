@@ -2,6 +2,7 @@
 import { renderFileName } from '../dramas/filename';
 import { dailyTokens, issue, seriesTokens } from './shared';
 import type { DramaScan, Issue } from './types';
+import type { ScanWording } from './wording';
 
 /** 試砌一次 template 用嘅樣本日期（每日劇 token 要有日期先砌得） */
 const SAMPLE_DATE = '2000-01-01';
@@ -45,19 +46,28 @@ const listProblem = (existing: Json, kind: Kind): string | undefined => {
 };
 
 /** existing 唔啱用（唔係 object、kind 唔夾、list / template 壞咗）就回傳原因 */
-export const existingProblem = (existing: unknown, kind: Kind): string | undefined => {
-    if (!isPlainObject(existing)) return '--existing 唔係 drama.json（要係一個 { … } object）';
+export const existingProblem = (
+    existing: unknown,
+    kind: Kind,
+    wording: ScanWording,
+): string | undefined => {
+    const name = wording.existing;
+    if (!isPlainObject(existing)) return `${name}唔係 drama.json（要係一個 { … } object）`;
     if (existing.kind !== kind)
-        return `--existing 係 ${(existing.kind as string | undefined) ?? '（冇 kind）'}，但 folder 睇落係 ${kind}`;
+        return `${name}係 ${(existing.kind as string | undefined) ?? '（冇 kind）'}，但 folder 睇落係 ${kind}`;
     const problem = listProblem(existing, kind) ?? templateProblem(audioOf(existing)?.file, kind);
-    return problem === undefined ? undefined : `--existing 嘅 ${problem}`;
+    return problem === undefined ? undefined : `${name}嘅 ${problem}`;
 };
 
 /** existing 嘅 R2 folder 名同 listing 唔一樣：唔擋，但要講 */
-export const existingFolderIssues = (scan: DramaScan, existing: Json): Issue[] => {
+export const existingFolderIssues = (
+    scan: DramaScan,
+    existing: Json,
+    wording: ScanWording,
+): Issue[] => {
     const audio = audioOf(existing);
     const folder = audio?.folder;
     if (audio?.host !== 'r2' || folder === scan.name) return [];
-    const message = `--existing 嘅 audio.folder「${String(folder)}」同本機 folder 名唔一樣`;
+    const message = `${wording.existing}嘅 audio.folder「${String(folder)}」同${wording.folderName}唔一樣`;
     return [issue('warn', scan.name, message)];
 };

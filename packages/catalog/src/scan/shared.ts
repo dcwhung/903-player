@@ -52,12 +52,13 @@ export interface AudioNaming {
     audio: { folder: string; file: string };
 }
 
-/** 短篇某一集嘅真檔名：files 優先，否則用 template（集名：titles 優先，再到 episodes list） */
-export const arcEpisodeFile = (json: AudioNaming, arc: DraftArc, no: number): string => {
+/** 短篇某一集用 template 砌出嚟嘅檔名（唔理 files override；集名：titles 優先，再到 episodes list） */
+export const arcTemplateFile = (json: AudioNaming, arc: DraftArc, no: number): string => {
     const listTitle = Array.isArray(arc.episodes) ? arc.episodes[no - firstNoOf(arc)] : undefined;
     const title = arc.titles?.[no] ?? listTitle ?? '';
-    return (
-        arc.files?.[no] ??
-        renderFileName(json.audio.file, seriesTokens(json.audio.folder, arc.name, no, title))
-    );
+    return renderFileName(json.audio.file, seriesTokens(json.audio.folder, arc.name, no, title));
 };
+
+/** 短篇某一集嘅真檔名：files 優先，否則用 template */
+export const arcEpisodeFile = (json: AudioNaming, arc: DraftArc, no: number): string =>
+    arc.files?.[no] ?? arcTemplateFile(json, arc, no);

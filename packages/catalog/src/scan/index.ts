@@ -23,4 +23,5 @@ export type {
     FolderListing,
     Issue,
     IssueLevel,
+    ScanSource,
 } from './types';

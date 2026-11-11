@@ -27,13 +27,24 @@ export const isListedEntry = (entry: StoredEntry): boolean => {
 const sameSet = (a: readonly string[], b: readonly string[]): boolean =>
     a.length === b.length && new Set(a).size === a.length && b.every((id) => a.includes(id));
 
+/*
+ * S-799：
+ * - order 用 CAST(? AS INTEGER)：D1 / miniflare 將 JS number 綁做 REAL，json_set 會寫 `2.0`，
+ *   同 JSON.stringify 嘅 definition 唔一樣（還原 / diff 會當有改動）。CAST 唔靠 binding 層，真 D1 一樣
+ * - updated_at = MAX(由讀取時計嘅新值, 現行值 + 1 ms)：讀完之後、batch 之前有人寫咗（佢嘅
+ *   updated_at 可能大過我哋計嗰個），ETag 都只會向前行、唔會撞返佢嗰個。updated_at 一律係
+ *   toISOString 格式（YYYY-MM-DDTHH:MM:SS.sssZ），strftime('%f') 出同一格式，字串比較 = 時間比較；
+ *   現行值 parse 唔到（strftime 回 NULL）就用新值
+ */
 const orderStatement = (db: D1Database, entry: StoredEntry, order: number) =>
     db
         .prepare(
-            `UPDATE entries SET definition = json_set(definition, '$.order', ?), updated_at = ?
-             WHERE kind = ? AND id = ? AND json_extract(definition, '$.order') IS NOT ?`,
+            `UPDATE entries
+             SET definition = json_set(definition, '$.order', CAST(?1 AS INTEGER)),
+                 updated_at = max(?2, coalesce(strftime('%Y-%m-%dT%H:%M:%fZ', updated_at, '+0.001 seconds'), ''))
+             WHERE kind = ?3 AND id = ?4 AND json_extract(definition, '$.order') IS NOT CAST(?1 AS INTEGER)`,
         )
-        .bind(order, nextUpdatedAt(entry.updated_at), entry.kind, entry.id, order);
+        .bind(order, nextUpdatedAt(entry.updated_at), entry.kind, entry.id);
 
 const readIds = async (c: Context<AppEnv>): Promise<string[] | undefined> => {
     const ids = (await readJsonObject(c))?.ids;
