@@ -414,16 +414,22 @@ describe('GET /api/changes', () => {
 describe('GET /api/publishes changes', () => {
     it('should attach the changes since the previous publish to each row', async () => {
         await adminPost('/api/publish');
-        await putEntry('dramas', 'golden', scannable(4));
+        const withArc = scannable(4);
+        const added = { id: 'season-2', name: 'Season 2', addedAt: '2026-10-24', episodes: 1 };
+        await putEntry('dramas', 'golden', {
+            ...withArc,
+            arcs: [...(withArc.arcs as Json[]), added],
+        });
         await adminPost('/api/publish');
-        await adminPost('/api/publishes/1/rollback?force=1');
+        // 還原 #1：之後加嘅 Season 2 落架（集數唔郁）
+        await adminPost('/api/publishes/1/rollback');
         const { publishes } = (await json(await adminGet('/api/publishes'))) as {
             publishes: Json[];
         };
         const kinds = (p: Json | undefined) =>
             ((p?.changes as Json).items as Json[]).map((i) => i.kind);
         expect(kinds(publishes[2])).toEqual(['newShow', 'newDrama', 'newArc']);
-        expect(kinds(publishes[1])).toEqual(['newEpisodes']);
+        expect(kinds(publishes[1])).toEqual(['newEpisodes', 'newArc']);
         expect(kinds(publishes[0])).toEqual(['rollback', 'unlist']);
         expect(publishes[0]).toMatchObject({ rollbackOf: 1, error: null });
     });
