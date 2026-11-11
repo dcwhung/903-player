@@ -1,6 +1,6 @@
 /*
  * 每頁一個儲存掣（mockup .savebar）：由待辦入嚟叫「儲存並返回待辦」，由列表入嚟叫「儲存」；
- * 有改動先出「● 有未儲存的變更（欄位）」；按鈕左邊 outline icon（mockup admin-style ④）
+ * 有改動先出「● 有未儲存的變更（欄位）」，放喺儲存掣前面；按鈕左邊 outline icon（mockup admin-style ④）
  */
 import { Save, Undo2 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -29,27 +29,25 @@ export function SaveBar({
 }: SaveBarProps) {
     const dirty = dirtyFields.length > 0;
     const label = fromTodos ? t('editor.saveAndBack') : t('editor.save');
+    const note = dirty
+        ? t('editor.dirty', { fields: dirtyFields.join('、') })
+        : pendingConfirm
+          ? t('editor.idUnconfirmed')
+          : '';
     return (
         <div className="savebar">
-            <div className="actions">
-                {start}
-                {dirty && (
-                    <span className="small dirty" role="status">
-                        {t('editor.dirty', { fields: dirtyFields.join('、') })}
-                    </span>
-                )}
-                {!dirty && pendingConfirm && (
-                    <span className="small dirty" role="status">
-                        {t('editor.idUnconfirmed')}
-                    </span>
-                )}
-            </div>
+            <div className="actions">{start}</div>
             <div className="actions">
                 {onRevert && dirty && (
                     <button type="button" onClick={onRevert} disabled={saving}>
                         <Undo2 aria-hidden="true" />
                         {t('editor.revert')}
                     </button>
+                )}
+                {note && (
+                    <span className="small dirty" role="status">
+                        {note}
+                    </span>
                 )}
                 <button
                     type="button"

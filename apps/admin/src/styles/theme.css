@@ -1032,3 +1032,8 @@ textarea.autosize {
         display: grid;
     }
 }
+
+/* 已發佈不可刪除（savebar 左邊） */
+.danger-note {
+    color: var(--danger);
+}
