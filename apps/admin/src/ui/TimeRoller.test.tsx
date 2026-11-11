@@ -40,5 +40,6 @@ describe('TimeRoller', () => {
         await userEvent.click(screen.getByRole('button', { name: '開始時間 15:00' }));
         fireEvent.keyDown(screen.getByRole('listbox', { name: '時' }), { key: 'Escape' });
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '開始時間 15:00' })).toHaveFocus();
     });
 });

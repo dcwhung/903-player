@@ -257,3 +257,8 @@ table.matrix th[scope='row'] {
     z-index: 2;
     box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
 }
+
+/* login 畫面：成個 viewport 置中 */
+.login {
+    min-height: 100dvh;
+}
