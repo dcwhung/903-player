@@ -91,22 +91,48 @@ describe('DramaEditor', () => {
         const future = await screen.findByRole('group', { name: '今天之後的批次' });
         await waitFor(() => expect(within(future).getByText(/1\/5/)).toBeInTheDocument());
         await userEvent.click(screen.getByRole('button', { name: '儲存' }));
+        const scheduleCall = () =>
+            fetchMock.mock.calls.find(
+                ([url, init]) =>
+                    url === '/api/dramas/lancy/arcs/arc-01/schedule' && init?.method === 'PUT',
+            );
+        await waitFor(() => expect(scheduleCall()).toBeDefined());
+        // 新短篇預設下架：排期同轉上架喺同一個 request（S-803：enable: true，server 同一個 batch 做）
+        const [, init] = scheduleCall() ?? [];
+        expect(JSON.parse(String(init?.body))).toEqual({
+            rule: expect.any(Object) as unknown,
+            enable: true,
+        });
+        expect(new Headers(init?.headers).get('if-match')).toBe('"v1"');
         await waitFor(() =>
             expect(
-                fetchMock.mock.calls.some(
-                    ([url, init]) =>
-                        url === '/api/dramas/lancy/arcs/arc-01/schedule' && init?.method === 'PUT',
-                ),
-            ).toBe(true),
+                fetchMock.mock.calls.filter(([url]) => url === '/api/entries/dramas/lancy'),
+            ).toHaveLength(2),
         );
-        // 新短篇預設下架：排期之後順手轉上架
-        await waitFor(() =>
-            expect(
-                fetchMock.mock.calls.some(
-                    ([url, init]) => url === '/api/entries/dramas/lancy' && init?.method === 'PUT',
-                ),
-            ).toBe(true),
+        expect(
+            fetchMock.mock.calls.some(
+                ([url, init]) => url === '/api/entries/dramas/lancy' && init?.method === 'PUT',
+            ),
+        ).toBe(false);
+    });
+
+    it('should show the error and not save twice when the schedule save fails (S-803)', async () => {
+        const fetchMock = api({
+            'PUT /api/dramas/lancy/arcs/arc-01/schedule': () => ({
+                status: 412,
+                body: { error: 'version mismatch' },
+            }),
+        });
+        renderAt(
+            '/dramas/lancy/schedule#arc-01',
+            '/dramas/:id/schedule',
+            <DramaEditorPage tab="schedule" />,
         );
+        await userEvent.click(await screen.findByRole('button', { name: '逢一三五 · 每次 5 集' }));
+        await userEvent.click(screen.getByRole('button', { name: '儲存' }));
+        await screen.findByRole('alert');
+        const puts = fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT');
+        expect(puts.map(([url]) => url)).toEqual(['/api/dramas/lancy/arcs/arc-01/schedule']);
     });
 
     it('should open and close an arc by clicking anywhere on its row', async () => {
