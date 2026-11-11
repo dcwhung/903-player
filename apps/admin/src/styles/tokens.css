@@ -5,8 +5,9 @@
  */
 :root {
     --sky: #53a9e3;
-    /* --sky 底上面嘅字（「新」pill）：--sky 深淺色一樣，所以呢個都唔跟主題換（白字對比唔夠） */
-    --on-sky: #0d1a2b;
+    /* 「新」pill：跟 player NewBadge（apps/player tokens --new-badge-*）紅底白字，5.2:1 過 AA；深淺色一樣 */
+    --new-badge-bg: #c0362c;
+    --new-badge-text: #ffffff;
     --primary: #1e7bc0;
     --primary-hover: #155f96;
     --on-primary: #ffffff;

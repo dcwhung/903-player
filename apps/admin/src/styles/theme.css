@@ -453,9 +453,9 @@ input[aria-invalid='true'] {
 }
 
 .pill.new {
-    background: var(--sky);
-    color: var(--on-sky);
-    font-weight: 600;
+    background: var(--new-badge-bg);
+    color: var(--new-badge-text);
+    font-weight: 700;
 }
 
 .note {
