@@ -195,4 +195,22 @@ describe('DramaEditor', () => {
         const tab = await screen.findByRole('tab', { name: /我心不死/ });
         expect(tab.querySelector('.thumb.xs')).not.toBeNull();
     });
+
+    it('should show the saved disc image in the title when the drama has one (S-824)', async () => {
+        api({
+            'GET /api/entries/dramas/lancy': () => ({
+                body: {
+                    ...DRAMA,
+                    definition: { ...DRAMA.definition, disc: 'disc.webp' },
+                    images: { 'disc.webp': 'aaa.webp' },
+                },
+                etag: '"v1"',
+            }),
+        });
+        renderAt('/dramas/lancy', '/dramas/:id', <DramaEditorPage tab="basic" />);
+        const title = await screen.findByRole('heading', { level: 1 });
+        const disc = title.querySelector<HTMLElement>('.thumb');
+        expect(disc).not.toHaveClass('blank');
+        expect(disc?.style.backgroundImage).toBe('url("/catalog/v1/img/aaa.webp")');
+    });
 });
