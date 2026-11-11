@@ -38,13 +38,21 @@ body {
     border-radius: 14px;
 }
 
-.nav .logo-mini {
-    display: block;
-    width: 48px;
-    height: 48px;
+/*
+ * 收細 nav 左上角 app icon：圓形 --surface 底包住原 icon（1:1、contain、置中留 padding）。
+ * selector 要贏 `.shell.mini .nav a { padding: 12px 0 }`，否則 48px 框扣咗上下 padding，icon 會壓扁做 48×24
+ */
+.shell.mini .nav .logo-mini {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 52px;
+    height: 52px;
     margin: 0 auto 14px;
-    padding: 0;
-    border-radius: 14px;
+    /* 原 icon 係圓角方形：padding 8px 令四角都喺圓形入面，唔使裁 icon */
+    padding: 8px;
+    border-radius: 50%;
+    background: var(--surface);
     overflow: hidden;
     box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
 }
@@ -52,7 +60,9 @@ body {
 .nav .logo-mini img {
     display: block;
     width: 100%;
-    height: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: contain;
 }
 
 .nav .group {
@@ -1189,6 +1199,24 @@ textarea.autosize {
     background: var(--toggle-off);
 }
 
+/*
+ * 快速套用：揀咗嘅 chip 用實色主色底 + 白字，hover 都唔變
+ * （之前 button:hover 嘅 --surface-2 蓋咗底色：撳完滑鼠仲喺上面時白字淺底睇唔到）
+ */
+.presets button[aria-pressed='true'],
+.presets button[aria-pressed='true']:hover:not(:disabled) {
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+/* 類型 switch：同一個 hover 問題，揀咗嘅一邊照用實色主色底 + 白字 */
+.switch button[aria-pressed='true'],
+.switch button[aria-pressed='true']:hover:not(:disabled) {
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: var(--shadow-btn);
+}
+
 /* 排程 tab：揀咗嘅短篇 chip 用實色主色底 + 白字（深色主題 --primary 不變，白字對比 ≥ 4.5:1） */
 .arc-tabs button[aria-selected='true'],
 .arc-tabs button[aria-selected='true']:hover:not(:disabled) {
@@ -1199,6 +1227,24 @@ textarea.autosize {
 
 .arc-tabs button[aria-selected='true'] small {
     color: var(--on-primary);
+}
+
+/*
+ * chip 類掣 disabled：唔用全域 opacity（0.45 透明令字對底跌穿 3:1），改 --muted 字 + --surface-2 淺底
+ * （對比淺色深色都 ≥ 4.5:1）；放喺揀咗 rule 後面：揀咗又 disabled 都用呢個樣，狀態由 aria-pressed / aria-selected 報
+ */
+.presets button:disabled,
+.switch button:disabled,
+.arc-tabs button:disabled {
+    opacity: 1;
+    background: var(--surface-2);
+    color: var(--muted);
+    box-shadow: inset 0 0 0 1px var(--line);
+    cursor: not-allowed;
+}
+
+.arc-tabs button:disabled small {
+    color: var(--muted);
 }
 
 /* 驗證錯誤原文：細字、預設收埋 */
