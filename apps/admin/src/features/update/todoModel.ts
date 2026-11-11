@@ -43,6 +43,18 @@ export const isRowDone = (row: TodoRow): boolean =>
 export const mustCount = (rows: readonly TodoRow[]): number =>
     rows.reduce((sum, row) => sum + missingOf(row).length, 0);
 
+/** 待辦頁統計卡：新內容行數、必須格、選填格、已完成行 */
+export const todoStats = (rows: readonly TodoRow[]) => ({
+    rows: rows.length,
+    must: mustCount(rows),
+    optional: rows.reduce(
+        (sum, row) =>
+            sum + TODO_COLUMNS.filter((column) => row.cells[column].state === 'optional').length,
+        0,
+    ),
+    done: rows.filter(isRowDone).length,
+});
+
 /** API name = 「劇名 · 短篇名」；短篇行顯示短篇名，劇名放 meta */
 export const splitName = (row: TodoRow): { title: string; drama: string } => {
     const at = row.name.lastIndexOf(' · ');

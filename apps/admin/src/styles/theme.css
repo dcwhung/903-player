@@ -1,0 +1,912 @@
+/*
+ * Phase 3c 樣式層：Design Origin: mockup: _mockups_/admin-style/index.html（v3，① – ⑧）
+ * 喺 mockup.css（3b 結構）+ app.css 之後載入，覆蓋外觀：實色天藍 nav（可收細）、四角圓角內容 panel、
+ * 卡片 A、實色按鈕 + outline icon、自訂 tooltip、漸變統計卡、403 / 直向提示同一版式。
+ * 字色一律跟 token（深色模式唔會出現睇唔到嘅字）
+ */
+body {
+    background: var(--nav-bg);
+    font: 15px/1.55 var(--font);
+}
+
+/* ---------- App shell（① / ②） ---------- */
+.shell {
+    grid-template-columns: var(--nav-width) minmax(0, 1fr);
+    background: var(--nav-bg);
+}
+
+.shell.mini {
+    grid-template-columns: var(--nav-width-mini) minmax(0, 1fr);
+}
+
+.nav {
+    background: var(--nav-bg);
+    color: var(--on-nav);
+    border-right: 0;
+    padding: 18px 14px;
+    gap: 4px;
+}
+
+.nav .brand-link {
+    margin-bottom: 14px;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+}
+
+.nav .brand-banner {
+    margin: 0;
+    border-radius: 14px;
+}
+
+.logo-mini {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 15px;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+    .logo-mini {
+        background: #ffffff;
+    }
+}
+
+.nav .group {
+    margin: 12px 12px 2px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--on-nav);
+    opacity: 0.75;
+}
+
+.nav a,
+.nav-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--on-nav);
+    font: 500 15px var(--font);
+    text-align: left;
+    text-decoration: none;
+    box-shadow: none;
+}
+
+.nav a .lucide,
+.nav-btn .lucide {
+    width: 18px;
+    height: 18px;
+}
+
+.nav a:hover,
+.nav-btn:hover {
+    background: rgb(255 255 255 / 0.14);
+}
+
+.nav a[aria-current='page'] {
+    background: #ffffff;
+    color: var(--primary);
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
+}
+
+.nav :focus-visible {
+    outline-color: #ffffff;
+}
+
+.nav .count {
+    margin-left: auto;
+    min-width: 22px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+    justify-content: center;
+}
+
+.nav a[aria-current='page'] .count {
+    background: var(--primary);
+    color: #ffffff;
+}
+
+.nav .who {
+    padding: 0 12px;
+    font-size: 12px;
+    color: var(--on-nav);
+    opacity: 0.85;
+}
+
+.nav-collapse {
+    margin-top: 4px;
+    background: rgb(255 255 255 / 0.12);
+}
+
+.dot-count {
+    position: absolute;
+    top: 6px;
+    right: 12px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--todo-dot);
+    border: 2px solid var(--nav-bg);
+}
+
+.shell.mini .nav {
+    padding: 18px 12px;
+}
+
+.shell.mini .nav a,
+.shell.mini .nav-btn {
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.shell.mini .label,
+.shell.mini .nav .group,
+.shell.mini .nav .who,
+.shell.mini .nav .count {
+    display: none;
+}
+
+/* 內容 panel：四角 24px 圓角，浮喺 nav 色上面 */
+.content {
+    margin: 12px 12px 12px 0;
+    border-radius: var(--r-panel);
+    background: var(--panel);
+    color: var(--ink);
+}
+
+.main {
+    padding: 24px 28px 32px;
+    gap: 18px;
+}
+
+h1,
+.title-row h2 {
+    font-size: 22px;
+    font-weight: 600;
+}
+
+/* ---------- 卡片 A（③）：20px 圓角 + 柔和陰影、冇邊框；深色改細邊框 ---------- */
+.card {
+    border: 1px solid var(--card-border);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow);
+    padding: 18px 20px;
+}
+
+.card.flush {
+    overflow: hidden;
+}
+
+.card h3 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* ---------- 按鈕（④）：10px 圓角；主 = 實色天藍 + 陰影；次要 = 白底細框；危險 = 紅 ---------- */
+button,
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 0;
+    border-radius: var(--r-btn);
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line);
+    font: 500 14px var(--font);
+}
+
+button .lucide,
+.btn .lucide {
+    width: 18px;
+    height: 18px;
+}
+
+button:hover:not(:disabled),
+.btn:hover {
+    background: var(--surface-2);
+}
+
+button.primary,
+.btn.primary {
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: var(--shadow-btn);
+}
+
+button.primary:hover:not(:disabled),
+.btn.primary:hover {
+    background: var(--primary-hover);
+}
+
+button.big {
+    padding: 12px 28px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+button.danger {
+    background: var(--danger);
+    color: var(--on-danger);
+    box-shadow: none;
+}
+
+button.ghost-danger {
+    color: var(--danger-ink);
+}
+
+button:disabled {
+    opacity: 0.45;
+}
+
+/* 純文字掣（展開、link 樣）唔要框 */
+.link-btn,
+.handle,
+.chip-remove,
+.switch button,
+.toggle,
+.img-slot,
+.slot-btn,
+.wheel button {
+    box-shadow: none;
+}
+
+.link-btn:hover:not(:disabled),
+.handle:hover:not(:disabled) {
+    background: none;
+}
+
+.handle:hover:not(:disabled) {
+    background: var(--surface-2);
+}
+
+.icon-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+}
+
+/* ---------- 表單 ---------- */
+input[type='text'],
+input[type='date'],
+input[type='number'],
+select,
+textarea {
+    padding: 9px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 0;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+input[aria-invalid='true'] {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px var(--danger-bg);
+}
+
+/* ID 未確認：欄同 label 一齊紅（⑤） */
+.field.unconfirmed > span,
+.field.unconfirmed > span .lucide {
+    color: var(--danger-ink);
+}
+
+.field.unconfirmed input {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px var(--danger-bg);
+}
+
+.chips {
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+}
+
+.chips input[type='text'],
+.chips input[type='text']:focus-visible {
+    padding: 4px;
+    border: 0;
+    box-shadow: none;
+}
+
+.check-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.check-line input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--primary);
+}
+
+/* ---------- Pill / note ---------- */
+.pill.ok {
+    color: var(--ok-ink);
+}
+
+.pill.bad {
+    color: var(--danger-ink);
+}
+
+.pill.new {
+    background: var(--sky);
+    color: #0d1a2b;
+    font-weight: 600;
+}
+
+.note {
+    border-radius: 12px;
+}
+
+.note.ok {
+    color: var(--ok-ink);
+}
+
+.note.bad {
+    color: var(--danger-ink);
+}
+
+.legend .dot {
+    width: 9px;
+    height: 9px;
+}
+
+.legend .dot.live {
+    background: var(--ok);
+}
+
+.legend .dot.soon {
+    background: var(--accent);
+}
+
+.legend .dot.off {
+    background: var(--danger);
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-line {
+    flex-basis: 100%;
+}
+
+/* ---------- 掃描 bar：spinner + 文字靠左，掣喺最右 ---------- */
+.scan-bar {
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    font-weight: 500;
+}
+
+.scan-bar > button,
+.scan-bar > a {
+    margin-left: auto;
+}
+
+.scan-bar.none {
+    color: var(--ok-ink);
+}
+
+.scan-bar.found {
+    color: var(--warn-ink);
+}
+
+.scan-bar.failed {
+    color: var(--danger-ink);
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+}
+
+/* ---------- 漸變統計卡（① / ⑧） ---------- */
+.stats {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px;
+    border-radius: var(--r-card);
+    color: var(--on-grad);
+    box-shadow: 0 8px 20px rgb(0 0 0 / 0.12);
+}
+
+.stat .ico {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.25);
+    flex: none;
+}
+
+.stat .ico .lucide {
+    width: 22px;
+    height: 22px;
+}
+
+.stat b {
+    display: block;
+    font-size: 28px;
+    line-height: 1.1;
+    font-weight: 600;
+}
+
+.stat .stat-label {
+    font-size: 13px;
+}
+
+.stat.sky {
+    background: var(--grad-sky);
+}
+
+.stat.red {
+    background: var(--grad-red);
+}
+
+.stat.orange {
+    background: var(--grad-orange);
+}
+
+.stat.green {
+    background: var(--grad-green);
+}
+
+/* 白字喺淺色漸變上面：加細陰影保對比 */
+.stat b,
+.stat .stat-label {
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+}
+
+/* ---------- 待辦矩陣 ---------- */
+table.matrix th,
+table.matrix td {
+    padding: 12px 10px;
+}
+
+table.matrix thead th .lucide {
+    width: 15px;
+    height: 15px;
+    vertical-align: -2px;
+    margin-right: 2px;
+}
+
+.cell {
+    padding: 4px 14px;
+    border-radius: 8px;
+    border: 1.5px dashed var(--line);
+}
+
+.cell.must {
+    background: var(--danger);
+    color: var(--on-danger);
+}
+
+/* ---------- 列表：成行撳入編輯頁 ---------- */
+.row.clickable,
+.drama-row.clickable {
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .row.clickable:hover,
+    .drama-row.clickable:hover {
+        background: var(--surface-2);
+    }
+}
+
+.list-head,
+.drama-head {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+/* ---------- 短篇（⑤） ---------- */
+.row.arc-line {
+    cursor: pointer;
+}
+
+.row.arc-line.open {
+    border-radius: 0;
+    background: var(--accent-soft);
+}
+
+.row.arc-line .name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.arc-chevron {
+    color: var(--muted);
+}
+
+.label-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pill.warn {
+    background: var(--warn-bg);
+    color: var(--warn-ink);
+}
+
+fieldset.scan-box {
+    padding: 16px 16px 16px;
+    border-radius: 16px;
+}
+
+fieldset.scan-box legend {
+    font-size: 14px;
+    line-height: 22px;
+}
+
+/* 「重新掃描」掣：中線對正虛線（legend 高 22px，虛線喺 legend 中間 = fieldset 頂 -11px） */
+fieldset.scan-box .rescan {
+    position: absolute;
+    top: -11px;
+    right: 14px;
+    transform: translateY(-50%);
+    padding: 6px 12px;
+    border: 0;
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: var(--shadow-btn);
+    font-size: 13px;
+}
+
+textarea.autosize {
+    resize: none;
+    field-sizing: content;
+    min-height: 2.6em;
+    overflow: hidden;
+}
+
+/* 圖片：Banner 340×192 排先、碟面 192px（⑤） */
+.with-media {
+    grid-template-columns: minmax(0, 1fr) 360px;
+}
+
+.img-slot {
+    width: 192px;
+    height: 192px;
+}
+
+.img-slot.tile {
+    width: 340px;
+    height: 192px;
+    border-radius: 16px;
+}
+
+.slot-btn {
+    width: 36px;
+    height: 36px;
+    right: 6px;
+    bottom: 6px;
+    border: 3px solid var(--surface);
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+.img-slot.tile .slot-btn {
+    right: -10px;
+    bottom: -10px;
+}
+
+.media .cap {
+    margin-bottom: 8px;
+}
+
+@media (max-width: 1180px) {
+    .with-media {
+        grid-template-columns: 1fr;
+    }
+
+    .with-media > .media {
+        grid-column: 1;
+        grid-row: auto;
+        grid-template-columns: auto auto;
+        justify-content: start;
+        column-gap: 24px;
+    }
+
+    .with-media > .media .cap {
+        grid-row: 2;
+    }
+}
+
+/* ---------- 對話框 / 裁切預覽（⑥） ---------- */
+.scrim {
+    background: rgb(10 20 35 / 0.45);
+}
+
+.scrim .card {
+    border-radius: 22px;
+    padding: 22px 24px;
+    gap: 16px;
+    box-shadow: 0 20px 50px rgb(0 0 0 / 0.25);
+}
+
+.scrim .card.crop-dialog {
+    max-width: 560px;
+}
+
+.crop {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+}
+
+.crop .src {
+    position: relative;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface-2);
+}
+
+.crop .src img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.crop .box {
+    position: absolute;
+    border: 2px solid #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 0 0 999px rgb(0 0 0 / 0.35);
+}
+
+.crop .out {
+    justify-self: center;
+    max-width: 100%;
+    background: var(--surface-2);
+    object-fit: cover;
+}
+
+.crop .out.disc {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+}
+
+.crop .out.tile {
+    width: 100%;
+    aspect-ratio: 1216 / 684;
+    height: auto;
+    border-radius: 10px;
+}
+
+.crop > .lucide {
+    color: var(--muted);
+}
+
+/* ---------- 上下架記錄：變更欄用晒欄闊、版本資訊兩行 ---------- */
+.hist-head,
+.hist-row {
+    grid-template-columns: 170px minmax(0, 1fr) 96px;
+}
+
+.hist-row .changes {
+    grid-template-columns: 56px 28px minmax(0, 1fr) auto;
+}
+
+.hist-row .ver .when,
+.hist-row .ver .who {
+    display: block;
+}
+
+.tip-anchor {
+    display: contents;
+}
+
+/* ---------- 自訂 tooltip（④）：泡泡 + 箭咀，fixed 喺 body，自動翻轉 / 避開 nav 同視窗邊 ---------- */
+.tip {
+    cursor: default;
+    color: var(--muted);
+}
+
+.tip-pop {
+    position: fixed;
+    z-index: 40;
+    max-width: 280px;
+    width: max-content;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--tip-bg);
+    color: var(--on-tip);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.45;
+    box-shadow: 0 6px 18px rgb(0 0 0 / 0.2);
+    pointer-events: none;
+}
+
+.tip-pop::after {
+    content: '';
+    position: absolute;
+    border: 7px solid transparent;
+}
+
+.tip-pop[data-side='top']::after {
+    top: 100%;
+    left: var(--arrow, 50%);
+    transform: translateX(-50%);
+    border-top-color: var(--tip-bg);
+}
+
+.tip-pop[data-side='bottom']::after {
+    bottom: 100%;
+    left: var(--arrow, 50%);
+    transform: translateX(-50%);
+    border-bottom-color: var(--tip-bg);
+}
+
+.tip-pop[data-side='right']::after {
+    right: 100%;
+    top: var(--arrow, 50%);
+    transform: translateY(-50%);
+    border-right-color: var(--tip-bg);
+}
+
+.tip-pop[data-side='left']::after {
+    left: 100%;
+    top: var(--arrow, 50%);
+    transform: translateY(-50%);
+    border-left-color: var(--tip-bg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .tip-pop {
+        animation: tip-in var(--motion-fast) var(--motion-ease);
+    }
+}
+
+@keyframes tip-in {
+    from {
+        opacity: 0;
+    }
+}
+
+/* ---------- 403 / 直向提示（⑦）：同一版式（403 頁喺 Worker inline 同一套） ---------- */
+.notice {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 32px 20px;
+    background: var(--bg);
+    color: var(--ink);
+}
+
+.notice-box {
+    width: min(380px, 100%);
+    padding: 32px 28px;
+    border-radius: 24px;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow);
+    text-align: center;
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+}
+
+.notice-box .brand-banner {
+    width: calc(100% + 56px);
+    max-width: none;
+    margin: -32px -28px 0;
+    border-radius: 24px 24px 0 0;
+}
+
+.notice-art {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 112px;
+    height: 112px;
+    margin: -54px 0 4px;
+    border: 6px solid var(--surface);
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--primary);
+}
+
+.notice-art svg {
+    width: 60px;
+    height: 60px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+@media (prefers-color-scheme: dark) {
+    .notice-art {
+        color: var(--accent);
+    }
+}
+
+.notice h1,
+.notice h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.notice p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.notice .btn.google {
+    width: auto;
+}
+
+/* 直向提示：闊度 < 720px 先顯示（app.css 收埋 .app-root） */
+.rotate-note.notice {
+    display: none;
+}
+
+@media (max-width: 719.98px) {
+    .rotate-note.notice {
+        display: grid;
+    }
+}

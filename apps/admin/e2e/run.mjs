@@ -78,7 +78,7 @@ const todoFlowCheck = (browser) =>
         await id.press('Enter');
         await page.screenshot({ path: `${OUT}/arc-editor.png` });
         await page.getByRole('button', { name: '儲存並返回待辦' }).click();
-        await page.getByRole('button', { name: '下一步：確認發佈 →' }).click();
+        await page.getByRole('button', { name: '下一步：確認發佈' }).click();
         await page.getByText('即時上線').waitFor();
         await page.screenshot({ path: `${OUT}/publish.png` });
         await page.getByRole('button', { name: '發佈', exact: true }).click();
