@@ -13,6 +13,7 @@ import {
     insertEntryStatement,
     latestPublish,
     listAssetHashes,
+    listScheduledArcIds,
     listStoredEntries,
     updateEntryStatement,
     type EntryRow,
@@ -114,6 +115,44 @@ export const rowOf = (entry: EntryInput): EntryRow => ({
     images: JSON.stringify(entry.images),
 });
 
+const arcIdsOf = (definition: Json): Set<string> =>
+    new Set(
+        (Array.isArray(definition.arcs) ? (definition.arcs as unknown[]) : []).flatMap((arc) =>
+            isRecord(arc) && typeof arc.id === 'string' ? [arc.id] : [],
+        ),
+    );
+
+/**
+ * S-804：舊 definition 有、新 definition 冇嘅短篇 ID 有排程（schedules 行）→ 回第一個（409）。
+ * 排程跟 arc_id，改短篇 ID 會令規則同新 ID 斷開；server 唔估「邊個改名做邊個」，要 admin 先刪排程、
+ * 改 ID、再排。只睇舊 definition 真係有嘅 ID：以前遺留、對唔返任何短篇嘅排程行唔會令每次儲存都 409。
+ * 排程寫入都會 bump entry 嘅 updated_at，所以「檢查 → 寫」之間有人排程，樂觀鎖會 412
+ */
+const droppedScheduledArc = async (
+    db: D1Database,
+    existing: StoredEntry,
+    definition: Json,
+): Promise<string | undefined> => {
+    if (existing.kind !== 'dramas') return undefined;
+    const next = arcIdsOf(definition);
+    const dropped = [...arcIdsOf(JSON.parse(existing.definition) as Json)].filter(
+        (id) => !next.has(id),
+    );
+    if (dropped.length === 0) return undefined;
+    const scheduled = await listScheduledArcIds(db, existing.id);
+    return dropped.find((id) => scheduled.has(id));
+};
+
+const arcScheduled = (c: Context<AppEnv>, arcId: string) =>
+    c.json(
+        {
+            error: `arc ${arcId} has a schedule; delete it before changing the arc id`,
+            arcId,
+            reason: 'arcScheduled',
+        },
+        HTTP_STATUS.conflict,
+    );
+
 /** If-None-Match: * = 新增（唔可以已經有）；If-Match = 更新（要對到）；唔啱 → undefined（412） */
 const writeMode = (c: Context<AppEnv>, existing: StoredEntry | null) => {
     if (c.req.header('if-none-match')?.trim() === '*') return existing ? undefined : 'create';
@@ -150,6 +189,11 @@ entryRoutes.put('/entries/:kind/:id', async (c) => {
     const existing = await getEntry(c.env.DB, target.kind, target.id);
     const mode = writeMode(c, existing);
     if (!mode) return preconditionFailed(c);
+    const scheduledArc =
+        mode === 'update' && existing
+            ? await droppedScheduledArc(c.env.DB, existing, entry.definition)
+            : undefined;
+    if (scheduledArc !== undefined) return arcScheduled(c, scheduledArc);
     // 新增一律完整驗證（draft 只係掃描自動建）
     const checked = await checkedEntry(c, entry, mode === 'update' && existing?.draft === 1);
     if (checked instanceof Response) return checked;

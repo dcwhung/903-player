@@ -256,6 +256,17 @@ export interface ScheduleRow {
     updated_at: string;
 }
 
+/** 一套劇有排程嘅短篇 ID（S-804：改短篇 ID 前檢查） */
+export const listScheduledArcIds = async (db: D1Database, dramaId: string): Promise<Set<string>> =>
+    new Set(
+        (
+            await db
+                .prepare('SELECT arc_id FROM schedules WHERE drama_id = ?')
+                .bind(dramaId)
+                .all<{ arc_id: string }>()
+        ).results.map((row) => row.arc_id),
+    );
+
 export const getSchedule = (
     db: D1Database,
     dramaId: string,
