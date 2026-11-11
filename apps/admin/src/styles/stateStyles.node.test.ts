@@ -12,14 +12,14 @@ const theme = readFileSync(new URL('./theme.css', import.meta.url), 'utf8').repl
     '',
 );
 
-/** 搵包含 selector 嘅 rule body */
-const bodyOf = (selector: string) => {
-    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const match = new RegExp(`(?:^|[},])\\s*[^{}]*${escaped}\\s*[,{][^{]*\\{([^}]*)\\}`, 'm').exec(
-        theme,
-    );
-    return match?.[1] ?? '';
-};
+/** selector 清單包含 selector 嘅 rule body（全部合埋） */
+const bodyOf = (selector: string) =>
+    theme
+        .split('}')
+        .map((rule) => rule.split('{'))
+        .filter(([selectors = '']) => selectors.split(',').some((sel) => sel.trim() === selector))
+        .map(([, body = '']) => body)
+        .join(';');
 
 describe('state colours survive hover', () => {
     it.each([
