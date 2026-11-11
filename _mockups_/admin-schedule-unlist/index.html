@@ -643,16 +643,43 @@
                 </div>
             </section>
 
-            <!-- ⑦ 同一日有上架又有下架 -->
+            <!-- ⑦ 編輯排程：同時有上架同下架 -->
             <section>
                 <p class="state-label">
-                    ⑦ 同一日有上架又有下架：例如逢一上 5 集，加「每集上架 28 日後下架」→ 14/12
-                    嗰日第 21–25 集上架、第 1–5 集下架。兩種顯示方法，請揀一個
+                    ⑦ 編輯排程，上架同下架都設咗：上架「由 16/11 起逢一上 5 集」、下架「由 14/12
+                    起逢一落 10 集」。上架同下架嘅批次大細唔同，所以集數條同表都按「上架日 ×
+                    下架日」切段：每段一齊上、一齊落，每段日數可以唔同。同一日有上有落（例如
+                    14/12）喺「當日摘要」一行睇晒
                 </p>
                 <div class="card">
-                    <div class="label">
-                        方案 A：按批次（每批一行，上架日期 +
-                        下架日期）。集數條每批下面兩行日子：藍字上、紅字落
+                    <div class="chips">
+                        <span class="arc-chip">戀愛二分一<small>無排程</small></span>
+                        <span class="arc-chip on">我心不死<small>排程中</small></span>
+                    </div>
+                    <div class="label">上架</div>
+                    <div class="sentence">
+                        由 <input class="field" value="16/11/2026" /> 起，逢
+                        <span class="wd"
+                            ><span>日</span><span class="on">一</span><span>二</span><span>三</span
+                            ><span>四</span><span>五</span><span>六</span></span
+                        >
+                        ，每次上 <input class="field num" value="5" /> 集
+                    </div>
+                    <hr class="divider" />
+                    <div class="label">下架</div>
+                    <div class="seg" role="group" aria-label="下架方式">
+                        <button aria-pressed="false">唔下架</button>
+                        <button aria-pressed="false">指定日全部下架</button>
+                        <button aria-pressed="false">每集上架 N 日後下架</button>
+                        <button aria-pressed="true">逢星期 X 落 N 集</button>
+                    </div>
+                    <div class="sentence">
+                        由 <input class="field" value="14/12/2026" /> 起，逢
+                        <span class="wd"
+                            ><span>日</span><span class="on">一</span><span>二</span><span>三</span
+                            ><span>四</span><span>五</span><span>六</span></span
+                        >
+                        ，每次落 <input class="field num" value="10" /> 集
                     </div>
                     <div class="strip">
                         <div class="group">
@@ -667,89 +694,111 @@
                                 <span class="ep on">6</span><span class="ep on">…</span
                                 ><span class="ep on">10</span>
                             </div>
-                            <span class="when">上 23/11</span><span class="when red">落 21/12</span>
+                            <span class="when">上 23/11</span><span class="when red">落 14/12</span>
+                        </div>
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep on">11</span><span class="ep on">…</span
+                                ><span class="ep on">15</span>
+                            </div>
+                            <span class="when">上 30/11</span><span class="when red">落 21/12</span>
+                        </div>
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep on">16</span><span class="ep on">…</span
+                                ><span class="ep on">20</span>
+                            </div>
+                            <span class="when">上 7/12</span><span class="when red">落 21/12</span>
                         </div>
                         <div class="group">
                             <div class="eps">
                                 <span class="ep on">21</span><span class="ep on">…</span
                                 ><span class="ep on">25</span>
                             </div>
-                            <span class="when">上 14/12</span><span class="when red">落 11/1</span>
+                            <span class="when">上 14/12</span><span class="when red">落 28/12</span>
                         </div>
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep on">26</span><span class="ep on">…</span
+                                ><span class="ep on">30</span>
+                            </div>
+                            <span class="when">上 21/12</span><span class="when red">落 28/12</span>
+                        </div>
+                    </div>
+                    <div class="legend">
+                        <span><i style="background: var(--primary)"></i>排咗上架</span>
+                        <span style="color: var(--primary)">上 = 上架日</span>
+                        <span style="color: var(--danger)">落 = 下架日</span>
                     </div>
                     <div class="batches">
                         <h4>上下架批次</h4>
                         <table>
                             <thead>
                                 <tr>
-                                    <th>上架日期</th>
                                     <th>集數</th>
-                                    <th>狀態</th>
+                                    <th>上架日期</th>
                                     <th>下架日期</th>
+                                    <th>上架日數</th>
+                                    <th>狀態</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>16/11 一</td>
                                     <td>第 1–5 集</td>
-                                    <td><span class="pill plan">排程中</span></td>
+                                    <td>16/11 一</td>
                                     <td>14/12 一</td>
+                                    <td>28 日</td>
+                                    <td><span class="pill plan">排程中</span></td>
                                 </tr>
                                 <tr>
-                                    <td>23/11 一</td>
                                     <td>第 6–10 集</td>
+                                    <td>23/11 一</td>
+                                    <td>14/12 一</td>
+                                    <td>21 日</td>
                                     <td><span class="pill plan">排程中</span></td>
-                                    <td>21/12 一</td>
                                 </tr>
                                 <tr>
-                                    <td>14/12 一</td>
-                                    <td>第 21–25 集</td>
+                                    <td>第 11–15 集</td>
+                                    <td>30/11 一</td>
+                                    <td>21/12 一</td>
+                                    <td>21 日</td>
                                     <td><span class="pill plan">排程中</span></td>
-                                    <td>11/1 一</td>
+                                </tr>
+                                <tr>
+                                    <td>第 16–20 集</td>
+                                    <td>7/12 一</td>
+                                    <td>21/12 一</td>
+                                    <td>14 日</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                </tr>
+                                <tr>
+                                    <td>第 21–25 集</td>
+                                    <td>14/12 一</td>
+                                    <td>28/12 一</td>
+                                    <td>14 日</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                </tr>
+                                <tr>
+                                    <td>第 26–30 集</td>
+                                    <td>21/12 一</td>
+                                    <td>28/12 一</td>
+                                    <td>7 日</td>
+                                    <td><span class="pill plan">排程中</span></td>
                                 </tr>
                             </tbody>
                         </table>
                         <p class="hint">
-                            14/12 喺第 1 行（下架）同第 3
-                            行（上架）都出現；一眼睇到每批幾時上、幾時落
+                            當日摘要：14/12 一　上第 21–25 集 · 落第 1–10 集　｜　21/12 一　上第
+                            26–30 集 · 落第 11–20 集
                         </p>
                     </div>
-                    <hr class="divider" />
-                    <div class="label">方案 B：按日期（每日一行，同日嘅上架同下架放埋一齊）</div>
-                    <div class="batches">
-                        <h4>上下架批次</h4>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>日期</th>
-                                    <th>上架</th>
-                                    <th>下架</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>16/11 一</td>
-                                    <td><span class="pill plan">第 1–5 集</span></td>
-                                    <td>—</td>
-                                </tr>
-                                <tr>
-                                    <td>23/11 一</td>
-                                    <td><span class="pill plan">第 6–10 集</span></td>
-                                    <td>—</td>
-                                </tr>
-                                <tr>
-                                    <td>14/12 一</td>
-                                    <td><span class="pill plan">第 21–25 集</span></td>
-                                    <td><span class="pill bad">第 1–5 集</span></td>
-                                </tr>
-                                <tr>
-                                    <td>21/12 一</td>
-                                    <td><span class="pill plan">第 26–30 集</span></td>
-                                    <td><span class="pill bad">第 6–10 集</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <p class="hint">似時間表，一日發生乜一行睇晒；但要對住睇先知每批上咗幾耐</p>
+                    <p class="hint">
+                        驗證：任何一集嘅下架日唔可以早過或者等於佢嘅上架日；有衝突就喺集數條標紅、唔准儲存（例如下架改做由
+                        7/12 起逢一落 10 集，第 26–30 集喺 21/12 同日上落 → 出錯）
+                    </p>
+                    <div class="savebar">
+                        <button class="btn">↶ 復原</button>
+                        <button class="btn primary">儲存</button>
                     </div>
                 </div>
             </section>
