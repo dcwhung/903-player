@@ -1,9 +1,10 @@
 /*
- * 「＋ 新增廣播劇」：新劇由 R2 掃描自動建立（plan：新資料夾 → draft 劇），所以呢度解釋 + 一撳重新掃描
+ * 「＋ 新增廣播劇」：新劇由 R2 掃描自動建立（plan：新資料夾 → draft 劇），所以呢度解釋 + 一撳重新掃描。
+ * 用 ConfirmDialog shell（S-811）：focus 入「關閉」、Tab 循環、Esc 關、關閉後 focus 返 ＋ 掣
  */
 import { RefreshCw } from 'lucide-react';
-import { useEffect, useId, useRef } from 'react';
 import { t } from '../../i18n/t';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
 
 export function NewDramaDialog({
     onRescan,
@@ -12,24 +13,15 @@ export function NewDramaDialog({
     onRescan: () => void;
     onClose: () => void;
 }) {
-    const titleId = useId();
-    const closeRef = useRef<HTMLButtonElement>(null);
-    useEffect(() => closeRef.current?.focus(), []);
     return (
-        <div className="scrim" onKeyDown={(event) => event.key === 'Escape' && onClose()}>
-            <div className="card" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-                <h3 id={titleId}>{t('list.addDrama')}</h3>
-                <p className="sub">{t('list.newDramaHelp')}</p>
-                <div className="actions end">
-                    <button type="button" ref={closeRef} onClick={onClose}>
-                        {t('list.close')}
-                    </button>
-                    <button type="button" className="primary" onClick={onRescan}>
-                        <RefreshCw aria-hidden="true" />
-                        {t('scan.rescan')}
-                    </button>
-                </div>
-            </div>
-        </div>
+        <ConfirmDialog
+            title={t('list.addDrama')}
+            body={t('list.newDramaHelp')}
+            cancelLabel={t('list.close')}
+            confirmLabel={t('scan.rescan')}
+            confirmIcon={<RefreshCw aria-hidden="true" />}
+            onConfirm={onRescan}
+            onCancel={onClose}
+        />
     );
 }
