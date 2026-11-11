@@ -64,7 +64,7 @@ export const placeholderDramaIds = (taken: ReadonlySet<string>) => {
 /** 新資料夾 → draft 劇（圖未有、placeholder ID、enabled: false） */
 const planNewDrama = async (plan: Plan, folder: string, id: string, ctx: ScanContext) => {
     const listing = await listingFromR2(ctx.env.AUDIO, folder);
-    const result = generateDraft(listing, { id, today: ctx.today });
+    const result = generateDraft(listing, { id, today: ctx.today, source: 'r2' });
     if (result.json === null) {
         plan.skipped.push({ folder, issues: result.issues.filter((i) => i.level === 'error') });
         return;
