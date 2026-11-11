@@ -42,7 +42,7 @@ describe('Timeline', () => {
         expect(items[0]).toHaveTextContent('即時上線');
         expect(within(items[0]!).getByText('新集數')).toBeInTheDocument();
         expect(items[0]).toHaveTextContent('戀愛二分一31–32');
-        expect(items[1]).toHaveTextContent('11/16 一');
+        expect(items[1]).toHaveTextContent('16/11 一');
         expect(items[1]).toHaveTextContent('新短篇');
         expect(items[1]).toHaveTextContent('我心不死');
     });
