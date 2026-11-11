@@ -354,6 +354,85 @@ const schedulePreviewCheck = (browser) =>
         await page.close();
     });
 
+const scheduleChipCheck = (browser) =>
+    check(
+        'schedule: arc chips follow the saved schedules (已全部上架 / 已上 15 / 30 集)',
+        async () => {
+            const page = await newPage(browser, loggedIn());
+            await page.goto(SCHEDULE_PARTLY);
+            const note = (name) =>
+                page.getByRole('tab', { name: new RegExp(name) }).locator('small');
+            await page.getByRole('tab', { name: /Season 2/ }).waitFor();
+            const notes = [
+                await note('Season 1').textContent(),
+                await note('Season 2').textContent(),
+            ];
+            if (notes.join() !== '已全部上架,已上 15 / 30 集') throw new Error(`chips: ${notes}`);
+            // 已存嘅規則讀返入句子：由下一批起逢 X、每次 5 集
+            if ((await page.getByRole('spinbutton', { name: '每次上架集數' }).inputValue()) !== '5')
+                throw new Error('saved rule not read into the sentence');
+            await shoot(page, 'schedule-chips', { fullPage: true });
+            await page.close();
+        },
+    );
+
+/** 前景 / 背景對比（背景透明就搵上層）；WCAG 相對亮度 */
+const contrastOf = (locator) =>
+    locator.evaluate((el) => {
+        const rgb = (value) => value.match(/[\d.]+/g).map(Number);
+        const background = (node) => {
+            for (let n = node; n; n = n.parentElement) {
+                const [r, g, b, a = 1] = rgb(getComputedStyle(n).backgroundColor);
+                if (a > 0) return [r, g, b];
+            }
+            return [255, 255, 255];
+        };
+        const lum = ([r, g, b]) =>
+            [r, g, b]
+                .map((c) => c / 255)
+                .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+                .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+        const [fg, bg] = [lum(rgb(getComputedStyle(el).color)), lum(background(el))];
+        return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
+    });
+
+const MIN_CONTRAST = 3;
+
+const scheduleContrastCheck = (browser) =>
+    check(
+        'schedule chips / segmented: text ≥ 3:1 selected, hovered or not (light + dark)',
+        async () => {
+            const page = await newPage(browser, loggedIn());
+            await page.goto(SCHEDULE_PARTLY);
+            await page.getByRole('button', { name: '每日 1 集' }).click();
+            await page.getByRole('button', { name: '指定日全部' }).click();
+            const buttons = [
+                ...['一次性全部', '每日 1 集', '每週 1 次'],
+                ...['不下架', '指定日全部', '上架 N 日後', '逢星期 X 下架 N 集'],
+                ...['編輯', '預覽'],
+            ].map((name) => page.getByRole('button', { name, exact: true }));
+            const low = [];
+            for (const scheme of ['light', 'dark']) {
+                await page.emulateMedia({ colorScheme: scheme });
+                for (const button of buttons) {
+                    await page.mouse.move(0, 0);
+                    const plain = await contrastOf(button);
+                    await button.hover();
+                    const hovered = await contrastOf(button);
+                    const name = await button.textContent();
+                    const pressed = await button.getAttribute('aria-pressed');
+                    if (Math.min(plain, hovered) < MIN_CONTRAST)
+                        low.push(
+                            `${scheme} ${name}(${pressed}) ${plain.toFixed(2)}/${hovered.toFixed(2)}`,
+                        );
+                }
+            }
+            await page.emulateMedia({ colorScheme: 'light' });
+            if (low.length > 0) throw new Error(low.join('; '));
+            await page.close();
+        },
+    );
+
 const scheduleAllListedCheck = (browser) =>
     check('schedule: every episode listed → only 下架 can be set', async () => {
         const page = await newPage(browser, loggedIn());
@@ -1103,6 +1182,8 @@ try {
         showListCheck,
         scheduleEditCheck,
         schedulePreviewCheck,
+        scheduleChipCheck,
+        scheduleContrastCheck,
         scheduleAllListedCheck,
         scheduleConflictCheck,
         presetChipCheck,

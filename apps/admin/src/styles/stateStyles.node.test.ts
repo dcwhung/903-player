@@ -44,6 +44,18 @@ describe('state colours survive hover', () => {
             /color:\s*var\(--on-primary\)/,
         );
     });
+
+    // 0.6.3 bug：揀咗嘅快速套用 chip hover 時底色變 --surface-2，白字（深色 = 深字）睇唔到
+    it('should keep the selected preset chip solid, hover included', () => {
+        for (const selector of [
+            ".presets button[aria-pressed='true']",
+            ".presets button[aria-pressed='true']:hover:not(:disabled)",
+        ]) {
+            const body = bodyOf(selector);
+            expect(body).toMatch(/background:\s*var\(--primary\)/);
+            expect(body).toMatch(/color:\s*var\(--on-primary\)/);
+        }
+    });
 });
 
 /*

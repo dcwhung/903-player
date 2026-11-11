@@ -138,6 +138,18 @@ describe('ScheduleTab — 編輯 (mockup ⑧)', () => {
     });
 });
 
+describe('ScheduleTab — icons', () => {
+    it('should put an aria-hidden outline icon on 編輯 / 預覽 / 儲存 like the other buttons', async () => {
+        api();
+        await open('heart');
+        for (const name of ['編輯', '預覽', '儲存']) {
+            const icon = screen.getByRole('button', { name }).querySelector('svg.lucide');
+            expect(icon).not.toBeNull();
+            expect(icon).toHaveAttribute('aria-hidden', 'true');
+        }
+    });
+});
+
 describe('ScheduleTab — 預覽 (mockup ⑨)', () => {
     it('should show one merged timeline and the 上下架批次 table, read-only', async () => {
         api();

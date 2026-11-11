@@ -28,6 +28,10 @@ describe('stripModel', () => {
         expect(arcTabNote(drama, arc, false, TODAY)).toBe('無排程');
         expect(arcTabNote(drama, arc, true, TODAY)).toBe('已上 20 / 33 集');
         expect(arcTabNote(drama, { episodes: 5, addedAt: '2026-11-16' }, true, TODAY)).toBe('定期');
+        // mockup ①：全部已上架（例如只設下架）嘅短篇 chip 寫「已全部上架」，唔係「定期」
+        expect(arcTabNote(drama, { episodes: 5, addedAt: '2026-11-01' }, true, TODAY)).toBe(
+            '已全部上架',
+        );
     });
 
     // Bug：掃描建嘅新短篇 addedAt = 掃描當日、enabled: false；冇排程唔可以當「已上架」（player 唔出下架短篇）

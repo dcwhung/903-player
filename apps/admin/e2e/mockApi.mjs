@@ -99,9 +99,14 @@ const golden = () => ({
         order: 2,
         addedAt: '2026-10-01',
         arcs: [
-            // 全部已上架（跟劇集 1/10）：排程 tab 只可以設下架
-            { id: 's1', name: 'Season 1', episodes: 35 },
-            // 第 1–15 集已上架（3 批），第 16 集起 6 日後先上架（mockup ⑧）
+            // 全部已上架（跟劇集 1/10），已排程 30 日後全部下架（只設下架，見 schedulesOf）
+            {
+                id: 's1',
+                name: 'Season 1',
+                episodes: 35,
+                episodeRemovedAt: { '1-35': daysFromToday(30) },
+            },
+            // 由 21 日前起每 7 日上架 5 集：第 1–15 集已上架，第 16 集起 7 日後先上架（mockup ⑧）
             {
                 id: 's2',
                 name: 'Season 2',
@@ -110,7 +115,9 @@ const golden = () => ({
                 episodeDates: {
                     6: daysFromToday(-14),
                     11: daysFromToday(-7),
-                    16: daysFromToday(6),
+                    16: daysFromToday(7),
+                    21: daysFromToday(14),
+                    26: daysFromToday(21),
                 },
             },
         ],
@@ -119,6 +126,22 @@ const golden = () => ({
     draft: false,
     updatedAt: 'golden-v1',
 });
+
+/** D1 schedules：同 golden 嘅 definition 對得上（排程 tab 短篇 chip 跟呢度計「已上 15 / 30 集」等） */
+const schedulesOf = () => ({
+    'golden/s1': {
+        kind: 'dates',
+        batches: [{ from: 1, date: '2026-10-01' }],
+        unlist: { kind: 'date', date: daysFromToday(30) },
+    },
+    'golden/s2': {
+        kind: 'periodic',
+        start: daysFromToday(-21),
+        perRelease: 5,
+        every: { days: 7 },
+    },
+});
+
 
 /*
  * createState({ missingFolder: true })：「黃金少年」嘅 R2 資料夾改咗名（掃描搵唔到「黃金少年/」），
@@ -176,6 +199,7 @@ export const createState = ({ realImages = false, missingFolder = false } = {}) 
         },
     ],
     orders: [],
+    schedules: schedulesOf(),
     puts: [],
     confirms: [],
     assets: [],
@@ -315,6 +339,19 @@ const previewRoute = (state, route, request, [dramaId, arcId]) => {
     return json(route, { expanded, warnings: { missingEpisodeIds: [] } });
 };
 
+/** GET = 已存規則（冇 = 404）；PUT 存規則（唔改 definition，夠 e2e 用） */
+const scheduleRoute = (state, route, request, [dramaId, arcId]) => {
+    const key = `${dramaId}/${arcId}`;
+    if (request.method() === 'PUT') {
+        state.schedules[key] = request.postDataJSON().rule;
+        return json(route, { updatedAt: `${key}-saved`, warnings: { missingEpisodeIds: [] } });
+    }
+    const rule = state.schedules[key];
+    return rule
+        ? json(route, { rule, expanded: null, updatedAt: `${key}-v1` })
+        : json(route, { error: 'no such schedule' }, { status: 404 });
+};
+
 const handlers = {
     'GET /api/me': (state, route) =>
         state.loggedIn
@@ -383,8 +420,8 @@ export const installMockApi = async (page, state) => {
             /^\/api\/dramas\/([^/]+)\/arcs\/([^/]+)\/schedule\/preview$/,
         );
         if (preview) return previewRoute(state, route, request, preview.slice(1));
-        if (/\/schedule$/.test(url.pathname))
-            return json(route, { error: 'no such schedule' }, { status: 404 });
+        const schedule = url.pathname.match(/^\/api\/dramas\/([^/]+)\/arcs\/([^/]+)\/schedule$/);
+        if (schedule) return scheduleRoute(state, route, request, schedule.slice(1));
         const handler = handlers[key];
         return handler
             ? handler(state, route, request)
