@@ -340,10 +340,14 @@
                 align-content: start;
             }
             .panel.up {
-                border-top: 4px solid var(--primary);
+                border-top: 4px solid var(--ok);
             }
             .panel.down {
                 border-top: 4px solid var(--danger);
+            }
+            .pill.big {
+                padding: 3px 14px;
+                font-size: 15px;
             }
             .panel h3 {
                 margin: 0;
@@ -1091,7 +1095,7 @@
                     </div>
                     <div class="split">
                         <div class="panel up">
-                            <h3>上架</h3>
+                            <h3><span class="pill ok big">上架</span></h3>
                             <div class="scope">可上架：第 16–30 集（15 集未上架）</div>
                             <div class="chips">
                                 <span class="arc-chip" style="padding: 4px 10px"
@@ -1140,7 +1144,7 @@
                             </div>
                         </div>
                         <div class="panel down">
-                            <h3>下架</h3>
+                            <h3><span class="pill bad big">下架</span></h3>
                             <div class="scope">
                                 可下架：第 1–15 集（已上架）· 第 16–30
                                 集（已排程上架，下架日須遲於上架日）
