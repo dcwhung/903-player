@@ -13,6 +13,7 @@ import { isAdminEmail } from '../lib/env';
 import { deniedPage } from './deniedPage';
 import { authorizationUrl, exchangeCode, GoogleAuthError } from './google';
 import { requireSameOrigin } from './middleware';
+import { safeNext } from './next';
 import { newOAuthState, openOAuthState, sealOAuthState } from './oauthState';
 import { createSession, deleteSession } from './session';
 
@@ -22,7 +23,8 @@ const HOST_COOKIE = { httpOnly: true, secure: true, sameSite: 'Lax', path: '/' }
 export const authRoutes = new Hono<AppEnv>();
 
 authRoutes.get('/google/start', async (c) => {
-    const value = newOAuthState();
+    // 深連結（S-809）：唔合規嘅 next 當冇
+    const value = newOAuthState(Date.now(), safeNext(c.req.query('next')));
     setCookie(c, OAUTH_COOKIE, await sealOAuthState(c.env.SESSION_SECRET, value), {
         ...HOST_COOKIE,
         maxAge: OAUTH_STATE_TTL_SECONDS,
@@ -34,15 +36,19 @@ authRoutes.get('/google/start', async (c) => {
     );
 });
 
-/** state 啱 → 換 token → 驗 email → 開 session；失敗唔開 session */
-const finishLogin = async (c: Context<AppEnv>, code: string, verifier: string) => {
+/** state 啱 → 換 token → 驗 email → 開 session → 返 next（冇就 /）；失敗唔開 session */
+const finishLogin = async (
+    c: Context<AppEnv>,
+    code: string,
+    { verifier, next }: { verifier: string; next?: string | undefined },
+) => {
     const identity = await exchangeCode(c.env, code, verifier);
     if (!identity.emailVerified || !isAdminEmail(c.env.ADMIN_EMAILS, identity.email)) {
         return c.html(deniedPage(identity.email), HTTP_STATUS.forbidden);
     }
     const token = await createSession(c.env.DB, identity.email);
     setCookie(c, SESSION_COOKIE, token, { ...HOST_COOKIE, maxAge: SESSION_TTL_SECONDS });
-    return c.redirect('/', HTTP_STATUS.found);
+    return c.redirect(next ?? '/', HTTP_STATUS.found);
 };
 
 authRoutes.get('/google/callback', async (c) => {
@@ -50,12 +56,12 @@ authRoutes.get('/google/callback', async (c) => {
     if (c.req.query('error')) return c.redirect('/', HTTP_STATUS.found);
     const cookie = getCookie(c, OAUTH_COOKIE);
     deleteCookie(c, OAUTH_COOKIE, HOST_COOKIE);
-    const verifier = await openOAuthState(c.env.SESSION_SECRET, cookie, c.req.query('state'));
+    const opened = await openOAuthState(c.env.SESSION_SECRET, cookie, c.req.query('state'));
     const code = c.req.query('code');
-    if (!verifier || !code)
+    if (!opened || !code)
         return c.text('Login expired or invalid. Try again.', HTTP_STATUS.badRequest);
     try {
-        return await finishLogin(c, code, verifier);
+        return await finishLogin(c, code, opened);
     } catch (error) {
         if (!(error instanceof GoogleAuthError)) throw error;
         console.warn('[auth] Google login failed', error.message);

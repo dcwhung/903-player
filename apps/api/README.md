@@ -3,21 +3,21 @@
 Cloudflare Worker：管理 catalog 內容（D1）、publish `catalog.json`（R2）、代出 `catalog.json` 同圖畀 player。
 Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a、3b）。
 
-| 路徑                               | 用途                                                                   | 權限                          |
-| ---------------------------------- | ---------------------------------------------------------------------- | ----------------------------- |
-| `/`、`/shows`…（`../admin/dist`）  | Admin SPA（`apps/admin`）：掃描、待辦、編輯、確認發佈、上下架記錄      | 公開（資料要 login）          |
-| `/auth/google/start`、`/callback`  | Google login（Authorization Code + PKCE）                              | 公開                          |
-| `POST /auth/logout`                | 登出                                                                   | same-origin                   |
-| `GET /api/health`                  | `{ ok, version }`                                                      | 公開                          |
-| `GET /api/me`                      | 而家 login 咗邊個                                                      | session                       |
-| `POST /api/publish[?force=1]`      | D1 → `catalog.json` → R2；ID 守衛（上次有、今次冇嘅 episode ID → 409） | session + same-origin         |
-| `GET /api/publishes`               | Publish 記錄（新到舊）+ `changes`（同上一次 ok publish 比）+ `error`   | session                       |
-| `POST /api/publishes/:id/rollback` | 還原 #N 嘅上架狀態入 D1（之後新增嘅下架），再正常 publish（新一行）    | session + same-origin         |
-| 內容 API（2b-1，見下面）           | entries CRUD、R2 掃描、短篇排程（Phase 3 admin 用）                    | session（改嘢 + same-origin） |
-| Admin API（3a，見下面）            | 自動掃描、待辦、改 ID、資料夾配對、排序、變更摘要                      | session（改嘢 + same-origin） |
-| `PUT /api/assets`（2b-2，見下面）  | 上載 disc / tile（WebP）→ R2 + `assets`，回圖檔名                      | session + same-origin         |
-| `GET /catalog/v1/catalog.json`     | Player 讀嘅 catalog（`max-age=60` + ETag）                             | 公開，CORS 限 player          |
-| `GET /catalog/v1/img/<hash>.<ext>` | Catalog 圖（content hash，`immutable`）                                | 公開，CORS 限 player          |
+| 路徑                               | 用途                                                                                                      | 權限                          |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `/`、`/shows`…（`../admin/dist`）  | Admin SPA（`apps/admin`）：掃描、待辦、編輯、確認發佈、上下架記錄                                         | 公開（資料要 login）          |
+| `/auth/google/start`、`/callback`  | Google login（Authorization Code + PKCE）；`start?next=<同站 path>` login 後返嗰度（S-809，唔合規 → `/`） | 公開                          |
+| `POST /auth/logout`                | 登出                                                                                                      | same-origin                   |
+| `GET /api/health`                  | `{ ok, version }`                                                                                         | 公開                          |
+| `GET /api/me`                      | 而家 login 咗邊個                                                                                         | session                       |
+| `POST /api/publish[?force=1]`      | D1 → `catalog.json` → R2；ID 守衛（上次有、今次冇嘅 episode ID → 409）                                    | session + same-origin         |
+| `GET /api/publishes`               | Publish 記錄（新到舊）+ `changes`（同上一次 ok publish 比）+ `error`                                      | session                       |
+| `POST /api/publishes/:id/rollback` | 還原 #N 嘅上架狀態入 D1（之後新增嘅下架），再正常 publish（新一行）                                       | session + same-origin         |
+| 內容 API（2b-1，見下面）           | entries CRUD、R2 掃描、短篇排程（Phase 3 admin 用）                                                       | session（改嘢 + same-origin） |
+| Admin API（3a，見下面）            | 自動掃描、待辦、改 ID、資料夾配對、排序、變更摘要                                                         | session（改嘢 + same-origin） |
+| `PUT /api/assets`（2b-2，見下面）  | 上載 disc / tile（WebP）→ R2 + `assets`，回圖檔名                                                         | session + same-origin         |
+| `GET /catalog/v1/catalog.json`     | Player 讀嘅 catalog（`max-age=60` + ETag）                                                                | 公開，CORS 限 player          |
+| `GET /catalog/v1/img/<hash>.<ext>` | Catalog 圖（content hash，`immutable`）                                                                   | 公開，CORS 限 player          |
 
 設定喺 `wrangler.toml`（D1 `DB`、R2 `CATALOG`、R2 `AUDIO`（`903-radio-drama`，只 list）、`[vars]`）；secret（`GOOGLE_CLIENT_SECRET`、`SESSION_SECRET`）唔入 repo。
 
