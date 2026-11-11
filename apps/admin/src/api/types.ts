@@ -1,4 +1,4 @@
-/* API 回應形狀（apps/api/src/{admin,content,catalog}/**，api 0.4.0） */
+/* API 回應形狀（apps/api/src/{admin,content,catalog}/**，api 0.5.0） */
 import type { ChangeSummary, ExpandedSchedule, ScheduleRule } from '@903-player/catalog';
 
 export type EntryKind = 'shows' | 'dramas';
