@@ -195,6 +195,29 @@ const showEditorCheck = (browser) =>
         },
     );
 
+/** S-823：窄畫面（nav 自動收合 / 最窄橫向）完結 roller 唔可以超出 panel 右邊 */
+const NARROW_WIDTHS = [1024, 720];
+
+const narrowRollerCheck = (browser) =>
+    check('show editor: end roller stays inside the panel on narrow screens', async () => {
+        for (const width of NARROW_WIDTHS) {
+            const page = await newPage(browser, loggedIn(), { width, height: 768 });
+            await page.goto(`${BASE}/shows/night`);
+            await page.getByRole('checkbox', { name: '設定播放時間' }).check();
+            await page.getByRole('button', { name: /完結時間/ }).click();
+            const pop = page.getByRole('dialog', { name: '完結時間' });
+            await pop.scrollIntoViewIfNeeded();
+            const box = await boxOf(pop);
+            const card = await boxOf(page.locator('.card', { has: pop }));
+            if (box.x + box.width > card.x + card.width || box.x + box.width > width)
+                throw new Error(
+                    `${width}px: roller ${JSON.stringify(box)} past ${JSON.stringify(card)}`,
+                );
+            await shoot(page, `show-editor-end-roller-${width}`);
+            await page.close();
+        }
+    });
+
 /** 1×1 PNG（Safari 路徑：canvas 出 PNG → wasm encoder） */
 const PNG_1PX = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
@@ -370,6 +393,7 @@ try {
         showListCheck,
         scheduleCheck,
         showEditorCheck,
+        narrowRollerCheck,
         imageCheck,
         navCheck,
         reducedMotionCheck,
