@@ -4,7 +4,7 @@
 - 審閱者：Code Reviewer（subagent）
 - 目標：branch `claude/charming-heisenberg-8z30x3`，`a2b2c0a..3fef4de`（另加 `ace1ff5` / `3fef4de`：碟面裁切預覽改用圓框；docs / mockup commit、`b974b80`、`5c2b9db` 唔審 code）
 - Tier：T2（admin UI + api 驗證邏輯）
-- 總評：13 項同 `8033117` regression fix 全部對到 SSoT，測試齊。但 9(b) 嘅 `mayRelax` 放寬咗太多：**已發佈**嘅 entry 轉下架、圖唔齊，都會被存做 draft，publish 唔包佢（W-714，blocking）
+- 總評：13 項同 `8033117` regression fix 全部對到 SSoT，測試齊。但 9(b) 嘅 `mayRelax` 放寬咗太多：**已發佈**嘅 entry 轉下架、圖唔齊，都會被存做 draft，publish 唔包佢（W-714，blocking）。**Re-review：W-714 已 resolved（`6306589` / `645f593`），結果改做 pass**
 
 ## Hard Gates
 
@@ -16,17 +16,17 @@ all pass：`npm run lint`（eslint + prettier）、`tsc -b`（admin / api）、�
 
 ## 評分結果
 
-| 維度     | 得分   | 滿分    | 備注                          |
-| -------- | ------ | ------- | ----------------------------- |
-| 正確性   | 20     | 25      | W-714                         |
-| 安全性   | 20     | 20      |                               |
-| 可維護性 | 20     | 20      |                               |
-| 測試覆蓋 | 15     | 15      | 已發佈 entry 嘅情況歸入 W-714 |
-| 性能     | 10     | 10      |                               |
-| 代碼風格 | 10     | 10      |                               |
-| **總分** | **95** | **100** |                               |
+| 維度     | 得分   | 滿分    | 備注                               |
+| -------- | ------ | ------- | ---------------------------------- |
+| 正確性   | 20     | 25      | W-714（第一輪；re-review 回復 25） |
+| 安全性   | 20     | 20      |                                    |
+| 可維護性 | 20     | 20      |                                    |
+| 測試覆蓋 | 15     | 15      | 已發佈 entry 嘅情況歸入 W-714      |
+| 性能     | 10     | 10      |                                    |
+| 代碼風格 | 10     | 10      |                                    |
+| **總分** | **95** | **100** |                                    |
 
-**結果：⚠️ warn（分數有 95，但 W-714 按 dispatch 指示當 blocking，要修好先 merge）**
+**結果（第一輪）：⚠️ warn（W-714 blocking）→ Re-review 之後：✅ pass（W-714 resolved，正確性回復 25，總分 100）**
 
 ## 🟡 W-714 — 已發佈 entry 轉下架、圖唔齊，會被存做 draft，喺 catalog 消失 / 令 publish 卡住（blocking）
 
@@ -53,7 +53,17 @@ const mayRelax = async (db: D1Database, entry: EntryInput, wasDraft: boolean) =>
 // （isPublished 要移去 checkedEntry 上面，或者抽去 catalog/store）
 ```
 
+## Re-review — W-714 ✅ resolved（`6306589` 紅燈 → `645f593`）
+
+- 改動：方案 A。`mayRelax` 改做 async，條件係 `(wasDraft && kind === 'dramas') || (enabled === false && !(await isPublished(db, kind, id)))`。新增 / 從未發佈嘅下架 entry 照舊可以存做 draft（9(b) 冇 regress，原本嘅 8 個 case 都過）
+- `isPublished` 定義喺 `mayRelax` 後面，但只喺 request 時先 call，module 已經載入咗，冇 TDZ 問題；`isPublished` 只會喺完整驗證失敗之後先讀 DB
+- 驗證：`disabledEntries` / `drafts` / `entries` / `schedule` 加臨時 probe，5 個檔 58 個 test 過；`tsc -b`、eslint、prettier 都過
+- (ii-b) 用臨時 workerd probe 再試（已刪）：已發佈劇轉下架、加一個未上載碟面嘅短篇 → `422 arcs[1].disc: no file season-2.webp`，之後 publish `200`，同 base 一致
+- 新 test 只覆蓋節目；劇嘅情況（ID 守衛相關）未有 regression test → S-831
+
 ## 🟢 Suggestion / Observation（backlog，唔 block）
+
+- S-831 `apps/api/test/disabledEntries.test.ts`：加一個 W-714 劇 case，即係 (ii-b)「已發佈劇轉下架 + 未上載碟面嘅新短篇 → 422、`draft` 仍然係 0、publish 唔會 409」，鎖住 ID 守衛相關嘅情況。順手刪走 `mayRelax` 上面舊嗰段 JSDoc（而家有兩段，舊嗰段仲寫「或者下架嘅 entry」，同新條件唔夾）
 
 - S-828 `apps/admin/src/model/paths.ts`、`todoModel.ts` `rowTarget`：路徑冇 `encodeURIComponent`。劇 ID 受 `ID_PATTERN`、短篇 ID 受 `ARC_ID_PATTERN`（API 驗證）限制，而家冇問題；如果想防禦性啲可以加 encode。`todoHref` 已經用 `URLSearchParams` encode 咗 query
 - S-829 `apps/admin/e2e/run.mjs` `boxOf(locator, x, height)`：`x` 冇用到，但 call site 傳 `0`，容易令人以為會改 x。建議刪走呢個參數，或者改用 `{ height }` option
@@ -71,13 +81,14 @@ const mayRelax = async (db: D1Database, entry: EntryInput, wasDraft: boolean) =>
 ```
 HANDOFF_RECEIPT
 agent: code-reviewer
-scope: admin-feedback-0.6.3 (a2b2c0a..3fef4de)
-status: warn
-score: 95
+scope: admin-feedback-0.6.3 (a2b2c0a..645f593; re-review 564f638..645f593)
+status: pass
+score: 100
 hard_gates: { lint: pass, type: pass, tests: pass, coverage: n/a, no_critical: pass, security: n/a }
-blocking: [W-714]
-backlog: [S-828, S-829, S-830]
-next_action: invoke developer subagent to fix W-714 (Option A), then re-review W-714 diff only
-context: W-714 reproduced in workerd — published show disabled + missing image → draft → dropped from catalog; published drama → publish 409. CI run 43112989807 for 4d83f96 was in_progress at review time.
+blocking: []
+resolved: [W-714]
+backlog: [S-828, S-829, S-830, S-831]
+next_action: proceed to QA / merge (backlog items non-blocking)
+context: W-714 reproduced in workerd — published show disabled + missing image → draft → dropped from catalog; published drama → publish 409. CI run 43112989807 for 4d83f96 was in_progress at first review. Re-review: W-714 fixed by 6306589/645f593 (Option A); (ii-b) drama case now 422 via probe; suggest S-831 regression test.
 report: .proj-docs/reviews/2026-11-12_review_admin-feedback-0.6.3.md (committed, not pushed)
 ```
