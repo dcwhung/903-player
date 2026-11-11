@@ -15,6 +15,7 @@
     - AC-10 直向 < 720px 淨係「請轉為橫向或使用電腦」；reduced motion = 唔播動畫（`.claude/CLAUDE.md` Motion）
     - AC-11 UX 步數（plan §3b.4）：設 ID 3、排期 3、加圖 3、發佈 2、排序 1、落架 3、改名 3、還原 3
     - AC-12 3c（§3c + plan 後用戶確認）：樣式（天藍 nav、24px panel、漸變統計卡、自訂 tooltip）；主題「跟系統 / 淺色 / 深色」存 localStorage `admin.theme`、first paint 前套用，login 同 Worker 403 頁都跟；列表撳成行入編輯、圖例三行；節目「設定播放時間」checkbox；新短篇自動 ID `<劇ID>-NN` 要儲存確認（confirm-id）；PNG / JPG / WebP 置中裁切轉 WebP（wasm 後備）+ 預覽 dialog；上下架記錄 pill + 「還原」喺版本欄、確認框有「只會還原上架狀態」提示；nav v4（「更新」喺「內容」第一、主題同收合同一行、FLIP，reduced motion 唔播）；改劇 ID 撞短篇 ID 顯示 409 訊息（W-711）
+    - AC-13 3c production 回饋（api 0.6.1，用戶 8 項）：savebar「已發佈的項目不可刪除。」紅字（`--danger`）、冇下架提示句、「● 有未儲存的變更」喺儲存掣前面；時間 roller 喺撳嗰個框下面；列表圖例只出列表真係有嘅類別（`legendOf`），「拖曳」行照舊；短篇細碟（列表 / 短篇 tab / 排程 chip）短篇 → 劇 → 黑碟；編輯頁標題旁已儲存碟面、冇 = 黑碟；類型鎖住 = 實色 pill；檔名模板例子（`exampleFileName`）；確認發佈時間線日期 / 綠點 / 第一行置中
 - Scope files（freeze 用 `git ls-files apps/admin`）:
     - `apps/admin/{package.json,index.html,vite.config.ts,tsconfig.json,tsconfig.app.json,tsconfig.node.json}` `apps/admin/src/**`（app / api / data / features / i18n / model / styles / ui / utils + tests）`apps/admin/tests/*` `apps/admin/e2e/{run,mockApi}.mjs`
     - 3c Design Origin（只凍結）：`_mockups_/admin-style/{index.html,banner.webp}`
@@ -23,6 +24,7 @@
     - `npm test -- apps/admin`（coverage：`npx vitest run --project @903-player/admin --coverage.enabled --coverage.provider=v8`）
     - `npm run build:admin`；`PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run e2e:admin`（3c 起 12 checks：login、掃描 → 確認自動 ID → 發佈 → 記錄、鍵盤排序、節目列表圖例 / 撳成行、排程預覽、播放時間 checkbox、PNG → WebP（wasm）、nav v4 FLIP、reduced motion、< 1100px 自動收、手動深色 first paint、直向）；CI 同 SHA 綠就引用
     - 補充 smoke（AC-4 409、AC-8、AC-9、AC-11 步數、W-709、reduced motion；3c：login 4 種主題組合、JS 擋咗都有 `data-theme`、主題掣 + reload、圖例三行、記錄版本欄 + 還原提示、nav 分組；403 頁用 `deniedPage()` 出 HTML 喺 Playwright 試 4 種主題組合）：scratchpad Playwright script 用 `apps/admin/e2e/mockApi.mjs` 再疊 `page.route`；結果寫入 QA 報告，script 唔入 repo
+    - AC-13 smoke（scratchpad Playwright + `mockApi.mjs`，劇 / 短篇加 `disc`）：delete note 字 + 色 = `--danger`、dirty note 喺儲存掣前（DOM + x）、標題碟 / 黑碟、列表 / 短篇 tab / 排程 chip 碟面次序、圖例（全上架 / 有下架 / 冇改動）、時間線三個中心 y ≤ 2px
     - Worker 出 SPA：`apps/api` 臨時 `.dev.vars`（假 secret）→ `wrangler dev --persist-to <scratchpad>` → curl `/`、深連結、`/api/health`、`/api/*`、`/auth/*`、`/catalog/*`、asset；完咗刪 `.dev.vars`
 - PWA gate: no（admin 冇 service worker / manifest；唔掂 player）
 - Out of scope: 真 Google OAuth、真 D1 / R2（deploy 後用戶手動清單）；Worker API 行為（api 鏈）；player 讀 catalog（catalog-data 鏈）
