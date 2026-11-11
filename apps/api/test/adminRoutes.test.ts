@@ -350,6 +350,29 @@ describe('R2 folders', () => {
         expect(kinds).toEqual(['newEpisodes']);
     });
 
+    it('should treat pairing the same folder with nothing new as unchanged (S-801)', async () => {
+        await addFinding('missingFolder', 'golden');
+        const before = await env.DB.prepare(
+            "SELECT definition, updated_at FROM entries WHERE kind = 'dramas' AND id = 'golden'",
+        ).first<{ definition: string; updated_at: string }>();
+        const response = await adminRequest('POST', '/api/dramas/golden/folder', {
+            body: { folder: FOLDER },
+        });
+        expect(response.status).toBe(200);
+        expect(response.headers.get('etag')).toBe(`"${before?.updated_at}"`);
+        expect(await json(response)).toEqual({
+            unchanged: true,
+            definition: JSON.parse(before?.definition ?? 'null'),
+            updatedAt: before?.updated_at,
+            findings: [],
+        });
+        const after = await env.DB.prepare(
+            "SELECT definition, updated_at FROM entries WHERE kind = 'dramas' AND id = 'golden'",
+        ).first();
+        expect(after).toEqual(before);
+        expect((await env.DB.prepare('SELECT kind FROM scan_findings').all()).results).toEqual([]);
+    });
+
     it('should refuse a folder missing in R2 (422), used by another drama (409) or a bad body (400)', async () => {
         await putEntry('dramas', 'other', {
             ...scannable(3),
