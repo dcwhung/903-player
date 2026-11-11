@@ -5,6 +5,8 @@
  */
 :root {
     --sky: #53a9e3;
+    /* --sky 底上面嘅字（「新」pill）：--sky 深淺色一樣，所以呢個都唔跟主題換（白字對比唔夠） */
+    --on-sky: #0d1a2b;
     --primary: #1e7bc0;
     --primary-hover: #155f96;
     --on-primary: #ffffff;
@@ -46,6 +48,8 @@
     /* Tooltip 泡泡（深淺色都係深底白字） */
     --tip-bg: #16212e;
     --on-tip: #ffffff;
+    /* 圖片裁切框（深色遮罩上面嘅白框，深淺色一樣） */
+    --crop-frame: #ffffff;
     /* 卡片 A：20px 圓角 + 柔和陰影、冇邊框；深色改細邊框 */
     --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06);
     --shadow-btn: 0 2px 6px rgb(30 123 192 / 0.3);

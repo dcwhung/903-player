@@ -57,7 +57,7 @@ body {
 
 .nav .logo-mini,
 .nav .logo-mini:hover {
-    background: #ffffff;
+    background: var(--on-nav);
 }
 
 .nav .group {
@@ -97,14 +97,14 @@ body {
 }
 
 .nav a[aria-current='page'] {
-    background: #ffffff;
+    background: var(--on-nav);
     color: var(--primary);
     font-weight: 600;
     box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
 }
 
 .nav :focus-visible {
-    outline-color: #ffffff;
+    outline-color: var(--on-nav);
 }
 
 .nav .count {
@@ -112,7 +112,7 @@ body {
     min-width: 22px;
     padding: 0 7px;
     border-radius: 999px;
-    background: #ffffff;
+    background: var(--on-nav);
     color: var(--primary);
     font-size: 12px;
     font-weight: 700;
@@ -121,7 +121,7 @@ body {
 
 .nav a[aria-current='page'] .count {
     background: var(--primary);
-    color: #ffffff;
+    color: var(--on-primary);
 }
 
 .nav .who {
@@ -183,7 +183,7 @@ body {
 
 .theme-switch button[aria-pressed='true'],
 .theme-switch button[aria-pressed='true']:hover {
-    background: #ffffff;
+    background: var(--on-nav);
     color: var(--primary);
 }
 
@@ -454,7 +454,7 @@ input[aria-invalid='true'] {
 
 .pill.new {
     background: var(--sky);
-    color: #0d1a2b;
+    color: var(--on-sky);
     font-weight: 600;
 }
 
@@ -817,7 +817,7 @@ textarea.autosize {
 
 .crop .box {
     position: absolute;
-    border: 2px solid #ffffff;
+    border: 2px solid var(--crop-frame);
     border-radius: 6px;
     box-shadow: 0 0 0 999px rgb(0 0 0 / 0.35);
 }
