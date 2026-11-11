@@ -147,6 +147,42 @@ const entryRoute = (state, route, request, [kind, id]) => {
     );
 };
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const isoOf = (ms) => new Date(ms).toISOString().slice(0, 10);
+
+/** 同 packages/catalog expandSchedule 一樣形狀（{ addedAt, episodeDates, episodeRemovedAt }）嘅簡化展開 */
+const expandRule = (rule, count, firstNo = 1) => {
+    if (rule.kind === 'dates') {
+        const [first, ...rest] = rule.batches;
+        return {
+            addedAt: first.date,
+            episodeDates: Object.fromEntries(rest.map((b) => [b.from, b.date])),
+            episodeRemovedAt: {},
+        };
+    }
+    const fits = (ms) =>
+        'weekdays' in rule.every ? rule.every.weekdays.includes(new Date(ms).getUTCDay()) : true;
+    const step = 'days' in rule.every ? rule.every.days * DAY_MS : DAY_MS;
+    let ms = Date.parse(`${rule.start}T00:00:00Z`);
+    while (!fits(ms)) ms += DAY_MS;
+    const dates = [];
+    for (let no = firstNo; no < firstNo + count; no += rule.perRelease) {
+        dates.push([no, isoOf(ms)]);
+        do ms += step;
+        while (!fits(ms));
+    }
+    const [[, addedAt], ...later] = dates;
+    return { addedAt, episodeDates: Object.fromEntries(later), episodeRemovedAt: {} };
+};
+
+const previewRoute = (state, route, request, [dramaId, arcId]) => {
+    const drama = state.entries.find((e) => e.kind === 'dramas' && e.id === dramaId);
+    const arc = drama?.definition.arcs.find((a) => a.id === arcId);
+    if (!arc) return json(route, { error: 'no such arc' }, { status: 404 });
+    const expanded = expandRule(request.postDataJSON().rule, arc.episodes, arc.firstNo ?? 1);
+    return json(route, { expanded, warnings: { missingEpisodeIds: [] } });
+};
+
 const handlers = {
     'GET /api/me': (state, route) =>
         state.loggedIn
@@ -193,6 +229,10 @@ export const installMockApi = async (page, state) => {
             });
             return json(route, { ids: request.postDataJSON().ids, changed: [] });
         }
+        const preview = url.pathname.match(
+            /^\/api\/dramas\/([^/]+)\/arcs\/([^/]+)\/schedule\/preview$/,
+        );
+        if (preview) return previewRoute(state, route, request, preview.slice(1));
         if (/\/schedule$/.test(url.pathname))
             return json(route, { error: 'no such schedule' }, { status: 404 });
         const handler = handlers[key];

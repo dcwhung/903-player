@@ -109,6 +109,28 @@ const reorderCheck = (browser) =>
         await page.close();
     });
 
+const scheduleCheck = (browser) =>
+    check('schedule tab previews future batches after 今天', async () => {
+        const page = await newPage(browser, { ...createState(), loggedIn: true });
+        await page.goto(`${BASE}/dramas/lancy/schedule#arc-01`);
+        await page.getByRole('button', { name: '逢一三五 · 每次 5 集' }).click();
+        const future = page.getByRole('group', { name: '今天之後的批次' });
+        await future.locator('.seg-batch').first().waitFor();
+        if (await page.getByText(/無法預覽/).isVisible()) throw new Error('preview failed');
+        await page.screenshot({ path: `${OUT}/schedule.png`, fullPage: true });
+        await page.close();
+    });
+
+const showEditorCheck = (browser) =>
+    check('show editor renders title, status and air time', async () => {
+        const page = await newPage(browser, { ...createState(), loggedIn: true });
+        await page.goto(`${BASE}/shows/waves`);
+        await page.getByRole('switch', { name: '狀態' }).waitFor();
+        await page.getByRole('button', { name: /開始時間/ }).click();
+        await page.screenshot({ path: `${OUT}/show-editor.png`, fullPage: true });
+        await page.close();
+    });
+
 const portraitCheck = (browser) =>
     check('portrait phone only shows the rotate notice', async () => {
         const page = await newPage(browser, { ...createState(), loggedIn: true }, PORTRAIT);
@@ -127,7 +149,15 @@ try {
     const browser = await chromium.launch({
         executablePath: process.env.PW_CHROMIUM_PATH || undefined,
     });
-    for (const run of [loginCheck, todoFlowCheck, reorderCheck, portraitCheck]) await run(browser);
+    for (const run of [
+        loginCheck,
+        todoFlowCheck,
+        reorderCheck,
+        scheduleCheck,
+        showEditorCheck,
+        portraitCheck,
+    ])
+        await run(browser);
     await browser.close();
 } finally {
     preview.kill();

@@ -262,3 +262,39 @@ table.matrix th[scope='row'] {
 .login {
     min-height: 100dvh;
 }
+
+/* 編輯頁標題：名同狀態 pill 之間留位（mockup .title-row h2） */
+.title-row h1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* 一句話規則（mockup ⑩ .sentence）：控件跟住文字排，唔好撐滿成行 */
+.sentence .inline-ctl {
+    display: inline-block;
+    width: auto;
+    padding: 3px 10px;
+    border: 0;
+    border-bottom: 2px solid var(--accent);
+    border-radius: 4px 4px 0 0;
+    background: var(--accent-soft);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 600;
+    line-height: 1.4;
+    vertical-align: baseline;
+}
+
+.sentence input[type='number'].inline-ctl {
+    width: 4em;
+}
+
+.sentence input[type='date'].inline-ctl {
+    width: 10.5em;
+}
+
+.sentence .days.inline {
+    margin: 0 4px;
+}
