@@ -213,4 +213,5 @@ curl -k -X PUT https://localhost:8787/api/assets -H 'Origin: https://localhost:8
 - **Draft**（`entries.draft = 1`）：掃描自動建、未齊必須資料嘅劇。`PUT` 先試完整驗證，唔過就用寬鬆驗證（definition 用到但未上載嘅圖當有；其他規則照驗）；一次 `PUT` 通過完整驗證就自動清 `draft`。Publish / `GET /api/changes` 唔包 draft；`DELETE` 照准（從未發佈）
 - **Findings**：普通 publish 成功之後，待辦行冇「必須」格嘅 finding 標 `resolved_publish_id`（仲有必須嘅留低）；「資料夾唔見」喺配對資料夾時刪走
 - **下架短篇**（`enabled: false`）：player 唔顯示。ID 守衛唔對稱：`publishes.episode_ids` 只鎖上過架嘅 episode ID（今次上架 + 以前鎖咗而仲喺 document 嘅）；比較時新 document 連下架劇 / 短篇都計，所以落架唔會 409，但從未上架嘅自動 ID（`lancy-04`、`drama-01`；3c 之前嘅 `arc-01`）改 ID 唔使 force；rename「從未發佈」亦只睇鎖咗嘅 ID（W-707）
+- **排序**（`PUT /api/order`）：`json_set` 原地改 `order`（`CAST(? AS INTEGER)`，D1 綁 JS number 係 REAL，唔 cast 會寫成 `2.0`）；`updated_at` = MAX(新值, 現行值 + 1 ms)，同時有人寫都唔會令 ETag 倒退或者撞（S-799）。miniflare test 驗過；deploy 後喺真 D1 排一次，再 `GET /api/entries/dramas/<id>` 睇 `order` 係整數、`ETag` 有變
 - 每次掃描成本：1 個頂層 list + 每套劇（根 + 每個短篇）各 1 個 list
