@@ -25,7 +25,22 @@ describe('DramaList', () => {
     it('should open the drama editor from anywhere on the row except its controls', async () => {
         renderAt('/dramas', '/dramas', <DramaList />, fakeData({ entries: resource([drama]) }));
         await userEvent.click(screen.getByText('短篇集 · 30 集'));
-        expect(screen.getByText('other page')).toBeInTheDocument();
+        expect(screen.getByTestId('location')).toHaveTextContent(/^\/dramas\/lancy$/);
+    });
+
+    it('should open the arc in the arcs tab when its name is clicked, not the drama editor', async () => {
+        renderAt('/dramas', '/dramas', <DramaList />, fakeData({ entries: resource([drama]) }));
+        const arc = screen.getByRole('link', { name: '戀愛二分一' });
+        expect(arc).toHaveAttribute('href', '/dramas/lancy/arcs#half');
+        await userEvent.click(arc);
+        expect(screen.getByTestId('location')).toHaveTextContent(/^\/dramas\/lancy\/arcs#half$/);
+    });
+
+    it('should open the arc from the keyboard (Enter on the arc link)', async () => {
+        renderAt('/dramas', '/dramas', <DramaList />, fakeData({ entries: resource([drama]) }));
+        screen.getByRole('link', { name: '戀愛二分一' }).focus();
+        await userEvent.keyboard('{Enter}');
+        expect(screen.getByTestId('location')).toHaveTextContent(/^\/dramas\/lancy\/arcs#half$/);
     });
 
     it('should trap Tab in the ＋ dialog, close on Esc and return focus to ＋ (S-811)', async () => {

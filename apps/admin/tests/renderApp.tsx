@@ -2,7 +2,7 @@
 import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import type { ChangesResponse } from '../src/api/types';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AdminDataContext, type AdminData } from '../src/data/AdminData';
 import type { Resource } from '../src/data/useResource';
 import { ToastProvider } from '../src/ui/Toast';
@@ -24,6 +24,17 @@ export const fakeData = (over: Partial<AdminData> = {}): AdminData => ({
     ...over,
 });
 
+/** 其他路由：「other page」+ 去咗邊（pathname + search + hash，畀 test 對 target） */
+function OtherPage() {
+    const { pathname, search, hash } = useLocation();
+    return (
+        <>
+            <p>other page</p>
+            <output data-testid="location">{`${pathname}${search}${hash}`}</output>
+        </>
+    );
+}
+
 export const renderAt = (
     url: string,
     path: string,
@@ -36,7 +47,7 @@ export const renderAt = (
                 <MemoryRouter initialEntries={[url]}>
                     <Routes>
                         <Route path={path} element={element} />
-                        <Route path="*" element={<p>other page</p>} />
+                        <Route path="*" element={<OtherPage />} />
                     </Routes>
                 </MemoryRouter>
             </ToastProvider>
