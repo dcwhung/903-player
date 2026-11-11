@@ -61,8 +61,6 @@ const golden = () => ({
     updatedAt: 'golden-v1',
 });
 
-const NA = { state: 'na' };
-
 export const createState = () => ({
     loggedIn: false,
     entries: [
@@ -105,7 +103,8 @@ const todosOf = (state) => {
         arcId: arc.id,
         name: `蘭茜夫人劇場 · ${arc.name}`,
         cells: {
-            folder: NA,
+            // 資料夾係掃描搵到嘅 = done（同 apps/api todos）
+            folder: { state: 'done', target: '/dramas/lancy#folder' },
             id: { state: placeholder ? 'must' : 'done', target },
             images: { state: 'optional', target },
             schedule: { state: 'done', target: `/dramas/lancy/schedule#${arc.id}` },
