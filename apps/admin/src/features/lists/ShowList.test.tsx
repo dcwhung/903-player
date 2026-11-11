@@ -42,7 +42,11 @@ describe('ShowList', () => {
         const legend = within(screen.getByRole('group', { name: '圖例' }));
         expect(legend.getByText('上架中')).toBeInTheDocument();
         expect(legend.getByText('已下架')).toBeInTheDocument();
-        expect(legend.getByText('有已儲存但未發佈的改動')).toBeInTheDocument();
-        expect(legend.getByText(/拖曳 ⠿ 調整播放器顯示次序/)).toBeInTheDocument();
+        expect(legend.getByText('更新過但未公開')).toBeInTheDocument();
+        const drag = legend.getByText('拖曳調整播放器顯示次序');
+        // ⠿ icon 排第一，跟住先係字
+        expect(drag.firstChild?.nodeName.toLowerCase()).toBe('svg');
+        expect(drag.textContent).toBe('拖曳調整播放器顯示次序');
+        expect(legend.queryByText('從未發佈的短篇')).not.toBeInTheDocument();
     });
 });

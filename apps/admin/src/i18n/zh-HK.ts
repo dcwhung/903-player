@@ -164,9 +164,9 @@ export const zhHK = {
         legendLive: '上架中',
         legendSoon: '上架日期未到',
         legendOff: '已下架',
-        legendPending: '有已儲存但未發佈的改動',
+        legendPending: '更新過但未公開',
         legendNew: '從未發佈的短篇',
-        legendDrag: '拖曳 ⠿ 調整播放器顯示次序',
+        legendDrag: '拖曳調整播放器顯示次序',
         newDramaHelp:
             '新廣播劇由 R2 掃描自動建立：將資料夾上載至 R2 後按「重新掃描」，新劇會出現在「更新內容」待辦。',
         close: '關閉',

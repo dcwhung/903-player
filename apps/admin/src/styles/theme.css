@@ -432,8 +432,17 @@ input[aria-invalid='true'] {
     gap: 6px;
 }
 
+.legend {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
 .legend-line {
-    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 16px;
 }
 
 /* ---------- 掃描 bar：spinner + 文字靠左，掣喺最右 ---------- */
