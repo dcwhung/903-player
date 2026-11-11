@@ -72,6 +72,17 @@ export const createState = () => ({
         golden(),
     ],
     publishes: [],
+    /** 之前嘅記錄（#2 成功、#1 失敗）：上下架記錄出到「還原」同「失敗」 */
+    history: [
+        { ...publishRow(2), current: false, createdAt: '2026-11-09T14:40:00.000Z' },
+        {
+            ...publishRow(1),
+            current: false,
+            status: 'failed',
+            error: 'R2 寫入失敗',
+            createdAt: '2026-11-08T03:10:00.000Z',
+        },
+    ],
     orders: [],
     puts: [],
     confirms: [],
@@ -220,11 +231,12 @@ const handlers = {
             validation: { ok: true, episodeCount: 102 },
         }),
     'POST /api/publish': (state, route) => {
-        const row = publishRow(state.publishes.length + 1);
+        const row = publishRow(state.publishes.length + 1 + state.history.length);
         state.publishes.unshift(row);
         return json(route, { publish: row });
     },
-    'GET /api/publishes': (state, route) => json(route, { publishes: state.publishes }),
+    'GET /api/publishes': (state, route) =>
+        json(route, { publishes: [...state.publishes, ...state.history] }),
     'POST /api/todos/confirm-id': (state, route, request) => {
         state.confirms.push(request.postDataJSON());
         return json(route, { confirmed: 1 });

@@ -445,6 +445,16 @@ input[aria-invalid='true'] {
     gap: 6px 16px;
 }
 
+/* 第 3 行：⠿ icon 緊貼「拖曳…」 */
+.legend-line.legend-item {
+    gap: 4px;
+}
+
+.legend-line .lucide {
+    width: 14px;
+    height: 14px;
+}
+
 /* ---------- 掃描 bar：spinner + 文字靠左，掣喺最右 ---------- */
 .scan-bar {
     justify-content: flex-start;

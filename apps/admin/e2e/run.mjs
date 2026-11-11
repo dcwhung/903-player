@@ -101,7 +101,8 @@ const todoFlowCheck = (browser) =>
         await shoot(page, 'publish');
         await page.getByRole('button', { name: '發佈', exact: true }).click();
         await page.getByRole('heading', { name: '上下架記錄' }).waitFor();
-        await page.getByText('#1', { exact: true }).waitFor();
+        await page.getByText('使用中').waitFor();
+        await page.getByText('#3', { exact: true }).waitFor();
         await shoot(page, 'history');
         const confirm = JSON.stringify(state.confirms);
         if (confirm !== '[{"dramaId":"lancy","arcId":"lancy-02"}]')
@@ -229,6 +230,30 @@ const autoNavCheck = (browser) =>
         await page.close();
     });
 
+const themeCheck = (browser) =>
+    check(
+        'manual dark theme overrides a light system, persists and applies before paint',
+        async () => {
+            const page = await newPage(browser, loggedIn());
+            await page.emulateMedia({ colorScheme: 'light' });
+            await page.goto(`${BASE}/history`);
+            await page.getByRole('button', { name: '深色' }).click();
+            await page.reload();
+            const theme = await page.evaluate(() => document.documentElement.dataset.theme);
+            if (theme !== 'dark') throw new Error(`data-theme after reload: ${theme}`);
+            const panel = await page
+                .locator('.content')
+                .evaluate((el) => getComputedStyle(el).backgroundColor);
+            if (panel !== 'rgb(20, 29, 41)') throw new Error(`panel is ${panel}, not dark`);
+            await page.getByRole('heading', { name: '上下架記錄' }).waitFor();
+            await page.screenshot({ path: `${OUT}/theme-manual-dark.png` });
+            await page.getByRole('button', { name: '跟系統' }).click();
+            if (await page.evaluate(() => document.documentElement.hasAttribute('data-theme')))
+                throw new Error('跟系統 should clear data-theme');
+            await page.close();
+        },
+    );
+
 const portraitCheck = (browser) =>
     check('portrait phone only shows the rotate notice', async () => {
         const page = await newPage(browser, loggedIn(), PORTRAIT);
@@ -257,6 +282,7 @@ try {
         imageCheck,
         navCheck,
         autoNavCheck,
+        themeCheck,
         portraitCheck,
     ])
         await run(browser);
