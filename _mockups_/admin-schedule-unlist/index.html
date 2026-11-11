@@ -643,27 +643,20 @@
                 </div>
             </section>
 
-            <!-- ⑦ 編輯排程：同時有上架同下架 -->
+            <!-- ⑦ 編輯排程：同時有上架同下架（A / B 比較） -->
             <section>
                 <p class="state-label">
-                    ⑦ 編輯排程，上架同下架都設咗：上架「由 16/11 起逢一上 5 集」、下架「由 14/12
-                    起逢一落 10 集」。上架同下架嘅批次大細唔同，所以集數條同表都按「上架日 ×
-                    下架日」切段：每段一齊上、一齊落，每段日數可以唔同。同一日有上有落（例如
-                    14/12）喺「當日摘要」一行睇晒
+                    ⑦ 編輯排程，上架同下架都設咗，而且批次大細唔同：上架「由 16/11 起逢一上 5
+                    集」、下架「由 14/12 起逢一落 6 集」。下面用同一個例子比較兩個顯示方法
                 </p>
                 <div class="card">
-                    <div class="chips">
-                        <span class="arc-chip">戀愛二分一<small>無排程</small></span>
-                        <span class="arc-chip on">我心不死<small>排程中</small></span>
-                    </div>
                     <div class="label">上架</div>
                     <div class="sentence">
                         由 <input class="field" value="16/11/2026" /> 起，逢
                         <span class="wd"
                             ><span>日</span><span class="on">一</span><span>二</span><span>三</span
                             ><span>四</span><span>五</span><span>六</span></span
-                        >
-                        ，每次上 <input class="field num" value="5" /> 集
+                        >，每次上 <input class="field num" value="5" /> 集
                     </div>
                     <hr class="divider" />
                     <div class="label">下架</div>
@@ -678,8 +671,13 @@
                         <span class="wd"
                             ><span>日</span><span class="on">一</span><span>二</span><span>三</span
                             ><span>四</span><span>五</span><span>六</span></span
-                        >
-                        ，每次落 <input class="field num" value="10" /> 集
+                        >，每次落 <input class="field num" value="6" /> 集
+                    </div>
+                    <hr class="divider" />
+                    <div class="label">
+                        方案
+                        A：按集數切段（每段同一日上、同一日落）。批次大細唔同就會切到好碎：呢個例子
+                        30 集切成 10 段
                     </div>
                     <div class="strip">
                         <div class="group">
@@ -690,45 +688,60 @@
                             <span class="when">上 16/11</span><span class="when red">落 14/12</span>
                         </div>
                         <div class="group">
-                            <div class="eps">
-                                <span class="ep on">6</span><span class="ep on">…</span
-                                ><span class="ep on">10</span>
-                            </div>
+                            <div class="eps"><span class="ep on">6</span></div>
                             <span class="when">上 23/11</span><span class="when red">落 14/12</span>
                         </div>
                         <div class="group">
                             <div class="eps">
-                                <span class="ep on">11</span><span class="ep on">…</span
-                                ><span class="ep on">15</span>
+                                <span class="ep on">7</span><span class="ep on">…</span
+                                ><span class="ep on">10</span>
+                            </div>
+                            <span class="when">上 23/11</span><span class="when red">落 21/12</span>
+                        </div>
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep on">11</span><span class="ep on">12</span>
                             </div>
                             <span class="when">上 30/11</span><span class="when red">落 21/12</span>
                         </div>
                         <div class="group">
                             <div class="eps">
-                                <span class="ep on">16</span><span class="ep on">…</span
-                                ><span class="ep on">20</span>
+                                <span class="ep on">13</span><span class="ep on">…</span
+                                ><span class="ep on">15</span>
                             </div>
-                            <span class="when">上 7/12</span><span class="when red">落 21/12</span>
+                            <span class="when">上 30/11</span><span class="when red">落 28/12</span>
+                        </div>
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep on">16</span><span class="ep on">…</span
+                                ><span class="ep on">18</span>
+                            </div>
+                            <span class="when">上 7/12</span><span class="when red">落 28/12</span>
+                        </div>
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep on">19</span><span class="ep on">20</span>
+                            </div>
+                            <span class="when">上 7/12</span><span class="when red">落 4/1</span>
                         </div>
                         <div class="group">
                             <div class="eps">
                                 <span class="ep on">21</span><span class="ep on">…</span
-                                ><span class="ep on">25</span>
+                                ><span class="ep on">24</span>
                             </div>
-                            <span class="when">上 14/12</span><span class="when red">落 28/12</span>
+                            <span class="when">上 14/12</span><span class="when red">落 4/1</span>
+                        </div>
+                        <div class="group">
+                            <div class="eps"><span class="ep on">25</span></div>
+                            <span class="when">上 14/12</span><span class="when red">落 11/1</span>
                         </div>
                         <div class="group">
                             <div class="eps">
                                 <span class="ep on">26</span><span class="ep on">…</span
                                 ><span class="ep on">30</span>
                             </div>
-                            <span class="when">上 21/12</span><span class="when red">落 28/12</span>
+                            <span class="when">上 21/12</span><span class="when red">落 11/1</span>
                         </div>
-                    </div>
-                    <div class="legend">
-                        <span><i style="background: var(--primary)"></i>排咗上架</span>
-                        <span style="color: var(--primary)">上 = 上架日</span>
-                        <span style="color: var(--danger)">落 = 下架日</span>
                     </div>
                     <div class="batches">
                         <h4>上下架批次</h4>
@@ -751,54 +764,249 @@
                                     <td><span class="pill plan">排程中</span></td>
                                 </tr>
                                 <tr>
-                                    <td>第 6–10 集</td>
+                                    <td>第 6 集</td>
                                     <td>23/11 一</td>
                                     <td>14/12 一</td>
                                     <td>21 日</td>
                                     <td><span class="pill plan">排程中</span></td>
                                 </tr>
                                 <tr>
-                                    <td>第 11–15 集</td>
+                                    <td>第 7–10 集</td>
+                                    <td>23/11 一</td>
+                                    <td>21/12 一</td>
+                                    <td>28 日</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                </tr>
+                                <tr>
+                                    <td>第 11–12 集</td>
                                     <td>30/11 一</td>
                                     <td>21/12 一</td>
                                     <td>21 日</td>
                                     <td><span class="pill plan">排程中</span></td>
                                 </tr>
                                 <tr>
-                                    <td>第 16–20 集</td>
-                                    <td>7/12 一</td>
-                                    <td>21/12 一</td>
-                                    <td>14 日</td>
+                                    <td>第 13–15 集</td>
+                                    <td>30/11 一</td>
+                                    <td>28/12 一</td>
+                                    <td>28 日</td>
                                     <td><span class="pill plan">排程中</span></td>
                                 </tr>
                                 <tr>
-                                    <td>第 21–25 集</td>
-                                    <td>14/12 一</td>
+                                    <td>第 16–18 集</td>
+                                    <td>7/12 一</td>
                                     <td>28/12 一</td>
-                                    <td>14 日</td>
+                                    <td>21 日</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                </tr>
+                                <tr>
+                                    <td>第 19–20 集</td>
+                                    <td>7/12 一</td>
+                                    <td>4/1 一</td>
+                                    <td>28 日</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                </tr>
+                                <tr>
+                                    <td>第 21–24 集</td>
+                                    <td>14/12 一</td>
+                                    <td>4/1 一</td>
+                                    <td>21 日</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                </tr>
+                                <tr>
+                                    <td>第 25 集</td>
+                                    <td>14/12 一</td>
+                                    <td>11/1 一</td>
+                                    <td>28 日</td>
                                     <td><span class="pill plan">排程中</span></td>
                                 </tr>
                                 <tr>
                                     <td>第 26–30 集</td>
                                     <td>21/12 一</td>
-                                    <td>28/12 一</td>
-                                    <td>7 日</td>
+                                    <td>11/1 一</td>
+                                    <td>21 日</td>
                                     <td><span class="pill plan">排程中</span></td>
                                 </tr>
                             </tbody>
                         </table>
                         <p class="hint">
-                            當日摘要：14/12 一　上第 21–25 集 · 落第 1–10 集　｜　21/12 一　上第
-                            26–30 集 · 落第 11–20 集
+                            好處：每集上幾耐一眼睇到。壞處：上落批次唔夾就好碎，同 admin 設嘅「每次
+                            5 集 / 每次 6 集」對唔返
+                        </p>
+                    </div>
+                    <hr class="divider" />
+                    <div class="label">
+                        方案 B：按日期（時間軸每個日期一格：藍格 = 當日上架、紅格 = 當日下架）
+                    </div>
+                    <div class="strip">
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >16/11</span
+                            >
+                            <div class="eps">
+                                <span class="ep on">1</span><span class="ep on">…</span
+                                ><span class="ep on">5</span>
+                            </div>
+                            <span class="when">上 第 1–5 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >23/11</span
+                            >
+                            <div class="eps">
+                                <span class="ep on">6</span><span class="ep on">…</span
+                                ><span class="ep on">10</span>
+                            </div>
+                            <span class="when">上 第 6–10 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >30/11</span
+                            >
+                            <div class="eps">
+                                <span class="ep on">11</span><span class="ep on">…</span
+                                ><span class="ep on">15</span>
+                            </div>
+                            <span class="when">上 第 11–15 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >7/12</span
+                            >
+                            <div class="eps">
+                                <span class="ep on">16</span><span class="ep on">…</span
+                                ><span class="ep on">20</span>
+                            </div>
+                            <span class="when">上 第 16–20 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >14/12</span
+                            >
+                            <div class="eps">
+                                <span class="ep on">21</span><span class="ep on">…</span
+                                ><span class="ep on">25</span>
+                            </div>
+                            <span class="when">上 第 21–25 集</span>
+                            <div class="eps">
+                                <span class="ep off">1</span><span class="ep off">…</span
+                                ><span class="ep off">6</span>
+                            </div>
+                            <span class="when red">落 第 1–6 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >21/12</span
+                            >
+                            <div class="eps">
+                                <span class="ep on">26</span><span class="ep on">…</span
+                                ><span class="ep on">30</span>
+                            </div>
+                            <span class="when">上 第 26–30 集</span>
+                            <div class="eps">
+                                <span class="ep off">7</span><span class="ep off">…</span
+                                ><span class="ep off">12</span>
+                            </div>
+                            <span class="when red">落 第 7–12 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >28/12</span
+                            >
+                            <div class="eps">
+                                <span class="ep off">13</span><span class="ep off">…</span
+                                ><span class="ep off">18</span>
+                            </div>
+                            <span class="when red">落 第 13–18 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >4/1</span
+                            >
+                            <div class="eps">
+                                <span class="ep off">19</span><span class="ep off">…</span
+                                ><span class="ep off">24</span>
+                            </div>
+                            <span class="when red">落 第 19–24 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >11/1</span
+                            >
+                            <div class="eps">
+                                <span class="ep off">25</span><span class="ep off">…</span
+                                ><span class="ep off">30</span>
+                            </div>
+                            <span class="when red">落 第 25–30 集</span>
+                        </div>
+                    </div>
+                    <div class="batches">
+                        <h4>上下架批次</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>上架</th>
+                                    <th>下架</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>16/11 一</td>
+                                    <td><span class="pill plan">第 1–5 集</span></td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td>23/11 一</td>
+                                    <td><span class="pill plan">第 6–10 集</span></td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td>30/11 一</td>
+                                    <td><span class="pill plan">第 11–15 集</span></td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td>7/12 一</td>
+                                    <td><span class="pill plan">第 16–20 集</span></td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td>14/12 一</td>
+                                    <td><span class="pill plan">第 21–25 集</span></td>
+                                    <td><span class="pill bad">第 1–6 集</span></td>
+                                </tr>
+                                <tr>
+                                    <td>21/12 一</td>
+                                    <td><span class="pill plan">第 26–30 集</span></td>
+                                    <td><span class="pill bad">第 7–12 集</span></td>
+                                </tr>
+                                <tr>
+                                    <td>28/12 一</td>
+                                    <td>—</td>
+                                    <td><span class="pill bad">第 13–18 集</span></td>
+                                </tr>
+                                <tr>
+                                    <td>4/1 一</td>
+                                    <td>—</td>
+                                    <td><span class="pill bad">第 19–24 集</span></td>
+                                </tr>
+                                <tr>
+                                    <td>11/1 一</td>
+                                    <td>—</td>
+                                    <td><span class="pill bad">第 25–30 集</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="hint">
+                            好處：同 admin 設嘅規則一一對應（每次上 5 集、每次落 6
+                            集），批次唔夾都唔會碎；同日上落一行睇晒。壞處：要對住睇先知某一集上咗幾耐
                         </p>
                     </div>
                     <p class="hint">
-                        驗證：任何一集嘅下架日唔可以早過或者等於佢嘅上架日；有衝突就喺集數條標紅、唔准儲存（例如下架改做由
-                        7/12 起逢一落 10 集，第 26–30 集喺 21/12 同日上落 → 出錯）
+                        兩個方案都會驗證：任何一集嘅下架日唔可以早過或者等於佢嘅上架日；有衝突就標紅、唔准儲存
                     </p>
                     <div class="savebar">
-                        <button class="btn">↶ 復原</button>
-                        <button class="btn primary">儲存</button>
+                        <button class="btn">↶ 復原</button><button class="btn primary">儲存</button>
                     </div>
                 </div>
             </section>
