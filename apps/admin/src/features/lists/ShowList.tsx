@@ -13,6 +13,7 @@ import { Pill } from '../../ui/Pill';
 import type { SortableRender } from '../../ui/SortableList';
 import { airDaysOf as airDaysIn, airTimeOf } from '../shows/showModel';
 import { EntryName } from './EntryName';
+import { legendOf } from './legendModel';
 import { ListLegend } from './ListLegend';
 import { rowClickTo } from './rowClick';
 import { ListTitle } from './ListTitle';
@@ -57,7 +58,8 @@ export function ShowList() {
     const { entries, changes } = useAdminData();
     const navigate = useNavigate();
     const flags = changeFlagsOf(changes.data?.changes);
-    const groups = groupEntries((entries.data ?? []).filter((e) => e.kind === 'shows'));
+    const shows = (entries.data ?? []).filter((e) => e.kind === 'shows');
+    const groups = groupEntries(shows);
     return (
         <>
             <ListTitle
@@ -93,7 +95,7 @@ export function ShowList() {
                     </>
                 )}
             </div>
-            <ListLegend dots={['live', 'off']} />
+            <ListLegend legend={legendOf(shows, flags)} />
         </>
     );
 }

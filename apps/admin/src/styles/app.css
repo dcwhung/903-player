@@ -145,8 +145,16 @@ table.matrix th[scope='row'] {
     position: relative;
 }
 
+.time-slot {
+    position: relative;
+    display: inline-block;
+}
+
+/* roller 喺撳開嗰個時間框正下面、左邊對齊 */
 .roller-pop {
     position: absolute;
+    top: 100%;
+    left: 0;
     z-index: 5;
 }
 

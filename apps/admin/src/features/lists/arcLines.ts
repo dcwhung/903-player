@@ -11,6 +11,8 @@ export interface ArcLine {
     episodes: number;
     status: Status;
     isNew: boolean;
+    /** 短篇碟面（arcDiscOf：短篇 → 劇集 → 冇 = 黑碟） */
+    disc?: string | undefined;
 }
 
 export const collapseArcs = (lines: readonly ArcLine[]): { shown: ArcLine[]; hidden: number } => {

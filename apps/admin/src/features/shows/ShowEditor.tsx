@@ -8,6 +8,7 @@ import { Pill } from '../../ui/Pill';
 import { SaveBar } from '../../ui/SaveBar';
 import { useParams } from 'react-router-dom';
 import { DeleteEntry } from '../editor/DeleteEntry';
+import { savedDiscOf } from '../../model/thumbs';
 import { EditorHeader } from '../editor/EditorHeader';
 import { EditorNotices } from '../editor/EditorNotices';
 import { dirtyLabels } from '../editor/entryDraft';
@@ -37,7 +38,6 @@ function ShowEditor({ id }: { id: string | undefined }) {
     if (editor.loadError) return <p className="note bad">{t('editor.notFound')}</p>;
     if (!draft) return <p className="muted">{t('app.loading')}</p>;
     const name = nameOf(draft.definition, isNew ? t('show.newTitle') : (id ?? ''));
-    const off = draft.definition.enabled === false;
     return (
         <>
             <EditorHeader
@@ -46,7 +46,8 @@ function ShowEditor({ id }: { id: string | undefined }) {
                 name={name}
                 flow={origin.flow}
                 onRename={isNew ? undefined : rename}
-                pills={!isNew && <ShowStatusPill off={off} />}
+                pills={!isNew && <ShowStatusPill off={draft.definition.enabled === false} />}
+                disc={savedDiscOf(entry)}
             />
             <EditorNotices
                 status={status}

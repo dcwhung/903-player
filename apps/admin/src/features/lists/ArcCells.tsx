@@ -9,7 +9,9 @@ import { t } from '../../i18n/t';
 import type { ChangeFlags } from '../../model/listModel';
 import { arcLabel, arcsOf, countOf, isDaily, str } from '../../model/raw';
 import { arcStatusOf, dailyStatusOf } from '../../model/status';
+import { arcDiscOf } from '../../model/thumbs';
 import { Pill } from '../../ui/Pill';
+import { Thumb } from '../../ui/Thumb';
 import { collapseArcs, type ArcLine } from './arcLines';
 
 const linesOf = (entry: LoadedEntry, flags: ChangeFlags): ArcLine[] => {
@@ -23,6 +25,7 @@ const linesOf = (entry: LoadedEntry, flags: ChangeFlags): ArcLine[] => {
             episodes: countOf(arc),
             status: arcStatusOf(entry.definition, arc, today, isNew),
             isNew,
+            disc: arcDiscOf(entry.definition, entry.images, arc),
         };
     });
 };
@@ -30,8 +33,10 @@ const linesOf = (entry: LoadedEntry, flags: ChangeFlags): ArcLine[] => {
 function Line({ line }: { line: ArcLine }) {
     return (
         <>
-            <span className="arc">
-                {line.isNew && <Pill tone="new">{t('status.newArc')}</Pill>} {line.label}
+            <span className="arc arc-with-disc">
+                <Thumb url={line.disc} size="xs" />
+                {line.isNew && <Pill tone="new">{t('status.newArc')}</Pill>}
+                {line.label}
             </span>
             <span className="eps">{t('list.episodes', { count: line.episodes })}</span>
             <span>

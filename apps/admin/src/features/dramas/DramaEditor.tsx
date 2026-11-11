@@ -5,6 +5,7 @@
 import { useParams } from 'react-router-dom';
 import { t } from '../../i18n/t';
 import { arcsOf, nameOf } from '../../model/raw';
+import { savedDiscOf } from '../../model/thumbs';
 import { Pill } from '../../ui/Pill';
 import { EditorHeader } from '../editor/EditorHeader';
 import { EditorNotices } from '../editor/EditorNotices';
@@ -40,6 +41,7 @@ function DramaEditor({ id, tab }: { id: string; tab: DramaTab }) {
                 name={nameOf(definition, id)}
                 flow={state.origin.flow}
                 onRename={state.rename}
+                disc={savedDiscOf(editor.entry)}
                 pills={
                     <StatusPill
                         neverPublished={state.neverPublished}

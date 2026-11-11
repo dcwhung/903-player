@@ -38,6 +38,7 @@ export function ScheduleTab({
         <>
             <ArcScheduleTabs
                 drama={drama}
+                images={state.editor.draft?.images ?? {}}
                 arcs={arcs}
                 selected={selected}
                 schedules={schedules}

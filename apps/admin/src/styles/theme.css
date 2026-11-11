@@ -1032,3 +1032,66 @@ textarea.autosize {
         display: grid;
     }
 }
+
+/* 已發佈不可刪除（savebar 左邊） */
+.danger-note {
+    color: var(--danger);
+}
+
+/* ---------- 碟面縮圖：冇圖 = player 預設黑碟；xs = 短篇行 / chip ---------- */
+.thumb.blank {
+    background: var(--disc-blank);
+    box-shadow: 0 0 0 2px var(--disc-blank-rim);
+}
+
+.thumb.blank::before {
+    content: '';
+    position: absolute;
+    inset: 38%;
+    border-radius: 50%;
+    background: var(--disc-blank-rim);
+}
+
+.thumb.xs {
+    width: 22px;
+    height: 22px;
+    vertical-align: middle;
+}
+
+.arc-with-disc {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    /* 黑碟嘅碟邊（box-shadow）喺 overflow: hidden 入面唔好被裁 */
+    padding: 2px;
+}
+
+.title-row h1 .thumb {
+    width: 40px;
+    height: 40px;
+}
+
+/* 實色 pill（例如已鎖住嘅類型「短篇集」） */
+.pill.solid {
+    padding: 3px 12px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* 確認發佈時間線：日期、綠點同第一行（縮圖高度）垂直置中 */
+.timeline {
+    --timeline-row: 32px;
+}
+.timeline .when,
+.timeline .what {
+    display: flex;
+    align-items: center;
+    min-height: var(--timeline-row);
+}
+.timeline li::before {
+    /* li padding-top 8px + 半行高 − 半粒點（12px） */
+    top: calc(8px + var(--timeline-row) / 2 - 6px);
+}

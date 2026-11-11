@@ -8,6 +8,7 @@ import { t } from '../../i18n/t';
 import { changeFlagsOf, groupEntries, type ChangeFlags } from '../../model/listModel';
 import type { LoadedEntry } from '../../api/types';
 import { DramaRow } from './DramaRow';
+import { legendOf } from './legendModel';
 import { DramaListHead, DramaLegend } from './DramaListParts';
 import { ListTitle } from './ListTitle';
 import { NewDramaDialog } from './NewDramaDialog';
@@ -40,7 +41,8 @@ export function DramaList() {
     const { entries, changes, rescan } = useAdminData();
     const [adding, setAdding] = useState(false);
     const flags = changeFlagsOf(changes.data?.changes);
-    const groups = groupEntries((entries.data ?? []).filter((e) => e.kind === 'dramas'));
+    const dramas = (entries.data ?? []).filter((e) => e.kind === 'dramas');
+    const groups = groupEntries(dramas);
     return (
         <>
             <ListTitle
@@ -70,7 +72,7 @@ export function DramaList() {
                     flags={flags}
                 />
             </div>
-            <DramaLegend />
+            <DramaLegend legend={legendOf(dramas, flags)} />
             {adding && (
                 <NewDramaDialog
                     onClose={() => setAdding(false)}

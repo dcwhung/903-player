@@ -1,5 +1,6 @@
 /* 廣播劇列表表頭 + 圖例（mockup ⑤ .drama-head / .legend；3c 圖例改真顏色點） */
 import { t } from '../../i18n/t';
+import type { Legend } from './legendModel';
 import { ListLegend } from './ListLegend';
 
 export function DramaListHead() {
@@ -14,6 +15,6 @@ export function DramaListHead() {
     );
 }
 
-export function DramaLegend() {
-    return <ListLegend dots={['live', 'soon', 'off']} newArcs />;
+export function DramaLegend({ legend }: { legend: Legend }) {
+    return <ListLegend legend={legend} />;
 }

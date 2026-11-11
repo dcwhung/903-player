@@ -1,9 +1,11 @@
-/* 基本資料：類型 switch / 上架日期 / 狀態 同一行（mockup ⑧ .row3） */
+/* 基本資料：類型 switch（發佈咗 = 實色 pill）/ 上架日期 / 狀態 同一行（mockup ⑧ .row3） */
 import { useId } from 'react';
 import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
 import { str } from '../../model/raw';
+import { Pill } from '../../ui/Pill';
 import { Switch } from '../../ui/Switch';
+import { Tip } from '../../ui/Tip';
 import { Toggle } from '../../ui/Toggle';
 import { withOptional } from '../shows/showModel';
 
@@ -25,15 +27,23 @@ export function BasicFields({ definition, kindLocked, onChange }: BasicFieldsPro
         <div className="field wide">
             <div className="row3">
                 <div className="field">
-                    <span>{t('drama.kind')}</span>
-                    <Switch
-                        label={t('drama.kind')}
-                        value={kind}
-                        options={KIND_OPTIONS}
-                        disabled={kindLocked}
-                        title={kindLocked ? t('drama.kindLockedTip') : undefined}
-                        onChange={(value) => onChange((d) => ({ ...d, kind: value }))}
-                    />
+                    <span>
+                        {t('drama.kind')}
+                        {kindLocked && <Tip text={t('drama.kindLockedTip')} />}
+                    </span>
+                    {kindLocked ? (
+                        // 鎖住：直接顯示目前類型（實色 pill），唔出 disabled switch
+                        <span>
+                            <Pill tone="solid">{t(`drama.${kind}`)}</Pill>
+                        </span>
+                    ) : (
+                        <Switch
+                            label={t('drama.kind')}
+                            value={kind}
+                            options={KIND_OPTIONS}
+                            onChange={(value) => onChange((d) => ({ ...d, kind: value }))}
+                        />
+                    )}
                 </div>
                 <label className="field">
                     <span>{t('drama.addedAt')}</span>

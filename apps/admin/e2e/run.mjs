@@ -160,17 +160,35 @@ const scheduleCheck = (browser) =>
     });
 
 const showEditorCheck = (browser) =>
-    check('show editor: 設定播放時間 checkbox reveals the roller', async () => {
-        const page = await newPage(browser, loggedIn());
-        await page.goto(`${BASE}/shows/night`);
-        await page.getByRole('switch', { name: '狀態' }).waitFor();
-        if (await page.getByRole('button', { name: /開始時間/ }).isVisible())
-            throw new Error('time boxes shown without 設定播放時間');
-        await page.getByRole('checkbox', { name: '設定播放時間' }).check();
-        await page.getByRole('button', { name: /開始時間/ }).click();
-        await shoot(page, 'show-editor', { fullPage: true });
-        await page.close();
-    });
+    check(
+        'show editor: 設定播放時間 reveals the roller, each roller under its own box',
+        async () => {
+            const page = await newPage(browser, loggedIn());
+            await page.goto(`${BASE}/shows/night`);
+            await page.getByRole('switch', { name: '狀態' }).waitFor();
+            if (await page.getByRole('button', { name: /開始時間/ }).isVisible())
+                throw new Error('time boxes shown without 設定播放時間');
+            await page.getByRole('checkbox', { name: '設定播放時間' }).check();
+            // 完結時間嘅 roller 要喺完結框下面（唔係開始框下面）
+            const end = page.getByRole('button', { name: /完結時間/ });
+            await end.click();
+            const endBox = await end.boundingBox();
+            const pop = await page.getByRole('dialog', { name: '完結時間' }).boundingBox();
+            if (
+                !endBox ||
+                !pop ||
+                Math.abs(pop.x - endBox.x) > 2 ||
+                pop.y < endBox.y + endBox.height
+            )
+                throw new Error(
+                    `end roller not under the end box: ${JSON.stringify({ endBox, pop })}`,
+                );
+            await shoot(page, 'show-editor-end-roller');
+            await page.getByRole('button', { name: /開始時間/ }).click();
+            await shoot(page, 'show-editor', { fullPage: true });
+            await page.close();
+        },
+    );
 
 /** 1×1 PNG（Safari 路徑：canvas 出 PNG → wasm encoder） */
 const PNG_1PX = Buffer.from(
@@ -192,6 +210,10 @@ const imageCheck = (browser) =>
                 };
             });
             await page.goto(`${BASE}/dramas/lancy`);
+            // 基本資料：類型鎖住 = 實色 pill、檔名模板例子
+            await page.getByText('例：01 - 戀愛二分一.m4a').waitFor();
+            await page.locator('.pill.solid', { hasText: '短篇集' }).waitFor();
+            await shoot(page, 'drama-basic');
             const chooser = page.waitForEvent('filechooser');
             await page.getByRole('button', { name: '上載碟面' }).click();
             await (

@@ -48,11 +48,16 @@ describe('DramaEditor', () => {
     it('should show the basic tab with the R2 scan box', async () => {
         api();
         renderAt('/dramas/lancy', '/dramas/:id', <DramaEditorPage tab="basic" />);
-        expect(await screen.findByRole('group', { name: '類型' })).toBeInTheDocument();
+        // 已發佈：類型鎖住 → 實色 pill，唔出 disabled switch
+        const kind = await screen.findByText('短篇集', { selector: '.pill' });
+        expect(kind).toHaveClass('solid');
+        expect(screen.queryByRole('group', { name: '類型' })).not.toBeInTheDocument();
         expect(screen.getByRole('group', { name: '由 R2 掃描' })).toHaveTextContent(
             '蘭茜夫人劇場/',
         );
         expect(screen.getByRole('textbox', { name: /^ID/ })).toHaveAttribute('readonly');
+        // 檔名模板下面：用模板 + 第一集砌嘅例子
+        expect(screen.getByText('例：01 - 戀愛二分一.m4a')).toHaveClass('muted');
     });
 
     it('should expand the arc from the hash with an inline name input and titles', async () => {
@@ -166,5 +171,28 @@ describe('DramaEditor', () => {
             ['/api/todos/confirm-id', { dramaId: 'lancy', arcId: 'arc-01' }],
         ]);
         expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
+    });
+
+    it('should show discs: saved disc (or the black disc) in the title, arc discs in rows and tabs', async () => {
+        api();
+        const { unmount } = renderAt(
+            '/dramas/lancy/arcs',
+            '/dramas/:id/arcs',
+            <DramaEditorPage tab="arcs" />,
+        );
+        const title = await screen.findByRole('heading', { level: 1 });
+        expect(title.querySelector('.thumb.blank')).not.toBeNull();
+        const rows = screen.getAllByRole('button', { name: /^展開「/ });
+        rows.forEach((toggle) =>
+            expect(toggle.closest('li')?.querySelector('.thumb.xs')).not.toBeNull(),
+        );
+        unmount();
+        renderAt(
+            '/dramas/lancy/schedule',
+            '/dramas/:id/schedule',
+            <DramaEditorPage tab="schedule" />,
+        );
+        const tab = await screen.findByRole('tab', { name: /我心不死/ });
+        expect(tab.querySelector('.thumb.xs')).not.toBeNull();
     });
 });

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import type { Tone } from '../model/status';
 
 interface PillProps {
-    tone?: Tone | 'draft' | 'new' | 'count' | 'warn';
+    tone?: Tone | 'draft' | 'new' | 'count' | 'warn' | 'solid';
     dot?: boolean;
     title?: string;
     children: ReactNode;

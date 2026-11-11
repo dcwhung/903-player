@@ -133,7 +133,7 @@ describe('GET /auth/google/callback', () => {
         expect(page).toContain('沒有權限');
         expect(page).toContain('並非管理員。');
         expect(page).toContain('src="/banner.webp"');
-        expect(page).toContain('Admin v0.6.0');
+        expect(page).toContain('Admin v0.6.1');
         expect(page).not.toMatch(/<link[^>]+\.css/);
         // admin 揀咗嘅淺 / 深色（同一個 localStorage key）
         expect(page).toContain("localStorage.getItem('admin.theme')");

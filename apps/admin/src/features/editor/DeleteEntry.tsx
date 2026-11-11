@@ -22,7 +22,7 @@ export function DeleteEntry({
     const navigate = useNavigate();
     const { refresh } = useAdminData();
     if (!neverPublished)
-        return <span className="muted small">{t('editor.publishedNoDelete')}</span>;
+        return <span className="small danger-note">{t('editor.publishedNoDelete')}</span>;
     const onConfirm = async () => {
         setConfirming(false);
         try {

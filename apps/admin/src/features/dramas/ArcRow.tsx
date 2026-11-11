@@ -8,7 +8,9 @@ import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
 import { arcLabel, countOf } from '../../model/raw';
 import { arcStatusOf } from '../../model/status';
+import { arcDiscOf } from '../../model/thumbs';
 import { Pill } from '../../ui/Pill';
+import { Thumb } from '../../ui/Thumb';
 import type { SortableRender } from '../../ui/SortableList';
 import { rowClickTo } from '../lists/rowClick';
 import type { DramaEditorState } from './useDramaEditor';
@@ -39,6 +41,10 @@ export function ArcRow({ state, arc, arcId, open, onToggle, sortable }: ArcRowPr
             {handle}
             <span className="text">
                 <span className="name">
+                    <Thumb
+                        url={arcDiscOf(drama, state.editor.draft?.images ?? {}, arc)}
+                        size="xs"
+                    />
                     {isNew && <Pill tone="new">{t('status.newArc')}</Pill>}
                     {arcLabel(arc)}
                     <button
