@@ -1,5 +1,6 @@
 /*
- * 資料夾對唔到（R2 改咗名）：警告 + dropdown 揀返一個未配對嘅資料夾 → POST /api/dramas/:id/folder
+ * 資料夾對唔到（R2 改咗名）：警告 + dropdown 揀返一個未配對嘅資料夾 + 「配對」掣 → POST /api/dramas/:id/folder
+ * （W-709：揀選只改 local state，配對會 rescan 寫 D1，一定要撳掣先做）
  * Design Origin: mockup: _mockups_/admin/index.html#s4c
  */
 import { useState } from 'react';
@@ -17,13 +18,17 @@ interface MissingFolderProps {
 export function MissingFolder({ dramaId, folder, etag, onPaired }: MissingFolderProps) {
     const folders = useResource(unmappedFolders);
     const [error, setError] = useState<string>();
-    const onPick = async (picked: string) => {
-        if (picked === '') return;
+    const [picked, setPicked] = useState('');
+    const [busy, setBusy] = useState(false);
+    const onPair = async () => {
+        setBusy(true);
         try {
             await pairFolder(dramaId, picked, etag);
             await onPaired();
         } catch (pairError) {
             setError(pairError instanceof Error ? pairError.message : String(pairError));
+        } finally {
+            setBusy(false);
         }
     };
     return (
@@ -33,14 +38,22 @@ export function MissingFolder({ dramaId, folder, etag, onPaired }: MissingFolder
             <div className="readonly-box">
                 <select
                     aria-label={t('drama.pickFolder')}
-                    defaultValue=""
-                    onChange={(e) => void onPick(e.target.value)}
+                    value={picked}
+                    onChange={(e) => setPicked(e.target.value)}
                 >
                     <option value="">{t('drama.pickFolder')}</option>
                     {(folders.data ?? []).map((name) => (
                         <option key={name} value={name}>{`${name}/`}</option>
                     ))}
                 </select>
+                <button
+                    type="button"
+                    className="primary"
+                    disabled={picked === '' || busy}
+                    onClick={() => void onPair()}
+                >
+                    {t('drama.pair')}
+                </button>
             </div>
             {error && (
                 <span className="err" role="alert">

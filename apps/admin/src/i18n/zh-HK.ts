@@ -260,6 +260,7 @@ export const zhHK = {
         fileTemplate: '檔名模板',
         missingFolder: '在 R2 找不到 {folder}，請選擇對應的資料夾：',
         pickFolder: '選擇未配對的資料夾…',
+        pair: '配對',
         paired: '已配對資料夾',
         arcName: '短篇名稱（播放器顯示）',
         arcId: '短篇 ID',
