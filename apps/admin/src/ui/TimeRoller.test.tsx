@@ -42,4 +42,18 @@ describe('TimeRoller', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: '開始時間 15:00' })).toHaveFocus();
     });
+
+    it('should open each roller under its own box (end under 完結, not under 開始)', async () => {
+        render(<Harness initial={{ start: '15:00', end: '16:30' }} />);
+        const end = screen.getByRole('button', { name: '完結時間 16:30' });
+        await userEvent.click(end);
+        const pop = screen.getByRole('dialog', { name: '完結時間' });
+        expect(end.closest('.time-slot')).not.toBeNull();
+        expect(pop.closest('.time-slot')).toBe(end.closest('.time-slot'));
+        await userEvent.click(screen.getByRole('button', { name: '開始時間 15:00' }));
+        const start = screen.getByRole('button', { name: '開始時間 15:00' });
+        expect(screen.getByRole('dialog', { name: '開始時間' }).closest('.time-slot')).toBe(
+            start.closest('.time-slot'),
+        );
+    });
 });

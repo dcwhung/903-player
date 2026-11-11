@@ -1,5 +1,5 @@
 /*
- * 播放時間：兩個時間框平排，撳開彈出「時」「分」roller。Design Origin: mockup: _mockups_/admin/index.html#s3
+ * 播放時間：兩個時間框平排，撳開喺嗰個框下面彈出「時」「分」roller（每個框一個 .time-slot）。Design Origin: mockup: _mockups_/admin/index.html#s3
  * 完結只可揀開始後 15 分鐘至 3 小時；改開始會自動收窄 / 調整完結（timeRollerModel）
  */
 import { useEffect, useRef, useState, type RefObject } from 'react';
@@ -99,16 +99,27 @@ export function TimeRoller({ value, onChange }: TimeRollerProps) {
         onChange({ start, end: adjustEnd(value.start, value.end, start) });
     const setEnd = (end: string) => onChange({ ...value, end });
     const box = (which: Which) => (
-        <button
-            type="button"
-            className={`time-box${open === which ? ' open' : ''}`}
-            aria-expanded={open === which}
-            aria-label={`${t(which === 'start' ? 'show.start' : 'show.end')} ${value[which]}`}
-            data-which={which}
-            onClick={() => setOpen(open === which ? null : which)}
-        >
-            {value[which]}
-        </button>
+        <span className="time-slot">
+            <button
+                type="button"
+                className={`time-box${open === which ? ' open' : ''}`}
+                aria-expanded={open === which}
+                aria-label={`${t(which === 'start' ? 'show.start' : 'show.end')} ${value[which]}`}
+                data-which={which}
+                onClick={() => setOpen(open === which ? null : which)}
+            >
+                {value[which]}
+            </button>
+            {open === which && (
+                <RollerPopover
+                    label={t(which === 'start' ? 'show.start' : 'show.end')}
+                    options={which === 'start' ? startOptions() : endOptions(value.start)}
+                    value={value[which]}
+                    onChange={which === 'start' ? setStart : setEnd}
+                    onClose={close}
+                />
+            )}
+        </span>
     );
     return (
         <div ref={rootRef} className="time-roller">
@@ -117,15 +128,6 @@ export function TimeRoller({ value, onChange }: TimeRollerProps) {
                 <span className="muted">{t('show.to')}</span>
                 {box('end')}
             </div>
-            {open && (
-                <RollerPopover
-                    label={t(open === 'start' ? 'show.start' : 'show.end')}
-                    options={open === 'start' ? startOptions() : endOptions(value.start)}
-                    value={value[open]}
-                    onChange={open === 'start' ? setStart : setEnd}
-                    onClose={close}
-                />
-            )}
         </div>
     );
 }
