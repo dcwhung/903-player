@@ -181,6 +181,7 @@ export const zhHK = {
         saveAndBack: '儲存並返回待辦',
         saving: '儲存中…',
         saved: '已儲存',
+        created: '已新增「{id}」',
         revert: '復原',
         dirty: '● 有未儲存的變更（{fields}）',
         flowTitle: '處理待辦',
