@@ -30,6 +30,14 @@ describe('validationMessage', () => {
         expect(validationMessage(detail)).toBe(message);
     });
 
+    it('should explain a schedule whose unlist date is not after the listing date', () => {
+        expect(
+            validationMessage(
+                'episode 6 unlist date 2026-11-16 must be later than its listing date 2026-11-23',
+            ),
+        ).toBe('第 6 集的下架日期（16/11 一）必須遲於其上架日期（23/11 一），請修改下架設定。');
+    });
+
     it('should return null for errors it does not know', () => {
         expect(validationMessage('dramas/golden: audio.file: unknown token {x}')).toBeNull();
         expect(validationMessage('something else')).toBeNull();
