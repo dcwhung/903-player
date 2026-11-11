@@ -92,4 +92,39 @@ describe('disabled entries without images', () => {
         ) as { shows: Json[] };
         expect(doc.shows.map((s) => s.id)).toEqual(['badgirl']);
     });
+
+    it('W-714: a published show turned off still needs both images (no silent draft)', async () => {
+        expect((await adminPost('/api/publish')).status).toBe(200);
+        const current = (await (await adminGet('/api/entries/shows/badgirl')).json()) as {
+            definition: Json;
+            images: Json;
+        };
+        const images = Object.fromEntries(
+            Object.entries(current.images).filter(([name]) => name !== current.definition.disc),
+        );
+        const response = await update(
+            'shows',
+            'badgirl',
+            { ...current.definition, enabled: false },
+            images,
+        );
+        expect(response.status).toBe(422);
+        expect(await draftFlag('shows', 'badgirl')).toBe(0);
+    });
+
+    it('W-714: a published show turned off with full data stays a normal entry', async () => {
+        expect((await adminPost('/api/publish')).status).toBe(200);
+        const current = (await (await adminGet('/api/entries/shows/badgirl')).json()) as {
+            definition: Json;
+            images: Json;
+        };
+        const response = await update(
+            'shows',
+            'badgirl',
+            { ...current.definition, enabled: false },
+            current.images,
+        );
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ draft: false });
+    });
 });
