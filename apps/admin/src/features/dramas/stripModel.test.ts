@@ -36,4 +36,37 @@ describe('stripModel', () => {
         expect(arcTabNote(drama, arc, true, TODAY)).toBe('已上 20 / 33 集');
         expect(arcTabNote(drama, { episodes: 5, addedAt: '2026-11-16' }, true, TODAY)).toBe('定期');
     });
+
+    // Bug：掃描建嘅新短篇 addedAt = 掃描當日、enabled: false；冇排程唔可以當「已上架」（player 唔出下架短篇）
+    describe('disabled arc without a schedule', () => {
+        const scanned = { id: 'love-after', episodes: 20, addedAt: TODAY, enabled: false };
+
+        it('should not list any released batch', () => {
+            const strip = stripOf(drama, scanned, null, TODAY);
+            expect(strip.past).toEqual([]);
+            expect(strip.unreleased).toBe(true);
+        });
+
+        it('should not fall back to the drama addedAt either', () => {
+            const noDate = { id: scanned.id, episodes: scanned.episodes, enabled: false };
+            expect(stripOf(drama, noDate, null, TODAY).past).toEqual([]);
+        });
+
+        it('should not flag released episodes as moved by a new rule', () => {
+            const expanded = { addedAt: '2026-11-16', episodeDates: {}, episodeRemovedAt: {} };
+            const strip = stripOf(drama, scanned, expanded, TODAY);
+            expect(strip.comparison?.differs).toBe(false);
+            expect(strip.future).toEqual([{ first: 1, last: 20, date: '2026-11-16' }]);
+        });
+
+        it('should follow the saved schedule when the arc has one', () => {
+            const strip = stripOf(drama, { ...arc, enabled: false }, null, TODAY, true);
+            expect(strip.past).toHaveLength(2);
+            expect(strip.unreleased).toBe(false);
+        });
+
+        it('should keep enabled arcs released as before', () => {
+            expect(stripOf(drama, arc, null, TODAY).unreleased).toBe(false);
+        });
+    });
 });
