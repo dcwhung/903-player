@@ -657,6 +657,19 @@
                 flex-direction: row-reverse;
                 padding-left: 14px;
             }
+            /* 短篇編輯入面嘅 tooltip 只喺 hover / focus 先出（④ 示範常駐樣） */
+            .arc-form .tip {
+                display: none;
+            }
+            .arc-form .tip-wrap:hover .tip,
+            .arc-form .tip-wrap:focus-within .tip {
+                display: block;
+            }
+            .label-line {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
             .status-line {
                 display: flex;
                 align-items: center;
@@ -697,7 +710,7 @@
             }
             .scan-box .rescan {
                 position: absolute;
-                top: 0;
+                top: -11px; /* 虛線喺 legend 中間（legend 高約 22px） */
                 transform: translateY(-50%);
                 right: 14px;
                 padding: 6px 12px;
@@ -1287,7 +1300,7 @@
                 <p class="state-label">
                     ⑤ 短篇展開（今次改動）：撳成行打開 / 閂；新短篇 ID 自動「劇 ID +
                     號碼」（lancy-04）但仍然要親手確認 → ID 格紅框（唔再出「須設定
-                    ID」字）；「未排期」放喺狀態掣隔籬；簡介
+                    ID」字）；「未排期」放喺「狀態」label 隔籬；簡介
                     placeholder「選填」（冇括號）；各集標題唔收埋，textarea 跟內容自動高；右邊
                     Banner / 碟面大一倍（Banner 排先，340×192 / 192px）；ID 紅框時 label
                     都紅；「重新掃描」掣喺虛線中間
@@ -1325,12 +1338,13 @@
                                             />
                                         </label>
                                         <div class="field">
-                                            <span>狀態</span>
+                                            <span class="label-line"
+                                                >狀態 <span class="pill warn">未排期</span></span
+                                            >
                                             <div class="status-line">
                                                 <button class="toggle off" aria-pressed="false">
                                                     下架
                                                 </button>
-                                                <span class="pill warn">未排期</span>
                                             </div>
                                         </div>
                                     </div>
