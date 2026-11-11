@@ -1,6 +1,7 @@
 /* POST /api/scan（Phase 3a）：入 admin 自動掃 R2，有變先寫 D1 + finding */
 import { env } from 'cloudflare:test';
 import { hkToday } from '@903-player/catalog';
+import { insertFindingStatement } from '../src/admin/findings';
 import { adminRequest, call, loginCookie } from './helpers';
 import { drama, putEntry, seed } from './fixtures';
 
@@ -176,5 +177,49 @@ describe('POST /api/scan', () => {
             headers: { cookie: await loginCookie() },
         });
         expect(response.status).toBe(403);
+    });
+});
+
+/*
+ * S-802：兩個 scan 喺同一 ms 計到同一個 guard（updated_at），輸咗嗰個嘅 finding 都過到 guard。
+ * D1 batch 係逐個 transaction 執行，第二個 insert 睇到第一個寫咗嘅 open finding 就唔再寫
+ */
+describe('insertFindingStatement (S-802)', () => {
+    const now = '2026-11-11T00:00:00.000Z';
+    const guarded = (detail: Json) =>
+        insertFindingStatement(
+            env.DB,
+            { kind: 'newEpisodes', dramaId: 'golden', arcId: 'season-1', detail },
+            { createdAt: now, guard: '2026-11-08T00:00:00Z' },
+        );
+
+    it('should not write the same open finding twice when two scans race', async () => {
+        const first = await guarded({ episodes: { first: 4, last: 4 } }).run();
+        const second = await guarded({ episodes: { first: 4, last: 4 } }).run();
+        expect(first.results).toHaveLength(1);
+        expect(second.results).toEqual([]);
+        expect(await findingRows()).toHaveLength(1);
+    });
+
+    it('should still write a different finding, or the same one once the old is resolved', async () => {
+        expect((await adminRequest('POST', '/api/publish')).status).toBe(200);
+        await guarded({ episodes: { first: 4, last: 4 } }).run();
+        await guarded({ episodes: { first: 5, last: 5 } }).run();
+        expect(await findingRows()).toHaveLength(2);
+        await env.DB.prepare('UPDATE scan_findings SET resolved_publish_id = 1').run();
+        await guarded({ episodes: { first: 4, last: 4 } }).run();
+        expect(await findingRows()).toHaveLength(3);
+    });
+
+    it('should not flag the same missing folder twice', async () => {
+        const missing = () =>
+            insertFindingStatement(
+                env.DB,
+                { kind: 'missingFolder', dramaId: 'golden', detail: { folder: FOLDER } },
+                { createdAt: now },
+            ).run();
+        await missing();
+        await missing();
+        expect(await findingRows()).toHaveLength(1);
     });
 });
