@@ -1072,9 +1072,10 @@
             <!-- ⑧ 定稿方向：方案 B，上架 / 下架左右 panel -->
             <section>
                 <p class="state-label">
-                    ⑧ 方案 B 定稿方向（今日 = 1/12）：上架、下架分左右兩個
-                    panel，各自有句子同時間軸。上架只處理未上架嘅集數；下架只處理已上架嘅集數；兩邊頂部寫明可處理嘅集數。右上角「合併檢視」一撳就睇返
-                    ⑨ 嘅合併時間軸
+                    ⑧ 方案 B 定稿（今日 = 1/12）：上架、下架分左右兩個
+                    panel，各自有句子同時間軸。上架只處理未上架嘅集數；下架處理已上架 +
+                    已排程上架嘅集數（下架日一定要遲過嗰集嘅上架日）；兩邊頂部寫明可處理嘅集數。右上角「合併檢視」一撳就睇
+                    ⑨
                 </p>
                 <div class="card">
                     <div class="chips">
@@ -1082,7 +1083,7 @@
                         <span class="arc-chip on">我心不死<small>排程中</small></span>
                     </div>
                     <div class="viewbar">
-                        <span class="hint">第 1–15 集已上架 · 第 16–30 集未上架</span>
+                        <span class="hint">第 1–15 集已上架 · 第 16–30 集已排程上架</span>
                         <div class="seg" role="group" aria-label="檢視">
                             <button aria-pressed="true">分開檢視</button>
                             <button aria-pressed="false">合併檢視</button>
@@ -1140,7 +1141,10 @@
                         </div>
                         <div class="panel down">
                             <h3>下架</h3>
-                            <div class="scope">可下架：第 1–15 集（已上架）</div>
+                            <div class="scope">
+                                可下架：第 1–15 集（已上架）· 第 16–30
+                                集（已排程上架，下架日須遲於上架日）
+                            </div>
                             <div class="seg" role="group" aria-label="下架方式">
                                 <button aria-pressed="false">不下架</button>
                                 <button aria-pressed="false">指定日全部</button>
@@ -1173,11 +1177,28 @@
                                 <div class="group">
                                     <div class="eps">
                                         <span class="ep off">13</span><span class="ep off">…</span
-                                        ><span class="ep off">15</span>
+                                        ><span class="ep off">18</span>
                                     </div>
                                     <span class="when red">28/12 一</span>
                                 </div>
+                                <div class="group">
+                                    <div class="eps">
+                                        <span class="ep off">19</span><span class="ep off">…</span
+                                        ><span class="ep off">24</span>
+                                    </div>
+                                    <span class="when red">4/1 一</span>
+                                </div>
+                                <div class="group">
+                                    <div class="eps">
+                                        <span class="ep off">25</span><span class="ep off">…</span
+                                        ><span class="ep off">30</span>
+                                    </div>
+                                    <span class="when red">11/1 一</span>
+                                </div>
                             </div>
+                            <p class="hint">
+                                如某集的下架日早於或等於其上架日，該集會以紅框標示，並不能儲存
+                            </p>
                         </div>
                     </div>
                     <div class="savebar">
@@ -1189,12 +1210,12 @@
             <!-- ⑨ 合併檢視 -->
             <section>
                 <p class="state-label">
-                    ⑨ 撳「合併檢視」：兩個 panel 換成一條合併時間軸（每日一格：藍 = 上、紅 =
-                    落）+「上下架批次」表；設定要撳返「分開檢視」先改
+                    ⑨ 撳「合併檢視」：兩個 panel 換成一條合併時間軸（每日一格：藍 = 上架、紅 =
+                    下架）+「上下架批次」表；設定要撳返「分開檢視」先改
                 </p>
                 <div class="card">
                     <div class="viewbar">
-                        <span class="hint">第 1–15 集已上架 · 第 16–30 集未上架</span>
+                        <span class="hint">第 1–15 集已上架 · 第 16–30 集已排程上架</span>
                         <div class="seg" role="group" aria-label="檢視">
                             <button aria-pressed="false">分開檢視</button>
                             <button aria-pressed="true">合併檢視</button>
@@ -1247,9 +1268,29 @@
                             >
                             <div class="eps">
                                 <span class="ep off">13</span><span class="ep off">…</span
-                                ><span class="ep off">15</span>
+                                ><span class="ep off">18</span>
                             </div>
-                            <span class="when red">下架 第 13–15 集</span>
+                            <span class="when red">下架 第 13–18 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >4/1</span
+                            >
+                            <div class="eps">
+                                <span class="ep off">19</span><span class="ep off">…</span
+                                ><span class="ep off">24</span>
+                            </div>
+                            <span class="when red">下架 第 19–24 集</span>
+                        </div>
+                        <div class="group">
+                            <span class="when" style="font-weight: 600; color: var(--ink)"
+                                >11/1</span
+                            >
+                            <div class="eps">
+                                <span class="ep off">25</span><span class="ep off">…</span
+                                ><span class="ep off">30</span>
+                            </div>
+                            <span class="when red">下架 第 25–30 集</span>
                         </div>
                     </div>
                     <div class="batches">
@@ -1281,7 +1322,17 @@
                                 <tr>
                                     <td>28/12 一</td>
                                     <td>—</td>
-                                    <td><span class="pill bad">第 13–15 集</span></td>
+                                    <td><span class="pill bad">第 13–18 集</span></td>
+                                </tr>
+                                <tr>
+                                    <td>4/1 一</td>
+                                    <td>—</td>
+                                    <td><span class="pill bad">第 19–24 集</span></td>
+                                </tr>
+                                <tr>
+                                    <td>11/1 一</td>
+                                    <td>—</td>
+                                    <td><span class="pill bad">第 25–30 集</span></td>
                                 </tr>
                             </tbody>
                         </table>
