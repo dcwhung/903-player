@@ -1,0 +1,4 @@
+# W-713：admin SPA 由 Workers static assets 出，唔經 Worker 嘅 denyFraming；有發佈 / 還原 / 刪除掣，唔准俾其他網站 frame
+/*
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
