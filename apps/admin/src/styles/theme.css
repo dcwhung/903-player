@@ -1192,3 +1192,15 @@ textarea.autosize {
 .arc-tabs button[aria-selected='true'] small {
     color: var(--on-primary);
 }
+
+/* 驗證錯誤原文：細字、預設收埋 */
+.raw-error {
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+.raw-error code {
+    display: block;
+    margin-top: 4px;
+    overflow-wrap: anywhere;
+}
