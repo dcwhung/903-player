@@ -1078,8 +1078,8 @@
                 <p class="state-label">
                     ⑧ 方案 B 定稿（今日 = 1/12）：上架、下架分左右兩個
                     panel，各自有句子同時間軸。上架只處理未上架嘅集數；下架處理已上架 +
-                    已排程上架嘅集數（下架日一定要遲過嗰集嘅上架日）；兩邊頂部寫明可處理嘅集數。右上角「合併檢視」一撳就睇
-                    ⑨
+                    已排程上架嘅集數（下架日一定要遲過嗰集嘅上架日）；兩邊頂部寫明可處理嘅集數。右上角「預覽」一撳就睇
+                    ⑨（唯讀）；下架日早於或等於上架日，只會喺撳「儲存」時以錯誤提示彈出
                 </p>
                 <div class="card">
                     <div class="chips">
@@ -1089,18 +1089,16 @@
                     <div class="viewbar">
                         <span class="hint">第 1–15 集已上架 · 第 16–30 集已排程上架</span>
                         <div class="seg" role="group" aria-label="檢視">
-                            <button aria-pressed="true">分開檢視</button>
-                            <button aria-pressed="false">合併檢視</button>
+                            <button aria-pressed="true">編輯</button>
+                            <button aria-pressed="false">預覽</button>
                         </div>
                     </div>
                     <div class="split">
                         <div class="panel up">
                             <h3><span class="pill ok big">上架</span></h3>
-                            <div class="scope">可上架：第 16–30 集（15 集未上架）</div>
+                            <div class="scope">可上架：第 16–30 集（共 15 集）</div>
                             <div class="chips">
-                                <span class="arc-chip" style="padding: 4px 10px"
-                                    >一次過全部上架</span
-                                >
+                                <span class="arc-chip" style="padding: 4px 10px">一次性全部</span>
                                 <span class="arc-chip" style="padding: 4px 10px">每日 1 集</span>
                                 <span class="arc-chip" style="padding: 4px 10px">每週 1 次</span>
                             </div>
@@ -1146,8 +1144,7 @@
                         <div class="panel down">
                             <h3><span class="pill bad big">下架</span></h3>
                             <div class="scope">
-                                可下架：第 1–15 集（已上架）· 第 16–30
-                                集（已排程上架，下架日須遲於上架日）
+                                可下架：第 1–15 集（已上架）· 第 16–30 集（已排程上架）
                             </div>
                             <div class="seg" role="group" aria-label="下架方式">
                                 <button aria-pressed="false">不下架</button>
@@ -1200,9 +1197,6 @@
                                     <span class="when red">11/1 一</span>
                                 </div>
                             </div>
-                            <p class="hint">
-                                如某集的下架日早於或等於其上架日，該集會以紅框標示，並不能儲存
-                            </p>
                         </div>
                     </div>
                     <div class="savebar">
@@ -1211,18 +1205,18 @@
                 </div>
             </section>
 
-            <!-- ⑨ 合併檢視 -->
+            <!-- ⑨ 預覽 -->
             <section>
                 <p class="state-label">
-                    ⑨ 撳「合併檢視」：兩個 panel 換成一條合併時間軸（每日一格：藍 = 上架、紅 =
-                    下架）+「上下架批次」表；設定要撳返「分開檢視」先改
+                    ⑨ 撳「預覽」：兩個 panel 換成一條合併時間軸（每日一格：藍 = 上架、紅 =
+                    下架）+「上下架批次」表；唯讀，要改設定就撳返「編輯」
                 </p>
                 <div class="card">
                     <div class="viewbar">
                         <span class="hint">第 1–15 集已上架 · 第 16–30 集已排程上架</span>
                         <div class="seg" role="group" aria-label="檢視">
-                            <button aria-pressed="false">分開檢視</button>
-                            <button aria-pressed="true">合併檢視</button>
+                            <button aria-pressed="false">編輯</button>
+                            <button aria-pressed="true">預覽</button>
                         </div>
                     </div>
                     <div class="strip">
