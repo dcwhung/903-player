@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>903 Admin · 排程下架</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            /* Design Origin: _mockups_/admin-style/index.html（token）+ _mockups_/admin/index.html#s7（排程 A + C） */
+            :root {
+                --sky: #53a9e3;
+                --primary: #1e7bc0;
+                --on-primary: #ffffff;
+                --bg: #eef3f8;
+                --surface: #ffffff;
+                --surface-2: #f3f6fa;
+                --ink: #1a2433;
+                --muted: #6b7a8f;
+                --line: #dfe6ef;
+                --ok: #1f8a4c;
+                --ok-bg: #e3f4ea;
+                --danger: #c0362c;
+                --danger-bg: #fbe9e7;
+                --warn-bg: #fff3e0;
+                --warn-ink: #9a5b00;
+                --accent-soft: #e5f1fb;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--ink);
+                font:
+                    15px/1.6 'Poppins',
+                    'Noto Sans TC',
+                    sans-serif;
+            }
+            main {
+                max-width: 1100px;
+                margin: 0 auto;
+                padding: 24px 16px 64px;
+                display: grid;
+                gap: 28px;
+            }
+            h1 {
+                margin: 0;
+                font-size: 22px;
+            }
+            .intro {
+                color: var(--muted);
+                margin: 4px 0 0;
+            }
+            .state-label {
+                margin: 0 0 8px;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .card {
+                background: var(--surface);
+                border-radius: 24px;
+                padding: 20px 24px;
+                box-shadow: 0 6px 20px rgb(15 40 70 / 0.06);
+                display: grid;
+                gap: 16px;
+            }
+            .chips {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .arc-chip {
+                display: grid;
+                padding: 8px 14px;
+                border-radius: 12px;
+                border: 1px solid var(--line);
+                background: var(--surface);
+                font-weight: 600;
+                font-size: 14px;
+            }
+            .arc-chip small {
+                font-weight: 500;
+                color: var(--muted);
+                font-size: 12px;
+            }
+            .arc-chip.on {
+                background: var(--primary);
+                border-color: var(--primary);
+                color: var(--on-primary);
+            }
+            .arc-chip.on small {
+                color: rgb(255 255 255 / 0.85);
+            }
+            .banner {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                padding: 10px 14px;
+                border-radius: 12px;
+                background: var(--ok-bg);
+                color: var(--ok);
+                font-weight: 600;
+            }
+            .seg {
+                display: inline-flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                padding: 4px;
+                border-radius: 12px;
+                background: var(--surface-2);
+                border: 1px solid var(--line);
+                width: fit-content;
+            }
+            .seg button {
+                border: 0;
+                border-radius: 9px;
+                padding: 6px 14px;
+                background: transparent;
+                font: inherit;
+                font-size: 14px;
+                color: var(--muted);
+            }
+            .seg button[aria-pressed='true'] {
+                background: var(--surface);
+                color: var(--ink);
+                font-weight: 600;
+                box-shadow: 0 1px 3px rgb(0 0 0 / 0.15);
+            }
+            .sentence {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+                font-size: 18px;
+            }
+            .field {
+                border: 0;
+                border-bottom: 2px solid var(--primary);
+                background: var(--accent-soft);
+                padding: 4px 10px;
+                font: inherit;
+                font-weight: 600;
+                width: 8.5em;
+            }
+            .field.num {
+                width: 3.5em;
+                text-align: center;
+            }
+            .wd {
+                display: inline-flex;
+                gap: 4px;
+            }
+            .wd span {
+                width: 30px;
+                height: 30px;
+                display: grid;
+                place-items: center;
+                border-radius: 8px;
+                border: 1px solid var(--line);
+                font-size: 14px;
+            }
+            .wd span.on {
+                background: var(--primary);
+                border-color: var(--primary);
+                color: #fff;
+            }
+            .strip {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px 3px;
+                align-items: flex-start;
+            }
+            .ep {
+                width: 26px;
+                height: 26px;
+                display: grid;
+                place-items: center;
+                border-radius: 5px;
+                font-size: 12px;
+                background: var(--surface-2);
+                color: var(--muted);
+            }
+            .ep.off {
+                background: var(--danger-bg);
+                color: var(--danger);
+                font-weight: 600;
+                text-decoration: line-through;
+            }
+            .ep.on {
+                background: var(--primary);
+                color: #fff;
+            }
+            .group {
+                display: grid;
+                gap: 4px;
+                padding-right: 10px;
+                margin-right: 6px;
+                border-right: 2px dashed var(--line);
+            }
+            .group:last-child {
+                border-right: 0;
+            }
+            .group .eps {
+                display: flex;
+                gap: 3px;
+            }
+            .group .when {
+                font-size: 12px;
+                color: var(--muted);
+                text-align: center;
+            }
+            .group .when.red {
+                color: var(--danger);
+            }
+            .legend {
+                display: flex;
+                gap: 16px;
+                flex-wrap: wrap;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .legend i {
+                display: inline-block;
+                width: 12px;
+                height: 12px;
+                border-radius: 3px;
+                vertical-align: -1px;
+                margin-right: 4px;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                font-size: 14px;
+            }
+            th,
+            td {
+                text-align: left;
+                padding: 6px 10px;
+                border-bottom: 1px solid var(--line);
+            }
+            th {
+                color: var(--muted);
+                font-weight: 600;
+            }
+            .pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 1px 10px;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            .pill::before {
+                content: '';
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: currentColor;
+            }
+            .pill.ok {
+                background: var(--ok-bg);
+                color: var(--ok);
+            }
+            .pill.bad {
+                background: var(--danger-bg);
+                color: var(--danger);
+            }
+            .pill.plan {
+                background: var(--accent-soft);
+                color: var(--primary);
+            }
+            .batches {
+                background: var(--warn-bg);
+                border-radius: 16px;
+                padding: 12px 16px;
+            }
+            .batches h4 {
+                margin: 0 0 6px;
+                color: var(--warn-ink);
+            }
+            .savebar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-top: 1px solid var(--line);
+                padding-top: 14px;
+            }
+            .btn {
+                border: 1px solid var(--line);
+                background: var(--surface);
+                border-radius: 12px;
+                padding: 8px 16px;
+                font: inherit;
+                font-weight: 600;
+            }
+            .btn.primary {
+                background: var(--primary);
+                border-color: var(--primary);
+                color: #fff;
+            }
+            .hint {
+                font-size: 13px;
+                color: var(--muted);
+                margin: 0;
+            }
+            .divider {
+                border: 0;
+                border-top: 1px dashed var(--line);
+                margin: 4px 0;
+            }
+            .label {
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--muted);
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header>
+                <h1>排程下架（mockup）</h1>
+                <p class="intro">
+                    已經全部上架嘅短篇，排程頁唔再出上架設定，只可以設下架。部分上架 /
+                    未上架嘅短篇，上架設定下面多一組「下架」。下架有 4
+                    種：唔下架、指定日全部下架、每集上架 N 日後下架、由某日起逢星期 X 落 N 集。
+                </p>
+            </header>
+
+            <!-- ① 全部上架：只可以設下架（指定日全部下架） -->
+            <section>
+                <p class="state-label">
+                    ① 已全部上架（30 / 30 集）→
+                    唔出「快速套用」同上架句子，只出「下架」。揀「指定日全部下架」
+                </p>
+                <div class="card">
+                    <div class="chips">
+                        <span class="arc-chip">戀愛二分一<small>無排程</small></span>
+                        <span class="arc-chip on">戀愛後二分一<small>已全部上架</small></span>
+                    </div>
+                    <div class="banner">✓ 已全部上架（10/27 二 · 第 1–30 集）</div>
+                    <div>
+                        <div class="label">下架</div>
+                        <div class="seg" role="group" aria-label="下架方式">
+                            <button aria-pressed="false">唔下架</button>
+                            <button aria-pressed="true">指定日全部下架</button>
+                            <button aria-pressed="false">每集上架 N 日後下架</button>
+                            <button aria-pressed="false">逢星期 X 落 N 集</button>
+                        </div>
+                    </div>
+                    <div class="sentence">
+                        喺 <input class="field" value="31/12/2026" /> 全部下架
+                    </div>
+                    <div class="strip">
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep off">1</span><span class="ep off">2</span
+                                ><span class="ep off">3</span><span class="ep off">4</span
+                                ><span class="ep off">5</span><span class="ep off">6</span
+                                ><span class="ep off">7</span><span class="ep off">8</span
+                                ><span class="ep off">9</span><span class="ep off">10</span
+                                ><span class="ep off">…</span><span class="ep off">30</span>
+                            </div>
+                            <span class="when red">12/31 四 全部下架</span>
+                        </div>
+                    </div>
+                    <div class="legend">
+                        <span><i style="background: var(--surface-2)"></i>已上架</span>
+                        <span><i style="background: var(--danger-bg)"></i>排咗下架</span>
+                    </div>
+                    <div class="savebar">
+                        <button class="btn">↶ 復原</button>
+                        <button class="btn primary">儲存</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ② 全部上架：每集上架 N 日後下架 -->
+            <section>
+                <p class="state-label">
+                    ② 同 ①，揀「每集上架 N
+                    日後下架」：每集由自己上架日計，所以會一批批落；下面出「下架批次」表
+                </p>
+                <div class="card">
+                    <div class="seg" role="group" aria-label="下架方式">
+                        <button aria-pressed="false">唔下架</button>
+                        <button aria-pressed="false">指定日全部下架</button>
+                        <button aria-pressed="true">每集上架 N 日後下架</button>
+                        <button aria-pressed="false">逢星期 X 落 N 集</button>
+                    </div>
+                    <div class="sentence">
+                        每集上架 <input class="field num" value="90" /> 日後下架
+                    </div>
+                    <div class="strip">
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep off">1</span><span class="ep off">…</span
+                                ><span class="ep off">30</span>
+                            </div>
+                            <span class="when red">1/25 一</span>
+                        </div>
+                    </div>
+                    <div class="batches">
+                        <h4>下架批次</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>集數</th>
+                                    <th>狀態</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1/25 一</td>
+                                    <td>第 1–30 集</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="hint">
+                            全部集數係同一日（10/27）上架，所以會同一日下架；分批上架嘅短篇會分開幾行
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ③ 全部上架：由某日起逢星期 X 落 N 集 -->
+            <section>
+                <p class="state-label">
+                    ③ 同 ①，揀「逢星期 X 落 N 集」：同上架句子對稱，由第 1
+                    集開始逐批落；集數條紅格分批，下面出下架批次
+                </p>
+                <div class="card">
+                    <div class="seg" role="group" aria-label="下架方式">
+                        <button aria-pressed="false">唔下架</button>
+                        <button aria-pressed="false">指定日全部下架</button>
+                        <button aria-pressed="false">每集上架 N 日後下架</button>
+                        <button aria-pressed="true">逢星期 X 落 N 集</button>
+                    </div>
+                    <div class="sentence">
+                        由 <input class="field" value="1/12/2026" /> 起，逢
+                        <span class="wd"
+                            ><span>日</span><span class="on">一</span><span>二</span
+                            ><span class="on">三</span><span>四</span><span class="on">五</span
+                            ><span>六</span></span
+                        >，每次落 <input class="field num" value="10" /> 集
+                    </div>
+                    <div class="strip">
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep off">1</span><span class="ep off">…</span
+                                ><span class="ep off">10</span>
+                            </div>
+                            <span class="when red">12/2 三</span>
+                        </div>
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep off">11</span><span class="ep off">…</span
+                                ><span class="ep off">20</span>
+                            </div>
+                            <span class="when red">12/4 五</span>
+                        </div>
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep off">21</span><span class="ep off">…</span
+                                ><span class="ep off">30</span>
+                            </div>
+                            <span class="when red">12/7 一</span>
+                        </div>
+                    </div>
+                    <div class="batches">
+                        <h4>下架批次</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>集數</th>
+                                    <th>狀態</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>12/2 三</td>
+                                    <td>第 1–10 集</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                </tr>
+                                <tr>
+                                    <td>12/4 五</td>
+                                    <td>第 11–20 集</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                </tr>
+                                <tr>
+                                    <td>12/7 一</td>
+                                    <td>第 21–30 集</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ④ 部分上架：上架設定 + 下架設定 -->
+            <section>
+                <p class="state-label">
+                    ④ 部分上架 / 未上架（第 1–10 集已上架，11–30 排緊）→
+                    照舊出上架句子；下面加「下架」一組（同 ① 嘅 4 個選項），取代而家「上架 90
+                    日後下架」dropdown
+                </p>
+                <div class="card">
+                    <div class="chips">
+                        <span class="arc-chip on">我心不死<small>排程中</small></span>
+                    </div>
+                    <div class="label">上架</div>
+                    <div class="sentence">
+                        由 <input class="field" value="16/11/2026" /> 起，逢
+                        <span class="wd"
+                            ><span>日</span><span class="on">一</span><span>二</span><span>三</span
+                            ><span>四</span><span>五</span><span>六</span></span
+                        >，每次上 <input class="field num" value="5" /> 集
+                    </div>
+                    <hr class="divider" />
+                    <div class="label">下架</div>
+                    <div class="seg" role="group" aria-label="下架方式">
+                        <button aria-pressed="true">唔下架</button>
+                        <button aria-pressed="false">指定日全部下架</button>
+                        <button aria-pressed="false">每集上架 N 日後下架</button>
+                        <button aria-pressed="false">逢星期 X 落 N 集</button>
+                    </div>
+                    <div class="strip">
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep">1</span><span class="ep">…</span
+                                ><span class="ep">10</span>
+                            </div>
+                            <span class="when">✓ 已上架</span>
+                        </div>
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep on">11</span><span class="ep on">…</span
+                                ><span class="ep on">15</span>
+                            </div>
+                            <span class="when">11/16 —</span>
+                        </div>
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep on">16</span><span class="ep on">…</span
+                                ><span class="ep on">20</span>
+                            </div>
+                            <span class="when">11/23 —</span>
+                        </div>
+                    </div>
+                    <p class="hint">
+                        「逢星期 X 落 N 集」嘅開始日要喺最後一批上架之後；早過就出錯誤提示，唔准儲存
+                    </p>
+                </div>
+            </section>
+
+            <!-- ⑤ 已經有下架 -->
+            <section>
+                <p class="state-label">
+                    ⑤ 下架日已過（部分集數已經落架）→ 集數條灰紅格
+                    ✓「已下架」唔受新規則影響；只可以改仲未到嘅下架
+                </p>
+                <div class="card">
+                    <div class="strip">
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep off" style="opacity: 0.55">1</span
+                                ><span class="ep off" style="opacity: 0.55">…</span
+                                ><span class="ep off" style="opacity: 0.55">10</span>
+                            </div>
+                            <span class="when red">✓ 11/4 已下架</span>
+                        </div>
+                        <div class="group">
+                            <div class="eps">
+                                <span class="ep off">11</span><span class="ep off">…</span
+                                ><span class="ep off">30</span>
+                            </div>
+                            <span class="when red">12/31 四</span>
+                        </div>
+                    </div>
+                    <div class="legend">
+                        <span
+                            ><i style="background: var(--danger-bg); opacity: 0.55"></i
+                            >已下架（不受新規則影響）</span
+                        >
+                        <span><i style="background: var(--danger-bg)"></i>排咗下架</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </body>
+</html>
