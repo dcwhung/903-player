@@ -3,6 +3,7 @@ import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { t } from '../i18n/t';
 import { Tooltip } from '../ui/Tooltip';
 import type { NavProps } from './Nav';
+import { ThemeSwitch } from './ThemeSwitch';
 
 export function NavFooter({ email, onLogout, mini, onToggle }: NavProps) {
     const ToggleIcon = mini ? PanelLeftOpen : PanelLeftClose;
@@ -22,6 +23,7 @@ export function NavFooter({ email, onLogout, mini, onToggle }: NavProps) {
                     <span className="label">{t('nav.logout')}</span>
                 </button>
             </Tooltip>
+            <ThemeSwitch mini={mini} />
             <Tooltip text={toggleLabel} side="right" enabled={mini}>
                 <button
                     type="button"

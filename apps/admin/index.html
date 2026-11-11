@@ -6,6 +6,17 @@
         <meta name="robots" content="noindex" />
         <title>903 Player Admin</title>
         <!--
+            淺 / 深色：first paint 之前套用 localStorage 嘅選擇（key 同 src/app/themePref.ts THEME_KEY 一致），
+            唔會先閃一下系統色；讀唔到就跟系統
+        -->
+        <script>
+            try {
+                var theme = localStorage.getItem('admin.theme');
+                if (theme === 'light' || theme === 'dark')
+                    document.documentElement.setAttribute('data-theme', theme);
+            } catch (error) {}
+        </script>
+        <!--
             字體同 player 一樣（apps/player/index.html）：Poppins + Noto Sans TC，preload 落嚟先套用，
             未到就用 system font（display=swap）；冇 JS 嘅話 noscript 照用返普通 stylesheet
         -->

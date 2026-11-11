@@ -12,12 +12,20 @@ import pkg from '../../package.json';
 /** apps/admin/public/banner.webp（1200×517） */
 export const DENIED_BANNER_PATH = '/banner.webp';
 
-/** 同 admin token 一致（apps/admin/src/styles/tokens.css），跟系統深淺色 */
+/** 深色 token（跟系統，或者 admin 揀咗深色：data-theme="dark"） */
+const DARK_TOKENS = `--bg: #0f1620; --surface: #1b2635; --ink: #e8eef5; --muted: #9aabbd;
+  --soft: #1c3349; --art: #7cc2f0; --shadow: none; --border: #2c3b4f;`;
+
+/**
+ * 同 admin token 一致（apps/admin/src/styles/tokens.css）：預設跟系統深淺色；
+ * admin 揀咗淺 / 深色（localStorage admin.theme，同 apps/admin/src/app/themePref.ts）就跟揀咗嘅
+ */
 const DENIED_STYLE = `
 :root { color-scheme: light dark; --bg: #eef3f8; --surface: #fff; --ink: #16212e; --muted: #5e6b7a;
   --primary: #1e7bc0; --primary-hover: #155f96; --soft: #e6f3fc; --art: #1e7bc0; --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06); --border: transparent; }
-@media (prefers-color-scheme: dark) { :root { --bg: #0f1620; --surface: #1b2635; --ink: #e8eef5; --muted: #9aabbd;
-  --soft: #1c3349; --art: #7cc2f0; --shadow: none; --border: #2c3b4f; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) { ${DARK_TOKENS} } }
+:root[data-theme='dark'] { color-scheme: dark; ${DARK_TOKENS} }
+:root[data-theme='light'] { color-scheme: light; }
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100dvh; display: grid; place-items: center; padding: 32px 20px; background: var(--bg); color: var(--ink);
   font: 15px/1.55 'Poppins', 'Noto Sans TC', 'PingFang HK', -apple-system, 'Segoe UI', sans-serif; }
@@ -40,6 +48,10 @@ code { font-family: inherit; color: var(--ink); font-weight: 500; overflow-wrap:
 .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .btn svg { width: 18px; height: 18px; stroke-width: 2; }
 `;
+
+/** first paint 之前套用 admin 揀嘅淺 / 深色（讀唔到就跟系統） */
+export const THEME_SCRIPT = `try { var theme = localStorage.getItem('admin.theme');
+if (theme === 'light' || theme === 'dark') document.documentElement.setAttribute('data-theme', theme); } catch (error) {}`;
 
 /** lucide shield-x（插圖圓）+ log-in（按鈕） */
 const SHIELD_X =
@@ -66,6 +78,9 @@ export const deniedPage = (email: string) =>
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <meta name="robots" content="noindex" />
                 <title>沒有權限 · 903 Player Admin</title>
+                <script>
+                    ${raw(THEME_SCRIPT)};
+                </script>
                 <link rel="stylesheet" href="${FONTS}" />
                 <style>
                     ${raw(DENIED_STYLE)}

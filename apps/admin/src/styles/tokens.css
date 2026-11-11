@@ -54,6 +54,8 @@
     --grad-orange: linear-gradient(135deg, #ffc46b, #f08a24);
     --grad-green: linear-gradient(135deg, #6fdca4, #23935c);
     --on-grad: #ffffff;
+    /* 403 / 直向提示插圖 icon */
+    --art-ink: #1e7bc0;
     --radius: 12px;
     --r-panel: 24px;
     --r-card: 20px;
@@ -72,8 +74,12 @@
     color-scheme: light dark;
 }
 
+/*
+ * 深色：跟系統（冇 data-theme）或者手動揀深色（data-theme="dark"）；手動揀淺色（data-theme="light"）唔理系統。
+ * 兩段內容一樣，改一段要同步改另一段（Worker 403 頁 inline 嘅 token 亦一樣）
+ */
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme='light']) {
         --bg: #0f1620;
         --panel: #141d29;
         --surface: #1b2635;
@@ -95,6 +101,7 @@
         --danger-ink: #f6a9a2;
         --danger-bg: #3b1619;
         --on-danger: #2b0d0b;
+        --art-ink: #7cc2f0;
         --shadow: none;
         --shadow-btn: none;
         --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
@@ -102,4 +109,41 @@
         /* 深色底上面 tooltip 要淺一級先睇到泡泡邊 */
         --tip-bg: #33465e;
     }
+}
+
+:root[data-theme='dark'] {
+    --bg: #0f1620;
+    --panel: #141d29;
+    --surface: #1b2635;
+    --surface-2: #223043;
+    --ink: #e8eef5;
+    --muted: #9aabbd;
+    --line: #2c3b4f;
+    --accent: #7cc2f0;
+    --accent-soft: #1c3349;
+    --accent-ink: #9fd2f6;
+    --on-accent: #0d1a2b;
+    --ok: #6fc28f;
+    --ok-ink: #8fd6a9;
+    --ok-bg: #133524;
+    --warn: #f2a93b;
+    --warn-bg: #3a2a10;
+    --warn-ink: #f2c27a;
+    --danger: #f28b82;
+    --danger-ink: #f6a9a2;
+    --danger-bg: #3b1619;
+    --on-danger: #2b0d0b;
+    --art-ink: #7cc2f0;
+    --shadow: none;
+    --shadow-btn: none;
+    --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
+    --card-border: #2c3b4f;
+    /* 深色底上面 tooltip 要淺一級先睇到泡泡邊 */
+    --tip-bg: #33465e;
+
+    color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+    color-scheme: light;
 }

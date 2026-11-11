@@ -32,6 +32,13 @@ export const zhHK = {
         collapseLabel: '收合選單',
         expandLabel: '展開選單',
     },
+    theme: {
+        label: '顯示模式',
+        system: '跟系統',
+        light: '淺色',
+        dark: '深色',
+        cycle: '主題：{current}（撳一下轉{next}）',
+    },
     scan: {
         running: '正在掃描 R2…',
         done: '✓ 已掃描 R2（{time}）',
