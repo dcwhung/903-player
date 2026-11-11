@@ -51,12 +51,12 @@ describe('POST /api/dramas/:id/scan', () => {
         expect(((await stored.json()) as { definition: Json }).definition).toEqual(scannable(3));
     });
 
-    it('should add a new arc folder with a placeholder id and today as addedAt', async () => {
+    it('should add a new arc folder with an auto id <dramaId>-NN and today as addedAt', async () => {
         await upload([episodeKey('Season 2', 1)]);
         const { body } = await scan();
         const arcs = (body.draft as Json).arcs as Json[];
         expect(arcs[1]).toEqual({
-            id: 'arc-01',
+            id: 'golden-02',
             name: 'Season 2',
             addedAt: hkToday(),
             episodes: 1,

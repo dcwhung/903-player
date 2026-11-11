@@ -73,19 +73,19 @@ describe('POST /api/scan', () => {
         ]);
     });
 
-    it('should add a new arc disabled with a placeholder id', async () => {
+    it('should add a new arc disabled with an auto id <dramaId>-NN', async () => {
         await upload([episodeKey(FOLDER, 'Season 2', 1)]);
         const { body } = await scan();
         const arcs = JSON.parse((await entry('golden'))?.definition ?? '{}').arcs as Json[];
         expect(arcs[1]).toEqual({
-            id: 'arc-01',
+            id: 'golden-02',
             name: 'Season 2',
             addedAt: hkToday(),
             episodes: 1,
             enabled: false,
         });
         expect((body.findings as Json[]).map((f) => [f.kind, f.arcId])).toEqual([
-            ['newArc', 'arc-01'],
+            ['newArc', 'golden-02'],
         ]);
     });
 
@@ -98,7 +98,7 @@ describe('POST /api/scan', () => {
             name: '新劇',
             enabled: false,
             audio: { host: 'r2', folder: '新劇' },
-            arcs: [{ id: 'arc-01', name: '第一部', episodes: 2 }],
+            arcs: [{ id: 'drama-01-01', name: '第一部', episodes: 2 }],
         });
         expect(body.findings).toEqual([
             expect.objectContaining({

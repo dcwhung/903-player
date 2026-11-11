@@ -67,13 +67,17 @@ const templateOf = (existing: DraftJson | undefined): string | undefined => {
     return isPlainObject(audio) ? (audio.file as string | undefined) : undefined;
 };
 
-const seriesJson = (scan: DramaScan, existing: DraftJson | undefined, today: string): Built => {
+const seriesJson = (
+    scan: DramaScan,
+    existing: DraftJson | undefined,
+    { today, id }: { today: string; id: string | undefined },
+): Built => {
     const analysis = analyseSeries(scan, templateOf(existing));
     if (!existing) {
         const json = {
             ...newDramaBase(scan, 'series', analysis.template),
             addedAt: today,
-            arcs: withArcIds(analysis.arcs, analysis.issues),
+            arcs: withArcIds(analysis.arcs, analysis.issues, id),
         };
         return { ...analysis, json };
     }
@@ -81,7 +85,7 @@ const seriesJson = (scan: DramaScan, existing: DraftJson | undefined, today: str
     const ctx = { audio: { file: analysis.template, folder: scan.name }, today };
     const oldArcs = (existing.arcs as DraftArc[] | undefined) ?? [];
     const merged = mergeArcs(oldArcs, analysis.arcs, ctx, analysis.issues);
-    return { ...analysis, json: { ...existing, arcs: withArcIds(merged, analysis.issues) } };
+    return { ...analysis, json: { ...existing, arcs: withArcIds(merged, analysis.issues, id) } };
 };
 
 const dailyJson = (scan: DramaScan, existing: DraftJson | undefined): Built => {
@@ -123,9 +127,14 @@ const orderKeys = (json: DraftJson): DraftJson => {
     return Object.fromEntries([...known, ...extra]) as DraftJson;
 };
 
-const buildJson = (scan: DramaScan, kind: 'series' | 'daily', existing: unknown, today: string) => {
+const buildJson = (
+    scan: DramaScan,
+    kind: 'series' | 'daily',
+    existing: unknown,
+    options: { today: string; id: string | undefined },
+) => {
     const old = existing as DraftJson | undefined;
-    return kind === 'series' ? seriesJson(scan, old, today) : dailyJson(scan, old);
+    return kind === 'series' ? seriesJson(scan, old, options) : dailyJson(scan, old);
 };
 
 /** listing → drama.json 草稿 + 問題清單；existing 有就合併（人手欄位照留） */
@@ -141,7 +150,7 @@ export const generateDraft = (listing: FolderListing, options: DraftOptions): Dr
         const issues = [...base.issues, issue('error', scan.name, problem)];
         return { ...base, issues, json: null, summaries: [] } as DraftResult;
     }
-    const built = buildJson(scan, kind, existing, today);
+    const built = buildJson(scan, kind, existing, { today, id });
     const issues = [...base.issues, ...built.issues];
     const blocked = issues.some((i) => i.level === 'error');
     const json = blocked ? null : orderKeys(built.json);
