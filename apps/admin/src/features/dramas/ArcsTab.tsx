@@ -1,6 +1,7 @@
 /*
  * 廣播劇 · 短篇：Design Origin: mockup: _mockups_/admin/index.html#s5
- * 拖 ⠿ 改次序（草稿，同其他改動一齊儲存）；撳一行原位展開編輯
+ * 拖 ⠿ 改次序（草稿，同其他改動一齊儲存）；撳成行原位展開 / 收起編輯；
+ * 打開咗嘅短篇 ID 未確認 → 「儲存」冇改動都撳得，順手 POST /api/todos/confirm-id（3c）
  */
 import { Fragment, useState } from 'react';
 import type { RawDefinition } from '../../api/types';
@@ -16,6 +17,22 @@ import type { DramaEditorState } from './useDramaEditor';
 
 const arcItemsOf = (definition: RawDefinition) =>
     arcsOf(definition).map((arc, i) => ({ arc, id: arcIdOf(arc, i) }));
+
+/** 打開咗、ID 未確認嘅短篇：儲存 = 確認佢個 ID（就算冇改） */
+function ArcsSaveBar({ state, open }: { state: DramaEditorState; open: string | null }) {
+    const { editor } = state;
+    const confirmOpen = open !== null && state.isArcIdUnconfirmed(open);
+    return (
+        <SaveBar
+            dirtyFields={dirtyLabels(editor.dirtyKeys)}
+            fromTodos={state.origin.fromTodos}
+            saving={editor.status.saving}
+            pendingConfirm={confirmOpen}
+            onSave={() => void state.save({ arcIds: confirmOpen && open ? [open] : [] })}
+            onRevert={editor.revert}
+        />
+    );
+}
 
 function ArcsHead() {
     return (
@@ -65,13 +82,7 @@ export function ArcsTab({ state, openArc }: { state: DramaEditorState; openArc: 
                     />
                 </ol>
             </div>
-            <SaveBar
-                dirtyFields={dirtyLabels(editor.dirtyKeys)}
-                fromTodos={state.origin.fromTodos}
-                saving={editor.status.saving}
-                onSave={() => void state.save()}
-                onRevert={editor.revert}
-            />
+            <ArcsSaveBar state={state} open={open} />
         </>
     );
 }

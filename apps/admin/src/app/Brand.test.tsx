@@ -6,6 +6,6 @@ describe('Brand', () => {
     it('should show the api package version in the admin pill', () => {
         render(<Brand />);
         expect(screen.getByText(`Admin v${apiPackage.version}`)).toBeInTheDocument();
-        expect(apiPackage.version).toBe('0.5.0');
+        expect(apiPackage.version).toBe('0.6.0');
     });
 });

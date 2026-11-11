@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:test';
 import { parseCatalogDocument, type CatalogDocument } from '@903-player/catalog';
 import { ORIGIN, adminGet, adminPost, call, loginCookie } from './helpers';
-import { DISC, TILE, drama, putEntry, seed } from './fixtures';
+import { DISC, SHOW, TILE, drama, markDraft, putEntry, seed } from './fixtures';
 import { commitPublish, documentFromEntries, validateDocument } from '../src/catalog/publish';
 import { listAssetHashes, listEntries } from '../src/catalog/store';
 
@@ -288,13 +288,24 @@ describe('commitPublish (S-767)', () => {
     });
 });
 
-describe('GET /api/publishes + rollback', () => {
+describe('GET /api/publishes + rollback (restore status into D1)', () => {
     beforeEach(async () => {
         await seed(3);
         await adminPost('/api/publish');
         await putEntry('dramas', 'golden', drama(4));
         await adminPost('/api/publish');
     });
+
+    const stored = async (kind: string, id: string) =>
+        JSON.parse(
+            (await env.DB.prepare('SELECT definition FROM entries WHERE kind = ? AND id = ?')
+                .bind(kind, id)
+                .first<string>('definition')) ?? 'null',
+        ) as Record<string, unknown> | null;
+
+    const pendingChanges = async () =>
+        ((await (await adminGet('/api/changes')).json()) as { changes: { items: unknown[] } })
+            .changes.items;
 
     it('should list publishes newest first and mark the current one', async () => {
         const list = await history();
@@ -304,32 +315,87 @@ describe('GET /api/publishes + rollback', () => {
         ]);
     });
 
-    it('should apply the ID guard to a rollback too', async () => {
+    it('should keep episodes added later (no 409): only the listed status is restored', async () => {
         const response = await adminPost('/api/publishes/1/rollback');
-        expect(response.status).toBe(409);
-        expect(await response.json()).toMatchObject({ missing: ['drama:golden:season-1:4'] });
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ unchanged: true });
+        expect(await stored('dramas', 'golden')).toEqual(drama(4));
     });
 
-    it('should republish the old snapshot as a new publish with force', async () => {
-        const response = await adminPost('/api/publishes/1/rollback?force=1');
+    it('should relist A and unlist what was added after #1 (the user example)', async () => {
+        // #3：劇 A（golden）下架、A 加咗短篇 season-2；新劇 later 嘅短篇 B 上架
+        const later = drama(4);
+        const arcB = { id: 'b', name: 'B', addedAt: '2026-10-25', episodes: 2 };
+        await putEntry('dramas', 'golden', {
+            ...later,
+            enabled: false,
+            arcs: [...(later.arcs as unknown[]), { ...arcB, id: 'season-2' }],
+        });
+        await putEntry('dramas', 'later', { ...drama(1), name: '新劇', arcs: [arcB] });
+        await putEntry('shows', 'newshow', { ...SHOW, name: '新節目' });
+        expect((await adminPost('/api/publish')).status).toBe(200);
+
+        const response = await adminPost('/api/publishes/1/rollback');
         expect(response.status).toBe(200);
-        expect((await publishedDocument()).dramas[0]?.definition).toEqual(drama(3));
-        const [latest, , first] = await history();
-        expect(latest).toMatchObject({ id: 3, rollbackOf: 1, episodeCount: 3, current: true });
-        expect(latest?.hash).toBe(first?.hash);
+        expect(await response.json()).toMatchObject({ publish: { id: 4, rollbackOf: 1 } });
+        const golden = await stored('dramas', 'golden');
+        expect(golden?.enabled).toBe(true);
+        expect((golden?.arcs as Record<string, unknown>[]).map((a) => [a.id, a.enabled])).toEqual([
+            ['season-1', undefined],
+            ['season-2', false],
+        ]);
+        expect((await stored('dramas', 'later'))?.enabled).toBe(false);
+        expect((await stored('shows', 'newshow'))?.enabled).toBe(false);
+        expect((await stored('shows', 'badgirl'))?.enabled).toBeUndefined();
+        // B 上過架（#3 鎖咗），落架之後集數 ID 仍然喺 document：ID 守衛過、仲鎖住
+        const ids = JSON.parse(
+            (await env.DB.prepare('SELECT episode_ids FROM publishes WHERE id = 4').first<string>(
+                'episode_ids',
+            )) ?? '[]',
+        ) as string[];
+        expect(ids).toContain('drama:later:b:1');
+        expect((await publishedDocument()).dramas.map((d) => d.id)).toContain('later');
+        expect(await pendingChanges()).toEqual([]);
+        const [latest] = await history();
+        expect(latest).toMatchObject({ id: 4, rollbackOf: 1, current: true });
+    });
+
+    it('should bump updated_at (ETag) of the entries it changes and leave drafts alone', async () => {
+        await putEntry('dramas', 'golden', { ...drama(4), enabled: false });
+        await putEntry('dramas', 'draft-one', { ...drama(1), enabled: false });
+        await markDraft('dramas', 'draft-one');
+        await adminPost('/api/publish');
+        const before = await env.DB.prepare(
+            "SELECT id, updated_at, definition FROM entries WHERE kind = 'dramas' ORDER BY id",
+        ).all<{ id: string; updated_at: string; definition: string }>();
+        expect((await adminPost('/api/publishes/1/rollback')).status).toBe(200);
+        const after = await env.DB.prepare(
+            "SELECT id, updated_at, definition FROM entries WHERE kind = 'dramas' ORDER BY id",
+        ).all<{ id: string; updated_at: string; definition: string }>();
+        const [draftBefore, goldenBefore] = before.results;
+        const [draftAfter, goldenAfter] = after.results;
+        expect(draftAfter).toEqual(draftBefore);
+        expect(goldenAfter?.updated_at).not.toBe(goldenBefore?.updated_at);
+    });
+
+    it('should put D1 back when writing the catalog fails', async () => {
+        await putEntry('dramas', 'golden', { ...drama(4), enabled: false });
+        await adminPost('/api/publish');
+        const failing = { ...env, CATALOG: { put: () => Promise.reject(new Error('R2 down')) } };
+        const { rollbackToPublish } = await import('../src/catalog/rollback');
+        await expect(
+            rollbackToPublish(failing as unknown as typeof env, 1, {
+                createdBy: 'x',
+                force: false,
+            }),
+        ).rejects.toThrow('R2 down');
+        expect((await stored('dramas', 'golden'))?.enabled).toBe(false);
+        expect(await pendingChanges()).toEqual([]);
     });
 
     it('should answer 404 for an unknown publish', async () => {
         expect((await adminPost('/api/publishes/99/rollback')).status).toBe(404);
         expect((await adminPost('/api/publishes/abc/rollback')).status).toBe(404);
-    });
-
-    it('should keep D1 entries untouched', async () => {
-        await adminPost('/api/publishes/1/rollback?force=1');
-        const row = await env.DB.prepare(
-            "SELECT definition FROM entries WHERE id = 'golden'",
-        ).first<string>('definition');
-        expect(JSON.parse(row ?? '{}')).toEqual(drama(4));
     });
 
     it('should need the same origin', async () => {

@@ -29,12 +29,16 @@ export interface TodoRow {
     cells: Record<TodoColumn, TodoCell>;
 }
 
-/** 掃描派嘅 placeholder ID（drama-01、arc-01）：要人手改 */
-const PLACEHOLDER_ID = /^(drama|arc)-\d+$/;
+/** 掃描派嘅劇 ID（drama-01）：admin 確認（confirm-id）或者改咗名先算搞掂 */
+const PLACEHOLDER_DRAMA_ID = /^drama-\d+$/;
+/** 3c 之前掃描派嘅短篇 placeholder（arc-01）：一定要改 */
+const LEGACY_ARC_ID = /^arc-\d+$/;
 const NA: TodoCell = { state: 'na' };
 
 interface TodoContext {
     entry: StoredEntry;
+    /** 呢個 finding 嘅 ID 已經由 admin 確認（POST /api/todos/confirm-id） */
+    idConfirmed?: boolean;
     definition: Json;
     images: Json;
     /** 有排程規則嘅 arc id */
@@ -57,16 +61,19 @@ const dramaRow = ({
     definition,
     images,
     scheduled: rules,
+    idConfirmed = false,
 }: TodoContext): Record<TodoColumn, TodoCell> => {
     const base = `/dramas/${entry.id}`;
-    const placeholders = [entry.id, ...arcsOf(definition).map((arc) => arc.id)].some(
-        (id) => typeof id === 'string' && PLACEHOLDER_ID.test(id),
+    // 改咗名（唔再係 drama-NN）都算確認；短篇 ID 跟劇 ID 編號，改劇 ID 時一齊改（rename）
+    const dramaIdOk = idConfirmed || !PLACEHOLDER_DRAMA_ID.test(entry.id);
+    const legacyArcs = arcsOf(definition).some(
+        (arc) => typeof arc.id === 'string' && LEGACY_ARC_ID.test(arc.id),
     );
     // 掃描建嘅劇 addedAt = 掃描當日，唔算排咗期：要上架（enabled）或者有排程規則
     const scheduled = definition.enabled === true || rules.size > 0;
     return {
         folder: cell(true, 'must', `${base}#folder`),
-        id: cell(!placeholders, 'must', base),
+        id: cell(dramaIdOk && !legacyArcs, 'must', base),
         images: cell(
             hasImage(images, definition.tile) && hasImage(images, definition.disc),
             'must',
@@ -77,12 +84,23 @@ const dramaRow = ({
     };
 };
 
-const arcRow = (ctx: TodoContext, arc: Json): Record<TodoColumn, TodoCell> => {
+/**
+ * 新短篇 ID：掃描自動編號（<劇 ID>-NN），admin 確認（confirm-id）先算搞掂；
+ * 改咗（同 finding 記低嘅自動 ID 唔同）都算確認
+ */
+const arcIdDone = (ctx: TodoContext, arcId: string, scannedId: string | null): boolean =>
+    ctx.idConfirmed === true || (arcId !== scannedId && !LEGACY_ARC_ID.test(arcId));
+
+const arcRow = (
+    ctx: TodoContext,
+    arc: Json,
+    scannedId: string | null,
+): Record<TodoColumn, TodoCell> => {
     const arcId = String(arc.id ?? '');
     const target = `/dramas/${ctx.entry.id}/arcs#${arcId}`;
     return {
         folder: NA,
-        id: cell(!PLACEHOLDER_ID.test(arcId), 'must', target),
+        id: cell(arcIdDone(ctx, arcId, scannedId), 'must', target),
         images: cell(hasImage(ctx.images, arc.disc), 'optional', target),
         schedule: cell(
             arc.enabled !== false || ctx.scheduled.has(arcId),
@@ -114,14 +132,15 @@ const missingFolderRow = (ctx: TodoContext): Record<TodoColumn, TodoCell> => ({
 });
 
 const cellsOf = (
-    kind: FindingKind,
+    finding: FindingRow,
     ctx: TodoContext,
     arc: Json | undefined,
     arcId: string | null,
 ) => {
+    const { kind } = finding;
     if (kind === 'newDrama') return dramaRow(ctx);
     if (kind === 'missingFolder') return missingFolderRow(ctx);
-    if (kind === 'newArc') return arc ? arcRow(ctx, arc) : undefined;
+    if (kind === 'newArc') return arc ? arcRow(ctx, arc, finding.arc_id) : undefined;
     return episodesRow(ctx, arcId);
 };
 
@@ -136,17 +155,22 @@ const nameOf = (definition: Json, arc: Json | undefined): string => {
  * finding 指嘅短篇：用 detail.arc（短篇 name = R2 子資料夾，永遠唔改）對，arc_id 係 placeholder，
  * admin 改咗 ID 就對唔到（C-013）；舊 / 冇 detail.arc 嘅 finding 先 fallback 用 arc_id
  */
-const arcOfFinding = (finding: FindingRow, definition: Json): Json | undefined => {
+export const arcOfFinding = (finding: FindingRow, definition: Json): Json | undefined => {
     const detail = JSON.parse(finding.detail) as Json;
     const arcs = arcsOf(definition);
     if (typeof detail.arc === 'string') return arcs.find((a) => a.name === detail.arc);
     return arcs.find((a) => a.id === finding.arc_id);
 };
 
-const rowOf = (finding: FindingRow, ctx: TodoContext): TodoRow | undefined => {
+/** finding.detail.idConfirmed（confirm-id 寫） */
+export const isIdConfirmed = (finding: FindingRow): boolean =>
+    (JSON.parse(finding.detail) as Json).idConfirmed === true;
+
+const rowOf = (finding: FindingRow, base: TodoContext): TodoRow | undefined => {
+    const ctx = { ...base, idConfirmed: isIdConfirmed(finding) };
     const arc = arcOfFinding(finding, ctx.definition);
     const arcId = typeof arc?.id === 'string' ? arc.id : finding.arc_id;
-    const cells = cellsOf(finding.kind, ctx, arc, arcId);
+    const cells = cellsOf(finding, ctx, arc, arcId);
     if (!cells) return undefined;
     const row = { kind: finding.kind, findingIds: [finding.id], dramaId: finding.drama_id };
     return { ...row, arcId, name: nameOf(ctx.definition, arc), cells };

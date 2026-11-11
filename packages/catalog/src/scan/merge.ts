@@ -2,6 +2,7 @@
  * 同現有 drama.json 合併：集數部份以 folder 為準，人手欄位（id、圖、addedAt、人手補嘅集名）照留，
  * folder 冇嘅短篇 / 日子保留兼提示；有變就出 [資料]，唔好靜靜雞改
  */
+import { ID_PATTERN } from '../core/reader';
 import { renderFileName } from '../dramas/filename';
 import {
     arcEpisodeFile,
@@ -179,25 +180,35 @@ export const mergeDaily = (
     return merged.sort((a, b) => b.date.localeCompare(a.date));
 };
 
-const placeholderArcId = (n: number): string =>
-    `${PLACEHOLDER_ARC_PREFIX}${String(n).padStart(PLACEHOLDER_ARC_WIDTH, '0')}`;
+const numbered = (prefix: string, n: number): string =>
+    `${prefix}${String(n).padStart(PLACEHOLDER_ARC_WIDTH, '0')}`;
 
 /**
- * 冇 id 嘅短篇（新短篇）派 placeholder id（避開已經用咗嘅），逐個出 TODO 提示人手改：
- * id 係 episode ID（進度 / 收藏 key）嘅一部份，發佈之後唔可以再改
+ * 冇 id 嘅短篇（新短篇）自動派 id（避開已經用咗嘅），逐個出 TODO 提示人手確認：
+ * id 係 episode ID（進度 / 收藏 key）嘅一部份，發佈之後唔可以再改。
+ * 知道劇 ID（合 ID_PATTERN）就用「<劇 ID>-NN」，號碼由已有 id 嘅短篇數 + 1 起（例如 lancy-04，Phase 3c）；
+ * 唔知（CLI 冇 --id）就照舊 arc-NN
  */
-export const withArcIds = (arcs: readonly DraftArc[], issues: Issue[]): DraftArc[] => {
+export const withArcIds = (
+    arcs: readonly DraftArc[],
+    issues: Issue[],
+    dramaId?: string,
+): DraftArc[] => {
     const used = new Set(arcs.flatMap((arc) => (arc.id === undefined ? [] : [arc.id])));
-    let n = 0;
+    const known = dramaId !== undefined && ID_PATTERN.test(dramaId);
+    const prefix = known ? `${dramaId}-` : PLACEHOLDER_ARC_PREFIX;
+    let n = known ? used.size : 0;
     const nextFree = () => {
         do n += 1;
-        while (used.has(placeholderArcId(n)));
-        return placeholderArcId(n);
+        while (used.has(numbered(prefix, n)));
+        return numbered(prefix, n);
     };
     return arcs.map((arc) => {
         if (arc.id !== undefined) return arc;
         const id = nextFree();
-        const message = `TODO：id「${id}」係 placeholder，請改做英文 slug（有圖就用 arcs/<slug>/ folder 名）；發佈之後唔可以再改`;
+        const message = known
+            ? `TODO：id「${id}」係自動編號，請喺 admin 確認或修改；發佈之後唔可以再改`
+            : `TODO：id「${id}」係 placeholder，請改做英文 slug（有圖就用 arcs/<slug>/ folder 名）；發佈之後唔可以再改`;
         issues.push(issue('warn', arc.name, message));
         return { id, ...arc };
     });

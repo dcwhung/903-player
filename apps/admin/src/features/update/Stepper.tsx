@@ -1,4 +1,4 @@
-/* 更新內容 stepper：掃描 R2（自動）→ 處理待辦 → 確認發佈（mockup .stepper） */
+/* 更新 stepper：掃描 R2（自動）→ 處理待辦 → 確認發佈（mockup .stepper） */
 import { Check } from 'lucide-react';
 import { t, type MessageKey } from '../../i18n/t';
 

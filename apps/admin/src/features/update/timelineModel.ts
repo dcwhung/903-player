@@ -29,6 +29,20 @@ export const countPills = (summary: ChangeSummary): { kind: ChangeKind; label: s
         return count > 0 ? [{ kind, label: t(key, { count }) }] : [];
     });
 
+/** 確認發佈統計卡：新增（節目 / 劇 / 短篇）、新集數、修改、下架 */
+export const publishStats = (summary: ChangeSummary) => {
+    const count = (kinds: readonly ChangeKind[]) =>
+        summary.items.filter((item) => kinds.includes(item.kind)).length;
+    return {
+        added: count(['newShow', 'newDrama', 'newArc']),
+        episodes: summary.items
+            .filter((item) => item.kind === 'newEpisodes')
+            .reduce((sum, item) => sum + episodesIn(item), 0),
+        edits: count(['edit']),
+        unlists: count(['unlist']),
+    };
+};
+
 export const whenLabel = (when: ChangeWhen): string =>
     when === 'now' ? t('publish.now') : shortDate(when);
 

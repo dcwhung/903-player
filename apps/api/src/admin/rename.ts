@@ -1,7 +1,8 @@
 /*
  * POST /api/entries/dramas/:id/rename { newId }：改劇集 ID（掃描派嘅 drama-NN → 有意思嘅 ID）。
  * 只限從未發佈（ID 係 episode ID 嘅一部份，發佈咗改就冇晒用戶進度）→ 否則 409；
- * entries PK + schedules.drama_id + scan_findings 一個 batch 改
+ * entries PK + schedules.drama_id + scan_findings 一個 batch 改。
+ * 掃描跟劇 ID 自動編號嘅短篇 ID（<舊 ID>-NN，Phase 3c）一齊改做 <新 ID>-NN（definition、schedules、findings）
  */
 import { ID_PATTERN } from '@903-player/catalog';
 import { Hono, type Context } from 'hono';
@@ -12,6 +13,8 @@ import { etagOf, expectedVersion, nextUpdatedAt } from '../content/etag';
 import {
     badTarget,
     errorResponse,
+    isRecord,
+    type Json,
     preconditionFailed,
     readJsonObject,
     targetOf,
@@ -36,6 +39,43 @@ export const wasEverPublished = async (db: D1Database, id: string): Promise<bool
     return row !== null;
 };
 
+/** 自動編號短篇 ID：<劇 ID>-NN（兩位數） */
+const AUTO_ARC_SUFFIX = /^-\d{2}$/;
+
+/** <from>-NN → <to>-NN；其他 ID 唔郁 */
+export const renamedArcId = (arcId: string, from: string, to: string): string =>
+    arcId.startsWith(from) && AUTO_ARC_SUFFIX.test(arcId.slice(from.length))
+        ? `${to}${arcId.slice(from.length)}`
+        : arcId;
+
+export const withRenamedArcIds = (definition: Json, from: string, to: string): Json =>
+    Array.isArray(definition.arcs)
+        ? {
+              ...definition,
+              arcs: (definition.arcs as unknown[]).map((arc) =>
+                  isRecord(arc) && typeof arc.id === 'string'
+                      ? { ...arc, id: renamedArcId(arc.id, from, to) }
+                      : arc,
+              ),
+          }
+        : definition;
+
+/** SQL：arc_id 係 <from>-NN 就換頭（ID 只有細楷英數同 -，GLOB 唔會撞通配） */
+const ARC_ID_SQL = `CASE WHEN arc_id GLOB ? THEN ? || substr(arc_id, ?) ELSE arc_id END`;
+const arcIdBinds = (from: string, to: string) => [`${from}-[0-9][0-9]`, to, from.length + 1];
+
+/** findings 嘅 arc_id（自動編號）跟住改；要喺 drama_id 改之前 */
+const renameFindingArcsStatement = (
+    db: D1Database,
+    { from, to, updatedAt }: { from: string; to: string; updatedAt: string },
+) =>
+    db
+        .prepare(
+            `UPDATE scan_findings SET arc_id = ${ARC_ID_SQL} WHERE drama_id = ? AND arc_id IS NOT NULL
+             AND EXISTS (SELECT 1 FROM entries WHERE kind = 'dramas' AND id = ? AND updated_at = ?)`,
+        )
+        .bind(...arcIdBinds(from, to), from, to, updatedAt);
+
 const renameStatements = (
     db: D1Database,
     {
@@ -43,24 +83,44 @@ const renameStatements = (
         to,
         expected,
         updatedAt,
-    }: { from: string; to: string; expected: string; updatedAt: string },
+        definition,
+    }: { from: string; to: string; expected: string; updatedAt: string; definition: string },
 ) => [
     db
         .prepare(
-            `UPDATE entries SET id = ?, updated_at = ? WHERE kind = 'dramas' AND id = ? AND updated_at = ?`,
+            `UPDATE entries SET id = ?, definition = ?, updated_at = ?
+             WHERE kind = 'dramas' AND id = ? AND updated_at = ?`,
         )
-        .bind(to, updatedAt, from, expected),
+        .bind(to, definition, updatedAt, from, expected),
     // 上一句真係改咗先跟住改（樂觀鎖輸咗就乜都唔郁）
     db
         .prepare(
-            `UPDATE schedules SET drama_id = ? WHERE drama_id = ? AND EXISTS
+            `UPDATE schedules SET drama_id = ?, arc_id = ${ARC_ID_SQL} WHERE drama_id = ? AND EXISTS
              (SELECT 1 FROM entries WHERE kind = 'dramas' AND id = ? AND updated_at = ?)`,
         )
-        .bind(to, from, to, updatedAt),
+        .bind(to, ...arcIdBinds(from, to), from, to, updatedAt),
+    renameFindingArcsStatement(db, { from, to, updatedAt }),
     renameFindingsStatement(db, from, to, updatedAt),
 ];
 
-/** 改得先回現有 entry：404 / 412 / 409（發佈過、新 ID 已經有） */
+/** 改名後重複嘅短篇 ID（<舊 ID>-NN 跟住改，可能撞同劇已有嘅 <新 ID>-NN，W-711）；冇就 undefined */
+export const duplicateArcIdAfterRename = (
+    definition: Json,
+    from: string,
+    to: string,
+): string | undefined => {
+    const ids = (withRenamedArcIds(definition, from, to).arcs as unknown[] | undefined) ?? [];
+    const seen = new Set<string>();
+    for (const arc of ids) {
+        const id = isRecord(arc) && typeof arc.id === 'string' ? arc.id : undefined;
+        if (id === undefined) continue;
+        if (seen.has(id)) return id;
+        seen.add(id);
+    }
+    return undefined;
+};
+
+/** 改得先回現有 entry：404 / 412 / 409（發佈過、新 ID 已經有、改名後短篇 ID 重複） */
 const renamable = async (c: Context<AppEnv>, id: string, newId: string) => {
     const existing = await getEntry(c.env.DB, 'dramas', id);
     if (!existing) return errorResponse(c, HTTP_STATUS.notFound, 'no such entry');
@@ -70,6 +130,14 @@ const renamable = async (c: Context<AppEnv>, id: string, newId: string) => {
         return errorResponse(c, HTTP_STATUS.conflict, 'published dramas cannot change their id');
     if (newId !== id && (await getEntry(c.env.DB, 'dramas', newId)))
         return errorResponse(c, HTTP_STATUS.conflict, `drama ${newId} already exists`);
+    const duplicate = duplicateArcIdAfterRename(JSON.parse(existing.definition) as Json, id, newId);
+    if (duplicate !== undefined)
+        return errorResponse(
+            c,
+            HTTP_STATUS.conflict,
+            `arc id ${duplicate} would exist twice after the rename`,
+            { arcId: duplicate },
+        );
     return existing;
 };
 
@@ -93,6 +161,9 @@ renameRoutes.post('/entries/dramas/:id/rename', async (c) => {
             to: newId,
             expected: existing.updated_at,
             updatedAt,
+            definition: JSON.stringify(
+                withRenamedArcIds(JSON.parse(existing.definition) as Json, target.id, newId),
+            ),
         }),
     );
     if ((renamed?.meta.changes ?? 0) === 0) return preconditionFailed(c);

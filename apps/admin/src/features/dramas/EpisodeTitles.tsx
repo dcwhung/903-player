@@ -1,5 +1,6 @@
 /*
- * 各集標題 textarea：每行「第 X 集 ｜ 標題」（formatTitles / parseTitles），錯誤指明第幾行
+ * 各集標題 textarea：每行「第 X 集 ｜ 標題」（formatTitles / parseTitles），錯誤指明第幾行；
+ * 3c：唔再收埋，textarea 跟內容自動高（field-sizing: content；唔支援嘅 browser 用行數做 rows）
  * Design Origin: mockup: _mockups_/admin/index.html#s5（textarea.ep-titles）
  */
 import { formatTitles, parseTitles, type TitledArc } from '@903-player/catalog';
@@ -28,11 +29,11 @@ export function EpisodeTitles({ arc, onTitles, onErrors }: EpisodeTitlesProps) {
         if (parsed.errors.length === 0) onTitles(parsed.titles);
     };
     return (
-        <details open>
-            <summary className="small">{t('drama.titles', { count })}</summary>
+        <div className="field wide">
+            <span>{t('drama.titles', { count })}</span>
             <textarea
-                className="ep-titles"
-                rows={8}
+                className="ep-titles autosize"
+                rows={Math.max(2, text.split('\n').length)}
                 spellCheck={false}
                 aria-label={t('fields.titles')}
                 placeholder={t('drama.titlesPlaceholder')}
@@ -51,6 +52,6 @@ export function EpisodeTitles({ arc, onTitles, onErrors }: EpisodeTitlesProps) {
                     ))}
                 </ul>
             )}
-        </details>
+        </div>
     );
 }

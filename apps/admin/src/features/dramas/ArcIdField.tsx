@@ -6,10 +6,12 @@ import { IdField, idProblem } from '../editor/IdField';
 interface ArcIdFieldProps {
     arcId: string;
     editable: boolean;
+    /** 掃描自動編號（<劇 ID>-NN）、未確認 */
+    unconfirmed: boolean;
     onCommit: (id: string) => void;
 }
 
-export function ArcIdField({ arcId, editable, onCommit }: ArcIdFieldProps) {
+export function ArcIdField({ arcId, editable, unconfirmed, onCommit }: ArcIdFieldProps) {
     const [text, setText] = useState(arcId);
     const commit = () => {
         if (text !== arcId && !idProblem(text)) onCommit(text);
@@ -20,7 +22,14 @@ export function ArcIdField({ arcId, editable, onCommit }: ArcIdFieldProps) {
                 label={t('drama.arcId')}
                 value={editable ? text : arcId}
                 editable={editable}
-                tip={editable ? t('editor.idNewTip') : t('editor.idLockedTip')}
+                tip={
+                    unconfirmed
+                        ? t('editor.idAutoTip')
+                        : editable
+                          ? t('editor.idNewTip')
+                          : t('editor.idLockedTip')
+                }
+                unconfirmed={unconfirmed && text === arcId}
                 onChange={setText}
             />
         </div>

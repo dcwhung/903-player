@@ -1,4 +1,5 @@
-/* 確認發佈頁底：發佈結果（擋住 / 失敗 / 冇改）+ ← 返回待辦 + 大「發佈」掣 */
+/* 確認發佈頁底：發佈結果（擋住 / 失敗 / 冇改）+ 返回待辦 + 大「發佈」掣（左邊 outline icon，mockup admin-style ④） */
+import { ArrowLeft, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { t } from '../../i18n/t';
 import { PublishBlocked } from './PublishBlocked';
@@ -21,7 +22,8 @@ export function PublishActions({ state, canPublish, onPublish }: PublishActionsP
                 </p>
             )}
             <div className="savebar">
-                <Link className="small back-link" to="/">
+                <Link className="btn back-link" to="/">
+                    <ArrowLeft aria-hidden="true" />
                     {t('publish.backToTodos')}
                 </Link>
                 <button
@@ -30,6 +32,7 @@ export function PublishActions({ state, canPublish, onPublish }: PublishActionsP
                     disabled={!canPublish || busy}
                     onClick={onPublish}
                 >
+                    <Send aria-hidden="true" />
                     {busy ? t('publish.publishing') : t('publish.publish')}
                 </button>
             </div>

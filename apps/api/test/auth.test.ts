@@ -127,7 +127,17 @@ describe('GET /auth/google/callback', () => {
         mockGoogle(googleClaims('someone@gmail.com'));
         const response = await callback(location.searchParams.get('state') ?? '', cookie);
         expect(response.status).toBe(403);
-        expect(await response.text()).toContain('someone@gmail.com');
+        const page = await response.text();
+        expect(page).toContain('someone@gmail.com');
+        // 3c 版式（書面語 + admin banner + 版本 pill），樣式 inline、自己一個檔
+        expect(page).toContain('沒有權限');
+        expect(page).toContain('並非管理員。');
+        expect(page).toContain('src="/banner.webp"');
+        expect(page).toContain('Admin v0.6.0');
+        expect(page).not.toMatch(/<link[^>]+\.css/);
+        // admin 揀咗嘅淺 / 深色（同一個 localStorage key）
+        expect(page).toContain("localStorage.getItem('admin.theme')");
+        expect(page).toContain(":root[data-theme='dark']");
         expect(cookiePair(response, '__Host-session')).toBeUndefined();
         const count = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions').first('n');
         expect(count).toBe(0);

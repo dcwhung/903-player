@@ -1,20 +1,24 @@
 /*
- * 短篇原位編輯（同展開嗰行同一個底色）：ID + 上架 / 下架 → 簡介 → 聲演 → 虛線框 R2（子資料夾、集數、各集標題）；圖片喺右邊
- * Design Origin: mockup: _mockups_/admin/index.html#s5（.arc-editor）
+ * 短篇原位編輯（同展開嗰行同一個底色）：名稱 → ID + 狀態（未排期 pill 喺 label 隔籬）→ 簡介 → 聲演 →
+ * 虛線框 R2（資料夾、集數、各集標題）；Banner / 碟面喺右邊
+ * Design Origin: mockup: _mockups_/admin-style/index.html#e（.arc-body）；結構 mockup: _mockups_/admin/index.html#s5
  */
+import { hkToday } from '@903-player/catalog';
 import { useCallback, useId } from 'react';
 import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
-import { countOf, str, strList } from '../../model/raw';
+import { str, strList } from '../../model/raw';
+import { arcStatusOf } from '../../model/status';
+import { Pill } from '../../ui/Pill';
+import { Tip } from '../../ui/Tip';
 import { Chips } from '../../ui/Chips';
 import { Toggle } from '../../ui/Toggle';
 import { MediaAside } from '../editor/MediaAside';
 import { withOptional } from '../shows/showModel';
 import { SummaryField } from '../editor/SummaryField';
 import { ArcIdField } from './ArcIdField';
-import { updateArc, withTitles } from './dramaModel';
-import { EpisodeTitles } from './EpisodeTitles';
-import { ReadonlyValue, ScanBox } from './ScanBox';
+import { updateArc } from './dramaModel';
+import { ArcScanBox } from './ArcScanBox';
 import type { DramaEditorState } from './useDramaEditor';
 
 export function ArcEditor({
@@ -44,6 +48,7 @@ export function ArcEditor({
                 onUploaded={(slot, name) => state.saveImage(slot, name, arcId)}
             />
             <div className="form">
+                <ArcNameField arc={arc} set={set} />
                 <ArcHead state={state} arc={arc} arcId={arcId} set={set} onIdChange={onIdChange} />
                 <SummaryField target={arc} onChange={set} />
                 <div className="field wide">
@@ -60,7 +65,28 @@ export function ArcEditor({
     );
 }
 
-type SetArc = (update: (arc: RawDefinition) => RawDefinition) => void;
+export type SetArc = (update: (arc: RawDefinition) => RawDefinition) => void;
+
+/** 名稱 = 播放器顯示名（displayName）；R2 資料夾名（name）唔改 */
+function ArcNameField({ arc, set }: { arc: RawDefinition; set: SetArc }) {
+    return (
+        <label className="field wide arc-name">
+            <span>
+                {t('drama.arcName')} <Tip text={t('drama.arcNameTip')} />
+            </span>
+            <input
+                type="text"
+                value={str(arc, 'displayName') ?? str(arc, 'name') ?? ''}
+                onChange={(e) => set((a) => withOptional(a, 'displayName', e.target.value))}
+            />
+        </label>
+    );
+}
+
+/** 「未排期」pill：新短篇下架又未排程 */
+const unscheduledOf = (state: DramaEditorState, arc: RawDefinition, arcId: string) =>
+    arcStatusOf(state.editor.draft?.definition ?? {}, arc, hkToday(), state.isNewArc(arcId))
+        .text === t('status.unscheduled');
 
 function ArcHead({
     state,
@@ -81,14 +107,20 @@ function ArcHead({
             <div className="row3">
                 <ArcIdField
                     arcId={arcId}
-                    editable={state.isNewArc(arcId)}
+                    editable={state.isNewArc(arcId) || state.isArcIdUnconfirmed(arcId)}
+                    unconfirmed={state.isArcIdUnconfirmed(arcId)}
                     onCommit={(id) => {
                         set((a) => ({ ...a, id }));
                         onIdChange(id);
                     }}
                 />
                 <div className="field">
-                    <span id={statusId}>{t('editor.status')}</span>
+                    <span className="label-line">
+                        <span id={statusId}>{t('editor.status')}</span>
+                        {unscheduledOf(state, arc, arcId) && (
+                            <Pill tone="warn">{t('status.unscheduled')}</Pill>
+                        )}
+                    </span>
                     <Toggle
                         on={arc.enabled !== false}
                         labelledBy={statusId}
@@ -97,42 +129,5 @@ function ArcHead({
                 </div>
             </div>
         </div>
-    );
-}
-
-function ArcScanBox({
-    state,
-    arc,
-    set,
-    onErrors,
-}: {
-    state: DramaEditorState;
-    arc: RawDefinition;
-    set: SetArc;
-    onErrors: (count: number) => void;
-}) {
-    return (
-        <ScanBox
-            busy={state.rescan.busy}
-            message={state.rescan.message}
-            onRescan={() => void state.rescan.run()}
-        >
-            <div className="row3">
-                <ReadonlyValue
-                    label={t('drama.subFolder')}
-                    value={`${str(arc, 'name') ?? ''}/`}
-                    code
-                />
-                <ReadonlyValue
-                    label={t('drama.episodeCount')}
-                    value={t('list.episodes', { count: countOf(arc) })}
-                />
-            </div>
-            <EpisodeTitles
-                arc={arc}
-                onTitles={(titles) => set((a) => withTitles(a, titles))}
-                onErrors={onErrors}
-            />
-        </ScanBox>
     );
 }

@@ -1344,28 +1344,6 @@ fieldset.scan-box {
 .hist-row .changes .meta {
     flex-basis: 100%;
 }
-.rotate-note {
-    min-height: 420px;
-    display: grid;
-    place-content: center;
-    justify-items: center;
-    gap: 8px;
-    padding: 32px 24px;
-    text-align: center;
-    background: var(--bg);
-}
-.rotate-note h2 {
-    margin: 0;
-    font-size: 18px;
-}
-.rotate-note p {
-    margin: 0;
-    max-width: 260px;
-}
-.rotate-icon {
-    font-size: 44px;
-    color: var(--accent);
-}
 .arc-editor {
     margin: 0;
     border: 0;
@@ -1441,15 +1419,6 @@ table.batches tr.past td {
 }
 .hist-row .changes .name {
     font-weight: 600;
-}
-.hist-row .status {
-    display: flex;
-    justify-content: flex-start;
-}
-.hist-row .status button {
-    padding: 1px 10px;
-    font-size: 12px;
-    border-radius: 999px;
 }
 textarea.ep-titles {
     margin-top: 8px;

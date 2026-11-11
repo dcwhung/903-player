@@ -85,6 +85,15 @@ describe('generateDraft — new series drama', () => {
         expect(messagesOf(result.issues, 'warn')).toContain('甲：TODO：id「arc-01」係 placeholder');
     });
 
+    it('should number new arcs after the drama id when the id is known (Phase 3c)', () => {
+        const result = build([episodeFile('甲', 1), episodeFile('乙', 1)], 'lancy');
+        expect((jsonOf(result).arcs as Json[]).map((arc) => arc.id)).toEqual([
+            'lancy-01',
+            'lancy-02',
+        ]);
+        expect(messagesOf(result.issues, 'warn')).toContain('乙：TODO：id「lancy-01」係自動編號');
+    });
+
     it('should produce JSON the app accepts, with every URL pointing at a listed file', () => {
         const files = [
             ...range(1, 3).map((n) => episodeFile('森之愛情II - 電燈膽', n)),
@@ -223,6 +232,25 @@ describe('generateDraft — merging with an existing definition', () => {
         expect(messagesOf(result.issues, 'warn')).toContain('已走：本機 folder 冇呢個短篇');
         expect(messagesOf(result.issues, 'info')).toContain('甲：集數由 1 變 2');
         expect(messagesOf(result.issues, 'info')).toContain('新：新短篇');
+    });
+
+    it('should number a new arc <dramaId>-NN after the existing arcs, skipping used ids', () => {
+        const paths = [episodeFile('甲', 1), episodeFile('乙', 1), episodeFile('新', 1)];
+        const base = jsonOf(draft(paths.slice(0, 2)));
+        const arcs = [
+            { id: 'first', name: '甲', episodes: 1 },
+            { id: 'lancy-03', name: '乙', episodes: 1 },
+        ];
+        const result = generateDraft(listingOf(DRAMA, paths), {
+            id: 'lancy',
+            existing: { ...base, arcs },
+            today: TODAY,
+        });
+        expect((jsonOf(result).arcs as Json[]).map((arc) => arc.id)).toEqual([
+            'first',
+            'lancy-03',
+            'lancy-04',
+        ]);
     });
 
     it('should keep arc removedAt / episodeDates / episodeRemovedAt from the existing definition (W-705)', () => {

@@ -11,11 +11,11 @@ import {
     validateDocument,
     type PublishOutcome,
 } from './publish';
+import { RollbackConflictError, rollbackToPublish } from './rollback';
 import {
     listAssetHashes,
     listEntries,
     listPublishes,
-    publishDocument,
     publishDocuments,
     type PublishRow,
 } from './store';
@@ -47,22 +47,18 @@ const respond = (c: Context<AppEnv>, outcome: PublishOutcome) => {
     return c.json({ ...unchanged, publish: summary(outcome.publish, true) });
 };
 
-/** 驗證 / commit；validator 拒絕 → 422 連原因 */
-const publishValue = async (
-    c: Context<AppEnv>,
-    value: () => Promise<unknown>,
-    rollbackOf: number | null,
-) => {
+/** 普通 publish：驗證 / commit；validator 拒絕 → 422 連原因（還原見 rollback.ts） */
+const publishValue = async (c: Context<AppEnv>, value: () => Promise<unknown>) => {
     try {
         const validated = validateDocument(await value());
         const options = {
             createdBy: c.get('email'),
             force: c.req.query('force') === '1',
-            rollbackOf,
+            rollbackOf: null,
         };
         const outcome = await commitPublish(c.env, validated, options);
-        // 普通 publish 成功：搞掂咗嘅掃描 finding 標 resolved（還原唔算）
-        if (outcome.kind === 'published' && rollbackOf === null)
+        // publish 成功：搞掂咗嘅掃描 finding 標 resolved（還原唔算）
+        if (outcome.kind === 'published')
             // 已經上咗線：標唔到只係待辦行留低，唔好令 publish 回 500
             await resolveDoneFindings(c.env.DB, outcome.publish.id).catch((error: unknown) =>
                 console.error(`publish ${outcome.publish.id}: could not resolve findings`, error),
@@ -77,15 +73,12 @@ const publishValue = async (
 export const publishRoutes = new Hono<AppEnv>();
 
 publishRoutes.post('/publish', (c) =>
-    publishValue(
-        c,
-        async () =>
-            documentFromEntries(await listEntries(c.env.DB), {
-                origin: c.env.WORKER_ORIGIN,
-                assets: await listAssetHashes(c.env.DB),
-                generatedAt: new Date().toISOString(),
-            }),
-        null,
+    publishValue(c, async () =>
+        documentFromEntries(await listEntries(c.env.DB), {
+            origin: c.env.WORKER_ORIGIN,
+            assets: await listAssetHashes(c.env.DB),
+            generatedAt: new Date().toISOString(),
+        }),
     ),
 );
 
@@ -106,10 +99,25 @@ publishRoutes.get('/publishes', async (c) => {
     });
 });
 
-/** 還原 = 重新 publish 舊 snapshot（記做新一行，D1 entries 唔郁），一樣行 ID 守衛 */
+/**
+ * 還原 #N：snapshot #N 嘅上架狀態寫返 D1（之後新增嘅下架），再經正常 publish 發佈（rollbackOf = N），
+ * 見 rollback.ts；驗證 / ID 守衛唔過乜都唔寫（422 / 409），途中有人改 entry → 412
+ */
 publishRoutes.post('/publishes/:id/rollback', async (c) => {
     const id = c.req.param('id');
-    const snapshot = POSITIVE_INT.test(id) ? await publishDocument(c.env.DB, Number(id)) : null;
-    if (!snapshot) return c.json({ error: 'no such publish' }, HTTP_STATUS.notFound);
-    return publishValue(c, async () => JSON.parse(snapshot) as unknown, Number(id));
+    if (!POSITIVE_INT.test(id)) return c.json({ error: 'no such publish' }, HTTP_STATUS.notFound);
+    try {
+        const outcome = await rollbackToPublish(c.env, Number(id), {
+            createdBy: c.get('email'),
+            force: c.req.query('force') === '1',
+        });
+        if (!outcome) return c.json({ error: 'no such publish' }, HTTP_STATUS.notFound);
+        return respond(c, outcome);
+    } catch (error) {
+        if (error instanceof PublishValidationError)
+            return c.json({ error: error.message }, HTTP_STATUS.unprocessable);
+        if (error instanceof RollbackConflictError)
+            return c.json({ error: error.message }, HTTP_STATUS.preconditionFailed);
+        throw error;
+    }
 });

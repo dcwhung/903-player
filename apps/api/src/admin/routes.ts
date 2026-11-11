@@ -2,6 +2,7 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { changeRoutes } from './changes';
+import { confirmIdRoutes } from './confirmId';
 import { folderRoutes } from './folders';
 import { orderRoutes } from './order';
 import { renameRoutes } from './rename';
@@ -12,6 +13,7 @@ export const adminRoutes = new Hono<AppEnv>();
 
 adminRoutes.route('/', adminScanRoutes);
 adminRoutes.route('/', todoRoutes);
+adminRoutes.route('/', confirmIdRoutes);
 adminRoutes.route('/', renameRoutes);
 adminRoutes.route('/', folderRoutes);
 adminRoutes.route('/', orderRoutes);

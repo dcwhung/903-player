@@ -193,3 +193,43 @@ run_worker_first = ["/api/*", "/auth/*", "/catalog/*"]
 - `npm test`（全部 projects）、`npm run lint`、`npx tsc -b`、`npm run e2e`（player）+ admin e2e
 - 3a deploy 後：`curl POST /api/scan` 冇新嘢時 findings 空；`GET /api/changes` 同最新 publish 比冇改動
 - 3b deploy 後（用戶手動）：login → 自動掃描 bar → 拖排序 → 改一個節目簡介 → 確認發佈 → 上下架記錄有新行 → player 60 秒內見到
+
+---
+
+## 3c：UI 樣式 + 3b 用後回饋（2026-11-11 grill，用戶確認）
+
+Design Origin：`mockup: _mockups_/admin-style/index.html`（樣式）+ `mockup: _mockups_/admin/index.html`（結構）。3a / 3b 已上線（api 0.5.0）。
+
+### 樣式決定
+
+| 項目           | 決定                                                                                                                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 主色           | banner 天藍 `#53a9e3`（高亮、淺底）；nav / 主按鈕用深一級 `#1e7bc0`（白字過 AA 4.5:1）                                                                                                      |
+| Nav            | 實色天藍 + 白字，揀中 = 白底天藍字；可收細（76px，只剩 icon + tooltip，banner 變圓形「903」logo，待辦數變小橙點）；手動收合掣（記住選擇）+ 視窗 < 約 1100px 自動收                          |
+| 內容 panel     | 四角 24px 圓角，浮喺 nav 色上面                                                                                                                                                             |
+| 卡片           | A：20px 圓角 + 柔和陰影、冇邊框；深色模式改細邊框（字色跟 token，唔可以睇唔到）                                                                                                             |
+| 統計           | 漸變色卡（新內容天藍、必須處理紅、選填橙、已完成綠），白字大數字 + icon                                                                                                                     |
+| 字體           | Poppins + Noto Sans TC（同 player）                                                                                                                                                         |
+| 按鈕           | 10px 圓角實色天藍 + 輕微陰影 + 左邊 outline icon（lucide）；發佈大一級；次要白底細框；危險紅                                                                                                |
+| Tooltip        | 自訂泡泡 + 箭咀，滑鼠唔變「?」；自動避開 nav / 視窗邊（唔可以被遮）                                                                                                                         |
+| 淺 / 深色      | 淺色為主設計，深色跟系統                                                                                                                                                                    |
+| 403 / 直向提示 | 同一版式：app banner（連 Admin pill）→ 插圖圓疊喺 banner 底 → 標題 → 一行說明 → 按鈕；書面語（「沒有權限」「xxx 並非管理員。」「使用其他 Google 帳戶登入」）；轉向 icon 直機 → 橫機單向箭咀 |
+
+### 功能 / 細節改動
+
+- **列表**：撳成行入編輯頁（節目、廣播劇）；節目 meta 有播放時間就顯示「星期一至五（15:00 - 16:30）」；節目表加圖例；廣播劇圖例改「（綠點）上架中 ·（藍點）上架日期未到 ·（紅點）已下架」、解釋「待發佈」=有已儲存未發佈改動、「新」=從未發佈嘅短篇，「拖曳調整播放器顯示次序」另起一行
+- **節目編輯**：播放時間加「設定播放時間」checkbox；未設定時唔顯示預設時間、唔寫 `airTime`
+- **短篇頁**：撳成行開 / 閂；ID 待確認時 ID 格同 label 一齊紅（唔再出「須設定 ID」字）；「未排期」pill 放喺「狀態」label 隔籬；簡介 placeholder「選填」；各集標題唔收埋、textarea 自動高度；Banner 排先、碟面排後，各大一倍（340×192 / 192px）；字眼「唱片」→「碟面」、「橫額」→「Banner」、「子資料夾」→「資料夾」；「重新掃描」掣喺虛線中間，「由 R2 掃描」14px
+- **新短篇 ID**：掃描自動用「劇 ID + 下一個兩位號碼」（例如 `lancy-04`）；仍然係「必須」，要 admin 親手確認（儲存嗰陣確認）先清
+- **圖片上載**：收 PNG / JPG / WebP；尺寸唔啱就置中裁切 + 縮放到標準尺寸，轉 WebP（Safari 冇 `toBlob('image/webp')` 就用 wasm encoder）；上載前出預覽 dialog；手動拖曳裁切留 Phase 4
+- **掃描 bar**：spinner + 文字靠左
+- **上下架記錄**：變更欄用晒欄闊（名同狀態唔再固定窄欄）；版本資訊時間同 admin 分兩行
+
+### API（api 0.5.0 → 0.6.0）
+
+- `packages/catalog` scan `withArcIds`：新短篇 ID = `<dramaId>-NN`（避開已用）
+- 待辦「ID」格：finding 記 `idConfirmed`；admin 儲存短篇 ID 時（就算冇改）call `POST /api/todos/confirm-id { dramaId, arcId }` → 該格變 ✓；`drama-NN` 新劇同樣規則
+
+### 流程
+
+`/feature`：Frontend Developer（+ 少量 catalog / api）→ Code Review → QA S1（`admin`、`api`、`catalog-data`）→ CI → merge → DevOps。

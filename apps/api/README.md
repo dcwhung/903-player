@@ -1,4 +1,4 @@
-# 903-player-api（Backend Phase 2a / 2b / 3a / 3b）
+# 903-player-api（Backend Phase 2a / 2b / 3a / 3b / 3c）
 
 Cloudflare Worker：管理 catalog 內容（D1）、publish `catalog.json`（R2）、代出 `catalog.json` 同圖畀 player。
 Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a、3b）。
@@ -12,7 +12,7 @@ Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans
 | `GET /api/me`                      | 而家 login 咗邊個                                                      | session                       |
 | `POST /api/publish[?force=1]`      | D1 → `catalog.json` → R2；ID 守衛（上次有、今次冇嘅 episode ID → 409） | session + same-origin         |
 | `GET /api/publishes`               | Publish 記錄（新到舊）+ `changes`（同上一次 ok publish 比）+ `error`   | session                       |
-| `POST /api/publishes/:id/rollback` | 重新 publish 舊 snapshot（記做新一行，一樣行 ID 守衛）                 | session + same-origin         |
+| `POST /api/publishes/:id/rollback` | 還原 #N 嘅上架狀態入 D1（之後新增嘅下架），再正常 publish（新一行）    | session + same-origin         |
 | 內容 API（2b-1，見下面）           | entries CRUD、R2 掃描、短篇排程（Phase 3 admin 用）                    | session（改嘢 + same-origin） |
 | Admin API（3a，見下面）            | 自動掃描、待辦、改 ID、資料夾配對、排序、變更摘要                      | session（改嘢 + same-origin） |
 | `PUT /api/assets`（2b-2，見下面）  | 上載 disc / tile（WebP）→ R2 + `assets`，回圖檔名                      | session + same-origin         |
@@ -123,7 +123,11 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 
 - Publish 用 D1 而家嘅 entries；player 最多 60 秒內讀到（Worker edge cache 喺 publish 時即刻清）
 - **ID 守衛**：上次 publish 有、今次冇嘅 episode ID → 拒絕（409 + 列出 ID）。聽緊嗰啲集嘅用戶會冇咗進度 / 收藏，確定先剔「照樣 publish」（`?force=1`）
-- 還原 = 重新寫舊 snapshot（新一行 publish，`rollback_of` 記住來源）；D1 entries 唔郁
+- **還原 #N**（3c）=「還原上架狀態，之後新增嘅變下架」：用 snapshot #N 改 D1，再行正常 publish（新一行，`rollback_of = N`），所以之後 `GET /api/changes` 冇差異、admin 唔會出「待發佈」
+    - 只改 `enabled`（節目、劇、短篇三層）：snapshot 有 → 跟 snapshot（冇呢個 key = 預設，刪走）；snapshot 冇（之後先加）→ `enabled: false`，唔刪，集數 ID 仲喺 document，ID 守衛過、收藏唔斷；draft 唔郁
+    - **唔還原**內容欄位（名、簡介、圖、集數、排程日期 / schedules）：還原集數會令鎖咗嘅 ID 消失，排程日期由 schedules 表計出，淨改 definition 會唔夾。即係上架項目同 #N 一樣，但文字 / 圖 / 之後加嘅集數係最新版本
+    - 次序：先喺記憶體砌 document → 驗證（422）+ ID 守衛（409）→ 唔過就乜都唔寫；過咗先一個 D1 batch 寫（樂觀鎖，`updated_at` / ETag bump；中途有人改 → 寫返舊值 + 412）→ publish；publish throw（例如 R2 寫唔到）或者被拒 → 另一個 batch 寫返舊 definition（`updated_at` 再 bump）
+    - 冇嘢要改又同最新一次一樣 → `{ unchanged: true }`（唔開新行）
 - 內容（除 `generatedAt` 外）同最新一次一樣 → `{ unchanged: true, publish }`，唔開新行、唔寫 R2（admin 顯示「內容與目前版本相同」）；`?force=1` 照寫
 - 次序：先記 `publishes` 一行，再寫 R2；R2 寫失敗就刪返嗰行（ID 守衛唔會漏咗已上線嘅 ID）；連刪都失敗就標 `status = 'failed'`（migration `0003`）。「而家 publish 緊」、ID 守衛、「內容冇變」比較都只睇最新一行 `status = 'ok'`，記錄照列出 failed 行（`status` 欄）
 - 圖 manifest 嘅圖檔名要合 `<sha256 前 16 hex>.<webp|jpg>` 兼已經喺 `assets`
@@ -194,17 +198,18 @@ curl -k -X PUT https://localhost:8787/api/assets -H 'Origin: https://localhost:8
 
 全部喺 `/api` 底下，同內容 API 一樣要 login（改嘢要 same-origin），body 上限 256 KB。Migration `0004_admin.sql`：`entries.draft`、`scan_findings` 表、`publishes.error`（deploy 時 `deploy-api.yml` 自動 apply）。
 
-| Method + path                         | 做咩                                                                                                                                                                                                                                                                                          |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /api/scan`                      | 入 admin 自動掃描：列 `AUDIO` 頂層資料夾 → 每套 `audio.host = r2` 嘅劇 `listingFromR2` + `generateDraft`；有 diff 先寫 D1（新短篇 `enabled: false`）+ 記 finding；新資料夾 → 建 draft 劇（ID `drama-NN`）；有劇資料夾唔見 → 唔自動建，記「資料夾唔見」。回 `{ scannedAt, findings, skipped }` |
-| `GET /api/todos`                      | 未解決 findings → 待辦矩陣 `{ rows: [{ kind, findingIds, dramaId, arcId, name, cells }], blocking }`；`cells` = `folder` / `id` / `images` / `schedule` / `summary`，每格 `{ state: done / must / optional / na, target }`                                                                    |
-| `POST /api/entries/dramas/:id/rename` | `{ newId }`：只限從未發佈（任何 ok publish 都冇用過呢個 ID，否則 409）；entries + schedules + findings 一個 batch 改；可帶 `If-Match`                                                                                                                                                         |
-| `POST /api/dramas/:id/folder`         | `{ folder }`：配對 R2 頂層資料夾（R2 冇 → 422、其他劇用緊 → 409）→ 即刻重新掃描嗰套劇，同一個 batch 寫 + 刪「資料夾唔見」finding                                                                                                                                                              |
-| `GET /api/folders/unmapped`           | `{ folders }`：冇劇用緊嘅頂層資料夾                                                                                                                                                                                                                                                           |
-| `PUT /api/order/:kind`                | `{ ids }`：上架嗰段嘅全部 entry（新次序；唔啱 → 422）→ 一個 batch 寫 `order` 1、2、3…；下架 / draft 唔郁；回 `{ ids, changed }`                                                                                                                                                               |
-| `GET /api/changes`                    | D1（唔包 draft）vs 最新 ok publish：`{ base, changes: { items, timeline }, validation }`（`summarizeChanges`；`validation` = `{ ok: true, episodeCount }` 或 `{ ok: false, error }`）                                                                                                         |
+| Method + path                         | 做咩                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/scan`                      | 入 admin 自動掃描：列 `AUDIO` 頂層資料夾 → 每套 `audio.host = r2` 嘅劇 `listingFromR2` + `generateDraft`；有 diff 先寫 D1（新短篇 `enabled: false`）+ 記 finding；新資料夾 → 建 draft 劇（ID `drama-NN`）；新短篇 ID 自動 `<劇 ID>-NN`（兩位數，由已有 ID 嘅短篇數 + 1 起、避開已用，3c）；有劇資料夾唔見 → 唔自動建，記「資料夾唔見」。回 `{ scannedAt, findings, skipped }` |
+| `GET /api/todos`                      | 未解決 findings → 待辦矩陣 `{ rows: [{ kind, findingIds, dramaId, arcId, name, cells }], blocking }`；`cells` = `folder` / `id` / `images` / `schedule` / `summary`，每格 `{ state: done / must / optional / na, target }`；`id` 格：自動派嘅 ID（`drama-NN`、`<劇 ID>-NN`）未經 `confirm-id` 確認或改名就係 `must`                                                           |
+| `POST /api/entries/dramas/:id/rename` | `{ newId }`：只限從未發佈（任何 ok publish 都冇用過呢個 ID，否則 409）；entries + schedules + findings 一個 batch 改；自動編號短篇 ID `<舊 ID>-NN` 一齊改做 `<新 ID>-NN`（definition、schedules、findings）；可帶 `If-Match`                                                                                                                                                  |
+| `POST /api/todos/confirm-id`          | `{ dramaId, arcId? }`（3c）：admin 儲存 ID 欄（就算冇改）時叫，確認掃描自動派嘅 ID → finding `detail.idConfirmed = true`，待辦 `id` 格變 `done`；冇 `arcId` = 新劇、有 = 新短篇；對唔到回 `{ confirmed: 0 }`（idempotent）；body 錯 400、冇呢套劇 404                                                                                                                         |
+| `POST /api/dramas/:id/folder`         | `{ folder }`：配對 R2 頂層資料夾（R2 冇 → 422、其他劇用緊 → 409）→ 即刻重新掃描嗰套劇，同一個 batch 寫 + 刪「資料夾唔見」finding                                                                                                                                                                                                                                              |
+| `GET /api/folders/unmapped`           | `{ folders }`：冇劇用緊嘅頂層資料夾                                                                                                                                                                                                                                                                                                                                           |
+| `PUT /api/order/:kind`                | `{ ids }`：上架嗰段嘅全部 entry（新次序；唔啱 → 422）→ 一個 batch 寫 `order` 1、2、3…；下架 / draft 唔郁；回 `{ ids, changed }`                                                                                                                                                                                                                                               |
+| `GET /api/changes`                    | D1（唔包 draft）vs 最新 ok publish：`{ base, changes: { items, timeline }, validation }`（`summarizeChanges`；`validation` = `{ ok: true, episodeCount }` 或 `{ ok: false, error }`）                                                                                                                                                                                         |
 
 - **Draft**（`entries.draft = 1`）：掃描自動建、未齊必須資料嘅劇。`PUT` 先試完整驗證，唔過就用寬鬆驗證（definition 用到但未上載嘅圖當有；其他規則照驗）；一次 `PUT` 通過完整驗證就自動清 `draft`。Publish / `GET /api/changes` 唔包 draft；`DELETE` 照准（從未發佈）
 - **Findings**：普通 publish 成功之後，待辦行冇「必須」格嘅 finding 標 `resolved_publish_id`（仲有必須嘅留低）；「資料夾唔見」喺配對資料夾時刪走
-- **下架短篇**（`enabled: false`）：player 唔顯示。ID 守衛唔對稱：`publishes.episode_ids` 只鎖上過架嘅 episode ID（今次上架 + 以前鎖咗而仲喺 document 嘅）；比較時新 document 連下架劇 / 短篇都計，所以落架唔會 409，但從未上架嘅 placeholder（`arc-01`、`drama-01`）改 ID 唔使 force；rename「從未發佈」亦只睇鎖咗嘅 ID（W-707）
+- **下架短篇**（`enabled: false`）：player 唔顯示。ID 守衛唔對稱：`publishes.episode_ids` 只鎖上過架嘅 episode ID（今次上架 + 以前鎖咗而仲喺 document 嘅）；比較時新 document 連下架劇 / 短篇都計，所以落架唔會 409，但從未上架嘅自動 ID（`lancy-04`、`drama-01`；3c 之前嘅 `arc-01`）改 ID 唔使 force；rename「從未發佈」亦只睇鎖咗嘅 ID（W-707）
 - 每次掃描成本：1 個頂層 list + 每套劇（根 + 每個短篇）各 1 個 list

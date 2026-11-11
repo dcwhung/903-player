@@ -1,6 +1,6 @@
 # Backlog 登記冊（🟢 / Observation）
 
-**最後更新**：2026-11-11（Phase 3b：S-803–S-811 開、S-807 關；Phase 3a：S-798–S-802 開；Phase 2b-2：S-786、S-787 關，S-792–S-797 開）
+**最後更新**：2026-11-11（Phase 3c：S-812–S-817、S-819 開，S-818 喺 PR 處理；Phase 3b：S-803–S-811 開、S-807 關；Phase 3a：S-798–S-802 開；Phase 2b-2：S-786、S-787 關，S-792–S-797 開）
 
 > Review / QA 報告入面嘅 🟢 同 Observation 統一喺呢度追蹤。掃 backlog 時淨係睇「Open」；「Closed」嘅唔使再理。
 > 新 finding 照寫喺各自報告，處理完或者決定唔理就喺呢度更新。
@@ -59,6 +59,13 @@
 | S-809 | `apps/admin/src/app/LoginScreen.tsx`                | login 完一律返 `/`，深連結冇咗；callback 帶返原本路徑                                                                                                                                     | 有人撞到先做                   | reviews/2026-11-11_review_phase3b-admin-spa      |
 | S-810 | git / TDD                                           | Phase 3b 8 個 commit test 同實作一齊入，睇唔到紅燈 commit；以後先 commit failing test                                                                                                     | 以後 commit                    | reviews/2026-11-11_review_phase3b-admin-spa      |
 | S-811 | `apps/admin/src/features/lists/NewDramaDialog.tsx`  | 冇 Tab 循環同關閉後 focus 返 ＋ 掣；共用 `ConfirmDialog` shell                                                                                                                            | UI 樣式 round                  | reviews/2026-11-11_review_phase3b-admin-spa      |
+| S-812 | `apps/admin/src/styles/theme.css`                   | `#ffffff`、`#0d1a2b` hardcode，改用 `--on-nav` / `--on-primary` / `--on-accent` token                                                                                                     | 下次改 admin 樣式              | reviews/2026-11-11_review_phase3c-admin-style    |
+| S-813 | `apps/api/test/publish.test.ts`                     | 補還原 412 衝突 test（apply 前改一行 → 412、其他行寫返、冇新 publish）                                                                                                                    | 下次改還原                     | reviews/2026-11-11_review_phase3c-admin-style    |
+| S-814 | `apps/api/src/catalog/rollback.ts`                  | 剩餘 race：讀 entries 後有人改冇喺 changes 嘅 entry；`purgeCatalogCache` throw 令 D1 同已上線 catalog 唔夾（purge 失敗改為只 log）                                                        | 下次改還原                     | reviews/2026-11-11_review_phase3c-admin-style    |
+| S-815 | `apps/api/src/auth/deniedPage.ts`                   | 加 CSP 時要 hash `THEME_SCRIPT`（同 `apps/admin/index.html`）；`auth.test.ts` hardcode `Admin v0.6.0`，改用 `pkg.version`                                                                 | 下次 bump api 版本             | reviews/2026-11-11_review_phase3c-admin-style    |
+| S-816 | `apps/admin/src/ui/imageCrop.ts`                    | 冇原圖尺寸 / 檔案大小上限；處理中（載 wasm）冇 busy 狀態                                                                                                                                  | Phase 4 裁切編輯器             | reviews/2026-11-11_review_phase3c-admin-style    |
+| S-817 | `apps/admin/src/ui/ImageSlot.tsx`                   | 尺寸提示讀屏聽唔到（加 `aria-describedby`）；`ImagePreviewDialog` 上載中 Esc 仍會收埋                                                                                                     | Phase 4 裁切編輯器             | reviews/2026-11-11_review_phase3c-admin-style    |
+| S-819 | git / TDD                                           | Phase 3c feature commit 同 test 一齊入，睇唔到紅燈 commit（同 S-810）                                                                                                                     | 以後 commit                    | reviews/2026-11-11_review_phase3c-admin-style    |
 
 ## Closed
 

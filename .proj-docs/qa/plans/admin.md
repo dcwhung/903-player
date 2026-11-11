@@ -2,7 +2,7 @@
 
 - Paths：全部相對 repo root；指令喺 repo root 跑（root `vitest.config.ts` projects 包括 `@903-player/admin`（jsdom））
 - Chain: Admin SPA `apps/admin`（React 19 + Vite，Worker static assets 出）：Google login gate → 入嚟自動掃 R2 → 待辦矩陣 → 編輯（flow bar「儲存並返回待辦」）→ 確認發佈時間線 → 上下架記錄 / 還原；節目 / 廣播劇列表 + 拖曳排序；節目 / 廣播劇編輯；圖片上載
-- AC（`.proj-docs/plans/2026-11-10_plan_phase3-admin.md` §3b + 決定表 + UX 步數表；Design Origin `mockup: _mockups_/admin/index.html` v16）:
+- AC（`.proj-docs/plans/2026-11-10_plan_phase3-admin.md` §3b + 決定表 + UX 步數表；Design Origin `mockup: _mockups_/admin/index.html` v16；3c 加 §3c + `mockup: _mockups_/admin-style/index.html`（含 ⑨ nav v4））:
     - AC-1 Login / auth gate：`/api/me` 401 → 登入畫面（`/auth/google/start`）；Nav banner + 「Admin v{api version}」pill（`apps/api/package.json`）
     - AC-2 自動掃描 bar：入 app 即 `POST /api/scan`，顯示時間 / 新內容數 / 需要處理數，「重新掃描」
     - AC-3 待辦矩陣（資料夾 / ID / 圖片 / 排期 / 簡介）：紅「設定」/「配對」= 必須、灰「＋」= 選填；flow bar + 「儲存並返回待辦」只喺由待辦入嚟出現；必須項未清擋「確認發佈」
@@ -14,13 +14,15 @@
     - AC-9 錯誤：401 → 中文逾時提示 + 新分頁重新登入、draft 保留（W-710）；412 → 重新載入；422 → 「無法儲存」；409 publish → AC-4
     - AC-10 直向 < 720px 淨係「請轉為橫向或使用電腦」；reduced motion = 唔播動畫（`.claude/CLAUDE.md` Motion）
     - AC-11 UX 步數（plan §3b.4）：設 ID 3、排期 3、加圖 3、發佈 2、排序 1、落架 3、改名 3、還原 3
+    - AC-12 3c（§3c + plan 後用戶確認）：樣式（天藍 nav、24px panel、漸變統計卡、自訂 tooltip）；主題「跟系統 / 淺色 / 深色」存 localStorage `admin.theme`、first paint 前套用，login 同 Worker 403 頁都跟；列表撳成行入編輯、圖例三行；節目「設定播放時間」checkbox；新短篇自動 ID `<劇ID>-NN` 要儲存確認（confirm-id）；PNG / JPG / WebP 置中裁切轉 WebP（wasm 後備）+ 預覽 dialog；上下架記錄 pill + 「還原」喺版本欄、確認框有「只會還原上架狀態」提示；nav v4（「更新」喺「內容」第一、主題同收合同一行、FLIP，reduced motion 唔播）；改劇 ID 撞短篇 ID 顯示 409 訊息（W-711）
 - Scope files（freeze 用 `git ls-files apps/admin`）:
     - `apps/admin/{package.json,index.html,vite.config.ts,tsconfig.json,tsconfig.app.json,tsconfig.node.json}` `apps/admin/src/**`（app / api / data / features / i18n / model / styles / ui / utils + tests）`apps/admin/tests/*` `apps/admin/e2e/{run,mockApi}.mjs`
+    - 3c Design Origin（只凍結）：`_mockups_/admin-style/{index.html,banner.webp}`
     - 1-hop（屬其他鏈，唔重複 freeze）：`apps/api/wrangler.toml` / `apps/api/package.json`（api）、root `vitest.config.ts` / `tsconfig.json` / `eslint.config.js` / `ci.yml`（repo-tooling）、`packages/catalog`（`expandSchedule` 等，catalog-data / api）
 - Commands:
     - `npm test -- apps/admin`（coverage：`npx vitest run --project @903-player/admin --coverage.enabled --coverage.provider=v8`）
-    - `npm run build:admin`；`PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run e2e:admin`（6 checks：login、掃描 → 設 ID → 發佈 → 記錄、鍵盤排序、排程預覽、節目編輯、直向）；CI 同 SHA 綠就引用
-    - 補充 smoke（AC-4 409、AC-8、AC-9、AC-11 步數、W-709、reduced motion）：scratchpad Playwright script 用 `apps/admin/e2e/mockApi.mjs` 再疊 `page.route`；結果寫入 QA 報告，script 唔入 repo
+    - `npm run build:admin`；`PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run e2e:admin`（3c 起 12 checks：login、掃描 → 確認自動 ID → 發佈 → 記錄、鍵盤排序、節目列表圖例 / 撳成行、排程預覽、播放時間 checkbox、PNG → WebP（wasm）、nav v4 FLIP、reduced motion、< 1100px 自動收、手動深色 first paint、直向）；CI 同 SHA 綠就引用
+    - 補充 smoke（AC-4 409、AC-8、AC-9、AC-11 步數、W-709、reduced motion；3c：login 4 種主題組合、JS 擋咗都有 `data-theme`、主題掣 + reload、圖例三行、記錄版本欄 + 還原提示、nav 分組；403 頁用 `deniedPage()` 出 HTML 喺 Playwright 試 4 種主題組合）：scratchpad Playwright script 用 `apps/admin/e2e/mockApi.mjs` 再疊 `page.route`；結果寫入 QA 報告，script 唔入 repo
     - Worker 出 SPA：`apps/api` 臨時 `.dev.vars`（假 secret）→ `wrangler dev --persist-to <scratchpad>` → curl `/`、深連結、`/api/health`、`/api/*`、`/auth/*`、`/catalog/*`、asset；完咗刪 `.dev.vars`
 - PWA gate: no（admin 冇 service worker / manifest；唔掂 player）
 - Out of scope: 真 Google OAuth、真 D1 / R2（deploy 後用戶手動清單）；Worker API 行為（api 鏈）；player 讀 catalog（catalog-data 鏈）

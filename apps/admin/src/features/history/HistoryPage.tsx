@@ -8,6 +8,7 @@ import type { LoadedEntry, PublishSummary } from '../../api/types';
 import { useAdminData } from '../../data/AdminData';
 import { useResource } from '../../data/useResource';
 import { t } from '../../i18n/t';
+import { useToast } from '../../ui/Toast';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { HistoryRow } from './HistoryRow';
 import { errorMessage } from '../../api/errorMessage';
@@ -30,7 +31,6 @@ function HistoryTable({
             <div className="hist-head" role="row">
                 <span role="columnheader">{t('history.colVersion')}</span>
                 <span role="columnheader">{t('history.colChanges')}</span>
-                <span role="columnheader">{t('history.colStatus')}</span>
             </div>
             {rows.map((row, i) => (
                 <HistoryRow
@@ -49,12 +49,13 @@ export function HistoryPage() {
     const publishes = useResource(listPublishes);
     const { entries, refresh } = useAdminData();
     const [confirming, setConfirming] = useState<number | null>(null);
+    const toast = useToast();
     const [error, setError] = useState<string>();
     const rows = publishes.data ?? [];
     const onConfirm = async (id: number) => {
         setConfirming(null);
         try {
-            await rollback(id);
+            if ((await rollback(id)).unchanged) toast(t('publish.unchanged'));
         } catch (rollbackError) {
             setError(errorMessage(rollbackError));
         }
@@ -78,7 +79,8 @@ export function HistoryPage() {
             {confirming !== null && (
                 <ConfirmDialog
                     title={t('history.confirmTitle', { id: confirming })}
-                    body={t('history.confirmBody')}
+                    body={t('history.confirmBody', { id: confirming })}
+                    note={t('history.confirmNote')}
                     confirmLabel={t('history.rollback')}
                     onConfirm={() => void onConfirm(confirming)}
                     onCancel={() => setConfirming(null)}

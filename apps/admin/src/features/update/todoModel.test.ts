@@ -4,6 +4,7 @@ import {
     missingOf,
     mustCount,
     rowMeta,
+    todoStats,
     splitName,
     todoHref,
     todoKey,
@@ -53,5 +54,17 @@ describe('todoModel', () => {
         expect(rowMeta(row({ kind: 'newDrama', arcId: null, name: '天使之戀系列' }), 24)).toBe(
             '新廣播劇 · 24 集',
         );
+    });
+
+    it('should count rows, must / optional cells and finished rows for the stat cards', () => {
+        const done = row({
+            cells: {
+                ...row().cells,
+                id: { state: 'done' },
+                images: { state: 'done' },
+                schedule: { state: 'done' },
+            },
+        });
+        expect(todoStats([row(), done])).toEqual({ rows: 2, must: 2, optional: 1, done: 1 });
     });
 });

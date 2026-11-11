@@ -66,6 +66,13 @@ export const renameDrama = (id: string, newId: string, etag: string | null) =>
         ifMatch: etag,
     });
 
+/** 確認掃描自動派嘅 ID（就算冇改）：待辦 ID 格變 ✓（3c） */
+export const confirmId = (dramaId: string, arcId?: string) =>
+    request<{ confirmed: number }>('/api/todos/confirm-id', {
+        method: 'POST',
+        body: arcId === undefined ? { dramaId } : { dramaId, arcId },
+    });
+
 export const pairFolder = (id: string, folder: string, etag: string | null) =>
     request(`/api/dramas/${encodeURIComponent(id)}/folder`, {
         method: 'POST',
@@ -98,8 +105,10 @@ export const publish = async () =>
 export const listPublishes = async () =>
     (await request<{ publishes: PublishSummary[] }>('/api/publishes')).data.publishes;
 
-export const rollback = (id: number) =>
-    request(`/api/publishes/${id}/rollback`, { method: 'POST' });
+/** 還原 #id（3c：上架狀態寫返 D1、之後新增嘅下架，再發佈）；unchanged = 冇嘢要改 */
+export const rollback = async (id: number) =>
+    (await request<{ unchanged?: boolean }>(`/api/publishes/${id}/rollback`, { method: 'POST' }))
+        .data;
 
 /** 冇排程 → null */
 export const getSchedule = async (dramaId: string, arcId: string) => {

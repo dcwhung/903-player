@@ -1,64 +1,151 @@
 /*
- * Design Origin: mockup: _mockups_/admin/index.html（:root token，v16）
- * Admin 自己一套 token（唔用 player theme），跟系統深淺色
+ * Design Origin: mockup: _mockups_/admin-style/index.html（Phase 3c 樣式 v3，:root token）
+ * Admin 自己一套 token（唔用 player theme）：淺色為主，深色跟系統。
+ * 主色 = banner 天藍：--sky（#53a9e3）用喺高亮 / 淺底；nav / 主按鈕用深一級 --primary（#1e7bc0，白字過 AA 4.5:1）
  */
 :root {
-    --bg: #f4f5f7;
+    --sky: #53a9e3;
+    --primary: #1e7bc0;
+    --primary-hover: #155f96;
+    --on-primary: #ffffff;
+    --nav-bg: #1e7bc0;
+    --on-nav: #ffffff;
+    --bg: #eef3f8;
+    --panel: #f7f9fc;
     --surface: #ffffff;
-    --surface-2: #eef1f5;
-    --ink: #18202b;
-    --muted: #5d6775;
-    --line: #d3d9e2;
-    --accent: #2f5fa7;
-    --accent-soft: #e3ecf8;
+    --surface-2: #f1f5f9;
+    --ink: #16212e;
+    --muted: #5e6b7a;
+    --line: #dbe3ec;
+    /* 文字 / 連結 / 細高亮（淺色 = --primary；深色換淺啲先睇到） */
+    --accent: #1e7bc0;
+    --accent-soft: #e6f3fc;
+    --accent-ink: #155f96;
     --on-accent: #ffffff;
-    --ok: #2f7d4f;
-    --ok-bg: #e4f3ea;
-    --warn: #c77700;
-    --warn-bg: #fff4e0;
-    --warn-ink: #7a4500;
-    --danger: #b3261e;
-    --danger-bg: #fdecea;
+    --ok: #23935c;
+    --ok-ink: #1a7349;
+    --ok-bg: #e3f5ec;
+    --warn: #d97706;
+    --warn-bg: #fff3df;
+    --warn-ink: #9a5800;
+    --danger: #d9363e;
+    --danger-ink: #b3262d;
+    --danger-bg: #fdebec;
     --on-danger: #ffffff;
     /* 上架 / 下架掣：深淺色都用同一對實色（白字對比 ≥ 4.5:1） */
-    --toggle-on: #2f7d4f;
-    --toggle-off: #b3261e;
+    --toggle-on: #1f7a4d;
+    --toggle-off: #c2333a;
     --on-toggle: #ffffff;
-    /* 版本 pill：同 player 一樣位置同形狀，用橙色分返 admin */
+    /* 版本 pill：同 player 一樣位置同形狀，用橙色分返 admin；收細 nav 嘅待辦點 */
     --brand-admin: #c2410c;
     --on-brand: #ffffff;
-    --radius: 10px;
+    --todo-dot: #ffb020;
+    /* Tooltip 泡泡（深淺色都係深底白字） */
+    --tip-bg: #16212e;
+    --on-tip: #ffffff;
+    /* 卡片 A：20px 圓角 + 柔和陰影、冇邊框；深色改細邊框 */
+    --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06);
+    --shadow-btn: 0 2px 6px rgb(30 123 192 / 0.3);
+    --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.18);
+    --card-border: transparent;
+    /* 統計漸變卡（白字） */
+    --grad-sky: linear-gradient(135deg, #6cc0f5, #2b8ad1);
+    --grad-red: linear-gradient(135deg, #ff8a8a, #e0444c);
+    --grad-orange: linear-gradient(135deg, #ffc46b, #f08a24);
+    --grad-green: linear-gradient(135deg, #6fdca4, #23935c);
+    --on-grad: #ffffff;
+    /* 403 / 直向提示插圖 icon */
+    --art-ink: #1e7bc0;
+    --radius: 12px;
+    --r-panel: 24px;
+    --r-card: 20px;
+    --r-btn: 10px;
     --gap: 16px;
-    --nav-width: 200px;
+    --nav-width: 232px;
+    --nav-width-mini: 76px;
     /* 直向手機（闊度 < 720px）淨係顯示提示 */
     --narrow-max: 719.98px;
-    --font: -apple-system, 'PingFang HK', 'Noto Sans TC', 'Segoe UI', sans-serif;
+    --font: 'Poppins', 'Noto Sans TC', 'PingFang HK', -apple-system, 'Segoe UI', sans-serif;
     --mono: ui-monospace, 'SF Mono', Menlo, monospace;
     /* 動畫（≤ 300ms；全部包 prefers-reduced-motion） */
     --motion-fast: 150ms;
-    --motion-base: 240ms;
+    --motion-base: 200ms;
+    /* nav 收合 / 展開時掣滑去新位置（FLIP） */
+    --motion-move: 220ms;
     --motion-ease: cubic-bezier(0.2, 0, 0, 1);
     color-scheme: light dark;
 }
 
+/*
+ * 深色：跟系統（冇 data-theme）或者手動揀深色（data-theme="dark"）；手動揀淺色（data-theme="light"）唔理系統。
+ * 兩段內容一樣，改一段要同步改另一段（Worker 403 頁 inline 嘅 token 亦一樣）
+ */
 @media (prefers-color-scheme: dark) {
-    :root {
-        --bg: #12161c;
-        --surface: #1c222b;
-        --surface-2: #232b36;
-        --ink: #e6e9ee;
-        --muted: #9aa4b2;
-        --line: #2e3742;
-        --accent: #7aa7e8;
-        --accent-soft: #1f2e45;
+    :root:not([data-theme='light']) {
+        --bg: #0f1620;
+        --panel: #141d29;
+        --surface: #1b2635;
+        --surface-2: #223043;
+        --ink: #e8eef5;
+        --muted: #9aabbd;
+        --line: #2c3b4f;
+        --accent: #7cc2f0;
+        --accent-soft: #1c3349;
+        --accent-ink: #9fd2f6;
         --on-accent: #0d1a2b;
         --ok: #6fc28f;
-        --ok-bg: #16301f;
+        --ok-ink: #8fd6a9;
+        --ok-bg: #133524;
         --warn: #f2a93b;
         --warn-bg: #3a2a10;
         --warn-ink: #f2c27a;
         --danger: #f28b82;
-        --danger-bg: #3a1614;
+        --danger-ink: #f6a9a2;
+        --danger-bg: #3b1619;
         --on-danger: #2b0d0b;
+        --art-ink: #7cc2f0;
+        --shadow: none;
+        --shadow-btn: none;
+        --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
+        --card-border: #2c3b4f;
+        /* 深色底上面 tooltip 要淺一級先睇到泡泡邊 */
+        --tip-bg: #33465e;
     }
+}
+
+:root[data-theme='dark'] {
+    --bg: #0f1620;
+    --panel: #141d29;
+    --surface: #1b2635;
+    --surface-2: #223043;
+    --ink: #e8eef5;
+    --muted: #9aabbd;
+    --line: #2c3b4f;
+    --accent: #7cc2f0;
+    --accent-soft: #1c3349;
+    --accent-ink: #9fd2f6;
+    --on-accent: #0d1a2b;
+    --ok: #6fc28f;
+    --ok-ink: #8fd6a9;
+    --ok-bg: #133524;
+    --warn: #f2a93b;
+    --warn-bg: #3a2a10;
+    --warn-ink: #f2c27a;
+    --danger: #f28b82;
+    --danger-ink: #f6a9a2;
+    --danger-bg: #3b1619;
+    --on-danger: #2b0d0b;
+    --art-ink: #7cc2f0;
+    --shadow: none;
+    --shadow-btn: none;
+    --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
+    --card-border: #2c3b4f;
+    /* 深色底上面 tooltip 要淺一級先睇到泡泡邊 */
+    --tip-bg: #33465e;
+
+    color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+    color-scheme: light;
 }

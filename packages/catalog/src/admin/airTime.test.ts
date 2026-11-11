@@ -53,7 +53,7 @@ describe('formatAirDays', () => {
 describe('formatAirTime', () => {
     it('should join the days and the time range', () => {
         expect(formatAirTime([1, 2, 3, 4, 5], { start: '15:00', end: '16:30' })).toBe(
-            '星期一至五 15:00 - 16:30',
+            '星期一至五（15:00 - 16:30）',
         );
     });
 

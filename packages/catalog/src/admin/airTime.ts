@@ -87,11 +87,11 @@ export const formatAirDays = (airDays: readonly Weekday[]): string => {
     return `${WEEKDAY_PREFIX}${runsOf(positions).map(runText).join(LIST_JOINER)}`;
 };
 
-/** 「星期一至五 15:00 - 16:30」；冇 airTime 就淨係星期幾 */
+/** 「星期一至五（15:00 - 16:30）」（admin 節目列表 meta / 預覽，3c）；冇 airTime 就淨係星期幾 */
 export const formatAirTime = (
     airDays: readonly Weekday[],
     airTime: AirTime | undefined,
 ): string => {
     const days = formatAirDays(airDays);
-    return airTime ? `${days} ${airTime.start} - ${airTime.end}` : days;
+    return airTime ? `${days}（${airTime.start} - ${airTime.end}）` : days;
 };

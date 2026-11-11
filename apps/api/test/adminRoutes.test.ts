@@ -1,6 +1,6 @@
 /* Phase 3a admin API：待辦、改 ID、資料夾配對、排序、變更摘要、上下架記錄 */
 import { env } from 'cloudflare:test';
-import { adminGet, adminPost, adminRequest } from './helpers';
+import { adminGet, adminPost, adminRequest, call } from './helpers';
 import { SHOW, TILE, drama, markDraft, putEntry, seed } from './fixtures';
 
 type Json = Record<string, unknown>;
@@ -66,24 +66,26 @@ describe('GET /api/todos', () => {
         ]);
     });
 
-    it('should mark a new arc: placeholder id and schedule must, done once fixed', async () => {
+    it('should mark a new arc: auto id and schedule must, done once fixed', async () => {
         await upload([episodeKey(FOLDER, 'Season 2', 1)]);
         await adminPost('/api/scan');
         const [row] = (await json(await adminGet('/api/todos'))).rows as Json[];
         expect(row).toMatchObject({
             kind: 'newArc',
-            arcId: 'arc-01',
+            arcId: 'golden-02',
             name: '黃金少年 · Season 2',
             cells: {
                 folder: { state: 'na' },
                 id: { state: 'must' },
                 images: { state: 'optional' },
-                schedule: { state: 'must', target: '/dramas/golden/schedule#arc-01' },
+                schedule: { state: 'must', target: '/dramas/golden/schedule#golden-02' },
             },
         });
         const fixed = await definitionOf('dramas', 'golden');
         const arcs = (fixed?.arcs as Json[]).map((arc) =>
-            arc.id === 'arc-01' ? { ...arc, id: 'season-2', enabled: true, summary: '簡介' } : arc,
+            arc.id === 'golden-02'
+                ? { ...arc, id: 'season-2', enabled: true, summary: '簡介' }
+                : arc,
         );
         await putEntry('dramas', 'golden', { ...fixed, arcs });
         const body = await json(await adminGet('/api/todos'));
@@ -100,7 +102,7 @@ describe('GET /api/todos', () => {
         await adminPost('/api/scan');
         const scanned = await definitionOf('dramas', 'golden');
         const renamed = (scanned?.arcs as Json[]).map((arc) =>
-            arc.id === 'arc-01' ? { ...arc, id: 'season-2' } : arc,
+            arc.id === 'golden-02' ? { ...arc, id: 'season-2' } : arc,
         );
         await putEntry('dramas', 'golden', { ...scanned, arcs: renamed });
         const body = await json(await adminGet('/api/todos'));
@@ -126,7 +128,7 @@ describe('GET /api/todos', () => {
         await adminPost('/api/scan');
         const scanned = await definitionOf('dramas', 'golden');
         const ready = (scanned?.arcs as Json[]).map((arc) =>
-            arc.id === 'arc-01' ? { ...arc, id: 'season-2', enabled: true } : arc,
+            arc.id === 'golden-02' ? { ...arc, id: 'season-2', enabled: true } : arc,
         );
         await putEntry('dramas', 'golden', { ...scanned, arcs: ready });
         expect((await json(await adminGet('/api/todos'))).blocking).toBe(0);
@@ -170,6 +172,52 @@ describe('GET /api/todos', () => {
     });
 });
 
+describe('POST /api/todos/confirm-id (Phase 3c)', () => {
+    const confirm = (body: unknown) => adminRequest('POST', '/api/todos/confirm-id', { body });
+    const idCells = async () =>
+        ((await json(await adminGet('/api/todos'))).rows as Json[]).map((row) => [
+            row.kind,
+            row.arcId,
+            ((row.cells as Json).id as Json).state,
+        ]);
+
+    it('should keep an auto-numbered arc id a must until the admin confirms it', async () => {
+        await upload([episodeKey(FOLDER, 'Season 2', 1)]);
+        await adminPost('/api/scan');
+        expect(await idCells()).toEqual([['newArc', 'golden-02', 'must']]);
+        const response = await confirm({ dramaId: 'golden', arcId: 'golden-02' });
+        expect(response.status).toBe(200);
+        expect(await json(response)).toEqual({ confirmed: 1 });
+        expect(await idCells()).toEqual([['newArc', 'golden-02', 'done']]);
+    });
+
+    it('should confirm a new drama id (drama-NN) without renaming it', async () => {
+        await upload([episodeKey('新劇', 'A', 1)]);
+        await adminPost('/api/scan');
+        expect(await idCells()).toEqual([['newDrama', null, 'must']]);
+        expect(await json(await confirm({ dramaId: 'drama-01' }))).toEqual({ confirmed: 1 });
+        expect(await idCells()).toEqual([['newDrama', null, 'done']]);
+    });
+
+    it('should be idempotent when nothing matches, and refuse bad bodies or unknown dramas', async () => {
+        expect(await json(await confirm({ dramaId: 'golden', arcId: 'season-1' }))).toEqual({
+            confirmed: 0,
+        });
+        expect((await confirm({ arcId: 'x' })).status).toBe(400);
+        expect((await confirm({ dramaId: 'golden', arcId: '' })).status).toBe(400);
+        expect((await confirm({ dramaId: 'nope' })).status).toBe(404);
+    });
+
+    it('should need a same-origin session', async () => {
+        const response = await call('/api/todos/confirm-id', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ dramaId: 'golden' }),
+        });
+        expect(response.ok).toBe(false);
+    });
+});
+
 describe('POST /api/entries/dramas/:id/rename', () => {
     const rename = (id: string, newId: unknown) =>
         adminRequest('POST', `/api/entries/dramas/${id}/rename`, { body: { newId } });
@@ -192,6 +240,62 @@ describe('POST /api/entries/dramas/:id/rename', () => {
             );
         expect(await ids('schedules')).toEqual(['new-drama']);
         expect(await ids('scan_findings')).toEqual(['new-drama']);
+    });
+
+    it('should move auto-numbered arc ids (<id>-NN) to the new id with their schedules (Phase 3c)', async () => {
+        const arcs = [
+            { id: 'drama-01-01', name: 'Season 1', episodes: 3 },
+            { id: 'drama-01-extra', name: 'Extra', episodes: 1 },
+        ];
+        await putEntry('dramas', 'drama-01', { ...scannable(3), arcs });
+        await env.DB.prepare(
+            "INSERT INTO schedules (drama_id, arc_id, rule, updated_at) VALUES ('drama-01', 'drama-01-01', '{}', 'x')",
+        ).run();
+        await addFinding('newArc', 'drama-01', 'drama-01-01');
+        expect((await rename('drama-01', 'lancy')).status).toBe(200);
+        expect(((await definitionOf('dramas', 'lancy'))?.arcs as Json[]).map((a) => a.id)).toEqual([
+            'lancy-01',
+            'drama-01-extra',
+        ]);
+        const pairs = async (table: string) =>
+            (await env.DB.prepare(`SELECT drama_id, arc_id FROM ${table}`).all()).results;
+        expect(await pairs('schedules')).toEqual([{ drama_id: 'lancy', arc_id: 'lancy-01' }]);
+        expect(await pairs('scan_findings')).toEqual([{ drama_id: 'lancy', arc_id: 'lancy-01' }]);
+    });
+
+    const collidingArcs = [
+        { id: 'drama-01-01', name: 'Season 1', episodes: 3 },
+        { id: 'lancy-01', name: 'Extra', episodes: 1 },
+    ];
+
+    it('should refuse (409) a rename whose moved arc id already exists, changing nothing (W-711)', async () => {
+        await putEntry('dramas', 'drama-01', { ...scannable(3), arcs: collidingArcs });
+        const response = await rename('drama-01', 'lancy');
+        expect(response.status).toBe(409);
+        expect(await json(response)).toMatchObject({ arcId: 'lancy-01' });
+        expect(await definitionOf('dramas', 'lancy')).toBeNull();
+        expect(
+            ((await definitionOf('dramas', 'drama-01'))?.arcs as Json[]).map((a) => a.id),
+        ).toEqual(['drama-01-01', 'lancy-01']);
+    });
+
+    it('should refuse (409, not 500) the same collision when both arcs have schedules (W-711)', async () => {
+        await putEntry('dramas', 'drama-01', { ...scannable(3), arcs: collidingArcs });
+        await env.DB.batch(
+            ['drama-01-01', 'lancy-01'].map((arcId) =>
+                env.DB.prepare(
+                    "INSERT INTO schedules (drama_id, arc_id, rule, updated_at) VALUES ('drama-01', ?, '{}', 'x')",
+                ).bind(arcId),
+            ),
+        );
+        expect((await rename('drama-01', 'lancy')).status).toBe(409);
+        const schedules = await env.DB.prepare(
+            'SELECT drama_id, arc_id FROM schedules ORDER BY arc_id',
+        ).all();
+        expect(schedules.results).toEqual([
+            { drama_id: 'drama-01', arc_id: 'drama-01-01' },
+            { drama_id: 'drama-01', arc_id: 'lancy-01' },
+        ]);
     });
 
     it('should rename a drama published only while unlisted (W-707)', async () => {
@@ -345,16 +449,22 @@ describe('GET /api/changes', () => {
 describe('GET /api/publishes changes', () => {
     it('should attach the changes since the previous publish to each row', async () => {
         await adminPost('/api/publish');
-        await putEntry('dramas', 'golden', scannable(4));
+        const withArc = scannable(4);
+        const added = { id: 'season-2', name: 'Season 2', addedAt: '2026-10-24', episodes: 1 };
+        await putEntry('dramas', 'golden', {
+            ...withArc,
+            arcs: [...(withArc.arcs as Json[]), added],
+        });
         await adminPost('/api/publish');
-        await adminPost('/api/publishes/1/rollback?force=1');
+        // 還原 #1：之後加嘅 Season 2 落架（集數唔郁）
+        await adminPost('/api/publishes/1/rollback');
         const { publishes } = (await json(await adminGet('/api/publishes'))) as {
             publishes: Json[];
         };
         const kinds = (p: Json | undefined) =>
             ((p?.changes as Json).items as Json[]).map((i) => i.kind);
         expect(kinds(publishes[2])).toEqual(['newShow', 'newDrama', 'newArc']);
-        expect(kinds(publishes[1])).toEqual(['newEpisodes']);
+        expect(kinds(publishes[1])).toEqual(['newEpisodes', 'newArc']);
         expect(kinds(publishes[0])).toEqual(['rollback', 'unlist']);
         expect(publishes[0]).toMatchObject({ rollbackOf: 1, error: null });
     });
