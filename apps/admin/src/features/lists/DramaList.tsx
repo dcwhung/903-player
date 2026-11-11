@@ -9,7 +9,8 @@ import { changeFlagsOf, groupEntries, type ChangeFlags } from '../../model/listM
 import type { LoadedEntry } from '../../api/types';
 import { DramaRow } from './DramaRow';
 import { legendOf } from './legendModel';
-import { DramaListHead, DramaLegend } from './DramaListParts';
+import { DramaListHead } from './DramaListParts';
+import { ListLegend } from './ListLegend';
 import { ListTitle } from './ListTitle';
 import { NewDramaDialog } from './NewDramaDialog';
 import { UnpublishedNote } from './UnpublishedNote';
@@ -72,7 +73,7 @@ export function DramaList() {
                     flags={flags}
                 />
             </div>
-            <DramaLegend legend={legendOf(dramas, flags)} />
+            <ListLegend legend={legendOf(dramas, flags)} />
             {adding && (
                 <NewDramaDialog
                     onClose={() => setAdding(false)}
