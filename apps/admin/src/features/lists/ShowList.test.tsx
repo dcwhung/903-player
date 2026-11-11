@@ -23,6 +23,11 @@ describe('ShowList', () => {
         expect(screen.getByText('星期一至五（15:00 - 16:30）')).toBeInTheDocument();
     });
 
+    it('should list a new show saved without images (draft, disabled) under 已下架', () => {
+        renderList({ ...show({ name: '新節目', enabled: false }), id: 'abc', draft: true });
+        expect(screen.getByText('新節目')).toBeInTheDocument();
+    });
+
     it('should open the editor when the row background is clicked', async () => {
         renderList();
         await userEvent.click(screen.getByText('星期一至五'));
