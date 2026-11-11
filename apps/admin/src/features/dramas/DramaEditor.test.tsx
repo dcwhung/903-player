@@ -48,7 +48,10 @@ describe('DramaEditor', () => {
     it('should show the basic tab with the R2 scan box', async () => {
         api();
         renderAt('/dramas/lancy', '/dramas/:id', <DramaEditorPage tab="basic" />);
-        expect(await screen.findByRole('group', { name: '類型' })).toBeInTheDocument();
+        // 已發佈：類型鎖住 → 實色 pill，唔出 disabled switch
+        const kind = await screen.findByText('短篇集', { selector: '.pill' });
+        expect(kind).toHaveClass('solid');
+        expect(screen.queryByRole('group', { name: '類型' })).not.toBeInTheDocument();
         expect(screen.getByRole('group', { name: '由 R2 掃描' })).toHaveTextContent(
             '蘭茜夫人劇場/',
         );
