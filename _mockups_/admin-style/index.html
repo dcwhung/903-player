@@ -917,15 +917,18 @@
                 border: 1px solid var(--line);
             }
 
-            /* ---------- ⑨ nav v4：收合掣置頂、登出同 email 一行置底 ---------- */
-            .nav-top {
-                display: flex;
-                align-items: center;
-                justify-content: flex-start;
-                margin: -6px 0 10px;
+            /* ---------- ⑨ nav v4：更新入內容分類、底部主題 ＋ 收合同一行、email ＋ 登出一行 ---------- */
+            .shell.v4 .logo-mini {
+                display: none;
             }
-            .shell.mini .nav-top {
-                justify-content: center;
+            .shell.v4.mini .logo-mini {
+                display: grid;
+            }
+            .shell.v4.mini .brand {
+                display: none;
+            }
+            .shell.v4.mini .nav .group {
+                display: none;
             }
             .icon-ghost {
                 display: inline-grid;
@@ -938,18 +941,28 @@
                 background: transparent;
                 color: #fff;
                 cursor: pointer;
+                flex: none;
             }
             .icon-ghost:hover {
                 background: rgb(255 255 255 / 0.16);
             }
+            .nav-tools {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-bottom: 8px;
+            }
+            .shell.v4.mini .nav-tools {
+                flex-direction: column;
+            }
             .theme-seg {
+                flex: 1;
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 gap: 4px;
                 padding: 4px;
                 border-radius: 12px;
                 background: rgb(255 255 255 / 0.12);
-                margin-bottom: 8px;
             }
             .theme-seg button {
                 display: grid;
@@ -965,12 +978,25 @@
                 background: #fff;
                 color: var(--sky-strong);
             }
+            .theme-one {
+                display: none;
+                background: rgb(255 255 255 / 0.12);
+            }
+            .shell.v4.mini .theme-seg {
+                display: none;
+            }
+            .shell.v4.mini .theme-one {
+                display: inline-grid;
+            }
+            .shell.v4.mini .nav-toggle svg {
+                transform: scaleX(-1);
+            }
             .foot-row {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 gap: 8px;
-                padding: 6px 4px 0 12px;
+                padding: 6px 0 0 12px;
                 border-top: 1px solid rgb(255 255 255 / 0.2);
             }
             .foot-row .who {
@@ -980,20 +1006,12 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
-            .shell.mini .foot-row {
+            .shell.v4.mini .foot-row {
                 justify-content: center;
                 padding: 6px 0 0;
             }
-            .shell.mini .theme-seg {
+            .shell.v4.mini .foot-row .who {
                 display: none;
-            }
-            .theme-one {
-                display: none;
-            }
-            .shell.mini .theme-one {
-                display: inline-grid;
-                margin: 0 auto 8px;
-                background: rgb(255 255 255 / 0.12);
             }
         </style>
     </head>
@@ -1653,28 +1671,26 @@
             <!-- ⑨ -->
             <section id="i">
                 <p class="state-label">
-                    ⑨ nav v4（取代 ① / ② 嘅底部）：收合掣做 icon 放頂部左上（參考 iPad
-                    Files）；底部由上至下 = 主題切換 → 分隔線 → email ＋ 登出
-                    icon（同一行置右，放最底）。登出 / 收合唔出字，hover 出 tooltip
+                    ⑨ nav v4（取代 ① / ② 嘅
+                    nav）：「更新內容」改名「更新」，放入「內容」分類第一項。底部：主題三掣 ＋ 收合
+                    icon 同一行（收合排最後）；最底一行 email ＋ 登出 icon 置右。登出 /
+                    收合唔出字，hover 出 tooltip
                 </p>
                 <div class="frame">
-                    <div class="shell">
+                    <div class="shell v4">
                         <nav class="nav" aria-label="主選單">
-                            <div class="nav-top">
-                                <button class="icon-ghost" aria-label="收合選單" title="收合選單">
-                                    <svg class="i"><use href="#i-panel" /></svg>
-                                </button>
-                            </div>
                             <div class="brand">
                                 <img src="banner.webp" alt="903 叱咤 Player" /><span class="ver"
                                     >Admin v0.6.0</span
                                 >
                             </div>
-                            <a href="#i" aria-current="page" aria-label="更新內容"
-                                ><svg class="i"><use href="#i-inbox" /></svg
-                                ><span class="label">更新內容</span><span class="count">3</span></a
-                            >
+                            <div class="logo-mini" aria-label="903 Player Admin v0.6.0">903</div>
                             <span class="group">內容</span>
+                            <a href="#i" aria-current="page" aria-label="更新（3）"
+                                ><svg class="i"><use href="#i-inbox" /></svg
+                                ><span class="label">更新</span><span class="count">3</span
+                                ><span class="dot-count"></span
+                            ></a>
                             <a href="#i" aria-label="節目"
                                 ><svg class="i"><use href="#i-radio" /></svg
                                 ><span class="label">節目</span></a
@@ -1689,24 +1705,33 @@
                                 ><span class="label">上下架記錄</span></a
                             >
                             <span class="spacer"></span>
-                            <div class="theme-seg" role="group" aria-label="主題">
-                                <button aria-pressed="true" aria-label="跟系統" title="跟系統">
+                            <div class="nav-tools">
+                                <div class="theme-seg" role="group" aria-label="主題">
+                                    <button aria-pressed="true" aria-label="跟系統" title="跟系統">
+                                        <svg class="i"><use href="#i-monitor" /></svg>
+                                    </button>
+                                    <button aria-pressed="false" aria-label="淺色" title="淺色">
+                                        <svg class="i"><use href="#i-sun" /></svg>
+                                    </button>
+                                    <button aria-pressed="false" aria-label="深色" title="深色">
+                                        <svg class="i"><use href="#i-moon" /></svg>
+                                    </button>
+                                </div>
+                                <button
+                                    class="icon-ghost theme-one"
+                                    aria-label="主題：跟系統（撳一下轉淺色）"
+                                    title="主題：跟系統"
+                                >
                                     <svg class="i"><use href="#i-monitor" /></svg>
                                 </button>
-                                <button aria-pressed="false" aria-label="淺色" title="淺色">
-                                    <svg class="i"><use href="#i-sun" /></svg>
-                                </button>
-                                <button aria-pressed="false" aria-label="深色" title="深色">
-                                    <svg class="i"><use href="#i-moon" /></svg>
+                                <button
+                                    class="icon-ghost nav-toggle"
+                                    aria-label="收合選單"
+                                    title="收合選單"
+                                >
+                                    <svg class="i"><use href="#i-panel" /></svg>
                                 </button>
                             </div>
-                            <button
-                                class="icon-ghost theme-one"
-                                aria-label="主題：跟系統（撳一下轉淺色）"
-                                title="主題：跟系統"
-                            >
-                                <svg class="i"><use href="#i-monitor" /></svg>
-                            </button>
                             <div class="foot-row">
                                 <span class="who" title="admin@example.com">admin@example.com</span>
                                 <button class="icon-ghost" aria-label="登出" title="登出">
@@ -1716,61 +1741,77 @@
                         </nav>
                         <div class="panel">
                             <div class="scan">✓ 已掃描 R2（09:41）· 發現 3 項新內容</div>
-                            <h2>更新內容</h2>
+                            <h2>更新</h2>
                             <div class="card">
-                                <p class="meta" style="margin: 0">（內容區不變）</p>
+                                <p class="meta" style="margin: 0">
+                                    （內容區不變）撳 nav 底部收合掣試 animation
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
                 <p class="state-label">
-                    ⑨b 收合版：頂部展開掣、logo、icon；主題變一粒掣（撳一下輪住轉）；最底淨係登出
-                    icon
+                    ⑨b 收合版：主題變一粒掣（撳一下輪住轉），收合（展開）掣排喺佢下面；最底淨係登出
+                    icon。收合 / 展開時兩粒掣會滑去新位置（220ms，減少動態時直接切換）
                 </p>
                 <div class="frame">
-                    <div class="shell mini">
+                    <div class="shell v4 mini">
                         <nav class="nav" aria-label="主選單">
-                            <div class="nav-top">
-                                <button class="icon-ghost" aria-label="展開選單" title="展開選單">
-                                    <svg class="i" style="transform: scaleX(-1)">
-                                        <use href="#i-panel" />
-                                    </svg>
-                                </button>
+                            <div class="brand">
+                                <img src="banner.webp" alt="903 叱咤 Player" /><span class="ver"
+                                    >Admin v0.6.0</span
+                                >
                             </div>
                             <div class="logo-mini" aria-label="903 Player Admin v0.6.0">903</div>
-                            <a href="#i" aria-current="page" aria-label="更新內容"
+                            <span class="group">內容</span>
+                            <a href="#i" aria-current="page" aria-label="更新（3）"
                                 ><svg class="i"><use href="#i-inbox" /></svg
+                                ><span class="label">更新</span><span class="count">3</span
                                 ><span class="dot-count"></span
                             ></a>
                             <a href="#i" aria-label="節目"
                                 ><svg class="i"><use href="#i-radio" /></svg
-                            ></a>
+                                ><span class="label">節目</span></a
+                            >
                             <a href="#i" aria-label="廣播劇"
                                 ><svg class="i"><use href="#i-disc" /></svg
-                            ></a>
+                                ><span class="label">廣播劇</span></a
+                            >
+                            <span class="group">記錄</span>
                             <a href="#i" aria-label="上下架記錄"
                                 ><svg class="i"><use href="#i-history" /></svg
-                            ></a>
+                                ><span class="label">上下架記錄</span></a
+                            >
                             <span class="spacer"></span>
-                            <div class="theme-seg" role="group" aria-label="主題">
-                                <button aria-pressed="true" aria-label="跟系統" title="跟系統">
+                            <div class="nav-tools">
+                                <div class="theme-seg" role="group" aria-label="主題">
+                                    <button aria-pressed="true" aria-label="跟系統" title="跟系統">
+                                        <svg class="i"><use href="#i-monitor" /></svg>
+                                    </button>
+                                    <button aria-pressed="false" aria-label="淺色" title="淺色">
+                                        <svg class="i"><use href="#i-sun" /></svg>
+                                    </button>
+                                    <button aria-pressed="false" aria-label="深色" title="深色">
+                                        <svg class="i"><use href="#i-moon" /></svg>
+                                    </button>
+                                </div>
+                                <button
+                                    class="icon-ghost theme-one"
+                                    aria-label="主題：跟系統（撳一下轉淺色）"
+                                    title="主題：跟系統"
+                                >
                                     <svg class="i"><use href="#i-monitor" /></svg>
                                 </button>
-                                <button aria-pressed="false" aria-label="淺色" title="淺色">
-                                    <svg class="i"><use href="#i-sun" /></svg>
-                                </button>
-                                <button aria-pressed="false" aria-label="深色" title="深色">
-                                    <svg class="i"><use href="#i-moon" /></svg>
+                                <button
+                                    class="icon-ghost nav-toggle"
+                                    aria-label="收合選單"
+                                    title="收合選單"
+                                >
+                                    <svg class="i"><use href="#i-panel" /></svg>
                                 </button>
                             </div>
-                            <button
-                                class="icon-ghost theme-one"
-                                aria-label="主題：跟系統（撳一下轉淺色）"
-                                title="主題：跟系統"
-                            >
-                                <svg class="i"><use href="#i-monitor" /></svg>
-                            </button>
                             <div class="foot-row">
+                                <span class="who" title="admin@example.com">admin@example.com</span>
                                 <button class="icon-ghost" aria-label="登出" title="登出">
                                     <svg class="i"><use href="#i-logout" /></svg>
                                 </button>
@@ -1778,14 +1819,45 @@
                         </nav>
                         <div class="panel">
                             <div class="scan">✓ 已掃描 R2（09:41）· 發現 3 項新內容</div>
-                            <h2>更新內容</h2>
+                            <h2>更新</h2>
                             <div class="card">
-                                <p class="meta" style="margin: 0">（內容區不變）</p>
+                                <p class="meta" style="margin: 0">
+                                    （內容區不變）撳 nav 底部收合掣試 animation
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
         </main>
+        <script>
+            // ⑨ 收合 / 展開：FLIP —— 記低兩粒掣舊位置，切 class，再由舊位置滑去新位置（220ms）
+            document.querySelectorAll('.shell.v4 .nav-toggle').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const shell = btn.closest('.shell');
+                    const moving = [btn, ...shell.querySelectorAll('.theme-one, .theme-seg')];
+                    const before = new Map(moving.map((el) => [el, el.getBoundingClientRect()]));
+                    shell.classList.toggle('mini');
+                    const mini = shell.classList.contains('mini');
+                    btn.setAttribute('aria-label', mini ? '展開選單' : '收合選單');
+                    btn.title = btn.getAttribute('aria-label');
+                    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                    for (const el of moving) {
+                        const a = before.get(el);
+                        const b = el.getBoundingClientRect();
+                        if (!a.width || !b.width) continue;
+                        el.animate(
+                            [
+                                {
+                                    transform: `translate(${a.left - b.left}px, ${a.top - b.top}px)`,
+                                },
+                                { transform: 'none' },
+                            ],
+                            { duration: 220, easing: 'cubic-bezier(0.2, 0, 0, 1)' },
+                        );
+                    }
+                });
+            });
+        </script>
     </body>
 </html>
