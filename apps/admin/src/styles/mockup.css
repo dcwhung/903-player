@@ -881,7 +881,7 @@ textarea {
 }
 @media (prefers-reduced-motion: no-preference) {
     .spinner {
-        animation: spin 0.8s linear infinite;
+        animation: spin var(--motion-spin) linear infinite;
     }
 }
 @keyframes spin {
