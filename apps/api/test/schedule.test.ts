@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:test';
 import { updateEntryStatement, upsertScheduleStatement } from '../src/catalog/store';
 import { adminGet, adminRequest } from './helpers';
-import { drama, putEntry, seed } from './fixtures';
+import { DISC, TILE, drama, putEntry, seed } from './fixtures';
 
 type Json = Record<string, unknown>;
 
@@ -193,5 +193,94 @@ describe('GET / preview / DELETE schedule', () => {
         expect(await scheduleCount()).toBe(0);
         expect(await arcOf()).toEqual(arc);
         expect((await adminRequest('DELETE', PATH)).status).toBe(404);
+    });
+});
+
+describe('PUT schedule with enable: true (S-803)', () => {
+    const unlisted = async () => {
+        const definition = drama(6);
+        const [arc] = definition.arcs as Json[];
+        await putEntry('dramas', 'golden', { ...definition, arcs: [{ ...arc, enabled: false }] });
+    };
+    const put = async (body: Json) =>
+        adminRequest('PUT', PATH, { body, headers: { 'if-match': await etag() } });
+
+    it('should list the arc in the same write as the schedule', async () => {
+        await unlisted();
+        const response = await put({ rule: WEEKLY, enable: true });
+        expect(response.status).toBe(200);
+        expect(Object.keys((await response.json()) as Json).sort()).toEqual([
+            'expanded',
+            'rule',
+            'updatedAt',
+            'warnings',
+        ]);
+        expect(await arcOf()).toMatchObject({ enabled: true, addedAt: '2026-11-01' });
+        expect(await scheduleCount()).toBe(1);
+    });
+
+    it('should leave enabled alone without enable (old clients) or with enable: false', async () => {
+        await unlisted();
+        expect((await put({ rule: WEEKLY })).status).toBe(200);
+        expect((await arcOf()).enabled).toBe(false);
+        expect((await put({ rule: WEEKLY, enable: false })).status).toBe(200);
+        expect((await arcOf()).enabled).toBe(false);
+    });
+
+    it('should answer 400 for a non-boolean enable and write nothing', async () => {
+        await unlisted();
+        expect((await put({ rule: WEEKLY, enable: 'yes' })).status).toBe(400);
+        expect(await scheduleCount()).toBe(0);
+        expect((await arcOf()).enabled).toBe(false);
+    });
+
+    it('should write neither the schedule nor enabled on a stale If-Match', async () => {
+        await unlisted();
+        const response = await adminRequest('PUT', PATH, {
+            body: { rule: WEEKLY, enable: true },
+            headers: { 'if-match': '"stale"' },
+        });
+        expect(response.status).toBe(412);
+        expect(await scheduleCount()).toBe(0);
+        expect((await arcOf()).enabled).toBe(false);
+    });
+});
+
+describe('arc id change with a schedule (S-804)', () => {
+    const putDefinition = async (definition: Json) =>
+        adminRequest('PUT', '/api/entries/dramas/golden', {
+            body: { definition, images: { 'tile.webp': TILE, 'disc.webp': DISC } },
+            headers: { 'if-match': await etag() },
+        });
+    const renamedArc = (current: Json, id: string): Json => ({
+        ...current,
+        arcs: (current.arcs as Json[]).map((arc) => ({ ...arc, id })),
+    });
+
+    it('should refuse with 409 to drop the id of a scheduled arc, writing nothing', async () => {
+        expect((await putSchedule(WEEKLY)).status).toBe(200);
+        const before = await definition();
+        const response = await putDefinition(renamedArc(before, 'season-one'));
+        expect(response.status).toBe(409);
+        expect(await response.json()).toEqual({
+            error: 'arc season-1 has a schedule; delete it before changing the arc id',
+            arcId: 'season-1',
+            reason: 'arcScheduled',
+        });
+        expect(await definition()).toEqual(before);
+    });
+
+    it('should allow changing the id of an arc without a schedule', async () => {
+        const response = await putDefinition(renamedArc(await definition(), 'season-one'));
+        expect(response.status).toBe(200);
+        expect(((await definition()).arcs as Json[])[0]?.id).toBe('season-one');
+    });
+
+    it('should not block on a schedule left behind for an arc id that is already gone', async () => {
+        await env.DB.prepare(
+            "INSERT INTO schedules (drama_id, arc_id, rule, updated_at) VALUES ('golden', 'old-arc', '{}', 'x')",
+        ).run();
+        const response = await putDefinition({ ...(await definition()), name: '改名' });
+        expect(response.status).toBe(200);
     });
 });
