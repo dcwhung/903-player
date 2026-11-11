@@ -393,3 +393,67 @@ describe('generateDraft — daily drama', () => {
         expect(messagesOf(issues, 'error')).toContain('20261332.m4a');
     });
 });
+
+/** S-785：同一套檢查，CLI（本機 folder，預設）同 API（R2 掃描）各自出合適嘅字眼 */
+describe('generateDraft — wording by source (S-785)', () => {
+    const CLI_ONLY = /--verify|--existing|--id|本機/;
+    const allMessages = (result: DraftResult) =>
+        result.issues.map((i) => `${i.where}：${i.message}`).join('\n');
+
+    const nfdSeries = (source?: 'folder' | 'r2') =>
+        generateDraft(listingOf('劇', [episodeFile(NFD_NAME, 1)]), {
+            id: 'Bad_ID',
+            today: TODAY,
+            ...(source === undefined ? {} : { source }),
+        });
+
+    it('should keep the CLI hints when scanning a local folder (default)', () => {
+        const text = allMessages(nfdSeries());
+        expect(text).toContain('--verify');
+        expect(text).toContain('--id「Bad_ID」');
+        expect(allMessages(nfdSeries('folder'))).toBe(text);
+    });
+
+    it('should not mention CLI flags or a local folder for an R2 scan', () => {
+        const text = allMessages(nfdSeries('r2'));
+        expect(text).toContain('NFD');
+        expect(text).toContain('「Bad_ID」');
+        expect(text).not.toMatch(CLI_ONLY);
+    });
+
+    it('should say the R2 folder is missing an arc / a day', () => {
+        const paths = [episodeFile('甲', 1)];
+        const base = jsonOf(generateDraft(listingOf('劇', paths), { today: TODAY }));
+        const gone = { id: 'gone', name: '已走', episodes: 1 };
+        const existing = { ...base, arcs: [...(base.arcs as unknown[]), gone] };
+        const series = generateDraft(listingOf('劇', paths), {
+            existing,
+            today: TODAY,
+            source: 'r2',
+        });
+        expect(messagesOf(series.issues, 'warn')).toContain('已走：R2 資料夾冇呢個短篇');
+
+        const daily = generateDraft(listingOf('每日劇', ['20261022.m4a']), {
+            existing: {
+                kind: 'daily',
+                audio: { host: 'r2', folder: '每日劇', file: '{yyyymmdd}.m4a' },
+                episodes: [{ date: '2026-10-20' }],
+            },
+            today: TODAY,
+            source: 'r2',
+        });
+        expect(messagesOf(daily.issues, 'warn')).toContain('2026-10-20：R2 資料夾冇呢日');
+        expect(allMessages(series) + allMessages(daily)).not.toMatch(CLI_ONLY);
+    });
+
+    it('should name the saved definition instead of --existing', () => {
+        const blocked = generateDraft(listingOf('劇', [episodeFile('甲', 1)]), {
+            existing: { kind: 'daily', episodes: [] },
+            today: TODAY,
+            source: 'r2',
+        });
+        expect(blocked.json).toBeNull();
+        expect(messagesOf(blocked.issues, 'error')).toContain('現有設定係 daily');
+        expect(allMessages(blocked)).not.toMatch(CLI_ONLY);
+    });
+});
