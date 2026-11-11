@@ -303,6 +303,20 @@ const assertImagesLoaded = async (page, locator, what) => {
     }
 };
 
+/** 框線：'dashed' = 2px 虛線；'none' = 冇 border、冇 box-shadow 框 */
+const assertFrames = async (locator, expected, what) => {
+    const styles = await locator.evaluateAll((els) =>
+        els.map((el) => {
+            const style = getComputedStyle(el);
+            return `${style.borderTopStyle}|${style.borderTopWidth}|${style.boxShadow}`;
+        }),
+    );
+    if (styles.length === 0) throw new Error(`${what}: nothing to check`);
+    const ok = (s) => (expected === 'dashed' ? s.startsWith('dashed|2px') : s === 'none|0px|none');
+    const bad = styles.filter((s) => !ok(s));
+    if (bad.length > 0) throw new Error(`${what}: expected ${expected} frame, got ${bad}`);
+};
+
 const realImagesCheck = (browser) =>
     check('real covers: editor slots, title disc, lists and schedule chips', async () => {
         const page = await newPage(browser, loggedIn({ realImages: true }));
@@ -315,9 +329,34 @@ const realImagesCheck = (browser) =>
             await media.locator('.img-slot:not(.empty)').nth(1).waitFor();
             await assertImagesLoaded(page, media.locator('.thumb'), `${name} image slots`);
             await shoot(page, `image-slots-real-${name}`, { clip: await boxOf(media) });
+            await assertFrames(media.locator('.img-slot'), 'dashed', `${name} image slots`);
             const title = page.locator('.title-row').first();
             await assertImagesLoaded(page, title.locator('.thumb'), `${name} title disc`);
+            await assertFrames(title.locator('.thumb'), 'none', `${name} title disc`);
             await shoot(page, `title-disc-real-${name}`, { clip: await boxOf(title) });
+        }
+        // 上載預覽 dialog：用真圖揀檔，原圖 / 裁切後都係虛線框（碟面裁切後淨係圓形虛線框）
+        await page.goto(`${BASE}/dramas/lancy`);
+        for (const [slot, label] of [
+            ['disc', '碟面'],
+            ['tile', 'Banner'],
+        ]) {
+            const chooser = page.waitForEvent('filechooser');
+            await page.getByRole('button', { name: `更換${label}` }).click();
+            await (
+                await chooser
+            ).setFiles(new URL(`./fixtures/lancy-${slot}.webp`, import.meta.url).pathname);
+            const dialog = page.getByRole('dialog', { name: `上載${label}` });
+            await dialog.getByRole('figure', { name: '裁切後' }).getByText(/WebP/).waitFor();
+            await assertFrames(dialog.locator('.frame').first(), 'dashed', `${slot} source frame`);
+            await assertFrames(
+                dialog.locator(slot === 'disc' ? '.out.disc' : '.frame').last(),
+                'dashed',
+                `${slot} result frame`,
+            );
+            await shoot(page, `upload-preview-real-${slot}`, { clip: await boxOf(dialog) });
+            await dialog.getByRole('button', { name: '取消' }).click();
+            await dialog.waitFor({ state: 'detached' });
         }
         for (const [path, name] of [
             ['/shows', 'shows'],
@@ -326,12 +365,14 @@ const realImagesCheck = (browser) =>
             await page.goto(`${BASE}${path}`);
             await page.locator('.list .thumb').first().waitFor();
             await assertImagesLoaded(page, page.locator('.list .thumb'), `${name} list`);
+            await assertFrames(page.locator('.list .thumb:not(.blank)'), 'none', `${name} list`);
             await shoot(page, `${name}-real`);
         }
         await page.goto(`${BASE}/dramas/lancy/schedule#half`);
         const tabs = page.getByRole('tablist', { name: /短篇/ });
         await tabs.waitFor();
         await assertImagesLoaded(page, tabs.locator('.thumb'), 'schedule arc chips');
+        await assertFrames(tabs.locator('.thumb'), 'none', 'schedule arc chips');
         await shoot(page, 'schedule-chips-real', { clip: await boxOf(tabs) });
         await page.close();
     });
@@ -500,24 +541,29 @@ const navCheck = (browser) =>
                 throw new Error('collapsed nav does not show the app icon');
             if (!(await logo.evaluate((img) => img.complete && img.naturalWidth > 0)))
                 throw new Error('app icon failed to load');
-            // icon 1:1 唔變形，外面圓形框
+            // 完整 app icon（原本圓角方形）：1:1 唔變形、冇圓形底、冇裁切（img 佔滿成個 link）
             const shape = await logo.evaluate((img) => {
-                const frame = getComputedStyle(img.parentElement);
+                const link = getComputedStyle(img.parentElement);
                 const box = img.getBoundingClientRect();
                 const outer = img.parentElement.getBoundingClientRect();
                 return {
                     width: getComputedStyle(img).width,
                     height: getComputedStyle(img).height,
                     fit: getComputedStyle(img).objectFit,
-                    radius: frame.borderRadius,
-                    frame: [outer.width, outer.height],
-                    inside: box.left >= outer.left && box.right <= outer.right,
+                    radius: link.borderRadius,
+                    background: link.backgroundColor,
+                    img: [box.width, box.height],
+                    link: [outer.width, outer.height],
                 };
             });
             if (shape.width !== shape.height || shape.fit !== 'contain')
                 throw new Error(`app icon is distorted: ${JSON.stringify(shape)}`);
-            if (shape.radius !== '50%' || shape.frame[0] !== shape.frame[1] || !shape.inside)
-                throw new Error(`app icon frame is not a circle: ${JSON.stringify(shape)}`);
+            if (
+                shape.radius === '50%' ||
+                shape.background !== 'rgba(0, 0, 0, 0)' ||
+                shape.img.join() !== shape.link.join()
+            )
+                throw new Error(`app icon has a badge or is cropped: ${JSON.stringify(shape)}`);
             await shoot(page, 'nav-mini');
             await shoot(page, 'nav-mini-logo', { clip: await boxOf(page.locator('.nav'), 0, 140) });
             await page.close();

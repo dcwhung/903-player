@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { hasIcon } from '../../tests/icons';
 import { ConfirmDialog } from './ConfirmDialog';
 
 describe('ConfirmDialog', () => {
@@ -23,5 +24,18 @@ describe('ConfirmDialog', () => {
         expect(screen.getByRole('button', { name: '取消' })).toHaveFocus();
         await userEvent.keyboard('{Escape}');
         expect(onCancel).toHaveBeenCalled();
+    });
+
+    it('should show an X icon on cancel', () => {
+        render(
+            <ConfirmDialog
+                title="還原？"
+                body="b"
+                confirmLabel="還原"
+                onConfirm={() => {}}
+                onCancel={() => {}}
+            />,
+        );
+        expect(hasIcon(screen.getByRole('button', { name: '取消' }), 'x')).toBe(true);
     });
 });

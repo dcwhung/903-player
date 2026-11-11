@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { hasIcon } from '../../../tests/icons';
 import { EditorNotices } from './EditorNotices';
 
 const renderInvalid = (detail: string) =>
@@ -27,5 +28,20 @@ describe('EditorNotices', () => {
         expect(details).not.toBeNull();
         expect(details).not.toHaveAttribute('open');
         expect(details).toHaveTextContent('dramas/golden: audio.file: unknown token {x}');
+    });
+
+    it('should show a refresh icon on 重新載入 after a conflict', () => {
+        render(
+            <EditorNotices
+                status={{
+                    saving: false,
+                    problem: { type: 'conflict', at: '2026-11-11T01:00:00.000Z' },
+                    warnings: [],
+                }}
+                fieldErrors={0}
+                onReload={vi.fn()}
+            />,
+        );
+        expect(hasIcon(screen.getByRole('button', { name: '重新載入' }), 'refresh-cw')).toBe(true);
     });
 });

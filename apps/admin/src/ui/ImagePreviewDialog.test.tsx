@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { hasIcon } from '../../tests/icons';
 import { ImagePreviewDialog, type PendingImage } from './ImagePreviewDialog';
 
 const image: PendingImage = {
@@ -40,5 +41,18 @@ describe('ImagePreviewDialog', () => {
             />,
         );
         expect(resultFrame()).not.toHaveClass('bare');
+    });
+
+    it('should show an X icon on 取消', () => {
+        render(
+            <ImagePreviewDialog
+                slot="disc"
+                image={image}
+                busy={false}
+                onConfirm={() => {}}
+                onCancel={() => {}}
+            />,
+        );
+        expect(hasIcon(screen.getByRole('button', { name: '取消' }), 'x')).toBe(true);
     });
 });
