@@ -22,4 +22,33 @@ describe('HistoryRow', () => {
         expect(screen.getByText('admin').previousElementSibling).toHaveClass('when');
         expect(screen.getByRole('button', { name: '還原至 #3' })).toBeInTheDocument();
     });
+
+    it('should show 使用中 under #N in the version column and no rollback button', () => {
+        render(
+            <HistoryRow
+                row={{ ...row, current: true }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+            />,
+        );
+        const pill = screen.getByText('使用中');
+        expect(pill.closest('.ver')).not.toBeNull();
+        expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('should show 失敗 in the version column and no pill for an older ok version', () => {
+        const { rerender } = render(
+            <HistoryRow
+                row={{ ...row, status: 'failed', error: 'x' }}
+                servingId={2}
+                entries={[]}
+                onRollback={vi.fn()}
+            />,
+        );
+        expect(screen.getByText('失敗').closest('.ver')).not.toBeNull();
+        rerender(<HistoryRow row={row} servingId={3} entries={[]} onRollback={vi.fn()} />);
+        expect(screen.queryByText('使用中')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '還原至 #3' }).closest('.action')).not.toBeNull();
+    });
 });

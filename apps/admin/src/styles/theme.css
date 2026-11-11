@@ -757,6 +757,15 @@ textarea.autosize {
     display: block;
 }
 
+.hist-row .ver-pill-line {
+    display: flex;
+    margin: 2px 0 4px;
+}
+
+.hist-row .ver-pill-line:empty {
+    display: none;
+}
+
 .tip-anchor {
     display: contents;
 }

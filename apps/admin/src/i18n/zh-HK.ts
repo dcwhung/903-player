@@ -356,7 +356,7 @@ export const zhHK = {
         total: '共 {count} 次',
         colVersion: '版本',
         colChanges: '變更',
-        colStatus: '狀態',
+        colAction: '操作',
         today: '今天',
         stats: '{shows} 節目 · {dramas} 劇 · {episodes} 集',
         failed: '失敗：{error}，播放器仍用 #{id}',

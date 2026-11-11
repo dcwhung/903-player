@@ -1420,11 +1420,11 @@ table.batches tr.past td {
 .hist-row .changes .name {
     font-weight: 600;
 }
-.hist-row .status {
+.hist-row .action {
     display: flex;
     justify-content: flex-start;
 }
-.hist-row .status button {
+.hist-row .action button {
     padding: 1px 10px;
     font-size: 12px;
     border-radius: 999px;

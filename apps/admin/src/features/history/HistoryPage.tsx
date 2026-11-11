@@ -30,7 +30,7 @@ function HistoryTable({
             <div className="hist-head" role="row">
                 <span role="columnheader">{t('history.colVersion')}</span>
                 <span role="columnheader">{t('history.colChanges')}</span>
-                <span role="columnheader">{t('history.colStatus')}</span>
+                <span role="columnheader">{t('history.colAction')}</span>
             </div>
             {rows.map((row, i) => (
                 <HistoryRow
