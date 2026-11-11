@@ -1,0 +1,147 @@
+/* 每個 admin API endpoint 一個 function（形狀見 types.ts） */
+import type { ScheduleRule, ExpandedSchedule } from '@903-player/catalog';
+import { ApiError, request } from './client';
+import type {
+    ChangesResponse,
+    DramaScanResponse,
+    EntryDetail,
+    EntryKind,
+    EntrySummary,
+    ImageMap,
+    LoadedEntry,
+    PublishSummary,
+    RawDefinition,
+    SaveResult,
+    ScanResponse,
+    ScheduleState,
+    TodosResponse,
+} from './types';
+
+const NOT_FOUND = 404;
+
+const entryPath = (kind: EntryKind, id: string) => `/api/entries/${kind}/${encodeURIComponent(id)}`;
+const schedulePath = (dramaId: string, arcId: string) =>
+    `/api/dramas/${encodeURIComponent(dramaId)}/arcs/${encodeURIComponent(arcId)}/schedule`;
+
+export const getMe = async () => (await request<{ email: string }>('/api/me')).data;
+
+export const logout = () => request('/auth/logout', { method: 'POST' });
+
+export const scanAll = async () =>
+    (await request<ScanResponse>('/api/scan', { method: 'POST' })).data;
+
+export const getTodos = async () => (await request<TodosResponse>('/api/todos')).data;
+
+export const listEntries = async () =>
+    (await request<{ entries: EntrySummary[] }>('/api/entries')).data.entries;
+
+export const getEntry = async (kind: EntryKind, id: string): Promise<LoadedEntry> => {
+    const { data, etag } = await request<EntryDetail>(entryPath(kind, id));
+    return { ...data, kind, id, etag };
+};
+
+export interface EntryWrite {
+    definition: RawDefinition;
+    images: ImageMap;
+}
+
+/** etag = null → 新增（If-None-Match: *） */
+export const putEntry = async (
+    kind: EntryKind,
+    id: string,
+    body: EntryWrite,
+    etag: string | null,
+) => {
+    const options = etag === null ? { create: true } : { ifMatch: etag };
+    return request<SaveResult>(entryPath(kind, id), { method: 'PUT', body, ...options });
+};
+
+export const deleteEntry = (kind: EntryKind, id: string, etag: string | null) =>
+    request(entryPath(kind, id), { method: 'DELETE', ifMatch: etag });
+
+export const renameDrama = (id: string, newId: string, etag: string | null) =>
+    request<{ id: string; updatedAt: string }>(`${entryPath('dramas', id)}/rename`, {
+        method: 'POST',
+        body: { newId },
+        ifMatch: etag,
+    });
+
+export const pairFolder = (id: string, folder: string, etag: string | null) =>
+    request(`/api/dramas/${encodeURIComponent(id)}/folder`, {
+        method: 'POST',
+        body: { folder },
+        ifMatch: etag,
+    });
+
+export const unmappedFolders = async () =>
+    (await request<{ folders: string[] }>('/api/folders/unmapped')).data.folders;
+
+export const rescanDrama = async (id: string) =>
+    (
+        await request<DramaScanResponse>(`/api/dramas/${encodeURIComponent(id)}/scan`, {
+            method: 'POST',
+        })
+    ).data;
+
+export const putOrder = (kind: EntryKind, ids: string[]) =>
+    request(`/api/order/${kind}`, { method: 'PUT', body: { ids } });
+
+export const getChanges = async () => (await request<ChangesResponse>('/api/changes')).data;
+
+export const publish = async () =>
+    (
+        await request<{ unchanged?: boolean; publish: PublishSummary }>('/api/publish', {
+            method: 'POST',
+        })
+    ).data;
+
+export const listPublishes = async () =>
+    (await request<{ publishes: PublishSummary[] }>('/api/publishes')).data.publishes;
+
+export const rollback = (id: number) =>
+    request(`/api/publishes/${id}/rollback`, { method: 'POST' });
+
+/** 冇排程 → null */
+export const getSchedule = async (dramaId: string, arcId: string) => {
+    try {
+        return (await request<ScheduleState>(schedulePath(dramaId, arcId))).data;
+    } catch (error) {
+        if (error instanceof ApiError && error.status === NOT_FOUND) return null;
+        throw error;
+    }
+};
+
+export const previewSchedule = async (dramaId: string, arcId: string, rule: ScheduleRule) =>
+    (
+        await request<{ expanded: ExpandedSchedule; warnings: SaveResult['warnings'] }>(
+            `${schedulePath(dramaId, arcId)}/preview`,
+            { method: 'POST', body: { rule } },
+        )
+    ).data;
+
+export const putSchedule = (
+    dramaId: string,
+    arcId: string,
+    rule: ScheduleRule,
+    etag: string | null,
+) =>
+    request<{ updatedAt: string; warnings: SaveResult['warnings'] }>(schedulePath(dramaId, arcId), {
+        method: 'PUT',
+        body: { rule },
+        ifMatch: etag,
+    });
+
+export const deleteSchedule = (dramaId: string, arcId: string) =>
+    request(schedulePath(dramaId, arcId), { method: 'DELETE' });
+
+export const uploadAsset = async (file: Blob) =>
+    (
+        await request<{ name: string }>('/api/assets', {
+            method: 'PUT',
+            raw: file,
+            contentType: 'image/webp',
+        })
+    ).data;
+
+/** 圖片 URL（Worker 代出 catalog 圖） */
+export const imageUrl = (name: string) => `/catalog/v1/img/${encodeURIComponent(name)}`;

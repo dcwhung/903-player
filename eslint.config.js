@@ -31,7 +31,12 @@ export default tseslint.config(
     },
     {
         // .ts（含 hook / service）：函數 ≤ 30 行，冇檔案上限
-        files: ['apps/player/src/**/*.ts', 'apps/api/src/**/*.ts', 'packages/*/src/**/*.ts'],
+        files: [
+            'apps/player/src/**/*.ts',
+            'apps/admin/src/**/*.ts',
+            'apps/api/src/**/*.ts',
+            'packages/*/src/**/*.ts',
+        ],
         ignores: ['**/*.test.ts'], // 已包 *.node.test.ts
         rules: {
             'max-lines-per-function': ['error', { max: TS_FN_MAX_LINES, ...SIZE_LINES }],
@@ -39,7 +44,7 @@ export default tseslint.config(
     },
     {
         // .tsx 主要係 component：函數 ≤ 50 行，檔案 ≤ 150 行
-        files: ['apps/player/src/**/*.tsx', 'packages/*/src/**/*.tsx'],
+        files: ['apps/player/src/**/*.tsx', 'apps/admin/src/**/*.tsx', 'packages/*/src/**/*.tsx'],
         ignores: ['**/*.test.tsx'],
         rules: {
             'max-lines-per-function': ['error', { max: TSX_FN_MAX_LINES, ...SIZE_LINES }],
@@ -51,6 +56,7 @@ export default tseslint.config(
         // 將來如果幫 .ts 加 max-lines，資料檔照樣豁免（函數上限照用）
         files: [
             'apps/player/src/i18n/zh-HK.ts',
+            'apps/admin/src/i18n/zh-HK.ts',
             'packages/catalog/src/dramas/schema.ts',
             'packages/catalog/src/dramas/registry.ts',
         ],
@@ -62,6 +68,7 @@ export default tseslint.config(
         files: [
             '**/*.test.{ts,tsx}',
             'apps/player/e2e/**',
+            'apps/admin/e2e/**',
             'apps/player/scripts/**',
             'packages/*/tests/**',
         ],

@@ -1,0 +1,259 @@
+/*
+ * Admin app 層樣式：mockup.css 以外嘅 app shell（固定 nav、內容區 scroll、100dvh）、直向提示、
+ * icon、tooltip、toast、roller、chips 等互動細節
+ */
+html,
+body,
+#root {
+    height: 100%;
+}
+
+body {
+    overflow: hidden;
+}
+
+h1 {
+    margin: 0;
+    font-size: 20px;
+}
+
+a {
+    color: var(--accent);
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* lucide icon：跟字體大小 */
+svg.lucide {
+    width: 1em;
+    height: 1em;
+    flex: none;
+    vertical-align: -0.125em;
+}
+
+/* App shell：nav 固定，內容區自己 scroll */
+.shell {
+    height: 100dvh;
+    min-height: 0;
+}
+
+.nav {
+    overflow-y: auto;
+}
+
+.nav .brand-link {
+    padding: 0;
+    display: block;
+}
+
+.nav-logout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    background: none;
+    padding: 8px 10px;
+    color: var(--ink);
+    text-align: left;
+}
+
+.content {
+    overflow-y: auto;
+    min-width: 0;
+}
+
+/* 直向手機（闊度 < 720px）淨係顯示提示 */
+.rotate-note {
+    display: none;
+}
+
+@media (max-width: 719.98px) {
+    .rotate-note {
+        display: grid;
+        min-height: 100dvh;
+    }
+
+    .app-root {
+        display: none;
+    }
+}
+
+.rotate-icon {
+    width: 44px;
+    height: 44px;
+}
+
+.btn.google {
+    text-decoration: none;
+}
+
+.scan-bar.failed {
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+
+.scan-bar button,
+.savebar button,
+.actions button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.handle {
+    border: 0;
+    background: none;
+    padding: 0;
+}
+
+.dirty {
+    color: var(--warn-ink);
+}
+
+.actions.end {
+    justify-content: flex-end;
+}
+
+.link-btn {
+    border: 0;
+    padding: 0;
+    background: none;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.err {
+    color: var(--danger);
+}
+
+table.matrix th[scope='row'] {
+    text-align: left;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--ink);
+    white-space: normal;
+}
+
+/* ⓘ tooltip：hover / 鍵盤 focus 都顯示 */
+.tip {
+    position: relative;
+    display: inline-flex;
+}
+
+.tip[data-tip]:hover::after,
+.tip[data-tip]:focus-visible::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 6px);
+    transform: translateX(-50%);
+    z-index: 5;
+    width: max-content;
+    max-width: 260px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--ink);
+    color: var(--surface);
+    font-size: 12px;
+    font-weight: 400;
+    white-space: normal;
+}
+
+/* 時間 roller */
+.time-roller {
+    position: relative;
+}
+
+.roller-pop {
+    position: absolute;
+    z-index: 5;
+}
+
+.wheel li {
+    cursor: pointer;
+}
+
+/* chips */
+.chips > .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.chip .handle {
+    width: 16px;
+    height: 22px;
+    font-size: 13px;
+}
+
+.chip-remove {
+    border: 0;
+    padding: 0 2px;
+    background: none;
+    color: var(--muted);
+}
+
+/* 對話框：蓋住成頁 */
+.scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+}
+
+.toast-region {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: 30;
+}
+
+.toast {
+    display: block;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--surface);
+    font-size: 14px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .toast {
+        animation: toast-in var(--motion-base) var(--motion-ease);
+    }
+
+    .row,
+    .drama-row {
+        transition: box-shadow var(--motion-fast) var(--motion-ease);
+    }
+}
+
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+
+/* 拖曳中：浮起 + 陰影（mockup ⑤b）；減少動態時唔做浮起 */
+.is-dragging {
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
