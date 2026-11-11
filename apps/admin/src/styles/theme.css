@@ -788,7 +788,16 @@ textarea.autosize {
 /* ---------- 上下架記錄：變更欄用晒欄闊、版本資訊兩行 ---------- */
 .hist-head,
 .hist-row {
-    grid-template-columns: 170px minmax(0, 1fr) 96px;
+    grid-template-columns: 170px minmax(0, 1fr);
+}
+
+/* 還原掣喺版本欄最底 */
+.hist-row .ver > button {
+    justify-self: start;
+    margin-top: 6px;
+    padding: 2px 10px;
+    font-size: 12px;
+    border-radius: 999px;
 }
 
 .hist-row .changes {

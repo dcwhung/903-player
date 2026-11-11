@@ -1,6 +1,7 @@
 /*
  * 上下架記錄一行：版本資訊置頂（#id / 時間 / admin 分行）；變更 tag / 縮圖 / 名 / 狀態對齊，名欄用晒餘下闊度（3c）；
- * 使用中 / 失敗 pill 喺版本欄 #N 下面，最右欄淨係「還原」；使用中綠邊、失敗紅邊 + 原因
+ * 版本欄由上至下：#N → 使用中 / 失敗 pill → 時間 → admin → 還原掣（冇「操作」欄，變更欄用晒餘下闊度）；
+ * 使用中綠邊、失敗紅邊 + 原因
  * Design Origin: mockup: _mockups_/admin/index.html#s8（.hist-row）
  */
 import { Undo2 } from 'lucide-react';
@@ -39,7 +40,7 @@ function VersionPill({ row }: { row: PublishSummary }) {
     return null;
 }
 
-/** 最右欄：淨係「還原」（使用中 / 失敗嘅冇） */
+/** 版本欄最底：「還原」（使用中 / 失敗嘅冇） */
 function Action({ row, onRollback }: Pick<HistoryRowProps, 'row' | 'onRollback'>) {
     if (row.current || row.status !== 'ok') return null;
     return (
@@ -87,6 +88,7 @@ export function HistoryRow({ row, servingId, entries, onRollback }: HistoryRowPr
                 </span>
                 <span className="meta when">{stampOf(row.createdAt)}</span>
                 <span className="meta who">{row.createdBy.split('@')[0] ?? ''}</span>
+                <Action row={row} onRollback={onRollback} />
             </span>
             <span className="changes" role="cell">
                 {items.map((item, i) => (
@@ -104,9 +106,6 @@ export function HistoryRow({ row, servingId, entries, onRollback }: HistoryRowPr
                               episodes: row.episodeCount,
                           })}
                 </span>
-            </span>
-            <span className="action" role="cell">
-                <Action row={row} onRollback={onRollback} />
             </span>
         </div>
     );

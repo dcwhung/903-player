@@ -1420,15 +1420,6 @@ table.batches tr.past td {
 .hist-row .changes .name {
     font-weight: 600;
 }
-.hist-row .action {
-    display: flex;
-    justify-content: flex-start;
-}
-.hist-row .action button {
-    padding: 1px 10px;
-    font-size: 12px;
-    border-radius: 999px;
-}
 textarea.ep-titles {
     margin-top: 8px;
     font-family: var(--mono);

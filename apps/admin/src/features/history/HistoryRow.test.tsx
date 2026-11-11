@@ -49,6 +49,10 @@ describe('HistoryRow', () => {
         expect(screen.getByText('失敗').closest('.ver')).not.toBeNull();
         rerender(<HistoryRow row={row} servingId={3} entries={[]} onRollback={vi.fn()} />);
         expect(screen.queryByText('使用中')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '還原至 #3' }).closest('.action')).not.toBeNull();
+        // 還原掣喺版本欄最底（冇「操作」欄）
+        const rollback = screen.getByRole('button', { name: '還原至 #3' });
+        expect(rollback.closest('.ver')).not.toBeNull();
+        expect(rollback.closest('.ver')?.lastElementChild).toBe(rollback);
+        expect(document.querySelector('.action')).toBeNull();
     });
 });

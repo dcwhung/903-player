@@ -30,7 +30,6 @@ function HistoryTable({
             <div className="hist-head" role="row">
                 <span role="columnheader">{t('history.colVersion')}</span>
                 <span role="columnheader">{t('history.colChanges')}</span>
-                <span role="columnheader">{t('history.colAction')}</span>
             </div>
             {rows.map((row, i) => (
                 <HistoryRow
@@ -78,7 +77,7 @@ export function HistoryPage() {
             {confirming !== null && (
                 <ConfirmDialog
                     title={t('history.confirmTitle', { id: confirming })}
-                    body={t('history.confirmBody')}
+                    body={t('history.confirmBody', { id: confirming })}
                     confirmLabel={t('history.rollback')}
                     onConfirm={() => void onConfirm(confirming)}
                     onCancel={() => setConfirming(null)}
