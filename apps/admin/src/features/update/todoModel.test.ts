@@ -8,6 +8,7 @@ import {
     splitName,
     todoHref,
     todoKey,
+    rowTarget,
 } from './todoModel';
 
 const NA = { state: 'na' } as const;
@@ -66,5 +67,15 @@ describe('todoModel', () => {
             },
         });
         expect(todoStats([row(), done])).toEqual({ rows: 2, must: 2, optional: 1, done: 1 });
+    });
+
+    it('should send each row to the editor of its content', () => {
+        expect(rowTarget(row({ kind: 'newDrama', dramaId: 'drama-01', arcId: null }))).toBe(
+            '/dramas/drama-01',
+        );
+        expect(rowTarget(row())).toBe('/dramas/lancy/arcs#arc-01');
+        expect(rowTarget(row({ kind: 'newEpisodes', arcId: 's1' }))).toBe('/dramas/lancy/arcs#s1');
+        expect(rowTarget(row({ kind: 'newEpisodes', arcId: null }))).toBe('/dramas/lancy');
+        expect(rowTarget(row({ kind: 'missingFolder', arcId: null }))).toBe('/dramas/lancy#folder');
     });
 });
