@@ -1,7 +1,8 @@
 name: Deploy API
 
 # apps/api（Cloudflare Worker 903-player-api）：main push 而且改咗 Worker、admin SPA 或者佢哋用嘅 catalog package 先跑。
-# 先 apply D1 migration（未 apply 嘅先會跑），再 build admin（Worker static assets = apps/admin/dist），再 deploy Worker。
+# 先 build admin（Worker static assets = apps/admin/dist；build 失敗就唔郁 D1，唔會留低半套 deploy），
+# 再 apply D1 migration（未 apply 嘅先會跑），檢查 admin build 真係有 index.html，再 deploy Worker（S-808）。
 # Secrets：CLOUDFLARE_API_TOKEN（Workers Scripts / D1 / Workers R2 Storage：Edit，1 年到期）、CLOUDFLARE_ACCOUNT_ID。
 # Worker 自己嘅 secret（GOOGLE_CLIENT_SECRET、SESSION_SECRET）喺 Cloudflare dashboard 設，唔經 CI（見 apps/api/README.md）
 on:
@@ -45,13 +46,17 @@ jobs:
             # deploy 之前喺 workerd 再跑一次 api test（同 CI 一樣，唔使 Cloudflare 帳戶）
             - run: npm test
 
-            - name: Apply D1 migrations
-              run: npx wrangler d1 migrations apply 903-player --remote
-
-            # wrangler.toml [assets] directory = ../admin/dist
+            # wrangler.toml [assets] directory = ../admin/dist；放喺 migration 之前（S-808）
             - name: Build admin SPA
               run: npm run build -w apps/admin
               working-directory: .
+
+            - name: Apply D1 migrations
+              run: npx wrangler d1 migrations apply 903-player --remote
+
+            # api test 會開個空 apps/admin/dist（vitest.config.ts），冇 index.html 就會 deploy 一個空 SPA
+            - name: Check admin build
+              run: test -f ../admin/dist/index.html || { echo "::error::apps/admin/dist/index.html missing"; exit 1; }
 
             - name: Deploy Worker
               run: npx wrangler deploy
