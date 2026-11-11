@@ -140,6 +140,29 @@ const reorderCheck = (browser) =>
         await page.close();
     });
 
+const newDramaDialogCheck = (browser) =>
+    check('＋ dialog: Tab stays inside, Esc closes and focus returns to ＋ (S-811)', async () => {
+        const page = await newPage(browser, loggedIn());
+        await page.goto(`${BASE}/dramas`);
+        const add = page.getByRole('button', { name: '新增廣播劇' });
+        await add.click();
+        const dialog = page.getByRole('dialog', { name: '新增廣播劇' });
+        await dialog.waitFor();
+        await shoot(page, 'new-drama-dialog');
+        const focused = () => page.evaluate(() => document.activeElement?.textContent?.trim());
+        const seen = [];
+        for (let i = 0; i < 3; i += 1) {
+            seen.push(await focused());
+            await page.keyboard.press('Tab');
+        }
+        if (seen.join(',') !== '關閉,重新掃描,關閉') throw new Error(`Tab order ${seen}`);
+        await page.keyboard.press('Escape');
+        await dialog.waitFor({ state: 'detached' });
+        if (!(await add.evaluate((el) => el === document.activeElement)))
+            throw new Error('focus did not return to ＋');
+        await page.close();
+    });
+
 const showListCheck = (browser) =>
     check('show list: air time meta, legend, whole row opens the editor', async () => {
         const page = await newPage(browser, loggedIn());
@@ -390,6 +413,7 @@ try {
         loginCheck,
         todoFlowCheck,
         reorderCheck,
+        newDramaDialogCheck,
         showListCheck,
         scheduleCheck,
         showEditorCheck,
