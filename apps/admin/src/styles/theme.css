@@ -1080,3 +1080,18 @@ textarea.autosize {
     font-size: 13px;
     font-weight: 600;
 }
+
+/* 確認發佈時間線：日期、綠點同第一行（縮圖高度）垂直置中 */
+.timeline {
+    --timeline-row: 32px;
+}
+.timeline .when,
+.timeline .what {
+    display: flex;
+    align-items: center;
+    min-height: var(--timeline-row);
+}
+.timeline li::before {
+    /* li padding-top 8px + 半行高 − 半粒點（12px） */
+    top: calc(8px + var(--timeline-row) / 2 - 6px);
+}
