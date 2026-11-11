@@ -73,6 +73,11 @@ const loginCheck = (browser) =>
         if ((await google.getAttribute('href')) !== '/auth/google/start')
             throw new Error('bad href');
         await shoot(page, 'login');
+        // S-809：深連結 login 完要返返嚟 → ?next=（只係同源相對路徑）
+        await page.goto(`${BASE}/dramas/lancy/schedule#lancy-02`);
+        const deep = await google.getAttribute('href');
+        if (deep !== '/auth/google/start?next=%2Fdramas%2Flancy%2Fschedule%23lancy-02')
+            throw new Error(`deep link not passed to login: ${deep}`);
         await page.close();
     });
 
