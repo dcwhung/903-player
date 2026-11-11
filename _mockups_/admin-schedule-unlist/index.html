@@ -595,6 +595,53 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ⑥ 上架批次表加「下架」欄 -->
+            <section>
+                <p class="state-label">
+                    ⑥
+                    上架批次表加「下架」欄：設咗下架就每批顯示幾時落架（冇設就「不會下架」）。呢個表係「而家嘅排法」（已上架
+                    + 未上架批次），唔係改動歷史；改動歷史睇「上下架記錄」
+                </p>
+                <div class="card">
+                    <div class="batches">
+                        <h4>上架批次</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>上架日期</th>
+                                    <th>集數</th>
+                                    <th>狀態</th>
+                                    <th>下架</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>10/26 一</td>
+                                    <td>第 1–10 集</td>
+                                    <td><span class="pill ok">已上架</span></td>
+                                    <td>1/24 日（上架 90 日後）</td>
+                                </tr>
+                                <tr>
+                                    <td>11/16 一</td>
+                                    <td>第 11–15 集</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                    <td>2/14 日（上架 90 日後）</td>
+                                </tr>
+                                <tr>
+                                    <td>—</td>
+                                    <td>第 1–15 集</td>
+                                    <td><span class="pill plan">排程中</span></td>
+                                    <td>或：12/31 四 全部下架</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="hint">
+                            第 3 行示範「指定日全部下架」時嘅寫法（同一時間只會出一種）
+                        </p>
+                    </div>
+                </div>
+            </section>
         </main>
     </body>
 </html>
