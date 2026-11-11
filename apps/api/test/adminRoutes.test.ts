@@ -1,6 +1,6 @@
 /* Phase 3a admin API：待辦、改 ID、資料夾配對、排序、變更摘要、上下架記錄 */
 import { env } from 'cloudflare:test';
-import { adminGet, adminPost, adminRequest, call } from './helpers';
+import { ORIGIN, adminGet, adminPost, adminRequest, call, loginCookie } from './helpers';
 import { SHOW, TILE, drama, markDraft, putEntry, seed } from './fixtures';
 
 type Json = Record<string, unknown>;
@@ -400,6 +400,61 @@ describe('PUT /api/order/:kind', () => {
         expect((await order('dramas', ['golden', 'golden'])).status).toBe(422);
         expect((await order('dramas', 'golden')).status).toBe(400);
         expect((await order('films', [])).status).toBe(400);
+    });
+
+    /*
+     * S-799：json_set 綁 JS number 喺 miniflare 寫入 JSON integer（唔係 "1" string），其他欄位原封不動。
+     * 真 D1 同 miniflare 都係 SQLite JSON1，但 binding 層唔同；deploy 後 QA 喺真 D1 跑一次 PUT /api/order
+     * 再 GET entry 睇 order 係數字（見 README）
+     */
+    it('should store order as a JSON integer and keep the other fields (S-799)', async () => {
+        const before = await definitionOf('dramas', 'golden');
+        await order('dramas', ['alpha', 'golden']);
+        const type = await env.DB.prepare(
+            "SELECT json_type(definition, '$.order') AS t FROM entries WHERE kind = 'dramas' AND id = 'golden'",
+        ).first<string>('t');
+        expect(type).toBe('integer');
+        expect(await definitionOf('dramas', 'golden')).toEqual({ ...before, order: 2 });
+    });
+
+    it('should keep updated_at (ETag) increasing when another write lands first (S-799)', async () => {
+        const later = '2099-01-01T00:00:00.000Z';
+        // 讀完 entries、batch 之前另一個寫入：updated_at 已經大過我哋由舊值計出嚟嗰個
+        const raced = new Proxy(env.DB, {
+            get: (target, key) => {
+                if (key !== 'batch') {
+                    const value = Reflect.get(target, key) as unknown;
+                    return typeof value === 'function' ? value.bind(target) : value;
+                }
+                return async (statements: D1PreparedStatement[]) => {
+                    await target
+                        .prepare(
+                            "UPDATE entries SET updated_at = ? WHERE kind = 'dramas' AND id = 'alpha'",
+                        )
+                        .bind(later)
+                        .run();
+                    return target.batch(statements);
+                };
+            },
+        });
+        const { default: worker } = await import('../src/index');
+        const response = await worker.fetch(
+            new Request(new URL('/api/order/dramas', ORIGIN), {
+                method: 'PUT',
+                headers: {
+                    cookie: await loginCookie(),
+                    origin: ORIGIN,
+                    'content-type': 'application/json',
+                },
+                body: JSON.stringify({ ids: ['alpha', 'golden'] }),
+            }),
+            { ...env, DB: raced },
+        );
+        expect(response.status).toBe(200);
+        const updatedAt = await env.DB.prepare(
+            "SELECT updated_at FROM entries WHERE kind = 'dramas' AND id = 'alpha'",
+        ).first<string>('updated_at');
+        expect(updatedAt).toBe('2099-01-01T00:00:00.001Z');
     });
 
     it('should order shows too', async () => {
