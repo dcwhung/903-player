@@ -1,0 +1,28 @@
+/* ⟳ 重新掃描（POST /api/dramas/:id/scan，唔寫 D1）：結果併入草稿，本機改過嘅欄位保留，按「儲存」先寫 */
+import { useState } from 'react';
+import { rescanDrama } from '../../api/endpoints';
+import { t } from '../../i18n/t';
+import { mergeRescan } from '../editor/entryDraft';
+import type { EntryEditor } from '../editor/useEntryEditor';
+
+export const useRescan = (id: string, editor: EntryEditor) => {
+    const [state, setState] = useState<{ busy: boolean; message?: string }>({ busy: false });
+    const run = async () => {
+        setState({ busy: true });
+        try {
+            const result = await rescanDrama(id);
+            const saved = editor.entry?.definition ?? {};
+            if (result.draft) {
+                const scanned = result.draft;
+                editor.setDefinition((local) => mergeRescan(saved, local, scanned));
+            }
+            setState({ busy: false, message: t('drama.rescanned') });
+        } catch (error) {
+            setState({
+                busy: false,
+                message: error instanceof Error ? error.message : String(error),
+            });
+        }
+    };
+    return { ...state, run };
+};

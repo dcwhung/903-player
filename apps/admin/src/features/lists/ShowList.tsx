@@ -33,7 +33,7 @@ function ShowRow({
     const off = entry.definition.enabled === false;
     return (
         <li
-            ref={sortable?.ref}
+            ref={sortable?.setNodeRef}
             style={sortable?.style}
             className={`row${sortable?.isDragging ? ' is-dragging' : ''}`}
         >

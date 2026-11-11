@@ -27,7 +27,7 @@ export function DramaRow({ entry, flags, sortable, disabled = false }: DramaRowP
     ];
     return (
         <li
-            ref={sortable?.ref}
+            ref={sortable?.setNodeRef}
             style={sortable?.style}
             className={classes.filter(Boolean).join(' ')}
         >

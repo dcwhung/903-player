@@ -7,7 +7,7 @@ import { t } from '../i18n/t';
 import { prefersReducedMotion } from '../utils/motion';
 
 export interface SortableRender {
-    ref: (node: HTMLElement | null) => void;
+    setNodeRef: (node: HTMLElement | null) => void;
     style: CSSProperties;
     handle: ReactNode;
     isDragging: boolean;
@@ -46,5 +46,5 @@ export function SortableItem({ id, label, children }: SortableItemProps) {
         </button>
     );
     const style: CSSProperties = { transform: CSS.Translate.toString(transform), transition };
-    return <>{children({ ref: setNodeRef, style, handle, isDragging })}</>;
+    return <>{children({ setNodeRef, style, handle, isDragging })}</>;
 }

@@ -312,6 +312,11 @@ export const zhHK = {
         noCount: '此短篇的集數未知，請先於 R2 上載音檔並重新掃描。',
         notSeries: '每日播劇集沒有短篇排程。',
         previewFailed: '無法預覽：{error}',
+        custom: '自訂批次',
+        customSentence: '自訂批次（{count} 批）：揀上面的預設可重新排',
+        enableNote: '此短篇目前為「下架」，儲存排程後會同時轉為「上架」。',
+        unsavedNote: '其他分頁有未儲存的變更，儲存排程前請先儲存。',
+        days: '{days} 日',
     },
     history: {
         title: '上下架記錄',

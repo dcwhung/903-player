@@ -34,7 +34,11 @@ const renderList = (onReorder: (ids: string[]) => void) =>
                 labelOf={(item) => item}
                 onReorder={onReorder}
                 renderItem={(item, sortable) => (
-                    <li ref={sortable.ref} style={sortable.style} data-index={ITEMS.indexOf(item)}>
+                    <li
+                        ref={sortable.setNodeRef}
+                        style={sortable.style}
+                        data-index={ITEMS.indexOf(item)}
+                    >
                         {sortable.handle}
                         {item}
                     </li>

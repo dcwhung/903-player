@@ -33,7 +33,7 @@ export function Chips({ label, values, onChange }: ChipsProps) {
                 onReorder={onChange}
                 layout="wrap"
                 renderItem={(name, sortable) => (
-                    <span ref={sortable.ref} style={sortable.style} className="chip">
+                    <span ref={sortable.setNodeRef} style={sortable.style} className="chip">
                         {sortable.handle}
                         {name}
                         <button
