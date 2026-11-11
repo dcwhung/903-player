@@ -47,7 +47,7 @@ npm run dev                    # wrangler dev --local-protocol https → https:/
 - **Deploy 前一定要 build admin**：`npm run build:admin`（repo 根）；`deploy-api.yml` 喺 `wrangler deploy` 之前自動 build，`apps/admin/**` 有改都會觸發 deploy
 - Worker test（`vitest.config.ts`）會開個空 `apps/admin/dist`：wrangler 要個資料夾存在，test 唔使真 SPA
 - 本機：`npm run build:admin && npm run dev -w apps/api` → https://localhost:8787 直接用 admin；或者 `npm run dev:admin`（Vite，http://localhost:5173，proxy `/api` `/auth` `/catalog` 去 wrangler dev，改寫 Origin 過 same-origin 守門），先喺 https://localhost:8787 login（cookie 唔分 port）
-- 舊 ops 頁（`public/`）已經退役：發佈、記錄、還原全部喺 admin；唔喺 whitelist 嘅「冇權限」頁樣式改為 inline
+- 舊 ops 頁（`public/`）已經退役：發佈、記錄、還原全部喺 admin；唔喺 whitelist 嘅「冇權限」頁樣式改為 inline；`/auth/*`、`/api/*` 回應帶 `X-Frame-Options: DENY` + `Content-Security-Policy: frame-ancestors 'none'`（淨係 frame-ancestors，唔擋 inline theme script；S-774）。admin SPA static assets 唔經 Worker，要 frame 保護就喺 `apps/admin/public/_headers` 加
 
 Test（Worker code 喺 workerd 跑，`@cloudflare/vitest-plugin`；scripts 喺 Node）：
 
