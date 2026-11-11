@@ -222,6 +222,104 @@ describe('DramaEditor', () => {
         expect(tab.querySelector('.thumb.xs')).not.toBeNull();
     });
 
+    describe('changing the ID of an arc that has a schedule (S-804)', () => {
+        const SCHEDULE = {
+            rule: {
+                kind: 'periodic',
+                start: '2099-01-05',
+                perRelease: 5,
+                every: { weekdays: [1] },
+            },
+            expanded: null,
+            updatedAt: 's1',
+        };
+
+        /** 改短篇 ID（離開欄位 = 套用）再撳儲存 */
+        const renameArc = async (to: string) => {
+            const id = await screen.findByRole('textbox', { name: /短篇 ID/ });
+            await userEvent.clear(id);
+            await userEvent.type(id, `${to}{Enter}`);
+            await userEvent.click(screen.getByRole('button', { name: '儲存' }));
+        };
+
+        it('should save and read the schedule under the new ID when the server moves it', async () => {
+            let saved = DRAMA;
+            const fetchMock = api({
+                'GET /api/entries/dramas/lancy': () => ({
+                    body: saved,
+                    etag: `"${saved.updatedAt}"`,
+                }),
+                'GET /api/dramas/lancy/arcs/arc-01/schedule': () => ({ body: SCHEDULE }),
+                'GET /api/dramas/lancy/arcs/lancy-02/schedule': () => ({ body: SCHEDULE }),
+                'PUT /api/entries/dramas/lancy': (init: RequestInit) => {
+                    const body = JSON.parse(String(init.body)) as Pick<
+                        typeof DRAMA,
+                        'definition' | 'images'
+                    >;
+                    saved = { ...DRAMA, ...body, updatedAt: 'v2' };
+                    return {
+                        body: {
+                            updatedAt: 'v2',
+                            draft: false,
+                            warnings: { missingEpisodeIds: [] },
+                        },
+                    };
+                },
+            });
+            const { unmount } = renderAt(
+                '/dramas/lancy/arcs#arc-01',
+                '/dramas/:id/arcs',
+                <DramaEditorPage tab="arcs" />,
+            );
+            await renameArc('lancy-02');
+            await waitFor(() => expect(saved.updatedAt).toBe('v2'));
+            const put = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT');
+            const body = JSON.parse(String(put?.[1]?.body)) as {
+                definition: { arcs: { id: string }[] };
+            };
+            expect(body.definition.arcs.map((arc) => arc.id)).toEqual(['half', 'lancy-02']);
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+            unmount();
+            // 排程 tab：短篇用新 ID 讀返 server 搬咗過去嘅排程
+            renderAt(
+                '/dramas/lancy/schedule#lancy-02',
+                '/dramas/:id/schedule',
+                <DramaEditorPage tab="schedule" />,
+            );
+            const tab = await screen.findByRole('tab', { name: /我心不死/ });
+            expect(tab).toHaveAttribute('aria-selected', 'true');
+            expect(
+                fetchMock.mock.calls.some(
+                    ([url]) => url === '/api/dramas/lancy/arcs/lancy-02/schedule',
+                ),
+            ).toBe(true);
+        });
+
+        it('should explain a 409 from the server and keep the edit unsaved', async () => {
+            api({
+                'GET /api/dramas/lancy/arcs/arc-01/schedule': () => ({ body: SCHEDULE }),
+                'PUT /api/entries/dramas/lancy': () => ({
+                    status: 409,
+                    body: {
+                        error: 'arc arc-01 has a schedule; remove it first',
+                        arcId: 'arc-01',
+                        reason: 'arcScheduled',
+                    },
+                }),
+            });
+            renderAt(
+                '/dramas/lancy/arcs#arc-01',
+                '/dramas/:id/arcs',
+                <DramaEditorPage tab="arcs" />,
+            );
+            await renameArc('lancy-02');
+            expect(
+                await screen.findByText('此短篇已有排程，請先移除排程再修改 ID。'),
+            ).toHaveAttribute('role', 'alert');
+            expect(screen.getByRole('textbox', { name: /短篇 ID/ })).toHaveValue('lancy-02');
+        });
+    });
+
     it('should show the saved disc image in the title when the drama has one (S-824)', async () => {
         api({
             'GET /api/entries/dramas/lancy': () => ({
