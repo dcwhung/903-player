@@ -1,7 +1,9 @@
 /*
- * 上下架記錄一行：版本資訊置頂；變更 tag / 縮圖 / 名 / 狀態四欄對齊；使用中綠邊、失敗紅邊 + 原因
+ * 上下架記錄一行：版本資訊置頂（#id / 時間 / admin 分行）；變更 tag / 縮圖 / 名 / 狀態對齊，名欄用晒餘下闊度（3c）；
+ * 使用中綠邊、失敗紅邊 + 原因
  * Design Origin: mockup: _mockups_/admin/index.html#s8（.hist-row）
  */
+import { Undo2 } from 'lucide-react';
 import type { ChangeItem } from '@903-player/catalog';
 import type { LoadedEntry, PublishSummary } from '../../api/types';
 import { t } from '../../i18n/t';
@@ -39,6 +41,7 @@ function Status({ row, onRollback }: Pick<HistoryRowProps, 'row' | 'onRollback'>
             onClick={() => onRollback(row.id)}
             aria-label={t('history.rollbackTo', { id: row.id })}
         >
+            <Undo2 aria-hidden="true" />
             {t('history.rollback')}
         </button>
     );
@@ -72,7 +75,8 @@ export function HistoryRow({ row, servingId, entries, onRollback }: HistoryRowPr
         >
             <span className="ver" role="cell">
                 <b>#{row.id}</b>
-                <span className="meta">{`${stampOf(row.createdAt)} · ${row.createdBy.split('@')[0] ?? ''}`}</span>
+                <span className="meta when">{stampOf(row.createdAt)}</span>
+                <span className="meta who">{row.createdBy.split('@')[0] ?? ''}</span>
             </span>
             <span className="changes" role="cell">
                 {items.map((item, i) => (
