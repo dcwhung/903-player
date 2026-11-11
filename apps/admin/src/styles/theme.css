@@ -1097,3 +1097,29 @@ textarea.autosize {
     color: var(--muted);
     font-size: 13px;
 }
+
+/*
+ * 上架 / 下架 toggle：狀態色唔跟一般 button:hover（淺灰會食咗白字白點）；
+ * focus-visible outline 照用全域樣式
+ */
+.toggle.on,
+.toggle.on:hover:not(:disabled) {
+    background: var(--toggle-on);
+}
+
+.toggle.off,
+.toggle.off:hover:not(:disabled) {
+    background: var(--toggle-off);
+}
+
+/* 排程 tab：揀咗嘅短篇 chip 用實色主色底 + 白字（深色主題 --primary 不變，白字對比 ≥ 4.5:1） */
+.arc-tabs button[aria-selected='true'],
+.arc-tabs button[aria-selected='true']:hover:not(:disabled) {
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: var(--shadow-btn);
+}
+
+.arc-tabs button[aria-selected='true'] small {
+    color: var(--on-primary);
+}
