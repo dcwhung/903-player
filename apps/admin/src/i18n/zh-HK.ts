@@ -248,6 +248,7 @@ export const zhHK = {
         airDays: '播出日',
         airTime: '播放時間',
         airTimeTip: '每 15 分鐘一格；完結時間只可選開始時間後 3 小時內',
+        setAirTime: '設定播放時間',
         to: '至',
         start: '開始時間',
         end: '完結時間',

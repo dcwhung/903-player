@@ -115,4 +115,50 @@ describe('ShowEditor', () => {
         expect(await screen.findByText('other page')).toBeInTheDocument();
         expect(data.refresh).toHaveBeenCalled();
     });
+
+    it('should hide the time boxes until 設定播放時間 is ticked, then write the default range', async () => {
+        const api = mockApi({
+            'GET /api/entries/shows/waves': load,
+            'PUT /api/entries/shows/waves': () => ({
+                body: { updatedAt: 'v2', draft: false, warnings: { missingEpisodeIds: [] } },
+            }),
+        });
+        renderAt('/shows/waves', '/shows/:id', <ShowEditorPage />);
+        const box = await screen.findByRole('checkbox', { name: '設定播放時間' });
+        expect(box).not.toBeChecked();
+        expect(screen.queryByRole('button', { name: /開始時間/ })).not.toBeInTheDocument();
+        await userEvent.click(box);
+        expect(screen.getByRole('button', { name: /開始時間/ })).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', { name: '儲存' }));
+        await waitFor(() => expect(api.mock.calls.some(([, i]) => i?.method === 'PUT')).toBe(true));
+        const put = api.mock.calls.find(([, init]) => init?.method === 'PUT');
+        expect(JSON.parse(String(put?.[1]?.body)).definition.airTime).toEqual({
+            start: '15:00',
+            end: '16:00',
+        });
+    });
+
+    it('should drop airTime when 設定播放時間 is unticked', async () => {
+        const api = mockApi({
+            'GET /api/entries/shows/waves': () => ({
+                body: {
+                    ...SHOW,
+                    definition: { ...SHOW.definition, airTime: { start: '15:00', end: '16:30' } },
+                },
+                etag: '"2026-11-10T00:00:00.000Z"',
+            }),
+            'PUT /api/entries/shows/waves': () => ({
+                body: { updatedAt: 'v2', draft: false, warnings: { missingEpisodeIds: [] } },
+            }),
+        });
+        renderAt('/shows/waves', '/shows/:id', <ShowEditorPage />);
+        const box = await screen.findByRole('checkbox', { name: '設定播放時間' });
+        expect(box).toBeChecked();
+        await userEvent.click(box);
+        expect(screen.queryByRole('button', { name: /開始時間/ })).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', { name: '儲存' }));
+        await waitFor(() => expect(api.mock.calls.some(([, i]) => i?.method === 'PUT')).toBe(true));
+        const put = api.mock.calls.find(([, init]) => init?.method === 'PUT');
+        expect(JSON.parse(String(put?.[1]?.body)).definition).not.toHaveProperty('airTime');
+    });
 });

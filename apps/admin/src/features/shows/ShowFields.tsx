@@ -6,19 +6,12 @@ import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
 import { str } from '../../model/raw';
 import { Chips } from '../../ui/Chips';
-import { TimeRoller } from '../../ui/TimeRoller';
 import { Tip } from '../../ui/Tip';
 import { Toggle } from '../../ui/Toggle';
 import { IdField } from '../editor/IdField';
+import { AirTimeField } from './AirTimeField';
 import { DaysField } from './DaysField';
-import {
-    DEFAULT_AIR_TIME,
-    airDaysOf,
-    airTimeOf,
-    hostsOf,
-    summaryOf,
-    withOptional,
-} from './showModel';
+import { airDaysOf, hostsOf, summaryOf, withOptional } from './showModel';
 
 interface ShowFieldsProps {
     id: string;
@@ -129,15 +122,7 @@ function AirFields({
                     onChange={(days) => onChange((d) => ({ ...d, airDays: days }))}
                 />
             </div>
-            <div className="field wide">
-                <span>
-                    {t('show.airTime')} <Tip text={t('show.airTimeTip')} />
-                </span>
-                <TimeRoller
-                    value={airTimeOf(definition) ?? DEFAULT_AIR_TIME}
-                    onChange={(range) => set('airTime', range)}
-                />
-            </div>
+            <AirTimeField definition={definition} set={set} />
         </>
     );
 }
