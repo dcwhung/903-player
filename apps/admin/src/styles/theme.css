@@ -1095,3 +1095,10 @@ textarea.autosize {
     /* li padding-top 8px + 半行高 − 半粒點（12px） */
     top: calc(8px + var(--timeline-row) / 2 - 6px);
 }
+
+/* ---------- 排程：下架又冇排程 = 未上架（唔出灰 ✓） ---------- */
+.strip-unreleased {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+}

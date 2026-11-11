@@ -341,6 +341,7 @@ export const zhHK = {
         futureLabel: '今天之後的批次',
         today: '今天',
         legendPast: '灰格 ✓ = 已上架（不受新規則影響）',
+        unreleased: '未上架：此短篇目前為「下架」，未有排程',
         legendToday: '藍線 = 今天',
         batches: '上架批次',
         colDate: '日期',

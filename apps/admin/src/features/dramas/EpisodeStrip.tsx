@@ -1,5 +1,5 @@
 /*
- * 集數條（mockup ⑩ C）：已上架批次灰格 ✓ 日期一行；「今天」換行，之後係新批次（虛線分隔）
+ * 集數條（mockup ⑩ C）：已上架批次灰格 ✓ 日期一行（下架又冇排程 = 「未上架」）；「今天」換行，之後係新批次（虛線分隔）
  */
 import type { EpisodeRange } from '@903-player/catalog';
 import { t } from '../../i18n/t';
@@ -26,6 +26,11 @@ function Batch({ batch, tone }: { batch: EpisodeRange; tone: 'past' | 'b1' | 'b2
 export function EpisodeStrip({ strip, count }: { strip: Strip; count: number }) {
     return (
         <>
+            {strip.unreleased && (
+                <p className="strip-unreleased" role="status">
+                    {t('schedule.unreleased')}
+                </p>
+            )}
             {strip.past.length > 0 && (
                 <div
                     className="strip"
