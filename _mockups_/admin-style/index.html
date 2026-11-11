@@ -1,0 +1,1510 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>903 Player Admin · UI 樣式</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            /*
+             * Phase 3c UI 樣式 preview（grill 2026-11-11）：
+             * 主色 = banner 天藍；nav 實色天藍 + 白字（用深一級 #1e7bc0 先過 AA 4.5:1）、可收細；
+             * 內容 panel 四角圓角；統計用漸變色卡；Poppins + Noto Sans TC；按鈕實色 + outline icon；
+             * 淺色為主，深色跟系統（下面 ⑨ 強制顯示深色版）。卡片風格 A / B / C 三揀一（⑥）。
+             */
+            :root {
+                --sky: #53a9e3;
+                --sky-strong: #1e7bc0;
+                --sky-deep: #155f96;
+                --sky-soft: #e6f3fc;
+                --bg: #eef3f8;
+                --panel: #f7f9fc;
+                --surface: #ffffff;
+                --surface-2: #f1f5f9;
+                --ink: #16212e;
+                --muted: #5e6b7a;
+                --line: #dbe3ec;
+                --ok: #23935c;
+                --ok-bg: #e3f5ec;
+                --warn: #d97706;
+                --warn-bg: #fff3df;
+                --danger: #d9363e;
+                --danger-bg: #fdebec;
+                --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06);
+                --shadow-btn: 0 2px 6px rgb(30 123 192 / 0.3);
+                --r-panel: 24px;
+                --r-card: 18px;
+                --r-btn: 10px;
+                --nav-w: 232px;
+                --nav-w-mini: 76px;
+                --font: 'Poppins', 'Noto Sans TC', 'PingFang HK', sans-serif;
+                --motion-base: 200ms;
+                --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+                --grad-sky: linear-gradient(135deg, #6cc0f5, #2b8ad1);
+                --grad-red: linear-gradient(135deg, #ff8a8a, #e0444c);
+                --grad-orange: linear-gradient(135deg, #ffc46b, #f08a24);
+                --grad-green: linear-gradient(135deg, #6fdca4, #23935c);
+                color-scheme: light dark;
+            }
+            .dark,
+            :root.dark-auto {
+                --bg: #0f1620;
+                --panel: #141d29;
+                --surface: #1b2635;
+                --surface-2: #223043;
+                --ink: #e8eef5;
+                --muted: #9aabbd;
+                --line: #2c3b4f;
+                --sky-soft: #1c3349;
+                --ok-bg: #133524;
+                --warn-bg: #3a2a10;
+                --danger-bg: #3b1619;
+                --shadow: none;
+                --shadow-btn: none;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: #0f1620;
+                    --panel: #141d29;
+                    --surface: #1b2635;
+                    --surface-2: #223043;
+                    --ink: #e8eef5;
+                    --muted: #9aabbd;
+                    --line: #2c3b4f;
+                    --sky-soft: #1c3349;
+                    --ok-bg: #133524;
+                    --warn-bg: #3a2a10;
+                    --danger-bg: #3b1619;
+                    --shadow: none;
+                    --shadow-btn: none;
+                }
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: #dfe6ee;
+                color: #16212e;
+                font: 15px/1.55 var(--font);
+            }
+            .page {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 24px 16px 64px;
+                display: grid;
+                gap: 40px;
+            }
+            .intro h1 {
+                margin: 0 0 4px;
+                font-size: 20px;
+            }
+            .intro p,
+            .state-label {
+                margin: 0 0 8px;
+                font-size: 13px;
+                color: #4d5a69;
+            }
+            .jump {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px 14px;
+                font-size: 13px;
+            }
+            .jump a {
+                color: #1e7bc0;
+            }
+            .frame {
+                border-radius: 16px;
+                overflow: hidden;
+                box-shadow: 0 8px 30px rgb(0 0 0 / 0.12);
+            }
+            svg.i {
+                width: 18px;
+                height: 18px;
+                flex: none;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 2;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            /* ---------- App shell ---------- */
+            .shell {
+                display: grid;
+                grid-template-columns: var(--nav-w) 1fr;
+                min-height: 640px;
+                background: var(--sky-strong);
+                color: var(--ink);
+            }
+            .shell.mini {
+                grid-template-columns: var(--nav-w-mini) 1fr;
+            }
+            .nav {
+                background: var(--sky-strong);
+                color: #ffffff;
+                padding: 18px 14px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .brand {
+                position: relative;
+                border-radius: 14px;
+                overflow: hidden;
+                margin-bottom: 14px;
+                box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+            }
+            .brand img {
+                display: block;
+                width: 100%;
+            }
+            .ver {
+                position: absolute;
+                right: 6px;
+                bottom: 6px;
+                padding: 0 8px;
+                border-radius: 999px;
+                background: #c2410c;
+                color: #fff;
+                font-size: 11px;
+                font-weight: 600;
+                line-height: 1.7;
+            }
+            .logo-mini {
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                margin: 0 auto 14px;
+                display: grid;
+                place-items: center;
+                background: #ffffff;
+                color: var(--sky-strong);
+                font-weight: 700;
+                font-size: 15px;
+                box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+            }
+            .nav .group {
+                margin: 12px 12px 2px;
+                font-size: 11px;
+                letter-spacing: 0.08em;
+                opacity: 0.7;
+            }
+            .nav a {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 12px;
+                border-radius: 12px;
+                color: #ffffff;
+                text-decoration: none;
+                font-weight: 500;
+            }
+            .nav a:hover {
+                background: rgb(255 255 255 / 0.12);
+            }
+            .nav a[aria-current='page'] {
+                background: #ffffff;
+                color: var(--sky-strong);
+                box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
+            }
+            .nav .count {
+                margin-left: auto;
+                min-width: 22px;
+                padding: 0 7px;
+                border-radius: 999px;
+                background: #ffffff;
+                color: var(--sky-strong);
+                font-size: 12px;
+                font-weight: 700;
+                text-align: center;
+            }
+            .nav a[aria-current='page'] .count {
+                background: var(--sky-strong);
+                color: #fff;
+            }
+            .nav .spacer {
+                flex: 1;
+            }
+            .nav .who {
+                padding: 0 12px;
+                font-size: 12px;
+                opacity: 0.8;
+            }
+            .collapse {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 12px;
+                border: 0;
+                border-radius: 12px;
+                background: rgb(255 255 255 / 0.12);
+                color: #fff;
+                font: inherit;
+                cursor: pointer;
+            }
+            .shell.mini .nav a,
+            .shell.mini .collapse {
+                justify-content: center;
+                padding: 12px 0;
+            }
+            .shell.mini .label,
+            .shell.mini .group,
+            .shell.mini .who,
+            .shell.mini .count {
+                display: none;
+            }
+            .shell.mini .nav a .dot-count {
+                position: absolute;
+                top: 6px;
+                right: 12px;
+                width: 9px;
+                height: 9px;
+                border-radius: 50%;
+                background: #ffb020;
+                border: 2px solid var(--sky-strong);
+            }
+            .dot-count {
+                display: none;
+            }
+            .shell.mini .dot-count {
+                display: block;
+            }
+            /* 內容 panel：四角圓角，浮喺 nav 色上面 */
+            .panel {
+                margin: 12px 12px 12px 0;
+                padding: 24px 28px;
+                border-radius: var(--r-panel);
+                background: var(--panel);
+                display: grid;
+                gap: 18px;
+                align-content: start;
+                min-width: 0;
+            }
+            .panel h2 {
+                margin: 0;
+                font-size: 22px;
+                font-weight: 600;
+            }
+            .title-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            /* ---------- Scan bar（文字靠左） ---------- */
+            .scan {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 14px;
+                border-radius: 14px;
+                background: var(--sky-soft);
+                color: var(--sky-deep);
+                font-size: 14px;
+                font-weight: 500;
+            }
+            .dark .scan,
+            .scan.dk {
+                color: #9fd2f6;
+            }
+            .scan .spin {
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                border: 2px solid currentColor;
+                border-right-color: transparent;
+            }
+            @media (prefers-reduced-motion: no-preference) {
+                .scan .spin {
+                    animation: spin 0.8s linear infinite;
+                }
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* ---------- 漸變統計卡 ---------- */
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 16px;
+            }
+            .stat {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                padding: 18px;
+                border-radius: var(--r-card);
+                color: #ffffff;
+                box-shadow: 0 8px 20px rgb(0 0 0 / 0.12);
+            }
+            .stat .ico {
+                width: 46px;
+                height: 46px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: rgb(255 255 255 / 0.25);
+            }
+            .stat .ico svg.i {
+                width: 22px;
+                height: 22px;
+            }
+            .stat b {
+                display: block;
+                font-size: 28px;
+                line-height: 1.1;
+                font-weight: 600;
+            }
+            .stat span {
+                font-size: 13px;
+                opacity: 0.92;
+            }
+            .g-sky {
+                background: var(--grad-sky);
+            }
+            .g-red {
+                background: var(--grad-red);
+            }
+            .g-orange {
+                background: var(--grad-orange);
+            }
+            .g-green {
+                background: var(--grad-green);
+            }
+
+            /* ---------- 卡片 ---------- */
+            .card {
+                background: var(--surface);
+                border-radius: var(--r-card);
+                box-shadow: var(--shadow);
+                padding: 18px 20px;
+                display: grid;
+                gap: 12px;
+            }
+            .dark .card,
+            .card.bordered {
+                border: 1px solid var(--line);
+            }
+            .card h3 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 600;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 14px;
+            }
+            th,
+            td {
+                padding: 12px 10px;
+                text-align: center;
+                border-bottom: 1px solid var(--line);
+            }
+            th {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--muted);
+            }
+            th:first-child,
+            td:first-child {
+                text-align: left;
+            }
+            tr:last-child td {
+                border-bottom: 0;
+            }
+            th .i {
+                width: 15px;
+                height: 15px;
+                vertical-align: -2px;
+                margin-right: 4px;
+            }
+            .meta {
+                display: block;
+                font-size: 12px;
+                color: var(--muted);
+            }
+            .cell-must {
+                display: inline-block;
+                padding: 4px 14px;
+                border-radius: 8px;
+                background: var(--danger);
+                color: #fff;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            .cell-opt {
+                display: inline-grid;
+                place-items: center;
+                width: 34px;
+                height: 28px;
+                border-radius: 8px;
+                border: 1.5px dashed var(--line);
+                color: var(--muted);
+            }
+            .ok {
+                color: var(--ok);
+                font-weight: 700;
+            }
+
+            /* ---------- 按鈕（實色 + outline icon） ---------- */
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 9px 18px;
+                border-radius: var(--r-btn);
+                border: 0;
+                background: var(--sky-strong);
+                color: #ffffff;
+                font: 500 14px var(--font);
+                box-shadow: var(--shadow-btn);
+                cursor: pointer;
+                white-space: nowrap;
+            }
+            .btn:hover {
+                background: var(--sky-deep);
+            }
+            .btn.big {
+                padding: 12px 28px;
+                font-size: 16px;
+                font-weight: 600;
+            }
+            .btn.ghost {
+                background: var(--surface);
+                color: var(--ink);
+                box-shadow: inset 0 0 0 1px var(--line);
+            }
+            .btn.danger {
+                background: var(--danger);
+                box-shadow: 0 2px 6px rgb(217 54 62 / 0.3);
+            }
+            .btn:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+            }
+            .row {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+
+            /* ---------- Tooltip（有箭咀；滑鼠唔變 ?） ---------- */
+            .tip-wrap {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                cursor: default;
+            }
+            .tip-wrap .i {
+                width: 15px;
+                height: 15px;
+                color: var(--muted);
+            }
+            .tip {
+                position: absolute;
+                left: 50%;
+                bottom: calc(100% + 10px);
+                transform: translateX(-50%);
+                padding: 8px 12px;
+                border-radius: 10px;
+                background: #16212e;
+                color: #ffffff;
+                font-size: 13px;
+                font-weight: 400;
+                white-space: nowrap;
+                box-shadow: 0 6px 18px rgb(0 0 0 / 0.2);
+            }
+            .tip::after {
+                content: '';
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                border: 7px solid transparent;
+                border-top-color: #16212e;
+            }
+            .tip.right {
+                left: calc(100% + 10px);
+                bottom: auto;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            .tip.right::after {
+                top: 50%;
+                left: auto;
+                right: 100%;
+                transform: translateY(-50%);
+                border-color: transparent;
+                border-right-color: #16212e;
+            }
+
+            /* ---------- 表單 / 短篇編輯 ---------- */
+            .field {
+                display: grid;
+                gap: 6px;
+                align-content: start;
+            }
+            .field > span {
+                font-size: 13px;
+                font-weight: 600;
+            }
+            input[type='text'],
+            textarea {
+                font: inherit;
+                width: 100%;
+                padding: 9px 12px;
+                border-radius: 12px;
+                border: 1.5px solid var(--line);
+                background: var(--surface);
+                color: var(--ink);
+            }
+            textarea {
+                resize: none;
+                field-sizing: content;
+                min-height: 2.6em;
+            }
+            input.mono,
+            textarea.mono {
+                font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+                font-size: 13px;
+            }
+            .invalid {
+                border-color: var(--danger) !important;
+                box-shadow: 0 0 0 3px var(--danger-bg);
+            }
+            .arc-row {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 14px 18px;
+                border-radius: var(--r-card) var(--r-card) 0 0;
+                background: var(--sky-soft);
+                cursor: pointer;
+            }
+            .arc-row .name {
+                font-weight: 600;
+                font-size: 16px;
+            }
+            .arc-row .chev {
+                margin-left: auto;
+                color: var(--muted);
+            }
+            .arc-body {
+                padding: 18px;
+                border-radius: 0 0 var(--r-card) var(--r-card);
+                background: var(--sky-soft);
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 360px;
+                gap: 24px;
+            }
+            .arc-form {
+                display: grid;
+                gap: 16px;
+            }
+            .row3 {
+                display: flex;
+                gap: 28px;
+                align-items: flex-start;
+                flex-wrap: wrap;
+            }
+            .toggle {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 3px 3px 3px 3px;
+                border-radius: 999px;
+                border: 0;
+                font: 700 13px var(--font);
+                color: #fff;
+            }
+            .toggle::before {
+                content: '';
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: #fff;
+            }
+            .toggle.off {
+                background: #c2333a;
+                padding-right: 14px;
+            }
+            .toggle.on {
+                background: #1f7a4d;
+                flex-direction: row-reverse;
+                padding-left: 14px;
+            }
+            .status-line {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 2px 10px;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 500;
+                background: var(--surface-2);
+                color: var(--muted);
+            }
+            .pill.warn {
+                background: var(--warn-bg);
+                color: #9a5800;
+            }
+            .dark .pill.warn {
+                color: #f2c27a;
+            }
+            .scan-box {
+                position: relative;
+                margin: 0;
+                padding: 14px 16px 16px;
+                border: 1.5px dashed var(--line);
+                border-radius: 16px;
+                display: grid;
+                gap: 12px;
+            }
+            .scan-box legend {
+                padding: 0 6px;
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--muted);
+            }
+            .scan-box .rescan {
+                position: absolute;
+                top: -19px;
+                right: 14px;
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+            .ro {
+                padding: 8px 12px;
+                border-radius: 10px;
+                background: var(--surface-2);
+                font-size: 14px;
+                width: fit-content;
+            }
+            .media {
+                display: grid;
+                gap: 8px;
+                justify-items: center;
+                align-content: start;
+            }
+            .slot {
+                position: relative;
+                border: 0;
+                padding: 0;
+                cursor: pointer;
+                background: linear-gradient(135deg, #d77a4e, #8fbcb2);
+            }
+            .slot.disc {
+                width: 192px;
+                height: 192px;
+                border-radius: 50%;
+            }
+            .slot.tile {
+                width: 340px;
+                height: 192px;
+                border-radius: 16px;
+            }
+            .slot .pen {
+                position: absolute;
+                right: 6px;
+                bottom: 6px;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: var(--sky-strong);
+                color: #fff;
+                border: 3px solid var(--surface);
+            }
+            .slot.tile .pen {
+                right: -10px;
+                bottom: -10px;
+            }
+            .media .cap {
+                font-size: 12px;
+                color: var(--muted);
+                margin-bottom: 8px;
+            }
+
+            /* ---------- 裁切預覽 ---------- */
+            .scrim {
+                padding: 40px 16px;
+                background: rgb(10 20 35 / 0.45);
+                display: grid;
+                place-items: center;
+            }
+            .dialog {
+                width: min(560px, 100%);
+                background: var(--surface);
+                border-radius: 22px;
+                padding: 22px 24px;
+                display: grid;
+                gap: 16px;
+                box-shadow: 0 20px 50px rgb(0 0 0 / 0.25);
+            }
+            .crop {
+                display: grid;
+                grid-template-columns: 1fr auto 1fr;
+                align-items: center;
+                gap: 14px;
+            }
+            .crop .src {
+                position: relative;
+                height: 180px;
+                border-radius: 12px;
+                background: linear-gradient(135deg, #d77a4e, #8fbcb2);
+            }
+            .crop .box {
+                position: absolute;
+                inset: 20px 30%;
+                border: 2px solid #fff;
+                border-radius: 6px;
+                box-shadow: 0 0 0 999px rgb(0 0 0 / 0.35);
+            }
+            .crop .out {
+                width: 160px;
+                height: 160px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #d77a4e, #8fbcb2);
+                justify-self: center;
+            }
+
+            /* ---------- 403 / 直向提示（同一版式） ---------- */
+            .notice-pair {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 20px;
+            }
+            .notice {
+                min-height: 460px;
+                display: grid;
+                place-items: center;
+                padding: 32px 20px;
+                background: var(--bg);
+                color: var(--ink);
+            }
+            .notice .box {
+                width: min(380px, 100%);
+                padding: 32px 28px;
+                border-radius: 24px;
+                background: var(--surface);
+                box-shadow: var(--shadow);
+                text-align: center;
+                display: grid;
+                gap: 12px;
+                justify-items: center;
+            }
+            .notice .art {
+                width: 140px;
+                height: 140px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: var(--sky-soft);
+                color: var(--sky-strong);
+                margin-bottom: 4px;
+            }
+            .notice .art svg {
+                width: 84px;
+                height: 84px;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 2.4;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+            .notice h2 {
+                margin: 0;
+                font-size: 22px;
+                font-weight: 600;
+            }
+            .notice p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 14px;
+            }
+            .notice code {
+                font-family: var(--font);
+                color: var(--ink);
+                font-weight: 500;
+            }
+            .cards3 {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 20px;
+                padding: 24px;
+                background: var(--panel);
+            }
+            .opt-label {
+                font-size: 13px;
+                font-weight: 600;
+                margin: 0 0 8px;
+                color: var(--muted);
+            }
+            .card.styleA {
+                border-radius: 20px;
+                box-shadow: var(--shadow);
+            }
+            .card.styleB {
+                border-radius: 12px;
+                box-shadow: none;
+                border: 1px solid var(--line);
+            }
+            .card.styleC {
+                border-radius: 20px;
+                box-shadow: var(--shadow);
+                border: 1px solid var(--line);
+            }
+        </style>
+    </head>
+    <body>
+        <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+            <defs>
+                <symbol id="i-refresh" viewBox="0 0 24 24">
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36L21 8" />
+                    <path d="M21 3v5h-5" />
+                </symbol>
+                <symbol id="i-inbox" viewBox="0 0 24 24">
+                    <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+                    <path
+                        d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+                    />
+                </symbol>
+                <symbol id="i-radio" viewBox="0 0 24 24">
+                    <rect x="3" y="7" width="18" height="13" rx="2" />
+                    <path d="m7 7 10-4" />
+                    <circle cx="8" cy="13.5" r="2.5" />
+                    <path d="M14 12h4M14 15h4" />
+                </symbol>
+                <symbol id="i-disc" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" />
+                    <circle cx="12" cy="12" r="2" />
+                </symbol>
+                <symbol id="i-history" viewBox="0 0 24 24">
+                    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                    <path d="M3 3v5h5M12 7v5l3 2" />
+                </symbol>
+                <symbol id="i-logout" viewBox="0 0 24 24">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                </symbol>
+                <symbol id="i-chev" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol>
+                <symbol id="i-chevdown" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol>
+                <symbol id="i-folder" viewBox="0 0 24 24">
+                    <path
+                        d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+                    />
+                </symbol>
+                <symbol id="i-hash" viewBox="0 0 24 24">
+                    <path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18" />
+                </symbol>
+                <symbol id="i-image" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="9" cy="9" r="2" />
+                    <path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21" />
+                </symbol>
+                <symbol id="i-cal" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                </symbol>
+                <symbol id="i-text" viewBox="0 0 24 24">
+                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                    <path d="M14 2v5h5M8 13h8M8 17h5" />
+                </symbol>
+                <symbol id="i-info" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4M12 8h.01" />
+                </symbol>
+                <symbol id="i-pen" viewBox="0 0 24 24">
+                    <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                </symbol>
+                <symbol id="i-save" viewBox="0 0 24 24">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <path d="M17 21v-8H7v8M7 3v5h8" />
+                </symbol>
+                <symbol id="i-send" viewBox="0 0 24 24">
+                    <path d="m22 2-7 20-4-9-9-4Z" />
+                    <path d="M22 2 11 13" />
+                </symbol>
+                <symbol id="i-undo" viewBox="0 0 24 24">
+                    <path d="M3 7v6h6" />
+                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+                </symbol>
+                <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+                <symbol id="i-alert" viewBox="0 0 24 24">
+                    <path d="M12 9v4M12 17h.01" />
+                    <path
+                        d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"
+                    />
+                </symbol>
+                <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+                <symbol id="i-panel" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M9 3v18M15 9l-3 3 3 3" />
+                </symbol>
+                <symbol id="i-login" viewBox="0 0 24 24">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />
+                </symbol>
+            </defs>
+        </svg>
+
+        <main class="page">
+            <section class="intro">
+                <h1>903 Player Admin：UI 樣式 preview（Phase 3c）</h1>
+                <p>
+                    主色 banner 天藍；nav 實色天藍 + 白字（白字要過 AA，所以 nav / 按鈕用深一級
+                    <code>#1e7bc0</code>，banner 天藍 <code>#53a9e3</code> 用喺高亮同淺底）；內容
+                    panel 四角圓角；漸變統計卡；Poppins + Noto Sans TC；按鈕實色 + outline icon。
+                </p>
+                <nav class="jump">
+                    <a href="#a">① 展開 nav + 更新內容</a><a href="#b">② 收細 nav</a
+                    ><a href="#c">③ 卡片風格 A / B / C</a><a href="#d">④ 按鈕 + tooltip</a
+                    ><a href="#e">⑤ 短篇展開（新改動）</a><a href="#f">⑥ 圖片裁切預覽</a
+                    ><a href="#g">⑦ 403 + 直向提示</a><a href="#h">⑧ 深色模式</a>
+                </nav>
+            </section>
+
+            <!-- ① -->
+            <section id="a">
+                <p class="state-label">
+                    ① 展開 nav（232px）：實色天藍、白字，揀中項目變白底天藍字；底部「收合」掣。內容
+                    panel 四角 24px 圓角，浮喺 nav 色上面。頂部掃描 bar 文字靠左（spinner +
+                    文字）。統計用漸變色卡
+                </p>
+                <div class="frame">
+                    <div class="shell">
+                        <nav class="nav" aria-label="主選單">
+                            <div class="brand">
+                                <img src="banner.webp" alt="903 叱咤 Player" /><span class="ver"
+                                    >Admin v0.5.0</span
+                                >
+                            </div>
+                            <a href="#a" aria-current="page"
+                                ><svg class="i"><use href="#i-inbox" /></svg
+                                ><span class="label">更新內容</span><span class="count">3</span
+                                ><span class="dot-count"></span
+                            ></a>
+                            <span class="group">內容</span>
+                            <a href="#a"
+                                ><svg class="i"><use href="#i-radio" /></svg
+                                ><span class="label">節目</span></a
+                            >
+                            <a href="#a"
+                                ><svg class="i"><use href="#i-disc" /></svg
+                                ><span class="label">廣播劇</span></a
+                            >
+                            <span class="group">記錄</span>
+                            <a href="#a"
+                                ><svg class="i"><use href="#i-history" /></svg
+                                ><span class="label">上下架記錄</span></a
+                            >
+                            <span class="spacer"></span>
+                            <span class="who">admin@…</span>
+                            <a href="#a"
+                                ><svg class="i"><use href="#i-logout" /></svg
+                                ><span class="label">登出</span></a
+                            >
+                            <button class="collapse" aria-label="收合選單">
+                                <svg class="i"><use href="#i-panel" /></svg
+                                ><span class="label">收合</span>
+                            </button>
+                        </nav>
+                        <div class="panel">
+                            <div class="scan">
+                                <span class="spin" aria-hidden="true"></span>正在掃描 R2…
+                            </div>
+                            <div class="title-row">
+                                <h2>更新內容</h2>
+                                <button class="btn ghost">
+                                    <svg class="i"><use href="#i-refresh" /></svg>重新掃描
+                                </button>
+                            </div>
+                            <div class="stats">
+                                <div class="stat g-sky">
+                                    <span class="ico"
+                                        ><svg class="i"><use href="#i-inbox" /></svg></span
+                                    ><span><b>3</b><span>新內容</span></span>
+                                </div>
+                                <div class="stat g-red">
+                                    <span class="ico"
+                                        ><svg class="i"><use href="#i-alert" /></svg></span
+                                    ><span><b>6</b><span>必須處理</span></span>
+                                </div>
+                                <div class="stat g-orange">
+                                    <span class="ico"
+                                        ><svg class="i"><use href="#i-text" /></svg></span
+                                    ><span><b>4</b><span>選填</span></span>
+                                </div>
+                                <div class="stat g-green">
+                                    <span class="ico"
+                                        ><svg class="i"><use href="#i-check" /></svg></span
+                                    ><span><b>2</b><span>已完成</span></span>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>新內容</th>
+                                            <th>
+                                                <svg class="i"><use href="#i-folder" /></svg>資料夾
+                                            </th>
+                                            <th>
+                                                <svg class="i"><use href="#i-hash" /></svg>ID
+                                            </th>
+                                            <th>
+                                                <svg class="i"><use href="#i-image" /></svg>圖片
+                                            </th>
+                                            <th>
+                                                <svg class="i"><use href="#i-cal" /></svg>排期
+                                            </th>
+                                            <th>
+                                                <svg class="i"><use href="#i-text" /></svg>簡介
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <b>天使之戀系列</b
+                                                ><span class="meta">新廣播劇 · 24 集</span>
+                                            </td>
+                                            <td class="ok">✓</td>
+                                            <td><span class="cell-must">設定</span></td>
+                                            <td><span class="cell-must">設定</span></td>
+                                            <td><span class="cell-must">設定</span></td>
+                                            <td><span class="cell-opt">＋</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <b>戀愛後二分一</b
+                                                ><span class="meta"
+                                                    >蘭茜夫人劇場 · 新短篇 · 20 集</span
+                                                >
+                                            </td>
+                                            <td class="ok">✓</td>
+                                            <td><span class="cell-must">設定</span></td>
+                                            <td><span class="cell-opt">＋</span></td>
+                                            <td><span class="cell-must">設定</span></td>
+                                            <td><span class="cell-opt">＋</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="row" style="justify-content: flex-end">
+                                <button class="btn big" disabled>
+                                    <svg class="i"><use href="#i-send" /></svg>下一步：確認發佈
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ② -->
+            <section id="b">
+                <p class="state-label">
+                    ② 收細 nav（76px）：手動撳「收合」或者視窗窄過約 1100px
+                    自動收；記住上次揀咩。banner 變圓形「903」logo；只剩 icon，hover 出
+                    tooltip（項目名）；待辦數變小橙點
+                </p>
+                <div class="frame">
+                    <div class="shell mini">
+                        <nav class="nav" aria-label="主選單">
+                            <div class="logo-mini" aria-label="903 Player Admin v0.5.0">903</div>
+                            <a href="#b" aria-current="page" aria-label="更新內容（3）"
+                                ><svg class="i"><use href="#i-inbox" /></svg
+                                ><span class="dot-count"></span
+                            ></a>
+                            <a href="#b" aria-label="節目" class="tip-wrap" style="display: flex"
+                                ><svg class="i" style="color: #fff; width: 18px; height: 18px">
+                                    <use href="#i-radio" /></svg
+                                ><span class="tip right">節目</span></a
+                            >
+                            <a href="#b" aria-label="廣播劇"
+                                ><svg class="i"><use href="#i-disc" /></svg
+                            ></a>
+                            <a href="#b" aria-label="上下架記錄"
+                                ><svg class="i"><use href="#i-history" /></svg
+                            ></a>
+                            <span class="spacer"></span>
+                            <a href="#b" aria-label="登出"
+                                ><svg class="i"><use href="#i-logout" /></svg
+                            ></a>
+                            <button class="collapse" aria-label="展開選單">
+                                <svg class="i" style="transform: scaleX(-1)">
+                                    <use href="#i-panel" />
+                                </svg>
+                            </button>
+                        </nav>
+                        <div class="panel">
+                            <div class="scan">✓ 已掃描 R2（09:41）· 發現 3 項新內容</div>
+                            <h2>更新內容</h2>
+                            <div class="card">
+                                <p class="meta" style="margin: 0">（內容區闊咗 156px，其餘同 ①）</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ③ -->
+            <section id="c">
+                <p class="state-label">
+                    ③ 卡片風格三揀一（你話睇 preview 決定）：同一張卡用三種做法
+                </p>
+                <div class="frame">
+                    <div class="cards3">
+                        <div>
+                            <p class="opt-label">
+                                A：大圓角 20px + 柔和陰影、冇邊框（建議；深色模式自動改細邊框）
+                            </p>
+                            <div class="card styleA">
+                                <h3>蘭茜夫人劇場</h3>
+                                <span class="meta">短篇集 · 3 個短篇 · 100 集</span>
+                                <div class="row"><span class="pill warn">待發佈</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="opt-label">B：中圓角 12px + 細邊框、冇陰影（同而家差唔多）</p>
+                            <div class="card styleB">
+                                <h3>蘭茜夫人劇場</h3>
+                                <span class="meta">短篇集 · 3 個短篇 · 100 集</span>
+                                <div class="row"><span class="pill warn">待發佈</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="opt-label">C：大圓角 20px + 陰影 + 細邊框</p>
+                            <div class="card styleC">
+                                <h3>蘭茜夫人劇場</h3>
+                                <span class="meta">短篇集 · 3 個短篇 · 100 集</span>
+                                <div class="row"><span class="pill warn">待發佈</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ④ -->
+            <section id="d">
+                <p class="state-label">
+                    ④ 按鈕：圓角 10px 實色天藍 + 輕微陰影 + 左邊 outline
+                    icon（lucide）；發佈大一級；次要 = 白底細框；危險 = 紅。Tooltip：深色圓角泡泡 +
+                    箭咀（上 / 右），滑鼠唔會變「?」
+                </p>
+                <div class="frame">
+                    <div class="panel" style="margin: 0; border-radius: 0; padding: 36px 28px 28px">
+                        <div class="row">
+                            <button class="btn">
+                                <svg class="i"><use href="#i-save" /></svg>儲存
+                            </button>
+                            <button class="btn">
+                                <svg class="i"><use href="#i-undo" /></svg>儲存並返回待辦
+                            </button>
+                            <button class="btn big">
+                                <svg class="i"><use href="#i-send" /></svg>發佈
+                            </button>
+                            <button class="btn ghost">
+                                <svg class="i"><use href="#i-refresh" /></svg>重新掃描
+                            </button>
+                            <button class="btn ghost">
+                                <svg class="i"><use href="#i-undo" /></svg>還原
+                            </button>
+                            <button class="btn danger">
+                                <svg class="i"><use href="#i-alert" /></svg>刪除
+                            </button>
+                            <button class="btn" disabled>
+                                <svg class="i"><use href="#i-save" /></svg>儲存
+                            </button>
+                        </div>
+                        <div class="row" style="margin-top: 52px; gap: 120px; padding-left: 180px">
+                            <span class="tip-wrap"
+                                ><b>短篇 ID</b><svg class="i"><use href="#i-info" /></svg
+                                ><span class="tip"
+                                    >已發佈，不可更改（更改會令收聽進度遺失）</span
+                                ></span
+                            >
+                            <span class="tip-wrap"
+                                ><b>播放時間</b><svg class="i"><use href="#i-info" /></svg
+                                ><span class="tip right"
+                                    >每 15 分鐘一格；完結時間最多開始後 3 小時</span
+                                ></span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑤ -->
+            <section id="e">
+                <p class="state-label">
+                    ⑤ 短篇展開（今次改動）：撳成行打開 / 閂；新短篇 ID 自動「劇 ID +
+                    號碼」（lancy-04）但仍然要親手確認 → ID 格紅框（唔再出「須設定
+                    ID」字）；「未排期」放喺狀態掣隔籬；簡介
+                    placeholder「選填」（冇括號）；各集標題唔收埋，textarea 跟內容自動高；右邊唱片 /
+                    橫額大一倍（192px / 340×192）
+                </p>
+                <div class="frame">
+                    <div class="panel" style="margin: 0; border-radius: 0">
+                        <div>
+                            <div class="arc-row" role="button" aria-expanded="true">
+                                <span class="meta" style="font-size: 18px">⠿</span>
+                                <span class="pill" style="background: var(--sky); color: #fff"
+                                    >新</span
+                                >
+                                <span class="name">戀愛後二分一</span>
+                                <svg class="i chev"><use href="#i-chevdown" /></svg>
+                            </div>
+                            <div class="arc-body">
+                                <div class="arc-form">
+                                    <label class="field" style="max-width: 300px">
+                                        <span>名稱</span>
+                                        <input type="text" value="戀愛後二分一" />
+                                    </label>
+                                    <div class="row3">
+                                        <label class="field" style="width: 240px">
+                                            <span class="tip-wrap"
+                                                >短篇 ID<svg class="i"><use href="#i-info" /></svg
+                                                ><span class="tip right"
+                                                    >自動按劇 ID 編號；請確認或修改後儲存</span
+                                                ></span
+                                            >
+                                            <input
+                                                type="text"
+                                                class="mono invalid"
+                                                value="lancy-04"
+                                                aria-invalid="true"
+                                            />
+                                        </label>
+                                        <div class="field">
+                                            <span>狀態</span>
+                                            <div class="status-line">
+                                                <button class="toggle off" aria-pressed="false">
+                                                    下架
+                                                </button>
+                                                <span class="pill warn">未排期</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <label class="field">
+                                        <span>簡介</span>
+                                        <textarea placeholder="選填"></textarea>
+                                    </label>
+                                    <label class="field">
+                                        <span>聲演</span>
+                                        <input
+                                            type="text"
+                                            placeholder="輸入名稱後按 Enter，可拖曳排序"
+                                        />
+                                    </label>
+                                    <fieldset class="scan-box">
+                                        <legend>由 R2 掃描</legend>
+                                        <button class="btn rescan">
+                                            <svg class="i"><use href="#i-refresh" /></svg>重新掃描
+                                        </button>
+                                        <div class="row3">
+                                            <div class="field">
+                                                <span>子資料夾</span
+                                                ><span class="ro">戀愛後二分一/</span>
+                                            </div>
+                                            <div class="field">
+                                                <span>集數</span><span class="ro">20 集</span>
+                                            </div>
+                                        </div>
+                                        <label class="field">
+                                            <span>各集標題（20 集，由檔名讀取）</span>
+                                            <textarea class="mono">
+第 1 集 ｜ 初次見面
+第 2 集 ｜
+第 3 集 ｜
+第 4 集 ｜ 誤會
+第 5 集 ｜ </textarea>
+                                        </label>
+                                    </fieldset>
+                                </div>
+                                <aside class="media">
+                                    <button class="slot disc" aria-label="更換唱片">
+                                        <span class="pen"
+                                            ><svg class="i"><use href="#i-pen" /></svg
+                                        ></span>
+                                    </button>
+                                    <span class="cap">唱片</span>
+                                    <button class="slot tile" aria-label="更換橫額">
+                                        <span class="pen"
+                                            ><svg class="i"><use href="#i-pen" /></svg
+                                        ></span>
+                                    </button>
+                                    <span class="cap">橫額</span>
+                                </aside>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑥ -->
+            <section id="f">
+                <p class="state-label">
+                    ⑥ 上載 PNG / JPG / WebP：尺寸唔啱就自動置中裁切 + 縮放到標準尺寸，轉
+                    WebP（Safari 用 wasm
+                    編碼器）；上載前出呢個預覽，撳「上載」先寫入。手動拖曳裁切等 Phase 4
+                </p>
+                <div class="frame">
+                    <div class="scrim">
+                        <div class="dialog">
+                            <h3 style="margin: 0">上載唱片</h3>
+                            <div class="crop">
+                                <div class="src"><span class="box"></span></div>
+                                <svg class="i" style="color: var(--muted)">
+                                    <use href="#i-chev" transform="rotate(180 12 12)" />
+                                </svg>
+                                <div class="out" aria-label="裁切後預覽"></div>
+                            </div>
+                            <p class="meta" style="margin: 0">
+                                photo.jpg · 1920×1080 → 600×600 WebP（置中裁切）
+                            </p>
+                            <div class="row" style="justify-content: flex-end">
+                                <button class="btn ghost">取消</button>
+                                <button class="btn">
+                                    <svg class="i"><use href="#i-check" /></svg>上載
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑦ -->
+            <section id="g">
+                <p class="state-label">
+                    ⑦ 403 同直向提示：同一個版式（插圖圓 → 標題 → 一行說明 →
+                    按鈕），書面語；直向提示 icon = 直機 → 橫機，單向箭咀
+                </p>
+                <div class="frame">
+                    <div class="notice-pair">
+                        <div class="notice">
+                            <div class="box">
+                                <div class="art" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        <path
+                                            d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+                                        />
+                                        <path d="m14.5 9.5-5 5M9.5 9.5l5 5" />
+                                    </svg>
+                                </div>
+                                <h2>沒有權限</h2>
+                                <p><code>donald91103@gmail.com</code> 並非管理員。</p>
+                                <button class="btn">
+                                    <svg class="i"><use href="#i-login" /></svg>使用其他 Google
+                                    帳戶登入
+                                </button>
+                            </div>
+                        </div>
+                        <div class="notice">
+                            <div class="box">
+                                <div class="art" aria-hidden="true">
+                                    <svg viewBox="0 0 48 48">
+                                        <rect x="6" y="6" width="14" height="26" rx="3" />
+                                        <path d="M11 10h4" />
+                                        <rect x="20" y="28" width="24" height="14" rx="3" />
+                                        <path d="M40 33v4" />
+                                        <path d="M24 9c7 0 13 5 13 14" />
+                                        <path d="m33 19 4 4 4-4" />
+                                    </svg>
+                                </div>
+                                <h2>請轉為橫向或使用電腦</h2>
+                                <p>管理介面需要較闊的畫面。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑧ -->
+            <section id="h">
+                <p class="state-label">
+                    ⑧ 深色模式（跟系統自動轉）：nav 照用實色天藍；卡片冇陰影改細邊框；漸變統計卡照用
+                </p>
+                <div class="frame dark">
+                    <div class="shell" style="min-height: 420px">
+                        <nav class="nav" aria-label="主選單">
+                            <div class="brand">
+                                <img src="banner.webp" alt="903 叱咤 Player" /><span class="ver"
+                                    >Admin v0.5.0</span
+                                >
+                            </div>
+                            <a href="#h"
+                                ><svg class="i"><use href="#i-inbox" /></svg
+                                ><span class="label">更新內容</span><span class="count">3</span></a
+                            >
+                            <span class="group">內容</span>
+                            <a href="#h"
+                                ><svg class="i"><use href="#i-radio" /></svg
+                                ><span class="label">節目</span></a
+                            >
+                            <a href="#h" aria-current="page"
+                                ><svg class="i"><use href="#i-disc" /></svg
+                                ><span class="label">廣播劇</span></a
+                            >
+                        </nav>
+                        <div class="panel">
+                            <div class="scan dk">✓ 已掃描 R2（09:41）· 沒有新內容</div>
+                            <div class="stats">
+                                <div class="stat g-sky">
+                                    <span class="ico"
+                                        ><svg class="i"><use href="#i-disc" /></svg></span
+                                    ><span><b>7</b><span>廣播劇</span></span>
+                                </div>
+                                <div class="stat g-green">
+                                    <span class="ico"
+                                        ><svg class="i"><use href="#i-check" /></svg></span
+                                    ><span><b>6</b><span>上架中</span></span>
+                                </div>
+                                <div class="stat g-orange">
+                                    <span class="ico"
+                                        ><svg class="i"><use href="#i-text" /></svg></span
+                                    ><span><b>1</b><span>待發佈</span></span>
+                                </div>
+                                <div class="stat g-red">
+                                    <span class="ico"
+                                        ><svg class="i"><use href="#i-alert" /></svg></span
+                                    ><span><b>1</b><span>已下架</span></span>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <h3>蘭茜夫人劇場</h3>
+                                <span class="meta">短篇集 · 3 個短篇 · 100 集</span>
+                                <div class="row">
+                                    <span class="pill warn">待發佈</span>
+                                    <button class="btn">
+                                        <svg class="i"><use href="#i-save" /></svg>儲存
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </body>
+</html>
