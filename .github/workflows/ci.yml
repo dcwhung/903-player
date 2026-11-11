@@ -78,7 +78,8 @@ jobs:
     e2e:
         name: E2E (Playwright)
         needs: check
-        runs-on: ubuntu-latest
+        # S-820：ubuntu-latest（26.04）解析唔到 archive.ubuntu.com，`playwright install --with-deps` 裝唔到系統套件；固定 24.04
+        runs-on: ubuntu-24.04
         steps:
             - uses: actions/checkout@v7
 
