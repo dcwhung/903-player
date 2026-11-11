@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { HistoryPage } from '../features/history/HistoryPage';
 import { DramaList } from '../features/lists/DramaList';
 import { ShowList } from '../features/lists/ShowList';
+import { ShowEditorPage } from '../features/shows/ShowEditor';
 import { PublishPage } from '../features/update/PublishPage';
 import { UpdatePage } from '../features/update/UpdatePage';
 
@@ -12,6 +13,8 @@ export function AppRoutes() {
             <Route path="/" element={<UpdatePage />} />
             <Route path="/publish" element={<PublishPage />} />
             <Route path="/shows" element={<ShowList />} />
+            <Route path="/shows/new" element={<ShowEditorPage />} />
+            <Route path="/shows/:id" element={<ShowEditorPage />} />
             <Route path="/dramas" element={<DramaList />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

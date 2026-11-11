@@ -18,7 +18,7 @@ export interface AdminData {
     refresh: () => Promise<void>;
 }
 
-const AdminDataContext = createContext<AdminData | null>(null);
+export const AdminDataContext = createContext<AdminData | null>(null);
 
 export const loadAllEntries = async (): Promise<LoadedEntry[]> =>
     Promise.all((await listEntries()).map((e) => getEntry(e.kind, e.id)));
