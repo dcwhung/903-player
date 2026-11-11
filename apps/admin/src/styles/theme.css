@@ -39,25 +39,20 @@ body {
 }
 
 .nav .logo-mini {
-    display: grid;
-    place-items: center;
+    display: block;
     width: 48px;
     height: 48px;
     margin: 0 auto 14px;
-    border-radius: 50%;
-    background: var(--surface);
-    color: var(--primary);
-    font-weight: 700;
-    font-size: 15px;
-    justify-content: center;
     padding: 0;
-    text-decoration: none;
+    border-radius: 14px;
+    overflow: hidden;
     box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
 }
 
-.nav .logo-mini,
-.nav .logo-mini:hover {
-    background: var(--on-nav);
+.nav .logo-mini img {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .nav .group {

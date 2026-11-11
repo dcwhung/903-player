@@ -1,7 +1,7 @@
 /*
  * 側邊 nav：Design Origin: mockup: _mockups_/admin-style/index.html#i（⑨ / ⑨b nav v4，實色天藍 + 白字，可收細）
  * 內容：更新（待辦數）、節目、廣播劇 / 記錄：上下架記錄 / 底：主題 + 收合、email + 登出（NavFooter）
- * 收細（76px）：banner → 圓形「903」logo、只剩 icon + tooltip、待辦數 → 小橙點。
+ * 收細（76px）：banner → player app icon 縮圖（public/icon-192.png，圓角）、只剩 icon + tooltip、待辦數 → 小橙點。
  * 手動收合 / 展開：主題掣同收合掣由舊位置滑去新位置（FLIP，flip.ts）；視窗窄咗自動收合唔播
  */
 import { Disc, History, Inbox, Radio, type LucideIcon } from 'lucide-react';
@@ -15,6 +15,8 @@ import { useFlip } from './flip';
 import { NavFooter } from './NavFooter';
 
 const UPDATE_PATHS = ['/', '/publish'];
+/** player 嘅 app icon（複製咗一份喺 admin public/） */
+const APP_ICON_PATH = '/icon-192.png';
 
 export interface NavProps {
     email: string;
@@ -62,8 +64,8 @@ function BrandLink({ mini }: { mini: boolean }) {
     const label = `${t('app.name')} ${t('app.version', { version: __API_VERSION__ })}`;
     if (mini)
         return (
-            <Link className="logo-mini" to="/" aria-label={label}>
-                903
+            <Link className="logo-mini" to="/">
+                <img src={APP_ICON_PATH} alt={label} width={48} height={48} />
             </Link>
         );
     return (
