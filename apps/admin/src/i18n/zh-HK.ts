@@ -400,7 +400,9 @@ export const zhHK = {
         short: '日,一,二,三,四,五,六',
     },
     dates: {
-        short: '{month}/{day} {weekday}',
+        short: '{day}/{month} {weekday}',
+        dayMonth: '{day}/{month}',
+        dayMonthYear: '{day}/{month}/{year}',
         long: '{month} 月 {day} 日',
         today: '今天 {time}',
     },
