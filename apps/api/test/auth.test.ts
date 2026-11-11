@@ -263,6 +263,17 @@ describe('session guard', () => {
         expect((await call('/api/health')).status).toBe(200);
     });
 
+    // S-774：Worker 出嘅頁 / API 唔准被 frame；淨係 frame-ancestors，唔會擋 inline theme script（S-815）
+    it('should refuse framing on /auth and /api responses without restricting scripts', async () => {
+        const { location, cookie } = await start();
+        mockGoogle(googleClaims('someone@gmail.com'));
+        const denied = await callback(location.searchParams.get('state') ?? '', cookie);
+        for (const response of [denied, await call('/api/health'), await call('/api/me')]) {
+            expect(response.headers.get('x-frame-options')).toBe('DENY');
+            expect(response.headers.get('content-security-policy')).toBe("frame-ancestors 'none'");
+        }
+    });
+
     it('should answer 401 on /api/* without a session', async () => {
         expect((await call('/api/me')).status).toBe(401);
         expect((await call('/api/publishes')).status).toBe(401);
