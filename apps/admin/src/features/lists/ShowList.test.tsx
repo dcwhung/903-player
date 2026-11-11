@@ -37,12 +37,13 @@ describe('ShowList', () => {
         expect(screen.queryByText('other page')).not.toBeInTheDocument();
     });
 
-    it('should explain the status dots in a legend', () => {
+    it('should only explain what the list shows, and always the drag hint', () => {
         renderList();
         const legend = within(screen.getByRole('group', { name: '圖例' }));
         expect(legend.getByText('上架中')).toBeInTheDocument();
-        expect(legend.getByText('已下架')).toBeInTheDocument();
-        expect(legend.getByText('更新過但未公開')).toBeInTheDocument();
+        // 冇已下架節目、冇待發佈 → 唔出
+        expect(legend.queryByText('已下架')).not.toBeInTheDocument();
+        expect(legend.queryByText('更新過但未公開')).not.toBeInTheDocument();
         const drag = legend.getByText('拖曳調整播放器顯示次序');
         // ⠿ icon 排第一，跟住先係字
         expect(drag.firstChild?.nodeName.toLowerCase()).toBe('svg');
