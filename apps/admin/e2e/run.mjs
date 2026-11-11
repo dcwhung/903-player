@@ -213,16 +213,76 @@ const imageCheck = (browser) =>
         },
     );
 
+const boxOf = async (locator) => {
+    const box = await locator.boundingBox();
+    if (!box) throw new Error('element not visible');
+    return box;
+};
+
 const navCheck = (browser) =>
-    check('nav collapses to icons with tooltips and remembers it', async () => {
+    check(
+        'nav v4: collapse moves the toggle below the theme button, remembered, tooltip visible',
+        async () => {
+            const page = await newPage(browser, loggedIn());
+            await page.goto(`${BASE}/dramas`);
+            await page.getByText('已掃描 R2').waitFor();
+            await shoot(page, 'nav-full');
+            // 展開：主題三掣 + 收合同一行（收合排最後）
+            const seg = await boxOf(page.getByRole('group', { name: '顯示模式' }));
+            const collapse = await boxOf(page.getByRole('button', { name: '收合選單' }));
+            if (Math.abs(seg.y - collapse.y) > 8 || collapse.x <= seg.x)
+                throw new Error('collapse button is not after the theme switch on the same row');
+            await page.getByRole('button', { name: '收合選單' }).click();
+            // animation 中途：停喺 50ms（ease-out，畫面約一半位置）截圖，再放佢播完
+            const paused = await page.evaluate(() =>
+                // 停咗嘅 animation 唔會 settle：flip.ts 超時收 .flipping，截圖前補返（= 50ms 嗰格嘅樣）
+                (document.querySelector('.nav')?.classList.add('flipping'),
+                document.getAnimations()).map((animation) => {
+                    animation.pause();
+                    animation.currentTime = 50;
+                    const target = animation.effect?.target;
+                    return `${target?.dataset?.flip}:${animation.effect.getComputedTiming().duration}`;
+                }),
+            );
+            if (!paused.includes('toggle:220')) throw new Error(`no FLIP on toggle: ${paused}`);
+            await page.screenshot({ path: `${OUT}/nav-flip-mid.png` });
+            await page.evaluate(() => document.getAnimations().forEach((a) => a.play()));
+            await page.reload();
+            const expand = page.getByRole('button', { name: '展開選單' });
+            const cycle = await boxOf(page.getByRole('button', { name: /主題：/ }));
+            const below = await boxOf(expand);
+            if (below.y <= cycle.y) throw new Error('expand button is not below the theme button');
+            await page.getByRole('link', { name: '節目' }).hover();
+            await page.locator('.tip-pop', { hasText: '節目' }).waitFor();
+            await expand.hover();
+            const tip = await boxOf(page.locator('.tip-pop', { hasText: '展開選單' }));
+            const viewport = page.viewportSize();
+            // 喺掣右邊、成個喺視窗入面；fixed + z-index 40 喺 body（唔會被 nav / panel 遮）
+            if (tip.x < below.x + below.width || tip.x + tip.width > viewport.width || tip.y < 0)
+                throw new Error(`tooltip clipped: ${JSON.stringify({ tip, below })}`);
+            const onTop = await page.evaluate(() => {
+                const bubble = document.querySelector('.tip-pop');
+                return bubble?.parentElement === document.body && getComputedStyle(bubble).zIndex;
+            });
+            if (onTop !== '40') throw new Error('tooltip is not on top of nav / panel');
+            await shoot(page, 'nav-mini');
+            await page.close();
+        },
+    );
+
+const reducedMotionCheck = (browser) =>
+    check('nav collapse switches instantly with reduced motion (no animation)', async () => {
         const page = await newPage(browser, loggedIn());
+        await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.goto(`${BASE}/dramas`);
         await page.getByRole('button', { name: '收合選單' }).click();
-        await page.reload();
+        const running = await page.evaluate(() => document.getAnimations().length);
+        if (running !== 0) throw new Error(`${running} animations with reduced motion`);
         await page.getByRole('button', { name: '展開選單' }).waitFor();
-        await page.getByRole('link', { name: '節目' }).hover();
-        await page.locator('.tip-pop', { hasText: '節目' }).waitFor();
-        await shoot(page, 'nav-mini');
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await page.getByRole('button', { name: '展開選單' }).click();
+        const moving = await page.evaluate(() => document.getAnimations().length);
+        if (moving === 0) throw new Error('no FLIP animation without reduced motion');
         await page.close();
     });
 
@@ -285,6 +345,7 @@ try {
         showEditorCheck,
         imageCheck,
         navCheck,
+        reducedMotionCheck,
         autoNavCheck,
         themeCheck,
         portraitCheck,
