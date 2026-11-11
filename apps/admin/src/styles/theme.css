@@ -1381,6 +1381,29 @@ textarea.autosize {
     font-weight: 400;
 }
 
+/*
+ * 快速套用：揀咗嘅 chip 實色主色底 + --on-primary 字，hover 都唔變
+ * （一般 button:hover 嘅 --surface-2 會食咗白字 / 深色主題嘅深字，0.6.3 bug）
+ */
+.presets button[aria-pressed='true'],
+.presets button[aria-pressed='true']:hover:not(:disabled) {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--on-primary);
+}
+
+/* segmented 掣嘅 icon 細啲，跟字排 */
+.seg button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.seg button .lucide {
+    width: 16px;
+    height: 16px;
+}
+
 /* panel 半闊：下架方式 4 粒掣盡量排一行 */
 .panel .seg button {
     padding: 5px 10px;

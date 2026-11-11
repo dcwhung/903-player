@@ -342,6 +342,7 @@ export const zhHK = {
         none: '無排程',
         periodic: '定期',
         released: '已上 {released} / {count} 集',
+        allListedNote: '已全部上架',
         viewLabel: '檢視',
         viewEdit: '編輯',
         viewPreview: '預覽',

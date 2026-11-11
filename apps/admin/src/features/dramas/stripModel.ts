@@ -52,7 +52,7 @@ export const scheduleContextOf = (
     };
 };
 
-/** 短篇 tab 細字：無排程 / 已上 X / Y 集 / 定期 */
+/** 短篇 tab 細字：無排程 / 已上 X / Y 集 / 已全部上架（mockup ①）/ 定期（未開始上架） */
 export const arcTabNote = (
     drama: RawDefinition,
     arc: RawDefinition,
@@ -65,7 +65,6 @@ export const arcTabNote = (
         0,
     );
     const count = countOf(arc);
-    return released > 0 && released < count
-        ? t('schedule.released', { released, count })
-        : t('schedule.periodic');
+    if (count > 0 && released >= count) return t('schedule.allListedNote');
+    return released > 0 ? t('schedule.released', { released, count }) : t('schedule.periodic');
 };
