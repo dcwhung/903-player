@@ -5,6 +5,9 @@
  */
 :root {
     --sky: #53a9e3;
+    /* 「新」pill：跟 player NewBadge（apps/player tokens --new-badge-*）紅底白字，5.2:1 過 AA；深淺色一樣 */
+    --new-badge-bg: #c0362c;
+    --new-badge-text: #ffffff;
     --primary: #1e7bc0;
     --primary-hover: #155f96;
     --on-primary: #ffffff;
@@ -46,6 +49,8 @@
     /* Tooltip 泡泡（深淺色都係深底白字） */
     --tip-bg: #16212e;
     --on-tip: #ffffff;
+    /* 圖片裁切框（深色遮罩上面嘅白框，深淺色一樣） */
+    --crop-frame: #ffffff;
     /* 卡片 A：20px 圓角 + 柔和陰影、冇邊框；深色改細邊框 */
     --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06);
     --shadow-btn: 0 2px 6px rgb(30 123 192 / 0.3);
@@ -76,6 +81,8 @@
     /* nav 收合 / 展開時掣滑去新位置（FLIP） */
     --motion-move: 220ms;
     --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+    /* 掃描 spinner 轉一個圈（循環週期，唔係過場，所以唔受 ≤ 300ms 限制） */
+    --motion-spin: 800ms;
     color-scheme: light dark;
 }
 

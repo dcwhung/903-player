@@ -20,4 +20,13 @@ describe('errorMessage', () => {
         });
         expect(errorMessage(error)).toBe('改名後短篇 ID「lancy-01」會重複，請先修改該短篇 ID。');
     });
+
+    it('should explain an arc ID change refused because the arc has a schedule (S-804)', () => {
+        const error = new ApiError(409, 'arc arc-01 has a schedule; remove it first', {
+            error: 'arc arc-01 has a schedule; remove it first',
+            arcId: 'arc-01',
+            reason: 'arcScheduled',
+        });
+        expect(errorMessage(error)).toBe('此短篇已有排程，請先移除排程再修改 ID。');
+    });
 });

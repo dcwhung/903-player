@@ -28,6 +28,34 @@ describe('DramaList', () => {
         expect(screen.getByText('other page')).toBeInTheDocument();
     });
 
+    it('should trap Tab in the ＋ dialog, close on Esc and return focus to ＋ (S-811)', async () => {
+        renderAt('/dramas', '/dramas', <DramaList />, fakeData({ entries: resource([drama]) }));
+        const add = screen.getByRole('button', { name: '新增廣播劇' });
+        await userEvent.click(add);
+        const dialog = within(screen.getByRole('dialog', { name: '新增廣播劇' }));
+        const close = dialog.getByRole('button', { name: '關閉' });
+        const rescan = dialog.getByRole('button', { name: '重新掃描' });
+        expect(close).toHaveFocus();
+        await userEvent.tab();
+        expect(rescan).toHaveFocus();
+        await userEvent.tab();
+        expect(close).toHaveFocus();
+        await userEvent.tab({ shift: true });
+        expect(rescan).toHaveFocus();
+        await userEvent.keyboard('{Escape}');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(add).toHaveFocus();
+    });
+
+    it('should return focus to ＋ after 關閉 too (S-811)', async () => {
+        renderAt('/dramas', '/dramas', <DramaList />, fakeData({ entries: resource([drama]) }));
+        const add = screen.getByRole('button', { name: '新增廣播劇' });
+        await userEvent.click(add);
+        await userEvent.click(screen.getByRole('button', { name: '關閉' }));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(add).toHaveFocus();
+    });
+
     it('should explain 待發佈 and 新 once the list has them, and only the dots that appear', () => {
         const changes = {
             base: null,

@@ -1,7 +1,5 @@
-/* 廣播劇列表表頭 + 圖例（mockup ⑤ .drama-head / .legend；3c 圖例改真顏色點） */
+/* 廣播劇列表表頭（mockup ⑤ .drama-head）；圖例直接用 ListLegend（S-824） */
 import { t } from '../../i18n/t';
-import type { Legend } from './legendModel';
-import { ListLegend } from './ListLegend';
 
 export function DramaListHead() {
     return (
@@ -13,8 +11,4 @@ export function DramaListHead() {
             <span>{t('list.colStatus')}</span>
         </div>
     );
-}
-
-export function DramaLegend({ legend }: { legend: Legend }) {
-    return <ListLegend legend={legend} />;
 }

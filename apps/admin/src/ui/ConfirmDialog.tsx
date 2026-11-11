@@ -1,8 +1,8 @@
 /*
- * 確認對話框（刪除 / 還原）：Design Origin: mockup: _mockups_/admin/index.html#s9（.scrim）
+ * 兩粒掣嘅對話框 shell（刪除 / 還原確認、＋ 新增廣播劇說明）：Design Origin: mockup: _mockups_/admin/index.html#s9（.scrim）
  * 開啟時 focus 入「取消」、Tab 喺掣之間循環、Esc 取消；關閉後 focus 返去原本個掣
  */
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { t } from '../i18n/t';
 import { useDialogFocus } from './useDialogFocus';
 
@@ -12,6 +12,10 @@ interface ConfirmDialogProps {
     /** 補充提示（例如還原嘅限制），以 warn 樣式顯示喺 body 下面 */
     note?: string;
     confirmLabel: string;
+    /** 確認掣前面嘅 icon（aria-hidden） */
+    confirmIcon?: ReactNode;
+    /** 預設「取消」；淨係解釋嘅對話框用「關閉」 */
+    cancelLabel?: string;
     danger?: boolean;
     onConfirm: () => void;
     onCancel: () => void;
@@ -22,6 +26,8 @@ export function ConfirmDialog({
     body,
     note,
     confirmLabel,
+    confirmIcon,
+    cancelLabel = t('editor.cancel'),
     danger = false,
     onConfirm,
     onCancel,
@@ -36,7 +42,7 @@ export function ConfirmDialog({
                 {note && <p className="note warn">{note}</p>}
                 <div className="actions end">
                     <button type="button" ref={cancelRef} onClick={onCancel}>
-                        {t('editor.cancel')}
+                        {cancelLabel}
                     </button>
                     <button
                         type="button"
@@ -44,6 +50,7 @@ export function ConfirmDialog({
                         className={danger ? 'danger' : 'primary'}
                         onClick={onConfirm}
                     >
+                        {confirmIcon}
                         {confirmLabel}
                     </button>
                 </div>

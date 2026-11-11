@@ -128,15 +128,20 @@ export const previewSchedule = async (dramaId: string, arcId: string, rule: Sche
         )
     ).data;
 
+/**
+ * 儲存排程；enable = 同一個 D1 batch 順手將短篇轉「上架」（S-803，新短篇預設下架，排咗期先上架）。
+ * 回應同冇 enable 時一樣
+ */
 export const putSchedule = (
     dramaId: string,
     arcId: string,
     rule: ScheduleRule,
     etag: string | null,
+    { enable = false }: { enable?: boolean } = {},
 ) =>
     request<{ updatedAt: string; warnings: SaveResult['warnings'] }>(schedulePath(dramaId, arcId), {
         method: 'PUT',
-        body: { rule },
+        body: enable ? { rule, enable } : { rule },
         ifMatch: etag,
     });
 

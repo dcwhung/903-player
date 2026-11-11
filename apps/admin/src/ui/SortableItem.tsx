@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import { t } from '../i18n/t';
-import { prefersReducedMotion } from '../utils/motion';
+import { motionTiming, prefersReducedMotion } from '../utils/motion';
 
 export interface SortableRender {
     setNodeRef: (node: HTMLElement | null) => void;
@@ -13,9 +13,6 @@ export interface SortableRender {
     isDragging: boolean;
 }
 
-/** 位移過場（--motion-base）；減少動態就直接跳位 */
-const SORT_TRANSITION = { duration: 240, easing: 'cubic-bezier(0.2, 0, 0, 1)' };
-
 interface SortableItemProps {
     id: string;
     label: string;
@@ -23,6 +20,7 @@ interface SortableItemProps {
 }
 
 export function SortableItem({ id, label, children }: SortableItemProps) {
+    // 位移過場跟 tokens.css（--motion-base / --motion-ease，S-806）；減少動態就直接跳位
     const {
         attributes,
         listeners,
@@ -31,7 +29,10 @@ export function SortableItem({ id, label, children }: SortableItemProps) {
         transform,
         transition,
         isDragging,
-    } = useSortable({ id, transition: prefersReducedMotion() ? null : SORT_TRANSITION });
+    } = useSortable({
+        id,
+        transition: prefersReducedMotion() ? null : motionTiming('--motion-base'),
+    });
     const handle = (
         <button
             type="button"

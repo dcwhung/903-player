@@ -5,7 +5,7 @@
  * 時間 / easing 跟 tokens.css --motion-move / --motion-ease
  */
 import { useLayoutEffect, useRef, type RefObject } from 'react';
-import { prefersReducedMotion } from '../utils/motion';
+import { motionTiming, prefersReducedMotion } from '../utils/motion';
 
 interface Box {
     left: number;
@@ -22,26 +22,7 @@ export const flipOffset = (before: Box, after: Box): { dx: number; dy: number } 
     return dx === 0 && dy === 0 ? null : { dx, dy };
 };
 
-const FALLBACK_MS = 220;
-const FALLBACK_EASE = 'cubic-bezier(0.2, 0, 0, 1)';
-
-const MS_PER_S = 1000;
-
-/** CSS 時間 → ms（build 會將 220ms 壓成 .22s，兩種都要識） */
-export const durationMs = (value: string): number | undefined => {
-    const text = value.trim();
-    const number = Number.parseFloat(text);
-    if (!Number.isFinite(number)) return undefined;
-    if (text.endsWith('ms')) return number;
-    return text.endsWith('s') ? number * MS_PER_S : undefined;
-};
-
-const timing = (): KeyframeAnimationOptions => {
-    const style = getComputedStyle(document.documentElement);
-    const ms = durationMs(style.getPropertyValue('--motion-move'));
-    const easing = style.getPropertyValue('--motion-ease').trim();
-    return { duration: ms ?? FALLBACK_MS, easing: easing || FALLBACK_EASE };
-};
+const timing = (): KeyframeAnimationOptions => motionTiming('--motion-move');
 
 const FLIPPING_CLASS = 'flipping';
 
@@ -57,7 +38,7 @@ const showOverflowWhile = (
     if (!nav || animations.length === 0) return;
     nav.classList.add(FLIPPING_CLASS);
     const done = () => nav.classList.remove(FLIPPING_CLASS);
-    const timeout = Number(options.duration ?? FALLBACK_MS) * 2;
+    const timeout = Number(options.duration ?? 0) * 2;
     void Promise.race([
         Promise.allSettled(animations.map((animation) => animation.finished)),
         new Promise((resolve) => setTimeout(resolve, timeout)),
