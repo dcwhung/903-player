@@ -73,7 +73,7 @@ D1（`apps/api`）已經係內容 SSoT，repo `library/` 只係 fallback。Produ
 2. Fetch 最新 publish 嘅 `catalog.json`（timeout `SNAPSHOT_FETCH_TIMEOUT_MS`）→ 用 player runtime 同一套 validator 驗（`parseCatalogDocument` + 兩個 registry）
 3. 下載全部圖（同時最多 `SNAPSHOT_IMAGE_CONCURRENCY` 張），sha256 前 16 hex 一定要等於檔名
 4. `images` 改寫做檔名 → 先寫 `data.tmp/`，全部成功先 rename 做 `data/`
-5. Build log 印 `[catalog-snapshot] hash … · generatedAt … · N images`（hash = publish hash，可以同 ops 頁對）
+5. Build log 印 `[catalog-snapshot] hash … · generatedAt … · N images`（hash = publish hash，可以同 admin 上下架記錄對）
 
 `src/catalog/snapshot/source.ts` 用 `import.meta.glob` 包入 bundle（圖經 Vite hash 入 `dist/assets/`，PWA 自動 precache），`dramas` / `shows` 嘅 `bundledSource` 有 snapshot 就用 snapshot，冇就用 `library/`。
 
@@ -155,8 +155,9 @@ npm run drama-from-folder -w apps/player -- "/路徑/森美小儀系列" --exist
 
 npm workspaces monorepo：app 喺 `apps/player/`（version 嘅唯一來源係 `apps/player/package.json`）；
 劇集 / 節目資料嘅純邏輯喺 `packages/catalog/`（`@903-player/catalog`，直接 export TS source，冇 build step；JSON Schema 喺 `packages/catalog/schemas/`）。
-Catalog backend（Cloudflare Worker + D1 + R2、ops 頁）喺 `apps/api/`（version 喺 `apps/api/package.json`；runbook 見 `apps/api/README.md`）。
-下面指令全部喺 repo 根跑（root scripts 轉發去 `apps/player`；`npm test` 用 root `vitest.config.ts` 嘅 projects 一次過跑 player + catalog + api；
+Catalog backend（Cloudflare Worker + D1 + R2）喺 `apps/api/`（version 喺 `apps/api/package.json`；runbook 見 `apps/api/README.md`）；
+Admin SPA（React，由同一個 Worker 出）喺 `apps/admin/`（版本 pill 用 api version；`npm run dev:admin` / `npm run build:admin` / `npm run e2e:admin`）。
+下面指令全部喺 repo 根跑（root scripts 轉發去 `apps/player`；`npm test` 用 root `vitest.config.ts` 嘅 projects 一次過跑 player + admin + catalog + api；
 `npm run lint` 用 root 嘅 ESLint / Prettier 設定檢查成個 repo；`npx tsc -b` 用 root `tsconfig.json` 覆蓋全部 workspace）。
 下面提到嘅 `src/`、`e2e/`、`scripts/`、`public/` 都喺 `apps/player/` 入面。
 

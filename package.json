@@ -8,14 +8,17 @@
     ],
     "scripts": {
         "dev": "npm run dev -w apps/player --",
+        "dev:admin": "npm run dev -w apps/admin --",
         "build": "npm run build -w apps/player --",
+        "build:admin": "npm run build -w apps/admin --",
         "preview": "npm run preview -w apps/player --",
         "test": "vitest run",
         "test:watch": "vitest",
         "coverage": "npm run coverage -w apps/player --",
         "lint": "eslint . && prettier --check .",
         "format": "prettier --write .",
-        "e2e": "npm run e2e -w apps/player --"
+        "e2e": "npm run e2e -w apps/player --",
+        "e2e:admin": "npm run e2e -w apps/admin --"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",

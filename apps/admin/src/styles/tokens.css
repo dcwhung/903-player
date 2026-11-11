@@ -1,0 +1,64 @@
+/*
+ * Design Origin: mockup: _mockups_/admin/index.html（:root token，v16）
+ * Admin 自己一套 token（唔用 player theme），跟系統深淺色
+ */
+:root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-2: #eef1f5;
+    --ink: #18202b;
+    --muted: #5d6775;
+    --line: #d3d9e2;
+    --accent: #2f5fa7;
+    --accent-soft: #e3ecf8;
+    --on-accent: #ffffff;
+    --ok: #2f7d4f;
+    --ok-bg: #e4f3ea;
+    --warn: #c77700;
+    --warn-bg: #fff4e0;
+    --warn-ink: #7a4500;
+    --danger: #b3261e;
+    --danger-bg: #fdecea;
+    --on-danger: #ffffff;
+    /* 上架 / 下架掣：深淺色都用同一對實色（白字對比 ≥ 4.5:1） */
+    --toggle-on: #2f7d4f;
+    --toggle-off: #b3261e;
+    --on-toggle: #ffffff;
+    /* 版本 pill：同 player 一樣位置同形狀，用橙色分返 admin */
+    --brand-admin: #c2410c;
+    --on-brand: #ffffff;
+    --radius: 10px;
+    --gap: 16px;
+    --nav-width: 200px;
+    /* 直向手機（闊度 < 720px）淨係顯示提示 */
+    --narrow-max: 719.98px;
+    --font: -apple-system, 'PingFang HK', 'Noto Sans TC', 'Segoe UI', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+    /* 動畫（≤ 300ms；全部包 prefers-reduced-motion） */
+    --motion-fast: 150ms;
+    --motion-base: 240ms;
+    --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+    color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #12161c;
+        --surface: #1c222b;
+        --surface-2: #232b36;
+        --ink: #e6e9ee;
+        --muted: #9aa4b2;
+        --line: #2e3742;
+        --accent: #7aa7e8;
+        --accent-soft: #1f2e45;
+        --on-accent: #0d1a2b;
+        --ok: #6fc28f;
+        --ok-bg: #16301f;
+        --warn: #f2a93b;
+        --warn-bg: #3a2a10;
+        --warn-ink: #f2c27a;
+        --danger: #f28b82;
+        --danger-bg: #3a1614;
+        --on-danger: #2b0d0b;
+    }
+}

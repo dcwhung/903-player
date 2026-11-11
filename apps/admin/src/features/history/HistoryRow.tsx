@@ -1,0 +1,99 @@
+/*
+ * 上下架記錄一行：版本資訊置頂；變更 tag / 縮圖 / 名 / 狀態四欄對齊；使用中綠邊、失敗紅邊 + 原因
+ * Design Origin: mockup: _mockups_/admin/index.html#s8（.hist-row）
+ */
+import type { ChangeItem } from '@903-player/catalog';
+import type { LoadedEntry, PublishSummary } from '../../api/types';
+import { t } from '../../i18n/t';
+import { stampOf } from '../../model/dates';
+import { thumbOf } from '../../model/thumbs';
+import { Pill } from '../../ui/Pill';
+import { Thumb } from '../../ui/Thumb';
+import { kindLabel } from '../update/timelineModel';
+import { historyName, itemStatusOf } from './historyModel';
+
+interface HistoryRowProps {
+    row: PublishSummary;
+    /** 失敗時播放器仍然用緊嘅版本 */
+    servingId: number | undefined;
+    entries: readonly LoadedEntry[];
+    onRollback: (id: number) => void;
+}
+
+function Status({ row, onRollback }: Pick<HistoryRowProps, 'row' | 'onRollback'>) {
+    if (row.current)
+        return (
+            <Pill tone="ok" dot>
+                {t('status.current')}
+            </Pill>
+        );
+    if (row.status !== 'ok')
+        return (
+            <Pill tone="bad" dot>
+                {t('status.failed')}
+            </Pill>
+        );
+    return (
+        <button
+            type="button"
+            onClick={() => onRollback(row.id)}
+            aria-label={t('history.rollbackTo', { id: row.id })}
+        >
+            {t('history.rollback')}
+        </button>
+    );
+}
+
+function ChangeLine({ item, entries }: { item: ChangeItem; entries: readonly LoadedEntry[] }) {
+    const status = itemStatusOf(item);
+    return (
+        <>
+            <span className="kind">{kindLabel(item.kind)}</span>
+            {item.kind === 'rollback' ? <span /> : <Thumb url={thumbOf(entries, item)} size="sm" />}
+            <span className="name">{historyName(item)}</span>
+            <span>
+                {status && (
+                    <Pill tone={status.tone} dot={status.tone !== 'none'}>
+                        {status.text}
+                    </Pill>
+                )}
+            </span>
+        </>
+    );
+}
+
+export function HistoryRow({ row, servingId, entries, onRollback }: HistoryRowProps) {
+    const failed = row.status !== 'ok';
+    const items = row.changes?.items ?? [];
+    return (
+        <div
+            className={`hist-row${row.current ? ' current' : ''}${failed ? ' failed' : ''}`}
+            role="row"
+        >
+            <span className="ver" role="cell">
+                <b>#{row.id}</b>
+                <span className="meta">{`${stampOf(row.createdAt)} · ${row.createdBy.split('@')[0] ?? ''}`}</span>
+            </span>
+            <span className="changes" role="cell">
+                {items.map((item, i) => (
+                    <ChangeLine key={i} item={item} entries={entries} />
+                ))}
+                {items.length === 0 && (
+                    <span className="muted small">{t('history.noChanges')}</span>
+                )}
+                <span className={`meta${failed ? ' err' : ''}`}>
+                    {failed
+                        ? t('history.failed', { error: row.error ?? '', id: servingId ?? '–' })
+                        : t('history.stats', {
+                              shows: row.showCount,
+                              dramas: row.dramaCount,
+                              episodes: row.episodeCount,
+                          })}
+                </span>
+            </span>
+            <span className="status" role="cell">
+                <Status row={row} onRollback={onRollback} />
+            </span>
+        </div>
+    );
+}
