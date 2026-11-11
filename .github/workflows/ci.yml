@@ -64,13 +64,16 @@ jobs:
 
             - run: npm run lint
 
-            # 全部 workspace（player、catalog、api）嘅 type check；build 只會 check player
+            # 全部 workspace（player、admin、catalog、api）嘅 type check；build 只會 check player
             - run: npx tsc -b
 
-            # 包括 apps/api（Worker test 喺 miniflare / workerd 跑，唔使 Cloudflare 帳戶）
+            # 包括 apps/admin（jsdom）同 apps/api（Worker test 喺 miniflare / workerd 跑，唔使 Cloudflare 帳戶）
             - run: npm test
 
             - run: npm run build
+
+            # Admin SPA（Worker static assets 出）
+            - run: npm run build:admin
 
     e2e:
         name: E2E (Playwright)
@@ -93,11 +96,16 @@ jobs:
             # 同本機一樣：npm run e2e（root 轉發去 apps/player）= build + node e2e/run.mjs（自己起 vite preview，port 4173）
             - run: npm run e2e
 
+            # Admin e2e：build + vite preview + Playwright mock 晒 /api、/auth（唔使 Worker）
+            - run: npm run e2e:admin
+
             - name: Upload e2e screenshots
               if: failure()
               uses: actions/upload-artifact@v5
               with:
                   name: e2e-screenshots
-                  path: apps/player/e2e/screenshots/
+                  path: |
+                      apps/player/e2e/screenshots/
+                      apps/admin/e2e/screenshots/
                   if-no-files-found: ignore
                   retention-days: 7
