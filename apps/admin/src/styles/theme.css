@@ -1204,3 +1204,23 @@ textarea.autosize {
     margin-top: 4px;
     overflow-wrap: anywhere;
 }
+
+/* ---------- 待辦矩陣：成行撳入編輯頁（同列表頁 .clickable） ---------- */
+table.matrix tr.clickable {
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    table.matrix tr.clickable:hover > * {
+        background: var(--surface-2);
+    }
+}
+
+table.matrix .row-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+table.matrix .row-link:hover {
+    text-decoration: underline;
+}

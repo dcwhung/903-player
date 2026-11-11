@@ -32,6 +32,17 @@ export const todoHref = (target: string, key: string): string => {
     return `${path}?${query.toString()}${hash ? `#${hash}` : ''}`;
 };
 
+/**
+ * 成行撳去邊（同列表頁一樣）：新劇 → 編輯頁；新短篇 / 新集數 → 短篇 tab 展開嗰個短篇；
+ * 資料夾唔見 → 配對資料夾
+ */
+export const rowTarget = (row: TodoRow): string => {
+    const base = `/dramas/${row.dramaId}`;
+    if (row.kind === 'missingFolder') return `${base}#folder`;
+    if (row.kind === 'newDrama' || row.arcId === null) return base;
+    return `${base}/arcs#${row.arcId}`;
+};
+
 /** 仲未做嘅「必須」格 */
 export const missingOf = (row: TodoRow): string[] =>
     TODO_COLUMNS.filter((column) => row.cells[column].state === 'must').map(columnLabel);
