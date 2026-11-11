@@ -370,7 +370,9 @@ export const zhHK = {
         colPattern: '排法',
         episodesRange: '第 {first}–{last} 集',
         patternEach: '每次 {count} 集',
-        deleteSchedule: '刪除排程',
+        deleteSchedule: '刪除',
+        /** 讀屏用：掣面淨係「刪除」，名要講埋係刪排程 */
+        deleteScheduleLabel: '刪除排程',
         noCount: '此短篇的集數未知，請先於 R2 上載音檔並重新掃描。',
         notSeries: '每日播劇集沒有短篇排程。',
         previewFailed: '無法預覽：{error}',

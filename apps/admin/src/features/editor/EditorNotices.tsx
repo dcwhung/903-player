@@ -3,6 +3,7 @@
  * 412 →「此劇集已在其他視窗或裝置修改…」+ 重新載入；422 → 中文說明（validationMessage，唔識就一般訊息 + 原文）；
  * warnings → 會消失嘅集數
  */
+import { RefreshCw } from 'lucide-react';
 import { t } from '../../i18n/t';
 import { clockTime } from '../../model/dates';
 import type { SaveStatus } from './useEntryEditor';
@@ -58,6 +59,7 @@ export function EditorNotices({ status, fieldErrors, onReload }: EditorNoticesPr
                     </p>
                     <div className="actions">
                         <button type="button" className="primary" onClick={onReload}>
+                            <RefreshCw aria-hidden="true" />
                             {t('editor.reload')}
                         </button>
                     </div>

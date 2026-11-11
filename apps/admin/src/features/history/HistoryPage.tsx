@@ -9,6 +9,7 @@ import { useAdminData } from '../../data/AdminData';
 import { useResource } from '../../data/useResource';
 import { t } from '../../i18n/t';
 import { useToast } from '../../ui/Toast';
+import { Undo2 } from 'lucide-react';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { HistoryRow } from './HistoryRow';
 import { errorMessage } from '../../api/errorMessage';
@@ -82,6 +83,7 @@ export function HistoryPage() {
                     body={t('history.confirmBody', { id: confirming })}
                     note={t('history.confirmNote')}
                     confirmLabel={t('history.rollback')}
+                    confirmIcon={<Undo2 aria-hidden="true" />}
                     onConfirm={() => void onConfirm(confirming)}
                     onCancel={() => setConfirming(null)}
                 />

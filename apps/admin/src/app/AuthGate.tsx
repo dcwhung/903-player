@@ -1,4 +1,5 @@
 /* /api/me：401 → login 畫面；其他錯誤 → 重試；有 session → children(email, logout) */
+import { RefreshCw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { getMe, logout } from '../api/endpoints';
 import { UnauthorizedError } from '../api/client';
@@ -18,6 +19,7 @@ export function AuthGate({ children }: AuthGateProps) {
             <main className="login">
                 <p role="alert">{t('app.loadFailed', { error: me.error.message })}</p>
                 <button type="button" onClick={() => void me.reload()}>
+                    <RefreshCw aria-hidden="true" />
                     {t('app.retry')}
                 </button>
             </main>

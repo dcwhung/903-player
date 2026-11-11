@@ -3,6 +3,7 @@
  * 刪除排程 / 儲存
  */
 import { hkToday } from '@903-player/catalog';
+import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { RawDefinition, ScheduleState } from '../../api/types';
 import { t } from '../../i18n/t';
@@ -34,7 +35,7 @@ interface ScheduleSaveBarProps {
     onSave: () => void;
 }
 
-function ScheduleSaveBar({
+export function ScheduleSaveBar({
     canDelete,
     canSave,
     fromTodos,
@@ -50,9 +51,11 @@ function ScheduleSaveBar({
                     <button
                         type="button"
                         className="ghost-danger"
+                        aria-label={t('schedule.deleteScheduleLabel')}
                         disabled={actions.saving}
                         onClick={onDelete}
                     >
+                        <Trash2 aria-hidden="true" />
                         {t('schedule.deleteSchedule')}
                     </button>
                 )}

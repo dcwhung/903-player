@@ -39,22 +39,19 @@ body {
 }
 
 /*
- * 收細 nav 左上角 app icon：圓形 --surface 底包住原 icon（1:1、contain、置中留 padding）。
- * selector 要贏 `.shell.mini .nav a { padding: 12px 0 }`，否則 48px 框扣咗上下 padding，icon 會壓扁做 48×24
+ * 收細 nav 左上角：直接顯示完整 app icon（PNG 本身係透明四角嘅圓角方形），唔加底、唔裁切、唔變形。
+ * selector 要贏 `.shell.mini .nav a { padding: 12px 0 }`，否則 48px 框扣咗上下 padding，icon 會壓扁做 48×24。
+ * 陰影用 drop-shadow 跟 icon 形狀（box-shadow 會變方）
  */
 .shell.mini .nav .logo-mini {
-    display: grid;
-    place-items: center;
-    flex: none;
-    width: 52px;
-    height: 52px;
+    display: block;
+    width: 48px;
+    height: 48px;
     margin: 0 auto 14px;
-    /* 原 icon 係圓角方形：padding 8px 令四角都喺圓形入面，唔使裁 icon */
-    padding: 8px;
-    border-radius: 50%;
-    background: var(--surface);
-    overflow: hidden;
-    box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    overflow: visible;
 }
 
 .nav .logo-mini img {
@@ -63,6 +60,7 @@ body {
     height: auto;
     aspect-ratio: 1;
     object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.18));
 }
 
 .nav .group {
@@ -735,14 +733,15 @@ textarea.autosize {
     grid-template-columns: minmax(0, 1fr) 360px;
 }
 
+/* 有圖冇圖都係虛線框（.empty 要蓋 mockup.css 嘅 --line 淺色虛線） */
+.img-slot,
+.img-slot.empty {
+    border: 2px dashed var(--media-border);
+}
+
 .img-slot {
     width: 192px;
     height: 192px;
-    border: 2px solid var(--media-border);
-}
-
-.img-slot.empty {
-    border: 2px dashed var(--media-border);
 }
 
 /* 縮圖跟 slot 圓角（邊框入面） */
@@ -851,7 +850,7 @@ textarea.autosize {
     place-items: center;
     aspect-ratio: 4 / 3;
     padding: 10px;
-    border: 2px solid var(--media-border);
+    border: 2px dashed var(--media-border);
     border-radius: 12px;
     background: var(--surface-2);
     overflow: hidden;
@@ -912,7 +911,7 @@ textarea.autosize {
     height: auto;
     aspect-ratio: 1;
     border-radius: 50%;
-    border: 2px solid var(--media-border);
+    border: 2px dashed var(--media-border);
 }
 
 .crop .out.tile {

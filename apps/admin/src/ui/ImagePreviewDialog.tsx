@@ -4,7 +4,7 @@
  * 說明放喺各自圖下面（原圖：檔名、尺寸 · 格式；裁切後：輸出尺寸 · WebP · 約 KB）；撳「上載」先寫入。
  * 開啟時 focus 入「取消」、Tab 喺兩粒掣之間循環、Esc 取消（同 ConfirmDialog）
  */
-import { Check } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import { t } from '../i18n/t';
 import { cropBoxStyle, type PreparedImage } from './imageCrop';
@@ -125,6 +125,7 @@ export function ImagePreviewDialog({
                 <CropPreview slot={slot} image={image} />
                 <div className="actions end">
                     <button type="button" ref={cancelRef} onClick={onCancel} disabled={busy}>
+                        <X aria-hidden="true" />
                         {t('images.cancel')}
                     </button>
                     <button

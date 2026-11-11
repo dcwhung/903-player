@@ -25,7 +25,9 @@ describe('image slot border', () => {
     it('should frame filled and empty slots with a dashed --media-border', () => {
         const theme = cssOf('theme.css');
         expect(bodyOf(theme, '.img-slot')).toMatch(/border:\s*2px dashed var\(--media-border\)/);
-        expect(bodyOf(theme, '.img-slot.empty')).not.toMatch(/solid/);
+        expect(bodyOf(theme, '.img-slot.empty')).toMatch(
+            /border:\s*2px dashed var\(--media-border\)/,
+        );
     });
 
     it('should frame both panes of the crop preview with dashes, the disc result as a dashed circle', () => {
@@ -40,7 +42,10 @@ describe('image slot border', () => {
         const users = cssOf('theme.css')
             .split('}')
             .filter((rule) => rule.includes('var(--media-border)'))
-            .map((rule) => rule.split('{')[0]?.trim());
-        expect(users.sort()).toEqual(['.crop .frame', '.crop .out.disc', '.img-slot'].sort());
+            .flatMap((rule) => (rule.split('{')[0] ?? '').split(','))
+            .map((selector) => selector.trim());
+        expect(users.sort()).toEqual(
+            ['.crop .frame', '.crop .out.disc', '.img-slot', '.img-slot.empty'].sort(),
+        );
     });
 });

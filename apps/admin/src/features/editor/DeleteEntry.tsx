@@ -49,6 +49,7 @@ export function DeleteEntry({
                     title={t('editor.deleteTitle', { name: nameOf(entry.definition, entry.id) })}
                     body={t('editor.deleteBody')}
                     confirmLabel={t('editor.delete')}
+                    confirmIcon={<Trash2 aria-hidden="true" />}
                     danger
                     onConfirm={() => void onConfirm()}
                     onCancel={() => setConfirming(false)}
