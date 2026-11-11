@@ -218,6 +218,7 @@ export const zhHK = {
         publishedNoDelete: '已發佈的項目不可刪除。如需下架，請將狀態轉為「下架」。',
         idPattern: '只可使用小楷英文字母、數字及連字號（例如 heart-arc）',
         required: '必須填寫',
+        arcIdDuplicate: '改名後短篇 ID「{id}」會重複，請先修改該短篇 ID。',
         notFound: '找不到此項目。',
     },
     fields: {

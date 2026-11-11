@@ -263,6 +263,41 @@ describe('POST /api/entries/dramas/:id/rename', () => {
         expect(await pairs('scan_findings')).toEqual([{ drama_id: 'lancy', arc_id: 'lancy-01' }]);
     });
 
+    const collidingArcs = [
+        { id: 'drama-01-01', name: 'Season 1', episodes: 3 },
+        { id: 'lancy-01', name: 'Extra', episodes: 1 },
+    ];
+
+    it('should refuse (409) a rename whose moved arc id already exists, changing nothing (W-711)', async () => {
+        await putEntry('dramas', 'drama-01', { ...scannable(3), arcs: collidingArcs });
+        const response = await rename('drama-01', 'lancy');
+        expect(response.status).toBe(409);
+        expect(await json(response)).toMatchObject({ arcId: 'lancy-01' });
+        expect(await definitionOf('dramas', 'lancy')).toBeNull();
+        expect(
+            ((await definitionOf('dramas', 'drama-01'))?.arcs as Json[]).map((a) => a.id),
+        ).toEqual(['drama-01-01', 'lancy-01']);
+    });
+
+    it('should refuse (409, not 500) the same collision when both arcs have schedules (W-711)', async () => {
+        await putEntry('dramas', 'drama-01', { ...scannable(3), arcs: collidingArcs });
+        await env.DB.batch(
+            ['drama-01-01', 'lancy-01'].map((arcId) =>
+                env.DB.prepare(
+                    "INSERT INTO schedules (drama_id, arc_id, rule, updated_at) VALUES ('drama-01', ?, '{}', 'x')",
+                ).bind(arcId),
+            ),
+        );
+        expect((await rename('drama-01', 'lancy')).status).toBe(409);
+        const schedules = await env.DB.prepare(
+            'SELECT drama_id, arc_id FROM schedules ORDER BY arc_id',
+        ).all();
+        expect(schedules.results).toEqual([
+            { drama_id: 'drama-01', arc_id: 'drama-01-01' },
+            { drama_id: 'drama-01', arc_id: 'lancy-01' },
+        ]);
+    });
+
     it('should rename a drama published only while unlisted (W-707)', async () => {
         await putEntry('dramas', 'drama-01', { ...scannable(3), enabled: false });
         expect((await adminPost('/api/publish')).status).toBe(200);

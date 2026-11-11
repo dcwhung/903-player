@@ -103,7 +103,24 @@ const renameStatements = (
     renameFindingsStatement(db, from, to, updatedAt),
 ];
 
-/** 改得先回現有 entry：404 / 412 / 409（發佈過、新 ID 已經有） */
+/** 改名後重複嘅短篇 ID（<舊 ID>-NN 跟住改，可能撞同劇已有嘅 <新 ID>-NN，W-711）；冇就 undefined */
+export const duplicateArcIdAfterRename = (
+    definition: Json,
+    from: string,
+    to: string,
+): string | undefined => {
+    const ids = (withRenamedArcIds(definition, from, to).arcs as unknown[] | undefined) ?? [];
+    const seen = new Set<string>();
+    for (const arc of ids) {
+        const id = isRecord(arc) && typeof arc.id === 'string' ? arc.id : undefined;
+        if (id === undefined) continue;
+        if (seen.has(id)) return id;
+        seen.add(id);
+    }
+    return undefined;
+};
+
+/** 改得先回現有 entry：404 / 412 / 409（發佈過、新 ID 已經有、改名後短篇 ID 重複） */
 const renamable = async (c: Context<AppEnv>, id: string, newId: string) => {
     const existing = await getEntry(c.env.DB, 'dramas', id);
     if (!existing) return errorResponse(c, HTTP_STATUS.notFound, 'no such entry');
@@ -113,6 +130,14 @@ const renamable = async (c: Context<AppEnv>, id: string, newId: string) => {
         return errorResponse(c, HTTP_STATUS.conflict, 'published dramas cannot change their id');
     if (newId !== id && (await getEntry(c.env.DB, 'dramas', newId)))
         return errorResponse(c, HTTP_STATUS.conflict, `drama ${newId} already exists`);
+    const duplicate = duplicateArcIdAfterRename(JSON.parse(existing.definition) as Json, id, newId);
+    if (duplicate !== undefined)
+        return errorResponse(
+            c,
+            HTTP_STATUS.conflict,
+            `arc id ${duplicate} would exist twice after the rename`,
+            { arcId: duplicate },
+        );
     return existing;
 };
 
