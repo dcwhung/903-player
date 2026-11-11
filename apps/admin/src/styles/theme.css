@@ -728,6 +728,41 @@ textarea.autosize {
 .img-slot {
     width: 192px;
     height: 192px;
+    border: 2px solid var(--media-border);
+}
+
+.img-slot.empty {
+    border: 2px dashed var(--media-border);
+}
+
+/* 縮圖跟 slot 圓角（邊框入面） */
+.img-slot .thumb {
+    border-radius: inherit;
+}
+
+/* 每張圖一格：圖 → 名 → 尺寸提示 → 錯誤（各自喺自己張圖下面） */
+.media .slot {
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.slot-cap {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    text-align: center;
+}
+
+.slot-cap .hint {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.slot-cap .err {
+    max-width: 340px;
 }
 
 .img-slot.tile {
@@ -752,7 +787,9 @@ textarea.autosize {
 }
 
 .media .cap {
-    margin-bottom: 8px;
+    margin-bottom: 0;
+    font-weight: 600;
+    color: var(--ink);
 }
 
 @media (max-width: 1180px) {
@@ -766,10 +803,6 @@ textarea.autosize {
         grid-template-columns: auto auto;
         justify-content: start;
         column-gap: 24px;
-    }
-
-    .with-media > .media .cap {
-        grid-row: 2;
     }
 }
 
@@ -786,27 +819,61 @@ textarea.autosize {
 }
 
 .scrim .card.crop-dialog {
-    max-width: 560px;
+    max-width: 640px;
 }
 
+/* 原圖 | 裁切後：兩格並排，每格有邊框，說明喺各自圖下面 */
 .crop {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
+}
+
+.crop .pane {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+}
+
+.crop .frame {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    padding: 10px;
+    border: 2px solid var(--media-border);
+    border-radius: 12px;
+    background: var(--surface-2);
+    overflow: hidden;
+}
+
+.crop figcaption {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.crop figcaption strong {
+    font-size: 15px;
+    color: var(--ink);
 }
 
 .crop .src {
     position: relative;
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    background: var(--surface-2);
+    max-width: 100%;
+    max-height: 100%;
+    line-height: 0;
 }
 
 .crop .src img {
     display: block;
-    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
     height: auto;
 }
 
@@ -818,15 +885,15 @@ textarea.autosize {
 }
 
 .crop .out {
-    justify-self: center;
     max-width: 100%;
-    background: var(--surface-2);
+    max-height: 100%;
     object-fit: cover;
 }
 
 .crop .out.disc {
-    width: 160px;
-    height: 160px;
+    height: 100%;
+    aspect-ratio: 1;
+    width: auto;
     border-radius: 50%;
 }
 
@@ -834,11 +901,13 @@ textarea.autosize {
     width: 100%;
     aspect-ratio: 1216 / 684;
     height: auto;
-    border-radius: 10px;
+    border-radius: 8px;
 }
 
-.crop > .lucide {
-    color: var(--muted);
+@media (max-width: 560px) {
+    .crop {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ---------- 上下架記錄：變更欄用晒欄闊、版本資訊兩行 ---------- */

@@ -1,6 +1,6 @@
 /*
  * 圖片 slot：撳縮圖 → 揀檔（PNG / JPG / WebP）→ 置中裁切 + 轉 WebP → 預覽 dialog → 「上載」→ PUT /api/assets →
- * onUploaded（caller 即刻 PUT entry：上載即存）
+ * onUploaded（caller 即刻 PUT entry：上載即存）。名、尺寸提示、錯誤都放喺各自圖片下面（.slot-cap）
  * Design Origin: mockup: _mockups_/admin/index.html#s3（.img-slot、右下 ✎ / ＋）+ admin-style ⑤ / ⑥
  */
 import { Pencil, Plus } from 'lucide-react';
@@ -42,9 +42,10 @@ export function ImageSlot({ slot, url, onUploaded }: ImageSlotProps) {
     const slotName = t(`images.${slot}`);
     const action = t(url ? 'images.change' : 'images.upload', { slot: slotName });
     const classes = ['img-slot', slot === 'tile' ? 'tile' : '', url ? '' : 'empty'];
+    const size = sizeLabel(SLOT_SIZES[slot]);
     return (
-        <>
-            <Tooltip text={t('images.tip', { slot: slotName, size: sizeLabel(SLOT_SIZES[slot]) })}>
+        <div className="slot">
+            <Tooltip text={t('images.tip', { slot: slotName, size })}>
                 <button
                     type="button"
                     className={classes.filter(Boolean).join(' ')}
@@ -63,12 +64,15 @@ export function ImageSlot({ slot, url, onUploaded }: ImageSlotProps) {
                 hidden
                 onChange={(e) => void onPick(e)}
             />
-            <span className="cap">{busy ? t('images.uploading') : slotName}</span>
-            {error && (
-                <span className="err small" role="alert">
-                    {error}
-                </span>
-            )}
+            <span className="slot-cap">
+                <span className="cap">{busy ? t('images.uploading') : slotName}</span>
+                <span className="hint">{t('images.hint', { size })}</span>
+                {error && (
+                    <span className="err small" role="alert">
+                        {error}
+                    </span>
+                )}
+            </span>
             {pending && (
                 <ImagePreviewDialog
                     slot={slot}
@@ -78,6 +82,6 @@ export function ImageSlot({ slot, url, onUploaded }: ImageSlotProps) {
                     onCancel={cancel}
                 />
             )}
-        </>
+        </div>
     );
 }

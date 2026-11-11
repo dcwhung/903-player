@@ -1094,9 +1094,6 @@ button.big {
         justify-content: start;
         column-gap: 16px;
     }
-    .with-media > .media .cap {
-        grid-row: 2;
-    }
 }
 .time-range {
     display: flex;
