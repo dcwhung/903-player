@@ -127,4 +127,30 @@ describe('disabled entries without images', () => {
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({ draft: false });
     });
+
+    it('W-714: a published drama turned off with a new arc missing its disc answers 422 (no publish 409)', async () => {
+        expect((await adminPost('/api/publish')).status).toBe(200);
+        const current = (await (await adminGet('/api/entries/dramas/golden')).json()) as {
+            definition: Json & { arcs: Json[] };
+            images: Json;
+        };
+        const definition = {
+            ...current.definition,
+            enabled: false,
+            arcs: [
+                ...current.definition.arcs,
+                {
+                    id: 'season-2',
+                    name: 'Season 2',
+                    addedAt: '2026-11-01',
+                    episodes: 2,
+                    disc: 'season-2.webp',
+                },
+            ],
+        };
+        const response = await update('dramas', 'golden', definition, current.images);
+        expect(response.status).toBe(422);
+        expect(await draftFlag('dramas', 'golden')).toBe(0);
+        expect((await adminPost('/api/publish')).status).not.toBe(409);
+    });
 });

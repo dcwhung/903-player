@@ -87,11 +87,8 @@ const validationFailed = (c: Context<AppEnv>, error: unknown) => {
 };
 
 /**
- * 可唔可以寬鬆驗證：掃描建嘅 draft 劇（上架都得：排程可以同時轉上架，圖喺待辦跟）；
- * 或者下架嘅 entry（admin 新建節目 / 劇，圖未齊）。上架嘅節目一定要完整驗證（圖要齊）
- */
-/**
- * 寬鬆驗證只限：掃描 draft 劇，或者「從未發佈過」嘅下架 entry（admin 新建、圖未齊）。
+ * 寬鬆驗證只限：掃描 draft 劇（上架都得：排程可以同時轉上架，圖喺待辦跟），
+ * 或者「從未發佈過」嘅下架 entry（admin 新建節目 / 劇，圖未齊）。
  * 已發佈嘅 entry 下架後仍要留喺 document（ID 守衛 + player 顯示下架），所以一定要完整驗證（W-714）
  */
 const mayRelax = async (db: D1Database, entry: EntryInput, wasDraft: boolean) =>
