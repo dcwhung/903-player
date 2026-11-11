@@ -1,11 +1,10 @@
 /*
- * 廣播劇 · 排程：Design Origin: mockup: _mockups_/admin/index.html#s7
- * 短篇 tab（#arcId 由待辦跳入嚟就揀嗰個）→ 嗰個短篇嘅排程
+ * 廣播劇 · 排程：Design Origin: mockup: _mockups_/admin/index.html#s7、_mockups_/admin-schedule-unlist ⑧ ⑨
+ * 短篇 tab（#arcId 由待辦跳入嚟就揀嗰個）→ 嗰個短篇嘅排程（儲存結果提示喺儲存掣上面，見 ArcSchedule）
  */
 import { useState } from 'react';
 import { t } from '../../i18n/t';
 import { arcsOf, isDaily } from '../../model/raw';
-import { EditorNotices } from '../editor/EditorNotices';
 import { ArcSchedule } from './ArcSchedule';
 import { ArcScheduleTabs } from './ArcScheduleTabs';
 import { arcIdOf } from './dramaModel';
@@ -44,11 +43,6 @@ export function ScheduleTab({
                 schedules={schedules}
                 isNew={state.isNewArc}
                 onSelect={setSelected}
-            />
-            <EditorNotices
-                status={{ saving: actions.saving, problem: actions.problem, warnings: [] }}
-                fieldErrors={0}
-                onReload={() => void state.editor.reload()}
             />
             <ArcSchedule
                 key={`${current.id}:${schedules[current.id]?.updatedAt ?? 'none'}`}

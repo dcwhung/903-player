@@ -1,3 +1,4 @@
+import type { UnlistRule } from '@903-player/catalog';
 import {
     applyPreset,
     formOf,
@@ -7,6 +8,7 @@ import {
     weekdaysOf,
     type ScheduleContext,
     type ScheduleForm,
+    type UnlistForm,
 } from './scheduleModel';
 
 const TODAY = '2026-12-01';
@@ -71,7 +73,7 @@ describe('scheduleModel — listing presets', () => {
             unlist: { mode: 'none' },
         };
         expect(ruleOf(form, FRESH)).toMatchObject({ every: { days: 1 } });
-        expect(weekdaysOf(applyPreset('daily', TODAY))).toHaveLength(7);
+        expect(weekdaysOf({ start: TODAY, every: { days: 1 } })).toHaveLength(7);
     });
 });
 
@@ -182,11 +184,14 @@ describe('scheduleModel — unlisting', () => {
             { mode: 'periodic', start: '2026-12-14', every: { weekdays: [1] }, perRelease: 6 },
             { kind: 'periodic', start: '2026-12-14', perRelease: 6, every: { weekdays: [1] } },
         ],
-    ] as const)('should write %j as unlist and read it back', (unlist, expected) => {
-        const rule = ruleOf({ listing, unlist }, FRESH);
-        expect(rule.unlist).toEqual(expected);
-        expect(formOf(rule, FRESH).unlist).toEqual(unlist);
-    });
+    ] as [UnlistForm, UnlistRule][])(
+        'should write %j as unlist and read it back',
+        (unlist, expected) => {
+            const rule = ruleOf({ listing, unlist }, FRESH);
+            expect(rule.unlist).toEqual(expected);
+            expect(formOf(rule, FRESH).unlist).toEqual(unlist);
+        },
+    );
 
     it('should read the old removeAfterDays as 上架 N 日後', () => {
         const legacy = {

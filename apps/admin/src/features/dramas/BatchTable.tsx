@@ -1,27 +1,24 @@
-/* 上下架批次表（舊批次同新規則排法唔同先出）：日期 / 集數 / 狀態 / 排法（mockup ⑩ table.batches） */
-import type { EpisodeRange, ScheduleRule } from '@903-player/catalog';
+/* 預覽「上下架批次」表（mockup ⑨ table）：日期 / 上架 / 下架，集數範圍用 pill（藍 = 上架、紅 = 下架） */
+import type { EpisodeRange } from '@903-player/catalog';
 import { t } from '../../i18n/t';
 import { shortDate } from '../../model/dates';
 import { Pill } from '../../ui/Pill';
-import { describeRule } from './scheduleModel';
-import { batchSize, type Strip } from './stripModel';
+import { rangeText, type PreviewDay } from './timelineModel';
 
-function Row({ batch, past, pattern }: { batch: EpisodeRange; past: boolean; pattern: string }) {
+function Ranges({ ranges, tone }: { ranges: readonly EpisodeRange[]; tone: 'info' | 'bad' }) {
+    if (ranges.length === 0) return <span className="muted">{t('schedule.empty')}</span>;
     return (
-        <tr className={past ? 'past' : undefined}>
-            <td>{shortDate(batch.date)}</td>
-            <td>{t('schedule.episodesRange', { first: batch.first, last: batch.last })}</td>
-            <td>
-                <Pill tone={past ? 'ok' : 'info'} dot>
-                    {past ? t('status.live') : t('status.scheduled')}
+        <span className="pills">
+            {ranges.map((range) => (
+                <Pill key={range.first} tone={tone}>
+                    {rangeText(range)}
                 </Pill>
-            </td>
-            <td className={past ? 'muted' : undefined}>{pattern}</td>
-        </tr>
+            ))}
+        </span>
     );
 }
 
-export function BatchTable({ strip, rule }: { strip: Strip; rule: ScheduleRule }) {
+export function BatchTable({ days }: { days: readonly PreviewDay[] }) {
     return (
         <div className="note warn batch-note">
             <b>{t('schedule.batches')}</b>
@@ -30,27 +27,21 @@ export function BatchTable({ strip, rule }: { strip: Strip; rule: ScheduleRule }
                     <thead>
                         <tr>
                             <th scope="col">{t('schedule.colDate')}</th>
-                            <th scope="col">{t('schedule.colEpisodes')}</th>
-                            <th scope="col">{t('schedule.colStatus')}</th>
-                            <th scope="col">{t('schedule.colPattern')}</th>
+                            <th scope="col">{t('schedule.colList')}</th>
+                            <th scope="col">{t('schedule.colUnlist')}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {strip.past.map((b) => (
-                            <Row
-                                key={`p${b.first}`}
-                                batch={b}
-                                past
-                                pattern={t('schedule.patternEach', { count: batchSize(b) })}
-                            />
-                        ))}
-                        {strip.future.map((b) => (
-                            <Row
-                                key={`f${b.first}-${b.date}`}
-                                batch={b}
-                                past={false}
-                                pattern={describeRule(rule)}
-                            />
+                        {days.map((day) => (
+                            <tr key={day.date}>
+                                <td>{shortDate(day.date)}</td>
+                                <td>
+                                    <Ranges ranges={day.listings} tone="info" />
+                                </td>
+                                <td>
+                                    <Ranges ranges={day.removals} tone="bad" />
+                                </td>
+                            </tr>
                         ))}
                     </tbody>
                 </table>

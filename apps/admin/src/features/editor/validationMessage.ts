@@ -1,8 +1,10 @@
 /*
- * 422 驗證錯誤（server 原文英文：「<kind>/<id>: <欄位> <原因>」，同 catalog parser 一套）→ 書面語中文。
+ * 422 驗證錯誤（server 原文英文：「<kind>/<id>: <欄位> <原因>」，同 catalog parser 一套；
+ * 排程下架日衝突係「episode N unlist date … must be later than its listing date …」）→ 書面語中文。
  * 識嘅寫明邊樣有問題；唔識就回 null（畫面出一般訊息 + 可展開原文）
  */
 import { t, type MessageKey } from '../../i18n/t';
+import { shortDate } from '../../model/dates';
 
 const SOURCE = /^(shows|dramas)\/([^:]+): (.+)$/;
 const ARC_PATH = /^arcs\[(\d+)\]\.?/;
@@ -11,6 +13,9 @@ const FIELD_PROBLEM = /^(\w+)(?:\[\d+\])? must (.+)$/;
 const EMPTY_REASON = /^(be a non-empty string|not be empty)$/;
 const DATE_REASON = /^be a YYYY-MM-DD date$/;
 const DUPLICATE_ARC_ID = /^id: duplicate arc id (\S+)$/;
+/** 排程 422（packages/catalog expandSchedule）：某集下架日唔遲過上架日 */
+const UNLIST_BEFORE_LISTING =
+    /^episode (\d+) unlist date (\S+) must be later than its listing date (\S+)$/;
 
 /** 欄位 → 畫面標籤（fields.*，同編輯頁一樣） */
 const FIELD_LABELS: Record<string, MessageKey> = {
@@ -46,6 +51,13 @@ const fieldMessage = (owner: string, field: string, reason: string): string | nu
 };
 
 export const validationMessage = (detail: string): string | null => {
+    const unlist = UNLIST_BEFORE_LISTING.exec(detail.trim());
+    if (unlist)
+        return t('validation.unlistBeforeListing', {
+            no: Number(unlist[1]),
+            removed: shortDate(unlist[2] ?? ''),
+            listed: shortDate(unlist[3] ?? ''),
+        });
     const source = SOURCE.exec(detail.trim());
     if (!source) return null;
     const { entity, owner, rest } = whereOf(source[1] ?? '', source[2] ?? '', source[3] ?? '');

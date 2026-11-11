@@ -1,120 +1,93 @@
 /*
- * 一句話規則（mockup ⑩ A）：由 [日期] 起，逢 [星期]，每次上 [N 集]，[下架安排]
+ * 一句話規則（mockup ⑧）：
+ * 上架「由 ⟨日期⟩ 起，逢 ⟨星期⟩，每次上架 ⟨N⟩ 集」/「於 ⟨日期⟩ 一次性全部上架」；
+ * 下架「於 ⟨日期⟩ 全部下架」/「每集上架 ⟨N⟩ 日後下架」/「由 ⟨日期⟩ 起，逢 ⟨星期⟩，每次下架 ⟨N⟩ 集」
  */
-import type { Weekday } from '@903-player/catalog';
 import { t } from '../../i18n/t';
-import { DaysField } from '../shows/DaysField';
-import { weekdaysOf, type ScheduleForm } from './scheduleModel';
+import {
+    CadenceSentence,
+    DateField,
+    LISTING_LABELS,
+    positive,
+    UNLIST_LABELS,
+} from './CadenceSentence';
+import type { ListingForm, UnlistForm } from './scheduleModel';
 
-const REMOVAL_DAYS = [7, 14, 30, 60, 90];
-const MAX_PER_RELEASE = 99;
+/** 「上架 N 日後」上限：同 catalog MAX_SCHEDULE_DAYS（約 10 年） */
+const MAX_AFTER_DAYS = 3660;
 
-type Editable = Exclude<ScheduleForm, { mode: 'custom' }>;
-
-function RemovalSelect({
-    form,
+export function ListingSentence({
+    listing,
+    min,
     onChange,
 }: {
-    form: Editable;
-    onChange: (form: ScheduleForm) => void;
+    listing: ListingForm;
+    /** 已上架最後一批之後先可以再上架 */
+    min?: string | undefined;
+    onChange: (listing: ListingForm) => void;
 }) {
-    return (
-        <select
-            className="inline-ctl"
-            aria-label={t('schedule.removeLabel')}
-            value={form.removeAfterDays ?? ''}
-            onChange={(e) =>
-                onChange({
-                    ...form,
-                    removeAfterDays: e.target.value === '' ? null : Number(e.target.value),
-                })
-            }
-        >
-            <option value="">{t('schedule.keep')}</option>
-            {REMOVAL_DAYS.map((days) => (
-                <option key={days} value={days}>
-                    {t('schedule.removeAfter', { days })}
-                </option>
-            ))}
-        </select>
-    );
-}
-
-function Cadence({
-    form,
-    onChange,
-}: {
-    form: Extract<ScheduleForm, { mode: 'periodic' }>;
-    onChange: (form: ScheduleForm) => void;
-}) {
-    const weekdays = weekdaysOf(form);
-    const every = 'days' in form.every ? form.every.days : 0;
-    return (
-        <>
-            {weekdays ? (
-                <>
-                    {t('schedule.every')}
-                    <DaysField
-                        inline
-                        label={t('schedule.weekdaysLabel')}
-                        days={weekdays}
-                        onChange={(days: Weekday[]) =>
-                            onChange({ ...form, every: { weekdays: days } })
-                        }
-                    />
-                </>
-            ) : (
-                t('schedule.everyDays', { days: every })
-            )}
-            {t('schedule.each')}
-            <input
-                className="inline-ctl"
-                type="number"
-                min={1}
-                max={MAX_PER_RELEASE}
-                aria-label={t('schedule.perRelease')}
-                value={form.perRelease}
-                onChange={(e) =>
-                    onChange({ ...form, perRelease: Math.max(1, Number(e.target.value) || 1) })
-                }
-            />
-            {t('schedule.unit')}，
-        </>
-    );
-}
-
-export function ScheduleSentence({
-    form,
-    onChange,
-}: {
-    form: ScheduleForm;
-    onChange: (form: ScheduleForm) => void;
-}) {
-    if (form.mode === 'custom')
+    if (listing.mode === 'done') return null;
+    if (listing.mode === 'custom')
         return (
             <p className="sentence">
-                {t('schedule.customSentence', {
-                    count: form.rule.kind === 'dates' ? form.rule.batches.length : 1,
-                })}
+                {t('schedule.customSentence', { count: listing.batches.length })}
+            </p>
+        );
+    if (listing.mode === 'periodic')
+        return (
+            <CadenceSentence form={listing} labels={LISTING_LABELS} min={min} onChange={onChange} />
+        );
+    return (
+        <p className="sentence">
+            {t('schedule.on')}{' '}
+            <DateField
+                label="schedule.listAllLabel"
+                value={listing.start}
+                min={min}
+                onChange={(start) => onChange({ ...listing, start })}
+            />{' '}
+            {t('schedule.listAll')}
+        </p>
+    );
+}
+
+export function UnlistSentence({
+    unlist,
+    onChange,
+}: {
+    unlist: UnlistForm;
+    onChange: (unlist: UnlistForm) => void;
+}) {
+    if (unlist.mode === 'none') return <p className="muted small">{t('schedule.unlistKeep')}</p>;
+    if (unlist.mode === 'periodic')
+        return <CadenceSentence form={unlist} labels={UNLIST_LABELS} onChange={onChange} />;
+    if (unlist.mode === 'afterDays')
+        return (
+            <p className="sentence">
+                {t('schedule.unlistAfterPrefix')}{' '}
+                <input
+                    className="inline-ctl"
+                    type="number"
+                    min={1}
+                    max={MAX_AFTER_DAYS}
+                    aria-label={t('schedule.unlistDaysLabel')}
+                    value={unlist.days}
+                    onChange={(e) =>
+                        onChange({ ...unlist, days: positive(e.target.value, MAX_AFTER_DAYS) })
+                    }
+                />{' '}
+                {t('schedule.unlistAfterSuffix')}
             </p>
         );
     return (
         <p className="sentence">
-            {t('schedule.from')}{' '}
-            <input
-                className="inline-ctl"
-                type="date"
-                aria-label={t('schedule.startLabel')}
-                value={form.start}
-                onChange={(e) => e.target.value && onChange({ ...form, start: e.target.value })}
+            {t('schedule.on')}{' '}
+            <DateField
+                label="schedule.unlistDateLabel"
+                value={unlist.date}
+                onChange={(date) => onChange({ ...unlist, date })}
             />{' '}
-            {t('schedule.since')}
-            {form.mode === 'periodic' ? (
-                <Cadence form={form} onChange={onChange} />
-            ) : (
-                `${t('schedule.allAtOnce')}，`
-            )}
-            <RemovalSelect form={form} onChange={onChange} />
+            {t('schedule.unlistAll')}
         </p>
     );
 }

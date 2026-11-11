@@ -95,7 +95,7 @@ describe('timelineModel — edit timelines', () => {
             },
             { firstNo: 1, count: 30 },
         );
-        expect(unlistTimeline(kept, CONTEXT)).toEqual({
+        expect(unlistTimeline(kept, { ...CONTEXT, unlisted: { '1-10': '2026-11-04' } })).toEqual({
             removed: [{ first: 1, last: 10, date: '2026-11-04' }],
             planned: [{ first: 11, last: 30, date: '2026-12-31' }],
         });

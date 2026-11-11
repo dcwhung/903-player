@@ -1,5 +1,5 @@
 /* 每個 admin API endpoint 一個 function（形狀見 types.ts） */
-import type { ScheduleRule, ExpandedSchedule } from '@903-player/catalog';
+import type { ScheduleRule } from '@903-player/catalog';
 import { ApiError, request } from './client';
 import type {
     ChangesResponse,
@@ -119,14 +119,6 @@ export const getSchedule = async (dramaId: string, arcId: string) => {
         throw error;
     }
 };
-
-export const previewSchedule = async (dramaId: string, arcId: string, rule: ScheduleRule) =>
-    (
-        await request<{ expanded: ExpandedSchedule; warnings: SaveResult['warnings'] }>(
-            `${schedulePath(dramaId, arcId)}/preview`,
-            { method: 'POST', body: { rule } },
-        )
-    ).data;
 
 /**
  * 儲存排程；enable = 同一個 D1 batch 順手將短篇轉「上架」（S-803，新短篇預設下架，排咗期先上架）。
