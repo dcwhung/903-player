@@ -304,6 +304,10 @@ const scheduleEditCheck = (browser) =>
                 throw new Error('編輯 not selected');
             await page.getByRole('button', { name: '每週 1 次' }).click();
             await page.getByRole('spinbutton', { name: '每次上架集數' }).fill('5');
+            // 下架方式 = 快速套用 chip（同上架一樣），唔係 segmented 大框
+            if ((await page.locator('section.panel.down .seg').count()) > 0)
+                throw new Error('unlist modes still in a segmented box');
+            await page.locator('section.panel.down .presets').getByText('快速套用').waitFor();
             await page.getByRole('button', { name: '逢星期 X 下架 N 集' }).click();
             await page.getByRole('spinbutton', { name: '每次下架集數' }).fill('6');
             await page.getByText('✓ 已上架').waitFor();

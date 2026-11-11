@@ -139,14 +139,41 @@ describe('ScheduleTab — 編輯 (mockup ⑧)', () => {
 });
 
 describe('ScheduleTab — icons', () => {
-    it('should put an aria-hidden outline icon on 編輯 / 預覽 / 儲存 like the other buttons', async () => {
-        api();
-        await open('heart');
-        for (const name of ['編輯', '預覽', '儲存']) {
+    it('should put an aria-hidden outline icon on 編輯 / 預覽 / 復原 / 刪除 / 儲存', async () => {
+        api({
+            'GET /api/dramas/lancy/arcs/half/schedule': () => ({
+                body: {
+                    rule: { kind: 'dates', batches: [{ from: 1, date: '2026-10-27' }] },
+                    expanded: null,
+                    updatedAt: 's1',
+                },
+            }),
+        });
+        await open('half');
+        // 改一改先出「復原」
+        await userEvent.click(screen.getByRole('button', { name: '指定日全部' }));
+        for (const name of ['編輯', '預覽', '復原', '刪除', '儲存']) {
             const icon = screen.getByRole('button', { name }).querySelector('svg.lucide');
             expect(icon).not.toBeNull();
             expect(icon).toHaveAttribute('aria-hidden', 'true');
         }
+        expect(screen.queryByRole('button', { name: '刪除排程' })).not.toBeInTheDocument();
+    });
+});
+
+describe('ScheduleTab — 下架方式 chips', () => {
+    it('should show the unlist modes as 快速套用 chips like the listing panel, no segmented box', async () => {
+        api();
+        await open('heart');
+        const panel = screen.getByRole('heading', { name: '下架' }).closest('section');
+        const modes = within(panel as HTMLElement).getByRole('group', { name: '下架方式' });
+        expect(modes).toHaveClass('presets');
+        expect(modes).not.toHaveClass('seg');
+        expect(within(modes).getByText('快速套用')).toBeInTheDocument();
+        expect(within(modes).getByRole('button', { name: '不下架' })).toHaveAttribute(
+            'aria-pressed',
+            'true',
+        );
     });
 });
 
