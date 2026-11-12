@@ -18,6 +18,13 @@
 | S3 可引用嘅 CI        | `.github/workflows/ci.yml`（非 main push：lint、unit、build、e2e；淨係改 docs 嘅 push 由 `changes` job 跳過，跳過當 Success）；同一個 SHA 綠咗就引用個 run，唔重跑                                                                                                                                                                                                                                                     |
 | Cloud sandbox         | `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run e2e`（預裝 Chromium 同鎖住嘅 Playwright 唔夾時用）                                                                                                                                                                                                                                                                                                                 |
 
+## Ledger merge conflict（S-866，2026-11-12）
+
+- Branch merge `main` 撞 `.proj-docs/qa/verification-ledger.tsv`：喺 repo root 跑 `node scripts/qa/ledger-merge.mjs`（預設 ours = HEAD、theirs = MERGE_HEAD），逐行（chain + stage + path）三方合併；exit 1 會列出兩邊都改咗、又對唔上而家個檔嘅行，嗰啲先要重新驗收再 freeze
+- ❌ 唔好用 `git checkout --theirs` 之後 `qa-ledger.sh freeze <chain> <stage> … <淨係改咗嘅檔>`：freeze 會刪走同一個 chain + stage 嘅全部行，條鏈會截短（2026-11-12 PR #210 中過）
+- 要 freeze 就要畀晒成條 chain + stage 嘅檔（`awk -F'\t' '$1=="<chain>" && $2=="<stage>"{print $3}'` 由 ledger 攞）
+- Parallel lane：每個 PR merge 完，下一個先 merge `main` + 跑 script，等 CI 綠先 merge
+
 ## 淨改文件嘅 push（用戶 2026-11-06 決定）
 
 - 淨改 docs 嘅 push CI 會跳過，但 main 嘅 Deploy 會跑全 repo `npm run lint`（包括 `prettier --check .`）：2026-11-06 v1.28.1 因為 QA 報告冇 format，Deploy #145 失敗

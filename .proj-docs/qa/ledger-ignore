@@ -6,3 +6,6 @@
 
 # 封面生成 / review 工具（Python + node，開發者本機跑，唔入 player bundle）；backlog Lane D 揀 ignore，唔另開鏈（pytest 由開發者本機跑）
 apps/player/scripts/arcCover/*
+
+# QA ledger 合併工具（S-866）：只喺 merge 撞 ledger 時本機跑，唔入 build / test
+scripts/qa/*
