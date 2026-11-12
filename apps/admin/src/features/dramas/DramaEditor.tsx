@@ -1,6 +1,6 @@
 /*
  * 廣播劇編輯：Design Origin: mockup: _mockups_/admin/index.html#s4 / #s5 / #s7
- * 分頁 基本資料 / 短篇 / 排程；由待辦入嚟有 flow bar
+ * 分頁 基本資料 / 短篇 / 排程；由待辦入嚟有 flow bar；轉 tab 記住揀咗嘅短篇（useArcMemory）
  */
 import { useParams } from 'react-router-dom';
 import { t } from '../../i18n/t';
@@ -14,6 +14,8 @@ import { BasicTab } from './BasicTab';
 import { DramaTabs, type DramaTab } from './DramaTabs';
 import { ScheduleTab } from './ScheduleTab';
 import { useDramaEditor } from './useDramaEditor';
+import { arcIdOf } from './dramaModel';
+import { useArcMemory } from './useArcMemory';
 import { useHashTarget } from './useHashTarget';
 
 function StatusPill({ neverPublished, pending }: { neverPublished: boolean; pending: boolean }) {
@@ -30,6 +32,8 @@ function DramaEditor({ id, tab }: { id: string; tab: DramaTab }) {
     const state = useDramaEditor(id);
     const { editor } = state;
     const hash = useHashTarget(editor.draft !== null);
+    const arcIds = arcsOf(editor.draft?.definition ?? {}).map((arc, i) => arcIdOf(arc, i));
+    const memory = useArcMemory(hash, arcIds);
     if (editor.loadError) return <p className="note bad">{t('editor.notFound')}</p>;
     if (!editor.draft) return <p className="muted">{t('app.loading')}</p>;
     const definition = editor.draft.definition;
@@ -49,15 +53,19 @@ function DramaEditor({ id, tab }: { id: string; tab: DramaTab }) {
                     />
                 }
             />
-            <DramaTabs id={id} tab={tab} arcCount={arcsOf(definition).length} />
+            <DramaTabs id={id} tab={tab} arcCount={arcIds.length} arc={memory.arc} />
             <EditorNotices
                 status={editor.status}
                 fieldErrors={state.errorCount}
                 onReload={() => void editor.reload()}
             />
             {tab === 'basic' && <BasicTab state={state} />}
-            {tab === 'arcs' && <ArcsTab state={state} openArc={hash} />}
-            {tab === 'schedule' && <ScheduleTab state={state} initialArc={hash} />}
+            {tab === 'arcs' && (
+                <ArcsTab state={state} openArc={memory.arc} onPick={memory.remember} />
+            )}
+            {tab === 'schedule' && (
+                <ScheduleTab state={state} initialArc={memory.arc} onPick={memory.remember} />
+            )}
         </>
     );
 }
