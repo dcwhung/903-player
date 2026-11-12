@@ -70,7 +70,17 @@ jobs:
             # 包括 apps/admin（jsdom）同 apps/api（Worker test 喺 miniflare / workerd 跑，唔使 Cloudflare 帳戶）
             - run: npm test
 
+            # Production build（CI 冇 VITE_CATALOG_URL = runtime catalog flag off，同未設 repo variable 嘅 deploy 一樣）
             - run: npm run build
+
+            # S-766：e2e job 用呢份 dist 做 production smoke（e2e 自己會 build 一份 e2e mode 覆蓋）
+            - name: Upload production build
+              uses: actions/upload-artifact@v5
+              with:
+                  name: player-dist-production
+                  path: apps/player/dist
+                  if-no-files-found: error
+                  retention-days: 1
 
             # Admin SPA（Worker static assets 出）
             - run: npm run build:admin
@@ -93,6 +103,58 @@ jobs:
             # npx 用 node_modules 鎖住嘅 Playwright（workspaces hoist 喺 repo 根），所以裝到嘅 Chromium revision 一定夾
             - name: Install Playwright Chromium
               run: npx playwright install --with-deps chromium
+
+            # S-766：e2e build 預設設咗 catalog URL（行「flag 開 + 404 → fallback」），呢步補 production 真正 flag off 路徑：
+            # check job 嗰份 production dist → sw.js 冇 catalog route → vite preview 開一次：splash 移走、版本號出到、
+            # 0 個 catalog.json request、0 pageerror。用 4174 避開 e2e 嘅 4173
+            - name: Download production build
+              uses: actions/download-artifact@v5
+              with:
+                  name: player-dist-production
+                  path: apps/player/dist
+
+            - name: Production smoke (catalog flag off)
+              working-directory: apps/player
+              env:
+                  SMOKE_PORT: '4174'
+              run: |
+                  set -euo pipefail
+                  # 1) flag off：sw.js 冇 catalog runtime route（cache 名 catalog-json，見 scripts/catalogCaching.ts）
+                  if grep -qF 'catalog-json' dist/sw.js; then
+                      echo "::error::production sw.js has a catalog.json route (VITE_CATALOG_URL leaked into the build?)"
+                      exit 1
+                  fi
+                  # 2) 起 vite preview（production mode）喺 Chromium 開一次
+                  npx vite preview --port "$SMOKE_PORT" --strictPort > "$RUNNER_TEMP/preview.log" 2>&1 &
+                  # npx 會再開 child process（真正 listen 嘅 vite），按指令收
+                  trap 'pkill -f "vite preview --port $SMOKE_PORT" || true' EXIT
+                  for _ in $(seq 1 30); do
+                      curl -sf "http://localhost:$SMOKE_PORT/903-player/" > /dev/null && break
+                      sleep 1
+                  done
+                  node --input-type=module <<'EOF'
+                  import { readFileSync } from 'node:fs';
+                  import { chromium } from 'playwright';
+
+                  const SPLASH_TIMEOUT_MS = 10_000;
+                  const url = `http://localhost:${process.env.SMOKE_PORT}/903-player/`;
+                  const version = `v${JSON.parse(readFileSync('package.json', 'utf8')).version}`;
+                  const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM_PATH || undefined });
+                  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+                  const catalogRequests = [];
+                  const pageErrors = [];
+                  page.on('request', (req) => /catalog\.json/.test(req.url()) && catalogRequests.push(req.url()));
+                  page.on('pageerror', (err) => pageErrors.push(err.message));
+                  await page.goto(url);
+                  await page.locator('#splash').waitFor({ state: 'detached', timeout: SPLASH_TIMEOUT_MS });
+                  const versionShown = await page.locator('#root').getByText(version, { exact: true }).isVisible();
+                  await browser.close();
+                  console.log({ versionShown, catalogRequests, pageErrors });
+                  if (!versionShown || catalogRequests.length > 0 || pageErrors.length > 0) {
+                      console.log('::error::production smoke failed');
+                      process.exit(1);
+                  }
+                  EOF
 
             # 同本機一樣：npm run e2e（root 轉發去 apps/player）= build + node e2e/run.mjs（自己起 vite preview，port 4173）
             - run: npm run e2e
