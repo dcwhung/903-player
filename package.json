@@ -14,7 +14,7 @@
         "preview": "npm run preview -w apps/player --",
         "test": "vitest run",
         "test:watch": "vitest",
-        "coverage": "npm run coverage -w apps/player --",
+        "coverage": "vitest run --coverage --project @903-player/player --project @903-player/catalog",
         "lint": "eslint . && prettier --check .",
         "format": "prettier --write .",
         "e2e": "npm run e2e -w apps/player --",
@@ -22,11 +22,14 @@
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
+        "@vitest/coverage-v8": "^5.0.5",
         "eslint": "^10.13.0",
         "eslint-plugin-react-hooks": "^7.1.1",
         "globals": "^17.13.0",
         "prettier": "^3.9.10",
         "tsx": "^4.23.15",
-        "typescript-eslint": "^8.71.2"
+        "typescript": "^6.0.3",
+        "typescript-eslint": "^8.71.2",
+        "vitest": "^5.0.5"
     }
 }

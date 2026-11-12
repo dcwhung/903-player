@@ -7,15 +7,17 @@
     - AC-2 Root 指令照舊：`npm test`、`npm test -- <path>`、`npm run build -- --mode e2e`、`npm run e2e`、`npm run lint` 喺 repo root 跑得（CLAUDE.md QA 表）
     - AC-3 CI / Deploy 指向 `apps/player`（artifact `apps/player/dist`）；lockfile 依賴版本唔變
     - AC-4 Phase 3b（plan §3b.3）：`ci.yml` check job 加 `build:admin`、e2e job 加 `e2e:admin` + admin screenshot artifact；root `vitest.config.ts` projects 加 `apps/admin`、`tsconfig.json` reference、`eslint.config.js` admin 用同一套 size 規則；lockfile 只加 admin 依賴（`@dnd-kit/*`、`lucide-react`），現有套件版本唔變
+    - AC-5 Lane D（`.proj-docs/backlog.md` S-752 / S-759 / S-761 / S-762 / S-766）：root `package.json` devDeps 聲明 `typescript` / `vitest` / `@vitest/coverage-v8`（lockfile 只改 root devDeps block，解析版本唔變）；root `npm run coverage` = player + catalog 兩個 project，用 root `vitest.config.ts` coverage block；`.proj-docs/qa/ledger-ignore` ignore `.vscode/*`、`apps/player/scripts/arcCover/*`（`impact` 唔再出 UNCOVERED）；`ci.yml` check job 上載 production `dist` artifact，e2e job 喺 `npm run e2e` 之前跑「Production smoke (catalog flag off)」：`sw.js` 冇 `catalog-json` route、splash 移走、版本號出到、0 個 `catalog.json` request、0 pageerror
 - Scope files:
     - `package.json` `package-lock.json` `apps/player/package.json` `eslint.config.js`
     - `tsconfig.json` `vitest.config.ts` `apps/player/tsconfig.app.json` `apps/player/tsconfig.node.json`
     - `packages/catalog/{package.json,tsconfig.json,tsconfig.node.json,tsconfig.src.json,vitest.config.ts}` `packages/catalog/src/console.d.ts`
-    - `.github/workflows/ci.yml` `.github/workflows/deploy.yml`
+    - `.github/workflows/ci.yml` `.github/workflows/deploy.yml` `.proj-docs/qa/ledger-ignore`（S-762）
     - `apps/player/e2e/run.mjs` `apps/player/e2e/harness.mjs` `apps/player/vite.config.ts` `apps/player/scripts/catalogCaching.{ts,test.ts}`（workbox runtime catalog route，Phase 1）
 - Commands:
     - （Phase 0a；冇 bump version 嗰陣先用）`npm run build`，再喺 `apps/player/dist` 跑 `find . -type f | sort | xargs sha256sum`，同 `origin/main` 獨立 worktree build 嘅清單 `diff`（一次）
     - `npm run lint`；`npm test`（CI 同 SHA 綠就引用）
-    - e2e：`npm run e2e`（CI 同 SHA 綠就引用）
+    - e2e：`npm run e2e`（CI 同 SHA 綠就引用；AC-5 production smoke = CI e2e job 同名 step）
+    - AC-5：`npm run coverage`（root，一次）；`impact` 確認 `.vscode/` / `arcCover/` 歸 IGNORED
 - PWA gate: no（`sw.js` / manifest / 更新邏輯冇改；dist 一樣即係 SW precache 一樣。Phase 1 起 `VITE_CATALOG_URL` 有設先加 catalog runtimeCaching route，production 冇設 → `sw.js` 冇 route；PWA 換版由 e2e section 證。2b-2 `vite.config.ts` 加 `catalogSnapshot()` plugin：只改 precache 內容（snapshot 圖），SW 策略唔變；驗證屬 catalog-data AC-5，PWA 換版由 CI e2e 證）
-- Out of scope: `.vscode/settings.json`（editor JSON schema path）、`vercel.json`（Phase 0a 有 TEMP preview commit，revert 後先定稿；證據 = Vercel preview status）、`.vscode/`、`apps/player/scripts/generateIcons.mjs` / `arcCover/`（開發工具，只改相對 path）、各功能鏈（各自 plan）
+- Out of scope: `deploy-api.yml`（屬 api 鏈）、`vercel.json`（Phase 0a 有 TEMP preview commit，revert 後先定稿；證據 = Vercel preview status）、`.vscode/` / `apps/player/scripts/arcCover/`（S-762 起 ledger-ignore）、`apps/player/scripts/generateIcons.mjs`（開發工具，只改相對 path）、各功能鏈（各自 plan）
