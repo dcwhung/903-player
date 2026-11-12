@@ -2,13 +2,12 @@
  * 播放時間 roller 規則（packages/catalog admin/airTime：分鐘 ∈ 00/15/30/45；end > start 且 ≤ start + 3 小時；唔跨午夜）
  */
 import { AIR_TIME_MAX_HOURS } from '@903-player/catalog';
+import { pad2 } from '../model/isoDate';
 
 const MINUTES_PER_HOUR = 60;
 const QUARTER = 15;
 const LAST_SLOT = 23 * MINUTES_PER_HOUR + 45;
 const MAX_DURATION = AIR_TIME_MAX_HOURS * MINUTES_PER_HOUR;
-
-const pad = (n: number) => String(n).padStart(2, '0');
 
 export const toMinutes = (time: string): number => {
     const [h = 0, m = 0] = time.split(':').map(Number);
@@ -16,7 +15,7 @@ export const toMinutes = (time: string): number => {
 };
 
 export const toTime = (minutes: number): string =>
-    `${pad(Math.floor(minutes / MINUTES_PER_HOUR))}:${pad(minutes % MINUTES_PER_HOUR)}`;
+    `${pad2(Math.floor(minutes / MINUTES_PER_HOUR))}:${pad2(minutes % MINUTES_PER_HOUR)}`;
 
 const range = (from: number, to: number): string[] =>
     Array.from({ length: Math.max(0, (to - from) / QUARTER + 1) }, (_, i) =>

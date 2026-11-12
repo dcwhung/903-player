@@ -1,7 +1,8 @@
 /* DateCalendar 嘅一個月日子格（role="grid"）：星期日開始，roving tabindex（只有 cursor 嗰日 Tab 入得） */
+import { weekdayOf } from '@903-player/catalog';
 import type { KeyboardEvent } from 'react';
 import { t } from '../i18n/t';
-import { dayOf, formatDmy, monthWeeks, rangeProblem, weekdayOf } from './dateFieldModel';
+import { dayOf, formatDmy, monthWeeks, rangeProblem } from './dateFieldModel';
 
 const WEEKDAYS = t('weekdays.short').split(',');
 

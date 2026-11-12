@@ -1,6 +1,7 @@
 /* 日子顯示（香港時間）：一律日/月（用戶 2026-11-11）：「16/11 一」、「11 月 16 日」、「09:41」；有年份 = 日/月/年 */
-import { HK_TIMEZONE, hkToday } from '@903-player/catalog';
+import { HK_TIMEZONE, hkToday, weekdayOf } from '@903-player/catalog';
 import { t } from '../i18n/t';
+import { isoPartsOf } from './isoDate';
 
 const WEEKDAYS = t('weekdays.short').split(',');
 
@@ -11,10 +12,7 @@ const timeFormatter = new Intl.DateTimeFormat('en-GB', {
     hourCycle: 'h23',
 });
 
-const partsOf = (isoDate: string) => {
-    const [year = 0, month = 1, day = 1] = isoDate.split('-').map(Number);
-    return { year, month, day, weekday: new Date(Date.UTC(year, month - 1, day)).getUTCDay() };
-};
+const partsOf = (isoDate: string) => ({ ...isoPartsOf(isoDate), weekday: weekdayOf(isoDate) });
 
 /** YYYY-MM-DD → 「16/11 一」 */
 export const shortDate = (isoDate: string): string => {

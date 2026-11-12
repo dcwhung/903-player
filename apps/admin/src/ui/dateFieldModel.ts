@@ -2,18 +2,15 @@
  * 自訂日期欄（DateField）嘅純邏輯（用戶 2026-11-12）：一律顯示 DD/MM/YYYY，入出都係 ISO YYYY-MM-DD；
  * 月曆由星期日開始（同星期掣「日 一 二 … 六」一樣）
  */
+import { weekdayOf } from '@903-player/catalog';
+import { isoPartsOf as partsOf, pad2 } from '../model/isoDate';
+
 const DMY = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
 const DAYS_PER_WEEK = 7;
-
-const pad2 = (n: number) => String(n).padStart(2, '0');
+const MONTHS_PER_YEAR = 12;
 
 const isoOf = (year: number, month: number, day: number) =>
     `${String(year).padStart(4, '0')}-${pad2(month)}-${pad2(day)}`;
-
-const partsOf = (iso: string) => {
-    const [year = 0, month = 1, day = 1] = iso.split('-').map(Number);
-    return { year, month, day };
-};
 
 const daysInMonth = (year: number, month: number) =>
     new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -30,23 +27,18 @@ export const parseDmy = (text: string): string | null => {
     const match = DMY.exec(text.trim());
     if (!match) return null;
     const [day, month, year] = [Number(match[1]), Number(match[2]), Number(match[3])];
-    if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) return null;
+    if (month < 1 || month > MONTHS_PER_YEAR || day < 1 || day > daysInMonth(year, month))
+        return null;
     return isoOf(year, month, day);
 };
 
 /** 加減月份：日子超出新月份就用嗰個月最後一日（31/1 + 1 月 = 28/2） */
 export const addMonths = (iso: string, months: number): string => {
     const { year, month, day } = partsOf(iso);
-    const index = year * 12 + (month - 1) + months;
-    const y = Math.floor(index / 12);
-    const m = (index % 12) + 1;
+    const index = year * MONTHS_PER_YEAR + (month - 1) + months;
+    const y = Math.floor(index / MONTHS_PER_YEAR);
+    const m = (index % MONTHS_PER_YEAR) + 1;
     return isoOf(y, m, Math.min(day, daysInMonth(y, m)));
-};
-
-/** 星期幾（0 = 日） */
-export const weekdayOf = (iso: string): number => {
-    const { year, month, day } = partsOf(iso);
-    return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
 };
 
 /** 嗰個月嘅月曆：每行一個星期（日 → 六），唔屬於嗰個月嘅格 = null */
