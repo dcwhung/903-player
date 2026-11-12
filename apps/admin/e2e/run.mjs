@@ -569,6 +569,24 @@ const scheduleConflictCheck = (browser) =>
         await page.close();
     });
 
+/** W-715：「上架 N 日後」由舊上架日計出今日之前嘅下架日 → 儲存先彈錯，唔會即時落架 */
+const scheduleUnlistPastCheck = (browser) =>
+    check('schedule: an unlist date before today pops an error only on 儲存 (W-715)', async () => {
+        const page = await newPage(browser, scheduleState());
+        await page.goto(SCHEDULE_ALL_LISTED);
+        await page.getByRole('button', { name: '上架 N 日後' }).click();
+        await page.getByRole('spinbutton', { name: '上架後日數' }).fill('10');
+        if ((await page.getByRole('alert').count()) > 0) throw new Error('error shown before 儲存');
+        await page.getByRole('button', { name: '儲存' }).click();
+        const alert = page.getByRole('alert');
+        await alert.waitFor();
+        const text = await alert.textContent();
+        if (text !== '無法儲存：第 1 集的下架日期（6/11 五）早於今日，請修改下架設定。')
+            throw new Error(`alert: ${text}`);
+        await shoot(page, 'schedule-unlist-past', { fullPage: true });
+        await page.close();
+    });
+
 /*
  * 日期欄（ui/DateField，用戶 2026-11-12）：顯示 DD/MM/YYYY，日曆 icon 開月曆（星期日開始、標今日、揀咗實色），
  * 方向鍵 + Enter 揀日、Esc 收起；截圖時月曆開住
@@ -1377,6 +1395,7 @@ try {
         scheduleContrastCheck,
         scheduleAllListedCheck,
         scheduleConflictCheck,
+        scheduleUnlistPastCheck,
         scheduleDateFieldCheck,
         scheduleDateFieldUpCheck,
         scheduleTodayOverlapCheck,
