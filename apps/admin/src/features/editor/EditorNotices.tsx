@@ -3,7 +3,7 @@
  * 412 →「此劇集已在其他視窗或裝置修改…」+ 重新載入；422 → 中文說明（validationMessage，唔識就一般訊息 + 原文）；
  * warnings → 會消失嘅集數
  */
-import { RefreshCw } from 'lucide-react';
+import { ExternalLink, RefreshCw } from 'lucide-react';
 import { t } from '../../i18n/t';
 import { clockTime } from '../../model/dates';
 import type { SaveStatus } from './useEntryEditor';
@@ -22,6 +22,7 @@ function SessionExpired() {
             {t('editor.sessionExpired')}{' '}
             <a href="/auth/google/start" target="_blank" rel="noopener">
                 {t('editor.relogin')}
+                <ExternalLink aria-hidden="true" />
             </a>
         </p>
     );

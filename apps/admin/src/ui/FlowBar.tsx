@@ -1,6 +1,7 @@
 /*
- * 由待辦入嚟嘅 flow bar：講明呢項仲欠乜 + ← 返回待辦。Design Origin: mockup: _mockups_/admin/index.html#s4（.flow-bar）
+ * 由待辦入嚟嘅 flow bar：講明呢項仲欠乜 +「返回待辦」（ArrowLeft）。Design Origin: mockup: _mockups_/admin/index.html#s4（.flow-bar）
  */
+import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { t } from '../i18n/t';
 
@@ -19,7 +20,10 @@ export function FlowBar({ name, missing }: FlowBarProps) {
             <span>
                 <b>{t('editor.flowTitle')}</b> · {name} · {status}
             </span>
-            <Link to="/">{t('editor.backToTodos')}</Link>
+            <Link to="/">
+                <ArrowLeft aria-hidden="true" />
+                {t('editor.backToTodos')}
+            </Link>
         </div>
     );
 }

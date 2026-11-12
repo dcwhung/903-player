@@ -1289,3 +1289,12 @@ table.matrix .row-link:hover {
     color: var(--accent);
     text-decoration: underline;
 }
+
+/* 文字 link 帶 icon（返回待辦 ←、處理待辦 / 前往發佈 →、重新登入 ↗）：icon 同字之間留少少位，底線唔包 icon */
+.flow-bar a,
+.scan-bar a,
+.note a {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}

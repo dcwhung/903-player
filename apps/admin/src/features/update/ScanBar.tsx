@@ -2,7 +2,7 @@
  * 自動掃描 bar（頂部細 bar）：掃描中 / 發現 N 項 / 沒有新內容 + 重新掃描。
  * Design Origin: mockup: _mockups_/admin/index.html#u0（.scan-bar）
  */
-import { RefreshCw } from 'lucide-react';
+import { ArrowRight, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { TodoRow } from '../../api/types';
 import type { ScanState } from '../../data/useScan';
@@ -13,7 +13,7 @@ interface ScanBarProps {
     scan: ScanState;
     rows: readonly TodoRow[] | undefined;
     onRescan: () => void;
-    /** 已經喺待辦頁：唔使「處理待辦 →」 */
+    /** 已經喺待辦頁：唔使「處理待辦」 */
     onTodosPage: boolean;
 }
 
@@ -67,7 +67,10 @@ export function ScanBar({ scan, rows, onRescan, onTodosPage }: ScanBarProps) {
             {onTodosPage ? (
                 <RescanButton onRescan={onRescan} />
             ) : (
-                <Link to="/">{t('scan.goTodos')}</Link>
+                <Link to="/">
+                    {t('scan.goTodos')}
+                    <ArrowRight aria-hidden="true" />
+                </Link>
             )}
         </div>
     );

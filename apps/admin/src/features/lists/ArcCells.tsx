@@ -3,6 +3,7 @@
  * 短篇名係 link → 短篇 tab 展開嗰個短篇
  * Design Origin: mockup: _mockups_/admin/index.html#s2（.arcs）
  */
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { hkToday } from '@903-player/catalog';
 import { Fragment, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -111,6 +112,11 @@ export function ArcCells({ entry, flags }: { entry: LoadedEntry; flags: ChangeFl
                         onClick={() => setExpanded(!expanded)}
                     >
                         {expanded ? t('list.collapse') : t('list.expand', { count: lines.length })}
+                        {expanded ? (
+                            <ChevronUp aria-hidden="true" />
+                        ) : (
+                            <ChevronDown aria-hidden="true" />
+                        )}
                     </button>
                     <span className="eps" />
                     <span className="muted small">
