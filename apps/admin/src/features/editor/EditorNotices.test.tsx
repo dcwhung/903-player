@@ -44,4 +44,16 @@ describe('EditorNotices', () => {
         );
         expect(hasIcon(screen.getByRole('button', { name: '重新載入' }), 'refresh-cw')).toBe(true);
     });
+
+    it('should mark 重新登入（新分頁） with an external-link icon', () => {
+        render(
+            <EditorNotices
+                status={{ saving: false, problem: { type: 'unauthorized' }, warnings: [] }}
+                fieldErrors={0}
+                onReload={vi.fn()}
+            />,
+        );
+        const relogin = screen.getByRole('link', { name: '重新登入（新分頁）' });
+        expect(hasIcon(relogin, 'external-link')).toBe(true);
+    });
 });

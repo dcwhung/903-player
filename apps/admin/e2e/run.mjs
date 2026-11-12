@@ -377,6 +377,153 @@ const realImagesCheck = (browser) =>
         await page.close();
     });
 
+/** 資料夾唔見咗：編輯頁「音訊來源」出警告 + 揀資料夾 dropdown +「配對」掣（截圖畀用戶睇位置） */
+const missingFolderCheck = (browser) =>
+    check('missing R2 folder: warning, folder dropdown and 配對 on the drama editor', async () => {
+        const page = await newPage(browser, loggedIn({ missingFolder: true }));
+        await page.goto(`${BASE}/dramas/golden`);
+        const field = page.locator('#folder');
+        await field.getByText('在 R2 找不到 黃金少年/').waitFor();
+        const select = field.getByRole('combobox', { name: '選擇未配對的資料夾…' });
+        await select.locator('option', { hasText: '少爺占系列/' }).waitFor({ state: 'attached' });
+        const pair = field.getByRole('button', { name: '配對' });
+        if (!(await pair.isDisabled())) throw new Error('配對 enabled before picking a folder');
+        await shoot(page, 'missing-folder-page', { fullPage: true });
+        await select.selectOption('黃金少年 第一季');
+        if (await pair.isDisabled()) throw new Error('配對 still disabled after picking');
+        const box = await boxOf(field);
+        const pad = 12;
+        await shoot(page, 'missing-folder', {
+            clip: {
+                x: box.x - pad,
+                y: box.y - pad,
+                width: box.width + pad * 2,
+                height: box.height + pad * 2,
+            },
+        });
+        await page.close();
+    });
+
+/** lucide icon（aria-hidden）喺唔喺 locator 入面；文字唔可以再有 ← → ▾ ▴ */
+const assertIcon = async (locator, icon, what) => {
+    const found = await locator.evaluate(
+        (el, name) => el.querySelector(`svg.lucide-${name}[aria-hidden="true"]`) !== null,
+        icon,
+    );
+    if (!found) throw new Error(`${what}: no ${icon} icon`);
+    const text = await locator.innerText();
+    if (/[←→▾▴]/.test(text)) throw new Error(`${what}: arrow character left in "${text}"`);
+};
+
+const clipAround = async (locator, pad = 12) => {
+    const box = await boxOf(locator);
+    return {
+        x: box.x - pad,
+        y: box.y - pad,
+        width: box.width + pad * 2,
+        height: box.height + pad * 2,
+    };
+};
+
+/** 8 組日期（即時上線 + 7 日）：確認發佈時間線收起，出「查看全部」 */
+const longTimeline = () => {
+    const days = ['now', ...[17, 18, 19, 20, 21, 22, 23].map((d) => `2026-11-${d}`)];
+    const groups = days.map((when, i) => ({
+        when,
+        items: [
+            {
+                kind: 'newArc',
+                when,
+                entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
+                arc: { id: 'lancy-02', name: '我心不死', label: `我心不死 ${i + 1}` },
+                detail: { episodes: { first: i + 1, last: i + 1 } },
+            },
+        ],
+    }));
+    return { items: groups.flatMap((g) => g.items), timeline: groups };
+};
+
+const actionIconsCheck = (browser) =>
+    check('action links / buttons carry outline icons (no arrow characters)', async () => {
+        const state = loggedIn();
+        // 6 個短篇：列表收起，出「展開全部」
+        state.entries.find((e) => e.id === 'golden').definition.arcs = [1, 2, 3, 4, 5, 6].map(
+            (n) => ({ id: `s${n}`, name: `Season ${n}`, episodes: 10 }),
+        );
+        const page = await newPage(browser, state);
+        // ScanBar「處理待辦」+ UnpublishedNote「前往發佈」
+        await page.goto(`${BASE}/dramas`);
+        const go = page.getByRole('link', { name: '處理待辦' });
+        await go.waitFor();
+        await assertIcon(go, 'arrow-right', '處理待辦');
+        const publish = page.getByRole('link', { name: '前往發佈' });
+        await assertIcon(publish, 'arrow-right', '前往發佈');
+        await shoot(page, 'icon-scan-unpublished', {
+            clip: { ...(await clipAround(page.locator('.scan-bar'))), height: 180 },
+        });
+        // 展開全部 / 收起
+        const expand = page.getByRole('button', { name: '展開全部 6 個短篇' });
+        await assertIcon(expand, 'chevron-down', '展開全部');
+        await shoot(page, 'icon-arcs-expand', {
+            clip: await clipAround(page.locator('.arcs', { has: expand })),
+        });
+        await expand.click();
+        const collapse = page.getByRole('button', { name: '收起' });
+        await assertIcon(collapse, 'chevron-up', '收起');
+        await shoot(page, 'icon-arcs-collapse', {
+            clip: await clipAround(page.locator('.arcs', { has: collapse })),
+        });
+        // 「返回待辦」（flow bar）
+        await page.goto(
+            `${BASE}/dramas/lancy/arcs?from=todos&todo=newArc%3Alancy%3Alancy-02#lancy-02`,
+        );
+        const back = page
+            .getByRole('region', { name: '處理待辦' })
+            .getByRole('link', { name: '返回待辦' });
+        await back.waitFor();
+        await assertIcon(back, 'arrow-left', '返回待辦');
+        await shoot(page, 'icon-flow-back', { clip: await clipAround(page.locator('.flow-bar')) });
+        // 「查看全部」（確認發佈時間線）
+        await page.route('**/api/changes', (route) =>
+            route.fulfill({
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    base: null,
+                    changes: longTimeline(),
+                    validation: { ok: true, episodeCount: 102 },
+                }),
+            }),
+        );
+        await page.goto(`${BASE}/publish`);
+        const all = page.getByRole('button', { name: /查看全部/ });
+        await all.waitFor();
+        await assertIcon(all, 'chevron-down', '查看全部');
+        await all.scrollIntoViewIfNeeded();
+        await shoot(page, 'icon-timeline-all', {
+            clip: await clipAround(page.locator('.timeline li.more')),
+        });
+        // 「重新登入（新分頁）」：儲存時 401
+        await page.route(/\/api\/entries\/shows\/night$/, (route, request) =>
+            request.method() === 'PUT'
+                ? route.fulfill({
+                      status: 401,
+                      contentType: 'application/json',
+                      body: '{"error":"x"}',
+                  })
+                : route.fallback(),
+        );
+        await page.goto(`${BASE}/shows/night`);
+        await page.getByRole('textbox', { name: '簡介' }).fill('x');
+        await page.getByRole('button', { name: '儲存' }).click();
+        const relogin = page.getByRole('link', { name: '重新登入（新分頁）' });
+        await relogin.waitFor();
+        await assertIcon(relogin, 'external-link', '重新登入');
+        await shoot(page, 'icon-relogin', {
+            clip: await clipAround(page.locator('.note', { has: relogin })),
+        });
+        await page.close();
+    });
+
 const showEditorCheck = (browser) =>
     check(
         'show editor: 設定播放時間 reveals the roller, each roller under its own box',
@@ -794,6 +941,8 @@ try {
         scheduleCheck,
         presetChipCheck,
         realImagesCheck,
+        missingFolderCheck,
+        actionIconsCheck,
         showEditorCheck,
         narrowRollerCheck,
         imageCheck,

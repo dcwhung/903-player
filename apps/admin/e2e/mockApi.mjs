@@ -103,14 +103,49 @@ const golden = () => ({
     updatedAt: 'golden-v1',
 });
 
-export const createState = ({ realImages = false } = {}) => ({
+/*
+ * createState({ missingFolder: true })：「黃金少年」嘅 R2 資料夾改咗名（掃描搵唔到「黃金少年/」），
+ * 待辦多一行 missingFolder，編輯頁出「配對」資料夾；未配對資料夾有兩個揀
+ */
+const withMissingFolder = (entry) =>
+    entry.id === 'golden'
+        ? {
+              ...entry,
+              definition: {
+                  ...entry.definition,
+                  audio: { host: 'r2', folder: '黃金少年', file: '{no2} - {arc}.m4a' },
+              },
+          }
+        : entry;
+
+const UNMAPPED_FOLDERS = ['黃金少年 第一季', '少爺占系列'];
+
+const missingFolderRow = () => ({
+    kind: 'missingFolder',
+    findingIds: [2],
+    dramaId: 'golden',
+    arcId: null,
+    name: '黃金少年',
+    cells: {
+        folder: { state: 'must', target: '/dramas/golden#folder' },
+        id: { state: 'na' },
+        images: { state: 'na' },
+        schedule: { state: 'na' },
+        summary: { state: 'na' },
+    },
+});
+
+export const createState = ({ realImages = false, missingFolder = false } = {}) => ({
     loggedIn: false,
+    missingFolder,
     entries: [
         show('waves', '口水多過浪花', 1, { airTime: { start: '15:00', end: '16:30' } }),
         show('night', '深夜節目', 2),
         lancy(),
         golden(),
-    ].map((entry) => (realImages ? withRealImages(entry) : entry)),
+    ]
+        .map((entry) => (realImages ? withRealImages(entry) : entry))
+        .map((entry) => (missingFolder ? withMissingFolder(entry) : entry)),
     publishes: [],
     /** 之前嘅記錄（#2 成功、#1 失敗）：上下架記錄出到「還原」同「失敗」 */
     history: [
@@ -153,6 +188,8 @@ const todosOf = (state) => {
             summary: { state: 'optional', target },
         },
     };
+    if (state.missingFolder)
+        return { rows: [row, missingFolderRow()], blocking: placeholder ? 2 : 1 };
     return { rows: [row], blocking: placeholder ? 1 : 0 };
 };
 
@@ -269,6 +306,7 @@ const handlers = {
     'POST /api/scan': (state, route) =>
         json(route, { scannedAt: new Date().toISOString(), findings: [], skipped: [] }),
     'GET /api/todos': (state, route) => json(route, todosOf(state)),
+    'GET /api/folders/unmapped': (state, route) => json(route, { folders: UNMAPPED_FOLDERS }),
     'GET /api/entries': (state, route) =>
         json(route, {
             entries: state.entries.map(({ kind, id, definition, draft, updatedAt }) => ({

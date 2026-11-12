@@ -1,6 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ChangesResponse, LoadedEntry } from '../../api/types';
+import { hasIcon } from '../../../tests/icons';
 import { fakeData, renderAt, resource } from '../../../tests/renderApp';
 import { DramaList } from './DramaList';
 
@@ -103,5 +104,25 @@ describe('DramaList', () => {
         expect(legend.queryByText('已下架')).not.toBeInTheDocument();
         expect(legend.getByText('更新過但未公開')).toBeInTheDocument();
         expect(legend.getByText('從未發佈的短篇')).toBeInTheDocument();
+    });
+
+    it('should show chevrons (not ▾ / ▴) on 展開全部 / 收起', async () => {
+        const many: LoadedEntry = {
+            ...drama,
+            definition: {
+                ...drama.definition,
+                arcs: [1, 2, 3, 4, 5, 6].map((n) => ({
+                    id: `a${n}`,
+                    name: `短篇${n}`,
+                    episodes: 3,
+                })),
+            },
+        };
+        renderAt('/dramas', '/dramas', <DramaList />, fakeData({ entries: resource([many]) }));
+        const expand = screen.getByRole('button', { name: '展開全部 6 個短篇' });
+        expect(hasIcon(expand, 'chevron-down')).toBe(true);
+        await userEvent.click(expand);
+        const collapse = screen.getByRole('button', { name: '收起' });
+        expect(hasIcon(collapse, 'chevron-up')).toBe(true);
     });
 });

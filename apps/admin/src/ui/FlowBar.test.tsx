@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { hasIcon } from '../../tests/icons';
 import { FlowBar } from './FlowBar';
 import { SaveBar } from './SaveBar';
 
@@ -13,7 +14,10 @@ describe('FlowBar', () => {
         expect(screen.getByRole('region', { name: '處理待辦' })).toHaveTextContent(
             '蘭茜夫人劇場 › 我心不死 · 尚欠：排期、ID',
         );
-        expect(screen.getByRole('link', { name: '← 返回待辦' })).toHaveAttribute('href', '/');
+        const back = screen.getByRole('link', { name: '返回待辦' });
+        expect(back).toHaveAttribute('href', '/');
+        expect(back).toHaveTextContent(/^返回待辦$/);
+        expect(hasIcon(back, 'arrow-left')).toBe(true);
     });
 });
 
