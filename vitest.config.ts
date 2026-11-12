@@ -11,5 +11,14 @@ export default defineConfig({
             'apps/api/vitest.config.ts',
             'apps/api/vitest.scripts.config.ts',
         ],
+        // root `npm run coverage`（S-761）：只揀 player + catalog project（root package.json script 用 --project 揀）。
+        // projects 模式下 coverage 只認 root 設定；有 --project 時 include / exclude 係相對「各 project root」match
+        //（vitest BaseCoverageProvider.isIncluded），所以 `src/**` 同時包 apps/player/src 同 packages/catalog/src。
+        // player 自己 `npm run coverage -w apps/player` 照用 vite.config.ts 嗰份（同一套 pattern）
+        coverage: {
+            provider: 'v8',
+            include: ['src/**/*.{ts,tsx}', 'scripts/**/*.ts'],
+            exclude: ['src/main.tsx', '**/*.test.{ts,tsx}', '**/*.d.ts'],
+        },
     },
 });
