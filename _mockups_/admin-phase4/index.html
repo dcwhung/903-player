@@ -740,76 +740,6 @@
                 gap: 20px;
                 align-items: start;
             }
-            .tcands {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-                gap: 10px;
-            }
-            .tcand {
-                display: grid;
-                gap: 6px;
-                padding: 6px 6px 8px;
-                border-radius: 14px;
-                background: var(--surface);
-                box-shadow: inset 0 0 0 1px var(--line);
-                font-size: 13px;
-                text-align: left;
-                justify-items: stretch;
-            }
-            .tcand[aria-pressed='true'] {
-                box-shadow: inset 0 0 0 2px var(--primary);
-                background: var(--accent-soft);
-            }
-            .tcand .mini {
-                display: grid;
-                grid-template-columns: 44px 1fr;
-                gap: 8px;
-                align-items: center;
-                padding: 10px;
-                border-radius: 10px;
-                background: var(--theme-bg);
-                color: var(--theme-text);
-            }
-            .tcand .mini .d {
-                width: 44px;
-                height: 44px;
-                border-radius: 50%;
-                background: center / cover;
-                box-shadow: 0 0 0 3px var(--theme-surface);
-            }
-            .tcand .mini b {
-                display: block;
-                color: var(--theme-title);
-                font-size: 13px;
-                line-height: 1.3;
-            }
-            .tcand .mini i {
-                display: inline-block;
-                margin-top: 4px;
-                padding: 0 8px;
-                border-radius: 999px;
-                background: var(--theme-accent);
-                color: var(--theme-on-accent);
-                font-style: normal;
-                font-size: 11px;
-                font-weight: 600;
-            }
-            .tcand .sw {
-                display: flex;
-                height: 10px;
-                border-radius: 5px;
-                overflow: hidden;
-            }
-            .tcand .sw span {
-                flex: 1;
-            }
-            .tcand .lbl {
-                display: flex;
-                justify-content: space-between;
-                gap: 6px;
-                align-items: center;
-                font-weight: 600;
-            }
             .seg {
                 display: inline-flex;
                 padding: 3px;
@@ -827,210 +757,112 @@
                 background: var(--primary);
                 color: var(--on-primary);
             }
-            .colors {
+
+            /* ---------- Theme 候選卡（每張係細版 player 頁） ---------- */
+            .tgrid {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-                gap: 8px 16px;
+                grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+                gap: 12px;
             }
-            .crow {
-                display: grid;
-                grid-template-columns: 34px minmax(0, 1fr) 92px;
-                gap: 8px;
-                align-items: center;
+            /* button 入面用 block 排（grid 喺 button 入面會縮成內容闊度） */
+            .tcard {
+                display: block;
+                padding: 8px 8px 10px;
+                border-radius: 16px;
+                background: var(--surface);
+                box-shadow: inset 0 0 0 1px var(--line);
                 font-size: 13px;
-            }
-            .crow input[type='color'] {
-                width: 34px;
-                height: 30px;
-                padding: 0;
-                border: 1.5px solid var(--line);
-                border-radius: 8px;
-                background: none;
-                cursor: pointer;
-            }
-            .crow input[type='text'] {
-                font-family: var(--mono);
-                font-size: 13px;
-                padding: 5px 8px;
-            }
-            .crow .nm {
-                display: grid;
-                line-height: 1.25;
-            }
-            .crow .nm code {
-                font-family: var(--mono);
-                font-size: 12px;
-            }
-            .crow .nm span {
-                color: var(--muted);
-                font-size: 11px;
-            }
-            .crow.flag .nm code::after {
-                content: ' ⚠';
-                color: var(--warn);
-            }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 13px;
-            }
-            th,
-            td {
-                padding: 6px 8px;
-                border-bottom: 1px solid var(--line);
                 text-align: left;
-                vertical-align: middle;
             }
-            th {
-                color: var(--muted);
-                font-weight: 500;
+            .tcard > * {
+                width: 100%;
             }
-            td.num {
-                font-family: var(--mono);
-                text-align: right;
+            .tcard > * + * {
+                margin-top: 8px;
             }
-            .chipc {
-                display: inline-flex;
+            .tcard[aria-pressed='true'] {
+                background: var(--accent-soft);
+                box-shadow: inset 0 0 0 2px var(--primary);
+            }
+            .tcard .lbl {
+                display: flex;
+                justify-content: space-between;
                 align-items: center;
                 gap: 6px;
-                padding: 2px 10px;
-                border-radius: 8px;
                 font-weight: 600;
             }
-            .ro {
+            .tphone {
                 display: grid;
-                grid-template-columns: 120px minmax(0, 1fr);
-                gap: 6px 12px;
-                font-size: 13px;
-            }
-            .ro code {
-                font-family: var(--mono);
-                font-size: 12px;
-                overflow-wrap: anywhere;
-                color: var(--muted);
-            }
-
-            /* player 頁頭 preview（手機直版） */
-            .phone {
-                --theme-bg: #141414;
-                width: 100%;
-                max-width: 320px;
-                justify-self: center;
-                border-radius: 28px;
+                gap: 8px;
+                padding-bottom: 10px;
+                border-radius: 14px;
                 overflow: hidden;
                 background: var(--theme-bg);
                 color: var(--theme-text);
-                box-shadow:
-                    0 0 0 8px #0b0f14,
-                    0 16px 40px rgb(0 0 0 / 0.3);
             }
-            .phone .sb {
-                height: 22px;
-                padding: 0 16px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                font-size: 11px;
-                font-weight: 600;
-                color: #fff;
-                background: var(--theme-status-bar, transparent);
+            .tphone .sb {
+                height: 8px;
+                background: var(--theme-status-bar);
             }
-            .phone.dark .sb {
-                background: transparent;
-            }
-            .phone .hd {
+            .tphone .hd {
                 position: relative;
-                padding: 12px 16px 14px;
+                display: grid;
+                padding: 2px 10px 8px;
             }
-            .phone .hd::after {
+            .tphone .hd::after {
                 content: '';
                 position: absolute;
                 inset: 0;
-                pointer-events: none;
                 background: var(--theme-header-rule);
             }
-            .phone .hd b {
-                display: block;
+            .tphone .hd b {
                 color: var(--theme-title);
-                font: 700 20px/1.3 var(--theme-title-font);
+                font: 700 15px/1.3 var(--theme-title-font);
             }
-            .phone .hd span {
-                font-size: 12px;
+            .tphone .hd small {
                 color: var(--theme-muted);
+                font-size: 11px;
             }
-            .phone .stage {
-                display: grid;
-                place-items: center;
-                padding: 18px 0 22px;
+            .tphone .pdisc.sm {
+                width: 52%;
+                justify-self: center;
+                box-shadow:
+                    0 0 0 5px var(--theme-surface),
+                    0 8px 16px rgb(0 0 0 / 0.35);
             }
-            .phone .pdisc {
-                width: 62%;
-            }
-            .phone .bar {
-                margin: 0 18px;
-                height: 4px;
+            .tphone .bar {
+                margin: 4px 12px 0;
+                height: 3px;
                 border-radius: 2px;
-                background: var(--theme-track);
-                position: relative;
+                background: linear-gradient(90deg, var(--theme-accent) 40%, var(--theme-track) 40%);
             }
-            .phone .bar::before {
-                content: '';
-                position: absolute;
-                inset: 0 60% 0 0;
-                border-radius: 2px;
-                background: var(--theme-accent);
-            }
-            .phone .ctl {
+            .tphone .ctl {
                 display: flex;
                 justify-content: center;
-                gap: 22px;
-                align-items: center;
-                padding: 14px 0;
             }
-            .phone .ctl .play {
+            .tphone .play {
                 display: grid;
                 place-items: center;
-                width: 56px;
-                height: 56px;
+                width: 34px;
+                height: 34px;
                 border-radius: 50%;
                 background: var(--theme-accent);
                 color: var(--theme-on-accent);
-                box-shadow:
-                    6px 6px 14px var(--theme-shadow-dark),
-                    -4px -4px 10px var(--theme-shadow-light);
-            }
-            .phone .ctl .sm {
-                display: grid;
-                place-items: center;
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                background: var(--theme-surface);
-                color: var(--theme-text);
-                box-shadow:
-                    4px 4px 10px var(--theme-shadow-dark),
-                    -3px -3px 8px var(--theme-shadow-light);
-            }
-            .phone ul {
-                list-style: none;
-                margin: 0;
-                padding: 0 12px 16px;
-                display: grid;
-                gap: 6px;
-            }
-            .phone li {
-                display: flex;
-                justify-content: space-between;
-                gap: 8px;
-                padding: 9px 12px;
-                border-radius: 12px;
-                background: var(--theme-surface);
                 font-size: 13px;
             }
-            .phone li small {
+            .tphone .li {
+                display: flex;
+                justify-content: space-between;
+                margin: 0 8px;
+                padding: 5px 8px;
+                border-radius: 8px;
+                background: var(--theme-surface);
+                font-size: 11px;
+            }
+            .tphone .li small {
                 color: var(--theme-muted);
             }
-            .phone li.on {
+            .tphone .li.on {
                 color: var(--theme-accent-text);
                 font-weight: 600;
             }
@@ -1170,50 +1002,41 @@
 
             <!-- ① 封面 slot -->
             <section id="a">
-                <h2>① 封面 slot：揀來源</h2>
+                <h2>① 封面 slot</h2>
                 <p class="state-label">
-                    劇集編輯頁右邊圖片欄。碟面未有圖：撳 ＋ 彈選單（本機檔 / R2 原圖）；Banner
-                    已經有圖：撳 ✎ 直接揀本機檔（已有圖唔准用 R2 取代，掣唔出）。節目冇 R2 原圖，撳
-                    ＋ 直接開檔案揀。
+                    用戶 2026-11-12 確認：冇選單。開劇集時先睇 R2 folder 有冇原圖；有就自動用 center
+                    裁切出碟面 / Banner（碟面用 <span class="mono">cd cover</span>，冇就
+                    <span class="mono">cover photo</span>；Banner 用
+                    <span class="mono">cover photo</span>）。slot 有圖就撳 ✎ 換本機檔；冇圖（R2
+                    都冇）就撳 ＋ 直接開檔案揀。節目冇 R2 原圖，一律本機檔。
                 </p>
                 <div class="frame">
+                    <p class="state-label">
+                        狀態 A：新劇，R2 有 cd cover.jpg + cover photo.jpg → 兩個 slot 自動填好
+                    </p>
                     <div class="card">
-                        <h3>蘭茜 · 圖片</h3>
+                        <h3>新劇（示範）· 圖片</h3>
                         <div class="media">
-                            <div class="slot" style="margin-bottom: 140px">
+                            <div class="slot">
                                 <button
                                     type="button"
                                     class="img-slot disc-slot"
-                                    aria-label="上載碟面"
-                                    aria-describedby="hint-disc"
-                                    aria-haspopup="menu"
-                                    aria-expanded="true"
+                                    aria-label="更換碟面"
+                                    aria-describedby="hint-disc-a"
+                                    data-open-crop="disc-local"
                                 >
+                                    <span
+                                        class="thumb"
+                                        style="background-image: url('disc-lancy.webp')"
+                                    ></span>
                                     <span class="slot-btn" aria-hidden="true"
-                                        ><svg class="i"><use href="#i-plus" /></svg
+                                        ><svg class="i"><use href="#i-pencil" /></svg
                                     ></span>
                                 </button>
-                                <div class="menu" role="menu" aria-label="碟面來源">
-                                    <button
-                                        type="button"
-                                        role="menuitem"
-                                        data-open-crop="disc-local"
-                                    >
-                                        <svg class="i"><use href="#i-upload" /></svg>
-                                        <span>揀本機檔…<small>PNG / JPG / WebP</small></span>
-                                    </button>
-                                    <button type="button" role="menuitem" data-open-crop="disc-r2">
-                                        <svg class="i"><use href="#i-cloud" /></svg>
-                                        <span
-                                            >用 R2 原圖<small
-                                                >cd cover.jpg · 3000 × 3000 · 2.4 MB</small
-                                            ></span
-                                        >
-                                    </button>
-                                </div>
                                 <span class="slot-cap">
                                     <span class="cap">碟面</span>
-                                    <span class="hint" id="hint-disc"
+                                    <span class="pill info">由 R2 cd cover.jpg 自動裁切</span>
+                                    <span class="hint" id="hint-disc-a"
                                         >輸出 600 × 600 WebP；原圖建議 ≥ 600 × 600</span
                                     >
                                 </span>
@@ -1223,7 +1046,7 @@
                                     type="button"
                                     class="img-slot tile"
                                     aria-label="更換 Banner"
-                                    aria-describedby="hint-tile"
+                                    aria-describedby="hint-tile-a"
                                     data-open-crop="tile-local"
                                 >
                                     <span
@@ -1236,22 +1059,68 @@
                                 </button>
                                 <span class="slot-cap">
                                     <span class="cap">Banner</span>
-                                    <span class="hint" id="hint-tile"
+                                    <span class="pill info">由 R2 cover photo.jpg 自動裁切</span>
+                                    <span class="hint" id="hint-tile-a"
                                         >輸出 1216 × 684 WebP；原圖建議 ≥ 1216 × 684</span
                                     >
                                 </span>
                             </div>
                         </div>
-                        <p class="small muted">
-                            R2 folder 冇
-                            <span class="mono">cd cover.*</span> 嘅時候，碟面選單第二項會變成「用 R2
-                            原圖：cover photo.jpg」；兩個都冇就唔出呢項。
-                        </p>
+                    </div>
+                    <p class="state-label">
+                        狀態 B：R2 冇原圖（或者係節目）→ 空 slot，撳 ＋ 直接揀本機檔
+                    </p>
+                    <div class="card">
+                        <h3>新劇（示範）· 圖片</h3>
+                        <div class="media">
+                            <div class="slot">
+                                <button
+                                    type="button"
+                                    class="img-slot disc-slot"
+                                    aria-label="上載碟面"
+                                    aria-describedby="hint-disc-b"
+                                    data-open-crop="disc-local"
+                                >
+                                    <span class="slot-btn" aria-hidden="true"
+                                        ><svg class="i"><use href="#i-plus" /></svg
+                                    ></span>
+                                </button>
+                                <span class="slot-cap">
+                                    <span class="cap">碟面</span>
+                                    <span class="hint" id="hint-disc-b"
+                                        >輸出 600 × 600 WebP；原圖建議 ≥ 600 × 600</span
+                                    >
+                                </span>
+                            </div>
+                            <div class="slot">
+                                <button
+                                    type="button"
+                                    class="img-slot tile"
+                                    aria-label="上載 Banner"
+                                    aria-describedby="hint-tile-b"
+                                    data-open-crop="tile-local"
+                                >
+                                    <span class="slot-btn" aria-hidden="true"
+                                        ><svg class="i"><use href="#i-plus" /></svg
+                                    ></span>
+                                </button>
+                                <span class="slot-cap">
+                                    <span class="cap">Banner</span>
+                                    <span class="hint" id="hint-tile-b"
+                                        >輸出 1216 × 684 WebP；原圖建議 ≥ 1216 × 684</span
+                                    >
+                                </span>
+                            </div>
+                        </div>
                     </div>
                     <div class="q">
-                        <strong>Q1 空 slot 揀來源：</strong>上面係「撳 ＋ 彈選單」。另一個做法係
-                        slot 下面直接擺兩粒細掣（「本機檔」「用 R2 原圖」），少一下 click
-                        但圖片欄會長咗。用邊個？
+                        <strong>Q13 自動裁切喺幾時做：</strong>建議喺 admin
+                        開劇集編輯頁（或者「新增劇集」掃描完）嗰陣，slot 冇圖、R2 又有原圖，就由
+                        browser 讀原圖 → center 裁切 → 即刻上載同儲存（Worker 冇 canvas，唔方便喺
+                        api 做）。過程顯示 slot 載入中；失敗就留返空 slot + 錯誤。得唔得？
+                        <br />
+                        <strong>Q14 自動裁切嘅結果：</strong
+                        >直接儲存（上面做法），定係淨係填入草稿、要撳「儲存」先算？
                     </div>
                 </div>
             </section>
@@ -1260,14 +1129,14 @@
             <section id="b">
                 <h2>② 裁切編輯器（可以玩）</h2>
                 <p class="state-label">
-                    撳下面掣（或者 ① 嘅選單 / slot）開
+                    撳下面掣（或者 ① / ⑤ 嘅 slot）開
                     dialog。左邊原圖拖白框移位、拖右下圓點縮放（鎖比例）；中間揀候選；右邊用 player
                     disc / tile / banner 樣式即場 preview。
                 </p>
                 <div class="frame">
                     <div class="row">
-                        <button type="button" class="primary" data-open-crop="disc-r2">
-                            碟面 600×600（R2 cd cover）
+                        <button type="button" class="primary" data-open-crop="disc-local">
+                            碟面 600×600
                         </button>
                         <button type="button" data-open-crop="tile-local">
                             Banner 1216×684（本機）
@@ -1279,14 +1148,10 @@
                             首頁 Banner 闊版 2000×400
                         </button>
                     </div>
-                    <div class="q">
-                        <strong>Q2 fit-blur / fit-extend 時嘅裁切框：</strong>而家揀咗 fit
-                        模式就鎖住成張圖（框變虛線、唔拖得），成張圖縮入目標框、空位用模糊 /
-                        延伸邊色補。要唔要 fit 模式都准縮放 / 移位（即係「部分 fit」）？
-                        <br />
-                        <strong>Q3 預設候選：</strong>開 dialog 時預設揀 center（同而家 3c
-                        一樣）；定係原圖比例同目標差好遠（例如方圖做 1216×684）就預設 fit-blur？
-                    </div>
+                    <p class="note info">
+                        已確認：開 dialog 一律預設 center（Q3）；揀 fit-blur / fit-extend
+                        就鎖住成張圖、唔拖得（Q2）。
+                    </p>
                 </div>
             </section>
 
@@ -1424,164 +1289,68 @@
 
             <!-- ④ Theme 編輯器 -->
             <section id="d">
-                <h2>④ Theme 編輯器（可以玩）</h2>
+                <h2>④ Theme（可以玩）</h2>
                 <p class="state-label">
-                    節目 / 劇集編輯頁新 tab「Theme」。由碟面抽色出候選 → 揀一套 → picker
-                    微調。改任何色右邊 player preview 同 contrast 表即場更新。
+                    簡化版（用戶 2026-11-12）：冇 picker、冇深淺掣、冇 contrast 表。由碟面抽色出 3
+                    套候選，每套直接用 player 樣式
+                    preview；唔啱就撳「換另外三套」再出三套。揀咗撳「用呢套」。
                 </p>
                 <div class="frame">
+                    <div class="row">
+                        <label class="small muted" for="theme-src">示範資料</label>
+                        <select id="theme-src">
+                            <option value="lancy">蘭茜（廣播劇 · 有現用 theme）</option>
+                            <option value="waves">口水多過浪花（節目 · 有現用 theme）</option>
+                            <option value="fresh">新劇（未設定 theme）</option>
+                        </select>
+                    </div>
                     <div class="card">
                         <div class="row" style="justify-content: space-between">
+                            <h3 id="theme-head">Theme</h3>
                             <div class="row">
-                                <label class="small muted" for="theme-src">示範資料</label>
-                                <select id="theme-src">
-                                    <option value="lancy">蘭茜（廣播劇 · 現用淺色）</option>
-                                    <option value="waves">口水多過浪花（節目 · 現用深色）</option>
-                                </select>
-                            </div>
-                            <button type="button" id="re-extract">
-                                <svg class="i"><use href="#i-wand" /></svg>由碟面重新抽色
-                            </button>
-                        </div>
-                        <div>
-                            <h3 style="margin-bottom: 8px">候選</h3>
-                            <div class="tcands" id="tcands"></div>
-                            <p class="small muted" id="extract-note" style="margin-top: 6px"></p>
-                        </div>
-                    </div>
-
-                    <div class="theme-layout">
-                        <div style="display: grid; gap: 18px; min-width: 0">
-                            <div class="card">
-                                <div class="row" style="justify-content: space-between">
-                                    <h3>微調</h3>
-                                    <div class="seg" role="group" aria-label="深淺色">
-                                        <button
-                                            type="button"
-                                            data-scheme="dark"
-                                            aria-pressed="false"
-                                        >
-                                            深色
-                                        </button>
-                                        <button
-                                            type="button"
-                                            data-scheme="light"
-                                            aria-pressed="true"
-                                        >
-                                            淺色
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="colors" id="colors"></div>
-                                <div class="ro" aria-label="唯讀欄位">
-                                    <span class="row" style="gap: 6px"
-                                        ><svg class="i" style="width: 14px">
-                                            <use href="#i-lock" /></svg
-                                        ><b>titleFont</b></span
-                                    >
-                                    <code id="ro-font"></code>
-                                    <span class="row" style="gap: 6px"
-                                        ><svg class="i" style="width: 14px">
-                                            <use href="#i-lock" /></svg
-                                        ><b>headerRule</b></span
-                                    >
-                                    <code id="ro-rule"></code>
-                                </div>
-                                <p class="small muted">
-                                    titleFont / headerRule 喺 admin 唔改得，儲存時原封不動保留。
-                                </p>
-                            </div>
-                            <div class="card">
-                                <div class="row" style="justify-content: space-between">
-                                    <h3>對比度（WCAG AA）</h3>
-                                    <span id="contrast-sum"></span>
-                                </div>
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>配對</th>
-                                            <th>樣本</th>
-                                            <th style="text-align: right">比例</th>
-                                            <th>要求</th>
-                                            <th>結果</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="contrast"></tbody>
-                                </table>
-                                <p class="small muted">
-                                    唔合格只係警告：照樣儲存得，publish 頁會列出嚟。
-                                </p>
-                            </div>
-                            <div class="row" style="justify-content: flex-end">
-                                <button type="button">還原</button>
-                                <button type="button" class="primary">
-                                    <svg class="i"><use href="#i-check" /></svg>儲存 Theme
+                                <span class="small muted" id="round-note"></span>
+                                <button type="button" id="more-cands">
+                                    <svg class="i"><use href="#i-wand" /></svg>換另外三套
                                 </button>
                             </div>
                         </div>
-                        <div class="card" style="position: sticky; top: 12px">
-                            <h3>Player preview</h3>
-                            <div class="phone pv-theme" id="phone">
-                                <div class="sb"><span>9:41</span><span>●●● 100%</span></div>
-                                <div class="hd">
-                                    <b id="ph-title">蘭茜</b>
-                                    <span>廣播劇 · 18 集</span>
-                                </div>
-                                <div class="stage">
-                                    <div class="pdisc">
-                                        <img id="ph-disc" src="disc-lancy.webp" alt="" />
-                                    </div>
-                                </div>
-                                <div class="bar"></div>
-                                <div class="ctl">
-                                    <span class="sm"
-                                        ><svg class="i" style="rotate: 180deg">
-                                            <use href="#i-skip" /></svg
-                                    ></span>
-                                    <span class="play"
-                                        ><svg
-                                            class="i"
-                                            style="width: 24px; height: 24px; fill: currentColor"
-                                        >
-                                            <use href="#i-play" /></svg
-                                    ></span>
-                                    <span class="sm"
-                                        ><svg class="i"><use href="#i-skip" /></svg
-                                    ></span>
-                                </div>
-                                <ul>
-                                    <li class="on">
-                                        <span>第 3 集 · 播緊</span><small>11/12</small>
-                                    </li>
-                                    <li><span>第 2 集</span><small>11/11</small></li>
-                                    <li><span>第 1 集</span><small>11/10</small></li>
-                                </ul>
+                        <div class="tgrid" id="tcands" role="group" aria-label="Theme 候選"></div>
+                        <div class="row" style="justify-content: space-between">
+                            <span class="small muted" id="keep-note"></span>
+                            <div class="row">
+                                <span class="small" id="pick-note"></span>
+                                <button type="button" class="primary" id="use-theme">
+                                    <svg class="i"><use href="#i-check" /></svg>用呢套
+                                </button>
                             </div>
                         </div>
                     </div>
                     <div class="q">
-                        <strong>Q6 候選數目：</strong>而家係「現用」+ 4 套抽色（主色做底深 /
-                        鮮色做底深 / 主色做底淺 / 第二主色做底深）。要減到 3 套？「現用」卡要唔要？
+                        <strong>Q6 新劇未有 theme：</strong>新劇掃描出嚟會先用中性灰（現有
+                        PLACEHOLDER_THEME）。上面「新劇」示範：第一格係「現用：未設定（中性灰）」，加
+                        <span class="pill warn">未設定</span
+                        >；三套候選照出，第一套標「建議」，但唔會自動用，一定要人手揀。Publish
+                        頁會出警告「未設定 Theme」（唔阻 publish）。得唔得？定係自動用第一套？
                         <br />
-                        <strong>Q7 淺色自動推：</strong>accentText = accent 逐步變深直到對 bg ≥
-                        4.5:1；statusBar =
-                        同一隻色（白字狀態列夠對比）。轉返深色就刪走呢兩隻。可唔可以？手動改過嘅（冇「自動」標籤）之後改
-                        accent 唔會再跟。
+                        <strong>Q15 contrast：</strong>每套候選右上角出
+                        <span class="pill ok">AA</span> 或者
+                        <span class="pill warn">⚠ 2</span>（幾多對唔合格）；Publish
+                        頁照樣列警告。夠唔夠？
                         <br />
-                        <strong>Q8 對比度顯示：</strong>而家係獨立配對表 + 有關色 picker 名後面加
-                        ⚠。要唔要再喺每個 picker 旁邊直接顯示比例？
-                        <br />
-                        <strong>Q9 抽色幾時做：</strong
-                        >而家要撳「由碟面重新抽色」；換咗碟面之後要唔要自動彈提示「碟面換咗，要唔要重新抽色？」
+                        <strong>Q16 抽色規則：</strong>每輪三套 = 唔同底色 × 深 /
+                        淺（例如主色深底、鮮色深底、主色淺底），換一輪就輪下一個主色組合；輪完由頭再嚟。淺色套自動推
+                        statusBar / accentText。OK？
                     </div>
                 </div>
             </section>
 
             <!-- ⑤ Banner -->
             <section id="e">
-                <h2>⑤ Banner 頁（nav 新項目「首頁 Banner」）</h2>
+                <h2>⑤ 首頁 Banner 頁</h2>
                 <p class="state-label">
-                    兩個 slot 用同一個裁切編輯器（撳 slot 試）。缺一張唔准 publish。
+                    兩張一齊換（Q10）：撳任何一個 slot 或者「換 Banner」→ 先裁窄版（1 /
+                    2）→「下一張」即刻開闊版（2 / 2）→
+                    兩張一齊上載。中途取消就兩張都唔換，所以唔會有「換咗一半」嘅狀態。
                 </p>
                 <div class="frame">
                     <p class="state-label">狀態 A：用緊內建預設（catalog 冇 banner）</p>
@@ -1593,6 +1362,9 @@
                                 <button type="button" class="ghost-danger" disabled>
                                     <svg class="i"><use href="#i-undo" /></svg>還原預設
                                 </button>
+                                <button type="button" class="primary" data-open-banner>
+                                    <svg class="i"><use href="#i-upload" /></svg>換 Banner
+                                </button>
                             </div>
                         </div>
                         <div class="media">
@@ -1600,8 +1372,8 @@
                                 <button
                                     type="button"
                                     class="img-slot banner-std"
-                                    aria-label="更換窄版 Banner"
-                                    data-open-crop="bannerStd"
+                                    aria-label="換 Banner（由窄版開始）"
+                                    data-open-banner
                                 >
                                     <span
                                         class="thumb"
@@ -1620,8 +1392,8 @@
                                 <button
                                     type="button"
                                     class="img-slot banner-long"
-                                    aria-label="更換闊版 Banner"
-                                    data-open-crop="bannerLong"
+                                    aria-label="換 Banner（由窄版開始）"
+                                    data-open-banner
                                 >
                                     <span
                                         class="thumb"
@@ -1639,30 +1411,27 @@
                         </div>
                     </div>
 
-                    <p class="state-label">
-                        狀態 B：換咗窄版、闊版未換（草稿儲存咗，但 publish 會擋）
-                    </p>
+                    <p class="state-label">狀態 B：已換自訂 Banner（未 publish）</p>
                     <div class="card">
                         <div class="row" style="justify-content: space-between">
                             <h3>首頁 Banner</h3>
                             <div class="row">
-                                <span class="pill warn">未完成</span>
+                                <span class="pill ok">自訂 · 未 publish</span>
                                 <button type="button" class="ghost-danger">
                                     <svg class="i"><use href="#i-undo" /></svg>還原預設
                                 </button>
+                                <button type="button" class="primary" data-open-banner>
+                                    <svg class="i"><use href="#i-upload" /></svg>換 Banner
+                                </button>
                             </div>
-                        </div>
-                        <div class="note warn">
-                            <svg class="i"><use href="#i-alert" /></svg>
-                            <span>兩張都要換先可以 publish：仲差闊版。</span>
                         </div>
                         <div class="media">
                             <div class="slot">
                                 <button
                                     type="button"
                                     class="img-slot banner-std"
-                                    aria-label="更換窄版 Banner"
-                                    data-open-crop="bannerStd"
+                                    aria-label="換 Banner（由窄版開始）"
+                                    data-open-banner
                                 >
                                     <span
                                         class="thumb"
@@ -1673,7 +1442,7 @@
                                     ></span>
                                 </button>
                                 <span class="slot-cap">
-                                    <span class="cap">窄版 <span class="pill ok">新</span></span>
+                                    <span class="cap">窄版</span>
                                     <span class="hint">輸出 1200 × 517 WebP</span>
                                 </span>
                             </div>
@@ -1681,32 +1450,26 @@
                                 <button
                                     type="button"
                                     class="img-slot banner-long"
-                                    aria-label="上載闊版 Banner"
-                                    data-open-crop="bannerLong"
-                                    style="border-color: var(--warn)"
+                                    aria-label="換 Banner（由窄版開始）"
+                                    data-open-banner
                                 >
                                     <span
                                         class="thumb"
-                                        style="
-                                            background-image: url('banner-wide.webp');
-                                            opacity: 0.35;
-                                        "
+                                        style="background-image: url('tile-lancy.webp')"
                                     ></span>
                                     <span class="slot-btn" aria-hidden="true"
-                                        ><svg class="i"><use href="#i-plus" /></svg
+                                        ><svg class="i"><use href="#i-pencil" /></svg
                                     ></span>
                                 </button>
                                 <span class="slot-cap">
-                                    <span class="cap"
-                                        >闊版 <span class="pill warn">仲係預設</span></span
-                                    >
+                                    <span class="cap">闊版</span>
                                     <span class="hint">輸出 2000 × 400 WebP</span>
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <p class="state-label">「還原預設」確認</p>
+                    <p class="state-label">「還原預設」確認（Q11）</p>
                     <div class="scrim">
                         <div class="card dialog narrow" role="alertdialog">
                             <h3>還原預設 Banner？</h3>
@@ -1724,11 +1487,8 @@
                         </div>
                     </div>
                     <div class="q">
-                        <strong>Q10 只換一張：</strong>狀態 B 係「准儲存草稿、publish 擋」（跟
-                        plan）。另一個做法係裁切完一張之後即刻接住開第二張嘅
-                        dialog（逼你一次過換兩張），唔使有半完成狀態。用邊個？
-                        <br />
-                        <strong>Q11 還原預設：</strong>係咪一定要確認 dialog？
+                        <strong>Q17 撳單獨一個 slot：</strong
+                        >上面撳窄版定闊版都係由窄版開始、兩張都要做。如果你想撳闊版就由闊版開始（再接窄版），話我知。
                     </div>
                 </div>
             </section>
@@ -1737,21 +1497,33 @@
             <section id="f">
                 <h2>⑥ Publish 頁</h2>
                 <div class="frame">
-                    <p class="state-label">有錯誤（banner 缺一張）+ 警告：唔准 publish</p>
+                    <p class="state-label">
+                        有錯誤：唔准 publish（Banner 兩張一齊換之後，正常唔會缺一張；呢個錯誤係
+                        validator 保險，例如資料被人改壞）
+                    </p>
                     <div class="card">
                         <h3>發佈前檢查</h3>
                         <ul class="issues bad" aria-label="錯誤">
                             <li>
                                 <svg class="i"><use href="#i-x" /></svg>
                                 <span
-                                    >首頁 Banner 未完成：仲差闊版（2000 × 400）<small
-                                        >兩張要一齊換；或者還原預設</small
+                                    >首頁 Banner 唔完整：缺闊版（2000 × 400）<small
+                                        >重新換 Banner；或者還原預設</small
                                     ></span
                                 >
                                 <button type="button" class="link">去 Banner 頁</button>
                             </li>
                         </ul>
-                        <ul class="issues warn" aria-label="Contrast 警告">
+                        <ul class="issues warn" aria-label="Theme 警告">
+                            <li>
+                                <svg class="i"><use href="#i-alert" /></svg>
+                                <span
+                                    >新劇（示範）：未設定 Theme，用緊中性灰<small
+                                        >廣播劇 · Theme</small
+                                    ></span
+                                >
+                                <button type="button" class="link">去揀</button>
+                            </li>
                             <li>
                                 <svg class="i"><use href="#i-alert" /></svg>
                                 <span
@@ -1766,15 +1538,6 @@
                                 <span
                                     >口水多過浪花：onAccent 對 accent 4.1:1（要 4.5:1）<small
                                         >節目 · Theme</small
-                                    ></span
-                                >
-                                <button type="button" class="link">去改</button>
-                            </li>
-                            <li>
-                                <svg class="i"><use href="#i-alert" /></svg>
-                                <span
-                                    >金曲：accentText 對 bg 2.6:1（要 3:1）<small
-                                        >廣播劇 · Theme</small
                                     ></span
                                 >
                                 <button type="button" class="link">去改</button>
@@ -1821,7 +1584,10 @@
         <div class="scrim fixed" id="crop-scrim" hidden>
             <div class="card dialog" role="dialog" aria-modal="true" aria-labelledby="crop-title">
                 <header>
-                    <h3 id="crop-title">更換碟面</h3>
+                    <h3>
+                        <span class="pill info" id="crop-step" hidden></span>
+                        <span id="crop-title">更換碟面</span>
+                    </h3>
                     <span class="meta" id="crop-src-meta"></span>
                 </header>
                 <div class="editor">
@@ -1845,8 +1611,10 @@
                 </div>
                 <footer>
                     <button type="button" id="crop-cancel">取消</button>
+                    <button type="button" id="crop-back" hidden>上一張</button>
                     <button type="button" class="primary" id="crop-ok">
-                        <svg class="i"><use href="#i-upload" /></svg>上載
+                        <svg class="i"><use href="#i-upload" /></svg
+                        ><span id="crop-ok-text">上載</span>
                     </button>
                 </footer>
             </div>
@@ -1927,18 +1695,6 @@
                     h: 600,
                     src: 'disc-lancy.webp',
                     meta: ['本機檔', 'lancy-disc.png', '原圖 600 × 600 · PNG'],
-                    kind: 'disc',
-                },
-                'disc-r2': {
-                    title: '上載碟面',
-                    w: 600,
-                    h: 600,
-                    src: 'tile-lancy.webp',
-                    meta: [
-                        'R2 原圖',
-                        'cd cover.jpg',
-                        '原圖 3000 × 3000 · JPEG · 2.4 MB（mockup 用橫圖扮）',
-                    ],
                     kind: 'disc',
                 },
                 'tile-local': {
@@ -2115,10 +1871,12 @@
                 renderPreview();
             };
 
+            /** 首頁 Banner 兩張一齊換：queue = 兩個 slot，step = 而家第幾張 */
+            const flow = { queue: [], step: 0 };
             const openCrop = (key) => {
                 const slot = SLOTS[key];
                 if (!slot) return;
-                lastFocus = document.activeElement;
+                if (!flow.queue.length) lastFocus = document.activeElement;
                 crop.slot = slot;
                 crop.mode = 'center';
                 $('crop-title').textContent = slot.title + '（' + slot.w + ' × ' + slot.h + '）';
@@ -2130,8 +1888,18 @@
                     '</span><span>' +
                     slot.meta[2] +
                     '</span>';
-                const pv = $('crop-pv');
-                applyTheme(pv, THEMES.lancy.current);
+                const multi = flow.queue.length > 1;
+                const last = !multi || flow.step === flow.queue.length - 1;
+                $('crop-step').hidden = !multi;
+                $('crop-step').textContent = multi ? flow.step + 1 + ' / ' + flow.queue.length : '';
+                $('crop-back').hidden = !multi || flow.step === 0;
+                $('crop-ok-text').textContent = !multi
+                    ? '上載'
+                    : last
+                      ? '上載兩張'
+                      : '下一張：闊版';
+                $('crop-cancel').textContent = multi ? '取消（兩張都唔換）' : '取消';
+                applyTheme($('crop-pv'), THEMES.lancy.current);
                 const img = $('src-img');
                 img.onload = () => {
                     crop.img = img;
@@ -2144,14 +1912,34 @@
                 $('crop-cancel').focus();
             };
             const closeCrop = () => {
+                flow.queue = [];
+                flow.step = 0;
                 $('crop-scrim').hidden = true;
                 if (lastFocus) lastFocus.focus();
             };
             document
                 .querySelectorAll('[data-open-crop]')
                 .forEach((b) => b.addEventListener('click', () => openCrop(b.dataset.openCrop)));
+            document.querySelectorAll('[data-open-banner]').forEach((b) =>
+                b.addEventListener('click', () => {
+                    lastFocus = b;
+                    flow.queue = ['bannerStd', 'bannerLong'];
+                    flow.step = 0;
+                    openCrop(flow.queue[0]);
+                }),
+            );
             $('crop-cancel').addEventListener('click', closeCrop);
-            $('crop-ok').addEventListener('click', closeCrop);
+            $('crop-ok').addEventListener('click', () => {
+                if (flow.queue.length > 1 && flow.step < flow.queue.length - 1) {
+                    flow.step++;
+                    openCrop(flow.queue[flow.step]);
+                    $('crop-ok').focus();
+                } else closeCrop();
+            });
+            $('crop-back').addEventListener('click', () => {
+                flow.step--;
+                openCrop(flow.queue[flow.step]);
+            });
             // 候選掣會重畫（focus 會跌返 body），所以喺 document 聽 Esc
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && !$('crop-scrim').hidden) closeCrop();
@@ -2209,23 +1997,7 @@
                 $('grip').addEventListener('pointercancel', end);
             })();
 
-            /* ===================== Theme 編輯器 ===================== */
-            const COLOR_KEYS = [
-                ['bg', '底色'],
-                ['surface', '卡 / 列底'],
-                ['track', '進度條軌'],
-                ['accent', '強調色'],
-                ['onAccent', '強調色上嘅字'],
-                ['title', '標題'],
-                ['text', '內文'],
-                ['muted', '次要字'],
-                ['shadowDark', '暗陰影 / 碟底'],
-                ['shadowLight', '亮陰影'],
-            ];
-            const OPT_KEYS = [
-                ['statusBar', '狀態列色帶'],
-                ['accentText', '強調色做字'],
-            ];
+            /* ===================== Theme（簡化版：3 套候選 + 換一輪） ===================== */
             const THEMES = {
                 lancy: {
                     disc: 'disc-lancy.webp',
@@ -2268,8 +2040,29 @@
                     },
                     fallback: ['#123456', '#ff5a4e', '#5fa8d3', '#f2e8d5', '#0b1622'],
                 },
+                fresh: {
+                    disc: 'disc-lancy.webp',
+                    name: '新劇（示範）',
+                    sub: '廣播劇 · 12 集',
+                    // 掃描出嚟嘅新劇：PLACEHOLDER_THEME（packages/catalog scan/draft.ts）
+                    current: {
+                        bg: '#141414',
+                        surface: '#1e1e1e',
+                        track: '#333333',
+                        accent: '#f2f2f2',
+                        onAccent: '#141414',
+                        title: '#ffffff',
+                        text: '#f2f2f2',
+                        muted: '#a3a3a3',
+                        shadowDark: '#0a0a0a',
+                        shadowLight: '#242424',
+                    },
+                    unset: true,
+                    fallback: ['#e9dfc4', '#d45f32', '#8fbcb2', '#3b2a1e', '#b88a5a'],
+                },
             };
-            const theme = { key: 'lancy', cands: [], sel: 0, edit: null, auto: new Set() };
+            const CANDS_PER_ROUND = 3;
+            const theme = { key: 'lancy', pool: [], round: 0, sel: 0, applied: null };
 
             const applyTheme = (el, t) => {
                 const s = el.style;
@@ -2370,96 +2163,31 @@
                 return t;
             };
 
-            const makeCands = (palette) => {
+            /** 候選池：每輪三套（唔同底色 × 深 / 淺），換一輪就輪下一組；輪完由頭再嚟 */
+            const buildPool = (palette) => {
                 const sat = (hex) => {
                     const [, s, l] = rgbToHsl(hexToRgb(hex));
                     return s * (1 - Math.abs(l - 0.5) * 1.4);
                 };
-                const dominant = palette[0];
-                const vivid = [...palette].sort((a, b) => sat(b) - sat(a))[0];
-                const second =
-                    palette.find((p) => p !== dominant && p !== vivid) || palette[1] || dominant;
-                const vivid2 =
-                    [...palette].filter((p) => p !== vivid).sort((a, b) => sat(b) - sat(a))[0] ||
-                    second;
+                const bySat = [...palette].sort((a, b) => sat(b) - sat(a));
+                const [dominant, second = palette[0], third = palette[1] || palette[0]] =
+                    palette.filter((p) => p !== bySat[0]);
+                const vivid = bySat[0];
+                const vivid2 = bySat[1] || vivid;
                 return [
-                    { label: '主色做底 · 深', t: buildTheme(dominant, vivid, 'dark') },
-                    { label: '鮮色做底 · 深', t: buildTheme(vivid, vivid2, 'dark') },
-                    { label: '主色做底 · 淺', t: buildTheme(dominant, vivid, 'light') },
-                    { label: '第二色做底 · 深', t: buildTheme(second, vivid, 'dark') },
-                ];
-            };
-
-            const runExtract = () => {
-                const src = THEMES[theme.key];
-                const img = new Image();
-                img.onload = () => {
-                    let palette;
-                    let note;
-                    try {
-                        palette = extractPalette(img);
-                        note = '抽到 ' + palette.length + ' 隻主色：' + palette.join(' ');
-                    } catch {
-                        palette = src.fallback;
-                        note =
-                            '（本機 file:// 開唔讀到 canvas 像素，用預設色示範；經 http 開就會真係抽色）';
-                    }
-                    const keep = {
-                        titleFont: src.current.titleFont,
-                        headerRule: src.current.headerRule,
-                    };
-                    theme.cands = [{ label: '現用', t: { ...src.current }, current: true }].concat(
-                        makeCands(palette).map((c) => ({ ...c, t: { ...c.t, ...keep } })),
-                    );
-                    $('extract-note').textContent = note;
-                    selectCand(0);
-                };
-                img.src = src.disc;
-            };
-
-            const selectCand = (i) => {
-                theme.sel = i;
-                theme.edit = { ...theme.cands[i].t };
-                theme.auto = new Set(
-                    theme.cands[i].current
-                        ? []
-                        : theme.edit.scheme === 'light'
-                          ? ['statusBar', 'accentText']
-                          : [],
-                );
-                renderThemeAll();
-            };
-
-            const renderCandsT = () => {
-                const wrap = $('tcands');
-                wrap.replaceChildren();
-                const src = THEMES[theme.key];
-                theme.cands.forEach((c, i) => {
-                    const b = document.createElement('button');
-                    b.type = 'button';
-                    b.className = 'tcand';
-                    b.setAttribute('aria-pressed', String(i === theme.sel));
-                    applyTheme(b, c.t);
-                    const fails = contrastRows(c.t).filter((r) => !r.ok).length;
-                    b.innerHTML =
-                        '<span class="lbl"><span>' +
-                        c.label +
-                        '</span>' +
-                        (fails
-                            ? '<span class="pill warn">⚠ ' + fails + '</span>'
-                            : '<span class="pill ok">AA</span>') +
-                        '</span><span class="mini"><span class="d" style="background-image:url(' +
-                        src.disc +
-                        ')"></span><span><b>' +
-                        src.name +
-                        '</b><i>播放</i></span></span><span class="sw">' +
-                        ['bg', 'surface', 'accent', 'title', 'text', 'muted']
-                            .map((k) => '<span style="background:' + c.t[k] + '"></span>')
-                            .join('') +
-                        '</span>';
-                    b.addEventListener('click', () => selectCand(i));
-                    wrap.append(b);
-                });
+                    ['主色深底', dominant, vivid, 'dark'],
+                    ['鮮色深底', vivid, vivid2, 'dark'],
+                    ['主色淺底', dominant, vivid, 'light'],
+                    ['第二色深底', second, vivid, 'dark'],
+                    ['第二色淺底', second, vivid2, 'light'],
+                    ['鮮色淺底', vivid, vivid2, 'light'],
+                    ['第三色深底', third, vivid2, 'dark'],
+                    ['主色深底 · 第二強調色', dominant, vivid2, 'dark'],
+                    ['第三色淺底', third, vivid, 'light'],
+                ].map(([label, base, accent, scheme]) => ({
+                    label,
+                    t: buildTheme(base, accent, scheme),
+                }));
             };
 
             const PAIRS = [
@@ -2489,159 +2217,132 @@
                     };
                 });
 
-            const renderContrast = () => {
-                const rows = contrastRows(theme.edit);
-                const fails = rows.filter((r) => !r.ok);
-                $('contrast').innerHTML = rows
-                    .map(
-                        (r) =>
-                            '<tr><td><code>' +
-                            r.label +
-                            '</code> 對 <code>' +
-                            r.bg +
-                            '</code></td>' +
-                            '<td><span class="chipc" style="background:' +
-                            r.bgHex +
-                            ';color:' +
-                            r.fgHex +
-                            '">Aa 字</span></td>' +
-                            '<td class="num">' +
-                            r.r.toFixed(2) +
-                            ':1</td><td class="small muted">≥ ' +
-                            r.min +
-                            ':1</td>' +
-                            '<td>' +
-                            (r.ok
-                                ? '<span class="pill ok">✓ 合格</span>'
-                                : '<span class="pill bad">✕ 唔合格</span>') +
-                            '</td></tr>',
-                    )
-                    .join('');
-                $('contrast-sum').innerHTML = fails.length
-                    ? '<span class="pill warn">⚠ ' + fails.length + ' 對唔合格（只警告）</span>'
-                    : '<span class="pill ok">全部合格</span>';
-                const flagged = new Set(
-                    fails.flatMap((r) => [
-                        r.fg === 'accentText' && !theme.edit.accentText ? 'accent' : r.fg,
-                        r.bg,
-                    ]),
-                );
-                document
-                    .querySelectorAll('.crow')
-                    .forEach((row) => row.classList.toggle('flag', flagged.has(row.dataset.key)));
-            };
-
-            const colorRow = (key, label, isAuto) => {
-                const v = theme.edit[key];
-                const d = document.createElement('div');
-                d.className = 'crow';
-                d.dataset.key = key;
-                d.innerHTML =
-                    '<input type="color" value="' +
-                    v +
-                    '" aria-label="' +
-                    key +
-                    '" />' +
-                    '<span class="nm"><code>' +
-                    key +
-                    '</code><span>' +
-                    label +
-                    (isAuto ? ' · <span class="pill info" style="padding:0 6px">自動</span>' : '') +
-                    '</span></span><input type="text" value="' +
-                    v +
-                    '" aria-label="' +
-                    key +
-                    ' hex" maxlength="7" />';
-                const [pick, text] = d.querySelectorAll('input');
-                const set = (val) => {
-                    if (!/^#[0-9a-f]{6}$/i.test(val)) return;
-                    theme.edit[key] = val.toLowerCase();
-                    pick.value = val;
-                    text.value = val;
-                    if (theme.auto.has(key)) {
-                        theme.auto.delete(key);
-                        d.querySelector('.pill.info')?.remove();
-                    }
-                    if ((key === 'accent' || key === 'bg') && theme.edit.scheme === 'light')
-                        rederive();
-                    renderLive();
-                };
-                pick.addEventListener('input', () => set(pick.value));
-                text.addEventListener('change', () => set(text.value.trim()));
-                return d;
-            };
-
-            const rederive = () => {
-                const t = theme.edit;
-                const derived = deriveAccentText(t.accent, t.bg);
-                ['accentText', 'statusBar'].forEach((k) => {
-                    if (theme.auto.has(k)) {
-                        t[k] = derived;
-                        const row = document.querySelector('.crow[data-key="' + k + '"]');
-                        if (row) row.querySelectorAll('input').forEach((x) => (x.value = derived));
-                    }
-                });
-            };
-
-            const renderColors = () => {
-                const wrap = $('colors');
-                wrap.replaceChildren();
-                COLOR_KEYS.forEach(([k, l]) => wrap.append(colorRow(k, l, false)));
-                if (theme.edit.scheme === 'light')
-                    OPT_KEYS.forEach(([k, l]) => wrap.append(colorRow(k, l, theme.auto.has(k))));
-                document
-                    .querySelectorAll('[data-scheme]')
-                    .forEach((b) =>
-                        b.setAttribute(
-                            'aria-pressed',
-                            String((theme.edit.scheme || 'dark') === b.dataset.scheme),
-                        ),
-                    );
-                $('ro-font').textContent = theme.edit.titleFont || '（冇，跟 app 字體）';
-                $('ro-rule').textContent = theme.edit.headerRule || '（冇）';
-            };
-
-            const renderLive = () => {
-                const ph = $('phone');
-                applyTheme(ph, theme.edit);
-                ph.classList.toggle('dark', theme.edit.scheme !== 'light');
-                renderContrast();
-            };
-
-            const renderThemeAll = () => {
+            const rounds = () => Math.ceil(theme.pool.length / CANDS_PER_ROUND);
+            const shown = () => {
                 const src = THEMES[theme.key];
-                $('ph-title').textContent = src.name;
-                $('ph-title').nextElementSibling.textContent = src.sub;
-                $('ph-disc').src = src.disc;
-                renderCandsT();
-                renderColors();
-                renderLive();
+                const cur = theme.applied || src.current;
+                const curLabel = theme.applied
+                    ? '現用（啱啱揀）'
+                    : src.unset
+                      ? '現用：未設定（中性灰）'
+                      : '現用';
+                const from = theme.round * CANDS_PER_ROUND;
+                return [
+                    { label: curLabel, t: cur, current: true, unset: src.unset && !theme.applied },
+                ].concat(
+                    theme.pool
+                        .slice(from, from + CANDS_PER_ROUND)
+                        .map((c, i) => ({ ...c, suggest: src.unset && !theme.applied && i === 0 })),
+                );
             };
 
-            document.querySelectorAll('[data-scheme]').forEach((b) =>
-                b.addEventListener('click', () => {
-                    const t = theme.edit;
-                    if (b.dataset.scheme === 'light') {
-                        t.scheme = 'light';
-                        theme.auto = new Set(['statusBar', 'accentText']);
-                        rederive();
-                        t.accentText = deriveAccentText(t.accent, t.bg);
-                        t.statusBar = t.accentText;
-                    } else {
-                        delete t.scheme;
-                        delete t.statusBar;
-                        delete t.accentText;
-                        theme.auto = new Set();
+            const cardHtml = (c, src) => {
+                const fails = contrastRows(c.t).filter((r) => !r.ok).length;
+                const badge = c.unset
+                    ? '<span class="pill warn">未設定</span>'
+                    : c.suggest
+                      ? '<span class="pill info">建議</span>'
+                      : '';
+                const aa = fails
+                    ? '<span class="pill warn">⚠ ' + fails + '</span>'
+                    : '<span class="pill ok">AA</span>';
+                return (
+                    '<span class="lbl"><span>' +
+                    c.label +
+                    ' ' +
+                    badge +
+                    '</span>' +
+                    aa +
+                    '</span>' +
+                    '<span class="tphone' +
+                    (c.t.scheme === 'light' ? '' : ' dark') +
+                    '">' +
+                    '<span class="sb"></span>' +
+                    '<span class="hd"><b>' +
+                    src.name +
+                    '</b><small>' +
+                    src.sub +
+                    '</small></span>' +
+                    '<span class="pdisc sm"><img src="' +
+                    src.disc +
+                    '" alt="" /></span>' +
+                    '<span class="bar"></span>' +
+                    '<span class="ctl"><span class="play">▶</span></span>' +
+                    '<span class="li on">第 3 集 · 播緊</span><span class="li">第 2 集<small>11/11</small></span>' +
+                    '</span>'
+                );
+            };
+
+            const renderThemeCards = () => {
+                const src = THEMES[theme.key];
+                const wrap = $('tcands');
+                wrap.replaceChildren();
+                shown().forEach((c, i) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'tcard';
+                    b.setAttribute('aria-pressed', String(i === theme.sel));
+                    applyTheme(b, c.t);
+                    b.innerHTML = cardHtml(c, src);
+                    b.addEventListener('click', () => {
+                        theme.sel = i;
+                        renderThemeCards();
+                        $('tcands').querySelectorAll('.tcard')[i].focus();
+                    });
+                    wrap.append(b);
+                });
+                $('round-note').textContent = '第 ' + (theme.round + 1) + ' / ' + rounds() + ' 輪';
+                $('theme-head').textContent = src.name + ' · Theme';
+                const keep = [
+                    src.current.titleFont && 'titleFont',
+                    src.current.headerRule && 'headerRule',
+                ].filter(Boolean);
+                $('keep-note').textContent = keep.length
+                    ? '儲存時保留原有 ' + keep.join(' / ') + '（唔會改）'
+                    : '';
+                $('use-theme').disabled = theme.sel === 0;
+            };
+
+            const runExtract = () => {
+                const src = THEMES[theme.key];
+                const img = new Image();
+                img.onload = () => {
+                    let palette;
+                    try {
+                        palette = extractPalette(img);
+                    } catch {
+                        palette = src.fallback; // file:// 開讀唔到 canvas 像素：用預設色示範
                     }
-                    renderColors();
-                    renderLive();
-                }),
-            );
+                    const keep = {
+                        titleFont: src.current.titleFont,
+                        headerRule: src.current.headerRule,
+                    };
+                    theme.pool = buildPool(palette).map((c) => ({ ...c, t: { ...c.t, ...keep } }));
+                    theme.round = 0;
+                    theme.sel = 0;
+                    theme.applied = null;
+                    $('pick-note').textContent = '';
+                    renderThemeCards();
+                };
+                img.src = src.disc;
+            };
+
+            $('more-cands').addEventListener('click', () => {
+                theme.round = (theme.round + 1) % rounds();
+                theme.sel = 0;
+                renderThemeCards();
+            });
+            $('use-theme').addEventListener('click', () => {
+                const c = shown()[theme.sel];
+                theme.applied = { ...c.t };
+                theme.sel = 0;
+                $('pick-note').textContent = '已套用「' + c.label + '」（mockup 唔會真係儲存）';
+                renderThemeCards();
+            });
             $('theme-src').addEventListener('change', (e) => {
                 theme.key = e.target.value;
                 runExtract();
             });
-            $('re-extract').addEventListener('click', runExtract);
             runExtract();
         </script>
     </body>
