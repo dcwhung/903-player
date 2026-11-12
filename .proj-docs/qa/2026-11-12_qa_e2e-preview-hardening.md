@@ -36,7 +36,7 @@ all pass。Coverage：n/a（e2e runner 冇 unit，行為由上面實跑證）。
 protocol: 1
 status: pass
 stage: S1
-ledger: "FROZEN admin / coming-soon / repo-tooling S1 @2e3d903 (code b3e1e7a)"
+ledger: "（已過時）原本 FROZEN admin / coming-soon / repo-tooling S1 @2e3d903；merge b0051a4 用咗 main 嘅 ledger，以下 Addendum 為準"
 hard_gates: { tests: pass, coverage: n/a, no_blocking: pass, pwa: n/a, security: n/a, performance: n/a }
 tickets: []
 next_action: merge_main
@@ -44,3 +44,17 @@ next_agent: main
 branch: "claude/peaceful-hamilton-35etnm"
 context: "S-850/S-851 re-verify S1 pass; admin e2e 34/0 + 冇 vite 留低；stray port exit 1 <1s；stopPreview 對唔理 SIGTERM 嘅 child 5s 後 SIGKILL；player 冇 dist / SIGKILL 都即刻 exited early + vite stderr；CI 43213117515 @b3e1e7a success（含 e2e）；報告 + ledger 只 commit 未 push"
 ```
+
+## Addendum — merge main 之後 re-freeze（47f4a2b，2026-11-12）
+
+- 上面 receipt 嘅 `FROZEN … @2e3d903` 已過時：merge `b0051a4` 用咗 main（#208）嘅 `apps/admin/e2e/run.mjs` 同 `verification-ledger.tsv`，8ebb6dd 嗰次 freeze 冇咗；admin 跟 main 嘅 freeze（SKIP），S-851 由 #208 取代
+- Ledger（`impact --since "$(git merge-base HEAD origin/main)"`）: SKIP 12 / REVERIFY 2（coming-soon、repo-tooling；都係 `apps/player/e2e/run.mjs` hash 變）/ UNCOVERED 0 / IGNORED 3（docs）
+- `git diff b3e1e7a HEAD -- apps/player/e2e/run.mjs`：淨係兩行註解 S-844→S-850，邏輯同上面驗過嘅一樣，所以輕量 re-check
+
+| Command / 證據                                                                                | Result                                                                                                                                     |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 冇 `dist`：喺 `apps/player` 跑 `E2E_PORT=4295 node e2e/run.mjs` → `pgrep -fa "vite.*preview"` | vite stderr「The directory "dist" does not exist…」+「vite preview exited early (code 1, signal null) on port 4295」，exit 1；`pgrep` 冇嘢 |
+| `npx eslint` + `npx prettier --check apps/player/e2e/run.mjs`                                 | clean                                                                                                                                      |
+| CI [43227488155](https://github.com/dcwhung/903-player/actions/runs/43227488155) @`47f4a2b`   | pending（交 report 時仲 `in_progress`，未跑到 e2e）；main agent push 前要確認 success                                                      |
+
+Verdict: ✅ pass，冇新 finding。Re-freeze coming-soon / repo-tooling S1（file list 同 main ledger 嗰份一樣）。
