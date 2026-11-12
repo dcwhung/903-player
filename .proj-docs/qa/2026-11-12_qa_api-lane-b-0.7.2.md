@@ -5,7 +5,7 @@
 - Ledger（base `450e5d4` = merge-base origin/main）: SKIP 12 / REVERIFY 3（`api` `coming-soon` `repo-tooling`）/ UNCOVERED 0 / IGNORED 2（review 報告、`apps/api/README.md`）
 - `coming-soon` / `repo-tooling`：淨係 `package-lock.json` 嘅 `apps/api` version `0.7.1 → 0.7.2` 一行，冇行為改動 → 沿用 plan 重新 freeze，冇額外驗
 - E2E：冇（`api` 鏈冇 player e2e；admin 鏈 SKIP）
-- Plan：`plans/api.md` 加 AC-20
+- Plan：`plans/api.md` 加 AC-21（merge 時 Lane D 已用 AC-20，改號）
 
 ## Runs
 
@@ -40,7 +40,7 @@ all pass，Coverage 講明：改動檔 lines `next.ts` 100 / `webp.ts` 98.76 / `
 from: quality-assurance
 stage: S1
 status: pass
-chains: api S1 (re-frozen, plan +AC-20); coming-soon S1, repo-tooling S1 (lockfile version line only, re-frozen)
+chains: api S1 (re-frozen, plan +AC-21); coming-soon S1, repo-tooling S1 (lockfile version line only, re-frozen)
 tickets: none
 ci: run 43230669865 @ ceb93d0 — completed success (lint, tsc, unit, build, build:admin, e2e, e2e:admin)
 next_action: main agent wait for CI 43230669865 to complete, then push code + review + QA commits together
