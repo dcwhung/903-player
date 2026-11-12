@@ -156,7 +156,7 @@ export const zhHK = {
         restLive: '其餘 {count} 個已上架',
         unlisted: '已下架（{count}）· 播放器不顯示，固定排最底',
         unlistedOrNever: '未上架 / 已下架（{count}）· 播放器不顯示，固定排最底',
-        notListed: '未上架（{count}）· 處理待辦後才可排序',
+        notListed: '待處理（{count}）· 處理待辦後才可排序',
         dragHandle: '拖曳以調整「{name}」的次序',
         reordered: '已更新次序',
         unpublished: '有 {count} 項變更尚未發佈，發佈後播放器才會更新。',

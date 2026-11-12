@@ -171,4 +171,22 @@ describe('DramaList', () => {
         expect(legend.getByText('未上架')).toBeInTheDocument();
         expect(legend.queryByText('已下架')).not.toBeInTheDocument();
     });
+
+    it('should label the draft group 待處理, keeping 未上架 for never-published entries (S-847)', () => {
+        const draft: LoadedEntry = {
+            ...drama,
+            id: 'scanned',
+            definition: { ...drama.definition, name: '掃描新劇', enabled: false },
+            draft: true,
+            published: false,
+        };
+        renderAt(
+            '/dramas',
+            '/dramas',
+            <DramaList />,
+            fakeData({ entries: resource([drama, draft]) }),
+        );
+        expect(screen.getByText('待處理（1）· 處理待辦後才可排序')).toHaveClass('section-divider');
+        expect(screen.queryByText(/^未上架（/)).not.toBeInTheDocument();
+    });
 });

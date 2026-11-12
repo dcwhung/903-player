@@ -1,4 +1,4 @@
-/* 內容列表：上架（可拖）/ 未上架（draft）/ 已下架（固定排最底）分組 + 待發佈標記 */
+/* 內容列表：上架（可拖）/ 待處理（draft）/ 未上架・已下架（固定排最底）分組 + 待發佈標記 */
 import { compareOrderThenId, type ChangeSummary } from '@903-player/catalog';
 import type { LoadedEntry } from '../api/types';
 import { t } from '../i18n/t';
