@@ -1,6 +1,6 @@
 /*
  * 預覽「上下架批次」表（mockup ⑨ table）：日期 / 上架 / 下架，集數範圍用 pill（藍 = 上架、紅 = 下架）；
- * 今日（用戶 2026-11-12）：撞正某行 = 日期加「（今日）」+ 高亮；唔撞 = 按次序插一行今日，上架 / 下架「—」
+ * 今日（用戶 2026-11-12）：撞正某行 = 日期加「（今日）」+ 淺主色成行底；唔撞 = 按次序插一行今日，上架 / 下架「—」
  */
 import type { EpisodeRange } from '@903-player/catalog';
 import { t } from '../../i18n/t';
@@ -23,8 +23,9 @@ function Ranges({ ranges, tone }: { ranges: readonly EpisodeRange[]; tone: 'info
 
 export function BatchTable({ days, today }: { days: readonly PreviewDay[]; today: string }) {
     return (
-        <div className="note warn batch-note">
-            <b>{t('schedule.batches')}</b>
+        // 同內容頁（節目 / 廣播劇列表）一樣嘅中性表：冇底色、--muted 表頭、--line 分隔線（用戶 2026-11-12）
+        <div className="batch-section">
+            <b className="batch-title">{t('schedule.batches')}</b>
             <div className="table-wrap">
                 <table className="batches">
                     <thead>

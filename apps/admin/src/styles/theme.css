@@ -1700,11 +1700,13 @@ table.matrix .row-link:hover {
     white-space: nowrap;
 }
 
-/* 今日：主色框 + 淺主色底；日子字粗、--accent-ink（淺深色對 --accent-soft 都 ≥ 4.5:1） */
-.seg-batch.today .eps-cells,
-.day-group.today {
+/*
+ * 今日（用戶 2026-11-12 第二輪：唔要框）：只用淺主色底 + 主色字；
+ * 日子字粗、--accent-ink（淺深色對 --accent-soft 都 ≥ 4.5:1）
+ */
+.seg-batch.today .eps-cells {
     border-radius: 8px;
-    box-shadow: 0 0 0 2px var(--accent);
+    background: var(--accent-soft);
 }
 
 .seg-batch.today .seg-date,
@@ -1728,21 +1730,32 @@ table.matrix .row-link:hover {
 .day-group.today {
     padding-top: 4px;
     padding-bottom: 4px;
+    border-radius: 8px;
     background: var(--accent-soft);
 }
 
-.day-group.today .eps-cells.on span {
-    box-shadow: 0 0 0 1px var(--accent-soft);
+/*
+ * 上下架批次表：同節目 / 廣播劇列表（.list-head / .row）一樣嘅中性樣式——直接用全域 table / th / td
+ * （--muted 12px 表頭、--line 分隔線），冇底色、冇外框卡；標題用正文色
+ */
+.batch-section {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
 }
 
-/* 批次表今日一行：淺主色底 + 左邊主色條，日期粗字 */
+.batch-title {
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* 今日一行：列表冇固定高亮（只有 hover --surface-2），所以用淺主色成行底；日期主色粗字 */
 table.batches tr.today td {
     background: var(--accent-soft);
-    color: var(--ink);
 }
 
 table.batches tr.today td:first-child {
-    box-shadow: inset 3px 0 0 var(--accent);
     color: var(--accent-ink);
     font-weight: 700;
 }

@@ -310,6 +310,30 @@ const assertTodayCells = async (page) => {
     }
 };
 
+/**
+ * 用戶 2026-11-12 第二輪：今日格冇框（只係淺主色底）；批次表同內容頁列表一樣冇底色（唔係黃色卡），淺深色都量
+ */
+const assertPlainToday = async (page) => {
+    for (const scheme of ['light', 'dark']) {
+        await page.emulateMedia({ colorScheme: scheme });
+        const looks = await page.evaluate(() => {
+            const style = (selector) => getComputedStyle(document.querySelector(selector));
+            return {
+                ring: style('.strip.preview .day-group.today').boxShadow,
+                outline: style('.strip.preview .day-group.today').outlineStyle,
+                section: style('.batch-section').backgroundColor,
+                table: style('table.batches').backgroundColor,
+                bar: style('table.batches tr.today td').boxShadow,
+            };
+        });
+        if (looks.ring !== 'none' || looks.outline !== 'none' || looks.bar !== 'none')
+            throw new Error(`${scheme}: 今日 has a border ${JSON.stringify(looks)}`);
+        if (looks.section !== 'rgba(0, 0, 0, 0)' || looks.table !== 'rgba(0, 0, 0, 0)')
+            throw new Error(`${scheme}: batch table has a background ${JSON.stringify(looks)}`);
+    }
+    await page.emulateMedia({ colorScheme: 'light' });
+};
+
 /** 句子兩段：同一行，或者第二段（「逢」開頭）喺下一行嘅最左 */
 const assertCadenceBreaks = async (page) => {
     for (const sentence of await page.locator('.sentence.cadence').all()) {
@@ -394,6 +418,7 @@ const schedulePreviewCheck = (browser) =>
         const firstRow = page.locator('table.batches tbody tr').first();
         const rowText = (await firstRow.innerText()).replace(/\s+/g, ' ').trim();
         if (rowText !== '12/11 四（今日） — —') throw new Error(`today row: ${rowText}`);
+        await assertPlainToday(page);
         const heads = await page.locator('table.batches th').allTextContents();
         if (heads.join() !== '日期,上架,下架') throw new Error(`table columns ${heads}`);
         await page.locator('table.batches .pill.info').first().waitFor();
