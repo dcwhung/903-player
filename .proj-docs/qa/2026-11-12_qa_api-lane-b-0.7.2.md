@@ -9,12 +9,12 @@
 
 ## Runs
 
-| Command                                                                                                          | Result                                                                                             | Time |
-| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---- |
-| `npm run lint`、`npm test`、`npm run test -w apps/api`、`tsc -b`（main agent 已跑，引用）                        | lint ok / 353 files 3789 tests pass / api 13 files 217 + 12 / ok                                   | —    |
-| `apps/api`: `npx vitest run --coverage.enabled --coverage.provider=v8`（include `next.ts` `webp.ts` `store.ts`） | 全綠；coverage 見 Hard Gates                                                                       | 14 s |
-| `node -e` WHATWG `new URL(p, origin).pathname`（S-825 前提）                                                     | 見下                                                                                               | <1 s |
-| CI `ceb93d0` run [43230669865](https://github.com/dcwhung/903-player/actions/runs/43230669865)                   | 寫報告時 `in_progress`：lint、tsc、unit、build ✅；build:admin / e2e 未完 → main agent push 前確認 | —    |
+| Command                                                                                                          | Result                                                                                          | Time |
+| ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---- |
+| `npm run lint`、`npm test`、`npm run test -w apps/api`、`tsc -b`（main agent 已跑，引用）                        | lint ok / 353 files 3789 tests pass / api 13 files 217 + 12 / ok                                | —    |
+| `apps/api`: `npx vitest run --coverage.enabled --coverage.provider=v8`（include `next.ts` `webp.ts` `store.ts`） | 全綠；coverage 見 Hard Gates                                                                    | 14 s |
+| `node -e` WHATWG `new URL(p, origin).pathname`（S-825 前提）                                                     | 見下                                                                                            | <1 s |
+| CI `ceb93d0` run [43230669865](https://github.com/dcwhung/903-player/actions/runs/43230669865)                   | completed success（lint、tsc、unit、build、build:admin、e2e、e2e:admin；main agent 14:05 確認） | —    |
 
 ## 驗證要點（L2）
 
@@ -42,7 +42,7 @@ stage: S1
 status: pass
 chains: api S1 (re-frozen, plan +AC-20); coming-soon S1, repo-tooling S1 (lockfile version line only, re-frozen)
 tickets: none
-ci: run 43230669865 @ ceb93d0 — in_progress at report time (lint, tsc, unit, build success; build:admin / e2e pending); main agent confirm success before push
+ci: run 43230669865 @ ceb93d0 — completed success (lint, tsc, unit, build, build:admin, e2e, e2e:admin)
 next_action: main agent wait for CI 43230669865 to complete, then push code + review + QA commits together
 context: T1, 0 blocking findings; S-849 / S-825 / S-794 / S-778 verified; S-852 backlog (from review)
 ```
