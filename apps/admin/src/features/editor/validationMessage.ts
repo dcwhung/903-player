@@ -1,7 +1,7 @@
 /*
  * 422 驗證錯誤（server 原文英文：「<kind>/<id>: <欄位> <原因>」，同 catalog parser 一套；
  * 排程下架日衝突係「episode N unlist date … must be later than its listing date …」；
- * admin 自己擋嘅「episode N unlist date … is before today …」（W-715））→ 書面語中文。
+ * admin 自己擋嘅「episode N / episodes A-B unlist date … is before today …」（W-715、S-843））→ 書面語中文。
  * 識嘅寫明邊樣有問題；唔識就回 null（畫面出一般訊息 + 可展開原文）
  */
 import { t, type MessageKey } from '../../i18n/t';
@@ -17,8 +17,8 @@ const DUPLICATE_ARC_ID = /^id: duplicate arc id (\S+)$/;
 /** 排程 422（packages/catalog expandSchedule）：某集下架日唔遲過上架日 */
 const UNLIST_BEFORE_LISTING =
     /^episode (\d+) unlist date (\S+) must be later than its listing date (\S+)$/;
-/** admin 儲存前（saveProblemOf，W-715）：某集新排嘅下架日早過今日 */
-const UNLIST_BEFORE_TODAY = /^episode (\d+) unlist date (\S+) is before today \S+$/;
+/** admin 儲存前（saveProblemOf，W-715）：某集 / 一段集數（S-843）新排嘅下架日早過今日 */
+const UNLIST_BEFORE_TODAY = /^episodes? (\d+)(?:-(\d+))? unlist date (\S+) is before today \S+$/;
 
 /** 欄位 → 畫面標籤（fields.*，同編輯頁一樣） */
 const FIELD_LABELS: Record<string, MessageKey> = {
@@ -53,6 +53,15 @@ const fieldMessage = (owner: string, field: string, reason: string): string | nu
     return t('validation.invalidField', { owner, field: t(label) });
 };
 
+const pastMessage = ([, first = '', last, removed = '']: RegExpExecArray): string =>
+    last === undefined
+        ? t('validation.unlistBeforeToday', { no: Number(first), removed: shortDate(removed) })
+        : t('validation.unlistBeforeTodayRange', {
+              first: Number(first),
+              last: Number(last),
+              removed: shortDate(removed),
+          });
+
 export const validationMessage = (detail: string): string | null => {
     const unlist = UNLIST_BEFORE_LISTING.exec(detail.trim());
     if (unlist)
@@ -62,11 +71,7 @@ export const validationMessage = (detail: string): string | null => {
             listed: shortDate(unlist[3] ?? ''),
         });
     const past = UNLIST_BEFORE_TODAY.exec(detail.trim());
-    if (past)
-        return t('validation.unlistBeforeToday', {
-            no: Number(past[1]),
-            removed: shortDate(past[2] ?? ''),
-        });
+    if (past) return pastMessage(past);
     const source = SOURCE.exec(detail.trim());
     if (!source) return null;
     const { entity, owner, rest } = whereOf(source[1] ?? '', source[2] ?? '', source[3] ?? '');

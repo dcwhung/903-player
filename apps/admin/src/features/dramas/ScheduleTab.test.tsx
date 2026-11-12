@@ -151,7 +151,7 @@ describe('ScheduleTab — unlist date before today (W-715)', () => {
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', { name: '儲存' }));
         expect(await screen.findByRole('alert')).toHaveTextContent(
-            '無法儲存：第 1 集的下架日期（6/11 五）早於今日，請修改下架設定。',
+            '無法儲存：第 1–30 集的下架日期（6/11 五）早於今日，請修改下架設定。',
         );
         expect(putBody(fetchMock)).toBeUndefined();
     });

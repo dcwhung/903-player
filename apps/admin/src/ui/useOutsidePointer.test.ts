@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { useOutsidePointer } from './useOutsidePointer';
 
-const pointerdownAdds = (spy: ReturnType<typeof vi.spyOn>) =>
+const pointerdownAdds = (spy: { mock: { calls: unknown[][] } }) =>
     spy.mock.calls.filter(([type]) => type === 'pointerdown').length;
 
 describe('useOutsidePointer', () => {
