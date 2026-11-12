@@ -21,11 +21,23 @@ const afterDays = (days: number): ScheduleRule => ({
 });
 
 describe('saveProblemOf — unlist date before today (W-715)', () => {
-    it('should refuse an unlist date already past, naming the first episode', () => {
+    it('should refuse an unlist date already past, naming the episode range that shares it (S-843)', () => {
         const problem = saveProblemOf(afterDays(90), CTX);
-        expect(problem).toBe('episode 1 unlist date 2026-08-30 is before today 2026-11-12');
+        expect(problem).toBe('episodes 1-10 unlist date 2026-08-30 is before today 2026-11-12');
         expect(validationMessage(problem ?? '')).toBe(
-            '第 1 集的下架日期（30/8 日）早於今日，請修改下架設定。',
+            '第 1–10 集的下架日期（30/8 日）早於今日，請修改下架設定。',
+        );
+    });
+
+    it('should name a single episode when only one shares the past date (S-843)', () => {
+        const ctx = {
+            ...CTX,
+            firstNo: 1,
+            count: 1,
+            listed: [{ first: 1, last: 1, date: '2026-06-01' }],
+        };
+        expect(saveProblemOf(afterDays(90), ctx)).toBe(
+            'episode 1 unlist date 2026-08-30 is before today 2026-11-12',
         );
     });
 
@@ -45,7 +57,7 @@ describe('saveProblemOf — unlist date before today (W-715)', () => {
         expect(saveProblemOf(kept, { ...CTX, unlisted: { '1-5': '2026-08-01' } })).toBeUndefined();
     });
 
-    it('should report the first episode in order when only later ones are past', () => {
+    it('should report the first past range in order, stopping at a different date', () => {
         const ctx = {
             ...CTX,
             listed: [
@@ -62,7 +74,7 @@ describe('saveProblemOf — unlist date before today (W-715)', () => {
             unlist: { kind: 'afterDays', days: 120 },
         };
         // 第 1 集 1/6 + 120 = 29/9（過咗）
-        expect(saveProblemOf(rule, ctx)).toMatch(/^episode 1 unlist date 2026-09-29 /);
+        expect(saveProblemOf(rule, ctx)).toMatch(/^episodes 1-5 unlist date 2026-09-29 /);
     });
 });
 

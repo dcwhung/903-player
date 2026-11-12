@@ -44,6 +44,12 @@ describe('validationMessage', () => {
         ).toBe('第 1 集的下架日期（30/8 日）早於今日，請修改下架設定。');
     });
 
+    it('should explain an episode range whose unlist date is before today (S-843)', () => {
+        expect(
+            validationMessage('episodes 1-10 unlist date 2026-08-30 is before today 2026-11-12'),
+        ).toBe('第 1–10 集的下架日期（30/8 日）早於今日，請修改下架設定。');
+    });
+
     it('should return null for errors it does not know', () => {
         expect(validationMessage('dramas/golden: audio.file: unknown token {x}')).toBeNull();
         expect(validationMessage('something else')).toBeNull();
