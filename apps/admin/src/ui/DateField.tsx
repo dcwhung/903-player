@@ -76,32 +76,40 @@ function DateInput({
     );
 }
 
-export function DateField({ label, value, onChange, inline = false, ...limits }: DateFieldProps) {
-    const { text, error, type, check, accept } = useDateText(value, onChange, limits);
+/**
+ * 月曆開關：撳出面（useOutsidePointer）、文字欄 / 日曆掣撳 Esc、Tab 離開成個欄位都收起（S-838）；
+ * close = 收起再 focus 返日曆掣（揀咗 / 月曆入面 Esc）
+ */
+const useCalendarPopover = () => {
     const [open, setOpen] = useState(false);
     const rootRef = useRef<HTMLSpanElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
-    const errorId = useId();
     useOutsidePointer(rootRef, open, () => setOpen(false));
     const close = () => {
         setOpen(false);
         triggerRef.current?.focus();
     };
-    // 月曆入面嘅 Esc 由 DateCalendar 處理（stopPropagation）；嚟到呢度 = focus 喺文字欄 / 日曆掣，原地收起
-    const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
-        if (!open || event.key !== 'Escape') return;
-        event.preventDefault();
-        setOpen(false);
+    const rootProps = {
+        ref: rootRef,
+        // 月曆入面嘅 Esc 由 DateCalendar 處理（stopPropagation）；嚟到呢度 = focus 喺文字欄 / 日曆掣，原地收起
+        onKeyDown: (event: KeyboardEvent<HTMLSpanElement>) => {
+            if (!open || event.key !== 'Escape') return;
+            event.preventDefault();
+            setOpen(false);
+        },
+        onBlur: (event: FocusEvent<HTMLSpanElement>) => {
+            if (open && leftField(event)) setOpen(false);
+        },
     };
+    return { open, toggle: () => setOpen(!open), close, triggerRef, rootProps };
+};
+
+export function DateField({ label, value, onChange, inline = false, ...limits }: DateFieldProps) {
+    const { text, error, type, check, accept } = useDateText(value, onChange, limits);
+    const { open, toggle, close, triggerRef, rootProps } = useCalendarPopover();
+    const errorId = useId();
     return (
-        <span
-            ref={rootRef}
-            className={`date-field${inline ? ' inline' : ''}`}
-            onKeyDown={onKeyDown}
-            onBlur={(event) => {
-                if (open && leftField(event)) setOpen(false);
-            }}
-        >
+        <span {...rootProps} className={`date-field${inline ? ' inline' : ''}`}>
             <DateInput
                 label={label}
                 inline={inline}
@@ -118,7 +126,7 @@ export function DateField({ label, value, onChange, inline = false, ...limits }:
                 aria-label={t('dateField.open', { label })}
                 aria-haspopup="dialog"
                 aria-expanded={open}
-                onClick={() => setOpen(!open)}
+                onClick={toggle}
             >
                 <Calendar aria-hidden="true" />
             </button>
