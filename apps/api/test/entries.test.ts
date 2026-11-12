@@ -80,6 +80,27 @@ describe('GET /api/entries', () => {
     });
 });
 
+describe('GET /api/entries published for shows (W-716)', () => {
+    const showOf = async (id: string) => {
+        const { entries } = (await (await adminGet('/api/entries')).json()) as { entries: Json[] };
+        return entries.find((e) => e.kind === 'shows' && e.id === id);
+    };
+
+    it('should keep a show created disabled and never listed at published: false after a publish', async () => {
+        await putEntry('shows', 'newshow', { ...SHOW, enabled: false });
+        await adminPost('/api/publish');
+        expect(await showOf('newshow')).toMatchObject({ published: false });
+        expect(await showOf('badgirl')).toMatchObject({ published: true });
+    });
+
+    it('should keep published: true for a show listed before, then disabled and published again', async () => {
+        await adminPost('/api/publish');
+        await putEntry('shows', 'badgirl', { ...SHOW, enabled: false });
+        await adminPost('/api/publish');
+        expect(await showOf('badgirl')).toMatchObject({ published: true });
+    });
+});
+
 describe('GET /api/entries/:kind/:id', () => {
     it('should return definition, images and updatedAt with the ETag', async () => {
         const response = await adminGet('/api/entries/dramas/golden');
@@ -272,6 +293,16 @@ describe('DELETE /api/entries/:kind/:id', () => {
         await putEntry('dramas', 'later', { ...drama(2), name: '後加' });
         expect((await adminRequest('DELETE', '/api/entries/dramas/later')).status).toBe(204);
         expect((await adminRequest('DELETE', '/api/entries/dramas/nope')).status).toBe(404);
+    });
+
+    it('should refuse to delete a show when the latest document cannot be read (S-844)', async () => {
+        await env.DB.prepare(
+            `INSERT INTO publishes (created_at, created_by, hash, document, episode_ids, show_count,
+             drama_count, episode_count) VALUES ('2026-11-12T00:00:00Z', 'x', 'h', 'not json', '[]', 0, 0, 0)`,
+        ).run();
+        expect((await adminRequest('DELETE', '/api/entries/shows/badgirl')).status).toBe(409);
+        // 列表照開到（壞咗嗰份唔計）
+        expect((await adminGet('/api/entries')).status).toBe(200);
     });
 
     it('should answer 412 for a stale If-Match', async () => {

@@ -103,6 +103,32 @@ export const latestPublish = async (db: D1Database): Promise<LatestPublish | nul
     return { row: summary, episodeIds: JSON.parse(ids) as string[], document };
 };
 
+/** 最新 ok publish 嘅鎖住 episode ID（唔讀 document；未 publish 過 → []） */
+export const latestEpisodeIds = async (db: D1Database): Promise<string[]> => {
+    const ids = await db
+        .prepare(`SELECT episode_ids FROM publishes WHERE status = 'ok' ORDER BY id DESC LIMIT 1`)
+        .first<string>('episode_ids');
+    return ids === null ? [] : (JSON.parse(ids) as string[]);
+};
+
+/**
+ * 任何一次 ok publish 入面上過架（enabled 唔係 false）嘅節目 ID（W-716）：一條 query，
+ * json_each 掃晒 ok publish 嘅 document.shows；JSON 唔合格嗰份（json_valid）跳過
+ */
+export const everListedShowIds = async (db: D1Database): Promise<Set<string>> =>
+    new Set(
+        (
+            await db
+                .prepare(
+                    `SELECT DISTINCT json_extract(s.value, '$.id') AS id
+                     FROM publishes AS p, json_each(p.document, '$.shows') AS s
+                     WHERE p.status = 'ok' AND json_valid(p.document)
+                       AND coalesce(json_extract(s.value, '$.definition.enabled'), 1) != 0`,
+                )
+                .all<{ id: unknown }>()
+        ).results.flatMap((row) => (typeof row.id === 'string' ? [row.id] : [])),
+    );
+
 /** R2 寫失敗時收返啱啱 insert 嗰行（S-767） */
 export const deletePublish = async (db: D1Database, id: number): Promise<void> => {
     await db.prepare('DELETE FROM publishes WHERE id = ?').bind(id).run();

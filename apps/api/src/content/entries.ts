@@ -11,6 +11,8 @@ import {
     deleteEntry,
     getEntry,
     insertEntryStatement,
+    everListedShowIds,
+    latestEpisodeIds,
     latestPublish,
     listAssetHashes,
     listScheduledArcIds,
@@ -20,7 +22,7 @@ import {
     type StoredEntry,
 } from '../catalog/store';
 import { etagOf, expectedVersion, ifMatches, nextUpdatedAt } from './etag';
-import { isInIndex, publishedIndexOf, type PublishedIndex } from './published';
+import { documentShowIds, dramasOf, isInIndex, type PublishedIndex } from './published';
 import {
     badTarget,
     errorResponse,
@@ -41,7 +43,7 @@ const publishedArcsOf = (definition: Json, published: ReadonlySet<string> | unde
         : {};
 
 /**
- * published / publishedArcs：最新 ok publish 有冇上過架（admin「未上架」vs「已下架」）；
+ * published / publishedArcs：有冇上過架（admin「未上架」vs「已下架」；劇 / 短篇睇最新 ok publish 嘅鎖住集數，節目睇任何一次 ok publish，見 published.ts）；
  * 舊 client 唔睇呢兩個欄位，照用
  */
 const summaryOf = (row: StoredEntry, index: PublishedIndex) => {
@@ -60,11 +62,12 @@ const summaryOf = (row: StoredEntry, index: PublishedIndex) => {
 };
 
 entryRoutes.get('/entries', async (c) => {
-    const [rows, latest] = await Promise.all([
+    const [rows, episodeIds, shows] = await Promise.all([
         listStoredEntries(c.env.DB),
-        latestPublish(c.env.DB),
+        latestEpisodeIds(c.env.DB),
+        everListedShowIds(c.env.DB),
     ]);
-    const index = publishedIndexOf(latest);
+    const index = { shows, dramas: dramasOf(episodeIds) };
     return c.json({ entries: rows.map((row) => summaryOf(row, index)) });
 });
 
@@ -237,8 +240,13 @@ entryRoutes.put('/entries/:kind/:id', async (c) => {
 });
 
 /** 最新 publish 有冇用緊：劇集睇 episode ID，節目睇 document 有冇佢 */
-const isPublished = async (db: D1Database, kind: EntryInput['kind'], id: string) =>
-    isInIndex(publishedIndexOf(await latestPublish(db)), kind, id);
+const isPublished = async (db: D1Database, kind: EntryInput['kind'], id: string) => {
+    const latest = await latestPublish(db);
+    if (!latest) return false;
+    if (kind === 'dramas') return dramasOf(latest.episodeIds).has(id);
+    // document 讀唔到就當用緊（拒絕刪除，S-844）
+    return documentShowIds(latest.document)?.has(id) ?? true;
+};
 
 entryRoutes.delete('/entries/:kind/:id', async (c) => {
     const target = targetOf(c);
