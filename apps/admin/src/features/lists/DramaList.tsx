@@ -5,7 +5,12 @@
 import { useState } from 'react';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
-import { changeFlagsOf, groupEntries, type ChangeFlags } from '../../model/listModel';
+import {
+    changeFlagsOf,
+    groupEntries,
+    unlistedLabelOf,
+    type ChangeFlags,
+} from '../../model/listModel';
 import type { LoadedEntry } from '../../api/types';
 import { DramaRow } from './DramaRow';
 import { legendOf } from './legendModel';
@@ -68,7 +73,7 @@ export function DramaList() {
                     flags={flags}
                 />
                 <LockedSection
-                    label={t('list.unlisted', { count: groups.unlisted.length })}
+                    label={unlistedLabelOf(groups.unlisted)}
                     entries={groups.unlisted}
                     flags={flags}
                 />

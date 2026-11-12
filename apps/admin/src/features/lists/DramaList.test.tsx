@@ -125,4 +125,50 @@ describe('DramaList', () => {
         const collapse = screen.getByRole('button', { name: '收起' });
         expect(hasIcon(collapse, 'chevron-up')).toBe(true);
     });
+
+    it('should show 未上架 for never-published arcs and keep 已下架 for published ones', () => {
+        const mixed: LoadedEntry = {
+            ...drama,
+            definition: {
+                ...drama.definition,
+                arcs: [
+                    ...[1, 2, 3, 4].map((n) => ({ id: `a${n}`, name: `短篇${n}`, episodes: 3 })),
+                    { id: 'fantasy', name: '森美幻想劇', episodes: 5, enabled: false },
+                    { id: 'old', name: '舊短篇', episodes: 5, enabled: false },
+                ],
+            },
+            published: true,
+            publishedArcs: ['a1', 'a2', 'a3', 'a4', 'old'],
+        };
+        renderAt('/dramas', '/dramas', <DramaList />, fakeData({ entries: resource([mixed]) }));
+        const row = screen.getByRole('link', { name: '森美幻想劇' }).closest('li');
+        expect(row).not.toBeNull();
+        const fantasy = within(row as HTMLElement);
+        const unlisted = fantasy.getByText('未上架', { selector: '.pill' });
+        expect(unlisted).toHaveClass('unlisted');
+        expect(fantasy.getByText('已下架', { selector: '.pill' })).toHaveClass('bad');
+        // 收埋嘅淨係已上架嗰啲，摘要字眼照舊
+        expect(fantasy.getByText('其餘 4 個已上架')).toBeInTheDocument();
+    });
+
+    it('should grey out a never-published disabled drama and label its section 未上架 / 已下架', () => {
+        const fresh: LoadedEntry = {
+            ...drama,
+            id: 'fresh',
+            definition: { ...drama.definition, name: '新劇', enabled: false },
+            published: false,
+            publishedArcs: [],
+        };
+        const { container } = renderAt(
+            '/dramas',
+            '/dramas',
+            <DramaList />,
+            fakeData({ entries: resource([drama, fresh]) }),
+        );
+        expect(container.querySelector('.thumb.st-unlisted')).not.toBeNull();
+        expect(screen.getByText(/^未上架 \/ 已下架（1）/)).toHaveClass('section-divider');
+        const legend = within(screen.getByRole('group', { name: '圖例' }));
+        expect(legend.getByText('未上架')).toBeInTheDocument();
+        expect(legend.queryByText('已下架')).not.toBeInTheDocument();
+    });
 });

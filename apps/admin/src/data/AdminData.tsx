@@ -20,8 +20,15 @@ export interface AdminData {
 
 export const AdminDataContext = createContext<AdminData | null>(null);
 
+/** 列表嘅 published / publishedArcs（成個列表一次計）併入每個 entry */
 export const loadAllEntries = async (): Promise<LoadedEntry[]> =>
-    Promise.all((await listEntries()).map((e) => getEntry(e.kind, e.id)));
+    Promise.all(
+        (await listEntries()).map(async (e) => ({
+            ...(await getEntry(e.kind, e.id)),
+            published: e.published,
+            publishedArcs: e.publishedArcs,
+        })),
+    );
 
 export function AdminDataProvider({ children }: { children: ReactNode }) {
     const todos = useResource(getTodos, false);

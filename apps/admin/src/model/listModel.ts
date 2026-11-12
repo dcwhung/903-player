@@ -1,6 +1,7 @@
 /* 內容列表：上架（可拖）/ 未上架（draft）/ 已下架（固定排最底）分組 + 待發佈標記 */
 import { compareOrderThenId, type ChangeSummary } from '@903-player/catalog';
 import type { LoadedEntry } from '../api/types';
+import { t } from '../i18n/t';
 
 export type CatalogItem = LoadedEntry;
 
@@ -28,6 +29,12 @@ const byOrder = (a: CatalogItem, b: CatalogItem) =>
             order: typeof b.definition.order === 'number' ? b.definition.order : undefined,
         },
     );
+
+/** 「已下架」分組分隔線：入面有從未上過架嘅（未上架）就寫「未上架 / 已下架」 */
+export const unlistedLabelOf = (entries: readonly CatalogItem[]): string =>
+    t(entries.some((e) => e.published === false) ? 'list.unlistedOrNever' : 'list.unlisted', {
+        count: entries.length,
+    });
 
 export const groupEntries = (entries: readonly CatalogItem[]): EntryGroups => {
     const sorted = [...entries].sort(byOrder);

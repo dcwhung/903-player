@@ -4,6 +4,7 @@
  */
 import { t } from '../../i18n/t';
 import { nameOf } from '../../model/raw';
+import { showStatusOf } from '../../model/status';
 import { Pill } from '../../ui/Pill';
 import { SaveBar } from '../../ui/SaveBar';
 import { useParams } from 'react-router-dom';
@@ -23,17 +24,21 @@ export function ShowEditorPage() {
     return <ShowEditor key={id ?? 'new'} id={id} />;
 }
 
-function ShowStatusPill({ off }: { off: boolean }) {
+/** 標題旁狀態 pill：跟住草稿嘅上架 toggle（新節目唔出） */
+function ShowStatusPill({ show }: { show: ReturnType<typeof useShowEditor> }) {
+    const definition = show.editor.draft?.definition;
+    if (show.isNew || !definition) return null;
+    const status = showStatusOf(definition, show.published);
     return (
-        <Pill tone={off ? 'bad' : 'ok'} dot>
-            {off ? t('status.off') : t('status.showLive')}
+        <Pill tone={status.tone} dot>
+            {status.text}
         </Pill>
     );
 }
 
 function ShowEditor({ id }: { id: string | undefined }) {
-    const { isNew, editor, newId, setNewId, origin, save, neverPublished, saveImage, rename } =
-        useShowEditor(id);
+    const show = useShowEditor(id);
+    const { isNew, editor, newId, setNewId, origin, save, neverPublished } = show;
     const { draft, entry, status } = editor;
     if (editor.loadError) return <p className="note bad">{t('editor.notFound')}</p>;
     if (!draft) return <p className="muted">{t('app.loading')}</p>;
@@ -45,8 +50,8 @@ function ShowEditor({ id }: { id: string | undefined }) {
                 listLabel={t('list.shows')}
                 name={name}
                 flow={origin.flow}
-                onRename={isNew ? undefined : rename}
-                pills={!isNew && <ShowStatusPill off={draft.definition.enabled === false} />}
+                onRename={isNew ? undefined : show.rename}
+                pills={<ShowStatusPill show={show} />}
                 disc={savedDiscOf(entry)}
             />
             <EditorNotices
@@ -58,7 +63,7 @@ function ShowEditor({ id }: { id: string | undefined }) {
                 <MediaAside
                     target={draft.definition}
                     images={draft.images}
-                    onUploaded={saveImage}
+                    onUploaded={show.saveImage}
                 />
                 <div className="form">
                     <ShowFields

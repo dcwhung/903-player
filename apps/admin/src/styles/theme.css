@@ -1988,3 +1988,17 @@ table.date-grid button[aria-disabled='true'] {
         transform: translateY(var(--date-pop-shift, -4px));
     }
 }
+
+/* 未上架（從未發佈、下架）：灰色中性，同紅色「已下架」分開；狀態 pill 冇 hover 效果 */
+.pill.unlisted {
+    background: var(--surface-2);
+    color: var(--muted);
+}
+
+.thumb.st-unlisted::after {
+    background: var(--muted);
+}
+
+.legend .dot.unlisted {
+    background: var(--muted);
+}

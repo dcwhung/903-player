@@ -23,4 +23,11 @@ describe('collapseArcs', () => {
         const lines = [line('a'), line('b'), line('c', 'bad'), line('d'), line('e', 'info')];
         expect(collapseArcs(lines).shown.map((l) => l.key)).toEqual(['c', 'e']);
     });
+
+    it('should never hide 未上架 arcs behind the 其餘 N 個已上架 summary', () => {
+        const lines = [line('a'), line('b'), line('c'), line('d', 'unlisted'), line('e', 'bad')];
+        const result = collapseArcs(lines);
+        expect(result.shown.map((l) => l.key)).toEqual(['d', 'e']);
+        expect(result.hidden).toBe(3);
+    });
 });
