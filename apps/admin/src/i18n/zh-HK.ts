@@ -410,7 +410,7 @@ export const zhHK = {
         summaryCount: '共 {count} 批',
         summaryList: '{range}上架',
         summaryUnlist: '{range}下架',
-        summarySeparator: '・',
+        summarySeparator: ' · ',
         viewTimeline: '時間軸',
         viewList: '列表',
         colDate: '日期',

@@ -221,8 +221,8 @@ describe('ScheduleTab — 預覽 titles (用戶 2026-11-12 方案 A)', () => {
         await userEvent.click(screen.getByRole('tab', { name: '預覽' }));
         const title = screen.getByRole('heading', { level: 3, name: '上下架批次' });
         // 一次性改每週 1 次（逢二）由 1/12 起每次 1 集：第 16–30 集 15 批；冇下架
-        expect(title.parentElement).toHaveTextContent('共 15 批・第 16–30 集上架');
-        expect(screen.getByText('共 15 批・第 16–30 集上架')).toHaveClass('muted');
+        expect(title.parentElement).toHaveTextContent('共 15 批 · 第 16–30 集上架');
+        expect(screen.getByText('共 15 批 · 第 16–30 集上架')).toHaveClass('muted');
         const timeline = screen.getByRole('heading', { level: 4, name: '時間軸' });
         const list = screen.getByRole('heading', { level: 4, name: '列表' });
         expect(hasIcon(timeline, 'chart-no-axes-gantt')).toBe(true);

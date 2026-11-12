@@ -186,7 +186,7 @@ const nosOf = (ranges: readonly EpisodeSpan[]): number[] =>
     ].sort((a, b) => a - b);
 
 /**
- * 預覽標題旁邊嘅摘要（用戶 2026-11-12 方案 A）：「共 N 批・第 a–b 集上架・第 c–d 集下架」；
+ * 預覽標題旁邊嘅摘要（用戶 2026-11-12 方案 A；分隔符號同檢視列統一用「 · 」）：「共 N 批 · 第 a–b 集上架 · 第 c–d 集下架」；
  * N = 有上架 / 下架嘅日子（唔計插入嘅今日），冇嘅部分唔寫，唔連續就「第 1–3 集、第 5–6 集」
  */
 export const previewSummary = (days: readonly PreviewDay[]): string => {

@@ -411,7 +411,7 @@ const schedulePreviewCheck = (browser) =>
         await page.getByRole('tab', { name: '預覽' }).click();
         if (await page.getByRole('heading', { name: '上架' }).isVisible())
             throw new Error('edit panels still shown in 預覽');
-        await assertPreviewTitles(page, /^共 \d+ 批・第 16–37 集上架・第 1–37 集下架$/);
+        await assertPreviewTitles(page, /^共 \d+ 批 · 第 16–37 集上架 · 第 1–37 集下架$/);
         // 今日 12/11 喺第一個上架日（15/11）之前：時間軸最前一格「今日」、批次表第一行今日
         const todayCell = page.locator('.strip.preview > .day-group').first();
         if (!(await todayCell.evaluate((el) => el.classList.contains('today-cell'))))
@@ -461,7 +461,7 @@ const schedulePreviewListingOnlyCheck = (browser) =>
         const page = await newPage(browser, scheduleState());
         await page.goto(SCHEDULE_PARTLY);
         await page.getByRole('tab', { name: '預覽' }).click();
-        await assertPreviewTitles(page, /^共 5 批・第 16–37 集上架$/);
+        await assertPreviewTitles(page, /^共 5 批 · 第 16–37 集上架$/);
         await page.waitForTimeout(PILL_SETTLE_MS);
         await shoot(page, 'schedule-preview-listing-only', { fullPage: true });
         await page.close();
