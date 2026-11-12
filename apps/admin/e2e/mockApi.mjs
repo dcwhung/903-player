@@ -72,8 +72,23 @@ const lancy = () => ({
         addedAt: '2026-10-27',
         audio: { host: 'r2', folder: '蘭茜夫人劇場', file: '{no2} - {arc}.m4a' },
         arcs: [
-            { id: 'half', name: '戀愛二分一', episodes: 30 },
-            { id: 'lancy-02', name: '我心不死', episodes: 37, addedAt: '2026-11-01' },
+            // 全部已上架（跟劇集 27/10），已排程 30 日後全部下架（只設下架，見 schedulesOf）
+            {
+                id: 'half',
+                name: '戀愛二分一',
+                episodes: 30,
+                episodeRemovedAt: { '1-30': daysFromToday(30) },
+            },
+            // 由 18 日前起每 7 日上架 5 集：第 1–15 集已上架，第 16 集起 3 日後先上架（排程 ⑧）
+            {
+                id: 'lancy-02',
+                name: '我心不死',
+                episodes: 37,
+                addedAt: daysFromToday(-18),
+                episodeDates: Object.fromEntries(
+                    [6, 11, 16, 21, 26, 31, 36].map((no, i) => [no, daysFromToday(-11 + i * 7)]),
+                ),
+            },
             // 掃描建嘅新短篇：addedAt = 掃描當日、下架、冇排程（排程 tab 要出「未上架」，唔係灰 ✓）
             {
                 id: 'love-after',
@@ -98,50 +113,27 @@ const golden = () => ({
         enabled: true,
         order: 2,
         addedAt: '2026-10-01',
-        arcs: [
-            // 全部已上架（跟劇集 1/10），已排程 30 日後全部下架（只設下架，見 schedulesOf）
-            {
-                id: 's1',
-                name: 'Season 1',
-                episodes: 35,
-                episodeRemovedAt: { '1-35': daysFromToday(30) },
-            },
-            // 由 21 日前起每 7 日上架 5 集：第 1–15 集已上架，第 16 集起 7 日後先上架（mockup ⑧）
-            {
-                id: 's2',
-                name: 'Season 2',
-                episodes: 30,
-                addedAt: daysFromToday(-21),
-                episodeDates: {
-                    6: daysFromToday(-14),
-                    11: daysFromToday(-7),
-                    16: daysFromToday(7),
-                    21: daysFromToday(14),
-                    26: daysFromToday(21),
-                },
-            },
-        ],
+        arcs: [{ id: 's1', name: 'Season 1', episodes: 35 }],
     },
     images: {},
     draft: false,
     updatedAt: 'golden-v1',
 });
 
-/** D1 schedules：同 golden 嘅 definition 對得上（排程 tab 短篇 chip 跟呢度計「已上 15 / 30 集」等） */
+/** D1 schedules：同蘭茜夫人劇場嘅 definition 對得上（排程 tab 短篇 chip 跟呢度計「已上 15 / 37 集」等） */
 const schedulesOf = () => ({
-    'golden/s1': {
+    'lancy/half': {
         kind: 'dates',
-        batches: [{ from: 1, date: '2026-10-01' }],
+        batches: [{ from: 1, date: '2026-10-27' }],
         unlist: { kind: 'date', date: daysFromToday(30) },
     },
-    'golden/s2': {
+    'lancy/lancy-02': {
         kind: 'periodic',
-        start: daysFromToday(-21),
+        start: daysFromToday(-18),
         perRelease: 5,
         every: { days: 7 },
     },
 });
-
 
 /*
  * createState({ missingFolder: true })：「黃金少年」嘅 R2 資料夾改咗名（掃描搵唔到「黃金少年/」），

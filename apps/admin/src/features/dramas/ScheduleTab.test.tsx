@@ -152,12 +152,13 @@ describe('ScheduleTab — icons', () => {
         await open('half');
         // 改一改先出「復原」
         await userEvent.click(screen.getByRole('button', { name: '指定日全部' }));
-        for (const name of ['編輯', '預覽', '復原', '刪除', '儲存']) {
+        // 刪除：掣面「刪除」，讀屏名「刪除排程」（main 0.6.3 做法）
+        for (const name of ['編輯', '預覽', '復原', '刪除排程', '儲存']) {
             const icon = screen.getByRole('button', { name }).querySelector('svg.lucide');
             expect(icon).not.toBeNull();
             expect(icon).toHaveAttribute('aria-hidden', 'true');
         }
-        expect(screen.queryByRole('button', { name: '刪除排程' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '刪除排程' })).toHaveTextContent(/^刪除$/);
     });
 });
 

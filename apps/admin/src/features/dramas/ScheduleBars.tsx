@@ -63,6 +63,7 @@ export function ScheduleSaveBar(props: ScheduleSaveBarProps) {
                     <button
                         type="button"
                         className="ghost-danger"
+                        aria-label={t('schedule.deleteScheduleLabel')}
                         disabled={props.saving}
                         onClick={props.onDelete}
                     >

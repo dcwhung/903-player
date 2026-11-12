@@ -273,8 +273,10 @@ const showListCheck = (browser) =>
         await page.close();
     });
 
-const SCHEDULE_PARTLY = `${BASE}/dramas/golden/schedule#s2`;
-const SCHEDULE_ALL_LISTED = `${BASE}/dramas/golden/schedule#s1`;
+const SCHEDULE_PARTLY = `${BASE}/dramas/lancy/schedule#lancy-02`;
+const SCHEDULE_ALL_LISTED = `${BASE}/dramas/lancy/schedule#half`;
+/** 真封面（e2e/fixtures）：排程截圖有碟面 */
+const scheduleState = () => loggedIn({ realImages: true });
 
 /** 兩個 panel 嘅左上角：並排 = 同一行、上下排 = 同一列 */
 const panelBoxes = async (page) =>
@@ -290,11 +292,11 @@ const scheduleEditCheck = (browser) =>
     check(
         'schedule 編輯 (mockup ⑧): 上架 / 下架 panels side by side, stacked under 900px',
         async () => {
-            const page = await newPage(browser, loggedIn());
+            const page = await newPage(browser, scheduleState());
             await page.goto(SCHEDULE_PARTLY);
-            await page.getByText('可上架：第 16–30 集（共 15 集）').waitFor();
+            await page.getByText('可上架：第 16–37 集（共 22 集）').waitFor();
             await page
-                .getByText('可下架：第 1–15 集（已上架）· 第 16–30 集（已排程上架）')
+                .getByText('可下架：第 1–15 集（已上架）· 第 16–37 集（已排程上架）')
                 .waitFor();
             if (
                 (await page
@@ -335,7 +337,7 @@ const scheduleEditCheck = (browser) =>
 
 const schedulePreviewCheck = (browser) =>
     check('schedule 預覽 (mockup ⑨): merged timeline, 上下架批次 table, cell tooltip', async () => {
-        const page = await newPage(browser, loggedIn());
+        const page = await newPage(browser, scheduleState());
         await page.goto(SCHEDULE_PARTLY);
         await page.getByRole('button', { name: '每週 1 次' }).click();
         await page.getByRole('spinbutton', { name: '每次上架集數' }).fill('5');
@@ -360,18 +362,18 @@ const schedulePreviewCheck = (browser) =>
 
 const scheduleChipCheck = (browser) =>
     check(
-        'schedule: arc chips follow the saved schedules (已全部上架 / 已上 15 / 30 集)',
+        'schedule: arc chips follow the saved schedules (已全部上架 / 已上 15 / 37 集)',
         async () => {
-            const page = await newPage(browser, loggedIn());
+            const page = await newPage(browser, scheduleState());
             await page.goto(SCHEDULE_PARTLY);
             const note = (name) =>
                 page.getByRole('tab', { name: new RegExp(name) }).locator('small');
-            await page.getByRole('tab', { name: /Season 2/ }).waitFor();
+            await page.getByRole('tab', { name: /我心不死/ }).waitFor();
             const notes = [
-                await note('Season 1').textContent(),
-                await note('Season 2').textContent(),
+                await note('^戀愛二分一').textContent(),
+                await note('我心不死').textContent(),
             ];
-            if (notes.join() !== '已全部上架,已上 15 / 30 集') throw new Error(`chips: ${notes}`);
+            if (notes.join() !== '已全部上架,已上 15 / 37 集') throw new Error(`chips: ${notes}`);
             // 已存嘅規則讀返入句子：由下一批起逢 X、每次 5 集
             if ((await page.getByRole('spinbutton', { name: '每次上架集數' }).inputValue()) !== '5')
                 throw new Error('saved rule not read into the sentence');
@@ -380,33 +382,13 @@ const scheduleChipCheck = (browser) =>
         },
     );
 
-/** 前景 / 背景對比（背景透明就搵上層）；WCAG 相對亮度 */
-const contrastOf = (locator) =>
-    locator.evaluate((el) => {
-        const rgb = (value) => value.match(/[\d.]+/g).map(Number);
-        const background = (node) => {
-            for (let n = node; n; n = n.parentElement) {
-                const [r, g, b, a = 1] = rgb(getComputedStyle(n).backgroundColor);
-                if (a > 0) return [r, g, b];
-            }
-            return [255, 255, 255];
-        };
-        const lum = ([r, g, b]) =>
-            [r, g, b]
-                .map((c) => c / 255)
-                .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
-                .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
-        const [fg, bg] = [lum(rgb(getComputedStyle(el).color)), lum(background(el))];
-        return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
-    });
-
 const MIN_CONTRAST = 3;
 
 const scheduleContrastCheck = (browser) =>
     check(
         'schedule chips / segmented: text ≥ 3:1 selected, hovered or not (light + dark)',
         async () => {
-            const page = await newPage(browser, loggedIn());
+            const page = await newPage(browser, scheduleState());
             await page.goto(SCHEDULE_PARTLY);
             await page.getByRole('button', { name: '每日 1 集' }).click();
             await page.getByRole('button', { name: '指定日全部' }).click();
@@ -439,9 +421,9 @@ const scheduleContrastCheck = (browser) =>
 
 const scheduleAllListedCheck = (browser) =>
     check('schedule: every episode listed → only 下架 can be set', async () => {
-        const page = await newPage(browser, loggedIn());
+        const page = await newPage(browser, scheduleState());
         await page.goto(SCHEDULE_ALL_LISTED);
-        await page.getByText('✓ 已全部上架（1/10 四 · 第 1–35 集）').waitFor();
+        await page.getByText('✓ 已全部上架（27/10 二 · 第 1–30 集）').waitFor();
         if (await page.getByRole('group', { name: '快速套用' }).isVisible())
             throw new Error('presets shown for an arc already listed');
         if ((await page.getByText(/每次上架/).count()) > 0)
@@ -455,7 +437,7 @@ const scheduleAllListedCheck = (browser) =>
 
 const scheduleConflictCheck = (browser) =>
     check('schedule: an unlist date not after listing pops an error only on 儲存', async () => {
-        const page = await newPage(browser, loggedIn());
+        const page = await newPage(browser, scheduleState());
         await page.goto(SCHEDULE_ALL_LISTED);
         await page.getByRole('button', { name: '指定日全部' }).click();
         await page.getByLabel('下架日期').fill('2026-09-01');
@@ -467,7 +449,7 @@ const scheduleConflictCheck = (browser) =>
         const text = await alert.textContent();
         if (
             text !==
-            '無法儲存：第 1 集的下架日期（1/9 二）必須遲於其上架日期（1/10 四），請修改下架設定。'
+            '無法儲存：第 1 集的下架日期（1/9 二）必須遲於其上架日期（27/10 二），請修改下架設定。'
         )
             throw new Error(`alert: ${text}`);
         await shoot(page, 'schedule-conflict', { fullPage: true });
@@ -481,8 +463,9 @@ const scheduleConflictCheck = (browser) =>
 const presetChipCheck = (browser) =>
     check('schedule chips: pressed (hovered) and disabled chips stay readable', async () => {
         const page = await newPage(browser, loggedIn());
-        await page.goto(`${BASE}/dramas/lancy/schedule#lancy-02`);
-        const mwf = page.getByRole('button', { name: '逢一三五 · 每次 5 集' });
+        await page.goto(SCHEDULE_PARTLY);
+        // 「逢一三五」已刪（只剩 3 粒）：用「每日 1 集」做揀咗嘅 chip
+        const mwf = page.getByRole('button', { name: '每日 1 集' });
         await mwf.click();
         if ((await mwf.getAttribute('aria-pressed')) !== 'true')
             throw new Error('preset not pressed');
@@ -504,7 +487,7 @@ const presetChipCheck = (browser) =>
         });
         await page.mouse.move(0, 0);
         await assertContrast(page, mwf, 3, 'disabled pressed preset');
-        const daily = page.getByRole('button', { name: '每日 1 集' });
+        const daily = page.getByRole('button', { name: '每週 1 次' });
         await daily.evaluate((el) => {
             el.disabled = true;
         });
