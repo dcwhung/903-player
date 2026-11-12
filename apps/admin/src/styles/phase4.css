@@ -464,3 +464,56 @@
             background var(--motion-fast) var(--motion-ease);
     }
 }
+
+/* ---------- 首頁 Banner 頁（#e）：狀態 pill + 還原預設 + 更換 Banner；窄版 / 闊版兩個 slot ---------- */
+.banner-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.banner-head .pill {
+    margin-right: auto;
+}
+
+.banner-media {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 28px;
+}
+
+.img-slot.banner-std {
+    width: 340px;
+    height: calc(340px * 517 / 1200);
+    border-radius: 12px;
+}
+
+.img-slot.banner-long {
+    width: 340px;
+    height: calc(340px * 400 / 2000);
+    border-radius: 10px;
+}
+
+.img-slot.banner-std .slot-btn,
+.img-slot.banner-long .slot-btn {
+    right: -10px;
+    bottom: -10px;
+}
+
+@media (max-width: 420px) {
+    .img-slot.banner-std,
+    .img-slot.banner-long {
+        width: 280px;
+    }
+
+    .img-slot.banner-std {
+        height: calc(280px * 517 / 1200);
+    }
+
+    .img-slot.banner-long {
+        height: calc(280px * 400 / 2000);
+    }
+}

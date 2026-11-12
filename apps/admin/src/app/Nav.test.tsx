@@ -27,6 +27,7 @@ describe('Nav v4', () => {
             '更新3',
             '節目',
             '廣播劇',
+            '首頁 Banner',
             '上下架記錄',
         ]);
         expect(following(nav.getByText('內容'), links[0] as Element)).toBe(true);
