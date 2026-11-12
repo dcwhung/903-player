@@ -110,15 +110,14 @@ const MOCKED_ORIGINS = new Set([
 /** runtime catalog.json 同佢嘅圖（vite.config.ts E2E_CATALOG_URL 嘅 folder，同 origin） */
 export const E2E_CATALOG_GLOB = '**/e2e-catalog/**';
 /**
- * 預設 catalog.json 答 404（app fallback 內建資料）。SW 自己發嘅 request（NetworkFirst）唔可以 fulfill：
- * Playwright fulfill SW request 會令 Chromium 重複裝同一版 SW（PWA 換版 e2e 多 reload 一次），真機冇呢個情況。
- * 以前交返本機 preview server，但佢係 SPA：冇呢個檔都答 200 + index.html，入咗 SW 嘅 catalog-json cache（S-765）；
- * 而家 abort（同離線一樣）：NetworkFirst 冇 cache 就失敗，page 照 fallback 內建資料，cache 唔會有嘢
+ * 預設 catalog.json 答 404（app fallback 內建資料）。SW 自己發嘅 request（NetworkFirst）一定要原封不動交返本機 server：
+ * Playwright 改過嘅 SW request（fulfill、abort、fallback 改 header 都試過）會令 Chromium 重複裝同一版 SW，
+ * PWA 換版 e2e（Shift-reload，S-648）多 reload 一次，真機冇呢個情況。
+ * 已知副作用（S-765，未修）：vite preview 係 SPA，冇呢個檔都答 200 + index.html，會入 SW 嘅 catalog-json cache；
+ * app parse 唔到照 fallback 內建資料，冇影響。要修就要喺 harness 以外（例如 e2e build 嘅 preview 唔做 SPA fallback）
  */
 const catalogNotFound = (route) =>
-    route.request().serviceWorker()
-        ? route.abort('blockedbyclient')
-        : route.fulfill({ status: 404, body: '' });
+    route.request().serviceWorker() ? route.fallback() : route.fulfill({ status: 404, body: '' });
 /** 冇 section 自己 route 嘅 mock origin：一律 404 */
 const notFound = (route) => route.fulfill({ status: 404, body: '' });
 
