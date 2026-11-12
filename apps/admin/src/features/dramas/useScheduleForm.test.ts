@@ -5,6 +5,16 @@ import { validationMessage } from '../editor/validationMessage';
 import type { ScheduleContext } from './scheduleModel';
 import { saveProblemOf, useScheduleForm } from './useScheduleForm';
 
+/** shortDate 跨年會加年份（S-830）：固定「今日」喺 2026，唔跟真實時鐘 */
+beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-12T04:00:00Z'));
+});
+
+afterEach(() => {
+    vi.useRealTimers();
+});
+
 /** review W-715 重現：第 1–10 集 1/6 上架，今日 12/11，「上架 N 日後」預設 90 日 → 30/8 已過 */
 const CTX: ScheduleContext = {
     firstNo: 1,

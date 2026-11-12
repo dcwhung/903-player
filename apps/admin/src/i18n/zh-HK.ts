@@ -469,6 +469,7 @@ export const zhHK = {
     },
     dates: {
         short: '{day}/{month} {weekday}',
+        shortYear: '{day}/{month}/{year} {weekday}',
         dayMonth: '{day}/{month}',
         dayMonthYear: '{day}/{month}/{year}',
         long: '{month} 月 {day} 日',

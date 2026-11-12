@@ -1,6 +1,16 @@
 import { render, screen, within } from '@testing-library/react';
 import { BatchTable } from './BatchTable';
 
+/** shortDate 跨年會加年份（S-830）：固定「今日」喺 2026，唔跟真實時鐘 */
+beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-12T04:00:00Z'));
+});
+
+afterEach(() => {
+    vi.useRealTimers();
+});
+
 describe('BatchTable', () => {
     it('should list each day with the episodes listed and unlisted as pills (mockup ⑨)', () => {
         render(
