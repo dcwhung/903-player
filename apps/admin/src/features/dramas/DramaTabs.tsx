@@ -4,6 +4,7 @@
  */
 import { Link, useLocation } from 'react-router-dom';
 import { t } from '../../i18n/t';
+import { dramaEditorPath } from '../../model/paths';
 
 export type DramaTab = 'basic' | 'arcs' | 'schedule';
 
@@ -34,7 +35,7 @@ export function DramaTabs({ id, tab, arcCount, arc = '' }: DramaTabsProps) {
             {(Object.keys(SUFFIX) as DramaTab[]).map((key) => (
                 <Link
                     key={key}
-                    to={`/dramas/${id}${SUFFIX[key]}${search}${hashOf(key)}`}
+                    to={`${dramaEditorPath(id)}${SUFFIX[key]}${search}${hashOf(key)}`}
                     aria-current={key === tab ? 'page' : undefined}
                 >
                     {labels[key]}

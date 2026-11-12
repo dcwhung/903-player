@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { LoadedEntry } from '../../api/types';
 import { t } from '../../i18n/t';
 import type { ChangeFlags } from '../../model/listModel';
+import { dramaEditorPath } from '../../model/paths';
 import { isDaily, totalEpisodes } from '../../model/raw';
 import type { SortableRender } from '../../ui/SortableList';
 import { ArcCells } from './ArcCells';
@@ -34,7 +35,7 @@ export function DramaRow({ entry, flags, sortable, disabled = false }: DramaRowP
             ref={sortable?.setNodeRef}
             style={sortable?.style}
             className={classes.filter(Boolean).join(' ')}
-            onClick={rowClickTo(() => navigate(`/dramas/${entry.id}`))}
+            onClick={rowClickTo(() => navigate(dramaEditorPath(entry.id)))}
         >
             {sortable ? sortable.handle : <LockedHandle />}
             <EntryName entry={entry} flags={flags} meta={meta} />
