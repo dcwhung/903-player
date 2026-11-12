@@ -89,6 +89,8 @@
     --motion-base: 200ms;
     /* nav 收合 / 展開時掣滑去新位置（FLIP） */
     --motion-move: 220ms;
+    /* 「編輯｜預覽」膠囊拉長：後面嗰邊遲幾耐先跟（同 player HomeTabs 拉長做法） */
+    --motion-trail: 60ms;
     --motion-ease: cubic-bezier(0.2, 0, 0, 1);
     /* 掃描 spinner 轉一個圈（循環週期，唔係過場，所以唔受 ≤ 300ms 限制） */
     --motion-spin: 800ms;

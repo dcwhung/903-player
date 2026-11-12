@@ -92,13 +92,43 @@ export const unlistScopeText = (ctx: ScheduleContext): string => {
         : t('schedule.unlistScopeNone');
 };
 
-/** 檢視列細字：「第 1–15 集已上架 · 第 16–30 集已排程上架」 */
-export const progressText = (ctx: ScheduleContext): string => {
+/** 下架時間軸入面新規則排嘅下架（已下架嘅唔計）：集數連續段 */
+const unlistSpansOf = (plan: SchedulePlan, ctx: ScheduleContext): EpisodeSpan[] =>
+    spansOf(
+        unlistTimeline(plan, ctx)
+            .planned.flatMap((r) =>
+                Array.from({ length: r.last - r.first + 1 }, (_, i) => r.first + i),
+            )
+            .sort((a, b) => a - b),
+    );
+
+/**
+ * 檢視列細字：「第 1–15 集已上架 · 第 16–30 集已排程上架 · 第 1–30 集已排程下架」；
+ * 未儲存（draft）就寫「即將排程上架（未儲存）」/「即將排程下架（未儲存）」（用戶 2026-11-12）
+ */
+export const progressText = (
+    ctx: ScheduleContext,
+    { plan = null, draft = false }: { plan?: SchedulePlan | null; draft?: boolean } = {},
+): string => {
     const listed = spansOf(listedNos(ctx));
     const planned = plannedSpan(ctx);
+    const unlist = plan ? unlistSpansOf(plan, ctx) : [];
     return [
         ...(listed.length > 0 ? [t('schedule.progressListed', { range: spansText(listed) })] : []),
-        ...(planned ? [t('schedule.progressPlanned', { range: rangeText(planned) })] : []),
+        ...(planned
+            ? [
+                  t(draft ? 'schedule.progressPlannedDraft' : 'schedule.progressPlanned', {
+                      range: rangeText(planned),
+                  }),
+              ]
+            : []),
+        ...(unlist.length > 0
+            ? [
+                  t(draft ? 'schedule.progressUnlistDraft' : 'schedule.progressUnlist', {
+                      range: spansText(unlist),
+                  }),
+              ]
+            : []),
     ].join(' · ');
 };
 
@@ -174,3 +204,73 @@ export const episodeTip = ({ no, listedAt, removedAt }: EpisodeSchedule): string
               removed: dayMonth(removedAt),
               days: daysBetween(listedAt, removedAt),
           });
+
+/** 時間軸 / 批次表加「今日」（用戶 2026-11-12）：撞正某格 = 嗰格 isToday；唔撞 = 按日子次序插一格 today */
+export type TodayMarked<T> =
+    { kind: 'item'; item: T; isToday: boolean } | { kind: 'today'; date: string };
+
+export const withToday = <T>(
+    items: readonly T[],
+    dateOf: (item: T) => string,
+    today: string,
+): TodayMarked<T>[] => {
+    const marked = items.map((item): TodayMarked<T> => ({
+        kind: 'item',
+        item,
+        isToday: dateOf(item) === today,
+    }));
+    if (marked.some((m) => m.kind === 'item' && m.isToday)) return marked;
+    const after = items.findIndex((item) => dateOf(item) > today);
+    const at = after === -1 ? items.length : after;
+    return [...marked.slice(0, at), { kind: 'today', date: today }, ...marked.slice(at)];
+};
+
+export type StripTone = 'listed' | 'b1' | 'b2' | 'off' | 'gone';
+
+export interface StripItem {
+    span: EpisodeSpan;
+    /** 已上架一段 = 最後一批嘅日子 */
+    date: string;
+    tone: StripTone;
+}
+
+/** 編輯模式上架時間軸：已上架一段灰格 + 每批（深淺相間）+ 今日 */
+export const listingStrip = (
+    plan: SchedulePlan,
+    ctx: ScheduleContext,
+    today: string,
+): TodayMarked<StripItem>[] => {
+    const { listed, planned } = listingTimeline(plan, ctx);
+    const last = ctx.listed.at(-1);
+    const items: StripItem[] = [
+        ...(listed && last ? [{ span: listed, date: last.date, tone: 'listed' as const }] : []),
+        ...planned.map((b, i) => ({
+            span: { first: b.first, last: b.last },
+            date: b.date,
+            tone: i % 2 === 0 ? ('b1' as const) : ('b2' as const),
+        })),
+    ];
+    return withToday(items, (item) => item.date, today);
+};
+
+/** 編輯模式下架時間軸：已下架（淡）+ 排程下架 + 今日；冇任何下架就冇時間軸 */
+export const unlistStrip = (
+    plan: SchedulePlan,
+    ctx: ScheduleContext,
+    today: string,
+): TodayMarked<StripItem>[] => {
+    const { removed, planned } = unlistTimeline(plan, ctx);
+    const items: StripItem[] = [
+        ...removed.map((r) => ({
+            span: { first: r.first, last: r.last },
+            date: r.date,
+            tone: 'gone' as const,
+        })),
+        ...planned.map((r) => ({
+            span: { first: r.first, last: r.last },
+            date: r.date,
+            tone: 'off' as const,
+        })),
+    ];
+    return items.length === 0 ? [] : withToday(items, (item) => item.date, today);
+};

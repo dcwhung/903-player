@@ -6,9 +6,9 @@
 import { t } from '../../i18n/t';
 import {
     CadenceSentence,
-    DateField,
     LISTING_LABELS,
     positive,
+    SentenceDate,
     UNLIST_LABELS,
 } from './CadenceSentence';
 import type { ListingForm, UnlistForm } from './scheduleModel';
@@ -40,7 +40,7 @@ export function ListingSentence({
     return (
         <p className="sentence">
             {t('schedule.on')}{' '}
-            <DateField
+            <SentenceDate
                 label="schedule.listAllLabel"
                 value={listing.start}
                 min={min}
@@ -82,7 +82,7 @@ export function UnlistSentence({
     return (
         <p className="sentence">
             {t('schedule.on')}{' '}
-            <DateField
+            <SentenceDate
                 label="schedule.unlistDateLabel"
                 value={unlist.date}
                 onChange={(date) => onChange({ ...unlist, date })}

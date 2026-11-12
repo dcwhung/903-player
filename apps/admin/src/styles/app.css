@@ -260,10 +260,6 @@ table.matrix th[scope='row'] {
     width: 4em;
 }
 
-.sentence input[type='date'].inline-ctl {
-    width: 10.5em;
-}
-
 .sentence .days.inline {
     margin: 0 4px;
 }

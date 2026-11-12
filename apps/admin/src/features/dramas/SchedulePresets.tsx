@@ -26,8 +26,9 @@ export function SchedulePresets({
     const current = presetOf(listing);
     return (
         <div className="presets" role="group" aria-label={t('schedule.presets')}>
-            <span className="muted small" aria-hidden="true">
-                {t('schedule.presets')}
+            {/* 「快速套用：」自己一行，chip 喺下一行（用戶 2026-11-12） */}
+            <span className="presets-label muted small" aria-hidden="true">
+                {t('schedule.presetsLabel')}
             </span>
             {PRESET_KEYS.map((key) => (
                 <button

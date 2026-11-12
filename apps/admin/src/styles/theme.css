@@ -1189,38 +1189,93 @@ textarea.autosize {
     align-items: center;
 }
 
-/* segmented：揀咗嘅白底浮起，其他透明 */
-.seg {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    width: fit-content;
-    padding: 4px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
+/*
+ * 「編輯｜預覽」tabs（用戶 2026-11-12）：同 player 主頁 tabs 一樣嘅形狀（apps/player HomeTabs）——
+ * 膠囊軌道（中性 --surface-2 + 細框）、一粒共用嘅揀中膠囊（--primary 實底，--on-primary 粗體字），未揀嘅冇底色。
+ * 唔跟 player 嘅奶油黃 / 深藍，改用 admin token（淺深色 --primary 一樣，白字 ≥ 4.5:1）
+ */
+.view-tabs {
+    --view-tab-inset: 3px;
+    position: relative;
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--view-tab-inset);
+    padding: var(--view-tab-inset);
+    border-radius: 999px;
     background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--line);
 }
 
-.seg button {
-    padding: 5px 14px;
-    border: 0;
-    border-radius: 9px;
+/* 成條軌道得一粒膠囊：用 left / right 定位（兩格一樣闊），換 tab 先可以兩邊分開郁 */
+.view-pill {
+    position: absolute;
+    top: var(--view-tab-inset);
+    bottom: var(--view-tab-inset);
+    border-radius: 999px;
+    background: var(--primary);
+    box-shadow: var(--shadow-btn);
+    pointer-events: none;
+}
+
+.view-pill[data-view='edit'] {
+    left: var(--view-tab-inset);
+    right: calc(50% + var(--view-tab-inset) / 2);
+}
+
+.view-pill[data-view='preview'] {
+    left: calc(50% + var(--view-tab-inset) / 2);
+    right: var(--view-tab-inset);
+}
+
+/* position: relative 令掣疊喺膠囊上面 */
+.view-tabs button {
+    position: relative;
+    gap: 6px;
+    padding: 5px 16px;
+    border-radius: 999px;
     background: transparent;
+    box-shadow: none;
     color: var(--muted);
     font-size: 14px;
+    font-weight: 500;
 }
 
-.seg button:hover:not(:disabled) {
-    background: var(--surface);
+.view-tabs button:hover:not(:disabled) {
+    background: transparent;
     color: var(--ink);
 }
 
-.seg button[aria-pressed='true'],
-.seg button[aria-pressed='true']:hover:not(:disabled) {
-    background: var(--surface);
-    color: var(--ink);
-    font-weight: 600;
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.15);
+.view-tabs button[aria-selected='true'],
+.view-tabs button[aria-selected='true']:hover:not(:disabled) {
+    color: var(--on-primary);
+    font-weight: 700;
+}
+
+.view-tabs button .lucide {
+    width: 16px;
+    height: 16px;
+}
+
+/*
+ * 拉長（同 player：前面嗰邊即刻郁，後面嗰邊遲 --motion-trail 先跟），字色淡入；
+ * 第一次顯示冇 transition 起點，所以唔會滑入；減少動態就冇 transition，即刻換
+ */
+@media (prefers-reduced-motion: no-preference) {
+    .view-tabs button {
+        transition: color var(--motion-fast) var(--motion-ease);
+    }
+
+    .view-pill[data-view='preview'] {
+        transition:
+            right var(--motion-move) var(--motion-ease),
+            left var(--motion-move) var(--motion-ease) var(--motion-trail);
+    }
+
+    .view-pill[data-view='edit'] {
+        transition:
+            left var(--motion-move) var(--motion-ease),
+            right var(--motion-move) var(--motion-ease) var(--motion-trail);
+    }
 }
 
 /* 編輯：左上架、右下架；窄過 900px 上下排 */
@@ -1379,18 +1434,6 @@ textarea.autosize {
     color: var(--muted);
     text-decoration: none;
     font-weight: 400;
-}
-
-/* segmented 掣嘅 icon 細啲，跟字排 */
-.seg button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.seg button .lucide {
-    width: 16px;
-    height: 16px;
 }
 
 /*
@@ -1622,4 +1665,263 @@ table.matrix .row-link:hover {
     width: 20px;
     height: 20px;
     flex: none;
+}
+
+/* ---------- 排程：快速套用、句子斷行、今日（用戶 2026-11-12） ---------- */
+
+/* 「快速套用：」自己一行，chip 喺下一行 */
+.presets .presets-label {
+    flex-basis: 100%;
+}
+
+/*
+ * 「由 ⟨日期⟩ 起，」同「逢 ⟨星期⟩，每次上架 ⟨N⟩ 集」兩段各自一個 flex item：
+ * 一行放得落就一行；放唔落第二段成段落去下一行（由「逢」開頭）；第二段比 panel 仲闊先喺入面斷
+ */
+.sentence.cadence {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+}
+
+.sentence.cadence > .cadence-part {
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.sentence.cadence > .cadence-part:first-child {
+    white-space: nowrap;
+}
+
+/* 今日：主色框 + 淺主色底；日子字粗、--accent-ink（淺深色對 --accent-soft 都 ≥ 4.5:1） */
+.seg-batch.today .eps-cells,
+.day-group.today {
+    border-radius: 8px;
+    box-shadow: 0 0 0 2px var(--accent);
+}
+
+.seg-batch.today .seg-date,
+.day-group.today .day-date {
+    color: var(--accent-ink);
+    font-weight: 700;
+}
+
+/* 唔撞日嘅今日格：淺主色底，「今日」喺格入面橫向置中 */
+.today-cell .eps-cells span {
+    width: auto;
+    min-width: 40px;
+    padding: 0 8px;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.day-group.today {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    background: var(--accent-soft);
+}
+
+.day-group.today .eps-cells.on span {
+    box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+/* 批次表今日一行：淺主色底 + 左邊主色條，日期粗字 */
+table.batches tr.today td {
+    background: var(--accent-soft);
+    color: var(--ink);
+}
+
+table.batches tr.today td:first-child {
+    box-shadow: inset 3px 0 0 var(--accent);
+    color: var(--accent-ink);
+    font-weight: 700;
+}
+
+/* ---------- 日期欄（ui/DateField）：DD/MM/YYYY + 日曆 icon 掣 + 月曆 popover ---------- */
+.date-field {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.field .date-field {
+    display: flex;
+}
+
+.field .date-field input {
+    flex: 1;
+    min-width: 0;
+}
+
+.date-field.inline {
+    gap: 2px;
+    line-height: normal;
+    vertical-align: baseline;
+}
+
+.sentence .date-field.inline input.inline-ctl {
+    width: 7.2em;
+    font-variant-numeric: tabular-nums;
+}
+
+.date-trigger {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+}
+
+.date-field.inline .date-trigger {
+    width: 28px;
+    height: 28px;
+    box-shadow: none;
+    background: transparent;
+    color: var(--accent-ink);
+}
+
+.date-field.inline .date-trigger:hover:not(:disabled) {
+    background: var(--accent-soft);
+}
+
+.date-field.inline .date-trigger .lucide {
+    width: 16px;
+    height: 16px;
+}
+
+.date-error {
+    color: var(--danger-ink);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+/* 一般表單欄：錯誤喺欄下面自己一行；句子入面：疊喺欄下面（唔推郁句子） */
+.field .date-field {
+    flex-wrap: wrap;
+}
+
+.field .date-error {
+    flex-basis: 100%;
+}
+
+.date-field.inline .date-error {
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 0;
+    z-index: 4;
+}
+
+.date-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 6;
+    display: grid;
+    gap: 6px;
+    padding: 10px;
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow:
+        var(--shadow-pop),
+        inset 0 0 0 1px var(--line);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: normal;
+    white-space: normal;
+}
+
+.date-pop-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.date-pop-title {
+    font-weight: 600;
+}
+
+.date-nav {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    box-shadow: none;
+}
+
+.date-nav .lucide {
+    width: 18px;
+    height: 18px;
+}
+
+table.date-grid {
+    width: auto;
+    border-collapse: collapse;
+}
+
+table.date-grid th,
+table.date-grid td {
+    padding: 1px;
+    border: 0;
+    background: none;
+    text-align: center;
+}
+
+table.date-grid th {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+table.date-grid button {
+    width: 34px;
+    height: 32px;
+    padding: 0;
+    border-radius: 8px;
+    box-shadow: none;
+    background: transparent;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+table.date-grid button:hover:not(:disabled) {
+    background: var(--surface-2);
+}
+
+/* 今日：主色框；揀咗：主色實底白字（淺深色 --primary 同 --on-primary ≥ 4.5:1） */
+table.date-grid button[aria-current='date'] {
+    box-shadow: inset 0 0 0 2px var(--accent);
+    color: var(--accent-ink);
+    font-weight: 700;
+}
+
+table.date-grid td[aria-selected='true'] button,
+table.date-grid td[aria-selected='true'] button:hover:not(:disabled) {
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: 700;
+}
+
+table.date-grid button[aria-disabled='true'] {
+    color: var(--muted);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .date-pop {
+        animation: date-pop-in var(--motion-fast) var(--motion-ease);
+    }
+}
+
+@keyframes date-pop-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
 }

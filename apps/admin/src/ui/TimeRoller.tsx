@@ -2,7 +2,7 @@
  * 播放時間：兩個時間框平排，撳開喺嗰個框下面彈出「時」「分」roller（每個框一個 .time-slot）。Design Origin: mockup: _mockups_/admin/index.html#s3
  * 完結只可揀開始後 15 分鐘至 3 小時；改開始會自動收窄 / 調整完結（timeRollerModel）
  */
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useRef, useState } from 'react';
 import { t } from '../i18n/t';
 import {
     adjustEnd,
@@ -13,6 +13,7 @@ import {
     withHour,
     withMinute,
 } from './timeRollerModel';
+import { useOutsidePointer } from './useOutsidePointer';
 import { Wheel } from './Wheel';
 
 export interface TimeRange {
@@ -69,21 +70,6 @@ function RollerPopover({
         </div>
     );
 }
-
-/** 撳 roller 以外嘅地方就收起 */
-const useOutsidePointer = (
-    ref: RefObject<HTMLElement | null>,
-    active: boolean,
-    onOutside: () => void,
-) =>
-    useEffect(() => {
-        if (!active) return undefined;
-        const onPointerDown = (event: PointerEvent) => {
-            if (!ref.current?.contains(event.target as Node)) onOutside();
-        };
-        document.addEventListener('pointerdown', onPointerDown);
-        return () => document.removeEventListener('pointerdown', onPointerDown);
-    }, [ref, active, onOutside]);
 
 export function TimeRoller({ value, onChange }: TimeRollerProps) {
     const [open, setOpen] = useState<Which | null>(null);

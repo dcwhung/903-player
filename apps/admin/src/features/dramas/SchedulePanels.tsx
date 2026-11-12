@@ -27,6 +27,8 @@ interface PanelProps {
     plan: SchedulePlan | null;
     /** 下架又冇排程：未上過架（唔出灰 ✓，講明「未上架」） */
     unreleased?: boolean;
+    /** 時間軸「今日」（本機日子） */
+    today: string;
     onChange: (form: ScheduleForm) => void;
 }
 
@@ -41,7 +43,7 @@ const UNLIST_LABEL: Record<UnlistMode, MessageKey> = {
 const presetStart = (listing: ListingForm, ctx: ScheduleContext) =>
     listing.mode === 'all' || listing.mode === 'periodic' ? listing.start : addDays(ctx.today, 1);
 
-export function ListingPanel({ ctx, form, plan, unreleased = false, onChange }: PanelProps) {
+export function ListingPanel({ ctx, form, plan, unreleased = false, today, onChange }: PanelProps) {
     const titleId = useId();
     const lastListed = ctx.listed.at(-1)?.date;
     const setListing = (listing: ListingForm) => onChange({ ...form, listing });
@@ -74,12 +76,12 @@ export function ListingPanel({ ctx, form, plan, unreleased = false, onChange }: 
                     />
                 </>
             )}
-            {plan && <ListingTimeline plan={plan} ctx={ctx} />}
+            {plan && <ListingTimeline plan={plan} ctx={ctx} today={today} />}
         </section>
     );
 }
 
-export function UnlistPanel({ ctx, form, plan, onChange }: PanelProps) {
+export function UnlistPanel({ ctx, form, plan, today, onChange }: PanelProps) {
     const titleId = useId();
     return (
         <section className="panel down" aria-labelledby={titleId}>
@@ -91,8 +93,8 @@ export function UnlistPanel({ ctx, form, plan, onChange }: PanelProps) {
             <p className="scope">{unlistScopeText(ctx)}</p>
             {/* 同上架 panel 嘅快速套用一樣：一粒粒 chip，揀咗實色（mockup ⑧ 用戶修正） */}
             <div className="presets" role="group" aria-label={t('schedule.unlistModes')}>
-                <span className="muted small" aria-hidden="true">
-                    {t('schedule.presets')}
+                <span className="presets-label muted small" aria-hidden="true">
+                    {t('schedule.presetsLabel')}
                 </span>
                 {UNLIST_MODES.map((mode) => (
                     <button
@@ -112,7 +114,7 @@ export function UnlistPanel({ ctx, form, plan, onChange }: PanelProps) {
                 unlist={form.unlist}
                 onChange={(unlist) => onChange({ ...form, unlist })}
             />
-            {plan && <UnlistTimeline plan={plan} ctx={ctx} />}
+            {plan && <UnlistTimeline plan={plan} ctx={ctx} today={today} />}
         </section>
     );
 }
