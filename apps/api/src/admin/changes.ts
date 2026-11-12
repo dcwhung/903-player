@@ -12,8 +12,15 @@ import {
 } from '@903-player/catalog';
 import { Hono } from 'hono';
 import type { AppEnv } from '../app';
+import { getBanner, type BannerImages } from '../banner/store';
 import { CATALOG_IMAGE_PATH } from '../config';
-import { documentFromEntries, PublishValidationError, validateDocument } from '../catalog/publish';
+import {
+    documentFromEntries,
+    PublishValidationError,
+    validateDocument,
+    type DocumentContext,
+} from '../catalog/publish';
+import type { PublishWarning } from '../catalog/warnings';
 import {
     latestPublish,
     listAssetHashes,
@@ -66,38 +73,64 @@ export const publishedDocument = (json: string): ChangeDocument => {
 
 type Validation = { ok: true; episodeCount: number } | { ok: false; error: string };
 
+/** 驗證結果 + 警告（驗證唔過就冇警告） */
 const validationOf = (
     rows: readonly EntryRow[],
-    context: { origin: string; assets: ReadonlySet<string> },
-): Validation => {
+    context: Omit<DocumentContext, 'generatedAt'>,
+): { validation: Validation; warnings: PublishWarning[] } => {
     try {
         const generatedAt = new Date().toISOString();
-        const { listedEpisodeIds } = validateDocument(
+        const { listedEpisodeIds, warnings } = validateDocument(
             documentFromEntries(rows, { ...context, generatedAt }),
         );
-        return { ok: true, episodeCount: listedEpisodeIds.length };
+        return { validation: { ok: true, episodeCount: listedEpisodeIds.length }, warnings };
     } catch (error) {
         if (!(error instanceof PublishValidationError)) throw error;
-        return { ok: false, error: error.message };
+        return { validation: { ok: false, error: error.message }, warnings: [] };
     }
 };
 
+/** 已發佈 catalog.json 嘅 banner（圖 URL；壞咗 / 冇當 null） */
+const publishedBanner = (json: string): unknown => parseObject(json).banner ?? null;
+
+/** D1 banner 照 publish 格式砌 URL，同已發佈嗰份比（未 publish 過 = 有 banner 就係改咗） */
+export const bannerChanged = (
+    banner: BannerImages | null,
+    latestDocument: string | undefined,
+    origin: string,
+): boolean => {
+    const draft =
+        banner === null
+            ? null
+            : {
+                  standard: `${origin}${CATALOG_IMAGE_PATH}${banner.standard}`,
+                  long: `${origin}${CATALOG_IMAGE_PATH}${banner.long}`,
+              };
+    const published = latestDocument === undefined ? null : publishedBanner(latestDocument);
+    return JSON.stringify(draft) !== JSON.stringify(published);
+};
+
 changeRoutes.get('/changes', async (c) => {
-    const [rows, latest, assets] = await Promise.all([
+    const [rows, latest, assets, stored] = await Promise.all([
         listEntries(c.env.DB),
         latestPublish(c.env.DB),
         listAssetHashes(c.env.DB),
+        getBanner(c.env.DB),
     ]);
     const origin = c.env.WORKER_ORIGIN;
+    const banner = stored && { standard: stored.standard, long: stored.long };
     const changes = summarizeChanges(
         latest ? publishedDocument(latest.document) : null,
         previewDocument(rows, origin),
         hkToday(),
     );
+    const { validation, warnings } = validationOf(rows, { origin, assets, banner });
     return c.json({
         base: latest?.row.id ?? null,
         changes,
-        validation: validationOf(rows, { origin, assets }),
+        validation,
+        warnings,
+        bannerChanged: bannerChanged(banner, latest?.document, origin),
     });
 });
 

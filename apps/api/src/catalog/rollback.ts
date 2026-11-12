@@ -8,6 +8,7 @@
  * 驗證 + ID 守衛喺寫 D1 之前先試；D1 一個 batch（樂觀鎖 + bump updated_at）；
  * 發佈 throw / 被拒就用另一個 batch 寫返舊 definition
  */
+import { getBanner } from '../banner/store';
 import { nextUpdatedAt } from '../content/etag';
 import { isRecord, type Json } from '../content/http';
 import {
@@ -167,6 +168,8 @@ const preflight = async (env: RollbackEnv, rows: ReturnType<typeof rowsAfter>, f
             origin: env.WORKER_ORIGIN,
             assets: await listAssetHashes(env.DB),
             generatedAt: new Date().toISOString(),
+            // 還原只係還原上下架狀態：banner 跟而家 D1（同圖一樣）
+            banner: await getBanner(env.DB),
         }),
     );
     const latest = await latestPublish(env.DB);

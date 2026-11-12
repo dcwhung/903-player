@@ -3,6 +3,7 @@ import { Hono, type Context } from 'hono';
 import { publishChanges } from '../admin/changes';
 import { resolveDoneFindings } from '../admin/todos';
 import type { AppEnv } from '../app';
+import { getBanner } from '../banner/store';
 import { HTTP_STATUS } from '../config';
 import {
     commitPublish,
@@ -11,6 +12,7 @@ import {
     validateDocument,
     type PublishOutcome,
 } from './publish';
+import type { PublishWarning } from './warnings';
 import { RollbackConflictError, RollbackNotRestorableError, rollbackToPublish } from './rollback';
 import {
     listAssetHashes,
@@ -37,14 +39,19 @@ const summary = (row: PublishRow, current: boolean) => ({
     current,
 });
 
-const respond = (c: Context<AppEnv>, outcome: PublishOutcome) => {
+/** warnings：普通 publish 先有（還原唔報，見 rollback.ts） */
+const respond = (c: Context<AppEnv>, outcome: PublishOutcome, warnings?: PublishWarning[]) => {
     if (outcome.kind === 'rejected')
         return c.json(
             { error: 'episode IDs would disappear', missing: outcome.missing },
             HTTP_STATUS.conflict,
         );
     const unchanged = outcome.kind === 'unchanged' ? { unchanged: true } : {};
-    return c.json({ ...unchanged, publish: summary(outcome.publish, true) });
+    return c.json({
+        ...unchanged,
+        publish: summary(outcome.publish, true),
+        ...(warnings ? { warnings } : {}),
+    });
 };
 
 /** 普通 publish：驗證 / commit；validator 拒絕 → 422 連原因（還原見 rollback.ts） */
@@ -63,7 +70,7 @@ const publishValue = async (c: Context<AppEnv>, value: () => Promise<unknown>) =
             await resolveDoneFindings(c.env.DB, outcome.publish.id).catch((error: unknown) =>
                 console.error(`publish ${outcome.publish.id}: could not resolve findings`, error),
             );
-        return respond(c, outcome);
+        return respond(c, outcome, validated.warnings);
     } catch (error) {
         if (!(error instanceof PublishValidationError)) throw error;
         return c.json({ error: error.message }, HTTP_STATUS.unprocessable);
@@ -78,6 +85,7 @@ publishRoutes.post('/publish', (c) =>
             origin: c.env.WORKER_ORIGIN,
             assets: await listAssetHashes(c.env.DB),
             generatedAt: new Date().toISOString(),
+            banner: await getBanner(c.env.DB),
         }),
     ),
 );

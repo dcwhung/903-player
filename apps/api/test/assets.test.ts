@@ -51,6 +51,11 @@ describe('PUT /api/assets', () => {
         expect(await assetRows()).toHaveLength(1);
     });
 
+    it('should accept the two banner sizes (1200×517 and 2000×400)', async () => {
+        expect((await upload(webpVp8x(1200, 517))).status).toBe(201);
+        expect((await upload(webpVp8x(2000, 400))).status).toBe(201);
+    });
+
     it('should accept an image bigger than the 256 KB content body limit', async () => {
         const response = await upload(padded(webpVp8x(1216, 684), 512 * 1024));
         expect(response.status).toBe(201);
@@ -78,7 +83,7 @@ describe('PUT /api/assets', () => {
         const response = await upload(webpVp8x(1216, 608));
         expect(response.status).toBe(422);
         const body = (await response.json()) as { error: string; allowed: string[] };
-        expect(body.allowed).toEqual(['600×600', '1216×684']);
+        expect(body.allowed).toEqual(['600×600', '1216×684', '1200×517', '2000×400']);
         expect(body.error).toContain('1216×608');
         expect((await env.CATALOG.list()).objects).toHaveLength(0);
     });

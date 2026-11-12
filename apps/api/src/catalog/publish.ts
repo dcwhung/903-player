@@ -17,8 +17,10 @@ import {
     IMAGE_FILE_PATTERN,
     VALIDATION_BUILD_OPTIONS,
 } from '../config';
+import type { BannerImages } from '../banner/store';
 import { sha256Hex } from '../lib/crypto';
 import { purgeCatalogCache } from './serve';
+import { publishWarnings, type PublishWarning } from './warnings';
 import {
     deletePublish,
     insertPublish,
@@ -42,6 +44,8 @@ export interface ValidatedDocument {
     episodeIds: string[];
     /** player 睇到嘅 episode ID（劇 enabled、短篇冇下架）：上過架先鎖入守衛（W-707） */
     listedEpisodeIds: string[];
+    /** 唔阻 publish 嘅警告（theme contrast、未設定配色） */
+    warnings: PublishWarning[];
 }
 
 export type PublishOutcome =
@@ -85,14 +89,33 @@ const imageUrls = (row: EntryRow, origin: string, assets: ReadonlySet<string>) =
     return resolveImages(parseJson(row.images, `${where} images`), where, { origin, assets });
 };
 
-/** D1 rows → catalog.json 內容（未驗證） */
+export interface DocumentContext {
+    origin: string;
+    assets: ReadonlySet<string>;
+    generatedAt: string;
+    /** D1 banner（null = 還原預設，catalog.json 冇 banner）；必填，免得有 caller 漏咗 */
+    banner: BannerImages | null;
+}
+
+/** banner 兩張圖 → Worker 圖 URL（同 entries 圖一樣要已上載） */
+const bannerUrls = (
+    banner: BannerImages | null,
+    context: { origin: string; assets: ReadonlySet<string> },
+) =>
+    banner === null
+        ? {}
+        : {
+              banner: resolveImages(
+                  { standard: banner.standard, long: banner.long },
+                  'banner',
+                  context,
+              ),
+          };
+
+/** D1 rows（+ banner）→ catalog.json 內容（未驗證） */
 export const documentFromEntries = (
     rows: readonly EntryRow[],
-    {
-        origin,
-        assets,
-        generatedAt,
-    }: { origin: string; assets: ReadonlySet<string>; generatedAt: string },
+    { origin, assets, generatedAt, banner }: DocumentContext,
 ): unknown => {
     const entriesOf = (kind: EntryRow['kind']): CatalogEntry[] =>
         rows
@@ -107,6 +130,7 @@ export const documentFromEntries = (
         generatedAt,
         shows: entriesOf('shows'),
         dramas: entriesOf('dramas'),
+        ...bannerUrls(banner, { origin, assets }),
     };
 };
 
@@ -145,7 +169,13 @@ export const validateDocument = (value: unknown): ValidatedDocument => {
         const episodeIds = dramas.dramas.flatMap((d) =>
             dramas.catalogEpisodesOf(d.id).map((e) => e.id),
         );
-        return { doc, json: JSON.stringify(value), episodeIds, listedEpisodeIds: listedIdsOf(doc) };
+        return {
+            doc,
+            json: JSON.stringify(value),
+            episodeIds,
+            listedEpisodeIds: listedIdsOf(doc),
+            warnings: publishWarnings(doc),
+        };
     } catch (error) {
         if (error instanceof PublishValidationError) throw error;
         throw new PublishValidationError(error instanceof Error ? error.message : String(error));
