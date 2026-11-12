@@ -43,7 +43,10 @@ function ScheduleNotes({ state, arc, actions }: Omit<ArcScheduleProps, 'arcId' |
 
 export function ArcSchedule({ state, arc, arcId, saved, actions }: ArcScheduleProps) {
     const ctx = scheduleContextOf(state.editor.draft?.definition ?? {}, arc, hkToday(), !!saved);
-    const { form, setForm, rule, dirty, changed, initial } = useScheduleForm(saved, ctx);
+    const { form, setForm, rule, dirty, listingDirty, changed, initial } = useScheduleForm(
+        saved,
+        ctx,
+    );
     if (countOf(arc) === 0) return <p className="note warn">{t('schedule.noCount')}</p>;
     const { plan, error } = planOf(rule, ctx);
     const change = (next: ScheduleForm) => {
@@ -64,7 +67,7 @@ export function ArcSchedule({ state, arc, arcId, saved, actions }: ArcSchedulePr
                 plan={plan}
                 error={error}
                 unreleased={unreleased}
-                draft={dirty}
+                draft={listingDirty}
                 onChange={change}
             />
             <ScheduleNotes state={state} arc={arc} actions={actions} />

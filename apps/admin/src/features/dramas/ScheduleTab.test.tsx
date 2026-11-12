@@ -326,7 +326,7 @@ describe('ScheduleTab — summary while unsaved (用戶 2026-11-12)', () => {
         expect(screen.queryByText(/已排程上架$/)).not.toBeInTheDocument();
     });
 
-    it('should use the saved wording once saved, and the draft wording again after a change', async () => {
+    it('should use the saved wording once saved, and the draft wording again after a listing change (S-840)', async () => {
         api({
             'GET /api/dramas/lancy/arcs/heart/schedule': () => ({
                 body: {
@@ -348,7 +348,11 @@ describe('ScheduleTab — summary while unsaved (用戶 2026-11-12)', () => {
         await open('heart');
         // 只講上架（用戶 2026-11-12 第三輪：冇下架部分）
         expect(screen.getByText('第 1–15 集已上架 · 第 16–30 集已排程上架')).toBeInTheDocument();
+        // 淨改下架：上架冇變，照寫已排程（S-840）
         await userEvent.click(screen.getByRole('button', { name: '上架 N 日後' }));
+        expect(screen.getByText('第 1–15 集已上架 · 第 16–30 集已排程上架')).toBeInTheDocument();
+        // 改上架先寫即將排程（未儲存）
+        await userEvent.click(screen.getByRole('button', { name: '每日 1 集' }));
         expect(
             screen.getByText('第 1–15 集已上架 · 第 16–30 集即將排程上架（未儲存）'),
         ).toBeInTheDocument();

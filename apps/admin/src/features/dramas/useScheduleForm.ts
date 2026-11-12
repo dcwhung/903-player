@@ -57,13 +57,17 @@ export const useScheduleForm = (saved: ScheduleState | null, ctx: ScheduleContex
     const [initial] = useState(() => formOf(saved?.rule ?? null, ctx));
     const [form, setForm] = useState<ScheduleForm>(initial);
     // 已儲存嘅規則經過句子正規化（例如 periodic 由下一批起計）先比較，冇改就唔算有改動
-    const baseline = saved ? JSON.stringify(ruleOf(formOf(saved.rule, ctx), ctx)) : null;
+    const savedForm = saved ? formOf(saved.rule, ctx) : null;
+    const baseline = savedForm ? JSON.stringify(ruleOf(savedForm, ctx)) : null;
     const rule = ruleOf(form, ctx);
+    // 上架部分有冇改（S-840）：下架換返已儲存嗰個再比，淨改下架唔算；未有排程 = 成個都係新
+    const listingRule = savedForm ? ruleOf({ ...form, unlist: savedForm.unlist }, ctx) : null;
     return {
         form,
         setForm,
         rule,
         dirty: JSON.stringify(rule) !== baseline,
+        listingDirty: JSON.stringify(listingRule) !== baseline,
         changed: JSON.stringify(form) !== JSON.stringify(initial),
         initial,
     };

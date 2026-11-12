@@ -20,7 +20,7 @@ interface ScheduleViewsProps {
     plan: SchedulePlan | null;
     error?: string | undefined;
     unreleased: boolean;
-    /** 有未儲存嘅改動（包括從未儲存過） */
+    /** 上架部分有未儲存嘅改動（包括從未儲存過；淨改下架唔算，S-840） */
     draft: boolean;
     onChange: (form: ScheduleForm) => void;
 }
