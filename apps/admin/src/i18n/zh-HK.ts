@@ -368,6 +368,7 @@ export const zhHK = {
         sourceMeta: '原圖 {size} · {format}',
         loadingFile: '正在讀取 {name}（{mb} MB）…',
         upscale: '原圖 {source} 小於{slot} {target}，將放大 {factor} 倍，畫質可能較模糊。',
+        upscaleCrop: '裁切範圍 {source} 小於{slot} {target}，將放大 {factor} 倍，畫質可能較模糊。',
         converting: '正在轉換 WebP…',
         preparingWasm: '正在準備 WebP 編碼器…',
         uploadingSize: '正在上載 {size} WebP（約 {kb} KB）…',

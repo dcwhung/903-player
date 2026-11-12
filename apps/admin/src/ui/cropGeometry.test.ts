@@ -1,4 +1,11 @@
-import { fitRect, moveBox, resizeBox, upscaleFactor } from './cropGeometry';
+import {
+    CROP_MODE,
+    cropSourceSize,
+    fitRect,
+    moveBox,
+    resizeBox,
+    upscaleFactor,
+} from './cropGeometry';
 
 const SOURCE = { width: 1920, height: 1080 };
 const DISC = { width: 600, height: 600 };
@@ -61,11 +68,63 @@ describe('resizeBox', () => {
 });
 
 describe('upscaleFactor', () => {
-    it('should report how much a smaller source has to be enlarged', () => {
-        expect(upscaleFactor({ width: 480, height: 480 }, DISC)).toBe(1.25);
+    const SMALL = { width: 480, height: 480 };
+    const fullBox = { x: 0, y: 0, width: 480, height: 480 };
+
+    it('should report how much the centre crop box has to be enlarged', () => {
+        expect(upscaleFactor(CROP_MODE.CENTER, fullBox, SMALL, DISC)).toBe(1.25);
+    });
+
+    it('should grow when the crop box is dragged smaller', () => {
+        const box = { x: 0, y: 0, width: 300, height: 300 };
+        expect(upscaleFactor(CROP_MODE.CENTER, box, SMALL, DISC)).toBe(2);
+    });
+
+    it('should use the fitted size for the whole-image candidates', () => {
+        const wide = { width: 1216, height: 608 };
+        const box = { x: 0, y: 0, width: 1216, height: 243 };
+        expect(upscaleFactor(CROP_MODE.BLUR, box, wide, { width: 2000, height: 400 })).toBe(1);
     });
 
     it('should be 1 when the source already covers the output', () => {
-        expect(upscaleFactor(SOURCE, DISC)).toBe(1);
+        const box = { x: 420, y: 0, width: 1080, height: 1080 };
+        expect(upscaleFactor(CROP_MODE.CENTER, box, SOURCE, DISC)).toBe(1);
+    });
+});
+
+describe('cropSourceSize', () => {
+    const SMALL = { width: 480, height: 800 };
+
+    it('should report the whole source when the centre box covers it', () => {
+        const box = { x: 0, y: 0, width: 480, height: 480 };
+        const square = { width: 480, height: 480 };
+        expect(cropSourceSize(CROP_MODE.CENTER, box, square)).toEqual({
+            size: square,
+            cropped: false,
+        });
+    });
+
+    it('should report the crop box when the centre box is narrower than the source', () => {
+        const box = { x: 0, y: 160, width: 480, height: 480 };
+        expect(cropSourceSize(CROP_MODE.CENTER, box, SMALL)).toEqual({
+            size: { width: 480, height: 480 },
+            cropped: true,
+        });
+    });
+
+    it('should round a dragged box to whole pixels', () => {
+        const box = { x: 0, y: 0, width: 300.4, height: 300.4 };
+        expect(cropSourceSize(CROP_MODE.CENTER, box, SMALL).size).toEqual({
+            width: 300,
+            height: 300,
+        });
+    });
+
+    it('should report the whole source for the whole-image candidates', () => {
+        const box = { x: 0, y: 160, width: 480, height: 480 };
+        expect(cropSourceSize(CROP_MODE.BLUR, box, SMALL)).toEqual({
+            size: SMALL,
+            cropped: false,
+        });
     });
 });

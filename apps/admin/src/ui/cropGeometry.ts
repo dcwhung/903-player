@@ -80,8 +80,30 @@ export const resizeBox = (
     return { ...box, width, height: width / ratio };
 };
 
-/** 原圖細過輸出：置中裁切要放大幾多倍（≥ 1；1 = 唔使放大） */
-export const upscaleFactor = (source: Size, target: Size): number => {
-    const factor = Math.max(target.width / source.width, target.height / source.height, 1);
-    return Math.round(factor * FACTOR_DECIMALS) / FACTOR_DECIMALS;
+/**
+ * 輸出要放大幾多倍（≥ 1；1 = 唔使放大）：置中裁切 = 裁切框 → 輸出；fit 兩款 = 成張圖放入輸出
+ */
+export const upscaleFactor = (
+    mode: CropMode,
+    box: CropRect,
+    source: Size,
+    target: Size,
+): number => {
+    const scale =
+        mode === CROP_MODE.CENTER
+            ? target.width / box.width
+            : Math.min(target.width / source.width, target.height / source.height);
+    return Math.round(Math.max(scale, 1) * FACTOR_DECIMALS) / FACTOR_DECIMALS;
+};
+
+/** 放大警告講邊個尺寸：置中裁切框細過原圖（任何一邊）= 「裁切範圍」；否則 = 「原圖」 */
+export const cropSourceSize = (
+    mode: CropMode,
+    box: CropRect,
+    source: Size,
+): { size: Size; cropped: boolean } => {
+    const cropped =
+        mode === CROP_MODE.CENTER && (box.width < source.width || box.height < source.height);
+    if (!cropped) return { size: source, cropped };
+    return { size: { width: Math.round(box.width), height: Math.round(box.height) }, cropped };
 };

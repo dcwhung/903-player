@@ -2,7 +2,7 @@
  * 將一個候選畫落 canvas（任何大細：候選縮圖、播放器預覽、標準尺寸輸出都用同一個 function）
  * Design Origin: mockup: _mockups_/admin-phase4/index.html#b（renderTo）
  * - 置中裁切：裁切框 → 成個 canvas
- * - 完整 · 模糊背景：底層 = 置中裁切縮到好細再放大（等同模糊，Safari 舊版冇 ctx.filter 都得）+ 壓暗，上面放成張圖
+ * - 完整 · 模糊背景：底層 = 置中裁切 ctx.filter 模糊 + 壓暗（舊 Safari 冇 filter：縮到好細再放大）；上面放成張圖
  * - 完整 · 延伸邊緣：最外一行 / 一列像素拉闊填空位，上面放成張圖
  */
 import { CROP_MODE, centerCrop, fitRect, type CropMode, type CropRect } from './cropGeometry';
@@ -30,12 +30,41 @@ const EDGE_OVERLAP = 1;
 /** 空位細過半個像素就唔使延伸 */
 const MIN_GAP = 0.5;
 
-const drawBlurBackground = (
+/** ctx.filter（Chrome / Firefox / Safari 18+）：真模糊 + 壓暗，邊放大少少遮住模糊後嘅透明邊 */
+const FILTER_BLUR_DIVISOR = 30;
+const FILTER_BRIGHTNESS = 0.85;
+const FILTER_BLEED = 0.05;
+
+const drawFilteredBlur = (
     context: CanvasRenderingContext2D,
     { image, source }: DrawSource,
     size: Size,
+) => {
+    const cover = centerCrop(source, size);
+    const radius = Math.round(size.width / FILTER_BLUR_DIVISOR);
+    context.filter = `blur(${radius}px) brightness(${FILTER_BRIGHTNESS})`;
+    context.drawImage(
+        image,
+        cover.x,
+        cover.y,
+        cover.width,
+        cover.height,
+        -size.width * FILTER_BLEED,
+        -size.height * FILTER_BLEED,
+        size.width * (1 + 2 * FILTER_BLEED),
+        size.height * (1 + 2 * FILTER_BLEED),
+    );
+    context.filter = 'none';
+};
+
+const drawBlurBackground = (
+    context: CanvasRenderingContext2D,
+    from: DrawSource,
+    size: Size,
     createCanvas: CreateCanvas,
 ) => {
+    if (typeof context.filter === 'string') return drawFilteredBlur(context, from, size);
+    const { image, source } = from;
     const cover = centerCrop(source, size);
     const small = createCanvas(
         Math.max(1, Math.round(size.width / BLUR_DOWNSCALE)),

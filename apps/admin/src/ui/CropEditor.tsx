@@ -5,7 +5,7 @@
 import { TriangleAlert, Upload } from 'lucide-react';
 import { t } from '../i18n/t';
 import { CropCandidates } from './CropCandidates';
-import { upscaleFactor } from './cropGeometry';
+import { cropSourceSize, upscaleFactor } from './cropGeometry';
 import { CropPlayerPreview, type CropPreviewInfo } from './CropPlayerPreview';
 import type { CropChoice } from './cropRender';
 import { CropSourcePane } from './CropSourcePane';
@@ -22,21 +22,21 @@ const SLOT_NAMES: Record<CropSlot, Parameters<typeof t>[0]> = {
 export const slotName = (slot: CropSlot) => t(SLOT_NAMES[slot]);
 
 function UpscaleWarning({ ready, slot }: { ready: ReadySource; slot: CropSlot }) {
-    const { source } = ready.loaded;
     const target = SLOT_SIZES[slot];
-    const factor = upscaleFactor(source, target);
+    const { mode, box } = ready.choice;
+    const factor = upscaleFactor(mode, box, ready.loaded.source, target);
     if (factor <= 1) return null;
+    const { size, cropped } = cropSourceSize(mode, box, ready.loaded.source);
+    const params = {
+        source: sizeLabel(size),
+        slot: slotName(slot),
+        target: sizeLabel(target),
+        factor,
+    };
     return (
         <p className="note warn">
             <TriangleAlert aria-hidden="true" />
-            <span>
-                {t('images.upscale', {
-                    source: sizeLabel(source),
-                    slot: slotName(slot),
-                    target: sizeLabel(target),
-                    factor,
-                })}
-            </span>
+            <span>{t(cropped ? 'images.upscaleCrop' : 'images.upscale', params)}</span>
         </p>
     );
 }

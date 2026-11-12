@@ -361,10 +361,15 @@
 
 .tcard .lbl {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    gap: 6px;
+    gap: 4px 6px;
     font-weight: 600;
+}
+
+.tcard .lbl > span:first-child {
+    min-width: 0;
 }
 
 .tphone {
