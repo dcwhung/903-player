@@ -2,6 +2,7 @@
 // 用法：npm run e2e -w apps/admin（= build + 呢個檔）；E2E_PORT 改 port；PW_CHROMIUM_PATH 指定 Chromium
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
+import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
 
@@ -19,21 +20,101 @@ const log = (ok, message) => {
     console.log(`${ok ? 'PASS' : 'FAIL'}  ${message}`);
 };
 
-const startPreview = () =>
-    spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], {
-        cwd: new URL('..', import.meta.url).pathname,
-        stdio: 'ignore',
+const STOP_TIMEOUT_MS = 5_000;
+const POLL_MS = 250;
+const STDERR_TAIL_CHARS = 2_000;
+/** 128 + signal number：shell 慣例 */
+const SIGNAL_EXIT_CODES = { SIGINT: 130, SIGTERM: 143 };
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** port 有人用緊（例如上次殘留嘅 vite preview）就即刻停：否則 --strictPort 起唔到，會靜靜雞測咗舊 dist */
+const assertPortFree = () =>
+    new Promise((resolve, reject) => {
+        const probe = createServer();
+        probe.once('error', () =>
+            reject(
+                new Error(
+                    `port ${PORT} is already in use (stale vite preview?). ` +
+                        `Free it (ss -ltnp | grep :${PORT}) or set E2E_PORT.`,
+                ),
+            ),
+        );
+        probe.listen(PORT, () => probe.close(resolve));
     });
 
-const waitForServer = async () => {
+/**
+ * detached：preview 自成一個 process group（pgid = pid），
+ * 收尾 kill 成個 group，連 npx 下面嘅 vite 一齊停，唔會殘留霸住 port
+ */
+const startPreview = () => {
+    const child = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], {
+        cwd: new URL('..', import.meta.url).pathname,
+        detached: true,
+        stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    let stderr = '';
+    child.stderr.on('data', (chunk) => {
+        stderr = (stderr + chunk).slice(-STDERR_TAIL_CHARS);
+    });
+    const exited = new Promise((resolve) =>
+        child.once('exit', (code, signal) => resolve({ code, signal, stderr })),
+    );
+    return { child, exited };
+};
+
+/** group 仲有冇 process（signal 0 = 淨係探） */
+const groupAlive = (pid) => {
+    try {
+        process.kill(-pid, 0);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+const signalGroup = (pid, signal) => {
+    try {
+        process.kill(-pid, signal);
+    } catch {
+        // group 已經冇晒
+    }
+};
+
+/** SIGTERM 成個 group，等佢冇晒（port 先真正放返）；超時就 SIGKILL */
+const stopPreview = async ({ child }) => {
+    if (!child.pid || !groupAlive(child.pid)) return;
+    signalGroup(child.pid, 'SIGTERM');
+    const deadline = Date.now() + STOP_TIMEOUT_MS;
+    while (groupAlive(child.pid) && Date.now() < deadline) await sleep(POLL_MS);
+    if (groupAlive(child.pid)) signalGroup(child.pid, 'SIGKILL');
+};
+
+/** 同步版：俾 SIGINT / exit handler 用（唔可以 await） */
+const killPreviewNow = ({ child }) => {
+    if (child.pid) signalGroup(child.pid, 'SIGTERM');
+};
+
+/** server ready 之前 preview 已經退出（例如撞 port）就即刻 fail，唔好等到 timeout */
+const waitForServer = async ({ exited }) => {
+    let exitInfo = null;
+    exited.then((info) => {
+        exitInfo = info;
+    });
     const deadline = Date.now() + STARTUP_TIMEOUT_MS;
     while (Date.now() < deadline) {
+        if (exitInfo) {
+            const { code, signal, stderr } = exitInfo;
+            throw new Error(
+                `vite preview exited before ready (code ${code}, signal ${signal})` +
+                    (stderr.trim() ? `:\n${stderr.trim()}` : ''),
+            );
+        }
         try {
             if ((await fetch(BASE)).ok) return;
         } catch {
             // 未起好
         }
-        await new Promise((resolve) => setTimeout(resolve, 250));
+        await sleep(POLL_MS);
     }
     throw new Error(`vite preview did not start on ${BASE}`);
 };
@@ -1376,9 +1457,22 @@ const portraitCheck = (browser) =>
     });
 
 mkdirSync(OUT, { recursive: true });
-const preview = startPreview();
 try {
-    await waitForServer();
+    await assertPortFree();
+} catch (error) {
+    console.error(`admin e2e: ${error.message}`);
+    process.exit(1);
+}
+const preview = startPreview();
+// Ctrl-C / 被 kill / 任何 process.exit 都要收埋 preview group
+process.once('exit', () => killPreviewNow(preview));
+for (const [signal, exitCode] of Object.entries(SIGNAL_EXIT_CODES))
+    process.once(signal, () => {
+        killPreviewNow(preview);
+        process.exit(exitCode);
+    });
+try {
+    await waitForServer(preview);
     const browser = await chromium.launch({
         executablePath: process.env.PW_CHROMIUM_PATH || undefined,
     });
@@ -1420,8 +1514,10 @@ try {
     ])
         await run(browser);
     await browser.close();
+} catch (error) {
+    log(false, `admin e2e aborted: ${error instanceof Error ? error.message : error}`);
 } finally {
-    preview.kill();
+    await stopPreview(preview);
 }
 console.log(failures === 0 ? 'admin e2e: all passed' : `admin e2e: ${failures} failed`);
 process.exit(failures === 0 ? 0 : 1);
