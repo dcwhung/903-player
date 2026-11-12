@@ -3,7 +3,8 @@
 // （內建全部節目 / 劇集 + 一套只有 catalog 先有嘅測試劇），圖由 src/catalog/*/library/ 直接讀。
 // 1 正常 → 主頁即見測試劇；2 壞 JSON / 唔識 schemaVersion → 用內建；3 慢過 1.5s → 用內建、splash 照收；
 // 4 第二次開 app 斷網 → SW cache 嘅 catalog；5 舊版（v1）進度用 remote catalog 照搬；
-// 6 跨 origin 圖（似 Worker：有 CORS header）：<img crossorigin> 照出到（S-764）。
+// 6 跨 origin 圖（似 Worker：有 CORS header）：<img crossorigin> 照出到（S-764）；
+// 7 harness 預設（冇蓋 route）：SW 嘅 catalog request 由 e2e preview 答 404，catalog-json cache 冇 key（S-765）。
 // 所有 route 都好似 apps/api Worker 咁答 Access-Control-Allow-Origin + Vary: Origin
 import { readFileSync } from 'node:fs';
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';

@@ -113,8 +113,9 @@ export const E2E_CATALOG_GLOB = '**/e2e-catalog/**';
  * 預設 catalog.json 答 404（app fallback 內建資料）。SW 自己發嘅 request（NetworkFirst）一定要原封不動交返本機 server：
  * Playwright 改過嘅 SW request（fulfill、abort、fallback 改 header 都試過）會令 Chromium 重複裝同一版 SW，
  * PWA 換版 e2e（Shift-reload，S-648）多 reload 一次，真機冇呢個情況。
- * 已知副作用（S-765，未修）：vite preview 係 SPA，冇呢個檔都答 200 + index.html，會入 SW 嘅 catalog-json cache；
- * app parse 唔到照 fallback 內建資料，冇影響。要修就要喺 harness 以外（例如 e2e build 嘅 preview 唔做 SPA fallback）
+ * vite preview 係 SPA，冇呢個檔本來都答 200 + index.html，會入 SW 嘅 catalog-json cache（S-765）：
+ * 已喺 harness 以外修，e2e mode preview 對 e2e-catalog/ 答 404（vite.config.ts e2eCatalogNotFound），
+ * remoteCatalog.mjs「預設 404 唔入 SW cache」section 鎖住
  */
 const catalogNotFound = (route) =>
     route.request().serviceWorker() ? route.fallback() : route.fulfill({ status: 404, body: '' });
