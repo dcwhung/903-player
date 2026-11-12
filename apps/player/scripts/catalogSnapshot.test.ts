@@ -129,6 +129,39 @@ describe('createSnapshot', () => {
         expect(await leftovers()).toEqual([]);
     });
 
+    describe('with a home banner (Phase 4 L3)', () => {
+        const STANDARD_BYTES = new Uint8Array([10, 11]);
+        const LONG_BYTES = new Uint8Array([12, 13]);
+        const STANDARD = hashName(STANDARD_BYTES);
+        const LONG = hashName(LONG_BYTES);
+        const WITH_BANNER = {
+            ...PUBLISHED,
+            banner: { standard: `${IMG_BASE}${STANDARD}`, long: `/catalog/v1/img/${LONG}` },
+        };
+        const bannerRoutes = (): Routes => ({
+            ...okRoutes(WITH_BANNER),
+            [`${IMG_BASE}${STANDARD}`]: () => new Response(STANDARD_BYTES),
+            [`${IMG_BASE}${LONG}`]: () => new Response(LONG_BYTES),
+        });
+
+        it('should download both banner images and write their file names', async () => {
+            const result = await snapshot(fakeFetch(bannerRoutes()));
+            expect(result.imageCount).toBe(4);
+            const written = JSON.parse(await readFile(join(dir, 'catalog.json'), 'utf8'));
+            expect(written.banner).toEqual({ standard: STANDARD, long: LONG });
+            expect(new Uint8Array(await readFile(join(dir, 'img', LONG)))).toEqual(LONG_BYTES);
+        });
+
+        it('should reject the whole snapshot when a banner image fails', async () => {
+            const fetchImpl = fakeFetch({
+                ...bannerRoutes(),
+                [`${IMG_BASE}${LONG}`]: () => new Response('gone', { status: 404 }),
+            });
+            await expect(snapshot(fetchImpl)).rejects.toThrow(/404/);
+            expect(existsSync(dir)).toBe(false);
+        });
+    });
+
     it('should download each image once, at most `concurrency` at a time', async () => {
         let inFlight = 0;
         let peak = 0;

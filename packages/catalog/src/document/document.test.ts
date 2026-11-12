@@ -57,6 +57,12 @@ const validDocument = (): Json => ({
     dramas: [{ id: 'golden', definition: DRAMA_DEFINITION, images: IMAGES }],
 });
 
+/** 首頁 banner：窄版 + 闊版 */
+const BANNER = {
+    standard: 'https://cdn.example.com/catalog/banner.webp',
+    long: '/catalog/banner-wide.webp',
+};
+
 /** validDocument + 一個改動（path 用 . 分隔；value undefined = 刪走個 key） */
 const withChange = (path: string, value: unknown): Json => {
     const result = JSON.parse(JSON.stringify(validDocument())) as Json;
@@ -76,8 +82,40 @@ describe('parseCatalogDocument', () => {
         expect(doc.shows[0]?.images).toEqual(IMAGES);
     });
 
-    it('should ignore unknown top-level keys (for example a later banner)', () => {
-        expect(() => parseCatalogDocument(withChange('banner', { text: 'x' }))).not.toThrow();
+    it('should ignore unknown top-level keys', () => {
+        expect(() => parseCatalogDocument(withChange('notice', { text: 'x' }))).not.toThrow();
+    });
+
+    it('should leave banner out when the document has none (player uses its built-in art)', () => {
+        expect(parseCatalogDocument(validDocument())).not.toHaveProperty('banner');
+    });
+
+    it('should keep both banner image URLs', () => {
+        const doc = parseCatalogDocument(withChange('banner', BANNER));
+        expect(doc.banner).toEqual(BANNER);
+    });
+
+    it.each<[string, unknown]>([
+        ['only standard', { standard: BANNER.standard }],
+        ['only long', { long: BANNER.long }],
+        ['an empty object', {}],
+        ['a list', [BANNER.standard, BANNER.long]],
+        ['a string', BANNER.standard],
+        ['null', null],
+        ['an http URL', { ...BANNER, long: 'http://cdn.example.com/banner-wide.webp' }],
+        ['a relative URL', { ...BANNER, standard: 'banner.webp' }],
+        ['a URL that is not a string', { ...BANNER, standard: 1 }],
+        ['an extra key', { ...BANNER, wide: BANNER.long }],
+    ])('should reject a banner with %s', (_label, banner) => {
+        expect(() => parseCatalogDocument(withChange('banner', banner))).toThrow(
+            CatalogDocumentError,
+        );
+    });
+
+    it('should say which banner image is missing', () => {
+        expect(() =>
+            parseCatalogDocument(withChange('banner', { standard: BANNER.standard })),
+        ).toThrow('catalog.json: banner.long must be an https URL or a same-origin absolute path');
     });
 
     it.each([

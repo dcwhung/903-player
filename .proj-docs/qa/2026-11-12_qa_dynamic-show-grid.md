@@ -4,7 +4,7 @@
 - 取代同 branch 上次（已作廢）嘅 S1：code 之後改咗（S-935 inline `--show-grid-columns` + cqi、S-936 rerender test、S-938 e2e 補強）
 - Ledger（`impact --since bffa7ea` = `git merge-base HEAD origin/main`）：SKIP 10 / REVERIFY 4（`home` `catalog-data` `coming-soon` `repo-tooling`）/ UNCOVERED 13（`apps/player/e2e/showGridCounts.mjs` + `_mockups_/dynamic-show-grid/**` 12 個 → 歸入 `home`）
 - `catalog-data`：淨 `e2e/remoteCatalog.mjs`（`openWithCatalog` export + `contextOptions` 交畀 `newE2EPage`）；`coming-soon` / `repo-tooling`：淨 `e2e/run.mjs`（加 section）、`apps/player/package.json` + `package-lock.json`（1.33.0 → 1.35.0，同 plan L4 一致）
-- Plan：`.proj-docs/qa/plans/home.md` 加 AC-8（動態欄數規則）、scope `_mockups_/dynamic-show-grid/**` + `e2e/showGridCounts.mjs`、e2e command；其他三條沿用
+- Plan：`.proj-docs/qa/plans/home.md` 加 AC-9（動態欄數規則）、scope `_mockups_/dynamic-show-grid/**` + `e2e/showGridCounts.mjs`、e2e command；其他三條沿用
 
 ## Runs
 
@@ -18,7 +18,7 @@
 
 CI 同一個 SHA 綠咗，plan 嘅 unit / e2e 指令唔重跑；本地淨跑 coverage（CI 冇 coverage gate）。
 
-## AC-8 對證（CI e2e log 節錄）
+## AC-9 對證（CI e2e log 節錄）
 
 - ≤ 2 格一欄：1 個節目（2 格）→ 1 欄，今日節目成行闊
 - ≥ 3 格兩欄 + 單數橫跨：2 / 4 / 8 個節目（3 / 5 / 9 格）→ 2 欄，今日節目成行咁闊；偶數（8 / 12 格）唔橫跨、同其他格一樣闊

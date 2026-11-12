@@ -1,7 +1,7 @@
-# 903-player-api（Backend Phase 2a / 2b / 3a / 3b / 3c）
+# 903-player-api（Backend Phase 2a / 2b / 3a / 3b / 3c / 4）
 
 Cloudflare Worker：管理 catalog 內容（D1）、publish `catalog.json`（R2）、代出 `catalog.json` 同圖畀 player。
-Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a、3b）。
+Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a、3b）、`.proj-docs/plans/2026-11-12_plan_phase4-5.md`（Phase 4 L1）。版本記錄：`CHANGELOG.md`。
 
 | 路徑                               | 用途                                                                                                      | 權限                          |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------- |
@@ -15,7 +15,8 @@ Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans
 | `POST /api/publishes/:id/rollback` | 還原 #N 嘅上架狀態入 D1（之後新增嘅下架），再正常 publish（新一行）                                       | session + same-origin         |
 | 內容 API（2b-1，見下面）           | entries CRUD、R2 掃描、短篇排程（Phase 3 admin 用）                                                       | session（改嘢 + same-origin） |
 | Admin API（3a，見下面）            | 自動掃描、待辦、改 ID、資料夾配對、排序、變更摘要                                                         | session（改嘢 + same-origin） |
-| `PUT /api/assets`（2b-2，見下面）  | 上載 disc / tile（WebP）→ R2 + `assets`，回圖檔名                                                         | session + same-origin         |
+| `PUT /api/assets`（2b-2，見下面）  | 上載 disc / tile / banner（WebP）→ R2 + `assets`，回圖檔名                                                | session + same-origin         |
+| 首頁 banner / R2 原圖（4，見下面） | `GET` / `PUT` / `DELETE /api/banner`、`GET /api/dramas/:id/sources`、`GET /api/r2-source?key=`            | session（改嘢 + same-origin） |
 | `GET /catalog/v1/catalog.json`     | Player 讀嘅 catalog（`max-age=60` + ETag）                                                                | 公開，CORS 限 player          |
 | `GET /catalog/v1/img/<hash>.<ext>` | Catalog 圖（content hash，`immutable`）                                                                   | 公開，CORS 限 player          |
 
@@ -134,6 +135,10 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 - 內容（除 `generatedAt` 外）同最新一次一樣 → `{ unchanged: true, publish }`，唔開新行、唔寫 R2（admin 顯示「內容與目前版本相同」）；`?force=1` 照寫
 - 次序：先記 `publishes` 一行，再寫 R2；R2 寫失敗就刪返嗰行（ID 守衛唔會漏咗已上線嘅 ID）；R2 寫咗之後 purge edge cache 失敗只 log、唔當 publish 失敗（S-814：唔係還原會 revert D1，同已上線 catalog 唔夾）；連刪都失敗就標 `status = 'failed'`（migration `0003`）。「而家 publish 緊」、ID 守衛、「內容冇變」比較都只睇最新一行 `status = 'ok'`，記錄照列出 failed 行（`status` 欄）
 - 圖 manifest 嘅圖檔名要合 `<sha256 前 16 hex>.<webp|jpg>` 兼已經喺 `assets`
+- D1 有 banner（`PUT /api/banner`）就寫入 `catalog.json` 嘅 `banner: { standard, long }`（Worker 圖 URL，同樣要已上載）；冇 = 唔寫（player 用內建圖）。還原 #N 照用而家 D1 嘅 banner（同圖一樣唔還原）
+- **警告**（唔阻 publish）：`POST /api/publish` 200（包括 `unchanged`）同 `GET /api/changes` 都有 `warnings`：
+    - `{ kind: 'contrast', target: '<kind>/<id>', foreground, background, ratio, minimum }`：theme 色對唔夠 WCAG AA（`checkThemeContrast`）
+    - `{ kind: 'neutralTheme', target }`：theme 10 個必填色 = `NEUTRAL_THEME`（未設定配色；唔理 `art` 同選填欄位，色值唔分大細楷）
 
 ## 內容 API（Backend Phase 2b-1）
 
@@ -167,12 +172,12 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 
 `PUT /api/assets`（要 login + same-origin）：body = WebP 原始 bytes。
 
-| 檢查                                                       | 唔過                          |
-| ---------------------------------------------------------- | ----------------------------- |
-| `Content-Type: image/webp`                                 | 415                           |
-| 大小 ≤ `ASSET_MAX_BYTES`（1 MB）                           | 413                           |
-| RIFF / WEBP header（`VP8 ` / `VP8L` / `VP8X`）讀到闊高     | 422                           |
-| 尺寸白名單 `ASSET_DIMENSIONS`：disc 600×600、tile 1216×684 | 422（`allowed` 列出允許尺寸） |
+| 檢查                                                                                   | 唔過                          |
+| -------------------------------------------------------------------------------------- | ----------------------------- |
+| `Content-Type: image/webp`                                                             | 415                           |
+| 大小 ≤ `ASSET_MAX_BYTES`（1 MB）                                                       | 413                           |
+| RIFF / WEBP header（`VP8 ` / `VP8L` / `VP8X`）讀到闊高                                 | 422                           |
+| 尺寸白名單 `ASSET_DIMENSIONS`：disc 600×600、tile 1216×684、banner 1200×517 / 2000×400 | 422（`allowed` 列出允許尺寸） |
 
 - 檔名 = sha256 前 16 hex + `.webp`（同 `importLibrary.mjs` / `IMAGE_FILE_PATTERN` 一致）
 - 已經有呢個 hash → 200 `{ name, existed: true }`（idempotent，乜都唔寫）
@@ -197,6 +202,22 @@ curl -k -X PUT https://localhost:8787/api/assets -H 'Origin: https://localhost:8
 | Google OAuth client                             | **6 個月冇用**會被 Google 刪（刪咗 30 日內可以 restore） | 最少半年 login 一次 admin；被刪就喺 Google Cloud Console → Credentials restore                       |
 | Google consent screen Testing 模式              | —                                                        | 只有 test user 登入得（同 whitelist 一致）；加 admin 要同時加 test user 同 `ADMIN_EMAILS`            |
 
+## 首頁 banner + R2 原圖（Phase 4）
+
+Migration `0005_banner.sql`：`banner` 表（只會有 `id = 1` 一行；值 = R2 圖檔名 `<hash>.webp`）。
+
+| Method + path                  | 做咩                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /api/banner`              | `{ banner: { standard, long } \| null, updatedAt }`                                                                                                                                                                                                                                                                                        |
+| `PUT /api/banner`              | `{ standard, long }`（兩個都要，唔係 string → 400）；每張要合 `<hash>.webp`、已上載、R2 WebP header 尺寸啱 slot（standard 1200×517、long 2000×400），唔過 → 422；回同 `GET` 一樣。同 entries 一樣係草稿：`POST /api/publish` 先上線                                                                                                        |
+| `DELETE /api/banner`           | 還原預設（刪行）→ 204；冇 banner 都 204                                                                                                                                                                                                                                                                                                    |
+| `GET /api/dramas/:id/sources`  | 即場掃 `AUDIO` `<audio.folder>/`（= 最新掃描結果，唔寫 D1，draft 劇都得）→ `{ folder, cdCover, coverPhoto, arcs: [{ name, id, cdCover, coverPhoto }] }`；key = `AUDIO` 完整 key（冇 = `null`；`arcs[].id` 對唔到 definition 就 `null`）。400 id 唔合規、404 冇呢套劇、422 `audio.host` 唔係 `r2`                                           |
+| `GET /api/r2-source?key=<key>` | 代讀原圖：`key` 要係某套 r2 劇（包括 draft）即場掃描嘅 `cdCover` / `coverPhoto`，其他一律 404（唔收任意 key）；R2 冇呢個 object → 404；> `R2_SOURCE_MAX_BYTES`（20 MB）→ 413；R2 記嘅 Content-Type 唔係 jpeg / png / webp → 415；冇 `key` → 400。200 = 原圖（Content-Type 跟副檔名、`private, no-cache` + ETag，`If-None-Match` 啱 → 304） |
+
+- 封面固定檔名（唔分大細楷，`scanListing`）：`cd cover.<jpg|jpeg|png|webp>`（disc）、`cover photo.<…>`（tile；冇 cd cover 時 disc 都用）
+- Admin 開劇集編輯頁 / 掃描後自動 call `sources` → slot 冇圖就攞 `r2-source` 裁切上載；冇原圖 = `null` / 404，靜靜雞略過
+- 每次 `r2-source` 成本：1 個 D1 query + 該劇一次掃描（根 + 每個短篇各 1 個 list）+ 1 個 head（+ 1 個 get）
+
 ## Admin API（Phase 3a）
 
 全部喺 `/api` 底下，同內容 API 一樣要 login（改嘢要 same-origin），body 上限 256 KB。Migration `0004_admin.sql`：`entries.draft`、`scan_findings` 表、`publishes.error`（deploy 時 `deploy-api.yml` 自動 apply）。
@@ -210,7 +231,7 @@ curl -k -X PUT https://localhost:8787/api/assets -H 'Origin: https://localhost:8
 | `POST /api/dramas/:id/folder`         | `{ folder }`：配對 R2 頂層資料夾（R2 冇 → 422、其他劇用緊 → 409）→ 即刻重新掃描嗰套劇，同一個 batch 寫 + 刪「資料夾唔見」finding；配對返同一個資料夾又冇 diff → 200 `{ unchanged: true, definition, updatedAt, findings: [] }`，entry 唔郁，只刪 finding（S-801）                                                                                                                                                                                              |
 | `GET /api/folders/unmapped`           | `{ folders }`：冇劇用緊嘅頂層資料夾                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `PUT /api/order/:kind`                | `{ ids }`：上架嗰段嘅全部 entry（新次序；唔啱 → 422）→ 一個 batch 寫 `order` 1、2、3…；下架 / draft 唔郁；回 `{ ids, changed }`                                                                                                                                                                                                                                                                                                                                |
-| `GET /api/changes`                    | D1（唔包 draft）vs 最新 ok publish：`{ base, changes: { items, timeline }, validation }`（`summarizeChanges`；`validation` = `{ ok: true, episodeCount }` 或 `{ ok: false, error }`）                                                                                                                                                                                                                                                                          |
+| `GET /api/changes`                    | D1（唔包 draft）vs 最新 ok publish：`{ base, changes: { items, timeline }, validation, warnings, bannerChanged }`（`summarizeChanges`；`validation` = `{ ok: true, episodeCount }` 或 `{ ok: false, error }`）                                                                                                                                                                                                                                                 |
 
 - **Draft**（`entries.draft = 1`）：掃描自動建、未齊必須資料嘅劇。`PUT` 先試完整驗證，唔過就用寬鬆驗證（definition 用到但未上載嘅圖當有；其他規則照驗）；一次 `PUT` 通過完整驗證就自動清 `draft`。Publish / `GET /api/changes` 唔包 draft；`DELETE` 照准（從未發佈）
 - **Findings**：普通 publish 成功之後，待辦行冇「必須」格嘅 finding 標 `resolved_publish_id`（仲有必須嘅留低）；「資料夾唔見」喺配對資料夾時刪走

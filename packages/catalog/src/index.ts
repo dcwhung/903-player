@@ -14,6 +14,21 @@ export {
     weekdayOf,
 } from './date';
 export { NEUTRAL_THEME, type ShowTheme } from './showTheme';
+export {
+    ACCENT_TEXT_MIN_CONTRAST,
+    checkThemeContrast,
+    contrastRatio,
+    relativeLuminance,
+    TEXT_MIN_CONTRAST,
+    type ContrastTheme,
+    type ContrastWarning,
+} from './theme/contrast';
+export {
+    ASSET_DIMENSIONS,
+    ASSET_MAX_BYTES,
+    type AssetSize,
+    type AssetSlot,
+} from './assets/dimensions';
 export type {
     ArcAvailability,
     DailyEpisode,
@@ -36,6 +51,8 @@ export {
     documentSource,
     isCatalogImageUrl,
     parseCatalogDocument,
+    type AssetRef,
+    type CatalogBanner,
     type CatalogDocument,
     type CatalogEntry,
     type CatalogKind,

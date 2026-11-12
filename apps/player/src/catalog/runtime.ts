@@ -5,11 +5,13 @@
  * - initCatalog：fetch catalog.json（最多 CATALOG_FETCH_TIMEOUT_MS）→ parse → 兩個 registry 都 build 到先用；
  *   任何一步唔得就 console.warn + 用內建資料（app 照開，唔會白畫面）
  * dramas/index.ts、shows/index.ts 嘅 module-level function 全部經呢度攞 registry，consumer 唔使知有呢層。
+ * 首頁 banner（Phase 4）跟同一個 source：remote → prebuild snapshot → 冇（用 src/assets 內建圖），見 activeBanner。
  */
 import {
     buildRegistry,
     buildShowRegistry,
     documentSource,
+    type CatalogBanner,
     parseCatalogDocument,
     type DramaRegistry,
     type ShowRegistry,
@@ -18,6 +20,7 @@ import { CATALOG_FETCH_TIMEOUT_MS } from '../config/catalogFetch';
 import { bundledSource as bundledDramas } from './dramas/lib/bundledSource';
 import { PLAYER_EPISODE_OPTIONS } from './dramas/lib/episodeOptions';
 import { bundledSource as bundledShows } from './shows/lib/bundledSource';
+import { snapshotDocument } from './snapshot/source';
 
 export type CatalogOrigin = 'bundled' | 'remote';
 
@@ -32,6 +35,8 @@ export interface InitCatalogOptions {
 interface Registries {
     dramas: DramaRegistry;
     shows: ShowRegistry;
+    /** 呢份 catalog.json 嘅 banner；冇 = 用內建圖（唔會退去 snapshot：publish 咗冇 banner 就係唔要） */
+    banner: CatalogBanner | undefined;
 }
 
 const LOG_PREFIX = '[catalog]';
@@ -54,6 +59,15 @@ export const activeDramaRegistry = (): DramaRegistry => {
 export const activeShowRegistry = (): ShowRegistry => {
     registryRead = true;
     return remote?.shows ?? (bundledShowRegistry ??= buildShowRegistry(bundledShows));
+};
+
+/**
+ * 首頁 banner 兩張圖（Phase 4）：用緊 remote catalog 就跟佢，fallback 就跟 prebuild snapshot；
+ * undefined = 用 src/assets 內建圖。同 registry 一樣計「讀過」，之後唔准再換 source
+ */
+export const activeBanner = (): CatalogBanner | undefined => {
+    registryRead = true;
+    return remote ? remote.banner : snapshotDocument?.banner;
 };
 
 const currentOrigin = (): CatalogOrigin => (remote ? 'remote' : 'bundled');
@@ -83,6 +97,7 @@ const buildRemote = (value: unknown): Registries => {
     return {
         dramas: buildRegistry(documentSource(doc, 'dramas'), PLAYER_EPISODE_OPTIONS),
         shows: buildShowRegistry(documentSource(doc, 'shows')),
+        banner: doc.banner,
     };
 };
 

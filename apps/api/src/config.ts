@@ -1,4 +1,5 @@
 /* apps/api 嘅 named constants：cookie、TTL、cache 秒數、R2 key layout、Google endpoint */
+import { ASSET_DIMENSIONS, type AssetSize } from '@903-player/catalog';
 
 /** 唯一一份（S-773） */
 export const SECOND_MS = 1000;
@@ -88,18 +89,29 @@ export const CONTENT_BODY_LIMIT_BYTES = 256 * 1024;
 /** 只收 WebP（admin 喺 browser 轉好先上載） */
 export const ASSET_CONTENT_TYPE = 'image/webp';
 export const ASSET_EXTENSION = 'webp';
-const KIB = 1024;
-/** 1 MB：現有最大嘅圖遠細過呢個數 */
-export const ASSET_MAX_BYTES = KIB * KIB;
-
-/** disc：正方形 */
-const DISC_SIZE_PX = 600;
-/** tile：16:9（節目同劇集統一；劇集卡照舊 2:1 cover 裁） */
-const TILE_WIDTH_PX = 1216;
-const TILE_HEIGHT_PX = 684;
-
-/** 尺寸白名單（用戶 2026-11-10 決定） */
-export const ASSET_DIMENSIONS: readonly { width: number; height: number }[] = [
-    { width: DISC_SIZE_PX, height: DISC_SIZE_PX },
-    { width: TILE_WIDTH_PX, height: TILE_HEIGHT_PX },
+/**
+ * 上載白名單：disc / tile（用戶 2026-11-10 決定）+ 首頁 banner 窄 / 闊（Phase 4）；
+ * 尺寸同大小上限喺 @903-player/catalog（S-805）
+ */
+export const ASSET_UPLOAD_DIMENSIONS: readonly AssetSize[] = [
+    ASSET_DIMENSIONS.disc,
+    ASSET_DIMENSIONS.tile,
+    ASSET_DIMENSIONS.bannerStandard,
+    ASSET_DIMENSIONS.bannerLong,
 ];
+
+/* ───────────── R2 原圖代讀（GET /api/r2-source，Phase 4 封面編輯器） ───────────── */
+
+const MIB = 1024 * 1024;
+const R2_SOURCE_MAX_MIB = 20;
+/** 原圖大小上限：admin 喺 browser decode，太大會食爆記憶體（S-816） */
+export const R2_SOURCE_MAX_BYTES = R2_SOURCE_MAX_MIB * MIB;
+/** 原圖副檔名（細楷，同 scanListing 認做圖嘅一樣）→ 回應嘅 Content-Type */
+export const R2_SOURCE_CONTENT_TYPES: Readonly<Record<string, string>> = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.webp': 'image/webp',
+};
+/** 原圖會換（同名覆蓋）：每次用 ETag revalidate，唔好直接用舊 cache */
+export const R2_SOURCE_CACHE_CONTROL = 'private, no-cache';

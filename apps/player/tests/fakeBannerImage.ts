@@ -33,6 +33,7 @@ export interface FakeImage {
     naturalWidth: number;
     naturalHeight: number;
     src: string;
+    crossOrigin: string | null;
     onload: (() => void) | null;
     onerror: (() => void) | null;
 }
@@ -49,6 +50,7 @@ export const stubImages = (): FakeImage[] => {
             naturalWidth = FAKE_IMAGE_SIZE;
             naturalHeight = FAKE_IMAGE_SIZE;
             src = '';
+            crossOrigin: string | null = null;
             onload: (() => void) | null = null;
             onerror: (() => void) | null = null;
             constructor() {
