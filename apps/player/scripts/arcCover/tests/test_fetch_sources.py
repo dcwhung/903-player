@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "review"))
 
 import fetch_sources  # noqa: E402
-from build import REPO_ROOT  # noqa: E402
+from build import APP_ROOT  # noqa: E402
 from fetch_sources import (  # noqa: E402
     EXIT_FETCH_ERROR,
     EXIT_MISSING,
@@ -62,8 +62,8 @@ class UrlAndSlugTest(unittest.TestCase):
         self.assertTrue(url.endswith("/%E8%8A%9DSee%E8%8F%87Bi%20Family/cover%20photo.png"), url)
 
     def test_r2_base_should_match_app_constant(self) -> None:
-        # DRAMA_AUDIO_BASE 喺 @903-player/catalog（REPO_ROOT = apps/player，parents[1] = repo 根）
-        constants_ts = REPO_ROOT.parents[1] / "packages" / "catalog" / "src" / "constants.ts"
+        # DRAMA_AUDIO_BASE 喺 @903-player/catalog（APP_ROOT = apps/player，parents[1] = repo 根）
+        constants_ts = APP_ROOT.parents[1] / "packages" / "catalog" / "src" / "constants.ts"
         constants = constants_ts.read_text(encoding="utf-8")
         match = re.search(r"DRAMA_AUDIO_BASE = '([^']+)'", constants)
         self.assertIsNotNone(match)

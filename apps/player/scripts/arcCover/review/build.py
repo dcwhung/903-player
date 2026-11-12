@@ -32,7 +32,7 @@ from PIL import Image
 
 REVIEW_DIR = Path(__file__).resolve().parent
 TOOL_DIR = REVIEW_DIR.parent
-REPO_ROOT = TOOL_DIR.parents[1]
+APP_ROOT = TOOL_DIR.parents[1]
 TEMPLATE = REVIEW_DIR / "index.html"
 DEFAULT_WORK = Path(os.environ.get("ARC_COVER_WORK") or Path(tempfile.gettempdir()) / "903-player-covers")
 if str(TOOL_DIR) not in sys.path:
@@ -340,7 +340,7 @@ def parse_args(argv: list[str]) -> tuple[Paths, Path | None, int | None]:
         type=int,
         help="每批 64MB 預留畀主頁嘅 bytes（預設 = build 出嚟嘅 site/index.html 大小）",
     )
-    parser.add_argument("--repo", type=Path, default=REPO_ROOT, help=argparse.SUPPRESS)
+    parser.add_argument("--repo", type=Path, default=APP_ROOT, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     # 負數會令每批上限超過 64MB；≥ 64MB 會令每批上限 ≤ 0（每個檔自己一批）
     if args.page_bytes is not None and not 0 <= args.page_bytes < MAX_BYTES_PER_PUBLISH:

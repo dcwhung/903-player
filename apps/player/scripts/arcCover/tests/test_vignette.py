@@ -19,9 +19,9 @@ from constants import VIGNETTE_ALPHA, VIGNETTE_START  # noqa: E402
 from geometry import vignette_alpha  # noqa: E402
 from preview import _vignette  # noqa: E402
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-DISC_CSS = REPO_ROOT / "src" / "components" / "shared" / "common" / "Disc" / "Disc.module.css"
-TOKENS_CSS = REPO_ROOT / "src" / "styles" / "tokens.css"
+APP_ROOT = Path(__file__).resolve().parents[3]
+DISC_CSS = APP_ROOT / "src" / "components" / "shared" / "common" / "Disc" / "Disc.module.css"
+TOKENS_CSS = APP_ROOT / "src" / "styles" / "tokens.css"
 SIZE = 1001
 CENTRE = SIZE // 2
 
