@@ -1,6 +1,7 @@
 /*
  * catalog.json（v1）：一份文件包晒全部節目同劇集，畀 player 喺 runtime 讀（Phase 1），將來由 backend publish（Phase 2）。
  * 每項 = 一個 folder：definition 同 library 嘅 show.json / drama.json 一模一樣，images 係「檔名 → 絕對 URL」manifest。
+ * 選填 banner = 首頁 banner 兩張圖（窄 + 闊，缺一張成份拒絕）。
  * 呢度只驗文件結構（任何一項唔合格就成份拒絕）；definition 內容由 buildRegistry / buildShowRegistry 驗。
  * 規則同 schemas/catalog.schema.json 一致（document/catalogSchema.node.test.ts 鎖住）
  */
@@ -25,12 +26,23 @@ export interface CatalogEntry {
     images: Readonly<Record<string, string>>;
 }
 
+/** catalog.json 入面一張圖：https 絕對 URL 或者同 origin 嘅絕對路徑（同 images manifest 嘅值一樣） */
+export type AssetRef = string;
+
+/** 首頁 banner：窄版 1200×517 + 闊版 2000×400（ASSET_DIMENSIONS），兩張一齊換 */
+export interface CatalogBanner {
+    standard: AssetRef;
+    long: AssetRef;
+}
+
 export interface CatalogDocument {
     schemaVersion: typeof CATALOG_SCHEMA_VERSION;
     /** ISO 8601 時間（要有時區） */
     generatedAt: string;
     shows: readonly CatalogEntry[];
     dramas: readonly CatalogEntry[];
+    /** 選填（schemaVersion 唔升，舊 player 忽略）；冇 = player 用內建圖 */
+    banner?: CatalogBanner;
 }
 
 export class CatalogDocumentError extends Error {
@@ -69,12 +81,31 @@ const isDateTime = (value: unknown): value is string => {
     return day !== undefined && new Date(`${day}T00:00:00Z`).toISOString().startsWith(day);
 };
 
+const BANNER_KEYS: readonly (keyof CatalogBanner)[] = ['standard', 'long'];
+
+const readImageUrl = (value: unknown, path: string): AssetRef =>
+    typeof value === 'string' && isCatalogImageUrl(value)
+        ? value
+        : fail(path, 'must be an https URL or a same-origin absolute path');
+
+/** banner 兩張都要、唔准多出 key（打錯字會靜靜雞冇 banner） */
+const readBanner = (value: unknown): CatalogBanner => {
+    const raw = readRecord(value, 'banner');
+    Object.keys(raw).forEach((key) => {
+        if (!(BANNER_KEYS as readonly string[]).includes(key))
+            fail('banner', `has an unknown key "${key}"`);
+    });
+    return {
+        standard: readImageUrl(raw.standard, 'banner.standard'),
+        long: readImageUrl(raw.long, 'banner.long'),
+    };
+};
+
 const readImages = (value: unknown, path: string): Record<string, string> => {
     const raw = readRecord(value, path);
     Object.entries(raw).forEach(([file, url]) => {
         if (!IMAGE_FILE_PATTERN.test(file)) fail(path, `has an invalid file name "${file}"`);
-        if (typeof url !== 'string' || !isCatalogImageUrl(url))
-            fail(`${path}["${file}"]`, 'must be an https URL or a same-origin absolute path');
+        readImageUrl(url, `${path}["${file}"]`);
     });
     return raw as Record<string, string>;
 };
@@ -116,6 +147,7 @@ export const parseCatalogDocument = (value: unknown): CatalogDocument => {
         generatedAt: raw.generatedAt as string,
         shows: shows ?? [],
         dramas: dramas ?? [],
+        ...(raw.banner === undefined ? {} : { banner: readBanner(raw.banner) }),
     };
 };
 

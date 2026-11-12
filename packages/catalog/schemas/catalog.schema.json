@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "903 Player catalog（catalog.json）",
-    "description": "player 喺 runtime 讀嘅一份 catalog：全部節目同劇集（Phase 1）。runtime 驗證喺 packages/catalog/src/document/document.ts；同一類入面 id 唔准重複、generatedAt 要係存在嘅日子，呢兩樣淨係 runtime 驗。definition 內容跟 show.schema.json / drama.schema.json，由 registry build 驗。頂層多出嚟嘅 key（例如將來嘅 banner）會被忽略。",
+    "description": "player 喺 runtime 讀嘅一份 catalog：全部節目同劇集（Phase 1）。runtime 驗證喺 packages/catalog/src/document/document.ts；同一類入面 id 唔准重複、generatedAt 要係存在嘅日子，呢兩樣淨係 runtime 驗。definition 內容跟 show.schema.json / drama.schema.json，由 registry build 驗。頂層多出嚟嘅 key 會被忽略。",
     "type": "object",
     "required": ["schemaVersion", "generatedAt", "shows", "dramas"],
     "properties": {
@@ -29,6 +29,22 @@
             "minItems": 1,
             "items": { "$ref": "#/definitions/entry" },
             "description": "廣播劇（definition = drama.json）"
+        },
+        "banner": {
+            "type": "object",
+            "required": ["standard", "long"],
+            "additionalProperties": false,
+            "description": "選填：首頁 banner（兩張一齊換）；冇就用 player 內建圖。schemaVersion 唔使升，舊 player 會忽略",
+            "properties": {
+                "standard": {
+                    "$ref": "#/definitions/imageUrl",
+                    "description": "窄版 1200×517（banner.webp）"
+                },
+                "long": {
+                    "$ref": "#/definitions/imageUrl",
+                    "description": "闊版 2000×400（banner-wide.webp）"
+                }
+            }
         }
     },
     "definitions": {
@@ -53,12 +69,15 @@
                         "pattern": "^(?!.*(^|/)\\.\\.?(/|$))[^/\\\\]+(/[^/\\\\]+)*$"
                     },
                     "additionalProperties": {
-                        "type": "string",
-                        "pattern": "^(https://[^/?#\\s]+([/?#].*)?|/(?!/).*)$",
-                        "description": "https URL，或者同 origin 嘅絕對路徑（/ 開頭）"
+                        "$ref": "#/definitions/imageUrl"
                     }
                 }
             }
+        },
+        "imageUrl": {
+            "type": "string",
+            "pattern": "^(https://[^/?#\\s]+([/?#].*)?|/(?!/).*)$",
+            "description": "https URL，或者同 origin 嘅絕對路徑（/ 開頭）"
         }
     }
 }
