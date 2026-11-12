@@ -37,6 +37,8 @@ describe('GET /api/entries', () => {
                     enabled: true,
                     draft: false,
                     updatedAt: '2026-11-08T00:00:00Z',
+                    published: false,
+                    publishedArcs: [],
                 },
                 {
                     kind: 'shows',
@@ -45,9 +47,32 @@ describe('GET /api/entries', () => {
                     enabled: true,
                     draft: false,
                     updatedAt: '2026-11-08T00:00:00Z',
+                    published: false,
                 },
             ],
         });
+    });
+
+    it('should mark entries and arcs that the latest ok publish has ever listed', async () => {
+        await adminPost('/api/publish');
+        const golden = drama(3);
+        const arcs = golden.arcs as Json[];
+        // 新短篇（下架、未上過架）+ 已上過架嘅 season-1 轉下架：再發佈
+        await putEntry('dramas', 'golden', {
+            ...golden,
+            arcs: [
+                { ...arcs[0], enabled: false },
+                { id: 'later', name: '後加', episodes: 2, enabled: false },
+            ],
+        });
+        await putEntry('dramas', 'fresh', { ...golden, name: '新劇', enabled: false });
+        await adminPost('/api/publish');
+        const { entries } = (await (await adminGet('/api/entries')).json()) as { entries: Json[] };
+        const byId = Object.fromEntries(entries.map((e) => [e.id, e]));
+        expect(byId.golden).toMatchObject({ published: true, publishedArcs: ['season-1'] });
+        expect(byId.fresh).toMatchObject({ published: false, publishedArcs: [] });
+        expect(byId.badgirl).toMatchObject({ published: true });
+        expect(byId.badgirl).not.toHaveProperty('publishedArcs');
     });
 
     it('should need a session', async () => {
