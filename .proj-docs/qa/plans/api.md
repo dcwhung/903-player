@@ -30,7 +30,7 @@
     - 2b-1 schedule core：`packages/catalog/src/schedule/*`（scan core `packages/catalog/src/scan/*` 屬 drama 鏈）
     - `apps/api/scripts/{importLibrary.mjs,importLibrary.d.mts,importLibrary.test.ts}`（3b 刪 `opsPage.test.ts`） `apps/api/test/*`
     - `_mockups_/admin-ops/index.html` `_mockups_/admin/{index.html,banner.webp}`（3b Design Origin，3a 唔驗，只凍結） `.github/workflows/deploy-api.yml` `.github/workflows/import-catalog.yml`
-    - 1-hop：`apps/player/scripts/buildCatalogJson.{mjs,d.mts}`（`scanLibrary`，亦屬 catalog-data）
+    - 1-hop：`packages/catalog/src/assets/dimensions.ts`（Phase 4 L0：`ASSET_DIMENSIONS` / `ASSET_MAX_BYTES` 由 `config.ts` 搬過去，上載白名單 `ASSET_UPLOAD_DIMENSIONS` 照舊 disc + tile）`apps/player/scripts/buildCatalogJson.{mjs,d.mts}`（`scanLibrary`，亦屬 catalog-data）
 - Commands:
     - `npm test -- apps/api packages/catalog/src/schedule`（`apps/api` 2 個 project；coverage：喺 `apps/api` 加 `--coverage.enabled --coverage.provider=v8`）
     - 本機 smoke（冇 Cloudflare 帳戶都得）：`apps/api` 臨時 `.dev.vars`（假 secret）→ `wrangler d1 migrations apply 903-player --local` → `node scripts/importLibrary.mjs --local` ×2 → `wrangler dev --local-protocol https` → D1 插測試 session → curl AC-3 / AC-5 / AC-6 → 比較 published `catalog.json` 同 `buildCatalogDocument`（AC-7）→ Playwright 行 ops 頁（AC-8；冇權限頁由 unit 證，要真 Google callback）；完咗刪 `.dev.vars`、還原 `.wrangler/`
