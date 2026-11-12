@@ -92,3 +92,49 @@ next_action: proceed to QA / merge (backlog items non-blocking)
 context: W-714 reproduced in workerd — published show disabled + missing image → draft → dropped from catalog; published drama → publish 409. CI run 43112989807 for 4d83f96 was in_progress at first review. Re-review: W-714 fixed by 6306589/645f593 (Option A); (ii-b) drama case now 422 via probe; suggest S-831 regression test.
 report: .proj-docs/reviews/2026-11-12_review_admin-feedback-0.6.3.md (committed, not pushed)
 ```
+
+---
+
+## 追加 review（視覺回饋 4 輪）
+
+- 日期：2026-11-12；審閱者：code-reviewer；範圍：`2b14aeb..3745863`（`1904855` 淨 mockup，冇 review code）；Tier：T2
+- SSoT：用戶睇截圖確認嘅 7 項（收合 nav icon、chip / switch hover 同 disabled、虛線媒體框、「刪除」+ `Trash2`、action icon、login 款 3、e2e 真封面 fixtures）
+- Hard Gates：all pass（`eslint apps/admin`、`tsc -b`、`prettier --check apps/admin _mockups_/admin-login`、diff 相關 unit 25 檔 81 test、`vite build`）。CI run `43126936714`（`3745863`）review 時仲 `in_progress`
+- 評分：100 / 100（正確性 25、安全性 20、可維護性 20、測試 15、性能 10、風格 10）。冇 🔴 / 🟡。**結果：✅ pass**
+
+### 重點檢查結果
+
+- **Specificity**：`.shell.mini .nav .logo-mini`（0,3,0）贏 `.shell.mini .nav a`（0,2,1）同 `.nav a:hover`；`.logo-mini` 只喺 mini 先 render（`Nav.tsx:65`）。`.presets` / `.switch` 揀咗嘅 rule 只會 match 自己 container，`.theme-switch` 係另一個 class，唔受影響。disabled rule 同揀咗 rule 一樣 specificity、放喺後面，所以 disabled 贏。`.flow-bar a, .scan-bar a, .note a` 加咗 inline-flex：而家 `.note` 入面得兩個 link（`UnpublishedNote`、`EditorNotices` 重新登入）
+- **Token**：6 個新 token（`--gsi-*` ×4、`--login-scrim`、`--shadow-float`）喺淺色、`@media` 深色、`[data-theme='dark']` 三段都有（`tokens.css:69-75 / 133-139 / 173-179`）。量咗對比：disabled chip `--muted`/`--surface-2` 淺色 4.97、深色 5.68；`--media-border`/`--surface` 淺色 3.32、深色 3.72；`.gsi` focus ring `--primary` 對深色卡 3.38、對 `--gsi-bg` 4.11，全部 ≥ 3:1
+- **Login a11y**：得一個 `h1`（「管理介面登入」）；卡入面 banner `img` 有 alt；背景 `.login-bg` 同 G logo 都有 `aria-hidden`；`.gsi:focus-visible` 有 outline；`?next=` 照用 `loginHref(location)`。AuthGate 重試畫面都係 `main.login`，冇 `.login-bg` 都正常，底色照用 `--bg`
+- **Roboto**：只係 Google Fonts CSS 多咗 Roboto 500 嘅 `@font-face`（幾 KB CSS）。woff2 要有字用到先下載，即係淨係登入頁「Google」嗰幾個拉丁字母；字體照樣 preload + `display=swap`，唔會阻 render，其他頁唔受影響
+- **Fixtures**：`vite build` 後 `dist/` 只有 `_headers assets banner.webp icon-192.png index.html`，冇 fixtures。圖係 `mockApi.mjs` 用 `page.route` + `route.fulfill({ path })` 出
+
+### 🟢 Suggestion / Observation（backlog，唔 block）
+
+- S-832 冇用嘅 CSS / prop：`LoginScreen` 唔再用 `<Brand big />`，所以 `Brand` 嘅 `big` prop（`app/Brand.tsx:9`）同 `.brand-banner.big`（`mockup.css:1421`）冇人用。另外 `app.css:231` 嘅 `.login { min-height: 100dvh }` 同 `theme.css` 新嘅 `.login` 重複。三樣都可以刪
+- S-833 `app/LoginScreen.tsx` `GoogleLogo` 係 inline `<svg>`（約 20 行），同 sw-coding-style-ts §4 唔夾；不過 SSoT 6 寫明「inline 四色 G」，而且 `RotateNotice` 本身都係咁寫，所以唔 block。想兩邊都啱，可以搬去 `src/assets/svg/logos/google-g.svg`，再用 Vite 預設嘅 URL import 做 `<img alt="">`，唔使加 svgr
+- S-834 `e2e/mockApi.mjs:8`：`new URL('./fixtures/', import.meta.url).pathname` 遇到有空格或者非 ASCII 嘅 checkout 路徑會變 `%20` 咁樣，`readdirSync` 就會失敗。建議改用 `fileURLToPath`。CI 路徑而家冇問題
+- Observation：`.presets` / `.arc-tabs` 嘅 disabled 樣式而家 production 冇地方用到（e2e 要用 `el.disabled = true` 先觸發），只有 `Switch` 有 `disabled` prop。SSoT 2 要求有呢個樣式，所以保留。另外揀咗又 disabled 時睇唔到揀咗邊個，但只有讀屏會讀 `aria-pressed` / `aria-selected`，暫時可以接受
+- Observation：`ScheduleSaveBar` 改咗 `export`，只係畀 test 用，冇其他 caller
+
+### ✅ 做得好嘅地方
+
+- 4 輪都係先 failing test 再 fix；chip 對比、媒體框、nav icon 有 node CSS test 鎖住，e2e 喺淺色同深色都量咗對比
+- 箭咀字元（`←→▾▴`）全部改做 lucide icon，e2e 會檢查有冇字元殘留；icon 一律加 `aria-hidden`，「刪除」另外有 `aria-label`
+
+### Handoff receipt（追加）
+
+```
+HANDOFF_RECEIPT
+agent: code-reviewer
+scope: admin-feedback-0.6.3 visual follow-up (2b14aeb..3745863; 1904855 mockup-only)
+status: pass
+score: 100
+hard_gates: { lint: pass, type: pass, tests: pass, coverage: n/a, no_critical: pass, security: n/a }
+blocking: []
+backlog: [S-832, S-833, S-834]
+next_action: proceed to QA / merge after CI 43126936714 (3745863) is green
+context: specificity, tokens (3 theme blocks), login a11y, Roboto cost, dist fixtures all checked; only dead CSS/prop, inline G svg (SSoT says inline), fileURLToPath nit
+report: .proj-docs/reviews/2026-11-12_review_admin-feedback-0.6.3.md (committed, not pushed)
+```
