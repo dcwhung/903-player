@@ -87,10 +87,10 @@ const startPreview = async () => {
     const server = spawn(
         process.execPath,
         [viteBin, 'preview', '--port', String(PORT), '--strictPort'],
-        // stderr 照出：vite 起唔到（例如撞 port）時睇到原因（S-844）
+        // stderr 照出：vite 起唔到（例如撞 port）時睇到原因（S-850）
         { stdio: ['ignore', 'ignore', 'inherit'] },
     );
-    // 俾 signal 殺咗時 exitCode 係 null、signalCode 先有值，兩樣都要睇（S-844）
+    // 俾 signal 殺咗時 exitCode 係 null、signalCode 先有值，兩樣都要睇（S-850）
     const hasExited = () => server.exitCode !== null || server.signalCode !== null;
     for (let i = 0; i < 30; i += 1) {
         // vite 自己退出（例如 strictPort 撞 port）就唔使再等

@@ -45,8 +45,8 @@ all pass。
 
 ## 🟢 / Observation（入 backlog）
 
-- S-844 `apps/player/e2e/run.mjs:88–103`：player 嘅 startPreview 比 admin 少兩樣：(1) 只查 `exitCode`，vite 被 signal 殺（`exitCode` = null、`signalCode` 有值）會白等 30 次 poll 先 fail；(2) `stdio: 'ignore'`，起唔到時只得 `vite preview did not start`，睇唔到原因。可以照 admin 加 `signalCode` 檢查同 `stderr: 'inherit'`（用戶指示今次唔改 player）
-- S-845 `apps/admin/e2e/run.mjs:72–75`：`stopPreview()` 嘅 `await exited` 冇 timeout；萬一 vite 唔理 SIGTERM，e2e 會永遠卡住。vite 8.3.4 實測會退出（author 已驗），屬 L3 防禦性建議：例如 5 秒後 `SIGKILL`
+- S-850 `apps/player/e2e/run.mjs:88–103`：player 嘅 startPreview 比 admin 少兩樣：(1) 只查 `exitCode`，vite 被 signal 殺（`exitCode` = null、`signalCode` 有值）會白等 30 次 poll 先 fail；(2) `stdio: 'ignore'`，起唔到時只得 `vite preview did not start`，睇唔到原因。可以照 admin 加 `signalCode` 檢查同 `stderr: 'inherit'`（用戶指示今次唔改 player）
+- S-851 `apps/admin/e2e/run.mjs:72–75`：`stopPreview()` 嘅 `await exited` 冇 timeout；萬一 vite 唔理 SIGTERM，e2e 會永遠卡住。vite 8.3.4 實測會退出（author 已驗），屬 L3 防禦性建議：例如 5 秒後 `SIGKILL`
 
 ## ✅ 做得好嘅地方
 
@@ -68,14 +68,14 @@ hard_gates:
 next_action: merge_develop
 next_agent: quality-assurance
 branch: "claude/peaceful-hamilton-35etnm"
-context: "PR #207 admin e2e runner orphan-vite fix 100/100 pass; integration branch is main; no C/W; S-844 (player startPreview lacks signalCode check + stderr) and S-845 (stopPreview await has no SIGKILL timeout) to backlog; player not awaiting exit is not a real gap (uses process.exitCode). Report committed locally, not pushed."
+context: "PR #207 admin e2e runner orphan-vite fix 100/100 pass; integration branch is main; no C/W; S-850 (player startPreview lacks signalCode check + stderr) and S-851 (stopPreview await has no SIGKILL timeout) to backlog; player not awaiting exit is not a real gap (uses process.exitCode). Report committed locally, not pushed."
 ```
 
 ## Re-review（`b3e1e7a`）
 
 - 範圍：只睇 follow-up commit `b3e1e7a`（`apps/admin/e2e/run.mjs` +14 / −2、`apps/player/e2e/run.mjs` +10 / −2），唔重新 review 成個 branch
-- S-844 ✅ resolved：player `startPreview()` 加 `hasExited()`（`exitCode` 或 `signalCode`），poll loop 一見 vite 退出就 break，之後 throw `vite preview exited early (code …, signal …) on port …`；stdio 改 `['ignore', 'ignore', 'inherit']`，起唔到時睇到 vite 嘅 stderr。行為同 admin `waitForServer` 一致
-- S-845 ✅ resolved：admin `stopPreview()` 已退出就直接 return；否則 SIGTERM 後 race `exited` 同 `STOP_TIMEOUT_MS = 5_000`，`clearTimeout` 之後先決定；超時 log 一句再 SIGKILL 並 `await exited`（SIGKILL 唔可以被忽略，唔會再 hang）。常數有命名同註解
+- S-850 ✅ resolved：player `startPreview()` 加 `hasExited()`（`exitCode` 或 `signalCode`），poll loop 一見 vite 退出就 break，之後 throw `vite preview exited early (code …, signal …) on port …`；stdio 改 `['ignore', 'ignore', 'inherit']`，起唔到時睇到 vite 嘅 stderr。行為同 admin `waitForServer` 一致
+- S-851 ✅ resolved：admin `stopPreview()` 已退出就直接 return；否則 SIGTERM 後 race `exited` 同 `STOP_TIMEOUT_MS = 5_000`，`clearTimeout` 之後先決定；超時 log 一句再 SIGKILL 並 `await exited`（SIGKILL 唔可以被忽略，唔會再 hang）。常數有命名同註解
 - L2（reviewer 自己跑，scratchpad 抽出同一段 code）：唔理 SIGTERM 嘅 child → 5009 ms 後 `signalCode = SIGKILL`；正常 child → 3 ms；已退出 child → 0 ms 直接 return；被 SIGKILL 嘅 child `hasExited()` = true（`exitCode` null）。跑完 `pgrep` 冇殘留 process。冇起 vite、冇用 port
 - Author 驗證（另一個 worktree，同一內容）：full admin e2e pass；full player e2e 780 PASS / 0 FAIL；冇 `dist` 時 1 s 內報 `exited early (code 1, signal null)` 連 vite stderr；冇 vite 殘留
 - Gates：`npx eslint apps/admin apps/player` exit 0；`npx prettier --check apps/admin apps/player` exit 0（用 folder 範圍，避開 hook）。Type / unit / coverage n/a（e2e runner 唔喺 tsconfig、冇 unit test）
@@ -88,10 +88,10 @@ context: "PR #207 admin e2e runner orphan-vite fix 100/100 pass; integration bra
 HANDOFF_RECEIPT
 agent: code-reviewer
 status: pass
-score: 100（re-review；S-844、S-845 resolved）
+score: 100（re-review；S-850、S-851 resolved）
 hard_gates: { lint: pass, type: n/a, tests: n/a, coverage: n/a, no_critical: pass, security_scan: n/a }
 blocking: none
-findings: S-844 resolved（b3e1e7a）；S-845 resolved（b3e1e7a）；冇新 finding
+findings: S-850 resolved（b3e1e7a）；S-851 resolved（b3e1e7a）；冇新 finding
 next_action: QA
 context: re-review b3e1e7a；報告只 commit，未 push（等 b3e1e7a 嘅 CI 跑完先由 main agent push）
 ```

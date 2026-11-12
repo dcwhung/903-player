@@ -2,7 +2,7 @@
 
 - Tier: T1（淨改 `apps/admin/e2e/run.mjs`，test harness）| Commit: `9e1a945`（code）/ `6481445`（review 報告）| Verdict: ✅ pass
 - Ledger（`impact --since 0c03889` = `merge-base HEAD origin/main`）: SKIP 13 / REVERIFY 1（admin）/ UNCOVERED 0 / IGNORED 1（review 報告）
-- SSoT: 用戶 AC（PR #207）：AC-1 跑完 `node apps/admin/e2e/run.mjs` 冇 vite preview 留低；AC-2 port 俾 stray server 佔住時第二次跑要 fail 兼有清楚訊息。Review `.proj-docs/reviews/2026-11-12_review_admin-e2e-orphan-vite.md`（100/100，S-844 / S-845 淨建議）；plan `plans/admin.md`（沿用，冇改）
+- SSoT: 用戶 AC（PR #207）：AC-1 跑完 `node apps/admin/e2e/run.mjs` 冇 vite preview 留低；AC-2 port 俾 stray server 佔住時第二次跑要 fail 兼有清楚訊息。Review `.proj-docs/reviews/2026-11-12_review_admin-e2e-orphan-vite.md`（100/100，S-850 / S-851 淨建議）；plan `plans/admin.md`（沿用，冇改）
 - SKIP api / bookmark / card-zoom / catalog-data / coming-soon / drama / home / mini-player / player-core / pwa-shell / repo-tooling / show-today-page / ui-foundation（frozen, untouched）
 
 ## Runs
