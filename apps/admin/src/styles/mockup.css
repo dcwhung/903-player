@@ -1418,10 +1418,6 @@ textarea.ep-titles {
     width: 100%;
     height: auto;
 }
-.brand-banner.big {
-    max-width: 300px;
-    margin: 0 auto;
-}
 .ver-pill {
     position: absolute;
     right: 6px;
