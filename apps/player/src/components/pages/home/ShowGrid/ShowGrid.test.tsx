@@ -121,6 +121,23 @@ describe('ShowGrid', () => {
         );
     });
 
+    // S-936：2 → 3 格 totalRows 都係 2（一欄 2 行 → 兩欄 2 行），欄數變都要重新量、出新行高
+    it('should measure again when the column count changes but the row count does not', () => {
+        mockLayout(500, { widthPx: IPHONE_15_PX, ...IPHONE_GAPS });
+        const { rerender } = render(<ShowGrid tiles={tilesOf(2)} label="節目" busy={false} />);
+        expect(gridOf('節目 1')).toHaveStyle({ gridTemplateRows: 'repeat(2, 244px)' });
+
+        rerender(<ShowGrid tiles={tilesOf(3)} label="節目" busy={false} />);
+
+        // 兩欄：(361 − 12) ÷ 2 = 174.5px 一欄，16:9 最矮 98.2px，最多 × 1.3（TOKENS）≈ 127.6px < 244
+        const grid = gridOf('節目 1');
+        expect(grid).toHaveStyle(twoColumns);
+        expect(
+            parseFloat(/,\s*([\d.]+)px/.exec(grid?.style.gridTemplateRows ?? '')?.[1] ?? ''),
+        ).toBeCloseTo(174.5 * (9 / 16) * 1.3);
+        expect(grid).toHaveAttribute('data-span-last');
+    });
+
     it.each([3, 5, 7])(
         'should span the last of %i tiles (today) across both columns on one page',
         (count) => {
