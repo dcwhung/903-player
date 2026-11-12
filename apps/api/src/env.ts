@@ -2,7 +2,7 @@
 export interface Env {
     DB: D1Database;
     CATALOG: R2Bucket;
-    /** 廣播劇音檔（903-radio-drama）：只 list / head */
+    /** 廣播劇音檔（903-radio-drama）：只 list / head，同 get 封面原圖（r2-source） */
     AUDIO: R2Bucket;
     GOOGLE_CLIENT_ID: string;
     /** secret */
