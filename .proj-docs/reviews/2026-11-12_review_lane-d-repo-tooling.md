@@ -4,7 +4,7 @@
 - 目標：`refactor/lane-d-repo-tooling` `450e5d4..8ff0756`（1 個 commit，6 個檔：`ci.yml`、`deploy-api.yml`、`.proj-docs/qa/ledger-ignore`、root `package.json` / `package-lock.json`、root `vitest.config.ts`）
 - SSoT（L1）：`.proj-docs/backlog.md` 六個 ID 嘅描述同 Source 報告；`.proj-docs/qa/plans/repo-tooling.md` AC-2 / AC-3
 - Tier：T2（CI / deploy workflow、root 依賴同 coverage 設定；冇改 app 源碼，player / admin / api bundle 唔受影響）
-- 總評：六項都跟足 backlog 做，冇 🔴 / 🟡。`deploy-api.yml` 嘅 secret 而家只有 wrangler 兩步攞到，`Require main` 喺 checkout 之前用 `working-directory: .`，冇問題。Production smoke 我喺本機跑過，結果同開發者一樣。留低 4 條 🟢，最重要係 S-850：production 由 v1.31.1 起已經設咗 `VITE_CATALOG_URL`，所以呢個 smoke 守住嘅「flag off」唔再係 production 實際行緊嘅路徑
+- 總評：六項都跟足 backlog 做，冇 🔴 / 🟡。`deploy-api.yml` 嘅 secret 而家只有 wrangler 兩步攞到，`Require main` 喺 checkout 之前用 `working-directory: .`，冇問題。Production smoke 我喺本機跑過，結果同開發者一樣。留低 4 條 🟢，最重要係 S-852：production 由 v1.31.1 起已經設咗 `VITE_CATALOG_URL`，所以呢個 smoke 守住嘅「flag off」唔再係 production 實際行緊嘅路徑
 - S-781（GitHub Environment）今次冇做，因為要用戶喺 GitHub Settings 開 environment，backlog 保留 open；`deploy-api.yml` 檔頭注釋已經寫明 main guard 只係防手滑
 
 ## Hard Gates
@@ -32,10 +32,10 @@
 
 ## 🟢 / Observation
 
-- S-850 `.github/workflows/ci.yml` production smoke：`deploys/2026-11-10_deploy_v1.31.1.md` 寫明 CI build 嘅 `VITE_CATALOG_URL` 已經指向 Worker，即係 production 而家係 flag 開 + prebuild snapshot。新 step 守住嘅係「repo variable 冇設」嗰個 fallback 設定（呢個設定仍然有效，backlog S-766 原文都係咁要求），但 step 注釋寫「production 真正 flag off 路徑」會令人以為 production 行緊呢條路。建議改注釋做「repo variable 未設時嘅 flag off 設定」；production 真正行緊嘅路徑（真 Worker + snapshot）CI 依然冇 smoke，可以考慮另外開 backlog
-- S-851 `ci.yml` `player-dist-production` 設咗 `retention-days: 1`：CLAUDE.md 講過 e2e 被 cancel 之後要 rerun 補跑。如果超過 1 日先「Re-run failed jobs」，check job 唔會重跑，所以 e2e job 會喺 `Download production build` 就 fail。可以改做 3–7 日，或者喺 runbook 寫明超過 1 日要 re-run all jobs
-- S-852 `ci.yml` smoke 等 preview 嗰個 curl loop：等夠 30 秒都唔會報錯，之後由 `page.goto` 嘅 ECONNREFUSED 令 step fail，而 `$RUNNER_TEMP/preview.log` 從來冇印出嚟，fail 咗都睇唔到原因。可以 loop 完再 `curl -sf` 一次，唔得就 `cat` 個 log 再 `exit 1`
-- S-853 `README.md:160-168`：寫住「root scripts 轉發去 `apps/player`」，而 `npm run coverage` 而家係 root vitest 跑 player + catalog，唔再係轉發。可以喺 `# 覆蓋率` 後面補「（player + catalog）」
+- S-852 `.github/workflows/ci.yml` production smoke：`deploys/2026-11-10_deploy_v1.31.1.md` 寫明 CI build 嘅 `VITE_CATALOG_URL` 已經指向 Worker，即係 production 而家係 flag 開 + prebuild snapshot。新 step 守住嘅係「repo variable 冇設」嗰個 fallback 設定（呢個設定仍然有效，backlog S-766 原文都係咁要求），但 step 注釋寫「production 真正 flag off 路徑」會令人以為 production 行緊呢條路。建議改注釋做「repo variable 未設時嘅 flag off 設定」；production 真正行緊嘅路徑（真 Worker + snapshot）CI 依然冇 smoke，可以考慮另外開 backlog
+- S-853 `ci.yml` `player-dist-production` 設咗 `retention-days: 1`：CLAUDE.md 講過 e2e 被 cancel 之後要 rerun 補跑。如果超過 1 日先「Re-run failed jobs」，check job 唔會重跑，所以 e2e job 會喺 `Download production build` 就 fail。可以改做 3–7 日，或者喺 runbook 寫明超過 1 日要 re-run all jobs
+- S-854 `ci.yml` smoke 等 preview 嗰個 curl loop：等夠 30 秒都唔會報錯，之後由 `page.goto` 嘅 ECONNREFUSED 令 step fail，而 `$RUNNER_TEMP/preview.log` 從來冇印出嚟，fail 咗都睇唔到原因。可以 loop 完再 `curl -sf` 一次，唔得就 `cat` 個 log 再 `exit 1`
+- S-855 `README.md:160-168`：寫住「root scripts 轉發去 `apps/player`」，而 `npm run coverage` 而家係 root vitest 跑 player + catalog，唔再係轉發。可以喺 `# 覆蓋率` 後面補「（player + catalog）」
 
 ## 重點檢查
 
@@ -69,7 +69,11 @@ status: pass
 score: 100
 hard_gates: { lint: pass, type: pass, tests: pass, coverage: n/a, no_critical: pass, security_scan: pass }
 blocking: none
-findings: S-850 S-851 S-852 S-853（🟢，入 backlog）；S-781 刻意未做（要用戶開 GitHub Environment）
+findings: S-852 S-853 S-854 S-855（🟢，入 backlog）；S-781 刻意未做（要用戶開 GitHub Environment）
 next_action: QA
 context: 450e5d4..8ff0756；報告只 commit，未 push（CI run 43231620345 跑緊，由 main agent 等 CI 完先 push）。QA repo-tooling 鏈引用呢個 run（包括新 production smoke 同 e2e）；S-752 S-759 S-761 S-762 S-766 S-769 可以喺 backlog 關
 ```
+
+## 補註（merge `origin/main` 後）
+
+- `main`（PR #207）已經用咗 S-850 / S-851，本報告原本嘅 S-850–S-853 改號做 S-852–S-855（內容不變）

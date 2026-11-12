@@ -50,3 +50,8 @@ ci: run 43231620345 @ 8ff0756 — completed success (lint, tsc, unit 353/3784, b
 next_action: main agent push (CI already completed); merge PR after branch-head `npm run lint`
 context: T1, 0 blocking findings; S-752/S-759/S-761/S-762/S-766/S-769 verified; S-781 not in scope (needs user GitHub Environment)
 ```
+
+## 補註（merge `origin/main` 後重新 freeze）
+
+- `main` 經 PR #207 改咗 `apps/player/e2e/run.mjs`（preview 起停加固，已經有自己嘅 review / QA），同今次改嘅檔冇重疊；ledger 衝突取 `main` 版本，再用合併後內容重新 freeze `api`、`coming-soon`、`repo-tooling` S1（路徑同上面一樣）
+- 證據：合併 commit 嘅 CI run（lint、unit、build、production smoke、e2e）
