@@ -93,10 +93,11 @@ const imageOf = (url: string, catalogUrl: string) => {
     return { name, url: absolute };
 };
 
-/** 全部圖（同一張圖多個 entry 用都只下載一次）：檔名 → 絕對 URL */
+/** 全部圖（同一張圖多個 entry 用都只下載一次）：檔名 → 絕對 URL；首頁 banner 兩張都計（Phase 4） */
 const imagesOf = (doc: CatalogDocument, catalogUrl: string): Map<string, string> => {
     const entries = [...doc.shows, ...doc.dramas];
-    const urls = entries.flatMap((entry) => Object.values(entry.images));
+    const bannerUrls = doc.banner ? [doc.banner.standard, doc.banner.long] : [];
+    const urls = [...entries.flatMap((entry) => Object.values(entry.images)), ...bannerUrls];
     return new Map(urls.map((url) => imageOf(url, catalogUrl)).map((i) => [i.name, i.url]));
 };
 
@@ -137,7 +138,7 @@ const downloadImage = async (
     await writeFile(join(tmp, IMAGE_DIR, name), bytes);
 };
 
-/** images 值（URL）改寫做檔名：source.ts 再換做 Vite asset URL（localizeDocument） */
+/** images 同 banner 值（URL）改寫做檔名：source.ts 再換做 Vite asset URL（loadSnapshot） */
 const withFileNames = (doc: CatalogDocument, catalogUrl: string): CatalogDocument => {
     const localEntry = (entry: CatalogEntry): CatalogEntry => ({
         ...entry,
@@ -148,7 +149,17 @@ const withFileNames = (doc: CatalogDocument, catalogUrl: string): CatalogDocumen
             ]),
         ),
     });
-    return { ...doc, shows: doc.shows.map(localEntry), dramas: doc.dramas.map(localEntry) };
+    const fileName = (url: string) => imageOf(url, catalogUrl).name;
+    const banner = doc.banner && {
+        standard: fileName(doc.banner.standard),
+        long: fileName(doc.banner.long),
+    };
+    return {
+        ...doc,
+        shows: doc.shows.map(localEntry),
+        dramas: doc.dramas.map(localEntry),
+        ...(banner ? { banner } : {}),
+    };
 };
 
 const fetchDocument = async (options: SnapshotOptions) => {

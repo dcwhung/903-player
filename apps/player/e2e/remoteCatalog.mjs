@@ -5,6 +5,8 @@
 // 4 第二次開 app 斷網 → SW cache 嘅 catalog；5 舊版（v1）進度用 remote catalog 照搬；
 // 6 跨 origin 圖（似 Worker：有 CORS header）：<img crossorigin> 照出到（S-764）；
 // 7 harness 預設（冇蓋 route）：SW 嘅 catalog request 由 e2e preview 答 404，catalog-json cache 冇 key（S-765）。
+// 8 首頁 banner（Phase 4 L3）：fixture 帶 banner → 主頁橫額用 catalog 嘅圖（同 origin + 跨 origin 都試）；
+//   fallback 內建資料 → 用返 src/assets 內建圖。banner 圖由 src/assets 直接讀（尺寸同 catalog 鎖死嘅一樣）
 // 所有 route 都好似 apps/api Worker 咁答 Access-Control-Allow-Origin + Vary: Origin
 import { readFileSync } from 'node:fs';
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
@@ -18,6 +20,12 @@ import {
 import { checkStorage, seedV1 } from './storageMigration.mjs';
 
 const CATALOG_DIR = new URL('../src/catalog/', import.meta.url);
+const ASSETS_DIR = new URL('../src/assets/', import.meta.url);
+/** catalog banner 圖嘅 sub-folder：<base>e2e-catalog/banner/<檔名> → src/assets/<檔名> */
+const BANNER_FOLDER = 'banner';
+const BANNER_FILES = { standard: 'banner.webp', long: 'banner-wide.webp' };
+/** 主頁橫額 <img> 嘅 alt（同 run.mjs BANNER_ALT 一樣） */
+const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 const CATALOG_FOLDER = 'e2e-catalog/';
 const SHELF = '廣播劇';
 const WAIT_MS = 5000;
@@ -49,13 +57,22 @@ const remoteDocument = (base) => {
         id: REMOTE_ID,
         definition: { ...donor.definition, name: REMOTE_NAME },
     };
-    return { ...doc, dramas: [...doc.dramas, extra] };
+    const bannerUrl = (file) => `${imageBase}/${BANNER_FOLDER}/${file}`;
+    const banner = {
+        standard: bannerUrl(BANNER_FILES.standard),
+        long: bannerUrl(BANNER_FILES.long),
+    };
+    return { ...doc, dramas: [...doc.dramas, extra], banner };
 };
 
-/** <base>e2e-catalog/<shows|dramas>/<id>/<檔名> → src/catalog/<kind>/library/<id>/<檔名> */
+/**
+ * <base>e2e-catalog/<shows|dramas>/<id>/<檔名> → src/catalog/<kind>/library/<id>/<檔名>；
+ * <base>e2e-catalog/banner/<檔名> → src/assets/<檔名>
+ */
 const imageFile = (pathname) => {
     const [, rest = ''] = decodeURIComponent(pathname).split(`/${CATALOG_FOLDER}`);
     const [kind, ...file] = rest.split('/');
+    if (kind === BANNER_FOLDER) return new URL(file.join('/'), ASSETS_DIR);
     return new URL(`${kind}/library/${file.join('/')}`, CATALOG_DIR);
 };
 
@@ -128,6 +145,32 @@ const remoteArt = (p) =>
         }))
         .catch(() => ({ src: '', width: 0, crossOrigin: null }));
 
+/** 主頁頁頂橫額嘅圖：真正載入咗邊張、有冇載入到、crossorigin attribute */
+const bannerArt = (p) =>
+    p
+        .getByRole('heading', { level: 1 })
+        .getByRole('img', { name: BANNER_ALT })
+        .evaluate(async (img) => {
+            await img.decode().catch(() => undefined);
+            return {
+                src: img.currentSrc,
+                width: img.naturalWidth,
+                crossOrigin: img.getAttribute('crossorigin'),
+            };
+        })
+        .catch(() => ({ src: '', width: 0, crossOrigin: null }));
+
+/** 橫額係 catalog banner：URL 喺 base 底下嘅 banner/、載入到、CORS 模式 */
+const checkCatalogBanner = async (p, log, base, label) => {
+    const art = await bannerArt(p);
+    log(
+        art.src.startsWith(`${base}${BANNER_FOLDER}/`) &&
+            art.width > 0 &&
+            art.crossOrigin === 'anonymous',
+        `${label}：主頁橫額用 catalog banner，CORS 載入到（${art.src}）`,
+    );
+};
+
 const checkValidCatalog = async (env, json) => {
     const { log } = env;
     const { p } = await openWithCatalog(env, { catalogBody: json });
@@ -143,6 +186,8 @@ const checkValidCatalog = async (env, json) => {
         art.crossOrigin === 'anonymous',
         'Remote catalog：catalog 圖用 CORS 模式載入（crossorigin）',
     );
+    const localBase = new URL(CATALOG_FOLDER, env.base).href;
+    await checkCatalogBanner(p, log, localBase, 'Remote catalog banner');
 };
 
 /** 測試劇嘅圖搬去跨 origin host（似 Worker 出圖），其他照舊 */
@@ -160,7 +205,8 @@ const crossOriginDocument = (base, json) => {
               }
             : d,
     );
-    return JSON.stringify({ ...doc, dramas });
+    const banner = { standard: moved(doc.banner.standard), long: moved(doc.banner.long) };
+    return JSON.stringify({ ...doc, dramas, banner });
 };
 
 const checkCrossOriginImages = async (env, json) => {
@@ -172,6 +218,12 @@ const checkCrossOriginImages = async (env, json) => {
         remote && art.src.startsWith(CROSS_ORIGIN_IMAGE_BASE) && art.width > 0,
         `Remote catalog：跨 origin 圖有 CORS header，<img crossorigin> 照出到（${art.src}）`,
     );
+    await checkCatalogBanner(
+        p,
+        env.log,
+        CROSS_ORIGIN_IMAGE_BASE,
+        'Remote catalog 跨 origin banner',
+    );
 };
 
 const checkFallback = async (env, label, routeOptions) => {
@@ -181,6 +233,11 @@ const checkFallback = async (env, label, routeOptions) => {
     const splashMs = Date.now() - started;
     const { golden, remote } = await shelfState(p);
     env.log(golden && !remote, `Remote catalog ${label}：用返內建資料（冇「${REMOTE_NAME}」）`);
+    const banner = await bannerArt(p);
+    env.log(
+        banner.width > 0 && !banner.src.includes(`/${CATALOG_FOLDER}`),
+        `Remote catalog ${label}：主頁橫額用返內建圖（${banner.src}）`,
+    );
     return splashMs;
 };
 
