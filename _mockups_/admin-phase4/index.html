@@ -1376,7 +1376,7 @@
                 <p class="state-label">
                     簡化版（用戶 2026-11-12）：冇 picker、冇深淺掣、冇 contrast 表。由碟面抽色出 3
                     套候選，每套直接用 player 樣式
-                    preview；唔啱就撳「更換另外三套」再出三套。揀咗撳「套用此配色」。
+                    preview；唔啱就撳「更換另外三套」再出三套。揀咗撳「套用」。
                 </p>
                 <div class="frame">
                     <div class="row">
@@ -1398,12 +1398,11 @@
                             </div>
                         </div>
                         <div class="tgrid" id="tcands" role="group" aria-label="Theme 候選"></div>
-                        <div class="row" style="justify-content: space-between">
-                            <span class="small muted" id="keep-note"></span>
+                        <div class="row" style="justify-content: flex-end">
                             <div class="row">
                                 <span class="small" id="pick-note"></span>
                                 <button type="button" class="primary" id="use-theme">
-                                    <svg class="i"><use href="#i-check" /></svg>套用此配色
+                                    <svg class="i"><use href="#i-check" /></svg>套用
                                 </button>
                             </div>
                         </div>
@@ -2364,13 +2363,6 @@
                 });
                 $('round-note').textContent = '第 ' + (theme.round + 1) + ' / ' + rounds() + ' 組';
                 $('theme-head').textContent = src.name + ' · 配色';
-                const keep = [
-                    src.current.titleFont && 'titleFont',
-                    src.current.headerRule && 'headerRule',
-                ].filter(Boolean);
-                $('keep-note').textContent = keep.length
-                    ? '儲存時將保留原有的 ' + keep.join(' / ')
-                    : '';
                 $('use-theme').disabled = theme.sel === 0;
             };
 
