@@ -1,6 +1,7 @@
 /*
  * 422 驗證錯誤（server 原文英文：「<kind>/<id>: <欄位> <原因>」，同 catalog parser 一套；
- * 排程下架日衝突係「episode N unlist date … must be later than its listing date …」）→ 書面語中文。
+ * 排程下架日衝突係「episode N unlist date … must be later than its listing date …」；
+ * admin 自己擋嘅「episode N unlist date … is before today …」（W-715））→ 書面語中文。
  * 識嘅寫明邊樣有問題；唔識就回 null（畫面出一般訊息 + 可展開原文）
  */
 import { t, type MessageKey } from '../../i18n/t';
@@ -16,6 +17,8 @@ const DUPLICATE_ARC_ID = /^id: duplicate arc id (\S+)$/;
 /** 排程 422（packages/catalog expandSchedule）：某集下架日唔遲過上架日 */
 const UNLIST_BEFORE_LISTING =
     /^episode (\d+) unlist date (\S+) must be later than its listing date (\S+)$/;
+/** admin 儲存前（saveProblemOf，W-715）：某集新排嘅下架日早過今日 */
+const UNLIST_BEFORE_TODAY = /^episode (\d+) unlist date (\S+) is before today \S+$/;
 
 /** 欄位 → 畫面標籤（fields.*，同編輯頁一樣） */
 const FIELD_LABELS: Record<string, MessageKey> = {
@@ -57,6 +60,12 @@ export const validationMessage = (detail: string): string | null => {
             no: Number(unlist[1]),
             removed: shortDate(unlist[2] ?? ''),
             listed: shortDate(unlist[3] ?? ''),
+        });
+    const past = UNLIST_BEFORE_TODAY.exec(detail.trim());
+    if (past)
+        return t('validation.unlistBeforeToday', {
+            no: Number(past[1]),
+            removed: shortDate(past[2] ?? ''),
         });
     const source = SOURCE.exec(detail.trim());
     if (!source) return null;

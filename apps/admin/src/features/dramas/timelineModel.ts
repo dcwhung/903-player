@@ -50,7 +50,8 @@ const spansOf = (nos: readonly number[]): EpisodeSpan[] =>
         return spans;
     }, []);
 
-const keptNos = (unlisted: Readonly<Record<string, string>>): Set<number> =>
+/** 已經落咗架（ctx.unlisted）嘅集數 */
+export const keptNos = (unlisted: Readonly<Record<string, string>>): Set<number> =>
     new Set(
         Object.keys(unlisted).flatMap((key) => {
             const match = RANGE_KEY.exec(key);

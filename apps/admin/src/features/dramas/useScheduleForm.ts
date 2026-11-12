@@ -12,6 +12,7 @@ import {
 import { useState } from 'react';
 import type { ScheduleState } from '../../api/types';
 import { formOf, ruleOf, type ScheduleContext, type ScheduleForm } from './scheduleModel';
+import { keptNos } from './timelineModel';
 
 const scheduleErrorOf = (error: unknown): string => {
     if (!(error instanceof ScheduleError)) throw error;
@@ -30,14 +31,26 @@ export const planOf = (
     }
 };
 
-/** 儲存前驗證：唔過就回 server 會回嘅 422 原文（validationMessage 譯中文） */
+/**
+ * 新規則排嘅下架日早過今日（W-715）：「上架 N 日後」由每集舊上架日計，可以出過去嘅日子，儲存即時落架、預覽又冇顯示。
+ * 已經落咗架（kept）嘅唔計；回第一集嘅英文原文（同 422 一樣格式，validationMessage 譯中文）
+ */
+const pastUnlistOf = (rule: ScheduleRule, ctx: ScheduleContext): string | undefined => {
+    const kept = keptNos(ctx.unlisted);
+    const past = planSchedule(rule, ctx).episodes.find(
+        (e) => e.removedAt !== undefined && e.removedAt < ctx.today && !kept.has(e.no),
+    );
+    return past && `episode ${past.no} unlist date ${past.removedAt} is before today ${ctx.today}`;
+};
+
+/** 儲存前驗證：唔過就回 server 會回嘅 422 原文；再擋下架日早過今日（W-715，server 冇「今日」概念） */
 export const saveProblemOf = (rule: ScheduleRule, ctx: ScheduleContext): string | undefined => {
     try {
         expandSchedule(rule, ctx);
-        return undefined;
     } catch (error) {
         return scheduleErrorOf(error);
     }
+    return pastUnlistOf(rule, ctx);
 };
 
 export const useScheduleForm = (saved: ScheduleState | null, ctx: ScheduleContext) => {

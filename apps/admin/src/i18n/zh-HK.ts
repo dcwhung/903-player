@@ -236,6 +236,7 @@ export const zhHK = {
         duplicateArcId: '{entity}有重複的短篇 ID「{id}」。',
         unlistBeforeListing:
             '第 {no} 集的下架日期（{removed}）必須遲於其上架日期（{listed}），請修改下架設定。',
+        unlistBeforeToday: '第 {no} 集的下架日期（{removed}）早於今日，請修改下架設定。',
         general: '資料驗證失敗，請檢查後再試。',
         original: '原始錯誤訊息',
     },
