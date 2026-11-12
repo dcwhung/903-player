@@ -5,11 +5,20 @@
 import { byteOrder, extensionOf } from './names';
 import type { ArcScan, DramaScan, FolderListing } from './types';
 
+/** ArcScan 入面由固定檔名配對嘅封面 */
+type CoverRole = 'cdCover' | 'coverPhoto';
+type CoverRoles = Partial<Record<CoverRole, string>>;
+
 const AUDIO_EXTENSIONS = new Set(['.m4a', '.mp3', '.aac', '.mp4']);
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 /** 系統自動生成嘅檔（macOS / Windows），一律略過 */
 const SYSTEM_FILES = new Set(['thumbs.db', 'desktop.ini']);
 const FOLDER_SUFFIX = '/';
+/** 固定封面檔名（唔計副檔名、細楷）→ 角色；其他圖照列 covers 但唔自動配對 */
+const COVER_ROLES: ReadonlyMap<string, CoverRole> = new Map([
+    ['cd cover', 'cdCover'],
+    ['cover photo', 'coverPhoto'],
+]);
 
 type Group = 'dirs' | 'audio' | 'images' | 'ignored';
 type Groups = Record<Group, string[]>;
@@ -35,6 +44,17 @@ const groupEntries = (entries: readonly Entry[]): Groups => {
     return groups;
 };
 
+/** images 已按 byte 次序：同一角色有幾個副檔名就揀第一個 */
+const coverRolesOf = (images: readonly string[]): CoverRoles => {
+    const roles: CoverRoles = {};
+    images.forEach((image) => {
+        const lower = image.toLowerCase();
+        const role = COVER_ROLES.get(lower.slice(0, -extensionOf(lower).length));
+        if (role !== undefined && roles[role] === undefined) roles[role] = image;
+    });
+    return roles;
+};
+
 /** 「名/」= folder */
 const entryOf = (file: string): Entry =>
     file.endsWith(FOLDER_SUFFIX)
@@ -48,6 +68,7 @@ const scanArc = (rawName: string, files: readonly string[]): ArcScan => {
         name: rawName.normalize('NFC'),
         audio,
         covers: images,
+        ...coverRolesOf(images),
         ignored: [...ignored, ...dirs.map((d) => `${d}${FOLDER_SUFFIX}`)].sort(byteOrder),
     };
 };
@@ -63,5 +84,13 @@ export const scanListing = (listing: FolderListing): DramaScan => {
     const arcs = dirs.map((d) => scanArc(d, filesOf.get(d) ?? []));
     arcs.sort((a, b) => byteOrder(a.name, b.name));
     const rawName = listing.name;
-    return { rawName, name: rawName.normalize('NFC'), audio, covers: images, ignored, arcs };
+    return {
+        rawName,
+        name: rawName.normalize('NFC'),
+        audio,
+        covers: images,
+        ...coverRolesOf(images),
+        ignored,
+        arcs,
+    };
 };

@@ -1,4 +1,5 @@
 /* apps/api 嘅 named constants：cookie、TTL、cache 秒數、R2 key layout、Google endpoint */
+import { ASSET_DIMENSIONS, type AssetSize } from '@903-player/catalog';
 
 /** 唯一一份（S-773） */
 export const SECOND_MS = 1000;
@@ -88,18 +89,8 @@ export const CONTENT_BODY_LIMIT_BYTES = 256 * 1024;
 /** 只收 WebP（admin 喺 browser 轉好先上載） */
 export const ASSET_CONTENT_TYPE = 'image/webp';
 export const ASSET_EXTENSION = 'webp';
-const KIB = 1024;
-/** 1 MB：現有最大嘅圖遠細過呢個數 */
-export const ASSET_MAX_BYTES = KIB * KIB;
-
-/** disc：正方形 */
-const DISC_SIZE_PX = 600;
-/** tile：16:9（節目同劇集統一；劇集卡照舊 2:1 cover 裁） */
-const TILE_WIDTH_PX = 1216;
-const TILE_HEIGHT_PX = 684;
-
-/** 尺寸白名單（用戶 2026-11-10 決定） */
-export const ASSET_DIMENSIONS: readonly { width: number; height: number }[] = [
-    { width: DISC_SIZE_PX, height: DISC_SIZE_PX },
-    { width: TILE_WIDTH_PX, height: TILE_HEIGHT_PX },
+/** 上載白名單（用戶 2026-11-10 決定）：disc / tile；尺寸同大小上限喺 @903-player/catalog（S-805） */
+export const ASSET_UPLOAD_DIMENSIONS: readonly AssetSize[] = [
+    ASSET_DIMENSIONS.disc,
+    ASSET_DIMENSIONS.tile,
 ];

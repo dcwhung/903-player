@@ -42,6 +42,8 @@ const withChange = (path: string, value: unknown): Json => {
     return result;
 };
 
+const BANNER = { standard: 'https://cdn.example.com/banner.webp', long: '/c/banner-wide.webp' };
+
 const withImage = (file: string, url: unknown) =>
     withChange('dramas.0.images', { ...IMAGES, [file]: url });
 
@@ -79,12 +81,21 @@ const INVALID: Case[] = [
     ['圖檔名有 backslash', withImage('arcs\\tile.webp', '/a.webp')],
     ['圖檔名空字串', withImage('', '/a.webp')],
     ['圖檔名 / 結尾', withImage('arcs/', '/a.webp')],
+    ['banner 淨係窄版', withChange('banner', { standard: BANNER.standard })],
+    ['banner 淨係闊版', withChange('banner', { long: BANNER.long })],
+    ['banner 空 object', withChange('banner', {})],
+    ['banner 係字串', withChange('banner', BANNER.standard)],
+    ['banner 係 null', withChange('banner', null)],
+    ['banner URL http', withChange('banner', { ...BANNER, long: 'http://x.example.com/b.webp' })],
+    ['banner URL 相對', withChange('banner', { ...BANNER, standard: 'banner.webp' })],
+    ['banner 多出 key', withChange('banner', { ...BANNER, wide: BANNER.long })],
 ];
 
 const VALID: Case[] = [
     ['基本例子', BASE],
     ['generatedAt 用 Z', withChange('generatedAt', '2026-11-07T10:00:00Z')],
-    ['頂層多出嚟嘅 key（將來 banner）', withChange('banner', { text: 'x' })],
+    ['頂層多出嚟嘅 key', withChange('notice', { text: 'x' })],
+    ['有 banner（窄 + 闊）', withChange('banner', BANNER)],
     ['加 $schema', withChange('$schema', '../schemas/catalog.schema.json')],
     ['圖檔名喺 sub-folder', withImage('arcs/season-1/disc.webp', '/a.webp')],
     ['圖檔名有中文同空格', withImage('封面 1.webp', '/a.webp')],

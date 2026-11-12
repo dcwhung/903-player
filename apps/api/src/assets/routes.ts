@@ -5,13 +5,13 @@
  */
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { ASSET_MAX_BYTES } from '@903-player/catalog';
 import type { AppEnv } from '../app';
 import {
     ASSET_CONTENT_TYPE,
-    ASSET_DIMENSIONS,
     ASSET_EXTENSION,
     ASSET_HASH_HEX_LENGTH,
-    ASSET_MAX_BYTES,
+    ASSET_UPLOAD_DIMENSIONS,
     CATALOG_IMAGE_KEY_PREFIX,
     HTTP_STATUS,
 } from '../config';
@@ -46,7 +46,7 @@ const limitSize = bodyLimit({
 });
 
 const isAllowedSize = (size: WebpSize) =>
-    ASSET_DIMENSIONS.some((d) => d.width === size.width && d.height === size.height);
+    ASSET_UPLOAD_DIMENSIONS.some((d) => d.width === size.width && d.height === size.height);
 
 /** 驗 WebP + 尺寸；唔得就回 422 response */
 const checkedSize = (c: Context<AppEnv>, bytes: Uint8Array): WebpSize | Response => {
@@ -58,7 +58,7 @@ const checkedSize = (c: Context<AppEnv>, bytes: Uint8Array): WebpSize | Response
         return c.json({ error: `invalid WebP: ${error.message}` }, HTTP_STATUS.unprocessable);
     }
     if (isAllowedSize(size)) return size;
-    const allowed = ASSET_DIMENSIONS.map(sizeLabel);
+    const allowed = ASSET_UPLOAD_DIMENSIONS.map(sizeLabel);
     return c.json(
         { error: `image is ${sizeLabel(size)}; allowed sizes: ${allowed.join(', ')}`, allowed },
         HTTP_STATUS.unprocessable,
