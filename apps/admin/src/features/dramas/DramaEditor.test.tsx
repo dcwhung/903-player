@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fakeData, mockApi, renderAt, resource } from '../../../tests/renderApp';
 import { DramaEditorPage } from './DramaEditor';
@@ -31,16 +31,6 @@ const api = (extra = {}) =>
             status: 404,
             body: { error: 'no such schedule' },
         }),
-        'POST /api/dramas/lancy/arcs/arc-01/schedule/preview': () => ({
-            body: {
-                expanded: {
-                    addedAt: '2099-01-05',
-                    episodeDates: { 6: '2099-01-07' },
-                    episodeRemovedAt: {},
-                },
-                warnings: { missingEpisodeIds: [] },
-            },
-        }),
         ...extra,
     });
 
@@ -71,7 +61,7 @@ describe('DramaEditor', () => {
         expect(screen.getByRole('textbox', { name: /短篇 ID/ })).not.toHaveAttribute('readonly');
     });
 
-    it('should preview a preset schedule and save it for the selected arc', async () => {
+    it('should plan a preset schedule and save it for the selected arc', async () => {
         const fetchMock = api({
             'PUT /api/dramas/lancy/arcs/arc-01/schedule': () => ({
                 body: { updatedAt: 'v2', warnings: { missingEpisodeIds: [] } },
@@ -87,9 +77,9 @@ describe('DramaEditor', () => {
         );
         const tab = await screen.findByRole('tab', { name: /我心不死/ });
         expect(tab).toHaveAttribute('aria-selected', 'true');
-        await userEvent.click(screen.getByRole('button', { name: '逢一三五 · 每次 5 集' }));
-        const future = await screen.findByRole('group', { name: '今天之後的批次' });
-        await waitFor(() => expect(within(future).getByText(/5\/1/)).toBeInTheDocument());
+        await userEvent.click(screen.getByRole('button', { name: '每日 1 集' }));
+        // 時間軸喺本機展開（catalog planSchedule），唔使等 server preview
+        expect(screen.getByRole('group', { name: '上架時間軸' })).toHaveTextContent('10');
         await userEvent.click(screen.getByRole('button', { name: '儲存' }));
         const scheduleCall = () =>
             fetchMock.mock.calls.find(
@@ -128,7 +118,7 @@ describe('DramaEditor', () => {
             '/dramas/:id/schedule',
             <DramaEditorPage tab="schedule" />,
         );
-        await userEvent.click(await screen.findByRole('button', { name: '逢一三五 · 每次 5 集' }));
+        await userEvent.click(await screen.findByRole('button', { name: '每日 1 集' }));
         await userEvent.click(screen.getByRole('button', { name: '儲存' }));
         await screen.findByRole('alert');
         const puts = fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT');

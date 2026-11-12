@@ -123,12 +123,19 @@ export {
 export {
     expandSchedule,
     parseScheduleRule,
+    planSchedule,
     ScheduleError,
+    unlistOf,
+    type Cadence,
     type DatesRule,
+    type EpisodeSchedule,
     type ExpandedSchedule,
     type PeriodicRule,
     type ScheduleArc,
+    type ScheduleBatch,
+    type SchedulePlan,
     type ScheduleRule,
+    type UnlistRule,
 } from './schedule';
 
 export * from './admin';

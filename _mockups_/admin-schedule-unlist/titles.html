@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <title>排程預覽標題方案</title>
+        <style>
+            :root {
+                --bg: #1e7bc0;
+                --surface: #fff;
+                --surface-2: #f1f5f9;
+                --line: #e2e8f0;
+                --text: #0f172a;
+                --muted: #64748b;
+                --primary: #1e7bc0;
+                --today-bg: #fff3df;
+                --warn-ink: #8a5300;
+                --list-bg: #e6f1fb;
+                --list-ink: #1e6aa8;
+                --unlist-bg: #fde8e8;
+                --unlist-ink: #c62828;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 24px;
+                background: var(--bg);
+                font-family: 'Noto Sans HK', system-ui, sans-serif;
+                color: var(--text);
+                display: grid;
+                gap: 24px;
+            }
+            .opt {
+                background: var(--surface);
+                border-radius: 20px;
+                padding: 20px 22px;
+                width: 980px;
+            }
+            .opt > .tag {
+                display: inline-block;
+                font-size: 13px;
+                font-weight: 700;
+                color: #fff;
+                background: #0f172a;
+                border-radius: 999px;
+                padding: 3px 12px;
+                margin-bottom: 4px;
+            }
+            .opt > .why {
+                font-size: 13px;
+                color: var(--muted);
+                margin: 4px 0 16px;
+            }
+            h3 {
+                font-size: 15px;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            h4 {
+                font-size: 13px;
+                color: var(--muted);
+                font-weight: 600;
+                margin: 0 0 8px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 10px;
+            }
+            .sub {
+                font-size: 12px;
+                color: var(--muted);
+                font-weight: 400;
+            }
+            .tl {
+                background: var(--surface-2);
+                border-radius: 12px;
+                padding: 10px 12px;
+                display: flex;
+                gap: 0;
+            }
+            .col {
+                padding: 4px 12px;
+                border-left: 1px dashed #cbd5e1;
+                text-align: center;
+                font-size: 12px;
+            }
+            .col:first-child {
+                border-left: 0;
+            }
+            .col b {
+                display: block;
+                font-size: 13px;
+                margin-bottom: 4px;
+            }
+            .col.today {
+                background: var(--today-bg);
+                color: var(--warn-ink);
+                border-radius: 8px;
+                font-weight: 700;
+            }
+            .ep {
+                display: inline-block;
+                padding: 2px 6px;
+                border-radius: 4px;
+                background: var(--primary);
+                color: #fff;
+                font-size: 11px;
+            }
+            .ep.un {
+                background: var(--unlist-bg);
+                color: var(--unlist-ink);
+                text-decoration: line-through;
+            }
+            .lbl {
+                display: block;
+                margin-top: 4px;
+                color: var(--muted);
+            }
+            .lbl.un {
+                color: var(--unlist-ink);
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+            }
+            th {
+                text-align: left;
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 600;
+                padding: 6px 10px;
+                border-bottom: 1px solid var(--line);
+            }
+            td {
+                padding: 7px 10px;
+                border-bottom: 1px solid var(--line);
+            }
+            tr.today td {
+                background: var(--today-bg);
+                color: var(--warn-ink);
+                font-weight: 700;
+            }
+            .pill {
+                display: inline-block;
+                padding: 1px 8px;
+                border-radius: 999px;
+                font-size: 12px;
+                background: var(--list-bg);
+                color: var(--list-ink);
+                font-weight: 600;
+            }
+            .pill.un {
+                background: var(--unlist-bg);
+                color: var(--unlist-ink);
+            }
+            .tabs {
+                display: inline-flex;
+                background: var(--surface-2);
+                border: 1px solid var(--line);
+                border-radius: 999px;
+                padding: 3px;
+            }
+            .tabs span {
+                padding: 4px 14px;
+                border-radius: 999px;
+                font-size: 13px;
+                color: var(--muted);
+                display: inline-flex;
+                gap: 6px;
+                align-items: center;
+            }
+            .tabs span.on {
+                background: var(--primary);
+                color: #fff;
+                font-weight: 700;
+            }
+            .gap {
+                height: 14px;
+            }
+            svg {
+                width: 16px;
+                height: 16px;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 2;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+        </style>
+    </head>
+    <body>
+        <template id="tl">
+            <div class="tl">
+                <div class="col today"><b>12/11 四</b>今日</div>
+                <div class="col">
+                    <b>15/11</b><span class="ep">16</span> … <span class="ep">20</span
+                    ><span class="lbl">上架 第 16–20 集</span>
+                </div>
+                <div class="col">
+                    <b>22/11</b><span class="ep">21</span> … <span class="ep">25</span
+                    ><span class="lbl">上架 第 21–25 集</span>
+                </div>
+                <div class="col">
+                    <b>29/11</b><span class="ep">26</span> … <span class="ep">30</span
+                    ><span class="lbl">上架 第 26–30 集</span>
+                </div>
+                <div class="col">
+                    <b>12/1</b><span class="ep un">1</span> … <span class="ep un">6</span
+                    ><span class="lbl un">下架 第 1–6 集</span>
+                </div>
+                <div class="col">
+                    <b>19/1</b><span class="ep un">7</span> … <span class="ep un">12</span
+                    ><span class="lbl un">下架 第 7–12 集</span>
+                </div>
+            </div>
+        </template>
+        <template id="tb">
+            <table>
+                <tr>
+                    <th>日期</th>
+                    <th>上架</th>
+                    <th>下架</th>
+                </tr>
+                <tr class="today">
+                    <td>12/11 四（今日）</td>
+                    <td>—</td>
+                    <td>—</td>
+                </tr>
+                <tr>
+                    <td>15/11 日</td>
+                    <td><span class="pill">第 16–20 集</span></td>
+                    <td>—</td>
+                </tr>
+                <tr>
+                    <td>22/11 日</td>
+                    <td><span class="pill">第 21–25 集</span></td>
+                    <td>—</td>
+                </tr>
+                <tr>
+                    <td>12/1 二</td>
+                    <td>—</td>
+                    <td><span class="pill un">第 1–6 集</span></td>
+                </tr>
+            </table>
+        </template>
+
+        <!-- A：一個標題 + 兩個小標 -->
+        <div class="opt">
+            <span class="tag">方案 A（建議）：一個標題，兩個小標</span>
+            <p class="why">
+                「上下架批次」做大標題，下面「時間軸」「列表」做灰色小標，一睇就知係同一份資料嘅兩種睇法。改動最少。
+            </p>
+            <div class="head">
+                <h3>
+                    上下架批次 <span class="sub">共 9 批 · 第 16–37 集上架 · 第 1–37 集下架</span>
+                </h3>
+            </div>
+            <h4>
+                <svg viewBox="0 0 24 24"><path d="M3 12h18M7 8v8M12 8v8M17 8v8" /></svg>時間軸
+            </h4>
+            <div data-tl></div>
+            <div class="gap"></div>
+            <h4>
+                <svg viewBox="0 0 24 24">
+                    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg
+                >列表
+            </h4>
+            <div data-tb></div>
+        </div>
+
+        <!-- B：一個標題 + 切換 -->
+        <div class="opt">
+            <span class="tag">方案 B：一個標題，時間軸｜列表切換</span>
+            <p class="why">
+                同一時間只顯示一種，用膠囊 tab
+                切換（同編輯｜預覽同款）。版面最乾淨，但唔可以同時對照。
+            </p>
+            <div class="head">
+                <h3>上下架批次 <span class="sub">共 9 批</span></h3>
+                <div class="tabs">
+                    <span class="on"
+                        ><svg viewBox="0 0 24 24"><path d="M3 12h18M7 8v8M12 8v8M17 8v8" /></svg
+                        >時間軸</span
+                    ><span
+                        ><svg viewBox="0 0 24 24">
+                            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg
+                        >列表</span
+                    >
+                </div>
+            </div>
+            <div data-tl></div>
+        </div>
+
+        <!-- C：兩個平行標題 -->
+        <div class="opt">
+            <span class="tag">方案 C：兩個平行標題</span>
+            <p class="why">
+                「上下架時間軸」同「上下架批次列表」各自一個標題，用同一個前綴表示關係。最直接，但兩個標題份量一樣，容易以為係兩樣嘢。
+            </p>
+            <h3 style="margin-bottom: 10px">上下架時間軸</h3>
+            <div data-tl></div>
+            <div class="gap"></div>
+            <h3 style="margin-bottom: 10px">上下架批次列表</h3>
+            <div data-tb></div>
+        </div>
+
+        <script>
+            const tl = document.getElementById('tl').innerHTML;
+            const tb = document.getElementById('tb').innerHTML;
+            document.querySelectorAll('[data-tl]').forEach((n) => (n.innerHTML = tl));
+            document.querySelectorAll('[data-tb]').forEach((n) => (n.innerHTML = tb));
+        </script>
+    </body>
+</html>

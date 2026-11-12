@@ -1,18 +1,12 @@
 /*
- * 集數條（mockup ⑩ C）：第一行 = 已上架批次（灰 ✓），由「今天」換行顯示新規則排出嚟嘅批次；
- * 舊批次同新規則排法唔同 → 批次表（packages/catalog batches）
+ * 排程 tab 嘅固定部分（_mockups_/admin-schedule-unlist ⑧）：由 definition 讀「已上架批次」（日子 ≤ 今日，唔改得）
+ * 同「已經過咗下架日」嘅下架（照留，mockup ⑤）；短篇 tab 細字
  */
-import {
-    batchesOf,
-    compareBatches,
-    type ArcSchedule,
-    type BatchComparison,
-    type EpisodeRange,
-    type ExpandedSchedule,
-} from '@903-player/catalog';
+import { batchesOf, type ArcSchedule } from '@903-player/catalog';
 import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
 import { countOf, firstNoOf, isRecord, str } from '../../model/raw';
+import type { ScheduleContext } from './scheduleModel';
 
 export const spanOf = (arc: RawDefinition) => ({ firstNo: firstNoOf(arc), count: countOf(arc) });
 
@@ -24,43 +18,41 @@ export const currentScheduleOf = (drama: RawDefinition, arc: RawDefinition): Arc
         : undefined,
 });
 
-export interface Strip {
-    past: EpisodeRange[];
-    /** 下架又冇排程：未上架（唔可以出灰 ✓） */
-    unreleased: boolean;
-    future: EpisodeRange[];
-    comparison: BatchComparison | null;
-}
-
 /**
  * 下架（enabled: false）又冇排程嘅短篇未上過架：掃描新短篇嘅 addedAt = 掃描當日，唔係上架日；
  * player（arcAvailabilityOf）亦唔出下架短篇。有排程就照排程日子
  */
-const isUnreleased = (arc: RawDefinition, scheduled: boolean) =>
+export const isUnreleased = (arc: RawDefinition, scheduled: boolean) =>
     arc.enabled === false && !scheduled;
 
-export const stripOf = (
+/** episodeRemovedAt 入面下架日 ≤ 今日嘅：已經落咗架，新規則唔郁 */
+const pastRemovals = (arc: RawDefinition, today: string): Record<string, string> =>
+    isRecord(arc.episodeRemovedAt)
+        ? Object.fromEntries(
+              Object.entries(arc.episodeRemovedAt).filter(
+                  (entry): entry is [string, string] =>
+                      typeof entry[1] === 'string' && entry[1] <= today,
+              ),
+          )
+        : {};
+
+export const scheduleContextOf = (
     drama: RawDefinition,
     arc: RawDefinition,
-    expanded: ExpandedSchedule | null,
     today: string,
     scheduled = false,
-): Strip => {
+): ScheduleContext => {
     const span = spanOf(arc);
-    const unreleased = isUnreleased(arc, scheduled);
-    const current: ArcSchedule = unreleased ? {} : currentScheduleOf(drama, arc);
-    const plan = expanded ?? current;
+    const base = { ...span, today };
+    if (isUnreleased(arc, scheduled)) return { ...base, listed: [], unlisted: {} };
     return {
-        past: batchesOf(current, span).filter((b) => b.date <= today),
-        unreleased,
-        future: batchesOf(plan, span).filter((b) => b.date > today),
-        comparison: expanded ? compareBatches(current, expanded, span, today) : null,
+        ...base,
+        listed: batchesOf(currentScheduleOf(drama, arc), span).filter((b) => b.date <= today),
+        unlisted: pastRemovals(arc, today),
     };
 };
 
-const sizeOf = (batch: EpisodeRange) => batch.last - batch.first + 1;
-
-/** 短篇 tab 細字：無排程 / 已上 X / Y 集 / 定期 */
+/** 短篇 tab 細字：無排程 / 已上 X / Y 集 / 已全部上架（mockup ①）/ 定期（未開始上架） */
 export const arcTabNote = (
     drama: RawDefinition,
     arc: RawDefinition,
@@ -68,14 +60,11 @@ export const arcTabNote = (
     today: string,
 ) => {
     if (!hasRule) return t('schedule.none');
-    const released = stripOf(drama, arc, null, today, hasRule).past.reduce(
-        (sum, b) => sum + sizeOf(b),
+    const released = scheduleContextOf(drama, arc, today, hasRule).listed.reduce(
+        (sum, b) => sum + b.last - b.first + 1,
         0,
     );
     const count = countOf(arc);
-    return released > 0 && released < count
-        ? t('schedule.released', { released, count })
-        : t('schedule.periodic');
+    if (count > 0 && released >= count) return t('schedule.allListedNote');
+    return released > 0 ? t('schedule.released', { released, count }) : t('schedule.periodic');
 };
-
-export const batchSize = sizeOf;

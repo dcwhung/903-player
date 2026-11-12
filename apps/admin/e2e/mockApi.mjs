@@ -38,8 +38,16 @@ const json = (route, body, { status = 200, etag } = {}) =>
         body: JSON.stringify(body),
     });
 
+/*
+ * e2e 固定「而家」= 12/11/2026（四）香港 10:00：假資料（相對今日）同瀏覽器時鐘（run.mjs page.clock）用同一個，
+ * 時間軸「今日」、截圖日子每次都一樣
+ */
+export const E2E_NOW = Date.parse('2026-11-12T02:00:00Z');
+export const E2E_TIMEZONE = 'Asia/Hong_Kong';
 const HK_OFFSET_MS = 8 * 60 * 60 * 1000;
-const hkToday = () => new Date(Date.now() + HK_OFFSET_MS).toISOString().slice(0, 10);
+const hkToday = () => new Date(E2E_NOW + HK_OFFSET_MS).toISOString().slice(0, 10);
+const daysFromToday = (days) =>
+    new Date(E2E_NOW + HK_OFFSET_MS + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 const show = (id, name, order, extra = {}) => ({
     kind: 'shows',
@@ -70,8 +78,23 @@ const lancy = () => ({
         addedAt: '2026-10-27',
         audio: { host: 'r2', folder: '蘭茜夫人劇場', file: '{no2} - {arc}.m4a' },
         arcs: [
-            { id: 'half', name: '戀愛二分一', episodes: 30 },
-            { id: 'lancy-02', name: '我心不死', episodes: 37, addedAt: '2026-11-01' },
+            // 全部已上架（跟劇集 27/10），已排程 30 日後全部下架（只設下架，見 schedulesOf）
+            {
+                id: 'half',
+                name: '戀愛二分一',
+                episodes: 30,
+                episodeRemovedAt: { '1-30': daysFromToday(30) },
+            },
+            // 由 18 日前起每 7 日上架 5 集：第 1–15 集已上架，第 16 集起 3 日後先上架（排程 ⑧）
+            {
+                id: 'lancy-02',
+                name: '我心不死',
+                episodes: 37,
+                addedAt: daysFromToday(-18),
+                episodeDates: Object.fromEntries(
+                    [6, 11, 16, 21, 26, 31, 36].map((no, i) => [no, daysFromToday(-11 + i * 7)]),
+                ),
+            },
             // 掃描建嘅新短篇：addedAt = 掃描當日、下架、冇排程（排程 tab 要出「未上架」，唔係灰 ✓）
             {
                 id: 'love-after',
@@ -101,6 +124,21 @@ const golden = () => ({
     images: {},
     draft: false,
     updatedAt: 'golden-v1',
+});
+
+/** D1 schedules：同蘭茜夫人劇場嘅 definition 對得上（排程 tab 短篇 chip 跟呢度計「已上 15 / 37 集」等） */
+const schedulesOf = () => ({
+    'lancy/half': {
+        kind: 'dates',
+        batches: [{ from: 1, date: '2026-10-27' }],
+        unlist: { kind: 'date', date: daysFromToday(30) },
+    },
+    'lancy/lancy-02': {
+        kind: 'periodic',
+        start: daysFromToday(-18),
+        perRelease: 5,
+        every: { days: 7 },
+    },
 });
 
 /*
@@ -159,6 +197,7 @@ export const createState = ({ realImages = false, missingFolder = false } = {}) 
         },
     ],
     orders: [],
+    schedules: schedulesOf(),
     puts: [],
     confirms: [],
     assets: [],
@@ -208,7 +247,7 @@ const changesOf = (state) => {
 
 const publishRow = (id) => ({
     id,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(E2E_NOW).toISOString(),
     createdBy: 'admin@example.com',
     hash: 'abc',
     showCount: 1,
@@ -298,13 +337,26 @@ const previewRoute = (state, route, request, [dramaId, arcId]) => {
     return json(route, { expanded, warnings: { missingEpisodeIds: [] } });
 };
 
+/** GET = 已存規則（冇 = 404）；PUT 存規則（唔改 definition，夠 e2e 用） */
+const scheduleRoute = (state, route, request, [dramaId, arcId]) => {
+    const key = `${dramaId}/${arcId}`;
+    if (request.method() === 'PUT') {
+        state.schedules[key] = request.postDataJSON().rule;
+        return json(route, { updatedAt: `${key}-saved`, warnings: { missingEpisodeIds: [] } });
+    }
+    const rule = state.schedules[key];
+    return rule
+        ? json(route, { rule, expanded: null, updatedAt: `${key}-v1` })
+        : json(route, { error: 'no such schedule' }, { status: 404 });
+};
+
 const handlers = {
     'GET /api/me': (state, route) =>
         state.loggedIn
             ? json(route, { email: 'admin@example.com' })
             : json(route, { error: 'not logged in' }, { status: 401 }),
     'POST /api/scan': (state, route) =>
-        json(route, { scannedAt: new Date().toISOString(), findings: [], skipped: [] }),
+        json(route, { scannedAt: new Date(E2E_NOW).toISOString(), findings: [], skipped: [] }),
     'GET /api/todos': (state, route) => json(route, todosOf(state)),
     'GET /api/folders/unmapped': (state, route) => json(route, { folders: UNMAPPED_FOLDERS }),
     'GET /api/entries': (state, route) =>
@@ -366,8 +418,8 @@ export const installMockApi = async (page, state) => {
             /^\/api\/dramas\/([^/]+)\/arcs\/([^/]+)\/schedule\/preview$/,
         );
         if (preview) return previewRoute(state, route, request, preview.slice(1));
-        if (/\/schedule$/.test(url.pathname))
-            return json(route, { error: 'no such schedule' }, { status: 404 });
+        const schedule = url.pathname.match(/^\/api\/dramas\/([^/]+)\/arcs\/([^/]+)\/schedule$/);
+        if (schedule) return scheduleRoute(state, route, request, schedule.slice(1));
         const handler = handlers[key];
         return handler
             ? handler(state, route, request)

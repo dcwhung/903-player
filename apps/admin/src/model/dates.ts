@@ -22,6 +22,12 @@ export const shortDate = (isoDate: string): string => {
     return t('dates.short', { month, day, weekday: WEEKDAYS[weekday] ?? '' });
 };
 
+/** YYYY-MM-DD → 「16/11」（冇星期；排程時間軸 / tooltip 用） */
+export const dayMonth = (isoDate: string): string => {
+    const { month, day } = partsOf(isoDate);
+    return t('dates.dayMonth', { day, month });
+};
+
 /** YYYY-MM-DD → 「11 月 16 日」 */
 export const longDate = (isoDate: string): string => {
     const { month, day } = partsOf(isoDate);
@@ -31,7 +37,7 @@ export const longDate = (isoDate: string): string => {
 /** ISO timestamp → 香港時間「09:41」 */
 export const clockTime = (iso: string): string => timeFormatter.format(new Date(iso));
 
-/** 記錄用：今日 →「今天 10:02」，今年其他日子 →「9/11 22:40」，第二年 →「31/12/2025 22:40」 */
+/** 記錄用：今日 →「今日 10:02」，今年其他日子 →「9/11 22:40」，第二年 →「31/12/2025 22:40」 */
 export const stampOf = (iso: string, now: Date = new Date()): string => {
     const date = hkToday(new Date(iso));
     const today = hkToday(now);

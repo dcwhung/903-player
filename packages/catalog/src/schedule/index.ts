@@ -2,9 +2,16 @@
 export {
     expandSchedule,
     parseScheduleRule,
+    planSchedule,
     ScheduleError,
+    unlistOf,
+    type Cadence,
+    type EpisodeSchedule,
     type ExpandedSchedule,
     type ScheduleArc,
+    type ScheduleBatch,
+    type SchedulePlan,
     type ScheduleRule,
+    type UnlistRule,
 } from './expandSchedule';
 export type { DatesRule, PeriodicRule } from './rule';

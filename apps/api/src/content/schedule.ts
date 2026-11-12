@@ -3,7 +3,9 @@
  * PUT：規則 → expandSchedule → 寫入 definition 嗰個 arc（addedAt / episodeDates / episodeRemovedAt）→ 驗證 →
  * D1 batch 一次過寫 entries + schedules（atomic，樂觀鎖失敗兩樣都唔寫）。DELETE 只刪規則，日子照留。
  * body 可以帶 `enable: true`（S-803）：同一次寫入將下架（enabled: false）嘅短篇轉上架，
- * 唔使排完期再另外 PUT /entries；冇帶 / false = 唔郁 enabled（舊 client 照用）
+ * 唔使排完期再另外 PUT /entries；冇帶 / false = 唔郁 enabled（舊 client 照用）。
+ * 下架（rule.unlist，舊 removeAfterDays 照讀）同上架一齊喺 expandSchedule 展開；任何一集下架日唔遲過上架日
+ * → 422 details「episode N unlist date … must be later than its listing date …」（admin validationMessage 譯中文）
  */
 import {
     expandSchedule,

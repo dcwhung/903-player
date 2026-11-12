@@ -284,3 +284,84 @@ describe('arc id change with a schedule (S-804)', () => {
         expect(response.status).toBe(200);
     });
 });
+
+describe('schedule unlisting (mockup admin-schedule-unlist ⑧ ⑨)', () => {
+    /** 全部已上架（24/10 一次過）：照抄已上架批次，只設下架 */
+    const LISTED = { kind: 'dates', batches: [{ from: 1, date: '2026-10-24' }] };
+
+    it('should write the removals of an unlist-only rule and keep the listing as it is', async () => {
+        const rule = { ...LISTED, unlist: { kind: 'date', date: '2026-12-31' } };
+        const response = await putSchedule(rule);
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ rule });
+        expect(await arcOf()).toEqual({
+            id: 'season-1',
+            name: 'Season 1',
+            addedAt: '2026-10-24',
+            episodes: 6,
+            episodeRemovedAt: { '1-6': '2026-12-31' },
+        });
+        expect(await (await adminGet(PATH)).json()).toMatchObject({ rule });
+    });
+
+    it('should unlist periodically from episode 1 and keep listed batches before a periodic rule', async () => {
+        const rule = {
+            ...WEEKLY,
+            start: '2026-11-08',
+            from: 3,
+            listed: [{ from: 1, date: '2026-10-24' }],
+            unlist: { kind: 'periodic', start: '2026-12-01', perRelease: 4, every: { days: 7 } },
+        };
+        expect((await putSchedule(rule)).status).toBe(200);
+        expect(await arcOf()).toMatchObject({
+            addedAt: '2026-10-24',
+            episodeDates: { 3: '2026-11-08', 5: '2026-11-15' },
+            episodeRemovedAt: { '1-4': '2026-12-01', '5-6': '2026-12-08' },
+        });
+    });
+
+    it('should keep reading a stored legacy removeAfterDays rule', async () => {
+        await env.DB.prepare(
+            "INSERT INTO schedules (drama_id, arc_id, rule, updated_at) VALUES ('golden', 'season-1', ?, 'x')",
+        )
+            .bind(JSON.stringify({ ...WEEKLY, removeAfterDays: 30 }))
+            .run();
+        expect(await (await adminGet(PATH)).json()).toMatchObject({
+            rule: { removeAfterDays: 30 },
+            expanded: { episodeRemovedAt: { '1-2': '2026-12-01', '3-4': '2026-12-08' } },
+        });
+    });
+
+    it('should answer 422 with the episode when an unlist date is not after its listing date', async () => {
+        const rule = { ...WEEKLY, unlist: { kind: 'date', date: '2026-11-08' } };
+        const details =
+            'episode 3 unlist date 2026-11-08 must be later than its listing date 2026-11-08';
+        const preview = await adminRequest('POST', `${PATH}/preview`, { body: { rule } });
+        expect(preview.status).toBe(422);
+        expect(await preview.json()).toEqual({ error: 'invalid schedule', details });
+        const put = await putSchedule(rule);
+        expect(put.status).toBe(422);
+        expect(await put.json()).toEqual({ error: 'invalid schedule', details });
+        expect(await scheduleCount()).toBe(0);
+    });
+
+    it('should preview the removals without writing anything', async () => {
+        const rule = { ...LISTED, unlist: { kind: 'afterDays', days: 60 } };
+        const response = await adminRequest('POST', `${PATH}/preview`, { body: { rule } });
+        expect(await response.json()).toMatchObject({
+            expanded: { addedAt: '2026-10-24', episodeRemovedAt: { '1-6': '2026-12-23' } },
+        });
+        expect(await scheduleCount()).toBe(0);
+    });
+
+    it('should count an unlist-only schedule as scheduled in the todos', async () => {
+        await env.DB.prepare(
+            "INSERT INTO scan_findings (kind, drama_id, arc_id, detail, created_at) VALUES ('newEpisodes', 'golden', 'season-1', '{}', 'x')",
+        ).run();
+        const cells = async () =>
+            ((await (await adminGet('/api/todos')).json()) as { rows: Json[] }).rows[0]?.cells;
+        expect(await cells()).toMatchObject({ schedule: { state: 'optional' } });
+        await putSchedule({ ...LISTED, unlist: { kind: 'date', date: '2026-12-31' } });
+        expect(await cells()).toMatchObject({ schedule: { state: 'done' } });
+    });
+});

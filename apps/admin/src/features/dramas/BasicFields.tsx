@@ -3,6 +3,7 @@ import { useId } from 'react';
 import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
 import { str } from '../../model/raw';
+import { DateField } from '../../ui/DateField';
 import { Pill } from '../../ui/Pill';
 import { Switch } from '../../ui/Switch';
 import { Tip } from '../../ui/Tip';
@@ -45,16 +46,15 @@ export function BasicFields({ definition, kindLocked, onChange }: BasicFieldsPro
                         />
                     )}
                 </div>
-                <label className="field">
+                <div className="field">
                     <span>{t('drama.addedAt')}</span>
-                    <input
-                        type="date"
+                    {/* DD/MM/YYYY + 月曆（用戶 2026-11-12，唔用 type="date"）；可留空 */}
+                    <DateField
+                        label={t('drama.addedAt')}
                         value={str(definition, 'addedAt') ?? ''}
-                        onChange={(e) =>
-                            onChange((d) => withOptional(d, 'addedAt', e.target.value))
-                        }
+                        onChange={(iso) => onChange((d) => withOptional(d, 'addedAt', iso))}
                     />
-                </label>
+                </div>
                 <div className="field">
                     <span id={statusId}>{t('editor.status')}</span>
                     <Toggle

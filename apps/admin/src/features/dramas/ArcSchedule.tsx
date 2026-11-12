@@ -1,22 +1,20 @@
 /*
- * 一個短篇嘅排程（mockup ⑩ A + C）：預設 chip → 一句話規則 → 集數條（live preview）→ 排法唔同出批次表；
- * 刪除排程 / 儲存
+ * 一個短篇嘅排程：Design Origin: mockup: _mockups_/admin-schedule-unlist/index.html（⑧ 編輯、⑨ 預覽）
+ * 「編輯｜預覽」tabs（膠囊，同 player 主頁 tabs）：編輯 = 左上架、右下架兩個 panel；預覽 = 合併時間軸 + 上下架批次表（唯讀）。
+ * 下架日唔遲過上架日只喺撳「儲存」時彈錯誤提示（儲存掣上面，role="alert"），改設定就收返
  */
 import { hkToday } from '@903-player/catalog';
-import { Trash2 } from 'lucide-react';
-import { useState } from 'react';
 import type { RawDefinition, ScheduleState } from '../../api/types';
 import { t } from '../../i18n/t';
-import { countOf, firstNoOf } from '../../model/raw';
-import { BatchTable } from './BatchTable';
-import { EpisodeStrip } from './EpisodeStrip';
-import { formOf, ruleOf } from './scheduleModel';
-import { ScheduleSentence } from './ScheduleSentence';
-import { SchedulePresets } from './SchedulePresets';
-import { stripOf } from './stripModel';
-import { useSchedulePreview } from './useSchedulePreview';
-import type { useScheduleSave } from './useScheduleSave';
+import { countOf } from '../../model/raw';
+import { EditorNotices } from '../editor/EditorNotices';
+import { ScheduleSaveBar } from './ScheduleBars';
+import type { ScheduleForm } from './scheduleModel';
+import { ScheduleViews } from './ScheduleViews';
+import { isUnreleased, scheduleContextOf } from './stripModel';
 import type { DramaEditorState } from './useDramaEditor';
+import { planOf, saveProblemOf, useScheduleForm } from './useScheduleForm';
+import type { useScheduleSave } from './useScheduleSave';
 
 interface ArcScheduleProps {
     state: DramaEditorState;
@@ -26,87 +24,59 @@ interface ArcScheduleProps {
     actions: ReturnType<typeof useScheduleSave>;
 }
 
-interface ScheduleSaveBarProps {
-    canDelete: boolean;
-    canSave: boolean;
-    fromTodos: boolean;
-    actions: ReturnType<typeof useScheduleSave>;
-    onDelete: () => void;
-    onSave: () => void;
-}
-
-export function ScheduleSaveBar({
-    canDelete,
-    canSave,
-    fromTodos,
-    actions,
-    onDelete,
-    onSave,
-}: ScheduleSaveBarProps) {
-    const label = fromTodos ? t('editor.saveAndBack') : t('editor.save');
+/** 轉上架 / 其他分頁未儲存 / 儲存結果（422 = 中文錯誤提示，放喺儲存掣上面） */
+function ScheduleNotes({ state, arc, actions }: Omit<ArcScheduleProps, 'arcId' | 'saved'>) {
     return (
-        <div className="savebar">
-            <span>
-                {canDelete && (
-                    <button
-                        type="button"
-                        className="ghost-danger"
-                        aria-label={t('schedule.deleteScheduleLabel')}
-                        disabled={actions.saving}
-                        onClick={onDelete}
-                    >
-                        <Trash2 aria-hidden="true" />
-                        {t('schedule.deleteSchedule')}
-                    </button>
-                )}
-            </span>
-            <button
-                type="button"
-                className="primary"
-                disabled={!canSave || actions.saving}
-                onClick={onSave}
-            >
-                {actions.saving ? t('editor.saving') : label}
-            </button>
-        </div>
-    );
-}
-
-export function ArcSchedule({ state, arc, arcId, saved, actions }: ArcScheduleProps) {
-    const today = hkToday();
-    const [form, setForm] = useState(() => formOf(saved?.rule ?? null, today));
-    const rule = ruleOf(form, firstNoOf(arc));
-    const preview = useSchedulePreview(state.id, arcId, rule);
-    const strip = stripOf(
-        state.editor.draft?.definition ?? {},
-        arc,
-        preview.expanded,
-        today,
-        saved !== null,
-    );
-    const dirty = JSON.stringify(rule) !== JSON.stringify(saved?.rule ?? null);
-    const start = form.mode === 'custom' ? today : form.start;
-    if (countOf(arc) === 0) return <p className="note warn">{t('schedule.noCount')}</p>;
-    return (
-        <div className="card" id="schedule-panel" role="tabpanel" aria-labelledby={`tab-${arcId}`}>
-            <SchedulePresets form={form} start={start} onChange={setForm} />
-            <ScheduleSentence form={form} onChange={setForm} />
-            <EpisodeStrip strip={strip} count={countOf(arc)} />
-            {preview.error && (
-                <p className="note bad">{t('schedule.previewFailed', { error: preview.error })}</p>
-            )}
-            {strip.comparison?.differs && <BatchTable strip={strip} rule={rule} />}
+        <>
             {arc.enabled === false && <p className="note info">{t('schedule.enableNote')}</p>}
             {state.editor.dirtyKeys.length > 0 && (
                 <p className="note warn">{t('schedule.unsavedNote')}</p>
             )}
+            <EditorNotices
+                status={{ saving: actions.saving, problem: actions.problem, warnings: [] }}
+                fieldErrors={0}
+                onReload={() => void state.editor.reload()}
+            />
+        </>
+    );
+}
+
+export function ArcSchedule({ state, arc, arcId, saved, actions }: ArcScheduleProps) {
+    const ctx = scheduleContextOf(state.editor.draft?.definition ?? {}, arc, hkToday(), !!saved);
+    const { form, setForm, rule, dirty, changed, initial } = useScheduleForm(saved, ctx);
+    if (countOf(arc) === 0) return <p className="note warn">{t('schedule.noCount')}</p>;
+    const { plan, error } = planOf(rule, ctx);
+    const change = (next: ScheduleForm) => {
+        actions.clear();
+        setForm(next);
+    };
+    const save = () => {
+        const problem = saveProblemOf(rule, ctx);
+        if (problem) actions.reject(problem);
+        else void actions.save(arcId, rule);
+    };
+    const unreleased = isUnreleased(arc, saved !== null);
+    return (
+        <div className="card" id="schedule-panel" role="tabpanel" aria-labelledby={`tab-${arcId}`}>
+            <ScheduleViews
+                ctx={ctx}
+                form={form}
+                plan={plan}
+                error={error}
+                unreleased={unreleased}
+                draft={dirty}
+                onChange={change}
+            />
+            <ScheduleNotes state={state} arc={arc} actions={actions} />
             <ScheduleSaveBar
                 canDelete={saved !== null}
+                canRevert={changed}
                 canSave={dirty && state.editor.dirtyKeys.length === 0}
                 fromTodos={state.origin.fromTodos}
-                actions={actions}
+                saving={actions.saving}
                 onDelete={() => void actions.remove(arcId)}
-                onSave={() => void actions.save(arcId, rule)}
+                onRevert={() => change(initial)}
+                onSave={save}
             />
         </div>
     );
