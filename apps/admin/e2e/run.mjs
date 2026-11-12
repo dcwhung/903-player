@@ -12,6 +12,8 @@ const OUT = new URL('./screenshots', import.meta.url).pathname;
 const WIDE = { width: 1280, height: 860 };
 const PORTRAIT = { width: 390, height: 844 };
 const STARTUP_TIMEOUT_MS = 30_000;
+/** SIGTERM 之後等 vite 退出嘅上限，過咗就 SIGKILL（S-845） */
+const STOP_TIMEOUT_MS = 5_000;
 const KEY_GAP_MS = 200;
 
 let failures = 0;
@@ -68,9 +70,19 @@ const waitForServer = async ({ server }) => {
     throw new Error(`vite preview did not start on ${BASE}`);
 };
 
-/** 停 server 並等佢真係退出，先至結束 e2e */
+/** 停 server 並等佢真係退出，先至結束 e2e；SIGTERM 唔理就 SIGKILL，唔會永遠卡住（S-845） */
 const stopPreview = async ({ server, exited }) => {
-    if (server.exitCode === null && server.signalCode === null) server.kill();
+    if (server.exitCode !== null || server.signalCode !== null) return;
+    server.kill();
+    let timer;
+    const timedOut = new Promise((resolve) => {
+        timer = setTimeout(() => resolve(true), STOP_TIMEOUT_MS);
+    });
+    const mustForce = await Promise.race([exited.then(() => false), timedOut]);
+    clearTimeout(timer);
+    if (!mustForce) return;
+    console.error(`vite preview ${STOP_TIMEOUT_MS}ms 內冇因 SIGTERM 退出，改用 SIGKILL`);
+    server.kill('SIGKILL');
     await exited;
 };
 
