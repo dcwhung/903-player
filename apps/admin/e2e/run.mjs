@@ -113,6 +113,33 @@ const check = async (name, fn) => {
     }
 };
 
+/** Google「Sign in with Google」官方色（mockup admin-login --gsi-*） */
+const GSI = {
+    light: {
+        background: 'rgb(255, 255, 255)',
+        border: 'rgb(116, 119, 117)',
+        color: 'rgb(31, 31, 31)',
+        radius: '20px',
+    },
+    dark: {
+        background: 'rgb(19, 19, 20)',
+        border: 'rgb(142, 145, 143)',
+        color: 'rgb(227, 227, 227)',
+        radius: '20px',
+    },
+};
+
+const gsiColours = (locator) =>
+    locator.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return {
+            background: style.backgroundColor,
+            border: style.borderTopColor,
+            color: style.color,
+            radius: style.borderTopLeftRadius,
+        };
+    });
+
 const loginCheck = (browser) =>
     check('login screen when /api/me is 401', async () => {
         const page = await newPage(browser, createState());
@@ -121,7 +148,29 @@ const loginCheck = (browser) =>
         await google.waitFor();
         if ((await google.getAttribute('href')) !== '/auth/google/start')
             throw new Error('bad href');
+        // 款 3（_mockups_/admin-login #3）：全頁 banner 背景 + 毛玻璃卡；Google 掣跟官方淺 / 深色款
+        await page.locator('.login-card').waitFor();
+        await page.evaluate(() => document.fonts.ready);
+        for (const [scheme, expected] of Object.entries(GSI)) {
+            await page.emulateMedia({ colorScheme: scheme });
+            const got = await gsiColours(google);
+            if (JSON.stringify(got) !== JSON.stringify(expected))
+                throw new Error(`${scheme} Google button: ${JSON.stringify(got)}`);
+        }
+        await page.emulateMedia({ colorScheme: 'light' });
+        const bg = await page
+            .locator('.login-bg')
+            .evaluate((el) => getComputedStyle(el).backgroundImage);
+        if (!bg.includes('/banner.webp')) throw new Error(`login background: ${bg}`);
         await shoot(page, 'login');
+        // admin 揀咗深色（localStorage admin.theme）：系統淺色都用深色款
+        await page.evaluate(() => localStorage.setItem('admin.theme', 'dark'));
+        await page.reload();
+        await google.waitFor();
+        const manual = await gsiColours(google);
+        if (JSON.stringify(manual) !== JSON.stringify(GSI.dark))
+            throw new Error(`data-theme dark Google button: ${JSON.stringify(manual)}`);
+        await page.evaluate(() => localStorage.removeItem('admin.theme'));
         // S-809：深連結 login 完要返返嚟 → ?next=（只係同源相對路徑）
         await page.goto(`${BASE}/dramas/lancy/schedule#lancy-02`);
         const deep = await google.getAttribute('href');
@@ -389,6 +438,7 @@ const missingFolderCheck = (browser) =>
         const pair = field.getByRole('button', { name: '配對' });
         if (!(await pair.isDisabled())) throw new Error('配對 enabled before picking a folder');
         await shoot(page, 'missing-folder-page', { fullPage: true });
+        await assertIcon(pair, 'link-2', '配對');
         await select.selectOption('黃金少年 第一季');
         if (await pair.isDisabled()) throw new Error('配對 still disabled after picking');
         const box = await boxOf(field);
@@ -922,6 +972,13 @@ const portraitCheck = (browser) =>
         if (await page.getByRole('navigation', { name: '主選單' }).isVisible())
             throw new Error('nav visible');
         await shoot(page, 'portrait');
+        // 未登入都係：直向提示蓋過 login 頁
+        const out = await newPage(browser, createState(), PORTRAIT);
+        await out.goto(BASE);
+        await out.getByRole('heading', { name: '請轉為橫向或使用電腦' }).waitFor();
+        if (await out.getByRole('link', { name: '使用 Google 登入' }).isVisible())
+            throw new Error('login visible on a portrait phone');
+        await out.close();
         await page.close();
     });
 
