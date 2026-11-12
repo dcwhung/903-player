@@ -1,4 +1,4 @@
-import { arcStatusOf, dailyStatusOf, entryDotOf } from './status';
+import { arcStatusOf, dailyStatusOf, entryDotOf, showStatusOf } from './status';
 
 const TODAY = '2026-11-10';
 
@@ -18,6 +18,15 @@ describe('entryDotOf', () => {
         expect(entryDotOf('dramas', { enabled: true, removedAt: '2026-11-03' }, false, TODAY)).toBe(
             'off',
         );
+    });
+
+    it('should grey out a disabled entry that has never been published (未上架)', () => {
+        expect(entryDotOf('dramas', { enabled: false }, false, TODAY, false)).toBe('unlisted');
+        expect(entryDotOf('shows', { enabled: false }, false, TODAY, false)).toBe('unlisted');
+        expect(entryDotOf('dramas', { enabled: false }, false, TODAY, true)).toBe('off');
+        // 未知（舊 API 冇 published）照舊當已下架
+        expect(entryDotOf('shows', { enabled: false }, false, TODAY, undefined)).toBe('off');
+        expect(entryDotOf('dramas', { enabled: false }, true, TODAY, false)).toBe('soon');
     });
 });
 
@@ -61,15 +70,21 @@ describe('arcStatusOf', () => {
         });
     });
 
-    it('should treat a disabled arc as unscheduled when new, unlisted otherwise', () => {
-        expect(arcStatusOf(drama, { episodes: 3, enabled: false }, TODAY, true)).toEqual({
-            tone: 'none',
-            text: '未排期',
-        });
-        expect(arcStatusOf(drama, { episodes: 3, enabled: false }, TODAY)).toEqual({
+    it('should call a disabled arc 未上架 when it was never published, 已下架 otherwise', () => {
+        const off = { episodes: 3, enabled: false };
+        const unlisted = { tone: 'unlisted', text: '未上架' };
+        expect(arcStatusOf(drama, off, TODAY, { isNew: true })).toEqual(unlisted);
+        expect(arcStatusOf(drama, off, TODAY, { published: false })).toEqual(unlisted);
+        expect(arcStatusOf(drama, off, TODAY, { published: true })).toEqual({
             tone: 'bad',
             text: '已下架',
         });
+        // 未知（舊 API）照舊
+        expect(arcStatusOf(drama, off, TODAY)).toEqual({ tone: 'bad', text: '已下架' });
+        // 上架緊嘅唔受影響
+        expect(arcStatusOf(drama, { episodes: 3 }, TODAY, { published: false }).text).toBe(
+            '已上架',
+        );
     });
 });
 
@@ -80,5 +95,25 @@ describe('dailyStatusOf', () => {
             '11 月 20 日上架',
         );
         expect(dailyStatusOf({ enabled: true }, TODAY).tone).toBe('ok');
+    });
+
+    it('should call a never-published disabled daily drama 未上架', () => {
+        expect(dailyStatusOf({ enabled: false }, TODAY, false)).toEqual({
+            tone: 'unlisted',
+            text: '未上架',
+        });
+        expect(dailyStatusOf({ enabled: false }, TODAY, true).text).toBe('已下架');
+    });
+});
+
+describe('showStatusOf', () => {
+    it('should split disabled shows into 未上架 and 已下架', () => {
+        expect(showStatusOf({}, true)).toEqual({ tone: 'ok', text: '上架中' });
+        expect(showStatusOf({ enabled: false }, false)).toEqual({
+            tone: 'unlisted',
+            text: '未上架',
+        });
+        expect(showStatusOf({ enabled: false }, true)).toEqual({ tone: 'bad', text: '已下架' });
+        expect(showStatusOf({ enabled: false }, undefined).text).toBe('已下架');
     });
 });

@@ -44,9 +44,21 @@ function ArcsHead() {
     );
 }
 
-export function ArcsTab({ state, openArc }: { state: DramaEditorState; openArc: string }) {
+interface ArcsTabProps {
+    state: DramaEditorState;
+    openArc: string;
+    /** 展開咗（或者改咗 ID）嘅短篇：記住，轉去排程 tab 揀返佢 */
+    onPick?: (arcId: string) => void;
+}
+
+export function ArcsTab({ state, openArc, onPick }: ArcsTabProps) {
     const { editor } = state;
-    const [open, setOpen] = useState<string | null>(openArc || null);
+    const [open, setOpenState] = useState<string | null>(openArc || null);
+    // 收埋唔清記憶：轉 tab 仲係揀返最後展開嗰個
+    const setOpen = (arcId: string | null) => {
+        setOpenState(arcId);
+        if (arcId) onPick?.(arcId);
+    };
     const arcs = arcItemsOf(editor.draft?.definition ?? {});
     return (
         <>

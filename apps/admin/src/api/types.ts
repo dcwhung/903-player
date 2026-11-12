@@ -16,6 +16,10 @@ export interface EntrySummary {
     enabled: boolean;
     draft: boolean;
     updatedAt: string;
+    /** 最新 ok publish 有冇上過架（舊 API 冇 = 唔知） */
+    published?: boolean;
+    /** 短篇集：上過架嘅短篇 ID（舊 API 冇） */
+    publishedArcs?: string[];
 }
 
 export interface EntryDetail {
@@ -29,6 +33,9 @@ export interface LoadedEntry extends EntryDetail {
     kind: EntryKind;
     id: string;
     etag: string | null;
+    /** 由 GET /api/entries 併入（單一 entry GET 冇） */
+    published?: boolean | undefined;
+    publishedArcs?: string[] | undefined;
 }
 
 export interface SaveResult {

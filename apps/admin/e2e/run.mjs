@@ -1390,6 +1390,217 @@ const arcLinkCheck = (browser) =>
         },
     );
 
+/* 未上架（灰，從未上過架）vs 已下架（紅，上過架）：短篇 tab、廣播劇列表（短篇行 + 其餘摘要 + 灰點分隔線） */
+const statusMixState = () => loggedIn({ statusMix: true });
+
+const pillOf = (row) => row.locator('.pills .pill');
+
+/** 狀態 pill 唔可以有 hover 效果（用戶規則）：hover 前後底色 / 字色一樣 */
+const assertNoHover = async (page, pill, what) => {
+    const coloursOf = () =>
+        pill.evaluate((el) => {
+            const style = getComputedStyle(el);
+            return `${style.backgroundColor} ${style.color}`;
+        });
+    await page.mouse.move(0, 0);
+    const before = await coloursOf();
+    await pill.hover();
+    const after = await coloursOf();
+    if (before !== after) throw new Error(`${what} pill changes on hover: ${before} → ${after}`);
+};
+
+const arcStatusCheck = (browser) =>
+    check(
+        'arcs tab: never-listed disabled arc is grey 未上架, listed-before one red 已下架',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            await page.goto(`${BASE}/dramas/sammy/arcs`);
+            // published 由列表資料（GET /api/entries）嚟：載入完先由「已下架」轉灰色「未上架」
+            for (const id of ['fantasy', 'camp'])
+                await page
+                    .locator(`li#${id} .pills .pill.unlisted`, { hasText: '未上架' })
+                    .waitFor({ timeout: 5000 });
+            const diary = pillOf(page.locator('li#diary'));
+            if ((await diary.textContent()) !== '已下架') throw new Error('diary: not 已下架');
+            await assertNoHover(page, pillOf(page.locator('li#fantasy')), '未上架');
+            await page.mouse.move(0, 0);
+            await shoot(page, 'arc-status-unlisted', { fullPage: true });
+            await page.close();
+        },
+    );
+
+const dramaListStatusCheck = (browser) =>
+    check(
+        'drama list: arc lines 未上架 / 已下架, 其餘 summary, grey dot + 未上架 / 已下架 divider',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            await page.goto(`${BASE}/dramas`);
+            const row = page.locator('li.drama-row', { hasText: '森美小儀系列' });
+            await row.waitFor();
+            const unlisted = row.locator('.pill.unlisted', { hasText: '未上架' });
+            if ((await unlisted.count()) !== 2) throw new Error('expected 2 未上架 arc lines');
+            if ((await row.locator('.pill.bad', { hasText: '已下架' }).count()) !== 1)
+                throw new Error('expected 1 已下架 arc line');
+            await row.getByText('其餘 6 個已上架').waitFor();
+            await page.getByText(/^未上架 \/ 已下架（1）/).waitFor();
+            const fresh = page.locator('li.drama-row', { hasText: '新劇集' });
+            if ((await fresh.locator('.thumb.st-unlisted').count()) !== 1)
+                throw new Error('never-published drama has no grey dot');
+            await page.getByRole('group', { name: '圖例' }).getByText('未上架').waitFor();
+            await assertNoHover(page, unlisted.first(), '未上架');
+            await page.mouse.move(0, 0);
+            await shoot(page, 'drama-list-status', { fullPage: true });
+            await page.close();
+        },
+    );
+
+const arcMemoryCheck = (browser) =>
+    check(
+        'drama tabs remember the arc: 短篇 → 排程 selects it, 排程 → 短篇 expands it',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            await page.goto(`${BASE}/dramas/sammy/arcs`);
+            await page.getByRole('button', { name: '展開「大衛營」' }).click();
+            await page.getByRole('link', { name: '排程', exact: true }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/schedule#camp`);
+            const chip = page.getByRole('tab', { name: /大衛營/ });
+            await chip.waitFor();
+            if ((await chip.getAttribute('aria-selected')) !== 'true')
+                throw new Error('大衛營 chip not selected');
+            await page.mouse.move(0, 0);
+            await shoot(page, 'arc-memory', { fullPage: true });
+            await page.getByRole('tab', { name: /開心日記/ }).click();
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#diary`);
+            const toggle = page.getByRole('button', { name: '展開「開心日記」' });
+            if ((await toggle.getAttribute('aria-expanded')) !== 'true')
+                throw new Error('開心日記 not expanded in the arcs tab');
+            await page.close();
+        },
+    );
+
+/** 短篇 tab：嗰行展開咗（aria-expanded + 編輯欄位見到）而且喺畫面入面 */
+const assertArcExpanded = async (page, name) => {
+    const toggle = page.getByRole('button', { name: `展開「${name}」` });
+    await toggle.waitFor();
+    if ((await toggle.getAttribute('aria-expanded')) !== 'true')
+        throw new Error(`${name} not expanded in the arcs tab`);
+    const field = page.getByRole('textbox', { name: /^名稱/ });
+    if ((await field.inputValue()) !== name) throw new Error(`open editor is not ${name}`);
+    if (
+        (await page
+            .getByRole('button', { name: /^展開「/ })
+            .and(page.locator('[aria-expanded="true"]'))
+            .count()) !== 1
+    )
+        throw new Error('more than one arc expanded');
+    const row = page.locator('li.arc-line.open');
+    const inView = await row.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        return box.top >= 0 && box.bottom <= window.innerHeight;
+    });
+    if (!inView) throw new Error(`${name} row is outside the viewport`);
+};
+
+const arcMemoryBackCheck = (browser) =>
+    check(
+        '排程 → 短篇: the arc picked in 排程 is expanded (not just scrolled to), replacing an earlier one',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            // ① 排程揀非預設 chip → 短篇
+            await page.goto(`${BASE}/dramas/sammy/schedule`);
+            await page.getByRole('tab', { name: /開心日記/ }).click();
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#diary`);
+            await assertArcExpanded(page, '開心日記');
+            // ② 短篇已展開另一個（大衛營）→ 排程揀森美幻想劇 → 返短篇 = 森美幻想劇
+            await page.getByRole('button', { name: '展開「大衛營」' }).click();
+            await page.getByRole('link', { name: '排程', exact: true }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/schedule#camp`);
+            await page.getByRole('tab', { name: /森美幻想劇/ }).click();
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#fantasy`);
+            await assertArcExpanded(page, '森美幻想劇');
+            await page.mouse.move(0, 0);
+            // 等 scrollIntoView（smooth）停定先影，淺色 / 深色同一個位置
+            await page.waitForFunction(
+                () =>
+                    new Promise((resolve) => {
+                        const y = window.scrollY;
+                        setTimeout(() => resolve(window.scrollY === y), 300);
+                    }),
+            );
+            await shoot(page, 'arc-memory-back');
+            // ③ W-717：短篇展開開心日記（最底）→ 排程（chip 唔郁）→ 捲返頂 → 短篇：hash 一樣都要捲去嗰行
+            await page.getByRole('button', { name: '展開「開心日記」' }).click();
+            await page.getByRole('link', { name: '排程', exact: true }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/schedule#diary`);
+            await page.getByRole('tab', { name: /開心日記/ }).waitFor();
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#diary`);
+            // scrollIntoView（block: center）：嗰行要捲到畫面中間一帶，唔係淨係啱啱擠入畫面底
+            await page.waitForFunction(
+                () => {
+                    const row = document.querySelector('li.arc-line.open');
+                    if (!row) return false;
+                    const box = row.getBoundingClientRect();
+                    const middle = (box.top + box.bottom) / 2;
+                    return Math.abs(middle - window.innerHeight / 2) < window.innerHeight / 4;
+                },
+                undefined,
+                { timeout: 5000 },
+            );
+            await assertArcExpanded(page, '開心日記');
+            await page.close();
+        },
+    );
+
+const arcMemoryReloadCheck = (browser) =>
+    check(
+        'S-846: picked chip / expanded arc go into the URL (replace) and survive a reload',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            await page.goto(`${BASE}/dramas`);
+            await page.goto(`${BASE}/dramas/sammy/schedule`);
+            await page.getByRole('tab', { name: /大衛營/ }).click();
+            await page.getByRole('tab', { name: /開心日記/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/schedule#diary`);
+            await page.reload();
+            const chip = page.getByRole('tab', { name: /開心日記/ });
+            await chip.waitFor();
+            if ((await chip.getAttribute('aria-selected')) !== 'true')
+                throw new Error('開心日記 chip not selected after reload');
+            // scrollIntoView 記錄：轉 tab 要捲去記住嘅短篇；之後撳展開（hash quiet 寫入）唔可以捲
+            await page.evaluate(() => {
+                window.__scrolled = [];
+                const original = Element.prototype.scrollIntoView;
+                Element.prototype.scrollIntoView = function scrollIntoView(options) {
+                    window.__scrolled.push(this.id);
+                    return original.call(this, options);
+                };
+            });
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#diary`);
+            await page.waitForFunction(() => window.__scrolled.includes('diary'));
+            await page.evaluate(() => {
+                window.__scrolled = [];
+            });
+            await page.getByRole('button', { name: '展開「冬日戀曲」' }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#s6`);
+            await page.waitForTimeout(300);
+            const scrolled = await page.evaluate(() => window.__scrolled);
+            if (scrolled.length > 0) throw new Error(`expanding scrolled to ${scrolled.join()}`);
+            await page.reload();
+            await assertArcExpanded(page, '冬日戀曲');
+            // replace：上一頁直接返去廣播劇列表，唔會逐個 chip / 短篇行返轉頭
+            await page.goBack();
+            await page.goBack();
+            await page.waitForURL(`${BASE}/dramas`);
+            await page.close();
+        },
+    );
+
 const reducedMotionCheck = (browser) =>
     check('nav collapse switches instantly with reduced motion (no animation)', async () => {
         const page = await newPage(browser, loggedIn());
@@ -1506,6 +1717,11 @@ try {
         todoRowCheck,
         newShowCheck,
         arcLinkCheck,
+        arcStatusCheck,
+        dramaListStatusCheck,
+        arcMemoryCheck,
+        arcMemoryBackCheck,
+        arcMemoryReloadCheck,
         navCheck,
         reducedMotionCheck,
         autoNavCheck,

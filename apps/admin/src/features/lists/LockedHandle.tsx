@@ -1,4 +1,4 @@
-/* 唔可以拖嘅行（已下架 / 未上架）：灰色 ⠿，讀屏跳過 */
+/* 唔可以拖嘅行（待處理 / 未上架 / 已下架）：灰色 ⠿，讀屏跳過 */
 import { GripVertical } from 'lucide-react';
 
 export function LockedHandle() {

@@ -88,3 +88,20 @@ describe('chip buttons', () => {
         },
     );
 });
+
+/*
+ * 未上架（從未發佈、下架）：灰色中性 pill + 灰點，同紅色「已下架」分開；
+ * 狀態 pill 唔可以有 hover 效果（用戶規則）
+ */
+describe('未上架 status', () => {
+    it('should paint the 未上架 pill and dots neutral grey', () => {
+        expect(bodyOf('.pill.unlisted')).toMatch(/background:\s*var\(--surface-2\)/);
+        expect(bodyOf('.pill.unlisted')).toMatch(/color:\s*var\(--muted\)/);
+        expect(bodyOf('.thumb.st-unlisted::after')).toMatch(/background:\s*var\(--muted\)/);
+        expect(bodyOf('.legend .dot.unlisted')).toMatch(/background:\s*var\(--muted\)/);
+    });
+
+    it('should give status pills no hover rule', () => {
+        expect(theme).not.toMatch(/\.pill[^{]*:hover/);
+    });
+});

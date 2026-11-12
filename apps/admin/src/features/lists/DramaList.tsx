@@ -1,11 +1,16 @@
 /*
  * 廣播劇列表：Design Origin: mockup: _mockups_/admin/index.html#s2（+ #s2b 拖曳中）
- * 名稱 / 短篇 / 集數 / 狀態；拖 ⠿ 排序（放手即存）；未上架 / 已下架固定排最底、唔可以拖
+ * 名稱 / 短篇 / 集數 / 狀態；拖 ⠿ 排序（放手即存）；待處理 / 未上架 / 已下架固定排最底、唔可以拖
  */
 import { useState } from 'react';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
-import { changeFlagsOf, groupEntries, type ChangeFlags } from '../../model/listModel';
+import {
+    changeFlagsOf,
+    groupEntries,
+    unlistedLabelOf,
+    type ChangeFlags,
+} from '../../model/listModel';
 import type { LoadedEntry } from '../../api/types';
 import { DramaRow } from './DramaRow';
 import { legendOf } from './legendModel';
@@ -68,7 +73,7 @@ export function DramaList() {
                     flags={flags}
                 />
                 <LockedSection
-                    label={t('list.unlisted', { count: groups.unlisted.length })}
+                    label={unlistedLabelOf(groups.unlisted)}
                     entries={groups.unlisted}
                     flags={flags}
                 />

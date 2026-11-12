@@ -15,11 +15,19 @@ import {
     listAssetHashes,
     listScheduledArcIds,
     listStoredEntries,
+    publishedFacts,
     updateEntryStatement,
     type EntryRow,
     type StoredEntry,
 } from '../catalog/store';
 import { etagOf, expectedVersion, ifMatches, nextUpdatedAt } from './etag';
+import {
+    documentShowIds,
+    dramasOf,
+    indexOfFacts,
+    isInIndex,
+    type PublishedIndex,
+} from './published';
 import {
     badTarget,
     errorResponse,
@@ -33,7 +41,17 @@ import { EntryValidationError, validateEntry, type EntryInput } from './validate
 
 export const entryRoutes = new Hono<AppEnv>();
 
-const summaryOf = (row: StoredEntry) => {
+/** 短篇集：而家 definition 入面上過架嘅短篇 ID（每日播 / 節目冇呢個欄位） */
+const publishedArcsOf = (definition: Json, published: ReadonlySet<string> | undefined) =>
+    Array.isArray(definition.arcs)
+        ? { publishedArcs: [...arcIdsOf(definition)].filter((id) => published?.has(id) === true) }
+        : {};
+
+/**
+ * published / publishedArcs：任何一次 ok publish 有冇上過架（admin「未上架」vs「已下架」，見 published.ts）；
+ * 舊 client 唔睇呢兩個欄位，照用
+ */
+const summaryOf = (row: StoredEntry, index: PublishedIndex) => {
     const definition = JSON.parse(row.definition) as Json;
     return {
         kind: row.kind,
@@ -43,12 +61,19 @@ const summaryOf = (row: StoredEntry) => {
         enabled: definition.enabled ?? true,
         draft: row.draft === 1,
         updatedAt: row.updated_at,
+        published: isInIndex(index, row.kind, row.id),
+        ...(row.kind === 'dramas' ? publishedArcsOf(definition, index.dramas.get(row.id)) : {}),
     };
 };
 
-entryRoutes.get('/entries', async (c) =>
-    c.json({ entries: (await listStoredEntries(c.env.DB)).map(summaryOf) }),
-);
+entryRoutes.get('/entries', async (c) => {
+    const [rows, facts] = await Promise.all([
+        listStoredEntries(c.env.DB),
+        publishedFacts(c.env.DB),
+    ]);
+    const index = indexOfFacts(facts);
+    return c.json({ entries: rows.map((row) => summaryOf(row, index)) });
+});
 
 entryRoutes.get('/entries/:kind/:id', async (c) => {
     const target = targetOf(c);
@@ -222,9 +247,9 @@ entryRoutes.put('/entries/:kind/:id', async (c) => {
 const isPublished = async (db: D1Database, kind: EntryInput['kind'], id: string) => {
     const latest = await latestPublish(db);
     if (!latest) return false;
-    if (kind === 'dramas') return latest.episodeIds.some((e) => e.startsWith(`drama:${id}:`));
-    const shows = (JSON.parse(latest.document) as { shows?: { id: string }[] }).shows ?? [];
-    return shows.some((show) => show.id === id);
+    if (kind === 'dramas') return dramasOf(latest.episodeIds).has(id);
+    // document 讀唔到就當用緊（拒絕刪除，S-844）
+    return documentShowIds(latest.document)?.has(id) ?? true;
 };
 
 entryRoutes.delete('/entries/:kind/:id', async (c) => {

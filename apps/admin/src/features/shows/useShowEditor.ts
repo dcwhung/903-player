@@ -22,6 +22,19 @@ const useBackToList = () => {
     };
 };
 
+/**
+ * 從未發佈（可改 ID / 刪除）；published = GET /api/entries 有冇上過架（未上架 / 已下架），
+ * undefined = 未知（列表未載入 / 舊 API）
+ */
+const usePublishFlags = (isNew: boolean, id: string | undefined) => {
+    const { changes, entries } = useAdminData();
+    const flags = changeFlagsOf(changes.data?.changes);
+    return {
+        neverPublished: isNew || flags.never.has(`shows:${id}`),
+        published: entries.data?.find((e) => e.kind === 'shows' && e.id === id)?.published,
+    };
+};
+
 export const useShowEditor = (id: string | undefined) => {
     const isNew = id === undefined;
     const [initial] = useState(() =>
@@ -30,7 +43,6 @@ export const useShowEditor = (id: string | undefined) => {
     const editor = useEntryEditor('shows', id ?? '', initial);
     const [newId, setNewId] = useState('');
     const origin = useEditorOrigin();
-    const flags = changeFlagsOf(useAdminData().changes.data?.changes);
     const backToList = useBackToList();
     const save = async () => {
         if (!editor.draft || (isNew && idProblem(newId))) return;
@@ -46,7 +58,7 @@ export const useShowEditor = (id: string | undefined) => {
         setNewId,
         origin,
         save,
-        neverPublished: isNew || flags.never.has(`shows:${id}`),
+        ...usePublishFlags(isNew, id),
         saveImage: useImageSave(editor),
         rename: useRenameEntry(editor, origin.afterSave),
     };

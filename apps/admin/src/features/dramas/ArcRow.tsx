@@ -27,7 +27,10 @@ interface ArcRowProps {
 export function ArcRow({ state, arc, arcId, open, onToggle, sortable }: ArcRowProps) {
     const drama = state.editor.draft?.definition ?? {};
     const isNew = state.isNewArc(arcId);
-    const status = arcStatusOf(drama, arc, hkToday(), isNew);
+    const status = arcStatusOf(drama, arc, hkToday(), {
+        isNew,
+        published: state.isArcPublished(arcId),
+    });
     const { setNodeRef, style, handle, isDragging } = sortable;
     const Chevron = open ? ChevronDown : ChevronRight;
     return (

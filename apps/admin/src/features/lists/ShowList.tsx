@@ -8,7 +8,13 @@ import { useNavigate } from 'react-router-dom';
 import type { LoadedEntry } from '../../api/types';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
-import { changeFlagsOf, groupEntries, type ChangeFlags } from '../../model/listModel';
+import {
+    changeFlagsOf,
+    groupEntries,
+    unlistedLabelOf,
+    type ChangeFlags,
+} from '../../model/listModel';
+import { showStatusOf } from '../../model/status';
 import { Pill } from '../../ui/Pill';
 import type { SortableRender } from '../../ui/SortableList';
 import { airDaysOf as airDaysIn, airTimeOf } from '../shows/showModel';
@@ -34,7 +40,7 @@ function ShowRow({
     flags: ChangeFlags;
     sortable?: SortableRender;
 }) {
-    const off = entry.definition.enabled === false;
+    const status = showStatusOf(entry.definition, entry.published);
     const navigate = useNavigate();
     return (
         <li
@@ -46,8 +52,8 @@ function ShowRow({
             {sortable ? sortable.handle : <LockedHandle />}
             <EntryName entry={entry} flags={flags} meta={airMetaOf(entry)} />
             <div className="pills">
-                <Pill tone={off ? 'bad' : 'ok'} dot>
-                    {off ? t('status.off') : t('status.showLive')}
+                <Pill tone={status.tone} dot>
+                    {status.text}
                 </Pill>
             </div>
         </li>
@@ -86,9 +92,7 @@ export function ShowList() {
                 />
                 {unlisted.length > 0 && (
                     <>
-                        <div className="section-divider">
-                            {t('list.unlisted', { count: unlisted.length })}
-                        </div>
+                        <div className="section-divider">{unlistedLabelOf(unlisted)}</div>
                         <ol className="list disabled">
                             {unlisted.map((entry) => (
                                 <ShowRow key={entry.id} entry={entry} flags={flags} />

@@ -1,6 +1,6 @@
 /*
  * 廣播劇 · 排程：Design Origin: mockup: _mockups_/admin/index.html#s7、_mockups_/admin-schedule-unlist ⑧ ⑨
- * 短篇 tab（#arcId 由待辦跳入嚟就揀嗰個）→ 嗰個短篇嘅排程（儲存結果提示喺儲存掣上面，見 ArcSchedule）
+ * 短篇 tab（#arcId 由待辦跳入嚟 / 由短篇 tab 記住就揀嗰個）→ 嗰個短篇嘅排程（儲存結果提示喺儲存掣上面，見 ArcSchedule）
  */
 import { useState } from 'react';
 import { t } from '../../i18n/t';
@@ -12,13 +12,14 @@ import type { DramaEditorState } from './useDramaEditor';
 import { useSchedules } from './useSchedules';
 import { useScheduleSave } from './useScheduleSave';
 
-export function ScheduleTab({
-    state,
-    initialArc,
-}: {
+interface ScheduleTabProps {
     state: DramaEditorState;
     initialArc: string;
-}) {
+    /** 撳咗嘅短篇 chip：記住，轉去短篇 tab 展開佢 */
+    onPick?: (arcId: string) => void;
+}
+
+export function ScheduleTab({ state, initialArc, onPick }: ScheduleTabProps) {
     const drama = state.editor.draft?.definition ?? {};
     const arcs = arcsOf(drama).map((arc, i) => ({ arc, id: arcIdOf(arc, i) }));
     const { schedules, reload } = useSchedules(
@@ -42,7 +43,10 @@ export function ScheduleTab({
                 selected={selected}
                 schedules={schedules}
                 isNew={state.isNewArc}
-                onSelect={setSelected}
+                onSelect={(arcId) => {
+                    setSelected(arcId);
+                    onPick?.(arcId);
+                }}
             />
             <ArcSchedule
                 key={`${current.id}:${schedules[current.id]?.updatedAt ?? 'none'}`}

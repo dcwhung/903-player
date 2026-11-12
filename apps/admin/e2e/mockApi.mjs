@@ -65,6 +65,8 @@ const show = (id, name, order, extra = {}) => ({
     images: {},
     draft: false,
     updatedAt: `${id}-v1`,
+    // GET /api/entries 嘅 published（最新 ok publish 有冇上過架）
+    published: true,
 });
 
 const lancy = () => ({
@@ -108,6 +110,9 @@ const lancy = () => ({
     images: {},
     draft: false,
     updatedAt: 'lancy-v1',
+    // 我心不死 = 新短篇（變更摘要 newArc）、戀愛後二分一 = 掃描新短篇：都未上過架
+    published: true,
+    publishedArcs: ['half'],
 });
 
 const golden = () => ({
@@ -124,6 +129,58 @@ const golden = () => ({
     images: {},
     draft: false,
     updatedAt: 'golden-v1',
+    published: true,
+    publishedArcs: ['s1'],
+});
+
+/*
+ * createState({ statusMix: true })：「未上架」vs「已下架」（GET /api/entries published / publishedArcs）
+ * - 森美小儀系列：6 個已上架 + 森美幻想劇、大衛營（新、下架、從未上架 → 未上架）+ 開心日記（上過架、而家下架 → 已下架）
+ * - 新劇集：admin 新建、下架、從未發佈（灰點，分隔線「未上架 / 已下架」）
+ */
+const SAMMY_LIVE = ['小儀日記', '森美奇遇', '拍拖寶典', '辦公室風雲', '夏日物語', '冬日戀曲'];
+
+const sammy = () => ({
+    kind: 'dramas',
+    id: 'sammy',
+    definition: {
+        name: '森美小儀系列',
+        kind: 'series',
+        enabled: true,
+        order: 3,
+        addedAt: '2026-09-01',
+        audio: { host: 'r2', folder: '森美小儀系列', file: '{no2} - {arc}.m4a' },
+        arcs: [
+            ...SAMMY_LIVE.map((name, i) => ({ id: `s${i + 1}`, name, episodes: 10 })),
+            { id: 'fantasy', name: '森美幻想劇', episodes: 12, enabled: false },
+            { id: 'camp', name: '大衛營', episodes: 8, enabled: false },
+            { id: 'diary', name: '開心日記', episodes: 15, enabled: false },
+        ],
+    },
+    images: {},
+    draft: false,
+    updatedAt: 'sammy-v1',
+    published: true,
+    publishedArcs: [...SAMMY_LIVE.map((_, i) => `s${i + 1}`), 'diary'],
+});
+
+const freshDrama = () => ({
+    kind: 'dramas',
+    id: 'fresh',
+    definition: {
+        name: '新劇集',
+        kind: 'series',
+        enabled: false,
+        order: 4,
+        addedAt: '2026-11-12',
+        audio: { host: 'r2', folder: '新劇集', file: '{no2} - {arc}.m4a' },
+        arcs: [{ id: 'fresh-01', name: '第一輯', episodes: 6, enabled: false }],
+    },
+    images: {},
+    draft: false,
+    updatedAt: 'fresh-v1',
+    published: false,
+    publishedArcs: [],
 });
 
 /** D1 schedules：同蘭茜夫人劇場嘅 definition 對得上（排程 tab 短篇 chip 跟呢度計「已上 15 / 37 集」等） */
@@ -173,7 +230,11 @@ const missingFolderRow = () => ({
     },
 });
 
-export const createState = ({ realImages = false, missingFolder = false } = {}) => ({
+export const createState = ({
+    realImages = false,
+    missingFolder = false,
+    statusMix = false,
+} = {}) => ({
     loggedIn: false,
     missingFolder,
     entries: [
@@ -181,6 +242,7 @@ export const createState = ({ realImages = false, missingFolder = false } = {}) 
         show('night', '深夜節目', 2),
         lancy(),
         golden(),
+        ...(statusMix ? [sammy(), freshDrama()] : []),
     ]
         .map((entry) => (realImages ? withRealImages(entry) : entry))
         .map((entry) => (missingFolder ? withMissingFolder(entry) : entry)),
@@ -361,13 +423,18 @@ const handlers = {
     'GET /api/folders/unmapped': (state, route) => json(route, { folders: UNMAPPED_FOLDERS }),
     'GET /api/entries': (state, route) =>
         json(route, {
-            entries: state.entries.map(({ kind, id, definition, draft, updatedAt }) => ({
-                kind,
-                id,
-                name: definition.name,
-                enabled: definition.enabled ?? true,
-                draft,
-                updatedAt,
+            entries: state.entries.map((entry) => ({
+                kind: entry.kind,
+                id: entry.id,
+                name: entry.definition.name,
+                enabled: entry.definition.enabled ?? true,
+                draft: entry.draft,
+                updatedAt: entry.updatedAt,
+                // 同 apps/api：新建（未發佈）= false；短篇集先有 publishedArcs
+                published: entry.published ?? false,
+                ...(Array.isArray(entry.definition.arcs)
+                    ? { publishedArcs: entry.publishedArcs ?? [] }
+                    : {}),
             })),
         }),
     'GET /api/changes': (state, route) =>

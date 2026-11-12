@@ -1,14 +1,16 @@
 /*
- * 列表狀態（mockup ⑤ legend）：縮圖角點 = 主項狀態（綠 上架中 / 藍 上架日期未到 / 紅 已下架）；
- * 短篇 pill = 已上架 / 排程中 / 日期上架 / 已下架 / 部分下架 / 未排期
+ * 列表狀態（mockup ⑤ legend）：縮圖角點 = 主項狀態（綠 上架中 / 藍 上架日期未到 / 紅 已下架 / 灰 未上架）；
+ * 短篇 pill = 已上架 / 排程中 / 日期上架 / 已下架 / 部分下架 / 未上架。
+ * 未上架 = 下架（enabled: false）而從未上過架（GET /api/entries 嘅 published / publishedArcs）；
+ * published 未知（舊 API）就照舊當已下架
  */
 import type { EntryKind, RawDefinition } from '../api/types';
 import { t } from '../i18n/t';
 import { longDate } from './dates';
 import { countOf, firstNoOf, isRecord, str } from './raw';
 
-export type Dot = 'live' | 'soon' | 'off';
-export type Tone = 'ok' | 'info' | 'bad' | 'part' | 'none';
+export type Dot = 'live' | 'soon' | 'off' | 'unlisted';
+export type Tone = 'ok' | 'info' | 'bad' | 'part' | 'unlisted' | 'none';
 
 export interface Status {
     tone: Tone;
@@ -18,16 +20,31 @@ export interface Status {
 const isPast = (date: string | undefined, today: string) => date !== undefined && date <= today;
 const isFuture = (date: string | undefined, today: string) => date !== undefined && date > today;
 
+/** published 明確係 false 先算從未上架（undefined = 唔知，當上過） */
+const neverListed = (published: boolean | undefined) => published === false;
+
+const UNLISTED: () => Status = () => ({ tone: 'unlisted', text: t('status.unlisted') });
+const OFF: () => Status = () => ({ tone: 'bad', text: t('status.off') });
+
 export const entryDotOf = (
     kind: EntryKind,
     definition: RawDefinition,
     draft: boolean,
     today: string,
+    published?: boolean,
 ): Dot => {
-    if (kind === 'shows') return definition.enabled === false ? 'off' : 'live';
+    const offDot = neverListed(published) ? 'unlisted' : 'off';
+    if (kind === 'shows') return definition.enabled === false ? offDot : 'live';
     if (draft) return 'soon';
-    if (definition.enabled !== true || isPast(str(definition, 'removedAt'), today)) return 'off';
+    if (definition.enabled !== true) return offDot;
+    if (isPast(str(definition, 'removedAt'), today)) return 'off';
     return isFuture(str(definition, 'addedAt'), today) ? 'soon' : 'live';
+};
+
+/** 節目列表 / 編輯頁 pill：上架中 / 已下架 / 未上架 */
+export const showStatusOf = (definition: RawDefinition, published: boolean | undefined): Status => {
+    if (definition.enabled !== false) return { tone: 'ok', text: t('status.showLive') };
+    return neverListed(published) ? UNLISTED() : OFF();
 };
 
 /** 每集上架日：劇集 addedAt、短篇 addedAt、逐集批次最遲嗰個 */
@@ -71,16 +88,20 @@ const releaseStatus = (dates: string[], today: string): Status => {
     return { tone: 'info', text: t(key, { date }) };
 };
 
+export interface ArcPublishFacts {
+    /** 從未發佈嘅新短篇（變更摘要 newArc / placeholder ID / 劇未發佈過） */
+    isNew?: boolean;
+    /** 最新 ok publish 有冇上過架；undefined = 唔知 */
+    published?: boolean | undefined;
+}
+
 export const arcStatusOf = (
     drama: RawDefinition,
     arc: RawDefinition,
     today: string,
-    isNew = false,
+    { isNew = false, published }: ArcPublishFacts = {},
 ): Status => {
-    if (arc.enabled === false)
-        return isNew
-            ? { tone: 'none', text: t('status.unscheduled') }
-            : { tone: 'bad', text: t('status.off') };
+    if (arc.enabled === false) return isNew || neverListed(published) ? UNLISTED() : OFF();
     const removedAt = str(arc, 'removedAt');
     if (isPast(removedAt, today))
         return { tone: 'bad', text: t('status.offOn', { date: longDate(removedAt ?? '') }) };
@@ -94,8 +115,8 @@ export const arcStatusOf = (
 };
 
 /** 每日播（冇短篇）：跟劇集上架 / 下架 */
-export const dailyStatusOf = (drama: RawDefinition, today: string): Status => {
-    if (drama.enabled !== true) return { tone: 'bad', text: t('status.off') };
+export const dailyStatusOf = (drama: RawDefinition, today: string, published?: boolean): Status => {
+    if (drama.enabled !== true) return neverListed(published) ? UNLISTED() : OFF();
     const addedAt = str(drama, 'addedAt');
     if (isFuture(addedAt, today))
         return { tone: 'info', text: t('status.upcoming', { date: longDate(addedAt ?? '') }) };

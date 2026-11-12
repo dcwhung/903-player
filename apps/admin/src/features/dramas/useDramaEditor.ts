@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAdminData } from '../../data/AdminData';
 import { useToast } from '../../ui/Toast';
 import { changeFlagsOf } from '../../model/listModel';
+import { arcPublishedIn } from '../../model/raw';
 import { idProblem } from '../editor/IdField';
 import { useEditorOrigin } from '../editor/useEditorOrigin';
 import { useEntryEditor, type EntryEditor } from '../editor/useEntryEditor';
@@ -20,10 +21,11 @@ import { confirmAll, useUnconfirmedIds, type IdConfirm } from './idConfirm';
 const renamedPath = (pathname: string, search: string, from: string, to: string) =>
     `${pathname.replace(`/dramas/${from}`, `/dramas/${to}`)}${search}`;
 
-/** 從未發佈（可改 ID / 類型 / 刪除）、資料夾唔見咗 */
+/** 從未發佈（可改 ID / 類型 / 刪除）、資料夾唔見咗、短篇有冇上過架（未上架 / 已下架） */
 const useDramaFlags = (id: string, editor: EntryEditor) => {
-    const { changes, todos } = useAdminData();
+    const { changes, todos, entries } = useAdminData();
     const flags = changeFlagsOf(changes.data?.changes);
+    const summary = entries.data?.find((e) => e.kind === 'dramas' && e.id === id);
     const never = flags.never.has(`dramas:${id}`);
     const rows = todos.data?.rows ?? [];
     return {
@@ -32,6 +34,8 @@ const useDramaFlags = (id: string, editor: EntryEditor) => {
         /** 從未發佈嘅短篇（新短篇 / placeholder ID）：ID 仲改得 */
         isNewArc: (arcId: string) =>
             never || flags.newArcs.has(`${id}:${arcId}`) || PLACEHOLDER_ID.test(arcId),
+        /** undefined = 未知（列表未載入 / 舊 API）→ 照舊當上過架 */
+        isArcPublished: (arcId: string) => arcPublishedIn(summary?.publishedArcs, arcId),
         missingFolder: rows.some((r) => r.kind === 'missingFolder' && r.dramaId === id),
     };
 };
