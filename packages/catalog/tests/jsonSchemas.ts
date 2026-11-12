@@ -1,5 +1,5 @@
 // 只畀 Node 環境嘅測試用（*.node.test.ts / scripts/）：tsconfig.node.json 有 Node 型別，
-// tsconfig.app.json 排除咗呢個檔，所以 node:fs 同 ajv 唔會漏入 app 程式
+// package 嘅 tsconfig.src.json 只 include src（呢個檔喺 tests/），所以 node:fs 同 ajv 唔會漏入 package 程式
 import { readFileSync } from 'node:fs';
 import Ajv, { type ValidateFunction } from 'ajv';
 import addFormats from 'ajv-formats';
