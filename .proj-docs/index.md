@@ -74,6 +74,7 @@
 | 2026-11-07 | [reviews/2026-11-07_review_phase0b-catalog.md](reviews/2026-11-07_review_phase0b-catalog.md)（100 pass，S-758–S-761；抽 `packages/catalog`（`@903-player/catalog`），v1.29.1）                                                                                                                                                  |
 | 2026-11-07 | [reviews/2026-11-07_review_phase1-runtime-catalog.md](reviews/2026-11-07_review_phase1-runtime-catalog.md)（95 pass，W-702、S-763–S-765；runtime `catalog.json`，v1.30.0，production 關住）                                                                                                                                     |
 | 2026-11-09 | [reviews/2026-11-09_review_phase2a-backend.md](reviews/2026-11-09_review_phase2a-backend.md)（100 pass，S-767–S-778；Worker API + D1 + Google login + publish，player v1.31.0、api v0.1.0）                                                                                                                                     |
+| 2026-11-12 | [reviews/2026-11-12_review_phase4-l3-player-banner.md](reviews/2026-11-12_review_phase4-l3-player-banner.md)（100 pass，S-925–S-929；首頁 banner 讀 catalog（remote → snapshot → 內建圖），player v1.34.0）                                                                                                                     |
 
 ## QA
 
