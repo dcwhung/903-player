@@ -1,13 +1,12 @@
 /*
  * 排程卡頂部細字 +「編輯｜預覽」tabs + 對應 tabpanel（_mockups_/admin-schedule-unlist ⑧ ⑨，用戶 2026-11-12）：
  * 編輯 = 左上架、右下架兩個 panel；預覽 = 合併時間軸 + 上下架批次表（唯讀）。
- * 時間軸 / 批次表嘅「今日」= admin 本機日子（localToday）
+ * 時間軸 / 批次表嘅「今日」= ctx.today（hkToday，排程同日期欄最早日都用同一個，S-835）
  */
 import type { SchedulePlan } from '@903-player/catalog';
 import { ChartNoAxesGantt, List, type LucideIcon } from 'lucide-react';
 import { useId, useState, type ReactNode } from 'react';
 import { t } from '../../i18n/t';
-import { localToday } from '../../model/dates';
 import { BatchTable } from './BatchTable';
 import { PreviewTimeline } from './PreviewTimeline';
 import { ViewTabs, type ScheduleView } from './ScheduleBars';
@@ -95,7 +94,7 @@ export function ScheduleViews({
 }: ScheduleViewsProps) {
     const [view, setView] = useState<ScheduleView>('edit');
     const idBase = useId();
-    const marker = localToday();
+    const marker = ctx.today;
     const panels = { ctx, form, plan, unreleased, today: marker, onChange };
     return (
         <>

@@ -185,4 +185,15 @@ describe('DateField', () => {
         expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'up');
         vi.restoreAllMocks();
     });
+
+    it('should mark today in Hong Kong time, the day schedules use (S-835)', async () => {
+        // 17:00Z = 香港 13/11 01:00（本機 UTC 仲係 12/11）
+        vi.setSystemTime(new Date('2026-11-12T17:00:00Z'));
+        render(<Harness initial="2026-11-20" />);
+        await userEvent.click(trigger());
+        expect(screen.getByRole('button', { name: '13/11/2026 星期五（今日）' })).toHaveAttribute(
+            'aria-current',
+            'date',
+        );
+    });
 });

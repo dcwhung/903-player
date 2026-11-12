@@ -49,9 +49,3 @@ export const stampOf = (iso: string, now: Date = new Date()): string => {
         : t('dates.dayMonthYear', { day, month, year });
     return `${label} ${clockTime(iso)}`;
 };
-
-const pad2 = (n: number) => String(n).padStart(2, '0');
-
-/** admin 本機嘅今日（YYYY-MM-DD）：時間軸「今日」、日曆標今日用（用戶 2026-11-12） */
-export const localToday = (now: Date = new Date()): string =>
-    `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;

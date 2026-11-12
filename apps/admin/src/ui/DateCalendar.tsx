@@ -2,11 +2,10 @@
  * DateField 嘅月曆 popover（用戶 2026-11-12）：上 / 下一個月 icon 掣、星期日開始（日 一 … 六，同星期掣一樣）、
  * 標今日、揀咗嘅日子實色。方向鍵移日 / 週、PageUp / PageDown 移月、Enter 揀、Esc 收起（focus 交返 DateField）
  */
-import { addDays } from '@903-player/catalog';
+import { addDays, hkToday } from '@903-player/catalog';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { t } from '../i18n/t';
-import { localToday } from '../model/dates';
 import { addMonths, rangeProblem, yearMonthOf } from './dateFieldModel';
 import { MonthGrid } from './MonthGrid';
 import { usePopoverPlacement } from './usePopoverPlacement';
@@ -77,7 +76,8 @@ function MonthNav({ step, onClick }: { step: -1 | 1; onClick: () => void }) {
 }
 
 export function DateCalendar({ label, value, min, max, onPick, onClose }: DateCalendarProps) {
-    const today = localToday();
+    // 今日 = 香港日子（排程用同一個，S-835）
+    const today = hkToday();
     const rootRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const placement = usePopoverPlacement(rootRef);
