@@ -8,8 +8,8 @@ import { splitIsoDate } from '@903-player/catalog';
 export const pad2 = (n: number): string => String(n).padStart(2, '0');
 
 /**
- * YYYY-MM-DD → { year, month, day }。只收完整日子（admin 嘅 caller 全部係；空字串由 formatDmy 先擋），
- * 欄位唔齊會係 NaN（同 catalog 一樣），唔再補 0 / 1 / 1
+ * YYYY-MM-DD → { year, month, day }。只收完整日子（admin 嘅 caller 全部係；空字串由 formatDmy 先擋）。
+ * 唔完整就冇預設值（同 catalog 一樣，唔再補 0 / 1 / 1）：缺欄位 = undefined、'' = 0、非數字 = NaN（S-880）
  */
 export const isoPartsOf = (iso: string) => {
     const [year, month, day] = splitIsoDate(iso);
