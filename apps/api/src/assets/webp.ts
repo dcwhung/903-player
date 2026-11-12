@@ -16,14 +16,20 @@ export class WebpError extends Error {
     override readonly name = 'WebpError';
 }
 
+/** fourcc（'RIFF'、'WEBP'、chunk 名）同 size 欄位都係 4 bytes（S-794） */
+const FOURCC_BYTES = 4;
+const SIZE_FIELD_BYTES = 4;
 /** RIFF header：'RIFF' + 4 bytes size + 'WEBP' */
-const RIFF_HEADER_BYTES = 12;
+const RIFF_SIZE_OFFSET = FOURCC_BYTES;
+const WEBP_MAGIC_OFFSET = RIFF_SIZE_OFFSET + SIZE_FIELD_BYTES;
+const RIFF_HEADER_BYTES = WEBP_MAGIC_OFFSET + FOURCC_BYTES;
 /** chunk header：fourcc + 4 bytes size；第一個 chunk 嘅 payload 由呢度開始 */
-const CHUNK_HEADER_BYTES = 8;
+const CHUNK_SIZE_OFFSET = FOURCC_BYTES;
+const CHUNK_HEADER_BYTES = CHUNK_SIZE_OFFSET + SIZE_FIELD_BYTES;
 const FIRST_CHUNK = RIFF_HEADER_BYTES;
 const PAYLOAD = FIRST_CHUNK + CHUNK_HEADER_BYTES;
 /** RIFF size 欄位唔計 'RIFF' 同 size 本身 */
-const RIFF_SIZE_EXCLUDED_BYTES = 8;
+const RIFF_SIZE_EXCLUDED_BYTES = FOURCC_BYTES + SIZE_FIELD_BYTES;
 
 /**
  * VP8：3 bytes frame tag + start code 9d 01 2a + 2 × 16-bit（低 14 bit 係尺寸，高 2 bit 係 scale）。
@@ -32,12 +38,15 @@ const RIFF_SIZE_EXCLUDED_BYTES = 8;
 const VP8_INTERFRAME_BIT = 0x01;
 const VP8_START_CODE = [0x9d, 0x01, 0x2a] as const;
 const VP8_START_OFFSET = 3;
-const VP8_SIZE_OFFSET = 6;
+const VP8_WIDTH_OFFSET = 6;
+/** 闊後面緊接高（16-bit = 2 bytes） */
+const VP8_HEIGHT_OFFSET = VP8_WIDTH_OFFSET + 2;
 const VP8_SIZE_MASK = 0x3fff;
 const VP8_MIN_PAYLOAD = 10;
 
 /** VP8L：signature 0x2f + 32 bit：14 bit (闊 - 1)、14 bit (高 - 1) */
 const VP8L_SIGNATURE = 0x2f;
+const VP8L_SIZE_OFFSET = 1;
 const VP8L_SIZE_BITS = 14;
 const VP8L_SIZE_MASK = (1 << VP8L_SIZE_BITS) - 1;
 const VP8L_MIN_PAYLOAD = 5;
@@ -48,7 +57,7 @@ const VP8X_HEIGHT_OFFSET = 7;
 const VP8X_MIN_PAYLOAD = 10;
 
 const fourcc = (bytes: Uint8Array, at: number): string =>
-    String.fromCharCode(...bytes.subarray(at, at + 4));
+    String.fromCharCode(...bytes.subarray(at, at + FOURCC_BYTES));
 
 const uint16 = (bytes: Uint8Array, at: number): number =>
     (bytes[at] ?? 0) | ((bytes[at + 1] ?? 0) << 8);
@@ -65,14 +74,14 @@ const vp8 = (payload: Uint8Array): WebpSize => {
         throw new WebpError('VP8: frame is not a keyframe');
     if (!startCode) throw new WebpError('VP8: missing start code');
     return {
-        width: uint16(payload, VP8_SIZE_OFFSET) & VP8_SIZE_MASK,
-        height: uint16(payload, VP8_SIZE_OFFSET + 2) & VP8_SIZE_MASK,
+        width: uint16(payload, VP8_WIDTH_OFFSET) & VP8_SIZE_MASK,
+        height: uint16(payload, VP8_HEIGHT_OFFSET) & VP8_SIZE_MASK,
     };
 };
 
 const vp8l = (payload: Uint8Array): WebpSize => {
     if (payload[0] !== VP8L_SIGNATURE) throw new WebpError('VP8L: missing signature');
-    const bits = uint32(payload, 1);
+    const bits = uint32(payload, VP8L_SIZE_OFFSET);
     return {
         width: (bits & VP8L_SIZE_MASK) + 1,
         height: ((bits >>> VP8L_SIZE_BITS) & VP8L_SIZE_MASK) + 1,
@@ -108,7 +117,7 @@ interface Chunk {
 /** 讀 at 位嘅 chunk；長度超出 end 就係截短 */
 const chunkAt = (bytes: Uint8Array, at: number, end: number): Chunk => {
     const kind = fourcc(bytes, at);
-    const size = uint32(bytes, at + 4);
+    const size = uint32(bytes, at + CHUNK_SIZE_OFFSET);
     const start = at + CHUNK_HEADER_BYTES;
     if (start + size > end) throw new WebpError(`${kind.trim()} chunk is truncated`);
     return { kind, payload: bytes.subarray(start, start + size), next: start + size + (size & 1) };
@@ -135,9 +144,13 @@ const checkExtendedImage = (bytes: Uint8Array, from: number, end: number): void 
 
 /** RIFF / WEBP magic + 宣告長度唔可以長過收到嘅 bytes（截短嘅檔）；回 RIFF 結束位 */
 const checkContainer = (bytes: Uint8Array): number => {
-    if (bytes.length < PAYLOAD || fourcc(bytes, 0) !== 'RIFF' || fourcc(bytes, 8) !== 'WEBP')
+    if (
+        bytes.length < PAYLOAD ||
+        fourcc(bytes, 0) !== 'RIFF' ||
+        fourcc(bytes, WEBP_MAGIC_OFFSET) !== 'WEBP'
+    )
         throw new WebpError('not a RIFF / WEBP file');
-    const end = uint32(bytes, 4) + RIFF_SIZE_EXCLUDED_BYTES;
+    const end = uint32(bytes, RIFF_SIZE_OFFSET) + RIFF_SIZE_EXCLUDED_BYTES;
     if (end > bytes.length) throw new WebpError('file is truncated');
     return end;
 };

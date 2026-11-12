@@ -231,6 +231,25 @@ describe('login deep link (S-809)', () => {
         for (const next of unsafe) expect(await loginWith(next), next).toBe('/');
     });
 
+    // S-825：dot-segment 會被瀏覽器 normalise（%2e 都係），/x/../auth/… 一樣會行返 /auth
+    it('should fall back to / for paths with dot-segments, encoded or not', async () => {
+        const dotted = [
+            '/x/../auth/google/start',
+            '/x/%2e%2e/auth/me',
+            '/x/.%2E/auth',
+            '/./auth/me',
+            '/%2e/auth',
+            '/shows/..',
+            '/shows/.',
+        ];
+        for (const next of dotted) expect(await loginWith(next), next).toBe('/');
+    });
+
+    it('should keep dots that are not whole path segments, and dots after ? or #', async () => {
+        const fine = ['/dramas/a..b', '/shows/.hidden', '/shows?q=../auth', '/shows#/../auth'];
+        for (const next of fine) expect(await loginWith(next), next).toBe(next);
+    });
+
     it('should keep next out of reach of tampering (signed with the state)', async () => {
         const { location, cookie } = await start('?next=%2Fshows');
         const [payload = '', signature = ''] = (cookie.split('=')[1] ?? '').split('.');
