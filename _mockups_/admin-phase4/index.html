@@ -124,6 +124,9 @@
             * {
                 box-sizing: border-box;
             }
+            [hidden] {
+                display: none !important;
+            }
             body {
                 margin: 0;
                 background: var(--bg);
@@ -154,6 +157,29 @@
             .intro p,
             .state-label {
                 font-size: 13px;
+                color: var(--muted);
+            }
+            .decisions {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+                background: var(--surface);
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            .decisions th,
+            .decisions td {
+                padding: 6px 10px;
+                border-bottom: 1px solid var(--line);
+                text-align: left;
+                vertical-align: top;
+            }
+            .decisions th {
+                color: var(--muted);
+                font-weight: 500;
+            }
+            .decisions td:first-child {
+                white-space: nowrap;
                 color: var(--muted);
             }
             .jump {
@@ -962,6 +988,13 @@
             </symbol>
             <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8Z" /></symbol>
             <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 4v16l10-8Z M19 4v16" /></symbol>
+            <symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7" /></symbol>
+            <symbol id="i-right" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7" /></symbol>
+            <symbol id="i-refresh" viewBox="0 0 24 24">
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                <path d="M21 3v5h-5M3 21v-5h5" />
+            </symbol>
             <symbol id="i-send" viewBox="0 0 24 24">
                 <path d="m22 2-7 20-4-9-9-4Z" />
                 <path d="M22 2 11 13" />
@@ -974,7 +1007,8 @@
                 <p>
                     樣式跟 admin-style v3 同 apps/admin 現有元件（.card / .btn / .img-slot / 裁切
                     dialog）。假資料：蘭茜（廣播劇，淺色 theme）、口水多過浪花（節目，深色
-                    theme）。黃色框 = 要你揀 / 確認嘅問題（Q1–Q12）。
+                    theme）。以下係用戶 2026-11-12 確認咗嘅設計（Q1–Q17）；mockup
+                    入面嘅介面文字用書面語，跟 apps/admin 現有字眼。
                 </p>
                 <div class="row">
                     <span class="small muted">Admin 深淺色：</span>
@@ -990,8 +1024,65 @@
                         </button>
                     </div>
                 </div>
+                <table class="decisions">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>項目</th>
+                            <th>決定</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Q1 · Q13 · Q14</td>
+                            <td>封面來源</td>
+                            <td>
+                                冇選單。開劇集編輯頁或者新增劇集掃描完，slot 冇圖而 R2 有原圖，就由
+                                browser center 裁切，即刻上載同儲存；冇原圖就撳 ＋ 揀本機檔
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Q2 · Q3</td>
+                            <td>裁切候選</td>
+                            <td>預設一律 center；fit-blur / fit-extend 鎖住成張圖、唔拖得</td>
+                        </tr>
+                        <tr>
+                            <td>Q4 · Q5</td>
+                            <td>上限</td>
+                            <td>原圖邊長 8000 px、檔案 20 MB；原圖細過輸出尺寸只出黃色警告</td>
+                        </tr>
+                        <tr>
+                            <td>Q6</td>
+                            <td>新劇未有配色</td>
+                            <td>
+                                第一格「現用：未設定（中性灰）」；三套候選第一套標「建議」但唔自動套用；發佈頁出警告（唔阻發佈）
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Q7–Q9 · Q15 · Q16</td>
+                            <td>配色</td>
+                            <td>
+                                冇 picker / 深淺掣 / 對比度表；現用 + 三套候選，每套細版播放器預覽 +
+                                AA / ⚠ 標示；唔啱就換另外三套（唔同底色 × 深 / 淺輪住出）
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Q10 · Q11 · Q17</td>
+                            <td>首頁 Banner</td>
+                            <td>
+                                兩張連續換（窄版 → 闊版），中途取消就兩張都唔換；撳邊個 slot
+                                都由窄版開始；還原預設要確認
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Q12</td>
+                            <td>發佈頁</td>
+                            <td>淨係警告就收埋做一行摘要；有錯誤全部展開；發佈唔使多一個確認</td>
+                        </tr>
+                    </tbody>
+                </table>
                 <nav class="jump" aria-label="跳去">
-                    <a href="#a">① 封面 slot（揀來源）</a>
+                    <a href="#a">① 封面 slot</a>
                     <a href="#b">② 裁切編輯器（可玩）</a>
                     <a href="#c">③ 載入中 / 錯誤狀態</a>
                     <a href="#d">④ Theme 編輯器（可玩）</a>
@@ -1113,15 +1204,6 @@
                             </div>
                         </div>
                     </div>
-                    <div class="q">
-                        <strong>Q13 自動裁切喺幾時做：</strong>建議喺 admin
-                        開劇集編輯頁（或者「新增劇集」掃描完）嗰陣，slot 冇圖、R2 又有原圖，就由
-                        browser 讀原圖 → center 裁切 → 即刻上載同儲存（Worker 冇 canvas，唔方便喺
-                        api 做）。過程顯示 slot 載入中；失敗就留返空 slot + 錯誤。得唔得？
-                        <br />
-                        <strong>Q14 自動裁切嘅結果：</strong
-                        >直接儲存（上面做法），定係淨係填入草稿、要撳「儲存」先算？
-                    </div>
                 </div>
             </section>
 
@@ -1148,10 +1230,6 @@
                             首頁 Banner 闊版 2000×400
                         </button>
                     </div>
-                    <p class="note info">
-                        已確認：開 dialog 一律預設 center（Q3）；揀 fit-blur / fit-extend
-                        就鎖住成張圖、唔拖得（Q2）。
-                    </p>
                 </div>
             </section>
 
@@ -1176,15 +1254,17 @@
                                 <div class="src-frame" style="aspect-ratio: 16 / 9">
                                     <div class="row muted" role="status">
                                         <span class="spinner"></span>
-                                        讀取緊 R2 原圖 cd cover.jpg（2.4 MB）…
+                                        正在讀取 R2 原圖 cd cover.jpg（2.4 MB）…
                                     </div>
                                 </div>
                                 <p class="small muted">
-                                    Safari 第一次轉 WebP 要載編碼器（wasm），會顯示「準備緊 WebP
-                                    編碼器…」。
+                                    Safari 首次轉換 WebP 需載入編碼器（wasm），屆時會顯示「正在準備
+                                    WebP 編碼器…」。
                                 </p>
                                 <footer>
-                                    <button type="button" disabled>取消</button>
+                                    <button type="button" disabled>
+                                        <svg class="i"><use href="#i-x" /></svg>取消
+                                    </button>
                                     <button type="button" class="primary" disabled>上載</button>
                                 </footer>
                             </div>
@@ -1197,10 +1277,12 @@
                                 <header><h3>更換碟面</h3></header>
                                 <div class="note info">
                                     <span class="spinner"></span>
-                                    <span>上載緊 600 × 600 WebP（約 48 KB）…</span>
+                                    <span>正在上載 600 × 600 WebP（約 48 KB）…</span>
                                 </div>
                                 <footer>
-                                    <button type="button" disabled>取消</button>
+                                    <button type="button" disabled>
+                                        <svg class="i"><use href="#i-x" /></svg>取消
+                                    </button>
                                     <button type="button" class="primary" disabled>
                                         <span class="spinner"></span>上載中…
                                     </button>
@@ -1216,13 +1298,17 @@
                                 <div class="note bad" role="alert">
                                     <svg class="i"><use href="#i-alert" /></svg>
                                     <span
-                                        >原圖太大：12000 × 9000。上限 8000 × 8000
-                                        px，請先縮細再揀。</span
+                                        >原圖尺寸過大：12000 × 9000，上限為 8000 × 8000
+                                        px，請先縮小後再選擇。</span
                                     >
                                 </div>
                                 <footer>
-                                    <button type="button">揀過另一張</button>
-                                    <button type="button" class="primary">關閉</button>
+                                    <button type="button">
+                                        <svg class="i"><use href="#i-upload" /></svg>選擇其他圖片
+                                    </button>
+                                    <button type="button" class="primary">
+                                        <svg class="i"><use href="#i-x" /></svg>關閉
+                                    </button>
                                 </footer>
                             </div>
                         </div>
@@ -1234,11 +1320,15 @@
                                 <header><h3>更換 Banner</h3></header>
                                 <div class="note bad" role="alert">
                                     <svg class="i"><use href="#i-alert" /></svg>
-                                    <span>檔案太大：28.4 MB。上限 20 MB。</span>
+                                    <span>檔案過大：28.4 MB，上限為 20 MB。</span>
                                 </div>
                                 <footer>
-                                    <button type="button">揀過另一張</button>
-                                    <button type="button" class="primary">關閉</button>
+                                    <button type="button">
+                                        <svg class="i"><use href="#i-upload" /></svg>選擇其他圖片
+                                    </button>
+                                    <button type="button" class="primary">
+                                        <svg class="i"><use href="#i-x" /></svg>關閉
+                                    </button>
                                 </footer>
                             </div>
                         </div>
@@ -1249,8 +1339,8 @@
                             <div class="note warn">
                                 <svg class="i"><use href="#i-alert" /></svg>
                                 <span
-                                    >原圖 480 × 480，細過碟面 600 × 600：會放大 1.25
-                                    倍，可能會矇。</span
+                                    >原圖 480 × 480 小於碟面 600 × 600，將放大 1.25
+                                    倍，畫質可能較模糊。</span
                                 >
                             </div>
                             <p class="small muted">放喺裁切 dialog 原圖下面，唔阻上載。</p>
@@ -1278,13 +1368,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="q">
-                    <strong>Q4 上限數字：</strong>原圖邊長上限 8000 px、檔案 20 MB（本機同 R2
-                    一樣）得唔得？
-                    <br />
-                    <strong>Q5 原圖細過輸出尺寸：</strong
-                    >上面係「黃色警告、照准」。定係直接唔准（紅色錯誤）？
-                </div>
             </section>
 
             <!-- ④ Theme 編輯器 -->
@@ -1293,7 +1376,7 @@
                 <p class="state-label">
                     簡化版（用戶 2026-11-12）：冇 picker、冇深淺掣、冇 contrast 表。由碟面抽色出 3
                     套候選，每套直接用 player 樣式
-                    preview；唔啱就撳「換另外三套」再出三套。揀咗撳「用呢套」。
+                    preview；唔啱就撳「更換另外三套」再出三套。揀咗撳「套用此配色」。
                 </p>
                 <div class="frame">
                     <div class="row">
@@ -1310,7 +1393,7 @@
                             <div class="row">
                                 <span class="small muted" id="round-note"></span>
                                 <button type="button" id="more-cands">
-                                    <svg class="i"><use href="#i-wand" /></svg>換另外三套
+                                    <svg class="i"><use href="#i-refresh" /></svg>更換另外三套
                                 </button>
                             </div>
                         </div>
@@ -1320,26 +1403,10 @@
                             <div class="row">
                                 <span class="small" id="pick-note"></span>
                                 <button type="button" class="primary" id="use-theme">
-                                    <svg class="i"><use href="#i-check" /></svg>用呢套
+                                    <svg class="i"><use href="#i-check" /></svg>套用此配色
                                 </button>
                             </div>
                         </div>
-                    </div>
-                    <div class="q">
-                        <strong>Q6 新劇未有 theme：</strong>新劇掃描出嚟會先用中性灰（現有
-                        PLACEHOLDER_THEME）。上面「新劇」示範：第一格係「現用：未設定（中性灰）」，加
-                        <span class="pill warn">未設定</span
-                        >；三套候選照出，第一套標「建議」，但唔會自動用，一定要人手揀。Publish
-                        頁會出警告「未設定 Theme」（唔阻 publish）。得唔得？定係自動用第一套？
-                        <br />
-                        <strong>Q15 contrast：</strong>每套候選右上角出
-                        <span class="pill ok">AA</span> 或者
-                        <span class="pill warn">⚠ 2</span>（幾多對唔合格）；Publish
-                        頁照樣列警告。夠唔夠？
-                        <br />
-                        <strong>Q16 抽色規則：</strong>每輪三套 = 唔同底色 × 深 /
-                        淺（例如主色深底、鮮色深底、主色淺底），換一輪就輪下一個主色組合；輪完由頭再嚟。淺色套自動推
-                        statusBar / accentText。OK？
                     </div>
                 </div>
             </section>
@@ -1348,7 +1415,7 @@
             <section id="e">
                 <h2>⑤ 首頁 Banner 頁</h2>
                 <p class="state-label">
-                    兩張一齊換（Q10）：撳任何一個 slot 或者「換 Banner」→ 先裁窄版（1 /
+                    兩張一齊換（Q10）：撳任何一個 slot 或者「更換 Banner」→ 先裁窄版（1 /
                     2）→「下一張」即刻開闊版（2 / 2）→
                     兩張一齊上載。中途取消就兩張都唔換，所以唔會有「換咗一半」嘅狀態。
                 </p>
@@ -1363,7 +1430,7 @@
                                     <svg class="i"><use href="#i-undo" /></svg>還原預設
                                 </button>
                                 <button type="button" class="primary" data-open-banner>
-                                    <svg class="i"><use href="#i-upload" /></svg>換 Banner
+                                    <svg class="i"><use href="#i-upload" /></svg>更換 Banner
                                 </button>
                             </div>
                         </div>
@@ -1372,7 +1439,7 @@
                                 <button
                                     type="button"
                                     class="img-slot banner-std"
-                                    aria-label="換 Banner（由窄版開始）"
+                                    aria-label="更換 Banner（由窄版開始）"
                                     data-open-banner
                                 >
                                     <span
@@ -1392,7 +1459,7 @@
                                 <button
                                     type="button"
                                     class="img-slot banner-long"
-                                    aria-label="換 Banner（由窄版開始）"
+                                    aria-label="更換 Banner（由窄版開始）"
                                     data-open-banner
                                 >
                                     <span
@@ -1404,7 +1471,7 @@
                                     ></span>
                                 </button>
                                 <span class="slot-cap">
-                                    <span class="cap">闊版（打橫 / 闊屏）</span>
+                                    <span class="cap">闊版（橫向 / 闊螢幕）</span>
                                     <span class="hint">輸出 2000 × 400 WebP</span>
                                 </span>
                             </div>
@@ -1416,12 +1483,12 @@
                         <div class="row" style="justify-content: space-between">
                             <h3>首頁 Banner</h3>
                             <div class="row">
-                                <span class="pill ok">自訂 · 未 publish</span>
+                                <span class="pill ok">自訂 · 未發佈</span>
                                 <button type="button" class="ghost-danger">
                                     <svg class="i"><use href="#i-undo" /></svg>還原預設
                                 </button>
                                 <button type="button" class="primary" data-open-banner>
-                                    <svg class="i"><use href="#i-upload" /></svg>換 Banner
+                                    <svg class="i"><use href="#i-upload" /></svg>更換 Banner
                                 </button>
                             </div>
                         </div>
@@ -1430,7 +1497,7 @@
                                 <button
                                     type="button"
                                     class="img-slot banner-std"
-                                    aria-label="換 Banner（由窄版開始）"
+                                    aria-label="更換 Banner（由窄版開始）"
                                     data-open-banner
                                 >
                                     <span
@@ -1450,7 +1517,7 @@
                                 <button
                                     type="button"
                                     class="img-slot banner-long"
-                                    aria-label="換 Banner（由窄版開始）"
+                                    aria-label="更換 Banner（由窄版開始）"
                                     data-open-banner
                                 >
                                     <span
@@ -1473,22 +1540,20 @@
                     <div class="scrim">
                         <div class="card dialog narrow" role="alertdialog">
                             <h3>還原預設 Banner？</h3>
-                            <p>兩張自訂 Banner 會刪走，下次 publish 之後 player 用返內建圖。</p>
+                            <p>兩張自訂 Banner 將被刪除，下次發佈後播放器將改用內建圖片。</p>
                             <footer>
-                                <button type="button">取消</button>
+                                <button type="button">
+                                    <svg class="i"><use href="#i-x" /></svg>取消
+                                </button>
                                 <button
                                     type="button"
                                     class="primary"
                                     style="background: var(--danger); color: var(--on-danger)"
                                 >
-                                    還原預設
+                                    <svg class="i"><use href="#i-undo" /></svg>還原預設
                                 </button>
                             </footer>
                         </div>
-                    </div>
-                    <div class="q">
-                        <strong>Q17 撳單獨一個 slot：</strong
-                        >上面撳窄版定闊版都係由窄版開始、兩張都要做。如果你想撳闊版就由闊版開始（再接窄版），話我知。
                     </div>
                 </div>
             </section>
@@ -1507,46 +1572,45 @@
                             <li>
                                 <svg class="i"><use href="#i-x" /></svg>
                                 <span
-                                    >首頁 Banner 唔完整：缺闊版（2000 × 400）<small
-                                        >重新換 Banner；或者還原預設</small
+                                    >首頁 Banner 不完整：缺少闊版（2000 × 400）<small
+                                        >請重新更換 Banner，或還原預設</small
                                     ></span
                                 >
-                                <button type="button" class="link">去 Banner 頁</button>
+                                <button type="button" class="link">前往 Banner 頁</button>
                             </li>
                         </ul>
-                        <ul class="issues warn" aria-label="Theme 警告">
+                        <ul class="issues warn" aria-label="配色警告">
                             <li>
                                 <svg class="i"><use href="#i-alert" /></svg>
                                 <span
-                                    >新劇（示範）：未設定 Theme，用緊中性灰<small
-                                        >廣播劇 · Theme</small
+                                    >新劇（示範）：未設定配色，現正使用中性灰<small
+                                        >廣播劇 · 配色</small
                                     ></span
                                 >
-                                <button type="button" class="link">去揀</button>
+                                <button type="button" class="link">前往選擇</button>
                             </li>
                             <li>
                                 <svg class="i"><use href="#i-alert" /></svg>
                                 <span
-                                    >蘭茜：muted 對 surface 3.9:1（要 4.5:1）<small
-                                        >廣播劇 · Theme</small
+                                    >蘭茜：muted 與 surface 對比度 3.9:1（需 ≥ 4.5:1）<small
+                                        >廣播劇 · 配色</small
                                     ></span
                                 >
-                                <button type="button" class="link">去改</button>
+                                <button type="button" class="link">前往修改</button>
                             </li>
                             <li>
                                 <svg class="i"><use href="#i-alert" /></svg>
                                 <span
-                                    >口水多過浪花：onAccent 對 accent 4.1:1（要 4.5:1）<small
-                                        >節目 · Theme</small
-                                    ></span
+                                    >口水多過浪花：onAccent 與 accent 對比度 4.1:1（需 ≥
+                                    4.5:1）<small>節目 · 配色</small></span
                                 >
-                                <button type="button" class="link">去改</button>
+                                <button type="button" class="link">前往修改</button>
                             </li>
                         </ul>
                         <div class="row" style="justify-content: flex-end">
-                            <span class="small muted">有 1 個錯誤要先解決</span>
+                            <span class="small muted">請先解決 1 個錯誤</span>
                             <button type="button" class="primary" disabled>
-                                <svg class="i"><use href="#i-send" /></svg>Publish
+                                <svg class="i"><use href="#i-send" /></svg>發佈
                             </button>
                         </div>
                     </div>
@@ -1557,7 +1621,7 @@
                         <div class="note warn">
                             <svg class="i"><use href="#i-alert" /></svg>
                             <span
-                                >3 個 Theme contrast 警告（唔阻 publish）<button
+                                >3 項配色對比度警告（不影響發佈）<button
                                     type="button"
                                     class="link"
                                     style="margin-left: 8px"
@@ -1568,13 +1632,9 @@
                         </div>
                         <div class="row" style="justify-content: flex-end">
                             <button type="button" class="primary">
-                                <svg class="i"><use href="#i-send" /></svg>Publish
+                                <svg class="i"><use href="#i-send" /></svg>發佈
                             </button>
                         </div>
-                    </div>
-                    <div class="q">
-                        <strong>Q12 警告清單：</strong>淨係警告時預設收埋（一行摘要 +
-                        展開），有錯誤時全部展開。OK？撳 Publish 時要唔要因為有警告而多一個確認？
                     </div>
                 </div>
             </section>
@@ -1593,7 +1653,10 @@
                 <div class="editor">
                     <div class="pane">
                         <span class="label"
-                            >原圖 <span class="small muted">（拖框移位、拖右下角縮放）</span></span
+                            >原圖
+                            <span class="small muted"
+                                >（拖曳裁切框可移位，拖曳右下角可縮放）</span
+                            ></span
                         >
                         <div class="src-frame">
                             <div class="src" id="src">
@@ -1604,14 +1667,19 @@
                         <div class="cands" id="cands" role="group" aria-label="候選"></div>
                     </div>
                     <div class="pane">
-                        <span class="label">Player preview</span>
+                        <span class="label">播放器預覽</span>
                         <div class="pv" id="crop-pv"></div>
                         <div class="meta" id="crop-out-meta"></div>
                     </div>
                 </div>
                 <footer>
-                    <button type="button" id="crop-cancel">取消</button>
-                    <button type="button" id="crop-back" hidden>上一張</button>
+                    <button type="button" id="crop-cancel">
+                        <svg class="i"><use href="#i-x" /></svg
+                        ><span id="crop-cancel-text">取消</span>
+                    </button>
+                    <button type="button" id="crop-back" hidden>
+                        <svg class="i"><use href="#i-left" /></svg>上一張
+                    </button>
                     <button type="button" class="primary" id="crop-ok">
                         <svg class="i"><use href="#i-upload" /></svg
                         ><span id="crop-ok-text">上載</span>
@@ -1723,9 +1791,9 @@
                 },
             };
             const MODES = [
-                ['center', 'center 裁切'],
-                ['blur', 'fit-blur'],
-                ['extend', 'fit-extend'],
+                ['center', '置中裁切'],
+                ['blur', '完整 · 模糊背景'],
+                ['extend', '完整 · 延伸邊緣'],
             ];
             const PREVIEW_MAX = 480;
             const crop = { slot: null, img: null, mode: 'center', box: null };
@@ -1837,10 +1905,10 @@
                           Math.round(crop.box.w) +
                           ' × ' +
                           Math.round(crop.box.h) +
-                          '（原圖 px）</span>'
-                        : '<span>成張圖放入框（' +
-                          (crop.mode === 'blur' ? '模糊' : '延伸邊色') +
-                          '補空位）</span>');
+                          '（原圖像素）</span>'
+                        : '<span>完整顯示原圖（以' +
+                          (crop.mode === 'blur' ? '模糊背景' : '延伸邊緣') +
+                          '填補空位）</span>');
             };
 
             const renderCands = () => {
@@ -1898,7 +1966,10 @@
                     : last
                       ? '上載兩張'
                       : '下一張：闊版';
-                $('crop-cancel').textContent = multi ? '取消（兩張都唔換）' : '取消';
+                $('crop-cancel-text').textContent = multi ? '取消（兩張均不更換）' : '取消';
+                $('crop-ok')
+                    .querySelector('use')
+                    .setAttribute('href', multi && !last ? '#i-right' : '#i-upload');
                 applyTheme($('crop-pv'), THEMES.lancy.current);
                 const img = $('src-img');
                 img.onload = () => {
@@ -2213,7 +2284,7 @@
                         fgHex,
                         bgHex: t[bg],
                         label:
-                            fg === 'accentText' && !t.accentText ? 'accent（冇 accentText）' : fg,
+                            fg === 'accentText' && !t.accentText ? 'accent（未設 accentText）' : fg,
                     };
                 });
 
@@ -2222,7 +2293,7 @@
                 const src = THEMES[theme.key];
                 const cur = theme.applied || src.current;
                 const curLabel = theme.applied
-                    ? '現用（啱啱揀）'
+                    ? '現用（剛選取）'
                     : src.unset
                       ? '現用：未設定（中性灰）'
                       : '現用';
@@ -2268,7 +2339,7 @@
                     '" alt="" /></span>' +
                     '<span class="bar"></span>' +
                     '<span class="ctl"><span class="play">▶</span></span>' +
-                    '<span class="li on">第 3 集 · 播緊</span><span class="li">第 2 集<small>11/11</small></span>' +
+                    '<span class="li on">第 3 集 · 播放中</span><span class="li">第 2 集<small>11/11</small></span>' +
                     '</span>'
                 );
             };
@@ -2291,14 +2362,14 @@
                     });
                     wrap.append(b);
                 });
-                $('round-note').textContent = '第 ' + (theme.round + 1) + ' / ' + rounds() + ' 輪';
-                $('theme-head').textContent = src.name + ' · Theme';
+                $('round-note').textContent = '第 ' + (theme.round + 1) + ' / ' + rounds() + ' 組';
+                $('theme-head').textContent = src.name + ' · 配色';
                 const keep = [
                     src.current.titleFont && 'titleFont',
                     src.current.headerRule && 'headerRule',
                 ].filter(Boolean);
                 $('keep-note').textContent = keep.length
-                    ? '儲存時保留原有 ' + keep.join(' / ') + '（唔會改）'
+                    ? '儲存時將保留原有的 ' + keep.join(' / ')
                     : '';
                 $('use-theme').disabled = theme.sel === 0;
             };
@@ -2336,7 +2407,7 @@
                 const c = shown()[theme.sel];
                 theme.applied = { ...c.t };
                 theme.sel = 0;
-                $('pick-note').textContent = '已套用「' + c.label + '」（mockup 唔會真係儲存）';
+                $('pick-note').textContent = '已套用「' + c.label + '」（示範，不會儲存）';
                 renderThemeCards();
             });
             $('theme-src').addEventListener('change', (e) => {
