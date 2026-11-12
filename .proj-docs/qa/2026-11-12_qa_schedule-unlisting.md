@@ -8,15 +8,15 @@
 
 ## Runs
 
-| Command / 證據                                                                                                       | Result                                                                                                                                               | Time   |
-| -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| `npm test`                                                                                                           | 352 files / 3757 pass                                                                                                                                | 2m20s  |
-| `npm run test -w apps/api`                                                                                           | workerd 13 files / 207 + scripts 1 / 12 pass                                                                                                         | —      |
-| `npm run build:admin`                                                                                                | ok                                                                                                                                                   | 0.5 s  |
-| `E2E_PORT=4195 PW_CHROMIUM_PATH=/opt/pw-browsers/chromium node apps/admin/e2e/run.mjs`                               | 34 PASS / 0 FAIL（schedule 13 個 section，包括 W-715「unlist date before today pops an error only on 儲存」）                                        | 42 s   |
-| Coverage v8：`--project @903-player/admin`（dramas / ui / editor / model）+ `--project @903-player/catalog` schedule | catalog `src/schedule` lines 97.7；admin 見 Hard Gates                                                                                               | 1 min  |
-| CI [43194052694](https://github.com/dcwhung/903-player/actions/runs/43194052694) @`168ba7a`                          | check job（lint / `tsc -b` / unit / build / build:admin）success；E2E job 寫報告時仍 `in_progress`（API 讀數唔一致，未採用）——main agent push 前確認 | —      |
-| CI [43190871204](https://github.com/dcwhung/903-player/actions/runs/43190871204) @`ad1829d`（review 時嘅 code）      | success（包括 player e2e + e2e:admin）；`ad1829d..168ba7a` 淨改 `apps/admin` + review 檔，player e2e 引用呢個 run                                    | 16 min |
+| Command / 證據                                                                                                       | Result                                                                                                                                                               | Time   |
+| -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `npm test`                                                                                                           | 352 files / 3757 pass                                                                                                                                                | 2m20s  |
+| `npm run test -w apps/api`                                                                                           | workerd 13 files / 207 + scripts 1 / 12 pass                                                                                                                         | —      |
+| `npm run build:admin`                                                                                                | ok                                                                                                                                                                   | 0.5 s  |
+| `E2E_PORT=4195 PW_CHROMIUM_PATH=/opt/pw-browsers/chromium node apps/admin/e2e/run.mjs`                               | 34 PASS / 0 FAIL（schedule 13 個 section，包括 W-715「unlist date before today pops an error only on 儲存」）                                                        | 42 s   |
+| Coverage v8：`--project @903-player/admin`（dramas / ui / editor / model）+ `--project @903-player/catalog` schedule | catalog `src/schedule` lines 97.7；admin 見 Hard Gates                                                                                                               | 1 min  |
+| CI [43194052694](https://github.com/dcwhung/903-player/actions/runs/43194052694) @`168ba7a`                          | success：lint / `tsc -b` / unit / build / build:admin；e2e（player）780 PASS「All E2E checks passed」；e2e:admin 34 PASS「all passed」（包括 W-715 section）；0 FAIL | 16 min |
+| CI [43190871204](https://github.com/dcwhung/903-player/actions/runs/43190871204) @`ad1829d`（review 時嘅 code）      | success（包括 player e2e + e2e:admin）；`ad1829d..168ba7a` 淨改 `apps/admin` + review 檔，player e2e 引用呢個 run                                                    | 16 min |
 
 W-715 驗證（`97677a8`..`168ba7a`）：`useScheduleForm.test.ts` 4 個（過去日子擋、今日 / 之後准、已落架集數唔計、報第一集）+ `validationMessage.test.ts` 譯中文 + e2e section 全 pass；截圖 `apps/admin/e2e/screenshots/schedule-unlist-past{,-dark}.png`：「上架 N 日後」= 10（27/10 上架、今日 12/11）→「無法儲存：第 1 集的下架日期（6/11 五）早於今日，請修改下架設定。」，冇存。S-835（`ArcSchedule` / `ScheduleViews` / `DateCalendar` 同一個 `hkToday`）、S-841（文案「今日」）由 unit + e2e「今日」section 證
 
@@ -51,5 +51,5 @@ tickets: []
 next_action: merge_main
 next_agent: main
 branch: "claude/charming-heisenberg-8z30x3"
-context: "schedule unlisting api 0.7.0 S1 pass @168ba7a; W-715 verified (unit + e2e:admin + screenshot); local npm test 3757 pass, api 219 pass, e2e:admin 34/0; CI 43194052694 check job success, E2E job still in_progress at report time (main agent to confirm before push); player e2e cited from CI 43190871204 @ad1829d (ad1829d..168ba7a touches only apps/admin + review doc); report committed locally, not pushed"
+context: "schedule unlisting api 0.7.0 S1 pass @168ba7a; W-715 verified (unit + e2e:admin + screenshot); local npm test 3757 pass, api 219 pass, e2e:admin 34/0; CI 43194052694 @168ba7a success (unit, build, e2e 780 PASS, e2e:admin 34 PASS, 0 FAIL); report committed locally, not pushed"
 ```
