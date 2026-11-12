@@ -77,3 +77,42 @@ next_agent: quality-assurance
 branch: "fix/lane-c-player-catalog-misc"
 context: "Lane C (S-765, S-779, S-793, S-771, S-760, S-750) 100/100 pass; integration branch is main; no C/W; new S-852 (arcCover --repo flag still named repo), S-853 (no committed e2e guard for catalog-json cache), S-854 (jsonSchemas.ts line 1 stale 'scripts/'), S-855 (pre-existing ruff E501 + 2 format diffs in arcCover) to backlog. No version bump accepted (tooling/comment only). e2e (incl. PWA update section after SW abort change) to be cited by QA from main agent run. Report committed locally, not pushed."
 ```
+
+## Addendum — `4587f5b` S-765 revert（2026-11-12）
+
+- 範圍：只睇 `4587f5b`（`apps/player/e2e/harness.mjs` +6 / −7），唔重新 review 成個 branch
+- 觸發：第一次 full e2e 781 PASS / 1 FAIL「PWA 換版（Shift-reload 嘅 tab，S-648）：A 2、B 1」
+- L2（main agent 實測，scratch runner 只跑 `pwaUpdate.mjs` `runPwaUpdateChecks`，同一份 e2e build）：
+    - `725ae90` 舊 harness 0/5 fail；`ceb6dbd`（abort）5/5 fail；SW request 改用 `route.fallback({ headers })`（`accept: application/json`）都係 5/5 fail
+    - 拆開試：舊 harness + 只加 S-779 → 0/3 fail；新 harness 拎走 S-779 → 3/3 fail。即係問題來自 S-765，S-779 冇關係
+    - `4587f5b` 之後 0/5 fail；full e2e 背景重跑緊，結果交 QA 引用
+- 判斷：✅ `4587f5b` 啱
+    - `catalogNotFound` 嘅 code 同 `725ae90` 一模一樣（`git diff 725ae90 4587f5b` 喺呢度淨係 comment 有改），即係 SW 分支完全還原
+    - 新 comment 寫齊三樣：fulfill / abort / 改 header 都試過；S-648 會多 reload 一次；S-765 係已知副作用，要喺 harness 以外修
+    - S-779 保留冇問題：e2e build 嘅 catalog 喺同 origin `e2e-catalog/`，`catalogCaching.ts` 嘅 SW route 唔會 match `CATALOG_IMAGE_HOST`，所以嗰度嘅 request 全部係 page 發、唔經 SW，唔會有重裝 SW 嘅問題（L3，同上面 0/3 一致）
+    - `npx eslint apps/player/e2e` exit 0；`npx prettier --check apps/player/e2e` exit 0（用 folder 範圍，避開 hook）
+- Reviewer 自我更正：原本 review 將「abort 會唔會影響 PWA 換版」列做 Observation 交 e2e 驗，冇當 finding 處理；而 comment 本身已經寫咗 fulfill 會令 SW 重裝，應該要求先用 PWA section 驗過先算 pass。以後 harness 改動如果有掂 SW request，要求 author 先跑 `runPwaUpdateChecks` 先送 review
+- 處理咗嘅 ID 更新：
+    - **S-765：未處理**。harness 入面修唔到，要喺 harness 以外修：例如 e2e build 嘅 `vite preview` 唔做 SPA fallback（`vite.config.ts`，唔喺今次範圍）。backlog 保留 Open，位置改做 `vite.config.ts` / e2e preview，並註明「harness 唔可以改 SW request（S-648）」
+    - S-779、S-793、S-771、S-760、S-750：維持 ✅
+- 🟢 更新：
+    - S-853 close（moot）：佢要求用 e2e 鎖住「`catalog-json` cache 冇嘢」，但而家係刻意保留呢個副作用，加呢個 assert 一定 fail。將來喺 harness 以外修 S-765 時，assert 應該跟住嗰次改動一齊加，寫喺 S-765 入面就得，唔使另開 ID
+    - S-852、S-854、S-855 不變
+- 分數：最終狀態（`4587f5b`）冇 🔴 / 🟡，維持 100/100、✅ pass。`ceb6dbd` 嘅 regression 喺 merge 之前已經修好，所以唔扣分；處理咗嘅 ID 由 6 個減做 5 個
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "fix/lane-c-player-catalog-misc"
+context: "Addendum 4587f5b: SW catalog branch restored to route.fallback() (code identical to 725ae90), fixes S-648 PWA Shift-reload double install (scratch runner 0/5 vs ceb6dbd 5/5). S-765 NOT resolved: keep Open, relocate to vite.config.ts / e2e preview SPA fallback (outside harness). Resolved: S-779, S-793, S-771, S-760, S-750. S-853 closed as moot (fold guard into S-765). S-852/S-854/S-855 unchanged. QA must cite the full e2e rerun on 4587f5b. Report committed locally, not pushed."
+```
