@@ -139,6 +139,24 @@ describe('ScheduleTab — 編輯 (mockup ⑧)', () => {
     });
 });
 
+describe('ScheduleTab — unlist date before today (W-715)', () => {
+    it('should pop the error on 儲存 when 上架 N 日後 lands before today, and not save', async () => {
+        const fetchMock = api();
+        await open('half');
+        await userEvent.click(screen.getByRole('button', { name: '上架 N 日後' }));
+        // 27/10 上架 + 10 日 = 6/11，早過今日 1/12
+        fireEvent.change(screen.getByRole('spinbutton', { name: '上架後日數' }), {
+            target: { value: '10' },
+        });
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', { name: '儲存' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            '無法儲存：第 1 集的下架日期（6/11 五）早於今日，請修改下架設定。',
+        );
+        expect(putBody(fetchMock)).toBeUndefined();
+    });
+});
+
 describe('ScheduleTab — icons', () => {
     it('should put an aria-hidden outline icon on 編輯 / 預覽 / 復原 / 刪除 / 儲存', async () => {
         api({
