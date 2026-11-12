@@ -249,6 +249,16 @@ const loginCheck = (browser) =>
                 throw new Error(`${scheme} Google button: ${JSON.stringify(got)}`);
         }
         await page.emulateMedia({ colorScheme: 'light' });
+        // S-833：G 係 <img alt="">（asset 檔），要真係載入到、20×20
+        const logo = await google
+            .locator('img[alt=""]')
+            .evaluate((img) => ({
+                loaded: img.complete && img.naturalWidth > 0,
+                w: img.width,
+                h: img.height,
+            }));
+        if (!logo.loaded || logo.w !== 20 || logo.h !== 20)
+            throw new Error(`Google G image: ${JSON.stringify(logo)}`);
         const bg = await page
             .locator('.login-bg')
             .evaluate((el) => getComputedStyle(el).backgroundImage);
@@ -1155,7 +1165,8 @@ const imageCheck = (browser) =>
         },
     );
 
-const boxOf = async (locator, x = undefined, height = undefined) => {
+/** 元素嘅 bounding box；{ height } = 只截上面嗰段（S-829：冇用嘅 x 參數已刪） */
+const boxOf = async (locator, { height } = {}) => {
     const box = await locator.boundingBox();
     if (!box) throw new Error('element not visible');
     return height === undefined ? box : { ...box, height };
@@ -1236,7 +1247,9 @@ const navCheck = (browser) =>
             )
                 throw new Error(`app icon has a badge or is cropped: ${JSON.stringify(shape)}`);
             await shoot(page, 'nav-mini');
-            await shoot(page, 'nav-mini-logo', { clip: await boxOf(page.locator('.nav'), 0, 140) });
+            await shoot(page, 'nav-mini-logo', {
+                clip: await boxOf(page.locator('.nav'), { height: 140 }),
+            });
             await page.close();
         },
     );

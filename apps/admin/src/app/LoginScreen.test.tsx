@@ -37,7 +37,8 @@ describe('LoginScreen', () => {
         expect(google.querySelector('svg')).toBeNull();
         const logo = google.querySelector('img');
         expect(logo).toHaveAttribute('alt', '');
-        expect(logo?.getAttribute('src')).toMatch(/google-g\.svg$/);
+        // Vite：細檔 inline 做 data URI，大檔先出 URL
+        expect(logo?.getAttribute('src')).toMatch(/(google-g\.svg$)|(^data:image\/svg\+xml)/);
         const fills = [...googleG.matchAll(/fill="(#[0-9a-f]{6})"/gi)].map((m) =>
             m[1]?.toUpperCase(),
         );
