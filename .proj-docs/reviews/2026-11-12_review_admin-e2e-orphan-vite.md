@@ -95,3 +95,31 @@ findings: S-850 resolved（b3e1e7a）；S-851 resolved（b3e1e7a）；冇新 fin
 next_action: QA
 context: re-review b3e1e7a；報告只 commit，未 push（等 b3e1e7a 嘅 CI 跑完先由 main agent push）
 ```
+
+## Addendum — merge main（`b0051a4` / `47f4a2b`）
+
+- 範圍：`git diff origin/main...HEAD` = `apps/player/e2e/run.mjs`（+10 / −2）+ 三份報告；admin runner 同 ledger 用 main 原文，冇 net diff
+- Admin：今個 PR 嘅 admin 改動（`9e1a945`、`b3e1e7a` 嗰部分）由 PR #208（`48eb283`）取代：detached process group kill、port 預查、`waitForServer` 帶 stderr tail 即刻 fail、SIGINT / SIGTERM / exit 收尾、`STOP_TIMEOUT_MS = 5_000` 後 SIGKILL。上面 S-851 嘅 resolve 描述講嘅係舊 code；而家由 #208 嘅 `stopPreview()` cover（SIGTERM 成個 group，超時 SIGKILL），仍然算 resolved
+- ID 重編：本 PR 原本嘅 S-844 / S-845 同 main（api 0.7.1）撞號，`47f4a2b` 改做 S-850 / S-851；三份報告同 player 註解冇殘留，main 自己嘅 S-844 / S-845（api）冇郁
+- 剩低範圍 = player S-850：`hasExited()` 睇 `exitCode` 或 `signalCode`，退咗就 throw `vite preview exited early …`，stderr inherit。L2（scratchpad 抽同一段 logic，dummy child，冇起 vite）：`exit(1)` → `code 1, signal null` 連 child stderr 照出；SIGKILL → `code null, signal SIGKILL`，舊嘅淨查 `exitCode` 會當未退
+- 同 #208 admin 唔一致（決定：唔開 finding，冇 L1）：
+    - stderr：admin 收埋 tail 放入 error；player 直接 inherit。兩邊都睇到 vite 原因
+    - 收尾：admin 經 `npx` + detached，所以一定要 group kill 同 signal handler；player 直接 `node vite.js`、唔 detached，同 runner 同一個 process group，Ctrl-C 會一齊送到 vite，`server.kill()` 亦打中真 server，唔使 handler
+    - Observation（本 diff 以外，唔扣分）：淨係 `kill <player runner pid>`（唔係成個 group）會留低 vite；舊行為，冇 AC 要求
+- Gates：`npx eslint apps/player apps/admin` exit 0；`npx prettier --check apps/player apps/admin .proj-docs/reviews .proj-docs/qa` exit 0；type / unit / coverage n/a；e2e 交 QA / CI
+- Ledger 提示（QA）：merge 用咗 main 嘅 ledger，`8ebb6dd` 凍結嘅 coming-soon / repo-tooling `apps/player/e2e/run.mjs` 行冇咗；`impact` 而家係 REVERIFY coming-soon、repo-tooling（ledger hash `22e9b38…` vs HEAD `5ecbeef…`）。HEAD 同 `b3e1e7a` 嘅 player runner 只差兩行註解，QA 可以引用 `47f4a2b` 嘅 CI 再 freeze
+- 新 finding：冇
+
+## Addendum handoff receipt
+
+```
+HANDOFF_RECEIPT
+agent: code-reviewer
+status: pass
+score: 100（merge main 後 re-review；S-850 resolved，S-851 由 #208 cover）
+hard_gates: { lint: pass, type: n/a, tests: n/a, coverage: n/a, no_critical: pass, security_scan: n/a }
+blocking: none
+findings: 冇新 finding；Observation：player runner 單 kill runner pid 會留 vite（舊行為）
+next_action: QA（re-freeze coming-soon / repo-tooling）
+context: net diff = player run.mjs + 報告；報告只 commit，未 push（等 47f4a2b CI）
+```
