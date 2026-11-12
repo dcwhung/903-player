@@ -1,6 +1,16 @@
 import { zhHK } from '../i18n/zh-HK';
 import { clockTime, longDate, shortDate, stampOf } from './dates';
 
+/** shortDate 跨年會加年份（S-830）：固定「今日」喺 2026，唔跟真實時鐘 */
+beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-12T04:00:00Z'));
+});
+
+afterEach(() => {
+    vi.useRealTimers();
+});
+
 describe('dates', () => {
     // S-841：admin 文案一律「今日」（用戶確認嘅字眼），唔再混用「今天」
     it('should never say 今天 in the admin strings', () => {
@@ -12,6 +22,21 @@ describe('dates', () => {
         expect(shortDate('2026-11-16')).toBe('16/11 一');
         expect(shortDate('2026-10-27')).toBe('27/10 二');
         expect(shortDate('2026-11-22')).toBe('22/11 日');
+    });
+
+    it('should add the year to a short date in another year than today (S-830)', () => {
+        expect(shortDate('2027-01-03', '2026-11-12')).toBe('3/1/2027 日');
+        expect(shortDate('2025-12-31', '2026-11-12')).toBe('31/12/2025 三');
+        expect(shortDate('2026-12-31', '2026-11-12')).toBe('31/12 四');
+    });
+
+    it('should take today in Hong Kong time by default (S-830)', () => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        // 16:30Z = 香港 1/1/2027 00:30
+        vi.setSystemTime(new Date('2026-12-31T16:30:00Z'));
+        expect(shortDate('2027-01-03')).toBe('3/1 日');
+        expect(shortDate('2026-12-31')).toBe('31/12/2026 四');
+        vi.useRealTimers();
     });
 
     it('should not build month/day anywhere in the admin strings', () => {

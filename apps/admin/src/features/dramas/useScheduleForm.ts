@@ -6,6 +6,7 @@ import {
     expandSchedule,
     planSchedule,
     ScheduleError,
+    type EpisodeSchedule,
     type SchedulePlan,
     type ScheduleRule,
 } from '@903-player/catalog';
@@ -31,16 +32,28 @@ export const planOf = (
     }
 };
 
+/** 「episode 6」/「episodes 1-5」（同 validationMessage 嘅 UNLIST_BEFORE_TODAY 對應） */
+const episodesText = (first: number, last: number) =>
+    first === last ? `episode ${first}` : `episodes ${first}-${last}`;
+
 /**
  * 新規則排嘅下架日早過今日（W-715）：「上架 N 日後」由每集舊上架日計，可以出過去嘅日子，儲存即時落架、預覽又冇顯示。
- * 已經落咗架（kept）嘅唔計；回第一集嘅英文原文（同 422 一樣格式，validationMessage 譯中文）
+ * 已經落咗架（kept）嘅唔計；回第一段（連續、同一個下架日）嘅英文原文（S-843；同 422 一樣格式，validationMessage 譯中文）
  */
 const pastUnlistOf = (rule: ScheduleRule, ctx: ScheduleContext): string | undefined => {
     const kept = keptNos(ctx.unlisted);
-    const past = planSchedule(rule, ctx).episodes.find(
-        (e) => e.removedAt !== undefined && e.removedAt < ctx.today && !kept.has(e.no),
-    );
-    return past && `episode ${past.no} unlist date ${past.removedAt} is before today ${ctx.today}`;
+    const isPast = (e: EpisodeSchedule) =>
+        e.removedAt !== undefined && e.removedAt < ctx.today && !kept.has(e.no);
+    const episodes = planSchedule(rule, ctx).episodes;
+    const start = episodes.findIndex(isPast);
+    const first = episodes[start];
+    if (!first) return undefined;
+    let last = first;
+    for (const e of episodes.slice(start + 1)) {
+        if (!isPast(e) || e.no !== last.no + 1 || e.removedAt !== first.removedAt) break;
+        last = e;
+    }
+    return `${episodesText(first.no, last.no)} unlist date ${first.removedAt} is before today ${ctx.today}`;
 };
 
 /** 儲存前驗證：唔過就回 server 會回嘅 422 原文；再擋下架日早過今日（W-715，server 冇「今日」概念） */
@@ -57,13 +70,17 @@ export const useScheduleForm = (saved: ScheduleState | null, ctx: ScheduleContex
     const [initial] = useState(() => formOf(saved?.rule ?? null, ctx));
     const [form, setForm] = useState<ScheduleForm>(initial);
     // 已儲存嘅規則經過句子正規化（例如 periodic 由下一批起計）先比較，冇改就唔算有改動
-    const baseline = saved ? JSON.stringify(ruleOf(formOf(saved.rule, ctx), ctx)) : null;
+    const savedForm = saved ? formOf(saved.rule, ctx) : null;
+    const baseline = savedForm ? JSON.stringify(ruleOf(savedForm, ctx)) : null;
     const rule = ruleOf(form, ctx);
+    // 上架部分有冇改（S-840）：下架換返已儲存嗰個再比，淨改下架唔算；未有排程 = 成個都係新
+    const listingRule = savedForm ? ruleOf({ ...form, unlist: savedForm.unlist }, ctx) : null;
     return {
         form,
         setForm,
         rule,
         dirty: JSON.stringify(rule) !== baseline,
+        listingDirty: JSON.stringify(listingRule) !== baseline,
         changed: JSON.stringify(form) !== JSON.stringify(initial),
         initial,
     };

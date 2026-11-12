@@ -78,4 +78,13 @@ describe('todoModel', () => {
         expect(rowTarget(row({ kind: 'newEpisodes', arcId: null }))).toBe('/dramas/lancy');
         expect(rowTarget(row({ kind: 'missingFolder', arcId: null }))).toBe('/dramas/lancy#folder');
     });
+
+    it('should encode the drama ID in the path (S-828)', () => {
+        expect(rowTarget(row({ kind: 'missingFolder', dramaId: 'a b', arcId: null }))).toBe(
+            '/dramas/a%20b#folder',
+        );
+        expect(rowTarget(row({ kind: 'newDrama', dramaId: 'a/b', arcId: null }))).toBe(
+            '/dramas/a%2Fb',
+        );
+    });
 });

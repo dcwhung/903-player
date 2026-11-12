@@ -16,6 +16,16 @@ import {
     withToday,
 } from './timelineModel';
 
+/** shortDate 跨年會加年份（S-830）：固定「今日」喺 2026，唔跟真實時鐘 */
+beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-12T04:00:00Z'));
+});
+
+afterEach(() => {
+    vi.useRealTimers();
+});
+
 const TODAY = '2026-12-01';
 
 /** mockup ⑧（今日 1/12）：第 1–15 集已上架，第 16 集起由 7/12 逢一上架 5 集，由 14/12 起逢一下架 6 集 */

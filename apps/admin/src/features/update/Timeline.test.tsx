@@ -3,6 +3,16 @@ import { render, screen, within } from '@testing-library/react';
 import { hasIcon } from '../../../tests/icons';
 import { Timeline } from './Timeline';
 
+/** shortDate 跨年會加年份（S-830）：固定「今日」喺 2026，唔跟真實時鐘 */
+beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-12T04:00:00Z'));
+});
+
+afterEach(() => {
+    vi.useRealTimers();
+});
+
 const drama = (arcs: Record<string, unknown>[], extra: Record<string, unknown> = {}) => ({
     id: 'lancy',
     definition: {

@@ -10,6 +10,7 @@ import {
 } from '@903-player/catalog';
 import { t } from '../../i18n/t';
 import { dayMonth, shortDate } from '../../model/dates';
+import { nosOfRangeKey } from './episodeRangeKey';
 import { isAllListed, nextNoOf, type ScheduleContext } from './scheduleModel';
 
 export interface EpisodeSpan {
@@ -25,7 +26,6 @@ export interface PreviewDay {
 
 /** 一段超過幾多集就縮成「頭 … 尾」 */
 const MAX_FULL_CELLS = 3;
-const RANGE_KEY = /^(\d+)(?:-(\d+))?$/;
 
 const lastNoOf = (ctx: ScheduleContext) => ctx.firstNo + ctx.count - 1;
 
@@ -52,15 +52,7 @@ const spansOf = (nos: readonly number[]): EpisodeSpan[] =>
 
 /** 已經落咗架（ctx.unlisted）嘅集數 */
 export const keptNos = (unlisted: Readonly<Record<string, string>>): Set<number> =>
-    new Set(
-        Object.keys(unlisted).flatMap((key) => {
-            const match = RANGE_KEY.exec(key);
-            if (!match) return [];
-            const first = Number(match[1]);
-            const last = match[2] === undefined ? first : Number(match[2]);
-            return Array.from({ length: last - first + 1 }, (_, i) => first + i);
-        }),
-    );
+    new Set(Object.keys(unlisted).flatMap(nosOfRangeKey));
 
 const listedNos = (ctx: ScheduleContext): number[] =>
     ctx.listed.flatMap((b) => Array.from({ length: b.last - b.first + 1 }, (_, i) => b.first + i));

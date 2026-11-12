@@ -151,6 +151,31 @@ describe('DateField', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
+    it('should close on Escape typed in the text field (S-838)', async () => {
+        render(<Harness initial="2026-11-05" />);
+        await userEvent.click(trigger());
+        await userEvent.click(input());
+        await userEvent.keyboard('{Escape}');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(input()).toHaveFocus();
+    });
+
+    it('should close when Tab moves focus out of the field and calendar (S-838)', async () => {
+        render(<Harness initial="2026-11-05" />);
+        await userEvent.click(trigger());
+        expect(screen.getByRole('button', { name: '05/11/2026 星期四' })).toHaveFocus();
+        await userEvent.tab();
+        expect(screen.getByRole('button', { name: 'outside' })).toHaveFocus();
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('should keep the calendar open while Tab moves inside it (S-838)', async () => {
+        render(<Harness initial="2026-11-05" />);
+        await userEvent.click(trigger());
+        await userEvent.tab({ shift: true });
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
     it('should not pick days before min', async () => {
         const onChange = vi.fn();
         render(<Harness initial="2026-11-20" min="2026-11-13" onChange={onChange} />);
@@ -183,6 +208,36 @@ describe('DateField', () => {
         Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
         await userEvent.click(trigger());
         expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'up');
+        vi.restoreAllMocks();
+    });
+
+    it('should place the calendar again after a resize or scroll (S-838)', async () => {
+        render(<Harness initial="2026-11-05" />);
+        let fieldTop = 100;
+        vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+            this: HTMLElement,
+        ) {
+            const [top, height] = this.classList.contains('date-pop') ? [0, 300] : [fieldTop, 30];
+            return {
+                top,
+                bottom: top + height,
+                height,
+                left: 0,
+                right: 0,
+                width: 0,
+                x: 0,
+                y: top,
+            } as DOMRect;
+        });
+        Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
+        await userEvent.click(trigger());
+        expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'down');
+        fieldTop = 700;
+        fireEvent(window, new Event('resize'));
+        expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'up');
+        fieldTop = 100;
+        fireEvent.scroll(document);
+        expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'down');
         vi.restoreAllMocks();
     });
 

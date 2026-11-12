@@ -1,0 +1,8 @@
+# qa-ledger.sh 嘅專案 ignore（一行一個 glob，`*` 亦 match `/`）；預設已 ignore docs（*.md、.proj-docs/* 等）
+# S-762：唔屬任何功能鏈、每次改都喺 `impact` 出 UNCOVERED 嘅開發工具
+
+# editor 設定（JSON schema path 等），唔入 build / test
+.vscode/*
+
+# 封面生成 / review 工具（Python + node，開發者本機跑，唔入 player bundle）；backlog Lane D 揀 ignore，唔另開鏈（pytest 由開發者本機跑）
+apps/player/scripts/arcCover/*
