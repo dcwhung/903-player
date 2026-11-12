@@ -57,7 +57,7 @@ const remoteDocument = (base) => {
         id: REMOTE_ID,
         definition: { ...donor.definition, name: REMOTE_NAME },
     };
-    const bannerUrl = (file) => `${imageBase}/${BANNER_FOLDER}/${file}`;
+    const bannerUrl = (file) => `${imageBase}${BANNER_FOLDER}/${file}`;
     const banner = {
         standard: bannerUrl(BANNER_FILES.standard),
         long: bannerUrl(BANNER_FILES.long),
