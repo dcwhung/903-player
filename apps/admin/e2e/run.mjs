@@ -2,6 +2,7 @@
 // 用法：npm run e2e -w apps/admin（= build + 呢個檔）；E2E_PORT 改 port；PW_CHROMIUM_PATH 指定 Chromium
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
+import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
 
@@ -19,15 +20,44 @@ const log = (ok, message) => {
     console.log(`${ok ? 'PASS' : 'FAIL'}  ${message}`);
 };
 
-const startPreview = () =>
-    spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], {
-        cwd: new URL('..', import.meta.url).pathname,
-        stdio: 'ignore',
+/** port 有人用緊就即刻停：唔好 poll 到上次留低（或者第二個 worktree）嘅 preview，誤測人哋嘅 dist */
+const assertPortFree = () =>
+    new Promise((resolve) => {
+        const probe = createServer();
+        probe.once('error', () => {
+            console.error(
+                `port ${PORT} 有人用緊（可能係上次 e2e 留低嘅 vite preview，或者另一個 worktree），` +
+                    `用 \`pgrep -fa "vite.*preview"\` 搵出嚟停咗佢，或者用 E2E_PORT 揀第二個`,
+            );
+            process.exit(1);
+        });
+        probe.listen(PORT, () => probe.close(resolve));
     });
 
-const waitForServer = async () => {
+/** 直接用 node 行 vite（唔經 npx）：kill 先會停到真正嘅 server，唔會留低孤兒 process */
+const startPreview = async () => {
+    await assertPortFree();
+    // npm workspaces 將 vite hoist 去 repo 根嘅 node_modules：由 vite/package.json 位置搵 bin
+    const viteBin = new URL('bin/vite.js', import.meta.resolve('vite/package.json')).pathname;
+    const server = spawn(
+        process.execPath,
+        [viteBin, 'preview', '--port', String(PORT), '--strictPort'],
+        // stderr 照出：vite 起唔到（例如撞 port）時睇到原因
+        { cwd: new URL('..', import.meta.url).pathname, stdio: ['ignore', 'ignore', 'inherit'] },
+    );
+    const exited = new Promise((resolve) => server.once('exit', resolve));
+    return { server, exited };
+};
+
+/** 等 server 起好；vite 自己退出（例如 strictPort 撞 port）就即刻 fail，唔好當人哋個 server 係自己 */
+const waitForServer = async ({ server }) => {
     const deadline = Date.now() + STARTUP_TIMEOUT_MS;
     while (Date.now() < deadline) {
+        if (server.exitCode !== null || server.signalCode !== null) {
+            throw new Error(
+                `vite preview exited early (code ${server.exitCode}, signal ${server.signalCode}) on port ${PORT}`,
+            );
+        }
         try {
             if ((await fetch(BASE)).ok) return;
         } catch {
@@ -36,6 +66,12 @@ const waitForServer = async () => {
         await new Promise((resolve) => setTimeout(resolve, 250));
     }
     throw new Error(`vite preview did not start on ${BASE}`);
+};
+
+/** 停 server 並等佢真係退出，先至結束 e2e */
+const stopPreview = async ({ server, exited }) => {
+    if (server.exitCode === null && server.signalCode === null) server.kill();
+    await exited;
 };
 
 /** 固定時鐘 + 香港時區（同 mockApi E2E_NOW）：「今日」= 12/11/2026，timer 照行 */
@@ -1376,9 +1412,9 @@ const portraitCheck = (browser) =>
     });
 
 mkdirSync(OUT, { recursive: true });
-const preview = startPreview();
+const preview = await startPreview();
 try {
-    await waitForServer();
+    await waitForServer(preview);
     const browser = await chromium.launch({
         executablePath: process.env.PW_CHROMIUM_PATH || undefined,
     });
@@ -1421,7 +1457,7 @@ try {
         await run(browser);
     await browser.close();
 } finally {
-    preview.kill();
+    await stopPreview(preview);
 }
 console.log(failures === 0 ? 'admin e2e: all passed' : `admin e2e: ${failures} failed`);
 process.exit(failures === 0 ? 0 : 1);
