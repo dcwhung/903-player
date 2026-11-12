@@ -1,145 +1,100 @@
 /*
- * 上載前預覽（3c）：Design Origin: mockup: _mockups_/admin-style/index.html#f（⑥）
- * 「原圖」（保留範圍框）同「裁切後」（碟面圓形、Banner 長方）兩格並排、各自有邊框，
- * 說明放喺各自圖下面（原圖：檔名、尺寸 · 格式；裁切後：輸出尺寸 · WebP · 約 KB）；撳「上載」先寫入。
- * 開啟時 focus 入「取消」、Tab 喺兩粒掣之間循環、Esc 取消（同 ConfirmDialog）
+ * 封面 / 首頁 Banner 裁切 dialog：Design Origin: mockup: _mockups_/admin-phase4/index.html#b + #c
+ * 頂：（Banner 兩步時「1 / 2」pill）標題（輸出尺寸）+ 原圖資料；中：載入中 / 錯誤 / 裁切編輯器；
+ * 底：取消（Banner：兩張均不更換）、上一張、上載（Banner 第一步：下一張：闊版）。
+ * 載入中 / 上載中（busy）dialog 鎖住：Esc / 撳外面都唔收（S-817）
  */
-import { Check, X } from 'lucide-react';
-import { useId, type ReactNode } from 'react';
-import { t } from '../i18n/t';
-import { cropBoxStyle, type PreparedImage } from './imageCrop';
-import { sizeLabel, type ImageSlotKind } from './imageUpload';
-import { useDialogFocus } from './useDialogFocus';
+import { useId } from 'react';
+import { CropDialogFooter, type CropDialogStep } from './CropDialogFooter';
 
-export interface PendingImage extends PreparedImage {
-    name: string;
-    /** 原檔 MIME type（image/jpeg …）；冇就唔顯示格式 */
-    type?: string;
-    sourceUrl: string;
-    resultUrl: string;
-}
+import { DialogHeader, Loading, Problem } from './CropDialogParts';
+import { CropEditor } from './CropEditor';
+import type { CropPreviewInfo } from './CropPlayerPreview';
+import type { CropChoice } from './cropRender';
+import type { CropSlot } from './imageUpload';
+import type { CropPhase } from './useCropSession';
+import { useModalKeys } from './useModalKeys';
 
-interface ImagePreviewDialogProps {
-    slot: ImageSlotKind;
-    image: PendingImage;
-    busy: boolean;
+export type { CropDialogStep } from './CropDialogFooter';
+
+export interface ImagePreviewDialogProps {
+    slot: CropSlot;
+    title: string;
+    phase: CropPhase;
+    info: CropPreviewInfo;
+    /** 轉換 / 上載中嘅說明；null = 唔忙 */
+    busy: string | null;
+    /** 轉換 / 上載失敗（dialog 留低，可以再試或者取消） */
+    error?: string | undefined;
+    step?: CropDialogStep | undefined;
+    /** Banner 第一步：「下一張：闊版」 */
+    next?: boolean;
+    onChoice: (choice: CropChoice) => void;
     onConfirm: () => void;
     onCancel: () => void;
+    onBack?: (() => void) | undefined;
+    onPickOther: () => void;
 }
 
-const BYTES_PER_KB = 1024;
-
-/** image/jpeg → JPEG、image/webp → WebP；唔識就冇 */
-const FORMAT_NAMES: Record<string, string> = {
-    'image/jpeg': 'JPEG',
-    'image/png': 'PNG',
-    'image/webp': 'WebP',
-};
-
-const sourceMeta = (image: PendingImage) => {
-    const size = sizeLabel(image.source);
-    const format = FORMAT_NAMES[image.type ?? ''];
-    return format ? t('images.previewSourceMeta', { size, format }) : size;
-};
-
-const resultMeta = (image: PendingImage) =>
-    t('images.previewResultMeta', {
-        size: sizeLabel(image.target),
-        kb: Math.max(1, Math.round(image.blob.size / BYTES_PER_KB)),
-    });
-
-/** 一格：有邊框嘅圖 + 下面標題同說明；bare = 唔要長方形框（碟面圓形自己有圓框） */
-function Pane({
-    title,
-    lines,
-    bare = false,
-    children,
-}: {
-    title: string;
-    lines: string[];
-    bare?: boolean;
-    children: ReactNode;
-}) {
-    const titleId = useId();
+/** 載入中 / 錯誤 / 裁切編輯器 + 忙緊說明 + 轉換 / 上載錯誤 */
+function DialogBody(props: ImagePreviewDialogProps) {
+    const { phase, busy } = props;
     return (
-        <figure className="pane" aria-labelledby={titleId}>
-            <div className={bare ? 'frame bare' : 'frame'}>{children}</div>
-            <figcaption>
-                <strong id={titleId}>{title}</strong>
-                {lines.map((line) => (
-                    <span key={line}>{line}</span>
-                ))}
-            </figcaption>
-        </figure>
-    );
-}
-
-/** 原圖（保留範圍框）| 裁切後 */
-function CropPreview({ slot, image }: { slot: ImageSlotKind; image: PendingImage }) {
-    return (
-        <div className="crop">
-            <Pane title={t('images.previewSource')} lines={[image.name, sourceMeta(image)]}>
-                <div className="src">
-                    <img src={image.sourceUrl} alt={t('images.previewSourceAlt')} />
-                    {image.crop && (
-                        <span className="box" style={cropBoxStyle(image.source, image.crop)} />
-                    )}
-                </div>
-            </Pane>
-            <Pane
-                title={t('images.previewResult')}
-                bare={slot === 'disc'}
-                lines={[
-                    resultMeta(image),
-                    t(image.crop ? 'images.previewCropped' : 'images.previewExact'),
-                ]}
-            >
-                <img
-                    className={`out ${slot}`}
-                    src={image.resultUrl}
-                    alt={t('images.previewResultAlt')}
+        <>
+            {phase.status === 'loading' && <Loading name={phase.name} bytes={phase.bytes} />}
+            {phase.status === 'error' && <Problem message={phase.message} />}
+            {phase.status === 'ready' && (
+                <CropEditor
+                    ready={phase}
+                    slot={props.slot}
+                    info={props.info}
+                    disabled={busy !== null}
+                    onChoice={props.onChoice}
+                    onPickOther={props.onPickOther}
                 />
-            </Pane>
-        </div>
+            )}
+            {busy && (
+                <p className="note info" role="status">
+                    <span className="spinner" aria-hidden="true" />
+                    <span>{busy}</span>
+                </p>
+            )}
+            {props.error && <Problem message={props.error} />}
+        </>
     );
 }
 
-export function ImagePreviewDialog({
-    slot,
-    image,
-    busy,
-    onConfirm,
-    onCancel,
-}: ImagePreviewDialogProps) {
+export function ImagePreviewDialog(props: ImagePreviewDialogProps) {
+    const { phase, busy, step } = props;
     const titleId = useId();
-    const { cancelRef, confirmRef, onKeyDown } = useDialogFocus(onCancel);
+    const locked = busy !== null || phase.status === 'loading';
+    const { dialogRef, cancelRef, scrimProps } = useModalKeys(props.onCancel, locked);
+    const failed = phase.status === 'error';
     return (
-        <div className="scrim" onKeyDown={onKeyDown}>
+        <div className="scrim" {...scrimProps}>
             <div
+                ref={dialogRef}
                 className="card crop-dialog"
-                role="dialog"
+                role={failed ? 'alertdialog' : 'dialog'}
                 aria-modal="true"
                 aria-labelledby={titleId}
+                aria-busy={locked}
+                tabIndex={-1}
             >
-                <h3 id={titleId}>{t('images.previewTitle', { slot: t(`images.${slot}`) })}</h3>
-                <CropPreview slot={slot} image={image} />
-                <div className="actions end">
-                    <button type="button" ref={cancelRef} onClick={onCancel} disabled={busy}>
-                        <X aria-hidden="true" />
-                        {t('images.cancel')}
-                    </button>
-                    <button
-                        type="button"
-                        ref={confirmRef}
-                        className="primary"
-                        onClick={onConfirm}
-                        disabled={busy}
-                        aria-busy={busy}
-                    >
-                        <Check aria-hidden="true" />
-                        {busy ? t('images.uploading') : t('images.confirm')}
-                    </button>
-                </div>
+                <DialogHeader titleId={titleId} title={props.title} phase={phase} step={step} />
+                <DialogBody {...props} />
+                <CropDialogFooter
+                    failed={failed}
+                    locked={locked}
+                    busy={busy !== null}
+                    step={step}
+                    next={props.next ?? false}
+                    cancelRef={cancelRef}
+                    onCancel={props.onCancel}
+                    onBack={props.onBack}
+                    onConfirm={props.onConfirm}
+                    onPickOther={props.onPickOther}
+                />
             </div>
         </div>
     );

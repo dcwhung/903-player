@@ -6,6 +6,7 @@ import './styles/tokens.css';
 import './styles/mockup.css';
 import './styles/app.css';
 import './styles/theme.css';
+import './styles/phase4.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('#root missing in index.html');

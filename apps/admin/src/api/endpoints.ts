@@ -1,9 +1,12 @@
 /* 每個 admin API endpoint 一個 function（形狀見 types.ts） */
 import type { ScheduleRule } from '@903-player/catalog';
-import { ApiError, request } from './client';
+import { ApiError, errorOf, readJson, request } from './client';
 import type {
+    BannerImages,
+    BannerResponse,
     ChangesResponse,
     DramaScanResponse,
+    DramaSources,
     EntryDetail,
     EntryKind,
     EntrySummary,
@@ -151,3 +154,25 @@ export const uploadAsset = async (file: Blob) =>
 
 /** 圖片 URL（Worker 代出 catalog 圖） */
 export const imageUrl = (name: string) => `/catalog/v1/img/${encodeURIComponent(name)}`;
+
+/** R2 資料夾嘅封面原圖（cd cover / cover photo）；audio.host 唔係 r2 → 422 */
+export const getDramaSources = async (id: string) =>
+    (await request<DramaSources>(`/api/dramas/${encodeURIComponent(id)}/sources`)).data;
+
+/** R2 原圖 bytes（Content-Type 跟副檔名）；冇原圖 404、> 20 MB 413、唔係圖 415 */
+export const fetchR2Source = async (key: string): Promise<Blob> => {
+    const response = await fetch(`/api/r2-source?key=${encodeURIComponent(key)}`, {
+        credentials: 'same-origin',
+    });
+    if (!response.ok) throw errorOf(response.status, await readJson(response));
+    return response.blob();
+};
+
+export const getBanner = async () => (await request<BannerResponse>('/api/banner')).data;
+
+/** 兩張一齊換（草稿，publish 先上線） */
+export const putBanner = async (banner: BannerImages) =>
+    (await request<BannerResponse>('/api/banner', { method: 'PUT', body: banner })).data;
+
+/** 還原預設（冇 banner 都 204） */
+export const deleteBanner = () => request('/api/banner', { method: 'DELETE' });

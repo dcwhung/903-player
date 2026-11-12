@@ -30,22 +30,20 @@ describe('image slot border', () => {
         );
     });
 
-    it('should frame both panes of the crop preview with dashes, the disc result as a dashed circle', () => {
-        const theme = cssOf('theme.css');
-        expect(bodyOf(theme, '.crop .frame')).toMatch(/border:\s*2px dashed var\(--media-border\)/);
-        const disc = bodyOf(theme, '.crop .out.disc');
-        expect(disc).toMatch(/border:\s*2px dashed var\(--media-border\)/);
-        expect(disc).toMatch(/border-radius:\s*50%/);
+    it('should frame the source image of the crop editor with dashes', () => {
+        expect(bodyOf(cssOf('phase4.css'), '.crop-dialog .src-frame')).toMatch(
+            /border:\s*2px dashed var\(--media-border\)/,
+        );
     });
 
     it('should use --media-border only on those frames', () => {
-        const users = cssOf('theme.css')
-            .split('}')
+        const users = ['theme.css', 'phase4.css']
+            .flatMap((name) => cssOf(name).split('}'))
             .filter((rule) => rule.includes('var(--media-border)'))
             .flatMap((rule) => (rule.split('{')[0] ?? '').split(','))
             .map((selector) => selector.trim());
         expect(users.sort()).toEqual(
-            ['.crop .frame', '.crop .out.disc', '.img-slot', '.img-slot.empty'].sort(),
+            ['.crop-dialog .src-frame', '.img-slot', '.img-slot.empty'].sort(),
         );
     });
 });

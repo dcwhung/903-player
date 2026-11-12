@@ -6,7 +6,8 @@
 import { useCallback, useId } from 'react';
 import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
-import { str, strList } from '../../model/raw';
+import { arcLabel, str, strList } from '../../model/raw';
+import { previewInfoOf } from '../../model/theme';
 import { Pill } from '../../ui/Pill';
 import { Tip } from '../../ui/Tip';
 import { Chips } from '../../ui/Chips';
@@ -43,6 +44,8 @@ export function ArcEditor({
             <MediaAside
                 target={arc}
                 images={editor.draft?.images ?? {}}
+                preview={previewInfoOf(editor.draft?.definition ?? {}, arcLabel(arc))}
+                auto={state.autoCrop.statusOf(arcId)}
                 onUploaded={(slot, name) => state.saveImage(slot, name, arcId)}
             />
             <div className="form">
