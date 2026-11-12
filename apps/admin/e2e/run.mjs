@@ -1475,6 +1475,51 @@ const arcMemoryBackCheck = (browser) =>
         },
     );
 
+const arcMemoryReloadCheck = (browser) =>
+    check(
+        'S-846: picked chip / expanded arc go into the URL (replace) and survive a reload',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            await page.goto(`${BASE}/dramas`);
+            await page.goto(`${BASE}/dramas/sammy/schedule`);
+            await page.getByRole('tab', { name: /大衛營/ }).click();
+            await page.getByRole('tab', { name: /開心日記/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/schedule#diary`);
+            await page.reload();
+            const chip = page.getByRole('tab', { name: /開心日記/ });
+            await chip.waitFor();
+            if ((await chip.getAttribute('aria-selected')) !== 'true')
+                throw new Error('開心日記 chip not selected after reload');
+            // scrollIntoView 記錄：轉 tab 要捲去記住嘅短篇；之後撳展開（hash quiet 寫入）唔可以捲
+            await page.evaluate(() => {
+                window.__scrolled = [];
+                const original = Element.prototype.scrollIntoView;
+                Element.prototype.scrollIntoView = function scrollIntoView(options) {
+                    window.__scrolled.push(this.id);
+                    return original.call(this, options);
+                };
+            });
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#diary`);
+            await page.waitForFunction(() => window.__scrolled.includes('diary'));
+            await page.evaluate(() => {
+                window.__scrolled = [];
+            });
+            await page.getByRole('button', { name: '展開「冬日戀曲」' }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#s6`);
+            await page.waitForTimeout(300);
+            const scrolled = await page.evaluate(() => window.__scrolled);
+            if (scrolled.length > 0) throw new Error(`expanding scrolled to ${scrolled.join()}`);
+            await page.reload();
+            await assertArcExpanded(page, '冬日戀曲');
+            // replace：上一頁直接返去廣播劇列表，唔會逐個 chip / 短篇行返轉頭
+            await page.goBack();
+            await page.goBack();
+            await page.waitForURL(`${BASE}/dramas`);
+            await page.close();
+        },
+    );
+
 const reducedMotionCheck = (browser) =>
     check('nav collapse switches instantly with reduced motion (no animation)', async () => {
         const page = await newPage(browser, loggedIn());
@@ -1582,6 +1627,7 @@ try {
         dramaListStatusCheck,
         arcMemoryCheck,
         arcMemoryBackCheck,
+        arcMemoryReloadCheck,
         navCheck,
         reducedMotionCheck,
         autoNavCheck,

@@ -2,7 +2,7 @@
  * 廣播劇編輯：Design Origin: mockup: _mockups_/admin/index.html#s4 / #s5 / #s7
  * 分頁 基本資料 / 短篇 / 排程；由待辦入嚟有 flow bar；轉 tab 記住揀咗嘅短篇（useArcMemory）
  */
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { t } from '../../i18n/t';
 import { arcsOf, nameOf } from '../../model/raw';
 import { savedDiscOf } from '../../model/thumbs';
@@ -31,9 +31,10 @@ export function DramaEditorPage({ tab }: { tab: DramaTab }) {
 function DramaEditor({ id, tab }: { id: string; tab: DramaTab }) {
     const state = useDramaEditor(id);
     const { editor } = state;
-    const hash = useHashTarget(editor.draft !== null);
+    const { hash: rawHash } = useLocation();
     const arcIds = arcsOf(editor.draft?.definition ?? {}).map((arc, i) => arcIdOf(arc, i));
-    const memory = useArcMemory(hash, arcIds);
+    const memory = useArcMemory(decodeURIComponent(rawHash.slice(1)), arcIds);
+    useHashTarget(editor.draft !== null, memory.quietRef);
     if (editor.loadError) return <p className="note bad">{t('editor.notFound')}</p>;
     if (!editor.draft) return <p className="muted">{t('app.loading')}</p>;
     const definition = editor.draft.definition;

@@ -4,7 +4,7 @@
  */
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { fakeData, mockApi } from '../../../tests/renderApp';
 import { AdminDataContext } from '../../data/AdminData';
 import { ToastProvider } from '../../ui/Toast';
@@ -56,15 +56,27 @@ function Where() {
     return <output data-testid="location">{`${pathname}${hash}`}</output>;
 }
 
+function Back() {
+    const navigate = useNavigate();
+    return (
+        <button type="button" onClick={() => void navigate(-1)}>
+            上一頁
+        </button>
+    );
+}
+
+/** url 前面加一頁 /start：撳「上一頁」睇吓 history 有冇多咗嘢 */
 const renderEditor = (url: string) =>
     render(
         <AdminDataContext.Provider value={fakeData()}>
             <ToastProvider>
-                <MemoryRouter initialEntries={[url]}>
+                <MemoryRouter initialEntries={['/start', url]} initialIndex={1}>
+                    <Back />
                     <Link to="/dramas/other/schedule">去另一套</Link>
                     <Link to="/dramas/lancy/schedule">返蘭茜</Link>
                     <Link to="/dramas/lancy/schedule#fantasy">深連結森美幻想劇</Link>
                     <Routes>
+                        <Route path="/start" element={<p>start page</p>} />
                         <Route path="/dramas/:id" element={<DramaEditorPage tab="basic" />} />
                         <Route path="/dramas/:id/arcs" element={<DramaEditorPage tab="arcs" />} />
                         <Route
@@ -131,6 +143,41 @@ describe('arc memory across the drama tabs', () => {
         expect(screen.getByTestId('location')).toHaveTextContent(/^\/dramas\/lancy\/arcs#fantasy$/);
         expect(await screen.findByRole('textbox', { name: /^名稱/ })).toHaveValue('森美幻想劇');
         expect(scrolled.map((el) => el.id)).toContain('fantasy');
+    });
+
+    it('should write the picked chip into the URL, without scrolling or history entries (S-846)', async () => {
+        api();
+        renderEditor('/dramas/lancy/schedule');
+        await userEvent.click(await chip(/大衛營/));
+        expect(screen.getByTestId('location')).toHaveTextContent(
+            /^\/dramas\/lancy\/schedule#camp$/,
+        );
+        await userEvent.click(screen.getByRole('tab', { name: /森美幻想劇/ }));
+        expect(screen.getByTestId('location')).toHaveTextContent(
+            /^\/dramas\/lancy\/schedule#fantasy$/,
+        );
+        expect(screen.getByRole('tab', { name: /森美幻想劇/ })).toHaveAttribute(
+            'aria-selected',
+            'true',
+        );
+        expect(scrolled).toEqual([]);
+        // replace，唔係 push：上一頁直接返去入嚟之前嗰頁
+        await userEvent.click(screen.getByRole('button', { name: '上一頁' }));
+        expect(screen.getByText('start page')).toBeInTheDocument();
+    });
+
+    it('should write the expanded arc into the URL without making its row jump (S-846)', async () => {
+        api();
+        renderEditor('/dramas/lancy/arcs');
+        await userEvent.click(await screen.findByRole('button', { name: '展開「大衛營」' }));
+        expect(screen.getByTestId('location')).toHaveTextContent(/^\/dramas\/lancy\/arcs#camp$/);
+        expect(openArcName()).toHaveValue('大衛營');
+        expect(scrolled).toEqual([]);
+        await userEvent.click(screen.getByRole('button', { name: '展開「森美幻想劇」' }));
+        expect(screen.getByTestId('location')).toHaveTextContent(/^\/dramas\/lancy\/arcs#fantasy$/);
+        expect(scrolled).toEqual([]);
+        await userEvent.click(screen.getByRole('button', { name: '上一頁' }));
+        expect(screen.getByText('start page')).toBeInTheDocument();
     });
 
     it('should keep the arc through 基本資料 and follow the latest pick', async () => {
