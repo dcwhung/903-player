@@ -1,5 +1,5 @@
 import { zhHK } from '../i18n/zh-HK';
-import { clockTime, longDate, shortDate, stampOf } from './dates';
+import { clockTime, localToday, longDate, shortDate, stampOf } from './dates';
 
 describe('dates', () => {
     // 用戶 2026-11-11：admin 日期一律「日/月」（唔用「月/日」）
@@ -26,5 +26,12 @@ describe('dates', () => {
         expect(stampOf('2026-11-10T02:02:00.000Z', now)).toBe('今天 10:02');
         expect(stampOf('2026-11-09T14:40:00.000Z', now)).toBe('9/11 22:40');
         expect(stampOf('2025-12-31T14:40:00.000Z', now)).toBe('31/12/2025 22:40');
+    });
+});
+
+describe('localToday', () => {
+    it('should give the local calendar date as YYYY-MM-DD', () => {
+        expect(localToday(new Date(2026, 10, 5, 23, 59))).toBe('2026-11-05');
+        expect(localToday(new Date(2026, 0, 1, 0, 0))).toBe('2026-01-01');
     });
 });

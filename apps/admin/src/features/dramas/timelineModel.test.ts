@@ -5,11 +5,14 @@ import {
     doneText,
     episodeTip,
     listingScopeText,
+    listingStrip,
     listingTimeline,
     previewDays,
     progressText,
     unlistScopeText,
+    unlistStrip,
     unlistTimeline,
+    withToday,
 } from './timelineModel';
 
 const TODAY = '2026-12-01';
@@ -132,5 +135,92 @@ describe('timelineModel — preview (mockup ⑨)', () => {
             '第 6 集：23/11 上架，14/12 下架，共 21 日',
         );
         expect(episodeTip({ no: 6, listedAt: '2026-11-23' })).toBe('第 6 集：23/11 上架，不下架');
+    });
+});
+
+describe('timelineModel — 今日 (用戶 2026-11-12)', () => {
+    const items = ['2026-12-07', '2026-12-14', '2026-12-21'];
+    const mark = (today: string) =>
+        withToday(items, (date) => date, today).map((m) =>
+            m.kind === 'today' ? `today:${m.date}` : `${m.item}${m.isToday ? '*' : ''}`,
+        );
+
+    it('should insert a 今日 cell at its place when today is not a batch date', () => {
+        expect(mark('2026-12-10')).toEqual([
+            '2026-12-07',
+            'today:2026-12-10',
+            '2026-12-14',
+            '2026-12-21',
+        ]);
+    });
+
+    it('should put 今日 first when today is before every batch', () => {
+        expect(mark('2026-12-01')[0]).toBe('today:2026-12-01');
+        expect(mark('2026-12-01')).toHaveLength(4);
+    });
+
+    it('should put 今日 last when today is after every batch', () => {
+        expect(mark('2027-01-01').at(-1)).toBe('today:2027-01-01');
+    });
+
+    it('should mark the batch instead of adding a cell when today is a batch date', () => {
+        expect(mark('2026-12-07')).toEqual(['2026-12-07*', '2026-12-14', '2026-12-21']);
+        expect(mark('2026-12-21')).toEqual(['2026-12-07', '2026-12-14', '2026-12-21*']);
+        expect(mark('2026-12-14')).toEqual(['2026-12-07', '2026-12-14*', '2026-12-21']);
+    });
+
+    it('should give a 今日 cell alone when there is nothing else', () => {
+        expect(withToday([], (date: string) => date, '2026-12-01')).toEqual([
+            { kind: 'today', date: '2026-12-01' },
+        ]);
+    });
+
+    it('should place 今日 between the listed group and the next listing batch', () => {
+        const strip = listingStrip(PLAN, CONTEXT, TODAY);
+        expect(strip.map((m) => (m.kind === 'today' ? 'today' : m.item.tone))).toEqual([
+            'listed',
+            'today',
+            'b1',
+            'b2',
+            'b1',
+        ]);
+        expect(strip[0]).toMatchObject({
+            kind: 'item',
+            isToday: false,
+            item: { span: { first: 1, last: 15 }, date: '2026-11-09' },
+        });
+    });
+
+    it('should mark the first listing batch when it is today', () => {
+        const strip = listingStrip(PLAN, CONTEXT, '2026-12-07');
+        expect(strip.filter((m) => m.kind === 'today')).toEqual([]);
+        expect(strip[1]).toMatchObject({ kind: 'item', isToday: true, item: { tone: 'b1' } });
+    });
+
+    it('should place 今日 on the unlist strip too, and no strip when nothing is unlisted', () => {
+        const strip = unlistStrip(PLAN, CONTEXT, TODAY);
+        expect(strip[0]).toEqual({ kind: 'today', date: TODAY });
+        expect(strip).toHaveLength(6);
+        const last = unlistStrip(PLAN, CONTEXT, '2027-01-11').at(-1);
+        expect(last).toMatchObject({ kind: 'item', isToday: true, item: { tone: 'off' } });
+        const keep = planSchedule(
+            { kind: 'dates', batches: [{ from: 1, date: '2026-10-27' }] },
+            { firstNo: 1, count: 30 },
+        );
+        expect(unlistStrip(keep, CONTEXT, TODAY)).toEqual([]);
+    });
+});
+
+describe('timelineModel — summary while unsaved (用戶 2026-11-12)', () => {
+    it('should say 即將排程…（未儲存） for a draft and 已排程 once saved', () => {
+        const fresh = { ...CONTEXT, listed: [] };
+        expect(progressText(fresh, { draft: true })).toBe('第 1–30 集即將排程上架（未儲存）');
+        expect(progressText(fresh, { draft: false })).toBe('第 1–30 集已排程上架');
+        expect(progressText(CONTEXT, { plan: PLAN, draft: true })).toBe(
+            '第 1–15 集已上架 · 第 16–30 集即將排程上架（未儲存） · 第 1–30 集即將排程下架（未儲存）',
+        );
+        expect(progressText(CONTEXT, { plan: PLAN })).toBe(
+            '第 1–15 集已上架 · 第 16–30 集已排程上架 · 第 1–30 集已排程下架',
+        );
     });
 });
