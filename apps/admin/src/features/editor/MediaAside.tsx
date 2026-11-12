@@ -1,5 +1,5 @@
 /*
- * 編輯卡右邊圖片欄：Banner 排先、碟面排後（mockup admin-style ⑤ .media，340×192 / 192px）；
+ * 編輯卡右邊圖片欄：橫圖排先、碟面排後（mockup admin-style ⑤ .media，340×192 / 192px）；
  * auto = R2 原圖自動裁切狀態（劇集 / 短篇，見 useR2AutoCrop）
  */
 import type { ImageMap, RawDefinition } from '../../api/types';

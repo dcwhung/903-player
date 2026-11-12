@@ -1,6 +1,6 @@
 /*
  * 短篇原位編輯（同展開嗰行同一個底色）：名稱 → ID + 狀態（未排期 pill 喺 label 隔籬）→ 簡介 → 聲演 →
- * 虛線框 R2（資料夾、集數、各集標題）；Banner / 碟面喺右邊
+ * 虛線框 R2（資料夾、集數、各集標題）；橫圖 / 碟面喺右邊
  * Design Origin: mockup: _mockups_/admin-style/index.html#e（.arc-body）；結構 mockup: _mockups_/admin/index.html#s5
  */
 import { useCallback, useId } from 'react';

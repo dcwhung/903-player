@@ -310,3 +310,157 @@
 .scrim:has(.crop-dialog) {
     overflow: auto;
 }
+
+/* ---------- 配色（#d）：現用 + 三套候選，每張係細版 player 頁 ---------- */
+.theme-head,
+.theme-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.theme-head h3 {
+    margin: 0 auto 0 0;
+}
+
+.theme-foot {
+    justify-content: flex-end;
+}
+
+.tgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+}
+
+/* button 入面用 block 排（grid 喺 button 入面會縮成內容闊度） */
+.tcard {
+    display: block;
+    padding: 8px 8px 10px;
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--ink);
+    font-size: 13px;
+    text-align: left;
+}
+
+.tcard > * {
+    width: 100%;
+}
+
+.tcard > * + * {
+    margin-top: 8px;
+}
+
+.tcard[aria-pressed='true'] {
+    background: var(--accent-soft);
+    box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.tcard .lbl {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+
+.tphone {
+    display: grid;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+}
+
+.tphone .sb {
+    height: 8px;
+    background: var(--theme-status-bar);
+}
+
+.tphone .hd {
+    position: relative;
+    display: grid;
+    padding: 2px 10px 8px;
+}
+
+.tphone .hd::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--theme-header-rule);
+    pointer-events: none;
+}
+
+.tphone .hd b {
+    color: var(--theme-title);
+    font: 700 15px/1.3 var(--theme-title-font, var(--font));
+}
+
+.tphone .hd small {
+    color: var(--theme-muted);
+    font-size: 11px;
+}
+
+.tphone .pdisc.sm {
+    justify-self: center;
+    width: 52%;
+    box-shadow:
+        0 0 0 5px var(--theme-surface),
+        var(--disc-drop-sm);
+}
+
+.tphone .bar {
+    height: 3px;
+    margin: 4px 12px 0;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--theme-accent) 40%, var(--theme-track) 40%);
+}
+
+.tphone .ctl {
+    display: flex;
+    justify-content: center;
+}
+
+.tphone .play {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--theme-accent);
+    color: var(--theme-on-accent);
+}
+
+.tphone .play svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+}
+
+.tphone .li {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 8px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    background: var(--theme-surface);
+    font-size: 11px;
+}
+
+.tphone .li.on {
+    color: var(--theme-accent-text);
+    font-weight: 600;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .tcard {
+        transition:
+            box-shadow var(--motion-fast) var(--motion-ease),
+            background var(--motion-fast) var(--motion-ease);
+    }
+}

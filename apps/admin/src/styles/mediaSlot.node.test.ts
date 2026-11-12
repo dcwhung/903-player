@@ -1,7 +1,7 @@
 // @vitest-environment node
 // 要用 node:fs 讀 CSS 原文（Vitest 會將 .css?raw 變做空字串）
 /*
- * Banner / 碟面框線：淨係編輯頁圖片區（ImageSlot）同上載預覽 dialog（原圖、裁切後）有框，
+ * 橫圖 / 碟面框線：淨係編輯頁圖片區（ImageSlot）同上載預覽 dialog（原圖、裁切後）有框，
  * 有圖冇圖都係虛線；碟面係圓形虛線框。其他地方（列表、chip、標題碟面…）唔要框（對比 ≥ 3:1 UI 組件）
  */
 import { readFileSync } from 'node:fs';

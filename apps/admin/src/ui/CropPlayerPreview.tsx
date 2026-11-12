@@ -1,5 +1,5 @@
 /*
- * 裁切 dialog 右邊：用 player 樣式即場預覽（碟面：圓碟 + 碟邊 + 碟心；Banner（tile）：圓角卡 + 名；
+ * 裁切 dialog 右邊：用 player 樣式即場預覽（碟面：圓碟 + 碟邊 + 碟心；橫圖（tile）：圓角卡 + 名；
  * 首頁 Banner：長方），下面寫輸出尺寸同裁切範圍
  * Design Origin: mockup: _mockups_/admin-phase4/index.html#b（.pv / .pdisc / .ptile / .pbanner / .meta）
  */

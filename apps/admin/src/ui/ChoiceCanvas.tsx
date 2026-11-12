@@ -8,7 +8,7 @@ import type { LoadedSource } from './imageCrop';
 import { browserEnv } from './imageCrop';
 import type { Size } from './imageUpload';
 
-/** 預覽 canvas 最闊幾多 px（輸出 2000 闊嘅闊版 Banner 都縮到呢個數，拖框先夠快） */
+/** 預覽 canvas 最闊幾多 px（輸出 2000 闊嘅首頁 Banner 闊版都縮到呢個數，拖框先夠快） */
 const PREVIEW_MAX_PX = 480;
 
 interface ChoiceCanvasProps {

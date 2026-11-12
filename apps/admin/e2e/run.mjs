@@ -837,7 +837,7 @@ const presetChipCheck = (browser) =>
     });
 
 /*
- * 真圖（e2e/fixtures，player 嘅 cover）：「口水多過浪花」同「蘭茜夫人劇場」有 Banner / 碟面，
+ * 真圖（e2e/fixtures，player 嘅 cover）：「口水多過浪花」同「蘭茜夫人劇場」有橫圖 / 碟面，
  * 截編輯頁圖片區、標題碟面、兩個列表、排程短篇 chip 嘅淺色同深色，睇框線同真圖夾唔夾
  */
 const IMAGE_URL = /\/catalog\/v1\/img\//;
@@ -895,7 +895,7 @@ const realImagesCheck = (browser) =>
         await page.goto(`${BASE}/dramas/lancy`);
         for (const [slot, label] of [
             ['disc', '碟面'],
-            ['tile', 'Banner'],
+            ['tile', '橫圖'],
         ]) {
             const chooser = page.waitForEvent('filechooser');
             await page.getByRole('button', { name: `更換${label}` }).click();

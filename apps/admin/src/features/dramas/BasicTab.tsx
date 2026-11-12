@@ -59,7 +59,7 @@ function R2Fields({ state }: { state: DramaEditorState }) {
     );
 }
 
-/** 劇集碟面 / Banner（R2 原圖自動裁切狀態喺 slot 下面） */
+/** 劇集碟面 / 橫圖（R2 原圖自動裁切狀態喺 slot 下面） */
 function DramaMedia({ state }: { state: DramaEditorState }) {
     const { draft } = state.editor;
     if (!draft) return null;

@@ -20,6 +20,7 @@ export function AppRoutes() {
             <Route path="/dramas/:id" element={<DramaEditorPage tab="basic" />} />
             <Route path="/dramas/:id/arcs" element={<DramaEditorPage tab="arcs" />} />
             <Route path="/dramas/:id/schedule" element={<DramaEditorPage tab="schedule" />} />
+            <Route path="/dramas/:id/theme" element={<DramaEditorPage tab="theme" />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

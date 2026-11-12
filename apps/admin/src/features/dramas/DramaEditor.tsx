@@ -12,6 +12,7 @@ import { EditorNotices } from '../editor/EditorNotices';
 import { ArcsTab } from './ArcsTab';
 import { BasicTab } from './BasicTab';
 import { DramaTabs, type DramaTab } from './DramaTabs';
+import { DramaThemeTab } from './DramaThemeTab';
 import { ScheduleTab } from './ScheduleTab';
 import { useDramaEditor } from './useDramaEditor';
 import { arcIdOf } from './dramaModel';
@@ -64,6 +65,7 @@ function DramaEditor({ id, tab }: { id: string; tab: DramaTab }) {
             {tab === 'arcs' && (
                 <ArcsTab state={state} openArc={memory.arc} onPick={memory.remember} />
             )}
+            {tab === 'theme' && <DramaThemeTab state={state} />}
             {tab === 'schedule' && (
                 <ScheduleTab state={state} initialArc={memory.arc} onPick={memory.remember} />
             )}

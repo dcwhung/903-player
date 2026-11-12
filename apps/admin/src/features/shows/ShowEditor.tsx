@@ -12,6 +12,7 @@ import { EditorHeader } from '../editor/EditorHeader';
 import { EditorNotices } from '../editor/EditorNotices';
 import { idProblem } from '../editor/IdField';
 import { ShowEditorCard } from './ShowEditorCard';
+import { ShowThemeCard } from './ShowThemeCard';
 import { useShowEditor } from './useShowEditor';
 
 export function ShowEditorPage() {
@@ -55,6 +56,7 @@ function ShowEditor({ id }: { id: string | undefined }) {
                 onReload={() => void editor.reload()}
             />
             <ShowEditorCard show={show} name={name} />
+            <ShowThemeCard show={show} name={name} />
         </>
     );
 }

@@ -1,6 +1,6 @@
 /*
- * R2 原圖自動裁切嘅計劃（純 function）：劇集 + 每個短篇嘅碟面 / Banner slot，冇圖先做，有圖唔郁；
- * 碟面用 cd cover，冇就 cover photo；Banner（tile）用 cover photo（用戶 2026-11-12，plan「R2 檔名」）。
+ * R2 原圖自動裁切嘅計劃（純 function）：劇集 + 每個短篇嘅碟面 / 橫圖 slot，冇圖先做，有圖唔郁；
+ * 碟面用 cd cover，冇就 cover photo；橫圖（tile）用 cover photo（用戶 2026-11-12，plan「R2 檔名」）。
  * sources 嘅短篇 id 對唔到 definition（新資料夾未掃描入）就略過
  */
 import type { DramaSources, ImageMap, RawDefinition } from '../../api/types';
@@ -14,7 +14,7 @@ export interface AutoCropJob {
     sourceKey: string;
 }
 
-/** 圖片欄次序：Banner 先、碟面後（同 MediaAside） */
+/** 圖片欄次序：橫圖先、碟面後（同 MediaAside） */
 const SLOTS: readonly ImageSlotKind[] = ['tile', 'disc'];
 const DRAMA_SLOTS: readonly ImageSlotKind[] = ['disc', 'tile'];
 

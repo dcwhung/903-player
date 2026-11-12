@@ -15,7 +15,7 @@ describe('EditorNotices', () => {
     it('should explain a known validation error in Chinese', () => {
         renderInvalid('shows/abc: tile: no file tile.webp in the folder');
         expect(screen.getByRole('alert')).toHaveTextContent(
-            '無法儲存：節目「abc」未有 Banner 圖片，請先上載。',
+            '無法儲存：節目「abc」未有橫圖，請先上載。',
         );
         expect(screen.queryByText(/no file/)).not.toBeInTheDocument();
     });

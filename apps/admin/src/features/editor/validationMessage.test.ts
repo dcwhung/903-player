@@ -12,10 +12,7 @@ afterEach(() => {
 
 describe('validationMessage', () => {
     it.each([
-        [
-            'shows/abc: tile: no file tile.webp in the folder',
-            '節目「abc」未有 Banner 圖片，請先上載。',
-        ],
+        ['shows/abc: tile: no file tile.webp in the folder', '節目「abc」未有橫圖，請先上載。'],
         ['shows/abc: disc: no file disc.webp in the folder', '節目「abc」未有碟面圖片，請先上載。'],
         [
             'dramas/golden: disc: no file disc.webp in the folder',

@@ -1,7 +1,7 @@
 /*
  * 封面 / 首頁 Banner 裁切 dialog：Design Origin: mockup: _mockups_/admin-phase4/index.html#b + #c
- * 頂：（Banner 兩步時「1 / 2」pill）標題（輸出尺寸）+ 原圖資料；中：載入中 / 錯誤 / 裁切編輯器；
- * 底：取消（Banner：兩張均不更換）、上一張、上載（Banner 第一步：下一張：闊版）。
+ * 頂：（首頁 Banner 兩步時「1 / 2」pill）標題（輸出尺寸）+ 原圖資料；中：載入中 / 錯誤 / 裁切編輯器；
+ * 底：取消（首頁 Banner：兩張均不更換）、上一張、上載（首頁 Banner 第一步：下一張：闊版）。
  * 載入中 / 上載中（busy）dialog 鎖住：Esc / 撳外面都唔收（S-817）
  */
 import { useId } from 'react';
@@ -27,7 +27,7 @@ export interface ImagePreviewDialogProps {
     /** 轉換 / 上載失敗（dialog 留低，可以再試或者取消） */
     error?: string | undefined;
     step?: CropDialogStep | undefined;
-    /** Banner 第一步：「下一張：闊版」 */
+    /** 首頁 Banner 第一步：「下一張：闊版」 */
     next?: boolean;
     onChoice: (choice: CropChoice) => void;
     onConfirm: () => void;
