@@ -92,40 +92,22 @@ export const unlistScopeText = (ctx: ScheduleContext): string => {
         : t('schedule.unlistScopeNone');
 };
 
-/** 下架時間軸入面新規則排嘅下架（已下架嘅唔計）：集數連續段 */
-const unlistSpansOf = (plan: SchedulePlan, ctx: ScheduleContext): EpisodeSpan[] =>
-    spansOf(
-        unlistTimeline(plan, ctx)
-            .planned.flatMap((r) =>
-                Array.from({ length: r.last - r.first + 1 }, (_, i) => r.first + i),
-            )
-            .sort((a, b) => a - b),
-    );
-
 /**
- * 檢視列細字：「第 1–15 集已上架 · 第 16–30 集已排程上架 · 第 1–30 集已排程下架」；
- * 未儲存（draft）就寫「即將排程上架（未儲存）」/「即將排程下架（未儲存）」（用戶 2026-11-12）
+ * 檢視列細字：「第 1–15 集已上架 · 第 16–30 集已排程上架」（只講上架）；
+ * 未儲存（draft）就寫「即將排程上架（未儲存）」（用戶 2026-11-12）
  */
 export const progressText = (
     ctx: ScheduleContext,
-    { plan = null, draft = false }: { plan?: SchedulePlan | null; draft?: boolean } = {},
+    { draft = false }: { draft?: boolean } = {},
 ): string => {
     const listed = spansOf(listedNos(ctx));
     const planned = plannedSpan(ctx);
-    const unlist = plan ? unlistSpansOf(plan, ctx) : [];
     return [
         ...(listed.length > 0 ? [t('schedule.progressListed', { range: spansText(listed) })] : []),
         ...(planned
             ? [
                   t(draft ? 'schedule.progressPlannedDraft' : 'schedule.progressPlanned', {
                       range: rangeText(planned),
-                  }),
-              ]
-            : []),
-        ...(unlist.length > 0
-            ? [
-                  t(draft ? 'schedule.progressUnlistDraft' : 'schedule.progressUnlist', {
-                      range: spansText(unlist),
                   }),
               ]
             : []),

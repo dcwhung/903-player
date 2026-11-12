@@ -216,11 +216,10 @@ describe('timelineModel — summary while unsaved (用戶 2026-11-12)', () => {
         const fresh = { ...CONTEXT, listed: [] };
         expect(progressText(fresh, { draft: true })).toBe('第 1–30 集即將排程上架（未儲存）');
         expect(progressText(fresh, { draft: false })).toBe('第 1–30 集已排程上架');
-        expect(progressText(CONTEXT, { plan: PLAN, draft: true })).toBe(
-            '第 1–15 集已上架 · 第 16–30 集即將排程上架（未儲存） · 第 1–30 集即將排程下架（未儲存）',
+        // 用戶 2026-11-12 第三輪：細字只講上架，冇下架部分
+        expect(progressText(CONTEXT, { draft: true })).toBe(
+            '第 1–15 集已上架 · 第 16–30 集即將排程上架（未儲存）',
         );
-        expect(progressText(CONTEXT, { plan: PLAN })).toBe(
-            '第 1–15 集已上架 · 第 16–30 集已排程上架 · 第 1–30 集已排程下架',
-        );
+        expect(progressText(CONTEXT)).toBe('第 1–15 集已上架 · 第 16–30 集已排程上架');
     });
 });

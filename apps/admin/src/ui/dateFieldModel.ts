@@ -81,3 +81,25 @@ export const rangeProblem = (
     if (max && iso > max) return 'max';
     return null;
 };
+
+/** 兩個（可有可無嘅）ISO 日子揀遲嗰個：排程日期欄 min = max(今日, 原有 min) */
+export const latestOf = (date: string, other: string | undefined): string =>
+    other !== undefined && other > date ? other : date;
+
+/** popover 同欄位之間嘅空位（同 CSS .date-pop top / bottom 嘅 6px 一樣） */
+const POP_GAP = 6;
+
+interface Span {
+    top: number;
+    bottom: number;
+}
+
+/**
+ * 月曆向下定向上開：下面唔夠位（viewport 同捲動容器取細）而上面又多過下面先向上
+ * （用戶 2026-11-12）
+ */
+export const placementOf = (field: Span, popHeight: number, view: Span): 'down' | 'up' => {
+    const below = view.bottom - field.bottom;
+    const above = field.top - view.top;
+    return below < popHeight + POP_GAP && above > below ? 'up' : 'down';
+};

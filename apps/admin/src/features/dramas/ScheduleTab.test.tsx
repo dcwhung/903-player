@@ -121,14 +121,15 @@ describe('ScheduleTab — 編輯 (mockup ⑧)', () => {
 
     it('should pop the error only on 儲存 when an unlist date is not after the listing date', async () => {
         const fetchMock = api();
-        await open('half');
+        // 一次性全部預設今日 1/12 上架；下架日最早都係今日 → 同日 = 衝突
+        await open('heart');
         await userEvent.click(screen.getByRole('button', { name: '指定日全部' }));
         await userEvent.clear(screen.getByLabelText('下架日期'));
-        await userEvent.type(screen.getByLabelText('下架日期'), '01/10/2026');
+        await userEvent.type(screen.getByLabelText('下架日期'), '01/12/2026');
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', { name: '儲存' }));
         expect(await screen.findByRole('alert')).toHaveTextContent(
-            '第 1 集的下架日期（1/10 四）必須遲於其上架日期（27/10 二），請修改下架設定。',
+            '第 16 集的下架日期（1/12 二）必須遲於其上架日期（1/12 二），請修改下架設定。',
         );
         expect(putBody(fetchMock)).toBeUndefined();
         // 再改設定，錯誤提示收返
@@ -284,11 +285,16 @@ describe('ScheduleTab — summary while unsaved (用戶 2026-11-12)', () => {
 
     it('should use the saved wording once saved, and the draft wording again after a change', async () => {
         api({
-            'GET /api/dramas/lancy/arcs/half/schedule': () => ({
+            'GET /api/dramas/lancy/arcs/heart/schedule': () => ({
                 body: {
                     rule: {
                         kind: 'dates',
-                        batches: [{ from: 1, date: '2026-10-27' }],
+                        batches: [
+                            { from: 1, date: '2026-10-26' },
+                            { from: 6, date: '2026-11-02' },
+                            { from: 11, date: '2026-11-09' },
+                            { from: 16, date: '2026-12-07' },
+                        ],
                         unlist: { kind: 'date', date: '2026-12-31' },
                     },
                     expanded: null,
@@ -296,11 +302,42 @@ describe('ScheduleTab — summary while unsaved (用戶 2026-11-12)', () => {
                 },
             }),
         });
-        await open('half');
-        expect(screen.getByText('第 1–30 集已上架 · 第 1–30 集已排程下架')).toBeInTheDocument();
+        await open('heart');
+        // 只講上架（用戶 2026-11-12 第三輪：冇下架部分）
+        expect(screen.getByText('第 1–15 集已上架 · 第 16–30 集已排程上架')).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', { name: '上架 N 日後' }));
         expect(
-            screen.getByText('第 1–30 集已上架 · 第 1–30 集即將排程下架（未儲存）'),
+            screen.getByText('第 1–15 集已上架 · 第 16–30 集即將排程上架（未儲存）'),
         ).toBeInTheDocument();
+        expect(screen.queryByText(/排程下架/)).not.toBeInTheDocument();
+    });
+});
+
+describe('ScheduleTab — earliest date is today (用戶 2026-11-12)', () => {
+    it('should refuse listing and unlisting dates before today, with the inline error', async () => {
+        api();
+        await open('half');
+        await userEvent.click(screen.getByRole('button', { name: '指定日全部' }));
+        const unlist = screen.getByLabelText('下架日期');
+        await userEvent.clear(unlist);
+        await userEvent.type(unlist, '30/11/2026{Enter}');
+        expect(unlist).toHaveAccessibleDescription('日期不可早於 01/12/2026');
+        await userEvent.clear(unlist);
+        await userEvent.type(unlist, '02/12/2026');
+        await userEvent.click(screen.getByRole('button', { name: '選擇下架日期' }));
+        await userEvent.keyboard('{PageUp}');
+        expect(screen.getByRole('button', { name: '30/11/2026 星期一' })).toHaveAttribute(
+            'aria-disabled',
+            'true',
+        );
+    });
+
+    it('should not let the listing start go before today even when the last batch is older', async () => {
+        api();
+        await open('heart');
+        const start = screen.getByLabelText('上架日期');
+        await userEvent.clear(start);
+        await userEvent.type(start, '20/11/2026{Enter}');
+        expect(start).toHaveAccessibleDescription('日期不可早於 01/12/2026');
     });
 });

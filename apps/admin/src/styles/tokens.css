@@ -33,6 +33,11 @@
     --warn: #d97706;
     --warn-bg: #fff3df;
     --warn-ink: #9a5800;
+    /*
+     * 排程「今日」黃色高亮（用戶 2026-11-12）：淺色 = --warn-bg；深色 --warn-bg 同卡底太近（1.1:1），
+     * 改用 --warn 混 30% 入 --surface（對卡底 1.9:1，--warn-ink 字 5:1）
+     */
+    --today-bg: var(--warn-bg);
     --danger: #d9363e;
     --danger-ink: #b3262d;
     --danger-bg: #fdebec;
@@ -121,6 +126,7 @@
         --warn: #f2a93b;
         --warn-bg: #3a2a10;
         --warn-ink: #f2c27a;
+        --today-bg: color-mix(in srgb, var(--warn) 30%, var(--surface));
         --danger: #f28b82;
         --danger-ink: #f6a9a2;
         --danger-bg: #3b1619;
@@ -161,6 +167,7 @@
     --warn: #f2a93b;
     --warn-bg: #3a2a10;
     --warn-ink: #f2c27a;
+    --today-bg: color-mix(in srgb, var(--warn) 30%, var(--surface));
     --danger: #f28b82;
     --danger-ink: #f6a9a2;
     --danger-bg: #3b1619;

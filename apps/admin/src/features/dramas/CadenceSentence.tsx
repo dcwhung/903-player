@@ -100,7 +100,7 @@ export function CadenceSentence<T extends Periodic>({
     onChange: (form: T) => void;
 }) {
     return (
-        <p className="sentence cadence">
+        <div className="sentence cadence">
             <span className="cadence-part">
                 {t('schedule.from')}{' '}
                 <SentenceDate
@@ -132,6 +132,6 @@ export function CadenceSentence<T extends Periodic>({
                 />{' '}
                 {t('schedule.unit')}
             </span>
-        </p>
+        </div>
     );
 }

@@ -1701,27 +1701,34 @@ table.matrix .row-link:hover {
 }
 
 /*
- * 今日（用戶 2026-11-12 第二輪：唔要框）：只用淺主色底 + 主色字；
- * 日子字粗、--accent-ink（淺深色對 --accent-soft 都 ≥ 4.5:1）
+ * 今日（用戶 2026-11-12 第三輪）：黃色（--today-bg：淺色 = 掃描列 / 待發佈 pill 嘅 --warn-bg，深色 = --warn 混卡底；
+ * 字 --warn-ink，淺色 5.1:1、深色 5:1），冇框；一整舊連埋下面（預覽係上面）嘅日子一齊包住
  */
-.seg-batch.today .eps-cells {
+.seg-batch.today,
+.day-group.today {
     border-radius: 8px;
-    background: var(--accent-soft);
+    background: var(--today-bg);
+}
+
+/* 編輯時間軸：黃底包住格 + 日子，左右留少少位；虛線分隔交畀黃底（下一格照有自己嘅虛線） */
+.seg-batch.today {
+    padding: 2px 6px 4px;
+    border-left-color: transparent;
 }
 
 .seg-batch.today .seg-date,
 .day-group.today .day-date {
-    color: var(--accent-ink);
+    color: var(--warn-ink);
     font-weight: 700;
 }
 
-/* 唔撞日嘅今日格：淺主色底，「今日」喺格入面橫向置中 */
+/* 唔撞日嘅今日格：「今日」喺格入面橫向置中，透明底（黃底由外面包住） */
 .today-cell .eps-cells span {
     width: auto;
     min-width: 40px;
     padding: 0 8px;
-    background: var(--accent-soft);
-    color: var(--accent-ink);
+    background: transparent;
+    color: var(--warn-ink);
     font-size: 12px;
     font-weight: 700;
     text-align: center;
@@ -1730,8 +1737,6 @@ table.matrix .row-link:hover {
 .day-group.today {
     padding-top: 4px;
     padding-bottom: 4px;
-    border-radius: 8px;
-    background: var(--accent-soft);
 }
 
 /*
@@ -1750,13 +1755,13 @@ table.matrix .row-link:hover {
     font-weight: 600;
 }
 
-/* 今日一行：列表冇固定高亮（只有 hover --surface-2），所以用淺主色成行底；日期主色粗字 */
+/* 今日一行：同時間軸一樣嘅黃色成行底（--today-bg），日期 --warn-ink 粗字；表本身照舊冇底色 */
 table.batches tr.today td {
-    background: var(--accent-soft);
+    background: var(--today-bg);
 }
 
 table.batches tr.today td:first-child {
-    color: var(--accent-ink);
+    color: var(--warn-ink);
     font-weight: 700;
 }
 
@@ -1933,6 +1938,13 @@ table.date-grid button[aria-disabled='true'] {
     cursor: not-allowed;
 }
 
+/* 下面唔夠位就向上開（usePopoverPlacement） */
+.date-pop[data-placement='up'] {
+    top: auto;
+    bottom: calc(100% + 6px);
+    --date-pop-shift: 4px;
+}
+
 @media (prefers-reduced-motion: no-preference) {
     .date-pop {
         animation: date-pop-in var(--motion-fast) var(--motion-ease);
@@ -1942,6 +1954,6 @@ table.date-grid button[aria-disabled='true'] {
 @keyframes date-pop-in {
     from {
         opacity: 0;
-        transform: translateY(-4px);
+        transform: translateY(var(--date-pop-shift, -4px));
     }
 }

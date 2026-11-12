@@ -1,11 +1,13 @@
 /*
  * 編輯模式左右兩個 panel（_mockups_/admin-schedule-unlist ⑧）：
  * 左「上架」（綠）= 只排未上架嘅集數：快速套用 + 句子 + 時間軸；全部已上架就淨係「✓ 已全部上架」。
- * 右「下架」（紅）= 已上架 + 已排程上架嘅集數：4 個下架方式（快速套用 chip）+ 句子 + 時間軸
+ * 右「下架」（紅）= 已上架 + 已排程上架嘅集數：4 個下架方式（快速套用 chip）+ 句子 + 時間軸。
+ * 日期欄最早 = 今日（localToday，同時間軸「今日」一樣；上架仲要喺已上架最後一批之後）
  */
 import { addDays, type SchedulePlan } from '@903-player/catalog';
 import { useId } from 'react';
 import { t, type MessageKey } from '../../i18n/t';
+import { latestOf } from '../../ui/dateFieldModel';
 import { Pill } from '../../ui/Pill';
 import {
     isAllListed,
@@ -71,7 +73,7 @@ export function ListingPanel({ ctx, form, plan, unreleased = false, today, onCha
                     />
                     <ListingSentence
                         listing={form.listing}
-                        min={lastListed ? addDays(lastListed, 1) : undefined}
+                        min={latestOf(today, lastListed ? addDays(lastListed, 1) : undefined)}
                         onChange={setListing}
                     />
                 </>
@@ -112,6 +114,7 @@ export function UnlistPanel({ ctx, form, plan, today, onChange }: PanelProps) {
             </div>
             <UnlistSentence
                 unlist={form.unlist}
+                min={today}
                 onChange={(unlist) => onChange({ ...form, unlist })}
             />
             {plan && <UnlistTimeline plan={plan} ctx={ctx} today={today} />}

@@ -9,6 +9,7 @@ import { t } from '../i18n/t';
 import { localToday } from '../model/dates';
 import { addMonths, rangeProblem, yearMonthOf } from './dateFieldModel';
 import { MonthGrid } from './MonthGrid';
+import { usePopoverPlacement } from './usePopoverPlacement';
 const DAYS_PER_WEEK = 7;
 const DAY_STEPS: Record<string, number> = {
     ArrowLeft: -1,
@@ -79,6 +80,7 @@ export function DateCalendar({ label, value, min, max, onPick, onClose }: DateCa
     const today = localToday();
     const rootRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
+    const placement = usePopoverPlacement(rootRef);
     const pick = (iso: string) => {
         if (rangeProblem(iso, min, max) === null) onPick(iso);
     };
@@ -92,6 +94,7 @@ export function DateCalendar({ label, value, min, max, onPick, onClose }: DateCa
         <div
             ref={rootRef}
             className="date-pop"
+            data-placement={placement}
             role="dialog"
             aria-label={t('dateField.open', { label })}
             onKeyDown={(event) => {

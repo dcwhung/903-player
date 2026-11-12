@@ -161,4 +161,28 @@ describe('DateField', () => {
         expect(onChange).not.toHaveBeenCalled();
         expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
+
+    it('should open above the field when there is no room below', async () => {
+        render(<Harness initial="2026-11-05" />);
+        const rect = (top: number, height: number) =>
+            ({
+                top,
+                bottom: top + height,
+                height,
+                left: 0,
+                right: 0,
+                width: 0,
+                x: 0,
+                y: top,
+            }) as DOMRect;
+        vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+            this: HTMLElement,
+        ) {
+            return this.classList.contains('date-pop') ? rect(0, 300) : rect(700, 30);
+        });
+        Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
+        await userEvent.click(trigger());
+        expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'up');
+        vi.restoreAllMocks();
+    });
 });

@@ -356,8 +356,6 @@ export const zhHK = {
         progressListed: '{range}已上架',
         progressPlanned: '{range}已排程上架',
         progressPlannedDraft: '{range}即將排程上架（未儲存）',
-        progressUnlist: '{range}已排程下架',
-        progressUnlistDraft: '{range}即將排程下架（未儲存）',
         today: '今日',
         todayLabel: '{label}（今日）',
         allListed: '✓ 已全部上架（{date} · {range}）',

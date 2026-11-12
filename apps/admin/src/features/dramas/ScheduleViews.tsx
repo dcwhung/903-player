@@ -61,7 +61,7 @@ export function ScheduleViews({
         <>
             <div className="viewbar">
                 {/* 未儲存講「即將排程…（未儲存）」，唔好扮已排程（用戶 2026-11-12） */}
-                <span className="muted small">{progressText(ctx, { plan, draft })}</span>
+                <span className="muted small">{progressText(ctx, { draft })}</span>
                 <ViewTabs view={view} idBase={idBase} onChange={setView} />
             </div>
             {error && <p className="note bad">{t('schedule.planFailed', { error })}</p>}

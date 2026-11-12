@@ -1,4 +1,12 @@
-import { addMonths, formatDmy, monthWeeks, parseDmy, rangeProblem } from './dateFieldModel';
+import {
+    addMonths,
+    formatDmy,
+    latestOf,
+    monthWeeks,
+    parseDmy,
+    placementOf,
+    rangeProblem,
+} from './dateFieldModel';
 
 describe('dateFieldModel', () => {
     it('should show ISO dates as DD/MM/YYYY', () => {
@@ -42,5 +50,22 @@ describe('dateFieldModel', () => {
         expect(rangeProblem('2026-11-12', '2026-11-13', undefined)).toBe('min');
         expect(rangeProblem('2026-11-12', undefined, '2026-11-11')).toBe('max');
         expect(rangeProblem('2026-11-12', '2026-11-12', '2026-11-12')).toBeNull();
+    });
+
+    it('should open the calendar above the field only when below is too short and above is roomier', () => {
+        const view = { top: 0, bottom: 800 };
+        const field = (top: number) => ({ top, bottom: top + 30 });
+        expect(placementOf(field(100), 300, view)).toBe('down');
+        expect(placementOf(field(600), 300, view)).toBe('up');
+        // 上面都唔夠位：照向下（向下多啲位）
+        expect(placementOf(field(370), 500, view)).toBe('down');
+        // 捲動容器（例如內容區）比 viewport 細：跟容器
+        expect(placementOf(field(300), 300, { top: 0, bottom: 500 })).toBe('up');
+    });
+
+    it('should take the later of two optional dates for min', () => {
+        expect(latestOf('2026-11-12', '2026-11-09')).toBe('2026-11-12');
+        expect(latestOf('2026-11-12', '2026-11-20')).toBe('2026-11-20');
+        expect(latestOf('2026-11-12', undefined)).toBe('2026-11-12');
     });
 });

@@ -513,12 +513,15 @@ const scheduleAllListedCheck = (browser) =>
         await page.close();
     });
 
+/*
+ * 下架日最早 = 今日（用戶 2026-11-12），所以用排程中嘅短篇：下架日 1/12 早過第 31 集 6/12 上架 → 儲存先彈錯
+ */
 const scheduleConflictCheck = (browser) =>
     check('schedule: an unlist date not after listing pops an error only on 儲存', async () => {
         const page = await newPage(browser, scheduleState());
-        await page.goto(SCHEDULE_ALL_LISTED);
+        await page.goto(SCHEDULE_PARTLY);
         await page.getByRole('button', { name: '指定日全部' }).click();
-        await page.getByLabel('下架日期', { exact: true }).fill('01/09/2026');
+        await page.getByLabel('下架日期', { exact: true }).fill('01/12/2026');
         await page.getByText('全部下架').waitFor();
         if ((await page.getByRole('alert').count()) > 0) throw new Error('error shown before 儲存');
         await page.getByRole('button', { name: '儲存' }).click();
@@ -527,7 +530,7 @@ const scheduleConflictCheck = (browser) =>
         const text = await alert.textContent();
         if (
             text !==
-            '無法儲存：第 1 集的下架日期（1/9 二）必須遲於其上架日期（27/10 二），請修改下架設定。'
+            '無法儲存：第 31 集的下架日期（1/12 二）必須遲於其上架日期（6/12 日），請修改下架設定。'
         )
             throw new Error(`alert: ${text}`);
         await shoot(page, 'schedule-conflict', { fullPage: true });
@@ -573,6 +576,36 @@ const scheduleDateFieldCheck = (browser) =>
         if (error !== '日期無效，請以 DD/MM/YYYY 格式輸入') throw new Error(`error: ${error}`);
         await page.close();
     });
+
+/** 日期欄近 viewport 底：月曆向上開；今日之前嘅日子 disabled（用戶 2026-11-12） */
+const scheduleDateFieldUpCheck = (browser) =>
+    check(
+        'schedule date field: calendar opens upward near the bottom, past days disabled',
+        async () => {
+            const page = await newPage(browser, scheduleState(), { width: 1280, height: 640 });
+            await page.goto(SCHEDULE_PARTLY);
+            const trigger = page.getByRole('button', { name: '選擇上架開始日期' });
+            await trigger.click();
+            const dialog = page.getByRole('dialog', { name: '選擇上架開始日期' });
+            await dialog.waitFor();
+            if ((await dialog.getAttribute('data-placement')) !== 'up')
+                throw new Error('calendar did not open upward');
+            const [pop, field] = await Promise.all([dialog.boundingBox(), trigger.boundingBox()]);
+            if (!pop || !field || pop.y + pop.height > field.y)
+                throw new Error('calendar not above');
+            for (const name of ['11/11/2026 星期三', '01/11/2026 星期日']) {
+                const day = dialog.getByRole('button', { name });
+                if ((await day.getAttribute('aria-disabled')) !== 'true')
+                    throw new Error(`${name} before today is not disabled`);
+            }
+            const today = dialog.getByRole('button', { name: '12/11/2026 星期四（今日）' });
+            if ((await today.getAttribute('aria-disabled')) !== null)
+                throw new Error('today disabled');
+            await page.waitForTimeout(PILL_SETTLE_MS);
+            await shoot(page, 'schedule-datefield-up');
+            await page.close();
+        },
+    );
 
 /** 今日 = 上架日（未上架短篇「一次性全部」今日上架）：唔加格，嗰格 / 嗰行加「（今日）」 */
 const scheduleTodayOverlapCheck = (browser) =>
@@ -1312,6 +1345,7 @@ try {
         scheduleAllListedCheck,
         scheduleConflictCheck,
         scheduleDateFieldCheck,
+        scheduleDateFieldUpCheck,
         scheduleTodayOverlapCheck,
         presetChipCheck,
         realImagesCheck,

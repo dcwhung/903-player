@@ -29,16 +29,16 @@ export function ListingSentence({
     if (listing.mode === 'done') return null;
     if (listing.mode === 'custom')
         return (
-            <p className="sentence">
+            <div className="sentence">
                 {t('schedule.customSentence', { count: listing.batches.length })}
-            </p>
+            </div>
         );
     if (listing.mode === 'periodic')
         return (
             <CadenceSentence form={listing} labels={LISTING_LABELS} min={min} onChange={onChange} />
         );
     return (
-        <p className="sentence">
+        <div className="sentence">
             {t('schedule.on')}{' '}
             <SentenceDate
                 label="schedule.listAllLabel"
@@ -47,23 +47,28 @@ export function ListingSentence({
                 onChange={(start) => onChange({ ...listing, start })}
             />{' '}
             {t('schedule.listAll')}
-        </p>
+        </div>
     );
 }
 
 export function UnlistSentence({
     unlist,
+    min,
     onChange,
 }: {
     unlist: UnlistForm;
+    /** 最早下架日 = 今日 */
+    min?: string | undefined;
     onChange: (unlist: UnlistForm) => void;
 }) {
     if (unlist.mode === 'none') return <p className="muted small">{t('schedule.unlistKeep')}</p>;
     if (unlist.mode === 'periodic')
-        return <CadenceSentence form={unlist} labels={UNLIST_LABELS} onChange={onChange} />;
+        return (
+            <CadenceSentence form={unlist} labels={UNLIST_LABELS} min={min} onChange={onChange} />
+        );
     if (unlist.mode === 'afterDays')
         return (
-            <p className="sentence">
+            <div className="sentence">
                 {t('schedule.unlistAfterPrefix')}{' '}
                 <input
                     className="inline-ctl"
@@ -77,17 +82,18 @@ export function UnlistSentence({
                     }
                 />{' '}
                 {t('schedule.unlistAfterSuffix')}
-            </p>
+            </div>
         );
     return (
-        <p className="sentence">
+        <div className="sentence">
             {t('schedule.on')}{' '}
             <SentenceDate
                 label="schedule.unlistDateLabel"
                 value={unlist.date}
+                min={min}
                 onChange={(date) => onChange({ ...unlist, date })}
             />{' '}
             {t('schedule.unlistAll')}
-        </p>
+        </div>
     );
 }
