@@ -42,8 +42,18 @@ beforeEach(() => {
     vi.setSystemTime(NOW);
 });
 
+/** jsdom 原本嘅 innerHeight：個別 test 會改，每個 test 後還原（S-861） */
+const INNER_HEIGHT = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+
+/** 改 viewport 高度（afterEach 會還原） */
+const setInnerHeight = (value: number) =>
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value });
+
 afterEach(() => {
     vi.useRealTimers();
+    // test 中途 fail 都要還原，唔好喺 test 尾先 restore（S-861）
+    vi.restoreAllMocks();
+    if (INNER_HEIGHT) Object.defineProperty(window, 'innerHeight', INNER_HEIGHT);
 });
 
 describe('DateField', () => {
@@ -205,10 +215,9 @@ describe('DateField', () => {
         ) {
             return this.classList.contains('date-pop') ? rect(0, 300) : rect(700, 30);
         });
-        Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
+        setInnerHeight(800);
         await userEvent.click(trigger());
         expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'up');
-        vi.restoreAllMocks();
     });
 
     it('should place the calendar again after a resize or scroll (S-838)', async () => {
@@ -229,7 +238,7 @@ describe('DateField', () => {
                 y: top,
             } as DOMRect;
         });
-        Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
+        setInnerHeight(800);
         await userEvent.click(trigger());
         expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'down');
         fieldTop = 700;
@@ -238,7 +247,6 @@ describe('DateField', () => {
         fieldTop = 100;
         fireEvent.scroll(document);
         expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'down');
-        vi.restoreAllMocks();
     });
 
     it('should mark today in Hong Kong time, the day schedules use (S-835)', async () => {
