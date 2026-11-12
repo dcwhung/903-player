@@ -1398,6 +1398,62 @@ const arcMemoryCheck = (browser) =>
         },
     );
 
+/** 短篇 tab：嗰行展開咗（aria-expanded + 編輯欄位見到）而且喺畫面入面 */
+const assertArcExpanded = async (page, name) => {
+    const toggle = page.getByRole('button', { name: `展開「${name}」` });
+    await toggle.waitFor();
+    if ((await toggle.getAttribute('aria-expanded')) !== 'true')
+        throw new Error(`${name} not expanded in the arcs tab`);
+    const field = page.getByRole('textbox', { name: /^名稱/ });
+    if ((await field.inputValue()) !== name) throw new Error(`open editor is not ${name}`);
+    if (
+        (await page
+            .getByRole('button', { name: /^展開「/ })
+            .and(page.locator('[aria-expanded="true"]'))
+            .count()) !== 1
+    )
+        throw new Error('more than one arc expanded');
+    const row = page.locator('li.arc-line.open');
+    const inView = await row.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        return box.top >= 0 && box.bottom <= window.innerHeight;
+    });
+    if (!inView) throw new Error(`${name} row is outside the viewport`);
+};
+
+const arcMemoryBackCheck = (browser) =>
+    check(
+        '排程 → 短篇: the arc picked in 排程 is expanded (not just scrolled to), replacing an earlier one',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            // ① 排程揀非預設 chip → 短篇
+            await page.goto(`${BASE}/dramas/sammy/schedule`);
+            await page.getByRole('tab', { name: /開心日記/ }).click();
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#diary`);
+            await assertArcExpanded(page, '開心日記');
+            // ② 短篇已展開另一個（大衛營）→ 排程揀森美幻想劇 → 返短篇 = 森美幻想劇
+            await page.getByRole('button', { name: '展開「大衛營」' }).click();
+            await page.getByRole('link', { name: '排程', exact: true }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/schedule#camp`);
+            await page.getByRole('tab', { name: /森美幻想劇/ }).click();
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#fantasy`);
+            await assertArcExpanded(page, '森美幻想劇');
+            await page.mouse.move(0, 0);
+            // 等 scrollIntoView（smooth）停定先影，淺色 / 深色同一個位置
+            await page.waitForFunction(
+                () =>
+                    new Promise((resolve) => {
+                        const y = window.scrollY;
+                        setTimeout(() => resolve(window.scrollY === y), 300);
+                    }),
+            );
+            await shoot(page, 'arc-memory-back');
+            await page.close();
+        },
+    );
+
 const reducedMotionCheck = (browser) =>
     check('nav collapse switches instantly with reduced motion (no animation)', async () => {
         const page = await newPage(browser, loggedIn());
@@ -1504,6 +1560,7 @@ try {
         arcStatusCheck,
         dramaListStatusCheck,
         arcMemoryCheck,
+        arcMemoryBackCheck,
         navCheck,
         reducedMotionCheck,
         autoNavCheck,
