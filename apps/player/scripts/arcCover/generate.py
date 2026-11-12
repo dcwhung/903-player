@@ -63,7 +63,7 @@ from constants import (
 )
 from preview import analysis_overlay, contact_sheet, disc_preview, tile_preview
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+APP_ROOT = Path(__file__).resolve().parents[2]
 ROUND_PATTERN = re.compile(r"^round-(\d+)$")
 SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 EXIT_USAGE = 2
@@ -229,7 +229,7 @@ def _round_dir(options: Options) -> tuple[int, Path]:
 
 def theme_for(drama: str) -> dict[str, str]:
     """預覽顏色跟 src/catalog/dramas/library/<drama>/drama.json 嘅 theme；搵唔到就用預設。"""
-    drama_json = REPO_ROOT / "src" / "catalog" / "dramas" / "library" / drama / "drama.json"
+    drama_json = APP_ROOT / "src" / "catalog" / "dramas" / "library" / drama / "drama.json"
     if not drama_json.is_file():
         return dict(DEFAULT_THEME)
     theme = json.loads(drama_json.read_text(encoding="utf-8")).get("theme", {})

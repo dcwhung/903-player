@@ -32,7 +32,10 @@ export const DRAMA_AUDIO_BASE = 'https://pub-1f26dbd9526e41b89de51bd33054d825.r2
  */
 export const GOOGLE_FONTS_CSS = 'https://fonts.googleapis.com';
 export const GOOGLE_FONTS_FILES = 'https://fonts.gstatic.com';
-/** 跨 origin catalog 圖嘅假 host（似 apps/api Worker；.test TLD 唔會解析到真網址），由 remoteCatalog.mjs 自己 route */
+/**
+ * 跨 origin catalog 圖嘅假 host（似 apps/api Worker；.test TLD 唔會解析到真網址）：
+ * 所有 context 預設答 404（S-779），remoteCatalog.mjs 後註冊自己嘅 route 蓋過
+ */
 export const CATALOG_IMAGE_HOST = 'https://catalog-images.e2e.test';
 /** 本機字型檔喺 gstatic 嘅假路徑前綴（真 gstatic 唔會用 /e2e/，唔會同真網址混淆） */
 const LOCAL_FONT_PREFIX = '/e2e/';
@@ -94,7 +97,7 @@ const fontFilesResponder = (route) => {
 };
 
 /**
- * e2e 唔出外網：刻意 mock 咗嘅外部 origin（newE2EContext 入面 route 住；CATALOG_IMAGE_HOST 由用到嘅 section 自己 route）。
+ * e2e 唔出外網：刻意 mock 咗嘅外部 origin（newE2EContext 入面全部有預設 route；section 可以後註冊蓋過）。
  * 其他外部 request 一律 abort，同時記低入 externalRequests，run.mjs 最尾斷言要係空
  */
 const MOCKED_ORIGINS = new Set([
@@ -107,12 +110,16 @@ const MOCKED_ORIGINS = new Set([
 /** runtime catalog.json 同佢嘅圖（vite.config.ts E2E_CATALOG_URL 嘅 folder，同 origin） */
 export const E2E_CATALOG_GLOB = '**/e2e-catalog/**';
 /**
- * 預設 catalog.json 答 404（app fallback 內建資料）。SW 自己發嘅 request（NetworkFirst）交返本機 server：
- * Playwright fulfill SW request 會令 Chromium 重複裝同一版 SW（PWA 換版 e2e 多 reload 一次），真機冇呢個情況；
- * 本機 server 冇呢個檔，一樣係 fallback
+ * 預設 catalog.json 答 404（app fallback 內建資料）。SW 自己發嘅 request（NetworkFirst）一定要原封不動交返本機 server：
+ * Playwright 改過嘅 SW request（fulfill、abort、fallback 改 header 都試過）會令 Chromium 重複裝同一版 SW，
+ * PWA 換版 e2e（Shift-reload，S-648）多 reload 一次，真機冇呢個情況。
+ * 已知副作用（S-765，未修）：vite preview 係 SPA，冇呢個檔都答 200 + index.html，會入 SW 嘅 catalog-json cache；
+ * app parse 唔到照 fallback 內建資料，冇影響。要修就要喺 harness 以外（例如 e2e build 嘅 preview 唔做 SPA fallback）
  */
 const catalogNotFound = (route) =>
     route.request().serviceWorker() ? route.fallback() : route.fulfill({ status: 404, body: '' });
+/** 冇 section 自己 route 嘅 mock origin：一律 404 */
+const notFound = (route) => route.fulfill({ status: 404, body: '' });
 
 /** 本機 preview server（run.mjs 嘅 BASE） */
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
@@ -225,7 +232,8 @@ export const newE2EContext = async (
     await ctx.route(`${GOOGLE_FONTS_FILES}/**`, fontFilesResponder);
     await ctx.clock.install({ time: new Date(now) });
     await ctx.route(`${AUDIO_HOST}/**`, audioResponder(extraAudioUrls));
-    await ctx.route(`${DRAMA_AUDIO_BASE}/**`, (route) => route.fulfill({ status: 404, body: '' }));
+    await ctx.route(`${DRAMA_AUDIO_BASE}/**`, notFound);
+    await ctx.route(`${CATALOG_IMAGE_HOST}/**`, notFound);
     // e2e build 開咗 runtime catalog（VITE_CATALOG_URL 預設 <base>e2e-catalog/catalog.json）：預設 404 → app 用內建資料，
     // 其他 section 行為同 flag off 一樣；e2e/remoteCatalog.mjs 後註冊自己嘅 route 蓋過
     await ctx.route(E2E_CATALOG_GLOB, catalogNotFound);

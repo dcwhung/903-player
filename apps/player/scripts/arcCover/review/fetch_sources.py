@@ -21,7 +21,7 @@ from collections.abc import Callable
 from pathlib import Path
 from urllib.parse import quote
 
-from build import DEFAULT_WORK, REPO_ROOT, arc_slug_of, check_slug
+from build import APP_ROOT, DEFAULT_WORK, arc_slug_of, check_slug
 
 # 同 packages/catalog/src/constants.ts DRAMA_AUDIO_BASE 一樣（test_fetch_sources 鎖住）
 R2_BASE = "https://pub-1f26dbd9526e41b89de51bd33054d825.r2.dev"
@@ -108,7 +108,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--arc", action="append", default=[], help="未有碟面嘅短篇：「短篇名=slug」，可以重複"
     )
     parser.add_argument("--force", action="store_true", help="已經有都重新下載")
-    parser.add_argument("--repo", type=Path, default=REPO_ROOT, help=argparse.SUPPRESS)
+    parser.add_argument("--repo", type=Path, default=APP_ROOT, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     check_slug(args.drama, "劇集 id", reserved=frozenset())
     return args

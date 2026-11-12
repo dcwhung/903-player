@@ -175,6 +175,71 @@ describe('createSnapshot', () => {
         await expect(snapshot(fakeFetch(okRoutes(odd)))).rejects.toThrow(/tile\.webp/);
     });
 
+    describe('when one image fails (S-793)', () => {
+        const EXTRA_BYTES = [7, 8, 9].map((n) => new Uint8Array([n]));
+        const EXTRA = EXTRA_BYTES.map((bytes) => hashName(bytes));
+        /** 4 張圖：第一張 404，其餘三張等 release 先答 */
+        const fourImages = document({
+            'tile.webp': `${IMG_BASE}${TILE}`,
+            'disc.webp': `${IMG_BASE}${EXTRA[0]}`,
+        });
+        const MANY = {
+            ...fourImages,
+            dramas: [
+                {
+                    ...fourImages.dramas[0]!,
+                    images: {
+                        'tile.webp': `${IMG_BASE}${EXTRA[1]}`,
+                        'disc.webp': `${IMG_BASE}${EXTRA[2]}`,
+                    },
+                },
+            ],
+        };
+
+        const gatedRun = () => {
+            let release: () => void = () => undefined;
+            const gate = new Promise<void>((resolve) => (release = resolve));
+            const requested: string[] = [];
+            let inFlight = 0;
+            const gated = (bytes: Uint8Array) => async () => {
+                inFlight += 1;
+                await gate;
+                inFlight -= 1;
+                return new Response(bytes);
+            };
+            const routes: Routes = {
+                [CATALOG_URL]: () => new Response(JSON.stringify(MANY)),
+                [`${IMG_BASE}${TILE}`]: () => new Response('gone', { status: 404 }),
+                ...Object.fromEntries(
+                    EXTRA.map((name, i) => [`${IMG_BASE}${name}`, gated(EXTRA_BYTES[i]!)]),
+                ),
+            };
+            const base = fakeFetch(routes);
+            const fetchImpl = vi.fn(async (input: string | URL | Request) => {
+                requested.push(String(input));
+                return base(input);
+            });
+            return { fetchImpl, release, requested, inFlight: () => inFlight };
+        };
+
+        it('should wait for downloads in flight, start no new one, then clean up', async () => {
+            const run = gatedRun();
+            let inFlightAtReject = -1;
+            const result = snapshot(run.fetchImpl, { concurrency: 2 }).catch((error: unknown) => {
+                inFlightAtReject = run.inFlight();
+                throw error;
+            });
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            run.release();
+            await expect(result).rejects.toThrow(/404/);
+            expect(inFlightAtReject).toBe(0);
+            const images = run.requested.filter((url) => url.startsWith(IMG_BASE));
+            expect(images).toHaveLength(2);
+            expect(existsSync(dir)).toBe(false);
+            expect(await leftovers()).toEqual([]);
+        });
+    });
+
     it('should reject an HTTP error and a fetch that never answers', async () => {
         await expect(snapshot(fakeFetch({}))).rejects.toThrow(/404/);
         const hanging = vi.fn(() => new Promise<Response>(() => undefined));

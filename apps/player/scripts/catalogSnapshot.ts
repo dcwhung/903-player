@@ -100,13 +100,24 @@ const imagesOf = (doc: CatalogDocument, catalogUrl: string): Map<string, string>
     return new Map(urls.map((url) => imageOf(url, catalogUrl)).map((i) => [i.name, i.url]));
 };
 
-/** 每個 worker 輪流攞下一張，同時最多 limit 個 */
+/**
+ * 每個 worker 輪流攞下一張，同時最多 limit 個。一張失敗就唔再開新嘅（S-793），
+ * 但要等已經開咗嘅行完先 reject：唔係 createSnapshot 嘅 rm(tmp) 會同未完嘅 writeFile 競爭，留低 data.tmp/
+ */
 const runPool = async <T>(items: readonly T[], limit: number, task: (item: T) => Promise<void>) => {
     let next = 0;
+    let failure: { error: unknown } | undefined;
     const worker = async () => {
-        while (next < items.length) await task(items[next++] as T);
+        while (!failure && next < items.length) {
+            try {
+                await task(items[next++] as T);
+            } catch (error) {
+                failure ??= { error };
+            }
+        }
     };
     await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+    if (failure) throw failure.error;
 };
 
 const downloadImage = async (
