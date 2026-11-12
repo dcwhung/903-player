@@ -14,7 +14,8 @@ const PAGE_WIDTH_PX = 291;
 const IPHONE_WIDE_PX = 430;
 const IPHONE_15_PX = 393;
 const IPHONE_GAPS = { gutterPx: 16, columnGapPx: 12 };
-const twoColumns = { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' };
+/** 直版欄數（S-935）：TS 只經 inline --show-grid-columns 畀，CSS 用佢排欄同計橫跨格高 */
+const columnsOf = (grid: HTMLElement | null) => grid?.style.getPropertyValue('--show-grid-columns');
 
 /** 某格所在嗰頁嘅 grid */
 const gridOf = (name: string) => screen.getByRole('button', { name }).parentElement;
@@ -89,7 +90,10 @@ describe('ShowGrid', () => {
         expect(within(nav).getAllByRole('button')).toHaveLength(8);
         expect(screen.queryByRole('group')).not.toBeInTheDocument();
         expect(grid).toHaveAttribute('data-fill');
-        expect(grid).toHaveStyle({ gridTemplateRows: 'repeat(4, 131px)', ...twoColumns });
+        expect(grid).toHaveStyle({ gridTemplateRows: 'repeat(4, 131px)' });
+        expect(columnsOf(grid)).toBe('2');
+        // 欄數唔再 inline grid-template-columns（CSS 由 --show-grid-columns 排），改欄數只改 TS 一處
+        expect(grid?.style.gridTemplateColumns).toBe('');
         // 8 格雙數：冇格橫跨
         expect(grid).not.toHaveAttribute('data-span-last');
         // 用戶確認（dynamic-show-grid）：一頁放得晒就置頂，剩低高度留喺最底，唔再 space-between 拉開行距
@@ -102,10 +106,8 @@ describe('ShowGrid', () => {
         render(<ShowGrid tiles={tilesOf(2)} label="節目" busy={false} />);
 
         const grid = gridOf('節目 1');
-        expect(grid).toHaveStyle({
-            gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
-            gridTemplateRows: 'repeat(2, 244px)',
-        });
+        expect(columnsOf(grid)).toBe('1');
+        expect(grid).toHaveStyle({ gridTemplateRows: 'repeat(2, 244px)' });
         expect(grid).not.toHaveAttribute('data-span-last');
         expect(grid).not.toHaveAttribute('data-paged');
     });
@@ -131,7 +133,7 @@ describe('ShowGrid', () => {
 
         // 兩欄：(361 − 12) ÷ 2 = 174.5px 一欄，16:9 最矮 98.2px，最多 × 1.3（TOKENS）≈ 127.6px < 244
         const grid = gridOf('節目 1');
-        expect(grid).toHaveStyle(twoColumns);
+        expect(columnsOf(grid)).toBe('2');
         expect(
             parseFloat(/,\s*([\d.]+)px/.exec(grid?.style.gridTemplateRows ?? '')?.[1] ?? ''),
         ).toBeCloseTo(174.5 * (9 / 16) * 1.3);
@@ -145,7 +147,7 @@ describe('ShowGrid', () => {
             render(<ShowGrid tiles={tilesOf(count)} label="節目" busy={false} />);
 
             const grid = gridOf('節目 1');
-            expect(grid).toHaveStyle(twoColumns);
+            expect(columnsOf(grid)).toBe('2');
             expect(grid).toHaveAttribute('data-span-last');
             expect(grid).not.toHaveAttribute('data-paged');
         },
@@ -159,7 +161,7 @@ describe('ShowGrid', () => {
         expect(screen.getByRole('group', { name: '節目第 1 頁，共 3 頁' })).toBeInTheDocument();
         const first = gridOf('節目 1');
         const last = gridOf('節目 9');
-        expect(first).toHaveStyle(twoColumns);
+        expect(columnsOf(first)).toBe('2');
         expect(first).not.toHaveAttribute('data-span-last');
         expect(last).toHaveAttribute('data-span-last');
         // 分頁照 space-between（最後一頁行位跟第一頁）
@@ -201,7 +203,7 @@ describe('ShowGrid', () => {
             render(<ShowGrid tiles={tilesOf(count)} label="節目" busy={false} />);
 
             const grid = gridOf('節目 1');
-            expect(grid?.style.gridTemplateColumns).toBe('');
+            expect(columnsOf(grid)).toBe('');
             expect(grid).not.toHaveAttribute('data-span-last');
             expect(grid).not.toHaveAttribute('data-paged');
         },

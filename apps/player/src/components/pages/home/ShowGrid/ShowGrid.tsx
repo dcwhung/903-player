@@ -24,10 +24,12 @@ const pagePosition = (index: number, total: number) => t('home.pagePosition', { 
 const fillStyle = (rows: number, rowPx?: number): CSSProperties =>
     rowPx === undefined ? {} : { gridTemplateRows: `repeat(${rows}, ${rowPx}px)` };
 
-/** 直版欄數（dynamic-show-grid）：inline 蓋過 CSS 嘅兩欄；橫版唔畀，由 CSS 排 4 欄 */
-const columnsStyle = (columns: number): CSSProperties => ({
-    gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-});
+/**
+ * 直版欄數（dynamic-show-grid）：只經 --show-grid-columns 畀 CSS（S-935），CSS 用佢排欄、
+ * 計未量到時橫跨格嘅高，改欄數（portraitColumns）唔使再改 CSS。橫版唔畀，由 CSS 排 4 欄
+ */
+const columnsStyle = (columns: number): CSSProperties =>
+    ({ '--show-grid-columns': columns }) as CSSProperties;
 
 /** data attribute 開關：true → ''（有 attribute），false → 冇 */
 const flag = (on: boolean): '' | undefined => (on ? '' : undefined);

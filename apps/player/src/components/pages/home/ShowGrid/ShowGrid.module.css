@@ -34,12 +34,17 @@
 /*
  * 一頁：左右留白、格距同頁頂橫額共用（HomeBanner 用同一對 token 計高度）。
  * 捲動容器會剪走溢出，所以上下留位畀泥膠落影（--shadow-clay-tile 向下 6px 實色 + 散影；
- * 散影最外圈好淡，留 8px 已經睇唔出剪走）
+ * 散影最外圈好淡，留 8px 已經睇唔出剪走）。
+ * 欄數由 ShowGrid.tsx inline --show-grid-columns 定（portraitColumns，S-935）；冇 inline 就一欄。
+ * inline-size container：未量到時橫跨格用 100cqi（= 內容闊）計高
  */
 .grid {
+    --show-grid-columns: 1;
+
     display: grid;
     flex: 0 0 100%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    container-type: inline-size;
+    grid-template-columns: repeat(var(--show-grid-columns), minmax(0, 1fr));
     align-content: start;
     gap: var(--home-tile-gap);
     padding: var(--space-2) var(--home-gutter);
@@ -58,16 +63,31 @@
 }
 
 /*
- * 直版動態欄數（_mockups_/dynamic-show-grid）：欄數由 inline grid-template-columns 定；
+ * 直版動態欄數（_mockups_/dynamic-show-grid）：欄數由 inline --show-grid-columns 定（見 .grid）；
  * 兩欄而格數單數，最尾一格（今日節目）成行咁闊。ShowGrid 只喺直版、今日節目嗰頁先加 data-span-last
  */
 .grid[data-span-last] > :last-child {
     grid-column: 1 / -1;
 }
 
-/* 未量到（冇 data-fill）格照鎖比例：兩倍闊就兩倍比例，同其他 16:9 格一樣高（欄距嘅差別可以唔計） */
+/*
+ * 未量到 / 極矮唔填滿（冇 data-fill）：其他格鎖 16:9，橫跨格高 = 一欄闊 × 9 / 16
+ * （一欄闊 = (內容闊 − 欄距 × (欄數 − 1)) ÷ 欄數），同其他格一樣高（S-935：以前用兩倍比例會高咗欄距 × 9 / 32）
+ */
 .grid:not([data-fill])[data-span-last] > :last-child {
-    aspect-ratio: calc(2 * var(--tile-aspect-w)) / var(--tile-aspect-h);
+    aspect-ratio: auto;
+    height: calc(
+        (100cqi - (var(--show-grid-columns) - 1) * var(--home-tile-gap)) /
+            var(--show-grid-columns) * var(--tile-aspect-h) / var(--tile-aspect-w)
+    );
+}
+
+/* 唔支援 cqi 嘅舊瀏覽器：退返用欄數倍比例（差欄距 × 9 / 32），起碼唔會高過其他格一倍 */
+@supports not (width: 1cqi) {
+    .grid:not([data-fill])[data-span-last] > :last-child {
+        aspect-ratio: calc(var(--show-grid-columns) * var(--tile-aspect-w)) / var(--tile-aspect-h);
+        height: auto;
+    }
 }
 
 /*
@@ -98,5 +118,6 @@
 
     .grid:not([data-fill])[data-span-last] > :last-child {
         aspect-ratio: auto;
+        height: auto;
     }
 }
