@@ -94,6 +94,55 @@ describe('GET /api/entries published for dramas across publishes (S-845)', () =>
     });
 });
 
+/** S-849：publishedFacts 嘅 SQL 條件（status、json_valid、每日播 ID）直接鎖住 */
+describe('GET /api/entries published facts edge cases (S-849)', () => {
+    const insertPublish = (status: 'ok' | 'failed', document: string, episodeIds: string) =>
+        env.DB.prepare(
+            `INSERT INTO publishes (created_at, created_by, hash, document, episode_ids, show_count,
+             drama_count, episode_count, status) VALUES ('2026-11-01T00:00:00Z', 'x', 'h', ?, ?, 0, 0, 0, ?)`,
+        )
+            .bind(document, episodeIds, status)
+            .run();
+
+    const listEntries = async (): Promise<Record<string, Json>> => {
+        const response = await adminGet('/api/entries');
+        expect(response.status).toBe(200);
+        const { entries } = (await response.json()) as { entries: Json[] };
+        return Object.fromEntries(entries.map((e) => [e.id, e]));
+    };
+
+    it('should not count a failed publish as having listed anything', async () => {
+        await insertPublish(
+            'failed',
+            JSON.stringify({ shows: [{ id: 'badgirl', definition: { enabled: true } }] }),
+            JSON.stringify(['drama:golden:season-1:1']),
+        );
+        const byId = await listEntries();
+        expect(byId.golden).toMatchObject({ published: false, publishedArcs: [] });
+        expect(byId.badgirl).toMatchObject({ published: false });
+    });
+
+    it('should still answer 200 when an older ok publish has broken JSON', async () => {
+        await insertPublish('ok', 'not json', 'not json');
+        // 最新嗰份正常（壞嗰份喺「最新以外」，唔會行 DELETE 守衛 / ID 守衛嘅 parse）
+        await insertPublish(
+            'ok',
+            JSON.stringify({ shows: [{ id: 'badgirl', definition: { enabled: true } }] }),
+            JSON.stringify(['drama:golden:season-1:1']),
+        );
+        const byId = await listEntries();
+        expect(byId.golden).toMatchObject({ published: true, publishedArcs: ['season-1'] });
+        expect(byId.badgirl).toMatchObject({ published: true });
+    });
+
+    it('should mark a daily drama published without any publishedArcs', async () => {
+        // 每日播：drama:<劇>:<日子>，第三段係日子唔係短篇
+        await insertPublish('ok', '{}', JSON.stringify(['drama:golden:2026-11-01']));
+        const byId = await listEntries();
+        expect(byId.golden).toMatchObject({ published: true, publishedArcs: [] });
+    });
+});
+
 describe('GET /api/entries published for shows (W-716)', () => {
     const showOf = async (id: string) => {
         const { entries } = (await (await adminGet('/api/entries')).json()) as { entries: Json[] };
