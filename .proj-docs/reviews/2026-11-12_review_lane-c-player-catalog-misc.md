@@ -17,7 +17,7 @@ all pass。
 - Tests：`npx vitest run apps/player/scripts/catalogSnapshot.test.ts` 10 pass；arcCover `python3 -m pytest` 101 pass（24 subtests）。冇跑 full suite / e2e（e2e 由 main agent 背景跑，結果交 QA）
 - Coverage：`catalogSnapshot.ts` statements 99.08% / lines 98.97% / branches 89.28%（≥ 80%）
 - Security：冇新依賴（n/a）；No Critical：pass
-- Ruff：3 個 E501 + 2 個檔 format diff，同 `725ae90` 逐條一樣（喺 scratchpad 用 `git archive 725ae90` 對比），唔係今次引入（見 S-855）
+- Ruff：3 個 E501 + 2 個檔 format diff，同 `725ae90` 逐條一樣（喺 scratchpad 用 `git archive 725ae90` 對比），唔係今次引入（見 S-865）
 - Version：冇 bump。e2e harness、build 時先跑嘅 snapshot script（成功路徑輸出唔變）、Python tooling 同 comment，build 出嚟嘅 app 唔變。跟 `2026-11-12_review_admin-e2e-orphan-vite.md` / `2026-10-28_review_e2e_hardening.md` 先例，唔當 Warning
 
 ## 評分結果
@@ -26,8 +26,8 @@ all pass。
 | -------- | ------- | ------- | ---------------------------------------- |
 | 正確性   | 25      | 25      | 6 項行為 / 字眼同 backlog 一致           |
 | 安全性   | 20      | 20      | —                                        |
-| 可維護性 | 20      | 20      | comment 寫明原因；S-852、S-854（唔扣分） |
-| 測試覆蓋 | 15      | 15      | S-793 有 red → green；S-853（唔扣分）    |
+| 可維護性 | 20      | 20      | comment 寫明原因；S-862、S-864（唔扣分） |
+| 測試覆蓋 | 15      | 15      | S-793 有 red → green；S-863（唔扣分）    |
 | 性能     | 10      | 10      | 失敗後唔再開新下載，等待有 timeout 上限  |
 | 代碼風格 | 10      | 10      | eslint / prettier 過；ruff 同 main 一樣  |
 | **總分** | **100** | **100** |                                          |
@@ -49,10 +49,10 @@ all pass。
 
 ## 🟢 / Observation（入 backlog）
 
-- S-852 `apps/player/scripts/arcCover/review/build.py:343`、`review/fetch_sources.py:111`：常數改咗 `APP_ROOT`，但 CLI flag 仍叫 `--repo`，`args.repo / "src" / "catalog"` 其實係 app 根。flag 有 `argparse.SUPPRESS`，影響細；下次改 arcCover 可以改 `--app-root`（或者保留 `--repo` 做 alias）
-- S-853 `apps/player/e2e/harness.mjs`：S-765 / S-779 只有 author 嘅 scratch script 驗證，冇 committed check；如果將來有人改返 `fallback()`，`catalog-json` cache 入 HTML 又會靜靜返嚟。下次改 e2e 可以喺一個預設 section 尾斷言 `caches.open('catalog-json')` 冇 key
-- S-854 `packages/catalog/tests/jsonSchemas.ts:1`：comment 仲寫「`scripts/`」，但 `packages/catalog` 冇 `scripts/`，全 repo 亦冇 script import 呢個檔；下次改呢個檔順手刪
-- S-855 `apps/player/scripts/arcCover`：ruff 3 個 E501（`constants.py:3`、`review/fetch_sources.py:130`、`tests/test_fetch_sources.py:159`），另外有 2 個檔 format diff（author 講 1 個，實際係 `review/fetch_sources.py`、`tests/test_fetch_sources.py`）。`725ae90` 已經係咁，今次冇引入；backlog 未有記錄，下次改 arcCover 可以 `ruff format` 加拆長行
+- S-862 `apps/player/scripts/arcCover/review/build.py:343`、`review/fetch_sources.py:111`：常數改咗 `APP_ROOT`，但 CLI flag 仍叫 `--repo`，`args.repo / "src" / "catalog"` 其實係 app 根。flag 有 `argparse.SUPPRESS`，影響細；下次改 arcCover 可以改 `--app-root`（或者保留 `--repo` 做 alias）
+- S-863 `apps/player/e2e/harness.mjs`：S-765 / S-779 只有 author 嘅 scratch script 驗證，冇 committed check；如果將來有人改返 `fallback()`，`catalog-json` cache 入 HTML 又會靜靜返嚟。下次改 e2e 可以喺一個預設 section 尾斷言 `caches.open('catalog-json')` 冇 key
+- S-864 `packages/catalog/tests/jsonSchemas.ts:1`：comment 仲寫「`scripts/`」，但 `packages/catalog` 冇 `scripts/`，全 repo 亦冇 script import 呢個檔；下次改呢個檔順手刪
+- S-865 `apps/player/scripts/arcCover`：ruff 3 個 E501（`constants.py:3`、`review/fetch_sources.py:130`、`tests/test_fetch_sources.py:159`），另外有 2 個檔 format diff（author 講 1 個，實際係 `review/fetch_sources.py`、`tests/test_fetch_sources.py`）。`725ae90` 已經係咁，今次冇引入；backlog 未有記錄，下次改 arcCover 可以 `ruff format` 加拆長行
 - Observation：S-765 嘅 harness comment 話「fulfill SW request 會令 Chromium 重複裝 SW」。改用 `abort` 之後 PWA 換版 section 會唔會受影響，要睇 main agent 嗰次 e2e（QA 引用），reviewer 冇重跑
 
 ## ✅ 做得好嘅地方
@@ -75,7 +75,7 @@ hard_gates:
 next_action: merge_develop
 next_agent: quality-assurance
 branch: "fix/lane-c-player-catalog-misc"
-context: "Lane C (S-765, S-779, S-793, S-771, S-760, S-750) 100/100 pass; integration branch is main; no C/W; new S-852 (arcCover --repo flag still named repo), S-853 (no committed e2e guard for catalog-json cache), S-854 (jsonSchemas.ts line 1 stale 'scripts/'), S-855 (pre-existing ruff E501 + 2 format diffs in arcCover) to backlog. No version bump accepted (tooling/comment only). e2e (incl. PWA update section after SW abort change) to be cited by QA from main agent run. Report committed locally, not pushed."
+context: "Lane C (S-765, S-779, S-793, S-771, S-760, S-750) 100/100 pass; integration branch is main; no C/W; new S-862 (arcCover --repo flag still named repo), S-863 (no committed e2e guard for catalog-json cache), S-864 (jsonSchemas.ts line 1 stale 'scripts/'), S-865 (pre-existing ruff E501 + 2 format diffs in arcCover) to backlog. No version bump accepted (tooling/comment only). e2e (incl. PWA update section after SW abort change) to be cited by QA from main agent run. Report committed locally, not pushed."
 ```
 
 ## Addendum — `4587f5b` S-765 revert（2026-11-12）
@@ -96,8 +96,8 @@ context: "Lane C (S-765, S-779, S-793, S-771, S-760, S-750) 100/100 pass; integr
     - **S-765：未處理**。harness 入面修唔到，要喺 harness 以外修：例如 e2e build 嘅 `vite preview` 唔做 SPA fallback（`vite.config.ts`，唔喺今次範圍）。backlog 保留 Open，位置改做 `vite.config.ts` / e2e preview，並註明「harness 唔可以改 SW request（S-648）」
     - S-779、S-793、S-771、S-760、S-750：維持 ✅
 - 🟢 更新：
-    - S-853 close（moot）：佢要求用 e2e 鎖住「`catalog-json` cache 冇嘢」，但而家係刻意保留呢個副作用，加呢個 assert 一定 fail。將來喺 harness 以外修 S-765 時，assert 應該跟住嗰次改動一齊加，寫喺 S-765 入面就得，唔使另開 ID
-    - S-852、S-854、S-855 不變
+    - S-863 close（moot）：佢要求用 e2e 鎖住「`catalog-json` cache 冇嘢」，但而家係刻意保留呢個副作用，加呢個 assert 一定 fail。將來喺 harness 以外修 S-765 時，assert 應該跟住嗰次改動一齊加，寫喺 S-765 入面就得，唔使另開 ID
+    - S-862、S-864、S-865 不變
 - 分數：最終狀態（`4587f5b`）冇 🔴 / 🟡，維持 100/100、✅ pass。`ceb6dbd` 嘅 regression 喺 merge 之前已經修好，所以唔扣分；處理咗嘅 ID 由 6 個減做 5 個
 
 ```handoff-receipt
@@ -114,5 +114,7 @@ hard_gates:
 next_action: merge_develop
 next_agent: quality-assurance
 branch: "fix/lane-c-player-catalog-misc"
-context: "Addendum 4587f5b: SW catalog branch restored to route.fallback() (code identical to 725ae90), fixes S-648 PWA Shift-reload double install (scratch runner 0/5 vs ceb6dbd 5/5). S-765 NOT resolved: keep Open, relocate to vite.config.ts / e2e preview SPA fallback (outside harness). Resolved: S-779, S-793, S-771, S-760, S-750. S-853 closed as moot (fold guard into S-765). S-852/S-854/S-855 unchanged. QA must cite the full e2e rerun on 4587f5b. Report committed locally, not pushed."
+context: "Addendum 4587f5b: SW catalog branch restored to route.fallback() (code identical to 725ae90), fixes S-648 PWA Shift-reload double install (scratch runner 0/5 vs ceb6dbd 5/5). S-765 NOT resolved: keep Open, relocate to vite.config.ts / e2e preview SPA fallback (outside harness). Resolved: S-779, S-793, S-771, S-760, S-750. S-863 closed as moot (fold guard into S-765). S-862/S-864/S-865 unchanged. QA must cite the full e2e rerun on 4587f5b. Report committed locally, not pushed."
 ```
+
+> ID 重編（2026-11-12 merge 時）：parallel lane 撞號，以先 merge 入 `main` 嘅 Lane D 為準，本報告嘅新 S-ID 已改做 backlog 現行編號。

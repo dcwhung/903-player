@@ -25,9 +25,9 @@ all pass。
 | -------- | ------- | ------- | ---------------------------------------------------------- |
 | 正確性   | 25      | 25      | 範圍合併、listingDirty、shortDate 年份都有邊界 test        |
 | 安全性   | 20      | 20      | 路徑 encode；冇新依賴                                      |
-| 可維護性 | 20      | 20      | 抽咗共用 helper，`useCalendarPopover` 職責清楚（🟢 S-853） |
+| 可維護性 | 20      | 20      | 抽咗共用 helper，`useCalendarPopover` 職責清楚（🟢 S-858） |
 | 測試覆蓋 | 15      | 15      | red → green 次序清楚；2026 時鐘固定咗，2027 年唔會壞       |
-| 性能     | 10      | 10      | 🟢 S-854 只係 observation                                  |
+| 性能     | 10      | 10      | 🟢 S-859 只係 observation                                  |
 | 代碼風格 | 10      | 10      | lint / prettier 全過                                       |
 | **總分** | **100** | **100** | **結果：✅ pass**                                          |
 
@@ -37,11 +37,11 @@ all pass。
 
 ## 🟢 Suggestion / Observation（入 backlog，唔 block）
 
-- S-852 `features/lists/DramaRow.tsx:37` 仲係 ``navigate(`/dramas/${entry.id}`)``，冇用新嘅 `dramaEditorPath`。`model/paths.ts` 開頭寫「列表、待辦共用」、「ID 一律 encodeURIComponent」，但列表冇跟。`DramaTabs.tsx:37`、`useDramaEditor.ts:22` 都係直接砌 raw ID：`pathname.replace` 用 decode 咗嘅 ID，比對 encode 咗嘅 pathname。S-828 原本只講 `paths.ts` / `rowTarget`，而 ID pattern 而家限制咗字元，所以唔 block
-- S-853 `model/isoDate.ts` 嘅 `isoPartsOf` 同 `@903-player/catalog` 已經 export 嘅 `splitIsoDate`（`packages/catalog/src/date.ts:21`）重複。S-837 本身就係為咗收埋重複 helper。兩者只差預設值（0 / 1 / 1 對 NaN），可以考慮直接用 `splitIsoDate`
-- S-854 `ui/usePopoverPlacement.ts`：每個 capture scroll event 都同步做 `getBoundingClientRect`，仲行晒祖先 `getComputedStyle`（`visibleSpanOf`），冇用 rAF 節流；喺臨界位置捲動時 up / down 亦冇 hysteresis，可能會閃。只喺月曆打開時先有 listener，影響細
-- S-855 `ui/DateField.tsx` `leftField`：`relatedTarget === null` 當冇離開（設計上係為咗 PageUp / PageDown 換月）。代價係由頁面最後一個可 focus 元素 Tab 去瀏覽器 chrome 時，月曆唔會收起。已經寫咗 comment 交代 trade-off
-- S-856 `ui/DateField.test.tsx:232`（同舊有嘅 `:208`）用 `Object.defineProperty(window, 'innerHeight', …)`，但冇還原，`vi.restoreAllMocks()` 唔會處理，會漏去同一個檔之後嘅 test。而家冇 test 受影響
+- S-857 `features/lists/DramaRow.tsx:37` 仲係 ``navigate(`/dramas/${entry.id}`)``，冇用新嘅 `dramaEditorPath`。`model/paths.ts` 開頭寫「列表、待辦共用」、「ID 一律 encodeURIComponent」，但列表冇跟。`DramaTabs.tsx:37`、`useDramaEditor.ts:22` 都係直接砌 raw ID：`pathname.replace` 用 decode 咗嘅 ID，比對 encode 咗嘅 pathname。S-828 原本只講 `paths.ts` / `rowTarget`，而 ID pattern 而家限制咗字元，所以唔 block
+- S-858 `model/isoDate.ts` 嘅 `isoPartsOf` 同 `@903-player/catalog` 已經 export 嘅 `splitIsoDate`（`packages/catalog/src/date.ts:21`）重複。S-837 本身就係為咗收埋重複 helper。兩者只差預設值（0 / 1 / 1 對 NaN），可以考慮直接用 `splitIsoDate`
+- S-859 `ui/usePopoverPlacement.ts`：每個 capture scroll event 都同步做 `getBoundingClientRect`，仲行晒祖先 `getComputedStyle`（`visibleSpanOf`），冇用 rAF 節流；喺臨界位置捲動時 up / down 亦冇 hysteresis，可能會閃。只喺月曆打開時先有 listener，影響細
+- S-860 `ui/DateField.tsx` `leftField`：`relatedTarget === null` 當冇離開（設計上係為咗 PageUp / PageDown 換月）。代價係由頁面最後一個可 focus 元素 Tab 去瀏覽器 chrome 時，月曆唔會收起。已經寫咗 comment 交代 trade-off
+- S-861 `ui/DateField.test.tsx:232`（同舊有嘅 `:208`）用 `Object.defineProperty(window, 'innerHeight', …)`，但冇還原，`vi.restoreAllMocks()` 唔會處理，會漏去同一個檔之後嘅 test。而家冇 test 受影響
 
 ## ✅ 做得好嘅地方
 
@@ -69,9 +69,11 @@ hard_gates:
     security_scan: pass (no new deps)
 critical: []
 warnings: []
-backlog: [S-852, S-853, S-854, S-855, S-856]
+backlog: [S-857, S-858, S-859, S-860, S-861]
 handled: [S-828, S-829, S-830, S-832, S-833, S-834, S-836, S-837, S-838, S-839, S-840, S-843, S-848]
 next_action: proceed to QA (S1 admin chain) / merge after admin e2e rerun + CI green
 context: All 13 Lane A items verified against their source reports; red-before-green order confirmed. Only 🟢 left. PR needs a Design Origin line. Report committed locally, not pushed.
 report: .proj-docs/reviews/2026-11-12_review_admin-lane-a.md (committed, not pushed)
 ```
+
+> ID 重編（2026-11-12 merge 時）：parallel lane 撞號，以先 merge 入 `main` 嘅 Lane D 為準，本報告嘅新 S-ID 已改做 backlog 現行編號。

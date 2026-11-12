@@ -30,7 +30,7 @@ all pass，Coverage 講明：改動檔 lines `next.ts` 100 / `webp.ts` 98.76 / `
 ## Findings
 
 - 冇 🔴 / 🟡
-- S-852（review 已開，🟢）：`webp.ts:43` literal `2`（backlog，唔重複分析）
+- S-856（review 已開，🟢）：`webp.ts:43` literal `2`（backlog，唔重複分析）
 
 ## 建議補測
 
@@ -44,5 +44,7 @@ chains: api S1 (re-frozen, plan +AC-21); coming-soon S1, repo-tooling S1 (lockfi
 tickets: none
 ci: run 43230669865 @ ceb93d0 — completed success (lint, tsc, unit, build, build:admin, e2e, e2e:admin)
 next_action: main agent wait for CI 43230669865 to complete, then push code + review + QA commits together
-context: T1, 0 blocking findings; S-849 / S-825 / S-794 / S-778 verified; S-852 backlog (from review)
+context: T1, 0 blocking findings; S-849 / S-825 / S-794 / S-778 verified; S-856 backlog (from review)
 ```
+
+> ID 重編（2026-11-12 merge 時）：parallel lane 撞號，以先 merge 入 `main` 嘅 Lane D 為準，本報告嘅新 S-ID 已改做 backlog 現行編號。

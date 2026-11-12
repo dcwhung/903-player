@@ -38,7 +38,7 @@ all pass。
 
 ## 🟢 Suggestion / Observation（入 backlog，唔 block）
 
-- S-852 `apps/api/src/assets/webp.ts:43`：`VP8_HEIGHT_OFFSET = VP8_WIDTH_OFFSET + 2` 仲有一個 literal `2`（有註解「16-bit = 2 bytes」）。可以加 `UINT16_BYTES`，同 `uint16` / `uint32` helper 一齊用，S-794 就做得齊。
+- S-856 `apps/api/src/assets/webp.ts:43`：`VP8_HEIGHT_OFFSET = VP8_WIDTH_OFFSET + 2` 仲有一個 literal `2`（有註解「16-bit = 2 bytes」）。可以加 `UINT16_BYTES`，同 `uint16` / `uint32` helper 一齊用，S-794 就做得齊。
 - Observation（lane 範圍外，唔改）：`apps/admin/src/app/loginHref.ts:23-28` 嘅前端 `isSafeNext` 冇 dot-segment 檢查，`/auth` 判斷用 `startsWith('/auth/')`，同 api `safeNext` 唔一致。admin 嘅 `next` 嚟自 `location.pathname`，瀏覽器已經 normalise 過，而且 api 係最終把關，所以冇實際影響；如果想兩邊規則一致，可以另開 admin follow-up。
 - ID 分配：本報告賦號前掃咗 `.proj-docs/` 同所有 local / remote branch，最高係 C-014、W-717、S-851（`origin/claude/peaceful-hamilton-35etnm`）。其他 parallel session 可能同時賦號，merge 時如果撞號，以先 merge 入 `main` 嗰份為準，後嗰份重新編號。
 
@@ -63,5 +63,7 @@ hard_gates:
 next_action: merge_develop
 next_agent: null
 branch: "fix/api-lane-b-backlog"
-context: "Handled S-849, S-825, S-794, S-778. C=0, W=0. New S-852 (webp.ts:43 literal 2). Observation: apps/admin loginHref isSafeNext lacks dot-segment check (out of lane scope, no practical impact). IDs allocated after scanning all refs (max C-014/W-717/S-851); parallel sessions may collide. Integration branch is main. Report committed locally only, not pushed (code CI running)."
+context: "Handled S-849, S-825, S-794, S-778. C=0, W=0. New S-856 (webp.ts:43 literal 2). Observation: apps/admin loginHref isSafeNext lacks dot-segment check (out of lane scope, no practical impact). IDs allocated after scanning all refs (max C-014/W-717/S-851); parallel sessions may collide. Integration branch is main. Report committed locally only, not pushed (code CI running)."
 ```
+
+> ID 重編（2026-11-12 merge 時）：parallel lane 撞號，以先 merge 入 `main` 嘅 Lane D 為準，本報告嘅新 S-ID 已改做 backlog 現行編號。

@@ -33,7 +33,7 @@ all pass（Coverage：`catalogSnapshot.ts` ≥ 80%，其他改動係註解 / tes
 - Observation：S-765（SW 自己 fetch `e2e-catalog/catalog.json` 拎到 SPA fallback 200 入 cache）仍然存在，已知、未修，app parse 唔到照 fallback，冇用戶影響；review 已記，唔另開
 - Observation：arcCover 5 個檔 UNCOVERED，同 `2026-11-09_qa_r2-bucket-rename.md` 一樣用 pytest 驗、唔 freeze；等 S-762 決定開鏈或 ignore
 - Observation：freeze 後 `impact` 仍列 ui-foundation REVERIFY：S1 已 FROZEN（`status`），係舊 S3 行 `packages/catalog/tests/jsonSchemas.ts`（@cdb5263）hash 早已同 main 唔同，S3 release freeze 會清；唔屬 S1
-- Code review 新開 S-852 / S-854 / S-855（open，backlog）；S-853 close — 唔屬 QA 範圍
+- Code review 新開 S-862 / S-864 / S-865（open，backlog）；S-863 close — 唔屬 QA 範圍
 
 ## 建議補測
 
@@ -53,3 +53,5 @@ next_agent: main
 branch: "fix/lane-c-player-catalog-misc"
 context: "S-779/S-793/S-771/S-760/S-750 S1 pass; snapshot unit 235/235, catalogSnapshot.ts 99% lines; arcCover pytest 101; main agent e2e 780/0 @4587f5b + lint + npm test 3785; S-765 still open (Observation); report + ledger committed locally, not pushed; CI must be green on push before merge"
 ```
+
+> ID 重編（2026-11-12 merge 時）：parallel lane 撞號，以先 merge 入 `main` 嘅 Lane D 為準，本報告嘅新 S-ID 已改做 backlog 現行編號。

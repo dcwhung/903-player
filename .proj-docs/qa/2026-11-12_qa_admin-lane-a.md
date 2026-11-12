@@ -36,7 +36,7 @@ all pass。Coverage（改動 source，lines）：全部 ≥ 80%（最低 `ArcSch
 
 ## Findings
 
-- 冇 🔴 / 🟡；reviewer 🟢 S-852–S-856 已入 backlog，唔重複
+- 冇 🔴 / 🟡；reviewer 🟢 S-857–S-861 已入 backlog，唔重複
 
 ## 建議補測
 
@@ -52,3 +52,5 @@ ci: none (code not pushed); local admin e2e 39/39 @ f0d1f23-equivalent tree
 next_action: main agent push code + docs together; cite this report; CI on push to confirm
 context: T1, 0 blocking findings; S-828/829/830/832/833/834/836/837/838/839/840/843/848 verified
 ```
+
+> ID 重編（2026-11-12 merge 時）：parallel lane 撞號，以先 merge 入 `main` 嘅 Lane D 為準，本報告嘅新 S-ID 已改做 backlog 現行編號。
