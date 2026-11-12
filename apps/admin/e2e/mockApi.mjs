@@ -1,11 +1,13 @@
 // Admin e2e 嘅假 API（page.route）：in-memory 狀態，夠行 login → 掃描 → 待辦 → 設 ID → 發佈 → 記錄、拖曳排序
 import { readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 /*
  * 真圖（createState({ realImages: true })）：player catalog 嘅 cover 複製咗去 e2e/fixtures/（只係 e2e 用，唔入 admin bundle）
  * 「口水多過浪花」+「蘭茜夫人劇場」（連短篇「戀愛二分一」）有 Banner / 碟面；其他照舊冇圖（黑碟）
  */
-const FIXTURES = new URL('./fixtures/', import.meta.url).pathname;
+// fileURLToPath（S-834）：checkout 路徑有空格 / 中文都得（.pathname 會變 %20）
+const FIXTURES = fileURLToPath(new URL('./fixtures/', import.meta.url));
 const FIXTURE_NAMES = new Set(readdirSync(FIXTURES));
 const IMAGE_PATH = /^\/catalog\/v1\/img\/([^/]+)$/;
 const REAL_IMAGES = {

@@ -3,12 +3,13 @@
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { createServer } from 'node:net';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
 
 const PORT = Number(process.env.E2E_PORT || 4174);
 const BASE = `http://localhost:${PORT}`;
-const OUT = new URL('./screenshots', import.meta.url).pathname;
+const OUT = fileURLToPath(new URL('./screenshots', import.meta.url));
 const WIDE = { width: 1280, height: 860 };
 const PORTRAIT = { width: 390, height: 844 };
 const STARTUP_TIMEOUT_MS = 30_000;
@@ -42,13 +43,32 @@ const assertPortFree = () =>
         probe.listen(PORT, () => probe.close(resolve));
     });
 
+/** Node fetch（undici）封鎖 WHATWG「bad ports」（例如 4190）：錯誤 cause 係 `bad port` */
+const isBadPort = (error) => error?.cause?.message === 'bad port';
+
+/**
+ * S-848：Node fetch 唔准連嘅 port，preview 起咗都永遠 poll 唔到，會等足 STARTUP_TIMEOUT_MS 先報「did not start」。
+ * 起 preview 之前試 fetch 一次（port 冇人聽 = ECONNREFUSED，正常），bad port 就即刻報清楚
+ */
+const assertFetchablePort = async () => {
+    try {
+        await fetch(BASE);
+    } catch (error) {
+        if (isBadPort(error))
+            throw new Error(
+                `port ${PORT} is blocked by Node fetch ("bad port", WHATWG port blocking). ` +
+                    'Set E2E_PORT to another port, e.g. 4185.',
+            );
+    }
+};
+
 /**
  * detached：preview 自成一個 process group（pgid = pid），
  * 收尾 kill 成個 group，連 npx 下面嘅 vite 一齊停，唔會殘留霸住 port
  */
 const startPreview = () => {
     const child = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], {
-        cwd: new URL('..', import.meta.url).pathname,
+        cwd: fileURLToPath(new URL('..', import.meta.url)),
         detached: true,
         stdio: ['ignore', 'ignore', 'pipe'],
     });
@@ -111,7 +131,8 @@ const waitForServer = async ({ exited }) => {
         }
         try {
             if ((await fetch(BASE)).ok) return;
-        } catch {
+        } catch (error) {
+            if (isBadPort(error)) throw error;
             // 未起好
         }
         await sleep(POLL_MS);
@@ -250,13 +271,11 @@ const loginCheck = (browser) =>
         }
         await page.emulateMedia({ colorScheme: 'light' });
         // S-833：G 係 <img alt="">（asset 檔），要真係載入到、20×20
-        const logo = await google
-            .locator('img[alt=""]')
-            .evaluate((img) => ({
-                loaded: img.complete && img.naturalWidth > 0,
-                w: img.width,
-                h: img.height,
-            }));
+        const logo = await google.locator('img[alt=""]').evaluate((img) => ({
+            loaded: img.complete && img.naturalWidth > 0,
+            w: img.width,
+            h: img.height,
+        }));
         if (!logo.loaded || logo.w !== 20 || logo.h !== 20)
             throw new Error(`Google G image: ${JSON.stringify(logo)}`);
         const bg = await page
@@ -662,21 +681,25 @@ const scheduleConflictCheck = (browser) =>
 
 /** W-715：「上架 N 日後」由舊上架日計出今日之前嘅下架日 → 儲存先彈錯，唔會即時落架 */
 const scheduleUnlistPastCheck = (browser) =>
-    check('schedule: an unlist date before today pops an error only on 儲存 (W-715)', async () => {
-        const page = await newPage(browser, scheduleState());
-        await page.goto(SCHEDULE_ALL_LISTED);
-        await page.getByRole('button', { name: '上架 N 日後' }).click();
-        await page.getByRole('spinbutton', { name: '上架後日數' }).fill('10');
-        if ((await page.getByRole('alert').count()) > 0) throw new Error('error shown before 儲存');
-        await page.getByRole('button', { name: '儲存' }).click();
-        const alert = page.getByRole('alert');
-        await alert.waitFor();
-        const text = await alert.textContent();
-        if (text !== '無法儲存：第 1 集的下架日期（6/11 五）早於今日，請修改下架設定。')
-            throw new Error(`alert: ${text}`);
-        await shoot(page, 'schedule-unlist-past', { fullPage: true });
-        await page.close();
-    });
+    check(
+        'schedule: an unlist date before today pops an error only on 儲存, naming the range (W-715, S-843)',
+        async () => {
+            const page = await newPage(browser, scheduleState());
+            await page.goto(SCHEDULE_ALL_LISTED);
+            await page.getByRole('button', { name: '上架 N 日後' }).click();
+            await page.getByRole('spinbutton', { name: '上架後日數' }).fill('10');
+            if ((await page.getByRole('alert').count()) > 0)
+                throw new Error('error shown before 儲存');
+            await page.getByRole('button', { name: '儲存' }).click();
+            const alert = page.getByRole('alert');
+            await alert.waitFor();
+            const text = await alert.textContent();
+            if (text !== '無法儲存：第 1–30 集的下架日期（6/11 五）早於今日，請修改下架設定。')
+                throw new Error(`alert: ${text}`);
+            await shoot(page, 'schedule-unlist-past', { fullPage: true });
+            await page.close();
+        },
+    );
 
 /*
  * 日期欄（ui/DateField，用戶 2026-11-12）：顯示 DD/MM/YYYY，日曆 icon 開月曆（星期日開始、標今日、揀咗實色），
@@ -878,7 +901,7 @@ const realImagesCheck = (browser) =>
             await page.getByRole('button', { name: `更換${label}` }).click();
             await (
                 await chooser
-            ).setFiles(new URL(`./fixtures/lancy-${slot}.webp`, import.meta.url).pathname);
+            ).setFiles(fileURLToPath(new URL(`./fixtures/lancy-${slot}.webp`, import.meta.url)));
             const dialog = page.getByRole('dialog', { name: `上載${label}` });
             await dialog.getByRole('figure', { name: '裁切後' }).getByText(/WebP/).waitFor();
             await assertFrames(dialog.locator('.frame').first(), 'dashed', `${slot} source frame`);
@@ -1683,6 +1706,7 @@ const portraitCheck = (browser) =>
 mkdirSync(OUT, { recursive: true });
 try {
     await assertPortFree();
+    await assertFetchablePort();
 } catch (error) {
     console.error(`admin e2e: ${error.message}`);
     process.exit(1);
