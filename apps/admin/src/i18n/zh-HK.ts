@@ -14,7 +14,8 @@ export const zhHK = {
         rotateBody: '管理介面需要較闊的畫面。',
     },
     login: {
-        sub: '僅限獲授權的 Google 帳戶登入',
+        title: '管理介面登入',
+        sub: '僅限獲授權的 Google 帳戶登入。',
         google: '使用 Google 登入',
     },
     nav: {

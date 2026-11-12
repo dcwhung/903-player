@@ -1099,10 +1099,6 @@ textarea.autosize {
     font-size: 14px;
 }
 
-.notice .btn.google {
-    width: auto;
-}
-
 /* 直向提示：闊度 < 720px 先顯示（app.css 收埋 .app-root） */
 .rotate-note.notice {
     display: none;
@@ -1297,4 +1293,120 @@ table.matrix .row-link:hover {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+}
+
+/* ---------- 登入頁（mockup admin-login 款 3）：全頁 banner 背景 + 毛玻璃卡 ---------- */
+.login {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    min-height: 100dvh;
+    padding: 32px 20px;
+}
+
+/* banner 鋪滿成頁；上面疊淡化層（淺色淡、深色暗），卡同字先睇得清 */
+.login-bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-color: var(--sky);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.login-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--login-scrim);
+}
+
+.login-card {
+    width: min(400px, 100%);
+    padding: 28px 28px 24px;
+    border-radius: var(--r-panel);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-float);
+    backdrop-filter: blur(14px);
+    text-align: center;
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+}
+
+.login-card .brand-banner {
+    width: 220px;
+    margin: 0 0 6px;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+}
+
+.login-card h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.login-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* Google「Sign in with Google」官方掣（pill 款）：四色 G + Roboto Medium 14px、高 40px */
+.gsi {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 40px;
+    min-width: 220px;
+    margin-top: 8px;
+    padding: 0 12px;
+    border: 1px solid var(--gsi-border);
+    border-radius: 20px;
+    background: var(--gsi-bg);
+    color: var(--gsi-text);
+    font:
+        500 14px/1 'Roboto',
+        'Noto Sans TC',
+        'PingFang HK',
+        sans-serif;
+    letter-spacing: 0.25px;
+    text-decoration: none;
+}
+
+/* hover 疊一層（官方做法），唔改底色 token */
+.gsi::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: transparent;
+}
+
+.gsi:hover::after {
+    background: var(--gsi-hover);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .gsi::after {
+        transition: background-color var(--motion-fast) var(--motion-ease);
+    }
+}
+
+.gsi:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.gsi svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
 }

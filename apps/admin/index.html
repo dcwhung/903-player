@@ -17,7 +17,7 @@
             } catch (error) {}
         </script>
         <!--
-            字體同 player 一樣（apps/player/index.html）：Poppins + Noto Sans TC，preload 落嚟先套用，
+            字體同 player 一樣（apps/player/index.html）：Poppins + Noto Sans TC（加 Roboto 500 畀 Google 登入掣），preload 落嚟先套用，
             未到就用 system font（display=swap）；冇 JS 嘅話 noscript 照用返普通 stylesheet
         -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,7 +25,7 @@
         <link
             rel="preload"
             as="style"
-            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@500&display=swap"
             onload="
                 this.onload = null;
                 this.rel = 'stylesheet';
@@ -34,7 +34,7 @@
         <noscript>
             <link
                 rel="stylesheet"
-                href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+                href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@500&display=swap"
             />
         </noscript>
     </head>

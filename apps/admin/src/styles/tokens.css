@@ -66,6 +66,13 @@
     --on-grad: #ffffff;
     /* 403 / 直向提示插圖 icon */
     --art-ink: #1e7bc0;
+    /* 登入頁：Google「Sign in with Google」官方淺色款；全頁 banner 背景上面嘅淡化層；浮卡陰影 */
+    --gsi-bg: #ffffff;
+    --gsi-border: #747775;
+    --gsi-text: #1f1f1f;
+    --gsi-hover: rgb(31 31 31 / 0.08);
+    --login-scrim: linear-gradient(180deg, rgb(238 243 248 / 0.25), rgb(238 243 248 / 0.75));
+    --shadow-float: 0 18px 50px rgb(16 50 90 / 0.28);
     --radius: 12px;
     --r-panel: 24px;
     --r-card: 20px;
@@ -123,6 +130,13 @@
         --card-border: #2c3b4f;
         /* 深色底上面 tooltip 要淺一級先睇到泡泡邊 */
         --tip-bg: #33465e;
+        /* 登入頁：Google 官方深色款 + 深色淡化層 */
+        --gsi-bg: #131314;
+        --gsi-border: #8e918f;
+        --gsi-text: #e3e3e3;
+        --gsi-hover: rgb(227 227 227 / 0.08);
+        --login-scrim: linear-gradient(180deg, rgb(15 22 32 / 0.35), rgb(15 22 32 / 0.85));
+        --shadow-float: 0 18px 50px rgb(0 0 0 / 0.5);
     }
 }
 
@@ -156,6 +170,13 @@
     --card-border: #2c3b4f;
     /* 深色底上面 tooltip 要淺一級先睇到泡泡邊 */
     --tip-bg: #33465e;
+    /* 登入頁：Google 官方深色款 + 深色淡化層 */
+    --gsi-bg: #131314;
+    --gsi-border: #8e918f;
+    --gsi-text: #e3e3e3;
+    --gsi-hover: rgb(227 227 227 / 0.08);
+    --login-scrim: linear-gradient(180deg, rgb(15 22 32 / 0.35), rgb(15 22 32 / 0.85));
+    --shadow-float: 0 18px 50px rgb(0 0 0 / 0.5);
 
     color-scheme: dark;
 }
