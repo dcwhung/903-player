@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import googleG from '../assets/svg/logos/google-g.svg?raw';
 import { LoginScreen } from './LoginScreen';
 
 const renderAt = (url: string) =>
@@ -32,10 +33,14 @@ describe('LoginScreen', () => {
         renderAt('/');
         const google = screen.getByRole('link', { name: '使用 Google 登入' });
         expect(google).toHaveClass('gsi');
-        const logo = google.querySelector('svg');
-        expect(logo).toHaveAttribute('aria-hidden', 'true');
-        const fills = [...(logo?.querySelectorAll('path') ?? [])].map((p) =>
-            p.getAttribute('fill')?.toUpperCase(),
+        // S-833：G 係 asset 檔（src/assets/svg/logos/），<img alt=""> 純裝飾
+        expect(google.querySelector('svg')).toBeNull();
+        const logo = google.querySelector('img');
+        expect(logo).toHaveAttribute('alt', '');
+        // Vite：細檔 inline 做 data URI，大檔先出 URL
+        expect(logo?.getAttribute('src')).toMatch(/(google-g\.svg$)|(^data:image\/svg\+xml)/);
+        const fills = [...googleG.matchAll(/fill="(#[0-9a-f]{6})"/gi)].map((m) =>
+            m[1]?.toUpperCase(),
         );
         expect(fills.sort()).toEqual([...G_COLOURS].sort());
     });

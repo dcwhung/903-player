@@ -1,5 +1,15 @@
 import { validationMessage } from './validationMessage';
 
+/** shortDate 跨年會加年份（S-830）：固定「今日」喺 2026，唔跟真實時鐘 */
+beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-12T04:00:00Z'));
+});
+
+afterEach(() => {
+    vi.useRealTimers();
+});
+
 describe('validationMessage', () => {
     it.each([
         [
@@ -42,6 +52,12 @@ describe('validationMessage', () => {
         expect(
             validationMessage('episode 1 unlist date 2026-08-30 is before today 2026-11-12'),
         ).toBe('第 1 集的下架日期（30/8 日）早於今日，請修改下架設定。');
+    });
+
+    it('should explain an episode range whose unlist date is before today (S-843)', () => {
+        expect(
+            validationMessage('episodes 1-10 unlist date 2026-08-30 is before today 2026-11-12'),
+        ).toBe('第 1–10 集的下架日期（30/8 日）早於今日，請修改下架設定。');
     });
 
     it('should return null for errors it does not know', () => {

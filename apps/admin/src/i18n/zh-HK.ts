@@ -240,6 +240,8 @@ export const zhHK = {
         unlistBeforeListing:
             '第 {no} 集的下架日期（{removed}）必須遲於其上架日期（{listed}），請修改下架設定。',
         unlistBeforeToday: '第 {no} 集的下架日期（{removed}）早於今日，請修改下架設定。',
+        unlistBeforeTodayRange:
+            '第 {first}–{last} 集的下架日期（{removed}）早於今日，請修改下架設定。',
         general: '資料驗證失敗，請檢查後再試。',
         original: '原始錯誤訊息',
     },
@@ -467,6 +469,7 @@ export const zhHK = {
     },
     dates: {
         short: '{day}/{month} {weekday}',
+        shortYear: '{day}/{month}/{year} {weekday}',
         dayMonth: '{day}/{month}',
         dayMonthYear: '{day}/{month}/{year}',
         long: '{month} 月 {day} 日',

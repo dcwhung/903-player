@@ -1,7 +1,7 @@
 /* 待辦矩陣（mockup ③ 方案 B）：欄、跳轉連結（帶 from=todos 令編輯頁出 flow bar）、尚欠項目 */
 import type { TodoColumn, TodoRow } from '../../api/types';
 import { t, type MessageKey } from '../../i18n/t';
-import { arcEditorPath } from '../../model/paths';
+import { arcEditorPath, dramaEditorPath } from '../../model/paths';
 
 export const TODO_COLUMNS: readonly TodoColumn[] = [
     'folder',
@@ -38,7 +38,7 @@ export const todoHref = (target: string, key: string): string => {
  * 資料夾唔見 → 配對資料夾
  */
 export const rowTarget = (row: TodoRow): string => {
-    const base = `/dramas/${row.dramaId}`;
+    const base = dramaEditorPath(row.dramaId);
     if (row.kind === 'missingFolder') return `${base}#folder`;
     if (row.kind === 'newDrama' || row.arcId === null) return base;
     return arcEditorPath(row.dramaId, row.arcId);

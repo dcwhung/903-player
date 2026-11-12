@@ -6,9 +6,9 @@ import { t } from '../i18n/t';
 
 export const BANNER_PATH = '/banner.webp';
 
-export function Brand({ big = false }: { big?: boolean }) {
+export function Brand() {
     return (
-        <span className={`brand-banner${big ? ' big' : ''}`}>
+        <span className="brand-banner">
             <img src={BANNER_PATH} alt={t('app.bannerAlt')} width={1200} height={517} />
             <span className="ver-pill">{t('app.version', { version: __API_VERSION__ })}</span>
         </span>

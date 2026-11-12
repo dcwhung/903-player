@@ -227,11 +227,6 @@ table.matrix th[scope='row'] {
     box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
 }
 
-/* login 畫面：成個 viewport 置中 */
-.login {
-    min-height: 100dvh;
-}
-
 /* 編輯頁標題：名同狀態 pill 之間留位（mockup .title-row h2） */
 .title-row h1 {
     display: flex;
