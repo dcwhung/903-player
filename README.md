@@ -157,7 +157,8 @@ npm workspaces monorepo：app 喺 `apps/player/`（version 嘅唯一來源係 `a
 劇集 / 節目資料嘅純邏輯喺 `packages/catalog/`（`@903-player/catalog`，直接 export TS source，冇 build step；JSON Schema 喺 `packages/catalog/schemas/`）。
 Catalog backend（Cloudflare Worker + D1 + R2）喺 `apps/api/`（version 喺 `apps/api/package.json`；runbook 見 `apps/api/README.md`）；
 Admin SPA（React，由同一個 Worker 出）喺 `apps/admin/`（版本 pill 用 api version；`npm run dev:admin` / `npm run build:admin` / `npm run e2e:admin`）。
-下面指令全部喺 repo 根跑（root scripts 轉發去 `apps/player`；`npm test` 用 root `vitest.config.ts` 嘅 projects 一次過跑 player + admin + catalog + api；
+下面指令全部喺 repo 根跑（`dev` / `build` / `e2e` 等 root scripts 轉發去 `apps/player`；`npm test` 用 root `vitest.config.ts` 嘅 projects 一次過跑 player + admin + catalog + api，
+`npm run coverage` 用同一份 root 設定只跑 player + catalog 兩個 project；
 `npm run lint` 用 root 嘅 ESLint / Prettier 設定檢查成個 repo；`npx tsc -b` 用 root `tsconfig.json` 覆蓋全部 workspace）。
 下面提到嘅 `src/`、`e2e/`、`scripts/`、`public/` 都喺 `apps/player/` 入面。
 
@@ -165,7 +166,7 @@ Admin SPA（React，由同一個 Worker 出）喺 `apps/admin/`（版本 pill �
 npm install
 npm run dev        # 本地開發
 npm test           # Vitest
-npm run coverage   # 覆蓋率
+npm run coverage   # 覆蓋率（root vitest：player + catalog）
 npm run lint       # ESLint + Prettier
 npm run e2e        # Playwright 端對端測試（假錄音寫入 localStorage + 模擬 audio server）
 npm run build      # 輸出 apps/player/dist/
