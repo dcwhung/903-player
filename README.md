@@ -71,8 +71,8 @@ D1（`apps/api`）已經係內容 SSoT，repo `library/` 只係 fallback。Produ
 
 1. 清走舊 `src/catalog/snapshot/data/`（gitignored；每次 build 都清，唔會用本機殘留）
 2. Fetch 最新 publish 嘅 `catalog.json`（timeout `SNAPSHOT_FETCH_TIMEOUT_MS`）→ 用 player runtime 同一套 validator 驗（`parseCatalogDocument` + 兩個 registry）
-3. 下載全部圖（同時最多 `SNAPSHOT_IMAGE_CONCURRENCY` 張），sha256 前 16 hex 一定要等於檔名
-4. `images` 改寫做檔名 → 先寫 `data.tmp/`，全部成功先 rename 做 `data/`
+3. 下載全部圖（同時最多 `SNAPSHOT_IMAGE_CONCURRENCY` 張；包括首頁 `banner` 兩張），sha256 前 16 hex 一定要等於檔名
+4. `images` 同 `banner` 改寫做檔名 → 先寫 `data.tmp/`，全部成功先 rename 做 `data/`
 5. Build log 印 `[catalog-snapshot] hash … · generatedAt … · N images`（hash = publish hash，可以同 admin 上下架記錄對）
 
 `src/catalog/snapshot/source.ts` 用 `import.meta.glob` 包入 bundle（圖經 Vite hash 入 `dist/assets/`，PWA 自動 precache），`dramas` / `shows` 嘅 `bundledSource` 有 snapshot 就用 snapshot，冇就用 `library/`。
@@ -81,6 +81,11 @@ D1（`apps/api`）已經係內容 SSoT，repo `library/` 只係 fallback。Produ
 - 唔會 fetch：`vite` dev server、`--mode e2e`（e2e 照用 `library/` + 測試劇）、冇 `VITE_CATALOG_URL`（CI）
 - Unit test 永遠用 `library/`（本機 build 過留低嘅 snapshot 唔影響）
 - Publish 之後唔會自動 rebuild：snapshot 跟下次 deploy 更新；想即時更新就手動跑 Deploy workflow
+
+首頁橫額（Phase 4，v1.34.0）：`catalog.json` 選填 `banner`（`standard` 1200×517 + `long` 2000×400，尺寸鎖死）。
+`src/catalog/runtime.ts` 嘅 `activeBanner()` 跟同一個 source：用緊 runtime catalog 就跟佢（冇 `banner` = 內建圖，唔退去 snapshot），
+fallback 就跟 prebuild snapshot 嘅 `banner`，都冇就用 `src/assets/banner.webp` / `banner-wide.webp`（`bannerImages()`）。
+橫額 `<img>` 同邊色 canvas 一律 CORS 載入（R2 圖唔會 taint canvas）；SW 照用 catalog 圖嘅 CacheFirst（banner 圖同其他圖喺同一個 `img/` folder）
 
 ### 由本機 folder 生成 drama.json（`apps/player/scripts/dramaFromFolder.ts`）
 

@@ -1,3 +1,5 @@
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
+
 export type Rgb = readonly [number, number, number];
 
 /** 四邊補位用嘅 CSS background（左右沿高、上面沿闊漸變；下面一隻色） */
@@ -131,6 +133,8 @@ export const loadBannerEdges = (src: string): Promise<BannerEdges | null> => {
     if (cached) return cached;
     const pending = new Promise<BannerEdges | null>((resolve) => {
         const img = new Image();
+        // catalog banner 由 R2 跨 origin 出：唔用 CORS 載入會 taint canvas，getImageData 讀唔到邊色
+        img.crossOrigin = CATALOG_IMAGE_CROSS_ORIGIN;
         img.onload = () => resolve(readBannerEdges(img));
         img.onerror = () => resolve(null);
         img.src = src;
