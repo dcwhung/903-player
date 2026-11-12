@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { DateField } from './DateField';
@@ -41,6 +41,42 @@ beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
 });
+
+/** 月曆方向（data-placement） */
+const placement = () => screen.getByRole('dialog').getAttribute('data-placement');
+
+/** 欄位喺 fieldTop()、高 30；月曆高 300 */
+const mockRects = (fieldTop: () => number) =>
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+        this: HTMLElement,
+    ) {
+        const [top, height] = this.classList.contains('date-pop') ? [0, 300] : [fieldTop(), 30];
+        return {
+            top,
+            bottom: top + height,
+            height,
+            left: 0,
+            right: 0,
+            width: 0,
+            x: 0,
+            y: top,
+        } as DOMRect;
+    });
+
+/** requestAnimationFrame 留低唔跑；flush() = 跑下一格 frame */
+const stubFrames = () => {
+    let queued: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+        queued.push(callback);
+        return queued.length;
+    });
+    return () =>
+        act(() => {
+            const run = queued;
+            queued = [];
+            run.forEach((callback) => callback(0));
+        });
+};
 
 /** jsdom 原本嘅 innerHeight：個別 test 會改，每個 test 後還原（S-861） */
 const INNER_HEIGHT = Object.getOwnPropertyDescriptor(window, 'innerHeight');
@@ -199,54 +235,60 @@ describe('DateField', () => {
 
     it('should open above the field when there is no room below', async () => {
         render(<Harness initial="2026-11-05" />);
-        const rect = (top: number, height: number) =>
-            ({
-                top,
-                bottom: top + height,
-                height,
-                left: 0,
-                right: 0,
-                width: 0,
-                x: 0,
-                y: top,
-            }) as DOMRect;
-        vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
-            this: HTMLElement,
-        ) {
-            return this.classList.contains('date-pop') ? rect(0, 300) : rect(700, 30);
-        });
+        mockRects(() => 700);
         setInnerHeight(800);
         await userEvent.click(trigger());
-        expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'up');
+        expect(placement()).toBe('up');
     });
 
     it('should place the calendar again after a resize or scroll (S-838)', async () => {
+        const flush = stubFrames();
         render(<Harness initial="2026-11-05" />);
         let fieldTop = 100;
-        vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
-            this: HTMLElement,
-        ) {
-            const [top, height] = this.classList.contains('date-pop') ? [0, 300] : [fieldTop, 30];
-            return {
-                top,
-                bottom: top + height,
-                height,
-                left: 0,
-                right: 0,
-                width: 0,
-                x: 0,
-                y: top,
-            } as DOMRect;
-        });
+        mockRects(() => fieldTop);
         setInnerHeight(800);
         await userEvent.click(trigger());
-        expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'down');
+        expect(placement()).toBe('down');
         fieldTop = 700;
         fireEvent(window, new Event('resize'));
-        expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'up');
+        flush();
+        expect(placement()).toBe('up');
         fieldTop = 100;
         fireEvent.scroll(document);
-        expect(screen.getByRole('dialog')).toHaveAttribute('data-placement', 'down');
+        flush();
+        expect(placement()).toBe('down');
+    });
+
+    it('should measure at most once per frame while scrolling (S-859)', async () => {
+        const flush = stubFrames();
+        render(<Harness initial="2026-11-05" />);
+        let fieldTop = 100;
+        mockRects(() => fieldTop);
+        setInnerHeight(800);
+        await userEvent.click(trigger());
+        const frame = vi.mocked(window.requestAnimationFrame);
+        frame.mockClear();
+        fieldTop = 700;
+        fireEvent.scroll(document);
+        fireEvent.scroll(document);
+        fireEvent(window, new Event('resize'));
+        // 未到下一格 frame：未量、未換方向
+        expect(placement()).toBe('down');
+        expect(frame).toHaveBeenCalledTimes(1);
+        flush();
+        expect(placement()).toBe('up');
+    });
+
+    it('should drop a pending measure when the calendar closes (S-859)', async () => {
+        stubFrames();
+        const cancel = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+        render(<Harness initial="2026-11-05" />);
+        mockRects(() => 100);
+        await userEvent.click(trigger());
+        fireEvent.scroll(document);
+        await userEvent.keyboard('{Escape}');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(cancel).toHaveBeenCalledTimes(1);
     });
 
     it('should mark today in Hong Kong time, the day schedules use (S-835)', async () => {
