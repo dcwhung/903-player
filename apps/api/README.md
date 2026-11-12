@@ -21,6 +21,8 @@ Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans
 
 設定喺 `wrangler.toml`（D1 `DB`、R2 `CATALOG`、R2 `AUDIO`（`903-radio-drama`，只 list）、`[vars]`）；secret（`GOOGLE_CLIENT_SECRET`、`SESSION_SECRET`）唔入 repo。
 
+- `[vars]`（`ADMIN_EMAILS`、`PLAYER_ORIGINS` 等）**只改 `wrangler.toml`**：每次 `wrangler deploy`（包括 merge 入 `main` 嘅自動 deploy）都會用 `wrangler.toml` 嘅 `[vars]` 蓋走 Cloudflare dashboard 改過嘅 var；dashboard 只用嚟加 Secret（S-778）
+
 ## 本機開發
 
 本機全部用 miniflare（`.wrangler/state/`，已 gitignore），唔使 Cloudflare 帳戶。
