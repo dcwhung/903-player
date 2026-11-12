@@ -27,6 +27,7 @@ from build import (  # noqa: E402
     doc_id,
     main,
     page_hash,
+    parse_args,
     round_dirs,
     unique_variants,
     with_new_arcs,
@@ -144,14 +145,14 @@ class BuildTest(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         root = Path(self._tmp.name)
-        self.repo = root / "repo"
-        drama_dir = self.repo / "src" / "catalog" / "dramas" / "library" / "lancy"
+        self.app_root = root / "app"
+        drama_dir = self.app_root / "src" / "catalog" / "dramas" / "library" / "lancy"
         drama_dir.mkdir(parents=True)
         (drama_dir / "drama.json").write_text(json.dumps(LANCY, ensure_ascii=False), encoding="utf-8")
         work = root / "work"
         self.work = work
         self.paths = Paths(
-            gen=work / "arcCover", src=work / "arcCover-src", out=work / "review", repo=self.repo
+            gen=work / "arcCover", src=work / "arcCover-src", out=work / "review", app_root=self.app_root
         )
         self._round(2)
         (self.paths.src / "lancy").mkdir(parents=True)
@@ -196,7 +197,7 @@ class BuildTest(unittest.TestCase):
     def test_build_should_render_current_image_previews(self) -> None:
         art = np.zeros((90, 160, 3), np.uint8)
         art[:, :80] = (250, 40, 40)
-        lancy = self.repo / "src" / "catalog" / "dramas" / "library" / "lancy"
+        lancy = self.app_root / "src" / "catalog" / "dramas" / "library" / "lancy"
         (lancy / "arcs" / "heart").mkdir(parents=True)
         for name in ("arcs/heart/disc.webp", "arcs/heart/tile.webp"):
             Image.fromarray(art).save(lancy / name)
@@ -219,7 +220,7 @@ class BuildTest(unittest.TestCase):
 
     def test_build_should_reject_unsafe_slugs(self) -> None:
         bad = {**LANCY, "arcs": [{"name": "x", "disc": "arcs/cover/disc.webp"}]}
-        drama_json = self.repo / "src" / "catalog" / "dramas" / "library" / "lancy" / "drama.json"
+        drama_json = self.app_root / "src" / "catalog" / "dramas" / "library" / "lancy" / "drama.json"
         drama_json.write_text(json.dumps(bad, ensure_ascii=False), encoding="utf-8")
         with self.assertRaises(SystemExit):
             build(self.paths)
@@ -233,7 +234,7 @@ class BuildTest(unittest.TestCase):
         self.paths.out.mkdir(parents=True)
         previous = self.paths.out / "old-files.json"
         previous.write_text(json.dumps({"img/lancy/heart/round-1/gone.png": "/x", "rounds.json": "/r"}))
-        argv = ["--work", str(self.work), "--repo", str(self.repo), "--previous", str(previous)]
+        argv = ["--work", str(self.work), "--app-root", str(self.app_root), "--previous", str(previous)]
         with contextlib.redirect_stdout(io.StringIO()) as out:
             self.assertEqual(main(argv), 0)
         self.assertIn("gone.png", out.getvalue())
@@ -246,7 +247,7 @@ class BuildTest(unittest.TestCase):
         self.paths.out.mkdir(parents=True)
         listing = self.paths.out / "listing.txt"
         listing.write_text("index.html\nrounds.json\nimg/lancy/heart/round-1/gone.png\n")
-        argv = ["--work", str(self.work), "--repo", str(self.repo), "--previous", str(listing)]
+        argv = ["--work", str(self.work), "--app-root", str(self.app_root), "--previous", str(listing)]
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(main(argv), 0)
         batches = sorted(self.paths.out.glob("publish-*.json"))
@@ -264,7 +265,7 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(write.call_args.kwargs["page_bytes"], page)
 
     def test_main_page_bytes_should_override_the_page_size(self) -> None:
-        argv = ["--work", str(self.work), "--repo", str(self.repo), "--page-bytes", "123"]
+        argv = ["--work", str(self.work), "--app-root", str(self.app_root), "--page-bytes", "123"]
         with mock.patch("build.write_batches") as write, contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(main(argv), 0)
         self.assertEqual(write.call_args.kwargs["page_bytes"], 123)
@@ -272,7 +273,7 @@ class BuildTest(unittest.TestCase):
     def test_main_should_reject_page_bytes_out_of_range(self) -> None:
         # S-612：負數會令每批上限 > 64MB；≥ 64MB 會令每批上限 ≤ 0
         for bad in ("-1", str(MAX_BYTES_PER_PUBLISH)):
-            argv = ["--work", str(self.work), "--repo", str(self.repo), "--page-bytes", bad]
+            argv = ["--work", str(self.work), "--app-root", str(self.app_root), "--page-bytes", bad]
             with self.subTest(bad=bad), contextlib.redirect_stderr(io.StringIO()) as err:
                 with self.assertRaises(SystemExit) as stop:
                     main(argv)
@@ -281,18 +282,25 @@ class BuildTest(unittest.TestCase):
 
     def test_main_should_accept_page_bytes_range_edges(self) -> None:
         for good in (0, MAX_BYTES_PER_PUBLISH - 1):
-            argv = ["--work", str(self.work), "--repo", str(self.repo), "--page-bytes", str(good)]
+            argv = ["--work", str(self.work), "--app-root", str(self.app_root), "--page-bytes", str(good)]
             with self.subTest(good=good), mock.patch("build.write_batches") as write:
                 with contextlib.redirect_stdout(io.StringIO()):
                     self.assertEqual(main(argv), 0)
                 self.assertEqual(write.call_args.kwargs["page_bytes"], good)
+
+    def test_parse_args_should_keep_repo_as_alias_of_app_root(self) -> None:
+        # S-862：flag 改名 --app-root，舊 --repo 照用
+        for flag in ("--app-root", "--repo"):
+            with self.subTest(flag=flag):
+                paths, _, _ = parse_args(["--work", str(self.work), flag, str(self.app_root)])
+                self.assertEqual(paths.app_root, self.app_root.resolve())
 
     def test_main_should_warn_when_old_and_new_paths_exceed_version_limit(self) -> None:
         # S-610：null 喺最後一批先刪，中間版本 = 舊 path ∪ 新 path + index.html
         self.paths.out.mkdir(parents=True)
         listing = self.paths.out / "listing.json"
         listing.write_text(json.dumps([f"img/old/{i}.png" for i in range(MAX_FILES_PER_VERSION)]))
-        argv = ["--work", str(self.work), "--repo", str(self.repo), "--previous", str(listing)]
+        argv = ["--work", str(self.work), "--app-root", str(self.app_root), "--previous", str(listing)]
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
             self.assertEqual(main(argv), 0)
         self.assertIn(str(MAX_FILES_PER_VERSION), err.getvalue())
@@ -303,7 +311,7 @@ class BuildTest(unittest.TestCase):
         self.paths.out.mkdir(parents=True)
         listing = self.paths.out / "listing.txt"
         listing.write_text("index.html\nimg/other/x.png\n")
-        argv = ["--work", str(self.work), "--repo", str(self.repo), "--previous", str(listing)]
+        argv = ["--work", str(self.work), "--app-root", str(self.app_root), "--previous", str(listing)]
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
             self.assertEqual(main(argv), 0)
         self.assertIn("--previous", err.getvalue())
@@ -312,7 +320,7 @@ class BuildTest(unittest.TestCase):
         self.paths.out.mkdir(parents=True)
         listing = self.paths.out / "listing.txt"
         listing.write_text("index.html\nrounds.json\n")
-        argv = ["--work", str(self.work), "--repo", str(self.repo), "--previous", str(listing)]
+        argv = ["--work", str(self.work), "--app-root", str(self.app_root), "--previous", str(listing)]
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
             self.assertEqual(main(argv), 0)
         self.assertEqual(err.getvalue(), "")
