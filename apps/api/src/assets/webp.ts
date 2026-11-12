@@ -19,6 +19,8 @@ export class WebpError extends Error {
 /** fourcc（'RIFF'、'WEBP'、chunk 名）同 size 欄位都係 4 bytes（S-794） */
 const FOURCC_BYTES = 4;
 const SIZE_FIELD_BYTES = 4;
+/** little-endian 16-bit 欄位佔幾多 bytes：uint24 / uint32 跳過低 16 bit、VP8 闊後面接高都用（S-856） */
+const UINT16_BYTES = 2;
 /** RIFF header：'RIFF' + 4 bytes size + 'WEBP' */
 const RIFF_SIZE_OFFSET = FOURCC_BYTES;
 const WEBP_MAGIC_OFFSET = RIFF_SIZE_OFFSET + SIZE_FIELD_BYTES;
@@ -39,8 +41,8 @@ const VP8_INTERFRAME_BIT = 0x01;
 const VP8_START_CODE = [0x9d, 0x01, 0x2a] as const;
 const VP8_START_OFFSET = 3;
 const VP8_WIDTH_OFFSET = 6;
-/** 闊後面緊接高（16-bit = 2 bytes） */
-const VP8_HEIGHT_OFFSET = VP8_WIDTH_OFFSET + 2;
+/** 闊後面緊接高（各一個 16-bit 欄位） */
+const VP8_HEIGHT_OFFSET = VP8_WIDTH_OFFSET + UINT16_BYTES;
 const VP8_SIZE_MASK = 0x3fff;
 const VP8_MIN_PAYLOAD = 10;
 
@@ -63,10 +65,10 @@ const uint16 = (bytes: Uint8Array, at: number): number =>
     (bytes[at] ?? 0) | ((bytes[at + 1] ?? 0) << 8);
 
 const uint24 = (bytes: Uint8Array, at: number): number =>
-    uint16(bytes, at) | ((bytes[at + 2] ?? 0) << 16);
+    uint16(bytes, at) | ((bytes[at + UINT16_BYTES] ?? 0) << 16);
 
 const uint32 = (bytes: Uint8Array, at: number): number =>
-    (uint16(bytes, at) | (uint16(bytes, at + 2) << 16)) >>> 0;
+    (uint16(bytes, at) | (uint16(bytes, at + UINT16_BYTES) << 16)) >>> 0;
 
 const vp8 = (payload: Uint8Array): WebpSize => {
     const startCode = VP8_START_CODE.every((b, i) => payload[VP8_START_OFFSET + i] === b);

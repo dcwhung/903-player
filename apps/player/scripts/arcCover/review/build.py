@@ -86,7 +86,7 @@ class Paths:
     gen: Path
     src: Path
     out: Path
-    repo: Path
+    app_root: Path
 
     @property
     def site(self) -> Path:
@@ -243,7 +243,7 @@ def render_current_preview(src: Path, drama: str, kind: str) -> Image.Image:
 
 
 def current_images(site: Site, paths: Paths, drama: str, slug: str) -> dict[str, str]:
-    base = paths.repo / "src" / "catalog" / "dramas" / "library" / drama
+    base = paths.app_root / "src" / "catalog" / "dramas" / "library" / drama
     out: dict[str, str] = {}
     for kind in KINDS:
         src = base / app_image_name(slug, kind)
@@ -297,7 +297,7 @@ def drama_entry(site: Site, paths: Paths, drama_dir: Path) -> dict:
 
 def collect(site: Site, paths: Paths) -> dict:
     """全部劇集（跟 app 排序），每套劇：整套劇 + 有自己碟面嘅短篇，各有現用圖同每個 round 嘅候選"""
-    dramas_dir = paths.repo / "src" / "catalog" / "dramas" / "library"
+    dramas_dir = paths.app_root / "src" / "catalog" / "dramas" / "library"
     drama_dirs = sorted(p for p in dramas_dir.iterdir() if (p / "drama.json").is_file())
     dramas = [drama_entry(site, paths, d) for d in drama_dirs]
     dramas.sort(key=lambda d: (d["order"], d["id"]))
@@ -340,14 +340,17 @@ def parse_args(argv: list[str]) -> tuple[Paths, Path | None, int | None]:
         type=int,
         help="每批 64MB 預留畀主頁嘅 bytes（預設 = build 出嚟嘅 site/index.html 大小）",
     )
-    parser.add_argument("--repo", type=Path, default=APP_ROOT, help=argparse.SUPPRESS)
+    # 指 apps/player（app root，唔係 git repo root）；--repo 係舊名，保留做 alias（S-862）
+    parser.add_argument(
+        "--app-root", "--repo", dest="app_root", type=Path, default=APP_ROOT, help=argparse.SUPPRESS
+    )
     args = parser.parse_args(argv)
     # 負數會令每批上限超過 64MB；≥ 64MB 會令每批上限 ≤ 0（每個檔自己一批）
     if args.page_bytes is not None and not 0 <= args.page_bytes < MAX_BYTES_PER_PUBLISH:
         parser.error(f"--page-bytes 要喺 0 至 {MAX_BYTES_PER_PUBLISH - 1} 之間（而家係 {args.page_bytes}）")
     work = args.work.resolve()
     out = (args.out or work / "review").resolve()
-    paths = Paths(gen=work / "arcCover", src=work / "arcCover-src", out=out, repo=args.repo.resolve())
+    paths = Paths(gen=work / "arcCover", src=work / "arcCover-src", out=out, app_root=args.app_root.resolve())
     return paths, args.previous, args.page_bytes
 
 
