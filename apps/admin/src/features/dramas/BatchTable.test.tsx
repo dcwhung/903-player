@@ -20,9 +20,9 @@ describe('BatchTable', () => {
                 today="2026-12-01"
             />,
         );
-        expect(screen.getByText('上下架批次')).toBeInTheDocument();
-        // 同內容頁列表一樣嘅中性表，唔係黃色 note 卡（用戶 2026-11-12）
-        expect(screen.getByText('上下架批次').closest('.note')).toBeNull();
+        // 同內容頁列表一樣嘅中性表，唔係黃色 note 卡；標題搬咗去預覽頂（用戶 2026-11-12）
+        expect(screen.getByRole('table').closest('.note')).toBeNull();
+        expect(screen.queryByText('上下架批次')).not.toBeInTheDocument();
         const [, todayRow, first, second] = screen.getAllByRole('row');
         expect(todayRow).toHaveClass('today');
         expect(within(todayRow as HTMLElement).getByText('1/12 二（今日）')).toBeInTheDocument();

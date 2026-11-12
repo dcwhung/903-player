@@ -1740,6 +1740,43 @@ table.matrix .row-link:hover {
 }
 
 /*
+ * 預覽標題（用戶 2026-11-12 方案 A）：「上下架批次」同 .card h3 一樣大細，摘要 --muted 細字靠右；
+ * 「時間軸」「列表」灰色小標連 outline icon
+ */
+.preview-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 16px;
+}
+
+.preview-title {
+    margin: 0;
+}
+
+.preview-part {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+}
+
+.preview-sub {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.preview-sub .lucide {
+    width: 16px;
+    height: 16px;
+}
+
+/*
  * 上下架批次表：同節目 / 廣播劇列表（.list-head / .row）一樣嘅中性樣式——直接用全域 table / th / td
  * （--muted 12px 表頭、--line 分隔線），冇底色、冇外框卡；標題用正文色
  */
@@ -1747,12 +1784,6 @@ table.matrix .row-link:hover {
     display: grid;
     gap: 6px;
     min-width: 0;
-}
-
-.batch-title {
-    color: var(--ink);
-    font-size: 14px;
-    font-weight: 600;
 }
 
 /* 今日一行：同時間軸一樣嘅黃色成行底（--today-bg），日期 --warn-ink 粗字；表本身照舊冇底色 */

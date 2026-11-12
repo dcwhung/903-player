@@ -411,6 +411,7 @@ const schedulePreviewCheck = (browser) =>
         await page.getByRole('tab', { name: '預覽' }).click();
         if (await page.getByRole('heading', { name: '上架' }).isVisible())
             throw new Error('edit panels still shown in 預覽');
+        await assertPreviewTitles(page, /^共 \d+ 批・第 16–37 集上架・第 1–37 集下架$/);
         // 今日 12/11 喺第一個上架日（15/11）之前：時間軸最前一格「今日」、批次表第一行今日
         const todayCell = page.locator('.strip.preview > .day-group').first();
         if (!(await todayCell.evaluate((el) => el.classList.contains('today-cell'))))
@@ -432,6 +433,37 @@ const schedulePreviewCheck = (browser) =>
         // 等膠囊滑完、tooltip 淡入完先影
         await page.waitForTimeout(PILL_SETTLE_MS);
         await shoot(page, 'schedule-preview', { fullPage: true });
+        await page.close();
+    });
+
+/**
+ * 預覽標題（用戶 2026-11-12 方案 A）：h3「上下架批次」+ 同一行靠右嘅摘要，h4「時間軸」「列表」小標各自命名一個 region
+ */
+const assertPreviewTitles = async (page, summary) => {
+    const title = page.getByRole('heading', { level: 3, name: '上下架批次' });
+    const text = await page.locator('.preview-head .muted').textContent();
+    if (!summary.test(text)) throw new Error(`preview summary: ${text}`);
+    const [titleBox, summaryBox, headBox] = await Promise.all([
+        title.boundingBox(),
+        page.locator('.preview-head .muted').boundingBox(),
+        page.locator('.preview-head').boundingBox(),
+    ]);
+    if (!titleBox || !summaryBox || !headBox) throw new Error('preview head not shown');
+    if (Math.abs(summaryBox.x + summaryBox.width - (headBox.x + headBox.width)) > 1)
+        throw new Error('preview summary not right-aligned');
+    for (const name of ['時間軸', '列表'])
+        await page.getByRole('region', { name }).getByRole('heading', { level: 4, name }).waitFor();
+};
+
+/** 冇下架嘅預覽：摘要冇「下架」部分 */
+const schedulePreviewListingOnlyCheck = (browser) =>
+    check('schedule 預覽 without unlisting: summary has no 下架 part', async () => {
+        const page = await newPage(browser, scheduleState());
+        await page.goto(SCHEDULE_PARTLY);
+        await page.getByRole('tab', { name: '預覽' }).click();
+        await assertPreviewTitles(page, /^共 5 批・第 16–37 集上架$/);
+        await page.waitForTimeout(PILL_SETTLE_MS);
+        await shoot(page, 'schedule-preview-listing-only', { fullPage: true });
         await page.close();
     });
 
@@ -1340,6 +1372,7 @@ try {
         showListCheck,
         scheduleEditCheck,
         schedulePreviewCheck,
+        schedulePreviewListingOnlyCheck,
         scheduleChipCheck,
         scheduleContrastCheck,
         scheduleAllListedCheck,

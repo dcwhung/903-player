@@ -8,6 +8,7 @@ import {
     listingStrip,
     listingTimeline,
     previewDays,
+    previewSummary,
     progressText,
     unlistScopeText,
     unlistStrip,
@@ -221,5 +222,40 @@ describe('timelineModel — summary while unsaved (用戶 2026-11-12)', () => {
             '第 1–15 集已上架 · 第 16–30 集即將排程上架（未儲存）',
         );
         expect(progressText(CONTEXT)).toBe('第 1–15 集已上架 · 第 16–30 集已排程上架');
+    });
+});
+
+describe('timelineModel — preview summary (用戶 2026-11-12 方案 A)', () => {
+    const day = (
+        date: string,
+        listings: [number, number][],
+        removals: [number, number][] = [],
+    ) => ({
+        date,
+        listings: listings.map(([first, last]) => ({ first, last, date })),
+        removals: removals.map(([first, last]) => ({ first, last, date })),
+    });
+
+    it('should count the batch days and the episodes listed / unlisted', () => {
+        expect(previewSummary(previewDays(PLAN, TODAY))).toBe(
+            '共 6 批・第 16–30 集上架・第 1–30 集下架',
+        );
+    });
+
+    it('should leave out an empty part', () => {
+        expect(previewSummary([day('2026-12-07', [[16, 20]]), day('2026-12-14', [[21, 25]])])).toBe(
+            '共 2 批・第 16–25 集上架',
+        );
+        expect(previewSummary([day('2026-12-07', [], [[1, 30]])])).toBe('共 1 批・第 1–30 集下架');
+    });
+
+    it('should list gaps with the range formatter', () => {
+        expect(
+            previewSummary([
+                day('2026-12-07', [[16, 20]]),
+                day('2026-12-14', [[26, 26]], [[1, 3]]),
+                day('2026-12-21', [], [[5, 6]]),
+            ]),
+        ).toBe('共 3 批・第 16–20 集、第 26 集上架・第 1–3 集、第 5–6 集下架');
     });
 });

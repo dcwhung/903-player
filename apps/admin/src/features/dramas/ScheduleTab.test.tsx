@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { hasIcon } from '../../../tests/icons';
 import { mockApi, renderAt } from '../../../tests/renderApp';
 import { DramaEditorPage } from './DramaEditor';
 
@@ -209,6 +210,30 @@ describe('ScheduleTab — 預覽 (mockup ⑨)', () => {
         expect(within(timeline).getByText('1/12（今日）')).toBeInTheDocument();
         expect(within(timeline).queryByText('今日')).not.toBeInTheDocument();
         expect(within(table).getByText('1/12 二（今日）').closest('tr')).toHaveClass('today');
+    });
+});
+
+describe('ScheduleTab — 預覽 titles (用戶 2026-11-12 方案 A)', () => {
+    it('should head both views with 上下架批次, a summary and 時間軸 / 列表 sub-headings', async () => {
+        api();
+        await open('heart');
+        await userEvent.click(screen.getByRole('button', { name: '每週 1 次' }));
+        await userEvent.click(screen.getByRole('tab', { name: '預覽' }));
+        const title = screen.getByRole('heading', { level: 3, name: '上下架批次' });
+        // 一次性改每週 1 次（逢二）由 1/12 起每次 1 集：第 16–30 集 15 批；冇下架
+        expect(title.parentElement).toHaveTextContent('共 15 批・第 16–30 集上架');
+        expect(screen.getByText('共 15 批・第 16–30 集上架')).toHaveClass('muted');
+        const timeline = screen.getByRole('heading', { level: 4, name: '時間軸' });
+        const list = screen.getByRole('heading', { level: 4, name: '列表' });
+        expect(hasIcon(timeline, 'chart-no-axes-gantt')).toBe(true);
+        expect(hasIcon(list, 'list')).toBe(true);
+        expect(screen.getByRole('region', { name: '時間軸' })).toContainElement(
+            screen.getByRole('group', { name: '上下架時間軸' }),
+        );
+        expect(screen.getByRole('region', { name: '列表' })).toContainElement(
+            screen.getByRole('table'),
+        );
+        expect(screen.getAllByText('上下架批次')).toHaveLength(1);
     });
 });
 

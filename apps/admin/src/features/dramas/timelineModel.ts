@@ -176,6 +176,29 @@ export const previewDays = (plan: SchedulePlan, today: string): PreviewDay[] => 
     return [...days.values()].sort((a, b) => a.date.localeCompare(b.date));
 };
 
+const nosOf = (ranges: readonly EpisodeSpan[]): number[] =>
+    [
+        ...new Set(
+            ranges.flatMap(({ first, last }) =>
+                Array.from({ length: last - first + 1 }, (_, i) => first + i),
+            ),
+        ),
+    ].sort((a, b) => a - b);
+
+/**
+ * 預覽標題旁邊嘅摘要（用戶 2026-11-12 方案 A）：「共 N 批・第 a–b 集上架・第 c–d 集下架」；
+ * N = 有上架 / 下架嘅日子（唔計插入嘅今日），冇嘅部分唔寫，唔連續就「第 1–3 集、第 5–6 集」
+ */
+export const previewSummary = (days: readonly PreviewDay[]): string => {
+    const listed = spansOf(nosOf(days.flatMap((d) => d.listings)));
+    const removed = spansOf(nosOf(days.flatMap((d) => d.removals)));
+    return [
+        t('schedule.summaryCount', { count: days.length }),
+        ...(listed.length > 0 ? [t('schedule.summaryList', { range: spansText(listed) })] : []),
+        ...(removed.length > 0 ? [t('schedule.summaryUnlist', { range: spansText(removed) })] : []),
+    ].join(t('schedule.summarySeparator'));
+};
+
 /** 「第 6 集：23/11 上架，14/12 下架，共 21 日」 */
 export const episodeTip = ({ no, listedAt, removedAt }: EpisodeSchedule): string =>
     removedAt === undefined

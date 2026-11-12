@@ -23,9 +23,9 @@ function Ranges({ ranges, tone }: { ranges: readonly EpisodeRange[]; tone: 'info
 
 export function BatchTable({ days, today }: { days: readonly PreviewDay[]; today: string }) {
     return (
-        // 同內容頁（節目 / 廣播劇列表）一樣嘅中性表：冇底色、--muted 表頭、--line 分隔線（用戶 2026-11-12）
+        // 同內容頁（節目 / 廣播劇列表）一樣嘅中性表：冇底色、--muted 表頭、--line 分隔線；
+        // 標題「上下架批次」+「列表」小標喺預覽頂（ScheduleViews，用戶 2026-11-12 方案 A）
         <div className="batch-section">
-            <b className="batch-title">{t('schedule.batches')}</b>
             <div className="table-wrap">
                 <table className="batches">
                     <thead>

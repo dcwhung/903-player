@@ -4,7 +4,8 @@
  * 時間軸 / 批次表嘅「今日」= admin 本機日子（localToday）
  */
 import type { SchedulePlan } from '@903-player/catalog';
-import { useId, useState } from 'react';
+import { ChartNoAxesGantt, List, type LucideIcon } from 'lucide-react';
+import { useId, useState, type ReactNode } from 'react';
 import { t } from '../../i18n/t';
 import { localToday } from '../../model/dates';
 import { BatchTable } from './BatchTable';
@@ -12,7 +13,7 @@ import { PreviewTimeline } from './PreviewTimeline';
 import { ViewTabs, type ScheduleView } from './ScheduleBars';
 import type { ScheduleContext, ScheduleForm } from './scheduleModel';
 import { ListingPanel, UnlistPanel } from './SchedulePanels';
-import { previewDays, progressText } from './timelineModel';
+import { previewDays, previewSummary, progressText } from './timelineModel';
 
 interface ScheduleViewsProps {
     ctx: ScheduleContext;
@@ -25,7 +26,32 @@ interface ScheduleViewsProps {
     onChange: (form: ScheduleForm) => void;
 }
 
-/** 預覽（mockup ⑨，唯讀）：今日起每日一格嘅合併時間軸 + 上下架批次表 */
+/** 預覽入面一個睇法（時間軸 / 列表）：灰色細小標（h4 + outline icon），region 由小標命名 */
+function PreviewPart({
+    icon: Icon,
+    label,
+    children,
+}: {
+    icon: LucideIcon;
+    label: string;
+    children: ReactNode;
+}) {
+    const headingId = useId();
+    return (
+        <section className="preview-part" aria-labelledby={headingId}>
+            <h4 id={headingId} className="preview-sub">
+                <Icon aria-hidden="true" />
+                {label}
+            </h4>
+            {children}
+        </section>
+    );
+}
+
+/**
+ * 預覽（mockup ⑨，唯讀）：標題「上下架批次」+ 右邊摘要（用戶 2026-11-12 方案 A，摘要靠右），
+ * 下面「時間軸」（今日起每日一格嘅合併時間軸）同「列表」（上下架批次表）
+ */
 function SchedulePreview({
     plan,
     ctx,
@@ -38,8 +64,22 @@ function SchedulePreview({
     const days = previewDays(plan, ctx.today);
     return (
         <>
-            <PreviewTimeline plan={plan} days={days} today={marker} />
-            {days.length > 0 && <BatchTable days={days} today={marker} />}
+            <div className="preview-head">
+                <h3 className="preview-title">{t('schedule.batches')}</h3>
+                {days.length > 0 && <span className="muted small">{previewSummary(days)}</span>}
+            </div>
+            {days.length === 0 ? (
+                <PreviewTimeline plan={plan} days={days} today={marker} />
+            ) : (
+                <>
+                    <PreviewPart icon={ChartNoAxesGantt} label={t('schedule.viewTimeline')}>
+                        <PreviewTimeline plan={plan} days={days} today={marker} />
+                    </PreviewPart>
+                    <PreviewPart icon={List} label={t('schedule.viewList')}>
+                        <BatchTable days={days} today={marker} />
+                    </PreviewPart>
+                </>
+            )}
         </>
     );
 }
