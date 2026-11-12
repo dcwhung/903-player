@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>903 Player Admin · 登入頁三款</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@500&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            /*
+             * Admin 登入頁 preview（2026-11-12）：跟 403 / 直向提示同一套 token 同版式語言，三款揀一。
+             * 每款都有：app banner（連 Admin pill）→ 書面語標題 → 一句說明 →「使用 Google 登入」。
+             * Google 掣跟官方「Sign in with Google」：四色 G、白底 #747775 框（深色 #131314 底 #8E918F 框）、
+             * Roboto Medium 14px、高 40px。
+             * 右上角切換款式 / 深淺色（截圖時加 ?shot 收埋）；預設跟系統深淺色。
+             */
+            :root {
+                color-scheme: light dark;
+                --sky: #53a9e3;
+                --primary: #1e7bc0;
+                --bg: #eef3f8;
+                --surface: #ffffff;
+                --surface-2: #f1f5f9;
+                --ink: #16212e;
+                --muted: #5e6b7a;
+                --line: #dbe3ec;
+                --soft: #e6f3fc;
+                --art: #1e7bc0;
+                --brand-admin: #c2410c;
+                --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06);
+                --shadow-float: 0 18px 50px rgb(16 50 90 / 0.28);
+                --card-border: transparent;
+                --scrim: linear-gradient(180deg, rgb(238 243 248 / 0.25), rgb(238 243 248 / 0.75));
+                /* Google 官方 light 款 */
+                --gsi-bg: #ffffff;
+                --gsi-border: #747775;
+                --gsi-text: #1f1f1f;
+                --gsi-hover: rgb(31 31 31 / 0.08);
+                --font:
+                    'Poppins', 'Noto Sans TC', 'PingFang HK', -apple-system, 'Segoe UI', sans-serif;
+            }
+            /* 深色：跟 apps/admin tokens.css 同值；Google 官方 dark 款 */
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #0f1620;
+                    --surface: #1b2635;
+                    --surface-2: #223043;
+                    --ink: #e8eef5;
+                    --muted: #9aabbd;
+                    --line: #2c3b4f;
+                    --soft: #1c3349;
+                    --art: #7cc2f0;
+                    --shadow: none;
+                    --shadow-float: 0 18px 50px rgb(0 0 0 / 0.5);
+                    --card-border: #2c3b4f;
+                    --scrim: linear-gradient(180deg, rgb(15 22 32 / 0.35), rgb(15 22 32 / 0.85));
+                    --gsi-bg: #131314;
+                    --gsi-border: #8e918f;
+                    --gsi-text: #e3e3e3;
+                    --gsi-hover: rgb(227 227 227 / 0.08);
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #0f1620;
+                --surface: #1b2635;
+                --surface-2: #223043;
+                --ink: #e8eef5;
+                --muted: #9aabbd;
+                --line: #2c3b4f;
+                --soft: #1c3349;
+                --art: #7cc2f0;
+                --shadow: none;
+                --shadow-float: 0 18px 50px rgb(0 0 0 / 0.5);
+                --card-border: #2c3b4f;
+                --scrim: linear-gradient(180deg, rgb(15 22 32 / 0.35), rgb(15 22 32 / 0.85));
+                --gsi-bg: #131314;
+                --gsi-border: #8e918f;
+                --gsi-text: #e3e3e3;
+                --gsi-hover: rgb(227 227 227 / 0.08);
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                margin: 0;
+                min-height: 100dvh;
+            }
+            body {
+                background: var(--bg);
+                color: var(--ink);
+                font: 15px/1.55 var(--font);
+            }
+            h1 {
+                margin: 0;
+                font-size: 22px;
+                font-weight: 600;
+            }
+            p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 14px;
+            }
+
+            /* 只顯示揀咗嗰款 */
+            .variant {
+                display: none;
+                min-height: 100dvh;
+            }
+            body[data-variant='1'] .v1,
+            body[data-variant='2'] .v2,
+            body[data-variant='3'] .v3 {
+                display: grid;
+            }
+
+            /* ---------- 共用：banner + Admin pill ---------- */
+            .banner {
+                position: relative;
+                overflow: hidden;
+            }
+            .banner img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+            .ver {
+                position: absolute;
+                right: 8px;
+                bottom: 8px;
+                padding: 0 8px;
+                border-radius: 999px;
+                background: var(--brand-admin);
+                color: #fff;
+                font-size: 11px;
+                font-weight: 600;
+                line-height: 1.7;
+            }
+
+            /* 插圖圓（同 403 / 直向提示）：lucide log-in */
+            .art {
+                position: relative;
+                z-index: 1;
+                width: 112px;
+                height: 112px;
+                display: grid;
+                place-items: center;
+                border: 6px solid var(--surface);
+                border-radius: 50%;
+                background: var(--soft);
+                color: var(--art);
+            }
+            .art svg {
+                width: 56px;
+                height: 56px;
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 2.2;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            /* ---------- Google「Sign in with Google」掣（官方樣式） ---------- */
+            .gsi {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                height: 40px;
+                min-width: 220px;
+                padding: 0 12px;
+                border: 1px solid var(--gsi-border);
+                border-radius: 4px;
+                background: var(--gsi-bg);
+                color: var(--gsi-text);
+                font:
+                    500 14px/1 'Roboto',
+                    'Noto Sans TC',
+                    'PingFang HK',
+                    sans-serif;
+                letter-spacing: 0.25px;
+                text-decoration: none;
+                cursor: pointer;
+            }
+            .gsi::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                background: transparent;
+                transition: background-color 150ms;
+            }
+            .gsi:hover::after {
+                background: var(--gsi-hover);
+            }
+            .gsi:focus-visible {
+                outline: 2px solid var(--primary);
+                outline-offset: 2px;
+            }
+            .gsi svg {
+                width: 20px;
+                height: 20px;
+                flex: none;
+            }
+            .gsi.pill {
+                border-radius: 20px;
+            }
+            .gsi.wide {
+                width: 100%;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .gsi::after {
+                    transition: none;
+                }
+            }
+
+            .fine {
+                font-size: 12px;
+            }
+
+            /* ---------- 款 1：置中卡片（同 403） ---------- */
+            .v1 {
+                place-items: center;
+                padding: 32px 20px;
+            }
+            .v1 .box {
+                width: min(380px, 100%);
+                padding: 32px 28px;
+                border-radius: 24px;
+                background: var(--surface);
+                border: 1px solid var(--card-border);
+                box-shadow: var(--shadow);
+                text-align: center;
+                display: grid;
+                gap: 12px;
+                justify-items: center;
+            }
+            .v1 .banner {
+                width: calc(100% + 56px);
+                margin: -32px -28px 0;
+                border-radius: 24px 24px 0 0;
+            }
+            .v1 .art {
+                margin: -54px 0 4px;
+            }
+            .v1 .gsi {
+                margin-top: 8px;
+            }
+
+            /* ---------- 款 2：左右分欄（左大 banner、右登入） ---------- */
+            .v2 {
+                grid-template-columns: minmax(0, 1.25fr) minmax(360px, 1fr);
+            }
+            .v2 .hero {
+                display: grid;
+                place-items: center;
+                align-content: center;
+                gap: 20px;
+                padding: 48px;
+                background: linear-gradient(160deg, #6cc0f5, #1e7bc0);
+                color: #fff;
+            }
+            .v2 .hero .banner {
+                width: min(560px, 100%);
+                border-radius: 20px;
+                box-shadow: 0 16px 40px rgb(10 50 90 / 0.35);
+            }
+            .v2 .hero p {
+                color: rgb(255 255 255 / 0.9);
+                font-size: 15px;
+                text-align: center;
+            }
+            .v2 .side {
+                display: grid;
+                place-items: center;
+                padding: 48px 40px;
+                background: var(--surface);
+            }
+            .v2 .form {
+                width: min(340px, 100%);
+                display: grid;
+                gap: 12px;
+            }
+            .v2 .form h1 {
+                font-size: 26px;
+            }
+            .v2 .gsi {
+                margin-top: 12px;
+            }
+            .v2 .rule {
+                height: 1px;
+                margin: 16px 0 4px;
+                background: var(--line);
+            }
+            @media (max-width: 860px) {
+                .v2 {
+                    grid-template-columns: 1fr;
+                }
+                .v2 .hero {
+                    padding: 32px 20px;
+                }
+            }
+
+            /* ---------- 款 3：全頁 banner 背景、登入卡浮喺上面 ---------- */
+            .v3 {
+                position: relative;
+                place-items: center;
+                padding: 32px 20px;
+                isolation: isolate;
+                overflow: hidden;
+            }
+            .v3 .bg {
+                position: absolute;
+                inset: 0;
+                z-index: -2;
+                background: #53a9e3 url('banner.webp') center / cover no-repeat;
+                filter: saturate(1.05);
+            }
+            .v3 .bg::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: var(--scrim);
+            }
+            .v3 .box {
+                width: min(400px, 100%);
+                padding: 28px 28px 24px;
+                border-radius: 24px;
+                background: color-mix(in srgb, var(--surface) 88%, transparent);
+                border: 1px solid var(--card-border);
+                box-shadow: var(--shadow-float);
+                backdrop-filter: blur(14px);
+                -webkit-backdrop-filter: blur(14px);
+                text-align: center;
+                display: grid;
+                gap: 12px;
+                justify-items: center;
+            }
+            .v3 .banner {
+                width: 220px;
+                border-radius: 14px;
+                box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+                margin-bottom: 6px;
+            }
+            .v3 .gsi {
+                margin-top: 8px;
+            }
+
+            /* ---------- 切換器（截圖時 ?shot 收埋） ---------- */
+            .switcher {
+                position: fixed;
+                top: 12px;
+                right: 12px;
+                z-index: 10;
+                display: flex;
+                gap: 6px;
+                padding: 6px;
+                border-radius: 999px;
+                background: var(--surface);
+                border: 1px solid var(--line);
+                box-shadow: var(--shadow);
+                font-size: 13px;
+            }
+            .switcher button {
+                border: 0;
+                border-radius: 999px;
+                padding: 4px 12px;
+                background: none;
+                color: var(--ink);
+                font: inherit;
+                cursor: pointer;
+            }
+            .switcher button[aria-pressed='true'] {
+                background: var(--primary);
+                color: #fff;
+            }
+            body.shot .switcher {
+                display: none;
+            }
+        </style>
+    </head>
+    <body data-variant="1">
+        <!-- Google 四色 G（官方 logo） -->
+        <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+            <symbol id="g-logo" viewBox="0 0 48 48">
+                <path
+                    fill="#EA4335"
+                    d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                />
+                <path
+                    fill="#4285F4"
+                    d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+                />
+                <path
+                    fill="#FBBC05"
+                    d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+                />
+                <path
+                    fill="#34A853"
+                    d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                />
+            </symbol>
+        </svg>
+
+        <div class="switcher" role="group" aria-label="預覽設定">
+            <button type="button" data-v="1">款 1 置中卡片</button>
+            <button type="button" data-v="2">款 2 左右分欄</button>
+            <button type="button" data-v="3">款 3 全頁背景</button>
+            <button type="button" data-theme-toggle>深 / 淺</button>
+        </div>
+
+        <!-- 款 1：同 403 / 直向提示一樣：banner → 插圖圓 → 標題 → 說明 → 掣 -->
+        <main class="variant v1">
+            <div class="box">
+                <div class="banner">
+                    <img src="banner.webp" alt="903 叱咤 Player" width="1200" height="517" /><span
+                        class="ver"
+                        >Admin v0.6.3</span
+                    >
+                </div>
+                <div class="art" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />
+                    </svg>
+                </div>
+                <h1>管理介面登入</h1>
+                <p>僅限獲授權的 Google 帳戶登入。</p>
+                <a class="gsi" href="#">
+                    <svg aria-hidden="true"><use href="#g-logo" /></svg>使用 Google 登入
+                </a>
+            </div>
+        </main>
+
+        <!-- 款 2：左邊天藍漸變 + 大 banner，右邊白底登入 -->
+        <main class="variant v2">
+            <section class="hero">
+                <div class="banner">
+                    <img src="banner.webp" alt="903 叱咤 Player" width="1200" height="517" /><span
+                        class="ver"
+                        >Admin v0.6.3</span
+                    >
+                </div>
+                <p>節目、廣播劇上下架及排程管理</p>
+            </section>
+            <section class="side">
+                <div class="form">
+                    <h1>歡迎回來</h1>
+                    <p>請以獲授權的 Google 帳戶登入管理介面。</p>
+                    <a class="gsi wide" href="#">
+                        <svg aria-hidden="true"><use href="#g-logo" /></svg>使用 Google 登入
+                    </a>
+                    <div class="rule"></div>
+                    <p class="fine">如帳戶未獲授權，登入後會顯示「沒有權限」。</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- 款 3：banner 鋪滿成頁做背景（淡化），登入卡（毛玻璃）浮喺中間 -->
+        <main class="variant v3">
+            <div class="bg" aria-hidden="true"></div>
+            <div class="box">
+                <div class="banner">
+                    <img src="banner.webp" alt="903 叱咤 Player" width="1200" height="517" /><span
+                        class="ver"
+                        >Admin v0.6.3</span
+                    >
+                </div>
+                <h1>管理介面登入</h1>
+                <p>僅限獲授權的 Google 帳戶登入。</p>
+                <a class="gsi pill" href="#">
+                    <svg aria-hidden="true"><use href="#g-logo" /></svg>使用 Google 登入
+                </a>
+            </div>
+        </main>
+
+        <script>
+            // #2 / #3 揀款；?shot 收埋切換器；?theme=dark|light 強制深淺色
+            const params = new URLSearchParams(location.search);
+            const body = document.body;
+            if (params.has('shot')) body.classList.add('shot');
+            const theme = params.get('theme');
+            if (theme === 'dark' || theme === 'light')
+                document.documentElement.dataset.theme = theme;
+            const buttons = document.querySelectorAll('.switcher [data-v]');
+            const show = (v) => {
+                body.dataset.variant = v;
+                buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+            };
+            const fromHash = () =>
+                show(
+                    ['1', '2', '3'].includes(location.hash.slice(1)) ? location.hash.slice(1) : '1',
+                );
+            buttons.forEach((b) =>
+                b.addEventListener('click', () => (location.hash = b.dataset.v)),
+            );
+            window.addEventListener('hashchange', fromHash);
+            fromHash();
+            document.querySelector('[data-theme-toggle]').addEventListener('click', () => {
+                const dark =
+                    document.documentElement.dataset.theme === 'dark' ||
+                    (!document.documentElement.dataset.theme &&
+                        matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.dataset.theme = dark ? 'light' : 'dark';
+            });
+        </script>
+    </body>
+</html>
