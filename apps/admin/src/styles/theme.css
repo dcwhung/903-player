@@ -1278,6 +1278,13 @@ textarea.autosize {
     }
 }
 
+/* tabs 控制嘅 panel：同 .card 一樣嘅直排間距（時間軸同批次表之間） */
+.view-panel {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+}
+
 /* 編輯：左上架、右下架；窄過 900px 上下排 */
 .split {
     display: grid;

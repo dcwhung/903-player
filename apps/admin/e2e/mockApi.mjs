@@ -38,10 +38,16 @@ const json = (route, body, { status = 200, etag } = {}) =>
         body: JSON.stringify(body),
     });
 
+/*
+ * e2e 固定「而家」= 12/11/2026（四）香港 10:00：假資料（相對今日）同瀏覽器時鐘（run.mjs page.clock）用同一個，
+ * 時間軸「今日」、截圖日子每次都一樣
+ */
+export const E2E_NOW = Date.parse('2026-11-12T02:00:00Z');
+export const E2E_TIMEZONE = 'Asia/Hong_Kong';
 const HK_OFFSET_MS = 8 * 60 * 60 * 1000;
-const hkToday = () => new Date(Date.now() + HK_OFFSET_MS).toISOString().slice(0, 10);
+const hkToday = () => new Date(E2E_NOW + HK_OFFSET_MS).toISOString().slice(0, 10);
 const daysFromToday = (days) =>
-    new Date(Date.now() + HK_OFFSET_MS + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    new Date(E2E_NOW + HK_OFFSET_MS + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 const show = (id, name, order, extra = {}) => ({
     kind: 'shows',
@@ -241,7 +247,7 @@ const changesOf = (state) => {
 
 const publishRow = (id) => ({
     id,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(E2E_NOW).toISOString(),
     createdBy: 'admin@example.com',
     hash: 'abc',
     showCount: 1,
@@ -350,7 +356,7 @@ const handlers = {
             ? json(route, { email: 'admin@example.com' })
             : json(route, { error: 'not logged in' }, { status: 401 }),
     'POST /api/scan': (state, route) =>
-        json(route, { scannedAt: new Date().toISOString(), findings: [], skipped: [] }),
+        json(route, { scannedAt: new Date(E2E_NOW).toISOString(), findings: [], skipped: [] }),
     'GET /api/todos': (state, route) => json(route, todosOf(state)),
     'GET /api/folders/unmapped': (state, route) => json(route, { folders: UNMAPPED_FOLDERS }),
     'GET /api/entries': (state, route) =>

@@ -3,7 +3,7 @@
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { createState, installMockApi } from './mockApi.mjs';
+import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
 
 const PORT = Number(process.env.E2E_PORT || 4174);
 const BASE = `http://localhost:${PORT}`;
@@ -38,8 +38,10 @@ const waitForServer = async () => {
     throw new Error(`vite preview did not start on ${BASE}`);
 };
 
+/** 固定時鐘 + 香港時區（同 mockApi E2E_NOW）：「今日」= 12/11/2026，timer 照行 */
 const newPage = async (browser, state, viewport = WIDE) => {
-    const page = await browser.newPage({ viewport });
+    const page = await browser.newPage({ viewport, timezoneId: E2E_TIMEZONE });
+    await page.clock.setFixedTime(E2E_NOW);
     await installMockApi(page, state);
     return page;
 };
@@ -56,7 +58,7 @@ const shoot = async (page, name, options = {}) => {
 const loggedIn = (options) => ({ ...createState(options), loggedIn: true });
 
 /*
- * 字色對底色嘅對比度（WCAG）：底色由自己向上搵第一個唔透明嘅 background；
+ * 字色對底色嘅對比度（WCAG）：底色由自己向上搵第一個唔透明嘅 background（揀咗嘅 tab 用佢底下嘅膠囊）；
  * 自己 / 祖先有 opacity 就將字同底一齊混落再上一層嘅底（= 畫面上真正見到嘅顏色）
  */
 const contrastOf = (locator) =>
@@ -71,9 +73,17 @@ const contrastOf = (locator) =>
             b: top.b * alpha + under.b * (1 - alpha),
             a: 1,
         });
+        // 揀咗嘅「編輯｜預覽」tab 本身透明，真正墊底嘅係同層嘅共用膠囊（.view-pill）
+        const fillOf = (node) => {
+            const pill =
+                node.getAttribute?.('aria-selected') === 'true'
+                    ? node.parentElement?.querySelector(':scope > .view-pill')
+                    : null;
+            return getComputedStyle(pill ?? node).backgroundColor;
+        };
         const bgOf = (start) => {
             for (let node = start; node; node = node.parentElement) {
-                const bg = parse(getComputedStyle(node).backgroundColor);
+                const bg = parse(fillOf(node));
                 if (bg.a > 0) return bg.a === 1 ? bg : over(bg, bgOf(node.parentElement));
             }
             return { r: 255, g: 255, b: 255, a: 1 };
@@ -274,6 +284,8 @@ const showListCheck = (browser) =>
     });
 
 const SCHEDULE_PARTLY = `${BASE}/dramas/lancy/schedule#lancy-02`;
+/** 「編輯｜預覽」膠囊滑動（--motion-move + --motion-trail）完咗先截圖 */
+const PILL_SETTLE_MS = 400;
 const SCHEDULE_ALL_LISTED = `${BASE}/dramas/lancy/schedule#half`;
 /** 真封面（e2e/fixtures）：排程截圖有碟面 */
 const scheduleState = () => loggedIn({ realImages: true });
@@ -288,6 +300,32 @@ const panelBoxes = async (page) =>
         ),
     );
 
+/** 今日（12/11 四）唔撞日：上架、下架時間軸各有一格「今日」，日子 12/11 四 */
+const assertTodayCells = async (page) => {
+    for (const name of ['上架時間軸', '下架時間軸']) {
+        const cell = page.getByRole('group', { name }).locator('.seg-batch.today-cell');
+        if ((await cell.count()) !== 1) throw new Error(`${name}: no 今日 cell`);
+        const text = (await cell.innerText()).replace(/\s+/g, ' ').trim();
+        if (text !== '今日 12/11 四') throw new Error(`${name}: 今日 cell reads ${text}`);
+    }
+};
+
+/** 句子兩段：同一行，或者第二段（「逢」開頭）喺下一行嘅最左 */
+const assertCadenceBreaks = async (page) => {
+    for (const sentence of await page.locator('.sentence.cadence').all()) {
+        const box = await sentence.boundingBox();
+        const [first, second] = await Promise.all(
+            [0, 1].map((i) => sentence.locator('.cadence-part').nth(i).boundingBox()),
+        );
+        const text = await sentence.locator('.cadence-part').nth(1).innerText();
+        if (!box || !first || !second || !text.startsWith('逢'))
+            throw new Error(`cadence parts: ${text}`);
+        const sameLine = Math.abs(first.y - second.y) < 2;
+        if (!sameLine && Math.abs(second.x - box.x) > 1)
+            throw new Error('逢 part wrapped but not at the start of a line');
+    }
+};
+
 const scheduleEditCheck = (browser) =>
     check(
         'schedule 編輯 (mockup ⑧): 上架 / 下架 panels side by side, stacked under 900px',
@@ -300,16 +338,16 @@ const scheduleEditCheck = (browser) =>
                 .waitFor();
             if (
                 (await page
-                    .getByRole('button', { name: '編輯', exact: true })
-                    .getAttribute('aria-pressed')) !== 'true'
+                    .getByRole('tab', { name: '編輯', exact: true })
+                    .getAttribute('aria-selected')) !== 'true'
             )
-                throw new Error('編輯 not selected');
+                throw new Error('編輯 tab not selected');
             await page.getByRole('button', { name: '每週 1 次' }).click();
             await page.getByRole('spinbutton', { name: '每次上架集數' }).fill('5');
             // 下架方式 = 快速套用 chip（同上架一樣），唔係 segmented 大框
             if ((await page.locator('section.panel.down .seg').count()) > 0)
                 throw new Error('unlist modes still in a segmented box');
-            await page.locator('section.panel.down .presets').getByText('快速套用').waitFor();
+            await page.locator('section.panel.down .presets').getByText('快速套用：').waitFor();
             await page.getByRole('button', { name: '逢星期 X 下架 N 集' }).click();
             await page.getByRole('spinbutton', { name: '每次下架集數' }).fill('6');
             await page.getByText('✓ 已上架').waitFor();
@@ -326,6 +364,9 @@ const scheduleEditCheck = (browser) =>
             const [up, down] = await panelBoxes(page);
             if (!up || !down || Math.abs(up.y - down.y) > 1 || down.x <= up.x)
                 throw new Error('panels not side by side');
+            // 今日 12/11 唔係上架 / 下架日：兩條時間軸都插一格「今日」
+            await assertTodayCells(page);
+            await assertCadenceBreaks(page);
             await shoot(page, 'schedule-edit', { fullPage: true });
             await page.setViewportSize({ width: 860, height: 860 });
             const [upNarrow, downNarrow] = await panelBoxes(page);
@@ -343,9 +384,16 @@ const schedulePreviewCheck = (browser) =>
         await page.getByRole('spinbutton', { name: '每次上架集數' }).fill('5');
         await page.getByRole('button', { name: '逢星期 X 下架 N 集' }).click();
         await page.getByRole('spinbutton', { name: '每次下架集數' }).fill('6');
-        await page.getByRole('button', { name: '預覽' }).click();
+        await page.getByRole('tab', { name: '預覽' }).click();
         if (await page.getByRole('heading', { name: '上架' }).isVisible())
             throw new Error('edit panels still shown in 預覽');
+        // 今日 12/11 喺第一個上架日（15/11）之前：時間軸最前一格「今日」、批次表第一行今日
+        const todayCell = page.locator('.strip.preview > .day-group').first();
+        if (!(await todayCell.evaluate((el) => el.classList.contains('today-cell'))))
+            throw new Error('preview: 今日 not the first cell');
+        const firstRow = page.locator('table.batches tbody tr').first();
+        const rowText = (await firstRow.innerText()).replace(/\s+/g, ' ').trim();
+        if (rowText !== '12/11 四（今日） — —') throw new Error(`today row: ${rowText}`);
         const heads = await page.locator('table.batches th').allTextContents();
         if (heads.join() !== '日期,上架,下架') throw new Error(`table columns ${heads}`);
         await page.locator('table.batches .pill.info').first().waitFor();
@@ -356,6 +404,8 @@ const schedulePreviewCheck = (browser) =>
         await tip.waitFor();
         if (!/^第 16 集：\d+\/\d+ 上架，\d+\/\d+ 下架，共 \d+ 日$/.test(await tip.textContent()))
             throw new Error(`tooltip: ${await tip.textContent()}`);
+        // 等膠囊滑完、tooltip 淡入完先影
+        await page.waitForTimeout(PILL_SETTLE_MS);
         await shoot(page, 'schedule-preview', { fullPage: true });
         await page.close();
     });
@@ -386,7 +436,7 @@ const MIN_CONTRAST = 3;
 
 const scheduleContrastCheck = (browser) =>
     check(
-        'schedule chips / segmented: text ≥ 3:1 selected, hovered or not (light + dark)',
+        'schedule chips / 編輯｜預覽 tabs: text ≥ 3:1 selected, hovered or not (light + dark)',
         async () => {
             const page = await newPage(browser, scheduleState());
             await page.goto(SCHEDULE_PARTLY);
@@ -395,8 +445,9 @@ const scheduleContrastCheck = (browser) =>
             const buttons = [
                 ...['一次性全部', '每日 1 集', '每週 1 次'],
                 ...['不下架', '指定日全部', '上架 N 日後', '逢星期 X 下架 N 集'],
-                ...['編輯', '預覽'],
-            ].map((name) => page.getByRole('button', { name, exact: true }));
+            ]
+                .map((name) => page.getByRole('button', { name, exact: true }))
+                .concat(['編輯', '預覽'].map((name) => page.getByRole('tab', { name })));
             const low = [];
             for (const scheme of ['light', 'dark']) {
                 await page.emulateMedia({ colorScheme: scheme });
@@ -406,7 +457,9 @@ const scheduleContrastCheck = (browser) =>
                     await button.hover();
                     const hovered = await contrastOf(button);
                     const name = await button.textContent();
-                    const pressed = await button.getAttribute('aria-pressed');
+                    const pressed =
+                        (await button.getAttribute('aria-pressed')) ??
+                        (await button.getAttribute('aria-selected'));
                     if (Math.min(plain, hovered) < MIN_CONTRAST)
                         low.push(
                             `${scheme} ${name}(${pressed}) ${plain.toFixed(2)}/${hovered.toFixed(2)}`,
@@ -440,7 +493,7 @@ const scheduleConflictCheck = (browser) =>
         const page = await newPage(browser, scheduleState());
         await page.goto(SCHEDULE_ALL_LISTED);
         await page.getByRole('button', { name: '指定日全部' }).click();
-        await page.getByLabel('下架日期').fill('2026-09-01');
+        await page.getByLabel('下架日期', { exact: true }).fill('01/09/2026');
         await page.getByText('全部下架').waitFor();
         if ((await page.getByRole('alert').count()) > 0) throw new Error('error shown before 儲存');
         await page.getByRole('button', { name: '儲存' }).click();
@@ -453,6 +506,66 @@ const scheduleConflictCheck = (browser) =>
         )
             throw new Error(`alert: ${text}`);
         await shoot(page, 'schedule-conflict', { fullPage: true });
+        await page.close();
+    });
+
+/*
+ * 日期欄（ui/DateField，用戶 2026-11-12）：顯示 DD/MM/YYYY，日曆 icon 開月曆（星期日開始、標今日、揀咗實色），
+ * 方向鍵 + Enter 揀日、Esc 收起；截圖時月曆開住
+ */
+const scheduleDateFieldCheck = (browser) =>
+    check('schedule date field: DD/MM/YYYY text, month calendar popover, keyboard', async () => {
+        const page = await newPage(browser, scheduleState());
+        await page.goto(SCHEDULE_PARTLY);
+        const field = page.getByRole('textbox', { name: '上架開始日期', exact: true });
+        if ((await field.inputValue()) !== '15/11/2026')
+            throw new Error(`start date shows ${await field.inputValue()}`);
+        if ((await page.locator('input[type="date"]').count()) > 0)
+            throw new Error('a native date input is left');
+        await page.getByRole('button', { name: '選擇上架開始日期' }).click();
+        const dialog = page.getByRole('dialog', { name: '選擇上架開始日期' });
+        await dialog.waitFor();
+        await page.getByRole('grid', { name: '2026 年 11 月' }).waitFor();
+        const heads = await dialog.locator('th').allTextContents();
+        if (heads.join('') !== '日一二三四五六') throw new Error(`weekdays ${heads}`);
+        await dialog.getByRole('button', { name: '12/11/2026 星期四（今日）' }).waitFor();
+        const focused = await page.evaluate(() =>
+            document.activeElement?.getAttribute('aria-label'),
+        );
+        if (focused !== '15/11/2026 星期日') throw new Error(`focus on ${focused}`);
+        // 月曆底部喺內容區捲動範圍入面：捲到成個月曆見到先影
+        await dialog.scrollIntoViewIfNeeded();
+        await page.waitForTimeout(PILL_SETTLE_MS);
+        await shoot(page, 'schedule-datefield', { fullPage: true });
+        await page.keyboard.press('ArrowDown');
+        await page.keyboard.press('Enter');
+        if ((await dialog.count()) > 0) throw new Error('calendar still open after Enter');
+        if ((await field.inputValue()) !== '22/11/2026')
+            throw new Error(`picked ${await field.inputValue()}`);
+        await field.fill('31/11/2026');
+        await field.press('Tab');
+        const error = await page.locator('.date-error').first().textContent();
+        if (error !== '日期無效，請以 DD/MM/YYYY 格式輸入') throw new Error(`error: ${error}`);
+        await page.close();
+    });
+
+/** 今日 = 上架日（未上架短篇「一次性全部」今日上架）：唔加格，嗰格 / 嗰行加「（今日）」 */
+const scheduleTodayOverlapCheck = (browser) =>
+    check('schedule: 今日 on a batch date marks that batch, no extra cell', async () => {
+        const page = await newPage(browser, scheduleState());
+        await page.goto(`${BASE}/dramas/lancy/schedule#love-after`);
+        await page.getByRole('button', { name: '一次性全部' }).click();
+        await page.getByRole('button', { name: '指定日全部' }).click();
+        const listing = page.getByRole('group', { name: '上架時間軸' });
+        await listing.getByText('12/11 四（今日）').waitFor();
+        if ((await listing.locator('.today-cell').count()) > 0)
+            throw new Error('extra 今日 cell on overlap');
+        await page.mouse.move(0, 0);
+        await shoot(page, 'schedule-today-overlap', { fullPage: true });
+        await page.getByRole('tab', { name: '預覽' }).click();
+        await page.locator('.strip.preview .day-group.today').getByText('12/11（今日）').waitFor();
+        const row = page.locator('table.batches tr.today');
+        if ((await row.count()) !== 1) throw new Error('today row not highlighted once');
         await page.close();
     });
 
@@ -1173,6 +1286,8 @@ try {
         scheduleContrastCheck,
         scheduleAllListedCheck,
         scheduleConflictCheck,
+        scheduleDateFieldCheck,
+        scheduleTodayOverlapCheck,
         presetChipCheck,
         realImagesCheck,
         missingFolderCheck,
