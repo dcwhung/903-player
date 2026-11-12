@@ -49,11 +49,25 @@
 
 /*
  * 直版填滿（T8，useRowsPerPage 量到先有 data-fill）：行高由 inline grid-template-rows 定，
- * 每行最多高到 16:9 × --show-tile-max-grow；再有剩就平分做行距（_mockups_/home-fill-bottom B3），
+ * 每行最多高到 16:9 × --show-tile-max-grow。一頁放得晒就照 .grid 置頂，剩低高度留喺最底
+ * （_mockups_/dynamic-show-grid）；要分頁（data-paged）先將剩低平分做行距（_mockups_/home-fill-bottom B3），
  * 最尾一行貼住頁底。inline 係 n 條固定行，分頁最後一頁少格都係 n 條，行位同第一頁一樣
  */
-.grid[data-fill] {
+.grid[data-fill][data-paged] {
     align-content: space-between;
+}
+
+/*
+ * 直版動態欄數（_mockups_/dynamic-show-grid）：欄數由 inline grid-template-columns 定；
+ * 兩欄而格數單數，最尾一格（今日節目）成行咁闊。ShowGrid 只喺直版、今日節目嗰頁先加 data-span-last
+ */
+.grid[data-span-last] > :last-child {
+    grid-column: 1 / -1;
+}
+
+/* 未量到（冇 data-fill）格照鎖比例：兩倍闊就兩倍比例，同其他 16:9 格一樣高（欄距嘅差別可以唔計） */
+.grid:not([data-fill])[data-span-last] > :last-child {
+    aspect-ratio: calc(2 * var(--tile-aspect-w)) / var(--tile-aspect-h);
 }
 
 /*
@@ -75,5 +89,14 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
         grid-template-rows: repeat(2, minmax(0, 1fr));
         align-content: stretch;
+    }
+
+    /* 4 欄 × 2 行唔橫跨（data-span-last 只喺直版先加，呢度再保險一次） */
+    .grid[data-span-last] > :last-child {
+        grid-column: auto;
+    }
+
+    .grid:not([data-fill])[data-span-last] > :last-child {
+        aspect-ratio: auto;
     }
 }

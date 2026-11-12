@@ -5,7 +5,7 @@ import { t } from '../../../../i18n/t';
 import { HomeLandscapeGrid } from '../HomeLandscapeGrid/HomeLandscapeGrid';
 import { PageDots } from '../../../shared/common/PageDots/PageDots';
 import styles from './ShowGrid.module.css';
-import { GRID_COLUMNS, paginate } from './showGridPages';
+import { paginate, portraitColumns, spanningPage } from './showGridPages';
 import { useGridPager } from './useGridPager';
 import { useRowsPerPage } from './useRowsPerPage';
 
@@ -20,24 +20,52 @@ interface ShowGridProps {
 
 const pagePosition = (index: number, total: number) => t('home.pagePosition', { index, total });
 
-/** 直版填滿（T8）：每行用量到嘅高（16:9 到最多高 30%），剩低嘅高度留喺最底；未量到就照用 CSS 16:9 */
-const fillStyle = (rows: number, rowPx?: number): CSSProperties | undefined =>
-    rowPx === undefined ? undefined : { gridTemplateRows: `repeat(${rows}, ${rowPx}px)` };
+/** 直版填滿（T8）：每行用量到嘅高（16:9 到最多高 50%）；未量到就照用 CSS 16:9 */
+const fillStyle = (rows: number, rowPx?: number): CSSProperties =>
+    rowPx === undefined ? {} : { gridTemplateRows: `repeat(${rows}, ${rowPx}px)` };
+
+/** 直版欄數（dynamic-show-grid）：inline 蓋過 CSS 嘅兩欄；橫版唔畀，由 CSS 排 4 欄 */
+const columnsStyle = (columns: number): CSSProperties => ({
+    gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+});
+
+/** data attribute 開關：true → ''（有 attribute），false → 冇 */
+const flag = (on: boolean): '' | undefined => (on ? '' : undefined);
 
 /**
- * 直版 / 闊橫版節目格（兩欄）：填滿橫額同 mini player 之間嘅高度。
- * 全部（16:9 最矮）放得落就一頁，每行拉高分剩低嘅高度（最多高 30%）；
- * 矮螢幕放唔落就按高度分頁，左右掃（scroll-snap）或者撳指示點轉頁。
+ * 按格數同畫面計分頁：直版按格數揀欄數（portraitColumns：≤ 2 格一欄，否則兩欄），
+ * 單數格最尾一格（今日節目）喺佢嗰頁橫跨成行；橫版（LANDSCAPE_QUERY）唔分頁、唔加直版欄數 / 橫跨。
+ * gridProps(i)：第 i 頁 grid 嘅 data attribute 同 inline style
+ */
+const useShowGridPages = (tiles: ReactNode[]) => {
+    // 橫版一頁放晒（ShowGrid.module.css 排成幾欄 × 兩行填滿），唔使量高度分頁
+    const landscape = useMediaQuery(LANDSCAPE_QUERY);
+    const count = tiles.length;
+    const columns = portraitColumns(count);
+    const { rows, rowPx, ...refs } = useRowsPerPage(count, columns, !landscape);
+    const perPage = rows * columns;
+    const pages = paginate(tiles, perPage);
+    const paged = pages.length > 1;
+    // 橫跨嗰格喺邊頁（冇就 -1）：直版先有，唔好漏入闊橫版嘅 4 欄
+    const spanPage = landscape ? -1 : spanningPage(count, columns, perPage);
+    const style = landscape ? undefined : { ...columnsStyle(columns), ...fillStyle(rows, rowPx) };
+    const gridProps = (i: number) => ({
+        'data-fill': flag(rowPx !== undefined),
+        'data-paged': flag(paged),
+        'data-span-last': flag(i === spanPage),
+        style,
+    });
+    return { ...refs, pages, gridProps };
+};
+
+/**
+ * 直版 / 闊橫版節目格：填滿橫額同 mini player 之間嘅高度。
+ * 全部（16:9 最矮）放得落就一頁，每行拉高分剩低嘅高度（最多高 50%），置頂、剩低留喺最底；
+ * 矮螢幕放唔落就按高度分頁（行距 space-between），左右掃（scroll-snap）或者撳指示點轉頁。
  * 橫版（LANDSCAPE_QUERY，例如 iPad）唔分頁：CSS 排成 4 欄 × 兩行填滿
  */
 const PagedShowGrid = ({ tiles, label, busy }: ShowGridProps) => {
-    // 橫版一頁放晒（ShowGrid.module.css 排成幾欄 × 兩行填滿），唔使量高度分頁
-    const landscape = useMediaQuery(LANDSCAPE_QUERY);
-    const { viewportRef, gridRef, rows, rowPx, maxWidthPx } = useRowsPerPage(
-        tiles.length,
-        !landscape,
-    );
-    const pages = paginate(tiles, rows * GRID_COLUMNS);
+    const { viewportRef, gridRef, maxWidthPx, pages, gridProps } = useShowGridPages(tiles);
     const { scrollerRef, index, onScroll, goTo } = useGridPager(pages.length);
 
     const pageLabels = pages.map((_, i) => t('home.page', { index: i + 1 }));
@@ -55,8 +83,7 @@ const PagedShowGrid = ({ tiles, label, busy }: ShowGridProps) => {
                         key={pageLabels[i]}
                         className={styles.grid}
                         ref={i === 0 ? gridRef : undefined}
-                        data-fill={rowPx === undefined ? undefined : ''}
-                        style={fillStyle(rows, rowPx)}
+                        {...gridProps(i)}
                     >
                         {page}
                     </div>
