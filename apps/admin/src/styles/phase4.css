@@ -517,3 +517,54 @@
         height: calc(280px * 400 / 2000);
     }
 }
+
+/* ---------- 發佈頁配色警告（#f）：一行摘要 / 展開清單 ---------- */
+.pub-warnings {
+    display: grid;
+    gap: 8px;
+}
+
+.pub-warnings .note .link-btn {
+    margin-left: 8px;
+    color: var(--accent-ink);
+    text-decoration: underline;
+}
+
+.issues {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.issues li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+.issues li > svg {
+    width: 18px;
+    height: 18px;
+}
+
+.issues.warn li {
+    background: var(--warn-bg);
+    color: var(--warn-ink);
+}
+
+.issues li small {
+    display: block;
+    font-size: 12px;
+}
+
+.issues li a {
+    color: var(--accent-ink);
+    font-size: 13px;
+    font-weight: 600;
+}
