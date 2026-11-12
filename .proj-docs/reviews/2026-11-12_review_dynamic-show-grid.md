@@ -77,3 +77,56 @@ next_agent: quality-assurance
 branch: "feature/player-dynamic-show-grid"
 context: "L4 dynamic portrait ShowGrid player 1.35.0 review 100/100 at 60a2c2b; integration branch is main; no blocking findings; S-935..S-938 to backlog (main agent owns backlog.md); report committed locally, not pushed"
 ```
+
+## Re-review（S-935–S-938）
+
+- 日期：2026-11-12；目標：`eb1812a`，`git diff aebb087..HEAD`（5 files，+183 / −31）；S-937 另驗 `git rev-list 33cbf6e..HEAD`
+- 結果：S-935、S-936、S-937、S-938 **全部已處理**。冇收斂嘅 🔴 / 🟡；新增 3 條 🟢（S-939–S-941）。分數維持 100/100，✅ pass
+
+### Hard Gates
+
+all pass。
+
+- ESLint + Prettier `--check`（5 個改動檔）：pass；`apps/player` `npx tsc -b`：exit 0
+- 相關 unit：ShowGrid 五個 test 檔 74 tests pass；e2e 冇跑（Hard Rule #7），Developer 報 e2e 860 PASS，`eb1812a` CI run `43323673299` 跑緊，由 QA 引用
+
+### 逐條核實
+
+| ID    | Commit              | 核實                                                                                                                                                                                                                                                                                                                                                    | 狀態      |
+| ----- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| S-935 | `6ace44c`           | 數學：橫跨格高 `(100cqi − (n − 1) × gap) / n × 9 / 16`，`100cqi` = `.grid` content box（已扣 gutter），等於 `minmax(0, 1fr)` 一欄闊 × 16:9，同其他格一樣高。`--show-grid-columns` inline 覆蓋 `.grid` 預設 1；React custom property 唔加 `px`（test 鎖 `'2'`）。`@supports not (width: 1cqi)` 喺主規則之後、`@media` 橫版之前，橫版 `height: auto` 還原 | ✅ 已處理 |
+| S-936 | `7c10b06`           | Mutation：將 `useRowsPerPage.ts` deps 嘅 `columns` 拎走，新 test fail（1 failed / 16），還原後 pass，真係鎖住                                                                                                                                                                                                                                           | ✅ 已處理 |
+| S-937 | `f715e92`（squash） | Scratch worktree 逐個 commit `tsc -b --force`：`f715e92`、`d69f6c2`、`384721d`、`aebb087`、`7c10b06`、`6ace44c`、`eb1812a` 全部 exit 0、冇輸出                                                                                                                                                                                                          | ✅ 已處理 |
+| S-938 | `eb1812a`           | 0 個節目 → schema 拒絕、退返內建（格數由 `buildCatalogDocument` 計，唔寫死 8）；iPad 9 / 12 格 `tabletPages: 1`；今日節目同第一格同高（填滿）；拎走 `data-fill` 量未量到狀態，鎖 S-935（舊公式差 3.4px > 容差 2px，會 fail）                                                                                                                            | ✅ 已處理 |
+
+`container-type: inline-size` 對其他 layout 嘅影響（L2 讀 code 核實，冇問題）：
+
+- `.grid` 係 `flex: 0 0 100%`，闊度唔靠內容，inline-size containment 唔改闊；`useRowsPerPage` 量 `viewport.clientWidth`，唔受影響
+- 格入面（`ShowTile`、`NewBadge`）冇用 `cq*` 單位或者 `@container`；`--player-shell-height: 100cqh` 要 block 軸 container，`.grid` 只係 inline-size，照舊對住 `.scope`
+- Layout containment 令 `.grid` 做 fixed / absolute containing block 同 stacking context：格入面冇 fixed 元素（`MiniPlayer` / `ViewportDebug` 用 portal），card zoom 用 `getBoundingClientRect`（viewport 座標），唔受影響
+- 橫版：同一個 `.grid` 規則，4 × 2 由 `@media` 蓋，containment 唔改尺寸；手機打橫用 `HomeLandscapeGrid`，唔經呢度
+
+### 🟢 Suggestion / Observation（新增，唔 block）
+
+- S-939：`ShowGrid.module.css:88` 後備 `aspect-ratio: calc(var(--show-grid-columns) * …) / …`：`HomeBanner.module.css:38` 註解講明舊 iOS 嘅 `aspect-ratio` 唔一定接受 `calc()` / `var()`，咁會變 computed-value time 無效 → `auto`，今日節目（內容全部 absolute）會縮到 0 高。L1：HomeBanner 寫低嘅 project 做法；L2：冇 iOS 15 瀏覽器重現不到（舊 code 一樣寫法，唔係新風險）。橫跨只會喺兩欄出現，可以照 HomeBanner 寫死 `32 / 9`。
+- S-940（Developer 提出嘅 `HomeBanner` `/ 2`）：直版 1 欄（catalog 只有 1 個節目）時，橫額仍然係兩欄格高（約 98px），節目格起碼 203px。HomeBanner 註解已經接受「可以矮過節目格」，mockup `dynamic-show-grid` 寫明橫額唔喺範圍，冇違反 AC，**唔使即刻改**。建議開 follow-up 畀用戶決定橫額係咪要跟欄數：要跟就將 `--show-grid-columns` 搬上兩者共同嘅 ancestor（橫額同 `.grid` 係兄弟，讀唔到 `.grid` 嘅值），要出 mockup 確認；唔跟就喺兩邊註解互相指向，記低刻意分開。
+- S-941：`showGridCounts.mjs` 未量到檢查用 `EDGE_TOLERANCE_PX = 2`，手機上舊公式只差 3.4px（欄距 12px × 9 / 32），餘量 1.4px。可以畀呢個檢查一個細啲嘅容差（例如 0.5px）。
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+  no_critical: pass
+  security_scan: n/a
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/player-dynamic-show-grid"
+context: "L4 re-review at eb1812a: S-935..S-938 resolved (S-936 mutation-verified, S-937 all 7 commits tsc -b pass); new S-939..S-941 to backlog (main agent owns backlog.md; S-940 HomeBanner /2 = user design decision, no code change now); integration branch is main; CI run 43323673299 in progress, report committed locally, not pushed"
+```
