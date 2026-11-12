@@ -48,6 +48,26 @@ const catalogUrlFor = (mode: string): string =>
     (mode === E2E_MODE ? E2E_CATALOG_URL : '');
 
 /*
+ * S-765：vite preview 係 SPA，冇呢個檔都答 200 + index.html。e2e harness 唔可以改 SW 發嘅 catalog request
+ *（會令 Chromium 重裝 SW，S-648），SW 原封不動去 preview 就會將 SPA HTML 寫入 catalog-json cache。
+ * e2e mode 嘅 preview 對 catalog folder 底下一律答 404（喺 SPA fallback 之前），同真 hosting 冇呢個檔一樣；
+ * NetworkFirst 唔 cache 非 200。e2e/run.mjs 用 --mode e2e 起 preview
+ */
+const HTTP_NOT_FOUND = 404;
+const e2eCatalogNotFound = (catalogUrl: string): Plugin => {
+    const folder = catalogUrl.slice(0, catalogUrl.lastIndexOf('/') + 1);
+    return {
+        name: 'e2e-catalog-not-found',
+        configurePreviewServer: (server) => {
+            server.middlewares.use(folder, (_req, res) => {
+                res.statusCode = HTTP_NOT_FOUND;
+                res.end();
+            });
+        },
+    };
+};
+
+/*
  * Prebuild snapshot（Backend Phase 2b-2）：production build 有 catalog URL 就喺 buildStart 攞最新 publish
  *（連圖）寫去呢度，src/catalog/snapshot/source.ts 包入 bundle；失敗 / e2e / 冇 URL → repo library
  */
@@ -66,6 +86,7 @@ export default defineConfig(({ mode }) => {
             react(),
             injectAppVersion(),
             injectSocialTags(),
+            mode === E2E_MODE && catalogUrl.startsWith('/') && e2eCatalogNotFound(catalogUrl),
             catalogSnapshot({
                 url: catalogUrl,
                 dir: SNAPSHOT_DIR,

@@ -86,7 +86,8 @@ const startPreview = async () => {
     const viteBin = new URL('bin/vite.js', import.meta.resolve('vite/package.json')).pathname;
     const server = spawn(
         process.execPath,
-        [viteBin, 'preview', '--port', String(PORT), '--strictPort'],
+        // --mode e2e：同 build 一樣，vite.config.ts 先會對 e2e-catalog/ 答 404、唔做 SPA fallback（S-765）
+        [viteBin, 'preview', '--mode', 'e2e', '--port', String(PORT), '--strictPort'],
         // stderr 照出：vite 起唔到（例如撞 port）時睇到原因（S-850）
         { stdio: ['ignore', 'ignore', 'inherit'] },
     );

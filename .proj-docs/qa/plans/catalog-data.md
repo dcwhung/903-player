@@ -6,7 +6,7 @@
     - AC-1 probe 只加原站真係有嘅新一集，唔理未知節目（e2e「先驗 probe 同 audio host」）
     - AC-2 show.json 符合 schema（`packages/catalog/schemas/show.schema.json`、`packages/catalog/src/core/jsonSchemas.node.test.ts`；現有 library JSON：`src/catalog/libraryJsonSchemas.node.test.ts`）
     - AC-3 catalog 工具（.proj-docs/qa/2026-10-29_qa_catalog-tools.md）
-    - AC-4 runtime `catalog.json`（`.proj-docs/plans/2026-11-07_plan_phase1-runtime-catalog.md`）：`VITE_CATALOG_URL` 未設 = 零 request、同內建一樣；有設就 splash 期間 fetch 最多 1.5s 即用，壞 JSON / 錯 `schemaVersion` / 慢 / build 失敗 fallback（SW cache → 內建），splash 照移走；生成 vs 內建 registry 每集 episode ID / URL / 上下架 / theme 一樣；theme `headerRule` / `titleFont` 白名單（W-702，runtime 同 JSON schema 同一條 pattern）
+    - AC-4 runtime `catalog.json`（`.proj-docs/plans/2026-11-07_plan_phase1-runtime-catalog.md`）：`VITE_CATALOG_URL` 未設 = 零 request、同內建一樣；有設就 splash 期間 fetch 最多 1.5s 即用，壞 JSON / 錯 `schemaVersion` / 慢 / build 失敗 fallback（SW cache → 內建），splash 照移走；生成 vs 內建 registry 每集 episode ID / URL / 上下架 / theme 一樣；theme `headerRule` / `titleFont` 白名單（W-702，runtime 同 JSON schema 同一條 pattern）；e2e 預設（harness 404）SW 發嘅 `catalog.json` request 由 e2e preview 答 404，`catalog-json` cache 冇 key（S-765）
     - AC-5 Prebuild snapshot（`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md` §2b-2 B）：`command = build`、mode ≠ e2e、有 `VITE_CATALOG_URL` 先 fetch；同 runtime 一樣嘅 validator、圖 sha256 前 16 hex = 檔名、暫存 folder 全部成功先 rename；任何失敗 warn + repo library、build exit 0；每次 build 清舊 snapshot；有 snapshot 時內建來源用 snapshot（`localizeDocument`），test / e2e mode 永遠 library；snapshot 圖入 `dist` + `sw.js` precache；log hash = publish hash
     - AC-6 3a 新欄位（`.proj-docs/plans/2026-11-10_plan_phase3-admin.md` §3a.1–2）：show `enabled` / `summary` / `hosts` / `airTime`、drama `summary` 全部 optional，parser ↔ JSON schema 同步（`additionalProperties: false`）；`allShows()` 濾走 `enabled: false`；`packages/catalog/src/admin/*`（`parseTitles` / `summarizeChanges` / `airTime` / batches）unit
 - Scope files（56 個 + 1-hop importers 41 個；確實清單 = ledger 入面呢條鏈嘅行）:
@@ -18,7 +18,7 @@
     - npm test -- packages/catalog/src/core/ packages/catalog/src/date.test.ts src/catalog/libraryJsonSchemas.node.test.ts src/data/ src/hooks/useRefreshedOn.test.ts src/selectors/recordings.test.ts src/services/audioProbe.test.ts src/services/probeStore.test.ts src/catalog/shows/ packages/catalog/src/shows/ src/utils/date.test.ts
     - npm test -- packages/catalog/src/document/ src/catalog/runtime src/catalog/catalogJson scripts/buildCatalogJson
     - e2e: run.mjs '先驗 probe 同 audio host'
-    - e2e: e2e/remoteCatalog.mjs（'Remote catalog：…' 6 個 section）
+    - e2e: e2e/remoteCatalog.mjs（'Remote catalog：…' 8 個 section）
     - Flag off：`npm run build`（production）後 `dist` grep 唔到 `e2e-catalog|catalog-json|catalog-images`，`sw.js` 冇 NetworkFirst / CacheFirst
     - npm test -- apps/player/scripts/catalogSnapshot apps/player/src/catalog packages/catalog/src/document
     - Snapshot build（AC-5，配 api 鏈本機 Worker）：`NODE_EXTRA_CA_CERTS=<proxy CA + wrangler cert> VITE_CATALOG_URL=https://localhost:8787/catalog/v1/catalog.json npm run build -w apps/player`（log hash vs publish、dist / `sw.js` 圖、vite preview 擋 runtime fetch 睇 snapshot 圖）；URL 唔通、`--mode e2e`、冇 URL 各 build 一次；完咗刪 `src/catalog/snapshot/data*`

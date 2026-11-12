@@ -3,7 +3,8 @@
 // （內建全部節目 / 劇集 + 一套只有 catalog 先有嘅測試劇），圖由 src/catalog/*/library/ 直接讀。
 // 1 正常 → 主頁即見測試劇；2 壞 JSON / 唔識 schemaVersion → 用內建；3 慢過 1.5s → 用內建、splash 照收；
 // 4 第二次開 app 斷網 → SW cache 嘅 catalog；5 舊版（v1）進度用 remote catalog 照搬；
-// 6 跨 origin 圖（似 Worker：有 CORS header）：<img crossorigin> 照出到（S-764）。
+// 6 跨 origin 圖（似 Worker：有 CORS header）：<img crossorigin> 照出到（S-764）；
+// 7 harness 預設（冇蓋 route）：SW 嘅 catalog request 由 e2e preview 答 404，catalog-json cache 冇 key（S-765）。
 // 所有 route 都好似 apps/api Worker 咁答 Access-Control-Allow-Origin + Vary: Origin
 import { readFileSync } from 'node:fs';
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
@@ -27,6 +28,8 @@ const CATALOG_FETCH_TIMEOUT_MS = 1500;
 const SLOW_RESPONSE_MS = CATALOG_FETCH_TIMEOUT_MS + 1000;
 /** 同 run.mjs checkSplashRemoved 一樣：開頁到啟動畫面移走最多 5 秒 */
 const SPLASH_BUDGET_MS = 5000;
+/** SW NetworkFirst 收到 response 之後寫 cache 係 async：等一陣先數 key */
+const SW_CACHE_SETTLE_MS = 1000;
 
 /** 跨 origin 圖 host（似 apps/api Worker）；path 同本機 e2e-catalog/ 一樣，imageFile 照用 */
 const CROSS_ORIGIN_IMAGE_BASE = `${CATALOG_IMAGE_HOST}/${CATALOG_FOLDER}`;
@@ -220,6 +223,31 @@ const checkOfflineCache = async (env, json) => {
     await ctx.setOffline(false);
 };
 
+/**
+ * S-765：harness 預設（冇 section 蓋過 route）SW 發嘅 catalog request 原封不動去本機 preview（S-648），
+ * e2e preview 對 e2e-catalog/ 答 404（vite.config.ts e2eCatalogNotFound，唔做 SPA fallback）→
+ * NetworkFirst 唔 cache 非 200，catalog-json cache 要係空。先確認 SW 真係發過 request，唔係空過
+ */
+const checkDefaultNotCached = async (env) => {
+    const { log } = env;
+    const { ctx, p } = await newE2EPage(env.browser, env.errors);
+    const swResponses = [];
+    ctx.on('requestfinished', async (req) => {
+        if (!req.serviceWorker() || !req.url().includes('catalog.json')) return;
+        swResponses.push((await req.response())?.status() ?? 0);
+    });
+    await p.goto(env.base);
+    await waitForController(p);
+    await p.reload();
+    await p.waitForTimeout(SW_CACHE_SETTLE_MS);
+    const cached = await cachedCatalogs(p);
+    log(
+        swResponses.length > 0 && swResponses.every((s) => s === 404),
+        `Remote catalog 預設：SW 嘅 catalog.json request 由 preview 答 404（${swResponses.join(' / ') || '冇 request'}）`,
+    );
+    log(cached === 0, `Remote catalog 預設：catalog-json cache 冇 key（${cached} 個，S-765）`);
+};
+
 const checkMigration = async (env, json) => {
     const label = 'Remote catalog + v1 → v2 升級';
     const { ctx, p } = await openWithCatalog(env, { catalogBody: json });
@@ -243,6 +271,7 @@ export const runRemoteCatalogChecks = async (env) => {
     );
     await section('Remote catalog：慢', () => checkSlowCatalog(env, json));
     await section('Remote catalog：離線 SW cache', () => checkOfflineCache(env, json));
+    await section('Remote catalog：預設 404 唔入 SW cache', () => checkDefaultNotCached(env));
     await section('Remote catalog：v1 進度升級', () => checkMigration(env, json));
     await section('Remote catalog：跨 origin 圖（CORS）', () => checkCrossOriginImages(env, json));
 };
