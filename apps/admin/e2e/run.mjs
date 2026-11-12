@@ -12,8 +12,6 @@ const OUT = new URL('./screenshots', import.meta.url).pathname;
 const WIDE = { width: 1280, height: 860 };
 const PORTRAIT = { width: 390, height: 844 };
 const STARTUP_TIMEOUT_MS = 30_000;
-/** SIGTERM 之後等 vite 退出嘅上限，過咗就 SIGKILL（S-845） */
-const STOP_TIMEOUT_MS = 5_000;
 const KEY_GAP_MS = 200;
 
 let failures = 0;
@@ -22,42 +20,93 @@ const log = (ok, message) => {
     console.log(`${ok ? 'PASS' : 'FAIL'}  ${message}`);
 };
 
-/** port 有人用緊就即刻停：唔好 poll 到上次留低（或者第二個 worktree）嘅 preview，誤測人哋嘅 dist */
+const STOP_TIMEOUT_MS = 5_000;
+const POLL_MS = 250;
+const STDERR_TAIL_CHARS = 2_000;
+/** 128 + signal number：shell 慣例 */
+const SIGNAL_EXIT_CODES = { SIGINT: 130, SIGTERM: 143 };
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** port 有人用緊（例如上次殘留嘅 vite preview）就即刻停：否則 --strictPort 起唔到，會靜靜雞測咗舊 dist */
 const assertPortFree = () =>
-    new Promise((resolve) => {
+    new Promise((resolve, reject) => {
         const probe = createServer();
-        probe.once('error', () => {
-            console.error(
-                `port ${PORT} 有人用緊（可能係上次 e2e 留低嘅 vite preview，或者另一個 worktree），` +
-                    `用 \`pgrep -fa "vite.*preview"\` 搵出嚟停咗佢，或者用 E2E_PORT 揀第二個`,
-            );
-            process.exit(1);
-        });
+        probe.once('error', () =>
+            reject(
+                new Error(
+                    `port ${PORT} is already in use (stale vite preview?). ` +
+                        `Free it (ss -ltnp | grep :${PORT}) or set E2E_PORT.`,
+                ),
+            ),
+        );
         probe.listen(PORT, () => probe.close(resolve));
     });
 
-/** 直接用 node 行 vite（唔經 npx）：kill 先會停到真正嘅 server，唔會留低孤兒 process */
-const startPreview = async () => {
-    await assertPortFree();
-    // npm workspaces 將 vite hoist 去 repo 根嘅 node_modules：由 vite/package.json 位置搵 bin
-    const viteBin = new URL('bin/vite.js', import.meta.resolve('vite/package.json')).pathname;
-    const server = spawn(
-        process.execPath,
-        [viteBin, 'preview', '--port', String(PORT), '--strictPort'],
-        // stderr 照出：vite 起唔到（例如撞 port）時睇到原因
-        { cwd: new URL('..', import.meta.url).pathname, stdio: ['ignore', 'ignore', 'inherit'] },
+/**
+ * detached：preview 自成一個 process group（pgid = pid），
+ * 收尾 kill 成個 group，連 npx 下面嘅 vite 一齊停，唔會殘留霸住 port
+ */
+const startPreview = () => {
+    const child = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], {
+        cwd: new URL('..', import.meta.url).pathname,
+        detached: true,
+        stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    let stderr = '';
+    child.stderr.on('data', (chunk) => {
+        stderr = (stderr + chunk).slice(-STDERR_TAIL_CHARS);
+    });
+    const exited = new Promise((resolve) =>
+        child.once('exit', (code, signal) => resolve({ code, signal, stderr })),
     );
-    const exited = new Promise((resolve) => server.once('exit', resolve));
-    return { server, exited };
+    return { child, exited };
 };
 
-/** 等 server 起好；vite 自己退出（例如 strictPort 撞 port）就即刻 fail，唔好當人哋個 server 係自己 */
-const waitForServer = async ({ server }) => {
+/** group 仲有冇 process（signal 0 = 淨係探） */
+const groupAlive = (pid) => {
+    try {
+        process.kill(-pid, 0);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+const signalGroup = (pid, signal) => {
+    try {
+        process.kill(-pid, signal);
+    } catch {
+        // group 已經冇晒
+    }
+};
+
+/** SIGTERM 成個 group，等佢冇晒（port 先真正放返）；超時就 SIGKILL */
+const stopPreview = async ({ child }) => {
+    if (!child.pid || !groupAlive(child.pid)) return;
+    signalGroup(child.pid, 'SIGTERM');
+    const deadline = Date.now() + STOP_TIMEOUT_MS;
+    while (groupAlive(child.pid) && Date.now() < deadline) await sleep(POLL_MS);
+    if (groupAlive(child.pid)) signalGroup(child.pid, 'SIGKILL');
+};
+
+/** 同步版：俾 SIGINT / exit handler 用（唔可以 await） */
+const killPreviewNow = ({ child }) => {
+    if (child.pid) signalGroup(child.pid, 'SIGTERM');
+};
+
+/** server ready 之前 preview 已經退出（例如撞 port）就即刻 fail，唔好等到 timeout */
+const waitForServer = async ({ exited }) => {
+    let exitInfo = null;
+    exited.then((info) => {
+        exitInfo = info;
+    });
     const deadline = Date.now() + STARTUP_TIMEOUT_MS;
     while (Date.now() < deadline) {
-        if (server.exitCode !== null || server.signalCode !== null) {
+        if (exitInfo) {
+            const { code, signal, stderr } = exitInfo;
             throw new Error(
-                `vite preview exited early (code ${server.exitCode}, signal ${server.signalCode}) on port ${PORT}`,
+                `vite preview exited before ready (code ${code}, signal ${signal})` +
+                    (stderr.trim() ? `:\n${stderr.trim()}` : ''),
             );
         }
         try {
@@ -65,25 +114,9 @@ const waitForServer = async ({ server }) => {
         } catch {
             // 未起好
         }
-        await new Promise((resolve) => setTimeout(resolve, 250));
+        await sleep(POLL_MS);
     }
     throw new Error(`vite preview did not start on ${BASE}`);
-};
-
-/** 停 server 並等佢真係退出，先至結束 e2e；SIGTERM 唔理就 SIGKILL，唔會永遠卡住（S-845） */
-const stopPreview = async ({ server, exited }) => {
-    if (server.exitCode !== null || server.signalCode !== null) return;
-    server.kill();
-    let timer;
-    const timedOut = new Promise((resolve) => {
-        timer = setTimeout(() => resolve(true), STOP_TIMEOUT_MS);
-    });
-    const mustForce = await Promise.race([exited.then(() => false), timedOut]);
-    clearTimeout(timer);
-    if (!mustForce) return;
-    console.error(`vite preview ${STOP_TIMEOUT_MS}ms 內冇因 SIGTERM 退出，改用 SIGKILL`);
-    server.kill('SIGKILL');
-    await exited;
 };
 
 /** 固定時鐘 + 香港時區（同 mockApi E2E_NOW）：「今日」= 12/11/2026，timer 照行 */
@@ -1357,6 +1390,217 @@ const arcLinkCheck = (browser) =>
         },
     );
 
+/* 未上架（灰，從未上過架）vs 已下架（紅，上過架）：短篇 tab、廣播劇列表（短篇行 + 其餘摘要 + 灰點分隔線） */
+const statusMixState = () => loggedIn({ statusMix: true });
+
+const pillOf = (row) => row.locator('.pills .pill');
+
+/** 狀態 pill 唔可以有 hover 效果（用戶規則）：hover 前後底色 / 字色一樣 */
+const assertNoHover = async (page, pill, what) => {
+    const coloursOf = () =>
+        pill.evaluate((el) => {
+            const style = getComputedStyle(el);
+            return `${style.backgroundColor} ${style.color}`;
+        });
+    await page.mouse.move(0, 0);
+    const before = await coloursOf();
+    await pill.hover();
+    const after = await coloursOf();
+    if (before !== after) throw new Error(`${what} pill changes on hover: ${before} → ${after}`);
+};
+
+const arcStatusCheck = (browser) =>
+    check(
+        'arcs tab: never-listed disabled arc is grey 未上架, listed-before one red 已下架',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            await page.goto(`${BASE}/dramas/sammy/arcs`);
+            // published 由列表資料（GET /api/entries）嚟：載入完先由「已下架」轉灰色「未上架」
+            for (const id of ['fantasy', 'camp'])
+                await page
+                    .locator(`li#${id} .pills .pill.unlisted`, { hasText: '未上架' })
+                    .waitFor({ timeout: 5000 });
+            const diary = pillOf(page.locator('li#diary'));
+            if ((await diary.textContent()) !== '已下架') throw new Error('diary: not 已下架');
+            await assertNoHover(page, pillOf(page.locator('li#fantasy')), '未上架');
+            await page.mouse.move(0, 0);
+            await shoot(page, 'arc-status-unlisted', { fullPage: true });
+            await page.close();
+        },
+    );
+
+const dramaListStatusCheck = (browser) =>
+    check(
+        'drama list: arc lines 未上架 / 已下架, 其餘 summary, grey dot + 未上架 / 已下架 divider',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            await page.goto(`${BASE}/dramas`);
+            const row = page.locator('li.drama-row', { hasText: '森美小儀系列' });
+            await row.waitFor();
+            const unlisted = row.locator('.pill.unlisted', { hasText: '未上架' });
+            if ((await unlisted.count()) !== 2) throw new Error('expected 2 未上架 arc lines');
+            if ((await row.locator('.pill.bad', { hasText: '已下架' }).count()) !== 1)
+                throw new Error('expected 1 已下架 arc line');
+            await row.getByText('其餘 6 個已上架').waitFor();
+            await page.getByText(/^未上架 \/ 已下架（1）/).waitFor();
+            const fresh = page.locator('li.drama-row', { hasText: '新劇集' });
+            if ((await fresh.locator('.thumb.st-unlisted').count()) !== 1)
+                throw new Error('never-published drama has no grey dot');
+            await page.getByRole('group', { name: '圖例' }).getByText('未上架').waitFor();
+            await assertNoHover(page, unlisted.first(), '未上架');
+            await page.mouse.move(0, 0);
+            await shoot(page, 'drama-list-status', { fullPage: true });
+            await page.close();
+        },
+    );
+
+const arcMemoryCheck = (browser) =>
+    check(
+        'drama tabs remember the arc: 短篇 → 排程 selects it, 排程 → 短篇 expands it',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            await page.goto(`${BASE}/dramas/sammy/arcs`);
+            await page.getByRole('button', { name: '展開「大衛營」' }).click();
+            await page.getByRole('link', { name: '排程', exact: true }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/schedule#camp`);
+            const chip = page.getByRole('tab', { name: /大衛營/ });
+            await chip.waitFor();
+            if ((await chip.getAttribute('aria-selected')) !== 'true')
+                throw new Error('大衛營 chip not selected');
+            await page.mouse.move(0, 0);
+            await shoot(page, 'arc-memory', { fullPage: true });
+            await page.getByRole('tab', { name: /開心日記/ }).click();
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#diary`);
+            const toggle = page.getByRole('button', { name: '展開「開心日記」' });
+            if ((await toggle.getAttribute('aria-expanded')) !== 'true')
+                throw new Error('開心日記 not expanded in the arcs tab');
+            await page.close();
+        },
+    );
+
+/** 短篇 tab：嗰行展開咗（aria-expanded + 編輯欄位見到）而且喺畫面入面 */
+const assertArcExpanded = async (page, name) => {
+    const toggle = page.getByRole('button', { name: `展開「${name}」` });
+    await toggle.waitFor();
+    if ((await toggle.getAttribute('aria-expanded')) !== 'true')
+        throw new Error(`${name} not expanded in the arcs tab`);
+    const field = page.getByRole('textbox', { name: /^名稱/ });
+    if ((await field.inputValue()) !== name) throw new Error(`open editor is not ${name}`);
+    if (
+        (await page
+            .getByRole('button', { name: /^展開「/ })
+            .and(page.locator('[aria-expanded="true"]'))
+            .count()) !== 1
+    )
+        throw new Error('more than one arc expanded');
+    const row = page.locator('li.arc-line.open');
+    const inView = await row.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        return box.top >= 0 && box.bottom <= window.innerHeight;
+    });
+    if (!inView) throw new Error(`${name} row is outside the viewport`);
+};
+
+const arcMemoryBackCheck = (browser) =>
+    check(
+        '排程 → 短篇: the arc picked in 排程 is expanded (not just scrolled to), replacing an earlier one',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            // ① 排程揀非預設 chip → 短篇
+            await page.goto(`${BASE}/dramas/sammy/schedule`);
+            await page.getByRole('tab', { name: /開心日記/ }).click();
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#diary`);
+            await assertArcExpanded(page, '開心日記');
+            // ② 短篇已展開另一個（大衛營）→ 排程揀森美幻想劇 → 返短篇 = 森美幻想劇
+            await page.getByRole('button', { name: '展開「大衛營」' }).click();
+            await page.getByRole('link', { name: '排程', exact: true }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/schedule#camp`);
+            await page.getByRole('tab', { name: /森美幻想劇/ }).click();
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#fantasy`);
+            await assertArcExpanded(page, '森美幻想劇');
+            await page.mouse.move(0, 0);
+            // 等 scrollIntoView（smooth）停定先影，淺色 / 深色同一個位置
+            await page.waitForFunction(
+                () =>
+                    new Promise((resolve) => {
+                        const y = window.scrollY;
+                        setTimeout(() => resolve(window.scrollY === y), 300);
+                    }),
+            );
+            await shoot(page, 'arc-memory-back');
+            // ③ W-717：短篇展開開心日記（最底）→ 排程（chip 唔郁）→ 捲返頂 → 短篇：hash 一樣都要捲去嗰行
+            await page.getByRole('button', { name: '展開「開心日記」' }).click();
+            await page.getByRole('link', { name: '排程', exact: true }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/schedule#diary`);
+            await page.getByRole('tab', { name: /開心日記/ }).waitFor();
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#diary`);
+            // scrollIntoView（block: center）：嗰行要捲到畫面中間一帶，唔係淨係啱啱擠入畫面底
+            await page.waitForFunction(
+                () => {
+                    const row = document.querySelector('li.arc-line.open');
+                    if (!row) return false;
+                    const box = row.getBoundingClientRect();
+                    const middle = (box.top + box.bottom) / 2;
+                    return Math.abs(middle - window.innerHeight / 2) < window.innerHeight / 4;
+                },
+                undefined,
+                { timeout: 5000 },
+            );
+            await assertArcExpanded(page, '開心日記');
+            await page.close();
+        },
+    );
+
+const arcMemoryReloadCheck = (browser) =>
+    check(
+        'S-846: picked chip / expanded arc go into the URL (replace) and survive a reload',
+        async () => {
+            const page = await newPage(browser, statusMixState());
+            await page.goto(`${BASE}/dramas`);
+            await page.goto(`${BASE}/dramas/sammy/schedule`);
+            await page.getByRole('tab', { name: /大衛營/ }).click();
+            await page.getByRole('tab', { name: /開心日記/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/schedule#diary`);
+            await page.reload();
+            const chip = page.getByRole('tab', { name: /開心日記/ });
+            await chip.waitFor();
+            if ((await chip.getAttribute('aria-selected')) !== 'true')
+                throw new Error('開心日記 chip not selected after reload');
+            // scrollIntoView 記錄：轉 tab 要捲去記住嘅短篇；之後撳展開（hash quiet 寫入）唔可以捲
+            await page.evaluate(() => {
+                window.__scrolled = [];
+                const original = Element.prototype.scrollIntoView;
+                Element.prototype.scrollIntoView = function scrollIntoView(options) {
+                    window.__scrolled.push(this.id);
+                    return original.call(this, options);
+                };
+            });
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#diary`);
+            await page.waitForFunction(() => window.__scrolled.includes('diary'));
+            await page.evaluate(() => {
+                window.__scrolled = [];
+            });
+            await page.getByRole('button', { name: '展開「冬日戀曲」' }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#s6`);
+            await page.waitForTimeout(300);
+            const scrolled = await page.evaluate(() => window.__scrolled);
+            if (scrolled.length > 0) throw new Error(`expanding scrolled to ${scrolled.join()}`);
+            await page.reload();
+            await assertArcExpanded(page, '冬日戀曲');
+            // replace：上一頁直接返去廣播劇列表，唔會逐個 chip / 短篇行返轉頭
+            await page.goBack();
+            await page.goBack();
+            await page.waitForURL(`${BASE}/dramas`);
+            await page.close();
+        },
+    );
+
 const reducedMotionCheck = (browser) =>
     check('nav collapse switches instantly with reduced motion (no animation)', async () => {
         const page = await newPage(browser, loggedIn());
@@ -1424,7 +1668,20 @@ const portraitCheck = (browser) =>
     });
 
 mkdirSync(OUT, { recursive: true });
-const preview = await startPreview();
+try {
+    await assertPortFree();
+} catch (error) {
+    console.error(`admin e2e: ${error.message}`);
+    process.exit(1);
+}
+const preview = startPreview();
+// Ctrl-C / 被 kill / 任何 process.exit 都要收埋 preview group
+process.once('exit', () => killPreviewNow(preview));
+for (const [signal, exitCode] of Object.entries(SIGNAL_EXIT_CODES))
+    process.once(signal, () => {
+        killPreviewNow(preview);
+        process.exit(exitCode);
+    });
 try {
     await waitForServer(preview);
     const browser = await chromium.launch({
@@ -1460,6 +1717,11 @@ try {
         todoRowCheck,
         newShowCheck,
         arcLinkCheck,
+        arcStatusCheck,
+        dramaListStatusCheck,
+        arcMemoryCheck,
+        arcMemoryBackCheck,
+        arcMemoryReloadCheck,
         navCheck,
         reducedMotionCheck,
         autoNavCheck,
@@ -1468,6 +1730,8 @@ try {
     ])
         await run(browser);
     await browser.close();
+} catch (error) {
+    log(false, `admin e2e aborted: ${error instanceof Error ? error.message : error}`);
 } finally {
     await stopPreview(preview);
 }

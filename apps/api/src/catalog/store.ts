@@ -103,6 +103,49 @@ export const latestPublish = async (db: D1Database): Promise<LatestPublish | nul
     return { row: summary, episodeIds: JSON.parse(ids) as string[], document };
 };
 
+export interface PublishedFactRow {
+    kind: 'shows' | 'dramas';
+    id: string;
+    /** 短篇集嘅短篇 ID；每日播 / 節目 = null */
+    arc: string | null;
+}
+
+/**
+ * admin「未上架 / 已下架」用嘅「曾經上過架」（S-845、W-716）：一條 query，掃晒 ok publish，
+ * 喺 D1 入面拆好先回（document 同 episode_ids 全文唔會傳返 Worker），每個劇 / 短篇 / 節目一行：
+ * - 劇 / 短篇：任何一次 ok publish 嘅鎖住 episode ID（drama:<劇>:<短篇>:<集> / drama:<劇>:<日子>）
+ * - 節目：任何一次 ok publish 嘅 document.shows 入面 enabled 唔係 false
+ * JSON 唔合格嗰份（json_valid）跳過，唔會整爛個列表
+ */
+export const publishedFacts = async (db: D1Database): Promise<PublishedFactRow[]> =>
+    (
+        await db
+            .prepare(
+                `WITH ok AS (SELECT document, episode_ids FROM publishes WHERE status = 'ok'),
+                 eps AS (
+                     SELECT substr(e.value, 7) AS rest
+                     FROM ok, json_each(ok.episode_ids) AS e
+                     WHERE json_valid(ok.episode_ids) AND e.value LIKE 'drama:%'
+                 ),
+                 heads AS (
+                     SELECT substr(rest, 1, instr(rest, ':') - 1) AS drama,
+                            substr(rest, instr(rest, ':') + 1) AS tail
+                     FROM eps WHERE instr(rest, ':') > 0
+                 )
+                 SELECT DISTINCT 'dramas' AS kind, drama AS id,
+                        CASE WHEN instr(tail, ':') > 0
+                             THEN substr(tail, 1, instr(tail, ':') - 1) END AS arc
+                 FROM heads
+                 UNION
+                 SELECT DISTINCT 'shows' AS kind, json_extract(s.value, '$.id') AS id, NULL AS arc
+                 FROM ok, json_each(ok.document, '$.shows') AS s
+                 WHERE json_valid(ok.document)
+                   AND json_type(s.value, '$.id') = 'text'
+                   AND coalesce(json_extract(s.value, '$.definition.enabled'), 1) != 0`,
+            )
+            .all<PublishedFactRow>()
+    ).results;
+
 /** R2 寫失敗時收返啱啱 insert 嗰行（S-767） */
 export const deletePublish = async (db: D1Database, id: number): Promise<void> => {
     await db.prepare('DELETE FROM publishes WHERE id = ?').bind(id).run();

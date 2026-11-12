@@ -18,7 +18,7 @@ interface EntryNameProps {
 export function EntryName({ entry, flags, meta }: EntryNameProps) {
     const key = `${entry.kind}:${entry.id}`;
     const never = entry.draft || flags.never.has(key);
-    const dot = entryDotOf(entry.kind, entry.definition, entry.draft, hkToday());
+    const dot = entryDotOf(entry.kind, entry.definition, entry.draft, hkToday(), entry.published);
     return (
         <div className="name-cell">
             <Thumb url={imageOf(entry.definition, entry.images, 'disc')} dot={dot} />

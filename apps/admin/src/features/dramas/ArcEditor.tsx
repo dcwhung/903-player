@@ -3,12 +3,10 @@
  * 虛線框 R2（資料夾、集數、各集標題）；Banner / 碟面喺右邊
  * Design Origin: mockup: _mockups_/admin-style/index.html#e（.arc-body）；結構 mockup: _mockups_/admin/index.html#s5
  */
-import { hkToday } from '@903-player/catalog';
 import { useCallback, useId } from 'react';
 import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
 import { str, strList } from '../../model/raw';
-import { arcStatusOf } from '../../model/status';
 import { Pill } from '../../ui/Pill';
 import { Tip } from '../../ui/Tip';
 import { Chips } from '../../ui/Chips';
@@ -83,10 +81,9 @@ function ArcNameField({ arc, set }: { arc: RawDefinition; set: SetArc }) {
     );
 }
 
-/** 「未排期」pill：新短篇下架又未排程 */
+/** 「未排期」提示：新短篇下架（行嘅狀態 pill 寫「未上架」，呢度提醒要去排程） */
 const unscheduledOf = (state: DramaEditorState, arc: RawDefinition, arcId: string) =>
-    arcStatusOf(state.editor.draft?.definition ?? {}, arc, hkToday(), state.isNewArc(arcId))
-        .text === t('status.unscheduled');
+    arc.enabled === false && state.isNewArc(arcId);
 
 function ArcHead({
     state,

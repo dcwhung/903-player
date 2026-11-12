@@ -11,7 +11,7 @@ import type { LoadedEntry } from '../../api/types';
 import { t } from '../../i18n/t';
 import type { ChangeFlags } from '../../model/listModel';
 import { arcEditorPath } from '../../model/paths';
-import { arcLabel, arcsOf, countOf, isDaily, str } from '../../model/raw';
+import { arcLabel, arcPublishedIn, arcsOf, countOf, isDaily, str } from '../../model/raw';
 import { arcStatusOf, dailyStatusOf } from '../../model/status';
 import { arcDiscOf } from '../../model/thumbs';
 import { Pill } from '../../ui/Pill';
@@ -29,7 +29,10 @@ const linesOf = (entry: LoadedEntry, flags: ChangeFlags): ArcLine[] => {
             href: str(arc, 'id') === undefined ? undefined : arcEditorPath(entry.id, id),
             label: arcLabel(arc),
             episodes: countOf(arc),
-            status: arcStatusOf(entry.definition, arc, today, isNew),
+            status: arcStatusOf(entry.definition, arc, today, {
+                isNew,
+                published: arcPublishedIn(entry.publishedArcs, id),
+            }),
             isNew,
             disc: arcDiscOf(entry.definition, entry.images, arc),
         };
@@ -65,7 +68,7 @@ function Line({ line }: { line: ArcLine }) {
 }
 
 function DailyLine({ entry }: { entry: LoadedEntry }) {
-    const status = dailyStatusOf(entry.definition, hkToday());
+    const status = dailyStatusOf(entry.definition, hkToday(), entry.published);
     return (
         <>
             <span className="arc muted">{t('list.dailyNoArcs')}</span>

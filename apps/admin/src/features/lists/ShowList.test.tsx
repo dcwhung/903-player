@@ -28,6 +28,16 @@ describe('ShowList', () => {
         expect(screen.getByText('新節目')).toBeInTheDocument();
     });
 
+    it('should show 未上架 for a disabled show that was never published, 已下架 otherwise', () => {
+        const fresh = { ...show({ name: '新節目', enabled: false }), id: 'abc', published: false };
+        const old = { ...show({ name: '舊節目', enabled: false }), id: 'old', published: true };
+        renderAt('/shows', '/shows', <ShowList />, fakeData({ entries: resource([fresh, old]) }));
+        const freshRow = screen.getByText('新節目').closest('li') as HTMLElement;
+        const oldRow = screen.getByText('舊節目').closest('li') as HTMLElement;
+        expect(within(freshRow).getByText('未上架', { selector: '.pill' })).toHaveClass('unlisted');
+        expect(within(oldRow).getByText('已下架', { selector: '.pill' })).toHaveClass('bad');
+    });
+
     it('should open the editor when the row background is clicked', async () => {
         renderList();
         await userEvent.click(screen.getByText('星期一至五'));

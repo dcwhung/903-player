@@ -37,6 +37,12 @@ export const totalEpisodes = (definition: RawDefinition): number =>
 export const arcLabel = (arc: RawDefinition): string =>
     str(arc, 'displayName') ?? str(arc, 'name') ?? str(arc, 'id') ?? '';
 
+/** 短篇有冇上過架（GET /api/entries publishedArcs）；舊 API 冇呢個欄位 = undefined（唔知） */
+export const arcPublishedIn = (
+    publishedArcs: readonly string[] | undefined,
+    arcId: string,
+): boolean | undefined => (publishedArcs === undefined ? undefined : publishedArcs.includes(arcId));
+
 export const nameOf = (definition: RawDefinition, fallback: string): string =>
     str(definition, 'name') ?? fallback;
 

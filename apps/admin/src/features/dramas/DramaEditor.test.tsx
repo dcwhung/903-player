@@ -152,6 +152,45 @@ describe('DramaEditor', () => {
         );
     });
 
+    it('should show 未上架 for a never-published disabled arc and 已下架 for a published one', async () => {
+        const definition = {
+            ...DRAMA.definition,
+            arcs: [
+                ...DRAMA.definition.arcs,
+                { id: 'fantasy', name: '森美幻想劇', episodes: 5, enabled: false },
+                { id: 'old', name: '舊短篇', episodes: 5, enabled: false },
+            ],
+        };
+        api({ 'GET /api/entries/dramas/lancy': () => ({ body: { ...DRAMA, definition } }) });
+        const summary = {
+            ...DRAMA,
+            definition,
+            kind: 'dramas' as const,
+            id: 'lancy',
+            etag: '"v1"',
+            published: true,
+            publishedArcs: ['half', 'old'],
+        };
+        renderAt(
+            '/dramas/lancy/arcs',
+            '/dramas/:id/arcs',
+            <DramaEditorPage tab="arcs" />,
+            fakeData({ entries: resource([summary]) }),
+        );
+        const rowOf = async (name: string) =>
+            (await screen.findByRole('button', { name: `展開「${name}」` })).closest('li');
+        const fantasy = (await rowOf('森美幻想劇'))?.querySelector('.pills .pill');
+        expect(fantasy).toHaveTextContent('未上架');
+        expect(fantasy).toHaveClass('unlisted');
+        const old = (await rowOf('舊短篇'))?.querySelector('.pills .pill');
+        expect(old).toHaveTextContent('已下架');
+        expect(old).toHaveClass('bad');
+        // 新短篇（placeholder ID）都係未上架
+        expect((await rowOf('我心不死'))?.querySelector('.pills .pill')).toHaveTextContent(
+            '未上架',
+        );
+    });
+
     it('should mark an unconfirmed arc ID red and confirm it on save without changes', async () => {
         const fetchMock = api({
             'POST /api/todos/confirm-id': () => ({ body: { confirmed: 1 } }),

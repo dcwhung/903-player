@@ -34,6 +34,14 @@ describe('legendOf', () => {
         expect(legendOf([soon], flags(), TODAY).dots).toEqual(['soon']);
     });
 
+    it('should add the grey 未上架 dot after 已下架 for never-published disabled entries', () => {
+        const entries = [
+            { ...drama('fresh', { enabled: false }), published: false },
+            { ...drama('old', { enabled: false }), published: true },
+        ];
+        expect(legendOf(entries, flags(), TODAY).dots).toEqual(['off', 'unlisted']);
+    });
+
     it('should explain 待發佈 / 新 only when the list shows them', () => {
         const entries = [drama('lancy', { enabled: true, arcs: [{ id: 'a2' }] })];
         const shown = flags({ pending: new Set(['dramas:lancy']), newArcs: new Set(['lancy:a2']) });

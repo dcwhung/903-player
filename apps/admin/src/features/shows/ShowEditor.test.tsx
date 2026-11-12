@@ -27,6 +27,19 @@ describe('ShowEditor', () => {
         expect(screen.queryByRole('region', { name: '處理待辦' })).not.toBeInTheDocument();
     });
 
+    it('should show 未上架 in the title for a disabled show that was never published', async () => {
+        const off = { ...SHOW, definition: { ...SHOW.definition, enabled: false } };
+        mockApi({ 'GET /api/entries/shows/waves': () => ({ body: off, etag: '"v1"' }) });
+        const summary = { ...off, kind: 'shows' as const, id: 'waves', etag: '"v1"' };
+        renderAt(
+            '/shows/waves',
+            '/shows/:id',
+            <ShowEditorPage />,
+            fakeData({ entries: resource([{ ...summary, published: false }]) }),
+        );
+        expect(await screen.findByText('未上架', { selector: '.pill' })).toHaveClass('unlisted');
+    });
+
     it('should save with If-Match and show the dirty field', async () => {
         const api = mockApi({
             'GET /api/entries/shows/waves': load,

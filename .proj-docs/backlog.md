@@ -1,6 +1,6 @@
 # Backlog 登記冊（🟢 / Observation）
 
-**最後更新**：2026-11-12（api 0.7.0 排程下架：S-836–S-840、S-842、S-843 開，W-715、S-835、S-841 PR 內修；admin 0.6.3：S-828–S-830、S-832–S-834 開，S-831 即場修；Phase 3 backlog 清理：19 項 + S-826 關、S-825 / S-827 開；Phase 3c prod fixes：S-821–S-824 開、S-820 關；Phase 3c deploy：S-820 開；Phase 3c：S-812–S-817、S-819 開，S-818 喺 PR 處理；Phase 3b：S-803–S-811 開、S-807 關；Phase 3a：S-798–S-802 開；Phase 2b-2：S-786、S-787 關，S-792–S-797 開）
+**最後更新**：2026-11-12（api 0.7.1 未上架狀態：S-848、S-849 開，W-716、W-717、S-844–S-847 PR 內修；api 0.7.0 排程下架：S-836–S-840、S-842、S-843 開，W-715、S-835、S-841 PR 內修；admin 0.6.3：S-828–S-830、S-832–S-834 開，S-831 即場修；Phase 3 backlog 清理：19 項 + S-826 關、S-825 / S-827 開；Phase 3c prod fixes：S-821–S-824 開、S-820 關；Phase 3c deploy：S-820 開；Phase 3c：S-812–S-817、S-819 開，S-818 喺 PR 處理；Phase 3b：S-803–S-811 開、S-807 關；Phase 3a：S-798–S-802 開；Phase 2b-2：S-786、S-787 關，S-792–S-797 開）
 
 > Review / QA 報告入面嘅 🟢 同 Observation 統一喺呢度追蹤。掃 backlog 時淨係睇「Open」；「Closed」嘅唔使再理。
 > 新 finding 照寫喺各自報告，處理完或者決定唔理就喺呢度更新。
@@ -66,6 +66,8 @@
 | S-840 | `apps/admin/src/features/dramas/timelineModel.ts`   | 淨改下架都顯示「即將排程上架（未儲存）」，應只喺上架有改先顯示                                                                                                                                         | 下次改排程 UI                  | reviews/2026-11-12_review_schedule-unlisting     |
 | S-842 | `apps/admin/e2e/run.mjs`                            | `preview.kill()` 只殺 `npx`，`vite preview` 留低佔 port；下次 `--strictPort` 起唔到但 `waitForServer` 連舊 server 測舊 build。要 kill process group + port 檢查 + fail fast（player `run.mjs` 一併睇） | 下次改 e2e                     | qa/2026-11-12_qa_schedule-unlisting              |
 | S-843 | `apps/admin/src/features/dramas/useScheduleForm.ts` | W-715 錯誤只講第一集，可改講集數範圍                                                                                                                                                                   | 有需要時                       | qa/2026-11-12_qa_schedule-unlisting              |
+| S-848 | `apps/admin/e2e/run.mjs`                            | Node `fetch` 封鎖部分 port（例如 4190 `bad port`），揀 `E2E_PORT` 時要避開或者報清楚錯誤；同 S-842 一齊做                                                                                              | 下次改 e2e                     | qa/2026-11-12_qa_unlisted-status-0.7.1           |
+| S-849 | `apps/api/test/entries.test.ts`                     | 補 test：`publishedFacts` 唔計 failed publish；舊 ok publish 壞 JSON 時 `GET /api/entries` 仍回 200；每日播劇 `published: true` 但冇 `publishedArcs`                                                   | 下次改 api                     | qa/2026-11-12_qa_unlisted-status-0.7.1           |
 
 ## Closed
 

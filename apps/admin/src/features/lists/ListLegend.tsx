@@ -13,6 +13,7 @@ const DOT_LABEL: Record<Dot, MessageKey> = {
     live: 'list.legendLive',
     soon: 'list.legendSoon',
     off: 'list.legendOff',
+    unlisted: 'list.legendUnlisted',
 };
 
 export function ListLegend({ legend }: { legend: Legend }) {
