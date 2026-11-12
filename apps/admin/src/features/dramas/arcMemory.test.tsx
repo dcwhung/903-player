@@ -120,6 +120,19 @@ describe('arc memory across the drama tabs', () => {
         expect(scrolled.map((el) => el.id)).toContain('fantasy');
     });
 
+    it('should scroll again to the arc after 短篇 → 排程 → 短篇 with the same hash (W-717)', async () => {
+        api();
+        renderEditor('/dramas/lancy/arcs');
+        await userEvent.click(await screen.findByRole('button', { name: '展開「森美幻想劇」' }));
+        await userEvent.click(tab('排程'));
+        await chip(/森美幻想劇/);
+        scrolled.length = 0;
+        await userEvent.click(tab('短篇（3）'));
+        expect(screen.getByTestId('location')).toHaveTextContent(/^\/dramas\/lancy\/arcs#fantasy$/);
+        expect(await screen.findByRole('textbox', { name: /^名稱/ })).toHaveValue('森美幻想劇');
+        expect(scrolled.map((el) => el.id)).toContain('fantasy');
+    });
+
     it('should keep the arc through 基本資料 and follow the latest pick', async () => {
         api();
         renderEditor('/dramas/lancy/arcs#half');

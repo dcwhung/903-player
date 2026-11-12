@@ -1450,6 +1450,27 @@ const arcMemoryBackCheck = (browser) =>
                     }),
             );
             await shoot(page, 'arc-memory-back');
+            // ③ W-717：短篇展開開心日記（最底）→ 排程（chip 唔郁）→ 捲返頂 → 短篇：hash 一樣都要捲去嗰行
+            await page.getByRole('button', { name: '展開「開心日記」' }).click();
+            await page.getByRole('link', { name: '排程', exact: true }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/schedule#diary`);
+            await page.getByRole('tab', { name: /開心日記/ }).waitFor();
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await page.getByRole('link', { name: /^短篇（/ }).click();
+            await page.waitForURL(`${BASE}/dramas/sammy/arcs#diary`);
+            // scrollIntoView（block: center）：嗰行要捲到畫面中間一帶，唔係淨係啱啱擠入畫面底
+            await page.waitForFunction(
+                () => {
+                    const row = document.querySelector('li.arc-line.open');
+                    if (!row) return false;
+                    const box = row.getBoundingClientRect();
+                    const middle = (box.top + box.bottom) / 2;
+                    return Math.abs(middle - window.innerHeight / 2) < window.innerHeight / 4;
+                },
+                undefined,
+                { timeout: 5000 },
+            );
+            await assertArcExpanded(page, '開心日記');
             await page.close();
         },
     );
