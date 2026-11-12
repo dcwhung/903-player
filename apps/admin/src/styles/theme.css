@@ -38,26 +38,29 @@ body {
     border-radius: 14px;
 }
 
-.nav .logo-mini {
-    display: grid;
-    place-items: center;
+/*
+ * 收細 nav 左上角：直接顯示完整 app icon（PNG 本身係透明四角嘅圓角方形），唔加底、唔裁切、唔變形。
+ * selector 要贏 `.shell.mini .nav a { padding: 12px 0 }`，否則 48px 框扣咗上下 padding，icon 會壓扁做 48×24。
+ * 陰影用 drop-shadow 跟 icon 形狀（box-shadow 會變方）
+ */
+.shell.mini .nav .logo-mini {
+    display: block;
     width: 48px;
     height: 48px;
     margin: 0 auto 14px;
-    border-radius: 50%;
-    background: var(--surface);
-    color: var(--primary);
-    font-weight: 700;
-    font-size: 15px;
-    justify-content: center;
     padding: 0;
-    text-decoration: none;
-    box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+    border-radius: 0;
+    background: none;
+    overflow: visible;
 }
 
-.nav .logo-mini,
-.nav .logo-mini:hover {
-    background: var(--on-nav);
+.nav .logo-mini img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.18));
 }
 
 .nav .group {
@@ -730,9 +733,45 @@ textarea.autosize {
     grid-template-columns: minmax(0, 1fr) 360px;
 }
 
+/* 有圖冇圖都係虛線框（.empty 要蓋 mockup.css 嘅 --line 淺色虛線） */
+.img-slot,
+.img-slot.empty {
+    border: 2px dashed var(--media-border);
+}
+
 .img-slot {
     width: 192px;
     height: 192px;
+}
+
+/* 縮圖跟 slot 圓角（邊框入面） */
+.img-slot .thumb {
+    border-radius: inherit;
+}
+
+/* 每張圖一格：圖 → 名 → 尺寸提示 → 錯誤（各自喺自己張圖下面） */
+.media .slot {
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.slot-cap {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    text-align: center;
+}
+
+.slot-cap .hint {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.slot-cap .err {
+    max-width: 340px;
 }
 
 .img-slot.tile {
@@ -757,7 +796,9 @@ textarea.autosize {
 }
 
 .media .cap {
-    margin-bottom: 8px;
+    margin-bottom: 0;
+    font-weight: 600;
+    color: var(--ink);
 }
 
 @media (max-width: 1180px) {
@@ -771,10 +812,6 @@ textarea.autosize {
         grid-template-columns: auto auto;
         justify-content: start;
         column-gap: 24px;
-    }
-
-    .with-media > .media .cap {
-        grid-row: 2;
     }
 }
 
@@ -791,27 +828,61 @@ textarea.autosize {
 }
 
 .scrim .card.crop-dialog {
-    max-width: 560px;
+    max-width: 640px;
 }
 
+/* 原圖 | 裁切後：兩格並排，每格有邊框，說明喺各自圖下面 */
 .crop {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
+}
+
+.crop .pane {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+}
+
+.crop .frame {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    padding: 10px;
+    border: 2px dashed var(--media-border);
+    border-radius: 12px;
+    background: var(--surface-2);
+    overflow: hidden;
+}
+
+.crop figcaption {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.crop figcaption strong {
+    font-size: 15px;
+    color: var(--ink);
 }
 
 .crop .src {
     position: relative;
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    background: var(--surface-2);
+    max-width: 100%;
+    max-height: 100%;
+    line-height: 0;
 }
 
 .crop .src img {
     display: block;
-    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
     height: auto;
 }
 
@@ -823,27 +894,37 @@ textarea.autosize {
 }
 
 .crop .out {
-    justify-self: center;
     max-width: 100%;
-    background: var(--surface-2);
+    max-height: 100%;
     object-fit: cover;
 }
 
+/* 碟面裁切後係圓形：唔要長方形框同底色，淨係圓框 */
+.crop .frame.bare {
+    border-color: transparent;
+    background: transparent;
+}
+
 .crop .out.disc {
-    width: 160px;
-    height: 160px;
+    /* 4:3 格入面（扣 padding）放得落嘅最大圓 */
+    width: 64%;
+    height: auto;
+    aspect-ratio: 1;
     border-radius: 50%;
+    border: 2px dashed var(--media-border);
 }
 
 .crop .out.tile {
     width: 100%;
     aspect-ratio: 1216 / 684;
     height: auto;
-    border-radius: 10px;
+    border-radius: 8px;
 }
 
-.crop > .lucide {
-    color: var(--muted);
+@media (max-width: 560px) {
+    .crop {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ---------- 上下架記錄：變更欄用晒欄闊、版本資訊兩行 ---------- */
@@ -1018,10 +1099,6 @@ textarea.autosize {
     font-size: 14px;
 }
 
-.notice .btn.google {
-    width: auto;
-}
-
 /* 直向提示：闊度 < 720px 先顯示（app.css 收埋 .app-root） */
 .rotate-note.notice {
     display: none;
@@ -1094,4 +1171,242 @@ textarea.autosize {
 .timeline li::before {
     /* li padding-top 8px + 半行高 − 半粒點（12px） */
     top: calc(8px + var(--timeline-row) / 2 - 6px);
+}
+
+/* ---------- 排程：下架又冇排程 = 未上架（唔出灰 ✓） ---------- */
+.strip-unreleased {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+/*
+ * 上架 / 下架 toggle：狀態色唔跟一般 button:hover（淺灰會食咗白字白點）；
+ * focus-visible outline 照用全域樣式
+ */
+.toggle.on,
+.toggle.on:hover:not(:disabled) {
+    background: var(--toggle-on);
+}
+
+.toggle.off,
+.toggle.off:hover:not(:disabled) {
+    background: var(--toggle-off);
+}
+
+/*
+ * 快速套用：揀咗嘅 chip 用實色主色底 + 白字，hover 都唔變
+ * （之前 button:hover 嘅 --surface-2 蓋咗底色：撳完滑鼠仲喺上面時白字淺底睇唔到）
+ */
+.presets button[aria-pressed='true'],
+.presets button[aria-pressed='true']:hover:not(:disabled) {
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+/* 類型 switch：同一個 hover 問題，揀咗嘅一邊照用實色主色底 + 白字 */
+.switch button[aria-pressed='true'],
+.switch button[aria-pressed='true']:hover:not(:disabled) {
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: var(--shadow-btn);
+}
+
+/* 排程 tab：揀咗嘅短篇 chip 用實色主色底 + 白字（深色主題 --primary 不變，白字對比 ≥ 4.5:1） */
+.arc-tabs button[aria-selected='true'],
+.arc-tabs button[aria-selected='true']:hover:not(:disabled) {
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: var(--shadow-btn);
+}
+
+.arc-tabs button[aria-selected='true'] small {
+    color: var(--on-primary);
+}
+
+/*
+ * chip 類掣 disabled：唔用全域 opacity（0.45 透明令字對底跌穿 3:1），改 --muted 字 + --surface-2 淺底
+ * （對比淺色深色都 ≥ 4.5:1）；放喺揀咗 rule 後面：揀咗又 disabled 都用呢個樣，狀態由 aria-pressed / aria-selected 報
+ */
+.presets button:disabled,
+.switch button:disabled,
+.arc-tabs button:disabled {
+    opacity: 1;
+    background: var(--surface-2);
+    color: var(--muted);
+    box-shadow: inset 0 0 0 1px var(--line);
+    cursor: not-allowed;
+}
+
+.arc-tabs button:disabled small {
+    color: var(--muted);
+}
+
+/* 驗證錯誤原文：細字、預設收埋 */
+.raw-error {
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+.raw-error code {
+    display: block;
+    margin-top: 4px;
+    overflow-wrap: anywhere;
+}
+
+/* ---------- 待辦矩陣：成行撳入編輯頁（同列表頁 .clickable） ---------- */
+table.matrix tr.clickable {
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    table.matrix tr.clickable:hover > * {
+        background: var(--surface-2);
+    }
+}
+
+table.matrix .row-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+table.matrix .row-link:hover {
+    text-decoration: underline;
+}
+
+/* 廣播劇列表：短篇名（連碟面）可以撳去短篇 tab */
+.arcs .arc-link {
+    color: inherit;
+    text-decoration: none;
+    border-radius: 6px;
+}
+
+.arcs .arc-link:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+/* 文字 link 帶 icon（返回待辦 ←、處理待辦 / 前往發佈 →、重新登入 ↗）：icon 同字之間留少少位，底線唔包 icon */
+.flow-bar a,
+.scan-bar a,
+.note a {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ---------- 登入頁（mockup admin-login 款 3）：全頁 banner 背景 + 毛玻璃卡 ---------- */
+.login {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    min-height: 100dvh;
+    padding: 32px 20px;
+}
+
+/* banner 鋪滿成頁；上面疊淡化層（淺色淡、深色暗），卡同字先睇得清 */
+.login-bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-color: var(--sky);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.login-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--login-scrim);
+}
+
+.login-card {
+    width: min(400px, 100%);
+    padding: 28px 28px 24px;
+    border-radius: var(--r-panel);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-float);
+    backdrop-filter: blur(14px);
+    text-align: center;
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+}
+
+.login-card .brand-banner {
+    width: 220px;
+    margin: 0 0 6px;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+}
+
+.login-card h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.login-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* Google「Sign in with Google」官方掣（pill 款）：四色 G + Roboto Medium 14px、高 40px */
+.gsi {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 40px;
+    min-width: 220px;
+    margin-top: 8px;
+    padding: 0 12px;
+    border: 1px solid var(--gsi-border);
+    border-radius: 20px;
+    background: var(--gsi-bg);
+    color: var(--gsi-text);
+    font:
+        500 14px/1 'Roboto',
+        'Noto Sans TC',
+        'PingFang HK',
+        sans-serif;
+    letter-spacing: 0.25px;
+    text-decoration: none;
+}
+
+/* hover 疊一層（官方做法），唔改底色 token */
+.gsi::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: transparent;
+}
+
+.gsi:hover::after {
+    background: var(--gsi-hover);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .gsi::after {
+        transition: background-color var(--motion-fast) var(--motion-ease);
+    }
+}
+
+.gsi:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.gsi svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
 }

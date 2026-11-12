@@ -26,21 +26,33 @@ export const currentScheduleOf = (drama: RawDefinition, arc: RawDefinition): Arc
 
 export interface Strip {
     past: EpisodeRange[];
+    /** 下架又冇排程：未上架（唔可以出灰 ✓） */
+    unreleased: boolean;
     future: EpisodeRange[];
     comparison: BatchComparison | null;
 }
+
+/**
+ * 下架（enabled: false）又冇排程嘅短篇未上過架：掃描新短篇嘅 addedAt = 掃描當日，唔係上架日；
+ * player（arcAvailabilityOf）亦唔出下架短篇。有排程就照排程日子
+ */
+const isUnreleased = (arc: RawDefinition, scheduled: boolean) =>
+    arc.enabled === false && !scheduled;
 
 export const stripOf = (
     drama: RawDefinition,
     arc: RawDefinition,
     expanded: ExpandedSchedule | null,
     today: string,
+    scheduled = false,
 ): Strip => {
     const span = spanOf(arc);
-    const current = currentScheduleOf(drama, arc);
+    const unreleased = isUnreleased(arc, scheduled);
+    const current: ArcSchedule = unreleased ? {} : currentScheduleOf(drama, arc);
     const plan = expanded ?? current;
     return {
         past: batchesOf(current, span).filter((b) => b.date <= today),
+        unreleased,
         future: batchesOf(plan, span).filter((b) => b.date > today),
         comparison: expanded ? compareBatches(current, expanded, span, today) : null,
     };
@@ -56,7 +68,10 @@ export const arcTabNote = (
     today: string,
 ) => {
     if (!hasRule) return t('schedule.none');
-    const released = stripOf(drama, arc, null, today).past.reduce((sum, b) => sum + sizeOf(b), 0);
+    const released = stripOf(drama, arc, null, today, hasRule).past.reduce(
+        (sum, b) => sum + sizeOf(b),
+        0,
+    );
     const count = countOf(arc);
     return released > 0 && released < count
         ? t('schedule.released', { released, count })

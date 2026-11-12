@@ -60,6 +60,8 @@ export function ShowList() {
     const flags = changeFlagsOf(changes.data?.changes);
     const shows = (entries.data ?? []).filter((e) => e.kind === 'shows');
     const groups = groupEntries(shows);
+    // 節目冇掃描 draft：draft = 新節目圖未齊（下架先存到），同已下架一齊列
+    const unlisted = [...groups.pending, ...groups.unlisted];
     return (
         <>
             <ListTitle
@@ -82,13 +84,13 @@ export function ShowList() {
                         <ShowRow key={entry.id} entry={entry} flags={flags} sortable={sortable} />
                     )}
                 />
-                {groups.unlisted.length > 0 && (
+                {unlisted.length > 0 && (
                     <>
                         <div className="section-divider">
-                            {t('list.unlisted', { count: groups.unlisted.length })}
+                            {t('list.unlisted', { count: unlisted.length })}
                         </div>
                         <ol className="list disabled">
-                            {groups.unlisted.map((entry) => (
+                            {unlisted.map((entry) => (
                                 <ShowRow key={entry.id} entry={entry} flags={flags} />
                             ))}
                         </ol>

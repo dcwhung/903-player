@@ -1,5 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { hasIcon } from '../../../tests/icons';
 import { fakeData, mockApi, renderAt } from '../../../tests/renderApp';
 import { HistoryPage } from './HistoryPage';
 
@@ -48,5 +49,14 @@ describe('HistoryPage rollback', () => {
         await userEvent.click(await screen.findByRole('button', { name: '還原至 #1' }));
         await userEvent.click(screen.getByRole('button', { name: '還原' }));
         expect(await screen.findByText('內容與目前版本相同，沒有發佈新版本。')).toBeInTheDocument();
+    });
+
+    it('should show the undo icon on the dialog 還原 button', async () => {
+        mockApi({
+            'GET /api/publishes': () => ({ body: { publishes: [row(2, true), row(1, false)] } }),
+        });
+        renderAt('/history', '/history', <HistoryPage />);
+        await userEvent.click(await screen.findByRole('button', { name: '還原至 #1' }));
+        expect(hasIcon(screen.getByRole('button', { name: '還原' }), 'undo-2')).toBe(true);
     });
 });

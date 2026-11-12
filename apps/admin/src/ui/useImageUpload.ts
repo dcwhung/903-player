@@ -22,6 +22,7 @@ const toPending = async (file: File, slot: ImageSlotKind): Promise<PendingImage 
     return {
         ...prepared,
         name: file.name,
+        type: file.type,
         sourceUrl: URL.createObjectURL(file),
         resultUrl: URL.createObjectURL(prepared.blob),
     };

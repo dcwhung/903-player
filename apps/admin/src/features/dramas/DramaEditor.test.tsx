@@ -89,7 +89,7 @@ describe('DramaEditor', () => {
         expect(tab).toHaveAttribute('aria-selected', 'true');
         await userEvent.click(screen.getByRole('button', { name: '逢一三五 · 每次 5 集' }));
         const future = await screen.findByRole('group', { name: '今天之後的批次' });
-        await waitFor(() => expect(within(future).getByText(/1\/5/)).toBeInTheDocument());
+        await waitFor(() => expect(within(future).getByText(/5\/1/)).toBeInTheDocument());
         await userEvent.click(screen.getByRole('button', { name: '儲存' }));
         const scheduleCall = () =>
             fetchMock.mock.calls.find(

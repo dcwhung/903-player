@@ -39,7 +39,7 @@ describe('timelineModel', () => {
 
     it('should label the timeline', () => {
         expect(whenLabel('now')).toBe('即時上線');
-        expect(whenLabel('2026-11-16')).toBe('11/16 一');
+        expect(whenLabel('2026-11-16')).toBe('16/11 一');
         const [episodes, arc, drama] = SUMMARY.items;
         expect(itemName(episodes!)).toBe('公子森林');
         expect(itemRange(episodes!)).toBe('39–40');

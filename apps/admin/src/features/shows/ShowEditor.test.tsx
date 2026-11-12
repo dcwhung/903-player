@@ -39,9 +39,30 @@ describe('ShowEditor', () => {
         expect(screen.getByText('● 有未儲存的變更（簡介）')).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', { name: '儲存' }));
         await waitFor(() => expect(screen.queryByText(/有未儲存的變更/)).not.toBeInTheDocument());
+        // 已存在嘅節目：儲存後留喺編輯頁
+        expect(screen.queryByText('other page')).not.toBeInTheDocument();
         const put = api.mock.calls.find(([, init]) => init?.method === 'PUT');
         expect(new Headers(put?.[1]?.headers).get('if-match')).toBe('"2026-11-10T00:00:00.000Z"');
         expect(JSON.parse(String(put?.[1]?.body)).definition.summary).toBe('新簡介');
+    });
+
+    it('should go back to the show list with a toast after the first save of a new show', async () => {
+        const api = mockApi({
+            'PUT /api/entries/shows/abc': () => ({
+                status: 201,
+                body: { updatedAt: 'v1', draft: true, warnings: { missingEpisodeIds: [] } },
+            }),
+        });
+        const data = fakeData();
+        renderAt('/shows/new', '/shows/new', <ShowEditorPage />, data);
+        await userEvent.type(await screen.findByRole('textbox', { name: /ID/ }), 'abc');
+        await userEvent.type(screen.getByRole('textbox', { name: '簡介' }), 'x');
+        await userEvent.click(screen.getByRole('button', { name: '儲存' }));
+        expect(await screen.findByText('other page')).toBeInTheDocument();
+        expect(screen.getByText('已新增「abc」')).toBeInTheDocument();
+        expect(data.refresh).toHaveBeenCalled();
+        const put = api.mock.calls.find(([, init]) => init?.method === 'PUT');
+        expect(new Headers(put?.[1]?.headers).get('if-none-match')).toBe('*');
     });
 
     it('should explain a 412 and offer reload', async () => {

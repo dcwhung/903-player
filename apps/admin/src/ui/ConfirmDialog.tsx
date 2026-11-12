@@ -2,6 +2,7 @@
  * 兩粒掣嘅對話框 shell（刪除 / 還原確認、＋ 新增廣播劇說明）：Design Origin: mockup: _mockups_/admin/index.html#s9（.scrim）
  * 開啟時 focus 入「取消」、Tab 喺掣之間循環、Esc 取消；關閉後 focus 返去原本個掣
  */
+import { X } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import { t } from '../i18n/t';
 import { useDialogFocus } from './useDialogFocus';
@@ -42,6 +43,7 @@ export function ConfirmDialog({
                 {note && <p className="note warn">{note}</p>}
                 <div className="actions end">
                     <button type="button" ref={cancelRef} onClick={onCancel}>
+                        <X aria-hidden="true" />
                         {cancelLabel}
                     </button>
                     <button

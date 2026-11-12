@@ -53,7 +53,56 @@ const shoot = async (page, name, options = {}) => {
     await page.emulateMedia({ colorScheme: 'light' });
 };
 
-const loggedIn = () => ({ ...createState(), loggedIn: true });
+const loggedIn = (options) => ({ ...createState(options), loggedIn: true });
+
+/*
+ * 字色對底色嘅對比度（WCAG）：底色由自己向上搵第一個唔透明嘅 background；
+ * 自己 / 祖先有 opacity 就將字同底一齊混落再上一層嘅底（= 畫面上真正見到嘅顏色）
+ */
+const contrastOf = (locator) =>
+    locator.evaluate((el) => {
+        const parse = (value) => {
+            const [r, g, b, a = 1] = value.match(/[\d.]+/g).map(Number);
+            return { r, g, b, a };
+        };
+        const over = (top, under, alpha = top.a) => ({
+            r: top.r * alpha + under.r * (1 - alpha),
+            g: top.g * alpha + under.g * (1 - alpha),
+            b: top.b * alpha + under.b * (1 - alpha),
+            a: 1,
+        });
+        const bgOf = (start) => {
+            for (let node = start; node; node = node.parentElement) {
+                const bg = parse(getComputedStyle(node).backgroundColor);
+                if (bg.a > 0) return bg.a === 1 ? bg : over(bg, bgOf(node.parentElement));
+            }
+            return { r: 255, g: 255, b: 255, a: 1 };
+        };
+        let opacity = 1;
+        for (let node = el; node; node = node.parentElement)
+            opacity *= Number(getComputedStyle(node).opacity);
+        const bg = bgOf(el);
+        const under = bgOf(el.parentElement?.parentElement ?? null);
+        const fg = over(parse(getComputedStyle(el).color), bg);
+        const [shownFg, shownBg] = [over(fg, under, opacity), over(bg, under, opacity)];
+        const lum = ({ r, g, b }) => {
+            const lin = (c) => ((c /= 255) <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+            return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+        };
+        const [hi, lo] = [lum(shownFg), lum(shownBg)].sort((x, y) => y - x);
+        return (hi + 0.05) / (lo + 0.05);
+    });
+
+/** 淺色 + 深色各量一次對比度，任何一個低過 min 就 throw */
+const assertContrast = async (page, locator, min, what) => {
+    for (const scheme of ['light', 'dark']) {
+        await page.emulateMedia({ colorScheme: scheme });
+        const ratio = await contrastOf(locator);
+        if (ratio < min)
+            throw new Error(`${what} (${scheme}): contrast ${ratio.toFixed(2)} < ${min}`);
+    }
+    await page.emulateMedia({ colorScheme: 'light' });
+};
 
 const check = async (name, fn) => {
     try {
@@ -64,6 +113,33 @@ const check = async (name, fn) => {
     }
 };
 
+/** Google「Sign in with Google」官方色（mockup admin-login --gsi-*） */
+const GSI = {
+    light: {
+        background: 'rgb(255, 255, 255)',
+        border: 'rgb(116, 119, 117)',
+        color: 'rgb(31, 31, 31)',
+        radius: '20px',
+    },
+    dark: {
+        background: 'rgb(19, 19, 20)',
+        border: 'rgb(142, 145, 143)',
+        color: 'rgb(227, 227, 227)',
+        radius: '20px',
+    },
+};
+
+const gsiColours = (locator) =>
+    locator.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return {
+            background: style.backgroundColor,
+            border: style.borderTopColor,
+            color: style.color,
+            radius: style.borderTopLeftRadius,
+        };
+    });
+
 const loginCheck = (browser) =>
     check('login screen when /api/me is 401', async () => {
         const page = await newPage(browser, createState());
@@ -72,7 +148,29 @@ const loginCheck = (browser) =>
         await google.waitFor();
         if ((await google.getAttribute('href')) !== '/auth/google/start')
             throw new Error('bad href');
+        // 款 3（_mockups_/admin-login #3）：全頁 banner 背景 + 毛玻璃卡；Google 掣跟官方淺 / 深色款
+        await page.locator('.login-card').waitFor();
+        await page.evaluate(() => document.fonts.ready);
+        for (const [scheme, expected] of Object.entries(GSI)) {
+            await page.emulateMedia({ colorScheme: scheme });
+            const got = await gsiColours(google);
+            if (JSON.stringify(got) !== JSON.stringify(expected))
+                throw new Error(`${scheme} Google button: ${JSON.stringify(got)}`);
+        }
+        await page.emulateMedia({ colorScheme: 'light' });
+        const bg = await page
+            .locator('.login-bg')
+            .evaluate((el) => getComputedStyle(el).backgroundImage);
+        if (!bg.includes('/banner.webp')) throw new Error(`login background: ${bg}`);
         await shoot(page, 'login');
+        // admin 揀咗深色（localStorage admin.theme）：系統淺色都用深色款
+        await page.evaluate(() => localStorage.setItem('admin.theme', 'dark'));
+        await page.reload();
+        await google.waitFor();
+        const manual = await gsiColours(google);
+        if (JSON.stringify(manual) !== JSON.stringify(GSI.dark))
+            throw new Error(`data-theme dark Google button: ${JSON.stringify(manual)}`);
+        await page.evaluate(() => localStorage.removeItem('admin.theme'));
         // S-809：深連結 login 完要返返嚟 → ?next=（只係同源相對路徑）
         await page.goto(`${BASE}/dramas/lancy/schedule#lancy-02`);
         const deep = await google.getAttribute('href');
@@ -187,6 +285,295 @@ const scheduleCheck = (browser) =>
         await page.close();
     });
 
+/*
+ * 快速套用 chip：撳完滑鼠仲喺粒 chip 上面（揀咗 + hover），之前 hover 蓋咗實色底 → 字睇唔到。
+ * 揀咗：實色底白字 ≥ 4.5:1；disabled（快速套用 / 排程短篇 tab）：--muted 字淺底 ≥ 3:1，淺深色都量
+ */
+const presetChipCheck = (browser) =>
+    check('schedule chips: pressed (hovered) and disabled chips stay readable', async () => {
+        const page = await newPage(browser, loggedIn());
+        await page.goto(`${BASE}/dramas/lancy/schedule#lancy-02`);
+        const mwf = page.getByRole('button', { name: '逢一三五 · 每次 5 集' });
+        await mwf.click();
+        if ((await mwf.getAttribute('aria-pressed')) !== 'true')
+            throw new Error('preset not pressed');
+        await mwf.hover();
+        await assertContrast(page, mwf, 4.5, 'pressed + hovered preset');
+        for (const scheme of ['light', 'dark']) {
+            await page.emulateMedia({ colorScheme: scheme });
+            const colours = await mwf.evaluate((el) => {
+                const style = getComputedStyle(el);
+                return [style.backgroundColor, style.color];
+            });
+            if (colours.join() !== `${PRIMARY},${ON_PRIMARY}`)
+                throw new Error(`${scheme}: pressed preset is ${colours}`);
+        }
+        const presets = page.getByRole('group', { name: '快速套用' });
+        await shoot(page, 'preset-chips', { clip: await boxOf(presets) });
+        await mwf.evaluate((el) => {
+            el.disabled = true;
+        });
+        await page.mouse.move(0, 0);
+        await assertContrast(page, mwf, 3, 'disabled pressed preset');
+        const daily = page.getByRole('button', { name: '每日 1 集' });
+        await daily.evaluate((el) => {
+            el.disabled = true;
+        });
+        await assertContrast(page, daily, 3, 'disabled preset');
+        await shoot(page, 'preset-chips-disabled', { clip: await boxOf(presets) });
+        const tab = page.getByRole('tab', { name: /戀愛二分一/ });
+        await tab.evaluate((el) => {
+            el.disabled = true;
+        });
+        await assertContrast(page, tab, 3, 'disabled arc tab');
+        await page.close();
+    });
+
+/*
+ * 真圖（e2e/fixtures，player 嘅 cover）：「口水多過浪花」同「蘭茜夫人劇場」有 Banner / 碟面，
+ * 截編輯頁圖片區、標題碟面、兩個列表、排程短篇 chip 嘅淺色同深色，睇框線同真圖夾唔夾
+ */
+const IMAGE_URL = /\/catalog\/v1\/img\//;
+
+const assertImagesLoaded = async (page, locator, what) => {
+    const urls = await locator.evaluateAll((els) =>
+        els.map((el) => getComputedStyle(el).backgroundImage.match(/url\("?(.+?)"?\)/)?.[1] ?? ''),
+    );
+    const real = urls.filter((url) => IMAGE_URL.test(url));
+    if (real.length === 0) throw new Error(`${what}: no real image (${urls})`);
+    for (const url of real) {
+        const ok = await page.evaluate(async (src) => {
+            const img = new Image();
+            img.src = src;
+            await img.decode();
+            return img.naturalWidth > 0;
+        }, url);
+        if (!ok) throw new Error(`${what}: ${url} did not decode`);
+    }
+};
+
+/** 框線：'dashed' = 2px 虛線；'none' = 冇 border、冇 box-shadow 框 */
+const assertFrames = async (locator, expected, what) => {
+    const styles = await locator.evaluateAll((els) =>
+        els.map((el) => {
+            const style = getComputedStyle(el);
+            return `${style.borderTopStyle}|${style.borderTopWidth}|${style.boxShadow}`;
+        }),
+    );
+    if (styles.length === 0) throw new Error(`${what}: nothing to check`);
+    const ok = (s) => (expected === 'dashed' ? s.startsWith('dashed|2px') : s === 'none|0px|none');
+    const bad = styles.filter((s) => !ok(s));
+    if (bad.length > 0) throw new Error(`${what}: expected ${expected} frame, got ${bad}`);
+};
+
+const realImagesCheck = (browser) =>
+    check('real covers: editor slots, title disc, lists and schedule chips', async () => {
+        const page = await newPage(browser, loggedIn({ realImages: true }));
+        for (const [path, name] of [
+            ['/dramas/lancy', 'drama'],
+            ['/shows/waves', 'show'],
+        ]) {
+            await page.goto(`${BASE}${path}`);
+            const media = page.locator('.media').first();
+            await media.locator('.img-slot:not(.empty)').nth(1).waitFor();
+            await assertImagesLoaded(page, media.locator('.thumb'), `${name} image slots`);
+            await shoot(page, `image-slots-real-${name}`, { clip: await boxOf(media) });
+            await assertFrames(media.locator('.img-slot'), 'dashed', `${name} image slots`);
+            const title = page.locator('.title-row').first();
+            await assertImagesLoaded(page, title.locator('.thumb'), `${name} title disc`);
+            await assertFrames(title.locator('.thumb'), 'none', `${name} title disc`);
+            await shoot(page, `title-disc-real-${name}`, { clip: await boxOf(title) });
+        }
+        // 上載預覽 dialog：用真圖揀檔，原圖 / 裁切後都係虛線框（碟面裁切後淨係圓形虛線框）
+        await page.goto(`${BASE}/dramas/lancy`);
+        for (const [slot, label] of [
+            ['disc', '碟面'],
+            ['tile', 'Banner'],
+        ]) {
+            const chooser = page.waitForEvent('filechooser');
+            await page.getByRole('button', { name: `更換${label}` }).click();
+            await (
+                await chooser
+            ).setFiles(new URL(`./fixtures/lancy-${slot}.webp`, import.meta.url).pathname);
+            const dialog = page.getByRole('dialog', { name: `上載${label}` });
+            await dialog.getByRole('figure', { name: '裁切後' }).getByText(/WebP/).waitFor();
+            await assertFrames(dialog.locator('.frame').first(), 'dashed', `${slot} source frame`);
+            await assertFrames(
+                dialog.locator(slot === 'disc' ? '.out.disc' : '.frame').last(),
+                'dashed',
+                `${slot} result frame`,
+            );
+            await shoot(page, `upload-preview-real-${slot}`, { clip: await boxOf(dialog) });
+            await dialog.getByRole('button', { name: '取消' }).click();
+            await dialog.waitFor({ state: 'detached' });
+        }
+        for (const [path, name] of [
+            ['/shows', 'shows'],
+            ['/dramas', 'dramas'],
+        ]) {
+            await page.goto(`${BASE}${path}`);
+            await page.locator('.list .thumb').first().waitFor();
+            await assertImagesLoaded(page, page.locator('.list .thumb'), `${name} list`);
+            await assertFrames(page.locator('.list .thumb:not(.blank)'), 'none', `${name} list`);
+            await shoot(page, `${name}-real`);
+        }
+        await page.goto(`${BASE}/dramas/lancy/schedule#half`);
+        const tabs = page.getByRole('tablist', { name: /短篇/ });
+        await tabs.waitFor();
+        await assertImagesLoaded(page, tabs.locator('.thumb'), 'schedule arc chips');
+        await assertFrames(tabs.locator('.thumb'), 'none', 'schedule arc chips');
+        await shoot(page, 'schedule-chips-real', { clip: await boxOf(tabs) });
+        await page.close();
+    });
+
+/** 資料夾唔見咗：編輯頁「音訊來源」出警告 + 揀資料夾 dropdown +「配對」掣（截圖畀用戶睇位置） */
+const missingFolderCheck = (browser) =>
+    check('missing R2 folder: warning, folder dropdown and 配對 on the drama editor', async () => {
+        const page = await newPage(browser, loggedIn({ missingFolder: true }));
+        await page.goto(`${BASE}/dramas/golden`);
+        const field = page.locator('#folder');
+        await field.getByText('在 R2 找不到 黃金少年/').waitFor();
+        const select = field.getByRole('combobox', { name: '選擇未配對的資料夾…' });
+        await select.locator('option', { hasText: '少爺占系列/' }).waitFor({ state: 'attached' });
+        const pair = field.getByRole('button', { name: '配對' });
+        if (!(await pair.isDisabled())) throw new Error('配對 enabled before picking a folder');
+        await shoot(page, 'missing-folder-page', { fullPage: true });
+        await assertIcon(pair, 'link-2', '配對');
+        await select.selectOption('黃金少年 第一季');
+        if (await pair.isDisabled()) throw new Error('配對 still disabled after picking');
+        const box = await boxOf(field);
+        const pad = 12;
+        await shoot(page, 'missing-folder', {
+            clip: {
+                x: box.x - pad,
+                y: box.y - pad,
+                width: box.width + pad * 2,
+                height: box.height + pad * 2,
+            },
+        });
+        await page.close();
+    });
+
+/** lucide icon（aria-hidden）喺唔喺 locator 入面；文字唔可以再有 ← → ▾ ▴ */
+const assertIcon = async (locator, icon, what) => {
+    const found = await locator.evaluate(
+        (el, name) => el.querySelector(`svg.lucide-${name}[aria-hidden="true"]`) !== null,
+        icon,
+    );
+    if (!found) throw new Error(`${what}: no ${icon} icon`);
+    const text = await locator.innerText();
+    if (/[←→▾▴]/.test(text)) throw new Error(`${what}: arrow character left in "${text}"`);
+};
+
+const clipAround = async (locator, pad = 12) => {
+    const box = await boxOf(locator);
+    return {
+        x: box.x - pad,
+        y: box.y - pad,
+        width: box.width + pad * 2,
+        height: box.height + pad * 2,
+    };
+};
+
+/** 8 組日期（即時上線 + 7 日）：確認發佈時間線收起，出「查看全部」 */
+const longTimeline = () => {
+    const days = ['now', ...[17, 18, 19, 20, 21, 22, 23].map((d) => `2026-11-${d}`)];
+    const groups = days.map((when, i) => ({
+        when,
+        items: [
+            {
+                kind: 'newArc',
+                when,
+                entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
+                arc: { id: 'lancy-02', name: '我心不死', label: `我心不死 ${i + 1}` },
+                detail: { episodes: { first: i + 1, last: i + 1 } },
+            },
+        ],
+    }));
+    return { items: groups.flatMap((g) => g.items), timeline: groups };
+};
+
+const actionIconsCheck = (browser) =>
+    check('action links / buttons carry outline icons (no arrow characters)', async () => {
+        const state = loggedIn();
+        // 6 個短篇：列表收起，出「展開全部」
+        state.entries.find((e) => e.id === 'golden').definition.arcs = [1, 2, 3, 4, 5, 6].map(
+            (n) => ({ id: `s${n}`, name: `Season ${n}`, episodes: 10 }),
+        );
+        const page = await newPage(browser, state);
+        // ScanBar「處理待辦」+ UnpublishedNote「前往發佈」
+        await page.goto(`${BASE}/dramas`);
+        const go = page.getByRole('link', { name: '處理待辦' });
+        await go.waitFor();
+        await assertIcon(go, 'arrow-right', '處理待辦');
+        const publish = page.getByRole('link', { name: '前往發佈' });
+        await assertIcon(publish, 'arrow-right', '前往發佈');
+        await shoot(page, 'icon-scan-unpublished', {
+            clip: { ...(await clipAround(page.locator('.scan-bar'))), height: 180 },
+        });
+        // 展開全部 / 收起
+        const expand = page.getByRole('button', { name: '展開全部 6 個短篇' });
+        await assertIcon(expand, 'chevron-down', '展開全部');
+        await shoot(page, 'icon-arcs-expand', {
+            clip: await clipAround(page.locator('.arcs', { has: expand })),
+        });
+        await expand.click();
+        const collapse = page.getByRole('button', { name: '收起' });
+        await assertIcon(collapse, 'chevron-up', '收起');
+        await shoot(page, 'icon-arcs-collapse', {
+            clip: await clipAround(page.locator('.arcs', { has: collapse })),
+        });
+        // 「返回待辦」（flow bar）
+        await page.goto(
+            `${BASE}/dramas/lancy/arcs?from=todos&todo=newArc%3Alancy%3Alancy-02#lancy-02`,
+        );
+        const back = page
+            .getByRole('region', { name: '處理待辦' })
+            .getByRole('link', { name: '返回待辦' });
+        await back.waitFor();
+        await assertIcon(back, 'arrow-left', '返回待辦');
+        await shoot(page, 'icon-flow-back', { clip: await clipAround(page.locator('.flow-bar')) });
+        // 「查看全部」（確認發佈時間線）
+        await page.route('**/api/changes', (route) =>
+            route.fulfill({
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    base: null,
+                    changes: longTimeline(),
+                    validation: { ok: true, episodeCount: 102 },
+                }),
+            }),
+        );
+        await page.goto(`${BASE}/publish`);
+        const all = page.getByRole('button', { name: /查看全部/ });
+        await all.waitFor();
+        await assertIcon(all, 'chevron-down', '查看全部');
+        await all.scrollIntoViewIfNeeded();
+        await shoot(page, 'icon-timeline-all', {
+            clip: await clipAround(page.locator('.timeline li.more')),
+        });
+        // 「重新登入（新分頁）」：儲存時 401
+        await page.route(/\/api\/entries\/shows\/night$/, (route, request) =>
+            request.method() === 'PUT'
+                ? route.fulfill({
+                      status: 401,
+                      contentType: 'application/json',
+                      body: '{"error":"x"}',
+                  })
+                : route.fallback(),
+        );
+        await page.goto(`${BASE}/shows/night`);
+        await page.getByRole('textbox', { name: '簡介' }).fill('x');
+        await page.getByRole('button', { name: '儲存' }).click();
+        const relogin = page.getByRole('link', { name: '重新登入（新分頁）' });
+        await relogin.waitFor();
+        await assertIcon(relogin, 'external-link', '重新登入');
+        await shoot(page, 'icon-relogin', {
+            clip: await clipAround(page.locator('.note', { has: relogin })),
+        });
+        await page.close();
+    });
+
 const showEditorCheck = (browser) =>
     check(
         'show editor: 設定播放時間 reveals the roller, each roller under its own box',
@@ -265,13 +652,21 @@ const imageCheck = (browser) =>
             await page.getByText('例：01 - 戀愛二分一.m4a').waitFor();
             await page.locator('.pill.solid', { hasText: '短篇集' }).waitFor();
             await shoot(page, 'drama-basic');
+            await shoot(page, 'image-slots', { clip: await boxOf(page.locator('.media')) });
             const chooser = page.waitForEvent('filechooser');
             await page.getByRole('button', { name: '上載碟面' }).click();
             await (
                 await chooser
             ).setFiles({ name: 'photo.png', mimeType: 'image/png', buffer: PNG_1PX });
             const dialog = page.getByRole('dialog', { name: '上載碟面' });
-            await dialog.getByText('photo.png · 1×1 → 600×600 WebP（置中裁切）').waitFor();
+            // 原圖 | 裁切後兩格並排，說明喺各自圖下面
+            const source = dialog.getByRole('figure', { name: '原圖' });
+            const result = dialog.getByRole('figure', { name: '裁切後' });
+            await source.getByText('1×1 · PNG').waitFor();
+            await result.getByText(/^600×600 · WebP · 約 \d+ KB$/).waitFor();
+            const [left, right] = [await boxOf(source), await boxOf(result)];
+            if (Math.abs(left.y - right.y) > 2 || right.x <= left.x + left.width - 1)
+                throw new Error('原圖 / 裁切後 are not side by side');
             await shoot(page, 'image-preview');
             await dialog.getByRole('button', { name: '上載' }).click();
             await dialog.waitFor({ state: 'detached' });
@@ -286,10 +681,10 @@ const imageCheck = (browser) =>
         },
     );
 
-const boxOf = async (locator) => {
+const boxOf = async (locator, x = undefined, height = undefined) => {
     const box = await locator.boundingBox();
     if (!box) throw new Error('element not visible');
-    return box;
+    return height === undefined ? box : { ...box, height };
 };
 
 const navCheck = (browser) =>
@@ -338,7 +733,185 @@ const navCheck = (browser) =>
                 return bubble?.parentElement === document.body && getComputedStyle(bubble).zIndex;
             });
             if (onTop !== '40') throw new Error('tooltip is not on top of nav / panel');
+            const logo = page.locator('.logo-mini img');
+            if ((await logo.getAttribute('src')) !== '/icon-192.png')
+                throw new Error('collapsed nav does not show the app icon');
+            if (!(await logo.evaluate((img) => img.complete && img.naturalWidth > 0)))
+                throw new Error('app icon failed to load');
+            // 完整 app icon（原本圓角方形）：1:1 唔變形、冇圓形底、冇裁切（img 佔滿成個 link）
+            const shape = await logo.evaluate((img) => {
+                const link = getComputedStyle(img.parentElement);
+                const box = img.getBoundingClientRect();
+                const outer = img.parentElement.getBoundingClientRect();
+                return {
+                    width: getComputedStyle(img).width,
+                    height: getComputedStyle(img).height,
+                    fit: getComputedStyle(img).objectFit,
+                    radius: link.borderRadius,
+                    background: link.backgroundColor,
+                    img: [box.width, box.height],
+                    link: [outer.width, outer.height],
+                };
+            });
+            if (shape.width !== shape.height || shape.fit !== 'contain')
+                throw new Error(`app icon is distorted: ${JSON.stringify(shape)}`);
+            if (
+                shape.radius === '50%' ||
+                shape.background !== 'rgba(0, 0, 0, 0)' ||
+                shape.img.join() !== shape.link.join()
+            )
+                throw new Error(`app icon has a badge or is cropped: ${JSON.stringify(shape)}`);
             await shoot(page, 'nav-mini');
+            await shoot(page, 'nav-mini-logo', { clip: await boxOf(page.locator('.nav'), 0, 140) });
+            await page.close();
+        },
+    );
+
+const UNRELEASED_ARC = 'love-after';
+const PRIMARY = 'rgb(30, 123, 192)';
+const ON_PRIMARY = 'rgb(255, 255, 255)';
+
+const unreleasedScheduleCheck = (browser) =>
+    check(
+        'schedule tab: disabled arc without a schedule is 未上架 (no grey ✓), chip solid primary',
+        async () => {
+            const page = await newPage(browser, loggedIn());
+            await page.goto(`${BASE}/dramas/lancy/schedule#${UNRELEASED_ARC}`);
+            const tab = page.getByRole('tab', { name: /戀愛後二分一/ });
+            await tab.waitFor();
+            if ((await tab.getAttribute('aria-selected')) !== 'true')
+                throw new Error('arc not selected');
+            await page.locator('.strip-unreleased').waitFor();
+            if ((await page.locator('.seg-batch.past').count()) > 0)
+                throw new Error('disabled unscheduled arc shows released batches');
+            for (const scheme of ['light', 'dark']) {
+                await page.emulateMedia({ colorScheme: scheme });
+                await tab.hover();
+                const colours = await tab.evaluate((el) => {
+                    const style = getComputedStyle(el);
+                    return [style.backgroundColor, style.color];
+                });
+                if (colours.join() !== `${PRIMARY},${ON_PRIMARY}`)
+                    throw new Error(`${scheme}: selected chip is ${colours}`);
+            }
+            await page.mouse.move(0, 0);
+            await shoot(page, 'schedule-unreleased', { fullPage: true });
+            await page.close();
+        },
+    );
+
+const TOGGLE_ON = 'rgb(31, 122, 77)';
+const TOGGLE_OFF = 'rgb(194, 51, 58)';
+
+const toggleHoverCheck = (browser) =>
+    check('status toggle keeps green / red on hover (light + dark)', async () => {
+        const page = await newPage(browser, loggedIn());
+        for (const [path, colour] of [
+            ['/shows/night', TOGGLE_ON],
+            ['/shows/new', TOGGLE_OFF],
+        ]) {
+            await page.goto(`${BASE}${path}`);
+            const toggle = page.getByRole('switch', { name: '狀態' });
+            for (const scheme of ['light', 'dark']) {
+                await page.emulateMedia({ colorScheme: scheme });
+                await toggle.hover();
+                const bg = await toggle.evaluate((el) => getComputedStyle(el).backgroundColor);
+                if (bg !== colour) throw new Error(`${path} ${scheme}: hover background ${bg}`);
+            }
+            const box = await boxOf(toggle);
+            const clip = {
+                x: box.x - 16,
+                y: box.y - 40,
+                width: box.width + 32,
+                height: box.height + 56,
+            };
+            await shoot(page, `toggle-hover-${colour === TOGGLE_ON ? 'on' : 'off'}`, { clip });
+        }
+        await page.close();
+    });
+
+const savebarCheck = (browser) =>
+    check('arc editor savebar: 復原 at the far left, dirty note + save on the right', async () => {
+        const page = await newPage(browser, loggedIn());
+        await page.goto(`${BASE}/dramas/lancy/arcs#half`);
+        await page.getByRole('textbox', { name: '簡介' }).first().fill('新簡介');
+        const bar = page.locator('.savebar').filter({ hasText: '有未儲存的變更' });
+        await bar.scrollIntoViewIfNeeded();
+        const revert = await boxOf(bar.getByRole('button', { name: '復原' }));
+        const note = await boxOf(bar.getByText(/有未儲存的變更/));
+        const whole = await boxOf(bar);
+        if (revert.x - whole.x > 4) throw new Error('復原 is not at the far left');
+        if (note.x < whole.x + whole.width / 2) throw new Error('dirty note is not on the right');
+        const pad = 12;
+        await shoot(page, 'arc-savebar', {
+            clip: {
+                x: whole.x - pad,
+                y: whole.y - pad,
+                width: whole.width + pad * 2,
+                height: whole.height + pad * 2,
+            },
+        });
+        await page.close();
+    });
+
+const todoRowCheck = (browser) =>
+    check('todo matrix: folder ✓ on new arc, whole row opens the arc (flow bar kept)', async () => {
+        const page = await newPage(browser, loggedIn());
+        await page.goto(BASE);
+        await page.getByLabel('我心不死：資料夾 已完成').waitFor();
+        const row = page.getByRole('row', { name: /我心不死/ });
+        await row.hover();
+        await shoot(page, 'update-row-hover');
+        await row.locator('td.ok').first().click();
+        await page.waitForURL(
+            /\/dramas\/lancy\/arcs\?from=todos&todo=newArc%3Alancy%3Alancy-02#lancy-02$/,
+        );
+        await page.getByRole('region', { name: '處理待辦' }).waitFor();
+        await page.getByRole('button', { name: '儲存並返回待辦' }).waitFor();
+        await page.close();
+    });
+
+const newShowCheck = (browser) =>
+    check(
+        'new show: save without images, back to /shows with the new row; existing show stays',
+        async () => {
+            const state = loggedIn();
+            const page = await newPage(browser, state);
+            await page.goto(`${BASE}/shows`);
+            await page.getByRole('button', { name: '新增節目' }).click();
+            await page.waitForURL(`${BASE}/shows/new`);
+            await page.getByRole('textbox', { name: /ID/ }).fill('abc');
+            await page.getByRole('textbox', { name: '名稱' }).fill('新節目測試');
+            await page.getByRole('button', { name: '儲存' }).click();
+            await page.waitForURL(`${BASE}/shows`);
+            await page.getByText('已新增「abc」').waitFor();
+            await page.getByText('新節目測試').waitFor();
+            await page.goto(`${BASE}/shows/night`);
+            await page.getByRole('textbox', { name: '簡介' }).fill('x');
+            await page.getByRole('button', { name: '儲存' }).click();
+            await page.getByText(/有未儲存的變更/).waitFor({ state: 'detached' });
+            if (page.url() !== `${BASE}/shows/night`)
+                throw new Error('existing show left the editor');
+            await page.close();
+        },
+    );
+
+const arcLinkCheck = (browser) =>
+    check(
+        'drama list: arc name opens the arc in the arcs tab, row still opens the drama',
+        async () => {
+            const page = await newPage(browser, loggedIn());
+            await page.goto(`${BASE}/dramas`);
+            const arc = page.getByRole('link', { name: '我心不死' });
+            await arc.hover();
+            const line = await arc.evaluate((el) => getComputedStyle(el).textDecorationLine);
+            if (line !== 'underline') throw new Error(`arc link hover decoration: ${line}`);
+            await shoot(page, 'dramas-arc-hover');
+            await arc.click();
+            await page.waitForURL(`${BASE}/dramas/lancy/arcs#lancy-02`);
+            await page.goto(`${BASE}/dramas`);
+            await page.getByText('蘭茜夫人劇場').first().click();
+            await page.waitForURL(`${BASE}/dramas/lancy`);
             await page.close();
         },
     );
@@ -399,6 +972,13 @@ const portraitCheck = (browser) =>
         if (await page.getByRole('navigation', { name: '主選單' }).isVisible())
             throw new Error('nav visible');
         await shoot(page, 'portrait');
+        // 未登入都係：直向提示蓋過 login 頁
+        const out = await newPage(browser, createState(), PORTRAIT);
+        await out.goto(BASE);
+        await out.getByRole('heading', { name: '請轉為橫向或使用電腦' }).waitFor();
+        if (await out.getByRole('link', { name: '使用 Google 登入' }).isVisible())
+            throw new Error('login visible on a portrait phone');
+        await out.close();
         await page.close();
     });
 
@@ -416,9 +996,19 @@ try {
         newDramaDialogCheck,
         showListCheck,
         scheduleCheck,
+        presetChipCheck,
+        realImagesCheck,
+        missingFolderCheck,
+        actionIconsCheck,
         showEditorCheck,
         narrowRollerCheck,
         imageCheck,
+        unreleasedScheduleCheck,
+        toggleHoverCheck,
+        savebarCheck,
+        todoRowCheck,
+        newShowCheck,
+        arcLinkCheck,
         navCheck,
         reducedMotionCheck,
         autoNavCheck,

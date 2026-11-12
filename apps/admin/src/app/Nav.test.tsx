@@ -60,4 +60,12 @@ describe('Nav v4', () => {
         expect(screen.queryByText('admin@example.com')).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: '登出' })).toBeInTheDocument();
     });
+
+    it('should show the app icon (not a 903 text circle) as the collapsed brand link', () => {
+        renderNav(true);
+        const link = screen.getByRole('link', { name: /^903 Player Admin Admin v/ });
+        const icon = link.querySelector('img');
+        expect(icon).toHaveAttribute('src', '/icon-192.png');
+        expect(link).not.toHaveTextContent('903');
+    });
 });

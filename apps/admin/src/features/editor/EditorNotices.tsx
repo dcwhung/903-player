@@ -1,10 +1,13 @@
 /*
  * 儲存結果提示：Design Origin: mockup: _mockups_/admin/index.html#s9
- * 412 →「此劇集已在其他視窗或裝置修改…」+ 重新載入；422 → 總結；warnings → 會消失嘅集數
+ * 412 →「此劇集已在其他視窗或裝置修改…」+ 重新載入；422 → 中文說明（validationMessage，唔識就一般訊息 + 原文）；
+ * warnings → 會消失嘅集數
  */
+import { ExternalLink, RefreshCw } from 'lucide-react';
 import { t } from '../../i18n/t';
 import { clockTime } from '../../model/dates';
 import type { SaveStatus } from './useEntryEditor';
+import { validationMessage } from './validationMessage';
 
 interface EditorNoticesProps {
     status: SaveStatus;
@@ -19,8 +22,25 @@ function SessionExpired() {
             {t('editor.sessionExpired')}{' '}
             <a href="/auth/google/start" target="_blank" rel="noopener">
                 {t('editor.relogin')}
+                <ExternalLink aria-hidden="true" />
             </a>
         </p>
+    );
+}
+
+/** 422：識嘅驗證錯誤講中文；唔識就一般訊息 + 可展開嘅英文原文 */
+function InvalidNotice({ detail }: { detail: string }) {
+    const known = validationMessage(detail);
+    return (
+        <div className="note bad" role="alert">
+            {t('editor.invalidDetail', { detail: known ?? t('validation.general') })}
+            {known === null && (
+                <details className="raw-error">
+                    <summary>{t('validation.original')}</summary>
+                    <code>{detail}</code>
+                </details>
+            )}
+        </div>
     );
 }
 
@@ -40,17 +60,14 @@ export function EditorNotices({ status, fieldErrors, onReload }: EditorNoticesPr
                     </p>
                     <div className="actions">
                         <button type="button" className="primary" onClick={onReload}>
+                            <RefreshCw aria-hidden="true" />
                             {t('editor.reload')}
                         </button>
                     </div>
                 </div>
             )}
             {problem?.type === 'unauthorized' && <SessionExpired />}
-            {problem?.type === 'invalid' && (
-                <p className="note bad" role="alert">
-                    {t('editor.invalidDetail', { detail: problem.detail })}
-                </p>
-            )}
+            {problem?.type === 'invalid' && <InvalidNotice detail={problem.detail} />}
             {problem?.type === 'failed' && (
                 <p className="note bad" role="alert">
                     {problem.message}

@@ -2,6 +2,7 @@
  * 上架時間線（幾時 → 類型 tag → 縮圖 + 名 → 第幾集）：Design Origin: mockup: _mockups_/admin/index.html#u3
  * 太長就收起，「至 M/D，查看全部」原位展開
  */
+import { ChevronDown } from 'lucide-react';
 import type { ChangeItem, ChangeTimelineGroup } from '@903-player/catalog';
 import { Fragment, useState } from 'react';
 import type { LoadedEntry } from '../../api/types';
@@ -57,6 +58,7 @@ export function Timeline({
                     <span className="when">…</span>
                     <button type="button" className="link-btn" onClick={() => setExpanded(true)}>
                         {t('publish.showAll', { date: whenLabel(last.when) })}
+                        <ChevronDown aria-hidden="true" />
                     </button>
                 </li>
             )}

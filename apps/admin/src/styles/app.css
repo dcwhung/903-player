@@ -82,10 +82,6 @@ svg.lucide {
     }
 }
 
-.btn.google {
-    text-decoration: none;
-}
-
 .scan-bar.failed {
     background: var(--danger-bg);
     color: var(--danger);

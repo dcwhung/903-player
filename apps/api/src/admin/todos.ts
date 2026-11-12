@@ -34,6 +34,11 @@ const PLACEHOLDER_DRAMA_ID = /^drama-\d+$/;
 /** 3c 之前掃描派嘅短篇 placeholder（arc-01）：一定要改 */
 const LEGACY_ARC_ID = /^arc-\d+$/;
 const NA: TodoCell = { state: 'na' };
+/** 資料夾係掃描搵到嘅（新短篇 / 新集數）：已經存在 = done；「–」只留畀真係唔適用嘅格 */
+const folderFound = (dramaId: string): TodoCell => ({
+    state: 'done',
+    target: `/dramas/${dramaId}#folder`,
+});
 
 interface TodoContext {
     entry: StoredEntry;
@@ -99,7 +104,7 @@ const arcRow = (
     const arcId = String(arc.id ?? '');
     const target = `/dramas/${ctx.entry.id}/arcs#${arcId}`;
     return {
-        folder: NA,
+        folder: folderFound(ctx.entry.id),
         id: cell(arcIdDone(ctx, arcId, scannedId), 'must', target),
         images: cell(hasImage(ctx.images, arc.disc), 'optional', target),
         schedule: cell(
@@ -115,7 +120,7 @@ const episodesRow = (ctx: TodoContext, arcId: string | null): Record<TodoColumn,
     const scheduled = arcId === null || ctx.scheduled.has(arcId);
     const hash = arcId === null ? '' : `#${arcId}`;
     return {
-        folder: NA,
+        folder: folderFound(ctx.entry.id),
         id: NA,
         images: NA,
         schedule: cell(scheduled, 'optional', `/dramas/${ctx.entry.id}/schedule${hash}`),

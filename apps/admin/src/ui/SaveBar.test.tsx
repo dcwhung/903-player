@@ -17,4 +17,25 @@ describe('SaveBar', () => {
         expect(note.parentElement).toBe(save.parentElement);
         expect(note.nextElementSibling).toBe(save);
     });
+
+    it('should put 復原 at the far left, away from the dirty note and the save button', () => {
+        const { container } = render(
+            <SaveBar
+                dirtyFields={['簡介']}
+                fromTodos={true}
+                saving={false}
+                onSave={vi.fn()}
+                onRevert={vi.fn()}
+                start={<button type="button">刪除</button>}
+            />,
+        );
+        const [left, right] = Array.from(container.querySelectorAll('.savebar > .actions'));
+        const revert = screen.getByRole('button', { name: '復原' });
+        expect(left?.firstElementChild).toBe(revert);
+        expect(right).not.toContainElement(revert);
+        expect(right).toContainElement(screen.getByText('● 有未儲存的變更（簡介）'));
+        expect(right?.lastElementChild).toBe(
+            screen.getByRole('button', { name: '儲存並返回待辦' }),
+        );
+    });
 });

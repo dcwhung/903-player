@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { hasIcon } from '../../../tests/icons';
 import { mockApi } from '../../../tests/renderApp';
 import { MissingFolder } from './MissingFolder';
 
@@ -34,5 +35,10 @@ describe('MissingFolder', () => {
         await userEvent.click(pair);
         await waitFor(() => expect(onPaired).toHaveBeenCalled());
         expect(JSON.parse(String(pairCalls(api)[0]?.[1]?.body))).toEqual({ folder: '少爺占系列' });
+    });
+
+    it('should show a link icon on 配對', async () => {
+        setup();
+        expect(hasIcon(await screen.findByRole('button', { name: '配對' }), 'link-2')).toBe(true);
     });
 });

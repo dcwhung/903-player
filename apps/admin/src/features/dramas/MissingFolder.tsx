@@ -3,6 +3,7 @@
  * （W-709：揀選只改 local state，配對會 rescan 寫 D1，一定要撳掣先做）
  * Design Origin: mockup: _mockups_/admin/index.html#s4c
  */
+import { Link2 } from 'lucide-react';
 import { useState } from 'react';
 import { pairFolder, unmappedFolders } from '../../api/endpoints';
 import { useResource } from '../../data/useResource';
@@ -53,6 +54,7 @@ export function MissingFolder({ dramaId, folder, etag, onPaired }: MissingFolder
                     disabled={picked === '' || busy}
                     onClick={() => void onPair()}
                 >
+                    <Link2 aria-hidden="true" />
                     {t('drama.pair')}
                 </button>
             </div>

@@ -1,6 +1,7 @@
 /*
  * 每頁一個儲存掣（mockup .savebar）：由待辦入嚟叫「儲存並返回待辦」，由列表入嚟叫「儲存」；
- * 有改動先出「● 有未儲存的變更（欄位）」，放喺儲存掣前面；按鈕左邊 outline icon（mockup admin-style ④）
+ * 有改動先出「● 有未儲存的變更（欄位）」，放喺儲存掣前面；「復原」放最左（同儲存掣分開，免得撳錯）；
+ * 按鈕左邊 outline icon（mockup admin-style ④）
  */
 import { Save, Undo2 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -36,7 +37,6 @@ export function SaveBar({
           : '';
     return (
         <div className="savebar">
-            <div className="actions">{start}</div>
             <div className="actions">
                 {onRevert && dirty && (
                     <button type="button" onClick={onRevert} disabled={saving}>
@@ -44,6 +44,9 @@ export function SaveBar({
                         {t('editor.revert')}
                     </button>
                 )}
+                {start}
+            </div>
+            <div className="actions">
                 {note && (
                     <span className="small dirty" role="status">
                         {note}

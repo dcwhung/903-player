@@ -75,7 +75,8 @@ describe('GET /api/todos', () => {
             arcId: 'golden-02',
             name: '黃金少年 · Season 2',
             cells: {
-                folder: { state: 'na' },
+                // 資料夾係掃描搵到嘅，已經存在 = done（唔係「–」）
+                folder: { state: 'done', target: '/dramas/golden#folder' },
                 id: { state: 'must' },
                 images: { state: 'optional' },
                 schedule: { state: 'must', target: '/dramas/golden/schedule#golden-02' },
@@ -138,6 +139,20 @@ describe('GET /api/todos', () => {
             'SELECT COUNT(*) AS n FROM scan_findings WHERE resolved_publish_id IS NULL',
         ).first('n');
         expect(open).toBe(0);
+    });
+
+    it('should mark the folder of a new-episodes row done, leaving id / images / summary n/a', async () => {
+        await addFinding('newEpisodes', 'golden', 'season-1');
+        const [row] = (await json(await adminGet('/api/todos'))).rows as Json[];
+        expect(row).toMatchObject({
+            kind: 'newEpisodes',
+            cells: {
+                folder: { state: 'done', target: '/dramas/golden#folder' },
+                id: { state: 'na' },
+                images: { state: 'na' },
+                summary: { state: 'na' },
+            },
+        });
     });
 
     it('should show a missing folder as a must and drop rows of deleted dramas', async () => {

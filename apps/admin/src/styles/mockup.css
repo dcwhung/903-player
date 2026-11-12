@@ -274,30 +274,6 @@ code {
     padding: 32px var(--gap);
     background: var(--bg);
 }
-.login .card {
-    width: 100%;
-    max-width: 340px;
-    text-align: center;
-    gap: 16px;
-}
-.login h2 {
-    margin: 0;
-    font-size: 18px;
-}
-.google {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    padding: 10px 14px;
-}
-.g-mark {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: conic-gradient(#4285f4 0 25%, #34a853 0 50%, #fbbc05 0 75%, #ea4335 0);
-}
 .list {
     list-style: none;
     margin: 0;
@@ -1093,9 +1069,6 @@ button.big {
         grid-template-columns: auto auto;
         justify-content: start;
         column-gap: 16px;
-    }
-    .with-media > .media .cap {
-        grid-row: 2;
     }
 }
 .time-range {

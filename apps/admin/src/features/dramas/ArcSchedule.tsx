@@ -3,6 +3,7 @@
  * 刪除排程 / 儲存
  */
 import { hkToday } from '@903-player/catalog';
+import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { RawDefinition, ScheduleState } from '../../api/types';
 import { t } from '../../i18n/t';
@@ -34,7 +35,7 @@ interface ScheduleSaveBarProps {
     onSave: () => void;
 }
 
-function ScheduleSaveBar({
+export function ScheduleSaveBar({
     canDelete,
     canSave,
     fromTodos,
@@ -50,9 +51,11 @@ function ScheduleSaveBar({
                     <button
                         type="button"
                         className="ghost-danger"
+                        aria-label={t('schedule.deleteScheduleLabel')}
                         disabled={actions.saving}
                         onClick={onDelete}
                     >
+                        <Trash2 aria-hidden="true" />
                         {t('schedule.deleteSchedule')}
                     </button>
                 )}
@@ -74,7 +77,13 @@ export function ArcSchedule({ state, arc, arcId, saved, actions }: ArcSchedulePr
     const [form, setForm] = useState(() => formOf(saved?.rule ?? null, today));
     const rule = ruleOf(form, firstNoOf(arc));
     const preview = useSchedulePreview(state.id, arcId, rule);
-    const strip = stripOf(state.editor.draft?.definition ?? {}, arc, preview.expanded, today);
+    const strip = stripOf(
+        state.editor.draft?.definition ?? {},
+        arc,
+        preview.expanded,
+        today,
+        saved !== null,
+    );
     const dirty = JSON.stringify(rule) !== JSON.stringify(saved?.rule ?? null);
     const start = form.mode === 'custom' ? today : form.start;
     if (countOf(arc) === 0) return <p className="note warn">{t('schedule.noCount')}</p>;
