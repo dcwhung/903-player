@@ -1,9 +1,11 @@
 /*
  * 「曾經上過架」（admin 列表分「未上架」/「已下架」）同 DELETE 守衛（最新 publish 有冇用緊）。
- * - 劇集 / 短篇：publishes.episode_ids（鎖住嘅 ID = 上架過、仲喺 document 嘅集數，見 lockedEpisodeIds）
- * - 節目（狀態）：任何一次 ok publish 入面 enabled 唔係 false（everListedShowIds，W-716）
- * - 節目（守衛）：最新 document 有冇佢；document 讀唔到就當有（fail closed，S-844）
+ * - 狀態：任何一次 ok publish（publishedFacts，一條 query）：劇 / 短篇 = 鎖住嘅 episode ID
+ *   （上架過嘅集數，見 lockedEpisodeIds），節目 = enabled 唔係 false（W-716、S-845）
+ * - 守衛：最新 ok publish；劇睇鎖住 ID，節目睇 document 有冇佢，讀唔到就當有（fail closed，S-844）
  */
+import type { PublishedFactRow } from '../catalog/store';
+
 export interface PublishedIndex {
     shows: ReadonlySet<string>;
     /** 劇 ID → 有鎖住集數嘅短篇 ID（每日播嘅第三段係日子，唔會對到短篇） */
@@ -44,3 +46,19 @@ export const documentShowIds = (document: string): Set<string> | null => {
 
 export const isInIndex = (index: PublishedIndex, kind: 'shows' | 'dramas', id: string): boolean =>
     kind === 'shows' ? index.shows.has(id) : index.dramas.has(id);
+
+/** publishedFacts 嘅行 → 索引（GET /api/entries） */
+export const indexOfFacts = (rows: readonly PublishedFactRow[]): PublishedIndex => {
+    const shows = new Set<string>();
+    const dramas = new Map<string, Set<string>>();
+    rows.forEach(({ kind, id, arc }) => {
+        if (kind === 'shows') {
+            shows.add(id);
+            return;
+        }
+        const arcs = dramas.get(id) ?? new Set<string>();
+        if (arc !== null) arcs.add(arc);
+        dramas.set(id, arcs);
+    });
+    return { shows, dramas };
+};

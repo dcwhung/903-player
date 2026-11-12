@@ -80,6 +80,20 @@ describe('GET /api/entries', () => {
     });
 });
 
+describe('GET /api/entries published for dramas across publishes (S-845)', () => {
+    it('should keep arcs listed in an earlier ok publish after a newer one dropped them', async () => {
+        await adminPost('/api/publish');
+        // 較新嘅 ok publish（例如還原咗去舊版）冇 season-1 嘅集數
+        await env.DB.prepare(
+            `INSERT INTO publishes (created_at, created_by, hash, document, episode_ids, show_count,
+             drama_count, episode_count) VALUES ('2026-11-12T00:00:00Z', 'x', 'h', '{}', '[]', 0, 0, 0)`,
+        ).run();
+        const { entries } = (await (await adminGet('/api/entries')).json()) as { entries: Json[] };
+        const golden = entries.find((e) => e.id === 'golden');
+        expect(golden).toMatchObject({ published: true, publishedArcs: ['season-1'] });
+    });
+});
+
 describe('GET /api/entries published for shows (W-716)', () => {
     const showOf = async (id: string) => {
         const { entries } = (await (await adminGet('/api/entries')).json()) as { entries: Json[] };

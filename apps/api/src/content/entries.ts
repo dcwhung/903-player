@@ -11,18 +11,23 @@ import {
     deleteEntry,
     getEntry,
     insertEntryStatement,
-    everListedShowIds,
-    latestEpisodeIds,
     latestPublish,
     listAssetHashes,
     listScheduledArcIds,
     listStoredEntries,
+    publishedFacts,
     updateEntryStatement,
     type EntryRow,
     type StoredEntry,
 } from '../catalog/store';
 import { etagOf, expectedVersion, ifMatches, nextUpdatedAt } from './etag';
-import { documentShowIds, dramasOf, isInIndex, type PublishedIndex } from './published';
+import {
+    documentShowIds,
+    dramasOf,
+    indexOfFacts,
+    isInIndex,
+    type PublishedIndex,
+} from './published';
 import {
     badTarget,
     errorResponse,
@@ -43,7 +48,7 @@ const publishedArcsOf = (definition: Json, published: ReadonlySet<string> | unde
         : {};
 
 /**
- * published / publishedArcs：有冇上過架（admin「未上架」vs「已下架」；劇 / 短篇睇最新 ok publish 嘅鎖住集數，節目睇任何一次 ok publish，見 published.ts）；
+ * published / publishedArcs：任何一次 ok publish 有冇上過架（admin「未上架」vs「已下架」，見 published.ts）；
  * 舊 client 唔睇呢兩個欄位，照用
  */
 const summaryOf = (row: StoredEntry, index: PublishedIndex) => {
@@ -62,12 +67,11 @@ const summaryOf = (row: StoredEntry, index: PublishedIndex) => {
 };
 
 entryRoutes.get('/entries', async (c) => {
-    const [rows, episodeIds, shows] = await Promise.all([
+    const [rows, facts] = await Promise.all([
         listStoredEntries(c.env.DB),
-        latestEpisodeIds(c.env.DB),
-        everListedShowIds(c.env.DB),
+        publishedFacts(c.env.DB),
     ]);
-    const index = { shows, dramas: dramasOf(episodeIds) };
+    const index = indexOfFacts(facts);
     return c.json({ entries: rows.map((row) => summaryOf(row, index)) });
 });
 
