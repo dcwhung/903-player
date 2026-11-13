@@ -72,3 +72,40 @@ next_agent: null
 branch: "fix/player-backlog-1.35.1"
 context: "C=0, W=0, S-955 (module-level banner fallback memory across remount), S-956 (lock 32/9 to PORTRAIT_MAX_COLUMNS in node test), S-957 (rename checkBannerWithoutCors), S-958 (FittedBanner fallback test follow bannerRule image); all to be fixed in same PR; integration branch is main; e2e re-run needed for cb46ef2 (main agent); S-940 intentionally not done"
 ```
+
+## Re-review（L2）— `4e81ee0`
+
+- 日期：2026-11-13；範圍：只驗 S-955–S-958 嘅修正同佢哋嘅 diff（10 檔，+55 / −14），唔搵新 🟢
+- Hard gates：all pass
+    - unit：`npx vitest run` home 四個 folder → 34 files / 381 tests pass（多咗 S-955 remount case）
+    - type：`npx tsc -b apps/player` exit 0
+    - lint：`npx eslint` + `npx prettier --check` 對 `4e81ee0` 10 個改動檔 exit 0
+    - e2e：由 main agent 跑
+
+| ID    | 修正                                                                                                                                                                                                                                                                     | 結果 |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- |
+| S-955 | `useBannerImages.ts` module-level `catalogBannerFailed`，`useState(() => catalogBannerFailed)` 做初始值，`onError` 先設 flag 再 `setFailed`；新 test 驗 unmount 後再 mount 直接用內建圖、`onError` 係 `undefined`；四個 banner test 檔 `beforeEach(resetBannerFallback)` | ✅   |
+| S-956 | `showGridPages.ts` export `PORTRAIT_MAX_COLUMNS`，node test 改 `toBeCloseTo(PORTRAIT_MAX_COLUMNS * tileRatio)`，註解同步                                                                                                                                                 | ✅   |
+| S-957 | `checkBannerWithoutCors` → `checkBannerCorsRejected`（定義 + section 呼叫），repo 冇殘留舊名                                                                                                                                                                             | ✅   |
+| S-958 | fallback case 用 `bannerRule(...).image` 揀，斷言等於 `bannerImages({ builtIn: true })[image].src` 同唔等於 `CATALOG_BANNER[image]`                                                                                                                                      | ✅   |
+| 備註  | `HomePage.test.tsx` / `HomePageWide.test.tsx` 嘅 `BANNER_ALT` 改讀 `t('home.bannerAlt')`                                                                                                                                                                                 | ✅   |
+
+- 冇新 finding。`activeBanner()` init 後唔再換 source，module flag 唔使 key by URL，同 S-955 建議一致；flag 只喺 catalog 圖真係失敗先設，冇 catalog banner 時 `onError` 係 `undefined`，唔會誤設。
+- 結果：✅ pass，100 / 100。
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T1
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: null
+branch: "fix/player-backlog-1.35.1"
+context: "L2 re-review of 4e81ee0: S-955, S-956, S-957, S-958 verified fixed (+ BANNER_ALT via t() in HomePage tests); no new IDs; e2e run by main agent; integration branch is main"
+```
