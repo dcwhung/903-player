@@ -95,7 +95,7 @@ sourceRoutes.get('/dramas/:id/sources', async (c) => {
 
 /**
  * audio.folder + / 係 key 前綴嘅 r2 劇（包括 draft）：folder 可以多層（S-900，同 /sources 用同一個 prefix），
- * 劇嘅 folder 又可以一個包住另一個，所以可能有幾套
+ * 劇嘅 folder 又可以一個包住另一個，所以可能有幾套；folder 長嘅（最深）排先，通常掃一次就中（S-947）
  */
 const dramasCoveringKey = async (
     db: D1Database,
@@ -103,12 +103,14 @@ const dramasCoveringKey = async (
 ): Promise<{ folder: string; definition: Json }[]> =>
     (await listStoredEntries(db))
         .filter((entry) => entry.kind === 'dramas')
-        .map((entry) => JSON.parse(entry.definition) as Json)
-        .map((definition) => ({ folder: r2FolderOf(definition), definition }))
-        .filter(
-            (drama): drama is { folder: string; definition: Json } =>
-                drama.folder !== undefined && key.startsWith(`${drama.folder}${KEY_SEPARATOR}`),
-        );
+        .flatMap((entry) => {
+            const definition = JSON.parse(entry.definition) as Json;
+            const folder = r2FolderOf(definition);
+            return folder !== undefined && key.startsWith(`${folder}${KEY_SEPARATOR}`)
+                ? [{ folder, definition }]
+                : [];
+        })
+        .sort((a, b) => b.folder.length - a.folder.length);
 
 /** key 喺某套劇最新掃描嘅 cdCover / coverPhoto 入面先係 true（逐套掃，搵到就停） */
 const isScannedSource = async (env: AppEnv['Bindings'], key: string): Promise<boolean> => {

@@ -131,7 +131,10 @@ const chunkAt = (bytes: Uint8Array, at: number, end: number): Chunk => {
     return { kind, payload: bytes.subarray(start, start + size), next: start + size + (size & 1) };
 };
 
-const readChunk = ({ kind, payload }: Chunk, reader: Reader): WebpSize => {
+const readChunk = (
+    { kind, payload }: Pick<Chunk, 'kind' | 'payload'>,
+    reader: Reader,
+): WebpSize => {
     if (payload.length < reader.minPayload)
         throw new WebpError(`${kind.trim()} chunk is truncated`);
     return reader.read(payload);
@@ -193,5 +196,5 @@ export const parseWebpHeader = (bytes: Uint8Array): WebpSize => {
     const kind = fourcc(bytes, FIRST_CHUNK);
     const declared = uint32(bytes, FIRST_CHUNK + CHUNK_SIZE_OFFSET);
     const payload = bytes.subarray(PAYLOAD, PAYLOAD + declared);
-    return readChunk({ kind, payload, next: PAYLOAD + declared }, firstReader(kind));
+    return readChunk({ kind, payload }, firstReader(kind));
 };

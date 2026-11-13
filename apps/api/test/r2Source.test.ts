@@ -189,8 +189,10 @@ describe('GET /api/r2-source', () => {
             ...drama(3),
             audio: { host: 'r2', folder: inner, file: '{no2}.m4a' },
         });
-        await put(`${inner}/Cover Photo.jpg`, PHOTO_BYTES);
-        const response = await source(`${inner}/Cover Photo.jpg`);
+        // 淨係內層劇先掃到（外層劇只掃到 <FOLDER>/外傳/ 一層，W-732）
+        const deep = `${inner}/Season 1/cd cover.png`;
+        await put(deep, PHOTO_BYTES, 'image/png');
+        const response = await source(deep);
         expect(response.status).toBe(200);
         await response.arrayBuffer();
         const outer = await source(DRAMA_PHOTO);

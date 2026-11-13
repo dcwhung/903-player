@@ -94,6 +94,9 @@ const validationOf = (
 /** 已發佈 catalog.json 嘅 banner（圖 URL；壞咗 / 冇當 null） */
 const publishedBanner = (json: string): unknown => parseObject(json).banner ?? null;
 
+/** 兩個 banner（圖 URL；null = 冇）一樣（S-946：GET /api/changes 同發佈記錄共用） */
+const sameBanner = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+
 /** D1 banner 照 publish 格式砌 URL，同已發佈嗰份比（未 publish 過 = 有 banner 就係改咗） */
 export const bannerChanged = (
     banner: BannerImages | null,
@@ -108,7 +111,7 @@ export const bannerChanged = (
                   long: `${origin}${CATALOG_IMAGE_PATH}${banner.long}`,
               };
     const published = latestDocument === undefined ? null : publishedBanner(latestDocument);
-    return JSON.stringify(draft) !== JSON.stringify(published);
+    return !sameBanner(draft, published);
 };
 
 changeRoutes.get('/changes', async (c) => {
@@ -142,8 +145,7 @@ export interface PublishChangeSummary extends ChangeSummary {
 
 /** 兩份 catalog.json 嘅 banner 唔同（before 冇 = 第一次 publish：有 banner 就係改咗） */
 const publishedBannerChanged = (before: string | undefined, after: string): boolean =>
-    JSON.stringify(before === undefined ? null : publishedBanner(before)) !==
-    JSON.stringify(publishedBanner(after));
+    !sameBanner(before === undefined ? null : publishedBanner(before), publishedBanner(after));
 
 /** 每行 publish 同佢之前最近一次 ok publish 比（rows 新到舊；documents = id → catalog.json） */
 export const publishChanges = (
