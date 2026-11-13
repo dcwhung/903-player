@@ -23,7 +23,7 @@ const useBackToList = () => {
 };
 
 /**
- * neverPublished = 可以刪除：新節目、未入過 document（changes 嘅新節目），或者從未以上架狀態發佈
+ * deletable = 可以刪除：新節目、未入過 document（changes 嘅新節目），或者從未以上架狀態發佈
  * （published === false：淨係以下架入過 document，播放器從未顯示，同 api DELETE 守衛一致）。
  * published = GET /api/entries 有冇上過架（未上架 / 已下架），undefined = 未知（列表未載入 / 舊 API）
  */
@@ -32,7 +32,7 @@ const usePublishFlags = (isNew: boolean, id: string | undefined) => {
     const flags = changeFlagsOf(changes.data?.changes);
     const published = entries.data?.find((e) => e.kind === 'shows' && e.id === id)?.published;
     return {
-        neverPublished: isNew || flags.never.has(`shows:${id}`) || published === false,
+        deletable: isNew || flags.never.has(`shows:${id}`) || published === false,
         published,
     };
 };
