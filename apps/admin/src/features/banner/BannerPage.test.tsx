@@ -54,11 +54,11 @@ describe('BannerPage', () => {
         }));
     });
 
-    it('should show the built-in banners with 內建預設 and 還原預設 disabled', async () => {
+    it('should show the built-in banners with 內建預設 and 還原 disabled', async () => {
         mockApi({ 'GET /api/banner': () => ({ body: { banner: null, updatedAt: null } }) });
         show();
         expect(await screen.findByText('內建預設')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '還原預設' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: '還原首頁 Banner' })).toBeDisabled();
         // 兩個 slot 掣名唔同，螢幕閱讀器分得出窄版 / 闊版（S-914）
         expect(
             screen.getByRole('button', { name: '更換首頁 Banner（由窄版開始）— 窄版' }),
@@ -74,7 +74,7 @@ describe('BannerPage', () => {
         mockApi({ 'GET /api/banner': () => ({ body: { banner: CUSTOM, updatedAt: 'x' } }) });
         show(true);
         expect(await screen.findByText('自訂 · 未發佈')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '還原預設' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: '還原首頁 Banner' })).toBeEnabled();
     });
 
     it('should crop 窄版 then 闊版 in one dialog and upload both before saving the banner', async () => {
@@ -89,7 +89,7 @@ describe('BannerPage', () => {
             },
         });
         show();
-        const change = await screen.findByRole('button', { name: '更換 Banner' });
+        const change = await screen.findByRole('button', { name: '更換首頁 Banner' });
         expect(hasIcon(change, 'upload')).toBe(true);
         await userEvent.click(change);
         await pick();
@@ -114,7 +114,7 @@ describe('BannerPage', () => {
             'GET /api/banner': () => ({ body: { banner: null, updatedAt: null } }),
         });
         show();
-        await userEvent.click(await screen.findByRole('button', { name: '更換 Banner' }));
+        await userEvent.click(await screen.findByRole('button', { name: '更換首頁 Banner' }));
         await pick();
         await userEvent.click(await screen.findByRole('button', { name: '下一張：闊版' }));
         await userEvent.click(await screen.findByRole('button', { name: '取消' }));
@@ -129,10 +129,10 @@ describe('BannerPage', () => {
             'DELETE /api/banner': deleted,
         });
         show();
-        await userEvent.click(await screen.findByRole('button', { name: '還原預設' }));
-        const dialog = screen.getByRole('dialog', { name: '還原預設 Banner？' });
+        await userEvent.click(await screen.findByRole('button', { name: '還原首頁 Banner' }));
+        const dialog = screen.getByRole('dialog', { name: '還原首頁 Banner？' });
         expect(dialog).toHaveTextContent('兩張自訂 Banner 將被刪除');
-        await userEvent.click(within(dialog).getByRole('button', { name: '還原預設' }));
+        await userEvent.click(within(dialog).getByRole('button', { name: '還原' }));
         await waitFor(() => expect(deleted).toHaveBeenCalledOnce());
     });
 });

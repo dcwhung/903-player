@@ -324,7 +324,7 @@ const todoFlowCheck = (browser) =>
         await page.getByText('即時上線').waitFor();
         await shoot(page, 'publish');
         await page.getByRole('button', { name: '發佈', exact: true }).click();
-        await page.getByRole('heading', { name: '上下架記錄' }).waitFor();
+        await page.getByRole('heading', { name: '發佈 / 部署記錄' }).waitFor();
         await page.getByText('使用中').waitFor();
         await page.getByText('#4', { exact: true }).waitFor();
         // #3 淨換首頁 Banner：顯示「更換 · 首頁 Banner」，唔係「沒有內容變更」
@@ -1675,9 +1675,9 @@ const themeCheck = (browser) =>
                 .locator('.content')
                 .evaluate((el) => getComputedStyle(el).backgroundColor);
             if (panel !== 'rgb(20, 29, 41)') throw new Error(`panel is ${panel}, not dark`);
-            await page.getByRole('heading', { name: '上下架記錄' }).waitFor();
+            await page.getByRole('heading', { name: '發佈 / 部署記錄' }).waitFor();
             await page.screenshot({ path: `${OUT}/theme-manual-dark.png` });
-            await page.getByRole('button', { name: '跟系統' }).click();
+            await page.getByRole('button', { name: '跟隨系統' }).click();
             if (await page.evaluate(() => document.documentElement.hasAttribute('data-theme')))
                 throw new Error('跟系統 should clear data-theme');
             await page.close();
@@ -1741,7 +1741,7 @@ const bannerCheck = (browser) =>
             await page.getByText('內建預設').waitFor();
             await shoot(page, 'banner-default');
             const chooser = page.waitForEvent('filechooser');
-            await page.getByRole('button', { name: '更換 Banner', exact: true }).click();
+            await page.getByRole('button', { name: '更換首頁 Banner', exact: true }).click();
             await (
                 await chooser
             ).setFiles(fileURLToPath(new URL('./fixtures/lancy-tile.webp', import.meta.url)));
@@ -1760,10 +1760,10 @@ const bannerCheck = (browser) =>
                 throw new Error(`banner not saved: ${JSON.stringify(state.banner)}`);
             await page.getByText('自訂 · 未發佈').waitFor();
             await shoot(page, 'banner-custom');
-            await page.getByRole('button', { name: '還原預設' }).click();
-            const confirm = page.getByRole('dialog', { name: '還原預設 Banner？' });
+            await page.getByRole('button', { name: '還原首頁 Banner' }).click();
+            const confirm = page.getByRole('dialog', { name: '還原首頁 Banner？' });
             await shoot(page, 'banner-restore-confirm');
-            await confirm.getByRole('button', { name: '還原預設' }).click();
+            await confirm.getByRole('button', { name: '還原' }).click();
             await page.getByText('內建預設').waitFor();
             if (state.banner !== null) throw new Error('banner not restored');
             await page.close();

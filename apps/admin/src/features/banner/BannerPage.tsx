@@ -1,10 +1,10 @@
 /*
  * App 外觀頁（品牌 → App 外觀；第一區首頁 Banner，之後加 App 圖示、簡介）：Design Origin: mockup: _mockups_/admin-phase4/index.html#e
- * 狀態 pill（內建預設 / 自訂 · 未發佈 / 自訂）+ 還原預設（確認，danger）+ 更換 Banner（兩步裁切，useBannerFlow）；
+ * 狀態 pill（內建預設 / 自訂 · 未發佈 / 自訂）+ 還原（確認，danger）+ 更換（兩步裁切，useBannerFlow）；
  * 兩個 slot 顯示而家嘅圖（冇自訂 = 內建預設）。全部係草稿，發佈先上線
  */
 import { Undo2, Upload } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { deleteBanner, getBanner } from '../../api/endpoints';
 import { errorMessage } from '../../api/errorMessage';
 import type { BannerImages } from '../../api/types';
@@ -53,6 +53,40 @@ const useRestore = (refresh: (message: string) => void, toast: (message: string)
     return { confirming, setConfirming, restore };
 };
 
+interface BannerHeadProps {
+    status: ReactNode;
+    canRestore: boolean;
+    onRestore: () => void;
+    onChange: () => void;
+}
+
+/** 卡頭：標題 + 狀態 pill + 還原 / 更換（掣字短，aria-label 寫明係首頁 Banner） */
+const BannerHead = ({ status, canRestore, onRestore, onChange }: BannerHeadProps) => (
+    <div className="banner-head">
+        <h2>{t('banner.title')}</h2>
+        {status}
+        <button
+            type="button"
+            className="ghost-danger"
+            aria-label={t('banner.restoreLabel')}
+            disabled={!canRestore}
+            onClick={onRestore}
+        >
+            <Undo2 aria-hidden="true" />
+            {t('banner.restore')}
+        </button>
+        <button
+            type="button"
+            className="primary"
+            aria-label={t('banner.changeLabel')}
+            onClick={onChange}
+        >
+            <Upload aria-hidden="true" />
+            {t('banner.change')}
+        </button>
+    </div>
+);
+
 export function BannerPage() {
     const { banner, pending, refresh, toast } = useBannerData();
     const input = useRef<HTMLInputElement>(null);
@@ -68,23 +102,12 @@ export function BannerPage() {
                 <h1>{t('appearance.title')}</h1>
             </div>
             <div className="card banner-card">
-                <div className="banner-head">
-                    <h2>{t('banner.title')}</h2>
-                    {banner.data && <StatusPill banner={current} pending={pending} />}
-                    <button
-                        type="button"
-                        className="ghost-danger"
-                        disabled={!current}
-                        onClick={() => setConfirming(true)}
-                    >
-                        <Undo2 aria-hidden="true" />
-                        {t('banner.restore')}
-                    </button>
-                    <button type="button" className="primary" onClick={flow.start}>
-                        <Upload aria-hidden="true" />
-                        {t('banner.change')}
-                    </button>
-                </div>
+                <BannerHead
+                    status={banner.data && <StatusPill banner={current} pending={pending} />}
+                    canRestore={Boolean(current)}
+                    onRestore={() => setConfirming(true)}
+                    onChange={flow.start}
+                />
                 <BannerSlots banner={current} disabled={!banner.data} onChange={flow.start} />
             </div>
             <ImageFileInput ref={input} onPick={flow.onPick} />

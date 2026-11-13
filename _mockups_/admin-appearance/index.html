@@ -992,7 +992,7 @@
                 align-items: center;
                 gap: 10px;
                 justify-content: flex-end;
-                margin-bottom: 12px;
+                margin-bottom: 14px;
             }
             .card-head h3 {
                 margin-right: 6px;
@@ -1000,40 +1000,54 @@
             .card-head .pill {
                 margin-right: auto;
             }
-            .icon-row {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 22px;
-                align-items: flex-end;
+            /* 圖示同 Banner：置中、平均用盡闊度 */
+            .even {
+                display: grid;
+                grid-auto-flow: column;
+                grid-auto-columns: 1fr;
+                gap: 16px;
+                align-items: end;
+                justify-items: center;
             }
             .icon-prev {
                 display: grid;
-                gap: 6px;
+                gap: 8px;
                 justify-items: center;
                 font-size: 12px;
                 color: var(--muted);
+                text-align: center;
             }
-            .icon-prev img {
-                display: block;
+            .big-slot {
+                width: 128px;
+                height: 128px;
+                border-radius: 28px;
+                border: 1.5px dashed var(--media-border);
+                background: var(--surface-2) center / cover no-repeat;
+                cursor: pointer;
+                padding: 0;
             }
             .ios {
-                width: 76px;
-                height: 76px;
-                border-radius: 17px;
+                width: 88px;
+                height: 88px;
+                border-radius: 20px;
                 box-shadow: var(--shadow);
+                display: block;
             }
             .android {
-                width: 76px;
-                height: 76px;
+                width: 88px;
+                height: 88px;
                 border-radius: 50%;
                 overflow: hidden;
                 display: grid;
                 place-items: center;
                 box-shadow: var(--shadow);
             }
+            .android.sq {
+                border-radius: 24px;
+            }
             .android img {
-                width: 61px;
-                height: 61px;
+                width: 72px;
+                height: 72px;
             }
             .tab {
                 display: flex;
@@ -1044,21 +1058,43 @@
                 padding: 7px 12px;
                 font-size: 13px;
                 color: var(--ink);
-                min-width: 170px;
+                white-space: nowrap;
             }
             .tab img {
                 width: 16px;
                 height: 16px;
             }
-            .big-slot {
-                width: 132px;
-                height: 132px;
-                border-radius: 28px;
+            .banner-even {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+                align-items: end;
+            }
+            .banner-even .slot {
+                display: grid;
+                gap: 6px;
+                justify-items: center;
+            }
+            .banner-even .pic {
+                width: 100%;
+                border-radius: 12px;
                 border: 1.5px dashed var(--media-border);
-                background: var(--surface-2) center / cover no-repeat;
-                position: relative;
-                cursor: pointer;
-                padding: 0;
+                background: center / cover no-repeat;
+            }
+            .banner-even .std {
+                aspect-ratio: 1200 / 517;
+            }
+            .banner-even .long {
+                aspect-ratio: 2000 / 400;
+            }
+            .cap {
+                font-weight: 600;
+                font-size: 14px;
+                color: var(--ink);
+            }
+            .hint {
+                font-size: 12px;
+                color: var(--muted);
             }
             .swatches {
                 display: flex;
@@ -1078,6 +1114,55 @@
             }
             .sw.on {
                 box-shadow: 0 0 0 2.5px var(--primary);
+            }
+            .seg {
+                display: inline-flex;
+                background: var(--surface-2);
+                border-radius: 12px;
+                padding: 3px;
+                gap: 2px;
+            }
+            .seg button {
+                border: 0;
+                background: none;
+                box-shadow: none;
+                padding: 6px 14px;
+                border-radius: 9px;
+                font-weight: 600;
+                color: var(--muted);
+            }
+            .seg button[aria-pressed='true'] {
+                background: var(--surface);
+                color: var(--primary);
+                box-shadow: var(--shadow);
+            }
+            .crop-box {
+                width: 300px;
+                height: 300px;
+                background: #888 url('icon-512.png') center / contain no-repeat;
+                border-radius: 12px;
+                position: relative;
+                overflow: hidden;
+            }
+            .crop-frame {
+                position: absolute;
+                border: 2px solid #fff;
+                box-shadow: 0 0 0 999px rgb(0 0 0 / 0.35);
+            }
+            .crop-frame.round {
+                border-radius: 50%;
+            }
+            .crop-frame .safe {
+                position: absolute;
+                inset: 10%;
+                border: 1.5px dashed rgb(255 255 255 / 0.85);
+                border-radius: 50%;
+            }
+            .check {
+                display: inline-flex;
+                gap: 8px;
+                align-items: center;
+                font-size: 14px;
             }
             .form {
                 display: grid;
@@ -1106,10 +1191,6 @@
             .form textarea {
                 min-height: 64px;
                 resize: vertical;
-            }
-            .form .hint {
-                font-size: 12px;
-                color: var(--muted);
             }
             .form .hint.warn {
                 color: var(--warn-ink);
@@ -1158,12 +1239,12 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
-            .deploy {
+            .rec {
                 display: grid;
-                gap: 6px;
+                gap: 8px;
                 font-size: 14px;
             }
-            .deploy .row {
+            .rec .row {
                 gap: 8px;
             }
             @media (max-width: 760px) {
@@ -1175,6 +1256,13 @@
                 }
                 .form label {
                     padding-top: 0;
+                }
+                .even {
+                    grid-auto-flow: row;
+                    grid-template-columns: 1fr 1fr;
+                }
+                .banner-even {
+                    grid-template-columns: 1fr;
                 }
             }
         </style>
@@ -1231,63 +1319,64 @@
 
         <main class="page">
             <div class="frame intro">
-                <h1>App 外觀（品牌）預覽</h1>
+                <h1>App 外觀（品牌）預覽 · v2</h1>
                 <p class="state-label">
-                    用戶 2026-11-13 定咗：Nav 加「品牌」組，入面「App 外觀」一頁管首頁 Banner、App
-                    圖示、名稱與簡介； App 圖示上載一張 1024 × 1024 自動生晒各尺寸；改名稱 / 簡介 /
-                    圖示發佈後自動重新部署播放器。
-                    以下係待你確認嘅版面，同埋頁頂幾條要揀嘅問題（Q1–Q5）。
+                    v2（2026-11-13 回饋）：「品牌」組放 nav 最頂；卡次序 App 圖示 → 名稱與簡介 →
+                    首頁 Banner；圖示同 Banner 置中、平均用盡闊度；
+                    掣字改「還原」「更換」；記錄改名「發佈 /
+                    部署記錄」；介面文字全部書面語；每種裝置可以各自調裁切（Q6）。
                 </p>
                 <table class="decisions">
                     <thead>
                         <tr>
                             <th>#</th>
                             <th>問題</th>
-                            <th>建議</th>
+                            <th>決定 / 建議</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Q1</td>
-                            <td>Android 圓形 / 方形遮罩（maskable）嘅底色</td>
+                            <td>Q1 ✓</td>
+                            <td>Android 遮罩底色</td>
                             <td>
                                 自動抽 icon 邊緣色做預設，可以喺 4 個色（抽色 2 個 + 黑 + 白）揀
                             </td>
                         </tr>
                         <tr>
-                            <td>Q2</td>
-                            <td>短名（主畫面 icon 下面嗰行字）</td>
-                            <td>
-                                獨立欄位，超過 12 個字元出黃色提示（iOS / Android 會截斷）；唔填就用
-                                App 名
-                            </td>
+                            <td>Q2 ✓</td>
+                            <td>短名</td>
+                            <td>獨立欄位，超過 12 個字元出黃色提示；唔填就用 App 名</td>
                         </tr>
                         <tr>
-                            <td>Q3</td>
-                            <td>改 App 名要唔要額外確認</td>
-                            <td>要：儲存時彈確認（已安裝嘅 app 名、分享預覽都會變）</td>
+                            <td>Q3 ✓</td>
+                            <td>改 App 名</td>
+                            <td>儲存時彈確認</td>
                         </tr>
                         <tr>
-                            <td>Q4</td>
-                            <td>還原預設</td>
-                            <td>
-                                圖示同名稱與簡介各自一粒「還原預設」（確認）；還原 = 用返 repo 內建
-                            </td>
+                            <td>Q4 ✓</td>
+                            <td>還原</td>
+                            <td>圖示、名稱與簡介、Banner 各自一粒「還原」（確認）</td>
                         </tr>
                         <tr>
-                            <td>Q5</td>
-                            <td>發佈後重新部署嘅狀態</td>
+                            <td>Q5 ✓</td>
+                            <td>部署狀態</td>
+                            <td>「發佈 / 部署記錄」每行加部署狀態；失敗有 GitHub 連結同重新部署</td>
+                        </tr>
+                        <tr>
+                            <td>Q6 新</td>
+                            <td>每種裝置各自裁切</td>
                             <td>
-                                發佈成功 toast 寫「播放器重新部署中（約 5
-                                分鐘）」；上下架記錄嗰行加「部署」狀態（部署中 / 完成 / 失敗 +
-                                GitHub 連結）
+                                預設「所有裝置同一裁切」；取消勾選後分三個分頁各自調：iPhone（apple-touch
+                                180）、Android（192 / 512 + maskable
+                                512，圓形同方形係同一張圖，由手機自己套遮罩，所以只可以一齊調，框內虛線圈
+                                = 安全區）、瀏覽器分頁（favicon 64）。
                             </td>
                         </tr>
                     </tbody>
                 </table>
                 <nav class="jump" aria-label="跳去">
                     <a href="#a">① App 外觀頁</a>
-                    <a href="#b">② 更換 App 圖示</a>
+                    <a href="#b">② 更換 App 圖示（可以玩）</a>
                     <a href="#c">③ 名稱與簡介（可以打字）</a>
                     <a href="#d">④ 發佈 / 部署</a>
                 </nav>
@@ -1298,78 +1387,58 @@
                 <div class="frame">
                     <div class="shell">
                         <div class="mini-nav" aria-label="主選單（示意）">
+                            <span class="grp">品牌</span>
+                            <span class="it on">App 外觀</span>
                             <span class="grp">內容</span>
                             <span class="it">更新</span><span class="it">節目</span
                             ><span class="it">廣播劇</span>
-                            <span class="grp">品牌</span>
-                            <span class="it on">App 外觀</span>
                             <span class="grp">記錄</span>
-                            <span class="it">上下架記錄</span>
+                            <span class="it">發佈 / 部署記錄</span>
                         </div>
                         <div class="stack">
                             <div class="title-row"><h2 style="font-size: 24px">App 外觀</h2></div>
-                            <div class="card">
-                                <div class="card-head">
-                                    <h3>首頁 Banner</h3>
-                                    <span class="pill">內建預設</span>
-                                    <button type="button" class="ghost-danger" disabled>
-                                        <svg class="i"><use href="#i-undo" /></svg>還原預設
-                                    </button>
-                                    <button type="button" class="primary">
-                                        <svg class="i"><use href="#i-upload" /></svg>更換 Banner
-                                    </button>
-                                </div>
-                                <div class="media">
-                                    <div class="slot">
-                                        <span class="img-slot banner-std"
-                                            ><span
-                                                class="thumb"
-                                                style="background-image: url('banner.webp')"
-                                            ></span></span
-                                        ><span class="slot-cap"
-                                            ><span class="cap">窄版</span
-                                            ><span class="hint">1200 × 517</span></span
-                                        >
-                                    </div>
-                                    <div class="slot">
-                                        <span class="img-slot banner-long"
-                                            ><span
-                                                class="thumb"
-                                                style="background-image: url('banner-wide.webp')"
-                                            ></span></span
-                                        ><span class="slot-cap"
-                                            ><span class="cap">闊版</span
-                                            ><span class="hint">2000 × 400</span></span
-                                        >
-                                    </div>
-                                </div>
-                            </div>
+
                             <div class="card">
                                 <div class="card-head">
                                     <h3>App 圖示</h3>
                                     <span class="pill ok">自訂 · 未發佈</span>
-                                    <button type="button" class="ghost-danger">
-                                        <svg class="i"><use href="#i-undo" /></svg>還原預設
-                                    </button>
-                                    <button type="button" class="primary" data-open-icon>
-                                        <svg class="i"><use href="#i-upload" /></svg>更換圖示
-                                    </button>
-                                </div>
-                                <div class="icon-row">
                                     <button
                                         type="button"
-                                        class="big-slot"
-                                        style="background-image: url('icon-512.png')"
+                                        class="ghost-danger"
+                                        aria-label="還原 App 圖示"
+                                    >
+                                        <svg class="i"><use href="#i-undo" /></svg>還原
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="primary"
                                         aria-label="更換 App 圖示"
-                                        data-open-icon
-                                    ></button>
+                                    >
+                                        <svg class="i"><use href="#i-upload" /></svg>更換
+                                    </button>
+                                </div>
+                                <div class="even">
+                                    <div class="icon-prev">
+                                        <button
+                                            type="button"
+                                            class="big-slot"
+                                            style="background-image: url('icon-512.png')"
+                                            aria-label="更換 App 圖示"
+                                        ></button
+                                        >原圖 1024 × 1024
+                                    </div>
                                     <div class="icon-prev">
                                         <img class="ios" src="icon-512.png" alt="" />iPhone 主畫面
                                     </div>
                                     <div class="icon-prev">
                                         <span class="android" style="background: #0b0b0b"
                                             ><img src="icon-512.png" alt="" /></span
-                                        >Android（圓形遮罩）
+                                        >Android（圓形）
+                                    </div>
+                                    <div class="icon-prev">
+                                        <span class="android sq" style="background: #0b0b0b"
+                                            ><img src="icon-512.png" alt="" /></span
+                                        >Android（方形）
                                     </div>
                                     <div class="icon-prev">
                                         <span class="tab"
@@ -1377,21 +1446,63 @@
                                         >瀏覽器分頁
                                     </div>
                                 </div>
-                                <p class="state-label" style="margin-top: 12px">
-                                    上載一張 1024 × 1024（PNG / JPG / WebP）→ 自動輸出 favicon
-                                    64、apple-touch 180、192、512、maskable 512（PNG）。Admin
-                                    自己嘅分頁 icon 都會跟住換。
-                                </p>
                             </div>
                             <div class="card">
                                 <div class="card-head">
                                     <h3>名稱與簡介</h3>
                                     <span class="pill">內建預設</span>
-                                    <button type="button" class="ghost-danger" disabled>
-                                        <svg class="i"><use href="#i-undo" /></svg>還原預設
+                                    <button
+                                        type="button"
+                                        class="ghost-danger"
+                                        disabled
+                                        aria-label="還原名稱與簡介"
+                                    >
+                                        <svg class="i"><use href="#i-undo" /></svg>還原
+                                    </button>
+                                    <button type="button" class="primary">
+                                        <svg class="i"><use href="#i-check" /></svg>儲存
                                     </button>
                                 </div>
-                                <p class="state-label">見 ③（可以打字試）</p>
+                                <p class="state-label">欄位見 ③（可以打字試）</p>
+                            </div>
+                            <div class="card">
+                                <div class="card-head">
+                                    <h3>首頁 Banner</h3>
+                                    <span class="pill">內建預設</span>
+                                    <button
+                                        type="button"
+                                        class="ghost-danger"
+                                        disabled
+                                        aria-label="還原首頁 Banner"
+                                    >
+                                        <svg class="i"><use href="#i-undo" /></svg>還原
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="primary"
+                                        aria-label="更換首頁 Banner"
+                                    >
+                                        <svg class="i"><use href="#i-upload" /></svg>更換
+                                    </button>
+                                </div>
+                                <div class="banner-even">
+                                    <div class="slot">
+                                        <span
+                                            class="pic std"
+                                            style="background-image: url('banner.webp')"
+                                        ></span
+                                        ><span class="cap">窄版</span
+                                        ><span class="hint">1200 × 517</span>
+                                    </div>
+                                    <div class="slot">
+                                        <span
+                                            class="pic long"
+                                            style="background-image: url('banner-wide.webp')"
+                                        ></span
+                                        ><span class="cap">闊版</span
+                                        ><span class="hint">2000 × 400</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1399,104 +1510,115 @@
             </section>
 
             <section id="b">
-                <h2>② 更換 App 圖示（裁切 1 : 1 + 預覽 + 遮罩底色）</h2>
+                <h2>② 更換 App 圖示（每種裝置可以各自裁切 · Q6）</h2>
                 <div class="frame">
-                    <div class="card dialog" style="max-width: 860px">
+                    <div class="card dialog" style="max-width: 900px">
                         <header>
-                            <h3>更換 App 圖示（1024 × 1024）</h3>
+                            <h3>更換 App 圖示</h3>
                             <span class="pill info">本機檔 · logo.png · 原圖 1400 × 1400</span>
                         </header>
+                        <div
+                            class="row"
+                            style="
+                                justify-content: space-between;
+                                flex-wrap: wrap;
+                                gap: 12px;
+                                margin-bottom: 14px;
+                            "
+                        >
+                            <label class="check"
+                                ><input type="checkbox" id="same" checked />
+                                所有裝置使用同一裁切</label
+                            >
+                            <div class="seg" role="group" aria-label="裝置" id="devices">
+                                <button type="button" aria-pressed="true" data-d="ios">
+                                    iPhone
+                                </button>
+                                <button type="button" aria-pressed="false" data-d="android">
+                                    Android
+                                </button>
+                                <button type="button" aria-pressed="false" data-d="tab">
+                                    瀏覽器分頁
+                                </button>
+                            </div>
+                        </div>
                         <div
                             class="row"
                             style="align-items: flex-start; gap: 28px; flex-wrap: wrap"
                         >
                             <div>
-                                <p class="state-label">原圖（拖曳裁切框，正方形）</p>
-                                <div
-                                    style="
-                                        width: 300px;
-                                        height: 300px;
-                                        background: #888 url('icon-512.png') center / contain
-                                            no-repeat;
-                                        border-radius: 12px;
-                                        position: relative;
-                                    "
-                                >
+                                <p class="state-label" id="crop-cap">
+                                    原圖（拖曳裁切框可移位，拖曳右下角可縮放）
+                                </p>
+                                <div class="crop-box">
                                     <span
-                                        style="
-                                            position: absolute;
-                                            inset: 18px;
-                                            border: 2px solid #fff;
-                                            border-radius: 4px;
-                                        "
+                                        class="crop-frame"
+                                        id="frame"
+                                        style="left: 18px; top: 18px; width: 264px; height: 264px"
+                                        ><span class="safe" id="safe" hidden></span
                                     ></span>
                                 </div>
                             </div>
-                            <div class="stack" style="gap: 14px">
+                            <div class="stack" style="gap: 14px; flex: 1; min-width: 300px">
                                 <p class="state-label">預覽</p>
-                                <div class="icon-row">
-                                    <div class="icon-prev">
+                                <div class="even">
+                                    <div class="icon-prev" data-p="ios">
                                         <img class="ios" src="icon-512.png" alt="" />iPhone
                                     </div>
-                                    <div class="icon-prev">
-                                        <span
-                                            class="android"
-                                            id="mask-prev"
-                                            style="background: #0b0b0b"
+                                    <div class="icon-prev" data-p="android">
+                                        <span class="android mask" style="background: #0b0b0b"
                                             ><img src="icon-512.png" alt="" /></span
                                         >Android 圓形
                                     </div>
-                                    <div class="icon-prev">
-                                        <span
-                                            class="android"
-                                            id="mask-prev-sq"
-                                            style="background: #0b0b0b; border-radius: 22px"
+                                    <div class="icon-prev" data-p="android">
+                                        <span class="android sq mask" style="background: #0b0b0b"
                                             ><img src="icon-512.png" alt="" /></span
                                         >Android 方形
                                     </div>
-                                    <div class="icon-prev">
+                                    <div class="icon-prev" data-p="tab">
                                         <span class="tab"
                                             ><img src="icon-512.png" alt="" />903 Player</span
                                         >分頁
                                     </div>
                                 </div>
-                                <div>
-                                    <p class="state-label">
-                                        Android 遮罩底色（Q1）：icon 縮細放中間（安全區
-                                        80%），四周填呢個色
-                                    </p>
-                                    <div class="swatches" role="radiogroup" aria-label="遮罩底色">
+                                <div id="mask-row">
+                                    <p class="cap" style="margin-bottom: 6px">Android 遮罩底色</p>
+                                    <div
+                                        class="swatches"
+                                        role="radiogroup"
+                                        aria-label="Android 遮罩底色"
+                                    >
                                         <button
                                             type="button"
                                             class="sw on"
                                             style="background: #0b0b0b"
                                             data-c="#0b0b0b"
-                                            aria-label="抽色 1"
+                                            aria-label="抽取色 1"
                                         ></button>
                                         <button
                                             type="button"
                                             class="sw"
                                             style="background: #f39200"
                                             data-c="#f39200"
-                                            aria-label="抽色 2"
+                                            aria-label="抽取色 2"
                                         ></button>
                                         <button
                                             type="button"
                                             class="sw"
                                             style="background: #000"
                                             data-c="#000000"
-                                            aria-label="黑"
+                                            aria-label="黑色"
                                         ></button>
                                         <button
                                             type="button"
                                             class="sw"
                                             style="background: #fff"
                                             data-c="#ffffff"
-                                            aria-label="白"
+                                            aria-label="白色"
                                         ></button>
                                     </div>
                                 </div>
-                                <p class="state-label">
+                                <p class="hint" id="out">
                                     輸出：favicon 64 · apple-touch 180 · 192 · 512 · maskable
                                     512（PNG）
                                 </p>
@@ -1512,8 +1634,9 @@
                         </footer>
                     </div>
                     <p class="state-label">
-                        原圖唔係正方形 → 置中裁正方形；細過 512 × 512 →
-                        黃色警告（放大會矇）；透明底保留（iPhone 會補黑底，所以預覽用黑底示範）。
+                        勾住「同一裁切」=
+                        一個框管晒；取消勾選就撳上面分頁逐個調，預覽只會亮起嗰個裝置。原圖唔係正方形就置中裁正方形；細過
+                        512 × 512 出黃色警告。
                     </p>
                 </div>
             </section>
@@ -1525,10 +1648,10 @@
                         <div class="card-head">
                             <h3>名稱與簡介</h3>
                             <span class="pill" id="nd-pill">內建預設</span>
-                            <button type="button" class="ghost-danger">
-                                <svg class="i"><use href="#i-undo" /></svg>還原預設
+                            <button type="button" class="ghost-danger" aria-label="還原名稱與簡介">
+                                <svg class="i"><use href="#i-undo" /></svg>還原
                             </button>
-                            <button type="button" class="primary" id="nd-save">
+                            <button type="button" class="primary">
                                 <svg class="i"><use href="#i-check" /></svg>儲存
                             </button>
                         </div>
@@ -1537,7 +1660,7 @@
                             <div class="ctl">
                                 <input id="f-name" type="text" value="903 叱咤 Player" /><span
                                     class="hint"
-                                    >分享預覽標題、瀏覽器標題、安裝時嘅名</span
+                                    >用於分享預覽標題、瀏覽器標題及安裝名稱</span
                                 >
                             </div>
                             <label for="f-short">短名</label>
@@ -1545,14 +1668,14 @@
                                 <input id="f-short" type="text" value="903 Player" /><span
                                     class="hint"
                                     id="h-short"
-                                    >主畫面 icon 下面（建議 12 個字元內）</span
+                                    >主畫面圖示下方顯示（建議 12 個字元內；留空則使用 App 名）</span
                                 >
                             </div>
                             <label for="f-desc">簡介</label>
                             <div class="ctl">
                                 <textarea id="f-desc">
 903 叱咤 Player：隨時隨地，音樂・節目・一click即聽。</textarea
-                                ><span class="hint" id="h-desc">分享預覽同搜尋結果嘅描述</span>
+                                ><span class="hint" id="h-desc">用於分享預覽及搜尋結果的描述</span>
                             </div>
                         </div>
                         <div
@@ -1592,7 +1715,7 @@
                         <div class="card dialog narrow" role="alertdialog">
                             <h3>更改 App 名？</h3>
                             <p>
-                                發佈後，已安裝嘅 app 名稱同分享預覽都會改為「<span id="c-name"
+                                發佈後，已安裝的 App 名稱及分享預覽均會改為「<span id="c-name"
                                     >903 叱咤 Player</span
                                 >」。
                             </p>
@@ -1619,7 +1742,7 @@
                             <li>名稱與簡介已更改</li>
                         </ul>
                         <div
-                            class="note info"
+                            class="note"
                             style="
                                 margin-top: 10px;
                                 background: var(--accent-soft);
@@ -1627,12 +1750,12 @@
                             "
                         >
                             <svg class="i"><use href="#i-refresh" /></svg>
-                            圖示 / 名稱 / 簡介要重新部署播放器先生效：發佈後會自動開始（約 5
-                            分鐘）。已安裝嘅 app 圖示要用戶重新安裝先會變。
+                            圖示、名稱及簡介須重新部署播放器方會生效，發佈後會自動開始（約 5
+                            分鐘）。已安裝的 App 圖示須重新安裝方會更新。
                         </div>
                     </div>
-                    <div class="card deploy">
-                        <h3>上下架記錄</h3>
+                    <div class="card rec">
+                        <h3>發佈 / 部署記錄</h3>
                         <div class="row">
                             <b>#12</b> 更換 · App 圖示、名稱與簡介
                             <span class="pill info">部署中</span>
@@ -1654,12 +1777,14 @@
         </main>
         <script>
             const $ = (s) => document.querySelector(s);
-            const shortHint = '主畫面 icon 下面（建議 12 個字元內）';
+            const $$ = (s) => document.querySelectorAll(s);
+            /* ③ 名稱與簡介 */
+            const shortHint = '主畫面圖示下方顯示（建議 12 個字元內；留空則使用 App 名）';
             const sync = () => {
                 const name = $('#f-name').value.trim();
                 const short = $('#f-short').value.trim();
                 const desc = $('#f-desc').value.trim();
-                $('#p-name').textContent = name || '（未填）';
+                $('#p-name').textContent = name || '（未填寫）';
                 $('#c-name').textContent = name;
                 $('#p-short').textContent = short || name;
                 $('#p-desc').textContent = desc;
@@ -1667,20 +1792,87 @@
                 const h = $('#h-short');
                 h.textContent = len > 12 ? `${len} 個字元，主畫面可能會截斷` : shortHint;
                 h.classList.toggle('warn', len > 12);
-                $('#h-desc').textContent = `分享預覽同搜尋結果嘅描述 · ${[...desc].length} 字`;
+                $('#h-desc').textContent = `用於分享預覽及搜尋結果的描述 · ${[...desc].length} 字`;
                 $('#nd-pill').textContent = '自訂 · 未儲存';
                 $('#nd-pill').className = 'pill warn';
             };
             ['#f-name', '#f-short', '#f-desc'].forEach((s) => $(s).addEventListener('input', sync));
-            document.querySelectorAll('.sw').forEach((b) =>
+            /* ② 遮罩底色 */
+            $$('.sw').forEach((b) =>
                 b.addEventListener('click', () => {
-                    document
-                        .querySelectorAll('.sw')
-                        .forEach((x) => x.classList.toggle('on', x === b));
-                    $('#mask-prev').style.background = b.dataset.c;
-                    $('#mask-prev-sq').style.background = b.dataset.c;
+                    $$('.sw').forEach((x) => x.classList.toggle('on', x === b));
+                    $$('.mask').forEach((m) => (m.style.background = b.dataset.c));
                 }),
             );
+            /* ② 每種裝置各自裁切（Q6）：示範三個框位置唔同 */
+            const FRAMES = {
+                ios: {
+                    left: 18,
+                    top: 18,
+                    size: 264,
+                    round: false,
+                    safe: false,
+                    cap: '原圖 · iPhone（apple-touch 180）',
+                    out: '輸出：apple-touch 180（PNG）',
+                },
+                android: {
+                    left: 6,
+                    top: 6,
+                    size: 288,
+                    round: true,
+                    safe: true,
+                    cap: '原圖 · Android（虛線圈內 = 安全區，手機會套圓形 / 方形遮罩）',
+                    out: '輸出：192 · 512 · maskable 512（PNG）',
+                },
+                tab: {
+                    left: 60,
+                    top: 40,
+                    size: 180,
+                    round: false,
+                    safe: false,
+                    cap: '原圖 · 瀏覽器分頁（細圖可以裁近啲）',
+                    out: '輸出：favicon 64（PNG）',
+                },
+            };
+            let device = 'ios';
+            const render = () => {
+                const same = $('#same').checked;
+                const f = same
+                    ? {
+                          ...FRAMES.ios,
+                          cap: '原圖（拖曳裁切框可移位，拖曳右下角可縮放）',
+                          out: '輸出：favicon 64 · apple-touch 180 · 192 · 512 · maskable 512（PNG）',
+                          safe: true,
+                      }
+                    : FRAMES[device];
+                const el = $('#frame');
+                Object.assign(el.style, {
+                    left: f.left + 'px',
+                    top: f.top + 'px',
+                    width: f.size + 'px',
+                    height: f.size + 'px',
+                });
+                el.classList.toggle('round', !same && f.round);
+                $('#safe').hidden = !f.safe;
+                $('#crop-cap').textContent = f.cap;
+                $('#out').textContent = f.out;
+                $('#devices').style.opacity = same ? 0.45 : 1;
+                $$('#devices button').forEach((b) => {
+                    b.disabled = same;
+                    b.setAttribute('aria-pressed', String(!same && b.dataset.d === device));
+                });
+                $$('[data-p]').forEach(
+                    (p) => (p.style.opacity = same || p.dataset.p === device ? 1 : 0.35),
+                );
+            };
+            $('#same').addEventListener('change', render);
+            $$('#devices button').forEach((b) =>
+                b.addEventListener('click', () => {
+                    device = b.dataset.d;
+                    render();
+                }),
+            );
+            render();
         </script>
     </body>
 </html>
