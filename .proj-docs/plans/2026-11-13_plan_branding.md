@@ -65,8 +65,15 @@ Mockup：`_mockups_/admin-appearance/index.html`（v2，Q1–Q6 全部確認）�
 
 ## 用戶要做
 
-1. GitHub：fine-grained token，只限 `dcwhung/903-player`，權限 **Actions: Read and write**、**Contents: Read** → Cloudflare Worker secret `GITHUB_DEPLOY_TOKEN`（建議經 `deploy-api.yml` 由 GitHub secret 傳，同其他 secret 一樣）
-2. Vercel：Project → Settings → Git → Deploy Hooks，branch `main` → secret `VERCEL_DEPLOY_HOOK_URL`
+1. GitHub：fine-grained token，只限 `dcwhung/903-player`，權限 **Contents: Read and write**（`repository_dispatch` 要）+ **Actions: Read**（查部署狀態）→ GitHub repo secret **`DEPLOY_GITHUB_TOKEN`**（GitHub 唔准 secret 名以 `GITHUB_` 開頭；`deploy-api.yml` 會同步做 Worker secret `GITHUB_DEPLOY_TOKEN`）
+2. Vercel：Project → Settings → Git → Deploy Hooks，branch `main` → GitHub repo secret `VERCEL_DEPLOY_HOOK_URL`
+3. 加完兩個 secret 之後手動 Run 一次「Deploy API」先會寫入 Worker（步驟見 `apps/api/README.md`「重新部署 player」）
+
+## 實作差異（Backend 2026-11-13）
+
+- D1 開兩個單行 table（`branding_icon`、`branding_text`），各自 `updated_at`、各自刪；`publishes` 加 `deploy`、`deploy_requested_at`
+- 還原（rollback）到有 branding 改動嘅版本都會觸發部署
+- Entries / banner 圖檔名照舊只收 WebP；PNG 只限 branding icon
 
 ## 實作次序（同一條 branch，唔開 parallel lane）
 
