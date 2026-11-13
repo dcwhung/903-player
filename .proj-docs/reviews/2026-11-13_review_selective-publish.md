@@ -206,3 +206,49 @@ branch: "feature/selective-publish"
 context: "Re-review 2 @31a766d: S-988 verified fixed (footer shows app.loadFailed, 下一步 disabled; new test fails without fix). No new items. Proceed to QA S1. Report committed locally, not pushed (code CI running)."
 blockers: []
 ```
+
+## Re-review 3（未完成勾選框）
+
+- 日期：2026-11-13　審閱者：Code Reviewer　目標：`74c0451`（`fix: hide the publish checkbox on incomplete rows, show 未完成 only`）　Tier：T2（只驗呢個 diff）
+- 用戶要求：新內容表 `publish: 'incomplete'` 嘅行唔再出勾選框，最後一欄「發佈」淨係顯示「未完成」
+- Hard gates：all pass（`npx eslint` 改咗嘅 src / test、`npx prettier --check` 改咗嘅 css / mockup / tsx、`npx tsc -b apps/admin`、`npx vitest run TodoMatrix.test.tsx todoModel.test.ts` 18/18；developer 本地 `npm test -- apps/admin` 585 綠、`npm run e2e:admin` 綠）
+- 實作 ✅：`PublishCell` incomplete 分支改做 `<span className="lock" title={incompleteText(title, row)}>未完成</span>`，冇 `<label>` / `<input>`；unit test 斷言行內 `queryByRole('checkbox')` 冇、title 文字啱；「只有 selectable 行有勾選框」由 2 改 1；e2e `selectiveChecks.mjs` 改為搵 `row` → `getByTitle` → `getByText('未完成')`，並斷言行內冇 checkbox
+- 仲有冇嘢靠灰色勾選框：grep `apps/admin/src`、`apps/admin/e2e`（`isDisabled` / `toBeDisabled` / `pick:disabled` / `尚未設定` / `.lock`）→ 淨係 `SelectionCard`（確認發佈頁）用 `incompleteText`，同勾選框無關；mockup script 由 `.pick:not(:disabled)` 改 `.pick`，冇 disabled 之後等價。CSS `td.pick-cell label` 仲畀 selectable 用，唔係 dead code
+- 介面文字：冇新 string（`update.incomplete`「未完成」、`update.incompleteLabel`「{name}（尚未設定{missing}）」都係現有書面語 key）；mockup 介面文字冇改字
+- 行為變化（Observation，唔開 item）：以前撳「未完成」格會撞正 `<label>`（`rowClick` 嘅 INTERACTIVE），唔跳頁；而家係普通 `span`，撳落去會成行跳去編輯頁。同 `TodoMatrix` 註解「成行撳入嗰項嘅編輯頁」一致，對未完成行仲方便啲（直接去補設定），屬預期
+- Accessibility（用戶問）：`title` 喺冇 focus 嘅 `span` 上，鍵盤 / 觸控用戶睇唔到 tooltip，screen reader（例如 NVDA browse mode）多數唔讀；而行入面「設定」格嘅 accessible name 只係「大衛營：排期」（link），冇講明「尚未設定」，要靠推斷。不過確認發佈頁 `SelectionCard` 會完整讀出「以下項目尚未完成，不會在本次發佈：…大衛營（尚未設定排期）。」，頁底亦有「N 項未完成（不會發佈）」，資訊冇完全消失 → 冇 L1（冇 AC / SSoT 要求呢格要讀出缺咩），唔 block，記 🟢 S-989
+- 🟢 S-989 `apps/admin/src/features/update/PublishCell.tsx:36`：缺咩設定只喺 `title`，screen reader / 鍵盤讀唔到。最小修正：喺 `.lock` 入面加 `<span className="sr-only">：{incompleteText(title, row)}</span>`（`.sr-only` 已喺 `app.css`，冇新介面文字；unit test `toHaveTextContent('未完成')` 同 e2e `getByText('未完成')` 係子字串 match，照過）；或者接受現狀，靠確認發佈頁嘅清單
+- 🟢 S-990 文件過時：`apps/admin/CHANGELOG.md` 0.3.0（未 release）仲寫「`incomplete` 灰色勾選框 +「未完成」」；`apps/admin/src/styles/selective.css:3` header 註解仲寫「未完成灰色勾選框」→ 改做「`incomplete` 只顯示「未完成」（tooltip 列出未設定項目）」
+- Version：0.3.0 未 merge / 未 release，同一個 release 入面嘅改動，唔使再 bump
+
+| 維度     | 得分    | 滿分    |
+| -------- | ------- | ------- |
+| 正確性   | 25      | 25      |
+| 安全性   | 20      | 20      |
+| 可維護性 | 20      | 20      |
+| 測試覆蓋 | 15      | 15      |
+| 性能     | 10      | 10      |
+| 代碼風格 | 10      | 10      |
+| **總分** | **100** | **100** |
+
+**結果：✅ pass**（冇 🔴 / 🟡；🟢 S-989、S-990 按 project 規則要喺今個 session 清：lane 喺 PR 內修，或者用戶決定 S-989 唔做）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+  no_critical: pass
+  security_scan: n/a
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "feature/selective-publish"
+context: "Re-review 3 @74c0451: incomplete rows show 未完成 only, no checkbox; nothing else relies on the disabled checkbox; no new UI strings. Suggestions S-989 (sr-only missing-settings text) and S-990 (stale CHANGELOG 0.3.0 + selective.css header) must be cleared this session. Report committed locally, not pushed (code CI running)."
+blockers: []
+```
