@@ -320,8 +320,8 @@
     gap: 10px;
 }
 
-.theme-head h3 {
-    margin: 0 auto 0 0;
+.theme-head {
+    justify-content: flex-end;
 }
 
 .theme-foot {

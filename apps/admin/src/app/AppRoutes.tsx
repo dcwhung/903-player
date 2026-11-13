@@ -17,6 +17,7 @@ export function AppRoutes() {
             <Route path="/shows" element={<ShowList />} />
             <Route path="/shows/new" element={<ShowEditorPage />} />
             <Route path="/shows/:id" element={<ShowEditorPage />} />
+            <Route path="/shows/:id/theme" element={<ShowEditorPage tab="theme" />} />
             <Route path="/dramas" element={<DramaList />} />
             <Route path="/dramas/:id" element={<DramaEditorPage tab="basic" />} />
             <Route path="/dramas/:id/arcs" element={<DramaEditorPage tab="arcs" />} />

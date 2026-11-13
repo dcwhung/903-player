@@ -1,7 +1,7 @@
 /*
  * 圖片 slot：撳縮圖（空 slot 撳 ＋）直接揀本機檔（PNG / JPG / WebP）→ 裁切 dialog → 「上載」→ PUT /api/assets →
- * onUploaded（caller 即刻 PUT entry：上載即存）。名、R2 自動裁切狀態、尺寸提示（aria-describedby，S-817）、
- * 錯誤都放喺各自圖片下面（.slot-cap）
+ * onUploaded（caller 即刻 PUT entry：上載即存）。圖片下面（.slot-cap）只顯示名、R2 自動裁切狀態、錯誤；
+ * 尺寸 / 格式 / 上限收埋喺 tooltip（讀屏照用 aria-describedby，S-817）
  * Design Origin: mockup: _mockups_/admin-phase4/index.html#a（.img-slot、右下 ✎ / ＋、.pill info）+ #c（尺寸提示）
  */
 import { Pencil, Plus } from 'lucide-react';
@@ -19,6 +19,9 @@ import {
 } from './imageUpload';
 import { Tooltip } from './Tooltip';
 import { useImageUpload } from './useImageUpload';
+
+const LIMITS = { mb: SOURCE_MAX_MB, edge: SOURCE_MAX_EDGE_PX };
+const limitsText = () => t('images.limits', LIMITS);
 
 /** R2 原圖自動裁切嘅狀態（只喺今次 session 顯示） */
 export type AutoCropStatus =
@@ -64,11 +67,8 @@ function SlotCaption({
                 {auto?.status === 'loading' ? t('images.autoLoading') : t(`images.${slot}`)}
             </span>
             <AutoNote auto={auto} />
-            <span className="hint" id={`${hintId}-size`}>
-                {t('images.hint', { size: sizeLabel(SLOT_SIZES[slot]) })}
-            </span>
-            <span className="hint" id={`${hintId}-limits`}>
-                {t('images.limits', { mb: SOURCE_MAX_MB, edge: SOURCE_MAX_EDGE_PX })}
+            <span className="sr-only" id={hintId}>
+                {`${t('images.hint', { size: sizeLabel(SLOT_SIZES[slot]) })} ${limitsText()}`}
             </span>
         </span>
     );
@@ -113,13 +113,13 @@ export function ImageSlot({ slot, url, preview, onUploaded, auto }: ImageSlotPro
     const pickFile = () => input.current?.click();
     return (
         <div className="slot">
-            <Tooltip text={t('images.tip', { slot: slotName, size })}>
+            <Tooltip text={t('images.tip', { slot: slotName, size, ...LIMITS })}>
                 <button
                     ref={button}
                     type="button"
                     className={classes.filter(Boolean).join(' ')}
                     aria-label={action}
-                    aria-describedby={`${hintId}-size ${hintId}-limits`}
+                    aria-describedby={hintId}
                     aria-busy={busy}
                     disabled={busy || phase !== null}
                     onClick={pickFile}

@@ -356,7 +356,7 @@ export const zhHK = {
         bannerLong: '首頁 Banner（闊版）',
         change: '更換{slot}',
         upload: '上載{slot}',
-        tip: '{slot} · {size}（PNG / JPG / WebP，可裁切）',
+        tip: '{slot}\n輸出 {size} WebP；原圖建議 ≥ {size}\n接受 PNG / JPG / WebP，最大 {mb} MB、{edge} × {edge} px',
         badType: '只接受 PNG、JPG 或 WebP 圖片',
         undecodable: '無法讀取此圖片',
         encodeFailed: '無法轉換為 WebP 圖片',
@@ -403,6 +403,9 @@ export const zhHK = {
         autoFailed: '自動裁切失敗：{error}',
     },
     show: {
+        tabBasic: '基本資料',
+        tabTheme: '配色',
+        tabsLabel: '節目分頁',
         airDays: '播出日',
         airTime: '播放時間',
         airTimeTip: '每 15 分鐘一格；完結時間只可選開始時間後 3 小時內',

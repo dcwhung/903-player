@@ -1,5 +1,8 @@
 /* 編輯頁路徑（列表、待辦共用）。ID 一律 encodeURIComponent（S-828）：而家 ID pattern 已經限制字元，防將來改規則 */
 
+/** 節目編輯頁 */
+export const showEditorPath = (showId: string): string => `/shows/${encodeURIComponent(showId)}`;
+
 /** 劇編輯頁 */
 export const dramaEditorPath = (dramaId: string): string =>
     `/dramas/${encodeURIComponent(dramaId)}`;
