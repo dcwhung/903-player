@@ -2,27 +2,16 @@
  * Entry 嘅配色（definition.theme）：讀法、「未設定」（= NEUTRAL_THEME 10 色，同 api neutralTheme 警告一樣）、
  * 細版 player 預覽用嘅 --theme-* custom property（跟 apps/player tokens 命名）
  */
-import { NEUTRAL_THEME, type ShowTheme } from '@903-player/catalog';
+import { NEUTRAL_THEME, THEME_COLOUR_KEYS, type ShowTheme } from '@903-player/catalog';
 import type { CSSProperties } from 'react';
 import type { RawDefinition } from '../api/types';
 import { isRecord } from './raw';
 
+/** 必填 10 色：SSoT 喺 packages/catalog（S-916），re-export 畀 admin 現有用家 */
+export { THEME_COLOUR_KEYS } from '@903-player/catalog';
+
 /** definition.theme（ShowTheme 減 art，art 係 player runtime 先補） */
 export type EntryTheme = Omit<ShowTheme, 'art'>;
-
-/** 必填 10 色（同 packages/catalog themeSchema COLOUR_KEYS） */
-export const THEME_COLOUR_KEYS = [
-    'bg',
-    'surface',
-    'track',
-    'accent',
-    'onAccent',
-    'title',
-    'text',
-    'muted',
-    'shadowDark',
-    'shadowLight',
-] as const;
 
 const OPTIONAL_KEYS = ['scheme', 'statusBar', 'accentText', 'titleFont', 'headerRule'] as const;
 
