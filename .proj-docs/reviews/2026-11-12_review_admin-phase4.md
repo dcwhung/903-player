@@ -222,3 +222,60 @@ next_action: main agent proceeds; S-917 (api warnings.ts third colour-key copy, 
 context: S-916 fixed (catalog exports THEME_COLOUR_KEYS, admin re-exports). 9ebd505 matches api 80349d8 changes.bannerChanged placement; missing field treated as false; mutations on the banner logic fail the new tests. No new IDs from reviewer. Report committed locally, not pushed.
 report: .proj-docs/reviews/2026-11-12_review_admin-phase4.md (committed, not pushed)
 ```
+
+## Re-review 3（S-917）
+
+- 日期：2026-11-13 00:40；審閱者：Code Reviewer；目標：`416ae92`（淨改 `apps/api/src/catalog/warnings.ts`，+3 / −15）；Tier：T1（純 refactor）
+- Hard gates：all pass（`npm run lint` eslint + prettier、`npm run typecheck -w apps/api`、related unit `vitest run test/publishWarnings.test.ts test/publish.test.ts` 35/35）。`npm test -w apps/api` 被 `reviewer-test-scope` hook block（full workspace suite），改跑 related test，冇 bypass
+
+| ID    | 狀態    | 證據                                                                                                                                                                                                        |
+| ----- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-917 | ✅ 已修 | 刪咗本地 `NEUTRAL_COLOUR_KEYS`（連舊名 `COLOUR_KEYS` 註解），`isNeutralTheme` 改用 catalog `THEME_COLOUR_KEYS`（`themeSchema.ts:16`，經 `index.ts:47`）；`apps` 非 test 源碼再冇第三份 `'shadowLight'` 清單 |
+
+### 行為不變
+
+- 兩份清單逐項一樣、次序一樣（`bg` … `shadowLight` 10 色，冇 `art`、冇 `statusBar` / `accentText`）；`sameColour`（`toLowerCase()` 比較）同 `warningsOf` 冇改，所以 neutralTheme = 10 色等於 `NEUTRAL_THEME`、唔理 art 同選填欄位、唔分大細楷，同改之前一樣
+- 清單長度由 catalog `themeSchema.test.ts:129` 鎖住（10 個、全部喺 `NEUTRAL_THEME`）
+
+### Mutation（做完已 `git checkout` 還原，working tree clean）
+
+| Mutation                                        | 結果                                                            |
+| ----------------------------------------------- | --------------------------------------------------------------- |
+| M1 比較時漏咗 `track`                           | ✅ kill：「should ignore optional theme keys … changed colour」 |
+| M2 `isNeutralTheme` 永遠 `true`                 | ✅ kill：6 / 7 test fail                                        |
+| M3 漏咗最後一色 `shadowLight`（`slice(0, -1)`） | ⚠️ 生存：7 / 7 pass                                             |
+| M4 色值比較改分大細楷（拎走 `toLowerCase`）     | ⚠️ 生存：7 / 7 pass                                             |
+
+M3 / M4 係 api test 本身嘅缺口（S-917 之前已經咁，今次冇改呢兩部份），唔影響今次結論：S-917 只換清單來源，而清單內容由 catalog test 鎖住。
+
+### 🟢 / Observation
+
+- S-918 `apps/api/test/publishWarnings.test.ts:43-56` 淨改 `track` 一色；冇 test 鎖「每一色都要比」（M3 生存）同「色值唔分大細楷」（M4 生存）。可加：大楷 `NEUTRAL_COLOURS` 都要 warn；逐色改一色（`it.each(THEME_COLOUR_KEYS)`）都唔 warn。入 backlog，唔 block
+- Version：api 喺呢個 branch 維持 `0.8.0`（同 merge-base 一樣，`origin/main` 已係 `0.8.1`）冇 bump；純 refactor、行為不變，符合 W-718 先例（用戶決定純 refactor 唔 bump）✅
+
+### 評分（re-review 3）
+
+| 維度     | 得分    | 滿分    | 備注                                     |
+| -------- | ------- | ------- | ---------------------------------------- |
+| 正確性   | 25      | 25      | 清單同次序一樣，比較邏輯冇改             |
+| 安全性   | 20      | 20      | 冇新輸入面                               |
+| 可維護性 | 20      | 20      | 10 色清單得返一份（catalog）             |
+| 測試覆蓋 | 15      | 15      | M1 / M2 kill；M3 / M4 屬舊缺口，S-918 🟢 |
+| 性能     | 10      | 10      |                                          |
+| 代碼風格 | 10      | 10      | lint / prettier / tsc 全過               |
+| **總分** | **100** | **100** | **結果：✅ pass**                        |
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: /review re-review 3 S-917 (feature/admin-phase4 @ 416ae92, apps/api/src/catalog/warnings.ts)
+status: pass
+score: 100
+hard_gates: {lint: pass, type_check: pass, tests: pass (related unit 35/35; full api workspace suite blocked by reviewer-test-scope hook), coverage: pass, no_critical: pass, security_scan: n/a}
+warnings: []
+backlog: [S-918]
+resolved: [S-917]
+new: [S-918]
+next_action: main agent proceeds (no developer fix needed); add S-918 to backlog; push this docs commit only after the CI run for 416ae92 (incl. e2e) has finished
+context: S-917 fixed, identical 10-key list and order, sameColour unchanged so behaviour is the same. Mutations: drop track / always true killed; drop shadowLight / case-sensitive survive (pre-existing api test gap, S-918 green). No api bump, consistent with W-718 precedent. Report committed locally, not pushed.
+report: .proj-docs/reviews/2026-11-12_review_admin-phase4.md (committed, not pushed)
+```
