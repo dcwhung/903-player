@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="claude:viewport-fit-sides" content="cover" />
+        <title>直版節目格排法</title>
+        <style>
+            /* 版面：控制列喺頂（sticky），下面「現況 / 方案 A / 方案 B」手機並排，可以切總覽 */
+            :root {
+                --page: #eef1f5;
+                --panel: #ffffff;
+                --ink: #1b2430;
+                --note: #5d6877;
+                --line: #d5dbe3;
+                --accent: #2f5f8f;
+                --accent-ink: #ffffff;
+                --pick: #2f7d4f;
+                --warn: #b5561d;
+                --chip: #e3e8ef;
+                --frame: #1b2430;
+                /* player tokens（apps/player/src/styles/tokens.css，直版主頁實測） */
+                --home-bg-top: #4f749c;
+                --home-bg-bottom: #42658a;
+                --tile-border: #42658a;
+                --tile-surface: #42658a;
+                --radius-tile: 14px;
+                --shadow-clay-tile: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
+                --today-text: #2f4560;
+                --dot: rgb(255 255 255 / 45%);
+                --dot-on: #ffffff;
+                --mini-bg: #22364d;
+                --mini-ink: #ffffff;
+                --tile-num-bg: rgb(0 0 0 / 55%);
+                --tile-num-ink: #ffffff;
+                --view-transition-fade: 260ms;
+                --ease-view-transition: cubic-bezier(0.2, 0.8, 0.2, 1);
+                --font-ui:
+                    -apple-system, 'PingFang HK', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+                --font-num: ui-monospace, 'SF Mono', Menlo, monospace;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --page: #12171e;
+                    --panel: #1b222c;
+                    --ink: #e6ebf2;
+                    --note: #9aa6b5;
+                    --line: #2e3845;
+                    --accent: #7fb0e0;
+                    --accent-ink: #0f1a26;
+                    --pick: #5cc08a;
+                    --warn: #f0a070;
+                    --chip: #26303c;
+                    --frame: #05080c;
+                    color-scheme: dark;
+                }
+            }
+            :root[data-theme='dark'] {
+                --page: #12171e;
+                --panel: #1b222c;
+                --ink: #e6ebf2;
+                --note: #9aa6b5;
+                --line: #2e3845;
+                --accent: #7fb0e0;
+                --accent-ink: #0f1a26;
+                --pick: #5cc08a;
+                --warn: #f0a070;
+                --chip: #26303c;
+                --frame: #05080c;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding-block: 20px 48px;
+                padding-left: max(16px, env(safe-area-inset-left, 0px));
+                padding-right: max(16px, env(safe-area-inset-right, 0px));
+                background: var(--page);
+                color: var(--ink);
+                font-family: var(--font-ui);
+                font-size: 14px;
+            }
+            body::before {
+                content: '';
+                position: fixed;
+                inset: 0 0 auto;
+                height: env(safe-area-inset-top, 0px);
+                z-index: 10;
+                background: var(--page);
+            }
+            h1 {
+                margin: 0 0 4px;
+                font-size: 22px;
+                text-wrap: balance;
+            }
+            h2 {
+                margin: 0 0 6px;
+                font-size: 17px;
+                text-wrap: balance;
+            }
+            p {
+                line-height: 1.6;
+                max-width: 72ch;
+            }
+            .lead {
+                margin: 0 0 12px;
+                color: var(--note);
+            }
+            code {
+                font-family: var(--font-num);
+                font-size: 12.5px;
+                background: var(--chip);
+                padding: 1px 4px;
+                border-radius: 4px;
+            }
+
+            /* 控制列 */
+            .controls {
+                position: sticky;
+                top: env(safe-area-inset-top, 0px);
+                z-index: 5;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px 20px;
+                padding-block: 10px 12px;
+                margin-bottom: 16px;
+                background: var(--page);
+                border-bottom: 1px solid var(--line);
+            }
+            .ctl {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 6px;
+                min-width: 0;
+            }
+            .ctl > span {
+                font-size: 12px;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                color: var(--note);
+                margin-right: 2px;
+            }
+            .ctl button {
+                font: inherit;
+                font-size: 13px;
+                padding: 4px 10px;
+                min-height: 32px;
+                border-radius: 999px;
+                border: 1px solid var(--line);
+                background: var(--panel);
+                color: var(--ink);
+                cursor: pointer;
+                font-variant-numeric: tabular-nums;
+            }
+            .ctl button[aria-pressed='true'] {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: var(--accent-ink);
+                font-weight: 700;
+            }
+            .ctl button:focus-visible,
+            .pages:focus-visible {
+                outline: 3px solid var(--accent);
+                outline-offset: 2px;
+            }
+
+            /* 比較區 */
+            .section {
+                padding: 16px;
+                margin-bottom: 20px;
+                border-radius: 14px;
+                background: var(--panel);
+                border: 1px solid var(--line);
+            }
+            .section .why {
+                margin: 0 0 14px;
+                color: var(--note);
+            }
+            .row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 20px 24px;
+                align-items: flex-start;
+            }
+            .row + .row {
+                margin-top: 16px;
+            }
+            .col {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                min-width: 0;
+            }
+            .ctitle {
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                font-weight: 700;
+                font-size: 13.5px;
+                line-height: 1.4;
+                max-width: 270px;
+            }
+            .tag {
+                flex: none;
+                font-size: 11px;
+                font-weight: 700;
+                padding: 2px 8px;
+                border-radius: 999px;
+                background: var(--chip);
+                color: var(--note);
+            }
+            .tag.a {
+                background: var(--accent);
+                color: var(--accent-ink);
+            }
+            .tag.b {
+                background: var(--pick);
+                color: var(--accent-ink);
+            }
+            .stats {
+                margin: 0;
+                padding: 0;
+                list-style: none;
+                font-size: 12.5px;
+                line-height: 1.55;
+                color: var(--note);
+                font-variant-numeric: tabular-nums;
+                max-width: 270px;
+            }
+            .stats b {
+                color: var(--ink);
+            }
+            .stats .bad {
+                color: var(--warn);
+                font-weight: 700;
+            }
+
+            /* 手機外框：transform 縮細唔影響 layout，所以外層用縮細後嘅尺寸 */
+            .phone-wrap {
+                position: relative;
+                flex: none;
+            }
+            .phone {
+                position: absolute;
+                top: 0;
+                left: 0;
+                overflow: hidden;
+                border-radius: 30px;
+                transform-origin: top left;
+                background: linear-gradient(var(--home-bg-top), var(--home-bg-bottom));
+                box-shadow:
+                    0 0 0 6px var(--frame),
+                    0 8px 24px rgb(0 0 0 / 25%);
+            }
+            .head {
+                position: absolute;
+                inset: 0 0 auto;
+                background-size: 100% 100%;
+            }
+            .nav {
+                position: absolute;
+                left: 0;
+                right: 0;
+                display: flex;
+                flex-direction: column;
+            }
+            .pages {
+                display: flex;
+                width: 100%;
+                flex: 1 1 0;
+                min-height: 0;
+                overflow-x: auto;
+                overflow-y: hidden;
+                scroll-snap-type: x mandatory;
+                overscroll-behavior-x: contain;
+                scrollbar-width: none;
+            }
+            .pages::-webkit-scrollbar {
+                display: none;
+            }
+            .page {
+                flex: 0 0 100%;
+                display: flex;
+                padding: 8px 16px;
+                scroll-snap-align: start;
+                scroll-snap-stop: always;
+            }
+            .grid {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                width: 100%;
+            }
+            .grid.space {
+                justify-content: space-between;
+            }
+            .grid.top {
+                justify-content: flex-start;
+            }
+            .grid.center {
+                justify-content: center;
+            }
+            .trow {
+                display: flex;
+                gap: 12px;
+                flex: none;
+            }
+            .tile {
+                position: relative;
+                flex: 1 1 0;
+                min-width: 0;
+                overflow: hidden;
+                border: 1px solid var(--tile-border);
+                border-radius: var(--radius-tile);
+                background: var(--tile-surface);
+                box-shadow: var(--shadow-clay-tile);
+            }
+            .tile img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .tile.today {
+                border: none;
+            }
+            .tile.today span {
+                position: absolute;
+                top: 59%;
+                left: 52%;
+                transform: translate(-50%, -50%);
+                white-space: nowrap;
+                color: var(--today-text);
+                font-size: 16px;
+                font-weight: 700;
+            }
+            .tile .n {
+                position: absolute;
+                right: 6px;
+                bottom: 6px;
+                font: 700 11px/1 var(--font-num);
+                color: var(--tile-num-ink);
+                background: var(--tile-num-bg);
+                padding: 3px 5px;
+                border-radius: 6px;
+            }
+            .tile.ghost {
+                visibility: hidden;
+            }
+            .dots {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                justify-content: center;
+                height: 24px;
+                flex: none;
+            }
+            .dots i {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: var(--dot);
+            }
+            .dots i.on {
+                background: var(--dot-on);
+            }
+            .mini {
+                position: absolute;
+                left: 12px;
+                right: 12px;
+                border-radius: 18px;
+                background: var(--mini-bg);
+                color: var(--mini-ink);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 13px;
+            }
+
+            /* 總覽 */
+            .ov-wrap {
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+            .ov {
+                display: grid;
+                grid-template-columns: auto repeat(3, auto);
+                gap: 14px 20px;
+                align-items: start;
+                width: max-content;
+            }
+            .ov .h {
+                font-weight: 700;
+                font-size: 13px;
+                color: var(--note);
+            }
+            .ov .count {
+                font: 700 20px/1 var(--font-num);
+                padding-top: 6px;
+            }
+            .ov .count small {
+                display: block;
+                font: 12px/1.4 var(--font-ui);
+                color: var(--note);
+                margin-top: 4px;
+                max-width: 110px;
+            }
+            .ov .stats {
+                max-width: 160px;
+            }
+
+            /* 問題表 */
+            .qs {
+                overflow-x: auto;
+            }
+            table {
+                border-collapse: collapse;
+                font-size: 13px;
+                min-width: 620px;
+            }
+            th,
+            td {
+                border: 1px solid var(--line);
+                padding: 6px 10px;
+                text-align: left;
+                vertical-align: top;
+                line-height: 1.5;
+            }
+            thead th {
+                background: var(--chip);
+            }
+            td.num {
+                font-variant-numeric: tabular-nums;
+                white-space: nowrap;
+                font-weight: 700;
+            }
+
+            /* 切換時淡入（Motion 規則：只喺 no-preference 先播；減少動態就直接切換） */
+            @media (prefers-reduced-motion: no-preference) {
+                .fade-in {
+                    animation: fade-in var(--view-transition-fade) var(--ease-view-transition);
+                }
+                @keyframes fade-in {
+                    from {
+                        opacity: 0.35;
+                    }
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <h1>直版節目格排法：按格數揀欄 × 行</h1>
+        <p class="lead">
+            淨係手機直版「節目」tab（<code>ShowGrid</code>）。頂部橫額 + tab 係真 app（v1.33.0）喺
+            Chromium 嘅截圖；節目格可用高度係實測（SE 484 / iPhone 15 648 / Pro Max 717px，有 mini
+            player 再少 96px）。格嘅計法同而家一樣：16:9 最矮、每行最多高 1.5
+            倍（<code>--show-tile-max-grow</code>）、行距 12、左右 16、要分頁就扣 24px 指示點；1.5
+            倍之後仲有剩就按「剩低高度」擺（A / B 預設置中；現況永遠照而家平分行距）。
+        </p>
+        <p class="lead">
+            「格數」<b>包括最尾嘅「今日節目」格</b>（而家 7 個節目 + 今日 = 8 格）。12
+            格嗰啲節目圖係重用（右下角係次序）。分頁嘅手機可以左右掃。
+        </p>
+
+        <div class="controls" role="group" aria-label="設定">
+            <div class="ctl" id="ctl-count"><span>格數</span></div>
+            <div class="ctl" id="ctl-device"><span>手機</span></div>
+            <div class="ctl" id="ctl-mini"><span>Mini player</span></div>
+            <div class="ctl" id="ctl-align"><span>剩低高度</span></div>
+            <div class="ctl" id="ctl-view"><span>睇</span></div>
+        </div>
+
+        <div id="out"></div>
+
+        <section class="section">
+            <h2>要你揀嘅問題</h2>
+            <div class="qs">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">問題</th>
+                            <th scope="col">選項</th>
+                            <th scope="col">我建議</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="num">Q1</td>
+                            <td>每個格數用方案 A 定 B（可以逐個揀）</td>
+                            <td>見上面每個格數嘅 A / B</td>
+                            <td>
+                                1–2 格 A（1 欄大格）；3–4 格 B（1 欄收窄，格比 2 × 2 大）；5–7 格
+                                A（2 欄 + 今日節目喺尾橫跨）；9 / 12 格 A（2 欄，放唔落照而家分頁）
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="num">Q2</td>
+                            <td>單數格時尾行淨低一格點處理</td>
+                            <td>
+                                今日節目橫跨成行（A）/ 今日節目擺頂橫跨（5、7 格嘅 B）/
+                                靠左留空（而家）
+                            </td>
+                            <td>今日節目喺尾橫跨：次序唔變，同手機打橫 / 闊屏一樣今日節目喺最後</td>
+                        </tr>
+                        <tr>
+                            <td class="num">Q3</td>
+                            <td>格拉到最高（1.5 倍）都仲有剩低高度，剩低嘅放邊</td>
+                            <td>
+                                平分做行距（而家）/ 全部置頂 / 上下置中 / 拉高格（唔限 1.5
+                                倍，圖裁得多）
+                            </td>
+                            <td>
+                                一頁放得晒時置中（上下留返一樣多，唔會好似而家 2 × 2
+                                咁上下兩行中間穿個大窿）；要分頁照而家平分。現況一欄永遠照而家平分做行距
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="num">Q4</td>
+                            <td>9 / 12 格要唔要 3 欄一頁放晒</td>
+                            <td>2 欄分頁（A）/ 3 欄一頁（B，格約 112px 闊，節目名細）</td>
+                            <td>2 欄：3 欄格太細，節目圖上面嘅字睇唔清</td>
+                        </tr>
+                        <tr>
+                            <td class="num">Q5</td>
+                            <td>呢個排法係咪連闊直版（例如 iPad 直放）都用</td>
+                            <td>用（同一個 <code>ShowGrid</code>）/ 只限手機闊度</td>
+                            <td>用：規則按量到嘅闊高計，唔使分開</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <script>
+            /* ===== player 量度（實測 / tokens.css） ===== */
+            const DEVICES = {
+                se: { name: 'iPhone SE', short: 'SE', w: 375, h: 667, navTop: 175, navH: 484 },
+                i15: { name: 'iPhone 15', short: '15', w: 393, h: 852, navTop: 196, navH: 648 },
+                promax: {
+                    name: 'iPhone 15 Pro Max',
+                    short: 'Pro Max',
+                    w: 430,
+                    h: 932,
+                    navTop: 207,
+                    navH: 717,
+                },
+            };
+            const GUTTER = 16;
+            const GAP = 12;
+            const PAD_Y = 8;
+            const DOTS = 24;
+            const TILE_RATIO = 9 / 16;
+            const MAX_GROW = 1.5;
+            /** 有 mini player（multi）時主頁底部多留嘅高度：92 + 12 − 原本 8 */
+            const MINI_RESERVE = 96;
+            const MINI_H = 84;
+            const MINI_OFFSET = 8;
+            const COUNTS = [1, 2, 3, 4, 5, 7, 9, 12];
+            const SHOWS = ['badgirl', 'gongzi', 'wanni', 'sunnyday', 'westair', 'waves', 'lalala'];
+            const SCALE_MAIN = 0.62;
+            const SCALE_DEVICES = 0.4;
+            const SCALE_OVERVIEW = 0.32;
+
+            /*
+             * 每個格數兩個方案（同 landscapeLayout 嘅 SCREEN_SHAPES 一樣係一張表）。
+             * cols：欄數；last：尾行唔夠格點處理（wide = 尾行嗰幾格平分成行 / left = 靠左留空）；
+             * todayTop：今日節目擺頂、橫跨成行
+             */
+            const PLANS = {
+                1: {
+                    a: { cols: 1, last: 'wide', note: '1 欄，16:9 闊到盡' },
+                    b: { cols: 2, last: 'left', note: '維持 2 欄（同而家一樣）' },
+                },
+                2: {
+                    a: { cols: 1, last: 'wide', note: '1 欄 × 2 行，大格' },
+                    b: { cols: 2, last: 'left', note: '2 欄並排' },
+                },
+                3: {
+                    a: { cols: 2, last: 'wide', note: '2 欄 + 今日節目橫跨' },
+                    b: { cols: 1, shrink: true, note: '1 欄 × 3，放唔落就收窄格（唔分頁）' },
+                },
+                4: {
+                    a: { cols: 2, last: 'wide', note: '2 × 2' },
+                    b: { cols: 1, shrink: true, note: '1 欄 × 4，收窄格置中（唔分頁）' },
+                },
+                5: {
+                    a: { cols: 2, last: 'wide', note: '2 欄 + 今日節目喺尾橫跨' },
+                    b: { cols: 2, todayTop: true, note: '今日節目擺頂橫跨 + 2 × 2' },
+                },
+                7: {
+                    a: { cols: 2, last: 'wide', note: '2 欄 + 今日節目喺尾橫跨' },
+                    b: { cols: 2, todayTop: true, note: '今日節目擺頂橫跨 + 2 × 3' },
+                },
+                9: {
+                    a: { cols: 2, last: 'wide', note: '2 欄 + 今日節目橫跨，放唔落分頁' },
+                    b: { cols: 3, last: 'left', note: '3 × 3，一頁放晒但格細' },
+                },
+                12: {
+                    a: { cols: 2, last: 'wide', note: '2 欄，放唔落分頁（同而家）' },
+                    b: { cols: 3, last: 'left', note: '3 × 4，一頁放晒但格細' },
+                },
+            };
+            const CURRENT = {
+                cols: 2,
+                last: 'left',
+                current: true,
+                note: '固定 2 欄，放唔落按高度分頁',
+            };
+
+            const state = { count: 7, device: 'i15', mini: false, align: 'center', view: 'one' };
+            try {
+                Object.assign(state, JSON.parse(localStorage.getItem('dsg-state') || '{}'));
+            } catch {
+                /* 冇 storage 就用預設 */
+            }
+            const save = () => {
+                try {
+                    localStorage.setItem('dsg-state', JSON.stringify(state));
+                } catch {
+                    /* 冇 storage 唔記 */
+                }
+            };
+
+            /* ===== 排版計算 ===== */
+            /** 格嘅次序：節目 1…N−1，最尾今日節目（同 HomePage useHomeTiles） */
+            const tilesFor = (n) =>
+                Array.from({ length: n }, (_, i) =>
+                    i === n - 1 ? { today: true, i } : { art: SHOWS[i % SHOWS.length], i },
+                );
+
+            /** 排成一行行：todayTop = 今日節目自己一行喺頂；last = left 時尾行用隱形格補位 */
+            const rowsFor = (tiles, plan) => {
+                let rest = plan.todayTop ? [tiles[tiles.length - 1], ...tiles.slice(0, -1)] : tiles;
+                const rows = [];
+                if (plan.todayTop && plan.cols > 1) {
+                    rows.push([rest[0]]);
+                    rest = rest.slice(1);
+                }
+                for (let i = 0; i < rest.length; i += plan.cols)
+                    rows.push(rest.slice(i, i + plan.cols));
+                const lastRow = rows[rows.length - 1];
+                if (plan.last === 'left')
+                    while (lastRow.length < plan.cols) lastRow.push({ ghost: true });
+                return rows;
+            };
+
+            const layout = (n, plan, dev, mini, align) => {
+                const navH = dev.navH - (mini ? MINI_RESERVE : 0);
+                const avail = navH - 2 * PAD_Y;
+                const colW = (dev.w - 2 * GUTTER - (plan.cols - 1) * GAP) / plan.cols;
+                const minH = colW * TILE_RATIO;
+                const rows = rowsFor(tilesFor(n), plan);
+                const paged = rows.length * minH + (rows.length - 1) * GAP > avail;
+                const room = avail - (paged ? DOTS : 0);
+                const perPage = paged
+                    ? Math.max(1, Math.floor((room + GAP) / (minH + GAP)))
+                    : rows.length;
+                const share = (room - (perPage - 1) * GAP) / perPage;
+                // 1 欄放唔落：收窄格（保持 16:9、置中）一頁放晒，唔分頁
+                if (paged && plan.shrink) {
+                    const rowH = (avail - (rows.length - 1) * GAP) / rows.length;
+                    const rowW = rowH / TILE_RATIO;
+                    return {
+                        navH,
+                        colW: rowW,
+                        minH: rowH,
+                        rowH,
+                        rowW,
+                        pages: [rows],
+                        paged: false,
+                        perPage: rows.length,
+                        spare: 0,
+                    };
+                }
+                const grow = align === 'fill' && !paged ? Infinity : MAX_GROW;
+                const rowH = Math.min(share, minH * grow);
+                const pages = [];
+                for (let i = 0; i < rows.length; i += perPage)
+                    pages.push(rows.slice(i, i + perPage));
+                const usedH = perPage * rowH + (perPage - 1) * GAP;
+                return { navH, colW, minH, rowH, pages, paged, perPage, spare: room - usedH };
+            };
+
+            /* ===== 畫 ===== */
+            const el = (tag, cls, html) => {
+                const e = document.createElement(tag);
+                if (cls) e.className = cls;
+                if (html !== undefined) e.innerHTML = html;
+                return e;
+            };
+
+            const tileEl = (t) => {
+                if (t.ghost) return el('div', 'tile ghost');
+                const d = el('div', t.today ? 'tile today' : 'tile');
+                const img = el('img');
+                img.alt = '';
+                img.src = `img/${t.today ? 'today' : t.art}.webp`;
+                d.append(img);
+                d.append(t.today ? el('span', '', '今日節目') : el('b', 'n', String(t.i + 1)));
+                return d;
+            };
+
+            const pagesEl = (L, align) => {
+                const pages = el('div', 'pages');
+                L.pages.forEach((rows) => {
+                    const page = el('div', 'page');
+                    const grid = el('div', `grid ${align}`);
+                    // 分頁最後一頁少行：同而家一樣，行位跟第一頁（補空行）
+                    const filled = rows.slice();
+                    while (L.paged && filled.length < L.perPage) filled.push([]);
+                    filled.forEach((r) => {
+                        const row = el('div', 'trow');
+                        row.style.height = `${L.rowH}px`;
+                        if (L.rowW) {
+                            row.style.width = `${L.rowW}px`;
+                            row.style.alignSelf = 'center';
+                        }
+                        r.forEach((t) => row.append(tileEl(t)));
+                        grid.append(row);
+                    });
+                    page.append(grid);
+                    pages.append(page);
+                });
+                return pages;
+            };
+
+            const dotsEl = (L, pages) => {
+                const dots = el('div', 'dots');
+                L.pages.forEach((_, i) => dots.append(el('i', i === 0 ? 'on' : '')));
+                pages.addEventListener('scroll', () => {
+                    const idx = Math.round(pages.scrollLeft / pages.clientWidth);
+                    [...dots.children].forEach((d, i) => d.classList.toggle('on', i === idx));
+                });
+                return dots;
+            };
+
+            const phoneEl = (n, plan, dev, scale) => {
+                // 現況永遠用而家嘅做法（平分行距），唔跟「剩低高度」掣
+                const align = plan.current ? 'space' : state.align;
+                const L = layout(n, plan, dev, state.mini, align);
+                const wrap = el('div', 'phone-wrap fade-in');
+                wrap.style.width = `${dev.w * scale + 12}px`;
+                wrap.style.height = `${dev.h * scale + 12}px`;
+                const phone = el('div', 'phone');
+                phone.style.cssText = `width:${dev.w}px;height:${dev.h}px;transform:translate(6px,6px) scale(${scale})`;
+                const head = el('div', 'head');
+                head.style.height = `${dev.navTop}px`;
+                head.style.backgroundImage = `url(img/head-${dev.key}.webp)`;
+                phone.append(head);
+
+                const nav = el('div', 'nav');
+                nav.style.top = `${dev.navTop}px`;
+                nav.style.height = `${L.navH}px`;
+                const pages = pagesEl(L, L.paged || align === 'fill' ? 'space' : align);
+                pages.tabIndex = 0;
+                pages.setAttribute('aria-label', `${n} 格，${L.pages.length} 頁`);
+                nav.append(pages);
+                if (L.paged) nav.append(dotsEl(L, pages));
+                phone.append(nav);
+                if (state.mini) {
+                    const mini = el('div', 'mini', '▶︎ mini player');
+                    mini.style.height = `${MINI_H}px`;
+                    mini.style.bottom = `${MINI_OFFSET}px`;
+                    phone.append(mini);
+                }
+                wrap.append(phone);
+                return { wrap, L };
+            };
+
+            const statsEl = (L) => {
+                const ul = el('ul', 'stats');
+                const grow = (L.rowH / L.minH).toFixed(2);
+                ul.append(
+                    el(
+                        'li',
+                        '',
+                        `一格（1 欄闊）：<b>${Math.round(L.colW)} × ${Math.round(L.rowH)}px</b>（16:9 嘅 ${grow} 倍高）`,
+                    ),
+                );
+                ul.append(
+                    el(
+                        'li',
+                        '',
+                        L.paged
+                            ? `<span class="bad">分 ${L.pages.length} 頁</span>，每頁 ${L.perPage} 行`
+                            : `<b>一頁放晒</b>，${L.pages[0].length} 行`,
+                    ),
+                );
+                if (!L.paged && L.spare > 1)
+                    ul.append(el('li', '', `剩低高度 ${Math.round(L.spare)}px`));
+                return ul;
+            };
+
+            const column = (label, tagCls, note, n, plan, dev, scale) => {
+                const c = el('div', 'col');
+                c.append(
+                    el(
+                        'div',
+                        'ctitle',
+                        `<span class="tag ${tagCls}">${label}</span><span>${note}</span>`,
+                    ),
+                );
+                const { wrap, L } = phoneEl(n, plan, dev, scale);
+                c.append(wrap, statsEl(L));
+                return c;
+            };
+
+            const devOf = (key) => ({ ...DEVICES[key], key });
+            const miniLabel = () => (state.mini ? ' · 有 mini player' : '');
+
+            const renderOne = (out) => {
+                const n = state.count;
+                const dev = devOf(state.device);
+                const sec = el('section', 'section');
+                sec.append(el('h2', '', `${n} 格 · ${dev.name}${miniLabel()}`));
+                sec.append(
+                    el(
+                        'p',
+                        'why',
+                        n === 1
+                            ? '只得「今日節目」一格（例如全部節目下架）。'
+                            : `${n - 1} 個節目 + 今日節目。`,
+                    ),
+                );
+                const row = el('div', 'row');
+                row.append(column('現況', '', CURRENT.note, n, CURRENT, dev, SCALE_MAIN));
+                row.append(column('方案 A', 'a', PLANS[n].a.note, n, PLANS[n].a, dev, SCALE_MAIN));
+                row.append(column('方案 B', 'b', PLANS[n].b.note, n, PLANS[n].b, dev, SCALE_MAIN));
+                sec.append(row);
+                out.append(sec);
+
+                const sec2 = el('section', 'section');
+                sec2.append(el('h2', '', `${n} 格：方案 A / B 喺三部手機${miniLabel()}`));
+                ['a', 'b'].forEach((k) => {
+                    const r = el('div', 'row');
+                    Object.keys(DEVICES).forEach((d) => {
+                        const dv = devOf(d);
+                        r.append(
+                            column(
+                                `${k.toUpperCase()} · ${dv.short}`,
+                                k,
+                                '',
+                                n,
+                                PLANS[n][k],
+                                dv,
+                                SCALE_DEVICES,
+                            ),
+                        );
+                    });
+                    sec2.append(r);
+                });
+                out.append(sec2);
+            };
+
+            const renderOverview = (out) => {
+                const dev = devOf(state.device);
+                const sec = el('section', 'section');
+                sec.append(el('h2', '', `總覽 · ${dev.name}${miniLabel()}`));
+                const wrap = el('div', 'ov-wrap');
+                const ov = el('div', 'ov');
+                ['格數', '現況', '方案 A', '方案 B'].forEach((h) => ov.append(el('div', 'h', h)));
+                COUNTS.forEach((n) => {
+                    ov.append(el('div', 'count', `${n}<small>${n - 1} 節目 + 今日</small>`));
+                    [CURRENT, PLANS[n].a, PLANS[n].b].forEach((p) => {
+                        const c = el('div', 'col');
+                        const { wrap: ph, L } = phoneEl(n, p, dev, SCALE_OVERVIEW);
+                        const s = el('ul', 'stats');
+                        s.append(el('li', '', p.note));
+                        s.append(
+                            el(
+                                'li',
+                                '',
+                                L.paged
+                                    ? `<span class="bad">分 ${L.pages.length} 頁</span>`
+                                    : '<b>一頁</b>',
+                            ),
+                        );
+                        c.append(ph, s);
+                        ov.append(c);
+                    });
+                });
+                wrap.append(ov);
+                sec.append(wrap);
+                out.append(sec);
+            };
+
+            const render = () => {
+                const out = document.getElementById('out');
+                out.replaceChildren();
+                (state.view === 'all' ? renderOverview : renderOne)(out);
+                document.getElementById('ctl-count').hidden = state.view === 'all';
+                save();
+            };
+
+            /* ===== 控制 ===== */
+            const buttons = (id, items, key) => {
+                const box = document.getElementById(id);
+                const sync = () =>
+                    [...box.querySelectorAll('button')].forEach((b) =>
+                        b.setAttribute('aria-pressed', String(String(state[key]) === b.dataset.v)),
+                    );
+                items.forEach(([v, label]) => {
+                    const b = el('button', '', label);
+                    b.type = 'button';
+                    b.dataset.v = String(v);
+                    b.addEventListener('click', () => {
+                        state[key] = v;
+                        sync();
+                        render();
+                    });
+                    box.append(b);
+                });
+                sync();
+            };
+            buttons(
+                'ctl-count',
+                COUNTS.map((n) => [n, String(n)]),
+                'count',
+            );
+            buttons(
+                'ctl-device',
+                Object.entries(DEVICES).map(([k, d]) => [k, d.short]),
+                'device',
+            );
+            buttons(
+                'ctl-mini',
+                [
+                    [false, '冇'],
+                    [true, '有'],
+                ],
+                'mini',
+            );
+            buttons(
+                'ctl-align',
+                [
+                    ['space', '平分行距'],
+                    ['top', '置頂'],
+                    ['center', '置中'],
+                    ['fill', '拉高格（唔限 1.5 倍）'],
+                ],
+                'align',
+            );
+            buttons(
+                'ctl-view',
+                [
+                    ['one', '逐個格數'],
+                    ['all', '總覽'],
+                ],
+                'view',
+            );
+            render();
+        </script>
+    </body>
+</html>

@@ -104,8 +104,9 @@ const catalogRoute =
             .catch(() => undefined); // page 已經放棄（timeout）就唔使答
     };
 
-const openWithCatalog = async (env, routeOptions) => {
-    const { ctx, p } = await newE2EPage(env.browser, env.errors);
+/** 開一頁，catalog.json 照 routeOptions 答；contextOptions（例如 viewport）交畀 newE2EPage（showGridCounts.mjs 都用） */
+export const openWithCatalog = async (env, { contextOptions, ...routeOptions }) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, contextOptions);
     const allowOrigin = new URL(env.base).origin;
     await ctx.route(E2E_CATALOG_GLOB, catalogRoute({ ...routeOptions, allowOrigin }));
     await ctx.route(CROSS_ORIGIN_GLOB, (route) => serveImage(route, allowOrigin));
