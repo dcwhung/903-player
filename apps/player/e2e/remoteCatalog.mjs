@@ -7,12 +7,16 @@
 // 7 harness 預設（冇蓋 route）：SW 嘅 catalog request 由 e2e preview 答 404，catalog-json cache 冇 key（S-765）。
 // 8 首頁 banner（Phase 4 L3）：fixture 帶 banner → 主頁橫額用 catalog 嘅圖（同 origin + 跨 origin 都試）；
 //   fallback 內建資料 → 用返 src/assets 內建圖。banner 圖由 src/assets 直接讀（尺寸同 catalog 鎖死嘅一樣）
+// 9 catalog banner 圖載入失敗（S-929）：404（直版 / 手機打橫 / 闊橫版）同跨 origin CORS 唔批 player origin →
+//   <img onError> 換返 src/assets 內建圖，照載入到
 // 所有 route 都好似 apps/api Worker 咁答 Access-Control-Allow-Origin + Vary: Origin
 import { readFileSync } from 'node:fs';
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
 import {
+    BANNER_ALT,
     CATALOG_IMAGE_HOST,
     E2E_CATALOG_GLOB,
+    PHONE,
     isShown,
     newE2EPage,
     runSection,
@@ -24,8 +28,14 @@ const ASSETS_DIR = new URL('../src/assets/', import.meta.url);
 /** catalog banner 圖嘅 sub-folder：<base>e2e-catalog/banner/<檔名> → src/assets/<檔名> */
 const BANNER_FOLDER = 'banner';
 const BANNER_FILES = { standard: 'banner.webp', long: 'banner-wide.webp' };
-/** 主頁橫額 <img> 嘅 alt（同 run.mjs BANNER_ALT 一樣） */
-const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
+/** S-929：catalog 指住但 route 搵唔到嘅 banner 檔（serveImage 答 404） */
+const MISSING_BANNER_FILES = { standard: 'missing-banner.webp', long: 'missing-banner-wide.webp' };
+/** S-929：橫額三種擺法都要退返內建圖——直版預設 <picture>、手機打橫 FittedBanner、闊橫版格 */
+const BANNER_VIEWPORTS = [
+    ['直版', PHONE],
+    ['手機打橫', { width: PHONE.height, height: PHONE.width }],
+    ['闊橫版', { width: 1300, height: 800 }],
+];
 const CATALOG_FOLDER = 'e2e-catalog/';
 const SHELF = '廣播劇';
 const WAIT_MS = 5000;
@@ -42,6 +52,8 @@ const SW_CACHE_SETTLE_MS = 1000;
 /** 跨 origin 圖 host（似 apps/api Worker）；path 同本機 e2e-catalog/ 一樣，imageFile 照用 */
 const CROSS_ORIGIN_IMAGE_BASE = `${CATALOG_IMAGE_HOST}/${CATALOG_FOLDER}`;
 const CROSS_ORIGIN_GLOB = `${CATALOG_IMAGE_HOST}/**`;
+/** S-929：CORS header 批咗呢個 origin（唔係 player），瀏覽器當 CORS 失敗 */
+const FOREIGN_ORIGIN = 'https://other-player.e2e.test';
 
 /** 只有 catalog.json 先有嘅測試劇：借蘭茜夫人劇場嘅 definition 同圖 */
 const REMOTE_ID = 'e2e-remote';
@@ -227,6 +239,87 @@ const checkCrossOriginImages = async (env, json) => {
     );
 };
 
+/** 橫額係內建圖：載入到、唔係 catalog（本機 e2e-catalog/ 或者跨 origin host）嘅 URL */
+const isBuiltInBanner = (art) =>
+    art.width > 0 &&
+    !art.src.includes(`/${CATALOG_FOLDER}`) &&
+    !art.src.startsWith(CATALOG_IMAGE_HOST);
+
+/** 等主頁橫額載入到一張圖（catalog 圖失敗會換圖，要等換完先量）；timeout 就照量，交畀斷言 */
+const waitForBannerLoaded = (p) =>
+    p
+        .waitForFunction(
+            (alt) => {
+                const img = document.querySelector(`h1 img[alt="${alt}"]`);
+                return img !== null && img.complete && img.naturalWidth > 0;
+            },
+            BANNER_ALT,
+            { timeout: WAIT_MS },
+        )
+        .catch(() => undefined);
+
+/** 記低 page 有冇 request 過 url 含 part 嘅檔（證明真係試過 catalog 圖先換） */
+const requested = (ctx, part) => {
+    const seen = { hit: false };
+    ctx.on('request', (req) => {
+        if (req.url().includes(part)) seen.hit = true;
+    });
+    return seen;
+};
+
+/** catalog banner 指去唔存在嘅檔（route 答 404），其他照舊 */
+const missingBannerDocument = (base, json) => {
+    const doc = JSON.parse(json);
+    const folder = `${new URL(CATALOG_FOLDER, base).pathname}${BANNER_FOLDER}/`;
+    const banner = {
+        standard: `${folder}${MISSING_BANNER_FILES.standard}`,
+        long: `${folder}${MISSING_BANNER_FILES.long}`,
+    };
+    return JSON.stringify({ ...doc, banner });
+};
+
+/** S-929：catalog banner 圖 404 → 每種擺法都換返內建圖（仍然用緊 remote catalog） */
+const checkMissingBanner = async (env, json) => {
+    const catalogBody = missingBannerDocument(env.base, json);
+    for (const [device, viewport] of BANNER_VIEWPORTS) {
+        const { ctx, p } = await openWithCatalog(env, {
+            catalogBody,
+            contextOptions: { viewport },
+        });
+        const tried = requested(ctx, MISSING_BANNER_FILES.standard.replace('.webp', ''));
+        await p.goto(env.base);
+        await waitForBannerLoaded(p);
+        const art = await bannerArt(p);
+        env.log(
+            tried.hit && isBuiltInBanner(art),
+            `Remote catalog banner 404（${device}）：主頁橫額換返內建圖（${art.src}）`,
+        );
+        await ctx.close();
+    }
+};
+
+/**
+ * S-929：跨 origin banner 嘅 CORS 唔批 player origin（<img crossorigin> 載入失敗）→ 換返內建圖。
+ * 唔可以答「冇 CORS header」：Playwright route.fulfill 冇 header 會自動當批准，圖照載入到
+ */
+const checkBannerCorsRejected = async (env, json) => {
+    const { ctx, p } = await openWithCatalog(env, {
+        catalogBody: crossOriginDocument(env.base, json),
+    });
+    // 後註冊先行：蓋過 openWithCatalog 嘅跨 origin route，淨係 banner 嘅 CORS 批去第二個 origin
+    await ctx.route(`${CROSS_ORIGIN_IMAGE_BASE}${BANNER_FOLDER}/**`, (route) =>
+        serveImage(route, FOREIGN_ORIGIN),
+    );
+    const tried = requested(ctx, `${CROSS_ORIGIN_IMAGE_BASE}${BANNER_FOLDER}/`);
+    await p.goto(env.base);
+    await waitForBannerLoaded(p);
+    const art = await bannerArt(p);
+    env.log(
+        tried.hit && isBuiltInBanner(art),
+        `Remote catalog 跨 origin banner CORS 唔批：主頁橫額換返內建圖（${art.src}）`,
+    );
+};
+
 const checkFallback = async (env, label, routeOptions) => {
     const { p } = await openWithCatalog(env, routeOptions);
     const started = Date.now();
@@ -236,7 +329,7 @@ const checkFallback = async (env, label, routeOptions) => {
     env.log(golden && !remote, `Remote catalog ${label}：用返內建資料（冇「${REMOTE_NAME}」）`);
     const banner = await bannerArt(p);
     env.log(
-        banner.width > 0 && !banner.src.includes(`/${CATALOG_FOLDER}`),
+        isBuiltInBanner(banner),
         `Remote catalog ${label}：主頁橫額用返內建圖（${banner.src}）`,
     );
     return splashMs;
@@ -332,4 +425,6 @@ export const runRemoteCatalogChecks = async (env) => {
     await section('Remote catalog：預設 404 唔入 SW cache', () => checkDefaultNotCached(env));
     await section('Remote catalog：v1 進度升級', () => checkMigration(env, json));
     await section('Remote catalog：跨 origin 圖（CORS）', () => checkCrossOriginImages(env, json));
+    await section('Remote catalog：banner 圖 404', () => checkMissingBanner(env, json));
+    await section('Remote catalog：banner CORS 唔批', () => checkBannerCorsRejected(env, json));
 };

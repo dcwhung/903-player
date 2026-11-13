@@ -1,6 +1,7 @@
 // @vitest-environment node
 // 要用 node:fs 讀 CSS 原文：*.node.test.ts 行 tsconfig.node.json（有 Node 型別），唔會漏入 app 程式
 import { atRuleDeclarations, cssDeclarations, readCss } from '../../../../../tests/cssRule';
+import { PORTRAIT_MAX_COLUMNS } from './showGridPages';
 
 const css = readCss(new URL('./ShowGrid.module.css', import.meta.url));
 const tokens = readCss(new URL('../../../../styles/tokens.css', import.meta.url));
@@ -79,15 +80,22 @@ describe('ShowGrid portrait span (dynamic-show-grid)', () => {
         },
     );
 
-    // 唔支援 cqi 嘅舊瀏覽器：退返用比例（欄距差少少），欄數照跟 inline --show-grid-columns
-    it('should fall back to a column-count ratio where cqi is not supported', () => {
-        expect(
-            atRuleDeclarations(
-                css,
-                '@supports not (width: 1cqi)',
-                '.grid:not([data-fill])[data-span-last] > :last-child',
-            )['aspect-ratio'],
-        ).toBe('calc(var(--show-grid-columns) * var(--tile-aspect-w)) / var(--tile-aspect-h)');
+    /*
+     * 唔支援 cqi 嘅舊瀏覽器：退返用兩欄倍比例（欄距差少少；橫跨只會喺兩欄出現）。
+     * S-939：寫字面值，唔用 calc() / var()（舊 iOS 嘅 aspect-ratio 唔一定收，無效就變 auto 縮到 0 高）；
+     * 數值要等於最多欄數（PORTRAIT_MAX_COLUMNS）× tile token 比例，改 token / 欄數呢度會 fail（S-956）
+     */
+    it('should fall back to a literal two-column ratio where cqi is not supported', () => {
+        const ratio = atRuleDeclarations(
+            css,
+            '@supports not (width: 1cqi)',
+            '.grid:not([data-fill])[data-span-last] > :last-child',
+        )['aspect-ratio'];
+        expect(ratio).toMatch(/^\d+ \/ \d+$/);
+        const [w, h] = (ratio ?? '').split(' / ').map(Number);
+        const root = cssDeclarations(tokens, ':root');
+        const tileRatio = Number(root['--tile-aspect-w']) / Number(root['--tile-aspect-h']);
+        expect(Number(w) / Number(h)).toBeCloseTo(PORTRAIT_MAX_COLUMNS * tileRatio);
     });
 
     it('should never span a tile in the wide-landscape 4-column grid', () => {
