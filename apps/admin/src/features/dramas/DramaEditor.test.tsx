@@ -35,6 +35,19 @@ const api = (extra = {}) =>
     });
 
 describe('DramaEditor', () => {
+    it('should open the 配色 tab and explain that a disc is needed for extraction', async () => {
+        const fetchMock = api();
+        renderAt('/dramas/lancy/theme', '/dramas/:id/theme', <DramaEditorPage tab="theme" />);
+        expect(
+            await screen.findByRole('heading', { name: '蘭茜夫人劇場 · 配色' }),
+        ).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: '配色' })).toHaveAttribute('aria-current', 'page');
+        // 冇碟面：唔抽色，只出說明
+        expect(screen.getByText('未有碟面圖片，上載碟面後即可由碟面抽色。')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /現用：未設定（中性灰）/ })).toBeInTheDocument();
+        expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
+    });
+
     it('should show the basic tab with the R2 scan box', async () => {
         api();
         renderAt('/dramas/lancy', '/dramas/:id', <DramaEditorPage tab="basic" />);
@@ -48,6 +61,24 @@ describe('DramaEditor', () => {
         expect(screen.getByRole('textbox', { name: /^ID/ })).toHaveAttribute('readonly');
         // 檔名模板下面：用模板 + 第一集砌嘅例子
         expect(screen.getByText('例：01 - 戀愛二分一.m4a')).toHaveClass('muted');
+    });
+
+    it('should look for R2 sources again after 重新掃描 for slots still without an image', async () => {
+        const sourcesPath = 'GET /api/dramas/lancy/sources';
+        const empty = { folder: '蘭茜夫人劇場', cdCover: null, coverPhoto: null, arcs: [] };
+        const fetchMock = api({
+            [sourcesPath]: () => ({ body: empty }),
+            'POST /api/dramas/lancy/scan': () => ({ body: { draft: null } }),
+        });
+        const sourceCalls = () =>
+            fetchMock.mock.calls.filter(
+                ([path, init]) =>
+                    path === '/api/dramas/lancy/sources' && (init?.method ?? 'GET') === 'GET',
+            ).length;
+        renderAt('/dramas/lancy', '/dramas/:id', <DramaEditorPage tab="basic" />);
+        await waitFor(() => expect(sourceCalls()).toBe(1));
+        await userEvent.click(await screen.findByRole('button', { name: /重新掃描/ }));
+        await waitFor(() => expect(sourceCalls()).toBe(2));
     });
 
     it('should expand the arc from the hash with an inline name input and titles', async () => {
@@ -134,12 +165,12 @@ describe('DramaEditor', () => {
         expect(screen.queryByRole('textbox', { name: /^名稱/ })).not.toBeInTheDocument();
     });
 
-    it('should show Banner before 碟面 and 未排期 beside the 狀態 label', async () => {
+    it('should show 橫圖 before 碟面 and 未排期 beside the 狀態 label', async () => {
         api();
         renderAt('/dramas/lancy/arcs#arc-01', '/dramas/:id/arcs', <DramaEditorPage tab="arcs" />);
-        const slots = await screen.findAllByRole('button', { name: /^上載(Banner|碟面)$/ });
+        const slots = await screen.findAllByRole('button', { name: /^上載(橫圖|碟面)$/ });
         expect(slots.map((slot) => slot.getAttribute('aria-label'))).toEqual([
-            '上載Banner',
+            '上載橫圖',
             '上載碟面',
         ]);
         const status = screen.getByRole('switch', { name: '狀態' });

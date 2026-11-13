@@ -1,4 +1,4 @@
-/* API 回應形狀（apps/api/src/{admin,content,catalog}/**，api 0.5.0） */
+/* API 回應形狀（apps/api/src/{admin,content,catalog}/**，api 0.8.0） */
 import type { ChangeSummary, ExpandedSchedule, ScheduleRule } from '@903-player/catalog';
 
 export type EntryKind = 'shows' | 'dramas';
@@ -84,10 +84,54 @@ export interface ScanResponse {
 
 export type Validation = { ok: true; episodeCount: number } | { ok: false; error: string };
 
+/** 唔阻 publish 嘅警告（api 0.8.0）：配色對比度唔夠 / 未設定配色（target = '<kind>/<id>'） */
+export type PublishWarning =
+    | {
+          kind: 'contrast';
+          target: string;
+          foreground: string;
+          background: string;
+          ratio: number | null;
+          minimum: number;
+      }
+    | { kind: 'neutralTheme'; target: string };
+
 export interface ChangesResponse {
     base: number | null;
     changes: ChangeSummary;
     validation: Validation;
+    /** api 0.8.0：舊 API 冇 = 冇警告 */
+    warnings?: PublishWarning[];
+    /** 首頁 banner（草稿）同最新 publish 唔同 */
+    bannerChanged?: boolean;
+}
+
+/** 首頁 banner：兩張圖檔名（<hash16>.webp）；null = 內建預設 */
+export interface BannerImages {
+    standard: string;
+    long: string;
+}
+
+export interface BannerResponse {
+    banner: BannerImages | null;
+    updatedAt: string | null;
+}
+
+/** GET /api/dramas/:id/sources：R2 資料夾即場掃描到嘅封面原圖（完整 R2 key；冇 = null） */
+export interface SourceCovers {
+    cdCover: string | null;
+    coverPhoto: string | null;
+}
+
+export interface DramaSources extends SourceCovers {
+    folder: string;
+    /** id = null：短篇資料夾對唔到 definition */
+    arcs: (SourceCovers & { name: string; id: string | null })[];
+}
+
+/** GET /api/publishes 每行嘅 changes（api 0.8.1 加 bannerChanged；舊 api / 舊記錄冇 = 冇換） */
+export interface PublishChangeSummary extends ChangeSummary {
+    bannerChanged?: boolean;
 }
 
 export interface PublishSummary {
@@ -102,7 +146,7 @@ export interface PublishSummary {
     status: 'ok' | 'failed' | string;
     error: string | null;
     current: boolean;
-    changes?: ChangeSummary;
+    changes?: PublishChangeSummary;
 }
 
 export interface ScheduleState {

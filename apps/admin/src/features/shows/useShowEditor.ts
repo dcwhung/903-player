@@ -52,6 +52,7 @@ export const useShowEditor = (id: string | undefined) => {
         if (isNew && !origin.fromTodos) backToList(saved.id);
     };
     return {
+        id,
         isNew,
         editor,
         newId,
@@ -63,3 +64,5 @@ export const useShowEditor = (id: string | undefined) => {
         rename: useRenameEntry(editor, origin.afterSave),
     };
 };
+
+export type ShowEditorState = ReturnType<typeof useShowEditor>;

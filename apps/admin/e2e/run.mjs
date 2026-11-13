@@ -148,8 +148,9 @@ const newPage = async (browser, state, viewport = WIDE) => {
     return page;
 };
 
-/** 每個主要畫面淺色 + 深色各一張（深色 = prefers-color-scheme: dark） */
-const shoot = async (page, name, options = {}) => {
+/** 每個主要畫面淺色 + 深色各一張（深色 = prefers-color-scheme: dark）；彈出動畫直接跳到尾（唔影到半透明） */
+const shoot = async (page, name, extra = {}) => {
+    const options = { animations: 'disabled', ...extra };
     await page.emulateMedia({ colorScheme: 'light' });
     await page.screenshot({ path: `${OUT}/${name}.png`, ...options });
     await page.emulateMedia({ colorScheme: 'dark' });
@@ -325,7 +326,11 @@ const todoFlowCheck = (browser) =>
         await page.getByRole('button', { name: '發佈', exact: true }).click();
         await page.getByRole('heading', { name: '上下架記錄' }).waitFor();
         await page.getByText('使用中').waitFor();
-        await page.getByText('#3', { exact: true }).waitFor();
+        await page.getByText('#4', { exact: true }).waitFor();
+        // #3 淨換首頁 Banner：顯示「更換 · 首頁 Banner」，唔係「沒有內容變更」
+        await page.locator('.hist-row .changes .name').filter({ hasText: '首頁 Banner' }).waitFor();
+        if ((await page.getByText('沒有內容變更').count()) > 0)
+            throw new Error('banner-only publish should not say 沒有內容變更');
         await shoot(page, 'history');
         await page.getByRole('button', { name: '還原至 #2' }).click();
         await page.getByText('只會還原上架狀態').waitFor();
@@ -837,7 +842,7 @@ const presetChipCheck = (browser) =>
     });
 
 /*
- * 真圖（e2e/fixtures，player 嘅 cover）：「口水多過浪花」同「蘭茜夫人劇場」有 Banner / 碟面，
+ * 真圖（e2e/fixtures，player 嘅 cover）：「口水多過浪花」同「蘭茜夫人劇場」有橫圖 / 碟面，
  * 截編輯頁圖片區、標題碟面、兩個列表、排程短篇 chip 嘅淺色同深色，睇框線同真圖夾唔夾
  */
 const IMAGE_URL = /\/catalog\/v1\/img\//;
@@ -891,25 +896,23 @@ const realImagesCheck = (browser) =>
             await assertFrames(title.locator('.thumb'), 'none', `${name} title disc`);
             await shoot(page, `title-disc-real-${name}`, { clip: await boxOf(title) });
         }
-        // 上載預覽 dialog：用真圖揀檔，原圖 / 裁切後都係虛線框（碟面裁切後淨係圓形虛線框）
+        // 裁切 dialog：用真圖揀檔，原圖虛線框 + 三個候選 + 播放器預覽（碟面 = 圓碟）
         await page.goto(`${BASE}/dramas/lancy`);
         for (const [slot, label] of [
             ['disc', '碟面'],
-            ['tile', 'Banner'],
+            ['tile', '橫圖'],
         ]) {
             const chooser = page.waitForEvent('filechooser');
             await page.getByRole('button', { name: `更換${label}` }).click();
             await (
                 await chooser
             ).setFiles(fileURLToPath(new URL(`./fixtures/lancy-${slot}.webp`, import.meta.url)));
-            const dialog = page.getByRole('dialog', { name: `上載${label}` });
-            await dialog.getByRole('figure', { name: '裁切後' }).getByText(/WebP/).waitFor();
-            await assertFrames(dialog.locator('.frame').first(), 'dashed', `${slot} source frame`);
-            await assertFrames(
-                dialog.locator(slot === 'disc' ? '.out.disc' : '.frame').last(),
-                'dashed',
-                `${slot} result frame`,
-            );
+            const dialog = page.getByRole('dialog', { name: new RegExp(`^更換${label}（`) });
+            await dialog.getByRole('button', { name: '置中裁切' }).waitFor();
+            await assertFrames(dialog.locator('.src-frame'), 'dashed', `${slot} source frame`);
+            await dialog
+                .locator(slot === 'disc' ? '.pv .pdisc canvas' : '.pv .ptile canvas')
+                .waitFor();
             await shoot(page, `upload-preview-real-${slot}`, { clip: await boxOf(dialog) });
             await dialog.getByRole('button', { name: '取消' }).click();
             await dialog.waitFor({ state: 'detached' });
@@ -1165,15 +1168,11 @@ const imageCheck = (browser) =>
             await (
                 await chooser
             ).setFiles({ name: 'photo.png', mimeType: 'image/png', buffer: PNG_1PX });
-            const dialog = page.getByRole('dialog', { name: '上載碟面' });
-            // 原圖 | 裁切後兩格並排，說明喺各自圖下面
-            const source = dialog.getByRole('figure', { name: '原圖' });
-            const result = dialog.getByRole('figure', { name: '裁切後' });
-            await source.getByText('1×1 · PNG').waitFor();
-            await result.getByText(/^600×600 · WebP · 約 \d+ KB$/).waitFor();
-            const [left, right] = [await boxOf(source), await boxOf(result)];
-            if (Math.abs(left.y - right.y) > 2 || right.x <= left.x + left.width - 1)
-                throw new Error('原圖 / 裁切後 are not side by side');
+            const dialog = page.getByRole('dialog', { name: '上載碟面（600 × 600）' });
+            // 原圖資料 + 原圖細過輸出：黃色放大警告（唔阻上載）
+            await dialog.getByText('原圖 1 × 1 · PNG').waitFor();
+            await dialog.getByText(/將放大 600 倍/).waitFor();
+            await dialog.getByRole('group', { name: '候選' }).waitFor();
             await shoot(page, 'image-preview');
             await dialog.getByRole('button', { name: '上載' }).click();
             await dialog.waitFor({ state: 'detached' });
@@ -1685,6 +1684,105 @@ const themeCheck = (browser) =>
         },
     );
 
+/* ---------- Phase 4（mockup _mockups_/admin-phase4） ---------- */
+
+const r2AutoCropCheck = (browser) =>
+    check(
+        'R2 auto crop: empty drama slots fill from cd cover / cover photo in one save',
+        async () => {
+            const state = loggedIn({ r2Covers: true });
+            const page = await newPage(browser, state);
+            await page.goto(`${BASE}/dramas/lancy`);
+            const media = page.locator('.media').first();
+            await media.getByText('由 R2 cd cover.webp 自動裁切').waitFor();
+            await media.getByText('由 R2 cover photo.webp 自動裁切').waitFor();
+            await media.locator('.img-slot:not(.empty)').nth(1).waitFor();
+            const saves = state.puts.filter((put) => put.id === 'lancy');
+            if (saves.length !== 1 || Object.keys(saves[0].body.images).length !== 2)
+                throw new Error(`expected one PUT with two images, got ${JSON.stringify(saves)}`);
+            if (state.assets.length !== 2)
+                throw new Error(`uploaded ${state.assets.length} assets`);
+            await shoot(page, 'r2-auto-crop', { clip: await boxOf(media) });
+            await page.close();
+        },
+    );
+
+const colourThemeCheck = (browser) =>
+    check('配色: current + three extracted candidates, rotate, apply saves the theme', async () => {
+        const state = loggedIn({ realImages: true });
+        const page = await newPage(browser, state);
+        await page.goto(`${BASE}/dramas/lancy/theme`);
+        const group = page.getByRole('group', { name: '配色候選' });
+        await group.getByRole('button').nth(3).waitFor();
+        await page.getByText('現用：未設定（中性灰）').waitFor();
+        await group.getByText('建議').waitFor();
+        await shoot(page, 'theme-editor');
+        await page.getByRole('button', { name: '更換另外三套' }).click();
+        await page.getByText('第 2 / 3 組').waitFor();
+        await group.getByRole('button').nth(1).click();
+        await page.getByRole('button', { name: '套用' }).click();
+        await page.getByText(/已套用「/).waitFor();
+        const theme = state.puts.at(-1)?.body.definition.theme;
+        if (!theme?.bg || theme.bg === '#141414') throw new Error(`theme not saved: ${theme}`);
+        await shoot(page, 'theme-editor-applied');
+        await page.close();
+    });
+
+const bannerCheck = (browser) =>
+    check(
+        '首頁 Banner: default, two-step crop, upload both, then restore with confirm',
+        async () => {
+            const state = loggedIn();
+            const page = await newPage(browser, state);
+            await page.goto(`${BASE}/banner`);
+            await page.getByText('內建預設').waitFor();
+            await shoot(page, 'banner-default');
+            const chooser = page.waitForEvent('filechooser');
+            await page.getByRole('button', { name: '更換 Banner', exact: true }).click();
+            await (
+                await chooser
+            ).setFiles(fileURLToPath(new URL('./fixtures/lancy-tile.webp', import.meta.url)));
+            const first = page.getByRole('dialog', { name: /窄版/ });
+            await first.getByText('1 / 2').waitFor();
+            await first.locator('.pv .pbanner canvas').waitFor();
+            await shoot(page, 'banner-crop-standard');
+            await first.getByRole('button', { name: '下一張：闊版' }).click();
+            const second = page.getByRole('dialog', { name: /闊版/ });
+            await second.getByText('2 / 2').waitFor();
+            await second.getByRole('button', { name: '完整 · 模糊背景' }).click();
+            await shoot(page, 'banner-crop-long');
+            await second.getByRole('button', { name: '上載兩張' }).click();
+            await second.waitFor({ state: 'detached' });
+            if (state.assets.length !== 2 || !state.banner?.standard || !state.banner?.long)
+                throw new Error(`banner not saved: ${JSON.stringify(state.banner)}`);
+            await page.getByText('自訂 · 未發佈').waitFor();
+            await shoot(page, 'banner-custom');
+            await page.getByRole('button', { name: '還原預設' }).click();
+            const confirm = page.getByRole('dialog', { name: '還原預設 Banner？' });
+            await shoot(page, 'banner-restore-confirm');
+            await confirm.getByRole('button', { name: '還原預設' }).click();
+            await page.getByText('內建預設').waitFor();
+            if (state.banner !== null) throw new Error('banner not restored');
+            await page.close();
+        },
+    );
+
+const publishWarningsCheck = (browser) =>
+    check('publish: 配色 warnings fold into one line, expand with links', async () => {
+        const page = await newPage(browser, loggedIn({ warnings: true }));
+        await page.goto(`${BASE}/publish`);
+        await page.getByText('3 項配色警告（不影響發佈）').waitFor();
+        await shoot(page, 'publish-warnings');
+        await page.getByRole('button', { name: '展開' }).click();
+        const list = page.getByRole('list', { name: '配色警告' });
+        await list.getByText('蘭茜夫人劇場：muted 與 surface 對比度 3.9:1（需 ≥ 4.5:1）').waitFor();
+        await list.getByRole('link', { name: '前往選擇' }).waitFor();
+        if (await page.getByRole('button', { name: '發佈' }).isDisabled())
+            throw new Error('warnings must not block 發佈');
+        await shoot(page, 'publish-warnings-open');
+        await page.close();
+    });
+
 const portraitCheck = (browser) =>
     check('portrait phone only shows the rotate notice', async () => {
         const page = await newPage(browser, loggedIn(), PORTRAIT);
@@ -1743,6 +1841,10 @@ try {
         scheduleTodayOverlapCheck,
         presetChipCheck,
         realImagesCheck,
+        r2AutoCropCheck,
+        colourThemeCheck,
+        bannerCheck,
+        publishWarningsCheck,
         missingFolderCheck,
         actionIconsCheck,
         showEditorCheck,

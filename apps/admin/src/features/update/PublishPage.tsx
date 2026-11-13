@@ -2,14 +2,18 @@
  * 更新 · 確認發佈：Design Origin: mockup: _mockups_/admin/index.html#u3（結構）+
  * mockup: _mockups_/admin-style/index.html#a（漸變統計卡）。
  * 統計卡 + 數量 pill + 驗證 ✓ pill（hover 睇數字）+ 時間線 + 大「發佈」掣；409 → 擋住清單（#s9）
+ * Phase 4（mockup: _mockups_/admin-phase4/index.html#f）：驗證錯誤（PublishError，中文 + 前往 Banner 頁）、
+ * 配色警告（PublishWarnings）、首頁 Banner 改咗都算有變更
  */
 import { CirclePlus, EyeOff, ListPlus, PencilLine } from 'lucide-react';
 import { useEffect } from 'react';
-import type { ChangesResponse, Validation } from '../../api/types';
+import type { ChangesResponse, LoadedEntry, Validation } from '../../api/types';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
 import { Pill } from '../../ui/Pill';
 import { PublishActions } from './PublishActions';
+import { PublishError } from './PublishError';
+import { PublishWarnings } from './PublishWarnings';
 import { Stepper } from './Stepper';
 import { Timeline } from './Timeline';
 import { StatCards, type Stat } from '../../ui/StatCards';
@@ -64,7 +68,7 @@ const statsOf = (data: ChangesResponse): Stat[] => {
     ];
 };
 
-function PublishHead({ data }: { data: ChangesResponse }) {
+function PublishHead({ data, entries }: { data: ChangesResponse; entries: LoadedEntry[] }) {
     return (
         <>
             {data.changes.items.length > 0 && (
@@ -77,13 +81,24 @@ function PublishHead({ data }: { data: ChangesResponse }) {
                             {pill.label}
                         </Pill>
                     ))}
+                    {data.bannerChanged && <Pill tone="ok">{t('publish.bannerChanged')}</Pill>}
                 </div>
                 <ValidationPill validation={data.validation} />
             </div>
-            {!data.validation.ok && <p className="note bad">{data.validation.error}</p>}
+            {!data.validation.ok && <PublishError error={data.validation.error} />}
+            <PublishWarnings
+                warnings={data.warnings ?? []}
+                entries={entries}
+                forceOpen={!data.validation.ok}
+            />
         </>
     );
 }
+
+const emptyText = (loading: boolean, bannerChanged: boolean) => {
+    if (loading) return t('app.loading');
+    return t(bannerChanged ? 'publish.bannerOnly' : 'publish.nothing');
+};
 
 export function PublishPage() {
     const { changes, entries } = useAdminData();
@@ -91,20 +106,22 @@ export function PublishPage() {
     const { reload } = changes;
     useEffect(() => void reload(), [reload]);
     const data = changes.data;
-    const canPublish = data?.validation.ok === true && data.changes.items.length > 0;
+    // 首頁 Banner（草稿）改咗都算有嘢發佈
+    const hasChanges = (data?.changes.items.length ?? 0) > 0 || data?.bannerChanged === true;
+    const canPublish = data?.validation.ok === true && hasChanges;
     return (
         <>
             <div className="title-row">
                 <h1>{t('update.title')}</h1>
             </div>
             <Stepper current={3} />
-            {data && <PublishHead data={data} />}
+            {data && <PublishHead data={data} entries={entries.data ?? []} />}
             <div className="card">
                 {data && data.changes.timeline.length > 0 ? (
                     <Timeline groups={data.changes.timeline} entries={entries.data ?? []} />
                 ) : (
                     <p className="muted">
-                        {changes.loading ? t('app.loading') : t('publish.nothing')}
+                        {emptyText(changes.loading, data?.bannerChanged === true)}
                     </p>
                 )}
             </div>

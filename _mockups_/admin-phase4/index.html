@@ -1,0 +1,2412 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Admin Phase 4 預覽</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            /*
+             * Phase 4 admin preview（plan：.proj-docs/plans/2026-11-12_plan_phase4-5.md「L2」）
+             * 封面裁切編輯器 / Theme 編輯器 / Banner 頁 / Publish 警告。
+             * Token 抄自 apps/admin/src/styles/tokens.css（admin-style v3）；元件樣式跟 theme.css（.card / .btn / .img-slot / .crop）。
+             * 動畫全部包喺 prefers-reduced-motion: no-preference（.claude/CLAUDE.md「Motion」）。
+             */
+            :root {
+                --sky: #53a9e3;
+                --primary: #1e7bc0;
+                --primary-hover: #155f96;
+                --on-primary: #ffffff;
+                --nav-bg: #1e7bc0;
+                --on-nav: #ffffff;
+                --bg: #eef3f8;
+                --panel: #f7f9fc;
+                --surface: #ffffff;
+                --surface-2: #f1f5f9;
+                --ink: #16212e;
+                --muted: #5e6b7a;
+                --line: #dbe3ec;
+                --media-border: #7d8fa3;
+                --accent: #1e7bc0;
+                --accent-soft: #e6f3fc;
+                --accent-ink: #155f96;
+                --ok: #23935c;
+                --ok-ink: #1a7349;
+                --ok-bg: #e3f5ec;
+                --warn: #d97706;
+                --warn-bg: #fff3df;
+                --warn-ink: #9a5800;
+                --danger: #d9363e;
+                --danger-ink: #b3262d;
+                --danger-bg: #fdebec;
+                --on-danger: #ffffff;
+                --brand-admin: #c2410c;
+                --crop-frame: #ffffff;
+                --disc-blank: #0a0a0a;
+                --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06);
+                --shadow-btn: 0 2px 6px rgb(30 123 192 / 0.3);
+                --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.18);
+                --card-border: transparent;
+                --r-panel: 24px;
+                --r-card: 20px;
+                --r-btn: 10px;
+                --font:
+                    'Poppins', 'Noto Sans TC', 'PingFang HK', -apple-system, 'Segoe UI', sans-serif;
+                --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+                --motion-fast: 150ms;
+                --motion-base: 200ms;
+                --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+                --motion-spin: 800ms;
+                color-scheme: light dark;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #0f1620;
+                    --panel: #141d29;
+                    --surface: #1b2635;
+                    --surface-2: #223043;
+                    --ink: #e8eef5;
+                    --muted: #9aabbd;
+                    --line: #2c3b4f;
+                    --media-border: #6b7f98;
+                    --accent: #7cc2f0;
+                    --accent-soft: #1c3349;
+                    --accent-ink: #9fd2f6;
+                    --ok: #6fc28f;
+                    --ok-ink: #8fd6a9;
+                    --ok-bg: #133524;
+                    --warn: #f2a93b;
+                    --warn-bg: #3a2a10;
+                    --warn-ink: #f2c27a;
+                    --danger: #f28b82;
+                    --danger-ink: #f6a9a2;
+                    --danger-bg: #3b1619;
+                    --on-danger: #2b0d0b;
+                    --shadow: none;
+                    --shadow-btn: none;
+                    --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
+                    --card-border: #2c3b4f;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #0f1620;
+                --panel: #141d29;
+                --surface: #1b2635;
+                --surface-2: #223043;
+                --ink: #e8eef5;
+                --muted: #9aabbd;
+                --line: #2c3b4f;
+                --media-border: #6b7f98;
+                --accent: #7cc2f0;
+                --accent-soft: #1c3349;
+                --accent-ink: #9fd2f6;
+                --ok: #6fc28f;
+                --ok-ink: #8fd6a9;
+                --ok-bg: #133524;
+                --warn: #f2a93b;
+                --warn-bg: #3a2a10;
+                --warn-ink: #f2c27a;
+                --danger: #f28b82;
+                --danger-ink: #f6a9a2;
+                --danger-bg: #3b1619;
+                --on-danger: #2b0d0b;
+                --shadow: none;
+                --shadow-btn: none;
+                --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
+                --card-border: #2c3b4f;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+            [hidden] {
+                display: none !important;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--ink);
+                font: 15px/1.55 var(--font);
+            }
+            h1,
+            h2,
+            h3,
+            p {
+                margin: 0;
+            }
+            .page {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 24px 16px 64px;
+                display: grid;
+                gap: 40px;
+            }
+            .intro {
+                display: grid;
+                gap: 8px;
+            }
+            .intro h1 {
+                font-size: 22px;
+                font-weight: 600;
+            }
+            .intro p,
+            .state-label {
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .decisions {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+                background: var(--surface);
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            .decisions th,
+            .decisions td {
+                padding: 6px 10px;
+                border-bottom: 1px solid var(--line);
+                text-align: left;
+                vertical-align: top;
+            }
+            .decisions th {
+                color: var(--muted);
+                font-weight: 500;
+            }
+            .decisions td:first-child {
+                white-space: nowrap;
+                color: var(--muted);
+            }
+            .jump {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px 14px;
+                font-size: 13px;
+            }
+            .jump a {
+                color: var(--accent);
+            }
+            section {
+                display: grid;
+                gap: 14px;
+            }
+            section > h2 {
+                font-size: 18px;
+                font-weight: 600;
+            }
+            .frame {
+                padding: 24px 28px;
+                border-radius: var(--r-panel);
+                background: var(--panel);
+                box-shadow: 0 8px 30px rgb(0 0 0 / 0.08);
+                display: grid;
+                gap: 18px;
+                min-width: 0;
+            }
+            .q {
+                padding: 12px 16px;
+                border-left: 4px solid var(--warn);
+                border-radius: 12px;
+                background: var(--warn-bg);
+                color: var(--ink);
+                font-size: 14px;
+            }
+            .q strong {
+                color: var(--warn-ink);
+            }
+            .q ul {
+                margin: 6px 0 0;
+                padding-left: 20px;
+            }
+            .row {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 10px;
+            }
+            .grid2 {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
+            svg.i {
+                width: 18px;
+                height: 18px;
+                flex: none;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 2;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            /* ---------- card / btn / pill（跟 apps/admin theme.css） ---------- */
+            .card {
+                display: grid;
+                gap: 14px;
+                padding: 18px 20px;
+                border: 1px solid var(--card-border);
+                border-radius: var(--r-card);
+                background: var(--surface);
+                box-shadow: var(--shadow);
+                min-width: 0;
+            }
+            .card h3 {
+                font-size: 16px;
+                font-weight: 600;
+            }
+            button,
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 8px 16px;
+                border: 0;
+                border-radius: var(--r-btn);
+                background: var(--surface);
+                color: var(--ink);
+                box-shadow: inset 0 0 0 1px var(--line);
+                font: 500 14px var(--font);
+                cursor: pointer;
+            }
+            button:hover:not(:disabled) {
+                background: var(--surface-2);
+            }
+            button.primary {
+                background: var(--primary);
+                color: var(--on-primary);
+                box-shadow: var(--shadow-btn);
+            }
+            button.primary:hover:not(:disabled) {
+                background: var(--primary-hover);
+            }
+            button.ghost-danger {
+                color: var(--danger-ink);
+            }
+            button.link {
+                padding: 0;
+                background: none;
+                box-shadow: none;
+                color: var(--accent);
+                text-decoration: underline;
+                font-size: 13px;
+            }
+            button.link:hover:not(:disabled) {
+                background: none;
+            }
+            button:disabled {
+                opacity: 0.45;
+                cursor: default;
+            }
+            button:focus-visible,
+            input:focus-visible,
+            select:focus-visible {
+                outline: 2px solid var(--primary);
+                outline-offset: 2px;
+            }
+            input[type='text'],
+            select {
+                padding: 7px 10px;
+                border: 1.5px solid var(--line);
+                border-radius: 10px;
+                background: var(--surface);
+                color: var(--ink);
+                font: 14px var(--font);
+            }
+            .pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 1px 9px;
+                border-radius: 999px;
+                background: var(--surface-2);
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            .pill.ok {
+                background: var(--ok-bg);
+                color: var(--ok-ink);
+            }
+            .pill.bad {
+                background: var(--danger-bg);
+                color: var(--danger-ink);
+            }
+            .pill.warn {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .pill.info {
+                background: var(--accent-soft);
+                color: var(--accent-ink);
+            }
+            .note {
+                display: flex;
+                gap: 10px;
+                align-items: flex-start;
+                padding: 10px 14px;
+                border-radius: 12px;
+                font-size: 14px;
+            }
+            .note.warn {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .note.bad {
+                background: var(--danger-bg);
+                color: var(--danger-ink);
+            }
+            .note.info {
+                background: var(--accent-soft);
+                color: var(--accent-ink);
+            }
+            .muted {
+                color: var(--muted);
+            }
+            .small {
+                font-size: 12px;
+            }
+            .mono {
+                font-family: var(--mono);
+                font-size: 13px;
+            }
+
+            /* ---------- 圖片 slot（跟 .img-slot） ---------- */
+            .media {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 28px;
+                align-items: flex-start;
+            }
+            .slot {
+                position: relative;
+                display: grid;
+                justify-items: center;
+                gap: 8px;
+            }
+            .img-slot {
+                position: relative;
+                width: 192px;
+                height: 192px;
+                padding: 0;
+                border: 2px dashed var(--media-border);
+                border-radius: 50%;
+                background: var(--surface-2);
+                box-shadow: none;
+            }
+            .img-slot.tile {
+                width: 340px;
+                height: 192px;
+                border-radius: 16px;
+            }
+            .img-slot.banner-std {
+                width: 340px;
+                height: calc(340px * 517 / 1200);
+                border-radius: 12px;
+            }
+            .img-slot.banner-long {
+                width: 340px;
+                height: calc(340px * 400 / 2000);
+                border-radius: 10px;
+            }
+            .img-slot .thumb {
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                background: center / cover no-repeat;
+            }
+            .slot-btn {
+                position: absolute;
+                right: 6px;
+                bottom: 6px;
+                display: grid;
+                place-items: center;
+                width: 36px;
+                height: 36px;
+                border: 3px solid var(--surface);
+                border-radius: 50%;
+                background: var(--primary);
+                color: var(--on-primary);
+            }
+            .img-slot:not(.disc-slot) .slot-btn {
+                right: -10px;
+                bottom: -10px;
+            }
+            .slot-cap {
+                display: grid;
+                justify-items: center;
+                gap: 2px;
+                text-align: center;
+            }
+            .slot-cap .cap {
+                font-weight: 600;
+            }
+            .slot-cap .hint {
+                font-size: 12px;
+                color: var(--muted);
+                max-width: 340px;
+            }
+            .menu {
+                position: absolute;
+                top: calc(100% + 6px);
+                left: 50%;
+                z-index: 2;
+                translate: -50% 0;
+                display: grid;
+                min-width: 250px;
+                padding: 6px;
+                border-radius: 14px;
+                background: var(--surface);
+                box-shadow: var(--shadow-pop);
+                border: 1px solid var(--line);
+            }
+            .menu button {
+                justify-content: flex-start;
+                box-shadow: none;
+                text-align: left;
+            }
+            .menu button small {
+                display: block;
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 400;
+            }
+
+            /* ---------- dialog（scrim + card） ---------- */
+            .scrim {
+                position: relative;
+                display: grid;
+                place-items: center;
+                padding: 28px 12px;
+                border-radius: var(--r-panel);
+                background: rgb(10 20 35 / 0.45);
+            }
+            .scrim.fixed {
+                position: fixed;
+                inset: 0;
+                z-index: 50;
+                border-radius: 0;
+                overflow: auto;
+            }
+            .scrim[hidden] {
+                display: none;
+            }
+            .dialog {
+                width: min(920px, 100%);
+                border-radius: 22px;
+                padding: 22px 24px;
+                gap: 16px;
+                box-shadow: 0 20px 50px rgb(0 0 0 / 0.25);
+            }
+            .dialog.narrow {
+                width: min(520px, 100%);
+            }
+            .dialog header {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            .dialog footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .spinner {
+                width: 18px;
+                height: 18px;
+                border: 2.5px solid currentColor;
+                border-right-color: transparent;
+                border-radius: 50%;
+            }
+            @media (prefers-reduced-motion: no-preference) {
+                .scrim.fixed:not([hidden]) .dialog {
+                    animation: dialog-in var(--motion-base) var(--motion-ease);
+                }
+                .spinner {
+                    animation: spin var(--motion-spin) linear infinite;
+                }
+                .cand,
+                .seg button {
+                    transition:
+                        box-shadow var(--motion-fast) var(--motion-ease),
+                        background var(--motion-fast) var(--motion-ease);
+                }
+            }
+            @keyframes dialog-in {
+                from {
+                    opacity: 0;
+                    scale: 0.97;
+                }
+            }
+            @keyframes spin {
+                to {
+                    rotate: 360deg;
+                }
+            }
+
+            /* ---------- 裁切編輯器 ---------- */
+            .editor {
+                display: grid;
+                grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+                gap: 20px;
+                align-items: start;
+            }
+            .pane {
+                display: grid;
+                gap: 10px;
+                margin: 0;
+                min-width: 0;
+            }
+            .pane > .label {
+                font-weight: 600;
+            }
+            .src-frame {
+                display: grid;
+                place-items: center;
+                aspect-ratio: 4 / 3;
+                padding: 10px;
+                border: 2px dashed var(--media-border);
+                border-radius: 12px;
+                background: var(--surface-2);
+                overflow: hidden;
+            }
+            .src {
+                position: relative;
+                max-width: 100%;
+                max-height: 100%;
+                line-height: 0;
+                user-select: none;
+                touch-action: none;
+            }
+            .src img {
+                display: block;
+                max-width: 100%;
+                max-height: 280px;
+                -webkit-user-drag: none;
+            }
+            .box {
+                position: absolute;
+                border: 2px solid var(--crop-frame);
+                border-radius: 6px;
+                box-shadow: 0 0 0 999px rgb(0 0 0 / 0.45);
+                cursor: move;
+            }
+            .box.circle {
+                border-radius: 50%;
+            }
+            .box.locked {
+                cursor: default;
+                border-style: dashed;
+                box-shadow: none;
+            }
+            .box .grip {
+                position: absolute;
+                right: -9px;
+                bottom: -9px;
+                width: 18px;
+                height: 18px;
+                border: 2px solid var(--primary);
+                border-radius: 50%;
+                background: var(--crop-frame);
+                cursor: nwse-resize;
+            }
+            .box.locked .grip {
+                display: none;
+            }
+            .cands {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 10px;
+            }
+            .cand {
+                display: grid;
+                gap: 6px;
+                padding: 8px;
+                border-radius: 14px;
+                background: var(--surface);
+                box-shadow: inset 0 0 0 1px var(--line);
+                text-align: center;
+                font-size: 13px;
+            }
+            .cand[aria-pressed='true'] {
+                background: var(--accent-soft);
+                box-shadow: inset 0 0 0 2px var(--primary);
+                color: var(--accent-ink);
+                font-weight: 600;
+            }
+            .cand canvas {
+                width: 100%;
+                height: auto;
+                border-radius: 6px;
+                background: var(--disc-blank);
+            }
+            .cand.disc canvas {
+                border-radius: 50%;
+                width: 72%;
+                justify-self: center;
+            }
+            .meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px 12px;
+                font-size: 13px;
+                color: var(--muted);
+            }
+
+            /* player 樣式 preview（跟 apps/player Disc.module.css / tokens.css） */
+            .pv {
+                --theme-bg: #f3efde;
+                --theme-surface: #faf7ec;
+                --theme-track: #e0d6b8;
+                --theme-accent: #d45f32;
+                --theme-on-accent: #ffffff;
+                --theme-title: #a8401a;
+                --theme-text: #33281d;
+                --theme-muted: #6b5a47;
+                --theme-shadow-dark: #dcd3b8;
+                --theme-shadow-light: #ffffff;
+                --theme-accent-text: #a8401a;
+                --theme-status-bar: #a8401a;
+                --theme-header-rule: none;
+                --theme-title-font: var(--font);
+                display: grid;
+                place-items: center;
+                gap: 12px;
+                padding: 22px 14px;
+                border-radius: 16px;
+                background: var(--theme-bg);
+                color: var(--theme-text);
+            }
+            .pdisc {
+                position: relative;
+                width: 66%;
+                aspect-ratio: 1;
+                border-radius: 50%;
+                overflow: hidden;
+                background: var(--theme-shadow-dark);
+                box-shadow:
+                    0 0 0 8px var(--theme-surface),
+                    0 16px 30px rgb(0 0 0 / 0.4);
+            }
+            .pdisc canvas,
+            .pdisc img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .pdisc::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                z-index: 1;
+                border-radius: 50%;
+                background:
+                    radial-gradient(circle, transparent 55%, rgb(0 0 0 / 0.45) 100%),
+                    repeating-radial-gradient(
+                        circle,
+                        transparent 0 6px,
+                        rgb(255 255 255 / 0.14) 6px 7px
+                    );
+                mix-blend-mode: normal;
+            }
+            .pdisc::after {
+                content: '';
+                position: absolute;
+                z-index: 2;
+                left: 50%;
+                top: 50%;
+                width: 16%;
+                aspect-ratio: 1;
+                translate: -50% -50%;
+                border-radius: 50%;
+                background: var(--theme-surface);
+                box-shadow: 0 0 0 3px rgb(0 0 0 / 0.5);
+            }
+            .ptile {
+                width: 100%;
+                display: grid;
+                gap: 8px;
+            }
+            .ptile canvas {
+                width: 100%;
+                height: auto;
+                border-radius: 16px;
+                box-shadow:
+                    6px 6px 14px var(--theme-shadow-dark),
+                    -4px -4px 10px var(--theme-shadow-light);
+            }
+            .ptile b {
+                color: var(--theme-title);
+            }
+            .pbanner {
+                width: 100%;
+            }
+            .pbanner canvas {
+                width: 100%;
+                height: auto;
+                border-radius: 14px;
+            }
+
+            /* ---------- Theme 編輯器 ---------- */
+            .theme-layout {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 320px;
+                gap: 20px;
+                align-items: start;
+            }
+            .seg {
+                display: inline-flex;
+                padding: 3px;
+                border-radius: 999px;
+                background: var(--surface-2);
+                box-shadow: inset 0 0 0 1px var(--line);
+            }
+            .seg button {
+                padding: 5px 14px;
+                border-radius: 999px;
+                background: transparent;
+                box-shadow: none;
+            }
+            .seg button[aria-pressed='true'] {
+                background: var(--primary);
+                color: var(--on-primary);
+            }
+
+            /* ---------- Theme 候選卡（每張係細版 player 頁） ---------- */
+            .tgrid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+                gap: 12px;
+            }
+            /* button 入面用 block 排（grid 喺 button 入面會縮成內容闊度） */
+            .tcard {
+                display: block;
+                padding: 8px 8px 10px;
+                border-radius: 16px;
+                background: var(--surface);
+                box-shadow: inset 0 0 0 1px var(--line);
+                font-size: 13px;
+                text-align: left;
+            }
+            .tcard > * {
+                width: 100%;
+            }
+            .tcard > * + * {
+                margin-top: 8px;
+            }
+            .tcard[aria-pressed='true'] {
+                background: var(--accent-soft);
+                box-shadow: inset 0 0 0 2px var(--primary);
+            }
+            .tcard .lbl {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 6px;
+                font-weight: 600;
+            }
+            .tphone {
+                display: grid;
+                gap: 8px;
+                padding-bottom: 10px;
+                border-radius: 14px;
+                overflow: hidden;
+                background: var(--theme-bg);
+                color: var(--theme-text);
+            }
+            .tphone .sb {
+                height: 8px;
+                background: var(--theme-status-bar);
+            }
+            .tphone .hd {
+                position: relative;
+                display: grid;
+                padding: 2px 10px 8px;
+            }
+            .tphone .hd::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: var(--theme-header-rule);
+            }
+            .tphone .hd b {
+                color: var(--theme-title);
+                font: 700 15px/1.3 var(--theme-title-font);
+            }
+            .tphone .hd small {
+                color: var(--theme-muted);
+                font-size: 11px;
+            }
+            .tphone .pdisc.sm {
+                width: 52%;
+                justify-self: center;
+                box-shadow:
+                    0 0 0 5px var(--theme-surface),
+                    0 8px 16px rgb(0 0 0 / 0.35);
+            }
+            .tphone .bar {
+                margin: 4px 12px 0;
+                height: 3px;
+                border-radius: 2px;
+                background: linear-gradient(90deg, var(--theme-accent) 40%, var(--theme-track) 40%);
+            }
+            .tphone .ctl {
+                display: flex;
+                justify-content: center;
+            }
+            .tphone .play {
+                display: grid;
+                place-items: center;
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                background: var(--theme-accent);
+                color: var(--theme-on-accent);
+                font-size: 13px;
+            }
+            .tphone .li {
+                display: flex;
+                justify-content: space-between;
+                margin: 0 8px;
+                padding: 5px 8px;
+                border-radius: 8px;
+                background: var(--theme-surface);
+                font-size: 11px;
+            }
+            .tphone .li small {
+                color: var(--theme-muted);
+            }
+            .tphone .li.on {
+                color: var(--theme-accent-text);
+                font-weight: 600;
+            }
+
+            /* ---------- Publish ---------- */
+            .issues {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: grid;
+                gap: 8px;
+            }
+            .issues li {
+                display: grid;
+                grid-template-columns: auto minmax(0, 1fr) auto;
+                gap: 10px;
+                align-items: center;
+                padding: 10px 14px;
+                border-radius: 12px;
+                font-size: 14px;
+            }
+            .issues.bad li {
+                background: var(--danger-bg);
+                color: var(--danger-ink);
+            }
+            .issues.warn li {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .issues li small {
+                display: block;
+                font-size: 12px;
+                opacity: 0.9;
+            }
+
+            @media (max-width: 860px) {
+                .editor,
+                .theme-layout {
+                    grid-template-columns: 1fr;
+                }
+                .frame {
+                    padding: 16px;
+                }
+            }
+            @media (max-width: 420px) {
+                .img-slot.tile,
+                .img-slot.banner-std,
+                .img-slot.banner-long {
+                    width: 280px;
+                }
+                .img-slot.banner-std {
+                    height: calc(280px * 517 / 1200);
+                }
+                .img-slot.banner-long {
+                    height: calc(280px * 400 / 2000);
+                }
+                .img-slot.tile {
+                    height: calc(280px * 192 / 340);
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+            <symbol id="i-pencil" viewBox="0 0 24 24">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </symbol>
+            <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+            <symbol id="i-upload" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <path d="m17 8-5-5-5 5M12 3v12" />
+            </symbol>
+            <symbol id="i-cloud" viewBox="0 0 24 24">
+                <path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 6 17.5" />
+                <path d="M12 12v9m-3-3 3 3 3-3" />
+            </symbol>
+            <symbol id="i-alert" viewBox="0 0 24 24">
+                <path
+                    d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"
+                />
+                <path d="M12 9v4M12 17h.01" />
+            </symbol>
+            <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></symbol>
+            <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+            <symbol id="i-lock" viewBox="0 0 24 24">
+                <rect x="4" y="11" width="16" height="10" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </symbol>
+            <symbol id="i-undo" viewBox="0 0 24 24">
+                <path d="M3 7v6h6" />
+                <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
+            </symbol>
+            <symbol id="i-wand" viewBox="0 0 24 24">
+                <path d="m15 4 5 5L9 20H4v-5Z" />
+                <path d="M19 2v4M17 4h4" />
+            </symbol>
+            <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8Z" /></symbol>
+            <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 4v16l10-8Z M19 4v16" /></symbol>
+            <symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7" /></symbol>
+            <symbol id="i-right" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7" /></symbol>
+            <symbol id="i-refresh" viewBox="0 0 24 24">
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                <path d="M21 3v5h-5M3 21v-5h5" />
+            </symbol>
+            <symbol id="i-send" viewBox="0 0 24 24">
+                <path d="m22 2-7 20-4-9-9-4Z" />
+                <path d="M22 2 11 13" />
+            </symbol>
+        </svg>
+
+        <main class="page">
+            <div class="intro">
+                <h1>Admin Phase 4 預覽：封面裁切 / Theme / Banner / Publish</h1>
+                <p>
+                    樣式跟 admin-style v3 同 apps/admin 現有元件（.card / .btn / .img-slot / 裁切
+                    dialog）。假資料：蘭茜（廣播劇，淺色 theme）、口水多過浪花（節目，深色
+                    theme）。以下係用戶 2026-11-12 確認咗嘅設計（Q1–Q17）；mockup
+                    入面嘅介面文字用書面語，跟 apps/admin 現有字眼。
+                </p>
+                <div class="row">
+                    <span class="small muted">Admin 深淺色：</span>
+                    <div class="seg" role="group" aria-label="Admin 深淺色">
+                        <button type="button" data-admin-theme="" aria-pressed="true">
+                            跟系統
+                        </button>
+                        <button type="button" data-admin-theme="light" aria-pressed="false">
+                            淺
+                        </button>
+                        <button type="button" data-admin-theme="dark" aria-pressed="false">
+                            深
+                        </button>
+                    </div>
+                </div>
+                <table class="decisions">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>項目</th>
+                            <th>決定</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Q1 · Q13 · Q14</td>
+                            <td>封面來源</td>
+                            <td>
+                                冇選單。開劇集編輯頁或者新增劇集掃描完，slot 冇圖而 R2 有原圖，就由
+                                browser center 裁切，即刻上載同儲存；冇原圖就撳 ＋ 揀本機檔
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Q2 · Q3</td>
+                            <td>裁切候選</td>
+                            <td>預設一律 center；fit-blur / fit-extend 鎖住成張圖、唔拖得</td>
+                        </tr>
+                        <tr>
+                            <td>Q4 · Q5</td>
+                            <td>上限</td>
+                            <td>原圖邊長 8000 px、檔案 20 MB；原圖細過輸出尺寸只出黃色警告</td>
+                        </tr>
+                        <tr>
+                            <td>Q6</td>
+                            <td>新劇未有配色</td>
+                            <td>
+                                第一格「現用：未設定（中性灰）」；三套候選第一套標「建議」但唔自動套用；發佈頁出警告（唔阻發佈）
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Q7–Q9 · Q15 · Q16</td>
+                            <td>配色</td>
+                            <td>
+                                冇 picker / 深淺掣 / 對比度表；現用 + 三套候選，每套細版播放器預覽 +
+                                AA / ⚠ 標示；唔啱就換另外三套（唔同底色 × 深 / 淺輪住出）
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Q10 · Q11 · Q17</td>
+                            <td>首頁 Banner</td>
+                            <td>
+                                兩張連續換（窄版 → 闊版），中途取消就兩張都唔換；撳邊個 slot
+                                都由窄版開始；還原預設要確認
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Q12</td>
+                            <td>發佈頁</td>
+                            <td>淨係警告就收埋做一行摘要；有錯誤全部展開；發佈唔使多一個確認</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <nav class="jump" aria-label="跳去">
+                    <a href="#a">① 封面 slot</a>
+                    <a href="#b">② 裁切編輯器（可玩）</a>
+                    <a href="#c">③ 載入中 / 錯誤狀態</a>
+                    <a href="#d">④ Theme 編輯器（可玩）</a>
+                    <a href="#e">⑤ Banner 頁</a>
+                    <a href="#f">⑥ Publish 頁</a>
+                </nav>
+            </div>
+
+            <!-- ① 封面 slot -->
+            <section id="a">
+                <h2>① 封面 slot</h2>
+                <p class="state-label">
+                    用戶 2026-11-12 確認：冇選單。開劇集時先睇 R2 folder 有冇原圖；有就自動用 center
+                    裁切出碟面 / Banner（碟面用 <span class="mono">cd cover</span>，冇就
+                    <span class="mono">cover photo</span>；Banner 用
+                    <span class="mono">cover photo</span>）。slot 有圖就撳 ✎ 換本機檔；冇圖（R2
+                    都冇）就撳 ＋ 直接開檔案揀。節目冇 R2 原圖，一律本機檔。
+                </p>
+                <div class="frame">
+                    <p class="state-label">
+                        狀態 A：新劇，R2 有 cd cover.jpg + cover photo.jpg → 兩個 slot 自動填好
+                    </p>
+                    <div class="card">
+                        <h3>新劇（示範）· 圖片</h3>
+                        <div class="media">
+                            <div class="slot">
+                                <button
+                                    type="button"
+                                    class="img-slot disc-slot"
+                                    aria-label="更換碟面"
+                                    aria-describedby="hint-disc-a"
+                                    data-open-crop="disc-local"
+                                >
+                                    <span
+                                        class="thumb"
+                                        style="background-image: url('disc-lancy.webp')"
+                                    ></span>
+                                    <span class="slot-btn" aria-hidden="true"
+                                        ><svg class="i"><use href="#i-pencil" /></svg
+                                    ></span>
+                                </button>
+                                <span class="slot-cap">
+                                    <span class="cap">碟面</span>
+                                    <span class="pill info">由 R2 cd cover.jpg 自動裁切</span>
+                                    <span class="hint" id="hint-disc-a"
+                                        >輸出 600 × 600 WebP；原圖建議 ≥ 600 × 600</span
+                                    >
+                                </span>
+                            </div>
+                            <div class="slot">
+                                <button
+                                    type="button"
+                                    class="img-slot tile"
+                                    aria-label="更換 Banner"
+                                    aria-describedby="hint-tile-a"
+                                    data-open-crop="tile-local"
+                                >
+                                    <span
+                                        class="thumb"
+                                        style="background-image: url('tile-lancy.webp')"
+                                    ></span>
+                                    <span class="slot-btn" aria-hidden="true"
+                                        ><svg class="i"><use href="#i-pencil" /></svg
+                                    ></span>
+                                </button>
+                                <span class="slot-cap">
+                                    <span class="cap">Banner</span>
+                                    <span class="pill info">由 R2 cover photo.jpg 自動裁切</span>
+                                    <span class="hint" id="hint-tile-a"
+                                        >輸出 1216 × 684 WebP；原圖建議 ≥ 1216 × 684</span
+                                    >
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="state-label">
+                        狀態 B：R2 冇原圖（或者係節目）→ 空 slot，撳 ＋ 直接揀本機檔
+                    </p>
+                    <div class="card">
+                        <h3>新劇（示範）· 圖片</h3>
+                        <div class="media">
+                            <div class="slot">
+                                <button
+                                    type="button"
+                                    class="img-slot disc-slot"
+                                    aria-label="上載碟面"
+                                    aria-describedby="hint-disc-b"
+                                    data-open-crop="disc-local"
+                                >
+                                    <span class="slot-btn" aria-hidden="true"
+                                        ><svg class="i"><use href="#i-plus" /></svg
+                                    ></span>
+                                </button>
+                                <span class="slot-cap">
+                                    <span class="cap">碟面</span>
+                                    <span class="hint" id="hint-disc-b"
+                                        >輸出 600 × 600 WebP；原圖建議 ≥ 600 × 600</span
+                                    >
+                                </span>
+                            </div>
+                            <div class="slot">
+                                <button
+                                    type="button"
+                                    class="img-slot tile"
+                                    aria-label="上載 Banner"
+                                    aria-describedby="hint-tile-b"
+                                    data-open-crop="tile-local"
+                                >
+                                    <span class="slot-btn" aria-hidden="true"
+                                        ><svg class="i"><use href="#i-plus" /></svg
+                                    ></span>
+                                </button>
+                                <span class="slot-cap">
+                                    <span class="cap">Banner</span>
+                                    <span class="hint" id="hint-tile-b"
+                                        >輸出 1216 × 684 WebP；原圖建議 ≥ 1216 × 684</span
+                                    >
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ② 裁切編輯器 -->
+            <section id="b">
+                <h2>② 裁切編輯器（可以玩）</h2>
+                <p class="state-label">
+                    撳下面掣（或者 ① / ⑤ 嘅 slot）開
+                    dialog。左邊原圖拖白框移位、拖右下圓點縮放（鎖比例）；中間揀候選；右邊用 player
+                    disc / tile / banner 樣式即場 preview。
+                </p>
+                <div class="frame">
+                    <div class="row">
+                        <button type="button" class="primary" data-open-crop="disc-local">
+                            碟面 600×600
+                        </button>
+                        <button type="button" data-open-crop="tile-local">
+                            Banner 1216×684（本機）
+                        </button>
+                        <button type="button" data-open-crop="bannerStd">
+                            首頁 Banner 窄版 1200×517
+                        </button>
+                        <button type="button" data-open-crop="bannerLong">
+                            首頁 Banner 闊版 2000×400
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ③ 狀態 -->
+            <section id="c">
+                <h2>③ 載入中（S-816）/ 錯誤 / 尺寸提示（S-817）</h2>
+                <div class="grid2">
+                    <div>
+                        <p class="state-label">載入中：dialog 鎖住，Esc / 撳外面都唔收</p>
+                        <div class="scrim">
+                            <div class="card dialog narrow" aria-busy="true">
+                                <header>
+                                    <h3>更換碟面</h3>
+                                    <span class="pill info"
+                                        ><span
+                                            class="spinner"
+                                            style="width: 12px; height: 12px"
+                                        ></span
+                                        >載入中</span
+                                    >
+                                </header>
+                                <div class="src-frame" style="aspect-ratio: 16 / 9">
+                                    <div class="row muted" role="status">
+                                        <span class="spinner"></span>
+                                        正在讀取 R2 原圖 cd cover.jpg（2.4 MB）…
+                                    </div>
+                                </div>
+                                <p class="small muted">
+                                    Safari 首次轉換 WebP 需載入編碼器（wasm），屆時會顯示「正在準備
+                                    WebP 編碼器…」。
+                                </p>
+                                <footer>
+                                    <button type="button" disabled>
+                                        <svg class="i"><use href="#i-x" /></svg>取消
+                                    </button>
+                                    <button type="button" class="primary" disabled>上載</button>
+                                </footer>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="state-label">上載中：同樣鎖住；完成就收 dialog + toast</p>
+                        <div class="scrim">
+                            <div class="card dialog narrow" aria-busy="true">
+                                <header><h3>更換碟面</h3></header>
+                                <div class="note info">
+                                    <span class="spinner"></span>
+                                    <span>正在上載 600 × 600 WebP（約 48 KB）…</span>
+                                </div>
+                                <footer>
+                                    <button type="button" disabled>
+                                        <svg class="i"><use href="#i-x" /></svg>取消
+                                    </button>
+                                    <button type="button" class="primary" disabled>
+                                        <span class="spinner"></span>上載中…
+                                    </button>
+                                </footer>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="state-label">原圖尺寸過大（decode 前用檔頭讀尺寸）</p>
+                        <div class="scrim">
+                            <div class="card dialog narrow" role="alertdialog">
+                                <header><h3>更換碟面</h3></header>
+                                <div class="note bad" role="alert">
+                                    <svg class="i"><use href="#i-alert" /></svg>
+                                    <span
+                                        >原圖尺寸過大：12000 × 9000，上限為 8000 × 8000
+                                        px，請先縮小後再選擇。</span
+                                    >
+                                </div>
+                                <footer>
+                                    <button type="button">
+                                        <svg class="i"><use href="#i-upload" /></svg>選擇其他圖片
+                                    </button>
+                                    <button type="button" class="primary">
+                                        <svg class="i"><use href="#i-x" /></svg>關閉
+                                    </button>
+                                </footer>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="state-label">檔案過大（本機檔 / R2 都係 20 MB）</p>
+                        <div class="scrim">
+                            <div class="card dialog narrow" role="alertdialog">
+                                <header><h3>更換 Banner</h3></header>
+                                <div class="note bad" role="alert">
+                                    <svg class="i"><use href="#i-alert" /></svg>
+                                    <span>檔案過大：28.4 MB，上限為 20 MB。</span>
+                                </div>
+                                <footer>
+                                    <button type="button">
+                                        <svg class="i"><use href="#i-upload" /></svg>選擇其他圖片
+                                    </button>
+                                    <button type="button" class="primary">
+                                        <svg class="i"><use href="#i-x" /></svg>關閉
+                                    </button>
+                                </footer>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="state-label">原圖細過輸出尺寸：警告但准用（會放大，可能矇）</p>
+                        <div class="card">
+                            <div class="note warn">
+                                <svg class="i"><use href="#i-alert" /></svg>
+                                <span
+                                    >原圖 480 × 480 小於碟面 600 × 600，將放大 1.25
+                                    倍，畫質可能較模糊。</span
+                                >
+                            </div>
+                            <p class="small muted">放喺裁切 dialog 原圖下面，唔阻上載。</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="state-label">
+                            尺寸提示（S-817）：slot 下面 hint 用 aria-describedby 連住個掣
+                        </p>
+                        <div class="card">
+                            <div class="slot" style="justify-items: start">
+                                <span
+                                    class="slot-cap"
+                                    style="justify-items: start; text-align: left"
+                                >
+                                    <span class="cap">碟面</span>
+                                    <span class="hint"
+                                        >輸出 600 × 600 WebP；原圖建議 ≥ 600 × 600</span
+                                    >
+                                    <span class="hint"
+                                        >接受 PNG / JPG / WebP，最大 20 MB、8000 × 8000 px</span
+                                    >
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ④ Theme 編輯器 -->
+            <section id="d">
+                <h2>④ Theme（可以玩）</h2>
+                <p class="state-label">
+                    簡化版（用戶 2026-11-12）：冇 picker、冇深淺掣、冇 contrast 表。由碟面抽色出 3
+                    套候選，每套直接用 player 樣式
+                    preview；唔啱就撳「更換另外三套」再出三套。揀咗撳「套用」。
+                </p>
+                <div class="frame">
+                    <div class="row">
+                        <label class="small muted" for="theme-src">示範資料</label>
+                        <select id="theme-src">
+                            <option value="lancy">蘭茜（廣播劇 · 有現用 theme）</option>
+                            <option value="waves">口水多過浪花（節目 · 有現用 theme）</option>
+                            <option value="fresh">新劇（未設定 theme）</option>
+                        </select>
+                    </div>
+                    <div class="card">
+                        <div class="row" style="justify-content: space-between">
+                            <h3 id="theme-head">Theme</h3>
+                            <div class="row">
+                                <span class="small muted" id="round-note"></span>
+                                <button type="button" id="more-cands">
+                                    <svg class="i"><use href="#i-refresh" /></svg>更換另外三套
+                                </button>
+                            </div>
+                        </div>
+                        <div class="tgrid" id="tcands" role="group" aria-label="Theme 候選"></div>
+                        <div class="row" style="justify-content: flex-end">
+                            <div class="row">
+                                <span class="small" id="pick-note"></span>
+                                <button type="button" class="primary" id="use-theme">
+                                    <svg class="i"><use href="#i-check" /></svg>套用
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑤ Banner -->
+            <section id="e">
+                <h2>⑤ 首頁 Banner 頁</h2>
+                <p class="state-label">
+                    兩張一齊換（Q10）：撳任何一個 slot 或者「更換 Banner」→ 先裁窄版（1 /
+                    2）→「下一張」即刻開闊版（2 / 2）→
+                    兩張一齊上載。中途取消就兩張都唔換，所以唔會有「換咗一半」嘅狀態。
+                </p>
+                <div class="frame">
+                    <p class="state-label">狀態 A：用緊內建預設（catalog 冇 banner）</p>
+                    <div class="card">
+                        <div class="row" style="justify-content: space-between">
+                            <h3>首頁 Banner</h3>
+                            <div class="row">
+                                <span class="pill">內建預設</span>
+                                <button type="button" class="ghost-danger" disabled>
+                                    <svg class="i"><use href="#i-undo" /></svg>還原預設
+                                </button>
+                                <button type="button" class="primary" data-open-banner>
+                                    <svg class="i"><use href="#i-upload" /></svg>更換 Banner
+                                </button>
+                            </div>
+                        </div>
+                        <div class="media">
+                            <div class="slot">
+                                <button
+                                    type="button"
+                                    class="img-slot banner-std"
+                                    aria-label="更換 Banner（由窄版開始）"
+                                    data-open-banner
+                                >
+                                    <span
+                                        class="thumb"
+                                        style="background-image: url('banner.webp')"
+                                    ></span>
+                                    <span class="slot-btn" aria-hidden="true"
+                                        ><svg class="i"><use href="#i-pencil" /></svg
+                                    ></span>
+                                </button>
+                                <span class="slot-cap">
+                                    <span class="cap">窄版（手機直版）</span>
+                                    <span class="hint">輸出 1200 × 517 WebP</span>
+                                </span>
+                            </div>
+                            <div class="slot">
+                                <button
+                                    type="button"
+                                    class="img-slot banner-long"
+                                    aria-label="更換 Banner（由窄版開始）"
+                                    data-open-banner
+                                >
+                                    <span
+                                        class="thumb"
+                                        style="background-image: url('banner-wide.webp')"
+                                    ></span>
+                                    <span class="slot-btn" aria-hidden="true"
+                                        ><svg class="i"><use href="#i-pencil" /></svg
+                                    ></span>
+                                </button>
+                                <span class="slot-cap">
+                                    <span class="cap">闊版（橫向 / 闊螢幕）</span>
+                                    <span class="hint">輸出 2000 × 400 WebP</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="state-label">狀態 B：已換自訂 Banner（未 publish）</p>
+                    <div class="card">
+                        <div class="row" style="justify-content: space-between">
+                            <h3>首頁 Banner</h3>
+                            <div class="row">
+                                <span class="pill ok">自訂 · 未發佈</span>
+                                <button type="button" class="ghost-danger">
+                                    <svg class="i"><use href="#i-undo" /></svg>還原預設
+                                </button>
+                                <button type="button" class="primary" data-open-banner>
+                                    <svg class="i"><use href="#i-upload" /></svg>更換 Banner
+                                </button>
+                            </div>
+                        </div>
+                        <div class="media">
+                            <div class="slot">
+                                <button
+                                    type="button"
+                                    class="img-slot banner-std"
+                                    aria-label="更換 Banner（由窄版開始）"
+                                    data-open-banner
+                                >
+                                    <span
+                                        class="thumb"
+                                        style="background-image: url('tile-lancy.webp')"
+                                    ></span>
+                                    <span class="slot-btn" aria-hidden="true"
+                                        ><svg class="i"><use href="#i-pencil" /></svg
+                                    ></span>
+                                </button>
+                                <span class="slot-cap">
+                                    <span class="cap">窄版</span>
+                                    <span class="hint">輸出 1200 × 517 WebP</span>
+                                </span>
+                            </div>
+                            <div class="slot">
+                                <button
+                                    type="button"
+                                    class="img-slot banner-long"
+                                    aria-label="更換 Banner（由窄版開始）"
+                                    data-open-banner
+                                >
+                                    <span
+                                        class="thumb"
+                                        style="background-image: url('tile-lancy.webp')"
+                                    ></span>
+                                    <span class="slot-btn" aria-hidden="true"
+                                        ><svg class="i"><use href="#i-pencil" /></svg
+                                    ></span>
+                                </button>
+                                <span class="slot-cap">
+                                    <span class="cap">闊版</span>
+                                    <span class="hint">輸出 2000 × 400 WebP</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="state-label">「還原預設」確認（Q11）</p>
+                    <div class="scrim">
+                        <div class="card dialog narrow" role="alertdialog">
+                            <h3>還原預設 Banner？</h3>
+                            <p>兩張自訂 Banner 將被刪除，下次發佈後播放器將改用內建圖片。</p>
+                            <footer>
+                                <button type="button">
+                                    <svg class="i"><use href="#i-x" /></svg>取消
+                                </button>
+                                <button
+                                    type="button"
+                                    class="primary"
+                                    style="background: var(--danger); color: var(--on-danger)"
+                                >
+                                    <svg class="i"><use href="#i-undo" /></svg>還原預設
+                                </button>
+                            </footer>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⑥ Publish -->
+            <section id="f">
+                <h2>⑥ Publish 頁</h2>
+                <div class="frame">
+                    <p class="state-label">
+                        有錯誤：唔准 publish（Banner 兩張一齊換之後，正常唔會缺一張；呢個錯誤係
+                        validator 保險，例如資料被人改壞）
+                    </p>
+                    <div class="card">
+                        <h3>發佈前檢查</h3>
+                        <ul class="issues bad" aria-label="錯誤">
+                            <li>
+                                <svg class="i"><use href="#i-x" /></svg>
+                                <span
+                                    >首頁 Banner 不完整：缺少闊版（2000 × 400）<small
+                                        >請重新更換 Banner，或還原預設</small
+                                    ></span
+                                >
+                                <button type="button" class="link">前往 Banner 頁</button>
+                            </li>
+                        </ul>
+                        <ul class="issues warn" aria-label="配色警告">
+                            <li>
+                                <svg class="i"><use href="#i-alert" /></svg>
+                                <span
+                                    >新劇（示範）：未設定配色，現正使用中性灰<small
+                                        >廣播劇 · 配色</small
+                                    ></span
+                                >
+                                <button type="button" class="link">前往選擇</button>
+                            </li>
+                            <li>
+                                <svg class="i"><use href="#i-alert" /></svg>
+                                <span
+                                    >蘭茜：muted 與 surface 對比度 3.9:1（需 ≥ 4.5:1）<small
+                                        >廣播劇 · 配色</small
+                                    ></span
+                                >
+                                <button type="button" class="link">前往修改</button>
+                            </li>
+                            <li>
+                                <svg class="i"><use href="#i-alert" /></svg>
+                                <span
+                                    >口水多過浪花：onAccent 與 accent 對比度 4.1:1（需 ≥
+                                    4.5:1）<small>節目 · 配色</small></span
+                                >
+                                <button type="button" class="link">前往修改</button>
+                            </li>
+                        </ul>
+                        <div class="row" style="justify-content: flex-end">
+                            <span class="small muted">請先解決 1 個錯誤</span>
+                            <button type="button" class="primary" disabled>
+                                <svg class="i"><use href="#i-send" /></svg>發佈
+                            </button>
+                        </div>
+                    </div>
+
+                    <p class="state-label">淨係警告：照 publish 得</p>
+                    <div class="card">
+                        <h3>發佈前檢查</h3>
+                        <div class="note warn">
+                            <svg class="i"><use href="#i-alert" /></svg>
+                            <span
+                                >3 項配色對比度警告（不影響發佈）<button
+                                    type="button"
+                                    class="link"
+                                    style="margin-left: 8px"
+                                >
+                                    展開
+                                </button></span
+                            >
+                        </div>
+                        <div class="row" style="justify-content: flex-end">
+                            <button type="button" class="primary">
+                                <svg class="i"><use href="#i-send" /></svg>發佈
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 裁切 dialog（互動） -->
+        <div class="scrim fixed" id="crop-scrim" hidden>
+            <div class="card dialog" role="dialog" aria-modal="true" aria-labelledby="crop-title">
+                <header>
+                    <h3>
+                        <span class="pill info" id="crop-step" hidden></span>
+                        <span id="crop-title">更換碟面</span>
+                    </h3>
+                    <span class="meta" id="crop-src-meta"></span>
+                </header>
+                <div class="editor">
+                    <div class="pane">
+                        <span class="label"
+                            >原圖
+                            <span class="small muted"
+                                >（拖曳裁切框可移位，拖曳右下角可縮放）</span
+                            ></span
+                        >
+                        <div class="src-frame">
+                            <div class="src" id="src">
+                                <img id="src-img" alt="原圖" />
+                                <div class="box" id="box"><span class="grip" id="grip"></span></div>
+                            </div>
+                        </div>
+                        <div class="cands" id="cands" role="group" aria-label="候選"></div>
+                    </div>
+                    <div class="pane">
+                        <span class="label">播放器預覽</span>
+                        <div class="pv" id="crop-pv"></div>
+                        <div class="meta" id="crop-out-meta"></div>
+                    </div>
+                </div>
+                <footer>
+                    <button type="button" id="crop-cancel">
+                        <svg class="i"><use href="#i-x" /></svg
+                        ><span id="crop-cancel-text">取消</span>
+                    </button>
+                    <button type="button" id="crop-back" hidden>
+                        <svg class="i"><use href="#i-left" /></svg>上一張
+                    </button>
+                    <button type="button" class="primary" id="crop-ok">
+                        <svg class="i"><use href="#i-upload" /></svg
+                        ><span id="crop-ok-text">上載</span>
+                    </button>
+                </footer>
+            </div>
+        </div>
+
+        <script>
+            'use strict';
+            /* ===================== 共用：色彩 ===================== */
+            const hexToRgb = (h) => {
+                const n = parseInt(h.slice(1), 16);
+                return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+            };
+            const rgbToHex = (r, g, b) =>
+                '#' +
+                [r, g, b]
+                    .map((v) =>
+                        Math.round(Math.max(0, Math.min(255, v)))
+                            .toString(16)
+                            .padStart(2, '0'),
+                    )
+                    .join('');
+            const lum = (hex) => {
+                const c = hexToRgb(hex).map((v) => {
+                    v /= 255;
+                    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+                });
+                return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+            };
+            const contrast = (a, b) => {
+                const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+                return (x + 0.05) / (y + 0.05);
+            };
+            const rgbToHsl = ([r, g, b]) => {
+                r /= 255;
+                g /= 255;
+                b /= 255;
+                const mx = Math.max(r, g, b);
+                const mn = Math.min(r, g, b);
+                const l = (mx + mn) / 2;
+                if (mx === mn) return [0, 0, l];
+                const d = mx - mn;
+                const s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+                const h =
+                    mx === r
+                        ? ((g - b) / d + (g < b ? 6 : 0)) / 6
+                        : mx === g
+                          ? ((b - r) / d + 2) / 6
+                          : ((r - g) / d + 4) / 6;
+                return [h, s, l];
+            };
+            const hsl = (h, s, l) => {
+                const f = (n) => {
+                    const k = (n + h * 12) % 12;
+                    const a = s * Math.min(l, 1 - l);
+                    return 255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)));
+                };
+                return rgbToHex(f(0), f(8), f(4));
+            };
+            const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+            /* ===================== Admin 深淺色切換 ===================== */
+            document.querySelectorAll('[data-admin-theme]').forEach((b) =>
+                b.addEventListener('click', () => {
+                    const v = b.dataset.adminTheme;
+                    if (v) document.documentElement.dataset.theme = v;
+                    else delete document.documentElement.dataset.theme;
+                    document
+                        .querySelectorAll('[data-admin-theme]')
+                        .forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+                }),
+            );
+
+            /* ===================== 裁切編輯器 ===================== */
+            const SLOTS = {
+                'disc-local': {
+                    title: '更換碟面',
+                    w: 600,
+                    h: 600,
+                    src: 'disc-lancy.webp',
+                    meta: ['本機檔', 'lancy-disc.png', '原圖 600 × 600 · PNG'],
+                    kind: 'disc',
+                },
+                'tile-local': {
+                    title: '更換 Banner',
+                    w: 1216,
+                    h: 684,
+                    src: 'tile-lancy.webp',
+                    meta: ['本機檔', 'lancy-tile.jpg', '原圖 1216 × 608 · JPEG'],
+                    kind: 'tile',
+                },
+                bannerStd: {
+                    title: '更換首頁 Banner（窄版）',
+                    w: 1200,
+                    h: 517,
+                    src: 'banner-wide.webp',
+                    meta: ['本機檔', 'banner-2026.jpg', '原圖 2000 × 400'],
+                    kind: 'banner',
+                },
+                bannerLong: {
+                    title: '更換首頁 Banner（闊版）',
+                    w: 2000,
+                    h: 400,
+                    src: 'banner.webp',
+                    meta: ['本機檔', 'banner-2026.jpg', '原圖 1200 × 517'],
+                    kind: 'banner',
+                },
+            };
+            const MODES = [
+                ['center', '置中裁切'],
+                ['blur', '完整 · 模糊背景'],
+                ['extend', '完整 · 延伸邊緣'],
+            ];
+            const PREVIEW_MAX = 480;
+            const crop = { slot: null, img: null, mode: 'center', box: null };
+            const $ = (id) => document.getElementById(id);
+            let lastFocus = null;
+
+            const fitCenterBox = (iw, ih, tw, th) => {
+                const s = Math.min(iw / tw, ih / th);
+                const w = tw * s;
+                const h = th * s;
+                return { x: (iw - w) / 2, y: (ih - h) / 2, w, h };
+            };
+
+            /** 畫一個候選到 canvas（輸出尺寸按比例縮細做 preview） */
+            const renderTo = (canvas, mode) => {
+                const { img, slot, box } = crop;
+                const scale = Math.min(1, PREVIEW_MAX / slot.w);
+                const W = Math.round(slot.w * scale);
+                const H = Math.round(slot.h * scale);
+                canvas.width = W;
+                canvas.height = H;
+                const ctx = canvas.getContext('2d');
+                const iw = img.naturalWidth;
+                const ih = img.naturalHeight;
+                if (mode === 'center') {
+                    ctx.drawImage(img, box.x, box.y, box.w, box.h, 0, 0, W, H);
+                    return;
+                }
+                const fs = Math.min(W / iw, H / ih);
+                const fw = iw * fs;
+                const fh = ih * fs;
+                const fx = (W - fw) / 2;
+                const fy = (H - fh) / 2;
+                if (mode === 'blur') {
+                    const cb = fitCenterBox(iw, ih, W, H);
+                    ctx.filter = 'blur(' + Math.round(W / 30) + 'px) brightness(0.85)';
+                    ctx.drawImage(
+                        img,
+                        cb.x,
+                        cb.y,
+                        cb.w,
+                        cb.h,
+                        -W * 0.05,
+                        -H * 0.05,
+                        W * 1.1,
+                        H * 1.1,
+                    );
+                    ctx.filter = 'none';
+                } else {
+                    // 延伸邊色：最外一行 / 一列像素拉闊填空位
+                    if (fx > 0.5) {
+                        ctx.drawImage(img, 0, 0, 1, ih, 0, fy, fx + 1, fh);
+                        ctx.drawImage(img, iw - 1, 0, 1, ih, fx + fw - 1, fy, W - fx - fw + 1, fh);
+                    }
+                    if (fy > 0.5) {
+                        ctx.drawImage(img, 0, 0, iw, 1, fx, 0, fw, fy + 1);
+                        ctx.drawImage(img, 0, ih - 1, iw, 1, fx, fy + fh - 1, fw, H - fy - fh + 1);
+                    }
+                }
+                ctx.drawImage(img, fx, fy, fw, fh);
+            };
+
+            const placeBox = () => {
+                const { img, box, mode, slot } = crop;
+                const el = $('box');
+                const locked = mode !== 'center';
+                const b = locked ? { x: 0, y: 0, w: img.naturalWidth, h: img.naturalHeight } : box;
+                el.style.left = (b.x / img.naturalWidth) * 100 + '%';
+                el.style.top = (b.y / img.naturalHeight) * 100 + '%';
+                el.style.width = (b.w / img.naturalWidth) * 100 + '%';
+                el.style.height = (b.h / img.naturalHeight) * 100 + '%';
+                el.classList.toggle('locked', locked);
+                el.classList.toggle('circle', slot.kind === 'disc' && !locked);
+            };
+
+            const renderPreview = () => {
+                const pv = $('crop-pv');
+                const c = document.createElement('canvas');
+                renderTo(c, crop.mode);
+                pv.replaceChildren();
+                if (crop.slot.kind === 'disc') {
+                    const d = document.createElement('div');
+                    d.className = 'pdisc';
+                    d.append(c);
+                    pv.append(d);
+                } else if (crop.slot.kind === 'tile') {
+                    const t = document.createElement('div');
+                    t.className = 'ptile';
+                    const b = document.createElement('b');
+                    b.textContent = '蘭茜';
+                    t.append(c, b);
+                    pv.append(t);
+                } else {
+                    const t = document.createElement('div');
+                    t.className = 'pbanner';
+                    t.append(c);
+                    pv.append(t);
+                }
+                $('crop-out-meta').innerHTML =
+                    '<span>輸出 ' +
+                    crop.slot.w +
+                    ' × ' +
+                    crop.slot.h +
+                    ' · WebP</span><span>約 ' +
+                    Math.round((crop.slot.w * crop.slot.h) / 7000) +
+                    ' KB</span>' +
+                    (crop.mode === 'center'
+                        ? '<span>裁切範圍 ' +
+                          Math.round(crop.box.w) +
+                          ' × ' +
+                          Math.round(crop.box.h) +
+                          '（原圖像素）</span>'
+                        : '<span>完整顯示原圖（以' +
+                          (crop.mode === 'blur' ? '模糊背景' : '延伸邊緣') +
+                          '填補空位）</span>');
+            };
+
+            const renderCands = () => {
+                const wrap = $('cands');
+                wrap.replaceChildren();
+                MODES.forEach(([m, label]) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'cand' + (crop.slot.kind === 'disc' ? ' disc' : '');
+                    b.setAttribute('aria-pressed', String(m === crop.mode));
+                    const c = document.createElement('canvas');
+                    renderTo(c, m);
+                    const s = document.createElement('span');
+                    s.textContent = label;
+                    b.append(c, s);
+                    b.addEventListener('click', () => {
+                        crop.mode = m;
+                        refresh();
+                        $('cands').querySelector('[aria-pressed="true"]').focus();
+                    });
+                    wrap.append(b);
+                });
+            };
+
+            const refresh = () => {
+                placeBox();
+                renderCands();
+                renderPreview();
+            };
+
+            /** 首頁 Banner 兩張一齊換：queue = 兩個 slot，step = 而家第幾張 */
+            const flow = { queue: [], step: 0 };
+            const openCrop = (key) => {
+                const slot = SLOTS[key];
+                if (!slot) return;
+                if (!flow.queue.length) lastFocus = document.activeElement;
+                crop.slot = slot;
+                crop.mode = 'center';
+                $('crop-title').textContent = slot.title + '（' + slot.w + ' × ' + slot.h + '）';
+                $('crop-src-meta').innerHTML =
+                    '<span class="pill info">' +
+                    slot.meta[0] +
+                    '</span><span class="mono">' +
+                    slot.meta[1] +
+                    '</span><span>' +
+                    slot.meta[2] +
+                    '</span>';
+                const multi = flow.queue.length > 1;
+                const last = !multi || flow.step === flow.queue.length - 1;
+                $('crop-step').hidden = !multi;
+                $('crop-step').textContent = multi ? flow.step + 1 + ' / ' + flow.queue.length : '';
+                $('crop-back').hidden = !multi || flow.step === 0;
+                $('crop-ok-text').textContent = !multi
+                    ? '上載'
+                    : last
+                      ? '上載兩張'
+                      : '下一張：闊版';
+                $('crop-cancel-text').textContent = multi ? '取消（兩張均不更換）' : '取消';
+                $('crop-ok')
+                    .querySelector('use')
+                    .setAttribute('href', multi && !last ? '#i-right' : '#i-upload');
+                applyTheme($('crop-pv'), THEMES.lancy.current);
+                const img = $('src-img');
+                img.onload = () => {
+                    crop.img = img;
+                    crop.box = fitCenterBox(img.naturalWidth, img.naturalHeight, slot.w, slot.h);
+                    refresh();
+                };
+                img.src = slot.src;
+                if (img.complete && img.naturalWidth && img.src.endsWith(slot.src)) img.onload();
+                $('crop-scrim').hidden = false;
+                $('crop-cancel').focus();
+            };
+            const closeCrop = () => {
+                flow.queue = [];
+                flow.step = 0;
+                $('crop-scrim').hidden = true;
+                if (lastFocus) lastFocus.focus();
+            };
+            document
+                .querySelectorAll('[data-open-crop]')
+                .forEach((b) => b.addEventListener('click', () => openCrop(b.dataset.openCrop)));
+            document.querySelectorAll('[data-open-banner]').forEach((b) =>
+                b.addEventListener('click', () => {
+                    lastFocus = b;
+                    flow.queue = ['bannerStd', 'bannerLong'];
+                    flow.step = 0;
+                    openCrop(flow.queue[0]);
+                }),
+            );
+            $('crop-cancel').addEventListener('click', closeCrop);
+            $('crop-ok').addEventListener('click', () => {
+                if (flow.queue.length > 1 && flow.step < flow.queue.length - 1) {
+                    flow.step++;
+                    openCrop(flow.queue[flow.step]);
+                    $('crop-ok').focus();
+                } else closeCrop();
+            });
+            $('crop-back').addEventListener('click', () => {
+                flow.step--;
+                openCrop(flow.queue[flow.step]);
+            });
+            // 候選掣會重畫（focus 會跌返 body），所以喺 document 聽 Esc
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !$('crop-scrim').hidden) closeCrop();
+            });
+
+            // 拖框 / 縮放（鎖比例，限喺原圖入面）
+            (() => {
+                let drag = null;
+                const toImg = (dx, dy) => {
+                    const r = $('src-img').getBoundingClientRect();
+                    return [
+                        (dx / r.width) * crop.img.naturalWidth,
+                        (dy / r.height) * crop.img.naturalHeight,
+                    ];
+                };
+                const start = (e, kind) => {
+                    if (crop.mode !== 'center') return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    drag = { kind, x: e.clientX, y: e.clientY, box: { ...crop.box } };
+                    e.target.setPointerCapture(e.pointerId);
+                };
+                $('box').addEventListener('pointerdown', (e) => start(e, 'move'));
+                $('grip').addEventListener('pointerdown', (e) => start(e, 'resize'));
+                const move = (e) => {
+                    if (!drag) return;
+                    const [dx, dy] = toImg(e.clientX - drag.x, e.clientY - drag.y);
+                    const iw = crop.img.naturalWidth;
+                    const ih = crop.img.naturalHeight;
+                    const b = { ...drag.box };
+                    if (drag.kind === 'move') {
+                        b.x = clamp(b.x + dx, 0, iw - b.w);
+                        b.y = clamp(b.y + dy, 0, ih - b.h);
+                    } else {
+                        const ratio = crop.slot.w / crop.slot.h;
+                        const maxW = Math.min(iw - b.x, (ih - b.y) * ratio);
+                        const minW = Math.min(iw, ih * ratio) * 0.2;
+                        b.w = clamp(b.w + Math.max(dx, dy * ratio), minW, maxW);
+                        b.h = b.w / ratio;
+                    }
+                    crop.box = b;
+                    placeBox();
+                    renderPreview();
+                };
+                const end = () => {
+                    if (!drag) return;
+                    drag = null;
+                    renderCands();
+                };
+                $('box').addEventListener('pointermove', move);
+                $('grip').addEventListener('pointermove', move);
+                $('box').addEventListener('pointerup', end);
+                $('grip').addEventListener('pointerup', end);
+                $('box').addEventListener('pointercancel', end);
+                $('grip').addEventListener('pointercancel', end);
+            })();
+
+            /* ===================== Theme（簡化版：3 套候選 + 換一輪） ===================== */
+            const THEMES = {
+                lancy: {
+                    disc: 'disc-lancy.webp',
+                    name: '蘭茜',
+                    sub: '廣播劇 · 18 集',
+                    current: {
+                        bg: '#f3efde',
+                        surface: '#faf7ec',
+                        track: '#e0d6b8',
+                        accent: '#d45f32',
+                        onAccent: '#ffffff',
+                        title: '#a8401a',
+                        accentText: '#a8401a',
+                        text: '#33281d',
+                        muted: '#6b5a47',
+                        shadowDark: '#dcd3b8',
+                        shadowLight: '#ffffff',
+                        scheme: 'light',
+                        statusBar: '#a8401a',
+                        headerRule:
+                            'linear-gradient(90deg, #d45f32 0 60%, #8fbcb2 60%) 0 100% / 100% 3px no-repeat',
+                    },
+                    fallback: ['#e9dfc4', '#d45f32', '#8fbcb2', '#3b2a1e', '#b88a5a'],
+                },
+                waves: {
+                    disc: 'disc-waves.webp',
+                    name: '口水多過浪花',
+                    sub: '節目 · 一至五 15:10',
+                    current: {
+                        bg: '#0c1a2c',
+                        surface: '#152a40',
+                        track: '#2a4560',
+                        accent: '#ff5a4e',
+                        onAccent: '#0c1a2c',
+                        title: '#dcefff',
+                        text: '#eef5fb',
+                        muted: '#9fb6cc',
+                        shadowDark: '#06101c',
+                        shadowLight: '#1b3450',
+                    },
+                    fallback: ['#123456', '#ff5a4e', '#5fa8d3', '#f2e8d5', '#0b1622'],
+                },
+                fresh: {
+                    disc: 'disc-lancy.webp',
+                    name: '新劇（示範）',
+                    sub: '廣播劇 · 12 集',
+                    // 掃描出嚟嘅新劇：PLACEHOLDER_THEME（packages/catalog scan/draft.ts）
+                    current: {
+                        bg: '#141414',
+                        surface: '#1e1e1e',
+                        track: '#333333',
+                        accent: '#f2f2f2',
+                        onAccent: '#141414',
+                        title: '#ffffff',
+                        text: '#f2f2f2',
+                        muted: '#a3a3a3',
+                        shadowDark: '#0a0a0a',
+                        shadowLight: '#242424',
+                    },
+                    unset: true,
+                    fallback: ['#e9dfc4', '#d45f32', '#8fbcb2', '#3b2a1e', '#b88a5a'],
+                },
+            };
+            const CANDS_PER_ROUND = 3;
+            const theme = { key: 'lancy', pool: [], round: 0, sel: 0, applied: null };
+
+            const applyTheme = (el, t) => {
+                const s = el.style;
+                s.setProperty('--theme-bg', t.bg);
+                s.setProperty('--theme-surface', t.surface);
+                s.setProperty('--theme-track', t.track);
+                s.setProperty('--theme-accent', t.accent);
+                s.setProperty('--theme-on-accent', t.onAccent);
+                s.setProperty('--theme-title', t.title);
+                s.setProperty('--theme-text', t.text);
+                s.setProperty('--theme-muted', t.muted);
+                s.setProperty('--theme-shadow-dark', t.shadowDark);
+                s.setProperty('--theme-shadow-light', t.shadowLight);
+                s.setProperty('--theme-accent-text', t.accentText || t.accent);
+                s.setProperty('--theme-status-bar', t.statusBar || 'transparent');
+                s.setProperty('--theme-header-rule', t.headerRule || 'none');
+                s.setProperty('--theme-title-font', t.titleFont || 'var(--font)');
+            };
+
+            /** 簡單量化：每 channel 取高 4 bit 分桶，數量排序，揀互相有距離嘅主色 */
+            const extractPalette = (img) => {
+                const N = 64;
+                const c = document.createElement('canvas');
+                c.width = N;
+                c.height = N;
+                const ctx = c.getContext('2d', { willReadFrequently: true });
+                ctx.drawImage(img, 0, 0, N, N);
+                const data = ctx.getImageData(0, 0, N, N).data; // file:// 會 throw（canvas 污染）
+                const buckets = new Map();
+                for (let i = 0; i < data.length; i += 4) {
+                    const k =
+                        ((data[i] >> 4) << 8) | ((data[i + 1] >> 4) << 4) | (data[i + 2] >> 4);
+                    const b = buckets.get(k) || [0, 0, 0, 0];
+                    b[0] += data[i];
+                    b[1] += data[i + 1];
+                    b[2] += data[i + 2];
+                    b[3]++;
+                    buckets.set(k, b);
+                }
+                const list = [...buckets.values()]
+                    .map((b) => ({ rgb: [b[0] / b[3], b[1] / b[3], b[2] / b[3]], n: b[3] }))
+                    .sort((a, b) => b.n - a.n);
+                const picked = [];
+                for (const it of list) {
+                    if (picked.every((p) => Math.hypot(...p.rgb.map((v, i) => v - it.rgb[i])) > 60))
+                        picked.push(it);
+                    if (picked.length === 6) break;
+                }
+                return picked.map((p) => rgbToHex(...p.rgb));
+            };
+
+            const bestOn = (bg) =>
+                contrast(bg, '#ffffff') >= contrast(bg, '#141414') ? '#ffffff' : '#141414';
+            /** accent 逐步變深直到對 bg ≥ 4.5:1（淺色自動推 accentText / statusBar） */
+            const deriveAccentText = (accent, bg) => {
+                const [h, s, l0] = rgbToHsl(hexToRgb(accent));
+                for (let l = l0; l > 0.05; l -= 0.01) {
+                    const c = hsl(h, s, l);
+                    if (contrast(c, bg) >= 4.5 && contrast(c, '#ffffff') >= 4.5) return c;
+                }
+                return '#000000';
+            };
+
+            const buildTheme = (baseHex, accentHex, scheme) => {
+                const [h, s0] = rgbToHsl(hexToRgb(baseHex));
+                const [ah, as0, al0] = rgbToHsl(hexToRgb(accentHex));
+                const s = Math.min(s0, 0.55);
+                if (scheme === 'light') {
+                    const t = {
+                        bg: hsl(h, Math.min(s, 0.45), 0.92),
+                        surface: hsl(h, Math.min(s, 0.45), 0.96),
+                        track: hsl(h, Math.min(s, 0.4), 0.82),
+                        accent: hsl(ah, Math.max(as0, 0.5), clamp(al0, 0.42, 0.55)),
+                        title: hsl(ah, Math.max(as0, 0.5), 0.32),
+                        text: hsl(h, 0.3, 0.15),
+                        muted: hsl(h, 0.15, 0.38),
+                        shadowDark: hsl(h, Math.min(s, 0.35), 0.82),
+                        shadowLight: '#ffffff',
+                        scheme: 'light',
+                    };
+                    t.onAccent = bestOn(t.accent);
+                    t.accentText = deriveAccentText(t.accent, t.bg);
+                    t.statusBar = t.accentText;
+                    return t;
+                }
+                const t = {
+                    bg: hsl(h, s, 0.1),
+                    surface: hsl(h, s, 0.15),
+                    track: hsl(h, s * 0.8, 0.26),
+                    accent: hsl(ah, Math.max(as0, 0.55), clamp(al0, 0.55, 0.68)),
+                    title: hsl(h, 0.6, 0.92),
+                    text: hsl(h, 0.25, 0.95),
+                    muted: hsl(h, 0.2, 0.68),
+                    shadowDark: hsl(h, s, 0.05),
+                    shadowLight: hsl(h, s, 0.18),
+                };
+                t.onAccent = bestOn(t.accent);
+                return t;
+            };
+
+            /** 候選池：每輪三套（唔同底色 × 深 / 淺），換一輪就輪下一組；輪完由頭再嚟 */
+            const buildPool = (palette) => {
+                const sat = (hex) => {
+                    const [, s, l] = rgbToHsl(hexToRgb(hex));
+                    return s * (1 - Math.abs(l - 0.5) * 1.4);
+                };
+                const bySat = [...palette].sort((a, b) => sat(b) - sat(a));
+                const [dominant, second = palette[0], third = palette[1] || palette[0]] =
+                    palette.filter((p) => p !== bySat[0]);
+                const vivid = bySat[0];
+                const vivid2 = bySat[1] || vivid;
+                return [
+                    ['主色深底', dominant, vivid, 'dark'],
+                    ['鮮色深底', vivid, vivid2, 'dark'],
+                    ['主色淺底', dominant, vivid, 'light'],
+                    ['第二色深底', second, vivid, 'dark'],
+                    ['第二色淺底', second, vivid2, 'light'],
+                    ['鮮色淺底', vivid, vivid2, 'light'],
+                    ['第三色深底', third, vivid2, 'dark'],
+                    ['主色深底 · 第二強調色', dominant, vivid2, 'dark'],
+                    ['第三色淺底', third, vivid, 'light'],
+                ].map(([label, base, accent, scheme]) => ({
+                    label,
+                    t: buildTheme(base, accent, scheme),
+                }));
+            };
+
+            const PAIRS = [
+                ['text', 'bg', 4.5],
+                ['title', 'bg', 4.5],
+                ['muted', 'bg', 4.5],
+                ['text', 'surface', 4.5],
+                ['title', 'surface', 4.5],
+                ['muted', 'surface', 4.5],
+                ['onAccent', 'accent', 4.5],
+                ['accentText', 'bg', 3],
+            ];
+            const contrastRows = (t) =>
+                PAIRS.map(([fg, bg, min]) => {
+                    const fgHex = fg === 'accentText' ? t.accentText || t.accent : t[fg];
+                    const r = contrast(fgHex, t[bg]);
+                    return {
+                        fg,
+                        bg,
+                        min,
+                        r,
+                        ok: r >= min,
+                        fgHex,
+                        bgHex: t[bg],
+                        label:
+                            fg === 'accentText' && !t.accentText ? 'accent（未設 accentText）' : fg,
+                    };
+                });
+
+            const rounds = () => Math.ceil(theme.pool.length / CANDS_PER_ROUND);
+            const shown = () => {
+                const src = THEMES[theme.key];
+                const cur = theme.applied || src.current;
+                const curLabel = theme.applied
+                    ? '現用（剛選取）'
+                    : src.unset
+                      ? '現用：未設定（中性灰）'
+                      : '現用';
+                const from = theme.round * CANDS_PER_ROUND;
+                return [
+                    { label: curLabel, t: cur, current: true, unset: src.unset && !theme.applied },
+                ].concat(
+                    theme.pool
+                        .slice(from, from + CANDS_PER_ROUND)
+                        .map((c, i) => ({ ...c, suggest: src.unset && !theme.applied && i === 0 })),
+                );
+            };
+
+            const cardHtml = (c, src) => {
+                const fails = contrastRows(c.t).filter((r) => !r.ok).length;
+                const badge = c.unset
+                    ? '<span class="pill warn">未設定</span>'
+                    : c.suggest
+                      ? '<span class="pill info">建議</span>'
+                      : '';
+                const aa = fails
+                    ? '<span class="pill warn">⚠ ' + fails + '</span>'
+                    : '<span class="pill ok">AA</span>';
+                return (
+                    '<span class="lbl"><span>' +
+                    c.label +
+                    ' ' +
+                    badge +
+                    '</span>' +
+                    aa +
+                    '</span>' +
+                    '<span class="tphone' +
+                    (c.t.scheme === 'light' ? '' : ' dark') +
+                    '">' +
+                    '<span class="sb"></span>' +
+                    '<span class="hd"><b>' +
+                    src.name +
+                    '</b><small>' +
+                    src.sub +
+                    '</small></span>' +
+                    '<span class="pdisc sm"><img src="' +
+                    src.disc +
+                    '" alt="" /></span>' +
+                    '<span class="bar"></span>' +
+                    '<span class="ctl"><span class="play">▶</span></span>' +
+                    '<span class="li on">第 3 集 · 播放中</span><span class="li">第 2 集<small>11/11</small></span>' +
+                    '</span>'
+                );
+            };
+
+            const renderThemeCards = () => {
+                const src = THEMES[theme.key];
+                const wrap = $('tcands');
+                wrap.replaceChildren();
+                shown().forEach((c, i) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'tcard';
+                    b.setAttribute('aria-pressed', String(i === theme.sel));
+                    applyTheme(b, c.t);
+                    b.innerHTML = cardHtml(c, src);
+                    b.addEventListener('click', () => {
+                        theme.sel = i;
+                        renderThemeCards();
+                        $('tcands').querySelectorAll('.tcard')[i].focus();
+                    });
+                    wrap.append(b);
+                });
+                $('round-note').textContent = '第 ' + (theme.round + 1) + ' / ' + rounds() + ' 組';
+                $('theme-head').textContent = src.name + ' · 配色';
+                $('use-theme').disabled = theme.sel === 0;
+            };
+
+            const runExtract = () => {
+                const src = THEMES[theme.key];
+                const img = new Image();
+                img.onload = () => {
+                    let palette;
+                    try {
+                        palette = extractPalette(img);
+                    } catch {
+                        palette = src.fallback; // file:// 開讀唔到 canvas 像素：用預設色示範
+                    }
+                    const keep = {
+                        titleFont: src.current.titleFont,
+                        headerRule: src.current.headerRule,
+                    };
+                    theme.pool = buildPool(palette).map((c) => ({ ...c, t: { ...c.t, ...keep } }));
+                    theme.round = 0;
+                    theme.sel = 0;
+                    theme.applied = null;
+                    $('pick-note').textContent = '';
+                    renderThemeCards();
+                };
+                img.src = src.disc;
+            };
+
+            $('more-cands').addEventListener('click', () => {
+                theme.round = (theme.round + 1) % rounds();
+                theme.sel = 0;
+                renderThemeCards();
+            });
+            $('use-theme').addEventListener('click', () => {
+                const c = shown()[theme.sel];
+                theme.applied = { ...c.t };
+                theme.sel = 0;
+                $('pick-note').textContent = '已套用「' + c.label + '」（示範，不會儲存）';
+                renderThemeCards();
+            });
+            $('theme-src').addEventListener('change', (e) => {
+                theme.key = e.target.value;
+                runExtract();
+            });
+            runExtract();
+        </script>
+    </body>
+</html>

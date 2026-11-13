@@ -12,10 +12,7 @@ afterEach(() => {
 
 describe('validationMessage', () => {
     it.each([
-        [
-            'shows/abc: tile: no file tile.webp in the folder',
-            '節目「abc」未有 Banner 圖片，請先上載。',
-        ],
+        ['shows/abc: tile: no file tile.webp in the folder', '節目「abc」未有橫圖，請先上載。'],
         ['shows/abc: disc: no file disc.webp in the folder', '節目「abc」未有碟面圖片，請先上載。'],
         [
             'dramas/golden: disc: no file disc.webp in the folder',
@@ -35,6 +32,22 @@ describe('validationMessage', () => {
         [
             'dramas/golden: arcs[0].addedAt must be a YYYY-MM-DD date',
             '廣播劇「golden」第 1 個短篇的上架日期格式不正確。',
+        ],
+        [
+            'banner: image long → 0123456789abcdef.webp not uploaded',
+            '首頁 Banner 不完整：缺少闊版（2000 × 400）',
+        ],
+        [
+            'banner: image standard → 0123456789abcdef.webp not uploaded',
+            '首頁 Banner 不完整：缺少窄版（1200 × 517）',
+        ],
+        [
+            'banner: image long → banner.png is not <hash>.<ext>',
+            '首頁 Banner 不完整：闊版（2000 × 400）圖檔無效',
+        ],
+        [
+            'catalog.json: banner.standard must be an https URL or a same-origin absolute path',
+            '首頁 Banner 不完整：窄版（1200 × 517）圖檔無效',
         ],
     ])('should explain %s', (detail, message) => {
         expect(validationMessage(detail)).toBe(message);

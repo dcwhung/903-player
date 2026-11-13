@@ -12,8 +12,8 @@ const lightToken = (name: string) =>
     new RegExp(`${name}:\\s*([^;]+);`).exec(cssOf('tokens.css').split('@media')[0] ?? '')?.[1];
 
 describe('color tokens in admin CSS', () => {
-    it('theme.css should not hardcode hex colours', () => {
-        expect(withoutComments(cssOf('theme.css')).match(HEX_COLOR) ?? []).toEqual([]);
+    it.each(['theme.css', 'phase4.css'])('%s should not hardcode hex colours', (name) => {
+        expect(withoutComments(cssOf(name)).match(HEX_COLOR) ?? []).toEqual([]);
     });
 
     it('should paint the 新 pill like the player NewBadge (red #c0362c, white text, not themed)', () => {

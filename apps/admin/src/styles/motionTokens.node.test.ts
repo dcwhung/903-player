@@ -8,7 +8,7 @@ const withoutComments = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '');
 const LITERAL_TIME = /(?:animation|transition)[\w-]*\s*:[^;]*?(?<![\w-])\d*\.?\d+m?s\b/g;
 
 describe('motion tokens in admin CSS', () => {
-    it.each(['app.css', 'mockup.css', 'theme.css'])(
+    it.each(['app.css', 'mockup.css', 'theme.css', 'phase4.css'])(
         '%s should time animations with --motion-* tokens only',
         (name) => {
             expect(withoutComments(cssOf(name)).match(LITERAL_TIME) ?? []).toEqual([]);

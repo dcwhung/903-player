@@ -1,10 +1,10 @@
 /*
  * 側邊 nav：Design Origin: mockup: _mockups_/admin-style/index.html#i（⑨ / ⑨b nav v4，實色天藍 + 白字，可收細）
- * 內容：更新（待辦數）、節目、廣播劇 / 記錄：上下架記錄 / 底：主題 + 收合、email + 登出（NavFooter）
+ * 內容：更新（待辦數）、節目、廣播劇、首頁 Banner（Phase 4）/ 記錄：上下架記錄 / 底：主題 + 收合、email + 登出（NavFooter）
  * 收細（76px）：banner → player app icon 縮圖（public/icon-192.png，圓角）、只剩 icon + tooltip、待辦數 → 小橙點。
  * 手動收合 / 展開：主題掣同收合掣由舊位置滑去新位置（FLIP，flip.ts）；視窗窄咗自動收合唔播
  */
-import { Disc, History, Inbox, Radio, type LucideIcon } from 'lucide-react';
+import { Disc, History, Image, Inbox, Radio, type LucideIcon } from 'lucide-react';
 import { useRef, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAdminData } from '../data/AdminData';
@@ -115,6 +115,7 @@ export function Nav(props: NavProps) {
             />
             <Item to="/shows" label={t('nav.shows')} icon={Radio} mini={mini} />
             <Item to="/dramas" label={t('nav.dramas')} icon={Disc} mini={mini} />
+            <Item to="/banner" label={t('nav.banner')} icon={Image} mini={mini} />
             <span className="group">{t('nav.records')}</span>
             <Item to="/history" label={t('nav.history')} icon={History} mini={mini} />
             <NavFooter {...props} onToggle={toggle} />

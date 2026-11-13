@@ -14,6 +14,8 @@ describe('DramaTabs', () => {
             '/dramas/a%20b?from=todos',
             '/dramas/a%20b/arcs?from=todos#half',
             '/dramas/a%20b/schedule?from=todos#half',
+            '/dramas/a%20b/theme?from=todos',
         ]);
+        expect(screen.getByRole('link', { name: '配色' })).toBeInTheDocument();
     });
 });

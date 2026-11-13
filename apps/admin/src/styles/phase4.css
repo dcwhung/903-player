@@ -1,0 +1,580 @@
+/*
+ * Phase 4 樣式層：Design Origin: mockup: _mockups_/admin-phase4/index.html
+ * 喺 theme.css 之後載入。封面裁切 dialog（#b / #c）、配色候選卡（#d）、首頁 Banner 頁（#e）、發佈警告（#f）。
+ * 顏色一律用 tokens.css；細版 player 預覽用 --theme-*（model/theme.ts themeStyle 由 entry 配色設）。
+ * 動畫全部包喺 prefers-reduced-motion: no-preference（.claude/CLAUDE.md「Motion」）
+ */
+
+/* ---------- 共用：note 前面 icon、spinner 細版 ---------- */
+.note:has(> svg) {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.note > svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+}
+
+.note > .spinner {
+    flex: none;
+    margin-top: 3px;
+}
+
+/* ---------- 裁切 dialog（#b） ---------- */
+.crop-dialog {
+    width: 100%;
+}
+
+.crop-dialog:focus {
+    outline: none;
+}
+
+.crop-dialog header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 12px;
+}
+
+.crop-dialog h3 {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.crop-dialog .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.crop-dialog .mono {
+    font-family: var(--mono);
+}
+
+.crop-dialog .editor {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.crop-dialog .pane {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+}
+
+.crop-dialog .pane > .label {
+    font-weight: 600;
+}
+
+.crop-dialog .src-frame {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    padding: 10px;
+    border: 2px dashed var(--media-border);
+    border-radius: 12px;
+    background: var(--surface-2);
+    overflow: hidden;
+}
+
+.crop-dialog .src-frame.loading {
+    aspect-ratio: 16 / 9;
+}
+
+.crop-dialog .src {
+    position: relative;
+    max-width: 100%;
+    max-height: 100%;
+    line-height: 0;
+    user-select: none;
+    touch-action: none;
+}
+
+.crop-dialog .src img {
+    display: block;
+    max-width: 100%;
+    max-height: 280px;
+    -webkit-user-drag: none;
+}
+
+.crop-dialog .box {
+    position: absolute;
+    border: 2px solid var(--crop-frame);
+    border-radius: 6px;
+    box-shadow: 0 0 0 999px var(--crop-mask);
+    cursor: move;
+}
+
+.crop-dialog .box:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.crop-dialog .box.circle {
+    border-radius: 50%;
+}
+
+.crop-dialog .box.locked {
+    border-style: dashed;
+    box-shadow: none;
+    cursor: default;
+}
+
+.crop-dialog .grip {
+    position: absolute;
+    right: -9px;
+    bottom: -9px;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--primary);
+    border-radius: 50%;
+    background: var(--crop-frame);
+    cursor: nwse-resize;
+}
+
+.crop-dialog .box.locked .grip {
+    display: none;
+}
+
+.crop-dialog .cands {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.crop-dialog .cand {
+    display: grid;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+    font-size: 13px;
+    text-align: center;
+}
+
+.crop-dialog .cand[aria-pressed='true'] {
+    background: var(--accent-soft);
+    box-shadow: inset 0 0 0 2px var(--primary);
+    color: var(--accent-ink);
+    font-weight: 600;
+}
+
+.crop-dialog .cand canvas {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    background: var(--disc-blank);
+}
+
+.crop-dialog .cand.disc canvas {
+    justify-self: center;
+    width: 72%;
+    border-radius: 50%;
+}
+
+.crop-dialog .pick-other {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    gap: 6px;
+}
+
+.crop-dialog .pick-other svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ---------- 細版 player 預覽（裁切 dialog 右邊、配色候選卡）：跟 apps/player Disc / tile ---------- */
+.pv {
+    display: grid;
+    place-items: center;
+    gap: 12px;
+    padding: 22px 14px;
+    border-radius: 16px;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+}
+
+.pdisc {
+    position: relative;
+    width: 66%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--theme-shadow-dark);
+    box-shadow:
+        0 0 0 8px var(--theme-surface),
+        var(--disc-drop);
+}
+
+.pdisc canvas,
+.pdisc img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pdisc::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: 50%;
+    background: var(--disc-grooves);
+}
+
+.pdisc::after {
+    content: '';
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    top: 50%;
+    width: 16%;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    border-radius: 50%;
+    background: var(--theme-surface);
+    box-shadow: 0 0 0 3px var(--disc-hub-ring);
+}
+
+.ptile {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+}
+
+.ptile canvas {
+    width: 100%;
+    height: auto;
+    border-radius: 16px;
+    box-shadow:
+        6px 6px 14px var(--theme-shadow-dark),
+        -4px -4px 10px var(--theme-shadow-light);
+}
+
+.ptile b {
+    color: var(--theme-title);
+}
+
+.pbanner {
+    width: 100%;
+}
+
+.pbanner canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 14px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .scrim .crop-dialog {
+        animation: dialog-in var(--motion-base) var(--motion-ease);
+    }
+
+    .crop-dialog .cand {
+        transition:
+            box-shadow var(--motion-fast) var(--motion-ease),
+            background var(--motion-fast) var(--motion-ease);
+    }
+}
+
+@keyframes dialog-in {
+    from {
+        opacity: 0;
+        scale: 0.97;
+    }
+}
+
+@media (max-width: 860px) {
+    .crop-dialog .editor {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 裁切 dialog 高過視窗（手機打橫 / 細 laptop）都捲得到底 */
+.scrim:has(.crop-dialog) {
+    overflow: auto;
+}
+
+/* ---------- 配色（#d）：現用 + 三套候選，每張係細版 player 頁 ---------- */
+.theme-head,
+.theme-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.theme-head h3 {
+    margin: 0 auto 0 0;
+}
+
+.theme-foot {
+    justify-content: flex-end;
+}
+
+.tgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+}
+
+/* button 入面用 block 排（grid 喺 button 入面會縮成內容闊度） */
+.tcard {
+    display: block;
+    padding: 8px 8px 10px;
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--ink);
+    font-size: 13px;
+    text-align: left;
+}
+
+.tcard > * {
+    width: 100%;
+}
+
+.tcard > * + * {
+    margin-top: 8px;
+}
+
+.tcard[aria-pressed='true'] {
+    background: var(--accent-soft);
+    box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.tcard .lbl {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px 6px;
+    font-weight: 600;
+}
+
+.tcard .lbl > span:first-child {
+    min-width: 0;
+}
+
+.tphone {
+    display: grid;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+}
+
+.tphone .sb {
+    height: 8px;
+    background: var(--theme-status-bar);
+}
+
+.tphone .hd {
+    position: relative;
+    display: grid;
+    padding: 2px 10px 8px;
+}
+
+.tphone .hd::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--theme-header-rule);
+    pointer-events: none;
+}
+
+.tphone .hd b {
+    color: var(--theme-title);
+    font: 700 15px/1.3 var(--theme-title-font, var(--font));
+}
+
+.tphone .hd small {
+    color: var(--theme-muted);
+    font-size: 11px;
+}
+
+.tphone .pdisc.sm {
+    justify-self: center;
+    width: 52%;
+    box-shadow:
+        0 0 0 5px var(--theme-surface),
+        var(--disc-drop-sm);
+}
+
+.tphone .bar {
+    height: 3px;
+    margin: 4px 12px 0;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--theme-accent) 40%, var(--theme-track) 40%);
+}
+
+.tphone .ctl {
+    display: flex;
+    justify-content: center;
+}
+
+.tphone .play {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--theme-accent);
+    color: var(--theme-on-accent);
+}
+
+.tphone .play svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+}
+
+.tphone .li {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 8px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    background: var(--theme-surface);
+    font-size: 11px;
+}
+
+.tphone .li.on {
+    color: var(--theme-accent-text);
+    font-weight: 600;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .tcard {
+        transition:
+            box-shadow var(--motion-fast) var(--motion-ease),
+            background var(--motion-fast) var(--motion-ease);
+    }
+}
+
+/* ---------- 首頁 Banner 頁（#e）：狀態 pill + 還原預設 + 更換 Banner；窄版 / 闊版兩個 slot ---------- */
+.banner-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.banner-head .pill {
+    margin-right: auto;
+}
+
+.banner-media {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 28px;
+}
+
+.img-slot.banner-std {
+    width: 340px;
+    height: calc(340px * 517 / 1200);
+    border-radius: 12px;
+}
+
+.img-slot.banner-long {
+    width: 340px;
+    height: calc(340px * 400 / 2000);
+    border-radius: 10px;
+}
+
+.img-slot.banner-std .slot-btn,
+.img-slot.banner-long .slot-btn {
+    right: -10px;
+    bottom: -10px;
+}
+
+@media (max-width: 420px) {
+    .img-slot.banner-std,
+    .img-slot.banner-long {
+        width: 280px;
+    }
+
+    .img-slot.banner-std {
+        height: calc(280px * 517 / 1200);
+    }
+
+    .img-slot.banner-long {
+        height: calc(280px * 400 / 2000);
+    }
+}
+
+/* ---------- 發佈頁配色警告（#f）：一行摘要 / 展開清單 ---------- */
+.pub-warnings {
+    display: grid;
+    gap: 8px;
+}
+
+.pub-warnings .note .link-btn {
+    margin-left: 8px;
+    color: var(--accent-ink);
+    text-decoration: underline;
+}
+
+.issues {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.issues li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+.issues li > svg {
+    width: 18px;
+    height: 18px;
+}
+
+.issues.warn li {
+    background: var(--warn-bg);
+    color: var(--warn-ink);
+}
+
+.issues.bad li {
+    background: var(--danger-bg);
+    color: var(--danger-ink);
+}
+
+.issues li small {
+    display: block;
+    font-size: 12px;
+}
+
+.issues li a {
+    color: var(--accent-ink);
+    font-size: 13px;
+    font-weight: 600;
+}

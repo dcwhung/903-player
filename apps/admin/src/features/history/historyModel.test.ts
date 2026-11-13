@@ -1,5 +1,5 @@
 import type { ChangeItem } from '@903-player/catalog';
-import { historyName, itemStatusOf } from './historyModel';
+import { bannerChangedOf, historyName, itemStatusOf } from './historyModel';
 
 const entry = { kind: 'dramas', id: 'golden', name: '黃金少年' } as const;
 const arc = { id: 's1', name: 'Season 1', label: 'Season 1' };
@@ -46,5 +46,16 @@ describe('historyModel', () => {
         expect(historyName({ kind: 'rollback', when: 'now', detail: { publishId: 1 } })).toBe(
             '還原至 #1',
         );
+    });
+});
+
+describe('bannerChangedOf', () => {
+    it('should be true only when the publish changes say the banner changed', () => {
+        const changes = { items: [], timeline: [] };
+        expect(bannerChangedOf({ ...changes, bannerChanged: true })).toBe(true);
+        expect(bannerChangedOf({ ...changes, bannerChanged: false })).toBe(false);
+        // 舊 api（< 0.8.1）/ 舊記錄冇呢個欄位 → 當冇改
+        expect(bannerChangedOf(changes)).toBe(false);
+        expect(bannerChangedOf(undefined)).toBe(false);
     });
 });

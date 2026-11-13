@@ -15,6 +15,7 @@ import { useEntryEditor, type EntryEditor } from '../editor/useEntryEditor';
 import { useImageSave } from '../editor/useImageSave';
 import { useRenameEntry } from '../editor/useRenameEntry';
 import { PLACEHOLDER_ID } from './dramaModel';
+import { useR2AutoCrop } from './useR2AutoCrop';
 import { useRescan } from './useRescan';
 import { confirmAll, useUnconfirmedIds, type IdConfirm } from './idConfirm';
 
@@ -72,13 +73,15 @@ export const useDramaEditor = (id: string) => {
         await origin.afterSave();
     };
     const parts = { id, editor, origin, newId, setNewId, save, ...errors };
+    const autoCrop = useR2AutoCrop(id, editor);
     return {
         ...parts,
         ...useDramaFlags(id, editor),
         ...useUnconfirmedIds(id),
         saveImage: useImageSave(editor),
         rename: useRenameEntry(editor, origin.afterSave),
-        rescan: useRescan(id, editor),
+        rescan: useRescan(id, editor, autoCrop.retry),
+        autoCrop,
     };
 };
 

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 /*
  * 真圖（createState({ realImages: true })）：player catalog 嘅 cover 複製咗去 e2e/fixtures/（只係 e2e 用，唔入 admin bundle）
- * 「口水多過浪花」+「蘭茜夫人劇場」（連短篇「戀愛二分一」）有 Banner / 碟面；其他照舊冇圖（黑碟）
+ * 「口水多過浪花」+「蘭茜夫人劇場」（連短篇「戀愛二分一」）有橫圖 / 碟面；其他照舊冇圖（黑碟）
  */
 // fileURLToPath（S-834）：checkout 路徑有空格 / 中文都得（.pathname 會變 %20）
 const FIXTURES = fileURLToPath(new URL('./fixtures/', import.meta.url));
@@ -232,13 +232,57 @@ const missingFolderRow = () => ({
     },
 });
 
+/*
+ * Phase 4：createState({ r2Covers: true })：蘭茜夫人劇場 R2 資料夾有 cd cover / cover photo（GET sources +
+ * r2-source 出 e2e/fixtures 真圖），編輯頁自動裁切；{ warnings: true }：GET /api/changes 有配色警告
+ */
+const R2_COVERS = {
+    '蘭茜夫人劇場/cd cover.webp': 'lancy-disc.webp',
+    '蘭茜夫人劇場/cover photo.webp': 'lancy-tile.webp',
+};
+
+const sourcesOf = (state, id) =>
+    state.r2Covers && id === 'lancy'
+        ? {
+              folder: '蘭茜夫人劇場',
+              cdCover: '蘭茜夫人劇場/cd cover.webp',
+              coverPhoto: '蘭茜夫人劇場/cover photo.webp',
+              arcs: [],
+          }
+        : null;
+
+const WARNINGS = [
+    { kind: 'neutralTheme', target: 'dramas/golden' },
+    {
+        kind: 'contrast',
+        target: 'dramas/lancy',
+        foreground: 'muted',
+        background: 'surface',
+        ratio: 3.9,
+        minimum: 4.5,
+    },
+    {
+        kind: 'contrast',
+        target: 'shows/waves',
+        foreground: 'onAccent',
+        background: 'accent',
+        ratio: 4.1,
+        minimum: 4.5,
+    },
+];
+
 export const createState = ({
     realImages = false,
     missingFolder = false,
     statusMix = false,
+    r2Covers = false,
+    warnings = false,
 } = {}) => ({
     loggedIn: false,
     missingFolder,
+    r2Covers,
+    warnings,
+    banner: null,
     entries: [
         show('waves', '口水多過浪花', 1, { airTime: { start: '15:00', end: '16:30' } }),
         show('night', '深夜節目', 2),
@@ -249,8 +293,17 @@ export const createState = ({
         .map((entry) => (realImages ? withRealImages(entry) : entry))
         .map((entry) => (missingFolder ? withMissingFolder(entry) : entry)),
     publishes: [],
-    /** 之前嘅記錄（#2 成功、#1 失敗）：上下架記錄出到「還原」同「失敗」 */
+    /**
+     * 之前嘅記錄（#3 淨換首頁 Banner、#2 成功、#1 失敗）：上下架記錄出到「還原」、「失敗」同
+     * 「更換首頁 Banner」（api 0.8.1 changes.bannerChanged）
+     */
     history: [
+        {
+            ...publishRow(3),
+            current: false,
+            createdAt: '2026-11-10T09:20:00.000Z',
+            changes: { items: [], timeline: [], bannerChanged: true },
+        },
         { ...publishRow(2), current: false, createdAt: '2026-11-09T14:40:00.000Z' },
         {
             ...publishRow(1),
@@ -444,7 +497,25 @@ const handlers = {
             base: null,
             changes: changesOf(state),
             validation: { ok: true, episodeCount: 102 },
+            warnings: state.warnings ? WARNINGS : [],
+            bannerChanged: state.banner !== null,
         }),
+    'GET /api/banner': (state, route) =>
+        json(route, { banner: state.banner, updatedAt: state.banner ? 'banner-v1' : null }),
+    'PUT /api/banner': (state, route, request) => {
+        state.banner = request.postDataJSON();
+        return json(route, { banner: state.banner, updatedAt: 'banner-v1' });
+    },
+    'DELETE /api/banner': (state, route) => {
+        state.banner = null;
+        return route.fulfill({ status: 204 });
+    },
+    'GET /api/r2-source': (state, route, request) => {
+        const fixture = R2_COVERS[new URL(request.url()).searchParams.get('key') ?? ''];
+        if (!state.r2Covers || !fixture)
+            return json(route, { error: 'no such source' }, { status: 404 });
+        return route.fulfill({ path: `${FIXTURES}${fixture}`, contentType: 'image/webp' });
+    },
     'POST /api/publish': (state, route) => {
         const row = publishRow(state.publishes.length + 1 + state.history.length);
         state.publishes.unshift(row);
@@ -468,6 +539,10 @@ export const installMockApi = async (page, state) => {
         const name = decodeURIComponent(
             new URL(request.url()).pathname.match(IMAGE_PATH)?.[1] ?? '',
         );
+        // 今次 e2e 上載咗嘅圖（PUT /api/assets 回 img<N>.webp）：出返上載嗰份 bytes
+        const uploaded = name.match(/^img(\d+)\.webp$/);
+        const body = uploaded ? state.assets[Number(uploaded[1]) - 1] : undefined;
+        if (body) return route.fulfill({ body, contentType: 'image/webp' });
         if (!FIXTURE_NAMES.has(name)) return route.fulfill({ status: 404 });
         return route.fulfill({ path: `${FIXTURES}${name}`, contentType: 'image/webp' });
     });
@@ -489,6 +564,11 @@ export const installMockApi = async (page, state) => {
         if (preview) return previewRoute(state, route, request, preview.slice(1));
         const schedule = url.pathname.match(/^\/api\/dramas\/([^/]+)\/arcs\/([^/]+)\/schedule$/);
         if (schedule) return scheduleRoute(state, route, request, schedule.slice(1));
+        const sources = url.pathname.match(/^\/api\/dramas\/([^/]+)\/sources$/);
+        if (sources) {
+            const body = sourcesOf(state, decodeURIComponent(sources[1]));
+            return body ? json(route, body) : json(route, { error: 'not r2' }, { status: 422 });
+        }
         const handler = handlers[key];
         return handler
             ? handler(state, route, request)

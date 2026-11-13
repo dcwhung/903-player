@@ -1,58 +1,53 @@
 /*
- * 圖片 slot 上載流程（3c）：揀檔 → prepareImage（類型、decode、置中裁切、WebP）→ 預覽 dialog →
- * 「上載」先 PUT /api/assets → onUploaded（caller 即刻存 entry）；取消 / 完成就釋放預覽 URL
+ * 圖片 slot 上載流程：揀檔 → 裁切 dialog（載入中 → 候選 / 拖框）→「上載」先轉 WebP + PUT /api/assets →
+ * onUploaded（caller 即刻存 entry）→ 收 dialog。轉換 / 上載失敗留喺 dialog（可以再試或者取消）
  */
-import { useEffect, useState, type ChangeEvent } from 'react';
-import { uploadAsset } from '../api/endpoints';
+import { useState, type ChangeEvent } from 'react';
 import { errorMessage } from '../api/errorMessage';
-import { prepareImage } from './imageCrop';
-import type { PendingImage } from './ImagePreviewDialog';
 import type { ImageSlotKind } from './imageUpload';
+import { uploadChoice } from './uploadChoice';
+import { useCropSession, type ReadySource } from './useCropSession';
 
-const release = (image: PendingImage | null) => {
-    if (!image) return;
-    URL.revokeObjectURL(image.sourceUrl);
-    URL.revokeObjectURL(image.resultUrl);
-};
+type OnUploaded = (name: string) => Promise<void> | void;
 
-/** 揀咗嘅檔 → 預覽（連 object URL）或者錯誤文字 */
-const toPending = async (file: File, slot: ImageSlotKind): Promise<PendingImage | string> => {
-    const prepared = await prepareImage(file, slot);
-    if ('error' in prepared) return prepared.error;
-    return {
-        ...prepared,
-        name: file.name,
-        type: file.type,
-        sourceUrl: URL.createObjectURL(file),
-        resultUrl: URL.createObjectURL(prepared.blob),
-    };
-};
-
-export const useImageUpload = (
+/** 上載 + 存 entry；回錯誤文字（成功 = undefined） */
+const uploadAndSave = async (
+    ready: ReadySource,
     slot: ImageSlotKind,
-    onUploaded: (name: string) => Promise<void> | void,
-) => {
-    const [busy, setBusy] = useState(false);
+    onBusy: (message: string) => void,
+    onUploaded: OnUploaded,
+): Promise<string | undefined> => {
+    const uploaded = await uploadChoice(ready, slot, onBusy);
+    if ('error' in uploaded) return uploaded.error;
+    try {
+        await onUploaded(uploaded.name);
+        return undefined;
+    } catch (error) {
+        return errorMessage(error);
+    }
+};
+
+export const useImageUpload = (slot: ImageSlotKind, onUploaded: OnUploaded) => {
+    const session = useCropSession(slot);
+    const [busy, setBusy] = useState<string | null>(null);
     const [error, setError] = useState<string>();
-    const [pending, setPending] = useState<PendingImage | null>(null);
-    useEffect(() => () => release(pending), [pending]);
-    const onPick = async (event: ChangeEvent<HTMLInputElement>) => {
+    const onPick = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         event.target.value = '';
         setError(undefined);
-        if (!file) return;
-        const next = await toPending(file, slot);
-        if (typeof next === 'string') setError(next);
-        else setPending(next);
+        if (file) void session.open(file);
     };
     const confirm = async () => {
-        if (!pending) return;
-        setBusy(true);
-        await uploadAsset(pending.blob)
-            .then(({ name }) => onUploaded(name))
-            .catch((uploadError: unknown) => setError(errorMessage(uploadError)));
-        setPending(null);
-        setBusy(false);
+        if (session.phase?.status !== 'ready') return;
+        setError(undefined);
+        const failed = await uploadAndSave(session.phase, slot, setBusy, onUploaded);
+        setBusy(null);
+        if (failed === undefined) session.close();
+        else setError(failed);
     };
-    return { busy, error, pending, onPick, confirm, cancel: () => setPending(null) };
+    const cancel = () => {
+        setError(undefined);
+        session.close();
+    };
+    return { session, busy, error, onPick, confirm, cancel };
 };

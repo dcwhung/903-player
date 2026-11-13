@@ -58,6 +58,15 @@
     --on-tip: #ffffff;
     /* 圖片裁切框（深色遮罩上面嘅白框，深淺色一樣） */
     --crop-frame: #ffffff;
+    /* 裁切框外面嘅遮罩（深淺色一樣） */
+    --crop-mask: rgb(0 0 0 / 0.45);
+    /* 播放器樣式預覽（裁切 dialog、配色候選卡）：碟坑紋、碟影、碟心圈（跟 apps/player Disc，深淺色一樣） */
+    --disc-grooves:
+        radial-gradient(circle, transparent 55%, rgb(0 0 0 / 0.45) 100%),
+        repeating-radial-gradient(circle, transparent 0 6px, rgb(255 255 255 / 0.14) 6px 7px);
+    --disc-drop: 0 16px 30px rgb(0 0 0 / 0.4);
+    --disc-drop-sm: 0 8px 16px rgb(0 0 0 / 0.35);
+    --disc-hub-ring: rgb(0 0 0 / 0.5);
     /* 卡片 A：20px 圓角 + 柔和陰影、冇邊框；深色改細邊框 */
     --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06);
     --shadow-btn: 0 2px 6px rgb(30 123 192 / 0.3);

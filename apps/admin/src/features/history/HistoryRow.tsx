@@ -13,7 +13,7 @@ import { thumbOf } from '../../model/thumbs';
 import { Pill } from '../../ui/Pill';
 import { Thumb } from '../../ui/Thumb';
 import { kindLabel } from '../update/timelineModel';
-import { historyName, itemStatusOf } from './historyModel';
+import { bannerChangedOf, historyName, itemStatusOf } from './historyModel';
 
 interface HistoryRowProps {
     row: PublishSummary;
@@ -73,9 +73,22 @@ function ChangeLine({ item, entries }: { item: ChangeItem; entries: readonly Loa
     );
 }
 
+/** 換咗首頁 Banner（api 0.8.1 bannerChanged）：同變更行一樣嘅四欄，冇縮圖、冇狀態 */
+function BannerLine() {
+    return (
+        <>
+            <span className="kind">{t('history.bannerKind')}</span>
+            <span />
+            <span className="name">{t('history.bannerName')}</span>
+            <span />
+        </>
+    );
+}
+
 export function HistoryRow({ row, servingId, entries, onRollback }: HistoryRowProps) {
     const failed = row.status !== 'ok';
     const items = row.changes?.items ?? [];
+    const bannerChanged = bannerChangedOf(row.changes);
     return (
         <div
             className={`hist-row${row.current ? ' current' : ''}${failed ? ' failed' : ''}`}
@@ -94,7 +107,8 @@ export function HistoryRow({ row, servingId, entries, onRollback }: HistoryRowPr
                 {items.map((item, i) => (
                     <ChangeLine key={i} item={item} entries={entries} />
                 ))}
-                {items.length === 0 && (
+                {bannerChanged && <BannerLine />}
+                {items.length === 0 && !bannerChanged && (
                     <span className="muted small">{t('history.noChanges')}</span>
                 )}
                 <span className={`meta${failed ? ' err' : ''}`}>

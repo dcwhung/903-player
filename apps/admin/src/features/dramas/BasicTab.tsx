@@ -4,6 +4,8 @@
  */
 import { exampleFileName } from '@903-player/catalog';
 import type { RawDefinition } from '../../api/types';
+import { nameOf } from '../../model/raw';
+import { previewInfoOf } from '../../model/theme';
 import { t } from '../../i18n/t';
 import { DeleteEntry } from '../editor/DeleteEntry';
 import { dirtyLabels } from '../editor/entryDraft';
@@ -57,6 +59,22 @@ function R2Fields({ state }: { state: DramaEditorState }) {
     );
 }
 
+/** 劇集碟面 / 橫圖（R2 原圖自動裁切狀態喺 slot 下面） */
+function DramaMedia({ state }: { state: DramaEditorState }) {
+    const { draft } = state.editor;
+    if (!draft) return null;
+    return (
+        <MediaAside
+            id="images"
+            target={draft.definition}
+            images={draft.images}
+            preview={previewInfoOf(draft.definition, nameOf(draft.definition, state.id))}
+            auto={state.autoCrop.statusOf()}
+            onUploaded={state.saveImage}
+        />
+    );
+}
+
 export function BasicTab({ state }: { state: DramaEditorState }) {
     const { editor, neverPublished } = state;
     const { draft, entry } = editor;
@@ -71,12 +89,7 @@ export function BasicTab({ state }: { state: DramaEditorState }) {
     const confirmDrama = unconfirmed && state.newId === state.id;
     return (
         <div className="card with-media">
-            <MediaAside
-                id="images"
-                target={draft.definition}
-                images={draft.images}
-                onUploaded={state.saveImage}
-            />
+            <DramaMedia state={state} />
             <div className="form">
                 <IdField
                     value={state.newId}

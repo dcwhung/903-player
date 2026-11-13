@@ -1,14 +1,19 @@
 /*
- * 廣播劇分頁：基本資料 / 短篇（N）/ 排程（mockup ⑧ .tabs）；保留 ?from=todos；
+ * 廣播劇分頁：基本資料 / 短篇（N）/ 排程 / 配色（mockup ⑧ .tabs；配色：mockup admin-phase4 #d）；保留 ?from=todos；
  * 短篇 / 排程連結帶記住嘅短篇（#arc，見 useArcMemory）
  */
 import { Link, useLocation } from 'react-router-dom';
 import { t } from '../../i18n/t';
 import { dramaEditorPath } from '../../model/paths';
 
-export type DramaTab = 'basic' | 'arcs' | 'schedule';
+export type DramaTab = 'basic' | 'arcs' | 'schedule' | 'theme';
 
-const SUFFIX: Record<DramaTab, string> = { basic: '', arcs: '/arcs', schedule: '/schedule' };
+const SUFFIX: Record<DramaTab, string> = {
+    basic: '',
+    arcs: '/arcs',
+    schedule: '/schedule',
+    theme: '/theme',
+};
 
 /** 揀短篇嘅 tab：連結帶 #<短篇 ID> */
 const ARC_TABS: ReadonlySet<DramaTab> = new Set(['arcs', 'schedule']);
@@ -29,6 +34,7 @@ export function DramaTabs({ id, tab, arcCount, arc = '' }: DramaTabsProps) {
         basic: t('drama.tabBasic'),
         arcs: t('drama.tabArcs', { count: arcCount }),
         schedule: t('drama.tabSchedule'),
+        theme: t('drama.tabTheme'),
     };
     return (
         <nav className="tabs" aria-label={t('drama.tabsLabel')}>
