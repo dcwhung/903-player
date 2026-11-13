@@ -89,9 +89,9 @@ describe('TodoMatrix', () => {
         render(<MemoryRouter>{matrix()}</MemoryRouter>);
         const row = screen.getByRole('row', { name: /天使之戀系列/ });
         expect(within(row).queryByRole('checkbox')).not.toBeInTheDocument();
-        expect(within(row).getByTitle('天使之戀系列（尚未設定ID、圖片、排期）')).toHaveTextContent(
-            '未完成',
-        );
+        const cell = within(row).getByTitle('天使之戀系列（尚未設定ID、圖片、排期）');
+        // S-989：screen reader 讀到「未完成：…（尚未設定…）」
+        expect(cell).toHaveTextContent('未完成：天使之戀系列（尚未設定ID、圖片、排期）');
     });
 
     it('should only show a checkbox on selectable rows', () => {

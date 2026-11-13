@@ -35,6 +35,8 @@ export function PublishCell({ row, picked, onToggle }: PublishCellProps) {
             <td className="pick-cell">
                 <span className="lock" title={incompleteText(title, row)}>
                     {t('update.incomplete')}
+                    {/* S-989：title 唔讀、亦冇 focus，screen reader 靠呢段知欠咩設定 */}
+                    <span className="sr-only">：{incompleteText(title, row)}</span>
                 </span>
             </td>
         );
