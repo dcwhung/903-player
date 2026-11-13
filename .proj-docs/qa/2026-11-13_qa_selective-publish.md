@@ -48,3 +48,10 @@ tickets: none
 next_action: main_agent_push_then_user_screenshots
 context: "S1 pass for feature/selective-publish; CI 43510493759 @31a766d cited for lint / tsc / unit / build / e2e / e2e:admin (3 selective publish checks); local unit api 463 + admin 585 pass; changed-file coverage api 98.5% / admin 89.9%. QA report + plans + ledger committed locally, not pushed."
 ```
+
+## S1 delta — 未完成 row（74c0451 / 185f41a / 06d8578，freeze @`27b5b0b`）
+
+- Ledger: SKIP 13 / REVERIFY 1（admin：`PublishCell.tsx`、`TodoMatrix.test.tsx`、`selective.css`、`selectiveChecks.mjs`、mockup）/ UNCOVERED 0 / IGNORED 7；plan AC-22 改為「未完成 = 紅色（`--danger-ink`）、冇勾選框、tooltip + sr-only（S-989）」
+- Runs：`npm test -- apps/admin` 111 files / 585 tests pass（46 s）；`PublishCell.tsx` coverage 100% lines / branches；CI `ci.yml` @`06d8578`（run 43515854072）lint、unit 4400、build、`e2e`、`e2e:admin` 48 PASS（3 個「selective publish」，包「incomplete row」冇 checkbox）全綠 → 引用，唔重跑 e2e
+- Hard Gates all pass；Findings：冇（🟢 / Observation 都冇）；建議補測：none
+- Freeze：admin S1 390 → 390（全條 chain + stage 清單）；ledger 2323 → 2323，chain + stage + path 冇少行、冇多行，其他鏈行完全冇變；freeze 後 `impact` 淨 SKIP / IGNORED
