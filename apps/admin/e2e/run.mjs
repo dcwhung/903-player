@@ -6,6 +6,7 @@ import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
+import { selectiveChecks } from './selectiveChecks.mjs';
 
 const PORT = Number(process.env.E2E_PORT || 4174);
 const BASE = `http://localhost:${PORT}`;
@@ -415,6 +416,33 @@ const panelBoxes = async (page) =>
         ),
     );
 
+/** 量 panel 位置嘅容差（px）：sub-pixel / 捲軸出現時嘅細微差 */
+const PANEL_LAYOUT_TOLERANCE_PX = 2;
+const PANEL_LAYOUT_TIMEOUT_MS = 5000;
+const PANEL_LAYOUT_POLL_MS = 100;
+
+/**
+ * 時間軸格 render 完、layout 穩定（連續兩次量到一樣）而且合 predicate 先回；超時 throw message。
+ * 填完 spinbutton 即刻量 boundingBox 會量到 re-render 中途嘅位置（偶發 flaky，review Observation）
+ */
+const waitForPanels = async (page, predicate, message) => {
+    const deadline = Date.now() + PANEL_LAYOUT_TIMEOUT_MS;
+    let last = '';
+    for (;;) {
+        const [up, down] = await panelBoxes(page);
+        const now = JSON.stringify([up, down]);
+        if (up && down && now === last && predicate(up, down)) return;
+        if (Date.now() > deadline) throw new Error(`${message}: ${now}`);
+        last = now;
+        await page.waitForTimeout(PANEL_LAYOUT_POLL_MS);
+    }
+};
+
+const sideBySide = (up, down) =>
+    Math.abs(up.y - down.y) <= PANEL_LAYOUT_TOLERANCE_PX && down.x > up.x;
+
+const stacked = (up, down) => down.y > up.y + PANEL_LAYOUT_TOLERANCE_PX;
+
 /** 今日（12/11 四）唔撞日：上架、下架時間軸各有一格「今日」，日子 12/11 四 */
 const assertTodayCells = async (page) => {
     for (const name of ['上架時間軸', '下架時間軸']) {
@@ -500,17 +528,16 @@ const scheduleEditCheck = (browser) =>
             if ((await offCells.count()) === 0) throw new Error('no unlist batches');
             if ((await page.getByRole('alert').count()) > 0)
                 throw new Error('error shown before 儲存');
-            const [up, down] = await panelBoxes(page);
-            if (!up || !down || Math.abs(up.y - down.y) > 1 || down.x <= up.x)
-                throw new Error('panels not side by side');
+            // 先等兩條時間軸嘅「今日」格出齊（重新排程後時間軸 render 完）先量 panel 位置
+            for (const name of ['上架時間軸', '下架時間軸'])
+                await page.getByRole('group', { name }).locator('.seg-batch.today-cell').waitFor();
+            await waitForPanels(page, sideBySide, 'panels not side by side');
             // 今日 12/11 唔係上架 / 下架日：兩條時間軸都插一格「今日」
             await assertTodayCells(page);
             await assertCadenceBreaks(page);
             await shoot(page, 'schedule-edit', { fullPage: true });
             await page.setViewportSize({ width: 860, height: 860 });
-            const [upNarrow, downNarrow] = await panelBoxes(page);
-            if (!upNarrow || !downNarrow || downNarrow.y <= upNarrow.y)
-                throw new Error('panels not stacked under 900px');
+            await waitForPanels(page, stacked, 'panels not stacked under 900px');
             await page.close();
         },
     );
@@ -1044,7 +1071,8 @@ const actionIconsCheck = (browser) =>
         await assertIcon(back, 'arrow-left', '返回待辦');
         await shoot(page, 'icon-flow-back', { clip: await clipAround(page.locator('.flow-bar')) });
         // 「查看全部」（確認發佈時間線）
-        await page.route('**/api/changes', (route) =>
+        // 選擇發佈（admin 0.3.0）：確認發佈頁讀 /api/changes?selection=…，連 query 都要攔
+        await page.route(/\/api\/changes(\?|$)/, (route) =>
             route.fulfill({
                 contentType: 'application/json',
                 body: JSON.stringify({
@@ -1934,7 +1962,10 @@ const iconPreviewFitCheck = (browser) =>
 
 const publishWarningsCheck = (browser) =>
     check('publish: 配色 warnings fold into one line, expand with links', async () => {
-        const page = await newPage(browser, loggedIn({ warnings: true }));
+        const state = loggedIn({ warnings: true });
+        // 選擇發佈：新短篇 ID 確認咗先係 selectable（未完成嘅唔會發佈，冇嘢發佈「發佈」就灰）
+        state.confirms.push({ dramaId: 'lancy', arcId: 'lancy-02' });
+        const page = await newPage(browser, state);
         await page.goto(`${BASE}/publish`);
         await page.getByText('3 項配色警告（不影響發佈）').waitFor();
         await shoot(page, 'publish-warnings');
@@ -2012,6 +2043,7 @@ try {
         brandingCheck,
         iconPreviewFitCheck,
         publishWarningsCheck,
+        ...selectiveChecks({ check, newPage, shoot, loggedIn, BASE }),
         missingFolderCheck,
         actionIconsCheck,
         showEditorCheck,

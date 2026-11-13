@@ -1,0 +1,82 @@
+/*
+ * 選擇發佈：Design Origin: mockup: _mockups_/admin-selective-publish/index.html（#a 更新頁、#b 確認發佈）
+ * 喺 phase4.css 之後載入。section 標題 + hint、「發佈」勾選欄（最後一欄）、未完成（淨係文字，冇勾選框）、
+ * 確認發佈頁「本次發佈」清單。顏色一律用 tokens.css
+ */
+
+/* ---------- section 標題（mockup .sec-title） ---------- */
+.sec-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+}
+
+.card.flush > .sec-title {
+    padding: var(--gap) var(--gap) 10px;
+}
+
+.sec-title .hint {
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+/* ---------- 「發佈」勾選欄 ---------- */
+table.matrix th.pick-col {
+    width: 70px;
+}
+
+/* label 填滿成格：撳格邊都係撳勾選框，唔會觸發成行跳頁 */
+table.matrix td.pick-cell label {
+    display: block;
+    cursor: pointer;
+}
+
+.pick {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--primary);
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.pick-cell .lock {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--danger-ink);
+}
+
+/* ---------- 確認發佈頁「本次發佈」 ---------- */
+ul.plain {
+    margin: 0;
+    padding-left: 20px;
+    display: grid;
+    gap: 6px;
+}
+
+ul.plain ul {
+    margin: 6px 0 0;
+    padding-left: 20px;
+    color: var(--muted);
+}
+
+.note.muted-note {
+    background: var(--surface-2);
+    color: var(--muted);
+}
+
+.note.stale-note {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* 最後一行冇底線：mockup.css 只清 td，row header（th[scope='row']）都要清，否則底部剩半條線 */
+table.matrix tr:last-child th[scope='row'] {
+    border-bottom: none;
+}

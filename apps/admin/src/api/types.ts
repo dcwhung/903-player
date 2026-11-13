@@ -53,7 +53,16 @@ export interface TodoCell {
     target?: string;
 }
 
+/**
+ * 選擇發佈（api 0.10.0）：selectable = 設定完成，可選擇今次發佈；incomplete = 有「必須處理」，今次不會發佈；
+ * always = 不可剔除（已發佈劇集的新集數、資料夾不見），跟其他改動一併發佈
+ */
+export type PublishMode = 'selectable' | 'incomplete' | 'always';
+
 export interface TodoRow {
+    /** POST /api/publish selection.content 用（`<kind>/<劇 ID>[/<短篇 ID>]`） */
+    key: string;
+    publish: PublishMode;
     kind: FindingKind;
     findingIds: number[];
     dramaId: string;
@@ -106,6 +115,33 @@ export interface ChangesResponse {
     bannerChanged?: boolean;
     /** App 圖示 / 名稱與簡介（草稿）同最新 publish 唔同（api 0.9.0；舊 api 冇 = 冇改） */
     brandingChanged?: boolean;
+    /** api 0.10.0：App 外觀三項各自同最新 publish 唔同（唔理 selection） */
+    appearance?: Appearance;
+    /** api 0.10.0：唔計新內容 / App 外觀嘅其他已儲存改動（Q3：照舊全部發佈） */
+    others?: ChangeSummary;
+    /** 照呢個 selection 發佈會唔會回 unchanged */
+    unchanged?: boolean;
+    /** 有 ?selection 先有 */
+    selection?: SelectionResult;
+}
+
+export interface Appearance {
+    icon: boolean;
+    text: boolean;
+    banner: boolean;
+}
+
+/** POST /api/publish / GET /api/changes?selection= 嘅 selection（api 0.10.0） */
+export interface PublishSelection {
+    content: string[];
+    branding: { icon: boolean; text: boolean };
+    banner: boolean;
+}
+
+/** server 實際發佈咗邊啲；skipped = 揀咗但未完成，自動剔走 */
+export interface SelectionResult {
+    content: string[];
+    skipped: { key: string; reason: string }[];
 }
 
 /** 首頁 banner：兩張圖檔名（<hash16>.webp）；null = 內建預設 */

@@ -1,5 +1,7 @@
 import type { TodoRow } from '../../api/types';
 import {
+    displayName,
+    incompleteText,
     isRowDone,
     missingOf,
     mustCount,
@@ -13,6 +15,8 @@ import {
 
 const NA = { state: 'na' } as const;
 const row = (over: Partial<TodoRow> = {}): TodoRow => ({
+    key: 'newArc/lancy/arc-01',
+    publish: 'incomplete',
     kind: 'newArc',
     findingIds: [1],
     dramaId: 'lancy',
@@ -86,5 +90,16 @@ describe('todoModel', () => {
         expect(rowTarget(row({ kind: 'newDrama', dramaId: 'a/b', arcId: null }))).toBe(
             '/dramas/a%2Fb',
         );
+    });
+
+    it('should join drama and arc names with › for the publish page', () => {
+        expect(displayName(row())).toBe('蘭茜夫人劇場 › 我心不死');
+        expect(displayName(row({ kind: 'newDrama', arcId: null, name: '新劇集' }))).toBe('新劇集');
+    });
+
+    it('should name what is missing for an incomplete row, or just the name when nothing is', () => {
+        expect(incompleteText('我心不死', row())).toBe('我心不死（尚未設定ID、排期）');
+        const draft = row({ cells: { ...row().cells, id: NA, schedule: NA } });
+        expect(incompleteText('我心不死', draft)).toBe('我心不死');
     });
 });
