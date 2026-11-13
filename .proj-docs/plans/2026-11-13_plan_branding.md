@@ -74,6 +74,8 @@ Mockup：`_mockups_/admin-appearance/index.html`（v2，Q1–Q6 全部確認）�
 - D1 開兩個單行 table（`branding_icon`、`branding_text`），各自 `updated_at`、各自刪；`publishes` 加 `deploy`、`deploy_requested_at`
 - 還原 #N 唔還原舊 branding：同 banner 一樣照用 D1 而家嘅 branding；只有 D1 branding 同上一次 ok publish 唔同先觸發重新部署 player（同 `apps/api/README.md`「Publish / 還原」一致；`apps/api/test/deploy.test.ts` rollback 會 / 唔會觸發部署嘅 test 鎖住）
 - Entries / banner 圖檔名照舊只收 WebP；PNG 只限 branding icon
+- Player icon 唔係喺 `scripts/catalogSnapshot.ts` 下載：由 `apps/player/scripts/brandingIcons.ts` 下載五張 PNG（驗 PNG + sha256）寫去 branded public 副本，`vite.config.ts` 經 `scripts/brandingBuild.ts` 改 `publicDir` 覆蓋內建 icon（`publicDir` 要喺 config 階段定，snapshot 嘅 buildStart 太遲）
+- 所以 production build 會 fetch 兩次 catalog：config 階段 `loadBranding`（branding）同 `catalogSnapshot` buildStart（snapshot）各一次；publish 剛好喺兩次之間會令 branding 同 snapshot 屬不同版本，下次 build 自然一致
 
 ## 實作次序（同一條 branch，唔開 parallel lane）
 
