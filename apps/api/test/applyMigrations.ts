@@ -12,6 +12,8 @@ const TABLES = [
     'assets',
     'schedules',
     'banner',
+    'branding_icon',
+    'branding_text',
 ];
 
 await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);

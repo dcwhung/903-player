@@ -6,8 +6,8 @@
 import { useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { CROP_MODE, moveBox, resizeBox, type CropRect, type DragDelta } from './cropGeometry';
 import type { CropChoice } from './cropRender';
-import { SLOT_SIZES, type CropSlot, type Size } from './imageUpload';
-import type { ReadySource } from './useCropSession';
+import type { Size } from './imageUpload';
+import { targetSize, type CropTarget, type ReadySource } from './useCropSession';
 
 type DragKind = 'move' | 'resize';
 
@@ -89,7 +89,7 @@ const keyHandler =
 
 export const useCropDrag = (
     ready: ReadySource,
-    slot: CropSlot,
+    slot: CropTarget,
     locked: boolean,
     onChoice: (choice: CropChoice) => void,
     onDragChange?: (dragging: boolean) => void,
@@ -103,7 +103,7 @@ export const useCropDrag = (
     const apply = (kind: DragKind, box: CropRect, delta: DragDelta) =>
         onChoice({
             mode: CROP_MODE.CENTER,
-            box: nextBox(kind, box, delta, source, SLOT_SIZES[slot]),
+            box: nextBox(kind, box, delta, source, targetSize(slot)),
         });
     const context = { drag, setDrag, locked, source, box: ready.choice.box, apply };
     return {

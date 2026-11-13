@@ -4,6 +4,7 @@
  */
 import { useState } from 'react';
 import { listPublishes, rollback } from '../../api/endpoints';
+import { redeploy } from '../../api/brandingEndpoints';
 import type { LoadedEntry, PublishSummary } from '../../api/types';
 import { useAdminData } from '../../data/AdminData';
 import { useResource } from '../../data/useResource';
@@ -22,10 +23,12 @@ function HistoryTable({
     rows,
     entries,
     onRollback,
+    onRedeploy,
 }: {
     rows: readonly PublishSummary[];
     entries: readonly LoadedEntry[];
     onRollback: (id: number) => void;
+    onRedeploy: (id: number) => void;
 }) {
     return (
         <div className="card flush" role="table" aria-label={t('history.title')}>
@@ -40,11 +43,24 @@ function HistoryTable({
                     servingId={servingBefore(rows, i)}
                     entries={entries}
                     onRollback={onRollback}
+                    onRedeploy={onRedeploy}
                 />
             ))}
         </div>
     );
 }
+
+/** 重新部署 #id：再觸發 + 重讀記錄 */
+const useRedeploy =
+    (reload: () => Promise<unknown>, toast: (message: string) => void) => async (id: number) => {
+        try {
+            await redeploy(id);
+            toast(t('history.redeployed', { id }));
+            await reload();
+        } catch (error) {
+            toast(t('history.redeployFailed', { error: errorMessage(error) }));
+        }
+    };
 
 export function HistoryPage() {
     const publishes = useResource(listPublishes);
@@ -53,6 +69,7 @@ export function HistoryPage() {
     const toast = useToast();
     const [error, setError] = useState<string>();
     const rows = publishes.data ?? [];
+    const onRedeploy = useRedeploy(publishes.reload, toast);
     const onConfirm = async (id: number) => {
         setConfirming(null);
         try {
@@ -73,21 +90,44 @@ export function HistoryPage() {
                     {error}
                 </p>
             )}
-            <HistoryTable rows={rows} entries={entries.data ?? []} onRollback={setConfirming} />
+            <HistoryTable
+                rows={rows}
+                entries={entries.data ?? []}
+                onRollback={setConfirming}
+                onRedeploy={(id) => void onRedeploy(id)}
+            />
             {!publishes.loading && rows.length === 0 && (
                 <p className="muted">{t('history.empty')}</p>
             )}
             {confirming !== null && (
-                <ConfirmDialog
-                    title={t('history.confirmTitle', { id: confirming })}
-                    body={t('history.confirmBody', { id: confirming })}
-                    note={t('history.confirmNote')}
-                    confirmLabel={t('history.rollback')}
-                    confirmIcon={<Undo2 aria-hidden="true" />}
+                <RollbackConfirm
+                    id={confirming}
                     onConfirm={() => void onConfirm(confirming)}
                     onCancel={() => setConfirming(null)}
                 />
             )}
         </>
+    );
+}
+
+function RollbackConfirm({
+    id,
+    onConfirm,
+    onCancel,
+}: {
+    id: number;
+    onConfirm: () => void;
+    onCancel: () => void;
+}) {
+    return (
+        <ConfirmDialog
+            title={t('history.confirmTitle', { id })}
+            body={t('history.confirmBody', { id })}
+            note={t('history.confirmNote')}
+            confirmLabel={t('history.rollback')}
+            confirmIcon={<Undo2 aria-hidden="true" />}
+            onConfirm={onConfirm}
+            onCancel={onCancel}
+        />
     );
 }

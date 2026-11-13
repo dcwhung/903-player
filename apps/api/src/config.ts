@@ -43,8 +43,12 @@ export const CATALOG_IMAGE_KEY_PREFIX = CATALOG_IMAGE_PATH.slice(1);
 export const CATALOG_JSON_MAX_AGE_SECONDS = MINUTE_SECONDS;
 /** 圖檔名 = content hash，永遠唔變 */
 export const IMAGE_MAX_AGE_SECONDS = YEAR_DAYS * DAY_SECONDS;
-/** 圖檔名：<sha256 前 16 hex>.<ext>（同 scripts/importLibrary.mjs 一致） */
+/** 節目 / 劇集 / banner 圖檔名：<sha256 前 16 hex>.<ext>（同 scripts/importLibrary.mjs 一致） */
 export const IMAGE_FILE_PATTERN = /^[0-9a-f]{16}\.(webp|jpg)$/;
+/** App 圖示圖檔名（PNG，App 外觀 plan）：entries 唔收 png，淨係 branding.icon 用 */
+export const ICON_FILE_PATTERN = /^[0-9a-f]{16}\.png$/;
+/** /catalog/v1/img/ 出嘅圖：上面兩種 */
+export const SERVED_IMAGE_FILE_PATTERN = /^[0-9a-f]{16}\.(webp|jpg|png)$/;
 /** 圖檔名嘅 hash 長度（sha256 hex 前 16 個字，同 IMAGE_FILE_PATTERN 一致） */
 export const ASSET_HASH_HEX_LENGTH = 16;
 
@@ -86,18 +90,22 @@ export const CONTENT_BODY_LIMIT_BYTES = 256 * 1024;
 
 /* ───────────── 圖片上載（PUT /api/assets，Phase 2b-2） ───────────── */
 
-/** 只收 WebP（admin 喺 browser 轉好先上載） */
-export const ASSET_CONTENT_TYPE = 'image/webp';
-export const ASSET_EXTENSION = 'webp';
 /**
- * 上載白名單：disc / tile（用戶 2026-11-10 決定）+ 首頁 banner 窄 / 闊（Phase 4）；
- * 尺寸同大小上限喺 @903-player/catalog（S-805）
+ * WebP 上載白名單：disc / tile（用戶 2026-11-10 決定）+ 首頁 banner 窄 / 闊（Phase 4）；
+ * 尺寸同大小上限喺 @903-player/catalog（S-805）。格式見 assets/formats.ts
  */
 export const ASSET_UPLOAD_DIMENSIONS: readonly AssetSize[] = [
     ASSET_DIMENSIONS.disc,
     ASSET_DIMENSIONS.tile,
     ASSET_DIMENSIONS.bannerStandard,
     ASSET_DIMENSIONS.bannerLong,
+];
+/** PNG 上載白名單：App 圖示（App 外觀 plan）；icon512 同 maskable 同樣 512×512，只列一次 */
+export const ICON_UPLOAD_DIMENSIONS: readonly AssetSize[] = [
+    ASSET_DIMENSIONS.iconFavicon,
+    ASSET_DIMENSIONS.iconAppleTouch,
+    ASSET_DIMENSIONS.icon192,
+    ASSET_DIMENSIONS.icon512,
 ];
 
 /* ───────────── R2 原圖代讀（GET /api/r2-source，Phase 4 封面編輯器） ───────────── */

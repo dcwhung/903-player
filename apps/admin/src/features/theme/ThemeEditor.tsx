@@ -5,7 +5,6 @@
  * 新劇（10 色 = NEUTRAL_THEME）：現用標「未設定」、第一套候選標「建議」，唔自動套用
  */
 import { Check, RefreshCw } from 'lucide-react';
-import { useId } from 'react';
 import { t } from '../../i18n/t';
 import { isNeutralTheme, type EntryTheme } from '../../model/theme';
 import { Pill } from '../../ui/Pill';
@@ -32,20 +31,10 @@ function StatusNote({ status, error }: { status: string; error?: string }) {
 
 type Picker = ReturnType<typeof useThemePicker>;
 
-function ThemeHead({
-    headId,
-    name,
-    picker,
-    empty,
-}: {
-    headId: string;
-    name: string;
-    picker: Picker;
-    empty: boolean;
-}) {
+/** 頂行：第幾組 + 更換另外三套（冇標題：分頁已經寫明「配色」，2026-11-13 用戶要求） */
+function ThemeHead({ picker, empty }: { picker: Picker; empty: boolean }) {
     return (
         <div className="theme-head">
-            <h3 id={headId}>{t('themeEditor.title', { name })}</h3>
             <span className="small muted">
                 {t('themeEditor.round', { round: picker.round + 1, count: picker.rounds })}
             </span>
@@ -93,13 +82,12 @@ function CandidateGrid({
 }
 
 export function ThemeEditor({ name, sub, discUrl, current, onApply }: ThemeEditorProps) {
-    const headId = useId();
     const candidates = useThemeCandidates(discUrl);
     const pool = candidates.status === 'ready' ? candidates.pool : [];
     const picker = useThemePicker(pool, current, onApply);
     return (
-        <section className="card theme-card" aria-labelledby={headId}>
-            <ThemeHead headId={headId} name={name} picker={picker} empty={pool.length === 0} />
+        <section className="card theme-card" aria-label={t('themeEditor.title', { name })}>
+            <ThemeHead picker={picker} empty={pool.length === 0} />
             <StatusNote
                 status={candidates.status}
                 error={candidates.status === 'error' ? candidates.error : undefined}

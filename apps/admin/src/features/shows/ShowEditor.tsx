@@ -1,6 +1,6 @@
 /*
  * 節目編輯：Design Origin: mockup: _mockups_/admin/index.html#s3
- * 一格包晒（ID → 簡介 → 播出日 → 播放時間 → 主持），圖片喺右邊；單一儲存掣，有改動先出提示
+ * 分頁（2026-11-13）：基本資料（ID → 簡介 → 播出日 → 播放時間 → 主持，圖片喺右邊；單一儲存掣）/ 配色
  */
 import { t } from '../../i18n/t';
 import { nameOf } from '../../model/raw';
@@ -12,12 +12,13 @@ import { EditorHeader } from '../editor/EditorHeader';
 import { EditorNotices } from '../editor/EditorNotices';
 import { idProblem } from '../editor/IdField';
 import { ShowEditorCard } from './ShowEditorCard';
+import { ShowTabs, type ShowTab } from './ShowTabs';
 import { ShowThemeCard } from './ShowThemeCard';
 import { useShowEditor } from './useShowEditor';
 
-export function ShowEditorPage() {
+export function ShowEditorPage({ tab = 'basic' }: { tab?: ShowTab }) {
     const { id } = useParams();
-    return <ShowEditor key={id ?? 'new'} id={id} />;
+    return <ShowEditor key={id ?? 'new'} id={id} tab={tab} />;
 }
 
 /** 標題旁狀態 pill：跟住草稿嘅上架 toggle（新節目唔出） */
@@ -32,7 +33,7 @@ function ShowStatusPill({ show }: { show: ReturnType<typeof useShowEditor> }) {
     );
 }
 
-function ShowEditor({ id }: { id: string | undefined }) {
+function ShowEditor({ id, tab }: { id: string | undefined; tab: ShowTab }) {
     const show = useShowEditor(id);
     const { isNew, editor, newId, origin } = show;
     const { draft, entry, status } = editor;
@@ -55,8 +56,9 @@ function ShowEditor({ id }: { id: string | undefined }) {
                 fieldErrors={isNew && newId !== '' && idProblem(newId) ? 1 : 0}
                 onReload={() => void editor.reload()}
             />
-            <ShowEditorCard show={show} name={name} />
-            <ShowThemeCard show={show} name={name} />
+            {!isNew && id && <ShowTabs id={id} tab={tab} />}
+            {tab === 'basic' && <ShowEditorCard show={show} name={name} />}
+            {tab === 'theme' && !isNew && <ShowThemeCard show={show} name={name} />}
         </>
     );
 }

@@ -51,3 +51,14 @@ export const historyName = (item: ChangeItem): string => {
 /** 呢次 publish 有冇換首頁 Banner（欄位冇 = 舊 api / 舊記錄，當冇換） */
 export const bannerChangedOf = (changes: PublishChangeSummary | undefined): boolean =>
     changes?.bannerChanged === true;
+
+/** 呢次 publish 有冇改 App 外觀（圖示 / 名稱與簡介） */
+export const brandingChangedOf = (changes: PublishChangeSummary | undefined): boolean =>
+    changes?.brandingChanged === true;
+
+/**
+ * 「N 節目 · N 劇 · N 集」只喺改咗節目 / 劇內容先顯示（用戶 2026-11-13）：淨換 Banner / App 外觀唔顯示。
+ * 冇 change summary（舊記錄）唔知改咗乜，照舊顯示
+ */
+export const contentChangedOf = (changes: PublishChangeSummary | undefined): boolean =>
+    changes === undefined || changes.items.length > 0;

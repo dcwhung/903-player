@@ -4,7 +4,7 @@
  */
 import type { EntryKind, LoadedEntry, PublishWarning } from '../../api/types';
 import { t } from '../../i18n/t';
-import { dramaEditorPath } from '../../model/paths';
+import { dramaEditorPath, showEditorPath } from '../../model/paths';
 import { nameOf } from '../../model/raw';
 
 export interface WarningRow {
@@ -37,7 +37,7 @@ const textOf = (warning: PublishWarning, name: string) => {
 };
 
 const hrefOf = (kind: EntryKind, id: string) =>
-    kind === 'dramas' ? `${dramaEditorPath(id)}/theme` : `/shows/${encodeURIComponent(id)}`;
+    `${kind === 'dramas' ? dramaEditorPath(id) : showEditorPath(id)}/theme`;
 
 export const warningRows = (
     warnings: readonly PublishWarning[],

@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:test';
 import { sha256Hex } from '../src/lib/crypto';
 import { adminRequest, call, ORIGIN } from './helpers';
+import { pngOf } from './png';
 import { webpVp8, webpVp8x } from './webp';
 
 const HASH_HEX = 16;
@@ -61,10 +62,18 @@ describe('PUT /api/assets', () => {
         expect(response.status).toBe(201);
     });
 
-    it('should answer 415 for any other content type', async () => {
-        expect((await upload(webpVp8x(600, 600), 'image/png')).status).toBe(415);
+    it('should answer 415 for any content type other than WebP / PNG', async () => {
+        expect((await upload(webpVp8x(600, 600), 'image/jpeg')).status).toBe(415);
         expect((await upload(webpVp8x(600, 600), 'application/octet-stream')).status).toBe(415);
+        const body = (await (await upload(pngOf(64, 64), 'image/gif')).json()) as {
+            error: string;
+        };
+        expect(body.error).toBe('Content-Type must be image/webp or image/png');
         expect(await assetRows()).toHaveLength(0);
+    });
+
+    it('should answer 422 for a WebP at an icon-only size (512×512 is PNG only)', async () => {
+        expect((await upload(webpVp8x(512, 512))).status).toBe(422);
     });
 
     it('should answer 413 above ASSET_MAX_BYTES', async () => {
@@ -117,5 +126,55 @@ describe('PUT /api/assets', () => {
             headers: { 'content-type': 'image/webp', origin: 'https://evil.example' },
         });
         expect(cross.status).toBe(403);
+    });
+});
+
+describe('PUT /api/assets (PNG app icons)', () => {
+    const pngName = async (bytes: Uint8Array) =>
+        `${(await sha256Hex(bytes)).slice(0, HASH_HEX)}.png`;
+
+    it('should store a 64×64 favicon PNG in R2 and assets as <hash16>.png', async () => {
+        const bytes = pngOf(64, 64);
+        const response = await upload(bytes, 'image/png');
+        expect(response.status).toBe(201);
+        const name = await pngName(bytes);
+        expect(await response.json()).toEqual({ name, width: 64, height: 64, bytes: bytes.length });
+        const object = await env.CATALOG.get(`catalog/v1/img/${name}`);
+        expect(object?.httpMetadata?.contentType).toBe('image/png');
+        expect(await assetRows()).toEqual([
+            { hash: name.slice(0, HASH_HEX), content_type: 'image/png', bytes: bytes.length },
+        ]);
+    });
+
+    it('should accept 180, 192 and 512 squares and answer existed for the same bytes', async () => {
+        for (const size of [180, 192, 512])
+            expect((await upload(pngOf(size, size), 'image/png')).status).toBe(201);
+        const again = await upload(pngOf(512, 512), 'image/png');
+        expect(again.status).toBe(200);
+        expect(await again.json()).toEqual({ name: await pngName(pngOf(512, 512)), existed: true });
+    });
+
+    it('should answer 422 listing the icon sizes for a PNG of any other size', async () => {
+        const response = await upload(pngOf(600, 600), 'image/png');
+        expect(response.status).toBe(422);
+        const body = (await response.json()) as { error: string; allowed: string[] };
+        expect(body.allowed).toEqual(['64×64', '180×180', '192×192', '512×512']);
+        expect(body.error).toContain('600×600');
+        expect((await env.CATALOG.list()).objects).toHaveLength(0);
+    });
+
+    it('should answer 422 invalid PNG for WebP bytes sent as image/png', async () => {
+        const response = await upload(webpVp8x(600, 600), 'image/png');
+        expect(response.status).toBe(422);
+        expect(((await response.json()) as { error: string }).error).toMatch(/^invalid PNG: /);
+        expect(await assetRows()).toHaveLength(0);
+    });
+
+    it('should serve an uploaded PNG from /catalog/v1/img as image/png', async () => {
+        const bytes = pngOf(192, 192);
+        const { name } = (await (await upload(bytes, 'image/png')).json()) as { name: string };
+        const response = await call(`/catalog/v1/img/${name}`);
+        expect(response.status).toBe(200);
+        expect(response.headers.get('content-type')).toBe('image/png');
     });
 });

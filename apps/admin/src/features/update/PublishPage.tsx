@@ -82,6 +82,7 @@ function PublishHead({ data, entries }: { data: ChangesResponse; entries: Loaded
                         </Pill>
                     ))}
                     {data.bannerChanged && <Pill tone="ok">{t('publish.bannerChanged')}</Pill>}
+                    {data.brandingChanged && <Pill tone="ok">{t('publish.brandingChanged')}</Pill>}
                 </div>
                 <ValidationPill validation={data.validation} />
             </div>
@@ -91,12 +92,18 @@ function PublishHead({ data, entries }: { data: ChangesResponse; entries: Loaded
                 entries={entries}
                 forceOpen={!data.validation.ok}
             />
+            {data.brandingChanged && (
+                <p className="note info" role="note">
+                    {t('publish.deployNote')}
+                </p>
+            )}
         </>
     );
 }
 
-const emptyText = (loading: boolean, bannerChanged: boolean) => {
+const emptyText = (loading: boolean, bannerChanged: boolean, brandingChanged: boolean) => {
     if (loading) return t('app.loading');
+    if (brandingChanged) return t('publish.brandingOnly');
     return t(bannerChanged ? 'publish.bannerOnly' : 'publish.nothing');
 };
 
@@ -107,7 +114,10 @@ export function PublishPage() {
     useEffect(() => void reload(), [reload]);
     const data = changes.data;
     // 首頁 Banner（草稿）改咗都算有嘢發佈
-    const hasChanges = (data?.changes.items.length ?? 0) > 0 || data?.bannerChanged === true;
+    const hasChanges =
+        (data?.changes.items.length ?? 0) > 0 ||
+        data?.bannerChanged === true ||
+        data?.brandingChanged === true;
     const canPublish = data?.validation.ok === true && hasChanges;
     return (
         <>
@@ -121,7 +131,11 @@ export function PublishPage() {
                     <Timeline groups={data.changes.timeline} entries={entries.data ?? []} />
                 ) : (
                     <p className="muted">
-                        {emptyText(changes.loading, data?.bannerChanged === true)}
+                        {emptyText(
+                            changes.loading,
+                            data?.bannerChanged === true,
+                            data?.brandingChanged === true,
+                        )}
                     </p>
                 )}
             </div>

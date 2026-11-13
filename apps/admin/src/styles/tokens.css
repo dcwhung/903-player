@@ -78,6 +78,11 @@
     --grad-orange: linear-gradient(135deg, #ffc46b, #f08a24);
     --grad-green: linear-gradient(135deg, #6fdca4, #23935c);
     --on-grad: #ffffff;
+    /* App 外觀：WhatsApp 分享預覽（淡綠底）、主畫面圖示（深藍漸變、白字），深淺色各一套 */
+    --share-bg: #e7f6d8;
+    --share-ink: #4a5a40;
+    --home-bg: linear-gradient(#3b5a7a, #1c2e42);
+    --on-home: #ffffff;
     /* 403 / 直向提示插圖 icon */
     --art-ink: #1e7bc0;
     /* 登入頁：Google「Sign in with Google」官方淺色款；全頁 banner 背景上面嘅淡化層；浮卡陰影 */
@@ -147,6 +152,10 @@
         --card-border: #2c3b4f;
         /* 深色底上面 tooltip 要淺一級先睇到泡泡邊 */
         --tip-bg: #33465e;
+        /* App 外觀：WhatsApp 分享預覽、主畫面圖示（深色款） */
+        --share-bg: #27331c;
+        --share-ink: #c3d6ad;
+        --home-bg: linear-gradient(#2a4056, #121d2a);
         /* 登入頁：Google 官方深色款 + 深色淡化層 */
         --gsi-bg: #131314;
         --gsi-border: #8e918f;
@@ -188,6 +197,10 @@
     --card-border: #2c3b4f;
     /* 深色底上面 tooltip 要淺一級先睇到泡泡邊 */
     --tip-bg: #33465e;
+    /* App 外觀：WhatsApp 分享預覽、主畫面圖示（深色款） */
+    --share-bg: #27331c;
+    --share-ink: #c3d6ad;
+    --home-bg: linear-gradient(#2a4056, #121d2a);
     /* 登入頁：Google 官方深色款 + 深色淡化層 */
     --gsi-bg: #131314;
     --gsi-border: #8e918f;

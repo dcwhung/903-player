@@ -211,4 +211,12 @@ describe('ImageSlot', () => {
         await waitFor(() => expect(onUploaded).toHaveBeenCalledWith('abc.webp'));
         expect(screen.queryByText('由 R2 cd cover.jpg 自動裁切')).not.toBeInTheDocument();
     });
+
+    it('should list output, source and limits on separate lines in the tooltip', async () => {
+        renderSlot();
+        await userEvent.hover(screen.getByRole('button', { name: '上載碟面' }));
+        expect(document.querySelector('.tip-pop')?.textContent).toBe(
+            '輸出 600 × 600 WebP；\n原圖建議 ≥ 600 × 600；\n接受 PNG / JPG / WebP；\n最大 20 MB、8000 × 8000 px',
+        );
+    });
 });

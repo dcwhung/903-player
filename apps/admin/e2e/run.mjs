@@ -324,7 +324,7 @@ const todoFlowCheck = (browser) =>
         await page.getByText('即時上線').waitFor();
         await shoot(page, 'publish');
         await page.getByRole('button', { name: '發佈', exact: true }).click();
-        await page.getByRole('heading', { name: '上下架記錄' }).waitFor();
+        await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();
         await page.getByText('使用中').waitFor();
         await page.getByText('#4', { exact: true }).waitFor();
         // #3 淨換首頁 Banner：顯示「更換 · 首頁 Banner」，唔係「沒有內容變更」
@@ -1675,9 +1675,9 @@ const themeCheck = (browser) =>
                 .locator('.content')
                 .evaluate((el) => getComputedStyle(el).backgroundColor);
             if (panel !== 'rgb(20, 29, 41)') throw new Error(`panel is ${panel}, not dark`);
-            await page.getByRole('heading', { name: '上下架記錄' }).waitFor();
+            await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();
             await page.screenshot({ path: `${OUT}/theme-manual-dark.png` });
-            await page.getByRole('button', { name: '跟系統' }).click();
+            await page.getByRole('button', { name: '跟隨系統' }).click();
             if (await page.evaluate(() => document.documentElement.hasAttribute('data-theme')))
                 throw new Error('跟系統 should clear data-theme');
             await page.close();
@@ -1734,11 +1734,16 @@ const bannerCheck = (browser) =>
         async () => {
             const state = loggedIn();
             const page = await newPage(browser, state);
+            // 舊網址 /banner 轉去 /appearance（2026-11-13 改名「App 外觀」）
             await page.goto(`${BASE}/banner`);
-            await page.getByText('內建預設').waitFor();
+            await page.waitForURL(`${BASE}/appearance`);
+            await page.getByRole('heading', { level: 1, name: 'App 外觀' }).waitFor();
+            // 三張卡都係內建預設：淨係睇首頁 Banner 卡嗰個
+            const bannerCard = page.locator('.appearance-card', { hasText: '首頁 Banner' });
+            await bannerCard.getByText('內建預設').waitFor();
             await shoot(page, 'banner-default');
             const chooser = page.waitForEvent('filechooser');
-            await page.getByRole('button', { name: '更換 Banner', exact: true }).click();
+            await page.getByRole('button', { name: '更換首頁 Banner', exact: true }).click();
             await (
                 await chooser
             ).setFiles(fileURLToPath(new URL('./fixtures/lancy-tile.webp', import.meta.url)));
@@ -1757,12 +1762,158 @@ const bannerCheck = (browser) =>
                 throw new Error(`banner not saved: ${JSON.stringify(state.banner)}`);
             await page.getByText('自訂 · 未發佈').waitFor();
             await shoot(page, 'banner-custom');
-            await page.getByRole('button', { name: '還原預設' }).click();
-            const confirm = page.getByRole('dialog', { name: '還原預設 Banner？' });
+            await page.getByRole('button', { name: '還原首頁 Banner' }).click();
+            const confirm = page.getByRole('dialog', { name: '還原首頁 Banner？' });
             await shoot(page, 'banner-restore-confirm');
-            await confirm.getByRole('button', { name: '還原預設' }).click();
-            await page.getByText('內建預設').waitFor();
+            await confirm.getByRole('button', { name: '還原' }).click();
+            await bannerCard.getByText('內建預設').waitFor();
             if (state.banner !== null) throw new Error('banner not restored');
+            await page.close();
+        },
+    );
+
+const ICON_FIXTURE = fileURLToPath(new URL('./fixtures/lancy-disc.webp', import.meta.url));
+
+const brandingCheck = (browser) =>
+    check(
+        'App 外觀: change icon, rename app (confirm), restore, publish deploy note + status',
+        async () => {
+            const state = loggedIn();
+            const page = await newPage(browser, state);
+            await page.goto(`${BASE}/appearance`);
+            await page.getByRole('heading', { level: 1, name: 'App 外觀' }).waitFor();
+            // 三張卡：App 圖示 → 名稱與簡介 → 首頁 Banner
+            const headings = await page.getByRole('heading', { level: 2 }).allTextContents();
+            if (headings.join('|') !== 'App 圖示|名稱與簡介|首頁 Banner')
+                throw new Error(`card order: ${headings.join('|')}`);
+            await shoot(page, 'appearance');
+
+            // ① 更換 App 圖示（同一裁切）
+            const chooser = page.waitForEvent('filechooser');
+            await page.getByRole('button', { name: '更換 App 圖示', exact: true }).click();
+            await (await chooser).setFiles(ICON_FIXTURE);
+            const dialog = page.getByRole('dialog', { name: '更換 App 圖示' });
+            await dialog.getByRole('group', { name: '裝置' }).waitFor();
+            await shoot(page, 'appearance-icon-dialog');
+            await dialog.getByRole('button', { name: '上載' }).click();
+            await dialog.waitFor({ state: 'detached' });
+            if (!state.branding.icon || state.assets.length < 5)
+                throw new Error(`icon not saved: ${JSON.stringify(state.branding.icon)}`);
+            await page.getByText('自訂 · 未發佈').first().waitFor();
+            await shoot(page, 'appearance-icon');
+
+            // ② 改 App 名 → 確認
+            const name = page.getByLabel('App 名');
+            await name.fill('903 叱咤 Player Plus');
+            await page.getByRole('button', { name: '儲存名稱與簡介' }).click();
+            const rename = page.getByRole('dialog', { name: '更改 App 名？' });
+            await rename.getByText('903 叱咤 Player Plus').waitFor();
+            await shoot(page, 'appearance-rename');
+            await rename.getByRole('button', { name: '儲存' }).click();
+            await rename.waitFor({ state: 'detached' });
+            if (state.branding.text?.name !== '903 叱咤 Player Plus')
+                throw new Error(`text not saved: ${JSON.stringify(state.branding.text)}`);
+
+            // ③ 還原 App 圖示（確認）
+            await page.getByRole('button', { name: '還原 App 圖示' }).click();
+            const restore = page.getByRole('dialog', { name: '還原 App 圖示？' });
+            await restore.getByRole('button', { name: '還原' }).click();
+            await restore.waitFor({ state: 'detached' });
+            if (state.branding.icon !== null) throw new Error('icon not restored');
+
+            // ④ 發佈頁：App 外觀已更改 + 須重新部署提示
+            await page.goto(`${BASE}/publish`);
+            await page.getByText('App 外觀已更改').waitFor();
+            await page.getByText(/圖示、名稱及簡介須重新部署/).waitFor();
+            await shoot(page, 'appearance-publish');
+            await page.getByRole('button', { name: '發佈', exact: true }).click();
+            await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();
+
+            // ⑤ 部署狀態：triggered 行 poll → 已部署 + GitHub 連結
+            await page.getByText('已部署').waitFor();
+            await page
+                .getByRole('link', { name: /在 GitHub 查看/ })
+                .first()
+                .waitFor();
+            await shoot(page, 'appearance-deploy');
+            await page.close();
+        },
+    );
+
+/*
+ * 圖示預覽列（卡 + 更換 dialog）：四個預覽平均放入預覽欄，唔可以溢出（瀏覽器分頁之前凸出 dialog），
+ * 標籤一行（「Android（圓形）」之前斷兩行）。1280 同 1100 闊都要啱（用戶 2026-11-13）
+ */
+const ICON_FIT_WIDTHS = [1280, 1100];
+const SUBPIXEL = 1;
+const ONE_LINE = 1.5;
+
+const previewFit = (row) =>
+    row.evaluate(
+        (even, [subpixel, oneLine]) => {
+            const box = even.getBoundingClientRect();
+            const dialog = even.closest('.crop-dialog')?.getBoundingClientRect() ?? box;
+            const problems = [];
+            if (even.scrollWidth > even.clientWidth + subpixel) problems.push('row scrolls');
+            for (const prev of even.querySelectorAll('.icon-prev')) {
+                const label = prev.querySelector('.icon-prev-label');
+                const name = label?.textContent ?? '?';
+                for (const el of [prev, ...prev.querySelectorAll('*')]) {
+                    const r = el.getBoundingClientRect();
+                    const out =
+                        Math.max(box.left, dialog.left) - r.left > subpixel ||
+                        r.right - Math.min(box.right, dialog.right) > subpixel;
+                    if (out) {
+                        problems.push(
+                            `${name} overflows (${Math.round(r.left)}–${Math.round(r.right)})`,
+                        );
+                        break;
+                    }
+                }
+                const style = label && getComputedStyle(label);
+                const line = style
+                    ? parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2
+                    : 0;
+                if (!label || label.getBoundingClientRect().height > line * oneLine)
+                    problems.push(`${name} label wraps`);
+                else if (label.scrollWidth > label.clientWidth)
+                    problems.push(`${name} label is cut off`);
+            }
+            return problems;
+        },
+        [SUBPIXEL, ONE_LINE],
+    );
+
+const assertPreviewFit = async (row, what) => {
+    const problems = await previewFit(row);
+    if (problems.length) throw new Error(`${what}: ${problems.join('; ')}`);
+};
+
+const iconPreviewFitCheck = (browser) =>
+    check(
+        'App 圖示 previews fit their column on one line (card + dialog, 1280 / 1100)',
+        async () => {
+            const state = loggedIn();
+            const page = await newPage(browser, state);
+            for (const width of ICON_FIT_WIDTHS) {
+                await page.setViewportSize({ width, height: WIDE.height });
+                await page.goto(`${BASE}/appearance`);
+                const card = page.locator('.appearance-card').first();
+                await assertPreviewFit(card.locator('.even'), `card @${width}`);
+                const chooser = page.waitForEvent('filechooser');
+                await page.getByRole('button', { name: '更換 App 圖示', exact: true }).click();
+                await (await chooser).setFiles(ICON_FIXTURE);
+                const dialog = page.getByRole('dialog', { name: '更換 App 圖示' });
+                await dialog.getByRole('group', { name: '裝置' }).waitFor();
+                // 原圖載入後 dialog 先定闊度：等圖解碼 + 一格 frame 先量
+                await dialog
+                    .locator('.icon-crop .src img')
+                    .evaluate((img) => img.decode())
+                    .catch(() => undefined);
+                await page.evaluate(() => new Promise((done) => requestAnimationFrame(done)));
+                await assertPreviewFit(dialog.locator('.even'), `dialog @${width}`);
+                await shoot(page, `appearance-icon-dialog-${width}`);
+            }
             await page.close();
         },
     );
@@ -1844,6 +1995,8 @@ try {
         r2AutoCropCheck,
         colourThemeCheck,
         bannerCheck,
+        brandingCheck,
+        iconPreviewFitCheck,
         publishWarningsCheck,
         missingFolderCheck,
         actionIconsCheck,

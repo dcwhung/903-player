@@ -43,7 +43,7 @@ describe('image slot border', () => {
             .flatMap((rule) => (rule.split('{')[0] ?? '').split(','))
             .map((selector) => selector.trim());
         expect(users.sort()).toEqual(
-            ['.crop-dialog .src-frame', '.img-slot', '.img-slot.empty'].sort(),
+            ['.big-slot', '.crop-dialog .src-frame', '.img-slot', '.img-slot.empty'].sort(),
         );
     });
 });

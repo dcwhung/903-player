@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { t } from '../../i18n/t';
 import { isBannerProblem, validationMessage } from '../editor/validationMessage';
 
-const BANNER_PATH = '/banner';
+const BANNER_PATH = '/appearance';
 
 export function PublishError({ error }: { error: string }) {
     const banner = isBannerProblem(error);

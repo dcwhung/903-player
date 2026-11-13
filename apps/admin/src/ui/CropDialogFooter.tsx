@@ -1,6 +1,6 @@
 /*
  * 裁切 dialog 底部掣：Design Origin: mockup: _mockups_/admin-phase4/index.html#b / #c（footer）
- * 一般：取消（首頁 Banner 兩步：取消（兩張均不更換））· 上一張 · 上載 / 下一張：闊版 / 上載兩張；
+ * 一般：取消（首頁 Banner 兩步都係「取消」，兩張均不更換）· 上一張 · 上載 / 下一張：闊版 / 上載兩張；
  * 錯誤：選擇其他圖片 · 關閉
  */
 import { ArrowLeft, ArrowRight, Upload, X } from 'lucide-react';
@@ -55,7 +55,7 @@ export function CropDialogFooter(props: CropDialogFooterProps) {
         <footer className="actions end">
             <button type="button" ref={cancelRef} onClick={props.onCancel} disabled={locked}>
                 <X aria-hidden="true" />
-                {step ? t('images.cancelBoth') : t('images.cancel')}
+                {t('images.cancel')}
             </button>
             {props.onBack && (
                 <button type="button" onClick={props.onBack} disabled={locked}>

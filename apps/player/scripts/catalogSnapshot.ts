@@ -6,15 +6,21 @@
  * - 用 player runtime 同一套 validator（parseCatalogDocument + 兩個 registry）驗；圖要 sha256 前 16 hex = 檔名
  * - 先寫暫存 folder，全部成功先 rename；任何一步失敗 → console.warn + 清走，build 照行（用 repo library）
  */
-import { createHash } from 'node:crypto';
 import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type * as Catalog from '@903-player/catalog';
 import type { CatalogDocument, CatalogEntry, EpisodeBuildOptions } from '@903-player/catalog';
 import { runnerImport, type Plugin } from 'vite';
+import {
+    fetchBytes,
+    fetchOk,
+    matchesHashName,
+    sha256Hex,
+    SNAPSHOT_FETCH_TIMEOUT_MS,
+    withTimeout,
+} from './snapshotFetch.ts';
 
-/** catalog.json 同每張圖各自嘅上限（Worker edge cache 通常一秒內） */
-export const SNAPSHOT_FETCH_TIMEOUT_MS = 15_000;
+export { SNAPSHOT_FETCH_TIMEOUT_MS } from './snapshotFetch.ts';
 /** 同時下載幾多張圖 */
 export const SNAPSHOT_IMAGE_CONCURRENCY = 6;
 
@@ -26,7 +32,6 @@ const DOCUMENT_FILE = 'catalog.json';
 const IMAGE_DIR = 'img';
 /** Worker 圖檔名：<sha256 前 16 hex>.<ext>（同 apps/api IMAGE_FILE_PATTERN 一致） */
 const IMAGE_NAME_PATTERN = /^([0-9a-f]{16})\.(webp|jpg)$/;
-const HASH_HEX_LENGTH = 16;
 
 type CatalogModule = Pick<
     typeof Catalog,
@@ -51,31 +56,6 @@ export interface SnapshotResult {
     generatedAt: string;
     imageCount: number;
 }
-
-const sha256Hex = (data: string | Uint8Array) => createHash('sha256').update(data).digest('hex');
-
-/** 夠鐘就 reject（就算 fetch 唔理 abort signal、或者 body 未下載完都計） */
-const withTimeout = async <T>(work: (signal: AbortSignal) => Promise<T>, ms: number) => {
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => {
-            controller.abort();
-            reject(new Error(`timed out after ${ms}ms`));
-        }, ms);
-    });
-    try {
-        return await Promise.race([work(controller.signal), timeout]);
-    } finally {
-        clearTimeout(timer);
-    }
-};
-
-const fetchOk = async (fetchImpl: typeof fetch, url: string, signal: AbortSignal) => {
-    const response = await fetchImpl(url, { signal });
-    if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
-    return response;
-};
 
 /** 同 player runtime 一樣：parse + 兩個 registry 都 build 到先算合格 */
 const validate = (catalog: CatalogModule, value: unknown, options: EpisodeBuildOptions) => {
@@ -128,12 +108,8 @@ const downloadImage = async (
 ) => {
     const fetchImpl = options.fetchImpl ?? fetch;
     const timeoutMs = options.timeoutMs ?? SNAPSHOT_FETCH_TIMEOUT_MS;
-    const bytes = await withTimeout(
-        async (signal) =>
-            new Uint8Array(await (await fetchOk(fetchImpl, url, signal)).arrayBuffer()),
-        timeoutMs,
-    );
-    if (sha256Hex(bytes).slice(0, HASH_HEX_LENGTH) !== IMAGE_NAME_PATTERN.exec(name)?.[1])
+    const bytes = await fetchBytes(fetchImpl, url, timeoutMs);
+    if (!matchesHashName(bytes, IMAGE_NAME_PATTERN.exec(name)?.[1]))
         throw new Error(`image ${name}: content hash does not match the file name`);
     await writeFile(join(tmp, IMAGE_DIR, name), bytes);
 };

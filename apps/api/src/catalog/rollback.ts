@@ -9,6 +9,7 @@
  * 發佈 throw / 被拒就用另一個 batch 寫返舊 definition
  */
 import { getBanner } from '../banner/store';
+import { getBranding } from '../branding/store';
 import { nextUpdatedAt } from '../content/etag';
 import { isRecord, type Json } from '../content/http';
 import {
@@ -16,6 +17,7 @@ import {
     documentFromEntries,
     missingEpisodeIds,
     validateDocument,
+    type PublishEnv,
     type PublishOutcome,
 } from './publish';
 import {
@@ -27,7 +29,7 @@ import {
     type StoredEntry,
 } from './store';
 
-type RollbackEnv = { DB: D1Database; CATALOG: R2Bucket; WORKER_ORIGIN: string };
+type RollbackEnv = PublishEnv;
 
 /** 目標 publish 唔係 ok（failed = 從未上過 R2）：乜都唔寫，回 409（S-797） */
 export class RollbackNotRestorableError extends Error {
@@ -168,8 +170,9 @@ const preflight = async (env: RollbackEnv, rows: ReturnType<typeof rowsAfter>, f
             origin: env.WORKER_ORIGIN,
             assets: await listAssetHashes(env.DB),
             generatedAt: new Date().toISOString(),
-            // 還原只係還原上下架狀態：banner 跟而家 D1（同圖一樣）
+            // 還原只係還原上下架狀態：banner、branding 跟而家 D1（同圖一樣）
             banner: await getBanner(env.DB),
+            branding: await getBranding(env.DB),
         }),
     );
     const latest = await latestPublish(env.DB);
