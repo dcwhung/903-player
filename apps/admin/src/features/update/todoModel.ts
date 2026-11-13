@@ -49,6 +49,12 @@ export const rowTarget = (row: TodoRow): string => {
 export const missingOf = (row: TodoRow): string[] =>
     TODO_COLUMNS.filter((column) => row.cells[column].state === 'must').map(columnLabel);
 
+/** 未完成項目嘅文字：「名（尚未設定 X、Y）」；冇缺嘅格（例如 draft 劇）就淨係出名 */
+export const incompleteText = (name: string, row: TodoRow): string => {
+    const missing = missingOf(row).join('、');
+    return missing ? t('update.incompleteLabel', { name, missing }) : name;
+};
+
 export const isRowDone = (row: TodoRow): boolean =>
     TODO_COLUMNS.every((column) => ['done', 'na'].includes(row.cells[column].state));
 

@@ -8,7 +8,7 @@ import { RefreshCw, TriangleAlert } from 'lucide-react';
 import type { ChangesResponse, LoadedEntry, PublishSelection, TodoRow } from '../../api/types';
 import { t, type MessageKey } from '../../i18n/t';
 import { itemName, kindLabel } from './timelineModel';
-import { displayName, episodesOf, missingOf } from './todoModel';
+import { displayName, episodesOf, incompleteText } from './todoModel';
 import { pickedAppearance, type AppearanceItem } from './selectionModel';
 
 const APPEARANCE_LABEL: Record<AppearanceItem, MessageKey> = {
@@ -31,12 +31,6 @@ const contentLabel = (row: TodoRow, entries: readonly LoadedEntry[]): string => 
     return count === undefined
         ? t('publish.selectionContent', { kind, name })
         : t('publish.selectionContentEpisodes', { kind, name, count });
-};
-
-const incompleteLabel = (row: TodoRow): string => {
-    const missing = missingOf(row).join('、');
-    const name = displayName(row);
-    return missing ? t('publish.incompleteItem', { name, missing }) : name;
 };
 
 /** 未完成：待辦嘅 incomplete 行 + server 自動剔走嘅（揀咗之後先變未完成） */
@@ -98,7 +92,11 @@ export function SelectionCard(props: SelectionCardProps) {
             {incomplete.length > 0 && (
                 <p className="note muted-note">
                     <TriangleAlert aria-hidden="true" />
-                    {t('publish.incomplete', { items: incomplete.map(incompleteLabel).join('；') })}
+                    {t('publish.incomplete', {
+                        items: incomplete
+                            .map((row) => incompleteText(displayName(row), row))
+                            .join('；'),
+                    })}
                 </p>
             )}
             {props.data.brandingChanged && (

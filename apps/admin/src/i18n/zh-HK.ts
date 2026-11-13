@@ -153,7 +153,6 @@ export const zhHK = {
         selectionOthers: '其他已儲存的改動',
         selectionNone: '沒有選擇新內容或 App 外觀。',
         incomplete: '以下項目尚未完成，不會在本次發佈：{items}。',
-        incompleteItem: '{name}（尚未設定{missing}）',
         stale: '待辦內容已更新，此頁資料已過時。請重新載入並重新選擇發佈項目。',
         reload: '重新載入',
         publishedSkipped: '已發佈 #{id}；{count} 項尚未完成，沒有發佈',

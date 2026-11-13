@@ -6,7 +6,7 @@
 import { Minus } from 'lucide-react';
 import type { TodoRow } from '../../api/types';
 import { t } from '../../i18n/t';
-import { missingOf, splitName } from './todoModel';
+import { incompleteText, splitName } from './todoModel';
 
 interface PublishCellProps {
     row: TodoRow;
@@ -38,10 +38,7 @@ export function PublishCell({ row, picked, onToggle }: PublishCellProps) {
                         type="checkbox"
                         className="pick"
                         disabled
-                        aria-label={t('update.incompleteLabel', {
-                            name: title,
-                            missing: missingOf(row).join('、'),
-                        })}
+                        aria-label={incompleteText(title, row)}
                     />
                     <span className="lock">{t('update.incomplete')}</span>
                 </label>
