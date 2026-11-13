@@ -7,6 +7,8 @@ import { TodoMatrix } from './TodoMatrix';
 const NA = { state: 'na' } as const;
 const ROWS: TodoRow[] = [
     {
+        key: 'newDrama/drama-01',
+        publish: 'incomplete',
         kind: 'newDrama',
         findingIds: [1],
         dramaId: 'drama-01',
@@ -21,6 +23,8 @@ const ROWS: TodoRow[] = [
         },
     },
     {
+        key: 'missingFolder/jim',
+        publish: 'always',
         kind: 'missingFolder',
         findingIds: [2],
         dramaId: 'jim',
@@ -34,15 +38,92 @@ const ROWS: TodoRow[] = [
             summary: NA,
         },
     },
+    {
+        key: 'newArc/lancy/love-after',
+        publish: 'selectable',
+        kind: 'newArc',
+        findingIds: [3],
+        dramaId: 'lancy',
+        arcId: 'love-after',
+        name: '蘭茜夫人劇場 · 戀愛後二分一',
+        cells: {
+            folder: { state: 'done', target: '/dramas/lancy#folder' },
+            id: { state: 'done', target: '/dramas/lancy/arcs#love-after' },
+            images: { state: 'done', target: '/dramas/lancy/arcs#love-after' },
+            schedule: { state: 'done', target: '/dramas/lancy/schedule#love-after' },
+            summary: { state: 'done', target: '/dramas/lancy/arcs#love-after' },
+        },
+    },
+    {
+        key: 'newEpisodes/golden/s1',
+        publish: 'always',
+        kind: 'newEpisodes',
+        findingIds: [4],
+        dramaId: 'golden',
+        arcId: 's1',
+        name: '黃金少年 · Season 1',
+        cells: {
+            folder: { state: 'done', target: '/dramas/golden#folder' },
+            id: NA,
+            images: NA,
+            schedule: NA,
+            summary: NA,
+        },
+    },
 ];
 
+const NONE: ReadonlySet<string> = new Set();
+const matrix = (unpicked = NONE, onToggle = vi.fn()) => (
+    <TodoMatrix rows={ROWS} entries={[]} unpicked={unpicked} onToggle={onToggle} />
+);
+
 describe('TodoMatrix', () => {
-    it('should render must / optional / done / na cells with deep links', () => {
+    it('should put the 發佈 column last with a ticked box for a selectable row (Q1)', () => {
+        render(<MemoryRouter>{matrix()}</MemoryRouter>);
+        const headers = screen.getAllByRole('columnheader').map((th) => th.textContent);
+        expect(headers.at(-1)).toBe('發佈');
+        expect(screen.getByRole('checkbox', { name: '發佈戀愛後二分一' })).toBeChecked();
+    });
+
+    it('should grey out an incomplete row with 未完成 and the missing settings', () => {
+        render(<MemoryRouter>{matrix()}</MemoryRouter>);
+        const box = screen.getByRole('checkbox', {
+            name: '天使之戀系列（尚未設定ID、圖片、排期）',
+        });
+        expect(box).toBeDisabled();
+        expect(box).not.toBeChecked();
+        const row = screen.getByRole('row', { name: /天使之戀系列/ });
+        expect(row).toHaveTextContent('未完成');
+    });
+
+    it('should show no checkbox for rows that always go out', () => {
+        render(<MemoryRouter>{matrix()}</MemoryRouter>);
+        expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+        expect(screen.getByRole('row', { name: /Season 1/ })).toHaveTextContent('一併發佈');
+    });
+
+    it('should untick an unpicked row and report toggles without opening the row', async () => {
+        const onToggle = vi.fn();
         render(
-            <MemoryRouter>
-                <TodoMatrix rows={ROWS} entries={[]} />
+            <MemoryRouter initialEntries={['/']}>
+                <Routes>
+                    <Route
+                        path="/"
+                        element={matrix(new Set(['newArc/lancy/love-after']), onToggle)}
+                    />
+                    <Route path="*" element={<p>other page</p>} />
+                </Routes>
             </MemoryRouter>,
         );
+        const box = screen.getByRole('checkbox', { name: '發佈戀愛後二分一' });
+        expect(box).not.toBeChecked();
+        await userEvent.click(box);
+        expect(onToggle).toHaveBeenCalledWith('newArc/lancy/love-after');
+        expect(screen.queryByText('other page')).not.toBeInTheDocument();
+    });
+
+    it('should render must / optional / done / na cells with deep links', () => {
+        render(<MemoryRouter>{matrix()}</MemoryRouter>);
         expect(screen.getByRole('link', { name: '天使之戀系列：ID' })).toHaveAttribute(
             'href',
             '/dramas/drama-01?from=todos&todo=newDrama%3Adrama-01%3A',
@@ -67,7 +148,7 @@ describe('TodoMatrix', () => {
             render(
                 <MemoryRouter initialEntries={['/']}>
                     <Routes>
-                        <Route path="/" element={<TodoMatrix rows={ROWS} entries={[]} />} />
+                        <Route path="/" element={matrix()} />
                         <Route path="*" element={<Where />} />
                     </Routes>
                 </MemoryRouter>,

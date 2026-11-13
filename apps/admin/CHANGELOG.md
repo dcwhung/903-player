@@ -2,6 +2,23 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.3.0 — 2026-11-13
+
+選擇發佈（`.proj-docs/plans/2026-11-13_plan_selective-publish.md`，配 api 0.10.0）。Design Origin：`_mockups_/admin-selective-publish/index.html`（Q1–Q4）。
+
+### Added
+
+- 更新頁「App 外觀」section：只列同上次發佈不同的項目（App 圖示 / 名稱與簡介 / 首頁 Banner，`GET /api/changes` `appearance`），全部冇改就唔出；表頭「項目 · 狀態 · 發佈」，狀態 pill 跟 App 外觀頁（自訂 · 未發佈 / 內建預設 · 未發佈）
+- 待辦矩陣最後一欄「發佈」：`selectable` 勾選框（預設勾，Q1）、`incomplete` 灰色勾選框 +「未完成」、`always`（新集數）顯示「一併發佈」；撳勾選格唔會跳去編輯頁
+- 更新頁底「已選擇 N 項發佈 · M 項未完成（不會發佈）」；冇揀任何新內容 / App 外觀、又冇其他改動 →「未選擇任何內容」+「下一步」灰（Q4）
+- 確認發佈頁「今次發佈」：揀咗的新內容、App 外觀、其他已儲存的改動（`others.items`，Q3）；「以下項目尚未完成，不會在今次發佈：…」；App 外觀重新部署提示移入呢張卡
+- 選擇用 URL `?selection=` 帶去確認發佈頁（reload 照用；冇就用更新頁而家的選擇 / 預設選擇），`GET /api/changes?selection=` 計統計、時間線、驗證；「發佈」送 `POST /api/publish { selection }`，`skipped` 唔係空就 toast 講明；422 `unknown selection keys` → 提示「重新載入」（重讀資料 + 返更新頁）
+
+### Changed
+
+- 「必須處理」唔再擋「下一步：確認發佈」：未完成的新內容今次唔發佈（設定照留，下次再揀）
+- 設定完成的待辦行唔再變淡（佢哋正係今次會發佈的行）
+
 ## 0.2.0 — 2026-11-13
 
 App 外觀 branding（`.proj-docs/plans/2026-11-13_plan_branding.md`）。Design Origin：`_mockups_/admin-appearance/index.html`（v2，Q1–Q6）。

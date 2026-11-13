@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import type { ChangesResponse } from '../src/api/types';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AdminDataContext, type AdminData } from '../src/data/AdminData';
+import { PublishSelectionProvider } from '../src/features/update/PublishSelection';
 import type { Resource } from '../src/data/useResource';
 import { ToastProvider } from '../src/ui/Toast';
 
@@ -43,14 +44,16 @@ export const renderAt = (
 ) =>
     render(
         <AdminDataContext.Provider value={data}>
-            <ToastProvider>
-                <MemoryRouter initialEntries={[url]}>
-                    <Routes>
-                        <Route path={path} element={element} />
-                        <Route path="*" element={<OtherPage />} />
-                    </Routes>
-                </MemoryRouter>
-            </ToastProvider>
+            <PublishSelectionProvider>
+                <ToastProvider>
+                    <MemoryRouter initialEntries={[url]}>
+                        <Routes>
+                            <Route path={path} element={element} />
+                            <Route path="*" element={<OtherPage />} />
+                        </Routes>
+                    </MemoryRouter>
+                </ToastProvider>
+            </PublishSelectionProvider>
         </AdminDataContext.Provider>,
     );
 

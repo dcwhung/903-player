@@ -6,6 +6,7 @@ import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
+import { selectiveChecks } from './selectiveChecks.mjs';
 
 const PORT = Number(process.env.E2E_PORT || 4174);
 const BASE = `http://localhost:${PORT}`;
@@ -1044,7 +1045,8 @@ const actionIconsCheck = (browser) =>
         await assertIcon(back, 'arrow-left', '返回待辦');
         await shoot(page, 'icon-flow-back', { clip: await clipAround(page.locator('.flow-bar')) });
         // 「查看全部」（確認發佈時間線）
-        await page.route('**/api/changes', (route) =>
+        // 選擇發佈（admin 0.3.0）：確認發佈頁讀 /api/changes?selection=…，連 query 都要攔
+        await page.route(/\/api\/changes(\?|$)/, (route) =>
             route.fulfill({
                 contentType: 'application/json',
                 body: JSON.stringify({
@@ -1920,7 +1922,10 @@ const iconPreviewFitCheck = (browser) =>
 
 const publishWarningsCheck = (browser) =>
     check('publish: 配色 warnings fold into one line, expand with links', async () => {
-        const page = await newPage(browser, loggedIn({ warnings: true }));
+        const state = loggedIn({ warnings: true });
+        // 選擇發佈：新短篇 ID 確認咗先係 selectable（未完成嘅唔會發佈，冇嘢發佈「發佈」就灰）
+        state.confirms.push({ dramaId: 'lancy', arcId: 'lancy-02' });
+        const page = await newPage(browser, state);
         await page.goto(`${BASE}/publish`);
         await page.getByText('3 項配色警告（不影響發佈）').waitFor();
         await shoot(page, 'publish-warnings');
@@ -1998,6 +2003,7 @@ try {
         brandingCheck,
         iconPreviewFitCheck,
         publishWarningsCheck,
+        ...selectiveChecks({ check, newPage, shoot, loggedIn, BASE }),
         missingFolderCheck,
         actionIconsCheck,
         showEditorCheck,

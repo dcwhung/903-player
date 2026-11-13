@@ -85,3 +85,9 @@ export const rowMeta = (row: TodoRow, episodes: number | undefined): string => {
     };
     return parts[row.kind].filter(Boolean).join(' · ');
 };
+
+/** 確認發佈頁列項目用：「劇名 › 短篇名」（新劇 = 劇名） */
+export const displayName = (row: TodoRow): string => {
+    const { title, drama } = splitName(row);
+    return drama ? `${drama} › ${title}` : title;
+};

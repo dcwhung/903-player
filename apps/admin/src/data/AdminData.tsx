@@ -3,7 +3,8 @@
  * 掃描完先讀其他嘢（掃描會寫 D1）
  */
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
-import { getChanges, getEntry, getTodos, listEntries } from '../api/endpoints';
+import { getEntry, getTodos, listEntries } from '../api/endpoints';
+import { getChanges } from '../api/publishEndpoints';
 import type { ChangesResponse, LoadedEntry, TodosResponse } from '../api/types';
 import { useResource, type Resource } from './useResource';
 import { useScan, type ScanState } from './useScan';
@@ -33,7 +34,7 @@ export const loadAllEntries = async (): Promise<LoadedEntry[]> =>
 export function AdminDataProvider({ children }: { children: ReactNode }) {
     const todos = useResource(getTodos, false);
     const entries = useResource(loadAllEntries, false);
-    const changes = useResource(getChanges, false);
+    const changes = useResource(() => getChanges(), false);
     const { reload: reloadTodos } = todos;
     const { reload: reloadEntries } = entries;
     const { reload: reloadChanges } = changes;

@@ -1,5 +1,6 @@
 import type { TodoRow } from '../../api/types';
 import {
+    displayName,
     isRowDone,
     missingOf,
     mustCount,
@@ -13,6 +14,8 @@ import {
 
 const NA = { state: 'na' } as const;
 const row = (over: Partial<TodoRow> = {}): TodoRow => ({
+    key: 'newArc/lancy/arc-01',
+    publish: 'incomplete',
     kind: 'newArc',
     findingIds: [1],
     dramaId: 'lancy',
@@ -86,5 +89,10 @@ describe('todoModel', () => {
         expect(rowTarget(row({ kind: 'newDrama', dramaId: 'a/b', arcId: null }))).toBe(
             '/dramas/a%2Fb',
         );
+    });
+
+    it('should join drama and arc names with › for the publish page', () => {
+        expect(displayName(row())).toBe('蘭茜夫人劇場 › 我心不死');
+        expect(displayName(row({ kind: 'newDrama', arcId: null, name: '新劇集' }))).toBe('新劇集');
     });
 });
