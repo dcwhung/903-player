@@ -1,8 +1,10 @@
 /*
- * 「曾經上過架」（admin 列表分「未上架」/「已下架」）同 DELETE 守衛（最新 publish 有冇用緊）。
+ * 「曾經上過架」（admin 列表分「未上架」/「已下架」）同「最新 publish 有冇用緊」。
  * - 狀態：任何一次 ok publish（publishedFacts，一條 query）：劇 / 短篇 = 鎖住嘅 episode ID
  *   （上架過嘅集數，見 lockedEpisodeIds），節目 = enabled 唔係 false（W-716、S-845）
- * - 守衛：最新 ok publish；劇睇鎖住 ID，節目睇 document 有冇佢，讀唔到就當有（fail closed，S-844）
+ * - 最新 ok publish（entries.ts isPublished，寬鬆驗證 mayRelax 用）：劇睇鎖住 ID，節目睇 document 有冇佢，
+ *   讀唔到就當有（fail closed，S-844）
+ * - DELETE 守衛（entries.ts blocksDelete）：劇同上；節目用「狀態」嘅曾經上過架（最新 document 讀唔到照拒絕）
  */
 import type { PublishedFactRow } from '../catalog/store';
 

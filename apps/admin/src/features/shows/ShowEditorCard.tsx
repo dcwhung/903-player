@@ -12,7 +12,7 @@ import { ShowPreview } from './ShowPreview';
 import type { ShowEditorState } from './useShowEditor';
 
 export function ShowEditorCard({ show, name }: { show: ShowEditorState; name: string }) {
-    const { isNew, editor, newId, setNewId, origin, save, neverPublished, id } = show;
+    const { isNew, editor, newId, setNewId, origin, save, deletable, id } = show;
     const { draft, entry, status } = editor;
     if (!draft) return null;
     return (
@@ -38,7 +38,7 @@ export function ShowEditorCard({ show, name }: { show: ShowEditorState; name: st
                 fromTodos={origin.fromTodos}
                 saving={status.saving}
                 onSave={() => void save()}
-                start={entry && <DeleteEntry entry={entry} neverPublished={neverPublished} />}
+                start={entry && <DeleteEntry entry={entry} neverPublished={deletable} />}
             />
         </div>
     );

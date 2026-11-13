@@ -252,6 +252,19 @@ const isPublished = async (db: D1Database, kind: EntryInput['kind'], id: string)
     return documentShowIds(latest.document)?.has(id) ?? true;
 };
 
+/**
+ * DELETE 守衛：劇照舊睇最新 publish 嘅鎖住 episode ID；節目改為「曾經以上架狀態發佈過」
+ * （同列表「未上架 / 已下架」一致）：淨係以下架入過 document 嘅節目播放器從未顯示，刪得。
+ * 最新 document 讀唔到照拒絕（fail closed，S-844）
+ */
+const blocksDelete = async (db: D1Database, kind: EntryInput['kind'], id: string) => {
+    if (kind === 'dramas') return isPublished(db, kind, id);
+    const latest = await latestPublish(db);
+    if (!latest) return false;
+    if (documentShowIds(latest.document) === null) return true;
+    return isInIndex(indexOfFacts(await publishedFacts(db)), kind, id);
+};
+
 entryRoutes.delete('/entries/:kind/:id', async (c) => {
     const target = targetOf(c);
     if (!target) return badTarget(c);
@@ -259,7 +272,7 @@ entryRoutes.delete('/entries/:kind/:id', async (c) => {
     if (!existing) return errorResponse(c, HTTP_STATUS.notFound, 'no such entry');
     const expected = expectedVersion(c.req.header('if-match'));
     if (expected !== null && expected !== existing.updated_at) return preconditionFailed(c);
-    if (await isPublished(c.env.DB, target.kind, target.id))
+    if (await blocksDelete(c.env.DB, target.kind, target.id))
         return errorResponse(
             c,
             HTTP_STATUS.conflict,
