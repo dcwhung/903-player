@@ -192,4 +192,23 @@ describe('ImageSlot', () => {
         );
         expect(screen.getByRole('alert')).toHaveTextContent('自動裁切失敗：HTTP 500');
     });
+
+    it('should drop the auto-crop note once the image is replaced by hand', async () => {
+        mockApi({ 'PUT /api/assets': () => ({ body: { name: 'abc.webp' } }) });
+        const onUploaded = vi.fn();
+        render(
+            <ImageSlot
+                slot="disc"
+                url="https://img/d.webp"
+                preview={PREVIEW}
+                onUploaded={onUploaded}
+                auto={{ status: 'done', file: 'cd cover.jpg' }}
+            />,
+        );
+        expect(screen.getByText('由 R2 cd cover.jpg 自動裁切')).toBeInTheDocument();
+        await pick();
+        await userEvent.click(await screen.findByRole('button', { name: '上載' }));
+        await waitFor(() => expect(onUploaded).toHaveBeenCalledWith('abc.webp'));
+        expect(screen.queryByText('由 R2 cd cover.jpg 自動裁切')).not.toBeInTheDocument();
+    });
 });

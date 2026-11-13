@@ -5,7 +5,7 @@
  * Design Origin: mockup: _mockups_/admin-phase4/index.html#a（.img-slot、右下 ✎ / ＋、.pill info）+ #c（尺寸提示）
  */
 import { Pencil, Plus } from 'lucide-react';
-import { useId, useRef } from 'react';
+import { useId, useRef, useState } from 'react';
 import { t } from '../i18n/t';
 import type { CropPreviewInfo } from './CropPlayerPreview';
 import { ImageFileInput } from './ImageFileInput';
@@ -85,11 +85,25 @@ function AutoNote({ auto }: { auto: AutoCropStatus | undefined }) {
     );
 }
 
+/** 上載流程 + 手動換咗圖之後收起嗰次自動裁切嘅狀態（「由 R2 … 自動裁切」唔再講真話，S-912） */
+const useSlotUpload = (
+    slot: ImageSlotKind,
+    onUploaded: ImageSlotProps['onUploaded'],
+    auto: AutoCropStatus | undefined,
+) => {
+    const [replaced, setReplaced] = useState<AutoCropStatus>();
+    const upload = useImageUpload(slot, async (name) => {
+        await onUploaded(name);
+        setReplaced(auto);
+    });
+    return { upload, shownAuto: auto === replaced ? undefined : auto };
+};
+
 export function ImageSlot({ slot, url, preview, onUploaded, auto }: ImageSlotProps) {
     const input = useRef<HTMLInputElement>(null);
     const button = useRef<HTMLButtonElement>(null);
     const hintId = useId();
-    const upload = useImageUpload(slot, onUploaded);
+    const { upload, shownAuto } = useSlotUpload(slot, onUploaded, auto);
     const { phase } = upload.session;
     const busy = upload.busy !== null || auto?.status === 'loading';
     const slotName = t(`images.${slot}`);
@@ -114,7 +128,7 @@ export function ImageSlot({ slot, url, preview, onUploaded, auto }: ImageSlotPro
                 </button>
             </Tooltip>
             <ImageFileInput ref={input} onPick={upload.onPick} />
-            <SlotCaption slot={slot} auto={auto} hintId={hintId} />
+            <SlotCaption slot={slot} auto={shownAuto} hintId={hintId} />
             {phase && (
                 <ImagePreviewDialog
                     slot={slot}
