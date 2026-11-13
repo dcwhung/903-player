@@ -170,3 +170,55 @@ next_action: invoke developer to fix S-916 in this PR (one commit, `fix: S-916 |
 context: All prior items fixed and verified; W-724 mutation (drop !locked on Esc) now fails the S-817 test. Developer question (b) persistPatch extra body fields — no fix, api reads only definition/images. Question (a) raised as S-916 (catalog/admin duplicate colour key list). Report committed locally, not pushed.
 report: .proj-docs/reviews/2026-11-12_review_admin-phase4.md (committed, not pushed)
 ```
+
+---
+
+## Re-review 2（2026-11-13 00:34，`d5e5af4..9ebd505`）
+
+- 範圍：`b7e8023`（S-916）、`9ebd505`（上下架記錄顯示 banner 變更）；只驗呢兩個 commit 嘅 diff
+- Hard gates：all pass（eslint + prettier 改動檔、`tsc --noEmit` admin / catalog、`npm test -- apps/admin/src/features/history packages/catalog/src/core/themeSchema.test.ts apps/admin/src/model apps/admin/src/features/theme` 14 files / 110 tests pass）；e2e 屬 CI（run 43337905991 跑緊，reviewer 唔跑）
+
+### S-916 狀態
+
+| ID    | 狀態    | 證據                                                                                                                                                                                                                                           |
+| ----- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-916 | ✅ 已修 | `b7e8023`：catalog `themeSchema.ts:16` export `THEME_COLOUR_KEYS`（經 `src/index.ts:47`），`readTheme` 用同一份；admin `model/theme.ts` 刪咗本地清單、改 re-export，`palette.ts` 唔使改；`themeSchema.test` 斷言 10 色、全部喺 `NEUTRAL_THEME` |
+
+### 新 commit 結論（`9ebd505`）
+
+- 欄位位置：同 `origin/fix/api-backlog-0.8.1` `80349d8` `apps/api/src/admin/changes.ts:139-141`（`PublishChangeSummary extends ChangeSummary { bannerChanged: boolean }`，放喺每行 `changes` 入面）一致；admin `types.ts` 標 optional，`bannerChangedOf` 只認 `=== true`，舊 api / 舊記錄當冇換 ✅
+- 顯示：`BannerLine` 跟 `.hist-row .changes` 四欄 grid（kind / 空 / name / 空），排喺其他變更之後；淨換 banner 唔再出「沒有內容變更」✅
+- Test 有效：mutation（a）拎走 `!bannerChanged` → 「only the banner changed」fail；（b）拎走 `<BannerLine />` → 2 個 test fail；還原後全綠。`historyModel.test` 覆蓋 true / false / 欄位冇 / `undefined`
+- e2e：mock 加 #3（淨換 banner），`run.mjs` 改等 `#4` 同斷言冇「沒有內容變更」；結果以 CI run 為準
+- 冇引入新 🔴 / 🟡
+
+### 範圍外（交 main agent / api lane）
+
+- S-917（待修，同 PR 處理）`apps/api/src/catalog/warnings.ts:20` `NEUTRAL_COLOUR_KEYS` 係第三份 10 色清單（註解仲寫舊名 `COLOUR_KEYS`），改用 catalog `THEME_COLOUR_KEYS`；ID 由 main agent 預留，reviewer 冇另派
+
+### 評分（re-review 2）
+
+| 維度     | 得分    | 滿分    | 備注                                      |
+| -------- | ------- | ------- | ----------------------------------------- |
+| 正確性   | 25      | 25      | 欄位位置同 api 0.8.1 一致；缺欄位當 false |
+| 安全性   | 20      | 20      | 冇新輸入面                                |
+| 可維護性 | 20      | 20      | S-916 已修；S-917 屬 api lane             |
+| 測試覆蓋 | 15      | 15      | 兩個 mutation 都被 kill                   |
+| 性能     | 10      | 10      |                                           |
+| 代碼風格 | 10      | 10      | lint / prettier / tsc 全過                |
+| **總分** | **100** | **100** | **結果：✅ pass**                         |
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: /review re-review 2 Lane L2 admin Phase 4 (feature/admin-phase4 @ 9ebd505, d5e5af4..9ebd505)
+status: pass
+score: 100
+hard_gates: {lint: pass, type_check: pass, tests: pass, coverage: pass, no_critical: pass, security_scan: n/a}
+warnings: []
+backlog: []
+resolved: [S-916]
+new: []
+next_action: main agent proceeds; S-917 (api warnings.ts third colour-key copy, reserved by main agent) to developer in same PR; wait for CI run 43337905991 (incl. e2e) before pushing docs
+context: S-916 fixed (catalog exports THEME_COLOUR_KEYS, admin re-exports). 9ebd505 matches api 80349d8 changes.bannerChanged placement; missing field treated as false; mutations on the banner logic fail the new tests. No new IDs from reviewer. Report committed locally, not pushed.
+report: .proj-docs/reviews/2026-11-12_review_admin-phase4.md (committed, not pushed)
+```
