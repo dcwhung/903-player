@@ -3,10 +3,11 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { loadEnv, type Plugin } from 'vite';
 import { defineConfig, type ViteUserConfig } from 'vitest/config';
-import { brandedPublicDir } from './scripts/brandingIcons.ts';
-import { injectBrandingText, loadBranding, manifestText } from './scripts/brandingConfig.ts';
+import { resolveBuildBranding } from './scripts/brandingBuild.ts';
+import { injectBrandingText, manifestText } from './scripts/brandingConfig.ts';
 import { catalogRuntimeCaching } from './scripts/catalogCaching.ts';
 import { catalogSnapshot } from './scripts/catalogSnapshot.ts';
+import { e2eCatalogNotFound } from './scripts/e2eCatalogNotFound.ts';
 import { buildSocialTags, resolveSiteUrl } from './scripts/socialMeta.ts';
 import { episodeOptionsFor } from './src/catalog/dramas/lib/episodeOptionsFor.ts';
 import { LAUNCH_THEME_COLOR } from './src/config/launchTheme.ts';
@@ -50,54 +51,17 @@ const catalogUrlFor = (mode: string): string =>
     (mode === E2E_MODE ? E2E_CATALOG_URL : '');
 
 /*
- * S-765：vite preview 係 SPA，冇呢個檔都答 200 + index.html。e2e harness 唔可以改 SW 發嘅 catalog request
- *（會令 Chromium 重裝 SW，S-648），SW 原封不動去 preview 就會將 SPA HTML 寫入 catalog-json cache。
- * e2e mode 嘅 preview 對 catalog folder 底下一律答 404（喺 SPA fallback 之前），同真 hosting 冇呢個檔一樣；
- * NetworkFirst 唔 cache 非 200。e2e/run.mjs 用 --mode e2e 起 preview
- */
-const HTTP_NOT_FOUND = 404;
-const e2eCatalogNotFound = (catalogUrl: string): Plugin => {
-    const folder = catalogUrl.slice(0, catalogUrl.lastIndexOf('/') + 1);
-    return {
-        name: 'e2e-catalog-not-found',
-        configurePreviewServer: (server) => {
-            server.middlewares.use(folder, (_req, res) => {
-                res.statusCode = HTTP_NOT_FOUND;
-                res.end();
-            });
-        },
-    };
-};
-
-/*
  * Prebuild snapshot（Backend Phase 2b-2）：production build 有 catalog URL 就喺 buildStart 攞最新 publish
  *（連圖）寫去呢度，src/catalog/snapshot/source.ts 包入 bundle；失敗 / e2e / 冇 URL → repo library
  */
 const SNAPSHOT_DIR = new URL('./src/catalog/snapshot/data', import.meta.url).pathname;
 
-/*
- * Branding（App 外觀 plan 2026-11-13）：production build 讀 catalog.branding。
- * text → manifest name / short_name / description + index.html title / meta / og（injectBrandingText）；
- * icon → 下載五張 PNG 寫去 branded public 副本（gitignored），改 publicDir 覆蓋內建 icon。
- * loadBranding 自己 fetch catalog（唔靠 catalogSnapshot buildStart 寫嘅檔，嗰個喺 configResolved 之後先行）；
- * 失敗 / e2e / 冇 URL → 用內建值。
- */
-const PUBLIC_DIR = new URL('./public', import.meta.url).pathname;
-const BRANDED_PUBLIC_DIR = new URL('./node_modules/.tmp/branded-public', import.meta.url).pathname;
-
+// Branding（App 外觀 plan 2026-11-13）：catalog.branding 嘅 text / icon，詳見 scripts/brandingBuild.ts
 export default defineConfig(async ({ command, mode }): Promise<ViteUserConfig> => {
     const catalogUrl = catalogUrlFor(mode);
-    const branding = await loadBranding({ url: catalogUrl, command, mode });
-    const publicDir =
-        branding?.icon &&
-        (await brandedPublicDir({
-            icon: branding.icon,
-            catalogUrl,
-            publicDir: PUBLIC_DIR,
-            outDir: BRANDED_PUBLIC_DIR,
-        }));
+    const branding = await resolveBuildBranding({ command, mode, catalogUrl });
     return {
-        ...(publicDir ? { publicDir } : {}),
+        ...(branding.publicDir ? { publicDir: branding.publicDir } : {}),
         base: BASE_PATH,
         // Vitest 共用呢份 config，所以測試都睇到同一個 define
         define: {
@@ -108,7 +72,7 @@ export default defineConfig(async ({ command, mode }): Promise<ViteUserConfig> =
             react(),
             injectAppVersion(),
             injectSocialTags(),
-            injectBrandingText(branding?.text),
+            injectBrandingText(branding.text),
             mode === E2E_MODE && catalogUrl.startsWith('/') && e2eCatalogNotFound(catalogUrl),
             catalogSnapshot({
                 url: catalogUrl,
@@ -121,7 +85,7 @@ export default defineConfig(async ({ command, mode }): Promise<ViteUserConfig> =
                 registerType: 'prompt',
                 includeAssets: ['favicon.png', 'apple-touch-icon.png'],
                 manifest: {
-                    ...manifestText(branding?.text),
+                    ...manifestText(branding.text),
                     lang: 'zh-HK',
                     start_url: BASE_PATH,
                     scope: BASE_PATH,
