@@ -5,6 +5,7 @@
  */
 import type { ChangeItem } from '@903-player/catalog';
 import type { Appearance, PublishSelection, TodoRow } from '../../api/types';
+import { isRecord } from '../../model/raw';
 
 /** App 外觀項目（更新頁 section 嘅次序 = App 外觀頁卡次序） */
 export const APPEARANCE_ITEMS = ['icon', 'text', 'banner'] as const;
@@ -59,9 +60,6 @@ export const hasAnythingToPublish = (
 
 export const encodeSelection = (selection: PublishSelection): string =>
     new URLSearchParams({ [SELECTION_PARAM]: JSON.stringify(selection) }).toString();
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const isSelection = (value: unknown): value is PublishSelection =>
     isRecord(value) &&
