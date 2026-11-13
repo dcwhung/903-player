@@ -113,7 +113,7 @@ export function ImageSlot({ slot, url, preview, onUploaded, auto }: ImageSlotPro
     const pickFile = () => input.current?.click();
     return (
         <div className="slot">
-            <Tooltip text={t('images.tip', { slot: slotName, size, ...LIMITS })}>
+            <Tooltip text={t('images.tip', { size, ...LIMITS })}>
                 <button
                     ref={button}
                     type="button"

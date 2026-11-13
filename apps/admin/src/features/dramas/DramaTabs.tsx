@@ -1,5 +1,5 @@
 /*
- * 廣播劇分頁：基本資料 / 短篇（N）/ 排程 / 配色（mockup ⑧ .tabs；配色：mockup admin-phase4 #d）；保留 ?from=todos；
+ * 廣播劇分頁：基本資料 / 配色 / 短篇（N）/ 排程（mockup ⑧ .tabs；配色：mockup admin-phase4 #d）；保留 ?from=todos；
  * 短篇 / 排程連結帶記住嘅短篇（#arc，見 useArcMemory）
  */
 import { Link, useLocation } from 'react-router-dom';
@@ -8,11 +8,12 @@ import { dramaEditorPath } from '../../model/paths';
 
 export type DramaTab = 'basic' | 'arcs' | 'schedule' | 'theme';
 
+/** 分頁次序：基本資料 → 配色 → 短篇 → 排程（2026-11-13 用戶要求配色緊接基本資料） */
 const SUFFIX: Record<DramaTab, string> = {
     basic: '',
+    theme: '/theme',
     arcs: '/arcs',
     schedule: '/schedule',
-    theme: '/theme',
 };
 
 /** 揀短篇嘅 tab：連結帶 #<短篇 ID> */

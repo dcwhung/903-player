@@ -28,7 +28,7 @@ describe('Nav v4', () => {
             '更新3',
             '節目',
             '廣播劇',
-            '發佈 / 部署記錄',
+            '發佈 / 部署',
         ]);
         // 「品牌」組放最頂（2026-11-13 用戶要求），之後先係「內容」
         expect(following(nav.getByText('品牌'), links[0] as Element)).toBe(true);

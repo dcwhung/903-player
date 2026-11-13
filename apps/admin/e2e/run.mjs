@@ -324,7 +324,7 @@ const todoFlowCheck = (browser) =>
         await page.getByText('即時上線').waitFor();
         await shoot(page, 'publish');
         await page.getByRole('button', { name: '發佈', exact: true }).click();
-        await page.getByRole('heading', { name: '發佈 / 部署記錄' }).waitFor();
+        await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();
         await page.getByText('使用中').waitFor();
         await page.getByText('#4', { exact: true }).waitFor();
         // #3 淨換首頁 Banner：顯示「更換 · 首頁 Banner」，唔係「沒有內容變更」
@@ -1675,7 +1675,7 @@ const themeCheck = (browser) =>
                 .locator('.content')
                 .evaluate((el) => getComputedStyle(el).backgroundColor);
             if (panel !== 'rgb(20, 29, 41)') throw new Error(`panel is ${panel}, not dark`);
-            await page.getByRole('heading', { name: '發佈 / 部署記錄' }).waitFor();
+            await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();
             await page.screenshot({ path: `${OUT}/theme-manual-dark.png` });
             await page.getByRole('button', { name: '跟隨系統' }).click();
             if (await page.evaluate(() => document.documentElement.hasAttribute('data-theme')))
