@@ -3,6 +3,7 @@
  * POST /api/publish { selection }、GET /api/todos 嘅 key / publish、GET /api/changes 嘅 appearance / others / ?selection
  */
 import { env } from 'cloudflare:test';
+import { saveIcon, type BrandingIcon } from '../src/branding/store';
 import { adminGet, adminPost, adminRequest } from './helpers';
 import { SHOW, drama, markDraft, putEntry, seed } from './fixtures';
 
@@ -77,6 +78,21 @@ const putBanner = async () => {
     await env.DB.prepare('INSERT INTO banner (id, standard, long, updated_at) VALUES (1, ?, ?, ?)')
         .bind(BANNER.standard, BANNER.long, '2026-11-08T00:00:00Z')
         .run();
+};
+
+/** icon 直接寫 D1（PUT /api/branding/icon 驗 PNG 尺寸，呢度只關心 publish）；seed 決定 hash */
+const putIcon = async (seedChar: string): Promise<BrandingIcon> => {
+    const keys = ['favicon', 'appleTouch', 'icon192', 'icon512', 'maskable'] as const;
+    const names = keys.map((key, index) => [key, `${seedChar.repeat(15)}${index}.png`] as const);
+    for (const [, name] of names)
+        await env.DB.prepare(
+            'INSERT OR IGNORE INTO assets (hash, content_type, bytes, created_at) VALUES (?, ?, ?, ?)',
+        )
+            .bind(name.split('.')[0], 'image/png', 1, '2026-11-08T00:00:00Z')
+            .run();
+    const icon = { ...Object.fromEntries(names), maskableBackground: '#000000' } as BrandingIcon;
+    await saveIcon(env.DB, icon, '2026-11-08T00:00:00Z');
+    return icon;
 };
 
 beforeEach(() => seed(3));
@@ -219,6 +235,18 @@ describe('POST /api/publish selection — appearance', () => {
         expect((doc.branding as Json).text).toMatchObject({ name: '903 Player' });
         expect(Object.keys(doc.banner as Json)).toEqual(['standard', 'long']);
     });
+
+    it('should publish the selected icon and keep the unselected text at the last value', async () => {
+        await putText('903 Player');
+        await putIcon('c');
+        expect((await publish()).status).toBe(200);
+        await putText('新名');
+        const icon = await putIcon('d');
+        expect((await publish({ selection: { branding: { icon: true } } })).status).toBe(200);
+        const branding = (await catalog()).branding as Json;
+        expect((branding.icon as Json).favicon).toContain(icon.favicon);
+        expect(branding.text).toMatchObject({ name: '903 Player' });
+    });
 });
 
 describe('GET /api/changes selection data', () => {
@@ -252,5 +280,22 @@ describe('GET /api/changes selection data', () => {
         expect(((picked.changes as Json).items as Json[]).map((i) => i.kind)).toEqual(['newArc']);
         expect((await adminGet('/api/changes?selection=oops')).status).toBe(400);
         expect((await query({ content: ['newDrama/nope'] })).status).toBe(422);
+    });
+
+    it('should follow ?selection for bannerChanged / brandingChanged', async () => {
+        await putText('903 Player');
+        await putBanner();
+        const flags = async (selection: unknown) => {
+            const body = await json(
+                await adminGet(
+                    `/api/changes?selection=${encodeURIComponent(JSON.stringify(selection))}`,
+                ),
+            );
+            return [body.brandingChanged, body.bannerChanged, body.unchanged];
+        };
+        // 冇揀 App 外觀：唔使重新部署
+        expect(await flags({})).toEqual([false, false, true]);
+        expect(await flags({ branding: { text: true } })).toEqual([true, false, false]);
+        expect(await flags({ banner: true })).toEqual([false, true, false]);
     });
 });
