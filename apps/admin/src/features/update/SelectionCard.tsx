@@ -1,6 +1,6 @@
 /*
- * 確認發佈頁「今次發佈」：Design Origin: mockup: _mockups_/admin-selective-publish/index.html#b
- * 揀咗嘅新內容 + App 外觀 + 其他已儲存的改動（Q3，others.items）；未完成項目（不會在今次發佈）；
+ * 確認發佈頁「本次發佈」：Design Origin: mockup: _mockups_/admin-selective-publish/index.html#b
+ * 揀咗嘅新內容 + App 外觀 + 其他已儲存的改動（Q3，others.items）；未完成項目（不會在本次發佈）；
  * App 外觀（圖示 / 名稱與簡介）須重新部署提示
  */
 import type { ChangeItem } from '@903-player/catalog';

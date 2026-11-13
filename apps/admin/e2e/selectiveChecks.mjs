@@ -48,10 +48,10 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
                 await next.click();
 
                 // ② 確認發佈：今次項目 + 未完成；reload 照用 URL 嘅選擇
-                const card = page.getByRole('region', { name: '今次發佈' });
+                const card = page.getByRole('region', { name: '本次發佈' });
                 await card.getByText('新短篇 · 蘭茜夫人劇場 › 戀愛後二分一').waitFor();
                 await page.reload();
-                await card.getByText('以下項目尚未完成，不會在今次發佈').waitFor();
+                await card.getByText('以下項目尚未完成，不會在本次發佈').waitFor();
                 if ((await card.getByText('App 外觀 · 名稱與簡介').count()) > 0)
                     throw new Error('unticked 名稱與簡介 listed on the publish page');
                 await shoot(page, 'publish-selective');
@@ -85,7 +85,7 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
             const page = await newPage(browser, loggedIn({ selective: true }));
             await page.goto(BASE);
             await page.getByRole('button', { name: NEXT }).click();
-            const card = page.getByRole('region', { name: '今次發佈' });
+            const card = page.getByRole('region', { name: '本次發佈' });
             await card.getByText('App 外觀 · 名稱與簡介').waitFor();
             await card.getByText(/圖示、名稱及簡介須重新部署/).waitFor();
             await shoot(page, 'publish-selective-appearance');

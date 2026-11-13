@@ -1,7 +1,7 @@
 /*
  * 更新 · 確認發佈：Design Origin: mockup: _mockups_/admin/index.html#u3（結構）+
  * mockup: _mockups_/admin-style/index.html#a（漸變統計卡）+
- * mockup: _mockups_/admin-selective-publish/index.html#b（選擇發佈：今次發佈、未完成、重新部署提示）。
+ * mockup: _mockups_/admin-selective-publish/index.html#b（選擇發佈：本次發佈、未完成、重新部署提示）。
  * 409 → 擋住清單（#s9）；驗證錯誤 / 配色警告（admin-phase4 #f）；422 未知 key → 頁面過時（重新載入）
  */
 import { useEffect } from 'react';

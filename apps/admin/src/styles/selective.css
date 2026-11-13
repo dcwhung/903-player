@@ -1,7 +1,7 @@
 /*
  * 選擇發佈：Design Origin: mockup: _mockups_/admin-selective-publish/index.html（#a 更新頁、#b 確認發佈）
  * 喺 phase4.css 之後載入。section 標題 + hint、「發佈」勾選欄（最後一欄）、未完成灰色勾選框、
- * 確認發佈頁「今次發佈」清單。顏色一律用 tokens.css
+ * 確認發佈頁「本次發佈」清單。顏色一律用 tokens.css
  */
 
 /* ---------- section 標題（mockup .sec-title） ---------- */
@@ -56,7 +56,7 @@ table.matrix td.pick-cell label:has(.pick:disabled) {
     color: var(--muted);
 }
 
-/* ---------- 確認發佈頁「今次發佈」 ---------- */
+/* ---------- 確認發佈頁「本次發佈」 ---------- */
 ul.plain {
     margin: 0;
     padding-left: 20px;

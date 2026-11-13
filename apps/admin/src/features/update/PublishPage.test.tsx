@@ -190,14 +190,14 @@ describe('PublishPage', () => {
 
         it('should list what goes out, what is incomplete and the redeploy note', async () => {
             open();
-            const card = await screen.findByRole('region', { name: '今次發佈' });
+            const card = await screen.findByRole('region', { name: '本次發佈' });
             expect(getChanges).toHaveBeenLastCalledWith(SELECTION);
             expect(card).toHaveTextContent('新短篇 · 蘭茜夫人劇場 › 戀愛後二分一');
             expect(card).toHaveTextContent('App 外觀 · 名稱與簡介');
             expect(card).toHaveTextContent('其他已儲存的改動');
             expect(card).toHaveTextContent('修改 · 口水多過浪花');
             expect(card).toHaveTextContent(
-                '以下項目尚未完成，不會在今次發佈：森美小儀系列 › 大衛營（尚未設定排期）。',
+                '以下項目尚未完成，不會在本次發佈：森美小儀系列 › 大衛營（尚未設定排期）。',
             );
             expect(card).toHaveTextContent(/圖示、名稱及簡介須重新部署播放器/);
         });
@@ -205,7 +205,7 @@ describe('PublishPage', () => {
         it('should fall back to the default selection without one in the URL', async () => {
             vi.mocked(getChanges).mockResolvedValue(SELECTED);
             renderAt('/publish', '/publish', <PublishPage />, data());
-            await screen.findByRole('region', { name: '今次發佈' });
+            await screen.findByRole('region', { name: '本次發佈' });
             expect(getChanges).toHaveBeenLastCalledWith(SELECTION);
         });
 
@@ -218,7 +218,7 @@ describe('PublishPage', () => {
                 },
             });
             open();
-            await screen.findByRole('region', { name: '今次發佈' });
+            await screen.findByRole('region', { name: '本次發佈' });
             await waitForLoaded();
             await userEvent.click(screen.getByRole('button', { name: '發佈' }));
             expect(publish).toHaveBeenCalledWith(SELECTION);
@@ -252,7 +252,7 @@ describe('PublishPage', () => {
                 new ValidationError(422, 'unknown selection keys'),
             );
             open();
-            await screen.findByRole('region', { name: '今次發佈' });
+            await screen.findByRole('region', { name: '本次發佈' });
             await waitForLoaded();
             await userEvent.click(screen.getByRole('button', { name: '發佈' }));
             expect(await screen.findByRole('button', { name: '重新載入' })).toBeInTheDocument();
