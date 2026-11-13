@@ -1,14 +1,15 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { AdminDataContext } from '../data/AdminData';
 import { fakeData, resource } from '../../tests/renderApp';
 import { Nav } from './Nav';
 
-const renderNav = (mini: boolean) =>
+const renderNav = (mini: boolean, onToggle = vi.fn()) =>
     render(
         <AdminDataContext.Provider value={fakeData({ todos: resource({ rows: [], blocking: 3 }) })}>
             <MemoryRouter initialEntries={['/']}>
-                <Nav email="admin@example.com" onLogout={vi.fn()} mini={mini} onToggle={vi.fn()} />
+                <Nav email="admin@example.com" onLogout={vi.fn()} mini={mini} onToggle={onToggle} />
             </MemoryRouter>
         </AdminDataContext.Provider>,
     );
@@ -20,9 +21,7 @@ describe('Nav v4', () => {
     it('should put 更新 first under 內容, before 節目 and 廣播劇, keeping the todo count', () => {
         renderNav(false);
         const nav = within(screen.getByRole('navigation', { name: '主選單' }));
-        const links = nav
-            .getAllByRole('link')
-            .filter((link) => !link.classList.contains('brand-link'));
+        const links = nav.getAllByRole('link');
         expect(links.map((link) => link.textContent)).toEqual([
             'App 外觀',
             '更新3',
@@ -65,11 +64,25 @@ describe('Nav v4', () => {
         expect(screen.getByRole('button', { name: '登出' })).toBeInTheDocument();
     });
 
-    it('should show the app icon (not a 903 text circle) as the collapsed brand link', () => {
+    it('should show the app icon (not a 903 text circle) as the collapsed brand button', () => {
         renderNav(true);
-        const link = screen.getByRole('link', { name: /^903 Player Admin Admin v/ });
-        const icon = link.querySelector('img');
+        const brand = screen.getByRole('button', {
+            name: /^903 Player Admin Admin v.*（展開選單）$/,
+        });
+        const icon = brand.querySelector('img');
         expect(icon).toHaveAttribute('src', '/icon-192.png');
-        expect(link).not.toHaveTextContent('903');
+        expect(brand).not.toHaveTextContent('903');
+    });
+
+    it.each([
+        [false, '收合選單'],
+        [true, '展開選單'],
+    ])('should toggle the nav from the top-left brand (mini = %s → %s)', async (mini, action) => {
+        const onToggle = vi.fn();
+        renderNav(mini, onToggle);
+        const brand = screen.getByRole('button', { name: new RegExp(`（${action}）$`) });
+        expect(brand).toHaveAttribute('aria-expanded', String(!mini));
+        await userEvent.click(brand);
+        expect(onToggle).toHaveBeenCalledTimes(1);
     });
 });

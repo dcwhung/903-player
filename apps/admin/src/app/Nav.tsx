@@ -3,6 +3,7 @@
  * 品牌：App 外觀（最頂）/ 內容：更新（待辦數）、節目、廣播劇 / 記錄：發佈 / 部署 / 底：主題 + 收合、email + 登出（NavFooter）
  * 收細（76px）：banner → player app icon 縮圖（public/icon-192.png，圓角）、只剩 icon + tooltip、待辦數 → 小橙點。
  * 手動收合 / 展開：主題掣同收合掣由舊位置滑去新位置（FLIP，flip.ts）；視窗窄咗自動收合唔播
+ * 左上 banner / icon 撳落去同收合掣一樣收合 / 展開（2026-11-13 用戶要求；之前係去「更新」嘅 link）
  */
 import { Disc, History, Image, Inbox, Radio, type LucideIcon } from 'lucide-react';
 import { useRef, type ReactNode } from 'react';
@@ -60,18 +61,19 @@ function Item({ to, label, icon: Icon, mini, current, ariaLabel, extra }: ItemPr
     );
 }
 
-function BrandLink({ mini }: { mini: boolean }) {
-    const label = `${t('app.name')} ${t('app.version', { version: __API_VERSION__ })}`;
-    if (mini)
-        return (
-            <Link className="logo-mini" to="/">
-                <img src={APP_ICON_PATH} alt={label} width={48} height={48} />
-            </Link>
-        );
+function BrandToggle({ mini, onToggle }: { mini: boolean; onToggle: () => void }) {
+    const action = mini ? t('nav.expandLabel') : t('nav.collapseLabel');
+    const label = `${t('app.name')} ${t('app.version', { version: __API_VERSION__ })}（${action}）`;
     return (
-        <Link className="brand-link" to="/">
-            <Brand />
-        </Link>
+        <button
+            type="button"
+            className={mini ? 'logo-mini' : 'brand-link'}
+            aria-label={label}
+            aria-expanded={!mini}
+            onClick={onToggle}
+        >
+            {mini ? <img src={APP_ICON_PATH} alt="" width={48} height={48} /> : <Brand />}
+        </button>
     );
 }
 
@@ -102,7 +104,7 @@ export function Nav(props: NavProps) {
     };
     return (
         <nav ref={navRef} className="nav" aria-label={t('nav.label')}>
-            <BrandLink mini={mini} />
+            <BrandToggle mini={mini} onToggle={toggle} />
             <span className="group">{t('nav.brand')}</span>
             <Item to="/appearance" label={t('nav.appearance')} icon={Image} mini={mini} />
             <span className="group">{t('nav.content')}</span>

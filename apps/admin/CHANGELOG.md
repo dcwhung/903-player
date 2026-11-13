@@ -2,6 +2,12 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.4.0 — 2026-11-13
+
+### Changed
+
+- 側邊選單左上 banner（收合時嘅 app icon）由「去更新頁」改為收合 / 展開選單，同底部收合掣一樣（`aria-expanded`；讀屏讀「903 Player Admin Admin v…（收合選單 / 展開選單）」）；冇 button 框同 hover 底色
+
 ## 0.3.1 — 2026-11-13
 
 配 api 0.10.1。

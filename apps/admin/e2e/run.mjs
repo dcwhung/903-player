@@ -1232,10 +1232,12 @@ const navCheck = (browser) =>
             await shoot(page, 'nav-full');
             // 展開：主題三掣 + 收合同一行（收合排最後）
             const seg = await boxOf(page.getByRole('group', { name: '顯示模式' }));
-            const collapse = await boxOf(page.getByRole('button', { name: '收合選單' }));
+            const collapse = await boxOf(
+                page.getByRole('button', { name: '收合選單', exact: true }),
+            );
             if (Math.abs(seg.y - collapse.y) > 8 || collapse.x <= seg.x)
                 throw new Error('collapse button is not after the theme switch on the same row');
-            await page.getByRole('button', { name: '收合選單' }).click();
+            await page.getByRole('button', { name: '收合選單', exact: true }).click();
             // animation 中途：停喺 50ms（ease-out，畫面約一半位置）截圖，再放佢播完
             const paused = await page.evaluate(() =>
                 // 停咗嘅 animation 唔會 settle：flip.ts 超時收 .flipping，截圖前補返（= 50ms 嗰格嘅樣）
@@ -1251,7 +1253,7 @@ const navCheck = (browser) =>
             await page.screenshot({ path: `${OUT}/nav-flip-mid.png` });
             await page.evaluate(() => document.getAnimations().forEach((a) => a.play()));
             await page.reload();
-            const expand = page.getByRole('button', { name: '展開選單' });
+            const expand = page.getByRole('button', { name: '展開選單', exact: true });
             const cycle = await boxOf(page.getByRole('button', { name: /主題：/ }));
             const below = await boxOf(expand);
             if (below.y <= cycle.y) throw new Error('expand button is not below the theme button');
@@ -1300,6 +1302,26 @@ const navCheck = (browser) =>
             await shoot(page, 'nav-mini-logo', {
                 clip: await boxOf(page.locator('.nav'), { height: 140 }),
             });
+            // 左上 icon / banner 同收合掣一樣：撳 icon 展開、撳 banner 收合（冇 button 框 / 底色）
+            const frameOf = (locator) =>
+                locator.evaluate((el) => {
+                    const style = getComputedStyle(el);
+                    return [style.borderTopWidth, style.backgroundColor, style.boxShadow].join('|');
+                });
+            const icon = page.getByRole('button', { name: /（展開選單）$/ });
+            // W-741：收細 icon 冇 button 框（border / 底色 / inset box-shadow）
+            const iconFrame = await frameOf(icon);
+            if (iconFrame !== '0px|rgba(0, 0, 0, 0)|none')
+                throw new Error(`collapsed brand toggle shows a button frame: ${iconFrame}`);
+            await icon.click();
+            await page.getByRole('button', { name: '收合選單', exact: true }).waitFor();
+            const banner = page.getByRole('button', { name: /（收合選單）$/ });
+            // banner 嘅 box-shadow 係設計陰影（0 4px 14px），淨驗 border + 底色
+            const frame = (await frameOf(banner)).split('|').slice(0, 2).join('|');
+            if (frame !== '0px|rgba(0, 0, 0, 0)')
+                throw new Error(`brand toggle shows a button frame: ${frame}`);
+            await banner.click();
+            await page.getByRole('button', { name: '展開選單', exact: true }).waitFor();
             await page.close();
         },
     );
@@ -1669,12 +1691,12 @@ const reducedMotionCheck = (browser) =>
         const page = await newPage(browser, loggedIn());
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.goto(`${BASE}/dramas`);
-        await page.getByRole('button', { name: '收合選單' }).click();
+        await page.getByRole('button', { name: '收合選單', exact: true }).click();
         const running = await page.evaluate(() => document.getAnimations().length);
         if (running !== 0) throw new Error(`${running} animations with reduced motion`);
-        await page.getByRole('button', { name: '展開選單' }).waitFor();
+        await page.getByRole('button', { name: '展開選單', exact: true }).waitFor();
         await page.emulateMedia({ reducedMotion: 'no-preference' });
-        await page.getByRole('button', { name: '展開選單' }).click();
+        await page.getByRole('button', { name: '展開選單', exact: true }).click();
         const moving = await page.evaluate(() => document.getAnimations().length);
         if (moving === 0) throw new Error('no FLIP animation without reduced motion');
         await page.close();
@@ -1684,7 +1706,7 @@ const autoNavCheck = (browser) =>
     check('nav collapses automatically under 1100px', async () => {
         const page = await newPage(browser, loggedIn(), { width: 1024, height: 768 });
         await page.goto(`${BASE}/dramas/lancy`);
-        await page.getByRole('button', { name: '展開選單' }).waitFor();
+        await page.getByRole('button', { name: '展開選單', exact: true }).waitFor();
         await page.close();
     });
 
