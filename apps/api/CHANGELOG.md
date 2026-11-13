@@ -16,6 +16,7 @@
 ### Changed
 
 - 有 `selection` 時發佈後只 resolve 今次真係發佈咗嘅待辦行 findings
+- 加固（S-980）：selection key 要合 `<kind>/<劇 ID>[/<短篇 ID>]` 形狀、≤ 200 字元，唔啱 400；`POST /api/publish` body 上限 64 KB（413）；422 `keys` 最多送返頭 20 個
 - `admin/changes.ts` 拆出 `changeDocuments.ts`（比較用 document、App 外觀比較）同 `publishChanges.ts`（發佈記錄摘要），行為不變
 
 ## 0.9.0 — 2026-11-13

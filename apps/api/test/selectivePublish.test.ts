@@ -210,8 +210,26 @@ describe('POST /api/publish selection — content', () => {
             { selection: { branding: { icon: 'yes' } } },
             { selection: { banner: 1 } },
             { selection: { other: true } },
+            { selection: { content: ['x'.repeat(201)] } },
+            { selection: { content: ['no-kind'] } },
+            { selection: { content: ['newArc/golden/a/b'] } },
+            { selection: { content: ['newArc//season-2'] } },
         ];
         for (const body of bodies) expect((await publish(body)).status).toBe(400);
+    });
+
+    it('should answer 413 for a body over the publish limit', async () => {
+        const response = await adminRequest('POST', '/api/publish', {
+            body: { selection: {}, padding: 'x'.repeat(64 * 1024) },
+        });
+        expect(response.status).toBe(413);
+    });
+
+    it('should send back at most the first 20 unknown keys', async () => {
+        const keys = Array.from({ length: 25 }, (_, index) => `newDrama/nope-${index}`);
+        const response = await publish({ selection: { content: keys } });
+        expect(response.status).toBe(422);
+        expect((await json(response)).keys).toEqual(keys.slice(0, 20));
     });
 });
 

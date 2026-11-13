@@ -285,7 +285,7 @@ Player 喺 build 時先讀 `branding`（icon 檔、manifest、`<title>` 等）�
 - **冇揀嘅 App 外觀**：`icon`、`text`、`banner` 各自用上次 ok publish 嘅值（冇上次 / 上次冇 = 唔寫），D1 草稿唔郁、唔驗。重新部署 player 照舊用「今次 `branding` 同上次唔同」判斷，即係淨係揀咗而又真係改咗先觸發
 - **Findings**：只有今次真係發佈咗嘅行（揀咗嘅 `selectable` + 冇被剔走嘅 `always`）、而且冇「必須」先標 resolved；冇揀嘅留低
 - **`unchanged`**：照 selection 砌出嚟嘅 document 同最新一次一樣（例如乜都冇揀、又冇其他改動）→ `{ unchanged: true }`，唔開新行
-- 錯誤：body 唔係 JSON object、`selection` / `branding` 唔係 object、多咗未知欄位、`content` 唔係 string array（上限 500）、旗唔係 boolean → **400** `{ error }`；`content` 有待辦冇嘅 key → **422** `{ error: 'unknown selection keys', keys }`，乜都唔寫（頁面過時，重新載入）；其餘同普通 publish（422 驗證、409 ID 守衛）
+- 錯誤：body 唔係 JSON object、`selection` / `branding` 唔係 object、多咗未知欄位、`content` 唔係 string array（上限 500）、key 唔係 `<kind>/<劇 ID>[/<短篇 ID>]` 形狀（每段唔可以空、冇空白）或者長過 200 字元、旗唔係 boolean → **400** `{ error }`；body 大過 64 KB（`PUBLISH_BODY_LIMIT_BYTES`）→ **413**；`content` 有待辦冇嘅 key → **422** `{ error: 'unknown selection keys', keys }`（`keys` 最多頭 20 個），乜都唔寫（頁面過時，重新載入）；其餘同普通 publish（422 驗證、409 ID 守衛）。上限見 `src/catalog/selectionLimits.ts`；`GET /api/changes ?selection=` 用同一套驗證
 - 回應：普通 publish 嘅欄位 + `selection: { content: [今次發佈咗嘅 key], skipped: [{ key, reason }] }`（冇 `selection` 就冇呢欄）
 - 還原 #N 唔受 selection 影響（照舊用而家 D1，未發佈嘅新短篇以下架狀態入 catalog，見「Publish / 還原」）
 

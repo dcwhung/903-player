@@ -13,7 +13,12 @@ import {
 import type { PublishWarning } from './warnings';
 import { RollbackConflictError, RollbackNotRestorableError, rollbackToPublish } from './rollback';
 import { publishedRows, type SelectionPlan } from './selection';
-import { preparePublish, selectionErrorResponse, selectionFromBody } from './selectivePublish';
+import {
+    preparePublish,
+    publishBodyLimit,
+    selectionErrorResponse,
+    selectionFromBody,
+} from './selectivePublish';
 import { listPublishes, publishDocuments, type PublishRow } from './store';
 
 /** publish id path 參數（deploy/routes.ts 共用） */
@@ -94,7 +99,7 @@ const publishSelected = async (c: Context<AppEnv>) => {
 
 export const publishRoutes = new Hono<AppEnv>();
 
-publishRoutes.post('/publish', publishSelected);
+publishRoutes.post('/publish', publishBodyLimit, publishSelected);
 
 publishRoutes.get('/publishes', async (c) => {
     const [rows, documents] = await Promise.all([

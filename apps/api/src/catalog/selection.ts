@@ -5,6 +5,7 @@
  */
 import type { TodoRow } from '../admin/todos';
 import { isRecord, type Json } from '../content/http';
+import { isSelectionKey, MAX_CONTENT_KEYS } from './selectionLimits';
 
 export interface Appearance {
     icon: boolean;
@@ -37,8 +38,6 @@ export const EMPTY_SELECTION: PublishSelection = {
     appearance: { icon: false, text: false, banner: false },
 };
 
-/** content 上限：待辦行唔會多過呢個數，免得有人塞大 array */
-const MAX_CONTENT_KEYS = 500;
 const SELECTION_FIELDS: ReadonlySet<string> = new Set(['content', 'branding', 'banner']);
 const BRANDING_FIELDS: ReadonlySet<string> = new Set(['icon', 'text']);
 
@@ -57,10 +56,8 @@ const flag = (value: unknown, where: string): boolean => {
 const contentOf = (value: unknown): string[] => {
     if (value === undefined) return [];
     const valid =
-        Array.isArray(value) &&
-        value.length <= MAX_CONTENT_KEYS &&
-        value.every((key) => typeof key === 'string');
-    if (!valid) throw new SelectionError('selection.content must be an array of strings');
+        Array.isArray(value) && value.length <= MAX_CONTENT_KEYS && value.every(isSelectionKey);
+    if (!valid) throw new SelectionError('selection.content must be an array of selection keys');
     return [...new Set(value as string[])];
 };
 

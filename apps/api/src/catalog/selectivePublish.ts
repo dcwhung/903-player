@@ -2,6 +2,7 @@
  * 選擇發佈嘅 request 解析 + document 準備（POST /api/publish、GET /api/changes ?selection= 共用）
  */
 import type { Context } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { loadTodoRows, type TodoRow } from '../admin/todos';
 import type { AppEnv } from '../app';
 import { getBanner } from '../banner/store';
@@ -18,7 +19,14 @@ import {
     type PublishSelection,
     type SelectionPlan,
 } from './selection';
+import { MAX_REPORTED_UNKNOWN_KEYS, PUBLISH_BODY_LIMIT_BYTES } from './selectionLimits';
 import { latestPublish, listAssetHashes, listEntries, type EntryRow } from './store';
+
+/** POST /api/publish 唔經 contentRoutes 嘅 256 KB limit：selection body 自己限 64 KB（S-980） */
+export const publishBodyLimit = bodyLimit({
+    maxSize: PUBLISH_BODY_LIMIT_BYTES,
+    onError: (c) => c.json({ error: 'request body too large' }, HTTP_STATUS.payloadTooLarge),
+});
 
 const parseJsonText = (text: string, where: string): unknown => {
     try {
@@ -92,11 +100,14 @@ export const preparePublish = async (
     return { value: documentFor(rows, context, selected), plan };
 };
 
-/** selection 錯誤 → 400 / 422；其他錯誤回 undefined（caller 照 throw） */
+/** selection 錯誤 → 400 / 422（未知 key 最多送返頭 20 個）；其他錯誤回 undefined（caller 照 throw） */
 export const selectionErrorResponse = (c: Context<AppEnv>, error: unknown) => {
     if (error instanceof SelectionError)
         return c.json({ error: error.message }, HTTP_STATUS.badRequest);
     if (error instanceof UnknownSelectionError)
-        return c.json({ error: error.message, keys: error.keys }, HTTP_STATUS.unprocessable);
+        return c.json(
+            { error: error.message, keys: error.keys.slice(0, MAX_REPORTED_UNKNOWN_KEYS) },
+            HTTP_STATUS.unprocessable,
+        );
     return undefined;
 };
