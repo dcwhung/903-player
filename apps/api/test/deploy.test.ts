@@ -4,7 +4,7 @@
  */
 import { env } from 'cloudflare:test';
 import { adminGet, adminPost, adminRequest, call, loginCookie, ORIGIN } from './helpers';
-import { seed } from './fixtures';
+import { drama, putEntry, seed } from './fixtures';
 
 const TOKEN = 'github-test-token';
 const HOOK = 'https://api.vercel.com/v1/integrations/deploy/prj_test/hook';
@@ -117,6 +117,51 @@ describe('POST /api/publish deploy trigger', () => {
             publishes: Deployed[];
         };
         expect(history.publishes[0]).toMatchObject({ deploy: 'failed', id: row.id });
+    });
+});
+
+/*
+ * S-966：還原 #N 唔還原舊 branding（照用 D1 而家嘅值，同 banner 一樣），所以觸發與否只睇
+ * D1 branding 同上一次 ok publish 比有冇唔同（apps/api/README.md「Publish / 還原」）
+ */
+describe('POST /api/publishes/:id/rollback deploy trigger', () => {
+    beforeEach(() => seed(3));
+
+    const rollback = async (id: number) => {
+        const response = await adminPost(`/api/publishes/${id}/rollback`, WITH_SECRETS);
+        expect(response.status).toBe(200);
+        return (await response.json()) as { publish?: Deployed & { rollbackOf: number | null } };
+    };
+
+    const publishedText = async () => {
+        const object = await env.CATALOG.get('catalog/v1/catalog.json');
+        return (JSON.parse((await object?.text()) ?? '{}') as { branding?: { text?: unknown } })
+            .branding?.text;
+    };
+
+    it('should deploy when the current D1 branding differs from the last publish', async () => {
+        mockFetch();
+        await publish(); // #1：冇 branding
+        await putText();
+        const calls = mockFetch();
+        const { publish: row } = await rollback(1);
+        expect(row).toMatchObject({ rollbackOf: 1, deploy: 'triggered' });
+        expect(calls.map((c) => c.url)).toEqual([DISPATCH_URL, HOOK]);
+        // #1 冇 branding，但還原照用 D1 而家嘅 branding
+        expect(await publishedText()).toEqual(TEXT);
+    });
+
+    it('should not deploy (nor restore the old branding) when D1 branding is as last published', async () => {
+        mockFetch();
+        await publish(); // #1：冇 branding
+        await putText();
+        await putEntry('dramas', 'golden', { ...drama(3), enabled: false });
+        expect((await publish()).deploy).toBe('triggered'); // #2：有 branding、golden 下架
+        const calls = mockFetch();
+        const { publish: row } = await rollback(1);
+        expect(row).toMatchObject({ rollbackOf: 1, deploy: 'none', deployRequestedAt: null });
+        expect(calls).toEqual([]);
+        expect(await publishedText()).toEqual(TEXT);
     });
 });
 

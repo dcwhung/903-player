@@ -72,7 +72,7 @@ Mockup：`_mockups_/admin-appearance/index.html`（v2，Q1–Q6 全部確認）�
 ## 實作差異（Backend 2026-11-13）
 
 - D1 開兩個單行 table（`branding_icon`、`branding_text`），各自 `updated_at`、各自刪；`publishes` 加 `deploy`、`deploy_requested_at`
-- 還原（rollback）到有 branding 改動嘅版本都會觸發部署
+- 還原 #N 唔還原舊 branding：同 banner 一樣照用 D1 而家嘅 branding；只有 D1 branding 同上一次 ok publish 唔同先觸發重新部署 player（同 `apps/api/README.md`「Publish / 還原」一致；`apps/api/test/deploy.test.ts` rollback 會 / 唔會觸發部署嘅 test 鎖住）
 - Entries / banner 圖檔名照舊只收 WebP；PNG 只限 branding icon
 
 ## 實作次序（同一條 branch，唔開 parallel lane）
