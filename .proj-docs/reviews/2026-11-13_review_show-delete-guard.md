@@ -83,3 +83,44 @@ context: "show DELETE guard @ 0a4ca1f: logic correct and consistent with list st
 blockers:
   - "C-015: untrack apps/{admin,api,player}/node_modules symlinks (and make .gitignore match symlinks)"
 ```
+
+## Re-review — `4ac9562`、`44bd62f`（2026-11-13）
+
+範圍：淨係驗上一輪嘅 C-015、S-991、S-992 同呢兩個 commit 嘅 diff，冇再搵新嘅 🟢。
+
+### Hard Gates
+
+all pass。
+
+- `npx eslint apps/admin/src/features/shows apps/api/src/content/published.ts`：exit 0；同一批檔 `npx prettier --check`：exit 0
+- `npx tsc -b --noEmit`（`apps/admin`、`apps/api`）：exit 0
+- `npm test -- apps/admin/src/features/shows apps/api/test/entries.test.ts`：3 files，47 tests pass
+
+### 逐項驗收
+
+| ID    | Commit    | 結果 | 證據                                                                                                                                                                                             |
+| ----- | --------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| C-015 | `4ac9562` | 已修 | `git ls-files \| grep -c node_modules` = 0；`.gitignore:1` 改咗做 `node_modules`；`git check-ignore -v` 顯示三個 symlink 都由 `.gitignore:1` ignore；commit 淨係郁咗 `.gitignore` 同三個 symlink |
+| S-991 | `44bd62f` | 已修 | `published.ts` 檔頭分開寫 `isPublished`（`mayRelax`）同 `blocksDelete`，同 `entries.ts` 嘅行為對得上                                                                                             |
+| S-992 | `44bd62f` | 已修 | `usePublishFlags` 回 `deletable`；`ShowEditorCard` 傳 `neverPublished={deletable}` 去共用嘅 `DeleteEntry`；`apps/admin/src/features/shows` 冇其他地方仲用舊名；行為冇變（47 tests pass）         |
+
+### 評分（更新）
+
+代碼風格 10 / 10，其他維度不變，**總分 100 / 100**。結果：pass。
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T1
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: null
+branch: "fix/show-delete-guard"
+context: "re-review of 4ac9562 (C-015) + 44bd62f (S-991, S-992) @ 44bd62f: all three fixed, no regressions; integration branch is main; report committed locally, not pushed (code CI running)"
+```
