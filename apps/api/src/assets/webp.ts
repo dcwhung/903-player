@@ -3,6 +3,8 @@
  * 唔 decode 圖像（admin 上載前用 createImageBitmap decode 過）；上載 API 用嚟擋假檔同驗尺寸白名單。
  * 輕量結構檢查（S-795）：VP8 一定要係 keyframe；VP8X 後面一定要有圖像 chunk（VP8 / VP8L，
  * 動畫係 ANMF），ALPH 只係 VP8 嘅 alpha，單獨唔算圖。圖像 chunk 同樣驗 start code / signature。
+ * parseWebpHeader（S-901）：淨係讀頭 WEBP_HEADER_BYTES bytes 攞闊高（R2 range get 用），唔驗後面嘅 chunk；
+ * 只可以用喺上載時已經用 parseWebp 驗過嘅圖。
  * 格式見 https://developers.google.com/speed/webp/docs/riff_container
  */
 
@@ -57,6 +59,10 @@ const VP8L_MIN_PAYLOAD = 5;
 const VP8X_WIDTH_OFFSET = 4;
 const VP8X_HEIGHT_OFFSET = 7;
 const VP8X_MIN_PAYLOAD = 10;
+
+/** 讀闊高要嘅頭部長度：RIFF header + 第一個 chunk header + 最長嘅 minPayload（VP8 / VP8X 都係 10） */
+export const WEBP_HEADER_BYTES =
+    PAYLOAD + Math.max(VP8_MIN_PAYLOAD, VP8L_MIN_PAYLOAD, VP8X_MIN_PAYLOAD);
 
 const fourcc = (bytes: Uint8Array, at: number): string =>
     String.fromCharCode(...bytes.subarray(at, at + FOURCC_BYTES));
@@ -144,14 +150,26 @@ const checkExtendedImage = (bytes: Uint8Array, from: number, end: number): void 
     if (!hasImage) throw new WebpError('VP8X: no image chunk (VP8 / VP8L / ANMF)');
 };
 
-/** RIFF / WEBP magic + 宣告長度唔可以長過收到嘅 bytes（截短嘅檔）；回 RIFF 結束位 */
-const checkContainer = (bytes: Uint8Array): number => {
+/** RIFF / WEBP magic，而且夠長有第一個 chunk header */
+const checkMagic = (bytes: Uint8Array): void => {
     if (
         bytes.length < PAYLOAD ||
         fourcc(bytes, 0) !== 'RIFF' ||
         fourcc(bytes, WEBP_MAGIC_OFFSET) !== 'WEBP'
     )
         throw new WebpError('not a RIFF / WEBP file');
+};
+
+/** 第一個 chunk 嘅 reader（VP8X 或者簡單格式嘅圖像 chunk）；唔認得就 throw */
+const firstReader = (kind: string): Reader => {
+    const reader = kind === 'VP8X' ? VP8X_READER : IMAGE_READERS[kind];
+    if (!reader) throw new WebpError(`unknown first chunk "${kind}"`);
+    return reader;
+};
+
+/** magic + 宣告長度唔可以長過收到嘅 bytes（截短嘅檔）；回 RIFF 結束位 */
+const checkContainer = (bytes: Uint8Array): number => {
+    checkMagic(bytes);
     const end = uint32(bytes, RIFF_SIZE_OFFSET) + RIFF_SIZE_EXCLUDED_BYTES;
     if (end > bytes.length) throw new WebpError('file is truncated');
     return end;
@@ -161,12 +179,19 @@ const checkContainer = (bytes: Uint8Array): number => {
 export const parseWebp = (bytes: Uint8Array): WebpSize => {
     const end = checkContainer(bytes);
     const first = chunkAt(bytes, FIRST_CHUNK, end);
-    if (first.kind !== 'VP8X') {
-        const reader = IMAGE_READERS[first.kind];
-        if (!reader) throw new WebpError(`unknown first chunk "${first.kind}"`);
-        return readChunk(first, reader);
-    }
-    const size = readChunk(first, VP8X_READER);
-    checkExtendedImage(bytes, first.next, end);
+    const size = readChunk(first, firstReader(first.kind));
+    if (first.kind === 'VP8X') checkExtendedImage(bytes, first.next, end);
     return size;
+};
+
+/**
+ * 頭部（至少 WEBP_HEADER_BYTES bytes，可以係成個檔）→ 闊高；唔驗 RIFF 長度同後面嘅 chunk，
+ * 第一個 chunk 嘅 payload 只取收到嗰段。magic / 第一個 chunk 唔啱 throw WebpError
+ */
+export const parseWebpHeader = (bytes: Uint8Array): WebpSize => {
+    checkMagic(bytes);
+    const kind = fourcc(bytes, FIRST_CHUNK);
+    const declared = uint32(bytes, FIRST_CHUNK + CHUNK_SIZE_OFFSET);
+    const payload = bytes.subarray(PAYLOAD, PAYLOAD + declared);
+    return readChunk({ kind, payload, next: PAYLOAD + declared }, firstReader(kind));
 };

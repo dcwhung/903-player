@@ -149,9 +149,53 @@ describe('GET /api/r2-source', () => {
         await response.arrayBuffer();
     });
 
+    it('should treat a stored image/jpg Content-Type as image/jpeg (S-904)', async () => {
+        await put(DRAMA_PHOTO, PHOTO_BYTES, 'image/jpg');
+        const response = await source(DRAMA_PHOTO);
+        expect(response.status).toBe(200);
+        expect(response.headers.get('content-type')).toBe('image/jpeg');
+        await response.arrayBuffer();
+    });
+
     it('should answer 415 when R2 says the object is not an image', async () => {
         await put(DRAMA_PHOTO, '<script>alert(1)</script>', 'text/html');
         expect((await source(DRAMA_PHOTO)).status).toBe(415);
+    });
+
+    it('should serve keys of a drama whose audio.folder has several levels (S-900)', async () => {
+        const nested = '廣播劇/黃金少年';
+        await putEntry('dramas', 'golden', {
+            ...drama(3),
+            audio: { host: 'r2', folder: nested, file: '{no2}.m4a' },
+        });
+        await put(`${nested}/Cover Photo.jpg`, PHOTO_BYTES);
+        await put(`${nested}/Season 1/cd cover.png`, PHOTO_BYTES, 'image/png');
+        const body = (await (await adminGet('/api/dramas/golden/sources')).json()) as {
+            coverPhoto: string;
+            arcs: { cdCover: string }[];
+        };
+        expect(body.coverPhoto).toBe(`${nested}/Cover Photo.jpg`);
+        for (const key of [body.coverPhoto, body.arcs[0]?.cdCover ?? '']) {
+            const response = await source(key);
+            expect(response.status, key).toBe(200);
+            await response.arrayBuffer();
+        }
+        expect((await source(`廣播劇/Cover Photo.jpg`)).status).toBe(404);
+    });
+
+    it('should find the key under whichever drama folder scans it (nested drama folders)', async () => {
+        const inner = `${FOLDER}/外傳`;
+        await putEntry('dramas', 'side', {
+            ...drama(3),
+            audio: { host: 'r2', folder: inner, file: '{no2}.m4a' },
+        });
+        await put(`${inner}/Cover Photo.jpg`, PHOTO_BYTES);
+        const response = await source(`${inner}/Cover Photo.jpg`);
+        expect(response.status).toBe(200);
+        await response.arrayBuffer();
+        const outer = await source(DRAMA_PHOTO);
+        expect(outer.status).toBe(200);
+        await outer.arrayBuffer();
     });
 
     it('should need a session', async () => {

@@ -113,5 +113,9 @@ export const R2_SOURCE_CONTENT_TYPES: Readonly<Record<string, string>> = {
     '.png': 'image/png',
     '.webp': 'image/webp',
 };
+/** R2 記住嘅非標準圖片 Content-Type → 標準寫法（其他工具上載可能記 image/jpg，S-904） */
+export const R2_SOURCE_CONTENT_TYPE_ALIASES: Readonly<Record<string, string>> = {
+    'image/jpg': 'image/jpeg',
+};
 /** 原圖會換（同名覆蓋）：每次用 ETag revalidate，唔好直接用舊 cache */
 export const R2_SOURCE_CACHE_CONTROL = 'private, no-cache';
