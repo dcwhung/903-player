@@ -131,9 +131,22 @@ describe('ImageSlot', () => {
         await userEvent.click(await screen.findByRole('button', { name: '上載' }));
         const dialog = await screen.findByRole('dialog');
         await waitFor(() => expect(dialog).toHaveAttribute('aria-busy', 'true'));
+        // focus 要留喺 dialog 入面（唔係 disabled 嘅掣），Esc 先真係派到 dialog 嘅 keydown
+        expect(dialog).toContainElement(document.activeElement as HTMLElement);
+        expect(document.activeElement).not.toBeDisabled();
         await userEvent.keyboard('{Escape}');
         expect(screen.getByRole('dialog')).toBeInTheDocument();
+        await userEvent.tab();
+        expect(dialog).toContainElement(document.activeElement as HTMLElement);
         await act(async () => finish(new Response('{"name":"a.webp"}', { status: 200 })));
+    });
+
+    it('should close the dialog on Esc when not busy', async () => {
+        renderSlot();
+        await pick();
+        await screen.findByRole('button', { name: '上載' });
+        await userEvent.keyboard('{Escape}');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     it('should show R2 auto-crop progress, result and failure under the slot', () => {

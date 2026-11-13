@@ -1,6 +1,7 @@
 /*
  * 多粒掣嘅 modal（裁切 dialog）：開啟時 focus 入「取消」、Tab / Shift+Tab 喺 dialog 入面循環、Esc 取消、
- * 撳 dialog 外面（scrim）取消；locked（載入中 / 上載中，S-817）時 Esc 同撳外面都唔收。關閉後 focus 返去原本個掣
+ * 撳 dialog 外面（scrim）取消；locked（載入中 / 上載中，S-817）時 Esc 同撳外面都唔收，focus 移去 dialog 本身。
+ * 關閉後 focus 返去原本個掣
  */
 import { useEffect, useRef, type KeyboardEvent, type PointerEvent } from 'react';
 
@@ -12,7 +13,12 @@ const trapTab = (event: KeyboardEvent, dialog: HTMLElement | null) => {
     const items = [...(dialog?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])];
     const first = items[0];
     const last = items.at(-1);
-    if (!first || !last) return;
+    // 全部掣都 disabled（上載中）：Tab 唔准走出 dialog
+    if (!first || !last) {
+        event.preventDefault();
+        dialog?.focus();
+        return;
+    }
     const active = document.activeElement as HTMLElement;
     const edge = event.shiftKey ? first : last;
     if (active !== edge && items.includes(active)) return;
@@ -20,17 +26,40 @@ const trapTab = (event: KeyboardEvent, dialog: HTMLElement | null) => {
     (event.shiftKey ? last : first).focus();
 };
 
-export const useModalKeys = (onCancel: () => void, locked: boolean) => {
+/**
+ * locked 一變就執返 focus：鎖住而 focus 喺 disabled 掣（user-event / browser 都唔會向佢派 keydown，Esc 收唔到）
+ * 或者 dialog 外面 → dialog 本身；解鎖而 focus 喺 dialog 本身 / 外面 →「取消」
+ */
+const keepFocusInside = (
+    dialog: HTMLElement | null,
+    cancel: HTMLElement | null,
+    locked: boolean,
+) => {
+    if (!dialog) return;
+    const active = document.activeElement;
+    const inside = active instanceof HTMLElement && dialog.contains(active);
+    if (locked && (!inside || active.matches(':disabled'))) dialog.focus();
+    if (!locked && (!inside || active === dialog)) cancel?.focus();
+};
+
+/** 開啟 / locked 變化 / 關閉時嘅 focus */
+const useModalFocus = (locked: boolean) => {
     const dialogRef = useRef<HTMLDivElement>(null);
     const cancelRef = useRef<HTMLButtonElement>(null);
-    const downOnScrim = useRef(false);
     useEffect(() => {
-        const opener = document.activeElement as HTMLElement | null;
+        const back = document.activeElement as HTMLElement | null;
         cancelRef.current?.focus();
         // 載入中「取消」disabled focus 唔到：focus dialog 本身（tabIndex -1），Tab 照樣喺入面行
         if (document.activeElement !== cancelRef.current) dialogRef.current?.focus();
-        return () => opener?.focus();
+        return () => back?.focus();
     }, []);
+    useEffect(() => keepFocusInside(dialogRef.current, cancelRef.current, locked), [locked]);
+    return { dialogRef, cancelRef };
+};
+
+export const useModalKeys = (onCancel: () => void, locked: boolean) => {
+    const { dialogRef, cancelRef } = useModalFocus(locked);
+    const downOnScrim = useRef(false);
     const onKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'Escape' && !locked) onCancel();
         if (event.key === 'Tab') trapTab(event, dialogRef.current);
