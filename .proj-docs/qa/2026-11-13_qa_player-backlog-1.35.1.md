@@ -42,6 +42,7 @@ all pass（coverage 改咗嘅檔全部 ≥ 80%；PWA gate n/a：冇改 `sw.js` /
 
 - `freeze home S1`：151 檔（原 147 + UNCOVERED 4）；`catalog-data` 135、`coming-soon` 162、`repo-tooling` 24、`drama` 169、`mini-player` 52、`player-core` 101、`show-today-page` 104（全條 chain + stage 由 ledger 攞，S-866，無截短）
 - freeze 後 `impact` 淨 `REVERIFY home`：係 `home` S3 舊行（今次改 `plans/home.md`），S1 已 FROZEN，release 時處理
+- merge `origin/main`（`fc83424`，api 0.8.1）：`ledger-merge.mjs` 報 `coming-soon` / `repo-tooling` S1 `package-lock.json` 兩邊都改；merge 後 lock 對比 main 淨係多 player `1.35.1` 一行，`npm ci` 通過 → 用全條 chain + stage 清單重新 freeze（162 / 24 檔，S-866）
 
 ```handoff-receipt
 from: quality-assurance
