@@ -3,6 +3,7 @@
  * （mockup: _mockups_/admin-selective-publish/index.html#a .foot）。必須處理唔再擋；
  * Q4：冇揀任何新內容 / App 外觀、又冇其他改動 → 灰 +「未選擇任何內容」；
  * GET /api/changes 未載入完（App 外觀未知）→ 灰 +「載入中…」（S-987：否則預設勾咗嘅 App 外觀會靜靜雞唔發佈）
+ * GET /api/changes 載入失敗 → 灰 +「載入失敗：…」（S-988：唔好永遠停喺「載入中…」）
  */
 import type { ChangeItem } from '@903-player/catalog';
 import { Send } from 'lucide-react';
@@ -18,9 +19,18 @@ interface SelectionFooterProps {
     others: readonly ChangeItem[];
     /** GET /api/changes 未有資料 */
     loading: boolean;
+    /** GET /api/changes 載入失敗嘅訊息（S-988） */
+    error?: string;
 }
 
-const summaryOf = ({ selection, incomplete, others, loading }: SelectionFooterProps): string => {
+const summaryOf = ({
+    selection,
+    incomplete,
+    others,
+    loading,
+    error,
+}: SelectionFooterProps): string => {
+    if (error !== undefined) return t('app.loadFailed', { error });
     if (loading) return t('app.loading');
     const picked = pickedCount(selection);
     if (!hasAnythingToPublish(selection, others)) return t('update.nothingPicked');
@@ -32,7 +42,10 @@ const summaryOf = ({ selection, incomplete, others, loading }: SelectionFooterPr
 
 export function SelectionFooter(props: SelectionFooterProps) {
     const navigate = useNavigate();
-    const canGo = !props.loading && hasAnythingToPublish(props.selection, props.others);
+    const canGo =
+        props.error === undefined &&
+        !props.loading &&
+        hasAnythingToPublish(props.selection, props.others);
     return (
         <div className="savebar">
             <span className="muted small" aria-live="polite">

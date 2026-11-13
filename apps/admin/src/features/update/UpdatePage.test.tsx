@@ -69,6 +69,23 @@ describe('UpdatePage', () => {
         expect(screen.getByText('載入中…')).toBeInTheDocument();
     });
 
+    it('should show the load error and keep 下一步 disabled when GET /api/changes fails (S-988)', () => {
+        mockApi({
+            'GET /api/branding': () => ({ body: { icon: null, text: null, updatedAt: null } }),
+            'GET /api/banner': () => ({ body: { banner: null, updatedAt: null } }),
+        });
+        const failed = { ...resource<ChangesResponse>(undefined), error: new Error('HTTP 500') };
+        renderAt(
+            '/',
+            '/',
+            <UpdatePage />,
+            fakeData({ todos: resource({ rows: [READY], blocking: 0 }), changes: failed }),
+        );
+        expect(screen.getByRole('button', { name: '下一步：確認發佈' })).toBeDisabled();
+        expect(screen.getByText('載入失敗：HTTP 500')).toBeInTheDocument();
+        expect(screen.queryByText('載入中…')).not.toBeInTheDocument();
+    });
+
     it('should let you publish while a row still needs work, carrying the selection', async () => {
         show([READY, CAMP]);
         expect(screen.getByRole('heading', { name: /App 外觀/ })).toBeInTheDocument();

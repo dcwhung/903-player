@@ -83,6 +83,7 @@ export function UpdatePage() {
                 incomplete={incompleteRows(rows).length}
                 others={changes.data?.others?.items ?? []}
                 loading={changes.data === undefined}
+                error={changes.error?.message}
             />
         </>
     );
