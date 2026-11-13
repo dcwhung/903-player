@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import wideBannerImage from '../../../../assets/banner-wide.webp';
-import bannerImage from '../../../../assets/banner.webp';
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 import { WIDE_BANNER_QUERY } from '../../../../config/layout';
 import { t } from '../../../../i18n/t';
+import { bannerImages } from '../HomeLandscapeGrid/bannerImages';
 import styles from './HomeBanner.module.css';
 
 interface HomeBannerProps {
@@ -15,21 +15,30 @@ interface HomeBannerProps {
 }
 
 /**
- * 主頁頁頂橫額（用戶提供嘅 903 叱咤 Player 圖，原圖喺 design/banner.webp）。
+ * 主頁頁頂橫額（用戶提供嘅 903 叱咤 Player 圖，原圖喺 design/banner.webp；catalog 有 banner 就用 catalog 嘅，見 bannerImages）。
  * 橫額本身就係頁標題：<h1> 包住 <img>，heading 嘅名由 alt 嚟，唔使另外收埋一句字。
  * 橫版成行（WIDE_BANNER_QUERY）換闊版圖（5:1，原圖喺 design/banner-wide.webp），內容集中喺中間，
  * 大部分畫面 cover 只裁走兩邊天空；好闊好矮嘅視窗（扁過 5:1）先會裁走少少上下。
  */
 export const HomeBanner = ({ corner, art, fill = false }: HomeBannerProps) => (
     <div className={styles.banner} data-fill={fill ? '' : undefined}>
-        <h1 className={styles.heading}>
-            {art ?? (
-                <picture>
-                    <source media={WIDE_BANNER_QUERY} srcSet={wideBannerImage} />
-                    <img className={styles.image} src={bannerImage} alt={t('home.bannerAlt')} />
-                </picture>
-            )}
-        </h1>
+        <h1 className={styles.heading}>{art ?? <DefaultArt />}</h1>
         {corner && <div className={styles.corner}>{corner}</div>}
     </div>
 );
+
+/** 預設 <picture>：窄版 + 橫版成行換闊版 */
+const DefaultArt = () => {
+    const images = bannerImages();
+    return (
+        <picture>
+            <source media={WIDE_BANNER_QUERY} srcSet={images.long.src} />
+            <img
+                className={styles.image}
+                src={images.standard.src}
+                alt={t('home.bannerAlt')}
+                crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
+            />
+        </picture>
+    );
+};

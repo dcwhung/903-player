@@ -1,8 +1,9 @@
 import { useRef, type CSSProperties } from 'react';
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 import { t } from '../../../../i18n/t';
 import { bannerRule } from './bannerRules';
 import type { BannerEdges } from './bannerEdges';
-import { BANNER_IMAGES } from './bannerImages';
+import { bannerImages } from './bannerImages';
 import { useAspectRatio, useBannerEdges } from './useBannerEdges';
 import styles from './FittedBanner.module.css';
 
@@ -36,7 +37,7 @@ const EdgeFill = ({ edges }: { edges: BannerEdges | null }) =>
 export const FittedBanner = ({ count, miniPlayer }: FittedBannerProps) => {
     const ref = useRef<HTMLSpanElement>(null);
     const rule = bannerRule(count, miniPlayer, useAspectRatio(ref));
-    const image = BANNER_IMAGES[rule.image];
+    const image = bannerImages()[rule.image];
     const edges = useBannerEdges(image.src);
     const vars = {
         '--banner-ratio': image.width / image.height,
@@ -47,7 +48,12 @@ export const FittedBanner = ({ count, miniPlayer }: FittedBannerProps) => {
         <span ref={ref} className={styles.fit} data-fit={rule.fit} style={vars}>
             <span className={styles.frame}>
                 <EdgeFill edges={edges} />
-                <img className={styles.image} src={image.src} alt={t('home.bannerAlt')} />
+                <img
+                    className={styles.image}
+                    src={image.src}
+                    alt={t('home.bannerAlt')}
+                    crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
+                />
             </span>
         </span>
     );

@@ -2,6 +2,7 @@
  * Publish：D1 entries → CatalogDocument → packages/catalog 同一套 validator → ID 守衛 → R2 + publishes 記錄。
  * 最高原則：episode ID 唔准無聲無息消失（用戶進度 / 收藏靠佢），所以上次有、今次冇就拒絕，要 force 先得
  */
+import { hashOfImageName } from '../assets/imageName';
 import {
     buildRegistry,
     buildShowRegistry,
@@ -78,7 +79,7 @@ export const resolveImages = (
                 throw new PublishValidationError(
                     `${where}: image ${file} → ${name} is not <hash>.<ext>`,
                 );
-            if (!assets.has(name.split('.')[0] ?? ''))
+            if (!assets.has(hashOfImageName(name)))
                 throw new PublishValidationError(`${where}: image ${file} → ${name} not uploaded`);
             return [file, `${origin}${CATALOG_IMAGE_PATH}${name}`];
         }),

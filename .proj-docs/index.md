@@ -74,6 +74,7 @@
 | 2026-11-07 | [reviews/2026-11-07_review_phase0b-catalog.md](reviews/2026-11-07_review_phase0b-catalog.md)（100 pass，S-758–S-761；抽 `packages/catalog`（`@903-player/catalog`），v1.29.1）                                                                                                                                                  |
 | 2026-11-07 | [reviews/2026-11-07_review_phase1-runtime-catalog.md](reviews/2026-11-07_review_phase1-runtime-catalog.md)（95 pass，W-702、S-763–S-765；runtime `catalog.json`，v1.30.0，production 關住）                                                                                                                                     |
 | 2026-11-09 | [reviews/2026-11-09_review_phase2a-backend.md](reviews/2026-11-09_review_phase2a-backend.md)（100 pass，S-767–S-778；Worker API + D1 + Google login + publish，player v1.31.0、api v0.1.0）                                                                                                                                     |
+| 2026-11-12 | [reviews/2026-11-12_review_phase4-l3-player-banner.md](reviews/2026-11-12_review_phase4-l3-player-banner.md)（100 pass，S-925–S-929；首頁 banner 讀 catalog（remote → snapshot → 內建圖），player v1.34.0）                                                                                                                     |
 
 ## QA
 
@@ -126,6 +127,7 @@
 | 2026-11-07 | [qa/2026-11-07_qa_phase1-runtime-catalog.md](qa/2026-11-07_qa_phase1-runtime-catalog.md)（Backend Phase 1 runtime `catalog.json`（v1.30.0）S1 ✅ pass @ `a954048`：CI 42427493165 unit 249 files / 2953、e2e 777 / 0（Remote catalog 12/12、PWA 換版 7/7、v1→v2 10/10）；flag off dist grep 乾淨 + production smoke 0 個 catalog request；W-702 核實；17 個新檔入 catalog-data / repo-tooling；11 條鏈 S1 freeze；S-766）                               |
 | 2026-11-09 | [qa/2026-11-09_qa_phase2a-backend.md](qa/2026-11-09_qa_phase2a-backend.md)（Backend Phase 2a S1 ✅ pass @ `5190aa5`：CI 42579655596 unit 257 files / 3027、e2e 779 / 0；本機 `wrangler dev` smoke：import 冪等、CSRF / session、ID 守衛 409 + force + rollback、CORS / Cache-Control / ETag 304、published 內容同內建一樣、ops 頁狀態；新鏈 `api`；10 條鏈 S1 freeze；S-780）                                                                           |
 | 2026-11-09 | [qa/2026-11-09_qa_import-catalog-workflow.md](qa/2026-11-09_qa_import-catalog-workflow.md)（Import catalog workflow S1 ✅ pass @ `76fd072`：`run:` block stub 執行 + local dry run；api v0.1.1；真 run 留 S2 / UAT）                                                                                                                                                                                                                                    |
+| 2026-11-12 | [qa/2026-11-12_qa_phase4-l3-player-banner.md](qa/2026-11-12_qa_phase4-l3-player-banner.md)（Phase 4 L3 player 1.34.0 首頁 banner 讀 catalog S1 ✅ pass @ `ff87221`：CI 43322987780 unit 362 files / 3898、e2e 826 / 0（catalog banner 同 origin + 跨 origin、fallback 內建圖 ×3）；home / catalog-data plan AC-8；5 條鏈 S1 freeze；冇新 ID）                                                                                                           |
 
 ## Deploys
 

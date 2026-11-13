@@ -183,6 +183,90 @@ describe('catalog runtime', () => {
         });
     });
 
+    describe('activeBanner (Phase 4 L3)', () => {
+        const BANNER = {
+            standard: 'https://api.example/catalog/v1/img/0123456789abcdef.webp',
+            long: '/catalog/v1/img/fedcba9876543210.webp',
+        };
+
+        it('should have no banner without initCatalog (built-in images)', () => {
+            expect(runtime.activeBanner()).toBeUndefined();
+        });
+
+        it('should serve the remote catalog banner', async () => {
+            const fetchImpl = fetchReturning(jsonResponse({ ...remoteDocument(), banner: BANNER }));
+            await runtime.initCatalog({ url: URL_UNDER_TEST, fetchImpl });
+            expect(runtime.activeBanner()).toEqual(BANNER);
+        });
+
+        it('should have no banner when the remote catalog has none', async () => {
+            await runtime.initCatalog({
+                url: URL_UNDER_TEST,
+                fetchImpl: fetchReturning(jsonResponse(remoteDocument())),
+            });
+            expect(runtime.activeBanner()).toBeUndefined();
+        });
+
+        it('should reject a remote catalog whose banner is malformed, falling back', async () => {
+            const broken = { ...remoteDocument(), banner: { standard: BANNER.standard } };
+            await expect(
+                runtime.initCatalog({
+                    url: URL_UNDER_TEST,
+                    fetchImpl: fetchReturning(jsonResponse(broken)),
+                }),
+            ).resolves.toBe('bundled');
+            expect(runtime.activeBanner()).toBeUndefined();
+        });
+
+        it('should count as a read, so a later initCatalog is rejected', async () => {
+            runtime.activeBanner();
+            await expect(
+                runtime.initCatalog({
+                    url: URL_UNDER_TEST,
+                    fetchImpl: fetchReturning(jsonResponse(remoteDocument())),
+                }),
+            ).rejects.toThrow(/before any registry/);
+        });
+
+        describe('with a prebuild snapshot', () => {
+            const SNAPSHOT_BANNER = { standard: '/assets/s.webp', long: '/assets/l.webp' };
+
+            beforeEach(async () => {
+                vi.resetModules();
+                vi.doMock('./snapshot/source', async (importOriginal) => ({
+                    ...(await importOriginal<typeof import('./snapshot/source')>()),
+                    snapshotDocument: { ...remoteDocument(), banner: SNAPSHOT_BANNER },
+                }));
+                runtime = await import('./runtime');
+            });
+
+            afterEach(() => {
+                vi.doUnmock('./snapshot/source');
+            });
+
+            it('should fall back to the snapshot banner when the remote catalog fails', async () => {
+                await runtime.initCatalog({
+                    url: URL_UNDER_TEST,
+                    fetchImpl: fetchReturning(new Response('', { status: 404 })),
+                });
+                expect(runtime.activeBanner()).toEqual(SNAPSHOT_BANNER);
+            });
+
+            it('should use the snapshot banner without initCatalog', () => {
+                expect(runtime.activeBanner()).toEqual(SNAPSHOT_BANNER);
+            });
+
+            it('should prefer the remote banner over the snapshot', async () => {
+                const doc = { ...remoteDocument(), banner: BANNER };
+                await runtime.initCatalog({
+                    url: URL_UNDER_TEST,
+                    fetchImpl: fetchReturning(jsonResponse(doc)),
+                });
+                expect(runtime.activeBanner()).toEqual(BANNER);
+            });
+        });
+    });
+
     describe('one source per session', () => {
         const ok = () => fetchReturning(jsonResponse(remoteDocument()));
 

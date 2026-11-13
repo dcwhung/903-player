@@ -1,3 +1,4 @@
+import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 import { FAKE_IMAGE_SIZE, stubCanvas, stubImages } from '../../../../../tests/fakeBannerImage';
 import {
     edgeGradient,
@@ -165,6 +166,14 @@ describe('loadBannerEdges', () => {
 
         await expect(pending).resolves.toEqual(solidEdges(COLOR));
         expect(images[0]?.src).toBe('/load-ok.png');
+    });
+
+    it('should load with CORS, so a catalog banner from R2 does not taint the canvas', () => {
+        const images = stubImages();
+
+        void loadBannerEdges('https://api.example/catalog/v1/img/0123456789abcdef.webp');
+
+        expect(images[0]?.crossOrigin).toBe(CATALOG_IMAGE_CROSS_ORIGIN);
     });
 
     it('should reuse the cached read for the same image', async () => {

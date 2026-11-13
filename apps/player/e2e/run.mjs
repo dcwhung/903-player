@@ -14,6 +14,7 @@ import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runHomeWideChecks } from './homeWide.mjs';
 import { runPwaUpdateChecks } from './pwaUpdate.mjs';
 import { runRemoteCatalogChecks } from './remoteCatalog.mjs';
+import { runShowGridCountChecks } from './showGridCounts.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
 import {
     AUDIO_HOST,
@@ -1675,6 +1676,9 @@ try {
 
     // runtime catalog.json（Backend Phase 1）：正常 / 壞資料 / 慢 / 離線 SW cache / v1 進度升級
     await runRemoteCatalogChecks({ browser, base: BASE, errors, log });
+
+    // 直版節目格動態欄數（_mockups_/dynamic-show-grid）：唔同節目數（remote catalog route 隔離）嘅欄數、今日節目橫跨、置頂 / 分頁
+    await runShowGridCountChecks({ browser, base: BASE, errors, log });
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
     await section('廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));
