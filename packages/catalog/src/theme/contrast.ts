@@ -2,6 +2,7 @@
  * WCAG 2.x contrast（relative luminance）同 theme 色對檢查：admin theme 編輯器顯示、publish 出警告用。
  * 唔合格只係警告（唔 throw）；認唔到嘅色當唔合格，ratio = null
  */
+import { HEX_COLOUR_PATTERN } from '../core/hexColour';
 import type { ShowTheme } from '../showTheme';
 
 /** 一般文字（WCAG AA） */
@@ -9,8 +10,6 @@ export const TEXT_MIN_CONTRAST = 4.5;
 /** 強調色文字（播緊嗰集、現正播放標籤；大字 / UI 元件，WCAG AA） */
 export const ACCENT_TEXT_MIN_CONTRAST = 3;
 
-/** theme 嘅色值：#rrggbb（同 themeSchema 一樣） */
-const HEX_COLOUR_PATTERN = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i;
 const HEX_RADIX = 16;
 const CHANNEL_MAX = 255;
 /** sRGB → linear（WCAG 2.x relative luminance 定義） */

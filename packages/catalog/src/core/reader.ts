@@ -4,6 +4,7 @@
  * 每個錯誤都寫明邊個檔（ctx.source）、邊個欄位（path），方便加資料嘅人即刻改。
  */
 import { isCalendarDate } from '../date';
+import { HEX_COLOUR_PATTERN } from './hexColour';
 
 export class SchemaError extends Error {
     override readonly name = 'SchemaError';
@@ -22,7 +23,6 @@ export type Raw = Record<string, unknown>;
 
 /** folder 名 = route id：細楷英數同連字號 */
 export const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
-const HEX_COLOUR_PATTERN = /^#[0-9a-f]{6}$/i;
 
 /** 明確寫 type annotation，TypeScript 先會當佢係 assertion function 去收窄（例如 if (x === undefined) fail(...)） */
 export const fail: (ctx: ParseContext, message: string) => never = (ctx, message) => {
