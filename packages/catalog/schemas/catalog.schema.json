@@ -21,13 +21,17 @@
         "shows": {
             "type": "array",
             "minItems": 1,
-            "items": { "$ref": "#/definitions/entry" },
+            "items": {
+                "$ref": "#/definitions/entry"
+            },
             "description": "節目（definition = show.json）"
         },
         "dramas": {
             "type": "array",
             "minItems": 1,
-            "items": { "$ref": "#/definitions/entry" },
+            "items": {
+                "$ref": "#/definitions/entry"
+            },
             "description": "廣播劇（definition = drama.json）"
         },
         "banner": {
@@ -43,6 +47,80 @@
                 "long": {
                     "$ref": "#/definitions/imageUrl",
                     "description": "闊版 2000×400（banner-wide.webp）"
+                }
+            }
+        },
+        "branding": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "選填：App 外觀（App 圖示 + 名稱與簡介，各自選填）；player build 時讀，冇就用 repo 內建。schemaVersion 唔使升，舊 player 會忽略",
+            "properties": {
+                "icon": {
+                    "type": "object",
+                    "required": [
+                        "favicon",
+                        "appleTouch",
+                        "icon192",
+                        "icon512",
+                        "maskable",
+                        "maskableBackground"
+                    ],
+                    "additionalProperties": false,
+                    "description": "App 圖示：五張 PNG 一齊換",
+                    "properties": {
+                        "favicon": {
+                            "$ref": "#/definitions/imageUrl",
+                            "description": "瀏覽器分頁 64×64"
+                        },
+                        "appleTouch": {
+                            "$ref": "#/definitions/imageUrl",
+                            "description": "iOS 主畫面 180×180"
+                        },
+                        "icon192": {
+                            "$ref": "#/definitions/imageUrl",
+                            "description": "manifest 192×192"
+                        },
+                        "icon512": {
+                            "$ref": "#/definitions/imageUrl",
+                            "description": "manifest 512×512"
+                        },
+                        "maskable": {
+                            "$ref": "#/definitions/imageUrl",
+                            "description": "manifest maskable 512×512（icon 縮入安全區，四周填底色）"
+                        },
+                        "maskableBackground": {
+                            "type": "string",
+                            "pattern": "^#[0-9a-fA-F]{6}$",
+                            "format": "color-hex",
+                            "description": "maskable 底色 #rrggbb"
+                        }
+                    }
+                },
+                "text": {
+                    "type": "object",
+                    "required": ["name", "description"],
+                    "additionalProperties": false,
+                    "description": "App 名稱與簡介（trim 後唔可以空；長度以字計）",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "pattern": "\\S",
+                            "maxLength": 40,
+                            "description": "App 名：manifest name、<title>、og:title、og:site_name（最多 40 字）"
+                        },
+                        "shortName": {
+                            "type": "string",
+                            "pattern": "\\S",
+                            "maxLength": 24,
+                            "description": "短名：manifest short_name（最多 24 字；冇 = 用 App 名）"
+                        },
+                        "description": {
+                            "type": "string",
+                            "pattern": "\\S",
+                            "maxLength": 200,
+                            "description": "簡介：meta description、og:description、manifest description（最多 200 字）"
+                        }
+                    }
                 }
             }
         }

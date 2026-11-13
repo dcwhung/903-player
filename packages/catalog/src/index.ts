@@ -28,6 +28,7 @@ export {
     ASSET_MAX_BYTES,
     type AssetSize,
     type AssetSlot,
+    type IconSlot,
 } from './assets/dimensions';
 export type {
     ArcAvailability,
@@ -58,6 +59,17 @@ export {
     type CatalogEntry,
     type CatalogKind,
 } from './document/document';
+export {
+    BRANDING_DESCRIPTION_MAX_LENGTH,
+    BRANDING_NAME_MAX_LENGTH,
+    BRANDING_SHORT_NAME_MAX_LENGTH,
+    ICON_IMAGE_KEYS,
+    parseCatalogText,
+    type CatalogBranding,
+    type CatalogIcon,
+    type CatalogText,
+    type IconImageKey,
+} from './document/branding';
 export { localizeDocument } from './document/localize';
 
 export {

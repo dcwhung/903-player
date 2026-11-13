@@ -44,6 +44,16 @@ const withChange = (path: string, value: unknown): Json => {
 
 const BANNER = { standard: 'https://cdn.example.com/banner.webp', long: '/c/banner-wide.webp' };
 
+const ICON = {
+    favicon: 'https://cdn.example.com/f.png',
+    appleTouch: '/c/a.png',
+    icon192: '/c/192.png',
+    icon512: '/c/512.png',
+    maskable: '/c/m.png',
+    maskableBackground: '#A0b1C2',
+};
+const TEXT = { name: '903 Player', shortName: '903', description: '節目重溫' };
+
 const withImage = (file: string, url: unknown) =>
     withChange('dramas.0.images', { ...IMAGES, [file]: url });
 
@@ -89,6 +99,27 @@ const INVALID: Case[] = [
     ['banner URL http', withChange('banner', { ...BANNER, long: 'http://x.example.com/b.webp' })],
     ['banner URL 相對', withChange('banner', { ...BANNER, standard: 'banner.webp' })],
     ['banner 多出 key', withChange('banner', { ...BANNER, wide: BANNER.long })],
+    ['branding 係 null', withChange('branding', null)],
+    ['branding 多出 key', withChange('branding', { icon: ICON, splash: '/c/s.png' })],
+    ['icon 少一張', withChange('branding', { icon: { ...ICON, maskable: undefined } })],
+    ['icon 冇底色', withChange('branding', { icon: { ...ICON, maskableBackground: undefined } })],
+    ['icon 多出 key', withChange('branding', { icon: { ...ICON, og: '/c/o.png' } })],
+    ['icon URL http', withChange('branding', { icon: { ...ICON, favicon: 'http://x.example/f' } })],
+    ['icon 底色 3 位', withChange('branding', { icon: { ...ICON, maskableBackground: '#abc' } })],
+    ['text 冇 name', withChange('branding', { text: { ...TEXT, name: undefined } })],
+    ['text 冇 description', withChange('branding', { text: { ...TEXT, description: undefined } })],
+    ['text name 得空格', withChange('branding', { text: { ...TEXT, name: '  ' } })],
+    ['text shortName 空字串', withChange('branding', { text: { ...TEXT, shortName: '' } })],
+    ['text name 41 字', withChange('branding', { text: { ...TEXT, name: '字'.repeat(41) } })],
+    [
+        'text shortName 25 字',
+        withChange('branding', { text: { ...TEXT, shortName: 'a'.repeat(25) } }),
+    ],
+    [
+        'text description 201 字',
+        withChange('branding', { text: { ...TEXT, description: 'a'.repeat(201) } }),
+    ],
+    ['text 多出 key', withChange('branding', { text: { ...TEXT, title: 'x' } })],
 ];
 
 const VALID: Case[] = [
@@ -96,6 +127,23 @@ const VALID: Case[] = [
     ['generatedAt 用 Z', withChange('generatedAt', '2026-11-07T10:00:00Z')],
     ['頂層多出嚟嘅 key', withChange('notice', { text: 'x' })],
     ['有 banner（窄 + 闊）', withChange('banner', BANNER)],
+    ['有 branding（icon + text）', withChange('branding', { icon: ICON, text: TEXT })],
+    ['branding 淨係 icon', withChange('branding', { icon: ICON })],
+    [
+        'branding text 冇 shortName',
+        withChange('branding', { text: { ...TEXT, shortName: undefined } }),
+    ],
+    [
+        'branding text 上限長度',
+        withChange('branding', {
+            text: {
+                name: '字'.repeat(40),
+                shortName: '🎧'.repeat(24),
+                description: 'a'.repeat(200),
+            },
+        }),
+    ],
+    ['branding 空 object', withChange('branding', {})],
     ['加 $schema', withChange('$schema', '../schemas/catalog.schema.json')],
     ['圖檔名喺 sub-folder', withImage('arcs/season-1/disc.webp', '/a.webp')],
     ['圖檔名有中文同空格', withImage('封面 1.webp', '/a.webp')],
