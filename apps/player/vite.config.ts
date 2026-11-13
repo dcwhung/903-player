@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { loadEnv, type Plugin } from 'vite';
-import { defineConfig } from 'vitest/config';
+import { defineConfig, type ViteUserConfig } from 'vitest/config';
+import { brandedPublicDir } from './scripts/brandingIcons.ts';
+import { injectBrandingText, loadBranding, manifestText } from './scripts/brandingConfig.ts';
 import { catalogRuntimeCaching } from './scripts/catalogCaching.ts';
 import { catalogSnapshot } from './scripts/catalogSnapshot.ts';
 import { buildSocialTags, resolveSiteUrl } from './scripts/socialMeta.ts';
@@ -73,9 +75,29 @@ const e2eCatalogNotFound = (catalogUrl: string): Plugin => {
  */
 const SNAPSHOT_DIR = new URL('./src/catalog/snapshot/data', import.meta.url).pathname;
 
-export default defineConfig(({ mode }) => {
+/*
+ * Branding（App 外觀 plan 2026-11-13）：production build 讀 catalog.branding。
+ * text → manifest name / short_name / description + index.html title / meta / og（injectBrandingText）；
+ * icon → 下載五張 PNG 寫去 branded public 副本（gitignored），改 publicDir 覆蓋內建 icon。
+ * loadBranding 自己 fetch catalog（唔靠 catalogSnapshot buildStart 寫嘅檔，嗰個喺 configResolved 之後先行）；
+ * 失敗 / e2e / 冇 URL → 用內建值。
+ */
+const PUBLIC_DIR = new URL('./public', import.meta.url).pathname;
+const BRANDED_PUBLIC_DIR = new URL('./node_modules/.tmp/branded-public', import.meta.url).pathname;
+
+export default defineConfig(async ({ command, mode }): Promise<ViteUserConfig> => {
     const catalogUrl = catalogUrlFor(mode);
+    const branding = await loadBranding({ url: catalogUrl, command, mode });
+    const publicDir =
+        branding?.icon &&
+        (await brandedPublicDir({
+            icon: branding.icon,
+            catalogUrl,
+            publicDir: PUBLIC_DIR,
+            outDir: BRANDED_PUBLIC_DIR,
+        }));
     return {
+        ...(publicDir ? { publicDir } : {}),
         base: BASE_PATH,
         // Vitest 共用呢份 config，所以測試都睇到同一個 define
         define: {
@@ -86,6 +108,7 @@ export default defineConfig(({ mode }) => {
             react(),
             injectAppVersion(),
             injectSocialTags(),
+            injectBrandingText(branding?.text),
             mode === E2E_MODE && catalogUrl.startsWith('/') && e2eCatalogNotFound(catalogUrl),
             catalogSnapshot({
                 url: catalogUrl,
@@ -98,8 +121,7 @@ export default defineConfig(({ mode }) => {
                 registerType: 'prompt',
                 includeAssets: ['favicon.png', 'apple-touch-icon.png'],
                 manifest: {
-                    name: '903 Player',
-                    short_name: '903 Player',
+                    ...manifestText(branding?.text),
                     lang: 'zh-HK',
                     start_url: BASE_PATH,
                     scope: BASE_PATH,
