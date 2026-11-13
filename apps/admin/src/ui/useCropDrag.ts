@@ -1,6 +1,7 @@
 /*
  * 裁切框拖曳 / 鍵盤：拖框移位、拖右下角縮放（鎖比例、限喺原圖入面，cropGeometry）；
- * focus 咗裁切框用方向鍵移位、+ / − 縮放。fit 兩款（locked）乜都唔郁
+ * focus 咗裁切框用方向鍵移位、+ / − 縮放。fit 兩款（locked）乜都唔郁。
+ * onDragChange：撳落 / 放手時通知（候選縮圖拖緊唔重畫，放手先畫，S-910）
  */
 import { useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { CROP_MODE, moveBox, resizeBox, type CropRect, type DragDelta } from './cropGeometry';
@@ -91,8 +92,13 @@ export const useCropDrag = (
     slot: CropSlot,
     locked: boolean,
     onChoice: (choice: CropChoice) => void,
+    onDragChange?: (dragging: boolean) => void,
 ) => {
-    const [drag, setDrag] = useState<Drag | null>(null);
+    const [drag, setDragState] = useState<Drag | null>(null);
+    const setDrag = (next: Drag | null) => {
+        setDragState(next);
+        onDragChange?.(next !== null);
+    };
     const { source } = ready.loaded;
     const apply = (kind: DragKind, box: CropRect, delta: DragDelta) =>
         onChoice({

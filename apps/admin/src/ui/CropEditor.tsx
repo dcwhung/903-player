@@ -3,6 +3,7 @@
  * Design Origin: mockup: _mockups_/admin-phase4/index.html#b（.editor）+ #c（原圖細過輸出：黃色警告）
  */
 import { TriangleAlert, Upload } from 'lucide-react';
+import { useState } from 'react';
 import { t } from '../i18n/t';
 import { CropCandidates } from './CropCandidates';
 import { cropSourceSize, upscaleFactor } from './cropGeometry';
@@ -58,6 +59,7 @@ export function CropEditor({
     onChoice,
     onPickOther,
 }: CropEditorProps) {
+    const [dragging, setDragging] = useState(false);
     return (
         <div className="editor">
             <div className="pane">
@@ -65,9 +67,21 @@ export function CropEditor({
                     {t('images.previewSource')}{' '}
                     <span className="small muted">{t('images.sourceHint')}</span>
                 </span>
-                <CropSourcePane ready={ready} slot={slot} disabled={disabled} onChoice={onChoice} />
+                <CropSourcePane
+                    ready={ready}
+                    slot={slot}
+                    disabled={disabled}
+                    onChoice={onChoice}
+                    onDragChange={setDragging}
+                />
                 <UpscaleWarning ready={ready} slot={slot} />
-                <CropCandidates ready={ready} slot={slot} disabled={disabled} onChoice={onChoice} />
+                <CropCandidates
+                    ready={ready}
+                    slot={slot}
+                    disabled={disabled}
+                    dragging={dragging}
+                    onChoice={onChoice}
+                />
                 <button
                     type="button"
                     className="link-btn pick-other"

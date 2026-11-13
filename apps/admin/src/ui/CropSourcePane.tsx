@@ -16,12 +16,14 @@ interface CropSourcePaneProps {
     slot: CropSlot;
     disabled: boolean;
     onChoice: (choice: CropChoice) => void;
+    onDragChange?: (dragging: boolean) => void;
 }
 
-export function CropSourcePane({ ready, slot, disabled, onChoice }: CropSourcePaneProps) {
+export function CropSourcePane(props: CropSourcePaneProps) {
+    const { ready, slot, disabled, onChoice, onDragChange } = props;
     const center = ready.choice.mode === CROP_MODE.CENTER;
     const locked = !center || disabled;
-    const { boxHandlers, gripHandlers } = useCropDrag(ready, slot, locked, onChoice);
+    const { boxHandlers, gripHandlers } = useCropDrag(ready, slot, locked, onChoice, onDragChange);
     const { source } = ready.loaded;
     const shown = center ? ready.choice.box : { x: 0, y: 0, ...source };
     const boxClass = ['box', locked ? 'locked' : '', slot === 'disc' && !locked ? 'circle' : ''];
