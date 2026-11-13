@@ -20,7 +20,7 @@ function Preview({ label, device, active, children }: PreviewProps) {
     return (
         <div className="icon-prev" data-device={device} style={dim ? { opacity: 0.35 } : undefined}>
             {children}
-            {label}
+            <span className="icon-prev-label">{label}</span>
         </div>
     );
 }
@@ -60,7 +60,9 @@ export function IconPreviews({
             <Preview label={t('appearance.icon.previewTab')} device="tab" active={active}>
                 <span className="tab">
                     {views.tab}
-                    {tabLabel}
+                    <span className="tab-title" title={tabLabel}>
+                        {tabLabel}
+                    </span>
                 </span>
             </Preview>
         </div>

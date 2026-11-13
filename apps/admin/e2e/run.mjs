@@ -1840,6 +1840,84 @@ const brandingCheck = (browser) =>
         },
     );
 
+/*
+ * 圖示預覽列（卡 + 更換 dialog）：四個預覽平均放入預覽欄，唔可以溢出（瀏覽器分頁之前凸出 dialog），
+ * 標籤一行（「Android（圓形）」之前斷兩行）。1280 同 1100 闊都要啱（用戶 2026-11-13）
+ */
+const ICON_FIT_WIDTHS = [1280, 1100];
+const SUBPIXEL = 1;
+const ONE_LINE = 1.5;
+
+const previewFit = (row) =>
+    row.evaluate(
+        (even, [subpixel, oneLine]) => {
+            const box = even.getBoundingClientRect();
+            const dialog = even.closest('.crop-dialog')?.getBoundingClientRect() ?? box;
+            const problems = [];
+            if (even.scrollWidth > even.clientWidth + subpixel) problems.push('row scrolls');
+            for (const prev of even.querySelectorAll('.icon-prev')) {
+                const label = prev.querySelector('.icon-prev-label');
+                const name = label?.textContent ?? '?';
+                for (const el of [prev, ...prev.querySelectorAll('*')]) {
+                    const r = el.getBoundingClientRect();
+                    const out =
+                        Math.max(box.left, dialog.left) - r.left > subpixel ||
+                        r.right - Math.min(box.right, dialog.right) > subpixel;
+                    if (out) {
+                        problems.push(
+                            `${name} overflows (${Math.round(r.left)}–${Math.round(r.right)})`,
+                        );
+                        break;
+                    }
+                }
+                const style = label && getComputedStyle(label);
+                const line = style
+                    ? parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2
+                    : 0;
+                if (!label || label.getBoundingClientRect().height > line * oneLine)
+                    problems.push(`${name} label wraps`);
+                else if (label.scrollWidth > label.clientWidth)
+                    problems.push(`${name} label is cut off`);
+            }
+            return problems;
+        },
+        [SUBPIXEL, ONE_LINE],
+    );
+
+const assertPreviewFit = async (row, what) => {
+    const problems = await previewFit(row);
+    if (problems.length) throw new Error(`${what}: ${problems.join('; ')}`);
+};
+
+const iconPreviewFitCheck = (browser) =>
+    check(
+        'App 圖示 previews fit their column on one line (card + dialog, 1280 / 1100)',
+        async () => {
+            const state = loggedIn();
+            const page = await newPage(browser, state);
+            for (const width of ICON_FIT_WIDTHS) {
+                await page.setViewportSize({ width, height: WIDE.height });
+                await page.goto(`${BASE}/appearance`);
+                const card = page.locator('.appearance-card').first();
+                await assertPreviewFit(card.locator('.even'), `card @${width}`);
+                const chooser = page.waitForEvent('filechooser');
+                await page.getByRole('button', { name: '更換 App 圖示', exact: true }).click();
+                await (await chooser).setFiles(ICON_FIXTURE);
+                const dialog = page.getByRole('dialog', { name: '更換 App 圖示' });
+                await dialog.getByRole('group', { name: '裝置' }).waitFor();
+                // 原圖載入後 dialog 先定闊度：等圖解碼 + 一格 frame 先量
+                await dialog
+                    .locator('.icon-crop .src img')
+                    .evaluate((img) => img.decode())
+                    .catch(() => undefined);
+                await page.evaluate(() => new Promise((done) => requestAnimationFrame(done)));
+                await assertPreviewFit(dialog.locator('.even'), `dialog @${width}`);
+                await shoot(page, `appearance-icon-dialog-${width}`);
+            }
+            await page.close();
+        },
+    );
+
 const publishWarningsCheck = (browser) =>
     check('publish: 配色 warnings fold into one line, expand with links', async () => {
         const page = await newPage(browser, loggedIn({ warnings: true }));
@@ -1918,6 +1996,7 @@ try {
         colourThemeCheck,
         bannerCheck,
         brandingCheck,
+        iconPreviewFitCheck,
         publishWarningsCheck,
         missingFolderCheck,
         actionIconsCheck,

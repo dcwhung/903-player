@@ -609,11 +609,11 @@
     margin-right: auto;
 }
 
-/* 圖示 / Banner 預覽：置中、平均用盡闊度 */
+/* 圖示 / Banner 預覽：置中、平均用盡闊度；minmax(0, …) 令欄可以縮細過內容，唔會凸出預覽欄 */
 .even {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: 1fr;
+    grid-auto-columns: minmax(0, 1fr);
     gap: 16px;
     align-items: end;
     justify-items: center;
@@ -623,9 +623,19 @@
     display: grid;
     gap: 8px;
     justify-items: center;
+    min-width: 0;
+    max-width: 100%;
     font-size: 12px;
     color: var(--muted);
     text-align: center;
+}
+
+/* 標籤一行（「Android（圓形）」唔斷行）；萬一真係太窄先省略 */
+.icon-prev-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .big-slot {
@@ -639,8 +649,8 @@
 .icon-prev .ios {
     display: grid;
     place-items: center;
-    width: 88px;
-    height: 88px;
+    width: min(88px, 100%);
+    aspect-ratio: 1;
     border-radius: 20px;
     overflow: hidden;
     box-shadow: var(--shadow);
@@ -649,8 +659,8 @@
 .icon-prev .android {
     display: grid;
     place-items: center;
-    width: 88px;
-    height: 88px;
+    width: min(88px, 100%);
+    aspect-ratio: 1;
     border-radius: 50%;
     overflow: hidden;
     box-shadow: var(--shadow);
@@ -679,6 +689,9 @@
     display: flex;
     gap: 8px;
     align-items: center;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
     padding: 7px 12px;
     border-radius: 10px 10px 0 0;
     background: var(--surface-2);
@@ -687,14 +700,26 @@
     white-space: nowrap;
 }
 
+.icon-prev .tab-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .icon-prev .tab img,
 .icon-prev .tab canvas {
+    flex: none;
     width: 16px;
     height: 16px;
     border-radius: 3px;
 }
 
 /* 更換 App 圖示 dialog */
+/* 預覽欄只有半個 dialog 闊：收窄欄距，四個預覽 + 一行標籤先放得落 */
+.icon-dialog .even {
+    gap: 8px;
+}
+
 .icon-dialog .icon-editor {
     display: grid;
     gap: 14px;
