@@ -1,5 +1,5 @@
 import type { ChangeItem } from '@903-player/catalog';
-import { bannerChangedOf, historyName, itemStatusOf } from './historyModel';
+import { bannerChangedOf, contentChangedOf, historyName, itemStatusOf } from './historyModel';
 
 const entry = { kind: 'dramas', id: 'golden', name: '黃金少年' } as const;
 const arc = { id: 's1', name: 'Season 1', label: 'Season 1' };
@@ -57,5 +57,21 @@ describe('bannerChangedOf', () => {
         // 舊 api（< 0.8.1）/ 舊記錄冇呢個欄位 → 當冇改
         expect(bannerChangedOf(changes)).toBe(false);
         expect(bannerChangedOf(undefined)).toBe(false);
+    });
+});
+
+// 用戶 2026-11-13：「N 節目 · N 劇 · N 集」只喺呢次改咗節目 / 劇內容先顯示
+describe('contentChangedOf', () => {
+    const item = { kind: 'unlist', when: 'now', entry, detail: {} } as ChangeItem;
+
+    it('should be true only when the publish changed shows / dramas', () => {
+        expect(contentChangedOf({ items: [item], timeline: [] })).toBe(true);
+        expect(contentChangedOf({ items: [], timeline: [], bannerChanged: true })).toBe(false);
+        expect(contentChangedOf({ items: [], timeline: [], brandingChanged: true })).toBe(false);
+        expect(contentChangedOf({ items: [], timeline: [] })).toBe(false);
+    });
+
+    it('should keep the stats for an old record without a change summary', () => {
+        expect(contentChangedOf(undefined)).toBe(true);
     });
 });

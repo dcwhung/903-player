@@ -133,4 +133,55 @@ describe('HistoryRow', () => {
         expect(screen.getByText('沒有內容變更')).toBeInTheDocument();
         expect(screen.queryByText('首頁 Banner')).not.toBeInTheDocument();
     });
+
+    describe('stats line', () => {
+        const STATS = '1 節目 · 2 劇 · 30 集';
+        const item = {
+            kind: 'unlist',
+            when: 'now',
+            entry: { kind: 'dramas', id: 'golden', name: '黃金少年' },
+            detail: {},
+        } as const;
+        const renderRow = (changes: Record<string, unknown>) =>
+            render(
+                <HistoryRow
+                    row={{ ...row, changes: { items: [], timeline: [], ...changes } }}
+                    servingId={3}
+                    entries={[]}
+                    onRollback={vi.fn()}
+                    onRedeploy={vi.fn()}
+                />,
+            );
+
+        it('should show the stats when shows / dramas changed', () => {
+            renderRow({ items: [item], bannerChanged: true });
+            expect(screen.getByText(STATS)).toBeInTheDocument();
+        });
+
+        it.each([
+            ['banner-only', { bannerChanged: true }],
+            ['branding-only', { brandingChanged: true }],
+        ])('should hide the stats for a %s publish', (_label, changes) => {
+            renderRow(changes);
+            expect(screen.queryByText(STATS)).not.toBeInTheDocument();
+        });
+
+        it('should still show the error of a failed banner-only publish', () => {
+            render(
+                <HistoryRow
+                    row={{
+                        ...row,
+                        status: 'failed',
+                        error: 'R2 down',
+                        changes: { items: [], timeline: [], bannerChanged: true },
+                    }}
+                    servingId={2}
+                    entries={[]}
+                    onRollback={vi.fn()}
+                    onRedeploy={vi.fn()}
+                />,
+            );
+            expect(screen.getByText(/R2 down/)).toBeInTheDocument();
+        });
+    });
 });
