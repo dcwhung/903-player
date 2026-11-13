@@ -7,7 +7,7 @@
 // 7 harness 預設（冇蓋 route）：SW 嘅 catalog request 由 e2e preview 答 404，catalog-json cache 冇 key（S-765）。
 // 8 首頁 banner（Phase 4 L3）：fixture 帶 banner → 主頁橫額用 catalog 嘅圖（同 origin + 跨 origin 都試）；
 //   fallback 內建資料 → 用返 src/assets 內建圖。banner 圖由 src/assets 直接讀（尺寸同 catalog 鎖死嘅一樣）
-// 9 catalog banner 圖載入失敗（S-929）：404（直版 / 手機打橫 / 闊橫版）同跨 origin 冇 CORS header →
+// 9 catalog banner 圖載入失敗（S-929）：404（直版 / 手機打橫 / 闊橫版）同跨 origin CORS 唔批 player origin →
 //   <img onError> 換返 src/assets 內建圖，照載入到
 // 所有 route 都好似 apps/api Worker 咁答 Access-Control-Allow-Origin + Vary: Origin
 import { readFileSync } from 'node:fs';
@@ -52,6 +52,8 @@ const SW_CACHE_SETTLE_MS = 1000;
 /** 跨 origin 圖 host（似 apps/api Worker）；path 同本機 e2e-catalog/ 一樣，imageFile 照用 */
 const CROSS_ORIGIN_IMAGE_BASE = `${CATALOG_IMAGE_HOST}/${CATALOG_FOLDER}`;
 const CROSS_ORIGIN_GLOB = `${CATALOG_IMAGE_HOST}/**`;
+/** S-929：CORS header 批咗呢個 origin（唔係 player），瀏覽器當 CORS 失敗 */
+const FOREIGN_ORIGIN = 'https://other-player.e2e.test';
 
 /** 只有 catalog.json 先有嘅測試劇：借蘭茜夫人劇場嘅 definition 同圖 */
 const REMOTE_ID = 'e2e-remote';
@@ -296,18 +298,17 @@ const checkMissingBanner = async (env, json) => {
     }
 };
 
-/** S-929：跨 origin banner 冇 CORS header（<img crossorigin> 會載入失敗）→ 換返內建圖 */
+/**
+ * S-929：跨 origin banner 嘅 CORS 唔批 player origin（<img crossorigin> 載入失敗）→ 換返內建圖。
+ * 唔可以答「冇 CORS header」：Playwright route.fulfill 冇 header 會自動當批准，圖照載入到
+ */
 const checkBannerWithoutCors = async (env, json) => {
     const { ctx, p } = await openWithCatalog(env, {
         catalogBody: crossOriginDocument(env.base, json),
     });
-    // 後註冊先行：蓋過 openWithCatalog 嘅跨 origin route，淨係 banner 唔帶 CORS header
+    // 後註冊先行：蓋過 openWithCatalog 嘅跨 origin route，淨係 banner 嘅 CORS 批去第二個 origin
     await ctx.route(`${CROSS_ORIGIN_IMAGE_BASE}${BANNER_FOLDER}/**`, (route) =>
-        route.fulfill({
-            status: 200,
-            contentType: 'image/webp',
-            body: readFileSync(imageFile(new URL(route.request().url()).pathname)),
-        }),
+        serveImage(route, FOREIGN_ORIGIN),
     );
     const tried = requested(ctx, `${CROSS_ORIGIN_IMAGE_BASE}${BANNER_FOLDER}/`);
     await p.goto(env.base);
@@ -315,7 +316,7 @@ const checkBannerWithoutCors = async (env, json) => {
     const art = await bannerArt(p);
     env.log(
         tried.hit && isBuiltInBanner(art),
-        `Remote catalog 跨 origin banner 冇 CORS：主頁橫額換返內建圖（${art.src}）`,
+        `Remote catalog 跨 origin banner CORS 唔批：主頁橫額換返內建圖（${art.src}）`,
     );
 };
 
@@ -425,5 +426,5 @@ export const runRemoteCatalogChecks = async (env) => {
     await section('Remote catalog：v1 進度升級', () => checkMigration(env, json));
     await section('Remote catalog：跨 origin 圖（CORS）', () => checkCrossOriginImages(env, json));
     await section('Remote catalog：banner 圖 404', () => checkMissingBanner(env, json));
-    await section('Remote catalog：banner 冇 CORS', () => checkBannerWithoutCors(env, json));
+    await section('Remote catalog：banner CORS 唔批', () => checkBannerWithoutCors(env, json));
 };
