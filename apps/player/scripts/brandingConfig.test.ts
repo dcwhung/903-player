@@ -68,6 +68,21 @@ describe('applyBrandingText', () => {
         expect(html).toContain('content="A &amp; &lt;B&gt; &quot;C&quot;"');
         expect(html).not.toContain('<title>A & <B>');
     });
+
+    // W-736：String.replace 嘅 replacement 字串會解讀 $' / $& / $1，App 名有 $ 都要原樣寫入（& 照 escape）
+    it('should write $ patterns in the catalog values literally', () => {
+        const html = applyBrandingText(indexHtml, {
+            name: "A$'B$&C$1",
+            description: 'D$&E$`F$$G',
+        });
+        const name = "A$'B$&amp;C$1";
+        const description = 'D$&amp;E$`F$$G';
+        expect(html).toContain(`<title>${name}</title>`);
+        expect(contentOf(html, 'property="og:title"')).toBe(name);
+        expect(contentOf(html, 'name="description"')).toBe(description);
+        expect(contentOf(html, 'property="og:description"')).toBe(description);
+        expect(html.match(/<\/html>/g)).toHaveLength(1);
+    });
 });
 
 describe('injectBrandingText', () => {

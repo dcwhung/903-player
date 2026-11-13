@@ -77,17 +77,23 @@ const escapeHtml = (value: string): string =>
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;');
 
-/** 改一個 <meta …> 嘅 content（attr 跨行都 match，因為 [^>] 包埋換行） */
+/*
+ * 改一個 <meta …> 嘅 content（attr 跨行都 match，因為 [^>] 包埋換行）。
+ * W-736：replacement 一律用 function，唔係字串 —— 字串會解讀 $' / $& / $1，App 名有 $ 會破壞 HTML
+ */
 const setMetaContent = (html: string, marker: string, value: string): string =>
     html.replace(/<meta\b[^>]*>/g, (tag) =>
         tag.includes(marker)
-            ? tag.replace(/content="[^"]*"/, `content="${escapeHtml(value)}"`)
+            ? tag.replace(/content="[^"]*"/, () => `content="${escapeHtml(value)}"`)
             : tag,
     );
 
 /** index.html 嘅 title / description / og:* 換做 catalog branding 值（HTML escape） */
 export const applyBrandingText = (html: string, text: CatalogText): string => {
-    let out = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(text.name)}</title>`);
+    let out = html.replace(
+        /<title>[^<]*<\/title>/,
+        () => `<title>${escapeHtml(text.name)}</title>`,
+    );
     out = setMetaContent(out, 'name="description"', text.description);
     out = setMetaContent(out, 'property="og:title"', text.name);
     out = setMetaContent(out, 'property="og:site_name"', text.name);
