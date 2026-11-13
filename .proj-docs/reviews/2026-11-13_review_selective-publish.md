@@ -252,3 +252,43 @@ branch: "feature/selective-publish"
 context: "Re-review 3 @74c0451: incomplete rows show 未完成 only, no checkbox; nothing else relies on the disabled checkbox; no new UI strings. Suggestions S-989 (sr-only missing-settings text) and S-990 (stale CHANGELOG 0.3.0 + selective.css header) must be cleared this session. Report committed locally, not pushed (code CI running)."
 blockers: []
 ```
+
+## Re-review 4（S-989 / S-990）
+
+- 日期：2026-11-13　審閱者：Code Reviewer　目標：`185f41a`（`fix: S-989 S-990 | ...`）　Tier：T2（只驗呢個 diff）
+- Hard gates：all pass（`npx eslint` / `npx prettier --check` 改咗嘅檔、`npx tsc -b apps/admin`、`npx vitest run TodoMatrix.test.tsx writtenChinese.test.ts` 10/10；developer 本地 admin unit 585 綠、`e2e:admin` 綠）
+- S-989 ✅ 已修：`.lock` 入面加 `<span className="sr-only">：{incompleteText(title, row)}</span>`，screen reader 讀「未完成：天使之戀系列（尚未設定ID、圖片、排期）」；冇新 i18n key（只加全形「：」，非口語字），`.sr-only` 沿用 `app.css`。Test 改為斷言完整文字（L2：還原 `PublishCell.tsx` 去 `74c0451` → 呢個 test fail、其餘 8 個過；restore 後 9/9）。e2e `getByTitle(...).getByText('未完成')` 係子字串 match，照過；repo 內冇其他 exact match「未完成」嘅 selector
+- S-990 ✅ 已修：`CHANGELOG.md` 0.3.0 改做「`incomplete` 只顯示「未完成」（冇勾選框，tooltip 列出未設定項目）」；`selective.css` header 改做「未完成（淨係文字，冇勾選框）」
+- 冇新 item
+
+| 維度     | 得分    | 滿分    |
+| -------- | ------- | ------- |
+| 正確性   | 25      | 25      |
+| 安全性   | 20      | 20      |
+| 可維護性 | 20      | 20      |
+| 測試覆蓋 | 15      | 15      |
+| 性能     | 10      | 10      |
+| 代碼風格 | 10      | 10      |
+| **總分** | **100** | **100** |
+
+**結果：✅ pass**（冇 🔴 / 🟡 / 新 🟢；今個 session 嘅 review item 已清晒）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+  no_critical: pass
+  security_scan: n/a
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "feature/selective-publish"
+context: "Re-review 4 @185f41a: S-989 (sr-only missing-settings text, test fails without fix) and S-990 (CHANGELOG 0.3.0 + selective.css header) verified fixed. No new items. Report committed locally, not pushed (code CI running)."
+blockers: []
+```
