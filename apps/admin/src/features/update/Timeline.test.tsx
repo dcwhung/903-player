@@ -1,6 +1,7 @@
 import { summarizeChanges, type ChangeDocument } from '@903-player/catalog';
 import { render, screen, within } from '@testing-library/react';
 import { hasIcon } from '../../../tests/icons';
+import type { LoadedEntry } from '../../api/types';
 import { Timeline } from './Timeline';
 
 /** shortDate 跨年會加年份（S-830）：固定「今日」喺 2026，唔跟真實時鐘 */
@@ -80,5 +81,27 @@ describe('Timeline', () => {
         render(<Timeline groups={summary.timeline} entries={[]} />);
         const all = screen.getByRole('button', { name: /查看全部/ });
         expect(hasIcon(all, 'chevron-down')).toBe(true);
+    });
+
+    it('should show which fields a 修改 changes, naming the arc', () => {
+        const arc = { id: 'half', name: '戀愛二分一', episodes: 30 };
+        const prev: ChangeDocument = { shows: [], dramas: [drama([arc])] };
+        const next: ChangeDocument = {
+            shows: [],
+            dramas: [drama([{ ...arc, summary: '新簡介' }], { theme: { primary: '#123456' } })],
+        };
+        const summary = summarizeChanges(prev, next, '2026-11-12');
+        const entries = [
+            {
+                kind: 'dramas',
+                id: 'lancy',
+                etag: null,
+                ...next.dramas[0],
+                draft: false,
+                updatedAt: 'v',
+            },
+        ] as unknown as LoadedEntry[];
+        render(<Timeline groups={summary.timeline} entries={entries} />);
+        expect(screen.getByText('配色；戀愛二分一：簡介')).toBeInTheDocument();
     });
 });

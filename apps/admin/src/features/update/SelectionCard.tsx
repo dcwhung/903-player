@@ -7,6 +7,7 @@ import type { ChangeItem } from '@903-player/catalog';
 import { RefreshCw, TriangleAlert } from 'lucide-react';
 import type { ChangesResponse, LoadedEntry, PublishSelection, TodoRow } from '../../api/types';
 import { t, type MessageKey } from '../../i18n/t';
+import { editFieldsText } from './changeFields';
 import { itemName, kindLabel } from './timelineModel';
 import { displayName, episodesOf, incompleteText } from './todoModel';
 import { pickedAppearance, type AppearanceItem } from './selectionModel';
@@ -17,10 +18,13 @@ const APPEARANCE_LABEL: Record<AppearanceItem, MessageKey> = {
     banner: 'update.itemBanner',
 };
 
-const otherLabel = (item: ChangeItem): string => {
+/** 「修改 · 劇名（配色、簡介）」：修改寫埋改了哪些欄位 */
+const otherLabel = (item: ChangeItem, entries: readonly LoadedEntry[]): string => {
     const entry = item.entry?.name;
     const name = item.arc && entry ? `${entry} › ${itemName(item)}` : itemName(item);
-    return `${kindLabel(item.kind)} · ${name}`;
+    const fields = editFieldsText(item, entries);
+    const label = `${kindLabel(item.kind)} · ${name}`;
+    return fields ? t('publish.editedFields', { label, fields }) : label;
 };
 
 /** 「新短篇 · 劇名 › 短篇名（N 集）」；集數未知（entries 未載入）就唔加 */
@@ -71,7 +75,7 @@ function PickedList({ data, selection, rows, entries }: SelectionCardProps) {
                             <li
                                 key={`${item.kind}-${item.entry?.id ?? ''}-${item.arc?.id ?? ''}-${i}`}
                             >
-                                {otherLabel(item)}
+                                {otherLabel(item, entries)}
                             </li>
                         ))}
                     </ul>

@@ -2,6 +2,12 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.5.0 — 2026-11-14
+
+### Added
+
+- 確認發佈「本次發佈」同時間線嘅「修改」寫埋改了哪些欄位，例如「修改 · 蘭茜夫人劇場（配色、簡介）」；短篇欄位寫短篇名（「戀愛二分一：簡介、聲演」）。來源係 `GET /api/changes` 已有嘅 `detail.fields`，api 不變；認不到嘅欄位顯示「其他」
+
 ## 0.4.0 — 2026-11-13
 
 ### Changed

@@ -83,12 +83,24 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
                 throw new Error('App 外觀 section shown without appearance changes');
             await plain.close();
 
-            const page = await newPage(browser, loggedIn({ selective: true }));
+            const state = loggedIn({ selective: true });
+            // 其他已儲存的改動：修改寫埋改了哪些欄位（本次發佈卡 + 時間線）
+            state.others = [
+                {
+                    kind: 'edit',
+                    when: 'now',
+                    entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
+                    detail: { fields: ['theme', 'summary'] },
+                },
+            ];
+            const page = await newPage(browser, state);
             await page.goto(BASE);
             await page.getByRole('button', { name: NEXT }).click();
             const card = page.getByRole('region', { name: '本次發佈' });
             await card.getByText('App 外觀 · 名稱與簡介').waitFor();
             await card.getByText(/圖示、名稱及簡介須重新部署/).waitFor();
+            await card.getByText('修改 · 蘭茜夫人劇場（配色、簡介）').waitFor();
+            await page.locator('.timeline').getByText('配色、簡介').waitFor();
             await shoot(page, 'publish-selective-appearance');
             await page.close();
         });
