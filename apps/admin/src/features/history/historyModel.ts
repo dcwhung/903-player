@@ -1,5 +1,6 @@
 /* 上下架記錄：每項變更嘅狀態 pill（用返內容列表嘅 pill 字眼） */
 import type { ChangeItem } from '@903-player/catalog';
+import type { PublishChangeSummary } from '../../api/types';
 import { t } from '../../i18n/t';
 import { zhHK } from '../../i18n/zh-HK';
 import { longDate } from '../../model/dates';
@@ -46,3 +47,7 @@ export const historyName = (item: ChangeItem): string => {
     const entry = item.entry?.name ?? '';
     return item.arc ? `${entry} › ${item.arc.label}` : entry;
 };
+
+/** 呢次 publish 有冇換首頁 Banner（欄位冇 = 舊 api / 舊記錄，當冇換） */
+export const bannerChangedOf = (changes: PublishChangeSummary | undefined): boolean =>
+    changes?.bannerChanged === true;

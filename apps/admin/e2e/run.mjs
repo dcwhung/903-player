@@ -326,7 +326,11 @@ const todoFlowCheck = (browser) =>
         await page.getByRole('button', { name: '發佈', exact: true }).click();
         await page.getByRole('heading', { name: '上下架記錄' }).waitFor();
         await page.getByText('使用中').waitFor();
-        await page.getByText('#3', { exact: true }).waitFor();
+        await page.getByText('#4', { exact: true }).waitFor();
+        // #3 淨換首頁 Banner：顯示「更換 · 首頁 Banner」，唔係「沒有內容變更」
+        await page.locator('.hist-row .changes .name').filter({ hasText: '首頁 Banner' }).waitFor();
+        if ((await page.getByText('沒有內容變更').count()) > 0)
+            throw new Error('banner-only publish should not say 沒有內容變更');
         await shoot(page, 'history');
         await page.getByRole('button', { name: '還原至 #2' }).click();
         await page.getByText('只會還原上架狀態').waitFor();

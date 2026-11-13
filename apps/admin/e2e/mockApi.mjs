@@ -293,8 +293,17 @@ export const createState = ({
         .map((entry) => (realImages ? withRealImages(entry) : entry))
         .map((entry) => (missingFolder ? withMissingFolder(entry) : entry)),
     publishes: [],
-    /** 之前嘅記錄（#2 成功、#1 失敗）：上下架記錄出到「還原」同「失敗」 */
+    /**
+     * 之前嘅記錄（#3 淨換首頁 Banner、#2 成功、#1 失敗）：上下架記錄出到「還原」、「失敗」同
+     * 「更換首頁 Banner」（api 0.8.1 changes.bannerChanged）
+     */
     history: [
+        {
+            ...publishRow(3),
+            current: false,
+            createdAt: '2026-11-10T09:20:00.000Z',
+            changes: { items: [], timeline: [], bannerChanged: true },
+        },
         { ...publishRow(2), current: false, createdAt: '2026-11-09T14:40:00.000Z' },
         {
             ...publishRow(1),

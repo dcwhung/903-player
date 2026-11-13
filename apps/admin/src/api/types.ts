@@ -129,6 +129,11 @@ export interface DramaSources extends SourceCovers {
     arcs: (SourceCovers & { name: string; id: string | null })[];
 }
 
+/** GET /api/publishes 每行嘅 changes（api 0.8.1 加 bannerChanged；舊 api / 舊記錄冇 = 冇換） */
+export interface PublishChangeSummary extends ChangeSummary {
+    bannerChanged?: boolean;
+}
+
 export interface PublishSummary {
     id: number;
     createdAt: string;
@@ -141,7 +146,7 @@ export interface PublishSummary {
     status: 'ok' | 'failed' | string;
     error: string | null;
     current: boolean;
-    changes?: ChangeSummary;
+    changes?: PublishChangeSummary;
 }
 
 export interface ScheduleState {

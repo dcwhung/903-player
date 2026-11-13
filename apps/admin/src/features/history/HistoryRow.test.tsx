@@ -55,4 +55,60 @@ describe('HistoryRow', () => {
         expect(rollback.closest('.ver')?.lastElementChild).toBe(rollback);
         expect(document.querySelector('.action')).toBeNull();
     });
+
+    it('should show 更換首頁 Banner instead of 沒有內容變更 when only the banner changed', () => {
+        render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [], timeline: [], bannerChanged: true } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+            />,
+        );
+        expect(screen.queryByText('沒有內容變更')).not.toBeInTheDocument();
+        const name = screen.getByText('首頁 Banner');
+        expect(name).toHaveClass('name');
+        expect(name.previousElementSibling?.previousElementSibling).toHaveTextContent('更換');
+    });
+
+    it('should list the banner change after the other changes when both changed', () => {
+        const item = {
+            kind: 'unlist',
+            when: 'now',
+            entry: { kind: 'dramas', id: 'golden', name: '黃金少年' },
+            detail: {},
+        } as const;
+        render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [item], timeline: [], bannerChanged: true } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+            />,
+        );
+        const names = [...document.querySelectorAll('.changes .name')].map((el) => el.textContent);
+        expect(names).toEqual(['黃金少年', '首頁 Banner']);
+    });
+
+    it('should still say 沒有內容變更 when the banner did not change or the field is missing', () => {
+        const { rerender } = render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [], timeline: [], bannerChanged: false } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+            />,
+        );
+        expect(screen.getByText('沒有內容變更')).toBeInTheDocument();
+        rerender(
+            <HistoryRow
+                row={{ ...row, changes: { items: [], timeline: [] } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+            />,
+        );
+        expect(screen.getByText('沒有內容變更')).toBeInTheDocument();
+        expect(screen.queryByText('首頁 Banner')).not.toBeInTheDocument();
+    });
 });

@@ -15,6 +15,7 @@ Phase 4 L2（`.proj-docs/plans/2026-11-12_plan_phase4-5.md`）。Design Origin�
 - 配色編輯器（節目 + 廣播劇）：「現用」+ 碟面抽色三套候選（細版 player 預覽 + AA / ⚠ N，用 `packages/catalog` 嘅 `checkThemeContrast`）、「更換另外三套」（九套輪換）、「套用」；新劇現用 =「未設定（中性灰）」，第一套標「建議」但唔自動套用；`titleFont` / `headerRule` 唯讀顯示、儲存時原封不動
 - 首頁 Banner 頁：窄版 → 闊版兩步裁切（「上一張」記住兩步嘅裁切），「上載兩張」先寫入；中途取消兩張都唔換；「還原預設」要確認
 - 發佈頁：配色警告（對比度 + 未設定配色）收埋一行摘要「N 項配色警告（不影響發佈）」+「展開」（有驗證錯誤就全部展開），每行有連結去對應配色；驗證錯誤譯做中文（首頁 Banner 缺圖：「首頁 Banner 不完整：缺少闊版（2000 × 400）」+「前往 Banner 頁」；譯唔到顯示原文）；banner 有改動都算可發佈
+- 上下架記錄：讀 `GET /api/publishes` 嘅 `changes.bannerChanged`（api 0.8.1，S-903）；淨換首頁 Banner 嗰次顯示「更換 · 首頁 Banner」，唔再顯示「沒有內容變更」；同其他變更一齊時排喺最後；舊 api / 舊記錄冇呢個欄位當冇換
 - 抽色回歸參考 test：用 player 13 套人手配色嘅碟面跑抽色，記錄最接近候選嘅色差（只做參考，唔 block）
 
 ### Changed

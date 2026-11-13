@@ -559,6 +559,8 @@ export const zhHK = {
         confirmNote: '只會還原上架狀態；名稱、簡介、圖片、集數及排程會維持目前版本。',
         empty: '尚未有發佈記錄。',
         noChanges: '沒有內容變更',
+        bannerKind: '更換',
+        bannerName: '首頁 Banner',
     },
     weekdays: {
         short: '日,一,二,三,四,五,六',
