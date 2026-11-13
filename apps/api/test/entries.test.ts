@@ -351,6 +351,26 @@ describe('DELETE /api/entries/:kind/:id', () => {
         expect((await adminRequest('DELETE', '/api/entries/shows/badgirl')).status).toBe(409);
     });
 
+    it('should delete a show that only ever went out as 下架 (never listed in the player)', async () => {
+        await putEntry('shows', 'abc', { ...SHOW, name: 'ABC', enabled: false });
+        await adminPost('/api/publish');
+        const latest = await env.DB.prepare(
+            "SELECT document FROM publishes WHERE status = 'ok' ORDER BY id DESC LIMIT 1",
+        ).first<string>('document');
+        // 下架嘅節目照入 document（enabled: false），但播放器從未顯示過佢
+        expect(latest).toContain('"abc"');
+        expect((await adminRequest('DELETE', '/api/entries/shows/abc')).status).toBe(204);
+        // 下次發佈唔會因為佢唔見咗而撞 ID 守衛
+        expect((await adminPost('/api/publish')).status).toBe(200);
+    });
+
+    it('should still refuse a show that was listed once and is now 下架', async () => {
+        await adminPost('/api/publish');
+        await putEntry('shows', 'badgirl', { ...SHOW, enabled: false });
+        await adminPost('/api/publish');
+        expect((await adminRequest('DELETE', '/api/entries/shows/badgirl')).status).toBe(409);
+    });
+
     it('should delete a drama added after the latest publish, and 404 an unknown one', async () => {
         await adminPost('/api/publish');
         await putEntry('dramas', 'later', { ...drama(2), name: '後加' });

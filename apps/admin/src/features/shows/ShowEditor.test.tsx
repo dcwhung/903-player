@@ -40,6 +40,28 @@ describe('ShowEditor', () => {
         expect(await screen.findByText('未上架', { selector: '.pill' })).toHaveClass('unlisted');
     });
 
+    it.each([
+        [false, true],
+        [true, false],
+    ])(
+        'should offer 刪除 only when the show was never listed (published = %s → deletable = %s)',
+        async (published, deletable) => {
+            // 以下架入過最新 document：changes 冇「新節目」，要靠 GET /api/entries 嘅 published
+            const off = { ...SHOW, definition: { ...SHOW.definition, enabled: false } };
+            mockApi({ 'GET /api/entries/shows/waves': () => ({ body: off, etag: '"v1"' }) });
+            const summary = { ...off, kind: 'shows' as const, id: 'waves', etag: '"v1"' };
+            renderAt(
+                '/shows/waves',
+                '/shows/:id',
+                <ShowEditorPage />,
+                fakeData({ entries: resource([{ ...summary, published }]) }),
+            );
+            await screen.findByRole('button', { name: '儲存' });
+            expect(screen.queryByRole('button', { name: '刪除' }) !== null).toBe(deletable);
+            expect(screen.queryByText('已發佈的項目不可刪除。') !== null).toBe(!deletable);
+        },
+    );
+
     it('should save with If-Match and show the dirty field', async () => {
         const api = mockApi({
             'GET /api/entries/shows/waves': load,
