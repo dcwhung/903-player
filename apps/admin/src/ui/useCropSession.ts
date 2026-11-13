@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { centerCrop, CROP_MODE } from './cropGeometry';
 import type { CropChoice } from './cropRender';
 import { loadSource, type Failure, type LoadedSource } from './imageCrop';
-import { SLOT_SIZES, type CropSlot } from './imageUpload';
+import { SLOT_SIZES, type CropSlot, type Size } from './imageUpload';
 
 export interface ReadySource {
     /** 原檔（首頁 Banner 第二張預設沿用同一張） */
@@ -28,8 +28,14 @@ const release = (ready: ReadySource | null) => {
     URL.revokeObjectURL(ready.sourceUrl);
 };
 
+/** slot（封面 / Banner）或者直接畀輸出尺寸（App 圖示：正方形） */
+export type CropTarget = CropSlot | Size;
+
+export const targetSize = (target: CropTarget): Size =>
+    typeof target === 'string' ? SLOT_SIZES[target] : target;
+
 /** decode 完 → 可以裁（預設置中裁切）或者錯誤 */
-const toPhase = (file: File, slot: CropSlot, result: LoadedSource | Failure): CropPhase => {
+const toPhase = (file: File, target: Size, result: LoadedSource | Failure): CropPhase => {
     if ('error' in result) return { status: 'error', name: file.name, message: result.error };
     return {
         status: 'ready',
@@ -37,7 +43,7 @@ const toPhase = (file: File, slot: CropSlot, result: LoadedSource | Failure): Cr
         loaded: result,
         name: file.name,
         sourceUrl: URL.createObjectURL(file),
-        choice: { mode: CROP_MODE.CENTER, box: centerCrop(result.source, SLOT_SIZES[slot]) },
+        choice: { mode: CROP_MODE.CENTER, box: centerCrop(result.source, target) },
     };
 };
 
@@ -58,8 +64,10 @@ const useHeldSource = () => {
     return { drop, token, hold };
 };
 
-export const useCropSession = (slot: CropSlot) => {
+export const useCropSession = (slot: CropTarget) => {
     const [phase, setPhase] = useState<CropPhase | null>(null);
+    // 物件 target 每次 render 都係新嘅：用數字做 dependency
+    const { width, height } = targetSize(slot);
     const { drop, token, hold } = useHeldSource();
     const open = useCallback(
         async (file: File) => {
@@ -72,11 +80,11 @@ export const useCropSession = (slot: CropSlot) => {
                 if (!('error' in result)) result.image.close();
                 return;
             }
-            const next = toPhase(file, slot, result);
+            const next = toPhase(file, { width, height }, result);
             if (next.status === 'ready') hold(next);
             setPhase(next);
         },
-        [drop, token, hold, slot],
+        [drop, token, hold, width, height],
     );
     const choose = useCallback(
         (choice: CropChoice) =>

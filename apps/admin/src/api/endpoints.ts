@@ -143,12 +143,13 @@ export const putSchedule = (
 export const deleteSchedule = (dramaId: string, arcId: string) =>
     request(schedulePath(dramaId, arcId), { method: 'DELETE' });
 
-export const uploadAsset = async (file: Blob) =>
+/** 封面 / Banner = WebP；App 圖示 = PNG（api 0.9.0） */
+export const uploadAsset = async (file: Blob, contentType = 'image/webp') =>
     (
         await request<{ name: string }>('/api/assets', {
             method: 'PUT',
             raw: file,
-            contentType: 'image/webp',
+            contentType,
         })
     ).data;
 

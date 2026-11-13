@@ -17,7 +17,15 @@ const row = {
 
 describe('HistoryRow', () => {
     it('should put the publish time and the admin on separate lines', () => {
-        render(<HistoryRow row={row} servingId={3} entries={[]} onRollback={vi.fn()} />);
+        render(
+            <HistoryRow
+                row={row}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
         expect(screen.getByText('admin')).toHaveClass('who');
         expect(screen.getByText('admin').previousElementSibling).toHaveClass('when');
         expect(screen.getByRole('button', { name: '還原至 #3' })).toBeInTheDocument();
@@ -30,6 +38,7 @@ describe('HistoryRow', () => {
                 servingId={3}
                 entries={[]}
                 onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
             />,
         );
         const pill = screen.getByText('使用中');
@@ -44,10 +53,19 @@ describe('HistoryRow', () => {
                 servingId={2}
                 entries={[]}
                 onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
             />,
         );
         expect(screen.getByText('失敗').closest('.ver')).not.toBeNull();
-        rerender(<HistoryRow row={row} servingId={3} entries={[]} onRollback={vi.fn()} />);
+        rerender(
+            <HistoryRow
+                row={row}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
         expect(screen.queryByText('使用中')).not.toBeInTheDocument();
         // 還原掣喺版本欄最底（冇「操作」欄）
         const rollback = screen.getByRole('button', { name: '還原至 #3' });
@@ -63,6 +81,7 @@ describe('HistoryRow', () => {
                 servingId={3}
                 entries={[]}
                 onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
             />,
         );
         expect(screen.queryByText('沒有內容變更')).not.toBeInTheDocument();
@@ -84,6 +103,7 @@ describe('HistoryRow', () => {
                 servingId={3}
                 entries={[]}
                 onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
             />,
         );
         const names = [...document.querySelectorAll('.changes .name')].map((el) => el.textContent);
@@ -97,6 +117,7 @@ describe('HistoryRow', () => {
                 servingId={3}
                 entries={[]}
                 onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
             />,
         );
         expect(screen.getByText('沒有內容變更')).toBeInTheDocument();
@@ -106,6 +127,7 @@ describe('HistoryRow', () => {
                 servingId={3}
                 entries={[]}
                 onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
             />,
         );
         expect(screen.getByText('沒有內容變更')).toBeInTheDocument();

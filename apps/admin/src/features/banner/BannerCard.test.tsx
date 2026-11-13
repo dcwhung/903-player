@@ -4,7 +4,7 @@ import { hasIcon } from '../../../tests/icons';
 import { fakeData, mockApi, renderAt, resource } from '../../../tests/renderApp';
 import type { ChangesResponse } from '../../api/types';
 import { loadSource, renderOutput } from '../../ui/imageCrop';
-import { BannerPage } from './BannerPage';
+import { BannerCard } from './BannerCard';
 
 vi.mock('../../ui/imageCrop', async (importOriginal) => ({
     ...(await importOriginal<typeof import('../../ui/imageCrop')>()),
@@ -26,7 +26,7 @@ const show = (bannerChanged = false) =>
     renderAt(
         '/appearance',
         '/appearance',
-        <BannerPage />,
+        <BannerCard />,
         fakeData({ changes: resource(changes(bannerChanged)) }),
     );
 
@@ -35,7 +35,7 @@ const pick = async () => {
     await userEvent.upload(input, new File(['x'], 'banner-2026.jpg', { type: 'image/jpeg' }));
 };
 
-describe('BannerPage', () => {
+describe('BannerCard', () => {
     beforeEach(() => {
         vi.stubGlobal(
             'URL',

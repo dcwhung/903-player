@@ -13,7 +13,8 @@ import { thumbOf } from '../../model/thumbs';
 import { Pill } from '../../ui/Pill';
 import { Thumb } from '../../ui/Thumb';
 import { kindLabel } from '../update/timelineModel';
-import { bannerChangedOf, historyName, itemStatusOf } from './historyModel';
+import { bannerChangedOf, brandingChangedOf, historyName, itemStatusOf } from './historyModel';
+import { DeployCell } from './DeployCell';
 
 interface HistoryRowProps {
     row: PublishSummary;
@@ -21,6 +22,7 @@ interface HistoryRowProps {
     servingId: number | undefined;
     entries: readonly LoadedEntry[];
     onRollback: (id: number) => void;
+    onRedeploy: (id: number) => void;
 }
 
 /** 版本欄：使用中 / 失敗 pill（成功嘅舊版本冇 pill） */
@@ -85,10 +87,23 @@ function BannerLine() {
     );
 }
 
-export function HistoryRow({ row, servingId, entries, onRollback }: HistoryRowProps) {
+/** 改咗 App 外觀（圖示 / 名稱與簡介，api 0.9.0 brandingChanged） */
+function BrandingLine() {
+    return (
+        <>
+            <span className="kind">{t('history.bannerKind')}</span>
+            <span />
+            <span className="name">{t('history.brandingName')}</span>
+            <span />
+        </>
+    );
+}
+
+export function HistoryRow({ row, servingId, entries, onRollback, onRedeploy }: HistoryRowProps) {
     const failed = row.status !== 'ok';
     const items = row.changes?.items ?? [];
     const bannerChanged = bannerChangedOf(row.changes);
+    const brandingChanged = brandingChangedOf(row.changes);
     return (
         <div
             className={`hist-row${row.current ? ' current' : ''}${failed ? ' failed' : ''}`}
@@ -102,13 +117,15 @@ export function HistoryRow({ row, servingId, entries, onRollback }: HistoryRowPr
                 <span className="meta when">{stampOf(row.createdAt)}</span>
                 <span className="meta who">{row.createdBy.split('@')[0] ?? ''}</span>
                 <Action row={row} onRollback={onRollback} />
+                <DeployCell row={row} onRedeploy={onRedeploy} />
             </span>
             <span className="changes" role="cell">
                 {items.map((item, i) => (
                     <ChangeLine key={i} item={item} entries={entries} />
                 ))}
+                {brandingChanged && <BrandingLine />}
                 {bannerChanged && <BannerLine />}
-                {items.length === 0 && !bannerChanged && (
+                {items.length === 0 && !bannerChanged && !brandingChanged && (
                     <span className="muted small">{t('history.noChanges')}</span>
                 )}
                 <span className={`meta${failed ? ' err' : ''}`}>

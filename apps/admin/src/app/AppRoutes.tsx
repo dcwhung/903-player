@@ -1,6 +1,6 @@
 /* 路由：同 GET /api/todos 嘅跳轉目標一致（/dramas/:id、/dramas/:id/arcs、/dramas/:id/schedule） */
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { BannerPage } from '../features/banner/BannerPage';
+import { AppearancePage } from '../features/appearance/AppearancePage';
 import { HistoryPage } from '../features/history/HistoryPage';
 import { DramaEditorPage } from '../features/dramas/DramaEditor';
 import { DramaList } from '../features/lists/DramaList';
@@ -23,7 +23,7 @@ export function AppRoutes() {
             <Route path="/dramas/:id/arcs" element={<DramaEditorPage tab="arcs" />} />
             <Route path="/dramas/:id/schedule" element={<DramaEditorPage tab="schedule" />} />
             <Route path="/dramas/:id/theme" element={<DramaEditorPage tab="theme" />} />
-            <Route path="/appearance" element={<BannerPage />} />
+            <Route path="/appearance" element={<AppearancePage />} />
             {/* 舊網址（2026-11-13 前叫「首頁 Banner」） */}
             <Route path="/banner" element={<Navigate to="/appearance" replace />} />
             <Route path="/history" element={<HistoryPage />} />

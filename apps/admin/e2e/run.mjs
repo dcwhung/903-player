@@ -1738,7 +1738,9 @@ const bannerCheck = (browser) =>
             await page.goto(`${BASE}/banner`);
             await page.waitForURL(`${BASE}/appearance`);
             await page.getByRole('heading', { level: 1, name: 'App 外觀' }).waitFor();
-            await page.getByText('內建預設').waitFor();
+            // 三張卡都係內建預設：淨係睇首頁 Banner 卡嗰個
+            const bannerCard = page.locator('.appearance-card', { hasText: '首頁 Banner' });
+            await bannerCard.getByText('內建預設').waitFor();
             await shoot(page, 'banner-default');
             const chooser = page.waitForEvent('filechooser');
             await page.getByRole('button', { name: '更換首頁 Banner', exact: true }).click();
@@ -1764,8 +1766,76 @@ const bannerCheck = (browser) =>
             const confirm = page.getByRole('dialog', { name: '還原首頁 Banner？' });
             await shoot(page, 'banner-restore-confirm');
             await confirm.getByRole('button', { name: '還原' }).click();
-            await page.getByText('內建預設').waitFor();
+            await bannerCard.getByText('內建預設').waitFor();
             if (state.banner !== null) throw new Error('banner not restored');
+            await page.close();
+        },
+    );
+
+const ICON_FIXTURE = fileURLToPath(new URL('./fixtures/lancy-disc.webp', import.meta.url));
+
+const brandingCheck = (browser) =>
+    check(
+        'App 外觀: change icon, rename app (confirm), restore, publish deploy note + status',
+        async () => {
+            const state = loggedIn();
+            const page = await newPage(browser, state);
+            await page.goto(`${BASE}/appearance`);
+            await page.getByRole('heading', { level: 1, name: 'App 外觀' }).waitFor();
+            // 三張卡：App 圖示 → 名稱與簡介 → 首頁 Banner
+            const headings = await page.getByRole('heading', { level: 2 }).allTextContents();
+            if (headings.join('|') !== 'App 圖示|名稱與簡介|首頁 Banner')
+                throw new Error(`card order: ${headings.join('|')}`);
+            await shoot(page, 'appearance');
+
+            // ① 更換 App 圖示（同一裁切）
+            const chooser = page.waitForEvent('filechooser');
+            await page.getByRole('button', { name: '更換 App 圖示', exact: true }).click();
+            await (await chooser).setFiles(ICON_FIXTURE);
+            const dialog = page.getByRole('dialog', { name: '更換 App 圖示' });
+            await dialog.getByRole('group', { name: '裝置' }).waitFor();
+            await shoot(page, 'appearance-icon-dialog');
+            await dialog.getByRole('button', { name: '上載' }).click();
+            await dialog.waitFor({ state: 'detached' });
+            if (!state.branding.icon || state.assets.length < 5)
+                throw new Error(`icon not saved: ${JSON.stringify(state.branding.icon)}`);
+            await page.getByText('自訂 · 未發佈').first().waitFor();
+            await shoot(page, 'appearance-icon');
+
+            // ② 改 App 名 → 確認
+            const name = page.getByLabel('App 名');
+            await name.fill('903 叱咤 Player Plus');
+            await page.getByRole('button', { name: '儲存名稱與簡介' }).click();
+            const rename = page.getByRole('dialog', { name: '更改 App 名？' });
+            await rename.getByText('903 叱咤 Player Plus').waitFor();
+            await shoot(page, 'appearance-rename');
+            await rename.getByRole('button', { name: '儲存' }).click();
+            await rename.waitFor({ state: 'detached' });
+            if (state.branding.text?.name !== '903 叱咤 Player Plus')
+                throw new Error(`text not saved: ${JSON.stringify(state.branding.text)}`);
+
+            // ③ 還原 App 圖示（確認）
+            await page.getByRole('button', { name: '還原 App 圖示' }).click();
+            const restore = page.getByRole('dialog', { name: '還原 App 圖示？' });
+            await restore.getByRole('button', { name: '還原' }).click();
+            await restore.waitFor({ state: 'detached' });
+            if (state.branding.icon !== null) throw new Error('icon not restored');
+
+            // ④ 發佈頁：App 外觀已更改 + 須重新部署提示
+            await page.goto(`${BASE}/publish`);
+            await page.getByText('App 外觀已更改').waitFor();
+            await page.getByText(/圖示、名稱及簡介須重新部署/).waitFor();
+            await shoot(page, 'appearance-publish');
+            await page.getByRole('button', { name: '發佈', exact: true }).click();
+            await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();
+
+            // ⑤ 部署狀態：triggered 行 poll → 已部署 + GitHub 連結
+            await page.getByText('已部署').waitFor();
+            await page
+                .getByRole('link', { name: /在 GitHub 查看/ })
+                .first()
+                .waitFor();
+            await shoot(page, 'appearance-deploy');
             await page.close();
         },
     );
@@ -1847,6 +1917,7 @@ try {
         r2AutoCropCheck,
         colourThemeCheck,
         bannerCheck,
+        brandingCheck,
         publishWarningsCheck,
         missingFolderCheck,
         actionIconsCheck,

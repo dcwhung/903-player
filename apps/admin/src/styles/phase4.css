@@ -583,3 +583,330 @@
     font-size: 13px;
     font-weight: 600;
 }
+
+/* ---------- App 外觀頁（App 圖示 + 名稱與簡介 + 首頁 Banner）---------- */
+/* Design Origin: mockup: _mockups_/admin-appearance/index.html#a / #b / #c */
+.appearance-stack {
+    display: grid;
+    gap: 16px;
+}
+
+.appearance-card .card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.appearance-card .card-head h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.appearance-card .card-head .pill {
+    margin-right: auto;
+}
+
+/* 圖示 / Banner 預覽：置中、平均用盡闊度 */
+.even {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 16px;
+    align-items: end;
+    justify-items: center;
+}
+
+.icon-prev {
+    display: grid;
+    gap: 8px;
+    justify-items: center;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+}
+
+.big-slot {
+    width: 128px;
+    height: 128px;
+    border-radius: 28px;
+    border: 1.5px dashed var(--media-border);
+    background: var(--surface-2) center / cover no-repeat;
+}
+
+.icon-prev .ios {
+    display: grid;
+    place-items: center;
+    width: 88px;
+    height: 88px;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.icon-prev .android {
+    display: grid;
+    place-items: center;
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.icon-prev .android.sq {
+    border-radius: 24px;
+}
+
+.icon-prev .ios img,
+.icon-prev .ios canvas,
+.icon-prev .android img,
+.icon-prev .android canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.icon-prev .android img,
+.icon-prev .android canvas {
+    width: 82%;
+    height: 82%;
+}
+
+.icon-prev .tab {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 7px 12px;
+    border-radius: 10px 10px 0 0;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.icon-prev .tab img,
+.icon-prev .tab canvas {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+}
+
+/* 更換 App 圖示 dialog */
+.icon-dialog .icon-editor {
+    display: grid;
+    gap: 14px;
+}
+
+.icon-devices {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.icon-dialog .seg {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 12px;
+    background: var(--surface-2);
+}
+
+.icon-dialog .seg button {
+    padding: 6px 14px;
+    border: 0;
+    border-radius: 9px;
+    background: none;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.icon-dialog .seg button[aria-pressed='true'] {
+    background: var(--surface);
+    color: var(--primary);
+    box-shadow: var(--shadow);
+}
+
+.icon-editor-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.icon-crop {
+    display: grid;
+    gap: 8px;
+}
+
+.icon-crop .src {
+    position: relative;
+    justify-self: start;
+    max-width: 100%;
+    line-height: 0;
+    touch-action: none;
+    user-select: none;
+}
+
+.icon-crop .src img {
+    display: block;
+    max-width: 100%;
+    max-height: 300px;
+    -webkit-user-drag: none;
+}
+
+.icon-crop .safe {
+    position: absolute;
+    inset: 10%;
+    border: 1.5px dashed var(--crop-frame);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.icon-side {
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+}
+
+.swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.swatches .sw {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 2px solid var(--surface);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px var(--line);
+    cursor: pointer;
+}
+
+.swatches .sw.on {
+    box-shadow: 0 0 0 2.5px var(--primary);
+}
+
+.icon-side .cap {
+    margin: 0 0 6px;
+    font-weight: 600;
+}
+
+/* 名稱與簡介卡 */
+.brand-form {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 12px 16px;
+    align-items: start;
+}
+
+.brand-form label {
+    padding-top: 8px;
+    font-weight: 600;
+}
+
+.brand-form .ctl {
+    display: grid;
+    gap: 4px;
+}
+
+.brand-form .hint.warn {
+    color: var(--warn-ink);
+}
+
+.brand-previews {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.share {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 10px;
+    max-width: 360px;
+    padding: 8px;
+    border-radius: 12px;
+    background: var(--share-bg);
+    font-size: 13px;
+}
+
+.share img {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.share b {
+    display: block;
+    color: var(--ink);
+}
+
+.share span {
+    color: var(--share-ink);
+}
+
+.home {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    width: 84px;
+    padding: 12px 4px;
+    border-radius: 16px;
+    background: var(--home-bg);
+    color: var(--on-home);
+    font-size: 12px;
+}
+
+.home img {
+    width: 56px;
+    height: 56px;
+    border-radius: 13px;
+}
+
+.home span {
+    max-width: 76px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 部署狀態 cell */
+.hist-row .deploy {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.hist-row .deploy a {
+    color: var(--accent-ink);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+@media (max-width: 760px) {
+    .icon-editor-body,
+    .brand-form {
+        grid-template-columns: 1fr;
+    }
+
+    .brand-form label {
+        padding-top: 0;
+    }
+
+    .even {
+        grid-auto-flow: row;
+        grid-template-columns: 1fr 1fr;
+    }
+}
