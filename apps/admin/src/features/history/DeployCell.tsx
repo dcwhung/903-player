@@ -15,7 +15,7 @@ interface DeployCellProps {
 }
 
 export function DeployCell({ row, onRedeploy }: DeployCellProps) {
-    const status = useDeployStatus(row.id, isTriggered(row));
+    const status = useDeployStatus(row.id, isTriggered(row), row.deployRequestedAt ?? null);
     const view = deployView(row.deploy, status);
     if (!view) return null;
     return (

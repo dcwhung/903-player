@@ -57,4 +57,24 @@ describe('DeployCell', () => {
             'https://gh/run/1',
         );
     });
+
+    it('should poll again after a redeploy of a triggered publish', async () => {
+        const results = [{ status: 'failure', url: 'https://gh/run/1' }];
+        const fetchMock = mockApi({
+            'GET /api/publishes/9/deploy': () => ({
+                body: results.shift() ?? { status: 'success', url: 'https://gh/run/2' },
+            }),
+        });
+        const first = row({ deploy: 'triggered', deployRequestedAt: '2026-11-13T01:00:00Z' });
+        const { rerender } = render(<DeployCell row={first} onRedeploy={vi.fn()} />);
+        await waitFor(() => expect(screen.getByText('部署失敗')).toBeInTheDocument());
+        rerender(
+            <DeployCell
+                row={{ ...first, deployRequestedAt: '2026-11-13T02:00:00Z' }}
+                onRedeploy={vi.fn()}
+            />,
+        );
+        await waitFor(() => expect(screen.getByText('已部署')).toBeInTheDocument());
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
 });
