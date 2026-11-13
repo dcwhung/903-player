@@ -3,8 +3,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { activeBanner } from '../../../../catalog/runtime';
 import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 import { t } from '../../../../i18n/t';
+import { bannerImages } from './bannerImages';
 import { bannerRule } from './bannerRules';
 import { FittedBanner } from './FittedBanner';
+import { resetBannerFallback } from './useBannerImages';
 
 vi.mock('../../../../catalog/runtime', () => ({ activeBanner: vi.fn() }));
 
@@ -21,6 +23,8 @@ const UNMEASURED = Number.NaN;
 const bannerImage = () => screen.getByRole('img', { name: t('home.bannerAlt') });
 
 describe('FittedBanner (Phase 4 L3)', () => {
+    beforeEach(() => resetBannerFallback());
+
     it('should fit the catalog image picked by bannerRule, loaded with CORS (S-926)', () => {
         vi.mocked(activeBanner).mockReturnValue(CATALOG_BANNER);
         const { image } = bannerRule(COUNT, MINI_PLAYER, UNMEASURED);
@@ -31,9 +35,10 @@ describe('FittedBanner (Phase 4 L3)', () => {
 
     it('should fall back to the built-in image when the catalog image fails (S-929)', () => {
         vi.mocked(activeBanner).mockReturnValue(CATALOG_BANNER);
+        const { image } = bannerRule(COUNT, MINI_PLAYER, UNMEASURED);
         render(<FittedBanner count={COUNT} miniPlayer={MINI_PLAYER} />);
         fireEvent.error(bannerImage());
-        expect(bannerImage().getAttribute('src')).not.toBe(CATALOG_BANNER.standard);
-        expect(bannerImage().getAttribute('src')).toMatch(/banner\.webp$/);
+        expect(bannerImage().getAttribute('src')).toBe(bannerImages({ builtIn: true })[image].src);
+        expect(bannerImage().getAttribute('src')).not.toBe(CATALOG_BANNER[image]);
     });
 });

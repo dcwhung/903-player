@@ -4,6 +4,7 @@ import { activeBanner } from '../../../../catalog/runtime';
 import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 import { t } from '../../../../i18n/t';
 import { CoverBanner } from './CoverBanner';
+import { resetBannerFallback } from './useBannerImages';
 
 vi.mock('../../../../catalog/runtime', () => ({ activeBanner: vi.fn() }));
 
@@ -15,6 +16,8 @@ const CATALOG_BANNER: CatalogBanner = {
 const bannerImage = () => screen.getByRole('img', { name: t('home.bannerAlt') });
 
 describe('CoverBanner (Phase 4 L3)', () => {
+    beforeEach(() => resetBannerFallback());
+
     it('should fill the wide-landscape cell with the catalog standard image, loaded with CORS', () => {
         vi.mocked(activeBanner).mockReturnValue(CATALOG_BANNER);
         render(<CoverBanner />);

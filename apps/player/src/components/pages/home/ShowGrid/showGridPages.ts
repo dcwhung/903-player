@@ -3,8 +3,8 @@
  * 格少（≤ 2）一欄，每格成個內容咁闊；多啲就兩欄（9 / 12 格都唔用 3 欄，格太細）。
  * 闊橫版（LANDSCAPE_QUERY）唔用呢度，CSS 排 4 欄 × 2 行
  */
-/** 最多兩欄 */
-const PORTRAIT_MAX_COLUMNS = 2;
+/** 最多兩欄（橫跨格嘅 CSS 後備比例跟呢個數，showGridCss.node.test.ts 鎖住） */
+export const PORTRAIT_MAX_COLUMNS = 2;
 /** 幾多格先轉兩欄 */
 const PORTRAIT_MULTI_COLUMN_MIN_TILES = 3;
 

@@ -302,7 +302,7 @@ const checkMissingBanner = async (env, json) => {
  * S-929：跨 origin banner 嘅 CORS 唔批 player origin（<img crossorigin> 載入失敗）→ 換返內建圖。
  * 唔可以答「冇 CORS header」：Playwright route.fulfill 冇 header 會自動當批准，圖照載入到
  */
-const checkBannerWithoutCors = async (env, json) => {
+const checkBannerCorsRejected = async (env, json) => {
     const { ctx, p } = await openWithCatalog(env, {
         catalogBody: crossOriginDocument(env.base, json),
     });
@@ -426,5 +426,5 @@ export const runRemoteCatalogChecks = async (env) => {
     await section('Remote catalog：v1 進度升級', () => checkMigration(env, json));
     await section('Remote catalog：跨 origin 圖（CORS）', () => checkCrossOriginImages(env, json));
     await section('Remote catalog：banner 圖 404', () => checkMissingBanner(env, json));
-    await section('Remote catalog：banner CORS 唔批', () => checkBannerWithoutCors(env, json));
+    await section('Remote catalog：banner CORS 唔批', () => checkBannerCorsRejected(env, json));
 };
