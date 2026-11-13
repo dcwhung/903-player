@@ -49,7 +49,7 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
 
                 // ② 確認發佈：今次項目 + 未完成；reload 照用 URL 嘅選擇
                 const card = page.getByRole('region', { name: '本次發佈' });
-                await card.getByText('新短篇 · 蘭茜夫人劇場 › 戀愛後二分一').waitFor();
+                await card.getByText('新短篇 · 蘭茜夫人劇場 › 戀愛後二分一（20 集）').waitFor();
                 await page.reload();
                 await card.getByText('以下項目尚未完成，不會在本次發佈').waitFor();
                 if ((await card.getByText('App 外觀 · 名稱與簡介').count()) > 0)

@@ -5,10 +5,10 @@
  */
 import type { ChangeItem } from '@903-player/catalog';
 import { RefreshCw, TriangleAlert } from 'lucide-react';
-import type { ChangesResponse, PublishSelection, TodoRow } from '../../api/types';
+import type { ChangesResponse, LoadedEntry, PublishSelection, TodoRow } from '../../api/types';
 import { t, type MessageKey } from '../../i18n/t';
 import { itemName, kindLabel } from './timelineModel';
-import { displayName, missingOf } from './todoModel';
+import { displayName, episodesOf, missingOf } from './todoModel';
 import { pickedAppearance, type AppearanceItem } from './selectionModel';
 
 const APPEARANCE_LABEL: Record<AppearanceItem, MessageKey> = {
@@ -21,6 +21,16 @@ const otherLabel = (item: ChangeItem): string => {
     const entry = item.entry?.name;
     const name = item.arc && entry ? `${entry} › ${itemName(item)}` : itemName(item);
     return `${kindLabel(item.kind)} · ${name}`;
+};
+
+/** 「新短篇 · 劇名 › 短篇名（N 集）」；集數未知（entries 未載入）就唔加 */
+const contentLabel = (row: TodoRow, entries: readonly LoadedEntry[]): string => {
+    const kind = t(row.kind === 'newDrama' ? 'kind.newDrama' : 'kind.newArc');
+    const name = displayName(row);
+    const count = episodesOf(row, entries);
+    return count === undefined
+        ? t('publish.selectionContent', { kind, name })
+        : t('publish.selectionContentEpisodes', { kind, name, count });
 };
 
 const incompleteLabel = (row: TodoRow): string => {
@@ -39,9 +49,10 @@ interface SelectionCardProps {
     data: ChangesResponse;
     selection: PublishSelection;
     rows: readonly TodoRow[];
+    entries: readonly LoadedEntry[];
 }
 
-function PickedList({ data, selection, rows }: SelectionCardProps) {
+function PickedList({ data, selection, rows, entries }: SelectionCardProps) {
     const content = new Set(data.selection?.content ?? selection.content);
     const picked = rows.filter((row) => content.has(row.key));
     const appearance = pickedAppearance(selection).filter((item) => data.appearance?.[item]);
@@ -51,12 +62,7 @@ function PickedList({ data, selection, rows }: SelectionCardProps) {
     return (
         <ul className="plain">
             {picked.map((row) => (
-                <li key={row.key}>
-                    {t('publish.selectionContent', {
-                        kind: t(row.kind === 'newDrama' ? 'kind.newDrama' : 'kind.newArc'),
-                        name: displayName(row),
-                    })}
-                </li>
+                <li key={row.key}>{contentLabel(row, entries)}</li>
             ))}
             {appearance.map((item) => (
                 <li key={item}>

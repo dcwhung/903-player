@@ -29,6 +29,7 @@ describe('AppearanceSection', () => {
         // 圖示還原咗（草稿 null）= 內建預設；名稱與簡介有自訂
         expect(await screen.findByText('內建預設 · 未發佈')).toBeInTheDocument();
         expect(screen.getByText('自訂 · 未發佈')).toBeInTheDocument();
+        expect(screen.getAllByText('發佈後會自動重新部署播放器')).toHaveLength(2);
     });
 
     it('should render nothing when no appearance item changed', () => {

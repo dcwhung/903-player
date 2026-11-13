@@ -7,13 +7,13 @@ import { CalendarDays, FileText, Folder, Hash, Image, type LucideIcon } from 'lu
 import { Link, useNavigate } from 'react-router-dom';
 import type { LoadedEntry, TodoColumn, TodoRow } from '../../api/types';
 import { t } from '../../i18n/t';
-import { arcsOf, countOf, totalEpisodes } from '../../model/raw';
 import { rowClickTo } from '../lists/rowClick';
 import { MatrixCell } from './MatrixCell';
 import { PublishCell } from './PublishCell';
 import {
     TODO_COLUMNS,
     columnLabel,
+    episodesOf,
     rowMeta,
     rowTarget,
     splitName,
@@ -27,14 +27,6 @@ const COLUMN_ICON: Record<TodoColumn, LucideIcon> = {
     images: Image,
     schedule: CalendarDays,
     summary: FileText,
-};
-
-const episodesOf = (row: TodoRow, entries: readonly LoadedEntry[]): number | undefined => {
-    const drama = entries.find((e) => e.kind === 'dramas' && e.id === row.dramaId);
-    if (!drama) return undefined;
-    if (row.arcId === null) return totalEpisodes(drama.definition);
-    const arc = arcsOf(drama.definition).find((a) => a.id === row.arcId);
-    return arc ? countOf(arc) : undefined;
 };
 
 /* 設定完成的行唔再變淡（選擇發佈：佢哋正係今次會發佈嘅行，mockup 冇淡化） */

@@ -5,7 +5,7 @@
  * 409 → 擋住清單（#s9）；驗證錯誤 / 配色警告（admin-phase4 #f）；422 未知 key → 頁面過時（重新載入）
  */
 import { useEffect } from 'react';
-import type { ChangesResponse } from '../../api/types';
+import type { ChangesResponse, LoadedEntry } from '../../api/types';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
 import { PublishActions } from './PublishActions';
@@ -33,6 +33,31 @@ const canPublishOf = (data: ChangesResponse | undefined): boolean => {
     );
 };
 
+interface ChangesCardProps {
+    data: ChangesResponse | undefined;
+    entries: readonly LoadedEntry[];
+    loading: boolean;
+}
+
+/** 時間線；冇內容改動就講只改咗 Banner / App 外觀（或者冇嘢發佈） */
+function ChangesCard({ data, entries, loading }: ChangesCardProps) {
+    return (
+        <div className="card">
+            {data && data.changes.timeline.length > 0 ? (
+                <Timeline groups={data.changes.timeline} entries={entries} />
+            ) : (
+                <p className="muted">
+                    {emptyText(
+                        loading,
+                        data?.bannerChanged === true,
+                        data?.brandingChanged === true,
+                    )}
+                </p>
+            )}
+        </div>
+    );
+}
+
 export function PublishPage() {
     const { changes, entries, todos } = useAdminData();
     const { reload } = changes;
@@ -55,23 +80,16 @@ export function PublishPage() {
             )}
             {data && <PublishHead data={data} entries={entries.data ?? []} />}
             {data && selection && (
-                <SelectionCard data={data} selection={selection} rows={todos.data?.rows ?? []} />
+                <SelectionCard
+                    data={data}
+                    selection={selection}
+                    rows={todos.data?.rows ?? []}
+                    entries={entries.data ?? []}
+                />
             )}
             {/* 過時：唔顯示「沒有需要發佈的變更」，免得誤會 */}
             {!stale && (
-                <div className="card">
-                    {data && data.changes.timeline.length > 0 ? (
-                        <Timeline groups={data.changes.timeline} entries={entries.data ?? []} />
-                    ) : (
-                        <p className="muted">
-                            {emptyText(
-                                selected.loading,
-                                data?.bannerChanged === true,
-                                data?.brandingChanged === true,
-                            )}
-                        </p>
-                    )}
-                </div>
+                <ChangesCard data={data} entries={entries.data ?? []} loading={selected.loading} />
             )}
             <PublishActions
                 state={state}

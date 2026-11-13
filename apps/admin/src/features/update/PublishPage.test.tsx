@@ -4,7 +4,13 @@ import { fakeData, renderAt, resource } from '../../../tests/renderApp';
 import { ValidationError } from '../../api/client';
 import { getChanges, publish } from '../../api/publishEndpoints';
 import type { ChangeItem } from '@903-player/catalog';
-import type { ChangesResponse, PublishSummary, PublishWarning, TodoRow } from '../../api/types';
+import type {
+    ChangesResponse,
+    LoadedEntry,
+    PublishSummary,
+    PublishWarning,
+    TodoRow,
+} from '../../api/types';
 import { PublishPage } from './PublishPage';
 
 vi.mock('../../api/publishEndpoints', async (importOriginal) => ({
@@ -173,9 +179,19 @@ describe('PublishPage', () => {
             others: { items: [EDIT], timeline: [] },
             selection: { content: SELECTION.content, skipped: [] },
         });
+        const LANCY: LoadedEntry = {
+            kind: 'dramas',
+            id: 'lancy',
+            definition: { name: '蘭茜夫人劇場', arcs: [{ id: 'love-after', episodes: 20 }] },
+            images: {},
+            draft: false,
+            updatedAt: 'v1',
+            etag: '"v1"',
+        };
         const data = () =>
             fakeData({
                 todos: resource({ rows: ROWS, blocking: 1 }),
+                entries: resource([LANCY]),
                 changes: resource(changesOf({ appearance: SELECTED.appearance })),
             });
         const open = (over: Partial<ChangesResponse> = {}) => {
@@ -192,7 +208,7 @@ describe('PublishPage', () => {
             open();
             const card = await screen.findByRole('region', { name: '本次發佈' });
             expect(getChanges).toHaveBeenLastCalledWith(SELECTION);
-            expect(card).toHaveTextContent('新短篇 · 蘭茜夫人劇場 › 戀愛後二分一');
+            expect(card).toHaveTextContent('新短篇 · 蘭茜夫人劇場 › 戀愛後二分一（20 集）');
             expect(card).toHaveTextContent('App 外觀 · 名稱與簡介');
             expect(card).toHaveTextContent('其他已儲存的改動');
             expect(card).toHaveTextContent('修改 · 口水多過浪花');
