@@ -2,7 +2,8 @@
  * 更新 · 確認發佈：Design Origin: mockup: _mockups_/admin/index.html#u3（結構）+
  * mockup: _mockups_/admin-style/index.html#a（漸變統計卡）。
  * 統計卡 + 數量 pill + 驗證 ✓ pill（hover 睇數字）+ 時間線 + 大「發佈」掣；409 → 擋住清單（#s9）
- * Phase 4（mockup: _mockups_/admin-phase4/index.html#f）：配色警告（PublishWarnings）、首頁 Banner 改咗都算有變更
+ * Phase 4（mockup: _mockups_/admin-phase4/index.html#f）：驗證錯誤（PublishError，中文 + 前往 Banner 頁）、
+ * 配色警告（PublishWarnings）、首頁 Banner 改咗都算有變更
  */
 import { CirclePlus, EyeOff, ListPlus, PencilLine } from 'lucide-react';
 import { useEffect } from 'react';
@@ -11,6 +12,7 @@ import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
 import { Pill } from '../../ui/Pill';
 import { PublishActions } from './PublishActions';
+import { PublishError } from './PublishError';
 import { PublishWarnings } from './PublishWarnings';
 import { Stepper } from './Stepper';
 import { Timeline } from './Timeline';
@@ -83,7 +85,7 @@ function PublishHead({ data, entries }: { data: ChangesResponse; entries: Loaded
                 </div>
                 <ValidationPill validation={data.validation} />
             </div>
-            {!data.validation.ok && <p className="note bad">{data.validation.error}</p>}
+            {!data.validation.ok && <PublishError error={data.validation.error} />}
             <PublishWarnings
                 warnings={data.warnings ?? []}
                 entries={entries}

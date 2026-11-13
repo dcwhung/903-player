@@ -1767,7 +1767,7 @@ const publishWarningsCheck = (browser) =>
     check('publish: 配色 warnings fold into one line, expand with links', async () => {
         const page = await newPage(browser, loggedIn({ warnings: true }));
         await page.goto(`${BASE}/publish`);
-        await page.getByText('3 項配色對比度警告（不影響發佈）').waitFor();
+        await page.getByText('3 項配色警告（不影響發佈）').waitFor();
         await shoot(page, 'publish-warnings');
         await page.getByRole('button', { name: '展開' }).click();
         const list = page.getByRole('list', { name: '配色警告' });

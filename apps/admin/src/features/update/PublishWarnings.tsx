@@ -1,6 +1,6 @@
 /*
  * 發佈前配色警告（唔阻發佈）：Design Origin: mockup: _mockups_/admin-phase4/index.html#f
- * 淨係警告 → 一行摘要「N 項配色對比度警告（不影響發佈）」+「展開」；有驗證錯誤 → 全部展開（Q12）。
+ * 淨係警告 → 一行摘要「N 項配色警告（不影響發佈）」（對比度 + 未設定配色一齊數）+「展開」；有驗證錯誤 → 全部展開（Q12）。
  * 每行有「前往修改 / 前往選擇」去對應配色
  */
 import { TriangleAlert } from 'lucide-react';

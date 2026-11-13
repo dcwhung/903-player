@@ -563,6 +563,11 @@
     color: var(--warn-ink);
 }
 
+.issues.bad li {
+    background: var(--danger-bg);
+    color: var(--danger-ink);
+}
+
 .issues li small {
     display: block;
     font-size: 12px;

@@ -16,6 +16,9 @@ const WARNINGS: PublishWarning[] = [
     },
 ];
 
+/** api catalog/publish.ts resolveImages 嘅真實錯誤格式 */
+const BANNER_ERROR = 'banner: image long → 0123456789abcdef.webp not uploaded';
+
 const changesOf = (over: Partial<ChangesResponse> = {}): ChangesResponse => ({
     base: 1,
     changes: { items: [], timeline: [] },
@@ -31,7 +34,7 @@ const show = (changes: ChangesResponse) =>
 describe('PublishPage', () => {
     it('should fold warnings into one summary line that still lets you publish', async () => {
         show(changesOf({ warnings: WARNINGS, bannerChanged: true }));
-        expect(screen.getByText('2 項配色對比度警告（不影響發佈）')).toBeInTheDocument();
+        expect(screen.getByText('2 項配色警告（不影響發佈）')).toBeInTheDocument();
         expect(screen.queryByRole('list', { name: '配色警告' })).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: '發佈' })).toBeEnabled();
         await userEvent.click(screen.getByRole('button', { name: '展開' }));
@@ -48,13 +51,41 @@ describe('PublishPage', () => {
         show(
             changesOf({
                 warnings: WARNINGS,
-                validation: { ok: false, error: '首頁 Banner 不完整' },
+                validation: { ok: false, error: BANNER_ERROR },
                 changes: { items: [], timeline: [] },
             }),
         );
         expect(screen.getByRole('list', { name: '配色警告' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: '展開' })).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: '發佈' })).toBeDisabled();
+    });
+
+    it('should explain a banner validation error in Chinese with a link to the Banner page', () => {
+        show(changesOf({ validation: { ok: false, error: BANNER_ERROR }, warnings: [] }));
+        const errors = screen.getByRole('list', { name: '錯誤' });
+        expect(errors).toHaveTextContent('首頁 Banner 不完整：缺少闊版（2000 × 400）');
+        expect(errors).toHaveTextContent('請重新更換 Banner，或還原預設');
+        expect(within(errors).getByRole('link', { name: '前往 Banner 頁' })).toHaveAttribute(
+            'href',
+            '/banner',
+        );
+        expect(screen.queryByText(BANNER_ERROR)).not.toBeInTheDocument();
+    });
+
+    it('should fall back to the original text for an error it cannot explain', () => {
+        const error = 'dramas/lancy: image tile.webp → 0123456789abcdef.webp not uploaded';
+        show(changesOf({ validation: { ok: false, error } }));
+        const errors = screen.getByRole('list', { name: '錯誤' });
+        expect(errors).toHaveTextContent(error);
+        expect(within(errors).queryByRole('link')).not.toBeInTheDocument();
+    });
+
+    it('should link an unexplained banner error to the Banner page with the original text', () => {
+        const error = 'catalog.json: banner has an unknown key "wide"';
+        show(changesOf({ validation: { ok: false, error } }));
+        const errors = screen.getByRole('list', { name: '錯誤' });
+        expect(errors).toHaveTextContent(error);
+        expect(within(errors).getByRole('link', { name: '前往 Banner 頁' })).toBeInTheDocument();
     });
 
     it('should count a banner-only change as something to publish', () => {
