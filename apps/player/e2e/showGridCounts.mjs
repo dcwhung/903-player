@@ -17,6 +17,11 @@ const TABLET_PORTRAIT = { width: 820, height: 1180 };
 const GRID_WAIT_MS = 5000;
 /** subpixel 捨入容差 */
 const EDGE_TOLERANCE_PX = 2;
+/**
+ * 未量到（CSS 16:9）橫跨格同其他格比高嘅容差（S-941）：CSS 計數，淨係 subpixel 捨入；
+ * 舊兩倍比例公式喺手機只差 3.4px（欄距 12px × 9 / 32），2px 太鬆
+ */
+const UNFILLED_SPAN_TOLERANCE_PX = 0.5;
 /** 內建 7 個節目都唔夠 11 個：借第一個節目（definition + 圖）整假節目 */
 const CLONE_PREFIX = 'e2e-show-';
 
@@ -97,7 +102,7 @@ const measureGrid = (p) =>
         { nav: SHOWS_NAV, today: TODAY_LABEL },
     );
 
-const near = (a, b) => Math.abs(a - b) <= EDGE_TOLERANCE_PX;
+const near = (a, b, tolerance = EDGE_TOLERANCE_PX) => Math.abs(a - b) <= tolerance;
 
 /**
  * S-935：扮未量到（每頁拎走 data-fill 同 inline 行高，格返用 CSS 16:9），橫跨嘅今日節目要同第一格一樣高
@@ -161,7 +166,7 @@ const checkCount = async (
     if (span) {
         const u = await measureUnfilledSpan(p);
         log(
-            u.tileHeight > 0 && near(u.todayHeight, u.tileHeight),
+            u.tileHeight > 0 && near(u.todayHeight, u.tileHeight, UNFILLED_SPAN_TOLERANCE_PX),
             `${label}：未量到時橫跨嘅今日節目都同 16:9 格一樣高` +
                 `（${u.todayHeight.toFixed(1)} / ${u.tileHeight.toFixed(1)}px，S-935）`,
         );

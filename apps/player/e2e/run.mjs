@@ -18,6 +18,7 @@ import { runShowGridCountChecks } from './showGridCounts.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
 import {
     AUDIO_HOST,
+    BANNER_ALT,
     PROBE_STORAGE_KEY,
     SHOT,
     ensurePlaying,
@@ -112,8 +113,6 @@ const startPreview = async () => {
     server.kill();
     throw new Error('vite preview did not start');
 };
-
-const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 
 /** index.html 嘅啟動畫面：顯示 package.json 版本，app render 完之後淡出再由 DOM 移走 */
 const checkSplashRemoved = async (p) => {

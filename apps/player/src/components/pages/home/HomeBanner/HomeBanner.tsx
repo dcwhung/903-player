@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
 import { WIDE_BANNER_QUERY } from '../../../../config/layout';
 import { t } from '../../../../i18n/t';
-import { bannerImages } from '../HomeLandscapeGrid/bannerImages';
+import { useBannerImages } from '../HomeLandscapeGrid/useBannerImages';
 import styles from './HomeBanner.module.css';
 
 interface HomeBannerProps {
@@ -27,9 +27,9 @@ export const HomeBanner = ({ corner, art, fill = false }: HomeBannerProps) => (
     </div>
 );
 
-/** 預設 <picture>：窄版 + 橫版成行換闊版 */
+/** 預設 <picture>：窄版 + 橫版成行換闊版；catalog 圖載入失敗兩張一齊換返內建圖（S-929） */
 const DefaultArt = () => {
-    const images = bannerImages();
+    const { images, onError } = useBannerImages();
     return (
         <picture>
             <source media={WIDE_BANNER_QUERY} srcSet={images.long.src} />
@@ -38,6 +38,7 @@ const DefaultArt = () => {
                 src={images.standard.src}
                 alt={t('home.bannerAlt')}
                 crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
+                onError={onError}
             />
         </picture>
     );

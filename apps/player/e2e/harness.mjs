@@ -254,6 +254,12 @@ export const SHOT = { animations: 'disabled' };
 export const PHONE = { width: 390, height: 844 };
 
 /**
+ * 主頁橫額 <img> 嘅 alt（同 src/i18n/zh-HK.ts home.bannerAlt；刻意寫死做獨立對照）。
+ * run.mjs 同 remoteCatalog.mjs 共用，唔好各自抄（S-928）
+ */
+export const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
+
+/**
  * 開一個手機尺寸（PHONE、深色）嘅 e2e context 同 page，page 嘅 JS error 收入 errors。
  * contextOptions 蓋過預設（例如 hasTouch）；clock 傳畀 newE2EContext（例如 { now }）
  */
