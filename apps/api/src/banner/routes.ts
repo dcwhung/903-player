@@ -1,12 +1,14 @@
 /*
  * /api/banner（Phase 4）：首頁 banner 兩張圖（窄 1200×517 + 闊 2000×400），已經過 same-origin + session 守門。
  * 同 entries 一樣係「草稿」：PUT / DELETE 只改 D1，POST /api/publish 先寫入 catalog.json。
- * PUT 驗：兩張都要、檔名 <hash>.webp、已上載（assets）、R2 WebP header 嘅尺寸啱嗰個 slot
+ * PUT 驗：兩張都要、檔名 <hash>.webp、已上載（assets + R2 有 object）、R2 WebP header 嘅尺寸啱嗰個 slot。
+ * 尺寸只 range get 頭 WEBP_HEADER_BYTES bytes（S-901；上載時已經用 parseWebp 驗過成個檔）
  */
 import { ASSET_DIMENSIONS, type AssetSize } from '@903-player/catalog';
 import { Hono, type Context } from 'hono';
 import type { AppEnv } from '../app';
-import { parseWebp, WebpError } from '../assets/webp';
+import { hashOfImageName } from '../assets/imageName';
+import { parseWebpHeader, WEBP_HEADER_BYTES, WebpError } from '../assets/webp';
 import { CATALOG_IMAGE_KEY_PREFIX, HTTP_STATUS, IMAGE_FILE_PATTERN } from '../config';
 import { hasAsset } from '../catalog/store';
 import { errorResponse, readJsonObject } from '../content/http';
@@ -26,14 +28,21 @@ const view = (stored: StoredBanner | null) =>
 
 const sizeLabel = ({ width, height }: AssetSize) => `${width}×${height}`;
 
-/** R2 圖嘅闊高；冇呢個 object 或者唔係 WebP → null */
-const storedSize = async (bucket: R2Bucket, name: string): Promise<AssetSize | null> => {
-    const object = await bucket.get(`${CATALOG_IMAGE_KEY_PREFIX}${name}`);
-    if (!object) return null;
+/** storedSize 讀唔到尺寸嘅原因：R2 冇呢個 object / 有但唔係 WebP（S-902 分開報） */
+const MISSING = 'missing';
+const INVALID = 'invalid';
+type StoredSize = AssetSize | typeof MISSING | typeof INVALID;
+
+/** R2 圖嘅闊高：只讀頭部（range get，S-901） */
+const storedSize = async (bucket: R2Bucket, name: string): Promise<StoredSize> => {
+    const object = await bucket.get(`${CATALOG_IMAGE_KEY_PREFIX}${name}`, {
+        range: { offset: 0, length: WEBP_HEADER_BYTES },
+    });
+    if (!object) return MISSING;
     try {
-        return parseWebp(new Uint8Array(await object.arrayBuffer()));
+        return parseWebpHeader(new Uint8Array(await object.arrayBuffer()));
     } catch (error) {
-        if (error instanceof WebpError) return null;
+        if (error instanceof WebpError) return INVALID;
         throw error;
     }
 };
@@ -46,9 +55,10 @@ const slotProblem = async (
 ): Promise<string | undefined> => {
     if (!IMAGE_FILE_PATTERN.test(name) || !name.endsWith('.webp'))
         return `${key}: ${name} is not <hash>.webp`;
-    if (!(await hasAsset(env.DB, name.split('.')[0] ?? ''))) return `${key}: ${name} not uploaded`;
+    if (!(await hasAsset(env.DB, hashOfImageName(name)))) return `${key}: ${name} not uploaded`;
     const actual = await storedSize(env.CATALOG, name);
-    if (!actual) return `${key}: ${name} not uploaded`;
+    if (actual === MISSING) return `${key}: ${name} not uploaded`;
+    if (actual === INVALID) return `${key}: ${name} is not a valid WebP`;
     if (actual.width !== size.width || actual.height !== size.height)
         return `${key}: ${name} is ${sizeLabel(actual)}; must be ${sizeLabel(size)}`;
     return undefined;
