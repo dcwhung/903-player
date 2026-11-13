@@ -121,6 +121,8 @@ describe('ShowEditor', () => {
             }),
         });
         const row = {
+            key: 'newDrama/waves',
+            publish: 'incomplete' as const,
             kind: 'newDrama' as const,
             findingIds: [1],
             dramaId: 'waves',

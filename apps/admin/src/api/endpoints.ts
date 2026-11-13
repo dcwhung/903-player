@@ -4,7 +4,6 @@ import { ApiError, errorOf, readJson, request } from './client';
 import type {
     BannerImages,
     BannerResponse,
-    ChangesResponse,
     DramaScanResponse,
     DramaSources,
     EntryDetail,
@@ -95,15 +94,6 @@ export const rescanDrama = async (id: string) =>
 
 export const putOrder = (kind: EntryKind, ids: string[]) =>
     request(`/api/order/${kind}`, { method: 'PUT', body: { ids } });
-
-export const getChanges = async () => (await request<ChangesResponse>('/api/changes')).data;
-
-export const publish = async () =>
-    (
-        await request<{ unchanged?: boolean; publish: PublishSummary }>('/api/publish', {
-            method: 'POST',
-        })
-    ).data;
 
 export const listPublishes = async () =>
     (await request<{ publishes: PublishSummary[] }>('/api/publishes')).data.publishes;
