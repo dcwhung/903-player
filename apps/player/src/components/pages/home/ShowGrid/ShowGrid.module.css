@@ -82,10 +82,15 @@
     );
 }
 
-/* 唔支援 cqi 嘅舊瀏覽器：退返用欄數倍比例（差欄距 × 9 / 32），起碼唔會高過其他格一倍 */
+/*
+ * 唔支援 cqi 嘅舊瀏覽器：退返用兩欄倍比例（差欄距 × 9 / 32），起碼唔會高過其他格一倍。
+ * 寫死 32 / 9（= 2 × --tile-aspect-w / --tile-aspect-h，即 2 × 16 / 9，S-939）：橫跨只會喺兩欄出現；
+ * 舊 iOS 嘅 aspect-ratio 唔一定接受 calc() / var()，成句無效就變 auto（格內容全部 absolute → 縮到 0 高）。
+ * 同 HomeBanner.module.css .image 一樣做法；改 tile token 要同步改呢度
+ */
 @supports not (width: 1cqi) {
     .grid:not([data-fill])[data-span-last] > :last-child {
-        aspect-ratio: calc(var(--show-grid-columns) * var(--tile-aspect-w)) / var(--tile-aspect-h);
+        aspect-ratio: 32 / 9;
         height: auto;
     }
 }

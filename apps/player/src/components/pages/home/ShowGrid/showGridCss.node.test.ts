@@ -79,15 +79,22 @@ describe('ShowGrid portrait span (dynamic-show-grid)', () => {
         },
     );
 
-    // 唔支援 cqi 嘅舊瀏覽器：退返用比例（欄距差少少），欄數照跟 inline --show-grid-columns
-    it('should fall back to a column-count ratio where cqi is not supported', () => {
-        expect(
-            atRuleDeclarations(
-                css,
-                '@supports not (width: 1cqi)',
-                '.grid:not([data-fill])[data-span-last] > :last-child',
-            )['aspect-ratio'],
-        ).toBe('calc(var(--show-grid-columns) * var(--tile-aspect-w)) / var(--tile-aspect-h)');
+    /*
+     * 唔支援 cqi 嘅舊瀏覽器：退返用兩欄倍比例（欄距差少少；橫跨只會喺兩欄出現）。
+     * S-939：寫字面值，唔用 calc() / var()（舊 iOS 嘅 aspect-ratio 唔一定收，無效就變 auto 縮到 0 高）；
+     * 數值要等於 2 × tile token 比例，改 token 呢度會 fail
+     */
+    it('should fall back to a literal two-column ratio where cqi is not supported', () => {
+        const ratio = atRuleDeclarations(
+            css,
+            '@supports not (width: 1cqi)',
+            '.grid:not([data-fill])[data-span-last] > :last-child',
+        )['aspect-ratio'];
+        expect(ratio).toMatch(/^\d+ \/ \d+$/);
+        const [w, h] = (ratio ?? '').split(' / ').map(Number);
+        const root = cssDeclarations(tokens, ':root');
+        const tileRatio = Number(root['--tile-aspect-w']) / Number(root['--tile-aspect-h']);
+        expect(Number(w) / Number(h)).toBeCloseTo(2 * tileRatio);
     });
 
     it('should never span a tile in the wide-landscape 4-column grid', () => {
