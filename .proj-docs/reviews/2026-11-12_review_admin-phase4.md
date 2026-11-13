@@ -105,3 +105,68 @@ next_action: invoke developer to fix W-724 / W-725 / W-726 (one commit each), th
 context: R2 auto-crop flow, limits, theme preservation, banner two-step and Motion verified. Warnings are a vacuous S-817 Esc test (mutation survives), untested 412 retry / crop drag, and publish error state diverging from mockup #f. No full suite / e2e run. Report committed locally, not pushed.
 report: .proj-docs/reviews/2026-11-12_review_admin-phase4.md (committed, not pushed)
 ```
+
+---
+
+## Re-review（2026-11-13 00:23）
+
+- 目標：`feature/admin-phase4` @ `8d2ce42`，只驗 `7d77877..8d2ce42`（11 commits，38 files，+976 / −88）
+- Hard gates：all pass —— `npx eslint apps/admin packages/catalog`、`npx prettier --check apps/admin packages/catalog`、`npx tsc -b apps/admin packages/catalog` 全部 exit 0；`npx vitest run <12 個改動 admin test 檔>` → 12 files / 84 tests pass；`packages/catalog` `npx vitest run src/core src/theme` → 8 files / 329 tests pass；冇跑 full suite / e2e（Hard Rule #7）
+- Coverage（lines）：`useEntryEditor` 98.2%、`useCropDrag` 100%（branches 100%）、`useR2AutoCrop` 100%、`useModalKeys` 90.7%、`validationMessage` 100%、`ChoiceCanvas` 100%、`CropCandidates` 92.3%、`useBannerFlow` 97.9%
+
+| ID                 | 狀態    | 驗證                                                                                                                                                                                                                                              |
+| ------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-724              | ✅ 已修 | `efd6a6b`：locked 時 focus 移去 dialog、Tab 唔走出去。Mutation：`useModalKeys.ts` Esc 拆走 `!locked` → `ImageSlot.test.tsx`「should keep the dialog open on Esc while uploading (S-817)」**fail**（1 failed / 10 passed），已 `git checkout` 還原 |
+| focus 還原（Obs.） | ✅ 已修 | `e9a16a4`：`returnFocus` ref；test「should return focus to the slot button when the dialog closes」pass                                                                                                                                           |
+| W-725              | ✅ 已修 | `e175110`：`useEntryEditor.test` 412 → 重讀 → 新 ETag 再 PUT、兩次 412 回 `false`、連續 patch 用上一次 ETag；`useCropDrag.test` 方向鍵 / + / − / 拖框 / 角位縮放 / locked                                                                         |
+| W-726              | ✅ 已修 | `d2608c2`：`PublishError` 同 mockup #f（`.issues.bad`、中文、`<small>` 提示、「前往 Banner 頁」）一致；用 api 真實錯誤格式 test；摘要改「N 項配色警告」，e2e 文字同步                                                                             |
+| S-910              | ✅ 已修 | `abad6c7`：`ChoiceCanvas` rAF + 只跟 mode / box 數值；fit 款唔跟框；候選拖緊停喺撳落前嘅框，放手先畫（`ChoiceCanvas.test`、`CropEditor.test`）                                                                                                    |
+| S-911              | ✅ 已修 | `7be3549`：`retry` = 忘記試過（做緊嘅除外）再行；test 覆蓋重掃後再試同做緊唔重複                                                                                                                                                                  |
+| S-912              | ✅ 已修 | `434ef32`：手動上載後收起 auto note（status object 由 state 保存，identity 穩定）                                                                                                                                                                 |
+| S-913              | ✅ 已修 | `906b2cb`：未裁好回 `banner.notReady`，唔寫唔 toast；`useBannerFlow.test`                                                                                                                                                                         |
+| S-914              | ✅ 已修 | `ffec117`：兩個掣 `aria-label` 分窄版 / 闊版                                                                                                                                                                                                      |
+| S-915              | ✅ 已修 | `c019e93`：`NEAR_BLACK = NEUTRAL_THEME.bg`；regression test 用 `THEME_COLOUR_KEYS`                                                                                                                                                                |
+| S-892              | ✅ 已修 | `8d2ce42`：`packages/catalog/src/core/hexColour.ts` 一條 pattern，reader / contrast 共用；`hexColour.test.ts`                                                                                                                                     |
+
+### Developer 待判斷
+
+- (a) S-915 由 admin `model/theme` import `THEME_COLOUR_KEYS`：test 嘅做法冇問題（admin 入面已經係唯一一份）。但 `model/theme.ts:13` 自己註明「同 packages/catalog themeSchema COLOUR_KEYS」，即係 admin 同 catalog（`themeSchema.ts:15`，冇 export）各有一份 10 色清單，同 S-892 一樣係跨 package 重複 → 開 **S-916**
+- (b) `persistPatch` PUT body 帶 `kind` / `id` / `draft` / `updatedAt` / `etag`：**唔使修**。api `content/entries.ts:200-202` 只讀 `body.definition` / `body.images`，其他欄位唔會寫入 D1；client 嘅 `savedEntry` 先 spread entry 再 spread draft，兩者喺重試時都係同一個重讀版本，`draft` / `updatedAt` / `etag` 之後再由 response 覆蓋，唔會有舊值殘留；多出嚟只係幾十 byte
+
+### 新 ID
+
+- S-916 `apps/admin/src/model/theme.ts:14` + `packages/catalog/src/core/themeSchema.ts:15`：10 色 key 清單兩份。建議修法：catalog `themeSchema.ts` 將 `COLOUR_KEYS` 改名 `THEME_COLOUR_KEYS` 並 export（經 `src/index.ts`），admin `model/theme.ts` 改為 `export { THEME_COLOUR_KEYS } from '@903-player/catalog'`（保留 re-export，consumer 唔使改）；加一個 catalog test 斷言 `NEUTRAL_THEME` 嘅 key 涵蓋 `THEME_COLOUR_KEYS`
+
+### 評分（re-review）
+
+| 維度     | 得分    | 滿分    | 備注                                          |
+| -------- | ------- | ------- | --------------------------------------------- |
+| 正確性   | 25      | 25      | W-726 已修                                    |
+| 安全性   | 20      | 20      | 冇新依賴                                      |
+| 可維護性 | 20      | 20      | S-916 係 🟢，唔扣分                           |
+| 測試覆蓋 | 15      | 15      | W-724 mutation 被 kill；W-725 新 test 齊      |
+| 性能     | 10      | 10      | S-910 已修                                    |
+| 代碼風格 | 10      | 10      | lint / prettier / tsc 全過                    |
+| **總分** | **100** | **100** | **結果：✅ pass**（S-916 按用戶決定同 PR 修） |
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: /review re-review Lane L2 admin 0.1.0 Phase 4 (feature/admin-phase4 @ 8d2ce42, 7d77877..8d2ce42)
+status: pass
+score: 100
+hard_gates:
+    lint: pass
+    type_check: pass
+    tests: pass (12 changed admin test files / 84 tests; catalog src/core + src/theme 8 files / 329 tests)
+    coverage: pass (useEntryEditor 98%, useCropDrag 100%, useR2AutoCrop 100%, useModalKeys 91%)
+    no_critical: pass
+    security_scan: pass (no new deps)
+critical: []
+warnings: []
+backlog: []
+resolved: [W-724, W-725, W-726, S-910, S-911, S-912, S-913, S-914, S-915, S-892, focus-restore observation]
+new: [S-916]
+next_action: invoke developer to fix S-916 in this PR (one commit, `fix: S-916 | ...`) per user decision; reviewer then verifies only that diff
+context: All prior items fixed and verified; W-724 mutation (drop !locked on Esc) now fails the S-817 test. Developer question (b) persistPatch extra body fields — no fix, api reads only definition/images. Question (a) raised as S-916 (catalog/admin duplicate colour key list). Report committed locally, not pushed.
+report: .proj-docs/reviews/2026-11-12_review_admin-phase4.md (committed, not pushed)
+```
