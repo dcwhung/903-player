@@ -4,7 +4,7 @@
  * 碟面縮細做 64×64 → 每個 channel 取高 4 bit 分桶、按數量排 → 揀互相有距離嘅主色 →
  * 九套候選（唔同底色 × 深 / 淺），每輪出三套；淺色候選自動推 statusBar / accentText（對 bg ≥ 4.5:1）
  */
-import { contrastRatio, TEXT_MIN_CONTRAST } from '@903-player/catalog';
+import { contrastRatio, NEUTRAL_THEME, TEXT_MIN_CONTRAST } from '@903-player/catalog';
 import { THEME_COLOUR_KEYS, type EntryTheme } from '../../model/theme';
 import { hexToHsl, hslToHex, rgbToHex } from './colour';
 
@@ -19,8 +19,8 @@ const CHANNELS = 4;
 const MIN_ALPHA = 128;
 
 const WHITE = '#ffffff';
-/** 深色字（同 NEUTRAL_THEME.bg） */
-const NEAR_BLACK = '#141414';
+/** 深色字 = 中性灰配色嘅底色（唔好抄色碼，S-915） */
+const NEAR_BLACK = NEUTRAL_THEME.bg;
 const BLACK = '#000000';
 /** deriveAccentText：每步暗 1%，最暗到 5% */
 const DARKEN_STEP = 0.01;

@@ -6,8 +6,9 @@
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { buildPool, extractPalette } from './palette';
+import { THEME_COLOUR_KEYS } from '../../model/theme';
 import { hexToRgb } from './colour';
+import { buildPool, extractPalette } from './palette';
 
 const LIBRARY = new URL('../../../../player/src/catalog/', import.meta.url);
 const WASM = new URL(
@@ -16,20 +17,7 @@ const WASM = new URL(
 );
 const SAMPLE = 64;
 const CHANNELS = 4;
-const COLOUR_KEYS = [
-    'bg',
-    'surface',
-    'track',
-    'accent',
-    'onAccent',
-    'title',
-    'text',
-    'muted',
-    'shadowDark',
-    'shadowLight',
-] as const;
-
-type Theme = Record<(typeof COLOUR_KEYS)[number], string>;
+type Theme = Record<(typeof THEME_COLOUR_KEYS)[number], string>;
 
 interface Decoded {
     data: Uint8ClampedArray;
@@ -62,10 +50,10 @@ const sample = ({ data, width, height }: Decoded) => {
 };
 
 const themeDistance = (a: Theme, b: Theme) =>
-    COLOUR_KEYS.reduce((sum, key) => {
+    THEME_COLOUR_KEYS.reduce((sum, key) => {
         const [x, y] = [hexToRgb(a[key]), hexToRgb(b[key])];
         return sum + Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
-    }, 0) / COLOUR_KEYS.length;
+    }, 0) / THEME_COLOUR_KEYS.length;
 
 describe('palette regression (reference only)', () => {
     let decode: (buffer: ArrayBuffer) => Promise<Decoded>;
