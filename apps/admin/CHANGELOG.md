@@ -2,6 +2,14 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.3.1 — 2026-11-13
+
+配 api 0.10.1。
+
+### Fixed
+
+- 節目編輯頁：從未上架過嘅節目（淨係以下架發佈過）出返「刪除」掣，唔再顯示「已發佈的項目不可刪除」
+
 ## 0.3.0 — 2026-11-13
 
 選擇發佈（`.proj-docs/plans/2026-11-13_plan_selective-publish.md`，配 api 0.10.0）。Design Origin：`_mockups_/admin-selective-publish/index.html`（Q1–Q4）。

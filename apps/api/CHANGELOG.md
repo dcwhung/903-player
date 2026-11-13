@@ -2,6 +2,12 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.10.1 — 2026-11-13
+
+### Fixed
+
+- `DELETE /api/entries/shows/:id`：淨係以下架（`enabled: false`）入過 catalog document、從未以上架狀態發佈過嘅節目可以刪（之前最新 document 有佢就 409）；同列表「未上架 / 已下架」同一個判斷。曾經上過架嘅照舊 409；最新 document 讀唔到照拒絕（S-844）。劇集不變
+
 ## 0.10.0 — 2026-11-13
 
 選擇發佈（`.proj-docs/plans/2026-11-13_plan_selective-publish.md`）：更新頁有「必須處理」嘅待辦都可以淨發佈揀咗嘅新內容 / App 外觀。冇 `selection` = 舊行為，舊 admin 唔受影響。
