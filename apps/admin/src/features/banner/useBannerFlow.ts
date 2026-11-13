@@ -7,12 +7,13 @@ import { useState, type ChangeEvent } from 'react';
 import { putBanner } from '../../api/endpoints';
 import { errorMessage } from '../../api/errorMessage';
 import type { BannerImages } from '../../api/types';
+import { t } from '../../i18n/t';
 import { uploadChoice } from '../../ui/uploadChoice';
 import { useCropSession, type CropSession } from '../../ui/useCropSession';
 
 export const BANNER_STEPS = ['bannerStandard', 'bannerLong'] as const;
 
-/** 兩張都裁好 → 上載兩張 → 寫 banner；回錯誤文字（成功 = undefined） */
+/** 兩張都裁好 → 上載兩張 → 寫 banner；回錯誤文字（成功 = undefined）；未裁好 = 明確失敗，唔當成功（S-913） */
 const uploadBoth = async (
     sessions: readonly CropSession[],
     onBusy: (message: string) => void,
@@ -20,7 +21,7 @@ const uploadBoth = async (
     const names: string[] = [];
     for (const [i, slot] of BANNER_STEPS.entries()) {
         const phase = sessions[i]?.phase;
-        if (phase?.status !== 'ready') return undefined;
+        if (phase?.status !== 'ready') return t('banner.notReady');
         const uploaded = await uploadChoice(phase, slot, onBusy);
         if ('error' in uploaded) return uploaded.error;
         names.push(uploaded.name);

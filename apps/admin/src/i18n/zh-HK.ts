@@ -304,6 +304,7 @@ export const zhHK = {
         saved: '已更換首頁 Banner（發佈後生效）',
         restored: '已還原預設 Banner（發佈後生效）',
         saveFailed: '更換首頁 Banner 失敗：{error}',
+        notReady: '兩張 Banner 未裁切好，請重新選擇圖片。',
     },
     themeEditor: {
         title: '{name} · 配色',
