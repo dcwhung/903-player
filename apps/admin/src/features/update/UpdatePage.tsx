@@ -82,6 +82,7 @@ export function UpdatePage() {
                 selection={selection}
                 incomplete={incompleteRows(rows).length}
                 others={changes.data?.others?.items ?? []}
+                loading={changes.data === undefined}
             />
         </>
     );

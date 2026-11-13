@@ -53,6 +53,22 @@ const show = (rows: TodoRow[], over: Partial<ChangesResponse> = {}) => {
 };
 
 describe('UpdatePage', () => {
+    it('should keep 下一步 disabled until GET /api/changes has loaded (S-987)', () => {
+        mockApi({
+            'GET /api/branding': () => ({ body: { icon: null, text: null, updatedAt: null } }),
+            'GET /api/banner': () => ({ body: { banner: null, updatedAt: null } }),
+        });
+        renderAt(
+            '/',
+            '/',
+            <UpdatePage />,
+            fakeData({ todos: resource({ rows: [READY], blocking: 0 }) }),
+        );
+        // App 外觀未知：照撳會靜靜雞唔發佈預設勾咗嘅 App 外觀
+        expect(screen.getByRole('button', { name: '下一步：確認發佈' })).toBeDisabled();
+        expect(screen.getByText('載入中…')).toBeInTheDocument();
+    });
+
     it('should let you publish while a row still needs work, carrying the selection', async () => {
         show([READY, CAMP]);
         expect(screen.getByRole('heading', { name: /App 外觀/ })).toBeInTheDocument();

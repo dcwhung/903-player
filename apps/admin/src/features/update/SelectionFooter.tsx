@@ -1,7 +1,8 @@
 /*
  * 更新頁底：「已選擇 N 項發佈 · M 項未完成（不會發佈）」+「下一步：確認發佈」
  * （mockup: _mockups_/admin-selective-publish/index.html#a .foot）。必須處理唔再擋；
- * Q4：冇揀任何新內容 / App 外觀、又冇其他改動 → 灰 +「未選擇任何內容」
+ * Q4：冇揀任何新內容 / App 外觀、又冇其他改動 → 灰 +「未選擇任何內容」；
+ * GET /api/changes 未載入完（App 外觀未知）→ 灰 +「載入中…」（S-987：否則預設勾咗嘅 App 外觀會靜靜雞唔發佈）
  */
 import type { ChangeItem } from '@903-player/catalog';
 import { Send } from 'lucide-react';
@@ -15,9 +16,12 @@ interface SelectionFooterProps {
     incomplete: number;
     /** 其他已儲存改動（GET /api/changes others.items，Q3） */
     others: readonly ChangeItem[];
+    /** GET /api/changes 未有資料 */
+    loading: boolean;
 }
 
-const summaryOf = ({ selection, incomplete, others }: SelectionFooterProps): string => {
+const summaryOf = ({ selection, incomplete, others, loading }: SelectionFooterProps): string => {
+    if (loading) return t('app.loading');
     const picked = pickedCount(selection);
     if (!hasAnythingToPublish(selection, others)) return t('update.nothingPicked');
     const head = picked > 0 ? t('update.picked', { count: picked }) : t('update.othersOnly');
@@ -28,7 +32,7 @@ const summaryOf = ({ selection, incomplete, others }: SelectionFooterProps): str
 
 export function SelectionFooter(props: SelectionFooterProps) {
     const navigate = useNavigate();
-    const canGo = hasAnythingToPublish(props.selection, props.others);
+    const canGo = !props.loading && hasAnythingToPublish(props.selection, props.others);
     return (
         <div className="savebar">
             <span className="muted small" aria-live="polite">
