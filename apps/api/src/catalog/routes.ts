@@ -1,27 +1,20 @@
 /* /api/publish、/api/publishes、/api/publishes/:id/rollback（已經過 session + same-origin 守門） */
 import { Hono, type Context } from 'hono';
-import { publishChanges } from '../admin/changes';
+import { publishChanges } from '../admin/publishChanges';
 import { resolveDoneFindings } from '../admin/todos';
 import type { AppEnv } from '../app';
-import { getBanner } from '../banner/store';
-import { getBranding } from '../branding/store';
 import { HTTP_STATUS } from '../config';
 import {
     commitPublish,
-    documentFromEntries,
     PublishValidationError,
     validateDocument,
     type PublishOutcome,
 } from './publish';
 import type { PublishWarning } from './warnings';
 import { RollbackConflictError, RollbackNotRestorableError, rollbackToPublish } from './rollback';
-import {
-    listAssetHashes,
-    listEntries,
-    listPublishes,
-    publishDocuments,
-    type PublishRow,
-} from './store';
+import { publishedRows, type SelectionPlan } from './selection';
+import { preparePublish, selectionErrorResponse, selectionFromBody } from './selectivePublish';
+import { listPublishes, publishDocuments, type PublishRow } from './store';
 
 /** publish id path 參數（deploy/routes.ts 共用） */
 export const POSITIVE_INT = /^[1-9]\d*$/;
@@ -43,8 +36,12 @@ const summary = (row: PublishRow, current: boolean) => ({
     current,
 });
 
-/** warnings：普通 publish 先有（還原唔報，見 rollback.ts） */
-const respond = (c: Context<AppEnv>, outcome: PublishOutcome, warnings?: PublishWarning[]) => {
+/** warnings：普通 publish 先有（還原唔報，見 rollback.ts）；extra = 選擇發佈嘅 selection 結果 */
+const respond = (
+    c: Context<AppEnv>,
+    outcome: PublishOutcome,
+    { warnings, extra = {} }: { warnings?: PublishWarning[]; extra?: Record<string, unknown> } = {},
+) => {
     if (outcome.kind === 'rejected')
         return c.json(
             { error: 'episode IDs would disappear', missing: outcome.missing },
@@ -55,27 +52,41 @@ const respond = (c: Context<AppEnv>, outcome: PublishOutcome, warnings?: Publish
         ...unchanged,
         publish: summary(outcome.publish, true),
         ...(warnings ? { warnings } : {}),
+        ...extra,
     });
 };
 
-/** 普通 publish：驗證 / commit；validator 拒絕 → 422 連原因（還原見 rollback.ts） */
-const publishValue = async (c: Context<AppEnv>, value: () => Promise<unknown>) => {
+/** publish 成功：今次真係發佈咗、搞掂咗嘅掃描 finding 標 resolved（還原唔算） */
+const resolveAfterPublish = async (db: D1Database, publishId: number, plan?: SelectionPlan) => {
     try {
-        const validated = validateDocument(await value());
+        await resolveDoneFindings(db, publishId, plan && publishedRows(plan));
+    } catch (error) {
+        // 已經上咗線：標唔到只係待辦行留低，唔好令 publish 回 500
+        console.error(`publish ${publishId}: could not resolve findings`, error);
+    }
+};
+
+/**
+ * 普通 publish（body 選填 selection，見 selection.ts）：驗證 / commit；
+ * selection 唔啱 → 400 / 422，validator 拒絕 → 422 連原因（還原見 rollback.ts）
+ */
+const publishSelected = async (c: Context<AppEnv>) => {
+    try {
+        const { value, plan } = await preparePublish(c.env, await selectionFromBody(c.req.raw));
+        const validated = validateDocument(value);
         const options = {
             createdBy: c.get('email'),
             force: c.req.query('force') === '1',
             rollbackOf: null,
         };
         const outcome = await commitPublish(c.env, validated, options);
-        // publish 成功：搞掂咗嘅掃描 finding 標 resolved（還原唔算）
         if (outcome.kind === 'published')
-            // 已經上咗線：標唔到只係待辦行留低，唔好令 publish 回 500
-            await resolveDoneFindings(c.env.DB, outcome.publish.id).catch((error: unknown) =>
-                console.error(`publish ${outcome.publish.id}: could not resolve findings`, error),
-            );
-        return respond(c, outcome, validated.warnings);
+            await resolveAfterPublish(c.env.DB, outcome.publish.id, plan);
+        const extra = plan ? { selection: { content: plan.content, skipped: plan.skipped } } : {};
+        return respond(c, outcome, { warnings: validated.warnings, extra });
     } catch (error) {
+        const selectionError = selectionErrorResponse(c, error);
+        if (selectionError) return selectionError;
         if (!(error instanceof PublishValidationError)) throw error;
         return c.json({ error: error.message }, HTTP_STATUS.unprocessable);
     }
@@ -83,17 +94,7 @@ const publishValue = async (c: Context<AppEnv>, value: () => Promise<unknown>) =
 
 export const publishRoutes = new Hono<AppEnv>();
 
-publishRoutes.post('/publish', (c) =>
-    publishValue(c, async () =>
-        documentFromEntries(await listEntries(c.env.DB), {
-            origin: c.env.WORKER_ORIGIN,
-            assets: await listAssetHashes(c.env.DB),
-            generatedAt: new Date().toISOString(),
-            banner: await getBanner(c.env.DB),
-            branding: await getBranding(c.env.DB),
-        }),
-    ),
-);
+publishRoutes.post('/publish', publishSelected);
 
 publishRoutes.get('/publishes', async (c) => {
     const [rows, documents] = await Promise.all([

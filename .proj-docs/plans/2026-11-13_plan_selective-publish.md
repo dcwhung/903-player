@@ -48,6 +48,20 @@ Mockup：`_mockups_/admin-selective-publish/index.html`（Q1–Q4 用戶確認�
 2. admin（Frontend Developer）
 3. Code Review → QA S1 → 截圖畀用戶 → 用戶話先開 PR
 
+## 實作差異（api 0.10.0，Backend）
+
+| 項目                 | Plan                                                  | 實作                                                                                                                                                                                                              |
+| -------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `selection` shape    | `content`、`branding: { icon?, text? }`、`banner?`    | 一樣；全部選填，冇寫 = 冇揀（`content: []`、旗 `false`）；未知欄位 400                                                                                                                                            |
+| 待辦行 key           | `kind/id` 或者 `dramas/<id>/arcs/<arcId>`             | `GET /api/todos` 每行加 `key` = `<kind>/<劇 ID>[/<短篇 ID>]`（例如 `newArc/golden/season-2`），同合併行用同一個 key；另加 `publish: selectable / incomplete / always`                                             |
+| 「必須處理」嘅行被揀 | 422 或者自動剔走                                      | **自動剔走**，回應 `selection.skipped: [{ key, reason: 'incomplete' }]`；draft 劇嘅行都當 `incomplete`。未知 key 先 422（乜都唔寫）                                                                               |
+| 冇揀嘅新內容         | 新劇成個 entry 剔走；新短篇喺 definition 剔走嗰個 arc | 「完全唔入今次 catalog」做成「同上次發佈一樣」：上次 ok publish 有嗰套劇 / 嗰個短篇（例如以前以下架狀態發佈過）就換返上次版本（短篇用 `name` 對），冇先剔走。咁樣鎖咗嘅 episode ID 唔會因為冇揀而觸發 ID 守衛 409 |
+| 新節目               | 成個 entry 剔走                                       | 待辦表冇節目行（findings 只有劇集），節目改動一律屬「其他改動」                                                                                                                                                   |
+| 新集數 / 資料夾唔見  | —                                                     | `publish: 'always'`：唔可以剔走，跟其他改動發佈（新集數嘅新劇 / 新短篇冇發佈就唔 resolve）；資料夾唔見唔再阻發佈                                                                                                  |
+| 更新頁資料           | `GET /api/changes`（或者新 endpoint）                 | `GET /api/changes` 加 `appearance: { icon, text, banner }`、`others`、`unchanged`；選填 `?selection=`（URL-encoded JSON）令 changes / validation / warnings / unchanged 跟 selection 計                           |
+| 其他改動（Q3）       | 確認發佈頁列出                                        | `others` = 乜都唔揀時嘅 `summarizeChanges`（唔計 selectable / incomplete 新內容同 App 外觀），item shape 同 `changes.items` 一樣                                                                                  |
+| `packages/catalog`   | —                                                     | 冇改                                                                                                                                                                                                              |
+
 ## 風險
 
 - 🔴 剔走新短篇時唔可以影響同一套劇其他已發佈短篇 / 集數（ID 守衛 + test）

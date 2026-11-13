@@ -2,6 +2,22 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.10.0 — 2026-11-13
+
+選擇發佈（`.proj-docs/plans/2026-11-13_plan_selective-publish.md`）：更新頁有「必須處理」嘅待辦都可以淨發佈揀咗嘅新內容 / App 外觀。冇 `selection` = 舊行為，舊 admin 唔受影響。
+
+### Added
+
+- `POST /api/publish` body 選填 `selection: { content?: string[], branding?: { icon?, text? }, banner? }`：冇揀 / 未完成嘅新劇 / 新短篇唔入今次 catalog（上次發佈有就用上次版本，冇就剔走；D1 唔郁）；冇揀嘅 icon / text / banner 用上次 ok publish 嘅值；回應加 `selection: { content, skipped }`
+- 揀咗有「必須處理」（或者 draft）嘅行：自動剔走，列入 `selection.skipped`（`reason: 'incomplete'`）；未知 key → 422 `{ error: 'unknown selection keys', keys }`；格式錯 → 400
+- `GET /api/todos` 每行加 `key`（`<kind>/<劇 ID>[/<短篇 ID>]`）同 `publish`（`selectable` / `incomplete` / `always`）
+- `GET /api/changes` 加 `appearance: { icon, text, banner }`、`others`（唔計新內容同 App 外觀嘅其他改動）、`unchanged`；選填 `?selection=`（changes / validation / warnings / unchanged / bannerChanged / brandingChanged 跟 selection 計）
+
+### Changed
+
+- 有 `selection` 時發佈後只 resolve 今次真係發佈咗嘅待辦行 findings
+- `admin/changes.ts` 拆出 `changeDocuments.ts`（比較用 document、App 外觀比較）同 `publishChanges.ts`（發佈記錄摘要），行為不變
+
 ## 0.9.0 — 2026-11-13
 
 App 外觀（`.proj-docs/plans/2026-11-13_plan_branding.md`）：App 圖示 + 名稱與簡介，publish 後自動重新部署 player。

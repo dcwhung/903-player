@@ -1,7 +1,7 @@
-# 903-player-api（Backend Phase 2a / 2b / 3a / 3b / 3c / 4 / App 外觀）
+# 903-player-api（Backend Phase 2a / 2b / 3a / 3b / 3c / 4 / App 外觀 / 選擇發佈）
 
 Cloudflare Worker：管理 catalog 內容（D1）、publish `catalog.json`（R2）、代出 `catalog.json` 同圖畀 player。
-Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a、3b）、`.proj-docs/plans/2026-11-12_plan_phase4-5.md`（Phase 4 L1）、`.proj-docs/plans/2026-11-13_plan_branding.md`（App 外觀）。版本記錄：`CHANGELOG.md`。
+Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a、3b）、`.proj-docs/plans/2026-11-12_plan_phase4-5.md`（Phase 4 L1）、`.proj-docs/plans/2026-11-13_plan_branding.md`（App 外觀）、`.proj-docs/plans/2026-11-13_plan_selective-publish.md`（選擇發佈）。版本記錄：`CHANGELOG.md`。
 
 | 路徑                               | 用途                                                                                                                                                         | 權限                          |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
@@ -261,6 +261,55 @@ Player 喺 build 時先讀 `branding`（icon 檔、manifest、`<title>` 等）�
 - `deploy.yml` 要有 `on.repository_dispatch.types: [catalog-branding]` 先會跑（player + CI 嗰步做）
 - 本機 `.dev.vars` 唔好填真 token：本機 publish 改咗 branding 都會真係觸發部署
 
+## 選擇發佈（0.10.0）
+
+`POST /api/publish` body 選填 `selection`：淨係發佈揀咗嘅新內容 / App 外觀，其他已儲存改動照舊全部發佈。**冇 body 或者冇 `selection` = 舊行為（全部發佈）**，舊 admin 唔使改。
+
+```jsonc
+// POST /api/publish（Content-Type: application/json）
+{
+    "selection": {
+        "content": ["newArc/lancy/lancy-07", "newDrama/fresh"], // GET /api/todos 每行嘅 key；冇 = []
+        "branding": { "icon": false, "text": true }, // 冇 = 兩個都 false
+        "banner": false, // 冇 = false
+    },
+}
+```
+
+- **key**：`GET /api/todos` 每行 `key` = `<kind>/<劇 ID>[/<短篇 ID>]`（例如 `newDrama/fresh`、`newArc/golden/season-2`、`newEpisodes/golden/season-1`、`missingFolder/golden`）。劇 / 短篇改咗 ID 之後 key 跟住變，要重新 `GET /api/todos`
+- **每行 `publish`**：
+    - `selectable`：新劇 / 新短篇，冇「必須處理」→ 可以揀
+    - `incomplete`：新劇 / 新短篇，有「必須處理」（或者劇仲係 draft）→ **今次一定唔發佈**；就算 client 揀咗，server 都自動剔走（唔係 422），回應 `selection.skipped` 列出 `{ key, reason: 'incomplete' }`。理由：更新頁同發佈之間有人改咗設定都唔使成個發佈失敗
+    - `always`：已發佈劇集嘅新集數（`newEpisodes`）、資料夾唔見（`missingFolder`）→ 唔可以剔走，跟其他改動一齊發佈（`content` 有佢嘅 key 會忽略）。新集數所屬嘅新劇 / 新短篇冇發佈，佢都唔會 resolve
+- **冇揀 / 未完成嘅新內容完全唔入今次 catalog**（D1 唔郁，下次再揀）：即係「同上次發佈一樣」——新劇成個 entry、新短篇喺嗰套劇 definition 嘅 arc：上次 ok publish 有（例如以前以下架狀態發佈過）就換返上次嗰個版本（短篇用 `name` 對，`name` = R2 子資料夾、永遠唔改），冇就剔走。同一套劇其他短篇 / 集數 / 欄位照用 D1。所以已發佈（鎖咗 ID）嘅內容唔會因為冇揀而消失；**ID 守衛照舊**（409 / `?force=1`）
+- **冇揀嘅 App 外觀**：`icon`、`text`、`banner` 各自用上次 ok publish 嘅值（冇上次 / 上次冇 = 唔寫），D1 草稿唔郁、唔驗。重新部署 player 照舊用「今次 `branding` 同上次唔同」判斷，即係淨係揀咗而又真係改咗先觸發
+- **Findings**：只有今次真係發佈咗嘅行（揀咗嘅 `selectable` + 冇被剔走嘅 `always`）、而且冇「必須」先標 resolved；冇揀嘅留低
+- **`unchanged`**：照 selection 砌出嚟嘅 document 同最新一次一樣（例如乜都冇揀、又冇其他改動）→ `{ unchanged: true }`，唔開新行
+- 錯誤：body 唔係 JSON object、`selection` / `branding` 唔係 object、多咗未知欄位、`content` 唔係 string array（上限 500）、旗唔係 boolean → **400** `{ error }`；`content` 有待辦冇嘅 key → **422** `{ error: 'unknown selection keys', keys }`，乜都唔寫（頁面過時，重新載入）；其餘同普通 publish（422 驗證、409 ID 守衛）
+- 回應：普通 publish 嘅欄位 + `selection: { content: [今次發佈咗嘅 key], skipped: [{ key, reason }] }`（冇 `selection` 就冇呢欄）
+- 還原 #N 唔受 selection 影響（照舊用而家 D1，未發佈嘅新短篇以下架狀態入 catalog，見「Publish / 還原」）
+
+### `GET /api/changes`（更新頁 / 確認發佈頁）
+
+```jsonc
+{
+    "base": 12,
+    "changes": { "items": [], "timeline": [] }, // D1 vs 最新 ok publish（有 ?selection 就跟 selection）
+    "validation": { "ok": true, "episodeCount": 120 },
+    "warnings": [],
+    "unchanged": false, // 照呢個 selection（冇 = 全部）發佈會唔會回 unchanged
+    "bannerChanged": false, // 有 ?selection：揀咗而又改咗先 true
+    "brandingChanged": true,
+    "appearance": { "icon": false, "text": true, "banner": false }, // 三項各自同上次 ok publish 比（唔理 selection）
+    "others": { "items": [], "timeline": [] }, // 「其他改動」：唔計新內容（selectable / incomplete 行）同 App 外觀
+    "selection": { "content": [], "skipped": [] }, // 有 ?selection 先有
+}
+```
+
+- `?selection=<URL-encoded JSON>`（同 body 嘅 `selection` 一樣 shape）：`changes`、`validation`、`warnings`、`unchanged`、`bannerChanged`、`brandingChanged` 跟 selection 計，同 `POST /api/publish { selection }` 會發佈嘅 document 一樣；格式錯 400、未知 key 422（同 publish）
+- 更新頁：App 外觀 section 只列 `appearance` 入面 `true` 嘅項目；新內容表每行用 `GET /api/todos` 嘅 `publish`
+- 確認發佈頁「其他改動」= `others.items`（`summarizeChanges` 嘅 item：`newShow` / `newEpisodes` / `edit`（`detail.fields`）/ `unlist` 等）；「一項都冇揀」判斷：`content` 空、`appearance` 揀咗嘅都冇、`others.items` 空（或者直接睇 `?selection` 嘅 `unchanged`）
+
 ## Admin API（Phase 3a）
 
 全部喺 `/api` 底下，同內容 API 一樣要 login（改嘢要 same-origin），body 上限 256 KB。Migration `0004_admin.sql`：`entries.draft`、`scan_findings` 表、`publishes.error`（deploy 時 `deploy-api.yml` 自動 apply）。
@@ -268,16 +317,16 @@ Player 喺 build 時先讀 `branding`（icon 檔、manifest、`<title>` 等）�
 | Method + path                         | 做咩                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `POST /api/scan`                      | 入 admin 自動掃描：列 `AUDIO` 頂層資料夾 → 每套 `audio.host = r2` 嘅劇 `listingFromR2` + `generateDraft`；有 diff 先寫 D1（新短篇 `enabled: false`）+ 記 finding；新資料夾 → 建 draft 劇（ID `drama-NN`）；新短篇 ID 自動 `<劇 ID>-NN`（兩位數，由已有 ID 嘅短篇數 + 1 起、避開已用，3c）；有劇資料夾唔見 → 記「資料夾唔見」，只有睇落係佢改名嘅新資料夾（同種類 + 有一個短篇名 / 日子一樣）唔自動建，其他照建（S-800）。回 `{ scannedAt, findings, skipped }` |
-| `GET /api/todos`                      | 未解決 findings → 待辦矩陣 `{ rows: [{ kind, findingIds, dramaId, arcId, name, cells }], blocking }`；`cells` = `folder` / `id` / `images` / `schedule` / `summary`，每格 `{ state: done / must / optional / na, target }`；`id` 格：自動派嘅 ID（`drama-NN`、`<劇 ID>-NN`）未經 `confirm-id` 確認或改名就係 `must`                                                                                                                                            |
+| `GET /api/todos`                      | 未解決 findings → 待辦矩陣 `{ rows: [{ key, kind, findingIds, dramaId, arcId, name, cells, publish }], blocking }`（`key` / `publish` 見「選擇發佈」）；`cells` = `folder` / `id` / `images` / `schedule` / `summary`，每格 `{ state: done / must / optional / na, target }`；`id` 格：自動派嘅 ID（`drama-NN`、`<劇 ID>-NN`）未經 `confirm-id` 確認或改名就係 `must`                                                                                          |
 | `POST /api/entries/dramas/:id/rename` | `{ newId }`：只限從未發佈（任何 ok publish 都冇用過呢個 ID，否則 409）；entries + schedules + findings 一個 batch 改；自動編號短篇 ID `<舊 ID>-NN` 一齊改做 `<新 ID>-NN`（definition、schedules、findings）；可帶 `If-Match`                                                                                                                                                                                                                                   |
 | `POST /api/todos/confirm-id`          | `{ dramaId, arcId? }`（3c）：admin 儲存 ID 欄（就算冇改）時叫，確認掃描自動派嘅 ID → finding `detail.idConfirmed = true`，待辦 `id` 格變 `done`；冇 `arcId` = 新劇、有 = 新短篇；對唔到回 `{ confirmed: 0 }`（idempotent）；body 錯 400、冇呢套劇 404                                                                                                                                                                                                          |
 | `POST /api/dramas/:id/folder`         | `{ folder }`：配對 R2 頂層資料夾（R2 冇 → 422、其他劇用緊 → 409）→ 即刻重新掃描嗰套劇，同一個 batch 寫 + 刪「資料夾唔見」finding；配對返同一個資料夾又冇 diff → 200 `{ unchanged: true, definition, updatedAt, findings: [] }`，entry 唔郁，只刪 finding（S-801）                                                                                                                                                                                              |
 | `GET /api/folders/unmapped`           | `{ folders }`：冇劇用緊嘅頂層資料夾                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `PUT /api/order/:kind`                | `{ ids }`：上架嗰段嘅全部 entry（新次序；唔啱 → 422）→ 一個 batch 寫 `order` 1、2、3…；下架 / draft 唔郁；回 `{ ids, changed }`                                                                                                                                                                                                                                                                                                                                |
-| `GET /api/changes`                    | D1（唔包 draft）vs 最新 ok publish：`{ base, changes: { items, timeline }, validation, warnings, bannerChanged }`（`summarizeChanges`；`validation` = `{ ok: true, episodeCount }` 或 `{ ok: false, error }`）                                                                                                                                                                                                                                                 |
+| `GET /api/changes`                    | D1（唔包 draft）vs 最新 ok publish：`{ base, changes: { items, timeline }, validation, warnings, unchanged, bannerChanged, brandingChanged, appearance, others }`（選填 `?selection=`，見「選擇發佈」）（`summarizeChanges`；`validation` = `{ ok: true, episodeCount }` 或 `{ ok: false, error }`）                                                                                                                                                           |
 
 - **Draft**（`entries.draft = 1`）：掃描自動建、未齊必須資料嘅劇。`PUT` 先試完整驗證，唔過就用寬鬆驗證（definition 用到但未上載嘅圖當有；其他規則照驗）；一次 `PUT` 通過完整驗證就自動清 `draft`。Publish / `GET /api/changes` 唔包 draft；`DELETE` 照准（從未發佈）
-- **Findings**：普通 publish 成功之後，待辦行冇「必須」格嘅 finding 標 `resolved_publish_id`（仲有必須嘅留低）；「資料夾唔見」喺配對資料夾時刪走
+- **Findings**：普通 publish 成功之後，待辦行冇「必須」格（有 `selection` 就再要今次真係發佈咗）嘅 finding 標 `resolved_publish_id`（仲有必須 / 冇揀嘅留低）；「資料夾唔見」喺配對資料夾時刪走
 - **下架短篇**（`enabled: false`）：player 唔顯示。ID 守衛唔對稱：`publishes.episode_ids` 只鎖上過架嘅 episode ID（今次上架 + 以前鎖咗而仲喺 document 嘅）；比較時新 document 連下架劇 / 短篇都計，所以落架唔會 409，但從未上架嘅自動 ID（`lancy-04`、`drama-01`；3c 之前嘅 `arc-01`）改 ID 唔使 force；rename「從未發佈」亦只睇鎖咗嘅 ID（W-707）
 - **排序**（`PUT /api/order`）：`json_set` 原地改 `order`（`CAST(? AS INTEGER)`，D1 綁 JS number 係 REAL，唔 cast 會寫成 `2.0`）；`updated_at` = MAX(新值, 現行值 + 1 ms)，同時有人寫都唔會令 ETag 倒退或者撞（S-799）。miniflare test 驗過；deploy 後喺真 D1 排一次，再 `GET /api/entries/dramas/<id>` 睇 `order` 係整數、`ETag` 有變
 - 每次掃描成本：1 個頂層 list + 每套劇（根 + 每個短篇）各 1 個 list
