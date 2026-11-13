@@ -124,3 +124,64 @@ blockers:
   - "W-736 apps/player/scripts/brandingConfig.ts:84,90 string replacement interprets $ patterns"
   - "W-737 apps/admin/src/features/history/useDeployStatus.ts:9-28 no re-poll after redeploy"
 ```
+
+---
+
+## Re-review（2026-11-13，`0fa3e86..744b974`）
+
+- 範圍：上一輪 🟡 / 🟢 嘅修正（`d75d5b5` W-736、`1122dd9` W-737、`09ef640` S-967、`329c7bc` S-965、`1c27333` S-966、`137ba9e` S-968）+ 用戶追加 `32a21f3`（App 圖示 dialog 預覽排版）、`744b974`（統計行只喺節目 / 劇有改先顯示）
+- Hard gates：all pass
+    - lint：`npm run lint` exit 0
+    - type：`npx tsc -b`（apps/player、apps/admin、apps/api、packages/catalog）全部 exit 0
+    - unit（diff 相關）：`npx vitest related --run <改動嘅 .ts/.tsx>` → 408 files / 4352 tests pass；api `test/deploy.test.ts` 21 pass；冇跑 e2e（admin `iconPreviewFitCheck` 留 QA / CI）
+    - coverage：`brandingBuild.ts`、`e2eCatalogNotFound.ts`、`useDeployStatus.ts`、`contentChangedOf` 每個分支都有 test
+    - 另外用 `resolveConfig(build, e2e)` 載入 `apps/player/vite.config.ts`：`publicDir` = `apps/player/public`、`e2e-catalog-not-found` plugin 照裝（Vite 8 會替換 `import.meta.dirname`，抽出去 `scripts/` 冇改路徑）
+
+### 逐項確認
+
+| ID      | 結果 | 確認                                                                                                                                                                                                                                                                      |
+| ------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-736   | 已修 | `<title>` 同 `setMetaContent` 兩處都改 function replacement；test 用 `$'` / `$&` / `$1` / `` $` `` / `$$`，`</html>` 只得一個                                                                                                                                             |
+| W-737   | 已修 | 冇用 effect 內 `setStatus(undefined)`，改為結果連 `id@requestedAt` key 存、key 唔對就回 `undefined`：效果同建議一樣（舊結果即刻消失、次數由 0 再計），又避開 `react-hooks/set-state-in-effect`；`DeployCell` 傳 `deployRequestedAt`；hook test 有 redeploy、上限、unmount |
+| S-965   | 已修 | `vite.config.ts` 171 → 135 行；`resolveBuildBranding` 行為不變（冇 icon / 下載失敗都回內建 `publicDir`）；`e2eCatalogNotFound` 一併抽出，e2e 註解路徑已更新                                                                                                               |
+| S-966   | 已修 | plan 改寫成同 `apps/api/README.md` 一致；`deploy.test.ts` 加 rollback 會 / 唔會觸發兩個 case                                                                                                                                                                              |
+| S-967   | 已修 | 到 `DEPLOY_POLL_MAX` 仲係 running（或全部 poll 失敗）→ `{ status: 'unknown', url: 最後 url }`，`deployView` 顯示狀態不明 + 重新部署                                                                                                                                       |
+| S-968   | 已修 | plan「實作差異」寫明 `brandingIcons.ts` + `brandingBuild.ts` 改 `publicDir`，連 Observation（兩次 fetch）都記低                                                                                                                                                           |
+| 32a21f3 | OK   | `minmax(0, 1fr)` + `min-width: 0` + 標籤 `nowrap` / 分頁標題 ellipsis + `title` tooltip；冇 hardcoded 色；CSS node test + admin e2e 1280 / 1100 量幾何                                                                                                                    |
+| 744b974 | OK   | `contentChangedOf`：冇 change summary（舊記錄）照顯示、`items` 空（淨 Banner / 外觀 / 冇內容變更）唔顯示，符合用戶確認；`timeline` 由 `items` 推導，唔使另外睇；失敗行照顯示錯誤；`BannerLine` / `BrandingLine` 合併做 `ExtraLine`                                        |
+
+### 新 finding
+
+冇。
+
+### 評分
+
+| 維度     | 得分    | 滿分    | 備注                                      |
+| -------- | ------- | ------- | ----------------------------------------- |
+| 正確性   | 25      | 25      | W-736 / W-737 已修，有 test 鎖住          |
+| 安全性   | 20      | 20      | 無變                                      |
+| 可維護性 | 20      | 20      | vite.config ≤ 150 行；ExtraLine / RowMeta |
+| 測試覆蓋 | 15      | 15      | hook、build、rollback、CSS、e2e 都有      |
+| 性能     | 10      | 10      | 無變                                      |
+| 代碼風格 | 10      | 10      | lint / prettier 全過                      |
+| **總分** | **100** | **100** | **結果：✅ pass**                         |
+
+### Handoff receipt（re-review）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "feature/admin-branding"
+context: "Re-review of 0fa3e86..744b974: W-736, W-737, S-965..S-968 fixed; user follow-ups 32a21f3 / 744b974 OK; no new findings. Admin e2e iconPreviewFitCheck not run by reviewer (QA / CI)."
+blockers: []
+```
