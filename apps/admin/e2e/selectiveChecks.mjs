@@ -27,9 +27,10 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
                 await assertChecked(love, true, '戀愛後二分一');
                 if ((await page.getByRole('checkbox', { name: '發佈App 圖示' }).count()) > 0)
                     throw new Error('unchanged App 圖示 should not be listed');
-                const camp = page.getByRole('checkbox', { name: '大衛營（尚未設定排期）' });
-                if (!(await camp.isDisabled()))
-                    throw new Error('incomplete row should be disabled');
+                const camp = page.getByRole('row', { name: /大衛營/ });
+                await camp.getByTitle('大衛營（尚未設定排期）').getByText('未完成').waitFor();
+                if ((await camp.getByRole('checkbox').count()) > 0)
+                    throw new Error('incomplete row should have no checkbox');
                 await footer(page).getByText('已選擇 2 項發佈 · 1 項未完成（不會發佈）').waitFor();
                 const next = page.getByRole('button', { name: NEXT });
                 if (await next.isDisabled())

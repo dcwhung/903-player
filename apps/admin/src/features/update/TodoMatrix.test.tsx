@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import type { TodoRow } from '../../api/types';
@@ -85,20 +85,18 @@ describe('TodoMatrix', () => {
         expect(screen.getByRole('checkbox', { name: '發佈戀愛後二分一' })).toBeChecked();
     });
 
-    it('should grey out an incomplete row with 未完成 and the missing settings', () => {
+    it('should show 未完成 without a checkbox for an incomplete row, missing settings in the tooltip', () => {
         render(<MemoryRouter>{matrix()}</MemoryRouter>);
-        const box = screen.getByRole('checkbox', {
-            name: '天使之戀系列（尚未設定ID、圖片、排期）',
-        });
-        expect(box).toBeDisabled();
-        expect(box).not.toBeChecked();
         const row = screen.getByRole('row', { name: /天使之戀系列/ });
-        expect(row).toHaveTextContent('未完成');
+        expect(within(row).queryByRole('checkbox')).not.toBeInTheDocument();
+        expect(within(row).getByTitle('天使之戀系列（尚未設定ID、圖片、排期）')).toHaveTextContent(
+            '未完成',
+        );
     });
 
-    it('should show no checkbox for rows that always go out', () => {
+    it('should only show a checkbox on selectable rows', () => {
         render(<MemoryRouter>{matrix()}</MemoryRouter>);
-        expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+        expect(screen.getAllByRole('checkbox')).toHaveLength(1);
         expect(screen.getByRole('row', { name: /Season 1/ })).toHaveTextContent('一併發佈');
     });
 

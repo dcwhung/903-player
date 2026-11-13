@@ -1,6 +1,6 @@
 /*
  * 待辦矩陣最後一欄「發佈」（mockup: _mockups_/admin-selective-publish/index.html#a）：
- * selectable = 勾選框（預設勾）；incomplete = 灰色勾選框 +「未完成」；always = 「一併發佈」（新集數）/ –（資料夾不見）。
+ * selectable = 勾選框（預設勾）；incomplete = 淨係「未完成」（冇勾選框，tooltip 寫欠咩設定）；always = 「一併發佈」（新集數）/ –（資料夾不見）。
  * 勾選框包喺 label 入面：撳格唔會觸發成行跳去編輯頁（rowClick 略過 label / input）
  */
 import { Minus } from 'lucide-react';
@@ -33,15 +33,9 @@ export function PublishCell({ row, picked, onToggle }: PublishCellProps) {
     if (row.publish === 'incomplete')
         return (
             <td className="pick-cell">
-                <label>
-                    <input
-                        type="checkbox"
-                        className="pick"
-                        disabled
-                        aria-label={incompleteText(title, row)}
-                    />
-                    <span className="lock">{t('update.incomplete')}</span>
-                </label>
+                <span className="lock" title={incompleteText(title, row)}>
+                    {t('update.incomplete')}
+                </span>
             </td>
         );
     if (row.kind === 'missingFolder')

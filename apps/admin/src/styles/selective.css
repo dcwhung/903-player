@@ -44,14 +44,7 @@ table.matrix td.pick-cell label {
     vertical-align: middle;
 }
 
-.pick:disabled,
-table.matrix td.pick-cell label:has(.pick:disabled) {
-    cursor: not-allowed;
-}
-
 .pick-cell .lock {
-    display: block;
-    margin-top: 2px;
     font-size: 12px;
     color: var(--muted);
 }

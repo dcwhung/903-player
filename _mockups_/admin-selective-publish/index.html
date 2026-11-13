@@ -1064,14 +1064,9 @@
                 accent-color: var(--primary);
                 cursor: pointer;
             }
-            .pick:disabled {
-                cursor: not-allowed;
-            }
             .lock {
                 font-size: 12px;
                 color: var(--muted);
-                display: block;
-                margin-top: 2px;
             }
             .foot {
                 display: flex;
@@ -1292,12 +1287,9 @@
                                     <td><span class="must">設定</span></td>
                                     <td><span class="opt">＋</span></td>
                                     <td>
-                                        <input
-                                            class="pick"
-                                            type="checkbox"
-                                            disabled
-                                            aria-label="大衛營（尚未設定排期）"
-                                        /><span class="lock">未完成</span>
+                                        <span class="lock" title="大衛營（尚未設定排期）"
+                                            >未完成</span
+                                        >
                                     </td>
                                 </tr>
                             </tbody>
@@ -1358,7 +1350,7 @@
             </section>
         </main>
         <script>
-            const picks = [...document.querySelectorAll('.pick:not(:disabled)')];
+            const picks = [...document.querySelectorAll('.pick')];
             const render = () => {
                 const n = picks.filter((p) => p.checked).length;
                 document.querySelector('#sum').innerHTML = n
