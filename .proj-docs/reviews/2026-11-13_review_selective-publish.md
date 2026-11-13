@@ -101,3 +101,69 @@ branch: "feature/selective-publish"
 context: "User rule (parallel lane backlog): fix W-740 + S-980..S-987 this session, one commit each (fix: <ID> | ...), then re-review, then QA S1. Backend: W-740, S-980, S-981. Frontend: S-982..S-987. e2e schedule flake = Observation for QA known-issues."
 blockers: []
 ```
+
+---
+
+# Re-review — 2026-11-13 @ `63f6297`
+
+- 範圍：`c97d1a3..HEAD` 10 個修正 commit（W-740、S-980–S-987 各一個 + `63f6297` e2e flake），28 檔；只驗上一輪項目嘅修正同佢哋嘅 diff
+- Hard gates：all pass
+    - lint：改動檔 `npx eslint` exit 0；`npx prettier --check <改動檔>` 過
+    - type：`npx tsc -b apps/admin apps/api` exit 0
+    - unit：api `selectivePublish` / `publish` / `branding` 3 files / 77 tests pass；admin `src/features/update`、`src/i18n`（含 `writtenChinese.test.ts`）、`src/styles` 18 files / 89 tests pass；冇跑 e2e（留 QA / CI）
+    - security：冇新依賴
+
+## 逐項驗收
+
+| ID    | 結果 | 驗證                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-740 | ✅   | `GET /api/changes ?selection=` 三個 case（`{}` / 淨 text / 淨 banner）鎖住 `brandingChanged` / `bannerChanged` / `unchanged`；POST 加咗 icon 揀、text 唔揀 → icon 新值、text 上次值。`putIcon` 直寫 D1 繞過 PNG 驗證，註解有寫原因，可接受                                                                                                                                                                                                                                       |
+| S-980 | ✅   | 接受較寬鬆驗證：`todoKey` = `kind/劇 ID[/短篇 ID]`，劇 ID 合 `ID_PATTERN`、短篇 ID 由 scan / `ARC_ID_PATTERN` 產生，冇空白冇 `/`，所以 `^[a-zA-Z]+(?:\/[^/\s]+){1,2}$` + ≤ 200 字元唔會誤擋現有 key，又擋到超長 / 空段 / 多段（4 個新 400 case）。`bodyLimit` 64 KB → 413（跟 `content/routes.ts` 同一寫法、同一 status 常數），422 `keys.slice(0, 20)`，各有 test。常數抽去 `selectionLimits.ts`、`publishBodyLimit` 放 `selectivePublish.ts` 冇問題；README / CHANGELOG 已同步 |
+| S-981 | ✅   | 三行版本號同 `package.json` 一致；喺本地跑 `npm install --package-lock-only`（跑完還原）淨係多 `"peer": true` metadata，唔影響 `npm ci`，唔 commit 合理                                                                                                                                                                                                                                                                                                                          |
+| S-982 | ✅   | 「本次發佈」/「不會在本次發佈」：i18n、mockup `:1320,1335`、CHANGELOG、test、e2e 一齊改；`src` 入面剩低嘅「今次」淨係註解，唔係介面文字                                                                                                                                                                                                                                                                                                                                          |
+| S-983 | ✅   | `table.matrix tr.done` 已刪，`grep` 冇其他用處                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| S-984 | ✅   | 集數：`episodesOf` 搬去 `todoModel.ts`，TodoMatrix 同 SelectionCard 共用；entries 未載入就唔顯示集數；test + e2e 斷言「（20 集）」。meta 改「會自動」。「簡介已更改」唔做：API `appearance` 只有三個 boolean，要做就要改 API；plan「實作差異」已寫明，接受                                                                                                                                                                                                                       |
+| S-985 | ✅   | `incompleteText(name, row)` 共用，`missing` 空就淨係出名（test 有 draft case）；`publish.incompleteItem` 已刪                                                                                                                                                                                                                                                                                                                                                                    |
+| S-986 | ✅   | import `model/raw` 嘅 `isRecord`                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| S-987 | ✅   | `changes.data` 未有 → 「下一步」灰 +「載入中…」，有 test。⚠️ 失敗狀態見 S-988                                                                                                                                                                                                                                                                                                                                                                                                    |
+| e2e   | ✅   | 量 panel 之前先等兩條時間軸嘅 `.today-cell`，再 poll 到連續兩次一樣 + 合條件（容差 2 px、5 s 超時、常數有名）；邏輯啱，L2 要等 QA / CI 多跑幾次先確認                                                                                                                                                                                                                                                                                                                            |
+
+## 評分結果（Re-review）
+
+| 維度     | 得分    | 滿分    | 備注                       |
+| -------- | ------- | ------- | -------------------------- |
+| 正確性   | 25      | 25      | S-988 屬 🟢（冇 L1），唔扣 |
+| 安全性   | 20      | 20      | S-980 加固完成             |
+| 可維護性 | 20      | 20      |                            |
+| 測試覆蓋 | 15      | 15      | W-740 已補                 |
+| 性能     | 10      | 10      |                            |
+| 代碼風格 | 10      | 10      |                            |
+| **總分** | **100** | **100** |                            |
+
+**結果：✅ pass**（hard gates 全過、冇 🔴 / 🟡）
+
+## 新 🟢
+
+- S-988 `UpdatePage.tsx:85`、`SelectionFooter.tsx:24`：`loading={changes.data === undefined}` 喺 `GET /api/changes` **失敗**時都係 true——頁底永遠顯示「載入中…」、「下一步」灰，頁面冇任何錯誤訊息（L2：臨時 test 用 `error: new Error('boom')`、`data: undefined` render → `disabled=true`、「載入中…」1 個、錯誤文字 0 個；跑完已刪）。之前撳得落去會喺確認發佈頁見到錯誤，而家用戶唔知要重新整理。冇 AC 講明（L1 缺），所以係 🟢；按用戶規則今個 session 修。修法：`SelectionFooter` 加 `error?: string`（`changes.error?.message`），有 error 時 `summaryOf` 回 `t('app.loadFailed', { error })`、掣照灰（App 外觀仍然未知，唔可以放行）；補一個 UpdatePage test（changes 失敗 → 見到「載入失敗…」、掣 disabled）
+
+## Handoff receipt（Re-review）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+  no_critical: pass
+  security_scan: n/a
+next_action: invoke_developer
+next_agent: frontend-developer
+branch: "feature/selective-publish"
+context: "Re-review @63f6297: W-740 + S-980..S-987 + e2e flake all verified fixed. New S-988 (🟢, user rule: fix this session, one commit `fix: S-988 | ...`): show app.loadFailed in SelectionFooter when GET /api/changes fails (keep 下一步 disabled) + UpdatePage test; reviewer re-checks only that diff, then QA S1. e2e flake fix needs CI/QA runs to confirm."
+blockers: []
+```
