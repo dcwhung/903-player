@@ -6,6 +6,7 @@
 import {
     checkThemeContrast,
     NEUTRAL_THEME,
+    THEME_COLOUR_KEYS,
     type CatalogDocument,
     type CatalogKind,
     type ContrastTheme,
@@ -15,20 +16,6 @@ import {
 export type PublishWarning =
     | ({ kind: 'contrast'; target: string } & ContrastWarning)
     | { kind: 'neutralTheme'; target: string };
-
-/** ShowTheme 嘅必填色（art 係圖，唔係色；themeSchema COLOUR_KEYS 一樣） */
-const NEUTRAL_COLOUR_KEYS = [
-    'bg',
-    'surface',
-    'track',
-    'accent',
-    'onAccent',
-    'title',
-    'text',
-    'muted',
-    'shadowDark',
-    'shadowLight',
-] as const;
 
 const KINDS: readonly CatalogKind[] = ['shows', 'dramas'];
 
@@ -44,8 +31,9 @@ const themeOf = (definition: Readonly<Record<string, unknown>>): ThemeColours | 
 /** 色值唔分大細楷（#F2F2F2 同 #f2f2f2 一樣） */
 const sameColour = (a: unknown, b: string) => typeof a === 'string' && a.toLowerCase() === b;
 
+/** 只比 THEME_COLOUR_KEYS 嗰 10 個必填色（art 係圖、選填欄位唔算），清單由 packages/catalog 共用（S-917） */
 export const isNeutralTheme = (theme: ThemeColours): boolean =>
-    NEUTRAL_COLOUR_KEYS.every((key) => sameColour(theme[key], NEUTRAL_THEME[key]));
+    THEME_COLOUR_KEYS.every((key) => sameColour(theme[key], NEUTRAL_THEME[key]));
 
 const warningsOf = (target: string, theme: ThemeColours): PublishWarning[] => [
     ...(isNeutralTheme(theme) ? [{ kind: 'neutralTheme' as const, target }] : []),
