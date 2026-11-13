@@ -15,4 +15,11 @@ export interface Env {
     PLAYER_ORIGINS: string;
     /** Worker 自己嘅 origin：OAuth redirect、CSRF Origin 檢查、catalog 圖 URL */
     WORKER_ORIGIN: string;
+    /**
+     * 選填 secret：GitHub fine-grained token（只限 dcwhung/903-player，Contents: Read and write（dispatch 要）、Actions: Read（查 run））；
+     * publish 改咗 branding 就 repository_dispatch 重新部署 GitHub Pages + 查部署狀態。冇 = 唔觸發（deploy: skipped）
+     */
+    GITHUB_DEPLOY_TOKEN?: string;
+    /** 選填 secret：Vercel Deploy Hook URL（branch main）；冇 = 唔觸發 Vercel */
+    VERCEL_DEPLOY_HOOK_URL?: string;
 }

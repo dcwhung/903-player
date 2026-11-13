@@ -6,8 +6,9 @@ import { createSession } from '../src/auth/session';
 export const ORIGIN = env.WORKER_ORIGIN;
 export const ADMIN = 'donald.cw.hung@gmail.com';
 
-export const call = (path: string, init: RequestInit = {}): Promise<Response> =>
-    Promise.resolve(worker.fetch(new Request(new URL(path, ORIGIN), init), env));
+/** bindings：要加 secret（例如部署 token）嘅 test 傳 { ...env, X: … } */
+export const call = (path: string, init: RequestInit = {}, bindings = env): Promise<Response> =>
+    Promise.resolve(worker.fetch(new Request(new URL(path, ORIGIN), init), bindings));
 
 /** 開一個真 session（同 callback 一樣經 createSession），回 Cookie header */
 export const loginCookie = async (email = ADMIN, now = Date.now()): Promise<string> => {
@@ -16,11 +17,15 @@ export const loginCookie = async (email = ADMIN, now = Date.now()): Promise<stri
 };
 
 /** 已 login + same-origin 嘅 POST */
-export const adminPost = async (path: string): Promise<Response> =>
-    call(path, { method: 'POST', headers: { cookie: await loginCookie(), origin: ORIGIN } });
+export const adminPost = async (path: string, bindings = env): Promise<Response> =>
+    call(
+        path,
+        { method: 'POST', headers: { cookie: await loginCookie(), origin: ORIGIN } },
+        bindings,
+    );
 
-export const adminGet = async (path: string): Promise<Response> =>
-    call(path, { headers: { cookie: await loginCookie() } });
+export const adminGet = async (path: string, bindings = env): Promise<Response> =>
+    call(path, { headers: { cookie: await loginCookie() } }, bindings);
 
 const base64Url = (value: unknown): string =>
     btoa(JSON.stringify(value)).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');

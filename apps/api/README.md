@@ -1,26 +1,28 @@
-# 903-player-api（Backend Phase 2a / 2b / 3a / 3b / 3c / 4）
+# 903-player-api（Backend Phase 2a / 2b / 3a / 3b / 3c / 4 / App 外觀）
 
 Cloudflare Worker：管理 catalog 內容（D1）、publish `catalog.json`（R2）、代出 `catalog.json` 同圖畀 player。
-Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a、3b）、`.proj-docs/plans/2026-11-12_plan_phase4-5.md`（Phase 4 L1）。版本記錄：`CHANGELOG.md`。
+Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a、3b）、`.proj-docs/plans/2026-11-12_plan_phase4-5.md`（Phase 4 L1）、`.proj-docs/plans/2026-11-13_plan_branding.md`（App 外觀）。版本記錄：`CHANGELOG.md`。
 
-| 路徑                               | 用途                                                                                                       | 權限                          |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| `/`、`/shows`…（`../admin/dist`）  | Admin SPA（`apps/admin`）：掃描、待辦、編輯、確認發佈、上下架記錄                                          | 公開（資料要 login）          |
-| `/auth/google/start`、`/callback`  | Google login（Authorization Code + PKCE）；`start?next=<同站 path>` login 後返嗰度（S-809，唔合規 → `/`）  | 公開                          |
-| `POST /auth/logout`                | 登出                                                                                                       | same-origin                   |
-| `GET /api/health`                  | `{ ok, version }`                                                                                          | 公開                          |
-| `GET /api/me`                      | 而家 login 咗邊個                                                                                          | session                       |
-| `POST /api/publish[?force=1]`      | D1 → `catalog.json` → R2；ID 守衛（上次有、今次冇嘅 episode ID → 409）                                     | session + same-origin         |
-| `GET /api/publishes`               | Publish 記錄（新到舊）+ `changes`（同上一次 ok publish 比，`{ items, timeline, bannerChanged }`）+ `error` | session                       |
-| `POST /api/publishes/:id/rollback` | 還原 #N 嘅上架狀態入 D1（之後新增嘅下架），再正常 publish（新一行）                                        | session + same-origin         |
-| 內容 API（2b-1，見下面）           | entries CRUD、R2 掃描、短篇排程（Phase 3 admin 用）                                                        | session（改嘢 + same-origin） |
-| Admin API（3a，見下面）            | 自動掃描、待辦、改 ID、資料夾配對、排序、變更摘要                                                          | session（改嘢 + same-origin） |
-| `PUT /api/assets`（2b-2，見下面）  | 上載 disc / tile / banner（WebP）→ R2 + `assets`，回圖檔名                                                 | session + same-origin         |
-| 首頁 banner / R2 原圖（4，見下面） | `GET` / `PUT` / `DELETE /api/banner`、`GET /api/dramas/:id/sources`、`GET /api/r2-source?key=`             | session（改嘢 + same-origin） |
-| `GET /catalog/v1/catalog.json`     | Player 讀嘅 catalog（`max-age=60` + ETag）                                                                 | 公開，CORS 限 player          |
-| `GET /catalog/v1/img/<hash>.<ext>` | Catalog 圖（content hash，`immutable`）                                                                    | 公開，CORS 限 player          |
+| 路徑                               | 用途                                                                                                                                                         | 權限                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| `/`、`/shows`…（`../admin/dist`）  | Admin SPA（`apps/admin`）：掃描、待辦、編輯、確認發佈、上下架記錄                                                                                            | 公開（資料要 login）          |
+| `/auth/google/start`、`/callback`  | Google login（Authorization Code + PKCE）；`start?next=<同站 path>` login 後返嗰度（S-809，唔合規 → `/`）                                                    | 公開                          |
+| `POST /auth/logout`                | 登出                                                                                                                                                         | same-origin                   |
+| `GET /api/health`                  | `{ ok, version }`                                                                                                                                            | 公開                          |
+| `GET /api/me`                      | 而家 login 咗邊個                                                                                                                                            | session                       |
+| `POST /api/publish[?force=1]`      | D1 → `catalog.json` → R2；ID 守衛（上次有、今次冇嘅 episode ID → 409）                                                                                       | session + same-origin         |
+| `GET /api/publishes`               | Publish 記錄（新到舊）+ `changes`（同上一次 ok publish 比，`{ items, timeline, bannerChanged, brandingChanged }`）+ `error` + `deploy` / `deployRequestedAt` | session                       |
+| `POST /api/publishes/:id/rollback` | 還原 #N 嘅上架狀態入 D1（之後新增嘅下架），再正常 publish（新一行）                                                                                          | session + same-origin         |
+| 內容 API（2b-1，見下面）           | entries CRUD、R2 掃描、短篇排程（Phase 3 admin 用）                                                                                                          | session（改嘢 + same-origin） |
+| Admin API（3a，見下面）            | 自動掃描、待辦、改 ID、資料夾配對、排序、變更摘要                                                                                                            | session（改嘢 + same-origin） |
+| `PUT /api/assets`（2b-2，見下面）  | 上載 disc / tile / banner（WebP）、App 圖示（PNG）→ R2 + `assets`，回圖檔名                                                                                  | session + same-origin         |
+| 首頁 banner / R2 原圖（4，見下面） | `GET` / `PUT` / `DELETE /api/banner`、`GET /api/dramas/:id/sources`、`GET /api/r2-source?key=`                                                               | session（改嘢 + same-origin） |
+| App 外觀（見下面）                 | `GET /api/branding`、`PUT` / `DELETE /api/branding/{icon,text}`、`GET` / `POST /api/publishes/:id/deploy`                                                    | session（改嘢 + same-origin） |
+| `GET /api/branding/favicon`        | 302 去已發佈嘅 App 圖示 favicon（冇 → `/favicon.png`），admin 分頁 icon 用                                                                                   | 公開                          |
+| `GET /catalog/v1/catalog.json`     | Player 讀嘅 catalog（`max-age=60` + ETag）                                                                                                                   | 公開，CORS 限 player          |
+| `GET /catalog/v1/img/<hash>.<ext>` | Catalog 圖（content hash，`immutable`）                                                                                                                      | 公開，CORS 限 player          |
 
-設定喺 `wrangler.toml`（D1 `DB`、R2 `CATALOG`、R2 `AUDIO`（`903-radio-drama`，只 list）、`[vars]`）；secret（`GOOGLE_CLIENT_SECRET`、`SESSION_SECRET`）唔入 repo。
+設定喺 `wrangler.toml`（D1 `DB`、R2 `CATALOG`、R2 `AUDIO`（`903-radio-drama`，只 list）、`[vars]`）；secret（`GOOGLE_CLIENT_SECRET`、`SESSION_SECRET`；選填 `GITHUB_DEPLOY_TOKEN`、`VERCEL_DEPLOY_HOOK_URL`，見「App 外觀」）唔入 repo。
 
 - `[vars]`（`ADMIN_EMAILS`、`PLAYER_ORIGINS` 等）**只改 `wrangler.toml`**：每次 `wrangler deploy`（包括 merge 入 `main` 嘅自動 deploy）都會用 `wrangler.toml` 嘅 `[vars]` 蓋走 Cloudflare dashboard 改過嘅 var；dashboard 只用嚟加 Secret（S-778）
 
@@ -136,6 +138,7 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 - 次序：先記 `publishes` 一行，再寫 R2；R2 寫失敗就刪返嗰行（ID 守衛唔會漏咗已上線嘅 ID）；R2 寫咗之後 purge edge cache 失敗只 log、唔當 publish 失敗（S-814：唔係還原會 revert D1，同已上線 catalog 唔夾）；連刪都失敗就標 `status = 'failed'`（migration `0003`）。「而家 publish 緊」、ID 守衛、「內容冇變」比較都只睇最新一行 `status = 'ok'`，記錄照列出 failed 行（`status` 欄）
 - 圖 manifest 嘅圖檔名要合 `<sha256 前 16 hex>.<webp|jpg>` 兼已經喺 `assets`
 - D1 有 banner（`PUT /api/banner`）就寫入 `catalog.json` 嘅 `banner: { standard, long }`（Worker 圖 URL，同樣要已上載）；冇 = 唔寫（player 用內建圖）。還原 #N 照用而家 D1 嘅 banner（同圖一樣唔還原）
+- D1 有 branding（`PUT /api/branding/icon` / `text`）就寫入 `catalog.json` 嘅 `branding: { icon?, text? }`（icon 五張 = Worker 圖 URL，要已上載；兩部分都冇 = 唔寫）；還原 #N 同 banner 一樣照用而家 D1。branding 同上一次 ok publish 唔同 → 觸發重新部署 player（見「App 外觀」）
 - **警告**（唔阻 publish）：`POST /api/publish` 200（包括 `unchanged`）同 `GET /api/changes` 都有 `warnings`：
     - `{ kind: 'contrast', target: '<kind>/<id>', foreground, background, ratio, minimum }`：theme 色對唔夠 WCAG AA（`checkThemeContrast`）
     - `{ kind: 'neutralTheme', target }`：theme 10 個必填色 = `NEUTRAL_THEME`（未設定配色；唔理 `art` 同選填欄位，色值唔分大細楷）
@@ -170,16 +173,16 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
 
 ## 圖片上載（Backend Phase 2b-2）
 
-`PUT /api/assets`（要 login + same-origin）：body = WebP 原始 bytes。
+`PUT /api/assets`（要 login + same-origin）：body = WebP 或 PNG 原始 bytes（格式跟 `Content-Type`）。
 
-| 檢查                                                                                   | 唔過                          |
-| -------------------------------------------------------------------------------------- | ----------------------------- |
-| `Content-Type: image/webp`                                                             | 415                           |
-| 大小 ≤ `ASSET_MAX_BYTES`（1 MB）                                                       | 413                           |
-| RIFF / WEBP header（`VP8 ` / `VP8L` / `VP8X`）讀到闊高                                 | 422                           |
-| 尺寸白名單 `ASSET_DIMENSIONS`：disc 600×600、tile 1216×684、banner 1200×517 / 2000×400 | 422（`allowed` 列出允許尺寸） |
+| 檢查                                                                                                                                                 | 唔過                                        |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `Content-Type: image/webp` 或 `image/png`                                                                                                            | 415                                         |
+| 大小 ≤ `ASSET_MAX_BYTES`（1 MB）                                                                                                                     | 413                                         |
+| WebP：RIFF / WEBP header（`VP8 ` / `VP8L` / `VP8X`）讀到闊高；PNG：8 bytes signature + 第一個 chunk 係 IHDR（長度 13，闊高 1 至 2^31 - 1；唔驗 CRC） | 422（`invalid WebP: …` / `invalid PNG: …`） |
+| 尺寸白名單（`ASSET_DIMENSIONS`）：WebP = disc 600×600、tile 1216×684、banner 1200×517 / 2000×400；PNG = App 圖示 64×64、180×180、192×192、512×512    | 422（`allowed` 列出嗰個格式允許嘅尺寸）     |
 
-- 檔名 = sha256 前 16 hex + `.webp`（同 `importLibrary.mjs` / `IMAGE_FILE_PATTERN` 一致）
+- 檔名 = sha256 前 16 hex + `.webp` / `.png`（同 `importLibrary.mjs` / `IMAGE_FILE_PATTERN` 一致；`.png` 淨係 branding icon 用得，entries / banner 唔收）
 - 已經有呢個 hash → 200 `{ name, existed: true }`（idempotent，乜都唔寫）
 - 未有 → 先寫 R2 `catalog/v1/img/<name>`，再 insert `assets` → 201 `{ name, width, height, bytes }`。R2 寫失敗就唔 insert（R2 有、D1 冇嘅孤兒檔無害；反過嚟 publish 會出爛圖）
 - Admin 流程：上載 → 攞 `name` → `PUT /api/entries/:kind/:id` 將 `images` 指去 `name`
@@ -196,11 +199,12 @@ curl -k -X PUT https://localhost:8787/api/assets -H 'Origin: https://localhost:8
 
 ## 到期提醒
 
-| 項目                                            | 到期                                                     | 要做                                                                                                 |
-| ----------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Cloudflare API token `903-player-github-deploy` | 開 token 起 **1 年**（2026-11-08 開）                    | Cloudflare → My Profile → API Tokens 開新 token（同樣權限）→ 換 GitHub secret `CLOUDFLARE_API_TOKEN` |
-| Google OAuth client                             | **6 個月冇用**會被 Google 刪（刪咗 30 日內可以 restore） | 最少半年 login 一次 admin；被刪就喺 Google Cloud Console → Credentials restore                       |
-| Google consent screen Testing 模式              | —                                                        | 只有 test user 登入得（同 whitelist 一致）；加 admin 要同時加 test user 同 `ADMIN_EMAILS`            |
+| 項目                                               | 到期                                                     | 要做                                                                                                   |
+| -------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Cloudflare API token `903-player-github-deploy`    | 開 token 起 **1 年**（2026-11-08 開）                    | Cloudflare → My Profile → API Tokens 開新 token（同樣權限）→ 換 GitHub secret `CLOUDFLARE_API_TOKEN`   |
+| Google OAuth client                                | **6 個月冇用**會被 Google 刪（刪咗 30 日內可以 restore） | 最少半年 login 一次 admin；被刪就喺 Google Cloud Console → Credentials restore                         |
+| Google consent screen Testing 模式                 | —                                                        | 只有 test user 登入得（同 whitelist 一致）；加 admin 要同時加 test user 同 `ADMIN_EMAILS`              |
+| GitHub fine-grained token（`DEPLOY_GITHUB_TOKEN`） | 開 token 時揀嘅到期日                                    | 開新 token（同樣權限）→ 換 GitHub secret → Run **Deploy API**；過咗期 publish 照成功，`deploy: failed` |
 
 ## 首頁 banner + R2 原圖（Phase 4）
 
@@ -217,6 +221,45 @@ Migration `0005_banner.sql`：`banner` 表（只會有 `id = 1` 一行；值 = R
 - 封面固定檔名（唔分大細楷，`scanListing`）：`cd cover.<jpg|jpeg|png|webp>`（disc）、`cover photo.<…>`（tile；冇 cd cover 時 disc 都用）
 - Admin 開劇集編輯頁 / 掃描後自動 call `sources` → slot 冇圖就攞 `r2-source` 裁切上載；冇原圖 = `null` / 404，靜靜雞略過
 - 每次 `r2-source` 成本：1 個 D1 query + 該劇一次掃描（根 + 每個短篇各 1 個 list；folder 互相包住就逐套掃到搵到為止）+ 1 個 head（+ 1 個 get）
+
+## App 外觀（App 圖示 + 名稱與簡介）
+
+Migration `0006_branding.sql`：`branding_icon`、`branding_text` 兩個單行表（`id = 1`，各自 `updated_at`；冇行 = 用 repo 內建）+ `publishes.deploy` / `deploy_requested_at`。同 banner 一樣係草稿：`POST /api/publish` 先寫入 `catalog.json`。
+
+| Method + path                    | 做咩                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/branding`              | `{ icon: { favicon, appleTouch, icon192, icon512, maskable, maskableBackground } \| null, text: { name, shortName?, description } \| null, updatedAt }`（icon 值 = R2 圖檔名 `<hash16>.png`；`updatedAt` = 兩部分最新嗰個，都冇 = `null`）                                                                                                                       |
+| `PUT /api/branding/icon`         | Body 同 `GET` 嘅 `icon`（六個 key 都要、全部 string、唔准多 key，唔係 → 400）；`maskableBackground` 唔係 `#rrggbb` → 422；每張要合 `<hash>.png`、已上載、R2 PNG IHDR 尺寸啱 slot（favicon 64、appleTouch 180、icon192 192、icon512 / maskable 512），唔過 → 422（同 banner 一樣分 `not uploaded` / `is not a valid PNG` / 尺寸）。底色存細楷；回同 `GET` 一樣    |
+| `DELETE /api/branding/icon`      | 還原（用 repo 內建）→ 204（冇都 204）                                                                                                                                                                                                                                                                                                                            |
+| `PUT /api/branding/text`         | `{ name, shortName?, description }`（string；`shortName` 可以 `null` / 空 = 唔設；唔准多 key，唔係 → 400）；trim 後存。trim 後空白或者超長 → 422（上限 name 40、shortName 24、description 200 字，`BRANDING_*_MAX_LENGTH`）；回同 `GET` 一樣                                                                                                                     |
+| `DELETE /api/branding/text`      | 還原 → 204                                                                                                                                                                                                                                                                                                                                                       |
+| `GET /api/branding/favicon`      | **唔使 login**：最新 ok publish 嘅 `branding.icon.favicon` → 302 去嗰張圖；冇 → 302 `/favicon.png`（admin 內建）；`Cache-Control: no-cache`                                                                                                                                                                                                                      |
+| `GET /api/publishes/:id/deploy`  | `{ status: 'queued' \| 'in_progress' \| 'success' \| 'failure' \| 'unknown', url }`：查 GitHub Actions `deploy.yml` 喺 `deployRequestedAt` 之後最早嗰個 `repository_dispatch` run（`url` = run 頁）；未有 run = `queued`；觸發失敗（`deploy: 'failed'`）= `failure`；冇 token / `deploy` 係 `none` / `skipped` / GitHub 答唔到 = `unknown`。冇呢次 publish → 404 |
+| `POST /api/publishes/:id/deploy` | 重新部署（再 dispatch + Vercel hook，唔使 branding 有改）→ `{ deploy, deployRequestedAt }`；冇呢次 publish → 404，`status = 'failed'` → 409                                                                                                                                                                                                                      |
+
+- `GET /api/changes` 加 `brandingChanged`（D1 草稿 vs 最新 ok publish）；`GET /api/publishes` 每行 `changes.brandingChanged`（同上一次 ok publish 比）、`deploy`、`deployRequestedAt`；`POST /api/publish` 回嘅 `publish` 都有 `deploy` / `deployRequestedAt`
+
+### 重新部署 player
+
+Player 喺 build 時先讀 `branding`（icon 檔、manifest、`<title>` 等），所以 publish 嘅 `branding` 同上一次 ok publish 唔同（包括還原）就自動觸發：
+
+1. `POST https://api.github.com/repos/dcwhung/903-player/dispatches`（`event_type: catalog-branding`、`client_payload.publishId`；header `Authorization: Bearer <GITHUB_DEPLOY_TOKEN>`、`Accept: application/vnd.github+json`、`User-Agent: 903-player-api`）→ `deploy.yml`（GitHub Pages）
+2. `POST <VERCEL_DEPLOY_HOOK_URL>`（Vercel production）
+
+- 結果記入 `publishes.deploy`：`triggered`（有設嘅目標全部 2xx）、`failed`（任何一個非 2xx / network error / 10 秒 timeout）、`skipped`（兩個 secret 都冇）、`none`（branding 冇改）。**部署點都唔會令 publish 失敗**（R2 已經寫咗），錯誤只 log（唔 log token / hook URL）
+- `deployRequestedAt` 喺觸發之前記低，查 run 用 `created>=`（去毫秒）
+
+**設定（用戶做，兩個都選填）**：
+
+1. GitHub → Settings → Developer settings → Fine-grained tokens：Repository access 只揀 `dcwhung/903-player`；權限 **Contents: Read and write**（`repository_dispatch` 要 Contents 寫權限）、**Actions: Read**（查部署狀態）；到期日記入下面「到期提醒」
+2. Repo → Settings → Secrets and variables → Actions → **Secrets** 加 `DEPLOY_GITHUB_TOKEN` = 上面個 token（GitHub secret 名唔准 `GITHUB_` 開頭，`deploy-api.yml` 會同步做 Worker secret `GITHUB_DEPLOY_TOKEN`）
+3. Vercel → Project → Settings → Git → **Deploy Hooks**：branch `main` → 抄 URL → 同一頁 GitHub Secrets 加 `VERCEL_DEPLOY_HOOK_URL`
+4. Actions → **Deploy API** → Run workflow（`main`）：「Sync optional deploy secrets」一步 `wrangler secret bulk` 寫入 Worker（冇設嘅唔寫；兩個都冇就跳過）
+5. 或者唔經 CI：`cd apps/api && npx wrangler secret put GITHUB_DEPLOY_TOKEN`（同 `VERCEL_DEPLOY_HOOK_URL`）
+
+- 要停：刪 GitHub secret 唔會刪 Worker secret；用 `npx wrangler secret delete GITHUB_DEPLOY_TOKEN`（或者 Cloudflare dashboard）
+- `deploy.yml` 要有 `on.repository_dispatch.types: [catalog-branding]` 先會跑（player + CI 嗰步做）
+- 本機 `.dev.vars` 唔好填真 token：本機 publish 改咗 branding 都會真係觸發部署
 
 ## Admin API（Phase 3a）
 

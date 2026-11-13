@@ -4,6 +4,7 @@ import { publishChanges } from '../admin/changes';
 import { resolveDoneFindings } from '../admin/todos';
 import type { AppEnv } from '../app';
 import { getBanner } from '../banner/store';
+import { getBranding } from '../branding/store';
 import { HTTP_STATUS } from '../config';
 import {
     commitPublish,
@@ -22,7 +23,8 @@ import {
     type PublishRow,
 } from './store';
 
-const POSITIVE_INT = /^[1-9]\d*$/;
+/** publish id path 參數（deploy/routes.ts 共用） */
+export const POSITIVE_INT = /^[1-9]\d*$/;
 
 /** admin 用嘅 camelCase；current = 最新嗰個（R2 而家嘅 catalog.json） */
 const summary = (row: PublishRow, current: boolean) => ({
@@ -36,6 +38,8 @@ const summary = (row: PublishRow, current: boolean) => ({
     rollbackOf: row.rollback_of,
     status: row.status,
     error: row.error,
+    deploy: row.deploy,
+    deployRequestedAt: row.deploy_requested_at,
     current,
 });
 
@@ -86,6 +90,7 @@ publishRoutes.post('/publish', (c) =>
             assets: await listAssetHashes(c.env.DB),
             generatedAt: new Date().toISOString(),
             banner: await getBanner(c.env.DB),
+            branding: await getBranding(c.env.DB),
         }),
     ),
 );

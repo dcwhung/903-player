@@ -45,6 +45,7 @@ export { dailyEpisodeId, EPISODE_ID_KIND, seriesEpisodeId, showEpisodeId } from 
 export { foldersFromGlobs, type Folder, type FolderSource } from './core/folderSource';
 export { compareOrderThenId, type Ordered } from './core/ordering';
 export { ID_PATTERN, SchemaError, type ParseContext } from './core/reader';
+export { HEX_COLOUR_PATTERN } from './core/hexColour';
 export { THEME_COLOUR_KEYS } from './core/themeSchema';
 
 export {

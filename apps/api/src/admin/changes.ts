@@ -2,7 +2,7 @@
  * 變更摘要（packages/catalog summarizeChanges）：
  * - GET /api/changes：而家 D1（唔包 draft）vs 最新 ok publish → 時間線 + 驗證結果（admin 確認發佈頁一次 call）
  * - publishChanges：每次 publish 同佢之前最近一次 ok publish 比（GET /api/publishes 嘅 changes）；
- *   另加 bannerChanged（S-903），淨換 banner 嗰次 items 係空都分得出
+ *   另加 bannerChanged（S-903）同 brandingChanged（App 外觀），淨換 banner / branding 嗰次 items 係空都分得出
  */
 import {
     hkToday,
@@ -14,6 +14,13 @@ import {
 import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { getBanner, type BannerImages } from '../banner/store';
+import {
+    brandingDocument,
+    plainIconUrls,
+    publishedBranding,
+    sameBranding,
+} from '../branding/document';
+import { getBranding, type BrandingDraft } from '../branding/store';
 import { CATALOG_IMAGE_PATH } from '../config';
 import {
     documentFromEntries,
@@ -114,12 +121,24 @@ export const bannerChanged = (
     return !sameBanner(draft, published);
 };
 
+/** D1 branding 草稿照 publish 格式砌，同已發佈嗰份比（未 publish 過 = 有 branding 就係改咗） */
+export const brandingChanged = (
+    draft: BrandingDraft,
+    latestDocument: string | undefined,
+    origin: string,
+): boolean =>
+    !sameBranding(
+        brandingDocument(draft, plainIconUrls(origin)).branding,
+        publishedBranding(latestDocument),
+    );
+
 changeRoutes.get('/changes', async (c) => {
-    const [rows, latest, assets, stored] = await Promise.all([
+    const [rows, latest, assets, stored, branding] = await Promise.all([
         listEntries(c.env.DB),
         latestPublish(c.env.DB),
         listAssetHashes(c.env.DB),
         getBanner(c.env.DB),
+        getBranding(c.env.DB),
     ]);
     const origin = c.env.WORKER_ORIGIN;
     const banner = stored && { standard: stored.standard, long: stored.long };
@@ -128,19 +147,21 @@ changeRoutes.get('/changes', async (c) => {
         previewDocument(rows, origin),
         hkToday(),
     );
-    const { validation, warnings } = validationOf(rows, { origin, assets, banner });
+    const { validation, warnings } = validationOf(rows, { origin, assets, banner, branding });
     return c.json({
         base: latest?.row.id ?? null,
         changes,
         validation,
         warnings,
         bannerChanged: bannerChanged(banner, latest?.document, origin),
+        brandingChanged: brandingChanged(branding, latest?.document, origin),
     });
 });
 
-/** 發佈記錄嘅變更摘要：summarizeChanges + banner 有冇變（additive 欄位，S-903） */
+/** 發佈記錄嘅變更摘要：summarizeChanges + banner / branding 有冇變（additive 欄位，S-903） */
 export interface PublishChangeSummary extends ChangeSummary {
     bannerChanged: boolean;
+    brandingChanged: boolean;
 }
 
 /** 兩份 catalog.json 嘅 banner 唔同（before 冇 = 第一次 publish：有 banner 就係改咗） */
@@ -167,6 +188,7 @@ export const publishChanges = (
                 options,
             ),
             bannerChanged: publishedBannerChanged(before, after),
+            brandingChanged: !sameBranding(publishedBranding(before), publishedBranding(after)),
         });
     });
     return summaries;
