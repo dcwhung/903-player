@@ -2,7 +2,8 @@
  * R2 原圖（Phase 4 封面編輯器；admin 開劇集編輯頁 / 掃描後自動 call，slot 冇圖就自動裁切上載）：
  * - GET /api/dramas/:id/sources：即場掃 AUDIO <audio.folder>/（= 最新掃描結果），回劇集層同每個短篇嘅
  *   「cd cover」/「cover photo」key；唔寫 D1，draft 劇都得
- * - GET /api/r2-source?key=…：代讀原圖。key 一定要係某套 r2 劇最新掃描結果嘅 cdCover / coverPhoto
+ * - GET /api/r2-source?key=…：代讀原圖。key 一定要係某套 r2 劇（audio.folder + / 係 key 前綴，folder 可以多層）
+ *   最新掃描結果嘅 cdCover / coverPhoto
  *   （白名單由同一個掃描砌，唔收任意 key，防 path traversal / 讀錄音）；大小上限 R2_SOURCE_MAX_BYTES、
  *   只准圖片 MIME；ETag + If-None-Match → 304（重複 call 唔使再傳）。
  * 已經過 same-origin + session 守門（GET 唔使 same-origin）
@@ -14,6 +15,7 @@ import type { AppEnv } from '../app';
 import {
     HTTP_STATUS,
     R2_SOURCE_CACHE_CONTROL,
+    R2_SOURCE_CONTENT_TYPE_ALIASES,
     R2_SOURCE_CONTENT_TYPES,
     R2_SOURCE_MAX_BYTES,
 } from '../config';
@@ -91,19 +93,31 @@ sourceRoutes.get('/dramas/:id/sources', async (c) => {
     return c.json(await scanSources(c.env.AUDIO, folder, definition));
 });
 
-/** key 嘅頂層資料夾用緊嘅 r2 劇（包括 draft）definition；冇就 undefined */
-const dramaUsingFolder = async (db: D1Database, folder: string): Promise<Json | undefined> =>
+/**
+ * audio.folder + / 係 key 前綴嘅 r2 劇（包括 draft）：folder 可以多層（S-900，同 /sources 用同一個 prefix），
+ * 劇嘅 folder 又可以一個包住另一個，所以可能有幾套；folder 長嘅（最深）排先（S-947）：最深嗰套一定列晒
+ * 外層喺佢 prefix 下面會列嘅 key，所以第一套已經夠，loop 只係保險（S-949）
+ */
+export const dramasCoveringKey = async (
+    db: D1Database,
+    key: string,
+): Promise<{ folder: string; definition: Json }[]> =>
     (await listStoredEntries(db))
         .filter((entry) => entry.kind === 'dramas')
-        .map((entry) => JSON.parse(entry.definition) as Json)
-        .find((definition) => r2FolderOf(definition) === folder);
+        .flatMap((entry) => {
+            const definition = JSON.parse(entry.definition) as Json;
+            const folder = r2FolderOf(definition);
+            return folder !== undefined && key.startsWith(`${folder}${KEY_SEPARATOR}`)
+                ? [{ folder, definition }]
+                : [];
+        })
+        .sort((a, b) => b.folder.length - a.folder.length);
 
-/** key 喺某套劇最新掃描嘅 cdCover / coverPhoto 入面先係 true */
+/** key 喺某套劇最新掃描嘅 cdCover / coverPhoto 入面先係 true（逐套掃，搵到就停） */
 const isScannedSource = async (env: AppEnv['Bindings'], key: string): Promise<boolean> => {
-    const folder = key.split(KEY_SEPARATOR)[0] ?? '';
-    const definition = await dramaUsingFolder(env.DB, folder);
-    if (!definition) return false;
-    return allowedKeys(await scanSources(env.AUDIO, folder, definition)).has(key);
+    for (const { folder, definition } of await dramasCoveringKey(env.DB, key))
+        if (allowedKeys(await scanSources(env.AUDIO, folder, definition)).has(key)) return true;
+    return false;
 };
 
 /** 副檔名（細楷，連 .）→ 圖片 Content-Type；唔係圖就 undefined */
@@ -112,10 +126,12 @@ const contentTypeOf = (key: string): string | undefined => {
     return dot < 0 ? undefined : R2_SOURCE_CONTENT_TYPES[key.slice(dot).toLowerCase()];
 };
 
-/** R2 有記 Content-Type 就要係圖片 MIME（冇記就靠副檔名） */
+/** R2 有記 Content-Type 就要係圖片 MIME（冇記就靠副檔名；image/jpg 當 image/jpeg，S-904） */
 const isImageObject = (object: R2Object): boolean => {
     const stored = object.httpMetadata?.contentType?.split(';')[0]?.trim().toLowerCase();
-    return stored === undefined || Object.values(R2_SOURCE_CONTENT_TYPES).includes(stored);
+    if (stored === undefined) return true;
+    const normalized = R2_SOURCE_CONTENT_TYPE_ALIASES[stored] ?? stored;
+    return Object.values(R2_SOURCE_CONTENT_TYPES).includes(normalized);
 };
 
 const notFound = (c: Context<AppEnv>) =>

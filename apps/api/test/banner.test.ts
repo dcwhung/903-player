@@ -4,6 +4,7 @@ import { parseCatalogDocument, type CatalogDocument } from '@903-player/catalog'
 import { ORIGIN, adminGet, adminPost, adminRequest, call } from './helpers';
 import { seed } from './fixtures';
 import { webpVp8, webpVp8x } from './webp';
+import { WEBP_HEADER_BYTES } from '../src/assets/webp';
 
 interface BannerBody {
     banner: { standard: string; long: string } | null;
@@ -89,6 +90,39 @@ describe('PUT /api/banner', () => {
         const response = await putBanner({ standard, long: '0000000000000000.webp' });
         expect(response.status).toBe(422);
         expect(((await response.json()) as { error: string }).error).toMatch(/not uploaded/);
+    });
+
+    it('should answer 422 not uploaded when the R2 object is gone', async () => {
+        const banner = await uploadBanner();
+        await env.CATALOG.delete(`catalog/v1/img/${banner.long}`);
+        const response = await putBanner(banner);
+        expect(response.status).toBe(422);
+        expect(((await response.json()) as { error: string }).error).toBe(
+            `long: ${banner.long} not uploaded`,
+        );
+    });
+
+    it('should answer 422 is not a valid WebP when the R2 object is not a WebP (S-902)', async () => {
+        const banner = await uploadBanner();
+        await env.CATALOG.put(`catalog/v1/img/${banner.long}`, '<html>not a webp</html>');
+        const response = await putBanner(banner);
+        expect(response.status).toBe(422);
+        expect(((await response.json()) as { error: string }).error).toBe(
+            `long: ${banner.long} is not a valid WebP`,
+        );
+    });
+
+    it('should read only the WebP header from R2, not the whole image (S-901)', async () => {
+        const banner = await uploadBanner();
+        const get = vi.spyOn(env.CATALOG, 'get');
+        try {
+            expect((await putBanner(banner)).status).toBe(200);
+            expect(get).toHaveBeenCalledTimes(2);
+            for (const [, options] of get.mock.calls)
+                expect(options).toEqual({ range: { offset: 0, length: WEBP_HEADER_BYTES } });
+        } finally {
+            get.mockRestore();
+        }
     });
 
     it('should answer 422 when a slot has the wrong size (swapped or a disc)', async () => {
@@ -194,5 +228,35 @@ describe('GET /api/changes bannerChanged', () => {
         expect(await bannerChanged()).toBe(false);
         await adminRequest('DELETE', '/api/banner');
         expect(await bannerChanged()).toBe(true);
+    });
+});
+
+describe('GET /api/publishes changes.bannerChanged (S-903)', () => {
+    beforeEach(() => seed(3));
+
+    interface HistoryRow {
+        id: number;
+        changes: { items: unknown[]; bannerChanged: boolean };
+    }
+    const history = async (): Promise<HistoryRow[]> =>
+        ((await (await adminGet('/api/publishes')).json()) as { publishes: HistoryRow[] })
+            .publishes;
+
+    it('should flag a publish that only changed the banner (newest first)', async () => {
+        await adminPost('/api/publish');
+        await putBanner(await uploadBanner());
+        await adminPost('/api/publish');
+        await adminRequest('DELETE', '/api/banner');
+        await adminPost('/api/publish');
+        const rows = await history();
+        expect(rows.map((row) => row.changes.bannerChanged)).toEqual([true, true, false]);
+        expect(rows[0]?.changes.items).toEqual([]);
+        expect(rows[1]?.changes.items).toEqual([]);
+    });
+
+    it('should flag the first publish only when it carries a banner', async () => {
+        await putBanner(await uploadBanner());
+        await adminPost('/api/publish');
+        expect((await history())[0]?.changes.bannerChanged).toBe(true);
     });
 });

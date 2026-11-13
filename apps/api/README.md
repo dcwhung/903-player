@@ -3,22 +3,22 @@
 Cloudflare Worker：管理 catalog 內容（D1）、publish `catalog.json`（R2）、代出 `catalog.json` 同圖畀 player。
 Plan：`.proj-docs/plans/2026-11-08_plan_phase2a-backend.md`、`.proj-docs/plans/2026-11-10_plan_phase2b-backend.md`（2b-1、2b-2）、`.proj-docs/plans/2026-11-10_plan_phase3-admin.md`（3a、3b）、`.proj-docs/plans/2026-11-12_plan_phase4-5.md`（Phase 4 L1）。版本記錄：`CHANGELOG.md`。
 
-| 路徑                               | 用途                                                                                                      | 權限                          |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| `/`、`/shows`…（`../admin/dist`）  | Admin SPA（`apps/admin`）：掃描、待辦、編輯、確認發佈、上下架記錄                                         | 公開（資料要 login）          |
-| `/auth/google/start`、`/callback`  | Google login（Authorization Code + PKCE）；`start?next=<同站 path>` login 後返嗰度（S-809，唔合規 → `/`） | 公開                          |
-| `POST /auth/logout`                | 登出                                                                                                      | same-origin                   |
-| `GET /api/health`                  | `{ ok, version }`                                                                                         | 公開                          |
-| `GET /api/me`                      | 而家 login 咗邊個                                                                                         | session                       |
-| `POST /api/publish[?force=1]`      | D1 → `catalog.json` → R2；ID 守衛（上次有、今次冇嘅 episode ID → 409）                                    | session + same-origin         |
-| `GET /api/publishes`               | Publish 記錄（新到舊）+ `changes`（同上一次 ok publish 比）+ `error`                                      | session                       |
-| `POST /api/publishes/:id/rollback` | 還原 #N 嘅上架狀態入 D1（之後新增嘅下架），再正常 publish（新一行）                                       | session + same-origin         |
-| 內容 API（2b-1，見下面）           | entries CRUD、R2 掃描、短篇排程（Phase 3 admin 用）                                                       | session（改嘢 + same-origin） |
-| Admin API（3a，見下面）            | 自動掃描、待辦、改 ID、資料夾配對、排序、變更摘要                                                         | session（改嘢 + same-origin） |
-| `PUT /api/assets`（2b-2，見下面）  | 上載 disc / tile / banner（WebP）→ R2 + `assets`，回圖檔名                                                | session + same-origin         |
-| 首頁 banner / R2 原圖（4，見下面） | `GET` / `PUT` / `DELETE /api/banner`、`GET /api/dramas/:id/sources`、`GET /api/r2-source?key=`            | session（改嘢 + same-origin） |
-| `GET /catalog/v1/catalog.json`     | Player 讀嘅 catalog（`max-age=60` + ETag）                                                                | 公開，CORS 限 player          |
-| `GET /catalog/v1/img/<hash>.<ext>` | Catalog 圖（content hash，`immutable`）                                                                   | 公開，CORS 限 player          |
+| 路徑                               | 用途                                                                                                       | 權限                          |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `/`、`/shows`…（`../admin/dist`）  | Admin SPA（`apps/admin`）：掃描、待辦、編輯、確認發佈、上下架記錄                                          | 公開（資料要 login）          |
+| `/auth/google/start`、`/callback`  | Google login（Authorization Code + PKCE）；`start?next=<同站 path>` login 後返嗰度（S-809，唔合規 → `/`）  | 公開                          |
+| `POST /auth/logout`                | 登出                                                                                                       | same-origin                   |
+| `GET /api/health`                  | `{ ok, version }`                                                                                          | 公開                          |
+| `GET /api/me`                      | 而家 login 咗邊個                                                                                          | session                       |
+| `POST /api/publish[?force=1]`      | D1 → `catalog.json` → R2；ID 守衛（上次有、今次冇嘅 episode ID → 409）                                     | session + same-origin         |
+| `GET /api/publishes`               | Publish 記錄（新到舊）+ `changes`（同上一次 ok publish 比，`{ items, timeline, bannerChanged }`）+ `error` | session                       |
+| `POST /api/publishes/:id/rollback` | 還原 #N 嘅上架狀態入 D1（之後新增嘅下架），再正常 publish（新一行）                                        | session + same-origin         |
+| 內容 API（2b-1，見下面）           | entries CRUD、R2 掃描、短篇排程（Phase 3 admin 用）                                                        | session（改嘢 + same-origin） |
+| Admin API（3a，見下面）            | 自動掃描、待辦、改 ID、資料夾配對、排序、變更摘要                                                          | session（改嘢 + same-origin） |
+| `PUT /api/assets`（2b-2，見下面）  | 上載 disc / tile / banner（WebP）→ R2 + `assets`，回圖檔名                                                 | session + same-origin         |
+| 首頁 banner / R2 原圖（4，見下面） | `GET` / `PUT` / `DELETE /api/banner`、`GET /api/dramas/:id/sources`、`GET /api/r2-source?key=`             | session（改嘢 + same-origin） |
+| `GET /catalog/v1/catalog.json`     | Player 讀嘅 catalog（`max-age=60` + ETag）                                                                 | 公開，CORS 限 player          |
+| `GET /catalog/v1/img/<hash>.<ext>` | Catalog 圖（content hash，`immutable`）                                                                    | 公開，CORS 限 player          |
 
 設定喺 `wrangler.toml`（D1 `DB`、R2 `CATALOG`、R2 `AUDIO`（`903-radio-drama`，只 list）、`[vars]`）；secret（`GOOGLE_CLIENT_SECRET`、`SESSION_SECRET`）唔入 repo。
 
@@ -206,17 +206,17 @@ curl -k -X PUT https://localhost:8787/api/assets -H 'Origin: https://localhost:8
 
 Migration `0005_banner.sql`：`banner` 表（只會有 `id = 1` 一行；值 = R2 圖檔名 `<hash>.webp`）。
 
-| Method + path                  | 做咩                                                                                                                                                                                                                                                                                                                                       |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET /api/banner`              | `{ banner: { standard, long } \| null, updatedAt }`                                                                                                                                                                                                                                                                                        |
-| `PUT /api/banner`              | `{ standard, long }`（兩個都要，唔係 string → 400）；每張要合 `<hash>.webp`、已上載、R2 WebP header 尺寸啱 slot（standard 1200×517、long 2000×400），唔過 → 422；回同 `GET` 一樣。同 entries 一樣係草稿：`POST /api/publish` 先上線                                                                                                        |
-| `DELETE /api/banner`           | 還原預設（刪行）→ 204；冇 banner 都 204                                                                                                                                                                                                                                                                                                    |
-| `GET /api/dramas/:id/sources`  | 即場掃 `AUDIO` `<audio.folder>/`（= 最新掃描結果，唔寫 D1，draft 劇都得）→ `{ folder, cdCover, coverPhoto, arcs: [{ name, id, cdCover, coverPhoto }] }`；key = `AUDIO` 完整 key（冇 = `null`；`arcs[].id` 對唔到 definition 就 `null`）。400 id 唔合規、404 冇呢套劇、422 `audio.host` 唔係 `r2`                                           |
-| `GET /api/r2-source?key=<key>` | 代讀原圖：`key` 要係某套 r2 劇（包括 draft）即場掃描嘅 `cdCover` / `coverPhoto`，其他一律 404（唔收任意 key）；R2 冇呢個 object → 404；> `R2_SOURCE_MAX_BYTES`（20 MB）→ 413；R2 記嘅 Content-Type 唔係 jpeg / png / webp → 415；冇 `key` → 400。200 = 原圖（Content-Type 跟副檔名、`private, no-cache` + ETag，`If-None-Match` 啱 → 304） |
+| Method + path                  | 做咩                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/banner`              | `{ banner: { standard, long } \| null, updatedAt }`                                                                                                                                                                                                                                                                                                                                                                 |
+| `PUT /api/banner`              | `{ standard, long }`（兩個都要，唔係 string → 400）；每張要合 `<hash>.webp`、已上載、R2 WebP header 尺寸啱 slot（standard 1200×517、long 2000×400；只 range get 頭 `WEBP_HEADER_BYTES` = 30 bytes），唔過 → 422（`not uploaded` = assets / R2 冇；`is not a valid WebP` = R2 有但唔係 WebP）；回同 `GET` 一樣。同 entries 一樣係草稿：`POST /api/publish` 先上線                                                    |
+| `DELETE /api/banner`           | 還原預設（刪行）→ 204；冇 banner 都 204                                                                                                                                                                                                                                                                                                                                                                             |
+| `GET /api/dramas/:id/sources`  | 即場掃 `AUDIO` `<audio.folder>/`（= 最新掃描結果，唔寫 D1，draft 劇都得）→ `{ folder, cdCover, coverPhoto, arcs: [{ name, id, cdCover, coverPhoto }] }`；key = `AUDIO` 完整 key（冇 = `null`；`arcs[].id` 對唔到 definition 就 `null`）。400 id 唔合規、404 冇呢套劇、422 `audio.host` 唔係 `r2`                                                                                                                    |
+| `GET /api/r2-source?key=<key>` | 代讀原圖：`key` 要係某套 r2 劇（包括 draft；`audio.folder` + `/` 係 key 前綴，folder 可以多層）即場掃描嘅 `cdCover` / `coverPhoto`，其他一律 404（唔收任意 key）；R2 冇呢個 object → 404；> `R2_SOURCE_MAX_BYTES`（20 MB）→ 413；R2 記嘅 Content-Type 唔係 jpeg / png / webp（`image/jpg` 當 jpeg）→ 415；冇 `key` → 400。200 = 原圖（Content-Type 跟副檔名、`private, no-cache` + ETag，`If-None-Match` 啱 → 304） |
 
 - 封面固定檔名（唔分大細楷，`scanListing`）：`cd cover.<jpg|jpeg|png|webp>`（disc）、`cover photo.<…>`（tile；冇 cd cover 時 disc 都用）
 - Admin 開劇集編輯頁 / 掃描後自動 call `sources` → slot 冇圖就攞 `r2-source` 裁切上載；冇原圖 = `null` / 404，靜靜雞略過
-- 每次 `r2-source` 成本：1 個 D1 query + 該劇一次掃描（根 + 每個短篇各 1 個 list）+ 1 個 head（+ 1 個 get）
+- 每次 `r2-source` 成本：1 個 D1 query + 該劇一次掃描（根 + 每個短篇各 1 個 list；folder 互相包住就逐套掃到搵到為止）+ 1 個 head（+ 1 個 get）
 
 ## Admin API（Phase 3a）
 
