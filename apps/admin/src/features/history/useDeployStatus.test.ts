@@ -69,6 +69,23 @@ describe('useDeployStatus', () => {
         expect(statusMock).toHaveBeenCalledTimes(DEPLOY_POLL_MAX);
     });
 
+    // S-967：到上限仲未有結論 → 狀態不明（畫面有重新部署入口），保留最後一個 run 連結
+    it('should report unknown with the last run url when the limit is reached', async () => {
+        statusMock.mockResolvedValue(RUNNING);
+        const { result } = renderStatus(FIRST_REQUEST);
+        await advancePolls(DEPLOY_POLL_MAX - 2);
+        expect(result.current).toEqual(RUNNING);
+        await advancePolls(3);
+        expect(result.current).toEqual({ status: 'unknown', url: RUNNING.url });
+    });
+
+    it('should report unknown without a url when every poll failed', async () => {
+        statusMock.mockRejectedValue(new Error('offline'));
+        const { result } = renderStatus(FIRST_REQUEST);
+        await advancePolls(DEPLOY_POLL_MAX + 1);
+        expect(result.current).toEqual({ status: 'unknown', url: null });
+    });
+
     it('should restart the poll limit for a redeploy', async () => {
         statusMock.mockResolvedValue(RUNNING);
         const { rerender } = renderStatus(FIRST_REQUEST);
