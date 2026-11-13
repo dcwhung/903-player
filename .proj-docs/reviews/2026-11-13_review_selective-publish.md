@@ -292,3 +292,45 @@ branch: "feature/selective-publish"
 context: "Re-review 4 @185f41a: S-989 (sr-only missing-settings text, test fails without fix) and S-990 (CHANGELOG 0.3.0 + selective.css header) verified fixed. No new items. Report committed locally, not pushed (code CI running)."
 blockers: []
 ```
+
+## Re-review 5（未完成紅字）
+
+- 日期：2026-11-13　審閱者：Code Reviewer　目標：`06d8578`（`fix: show 未完成 in red (--danger-ink) on the update page`）　Tier：T2（只驗呢個 diff）
+- 用戶要求：「未完成用紅字顯示」；`.lock` 由 `color: var(--muted)` 改 `font-weight: 600; color: var(--danger-ink)`（`selective.css` + mockup）
+- Hard gates：all pass（`npx prettier --check` 兩個檔、`npx vitest run colorTokens.node.test.ts` 4/4（`selective.css` 冇 hardcode hex）；淨改 CSS，lint / tsc 唔受影響；developer 本地 `e2e:admin` 綠）
+- Token ✅：用現有 `--danger-ink`（同 `theme.css` / `phase4.css` 錯誤字一致），冇新 token、冇 hex；`tokens.css` 淺色 `#b3262d`、深色兩段（`prefers-color-scheme` + `[data-theme='dark']`）都係 `#f6a9a2`，mockup 三段 token 值一樣
+- AA 對比 ✅（12px / 600 屬一般字，要 ≥ 4.5:1；`.card` 底 = `--surface`，hover 行 = `--surface-2`）：淺色 `#b3262d` 對 `#ffffff` 6.50:1、對 `#f1f5f9` 5.93:1；深色 `#f6a9a2` 對 `#1b2635` 8.08:1、對 `#223043` 7.07:1。睇過 `update-selective-dark.png`：「未完成」紅字清楚，同「設定」紅掣一致
+- `.lock` 影響範圍 ✅：admin 用 `.pick-cell .lock`，`className="lock"` 淨係 `PublishCell` 一處；`.box.locked` / `.handle.locked` 係另一個 class，唔中。Mockup 嘅 `.lock` 雖然係全域 selector，但成份 mockup 淨係一個 `class="lock"`
+- 冇新 item
+
+| 維度     | 得分    | 滿分    |
+| -------- | ------- | ------- |
+| 正確性   | 25      | 25      |
+| 安全性   | 20      | 20      |
+| 可維護性 | 20      | 20      |
+| 測試覆蓋 | 15      | 15      |
+| 性能     | 10      | 10      |
+| 代碼風格 | 10      | 10      |
+| **總分** | **100** | **100** |
+
+**結果：✅ pass**（冇 🔴 / 🟡 / 新 🟢）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: n/a
+  tests: pass
+  coverage: n/a
+  no_critical: pass
+  security_scan: n/a
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "feature/selective-publish"
+context: "Re-review 5 @06d8578: .lock uses existing --danger-ink token; AA contrast light 6.50/5.93, dark 8.08/7.07 (surface/hover); .lock scoped to PublishCell only. No new items. Report committed locally, not pushed (code CI running)."
+blockers: []
+```
