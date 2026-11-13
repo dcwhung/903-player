@@ -59,9 +59,13 @@ describe('BannerPage', () => {
         show();
         expect(await screen.findByText('內建預設')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '還原預設' })).toBeDisabled();
-        expect(screen.getAllByRole('button', { name: '更換 Banner（由窄版開始）' })).toHaveLength(
-            2,
-        );
+        // 兩個 slot 掣名唔同，螢幕閱讀器分得出窄版 / 闊版（S-914）
+        expect(
+            screen.getByRole('button', { name: '更換首頁 Banner（由窄版開始）— 窄版' }),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole('button', { name: '更換首頁 Banner（由窄版開始）— 闊版' }),
+        ).toBeInTheDocument();
         expect(screen.getByText('窄版（手機直版）')).toBeInTheDocument();
         expect(screen.getByText('輸出 2000 × 400 WebP')).toBeInTheDocument();
     });

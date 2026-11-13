@@ -1,5 +1,6 @@
 /*
  * 首頁 Banner 兩個 slot（窄版 1200×517、闊版 2000×400）：冇自訂就顯示內建預設圖；撳任何一個都由窄版開始換
+ * （掣名講埋係邊個 slot，螢幕閱讀器分得出，S-914）
  * Design Origin: mockup: _mockups_/admin-phase4/index.html#e（.img-slot.banner-std / .banner-long）
  */
 import { Pencil } from 'lucide-react';
@@ -11,8 +12,20 @@ import { t } from '../../i18n/t';
 import { SLOT_SIZES, sizeLabel } from '../../ui/imageUpload';
 
 const SLOTS = [
-    { key: 'standard', slot: 'bannerStandard', className: 'banner-std', cap: 'banner.standardCap' },
-    { key: 'long', slot: 'bannerLong', className: 'banner-long', cap: 'banner.longCap' },
+    {
+        key: 'standard',
+        slot: 'bannerStandard',
+        className: 'banner-std',
+        cap: 'banner.standardCap',
+        name: 'banner.slotStandard',
+    },
+    {
+        key: 'long',
+        slot: 'bannerLong',
+        className: 'banner-long',
+        cap: 'banner.longCap',
+        name: 'banner.slotLong',
+    },
 ] as const;
 
 const DEFAULTS: Record<keyof BannerImages, string> = {
@@ -29,12 +42,12 @@ interface BannerSlotsProps {
 export function BannerSlots({ banner, disabled, onChange }: BannerSlotsProps) {
     return (
         <div className="media banner-media">
-            {SLOTS.map(({ key, slot, className, cap }) => (
+            {SLOTS.map(({ key, slot, className, cap, name }) => (
                 <div className="slot" key={key}>
                     <button
                         type="button"
                         className={`img-slot ${className}`}
-                        aria-label={t('banner.slotLabel')}
+                        aria-label={t('banner.slotLabel', { slot: t(name) })}
                         disabled={disabled}
                         onClick={onChange}
                     >
