@@ -24,8 +24,8 @@ const changes = (bannerChanged: boolean): ChangesResponse => ({
 
 const show = (bannerChanged = false) =>
     renderAt(
-        '/banner',
-        '/banner',
+        '/appearance',
+        '/appearance',
         <BannerPage />,
         fakeData({ changes: resource(changes(bannerChanged)) }),
     );
@@ -95,7 +95,7 @@ describe('BannerPage', () => {
         await pick();
         const first = await screen.findByRole('dialog', { name: /窄版/ });
         expect(within(first).getByText('1 / 2')).toBeInTheDocument();
-        expect(within(first).getByRole('button', { name: '取消（兩張均不更換）' })).toBeEnabled();
+        expect(within(first).getByRole('button', { name: '取消' })).toBeEnabled();
         await userEvent.click(within(first).getByRole('button', { name: '下一張：闊版' }));
         const second = await screen.findByRole('dialog', { name: /闊版/ });
         expect(within(second).getByText('2 / 2')).toBeInTheDocument();
@@ -117,7 +117,7 @@ describe('BannerPage', () => {
         await userEvent.click(await screen.findByRole('button', { name: '更換 Banner' }));
         await pick();
         await userEvent.click(await screen.findByRole('button', { name: '下一張：闊版' }));
-        await userEvent.click(await screen.findByRole('button', { name: '取消（兩張均不更換）' }));
+        await userEvent.click(await screen.findByRole('button', { name: '取消' }));
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(api.mock.calls.every(([, init]) => (init?.method ?? 'GET') === 'GET')).toBe(true);
     });

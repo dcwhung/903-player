@@ -27,10 +27,13 @@ describe('Nav v4', () => {
             '更新3',
             '節目',
             '廣播劇',
-            '首頁 Banner',
+            'App 外觀',
             '上下架記錄',
         ]);
         expect(following(nav.getByText('內容'), links[0] as Element)).toBe(true);
+        // App 外觀喺「品牌」組（2026-11-13 由內容搬過去）
+        expect(following(nav.getByText('品牌'), links[3] as Element)).toBe(true);
+        expect(following(links[2] as Element, nav.getByText('品牌'))).toBe(true);
         expect(nav.getByRole('link', { name: '更新（3 項待辦）' })).toBeInTheDocument();
     });
 

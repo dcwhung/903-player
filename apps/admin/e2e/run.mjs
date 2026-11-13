@@ -1734,7 +1734,10 @@ const bannerCheck = (browser) =>
         async () => {
             const state = loggedIn();
             const page = await newPage(browser, state);
+            // 舊網址 /banner 轉去 /appearance（2026-11-13 改名「App 外觀」）
             await page.goto(`${BASE}/banner`);
+            await page.waitForURL(`${BASE}/appearance`);
+            await page.getByRole('heading', { level: 1, name: 'App 外觀' }).waitFor();
             await page.getByText('內建預設').waitFor();
             await shoot(page, 'banner-default');
             const chooser = page.waitForEvent('filechooser');

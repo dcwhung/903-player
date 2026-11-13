@@ -65,9 +65,9 @@ describe('PublishPage', () => {
         const errors = screen.getByRole('list', { name: '錯誤' });
         expect(errors).toHaveTextContent('首頁 Banner 不完整：缺少闊版（2000 × 400）');
         expect(errors).toHaveTextContent('請重新更換 Banner，或還原預設');
-        expect(within(errors).getByRole('link', { name: '前往 Banner 頁' })).toHaveAttribute(
+        expect(within(errors).getByRole('link', { name: '前往 App 外觀' })).toHaveAttribute(
             'href',
-            '/banner',
+            '/appearance',
         );
         expect(screen.queryByText(BANNER_ERROR)).not.toBeInTheDocument();
     });
@@ -85,7 +85,7 @@ describe('PublishPage', () => {
         show(changesOf({ validation: { ok: false, error } }));
         const errors = screen.getByRole('list', { name: '錯誤' });
         expect(errors).toHaveTextContent(error);
-        expect(within(errors).getByRole('link', { name: '前往 Banner 頁' })).toBeInTheDocument();
+        expect(within(errors).getByRole('link', { name: '前往 App 外觀' })).toBeInTheDocument();
     });
 
     it('should count a banner-only change as something to publish', () => {

@@ -115,7 +115,8 @@ export function Nav(props: NavProps) {
             />
             <Item to="/shows" label={t('nav.shows')} icon={Radio} mini={mini} />
             <Item to="/dramas" label={t('nav.dramas')} icon={Disc} mini={mini} />
-            <Item to="/banner" label={t('nav.banner')} icon={Image} mini={mini} />
+            <span className="group">{t('nav.brand')}</span>
+            <Item to="/appearance" label={t('nav.appearance')} icon={Image} mini={mini} />
             <span className="group">{t('nav.records')}</span>
             <Item to="/history" label={t('nav.history')} icon={History} mini={mini} />
             <NavFooter {...props} onToggle={toggle} />

@@ -1,5 +1,5 @@
 /*
- * 首頁 Banner 頁：Design Origin: mockup: _mockups_/admin-phase4/index.html#e
+ * App 外觀頁（品牌 → App 外觀；第一區首頁 Banner，之後加 App 圖示、簡介）：Design Origin: mockup: _mockups_/admin-phase4/index.html#e
  * 狀態 pill（內建預設 / 自訂 · 未發佈 / 自訂）+ 還原預設（確認，danger）+ 更換 Banner（兩步裁切，useBannerFlow）；
  * 兩個 slot 顯示而家嘅圖（冇自訂 = 內建預設）。全部係草稿，發佈先上線
  */
@@ -65,10 +65,11 @@ export function BannerPage() {
     return (
         <>
             <div className="title-row">
-                <h1>{t('banner.title')}</h1>
+                <h1>{t('appearance.title')}</h1>
             </div>
             <div className="card banner-card">
                 <div className="banner-head">
+                    <h2>{t('banner.title')}</h2>
                     {banner.data && <StatusPill banner={current} pending={pending} />}
                     <button
                         type="button"
