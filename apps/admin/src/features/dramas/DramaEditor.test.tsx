@@ -39,7 +39,7 @@ describe('DramaEditor', () => {
         const fetchMock = api();
         renderAt('/dramas/lancy/theme', '/dramas/:id/theme', <DramaEditorPage tab="theme" />);
         expect(
-            await screen.findByRole('heading', { name: '蘭茜夫人劇場 · 配色' }),
+            await screen.findByRole('region', { name: '蘭茜夫人劇場 · 配色' }),
         ).toBeInTheDocument();
         expect(screen.getByRole('link', { name: '配色' })).toHaveAttribute('aria-current', 'page');
         // 冇碟面：唔抽色，只出說明

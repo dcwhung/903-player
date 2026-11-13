@@ -39,7 +39,7 @@ describe('warningRows', () => {
         expect(rows[0]).toMatchObject({
             text: '口水多過浪花：未設定配色，現正使用中性灰',
             scope: '節目 · 配色',
-            href: '/shows/waves',
+            href: '/shows/waves/theme',
             action: '前往選擇',
         });
     });

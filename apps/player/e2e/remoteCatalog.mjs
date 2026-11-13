@@ -376,7 +376,7 @@ const checkOfflineCache = async (env, json) => {
 
 /**
  * S-765：harness 預設（冇 section 蓋過 route）SW 發嘅 catalog request 原封不動去本機 preview（S-648），
- * e2e preview 對 e2e-catalog/ 答 404（vite.config.ts e2eCatalogNotFound，唔做 SPA fallback）→
+ * e2e preview 對 e2e-catalog/ 答 404（scripts/e2eCatalogNotFound.ts，唔做 SPA fallback）→
  * NetworkFirst 唔 cache 非 200，catalog-json cache 要係空。先確認 SW 真係發過 request，唔係空過
  */
 const checkDefaultNotCached = async (env) => {

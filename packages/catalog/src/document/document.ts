@@ -1,18 +1,27 @@
 /*
  * catalog.json（v1）：一份文件包晒全部節目同劇集，畀 player 喺 runtime 讀（Phase 1），將來由 backend publish（Phase 2）。
  * 每項 = 一個 folder：definition 同 library 嘅 show.json / drama.json 一模一樣，images 係「檔名 → 絕對 URL」manifest。
- * 選填 banner = 首頁 banner 兩張圖（窄 + 闊，缺一張成份拒絕）。
+ * 選填 banner = 首頁 banner 兩張圖（窄 + 闊，缺一張成份拒絕）；選填 branding = App 圖示 + 名稱與簡介（branding.ts）。
  * 呢度只驗文件結構（任何一項唔合格就成份拒絕）；definition 內容由 buildRegistry / buildShowRegistry 驗。
  * 規則同 schemas/catalog.schema.json 一致（document/catalogSchema.node.test.ts 鎖住）
  */
 import type { Folder, FolderSource } from '../core/folderSource';
 import { ID_PATTERN } from '../core/reader';
+import { readBranding, type CatalogBranding } from './branding';
+import {
+    DOCUMENT_NAME,
+    fail,
+    readImageUrl,
+    readKnownKeys,
+    readRecord,
+    type AssetRef,
+    type Raw,
+} from './fields';
+
+export { CatalogDocumentError, isCatalogImageUrl, type AssetRef } from './fields';
 
 /** 唯一識得嘅版本；唔識嘅版本成份拒絕（player fallback 內建資料） */
 export const CATALOG_SCHEMA_VERSION = 1;
-
-/** 錯誤 message 前綴 + documentSource 嘅 Folder.source */
-const DOCUMENT_NAME = 'catalog.json';
 
 export type CatalogKind = 'shows' | 'dramas';
 const KINDS: readonly CatalogKind[] = ['shows', 'dramas'];
@@ -25,9 +34,6 @@ export interface CatalogEntry {
     /** 檔名（可以有 sub-folder，例如 arcs/season-1/disc.webp）→ 絕對 URL */
     images: Readonly<Record<string, string>>;
 }
-
-/** catalog.json 入面一張圖：https 絕對 URL 或者同 origin 嘅絕對路徑（同 images manifest 嘅值一樣） */
-export type AssetRef = string;
 
 /** 首頁 banner：窄版 1200×517 + 闊版 2000×400（ASSET_DIMENSIONS），兩張一齊換 */
 export interface CatalogBanner {
@@ -43,37 +49,14 @@ export interface CatalogDocument {
     dramas: readonly CatalogEntry[];
     /** 選填（schemaVersion 唔升，舊 player 忽略）；冇 = player 用內建圖 */
     banner?: CatalogBanner;
-}
-
-export class CatalogDocumentError extends Error {
-    override readonly name = 'CatalogDocumentError';
+    /** 選填（同 banner 一樣唔升 schemaVersion）；冇 = player 用 repo 內建 icon / 名稱 */
+    branding?: CatalogBranding;
 }
 
 /** ISO 8601 日期時間，一定要有時區（Z 或 ±hh:mm） */
 const DATE_TIME_PATTERN = /^(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 /** 圖檔名：相對 folder 嘅路徑，唔准開頭 /、唔准 . / .. 段、唔准 backslash */
 const IMAGE_FILE_PATTERN = /^(?!.*(^|\/)\.\.?(\/|$))[^/\\]+(\/[^/\\]+)*$/;
-/** 同 origin 嘅絕對路徑：/ 開頭但唔係 //（protocol-relative 會變第二個 host） */
-const SAME_ORIGIN_PATH_PATTERN = /^\/(?!\/)/;
-/** https + 最少一個字嘅 host（package 唔用 DOM 嘅 URL；同 schema 用同一條 pattern） */
-const HTTPS_URL_PATTERN = /^https:\/\/[^/?#\s]+([/?#].*)?$/;
-
-const fail = (path: string, message: string): never => {
-    throw new CatalogDocumentError(`${DOCUMENT_NAME}: ${path} ${message}`);
-};
-
-type Raw = Record<string, unknown>;
-
-const isRecord = (value: unknown): value is Raw =>
-    typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const readRecord = (value: unknown, path: string): Raw =>
-    isRecord(value) ? value : fail(path, 'must be an object');
-
-/** https 絕對 URL（要有 host），或者同 origin 嘅絕對路徑 */
-export const isCatalogImageUrl = (url: string): boolean =>
-    SAME_ORIGIN_PATH_PATTERN.test(url) || HTTPS_URL_PATTERN.test(url);
-
 const isDateTime = (value: unknown): value is string => {
     if (typeof value !== 'string') return false;
     const day = DATE_TIME_PATTERN.exec(value)?.[1];
@@ -83,18 +66,9 @@ const isDateTime = (value: unknown): value is string => {
 
 const BANNER_KEYS: readonly (keyof CatalogBanner)[] = ['standard', 'long'];
 
-const readImageUrl = (value: unknown, path: string): AssetRef =>
-    typeof value === 'string' && isCatalogImageUrl(value)
-        ? value
-        : fail(path, 'must be an https URL or a same-origin absolute path');
-
 /** banner 兩張都要、唔准多出 key（打錯字會靜靜雞冇 banner） */
 const readBanner = (value: unknown): CatalogBanner => {
-    const raw = readRecord(value, 'banner');
-    Object.keys(raw).forEach((key) => {
-        if (!(BANNER_KEYS as readonly string[]).includes(key))
-            fail('banner', `has an unknown key "${key}"`);
-    });
+    const raw = readKnownKeys(value, 'banner', BANNER_KEYS);
     return {
         standard: readImageUrl(raw.standard, 'banner.standard'),
         long: readImageUrl(raw.long, 'banner.long'),
@@ -148,6 +122,7 @@ export const parseCatalogDocument = (value: unknown): CatalogDocument => {
         shows: shows ?? [],
         dramas: dramas ?? [],
         ...(raw.banner === undefined ? {} : { banner: readBanner(raw.banner) }),
+        ...(raw.branding === undefined ? {} : { branding: readBranding(raw.branding) }),
     };
 };
 

@@ -1,4 +1,4 @@
-/* API 回應形狀（apps/api/src/{admin,content,catalog}/**，api 0.8.0） */
+/* API 回應形狀（apps/api/src/{admin,content,catalog,branding,deploy}/**，api 0.9.0） */
 import type { ChangeSummary, ExpandedSchedule, ScheduleRule } from '@903-player/catalog';
 
 export type EntryKind = 'shows' | 'dramas';
@@ -104,6 +104,8 @@ export interface ChangesResponse {
     warnings?: PublishWarning[];
     /** 首頁 banner（草稿）同最新 publish 唔同 */
     bannerChanged?: boolean;
+    /** App 圖示 / 名稱與簡介（草稿）同最新 publish 唔同（api 0.9.0；舊 api 冇 = 冇改） */
+    brandingChanged?: boolean;
 }
 
 /** 首頁 banner：兩張圖檔名（<hash16>.webp）；null = 內建預設 */
@@ -114,6 +116,30 @@ export interface BannerImages {
 
 export interface BannerResponse {
     banner: BannerImages | null;
+    updatedAt: string | null;
+}
+
+/** App 圖示五張（R2 圖檔名 <hash16>.png）+ maskable 安全區外嘅底色 #rrggbb */
+export interface BrandingIcon {
+    favicon: string;
+    appleTouch: string;
+    icon192: string;
+    icon512: string;
+    maskable: string;
+    maskableBackground: string;
+}
+
+/** 名稱與簡介：shortName 冇 = 用 App 名 */
+export interface BrandingText {
+    name: string;
+    shortName?: string | null;
+    description: string;
+}
+
+/** GET /api/branding：null = 用 repo 內建 */
+export interface BrandingResponse {
+    icon: BrandingIcon | null;
+    text: BrandingText | null;
     updatedAt: string | null;
 }
 
@@ -129,9 +155,19 @@ export interface DramaSources extends SourceCovers {
     arcs: (SourceCovers & { name: string; id: string | null })[];
 }
 
-/** GET /api/publishes 每行嘅 changes（api 0.8.1 加 bannerChanged；舊 api / 舊記錄冇 = 冇換） */
+/** GET /api/publishes 每行嘅 changes（api 0.8.1 加 bannerChanged、0.9.0 加 brandingChanged；舊 api / 舊記錄冇 = 冇換） */
 export interface PublishChangeSummary extends ChangeSummary {
     bannerChanged?: boolean;
+    brandingChanged?: boolean;
+}
+
+/** 發佈後重新部署 player：none = branding 冇改、skipped = 未設定 secret、failed = 觸發失敗 */
+export type DeployRequest = 'none' | 'triggered' | 'skipped' | 'failed';
+
+/** GET /api/publishes/:id/deploy（GitHub Actions run；url = run 頁，冇 run = null） */
+export interface DeployStatus {
+    status: 'queued' | 'in_progress' | 'success' | 'failure' | 'unknown';
+    url: string | null;
 }
 
 export interface PublishSummary {
@@ -147,6 +183,9 @@ export interface PublishSummary {
     error: string | null;
     current: boolean;
     changes?: PublishChangeSummary;
+    /** api 0.9.0：舊 api 冇 = 唔顯示部署狀態 */
+    deploy?: DeployRequest;
+    deployRequestedAt?: string | null;
 }
 
 export interface ScheduleState {

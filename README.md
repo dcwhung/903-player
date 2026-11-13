@@ -87,6 +87,16 @@ D1（`apps/api`）已經係內容 SSoT，repo `library/` 只係 fallback。Produ
 fallback 就跟 prebuild snapshot 嘅 `banner`，都冇就用 `src/assets/banner.webp` / `banner-wide.webp`（`bannerImages()`）。
 橫額 `<img>` 同邊色 canvas 一律 CORS 載入（R2 圖唔會 taint canvas）；SW 照用 catalog 圖嘅 CacheFirst（banner 圖同其他圖喺同一個 `img/` folder）
 
+### App 外觀 branding（build 時套用，v1.36.0）
+
+`catalog.json` 選填 `branding`（admin「App 外觀」頁出）：App 圖示 + 名稱 / 簡介，production build（`VITE_CATALOG_URL` 有設定）時喺 `vite.config.ts` 讀：
+
+- `branding.text` → manifest `name` / `short_name`（冇 `shortName` 就用 `name`）/ `description`；`index.html` 嘅 `<title>`、`meta description`、`og:title` / `og:site_name` / `og:description`（`scripts/brandingConfig.ts`，值做 HTML escape）。冇就保持寫死嘅 `903 Player` / `903 叱咤 Player`
+- `branding.icon` → 下載五張 PNG（`favicon` / `appleTouch` / `icon192` / `icon512` / `maskable`，驗 PNG magic bytes + sha256 檔名）覆蓋 `public/` 內建嗰五張，寫去 branded public 副本（gitignored）再改 `publicDir`（`scripts/brandingIcons.ts`）。下載失敗 / 唔係 PNG / hash 唔啱 → 用全套內建 icon，build 唔會失敗
+- 唔改 runtime 行為：只係 build 時嘅值。已安裝 app 嘅圖示 / 名稱要重裝先更新
+- `vite.config.ts` 自己 fetch catalog 讀 branding（唔靠 `catalogSnapshot` 喺 `buildStart` 寫嘅檔——snapshot 喺 `configResolved` 之後先行，manifest / `publicDir` 要更早定）；e2e / 冇 `VITE_CATALOG_URL` / 任何失敗 → 用內建值
+- apps/api publish 改咗 `branding` 會向呢個 repo dispatch `catalog-branding`（`.github/workflows/deploy.yml` 收），重 build 套用
+
 ### 由本機 folder 生成 drama.json（`apps/player/scripts/dramaFromFolder.ts`）
 
 > 主要入口已經改為 admin / API 掃描：`POST /api/dramas/:id/scan` 直接 list R2 bucket `903-radio-drama`（見 `apps/api/README.md`）。

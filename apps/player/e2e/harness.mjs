@@ -114,7 +114,7 @@ export const E2E_CATALOG_GLOB = '**/e2e-catalog/**';
  * Playwright 改過嘅 SW request（fulfill、abort、fallback 改 header 都試過）會令 Chromium 重複裝同一版 SW，
  * PWA 換版 e2e（Shift-reload，S-648）多 reload 一次，真機冇呢個情況。
  * vite preview 係 SPA，冇呢個檔本來都答 200 + index.html，會入 SW 嘅 catalog-json cache（S-765）：
- * 已喺 harness 以外修，e2e mode preview 對 e2e-catalog/ 答 404（vite.config.ts e2eCatalogNotFound），
+ * 已喺 harness 以外修，e2e mode preview 對 e2e-catalog/ 答 404（scripts/e2eCatalogNotFound.ts），
  * remoteCatalog.mjs「預設 404 唔入 SW cache」section 鎖住
  */
 const catalogNotFound = (route) =>

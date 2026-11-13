@@ -51,6 +51,12 @@
 - 減少動態 = 唔播動畫、直接切換；唔可以因為等 `animationend` 而令元素卡住
 - 時間 / easing 用 `tokens.css` 現有過場 token（`--view-transition-*`）
 
+## Admin 介面文字（用戶 2026-11-13 決定）
+
+- Admin 介面所有文字（`apps/admin/src/i18n/zh-HK.ts`、aria-label、tooltip、dialog、toast）一律用**書面語**，唔准廣東話口語（嘅 / 咗 / 唔 / 喺 / 撳 / 嚟 / 冇 等）；`apps/admin/src/i18n/writtenChinese.test.ts` 鎖住
+- `_mockups_/` 入面 admin 畫面嘅介面文字都要書面語；mockup 嘅說明（state-label、問題表）可以照用廣東話
+- 掣字盡量短（「更換」「還原」），要分辨就用 aria-label 寫明對象（例如「更換首頁 Banner」）
+
 ## 回覆語言（用戶 2026-11-04 決定）
 
 - 同用戶嘅所有回覆一律用繁體中文（廣東話書面語）；code、指令、技術名詞先用英文

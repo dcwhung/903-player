@@ -9,17 +9,20 @@
     - AC-4 Phase 3b（plan §3b.3）：`ci.yml` check job 加 `build:admin`、e2e job 加 `e2e:admin` + admin screenshot artifact；root `vitest.config.ts` projects 加 `apps/admin`、`tsconfig.json` reference、`eslint.config.js` admin 用同一套 size 規則；lockfile 只加 admin 依賴（`@dnd-kit/*`、`lucide-react`），現有套件版本唔變
     - AC-5 Lane D（`.proj-docs/backlog.md` S-752 / S-759 / S-761 / S-762 / S-766）：root `package.json` devDeps 聲明 `typescript` / `vitest` / `@vitest/coverage-v8`（lockfile 只改 root devDeps block，解析版本唔變）；root `npm run coverage` = player + catalog 兩個 project，用 root `vitest.config.ts` coverage block；`.proj-docs/qa/ledger-ignore` ignore `.vscode/*`、`apps/player/scripts/arcCover/*`（`impact` 唔再出 UNCOVERED）；`ci.yml` check job 上載 production `dist` artifact，e2e job 喺 `npm run e2e` 之前跑「Production smoke (catalog flag off)」：`sw.js` 冇 `catalog-json` route、splash 移走、版本號出到、0 個 `catalog.json` request、0 pageerror
     - AC-6 Lane E（`.proj-docs/backlog.md` S-757 / S-765 / S-852 / S-853 / S-854）：`vercel.json` 入 scope（Vercel build `npm run build -w apps/player` → `apps/player/dist`，agent branch prefix 唔 deploy）；`ci.yml` `player-dist-production` `retention-days: 7`；production smoke 等 preview 30 秒都未起到 → 印 `preview.log` 兼 `exit 1`；smoke / e2e / snapshot unit 分工寫喺 `ci.yml` 注釋；e2e mode `vite preview`（`e2e/run.mjs` 用 `--mode e2e` 起）對 `<base>e2e-catalog/` 答 404、唔做 SPA fallback（`vite.config.ts` `e2eCatalogNotFound`），production / 其他 mode preview 不變
+    - AC-7 App 外觀 CI / build（`.proj-docs/plans/2026-11-13_plan_branding.md`「CI」「apps/player」）：`deploy.yml` 加 `repository_dispatch: types: [catalog-branding]`（build 照跑 lint + test）；`vite.config.ts` async config 經 `resolveBuildBranding` 改 `publicDir` / manifest 文字 / `injectBrandingText`（細節屬 catalog-data AC-10）；`e2eCatalogNotFound` 抽去 `scripts/e2eCatalogNotFound.ts`（S-965，行為不變）；player 1.36.0、lockfile 只改 api version
 - Scope files:
     - `package.json` `package-lock.json` `apps/player/package.json` `eslint.config.js`
     - `tsconfig.json` `vitest.config.ts` `apps/player/tsconfig.app.json` `apps/player/tsconfig.node.json`
     - `packages/catalog/{package.json,tsconfig.json,tsconfig.node.json,tsconfig.src.json,vitest.config.ts}` `packages/catalog/src/console.d.ts`
     - `.github/workflows/ci.yml` `.github/workflows/deploy.yml` `.proj-docs/qa/ledger-ignore`（S-762）`vercel.json`（S-757）
     - `apps/player/e2e/run.mjs` `apps/player/e2e/harness.mjs` `apps/player/vite.config.ts` `apps/player/scripts/catalogCaching.{ts,test.ts}`（workbox runtime catalog route，Phase 1）
+    - `apps/player/scripts/e2eCatalogNotFound.{ts,test.ts}`（AC-7）
 - Commands:
     - （Phase 0a；冇 bump version 嗰陣先用）`npm run build`，再喺 `apps/player/dist` 跑 `find . -type f | sort | xargs sha256sum`，同 `origin/main` 獨立 worktree build 嘅清單 `diff`（一次）
     - `npm run lint`；`npm test`（CI 同 SHA 綠就引用）
     - e2e：`npm run e2e`（CI 同 SHA 綠就引用；AC-5 production smoke = CI e2e job 同名 step）
     - AC-5：`npm run coverage`（root，一次）；`impact` 確認 `.vscode/` / `arcCover/` 歸 IGNORED
     - AC-6：S-854 用假 `npx`（即刻 exit 1）+ 空 `dist/sw.js` 跑 smoke step 開頭到 `node` 之前（一次：30 秒後印 log、exit 1）；S-765 見 catalog-data e2e「Remote catalog：預設 404 唔入 SW cache」+ PWA 換版 section（連跑多次 full e2e）；`vercel.json` 證據 = 檔案內容對 `apps/player` build / output path（Vercel preview 已停，見 `git.deploymentEnabled`）
-- PWA gate: no（`sw.js` / manifest / 更新邏輯冇改；dist 一樣即係 SW precache 一樣。Phase 1 起 `VITE_CATALOG_URL` 有設先加 catalog runtimeCaching route，production 冇設 → `sw.js` 冇 route；PWA 換版由 e2e section 證。2b-2 `vite.config.ts` 加 `catalogSnapshot()` plugin：只改 precache 內容（snapshot 圖），SW 策略唔變；驗證屬 catalog-data AC-5，PWA 換版由 CI e2e 證）
+    - AC-7：`npm test -- apps/player/scripts`；`deploy.yml` YAML parse `on`；PWA：冇 URL production build manifest / index.html 同 origin/main 比、branded build 見 catalog-data AC-10；PWA 換版 section + production smoke 由 CI 同 SHA 證
+- PWA gate: no（App 外觀 1.36.0：manifest 文字 / icon 只喺 catalog 有 branding 先變、SW 策略 / 更新邏輯唔變，AC-7 驗；之前：`sw.js` / manifest / 更新邏輯冇改；dist 一樣即係 SW precache 一樣。Phase 1 起 `VITE_CATALOG_URL` 有設先加 catalog runtimeCaching route，production 冇設 → `sw.js` 冇 route；PWA 換版由 e2e section 證。2b-2 `vite.config.ts` 加 `catalogSnapshot()` plugin：只改 precache 內容（snapshot 圖），SW 策略唔變；驗證屬 catalog-data AC-5，PWA 換版由 CI e2e 證）
 - Out of scope: `deploy-api.yml`（屬 api 鏈）、`.vscode/` / `apps/player/scripts/arcCover/`（S-762 起 ledger-ignore）、`apps/player/scripts/generateIcons.mjs`（開發工具，只改相對 path）、各功能鏈（各自 plan）

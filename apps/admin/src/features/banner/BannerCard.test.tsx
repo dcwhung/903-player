@@ -4,7 +4,7 @@ import { hasIcon } from '../../../tests/icons';
 import { fakeData, mockApi, renderAt, resource } from '../../../tests/renderApp';
 import type { ChangesResponse } from '../../api/types';
 import { loadSource, renderOutput } from '../../ui/imageCrop';
-import { BannerPage } from './BannerPage';
+import { BannerCard } from './BannerCard';
 
 vi.mock('../../ui/imageCrop', async (importOriginal) => ({
     ...(await importOriginal<typeof import('../../ui/imageCrop')>()),
@@ -24,9 +24,9 @@ const changes = (bannerChanged: boolean): ChangesResponse => ({
 
 const show = (bannerChanged = false) =>
     renderAt(
-        '/banner',
-        '/banner',
-        <BannerPage />,
+        '/appearance',
+        '/appearance',
+        <BannerCard />,
         fakeData({ changes: resource(changes(bannerChanged)) }),
     );
 
@@ -35,7 +35,7 @@ const pick = async () => {
     await userEvent.upload(input, new File(['x'], 'banner-2026.jpg', { type: 'image/jpeg' }));
 };
 
-describe('BannerPage', () => {
+describe('BannerCard', () => {
     beforeEach(() => {
         vi.stubGlobal(
             'URL',
@@ -54,11 +54,11 @@ describe('BannerPage', () => {
         }));
     });
 
-    it('should show the built-in banners with 內建預設 and 還原預設 disabled', async () => {
+    it('should show the built-in banners with 內建預設 and 還原 disabled', async () => {
         mockApi({ 'GET /api/banner': () => ({ body: { banner: null, updatedAt: null } }) });
         show();
         expect(await screen.findByText('內建預設')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '還原預設' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: '還原首頁 Banner' })).toBeDisabled();
         // 兩個 slot 掣名唔同，螢幕閱讀器分得出窄版 / 闊版（S-914）
         expect(
             screen.getByRole('button', { name: '更換首頁 Banner（由窄版開始）— 窄版' }),
@@ -74,7 +74,7 @@ describe('BannerPage', () => {
         mockApi({ 'GET /api/banner': () => ({ body: { banner: CUSTOM, updatedAt: 'x' } }) });
         show(true);
         expect(await screen.findByText('自訂 · 未發佈')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '還原預設' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: '還原首頁 Banner' })).toBeEnabled();
     });
 
     it('should crop 窄版 then 闊版 in one dialog and upload both before saving the banner', async () => {
@@ -89,13 +89,13 @@ describe('BannerPage', () => {
             },
         });
         show();
-        const change = await screen.findByRole('button', { name: '更換 Banner' });
+        const change = await screen.findByRole('button', { name: '更換首頁 Banner' });
         expect(hasIcon(change, 'upload')).toBe(true);
         await userEvent.click(change);
         await pick();
         const first = await screen.findByRole('dialog', { name: /窄版/ });
         expect(within(first).getByText('1 / 2')).toBeInTheDocument();
-        expect(within(first).getByRole('button', { name: '取消（兩張均不更換）' })).toBeEnabled();
+        expect(within(first).getByRole('button', { name: '取消' })).toBeEnabled();
         await userEvent.click(within(first).getByRole('button', { name: '下一張：闊版' }));
         const second = await screen.findByRole('dialog', { name: /闊版/ });
         expect(within(second).getByText('2 / 2')).toBeInTheDocument();
@@ -114,10 +114,10 @@ describe('BannerPage', () => {
             'GET /api/banner': () => ({ body: { banner: null, updatedAt: null } }),
         });
         show();
-        await userEvent.click(await screen.findByRole('button', { name: '更換 Banner' }));
+        await userEvent.click(await screen.findByRole('button', { name: '更換首頁 Banner' }));
         await pick();
         await userEvent.click(await screen.findByRole('button', { name: '下一張：闊版' }));
-        await userEvent.click(await screen.findByRole('button', { name: '取消（兩張均不更換）' }));
+        await userEvent.click(await screen.findByRole('button', { name: '取消' }));
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(api.mock.calls.every(([, init]) => (init?.method ?? 'GET') === 'GET')).toBe(true);
     });
@@ -129,10 +129,10 @@ describe('BannerPage', () => {
             'DELETE /api/banner': deleted,
         });
         show();
-        await userEvent.click(await screen.findByRole('button', { name: '還原預設' }));
-        const dialog = screen.getByRole('dialog', { name: '還原預設 Banner？' });
+        await userEvent.click(await screen.findByRole('button', { name: '還原首頁 Banner' }));
+        const dialog = screen.getByRole('dialog', { name: '還原首頁 Banner？' });
         expect(dialog).toHaveTextContent('兩張自訂 Banner 將被刪除');
-        await userEvent.click(within(dialog).getByRole('button', { name: '還原預設' }));
+        await userEvent.click(within(dialog).getByRole('button', { name: '還原' }));
         await waitFor(() => expect(deleted).toHaveBeenCalledOnce());
     });
 });

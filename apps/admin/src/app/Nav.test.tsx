@@ -24,13 +24,16 @@ describe('Nav v4', () => {
             .getAllByRole('link')
             .filter((link) => !link.classList.contains('brand-link'));
         expect(links.map((link) => link.textContent)).toEqual([
+            'App 外觀',
             '更新3',
             '節目',
             '廣播劇',
-            '首頁 Banner',
-            '上下架記錄',
+            '發佈 / 部署',
         ]);
-        expect(following(nav.getByText('內容'), links[0] as Element)).toBe(true);
+        // 「品牌」組放最頂（2026-11-13 用戶要求），之後先係「內容」
+        expect(following(nav.getByText('品牌'), links[0] as Element)).toBe(true);
+        expect(following(links[0] as Element, nav.getByText('內容'))).toBe(true);
+        expect(following(nav.getByText('內容'), links[1] as Element)).toBe(true);
         expect(nav.getByRole('link', { name: '更新（3 項待辦）' })).toBeInTheDocument();
     });
 
@@ -54,7 +57,7 @@ describe('Nav v4', () => {
 
     it('should show one cycling theme button with the expand button below it when collapsed', () => {
         renderNav(true);
-        const cycle = screen.getByRole('button', { name: /主題：跟系統/ });
+        const cycle = screen.getByRole('button', { name: /主題：跟隨系統/ });
         const toggle = screen.getByRole('button', { name: '展開選單' });
         expect(toggle.closest('.nav-tools')).toBe(cycle.closest('.nav-tools'));
         expect(following(cycle, toggle)).toBe(true);

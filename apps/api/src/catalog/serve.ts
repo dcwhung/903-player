@@ -12,8 +12,8 @@ import {
     CATALOG_JSON_MAX_AGE_SECONDS,
     CATALOG_JSON_PATH,
     HTTP_STATUS,
-    IMAGE_FILE_PATTERN,
     IMAGE_MAX_AGE_SECONDS,
+    SERVED_IMAGE_FILE_PATTERN,
 } from '../config';
 import { csvList } from '../lib/env';
 
@@ -85,6 +85,6 @@ catalogRoutes.get(CATALOG_JSON_PATH.slice(CATALOG_JSON_PATH.lastIndexOf('/')), (
 
 catalogRoutes.get('/img/:file', (c) => {
     const file = c.req.param('file');
-    if (!IMAGE_FILE_PATTERN.test(file)) return withCors(c, notFound());
+    if (!SERVED_IMAGE_FILE_PATTERN.test(file)) return withCors(c, notFound());
     return serve(c, `${CATALOG_IMAGE_KEY_PREFIX}${file}`, IMAGE_CACHE_CONTROL);
 });

@@ -2,6 +2,25 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.9.0 — 2026-11-13
+
+App 外觀（`.proj-docs/plans/2026-11-13_plan_branding.md`）：App 圖示 + 名稱與簡介，publish 後自動重新部署 player。
+
+### Added
+
+- `GET /api/branding`、`PUT` / `DELETE /api/branding/icon`（五張 PNG：favicon 64、appleTouch 180、icon192、icon512、maskable 512 + `maskableBackground`）、`PUT` / `DELETE /api/branding/text`（name ≤ 40、shortName? ≤ 24、description ≤ 200 字）；migration `0006_branding.sql`
+- `PUT /api/assets` 收 PNG（`image/png`：signature + IHDR 闊高，只限 icon 四個尺寸），檔名 `<hash16>.png`；WebP 不變
+- Publish 寫 `catalog.json` 嘅 `branding: { icon?, text? }`；`GET /api/changes` 同 `GET /api/publishes` 每行 `changes` 加 `brandingChanged`
+- Publish 嘅 branding 有改 → 觸發重新部署 player：GitHub `repository_dispatch`（`catalog-branding`）+ Vercel Deploy Hook；選填 secret `GITHUB_DEPLOY_TOKEN`、`VERCEL_DEPLOY_HOOK_URL`（冇 = `skipped`，失敗 = `failed`，都唔影響 publish）
+- Publish 記錄加 `deploy`（`none` / `triggered` / `skipped` / `failed`）同 `deployRequestedAt`（`POST /api/publish`、`GET /api/publishes`）
+- `GET /api/publishes/:id/deploy`（GitHub Actions `deploy.yml` run 狀態 + 連結）、`POST /api/publishes/:id/deploy`（重新部署）
+- `GET /api/branding/favicon`（公開）：302 去已發佈嘅 favicon，冇就 `/favicon.png`
+- `deploy-api.yml`：GitHub secret `DEPLOY_GITHUB_TOKEN` / `VERCEL_DEPLOY_HOOK_URL` 有設先同步做 Worker secret（`wrangler secret bulk`），未設就跳過
+
+### Changed
+
+- `PUT /api/banner` 嘅已上載圖檢查抽做 `assets/storedImage.ts`（banner / branding 共用），行為不變
+
 ## 0.8.1 — 2026-11-13
 
 Phase 4 L1 review backlog（`.proj-docs/reviews/2026-11-12_review_api-phase4-0.8.0.md`）。API contract 只有加欄位；加 response 欄位當 PATCH，跟 0.7.1 慣例（S-945）。

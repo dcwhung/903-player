@@ -5,6 +5,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="robots" content="noindex" />
         <title>903 Player Admin</title>
+        <!-- 分頁 icon 跟已發佈嘅 App 圖示（GET /api/branding/favicon 302；未設定就 302 去內建 /favicon.png） -->
+        <link rel="icon" href="/api/branding/favicon" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <!--
             淺 / 深色：first paint 之前套用 localStorage 嘅選擇（key 同 src/app/themePref.ts THEME_KEY 一致），
             唔會先閃一下系統色；讀唔到就跟系統

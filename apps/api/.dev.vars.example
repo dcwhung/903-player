@@ -5,3 +5,6 @@ SESSION_SECRET=paste-a-random-32-byte-secret
 # 本機要用 https（catalog.json 嘅圖 URL 一定要 https）：wrangler dev --local-protocol https
 WORKER_ORIGIN=https://localhost:8787
 PLAYER_ORIGINS=http://localhost:5173,https://903-player.vercel.app,https://dcwhung.github.io
+# 選填：publish 改咗 branding 就觸發重新部署 player（本機唔好填真 token，否則本機 publish 會真係觸發部署）
+# GITHUB_DEPLOY_TOKEN=
+# VERCEL_DEPLOY_HOOK_URL=

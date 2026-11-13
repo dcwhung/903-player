@@ -1,5 +1,6 @@
 /* D1 讀寫：entries / assets / publishes（SQL 全部 parameterized） */
 import type { CatalogKind } from '@903-player/catalog';
+import type { DeployState } from '../deploy/trigger';
 
 export interface EntryRow {
     kind: CatalogKind;
@@ -23,6 +24,10 @@ export interface PublishRow {
     status: PublishStatus;
     /** failed 嘅原因（migration 0004；ok 行係 null） */
     error: string | null;
+    /** 重新部署 player（migration 0006）：改咗 branding 先唔係 none */
+    deploy: DeployState;
+    /** 觸發部署嘅時間（ISO；none 係 null） */
+    deploy_requested_at: string | null;
 }
 
 export type PublishStatus = 'ok' | 'failed';
@@ -40,7 +45,7 @@ export interface NewPublish {
 }
 
 const SUMMARY_COLUMNS =
-    'id, created_at, created_by, hash, show_count, drama_count, episode_count, rollback_of, status, error';
+    'id, created_at, created_by, hash, show_count, drama_count, episode_count, rollback_of, status, error, deploy, deploy_requested_at';
 
 /**
  * Publish 用嘅 entries：按 id 排（同 buildCatalogJson.mjs folder 名排序一致，方便開 flag 前比較）；
@@ -203,6 +208,25 @@ export const publishDocuments = async (db: D1Database): Promise<Map<number, stri
                 .all<{ id: number; document: string }>()
         ).results.map((row) => [row.id, row.document]),
     );
+
+/** 一次 publish 嘅摘要（部署狀態 / 重新部署用）；冇 = null */
+export const findPublish = (db: D1Database, id: number): Promise<PublishRow | null> =>
+    db
+        .prepare(`SELECT ${SUMMARY_COLUMNS} FROM publishes WHERE id = ?`)
+        .bind(id)
+        .first<PublishRow>();
+
+/** 記低部署觸發結果（publish 之後 / 重新部署） */
+export const setPublishDeploy = async (
+    db: D1Database,
+    id: number,
+    { deploy, requestedAt }: { deploy: DeployState; requestedAt: string },
+): Promise<void> => {
+    await db
+        .prepare('UPDATE publishes SET deploy = ?, deploy_requested_at = ? WHERE id = ?')
+        .bind(deploy, requestedAt, id)
+        .run();
+};
 
 /** 還原用：snapshot + status（failed 嗰份從未上過 R2，唔准還原，S-797） */
 export const publishSnapshot = (

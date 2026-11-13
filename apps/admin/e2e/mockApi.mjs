@@ -283,6 +283,7 @@ export const createState = ({
     r2Covers,
     warnings,
     banner: null,
+    branding: { icon: null, text: null },
     entries: [
         show('waves', '口水多過浪花', 1, { airTime: { start: '15:00', end: '16:30' } }),
         show('night', '深夜節目', 2),
@@ -375,6 +376,8 @@ const publishRow = (id) => ({
     error: null,
     current: true,
     changes: changesOf({ publishes: [] }),
+    deploy: 'none',
+    deployRequestedAt: null,
 });
 
 /** If-None-Match: * = 新增（admin 新節目）；同 apps/api 一樣回 201 */
@@ -467,6 +470,33 @@ const scheduleRoute = (state, route, request, [dramaId, arcId]) => {
         : json(route, { error: 'no such schedule' }, { status: 404 });
 };
 
+/* GET = 部署狀態（triggered 行逐漸由 queued → success）；POST = 重新部署 */
+const deployRoute = (state, route, request, id) => {
+    const row = [...state.publishes, ...state.history].find((r) => r.id === id);
+    if (!row) return json(route, { error: 'no such publish' }, { status: 404 });
+    if (request.method() === 'POST') {
+        row.deploy = 'triggered';
+        row.deployRequestedAt = new Date(E2E_NOW).toISOString();
+        state.deployPolls = state.deployPolls ?? {};
+        state.deployPolls[id] = 0;
+        return json(route, { deploy: row.deploy, deployRequestedAt: row.deployRequestedAt });
+    }
+    // e2e：第一次 poll 就成功（UI 初次 render 顯示「部署中」，poll 返嚟變「已部署」）
+    return json(route, {
+        status: 'success',
+        url: 'https://github.com/dcwhung/903-player/actions/runs/1',
+    });
+};
+
+/** App 外觀草稿有冇改（圖示或名稱與簡介） */
+const brandingChanged = (state) => state.branding.icon !== null || state.branding.text !== null;
+
+const brandingBody = (state) => ({
+    icon: state.branding.icon,
+    text: state.branding.text,
+    updatedAt: brandingChanged(state) ? 'branding-v1' : null,
+});
+
 const handlers = {
     'GET /api/me': (state, route) =>
         state.loggedIn
@@ -499,6 +529,7 @@ const handlers = {
             validation: { ok: true, episodeCount: 102 },
             warnings: state.warnings ? WARNINGS : [],
             bannerChanged: state.banner !== null,
+            brandingChanged: brandingChanged(state),
         }),
     'GET /api/banner': (state, route) =>
         json(route, { banner: state.banner, updatedAt: state.banner ? 'banner-v1' : null }),
@@ -517,7 +548,20 @@ const handlers = {
         return route.fulfill({ path: `${FIXTURES}${fixture}`, contentType: 'image/webp' });
     },
     'POST /api/publish': (state, route) => {
-        const row = publishRow(state.publishes.length + 1 + state.history.length);
+        const changed = brandingChanged(state);
+        const row = {
+            ...publishRow(state.publishes.length + 1 + state.history.length),
+            changes: {
+                ...changesOf(state),
+                bannerChanged: state.banner !== null,
+                brandingChanged: changed,
+            },
+            deploy: changed ? 'triggered' : 'none',
+            deployRequestedAt: changed ? new Date(E2E_NOW).toISOString() : null,
+        };
+        // branding 已發佈：草稿清走
+        state.branding = { icon: null, text: null };
+        state.banner = null;
         state.publishes.unshift(row);
         return json(route, { publish: row });
     },
@@ -529,8 +573,28 @@ const handlers = {
     },
     'PUT /api/assets': (state, route, request) => {
         state.assets.push(request.postDataBuffer());
-        return json(route, { name: `img${state.assets.length}.webp` });
+        const ext = request.headers()['content-type'] === 'image/png' ? 'png' : 'webp';
+        return json(route, { name: `img${state.assets.length}.${ext}` });
     },
+    'GET /api/branding': (state, route) => json(route, brandingBody(state)),
+    'PUT /api/branding/icon': (state, route, request) => {
+        state.branding.icon = request.postDataJSON();
+        return json(route, brandingBody(state));
+    },
+    'DELETE /api/branding/icon': (state, route) => {
+        state.branding.icon = null;
+        return route.fulfill({ status: 204 });
+    },
+    'PUT /api/branding/text': (state, route, request) => {
+        state.branding.text = request.postDataJSON();
+        return json(route, brandingBody(state));
+    },
+    'DELETE /api/branding/text': (state, route) => {
+        state.branding.text = null;
+        return route.fulfill({ status: 204 });
+    },
+    'GET /api/branding/favicon': (state, route) =>
+        route.fulfill({ status: 302, headers: { location: '/favicon.png' } }),
 };
 
 export const installMockApi = async (page, state) => {
@@ -540,9 +604,9 @@ export const installMockApi = async (page, state) => {
             new URL(request.url()).pathname.match(IMAGE_PATH)?.[1] ?? '',
         );
         // 今次 e2e 上載咗嘅圖（PUT /api/assets 回 img<N>.webp）：出返上載嗰份 bytes
-        const uploaded = name.match(/^img(\d+)\.webp$/);
+        const uploaded = name.match(/^img(\d+)\.(webp|png)$/);
         const body = uploaded ? state.assets[Number(uploaded[1]) - 1] : undefined;
-        if (body) return route.fulfill({ body, contentType: 'image/webp' });
+        if (body) return route.fulfill({ body, contentType: `image/${uploaded[2]}` });
         if (!FIXTURE_NAMES.has(name)) return route.fulfill({ status: 404 });
         return route.fulfill({ path: `${FIXTURES}${name}`, contentType: 'image/webp' });
     });
@@ -569,6 +633,8 @@ export const installMockApi = async (page, state) => {
             const body = sourcesOf(state, decodeURIComponent(sources[1]));
             return body ? json(route, body) : json(route, { error: 'not r2' }, { status: 422 });
         }
+        const deploy = url.pathname.match(/^\/api\/publishes\/(\d+)\/deploy$/);
+        if (deploy) return deployRoute(state, route, request, Number(deploy[1]));
         const handler = handlers[key];
         return handler
             ? handler(state, route, request)

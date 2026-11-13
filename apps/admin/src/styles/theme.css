@@ -886,6 +886,8 @@ textarea.autosize {
     font-size: 13px;
     font-weight: 400;
     line-height: 1.45;
+    /* 多行提示（圖片 slot：名 / 輸出 / 上限）用 \n 分行 */
+    white-space: pre-line;
     box-shadow: 0 6px 18px rgb(0 0 0 / 0.2);
     pointer-events: none;
 }

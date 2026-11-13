@@ -27,6 +27,10 @@ binding = "AUDIO"
 bucket_name = "903-radio-drama"
 
 # 非 secret 設定；GOOGLE_CLIENT_SECRET、SESSION_SECRET 用 `wrangler secret put`（本機：.dev.vars）
+# 選填 secret（App 外觀：publish 改咗 branding 就重新部署 player；冇 = 唔觸發，publish 照成功）：
+#   GITHUB_DEPLOY_TOKEN（GitHub fine-grained token，repository_dispatch + 查部署狀態）
+#   VERCEL_DEPLOY_HOOK_URL（Vercel Deploy Hook）
+#   兩個都由 GitHub secret 經 deploy-api.yml 同步（見 README.md「重新部署 player」）
 [vars]
 GOOGLE_CLIENT_ID = "678038303553-e1sa3dlsj2mlrf09hvijukbbhksjth4h.apps.googleusercontent.com"
 # 逗號分隔

@@ -60,3 +60,41 @@ describe('HistoryPage rollback', () => {
         expect(hasIcon(screen.getByRole('button', { name: '還原' }), 'undo-2')).toBe(true);
     });
 });
+
+/** 部署失敗嘅版本：DeployCell 出「重新部署 #id」掣（QA 2026-11-13 補 useRedeploy 測試） */
+const failedDeploy = (id: number) => ({
+    ...row(id, true),
+    deploy: 'failed',
+    deployRequestedAt: '2026-11-13T10:00:00.000Z',
+});
+
+describe('HistoryPage redeploy', () => {
+    it('should toast and reload the list after a successful redeploy', async () => {
+        const api = mockApi({
+            'GET /api/publishes': () => ({ body: { publishes: [failedDeploy(2)] } }),
+            'POST /api/publishes/2/deploy': () => ({
+                body: { deploy: 'triggered', deployRequestedAt: '2026-11-13T10:05:00.000Z' },
+            }),
+        });
+        renderAt('/history', '/history', <HistoryPage />);
+        await userEvent.click(await screen.findByRole('button', { name: '重新部署 #2' }));
+        expect(await screen.findByText('已重新開始部署 #2')).toBeInTheDocument();
+        await waitFor(() =>
+            expect(api.mock.calls.filter(([url]) => url === '/api/publishes')).toHaveLength(2),
+        );
+    });
+
+    it('should toast the error and keep the list when the redeploy fails', async () => {
+        const api = mockApi({
+            'GET /api/publishes': () => ({ body: { publishes: [failedDeploy(2)] } }),
+            'POST /api/publishes/2/deploy': () => ({
+                status: 502,
+                body: { error: 'dispatch failed' },
+            }),
+        });
+        renderAt('/history', '/history', <HistoryPage />);
+        await userEvent.click(await screen.findByRole('button', { name: '重新部署 #2' }));
+        expect(await screen.findByText(/^重新部署失敗：/)).toBeInTheDocument();
+        expect(api.mock.calls.filter(([url]) => url === '/api/publishes')).toHaveLength(1);
+    });
+});
