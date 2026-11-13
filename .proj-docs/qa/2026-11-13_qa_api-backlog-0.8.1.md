@@ -51,3 +51,9 @@ ci: n/a (branch not pushed; no run for d6e9b0b)
 next_action: main agent fixes S-949 in this PR, then push code + docs together and wait for CI green (lint, unit, build, e2e) before merge; merge main → run scripts/qa/ledger-merge.mjs
 context: T1, 0 blocking findings, new ID S-949 only; e2e not run (no player/admin change)
 ```
+
+## S-949 修正（main agent）
+
+- `dramasCoveringKey` export，`r2Source.test.ts` 加 test 鎖住「最深嘅劇排先」（`[inner, FOLDER]`）；註解改寫做「最深嗰套已經夠，loop 只係保險」；`:186` test 改名
+- `apps/api` `npm test`：workerd 272 pass、scripts 12 pass；`tsc -b`、repo root `npm run lint` 過
+- `api` S1 成條鏈（111 個檔）重新 freeze

@@ -6,6 +6,7 @@
 import { env } from 'cloudflare:test';
 import { adminGet, call, loginCookie } from './helpers';
 import { drama, markDraft, putEntry, seed } from './fixtures';
+import { dramasCoveringKey } from '../src/content/sources';
 
 const FOLDER = '黃金少年';
 const MB = 1024 * 1024;
@@ -183,7 +184,7 @@ describe('GET /api/r2-source', () => {
         expect((await source(`廣播劇/Cover Photo.jpg`)).status).toBe(404);
     });
 
-    it('should find the key under whichever drama folder scans it (nested drama folders)', async () => {
+    it('should serve a key only the inner drama folder scans', async () => {
         const inner = `${FOLDER}/外傳`;
         await putEntry('dramas', 'side', {
             ...drama(3),
@@ -198,6 +199,20 @@ describe('GET /api/r2-source', () => {
         const outer = await source(DRAMA_PHOTO);
         expect(outer.status).toBe(200);
         await outer.arrayBuffer();
+    });
+
+    it('should list the dramas covering a key deepest folder first (S-949)', async () => {
+        const inner = `${FOLDER}/外傳`;
+        await putEntry('dramas', 'side', {
+            ...drama(3),
+            audio: { host: 'r2', folder: inner, file: '{no2}.m4a' },
+        });
+        const deep = `${inner}/Season 1/cd cover.png`;
+        expect((await dramasCoveringKey(env.DB, deep)).map((d) => d.folder)).toEqual([
+            inner,
+            FOLDER,
+        ]);
+        expect(await dramasCoveringKey(env.DB, `其他劇/Cover Photo.JPG`)).toEqual([]);
     });
 
     it('should need a session', async () => {

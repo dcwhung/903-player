@@ -95,9 +95,10 @@ sourceRoutes.get('/dramas/:id/sources', async (c) => {
 
 /**
  * audio.folder + / 係 key 前綴嘅 r2 劇（包括 draft）：folder 可以多層（S-900，同 /sources 用同一個 prefix），
- * 劇嘅 folder 又可以一個包住另一個，所以可能有幾套；folder 長嘅（最深）排先，通常掃一次就中（S-947）
+ * 劇嘅 folder 又可以一個包住另一個，所以可能有幾套；folder 長嘅（最深）排先（S-947）：最深嗰套一定列晒
+ * 外層喺佢 prefix 下面會列嘅 key，所以第一套已經夠，loop 只係保險（S-949）
  */
-const dramasCoveringKey = async (
+export const dramasCoveringKey = async (
     db: D1Database,
     key: string,
 ): Promise<{ folder: string; definition: Json }[]> =>
