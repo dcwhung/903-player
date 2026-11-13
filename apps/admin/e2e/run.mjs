@@ -1303,14 +1303,22 @@ const navCheck = (browser) =>
                 clip: await boxOf(page.locator('.nav'), { height: 140 }),
             });
             // 左上 icon / banner 同收合掣一樣：撳 icon 展開、撳 banner 收合（冇 button 框 / 底色）
-            await page.getByRole('button', { name: /（展開選單）$/ }).click();
+            const frameOf = (locator) =>
+                locator.evaluate((el) => {
+                    const style = getComputedStyle(el);
+                    return [style.borderTopWidth, style.backgroundColor, style.boxShadow].join('|');
+                });
+            const icon = page.getByRole('button', { name: /（展開選單）$/ });
+            // W-741：收細 icon 冇 button 框（border / 底色 / inset box-shadow）
+            const iconFrame = await frameOf(icon);
+            if (iconFrame !== '0px|rgba(0, 0, 0, 0)|none')
+                throw new Error(`collapsed brand toggle shows a button frame: ${iconFrame}`);
+            await icon.click();
             await page.getByRole('button', { name: '收合選單', exact: true }).waitFor();
             const banner = page.getByRole('button', { name: /（收合選單）$/ });
-            const frame = await banner.evaluate((el) => {
-                const style = getComputedStyle(el);
-                return [style.borderTopWidth, style.backgroundColor].join();
-            });
-            if (frame !== '0px,rgba(0, 0, 0, 0)')
+            // banner 嘅 box-shadow 係設計陰影（0 4px 14px），淨驗 border + 底色
+            const frame = (await frameOf(banner)).split('|').slice(0, 2).join('|');
+            if (frame !== '0px|rgba(0, 0, 0, 0)')
                 throw new Error(`brand toggle shows a button frame: ${frame}`);
             await banner.click();
             await page.getByRole('button', { name: '展開選單', exact: true }).waitFor();
