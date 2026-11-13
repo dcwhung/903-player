@@ -4,7 +4,7 @@
  * 底：取消（首頁 Banner：兩張均不更換）、上一張、上載（首頁 Banner 第一步：下一張：闊版）。
  * 載入中 / 上載中（busy）dialog 鎖住：Esc / 撳外面都唔收（S-817）
  */
-import { useId } from 'react';
+import { useId, type RefObject } from 'react';
 import { CropDialogFooter, type CropDialogStep } from './CropDialogFooter';
 
 import { DialogHeader, Loading, Problem } from './CropDialogParts';
@@ -34,6 +34,8 @@ export interface ImagePreviewDialogProps {
     onCancel: () => void;
     onBack?: (() => void) | undefined;
     onPickOther: () => void;
+    /** 收 dialog 時 focus 返去邊度（開 dialog 嗰陣原本個掣可能已經 disabled） */
+    returnFocus?: RefObject<HTMLElement | null> | undefined;
 }
 
 /** 載入中 / 錯誤 / 裁切編輯器 + 忙緊說明 + 轉換 / 上載錯誤 */
@@ -68,7 +70,11 @@ export function ImagePreviewDialog(props: ImagePreviewDialogProps) {
     const { phase, busy, step } = props;
     const titleId = useId();
     const locked = busy !== null || phase.status === 'loading';
-    const { dialogRef, cancelRef, scrimProps } = useModalKeys(props.onCancel, locked);
+    const { dialogRef, cancelRef, scrimProps } = useModalKeys(
+        props.onCancel,
+        locked,
+        props.returnFocus,
+    );
     const failed = phase.status === 'error';
     return (
         <div className="scrim" {...scrimProps}>

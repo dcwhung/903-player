@@ -87,6 +87,7 @@ function AutoNote({ auto }: { auto: AutoCropStatus | undefined }) {
 
 export function ImageSlot({ slot, url, preview, onUploaded, auto }: ImageSlotProps) {
     const input = useRef<HTMLInputElement>(null);
+    const button = useRef<HTMLButtonElement>(null);
     const hintId = useId();
     const upload = useImageUpload(slot, onUploaded);
     const { phase } = upload.session;
@@ -100,6 +101,7 @@ export function ImageSlot({ slot, url, preview, onUploaded, auto }: ImageSlotPro
         <div className="slot">
             <Tooltip text={t('images.tip', { slot: slotName, size })}>
                 <button
+                    ref={button}
                     type="button"
                     className={classes.filter(Boolean).join(' ')}
                     aria-label={action}
@@ -125,6 +127,7 @@ export function ImageSlot({ slot, url, preview, onUploaded, auto }: ImageSlotPro
                     onConfirm={() => void upload.confirm()}
                     onCancel={upload.cancel}
                     onPickOther={pickFile}
+                    returnFocus={button}
                 />
             )}
         </div>

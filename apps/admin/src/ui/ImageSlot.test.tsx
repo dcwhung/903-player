@@ -149,6 +149,13 @@ describe('ImageSlot', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
+    it('should return focus to the slot button when the dialog closes', async () => {
+        renderSlot();
+        await pick();
+        await userEvent.click(await screen.findByRole('button', { name: '取消' }));
+        expect(screen.getByRole('button', { name: '上載碟面' })).toHaveFocus();
+    });
+
     it('should show R2 auto-crop progress, result and failure under the slot', () => {
         const { rerender } = render(
             <ImageSlot
