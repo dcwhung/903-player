@@ -167,3 +167,42 @@ branch: "feature/selective-publish"
 context: "Re-review @63f6297: W-740 + S-980..S-987 + e2e flake all verified fixed. New S-988 (🟢, user rule: fix this session, one commit `fix: S-988 | ...`): show app.loadFailed in SelectionFooter when GET /api/changes fails (keep 下一步 disabled) + UpdatePage test; reviewer re-checks only that diff, then QA S1. e2e flake fix needs CI/QA runs to confirm."
 blockers: []
 ```
+
+## Re-review 2（S-988）
+
+- 日期：2026-11-13　審閱者：Code Reviewer　目標：`31a766d`（`fix: S-988 | ...`）　Tier：T2（只驗呢個 diff）
+- Hard gates：all pass（lint、`tsc -b apps/admin`、`npx vitest run apps/admin/src/features/update/UpdatePage.test.tsx` 6/6；developer 本地 `npm test -- apps/admin` 585 綠）
+- S-988 ✅ 已修：`SelectionFooter` 加 `error?: string`，`summaryOf` 有 error 先回 `t('app.loadFailed', { error })`（沿用現有書面語 key「載入失敗：{error}」，冇新介面文字），`canGo` 加 `error === undefined`；`UpdatePage` 傳 `changes.error?.message`。新 test 斷言「載入失敗：HTTP 500」、冇「載入中…」、「下一步：確認發佈」disabled（L2：還原 `UpdatePage.tsx` 去 `31a766d~1` → 呢個 test fail、其餘 5 個過；restore 後 6/6）
+- Regression 檢查：`useResource` reload 失敗時會保留舊 `data` 同時設 `error`（例如 IconCard / TextCard / BannerCard 儲存後 `changes.reload()` 失敗）→ 而家頁底顯示錯誤、掣灰，直至下次成功載入。舊 data 未必反映啱啱儲存嘅 App 外觀，同 S-987「外觀未知就唔放行」一致，屬預期行為，唔算 regression；冇新 item
+
+| 維度     | 得分    | 滿分    |
+| -------- | ------- | ------- |
+| 正確性   | 25      | 25      |
+| 安全性   | 20      | 20      |
+| 可維護性 | 20      | 20      |
+| 測試覆蓋 | 15      | 15      |
+| 性能     | 10      | 10      |
+| 代碼風格 | 10      | 10      |
+| **總分** | **100** | **100** |
+
+**結果：✅ pass**（冇 🔴 / 🟡 / 新 🟢）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+  no_critical: pass
+  security_scan: n/a
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "feature/selective-publish"
+context: "Re-review 2 @31a766d: S-988 verified fixed (footer shows app.loadFailed, 下一步 disabled; new test fails without fix). No new items. Proceed to QA S1. Report committed locally, not pushed (code CI running)."
+blockers: []
+```
