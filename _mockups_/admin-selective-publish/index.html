@@ -1022,8 +1022,8 @@
                 font-weight: 600;
                 font-size: 13px;
             }
-            table.mx th:nth-child(2),
-            table.mx td:nth-child(2) {
+            table.mx th:first-child,
+            table.mx td:first-child {
                 text-align: left;
             }
             table.mx td .meta {
@@ -1032,10 +1032,10 @@
                 font-size: 12px;
                 margin-top: 2px;
             }
-            table.mx tr.blocked td:nth-child(2) b {
+            table.mx tr.blocked td:first-child b {
                 color: var(--ink);
             }
-            table.mx tr.off td:nth-child(2) b {
+            table.mx tr.off td:first-child b {
                 color: var(--muted);
             }
             .ok-mark {
@@ -1216,13 +1216,20 @@
                         <table class="mx">
                             <thead>
                                 <tr>
-                                    <th style="width: 70px">發佈</th>
                                     <th>項目</th>
                                     <th>狀態</th>
+                                    <th style="width: 70px">發佈</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
+                                    <td>
+                                        <b>名稱與簡介</b
+                                        ><span class="meta"
+                                            >簡介已更改 · 發佈後會自動重新部署播放器</span
+                                        >
+                                    </td>
+                                    <td><span class="pill ok">自訂 · 未發佈</span></td>
                                     <td>
                                         <input
                                             class="pick"
@@ -1232,15 +1239,10 @@
                                             aria-label="發佈名稱與簡介"
                                         />
                                     </td>
-                                    <td>
-                                        <b>名稱與簡介</b
-                                        ><span class="meta"
-                                            >簡介已更改 · 發佈後會自動重新部署播放器</span
-                                        >
-                                    </td>
-                                    <td><span class="pill ok">自訂 · 未發佈</span></td>
                                 </tr>
                                 <tr class="off">
+                                    <td><b>App 圖示</b><span class="meta">無變更</span></td>
+                                    <td><span class="pill">內建預設</span></td>
                                     <td>
                                         <input
                                             class="pick"
@@ -1249,10 +1251,10 @@
                                             aria-label="App 圖示（無變更）"
                                         />
                                     </td>
-                                    <td><b>App 圖示</b><span class="meta">無變更</span></td>
-                                    <td><span class="pill">內建預設</span></td>
                                 </tr>
                                 <tr class="off">
+                                    <td><b>首頁 Banner</b><span class="meta">無變更</span></td>
+                                    <td><span class="pill">內建預設</span></td>
                                     <td>
                                         <input
                                             class="pick"
@@ -1261,8 +1263,6 @@
                                             aria-label="首頁 Banner（無變更）"
                                         />
                                     </td>
-                                    <td><b>首頁 Banner</b><span class="meta">無變更</span></td>
-                                    <td><span class="pill">內建預設</span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1275,26 +1275,17 @@
                         <table class="mx">
                             <thead>
                                 <tr>
-                                    <th style="width: 70px">發佈</th>
                                     <th>新內容</th>
                                     <th>資料夾</th>
                                     <th>ID</th>
                                     <th>圖片</th>
                                     <th>排期</th>
                                     <th>簡介</th>
+                                    <th style="width: 70px">發佈</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>
-                                        <input
-                                            class="pick"
-                                            type="checkbox"
-                                            checked
-                                            data-k="content"
-                                            aria-label="發佈戀愛後二分一"
-                                        />
-                                    </td>
                                     <td>
                                         <b>戀愛後二分一</b
                                         ><span class="meta">蘭茜夫人劇場 · 新短篇 · 20 集</span>
@@ -1304,16 +1295,17 @@
                                     <td class="ok-mark">✓</td>
                                     <td class="ok-mark">✓</td>
                                     <td class="ok-mark">✓</td>
-                                </tr>
-                                <tr class="blocked">
                                     <td>
                                         <input
                                             class="pick"
                                             type="checkbox"
-                                            disabled
-                                            aria-label="大衛營（尚未設定排期）"
-                                        /><span class="lock">未完成</span>
+                                            checked
+                                            data-k="content"
+                                            aria-label="發佈戀愛後二分一"
+                                        />
                                     </td>
+                                </tr>
+                                <tr class="blocked">
                                     <td>
                                         <b>大衛營</b
                                         ><span class="meta">森美小儀系列 · 新短篇 · 20 集</span>
@@ -1323,6 +1315,14 @@
                                     <td class="ok-mark">✓</td>
                                     <td><span class="must">設定</span></td>
                                     <td><span class="opt">＋</span></td>
+                                    <td>
+                                        <input
+                                            class="pick"
+                                            type="checkbox"
+                                            disabled
+                                            aria-label="大衛營（尚未設定排期）"
+                                        /><span class="lock">未完成</span>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
