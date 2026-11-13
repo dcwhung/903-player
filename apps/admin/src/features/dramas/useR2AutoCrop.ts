@@ -2,7 +2,9 @@
  * R2 原圖自動裁切（用戶 2026-11-12，mockup admin-phase4 ① 狀態 A）：開劇集編輯頁 / 重新掃描之後，
  * 已儲存版本有 slot 冇圖 → GET sources → 有原圖 key → r2-source → 置中裁切 → PUT /api/assets →
  * 全部做完一次 PUT entry（patchSaved：最新 ETag，412 重讀再試）。Slot 有圖唔郁。
- * 每個 slot 喺呢個編輯頁只試一次（attempted ref：StrictMode effect 行兩次、每次儲存都會再觸發，都唔會重複）。
+ * 每個 slot 喺呢個編輯頁只試一次（attempted ref：StrictMode effect 行兩次、每次儲存都會再觸發，都唔會重複）；
+ * ⟳ 重新掃描之後 retry：已儲存版本仲係冇圖嘅 slot 再試一次（用戶可能啱啱放咗原圖入 R2），做緊嘅 slot 唔會重複。
+ * 掃描先發現嘅新短篇未儲存，要「儲存」之後先由 updatedAt effect 觸發。
  * 冇原圖（null / 404）或者唔係 R2 劇（400 / 404 / 422）靜靜雞略過；其他失敗 slot 下面顯示錯誤、slot 留空
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -77,21 +79,42 @@ const useStatuses = () => {
     return { set, statusOf };
 };
 
-export const useR2AutoCrop = (id: string, editor: AutoCropEditor) => {
-    const { set, statusOf } = useStatuses();
+/** 試過邊啲 slot（attempted）+ 做緊邊啲（inFlight）；claim = 揀未試過嘅、記低；forget = 重新掃描後再試 */
+const useAttempts = () => {
     const attempted = useRef(new Set<string>());
-    const editorRef = useRef(editor);
-    useEffect(() => {
-        editorRef.current = editor;
-    });
-    const run = useCallback(async () => {
-        const entry = editorRef.current.entry;
-        if (!entry || !isR2(entry)) return;
-        const missing = missingSlots(entry.definition, entry.images).filter(
-            (key) => !attempted.current.has(key),
-        );
-        if (missing.length === 0) return;
-        missing.forEach((key) => attempted.current.add(key));
+    const inFlight = useRef(new Set<string>());
+    const claim = useCallback((keys: string[]) => {
+        const fresh = keys.filter((key) => !attempted.current.has(key));
+        fresh.forEach((key) => {
+            attempted.current.add(key);
+            inFlight.current.add(key);
+        });
+        return fresh;
+    }, []);
+    const release = useCallback((keys: string[]) => {
+        keys.forEach((key) => inFlight.current.delete(key));
+    }, []);
+    const forget = useCallback(() => {
+        attempted.current = new Set(inFlight.current);
+    }, []);
+    return { claim, release, forget };
+};
+
+interface AutoCropRun {
+    id: string;
+    editorRef: { current: AutoCropEditor };
+    set: SetStatus;
+    claim: (keys: string[]) => string[];
+    release: (keys: string[]) => void;
+}
+
+/** 已儲存版本冇圖、未試過嘅 slot → sources → 逐個裁切上載 → 一次儲存 */
+const autoCrop = async ({ id, editorRef, set, claim, release }: AutoCropRun) => {
+    const entry = editorRef.current.entry;
+    if (!entry || !isR2(entry)) return;
+    const missing = claim(missingSlots(entry.definition, entry.images));
+    if (missing.length === 0) return;
+    try {
         const sources = await loadSources(id);
         if (!sources) return;
         const jobs = planAutoCrop(entry.definition, entry.images, sources);
@@ -100,12 +123,32 @@ export const useR2AutoCrop = (id: string, editor: AutoCropEditor) => {
             editorRef,
             set,
         );
-    }, [id, set]);
+    } finally {
+        release(missing);
+    }
+};
+
+export const useR2AutoCrop = (id: string, editor: AutoCropEditor) => {
+    const { set, statusOf } = useStatuses();
+    const { claim, release, forget } = useAttempts();
+    const editorRef = useRef(editor);
+    useEffect(() => {
+        editorRef.current = editor;
+    });
+    const run = useCallback(
+        () => autoCrop({ id, editorRef, set, claim, release }),
+        [id, set, claim, release],
+    );
+    /** 重新掃描後：忘記試過邊啲 slot（做緊嗰啲除外）再行一次 */
+    const retry = useCallback(() => {
+        forget();
+        return run();
+    }, [forget, run]);
     const updatedAt = editor.entry?.updatedAt;
     useEffect(() => {
         if (updatedAt !== undefined) void run();
     }, [updatedAt, run]);
-    return { statusOf, run };
+    return { statusOf, retry };
 };
 
 /** 逐個 slot 做（同一時間只 decode 一張大圖），最後一次過儲存 */

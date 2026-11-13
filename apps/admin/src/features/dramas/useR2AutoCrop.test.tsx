@@ -142,4 +142,42 @@ describe('useR2AutoCrop', () => {
         expect(result.current.statusOf()).toEqual({});
         expect(fetchR2Source).not.toHaveBeenCalled();
     });
+
+    it('should retry still-empty slots after a rescan finds new R2 sources', async () => {
+        vi.mocked(getDramaSources).mockResolvedValueOnce({ ...SOURCES, cdCover: null, arcs: [] });
+        const { editor, saved } = editorOf(entryOf(R2_DRAMA));
+        const { result } = renderHook(() => useR2AutoCrop('lancy', editor));
+        await waitFor(() => expect(getDramaSources).toHaveBeenCalledOnce());
+        await act(async () => {});
+        expect(editor.patchSaved).not.toHaveBeenCalled();
+
+        await act(async () => result.current.retry());
+
+        expect(getDramaSources).toHaveBeenCalledTimes(2);
+        expect(editor.patchSaved).toHaveBeenCalledOnce();
+        expect(saved[0]?.definition).toMatchObject({ disc: 'disc.webp' });
+        expect(result.current.statusOf().disc).toEqual({ status: 'done', file: 'cd cover.jpg' });
+    });
+
+    it('should not start a slot twice when a rescan lands while it is still cropping', async () => {
+        let release: () => void = () => {};
+        vi.mocked(fetchR2Source).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    release = () => resolve(new Blob(['x'], { type: 'image/jpeg' }));
+                }),
+        );
+        const { editor } = editorOf(entryOf(R2_DRAMA));
+        const { result } = renderHook(() => useR2AutoCrop('lancy', editor));
+        await waitFor(() => expect(fetchR2Source).toHaveBeenCalledOnce());
+
+        await act(async () => {
+            const retried = result.current.retry();
+            release();
+            await retried;
+        });
+        await waitFor(() => expect(editor.patchSaved).toHaveBeenCalledOnce());
+
+        expect(fetchR2Source).toHaveBeenCalledTimes(3);
+    });
 });

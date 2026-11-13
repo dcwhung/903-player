@@ -80,7 +80,7 @@ export const useDramaEditor = (id: string) => {
         ...useUnconfirmedIds(id),
         saveImage: useImageSave(editor),
         rename: useRenameEntry(editor, origin.afterSave),
-        rescan: useRescan(id, editor, autoCrop.run),
+        rescan: useRescan(id, editor, autoCrop.retry),
         autoCrop,
     };
 };

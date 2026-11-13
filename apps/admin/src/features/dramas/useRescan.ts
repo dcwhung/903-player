@@ -1,6 +1,6 @@
 /*
  * ⟳ 重新掃描（POST /api/dramas/:id/scan，唔寫 D1）：結果併入草稿，本機改過嘅欄位保留，按「儲存」先寫；
- * 掃描完再試 R2 原圖自動裁切（afterScan：已儲存版本冇圖嘅 slot）
+ * 掃描完再試 R2 原圖自動裁切（afterScan = useR2AutoCrop retry：已儲存版本仲係冇圖嘅 slot 再試一次）
  */
 import { useState } from 'react';
 import { rescanDrama } from '../../api/endpoints';

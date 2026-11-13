@@ -63,6 +63,24 @@ describe('DramaEditor', () => {
         expect(screen.getByText('例：01 - 戀愛二分一.m4a')).toHaveClass('muted');
     });
 
+    it('should look for R2 sources again after 重新掃描 for slots still without an image', async () => {
+        const sourcesPath = 'GET /api/dramas/lancy/sources';
+        const empty = { folder: '蘭茜夫人劇場', cdCover: null, coverPhoto: null, arcs: [] };
+        const fetchMock = api({
+            [sourcesPath]: () => ({ body: empty }),
+            'POST /api/dramas/lancy/scan': () => ({ body: { draft: null } }),
+        });
+        const sourceCalls = () =>
+            fetchMock.mock.calls.filter(
+                ([path, init]) =>
+                    path === '/api/dramas/lancy/sources' && (init?.method ?? 'GET') === 'GET',
+            ).length;
+        renderAt('/dramas/lancy', '/dramas/:id', <DramaEditorPage tab="basic" />);
+        await waitFor(() => expect(sourceCalls()).toBe(1));
+        await userEvent.click(await screen.findByRole('button', { name: /重新掃描/ }));
+        await waitFor(() => expect(sourceCalls()).toBe(2));
+    });
+
     it('should expand the arc from the hash with an inline name input and titles', async () => {
         api();
         renderAt('/dramas/lancy/arcs#half', '/dramas/:id/arcs', <DramaEditorPage tab="arcs" />);
