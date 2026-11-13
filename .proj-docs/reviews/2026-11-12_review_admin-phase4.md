@@ -279,3 +279,75 @@ next_action: main agent proceeds (no developer fix needed); add S-918 to backlog
 context: S-917 fixed, identical 10-key list and order, sameColour unchanged so behaviour is the same. Mutations: drop track / always true killed; drop shadowLight / case-sensitive survive (pre-existing api test gap, S-918 green). No api bump, consistent with W-718 precedent. Report committed locally, not pushed.
 report: .proj-docs/reviews/2026-11-12_review_admin-phase4.md (committed, not pushed)
 ```
+
+## Re-review 4（S-918）
+
+- 日期：2026-11-13 00:44；審閱者：Code Reviewer；目標：`7b11655`（淨改 `apps/api/test/publishWarnings.test.ts`，+25 / −1）；Tier：T1（淨 test）
+- Hard gates：all pass（`npx eslint` + `npx prettier --check` 改動檔同 `warnings.ts`、`npm run typecheck -w apps/api` exit 0、related unit `vitest run --config vitest.config.ts test/publishWarnings.test.ts` 18/18）；冇跑 full suite / e2e
+
+| ID    | 狀態    | 證據                                                                                                                                                                                   |
+| ----- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-918 | ✅ 已修 | `it.each(THEME_COLOUR_KEYS)` 逐色只改一色（`nudged` 改最尾一個 hex 位）都唔出 neutralTheme；加大楷 `NEUTRAL_THEME` 10 色要出 neutralTheme。test 由 7 個變 18 個（+10 逐色、+1 大細楷） |
+
+### Mutation（reviewer 自己重做，做完 `git checkout` 還原，working tree clean）
+
+| Mutation（`apps/api/src/catalog/warnings.ts`）                                   | 結果                                                                                                               |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| M3 `isNeutralTheme` 漏 `shadowLight`（`filter((key) => key !== 'shadowLight')`） | ✅ kill：「should not warn neutralTheme when only shadowLight differs from NEUTRAL_THEME」（1 failed / 17 passed） |
+| M4 `sameColour` 拎走 `toLowerCase()`                                             | ✅ kill：「should warn neutralTheme when NEUTRAL_THEME colours are written in upper case」（1 failed / 17 passed） |
+
+### Test 質素
+
+- 唔 flaky：`nudged` 係純函數（尾位 `0` → `1`，其他 → `0`，一定變），冇時間 / 隨機；每個 case 由 `beforeEach` `seed(3)` + `PASSING_THEME` 重設，互不影響
+- 唔係假 test：逐色 case 斷言「冇 neutralTheme」，單睇有機會因寫入失敗而空過，但 `publishBody` 鎖 200，而且 M3 證明 shadowLight case 真係會 fail（其他 9 色行同一條路）；大楷 case 用 `toEqual` 鎖完整 warnings（同時證明大楷 neutral 色冇 contrast 警告）
+- 色 key 清單同實作共用 catalog `THEME_COLOUR_KEYS`：從清單刪 key 呢度驗唔到，但長度同內容由 `themeSchema.test.ts:129` 鎖住，可以接受
+- 冇新 🔴 / 🟡 / 🟢，冇開新 ID
+
+### 評分（re-review 4）
+
+| 維度     | 得分    | 滿分    | 備注                       |
+| -------- | ------- | ------- | -------------------------- |
+| 正確性   | 25      | 25      | 淨改 test                  |
+| 安全性   | 20      | 20      | 冇新輸入面                 |
+| 可維護性 | 20      | 20      | key 清單由 catalog 攞      |
+| 測試覆蓋 | 15      | 15      | M1–M4 全部 kill            |
+| 性能     | 10      | 10      |                            |
+| 代碼風格 | 10      | 10      | lint / prettier / tsc 全過 |
+| **總分** | **100** | **100** | **結果：✅ pass**          |
+
+## 最終結論
+
+| ID    | 級別 | 狀態    | 修正 commit                                     |
+| ----- | ---- | ------- | ----------------------------------------------- |
+| W-724 | 🟡   | ✅ 已修 | `efd6a6b`（+ `e9a16a4` focus 還原 Observation） |
+| W-725 | 🟡   | ✅ 已修 | `e175110`                                       |
+| W-726 | 🟡   | ✅ 已修 | `d2608c2`                                       |
+| S-910 | 🟢   | ✅ 已修 | `abad6c7`                                       |
+| S-911 | 🟢   | ✅ 已修 | `7be3549`                                       |
+| S-912 | 🟢   | ✅ 已修 | `434ef32`                                       |
+| S-913 | 🟢   | ✅ 已修 | `906b2cb`                                       |
+| S-914 | 🟢   | ✅ 已修 | `ffec117`                                       |
+| S-915 | 🟢   | ✅ 已修 | `c019e93`                                       |
+| S-916 | 🟢   | ✅ 已修 | `b7e8023`                                       |
+| S-917 | 🟢   | ✅ 已修 | `416ae92`                                       |
+| S-918 | 🟢   | ✅ 已修 | `7b11655`                                       |
+| S-892 | 🟢   | ✅ 已修 | `8d2ce42`                                       |
+
+- 全部 3 個 🟡、10 個 🟢 已修並驗證，冇未處理項，backlog 冇新增；`feature/admin-phase4` @ `7b11655` code review 結論：✅ pass（100 / 100）
+- 未關嘅 Observation：TDD red commit 說明（第一輪）只係流程提醒，唔 block
+
+```HANDOFF_RECEIPT
+agent: code-reviewer
+task: /review re-review 4 S-918 (feature/admin-phase4 @ 7b11655, apps/api/test/publishWarnings.test.ts)
+status: pass
+score: 100
+hard_gates: {lint: pass, type_check: pass, tests: pass (related unit publishWarnings.test.ts 18/18), coverage: pass, no_critical: pass, security_scan: n/a}
+critical: []
+warnings: []
+backlog: []
+resolved: [S-918]
+new: []
+next_action: main agent proceeds to QA / PR merge flow for feature/admin-phase4; push this docs commit only after the CI run for 7b11655 (incl. e2e) has finished
+context: S-918 fixed. Reviewer re-ran M3 (drop shadowLight) and M4 (drop toLowerCase): each now fails exactly one new test (1 failed / 17 passed); restored, tree clean. Tests deterministic (pure nudged helper, beforeEach reseed). Final status: W-724..W-726, S-910..S-918, S-892 all fixed. Report committed locally, not pushed.
+report: .proj-docs/reviews/2026-11-12_review_admin-phase4.md (committed, not pushed)
+```
