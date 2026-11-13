@@ -53,3 +53,9 @@ tickets: none
 next_action: main_agent_commit_then_user_screenshots
 context: "S1 pass for feature/admin-branding; CI 744b974 green cited for e2e / e2e:admin; branded + plain player builds verified locally; one suggested unit test (useRedeploy)."
 ```
+
+## 補測（2026-11-13，main agent）
+
+- QA 建議補 `HistoryPage` `useRedeploy` unit test：已加 `apps/admin/src/features/history/HistoryPage.test.tsx`「HistoryPage redeploy」2 個 case（成功 → toast + 重新載入列表；502 → toast 錯誤、唔重新載入）
+- admin unit 107 files / 556 tests 全綠；`npx tsc -b apps/admin`、`npm run lint` 過
+- admin S1 用成條 chain re-freeze（372 行，行數不變），同上一個 commit 比 chain + stage + path 冇少行
