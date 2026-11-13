@@ -210,7 +210,7 @@ export const missingEpisodeIds = (
 };
 
 /** 除 generatedAt 外完全一樣（document 都係由同一個 builder JSON.stringify，key 次序穩定） */
-const sameContent = (previous: string, next: string): boolean => {
+export const sameContent = (previous: string, next: string): boolean => {
     const strip = (json: string) =>
         JSON.stringify({ ...(JSON.parse(json) as Record<string, unknown>), generatedAt: null });
     return strip(previous) === strip(next);

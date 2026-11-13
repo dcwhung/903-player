@@ -896,9 +896,6 @@ table.matrix td:first-child .meta {
 table.matrix tr.attn td:first-child {
     box-shadow: inset 3px 0 0 var(--warn);
 }
-table.matrix tr.done {
-    opacity: 0.55;
-}
 table.matrix td.ok {
     color: var(--ok);
     font-weight: 700;

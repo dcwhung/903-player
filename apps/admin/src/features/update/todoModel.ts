@@ -1,6 +1,7 @@
 /* 待辦矩陣（mockup ③ 方案 B）：欄、跳轉連結（帶 from=todos 令編輯頁出 flow bar）、尚欠項目 */
-import type { TodoColumn, TodoRow } from '../../api/types';
+import type { LoadedEntry, TodoColumn, TodoRow } from '../../api/types';
 import { t, type MessageKey } from '../../i18n/t';
+import { arcsOf, countOf, totalEpisodes } from '../../model/raw';
 import { arcEditorPath, dramaEditorPath } from '../../model/paths';
 
 export const TODO_COLUMNS: readonly TodoColumn[] = [
@@ -48,6 +49,12 @@ export const rowTarget = (row: TodoRow): string => {
 export const missingOf = (row: TodoRow): string[] =>
     TODO_COLUMNS.filter((column) => row.cells[column].state === 'must').map(columnLabel);
 
+/** 未完成項目嘅文字：「名（尚未設定 X、Y）」；冇缺嘅格（例如 draft 劇）就淨係出名 */
+export const incompleteText = (name: string, row: TodoRow): string => {
+    const missing = missingOf(row).join('、');
+    return missing ? t('update.incompleteLabel', { name, missing }) : name;
+};
+
 export const isRowDone = (row: TodoRow): boolean =>
     TODO_COLUMNS.every((column) => ['done', 'na'].includes(row.cells[column].state));
 
@@ -74,6 +81,15 @@ export const splitName = (row: TodoRow): { title: string; drama: string } => {
     return { title: row.name.slice(at + 3), drama: row.name.slice(0, at) };
 };
 
+/** 行嘅集數（新劇 = 全劇、新短篇 = 嗰個短篇）；未載入 / 搵唔到 = undefined */
+export const episodesOf = (row: TodoRow, entries: readonly LoadedEntry[]): number | undefined => {
+    const drama = entries.find((e) => e.kind === 'dramas' && e.id === row.dramaId);
+    if (!drama) return undefined;
+    if (row.arcId === null) return totalEpisodes(drama.definition);
+    const arc = arcsOf(drama.definition).find((a) => a.id === row.arcId);
+    return arc ? countOf(arc) : undefined;
+};
+
 export const rowMeta = (row: TodoRow, episodes: number | undefined): string => {
     const { drama } = splitName(row);
     const count = episodes ?? 0;
@@ -84,4 +100,10 @@ export const rowMeta = (row: TodoRow, episodes: number | undefined): string => {
         missingFolder: [t('update.metaMissingFolder')],
     };
     return parts[row.kind].filter(Boolean).join(' · ');
+};
+
+/** 確認發佈頁列項目用：「劇名 › 短篇名」（新劇 = 劇名） */
+export const displayName = (row: TodoRow): string => {
+    const { title, drama } = splitName(row);
+    return drama ? `${drama} › ${title}` : title;
 };

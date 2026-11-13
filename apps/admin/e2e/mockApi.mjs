@@ -1,6 +1,7 @@
 // Admin e2e 嘅假 API（page.route）：in-memory 狀態，夠行 login → 掃描 → 待辦 → 設 ID → 發佈 → 記錄、拖曳排序
 import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { changesFor, selectionFromUrl, selectiveTodos } from './mockSelection.mjs';
 
 /*
  * 真圖（createState({ realImages: true })）：player catalog 嘅 cover 複製咗去 e2e/fixtures/（只係 e2e 用，唔入 admin bundle）
@@ -218,6 +219,8 @@ const withMissingFolder = (entry) =>
 const UNMAPPED_FOLDERS = ['黃金少年 第一季', '少爺占系列'];
 
 const missingFolderRow = () => ({
+    key: 'missingFolder/golden',
+    publish: 'always',
     kind: 'missingFolder',
     findingIds: [2],
     dramaId: 'golden',
@@ -277,19 +280,29 @@ export const createState = ({
     statusMix = false,
     r2Covers = false,
     warnings = false,
+    selective = false,
 } = {}) => ({
     loggedIn: false,
     missingFolder,
     r2Covers,
     warnings,
+    selective,
     banner: null,
-    branding: { icon: null, text: null },
+    // selective（mockup admin-selective-publish ①）：名稱與簡介已儲存未發佈
+    branding: {
+        icon: null,
+        text: selective
+            ? { name: '903 叱咤 Player', shortName: null, description: '新簡介' }
+            : null,
+    },
+    /** POST /api/publish 收到嘅 selection（冇 = 舊行為） */
+    publishedSelections: [],
     entries: [
         show('waves', '口水多過浪花', 1, { airTime: { start: '15:00', end: '16:30' } }),
         show('night', '深夜節目', 2),
         lancy(),
         golden(),
-        ...(statusMix ? [sammy(), freshDrama()] : []),
+        ...(statusMix ? [sammy(), freshDrama()] : selective ? [sammy()] : []),
     ]
         .map((entry) => (realImages ? withRealImages(entry) : entry))
         .map((entry) => (missingFolder ? withMissingFolder(entry) : entry)),
@@ -324,6 +337,7 @@ export const createState = ({
 /** 新短篇：掃描自動編號 lancy-02；未確認（confirm-id）又未改名就係必須（同 apps/api todos） */
 const AUTO_ARC_ID = 'lancy-02';
 const todosOf = (state) => {
+    if (state.selective) return selectiveTodos(state);
     const drama = state.entries.find((e) => e.id === 'lancy');
     const arc = drama.definition.arcs[1];
     const confirmed = state.confirms.some((c) => c.arcId === arc.id);
@@ -331,6 +345,9 @@ const todosOf = (state) => {
     if (state.publishes.length > 0) return { rows: [], blocking: 0 };
     const target = `/dramas/lancy/arcs#${arc.id}`;
     const row = {
+        // 選擇發佈（api 0.10.0）：ID 未確認 = 必須處理 → incomplete
+        key: `newArc/lancy/${arc.id}`,
+        publish: placeholder ? 'incomplete' : 'selectable',
         kind: 'newArc',
         findingIds: [1],
         dramaId: 'lancy',
@@ -362,6 +379,14 @@ const changesOf = (state) => {
     };
     return { items: [item], timeline: [{ when: 'now', items: [item] }] };
 };
+
+/** 選擇發佈：changes / appearance / others / selection（見 mockSelection.mjs） */
+const selectedChanges = (state, selection) =>
+    changesFor(state, {
+        rows: todosOf(state).rows,
+        defaultItems: changesOf(state).items,
+        selection,
+    });
 
 const publishRow = (id) => ({
     id,
@@ -522,15 +547,17 @@ const handlers = {
                     : {}),
             })),
         }),
-    'GET /api/changes': (state, route) =>
-        json(route, {
+    'GET /api/changes': (state, route, request) => {
+        const selection = selectionFromUrl(new URL(request.url()));
+        const { status, body } = selectedChanges(state, selection);
+        if (status) return json(route, body, { status });
+        return json(route, {
             base: null,
-            changes: changesOf(state),
+            ...body,
             validation: { ok: true, episodeCount: 102 },
             warnings: state.warnings ? WARNINGS : [],
-            bannerChanged: state.banner !== null,
-            brandingChanged: brandingChanged(state),
-        }),
+        });
+    },
     'GET /api/banner': (state, route) =>
         json(route, { banner: state.banner, updatedAt: state.banner ? 'banner-v1' : null }),
     'PUT /api/banner': (state, route, request) => {
@@ -547,23 +574,32 @@ const handlers = {
             return json(route, { error: 'no such source' }, { status: 404 });
         return route.fulfill({ path: `${FIXTURES}${fixture}`, contentType: 'image/webp' });
     },
-    'POST /api/publish': (state, route) => {
-        const changed = brandingChanged(state);
+    'POST /api/publish': (state, route, request) => {
+        const selection = request.postDataJSON()?.selection;
+        const { status, body } = selectedChanges(state, selection);
+        if (status) return json(route, body, { status });
+        state.publishedSelections.push(selection ?? null);
+        const changed = body.brandingChanged;
         const row = {
             ...publishRow(state.publishes.length + 1 + state.history.length),
             changes: {
-                ...changesOf(state),
-                bannerChanged: state.banner !== null,
+                items: body.changes.items,
+                timeline: body.changes.timeline,
+                bannerChanged: body.bannerChanged,
                 brandingChanged: changed,
             },
             deploy: changed ? 'triggered' : 'none',
             deployRequestedAt: changed ? new Date(E2E_NOW).toISOString() : null,
         };
-        // branding 已發佈：草稿清走
-        state.branding = { icon: null, text: null };
-        state.banner = null;
+        // 發佈咗嘅 App 外觀草稿清走（冇揀嘅留低，同 api：D1 草稿唔郁）
+        if (!selection || selection.branding?.icon) state.branding.icon = null;
+        if (!selection || selection.branding?.text) state.branding.text = null;
+        if (!selection || selection.banner) state.banner = null;
         state.publishes.unshift(row);
-        return json(route, { publish: row });
+        return json(route, {
+            publish: row,
+            ...(body.selection ? { selection: body.selection } : {}),
+        });
     },
     'GET /api/publishes': (state, route) =>
         json(route, { publishes: [...state.publishes, ...state.history] }),

@@ -227,6 +227,8 @@ describe('DramaEditor', () => {
             'POST /api/todos/confirm-id': () => ({ body: { confirmed: 1 } }),
         });
         const row = {
+            key: 'newArc/lancy/arc-01',
+            publish: 'incomplete' as const,
             kind: 'newArc' as const,
             findingIds: [1],
             dramaId: 'lancy',
