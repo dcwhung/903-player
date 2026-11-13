@@ -45,6 +45,10 @@ describe('editFieldsText', () => {
         expect(editFieldsText(item, [])).toBe('橫圖、碟面；gone：其他');
     });
 
+    it('should call an arc episodes change 各集標題: episode counts go out as 新集數 instead (W-742)', () => {
+        expect(editFieldsText(edit(['arcs.love.episodes']), ENTRIES)).toBe('戀愛二分一：各集標題');
+    });
+
     it('should be empty when there is nothing to show', () => {
         expect(editFieldsText(edit([]), ENTRIES)).toBe('');
         expect(editFieldsText({ ...edit([]), kind: 'unlist', detail: {} }, ENTRIES)).toBe('');

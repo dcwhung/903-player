@@ -11,6 +11,11 @@ const FIELD_SEPARATOR = '、';
 /** 頂層欄位同各短篇之間 */
 const GROUP_SEPARATOR = '；';
 const ARC_FIELD = /^arcs\.(.+)\.([^.]+)$/;
+/**
+ * 短篇 `episodes` 只會喺集數不變、集名 list 改咗先報（集數變咗係「新集數」，見 catalog arcEditFields），
+ * 所以當「各集標題」（W-742）
+ */
+const ARC_KEY_ALIASES: Readonly<Record<string, string>> = { episodes: 'titles' };
 
 const EDITOR_FIELDS = [
     'name',
@@ -20,7 +25,6 @@ const EDITOR_FIELDS = [
     'hosts',
     'kind',
     'addedAt',
-    'removedAt',
     'displayName',
     'cast',
     'titles',
@@ -33,11 +37,9 @@ const CHANGE_FIELDS = [
     'disc',
     'theme',
     'order',
-    'folder',
     'arcUnit',
     'firstNo',
     'files',
-    'episodes',
     'episodeRemovedAt',
 ] as const;
 
@@ -64,12 +66,16 @@ export const editFieldsText = (item: ChangeItem, entries: readonly LoadedEntry[]
     if (item.kind !== 'edit') return '';
     const top: string[] = [];
     const byArc = new Map<string, string[]>();
-    (item.detail.fields ?? []).forEach((field) => {
+    for (const field of item.detail.fields ?? []) {
         const arc = ARC_FIELD.exec(field);
-        if (!arc) return void top.push(t(labelKeyOf(field)));
-        const [, arcKey = '', key = ''] = arc;
-        byArc.set(arcKey, [...(byArc.get(arcKey) ?? []), t(labelKeyOf(key))]);
-    });
+        if (arc) {
+            const [, arcKey = '', key = ''] = arc;
+            const label = t(labelKeyOf(ARC_KEY_ALIASES[key] ?? key));
+            byArc.set(arcKey, [...(byArc.get(arcKey) ?? []), label]);
+        } else {
+            top.push(t(labelKeyOf(field)));
+        }
+    }
     const arcs = [...byArc].map(([arcKey, labels]) =>
         t('changeFields.arc', {
             arc: arcNameOf(item, entries, arcKey),
