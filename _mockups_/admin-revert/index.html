@@ -634,12 +634,24 @@
             }
             .diff-row {
                 display: grid;
-                grid-template-columns: 70px 1fr 1fr;
+                grid-template-columns: 22px 56px 1fr 1fr;
+                cursor: pointer;
                 gap: 10px;
                 align-items: center;
                 padding: 10px;
                 border-radius: 12px;
                 background: var(--surface-2);
+            }
+            .diff-row input {
+                width: 18px;
+                height: 18px;
+                accent-color: var(--danger);
+                margin: 0;
+            }
+            .diff-row.off {
+                opacity: 0.5;
+                background: transparent;
+                outline: 1px dashed var(--line);
             }
             .diff-row .col-label {
                 font-size: 11px;
@@ -955,16 +967,15 @@
 
             <h2 class="state-label" id="b">② 撳「還原」· 確認框</h2>
             <p class="state-note">
-                列出會還原嘅項目：圖顯示「已發佈」同「目前」兩張；字顯示前後；下架顯示「恢復上架」。確認後即刻寫入（仍然未發佈），時間線少咗嗰行，toast「已還原戀愛二分一」。
+                每項前面有剔格（預設全剔），可以淨揀還原其中幾項；冇剔任何一項，「還原」灰色。圖顯示「已發佈」同「目前」兩張；字顯示前後；下架顯示「恢復上架」。示範：淨剔橫圖，簡介唔還原。確認後即刻寫入（仍然未發佈），時間線少咗嗰行，toast「已還原戀愛二分一」。
             </p>
             <div class="page">
                 <div class="dialog" role="dialog" aria-label="還原戀愛二分一？">
                     <h3>還原戀愛二分一？</h3>
-                    <p class="muted small" style="margin: 0">
-                        以下未發佈的改動將還原至已發佈版本：
-                    </p>
+                    <p class="muted small" style="margin: 0">選擇要還原至已發佈版本的項目：</p>
                     <div class="diff">
-                        <div class="diff-row">
+                        <label class="diff-row">
+                            <input type="checkbox" checked aria-label="還原橫圖" />
                             <b>橫圖</b>
                             <div>
                                 <div class="col-label">已發佈</div>
@@ -974,8 +985,9 @@
                                 <div class="col-label">目前</div>
                                 <div class="img-box new">新橫圖</div>
                             </div>
-                        </div>
-                        <div class="diff-row">
+                        </label>
+                        <label class="diff-row off">
+                            <input type="checkbox" aria-label="還原簡介" />
                             <b>簡介</b>
                             <div>
                                 <div class="col-label">已發佈</div>
@@ -985,11 +997,11 @@
                                 <div class="col-label">目前</div>
                                 <div class="txt-box">一段關於愛情與成長的短篇故事。</div>
                             </div>
-                        </div>
+                        </label>
                     </div>
                     <div class="acts">
                         <button type="button" class="btn">取消</button>
-                        <button type="button" class="revert-btn dialog-revert">還原</button>
+                        <button type="button" class="revert-btn dialog-revert">還原 1 項</button>
                     </div>
                 </div>
             </div>
