@@ -1,4 +1,4 @@
-/* API 回應形狀（apps/api/src/{admin,content,catalog,branding,deploy}/**，api 0.9.0） */
+/* API 回應形狀（apps/api/src/{admin,content,catalog,branding,deploy}/**，api 0.11.0） */
 import type { ChangeSummary, ExpandedSchedule, ScheduleRule } from '@903-player/catalog';
 
 export type EntryKind = 'shows' | 'dramas';
@@ -29,6 +29,17 @@ export interface EntryDetail {
     updatedAt: string;
 }
 
+/** 最新 ok publish 入面嗰個 entry（images 同 D1 一樣係「檔名 → <hash>.<ext>」，api 0.11.0） */
+export interface PublishedVersion {
+    definition: RawDefinition;
+    images: ImageMap;
+}
+
+/** GET /api/entries/:kind/:id：published = null → 從未發佈（或者讀唔到） */
+export interface EntryResponse extends EntryDetail {
+    published?: PublishedVersion | null;
+}
+
 export interface LoadedEntry extends EntryDetail {
     kind: EntryKind;
     id: string;
@@ -36,6 +47,14 @@ export interface LoadedEntry extends EntryDetail {
     /** 由 GET /api/entries 併入（單一 entry GET 冇） */
     published?: boolean | undefined;
     publishedArcs?: string[] | undefined;
+    /** GET entry 嘅 published（改名免得同列表嘅 published 撞）；冇 = 從未發佈 / 舊 API */
+    publishedVersion?: PublishedVersion | undefined;
+}
+
+/** POST /api/entries/:kind/:id/revert 每項：arc = catalog arcIdOf（id，冇就用名）；field '*' = 成個短篇 */
+export interface RevertItem {
+    arc?: string;
+    field: string;
 }
 
 export interface SaveResult {

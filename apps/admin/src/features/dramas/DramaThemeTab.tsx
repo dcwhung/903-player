@@ -7,11 +7,15 @@ import { imageOf, nameOf, totalEpisodes } from '../../model/raw';
 import { themeOf } from '../../model/theme';
 import { ThemeEditor } from '../theme/ThemeEditor';
 import { useThemeApply } from '../theme/useThemeApply';
+import { RevertMark } from '../revert/FieldRevert';
+import { THEME_FIELDS } from '../revert/placedFields';
+import { useEntryRevert } from '../revert/useEntryRevert';
 import type { DramaEditorState } from './useDramaEditor';
 
 export function DramaThemeTab({ state }: { state: DramaEditorState }) {
     const { editor } = state;
     const apply = useThemeApply(editor);
+    const revert = useEntryRevert(editor);
     const definition = editor.draft?.definition ?? {};
     const saved = editor.entry;
     return (
@@ -21,6 +25,9 @@ export function DramaThemeTab({ state }: { state: DramaEditorState }) {
             discUrl={saved ? imageOf(saved.definition, saved.images, 'disc') : undefined}
             current={themeOf(saved?.definition ?? definition)}
             onApply={apply}
+            revert={
+                <RevertMark revert={revert} fields={THEME_FIELDS} name={t('changeFields.theme')} />
+            }
         />
     );
 }

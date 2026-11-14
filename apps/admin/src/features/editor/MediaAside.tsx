@@ -7,6 +7,9 @@ import { imageOf } from '../../model/raw';
 import type { CropPreviewInfo } from '../../ui/CropPlayerPreview';
 import { ImageSlot, type AutoCropStatus } from '../../ui/ImageSlot';
 import type { ImageSlotKind } from '../../ui/imageUpload';
+import { SlotRevert } from '../revert/FieldRevert';
+import { fieldChanged } from '../revert/revertScope';
+import type { EntryRevert } from '../revert/useEntryRevert';
 
 interface MediaAsideProps {
     /** 劇集 / 節目 definition，或者短篇（arc） */
@@ -17,9 +20,12 @@ interface MediaAsideProps {
     onUploaded: (slot: ImageSlotKind, name: string) => Promise<void>;
     auto?: Partial<Record<ImageSlotKind, AutoCropStatus>> | undefined;
     id?: string;
+    /** 同已發佈唔同嘅圖：「已修改」+ 鉛筆旁圓形還原掣（新內容冇） */
+    revert?: EntryRevert | undefined;
 }
 
-export function MediaAside({ target, images, preview, onUploaded, auto, id }: MediaAsideProps) {
+export function MediaAside(props: MediaAsideProps) {
+    const { target, images, preview, onUploaded, auto, id, revert } = props;
     return (
         <aside className="media" id={id}>
             {(['tile', 'disc'] as const).map((slot) => (
@@ -30,6 +36,8 @@ export function MediaAside({ target, images, preview, onUploaded, auto, id }: Me
                     preview={preview}
                     auto={auto?.[slot]}
                     onUploaded={(name) => onUploaded(slot, name)}
+                    modified={revert !== undefined && fieldChanged(revert.scope, slot)}
+                    revert={revert && <SlotRevert revert={revert} slot={slot} />}
                 />
             ))}
         </aside>

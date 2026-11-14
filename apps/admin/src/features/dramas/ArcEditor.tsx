@@ -1,24 +1,25 @@
 /*
  * 短篇原位編輯（同展開嗰行同一個底色）：名稱 → ID + 狀態（未排期 pill 喺 label 隔籬）→ 簡介 → 聲演 →
- * 虛線框 R2（資料夾、集數、各集標題）；橫圖 / 碟面喺右邊
+ * 虛線框 R2（資料夾、集數、各集標題）；橫圖 / 碟面喺右邊。
+ * 已發佈短篇同已發佈唔同嘅欄位原位出「已修改」「還原」（mockup admin-revert ③），其他欄位喺最尾一行
  * Design Origin: mockup: _mockups_/admin-style/index.html#e（.arc-body）；結構 mockup: _mockups_/admin/index.html#s5
  */
-import { useCallback, useId } from 'react';
+import { arcIdOf as arcKeyOf } from '@903-player/catalog';
+import { useCallback } from 'react';
 import type { RawDefinition } from '../../api/types';
-import { t } from '../../i18n/t';
-import { arcLabel, str, strList } from '../../model/raw';
+import { arcLabel } from '../../model/raw';
 import { previewInfoOf } from '../../model/theme';
-import { Pill } from '../../ui/Pill';
-import { Tip } from '../../ui/Tip';
-import { Chips } from '../../ui/Chips';
-import { Toggle } from '../../ui/Toggle';
 import { MediaAside } from '../editor/MediaAside';
-import { withOptional } from '../shows/showModel';
 import { SummaryField } from '../editor/SummaryField';
-import { ArcIdField } from './ArcIdField';
-import { updateArc } from './dramaModel';
+import { OtherRevert } from '../revert/FieldRevert';
+import { ARC_PLACED } from '../revert/placedFields';
+import { useEntryRevert } from '../revert/useEntryRevert';
+import { ArcCastField, ArcHead, ArcNameField } from './ArcFields';
 import { ArcScanBox } from './ArcScanBox';
+import { updateArc } from './dramaModel';
 import type { DramaEditorState } from './useDramaEditor';
+
+export type { SetArc } from './ArcFields';
 
 export function ArcEditor({
     state,
@@ -33,6 +34,8 @@ export function ArcEditor({
     onIdChange: (id: string) => void;
 }) {
     const { editor, setFieldError } = state;
+    // 還原用 catalog 嘅短篇 key（id，冇就用名），同 api 一樣
+    const revert = useEntryRevert(editor, arcKeyOf(arc));
     const set = (update: (arc: RawDefinition) => RawDefinition) =>
         editor.setDefinition((d) => updateArc(d, arcId, update));
     const onErrors = useCallback(
@@ -47,87 +50,23 @@ export function ArcEditor({
                 preview={previewInfoOf(editor.draft?.definition ?? {}, arcLabel(arc))}
                 auto={state.autoCrop.statusOf(arcId)}
                 onUploaded={(slot, name) => state.saveImage(slot, name, arcId)}
+                revert={revert}
             />
             <div className="form">
-                <ArcNameField arc={arc} set={set} />
-                <ArcHead state={state} arc={arc} arcId={arcId} set={set} onIdChange={onIdChange} />
-                <SummaryField target={arc} onChange={set} />
-                <div className="field wide">
-                    <span>{t('drama.cast')}</span>
-                    <Chips
-                        label={t('drama.cast')}
-                        values={strList(arc, 'cast')}
-                        onChange={(cast) => set((a) => withOptional(a, 'cast', cast))}
-                    />
-                </div>
+                <ArcNameField arc={arc} set={set} revert={revert} />
+                <ArcHead
+                    state={state}
+                    arc={arc}
+                    arcId={arcId}
+                    set={set}
+                    revert={revert}
+                    onIdChange={onIdChange}
+                />
+                <SummaryField target={arc} onChange={set} revert={revert} />
+                <ArcCastField arc={arc} set={set} revert={revert} />
                 <ArcScanBox state={state} arc={arc} set={set} onErrors={onErrors} />
+                <OtherRevert revert={revert} placed={ARC_PLACED} />
             </div>
         </li>
-    );
-}
-
-export type SetArc = (update: (arc: RawDefinition) => RawDefinition) => void;
-
-/** 名稱 = 播放器顯示名（displayName）；R2 資料夾名（name）唔改 */
-function ArcNameField({ arc, set }: { arc: RawDefinition; set: SetArc }) {
-    return (
-        <label className="field wide arc-name">
-            <span>
-                {t('drama.arcName')} <Tip text={t('drama.arcNameTip')} />
-            </span>
-            <input
-                type="text"
-                value={str(arc, 'displayName') ?? str(arc, 'name') ?? ''}
-                onChange={(e) => set((a) => withOptional(a, 'displayName', e.target.value))}
-            />
-        </label>
-    );
-}
-
-/** 「未排期」提示：新短篇下架（行嘅狀態 pill 寫「未上架」，呢度提醒要去排程） */
-const unscheduledOf = (state: DramaEditorState, arc: RawDefinition, arcId: string) =>
-    arc.enabled === false && state.isNewArc(arcId);
-
-function ArcHead({
-    state,
-    arc,
-    arcId,
-    set,
-    onIdChange,
-}: {
-    state: DramaEditorState;
-    arc: RawDefinition;
-    arcId: string;
-    set: SetArc;
-    onIdChange: (id: string) => void;
-}) {
-    const statusId = useId();
-    return (
-        <div className="field wide">
-            <div className="row3">
-                <ArcIdField
-                    arcId={arcId}
-                    editable={state.isNewArc(arcId) || state.isArcIdUnconfirmed(arcId)}
-                    unconfirmed={state.isArcIdUnconfirmed(arcId)}
-                    onCommit={(id) => {
-                        set((a) => ({ ...a, id }));
-                        onIdChange(id);
-                    }}
-                />
-                <div className="field">
-                    <span className="label-line">
-                        <span id={statusId}>{t('editor.status')}</span>
-                        {unscheduledOf(state, arc, arcId) && (
-                            <Pill tone="warn">{t('status.unscheduled')}</Pill>
-                        )}
-                    </span>
-                    <Toggle
-                        on={arc.enabled !== false}
-                        labelledBy={statusId}
-                        onChange={(on) => set((a) => ({ ...a, enabled: on }))}
-                    />
-                </div>
-            </div>
-        </div>
     );
 }

@@ -7,11 +7,15 @@ import { imageOf } from '../../model/raw';
 import { themeOf } from '../../model/theme';
 import { ThemeEditor } from '../theme/ThemeEditor';
 import { useThemeApply } from '../theme/useThemeApply';
+import { RevertMark } from '../revert/FieldRevert';
+import { THEME_FIELDS } from '../revert/placedFields';
+import { useEntryRevert } from '../revert/useEntryRevert';
 import type { ShowEditorState } from './useShowEditor';
 
 export function ShowThemeCard({ show, name }: { show: ShowEditorState; name: string }) {
     const { editor } = show;
     const apply = useThemeApply(editor);
+    const revert = useEntryRevert(editor);
     const saved = editor.entry;
     return (
         <ThemeEditor
@@ -20,6 +24,9 @@ export function ShowThemeCard({ show, name }: { show: ShowEditorState; name: str
             discUrl={saved ? imageOf(saved.definition, saved.images, 'disc') : undefined}
             current={themeOf(saved?.definition ?? editor.draft?.definition ?? {})}
             onApply={apply}
+            revert={
+                <RevertMark revert={revert} fields={THEME_FIELDS} name={t('changeFields.theme')} />
+            }
         />
     );
 }

@@ -9,6 +9,7 @@ import { savedDiscOf } from '../../model/thumbs';
 import { Pill } from '../../ui/Pill';
 import { EditorHeader } from '../editor/EditorHeader';
 import { EditorNotices } from '../editor/EditorNotices';
+import { NameRevert } from '../revert/NameRevert';
 import { ArcsTab } from './ArcsTab';
 import { BasicTab } from './BasicTab';
 import { DramaTabs, type DramaTab } from './DramaTabs';
@@ -49,10 +50,13 @@ function DramaEditor({ id, tab }: { id: string; tab: DramaTab }) {
                 onRename={state.rename}
                 disc={savedDiscOf(editor.entry)}
                 pills={
-                    <StatusPill
-                        neverPublished={state.neverPublished}
-                        pending={state.pendingPublish}
-                    />
+                    <>
+                        <StatusPill
+                            neverPublished={state.neverPublished}
+                            pending={state.pendingPublish}
+                        />
+                        <NameRevert editor={editor} />
+                    </>
                 }
             />
             <DramaTabs id={id} tab={tab} arcCount={arcIds.length} arc={memory.arc} />

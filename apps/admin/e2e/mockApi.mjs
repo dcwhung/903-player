@@ -1,6 +1,7 @@
 // Admin e2e 嘅假 API（page.route）：in-memory 狀態，夠行 login → 掃描 → 待辦 → 設 ID → 發佈 → 記錄、拖曳排序
 import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { revertItems, revertRoute, withPublished } from './mockRevert.mjs';
 import { changesFor, selectionFromUrl, selectiveTodos } from './mockSelection.mjs';
 
 /*
@@ -281,8 +282,11 @@ export const createState = ({
     r2Covers = false,
     warnings = false,
     selective = false,
+    revert = false,
 } = {}) => ({
     loggedIn: false,
+    // revert（api 0.11.0）：GET entry 有 published、確認發佈頁有「修改」行可以還原
+    ...(revert ? { others: revertItems, reverts: [] } : {}),
     missingFolder,
     r2Covers,
     warnings,
@@ -305,6 +309,7 @@ export const createState = ({
         ...(statusMix ? [sammy(), freshDrama()] : selective ? [sammy()] : []),
     ]
         .map((entry) => (realImages ? withRealImages(entry) : entry))
+        .map((entry) => (revert ? withPublished(entry) : entry))
         .map((entry) => (missingFolder ? withMissingFolder(entry) : entry)),
     publishes: [],
     /**
@@ -431,6 +436,7 @@ const entryRoute = (state, route, request, [kind, id]) => {
                 images: entry.images,
                 draft: entry.draft,
                 updatedAt: entry.updatedAt,
+                published: entry.publishedVersion ?? null,
             },
             { etag: `"${entry.updatedAt}"` },
         );
@@ -649,6 +655,8 @@ export const installMockApi = async (page, state) => {
     await page.route(/\/(api|auth)\//, (route, request) => {
         const url = new URL(request.url());
         const key = `${request.method()} ${url.pathname}`;
+        const revert = url.pathname.match(/^\/api\/entries\/(shows|dramas)\/([^/]+)\/revert$/);
+        if (revert) return revertRoute(state, route, request, revert.slice(1));
         const entry = url.pathname.match(/^\/api\/entries\/(shows|dramas)\/([^/]+)$/);
         if (entry) return entryRoute(state, route, request, entry.slice(1));
         if (/^PUT \/api\/order\//.test(key)) {

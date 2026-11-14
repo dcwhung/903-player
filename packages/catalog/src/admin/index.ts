@@ -15,6 +15,8 @@ export {
     type BatchComparison,
 } from './batches';
 export { summarizeChanges } from './changes';
+export { arcImageFile, entryImageFile, IMAGE_SLOTS } from './editChanges';
+export { arcIdOf } from './rawDefinition';
 export type {
     ChangeArcRef,
     ChangeDetail,

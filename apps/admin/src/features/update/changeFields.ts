@@ -19,6 +19,9 @@ const ARC_KEY_ALIASES: Readonly<Record<string, string>> = { episodes: 'titles' }
 
 const EDITOR_FIELDS = [
     'name',
+    'id',
+    'enabled',
+    'removedAt',
     'summary',
     'airDays',
     'airTime',
@@ -50,6 +53,10 @@ const labelKeyOf = (key: string): MessageKey => {
         return `changeFields.${key as (typeof CHANGE_FIELDS)[number]}`;
     return 'fields.other';
 };
+
+/** 欄位標籤（還原確認框 / 編輯頁共用）；短篇 `episodes` = 各集標題 */
+export const fieldLabel = (key: string, inArc = false): string =>
+    t(labelKeyOf(inArc ? (ARC_KEY_ALIASES[key] ?? key) : key));
 
 const unique = (labels: readonly string[]): string[] => [...new Set(labels)];
 

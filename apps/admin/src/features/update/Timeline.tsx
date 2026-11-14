@@ -25,6 +25,8 @@ interface TimelineProps {
     appearance?: readonly AppearanceItem[];
     /** 不會在本次發佈嘅未完成行（冇 = 唔出嗰組） */
     skipped?: readonly TodoRow[];
+    /** 有 = 修改 / 下架行出「還原」；還原完重讀 */
+    onReverted?: (() => Promise<unknown>) | undefined;
 }
 
 /** 有 App 外觀但冇即時上線嘅內容：補一個空嘅即時上線組放 App 外觀卡 */
@@ -40,6 +42,7 @@ function TimelineGroup({
     group,
     entries,
     appearance,
+    onReverted,
 }: Omit<TimelineProps, 'groups' | 'skipped'> & { group: ChangeTimelineGroup }) {
     const now = group.when === NOW;
     const heading = groupHeading(group.when);
@@ -52,7 +55,12 @@ function TimelineGroup({
             <ul className="tl-entries">
                 {now && appearance?.map((item) => <AppearanceCard key={item} item={item} />)}
                 {entryCardsOf(group.items).map((card) => (
-                    <EntryCardView key={card.key} card={card} entries={entries} />
+                    <EntryCardView
+                        key={card.key}
+                        card={card}
+                        entries={entries}
+                        onReverted={onReverted}
+                    />
                 ))}
             </ul>
         </li>
@@ -64,6 +72,7 @@ export function Timeline({
     entries,
     appearance = [],
     skipped = [],
+    onReverted,
 }: TimelineProps) {
     const [expanded, setExpanded] = useState(false);
     const groups = withNowGroup(content, appearance);
@@ -77,6 +86,7 @@ export function Timeline({
                     group={group}
                     entries={entries}
                     appearance={appearance}
+                    onReverted={onReverted}
                 />
             ))}
             {!expanded && last && groups.length > COLLAPSED_GROUPS && (

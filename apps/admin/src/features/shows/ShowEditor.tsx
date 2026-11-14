@@ -11,6 +11,7 @@ import { savedDiscOf } from '../../model/thumbs';
 import { EditorHeader } from '../editor/EditorHeader';
 import { EditorNotices } from '../editor/EditorNotices';
 import { idProblem } from '../editor/IdField';
+import { NameRevert } from '../revert/NameRevert';
 import { ShowEditorCard } from './ShowEditorCard';
 import { ShowTabs, type ShowTab } from './ShowTabs';
 import { ShowThemeCard } from './ShowThemeCard';
@@ -48,7 +49,12 @@ function ShowEditor({ id, tab }: { id: string | undefined; tab: ShowTab }) {
                 name={name}
                 flow={origin.flow}
                 onRename={isNew ? undefined : show.rename}
-                pills={<ShowStatusPill show={show} />}
+                pills={
+                    <>
+                        <ShowStatusPill show={show} />
+                        <NameRevert editor={editor} />
+                    </>
+                }
                 disc={savedDiscOf(entry)}
             />
             <EditorNotices

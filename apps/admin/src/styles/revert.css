@@ -1,0 +1,218 @@
+/*
+ * 還原未發佈改動（admin 0.7.0）：Design Origin: mockup: _mockups_/admin-revert/index.html
+ * 還原掣同刪除掣（theme.css button.ghost-danger）一樣：淺紅底 --danger-bg + 紅字 --danger-ink；
+ * 圖位鉛筆旁圓形還原掣同色。確認框沿用 .scrim（冇新動畫）
+ */
+
+/* ---------- 「還原」掣（時間線行尾、欄位標題旁、確認框） ---------- */
+button.revert-btn {
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 8px;
+    background: var(--danger-bg);
+    color: var(--danger-ink);
+    box-shadow: none;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+button.revert-btn .lucide {
+    width: 14px;
+    height: 14px;
+}
+
+button.revert-btn:hover:not(:disabled) {
+    background: var(--danger-bg);
+    box-shadow: inset 0 0 0 1px var(--danger-ink);
+}
+
+/* 時間線：還原掣靠最右 */
+.tl-row > .revert-btn {
+    margin-left: auto;
+}
+
+/* 確認框嘅「還原 N 項」同取消掣一樣大 */
+button.revert-btn.dialog-revert {
+    padding: 8px 18px;
+    font-size: 14px;
+}
+
+button.revert-btn.dialog-revert .lucide {
+    width: 18px;
+    height: 18px;
+}
+
+/* ---------- 編輯頁：「已修改」+「還原」、「已發佈：…」、其他欄位一行 ---------- */
+.revert-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 400;
+}
+
+/* .field > span（mockup.css 標題 13px 粗體）要蓋返 */
+.published-hint,
+.field > span.published-hint {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.revert-others .label-line {
+    flex-wrap: wrap;
+}
+
+/* ---------- 圖位：鉛筆旁圓形還原掣 ---------- */
+.slot-face {
+    position: relative;
+}
+
+button.slot-revert {
+    position: absolute;
+    right: 48px;
+    bottom: 6px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    border: 3px solid var(--surface);
+    background: var(--danger-bg);
+    color: var(--danger-ink);
+    box-shadow: none;
+}
+
+button.slot-revert:hover:not(:disabled) {
+    background: var(--danger-bg);
+    box-shadow: inset 0 0 0 1px var(--danger-ink);
+}
+
+button.slot-revert .lucide {
+    width: 16px;
+    height: 16px;
+}
+
+/* 橫圖嘅鉛筆凸出右下角（theme.css .img-slot.tile .slot-btn） */
+.slot-face:has(.img-slot.tile) > .slot-revert {
+    right: 32px;
+    bottom: -10px;
+}
+
+.media .cap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ---------- 確認框（mockup ② .dialog / .diff） ---------- */
+.scrim .card.revert-dialog {
+    max-width: 560px;
+}
+
+.revert-dialog .sub {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.diff {
+    display: grid;
+    gap: 10px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.diff-row {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr) 22px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border-radius: 12px;
+    background: var(--surface-2);
+    cursor: pointer;
+}
+
+.diff-row.single {
+    grid-template-columns: minmax(0, 1fr) 22px;
+}
+
+.diff-row input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    justify-self: end;
+    accent-color: var(--danger-ink);
+}
+
+/* 冇剔：淡咗 + 虛線框 */
+.diff-row.off {
+    opacity: 0.5;
+    background: transparent;
+    outline: 1px dashed var(--line);
+}
+
+.diff-side {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.diff-side .col-label {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.img-box {
+    height: 64px;
+    border-radius: 8px;
+    background: var(--surface) center / cover no-repeat;
+}
+
+.img-box.disc {
+    width: 64px;
+    border-radius: 50%;
+}
+
+.txt-box {
+    font-size: 12px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.txt-box.old {
+    color: var(--muted);
+}
+
+.swatches {
+    display: flex;
+    gap: 4px;
+}
+
+.swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px var(--line);
+}
+
+@media (max-width: 560px) {
+    .diff-row {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 22px;
+    }
+
+    /* 窄版：欄位名同剔格一行，下面「已發佈 / 目前」 */
+    .diff-row > b {
+        grid-column: 1 / 3;
+    }
+
+    .diff-row > input {
+        grid-row: 1;
+        grid-column: 3;
+    }
+
+    .diff-row > .diff-side:first-of-type {
+        grid-column: 1;
+    }
+}

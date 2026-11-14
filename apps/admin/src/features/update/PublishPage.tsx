@@ -6,7 +6,7 @@
  * App 外觀卡寫重新部署說明，未完成項目排時間線最尾「不會在本次發佈」）。
  * 409 → 擋住清單（#s9）；驗證錯誤 / 配色警告（admin-phase4 #f）；422 未知 key → 頁面過時（重新載入）
  */
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { ChangesResponse, LoadedEntry, PublishSelection, TodoRow } from '../../api/types';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
@@ -42,13 +42,14 @@ interface ChangesCardProps {
     entries: readonly LoadedEntry[];
     skipped: readonly TodoRow[];
     loading: boolean;
+    onReverted: () => Promise<unknown>;
 }
 
 /**
  * 時間線（內容 + 今次發佈嘅 App 外觀 + 不會在本次發佈）；冇內容就講只改咗 Banner / App 外觀
  * （或者冇嘢發佈），有未完成項目照出「不會在本次發佈」
  */
-function ChangesCard({ data, selection, entries, skipped, loading }: ChangesCardProps) {
+function ChangesCard({ data, selection, entries, skipped, loading, onReverted }: ChangesCardProps) {
     const appearance = data && selection ? publishedAppearance(data, selection) : [];
     const hasContent = (data?.changes.timeline.length ?? 0) > 0 || appearance.length > 0;
     return (
@@ -68,18 +69,31 @@ function ChangesCard({ data, selection, entries, skipped, loading }: ChangesCard
                     entries={entries}
                     appearance={appearance}
                     skipped={skipped}
+                    onReverted={onReverted}
                 />
             )}
         </section>
     );
 }
 
+/** 還原咗未發佈改動：admin 資料（待辦、entry、變更）+ 呢頁照選擇計嘅變更都重讀 */
+const useRevertRefresh = () => {
+    const { refresh } = useAdminData();
+    const [revision, setRevision] = useState(0);
+    const onReverted = useCallback(async () => {
+        await refresh();
+        setRevision((r) => r + 1);
+    }, [refresh]);
+    return { revision, onReverted };
+};
+
 export function PublishPage() {
     const { changes, entries, todos } = useAdminData();
     const { reload } = changes;
     useEffect(() => void reload(), [reload]);
     const selection = usePublishTarget();
-    const selected = useSelectedChanges(selection);
+    const { revision, onReverted } = useRevertRefresh();
+    const selected = useSelectedChanges(selection, revision);
     const { state, run } = usePublish(selection);
     const data = selected.data;
     const stale = selected.stale || state.status === 'stale';
@@ -103,6 +117,7 @@ export function PublishPage() {
                     entries={entries.data ?? []}
                     skipped={skippedRows(todos.data?.rows ?? [], data)}
                     loading={selected.loading}
+                    onReverted={onReverted}
                 />
             )}
             <PublishActions

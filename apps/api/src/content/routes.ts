@@ -10,6 +10,7 @@ import { adminRoutes } from '../admin/routes';
 import { bannerRoutes } from '../banner/routes';
 import { brandingRoutes } from '../branding/routes';
 import { entryRoutes } from './entries';
+import { revertRoutes } from './revertRoute';
 import { scanRoutes } from './scan';
 import { scheduleRoutes } from './schedule';
 import { sourceRoutes } from './sources';
@@ -25,6 +26,7 @@ contentRoutes.use(
 );
 
 contentRoutes.route('/', entryRoutes);
+contentRoutes.route('/', revertRoutes);
 contentRoutes.route('/', scanRoutes);
 contentRoutes.route('/', scheduleRoutes);
 contentRoutes.route('/', sourceRoutes);

@@ -36,21 +36,26 @@ interface Loaded {
 
 const asError = (error: unknown) => (error instanceof Error ? error : new Error(String(error)));
 
-export const useSelectedChanges = (selection: PublishSelection | undefined): SelectedChanges => {
+/** revision 變 = 同一個選擇都重讀（例如還原咗未發佈改動） */
+export const useSelectedChanges = (
+    selection: PublishSelection | undefined,
+    revision = 0,
+): SelectedChanges => {
     const [loaded, setLoaded] = useState<Loaded>({ key: undefined });
     // JSON 做 key：選擇內容一樣就唔重讀（selection object 每次 render 都係新嘅）
-    const key = selection ? JSON.stringify(selection) : undefined;
+    const json = selection ? JSON.stringify(selection) : undefined;
+    const key = json === undefined ? undefined : `${revision}:${json}`;
     useEffect(() => {
-        if (key === undefined) return undefined;
+        if (key === undefined || json === undefined) return undefined;
         let live = true;
-        getChanges(JSON.parse(key) as PublishSelection).then(
+        getChanges(JSON.parse(json) as PublishSelection).then(
             (data) => live && setLoaded({ key, data }),
             (error: unknown) => live && setLoaded({ key, error: asError(error) }),
         );
         return () => {
             live = false;
         };
-    }, [key]);
+    }, [key, json]);
     // 讀緊新選擇：舊結果照顯示（同 useResource 一樣），loading 擋住「發佈」
     return {
         data: loaded.data,

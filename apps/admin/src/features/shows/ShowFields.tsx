@@ -9,9 +9,14 @@ import { Chips } from '../../ui/Chips';
 import { Tip } from '../../ui/Tip';
 import { Toggle } from '../../ui/Toggle';
 import { IdField } from '../editor/IdField';
+import { SummaryField } from '../editor/SummaryField';
+import { PublishedHint } from '../revert/FieldRevert';
+import { RevertLabel } from '../revert/RevertLabel';
+import { STATUS_FIELDS, StatusHint } from '../revert/StatusRevert';
+import type { EntryRevert } from '../revert/useEntryRevert';
 import { AirTimeField } from './AirTimeField';
 import { DaysField } from './DaysField';
-import { airDaysOf, hostsOf, summaryOf, withOptional } from './showModel';
+import { airDaysOf, hostsOf, withOptional } from './showModel';
 
 interface ShowFieldsProps {
     id: string;
@@ -19,9 +24,11 @@ interface ShowFieldsProps {
     onId: (id: string) => void;
     definition: RawDefinition;
     onChange: (update: (definition: RawDefinition) => RawDefinition) => void;
+    /** 已發佈節目：同已發佈唔同嘅欄位出「已修改」「還原」 */
+    revert?: EntryRevert | undefined;
 }
 
-export function ShowFields({ id, isNew, onId, definition, onChange }: ShowFieldsProps) {
+export function ShowFields({ id, isNew, onId, definition, onChange, revert }: ShowFieldsProps) {
     const statusId = useId();
     const set = (key: string, value: unknown) => onChange((d) => withOptional(d, key, value));
     return (
@@ -35,33 +42,32 @@ export function ShowFields({ id, isNew, onId, definition, onChange }: ShowFields
                         onChange={onId}
                     />
                     <div className="field">
-                        <span id={statusId}>{t('editor.status')}</span>
+                        <RevertLabel
+                            label={t('editor.status')}
+                            id={statusId}
+                            revert={revert}
+                            fields={STATUS_FIELDS}
+                        />
                         <Toggle
                             on={definition.enabled !== false}
                             labelledBy={statusId}
                             onChange={(on) => set('enabled', on)}
                         />
+                        <StatusHint revert={revert} />
                     </div>
                 </div>
             </div>
             {isNew && <NewShowFields definition={definition} set={set} />}
-            <label className="field wide">
-                <span>{t('fields.summary')}</span>
-                <textarea
-                    rows={3}
-                    value={summaryOf(definition)}
-                    placeholder={t('editor.optional')}
-                    onChange={(e) => set('summary', e.target.value)}
-                />
-            </label>
-            <AirFields definition={definition} onChange={onChange} set={set} />
+            <SummaryField target={definition} onChange={onChange} revert={revert} />
+            <AirFields definition={definition} onChange={onChange} set={set} revert={revert} />
             <div className="field wide">
-                <span>{t('show.hosts')}</span>
+                <RevertLabel label={t('show.hosts')} revert={revert} fields={HOSTS} />
                 <Chips
                     label={t('show.hosts')}
                     values={hostsOf(definition)}
                     onChange={(hosts) => set('hosts', hosts)}
                 />
+                {revert && <PublishedHint revert={revert} fields={HOSTS} />}
             </div>
         </>
     );
@@ -104,25 +110,30 @@ function NewShowFields({
     );
 }
 
+const HOSTS = ['hosts'];
+const AIR_DAYS = ['airDays'];
+
 /** 播出日 + 播放時間（roller） */
 function AirFields({
     definition,
     onChange,
     set,
-}: Pick<ShowFieldsProps, 'definition' | 'onChange'> & {
+    revert,
+}: Pick<ShowFieldsProps, 'definition' | 'onChange' | 'revert'> & {
     set: (key: string, value: unknown) => void;
 }) {
     return (
         <>
             <div className="field wide">
-                <span>{t('show.airDays')}</span>
+                <RevertLabel label={t('show.airDays')} revert={revert} fields={AIR_DAYS} />
                 <DaysField
                     label={t('show.airDays')}
                     days={airDaysOf(definition)}
                     onChange={(days) => onChange((d) => ({ ...d, airDays: days }))}
                 />
+                {revert && <PublishedHint revert={revert} fields={AIR_DAYS} />}
             </div>
-            <AirTimeField definition={definition} set={set} />
+            <AirTimeField definition={definition} set={set} revert={revert} />
         </>
     );
 }

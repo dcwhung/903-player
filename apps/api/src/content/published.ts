@@ -5,6 +5,7 @@
  * - 最新 ok publish（entries.ts isPublished，寬鬆驗證 mayRelax 用）：劇睇鎖住 ID，節目睇 document 有冇佢，
  *   讀唔到就當有（fail closed，S-844）
  * - DELETE 守衛（entries.ts blocksDelete）：劇同上；節目用「狀態」嘅曾經上過架（最新 document 讀唔到照拒絕）
+ * - 已發佈版本（GET /api/entries/:kind/:id 嘅 published、還原 revert.ts）：見 publishedVersion.ts
  */
 import type { PublishedFactRow } from '../catalog/store';
 
