@@ -70,3 +70,31 @@ next_action: invoke_qa
 report: .proj-docs/reviews/2026-11-14_review_publish-change-accuracy.md
 context: T2 review of c591d8a, 0 findings, no new IDs used (C-023 / W-747 / S-1012 free); report committed locally, not pushed (code CI running). f9db85d and the uncommitted ReorderCard.tsx / zh-HK.ts / reorderChecks.mjs WIP are out of scope; WIP currently fails root tsc -b (TS6133 fieldLabel unused)
 ```
+
+## Delta review — `c591d8a..8923806`（2026-11-14）
+
+範圍：淨係 f9db85d、aad1945、8923806（全部係用戶要求嘅 UI 改動，之前見到未 commit 嘅改動已經喺入面）。
+
+- Hard gates：all pass。改咗嘅 ts / tsx / mjs 跑 `npx eslint` exit 0；14 個改咗嘅檔跑 `prettier --check` 過；root `npx tsc -b` exit 0（TS6133 已經冇）；admin `src/app/Brand.test.tsx`、`src/features/{history,revert}`、`src/ui`、`src/i18n` 34 files / 201 tests 全綠。冇跑 e2e
+- f9db85d：`ConfirmDialog` `confirmClassName` 有就用佢，冇就照舊 `danger` / `primary`，其他 caller 冇影響；`.revert-btn` / `.dialog-revert` 喺 `revert.css`（`main.tsx` 全域 import）；`theme.css` 刪咗舊 pill padding，淨係留位置，冇衝突；有測試鎖住兩個掣嘅 class
+- aad1945：`revert.orderName`「{list}排序」係書面語，`writtenChinese.test.ts` 過；確認框標題、行、toast 都跟住 list 變；拎走咗冇用嘅 `fieldLabel` import
+- 8923806：`__API_VERSION__` 全部改晒（`vite.config.ts` define、`vite-env.d.ts`、`Brand.tsx`、`Nav.tsx`），repo 搵唔到舊名；用戶決定推翻 plan §3b，喺 config 註解同 CHANGELOG 都有寫；記錄頁 `reorder` 行用 `revert.orderName`，同類型欄「修改」唔重複
+- 結果：0 finding，冇用新 ID（C-023 / W-747 / S-1012 仍然未用），✅ pass
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "fix/publish-change-accuracy"
+context: "Delta review f9db85d..8923806 (UI tweaks: unified revert style, list-named reorder dialog, admin version pill): 0 findings, no new IDs; root tsc -b now passes"
+blockers: []
+```
