@@ -24,7 +24,7 @@ describe('historyModel', () => {
             { kind: 'unlist', when: '2026-11-03', entry, arc, detail: { reason: 'removedAt' } },
             { kind: 'unlist', when: 'now', entry, detail: { reason: 'disabled' } },
         ];
-        expect(items.map((item) => itemStatusOf(item)?.text)).toEqual([
+        expect(items.map((item) => itemStatusOf(item, [])?.text)).toEqual([
             '＋2 集 · 已上架',
             '11 月 20 日上架',
             '排程中 · 11 月 16 日起',
@@ -41,7 +41,8 @@ describe('historyModel', () => {
             arc,
             detail: { fields: ['summary', 'zzz'] },
         };
-        expect(itemStatusOf(edit)?.text).toBe('簡介、zzz');
+        // 認不到嘅欄位寫「其他」，同確認發佈頁一樣
+        expect(itemStatusOf(edit, [])?.text).toBe('簡介、其他');
         expect(historyName(edit)).toBe('黃金少年 › Season 1');
         expect(historyName({ kind: 'rollback', when: 'now', detail: { publishId: 1 } })).toBe(
             '還原至 #1',

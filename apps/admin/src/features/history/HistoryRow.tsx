@@ -64,7 +64,7 @@ function Action({ row, onRollback }: Pick<HistoryRowProps, 'row' | 'onRollback'>
 }
 
 function ChangeLine({ item, entries }: { item: ChangeItem; entries: readonly LoadedEntry[] }) {
-    const status = itemStatusOf(item);
+    const status = itemStatusOf(item, entries);
     return (
         <>
             <span className="kind">{kindLabel(item.kind)}</span>

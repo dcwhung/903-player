@@ -1,3 +1,4 @@
+import type { ChangeItem } from '@903-player/catalog';
 import { render, screen } from '@testing-library/react';
 import { HistoryRow } from './HistoryRow';
 
@@ -183,5 +184,27 @@ describe('HistoryRow', () => {
             );
             expect(screen.getByText(/R2 down/)).toBeInTheDocument();
         });
+    });
+
+    it('should say which fields a 修改 changed, like the publish page', () => {
+        const edit = {
+            kind: 'edit',
+            when: 'now',
+            entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
+            detail: { fields: ['theme', 'summary'] },
+        } satisfies ChangeItem;
+        render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [edit], timeline: [] } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
+        // 狀態 pill 用編輯頁標籤（之前係原本 key「theme」）
+        expect(document.querySelector('.changes .name')).toHaveTextContent('蘭茜夫人劇場');
+        expect(screen.getByText('配色、簡介')).toBeInTheDocument();
+        expect(screen.queryByText(/theme/)).not.toBeInTheDocument();
     });
 });

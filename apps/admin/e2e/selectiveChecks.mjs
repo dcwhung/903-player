@@ -102,6 +102,23 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
             await card.getByText('修改 · 蘭茜夫人劇場（配色、簡介）').waitFor();
             await page.locator('.timeline').getByText('配色、簡介').waitFor();
             await shoot(page, 'publish-selective-appearance');
+            // 發佈 / 部署記錄：同一行修改都寫埋改了哪些欄位
+            await page.getByRole('button', { name: '發佈', exact: true }).click();
+            await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();
+            await page
+                .locator('.hist-row .changes')
+                .getByText('配色、簡介', { exact: true })
+                .first()
+                .waitFor();
+            // 只出一次（狀態 pill，S-998），唔再出原本 key「theme」
+            const fieldTexts = page
+                .locator('.hist-row .changes')
+                .getByText('配色、簡介', { exact: true });
+            if ((await fieldTexts.count()) !== 1)
+                throw new Error(`field list shown ${await fieldTexts.count()} times`);
+            if ((await page.locator('.hist-row .changes').getByText('theme').count()) > 0)
+                throw new Error('history still shows the raw field key');
+            await shoot(page, 'history-change-fields');
             await page.close();
         });
 

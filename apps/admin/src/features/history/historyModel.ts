@@ -1,14 +1,11 @@
 /* 上下架記錄：每項變更嘅狀態 pill（用返內容列表嘅 pill 字眼） */
 import type { ChangeItem } from '@903-player/catalog';
-import type { PublishChangeSummary } from '../../api/types';
+import type { LoadedEntry, PublishChangeSummary } from '../../api/types';
 import { t } from '../../i18n/t';
-import { zhHK } from '../../i18n/zh-HK';
 import { longDate } from '../../model/dates';
 import type { Status } from '../../model/status';
+import { editFieldsText } from '../update/changeFields';
 import { episodesIn } from '../update/timelineModel';
-
-const fieldLabel = (field: string): string =>
-    field in zhHK.fields ? t(`fields.${field as keyof typeof zhHK.fields}`) : field;
 
 const scheduled = (item: ChangeItem): Status => {
     const date = longDate(item.when);
@@ -19,7 +16,11 @@ const scheduled = (item: ChangeItem): Status => {
     };
 };
 
-export const itemStatusOf = (item: ChangeItem): Status | undefined => {
+/** 修改：改了哪些欄位，同確認發佈頁一樣（editFieldsText，短篇寫短篇名） */
+export const itemStatusOf = (
+    item: ChangeItem,
+    entries: readonly LoadedEntry[],
+): Status | undefined => {
     if (item.kind === 'rollback') return undefined;
     if (item.kind === 'unlist')
         return {
@@ -32,7 +33,7 @@ export const itemStatusOf = (item: ChangeItem): Status | undefined => {
     if (item.kind === 'edit')
         return {
             tone: 'none',
-            text: (item.detail.fields ?? []).map(fieldLabel).join('、') || t('kind.edit'),
+            text: editFieldsText(item, entries) || t('kind.edit'),
         };
     if (item.when !== 'now') return scheduled(item);
     if (item.kind === 'newEpisodes')
