@@ -533,6 +533,29 @@
             .thumb.heart {
                 background: radial-gradient(circle at 35% 35%, #8f2a2a, #3d0f0f);
             }
+            .thumb.camp {
+                background: radial-gradient(circle at 35% 35%, #7fae6a, #3f6b2e);
+            }
+            .b-group.skip::before {
+                background: var(--muted);
+                box-shadow: 0 0 0 4px var(--surface-2);
+            }
+            .entry.skipped {
+                background: transparent;
+                border: 1px dashed var(--line);
+            }
+            .entry.skipped .thumb {
+                filter: grayscale(1);
+                opacity: 0.6;
+            }
+            .entry.skipped .entry-title,
+            .entry.skipped .arc {
+                color: var(--muted);
+            }
+            .tag.skip {
+                background: var(--surface-2);
+                color: var(--muted);
+            }
             .sub-row .arc {
                 font-weight: 600;
             }
@@ -562,9 +585,9 @@
 
             <h2 class="state-label">B v2 · 確認發佈頁</h2>
             <p class="state-note">
-                頁頂四格數字照舊；「本次發佈」唔再重覆數量，淨留 App
-                外觀同兩個提示；下面時間線按日子分，每套劇 /
-                節目一張卡：劇本身嘅改動寫喺卡頭，短篇喺下面縮排逐行列。
+                方案 1（用戶揀）：拎走「本次發佈」卡同數字下面嗰行 pill；成頁 = 四格數字 → 時間線 →
+                發佈。 重新部署嘅說明搬入 App
+                外觀卡；未完成項目變成時間線最尾「不會在本次發佈」一組（灰色，寫原因）。
             </p>
             <div class="page">
                 <div class="stats">
@@ -573,42 +596,6 @@
                     <div class="stat s3"><b>3</b>修改</div>
                     <div class="stat s4"><b>1</b>下架</div>
                 </div>
-                <section class="card" aria-label="本次發佈">
-                    <h2>本次發佈</h2>
-                    <div class="b-summary">
-                        <span class="b-stat look">App 外觀 · 名稱與簡介</span>
-                    </div>
-                    <div class="notes">
-                        <div class="note grey">
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                aria-hidden="true"
-                            >
-                                <path d="M12 3 2 21h20L12 3z" />
-                                <path d="M12 10v4M12 18h.01" />
-                            </svg>
-                            以下項目尚未完成，不會在本次發佈：森美小儀系列 ›
-                            大衛營（尚未設定排期）。
-                        </div>
-                        <div class="note info">
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                aria-hidden="true"
-                            >
-                                <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
-                                <path d="M21 3v5h-5" />
-                            </svg>
-                            圖示、名稱及簡介須重新部署播放器方會生效，發佈後會自動開始（約 5
-                            分鐘）。
-                        </div>
-                    </div>
-                </section>
                 <section class="card" aria-label="上線時間">
                     <ol class="b-timeline">
                         <li class="b-group">
@@ -624,7 +611,10 @@
                                                 <span class="tag look">App 外觀</span
                                                 ><span class="entry-title">名稱與簡介</span>
                                             </div>
-                                            <div class="muted small">重新部署播放器後生效</div>
+                                            <div class="muted small">
+                                                發佈後自動重新部署播放器（約 5 分鐘）；已安裝的 App
+                                                須重新安裝方會更新圖示
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -701,6 +691,31 @@
                                 </div>
                             </div>
                         </li>
+                        <li class="b-group skip">
+                            <div class="b-when">
+                                不會在本次發佈<span class="muted small">設定完成後可再發佈</span>
+                            </div>
+                            <div class="b-items">
+                                <div class="entry skipped">
+                                    <div class="entry-head">
+                                        <span class="thumb sammy">森美</span>
+                                        <div class="b-text">
+                                            <div class="line1">
+                                                <span class="entry-title">森美小儀系列</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="sub">
+                                        <div class="sub-row">
+                                            <span class="tag skip">未完成</span
+                                            ><span class="thumb sm camp">大衛</span
+                                            ><span class="arc">大衛營</span
+                                            ><span class="muted small">尚未設定排期</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
                     </ol>
                 </section>
                 <div class="actions">
@@ -725,13 +740,24 @@
                     <tr>
                         <td>短篇改動</td>
                         <td>
-                            縮排逐行：短篇自己嘅碟面 + 類型 + 短篇名 + 改咗乜 /
-                            集數（劇集行留空位對齊）
+                            縮排逐行：類型 + 短篇自己嘅碟面（冇就用劇嘅）+ 短篇名 + 改咗乜 / 集數
                         </td>
                     </tr>
                     <tr>
                         <td>排序</td>
                         <td>App 外觀 / Banner 排最頂；之後跟劇 / 節目喺播放器嘅次序</td>
+                    </tr>
+                    <tr>
+                        <td>「本次發佈」卡</td>
+                        <td>拎走（方案 1）；數字下面嗰行 pill 都拎走</td>
+                    </tr>
+                    <tr>
+                        <td>未完成</td>
+                        <td>時間線最尾「不會在本次發佈」一組：灰色、虛線框、寫原因；冇就唔出</td>
+                    </tr>
+                    <tr>
+                        <td>重新部署說明</td>
+                        <td>寫喺 App 外觀卡（圖示 / 名稱與簡介先有；Banner 唔使重新部署）</td>
                     </tr>
                     <tr>
                         <td>發佈 / 部署記錄</td>
