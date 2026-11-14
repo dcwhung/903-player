@@ -5,7 +5,7 @@ import { t } from '../../i18n/t';
 import { longDate } from '../../model/dates';
 import type { Status } from '../../model/status';
 import { editFieldsText } from '../update/changeFields';
-import { episodesIn, reorderTitle } from '../update/timelineModel';
+import { episodesIn, listName } from '../update/timelineModel';
 
 const scheduled = (item: ChangeItem): Status => {
     const date = longDate(item.when);
@@ -41,9 +41,10 @@ export const itemStatusOf = (
     return { tone: 'ok', text: t('status.live') };
 };
 
-/** 「黃金少年 › Season 1」；排序 =「節目排序已更改」（冇 entry，#6） */
+/** 「黃金少年 › Season 1」；排序 =「節目排序」（冇 entry，#6；類型欄已寫「修改」，用戶 2026-11-14） */
 export const historyName = (item: ChangeItem): string => {
-    if (item.kind === 'reorder') return reorderTitle(item);
+    if (item.kind === 'reorder')
+        return t('revert.orderName', { list: listName(item.detail.list ?? 'shows') });
     if (item.kind === 'rollback')
         return t('history.rollbackTo', { id: item.detail.publishId ?? '' });
     const entry = item.entry?.name ?? '';

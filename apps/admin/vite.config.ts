@@ -3,11 +3,11 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 /*
- * Admin 同 api 係同一個 Worker deploy（Worker static assets 出 apps/admin/dist），
- * 所以版本 pill 用 apps/api/package.json 嘅 version：一個版本號就夠（plan §3b）
+ * 版本 pill「Admin vX」顯示 apps/admin/package.json 嘅 version（用戶 2026-11-14 決定；
+ * 之前 plan §3b 用 api version，admin 同 api 分開升版之後會令人誤會）
  */
-const API_PACKAGE_JSON = new URL('../api/package.json', import.meta.url);
-const { version: API_VERSION } = JSON.parse(readFileSync(API_PACKAGE_JSON, 'utf8')) as {
+const ADMIN_PACKAGE_JSON = new URL('./package.json', import.meta.url);
+const { version: ADMIN_VERSION } = JSON.parse(readFileSync(ADMIN_PACKAGE_JSON, 'utf8')) as {
     version: string;
 };
 
@@ -36,7 +36,7 @@ interface ProxyRequest {
 
 export default defineConfig({
     define: {
-        __API_VERSION__: JSON.stringify(API_VERSION),
+        __ADMIN_VERSION__: JSON.stringify(ADMIN_VERSION),
     },
     plugins: [react()],
     server: {

@@ -12,7 +12,7 @@ export const reorderState = () => ({ reordered: ['shows'], orderReverts: [] });
 /** state.others 頂：reorder item（同 catalog summarizeChanges 一樣排 now 組最頂） */
 export const reorderItems = (state) => (state.reordered ?? []).map(reorderItem);
 
-/** 之前一次發佈（#4）：廣播劇排序改咗（上下架記錄出「廣播劇排序已更改」） */
+/** 之前一次發佈（#4）：廣播劇排序改咗（上下架記錄出「修改 · 廣播劇排序」） */
 export const reorderHistoryRow = (row) => ({
     ...row,
     current: false,

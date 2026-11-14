@@ -1,5 +1,5 @@
 // Admin e2e section：排序改動（admin 0.8.0，#6 決定 A）—— 確認發佈頁一張「節目排序已更改」卡 +「還原」
-// → 確認框（一項「排序」）→ POST /api/order/shows/revert；冇發佈版本 409；上下架記錄出「廣播劇排序已更改」。
+// → 確認框（一項「排序」）→ POST /api/order/shows/revert；冇發佈版本 409；上下架記錄出「修改 · 廣播劇排序」。
 // 由 run.mjs 傳入共用 helper（check / newPage / shoot / loggedIn / BASE），回返 check function 清單
 const HIDPI = { deviceScaleFactor: 2 };
 const SHOWS_TITLE = '節目排序已更改';
@@ -63,7 +63,7 @@ export const reorderChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
         check('reorder: history names a reorder row by its list, with no entry', async () => {
             const page = await newPage(browser, reorderState(), undefined, HIDPI);
             await page.goto(`${BASE}/history`);
-            const line = page.locator('.hist-row .name', { hasText: '廣播劇排序已更改' });
+            const line = page.locator('.hist-row .name', { hasText: /^廣播劇排序$/ });
             await line.waitFor();
             const row = page.locator('.hist-row').filter({ has: line });
             if ((await row.locator('.changes .thumb').count()) > 0)

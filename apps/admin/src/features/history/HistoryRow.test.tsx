@@ -224,7 +224,7 @@ describe('HistoryRow', () => {
             />,
         );
         expect(document.querySelector('.changes .kind')).toHaveTextContent('修改');
-        expect(document.querySelector('.changes .name')).toHaveTextContent('節目排序已更改');
+        expect(document.querySelector('.changes .name')).toHaveTextContent(/^節目排序$/);
         expect(document.querySelector('.changes .thumb')).toBeNull();
         expect(screen.queryByText('已上架')).not.toBeInTheDocument();
     });
