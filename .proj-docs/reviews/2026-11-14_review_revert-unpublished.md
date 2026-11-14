@@ -91,3 +91,25 @@ const known =
     has(source, field) ||
     (isRecord(target) && has(target, field));
 ```
+
+## Re-review（2026-11-14，`3efc8a2`、`ff6ad1f`、`9c20e3b`）
+
+範圍：只驗上一輪 W-745、W-746 同 S-1006 至 S-1011 嘅修正，加埋用戶要求嘅剔格位置改動（`3efc8a2`）。
+
+Hard gates：all pass。`npx eslint apps/api apps/admin/src packages/catalog/src` exit 0；`npx tsc -b` exit 0；`npx vitest related <15 個改咗嘅 source> --run` 100 files / 832 tests 全綠；改動檔 coverage：lines 99.16%、statements 97.45%。冇跑 e2e。
+
+| ID     | 結果 | 驗證                                                                                                                                                                                             |
+| ------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| W-745  | ✅   | `revertTop` / `checkArcField` 嘅 `known` 加咗 `slotOf(field) !== undefined`；`revertEdgeCases.test.ts` 覆蓋頂層同短篇「冇 key、淨係改咗圖」                                                      |
+| W-746  | ✅   | `revertParts.has` = `Object.hasOwn`，`copyKey` 同兩個 `known` 都用佢；測試覆蓋 `constructor` / `toString` / `__proto__` / `hasOwnProperty` → 400                                                 |
+| S-1006 | ✅   | `publishedVersion.ts` 用 `id:hash` 做 key 嚟 memo；`hash` 係 document 嘅 sha256（`0001_init.sql`），key 一樣即係內容一樣。cache 住嘅 definition 唔會被改（`copyKey` / 插入都 `structuredClone`） |
+| S-1007 | ✅   | `revertFocus.ts`：focus 依次搵欄位控制 → 卡（`data-revert-anchor`）→ h1；只會喺 focus 已經跌咗時先搬                                                                                             |
+| S-1008 | ✅   | admin `NOT_REVERTABLE` 同 api `EPISODE_FIELDS` 一致（400）；短篇 `'*'` 照舊會還原成個短篇，已寫入 plan                                                                                           |
+| S-1009 | ✅   | `unresolvedImages` 喺 `restoreImage` 同清理階段都唔郁；GET 唔會洩露（有測試）                                                                                                                    |
+| S-1010 | ✅   | plan 已補 admin 嘅「實作差異」                                                                                                                                                                   |
+| S-1011 | ✅   | 409 帶 `reason: 'arcNotPublished'`，admin 顯示「此短篇尚未發佈，無法還原」（書面語）                                                                                                             |
+| 剔格   | ✅   | `3efc8a2`：mockup、`DiffRow`、`revert.css`（包括窄版）一齊改；`aria-label` 冇變                                                                                                                  |
+
+流程備註（唔扣分）：`ff6ad1f` / `9c20e3b` 每個 commit 包咗幾個 review item，唔符合「一個 review item = 一個 commit」嘅 Fix Convention；之後嘅 lane 要跟返。
+
+**Re-review 結果：✅ pass，100/100**：上一輪兩個 🟡 已經修好，S-1006 至 S-1011 全部處理完，冇剩低 backlog。
