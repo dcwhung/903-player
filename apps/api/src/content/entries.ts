@@ -26,9 +26,9 @@ import {
     dramasOf,
     indexOfFacts,
     isInIndex,
-    loadPublishedEntry,
     type PublishedIndex,
 } from './published';
+import { loadPublishedSource } from './publishedVersion';
 import {
     badTarget,
     errorResponse,
@@ -81,14 +81,15 @@ entryRoutes.get('/entries/:kind/:id', async (c) => {
     if (!target) return badTarget(c);
     const [row, published] = await Promise.all([
         getEntry(c.env.DB, target.kind, target.id),
-        loadPublishedEntry(c.env.DB, target.kind, target.id),
+        loadPublishedSource(c.env.DB, target.kind, target.id),
     ]);
     if (!row) return errorResponse(c, HTTP_STATUS.notFound, 'no such entry');
     // published（0.11.0）：最新 ok publish 嘅版本，admin「已修改 / 還原」用；冇 = null
     const body = {
         definition: JSON.parse(row.definition) as Json,
         images: JSON.parse(row.images) as Json,
-        published,
+        // 淨係 entry：unresolvedImages 係還原內部用（S-1009），唔入 response
+        published: published?.entry ?? null,
     };
     return c.json({ ...body, draft: row.draft === 1, updatedAt: row.updated_at }, HTTP_STATUS.ok, {
         etag: etagOf(row.updated_at),

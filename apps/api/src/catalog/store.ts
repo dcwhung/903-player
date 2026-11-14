@@ -108,6 +108,23 @@ export const latestPublish = async (db: D1Database): Promise<LatestPublish | nul
     return { row: summary, episodeIds: JSON.parse(ids) as string[], document };
 };
 
+/** 最新 ok publish 嘅 id + hash（唔讀 document 全文；S-1006 cache key）；未 publish 過 → null */
+export const latestPublishKey = async (
+    db: D1Database,
+): Promise<{ id: number; hash: string } | null> =>
+    db
+        .prepare("SELECT id, hash FROM publishes WHERE status = 'ok' ORDER BY id DESC LIMIT 1")
+        .first<{ id: number; hash: string }>();
+
+/** 某次 publish 嘅 document 全文；冇呢行 → null */
+export const publishDocument = async (db: D1Database, id: number): Promise<string | null> =>
+    (
+        await db
+            .prepare('SELECT document FROM publishes WHERE id = ?')
+            .bind(id)
+            .first<{ document: string }>()
+    )?.document ?? null;
+
 export interface PublishedFactRow {
     kind: 'shows' | 'dramas';
     id: string;

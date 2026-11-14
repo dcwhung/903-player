@@ -11,6 +11,11 @@
 - `GET /api/entries/:kind/:id` 加 `published: { definition, images } | null`：最新 ok publish document 入面嗰個 entry（`images` 轉返 `<hash>.<ext>`，同 D1 一樣）；未 publish 過、document 讀唔到（fail closed）或者冇佢 = `null`
 - `POST /api/entries/:kind/:id/revert`（要 `If-Match`）：body `{ items: [{ arc?, field }] }`，逐項將 definition key 還原返 published 嘅值（published 冇 = 刪走）；`tile` / `disc` 連圖一齊還原、清走冇 slot 再指去嘅舊圖 key；`enabled` / `removedAt` 還原上下架；短篇 `field: "*"` 成個換返，D1 刪咗嘅短篇加返 published 嘅位置。冇 published / 短篇從未發佈 → 409；shape 唔啱 / 未知 field 或短篇 → 400；寫入同 `PUT` 同一條路徑，回應一樣 `{ updatedAt, draft, warnings }` + ETag。排程規則唔郁
 - `packages/catalog` 匯出 `arcIdOf`、`entryImageFile`、`arcImageFile`、`IMAGE_SLOTS`（同變更摘要同一套 slot → 檔名規則）
+- 短篇從未發佈嘅 409 帶 `reason: "arcNotPublished"`（同 entry 嘅 `notPublished` 分開，S-1011）
+- `tile` / `disc` 兩邊 definition 都冇 key（慣例檔名）照樣還原得，唔再 400（W-745）；`field` 淨係認 own key，`constructor` / `toString` / `__proto__` 等 → 400（W-746）
+- `episodes` / `episodeDates`（頂層每日播同短篇）→ 400：新集數唔經還原，由發佈處理（S-1008）
+- published 圖 URL 唔係 `/catalog/v1/img/<name>` 格式：還原唔郁 D1 嗰個圖 key（fail closed，S-1009）
+- 最新 publish document 按 id + hash cache 喺 isolate 入面，連續 `GET` 多個 entry 只讀 + parse 一次（S-1006）
 
 ## 0.10.2 — 2026-11-14
 

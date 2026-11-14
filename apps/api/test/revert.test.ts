@@ -1,53 +1,17 @@
 /* 還原未發佈改動（0.11.0）：GET /api/entries/:kind/:id 嘅 published + POST …/revert */
 import { env } from 'cloudflare:test';
-import { adminGet, adminPost, adminRequest } from './helpers';
-import { DISC, SHOW, TILE, drama, putEntry, seed } from './fixtures';
-
-type Json = Record<string, unknown>;
-
-const NEW_TILE = 'aaaaaaaaaaaaaaaa.webp';
-const SEASON_2 = { id: 'season-2', name: 'Season 2', addedAt: '2026-10-25', episodes: 2 };
-
-/** 兩個短篇嘅劇（短篇刪咗再加返要用） */
-const twoArcs = (): Json => {
-    const base = drama(3);
-    return { ...base, arcs: [...(base.arcs as Json[]), SEASON_2] };
-};
-
-const getJson = async (kind: string, id: string) =>
-    (await (await adminGet(`/api/entries/${kind}/${id}`)).json()) as {
-        definition: Json;
-        images: Json;
-        published: { definition: Json; images: Json } | null;
-    };
-
-const etagOf = async (kind: string, id: string) =>
-    (await adminGet(`/api/entries/${kind}/${id}`)).headers.get('etag') ?? '';
-
-const revert = async (kind: string, id: string, body: unknown, etag?: string) =>
-    adminRequest('POST', `/api/entries/${kind}/${id}/revert`, {
-        body,
-        headers: { 'if-match': etag ?? (await etagOf(kind, id)) },
-    });
-
-const stored = async (kind: string, id: string) => {
-    const row = await env.DB.prepare(
-        'SELECT definition, images FROM entries WHERE kind = ? AND id = ?',
-    )
-        .bind(kind, id)
-        .first<{ definition: string; images: string }>();
-    return {
-        definition: JSON.parse(row?.definition ?? '{}') as Json,
-        images: JSON.parse(row?.images ?? '{}') as Json,
-    };
-};
-
-const arcsOf = (definition: Json) => definition.arcs as Json[];
-
-const putNewTileAsset = () =>
-    env.DB.prepare('INSERT INTO assets (hash, content_type, bytes, created_at) VALUES (?, ?, ?, ?)')
-        .bind(NEW_TILE.split('.')[0], 'image/webp', 1, '2026-11-08T00:00:00Z')
-        .run();
+import { adminPost, adminRequest } from './helpers';
+import { DISC, SHOW, TILE, putEntry, seed } from './fixtures';
+import {
+    NEW_TILE,
+    arcsOf,
+    getJson,
+    putNewTileAsset,
+    revert,
+    stored,
+    twoArcs,
+    type Json,
+} from './revertHelpers';
 
 beforeEach(async () => {
     await seed(3);
@@ -77,7 +41,8 @@ describe('GET /api/entries/:kind/:id published', () => {
 
     it('should be null when the published document cannot be parsed (fail closed)', async () => {
         await adminPost('/api/publish');
-        await env.DB.prepare("UPDATE publishes SET document = '{broken'").run();
+        // cache key 係 id + hash（S-1006）：document 同 hash 一齊變先係「另一份」
+        await env.DB.prepare("UPDATE publishes SET document = '{broken', hash = 'broken'").run();
         expect((await getJson('dramas', 'golden')).published).toBeNull();
     });
 });
@@ -231,6 +196,8 @@ describe('POST /api/entries/:kind/:id/revert', () => {
             items: [{ arc: 'season-3', field: 'name' }],
         });
         expect(response.status).toBe(409);
+        // S-1011：同 entry 嘅 notPublished 分開，admin 先講得準
+        expect(await response.json()).toMatchObject({ reason: 'arcNotPublished' });
     });
 
     it('should answer 409 for an entry that was never published', async () => {
