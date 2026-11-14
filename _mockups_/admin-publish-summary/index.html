@@ -519,6 +519,20 @@
                 align-items: center;
                 flex-wrap: wrap;
             }
+            .thumb.sm {
+                width: 26px;
+                height: 26px;
+                font-size: 9px;
+            }
+            .thumb.spacer {
+                background: none;
+            }
+            .thumb.love {
+                background: radial-gradient(circle at 35% 35%, #f6b7c8, #c7577a);
+            }
+            .thumb.heart {
+                background: radial-gradient(circle at 35% 35%, #8f2a2a, #3d0f0f);
+            }
             .sub-row .arc {
                 font-weight: 600;
             }
@@ -625,12 +639,14 @@
                                     </div>
                                     <div class="sub">
                                         <div class="sub-row">
-                                            <span class="tag edit">修改</span
+                                            <span class="thumb sm spacer" aria-hidden="true"></span
+                                            ><span class="tag edit">修改</span
                                             ><span class="muted">劇集</span
                                             ><span class="chip">碟面</span>
                                         </div>
                                         <div class="sub-row">
-                                            <span class="tag edit">修改</span
+                                            <span class="thumb sm love">戀愛</span
+                                            ><span class="tag edit">修改</span
                                             ><span class="arc">戀愛二分一</span
                                             ><span class="chip">橫圖</span>
                                         </div>
@@ -647,13 +663,15 @@
                                     </div>
                                     <div class="sub">
                                         <div class="sub-row">
-                                            <span class="tag edit">修改</span
+                                            <span class="thumb sm spacer" aria-hidden="true"></span
+                                            ><span class="tag edit">修改</span
                                             ><span class="muted">劇集</span
                                             ><span class="chip">橫圖</span
                                             ><span class="chip">碟面</span>
                                         </div>
                                         <div class="sub-row">
-                                            <span class="tag off">下架</span
+                                            <span class="thumb sm fantasy">幻想</span
+                                            ><span class="tag off">下架</span
                                             ><span class="arc">森美幻想劇</span>
                                         </div>
                                     </div>
@@ -676,7 +694,8 @@
                                     </div>
                                     <div class="sub">
                                         <div class="sub-row">
-                                            <span class="tag new">新集數</span
+                                            <span class="thumb sm heart">我心</span
+                                            ><span class="tag new">新集數</span
                                             ><span class="arc">我心不死</span
                                             ><span class="muted small">第 39–40 集</span>
                                         </div>
@@ -707,7 +726,10 @@
                     </tr>
                     <tr>
                         <td>短篇改動</td>
-                        <td>縮排逐行：類型 + 短篇名 + 改咗乜 / 集數</td>
+                        <td>
+                            縮排逐行：短篇自己嘅碟面 + 類型 + 短篇名 + 改咗乜 /
+                            集數（劇集行留空位對齊）
+                        </td>
                     </tr>
                     <tr>
                         <td>排序</td>
