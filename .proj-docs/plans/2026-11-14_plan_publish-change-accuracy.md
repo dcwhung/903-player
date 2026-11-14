@@ -55,3 +55,14 @@ api 0.12.0、admin 0.8.0（MINOR：新 change kind + 新 endpoint）
 1. catalog + api（Backend Developer）
 2. admin（Frontend Developer）
 3. Code Review → QA S1 → 截圖畀用戶 → PR → CI 綠就 merge（用戶已授權）
+
+## 實作差異（catalog + api，Backend Developer 2026-11-14）
+
+- **`reorder` 位置**：`now` 組最頂，但排喺 `rollback` item 之後（還原記錄嗰行照舊第一）；兩個列表都有就 `shows` 先、`dramas` 後
+- **相對次序**：淨係比較前後**都上架**嘅 entry（`isEntryListed`，由 `changes.ts` 搬去 `rawDefinition.ts` 共用），排法 = `compareOrderThenId`（order 唔係數字當冇寫）；新加 / 拎走 / 落架嘅 entry、淨係重新編號、第一次發佈（prev = null）都唔出 `reorder`
+- **`images` 欄位**：#4 之後冇 slot 指去嘅檔一律唔報，所以 `summarizeChanges` 唔會再出 `fields: ['images']`；admin 照留 `images` 嘅 label（舊發佈記錄仲有）
+- **#2 共用檔**：換返上次版本嘅短篇，佢指去嘅檔如果同時有今次照發佈嘅 slot 指去（例如共用劇集 `tile.webp`），用 D1（今次）嘅值，唔用上次嘅：其他已儲存改動照發佈優先
+- **`POST /api/order/:kind/revert` 範圍**：D1 呢個 kind 嘅**全部** entry（包括下架 / draft），只要 published document 有佢；回應 `{ updated }` = 真係改咗嘅行數（值冇變唔計、唔郁 `updated_at`）。`updated_at` 規則（S-799）抽咗做 `order.ts` `bumpedUpdatedAt(param)` 共用
+- **Entry revert `order`**：頂層 `field: 'order'` 一律 400（message 指去 `POST /api/order/:kind/revert`）；短篇 field 唔受影響（短篇冇 `order`）
+- **Admin 最少改動（等 Frontend 接）**：`timelineEntries.ts` `TONES.reorder = 'edit'`、`zh-HK.ts` `kind.reorder: '排序'`，令 `tsc` 過；`publishStats` 唔計 `reorder`、時間線 / 記錄頁未有專用卡，由 admin 部分處理
+- **`sameJson`** 由 `packages/catalog` admin index 匯出（root index `export * from './admin'` 一齊有）

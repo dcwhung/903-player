@@ -2,6 +2,26 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.12.0 — 2026-11-14
+
+變更摘要準確度（`.proj-docs/plans/2026-11-14_plan_publish-change-accuracy.md`）。舊 client 照用得；`reorder` 係新 change kind，識得 0.11.0 item 嘅 client 要加返先顯示到。
+
+### Added
+
+- `POST /api/order/:kind/revert`（`kind` = `shows` / `dramas`）：排序成個列表還原返最新 ok publish 嘅次序。D1 每個 entry 嘅 `definition.order` 換返 published 嘅值（published 冇 `order` = 刪 key；published 冇呢個 entry = 唔郁）；`json_set` / `json_remove` 原地改，唔郁其他欄位，次序冇變嘅 entry 連 `updated_at` 都唔郁。冇 ok publish → 409 `{ error, reason: "notPublished" }`；回 200 `{ updated }`（真係改咗嘅 entry 數）。權限同 `PUT /api/order/:kind` 一樣（session + same-origin）
+- 變更摘要（`GET /api/changes`、`GET /api/publishes`）新 item `{ kind: "reorder", when: "now", detail: { list: "shows" | "dramas" } }`（冇 `entry`）：前後都上架嘅 entry 相對次序（同 player 一樣：有 `order` 按 `order`，冇就排最後，再按 id）唔同 → 每個列表一個，排喺 `now` 組最頂（`rollback` 之後）；淨係重新編號、新加 / 拎走 / 落架嘅 entry、第一次發佈唔報
+- `packages/catalog` 匯出 `sameJson`（key 次序唔算嘅 JSON 比較，admin 編輯頁用）
+
+### Changed
+
+- `order` 唔再逐個 entry 報「修改」（由 `reorder` 代替）
+- `POST /api/entries/:kind/:id/revert` 頂層 `field: "order"` → 400（排序要成個列表還原）
+
+### Fixed
+
+- 選擇發佈：冇揀 / 未完成嘅新短篇由 definition 拎走時，佢 slot 指去嘅圖都由 `images` 拎走（仲有其他 slot 指去就留）；換返上次發佈版本嘅短篇，佢 slot 指去嘅圖用上次發佈嘅值。之前會令確認發佈頁出假「修改 · 劇集 · 圖片」，catalog 亦留低冇用嘅圖（#1 #2）。確認發佈頁預覽同真發佈共用同一條路徑
+- 前後兩個版本都冇 slot 指去嘅圖唔再報「圖片」改動（#4）；以前選擇性發佈留喺 production catalog 嘅冇用圖（#3）唔會再出，下次發佈自然清走
+
 ## 0.11.0 — 2026-11-14
 
 還原未發佈改動（`.proj-docs/plans/2026-11-14_plan_revert-unpublished.md`）。舊 client 唔受影響。
