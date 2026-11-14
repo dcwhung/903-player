@@ -54,6 +54,7 @@ function Action({ row, onRollback }: Pick<HistoryRowProps, 'row' | 'onRollback'>
     return (
         <button
             type="button"
+            className="revert-btn"
             onClick={() => onRollback(row.id)}
             aria-label={t('history.rollbackTo', { id: row.id })}
         >
