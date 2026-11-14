@@ -584,8 +584,8 @@
                 font-size: 12px;
                 padding: 3px 10px;
                 border-radius: 8px;
-                border: 1px solid var(--line);
-                background: var(--surface);
+                border: 1px solid transparent;
+                background: var(--danger-bg);
                 color: var(--danger-ink);
                 font-weight: 600;
                 cursor: pointer;
@@ -745,9 +745,8 @@
                 color: var(--on-primary);
             }
             .circle-btn.revert {
-                background: var(--surface);
+                background: var(--danger-bg);
                 color: var(--danger-ink);
-                box-shadow: inset 0 0 0 1px var(--line);
             }
             .circle-btn svg {
                 width: 16px;
@@ -787,6 +786,19 @@
                 border-radius: 10px;
                 padding: 10px 12px;
                 background: var(--surface);
+            }
+            .ed-actions {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                margin-top: 18px;
+                padding-top: 14px;
+                border-top: 1px solid var(--line);
+            }
+            .delete-btn {
+                margin-left: 0;
+                font-size: 14px;
+                padding: 8px 16px;
             }
             .published-hint {
                 font-size: 12px;
@@ -849,7 +861,8 @@
                 <button type="button" class="theme-btn" id="theme">切換深淺色</button>
             </header>
             <p class="muted">
-                用戶要求：一日未發佈，任何改動（圖、字、上下架）都可以還原返上次發佈嘅版本。掣放確認發佈頁時間線每行同編輯頁（喺原本編輯位）；一行多過一項改動就撳名入編輯頁逐項揀；從未發佈過嘅新內容唔出還原；所有還原掣用「刪除」掣嘅紅字樣式。
+                用戶要求：一日未發佈，任何改動（圖、字、上下架）都可以還原返上次發佈嘅版本。掣放確認發佈頁時間線每行同編輯頁（喺原本編輯位）；一行多過一項改動就撳名入編輯頁逐項揀；從未發佈過嘅新內容唔出還原；所有還原掣同刪除掣用淺紅底
+                + 紅字。
             </p>
 
             <h2 class="state-label">① 確認發佈頁 · 時間線每行加「還原」</h2>
@@ -1090,6 +1103,22 @@
                         <div class="field-head">名稱</div>
                         <div class="input">森美小儀系列</div>
                     </div>
+                    <div class="ed-actions">
+                        <button type="button" class="revert-btn delete-btn">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                aria-hidden="true"
+                            >
+                                <path d="M3 6h18" />
+                                <path d="M8 6V4h8v2" />
+                                <path d="M6 6l1 14h10l1-14" /></svg
+                            >刪除
+                        </button>
+                        <span class="muted small">（「刪除」掣同樣改用淺紅底）</span>
+                    </div>
                 </section>
             </div>
 
@@ -1124,8 +1153,8 @@
                     <tr>
                         <td>顏色</td>
                         <td>
-                            所有「還原」掣同「刪除」掣一樣：普通掣（白底灰框）+
-                            紅字（--danger-ink，`ghost-danger`）
+                            所有「還原」掣同「刪除」掣（admin 現有
+                            `ghost-danger`，一齊改）：淺紅底（--danger-bg）+ 紅字（--danger-ink）
                         </td>
                     </tr>
                     <tr>
