@@ -101,7 +101,8 @@ const planOf = (rows, selection) => {
  */
 export const changesFor = (state, { rows, defaultItems, selection }) => {
     const content = contentItems(state, rows, defaultItems);
-    const others = state.others ?? [];
+    // others：固定 list，或者 (state) => list（還原之後跟住變，mockRevert.mjs）
+    const others = typeof state.others === 'function' ? state.others(state) : (state.others ?? []);
     const appearance = appearanceOf(state);
     if (!selection) {
         const items = [...content.map((c) => c.item), ...others];

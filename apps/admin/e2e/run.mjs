@@ -6,6 +6,7 @@ import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
+import { revertChecks } from './revertChecks.mjs';
 import { selectiveChecks } from './selectiveChecks.mjs';
 
 const PORT = Number(process.env.E2E_PORT || 4174);
@@ -2056,6 +2057,7 @@ try {
         iconPreviewFitCheck,
         publishWarningsCheck,
         ...selectiveChecks({ check, newPage, shoot, loggedIn, BASE }),
+        ...revertChecks({ check, newPage, shoot, loggedIn, BASE }),
         missingFolderCheck,
         actionIconsCheck,
         showEditorCheck,
