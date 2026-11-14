@@ -51,6 +51,7 @@ const TONES: Readonly<Record<ChangeKind, TagTone>> = {
     edit: 'edit',
     unlist: 'off',
     rollback: 'look',
+    reorder: 'edit',
 };
 
 export const toneOf = (kind: ChangeKind): TagTone => TONES[kind];

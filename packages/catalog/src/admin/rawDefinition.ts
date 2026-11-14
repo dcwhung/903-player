@@ -2,6 +2,7 @@
  * summarizeChanges 用嘅 raw definition helper：document 未必驗證過（GET /api/changes 要連唔合格嘅都比較），
  * 所以唔 parse，逐個欄位小心讀
  */
+import type { CatalogKind } from '../document/document';
 import type { ChangeArcRef, ChangeWhen } from './changeTypes';
 
 export type RawJson = Readonly<Record<string, unknown>>;
@@ -29,6 +30,12 @@ export const arcIdOf = (arc: RawJson): string => stringField(arc, 'id') ?? nameO
 export const arcRefOf = (arc: RawJson): ChangeArcRef => {
     const name = nameOf(arc, '');
     return { id: arcIdOf(arc), name, label: stringField(arc, 'displayName') ?? name };
+};
+
+/** 上架：節目 enabled 冇 = 上架；劇集 enabled 要係 true（同 player 一樣） */
+export const isEntryListed = (kind: CatalogKind, definition: RawJson | undefined): boolean => {
+    if (definition === undefined) return false;
+    return kind === 'shows' ? definition.enabled !== false : definition.enabled === true;
 };
 
 export const isArcListed = (arc: RawJson): boolean => arc.enabled !== false;

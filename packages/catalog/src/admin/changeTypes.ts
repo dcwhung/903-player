@@ -2,7 +2,7 @@
 import type { CatalogDocument, CatalogKind } from '../document/document';
 
 export type ChangeKind =
-    'newShow' | 'newDrama' | 'newArc' | 'newEpisodes' | 'edit' | 'unlist' | 'rollback';
+    'newShow' | 'newDrama' | 'newArc' | 'newEpisodes' | 'edit' | 'unlist' | 'rollback' | 'reorder';
 
 /** 'now' = 發佈即時生效；YYYY-MM-DD = 嗰日（香港時間）先生效 */
 export type ChangeWhen = 'now' | string;
@@ -34,12 +34,14 @@ export interface ChangeDetail {
     reason?: UnlistReason;
     /** rollback：還原自邊次 publish */
     publishId?: number;
+    /** reorder：邊個列表嘅上架次序改咗（#6：整個列表一個 item，冇 entry） */
+    list?: CatalogKind;
 }
 
 export interface ChangeItem {
     kind: ChangeKind;
     when: ChangeWhen;
-    /** rollback 冇 */
+    /** rollback / reorder 冇 */
     entry?: ChangeEntryRef;
     arc?: ChangeArcRef;
     detail: ChangeDetail;

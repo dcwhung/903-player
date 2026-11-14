@@ -165,6 +165,7 @@ export const zhHK = {
         edit: '修改',
         unlist: '下架',
         rollback: '還原',
+        reorder: '排序',
     },
     /** 「修改」改了哪些欄位（detail.fields 中 fields.* 未有的 key） */
     changeFields: {
