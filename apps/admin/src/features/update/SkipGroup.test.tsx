@@ -70,4 +70,20 @@ describe('Timeline 不會在本次發佈', () => {
         expect(groups).toHaveLength(1);
         expect(groups[0]).toHaveClass('skip');
     });
+
+    it('should label a whole new drama row 劇集, without an arc disc (S-1005)', () => {
+        const golden: TodoRow = {
+            ...CAMP,
+            key: 'newDrama/golden',
+            kind: 'newDrama',
+            dramaId: 'golden',
+            arcId: null,
+            name: '黃金少年',
+        };
+        render(<Timeline groups={NOW} entries={ENTRIES} skipped={[golden]} />);
+        const [card] = cardsIn(groupsOf().at(-1)!);
+        expect(card).toHaveTextContent('黃金少年');
+        expect(rowsIn(card!)).toEqual(['未完成劇集尚未設定排期']);
+        expect(card!.querySelector('.tl-row .thumb')).toBeNull();
+    });
 });
