@@ -10,8 +10,11 @@ import { arcsOf } from '../../model/raw';
 /** 短篇 field '*' = 成個短篇（刪咗嘅短篇加返） */
 export const WHOLE_ARC = '*';
 
-/** 頂層 `arcs` 要逐個短篇還原（api 400）；`images` 唔係 definition key */
-const NOT_REVERTABLE: ReadonlySet<string> = new Set(['arcs', 'images']);
+/**
+ * 頂層 `arcs` 要逐個短篇還原（api 400）；`images` 唔係 definition key；
+ * `episodes` / `episodeDates` = 新集數，同確認發佈頁一樣唔出還原（由發佈剔格處理；api 400，S-1008）
+ */
+const NOT_REVERTABLE: ReadonlySet<string> = new Set(['arcs', 'images', 'episodes', 'episodeDates']);
 
 export type ImageSlot = (typeof IMAGE_SLOTS)[number];
 

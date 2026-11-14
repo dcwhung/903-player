@@ -58,11 +58,24 @@ Mockup：`_mockups_/admin-revert/index.html`（用戶確認）。Branch：`featu
 
 ### `apps/api` 0.11.0（Backend，2026-11-14）
 
-- `published.images` 用 D1 同一個格式（「檔名 → `<hash>.<ext>`」），唔係 document 入面嘅絕對 URL：admin 可以直接同 `images` 比較，顯示就照舊用 `imageUrl(name)`。URL 唔係 `/catalog/v1/img/<name>` 格式嘅圖略過
+- `published.images` 用 D1 同一個格式（「檔名 → `<hash>.<ext>`」），唔係 document 入面嘅絕對 URL：admin 可以直接同 `images` 比較，顯示就照舊用 `imageUrl(name)`。URL 唔係 `/catalog/v1/img/<name>` 格式嘅圖唔入 `published.images`，而且還原唔郁 D1 嗰個 key（fail closed，S-1009；解唔到嘅檔名只喺 server 入面帶，唔入 GET 回應）
 - 短篇 `field: "*"` = 成個短篇換返 published 版本（兩個 slot 嘅圖一齊還原）；D1 刪咗嘅短篇，任何 field（包括 `*`）都係成個加返。位置 = published 入面前面最近、D1 仲有嘅短篇之後；前面冇就放第一
 - 頂層 `field: "arcs"` / `"*"` → 400（短篇一定要逐個 `arc` item 還原，免得成個 `arcs` 蓋走新集數 / 新短篇）
-- 錯誤細分：entry 唔存在 → 404；短篇兩邊都冇 → 400、D1 有但 published 冇 → 409；冇 published 版本 → 409 `{ error, reason: "notPublished" }`；`If-Match` 冇帶都係 412
+- 錯誤細分：entry 唔存在 → 404；短篇兩邊都冇 → 400、D1 有但 published 冇 → 409 `{ error, reason: "arcNotPublished" }`（S-1011）；冇 published 版本 → 409 `{ error, reason: "notPublished" }`；`If-Match` 冇帶都係 412
 - 舊圖 key：只刪「還原前有 slot 指去、還原後冇 slot 指去」嘅 key；還原前已經冇人用嘅 key 唔郁。slot 指去嘅檔名用 `packages/catalog` 新匯出嘅 `entryImageFile` / `arcImageFile`（同 `editChanges.ts` 同一個 function）
-- 排程規則（`schedules`）唔郁：還原 `addedAt` / `episodeDates` / `episodeRemovedAt` 淨係改 definition，規則照留（下次儲存排程先再展開）；`removedAt` 本身唔經排程。還原會令短篇 ID 消失嘅（例如還原 `id`）照舊被 S-804 排程守衛擋（409 `arcScheduled`）
+- 排程規則（`schedules`）唔郁：還原 `addedAt` / `episodeRemovedAt` 淨係改 definition，規則照留（下次儲存排程先再展開）；`removedAt` 本身唔經排程。還原會令短篇 ID 消失嘅（例如還原 `id`）照舊被 S-804 排程守衛擋（409 `arcScheduled`）
 - 寫入：`PUT` 嘅更新 / 新增邏輯抽做 `writeEntry`（`entries.ts`），revert 同 `PUT` 共用（排程 ID 守衛、`checkedEntry`、draft、樂觀鎖、回應）。`entries.ts` 本身已經超 150 行（283 → 297），新邏輯放 `content/revert.ts`（純邏輯）同 `content/revertRoute.ts`（route）
 - 同一個 request 入面還原短篇 `id` / `name` 會改咗短篇 key，之後嘅 item 要用新 key
+- `field` 淨係認 own key（`Object.hasOwn`）：`constructor` / `toString` / `__proto__` 等 → 400（W-746）；`tile` / `disc` 兩邊 definition 都冇 key（慣例檔名）照認（W-745）
+- S-1008（用戶 2026-11-14 決定方案 A）：新集數唔經還原：頂層（每日播）同短篇嘅 `episodes` / `episodeDates` → 400；admin 編輯頁（包括「其他已修改」一行）同確認發佈頁一樣唔出，新集數由確認發佈頁嘅剔格處理。短篇 `field: "*"`（成個短篇換返 / 加返刪咗嘅短篇）照舊包括集數
+- 最新 publish document 按 `id` + `hash` memo 喺 isolate 入面（`content/publishedVersion.ts`，S-1006）：連續 `GET` 多個 entry 只讀 + parse 一次，有新 publish 就重讀；parse 唔到照 fail closed
+
+### `apps/admin` 0.7.0（實作差異）
+
+- Mockup（`_mockups_/admin-revert/index.html`）class 對應：`.field-head` → 現有 `.label-line`（`RevertLabel`）；`.circle-btn.revert` → 新 `.slot-revert`（`RevertButton round`）；`.modified` → 現有 `<Pill tone="warn">`。其餘新元素（`.revert-btn`、`.dialog-revert`、`.diff-row`、`.published-hint`、`.img-box`、`.txt-box`、`.col-label`）同 mockup 同名（S-1010）
+- 編輯頁還原位置：名稱 = 標題（h1）旁（`NameRevert`）；配色 = 配色 tab 頂行；`enabled` + `removedAt` = 「狀態」欄（一個「還原」，確認框逐個剔）；冇編輯位嘅欄位（R2 資料夾、排序、各集標題等）= 表格最尾「其他已修改：…」一行（`OtherRevert`，`placedFields.ts` 列明每頁原位還原咗嘅欄位）；`episodes` / `episodeDates` 唔出（S-1008）
+- API 嘅 `published` 喺 `LoadedEntry` 改名 `publishedVersion`（`endpoints.ts`）：`GET /api/entries` 列表併入嘅 `published: boolean`（有冇上過架）唔會蓋走佢
+- 確認框經 `createPortal` 畫喺 `body`：觸發掣可能喺標題（h1）/ 圖位入面，唔承繼佢哋嘅字型同定位
+- 確認框每行剔格放最後一欄（用戶要求，commit 3efc8a2；mockup 一齊改）
+- 錯誤：409 `arcNotPublished` →「此短篇尚未發佈，無法還原」，`notPublished` / 冇 reason →「此項目尚未發佈，無法還原」（S-1011）
+- 還原完 focus（S-1007，`revertFocus.ts`）：觸發掣重讀後 unmount 就搬去同一欄位 / 圖位嘅輸入框或者控制 → 時間線同一張卡（`data-revert-anchor`）→ 頁面 h1；用戶自己 focus 咗第二度就唔郁

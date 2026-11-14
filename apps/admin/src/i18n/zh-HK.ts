@@ -201,6 +201,7 @@ export const zhHK = {
         dirtyTip: '有未儲存的變更，請先儲存或復原後再還原',
         conflict: '資料已在其他視窗更新，已重新載入，請再試一次',
         notPublished: '此項目尚未發佈，無法還原',
+        arcNotPublished: '此短篇尚未發佈，無法還原',
         failed: '還原失敗：{error}',
     },
     status: {

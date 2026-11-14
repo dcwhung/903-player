@@ -73,7 +73,8 @@ export function EntryCardView({ card, entries, onReverted }: { card: EntryCard }
     const rows = cardRows(card);
     const first = card.items[0];
     return (
-        <li className="tl-entry">
+        // data-revert-anchor：還原完嗰行冇咗，focus 返呢張卡（S-1007，revertFocus.ts）
+        <li className="tl-entry" data-revert-anchor={card.key}>
             <div className="tl-entry-head">
                 <Thumb url={card.entry && entryDiscOf(entries, card.entry)} />
                 <span className="tl-entry-title">

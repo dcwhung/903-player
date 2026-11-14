@@ -44,6 +44,28 @@ describe('revertScope', () => {
         expect(fieldChanged(scope, 'images')).toBe(false);
     });
 
+    it('should never offer new episodes, on an arc or a daily drama (S-1008)', () => {
+        const more = entry({
+            definition: {
+                name: '每日',
+                episodeDates: ['2026-11-14', '2026-11-15'],
+                arcs: [{ name: '我心不死', episodes: 5, episodeDates: ['2026-11-15'] }],
+            },
+            images: {},
+            publishedVersion: {
+                definition: {
+                    name: '每日',
+                    episodeDates: ['2026-11-14'],
+                    arcs: [{ name: '我心不死', episodes: 3 }],
+                },
+                images: {},
+            },
+        });
+        expect(changedFields(scopeOf(more))).toEqual([]);
+        expect(changedFields(scopeOf(more, '我心不死'))).toEqual([]);
+        expect(fieldChanged(scopeOf(more, '我心不死'), 'episodes')).toBe(false);
+    });
+
     it('should compare an arc by id, or by name when it has no id', () => {
         expect(changedFields(scopeOf(entry(), 'half'))).toEqual(['tile', 'summary']);
         expect(changedFields(scopeOf(entry(), '我心不死'))).toEqual([]);

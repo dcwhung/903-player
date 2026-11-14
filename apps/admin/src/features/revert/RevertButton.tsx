@@ -4,12 +4,14 @@
  * blocked = 有未儲存改動：灰咗，title 講原因
  */
 import { Undo2 } from 'lucide-react';
+import type { MouseEvent } from 'react';
 import { t } from '../../i18n/t';
 
 interface RevertButtonProps {
     /** aria-label（例如「還原橫圖」） */
     label: string;
-    onClick: () => void;
+    /** 收 event：RevertFlow 用 currentTarget 記低觸發掣（還原完搬 focus，S-1007） */
+    onClick: (event: MouseEvent<HTMLButtonElement>) => void;
     round?: boolean;
     blocked?: string | undefined;
 }

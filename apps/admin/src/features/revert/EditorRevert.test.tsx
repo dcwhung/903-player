@@ -81,6 +81,29 @@ describe('editor revert', () => {
         expect(gets).toHaveLength(2);
     });
 
+    it('should move focus to the field input once its revert button is gone (S-1007)', async () => {
+        let reverted = false;
+        mockApi({
+            'GET /api/entries/shows/waves': () => ({
+                body: reverted
+                    ? { ...SHOW, definition: { ...SHOW.definition, summary: '舊簡介' } }
+                    : SHOW,
+                etag: '"v1"',
+            }),
+            'POST /api/entries/shows/waves/revert': () => {
+                reverted = true;
+                return { body: SAVED, etag: '"v2"' };
+            },
+        });
+        renderAt('/shows/waves', '/shows/:id', <ShowEditorPage />);
+        await userEvent.click(await screen.findByRole('button', { name: '還原簡介' }));
+        await userEvent.click(screen.getByRole('button', { name: '還原 1 項' }));
+        await waitFor(() =>
+            expect(screen.queryByRole('button', { name: '還原簡介' })).not.toBeInTheDocument(),
+        );
+        await waitFor(() => expect(screen.getByRole('textbox', { name: '簡介' })).toHaveFocus());
+    });
+
     it('should show the theme revert on the theme tab and the status revert covers removedAt', async () => {
         showRoutes();
         renderAt('/shows/waves/theme', '/shows/:id/theme', <ShowEditorPage tab="theme" />);

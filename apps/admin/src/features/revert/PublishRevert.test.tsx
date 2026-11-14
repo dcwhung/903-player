@@ -105,6 +105,51 @@ describe('publish page revert', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
+    it('should say the arc was never published on 409 arcNotPublished (S-1011)', async () => {
+        mockApi({
+            'POST /api/entries/dramas/lancy/revert': () => ({
+                status: 409,
+                body: { error: 'arc half has never been published', reason: 'arcNotPublished' },
+            }),
+        });
+        show();
+        await userEvent.click(await screen.findByRole('button', { name: '還原戀愛二分一' }));
+        await userEvent.click(screen.getByRole('button', { name: '還原 2 項' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent('此短篇尚未發佈，無法還原');
+    });
+
+    it('should move focus to the entry card once the row is gone (S-1007)', async () => {
+        mockApi({ 'POST /api/entries/dramas/lancy/revert': () => ({ body: SAVED }) });
+        show();
+        const left = {
+            ...changes,
+            changes: { items: [items[0]!], timeline: [{ when: 'now', items: [items[0]!] }] },
+        };
+        await userEvent.click(await screen.findByRole('button', { name: '還原戀愛二分一' }));
+        vi.mocked(getChanges).mockResolvedValue(left);
+        await userEvent.click(screen.getByRole('button', { name: '還原 2 項' }));
+        await waitFor(() =>
+            expect(
+                screen.queryByRole('button', { name: '還原戀愛二分一' }),
+            ).not.toBeInTheDocument(),
+        );
+        await waitFor(() =>
+            expect(document.activeElement).toBe(
+                screen.getByText('蘭茜夫人劇場').closest('.tl-entry'),
+            ),
+        );
+    });
+
+    it('should move focus to the page heading when the whole card is gone (S-1007)', async () => {
+        mockApi({ 'POST /api/entries/dramas/lancy/revert': () => ({ body: SAVED }) });
+        show();
+        const none = { ...changes, changes: { items: [], timeline: [] } };
+        await userEvent.click(await screen.findByRole('button', { name: '還原戀愛二分一' }));
+        vi.mocked(getChanges).mockResolvedValue(none);
+        await userEvent.click(screen.getByRole('button', { name: '還原 2 項' }));
+        await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveFocus());
+    });
+
     it('should close, reload and ask to retry on 412', async () => {
         mockApi({
             'POST /api/entries/dramas/lancy/revert': () => ({ status: 412, body: { error: 'x' } }),
