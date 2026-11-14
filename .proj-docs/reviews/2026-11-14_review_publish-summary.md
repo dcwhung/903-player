@@ -233,3 +233,83 @@ next_agent: null
 branch: "feature/admin-publish-summary"
 context: "All review items (W-743, W-744, C-016, S-999, S-1000, S-1002, S-1003) verified fixed at 1fed5dd; root tsc -b and related unit tests green; wait for CI run 43575584189 before pushing the report commit and merging to main; S-1001 is a user note"
 ```
+
+## Review — plan 1 (51b7f09, dcff0ab)（2026-11-14）
+
+範圍：用戶揀方案 1 之後嘅兩個 commit：`51b7f09`（拎走「本次發佈」卡同數量 pill、時間線最尾「不會在本次發佈」、App 外觀卡寫完整重新部署說明、「返回」掣）同 `dcff0ab`（兩個 mockup 嘅掣字）。Design Origin：`_mockups_/admin-publish-summary/index.html`（`56ef0f1` + `dcff0ab`）。Tier T2。
+
+### Hard Gates
+
+| Gate     | 結果 | 證據                                                                                                                                                               |
+| -------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Lint     | pass | `npx eslint apps/admin/src` exit 0；`npx prettier --check apps/admin/src apps/admin/e2e apps/admin/CHANGELOG.md` + 兩個 mockup pass                                |
+| Type     | pass | root `npx tsc -b` exit 0                                                                                                                                           |
+| Tests    | pass | `npx vitest related <10 個改咗嘅 source> --run`：76 files，428 tests pass（包括 `TodoMatrix`、`writtenChinese`）；`colorTokens` / `motionTokens` node test 10 pass |
+| Coverage | pass | `skipModel.ts` 100%、`model/thumbs.ts` 100%、`SkipGroup.tsx` lines 100% / branches 83.33%（line 19 未覆蓋，見 S-1005）、`todoModel.ts` lines 93.18%                |
+| Security | n/a  | 冇新依賴                                                                                                                                                           |
+
+冇跑 e2e（屬 QA / CI）。冇 hook 擋。
+
+### 開發者決定逐項核對
+
+- **跳過來源冇重複**：`skippedRows` 對 todo rows 做一次 `filter`（`publish === 'incomplete'` 或 key 喺 `selection.skipped` 嘅 Set），每行最多出一次；同舊 `SelectionCard.incompleteOf` 邏輯一樣。server `skipped.reason` 永遠係 `'incomplete'`（`apps/api/src/catalog/selection.ts:90`），所以 client 由 cells 計原因係啱嘅
+- **鎖嘅文字不變**：舊 `'{name}（尚未設定{missing}）'` = 新 `'{name}（{missing}）'` + `missingLabel '尚未設定{missing}'`，輸出逐字一樣；`TodoMatrix.test.tsx:92-94`、`todoModel.test.ts:95` 照舊 pass
+- **劇本身嘅行寫「劇集」**：用返時間線同一個 `publish.levelDrama`，同 mockup「修改 · 劇集」一致（冇 component test，見 S-1005）
+- **冇缺嘅格唔寫原因**：`row.reason &&` 空字串唔出，tag 已寫「未完成」，合理
+- **重新部署說明**：只喺今次揀咗嘅圖示 / 名稱與簡介卡出（`REDEPLOYED`），Banner 冇；文字同 mockup 逐字一樣。舊卡喺 `brandingChanged` 但冇揀都出提示，而家唔出，更準確
+- **「返回」掣**：`aria-label="返回待辦"` 包住可見文字「返回」（WCAG 2.5.3 Label in Name OK）；`editor.backToTodos`（FlowBar）不變
+- **Dead code**：`countPills`、`displayName`（todoModel）、`SelectionCard`、`pub-look(s)`、`muted-note`、6 個 `count*` + `bannerChanged` / `brandingChanged` / `selection*` / `incomplete` / `deployNote` key 全部冇剩低引用（`grep` apps/admin 淨係見到 data 欄位 `displayName`，同呢次無關）；`publish.*` 每個 key 都仍然有用到
+- **「✓ 驗證通過」pill 保留**：見下面 Observation
+
+### Design Fidelity / Motion / 書面語
+
+- Class 對照 mockup：`.b-group.skip` → `li.skip`、`.entry.skipped` → `.tl-entry.skipped`、`.tag.skip` → `.tl-tag.skip`、`.arc` → `.tl-arc`；CSS 值（`--muted` 點 + `--surface-2` 光環、虛線 `--line`、grayscale + 0.6 opacity、灰字）同 mockup 逐條一樣，全部 token
+- 冇新動畫 / transition，Motion 規則唔適用
+- 新介面文字（返回、不會在本次發佈、設定完成後可再發佈、未完成、尚未設定{missing}、重新部署說明）全部書面語，`writtenChinese.test.ts` pass
+
+### 評分
+
+| 維度     | 得分    | 滿分    | 備注                               |
+| -------- | ------- | ------- | ---------------------------------- |
+| 正確性   | 25      | 25      |                                    |
+| 安全性   | 20      | 20      |                                    |
+| 可維護性 | 20      | 20      | S-1004 只記錄                      |
+| 測試覆蓋 | 15      | 15      | S-1005 只記錄                      |
+| 性能     | 10      | 10      |                                    |
+| 代碼風格 | 10      | 10      |                                    |
+| **總分** | **100** | **100** | 冇 🔴 / 🟡（冇三層收斂嘅 finding） |
+
+**結果：✅ pass**
+
+### 🟢 / Observation
+
+- **S-1004** `_mockups_/admin/index.html:2224-2228`（#u3）仲畫住數量 pill 行（＋1 廣播劇 / ＋1 短篇 / ＋2 集），而 `PublishHead.tsx` / `PublishPage.tsx` 仍引用 #u3 做結構 origin；刪走 `.pills` 嗰個 div（留 ✓ 驗證通過），同方案 1 對齊
+- **S-1005** `SkipGroup.test.tsx` 冇測劇本身嘅未完成行（`arcId === null` → 「劇集」、冇短篇碟面），`SkipGroup.tsx:19` 分支未覆蓋；加一個 newDrama row 嘅 case
+- **Observation（請用戶確認，唔開 ID）**：「✓ 驗證通過」pill 保留。`admin-publish-summary` mockup 寫「成頁 = 四格數字 → 時間線 → 發佈」冇畫佢，但嗰個 mockup 從來冇畫過 `.pub-head`；#u3 有畫，而用戶話拎走嘅係「數字下面嗰行 pill」（數量 pill）。我判斷保留合理（驗證失敗時錯誤卡照出，成功時 hover 睇集數）；如果用戶想一併拎走，係一個 3 行改動
+
+### ✅ 做得好嘅地方
+
+- `skipModel` 純函數 + 100% coverage，`SkipGroup` 只負責 render；`missingText` 抽出嚟令鎖文字同跳過原因共用一個來源
+- e2e 加咗 `assertNoSummaryCard` 同 skip 行逐字對比，防止「本次發佈」卡回歸
+- 刪 dead code 徹底：i18n、CSS、helper、test 一齊清，冇殘留 key
+
+### Handoff receipt（plan 1）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "skipModel.ts 100%, model/thumbs.ts 100%, SkipGroup.tsx 100% lines / 83.33% branches"
+  no_critical: pass
+  security_scan: n/a
+next_action: merge_develop
+next_agent: null
+branch: "feature/admin-publish-summary"
+context: "Plan 1 (51b7f09, dcff0ab) passes; no blocking findings. Same-session backlog per lane rule: S-1004 (remove count pills from _mockups_/admin/index.html #u3) and S-1005 (SkipGroup test for drama-level 劇集 row) — fix in this PR or a cleanup lane. Ask user to confirm keeping the ✓ 驗證通過 pill. Report commit not pushed; push with/after code CI."
+```
