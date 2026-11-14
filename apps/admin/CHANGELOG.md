@@ -2,6 +2,12 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.5.1 — 2026-11-14
+
+### Fixed
+
+- 發佈 / 部署記錄：「修改」嘅狀態 pill 改用確認發佈頁同一套欄位標籤（之前顯示原本 key，例如「theme」；短篇欄位顯示 `arcs.<id>.<key>`），短篇寫短篇名，認不到嘅寫「其他」
+
 ## 0.5.0 — 2026-11-14
 
 ### Added
