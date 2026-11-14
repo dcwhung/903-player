@@ -5,6 +5,7 @@
  */
 import type { ChangeItem } from '@903-player/catalog';
 import { AppWindow, GalleryHorizontal, Type, type LucideIcon } from 'lucide-react';
+import { entryReverter } from '../../api/revertEndpoints';
 import type { LoadedEntry } from '../../api/types';
 import { t } from '../../i18n/t';
 import { entryDiscOf, thumbOf } from '../../model/thumbs';
@@ -29,7 +30,7 @@ function RowRevert({ item, entries, onReverted }: { item: ChangeItem } & WithEnt
     if (!target || !onReverted) return null;
     return (
         <RevertFlow
-            entry={target.entry}
+            perform={entryReverter(target.entry)}
             name={target.name}
             rows={target.rows}
             onDone={onReverted}

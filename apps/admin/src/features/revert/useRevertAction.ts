@@ -1,13 +1,11 @@
 /*
- * 確認還原：POST …/revert（If-Match = entry etag）→ toast「已還原<名>」→ 關框 → onDone（重讀資料）。
+ * 確認還原：perform（POST …/revert；entry 帶 If-Match = etag、排序冇）→ toast「已還原<名>」→ 關框 → onDone（重讀資料）。
  * 412（其他視窗改咗）→ 關框、重讀、toast 叫再試；409 冇發佈版本 / 短篇從未發佈（S-1011）/ 短篇有排程、400、422
  * → 錯誤留喺框入面
  */
 import { useState } from 'react';
 import { ApiError, ValidationError, VersionConflictError } from '../../api/client';
 import { errorMessage } from '../../api/errorMessage';
-import { revertEntry } from '../../api/revertEndpoints';
-import type { LoadedEntry, RevertItem } from '../../api/types';
 import { t } from '../../i18n/t';
 import { useToast } from '../../ui/Toast';
 
@@ -38,15 +36,10 @@ interface RevertState {
 export const useRevertAction = (onDone: () => Promise<unknown>) => {
     const toast = useToast();
     const [state, setState] = useState<RevertState>({ busy: false });
-    const run = async (
-        entry: LoadedEntry,
-        items: RevertItem[],
-        name: string,
-        close: () => void,
-    ) => {
+    const run = async (perform: () => Promise<unknown>, name: string, close: () => void) => {
         setState({ busy: true });
         try {
-            await revertEntry(entry.kind, entry.id, items, entry.etag);
+            await perform();
             toast(t('revert.done', { name }));
         } catch (error) {
             if (!(error instanceof VersionConflictError)) {

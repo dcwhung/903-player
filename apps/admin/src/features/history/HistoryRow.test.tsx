@@ -207,4 +207,44 @@ describe('HistoryRow', () => {
         expect(screen.getByText('配色、簡介')).toBeInTheDocument();
         expect(screen.queryByText(/theme/)).not.toBeInTheDocument();
     });
+
+    it('should show a reorder as one line named by its list, with no entry or thumbnail (#6)', () => {
+        const reorder = {
+            kind: 'reorder',
+            when: 'now',
+            detail: { list: 'shows' },
+        } satisfies ChangeItem;
+        render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [reorder], timeline: [] } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
+        expect(document.querySelector('.changes .kind')).toHaveTextContent('修改');
+        expect(document.querySelector('.changes .name')).toHaveTextContent('節目排序已更改');
+        expect(document.querySelector('.changes .thumb')).toBeNull();
+        expect(screen.queryByText('已上架')).not.toBeInTheDocument();
+    });
+
+    it('should keep the 圖片 label for old records that reported images', () => {
+        const edit = {
+            kind: 'edit',
+            when: 'now',
+            entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
+            detail: { fields: ['images'] },
+        } satisfies ChangeItem;
+        render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [edit], timeline: [] } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
+        expect(screen.getByText('圖片')).toBeInTheDocument();
+    });
 });

@@ -2,6 +2,7 @@
  * 編輯頁原位還原（mockup admin-revert ③）：欄位標題旁「已修改」+「還原」、輸入框下面「已發佈：…」、
  * 圖位鉛筆旁圓形還原掣、其他冇編輯位嘅欄位一行「其他已修改：…」。冇改動 = 乜都唔出
  */
+import { entryReverter } from '../../api/revertEndpoints';
 import { t } from '../../i18n/t';
 import { Pill } from '../../ui/Pill';
 import { RevertButton } from './RevertButton';
@@ -29,7 +30,7 @@ function Flow({ revert, fields, name, round = false }: FlowProps) {
     if (!entry || !scope) return null;
     return (
         <RevertFlow
-            entry={entry}
+            perform={entryReverter(entry)}
             name={name}
             rows={fields.map((field) => rowOf(scope, field))}
             onDone={revert.onDone}
