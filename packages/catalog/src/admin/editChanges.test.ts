@@ -55,12 +55,22 @@ describe('imageEditFields', () => {
         expect(fields).toEqual(['tile']);
     });
 
-    it('should keep images for files no slot points to', () => {
+    it('should not report files no slot points to before or after (#4)', () => {
         const fields = imageEditFields(
             drama({ arcs: [] }, { 'extra.webp': URL_A }),
             drama({ arcs: [] }, { 'extra.webp': URL_B }),
         );
-        expect(fields).toEqual(['images']);
+        expect(fields).toEqual([]);
+    });
+
+    it('should not report orphan files of the last publish that are now gone (#3)', () => {
+        // 以前選擇性發佈留低嘅短篇圖（definition 冇呢個短篇）：今次冇咗唔係「圖片」改動
+        const def = { arcs: [{ id: 's1', name: 'S1', episodes: 1 }] };
+        const fields = imageEditFields(
+            drama(def, { 'tile.webp': URL_A, 'arcs/new-arc/tile.webp': URL_A }),
+            drama(def, { 'tile.webp': URL_A }),
+        );
+        expect(fields).toEqual([]);
     });
 });
 

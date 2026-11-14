@@ -54,6 +54,7 @@ function Action({ row, onRollback }: Pick<HistoryRowProps, 'row' | 'onRollback'>
     return (
         <button
             type="button"
+            className="revert-btn"
             onClick={() => onRollback(row.id)}
             aria-label={t('history.rollbackTo', { id: row.id })}
         >
@@ -63,12 +64,15 @@ function Action({ row, onRollback }: Pick<HistoryRowProps, 'row' | 'onRollback'>
     );
 }
 
+/** 還原 / 排序（#6）冇 entry：冇縮圖 */
+const NO_THUMB: ReadonlySet<ChangeItem['kind']> = new Set(['rollback', 'reorder']);
+
 function ChangeLine({ item, entries }: { item: ChangeItem; entries: readonly LoadedEntry[] }) {
     const status = itemStatusOf(item, entries);
     return (
         <>
             <span className="kind">{kindLabel(item.kind)}</span>
-            {item.kind === 'rollback' ? <span /> : <Thumb url={thumbOf(entries, item)} size="sm" />}
+            {NO_THUMB.has(item.kind) ? <span /> : <Thumb url={thumbOf(entries, item)} size="sm" />}
             <span className="name">{historyName(item)}</span>
             <span>
                 {status && (

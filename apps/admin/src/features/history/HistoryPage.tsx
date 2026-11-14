@@ -126,6 +126,7 @@ function RollbackConfirm({
             note={t('history.confirmNote')}
             confirmLabel={t('history.rollback')}
             confirmIcon={<Undo2 aria-hidden="true" />}
+            confirmClassName="revert-btn dialog-revert"
             onConfirm={onConfirm}
             onCancel={onCancel}
         />

@@ -156,6 +156,8 @@ export const zhHK = {
         stale: '待辦內容已更新，此頁資料已過時。請重新載入並重新選擇發佈項目。',
         reload: '重新載入',
         publishedSkipped: '已發佈 #{id}；{count} 項尚未完成，沒有發佈',
+        /** 排序改動（#6）：list = list.shows / list.dramas */
+        reordered: '{list}排序已更改',
     },
     kind: {
         newShow: '新節目',
@@ -165,6 +167,8 @@ export const zhHK = {
         edit: '修改',
         unlist: '下架',
         rollback: '還原',
+        /** 類型 tag：卡標題已寫「節目排序已更改」，tag 同其他修改一樣寫「修改」 */
+        reorder: '修改',
     },
     /** 「修改」改了哪些欄位（detail.fields 中 fields.* 未有的 key） */
     changeFields: {
@@ -202,6 +206,8 @@ export const zhHK = {
         conflict: '資料已在其他視窗更新，已重新載入，請再試一次',
         notPublished: '此項目尚未發佈，無法還原',
         arcNotPublished: '此短篇尚未發佈，無法還原',
+        orderLabel: '還原{list}排序',
+        orderName: '{list}排序',
         failed: '還原失敗：{error}',
     },
     status: {

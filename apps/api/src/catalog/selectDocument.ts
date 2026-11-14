@@ -6,6 +6,7 @@
 import type { CatalogEntry } from '@903-player/catalog';
 import { isRecord, parseJsonObject, type Json } from '../content/http';
 import { documentFromEntries, type DocumentContext } from './publish';
+import { selectImages } from './selectImages';
 import type { Appearance, SelectionPlan } from './selection';
 import type { EntryRow } from './store';
 
@@ -14,7 +15,10 @@ type Excluded = Pick<SelectionPlan, 'excludedDramas' | 'excludedArcs'>;
 const arcsOf = (definition: Readonly<Json> | undefined): Json[] =>
     Array.isArray(definition?.arcs) ? (definition.arcs as unknown[]).filter(isRecord) : [];
 
-/** 冇揀嘅短篇換返上次發佈嗰個（用 name 對：name = R2 子資料夾，永遠唔改；ID 可能改過），上次冇就剔走 */
+/**
+ * 冇揀嘅短篇換返上次發佈嗰個（用 name 對：name = R2 子資料夾，永遠唔改；ID 可能改過），上次冇就剔走；
+ * images 跟住對返（selectImages.ts，#1 #2）
+ */
 const selectArcs = (
     entry: CatalogEntry,
     ids: ReadonlySet<string>,
@@ -22,12 +26,18 @@ const selectArcs = (
 ): CatalogEntry => {
     if (!Array.isArray(entry.definition.arcs)) return entry;
     const before = new Map(arcsOf(published?.definition).map((arc) => [arc.name, arc]));
+    const dropped: Json[] = [];
+    const restored: Json[] = [];
     const arcs = arcsOf(entry.definition).flatMap((arc) => {
         if (typeof arc.id !== 'string' || !ids.has(arc.id)) return [arc];
+        dropped.push(arc);
         const kept = before.get(arc.name);
+        if (kept) restored.push(kept);
         return kept ? [kept] : [];
     });
-    return { ...entry, definition: { ...entry.definition, arcs } };
+    const definition = { ...entry.definition, arcs };
+    const change = { definition, dropped, restored, previous: published?.images };
+    return { ...entry, definition, images: selectImages(entry.images, change) };
 };
 
 /** 劇集套用 selection（publish document 同變更預覽共用）；published = 上次 ok publish 嘅劇集 */

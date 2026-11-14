@@ -41,6 +41,17 @@ describe('entryCardsOf', () => {
         expect(cards).toHaveLength(2);
         expect(cards[0]!.entry).toBeUndefined();
     });
+
+    it('should key a reorder card by its list, so focus can find it after a reload (#6)', () => {
+        const reorder = (list: 'shows' | 'dramas'): ChangeItem => ({
+            kind: 'reorder',
+            when: 'now',
+            detail: { list },
+        });
+        const cards = entryCardsOf([reorder('shows'), reorder('dramas')]);
+        expect(cards.map((card) => card.key)).toEqual(['reorder:shows', 'reorder:dramas']);
+        expect(rowLevel(reorder('shows'))).toBe('');
+    });
 });
 
 describe('cardRows', () => {

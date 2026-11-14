@@ -6,6 +6,7 @@ import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
+import { reorderChecks } from './reorderChecks.mjs';
 import { revertChecks } from './revertChecks.mjs';
 import { selectiveChecks } from './selectiveChecks.mjs';
 
@@ -142,9 +143,9 @@ const waitForServer = async ({ exited }) => {
     throw new Error(`vite preview did not start on ${BASE}`);
 };
 
-/** 固定時鐘 + 香港時區（同 mockApi E2E_NOW）：「今日」= 12/11/2026，timer 照行 */
-const newPage = async (browser, state, viewport = WIDE) => {
-    const page = await browser.newPage({ viewport, timezoneId: E2E_TIMEZONE });
+/** 固定時鐘 + 香港時區（同 mockApi E2E_NOW）：「今日」= 12/11/2026，timer 照行；options 例如 deviceScaleFactor */
+const newPage = async (browser, state, viewport = WIDE, options = {}) => {
+    const page = await browser.newPage({ ...options, viewport, timezoneId: E2E_TIMEZONE });
     await page.clock.setFixedTime(E2E_NOW);
     await installMockApi(page, state);
     return page;
@@ -2058,6 +2059,7 @@ try {
         publishWarningsCheck,
         ...selectiveChecks({ check, newPage, shoot, loggedIn, BASE }),
         ...revertChecks({ check, newPage, shoot, loggedIn, BASE }),
+        ...reorderChecks({ check, newPage, shoot, loggedIn, BASE }),
         missingFolderCheck,
         actionIconsCheck,
         showEditorCheck,

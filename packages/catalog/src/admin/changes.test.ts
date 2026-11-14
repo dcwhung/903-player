@@ -208,7 +208,7 @@ describe('summarizeChanges', () => {
                         'arcs/s1/disc.webp': 'https://x/a2.webp',
                         // s2 冇寫 tile：用慣例檔名 arcs/<id>/tile.webp
                         'arcs/s2/tile.webp': 'https://x/b2.webp',
-                        // 對唔到任何欄位：照舊報 images
+                        // 對唔到任何欄位：唔報（#4）
                         'other.webp': 'https://x/o2.webp',
                     },
                 },
@@ -216,7 +216,7 @@ describe('summarizeChanges', () => {
         );
         const items = summarizeChanges(prev, next, TODAY).items;
         expect(items.map((i) => [i.arc?.id, i.detail.fields])).toEqual([
-            [undefined, ['disc', 'images']],
+            [undefined, ['disc']],
             ['s1', ['disc']],
             ['s2', ['tile']],
         ]);

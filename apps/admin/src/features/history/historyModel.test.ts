@@ -75,4 +75,10 @@ describe('contentChangedOf', () => {
     it('should keep the stats for an old record without a change summary', () => {
         expect(contentChangedOf(undefined)).toBe(true);
     });
+
+    it('should name a reorder by its list, with no thumbnail status (#6)', () => {
+        const item: ChangeItem = { kind: 'reorder', when: 'now', detail: { list: 'dramas' } };
+        expect(historyName(item)).toBe('廣播劇排序');
+        expect(itemStatusOf(item, [])).toBeUndefined();
+    });
 });

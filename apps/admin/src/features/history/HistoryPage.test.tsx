@@ -59,6 +59,20 @@ describe('HistoryPage rollback', () => {
         await userEvent.click(await screen.findByRole('button', { name: '還原至 #1' }));
         expect(hasIcon(screen.getByRole('button', { name: '還原' }), 'undo-2')).toBe(true);
     });
+
+    it('should use the unified light red revert style on both 還原 buttons', async () => {
+        mockApi({
+            'GET /api/publishes': () => ({ body: { publishes: [row(2, true), row(1, false)] } }),
+        });
+        renderAt('/history', '/history', <HistoryPage />);
+        const rowButton = await screen.findByRole('button', { name: '還原至 #1' });
+        expect(rowButton).toHaveClass('revert-btn');
+        await userEvent.click(rowButton);
+        expect(screen.getByRole('button', { name: '還原' })).toHaveClass(
+            'revert-btn',
+            'dialog-revert',
+        );
+    });
 });
 
 /** 部署失敗嘅版本：DeployCell 出「重新部署 #id」掣（QA 2026-11-13 補 useRedeploy 測試） */

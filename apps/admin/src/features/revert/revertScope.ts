@@ -1,9 +1,9 @@
 /*
  * 還原未發佈改動（api 0.11.0）：已儲存版本 vs 最新發佈版本（GET entry published）邊啲欄位唔同。
- * 比較 JSON；圖 slot（tile / disc）連埋 images 指去嘅圖一齊比（檔名冇寫就用慣例名，同 catalog editChanges）。
+ * 比較 JSON（catalog sameJson：唔理 key 次序，同變更摘要一樣，#5）；圖 slot（tile / disc）連埋 images 指去嘅圖一齊比（檔名冇寫就用慣例名，同 catalog editChanges）。
  * 頂層 = entry；有 arc = 嗰個短篇（catalog arcIdOf：id，冇就用名）。冇發佈版本 / 新短篇 → null（唔出還原）
  */
-import { arcIdOf, arcImageFile, entryImageFile, IMAGE_SLOTS } from '@903-player/catalog';
+import { arcIdOf, arcImageFile, entryImageFile, IMAGE_SLOTS, sameJson } from '@903-player/catalog';
 import type { ImageMap, LoadedEntry, RawDefinition } from '../../api/types';
 import { arcsOf } from '../../model/raw';
 
@@ -12,9 +12,16 @@ export const WHOLE_ARC = '*';
 
 /**
  * 頂層 `arcs` 要逐個短篇還原（api 400）；`images` 唔係 definition key；
- * `episodes` / `episodeDates` = 新集數，同確認發佈頁一樣唔出還原（由發佈剔格處理；api 400，S-1008）
+ * `episodes` / `episodeDates` = 新集數，同確認發佈頁一樣唔出還原（由發佈剔格處理；api 400，S-1008）；
+ * `order` = 成個列表一齊還原（確認發佈頁「節目排序已更改」，POST /api/order/:kind/revert；api 400，#6）
  */
-const NOT_REVERTABLE: ReadonlySet<string> = new Set(['arcs', 'images', 'episodes', 'episodeDates']);
+const NOT_REVERTABLE: ReadonlySet<string> = new Set([
+    'arcs',
+    'images',
+    'episodes',
+    'episodeDates',
+    'order',
+]);
 
 export type ImageSlot = (typeof IMAGE_SLOTS)[number];
 
@@ -70,8 +77,6 @@ export const imageNameOf = (
             : arcImageFile(side.target, slot);
     return side.images[file];
 };
-
-const sameJson = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 export const fieldChanged = (scope: RevertScope | null, field: string): boolean => {
     if (!scope || NOT_REVERTABLE.has(field)) return false;

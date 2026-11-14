@@ -63,7 +63,7 @@ function Item({ to, label, icon: Icon, mini, current, ariaLabel, extra }: ItemPr
 
 function BrandToggle({ mini, onToggle }: { mini: boolean; onToggle: () => void }) {
     const action = mini ? t('nav.expandLabel') : t('nav.collapseLabel');
-    const label = `${t('app.name')} ${t('app.version', { version: __API_VERSION__ })}（${action}）`;
+    const label = `${t('app.name')} ${t('app.version', { version: __ADMIN_VERSION__ })}（${action}）`;
     return (
         <button
             type="button"

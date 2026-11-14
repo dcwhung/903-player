@@ -87,4 +87,31 @@ describe('revertScope', () => {
         );
         expect(changedFields(scope)).toEqual(['tile']);
     });
+
+    it('should not count a theme with the same values in another key order as changed (#5)', () => {
+        const scope = scopeOf(
+            entry({
+                definition: { name: 'x', theme: { bg: '#000', fg: '#fff' } },
+                images: {},
+                publishedVersion: {
+                    definition: { name: 'x', theme: { fg: '#fff', bg: '#000' } },
+                    images: {},
+                },
+            }),
+        );
+        expect(fieldChanged(scope, 'theme')).toBe(false);
+        expect(changedFields(scope)).toEqual([]);
+    });
+
+    it('should never offer order: a reorder is reverted as a whole list (#6)', () => {
+        const scope = scopeOf(
+            entry({
+                definition: { name: 'x', order: 2 },
+                images: {},
+                publishedVersion: { definition: { name: 'x', order: 1 }, images: {} },
+            }),
+        );
+        expect(fieldChanged(scope, 'order')).toBe(false);
+        expect(changedFields(scope)).toEqual([]);
+    });
 });

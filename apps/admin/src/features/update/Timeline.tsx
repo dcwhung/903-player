@@ -1,7 +1,7 @@
 /*
  * 上線時間線（B v2）：Design Origin: mockup: _mockups_/admin-publish-summary/index.html
  * 按幾時上線分組（即時上線 = 綠點、日子 = accent 點），組內每套劇 / 節目一張卡；
- * App 外觀 / Banner 排即時上線組最頂；未完成項目排最尾「不會在本次發佈」（收起時都照出）。
+ * App 外觀 / Banner 排即時上線組最頂（之後係還原記錄、排序改動，#6）；未完成項目排最尾「不會在本次發佈」（收起時都照出）。
  * 太長就收起，「至 M/D，查看全部」原位展開
  */
 import { ChevronDown } from 'lucide-react';
@@ -10,6 +10,7 @@ import { useState } from 'react';
 import type { LoadedEntry, TodoRow } from '../../api/types';
 import { t } from '../../i18n/t';
 import type { AppearanceItem } from './selectionModel';
+import { ReorderCard } from './ReorderCard';
 import { SkipGroup } from './SkipGroup';
 import { AppearanceCard, EntryCardView } from './TimelineCards';
 import { entryCardsOf, groupHeading } from './timelineEntries';
@@ -54,14 +55,18 @@ function TimelineGroup({
             </p>
             <ul className="tl-entries">
                 {now && appearance?.map((item) => <AppearanceCard key={item} item={item} />)}
-                {entryCardsOf(group.items).map((card) => (
-                    <EntryCardView
-                        key={card.key}
-                        card={card}
-                        entries={entries}
-                        onReverted={onReverted}
-                    />
-                ))}
+                {entryCardsOf(group.items).map((card) =>
+                    card.items[0]?.kind === 'reorder' ? (
+                        <ReorderCard key={card.key} item={card.items[0]} onReverted={onReverted} />
+                    ) : (
+                        <EntryCardView
+                            key={card.key}
+                            card={card}
+                            entries={entries}
+                            onReverted={onReverted}
+                        />
+                    ),
+                )}
             </ul>
         </li>
     );

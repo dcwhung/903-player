@@ -2,7 +2,13 @@
  * 確認發佈時間線（B v2）：Design Origin: mockup: _mockups_/admin-publish-summary/index.html
  * 每組（即時 / 日子）入面按劇 / 節目分卡（第一次出現嘅次序），卡內逐行：劇本身嘅改動、各短篇
  */
-import type { ChangeEntryRef, ChangeItem, ChangeKind, ChangeWhen } from '@903-player/catalog';
+import type {
+    CatalogKind,
+    ChangeEntryRef,
+    ChangeItem,
+    ChangeKind,
+    ChangeWhen,
+} from '@903-player/catalog';
 import { hkToday } from '@903-player/catalog';
 import type { LoadedEntry } from '../../api/types';
 import { t } from '../../i18n/t';
@@ -11,14 +17,20 @@ import { episodeTotalOf } from '../../model/thumbs';
 import { episodesIn, itemRange } from './timelineModel';
 
 export interface EntryCard {
-    /** `<kind>/<id>`；冇 entry（還原）= 自己一張卡 */
+    /** `<kind>/<id>`；排序 = `reorder:<list>`；冇 entry（還原）= 自己一張卡 */
     key: string;
     entry: ChangeEntryRef | undefined;
     items: ChangeItem[];
 }
 
-const cardKeyOf = (item: ChangeItem, index: number): string =>
-    item.entry ? `${item.entry.kind}/${item.entry.id}` : `${item.kind}#${index}`;
+/** 排序卡 key / 還原後 focus anchor（data-revert-anchor）：唔跟 index，重讀後搵得返（revertFocus.ts） */
+export const reorderKeyOf = (list: CatalogKind): string => `reorder:${list}`;
+
+const cardKeyOf = (item: ChangeItem, index: number): string => {
+    if (item.entry) return `${item.entry.kind}/${item.entry.id}`;
+    if (item.kind === 'reorder' && item.detail.list) return reorderKeyOf(item.detail.list);
+    return `${item.kind}#${index}`;
+};
 
 export const entryCardsOf = (items: readonly ChangeItem[]): EntryCard[] => {
     const cards = new Map<string, EntryCard>();
@@ -51,6 +63,7 @@ const TONES: Readonly<Record<ChangeKind, TagTone>> = {
     edit: 'edit',
     unlist: 'off',
     rollback: 'look',
+    reorder: 'edit',
 };
 
 export const toneOf = (kind: ChangeKind): TagTone => TONES[kind];
@@ -70,7 +83,12 @@ export const groupHeading = (when: ChangeWhen, today: string = hkToday()): Group
           };
 
 /** 新劇 / 新節目只寫 tag（成張卡就係佢） */
-const WHOLE_ENTRY_KINDS: ReadonlySet<ChangeKind> = new Set(['newShow', 'newDrama', 'rollback']);
+const WHOLE_ENTRY_KINDS: ReadonlySet<ChangeKind> = new Set([
+    'newShow',
+    'newDrama',
+    'rollback',
+    'reorder',
+]);
 
 /** 劇本身嘅行寫「劇集」/「節目」；短篇行、新劇 / 新節目 = 空 */
 export const rowLevel = (item: ChangeItem): string => {
