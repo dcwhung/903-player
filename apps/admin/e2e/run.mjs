@@ -1871,10 +1871,14 @@ const brandingCheck = (browser) =>
             await restore.waitFor({ state: 'detached' });
             if (state.branding.icon !== null) throw new Error('icon not restored');
 
-            // ④ 發佈頁：App 外觀已更改 + 須重新部署提示
+            // ④ 發佈頁：時間線 App 外觀卡（名稱與簡介）寫重新部署說明
             await page.goto(`${BASE}/publish`);
-            await page.getByText('App 外觀已更改').waitFor();
-            await page.getByText(/圖示、名稱及簡介須重新部署/).waitFor();
+            await page
+                .getByRole('region', { name: '上線時間' })
+                .locator('.tl-entry')
+                .filter({ hasText: '名稱與簡介' })
+                .getByText(/發佈後自動重新部署播放器（約 5 分鐘）/)
+                .waitFor();
             await shoot(page, 'appearance-publish');
             await page.getByRole('button', { name: '發佈', exact: true }).click();
             await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();

@@ -1,5 +1,5 @@
 import type { ChangeItem } from '@903-player/catalog';
-import type { PublishSelection, TodoRow } from '../../api/types';
+import type { ChangesResponse, PublishSelection, TodoRow } from '../../api/types';
 import {
     EMPTY_UNPICKED,
     changedAppearance,
@@ -8,6 +8,7 @@ import {
     hasAnythingToPublish,
     incompleteRows,
     pickedCount,
+    publishedAppearance,
     selectionOf,
 } from './selectionModel';
 
@@ -84,5 +85,38 @@ describe('selectionModel', () => {
         expect(
             decodeSelection(new URLSearchParams({ selection: '{"content":[1]}' })),
         ).toBeUndefined();
+    });
+});
+
+describe('publishedAppearance (本次發佈 + 時間線 App 外觀卡)', () => {
+    const ALL = { content: [], branding: { icon: true, text: true }, banner: true };
+    const data = (over: Partial<ChangesResponse>): ChangesResponse => ({
+        base: 1,
+        changes: { items: [], timeline: [] },
+        validation: { ok: true, episodeCount: 1 },
+        appearance: { icon: true, text: true, banner: true },
+        brandingChanged: true,
+        bannerChanged: true,
+        ...over,
+    });
+
+    it('should list picked items that changed, in App 外觀 page order', () => {
+        expect(publishedAppearance(data({}), ALL)).toEqual(['icon', 'text', 'banner']);
+        const textOnly = { ...ALL, branding: { icon: false, text: true }, banner: false };
+        expect(publishedAppearance(data({}), textOnly)).toEqual(['text']);
+    });
+
+    it('should drop items the draft does not change', () => {
+        const appearance = { icon: false, text: true, banner: false };
+        expect(publishedAppearance(data({ appearance }), ALL)).toEqual(['text']);
+        expect(publishedAppearance(data({ appearance: undefined }), ALL)).toEqual([]);
+    });
+
+    it('should drop items the server says will not change with this selection', () => {
+        expect(publishedAppearance(data({ brandingChanged: false }), ALL)).toEqual(['banner']);
+        expect(publishedAppearance(data({ bannerChanged: undefined }), ALL)).toEqual([
+            'icon',
+            'text',
+        ]);
     });
 });

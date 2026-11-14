@@ -118,9 +118,10 @@ describe('PublishPage', () => {
 
     it('should count a banner-only change as something to publish', async () => {
         show(changesOf({ bannerChanged: true }));
-        expect(await screen.findByText('首頁 Banner 已更改')).toBeInTheDocument();
         await waitForLoaded();
         expect(screen.getByText('本次只更改首頁 Banner。')).toBeInTheDocument();
+        // 數字下面嗰行 pill 已拎走（mockup 方案 1）
+        expect(screen.queryByText('首頁 Banner 已更改')).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: '發佈' })).toBeEnabled();
     });
 
@@ -128,6 +129,15 @@ describe('PublishPage', () => {
         show(changesOf());
         await waitForLoaded();
         expect(screen.getByRole('button', { name: '發佈' })).toBeDisabled();
+    });
+
+    it('should show 返回 with 返回待辦 as its accessible name', async () => {
+        show(changesOf());
+        await waitForLoaded();
+        const back = screen.getByRole('link', { name: '返回待辦' });
+        expect(back).toHaveTextContent(/^返回$/);
+        expect(back).toHaveAttribute('aria-label', '返回待辦');
+        expect(back).toHaveAttribute('href', '/');
     });
 
     describe('selective publish', () => {
@@ -204,37 +214,83 @@ describe('PublishPage', () => {
             );
         };
 
-        it('should say which fields an other change edits', async () => {
+        it('should list other saved changes in the timeline with field chips', async () => {
             const lancyEdit = {
                 kind: 'edit',
                 when: 'now',
                 entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
                 detail: { fields: ['theme', 'arcs.love-after.summary'] },
             } as unknown as ChangeItem;
-            open({ others: { items: [lancyEdit], timeline: [] } });
-            const card = await screen.findByRole('region', { name: '本次發佈' });
+            const changes = { items: [lancyEdit], timeline: [{ when: 'now', items: [lancyEdit] }] };
+            open({ changes, others: changes });
+            const timeline = await screen.findByRole('region', { name: '上線時間' });
             // 短篇冇 name：用 key（love-after）
-            expect(card).toHaveTextContent('修改 · 蘭茜夫人劇場（配色；love-after：簡介）');
+            expect(within(timeline).getByText('配色')).toHaveClass('tl-chip');
+            expect(within(timeline).getByText('love-after：簡介')).toHaveClass('tl-chip');
         });
 
-        it('should list what goes out, what is incomplete and the redeploy note', async () => {
-            open();
-            const card = await screen.findByRole('region', { name: '本次發佈' });
+        it('should drop 本次發佈 and the pills: stats → timeline (App 外觀 note, skip group last)', async () => {
+            const NEW_ARC = {
+                kind: 'newArc',
+                when: 'now',
+                entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
+                arc: { id: 'love-after', name: '戀愛後二分一', label: '戀愛後二分一' },
+                detail: { episodes: { first: 1, last: 20 } },
+            } as unknown as ChangeItem;
+            const items = [NEW_ARC, EDIT];
+            open({ changes: { items, timeline: [{ when: 'now', items }] } });
+            const timeline = await screen.findByRole('region', { name: '上線時間' });
             expect(getChanges).toHaveBeenLastCalledWith(SELECTION);
-            expect(card).toHaveTextContent('新短篇 · 蘭茜夫人劇場 › 戀愛後二分一（20 集）');
-            expect(card).toHaveTextContent('App 外觀 · 名稱與簡介');
-            expect(card).toHaveTextContent('其他已儲存的改動');
-            expect(card).toHaveTextContent('修改 · 口水多過浪花');
-            expect(card).toHaveTextContent(
-                '以下項目尚未完成，不會在本次發佈：森美小儀系列 › 大衛營（尚未設定排期）。',
+            expect(screen.queryByRole('region', { name: '本次發佈' })).not.toBeInTheDocument();
+            expect(screen.queryByText('＋1 短篇')).not.toBeInTheDocument();
+            expect(screen.queryByText('1 項修改')).not.toBeInTheDocument();
+            expect(screen.queryByText('App 外觀已更改')).not.toBeInTheDocument();
+            expect(screen.queryByText(/以下項目尚未完成/)).not.toBeInTheDocument();
+            expect(screen.getByText('✓ 驗證通過')).toBeInTheDocument();
+            const cards = [...timeline.querySelectorAll('.tl-entry')].map((el) => el.textContent);
+            expect(cards).toEqual([
+                'App 外觀名稱與簡介發佈後自動重新部署播放器（約 5 分鐘）；已安裝的 App 須重新安裝方會更新圖示',
+                '蘭茜夫人劇場新短篇戀愛後二分一第 1–20 集',
+                '口水多過浪花修改節目',
+                '森美小儀系列未完成大衛營尚未設定排期',
+            ]);
+            const skip = timeline.querySelector('.timeline > li:last-child');
+            expect(skip).toHaveClass('skip');
+            expect(skip).toHaveTextContent(/^不會在本次發佈設定完成後可再發佈/);
+        });
+
+        it('should hide the skip group when nothing is incomplete', async () => {
+            vi.mocked(getChanges).mockResolvedValue(SELECTED);
+            renderAt(
+                `/publish?${new URLSearchParams({ selection: JSON.stringify(SELECTION) }).toString()}`,
+                '/publish',
+                <PublishPage />,
+                fakeData({ entries: resource([LANCY]) }),
             );
-            expect(card).toHaveTextContent(/圖示、名稱及簡介須重新部署播放器/);
+            await screen.findByRole('region', { name: '上線時間' });
+            await waitForLoaded();
+            expect(screen.queryByText('不會在本次發佈')).not.toBeInTheDocument();
+            expect(document.querySelector('.timeline > li.skip')).toBeNull();
+        });
+
+        it('should list a pick the server skipped in 不會在本次發佈', async () => {
+            open({
+                selection: {
+                    content: [],
+                    skipped: [{ key: 'newArc/lancy/love-after', reason: 'incomplete' }],
+                },
+            });
+            const timeline = await screen.findByRole('region', { name: '上線時間' });
+            const skip = await within(timeline).findByText('不會在本次發佈');
+            const group = skip.closest('li')!;
+            expect(group).toHaveTextContent('蘭茜夫人劇場未完成戀愛後二分一');
+            expect(group).toHaveTextContent('森美小儀系列未完成大衛營尚未設定排期');
         });
 
         it('should fall back to the default selection without one in the URL', async () => {
             vi.mocked(getChanges).mockResolvedValue(SELECTED);
             renderAt('/publish', '/publish', <PublishPage />, data());
-            await screen.findByRole('region', { name: '本次發佈' });
+            await screen.findByRole('region', { name: '上線時間' });
             expect(getChanges).toHaveBeenLastCalledWith(SELECTION);
         });
 
@@ -247,7 +303,7 @@ describe('PublishPage', () => {
                 },
             });
             open();
-            await screen.findByRole('region', { name: '本次發佈' });
+            await screen.findByRole('region', { name: '上線時間' });
             await waitForLoaded();
             await userEvent.click(screen.getByRole('button', { name: '發佈' }));
             expect(publish).toHaveBeenCalledWith(SELECTION);
@@ -281,7 +337,7 @@ describe('PublishPage', () => {
                 new ValidationError(422, 'unknown selection keys'),
             );
             open();
-            await screen.findByRole('region', { name: '本次發佈' });
+            await screen.findByRole('region', { name: '上線時間' });
             await waitForLoaded();
             await userEvent.click(screen.getByRole('button', { name: '發佈' }));
             expect(await screen.findByRole('button', { name: '重新載入' })).toBeInTheDocument();

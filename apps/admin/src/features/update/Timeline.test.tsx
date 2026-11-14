@@ -1,34 +1,13 @@
-import { summarizeChanges, type ChangeDocument } from '@903-player/catalog';
+import { summarizeChanges, type ChangeDocument, type ChangeItem } from '@903-player/catalog';
 import { render, screen, within } from '@testing-library/react';
 import { hasIcon } from '../../../tests/icons';
-import type { LoadedEntry } from '../../api/types';
 import { Timeline } from './Timeline';
+import { cardsIn, drama, fixToday, groupsOf, rowsIn } from './timelineTestKit';
 
-/** shortDate 跨年會加年份（S-830）：固定「今日」喺 2026，唔跟真實時鐘 */
-beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-11-12T04:00:00Z'));
-});
-
-afterEach(() => {
-    vi.useRealTimers();
-});
-
-const drama = (arcs: Record<string, unknown>[], extra: Record<string, unknown> = {}) => ({
-    id: 'lancy',
-    definition: {
-        name: '蘭茜夫人劇場',
-        kind: 'series',
-        enabled: true,
-        addedAt: '2026-10-01',
-        arcs,
-        ...extra,
-    },
-    images: {},
-});
+fixToday();
 
 describe('Timeline', () => {
-    it('should render summarizeChanges groups: 即時上線 first, then dated batches', () => {
+    it('should group by when: 即時上線 (按「發佈」後) first, then dated groups with the weekday', () => {
         const prev: ChangeDocument = {
             shows: [],
             dramas: [drama([{ id: 'half', name: '戀愛二分一', episodes: 30 }])],
@@ -38,25 +17,51 @@ describe('Timeline', () => {
             dramas: [
                 drama([
                     { id: 'half', name: '戀愛二分一', episodes: 32 },
-                    {
-                        id: 'heart',
-                        name: '我心不死',
-                        episodes: 10,
-                        addedAt: '2026-11-16',
-                        episodeDates: { 6: '2026-11-18' },
-                    },
+                    { id: 'heart', name: '我心不死', episodes: 10, addedAt: '2026-11-16' },
                 ]),
             ],
         };
         const summary = summarizeChanges(prev, next, '2026-11-10');
         render(<Timeline groups={summary.timeline} entries={[]} />);
-        const items = screen.getAllByRole('listitem');
-        expect(items[0]).toHaveTextContent('即時上線');
-        expect(within(items[0]!).getByText('新集數')).toBeInTheDocument();
-        expect(items[0]).toHaveTextContent('戀愛二分一31–32');
-        expect(items[1]).toHaveTextContent('16/11 一');
-        expect(items[1]).toHaveTextContent('新短篇');
-        expect(items[1]).toHaveTextContent('我心不死');
+        const [now, later] = groupsOf();
+        expect(now).toHaveClass('now');
+        expect(now).toHaveTextContent('即時上線按「發佈」後');
+        expect(rowsIn(cardsIn(now!)[0]!)).toEqual(['新集數戀愛二分一第 31–32 集']);
+        expect(later).toHaveClass('later');
+        expect(later).toHaveTextContent('11 月 16 日星期一');
+        expect(cardsIn(later!)[0]).toHaveTextContent('蘭茜夫人劇場');
+        expect(rowsIn(cardsIn(later!)[0]!)).toEqual(['新短篇我心不死第 1–10 集']);
+    });
+
+    it('should put App 外觀 cards first in 即時上線, with the redeploy line for icon / text', () => {
+        const item: ChangeItem = {
+            kind: 'edit',
+            when: 'now',
+            entry: { kind: 'shows', id: 'waves', name: '口水多過浪花' },
+            detail: { fields: ['summary'] },
+        };
+        render(
+            <Timeline
+                groups={[{ when: 'now', items: [item] }]}
+                entries={[]}
+                appearance={['text', 'banner']}
+            />,
+        );
+        const [text, banner, waves] = cardsIn(groupsOf()[0]!);
+        expect(text).toHaveTextContent(
+            'App 外觀名稱與簡介發佈後自動重新部署播放器（約 5 分鐘）；已安裝的 App 須重新安裝方會更新圖示',
+        );
+        expect(within(text!).getByText('App 外觀')).toHaveClass('tl-tag', 'look');
+        expect(banner).toHaveTextContent('App 外觀首頁 Banner');
+        expect(banner).not.toHaveTextContent('重新部署');
+        expect(rowsIn(waves!)).toEqual(['修改節目簡介']);
+    });
+
+    it('should show an appearance-only publish as a 即時上線 group', () => {
+        render(<Timeline groups={[]} entries={[]} appearance={['icon']} />);
+        const [now] = groupsOf();
+        expect(now).toHaveTextContent('即時上線');
+        expect(now).toHaveTextContent('App 外觀App 圖示發佈後自動重新部署播放器（約 5 分鐘）');
     });
 
     it('should show a chevron on 查看全部 when the timeline is collapsed', () => {
@@ -81,27 +86,5 @@ describe('Timeline', () => {
         render(<Timeline groups={summary.timeline} entries={[]} />);
         const all = screen.getByRole('button', { name: /查看全部/ });
         expect(hasIcon(all, 'chevron-down')).toBe(true);
-    });
-
-    it('should show which fields a 修改 changes, naming the arc', () => {
-        const arc = { id: 'half', name: '戀愛二分一', episodes: 30 };
-        const prev: ChangeDocument = { shows: [], dramas: [drama([arc])] };
-        const next: ChangeDocument = {
-            shows: [],
-            dramas: [drama([{ ...arc, summary: '新簡介' }], { theme: { primary: '#123456' } })],
-        };
-        const summary = summarizeChanges(prev, next, '2026-11-12');
-        const entries = [
-            {
-                kind: 'dramas',
-                id: 'lancy',
-                etag: null,
-                ...next.dramas[0],
-                draft: false,
-                updatedAt: 'v',
-            },
-        ] as unknown as LoadedEntry[];
-        render(<Timeline groups={summary.timeline} entries={entries} />);
-        expect(screen.getByText('配色；戀愛二分一：簡介')).toBeInTheDocument();
     });
 });

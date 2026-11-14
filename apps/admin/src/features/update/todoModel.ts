@@ -49,9 +49,15 @@ export const rowTarget = (row: TodoRow): string => {
 export const missingOf = (row: TodoRow): string[] =>
     TODO_COLUMNS.filter((column) => row.cells[column].state === 'must').map(columnLabel);
 
-/** 未完成項目嘅文字：「名（尚未設定 X、Y）」；冇缺嘅格（例如 draft 劇）就淨係出名 */
-export const incompleteText = (name: string, row: TodoRow): string => {
+/** 尚欠嘅設定：「尚未設定 X、Y」；冇缺嘅格（例如 draft 劇）= 空 */
+export const missingText = (row: TodoRow): string => {
     const missing = missingOf(row).join('、');
+    return missing ? t('update.missingLabel', { missing }) : '';
+};
+
+/** 未完成項目嘅文字：「名（尚未設定 X、Y）」；冇缺嘅格就淨係出名 */
+export const incompleteText = (name: string, row: TodoRow): string => {
+    const missing = missingText(row);
     return missing ? t('update.incompleteLabel', { name, missing }) : name;
 };
 
@@ -100,10 +106,4 @@ export const rowMeta = (row: TodoRow, episodes: number | undefined): string => {
         missingFolder: [t('update.metaMissingFolder')],
     };
     return parts[row.kind].filter(Boolean).join(' · ');
-};
-
-/** 確認發佈頁列項目用：「劇名 › 短篇名」（新劇 = 劇名） */
-export const displayName = (row: TodoRow): string => {
-    const { title, drama } = splitName(row);
-    return drama ? `${drama} › ${title}` : title;
 };

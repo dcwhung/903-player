@@ -1,5 +1,5 @@
 import type { ChangeSummary } from '@903-player/catalog';
-import { countPills, itemName, itemRange, whenLabel } from './timelineModel';
+import { itemName, itemRange, whenLabel } from './timelineModel';
 
 /** shortDate 跨年會加年份（S-830）：固定「今日」喺 2026，唔跟真實時鐘 */
 beforeEach(() => {
@@ -39,14 +39,6 @@ const SUMMARY = {
 } as unknown as ChangeSummary;
 
 describe('timelineModel', () => {
-    it('should count new dramas, arcs and episodes for the pills', () => {
-        expect(countPills(SUMMARY).map((p) => p.label)).toEqual([
-            '＋1 廣播劇',
-            '＋1 短篇',
-            '＋2 集',
-        ]);
-    });
-
     it('should label the timeline', () => {
         expect(whenLabel('now')).toBe('即時上線');
         expect(whenLabel('2026-11-16')).toBe('16/11 一');

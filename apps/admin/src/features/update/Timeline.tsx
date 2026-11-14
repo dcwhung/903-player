@@ -1,60 +1,83 @@
 /*
- * 上架時間線（幾時 → 類型 tag → 縮圖 + 名 → 第幾集）：Design Origin: mockup: _mockups_/admin/index.html#u3
+ * 上線時間線（B v2）：Design Origin: mockup: _mockups_/admin-publish-summary/index.html
+ * 按幾時上線分組（即時上線 = 綠點、日子 = accent 點），組內每套劇 / 節目一張卡；
+ * App 外觀 / Banner 排即時上線組最頂；未完成項目排最尾「不會在本次發佈」（收起時都照出）。
  * 太長就收起，「至 M/D，查看全部」原位展開
  */
 import { ChevronDown } from 'lucide-react';
-import type { ChangeItem, ChangeTimelineGroup } from '@903-player/catalog';
-import { Fragment, useState } from 'react';
-import type { LoadedEntry } from '../../api/types';
+import type { ChangeTimelineGroup } from '@903-player/catalog';
+import { useState } from 'react';
+import type { LoadedEntry, TodoRow } from '../../api/types';
 import { t } from '../../i18n/t';
-import { episodeTotalOf, thumbOf } from '../../model/thumbs';
-import { Thumb } from '../../ui/Thumb';
-import { editFieldsText } from './changeFields';
-import { itemName, itemRange, kindLabel, whenLabel } from './timelineModel';
+import type { AppearanceItem } from './selectionModel';
+import { SkipGroup } from './SkipGroup';
+import { AppearanceCard, EntryCardView } from './TimelineCards';
+import { entryCardsOf, groupHeading } from './timelineEntries';
+import { whenLabel } from './timelineModel';
 
 const COLLAPSED_GROUPS = 6;
+const NOW = 'now';
 
-function TimelineItem({ item, entries }: { item: ChangeItem; entries: readonly LoadedEntry[] }) {
-    const range =
-        item.kind === 'newDrama'
-            ? t('publish.all', { count: episodeTotalOf(entries, item) })
-            : itemRange(item);
-    const fields = editFieldsText(item, entries);
+interface TimelineProps {
+    groups: readonly ChangeTimelineGroup[];
+    entries: readonly LoadedEntry[];
+    /** 今次發佈嘅 App 外觀（冇 = 唔出 App 外觀卡） */
+    appearance?: readonly AppearanceItem[];
+    /** 不會在本次發佈嘅未完成行（冇 = 唔出嗰組） */
+    skipped?: readonly TodoRow[];
+}
+
+/** 有 App 外觀但冇即時上線嘅內容：補一個空嘅即時上線組放 App 外觀卡 */
+const withNowGroup = (
+    groups: readonly ChangeTimelineGroup[],
+    appearance: readonly AppearanceItem[],
+): readonly ChangeTimelineGroup[] =>
+    appearance.length > 0 && groups[0]?.when !== NOW
+        ? [{ when: NOW, items: [] }, ...groups]
+        : groups;
+
+function TimelineGroup({
+    group,
+    entries,
+    appearance,
+}: Omit<TimelineProps, 'groups' | 'skipped'> & { group: ChangeTimelineGroup }) {
+    const now = group.when === NOW;
+    const heading = groupHeading(group.when);
     return (
-        <span className="what">
-            <span className="kind">{kindLabel(item.kind)}</span>
-            <Thumb url={thumbOf(entries, item)} size="sm" />
-            {itemName(item)}
-            {range && <span className="muted">{range}</span>}
-            {fields && <span className="muted small">{fields}</span>}
-        </span>
+        <li className={now ? 'now' : 'later'}>
+            <p className="when">
+                {heading.label}
+                <span className="muted small">{heading.sub}</span>
+            </p>
+            <ul className="tl-entries">
+                {now && appearance?.map((item) => <AppearanceCard key={item} item={item} />)}
+                {entryCardsOf(group.items).map((card) => (
+                    <EntryCardView key={card.key} card={card} entries={entries} />
+                ))}
+            </ul>
+        </li>
     );
 }
 
 export function Timeline({
-    groups,
+    groups: content,
     entries,
-}: {
-    groups: readonly ChangeTimelineGroup[];
-    entries: readonly LoadedEntry[];
-}) {
+    appearance = [],
+    skipped = [],
+}: TimelineProps) {
     const [expanded, setExpanded] = useState(false);
+    const groups = withNowGroup(content, appearance);
     const shown = expanded ? groups : groups.slice(0, COLLAPSED_GROUPS);
     const last = groups.at(-1);
     return (
         <ol className="timeline">
             {shown.map((group) => (
-                <li key={group.when} className={group.when === 'now' ? 'now' : undefined}>
-                    <span className="when">{whenLabel(group.when)}</span>
-                    {group.items.map((item, i) => (
-                        <Fragment
-                            key={`${item.kind}-${item.entry?.id ?? ''}-${item.arc?.id ?? ''}-${i}`}
-                        >
-                            {i > 0 && <span />}
-                            <TimelineItem item={item} entries={entries} />
-                        </Fragment>
-                    ))}
-                </li>
+                <TimelineGroup
+                    key={group.when}
+                    group={group}
+                    entries={entries}
+                    appearance={appearance}
+                />
             ))}
             {!expanded && last && groups.length > COLLAPSED_GROUPS && (
                 <li className="more">
@@ -65,6 +88,7 @@ export function Timeline({
                     </button>
                 </li>
             )}
+            <SkipGroup rows={skipped} entries={entries} />
         </ol>
     );
 }

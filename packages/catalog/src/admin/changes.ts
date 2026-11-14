@@ -13,8 +13,9 @@ import type {
     ChangeTimelineGroup,
     SummarizeOptions,
 } from './changeTypes';
+import { editItemsFor, imageEditFields } from './editChanges';
 import { arcEditFields, seriesArcChanges } from './seriesChanges';
-import { changedKeys, nameOf, sameJson, stringField, whenOf, type RawJson } from './rawDefinition';
+import { changedKeys, nameOf, stringField, whenOf, type RawJson } from './rawDefinition';
 
 const NOW = 'now';
 /** 頂層 edit 唔計嘅欄位：上下架 / 集數另外有自己嘅 item */
@@ -43,10 +44,10 @@ const refOf = (kind: CatalogKind, entry: CatalogEntry): ChangeEntryRef => ({
     name: nameOf(entry.definition, entry.id),
 });
 
-/** 頂層欄位 + 圖有冇改 */
+/** 頂層欄位 + 換咗邊張圖（editChanges.ts） */
 const editedFields = (prev: CatalogEntry, next: CatalogEntry): string[] => [
     ...changedKeys(prev.definition, next.definition, ENTRY_HANDLED_KEYS),
-    ...(sameJson(prev.images, next.images) ? [] : ['images']),
+    ...imageEditFields(prev, next),
 ];
 
 const newEntryItem = ({ kind, next, today }: EntryPair, entry: CatalogEntry): ChangeItem => ({
@@ -115,8 +116,7 @@ const editItems = (pair: EntryPair): ChangeItem[] => {
         ...editedFields(prev, next),
         ...(pair.kind === 'dramas' ? arcEditFields(prev.definition, next.definition) : []),
     ];
-    if (fields.length === 0) return [];
-    return [{ kind: 'edit', when: NOW, entry: refOf(pair.kind, next), detail: { fields } }];
+    return editItemsFor(refOf(pair.kind, next), next.definition, fields);
 };
 
 const entryItems = (pair: EntryPair): ChangeItem[] => {

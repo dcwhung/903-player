@@ -5,6 +5,16 @@ const NEXT = '下一步：確認發佈';
 const LOVE_AFTER = '發佈戀愛後二分一';
 const APP_TEXT = '發佈名稱與簡介';
 
+const REDEPLOY = /發佈後自動重新部署播放器（約 5 分鐘）；已安裝的 App 須重新安裝方會更新圖示/;
+
+/** 方案 1（mockup admin-publish-summary）：冇「本次發佈」卡、冇數字下面嗰行 pill */
+const assertNoSummaryCard = async (page) => {
+    if ((await page.getByRole('region', { name: '本次發佈' }).count()) > 0)
+        throw new Error('本次發佈 card should be gone');
+    if ((await page.locator('.pub-head .pills').count()) > 0)
+        throw new Error('pill row under the stat cards should be gone');
+};
+
 const assertChecked = async (box, expected, what) => {
     if ((await box.isChecked()) !== expected) throw new Error(`${what} checked != ${expected}`);
 };
@@ -48,13 +58,30 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
                 await footer(page).getByText('已選擇 1 項發佈 · 1 項未完成（不會發佈）').waitFor();
                 await next.click();
 
-                // ② 確認發佈：今次項目 + 未完成；reload 照用 URL 嘅選擇
-                const card = page.getByRole('region', { name: '本次發佈' });
-                await card.getByText('新短篇 · 蘭茜夫人劇場 › 戀愛後二分一（20 集）').waitFor();
+                // ② 確認發佈（B v2 方案 1）：今次項目喺時間線（按劇分卡）、未完成排最尾「不會在本次發佈」；
+                // reload 照用 URL 嘅選擇
+                const timeline = page.getByRole('region', { name: '上線時間' });
+                const lancyCard = timeline.locator('.tl-entry').filter({ hasText: '蘭茜夫人劇場' });
+                await lancyCard.locator('.tl-row').getByText('戀愛後二分一').waitFor();
+                await lancyCard.getByText('第 1–20 集').waitFor();
                 await page.reload();
-                await card.getByText('以下項目尚未完成，不會在本次發佈').waitFor();
-                if ((await card.getByText('App 外觀 · 名稱與簡介').count()) > 0)
-                    throw new Error('unticked 名稱與簡介 listed on the publish page');
+                const skip = timeline.locator('.timeline > li.skip');
+                await skip.getByText('不會在本次發佈').waitFor();
+                const skipRows = await skip.locator('.tl-row').allTextContents();
+                if (skipRows.join('|') !== '未完成大衛營尚未設定排期')
+                    throw new Error(`skip rows: ${skipRows.join('|')}`);
+                if (
+                    !(await skip.locator('.tl-entry.skipped').textContent()).includes(
+                        '森美小儀系列',
+                    )
+                )
+                    throw new Error('skip card should be headed by its drama');
+                await assertNoSummaryCard(page);
+                const back = page.getByRole('link', { name: '返回待辦' });
+                if ((await back.textContent()) !== '返回')
+                    throw new Error(`back button text: ${await back.textContent()}`);
+                if ((await timeline.locator('.tl-tag.look').count()) > 0)
+                    throw new Error('unticked 名稱與簡介 has an App 外觀 card in the timeline');
                 await shoot(page, 'publish-selective');
                 await page.getByRole('button', { name: '發佈', exact: true }).click();
                 await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();
@@ -73,7 +100,7 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
             },
         );
 
-    /** App 外觀有改 → 確認發佈頁列出 + 重新部署提示；冇改 → 更新頁冇 App 外觀 section */
+    /** App 外觀有改 → 確認發佈頁時間線 App 外觀卡寫重新部署說明；冇改 → 更新頁冇 App 外觀 section */
     const selectiveAppearanceCheck = (browser) =>
         check('selective publish: App 外觀 section only when changed, redeploy note', async () => {
             const plain = await newPage(browser, loggedIn());
@@ -83,40 +110,54 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
                 throw new Error('App 外觀 section shown without appearance changes');
             await plain.close();
 
-            const state = loggedIn({ selective: true });
-            // 其他已儲存的改動：修改寫埋改了哪些欄位（本次發佈卡 + 時間線）
+            // 真圖：時間線卡頭用蘭茜碟面、短篇行用戀愛二分一自己嘅碟面
+            const state = loggedIn({ selective: true, realImages: true });
+            // 其他已儲存的改動（api 0.10.2）：劇本身換碟面、短篇戀愛二分一換橫圖，各自一項 edit
+            const lancyRef = { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' };
             state.others = [
+                { kind: 'edit', when: 'now', entry: lancyRef, detail: { fields: ['disc'] } },
                 {
                     kind: 'edit',
                     when: 'now',
-                    entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
-                    detail: { fields: ['theme', 'summary'] },
+                    entry: lancyRef,
+                    arc: { id: 'half', name: '戀愛二分一', label: '戀愛二分一' },
+                    detail: { fields: ['tile'] },
                 },
             ];
             const page = await newPage(browser, state);
             await page.goto(BASE);
             await page.getByRole('button', { name: NEXT }).click();
-            const card = page.getByRole('region', { name: '本次發佈' });
-            await card.getByText('App 外觀 · 名稱與簡介').waitFor();
-            await card.getByText(/圖示、名稱及簡介須重新部署/).waitFor();
-            await card.getByText('修改 · 蘭茜夫人劇場（配色、簡介）').waitFor();
-            await page.locator('.timeline').getByText('配色、簡介').waitFor();
+            // 時間線：App 外觀卡排即時上線最頂；蘭茜一張卡，「修改 · 劇集 · 碟面」+「修改 · 戀愛二分一 · 橫圖」
+            const timeline = page.getByRole('region', { name: '上線時間' });
+            const cards = timeline.locator('.tl-entry');
+            await cards.first().getByText(REDEPLOY).waitFor();
+            await assertNoSummaryCard(page);
+            const firstTag = await cards.first().locator('.tl-tag').textContent();
+            if (firstTag !== 'App 外觀') throw new Error(`first card tag: ${firstTag}`);
+            const lancyCard = cards.filter({ hasText: '蘭茜夫人劇場' });
+            const rows = await lancyCard.locator('.tl-row').allTextContents();
+            // 揀咗嘅新短篇同其他已儲存的改動都喺同一張卡（第一次出現嘅次序）
+            const expected = '新短篇戀愛後二分一第 1–20 集|修改劇集碟面|修改戀愛二分一橫圖';
+            if (rows.join('|') !== expected) throw new Error(`lancy rows: ${rows.join('|')}`);
+            const arcDisc = await lancyCard
+                .locator('.tl-row')
+                .filter({ hasText: '戀愛二分一橫圖' })
+                .locator('.thumb')
+                .evaluate((el) => el.style.backgroundImage);
+            if (!arcDisc.includes('lancy-half-disc.webp'))
+                throw new Error(`arc row should show the arc disc: ${arcDisc}`);
             await shoot(page, 'publish-selective-appearance');
             // 發佈 / 部署記錄：同一行修改都寫埋改了哪些欄位
             await page.getByRole('button', { name: '發佈', exact: true }).click();
             await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();
-            await page
-                .locator('.hist-row .changes')
-                .getByText('配色、簡介', { exact: true })
-                .first()
-                .waitFor();
-            // 只出一次（狀態 pill，S-998），唔再出原本 key「theme」
-            const fieldTexts = page
-                .locator('.hist-row .changes')
-                .getByText('配色、簡介', { exact: true });
+            const changes = page.locator('.hist-row .changes');
+            await changes.getByText('碟面', { exact: true }).first().waitFor();
+            await changes.getByText('橫圖', { exact: true }).first().waitFor();
+            // 只出一次（狀態 pill，S-998），唔再出原本 key「disc」
+            const fieldTexts = changes.getByText('碟面', { exact: true });
             if ((await fieldTexts.count()) !== 1)
                 throw new Error(`field list shown ${await fieldTexts.count()} times`);
-            if ((await page.locator('.hist-row .changes').getByText('theme').count()) > 0)
+            if ((await changes.getByText('disc', { exact: true }).count()) > 0)
                 throw new Error('history still shows the raw field key');
             await shoot(page, 'history-change-fields');
             await page.close();

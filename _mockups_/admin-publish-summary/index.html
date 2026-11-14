@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>確認發佈摘要</title>
+        <style>
+            /*
+             * 確認發佈頁「本次發佈」+ 時間線 preview（2026-11-14）：
+             * 用戶回饋：兩張卡內容重覆；劇同短篇改動要分開（修改 · 劇（碟面）/ 修改 · 劇 › 短篇（橫圖））；時間線要靚啲。
+             * A = 合併做一張卡；B = 上面摘要 + 下面時間線做唯一清單。
+             * Token 抄自 apps/admin/src/styles/tokens.css（admin-style v3）。介面文字書面語；說明可以用廣東話。
+             */
+            :root {
+                --primary: #1e7bc0;
+                --on-primary: #ffffff;
+                --bg: #eef3f8;
+                --panel: #f7f9fc;
+                --surface: #ffffff;
+                --surface-2: #f1f5f9;
+                --ink: #16212e;
+                --muted: #5e6b7a;
+                --line: #dbe3ec;
+                --accent: #1e7bc0;
+                --accent-soft: #e6f3fc;
+                --accent-ink: #155f96;
+                --ok: #23935c;
+                --ok-ink: #1a7349;
+                --ok-bg: #e3f5ec;
+                --warn: #d97706;
+                --warn-bg: #fff3df;
+                --warn-ink: #9a5800;
+                --danger: #d9363e;
+                --danger-ink: #b3262d;
+                --danger-bg: #fdebec;
+                --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06);
+                --card-border: transparent;
+                --r-card: 20px;
+                --font:
+                    'Poppins', 'Noto Sans TC', 'PingFang HK', -apple-system, 'Segoe UI', sans-serif;
+                color-scheme: light dark;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #0f1620;
+                    --panel: #141d29;
+                    --surface: #1b2635;
+                    --surface-2: #223043;
+                    --ink: #e8eef5;
+                    --muted: #9aabbd;
+                    --line: #2c3b4f;
+                    --accent: #7cc2f0;
+                    --accent-soft: #1c3349;
+                    --accent-ink: #9fd2f6;
+                    --ok: #6fc28f;
+                    --ok-ink: #8fd6a9;
+                    --ok-bg: #133524;
+                    --warn: #f2a93b;
+                    --warn-bg: #3a2a10;
+                    --warn-ink: #f2c27a;
+                    --danger: #f28b82;
+                    --danger-ink: #f6a9a2;
+                    --danger-bg: #3b1619;
+                    --shadow: none;
+                    --card-border: #2c3b4f;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #0f1620;
+                --panel: #141d29;
+                --surface: #1b2635;
+                --surface-2: #223043;
+                --ink: #e8eef5;
+                --muted: #9aabbd;
+                --line: #2c3b4f;
+                --accent: #7cc2f0;
+                --accent-soft: #1c3349;
+                --accent-ink: #9fd2f6;
+                --ok: #6fc28f;
+                --ok-ink: #8fd6a9;
+                --ok-bg: #133524;
+                --warn: #f2a93b;
+                --warn-bg: #3a2a10;
+                --warn-ink: #f2c27a;
+                --danger: #f28b82;
+                --danger-ink: #f6a9a2;
+                --danger-bg: #3b1619;
+                --shadow: none;
+                --card-border: #2c3b4f;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                font-family: var(--font);
+                background: var(--bg);
+                color: var(--ink);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+            main {
+                max-width: 1040px;
+                margin: 0 auto;
+                padding: 24px 16px 64px;
+            }
+            header.top {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            h1 {
+                font-size: 20px;
+                margin: 0;
+            }
+            .theme-btn {
+                font: inherit;
+                padding: 6px 14px;
+                border-radius: 10px;
+                border: 1px solid var(--line);
+                background: var(--surface);
+                color: var(--ink);
+                cursor: pointer;
+            }
+            .state-label {
+                margin: 32px 0 6px;
+                font-weight: 700;
+                font-size: 16px;
+            }
+            .state-note {
+                margin: 0 0 14px;
+                color: var(--muted);
+            }
+            .page {
+                background: var(--panel);
+                border-radius: 24px;
+                padding: 20px;
+                display: grid;
+                gap: 16px;
+            }
+            .card {
+                background: var(--surface);
+                border: 1px solid var(--card-border);
+                border-radius: var(--r-card);
+                box-shadow: var(--shadow);
+                padding: 20px;
+            }
+            .card h2 {
+                margin: 0 0 12px;
+                font-size: 16px;
+            }
+            .muted {
+                color: var(--muted);
+            }
+            .small {
+                font-size: 12px;
+            }
+
+            /* 共用：類型 tag、縮圖、欄位 chip、提示 */
+            .tag {
+                display: inline-flex;
+                justify-content: center;
+                min-width: 52px;
+                padding: 2px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            .tag.new {
+                background: var(--ok-bg);
+                color: var(--ok-ink);
+            }
+            .tag.edit {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .tag.off {
+                background: var(--danger-bg);
+                color: var(--danger-ink);
+            }
+            .tag.look {
+                background: var(--accent-soft);
+                color: var(--accent-ink);
+            }
+            .thumb {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                flex: none;
+                display: grid;
+                place-items: center;
+                font-size: 11px;
+                font-weight: 700;
+                color: #fff;
+            }
+            .thumb.lancy {
+                background: radial-gradient(circle at 35% 35%, #f5e6c8, #b9a37a);
+                color: #7a5b2b;
+            }
+            .thumb.sammy {
+                background: radial-gradient(circle at 35% 35%, #e6463c, #a51c14);
+            }
+            .thumb.fantasy {
+                background: radial-gradient(circle at 35% 35%, #3f6e9a, #1c3a57);
+            }
+            .thumb.app {
+                background: var(--accent-soft);
+                color: var(--accent-ink);
+                border-radius: 10px;
+            }
+            .name b {
+                font-weight: 600;
+            }
+            .arc-sep {
+                color: var(--muted);
+                margin: 0 4px;
+            }
+            .chips {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+            .chip {
+                padding: 1px 8px;
+                border-radius: 999px;
+                background: var(--surface-2);
+                color: var(--muted);
+                font-size: 12px;
+                white-space: nowrap;
+            }
+            .note {
+                display: flex;
+                gap: 10px;
+                align-items: flex-start;
+                padding: 10px 14px;
+                border-radius: 12px;
+                font-size: 13px;
+            }
+            .note.grey {
+                background: var(--surface-2);
+                color: var(--muted);
+            }
+            .note.info {
+                background: var(--accent-soft);
+                color: var(--ink);
+            }
+            .note svg {
+                flex: none;
+                width: 18px;
+                height: 18px;
+                margin-top: 1px;
+            }
+            .notes {
+                display: grid;
+                gap: 8px;
+                margin-top: 14px;
+            }
+            .actions {
+                display: flex;
+                justify-content: space-between;
+                padding-top: 12px;
+                border-top: 1px solid var(--line);
+            }
+            .btn {
+                font: inherit;
+                padding: 9px 18px;
+                border-radius: 10px;
+                border: 1px solid var(--line);
+                background: var(--surface);
+                color: var(--ink);
+            }
+            .btn.primary {
+                background: var(--primary);
+                border-color: var(--primary);
+                color: var(--on-primary);
+                font-weight: 600;
+            }
+
+            /* ---------- A：一張卡（按時間分組嘅清單） ---------- */
+            .a-group + .a-group {
+                margin-top: 14px;
+            }
+            .a-when {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--muted);
+                margin-bottom: 6px;
+            }
+            .a-when .dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--ok);
+            }
+            .a-when .dot.later {
+                background: var(--accent);
+            }
+            .a-list {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                overflow: hidden;
+            }
+            .a-row {
+                display: grid;
+                grid-template-columns: 60px 36px minmax(0, 1fr) auto;
+                gap: 12px;
+                align-items: center;
+                padding: 10px 14px;
+            }
+            .a-row + .a-row {
+                border-top: 1px solid var(--line);
+            }
+            .a-row .ep {
+                color: var(--muted);
+                font-size: 12px;
+                margin-left: 6px;
+            }
+
+            /* ---------- B：摘要 + 時間線 ---------- */
+            .b-summary {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .b-stat {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 999px;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            .b-stat.new {
+                background: var(--ok-bg);
+                color: var(--ok-ink);
+            }
+            .b-stat.edit {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .b-stat.off {
+                background: var(--danger-bg);
+                color: var(--danger-ink);
+            }
+            .b-stat.look {
+                background: var(--accent-soft);
+                color: var(--accent-ink);
+            }
+            .b-timeline {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                position: relative;
+            }
+            .b-timeline::before {
+                content: '';
+                position: absolute;
+                left: 7px;
+                top: 8px;
+                bottom: 8px;
+                width: 2px;
+                background: var(--line);
+            }
+            .b-group {
+                position: relative;
+                padding-left: 30px;
+            }
+            .b-group + .b-group {
+                margin-top: 18px;
+            }
+            .b-group::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 3px;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: var(--ok);
+                box-shadow: 0 0 0 4px var(--ok-bg);
+            }
+            .b-group.later::before {
+                background: var(--accent);
+                box-shadow: 0 0 0 4px var(--accent-soft);
+            }
+            .b-when {
+                font-weight: 700;
+                margin-bottom: 8px;
+            }
+            .b-when .muted {
+                font-weight: 400;
+                margin-left: 6px;
+            }
+            .b-items {
+                display: grid;
+                gap: 8px;
+            }
+            .b-item {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                padding: 10px 12px;
+                border-radius: 14px;
+                background: var(--surface-2);
+                border-left: 4px solid transparent;
+            }
+            .b-item.new {
+                border-left-color: var(--ok);
+            }
+            .b-item.edit {
+                border-left-color: var(--warn);
+            }
+            .b-item.off {
+                border-left-color: var(--danger);
+            }
+            .b-item.look {
+                border-left-color: var(--accent);
+            }
+            .b-text {
+                min-width: 0;
+                flex: 1;
+                display: grid;
+                gap: 4px;
+            }
+            .b-text .line1 {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            .b-item .chip {
+                background: var(--surface);
+            }
+
+            .compare {
+                margin-top: 32px;
+            }
+            table.cmp {
+                width: 100%;
+                border-collapse: collapse;
+                background: var(--surface);
+                border-radius: 14px;
+                overflow: hidden;
+            }
+            table.cmp th,
+            table.cmp td {
+                text-align: left;
+                padding: 10px 12px;
+                border-bottom: 1px solid var(--line);
+                vertical-align: top;
+            }
+
+            /* ---------- B v2：頁頂數字 + 按劇 / 節目分組 ---------- */
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 12px;
+            }
+            .stat {
+                border-radius: 16px;
+                padding: 14px 16px;
+                color: #fff;
+            }
+            .stat b {
+                display: block;
+                font-size: 26px;
+                line-height: 1.1;
+            }
+            .stat.s1 {
+                background: linear-gradient(135deg, #5db2ee, #2f86cc);
+            }
+            .stat.s2 {
+                background: linear-gradient(135deg, #63cf91, #2e9a5e);
+            }
+            .stat.s3 {
+                background: linear-gradient(135deg, #ffbe5c, #ef8a2c);
+            }
+            .stat.s4 {
+                background: linear-gradient(135deg, #ff8a8a, #e2484e);
+            }
+            .entry {
+                border-radius: 14px;
+                background: var(--surface-2);
+                padding: 10px 12px;
+                display: grid;
+                gap: 8px;
+            }
+            .entry-head {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+            }
+            .entry-head .b-text {
+                gap: 2px;
+            }
+            .entry-title {
+                font-weight: 700;
+            }
+            .sub {
+                display: grid;
+                gap: 6px;
+                margin-left: 48px;
+                padding-left: 12px;
+                border-left: 2px solid var(--line);
+            }
+            .sub-row {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            .thumb.sm {
+                width: 26px;
+                height: 26px;
+                font-size: 9px;
+            }
+            .thumb.spacer {
+                background: none;
+            }
+            .thumb.love {
+                background: radial-gradient(circle at 35% 35%, #f6b7c8, #c7577a);
+            }
+            .thumb.heart {
+                background: radial-gradient(circle at 35% 35%, #8f2a2a, #3d0f0f);
+            }
+            .thumb.camp {
+                background: radial-gradient(circle at 35% 35%, #7fae6a, #3f6b2e);
+            }
+            .b-group.skip::before {
+                background: var(--muted);
+                box-shadow: 0 0 0 4px var(--surface-2);
+            }
+            .entry.skipped {
+                background: transparent;
+                border: 1px dashed var(--line);
+            }
+            .entry.skipped .thumb {
+                filter: grayscale(1);
+                opacity: 0.6;
+            }
+            .entry.skipped .entry-title,
+            .entry.skipped .arc {
+                color: var(--muted);
+            }
+            .tag.skip {
+                background: var(--surface-2);
+                color: var(--muted);
+            }
+            .sub-row .arc {
+                font-weight: 600;
+            }
+            .entry .chip {
+                background: var(--surface);
+            }
+            @media (max-width: 640px) {
+                .stats {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+                .sub {
+                    margin-left: 12px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header class="top">
+                <h1>確認發佈摘要 preview（B v2：按劇 / 節目分組）</h1>
+                <button type="button" class="theme-btn" id="theme">切換深淺色</button>
+            </header>
+            <p class="muted">
+                用戶揀 B，再要求同一套劇 / 節目嘅改動放埋一齊。資料用今日嘅情況，另加一個 11 月 16
+                日嘅新集數示範之後上線點分組。
+            </p>
+
+            <h2 class="state-label">B v2 · 確認發佈頁</h2>
+            <p class="state-note">
+                方案 1（用戶揀）：拎走「本次發佈」卡同數字下面嗰行 pill；成頁 = 四格數字 → 時間線 →
+                發佈。 重新部署嘅說明搬入 App
+                外觀卡；未完成項目變成時間線最尾「不會在本次發佈」一組（灰色，寫原因）。
+            </p>
+            <div class="page">
+                <div class="stats">
+                    <div class="stat s1"><b>0</b>新增項目</div>
+                    <div class="stat s2"><b>2</b>新集數</div>
+                    <div class="stat s3"><b>3</b>修改</div>
+                    <div class="stat s4"><b>1</b>下架</div>
+                </div>
+                <section class="card" aria-label="上線時間">
+                    <ol class="b-timeline">
+                        <li class="b-group">
+                            <div class="b-when">
+                                即時上線<span class="muted small">按「發佈」後</span>
+                            </div>
+                            <div class="b-items">
+                                <div class="entry">
+                                    <div class="entry-head">
+                                        <span class="thumb app">Aa</span>
+                                        <div class="b-text">
+                                            <div class="line1">
+                                                <span class="tag look">App 外觀</span
+                                                ><span class="entry-title">名稱與簡介</span>
+                                            </div>
+                                            <div class="muted small">
+                                                發佈後自動重新部署播放器（約 5 分鐘）；已安裝的 App
+                                                須重新安裝方會更新圖示
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="entry">
+                                    <div class="entry-head">
+                                        <span class="thumb lancy">蘭茜</span>
+                                        <div class="b-text">
+                                            <div class="line1">
+                                                <span class="entry-title">蘭茜夫人劇場</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="sub">
+                                        <div class="sub-row">
+                                            <span class="tag edit">修改</span
+                                            ><span class="muted">劇集</span
+                                            ><span class="chip">碟面</span>
+                                        </div>
+                                        <div class="sub-row">
+                                            <span class="tag edit">修改</span
+                                            ><span class="thumb sm love">戀愛</span
+                                            ><span class="arc">戀愛二分一</span
+                                            ><span class="chip">橫圖</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="entry">
+                                    <div class="entry-head">
+                                        <span class="thumb sammy">森美</span>
+                                        <div class="b-text">
+                                            <div class="line1">
+                                                <span class="entry-title">森美小儀系列</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="sub">
+                                        <div class="sub-row">
+                                            <span class="tag edit">修改</span
+                                            ><span class="muted">劇集</span
+                                            ><span class="chip">橫圖</span
+                                            ><span class="chip">碟面</span>
+                                        </div>
+                                        <div class="sub-row">
+                                            <span class="tag off">下架</span
+                                            ><span class="thumb sm fantasy">幻想</span
+                                            ><span class="arc">森美幻想劇</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="b-group later">
+                            <div class="b-when">
+                                11 月 16 日<span class="muted small">星期一</span>
+                            </div>
+                            <div class="b-items">
+                                <div class="entry">
+                                    <div class="entry-head">
+                                        <span class="thumb lancy">蘭茜</span>
+                                        <div class="b-text">
+                                            <div class="line1">
+                                                <span class="entry-title">蘭茜夫人劇場</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="sub">
+                                        <div class="sub-row">
+                                            <span class="tag new">新集數</span
+                                            ><span class="thumb sm heart">我心</span
+                                            ><span class="arc">我心不死</span
+                                            ><span class="muted small">第 39–40 集</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="b-group skip">
+                            <div class="b-when">
+                                不會在本次發佈<span class="muted small">設定完成後可再發佈</span>
+                            </div>
+                            <div class="b-items">
+                                <div class="entry skipped">
+                                    <div class="entry-head">
+                                        <span class="thumb sammy">森美</span>
+                                        <div class="b-text">
+                                            <div class="line1">
+                                                <span class="entry-title">森美小儀系列</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="sub">
+                                        <div class="sub-row">
+                                            <span class="tag skip">未完成</span
+                                            ><span class="thumb sm camp">大衛</span
+                                            ><span class="arc">大衛營</span
+                                            ><span class="muted small">尚未設定排期</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ol>
+                </section>
+                <div class="actions">
+                    <button type="button" class="btn" aria-label="返回待辦">返回</button>
+                    <button type="button" class="btn primary">發佈</button>
+                </div>
+            </div>
+
+            <h2 class="state-label">規則</h2>
+            <table class="cmp">
+                <tbody>
+                    <tr>
+                        <td>分組</td>
+                        <td>
+                            先按幾時上線（即時 / 日子），再按劇 / 節目；同一套劇唔同日子會出喺兩組
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>劇本身嘅改動</td>
+                        <td>卡入面第一行，標「劇集」（節目就寫「節目」），chip 寫改咗乜</td>
+                    </tr>
+                    <tr>
+                        <td>短篇改動</td>
+                        <td>
+                            縮排逐行：類型 + 短篇自己嘅碟面（冇就用劇嘅）+ 短篇名 + 改咗乜 / 集數
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>排序</td>
+                        <td>App 外觀 / Banner 排最頂；之後跟劇 / 節目喺播放器嘅次序</td>
+                    </tr>
+                    <tr>
+                        <td>「本次發佈」卡</td>
+                        <td>拎走（方案 1）；數字下面嗰行 pill 都拎走</td>
+                    </tr>
+                    <tr>
+                        <td>未完成</td>
+                        <td>時間線最尾「不會在本次發佈」一組：灰色、虛線框、寫原因；冇就唔出</td>
+                    </tr>
+                    <tr>
+                        <td>重新部署說明</td>
+                        <td>寫喺 App 外觀卡（圖示 / 名稱與簡介先有；Banner 唔使重新部署）</td>
+                    </tr>
+                    <tr>
+                        <td>發佈 / 部署記錄</td>
+                        <td>暫時唔郁（之後要可以共用同一個樣式）</td>
+                    </tr>
+                </tbody>
+            </table>
+        </main>
+        <script>
+            const root = document.documentElement;
+            document.getElementById('theme').addEventListener('click', () => {
+                const dark =
+                    root.dataset.theme === 'dark' ||
+                    (!root.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+                root.dataset.theme = dark ? 'light' : 'dark';
+            });
+        </script>
+    </body>
+</html>

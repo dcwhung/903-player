@@ -1,4 +1,4 @@
-/* 確認發佈頁底：發佈結果（擋住 / 失敗 / 冇改）+ 返回待辦 + 大「發佈」掣（左邊 outline icon，mockup admin-style ④） */
+/* 確認發佈頁底：發佈結果（擋住 / 失敗 / 冇改）+「返回」（讀屏讀「返回待辦」）+ 大「發佈」掣（左邊 outline icon，mockup admin-style ④） */
 import { ArrowLeft, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { t } from '../../i18n/t';
@@ -22,9 +22,9 @@ export function PublishActions({ state, canPublish, onPublish }: PublishActionsP
                 </p>
             )}
             <div className="savebar">
-                <Link className="btn back-link" to="/">
+                <Link className="btn back-link" to="/" aria-label={t('publish.backToTodos')}>
                     <ArrowLeft aria-hidden="true" />
-                    {t('publish.backToTodos')}
+                    {t('publish.back')}
                 </Link>
                 <button
                     type="button"

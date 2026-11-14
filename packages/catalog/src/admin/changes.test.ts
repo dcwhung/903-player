@@ -176,9 +176,49 @@ describe('summarizeChanges', () => {
             ],
         );
         const items = summarizeChanges(prev, next, TODAY).items;
-        expect(items.map((i) => [i.kind, i.entry?.id, i.detail.fields])).toEqual([
-            ['edit', 'a', ['summary', 'images']],
-            ['edit', 'g', ['name', 'arcs.s1.displayName', 'arcs.s1.titles']],
+        // 劇同短篇分開：短篇一項自己嘅 edit（arc ref），欄位唔再帶 arcs. 前綴
+        expect(items.map((i) => [i.kind, i.entry?.id, i.arc?.id, i.detail.fields])).toEqual([
+            ['edit', 'a', undefined, ['summary', 'tile']],
+            ['edit', 'g', undefined, ['name']],
+            ['edit', 'g', 's1', ['displayName', 'titles']],
+        ]);
+    });
+
+    it('should name which image changed: entry tile / disc vs each arc, by the file the definition points to', () => {
+        const arcs = [
+            { ...ARC1, disc: 'arcs/s1/disc.webp' },
+            { id: 's2', name: 'Season 2', episodes: 2 },
+        ];
+        const images = {
+            'disc.webp': 'https://x/d1.webp',
+            'tile.webp': 'https://x/t1.webp',
+            'arcs/s1/disc.webp': 'https://x/a1.webp',
+            'arcs/s2/tile.webp': 'https://x/b1.webp',
+            'other.webp': 'https://x/o1.webp',
+        };
+        const prev = doc([], [{ ...series('g', arcs), images }]);
+        const next = doc(
+            [],
+            [
+                {
+                    ...series('g', arcs),
+                    images: {
+                        ...images,
+                        'disc.webp': 'https://x/d2.webp',
+                        'arcs/s1/disc.webp': 'https://x/a2.webp',
+                        // s2 冇寫 tile：用慣例檔名 arcs/<id>/tile.webp
+                        'arcs/s2/tile.webp': 'https://x/b2.webp',
+                        // 對唔到任何欄位：照舊報 images
+                        'other.webp': 'https://x/o2.webp',
+                    },
+                },
+            ],
+        );
+        const items = summarizeChanges(prev, next, TODAY).items;
+        expect(items.map((i) => [i.arc?.id, i.detail.fields])).toEqual([
+            [undefined, ['disc', 'images']],
+            ['s1', ['disc']],
+            ['s2', ['tile']],
         ]);
     });
 
