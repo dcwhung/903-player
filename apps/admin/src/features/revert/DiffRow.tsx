@@ -1,5 +1,5 @@
 /*
- * 確認框一行：剔格 + 欄位名 + 「已發佈 / 目前」（圖並排、字前後、配色色塊）；上下架行淨係「恢復上架」。
+ * 確認框一行：欄位名 + 「已發佈 / 目前」+ 剔格（最右欄，2026-11-14 用戶要求）（圖並排、字前後、配色色塊）；上下架行淨係「恢復上架」。
  * 冇剔 = 淡咗 + 虛線框（mockup admin-revert ② .diff-row.off）
  */
 import { t } from '../../i18n/t';
@@ -47,12 +47,6 @@ export function DiffRow({ row, checked, onToggle }: DiffRowProps) {
     const classes = ['diff-row', row.values ? '' : 'single', checked ? '' : 'off'];
     return (
         <label className={classes.filter(Boolean).join(' ')}>
-            <input
-                type="checkbox"
-                checked={checked}
-                aria-label={t('revert.fieldLabel', { field: row.label })}
-                onChange={onToggle}
-            />
             <b>{row.label}</b>
             {row.values && (
                 <>
@@ -60,6 +54,12 @@ export function DiffRow({ row, checked, onToggle }: DiffRowProps) {
                     <Side caption={t('revert.current')} value={row.values.current} old={false} />
                 </>
             )}
+            <input
+                type="checkbox"
+                checked={checked}
+                aria-label={t('revert.fieldLabel', { field: row.label })}
+                onChange={onToggle}
+            />
         </label>
     );
 }

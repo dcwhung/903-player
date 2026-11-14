@@ -634,7 +634,7 @@
             }
             .diff-row {
                 display: grid;
-                grid-template-columns: 22px 56px 1fr 1fr;
+                grid-template-columns: 56px 1fr 1fr 22px;
                 cursor: pointer;
                 gap: 10px;
                 align-items: center;
@@ -989,7 +989,6 @@
                     <p class="muted small" style="margin: 0">選擇要還原至已發佈版本的項目：</p>
                     <div class="diff">
                         <label class="diff-row">
-                            <input type="checkbox" checked aria-label="還原橫圖" />
                             <b>橫圖</b>
                             <div>
                                 <div class="col-label">已發佈</div>
@@ -999,9 +998,9 @@
                                 <div class="col-label">目前</div>
                                 <div class="img-box new">新橫圖</div>
                             </div>
+                            <input type="checkbox" checked aria-label="還原橫圖" />
                         </label>
                         <label class="diff-row off">
-                            <input type="checkbox" aria-label="還原簡介" />
                             <b>簡介</b>
                             <div>
                                 <div class="col-label">已發佈</div>
@@ -1011,6 +1010,7 @@
                                 <div class="col-label">目前</div>
                                 <div class="txt-box">一段關於愛情與成長的短篇故事。</div>
                             </div>
+                            <input type="checkbox" aria-label="還原簡介" />
                         </label>
                     </div>
                     <div class="acts">
