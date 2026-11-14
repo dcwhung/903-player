@@ -313,3 +313,50 @@ next_agent: null
 branch: "feature/admin-publish-summary"
 context: "Plan 1 (51b7f09, dcff0ab) passes; no blocking findings. Same-session backlog per lane rule: S-1004 (remove count pills from _mockups_/admin/index.html #u3) and S-1005 (SkipGroup test for drama-level 劇集 row) — fix in this PR or a cleanup lane. Ask user to confirm keeping the ✓ 驗證通過 pill. Report commit not pushed; push with/after code CI."
 ```
+
+## Re-review 3 — `295e7cc`（2026-11-14）
+
+範圍：只驗 S-1004 同 S-1005 嘅修正 diff（`_mockups_/admin/index.html` −5 / +1、`SkipGroup.test.tsx` +16）。
+
+### Hard Gates
+
+| Gate     | 結果 | 證據                                                                                                    |
+| -------- | ---- | ------------------------------------------------------------------------------------------------------- |
+| Lint     | pass | `npx eslint apps/admin/src/features/update/SkipGroup.test.tsx` exit 0；prettier check 兩個改咗嘅檔 pass |
+| Type     | pass | root `npx tsc -b` exit 0                                                                                |
+| Tests    | pass | `npx vitest related apps/admin/src/features/update/SkipGroup.tsx --run`：4 files，27 tests pass         |
+| Coverage | pass | `SkipGroup.tsx` 100% statements / branches / functions / lines（上一輪 branches 83.33%）                |
+
+### 上一輪 findings
+
+- **S-1004 已修**：#u3 `pub-head` 拎走咗 `.pills`（＋1 廣播劇 / ＋1 短篇 / ＋2 集），留低「✓ 驗證通過」，同實作一致；加咗 HTML 註解講原因（mockup 說明可用廣東話，唔係介面文字）
+- **S-1005 已修**：新 case 用 `arcId: null` 嘅 newDrama row，驗卡名「黃金少年」、行文字「未完成劇集尚未設定排期」、行入面冇短篇碟面；`SkipGroup.tsx:19` 分支而家有覆蓋
+
+### Observation
+
+- 第一次跑 related + coverage 時見到 1 個 test fail（27 個入面），但輸出被 filter 咗睇唔到係邊個；之後連續 5 次（有 / 冇 coverage）全部 27 pass，重現唔到，冇 L2，唔開 ID。如果 CI 再見到，留意係咪 jsdom 時間相關嘅 flaky test
+
+冇新 finding。
+
+### 評分
+
+正確性 25、安全性 20、可維護性 20、測試覆蓋 15、性能 10、代碼風格 10 → **100 / 100，結果：✅ pass**
+
+### Handoff receipt（re-review 3）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "SkipGroup.tsx 100% lines / 100% branches"
+next_action: merge_develop
+next_agent: null
+branch: "feature/admin-publish-summary"
+context: "S-1004 and S-1005 verified fixed at 295e7cc; all plan 1 review items closed. One unreproducible single test failure seen on the first coverage run (5 reruns green) — watch CI. ✓ 驗證通過 pill pending user confirmation via coordinator. Report commit not pushed; push after code CI for 295e7cc completes."
+```
