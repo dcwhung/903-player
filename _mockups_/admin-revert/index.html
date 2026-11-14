@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>還原未發佈改動</title>
+        <style>
+            /*
+             * 確認發佈頁「本次發佈」+ 時間線 preview（2026-11-14）：
+             * 用戶回饋：兩張卡內容重覆；劇同短篇改動要分開（修改 · 劇（碟面）/ 修改 · 劇 › 短篇（橫圖））；時間線要靚啲。
+             * A = 合併做一張卡；B = 上面摘要 + 下面時間線做唯一清單。
+             * Token 抄自 apps/admin/src/styles/tokens.css（admin-style v3）。介面文字書面語；說明可以用廣東話。
+             */
+            :root {
+                --primary: #1e7bc0;
+                --on-primary: #ffffff;
+                --bg: #eef3f8;
+                --panel: #f7f9fc;
+                --surface: #ffffff;
+                --surface-2: #f1f5f9;
+                --ink: #16212e;
+                --muted: #5e6b7a;
+                --line: #dbe3ec;
+                --accent: #1e7bc0;
+                --accent-soft: #e6f3fc;
+                --accent-ink: #155f96;
+                --ok: #23935c;
+                --ok-ink: #1a7349;
+                --ok-bg: #e3f5ec;
+                --warn: #d97706;
+                --warn-bg: #fff3df;
+                --warn-ink: #9a5800;
+                --danger: #d9363e;
+                --danger-ink: #b3262d;
+                --danger-bg: #fdebec;
+                --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06);
+                --card-border: transparent;
+                --r-card: 20px;
+                --font:
+                    'Poppins', 'Noto Sans TC', 'PingFang HK', -apple-system, 'Segoe UI', sans-serif;
+                color-scheme: light dark;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #0f1620;
+                    --panel: #141d29;
+                    --surface: #1b2635;
+                    --surface-2: #223043;
+                    --ink: #e8eef5;
+                    --muted: #9aabbd;
+                    --line: #2c3b4f;
+                    --accent: #7cc2f0;
+                    --accent-soft: #1c3349;
+                    --accent-ink: #9fd2f6;
+                    --ok: #6fc28f;
+                    --ok-ink: #8fd6a9;
+                    --ok-bg: #133524;
+                    --warn: #f2a93b;
+                    --warn-bg: #3a2a10;
+                    --warn-ink: #f2c27a;
+                    --danger: #f28b82;
+                    --danger-ink: #f6a9a2;
+                    --danger-bg: #3b1619;
+                    --shadow: none;
+                    --card-border: #2c3b4f;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #0f1620;
+                --panel: #141d29;
+                --surface: #1b2635;
+                --surface-2: #223043;
+                --ink: #e8eef5;
+                --muted: #9aabbd;
+                --line: #2c3b4f;
+                --accent: #7cc2f0;
+                --accent-soft: #1c3349;
+                --accent-ink: #9fd2f6;
+                --ok: #6fc28f;
+                --ok-ink: #8fd6a9;
+                --ok-bg: #133524;
+                --warn: #f2a93b;
+                --warn-bg: #3a2a10;
+                --warn-ink: #f2c27a;
+                --danger: #f28b82;
+                --danger-ink: #f6a9a2;
+                --danger-bg: #3b1619;
+                --shadow: none;
+                --card-border: #2c3b4f;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                font-family: var(--font);
+                background: var(--bg);
+                color: var(--ink);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+            main {
+                max-width: 1040px;
+                margin: 0 auto;
+                padding: 24px 16px 64px;
+            }
+            header.top {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            h1 {
+                font-size: 20px;
+                margin: 0;
+            }
+            .theme-btn {
+                font: inherit;
+                padding: 6px 14px;
+                border-radius: 10px;
+                border: 1px solid var(--line);
+                background: var(--surface);
+                color: var(--ink);
+                cursor: pointer;
+            }
+            .state-label {
+                margin: 32px 0 6px;
+                font-weight: 700;
+                font-size: 16px;
+            }
+            .state-note {
+                margin: 0 0 14px;
+                color: var(--muted);
+            }
+            .page {
+                background: var(--panel);
+                border-radius: 24px;
+                padding: 20px;
+                display: grid;
+                gap: 16px;
+            }
+            .card {
+                background: var(--surface);
+                border: 1px solid var(--card-border);
+                border-radius: var(--r-card);
+                box-shadow: var(--shadow);
+                padding: 20px;
+            }
+            .card h2 {
+                margin: 0 0 12px;
+                font-size: 16px;
+            }
+            .muted {
+                color: var(--muted);
+            }
+            .small {
+                font-size: 12px;
+            }
+
+            /* 共用：類型 tag、縮圖、欄位 chip、提示 */
+            .tag {
+                display: inline-flex;
+                justify-content: center;
+                min-width: 52px;
+                padding: 2px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            .tag.new {
+                background: var(--ok-bg);
+                color: var(--ok-ink);
+            }
+            .tag.edit {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .tag.off {
+                background: var(--danger-bg);
+                color: var(--danger-ink);
+            }
+            .tag.look {
+                background: var(--accent-soft);
+                color: var(--accent-ink);
+            }
+            .thumb {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                flex: none;
+                display: grid;
+                place-items: center;
+                font-size: 11px;
+                font-weight: 700;
+                color: #fff;
+            }
+            .thumb.lancy {
+                background: radial-gradient(circle at 35% 35%, #f5e6c8, #b9a37a);
+                color: #7a5b2b;
+            }
+            .thumb.sammy {
+                background: radial-gradient(circle at 35% 35%, #e6463c, #a51c14);
+            }
+            .thumb.fantasy {
+                background: radial-gradient(circle at 35% 35%, #3f6e9a, #1c3a57);
+            }
+            .thumb.app {
+                background: var(--accent-soft);
+                color: var(--accent-ink);
+                border-radius: 10px;
+            }
+            .name b {
+                font-weight: 600;
+            }
+            .arc-sep {
+                color: var(--muted);
+                margin: 0 4px;
+            }
+            .chips {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+            .chip {
+                padding: 1px 8px;
+                border-radius: 999px;
+                background: var(--surface-2);
+                color: var(--muted);
+                font-size: 12px;
+                white-space: nowrap;
+            }
+            .note {
+                display: flex;
+                gap: 10px;
+                align-items: flex-start;
+                padding: 10px 14px;
+                border-radius: 12px;
+                font-size: 13px;
+            }
+            .note.grey {
+                background: var(--surface-2);
+                color: var(--muted);
+            }
+            .note.info {
+                background: var(--accent-soft);
+                color: var(--ink);
+            }
+            .note svg {
+                flex: none;
+                width: 18px;
+                height: 18px;
+                margin-top: 1px;
+            }
+            .notes {
+                display: grid;
+                gap: 8px;
+                margin-top: 14px;
+            }
+            .actions {
+                display: flex;
+                justify-content: space-between;
+                padding-top: 12px;
+                border-top: 1px solid var(--line);
+            }
+            .btn {
+                font: inherit;
+                padding: 9px 18px;
+                border-radius: 10px;
+                border: 1px solid var(--line);
+                background: var(--surface);
+                color: var(--ink);
+            }
+            .btn.primary {
+                background: var(--primary);
+                border-color: var(--primary);
+                color: var(--on-primary);
+                font-weight: 600;
+            }
+
+            /* ---------- A：一張卡（按時間分組嘅清單） ---------- */
+            .a-group + .a-group {
+                margin-top: 14px;
+            }
+            .a-when {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--muted);
+                margin-bottom: 6px;
+            }
+            .a-when .dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--ok);
+            }
+            .a-when .dot.later {
+                background: var(--accent);
+            }
+            .a-list {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                overflow: hidden;
+            }
+            .a-row {
+                display: grid;
+                grid-template-columns: 60px 36px minmax(0, 1fr) auto;
+                gap: 12px;
+                align-items: center;
+                padding: 10px 14px;
+            }
+            .a-row + .a-row {
+                border-top: 1px solid var(--line);
+            }
+            .a-row .ep {
+                color: var(--muted);
+                font-size: 12px;
+                margin-left: 6px;
+            }
+
+            /* ---------- B：摘要 + 時間線 ---------- */
+            .b-summary {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .b-stat {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 999px;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            .b-stat.new {
+                background: var(--ok-bg);
+                color: var(--ok-ink);
+            }
+            .b-stat.edit {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .b-stat.off {
+                background: var(--danger-bg);
+                color: var(--danger-ink);
+            }
+            .b-stat.look {
+                background: var(--accent-soft);
+                color: var(--accent-ink);
+            }
+            .b-timeline {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                position: relative;
+            }
+            .b-timeline::before {
+                content: '';
+                position: absolute;
+                left: 7px;
+                top: 8px;
+                bottom: 8px;
+                width: 2px;
+                background: var(--line);
+            }
+            .b-group {
+                position: relative;
+                padding-left: 30px;
+            }
+            .b-group + .b-group {
+                margin-top: 18px;
+            }
+            .b-group::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 3px;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: var(--ok);
+                box-shadow: 0 0 0 4px var(--ok-bg);
+            }
+            .b-group.later::before {
+                background: var(--accent);
+                box-shadow: 0 0 0 4px var(--accent-soft);
+            }
+            .b-when {
+                font-weight: 700;
+                margin-bottom: 8px;
+            }
+            .b-when .muted {
+                font-weight: 400;
+                margin-left: 6px;
+            }
+            .b-items {
+                display: grid;
+                gap: 8px;
+            }
+            .b-item {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                padding: 10px 12px;
+                border-radius: 14px;
+                background: var(--surface-2);
+                border-left: 4px solid transparent;
+            }
+            .b-item.new {
+                border-left-color: var(--ok);
+            }
+            .b-item.edit {
+                border-left-color: var(--warn);
+            }
+            .b-item.off {
+                border-left-color: var(--danger);
+            }
+            .b-item.look {
+                border-left-color: var(--accent);
+            }
+            .b-text {
+                min-width: 0;
+                flex: 1;
+                display: grid;
+                gap: 4px;
+            }
+            .b-text .line1 {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            .b-item .chip {
+                background: var(--surface);
+            }
+
+            .compare {
+                margin-top: 32px;
+            }
+            table.cmp {
+                width: 100%;
+                border-collapse: collapse;
+                background: var(--surface);
+                border-radius: 14px;
+                overflow: hidden;
+            }
+            table.cmp th,
+            table.cmp td {
+                text-align: left;
+                padding: 10px 12px;
+                border-bottom: 1px solid var(--line);
+                vertical-align: top;
+            }
+
+            /* ---------- B v2：頁頂數字 + 按劇 / 節目分組 ---------- */
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 12px;
+            }
+            .stat {
+                border-radius: 16px;
+                padding: 14px 16px;
+                color: #fff;
+            }
+            .stat b {
+                display: block;
+                font-size: 26px;
+                line-height: 1.1;
+            }
+            .stat.s1 {
+                background: linear-gradient(135deg, #5db2ee, #2f86cc);
+            }
+            .stat.s2 {
+                background: linear-gradient(135deg, #63cf91, #2e9a5e);
+            }
+            .stat.s3 {
+                background: linear-gradient(135deg, #ffbe5c, #ef8a2c);
+            }
+            .stat.s4 {
+                background: linear-gradient(135deg, #ff8a8a, #e2484e);
+            }
+            .entry {
+                border-radius: 14px;
+                background: var(--surface-2);
+                padding: 10px 12px;
+                display: grid;
+                gap: 8px;
+            }
+            .entry-head {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+            }
+            .entry-head .b-text {
+                gap: 2px;
+            }
+            .entry-title {
+                font-weight: 700;
+            }
+            .sub {
+                display: grid;
+                gap: 6px;
+                margin-left: 48px;
+                padding-left: 12px;
+                border-left: 2px solid var(--line);
+            }
+            .sub-row {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            .thumb.sm {
+                width: 26px;
+                height: 26px;
+                font-size: 9px;
+            }
+            .thumb.spacer {
+                background: none;
+            }
+            .thumb.love {
+                background: radial-gradient(circle at 35% 35%, #f6b7c8, #c7577a);
+            }
+            .thumb.heart {
+                background: radial-gradient(circle at 35% 35%, #8f2a2a, #3d0f0f);
+            }
+            .thumb.camp {
+                background: radial-gradient(circle at 35% 35%, #7fae6a, #3f6b2e);
+            }
+            .b-group.skip::before {
+                background: var(--muted);
+                box-shadow: 0 0 0 4px var(--surface-2);
+            }
+            .entry.skipped {
+                background: transparent;
+                border: 1px dashed var(--line);
+            }
+            .entry.skipped .thumb {
+                filter: grayscale(1);
+                opacity: 0.6;
+            }
+            .entry.skipped .entry-title,
+            .entry.skipped .arc {
+                color: var(--muted);
+            }
+            .tag.skip {
+                background: var(--surface-2);
+                color: var(--muted);
+            }
+            .sub-row .arc {
+                font-weight: 600;
+            }
+            .entry .chip {
+                background: var(--surface);
+            }
+            @media (max-width: 640px) {
+                .stats {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+                .sub {
+                    margin-left: 12px;
+                }
+            }
+
+            /* ---------- 還原（2026-11-14） ---------- */
+            .revert-btn {
+                margin-left: auto;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                font: inherit;
+                font-size: 12px;
+                padding: 3px 10px;
+                border-radius: 8px;
+                border: 1px solid var(--line);
+                background: var(--surface);
+                color: var(--ink);
+                cursor: pointer;
+                white-space: nowrap;
+            }
+            .revert-btn svg {
+                width: 14px;
+                height: 14px;
+            }
+            .sub-row {
+                width: 100%;
+            }
+            a.arc-link {
+                color: var(--accent-ink);
+                font-weight: 600;
+                text-decoration: underline;
+                text-underline-offset: 3px;
+            }
+            .callout {
+                display: inline-block;
+                margin-left: 8px;
+                padding: 1px 8px;
+                border-radius: 6px;
+                font-size: 11px;
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .dialog {
+                max-width: 520px;
+                margin: 0 auto;
+                background: var(--surface);
+                border: 1px solid var(--card-border);
+                border-radius: 18px;
+                box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+                padding: 20px;
+                display: grid;
+                gap: 14px;
+            }
+            .dialog h3 {
+                margin: 0;
+                font-size: 16px;
+            }
+            .diff {
+                display: grid;
+                gap: 10px;
+            }
+            .diff-row {
+                display: grid;
+                grid-template-columns: 70px 1fr 1fr;
+                gap: 10px;
+                align-items: center;
+                padding: 10px;
+                border-radius: 12px;
+                background: var(--surface-2);
+            }
+            .diff-row .col-label {
+                font-size: 11px;
+                color: var(--muted);
+                margin-bottom: 4px;
+            }
+            .img-box {
+                height: 54px;
+                border-radius: 8px;
+                display: grid;
+                place-items: center;
+                color: #fff;
+                font-size: 11px;
+                font-weight: 700;
+            }
+            .img-box.old {
+                background: linear-gradient(135deg, #f6b7c8, #c7577a);
+            }
+            .img-box.new {
+                background: linear-gradient(135deg, #8bc6ec, #3d6fb6);
+            }
+            .txt-box {
+                font-size: 12px;
+                line-height: 1.4;
+            }
+            .txt-box.old {
+                color: var(--muted);
+            }
+            .dialog .acts {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+            .btn.danger-soft {
+                background: var(--warn-bg);
+                border-color: transparent;
+                color: var(--warn-ink);
+                font-weight: 600;
+            }
+            .pending {
+                display: grid;
+                gap: 8px;
+            }
+            .pending-head {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .pending-head h2 {
+                margin: 0;
+            }
+            .pending-list {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                overflow: hidden;
+            }
+            .pending-list li {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                padding: 10px 14px;
+            }
+            .pending-list li + li {
+                border-top: 1px solid var(--line);
+            }
+            .link-btn {
+                font: inherit;
+                font-size: 13px;
+                background: none;
+                border: 0;
+                color: var(--accent-ink);
+                text-decoration: underline;
+                cursor: pointer;
+            }
+            .fake-form {
+                display: grid;
+                gap: 10px;
+                opacity: 0.55;
+            }
+            .fake-field {
+                height: 38px;
+                border-radius: 10px;
+                background: var(--surface-2);
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header class="top">
+                <h1>還原未發佈改動 preview</h1>
+                <button type="button" class="theme-btn" id="theme">切換深淺色</button>
+            </header>
+            <p class="muted">
+                用戶要求：一日未發佈，任何改動（圖、字、上下架）都可以還原返上次發佈嘅版本。掣放確認發佈頁時間線每行同編輯頁；一行多過一項改動就撳名入編輯頁逐項揀；從未發佈過嘅新內容唔出還原。
+            </p>
+
+            <h2 class="state-label">① 確認發佈頁 · 時間線每行加「還原」</h2>
+            <p class="state-note">
+                每行最右「還原」= 還原成行（劇本身 / 某個短篇）。一行有多過一項改動，短篇名 /
+                「劇集」變 link，撳入編輯頁逐項揀。新短篇、新集數冇「還原」。
+            </p>
+            <div class="page">
+                <section class="card" aria-label="上線時間">
+                    <ol class="b-timeline">
+                        <li class="b-group">
+                            <div class="b-when">
+                                即時上線<span class="muted small">按「發佈」後</span>
+                            </div>
+                            <div class="b-items">
+                                <div class="entry">
+                                    <div class="entry-head">
+                                        <span class="thumb lancy">蘭茜</span>
+                                        <div class="b-text">
+                                            <div class="line1">
+                                                <span class="entry-title">蘭茜夫人劇場</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="sub">
+                                        <div class="sub-row">
+                                            <span class="tag new">新短篇</span
+                                            ><span class="thumb sm lancy">蘭茜</span
+                                            ><span class="arc">戀愛後二分一</span
+                                            ><span class="muted small">第 1–20 集</span>
+                                        </div>
+                                        <div class="sub-row">
+                                            <span class="tag edit">修改</span
+                                            ><span class="muted">劇集</span
+                                            ><span class="chip">碟面</span>
+                                            <button
+                                                type="button"
+                                                class="revert-btn"
+                                                aria-label="還原蘭茜夫人劇場劇集碟面"
+                                            >
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    aria-hidden="true"
+                                                >
+                                                    <path d="M9 14 4 9l5-5" />
+                                                    <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
+                                                >還原
+                                            </button>
+                                        </div>
+                                        <div class="sub-row">
+                                            <span class="tag edit">修改</span
+                                            ><span class="thumb sm love">戀愛</span
+                                            ><a class="arc-link" href="#c">戀愛二分一</a
+                                            ><span class="chip">橫圖</span
+                                            ><span class="chip">簡介</span>
+                                            <button
+                                                type="button"
+                                                class="revert-btn"
+                                                aria-label="還原戀愛二分一"
+                                            >
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    aria-hidden="true"
+                                                >
+                                                    <path d="M9 14 4 9l5-5" />
+                                                    <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
+                                                >還原
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="entry">
+                                    <div class="entry-head">
+                                        <span class="thumb sammy">森美</span>
+                                        <div class="b-text">
+                                            <div class="line1">
+                                                <span class="entry-title">森美小儀系列</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="sub">
+                                        <div class="sub-row">
+                                            <span class="tag off">下架</span
+                                            ><span class="thumb sm fantasy">幻想</span
+                                            ><span class="arc">森美幻想劇</span>
+                                            <button
+                                                type="button"
+                                                class="revert-btn"
+                                                aria-label="還原森美幻想劇（取消下架）"
+                                            >
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    aria-hidden="true"
+                                                >
+                                                    <path d="M9 14 4 9l5-5" />
+                                                    <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
+                                                >還原
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ol>
+                </section>
+            </div>
+
+            <h2 class="state-label" id="b">② 撳「還原」· 確認框</h2>
+            <p class="state-note">
+                列出會還原嘅項目：圖顯示「已發佈」同「目前」兩張；字顯示前後；下架顯示「恢復上架」。確認後即刻寫入（仍然未發佈），時間線少咗嗰行，toast「已還原戀愛二分一」。
+            </p>
+            <div class="page">
+                <div class="dialog" role="dialog" aria-label="還原戀愛二分一？">
+                    <h3>還原戀愛二分一？</h3>
+                    <p class="muted small" style="margin: 0">
+                        以下未發佈的改動將還原至已發佈版本：
+                    </p>
+                    <div class="diff">
+                        <div class="diff-row">
+                            <b>橫圖</b>
+                            <div>
+                                <div class="col-label">已發佈</div>
+                                <div class="img-box old">舊橫圖</div>
+                            </div>
+                            <div>
+                                <div class="col-label">目前</div>
+                                <div class="img-box new">新橫圖</div>
+                            </div>
+                        </div>
+                        <div class="diff-row">
+                            <b>簡介</b>
+                            <div>
+                                <div class="col-label">已發佈</div>
+                                <div class="txt-box old">一段關於愛情的短篇。</div>
+                            </div>
+                            <div>
+                                <div class="col-label">目前</div>
+                                <div class="txt-box">一段關於愛情與成長的短篇故事。</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="acts">
+                        <button type="button" class="btn">取消</button>
+                        <button type="button" class="btn danger-soft">還原</button>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="state-label" id="c">③ 編輯頁 · 逐項揀</h2>
+            <p class="state-note">
+                編輯頁頂（有未發佈改動先出）：列晒呢套劇未發佈嘅改動，逐項「還原」；「全部還原」=
+                成套劇（連短篇）變返上次發佈。撳 ① 嘅短篇名入嚟會 highlight
+                嗰個短篇嘅項目。冇未儲存改動先撳得（有就先儲存或者復原）。
+            </p>
+            <div class="page">
+                <section class="card pending" aria-label="未發佈的改動">
+                    <div class="pending-head">
+                        <h2>未發佈的改動（3）</h2>
+                        <button type="button" class="link-btn">全部還原</button>
+                    </div>
+                    <ul class="pending-list">
+                        <li>
+                            <span class="tag edit">修改</span><span class="muted">劇集</span
+                            ><span class="chip">碟面</span>
+                            <button type="button" class="revert-btn" aria-label="還原劇集碟面">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M9 14 4 9l5-5" />
+                                    <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
+                                >還原
+                            </button>
+                        </li>
+                        <li>
+                            <span class="tag edit">修改</span><span class="thumb sm love">戀愛</span
+                            ><b>戀愛二分一</b><span class="chip">橫圖</span
+                            ><span class="callout">由確認發佈頁進入</span>
+                            <button
+                                type="button"
+                                class="revert-btn"
+                                aria-label="還原戀愛二分一橫圖"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M9 14 4 9l5-5" />
+                                    <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
+                                >還原
+                            </button>
+                        </li>
+                        <li>
+                            <span class="tag edit">修改</span><span class="thumb sm love">戀愛</span
+                            ><b>戀愛二分一</b><span class="chip">簡介</span>
+                            <button
+                                type="button"
+                                class="revert-btn"
+                                aria-label="還原戀愛二分一簡介"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M9 14 4 9l5-5" />
+                                    <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
+                                >還原
+                            </button>
+                        </li>
+                    </ul>
+                </section>
+                <section class="card">
+                    <h2>蘭茜夫人劇場</h2>
+                    <div class="fake-form">
+                        <div class="fake-field"></div>
+                        <div class="fake-field"></div>
+                        <div class="fake-field"></div>
+                    </div>
+                </section>
+            </div>
+
+            <h2 class="state-label">規則</h2>
+            <table class="cmp">
+                <tbody>
+                    <tr>
+                        <td>還原去邊</td>
+                        <td>上次成功發佈嘅版本（發佈 / 部署記錄「使用中」嗰個）</td>
+                    </tr>
+                    <tr>
+                        <td>包括</td>
+                        <td>文字欄位、圖（橫圖 / 碟面）、配色、上下架、短篇資料；節目同劇集都有</td>
+                    </tr>
+                    <tr>
+                        <td>唔出還原</td>
+                        <td>
+                            從未發佈過嘅新節目 / 新劇 / 新短篇；新集數（R2 掃描出嚟，用發佈剔格揀）
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>確認發佈頁</td>
+                        <td>每行一粒「還原」（成行）；多過一項改動，名變 link 入編輯頁逐項揀</td>
+                    </tr>
+                    <tr>
+                        <td>編輯頁</td>
+                        <td>頂部「未發佈的改動」逐項還原 + 全部還原；有未儲存改動時先唔准還原</td>
+                    </tr>
+                    <tr>
+                        <td>還原之後</td>
+                        <td>即刻寫入 D1，仍然未發佈；時間線 / 待辦即時更新；toast 提示</td>
+                    </tr>
+                </tbody>
+            </table>
+        </main>
+        <script>
+            const root = document.documentElement;
+            document.getElementById('theme').addEventListener('click', () => {
+                const dark =
+                    root.dataset.theme === 'dark' ||
+                    (!root.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+                root.dataset.theme = dark ? 'light' : 'dark';
+            });
+        </script>
+    </body>
+</html>
