@@ -2,6 +2,21 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.7.0 — 2026-11-14
+
+配 api 0.11.0（`GET /api/entries/:kind/:id` 嘅 `published`、`POST /api/entries/:kind/:id/revert`）。Design Origin：`_mockups_/admin-revert/index.html`（用戶確認）。
+
+### Added
+
+- 確認發佈頁時間線：「修改」/「下架」行（劇本身或者某個短篇）最右「還原」；新節目 / 新劇 / 新短篇 / 新集數、劇本身刪咗、少咗集數冇。短篇名唔做 link，冇「全部還原」
+- 還原確認框「還原<名>？」：逐項剔格（預設全剔，冇剔 = 淡咗 + 虛線框），圖並排「已發佈 / 目前」、文字前後、配色色塊、下架行「恢復上架」；「還原 N 項」，冇剔就灰。確認 → `POST …/revert`（If-Match）→ toast「已還原<名>」→ 待辦 / entry / 變更重讀（嗰行即刻冇咗）；412 重讀再試、409（未發佈 / 短篇有排程）、其他錯誤喺框入面用書面語講
+- 編輯頁（節目、劇集基本資料、短篇 tab 每個短篇）：同已發佈唔同嘅欄位，標題旁「已修改」+「還原」、輸入框下面「已發佈：…」；圖位鉛筆旁紅色圓形還原掣（「還原橫圖」/「還原碟面」）+ 圖名旁「已修改」。名稱 = 標題旁；配色 = 配色 tab 頂行；上架狀態 + 下架日期（`enabled` / `removedAt`）= 「狀態」欄（確認框逐個剔）；冇編輯位嘅欄位（R2 資料夾、排序、各集標題等）= 表格最尾「其他已修改：…」一行。有未儲存改動時還原掣灰咗（title 講原因）；還原完重讀 entry。從未發佈嘅節目 / 劇 / 短篇乜都唔出
+
+### Changed
+
+- 「刪除」掣（`button.ghost-danger`，包括排程刪除、App 外觀還原預設）同所有「還原」掣一樣：淺紅底 `--danger-bg` + 紅字 `--danger-ink`
+- 節目簡介改用同劇集 / 短篇一樣嘅 `SummaryField`（多咗 500 字上限）
+
 ## 0.6.0 — 2026-11-14
 
 配 api 0.10.2（劇同短篇嘅「修改」分開報，換圖寫明橫圖 / 碟面）。Design Origin：`_mockups_/admin-publish-summary/index.html`（B v2）。
