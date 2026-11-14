@@ -1,6 +1,8 @@
 /*
  * 確認發佈時間線嘅卡（B v2）：Design Origin: mockup: _mockups_/admin-publish-summary/index.html
  * 喺 publish.css 之後載入。劇 / 節目卡、App 外觀卡、卡內逐行、類型 tag、欄位 chip。顏色一律用 tokens.css
+ * Class 對照 mockup（S-1000）：.entry → .tl-entry、.sub / .sub-row → .tl-rows / li、.tag → .tl-tag、
+ * .chip → .tl-chip（admin 已有 .chip）、.b-group / .b-when → .timeline > li / .tl-when
  */
 
 /* ---------- 劇 / 節目卡 ---------- */

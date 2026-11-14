@@ -1,7 +1,7 @@
 /*
  * summarizeChanges 嘅「修改」item：
- * - 換圖：逐個 images 檔名比較，按 definition 指去邊個檔名（冇寫就用慣例名）報 `tile` / `disc`
- *   或者 `arcs.<短篇>.tile`；對唔到任何欄位先報 `images`
+ * - 換圖：逐個 images 檔名比較，按前後兩份 definition 指去邊個檔名（冇寫就用慣例名）報 `tile` / `disc`
+ *   或者 `arcs.<短篇>.tile`（共用一個檔就全部報）；新 / 落架短篇嘅檔唔報；對唔到任何欄位先報 `images`
  * - 劇同短篇分開：劇本身一項 edit，每個短篇各自一項（arc ref，欄位唔帶 `arcs.` 前綴）
  */
 import type { CatalogEntry } from '../document/document';
@@ -26,26 +26,49 @@ const NOW = 'now';
 const conventionalFile = (slot: string, arcId?: string): string =>
     arcId === undefined ? `${slot}.webp` : `arcs/${arcId}/${slot}.webp`;
 
-/** 檔名 → 欄位；短篇只計前後都上架嘅（新短篇 / 落架有自己嘅 item），佢哋嘅檔名 → null（唔報） */
-const fileOwners = (prev: RawJson, next: RawJson): Map<string, string | null> => {
-    const owners = new Map<string, string | null>();
-    IMAGE_SLOTS.forEach((slot) =>
-        owners.set(stringField(next, slot) ?? conventionalFile(slot), slot),
-    );
-    const listedBefore = new Set(rawArcs(prev).filter(isArcListed).map(arcIdOf));
-    rawArcs(next).forEach((arc) => {
-        const arcId = arcIdOf(arc);
-        const tracked = isArcListed(arc) && listedBefore.has(arcId);
-        IMAGE_SLOTS.forEach((slot) => {
-            const file =
-                stringField(arc, slot) ?? conventionalFile(slot, stringField(arc, 'id') ?? arcId);
-            if (!owners.has(file)) owners.set(file, tracked ? `arcs.${arcId}.${slot}` : null);
+interface FileOwners {
+    /** 檔名 → 指去佢嘅欄位（共用一個檔就有幾個，W-743） */
+    fields: Map<string, Set<string>>;
+    /** 新短篇 / 落架 / 刪咗嘅短篇用嘅檔：有自己嘅 item，唔報 */
+    ignored: Set<string>;
+}
+
+const addOwner = (owners: FileOwners, file: string, field: string) =>
+    owners.fields.set(file, new Set([...(owners.fields.get(file) ?? []), field]));
+
+const arcFile = (arc: RawJson, slot: string): string =>
+    stringField(arc, slot) ?? conventionalFile(slot, stringField(arc, 'id') ?? arcIdOf(arc));
+
+const listedArcIds = (definition: RawJson): Set<string> =>
+    new Set(rawArcs(definition).filter(isArcListed).map(arcIdOf));
+
+/** 前後兩份 definition 都計（W-744）：換咗指去嘅檔名，舊檔都認得返係邊個欄位 */
+const fileOwners = (prev: RawJson, next: RawJson): FileOwners => {
+    const owners: FileOwners = { fields: new Map(), ignored: new Set() };
+    const tracked = new Set([...listedArcIds(prev)].filter((id) => listedArcIds(next).has(id)));
+    for (const definition of [prev, next]) {
+        IMAGE_SLOTS.forEach((slot) =>
+            addOwner(owners, stringField(definition, slot) ?? conventionalFile(slot), slot),
+        );
+        rawArcs(definition).forEach((arc) => {
+            const arcId = arcIdOf(arc);
+            IMAGE_SLOTS.forEach((slot) => {
+                const file = arcFile(arc, slot);
+                if (tracked.has(arcId)) addOwner(owners, file, `arcs.${arcId}.${slot}`);
+                else owners.ignored.add(file);
+            });
         });
-    });
+    }
     return owners;
 };
 
 const imageMap = (images: unknown): RawJson => (isRawRecord(images) ? images : {});
+
+const fieldsOfFile = (owners: FileOwners, file: string): string[] => {
+    const fields = owners.fields.get(file);
+    if (fields) return [...fields];
+    return owners.ignored.has(file) ? [] : [IMAGES_FIELD];
+};
 
 /** 圖改咗邊個欄位（冇改就空） */
 export const imageEditFields = (prev: CatalogEntry, next: CatalogEntry): string[] => {
@@ -56,12 +79,7 @@ export const imageEditFields = (prev: CatalogEntry, next: CatalogEntry): string[
     const changed = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(
         (file) => !sameJson(before[file], after[file]),
     );
-    const fields = changed.flatMap((file) => {
-        const owner = owners.get(file);
-        if (owner === null) return [];
-        return [owner ?? IMAGES_FIELD];
-    });
-    return [...new Set(fields)];
+    return [...new Set(changed.flatMap((file) => fieldsOfFile(owners, file)))];
 };
 
 const arcOf = (definition: RawJson, arcId: string): RawJson | undefined =>

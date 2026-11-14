@@ -1,56 +1,10 @@
 import { summarizeChanges, type ChangeDocument, type ChangeItem } from '@903-player/catalog';
 import { render, screen, within } from '@testing-library/react';
 import { hasIcon } from '../../../tests/icons';
-import type { LoadedEntry } from '../../api/types';
 import { Timeline } from './Timeline';
+import { cardsIn, drama, fixToday, groupsOf, rowsIn } from './timelineTestKit';
 
-/** shortDate / fullDate 跨年會加年份（S-830）：固定「今日」喺 2026，唔跟真實時鐘 */
-beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-11-12T04:00:00Z'));
-});
-
-afterEach(() => {
-    vi.useRealTimers();
-});
-
-type Images = Record<string, string>;
-
-const drama = (arcs: Record<string, unknown>[], extra: Record<string, unknown> = {}) => ({
-    id: 'lancy',
-    definition: {
-        name: '蘭茜夫人劇場',
-        kind: 'series',
-        enabled: true,
-        addedAt: '2026-10-01',
-        disc: 'disc.webp',
-        arcs,
-        ...extra,
-    },
-    images: {} as Images,
-});
-
-const loaded = (doc: ChangeDocument): LoadedEntry[] =>
-    doc.dramas.map((entry) => ({
-        kind: 'dramas',
-        id: entry.id,
-        definition: entry.definition as LoadedEntry['definition'],
-        images: entry.images as Images,
-        draft: false,
-        updatedAt: 'v',
-        etag: null,
-    }));
-
-const groupsOf = () => screen.getAllByRole('listitem').filter((li) => li.matches('.timeline > li'));
-const cardsIn = (group: HTMLElement) =>
-    within(group)
-        .getAllByRole('listitem')
-        .filter((li) => li.matches('.tl-entry'));
-const rowsIn = (card: HTMLElement) =>
-    within(card)
-        .getAllByRole('listitem')
-        .map((li) => li.textContent);
-const discOf = (el: Element | null) => (el as HTMLElement | null)?.style.backgroundImage;
+fixToday();
 
 describe('Timeline', () => {
     it('should group by when: 即時上線 (按「發佈」後) first, then dated groups with the weekday', () => {
@@ -77,100 +31,6 @@ describe('Timeline', () => {
         expect(later).toHaveTextContent('11 月 16 日星期一');
         expect(cardsIn(later!)[0]).toHaveTextContent('蘭茜夫人劇場');
         expect(rowsIn(cardsIn(later!)[0]!)).toEqual(['新短篇我心不死第 1–10 集']);
-    });
-
-    it('should put a drama edit and an arc edit in one card (real summarizeChanges, image changes)', () => {
-        const arc = { id: 'love', name: '戀愛二分一', episodes: 30, tile: 'arcs/love/tile.webp' };
-        const images = { 'disc.webp': 'old-disc.webp', 'arcs/love/tile.webp': 'old-tile.webp' };
-        const prev: ChangeDocument = {
-            shows: [],
-            dramas: [{ ...drama([arc]), images }],
-        };
-        const next: ChangeDocument = {
-            shows: [],
-            dramas: [
-                {
-                    ...drama([arc]),
-                    images: { 'disc.webp': 'new-disc.webp', 'arcs/love/tile.webp': 'new.webp' },
-                },
-            ],
-        };
-        const summary = summarizeChanges(prev, next, '2026-11-12');
-        render(<Timeline groups={summary.timeline} entries={loaded(next)} />);
-        const cards = cardsIn(groupsOf()[0]!);
-        expect(cards).toHaveLength(1);
-        expect(cards[0]!.querySelector('.tl-entry-title')).toHaveTextContent('蘭茜夫人劇場');
-        expect(rowsIn(cards[0]!)).toEqual(['修改劇集碟面', '修改戀愛二分一橫圖']);
-        expect(within(cards[0]!).getAllByText('修改')[0]).toHaveClass('tl-tag', 'edit');
-        expect(within(cards[0]!).getByText('碟面')).toHaveClass('tl-chip');
-    });
-
-    it("should show the arc's own disc on arc rows, falling back to the drama disc", () => {
-        const lancy = {
-            kind: 'dramas',
-            id: 'lancy',
-            name: '蘭茜夫人劇場',
-        } as const;
-        const items: ChangeItem[] = [
-            {
-                kind: 'unlist',
-                when: 'now',
-                entry: lancy,
-                arc: { id: 'own', name: 'A', label: 'A' },
-                detail: {},
-            },
-            {
-                kind: 'unlist',
-                when: 'now',
-                entry: lancy,
-                arc: { id: 'bare', name: 'B', label: 'B' },
-                detail: {},
-            },
-        ];
-        const entries = loaded({
-            shows: [],
-            dramas: [
-                {
-                    ...drama([
-                        { id: 'own', name: 'A', disc: 'arcs/own/disc.webp' },
-                        { id: 'bare', name: 'B' },
-                    ]),
-                    images: { 'disc.webp': 'drama.webp', 'arcs/own/disc.webp': 'arc.webp' },
-                },
-            ],
-        });
-        render(<Timeline groups={[{ when: 'now', items }]} entries={entries} />);
-        const card = cardsIn(groupsOf()[0]!)[0]!;
-        expect(discOf(card.querySelector('.tl-entry-head .thumb'))).toContain('drama.webp');
-        const [own, bare] = within(card).getAllByRole('listitem');
-        expect(own).toHaveTextContent('下架A');
-        expect(discOf(own!.querySelector('.thumb'))).toContain('arc.webp');
-        expect(discOf(bare!.querySelector('.thumb'))).toContain('drama.webp');
-        expect(within(own!).getByText('下架')).toHaveClass('tl-tag', 'off');
-    });
-
-    it('should give a new drama one 新劇 row with the episode total, and label show-level rows 節目', () => {
-        const next: ChangeDocument = {
-            shows: [
-                { id: 'waves', definition: { name: '口水多過浪花', enabled: false }, images: {} },
-            ],
-            dramas: [
-                drama([
-                    { id: 'a', name: 'A', episodes: 12 },
-                    { id: 'b', name: 'B', episodes: 8 },
-                ]),
-            ],
-        };
-        const prev: ChangeDocument = {
-            shows: [{ id: 'waves', definition: { name: '口水多過浪花' }, images: {} }],
-            dramas: [],
-        };
-        const summary = summarizeChanges(prev, next, '2026-11-12');
-        render(<Timeline groups={summary.timeline} entries={loaded(next)} />);
-        const [waves, lancy] = cardsIn(groupsOf()[0]!);
-        expect(rowsIn(waves!)).toEqual(['下架節目']);
-        expect(rowsIn(lancy!)).toEqual(['新劇全 20 集']);
-        expect(within(lancy!).getByText('新劇')).toHaveClass('tl-tag', 'new');
     });
 
     it('should put App 外觀 cards first in 即時上線, with the redeploy line for icon / text', () => {
