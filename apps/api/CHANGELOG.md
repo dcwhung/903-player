@@ -2,6 +2,16 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.11.0 — 2026-11-14
+
+還原未發佈改動（`.proj-docs/plans/2026-11-14_plan_revert-unpublished.md`）。舊 client 唔受影響。
+
+### Added
+
+- `GET /api/entries/:kind/:id` 加 `published: { definition, images } | null`：最新 ok publish document 入面嗰個 entry（`images` 轉返 `<hash>.<ext>`，同 D1 一樣）；未 publish 過、document 讀唔到（fail closed）或者冇佢 = `null`
+- `POST /api/entries/:kind/:id/revert`（要 `If-Match`）：body `{ items: [{ arc?, field }] }`，逐項將 definition key 還原返 published 嘅值（published 冇 = 刪走）；`tile` / `disc` 連圖一齊還原、清走冇 slot 再指去嘅舊圖 key；`enabled` / `removedAt` 還原上下架；短篇 `field: "*"` 成個換返，D1 刪咗嘅短篇加返 published 嘅位置。冇 published / 短篇從未發佈 → 409；shape 唔啱 / 未知 field 或短篇 → 400；寫入同 `PUT` 同一條路徑，回應一樣 `{ updatedAt, draft, warnings }` + ETag。排程規則唔郁
+- `packages/catalog` 匯出 `arcIdOf`、`entryImageFile`、`arcImageFile`、`IMAGE_SLOTS`（同變更摘要同一套 slot → 檔名規則）
+
 ## 0.10.2 — 2026-11-14
 
 ### Changed

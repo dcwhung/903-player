@@ -53,3 +53,16 @@ Mockup：`_mockups_/admin-revert/index.html`（用戶確認）。Branch：`featu
 - 🔴 圖：`images` 嘅檔名同 slot 對應（慣例名 `tile.webp` / `arcs/<id>/tile.webp`）唔可以搞亂其他 slot（同 `packages/catalog/src/admin/editChanges.ts` 一樣用 definition 指去嘅檔名）
 - 🟡 Published document 讀唔到（壞 JSON）→ 當冇 published，唔出還原（fail closed）
 - 🟡 改名（rename）之後 entry id 唔同：document 用舊 id 搵唔到 → `published: null`
+
+## 實作差異
+
+### `apps/api` 0.11.0（Backend，2026-11-14）
+
+- `published.images` 用 D1 同一個格式（「檔名 → `<hash>.<ext>`」），唔係 document 入面嘅絕對 URL：admin 可以直接同 `images` 比較，顯示就照舊用 `imageUrl(name)`。URL 唔係 `/catalog/v1/img/<name>` 格式嘅圖略過
+- 短篇 `field: "*"` = 成個短篇換返 published 版本（兩個 slot 嘅圖一齊還原）；D1 刪咗嘅短篇，任何 field（包括 `*`）都係成個加返。位置 = published 入面前面最近、D1 仲有嘅短篇之後；前面冇就放第一
+- 頂層 `field: "arcs"` / `"*"` → 400（短篇一定要逐個 `arc` item 還原，免得成個 `arcs` 蓋走新集數 / 新短篇）
+- 錯誤細分：entry 唔存在 → 404；短篇兩邊都冇 → 400、D1 有但 published 冇 → 409；冇 published 版本 → 409 `{ error, reason: "notPublished" }`；`If-Match` 冇帶都係 412
+- 舊圖 key：只刪「還原前有 slot 指去、還原後冇 slot 指去」嘅 key；還原前已經冇人用嘅 key 唔郁。slot 指去嘅檔名用 `packages/catalog` 新匯出嘅 `entryImageFile` / `arcImageFile`（同 `editChanges.ts` 同一個 function）
+- 排程規則（`schedules`）唔郁：還原 `addedAt` / `episodeDates` / `episodeRemovedAt` 淨係改 definition，規則照留（下次儲存排程先再展開）；`removedAt` 本身唔經排程。還原會令短篇 ID 消失嘅（例如還原 `id`）照舊被 S-804 排程守衛擋（409 `arcScheduled`）
+- 寫入：`PUT` 嘅更新 / 新增邏輯抽做 `writeEntry`（`entries.ts`），revert 同 `PUT` 共用（排程 ID 守衛、`checkedEntry`、draft、樂觀鎖、回應）。`entries.ts` 本身已經超 150 行（283 → 297），新邏輯放 `content/revert.ts`（純邏輯）同 `content/revertRoute.ts`（route）
+- 同一個 request 入面還原短篇 `id` / `name` 會改咗短篇 key，之後嘅 item 要用新 key
