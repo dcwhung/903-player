@@ -2,6 +2,27 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.8.0 — 2026-11-14
+
+配 api 0.12.0（`reorder` change item、`POST /api/order/:kind/revert`、entry 還原拒絕 `order`）。Plan：`.proj-docs/plans/2026-11-14_plan_publish-change-accuracy.md`（#5、#6 決定 A）。
+
+### Added
+
+- 確認發佈頁時間線：拖曳排序改為成個列表一張卡「[修改] 節目排序已更改」/「[修改] 廣播劇排序已更改」（即時上線組最頂、還原記錄之後；卡頭排序 icon，冇 entry 名 / 碟面）+ 最右「還原」（aria-label「還原節目排序」/「還原廣播劇排序」）。冇發佈剔格，同其他已儲存改動一樣
+- 排序還原：沿用還原確認框「還原排序？」，一項「排序」（預設剔）→「還原 1 項」→ `POST /api/order/:kind/revert` → toast「已還原排序」→ 待辦 / entry / 變更重讀；409 `notPublished` 喺框入面講「此項目尚未發佈，無法還原」；卡冇咗 focus 搬去頁面標題（S-1007）
+- 發佈 / 部署記錄頁：`reorder` 一行「修改 · 節目排序已更改 / 廣播劇排序已更改」，冇縮圖、冇狀態 pill、冇 entry 名
+
+### Changed
+
+- 統計卡「修改」計埋排序；淨係排序都可以發佈（「發佈」掣、更新頁「下一步」照開）
+- 編輯頁「已修改」用 catalog `sameJson` 比較（唔理 key 次序）：配色值一樣、key 次序唔同唔再當已修改（#5）
+- 編輯頁唔再出排序（`order`）嘅還原，「其他已修改」一行都冇（#6：排序喺確認發佈頁成個列表還原）
+- `RevertFlow` 改收 `perform`（entry 還原 / 排序還原共用確認框、toast、focus）
+
+### Unchanged
+
+- 舊發佈記錄嘅 `fields: ['images']` 照出「圖片」
+
 ## 0.7.0 — 2026-11-14
 
 配 api 0.11.0（`GET /api/entries/:kind/:id` 嘅 `published`、`POST /api/entries/:kind/:id/revert`）。Design Origin：`_mockups_/admin-revert/index.html`（用戶確認）。

@@ -66,3 +66,14 @@ api 0.12.0、admin 0.8.0（MINOR：新 change kind + 新 endpoint）
 - **Entry revert `order`**：頂層 `field: 'order'` 一律 400（message 指去 `POST /api/order/:kind/revert`）；短篇 field 唔受影響（短篇冇 `order`）
 - **Admin 最少改動（等 Frontend 接）**：`timelineEntries.ts` `TONES.reorder = 'edit'`、`zh-HK.ts` `kind.reorder: '排序'`，令 `tsc` 過；`publishStats` 唔計 `reorder`、時間線 / 記錄頁未有專用卡，由 admin 部分處理
 - **`sameJson`** 由 `packages/catalog` admin index 匯出（root index `export * from './admin'` 一齊有）
+
+## 實作差異（admin 0.8.0，Frontend Developer 2026-11-14）
+
+- **類型 tag**：`kind.reorder` 由 backend 暫定嘅「排序」改做「修改」（橙色 `edit` tone）：卡標題已經寫「節目排序已更改」，tag 再寫「排序」重複；記錄頁「類型」欄一樣寫「修改」
+- **卡**：`ReorderCard.tsx`，卡頭用 App 外觀卡嘅方格 icon（`ArrowUpDown`）+ tag + 標題，「還原」喺卡頭最右（冇下面嘅行）；卡 key / `data-revert-anchor` = `reorder:<list>`（唔跟 index），還原後卡冇咗 focus 去 `h1`
+- **確認框**：名 =「排序」（`changeFields.order`），所以標題「還原排序？」、toast「已還原排序」；一行冇前後值（同「恢復上架」一樣嘅 single row），剔走就「還原 0 項」灰
+- **`RevertFlow`**：`entry` prop 改做 `perform(items)`（`entryReverter(entry)` / `revertOrder(list)`，`api/revertEndpoints.ts`）；`useRevertAction.run(perform, name, close)`，412 / 409 / toast / focus 照舊共用
+- **統計**：`publishStats.edits` 計埋 `reorder`；`canPublish` 本身用 `items.length`、更新頁「下一步」用 `others`（api 一定放 reorder 入 `others`），兩樣唔使改
+- **#5**：`revertScope.ts` `NOT_REVERTABLE` 加 `order`，所以編輯頁任何地方（包括「其他已修改」）同確認發佈頁舊格式 `edit` 行都唔出排序還原
+- **記錄頁**：`historyName` / `itemName` 識 `reorder`；`itemStatusOf` 回 `undefined`（唔再錯出「已上架」）；冇縮圖
+- **e2e**：`apps/admin/e2e/mockReorder.mjs`（`createState({ reorder: true })`：節目排序未發佈 + 記錄 #4 廣播劇排序；`POST /api/order/:kind/revert`，冇任何發佈記錄 = 409）、`reorderChecks.mjs` 三個 check；截圖（deviceScaleFactor 2，淺 / 深色）放 `.proj-docs/qa/screenshots/2026-11-14_publish-change-accuracy/`
