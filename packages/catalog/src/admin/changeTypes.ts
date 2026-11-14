@@ -28,7 +28,7 @@ export interface ChangeDetail {
     episodes?: { first: number; last: number };
     /** newEpisodes（每日劇）：新日子 */
     dates?: string[];
-    /** edit：改咗嘅欄位（頂層 key、`images`、`arcs.<arc id>.<key>`） */
+    /** edit：改咗嘅欄位（頂層 key、`tile` / `disc`、對唔到欄位嘅圖 `images`）；短篇 edit 有 arc ref，欄位係短篇 key */
     fields?: string[];
     /** unlist：點解落架 */
     reason?: UnlistReason;

@@ -2,6 +2,14 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.10.2 — 2026-11-14
+
+### Changed
+
+- `GET /api/changes`、`GET /api/publishes` 嘅「修改」item（`packages/catalog` `summarizeChanges`）：
+    - 劇同短篇分開：劇本身一項 edit；每個短篇各自一項，帶 `arc` ref，`detail.fields` 係短篇 key（唔再係 `arcs.<id>.<key>`）
+    - 換圖寫明邊張：逐個 `images` 檔名比較，按 definition 指去嘅檔名（冇寫就用慣例名）報 `tile` / `disc`，短篇就報喺嗰個短篇嘅 item；對唔到欄位先報 `images`；新短篇 / 落架短篇嘅圖唔報
+
 ## 0.10.1 — 2026-11-13
 
 ### Fixed
