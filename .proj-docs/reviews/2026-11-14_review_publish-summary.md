@@ -131,3 +131,62 @@ context: "Fix W-743 (shared image file reports one slot) and W-744 (owners only 
 blockers:
   - "Tests/coverage gate not run: reviewer-test-scope hook blocked `vitest run <folders> --coverage`; per instruction reviewer stopped without retry or bypass"
 ```
+
+## Re-review — `ea086f7`（2026-11-14）
+
+範圍：只驗上一輪 W-743 / W-744 同埋已處理嘅 🟢（S-999、S-1000、S-1002）嘅修正 diff。S-1001 由 main agent 通知用戶。
+
+### Hard Gates
+
+| Gate     | 結果     | 證據                                                                                                                                                                                                                                                                  |
+| -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint     | pass     | `npx eslint packages/catalog/src/admin apps/admin/src/features/update apps/admin/src/styles` exit 0；prettier check 同範圍 pass                                                                                                                                       |
+| Type     | **fail** | `npx tsc -b`（root，同 CI `ci.yml` 一樣）exit 2：`packages/catalog/src/admin/editChanges.test.ts(7,28)` / `(7,42)` `TS2552: Cannot find name 'Json'`。`apps/admin` `tsc -b --noEmit` exit 0。CI run 43574909480（`ea086f7`）喺「Run npx tsc -b」一步 fail，同一個錯誤 |
+| Tests    | pass     | `npx vitest related editChanges.ts changes.ts Timeline.tsx TimelineCards.tsx timelineEntries.ts --run`（hook 准許嘅寫法，冇被擋）：175 files，2042 tests pass                                                                                                         |
+| Coverage | pass     | 同一條 command 加 `--coverage`：`editChanges.ts` lines 100%、branches 93.75%；`changes.ts` lines 100%；`Timeline.tsx` 93.75%；`TimelineCards.tsx` 100%                                                                                                                |
+
+### 上一輪 findings
+
+- **W-743 已修**：`npx tsx` 重跑 `repro.ts`：劇共用檔 → `["tile","disc"]`；短篇共用檔 → `["arcs.s1.tile","arcs.s1.disc"]`；短篇用劇嘅 `disc.webp` → `["disc","arcs.s1.disc"]`
+- **W-744 已修**：刪咗短篇 → 只有 `[unlist s2]`；劇 `tile` 改檔名 → `["tile"]`；`enabled:false` 落架行為不變。`fields` 優先過 `ignored`，有欄位認領嘅檔照報
+- **S-999 已修**：`editChanges.test.ts` 覆蓋共用檔、刪除 / 落架短篇、改檔名、對唔到嘅檔、id 有 `.`、冇 id 嘅短篇；但檔案有 type error（見 C-016）
+- **S-1000 已修**：`publishCards.css` 檔頭有對照，但有一處唔準（見 S-1003）
+- **S-1002 已修**：`Timeline.test.tsx` 88 行、`TimelineRows.test.tsx` 102 行、`timelineTestKit.ts` 54 行
+
+### 🔴 C-016 `editChanges.test.ts` 用咗未定義嘅 `Json` type，type check / CI fail
+
+- 位置：`packages/catalog/src/admin/editChanges.test.ts:7`
+- L1：Hard Gate「Type check exit 0」；`ci.yml` `npx tsc -b`（全部 workspace）
+- L2：本地 root `npx tsc -b` exit 2；CI run 43574909480 同一個錯誤 fail。vitest 唔做 type check，所以 test 照綠
+- L3：branch CI 紅咗，唔可以 merge；developer 嘅「tsc passes」應該冇跑 catalog 嗰個 project
+- 方案 A（推薦）：喺檔頭加 `type Json = Record<string, unknown>;`（同 `changes.test.ts` 一樣寫法）
+- 方案 B：`import type { RawJson } from './rawDefinition';` 再改用 `RawJson`；同 source 共用同一個 type，但 `RawJson` 係 `Readonly`，spread 冇問題
+
+### 🟢
+
+- **S-1003** `publishCards.css:5` 對照寫 `.b-when → .tl-when`，但 code 係 `<p className="when">`（`Timeline.tsx:44`），冇 `.tl-when`；`.sub-row` 實際對應 `li.tl-row`。改返註解就得
+
+### 評分
+
+正確性 25、安全性 20、可維護性 20、測試覆蓋 15、性能 10、代碼風格 10 → 100 分，但係 Type check gate fail + 1 項 🔴，**結果：❌ fail**。
+
+### Handoff receipt（re-review）
+
+```handoff-receipt
+protocol: 1
+status: fail
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: fail
+  tests: pass
+  coverage: "editChanges.ts 100% lines / 93.75% branches"
+next_action: invoke_developer
+next_agent: backend-developer
+branch: "feature/admin-publish-summary"
+context: "W-743/W-744/S-999/S-1000/S-1002 verified fixed; fix C-016 (define Json type in packages/catalog/src/admin/editChanges.test.ts, CI tsc -b red on ea086f7) and S-1003 (publishCards.css mapping comment: .when not .tl-when, .tl-row), then re-run root npx tsc -b"
+blockers:
+  - "C-016: root npx tsc -b exit 2 — editChanges.test.ts:7 Cannot find name 'Json'; CI run 43574909480 failed on it"
+```
