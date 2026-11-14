@@ -48,3 +48,18 @@ export const arcDiscOf = (
 /** 編輯頁標題：已儲存版本嘅碟面（新增 / 未上載 = undefined → 黑碟） */
 export const savedDiscOf = (entry: LoadedEntry | null): string | undefined =>
     entry ? imageOf(entry.definition, entry.images, 'disc') : undefined;
+
+/** 待辦行（劇 ID + 短篇 ID）嘅碟面：短篇自己嘅 → 劇集碟面；短篇 ID = null 就用劇集碟面 */
+export const todoDiscOf = (
+    entries: readonly LoadedEntry[],
+    dramaId: string,
+    arcId: string | null,
+): string | undefined => {
+    const entry = entries.find((e) => e.kind === 'dramas' && e.id === dramaId);
+    if (!entry) return undefined;
+    const arc =
+        arcId === null ? undefined : arcsOf(entry.definition).find((a) => arcKeyOf(a) === arcId);
+    return arc
+        ? arcDiscOf(entry.definition, entry.images, arc)
+        : imageOf(entry.definition, entry.images, 'disc');
+};

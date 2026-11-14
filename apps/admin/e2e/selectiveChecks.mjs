@@ -5,6 +5,16 @@ const NEXT = '下一步：確認發佈';
 const LOVE_AFTER = '發佈戀愛後二分一';
 const APP_TEXT = '發佈名稱與簡介';
 
+const REDEPLOY = /發佈後自動重新部署播放器（約 5 分鐘）；已安裝的 App 須重新安裝方會更新圖示/;
+
+/** 方案 1（mockup admin-publish-summary）：冇「本次發佈」卡、冇數字下面嗰行 pill */
+const assertNoSummaryCard = async (page) => {
+    if ((await page.getByRole('region', { name: '本次發佈' }).count()) > 0)
+        throw new Error('本次發佈 card should be gone');
+    if ((await page.locator('.pub-head .pills').count()) > 0)
+        throw new Error('pill row under the stat cards should be gone');
+};
+
 const assertChecked = async (box, expected, what) => {
     if ((await box.isChecked()) !== expected) throw new Error(`${what} checked != ${expected}`);
 };
@@ -48,18 +58,28 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
                 await footer(page).getByText('已選擇 1 項發佈 · 1 項未完成（不會發佈）').waitFor();
                 await next.click();
 
-                // ② 確認發佈（B v2）：今次項目喺時間線（按劇分卡）、本次發佈淨留未完成；reload 照用 URL 嘅選擇
-                const card = page.getByRole('region', { name: '本次發佈' });
+                // ② 確認發佈（B v2 方案 1）：今次項目喺時間線（按劇分卡）、未完成排最尾「不會在本次發佈」；
+                // reload 照用 URL 嘅選擇
                 const timeline = page.getByRole('region', { name: '上線時間' });
                 const lancyCard = timeline.locator('.tl-entry').filter({ hasText: '蘭茜夫人劇場' });
                 await lancyCard.locator('.tl-row').getByText('戀愛後二分一').waitFor();
                 await lancyCard.getByText('第 1–20 集').waitFor();
                 await page.reload();
-                await card.getByText('以下項目尚未完成，不會在本次發佈').waitFor();
-                if ((await card.getByText('新短篇').count()) > 0)
-                    throw new Error('本次發佈 should no longer list content (timeline does)');
-                if ((await page.getByText('App 外觀 · 名稱與簡介').count()) > 0)
-                    throw new Error('unticked 名稱與簡介 listed on the publish page');
+                const skip = timeline.locator('.timeline > li.skip');
+                await skip.getByText('不會在本次發佈').waitFor();
+                const skipRows = await skip.locator('.tl-row').allTextContents();
+                if (skipRows.join('|') !== '未完成大衛營尚未設定排期')
+                    throw new Error(`skip rows: ${skipRows.join('|')}`);
+                if (
+                    !(await skip.locator('.tl-entry.skipped').textContent()).includes(
+                        '森美小儀系列',
+                    )
+                )
+                    throw new Error('skip card should be headed by its drama');
+                await assertNoSummaryCard(page);
+                const back = page.getByRole('link', { name: '返回待辦' });
+                if ((await back.textContent()) !== '返回')
+                    throw new Error(`back button text: ${await back.textContent()}`);
                 if ((await timeline.locator('.tl-tag.look').count()) > 0)
                     throw new Error('unticked 名稱與簡介 has an App 外觀 card in the timeline');
                 await shoot(page, 'publish-selective');
@@ -80,7 +100,7 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
             },
         );
 
-    /** App 外觀有改 → 確認發佈頁列出 + 重新部署提示；冇改 → 更新頁冇 App 外觀 section */
+    /** App 外觀有改 → 確認發佈頁時間線 App 外觀卡寫重新部署說明；冇改 → 更新頁冇 App 外觀 section */
     const selectiveAppearanceCheck = (browser) =>
         check('selective publish: App 外觀 section only when changed, redeploy note', async () => {
             const plain = await newPage(browser, loggedIn());
@@ -107,15 +127,11 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
             const page = await newPage(browser, state);
             await page.goto(BASE);
             await page.getByRole('button', { name: NEXT }).click();
-            const card = page.getByRole('region', { name: '本次發佈' });
-            await card.getByText('App 外觀 · 名稱與簡介').waitFor();
-            await card.getByText(/圖示、名稱及簡介須重新部署/).waitFor();
-            if ((await card.getByText('蘭茜夫人劇場').count()) > 0)
-                throw new Error('本次發佈 should not list other saved changes');
             // 時間線：App 外觀卡排即時上線最頂；蘭茜一張卡，「修改 · 劇集 · 碟面」+「修改 · 戀愛二分一 · 橫圖」
             const timeline = page.getByRole('region', { name: '上線時間' });
             const cards = timeline.locator('.tl-entry');
-            await cards.first().getByText('重新部署播放器後生效').waitFor();
+            await cards.first().getByText(REDEPLOY).waitFor();
+            await assertNoSummaryCard(page);
             const firstTag = await cards.first().locator('.tl-tag').textContent();
             if (firstTag !== 'App 外觀') throw new Error(`first card tag: ${firstTag}`);
             const lancyCard = cards.filter({ hasText: '蘭茜夫人劇場' });

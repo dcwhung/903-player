@@ -48,7 +48,9 @@ describe('Timeline', () => {
             />,
         );
         const [text, banner, waves] = cardsIn(groupsOf()[0]!);
-        expect(text).toHaveTextContent('App 外觀名稱與簡介重新部署播放器後生效');
+        expect(text).toHaveTextContent(
+            'App 外觀名稱與簡介發佈後自動重新部署播放器（約 5 分鐘）；已安裝的 App 須重新安裝方會更新圖示',
+        );
         expect(within(text!).getByText('App 外觀')).toHaveClass('tl-tag', 'look');
         expect(banner).toHaveTextContent('App 外觀首頁 Banner');
         expect(banner).not.toHaveTextContent('重新部署');
@@ -59,7 +61,7 @@ describe('Timeline', () => {
         render(<Timeline groups={[]} entries={[]} appearance={['icon']} />);
         const [now] = groupsOf();
         expect(now).toHaveTextContent('即時上線');
-        expect(now).toHaveTextContent('App 外觀App 圖示重新部署播放器後生效');
+        expect(now).toHaveTextContent('App 外觀App 圖示發佈後自動重新部署播放器（約 5 分鐘）');
     });
 
     it('should show a chevron on 查看全部 when the timeline is collapsed', () => {

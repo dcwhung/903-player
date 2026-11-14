@@ -1,6 +1,5 @@
 import type { TodoRow } from '../../api/types';
 import {
-    displayName,
     incompleteText,
     isRowDone,
     missingOf,
@@ -90,11 +89,6 @@ describe('todoModel', () => {
         expect(rowTarget(row({ kind: 'newDrama', dramaId: 'a/b', arcId: null }))).toBe(
             '/dramas/a%2Fb',
         );
-    });
-
-    it('should join drama and arc names with › for the publish page', () => {
-        expect(displayName(row())).toBe('蘭茜夫人劇場 › 我心不死');
-        expect(displayName(row({ kind: 'newDrama', arcId: null, name: '新劇集' }))).toBe('新劇集');
     });
 
     it('should name what is missing for an incomplete row, or just the name when nothing is', () => {

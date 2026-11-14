@@ -1,26 +1,8 @@
 /*
  * 確認發佈頁 B v2：Design Origin: mockup: _mockups_/admin-publish-summary/index.html
- * 喺 selective.css 之後載入。「本次發佈」App 外觀 chip（間距跟 .card grid gap）；上線時間線（大點 + 直線、按劇 / 節目分卡、
- * 類型 tag、欄位 chip 喺 publishCards.css）。顏色一律用 tokens.css（colorTokens.node.test.ts 鎖住）
+ * 喺 selective.css 之後載入。上線時間線（大點 + 直線、按劇 / 節目分卡、類型 tag、欄位 chip 喺 publishCards.css）
+ * + 最尾「不會在本次發佈」組。顏色一律用 tokens.css（colorTokens.node.test.ts 鎖住）
  */
-
-/* ---------- 「本次發佈」 ---------- */
-.pub-looks {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.pub-look {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: var(--accent-soft);
-    color: var(--accent-ink);
-    font-size: 13px;
-    font-weight: 600;
-}
 
 /* ---------- 時間線：左邊一條直線，每組一粒大點（即時 = 綠、之後 = accent） ---------- */
 .timeline {
@@ -91,4 +73,30 @@
 
 .timeline > li.more .when {
     margin: 0;
+}
+
+/* ---------- 不會在本次發佈：灰點、虛線框、灰階碟面、灰字 ---------- */
+.timeline > li.skip::before {
+    background: var(--muted);
+    box-shadow: 0 0 0 4px var(--surface-2);
+}
+
+.tl-entry.skipped {
+    background: transparent;
+    border: 1px dashed var(--line);
+}
+
+.tl-entry.skipped .thumb {
+    filter: grayscale(1);
+    opacity: 0.6;
+}
+
+.tl-entry.skipped .tl-entry-title,
+.tl-entry.skipped .tl-arc {
+    color: var(--muted);
+}
+
+.tl-tag.skip {
+    background: var(--surface-2);
+    color: var(--muted);
 }
