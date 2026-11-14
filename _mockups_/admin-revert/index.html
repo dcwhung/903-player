@@ -584,9 +584,9 @@
                 font-size: 12px;
                 padding: 3px 10px;
                 border-radius: 8px;
-                border: 1px solid var(--danger);
-                background: var(--danger);
-                color: var(--on-danger);
+                border: 1px solid var(--line);
+                background: var(--surface);
+                color: var(--danger-ink);
                 font-weight: 600;
                 cursor: pointer;
                 white-space: nowrap;
@@ -645,7 +645,7 @@
             .diff-row input {
                 width: 18px;
                 height: 18px;
-                accent-color: var(--danger);
+                accent-color: var(--danger-ink);
                 margin: 0;
             }
             .diff-row.off {
@@ -745,8 +745,9 @@
                 color: var(--on-primary);
             }
             .circle-btn.revert {
-                background: var(--danger);
-                color: var(--on-danger);
+                background: var(--surface);
+                color: var(--danger-ink);
+                box-shadow: inset 0 0 0 1px var(--line);
             }
             .circle-btn svg {
                 width: 16px;
@@ -848,7 +849,7 @@
                 <button type="button" class="theme-btn" id="theme">切換深淺色</button>
             </header>
             <p class="muted">
-                用戶要求：一日未發佈，任何改動（圖、字、上下架）都可以還原返上次發佈嘅版本。掣放確認發佈頁時間線每行同編輯頁（喺原本編輯位）；一行多過一項改動就撳名入編輯頁逐項揀；從未發佈過嘅新內容唔出還原；所有還原掣紅色。
+                用戶要求：一日未發佈，任何改動（圖、字、上下架）都可以還原返上次發佈嘅版本。掣放確認發佈頁時間線每行同編輯頁（喺原本編輯位）；一行多過一項改動就撳名入編輯頁逐項揀；從未發佈過嘅新內容唔出還原；所有還原掣用「刪除」掣嘅紅字樣式。
             </p>
 
             <h2 class="state-label">① 確認發佈頁 · 時間線每行加「還原」</h2>
@@ -1122,7 +1123,10 @@
                     </tr>
                     <tr>
                         <td>顏色</td>
-                        <td>所有「還原」掣都係紅色（--danger）</td>
+                        <td>
+                            所有「還原」掣同「刪除」掣一樣：普通掣（白底灰框）+
+                            紅字（--danger-ink，`ghost-danger`）
+                        </td>
                     </tr>
                     <tr>
                         <td>未定</td>
