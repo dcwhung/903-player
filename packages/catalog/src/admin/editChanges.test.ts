@@ -1,10 +1,12 @@
 import type { CatalogEntry } from '../document/document';
 import { editItemsFor, imageEditFields } from './editChanges';
 
+type Json = Record<string, unknown>;
+
 const URL_A = 'https://x/a.webp';
 const URL_B = 'https://x/b.webp';
 
-const drama = (definition: Json, images: Json): CatalogEntry => ({
+const drama = (definition: Json, images: Record<string, string>): CatalogEntry => ({
     id: 'g',
     definition: { name: '劇', kind: 'series', enabled: true, ...definition },
     images,
