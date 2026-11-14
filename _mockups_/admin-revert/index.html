@@ -33,6 +33,7 @@
                 --danger: #d9363e;
                 --danger-ink: #b3262d;
                 --danger-bg: #fdebec;
+                --on-danger: #ffffff;
                 --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06);
                 --card-border: transparent;
                 --r-card: 20px;
@@ -61,6 +62,7 @@
                     --danger: #f28b82;
                     --danger-ink: #f6a9a2;
                     --danger-bg: #3b1619;
+                    --on-danger: #2b0d0b;
                     --shadow: none;
                     --card-border: #2c3b4f;
                 }
@@ -85,6 +87,7 @@
                 --danger: #f28b82;
                 --danger-ink: #f6a9a2;
                 --danger-bg: #3b1619;
+                --on-danger: #2b0d0b;
                 --shadow: none;
                 --card-border: #2c3b4f;
             }
@@ -581,9 +584,10 @@
                 font-size: 12px;
                 padding: 3px 10px;
                 border-radius: 8px;
-                border: 1px solid var(--line);
-                background: var(--surface);
-                color: var(--ink);
+                border: 1px solid var(--danger);
+                background: var(--danger);
+                color: var(--on-danger);
+                font-weight: 600;
                 cursor: pointer;
                 white-space: nowrap;
             }
@@ -675,6 +679,106 @@
                 color: var(--warn-ink);
                 font-weight: 600;
             }
+            .dialog-revert {
+                margin-left: 0;
+                font-size: 14px;
+                padding: 8px 18px;
+            }
+            .ed-media {
+                display: flex;
+                gap: 28px;
+                flex-wrap: wrap;
+                align-items: flex-start;
+            }
+            .slot {
+                position: relative;
+                display: grid;
+                gap: 8px;
+                justify-items: center;
+            }
+            .slot-img {
+                border: 2px dashed var(--line);
+                display: grid;
+                place-items: center;
+                color: #fff;
+                font-weight: 700;
+            }
+            .slot-img.tile {
+                width: 300px;
+                height: 130px;
+                border-radius: 14px;
+                background: linear-gradient(135deg, #e6463c, #a51c14);
+            }
+            .slot-img.disc {
+                width: 130px;
+                height: 130px;
+                border-radius: 50%;
+                background: radial-gradient(circle at 35% 35%, #e6463c, #a51c14);
+            }
+            .slot-btns {
+                position: absolute;
+                right: -6px;
+                top: 98px;
+                display: flex;
+                gap: 6px;
+            }
+            .circle-btn {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                border: 3px solid var(--surface);
+                background: var(--primary);
+                color: var(--on-primary);
+            }
+            .circle-btn.revert {
+                background: var(--danger);
+                color: var(--on-danger);
+            }
+            .circle-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+            .slot-label {
+                display: flex;
+                gap: 6px;
+                align-items: center;
+                font-weight: 700;
+                font-size: 13px;
+            }
+            .modified {
+                display: inline-flex;
+                align-items: center;
+                padding: 1px 8px;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 600;
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .field {
+                display: grid;
+                gap: 6px;
+                margin-top: 18px;
+            }
+            .field-head {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                font-weight: 700;
+                font-size: 13px;
+            }
+            .input {
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 10px 12px;
+                background: var(--surface);
+            }
+            .published-hint {
+                font-size: 12px;
+                color: var(--muted);
+            }
             .pending {
                 display: grid;
                 gap: 8px;
@@ -732,7 +836,7 @@
                 <button type="button" class="theme-btn" id="theme">切換深淺色</button>
             </header>
             <p class="muted">
-                用戶要求：一日未發佈，任何改動（圖、字、上下架）都可以還原返上次發佈嘅版本。掣放確認發佈頁時間線每行同編輯頁；一行多過一項改動就撳名入編輯頁逐項揀；從未發佈過嘅新內容唔出還原。
+                用戶要求：一日未發佈，任何改動（圖、字、上下架）都可以還原返上次發佈嘅版本。掣放確認發佈頁時間線每行同編輯頁（喺原本編輯位）；一行多過一項改動就撳名入編輯頁逐項揀；從未發佈過嘅新內容唔出還原；所有還原掣紅色。
             </p>
 
             <h2 class="state-label">① 確認發佈頁 · 時間線每行加「還原」</h2>
@@ -885,89 +989,93 @@
                     </div>
                     <div class="acts">
                         <button type="button" class="btn">取消</button>
-                        <button type="button" class="btn danger-soft">還原</button>
+                        <button type="button" class="revert-btn dialog-revert">還原</button>
                     </div>
                 </div>
             </div>
 
-            <h2 class="state-label" id="c">③ 編輯頁 · 逐項揀</h2>
+            <h2 class="state-label" id="c">③ 編輯頁 · 喺原本編輯位加「還原」</h2>
             <p class="state-note">
-                編輯頁頂（有未發佈改動先出）：列晒呢套劇未發佈嘅改動，逐項「還原」；「全部還原」=
-                成套劇（連短篇）變返上次發佈。撳 ① 嘅短篇名入嚟會 highlight
-                嗰個短篇嘅項目。冇未儲存改動先撳得（有就先儲存或者復原）。
+                唔另加面板：有未發佈改動嘅欄位，標題旁出「已修改」，旁邊加紅色「還原」（圖就喺鉛筆掣旁加紅色圓掣）；冇改動就同而家一樣。撳「還原」一樣彈
+                ② 確認框（淨係嗰一項）。由 ① 撳短篇名入嚟，會開「短篇」tab 捲去嗰個短篇。
             </p>
             <div class="page">
-                <section class="card pending" aria-label="未發佈的改動">
-                    <div class="pending-head">
-                        <h2>未發佈的改動（3）</h2>
-                        <button type="button" class="link-btn">全部還原</button>
-                    </div>
-                    <ul class="pending-list">
-                        <li>
-                            <span class="tag edit">修改</span><span class="muted">劇集</span
-                            ><span class="chip">碟面</span>
-                            <button type="button" class="revert-btn" aria-label="還原劇集碟面">
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    aria-hidden="true"
-                                >
-                                    <path d="M9 14 4 9l5-5" />
-                                    <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
-                                >還原
-                            </button>
-                        </li>
-                        <li>
-                            <span class="tag edit">修改</span><span class="thumb sm love">戀愛</span
-                            ><b>戀愛二分一</b><span class="chip">橫圖</span
-                            ><span class="callout">由確認發佈頁進入</span>
-                            <button
-                                type="button"
-                                class="revert-btn"
-                                aria-label="還原戀愛二分一橫圖"
-                            >
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    aria-hidden="true"
-                                >
-                                    <path d="M9 14 4 9l5-5" />
-                                    <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
-                                >還原
-                            </button>
-                        </li>
-                        <li>
-                            <span class="tag edit">修改</span><span class="thumb sm love">戀愛</span
-                            ><b>戀愛二分一</b><span class="chip">簡介</span>
-                            <button
-                                type="button"
-                                class="revert-btn"
-                                aria-label="還原戀愛二分一簡介"
-                            >
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    aria-hidden="true"
-                                >
-                                    <path d="M9 14 4 9l5-5" />
-                                    <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
-                                >還原
-                            </button>
-                        </li>
-                    </ul>
-                </section>
                 <section class="card">
-                    <h2>蘭茜夫人劇場</h2>
-                    <div class="fake-form">
-                        <div class="fake-field"></div>
-                        <div class="fake-field"></div>
-                        <div class="fake-field"></div>
+                    <h2>
+                        森美小儀系列
+                        <span class="muted small" style="font-weight: 400">基本資料</span>
+                    </h2>
+                    <div class="ed-media">
+                        <div class="slot">
+                            <div class="slot-img tile">森美小儀（新橫圖）</div>
+                            <div class="slot-btns">
+                                <span class="circle-btn revert" role="button" aria-label="還原橫圖"
+                                    ><svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        aria-hidden="true"
+                                    >
+                                        <path d="M9 14 4 9l5-5" />
+                                        <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
+                                ></span>
+                                <span class="circle-btn" role="button" aria-label="更換橫圖"
+                                    ><svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z"
+                                        /></svg
+                                ></span>
+                            </div>
+                            <div class="slot-label">橫圖 <span class="modified">已修改</span></div>
+                        </div>
+                        <div class="slot">
+                            <div class="slot-img disc">碟面</div>
+                            <div class="slot-btns" style="right: -10px">
+                                <span class="circle-btn" role="button" aria-label="更換碟面"
+                                    ><svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z"
+                                        /></svg
+                                ></span>
+                            </div>
+                            <div class="slot-label">碟面</div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="field-head">
+                            簡介 <span class="modified">已修改</span>
+                            <button type="button" class="revert-btn" aria-label="還原簡介">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M9 14 4 9l5-5" />
+                                    <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
+                                >還原
+                            </button>
+                        </div>
+                        <div class="input">森美同小儀的長篇廣播劇系列，逢星期一至五晚播出。</div>
+                        <div class="published-hint">已發佈：森美同小儀的廣播劇系列。</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-head">名稱</div>
+                        <div class="input">森美小儀系列</div>
                     </div>
                 </section>
             </div>
@@ -995,7 +1103,18 @@
                     </tr>
                     <tr>
                         <td>編輯頁</td>
-                        <td>頂部「未發佈的改動」逐項還原 + 全部還原；有未儲存改動時先唔准還原</td>
+                        <td>
+                            喺原本編輯位：欄位標題旁「已修改」+
+                            紅色「還原」；圖喺鉛筆旁加紅色圓掣；文字欄下面細字顯示已發佈嘅值；有未儲存改動時先唔准還原
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>顏色</td>
+                        <td>所有「還原」掣都係紅色（--danger）</td>
+                    </tr>
+                    <tr>
+                        <td>未定</td>
+                        <td>確認發佈頁每張劇卡要唔要「全部還原」；未到期嘅排程下架算唔算可還原</td>
                     </tr>
                     <tr>
                         <td>還原之後</td>
