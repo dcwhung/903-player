@@ -84,3 +84,68 @@ HANDOFF_RECEIPT:
         recommended to fix in this PR per same-session backlog rule; S-997/S-998 optional.
         e2e not run (QA/CI).
 ```
+
+## Re-review — `fb91de1`（S-996 / S-997 / S-998）
+
+只驗 `fb91de1` 嘅 diff。結果：✅ pass，三項都修好，冇新 🔴 / 🟡。
+
+### Hard Gates
+
+全部 pass。三條 command 分開跑，只用 `apps/admin/src` 路徑，冇觸發 hook。
+
+- `npx eslint apps/admin/src/features/history apps/admin/src/styles/historyPill.node.test.ts`：exit 0；`npx prettier --check` 檢查 `history`、`theme.css`、`historyPill.node.test.ts`：pass。`e2e/selectiveChecks.mjs` 由 developer 嘅 repo-wide `npm run lint` 覆蓋
+- `npx tsc -b apps/admin`：exit 0（`entries` 改做 required 之後，冇 caller 漏傳）
+- `npx vitest run apps/admin/src/features/history apps/admin/src/styles/historyPill apps/admin/src/i18n/writtenChinese`：8 files，40 tests pass
+- Coverage `historyModel.ts`：lines 96%，branches 82.1%
+- 冇跑 full suite 同 e2e（Hard Rule #7）
+
+### 逐項
+
+- **S-996 ✅** `theme.css` 加 `.hist-row .changes .pill { max-width: 40ch; white-space: normal; }`。`fb91de1~1` 嘅 `theme.css` 冇呢條 rule，所以 `historyPill.node.test.ts` 喺修之前會 fail。佢跟現有 `styles/*.node.test.ts` 嘅做法。L2：用 Chromium 載入 admin 全部 CSS 再量度（名「蘭茜夫人劇場 › 戀愛後二分一」）：
+
+    | 行闊   | pill                      | 修之前：名欄 / 溢出 | 修之後：名欄 / 溢出 | pill 尺寸        |
+    | ------ | ------------------------- | ------------------- | ------------------- | ---------------- |
+    | 1000px | 44 字（兩個短篇）         | 132px / 冇          | 366px / 冇          | 310 × 39px       |
+    | 700px  | 44 字（兩個短篇）         | 0 / 154px           | 66px / 冇           | 310 × 39px       |
+    | 700px  | 「配色、簡介」            | —                   | 300px / 冇          | 76 × 21px        |
+    | 700px  | 「＋2 集 · 已上架」（ok） | —                   | 267px / 冇          | 109 × 21px，一行 |
+
+    短 pill 都保持一行，冇受影響。
+
+- **S-997 ✅** `itemStatusOf(item, entries)` 改做 required；`historyModel.test` 明確傳 `[]`；`tsc` 過
+- **S-998 ✅** e2e 用 `count() !== 1` 就 throw，鎖住「配色、簡介」只出現一次（冇再跑 e2e，屬 QA / CI；developer 報 `e2e:admin` pass）
+
+### Observation（唔 block，唔開 ID）
+
+- 行闊 420px 時，名欄連短 pill 都變 0。原因係 `56px 28px minmax(0, 1fr) auto` 呢個 grid 本身，修之前已經係咁，同今次改動無關；手機版 layout 由 `theme.css` `@media (max-width: 719.98px)` 處理
+
+### 評分
+
+100 / 100，冇變。
+
+### Handoff receipt（re-review）
+
+```yaml
+HANDOFF_RECEIPT:
+    agent: code-reviewer
+    status: pass
+    score: 100
+    branch: feature/admin-history-change-fields
+    commits: [8361683, fb91de1]
+    hard_gates:
+        lint: pass
+        type_check: pass
+        tests: pass
+        coverage: pass
+        no_critical: pass
+        security_scan: n/a
+    findings:
+        critical: []
+        warning: []
+        suggestion: []
+        resolved: [S-996, S-997, S-998]
+    next_action: proceed_to_qa
+    context: >-
+        Re-review of fb91de1 only. S-996/S-997/S-998 verified fixed; 700px row re-measured
+        in Chromium (no overflow, name 66px, was 0 with 154px overflow). e2e not run (QA/CI).
+```
