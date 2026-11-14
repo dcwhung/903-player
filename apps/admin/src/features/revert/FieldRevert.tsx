@@ -85,7 +85,7 @@ export function SlotRevert({ revert, slot }: { revert: EntryRevert; slot: ImageS
     return <Flow revert={revert} fields={[slot]} name={t(`images.${slot}`)} round />;
 }
 
-/** 編輯頁冇位改嘅欄位（例如 R2 資料夾、排序、各集標題）：表格最尾一行 */
+/** 編輯頁冇位改嘅欄位（例如 R2 資料夾、各集標題；排序唔出，#6）：表格最尾一行 */
 export function OtherRevert({
     revert,
     placed,

@@ -51,7 +51,8 @@ describe('editor revert', () => {
         expect(screen.getByRole('button', { name: '還原橫圖' })).toHaveClass('slot-revert');
         expect(screen.getByRole('button', { name: '還原狀態' })).toBeInTheDocument();
         expect(screen.getByText('已發佈：上架')).toBeInTheDocument();
-        expect(screen.getByText('其他已修改：排序')).toBeInTheDocument();
+        // #6：排序喺確認發佈頁成個列表還原，編輯頁唔出
+        expect(screen.queryByText(/其他已修改/)).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: '還原播出日' })).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: '還原名稱' })).not.toBeInTheDocument();
     });
