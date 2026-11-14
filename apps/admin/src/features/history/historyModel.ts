@@ -19,7 +19,7 @@ const scheduled = (item: ChangeItem): Status => {
 /** 修改：改了哪些欄位，同確認發佈頁一樣（editFieldsText，短篇寫短篇名） */
 export const itemStatusOf = (
     item: ChangeItem,
-    entries: readonly LoadedEntry[] = [],
+    entries: readonly LoadedEntry[],
 ): Status | undefined => {
     if (item.kind === 'rollback') return undefined;
     if (item.kind === 'unlist')

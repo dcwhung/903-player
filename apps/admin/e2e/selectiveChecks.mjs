@@ -110,7 +110,12 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
                 .getByText('配色、簡介', { exact: true })
                 .first()
                 .waitFor();
-            // 只出一次（狀態 pill），唔再出原本 key「theme」
+            // 只出一次（狀態 pill，S-998），唔再出原本 key「theme」
+            const fieldTexts = page
+                .locator('.hist-row .changes')
+                .getByText('配色、簡介', { exact: true });
+            if ((await fieldTexts.count()) !== 1)
+                throw new Error(`field list shown ${await fieldTexts.count()} times`);
             if ((await page.locator('.hist-row .changes').getByText('theme').count()) > 0)
                 throw new Error('history still shows the raw field key');
             await shoot(page, 'history-change-fields');
