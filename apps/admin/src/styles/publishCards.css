@@ -1,0 +1,137 @@
+/*
+ * 確認發佈時間線嘅卡（B v2）：Design Origin: mockup: _mockups_/admin-publish-summary/index.html
+ * 喺 publish.css 之後載入。劇 / 節目卡、App 外觀卡、卡內逐行、類型 tag、欄位 chip。顏色一律用 tokens.css
+ */
+
+/* ---------- 劇 / 節目卡 ---------- */
+.tl-entries,
+.tl-rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tl-entries {
+    display: grid;
+    gap: 8px;
+}
+
+.tl-entry {
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: var(--surface-2);
+}
+
+.tl-entry-head {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.tl-entry-head .thumb {
+    width: 36px;
+    height: 36px;
+}
+
+.tl-entry-title {
+    font-weight: 700;
+}
+
+.tl-head-text {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.tl-line {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* App 外觀卡：圓角方格 icon（mockup .thumb.app） */
+.tl-app-icon {
+    width: 36px;
+    height: 36px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    font-size: 18px;
+}
+
+/* 卡內逐行：縮排 + 左邊細線（對齊卡頭碟面右邊） */
+.tl-rows {
+    display: grid;
+    gap: 6px;
+    margin-left: 48px;
+    padding-left: 12px;
+    border-left: 2px solid var(--line);
+}
+
+.tl-rows:empty {
+    display: none;
+}
+
+.tl-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.tl-row .thumb {
+    width: 26px;
+    height: 26px;
+}
+
+.tl-arc {
+    font-weight: 600;
+}
+
+/* ---------- 類型 tag：新 = ok、修改 = warn、下架 = danger、App 外觀 = accent ---------- */
+.tl-tag {
+    display: inline-flex;
+    justify-content: center;
+    min-width: 52px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.tl-tag.new {
+    background: var(--ok-bg);
+    color: var(--ok-ink);
+}
+
+.tl-tag.edit {
+    background: var(--warn-bg);
+    color: var(--warn-ink);
+}
+
+.tl-tag.off {
+    background: var(--danger-bg);
+    color: var(--danger-ink);
+}
+
+.tl-tag.look {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+}
+
+/* 改了哪些欄位 */
+.tl-chip {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+}

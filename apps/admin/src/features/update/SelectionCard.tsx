@@ -1,41 +1,13 @@
 /*
- * 確認發佈頁「本次發佈」：Design Origin: mockup: _mockups_/admin-selective-publish/index.html#b
- * 揀咗嘅新內容 + App 外觀 + 其他已儲存的改動（Q3，others.items）；未完成項目（不會在本次發佈）；
- * App 外觀（圖示 / 名稱與簡介）須重新部署提示
+ * 確認發佈頁「本次發佈」：Design Origin: mockup: _mockups_/admin-publish-summary/index.html（B v2）
+ * 淨留 App 外觀 chip + 未完成項目（不會在本次發佈）+ App 外觀（圖示 / 名稱與簡介）須重新部署提示；
+ * 逐項內容（新內容 / 其他已儲存的改動）只喺時間線列。乜都冇就成張卡唔顯示
  */
-import type { ChangeItem } from '@903-player/catalog';
 import { RefreshCw, TriangleAlert } from 'lucide-react';
-import type { ChangesResponse, LoadedEntry, PublishSelection, TodoRow } from '../../api/types';
-import { t, type MessageKey } from '../../i18n/t';
-import { editFieldsText } from './changeFields';
-import { itemName, kindLabel } from './timelineModel';
-import { displayName, episodesOf, incompleteText } from './todoModel';
-import { pickedAppearance, type AppearanceItem } from './selectionModel';
-
-const APPEARANCE_LABEL: Record<AppearanceItem, MessageKey> = {
-    icon: 'update.itemIcon',
-    text: 'update.itemText',
-    banner: 'update.itemBanner',
-};
-
-/** 「修改 · 劇名（配色、簡介）」：修改寫埋改了哪些欄位 */
-const otherLabel = (item: ChangeItem, entries: readonly LoadedEntry[]): string => {
-    const entry = item.entry?.name;
-    const name = item.arc && entry ? `${entry} › ${itemName(item)}` : itemName(item);
-    const fields = editFieldsText(item, entries);
-    const label = `${kindLabel(item.kind)} · ${name}`;
-    return fields ? t('publish.editedFields', { label, fields }) : label;
-};
-
-/** 「新短篇 · 劇名 › 短篇名（N 集）」；集數未知（entries 未載入）就唔加 */
-const contentLabel = (row: TodoRow, entries: readonly LoadedEntry[]): string => {
-    const kind = t(row.kind === 'newDrama' ? 'kind.newDrama' : 'kind.newArc');
-    const name = displayName(row);
-    const count = episodesOf(row, entries);
-    return count === undefined
-        ? t('publish.selectionContent', { kind, name })
-        : t('publish.selectionContentEpisodes', { kind, name, count });
-};
+import type { ChangesResponse, PublishSelection, TodoRow } from '../../api/types';
+import { t } from '../../i18n/t';
+import { displayName, incompleteText } from './todoModel';
+import { APPEARANCE_LABEL, publishedAppearance } from './selectionModel';
 
 /** 未完成：待辦嘅 incomplete 行 + server 自動剔走嘅（揀咗之後先變未完成） */
 const incompleteOf = (rows: readonly TodoRow[], data: ChangesResponse): TodoRow[] => {
@@ -47,52 +19,27 @@ interface SelectionCardProps {
     data: ChangesResponse;
     selection: PublishSelection;
     rows: readonly TodoRow[];
-    entries: readonly LoadedEntry[];
 }
 
-function PickedList({ data, selection, rows, entries }: SelectionCardProps) {
-    const content = new Set(data.selection?.content ?? selection.content);
-    const picked = rows.filter((row) => content.has(row.key));
-    const appearance = pickedAppearance(selection).filter((item) => data.appearance?.[item]);
-    const others = data.others?.items ?? [];
-    if (picked.length + appearance.length + others.length === 0)
-        return <p className="muted">{t('publish.selectionNone')}</p>;
-    return (
-        <ul className="plain">
-            {picked.map((row) => (
-                <li key={row.key}>{contentLabel(row, entries)}</li>
-            ))}
-            {appearance.map((item) => (
-                <li key={item}>
-                    {t('publish.selectionAppearance', { name: t(APPEARANCE_LABEL[item]) })}
-                </li>
-            ))}
-            {others.length > 0 && (
-                <li>
-                    {t('publish.selectionOthers')}
-                    <ul>
-                        {others.map((item, i) => (
-                            <li
-                                key={`${item.kind}-${item.entry?.id ?? ''}-${item.arc?.id ?? ''}-${i}`}
-                            >
-                                {otherLabel(item, entries)}
-                            </li>
-                        ))}
-                    </ul>
-                </li>
-            )}
-        </ul>
-    );
-}
-
-export function SelectionCard(props: SelectionCardProps) {
-    const incomplete = incompleteOf(props.rows, props.data);
+export function SelectionCard({ data, selection, rows }: SelectionCardProps) {
+    const appearance = publishedAppearance(data, selection);
+    const incomplete = incompleteOf(rows, data);
+    const redeploy = data.brandingChanged === true;
+    if (appearance.length === 0 && incomplete.length === 0 && !redeploy) return null;
     return (
         <section className="card" aria-labelledby="publish-selection-title">
             <h2 className="sec-title" id="publish-selection-title">
                 {t('publish.selectionTitle')}
             </h2>
-            <PickedList {...props} />
+            {appearance.length > 0 && (
+                <div className="pub-looks">
+                    {appearance.map((item) => (
+                        <span key={item} className="pub-look">
+                            {t('publish.selectionAppearance', { name: t(APPEARANCE_LABEL[item]) })}
+                        </span>
+                    ))}
+                </div>
+            )}
             {incomplete.length > 0 && (
                 <p className="note muted-note">
                     <TriangleAlert aria-hidden="true" />
@@ -103,7 +50,7 @@ export function SelectionCard(props: SelectionCardProps) {
                     })}
                 </p>
             )}
-            {props.data.brandingChanged && (
+            {redeploy && (
                 <p className="note info" role="note">
                     <RefreshCw aria-hidden="true" />
                     {t('publish.deployNote')}

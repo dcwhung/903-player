@@ -4,12 +4,20 @@
  * 確認發佈頁用 URL ?selection= 帶住今次選擇，reload 照用；冇就 fallback 預設選擇
  */
 import type { ChangeItem } from '@903-player/catalog';
-import type { Appearance, PublishSelection, TodoRow } from '../../api/types';
+import type { Appearance, ChangesResponse, PublishSelection, TodoRow } from '../../api/types';
+import type { MessageKey } from '../../i18n/t';
 import { isRecord } from '../../model/raw';
 
 /** App 外觀項目（更新頁 section 嘅次序 = App 外觀頁卡次序） */
 export const APPEARANCE_ITEMS = ['icon', 'text', 'banner'] as const;
 export type AppearanceItem = (typeof APPEARANCE_ITEMS)[number];
+
+/** App 外觀項目名（同更新頁 section 一樣） */
+export const APPEARANCE_LABEL: Readonly<Record<AppearanceItem, MessageKey>> = {
+    icon: 'update.itemIcon',
+    text: 'update.itemText',
+    banner: 'update.itemBanner',
+};
 
 export interface Unpicked {
     content: ReadonlySet<string>;
@@ -43,6 +51,20 @@ export const selectionOf = (
 export const pickedAppearance = (selection: PublishSelection): AppearanceItem[] =>
     APPEARANCE_ITEMS.filter((item) =>
         item === 'banner' ? selection.banner : selection.branding[item],
+    );
+
+/**
+ * 今次真係會發佈嘅 App 外觀：揀咗、草稿同最新 publish 唔同（appearance），
+ * 而且 server 照呢個選擇計會改（bannerChanged / brandingChanged）
+ */
+export const publishedAppearance = (
+    data: ChangesResponse,
+    selection: PublishSelection,
+): AppearanceItem[] =>
+    pickedAppearance(selection).filter(
+        (item) =>
+            data.appearance?.[item] === true &&
+            (item === 'banner' ? data.bannerChanged : data.brandingChanged) === true,
     );
 
 /** 「已選擇 N 項發佈」：新內容 + App 外觀 */

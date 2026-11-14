@@ -1,6 +1,6 @@
 import type { ChangeItem } from '@903-player/catalog';
 import type { LoadedEntry } from '../../api/types';
-import { editFieldsText } from './changeFields';
+import { editFieldChips, editFieldsText } from './changeFields';
 
 const lancy = { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' } as const;
 
@@ -52,5 +52,24 @@ describe('editFieldsText', () => {
     it('should be empty when there is nothing to show', () => {
         expect(editFieldsText(edit([]), ENTRIES)).toBe('');
         expect(editFieldsText({ ...edit([]), kind: 'unlist', detail: {} }, ENTRIES)).toBe('');
+    });
+});
+
+describe('editFieldChips (timeline chips)', () => {
+    it('should give one chip per entry field and one per arc group', () => {
+        const item = edit(['disc', 'tile', 'disc', 'arcs.love.summary', 'arcs.love.cast']);
+        expect(editFieldChips(item, ENTRIES)).toEqual(['碟面', '橫圖', '戀愛二分一：簡介、聲演']);
+    });
+
+    it('should label an arc edit item (arc ref, plain keys) without repeating the arc name', () => {
+        const item: ChangeItem = {
+            ...edit(['tile', 'summary']),
+            arc: { id: 'love', name: '戀愛二分一', label: '戀愛二分一' },
+        };
+        expect(editFieldChips(item, ENTRIES)).toEqual(['橫圖', '簡介']);
+    });
+
+    it('should be empty for anything but 修改', () => {
+        expect(editFieldChips({ ...edit(['tile']), kind: 'unlist' }, ENTRIES)).toEqual([]);
     });
 });

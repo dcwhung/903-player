@@ -61,9 +61,8 @@ const arcNameOf = (item: ChangeItem, entries: readonly LoadedEntry[], arcKey: st
     return (arc && str(arc, 'name')) ?? arcKey;
 };
 
-/** 「修改」以外、或者冇欄位 → 空字串 */
-export const editFieldsText = (item: ChangeItem, entries: readonly LoadedEntry[]): string => {
-    if (item.kind !== 'edit') return '';
+/** 頂層欄位標籤 + 每個短篇一句「短篇名：欄位、欄位」（舊格式 `arcs.<短篇>.<key>`） */
+const fieldGroups = (item: ChangeItem, entries: readonly LoadedEntry[]) => {
     const top: string[] = [];
     const byArc = new Map<string, string[]>();
     for (const field of item.detail.fields ?? []) {
@@ -73,7 +72,9 @@ export const editFieldsText = (item: ChangeItem, entries: readonly LoadedEntry[]
             const label = t(labelKeyOf(ARC_KEY_ALIASES[key] ?? key));
             byArc.set(arcKey, [...(byArc.get(arcKey) ?? []), label]);
         } else {
-            top.push(t(labelKeyOf(field)));
+            // 短篇自己嘅 edit（有 arc ref）：欄位係短篇 key，`episodes` 一樣當各集標題
+            const key = item.arc ? (ARC_KEY_ALIASES[field] ?? field) : field;
+            top.push(t(labelKeyOf(key)));
         }
     }
     const arcs = [...byArc].map(([arcKey, labels]) =>
@@ -82,6 +83,20 @@ export const editFieldsText = (item: ChangeItem, entries: readonly LoadedEntry[]
             fields: unique(labels).join(FIELD_SEPARATOR),
         }),
     );
-    const head = unique(top).join(FIELD_SEPARATOR);
+    return { top: unique(top), arcs };
+};
+
+/** 時間線 chip：每個頂層欄位一粒，每個短篇一粒；「修改」以外 = 冇 */
+export const editFieldChips = (item: ChangeItem, entries: readonly LoadedEntry[]): string[] => {
+    if (item.kind !== 'edit') return [];
+    const { top, arcs } = fieldGroups(item, entries);
+    return [...top, ...arcs];
+};
+
+/** 「修改」以外、或者冇欄位 → 空字串 */
+export const editFieldsText = (item: ChangeItem, entries: readonly LoadedEntry[]): string => {
+    if (item.kind !== 'edit') return '';
+    const { top, arcs } = fieldGroups(item, entries);
+    const head = top.join(FIELD_SEPARATOR);
     return [...(head ? [head] : []), ...arcs].join(GROUP_SEPARATOR);
 };

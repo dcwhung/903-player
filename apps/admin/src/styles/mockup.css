@@ -926,58 +926,6 @@ table.matrix td.na {
     gap: 10px;
     flex-wrap: wrap;
 }
-.timeline {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-}
-.timeline li {
-    display: grid;
-    grid-template-columns: 76px 1fr;
-    gap: 8px 14px;
-    align-items: start;
-    padding: 8px 0 8px 18px;
-    position: relative;
-    border-left: 2px solid var(--line);
-    margin-left: 6px;
-}
-.timeline li::before {
-    content: '';
-    position: absolute;
-    top: 13px;
-    left: -7px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: 2px solid var(--surface);
-}
-.timeline li.now::before {
-    background: var(--ok);
-}
-.timeline li.more::before {
-    background: var(--line);
-}
-.timeline .when {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-}
-.timeline .what {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-.timeline .what .kind {
-    min-width: 52px;
-    text-align: center;
-}
-.timeline .what .thumb + * {
-    margin-right: 4px;
-}
 button.big {
     padding: 10px 28px;
     font-size: 16px;

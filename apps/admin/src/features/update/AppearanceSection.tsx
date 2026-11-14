@@ -9,13 +9,7 @@ import type { Appearance } from '../../api/types';
 import { useResource } from '../../data/useResource';
 import { t, type MessageKey } from '../../i18n/t';
 import { Pill } from '../../ui/Pill';
-import { changedAppearance, type AppearanceItem } from './selectionModel';
-
-const ITEM_LABEL: Record<AppearanceItem, MessageKey> = {
-    icon: 'update.itemIcon',
-    text: 'update.itemText',
-    banner: 'update.itemBanner',
-};
+import { APPEARANCE_LABEL, changedAppearance, type AppearanceItem } from './selectionModel';
 
 const ITEM_META: Record<AppearanceItem, MessageKey> = {
     icon: 'update.metaRedeploy',
@@ -66,7 +60,7 @@ function AppearanceTable({ items, unpicked, onToggle }: RowsProps) {
                     {items.map((item) => (
                         <tr key={item}>
                             <th scope="row">
-                                <b>{t(ITEM_LABEL[item])}</b>
+                                <b>{t(APPEARANCE_LABEL[item])}</b>
                                 <span className="meta">{t(ITEM_META[item])}</span>
                             </th>
                             <td>
@@ -80,7 +74,7 @@ function AppearanceTable({ items, unpicked, onToggle }: RowsProps) {
                                         checked={!unpicked.has(item)}
                                         onChange={() => onToggle(item)}
                                         aria-label={t('update.pickLabel', {
-                                            name: t(ITEM_LABEL[item]),
+                                            name: t(APPEARANCE_LABEL[item]),
                                         })}
                                     />
                                 </label>
