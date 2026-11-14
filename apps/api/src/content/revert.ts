@@ -9,7 +9,7 @@
  *   published 嗰個檔嘅 URL 解唔到（S-1009）→ D1 嗰個 key 唔郁（fail closed）
  * - 短篇 field '*' = 成個短篇換返 published 版本；D1 刪咗嘅短篇，任何 field 都會成個加返 published 嘅位置
  *   （published 前面最近、D1 仲有嘅短篇之後；冇就放第一）
- * - 錯誤：未知 field / 短篇（兩邊都冇）、頂層 'arcs' / '*'、episodes / episodeDates（S-1008：新集數由發佈處理）→ 400；短篇喺 D1 有但從未發佈 → 409
+ * - 錯誤：未知 field / 短篇（兩邊都冇）、頂層 'arcs' / '*' / 'order'（0.12.0：排序成個列表還原）、episodes / episodeDates（S-1008：新集數由發佈處理）→ 400；短篇喺 D1 有但從未發佈 → 409
  *   （reason 'arcNotPublished'，S-1011）
  */
 import { arcImageFile, entryImageFile, IMAGE_SLOTS } from '@903-player/catalog';
@@ -35,6 +35,8 @@ export const WHOLE_ARC = '*';
 const EPISODE_FIELDS: ReadonlySet<string> = new Set(['episodes', 'episodeDates']);
 /** 頂層唔准逐個還原：短篇要逐個 item（arc） */
 const TOP_LEVEL_BLOCKED: ReadonlySet<string> = new Set(['arcs', WHOLE_ARC, ...EPISODE_FIELDS]);
+/** #6：排序成個列表一齊還原（POST /api/order/:kind/revert），逐個 entry 還原會撞次序 → 400 */
+const ORDER_FIELD = 'order';
 
 /** 409 body.reason：短篇喺 D1 有、但最新 publish 冇（同 entry 嘅 notPublished 分開，S-1011） */
 export const ARC_NOT_PUBLISHED = 'arcNotPublished';
@@ -99,6 +101,8 @@ class Reverter {
 
     private revertTop(field: string) {
         const source = this.published.definition;
+        if (field === ORDER_FIELD)
+            throw new RevertError(400, 'order is reverted per list: POST /api/order/:kind/revert');
         const known =
             slotOf(field) !== undefined || has(source, field) || has(this.definition, field);
         if (TOP_LEVEL_BLOCKED.has(field) || !known)
