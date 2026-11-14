@@ -190,3 +190,46 @@ context: "W-743/W-744/S-999/S-1000/S-1002 verified fixed; fix C-016 (define Json
 blockers:
   - "C-016: root npx tsc -b exit 2 — editChanges.test.ts:7 Cannot find name 'Json'; CI run 43574909480 failed on it"
 ```
+
+## Re-review 2 — `1fed5dd`（2026-11-14）
+
+範圍：只驗 C-016 同 S-1003 嘅修正 diff（`editChanges.test.ts` +3 / −1、`publishCards.css` 註解 2 行）。
+
+### Hard Gates
+
+| Gate     | 結果 | 證據                                                                                                                       |
+| -------- | ---- | -------------------------------------------------------------------------------------------------------------------------- |
+| Lint     | pass | `npx eslint packages/catalog/src/admin/editChanges.test.ts apps/admin/src/styles` exit 0；prettier check 兩個改咗嘅檔 pass |
+| Type     | pass | root `npx tsc -b`（同 CI）exit 0                                                                                           |
+| Tests    | pass | `npx vitest related packages/catalog/src/admin/editChanges.ts --run`（冇被 hook 擋）：175 files，2042 tests pass           |
+| Coverage | pass | source 冇改；沿用上一輪 `editChanges.ts` lines 100% / branches 93.75%                                                      |
+
+### 上一輪 findings
+
+- **C-016 已修**：檔頭加咗 `type Json = Record<string, unknown>`；`images` 參數改做 `Record<string, string>`，對得上 `CatalogEntry['images']`，冇用 cast
+- **S-1003 已修**：註解改為 `.sub-row → li.tl-row`、`.b-when → p.when`，同 `Timeline.tsx` / `TimelineCards.tsx` 實際 class 一致
+
+冇新 finding。CI run 43575584189（`1fed5dd`）review 嗰陣仲係 `in_progress`；報告 commit 未 push，等 CI 完成先由 main agent 一齊 push。
+
+### 評分
+
+正確性 25、安全性 20、可維護性 20、測試覆蓋 15、性能 10、代碼風格 10 → **100 / 100，結果：✅ pass**
+
+### Handoff receipt（re-review 2）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "editChanges.ts 100% lines / 93.75% branches"
+next_action: merge_develop
+next_agent: null
+branch: "feature/admin-publish-summary"
+context: "All review items (W-743, W-744, C-016, S-999, S-1000, S-1002, S-1003) verified fixed at 1fed5dd; root tsc -b and related unit tests green; wait for CI run 43575584189 before pushing the report commit and merging to main; S-1001 is a user note"
+```
