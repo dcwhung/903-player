@@ -34,13 +34,13 @@ export const reorderChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
             await shoot(page, 'publish-reorder');
 
             await card.getByRole('button', { name: SHOWS_REVERT }).click();
-            const dialog = page.getByRole('dialog', { name: '還原排序？' });
-            if (!(await dialog.getByRole('checkbox', { name: '還原排序' }).isChecked()))
+            const dialog = page.getByRole('dialog', { name: '還原節目排序？' });
+            if (!(await dialog.getByRole('checkbox', { name: '還原節目排序' }).isChecked()))
                 throw new Error('排序 should be ticked by default');
             await dialog.getByRole('button', { name: '還原 1 項' }).waitFor();
             await shoot(page, 'reorder-revert-dialog');
             await dialog.getByRole('button', { name: '還原 1 項' }).click();
-            await page.getByText('已還原排序').waitFor();
+            await page.getByText('已還原節目排序').waitFor();
             assertEqual(state.orderReverts, ['shows'], 'order revert requests');
             await card.waitFor({ state: 'detached' });
             await page.close();
@@ -52,7 +52,7 @@ export const reorderChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
             const page = await newPage(browser, state);
             await page.goto(`${BASE}/publish`);
             await reorderCard(page).getByRole('button', { name: SHOWS_REVERT }).click();
-            const dialog = page.getByRole('dialog', { name: '還原排序？' });
+            const dialog = page.getByRole('dialog', { name: '還原節目排序？' });
             await dialog.getByRole('button', { name: '還原 1 項' }).click();
             await dialog.getByRole('alert').getByText('此項目尚未發佈，無法還原').waitFor();
             assertEqual(state.orderReverts, [], 'order revert requests');

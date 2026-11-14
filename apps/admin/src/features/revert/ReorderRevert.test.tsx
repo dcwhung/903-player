@@ -53,21 +53,21 @@ describe('publish page reorder (#6)', () => {
         expect(edits.closest('.stat')).toHaveTextContent('1');
     });
 
-    it('should revert the whole list, toast 已還原排序 and reload everything', async () => {
+    it('should revert the whole list, toast 已還原節目排序 and reload everything', async () => {
         const fetchMock = mockApi({
             'POST /api/order/shows/revert': () => ({ body: { updated: 3 } }),
         });
         const data = show();
         await userEvent.click(await screen.findByRole('button', { name: '還原節目排序' }));
-        const dialog = screen.getByRole('dialog', { name: '還原排序？' });
-        expect(within(dialog).getByRole('checkbox', { name: '還原排序' })).toBeChecked();
+        const dialog = screen.getByRole('dialog', { name: '還原節目排序？' });
+        expect(within(dialog).getByRole('checkbox', { name: '還原節目排序' })).toBeChecked();
         vi.mocked(getChanges).mockResolvedValue(changesOf([dramas]));
         await userEvent.click(within(dialog).getByRole('button', { name: '還原 1 項' }));
         await waitFor(() => expect(data.refresh).toHaveBeenCalled());
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(fetchMock.mock.calls[0]![0]).toBe('/api/order/shows/revert');
         expect(fetchMock.mock.calls[0]![1]!.method).toBe('POST');
-        expect(screen.getByText('已還原排序')).toBeInTheDocument();
+        expect(screen.getByText('已還原節目排序')).toBeInTheDocument();
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         await waitFor(() => expect(getChanges).toHaveBeenCalledTimes(2));
         await waitFor(() => expect(screen.queryByText('節目排序已更改')).not.toBeInTheDocument());
@@ -84,6 +84,8 @@ describe('publish page reorder (#6)', () => {
         });
         show();
         await userEvent.click(await screen.findByRole('button', { name: '還原廣播劇排序' }));
+        expect(screen.getByRole('dialog', { name: '還原廣播劇排序？' })).toBeInTheDocument();
+        expect(screen.getByRole('checkbox', { name: '還原廣播劇排序' })).toBeChecked();
         await userEvent.click(screen.getByRole('button', { name: '還原 1 項' }));
         expect(await screen.findByRole('alert')).toHaveTextContent('此項目尚未發佈，無法還原');
         expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -92,7 +94,7 @@ describe('publish page reorder (#6)', () => {
     it('should grey out the confirm button when 排序 is unticked', async () => {
         show();
         await userEvent.click(await screen.findByRole('button', { name: '還原節目排序' }));
-        await userEvent.click(screen.getByRole('checkbox', { name: '還原排序' }));
+        await userEvent.click(screen.getByRole('checkbox', { name: '還原節目排序' }));
         expect(screen.getByRole('button', { name: '還原 0 項' })).toBeDisabled();
     });
 });

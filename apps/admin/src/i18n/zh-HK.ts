@@ -207,6 +207,7 @@ export const zhHK = {
         notPublished: '此項目尚未發佈，無法還原',
         arcNotPublished: '此短篇尚未發佈，無法還原',
         orderLabel: '還原{list}排序',
+        orderName: '{list}排序',
         failed: '還原失敗：{error}',
     },
     status: {

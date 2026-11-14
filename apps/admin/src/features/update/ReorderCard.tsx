@@ -10,15 +10,16 @@ import { t } from '../../i18n/t';
 import { RevertButton } from '../revert/RevertButton';
 import { RevertFlow } from '../revert/RevertFlow';
 import type { RevertRow } from '../revert/revertRows';
-import { fieldLabel } from './changeFields';
 import { reorderKeyOf, toneOf } from './timelineEntries';
 import { kindLabel, listName, reorderTitle } from './timelineModel';
 
 const ORDER_FIELD = 'order';
 
-/** 確認框嗰一項：淨係「排序」（冇前後值，同「恢復上架」一樣一行） */
-const ORDER_ROWS: readonly RevertRow[] = [
-    { key: ORDER_FIELD, item: { field: ORDER_FIELD }, label: fieldLabel(ORDER_FIELD) },
+/** 確認框嗰一項：「節目排序」/「廣播劇排序」（冇前後值，同「恢復上架」一樣一行；用戶 2026-11-14 要寫明邊個列表） */
+const orderName = (list: CatalogKind): string => t('revert.orderName', { list: listName(list) });
+
+const orderRows = (list: CatalogKind): readonly RevertRow[] => [
+    { key: ORDER_FIELD, item: { field: ORDER_FIELD }, label: orderName(list) },
 ];
 
 interface ReorderCardProps {
@@ -37,8 +38,8 @@ function ReorderRevert({
     return (
         <RevertFlow
             perform={() => revertOrder(list)}
-            name={fieldLabel(ORDER_FIELD)}
-            rows={ORDER_ROWS}
+            name={orderName(list)}
+            rows={orderRows(list)}
             onDone={onReverted}
             trigger={(open) => (
                 <RevertButton
