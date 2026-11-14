@@ -29,11 +29,13 @@
     - AC-24 左上品牌收合（admin 0.4.0；2026-11-13 用戶要求；review `.proj-docs/reviews/2026-11-13_review_admin-brand-toggle.md`）：展開時嘅 banner / 收合時嘅 app icon 係 `<button>`（取代去 `/` 嘅 link），撳落去同底部收合掣一樣收合 / 展開（同一個 `toggle`，包括 FLIP；reduced motion 唔播）；`aria-expanded`、`aria-label`「903 Player Admin Admin v…（收合選單 / 展開選單）」，icon `alt=""`；冇 button 框 / hover 底色（收合 icon `box-shadow: none`，W-741）
     - AC-25 修改欄位（admin 0.5.0；2026-11-13 用戶要求；review `.proj-docs/reviews/2026-11-14_review_admin-change-fields.md`）：確認發佈「本次發佈」卡「其他改動」同時間線嘅「修改」寫埋改咗邊啲欄位（`GET /api/changes` `detail.fields`，api 不變）— 卡「修改 · 劇名（配色、簡介）」、時間線灰字「配色、簡介」；`arcs.<短篇>.<key>` 按短篇分組「短篇名：簡介、聲演」（`；` 分隔，短篇 key 搵唔到名就用 key）、短篇 `episodes` = 「各集標題」（W-742）；標籤跟編輯頁 `fields.*`，冇嘅用 `changeFields.*`，認唔到 = 「其他」、重複標籤合併；非修改 / 冇欄位唔加括號；介面文字書面語
     - AC-26 記錄頁修改欄位（admin 0.5.1；2026-11-14 用戶要求；review `.proj-docs/reviews/2026-11-14_review_admin-history-change-fields.md`）：發佈 / 部署記錄「修改」狀態 pill 用確認發佈頁同一套標籤（`itemStatusOf(item, entries)` → `editFieldsText`）— 「配色、簡介」、短篇欄位寫喺短篇名下、認唔到 = 「其他」、冇欄位 = 「修改」；長 pill 換行（`.hist-row .changes .pill` `white-space: normal` + `max-width`，S-996）
+    - AC-27 確認發佈摘要方案 1（admin 0.6.0 + api 0.10.2；Design Origin `_mockups_/admin-publish-summary/index.html` 方案 1；review `.proj-docs/reviews/2026-11-14_review_publish-summary.md`）：時間線先按時間、再按劇 / 節目分卡（`timelineEntries`，第一次出現次序；新劇一行「新劇 · 全 N 集」）；短篇行用短篇自己碟面、冇就用劇碟面、再冇 = 黑碟；即時上線最頂「App 外觀」卡帶 icon / 文字完整重新部署說明；冇「本次發佈」卡、冇統計卡下面嘅 pill 行；最後一組「不會在本次發佈」= 未完成 + server 剔走嘅行（灰、虛線、寫原因），冇就唔出；頁底掣字「返回」、`aria-label`「返回待辦」；記錄頁 pill 認新 item 形狀（`arc` ref、`tile` / `disc` 標籤）；介面文字書面語
 - Scope files（freeze 用 `git ls-files apps/admin`）:
     - `apps/admin/{package.json,index.html,vite.config.ts,tsconfig.json,tsconfig.app.json,tsconfig.node.json}` `apps/admin/src/**`（app / api / data / features / i18n / model / styles / ui / utils + tests）`apps/admin/tests/*` `apps/admin/e2e/{run,mockApi}.mjs`
     - 3c Design Origin（只凍結）：`_mockups_/admin-style/{index.html,banner.webp}`；排程下架 Design Origin（只凍結）：`_mockups_/admin-schedule-unlist/{index.html,titles.html}`；Phase 4 Design Origin（只凍結）：`_mockups_/admin-phase4/{index.html,*.webp}`
     - App 外觀 Design Origin（只凍結）：`_mockups_/admin-appearance/{index.html,banner.webp,banner-wide.webp,icon-512.png,og-icon.jpg}`
     - 選擇發佈 Design Origin（只凍結）：`_mockups_/admin-selective-publish/index.html`；e2e：`apps/admin/e2e/{mockSelection,selectiveChecks}.mjs`
+    - 發佈摘要方案 1 Design Origin（只凍結）：`_mockups_/admin-publish-summary/index.html`（0.6.0 刪 `SelectionCard.tsx`）
     - 1-hop（屬其他鏈，唔重複 freeze）：`apps/api/wrangler.toml` / `apps/api/package.json`（api）、root `vitest.config.ts` / `tsconfig.json` / `eslint.config.js` / `ci.yml`（repo-tooling）、`packages/catalog`（`expandSchedule` 等，catalog-data / api）
 - Commands:
     - `npm test -- apps/admin`（coverage：`npx vitest run --project @903-player/admin --coverage.enabled --coverage.provider=v8`）
@@ -51,6 +53,7 @@
     - AC-24：`npm test -- apps/admin`（`Nav.test.tsx` `navLogo.node.test.ts`）+ changed-file coverage（`Nav.tsx`）；`e2e:admin`「nav v4」check（icon 展開 / banner 收合 + 框 computed style）、reduced motion、< 1100px 由 CI 同 SHA 引用（唔重跑）
     - AC-25：`npm test -- apps/admin`（`changeFields.test.ts` `PublishPage.test.tsx` `Timeline.test.tsx` `writtenChinese`）+ changed-file coverage（`changeFields.ts` `SelectionCard.tsx` `Timeline.tsx`）；`e2e:admin`「selective publish」App 外觀 check（卡 + 時間線欄位字）由 CI 同 SHA 引用（唔重跑）
     - AC-26：`npm test -- apps/admin`（`historyModel.test.ts` `HistoryRow.test.tsx` `historyPill.node.test.ts`）+ changed-file coverage（`historyModel.ts` `HistoryRow.tsx`）；`e2e:admin`「selective publish」App 外觀 check（記錄頁「配色、簡介」出一次、冇 `theme`）由 CI 同 SHA 引用（唔重跑）
+    - AC-27：`npm test -- apps/admin packages/catalog`（`timelineEntries` `skipModel` `SkipGroup` `TimelineRows` `Timeline` `PublishPage` `thumbs` `changeFields` `writtenChinese`）+ changed-file coverage（`apps/admin` 跑 `--coverage.include=<改動 src>`）；`e2e:admin`「selective publish」2 個 check（劇卡 + 「不會在本次發佈」+ 冇本次發佈卡 + 「返回」；App 外觀卡最頂 + 重新部署說明 + 短篇行碟面 + 記錄頁碟面 / 橫圖）由 CI 同 SHA 引用（唔重跑）
     - Worker 出 SPA：`apps/api` 臨時 `.dev.vars`（假 secret）→ `wrangler dev --persist-to <scratchpad>` → curl `/`、深連結、`/api/health`、`/api/*`、`/auth/*`、`/catalog/*`、asset；完咗刪 `.dev.vars`
 - PWA gate: no（admin 冇 service worker / manifest；唔掂 player）
 - Out of scope: 真 Google OAuth、真 D1 / R2（deploy 後用戶手動清單）；Worker API 行為（api 鏈）；player 讀 catalog（catalog-data 鏈）
