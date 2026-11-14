@@ -9,6 +9,9 @@ import type { LoadedEntry } from '../../api/types';
 import { t } from '../../i18n/t';
 import { entryDiscOf, thumbOf } from '../../model/thumbs';
 import { Thumb } from '../../ui/Thumb';
+import { RevertButton } from '../revert/RevertButton';
+import { RevertFlow } from '../revert/RevertFlow';
+import { timelineRevertOf } from '../revert/revertRows';
 import { editFieldChips } from './changeFields';
 import { APPEARANCE_LABEL, type AppearanceItem } from './selectionModel';
 import { cardRows, rowExtra, rowLevel, toneOf, type EntryCard } from './timelineEntries';
@@ -16,9 +19,31 @@ import { itemName, kindLabel } from './timelineModel';
 
 interface WithEntries {
     entries: readonly LoadedEntry[];
+    /** 有 = 修改 / 下架行最右出「還原」（mockup admin-revert ①）；還原完 caller 重讀 */
+    onReverted?: (() => Promise<unknown>) | undefined;
 }
 
-function Row({ item, entries }: { item: ChangeItem } & WithEntries) {
+/** 行尾「還原」+ 確認框；新內容 / 冇發佈版本 = 冇 */
+function RowRevert({ item, entries, onReverted }: { item: ChangeItem } & WithEntries) {
+    const target = onReverted ? timelineRevertOf(item, entries) : null;
+    if (!target || !onReverted) return null;
+    return (
+        <RevertFlow
+            entry={target.entry}
+            name={target.name}
+            rows={target.rows}
+            onDone={onReverted}
+            trigger={(open) => (
+                <RevertButton
+                    label={t('revert.buttonLabel', { name: target.name })}
+                    onClick={open}
+                />
+            )}
+        />
+    );
+}
+
+function Row({ item, entries, onReverted }: { item: ChangeItem } & WithEntries) {
     const level = rowLevel(item);
     const extra = rowExtra(item, entries);
     return (
@@ -37,13 +62,14 @@ function Row({ item, entries }: { item: ChangeItem } & WithEntries) {
                 </span>
             ))}
             {extra && <span className="muted small">{extra}</span>}
+            <RowRevert item={item} entries={entries} onReverted={onReverted} />
         </li>
     );
 }
 
 const rowKey = (item: ChangeItem, index: number) => `${item.kind}-${item.arc?.id ?? ''}-${index}`;
 
-export function EntryCardView({ card, entries }: { card: EntryCard } & WithEntries) {
+export function EntryCardView({ card, entries, onReverted }: { card: EntryCard } & WithEntries) {
     const rows = cardRows(card);
     const first = card.items[0];
     return (
@@ -56,7 +82,12 @@ export function EntryCardView({ card, entries }: { card: EntryCard } & WithEntri
             </div>
             <ul className="tl-rows">
                 {rows.map((item, i) => (
-                    <Row key={rowKey(item, i)} item={item} entries={entries} />
+                    <Row
+                        key={rowKey(item, i)}
+                        item={item}
+                        entries={entries}
+                        onReverted={onReverted}
+                    />
                 ))}
             </ul>
         </li>

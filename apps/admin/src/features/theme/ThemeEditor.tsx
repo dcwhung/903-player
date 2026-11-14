@@ -5,6 +5,7 @@
  * 新劇（10 色 = NEUTRAL_THEME）：現用標「未設定」、第一套候選標「建議」，唔自動套用
  */
 import { Check, RefreshCw } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { t } from '../../i18n/t';
 import { isNeutralTheme, type EntryTheme } from '../../model/theme';
 import { Pill } from '../../ui/Pill';
@@ -20,6 +21,8 @@ export interface ThemeEditorProps {
     current: EntryTheme;
     /** 儲存新配色；false = 儲存失敗（錯誤由編輯頁顯示） */
     onApply: (theme: EntryTheme) => Promise<boolean>;
+    /** 配色同已發佈唔同：頂行「已修改」「還原」（mockup admin-revert，編輯頁冇配色欄位標題） */
+    revert?: ReactNode;
 }
 
 function StatusNote({ status, error }: { status: string; error?: string }) {
@@ -32,12 +35,21 @@ function StatusNote({ status, error }: { status: string; error?: string }) {
 type Picker = ReturnType<typeof useThemePicker>;
 
 /** 頂行：第幾組 + 更換另外三套（冇標題：分頁已經寫明「配色」，2026-11-13 用戶要求） */
-function ThemeHead({ picker, empty }: { picker: Picker; empty: boolean }) {
+function ThemeHead({
+    picker,
+    empty,
+    revert,
+}: {
+    picker: Picker;
+    empty: boolean;
+    revert: ReactNode;
+}) {
     return (
         <div className="theme-head">
             <span className="small muted">
                 {t('themeEditor.round', { round: picker.round + 1, count: picker.rounds })}
             </span>
+            {revert}
             <button type="button" disabled={empty} onClick={picker.more}>
                 <RefreshCw aria-hidden="true" />
                 {t('themeEditor.more')}
@@ -81,13 +93,13 @@ function CandidateGrid({
     );
 }
 
-export function ThemeEditor({ name, sub, discUrl, current, onApply }: ThemeEditorProps) {
+export function ThemeEditor({ name, sub, discUrl, current, onApply, revert }: ThemeEditorProps) {
     const candidates = useThemeCandidates(discUrl);
     const pool = candidates.status === 'ready' ? candidates.pool : [];
     const picker = useThemePicker(pool, current, onApply);
     return (
         <section className="card theme-card" aria-label={t('themeEditor.title', { name })}>
-            <ThemeHead picker={picker} empty={pool.length === 0} />
+            <ThemeHead picker={picker} empty={pool.length === 0} revert={revert} />
             <StatusNote
                 status={candidates.status}
                 error={candidates.status === 'error' ? candidates.error : undefined}

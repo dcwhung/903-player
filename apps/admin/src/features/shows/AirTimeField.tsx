@@ -6,6 +6,9 @@ import { useState } from 'react';
 import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
 import { Tip } from '../../ui/Tip';
+import { PublishedHint } from '../revert/FieldRevert';
+import { RevertLabel } from '../revert/RevertLabel';
+import type { EntryRevert } from '../revert/useEntryRevert';
 import { TimeRoller, type TimeRange } from '../../ui/TimeRoller';
 import { DEFAULT_AIR_TIME, airTimeOf } from './showModel';
 
@@ -13,9 +16,12 @@ interface AirTimeFieldProps {
     definition: RawDefinition;
     /** value = '' 即係刪走欄位（withOptional） */
     set: (key: string, value: unknown) => void;
+    revert?: EntryRevert | undefined;
 }
 
-export function AirTimeField({ definition, set }: AirTimeFieldProps) {
+const FIELDS = ['airTime'];
+
+export function AirTimeField({ definition, set, revert }: AirTimeFieldProps) {
     const airTime = airTimeOf(definition);
     const [last, setLast] = useState<TimeRange>(airTime ?? DEFAULT_AIR_TIME);
     const onTick = (checked: boolean) => {
@@ -24,9 +30,9 @@ export function AirTimeField({ definition, set }: AirTimeFieldProps) {
     };
     return (
         <div className="field wide">
-            <span>
-                {t('show.airTime')} <Tip text={t('show.airTimeTip')} />
-            </span>
+            <RevertLabel label={t('show.airTime')} revert={revert} fields={FIELDS}>
+                <Tip text={t('show.airTimeTip')} />
+            </RevertLabel>
             <label className="check-line">
                 <input
                     type="checkbox"
@@ -36,6 +42,7 @@ export function AirTimeField({ definition, set }: AirTimeFieldProps) {
                 {t('show.setAirTime')}
             </label>
             {airTime && <TimeRoller value={airTime} onChange={(range) => set('airTime', range)} />}
+            {revert && <PublishedHint revert={revert} fields={FIELDS} />}
         </div>
     );
 }

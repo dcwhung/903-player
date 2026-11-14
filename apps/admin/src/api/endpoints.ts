@@ -6,7 +6,7 @@ import type {
     BannerResponse,
     DramaScanResponse,
     DramaSources,
-    EntryDetail,
+    EntryResponse,
     EntryKind,
     EntrySummary,
     ImageMap,
@@ -21,7 +21,8 @@ import type {
 
 const NOT_FOUND = 404;
 
-const entryPath = (kind: EntryKind, id: string) => `/api/entries/${kind}/${encodeURIComponent(id)}`;
+export const entryPath = (kind: EntryKind, id: string) =>
+    `/api/entries/${kind}/${encodeURIComponent(id)}`;
 const schedulePath = (dramaId: string, arcId: string) =>
     `/api/dramas/${encodeURIComponent(dramaId)}/arcs/${encodeURIComponent(arcId)}/schedule`;
 
@@ -37,9 +38,11 @@ export const getTodos = async () => (await request<TodosResponse>('/api/todos'))
 export const listEntries = async () =>
     (await request<{ entries: EntrySummary[] }>('/api/entries')).data.entries;
 
+/** published（api 0.11.0）改名 publishedVersion：列表併入嘅 published（有冇上過架）唔會蓋走佢 */
 export const getEntry = async (kind: EntryKind, id: string): Promise<LoadedEntry> => {
-    const { data, etag } = await request<EntryDetail>(entryPath(kind, id));
-    return { ...data, kind, id, etag };
+    const { data, etag } = await request<EntryResponse>(entryPath(kind, id));
+    const { published, ...detail } = data;
+    return { ...detail, kind, id, etag, ...(published ? { publishedVersion: published } : {}) };
 };
 
 export interface EntryWrite {

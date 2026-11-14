@@ -12,12 +12,16 @@ const lightToken = (name: string) =>
     new RegExp(`${name}:\\s*([^;]+);`).exec(cssOf('tokens.css').split('@media')[0] ?? '')?.[1];
 
 describe('color tokens in admin CSS', () => {
-    it.each(['theme.css', 'phase4.css', 'selective.css', 'publish.css', 'publishCards.css'])(
-        '%s should not hardcode hex colours',
-        (name) => {
-            expect(withoutComments(cssOf(name)).match(HEX_COLOR) ?? []).toEqual([]);
-        },
-    );
+    it.each([
+        'theme.css',
+        'phase4.css',
+        'selective.css',
+        'publish.css',
+        'publishCards.css',
+        'revert.css',
+    ])('%s should not hardcode hex colours', (name) => {
+        expect(withoutComments(cssOf(name)).match(HEX_COLOR) ?? []).toEqual([]);
+    });
 
     it('should paint the 新 pill like the player NewBadge (red #c0362c, white text, not themed)', () => {
         expect(lightToken('--new-badge-bg')).toBe('#c0362c');

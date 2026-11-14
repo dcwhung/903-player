@@ -8,30 +8,57 @@ import { Pill } from '../../ui/Pill';
 import { Switch } from '../../ui/Switch';
 import { Tip } from '../../ui/Tip';
 import { Toggle } from '../../ui/Toggle';
+import { PublishedHint } from '../revert/FieldRevert';
+import { RevertLabel } from '../revert/RevertLabel';
+import { STATUS_FIELDS, StatusHint } from '../revert/StatusRevert';
+import type { EntryRevert } from '../revert/useEntryRevert';
 import { withOptional } from '../shows/showModel';
 
 interface BasicFieldsProps {
     definition: RawDefinition;
     kindLocked: boolean;
     onChange: (update: (definition: RawDefinition) => RawDefinition) => void;
+    revert?: EntryRevert | undefined;
 }
+
+const KIND = ['kind'];
+const ADDED_AT = ['addedAt'];
 
 const KIND_OPTIONS = [
     { value: 'series', label: t('drama.series') },
     { value: 'daily', label: t('drama.daily') },
 ] as const;
 
-export function BasicFields({ definition, kindLocked, onChange }: BasicFieldsProps) {
+/** 狀態（上架 toggle）：還原連下架日期（removedAt）一齊 */
+function StatusField({ definition, onChange, revert }: Omit<BasicFieldsProps, 'kindLocked'>) {
     const statusId = useId();
+    return (
+        <div className="field">
+            <RevertLabel
+                label={t('editor.status')}
+                id={statusId}
+                revert={revert}
+                fields={STATUS_FIELDS}
+            />
+            <Toggle
+                on={definition.enabled === true}
+                labelledBy={statusId}
+                onChange={(on) => onChange((d) => ({ ...d, enabled: on }))}
+            />
+            <StatusHint revert={revert} />
+        </div>
+    );
+}
+
+export function BasicFields({ definition, kindLocked, onChange, revert }: BasicFieldsProps) {
     const kind = definition.kind === 'daily' ? 'daily' : 'series';
     return (
         <div className="field wide">
             <div className="row3">
                 <div className="field">
-                    <span>
-                        {t('drama.kind')}
+                    <RevertLabel label={t('drama.kind')} revert={revert} fields={KIND}>
                         {kindLocked && <Tip text={t('drama.kindLockedTip')} />}
-                    </span>
+                    </RevertLabel>
                     {kindLocked ? (
                         // 鎖住：直接顯示目前類型（實色 pill），唔出 disabled switch
                         <span>
@@ -47,22 +74,16 @@ export function BasicFields({ definition, kindLocked, onChange }: BasicFieldsPro
                     )}
                 </div>
                 <div className="field">
-                    <span>{t('drama.addedAt')}</span>
+                    <RevertLabel label={t('drama.addedAt')} revert={revert} fields={ADDED_AT} />
                     {/* DD/MM/YYYY + 月曆（用戶 2026-11-12，唔用 type="date"）；可留空 */}
                     <DateField
                         label={t('drama.addedAt')}
                         value={str(definition, 'addedAt') ?? ''}
                         onChange={(iso) => onChange((d) => withOptional(d, 'addedAt', iso))}
                     />
+                    {revert && <PublishedHint revert={revert} fields={ADDED_AT} />}
                 </div>
-                <div className="field">
-                    <span id={statusId}>{t('editor.status')}</span>
-                    <Toggle
-                        on={definition.enabled === true}
-                        labelledBy={statusId}
-                        onChange={(on) => onChange((d) => ({ ...d, enabled: on }))}
-                    />
-                </div>
+                <StatusField definition={definition} onChange={onChange} revert={revert} />
             </div>
         </div>
     );
