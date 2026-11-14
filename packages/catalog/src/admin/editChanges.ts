@@ -17,7 +17,8 @@ import {
     type RawJson,
 } from './rawDefinition';
 
-const IMAGE_SLOTS = ['tile', 'disc'] as const;
+/** definition 指去 images 嘅欄位（劇集 / 節目頂層同每個短篇都有） */
+export const IMAGE_SLOTS = ['tile', 'disc'] as const;
 const IMAGES_FIELD = 'images';
 const ARC_FIELD = /^arcs\.(.+)\.([^.]+)$/;
 const NOW = 'now';
@@ -36,7 +37,12 @@ interface FileOwners {
 const addOwner = (owners: FileOwners, file: string, field: string) =>
     owners.fields.set(file, new Set([...(owners.fields.get(file) ?? []), field]));
 
-const arcFile = (arc: RawJson, slot: string): string =>
+/** 頂層 slot 指去嘅檔名（冇寫就慣例名）；api 還原（revert.ts）共用 */
+export const entryImageFile = (definition: RawJson, slot: string): string =>
+    stringField(definition, slot) ?? conventionalFile(slot);
+
+/** 短篇 slot 指去嘅檔名（冇寫就 arcs/<短篇>/<slot>.webp） */
+export const arcImageFile = (arc: RawJson, slot: string): string =>
     stringField(arc, slot) ?? conventionalFile(slot, stringField(arc, 'id') ?? arcIdOf(arc));
 
 const listedArcIds = (definition: RawJson): Set<string> =>
@@ -47,13 +53,11 @@ const fileOwners = (prev: RawJson, next: RawJson): FileOwners => {
     const owners: FileOwners = { fields: new Map(), ignored: new Set() };
     const tracked = new Set([...listedArcIds(prev)].filter((id) => listedArcIds(next).has(id)));
     for (const definition of [prev, next]) {
-        IMAGE_SLOTS.forEach((slot) =>
-            addOwner(owners, stringField(definition, slot) ?? conventionalFile(slot), slot),
-        );
+        IMAGE_SLOTS.forEach((slot) => addOwner(owners, entryImageFile(definition, slot), slot));
         rawArcs(definition).forEach((arc) => {
             const arcId = arcIdOf(arc);
             IMAGE_SLOTS.forEach((slot) => {
-                const file = arcFile(arc, slot);
+                const file = arcImageFile(arc, slot);
                 if (tracked.has(arcId)) addOwner(owners, file, `arcs.${arcId}.${slot}`);
                 else owners.ignored.add(file);
             });

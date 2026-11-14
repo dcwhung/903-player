@@ -171,6 +171,8 @@ describe('GET /api/entries/:kind/:id', () => {
         expect(await response.json()).toEqual({
             definition: drama(3),
             images: IMAGES,
+            // 未 publish 過（0.11.0）
+            published: null,
             draft: false,
             updatedAt: '2026-11-08T00:00:00Z',
         });
