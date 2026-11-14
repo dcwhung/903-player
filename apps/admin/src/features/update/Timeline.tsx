@@ -9,6 +9,7 @@ import type { LoadedEntry } from '../../api/types';
 import { t } from '../../i18n/t';
 import { episodeTotalOf, thumbOf } from '../../model/thumbs';
 import { Thumb } from '../../ui/Thumb';
+import { editFieldsText } from './changeFields';
 import { itemName, itemRange, kindLabel, whenLabel } from './timelineModel';
 
 const COLLAPSED_GROUPS = 6;
@@ -18,12 +19,14 @@ function TimelineItem({ item, entries }: { item: ChangeItem; entries: readonly L
         item.kind === 'newDrama'
             ? t('publish.all', { count: episodeTotalOf(entries, item) })
             : itemRange(item);
+    const fields = editFieldsText(item, entries);
     return (
         <span className="what">
             <span className="kind">{kindLabel(item.kind)}</span>
             <Thumb url={thumbOf(entries, item)} size="sm" />
             {itemName(item)}
             {range && <span className="muted">{range}</span>}
+            {fields && <span className="muted small">{fields}</span>}
         </span>
     );
 }

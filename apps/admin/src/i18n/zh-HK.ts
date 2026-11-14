@@ -101,6 +101,7 @@ export const zhHK = {
         statDone: '已完成',
     },
     publish: {
+        editedFields: '{label}（{fields}）',
         backToTodos: '返回待辦',
         publish: '發佈',
         statsLabel: '本次發佈',
@@ -167,6 +168,18 @@ export const zhHK = {
         edit: '修改',
         unlist: '下架',
         rollback: '還原',
+    },
+    /** 「修改」改了哪些欄位（detail.fields 中 fields.* 未有的 key） */
+    changeFields: {
+        tile: '橫圖',
+        disc: '碟面',
+        theme: '配色',
+        order: '排序',
+        arcUnit: '短篇單位',
+        firstNo: '首集編號',
+        files: '錄音檔',
+        episodeRemovedAt: '單集下架日期',
+        arc: '{arc}：{fields}',
     },
     status: {
         live: '已上架',

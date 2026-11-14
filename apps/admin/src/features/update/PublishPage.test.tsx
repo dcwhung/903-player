@@ -204,6 +204,19 @@ describe('PublishPage', () => {
             );
         };
 
+        it('should say which fields an other change edits', async () => {
+            const lancyEdit = {
+                kind: 'edit',
+                when: 'now',
+                entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
+                detail: { fields: ['theme', 'arcs.love-after.summary'] },
+            } as unknown as ChangeItem;
+            open({ others: { items: [lancyEdit], timeline: [] } });
+            const card = await screen.findByRole('region', { name: '本次發佈' });
+            // 短篇冇 name：用 key（love-after）
+            expect(card).toHaveTextContent('修改 · 蘭茜夫人劇場（配色；love-after：簡介）');
+        });
+
         it('should list what goes out, what is incomplete and the redeploy note', async () => {
             open();
             const card = await screen.findByRole('region', { name: '本次發佈' });
