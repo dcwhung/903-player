@@ -188,6 +188,81 @@
         margin: 0;
         padding-left: 20px;
     }
+    /* 箭咀 demo：app 會用 tokens.css 嘅 --view-transition-fade / --ease-view-transition */
+    .demo {
+        max-width: 380px;
+        background: #f3efde;
+        color: #33281d;
+        border-radius: 18px;
+        padding: 14px 18px;
+        display: grid;
+        gap: 8px;
+    }
+    .demo-head {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+    }
+    .demo-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #a8401a;
+    }
+    .demo-tog {
+        width: 36px;
+        height: 36px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #a8401a;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+    }
+    .demo-tog:focus-visible {
+        outline: 2px solid #a8401a;
+    }
+    .demo-tog[aria-expanded='true'] {
+        transform: rotate(90deg);
+    }
+    .demo-note {
+        margin-left: auto;
+        font-size: 12px;
+        color: #6b5a47;
+    }
+    .demo-body {
+        display: grid;
+        grid-template-rows: 0fr;
+    }
+    .demo-body.open {
+        grid-template-rows: 1fr;
+    }
+    .demo-inner {
+        overflow: hidden;
+    }
+    .demo-sum {
+        margin: 0;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #faf7ec;
+        font-size: 14px;
+    }
+    .demo-row {
+        display: grid;
+        font-size: 15px;
+    }
+    .demo-row span {
+        font-size: 13px;
+        color: #6b5a47;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+        .demo-tog {
+            transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .demo-body {
+            transition: grid-template-rows 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+    }
     @media (max-width: 600px) {
         figure img {
             height: 360px;
@@ -222,39 +297,87 @@
             <li>橫版 sheet 放右欄（已揀 R）；主持 / 聲演用圓角 chip</li>
         </ul>
         <h3 style="margin: 4px 0 0; font-size: 16px">
-            短篇劇：資料併入「全集」sheet（表頭「資料」掣收合 / 展開）
+            短篇劇：資料併入「全集」sheet（「全集」旁邊箭咀收合 / 展開）
         </h3>
         <p>
             跟全集現有彈出邏輯：第一次入（冇進度、冇載入、唔係由收藏入）自動彈。展開 = 頂部劇集簡介
-            + 每個短篇下面聲演同簡介；唱片圈 ⓘ = 開全集 sheet 兼展開資料。
+            + 每個短篇下面「聲演」chip 同簡介；唱片圈 ⓘ = 開全集 sheet
+            兼展開資料。碟面同播放掣都置頂； 簡介用正文色加左邊細線，同灰色進度字分開。
         </p>
+        <div class="demo">
+            <div class="demo-head">
+                <span class="demo-title">全集</span>
+                <button
+                    type="button"
+                    class="demo-tog"
+                    id="demo-tog"
+                    aria-expanded="false"
+                    aria-label="劇集資料"
+                >
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.4"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+                <span class="demo-note">撳箭咀試動畫（減少動態就直接切換）</span>
+            </div>
+            <div class="demo-body" id="demo-body">
+                <div class="demo-inner">
+                    <p class="demo-sum">
+                        （示範簡介）蘭茜夫人劇場係 90
+                        年代經典廣播劇系列，每個短篇講一段都市愛情故事。
+                    </p>
+                </div>
+            </div>
+            <div class="demo-row"><b>戀愛二分一</b><span>聽到第 13 集 10:00</span></div>
+        </div>
+        <script>
+            (() => {
+                const tog = document.getElementById('demo-tog');
+                const body = document.getElementById('demo-body');
+                tog.addEventListener('click', () => {
+                    const open = tog.getAttribute('aria-expanded') !== 'true';
+                    tog.setAttribute('aria-expanded', String(open));
+                    body.classList.toggle('open', open);
+                });
+            })();
+        </script>
         <div class="shots">
             <figure>
                 <img
-                    src="a4-n-sheet-collapsed.webp"
-                    alt="全集 sheet 收合，表頭有資料掣"
+                    src="a7-n-collapsed.webp"
+                    alt="全集 sheet 收合，全集旁邊有箭咀"
                     loading="lazy"
                 />
-                <figcaption>收合（同而家一樣，多一粒「資料」掣）</figcaption>
+                <figcaption>收合：「全集」旁邊多一個箭咀</figcaption>
             </figure>
             <figure>
-                <img src="a6-n-fresh.webp" alt="全集 sheet 展開資料" loading="lazy" />
+                <img src="a7-n-fresh.webp" alt="全集 sheet 展開資料" loading="lazy" />
                 <figcaption>展開：劇集簡介 + 每個短篇聲演 / 簡介</figcaption>
             </figure>
             <figure class="wide">
-                <img src="a4-l-sheet-collapsed.webp" alt="橫版全集 sheet 收合" loading="lazy" />
+                <img src="a7-l-collapsed.webp" alt="橫版全集 sheet 收合" loading="lazy" />
                 <figcaption>橫版收合（全集 sheet 照舊喺左欄）</figcaption>
             </figure>
             <figure class="wide">
-                <img src="a6-l-fresh.webp" alt="橫版全集 sheet 展開" loading="lazy" />
+                <img src="a7-l-fresh.webp" alt="橫版全集 sheet 展開" loading="lazy" />
                 <figcaption>橫版展開</figcaption>
             </figure>
             <figure>
-                <img src="a6-n-progress.webp" alt="有進度時全集 sheet 展開資料" loading="lazy" />
+                <img src="a7-n-progress.webp" alt="有進度時全集 sheet 展開資料" loading="lazy" />
                 <figcaption>有進度：聽到第 13 集 / 已收聽組都照出資料</figcaption>
             </figure>
             <figure class="wide">
-                <img src="a6-l-progress.webp" alt="橫版有進度時全集 sheet 展開" loading="lazy" />
+                <img src="a7-l-progress.webp" alt="橫版有進度時全集 sheet 展開" loading="lazy" />
                 <figcaption>橫版有進度</figcaption>
             </figure>
         </div>
