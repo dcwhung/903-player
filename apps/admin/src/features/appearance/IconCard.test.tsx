@@ -104,4 +104,28 @@ describe('IconCard', () => {
         await userEvent.click(android);
         expect(android).toHaveAttribute('aria-pressed', 'true');
     });
+
+    it('should move focus to 更換 when 還原 disappears after restoring (S-1013)', async () => {
+        const custom = {
+            favicon: 'f.png',
+            appleTouch: 'a.png',
+            icon192: 'i.png',
+            icon512: 'j.png',
+            maskable: 'm.png',
+            maskableBackground: '#000000',
+        };
+        let icon: typeof custom | null = custom;
+        mockApi({
+            'GET /api/branding': () => ({ body: { icon, text: null, updatedAt: icon && 'x' } }),
+            'DELETE /api/branding/icon': () => ((icon = null), {}),
+        });
+        show();
+        await userEvent.click(await screen.findByRole('button', { name: '還原 App 圖示' }));
+        const dialog = screen.getByRole('dialog', { name: '還原 App 圖示？' });
+        await userEvent.click(within(dialog).getByRole('button', { name: '還原' }));
+        await screen.findByText('內建預設');
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: '更換 App 圖示' })).toHaveFocus(),
+        );
+    });
 });

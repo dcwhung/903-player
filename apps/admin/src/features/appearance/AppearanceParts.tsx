@@ -4,10 +4,11 @@
  * Design Origin: mockup: _mockups_/admin-appearance/index.html#a（.card-head）
  */
 import { Undo2 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { t } from '../../i18n/t';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Pill } from '../../ui/Pill';
+import { restoreLostFocus } from '../revert/revertFocus';
 
 interface StatusPillProps {
     custom: boolean;
@@ -42,23 +43,52 @@ interface CardHeadProps {
     children: ReactNode;
 }
 
-export const CardHead = ({ title, status, restoreLabel, canRestore, ...rest }: CardHeadProps) => (
-    <div className="card-head">
-        <h2>{title}</h2>
-        {status}
-        <button
-            type="button"
-            className="ghost-danger"
-            aria-label={restoreLabel}
-            disabled={!canRestore}
-            onClick={rest.onRestore}
-        >
-            <Undo2 aria-hidden="true" />
-            {t('appearance.restore')}
-        </button>
-        {rest.children}
-    </div>
-);
+/**
+ * S-1013：還原成功、重讀之後冇得再還原 → 還原掣 unmount，focus 會跌落 body。
+ * 掣由有變冇嗰下（只有還原會咁）focus 跌咗就搬去同一張卡嘅主要掣（更換 / 儲存）；
+ * 主要掣 disabled（儲存冇改動）就去卡標題（restoreLostFocus 補 tabIndex -1）
+ */
+const useRefocusWhenRestoreHides = (
+    canRestore: boolean,
+    head: RefObject<HTMLDivElement | null>,
+) => {
+    const could = useRef(canRestore);
+    useEffect(() => {
+        const hidden = could.current && !canRestore;
+        could.current = canRestore;
+        if (!hidden) return;
+        restoreLostFocus(
+            () =>
+                head.current?.querySelector<HTMLElement>('button:not(:disabled)') ??
+                head.current?.querySelector<HTMLElement>('h2') ??
+                null,
+        );
+    }, [canRestore, head]);
+};
+
+export function CardHead({ title, status, restoreLabel, canRestore, ...rest }: CardHeadProps) {
+    const head = useRef<HTMLDivElement>(null);
+    useRefocusWhenRestoreHides(canRestore, head);
+    return (
+        <div className="card-head" ref={head}>
+            <h2>{title}</h2>
+            {status}
+            {/* 冇得還原（內建預設）就唔顯示（C-023，用戶 2026-11-15：disabled 嘅還原掣隱藏） */}
+            {canRestore && (
+                <button
+                    type="button"
+                    className="ghost-danger"
+                    aria-label={restoreLabel}
+                    onClick={rest.onRestore}
+                >
+                    <Undo2 aria-hidden="true" />
+                    {t('appearance.restore')}
+                </button>
+            )}
+            {rest.children}
+        </div>
+    );
+}
 
 interface RestoreDialogProps {
     title: string;

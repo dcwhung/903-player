@@ -2,6 +2,18 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.8.1 — 2026-11-15
+
+### Changed
+
+- 編輯頁有未儲存改動時，「還原」掣（欄位旁、圖位圓形掣、「其他已修改」）唔再灰咗顯示，改為隱藏；「已修改」照出，儲存或者復原之後掣即刻返嚟（用戶 2026-11-15：所有頁面 disabled 嘅還原掣隱藏）
+- App 外觀頁「還原 App 圖示」「還原名稱與簡介」同首頁 Banner「還原首頁 Banner」：內建預設（冇得還原）時唔顯示，唔再灰咗（C-023）
+- 掣隱藏時欄位標題行保持同一高度，輸入框唔會上下跳（S-1012）
+- 「還原」掣寫死 line-height（`--revert-btn-line-height`），標題行最細高度由同一組 custom property 計：載入 Poppins / Noto Sans TC 之後掣隱藏都唔會再令輸入框跳 2px；確認框嘅「還原 N 項」維持原本高度（S-1012）
+- App 外觀頁（App 圖示、名稱與簡介）同首頁 Banner 還原成功、「還原」掣消失之後，focus 搬去同一張卡嘅「更換」/「儲存」；「儲存」唔撳得就搬去卡標題，唔再跌落 body（S-1013）
+- 刪走冇再用嘅 `revert.dirtyTip` 文字
+- 確認框入面嘅「還原 N 項」冇剔任何一項時照舊灰咗（確認框必須有確認掣）
+
 ## 0.8.0 — 2026-11-14
 
 配 api 0.12.0（`reorder` change item、`POST /api/order/:kind/revert`、entry 還原拒絕 `order`）。Plan：`.proj-docs/plans/2026-11-14_plan_publish-change-accuracy.md`（#5、#6 決定 A）。

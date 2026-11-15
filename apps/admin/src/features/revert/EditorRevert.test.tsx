@@ -57,13 +57,15 @@ describe('editor revert', () => {
         expect(screen.queryByRole('button', { name: '還原名稱' })).not.toBeInTheDocument();
     });
 
-    it('should block revert while there are unsaved edits', async () => {
+    it('should hide revert while there are unsaved edits and keep the 已修改 mark', async () => {
         showRoutes();
         renderAt('/shows/waves', '/shows/:id', <ShowEditorPage />);
-        const button = await screen.findByRole('button', { name: '還原簡介' });
+        await screen.findByRole('button', { name: '還原簡介' });
+        const modified = screen.getAllByText('已修改').length;
         await userEvent.type(screen.getByRole('textbox', { name: '簡介' }), '！');
-        expect(button).toBeDisabled();
-        expect(button).toHaveAttribute('title', '有未儲存的變更，請先儲存或復原後再還原');
+        expect(screen.queryByRole('button', { name: '還原簡介' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /^還原/ })).not.toBeInTheDocument();
+        expect(screen.getAllByText('已修改')).toHaveLength(modified);
     });
 
     it('should revert one field, then reload the entry and the admin data', async () => {
