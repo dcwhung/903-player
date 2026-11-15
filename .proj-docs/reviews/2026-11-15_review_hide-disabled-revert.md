@@ -84,3 +84,45 @@ next_action: invoke_developer
 report: .proj-docs/reviews/2026-11-15_review_hide-disabled-revert.md
 context: T1 review of 5f0a959. C-023 = appearance / banner CardHead 還原 still disabled (AppearanceParts.tsx canRestore), fix in this PR then re-review. S-1012 = 2.4 px label-line shift when the button hides (observation, measured in Chromium). Used C-023 and S-1012; W-747 still free (next: C-024 / W-747 / S-1013). Report committed locally, not pushed (code CI running). No e2e run.
 ```
+
+## Re-review — `5f0a959..eea0cf5`（2026-11-15）
+
+範圍：淨係 C-023 / S-1012 嘅修正（`AppearanceParts.tsx`、`AppearancePage.test.tsx`、`BannerCard.test.tsx`、`revert.css`、CHANGELOG）。
+
+- Hard gates：all pass。改咗嘅 3 個 tsx 跑 `npx eslint` exit 0；`revert.css`、CHANGELOG、`AppearanceParts.tsx` `prettier --check` 過；root `npx tsc -b` exit 0；`npx vitest related AppearanceParts.tsx --run`：4 files / 14 tests 全綠。冇跑 e2e
+- C-023 ✅ 已修：`CardHead` 改做 `{canRestore && <button…>}`，冇 `disabled`；三個 assert 改做 `not.toBeInTheDocument()`，自訂 Banner 改做斷言存在；repo 冇再有 assert 呢三個掣 disabled / enabled 嘅測試。`.appearance-card .card-head` 係 `justify-content: flex-end` + pill `margin-right: auto`，掣唔出時「更換」/「儲存」照樣靠右，冇亂。CHANGELOG 有寫
+- S-1012 ⚠️ 未完全修好（仍然係 🟢，唔 block）：
+    - L2：用 `apps/admin/src/styles/*.css` 喺 headless Chromium 量。冇 web font（system fallback）：`.revert-btn` = 23 px，有掣 / 冇掣嘅 `.label-line` 都係 23 px，輸入框 top 27 / 27，冇跳
+    - 但 admin `index.html` 會載 Poppins + Noto Sans TC（`display=swap`）。載咗呢兩隻字型再量（`document.fonts.check` 兩隻都 true）：`.revert-btn` = 25 px（`line-height: normal`），`.label-line` 有掣 25 px、冇掣 23 px，輸入框 top 29 → 27，即係用戶實際用嘅字型仲會跳 2 px（之前 2.4 px）
+    - 原因：掣高度跟字型嘅 `line-height: normal` 變，`min-height: 23px` 係 fallback 字型量出嚟嘅數
+    - 方案 A（推薦）：`button.revert-btn` 寫死 `line-height`（例如 `17px`），高度就同字型無關；`.revert-mark` `min-height` 用同一個 custom property 計（例如 `--revert-btn-height: calc(17px + 6px)`），唔再手抄數字。`.dialog-revert` 要另外蓋返自己嘅 line-height
+    - 方案 B：`min-height` 改做 25 px。最細改動，但換字型或者 fallback 時又會唔夾
+- S-1013 🟢 新 Observation：App 外觀 / Banner 還原成功之後，觸發掣 unmount，focus 跌去 `body`
+    - L2：臨時 probe（跑完已刪）：`BannerCard`，API mock 喺 `DELETE` 之後 `GET` 回 `banner: null`，撳「還原首頁 Banner」→ 確認「還原」→ 掣消失，`document.activeElement` = `BODY`
+    - L1 冇：S-1007 嘅 focus 後備（同欄控制 → 卡 → h1）係編輯頁 `RevertFlow` 嘅 AC-28，冇包 App 外觀。以前掣係變 disabled，focus 都會失效，所以唔算新 regression，只係而家先睇得清楚
+    - 建議：還原完掣唔見咗，就 focus 去同一張卡嘅主要掣（「更換」/「儲存」）或者卡標題
+- 跟 `.claude/CLAUDE.md`「Parallel lane backlog」：S-1012、S-1013 要喺今個 session 清，可以由呢個 PR 修再 delta re-review，或者由 main agent 開清理 lane
+- 結果：C-023 已修，冇 🔴 / 🟡，100/100，✅ pass（S-1012 未完、S-1013 新，兩個都係 🟢）
+
+```
+HANDOFF_RECEIPT
+from: code-reviewer
+to: main-agent
+workflow: /fix
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+  no_critical: pass
+  security_scan: n/a
+critical_count: 0
+warning_count: 0
+suggestion_count: 2
+review_items: [S-1012, S-1013]
+next_action: invoke_qa
+report: .proj-docs/reviews/2026-11-15_review_hide-disabled-revert.md
+context: Re-review of eea0cf5. C-023 fixed. S-1012 only half fixed: min-height 23px matches the button with fallback fonts, but with the production Poppins + Noto Sans TC the button is 25px, so the input still jumps 2px; recommend a fixed line-height on .revert-btn and a shared custom property for the min-height. New S-1013: after an appearance or banner restore, focus falls to body. Both are suggestions that must be cleared this session per CLAUDE.md, either in this PR with a delta re-review or in a cleanup lane. Next free IDs: C-024 / W-747 / S-1014. Report committed locally, not pushed (code CI running). No e2e run.
+```
