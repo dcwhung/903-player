@@ -126,3 +126,46 @@ next_action: invoke_qa
 report: .proj-docs/reviews/2026-11-15_review_hide-disabled-revert.md
 context: Re-review of eea0cf5. C-023 fixed. S-1012 only half fixed: min-height 23px matches the button with fallback fonts, but with the production Poppins + Noto Sans TC the button is 25px, so the input still jumps 2px; recommend a fixed line-height on .revert-btn and a shared custom property for the min-height. New S-1013: after an appearance or banner restore, focus falls to body. Both are suggestions that must be cleared this session per CLAUDE.md, either in this PR with a delta re-review or in a cleanup lane. Next free IDs: C-024 / W-747 / S-1014. Report committed locally, not pushed (code CI running). No e2e run.
 ```
+
+## Delta re-review — `eea0cf5..28652b2`（2026-11-15）
+
+範圍：S-1012、S-1013 修正（`revert.css`、`revertStyles.node.test.ts`、`AppearanceParts.tsx` + 新 `AppearanceParts.test.tsx`、`IconCard` / `TextCard` / `BannerCard` 測試、CHANGELOG）。`.claude/session-logs/` 同報告本身唔喺 review 範圍。
+
+- Hard gates：all pass。`npx eslint`（appearance、BannerCard 測試、`revertStyles.node.test.ts`）exit 0；改咗嘅檔 `prettier --check` 過；root `npx tsc -b` exit 0；`npx vitest related AppearanceParts.tsx revert.css --run` 5 files / 21 tests，加 5 個改咗嘅測試檔 `vitest run` 24 tests，全綠。冇跑 e2e
+- S-1012 ✅ 已修（L2：用 `apps/admin/src/styles/*.css` 喺 headless Chromium 量，兩種字型都量）：
+
+| 字型                                 | 欄位旁 `.revert-btn` | `.label-line` 有掣 / 冇掣（欄位、「其他已修改」） | 輸入框 top 有掣 / 冇掣 | 確認框 取消 / 還原 N 項 |
+| ------------------------------------ | -------------------- | ------------------------------------------------- | ---------------------- | ----------------------- |
+| Poppins + Noto Sans TC 載入          | 23 px，字冇裁走      | 23 / 23、23 / 23                                  | 27 / 27                | 38 / 38                 |
+| Google Fonts 擋咗（system fallback） | 23 px，字冇裁走      | 23 / 23、23 / 23                                  | 27 / 27                | 35 / 35                 |
+
+- 兩種字型都冇再跳；`.dialog-revert` 改返 `line-height: normal`，同「取消」一樣高。`min-height` 由同一組 custom property 計，冇手抄數字，`revertStyles.node.test.ts` 鎖住
+    - 副作用（Observation，唔使跟）：載咗 web font 時所有 `.revert-btn`（時間線、記錄頁「還原至 #N」、欄位旁）由 25 px 變 23 px，即係同 fallback 一樣、全部統一，冇裁字
+- S-1013 ✅ 已修：`useRefocusWhenRestoreHides` 只喺 `canRestore` 由 true 變 false 先做嘢，而且用 S-1007 嘅 `restoreLostFocus`：focus 仲喺頁面上（唔係 `body`、元素仲喺 DOM）就唔郁。目標係 `.card-head` 第一個 enabled 掣，冇就 `h2`（補 `tabIndex -1`）。`.card-head` 入面 children 之前得個還原掣，佢 unmount 咗之後第一個掣就係「更換」/「儲存」，揀法正確
+    - StrictMode 雙跑 effect：第一次 `could.current` 已經等於 `canRestore`，`hidden` 係 false，唔會搶 focus
+    - Banner 重讀期間如果 `current` 短暫變 null，都只係「focus 跌咗先搬」，唔會搶用戶 focus
+    - 測試：unit 4 個 case（搬去主要掣、主要掣 disabled 去標題、focus 仲喺頁面唔郁、從來冇出過唔郁）；三張卡各一個整合測試（API mock `DELETE` 之後回 null）。即係上一輪 probe 個情境而家有測試鎖住
+- 結果：冇 🔴 / 🟡，冇新 finding，冇用新 ID（下一個可用：C-024 / W-747 / S-1014），100/100，✅ pass。S-1012、S-1013 喺呢個 PR 清咗，冇 backlog 帶落去
+
+```
+HANDOFF_RECEIPT
+from: code-reviewer
+to: main-agent
+workflow: /fix
+status: pass
+score: 100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+  no_critical: pass
+  security_scan: n/a
+critical_count: 0
+warning_count: 0
+suggestion_count: 0
+review_items: []
+next_action: invoke_qa
+report: .proj-docs/reviews/2026-11-15_review_hide-disabled-revert.md
+context: Delta re-review of 28652b2. S-1012 fixed: label line 23/23 px and input top 27/27 px with both production web fonts and system fallback (Chromium); dialog revert matches cancel (38/38 web font, 35/35 fallback). S-1013 fixed with restoreLostFocus, covered by unit and card tests. No open items; C-023, S-1012 and S-1013 all closed in this PR. No new IDs (next: C-024 / W-747 / S-1014). Report committed locally, not pushed (code CI running). No e2e run.
+```
