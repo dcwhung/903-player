@@ -89,8 +89,9 @@ export const revertChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
 
             const summary = page.getByRole('textbox', { name: '簡介' });
             await summary.fill('未儲存');
-            if (!(await button.isDisabled())) throw new Error('還原 should wait for unsaved edits');
+            await button.waitFor({ state: 'detached' });
             await summary.fill(CURRENT_SUMMARY);
+            await button.waitFor();
             await button.click();
             const dialog = page.getByRole('dialog', { name: '還原簡介？' });
             await dialog.getByRole('button', { name: '還原 1 項' }).click();

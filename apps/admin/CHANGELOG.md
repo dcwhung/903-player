@@ -2,6 +2,14 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.8.1 — 2026-11-15
+
+### Changed
+
+- 編輯頁有未儲存改動時，「還原」掣（欄位旁、圖位圓形掣、「其他已修改」）唔再灰咗顯示，改為隱藏；「已修改」照出，儲存或者復原之後掣即刻返嚟（用戶 2026-11-15：所有頁面 disabled 嘅還原掣隱藏）
+- 刪走冇再用嘅 `revert.dirtyTip` 文字
+- 確認框入面嘅「還原 N 項」冇剔任何一項時照舊灰咗（確認框必須有確認掣）
+
 ## 0.8.0 — 2026-11-14
 
 配 api 0.12.0（`reorder` change item、`POST /api/order/:kind/revert`、entry 還原拒絕 `order`）。Plan：`.proj-docs/plans/2026-11-14_plan_publish-change-accuracy.md`（#5、#6 決定 A）。
