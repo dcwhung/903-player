@@ -1,257 +1,458 @@
-<!doctype html>
-<html lang="zh-HK">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <title>節目資料顯示</title>
-        <style>
-            /* P9.5 #12：節目 / 廣播劇 / 短篇資料（簡介、主持 / 聲演、播放時間）喺 player 嘅顯示位置。
-               截圖 = 真 app（e2e build，v1.x，2026-11-15）+ 注入示範 DOM；文字全部係示範 */
-            :root {
-                --bg: #eef1f5;
-                --surface: #ffffff;
-                --ink: #18202b;
-                --note: #5d6775;
-                --line: #d3d9e2;
-                --accent: #3b6fb6;
-                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
-            }
-            @media (prefers-color-scheme: dark) {
-                :root:not([data-theme='light']) {
-                    --bg: #10151c;
-                    --surface: #1a212b;
-                    --ink: #e8edf3;
-                    --note: #9aa5b3;
-                    --line: #2e3845;
-                    --accent: #7fa7e0;
-                }
-            }
-            :root[data-theme='dark'] {
-                --bg: #10151c;
-                --surface: #1a212b;
-                --ink: #e8edf3;
-                --note: #9aa5b3;
-                --line: #2e3845;
-                --accent: #7fa7e0;
-            }
-            * {
-                box-sizing: border-box;
-            }
-            body {
-                margin: 0;
-                padding: 16px;
-                background: var(--bg);
-                color: var(--ink);
-                font: 15px/1.6 var(--font);
-            }
-            main {
-                max-width: 1200px;
-                margin: 0 auto;
-                display: grid;
-                gap: 16px;
-            }
-            .panel {
-                background: var(--surface);
-                border: 1px solid var(--line);
-                border-radius: 14px;
-                padding: 16px;
-            }
-            h1 {
-                font-size: 22px;
-                margin: 0 0 4px;
-            }
-            h2 {
-                font-size: 18px;
-                margin: 0 0 8px;
-            }
-            h3 {
-                font-size: 15px;
-                margin: 16px 0 8px;
-                color: var(--note);
-            }
-            p,
-            li {
-                margin: 4px 0;
-            }
-            .note {
-                color: var(--note);
-                font-size: 13px;
-            }
-            .row {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 12px;
-                align-items: flex-start;
-            }
-            figure {
-                margin: 0;
-            }
-            figure img {
-                display: block;
-                border-radius: 10px;
-                border: 1px solid var(--line);
-                max-width: 100%;
-                height: auto;
-            }
-            .n img {
-                width: 260px;
-            }
-            .l img {
-                width: 520px;
-            }
-            figcaption {
-                font-size: 13px;
-                color: var(--note);
-                margin-top: 4px;
-            }
-            table {
-                border-collapse: collapse;
-                width: 100%;
-                font-size: 14px;
-            }
-            th,
-            td {
-                border: 1px solid var(--line);
-                padding: 6px 8px;
-                text-align: left;
-                vertical-align: top;
-            }
-            .tag {
-                display: inline-block;
-                padding: 0 8px;
-                border-radius: 999px;
-                background: var(--accent);
-                color: var(--surface);
-                font-size: 12px;
-                font-weight: 600;
-            }
-        </style>
-    </head>
-    <body>
-        <main>
-            <section class="panel">
-                <h1>P9.5 #12 節目資料喺 player 點顯示</h1>
-                <p class="note">
-                    admin 已可以編 <code>summary</code> / <code>hosts</code> / <code>cast</code> /
-                    <code>airTime</code>，player 未顯示。截圖係真 app 加示範
-                    DOM，文字（主持甲、聲演甲、簡介）全部係示範。
-                </p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>頁面</th>
-                            <th>有咩資料（catalog schema）</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>節目頁</td>
-                            <td>簡介、主持、播放時間（airTime + airDays）</td>
-                        </tr>
-                        <tr>
-                            <td>短篇劇（例：蘭茜夫人劇場）</td>
-                            <td>劇集簡介；每個短篇各自簡介 + 聲演</td>
-                        </tr>
-                        <tr>
-                            <td>每日劇（例：18 樓 C 座）</td>
-                            <td>淨係劇集簡介（schema 冇聲演）</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <h3>而家嘅樣（冇資料）</h3>
-                <div class="row">
-                    <figure class="n">
-                        <img src="n-show.webp" alt="節目頁直版現況" />
-                        <figcaption>節目頁（直版）</figcaption>
-                    </figure>
-                    <figure class="l">
-                        <img src="l-series.webp" alt="短篇劇橫版現況" />
-                        <figcaption>短篇劇（橫版，全集 sheet 開咗）</figcaption>
-                    </figure>
-                </div>
-            </section>
+<title>節目資料顯示位置</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<style>
+    /* 版面：一欄；每個設計一節（說明 + 橫捲截圖列）；頂部係比較表。截圖 = 真 app e2e build + 注入示範 DOM（2026-11-15） */
+    :root {
+        --bg: #f2f1ee;
+        --surface: #ffffff;
+        --ink: #1d1c1a;
+        --note: #66625a;
+        --line: #dcd8cf;
+        --accent: #b2561f;
+        --on-accent: #ffffff;
+        --good: #2f7d4f;
+        --bad: #a23a2c;
+        --font: 'Noto Sans TC', -apple-system, 'PingFang HK', system-ui, sans-serif;
+        --font-num: 'Poppins', 'Noto Sans TC', system-ui, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+            --bg: #141311;
+            --surface: #1e1d1a;
+            --ink: #ece9e3;
+            --note: #a7a197;
+            --line: #36332e;
+            --accent: #e08a52;
+            --on-accent: #1d1c1a;
+            --good: #6cc191;
+            --bad: #ee8a7b;
+            color-scheme: dark;
+        }
+    }
+    :root[data-theme='dark'] {
+        --bg: #141311;
+        --surface: #1e1d1a;
+        --ink: #ece9e3;
+        --note: #a7a197;
+        --line: #36332e;
+        --accent: #e08a52;
+        --on-accent: #1d1c1a;
+        --good: #6cc191;
+        --bad: #ee8a7b;
+        color-scheme: dark;
+    }
+    * {
+        box-sizing: border-box;
+    }
+    body {
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.65 var(--font);
+    }
+    .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding-block: 24px 48px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        display: grid;
+        gap: 20px;
+    }
+    h1 {
+        margin: 0;
+        font-size: 24px;
+        text-wrap: balance;
+    }
+    h2 {
+        margin: 0;
+        font-size: 19px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-wrap: balance;
+    }
+    p {
+        margin: 0;
+        max-width: 68ch;
+    }
+    .lead {
+        color: var(--note);
+    }
+    section {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px;
+        display: grid;
+        gap: 12px;
+        min-width: 0;
+    }
+    .letter {
+        flex: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--accent);
+        color: var(--on-accent);
+        display: grid;
+        place-items: center;
+        font: 600 17px var(--font-num);
+    }
+    .pc {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 4px 24px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+    .pc li {
+        padding-left: 20px;
+        position: relative;
+    }
+    .pc li::before {
+        position: absolute;
+        left: 0;
+        font-weight: 700;
+    }
+    .pc .pro::before {
+        content: '+';
+        color: var(--good);
+    }
+    .pc .con::before {
+        content: '−';
+        color: var(--bad);
+    }
+    .shots {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scroll-snap-type: x proximity;
+    }
+    figure {
+        margin: 0;
+        flex: none;
+        scroll-snap-align: start;
+        display: grid;
+        gap: 4px;
+    }
+    figure img {
+        display: block;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        height: 420px;
+        width: auto;
+        max-width: none;
+    }
+    figure.wide img {
+        height: 300px;
+    }
+    figcaption {
+        font-size: 13px;
+        color: var(--note);
+        max-width: 260px;
+    }
+    .table {
+        overflow-x: auto;
+    }
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+        min-width: 620px;
+    }
+    th,
+    td {
+        border-bottom: 1px solid var(--line);
+        padding: 8px 10px;
+        text-align: left;
+        vertical-align: top;
+    }
+    th {
+        color: var(--note);
+        font-weight: 500;
+        font-size: 13px;
+    }
+    td:first-child {
+        font: 600 15px var(--font-num);
+        color: var(--accent);
+    }
+    code {
+        font-size: 13px;
+        background: var(--bg);
+        padding: 1px 5px;
+        border-radius: 4px;
+    }
+    ul.rules {
+        margin: 0;
+        padding-left: 20px;
+    }
+    @media (max-width: 600px) {
+        figure img {
+            height: 360px;
+        }
+        figure.wide img {
+            height: 220px;
+        }
+    }
+</style>
 
-            <section class="panel">
-                <h2><span class="tag">A</span> 頁頭「ⓘ」掣 → 資料 sheet</h2>
-                <p>
-                    頁頭右邊加 ⓘ 掣；撳落去由下面彈出 sheet（同「全集」sheet
-                    一樣樣），列播放時間、主持 / 聲演、完整簡介。劇集 sheet
-                    上半係劇集簡介，下半係而家揀緊嗰個短篇。
-                </p>
-                <ul>
-                    <li>👍 現有版面完全唔郁，播放器同集數清單位置不變</li>
-                    <li>👍 長簡介唔使收起，sheet 自己捲</li>
-                    <li>👎 要撳先見到，用戶未必知有資料</li>
-                </ul>
-                <div class="row">
-                    <figure class="n">
-                        <img src="n-show-a.webp" alt="A 節目頁：頁頭 ⓘ 掣" />
-                        <figcaption>節目頁：頁頭 ⓘ</figcaption>
-                    </figure>
-                    <figure class="n">
-                        <img src="n-show-a-open.webp" alt="A 節目頁：資料 sheet" />
-                        <figcaption>節目頁：撳 ⓘ 後</figcaption>
-                    </figure>
-                    <figure class="n">
-                        <img src="n-series-a-open.webp" alt="A 短篇劇：資料 sheet" />
-                        <figcaption>短篇劇：劇集 + 短篇</figcaption>
-                    </figure>
-                </div>
-                <div class="row" style="margin-top: 12px">
-                    <figure class="l">
-                        <img src="l-show-a-open.webp" alt="A 節目頁橫版" />
-                        <figcaption>橫版：sheet 喺左欄（同全集 sheet 一樣位）</figcaption>
-                    </figure>
-                    <figure class="l">
-                        <img src="l-series-a-open.webp" alt="A 短篇劇橫版" />
-                        <figcaption>橫版短篇劇</figcaption>
-                    </figure>
-                </div>
-            </section>
+<div class="wrap">
+    <header style="display: grid; gap: 6px">
+        <h1>P9.5 #12：節目資料喺 player 點顯示</h1>
+        <p class="lead">
+            admin 已經可以編簡介、主持、聲演、播放時間，player 未顯示。下面五個設計都係真 app
+            截圖加示範內容（主持甲、聲演甲、簡介都係假文字）。可以揀一個，或者組合（例如 C + E）。
+        </p>
+    </header>
 
-            <section class="panel">
-                <h2><span class="tag">B</span> 集數清單頂嘅資料卡</h2>
-                <p>
-                    「集數」上面加一張卡：第一行播放時間、第二行主持 / 聲演、簡介收起做兩行
-                    +「顯示全部」。
-                    卡喺清單入面，捲清單就捲走。短篇劇有兩張卡：劇集簡介、而家揀緊嘅短篇（轉短篇就換）。
-                </p>
-                <ul>
-                    <li>👍 一入頁就見到，唔使撳</li>
-                    <li>👎 直版清單本身得半頁，卡會再逼細第一屏見到嘅集數</li>
-                    <li>👎 短篇劇兩張卡比較長</li>
-                </ul>
-                <div class="row">
-                    <figure class="n">
-                        <img src="n-show-b.webp" alt="B 節目頁資料卡" />
-                        <figcaption>節目頁</figcaption>
-                    </figure>
-                    <figure class="n">
-                        <img src="n-series-b.webp" alt="B 短篇劇資料卡" />
-                        <figcaption>短篇劇：劇集卡 + 短篇卡</figcaption>
-                    </figure>
-                </div>
-                <div class="row" style="margin-top: 12px">
-                    <figure class="l">
-                        <img src="l-show-b.webp" alt="B 節目頁橫版" />
-                        <figcaption>橫版節目頁</figcaption>
-                    </figure>
-                    <figure class="l">
-                        <img src="l-series-b.webp" alt="B 短篇劇橫版" />
-                        <figcaption>橫版短篇劇</figcaption>
-                    </figure>
-                </div>
-            </section>
+    <section>
+        <h2>每頁有咩資料</h2>
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>頁面</th>
+                        <th>資料</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font: inherit; color: inherit">節目頁（例：公子會）</td>
+                        <td>簡介、主持、播放時間（星期幾 + 時段）</td>
+                    </tr>
+                    <tr>
+                        <td style="font: inherit; color: inherit">短篇劇（例：蘭茜夫人劇場）</td>
+                        <td>劇集簡介；每個短篇各自有簡介 + 聲演</td>
+                    </tr>
+                    <tr>
+                        <td style="font: inherit; color: inherit">每日劇（例：18 樓 C 座）</td>
+                        <td>淨係劇集簡介</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-            <section class="panel">
-                <h2>兩個都一樣嘅規則（之後 grill 確認）</h2>
-                <ul>
-                    <li>冇任何資料：A 唔出 ⓘ 掣；B 唔出卡</li>
-                    <li>冇某一項（例如冇主持）：嗰行 / 嗰段唔出，唔寫「未有資料」</li>
-                    <li>播放時間：用 catalog <code>formatAirTime</code>（admin 預覽同一套字）</li>
-                    <li>今日節目頁、主頁唔加</li>
-                </ul>
-            </section>
-        </main>
-    </body>
-</html>
+    <section>
+        <h2>五個設計比較</h2>
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>設計</th>
+                        <th>位置</th>
+                        <th>一入頁見到</th>
+                        <th>版面改動</th>
+                        <th>長簡介</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>A</td>
+                        <td>頁頭 ⓘ 掣 → 資料 sheet</td>
+                        <td>淨係見到 ⓘ</td>
+                        <td>冇</td>
+                        <td>sheet 內全文</td>
+                    </tr>
+                    <tr>
+                        <td>B</td>
+                        <td>集數清單頂資料卡</td>
+                        <td>全部（簡介兩行）</td>
+                        <td>清單頂多一至兩張卡</td>
+                        <td>兩行 +「顯示全部」</td>
+                    </tr>
+                    <tr>
+                        <td>C</td>
+                        <td>清單頂一行精簡資料 → sheet</td>
+                        <td>播放時間、主持 / 聲演</td>
+                        <td>清單頂多一行</td>
+                        <td>撳一行開 sheet</td>
+                    </tr>
+                    <tr>
+                        <td>D</td>
+                        <td>標題下面副標題 → sheet</td>
+                        <td>播放時間 + 第一位主持</td>
+                        <td>頁頭高咗一行</td>
+                        <td>撳副標題開 sheet</td>
+                    </tr>
+                    <tr>
+                        <td>E</td>
+                        <td>全集 sheet 每個短篇行</td>
+                        <td>開全集先見到</td>
+                        <td>短篇行高咗</td>
+                        <td>兩行截斷（淨係短篇）</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="lead">E 只處理短篇，要同 A–D 其中一個一齊用（節目頁同劇集簡介仲要有位放）。</p>
+    </section>
+
+    <section>
+        <h2><span class="letter">A</span>頁頭 ⓘ 掣，撳落去彈出資料 sheet</h2>
+        <p>
+            頁頭右邊加 ⓘ。sheet 同「全集」sheet 一樣由下面彈出，列播放時間、主持 /
+            聲演、完整簡介。劇集頁上半係劇集簡介，下半係而家揀緊嘅短篇。
+        </p>
+        <ul class="pc">
+            <li class="pro">現有版面完全唔郁</li>
+            <li class="pro">長簡介唔使截斷</li>
+            <li class="con">要撳先見到，ⓘ 未必有人留意</li>
+        </ul>
+        <div class="shots">
+            <figure>
+                <img src="n-show-a.webp" alt="設計 A 節目頁，頁頭右邊有 ⓘ 掣" loading="lazy" />
+                <figcaption>節目頁：頁頭 ⓘ</figcaption>
+            </figure>
+            <figure>
+                <img src="n-show-a-open.webp" alt="設計 A 節目頁資料 sheet" loading="lazy" />
+                <figcaption>撳 ⓘ 之後</figcaption>
+            </figure>
+            <figure>
+                <img src="n-series-a-open.webp" alt="設計 A 短篇劇資料 sheet" loading="lazy" />
+                <figcaption>短篇劇：劇集 + 短篇</figcaption>
+            </figure>
+            <figure class="wide">
+                <img src="l-show-a-open.webp" alt="設計 A 橫版節目頁" loading="lazy" />
+                <figcaption>橫版：sheet 喺左欄</figcaption>
+            </figure>
+            <figure class="wide">
+                <img src="l-series-a-open.webp" alt="設計 A 橫版短篇劇" loading="lazy" />
+                <figcaption>橫版短篇劇</figcaption>
+            </figure>
+        </div>
+    </section>
+
+    <section>
+        <h2><span class="letter">B</span>集數清單頂資料卡</h2>
+        <p>
+            「集數」上面加卡：播放時間、主持 / 聲演、簡介兩行
+            +「顯示全部」。卡喺清單入面，捲清單就捲走。
+            短篇劇有兩張：劇集卡同而家揀緊嘅短篇卡（轉短篇就換）。
+        </p>
+        <ul class="pc">
+            <li class="pro">一入頁乜都見到，唔使撳</li>
+            <li class="con">直版第一屏見到嘅集數少咗大約兩行</li>
+            <li class="con">短篇劇兩張卡比較長</li>
+        </ul>
+        <div class="shots">
+            <figure>
+                <img src="n-show-b.webp" alt="設計 B 節目頁資料卡" loading="lazy" />
+                <figcaption>節目頁</figcaption>
+            </figure>
+            <figure>
+                <img src="n-series-b.webp" alt="設計 B 短篇劇兩張資料卡" loading="lazy" />
+                <figcaption>短篇劇：劇集卡 + 短篇卡</figcaption>
+            </figure>
+            <figure class="wide">
+                <img src="l-show-b.webp" alt="設計 B 橫版節目頁" loading="lazy" />
+                <figcaption>橫版節目頁</figcaption>
+            </figure>
+            <figure class="wide">
+                <img src="l-series-b.webp" alt="設計 B 橫版短篇劇" loading="lazy" />
+                <figcaption>橫版短篇劇</figcaption>
+            </figure>
+        </div>
+    </section>
+
+    <section>
+        <h2><span class="letter">C</span>清單頂一行精簡資料，撳開 sheet</h2>
+        <p>
+            「集數」上面得一行：節目頁寫播放時間 + 主持；短篇劇寫短篇名 + 聲演。行尾 ›，撳落去開 A
+            嘅 sheet 睇完整簡介。B 同 A 嘅折衷。
+        </p>
+        <ul class="pc">
+            <li class="pro">重點一入頁見到，只多一行</li>
+            <li class="pro">長簡介照放 sheet</li>
+            <li class="con">一行太長會截斷（主持多時）</li>
+        </ul>
+        <div class="shots">
+            <figure>
+                <img src="n-show-c.webp" alt="設計 C 節目頁精簡資料行" loading="lazy" />
+                <figcaption>節目頁</figcaption>
+            </figure>
+            <figure>
+                <img src="n-series-c.webp" alt="設計 C 短篇劇精簡資料行" loading="lazy" />
+                <figcaption>短篇劇：跟住揀緊嘅短篇</figcaption>
+            </figure>
+            <figure class="wide">
+                <img src="l-show-c.webp" alt="設計 C 橫版節目頁" loading="lazy" />
+                <figcaption>橫版節目頁</figcaption>
+            </figure>
+            <figure class="wide">
+                <img src="l-series-c.webp" alt="設計 C 橫版短篇劇" loading="lazy" />
+                <figcaption>橫版短篇劇</figcaption>
+            </figure>
+        </div>
+    </section>
+
+    <section>
+        <h2><span class="letter">D</span>標題下面副標題，撳開 sheet</h2>
+        <p>
+            頁頭標題下面加一行細字（例：「星期六（22:00 - 23:45）· 主持甲 等 3 位 ›」），撳落去開 A
+            嘅 sheet。資料跟節目名一齊，唔影響清單。
+        </p>
+        <ul class="pc">
+            <li class="pro">清單完全唔郁</li>
+            <li class="pro">位置自然：節目名下面就係節目資料</li>
+            <li class="con">頁頭高咗一行，直版唱片向下移少少</li>
+        </ul>
+        <div class="shots">
+            <figure>
+                <img src="n-show-d.webp" alt="設計 D 節目頁副標題" loading="lazy" />
+                <figcaption>節目頁</figcaption>
+            </figure>
+            <figure>
+                <img src="n-series-d.webp" alt="設計 D 短篇劇副標題" loading="lazy" />
+                <figcaption>短篇劇</figcaption>
+            </figure>
+            <figure class="wide">
+                <img src="l-show-d.webp" alt="設計 D 橫版節目頁" loading="lazy" />
+                <figcaption>橫版節目頁</figcaption>
+            </figure>
+            <figure class="wide">
+                <img src="l-series-d.webp" alt="設計 D 橫版短篇劇" loading="lazy" />
+                <figcaption>橫版短篇劇</figcaption>
+            </figure>
+        </div>
+    </section>
+
+    <section>
+        <h2><span class="letter">E</span>全集 sheet 每個短篇行加聲演 / 簡介</h2>
+        <p>
+            「全集」sheet
+            每個短篇名下面加兩行細字（聲演、簡介，超出就截斷）。揀短篇之前已經知道講咩。
+            節目頁同劇集簡介唔包，要配 A–D 其中一個。
+        </p>
+        <ul class="pc">
+            <li class="pro">揀短篇時最需要嘅資料就喺度</li>
+            <li class="con">全集 sheet 每行高咗，一屏見少咗短篇</li>
+        </ul>
+        <div class="shots">
+            <figure>
+                <img
+                    src="n-series-e.webp"
+                    alt="設計 E 全集 sheet 短篇行有聲演同簡介"
+                    loading="lazy"
+                />
+                <figcaption>全集 sheet（直版）</figcaption>
+            </figure>
+            <figure class="wide">
+                <img src="l-series-e.webp" alt="設計 E 橫版全集 sheet" loading="lazy" />
+                <figcaption>全集 sheet（橫版）</figcaption>
+            </figure>
+        </div>
+    </section>
+
+    <section>
+        <h2>所有設計共通（揀完再逐項確認）</h2>
+        <ul class="rules">
+            <li>冇任何資料：唔出掣 / 卡 / 行</li>
+            <li>缺某一項（例如冇主持）：嗰項唔出，唔寫「未有資料」</li>
+            <li>播放時間用 catalog <code>formatAirTime</code>，同 admin 預覽一樣字</li>
+            <li>主頁、今日節目頁唔加</li>
+        </ul>
+    </section>
+</div>
