@@ -58,7 +58,7 @@ describe('BannerCard', () => {
         mockApi({ 'GET /api/banner': () => ({ body: { banner: null, updatedAt: null } }) });
         show();
         expect(await screen.findByText('內建預設')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '還原首頁 Banner' })).toBeDisabled();
+        expect(screen.queryByRole('button', { name: '還原首頁 Banner' })).not.toBeInTheDocument();
         // 兩個 slot 掣名唔同，螢幕閱讀器分得出窄版 / 闊版（S-914）
         expect(
             screen.getByRole('button', { name: '更換首頁 Banner（由窄版開始）— 窄版' }),
@@ -74,7 +74,7 @@ describe('BannerCard', () => {
         mockApi({ 'GET /api/banner': () => ({ body: { banner: CUSTOM, updatedAt: 'x' } }) });
         show(true);
         expect(await screen.findByText('自訂 · 未發佈')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '還原首頁 Banner' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: '還原首頁 Banner' })).toBeInTheDocument();
     });
 
     it('should crop 窄版 then 闊版 in one dialog and upload both before saving the banner', async () => {

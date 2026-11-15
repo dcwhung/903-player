@@ -45,10 +45,12 @@ button.revert-btn.dialog-revert .lucide {
 }
 
 /* ---------- 編輯頁：「已修改」+「還原」、「已發佈：…」、其他欄位一行 ---------- */
+/* min-height = 「還原」掣高度：有未儲存改動時掣隱藏，標題行唔縮、輸入框唔跳（S-1012） */
 .revert-mark {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    min-height: 23px;
     font-weight: 400;
 }
 

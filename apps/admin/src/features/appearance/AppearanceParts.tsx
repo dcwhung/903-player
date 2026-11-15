@@ -46,16 +46,18 @@ export const CardHead = ({ title, status, restoreLabel, canRestore, ...rest }: C
     <div className="card-head">
         <h2>{title}</h2>
         {status}
-        <button
-            type="button"
-            className="ghost-danger"
-            aria-label={restoreLabel}
-            disabled={!canRestore}
-            onClick={rest.onRestore}
-        >
-            <Undo2 aria-hidden="true" />
-            {t('appearance.restore')}
-        </button>
+        {/* 冇得還原（內建預設）就唔顯示（C-023，用戶 2026-11-15：disabled 嘅還原掣隱藏） */}
+        {canRestore && (
+            <button
+                type="button"
+                className="ghost-danger"
+                aria-label={restoreLabel}
+                onClick={rest.onRestore}
+            >
+                <Undo2 aria-hidden="true" />
+                {t('appearance.restore')}
+            </button>
+        )}
         {rest.children}
     </div>
 );

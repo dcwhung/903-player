@@ -37,11 +37,11 @@ describe('AppearancePage', () => {
         ]);
     });
 
-    it('should mark the built-in icon and text with 內建預設 and disable 還原', async () => {
+    it('should mark the built-in icon and text with 內建預設 and hide 還原 (C-023)', async () => {
         show();
-        expect(await screen.findByRole('button', { name: '還原 App 圖示' })).toBeDisabled();
-        expect(screen.getByRole('button', { name: '還原名稱與簡介' })).toBeDisabled();
-        expect(screen.getAllByText('內建預設').length).toBeGreaterThanOrEqual(2);
+        expect((await screen.findAllByText('內建預設')).length).toBeGreaterThanOrEqual(2);
+        expect(screen.queryByRole('button', { name: '還原 App 圖示' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: '還原名稱與簡介' })).not.toBeInTheDocument();
     });
 
     it('should mark custom branding not yet published', async () => {
