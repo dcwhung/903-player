@@ -135,4 +135,20 @@ describe('BannerCard', () => {
         await userEvent.click(within(dialog).getByRole('button', { name: '還原' }));
         await waitFor(() => expect(deleted).toHaveBeenCalledOnce());
     });
+
+    it('should move focus to 更換 when 還原 disappears after restoring (S-1013)', async () => {
+        let current: typeof CUSTOM | null = CUSTOM;
+        mockApi({
+            'GET /api/banner': () => ({ body: { banner: current, updatedAt: current && 'x' } }),
+            'DELETE /api/banner': () => ((current = null), {}),
+        });
+        show();
+        await userEvent.click(await screen.findByRole('button', { name: '還原首頁 Banner' }));
+        const dialog = screen.getByRole('dialog', { name: '還原首頁 Banner？' });
+        await userEvent.click(within(dialog).getByRole('button', { name: '還原' }));
+        await screen.findByText('內建預設');
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: '更換首頁 Banner' })).toHaveFocus(),
+        );
+    });
 });

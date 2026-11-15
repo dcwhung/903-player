@@ -4,16 +4,27 @@
  * 圖位鉛筆旁圓形還原掣同色。確認框沿用 .scrim（冇新動畫）
  */
 
+/*
+ * 「還原」掣高度 = line-height + 上下 padding（S-1012）：寫死 line-height，高度唔跟字型（Poppins / Noto Sans TC
+ * 嘅 line-height: normal 比 fallback 高 2px）。冇 border：theme.css button 係 border: 0（mockup.css 嘅 1px 被蓋走），
+ * hover 框用 inset box-shadow，唔佔位。.revert-mark 用同一組 property 計 min-height
+ */
+:root {
+    --revert-btn-line-height: 17px;
+    --revert-btn-pad-y: 3px;
+}
+
 /* ---------- 「還原」掣（時間線行尾、欄位標題旁、確認框） ---------- */
 button.revert-btn {
     gap: 4px;
-    padding: 3px 10px;
+    padding: var(--revert-btn-pad-y) 10px;
     border-radius: 8px;
     background: var(--danger-bg);
     color: var(--danger-ink);
     box-shadow: none;
     font-size: 12px;
     font-weight: 600;
+    line-height: var(--revert-btn-line-height);
     white-space: nowrap;
 }
 
@@ -33,10 +44,11 @@ button.revert-btn:hover:not(:disabled) {
     margin-left: auto;
 }
 
-/* 確認框嘅「還原 N 項」同取消掣一樣大 */
+/* 確認框嘅「還原 N 項」同取消掣一樣大（line-height 跟返全域 button，唔用上面寫死嘅值） */
 button.revert-btn.dialog-revert {
     padding: 8px 18px;
     font-size: 14px;
+    line-height: normal;
 }
 
 button.revert-btn.dialog-revert .lucide {
@@ -50,7 +62,7 @@ button.revert-btn.dialog-revert .lucide {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    min-height: 23px;
+    min-height: calc(var(--revert-btn-line-height) + 2 * var(--revert-btn-pad-y));
     font-weight: 400;
 }
 

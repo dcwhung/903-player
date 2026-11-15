@@ -84,4 +84,25 @@ describe('TextCard', () => {
         await userEvent.click(within(dialog).getByRole('button', { name: '還原' }));
         await waitFor(() => expect(deleted).toHaveBeenCalledOnce());
     });
+
+    it('should move focus to the card title when 還原 disappears and 儲存 is disabled (S-1013)', async () => {
+        let text: { name: string; description: string } | null = { name: 'X', description: 'Y' };
+        mockApi({
+            'GET /api/branding': () => ({ body: { icon: null, text, updatedAt: text && 'z' } }),
+            'DELETE /api/branding/text': () => ((text = null), {}),
+        });
+        show();
+        await userEvent.click(await screen.findByRole('button', { name: '還原名稱與簡介' }));
+        const dialog = screen.getByRole('dialog', { name: '還原名稱與簡介？' });
+        await userEvent.click(within(dialog).getByRole('button', { name: '還原' }));
+        await screen.findByText('內建預設');
+        expect(screen.getByRole('button', { name: '儲存名稱與簡介' })).toBeDisabled();
+        await waitFor(() =>
+            expect(screen.getByRole('heading', { name: '名稱與簡介' })).toHaveFocus(),
+        );
+        expect(screen.getByRole('heading', { name: '名稱與簡介' })).toHaveAttribute(
+            'tabindex',
+            '-1',
+        );
+    });
 });
