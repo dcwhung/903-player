@@ -9,7 +9,7 @@ import { scanListing } from './listing';
 import { mergeArcs, mergeDaily, withArcIds, type DailyEpisodeJson } from './merge';
 import { analyseSeries, nameIssues } from './series';
 import { DAILY_TEMPLATE, issue } from './shared';
-import { wordingOf, type ScanWording } from './wording';
+import { SCAN_WORDING, type ScanWording } from './wording';
 import type {
     DraftArc,
     DraftJson,
@@ -159,7 +159,7 @@ const buildJson = (
 /** listing → drama.json 草稿 + 問題清單；existing 有就合併（人手欄位照留） */
 export const generateDraft = (listing: FolderListing, options: DraftOptions): DraftResult => {
     const { id, existing, today } = options;
-    const wording = wordingOf(options.source);
+    const wording = SCAN_WORDING;
     const scan = scanListing(listing);
     const kind = kindOf(scan);
     const base = { scan, kind, today, issues: dramaIssues(scan, { id, wording }, kind) };

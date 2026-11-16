@@ -1,5 +1,5 @@
 /*
- * 劇集 folder 掃描（R2 / 本機）嘅型別。輸入係 FolderListing：CLI 由 fs 砌，Worker 由 R2 list 砌，
+ * 劇集 folder 掃描（R2）嘅型別。輸入係 FolderListing：Worker 由 R2 list 砌（test 用 testListing.ts），
  * 呢個 module 唔郁 fs / 網絡。
  */
 
@@ -82,9 +82,4 @@ export interface DraftOptions {
     existing?: unknown;
     /** 香港日期 YYYY-MM-DD（新短篇 / 新劇嘅 addedAt） */
     today: string;
-    /** listing 由邊度嚟：決定訊息字眼（S-785）；預設 folder（CLI） */
-    source?: ScanSource | undefined;
 }
-
-/** folder = CLI 掃本機 folder；r2 = API 掃 R2 資料夾 */
-export type ScanSource = 'folder' | 'r2';

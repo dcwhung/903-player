@@ -144,7 +144,6 @@ export const planRescan = async (
         id: entry.id,
         existing: definition,
         today,
-        source: 'r2',
     });
     const errors = result.issues.filter((i) => i.level === 'error');
     const before = JSON.parse(entry.definition) as Json;

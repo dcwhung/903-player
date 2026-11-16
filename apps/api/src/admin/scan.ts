@@ -120,7 +120,7 @@ const planNewDrama = async (
     ctx: ScanContext,
 ): Promise<boolean> => {
     const listing = await listingFromR2(ctx.env.AUDIO, folder);
-    const result = generateDraft(listing, { id, today: ctx.today, source: 'r2' });
+    const result = generateDraft(listing, { id, today: ctx.today });
     if (result.json === null) {
         plan.skipped.push({ folder, issues: result.issues.filter((i) => i.level === 'error') });
         return false;

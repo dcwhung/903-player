@@ -10,7 +10,7 @@ const ROOT = new URL('../', import.meta.url);
 export type SchemaName = 'drama' | 'show' | 'catalog';
 
 /**
- * 用 ajv 編譯 schemas/<name>.schema.json。schema drift test 同 dramaFromFolder CLI test 共用，
+ * 用 ajv 編譯 schemas/<name>.schema.json。schema drift test 同 player 嘅 library test 共用，
  * 兩邊用同一套 ajv 設定，唔會一邊收一邊拒。
  */
 export const compileSchema = (name: SchemaName): ValidateFunction => {

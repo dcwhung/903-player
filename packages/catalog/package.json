@@ -5,6 +5,7 @@
     "exports": {
         ".": "./src/index.ts",
         "./testing/json-schemas": "./tests/jsonSchemas.ts",
+        "./testing/scan-listing": "./src/scan/testListing.ts",
         "./schemas/*": "./schemas/*"
     },
     "scripts": {
