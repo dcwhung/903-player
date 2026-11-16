@@ -462,7 +462,8 @@ const checkToday = async (env, label) => {
         p,
         log,
         label,
-        p.getByRole('region', { name: '節目表' }).getByRole('list'),
+        // S-1017：用 data-role 揀主清單（展開資料有主持 chip，都係 list）
+        p.getByRole('region', { name: '節目表' }).locator('[data-role="today-list"]'),
     );
     await checkCardSwipes(cdp, p, log, label);
     await checkCardDragNeverSeeks(cdp, p, log, label);

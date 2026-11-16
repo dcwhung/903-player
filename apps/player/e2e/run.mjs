@@ -578,7 +578,8 @@ const checkTodayCardShare = (share, label, short) => {
 
 /** 今日節目頁固定：捲輪 / scrollTo 都唔會捲成頁；清單太長就自己捲 */
 const checkFixedTodayPage = async (p, label) => {
-    const list = p.getByRole('region', { name: '節目表' }).getByRole('list');
+    // S-1017：用 data-role 揀主清單（展開資料有主持 chip，都係 list）
+    const list = p.getByRole('region', { name: '節目表' }).locator('[data-role="today-list"]');
     // 橫版播放器喺右欄，唔受六成上限（同矮螢幕一樣只印出）
     const short = p.viewportSize().height <= SHORT_HEIGHT_PX || isLandscape(p);
     checkTodayCardShare(await checkTodayRows(list, label), label, short);
@@ -872,14 +873,22 @@ const SHELL_MISMATCH_CASES = [
 ];
 const SHELL_PAGES = [
     { route: '#/show/badgirl', region: '集數', minRows: MIN_VISIBLE_ROWS, name: '節目頁' },
-    { route: '#/today', region: '節目表', minRows: TODAY_MIN_ROWS, name: '今日節目頁' },
+    {
+        route: '#/today',
+        region: '節目表',
+        // S-1017：主清單用 data-role 揀（展開資料嘅主持 chip 都係 list）
+        list: '[data-role="today-list"]',
+        minRows: TODAY_MIN_ROWS,
+        name: '今日節目頁',
+    },
 ];
 // 對照組用嘅舊做法：主碟跟 dvh（W-390 之前）
 const DVH_SOURCE_CSS = ':root { --player-shell-height: 100dvh !important; }';
 const LAYOUT_SETTLE_MS = 300;
 /** 殼縮矮後嘅量度：殼高、100dvh、唱片、清單行數、控制掣係咪喺 main 入面、main 有冇溢出 */
-const shellFit = async (p, region) => {
-    const rows = await visibleRows(p.getByRole('region', { name: region }).getByRole('list'));
+const shellFit = async (p, region, list) => {
+    const scope = p.getByRole('region', { name: region });
+    const rows = await visibleRows(list ? scope.locator(list) : scope.getByRole('list'));
     const layout = await p.evaluate(() => {
         const main = document.querySelector('main');
         const box = main.getBoundingClientRect();
@@ -922,17 +931,17 @@ const checkShellMismatch = async (browser, errors) => {
         });
         const sp = await ctx.newPage();
         sp.on('pageerror', (e) => errors.push(e.message));
-        for (const { route, region, minRows, name } of SHELL_PAGES) {
+        for (const { route, region, list, minRows, name } of SHELL_PAGES) {
             await sp.goto(`${BASE}${route}`);
             await ensurePlaying(sp);
             await sp.waitForTimeout(800);
             const label = `${width}×${height} ${name}（殼矮 ${shrink}px）`;
-            const normal = await shellFit(sp, region);
+            const normal = await shellFit(sp, region, list);
             const shrunk = await sp.addStyleTag({
                 content: `html { height: calc(100% - ${shrink}px) !important; }`,
             });
             await sp.waitForTimeout(LAYOUT_SETTLE_MS);
-            const fit = await shellFit(sp, region);
+            const fit = await shellFit(sp, region, list);
             log(
                 Math.abs(fit.dvh - fit.shell - shrink) < 1,
                 `${label}：模擬到 dvh 高過殼 ${(fit.dvh - fit.shell).toFixed(0)}px`,
@@ -943,7 +952,7 @@ const checkShellMismatch = async (browser, errors) => {
             );
             const legacy = await sp.addStyleTag({ content: DVH_SOURCE_CSS });
             await sp.waitForTimeout(LAYOUT_SETTLE_MS);
-            const dvhFit = await shellFit(sp, region);
+            const dvhFit = await shellFit(sp, region, list);
             log(
                 !shellHolds(dvhFit, minRows),
                 `${label} 對照：舊做法（唱片跟 100dvh）真係會出事（${describeFit(dvhFit)}）`,

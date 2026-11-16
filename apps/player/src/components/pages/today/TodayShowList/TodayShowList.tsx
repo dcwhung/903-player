@@ -64,7 +64,7 @@ export const TodayShowList = ({
                     <span>{t('today.unavailableCount', { count: unavailable })}</span>
                 )}
             </div>
-            <ul className={styles.list}>
+            <ul className={styles.list} data-role="today-list">
                 {items.map((item) => (
                     <TodayRow
                         key={item.key}

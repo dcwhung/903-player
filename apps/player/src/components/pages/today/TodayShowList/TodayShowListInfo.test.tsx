@@ -70,6 +70,16 @@ describe('TodayShowList item info（P9.5 #12）', () => {
         expect(scope.getByRole('button', { name: /^暫停 在晴朗的一天出發/ })).toBeInTheDocument();
     });
 
+    it('should mark the schedule list apart from the host chip lists', () => {
+        // S-1017：e2e 用 data-role 揀主清單，展開有主持 chip（都係 <ul>）都唔會撞
+        const { container } = renderList({ infoExpanded: true, onToggleInfo: vi.fn() });
+        const lists = container.querySelectorAll('[data-role="today-list"]');
+        expect(lists).toHaveLength(1);
+        expect(lists[0]?.querySelectorAll(':scope > li[data-today-row]')).toHaveLength(
+            ITEMS.length,
+        );
+    });
+
     it('should show the info of a show that is not up yet', () => {
         renderList({ infoExpanded: true, onToggleInfo: vi.fn() });
         expect(screen.getByText('未上架示範簡介')).toBeInTheDocument();
