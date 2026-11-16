@@ -1046,8 +1046,9 @@
                 border-radius: 24px;
             }
             .android img {
-                width: 72px;
-                height: 72px;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
             }
             .tab {
                 display: flex;
@@ -1368,8 +1369,9 @@
                             <td>
                                 預設「所有裝置同一裁切」；取消勾選後分三個分頁各自調：iPhone（apple-touch
                                 180）、Android（192 / 512 + maskable
-                                512，圓形同方形係同一張圖，由手機自己套遮罩，所以只可以一齊調，框內虛線圈
-                                = 安全區）、瀏覽器分頁（favicon 64）。
+                                512，圓形同方形係同一張圖，由手機自己套遮罩，所以只可以一齊調，實線圈
+                                = 遮罩邊界（輸出全幅），框內虛線圈 = 安全區）、瀏覽器分頁（favicon
+                                64）。
                             </td>
                         </tr>
                     </tbody>

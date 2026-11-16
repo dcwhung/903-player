@@ -24,13 +24,13 @@ const READY = {
     seed: {},
 } as unknown as IconReady;
 
-const renderSource = (round: boolean) =>
+const renderSource = (round: boolean, locked = false) =>
     render(
         <IconCropSource
             ready={READY}
             box={BOX}
             view={cropView(!round, 'android')}
-            locked={false}
+            locked={locked}
             onBox={vi.fn()}
         />,
     ).container;
@@ -52,5 +52,11 @@ describe('IconCropSource', () => {
     it('should cut a round hole when the Android crop box is a circle', () => {
         const hole = renderSource(true).querySelector('.dim-hole');
         expect(hole).toHaveClass('circle');
+    });
+
+    it('should not draw the dim when the crop is locked (S-1101)', () => {
+        const container = renderSource(false, true);
+        expect(container.querySelector('.dim')).toBeNull();
+        expect(container.querySelector('.box')).not.toBeNull();
     });
 });
