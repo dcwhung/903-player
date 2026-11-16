@@ -3,9 +3,16 @@
  * 冇行 = 還原（catalog.json 冇嗰部分，player 用 repo 內建）
  */
 import type { IconImageKey } from '@903-player/catalog';
+import { iconSourceOf, type IconSource } from './iconSource';
 
-/** 五個 R2 圖檔名 <hash>.png + maskable 底色 #rrggbb（細楷） */
-export type BrandingIcon = Record<IconImageKey, string> & { maskableBackground: string };
+/**
+ * 五個 R2 圖檔名 <hash>.png + maskable 底色 #rrggbb（細楷）；
+ * source = 原圖 + 裁切框（migration 0007，admin 草稿資料，唔寫入 catalog.json；冇 = 舊圖示）
+ */
+export type BrandingIcon = Record<IconImageKey, string> & {
+    maskableBackground: string;
+    source?: IconSource;
+};
 
 /** 已 trim；shortName 冇 = 用 name */
 export interface BrandingText {
@@ -27,9 +34,30 @@ export interface StoredBranding extends BrandingDraft {
 
 const ROW_ID = 1;
 
-interface IconRow extends BrandingIcon {
+interface IconRow extends Omit<BrandingIcon, 'source'> {
+    sourceImage: string | null;
+    sourceCrop: string | null;
     updatedAt: string;
 }
+
+/** source_crop JSON：{ same, boxes } */
+const cropJson = (source: IconSource | undefined) =>
+    source ? JSON.stringify({ same: source.same, boxes: source.boxes }) : null;
+
+/** 兩欄都有、JSON 讀得返先算有原圖（壞咗當冇，admin 照用 512 圖頂住） */
+const sourceOf = ({ sourceImage, sourceCrop }: IconRow): IconSource | null => {
+    if (sourceImage === null || sourceCrop === null) return null;
+    try {
+        const crop: unknown = JSON.parse(sourceCrop);
+        return (
+            iconSourceOf(
+                typeof crop === 'object' && crop !== null ? { ...crop, image: sourceImage } : crop,
+            ) ?? null
+        );
+    } catch {
+        return null;
+    }
+};
 
 interface TextRow {
     name: string;
@@ -39,19 +67,24 @@ interface TextRow {
 }
 
 const ICON_SELECT = `SELECT favicon, apple_touch AS appleTouch, icon_192 AS icon192, icon_512 AS icon512,
-    maskable, maskable_background AS maskableBackground, updated_at AS updatedAt
+    maskable, maskable_background AS maskableBackground, source_image AS sourceImage,
+    source_crop AS sourceCrop, updated_at AS updatedAt
     FROM branding_icon WHERE id = ?`;
 const TEXT_SELECT = `SELECT name, short_name AS shortName, description, updated_at AS updatedAt
     FROM branding_text WHERE id = ?`;
 
-const iconOf = (row: IconRow): BrandingIcon => ({
-    favicon: row.favicon,
-    appleTouch: row.appleTouch,
-    icon192: row.icon192,
-    icon512: row.icon512,
-    maskable: row.maskable,
-    maskableBackground: row.maskableBackground,
-});
+const iconOf = (row: IconRow): BrandingIcon => {
+    const source = sourceOf(row);
+    return {
+        favicon: row.favicon,
+        appleTouch: row.appleTouch,
+        icon192: row.icon192,
+        icon512: row.icon512,
+        maskable: row.maskable,
+        maskableBackground: row.maskableBackground,
+        ...(source ? { source } : {}),
+    };
+};
 
 const textOf = ({ name, shortName, description }: TextRow): BrandingText =>
     shortName === null ? { name, description } : { name, shortName, description };
@@ -78,11 +111,14 @@ export const saveIcon = async (db: D1Database, icon: BrandingIcon, updatedAt: st
     await db
         .prepare(
             `INSERT INTO branding_icon (id, favicon, apple_touch, icon_192, icon_512, maskable,
-                 maskable_background, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 maskable_background, source_image, source_crop, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT (id) DO UPDATE SET favicon = excluded.favicon,
                  apple_touch = excluded.apple_touch, icon_192 = excluded.icon_192,
                  icon_512 = excluded.icon_512, maskable = excluded.maskable,
-                 maskable_background = excluded.maskable_background, updated_at = excluded.updated_at`,
+                 maskable_background = excluded.maskable_background,
+                 source_image = excluded.source_image, source_crop = excluded.source_crop,
+                 updated_at = excluded.updated_at`,
         )
         .bind(
             ROW_ID,
@@ -92,6 +128,8 @@ export const saveIcon = async (db: D1Database, icon: BrandingIcon, updatedAt: st
             icon.icon512,
             icon.maskable,
             icon.maskableBackground,
+            icon.source?.image ?? null,
+            cropJson(icon.source),
             updatedAt,
         )
         .run();

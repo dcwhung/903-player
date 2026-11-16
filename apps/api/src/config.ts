@@ -127,3 +127,10 @@ export const R2_SOURCE_CONTENT_TYPE_ALIASES: Readonly<Record<string, string>> = 
 };
 /** 原圖會換（同名覆蓋）：每次用 ETag revalidate，唔好直接用舊 cache */
 export const R2_SOURCE_CACHE_CONTROL = 'private, no-cache';
+
+/* ───────────── App 圖示原圖（PUT /api/assets/source，icon recrop） ───────────── */
+
+/** 原圖檔名：<sha256 前 16 hex>.<png|jpg|webp>（/catalog/v1/img/ 讀得返，admin 重新裁切用） */
+export const ICON_SOURCE_FILE_PATTERN = /^[0-9a-f]{16}\.(png|jpg|webp)$/;
+/** 裁切框上限（px）：同 admin SOURCE_MAX_EDGE_PX 一樣（再大 browser decode 唔到） */
+export const ICON_SOURCE_MAX_EDGE_PX = 8000;

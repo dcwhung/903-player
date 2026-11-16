@@ -2,6 +2,16 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.13.0 — 2026-11-16
+
+App 圖示重新裁切（用戶 2026-11-16 決定：存原圖 + 裁切框，重新裁切唔會越裁越差）。舊 client 照用得：`source` 可以唔傳，冇原圖嘅圖示照舊有效。
+
+### Added
+
+- `PUT /api/assets/source`：App 圖示原圖（PNG / JPEG / WebP、任何尺寸、≤ 20 MB）原封不動存 R2 + `assets`（`<hash16>.<png|jpg|webp>`）；Content-Type 錯 415、magic bytes 對唔上 422、太大 413
+- `PUT /api/branding/icon` 可以帶 `source: { image, same, boxes: { ios, android, tab } }`（原圖檔名 + 每種裝置嘅裁切框 + 「所有裝置使用同一裁切」）；`GET /api/branding` 有就出返。形狀錯 400、框出界 / 原圖未上載 422。只係 admin 草稿資料，唔寫入 `catalog.json`
+- Migration `0007_branding_icon_source.sql`：`branding_icon.source_image`、`source_crop`（JSON）
+
 ## 0.12.2 — 2026-11-16
 
 本機 CLI `dramaFromFolder` 刪除（S-751）之後嘅清理；API 行為同 admin 見到嘅掃描字眼一字不差。
