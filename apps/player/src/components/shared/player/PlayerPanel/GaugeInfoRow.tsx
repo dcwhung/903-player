@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { INFO_OPENER_ATTR } from '../../common/ItemInfo/ItemInfoSheet';
 import { InfoIcon } from '../../common/icons/icons';
 import styles from './PlayerPanel.module.css';
 
@@ -21,7 +22,13 @@ export const GaugeInfoRow = ({ onInfo, label, children }: GaugeInfoRowProps) => 
     <div className={styles.infoRow}>
         {children}
         {onInfo && (
-            <button type="button" className={styles.info} aria-label={label} onClick={onInfo}>
+            <button
+                type="button"
+                className={styles.info}
+                aria-label={label}
+                onClick={onInfo}
+                {...{ [INFO_OPENER_ATTR]: '' }}
+            >
                 <InfoIcon size={INFO_ICON_SIZE} />
             </button>
         )}

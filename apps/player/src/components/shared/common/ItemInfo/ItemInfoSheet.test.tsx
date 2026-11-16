@@ -1,6 +1,6 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ItemInfoSheet } from './ItemInfoSheet';
+import { INFO_OPENER_ATTR, ItemInfoSheet } from './ItemInfoSheet';
 
 const SHOW = {
     kind: 'show' as const,
@@ -145,5 +145,98 @@ describe('ItemInfoSheet', () => {
         render(<ItemInfoSheet open docked sections={[SHOW]} label="節目資料" onClose={vi.fn()} />);
         expect(screen.queryByTestId('info-sheet-backdrop')).not.toBeInTheDocument();
         expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'false');
+    });
+
+    describe('docked: pressing something in the left column', () => {
+        /** 橫版：左欄清單 + 右欄 ⓘ + 右欄 sheet */
+        const renderDocked = (docked = true) => {
+            const onClose = vi.fn();
+            render(
+                <>
+                    <ul>
+                        <li>
+                            <button type="button">播放 17/10 星期六</button>
+                            <span>17/10</span>
+                        </li>
+                        <li>
+                            <a href="#all">全集</a>
+                            <div role="button" tabIndex={0}>
+                                戀愛二分一
+                            </div>
+                        </li>
+                    </ul>
+                    <button type="button" aria-label="節目資料" {...{ [INFO_OPENER_ATTR]: '' }}>
+                        <svg data-testid="info-icon" />
+                    </button>
+                    <ItemInfoSheet
+                        open
+                        docked={docked}
+                        sections={[SHOW]}
+                        label="節目資料"
+                        onClose={onClose}
+                    />
+                </>,
+            );
+            return onClose;
+        };
+
+        it('should close when a button, link or role=button outside the sheet is pressed', () => {
+            const onClose = renderDocked();
+            fireEvent.pointerDown(screen.getByRole('button', { name: '播放 17/10 星期六' }));
+            fireEvent.pointerDown(screen.getByRole('link', { name: '全集' }));
+            fireEvent.pointerDown(screen.getByRole('button', { name: '戀愛二分一' }));
+            expect(onClose).toHaveBeenCalledTimes(3);
+        });
+
+        it('should not close when the info button or its icon is pressed', () => {
+            const onClose = renderDocked();
+            fireEvent.pointerDown(screen.getByRole('button', { name: '節目資料' }));
+            fireEvent.pointerDown(screen.getByTestId('info-icon'));
+            expect(onClose).not.toHaveBeenCalled();
+        });
+
+        it('should not close on plain text outside or on anything inside the sheet', () => {
+            const onClose = renderDocked();
+            fireEvent.pointerDown(screen.getByText('17/10'));
+            fireEvent.pointerDown(screen.getByText('節目簡介'));
+            fireEvent.pointerDown(screen.getByRole('dialog'));
+            expect(onClose).not.toHaveBeenCalled();
+        });
+
+        it('should leave outside presses alone when not docked (the backdrop closes it)', () => {
+            const onClose = renderDocked(false);
+            fireEvent.pointerDown(screen.getByRole('button', { name: '播放 17/10 星期六' }));
+            expect(onClose).not.toHaveBeenCalled();
+        });
+
+        it('should stop listening once closed', () => {
+            const onClose = vi.fn();
+            const { rerender } = render(
+                <>
+                    <button type="button">播放</button>
+                    <ItemInfoSheet
+                        open
+                        docked
+                        sections={[SHOW]}
+                        label="節目資料"
+                        onClose={onClose}
+                    />
+                </>,
+            );
+            rerender(
+                <>
+                    <button type="button">播放</button>
+                    <ItemInfoSheet
+                        open={false}
+                        docked
+                        sections={[SHOW]}
+                        label="節目資料"
+                        onClose={onClose}
+                    />
+                </>,
+            );
+            fireEvent.pointerDown(screen.getByRole('button', { name: '播放' }));
+            expect(onClose).not.toHaveBeenCalled();
+        });
     });
 });
