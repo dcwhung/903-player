@@ -107,6 +107,19 @@ const futureStarts = (rule: ScheduleRule, ctx: ScheduleContext): ScheduleBatch[]
     }
 };
 
+/**
+ * 規則嘅 from 遲過下一集未上架（未發佈短篇：rule.listed 嗰段而家唔算已上架）：由第一批起計嘅句子
+ * 未必排出同一套日子，排唔返就當自訂批次（照原本日子顯示）；已發佈短篇（from ≤ 下一集）照舊
+ */
+const keepsPlan = (
+    rule: ScheduleRule & { kind: 'periodic' },
+    ctx: ScheduleContext,
+    periodic: ListingForm,
+    future: readonly ScheduleBatch[],
+): boolean =>
+    (rule.from ?? ctx.firstNo) <= nextNoOf(ctx) ||
+    JSON.stringify(futureStarts(listingRule(periodic, ctx), ctx)) === JSON.stringify(future);
+
 const listingFormOf = (rule: ScheduleRule | null, ctx: ScheduleContext): ListingForm => {
     if (isAllListed(ctx)) return { mode: 'done' };
     const fallback: ListingForm = { mode: 'all', start: defaultStart(ctx) };
@@ -115,8 +128,14 @@ const listingFormOf = (rule: ScheduleRule | null, ctx: ScheduleContext): Listing
     const [first] = future;
     if (!first || first.from !== nextNoOf(ctx)) return fallback;
     // periodic：句子由下一批（今日之後）起計，已上架嗰段變 listed
-    if (rule.kind === 'periodic')
-        return { mode: 'periodic', ...periodicOf({ ...rule, start: first.date }) };
+    if (rule.kind === 'periodic') {
+        const periodic: ListingForm = {
+            mode: 'periodic',
+            ...periodicOf({ ...rule, start: first.date }),
+        };
+        if (!keepsPlan(rule, ctx, periodic, future)) return { mode: 'custom', batches: future };
+        return periodic;
+    }
     return future.length === 1
         ? { mode: 'all', start: first.date }
         : { mode: 'custom', batches: future };

@@ -2,6 +2,7 @@
  * /api/branding（App 外觀 plan）：App 圖示（五張 PNG + 遮罩底色）同名稱與簡介，已經過 same-origin + session 守門。
  * 同 banner 一樣係「草稿」：PUT / DELETE 只改 D1，POST /api/publish 先寫入 catalog.json 嘅 branding。
  * icon PUT 驗：檔名 <hash>.png、已上載、R2 PNG IHDR 尺寸啱嗰個 slot（assets/storedImage.ts）；
+ * 有 source（原圖 + 裁切框，icon recrop）再驗框同原圖已上載（iconSource.ts）；
  * text PUT 驗：trim 後非空、長度上限（packages/catalog parseCatalogText，同 publish 同一套）
  */
 import {
@@ -18,6 +19,7 @@ import { storedImageProblem, type ImageSlot } from '../assets/storedImage';
 import { HTTP_STATUS } from '../config';
 import { errorResponse, readJsonObject } from '../content/http';
 import { iconBodyOf, textBodyOf } from './body';
+import { iconSourceProblem } from './iconSource';
 import { deleteIcon, deleteText, getBranding, saveIcon, saveText } from './store';
 
 export const brandingRoutes = new Hono<AppEnv>();
@@ -35,7 +37,8 @@ const current = async (c: Context<AppEnv>) => c.json(await getBranding(c.env.DB)
 const badBody = (c: Context<AppEnv>, shape: string) =>
     errorResponse(c, HTTP_STATUS.badRequest, `body must be ${shape}`);
 
-const ICON_SHAPE = '{ favicon, appleTouch, icon192, icon512, maskable, maskableBackground }';
+const ICON_SHAPE =
+    '{ favicon, appleTouch, icon192, icon512, maskable, maskableBackground, source?: { image, same, boxes: { ios, android, tab } } }';
 const TEXT_SHAPE = '{ name, shortName?, description } strings';
 
 brandingRoutes.get('/branding', current);
@@ -49,6 +52,8 @@ brandingRoutes.put('/branding/icon', async (c) => {
         const problem = await storedImageProblem(c.env, slot, icon[slot.key]);
         if (problem) return errorResponse(c, HTTP_STATUS.unprocessable, problem);
     }
+    const sourceProblem = icon.source && (await iconSourceProblem(c.env, icon.source));
+    if (sourceProblem) return errorResponse(c, HTTP_STATUS.unprocessable, sourceProblem);
     // 細楷：同一隻色唔會因為大細楷當改咗（brandingChanged）
     const background = icon.maskableBackground.toLowerCase();
     await saveIcon(c.env.DB, { ...icon, maskableBackground: background }, new Date().toISOString());

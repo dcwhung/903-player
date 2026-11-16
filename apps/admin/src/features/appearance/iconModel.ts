@@ -2,7 +2,8 @@
  * App 圖示輸出（plan 2026-11-13 App 外觀 · Q1 / Q6）：一張原圖裁正方形 → 五張 PNG
  * （favicon 64、apple-touch 180、icon 192 / 512、maskable 512）。每張屬於一種裝置：
  * iPhone（apple-touch）、Android（192 / 512 / maskable，圓形同方形係同一張，由手機套遮罩）、瀏覽器分頁（favicon）。
- * 「所有裝置使用同一裁切」= 一個框管晒；取消勾選後每種裝置各自一個框
+ * 「所有裝置使用同一裁切」= 一個框管晒；取消勾選後每種裝置各自一個框。
+ * 重新裁切（icon recrop）：由原圖 + 上次嘅框（IconSeed）開始，撳邊個裝置預覽就預先揀嗰個裝置
  * Design Origin: mockup: _mockups_/admin-appearance/index.html#b
  */
 import { ASSET_DIMENSIONS } from '@903-player/catalog';
@@ -15,7 +16,7 @@ export const ICON_DEVICES = ['ios', 'android', 'tab'] as const;
 
 export type IconDevice = (typeof ICON_DEVICES)[number];
 
-export type IconKey = Exclude<keyof BrandingIcon, 'maskableBackground'>;
+export type IconKey = Exclude<keyof BrandingIcon, 'maskableBackground' | 'source'>;
 
 export interface IconOutput {
     key: IconKey;
@@ -61,6 +62,46 @@ export const boxesFor = (same: boolean, shared: CropRect, own: Partial<IconBoxes
     tab: same ? shared : (own.tab ?? shared),
 });
 
+/** 開 dialog 嘅起點：全部冇 = 新揀嘅檔（預設置中裁切、同一裁切） */
+export interface IconSeed {
+    /** 撳咗邊個裝置預覽：嗰個裝置單獨調（取消「同一裁切」） */
+    device?: IconDevice;
+    /** 已存喺 R2 嘅原圖檔名；冇 = 上載時要連原圖一齊上載 */
+    storedName?: string;
+    /** 上次嘅框（原圖像素） */
+    boxes?: IconBoxes;
+    same?: boolean;
+    /** 上次嘅遮罩底色；冇 = 第一個抽色 */
+    background?: string;
+    /** 舊圖示冇原圖：用 512 圖示頂住（dialog 出提示） */
+    fallback?: boolean;
+}
+
+export interface InitialCrop {
+    same: boolean;
+    device: IconDevice;
+    shared: CropRect;
+    own: Partial<IconBoxes>;
+}
+
+const DEFAULT_DEVICE: IconDevice = 'ios';
+
+/** 撳裝置預覽 = 單獨調嗰個（其他裝置保留上次嘅框）；冇揀裝置 = 跟上次（新檔 = 同一裁切） */
+export const initialCrop = (defaultBox: CropRect, seed: IconSeed): InitialCrop => {
+    const device = seed.device ?? DEFAULT_DEVICE;
+    const { boxes } = seed;
+    return {
+        same: seed.device === undefined && (seed.same ?? true),
+        device,
+        shared: boxes ? boxes[device] : defaultBox,
+        own: boxes ? { ...boxes } : {},
+    };
+};
+
+/** 上次嘅底色唔喺抽色入面（例如內建底色）就排第一個，揀得返 */
+export const withSwatch = (swatches: string[], colour: string | undefined): string[] =>
+    colour === undefined || swatches.includes(colour) ? swatches : [colour, ...swatches];
+
 /** 裁切框顯示（Q6）：同一裁切顯示安全區、唔圓；Android 單獨調 = 圓 + 安全區；其他 = 方框 */
 export interface IconCropView {
     round: boolean;
@@ -95,3 +136,39 @@ export const cropView = (same: boolean, device: IconDevice): IconCropView =>
               cap: CAP_KEY[device],
               out: OUT_KEY[device],
           };
+
+/** 卡上撳得嘅裝置（瀏覽器分頁唔使：用戶要求淨係 iPhone / Android） */
+export type AdjustableDevice = Extract<IconDevice, 'ios' | 'android'>;
+
+/** 預覽列嘅 iPhone / Android 兩格（Android 圓形同方形係同一張 maskable，都開 Android） */
+export interface IconPreviewSlot {
+    view: 'ios' | 'round' | 'square';
+    device: AdjustableDevice;
+    label: MessageKey;
+    adjustLabel: MessageKey;
+    className: string;
+}
+
+export const ICON_PREVIEW_SLOTS: readonly IconPreviewSlot[] = [
+    {
+        view: 'ios',
+        device: 'ios',
+        label: 'appearance.icon.previewIos',
+        adjustLabel: 'appearance.icon.adjustIos',
+        className: 'ios',
+    },
+    {
+        view: 'round',
+        device: 'android',
+        label: 'appearance.icon.previewRound',
+        adjustLabel: 'appearance.icon.adjustRound',
+        className: 'android',
+    },
+    {
+        view: 'square',
+        device: 'android',
+        label: 'appearance.icon.previewSquare',
+        adjustLabel: 'appearance.icon.adjustSquare',
+        className: 'android sq',
+    },
+];

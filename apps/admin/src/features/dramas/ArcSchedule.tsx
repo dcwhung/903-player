@@ -42,7 +42,11 @@ function ScheduleNotes({ state, arc, actions }: Omit<ArcScheduleProps, 'arcId' |
 }
 
 export function ArcSchedule({ state, arc, arcId, saved, actions }: ArcScheduleProps) {
-    const ctx = scheduleContextOf(state.editor.draft?.definition ?? {}, arc, hkToday(), !!saved);
+    const published = state.isArcLive(arcId);
+    const ctx = scheduleContextOf(state.editor.draft?.definition ?? {}, arc, hkToday(), {
+        scheduled: saved !== null,
+        published,
+    });
     const { form, setForm, rule, dirty, listingDirty, changed, initial } = useScheduleForm(
         saved,
         ctx,
@@ -61,6 +65,7 @@ export function ArcSchedule({ state, arc, arcId, saved, actions }: ArcSchedulePr
     const unreleased = isUnreleased(arc, saved !== null);
     return (
         <div className="card" id="schedule-panel" role="tabpanel" aria-labelledby={`tab-${arcId}`}>
+            {!published && <p className="note info">{t('schedule.unpublishedNote')}</p>}
             <ScheduleViews
                 ctx={ctx}
                 form={form}

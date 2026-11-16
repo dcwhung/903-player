@@ -1,4 +1,4 @@
-import type { UnlistRule } from '@903-player/catalog';
+import type { ScheduleRule, UnlistRule } from '@903-player/catalog';
 import {
     applyPreset,
     formOf,
@@ -230,5 +230,49 @@ describe('scheduleModel — unlisting', () => {
         // 上架排到 7/1 → 由 7/1 + 30 日起
         const later: ScheduleForm = { ...form, listing: { mode: 'all', start: '2027-01-07' } };
         expect(switchUnlist('date', later, FRESH)).toEqual({ mode: 'date', date: '2027-02-06' });
+    });
+});
+
+// Bug：未發佈短篇（ctx.listed = []）嘅舊規則帶住「已上架」批次（listed / from），重新排程要真係搬走第 1 集起嘅集數
+describe('scheduleModel — rule of an arc not published yet', () => {
+    const savedWith = (listedDate: string): ScheduleRule => ({
+        kind: 'periodic',
+        start: '2026-11-09',
+        perRelease: 5,
+        every: { days: 7 },
+        from: 6,
+        listed: [{ from: 1, date: listedDate }],
+    });
+
+    it('should drop the stale listed batch when rescheduling from episode 1', () => {
+        const form = formOf(savedWith('2026-11-02'), FRESH);
+        expect(form.listing).toEqual({
+            mode: 'periodic',
+            start: '2026-11-02',
+            perRelease: 5,
+            every: { days: 7 },
+        });
+        const moved: ScheduleForm = {
+            ...form,
+            listing: { mode: 'periodic', start: '2027-01-01', perRelease: 5, every: { days: 7 } },
+        };
+        expect(ruleOf(moved, FRESH)).toEqual({
+            kind: 'periodic',
+            start: '2027-01-01',
+            perRelease: 5,
+            every: { days: 7 },
+        });
+    });
+
+    it('should show the saved batches as they are when the cadence does not match', () => {
+        const form = formOf(savedWith('2026-10-01'), FRESH);
+        if (form.listing.mode !== 'custom') throw new Error(`listing: ${form.listing.mode}`);
+        // 30 集每次 5 集 = 6 批：第 1 集照舊日子，之後由 9/11 起每 7 日
+        expect(form.listing.batches).toHaveLength(6);
+        expect(form.listing.batches.slice(0, 3)).toEqual([
+            { from: 1, date: '2026-10-01' },
+            { from: 6, date: '2026-11-09' },
+            { from: 11, date: '2026-11-16' },
+        ]);
     });
 });

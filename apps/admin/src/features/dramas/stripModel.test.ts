@@ -25,11 +25,14 @@ describe('stripModel', () => {
     });
 
     it('should describe each arc tab', () => {
-        expect(arcTabNote(drama, arc, false, TODAY)).toBe('無排程');
-        expect(arcTabNote(drama, arc, true, TODAY)).toBe('已上 20 / 33 集');
-        expect(arcTabNote(drama, { episodes: 5, addedAt: '2026-11-16' }, true, TODAY)).toBe('定期');
+        const scheduled = { scheduled: true };
+        expect(arcTabNote(drama, arc, TODAY)).toBe('無排程');
+        expect(arcTabNote(drama, arc, TODAY, scheduled)).toBe('已上 20 / 33 集');
+        expect(arcTabNote(drama, { episodes: 5, addedAt: '2026-11-16' }, TODAY, scheduled)).toBe(
+            '定期',
+        );
         // mockup ①：全部已上架（例如只設下架）嘅短篇 chip 寫「已全部上架」，唔係「定期」
-        expect(arcTabNote(drama, { episodes: 5, addedAt: '2026-11-01' }, true, TODAY)).toBe(
+        expect(arcTabNote(drama, { episodes: 5, addedAt: '2026-11-01' }, TODAY, scheduled)).toBe(
             '已全部上架',
         );
     });
@@ -54,7 +57,33 @@ describe('stripModel', () => {
         });
 
         it('should follow the saved schedule when the arc has one', () => {
-            const context = scheduleContextOf(drama, { ...arc, enabled: false }, TODAY, true);
+            const context = scheduleContextOf(drama, { ...arc, enabled: false }, TODAY, {
+                scheduled: true,
+            });
+            expect(context.listed).toHaveLength(2);
+        });
+    });
+
+    // Bug：未發佈嘅短篇（新短篇 / 從未上過架）日子 ≤ 今日嘅批次唔係「已上架」，前台根本睇唔到，全部集數照改得
+    describe('arc not in the published catalog', () => {
+        const unpublished = { scheduled: true, published: false };
+
+        it('should not treat any batch or past removal as done', () => {
+            const context = scheduleContextOf(drama, arc, TODAY, unpublished);
+            expect(context.listed).toEqual([]);
+            expect(context.unlisted).toEqual({});
+        });
+
+        it('should say the arc is scheduled but not published in its tab', () => {
+            expect(arcTabNote(drama, arc, TODAY, unpublished)).toBe('已排程（未發佈）');
+            expect(arcTabNote(drama, arc, TODAY, { published: false })).toBe('無排程');
+        });
+
+        it('should keep the listed batches of a published arc', () => {
+            const context = scheduleContextOf(drama, arc, TODAY, {
+                scheduled: true,
+                published: true,
+            });
             expect(context.listed).toHaveLength(2);
         });
     });

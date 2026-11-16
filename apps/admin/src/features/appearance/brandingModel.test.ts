@@ -1,9 +1,11 @@
 import {
+    BUILT_IN_ICON_BACKGROUND,
     BUILT_IN_TEXT,
     canSave,
     charCount,
     draftOf,
     homeName,
+    iconSourceRequest,
     iconUrls,
     isDirty,
     nameChanged,
@@ -68,5 +70,51 @@ describe('brandingModel', () => {
             favicon: '/catalog/v1/img/a.png',
         });
         expect(iconUrls(null).appleTouch).toBe('/apple-touch-icon.png');
+    });
+
+    describe('iconSourceRequest', () => {
+        const ICON = {
+            favicon: 'a.png',
+            appleTouch: 'b.png',
+            icon192: 'c.png',
+            icon512: 'd.png',
+            maskable: 'e.png',
+            maskableBackground: '#123456',
+        };
+        const BOXES = {
+            ios: { x: 1, y: 2, width: 30, height: 30 },
+            android: { x: 3, y: 4, width: 40, height: 40 },
+            tab: { x: 5, y: 6, width: 50, height: 50 },
+        };
+
+        it('should open the built-in original with the built-in mask colour, to be uploaded', () => {
+            const request = iconSourceRequest(null, 'ios');
+            expect(request.url).toMatch(/app-icon.*\.png$/);
+            expect(request.name).toBe('app-icon.png');
+            expect(request.seed).toEqual({ device: 'ios', background: BUILT_IN_ICON_BACKGROUND });
+        });
+
+        it('should open the stored original with its boxes and keep its name', () => {
+            const icon = { ...ICON, source: { image: 'f.jpg', same: false, boxes: BOXES } };
+            expect(iconSourceRequest(icon, 'android')).toEqual({
+                url: '/catalog/v1/img/f.jpg',
+                name: 'f.jpg',
+                seed: {
+                    device: 'android',
+                    storedName: 'f.jpg',
+                    boxes: BOXES,
+                    same: false,
+                    background: '#123456',
+                },
+            });
+        });
+
+        it('should fall back to the 512 icon for an icon saved without an original', () => {
+            expect(iconSourceRequest(ICON, 'ios')).toEqual({
+                url: '/catalog/v1/img/d.png',
+                name: 'd.png',
+                seed: { device: 'ios', storedName: 'd.png', background: '#123456', fallback: true },
+            });
+        });
     });
 });

@@ -16,6 +16,8 @@ interface ArcScheduleTabsProps {
     selected: string;
     schedules: ScheduleMap;
     isNew: (arcId: string) => boolean;
+    /** 喺唔喺已發佈 catalog（細字：未發佈 = 「已排程（未發佈）」） */
+    isLive: (arcId: string) => boolean;
     onSelect: (arcId: string) => void;
 }
 
@@ -26,6 +28,7 @@ export function ArcScheduleTabs({
     selected,
     schedules,
     isNew,
+    isLive,
     onSelect,
 }: ArcScheduleTabsProps) {
     const today = hkToday();
@@ -46,7 +49,12 @@ export function ArcScheduleTabs({
                         {isNew(id) && <Pill tone="new">{t('status.newArc')}</Pill>}
                         {arcLabel(arc)}
                     </span>
-                    <small>{arcTabNote(drama, arc, Boolean(schedules[id]), today)}</small>
+                    <small>
+                        {arcTabNote(drama, arc, today, {
+                            scheduled: Boolean(schedules[id]),
+                            published: isLive(id),
+                        })}
+                    </small>
                 </button>
             ))}
         </div>

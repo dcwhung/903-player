@@ -1,5 +1,6 @@
 import { planSchedule, type ScheduleRule } from '@903-player/catalog';
 import type { ScheduleContext } from './scheduleModel';
+import { scheduleContextOf } from './stripModel';
 import {
     cellsOf,
     doneText,
@@ -267,5 +268,30 @@ describe('timelineModel — preview summary (用戶 2026-11-12 方案 A)', () =>
                 day('2026-12-21', [], [[5, 6]]),
             ]),
         ).toBe('共 3 批 · 第 16–20 集、第 26 集上架 · 第 1–3 集、第 5–6 集下架');
+    });
+});
+
+// Bug：未發佈短篇（新短篇）第 1–5 集日子 ≤ 今日，都唔可以出「已上架」/ ✓
+describe('timelineModel — arc not published yet', () => {
+    const arc = { id: 'love-after', episodes: 20, addedAt: '2026-11-20' };
+    const ctx = scheduleContextOf({}, arc, TODAY, { scheduled: true, published: false });
+    const rule: ScheduleRule = {
+        kind: 'periodic',
+        start: '2026-11-20',
+        perRelease: 5,
+        every: { days: 7 },
+    };
+    const plan = planSchedule(rule, ctx);
+
+    it('should not mark any episode as listed', () => {
+        expect(progressText(ctx)).toBe('第 1–20 集已排程上架');
+        expect(listingScopeText(ctx)).toBe('可上架：第 1–20 集（共 20 集）');
+        expect(unlistScopeText(ctx)).toBe('可下架：第 1–20 集（已排程上架）');
+    });
+
+    it('should draw every batch, past ones included, as a planned batch', () => {
+        const strip = listingStrip(plan, ctx, TODAY);
+        const tones = strip.flatMap((cell) => (cell.kind === 'item' ? [cell.item.tone] : []));
+        expect(tones).toEqual(['b1', 'b2', 'b1', 'b2']);
     });
 });

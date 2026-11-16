@@ -2,6 +2,25 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.9.0 — 2026-11-16
+
+App 圖示重新裁切（用戶 2026-11-16 決定：存原圖 + 裁切框，重新裁切唔會越裁越差）。要 api 0.13.0。
+
+### Added
+
+- 「App 外觀」→ App 圖示卡：「iPhone 主畫面」「Android（圓形）」「Android（方形）」預覽係掣（鍵盤可用，aria-label「調整 iPhone 主畫面圖示」等，hover / focus 用現有 token）。撳就開「調整 App 圖示」：由原圖 + 上次嘅框 / 遮罩底色開始，預先揀嗰個裝置、取消「所有裝置使用同一裁切」，其他裝置嘅框照舊。Android 圓形同方形係同一張 maskable，兩個都開 Android
+- 更換 App 圖示時連原圖（`PUT /api/assets/source`）+ 每個裝置嘅框 + 同一裁切一齊存（`branding.icon.source`）；調整時原圖已存就唔再上載，五張 PNG 由原圖重新畫
+- 內建預設圖示：由 repo 原圖（`design/app-icon.png` 副本，內建底色 `#98bdde`）開始，儲存時連原圖上載
+- 呢個版本之前上載嘅自訂圖示（冇原圖）：用已上載嘅 512 × 512 圖示代替原圖，dialog 出提示；儲存後就有原圖記錄
+
+### Fixed
+
+- 未發佈嘅短篇（「新」）唔再將上架日已過嘅批次當「已上架」：排程全部集數改得、tab 細字「已排程（未發佈）」、時間軸冇 ✓，儲存唔再寫入舊 `listed` 批次；排程 tab 加提示「此短篇尚未發佈，前台看不到；發佈後按排程上架。」
+
+### Changed
+
+- 處理待辦表格：「簡介」欄放喺「排期」之前；「新內容」標題刪走「只可選擇已設定完成的項目」提示
+
 ## 0.8.3 — 2026-11-16
 
 Batch review：`.proj-docs/reviews/2026-11-16_review_admin-player-fixes_batch.md`（T1–T5 + cleanup）。

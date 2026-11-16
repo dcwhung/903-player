@@ -101,7 +101,7 @@ export function TodoMatrix({
     return (
         <section className="card flush table-wrap" aria-labelledby="todo-content-title">
             <h2 className="sec-title" id="todo-content-title">
-                {t('update.contentTitle')} <span className="hint">{t('update.contentHint')}</span>
+                {t('update.contentTitle')}
             </h2>
             <table className="matrix">
                 <caption className="sr-only">{t('update.matrixLabel')}</caption>

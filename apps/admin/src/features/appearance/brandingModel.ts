@@ -1,10 +1,13 @@
 /*
  * App 外觀：內建預設（player 而家寫死嘅值）+ 名稱與簡介表格嘅草稿邏輯 + 卡上預覽用嘅圖 URL
+ * + 撳預覽重新裁切時由邊張原圖開始（icon recrop）
  * Design Origin: mockup: _mockups_/admin-appearance/index.html#a / #c
  */
 import type { BrandingIcon, BrandingText } from '../../api/types';
 import { imageUrl } from '../../api/endpoints';
+import builtInSource from '../../assets/icon/app-icon.png';
 import maskableDefault from '../../assets/icon/icon-maskable-192.png';
+import type { IconDevice, IconSeed } from './iconModel';
 
 /** Player 內建（apps/player/index.html og:title / description、manifest short_name） */
 export const BUILT_IN_TEXT = {
@@ -81,3 +84,51 @@ export const iconUrls = (icon: BrandingIcon | null): IconPreviewUrls =>
               maskable: maskableDefault,
               favicon: '/favicon.png',
           };
+
+/** 內建圖示嘅底色（apps/player/scripts/generateIcons.mjs ICON_BACKGROUND，maskable / apple-touch 填四角） */
+export const BUILT_IN_ICON_BACKGROUND = '#98bdde';
+
+/** 內建原圖（design/app-icon.png 嘅副本，appIcon.node.test 鎖住）：重新裁切內建圖示時用 */
+const BUILT_IN_SOURCE_NAME = 'app-icon.png';
+
+/** 重新裁切：去邊度攞原圖（url）、dialog 顯示嘅檔名、dialog 起點 */
+export interface IconSourceRequest {
+    url: string;
+    name: string;
+    seed: IconSeed;
+}
+
+/**
+ * 內建 = repo 原圖（要上載）；有原圖 = R2 原圖 + 上次嘅框；
+ * 舊圖示（呢個功能之前上載，冇原圖）= 用已上載嘅 512 圖示頂住（唔使再上載）
+ */
+export const iconSourceRequest = (
+    icon: BrandingIcon | null,
+    device: IconDevice,
+): IconSourceRequest => {
+    if (!icon)
+        return {
+            url: builtInSource,
+            name: BUILT_IN_SOURCE_NAME,
+            seed: { device, background: BUILT_IN_ICON_BACKGROUND },
+        };
+    const background = icon.maskableBackground;
+    const { source } = icon;
+    if (!source)
+        return {
+            url: imageUrl(icon.icon512),
+            name: icon.icon512,
+            seed: { device, storedName: icon.icon512, background, fallback: true },
+        };
+    return {
+        url: imageUrl(source.image),
+        name: source.image,
+        seed: {
+            device,
+            storedName: source.image,
+            boxes: source.boxes,
+            same: source.same,
+            background,
+        },
+    };
+};

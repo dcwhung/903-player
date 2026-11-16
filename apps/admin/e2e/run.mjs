@@ -6,6 +6,7 @@ import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
+import { iconRecropChecks } from './iconRecropChecks.mjs';
 import { reorderChecks } from './reorderChecks.mjs';
 import { revertChecks } from './revertChecks.mjs';
 import { selectiveChecks } from './selectiveChecks.mjs';
@@ -405,8 +406,8 @@ const SCHEDULE_PARTLY = `${BASE}/dramas/lancy/schedule#lancy-02`;
 /** 「編輯｜預覽」膠囊滑動（--motion-move + --motion-trail）完咗先截圖 */
 const PILL_SETTLE_MS = 400;
 const SCHEDULE_ALL_LISTED = `${BASE}/dramas/lancy/schedule#half`;
-/** 真封面（e2e/fixtures）：排程截圖有碟面 */
-const scheduleState = () => loggedIn({ realImages: true });
+/** 真封面（e2e/fixtures）：排程截圖有碟面；我心不死已發佈（第 1–15 集已上架，見 mockApi liveArcs） */
+const scheduleState = () => loggedIn({ realImages: true, liveArcs: true });
 
 /** 兩個 panel 嘅左上角：並排 = 同一行、上下排 = 同一列 */
 const panelBoxes = async (page) =>
@@ -632,6 +633,30 @@ const scheduleChipCheck = (browser) =>
             await page.close();
         },
     );
+
+/*
+ * Bug（用戶 2026-11-16）：未發佈短篇（預設 state 我心不死 = 新短篇，有排程）第 1–15 集日子 ≤ 今日，
+ * 都唔算已上架、唔鎖；排程 tab 出「尚未發佈」提示，短篇 chip 寫「已排程（未發佈）」
+ */
+const scheduleUnpublishedCheck = (browser) =>
+    check('schedule: an arc not published yet has no listed episodes and a notice', async () => {
+        const page = await newPage(browser, loggedIn({ realImages: true }), WIDE, {
+            deviceScaleFactor: 2,
+        });
+        await page.goto(SCHEDULE_PARTLY);
+        await page.getByText('此短篇尚未發佈，前台看不到；發佈後按排程上架。').waitFor();
+        await page.getByText('可上架：第 1–37 集（共 37 集）').waitFor();
+        await page.getByText('可下架：第 1–37 集（已排程上架）').waitFor();
+        if ((await page.getByText('✓ 已上架').count()) > 0)
+            throw new Error('unpublished arc still shows ✓ 已上架');
+        const note = await page
+            .getByRole('tab', { name: /我心不死/ })
+            .locator('small')
+            .textContent();
+        if (note !== '已排程（未發佈）') throw new Error(`chip: ${note}`);
+        await shoot(page, 'schedule-unpublished', { fullPage: true });
+        await page.close();
+    });
 
 const MIN_CONTRAST = 3;
 
@@ -2040,6 +2065,7 @@ try {
         schedulePreviewCheck,
         schedulePreviewListingOnlyCheck,
         scheduleChipCheck,
+        scheduleUnpublishedCheck,
         scheduleContrastCheck,
         scheduleAllListedCheck,
         scheduleConflictCheck,
@@ -2054,6 +2080,7 @@ try {
         bannerCheck,
         brandingCheck,
         iconPreviewFitCheck,
+        ...iconRecropChecks({ check, newPage, shoot, loggedIn, BASE }),
         publishWarningsCheck,
         ...selectiveChecks({ check, newPage, shoot, loggedIn, BASE }),
         ...revertChecks({ check, newPage, shoot, loggedIn, BASE }),

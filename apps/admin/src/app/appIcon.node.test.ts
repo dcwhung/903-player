@@ -11,3 +11,13 @@ describe('admin app icon (public/icon-192.png)', () => {
         expect(readFileSync(ADMIN_ICON).equals(readFileSync(PLAYER_ICON))).toBe(true);
     });
 });
+
+// 重新裁切內建圖示（icon recrop）用嘅原圖：design/app-icon.png 嘅副本（player icon 都係由佢生成）
+const ADMIN_SOURCE = new URL('../assets/icon/app-icon.png', import.meta.url);
+const DESIGN_SOURCE = new URL('../../../../design/app-icon.png', import.meta.url);
+
+describe('built-in icon original (src/assets/icon/app-icon.png)', () => {
+    it('should be a copy of design/app-icon.png', () => {
+        expect(readFileSync(ADMIN_SOURCE).equals(readFileSync(DESIGN_SOURCE))).toBe(true);
+    });
+});

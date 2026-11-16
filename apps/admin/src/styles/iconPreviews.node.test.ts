@@ -44,4 +44,20 @@ describe('icon preview row', () => {
     it('should use a tighter gap in the dialog preview column', () => {
         expect(bodyOf('.icon-dialog .even')).toMatch(/gap:\s*8px/);
     });
+
+    it('should reset the button look for previews that open the crop (icon recrop)', () => {
+        const button = bodyOf('.icon-prev-adjust');
+        expect(button).toMatch(/display:\s*grid/);
+        expect(button).toMatch(/background:\s*none/);
+        expect(button).toMatch(/box-shadow:\s*none/);
+        expect(button).toMatch(/cursor:\s*pointer/);
+    });
+
+    it('should highlight the hovered / focused preview with existing tokens', () => {
+        expect(bodyOf('.icon-prev-adjust:hover:not(:disabled)')).toMatch(/var\(--surface-2\)/);
+        expect(bodyOf('.icon-prev-adjust:hover .icon-prev-label')).toMatch(/var\(--accent-ink\)/);
+        expect(bodyOf('.icon-prev-adjust:focus-visible .icon-prev-label')).toMatch(
+            /var\(--accent-ink\)/,
+        );
+    });
 });

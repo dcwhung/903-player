@@ -188,6 +188,12 @@ const freshDrama = () => ({
     publishedArcs: [],
 });
 
+/*
+ * createState({ liveArcs: true })：我心不死（lancy-02）已發佈過（publishedArcs、變更摘要 / 待辦冇 newArc）：
+ * 排程 tab 第 1–15 集先算「已上架」（未發佈短篇冇集數算已上架，用戶 2026-11-16）
+ */
+const withLiveArc = (entry) => ({ ...entry, publishedArcs: [...entry.publishedArcs, 'lancy-02'] });
+
 /** D1 schedules：同蘭茜夫人劇場嘅 definition 對得上（排程 tab 短篇 chip 跟呢度計「已上 15 / 37 集」等） */
 const schedulesOf = () => ({
     'lancy/half': {
@@ -285,8 +291,10 @@ export const createState = ({
     selective = false,
     revert = false,
     reorder = false,
+    liveArcs = false,
 } = {}) => ({
     loggedIn: false,
+    liveArcs,
     // revert（api 0.11.0）：GET entry 有 published、確認發佈頁有「修改」行可以還原
     ...(revert ? { others: revertItems, reverts: [] } : {}),
     // reorder（api 0.12.0，#6）：節目排序改咗未發佈 + 上下架記錄有一次廣播劇排序
@@ -308,7 +316,7 @@ export const createState = ({
     entries: [
         show('waves', '口水多過浪花', 1, { airTime: { start: '15:00', end: '16:30' } }),
         show('night', '深夜節目', 2),
-        lancy(),
+        liveArcs ? withLiveArc(lancy()) : lancy(),
         golden(),
         ...(statusMix ? [sammy(), freshDrama()] : selective ? [sammy()] : []),
     ]
@@ -342,6 +350,8 @@ export const createState = ({
     puts: [],
     confirms: [],
     assets: [],
+    /** PUT /api/assets/source（App 圖示原圖，icon recrop）上載嘅 bytes */
+    sources: [],
 });
 
 /** 新短篇：掃描自動編號 lancy-02；未確認（confirm-id）又未改名就係必須（同 apps/api todos） */
@@ -352,7 +362,7 @@ const todosOf = (state) => {
     const arc = drama.definition.arcs[1];
     const confirmed = state.confirms.some((c) => c.arcId === arc.id);
     const placeholder = arc.id === AUTO_ARC_ID && !confirmed;
-    if (state.publishes.length > 0) return { rows: [], blocking: 0 };
+    if (state.publishes.length > 0 || state.liveArcs) return { rows: [], blocking: 0 };
     const target = `/dramas/lancy/arcs#${arc.id}`;
     const row = {
         // 選擇發佈（api 0.10.0）：ID 未確認 = 必須處理 → incomplete
@@ -378,7 +388,7 @@ const todosOf = (state) => {
 };
 
 const changesOf = (state) => {
-    if (state.publishes.length > 0) return { items: [], timeline: [] };
+    if (state.publishes.length > 0 || state.liveArcs) return { items: [], timeline: [] };
     const arcId = state.entries?.find((e) => e.id === 'lancy').definition.arcs[1].id ?? AUTO_ARC_ID;
     const item = {
         kind: 'newArc',
@@ -623,6 +633,11 @@ const handlers = {
         const ext = request.headers()['content-type'] === 'image/png' ? 'png' : 'webp';
         return json(route, { name: `img${state.assets.length}.${ext}` });
     },
+    'PUT /api/assets/source': (state, route, request) => {
+        state.sources.push(request.postDataBuffer());
+        const ext = request.headers()['content-type'].split('/')[1].replace('jpeg', 'jpg');
+        return json(route, { name: `src${state.sources.length}.${ext}` });
+    },
     'GET /api/branding': (state, route) => json(route, brandingBody(state)),
     'PUT /api/branding/icon': (state, route, request) => {
         state.branding.icon = request.postDataJSON();
@@ -654,6 +669,14 @@ export const installMockApi = async (page, state) => {
         const uploaded = name.match(/^img(\d+)\.(webp|png)$/);
         const body = uploaded ? state.assets[Number(uploaded[1]) - 1] : undefined;
         if (body) return route.fulfill({ body, contentType: `image/${uploaded[2]}` });
+        // App 圖示原圖（PUT /api/assets/source 回 src<N>.<ext>）
+        const source = name.match(/^src(\d+)\.(webp|png|jpg)$/);
+        const original = source ? state.sources[Number(source[1]) - 1] : undefined;
+        if (original)
+            return route.fulfill({
+                body: original,
+                contentType: `image/${source[2].replace('jpg', 'jpeg')}`,
+            });
         if (!FIXTURE_NAMES.has(name)) return route.fulfill({ status: 404 });
         return route.fulfill({ path: `${FIXTURES}${name}`, contentType: 'image/webp' });
     });

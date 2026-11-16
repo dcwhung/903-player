@@ -28,12 +28,15 @@ function SourceMeta({ phase }: { phase: CropPhase }) {
     );
 }
 
-export function Loading({ name, bytes }: { name: string; bytes: number }) {
+/** bytes 冇 = 未知大小（例如由伺服器讀原圖） */
+export function Loading({ name, bytes }: { name: string; bytes?: number | undefined }) {
     return (
         <div className="src-frame loading">
             <p className="row muted" role="status">
                 <span className="spinner" aria-hidden="true" />
-                {t('images.loadingFile', { name, mb: megabytes(bytes) })}
+                {bytes === undefined
+                    ? t('images.loadingName', { name })
+                    : t('images.loadingFile', { name, mb: megabytes(bytes) })}
             </p>
         </div>
     );
