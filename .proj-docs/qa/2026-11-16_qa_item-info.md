@@ -24,13 +24,15 @@
 
 ## Delta：merge `origin/main`（`48dfb14`，1.36.0）→ `e7dbb9f`（1.37.0）
 
-- 新 base = `git merge-base HEAD origin/main` = `48dfb14`；`impact`：SKIP 8 / REVERIFY 6（catalog-data、drama、home、pwa-shell、show-today-page、ui-foundation）/ UNCOVERED 12（`ledger-merge.mjs` exit 1 冇寫入嘅 28 行 + 改名前舊 ArcSheet path）
-    - S1 層面：drama / show-today-page 因 `e2e/itemInfo.mjs`（跟 main 嘅 `openWithCatalog({ contextOptions })` 新簽名）STALE；其餘 REVERIFY 係 S3 行
-- Merge 解衝突嘅 code：`itemInfo.mjs` 簽名、`remoteCatalog.mjs` export `CATALOG_DIR` / `CATALOG_FOLDER`、`run.mjs`（main 嘅 S-1017 `data-role="today-list"` + itemInfo section）、`packages/catalog/src/index.ts`（加 `type ArcInfo`）、version 1.37.0（`package.json` / lock 各 1 行）
-- item-info 52 個改動 .ts / .tsx：`git diff 22e69ba e7dbb9f` 淨 `packages/catalog/src/index.ts` 有改（main 嘅 export + `type ArcInfo`）→ coverage 證據沿用
-- `npm test -- <11 份 plan（merge 後版本）npm test path 聯集，162 個>`：297 files / 3459 tests pass（102 s）
-- e2e 引用 Developer @`e7dbb9f`（log 11:20，commit 11:06，working tree clean）：912 PASS / 0 FAIL「All E2E checks passed」，`節目資料：…` 25 個 PASS；tsc 0、lint pass（Developer 同 SHA）
+- 新 base = `git merge-base HEAD origin/main` = `48dfb14`；`impact`：SKIP 8 / REVERIFY 6（catalog-data、drama、home、pwa-shell、show-today-page、ui-foundation）/ UNCOVERED 12（`ledger-merge.mjs` exit 1 冇寫入嘅 28 行 + 改名前舊 ArcSheet path）；S1 層面：drama / show-today-page 因 `e2e/itemInfo.mjs`（跟 main 嘅 `openWithCatalog({ contextOptions })` 新簽名）STALE；其餘 REVERIFY 係 S3 行
+- Merge 解衝突嘅 code：`itemInfo.mjs` 簽名、`remoteCatalog.mjs` export `CATALOG_DIR` / `CATALOG_FOLDER`、`run.mjs`（main 嘅 S-1017 `data-role="today-list"` + itemInfo section）、`packages/catalog/src/index.ts`（加 `type ArcInfo`）、version 1.37.0（`package.json` / lock 各 1 行）；item-info 52 個改動 .ts / .tsx：`git diff 22e69ba e7dbb9f` 淨 `packages/catalog/src/index.ts` 有改（main 嘅 export + `type ArcInfo`）→ coverage 證據沿用
+- `npm test -- <11 份 plan（merge 後版本）npm test path 聯集，162 個>`：297 files / 3459 tests pass（102 s）；e2e 引用 Developer @`e7dbb9f`（log 11:20，commit 11:06，working tree clean）：912 PASS / 0 FAIL「All E2E checks passed」，`節目資料：…` 25 個 PASS；tsc 0、lint pass（Developer 同 SHA）
 - Freeze @`3018e14`（code = `e7dbb9f`，之後淨 re-review 報告）：catalog-data / coming-soon / drama / home / player-core / repo-tooling / show-today-page S1 = ledger 現有行 + 28 行（ArcSheet 嗰批用 `shared/common/Sheet/` 新 path）；同兩個 parent（`1f4a4b6`、`48dfb14`）比 chain + stage + path 冇少行（`1f4a4b6` 嘅 admin `ImagePreviewDialog.test.tsx` 行唔喺度 = main 已刪該檔，非今次鏈）
+
+## Delta 2：merge `origin/main`（`57896ce`，#249 / #250，player 1.36.1）→ `490d2bc`（1.37.0）
+
+- 新 base = `57896ce`；`impact`：SKIP 8 / REVERIFY 6（同 Delta，全部係 S3 行；S1 status 全 FROZEN）/ UNCOVERED 9（`ledger-merge.mjs` 冇寫入嘅 17 行：舊 ArcSheet 7 個已刪 path + `package-lock.json` + `packages/catalog/src/index.ts`）；Merge 改動（vs `57896ce`）：`package-lock.json` 淨 apps/player `1.36.1 → 1.37.0` 一行；`packages/catalog/src/index.ts` 淨加 `type ArcInfo`；item-info 52 個 .ts / .tsx 由 `3246d62` 起淨 `index.ts` 有改 → coverage 證據沿用
+- `npm test -- <11 份 plan npm test path 聯集，162 個>` @`490d2bc`：297 files / 3472 tests pass（104 s）；e2e 引用 main agent @`490d2bc`（scratchpad `e2e-490d2bc.log`，working tree clean）：912 PASS / 0 FAIL「All E2E checks passed」，`節目資料：…` 25 個 PASS；tsc 0、lint pass、`npm ci` ok（main agent 同 SHA）；Freeze @`490d2bc`：catalog-data / coming-soon / drama / repo-tooling S1 = ledger 現有行 + 17 行（ArcSheet 用 `shared/common/Sheet/` 新 path，唔加已刪 path）；同 `HEAD^1` / `HEAD^2` 比 chain + stage + path 冇少行
 
 ## Hard Gates
 
@@ -38,8 +40,7 @@ all pass（Coverage：改動檔 52 個全部 ≥ 80%；PWA：n/a；Security / Da
 
 ## Findings
 
-- 冇三層收斂嘅 🔴 / 🟡；冇新 🟢
-- Observation：freeze 後 `impact` 仍列 REVERIFY 6（catalog-data / drama / home / pwa-shell / show-today-page / ui-foundation）= 呢幾條鏈嘅 **S3** 行 STALE（S1 全部 FROZEN @`22e69ba`），屬下次 release S3；UNCOVERED 7 = `ArcSheet/` 下舊 `sheetDrag` 等已改名去 `shared/common/Sheet/` 嘅已刪 path（`impact --since` 用 git diff 列出刪除端），唔使驗
+- 冇三層收斂嘅 🔴 / 🟡；冇新 🟢；Observation：freeze 後 `impact` 仍列 REVERIFY 6（catalog-data / drama / home / pwa-shell / show-today-page / ui-foundation）= 呢幾條鏈嘅 **S3** 行 STALE（S1 全部 FROZEN @`22e69ba`），屬下次 release S3；UNCOVERED 7 = `ArcSheet/` 下舊 `sheetDrag` 等已改名去 `shared/common/Sheet/` 嘅已刪 path（`impact --since` 用 git diff 列出刪除端），唔使驗
 
 ## 建議補測
 
@@ -49,11 +50,11 @@ all pass（Coverage：改動檔 52 個全部 ≥ 80%；PWA：n/a；Security / Da
 protocol: 1
 status: pass
 stage: S1
-ledger: "delta @3018e14 (code e7dbb9f, base 48dfb14): FROZEN S1 catalog-data / coming-soon / drama / home / player-core / repo-tooling / show-today-page (+28 ledger-merge rows, no row lost vs both parents); earlier FROZEN S1 @22e69ba: catalog-data / drama / show-today-page (plans updated) + bookmark / card-zoom / coming-soon / home / mini-player / player-core / pwa-shell / repo-tooling / ui-foundation (plans unchanged); SKIP admin, api; UNCOVERED 153 assigned to show-today-page / drama / catalog-data"
+ledger: "delta2 @490d2bc (base 57896ce): FROZEN S1 catalog-data / coming-soon / drama / repo-tooling (+17 ledger-merge rows); delta @3018e14 (code e7dbb9f, base 48dfb14): FROZEN S1 catalog-data / coming-soon / drama / home / player-core / repo-tooling / show-today-page (+28 ledger-merge rows, no row lost vs both parents); earlier FROZEN S1 @22e69ba: catalog-data / drama / show-today-page (plans updated) + bookmark / card-zoom / coming-soon / home / mini-player / player-core / pwa-shell / repo-tooling / ui-foundation (plans unchanged); SKIP admin, api; UNCOVERED 153 assigned to show-today-page / drama / catalog-data"
 hard_gates: { tests: pass, coverage: pass, no_blocking: pass, pwa: n/a, security: n/a, performance: n/a }
 tickets: []
 next_action: merge_main
 next_agent: main
 branch: "feature/catalog/item-info"
-context: "item-info S1 pass; delta after merging main (e7dbb9f, 1.37.0): unit 297 files / 3459 tests, e2e 912/0 cited from developer @e7dbb9f; unit 275 files / 3199 tests (12 plan path union, not full npm test); coverage 52 changed files >=80%; lint pass; e2e 823/0 @22e69ba; landscape right-column sheet manual check: inside sheet / info button do not close, left-column buttons close; report + ledger + 3 plans committed locally, not pushed; CI (incl. full npm test) must be green on push before merge"
+context: "item-info S1 pass; delta2 after merging main 57896ce (490d2bc): unit 297 files / 3472 tests, e2e 912/0 cited from main agent @490d2bc; delta after merging main (e7dbb9f, 1.37.0): unit 297 files / 3459 tests, e2e 912/0 cited from developer @e7dbb9f; unit 275 files / 3199 tests (12 plan path union, not full npm test); coverage 52 changed files >=80%; lint pass; e2e 823/0 @22e69ba; landscape right-column sheet manual check: inside sheet / info button do not close, left-column buttons close; report + ledger + 3 plans committed locally, not pushed; CI (incl. full npm test) must be green on push before merge"
 ```
