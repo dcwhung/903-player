@@ -85,6 +85,18 @@ describe('TodoMatrix', () => {
         expect(screen.getByRole('checkbox', { name: '發佈戀愛後二分一' })).toBeChecked();
     });
 
+    it('should title the section 新內容 without a selection hint', () => {
+        render(<MemoryRouter>{matrix()}</MemoryRouter>);
+        expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/^新內容$/);
+    });
+
+    it('should put 簡介 before 排期 in the header', () => {
+        render(<MemoryRouter>{matrix()}</MemoryRouter>);
+        const headers = screen.getAllByRole('columnheader').map((th) => th.textContent ?? '');
+        const at = (label: string) => headers.findIndex((text) => text.includes(label));
+        expect(at('簡介')).toBe(at('排期') - 1);
+    });
+
     it('should show 未完成 without a checkbox for an incomplete row, missing settings in the tooltip', () => {
         render(<MemoryRouter>{matrix()}</MemoryRouter>);
         const row = screen.getByRole('row', { name: /天使之戀系列/ });

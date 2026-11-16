@@ -8,8 +8,8 @@ export const TODO_COLUMNS: readonly TodoColumn[] = [
     'folder',
     'id',
     'images',
-    'schedule',
     'summary',
+    'schedule',
 ];
 
 const COLUMN_LABEL: Record<TodoColumn, MessageKey> = {

@@ -75,7 +75,6 @@ export const zhHK = {
         next: '下一步：確認發佈',
         colPublish: '發佈',
         contentTitle: '新內容',
-        contentHint: '只可選擇已設定完成的項目',
         appearanceTitle: 'App 外觀',
         appearanceHint: '已儲存、未發佈的改動',
         othersTitle: '其他改動',
