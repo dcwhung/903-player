@@ -8,7 +8,7 @@
     margin: 0 calc(-1 * var(--info-sheet-pad-x));
     overflow: hidden;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: var(--info-banner-ratio);
 }
 
 .art {

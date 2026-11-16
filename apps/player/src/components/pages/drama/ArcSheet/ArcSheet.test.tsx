@@ -608,6 +608,23 @@ describe('ArcSheet drama banner（G1）', () => {
         expect(screen.getByRole('dialog')).toHaveAttribute('data-banner', 'false');
     });
 
+    it('should move the close button out of the header onto the banner corner', async () => {
+        const onClose = renderWithBanner(BANNER);
+        const dialog = screen.getByRole('dialog');
+        const close = within(dialog).getByRole('button', { name: '關閉' });
+        expect(close.closest('header')).toBeNull();
+        expect(close).toHaveAttribute('data-on-banner', 'true');
+        await userEvent.click(close);
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('should keep the close button in the header without a banner', () => {
+        renderWithBanner();
+        const close = screen.getByRole('button', { name: '關閉' });
+        expect(close.closest('header')).not.toBeNull();
+        expect(close).not.toHaveAttribute('data-on-banner');
+    });
+
     it('should close when the banner is pulled down', () => {
         vi.useFakeTimers();
         vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({

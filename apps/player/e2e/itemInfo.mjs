@@ -15,8 +15,9 @@ const LANDSCAPE = { viewport: { width: 1280, height: 800 } };
 /** ⓘ 離畫面右邊（同頁頭返回掣離左邊一樣，--space-3 × --ui-scale；直版 ui-scale 1） */
 const INFO_RIGHT_GAP_PX = 12;
 const GAP_TOLERANCE_PX = 2;
-const BANNER_RATIO = 16 / 9;
-const BANNER_RATIO_TOLERANCE = 0.02;
+/** banner 16:9 高度 × 0.75（tokens.css --info-banner-ratio 64 / 27） */
+const BANNER_RATIO = 64 / 27;
+const BANNER_RATIO_TOLERANCE = 0.03;
 
 const SHOW_AIR_TIME = '逢星期六（23:00 - 23:45）播放';
 const SHOW_SUMMARY = '（e2e 示範簡介）公子會節目簡介';
@@ -93,8 +94,18 @@ const checkBanner = async (env, sheet, label) => {
     const ratio = b ? b.width / b.height : 0;
     env.log(
         flush && Math.abs(ratio - BANNER_RATIO) < BANNER_RATIO_TOLERANCE,
-        `${label}：banner 貼 sheet 頂、左右貼邊、16:9（${ratio.toFixed(2)}）`,
+        `${label}：banner 貼 sheet 頂、左右貼邊、64:27（${ratio.toFixed(2)}）`,
     );
+    // ✕ 疊喺 banner 右上角（全集 sheet 都由表頭搬上嚟）
+    const close = await sheet.getByRole('button', { name: '關閉' }).boundingBox();
+    const onCorner =
+        b !== null &&
+        close !== null &&
+        close.y >= b.y &&
+        close.y + close.height <= b.y + b.height / 2 &&
+        close.x + close.width <= b.x + b.width &&
+        close.x >= b.x + b.width / 2;
+    env.log(onCorner, `${label}：✕ 喺 banner 右上角`);
 };
 
 /** 節目頁直版：第一次入自動彈、內容、ⓘ 位置、閂咗撳 ⓘ 開返 */

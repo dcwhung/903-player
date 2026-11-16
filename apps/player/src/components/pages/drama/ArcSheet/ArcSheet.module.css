@@ -371,3 +371,12 @@
     background: var(--info-banner-grab);
     transform: translateX(-50%);
 }
+
+/* 有 banner：✕ 由表頭搬上表右上角，疊喺圖上（同資料 sheet 一樣：白色、冇底色、drop-shadow） */
+.bannerClose {
+    position: absolute;
+    top: var(--info-banner-close-top);
+    right: var(--info-banner-close-right);
+    color: var(--info-banner-text);
+    filter: var(--info-banner-icon-shadow);
+}

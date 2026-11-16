@@ -158,14 +158,20 @@
     --info-sheet-arc-title-size: calc(17px * var(--ui-scale));
     /* 資料 sheet 左右留白（banner 用負 margin 貼返邊） */
     --info-sheet-pad-x: var(--space-6);
-    /* 資料 sheet banner（P9.5 #12 v3）：名 28px、細字 14px，底部漸變 62% 黑；grab bar / ✕ 疊喺圖上 */
-    --info-banner-title-size: calc(28px * var(--ui-scale));
+    /*
+     * 資料 sheet / 全集 sheet banner（P9.5 #12 v3、G1）：主頁橫圖 16:9 高度 × 0.75（= 64:27，用戶 2026-11-16）；
+     * 名用 --font-size-xl、細字 14px，底部漸變 62% 黑；grab bar / ✕ 疊喺圖上（✕ 喺 sheet 右上角）
+     */
+    --info-banner-ratio: 64 / 27;
+    --info-banner-title-size: var(--font-size-xl);
     --info-banner-title-line: 1.2;
     --info-banner-subtitle-size: calc(14px * var(--ui-scale));
     --info-banner-scrim: rgb(0 0 0 / 62%);
     --info-banner-text: #ffffff;
     --info-banner-grab: rgb(255 255 255 / 60%);
     --info-banner-icon-shadow: drop-shadow(0 1px 2px rgb(0 0 0 / 60%));
+    --info-banner-close-top: var(--space-4);
+    --info-banner-close-right: var(--space-3);
     /* 短篇段標題前面嘅短篇碟面 */
     --info-arc-disc-size: calc(44px * var(--ui-scale));
     --info-arc-disc-ring: 2px;

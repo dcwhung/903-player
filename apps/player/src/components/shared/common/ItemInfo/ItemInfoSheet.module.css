@@ -73,8 +73,8 @@
 
 .close {
     position: absolute;
-    top: var(--space-4);
-    right: var(--space-3);
+    top: var(--info-banner-close-top);
+    right: var(--info-banner-close-right);
     display: flex;
     align-items: center;
     justify-content: center;

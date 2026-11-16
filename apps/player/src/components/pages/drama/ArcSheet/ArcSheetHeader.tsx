@@ -17,6 +17,25 @@ export const sheetProgress = (groups: readonly { items: readonly ArcSummary[] }[
     return { done: all.filter((s) => s.state === 'done').length, total: all.length };
 };
 
+/** ✕：有 banner 就疊喺表右上角（banner 上面，白色 + drop-shadow），冇就喺表頭最右 */
+const CloseButton = ({
+    onClose,
+    onBanner = false,
+}: {
+    onClose: () => void;
+    onBanner?: boolean;
+}) => (
+    <button
+        type="button"
+        className={`${styles.close} ${onBanner ? styles.bannerClose : ''}`}
+        aria-label={t('drama.sheetClose')}
+        data-on-banner={onBanner || undefined}
+        onClick={onClose}
+    >
+        <CloseIcon size={CLOSE_ICON_SIZE} />
+    </button>
+);
+
 interface SheetHeaderProps {
     titleId: string;
     progress: ReturnType<typeof sheetProgress>;
@@ -28,7 +47,7 @@ interface SheetHeaderProps {
 }
 
 /**
- * 表頂：（劇集 banner +）grab bar + 表頭「全集」（+ 劇集資料箭咀）+「聽完 N / M 個」+ ✕；
+ * 表頂：（劇集 banner + 右上角 ✕ +）grab bar + 表頭「全集」（+ 劇集資料箭咀）+「聽完 N / M 個」（+ 冇 banner 時 ✕）；
  * 成套劇快將下架就下面加一行琥珀字
  */
 export const SheetHeader = ({
@@ -42,6 +61,7 @@ export const SheetHeader = ({
     <>
         {banner && <InfoBanner banner={banner} />}
         <span className={styles.grab} aria-hidden="true" />
+        {banner && <CloseButton onClose={onClose} onBanner />}
         <header className={styles.header}>
             <h2 id={titleId} className={styles.title}>
                 {t('drama.sheetTitle')}
@@ -54,14 +74,7 @@ export const SheetHeader = ({
                 />
             )}
             <span className={styles.summary}>{t('drama.sheetDone', progress)}</span>
-            <button
-                type="button"
-                className={styles.close}
-                aria-label={t('drama.sheetClose')}
-                onClick={onClose}
-            >
-                <CloseIcon size={CLOSE_ICON_SIZE} />
-            </button>
+            {!banner && <CloseButton onClose={onClose} />}
         </header>
         {notice && (
             <p className={styles.notice}>
