@@ -11,6 +11,6 @@
 .text {
     margin: 0;
     color: var(--color-text);
-    font-size: var(--font-size-sm);
+    font-size: var(--info-inline-text-size);
     line-height: var(--info-text-line);
 }

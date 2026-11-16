@@ -22,6 +22,19 @@ const TODAY_SUMMARY = '（e2e 示範簡介）在晴朗的一天出發節目簡�
 const DRAMA_SUMMARY = '（e2e 示範簡介）蘭茜夫人劇場劇集簡介';
 const ARC_WITH_INFO = '戀愛二分一';
 const ARC_SUMMARY = '（e2e 示範簡介）戀愛二分一短篇簡介';
+/** 多啲名：直版全集 sheet 行、橫版今日節目行嘅 chip 一定要換行（V2 / V3） */
+const MANY_HOSTS = ['主持丙', '主持丁', '主持戊', '主持己', '主持庚', '主持辛'];
+const MANY_CAST = ['聲演甲', '聲演乙', '聲演丙', '聲演丁', '聲演戊', '聲演己'];
+/**
+ * 行資料字大細（_mockups_/catalog-item-info t9-l-open / a7-n-progress）：播放時間 / 簡介 13px、chip 12px，
+ * 橫版（--ui-scale 1.5）都唔放大
+ */
+const INLINE_TEXT_PX = 13;
+const INLINE_CHIP_PX = 12;
+/** 標籤同第一粒 chip 喺同一行：兩個中線相差唔超過呢個 */
+const SAME_LINE_PX = 4;
+/** 資料區右邊到收藏掣左邊最多咁遠（行間距 14px × --ui-scale 1.5 = 21px，再加少少誤差） */
+const STAR_GAP_MAX_PX = 24;
 
 const SHOW_EXTRA = {
     gongzi: {
@@ -31,13 +44,13 @@ const SHOW_EXTRA = {
     },
     sunnyday: {
         airTime: { start: '06:00', end: '09:00' },
-        hosts: ['主持丙'],
+        hosts: MANY_HOSTS,
         summary: TODAY_SUMMARY,
     },
 };
 
 const withArcInfo = (arc) =>
-    arc.name === ARC_WITH_INFO ? { ...arc, cast: ['聲演甲', '聲演乙'], summary: ARC_SUMMARY } : arc;
+    arc.name === ARC_WITH_INFO ? { ...arc, cast: MANY_CAST, summary: ARC_SUMMARY } : arc;
 
 /** 內建 catalog + 示範資料（airTime 要合規：最長 3 小時，唔係成份 catalog 被拒、fallback 內建） */
 const infoDocument = (base) => {
@@ -110,6 +123,41 @@ const checkShowLandscape = async (env, json) => {
     env.log(!backdrop, '節目資料橫版：冇遮罩，左欄清單照撳得');
 };
 
+/**
+ * 一行展開資料（InlineItemInfo）嘅量度：字大細、播放時間幾多行、標籤 vs 第一粒 chip 中線差、
+ * chip 排咗幾多行、資料區右邊
+ */
+const inlineMetrics = (info) =>
+    info.evaluate((el) => {
+        const center = (box) => box.top + box.height / 2;
+        const text = el.querySelector('p');
+        const list = el.querySelector('ul');
+        const role = list && document.getElementById(list.getAttribute('aria-labelledby'));
+        const chips = list ? [...list.querySelectorAll('li')] : [];
+        const firstChip = chips[0]?.getBoundingClientRect();
+        const style = text && getComputedStyle(text);
+        return {
+            textPx: style ? parseFloat(style.fontSize) : 0,
+            chipPx: chips[0] ? parseFloat(getComputedStyle(chips[0]).fontSize) : 0,
+            firstLines: style
+                ? Math.round(text.getBoundingClientRect().height / parseFloat(style.lineHeight))
+                : 0,
+            roleOffset:
+                role && firstChip
+                    ? Math.abs(center(role.getBoundingClientRect()) - center(firstChip))
+                    : -1,
+            chipRows: new Set(chips.map((li) => Math.round(li.getBoundingClientRect().top))).size,
+            right: el.getBoundingClientRect().right,
+        };
+    });
+
+/** 標籤喺第一行最左，chip 滿咗先換行（唔係標籤自己一行） */
+const logLabelFlow = (log, label, m) =>
+    log(
+        m.chipRows > 1 && m.roleOffset >= 0 && m.roleOffset <= SAME_LINE_PX,
+        `${label}：標籤同第一粒 chip 同一行、chip 換行（中線差 ${m.roleOffset.toFixed(1)}px、chip ${m.chipRows} 行）`,
+    );
+
 const arcSheet = (p) => p.getByRole('dialog', { name: '全集' });
 const dramaToggle = (p) => arcSheet(p).getByRole('button', { name: '劇集資料' });
 const castList = (p) => arcSheet(p).getByRole('list', { name: '聲演' });
@@ -128,6 +176,10 @@ const checkArcSheet = async (env, json, reducedMotion) => {
         expanded === 'true' && cast && summary,
         `${label}：第一次入全集 sheet 展開（箭咀 ${expanded}、聲演 ${cast}、劇集簡介 ${summary}）`,
     );
+    if (cast) {
+        const info = castList(p).locator('xpath=ancestor::*[@data-role="item-info"][1]');
+        logLabelFlow(log, `${label}聲演`, await inlineMetrics(info));
+    }
     await dramaToggle(p).click();
     if (!reducedMotion) await p.waitForTimeout(SETTLE_MS);
     const rows = await arcSheet(p)
@@ -156,6 +208,26 @@ const checkArcPick = async (env, json) => {
 const todayToggle = (p) =>
     p.getByRole('region', { name: '節目表' }).getByRole('button', { name: '節目資料' });
 
+/** 今日節目行資料：字大細跟 mockup、播放時間一行、資料區闊到收藏星前面、主持標籤同 chip 同一行 */
+const checkTodayInline = async (env, p, label) => {
+    const { log } = env;
+    await p.waitForTimeout(SETTLE_MS);
+    const row = p.locator('li[data-today-row]').filter({ hasText: TODAY_SUMMARY });
+    const m = await inlineMetrics(row.locator('[data-role="item-info"]'));
+    log(
+        Math.abs(m.textPx - INLINE_TEXT_PX) < 0.5 && Math.abs(m.chipPx - INLINE_CHIP_PX) < 0.5,
+        `${label}：資料字 ${m.textPx}px（${INLINE_TEXT_PX}px）、chip ${m.chipPx}px（${INLINE_CHIP_PX}px）`,
+    );
+    log(m.firstLines === 1, `${label}：播放時間一行放得落（${m.firstLines} 行）`);
+    const star = await row.getByRole('button', { name: /收藏/ }).first().boundingBox();
+    const gap = star ? star.x - m.right : -1;
+    log(
+        gap >= 0 && gap <= STAR_GAP_MAX_PX,
+        `${label}：資料區闊到收藏星前面（離星 ${gap.toFixed(1)}px）`,
+    );
+    logLabelFlow(log, `${label}主持`, m);
+};
+
 /** 今日節目表：第一次入展開、有資料；再入（記住睇過）收合；橫版有標題列 */
 const checkToday = async (env, json, contextOptions, label) => {
     const { log } = env;
@@ -165,6 +237,7 @@ const checkToday = async (env, json, contextOptions, label) => {
     const first = await todayToggle(p).getAttribute('aria-expanded');
     const shown = await isShown(p.getByText(TODAY_SUMMARY), { timeout: WAIT_MS });
     log(first === 'true' && shown, `${label}：第一次入節目表展開資料（${first}、簡介 ${shown}）`);
+    if (shown) await checkTodayInline(env, p, label);
     await p.reload();
     await todayToggle(p).waitFor({ timeout: WAIT_MS });
     const again = await todayToggle(p).getAttribute('aria-expanded');

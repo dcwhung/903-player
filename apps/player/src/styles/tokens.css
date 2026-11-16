@@ -157,7 +157,14 @@
     --info-sheet-title-size: calc(20px * var(--ui-scale));
     --info-sheet-arc-title-size: calc(17px * var(--ui-scale));
     --info-sheet-chip-line: calc(30px * var(--ui-scale));
-    --info-chip-line: calc(20px * var(--ui-scale));
+    /*
+     * 列表行展開資料（InlineItemInfo：全集 sheet 短篇行、今日節目行）嘅字同 chip：刻意唔跟 --ui-scale。
+     * mockup 橫版（--ui-scale 1.5，t9-l-open / a7-l-progress）量到播放時間 / 簡介 13px、chip 12px、chip 高 20px，
+     * 同直版一樣；跟 --ui-scale 放大「星期一至五（06:00 - 09:00）」會斷兩行（V1）
+     */
+    --info-inline-text-size: 13px;
+    --info-inline-chip-size: 12px;
+    --info-chip-line: 20px;
     --info-text-line: 1.6;
     --info-lamp-inset: 10%;
     /*
