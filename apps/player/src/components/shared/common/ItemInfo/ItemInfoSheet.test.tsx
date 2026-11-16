@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ItemInfoSheet } from './ItemInfoSheet';
 import { INFO_OPENER_ATTR } from './useCloseOnOutsidePress';
@@ -372,5 +372,40 @@ describe('ItemInfoSheet', () => {
             expect(screen.queryByTestId('info-banner')).not.toBeInTheDocument();
             expect(document.querySelector('img[src="arc.webp"]')).not.toBeNull();
         });
+    });
+});
+
+describe('ItemInfoSheet closing motion', () => {
+    afterEach(() => {
+        Reflect.deleteProperty(HTMLElement.prototype, 'getAnimations');
+    });
+
+    it('should slide away still showing its content, then unmount (T6)', async () => {
+        let finish: () => void = () => undefined;
+        const finished = new Promise<void>((resolve) => {
+            finish = resolve;
+        });
+        // jsdom 冇 Web Animations：扮收埋動畫跑緊
+        Object.defineProperty(HTMLElement.prototype, 'getAnimations', {
+            configurable: true,
+            value: () => [{ finished }],
+        });
+        const props = { label: '劇集資料', onClose: vi.fn() };
+        const { rerender } = render(<ItemInfoSheet open sections={[SHOW]} {...props} />);
+        // 短篇資料 sheet 閂嗰下父層清走 sections（useSeriesInfo）：滑走緊都要見返原本內容
+        rerender(<ItemInfoSheet open={false} sections={[]} {...props} />);
+        const overlay = document.querySelector('[data-info-sheet]');
+        expect(overlay).toHaveAttribute('data-sheet-state', 'closing');
+        expect(screen.getByRole('heading', { name: '公子會', hidden: true })).toBeInTheDocument();
+        await act(async () => finish());
+        expect(document.querySelector('[data-info-sheet]')).toBeNull();
+    });
+
+    it('should mark the overlay open so it slides up from the bottom', () => {
+        render(<ItemInfoSheet open sections={[SHOW]} label="節目資料" onClose={vi.fn()} />);
+        expect(document.querySelector('[data-info-sheet]')).toHaveAttribute(
+            'data-sheet-state',
+            'open',
+        );
     });
 });

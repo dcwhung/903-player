@@ -4,7 +4,7 @@
 // 檢查：節目頁第一次入自動彈 sheet、ⓘ 位置、橫版右欄；全集 sheet 箭咀展開 / 收合（減少動態直接切換）、
 // 揀未聽短篇彈短篇 sheet；今日節目表箭咀、第一次展開之後收合、橫版標題列
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
-import { isShown, runSection } from './harness.mjs';
+import { isShown, runSection, succeeds } from './harness.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 
 const WAIT_MS = 5000;
@@ -158,7 +158,8 @@ const checkShowLandscape = async (env, json) => {
         .getByRole('button', { name: /收藏/ })
         .first()
         .click();
-    const closed = !(await isShown(sheet, { timeout: ABSENT_WAIT_MS }));
+    // 收埋動畫（T6）完先 unmount：等佢走，唔係即刻當冇
+    const closed = await succeeds(sheet.waitFor({ state: 'detached', timeout: WAIT_MS }));
     env.log(closed, '節目資料橫版：撳左欄掣，右欄 sheet 自動閂');
     // ⓘ 離畫面右邊同直版一樣計法：同頁頭返回掣離左邊一樣（--space-3 × --ui-scale），唔再讓開把手預留位
     const info = await p.getByRole('button', { name: '節目資料' }).boundingBox();

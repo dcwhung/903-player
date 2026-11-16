@@ -113,10 +113,22 @@ interface ControlDeps {
     close: ReturnType<typeof useCloseTimer>;
 }
 
+/**
+ * 彈出動畫（SheetMotion sheet-in，CSSAnimation 有 animationName）未完就拉：即刻完咗佢，
+ * 唔係動畫會蓋過拉表嘅 inline transform，表唔跟手指。拉表 / 彈返嘅 transition 唔郁
+ */
+const finishOpening = (sheet: HTMLElement) => {
+    if (typeof sheet.getAnimations !== 'function') return;
+    sheet.getAnimations().forEach((animation) => {
+        if ('animationName' in animation) animation.finish();
+    });
+};
+
 /** 按低：表滑走緊 / 已經有手勢（例如 header 同清單同時拉）就唔接；量一次表高 */
 const startGesture = ({ getSheet, gesture, close }: ControlDeps, y: number, t: number) => {
     const sheet = getSheet();
     if (!sheet || close.isPending() || gesture.current) return false;
+    finishOpening(sheet);
     const height = sheet.getBoundingClientRect().height;
     gesture.current = { startY: y, height, offset: 0, samples: [toSample(y, t)] };
     return true;

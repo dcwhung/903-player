@@ -246,6 +246,22 @@ describe('ArcSheet pull down to close', () => {
         expect(dialog()).toHaveAttribute('data-dragging', 'true');
     });
 
+    it('jumps the opening slide to its end when a pull starts, so the sheet follows at once', () => {
+        renderSheet();
+        // 彈出動畫（CSSAnimation 有 animationName）未完就拉：即刻完咗佢；拉表嘅 transition 唔理
+        const opening = { animationName: 'sheet-in', finish: vi.fn() };
+        const transition = { transitionProperty: 'transform', finish: vi.fn() };
+        Object.defineProperty(dialog(), 'getAnimations', {
+            configurable: true,
+            value: () => [opening, transition],
+        });
+
+        fireEvent.pointerDown(header(), { clientY: 100, pointerId: 1, button: 0 });
+
+        expect(opening.finish).toHaveBeenCalledTimes(1);
+        expect(transition.finish).not.toHaveBeenCalled();
+    });
+
     it('springs back without closing after a short pull', () => {
         const { onClose } = renderSheet();
 
@@ -641,5 +657,38 @@ describe('ArcSheet drama banner（G1）', () => {
         expect(onClose).toHaveBeenCalledTimes(1);
         vi.useRealTimers();
         vi.restoreAllMocks();
+    });
+});
+
+describe('ArcSheet open / close motion（T6）', () => {
+    afterEach(() => {
+        Reflect.deleteProperty(HTMLElement.prototype, 'getAnimations');
+    });
+
+    it('slides up when opened and stays until the slide-down finishes after closing', async () => {
+        let finish: () => void = () => undefined;
+        const finished = new Promise<void>((resolve) => {
+            finish = resolve;
+        });
+        Object.defineProperty(HTMLElement.prototype, 'getAnimations', {
+            configurable: true,
+            value: () => [{ finished }],
+        });
+        const props = {
+            groups: GROUPS,
+            current: undefined,
+            isPlaying: false,
+            onPick: vi.fn(),
+            onPlay: vi.fn(),
+            onClose: vi.fn(),
+            coverOf: (s: ArcSummary) => `/covers/${s.arc}.webp`,
+        };
+        const { rerender } = render(<ArcSheet open {...props} />);
+        const overlay = () => screen.queryByRole('dialog', { hidden: true })?.parentElement;
+        expect(overlay()).toHaveAttribute('data-sheet-state', 'open');
+        rerender(<ArcSheet open={false} {...props} />);
+        expect(overlay()).toHaveAttribute('data-sheet-state', 'closing');
+        await act(async () => finish());
+        expect(screen.queryByRole('dialog', { hidden: true })).not.toBeInTheDocument();
     });
 });

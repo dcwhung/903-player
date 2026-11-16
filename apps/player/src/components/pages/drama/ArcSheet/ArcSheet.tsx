@@ -11,6 +11,9 @@ import styles from './ArcSheet.module.css';
 import type { ArcSheetInfo, UpcomingArcRowView } from './arcSheetTypes';
 import { UpcomingArcGroup } from './UpcomingArcRow';
 import { useSheetBehaviour } from '../../../shared/common/Sheet/useSheetBehaviour';
+import { SheetOverlay } from '../../../shared/common/Sheet/SheetOverlay';
+import { useSheetPresence } from '../../../shared/common/Sheet/useSheetPresence';
+import motion from '../../../shared/common/Sheet/SheetMotion.module.css';
 
 type RowProps = Omit<ArcRowProps, 'summary' | 'infoOf' | 'infoExpanded'>;
 
@@ -86,7 +89,7 @@ const SheetList = ({ listRef, groups, upcoming, info, rowProps }: SheetListProps
  * 全集一覽表（底部彈出）：分組 播放中 → 新上架 → 未聽完 → 已收聽，圓環 = 聽完幾多集；
  * 撳行轉去嗰個短篇，撳右邊掣直接播（續聽 / 未收聽 / ↺ 重聽）。
  * 頂部劇集 banner（G1，有圖先出）。閂：✕ 掣、撳遮罩、Escape，或者向下拉（banner / grab bar / header；
- * 清單捲到頂都得，直版橫版一樣）。
+ * 清單捲到頂都得，直版橫版一樣）。開 / 閂都由底滑上 / 滑落（useSheetPresence + SheetMotion.module.css）。
  * 見 design/previews/drama-flow-preview.html；橫版 docked 見 landscape-list-left-preview.html
  */
 export const ArcSheet = ({
@@ -102,20 +105,18 @@ export const ArcSheet = ({
 }: ArcSheetProps) => {
     const titleId = useId();
     const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(open, onClose);
-    if (!open) return null;
+    const { mounted, state, inert, overlayRef } = useSheetPresence(open);
+    if (!mounted) return null;
+    const backdrop = { className: styles.backdrop, testId: 'arc-sheet-backdrop', onClick: onClose };
     return (
-        <div className={`${styles.overlay} ${docked ? styles.docked : ''}`}>
-            {!docked && (
-                <div
-                    ref={backdropRef}
-                    className={styles.backdrop}
-                    data-testid="arc-sheet-backdrop"
-                    onClick={onClose}
-                />
-            )}
+        <SheetOverlay
+            {...{ state, inert, overlayRef, backdropRef }}
+            className={`${styles.overlay} ${docked ? styles.docked : ''}`}
+            backdrop={docked ? undefined : backdrop}
+        >
             <section
                 ref={setSheet}
-                className={styles.sheet}
+                className={`${styles.sheet} ${motion.sheet}`}
                 role="dialog"
                 aria-modal={!docked}
                 aria-labelledby={titleId}
@@ -135,6 +136,6 @@ export const ArcSheet = ({
                     rowProps={sheetRowProps}
                 />
             </section>
-        </div>
+        </SheetOverlay>
     );
 };
