@@ -5,6 +5,7 @@ import {
     hasItemInfo,
     hasNoItemProgress,
     seriesHasInfo,
+    shouldAutoOpenArcInfo,
     shouldAutoOpenInfo,
     showInfoSections,
 } from './itemInfo';
@@ -131,5 +132,18 @@ describe('shouldAutoOpenInfo', () => {
         expect(shouldAutoOpenInfo({ ...fresh, hasProgress: true })).toBe(false);
         expect(shouldAutoOpenInfo({ ...fresh, loaded: true })).toBe(false);
         expect(shouldAutoOpenInfo({ ...fresh, focused: true })).toBe(false);
+    });
+});
+
+describe('shouldAutoOpenArcInfo', () => {
+    it('should open for a picked arc with no progress that has info', () => {
+        expect(shouldAutoOpenArcInfo('new', { cast: ['甲'] })).toBe(true);
+    });
+
+    it('should not open for an arc with progress, without info or unknown', () => {
+        expect(shouldAutoOpenArcInfo('started', { cast: ['甲'] })).toBe(false);
+        expect(shouldAutoOpenArcInfo('done', { summary: '簡介' })).toBe(false);
+        expect(shouldAutoOpenArcInfo('new', {})).toBe(false);
+        expect(shouldAutoOpenArcInfo(undefined, { cast: ['甲'] })).toBe(false);
     });
 });

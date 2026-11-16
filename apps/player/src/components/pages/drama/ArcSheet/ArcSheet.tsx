@@ -1,16 +1,19 @@
-import { useId } from 'react';
+import { useId, type Ref } from 'react';
 import { t } from '../../../../i18n/t';
 import type { ArcGroup, ArcSummary } from '../../../../selectors/arcProgress';
-import { CloseIcon, HourglassIcon } from '../../../shared/common/icons/icons';
-import { SpokenText, type SpokenNotice } from '../../../shared/common/SpokenText/SpokenText';
+import { DramaSummaryCard } from '../../../shared/common/ItemInfo/DramaSummaryCard';
+import type { SpokenNotice } from '../../../shared/common/SpokenText/SpokenText';
 import { GROUP_TITLES } from './arcLabels';
+import { SheetHeader, sheetProgress } from './ArcSheetHeader';
 import { ArcRow, type ArcRowProps } from './ArcRow';
 import styles from './ArcSheet.module.css';
-import type { UpcomingArcRowView } from './arcSheetTypes';
+import type { ArcSheetInfo, UpcomingArcRowView } from './arcSheetTypes';
 import { UpcomingArcGroup } from './UpcomingArcRow';
 import { useSheetBehaviour } from './useSheetBehaviour';
 
-interface ArcSheetProps extends Omit<ArcRowProps, 'summary'> {
+type RowProps = Omit<ArcRowProps, 'summary' | 'infoOf' | 'infoExpanded'>;
+
+interface ArcSheetProps extends RowProps {
     open: boolean;
     /**
      * 橫版：表只蓋住清單欄（父層要 position: relative），冇遮罩、唔係 modal，旁邊播放器照撳得；
@@ -23,11 +26,10 @@ interface ArcSheetProps extends Omit<ArcRowProps, 'summary'> {
     upcoming?: readonly UpcomingArcRowView[] | undefined;
     /** 成套劇快將下架：表頭下面一行琥珀字（畫面字 + 讀屏字，W-537） */
     notice?: SpokenNotice | undefined;
+    /** 劇集 / 短篇資料（P9.5 #12）：成套劇有資料先傳，「全集」旁邊出箭咀 */
+    info?: ArcSheetInfo | undefined;
     onClose: () => void;
 }
-
-const CLOSE_ICON_SIZE = 20;
-const NOTICE_ICON_SIZE = 12;
 
 /** 一組：細標題（播放中 / 新上架 / 未聽完 / 已收聽）+ 嗰組嘅短篇 */
 const ArcGroupBlock = ({
@@ -50,43 +52,31 @@ const ArcGroupBlock = ({
     );
 };
 
-/** 表頭「聽完 N / M 個」 */
-const sheetProgress = (groups: ArcSheetProps['groups']) => {
-    const all = groups.flatMap((g) => g.items);
-    return { done: all.filter((s) => s.state === 'done').length, total: all.length };
-};
-
-interface SheetHeaderProps {
-    titleId: string;
-    progress: ReturnType<typeof sheetProgress>;
-    notice: SpokenNotice | undefined;
-    onClose: () => void;
+interface SheetListProps {
+    listRef: Ref<HTMLDivElement>;
+    groups: ArcSheetProps['groups'];
+    upcoming: readonly UpcomingArcRowView[];
+    info: ArcSheetInfo | undefined;
+    rowProps: RowProps;
 }
 
-/** 表頭：「全集」+「聽完 N / M 個」+ ✕；成套劇快將下架就下面加一行琥珀字 */
-const SheetHeader = ({ titleId, progress, notice, onClose }: SheetHeaderProps) => (
-    <>
-        <header className={styles.header}>
-            <h2 id={titleId} className={styles.title}>
-                {t('drama.sheetTitle')}
-            </h2>
-            <span className={styles.summary}>{t('drama.sheetDone', progress)}</span>
-            <button
-                type="button"
-                className={styles.close}
-                aria-label={t('drama.sheetClose')}
-                onClick={onClose}
-            >
-                <CloseIcon size={CLOSE_ICON_SIZE} />
-            </button>
-        </header>
-        {notice && (
-            <p className={styles.notice}>
-                <HourglassIcon size={NOTICE_ICON_SIZE} />
-                <SpokenText {...notice} />
-            </p>
+/** 唯一捲動嘅清單：（劇集簡介卡 +）各組短篇 + 即將上架組；展開資料時每行出聲演 / 簡介 */
+const SheetList = ({ listRef, groups, upcoming, info, rowProps }: SheetListProps) => (
+    <div ref={listRef} className={styles.list} data-role="sheet-list">
+        {info?.dramaSummary && (
+            <DramaSummaryCard summary={info.dramaSummary} expanded={info.expanded} />
         )}
-    </>
+        {groups.map((g) => (
+            <ArcGroupBlock
+                key={g.group}
+                {...g}
+                {...rowProps}
+                infoOf={info?.arcInfoOf}
+                infoExpanded={info?.expanded}
+            />
+        ))}
+        <UpcomingArcGroup rows={upcoming} />
+    </div>
 );
 
 /**
@@ -101,8 +91,9 @@ export const ArcSheet = ({
     groups,
     upcoming = [],
     notice,
+    info,
     onClose,
-    ...rowProps
+    ...sheetRowProps
 }: ArcSheetProps) => {
     const titleId = useId();
     const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(open, onClose);
@@ -131,14 +122,14 @@ export const ArcSheet = ({
                     titleId={titleId}
                     progress={sheetProgress(groups)}
                     notice={notice}
+                    info={info}
                     onClose={onClose}
                 />
-                <div ref={listRef} className={styles.list} data-role="sheet-list">
-                    {groups.map((g) => (
-                        <ArcGroupBlock key={g.group} {...g} {...rowProps} />
-                    ))}
-                    <UpcomingArcGroup rows={upcoming} />
-                </div>
+                <SheetList
+                    listRef={listRef}
+                    {...{ groups, upcoming, info }}
+                    rowProps={sheetRowProps}
+                />
             </section>
         </div>
     );

@@ -156,8 +156,14 @@
         margin-top: auto;
     }
 
-    .playerColumn > :last-child:not(.header) {
+    .playerColumn > :last-child:not(.header),
+    .playerColumn > :has(+ [data-info-sheet]:last-child) {
         margin-bottom: auto;
+    }
+
+    /* 資料 sheet（P9.5 #12）橫版喺呢欄底彈出（ItemInfoSheet docked，absolute）；佢唔計入上面置中 */
+    .playerColumn {
+        position: relative;
     }
 
     /* 廣播劇（短篇）現正播放有第二行（集名） */

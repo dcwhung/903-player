@@ -85,13 +85,14 @@
 }
 
 .title {
-    flex: 1;
     color: var(--color-title);
     font-size: var(--font-size-lg);
     font-weight: 700;
 }
 
+/* 「聽完 N / M 個」推去右邊（「全集」旁邊有劇集資料箭咀） */
 .summary {
+    margin-left: auto;
     color: var(--color-text-muted);
     font-size: var(--font-size-xs);
 }
@@ -147,11 +148,19 @@
 }
 
 .row {
-    display: flex;
+    /* 一行 = 撳轉短篇 + 播放掣；展開資料（.rowInfo）喺下一行，碟面同播放掣留喺頂嗰行（P9.5 #12） */
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: var(--space-2);
+    column-gap: var(--space-2);
     padding-right: var(--space-2);
     border-radius: var(--radius-md);
+}
+
+/* 短篇資料：對齊名 / 進度嗰欄（pick 左 padding + 碟面 + 間距） */
+.rowInfo {
+    grid-column: 1;
+    padding-left: calc(var(--space-2) + var(--arc-sheet-ring) + var(--space-3));
 }
 
 /* 載入緊嗰個短篇：淺底 + 強調色框 */

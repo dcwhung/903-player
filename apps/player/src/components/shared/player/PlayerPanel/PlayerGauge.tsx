@@ -84,6 +84,18 @@ const useGaugeView = (
     return { known, shownTime, max, seek, isPlaying, arc, disc, toggle, restart };
 };
 
+/** 外框止喺掣旁邊，入面嘅字放唔落就向外伸（見 PlayerPanel.module.css .time） */
+const GaugeTimes = ({ elapsed, total }: { elapsed: string; total: string }) => (
+    <>
+        <span className={`${styles.time} ${styles.elapsed}`}>
+            <span>{elapsed}</span>
+        </span>
+        <span className={`${styles.time} ${styles.total}`}>
+            <span>{total}</span>
+        </span>
+    </>
+);
+
 /** 唱片 + 弧形進度 + 時間 + 由頭播放：節目頁播放器同今日節目卡共用 */
 export const PlayerGauge = ({
     art,
@@ -121,13 +133,7 @@ export const PlayerGauge = ({
                 <div className={styles.discArea}>
                     <Disc art={art} artRef={artRef} {...view.disc} />
                 </div>
-                {/* 外框止喺掣旁邊，入面嘅字放唔落就向外伸（見 PlayerPanel.module.css .time） */}
-                <span className={`${styles.time} ${styles.elapsed}`}>
-                    <span>{formatClock(shownTime, known)}</span>
-                </span>
-                <span className={`${styles.time} ${styles.total}`}>
-                    <span>{total}</span>
-                </span>
+                <GaugeTimes elapsed={formatClock(shownTime, known)} total={total} />
                 <GaugeActions
                     isPlaying={isPlaying}
                     onRestart={view.restart}

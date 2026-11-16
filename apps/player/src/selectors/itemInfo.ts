@@ -11,6 +11,7 @@ import {
     type ShowConfig,
 } from '@903-player/catalog';
 import type { Progress } from '../services/progressStore';
+import type { ArcState } from './arcProgress';
 
 /** 判斷「有資料」嘅欄位（airDays 本身唔計） */
 export interface InfoFields {
@@ -44,6 +45,9 @@ export const hasItemInfo = (fields: InfoFields): boolean =>
     hasNames(fields.hosts) ||
     hasNames(fields.cast) ||
     fields.airTime !== undefined;
+
+/** 已經砌好嘅行資料（冇值嘅欄位唔出 key）有冇嘢 */
+export const hasInlineInfo = (info: InlineInfo): boolean => Object.keys(info).length > 0;
 
 /** 冇值就唔出 key（同 catalog registry 一樣） */
 const field = <K extends string, V>(key: K, value: V | undefined) =>
@@ -116,3 +120,7 @@ export interface AutoOpenInput {
 /** 第一次入（冇進度、冇載入、唔係由收藏入）而且有資料先自動彈獨立 sheet */
 export const shouldAutoOpenInfo = ({ hasInfo, hasProgress, loaded, focused }: AutoOpenInput) =>
     hasInfo && !hasProgress && !loaded && !focused;
+
+/** 揀一個冇任何進度（new）嘅短篇，而且嗰個短篇有資料：自動彈嗰個短篇嘅獨立 sheet */
+export const shouldAutoOpenArcInfo = (state: ArcState | undefined, info: InlineInfo): boolean =>
+    state === 'new' && hasInlineInfo(info);

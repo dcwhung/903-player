@@ -34,6 +34,7 @@ export const SeriesArcSheet = ({ sheet, current, docked }: SeriesArcSheetProps) 
             upcoming={sheet.upcoming}
             notice={sheet.notice}
             notesOf={sheet.notesOf}
+            info={sheet.info}
             onPick={sheet.pick}
             onPlay={sheet.play}
             onClose={sheet.close}

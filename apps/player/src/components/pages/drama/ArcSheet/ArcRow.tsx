@@ -2,11 +2,14 @@ import type { CSSProperties } from 'react';
 import type { SeriesEpisode } from '@903-player/catalog';
 import { t } from '../../../../i18n/t';
 import type { ArcSummary } from '../../../../selectors/arcProgress';
+import type { InlineInfo } from '../../../../selectors/itemInfo';
 import { ratio, toPercent } from '../../../../utils/ratio';
-import { CheckIcon, PauseIcon, PlayIcon, RestartIcon } from '../../../shared/common/icons/icons';
+import { CheckIcon } from '../../../shared/common/icons/icons';
+import { InlineItemInfo } from '../../../shared/common/ItemInfo/InlineItemInfo';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';
 import { NewBadge } from '../../../shared/common/NewBadge/NewBadge';
-import { playLabel, rowLabel, summaryLabel, visibleStatus } from './arcLabels';
+import { rowLabel, summaryLabel, visibleStatus } from './arcLabels';
+import { PlayButton } from './ArcPlayButton';
 import styles from './ArcSheet.module.css';
 import type { ArcRowNotes } from './arcSheetTypes';
 import { CATALOG_IMAGE_CROSS_ORIGIN } from '../../../../config/catalogImage';
@@ -25,25 +28,13 @@ export interface ArcRowProps {
     coverOf: (summary: ArcSummary) => string;
     /** 上架 / 下架補充（A2 逐集上架、LS2 快將下架）；冇就同以前一樣 */
     notesOf?: ((summary: ArcSummary) => ArcRowNotes | undefined) | undefined;
+    /** 每行聲演 / 簡介（P9.5 #12）；冇就唔出資料區 */
+    infoOf?: ((summary: ArcSummary) => InlineInfo) | undefined;
+    /** 全集「劇集資料」箭咀展開咗 */
+    infoExpanded?: boolean | undefined;
 }
 
-const PLAY_ICON_SIZE = 18;
 const CHECK_ICON_SIZE = 12;
-
-/** 右邊掣個 icon：播緊 ❚❚；聽完 ↺ 重聽；其他 ▶ */
-const PlayButtonIcon = ({
-    summary,
-    isCurrent,
-    isPlaying,
-}: {
-    summary: ArcSummary;
-    isCurrent: boolean;
-    isPlaying: boolean;
-}) => {
-    if (isCurrent && isPlaying) return <PauseIcon size={PLAY_ICON_SIZE} />;
-    if (!isCurrent && summary.state === 'done') return <RestartIcon size={PLAY_ICON_SIZE} />;
-    return <PlayIcon size={PLAY_ICON_SIZE} />;
-};
 
 /**
  * 碟面 + 外圈進度環（--arc-ring-fill = 聽完集數佔幾多）；未聽完碟面底中間有「1/4」pill，
@@ -87,7 +78,7 @@ const ArcCover = ({
     );
 };
 
-/** 一行：左邊撳轉短篇（碟面進度環 + 名 + 進度），右邊播放掣 */
+/** 一行：左邊撳轉短篇（碟面進度環 + 名 + 進度），右邊播放掣；展開資料就喺名 / 進度下面（掣外面，讀屏讀得到） */
 export const ArcRow = ({
     summary: s,
     current,
@@ -96,6 +87,8 @@ export const ArcRow = ({
     onPlay,
     coverOf,
     notesOf,
+    infoOf,
+    infoExpanded = false,
 }: ArcRowProps) => {
     const isCurrent = current?.arc === s.arc;
     const notes = notesOf?.(s);
@@ -123,14 +116,12 @@ export const ArcRow = ({
                     <span className={styles.status}>{status}</span>
                 </span>
             </button>
-            <button
-                type="button"
-                className={styles.play}
-                aria-label={playLabel(s, isCurrent, isPlaying)}
-                onClick={() => onPlay(s)}
-            >
-                <PlayButtonIcon summary={s} isCurrent={isCurrent} isPlaying={isPlaying} />
-            </button>
+            <PlayButton summary={s} isCurrent={isCurrent} isPlaying={isPlaying} onPlay={onPlay} />
+            {infoOf && (
+                <div className={styles.rowInfo}>
+                    <InlineItemInfo info={infoOf(s)} expanded={infoExpanded} />
+                </div>
+            )}
         </li>
     );
 };

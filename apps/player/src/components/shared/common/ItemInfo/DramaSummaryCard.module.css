@@ -1,0 +1,24 @@
+/* 劇集簡介卡：淺底圓角，「簡介」細字標籤 + 正文 */
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+.label {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-caps);
+}
+
+.text {
+    margin: 0;
+    color: var(--color-text);
+    font-size: var(--font-size-md);
+    line-height: var(--info-text-line);
+}

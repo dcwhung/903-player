@@ -1,28 +1,4 @@
-/*
- * 列表行資料（_mockups_/catalog-item-info：全集 sheet、今日節目表）：
- * 收埋 0fr → 展開 1fr；時間 / easing 用過場 token，減少動態直接切換（.claude/CLAUDE.md Motion）
- */
-.collapse {
-    display: grid;
-    grid-template-rows: 0fr;
-}
-
-.collapse[data-expanded='true'] {
-    grid-template-rows: 1fr;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-    .collapse {
-        transition: grid-template-rows var(--view-transition-fade) var(--ease-view-transition);
-    }
-}
-
-.clip {
-    min-height: 0;
-    overflow: hidden;
-}
-
-/* 左邊細直線入面；簡介用正文色，同灰色進度字分開 */
+/* 列表行資料：左邊細直線入面；簡介 / 播放時間用正文色，同灰色進度字分開 */
 .info {
     display: flex;
     flex-direction: column;
@@ -32,8 +8,7 @@
     border-left: 2px solid var(--color-track);
 }
 
-.airTime,
-.summary {
+.text {
     margin: 0;
     color: var(--color-text);
     font-size: var(--font-size-sm);
