@@ -121,10 +121,15 @@
         /*
          * 唱片按右欄（size container）嘅闊同高計，用盡位，唔再跟直版嘅「畫面高 × 六成」：
          * 闊最多 --player-disc-width，高扣走 --player-disc-reserve（現正播放 + 一個間距；
-         * 頁頭喺左欄），夾喺 --landscape-disc-min / --landscape-disc-max 之間（tokens.css）
+         * 頁頭喺左欄），夾喺 --landscape-disc-min / --landscape-disc-max 之間（tokens.css）。
+         * 闊兩邊都留 --gauge-info-room（T7b）：ⓘ 喺進度圈右邊外面都放得落欄入面（有冇 ⓘ 都留，
+         * 短篇之間轉唱片唔會變大細）
          */
         --now-playing-height: var(--now-playing-line);
-        --player-disc-width: calc(100cqw * var(--landscape-disc-fill));
+        --player-disc-width: min(
+            calc(100cqw * var(--landscape-disc-fill)),
+            calc(100cqw - 2 * var(--gauge-info-room))
+        );
         --player-disc-reserve: calc(var(--now-playing-height) + var(--fixed-page-gap));
         --player-disc-size: max(
             var(--landscape-disc-min),
@@ -204,7 +209,11 @@
     .todayColumn {
         --card-title-line: calc(1.6 * var(--font-size-xl));
         --today-stack-reserve: calc(2 * var(--card-stack-offset) + var(--touch-target-min));
-        --player-disc-width: calc(100cqw - 2 * var(--card-stack-gutter));
+        /* 同節目頁一樣留 --gauge-info-room（T7b）：今日節目頁唱片唔可以大過節目頁（e2e 對比） */
+        --player-disc-width: min(
+            calc(100cqw - 2 * var(--card-stack-gutter)),
+            calc(100cqw - 2 * var(--gauge-info-room))
+        );
         --player-disc-reserve: calc(
             var(--now-playing-height) + var(--fixed-page-gap) + var(--card-padding-block) +
                 var(--card-inner-gap) + var(--card-title-line) + var(--card-title-space) +

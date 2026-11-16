@@ -1,6 +1,6 @@
 import type { ChangeItem } from '@903-player/catalog';
 import type { ChangesResponse, TodoRow } from '../../api/types';
-import { pendingEdits, pendingPublishCount } from './pendingModel';
+import { pendingOthers, pendingPublishCount } from './pendingModel';
 
 const SHOW = { kind: 'shows', id: 'waves', name: '口水多過浪花' } as const;
 const edit = (fields: string[]): ChangeItem => ({
@@ -10,6 +10,7 @@ const edit = (fields: string[]): ChangeItem => ({
     detail: { fields },
 });
 const UNLIST: ChangeItem = { kind: 'unlist', when: 'now', entry: SHOW, detail: {} };
+const REORDER: ChangeItem = { kind: 'reorder', when: 'now', detail: { list: 'shows' } };
 const ROW = { key: 'newArc/lancy/love-after' } as TodoRow;
 
 const changes = (over: Partial<ChangesResponse> = {}): ChangesResponse => ({
@@ -21,28 +22,25 @@ const changes = (over: Partial<ChangesResponse> = {}): ChangesResponse => ({
     ...over,
 });
 
-describe('pendingEdits', () => {
-    it('should return the 修改 items among the other saved changes', () => {
-        const summary = { items: [edit(['airTime']), UNLIST, edit(['theme'])], timeline: [] };
-        expect(pendingEdits(changes({ others: summary }))).toEqual([
-            edit(['airTime']),
-            edit(['theme']),
-        ]);
+describe('pendingOthers', () => {
+    it('should return every other saved change of any kind (all published together)', () => {
+        const items = [edit(['airTime']), UNLIST, REORDER, edit(['theme'])];
+        expect(pendingOthers(changes({ others: { items, timeline: [] } }))).toEqual(items);
     });
 
     it('should return nothing when changes have not loaded or come from an old API', () => {
-        expect(pendingEdits(undefined)).toEqual([]);
-        expect(pendingEdits(changes({ others: undefined }))).toEqual([]);
+        expect(pendingOthers(undefined)).toEqual([]);
+        expect(pendingOthers(changes({ others: undefined }))).toEqual([]);
     });
 });
 
 describe('pendingPublishCount', () => {
-    it('should add new-content rows, edited items and changed App 外觀 items', () => {
+    it('should add new-content rows, every other saved change and changed App 外觀 items', () => {
         const data = changes({
             appearance: { icon: true, text: false, banner: true },
-            others: { items: [edit(['hosts']), edit(['summary']), UNLIST], timeline: [] },
+            others: { items: [edit(['hosts']), edit(['summary']), UNLIST, REORDER], timeline: [] },
         });
-        expect(pendingPublishCount([ROW, ROW], data)).toBe(6);
+        expect(pendingPublishCount([ROW, ROW], data)).toBe(8);
     });
 
     it('should count only the todo rows while changes have not loaded', () => {

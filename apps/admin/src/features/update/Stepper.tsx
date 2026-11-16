@@ -6,7 +6,7 @@
 import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { t, type MessageKey } from '../../i18n/t';
-import { usePublishStepPath } from './usePublishStepPath';
+import { usePublishPlan } from './usePublishPlan';
 
 type StepNo = 1 | 2 | 3;
 
@@ -24,7 +24,7 @@ const targetOf = (no: StepNo, current: 2 | 3, publishPath: string | undefined) =
 
 /** current = 第幾步（1-based） */
 export function Stepper({ current }: { current: 2 | 3 }) {
-    const publishPath = usePublishStepPath();
+    const { path: publishPath } = usePublishPlan();
     return (
         <ol className="stepper">
             {STEPS.map((key, i) => {
