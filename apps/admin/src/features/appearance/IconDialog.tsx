@@ -1,62 +1,18 @@
 /*
- * 更換 App 圖示 dialog（Q6）：左 = 原圖 + 正方形裁切框；右 = 預覽 + Android 遮罩底色 + 輸出說明。
- * 「所有裝置使用同一裁切」= 一個框；取消勾選後撳裝置分頁逐個調，預覽只亮起嗰個。「上載」= 五張 PNG → branding
+ * 更換 / 調整 App 圖示 dialog（Q6）：左 = 原圖 + 正方形裁切框；右 = 預覽 + Android 遮罩底色 + 輸出說明。
+ * 「所有裝置使用同一裁切」= 一個框；取消勾選後撳裝置分頁逐個調，預覽只亮起嗰個。「上載」= 五張 PNG → branding。
+ * 調整（icon recrop，由卡上預覽開）：同一個 dialog，標題「調整 App 圖示」；舊圖示冇原圖就出提示（用 512 圖頂住）
  * Design Origin: mockup: _mockups_/admin-appearance/index.html#b
  */
 import { useId } from 'react';
 import { t } from '../../i18n/t';
 import { Loading, Problem } from '../../ui/CropDialogParts';
 import { useModalKeys } from '../../ui/useModalKeys';
-import { IconCanvas } from './IconCanvas';
 import { IconCropSource } from './IconCropSource';
-import { DeviceTabs, IconDialogFooter, MaskColours } from './IconDialogParts';
-import { IconPreviews, type IconViews } from './IconPreviews';
-import { cropView, type IconBoxes } from './iconModel';
-import type { IconReady } from './iconSession';
+import { DeviceTabs, IconDialogFooter } from './IconDialogParts';
+import { IconSide } from './IconSide';
+import { cropView } from './iconModel';
 import type { IconCrop } from './useIconCrop';
-
-/** 四個裝置各自用自己嘅框、Android 填遮罩底色 */
-const previewViews = (crop: IconCrop, ready: IconReady, boxes: IconBoxes): IconViews => {
-    const canvas = (box: IconBoxes[keyof IconBoxes], masked: boolean) => (
-        <IconCanvas loaded={ready.loaded} box={box} background={masked ? crop.background : null} />
-    );
-    return {
-        ios: canvas(boxes.ios, false),
-        round: canvas(boxes.android, true),
-        square: canvas(boxes.android, true),
-        tab: canvas(boxes.tab, false),
-    };
-};
-
-function IconSide({ crop, tabLabel }: { crop: IconCrop; tabLabel: string }) {
-    const { ready, same, device, boxes } = crop;
-    if (!ready || !boxes) return null;
-    const view = cropView(same, device);
-    return (
-        <div className="icon-side">
-            <p className="state-label">{t('appearance.icon.preview')}</p>
-            <IconPreviews
-                views={previewViews(crop, ready, boxes)}
-                active={same ? undefined : device}
-                tabLabel={tabLabel}
-            />
-            <MaskColours
-                swatches={crop.swatches}
-                background={crop.background}
-                onPick={crop.setBackground}
-                disabled={crop.busy !== null}
-            />
-            {crop.small && (
-                <Problem
-                    message={t('appearance.icon.small', {
-                        size: `${ready.loaded.source.width} × ${ready.loaded.source.height}`,
-                    })}
-                />
-            )}
-            <p className="hint">{t(view.out)}</p>
-        </div>
-    );
-}
 
 function IconEditor({ crop, tabLabel }: { crop: IconCrop; tabLabel: string }) {
     const { ready, same, device, activeBox } = crop;
@@ -91,6 +47,9 @@ function DialogBody({ crop, tabLabel }: { crop: IconCrop; tabLabel: string }) {
         <>
             {phase.status === 'loading' && <Loading name={phase.name} bytes={phase.bytes} />}
             {phase.status === 'error' && <Problem message={phase.message} />}
+            {phase.status === 'ready' && phase.seed.fallback && (
+                <p className="note info">{t('appearance.icon.fallbackNote')}</p>
+            )}
             {phase.status === 'ready' && <IconEditor crop={crop} tabLabel={tabLabel} />}
             {crop.busy && (
                 <p className="note info" role="status">
@@ -128,7 +87,13 @@ export function IconDialog({ crop, tabLabel, onUpload, onCancel }: IconDialogPro
                 tabIndex={-1}
             >
                 <header>
-                    <h3 id={titleId}>{t('appearance.icon.dialogTitle')}</h3>
+                    <h3 id={titleId}>
+                        {t(
+                            crop.adjusting
+                                ? 'appearance.icon.adjustTitle'
+                                : 'appearance.icon.dialogTitle',
+                        )}
+                    </h3>
                     {phase.status === 'ready' && (
                         <span className="meta mono">{phase.file.name}</span>
                     )}

@@ -350,6 +350,8 @@ export const createState = ({
     puts: [],
     confirms: [],
     assets: [],
+    /** PUT /api/assets/source（App 圖示原圖，icon recrop）上載嘅 bytes */
+    sources: [],
 });
 
 /** 新短篇：掃描自動編號 lancy-02；未確認（confirm-id）又未改名就係必須（同 apps/api todos） */
@@ -631,6 +633,11 @@ const handlers = {
         const ext = request.headers()['content-type'] === 'image/png' ? 'png' : 'webp';
         return json(route, { name: `img${state.assets.length}.${ext}` });
     },
+    'PUT /api/assets/source': (state, route, request) => {
+        state.sources.push(request.postDataBuffer());
+        const ext = request.headers()['content-type'].split('/')[1].replace('jpeg', 'jpg');
+        return json(route, { name: `src${state.sources.length}.${ext}` });
+    },
     'GET /api/branding': (state, route) => json(route, brandingBody(state)),
     'PUT /api/branding/icon': (state, route, request) => {
         state.branding.icon = request.postDataJSON();
@@ -662,6 +669,14 @@ export const installMockApi = async (page, state) => {
         const uploaded = name.match(/^img(\d+)\.(webp|png)$/);
         const body = uploaded ? state.assets[Number(uploaded[1]) - 1] : undefined;
         if (body) return route.fulfill({ body, contentType: `image/${uploaded[2]}` });
+        // App 圖示原圖（PUT /api/assets/source 回 src<N>.<ext>）
+        const source = name.match(/^src(\d+)\.(webp|png|jpg)$/);
+        const original = source ? state.sources[Number(source[1]) - 1] : undefined;
+        if (original)
+            return route.fulfill({
+                body: original,
+                contentType: `image/${source[2].replace('jpg', 'jpeg')}`,
+            });
         if (!FIXTURE_NAMES.has(name)) return route.fulfill({ status: 404 });
         return route.fulfill({ path: `${FIXTURES}${name}`, contentType: 'image/webp' });
     });

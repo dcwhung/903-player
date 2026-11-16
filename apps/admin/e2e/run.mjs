@@ -6,6 +6,7 @@ import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
+import { iconRecropChecks } from './iconRecropChecks.mjs';
 import { reorderChecks } from './reorderChecks.mjs';
 import { revertChecks } from './revertChecks.mjs';
 import { selectiveChecks } from './selectiveChecks.mjs';
@@ -2079,6 +2080,7 @@ try {
         bannerCheck,
         brandingCheck,
         iconPreviewFitCheck,
+        ...iconRecropChecks({ check, newPage, shoot, loggedIn, BASE }),
         publishWarningsCheck,
         ...selectiveChecks({ check, newPage, shoot, loggedIn, BASE }),
         ...revertChecks({ check, newPage, shoot, loggedIn, BASE }),
